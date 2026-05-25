@@ -68,7 +68,7 @@ export class Resizer {
     })
   }
 
-  private applyColumns(): void {
+  applyColumns(): void {
     // Reconstrói grid-template-columns. Estrutura fixa:
     // 240px (sidebar) | 1fr (editor) | 4px | <right-panel> | 4px | <chat>
     const [right, chat] = this.targets

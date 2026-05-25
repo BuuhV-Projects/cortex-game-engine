@@ -36,6 +36,19 @@ const resizer = new Resizer(app, [rightTarget, chatTarget])
 resizer.attach(document.getElementById('resizer-right') as HTMLElement, rightTarget)
 resizer.attach(document.getElementById('resizer-chat') as HTMLElement, chatTarget)
 
+const COLLAPSED_CHAT_WIDTH = 32
+let chatWidthBeforeCollapse = chatTarget.width
+document.addEventListener('chat-collapsed-change', (e) => {
+  const { collapsed } = (e as CustomEvent<{ collapsed: boolean }>).detail
+  if (collapsed) {
+    chatWidthBeforeCollapse = chatTarget.width
+    chatTarget.width = COLLAPSED_CHAT_WIDTH
+  } else {
+    chatTarget.width = chatWidthBeforeCollapse
+  }
+  resizer.applyColumns()
+})
+
 // Ao criar um novo projeto, FileTree recarrega apontando para o path criado
 document.addEventListener('project-open', (e) => {
   const { path } = (e as CustomEvent<{ path: string }>).detail

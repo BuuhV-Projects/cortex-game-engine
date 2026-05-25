@@ -14,11 +14,13 @@ export class Chat {
   private messagesEl: HTMLElement | null = null
   private inputEl: HTMLTextAreaElement | null = null
   private sendBtn: HTMLButtonElement | null = null
+  private toggleBtn: HTMLButtonElement | null = null
 
   private messages: ChatMessage[] = []
   private projectDir: string | null = null
   private streamingMessageEl: HTMLElement | null = null
   private streaming = false
+  private collapsed = false
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -49,7 +51,22 @@ export class Chat {
 
     const header = document.createElement('div')
     header.className = 'chat-header'
-    header.textContent = 'Chat IA'
+
+    const title = document.createElement('span')
+    title.className = 'chat-header-title'
+    title.textContent = 'Chat IA'
+
+    const toggleBtn = document.createElement('button')
+    toggleBtn.className = 'chat-toggle-btn'
+    toggleBtn.type = 'button'
+    toggleBtn.title = 'Minimizar chat'
+    toggleBtn.setAttribute('aria-label', 'Minimizar chat')
+    toggleBtn.textContent = '▸'
+    toggleBtn.addEventListener('click', () => this.toggleCollapsed())
+    this.toggleBtn = toggleBtn
+
+    header.appendChild(title)
+    header.appendChild(toggleBtn)
 
     const messages = document.createElement('div')
     messages.className = 'chat-messages'
@@ -168,6 +185,22 @@ export class Chat {
       this.messagesEl.appendChild(el)
     }
     this.scrollToBottom()
+  }
+
+  private toggleCollapsed(): void {
+    this.collapsed = !this.collapsed
+    this.container.classList.toggle('chat-collapsed', this.collapsed)
+    if (this.toggleBtn) {
+      this.toggleBtn.textContent = this.collapsed ? '◂' : '▸'
+      this.toggleBtn.title = this.collapsed ? 'Expandir chat' : 'Minimizar chat'
+      this.toggleBtn.setAttribute(
+        'aria-label',
+        this.collapsed ? 'Expandir chat' : 'Minimizar chat',
+      )
+    }
+    document.dispatchEvent(
+      new CustomEvent('chat-collapsed-change', { detail: { collapsed: this.collapsed } }),
+    )
   }
 
   private scrollToBottom(): void {
