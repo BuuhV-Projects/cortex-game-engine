@@ -5,7 +5,7 @@
     "output": "dist-app"
   },
   "files": [
-    "dist-electron/**"
+    "out/**"
   ],
   "win": {
     "target": [
