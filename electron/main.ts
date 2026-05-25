@@ -453,6 +453,8 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
 
 // Chat IA — envia o histórico para Claude e faz streaming dos chunks de volta
 // para o renderer via canais ai:chunk / ai:done / ai:error (ADR-0014).
+const CLAUDE_CODE_SYSTEM_PREFIX = `You are Claude Code, Anthropic's official CLI for Claude.`
+
 const AI_SYSTEM_PROMPT = `\
 Você é um assistente para o cortex-game-engine — um motor de jogos 3D em \
 TypeScript com arquitetura Entity-Component-System (ECS), renderização via \
@@ -462,15 +464,22 @@ Você ajuda o usuário a criar jogos, explicar código existente, debugar \
 problemas e sugerir mudanças. Responda em português. Quando sugerir código, \
 prefira TypeScript moderno (ES2022+) e siga o padrão ECS do engine.`
 
+const OAUTH_BETA_HEADER = 'oauth-2025-04-20'
+
 /**
  * Resolve a autenticação para o SDK Anthropic. Prefere ANTHROPIC_API_KEY;
  * se ausente, tenta usar o accessToken do `~/.claude/.credentials.json`
  * (gerado por `claude login` do Claude Code) como authToken OAuth.
  * Retorna null se nenhuma fonte estiver disponível.
  */
-function buildAnthropicClient(): Anthropic | null {
+interface AnthropicClientResult {
+  client: Anthropic
+  isOAuth: boolean
+}
+
+function buildAnthropicClient(): AnthropicClientResult | null {
   if (process.env['ANTHROPIC_API_KEY']) {
-    return new Anthropic()
+    return { client: new Anthropic(), isOAuth: false }
   }
   const credsPath = join(homedir(), '.claude', '.credentials.json')
   if (!existsSync(credsPath)) return null
@@ -479,7 +488,11 @@ function buildAnthropicClient(): Anthropic | null {
     const parsed = JSON.parse(raw) as { claudeAiOauth?: { accessToken?: string } }
     const token = parsed.claudeAiOauth?.accessToken
     if (!token) return null
-    return new Anthropic({ authToken: token })
+    const oauthClient = new Anthropic({
+      authToken: token,
+      defaultHeaders: { 'anthropic-beta': OAUTH_BETA_HEADER },
+    })
+    return { client: oauthClient, isOAuth: true }
   } catch {
     return null
   }
@@ -491,8 +504,8 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
     return
   }
 
-  const client = buildAnthropicClient()
-  if (!client) {
+  const auth = buildAnthropicClient()
+  if (!auth) {
     mainWindow?.webContents.send('ai:error', {
       message:
         'Sem credencial: defina ANTHROPIC_API_KEY ou rode `claude login` para usar a subscription.',
@@ -500,11 +513,15 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
     return
   }
 
+  const systemPrompt = auth.isOAuth
+    ? `${CLAUDE_CODE_SYSTEM_PREFIX}\n\n${AI_SYSTEM_PROMPT}`
+    : AI_SYSTEM_PROMPT
+
   try {
-    const stream = client.messages.stream({
+    const stream = auth.client.messages.stream({
       model: 'claude-sonnet-4-5',
       max_tokens: 4096,
-      system: AI_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: messages as Anthropic.MessageParam[],
     })
 
@@ -520,10 +537,36 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
       usage: finalMessage.usage,
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    mainWindow?.webContents.send('ai:error', { message })
+    mainWindow?.webContents.send('ai:error', { message: formatAnthropicError(err) })
   }
 })
+
+function formatAnthropicError(err: unknown): string {
+  if (err instanceof Anthropic.APIError) {
+    const status = err.status
+    const headers = (err.headers ?? {}) as Record<string, string | undefined>
+    const retryAfter = headers['retry-after']
+    const resetUnified = headers['anthropic-ratelimit-unified-5h-reset']
+    const remainingUnified = headers['anthropic-ratelimit-unified-5h-remaining']
+
+    if (status === 429) {
+      const parts: string[] = ['429 rate limit atingido.']
+      if (retryAfter) parts.push(`retry-after: ${retryAfter}s`)
+      if (resetUnified) {
+        const resetDate = new Date(Number(resetUnified) * 1000)
+        if (!Number.isNaN(resetDate.getTime())) {
+          parts.push(`janela 5h reseta em ${resetDate.toLocaleString()}`)
+        }
+      }
+      if (remainingUnified) parts.push(`restante na janela: ${remainingUnified}`)
+      parts.push('(token OAuth compartilha cota com o Claude Code CLI)')
+      return parts.join(' | ')
+    }
+
+    return `${status} ${err.message}`
+  }
+  return err instanceof Error ? err.message : String(err)
+}
 
 // Mata o comando do terminal em execução, se houver
 ipcMain.handle('terminal:stop', async () => {
