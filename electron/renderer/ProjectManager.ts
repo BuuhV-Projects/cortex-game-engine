@@ -2,7 +2,8 @@ export class ProjectManager {
   private container: HTMLElement
   private dialog: HTMLDialogElement | null = null
   private nameInput: HTMLInputElement | null = null
-  private dirInput: HTMLInputElement | null = null
+  private dirPathDisplay: HTMLSpanElement | null = null
+  private selectedDir: string | null = null
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -50,23 +51,32 @@ export class ProjectManager {
     nameGroup.appendChild(nameLabel)
     nameGroup.appendChild(nameInput)
 
-    // Campo: pasta destino (webkitdirectory)
+    // Campo: pasta destino (diálogo nativo do Electron)
     const dirGroup = document.createElement('div')
     dirGroup.className = 'project-manager-field'
 
     const dirLabel = document.createElement('label')
     dirLabel.textContent = 'Pasta destino'
-    dirLabel.htmlFor = 'pm-dir-input'
 
-    const dirInput = document.createElement('input')
-    dirInput.type = 'file'
-    dirInput.id = 'pm-dir-input'
-    dirInput.className = 'project-manager-input'
-    dirInput.setAttribute('webkitdirectory', '')
-    this.dirInput = dirInput
+    const dirRow = document.createElement('div')
+    dirRow.className = 'project-manager-dir-row'
+
+    const dirBrowseBtn = document.createElement('button')
+    dirBrowseBtn.type = 'button'
+    dirBrowseBtn.textContent = 'Selecionar pasta'
+    dirBrowseBtn.className = 'project-manager-btn project-manager-btn--secondary'
+    dirBrowseBtn.addEventListener('click', () => void this.handleSelectDir())
+
+    const dirPathDisplay = document.createElement('span')
+    dirPathDisplay.className = 'project-manager-dir-path'
+    dirPathDisplay.textContent = 'Nenhuma pasta selecionada'
+    this.dirPathDisplay = dirPathDisplay
+
+    dirRow.appendChild(dirBrowseBtn)
+    dirRow.appendChild(dirPathDisplay)
 
     dirGroup.appendChild(dirLabel)
-    dirGroup.appendChild(dirInput)
+    dirGroup.appendChild(dirRow)
 
     // Ações
     const actions = document.createElement('div')
@@ -97,7 +107,16 @@ export class ProjectManager {
 
   private closeAndReset(): void {
     if (this.nameInput) this.nameInput.value = ''
+    this.selectedDir = null
+    if (this.dirPathDisplay) this.dirPathDisplay.textContent = 'Nenhuma pasta selecionada'
     this.dialog?.close()
+  }
+
+  private async handleSelectDir(): Promise<void> {
+    const path = await window.electronAPI.selectDirectory()
+    if (!path) return
+    this.selectedDir = path
+    if (this.dirPathDisplay) this.dirPathDisplay.textContent = path
   }
 
   private async handleCreate(): Promise<void> {
@@ -107,16 +126,13 @@ export class ProjectManager {
       return
     }
 
-    const files = this.dirInput?.files
-    if (!files || files.length === 0) {
+    if (!this.selectedDir) {
       alert('Selecione uma pasta destino.')
       return
     }
 
-    const targetDir = this.extractDirPath(files[0])
-
     try {
-      const createdPath = await window.electronAPI.createProject(targetDir, name)
+      const createdPath = await window.electronAPI.createProject(this.selectedDir, name)
       this.closeAndReset()
       document.dispatchEvent(
         new CustomEvent<{ path: string }>('project-open', {
@@ -126,21 +142,5 @@ export class ProjectManager {
     } catch (err) {
       alert(`Erro ao criar projeto: ${String(err)}`)
     }
-  }
-
-  /**
-   * Extrai o path absoluto da pasta selecionada via <input webkitdirectory>.
-   * Em Electron, File tem a propriedade não-padrão `.path` com o caminho absoluto do SO.
-   * webkitRelativePath usa sempre `/` como separador: "nomePasta/sub/arquivo.ext".
-   */
-  private extractDirPath(file: File): string {
-    const absPath = (file as unknown as { path: string }).path
-    const relPath = file.webkitRelativePath
-    const rootDirName = relPath.split('/')[0]
-    // Normaliza para `/` para calcular o comprimento do prefixo
-    // (no Windows, absPath usa `\` mas relPath usa `/`)
-    const normalizedAbs = absPath.replace(/\\/g, '/')
-    const prefixLength = normalizedAbs.length - relPath.length
-    return absPath.slice(0, prefixLength + rootDirName.length)
   }
 }

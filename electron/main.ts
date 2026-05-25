@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, resolve, relative, isAbsolute } from 'path'
 import { readdir, readFile, writeFile, cp } from 'fs/promises'
 import { spawn, ChildProcess } from 'child_process'
@@ -37,9 +37,12 @@ function createWindow(): void {
     width: 1280,
     height: 800,
     webPreferences: {
-      preload: join(__dirname, 'preload.js'),
+      preload: join(__dirname, '../preload/index.mjs'),
       nodeIntegration: false,
       contextIsolation: true,
+      // Necessário para preload ESM (.mjs). contextIsolation + nodeIntegration:false
+      // continuam protegendo o renderer contra acesso direto ao Node.
+      sandbox: false,
     },
   })
 
@@ -121,6 +124,16 @@ ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unkn
       }),
   )
   return projectPath
+})
+
+// Abre um diálogo nativo de seleção de pasta. Retorna o path absoluto ou null
+// se o usuário cancelar. Modal à janela principal quando ela existe.
+ipcMain.handle('dialog:openDirectory', async () => {
+  const result = await (mainWindow
+    ? dialog.showOpenDialog(mainWindow, { properties: ['openDirectory'] })
+    : dialog.showOpenDialog({ properties: ['openDirectory'] }))
+  if (result.canceled || result.filePaths.length === 0) return null
+  return result.filePaths[0]
 })
 
 // ---------------------------------------------------------------------------

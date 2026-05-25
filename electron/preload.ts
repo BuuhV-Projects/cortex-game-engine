@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createProject: (targetDir: string, name: string) =>
     ipcRenderer.invoke('fs:createProject', targetDir, name),
 
+  // Diálogo nativo de seleção de pasta
+  selectDirectory: () =>
+    ipcRenderer.invoke('dialog:openDirectory'),
+
   // Execução de projeto
   runProject: (projectDir: string) =>
     ipcRenderer.invoke('run:start', projectDir),

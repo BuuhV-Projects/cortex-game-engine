@@ -300,3 +300,19 @@ body {
 .project-manager-btn--secondary:hover {
   background-color: #4a4a4a;
 }
+
+.project-manager-dir-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-manager-dir-path {
+  flex: 1;
+  font-size: 12px;
+  color: #9d9d9d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
