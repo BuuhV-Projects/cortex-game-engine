@@ -1,10 +1,10 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, resolve } from 'path'
-import { readdir, readFile, writeFile, cp, mkdir } from 'fs/promises'
+import { readdir, readFile, writeFile, cp, mkdir, rename, rm } from 'fs/promises'
 import { spawn, ChildProcess } from 'child_process'
 import Anthropic from '@anthropic-ai/sdk'
 import { homedir } from 'os'
-import { existsSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
 let mainWindow: BrowserWindow | null = null
@@ -84,6 +84,21 @@ ipcMain.handle('fs:readDir', async (_event, dirPath: unknown) => {
 ipcMain.handle('fs:readFile', async (_event, filePath: unknown) => {
   const safePath = validatePath(filePath)
   return readFile(safePath, 'utf-8')
+})
+
+// Move (renomeia) um arquivo/pasta. Usado pelo drag & drop do FileTree para
+// reorganizar itens entre pastas do projeto (ADR-0016).
+ipcMain.handle('fs:move', async (_event, src: unknown, dest: unknown) => {
+  const safeSrc = validatePath(src)
+  const safeDest = validatePath(dest)
+  await rename(safeSrc, safeDest)
+})
+
+// Apaga um arquivo ou pasta recursivamente. Usado pelo menu de contexto
+// do FileTree (ADR-0016). A confirmação fica no renderer.
+ipcMain.handle('fs:delete', async (_event, targetPath: unknown) => {
+  const safePath = validatePath(targetPath)
+  await rm(safePath, { recursive: true, force: false })
 })
 
 // Cria uma pasta em <dirPath>/<name>. Mesmo padrão de validação do
@@ -429,22 +444,45 @@ Você ajuda o usuário a criar jogos, explicar código existente, debugar \
 problemas e sugerir mudanças. Responda em português. Quando sugerir código, \
 prefira TypeScript moderno (ES2022+) e siga o padrão ECS do engine.`
 
+/**
+ * Resolve a autenticação para o SDK Anthropic. Prefere ANTHROPIC_API_KEY;
+ * se ausente, tenta usar o accessToken do `~/.claude/.credentials.json`
+ * (gerado por `claude login` do Claude Code) como authToken OAuth.
+ * Retorna null se nenhuma fonte estiver disponível.
+ */
+function buildAnthropicClient(): Anthropic | null {
+  if (process.env['ANTHROPIC_API_KEY']) {
+    return new Anthropic()
+  }
+  const credsPath = join(homedir(), '.claude', '.credentials.json')
+  if (!existsSync(credsPath)) return null
+  try {
+    const raw = readFileSync(credsPath, 'utf-8')
+    const parsed = JSON.parse(raw) as { claudeAiOauth?: { accessToken?: string } }
+    const token = parsed.claudeAiOauth?.accessToken
+    if (!token) return null
+    return new Anthropic({ authToken: token })
+  } catch {
+    return null
+  }
+}
+
 ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
   if (!Array.isArray(messages)) {
     mainWindow?.webContents.send('ai:error', { message: 'messages deve ser array' })
     return
   }
 
-  const credsPath = join(homedir(), ".claude", ".credentials.json");
-  if (!existsSync(credsPath) && !process.env['ANTHROPIC_API_KEY']) {
+  const client = buildAnthropicClient()
+  if (!client) {
     mainWindow?.webContents.send('ai:error', {
-      message: 'ANTHROPIC_API_KEY não está configurada. Defina a variável de ambiente e reinicie o IDE.',
+      message:
+        'Sem credencial: defina ANTHROPIC_API_KEY ou rode `claude login` para usar a subscription.',
     })
     return
   }
 
   try {
-    const client = new Anthropic()
     const stream = client.messages.stream({
       model: 'claude-sonnet-4-5',
       max_tokens: 4096,

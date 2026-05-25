@@ -1,9 +1,12 @@
+import { customPrompt } from './customPrompt'
+
 const STORAGE_KEY = 'fileTree_projectDir'
 
 export class FileTree {
   private container: HTMLElement
   private projectDir: string | null = null
   private treeArea: HTMLElement | null = null
+  private activeContextMenu: HTMLElement | null = null
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -12,6 +15,8 @@ export class FileTree {
 
   async init(): Promise<void> {
     this.buildShell()
+    // Fecha context menu ao clicar fora
+    document.addEventListener('click', () => this.dismissContextMenu())
     if (this.projectDir) {
       await this.refresh()
     }
@@ -55,7 +60,7 @@ export class FileTree {
     newFileBtn.textContent = '+ Arquivo'
     newFileBtn.className = 'filetree-new-file-btn'
     newFileBtn.title = 'Criar arquivo na raiz do projeto'
-    newFileBtn.addEventListener('click', () => void this.handleNewFile())
+    newFileBtn.addEventListener('click', () => void this.createFileIn(this.projectDir))
     toolbar.appendChild(newFileBtn)
 
     // "+ Pasta" — cria pasta na raiz do projeto ativo (ADR-0015)
@@ -63,7 +68,7 @@ export class FileTree {
     newDirBtn.textContent = '+ Pasta'
     newDirBtn.className = 'filetree-new-file-btn'
     newDirBtn.title = 'Criar pasta na raiz do projeto'
-    newDirBtn.addEventListener('click', () => void this.handleNewDir())
+    newDirBtn.addEventListener('click', () => void this.createDirIn(this.projectDir))
     toolbar.appendChild(newDirBtn)
 
     this.container.appendChild(toolbar)
@@ -71,34 +76,38 @@ export class FileTree {
     // Área da árvore
     const treeArea = document.createElement('div')
     treeArea.className = 'filetree-area'
+    // Drop na própria área cai como drop na raiz do projeto
+    this.attachDropTarget(treeArea, () => this.projectDir)
     this.container.appendChild(treeArea)
     this.treeArea = treeArea
   }
 
-  private async handleNewFile(): Promise<void> {
-    if (!this.projectDir) {
+  // ── Ações de criar (recebem o diretório de destino) ─────────────────────────
+
+  private async createFileIn(dirPath: string | null): Promise<void> {
+    if (!dirPath) {
       alert('Abra um projeto antes de criar arquivos.')
       return
     }
-    const name = window.prompt('Nome do arquivo:')
+    const name = await customPrompt('Nome do arquivo:', { placeholder: 'main.ts' })
     if (!name || name.trim() === '') return
     try {
-      await window.electronAPI.createFile(this.projectDir, name.trim())
+      await window.electronAPI.createFile(dirPath, name.trim())
       await this.refresh()
     } catch (err) {
       alert(`Erro ao criar arquivo: ${String(err)}`)
     }
   }
 
-  private async handleNewDir(): Promise<void> {
-    if (!this.projectDir) {
+  private async createDirIn(dirPath: string | null): Promise<void> {
+    if (!dirPath) {
       alert('Abra um projeto antes de criar pastas.')
       return
     }
-    const name = window.prompt('Nome da pasta:')
+    const name = await customPrompt('Nome da pasta:', { placeholder: 'assets' })
     if (!name || name.trim() === '') return
     try {
-      await window.electronAPI.createDir(this.projectDir, name.trim())
+      await window.electronAPI.createDir(dirPath, name.trim())
       await this.refresh()
     } catch (err) {
       alert(`Erro ao criar pasta: ${String(err)}`)
@@ -172,14 +181,30 @@ export class FileTree {
     label.textContent = entry.name
     li.appendChild(label)
 
+    // Context menu (botão direito) — Itens dependem se é pasta ou arquivo
+    li.addEventListener('contextmenu', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.showContextMenuFor(entry, e.clientX, e.clientY)
+    })
+
+    // Drag para mover (arquivos e pastas)
+    label.draggable = true
+    label.addEventListener('dragstart', (e) => {
+      e.dataTransfer?.setData('text/plain', entry.path)
+      e.dataTransfer!.effectAllowed = 'move'
+    })
+
     if (entry.isDir) {
+      // Pastas aceitam drop (move arquivo/pasta pra dentro delas)
+      this.attachDropTarget(li, () => entry.path)
       this.attachDirBehavior(li, label, entry)
     } else {
       label.addEventListener('click', () => {
         document.dispatchEvent(
           new CustomEvent<{ path: string; name: string }>('file-open', {
             detail: { path: entry.path, name: entry.name },
-          })
+          }),
         )
       })
     }
@@ -217,5 +242,102 @@ export class FileTree {
         if (childUl) childUl.style.display = 'none'
       }
     })
+  }
+
+  // ── Drag & Drop ────────────────────────────────────────────────────────────
+
+  /**
+   * Marca o elemento como destino de drop. `getDestDir` é resolvido na hora
+   * do drop (pasta destino), permitindo passar lazily o path do projeto raiz.
+   */
+  private attachDropTarget(el: HTMLElement, getDestDir: () => string | null): void {
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      e.dataTransfer!.dropEffect = 'move'
+      el.classList.add('drop-target')
+    })
+    el.addEventListener('dragleave', (e) => {
+      e.stopPropagation()
+      el.classList.remove('drop-target')
+    })
+    el.addEventListener('drop', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      el.classList.remove('drop-target')
+      const src = e.dataTransfer?.getData('text/plain')
+      const dest = getDestDir()
+      if (!src || !dest) return
+      void this.moveItem(src, dest)
+    })
+  }
+
+  private async moveItem(src: string, destDir: string): Promise<void> {
+    // Não mover pra si mesmo nem pra dentro do próprio caminho (loop)
+    if (src === destDir) return
+    // Path do destino final = destDir/<nome do src>
+    const name = src.split(/[\\/]/).pop() ?? ''
+    const dest = `${destDir}${destDir.endsWith('\\') || destDir.endsWith('/') ? '' : (destDir.includes('\\') ? '\\' : '/')}${name}`
+    try {
+      await window.electronAPI.move(src, dest)
+      await this.refresh()
+    } catch (err) {
+      alert(`Erro ao mover: ${String(err)}`)
+    }
+  }
+
+  // ── Context Menu ───────────────────────────────────────────────────────────
+
+  private showContextMenuFor(entry: FileEntry, x: number, y: number): void {
+    const items: Array<{ label: string; action: () => void }> = []
+    if (entry.isDir) {
+      items.push({ label: 'Novo arquivo aqui', action: () => void this.createFileIn(entry.path) })
+      items.push({ label: 'Nova pasta aqui', action: () => void this.createDirIn(entry.path) })
+    }
+    items.push({
+      label: entry.isDir ? 'Apagar pasta' : 'Apagar arquivo',
+      action: () => void this.deleteEntry(entry),
+    })
+    this.openContextMenu(items, x, y)
+  }
+
+  private openContextMenu(
+    items: Array<{ label: string; action: () => void }>,
+    x: number,
+    y: number,
+  ): void {
+    this.dismissContextMenu()
+    const menu = document.createElement('div')
+    menu.className = 'filetree-context-menu'
+    menu.style.left = `${x}px`
+    menu.style.top = `${y}px`
+    for (const item of items) {
+      const btn = document.createElement('button')
+      btn.className = 'filetree-context-item'
+      btn.textContent = item.label
+      btn.addEventListener('click', () => {
+        this.dismissContextMenu()
+        item.action()
+      })
+      menu.appendChild(btn)
+    }
+    document.body.appendChild(menu)
+    this.activeContextMenu = menu
+  }
+
+  private dismissContextMenu(): void {
+    this.activeContextMenu?.remove()
+    this.activeContextMenu = null
+  }
+
+  private async deleteEntry(entry: FileEntry): Promise<void> {
+    const ok = window.confirm(`Apagar ${entry.isDir ? 'pasta' : 'arquivo'} "${entry.name}"?`)
+    if (!ok) return
+    try {
+      await window.electronAPI.deletePath(entry.path)
+      await this.refresh()
+    } catch (err) {
+      alert(`Erro ao apagar: ${String(err)}`)
+    }
   }
 }

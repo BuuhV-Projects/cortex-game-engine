@@ -20,6 +20,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createDir: (dirPath: string, name: string) =>
     ipcRenderer.invoke('fs:createDir', dirPath, name),
 
+  move: (src: string, dest: string) =>
+    ipcRenderer.invoke('fs:move', src, dest),
+
+  deletePath: (targetPath: string) =>
+    ipcRenderer.invoke('fs:delete', targetPath),
+
   // Diálogo nativo de seleção de pasta
   selectDirectory: () =>
     ipcRenderer.invoke('dialog:openDirectory'),

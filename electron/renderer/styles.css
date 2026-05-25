@@ -627,6 +627,120 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
+/* Custom prompt (substitui window.prompt)                             */
+/* ------------------------------------------------------------------ */
+
+.custom-prompt-dialog {
+  background-color: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  color: #cccccc;
+  padding: 16px 20px;
+  min-width: 320px;
+}
+
+.custom-prompt-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.custom-prompt-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.custom-prompt-input {
+  width: 100%;
+  background-color: #3c3c3c;
+  border: 1px solid #555555;
+  border-radius: 3px;
+  color: #cccccc;
+  font-size: 13px;
+  padding: 5px 8px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.custom-prompt-input:focus {
+  border-color: #007acc;
+}
+
+.custom-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.custom-prompt-btn {
+  padding: 5px 16px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.custom-prompt-btn--primary {
+  background-color: #007acc;
+  color: #ffffff;
+}
+
+.custom-prompt-btn--primary:hover {
+  background-color: #005fa3;
+}
+
+.custom-prompt-btn--secondary {
+  background-color: #3c3c3c;
+  color: #cccccc;
+  border: 1px solid #555555;
+}
+
+.custom-prompt-btn--secondary:hover {
+  background-color: #4a4a4a;
+}
+
+/* ------------------------------------------------------------------ */
+/* Context menu do FileTree                                            */
+/* ------------------------------------------------------------------ */
+
+.filetree-context-menu {
+  position: fixed;
+  background-color: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  padding: 4px 0;
+  min-width: 180px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.filetree-context-item {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #cccccc;
+  font-size: 12px;
+  text-align: left;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.filetree-context-item:hover {
+  background-color: #094771;
+  color: #ffffff;
+}
+
+/* Drop target highlight (drag & drop no FileTree) */
+.filetree-area.drop-target,
+.filetree-dir.drop-target > .filetree-label {
+  background-color: rgba(0, 122, 204, 0.18);
+  outline: 1px dashed #007acc;
+  outline-offset: -2px;
+}
+
+/* ------------------------------------------------------------------ */
 /* Chat IA                                                             */
 /* ------------------------------------------------------------------ */
 

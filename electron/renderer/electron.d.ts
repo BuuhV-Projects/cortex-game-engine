@@ -11,6 +11,8 @@ interface ElectronAPI {
   createProject(targetDir: string, name: string): Promise<string>
   createFile(dirPath: string, name: string): Promise<string>
   createDir(dirPath: string, name: string): Promise<string>
+  move(src: string, dest: string): Promise<void>
+  deletePath(targetPath: string): Promise<void>
   selectDirectory(): Promise<string | null>
   readEngineTypes(): Promise<Array<{ path: string; content: string; navigable: boolean }>>
   runProject(projectDir: string): Promise<void>
