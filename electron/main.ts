@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, resolve } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir } from 'fs/promises'
 import { spawn, ChildProcess } from 'child_process'
+import Anthropic from '@anthropic-ai/sdk'
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
 let mainWindow: BrowserWindow | null = null
@@ -81,6 +82,28 @@ ipcMain.handle('fs:readDir', async (_event, dirPath: unknown) => {
 ipcMain.handle('fs:readFile', async (_event, filePath: unknown) => {
   const safePath = validatePath(filePath)
   return readFile(safePath, 'utf-8')
+})
+
+// Cria uma pasta em <dirPath>/<name>. Mesmo padrão de validação do
+// fs:createFile. Rejeita se já existir (mkdir sem recursive). ADR-0015.
+ipcMain.handle('fs:createDir', async (_event, dirPath: unknown, name: unknown) => {
+  const safeDir = validatePath(dirPath)
+  if (typeof name !== 'string' || name.trim() === '') {
+    throw new Error('name deve ser uma string não vazia')
+  }
+  if (name.includes('/') || name.includes('\\') || name.includes('\0')) {
+    throw new Error('name não pode conter separadores de path')
+  }
+  const dirPathFull = join(safeDir, name.trim())
+  try {
+    await mkdir(dirPathFull, { recursive: false })
+  } catch (err) {
+    if (err instanceof Error && 'code' in err && err.code === 'EEXIST') {
+      throw new Error(`Pasta já existe: ${name}`)
+    }
+    throw err
+  }
+  return dirPathFull
 })
 
 // Cria um arquivo vazio em <dirPath>/<name>. Rejeita se já existir ou se
@@ -385,6 +408,56 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
     terminalProcess = null
     mainWindow?.webContents.send('terminal:done', { code: code ?? -1 })
   })
+})
+
+// Chat IA — envia o histórico para Claude e faz streaming dos chunks de volta
+// para o renderer via canais ai:chunk / ai:done / ai:error (ADR-0014).
+const AI_SYSTEM_PROMPT = `\
+Você é um assistente para o cortex-game-engine — um motor de jogos 3D em \
+TypeScript com arquitetura Entity-Component-System (ECS), renderização via \
+Three.js, e ferramentas de geração de scripts e modelos 3D via IA.
+
+Você ajuda o usuário a criar jogos, explicar código existente, debugar \
+problemas e sugerir mudanças. Responda em português. Quando sugerir código, \
+prefira TypeScript moderno (ES2022+) e siga o padrão ECS do engine.`
+
+ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
+  if (!Array.isArray(messages)) {
+    mainWindow?.webContents.send('ai:error', { message: 'messages deve ser array' })
+    return
+  }
+
+  if (!process.env['ANTHROPIC_API_KEY']) {
+    mainWindow?.webContents.send('ai:error', {
+      message: 'ANTHROPIC_API_KEY não está configurada. Defina a variável de ambiente e reinicie o IDE.',
+    })
+    return
+  }
+
+  try {
+    const client = new Anthropic()
+    const stream = client.messages.stream({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 4096,
+      system: AI_SYSTEM_PROMPT,
+      messages: messages as Anthropic.MessageParam[],
+    })
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        mainWindow?.webContents.send('ai:chunk', { text: event.delta.text })
+      }
+    }
+
+    const finalMessage = await stream.finalMessage()
+    mainWindow?.webContents.send('ai:done', {
+      stopReason: finalMessage.stop_reason,
+      usage: finalMessage.usage,
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    mainWindow?.webContents.send('ai:error', { message })
+  }
 })
 
 // Mata o comando do terminal em execução, se houver

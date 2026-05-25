@@ -1,5 +1,7 @@
 // Regex que captura a URL local do vite a partir do stdout — algo como
-// "Local:   http://localhost:5174/"
+// "Local:   http://localhost:5174/". O vite imprime com códigos ANSI de
+// cor (ex.: \x1b[36m antes do URL), então strippamos antes de procurar.
+const ANSI_ESCAPE_RE = /\x1b\[[0-9;]*m/g
 const VITE_LOCAL_URL_RE = /Local:\s+(https?:\/\/[^\s]+)/
 
 const STORAGE_KEY = 'preview_projectDir'
@@ -107,7 +109,8 @@ export class Preview {
 
   private handleLogLine(line: string): void {
     if (this.serverUrl) return
-    const match = line.match(VITE_LOCAL_URL_RE)
+    const clean = line.replace(ANSI_ESCAPE_RE, '')
+    const match = clean.match(VITE_LOCAL_URL_RE)
     if (match) {
       this.serverUrl = match[1]
       this.showIframe(this.serverUrl)

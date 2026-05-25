@@ -58,6 +58,14 @@ export class FileTree {
     newFileBtn.addEventListener('click', () => void this.handleNewFile())
     toolbar.appendChild(newFileBtn)
 
+    // "+ Pasta" — cria pasta na raiz do projeto ativo (ADR-0015)
+    const newDirBtn = document.createElement('button')
+    newDirBtn.textContent = '+ Pasta'
+    newDirBtn.className = 'filetree-new-file-btn'
+    newDirBtn.title = 'Criar pasta na raiz do projeto'
+    newDirBtn.addEventListener('click', () => void this.handleNewDir())
+    toolbar.appendChild(newDirBtn)
+
     this.container.appendChild(toolbar)
 
     // Área da árvore
@@ -79,6 +87,21 @@ export class FileTree {
       await this.refresh()
     } catch (err) {
       alert(`Erro ao criar arquivo: ${String(err)}`)
+    }
+  }
+
+  private async handleNewDir(): Promise<void> {
+    if (!this.projectDir) {
+      alert('Abra um projeto antes de criar pastas.')
+      return
+    }
+    const name = window.prompt('Nome da pasta:')
+    if (!name || name.trim() === '') return
+    try {
+      await window.electronAPI.createDir(this.projectDir, name.trim())
+      await this.refresh()
+    } catch (err) {
+      alert(`Erro ao criar pasta: ${String(err)}`)
     }
   }
 

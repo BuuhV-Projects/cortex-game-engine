@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createFile: (dirPath: string, name: string) =>
     ipcRenderer.invoke('fs:createFile', dirPath, name),
 
+  createDir: (dirPath: string, name: string) =>
+    ipcRenderer.invoke('fs:createDir', dirPath, name),
+
   // Diálogo nativo de seleção de pasta
   selectDirectory: () =>
     ipcRenderer.invoke('dialog:openDirectory'),
@@ -39,25 +42,39 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopTerminalCommand: () =>
     ipcRenderer.invoke('terminal:stop'),
 
-  // Eventos do main → renderer
-  // removeAllListeners garante que chamadas repetidas não acumulem handlers
+  // Chat IA (ADR-0014)
+  chat: (messages: Array<{ role: 'user' | 'assistant'; content: string }>) =>
+    ipcRenderer.invoke('ai:chat', messages),
+
+  // Eventos do main → renderer. Cada chamada adiciona um listener ao canal;
+  // múltiplos componentes (Preview, BottomPanel, etc.) podem se inscrever
+  // ao mesmo evento. Os componentes só chamam onX uma vez no init, então
+  // acumular listeners ao longo da sessão não é problema.
   onLog: (callback: (line: string) => void) => {
-    ipcRenderer.removeAllListeners('log')
     ipcRenderer.on('log', (_event, line: string) => callback(line))
   },
 
   onProjectStopped: (callback: () => void) => {
-    ipcRenderer.removeAllListeners('project:stopped')
     ipcRenderer.on('project:stopped', () => callback())
   },
 
   onTerminalOutput: (callback: (text: string) => void) => {
-    ipcRenderer.removeAllListeners('terminal:output')
     ipcRenderer.on('terminal:output', (_event, text: string) => callback(text))
   },
 
   onTerminalDone: (callback: (exitCode: number) => void) => {
-    ipcRenderer.removeAllListeners('terminal:done')
     ipcRenderer.on('terminal:done', (_event, payload: { code: number }) => callback(payload.code))
+  },
+
+  onAiChunk: (callback: (text: string) => void) => {
+    ipcRenderer.on('ai:chunk', (_event, payload: { text: string }) => callback(payload.text))
+  },
+
+  onAiDone: (callback: () => void) => {
+    ipcRenderer.on('ai:done', () => callback())
+  },
+
+  onAiError: (callback: (message: string) => void) => {
+    ipcRenderer.on('ai:error', (_event, payload: { message: string }) => callback(payload.message))
   },
 })
