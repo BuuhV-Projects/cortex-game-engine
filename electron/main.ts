@@ -85,7 +85,8 @@ ipcMain.handle('fs:writeFile', async (_event, filePath: unknown, content: unknow
   await writeFile(safePath, content, 'utf-8')
 })
 
-// Copia templates/new-project/ para join(targetDir, name) e retorna o path do novo projeto
+// Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}
+// em cada arquivo copiado e retorna o path do novo projeto
 ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unknown) => {
   const safeTarget = validatePath(targetDir)
   if (typeof name !== 'string' || name.trim() === '') {
@@ -95,10 +96,24 @@ ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unkn
   if (name.includes('/') || name.includes('\\') || name.includes('\0')) {
     throw new Error('name não pode conter separadores de path')
   }
+  const projectName = name.trim()
   // Projeto criado em subdiretório dedicado dentro de targetDir
-  const projectPath = resolve(safeTarget, name.trim())
+  const projectPath = resolve(safeTarget, projectName)
   const templateDir = join(app.getAppPath(), 'templates', 'new-project')
   await cp(templateDir, projectPath, { recursive: true })
+  // Substitui o placeholder {{PROJECT_NAME}} em cada arquivo do template copiado
+  const entries = await readdir(projectPath, { withFileTypes: true })
+  await Promise.all(
+    entries
+      .filter((e) => e.isFile())
+      .map(async (e) => {
+        const filePath = join(projectPath, e.name)
+        const content = await readFile(filePath, 'utf-8')
+        if (content.includes('{{PROJECT_NAME}}')) {
+          await writeFile(filePath, content.replaceAll('{{PROJECT_NAME}}', projectName), 'utf-8')
+        }
+      }),
+  )
   return projectPath
 })
 

@@ -1,0 +1,11 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {
+    "js-game-engine": "file:../../"
+  }
+}
