@@ -6,8 +6,8 @@
 ## Contexto
 
 Quando o IDE cria um projeto novo a partir de `templates/new-project/`, o projeto
-precisa conseguir importar o engine (`import { GameLoop } from 'js-game-engine'`).
-A primeira versão do template usava `"js-game-engine": "file:../../"` no
+precisa conseguir importar o engine (`import { GameLoop } from 'cortex-game-engine'`).
+A primeira versão do template usava `"cortex-game-engine": "file:../../"` no
 `package.json`, assumindo que o projeto seria criado dois níveis abaixo da raiz
 do repo. Isso quebra em qualquer cenário real:
 
@@ -23,7 +23,7 @@ Alternativas avaliadas:
 
 | Opção | Prós | Contras |
 |---|---|---|
-| Publicar `js-game-engine` no npm | Idiomático; `npm install` resolve | Obriga publicar/versionar a cada mudança antes de testar no IDE |
+| Publicar `cortex-game-engine` no npm | Idiomático; `npm install` resolve | Obriga publicar/versionar a cada mudança antes de testar no IDE |
 | Embutir engine no app + apontar `file:` para path absoluto da instalação | Sem npm publish | Projeto criado fica acoplado à instalação do IDE — quebra se IDE for movido/desinstalado |
 | **Vendor inline no projeto criado** | Projeto autocontido; sobrevive sem IDE; sem npm publish | Engine fica duplicado por projeto; atualizar engine não propaga |
 
@@ -38,13 +38,13 @@ O IDE **vendoriza o engine inline** em cada projeto criado:
 ```
 <projeto>/
 ├── vendor/
-│   └── js-game-engine/
+│   └── cortex-game-engine/
 │       ├── index.js         # bundle ESM único (three.js embutido)
 │       ├── index.d.ts       # agregador re-exportando core+ecs
 │       ├── core/*.d.ts
 │       └── ecs/*.d.ts
-├── vite.config.ts           # resolve.alias 'js-game-engine' → ./vendor/js-game-engine/index.js
-└── package.json             # sem dependência de js-game-engine
+├── vite.config.ts           # resolve.alias 'cortex-game-engine' → ./vendor/cortex-game-engine/index.js
+└── package.json             # sem dependência de cortex-game-engine
 ```
 
 **Build do engine** (`yarn build:engine`):
@@ -56,9 +56,9 @@ O IDE **vendoriza o engine inline** em cada projeto criado:
 
 **Vendoring** (`fs:createProject` no main process):
 1. Copia `templates/new-project/` para o destino, substitui `{{PROJECT_NAME}}`.
-2. Copia `dist-engine/index.js` → `<projeto>/vendor/js-game-engine/index.js`.
-3. Copia `dist/src/{core,ecs}/*.d.ts` → `<projeto>/vendor/js-game-engine/{core,ecs}/`.
-4. Escreve `<projeto>/vendor/js-game-engine/index.d.ts` agregador.
+2. Copia `dist-engine/index.js` → `<projeto>/vendor/cortex-game-engine/index.js`.
+3. Copia `dist/src/{core,ecs}/*.d.ts` → `<projeto>/vendor/cortex-game-engine/{core,ecs}/`.
+4. Escreve `<projeto>/vendor/cortex-game-engine/index.d.ts` agregador.
 
 **Empacotamento** (`electron-builder`): `dist-engine/` e `dist/src/**/*.d.ts`
 são listados em `files` — vão pro `app.asar` do build final. `app.getAppPath()`
@@ -77,7 +77,7 @@ three usados pelo engine.
 - Atualizar engine: usuário precisa regerar o projeto ou copiar o vendor
   manualmente. Aceitável dado o estágio do produto; revisitar se virar atrito.
 - Bundle do engine pesa ~1 MB (gzip ~227 KB) embutido em cada projeto.
-- AI (ScriptGenerator, BlenderModelGenerator) e CLI (jsgame-ai) **não** vão
+- AI (ScriptGenerator, BlenderModelGenerator) e CLI (cortex-ai) **não** vão
   para o vendor — dependem de `@anthropic-ai/sdk` e `commander`, Node-only.
   São features de autoria do IDE, não do runtime do projeto.
 - Substitui parcialmente [ADR-0007](0007-estrutura-electron-dentro-do-repo.md):

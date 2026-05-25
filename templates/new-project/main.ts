@@ -1,4 +1,4 @@
-import { GameLoop, Renderer, Scene, PerspectiveCamera } from 'js-game-engine'
+import { GameLoop, Renderer, Scene, PerspectiveCamera } from 'cortex-game-engine'
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 

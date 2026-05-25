@@ -4,7 +4,7 @@ import { resolve } from 'path'
 /**
  * Build do engine em library mode, gerando um bundle único ESM com `three`
  * embutido. Este bundle é o que o IDE vendoriza dentro de cada projeto criado,
- * permitindo que o projeto rode sem `npm install` (Vite resolve `js-game-engine`
+ * permitindo que o projeto rode sem `npm install` (Vite resolve `cortex-game-engine`
  * via alias apontando para o arquivo vendored).
  *
  * AI/CLI ficam fora (ver src/index-runtime.ts).

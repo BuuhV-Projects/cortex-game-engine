@@ -15,7 +15,7 @@
 
 1. **Repositório separado** — total isolamento, deploy independente.
 2. **Pacote monorepo** (ex.: `packages/ui/`) — separação formal, mas mesma raiz git.
-3. **Subdiretório `electron/`** no repo `js-game-engine` — zero overhead de monorepo, importação direta dos tipos do motor.
+3. **Subdiretório `electron/`** no repo `cortex-game-engine` — zero overhead de monorepo, importação direta dos tipos do motor.
 
 O motor é uma biblioteca TypeScript; a UI precisa importar tipos (`World`, `Scene`, `GameLoop`,
 etc.) para exibir inspeção de entidades e autocompletar na geração de scripts. Com repositórios
@@ -24,10 +24,10 @@ complexidade desnecessária nesta fase.
 
 ## Decisão
 
-O código Electron vive em **`electron/`** dentro de `js-game-engine/`:
+O código Electron vive em **`electron/`** dentro de `cortex-game-engine/`:
 
 ```
-js-game-engine/
+cortex-game-engine/
 ├── electron/
 │   ├── main.ts          # Processo principal
 │   ├── preload.ts       # contextBridge

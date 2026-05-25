@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * CLI principal do jsgame-ai.
+ * CLI principal do cortex-ai.
  *
  * Comandos disponíveis:
  *  - generate-script <description>  Gera script ECS via Claude (ADR-0003)
@@ -17,8 +17,8 @@ import { BlenderModelGenerator } from '../ai/BlenderModelGenerator.js';
 // ─── Metadados ────────────────────────────────────────────────────────────────
 
 program
-  .name('jsgame-ai')
-  .description('Motor de jogo 3D — ferramentas de geração por IA')
+  .name('cortex-ai')
+  .description('cortex-game-engine — ferramentas de geração por IA')
   .version('0.1.0');
 
 // ─── generate-script ─────────────────────────────────────────────────────────

@@ -122,11 +122,11 @@ describe('fs:createProject', () => {
     expect(result).toBe(projectPath)
   })
 
-  it('vendoriza o engine em <projeto>/vendor/js-game-engine/', async () => {
+  it('vendoriza o engine em <projeto>/vendor/cortex-game-engine/', async () => {
     const targetDir = os.tmpdir()
     const projectName = 'meu-jogo'
     const projectPath = path.resolve(targetDir, projectName)
-    const vendorDir = path.join(projectPath, 'vendor', 'js-game-engine')
+    const vendorDir = path.join(projectPath, 'vendor', 'cortex-game-engine')
 
     vi.mocked(fsp.cp).mockResolvedValue(undefined)
     vi.mocked(fsp.mkdir).mockResolvedValue(undefined)
@@ -136,7 +136,7 @@ describe('fs:createProject', () => {
     const handler = getIpcHandler('fs:createProject')
     await handler(null, targetDir, projectName)
 
-    // Bundle do engine copiado para vendor/js-game-engine/index.js
+    // Bundle do engine copiado para vendor/cortex-game-engine/index.js
     expect(vi.mocked(fsp.cp)).toHaveBeenCalledWith(
       path.join(MOCK_APP_PATH, 'dist-engine', 'index.js'),
       path.join(vendorDir, 'index.js'),

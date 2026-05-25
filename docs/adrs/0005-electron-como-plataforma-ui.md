@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O PRD solicita uma UI para criar e gerenciar projetos usando o motor `js-game-engine`.
+O PRD solicita uma UI para criar e gerenciar projetos usando o motor `cortex-game-engine`.
 As alternativas consideradas foram:
 
 | Opção | Prós | Contras |
@@ -34,4 +34,4 @@ unificando o toolchain e aproveitando HMR no desenvolvimento.
 - Bundle de distribuição maior (~150 MB com Electron embutido), aceitável para uma ferramenta de desenvolvimento.
 - O motor pode ser importado diretamente no main process ou no renderer sem adaptações — sem camadas extras.
 - Futuras features que requeiram acesso ao sistema de arquivos ou processos nativos são triviais de adicionar.
-- Adicionar `electron` e `electron-vite` como `devDependencies` no `js-game-engine/package.json`.
+- Adicionar `electron` e `electron-vite` como `devDependencies` no `cortex-game-engine/package.json`.

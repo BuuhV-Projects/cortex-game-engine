@@ -83,8 +83,8 @@ export class Editor {
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
       baseUrl: '/',
       paths: {
-        'js-game-engine': ['/node_modules/js-game-engine/index.d.ts'],
-        'js-game-engine/*': ['/node_modules/js-game-engine/*'],
+        'cortex-game-engine': ['/node_modules/cortex-game-engine/index.d.ts'],
+        'cortex-game-engine/*': ['/node_modules/cortex-game-engine/*'],
         three: ['/node_modules/three/index.d.ts'],
         'three/*': ['/node_modules/three/*'],
       },

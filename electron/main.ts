@@ -109,7 +109,7 @@ const VENDOR_TYPE_MODULES = {
 } as const
 
 /**
- * Vendoriza o engine dentro de <projectPath>/vendor/js-game-engine/:
+ * Vendoriza o engine dentro de <projectPath>/vendor/cortex-game-engine/:
  * - index.js: bundle único do engine (com three embutido), de dist-engine/
  * - core/*.d.ts e ecs/*.d.ts: types copiados de dist/src/
  * - index.d.ts: agregador minimal re-exportando só core+ecs
@@ -120,7 +120,7 @@ const VENDOR_TYPE_MODULES = {
  */
 async function vendorEngine(projectPath: string): Promise<void> {
   const appPath = app.getAppPath()
-  const vendorDir = join(projectPath, 'vendor', 'js-game-engine')
+  const vendorDir = join(projectPath, 'vendor', 'cortex-game-engine')
   await mkdir(vendorDir, { recursive: true })
 
   // Bundle do engine (JS)
@@ -147,7 +147,7 @@ async function vendorEngine(projectPath: string): Promise<void> {
 }
 
 // Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}
-// em cada arquivo copiado, vendoriza o engine em vendor/js-game-engine/ e
+// em cada arquivo copiado, vendoriza o engine em vendor/cortex-game-engine/ e
 // retorna o path do novo projeto
 ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unknown) => {
   const safeTarget = validatePath(targetDir)
@@ -249,7 +249,7 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
         'utf-8',
       )
       results.push({
-        path: `file:///node_modules/js-game-engine/${subdir}/${mod}.d.ts`,
+        path: `file:///node_modules/cortex-game-engine/${subdir}/${mod}.d.ts`,
         content: fileContent,
         navigable: true,
       })
@@ -264,17 +264,17 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
     )
     .join('\n')
   results.push({
-    path: 'file:///node_modules/js-game-engine/index.d.ts',
+    path: 'file:///node_modules/cortex-game-engine/index.d.ts',
     content: `${reexports}\n`,
     navigable: true,
   })
 
   // package.json virtual — o Node resolver do Monaco TS procura por ele
-  // primeiro ao resolver `import 'js-game-engine'`. Sem isso, em alguns
+  // primeiro ao resolver `import 'cortex-game-engine'`. Sem isso, em alguns
   // cenários o fallback para index.d.ts falha silenciosamente.
   results.push({
-    path: 'file:///node_modules/js-game-engine/package.json',
-    content: JSON.stringify({ name: 'js-game-engine', types: 'index.d.ts' }),
+    path: 'file:///node_modules/cortex-game-engine/package.json',
+    content: JSON.stringify({ name: 'cortex-game-engine', types: 'index.d.ts' }),
     navigable: false,
   })
 
