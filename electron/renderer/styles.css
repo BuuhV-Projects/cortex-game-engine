@@ -1,0 +1,96 @@
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #1e1e1e;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  color: #cccccc;
+}
+
+/* Layout principal: 3 colunas em CSS Grid */
+#app {
+  display: grid;
+  grid-template-columns: 240px 1fr 320px;
+  grid-template-rows: 100vh;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #1e1e1e;
+}
+
+/* Coluna esquerda — explorador de arquivos */
+#sidebar {
+  background-color: #252526;
+  border-right: 1px solid #3c3c3c;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* Coluna central — editor Monaco */
+#editor-container {
+  background-color: #1e1e1e;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Coluna direita — preview + console */
+#right-panel {
+  background-color: #252526;
+  border-left: 1px solid #3c3c3c;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Painel de preview (ocupa o espaço disponível) */
+#preview-container {
+  flex: 1;
+  background-color: #1e1e1e;
+  overflow: hidden;
+  border-bottom: 1px solid #3c3c3c;
+}
+
+/* Console de saída */
+#console-container {
+  height: 180px;
+  background-color: #0e0e0e;
+  overflow-y: auto;
+  font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #cccccc;
+  padding: 4px 8px;
+}
+
+/* Scrollbar estilizada para o console (Chromium/Electron) */
+#console-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+#console-container::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+#console-container::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 4px;
+}
+
+#console-container::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}

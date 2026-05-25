@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "electron:dev": "electron-vite dev",
+    "electron:build": "electron-vite build && electron-builder"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "latest",
@@ -16,9 +18,14 @@
   },
   "devDependencies": {
     "@types/three": "^0.184.1",
+    "electron": "latest",
+    "electron-builder": "latest",
+    "electron-vite": "latest",
     "eslint": "latest",
+    "monaco-editor": "latest",
     "typescript": "^6.0.3",
     "vite": "latest",
+    "vite-plugin-monaco-editor": "latest",
     "vitest": "latest"
   },
   "engines": {
