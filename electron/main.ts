@@ -3,6 +3,8 @@ import { join, resolve } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir } from 'fs/promises'
 import { spawn, ChildProcess } from 'child_process'
 import Anthropic from '@anthropic-ai/sdk'
+import { homedir } from 'os'
+import { existsSync } from 'fs'
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
 let mainWindow: BrowserWindow | null = null
@@ -187,13 +189,14 @@ async function vendorEngine(projectPath: string): Promise<void> {
     }
   }
 
-  // index.d.ts agregador
-  const reexports = Object.entries(VENDOR_TYPE_MODULES)
-    .flatMap(([subdir, modules]) =>
-      modules.map((mod) => `export * from './${subdir}/${mod}.js';`),
-    )
-    .join('\n')
-  await writeFile(join(vendorDir, 'index.d.ts'), `${reexports}\n`, 'utf-8')
+  // index.d.ts agregador — usa o gerado pelo tsc a partir de src/index-runtime.ts.
+  // Já inclui core+ecs E os re-exports de three (Mesh, BoxGeometry, lights, etc.)
+  // que o template usa para criar a cena. Manter agregador manual aqui perderia
+  // os re-exports.
+  await cp(
+    join(appPath, 'dist', 'src', 'index-runtime.d.ts'),
+    join(vendorDir, 'index.d.ts'),
+  )
 }
 
 // Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}
@@ -306,16 +309,21 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
     }
   }
 
-  // index.d.ts agregador sem '.js' nos paths — moduleResolution default do
-  // Monaco TS (Node legacy) não trata `.js` como mapeamento para `.d.ts`
-  const reexports = Object.entries(VENDOR_TYPE_MODULES)
-    .flatMap(([subdir, modules]) =>
-      modules.map((mod) => `export * from './${subdir}/${mod}';`),
-    )
-    .join('\n')
+  // index.d.ts agregador — lê o gerado pelo tsc (inclui core+ecs + re-exports
+  // de three). Strippa o sufixo '.js' dos paths relativos porque o
+  // moduleResolution default do Monaco TS (Node legacy) não trata `.js` como
+  // mapeamento para `.d.ts`. Os módulos `three` continuam intactos.
+  const indexRuntime = await readFile(
+    join(appPath, 'dist', 'src', 'index-runtime.d.ts'),
+    'utf-8',
+  )
+  const aggregatorContent = indexRuntime.replace(
+    /from '(\.\/[^']+)\.js'/g,
+    (_match, relPath: string) => `from '${relPath}'`,
+  )
   results.push({
     path: 'file:///node_modules/cortex-game-engine/index.d.ts',
-    content: `${reexports}\n`,
+    content: aggregatorContent,
     navigable: true,
   })
 
@@ -427,7 +435,8 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
     return
   }
 
-  if (!process.env['ANTHROPIC_API_KEY']) {
+  const credsPath = join(homedir(), ".claude", ".credentials.json");
+  if (!existsSync(credsPath) && !process.env['ANTHROPIC_API_KEY']) {
     mainWindow?.webContents.send('ai:error', {
       message: 'ANTHROPIC_API_KEY não está configurada. Defina a variável de ambiente e reinicie o IDE.',
     })

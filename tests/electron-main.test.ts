@@ -152,11 +152,11 @@ describe('fs:createProject', () => {
       path.join(vendorDir, 'ecs', 'World.d.ts'),
     )
 
-    // index.d.ts agregador com re-exports
-    expect(vi.mocked(fsp.writeFile)).toHaveBeenCalledWith(
+    // index.d.ts agregador é copiado de dist/src/index-runtime.d.ts (gerado
+    // pelo tsc) — inclui core+ecs E re-exports de three
+    expect(vi.mocked(fsp.cp)).toHaveBeenCalledWith(
+      path.join(MOCK_APP_PATH, 'dist', 'src', 'index-runtime.d.ts'),
       path.join(vendorDir, 'index.d.ts'),
-      expect.stringContaining("export * from './core/GameLoop.js';"),
-      'utf-8',
     )
   })
 })

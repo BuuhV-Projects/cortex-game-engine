@@ -1,4 +1,14 @@
-import { GameLoop, Renderer, Scene, PerspectiveCamera } from 'cortex-game-engine'
+import {
+  GameLoop,
+  Renderer,
+  Scene,
+  PerspectiveCamera,
+  Mesh,
+  BoxGeometry,
+  MeshStandardMaterial,
+  AmbientLight,
+  DirectionalLight,
+} from 'cortex-game-engine'
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
@@ -20,10 +30,28 @@ const camera = new PerspectiveCamera(
 )
 camera.position.z = 5
 
+// ─── Iluminação ───────────────────────────────────────────────────────────────
+
+scene.add(new AmbientLight(0xffffff, 0.4))
+const dirLight = new DirectionalLight(0xffffff, 0.8)
+dirLight.position.set(3, 5, 4)
+scene.add(dirLight)
+
+// ─── Objeto: cubo ─────────────────────────────────────────────────────────────
+
+const cube = new Mesh(
+  new BoxGeometry(1, 1, 1),
+  new MeshStandardMaterial({ color: 0x4ec9b0 }),
+)
+scene.add(cube)
+
 // ─── Loop principal ───────────────────────────────────────────────────────────
 
 const loop = new GameLoop({
-  onUpdate(_deltaTime: number) {
+  onUpdate(deltaTime: number) {
+    const dt = deltaTime / 1000
+    cube.rotation.x += 0.6 * dt
+    cube.rotation.y += 0.9 * dt
     renderer.render(scene.getThreeScene(), camera)
   },
 })
