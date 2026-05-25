@@ -97,12 +97,14 @@ export class Preview {
       this.running = true
       this.serverUrl = null
       this.updateButtonState()
+      document.dispatchEvent(new CustomEvent('play-started'))
       try {
         await window.electronAPI.runProject(this.projectDir)
       } catch (err) {
         console.error('Erro ao iniciar projeto:', err)
         this.running = false
         this.updateButtonState()
+        document.dispatchEvent(new CustomEvent('play-stopped'))
       }
     }
   }
@@ -130,6 +132,7 @@ export class Preview {
         : '<p class="preview-placeholder">Projeto falhou ao iniciar.<br>Veja o Console. Se faltar o <code>vite</code>, rode <code>yarn install</code> no Terminal.</p>'
     }
     this.updateButtonState()
+    document.dispatchEvent(new CustomEvent('play-stopped'))
   }
 
   private showIframe(url: string): void {

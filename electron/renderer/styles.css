@@ -377,8 +377,14 @@ body {
   cursor: pointer;
 }
 
-.terminal-run-btn:hover {
+.terminal-run-btn:hover:not(:disabled) {
   background-color: #005fa3;
+}
+
+.terminal-run-btn:disabled {
+  background-color: #3c3c3c;
+  color: #777777;
+  cursor: not-allowed;
 }
 
 /* ------------------------------------------------------------------ */

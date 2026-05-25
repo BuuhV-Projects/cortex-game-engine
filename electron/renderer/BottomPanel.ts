@@ -2,6 +2,10 @@ type TabId = 'console' | 'terminal'
 
 const STORAGE_KEY = 'bottomPanel_projectDir'
 
+// Remove códigos de cor ANSI (CSI SGR) — vite, yarn etc. emitem cores
+// que viram lixo visual sem um parser ANSI. Em V1 só strippamos.
+const ANSI_ESCAPE_RE = /\x1b\[[0-9;]*m/g
+
 /**
  * Painel inferior com abas Console e Terminal (ADR-0010 + ADR-0012).
  * - Console: recebe logs do `run:start` via electronAPI.onLog.
@@ -22,6 +26,8 @@ export class BottomPanel {
   private activeTab: TabId = 'console'
   private projectDir: string | null = null
   private terminalRunning = false
+  /** Terminal fica bloqueado enquanto o jogo está rodando (Play ativo). */
+  private playRunning = false
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -57,6 +63,17 @@ export class BottomPanel {
       localStorage.setItem(STORAGE_KEY, path)
       this.activateTab('terminal')
       void this.runCommandForce('yarn install')
+    })
+
+    // Bloqueia o terminal enquanto o Play está ativo — evita que o usuário
+    // rode comandos que podem interferir com o dev server em execução.
+    document.addEventListener('play-started', () => {
+      this.playRunning = true
+      this.updateTerminalButtons()
+    })
+    document.addEventListener('play-stopped', () => {
+      this.playRunning = false
+      this.updateTerminalButtons()
     })
   }
 
@@ -194,9 +211,16 @@ export class BottomPanel {
   private updateTerminalButtons(): void {
     if (!this.terminalRunBtn || !this.terminalInput) return
     this.terminalRunBtn.textContent = this.terminalRunning ? 'Parar' : 'Executar'
-    this.terminalInput.disabled = this.terminalRunning || !this.projectDir
+    // Bloqueado se Play ativo OU sem projeto OU comando em execução.
+    // Quando terminalRunning é true (mas Play não), permitimos o botão
+    // 'Parar' funcionar para interromper o comando.
+    const blocked = this.playRunning || !this.projectDir
+    this.terminalInput.disabled = blocked || this.terminalRunning
+    this.terminalRunBtn.disabled = blocked && !this.terminalRunning
     if (!this.projectDir) {
       this.terminalInput.placeholder = 'Abra um projeto para usar o terminal'
+    } else if (this.playRunning) {
+      this.terminalInput.placeholder = 'Pare o Play para usar o terminal'
     } else if (this.terminalRunning) {
       this.terminalInput.placeholder = 'Comando em execução...'
     } else {
@@ -222,7 +246,7 @@ export class BottomPanel {
     if (!output) return
     const line = document.createElement('div')
     line.className = `bottom-line bottom-line--${kind}`
-    line.textContent = text
+    line.textContent = text.replace(ANSI_ESCAPE_RE, '')
     output.appendChild(line)
     output.scrollTop = output.scrollHeight
   }
