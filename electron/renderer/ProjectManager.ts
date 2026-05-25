@@ -134,6 +134,14 @@ export class ProjectManager {
     try {
       const createdPath = await window.electronAPI.createProject(this.selectedDir, name)
       this.closeAndReset()
+      // Sinaliza primeiro que o projeto foi recém-criado (BottomPanel roda
+      // yarn install automaticamente — ADR-0013), depois abre como projeto
+      // ativo (mesma semântica de Abrir Projeto existente).
+      document.dispatchEvent(
+        new CustomEvent<{ path: string }>('project-created', {
+          detail: { path: createdPath },
+        }),
+      )
       document.dispatchEvent(
         new CustomEvent<{ path: string }>('project-open', {
           detail: { path: createdPath },

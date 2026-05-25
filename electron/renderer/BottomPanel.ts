@@ -48,6 +48,16 @@ export class BottomPanel {
       localStorage.setItem(STORAGE_KEY, path)
       this.updateTerminalButtons()
     })
+
+    // Projeto recém-criado: roda yarn install automaticamente (ADR-0013).
+    // Garante que projectDir está setado antes de chamar runCommand.
+    document.addEventListener('project-created', (e) => {
+      const { path } = (e as CustomEvent<{ path: string }>).detail
+      this.projectDir = path
+      localStorage.setItem(STORAGE_KEY, path)
+      this.activateTab('terminal')
+      void this.runCommandForce('yarn install')
+    })
   }
 
   // ── Construção da UI ────────────────────────────────────────────────────────
@@ -158,10 +168,17 @@ export class BottomPanel {
     }
     const cmd = this.terminalInput.value.trim()
     if (!cmd) return
+    await this.runCommandForce(cmd)
+  }
+
+  /** Executa um comando específico (independente do input). Usado pelo
+   *  setup automático de novo projeto (yarn install). */
+  private async runCommandForce(cmd: string): Promise<void> {
     if (!this.projectDir) {
       this.appendTerminal('Abra um projeto antes de rodar comandos.\n', 'error')
       return
     }
+    if (this.terminalRunning) return
     this.terminalRunning = true
     this.appendTerminal(`> ${cmd}\n`, 'system')
     this.updateTerminalButtons()

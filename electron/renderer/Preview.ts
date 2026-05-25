@@ -117,9 +117,14 @@ export class Preview {
 
   private handleStopped(): void {
     this.running = false
+    const startedSuccessfully = this.serverUrl !== null
     this.serverUrl = null
     if (this.viewportEl) {
-      this.viewportEl.innerHTML = '<p class="preview-placeholder">Projeto parado.</p>'
+      // Se nunca detectamos a URL do vite, é provável que tenha falhado a
+      // inicializar — orienta o usuário a instalar deps.
+      this.viewportEl.innerHTML = startedSuccessfully
+        ? '<p class="preview-placeholder">Projeto parado.</p>'
+        : '<p class="preview-placeholder">Projeto falhou ao iniciar.<br>Veja o Console. Se faltar o <code>vite</code>, rode <code>yarn install</code> no Terminal.</p>'
     }
     this.updateButtonState()
   }
