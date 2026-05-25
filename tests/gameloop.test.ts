@@ -165,4 +165,80 @@ describe('GameLoop', () => {
       loop.stop();
     });
   });
+
+  // ── pause / resume ────────────────────────────────────────────────────────
+
+  describe('pause / resume', () => {
+    it('pause() faz isPaused virar true mantendo isRunning true', () => {
+      const loop = new GameLoop({ onUpdate: vi.fn(), fixedStep: 50 });
+      loop.start();
+      loop.pause();
+      expect(loop.isPaused).toBe(true);
+      expect(loop.isRunning).toBe(true);
+      loop.stop();
+    });
+
+    it('callbacks não são chamados enquanto o loop está pausado', () => {
+      const onUpdate = vi.fn();
+      const loop = new GameLoop({ onUpdate, fixedStep: 50 });
+      loop.start();
+      vi.advanceTimersByTime(50); // deixa pelo menos 1 chamada ocorrer
+      loop.pause();
+      const countAtPause = onUpdate.mock.calls.length;
+      vi.advanceTimersByTime(300); // avança sem loop ativo
+      expect(onUpdate).toHaveBeenCalledTimes(countAtPause);
+      loop.stop();
+    });
+
+    it('resume() faz isPaused voltar a false e retoma as chamadas', () => {
+      const onUpdate = vi.fn();
+      const loop = new GameLoop({ onUpdate, fixedStep: 50 });
+      loop.start();
+      loop.pause();
+      expect(loop.isPaused).toBe(true);
+      loop.resume();
+      expect(loop.isPaused).toBe(false);
+      vi.advanceTimersByTime(50);
+      // após resume, onUpdate deve ter sido chamado novamente
+      expect(onUpdate).toHaveBeenCalled();
+      loop.stop();
+    });
+
+    it('resume() reinicializa lastTime, evitando spike de deltaTime', () => {
+      const onUpdate = vi.fn();
+      const STEP = 50;
+      const loop = new GameLoop({ onUpdate, fixedStep: STEP });
+      loop.start();
+      vi.advanceTimersByTime(STEP); // 1 frame normal
+      loop.pause();
+      vi.advanceTimersByTime(5000); // simula longa pausa
+      loop.resume();
+      vi.advanceTimersByTime(STEP); // 1 frame após resume
+      loop.stop();
+
+      // O deltaTime do frame imediatamente após resume não deve refletir os
+      // 5000 ms acumulados durante a pausa; deve ser próximo ao STEP normal.
+      const calls = onUpdate.mock.calls as [number][];
+      // último frame (após resume) é o último elemento
+      const deltaAfterResume = calls[calls.length - 1][0];
+      // Se lastTime foi reinicializado corretamente, o delta será ≈ STEP, não 5000+
+      expect(deltaAfterResume).toBeLessThan(5000);
+    });
+
+    it('pause() sem efeito se loop não está rodando', () => {
+      const loop = new GameLoop({ onUpdate: vi.fn(), fixedStep: 50 });
+      loop.pause(); // não rodando — não deve lançar nem mudar estado
+      expect(loop.isPaused).toBe(false);
+      expect(loop.isRunning).toBe(false);
+    });
+
+    it('resume() sem efeito se loop não está pausado', () => {
+      const loop = new GameLoop({ onUpdate: vi.fn(), fixedStep: 50 });
+      loop.start();
+      loop.resume(); // não está pausado — não deve lançar
+      expect(loop.isPaused).toBe(false);
+      expect(loop.isRunning).toBe(true);
+      loop.stop();
+    });
+  });
 });
