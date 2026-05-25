@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, resolve, relative, isAbsolute } from 'path'
-import { readdir, readFile, writeFile, cp } from 'fs/promises'
+import { readdir, readFile, writeFile, cp, mkdir } from 'fs/promises'
 import { spawn, ChildProcess } from 'child_process'
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
@@ -94,8 +94,63 @@ ipcMain.handle('fs:writeFile', async (_event, filePath: unknown, content: unknow
   await writeFile(safePath, content, 'utf-8')
 })
 
+// Lista dos módulos de core/ecs vendoriados — fonte única usada tanto para
+// copiar os .d.ts quanto para gerar o index.d.ts agregador. AI/CLI ficam fora
+// porque dependem de SDKs Node-only que não fazem sentido no runtime do projeto.
+const VENDOR_TYPE_MODULES = {
+  core: [
+    'GameLoop',
+    'Renderer',
+    'Scene',
+    'AssetLoader',
+    'AudioManager',
+    'InputManager',
+    'Physics',
+  ],
+  ecs: ['Entity', 'Component', 'System', 'World'],
+} as const
+
+/**
+ * Vendoriza o engine dentro de <projectPath>/vendor/js-game-engine/:
+ * - index.js: bundle único do engine (com three embutido), de dist-engine/
+ * - core/*.d.ts e ecs/*.d.ts: types copiados de dist/src/
+ * - index.d.ts: agregador minimal re-exportando só core+ecs
+ *
+ * Em dev o app.getAppPath() é a raiz do repo; em produção é o app.asar do build.
+ * O electron-builder copia dist-engine/ e dist/src/ no pacote (ver
+ * electron-builder.json#files).
+ */
+async function vendorEngine(projectPath: string): Promise<void> {
+  const appPath = app.getAppPath()
+  const vendorDir = join(projectPath, 'vendor', 'js-game-engine')
+  await mkdir(vendorDir, { recursive: true })
+
+  // Bundle do engine (JS)
+  await cp(join(appPath, 'dist-engine', 'index.js'), join(vendorDir, 'index.js'))
+
+  // Types: copia *.d.ts de cada módulo (ignora .d.ts.map e .js)
+  for (const [subdir, modules] of Object.entries(VENDOR_TYPE_MODULES)) {
+    await mkdir(join(vendorDir, subdir), { recursive: true })
+    for (const mod of modules) {
+      await cp(
+        join(appPath, 'dist', 'src', subdir, `${mod}.d.ts`),
+        join(vendorDir, subdir, `${mod}.d.ts`),
+      )
+    }
+  }
+
+  // index.d.ts agregador
+  const reexports = Object.entries(VENDOR_TYPE_MODULES)
+    .flatMap(([subdir, modules]) =>
+      modules.map((mod) => `export * from './${subdir}/${mod}.js';`),
+    )
+    .join('\n')
+  await writeFile(join(vendorDir, 'index.d.ts'), `${reexports}\n`, 'utf-8')
+}
+
 // Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}
-// em cada arquivo copiado e retorna o path do novo projeto
+// em cada arquivo copiado, vendoriza o engine em vendor/js-game-engine/ e
+// retorna o path do novo projeto
 ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unknown) => {
   const safeTarget = validatePath(targetDir)
   if (typeof name !== 'string' || name.trim() === '') {
@@ -123,7 +178,109 @@ ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unkn
         }
       }),
   )
+  await vendorEngine(projectPath)
   return projectPath
+})
+
+/**
+ * Lê recursivamente todos os .d.ts dentro de `rootDir`. `monacoBaseUri` é
+ * prefixado em cada arquivo (ex.: 'file:///node_modules/three' + '/index.d.ts').
+ * `navigable` determina se o renderer deve criar um Monaco model navegável
+ * (Ctrl+click) ou apenas alimentar o TS service via addExtraLib.
+ */
+async function readDtsRecursive(
+  rootDir: string,
+  monacoBaseUri: string,
+  navigable: boolean,
+): Promise<EngineTypeFile[]> {
+  const results: EngineTypeFile[] = []
+
+  async function walk(dir: string): Promise<void> {
+    const entries = await readdir(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        await walk(fullPath)
+      } else if (entry.name.endsWith('.d.ts')) {
+        const content = await readFile(fullPath, 'utf-8')
+        // Path relativo a rootDir, normalizado para `/` (Monaco usa POSIX)
+        const rel = fullPath.slice(rootDir.length).replace(/\\/g, '/')
+        results.push({ path: `${monacoBaseUri}${rel}`, content, navigable })
+      }
+    }
+  }
+
+  await walk(rootDir)
+  return results
+}
+
+interface EngineTypeFile {
+  path: string
+  content: string
+  /**
+   * `true` para arquivos onde queremos suporte a Ctrl+click no Monaco —
+   * cria um model navegável. Reservar para o conjunto pequeno do engine;
+   * criar model para os ~946 arquivos de @types/three estoura o limite
+   * de 200 listeners do Monaco e quebra o editor.
+   */
+  navigable: boolean
+}
+
+// Lê os .d.ts do engine + os types reais do `three` (de @types/three) e retorna
+// pares { path, content, navigable } para o renderer alimentar o Monaco.
+ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
+  const appPath = app.getAppPath()
+  const results: EngineTypeFile[] = []
+
+  // Types do three — só addExtraLib (resolução de tipos), sem createModel.
+  // São ~946 arquivos; criar um model por arquivo passa do limite de 200
+  // listeners do Monaco e dispara o erro "potential listener LEAK detected".
+  const threeTypesDir = join(appPath, 'node_modules', '@types', 'three')
+  const threeTypes = await readDtsRecursive(
+    threeTypesDir,
+    'file:///node_modules/three',
+    /* navigable */ false,
+  )
+  results.push(...threeTypes)
+
+  // Types do engine — navegáveis (cria model no Monaco para Ctrl+click)
+  for (const [subdir, modules] of Object.entries(VENDOR_TYPE_MODULES)) {
+    for (const mod of modules) {
+      const fileContent = await readFile(
+        join(appPath, 'dist', 'src', subdir, `${mod}.d.ts`),
+        'utf-8',
+      )
+      results.push({
+        path: `file:///node_modules/js-game-engine/${subdir}/${mod}.d.ts`,
+        content: fileContent,
+        navigable: true,
+      })
+    }
+  }
+
+  // index.d.ts agregador sem '.js' nos paths — moduleResolution default do
+  // Monaco TS (Node legacy) não trata `.js` como mapeamento para `.d.ts`
+  const reexports = Object.entries(VENDOR_TYPE_MODULES)
+    .flatMap(([subdir, modules]) =>
+      modules.map((mod) => `export * from './${subdir}/${mod}';`),
+    )
+    .join('\n')
+  results.push({
+    path: 'file:///node_modules/js-game-engine/index.d.ts',
+    content: `${reexports}\n`,
+    navigable: true,
+  })
+
+  // package.json virtual — o Node resolver do Monaco TS procura por ele
+  // primeiro ao resolver `import 'js-game-engine'`. Sem isso, em alguns
+  // cenários o fallback para index.d.ts falha silenciosamente.
+  results.push({
+    path: 'file:///node_modules/js-game-engine/package.json',
+    content: JSON.stringify({ name: 'js-game-engine', types: 'index.d.ts' }),
+    navigable: false,
+  })
+
+  return results
 })
 
 // Abre um diálogo nativo de seleção de pasta. Retorna o path absoluto ou null

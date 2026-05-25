@@ -48,6 +48,75 @@ body {
   min-width: 0;
 }
 
+.editor-tabs {
+  display: flex;
+  flex-direction: row;
+  background-color: #252526;
+  border-bottom: 1px solid #1e1e1e;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 32px;
+  user-select: none;
+}
+
+.editor-tabs::-webkit-scrollbar {
+  height: 3px;
+}
+
+.editor-tabs::-webkit-scrollbar-thumb {
+  background-color: #3c3c3c;
+}
+
+.editor-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 32px;
+  background-color: #2d2d2d;
+  border-right: 1px solid #1e1e1e;
+  color: #969696;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.editor-tab:hover {
+  background-color: #333334;
+}
+
+.editor-tab.active {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+.editor-tab-label {
+  pointer-events: none;
+}
+
+.editor-tab-close {
+  background: none;
+  border: none;
+  color: #969696;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.editor-tab-close:hover {
+  background-color: #4a4a4a;
+  color: #ffffff;
+}
+
+.editor-area {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* Coluna direita — preview + console */
 #right-panel {
   background-color: #252526;

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite"
   },
-  "dependencies": {
-    "js-game-engine": "file:../../"
+  "devDependencies": {
+    "vite": "latest"
   }
 }

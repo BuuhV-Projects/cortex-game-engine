@@ -33,6 +33,7 @@ vi.mock('fs/promises', () => ({
   readFile: vi.fn(),
   writeFile: vi.fn(),
   cp: vi.fn(),
+  mkdir: vi.fn(),
 }))
 
 vi.mock('child_process', () => ({
@@ -77,6 +78,7 @@ afterEach(() => {
   vi.mocked(fsp.readdir).mockReset()
   vi.mocked(fsp.readFile).mockReset()
   vi.mocked(fsp.writeFile).mockReset()
+  vi.mocked(fsp.mkdir).mockReset()
 })
 
 // ── Testes ────────────────────────────────────────────────────────────────────
@@ -94,7 +96,8 @@ describe('fs:createProject', () => {
       { name: 'main.ts', isFile: () => true, isDirectory: () => false },
     ]
 
-    vi.mocked(fsp.cp).mockResolvedValueOnce(undefined)
+    vi.mocked(fsp.cp).mockResolvedValue(undefined)
+    vi.mocked(fsp.mkdir).mockResolvedValue(undefined)
     vi.mocked(fsp.readdir).mockResolvedValueOnce(entries as never)
     // package.json contém o placeholder; main.ts não contém
     vi.mocked(fsp.readFile)
@@ -108,8 +111,7 @@ describe('fs:createProject', () => {
     // Deve ter copiado o diretório do template para o path do projeto
     expect(vi.mocked(fsp.cp)).toHaveBeenCalledWith(templateDir, projectPath, { recursive: true })
 
-    // Apenas package.json contém o placeholder — só ele deve ser reescrito
-    expect(vi.mocked(fsp.writeFile)).toHaveBeenCalledTimes(1)
+    // package.json é reescrito com o placeholder substituído
     expect(vi.mocked(fsp.writeFile)).toHaveBeenCalledWith(
       path.join(projectPath, 'package.json'),
       '{"name":"meu-jogo"}',
@@ -118,6 +120,44 @@ describe('fs:createProject', () => {
 
     // Retorna o path absoluto do projeto criado
     expect(result).toBe(projectPath)
+  })
+
+  it('vendoriza o engine em <projeto>/vendor/js-game-engine/', async () => {
+    const targetDir = os.tmpdir()
+    const projectName = 'meu-jogo'
+    const projectPath = path.resolve(targetDir, projectName)
+    const vendorDir = path.join(projectPath, 'vendor', 'js-game-engine')
+
+    vi.mocked(fsp.cp).mockResolvedValue(undefined)
+    vi.mocked(fsp.mkdir).mockResolvedValue(undefined)
+    vi.mocked(fsp.readdir).mockResolvedValueOnce([] as never)
+    vi.mocked(fsp.writeFile).mockResolvedValue(undefined)
+
+    const handler = getIpcHandler('fs:createProject')
+    await handler(null, targetDir, projectName)
+
+    // Bundle do engine copiado para vendor/js-game-engine/index.js
+    expect(vi.mocked(fsp.cp)).toHaveBeenCalledWith(
+      path.join(MOCK_APP_PATH, 'dist-engine', 'index.js'),
+      path.join(vendorDir, 'index.js'),
+    )
+
+    // .d.ts de um módulo de core e um de ecs (representantes — não exaustivo)
+    expect(vi.mocked(fsp.cp)).toHaveBeenCalledWith(
+      path.join(MOCK_APP_PATH, 'dist', 'src', 'core', 'GameLoop.d.ts'),
+      path.join(vendorDir, 'core', 'GameLoop.d.ts'),
+    )
+    expect(vi.mocked(fsp.cp)).toHaveBeenCalledWith(
+      path.join(MOCK_APP_PATH, 'dist', 'src', 'ecs', 'World.d.ts'),
+      path.join(vendorDir, 'ecs', 'World.d.ts'),
+    )
+
+    // index.d.ts agregador com re-exports
+    expect(vi.mocked(fsp.writeFile)).toHaveBeenCalledWith(
+      path.join(vendorDir, 'index.d.ts'),
+      expect.stringContaining("export * from './core/GameLoop.js';"),
+      'utf-8',
+    )
   })
 })
 

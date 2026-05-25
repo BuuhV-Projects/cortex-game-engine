@@ -18,6 +18,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectDirectory: () =>
     ipcRenderer.invoke('dialog:openDirectory'),
 
+  // Types do engine para alimentar o Monaco
+  readEngineTypes: () =>
+    ipcRenderer.invoke('engine:readTypes'),
+
   // Execução de projeto
   runProject: (projectDir: string) =>
     ipcRenderer.invoke('run:start', projectDir),

@@ -23,10 +23,34 @@ function workerUrl(name: string): string {
   return new URL(`./monacoeditorwork/${name}.bundle.js`, window.location.href).toString()
 }
 
+/**
+ * Converte um path absoluto do SO em URI sintética para o Monaco que NÃO inclui
+ * o drive letter como segmento `D:`. Isso permite que o Node resolver do TS
+ * suba a partir do arquivo aberto até a raiz `/` e encontre os types virtuais
+ * registrados em `/node_modules/...`. Sem essa transformação, o path do model
+ * fica `/D:/foo/main.ts` e o resolver para no drive.
+ */
+function pathToVirtualUri(realPath: string): monaco.Uri {
+  const posix = realPath
+    .replace(/\\/g, '/')
+    .replace(/^([a-z]):/i, (_m, letter: string) => `/_drive_${letter.toLowerCase()}`)
+  return monaco.Uri.parse(`file://${posix}`)
+}
+
+interface Tab {
+  path: string
+  name: string
+  model: monaco.editor.ITextModel
+}
+
 export class Editor {
   private container: HTMLElement
+  private tabsBar: HTMLElement | null = null
+  private editorArea: HTMLElement | null = null
   private instance: monaco.editor.IStandaloneCodeEditor | null = null
-  private currentPath: string | null = null
+  // Ordem das abas (insertion order do Map é estável)
+  private tabs: Map<string, Tab> = new Map()
+  private activePath: string | null = null
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -43,9 +67,29 @@ export class Editor {
       },
     }
 
-    // O servidor TS do Monaco não tem acesso ao node_modules do projeto aberto,
-    // então erros como "Cannot find module" são ruído. Mantemos só sintaxe.
-    // IntelliSense cross-file fica para iteração futura (ver ADR-0006).
+    // O Node resolver do TS sobe procurando node_modules/ a partir do
+    // diretório do arquivo aberto. No Monaco, arquivos abertos têm URI
+    // como /D:/projeto/main.ts e os types virtuais estão em /node_modules/.
+    // O resolver pode parar no drive (/D:/) e não subir até /, falhando.
+    // Mapeamos explicitamente via paths + baseUrl para forçar a resolução.
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      ...monaco.languages.typescript.typescriptDefaults.getCompilerOptions(),
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      baseUrl: '/',
+      paths: {
+        'js-game-engine': ['/node_modules/js-game-engine/index.d.ts'],
+        'js-game-engine/*': ['/node_modules/js-game-engine/*'],
+        three: ['/node_modules/three/index.d.ts'],
+        'three/*': ['/node_modules/three/*'],
+      },
+      allowSyntheticDefaultImports: true,
+      esModuleInterop: true,
+    })
+
+    // Diagnostics semânticos ficam desligados — o servidor TS do Monaco não
+    // tem acesso ao node_modules do projeto aberto, então imports
+    // não-vendoriados gerariam ruído. Autocomplete via Ctrl+Space continua
+    // funcionando para os tipos alimentados via addExtraLib.
     monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,
       noSyntaxValidation: false,
@@ -55,7 +99,12 @@ export class Editor {
       noSyntaxValidation: false,
     })
 
-    this.instance = monaco.editor.create(this.container, {
+    // Alimenta os types do engine no servidor TS do Monaco
+    void this.loadEngineTypes()
+
+    this.buildShell()
+
+    this.instance = monaco.editor.create(this.editorArea as HTMLElement, {
       theme: 'vs-dark',
       automaticLayout: true,
       fontSize: 13,
@@ -72,29 +121,169 @@ export class Editor {
       const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail
       void this.openFile(path, name)
     })
+
+    // Intercepta "abrir arquivo" do Monaco (clique no peek/breadcrumb,
+    // Ctrl+click numa referência etc.). Sem isso, o editor standalone
+    // ignora o request e o usuário não consegue navegar para definições
+    // em outros models (ex: o .d.ts do engine).
+    monaco.editor.registerEditorOpener({
+      openCodeEditor: (_source, resource, selectionOrPosition) => {
+        const model = monaco.editor.getModel(resource)
+        if (!model) return false
+        this.openModel(model, selectionOrPosition)
+        return true
+      },
+    })
+  }
+
+  /**
+   * Ativa (ou cria) uma aba para um model já existente — usado quando o
+   * Monaco solicita abrir um arquivo internamente (peek/Ctrl+click).
+   */
+  private openModel(
+    model: monaco.editor.ITextModel,
+    selectionOrPosition?: monaco.IRange | monaco.IPosition,
+  ): void {
+    if (!this.instance) return
+    const path = model.uri.toString()
+    if (!this.tabs.has(path)) {
+      const name = model.uri.path.split('/').pop() ?? '(sem nome)'
+      this.tabs.set(path, { path, name, model })
+    }
+    this.activateTab(path)
+
+    if (selectionOrPosition) {
+      if ('startLineNumber' in selectionOrPosition) {
+        this.instance.setSelection(selectionOrPosition)
+        this.instance.revealRangeInCenter(selectionOrPosition)
+      } else {
+        this.instance.setPosition(selectionOrPosition)
+        this.instance.revealPositionInCenter(selectionOrPosition)
+      }
+    }
+  }
+
+  private buildShell(): void {
+    this.container.innerHTML = ''
+    const tabsBar = document.createElement('div')
+    tabsBar.className = 'editor-tabs'
+    const editorArea = document.createElement('div')
+    editorArea.className = 'editor-area'
+    this.container.appendChild(tabsBar)
+    this.container.appendChild(editorArea)
+    this.tabsBar = tabsBar
+    this.editorArea = editorArea
+  }
+
+  private renderTabs(): void {
+    if (!this.tabsBar) return
+    this.tabsBar.innerHTML = ''
+    for (const tab of this.tabs.values()) {
+      const el = document.createElement('div')
+      el.className = 'editor-tab'
+      if (tab.path === this.activePath) el.classList.add('active')
+      el.addEventListener('click', () => this.activateTab(tab.path))
+
+      const label = document.createElement('span')
+      label.className = 'editor-tab-label'
+      label.textContent = tab.name
+
+      const close = document.createElement('button')
+      close.className = 'editor-tab-close'
+      close.textContent = '×'
+      close.title = 'Fechar'
+      close.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.closeTab(tab.path)
+      })
+
+      el.appendChild(label)
+      el.appendChild(close)
+      this.tabsBar.appendChild(el)
+    }
+  }
+
+  private activateTab(path: string): void {
+    const tab = this.tabs.get(path)
+    if (!tab || !this.instance) return
+    this.instance.setModel(tab.model)
+    this.activePath = path
+    this.renderTabs()
+  }
+
+  private closeTab(path: string): void {
+    const tab = this.tabs.get(path)
+    if (!tab) return
+    tab.model.dispose()
+    this.tabs.delete(path)
+
+    if (this.activePath === path) {
+      // Ativa a próxima aba (insertion order); se não houver, limpa o editor
+      const next = this.tabs.values().next().value
+      if (next) {
+        this.activateTab(next.path)
+      } else {
+        this.activePath = null
+        const emptyModel = monaco.editor.createModel('', 'plaintext')
+        this.instance?.setModel(emptyModel)
+      }
+    }
+    this.renderTabs()
+  }
+
+  private async loadEngineTypes(): Promise<void> {
+    try {
+      const files = await window.electronAPI.readEngineTypes()
+      for (const { path, content, navigable } of files) {
+        // addExtraLib é essencial para que o TS service resolva `import 'X'`
+        // — sem isso o módulo nem é encontrado.
+        monaco.languages.typescript.typescriptDefaults.addExtraLib(content, path)
+        // createModel adicional só para os arquivos do engine (poucos) —
+        // viabiliza Ctrl+click. Para @types/three (~946 arquivos) cair aqui
+        // estoura o limite de 200 listeners do Monaco.
+        if (navigable) {
+          const uri = monaco.Uri.parse(path)
+          if (!monaco.editor.getModel(uri)) {
+            monaco.editor.createModel(content, 'typescript', uri)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao carregar types do engine:', err)
+    }
   }
 
   private async openFile(path: string, name: string): Promise<void> {
     if (!this.instance) return
+
+    // Arquivo já aberto: apenas ativa a aba existente (preserva o estado do model)
+    if (this.tabs.has(path)) {
+      this.activateTab(path)
+      return
+    }
+
     try {
       const content = await window.electronAPI.readFile(path)
       const language = detectLanguage(name)
-      // Substitui o model em vez de só setar value para que o highlighting da linguagem seja aplicado
-      const oldModel = this.instance.getModel()
-      const newModel = monaco.editor.createModel(content, language)
-      this.instance.setModel(newModel)
-      oldModel?.dispose()
-      this.currentPath = path
+      // URI sintética sem drive — permite que o Node resolver do TS suba até
+      // a raiz virtual `/` e encontre node_modules/. O path real fica salvo
+      // separadamente em `tab.path` para o save (writeFile).
+      const uri = pathToVirtualUri(path)
+      const model =
+        monaco.editor.getModel(uri) ?? monaco.editor.createModel(content, language, uri)
+
+      this.tabs.set(path, { path, name, model })
+      this.activateTab(path)
     } catch (err) {
       console.error('Erro ao abrir arquivo:', err)
     }
   }
 
   private async save(): Promise<void> {
-    if (!this.instance || !this.currentPath) return
+    if (!this.instance || !this.activePath) return
     const content = this.instance.getValue()
     try {
-      await window.electronAPI.writeFile(this.currentPath, content)
+      await window.electronAPI.writeFile(this.activePath, content)
     } catch (err) {
       console.error('Erro ao salvar arquivo:', err)
     }

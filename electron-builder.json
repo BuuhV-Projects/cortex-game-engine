@@ -5,7 +5,12 @@
     "output": "dist-app"
   },
   "files": [
-    "out/**"
+    "out/**",
+    "templates/**",
+    "dist-engine/**",
+    "dist/src/**/*.d.ts",
+    "node_modules/@types/three/**/*.d.ts",
+    "node_modules/@types/three/package.json"
   ],
   "win": {
     "target": [
