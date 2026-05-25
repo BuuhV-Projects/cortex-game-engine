@@ -79,6 +79,29 @@ ipcMain.handle('fs:readFile', async (_event, filePath: unknown) => {
   return readFile(safePath, 'utf-8')
 })
 
+// Cria um arquivo vazio em <dirPath>/<name>. Rejeita se já existir ou se
+// `name` contiver separadores de path (impede path traversal).
+ipcMain.handle('fs:createFile', async (_event, dirPath: unknown, name: unknown) => {
+  const safeDir = validatePath(dirPath)
+  if (typeof name !== 'string' || name.trim() === '') {
+    throw new Error('name deve ser uma string não vazia')
+  }
+  if (name.includes('/') || name.includes('\\') || name.includes('\0')) {
+    throw new Error('name não pode conter separadores de path')
+  }
+  const filePath = join(safeDir, name.trim())
+  try {
+    // wx flag: rejeita se já existir
+    await writeFile(filePath, '', { encoding: 'utf-8', flag: 'wx' })
+  } catch (err) {
+    if (err instanceof Error && 'code' in err && err.code === 'EEXIST') {
+      throw new Error(`Arquivo já existe: ${name}`)
+    }
+    throw err
+  }
+  return filePath
+})
+
 // Escreve conteúdo em um arquivo (sobrescreve).
 // A restrição anterior a userData/projects/ foi removida: o IDE permite que
 // o usuário crie projetos em qualquer pasta (ver dialog:openDirectory). A

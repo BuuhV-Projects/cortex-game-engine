@@ -40,15 +40,24 @@ export class FileTree {
     })
     this.container.appendChild(input)
 
-    // Barra de ferramentas com botão "Abrir Projeto"
+    // Barra de ferramentas com botão "Abrir Projeto" e "+ Arquivo"
     const toolbar = document.createElement('div')
     toolbar.className = 'filetree-toolbar'
 
-    const btn = document.createElement('button')
-    btn.textContent = 'Abrir Projeto'
-    btn.className = 'filetree-open-btn'
-    btn.addEventListener('click', () => input.click())
-    toolbar.appendChild(btn)
+    const openBtn = document.createElement('button')
+    openBtn.textContent = 'Abrir Projeto'
+    openBtn.className = 'filetree-open-btn'
+    openBtn.addEventListener('click', () => input.click())
+    toolbar.appendChild(openBtn)
+
+    // "+ Arquivo" — cria arquivo na raiz do projeto ativo (ADR-0011)
+    const newFileBtn = document.createElement('button')
+    newFileBtn.textContent = '+ Arquivo'
+    newFileBtn.className = 'filetree-new-file-btn'
+    newFileBtn.title = 'Criar arquivo na raiz do projeto'
+    newFileBtn.addEventListener('click', () => void this.handleNewFile())
+    toolbar.appendChild(newFileBtn)
+
     this.container.appendChild(toolbar)
 
     // Área da árvore
@@ -56,6 +65,21 @@ export class FileTree {
     treeArea.className = 'filetree-area'
     this.container.appendChild(treeArea)
     this.treeArea = treeArea
+  }
+
+  private async handleNewFile(): Promise<void> {
+    if (!this.projectDir) {
+      alert('Abra um projeto antes de criar arquivos.')
+      return
+    }
+    const name = window.prompt('Nome do arquivo:')
+    if (!name || name.trim() === '') return
+    try {
+      await window.electronAPI.createFile(this.projectDir, name.trim())
+      await this.refresh()
+    } catch (err) {
+      alert(`Erro ao criar arquivo: ${String(err)}`)
+    }
   }
 
   private async handleDirSelect(input: HTMLInputElement): Promise<void> {

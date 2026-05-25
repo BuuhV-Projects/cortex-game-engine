@@ -9,6 +9,7 @@ interface ElectronAPI {
   readFile(filePath: string): Promise<string>
   writeFile(filePath: string, content: string): Promise<void>
   createProject(targetDir: string, name: string): Promise<string>
+  createFile(dirPath: string, name: string): Promise<string>
   selectDirectory(): Promise<string | null>
   readEngineTypes(): Promise<Array<{ path: string; content: string; navigable: boolean }>>
   runProject(projectDir: string): Promise<void>

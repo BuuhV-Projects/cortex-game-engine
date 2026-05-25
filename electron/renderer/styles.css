@@ -334,6 +334,23 @@ body {
   border-color: #007acc;
 }
 
+.filetree-new-file-btn {
+  background: none;
+  border: 1px solid #555555;
+  color: #cccccc;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 6px;
+}
+
+.filetree-new-file-btn:hover {
+  background-color: #2a2d2e;
+  border-color: #007acc;
+}
+
 .filetree-area {
   flex: 1;
   overflow-y: auto;
