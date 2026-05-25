@@ -31,3 +31,4 @@ coverage/
 # Temporary files (Blender script generation)
 tmp/
 *.tmp.py
+out/
