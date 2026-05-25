@@ -368,13 +368,31 @@ ipcMain.handle('dialog:openDirectory', async () => {
 // Handlers IPC — execução de projeto
 // ---------------------------------------------------------------------------
 
+/**
+ * Mata o processo e toda a sua árvore de filhos.
+ *
+ * No Windows, `ChildProcess.kill()` mata apenas o shell (cmd.exe) spawnado
+ * com `shell: true`, deixando os processos netos (ex.: vite/node) como
+ * zumbis que continuam segurando portas. Usamos `taskkill /T /F` para
+ * derrubar a árvore inteira. Em Unix, o kill normal já cascateia.
+ */
+function killProcessTree(proc: ChildProcess): void {
+  if (!proc.pid) return
+  if (process.platform === 'win32') {
+    // /T = mata filhos recursivamente; /F = força (SIGKILL equivalente)
+    spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'])
+  } else {
+    proc.kill('SIGTERM')
+  }
+}
+
 // Spawna o `vite` no diretório do projeto; redireciona stdout/stderr ao renderer via 'log'
 ipcMain.handle('run:start', async (_event, projectDir: unknown) => {
   const safeDir = validatePath(projectDir)
 
   // Garante que não há processo anterior pendurado
   if (runningProcess) {
-    runningProcess.kill()
+    killProcessTree(runningProcess)
     runningProcess = null
   }
 
@@ -409,7 +427,7 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
   }
 
   if (terminalProcess) {
-    terminalProcess.kill()
+    killProcessTree(terminalProcess)
     terminalProcess = null
   }
 
@@ -510,7 +528,7 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
 // Mata o comando do terminal em execução, se houver
 ipcMain.handle('terminal:stop', async () => {
   if (terminalProcess) {
-    terminalProcess.kill()
+    killProcessTree(terminalProcess)
     terminalProcess = null
     mainWindow?.webContents.send('terminal:done', { code: -1 })
   }
@@ -519,7 +537,7 @@ ipcMain.handle('terminal:stop', async () => {
 // Mata o processo filho em execução, se houver
 ipcMain.handle('run:stop', async () => {
   if (runningProcess) {
-    runningProcess.kill()
+    killProcessTree(runningProcess)
     runningProcess = null
     // Emite imediatamente para o renderer — o evento 'close' do child pode demorar
     // ou não disparar em algumas plataformas após kill()
