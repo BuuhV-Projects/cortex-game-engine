@@ -1,7 +1,13 @@
-# 0004 - IPC via contextBridge + preload (sem nodeIntegration)
+# 0008 - IPC via contextBridge + preload (sem nodeIntegration)
 
 **Data:** 2026-05-25
-**Status:** aceito
+**Status:** aceito (com atualização — ver nota abaixo)
+
+> **Atualização (2026-05-25):** o preload é emitido pelo `electron-vite` como
+> ESM (`.mjs`). Em Electron ≥ 20, preload ESM exige `webPreferences.sandbox =
+> false`. As demais proteções (`contextIsolation: true`, `nodeIntegration:
+> false`) permanecem. Novos handlers adicionados depois da redação original:
+> `fs:createProject`, `dialog:openDirectory`, `engine:readTypes`.
 
 ## Contexto
 

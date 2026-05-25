@@ -1,7 +1,13 @@
-# 0003 - Diretório `electron/` dentro do repositório do motor
+# 0007 - Diretório `electron/` dentro do repositório do motor
 
 **Data:** 2026-05-25
-**Status:** aceito
+**Status:** substituído parcialmente por [ADR-0009](0009-vendoring-engine-em-projetos-criados.md)
+
+> **Nota:** a decisão de hospedar o código Electron em `electron/` continua
+> válida. O que mudou foi a estrutura de build: `electron-vite` agora emite
+> em `out/` (não `dist-electron/`) e em ESM (não CommonJS). O preload é
+> servido como `out/preload/index.mjs`. Veja ADR-0009 para detalhes do
+> pipeline atualizado.
 
 ## Contexto
 
