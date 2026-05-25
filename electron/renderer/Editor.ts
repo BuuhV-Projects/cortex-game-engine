@@ -38,9 +38,15 @@ function pathToVirtualUri(realPath: string): monaco.Uri {
 }
 
 interface Tab {
+  /** Path real do filesystem (arquivos do projeto) ou URI virtual (engine .d.ts). */
   path: string
   name: string
   model: monaco.editor.ITextModel
+  dirty: boolean
+  /** Arquivos do engine vendoriado são apenas para leitura — save é no-op. */
+  readOnly: boolean
+  /** Listener de onDidChangeContent — descartado quando a aba é fechada. */
+  changeListener: monaco.IDisposable
 }
 
 export class Editor {
@@ -148,7 +154,7 @@ export class Editor {
     const path = model.uri.toString()
     if (!this.tabs.has(path)) {
       const name = model.uri.path.split('/').pop() ?? '(sem nome)'
-      this.tabs.set(path, { path, name, model })
+      this.tabs.set(path, this.makeTab(path, name, model))
     }
     this.activateTab(path)
 
@@ -161,6 +167,29 @@ export class Editor {
         this.instance.revealPositionInCenter(selectionOrPosition)
       }
     }
+  }
+
+  /**
+   * Cria uma Tab e registra o listener de mudança de conteúdo. Qualquer
+   * edição marca a aba como dirty (bolinha) até que o save (Ctrl+S) limpe.
+   * Arquivos do engine (URI virtual em node_modules/) entram como readOnly.
+   */
+  private makeTab(path: string, name: string, model: monaco.editor.ITextModel): Tab {
+    const readOnly = path.includes('/node_modules/')
+    const tab: Tab = {
+      path,
+      name,
+      model,
+      dirty: false,
+      readOnly,
+      changeListener: model.onDidChangeContent(() => {
+        if (!tab.dirty) {
+          tab.dirty = true
+          this.renderTabs()
+        }
+      }),
+    }
+    return tab
   }
 
   private buildShell(): void {
@@ -182,11 +211,18 @@ export class Editor {
       const el = document.createElement('div')
       el.className = 'editor-tab'
       if (tab.path === this.activePath) el.classList.add('active')
+      if (tab.dirty) el.classList.add('dirty')
       el.addEventListener('click', () => this.activateTab(tab.path))
 
       const label = document.createElement('span')
       label.className = 'editor-tab-label'
       label.textContent = tab.name
+
+      // Indicador de "modificado, não salvo". Visível só quando dirty;
+      // some no hover para dar lugar ao botão de fechar.
+      const dot = document.createElement('span')
+      dot.className = 'editor-tab-dot'
+      dot.textContent = '●'
 
       const close = document.createElement('button')
       close.className = 'editor-tab-close'
@@ -198,6 +234,7 @@ export class Editor {
       })
 
       el.appendChild(label)
+      el.appendChild(dot)
       el.appendChild(close)
       this.tabsBar.appendChild(el)
     }
@@ -207,6 +244,7 @@ export class Editor {
     const tab = this.tabs.get(path)
     if (!tab || !this.instance) return
     this.instance.setModel(tab.model)
+    this.instance.updateOptions({ readOnly: tab.readOnly })
     this.activePath = path
     this.renderTabs()
   }
@@ -214,7 +252,18 @@ export class Editor {
   private closeTab(path: string): void {
     const tab = this.tabs.get(path)
     if (!tab) return
-    tab.model.dispose()
+
+    if (tab.dirty) {
+      const ok = window.confirm(
+        `"${tab.name}" tem alterações não salvas. Fechar mesmo assim?`,
+      )
+      if (!ok) return
+    }
+
+    tab.changeListener.dispose()
+    // Não chamamos model.dispose() — alguns models são compartilhados (ex.: o
+    // .d.ts do engine usado pelo TS service para resolução). Em troca, recriar
+    // a aba reusa o model existente (openFile faz getModel ?? createModel).
     this.tabs.delete(path)
 
     if (this.activePath === path) {
@@ -272,7 +321,7 @@ export class Editor {
       const model =
         monaco.editor.getModel(uri) ?? monaco.editor.createModel(content, language, uri)
 
-      this.tabs.set(path, { path, name, model })
+      this.tabs.set(path, this.makeTab(path, name, model))
       this.activateTab(path)
     } catch (err) {
       console.error('Erro ao abrir arquivo:', err)
@@ -281,9 +330,15 @@ export class Editor {
 
   private async save(): Promise<void> {
     if (!this.instance || !this.activePath) return
-    const content = this.instance.getValue()
+    const tab = this.tabs.get(this.activePath)
+    if (!tab || tab.readOnly) return
+    const content = tab.model.getValue()
     try {
-      await window.electronAPI.writeFile(this.activePath, content)
+      await window.electronAPI.writeFile(tab.path, content)
+      if (tab.dirty) {
+        tab.dirty = false
+        this.renderTabs()
+      }
     } catch (err) {
       console.error('Erro ao salvar arquivo:', err)
     }

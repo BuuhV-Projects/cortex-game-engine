@@ -111,6 +111,33 @@ body {
   color: #ffffff;
 }
 
+/* Indicador de "modificado, não salvo" — bolinha branca posicionada no mesmo
+   slot do botão de fechar. Some no hover para dar lugar ao X. */
+.editor-tab-dot {
+  display: none;
+  color: #cccccc;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  pointer-events: none;
+}
+
+.editor-tab.dirty .editor-tab-dot {
+  display: inline;
+}
+
+.editor-tab.dirty .editor-tab-close {
+  display: none;
+}
+
+.editor-tab.dirty:hover .editor-tab-dot {
+  display: none;
+}
+
+.editor-tab.dirty:hover .editor-tab-close {
+  display: inline-block;
+}
+
 .editor-area {
   flex: 1;
   min-height: 0;
