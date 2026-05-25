@@ -4,28 +4,30 @@ const VITE_LOCAL_URL_RE = /Local:\s+(https?:\/\/[^\s]+)/
 
 const STORAGE_KEY = 'preview_projectDir'
 
+/**
+ * Painel direito superior: botão Play/Stop e iframe do projeto rodando.
+ * Logs do `vite` que ele dispara via electronAPI.runProject vão para o
+ * BottomPanel (abas Console/Terminal) — este componente apenas escuta o
+ * canal `log` para detectar a URL local do dev server.
+ */
 export class Preview {
-  private previewContainer: HTMLElement
-  private consoleContainer: HTMLElement
+  private container: HTMLElement
 
   private statusEl: HTMLElement | null = null
   private playBtn: HTMLButtonElement | null = null
   private viewportEl: HTMLElement | null = null
-  private consoleOutputEl: HTMLElement | null = null
 
   private projectDir: string | null = null
   private running = false
   private serverUrl: string | null = null
 
-  constructor(previewContainer: HTMLElement, consoleContainer: HTMLElement) {
-    this.previewContainer = previewContainer
-    this.consoleContainer = consoleContainer
+  constructor(container: HTMLElement) {
+    this.container = container
     this.projectDir = localStorage.getItem(STORAGE_KEY)
   }
 
   init(): void {
-    this.buildPreview()
-    this.buildConsole()
+    this.buildShell()
     this.updateButtonState()
 
     window.electronAPI.onLog((line) => this.handleLogLine(line))
@@ -39,10 +41,8 @@ export class Preview {
     })
   }
 
-  // ── UI ──────────────────────────────────────────────────────────────────────
-
-  private buildPreview(): void {
-    this.previewContainer.innerHTML = ''
+  private buildShell(): void {
+    this.container.innerHTML = ''
 
     const toolbar = document.createElement('div')
     toolbar.className = 'preview-toolbar'
@@ -66,36 +66,8 @@ export class Preview {
     viewport.innerHTML = '<p class="preview-placeholder">Clique em Play para executar o projeto.</p>'
     this.viewportEl = viewport
 
-    this.previewContainer.appendChild(toolbar)
-    this.previewContainer.appendChild(viewport)
-  }
-
-  private buildConsole(): void {
-    this.consoleContainer.innerHTML = ''
-
-    const header = document.createElement('div')
-    header.className = 'console-header'
-
-    const title = document.createElement('span')
-    title.className = 'console-title'
-    title.textContent = 'Console'
-
-    const clearBtn = document.createElement('button')
-    clearBtn.className = 'console-clear-btn'
-    clearBtn.textContent = 'Limpar'
-    clearBtn.addEventListener('click', () => {
-      if (this.consoleOutputEl) this.consoleOutputEl.innerHTML = ''
-    })
-
-    header.appendChild(title)
-    header.appendChild(clearBtn)
-
-    const output = document.createElement('div')
-    output.className = 'console-output'
-    this.consoleOutputEl = output
-
-    this.consoleContainer.appendChild(header)
-    this.consoleContainer.appendChild(output)
+    this.container.appendChild(toolbar)
+    this.container.appendChild(viewport)
   }
 
   private updateButtonState(): void {
@@ -115,53 +87,31 @@ export class Preview {
     }
   }
 
-  // ── Ações ───────────────────────────────────────────────────────────────────
-
   private async toggle(): Promise<void> {
     if (this.running) {
-      await this.stop()
-    } else {
-      await this.start()
-    }
-  }
-
-  private async start(): Promise<void> {
-    if (!this.projectDir || this.running) return
-    this.running = true
-    this.serverUrl = null
-    this.updateButtonState()
-    this.appendLog('▶ Iniciando projeto...\n', 'system')
-
-    try {
-      await window.electronAPI.runProject(this.projectDir)
-    } catch (err) {
-      this.appendLog(`Erro ao iniciar: ${String(err)}\n`, 'error')
-      this.running = false
-      this.updateButtonState()
-    }
-  }
-
-  private async stop(): Promise<void> {
-    try {
       await window.electronAPI.stopProject()
-    } catch (err) {
-      this.appendLog(`Erro ao parar: ${String(err)}\n`, 'error')
-    }
-  }
-
-  // ── Eventos do main process ─────────────────────────────────────────────────
-
-  private handleLogLine(line: string): void {
-    this.appendLog(line, 'log')
-
-    // Detecta a URL local do dev server e injeta o iframe
-    if (!this.serverUrl) {
-      const match = line.match(VITE_LOCAL_URL_RE)
-      if (match) {
-        this.serverUrl = match[1]
-        this.showIframe(this.serverUrl)
+    } else {
+      if (!this.projectDir) return
+      this.running = true
+      this.serverUrl = null
+      this.updateButtonState()
+      try {
+        await window.electronAPI.runProject(this.projectDir)
+      } catch (err) {
+        console.error('Erro ao iniciar projeto:', err)
+        this.running = false
         this.updateButtonState()
       }
+    }
+  }
+
+  private handleLogLine(line: string): void {
+    if (this.serverUrl) return
+    const match = line.match(VITE_LOCAL_URL_RE)
+    if (match) {
+      this.serverUrl = match[1]
+      this.showIframe(this.serverUrl)
+      this.updateButtonState()
     }
   }
 
@@ -171,7 +121,6 @@ export class Preview {
     if (this.viewportEl) {
       this.viewportEl.innerHTML = '<p class="preview-placeholder">Projeto parado.</p>'
     }
-    this.appendLog('■ Projeto parado.\n', 'system')
     this.updateButtonState()
   }
 
@@ -182,16 +131,5 @@ export class Preview {
     iframe.className = 'preview-iframe'
     iframe.src = url
     this.viewportEl.appendChild(iframe)
-  }
-
-  // ── Console ─────────────────────────────────────────────────────────────────
-
-  private appendLog(text: string, kind: 'log' | 'error' | 'system'): void {
-    if (!this.consoleOutputEl) return
-    const line = document.createElement('div')
-    line.className = `console-line console-line--${kind}`
-    line.textContent = text
-    this.consoleOutputEl.appendChild(line)
-    this.consoleOutputEl.scrollTop = this.consoleOutputEl.scrollHeight
   }
 }

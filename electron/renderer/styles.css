@@ -224,9 +224,9 @@ body {
   background-color: #000000;
 }
 
-/* Console de saída */
+/* Painel inferior — Console + Terminal com abas */
 #console-container {
-  height: 200px;
+  height: 220px;
   background-color: #0e0e0e;
   overflow: hidden;
   display: flex;
@@ -234,39 +234,61 @@ body {
   flex-shrink: 0;
 }
 
-.console-header {
+.bottom-tabs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 8px;
+  align-items: stretch;
   background-color: #252526;
   border-bottom: 1px solid #1e1e1e;
   flex-shrink: 0;
 }
 
-.console-title {
-  font-size: 11px;
+.bottom-tab {
+  background: none;
+  border: none;
   color: #9d9d9d;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  padding: 6px 14px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
 }
 
-.console-clear-btn {
+.bottom-tab:hover {
+  color: #cccccc;
+}
+
+.bottom-tab.active {
+  color: #ffffff;
+  border-bottom-color: #007acc;
+}
+
+.bottom-clear-btn {
+  margin-left: auto;
   background: none;
   border: 1px solid #3c3c3c;
   color: #9d9d9d;
   border-radius: 3px;
   font-size: 11px;
   padding: 2px 8px;
+  margin-right: 8px;
+  align-self: center;
   cursor: pointer;
 }
 
-.console-clear-btn:hover {
+.bottom-clear-btn:hover {
   background-color: #3c3c3c;
   color: #cccccc;
 }
 
-.console-output {
+.bottom-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.bottom-output {
   flex: 1;
   overflow-y: auto;
   font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
@@ -276,34 +298,76 @@ body {
   padding: 4px 8px;
 }
 
-.console-line {
+.bottom-line {
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.console-line--error {
+.bottom-line--error {
   color: #f48771;
 }
 
-.console-line--system {
+.bottom-line--system {
   color: #6a9955;
 }
 
-.console-output::-webkit-scrollbar {
+.bottom-output::-webkit-scrollbar {
   width: 8px;
 }
 
-.console-output::-webkit-scrollbar-track {
+.bottom-output::-webkit-scrollbar-track {
   background: #1e1e1e;
 }
 
-.console-output::-webkit-scrollbar-thumb {
+.bottom-output::-webkit-scrollbar-thumb {
   background: #424242;
   border-radius: 4px;
 }
 
-.console-output::-webkit-scrollbar-thumb:hover {
+.bottom-output::-webkit-scrollbar-thumb:hover {
   background: #555555;
+}
+
+.terminal-input-row {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
+}
+
+.terminal-input {
+  flex: 1;
+  background-color: #3c3c3c;
+  border: 1px solid #555555;
+  border-radius: 3px;
+  color: #cccccc;
+  font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  padding: 4px 8px;
+  outline: none;
+}
+
+.terminal-input:focus {
+  border-color: #007acc;
+}
+
+.terminal-input:disabled {
+  opacity: 0.6;
+}
+
+.terminal-run-btn {
+  background-color: #007acc;
+  color: #ffffff;
+  border: none;
+  border-radius: 3px;
+  padding: 4px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.terminal-run-btn:hover {
+  background-color: #005fa3;
 }
 
 /* ------------------------------------------------------------------ */

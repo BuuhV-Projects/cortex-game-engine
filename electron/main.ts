@@ -9,6 +9,10 @@ let mainWindow: BrowserWindow | null = null
 // Processo filho do vite em execução (único de cada vez)
 let runningProcess: ChildProcess | null = null
 
+// Processo do terminal embutido (independente do runningProcess — permite
+// rodar `yarn install` enquanto o Play continua ativo). ADR-0012.
+let terminalProcess: ChildProcess | null = null
+
 // ---------------------------------------------------------------------------
 // Segurança: validação de path traversal
 // ---------------------------------------------------------------------------
@@ -347,6 +351,49 @@ ipcMain.handle('run:start', async (_event, projectDir: unknown) => {
     runningProcess = null
     mainWindow?.webContents.send('project:stopped')
   })
+})
+
+// Terminal embutido — roda um comando one-shot no projeto (ADR-0012).
+// stdout/stderr vão para o canal 'terminal:output'; conclusão via
+// 'terminal:done' com { code }.
+ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unknown) => {
+  const safeDir = validatePath(projectDir)
+  if (typeof command !== 'string' || command.trim() === '') {
+    throw new Error('command deve ser uma string não vazia')
+  }
+
+  if (terminalProcess) {
+    terminalProcess.kill()
+    terminalProcess = null
+  }
+
+  const child = spawn(command, [], {
+    cwd: safeDir,
+    shell: true,
+  })
+
+  terminalProcess = child
+
+  const forwardOutput = (data: Buffer): void => {
+    mainWindow?.webContents.send('terminal:output', data.toString())
+  }
+
+  child.stdout?.on('data', forwardOutput)
+  child.stderr?.on('data', forwardOutput)
+
+  child.on('close', (code) => {
+    terminalProcess = null
+    mainWindow?.webContents.send('terminal:done', { code: code ?? -1 })
+  })
+})
+
+// Mata o comando do terminal em execução, se houver
+ipcMain.handle('terminal:stop', async () => {
+  if (terminalProcess) {
+    terminalProcess.kill()
+    terminalProcess = null
+    mainWindow?.webContents.send('terminal:done', { code: -1 })
+  }
 })
 
 // Mata o processo filho em execução, se houver

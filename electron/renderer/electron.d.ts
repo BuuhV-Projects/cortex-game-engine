@@ -14,8 +14,12 @@ interface ElectronAPI {
   readEngineTypes(): Promise<Array<{ path: string; content: string; navigable: boolean }>>
   runProject(projectDir: string): Promise<void>
   stopProject(): Promise<void>
+  runTerminalCommand(projectDir: string, command: string): Promise<void>
+  stopTerminalCommand(): Promise<void>
   onLog(callback: (line: string) => void): void
   onProjectStopped(callback: () => void): void
+  onTerminalOutput(callback: (text: string) => void): void
+  onTerminalDone(callback: (exitCode: number) => void): void
 }
 
 interface Window {

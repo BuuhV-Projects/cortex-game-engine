@@ -32,6 +32,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopProject: () =>
     ipcRenderer.invoke('run:stop'),
 
+  // Terminal embutido (ADR-0012)
+  runTerminalCommand: (projectDir: string, command: string) =>
+    ipcRenderer.invoke('terminal:run', projectDir, command),
+
+  stopTerminalCommand: () =>
+    ipcRenderer.invoke('terminal:stop'),
+
   // Eventos do main → renderer
   // removeAllListeners garante que chamadas repetidas não acumulem handlers
   onLog: (callback: (line: string) => void) => {
@@ -42,5 +49,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onProjectStopped: (callback: () => void) => {
     ipcRenderer.removeAllListeners('project:stopped')
     ipcRenderer.on('project:stopped', () => callback())
+  },
+
+  onTerminalOutput: (callback: (text: string) => void) => {
+    ipcRenderer.removeAllListeners('terminal:output')
+    ipcRenderer.on('terminal:output', (_event, text: string) => callback(text))
+  },
+
+  onTerminalDone: (callback: (exitCode: number) => void) => {
+    ipcRenderer.removeAllListeners('terminal:done')
+    ipcRenderer.on('terminal:done', (_event, payload: { code: number }) => callback(payload.code))
   },
 })
