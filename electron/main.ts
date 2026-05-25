@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
-import { join, resolve } from 'path'
+import { join, resolve, relative, isAbsolute } from 'path'
 import { readdir, readFile, writeFile, cp } from 'fs/promises'
 import { spawn, ChildProcess } from 'child_process'
 
@@ -77,8 +77,14 @@ ipcMain.handle('fs:readFile', async (_event, filePath: unknown) => {
 })
 
 // Escreve conteúdo em um arquivo (sobrescreve)
+// Rejeita paths fora do diretório de projetos para impedir path traversal (ADR-0004)
 ipcMain.handle('fs:writeFile', async (_event, filePath: unknown, content: unknown) => {
   const safePath = validatePath(filePath)
+  const projectsRoot = resolve(app.getPath('userData'), 'projects')
+  const rel = relative(projectsRoot, safePath)
+  if (rel.startsWith('..') || isAbsolute(rel)) {
+    throw new Error('Path fora do diretório de projetos permitido')
+  }
   if (typeof content !== 'string') {
     throw new Error('content deve ser uma string')
   }
