@@ -7,10 +7,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc",
+    "build:engine": "tsc -p tsconfig.engine.json && vite build --config vite.engine.config.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "electron:dev": "electron-vite dev",
-    "electron:build": "electron-vite build && electron-builder"
+    "electron:dev": "yarn build:engine && electron-vite dev",
+    "electron:build": "yarn build:engine && electron-vite build && electron-builder"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "latest",
