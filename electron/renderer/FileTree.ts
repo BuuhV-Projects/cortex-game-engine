@@ -17,6 +17,16 @@ export class FileTree {
     }
   }
 
+  /**
+   * Abre um projeto pelo caminho absoluto: persiste no localStorage e recarrega a árvore.
+   * Chamado externamente quando o evento 'project-open' é despachado (ex.: pelo ProjectManager).
+   */
+  async openProject(path: string): Promise<void> {
+    this.projectDir = path
+    localStorage.setItem(STORAGE_KEY, this.projectDir)
+    await this.refresh()
+  }
+
   private buildShell(): void {
     this.container.innerHTML = ''
 

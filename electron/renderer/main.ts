@@ -1,6 +1,7 @@
 import { FileTree } from './FileTree'
 import { Editor } from './Editor'
 import { Preview } from './Preview'
+import { ProjectManager } from './ProjectManager'
 
 const sidebar = document.getElementById('sidebar') as HTMLElement
 const editorContainer = document.getElementById('editor-container') as HTMLElement
@@ -10,7 +11,16 @@ const consoleContainer = document.getElementById('console-container') as HTMLEle
 const fileTree = new FileTree(sidebar)
 const editor = new Editor(editorContainer)
 const preview = new Preview(previewContainer, consoleContainer)
+const projectManager = new ProjectManager(sidebar)
 
+// FileTree.init() reconstrói o shell da sidebar; ProjectManager.init() prepend o botão depois
 fileTree.init()
 editor.init()
 preview.init()
+projectManager.init()
+
+// Ao criar um novo projeto, FileTree recarrega apontando para o path criado
+document.addEventListener('project-open', (e) => {
+  const { path } = (e as CustomEvent<{ path: string }>).detail
+  void fileTree.openProject(path)
+})

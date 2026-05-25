@@ -94,3 +94,209 @@ body {
 #console-container::-webkit-scrollbar-thumb:hover {
   background: #555555;
 }
+
+/* ------------------------------------------------------------------ */
+/* FileTree                                                            */
+/* ------------------------------------------------------------------ */
+
+.filetree-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid #3c3c3c;
+}
+
+.filetree-open-btn {
+  background: none;
+  border: 1px solid #555555;
+  color: #cccccc;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filetree-open-btn:hover {
+  background-color: #2a2d2e;
+  border-color: #007acc;
+}
+
+.filetree-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.filetree-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filetree-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filetree-area::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 3px;
+}
+
+.filetree-loading,
+.filetree-error {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #888888;
+}
+
+.filetree-error {
+  color: #f48771;
+}
+
+.filetree-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.filetree-list .filetree-list {
+  padding-left: 12px;
+}
+
+.filetree-dir > .filetree-label::before {
+  content: '▶ ';
+  font-size: 10px;
+  color: #888888;
+}
+
+.filetree-dir.expanded > .filetree-label::before {
+  content: '▼ ';
+}
+
+.filetree-dir.loading > .filetree-label::after {
+  content: ' …';
+  color: #888888;
+}
+
+.filetree-label {
+  display: block;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: #cccccc;
+}
+
+.filetree-label:hover {
+  background-color: #2a2d2e;
+}
+
+/* ------------------------------------------------------------------ */
+/* ProjectManager — botão e diálogo                                    */
+/* ------------------------------------------------------------------ */
+
+.project-manager-new-btn {
+  display: block;
+  width: calc(100% - 16px);
+  margin: 8px;
+  padding: 5px 0;
+  background-color: #007acc;
+  color: #ffffff;
+  border: none;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.project-manager-new-btn:hover {
+  background-color: #005fa3;
+}
+
+.project-manager-dialog {
+  background-color: #252526;
+  border: 1px solid #454545;
+  border-radius: 6px;
+  color: #cccccc;
+  padding: 20px 24px;
+  min-width: 340px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.project-manager-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.project-manager-dialog-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #ffffff;
+}
+
+.project-manager-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.project-manager-field label {
+  font-size: 11px;
+  color: #9d9d9d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.project-manager-input {
+  background-color: #3c3c3c;
+  border: 1px solid #555555;
+  border-radius: 3px;
+  color: #cccccc;
+  font-size: 13px;
+  padding: 5px 8px;
+  outline: none;
+}
+
+.project-manager-input:focus {
+  border-color: #007acc;
+}
+
+.project-manager-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.project-manager-btn {
+  padding: 5px 16px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.project-manager-btn--primary {
+  background-color: #007acc;
+  color: #ffffff;
+}
+
+.project-manager-btn--primary:hover {
+  background-color: #005fa3;
+}
+
+.project-manager-btn--secondary {
+  background-color: #3c3c3c;
+  color: #cccccc;
+  border: 1px solid #555555;
+}
+
+.project-manager-btn--secondary:hover {
+  background-color: #4a4a4a;
+}
