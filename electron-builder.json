@@ -1,0 +1,34 @@
+{
+  "appId": "com.jsge.studio",
+  "productName": "JS Game Engine Studio",
+  "directories": {
+    "output": "dist-app"
+  },
+  "files": [
+    "dist-electron/**"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "mac": {
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      }
+    ]
+  },
+  "linux": {
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": ["x64"]
+      }
+    ]
+  }
+}

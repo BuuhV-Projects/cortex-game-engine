@@ -2,6 +2,7 @@
   "name": "js-game-engine",
   "version": "0.1.0",
   "type": "module",
+  "main": "dist-electron/main/main.js",
   "description": "Motor de jogo 3D com ECS, Three.js e integração com Claude AI",
   "scripts": {
     "dev": "vite",
