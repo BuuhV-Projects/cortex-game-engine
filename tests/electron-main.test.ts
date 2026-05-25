@@ -162,18 +162,26 @@ describe('fs:createProject', () => {
 })
 
 describe('fs:writeFile', () => {
-  it('rejeita path com .. que sai do diretório de projetos (path traversal)', async () => {
-    // path.join + '..' navega um nível acima de PROJECTS_ROOT → fora da área permitida
-    const traversalPath = path.join(PROJECTS_ROOT, '..', 'evil.txt')
-
+  it('rejeita path com byte nulo', async () => {
     const handler = getIpcHandler('fs:writeFile')
-    await expect(handler(null, traversalPath, 'conteúdo')).rejects.toThrow(
-      'Path fora do diretório de projetos permitido',
+    await expect(handler(null, 'foo\0bar.txt', 'conteúdo')).rejects.toThrow(
+      'Path contém byte nulo',
     )
   })
 
-  it('aceita path válido dentro do diretório de projetos', async () => {
-    const validPath = path.join(PROJECTS_ROOT, 'meu-jogo', 'main.ts')
+  it('rejeita content que não é string', async () => {
+    const validPath = path.join(os.tmpdir(), 'meu-jogo', 'main.ts')
+
+    const handler = getIpcHandler('fs:writeFile')
+    await expect(handler(null, validPath, 123)).rejects.toThrow(
+      'content deve ser uma string',
+    )
+  })
+
+  it('escreve em qualquer path absoluto válido (sem restrição de diretório)', async () => {
+    // O IDE permite criar projetos em qualquer pasta — o save aceita o path
+    // resolvido sem restringir a userData/projects.
+    const validPath = path.join(os.tmpdir(), 'meu-jogo', 'main.ts')
 
     vi.mocked(fsp.writeFile).mockResolvedValueOnce(undefined)
 

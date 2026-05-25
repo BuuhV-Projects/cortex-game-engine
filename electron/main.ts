@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join, resolve, relative, isAbsolute } from 'path'
+import { join, resolve } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir } from 'fs/promises'
 import { spawn, ChildProcess } from 'child_process'
 
@@ -79,15 +79,13 @@ ipcMain.handle('fs:readFile', async (_event, filePath: unknown) => {
   return readFile(safePath, 'utf-8')
 })
 
-// Escreve conteúdo em um arquivo (sobrescreve)
-// Rejeita paths fora do diretório de projetos para impedir path traversal (ADR-0004)
+// Escreve conteúdo em um arquivo (sobrescreve).
+// A restrição anterior a userData/projects/ foi removida: o IDE permite que
+// o usuário crie projetos em qualquer pasta (ver dialog:openDirectory). A
+// validação se reduz a `validatePath` (resolve absoluto + rejeita byte nulo);
+// o controle de acesso fica por conta do FS do SO.
 ipcMain.handle('fs:writeFile', async (_event, filePath: unknown, content: unknown) => {
   const safePath = validatePath(filePath)
-  const projectsRoot = resolve(app.getPath('userData'), 'projects')
-  const rel = relative(projectsRoot, safePath)
-  if (rel.startsWith('..') || isAbsolute(rel)) {
-    throw new Error('Path fora do diretório de projetos permitido')
-  }
   if (typeof content !== 'string') {
     throw new Error('content deve ser uma string')
   }
