@@ -24,8 +24,7 @@ export function createBlenderToolServer(projectRoot: string) {
         'Gera um modelo 3D (.glb) a partir de uma descrição em linguagem natural. ' +
           'Usa Claude para escrever um script Python do Blender (bpy) e executa ' +
           '`blender --background --python script.py` para exportar o arquivo. ' +
-          'Requer ANTHROPIC_API_KEY no ambiente e Blender instalado no PATH ' +
-          '(ou BLENDER_PATH apontando para o executável).',
+          'Requer Blender instalado no PATH (ou BLENDER_PATH apontando para o executável).',
         {
           description: z
             .string()
@@ -43,14 +42,6 @@ export function createBlenderToolServer(projectRoot: string) {
             ),
         },
         async ({ description, target_path }) => {
-          if (!process.env['ANTHROPIC_API_KEY']) {
-            return errorResult(
-              'Esta ferramenta exige ANTHROPIC_API_KEY como variável de ambiente. ' +
-                'Configure em console.anthropic.com e reinicie o IDE. ' +
-                'Tokens OAuth do `claude login` não são compatíveis com este caminho.',
-            )
-          }
-
           const absolute = isAbsolute(target_path)
             ? target_path
             : resolve(projectRoot, target_path)

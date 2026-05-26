@@ -1,18 +1,27 @@
 # 0019 - Integração ScriptGenerator e BlenderModelGenerator no Chat IA
 
-**Data:** 2026-05-25 (reativada 2026-05-26)
-**Status:** parcialmente aceito — `generate_blender_model` reativado como tool MCP custom (ver atualização abaixo). `generate_script` segue não-prioritário; agente usa `Write`+`Edit` para scripts.
+**Data:** 2026-05-25 (reativada 2026-05-26, atualizada 2026-05-26)
+**Status:** parcialmente aceito — `generate_blender_model` integrado como tool MCP custom. `generate_script` segue não-prioritário; agente usa `Write`+`Edit` para scripts.
 
-> **Atualização 2026-05-26:** o argumento "Write/Bash cobre os casos" não
-> se sustenta para Blender — a IA teria que recriar do zero o conhecimento
-> de `bpy` (~200 linhas de receitas PBR, `bmesh`, exportação GLB) a cada
-> pedido, e ainda lidar com spawn do Blender headless. `generate_blender_model`
-> volta como **tool MCP custom in-process** registrada via
-> `createSdkMcpServer` do Claude Agent SDK ([electron/agent/tools/blender.ts](../../electron/agent/tools/blender.ts)).
+> **Atualização 2026-05-26 (parte 1):** o argumento "Write/Bash cobre os
+> casos" não se sustenta para Blender — a IA teria que recriar do zero o
+> conhecimento de `bpy` (~200 linhas de receitas PBR, `bmesh`, exportação
+> GLB) a cada pedido, e ainda lidar com spawn do Blender headless.
+> `generate_blender_model` volta como **tool MCP custom in-process**
+> registrada via `createSdkMcpServer` do Claude Agent SDK
+> ([electron/agent/tools/blender.ts](../../electron/agent/tools/blender.ts)).
 > O server precisa do `projectRoot` (sandbox da ADR-0017), por isso é
-> criado por turno do agente. As demais decisões da ADR original (timeouts,
-> exigência de `ANTHROPIC_API_KEY`, retorno de erro como `tool_result`)
-> seguem valendo.
+> criado por turno do agente.
+
+> **Atualização 2026-05-26 (parte 2 — auth):** a restrição original que
+> exigia `ANTHROPIC_API_KEY` foi removida. O `BlenderModelGenerator`
+> agora chama o Claude via `@anthropic-ai/claude-agent-sdk` em modo
+> single-shot (`allowedTools: []`, `systemPrompt` como string, sem
+> sessão) — o SDK herda a auth do `claude login` (OAuth) ou usa
+> `ANTHROPIC_API_KEY` se disponível, igual ao chat principal. Trade-off
+> assumido: perdemos o `cache_control: ephemeral` granular sobre o
+> BPY_SYSTEM_PROMPT — o SDK gerencia caching internamente; em prática
+> o overhead extra é aceitável.
 
 ## Contexto
 

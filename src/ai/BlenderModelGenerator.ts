@@ -1,5 +1,4 @@
-import './auth.js'; // Garante que a checagem de autenticação seja feita ao importar este módulo
-import Anthropic from '@anthropic-ai/sdk';
+import { query } from '@anthropic-ai/claude-agent-sdk';
 import { spawn } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -223,8 +222,13 @@ export interface GenerateModelResult {
 // ─── BlenderModelGenerator ───────────────────────────────────────────────────
 
 /**
- * Gera modelos 3D (.glb) a partir de descrições em linguagem natural, usando a Claude API
- * para produzir scripts Python do Blender e executando-os via CLI (`blender --background`).
+ * Gera modelos 3D (.glb) a partir de descrições em linguagem natural.
+ *
+ * Usa o `@anthropic-ai/claude-agent-sdk` em modo single-shot (sem tools, sem
+ * sessão, sem preset do Claude Code) para pedir um script Python `bpy` ao
+ * Claude, e então roda Blender headless para exportar o GLB. A auth fica a
+ * cargo do SDK — funciona com `ANTHROPIC_API_KEY` no env ou OAuth do
+ * `claude login` (ver ADR-0020).
  *
  * @example
  * const gen = new BlenderModelGenerator();
@@ -233,26 +237,14 @@ export interface GenerateModelResult {
  *   './assets/sword.glb',
  * );
  *
- * @see ADR-0004
+ * @see ADR-0004 (Blender CLI) / ADR-0020 (Claude Agent SDK)
  */
 export class BlenderModelGenerator {
-  private readonly _client: Anthropic;
-
-  /**
-   * Cria uma instância de BlenderModelGenerator.
-   *
-   * @throws {Error} Se a variável de ambiente `ANTHROPIC_API_KEY` não estiver definida.
-   */
-  constructor() {
-    const apiKey = process.env['ANTHROPIC_API_KEY'];
-    this._client = new Anthropic({ apiKey });
-  }
-
   /**
    * Gera um modelo 3D `.glb` a partir de uma descrição em linguagem natural.
    *
    * Fluxo:
-   * 1. Envia a descrição ao Claude com o system prompt `bpy` (cacheado).
+   * 1. Pede o script ao Claude via `claude-agent-sdk` (sem tools, sem cwd).
    * 2. Extrai o bloco ```python da resposta.
    * 3. Injeta `OUTPUT_PATH` no topo do script.
    * 4. Salva o script em arquivo temporário.
@@ -269,27 +261,13 @@ export class BlenderModelGenerator {
     // Garante extensão .glb
     const glbPath = outputPath.endsWith('.glb') ? outputPath : `${outputPath}.glb`;
 
-    // ── 1. Gerar script Python via Claude API ──────────────────────────────
-    const response = await this._client.messages.create({
-      model: 'claude-opus-4-7',
-      max_tokens: 4096,
-      system: [
-        {
-          type: 'text',
-          text: BPY_SYSTEM_PROMPT,
-          // Cache o system prompt para reduzir latência/custo em chamadas repetidas (ADR-0003)
-          cache_control: { type: 'ephemeral' },
-        },
-      ],
-      messages: [{ role: 'user', content: description }],
-    });
+    // ── 1. Gerar script Python via Claude Agent SDK (single-shot) ──────────
+    // systemPrompt como string usa prompt custom puro (sem preset Claude Code).
+    // allowedTools: [] zera as tools nativas (Read/Write/Bash) — só queremos
+    // uma resposta de texto, não interação com filesystem.
+    const fullText = await _querySingleShot(BPY_SYSTEM_PROMPT, description);
 
     // ── 2. Extrair bloco ```python da resposta ─────────────────────────────
-    const fullText = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('\n');
-
     const codeMatch = /```python\s*([\s\S]*?)```/.exec(fullText);
     if (!codeMatch || !codeMatch[1]) {
       throw new Error(
@@ -319,6 +297,34 @@ export class BlenderModelGenerator {
 }
 
 // ─── Utilitário interno ───────────────────────────────────────────────────────
+
+/**
+ * Chamada LLM single-shot via Claude Agent SDK. Coleta os blocos de texto
+ * do assistant e retorna o conteúdo concatenado. Sem tools, sem sessão.
+ */
+async function _querySingleShot(systemPrompt: string, userPrompt: string): Promise<string> {
+  const q = query({
+    prompt: userPrompt,
+    options: {
+      systemPrompt,
+      allowedTools: [],
+      includePartialMessages: false,
+    },
+  });
+
+  let fullText = '';
+  for await (const msg of q) {
+    const m = msg as { type?: string; message?: { content?: Array<{ type?: string; text?: string }> } };
+    if (m.type === 'assistant' && Array.isArray(m.message?.content)) {
+      for (const block of m.message.content) {
+        if (block.type === 'text' && typeof block.text === 'string') {
+          fullText += block.text;
+        }
+      }
+    }
+  }
+  return fullText;
+}
 
 /**
  * Executa `blender --background --python <scriptPath>` e aguarda o término.
