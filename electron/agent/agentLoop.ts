@@ -1,51 +1,49 @@
-import type Anthropic from '@anthropic-ai/sdk'
-import { TOOL_SCHEMAS, executeTool } from './tools.js'
-import type { ToolContext, ToolRequest, ToolExecutionResult } from './tools.js'
+import { query, type Options, type PermissionResult } from '@anthropic-ai/claude-agent-sdk'
 
 /**
- * Loop do agente (ADR-0017). Recebe o histórico de mensagens, conversa com a
- * SDK Anthropic em streaming, executa tool calls, devolve `tool_result` e
- * repete até o modelo encerrar o turno (stop_reason !== 'tool_use') ou bater
- * o cap de rodadas.
+ * Loop do agente usando @anthropic-ai/claude-agent-sdk (ADR-0017 V2).
+ *
+ * O SDK faz quase tudo: roda o backend Claude Code, gerencia sessão,
+ * autenticação (OAuth do `claude login` ou ANTHROPIC_API_KEY no env),
+ * stream de mensagens, tools nativas (Read/Write/Edit/Bash/Glob/Grep).
+ *
+ * Nosso código só precisa:
+ * - configurar cwd, allowedTools, systemPrompt;
+ * - implementar canUseTool pra rotear aprovação ao renderer (ADR-0018);
+ * - traduzir as mensagens do SDK em eventos pra UI (chunks, tool cards).
  */
-
-const MAX_TOOL_ROUNDS = 10
 
 const AGENT_SYSTEM_PROMPT = `\
 Você é um assistente embutido em um IDE para o cortex-game-engine — um motor \
 de jogos 3D em TypeScript com arquitetura Entity-Component-System (ECS) e \
 renderização via Three.js.
 
-Você pode usar as seguintes ferramentas para agir no projeto do usuário:
-
-- list_files: explorar a estrutura do projeto
-- read_file: ler arquivos existentes antes de propor mudanças
-- write_file: criar ou sobrescrever arquivos (exige aprovação do usuário)
-- delete_file: remover arquivos (exige aprovação)
-- run_command: executar comandos shell no projeto (exige aprovação)
-- generate_script: gerar um Script ECS completo a partir de descrição em \
-linguagem natural (exige aprovação; usa um modelo especializado em ECS)
-- generate_blender_model: gerar um modelo 3D .glb via Blender headless \
-(exige aprovação; demora mais)
-
 Diretrizes:
+- Todos os arquivos que você edita ou cria devem ficar dentro do projeto \
+aberto (cwd). Não acesse arquivos fora dele.
+- Sempre que possível, leia arquivos existentes antes de propor mudanças.
+- Responda em português. Quando escrever código, prefira TypeScript moderno \
+(ES2022+) e siga o padrão ECS do engine.
+- Seja conciso. Não repita o que as ferramentas já mostram no output.`
 
-- Todos os paths são relativos à raiz do projeto aberto. Você não pode \
-acessar arquivos fora dele.
-- Sempre que possível, leia arquivos relevantes antes de propor mudanças, \
-para entender o contexto existente.
-- Para criar Systems/Components ECS novos, prefira generate_script ao invés \
-de write_file — ele usa um modelo especializado com a API ECS no contexto.
-- Para criar modelos 3D, prefira generate_blender_model ao invés de tentar \
-escrever o .glb com write_file (não vai funcionar — formato binário).
-- Responda em português. Quando escrever código, use TypeScript moderno e \
-siga o padrão ECS.
-- Seja conciso nas respostas em texto. Não repita o que a ferramenta já \
-mostra no resultado.`
+const APPROVED_AUTO_TOOLS = new Set(['Read', 'Glob', 'Grep', 'NotebookRead'])
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+}
+
+export interface ToolRequest {
+  id: string
+  name: string
+  input: Record<string, unknown>
+  summary: string
+  needsApproval: boolean
+}
+
+export interface ToolExecutionResult {
+  content: string
+  isError: boolean
 }
 
 export interface AgentEvents {
@@ -57,104 +55,136 @@ export interface AgentEvents {
 }
 
 export interface AgentApproval {
+  /** Pergunta ao usuário se uma tool destrutiva pode rodar. */
   requestApproval(request: ToolRequest): Promise<boolean>
 }
 
 export interface RunAgentOptions {
-  client: Anthropic
-  model: string
-  initialMessages: ChatMessage[]
+  prompt: string
   projectRoot: string | null
-  isOAuth: boolean
   events: AgentEvents
   approval: AgentApproval
-  shouldAbort: () => boolean
+  abortController: AbortController
+  /** true no primeiro turno do projeto; demais turnos usam continue:true */
+  continueSession: boolean
 }
 
 /**
- * Executa um turno do agente. Faz streaming de texto, executa tools enfileiradas,
- * repete até `stop_reason !== 'tool_use'` ou cap de rodadas.
+ * Roda um turno do agente. `prompt` é só a mensagem atual do usuário;
+ * o SDK persiste o histórico por sessão (chave = cwd) quando passamos
+ * `continue: true`.
  */
 export async function runAgent(opts: RunAgentOptions): Promise<void> {
-  const claudeCodePrefix = opts.isOAuth
-    ? `You are Claude Code, Anthropic's official CLI for Claude.\n\n`
-    : ''
-  const systemPrompt = `${claudeCodePrefix}${AGENT_SYSTEM_PROMPT}`
-
-  const conversation: Anthropic.MessageParam[] = opts.initialMessages.map((msg) => ({
-    role: msg.role,
-    content: msg.content,
-  }))
-
-  const ctx: ToolContext = {
-    projectRoot: opts.projectRoot,
-    anthropicClient: opts.client,
-    announce: opts.events.onToolRequest,
-    requestApproval: opts.approval.requestApproval,
-    notifyExecuted: opts.events.onToolExecuted,
+  const queryOptions: Options = {
+    cwd: opts.projectRoot ?? undefined,
+    systemPrompt: { type: 'preset', preset: 'claude_code', append: AGENT_SYSTEM_PROMPT },
+    continue: opts.continueSession || undefined,
+    abortController: opts.abortController,
+    canUseTool: async (toolName, input) => {
+      if (APPROVED_AUTO_TOOLS.has(toolName)) {
+        return { behavior: 'allow', updatedInput: input } as PermissionResult
+      }
+      const request: ToolRequest = {
+        id: makeId(),
+        name: toolName,
+        input,
+        summary: buildSummary(toolName, input),
+        needsApproval: true,
+      }
+      opts.events.onToolRequest(request)
+      const approved = await opts.approval.requestApproval(request)
+      if (!approved) {
+        const denied: ToolExecutionResult = {
+          content: 'Usuário negou esta operação.',
+          isError: true,
+        }
+        opts.events.onToolExecuted(request.id, denied)
+        return { behavior: 'deny', message: 'Usuário negou esta operação.' } as PermissionResult
+      }
+      return { behavior: 'allow', updatedInput: input } as PermissionResult
+    },
   }
 
   try {
-    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      if (opts.shouldAbort()) {
-        opts.events.onDone('aborted')
-        return
-      }
-
-      const stream = opts.client.messages.stream({
-        model: opts.model,
-        max_tokens: 4096,
-        system: systemPrompt,
-        tools: TOOL_SCHEMAS,
-        messages: conversation,
-      })
-
-      for await (const event of stream) {
-        if (opts.shouldAbort()) {
-          stream.controller.abort()
-          opts.events.onDone('aborted')
-          return
-        }
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          opts.events.onTextChunk(event.delta.text)
-        }
-      }
-
-      const finalMessage = await stream.finalMessage()
-
-      // Adiciona a resposta do assistente ao histórico (texto + tool_use)
-      conversation.push({ role: 'assistant', content: finalMessage.content })
-
-      const toolUses = finalMessage.content.filter(
-        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
-      )
-
-      if (toolUses.length === 0 || finalMessage.stop_reason !== 'tool_use') {
-        opts.events.onDone(finalMessage.stop_reason ?? null)
-        return
-      }
-
-      // Executa cada tool, coleta tool_result blocks
-      const toolResults: Anthropic.ToolResultBlockParam[] = []
-      for (const toolUse of toolUses) {
-        if (opts.shouldAbort()) {
-          opts.events.onDone('aborted')
-          return
-        }
-        const execution = await executeTool(toolUse.id, toolUse.name, toolUse.input, ctx)
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: toolUse.id,
-          content: execution.content,
-          is_error: execution.isError,
-        })
-      }
-
-      conversation.push({ role: 'user', content: toolResults })
+    const q = query({ prompt: opts.prompt, options: queryOptions })
+    for await (const message of q) {
+      handleSdkMessage(message, opts.events)
     }
-
-    opts.events.onError(new Error(`Limite de ${MAX_TOOL_ROUNDS} rodadas de ferramentas atingido.`))
   } catch (err) {
     opts.events.onError(err)
   }
+}
+
+function handleSdkMessage(message: unknown, events: AgentEvents): void {
+  const msg = message as { type?: string }
+  if (!msg || typeof msg.type !== 'string') return
+
+  switch (msg.type) {
+    case 'assistant': {
+      const blocks = (msg as { message?: { content?: Array<{ type?: string; text?: string }> } })
+        .message?.content
+      if (!blocks) return
+      for (const block of blocks) {
+        if (block.type === 'text' && typeof block.text === 'string') {
+          events.onTextChunk(block.text)
+        }
+      }
+      return
+    }
+    case 'user': {
+      // Mensagens 'user' que voltam carregam tool_result blocks da execução
+      const blocks = (msg as { message?: { content?: unknown[] } }).message?.content
+      if (!Array.isArray(blocks)) return
+      for (const block of blocks) {
+        const b = block as { type?: string; tool_use_id?: string; content?: unknown; is_error?: boolean }
+        if (b.type === 'tool_result' && typeof b.tool_use_id === 'string') {
+          const content = stringifyToolResult(b.content)
+          events.onToolExecuted(b.tool_use_id, { content, isError: b.is_error === true })
+        }
+      }
+      return
+    }
+    case 'result': {
+      const stopReason = (msg as { subtype?: string }).subtype ?? null
+      events.onDone(stopReason)
+      return
+    }
+    default:
+      return
+  }
+}
+
+function stringifyToolResult(content: unknown): string {
+  if (typeof content === 'string') return content
+  if (Array.isArray(content)) {
+    return content
+      .map((b) => {
+        const block = b as { type?: string; text?: string }
+        if (block.type === 'text' && typeof block.text === 'string') return block.text
+        return JSON.stringify(b)
+      })
+      .join('\n')
+  }
+  return JSON.stringify(content)
+}
+
+function buildSummary(toolName: string, input: Record<string, unknown>): string {
+  const path = typeof input['file_path'] === 'string' ? input['file_path'] : ''
+  const command = typeof input['command'] === 'string' ? input['command'] : ''
+  switch (toolName) {
+    case 'Write':
+      return `Criar/sobrescrever ${path}`
+    case 'Edit':
+      return `Editar ${path}`
+    case 'NotebookEdit':
+      return `Editar notebook ${path}`
+    case 'Bash':
+      return `Executar: ${command}`
+    default:
+      return toolName
+  }
+}
+
+function makeId(): string {
+  return `tool_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }

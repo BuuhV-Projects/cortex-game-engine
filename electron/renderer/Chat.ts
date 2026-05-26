@@ -1,3 +1,5 @@
+import { AiToolRequest } from "./types";
+
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string

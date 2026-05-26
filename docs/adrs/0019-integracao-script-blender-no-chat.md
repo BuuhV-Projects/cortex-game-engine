@@ -1,7 +1,7 @@
 # 0019 - Integração ScriptGenerator e BlenderModelGenerator no Chat IA
 
 **Data:** 2026-05-25
-**Status:** aceito (implementa PRD-0002)
+**Status:** superseded por ADR-0020 (agent SDK não precisa de generators custom — Write/Bash cobre os casos)
 
 ## Contexto
 

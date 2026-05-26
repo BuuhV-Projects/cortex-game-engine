@@ -1,7 +1,7 @@
 # 0017 - Tool use no Chat IA com sandbox de projeto
 
 **Data:** 2026-05-25
-**Status:** aceito (implementa PRD-0002)
+**Status:** superseded por ADR-0020 (migração para @anthropic-ai/claude-agent-sdk)
 
 ## Contexto
 

@@ -2,11 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, resolve } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir, rename, rm } from 'fs/promises'
 import { spawn, ChildProcess } from 'child_process'
-import Anthropic from '@anthropic-ai/sdk'
-import { homedir } from 'os'
-import { existsSync, readFileSync } from 'fs'
 import { runAgent } from './agent/agentLoop.js'
-import type { ToolRequest, ToolExecutionResult } from './agent/tools.js'
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
 let mainWindow: BrowserWindow | null = null
@@ -466,44 +462,16 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
   })
 })
 
-// Chat IA — envia o histórico para Claude e faz streaming dos chunks de volta
-// para o renderer via canais ai:chunk / ai:done / ai:error (ADR-0014).
-const OAUTH_BETA_HEADER = 'oauth-2025-04-20'
+// Chat IA — usa @anthropic-ai/claude-agent-sdk como backend. Auth (OAuth do
+// Claude Code OU ANTHROPIC_API_KEY) é gerenciada pelo próprio SDK. ADR-0014
+// + ADR-0017 V2.
 
-/**
- * Resolve a autenticação para o SDK Anthropic. Prefere ANTHROPIC_API_KEY;
- * se ausente, tenta usar o accessToken do `~/.claude/.credentials.json`
- * (gerado por `claude login` do Claude Code) como authToken OAuth.
- * Retorna null se nenhuma fonte estiver disponível.
- */
-interface AnthropicClientResult {
-  client: Anthropic
-  isOAuth: boolean
-}
+// Rastreia se já houve uma chamada de query() pra cada projeto. A 2ª em
+// diante usa continue:true para manter contexto do turno anterior. Reseta
+// quando o usuário troca de projeto.
+const sessionStartedFor = new Set<string>()
+let currentAgentAbort: AbortController | null = null
 
-function buildAnthropicClient(): AnthropicClientResult | null {
-  if (process.env['ANTHROPIC_API_KEY']) {
-    return { client: new Anthropic(), isOAuth: false }
-  }
-  const credsPath = join(homedir(), '.claude', '.credentials.json')
-  if (!existsSync(credsPath)) return null
-  try {
-    const raw = readFileSync(credsPath, 'utf-8')
-    const parsed = JSON.parse(raw) as { claudeAiOauth?: { accessToken?: string } }
-    const token = parsed.claudeAiOauth?.accessToken
-    if (!token) return null
-    const oauthClient = new Anthropic({
-      authToken: token,
-      defaultHeaders: { 'anthropic-beta': OAUTH_BETA_HEADER },
-    })
-    return { client: oauthClient, isOAuth: true }
-  } catch {
-    return null
-  }
-}
-
-// Define qual projeto o agente está enxergando. Sem isso, tools de path
-// (list_files, read_file, etc.) recusam executar.
 ipcMain.handle('project:setActive', async (_event, projectDir: unknown) => {
   if (projectDir === null || projectDir === undefined) {
     currentProjectDir = null
@@ -522,18 +490,19 @@ ipcMain.handle('ai:tool_decision', async (_event, id: unknown, approved: unknown
   pending.resolve(approved)
 })
 
-// Cancela o turno do agente em andamento. Tools pendentes ficam marcadas
-// como negadas; o stream em curso é abortado.
+// Cancela o turno do agente em andamento. Aborta o controller passado ao
+// SDK e resolve as aprovações pendentes como negadas.
 ipcMain.handle('ai:cancel', async () => {
   agentAborted = true
+  currentAgentAbort?.abort()
   for (const [id, pending] of pendingApprovals) {
     pendingApprovals.delete(id)
     pending.resolve(false)
   }
 })
 
-// Turno do agente: recebe histórico, faz streaming de texto, executa tools
-// com aprovação, repete até stop_reason !== 'tool_use' (ADR-0017).
+// Turno do agente: extrai a última mensagem do usuário, delega ao SDK
+// (que gerencia stream, tools e sessão), traduz eventos pro renderer.
 ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
   if (!Array.isArray(messages)) {
     mainWindow?.webContents.send('ai:error', { message: 'messages deve ser array' })
@@ -545,87 +514,61 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
     })
     return
   }
-
-  const auth = buildAnthropicClient()
-  if (!auth) {
-    mainWindow?.webContents.send('ai:error', {
-      message:
-        'Sem credencial: defina ANTHROPIC_API_KEY ou rode `claude login` para usar a subscription.',
-    })
+  const history = messages as Array<{ role: 'user' | 'assistant'; content: string }>
+  const lastUserMessage = [...history].reverse().find((m) => m.role === 'user')?.content
+  if (!lastUserMessage) {
+    mainWindow?.webContents.send('ai:error', { message: 'Sem mensagem do usuário pra enviar.' })
     return
   }
 
   agentRunning = true
   agentAborted = false
+  const abortController = new AbortController()
+  currentAgentAbort = abortController
+
+  const sessionKey = currentProjectDir ?? '<no-project>'
+  const continueSession = sessionStartedFor.has(sessionKey)
 
   try {
     await runAgent({
-      client: auth.client,
-      model: 'claude-sonnet-4-5',
-      initialMessages: messages as Array<{ role: 'user' | 'assistant'; content: string }>,
+      prompt: lastUserMessage,
       projectRoot: currentProjectDir,
-      isOAuth: auth.isOAuth,
+      continueSession,
+      abortController,
       events: {
         onTextChunk(text) {
           mainWindow?.webContents.send('ai:chunk', { text })
         },
-        onToolRequest(request: ToolRequest) {
+        onToolRequest(request) {
           mainWindow?.webContents.send('ai:tool_request', request)
         },
-        onToolExecuted(id: string, result: ToolExecutionResult) {
+        onToolExecuted(id, result) {
           mainWindow?.webContents.send('ai:tool_executed', { id, result })
         },
         onDone(stopReason) {
           mainWindow?.webContents.send('ai:done', { stopReason })
         },
         onError(err) {
-          mainWindow?.webContents.send('ai:error', { message: formatAnthropicError(err) })
+          const message = err instanceof Error ? err.message : String(err)
+          mainWindow?.webContents.send('ai:error', { message })
         },
       },
       approval: {
-        async requestApproval(request: ToolRequest) {
+        async requestApproval(request) {
           if (agentAborted) return false
-          // O card já foi enviado via events.onToolRequest (announce). Aqui
-          // só esperamos a decisão do usuário que vai chegar por ai:tool_decision.
           return new Promise<boolean>((resolveApproval) => {
             pendingApprovals.set(request.id, { resolve: resolveApproval })
           })
         },
       },
-      shouldAbort: () => agentAborted,
     })
+    sessionStartedFor.add(sessionKey)
   } finally {
     agentRunning = false
+    currentAgentAbort = null
     pendingApprovals.clear()
   }
 })
-
-function formatAnthropicError(err: unknown): string {
-  if (err instanceof Anthropic.APIError) {
-    const status = err.status
-    const headers = (err.headers ?? {}) as Record<string, string | undefined>
-    const retryAfter = headers['retry-after']
-    const resetUnified = headers['anthropic-ratelimit-unified-5h-reset']
-    const remainingUnified = headers['anthropic-ratelimit-unified-5h-remaining']
-
-    if (status === 429) {
-      const parts: string[] = ['429 rate limit atingido.']
-      if (retryAfter) parts.push(`retry-after: ${retryAfter}s`)
-      if (resetUnified) {
-        const resetDate = new Date(Number(resetUnified) * 1000)
-        if (!Number.isNaN(resetDate.getTime())) {
-          parts.push(`janela 5h reseta em ${resetDate.toLocaleString()}`)
-        }
-      }
-      if (remainingUnified) parts.push(`restante na janela: ${remainingUnified}`)
-      parts.push('(token OAuth compartilha cota com o Claude Code CLI)')
-      return parts.join(' | ')
-    }
-
-    return `${status} ${err.message}`
-  }
-  return err instanceof Error ? err.message : String(err)
-}
 
 // Mata o comando do terminal em execução, se houver
 ipcMain.handle('terminal:stop', async () => {
