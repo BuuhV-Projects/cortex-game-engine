@@ -154,15 +154,20 @@ export class Chat {
 
   private renderAuthBanner(): void {
     if (!this.authBannerEl) return
+    this.authBannerEl.style.display = ''
+    this.authBannerEl.innerHTML = ''
+
     if (this.authMethod === 'none') {
-      this.authBannerEl.style.display = ''
       this.authBannerEl.classList.add('chat-auth-banner--warn')
       this.authBannerEl.classList.remove('chat-auth-banner--info')
-      this.authBannerEl.innerHTML = ''
 
       const msg = document.createElement('span')
       msg.className = 'chat-auth-banner-msg'
       msg.textContent = 'Sem credencial Claude. Faça login para usar o chat.'
+      this.authBannerEl.appendChild(msg)
+
+      const actions = document.createElement('div')
+      actions.className = 'chat-auth-banner-actions'
 
       const loginBtn = document.createElement('button')
       loginBtn.className = 'chat-auth-banner-btn'
@@ -174,12 +179,27 @@ export class Chat {
       recheckBtn.textContent = 'Verificar'
       recheckBtn.addEventListener('click', () => void this.refreshAuth())
 
-      this.authBannerEl.appendChild(msg)
-      this.authBannerEl.appendChild(loginBtn)
-      this.authBannerEl.appendChild(recheckBtn)
+      actions.appendChild(loginBtn)
+      actions.appendChild(recheckBtn)
+      this.authBannerEl.appendChild(actions)
     } else {
-      this.authBannerEl.style.display = 'none'
-      this.authBannerEl.innerHTML = ''
+      // Credencial presente: barra compacta com método + botão de troca.
+      this.authBannerEl.classList.add('chat-auth-banner--info')
+      this.authBannerEl.classList.remove('chat-auth-banner--warn')
+
+      const msg = document.createElement('span')
+      msg.className = 'chat-auth-banner-msg'
+      const label = this.authMethod === 'oauth' ? 'OAuth (Claude Code)' : 'ANTHROPIC_API_KEY'
+      msg.textContent = `Autenticado · ${label}`
+
+      const switchBtn = document.createElement('button')
+      switchBtn.className = 'chat-auth-banner-btn chat-auth-banner-btn--secondary'
+      switchBtn.textContent = 'Trocar conta'
+      switchBtn.title = 'Fazer login em outra conta Claude'
+      switchBtn.addEventListener('click', () => void this.handleLogin())
+
+      this.authBannerEl.appendChild(msg)
+      this.authBannerEl.appendChild(switchBtn)
     }
   }
 

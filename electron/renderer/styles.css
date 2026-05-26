@@ -926,20 +926,31 @@ body {
 
 .chat-auth-banner {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
   background-color: var(--od-bg-deep);
   border-bottom: 1px solid var(--od-border-soft);
-  font-size: 12px;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 
 .chat-auth-banner--warn {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 12px;
+  font-size: 12px;
   border-left: 3px solid var(--od-yellow);
 }
 
 .chat-auth-banner--info {
   border-left: 3px solid var(--od-accent);
+}
+
+.chat-auth-banner-actions {
+  display: flex;
+  gap: 6px;
 }
 
 .chat-auth-banner-msg {
