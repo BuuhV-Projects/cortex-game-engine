@@ -19,13 +19,15 @@ export class FileTree {
     document.addEventListener('click', () => this.dismissContextMenu())
     if (this.projectDir) {
       // Anuncia o projeto restaurado do localStorage para os demais
-      // componentes (Chat, BottomPanel, Preview) — sem isso o agente roda
-      // sem cwd e acaba tocando arquivos do diretório do processo Electron.
-      document.dispatchEvent(
-        new CustomEvent<{ path: string }>('project-open', {
-          detail: { path: this.projectDir },
-        }),
-      )
+      // componentes (Chat, BottomPanel, Preview). Adia para o próximo
+      // microtask para garantir que os listeners dos outros componentes
+      // já estejam registrados (o FileTree é instanciado/init antes deles).
+      const path = this.projectDir
+      queueMicrotask(() => {
+        document.dispatchEvent(
+          new CustomEvent<{ path: string }>('project-open', { detail: { path } }),
+        )
+      })
       await this.refresh()
     }
   }
