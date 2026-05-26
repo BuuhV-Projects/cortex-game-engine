@@ -868,6 +868,19 @@ body {
   30% { opacity: 1; transform: translateY(-3px); }
 }
 
+/* Linha discreta com stats do turno (tempo, custo, tokens) */
+.chat-turn-stats {
+  font-size: 10.5px;
+  color: var(--od-fg-dim);
+  text-align: right;
+  padding: 0 2px;
+  margin-top: -4px;
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+  letter-spacing: 0.02em;
+  user-select: text;
+  cursor: help;
+}
+
 .chat-message {
   display: flex;
   flex-direction: column;

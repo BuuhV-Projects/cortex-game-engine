@@ -545,8 +545,8 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
         onToolExecuted(id, result) {
           mainWindow?.webContents.send('ai:tool_executed', { id, result })
         },
-        onDone(stopReason) {
-          mainWindow?.webContents.send('ai:done', { stopReason })
+        onDone(stopReason, stats) {
+          mainWindow?.webContents.send('ai:done', { stopReason, stats })
         },
         onError(err) {
           const message = err instanceof Error ? err.message : String(err)

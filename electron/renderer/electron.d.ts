@@ -28,7 +28,7 @@ interface ElectronAPI {
   onTerminalOutput(callback: (text: string) => void): void
   onTerminalDone(callback: (exitCode: number) => void): void
   onAiChunk(callback: (text: string) => void): void
-  onAiDone(callback: () => void): void
+  onAiDone(callback: (payload: { stopReason: string | null; stats: TurnStats | null }) => void): void
   onAiError(callback: (message: string) => void): void
   onAiToolRequest(
     callback: (request: AiToolRequest) => void,
@@ -36,6 +36,14 @@ interface ElectronAPI {
   onAiToolExecuted(
     callback: (payload: { id: string; result: { content: string; isError: boolean } }) => void,
   ): void
+}
+
+interface TurnStats {
+  durationMs: number
+  costUsd: number
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
 }
 
 interface AiToolRequest {

@@ -1,5 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+// Repete a forma de TurnStats do agentLoop — preload é um arquivo compilado
+// separadamente e não importa do main bundle. Mantém em sync manualmente.
+interface TurnStats {
+  durationMs: number
+  costUsd: number
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   // Sistema de arquivos
   readDir: (dirPath: string) =>
@@ -87,8 +97,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('ai:chunk', (_event, payload: { text: string }) => callback(payload.text))
   },
 
-  onAiDone: (callback: () => void) => {
-    ipcRenderer.on('ai:done', () => callback())
+  onAiDone: (callback: (payload: { stopReason: string | null; stats: TurnStats | null }) => void) => {
+    ipcRenderer.on(
+      'ai:done',
+      (_event, payload: { stopReason: string | null; stats: TurnStats | null }) =>
+        callback(payload),
+    )
   },
 
   onAiError: (callback: (message: string) => void) => {

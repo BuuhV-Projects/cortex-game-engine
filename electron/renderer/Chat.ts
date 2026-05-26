@@ -5,6 +5,28 @@ interface ChatMessage {
   content: string
 }
 
+// ── Formatters para a linha de stats do turno ──────────────────────────────
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`
+  const s = ms / 1000
+  if (s < 60) return `${s.toFixed(1)}s`
+  const m = Math.floor(s / 60)
+  const rest = Math.round(s - m * 60)
+  return `${m}m${rest}s`
+}
+
+function formatCost(usd: number): string {
+  if (usd === 0) return 'grátis'
+  if (usd < 0.01) return `$${(usd * 100).toFixed(2)}¢`
+  return `$${usd.toFixed(usd < 1 ? 4 : 2)}`
+}
+
+function formatTokens(n: number): string {
+  if (n < 1000) return String(n)
+  return `${(n / 1000).toFixed(1)}k`
+}
+
 type DisplayItem =
   | { kind: 'message'; role: 'user' | 'assistant'; content: string; el: HTMLElement | null }
   | { kind: 'tool'; request: AiToolRequest; result: { content: string; isError: boolean } | null; el: HTMLElement | null }
@@ -59,7 +81,7 @@ export class Chat {
     this.updateInputState()
 
     window.electronAPI.onAiChunk((text) => this.handleChunk(text))
-    window.electronAPI.onAiDone(() => this.handleDone())
+    window.electronAPI.onAiDone((payload) => this.handleDone(payload.stats))
     window.electronAPI.onAiError((message) => this.handleError(message))
     window.electronAPI.onAiToolRequest((req) => this.handleToolRequest(req))
     window.electronAPI.onAiToolExecuted((p) => this.handleToolExecuted(p.id, p.result))
@@ -204,7 +226,7 @@ export class Chat {
     this.scrollToBottom()
   }
 
-  private handleDone(): void {
+  private handleDone(stats: TurnStats | null): void {
     this.hideThinking()
     if (this.currentTurnAssistantText.length > 0) {
       this.messagesSent.push({ role: 'assistant', content: this.currentTurnAssistantText })
@@ -213,6 +235,22 @@ export class Chat {
     this.liveAssistantItem = null
     this.streaming = false
     this.updateInputState()
+    if (stats) this.appendStats(stats)
+  }
+
+  private appendStats(stats: TurnStats): void {
+    if (!this.messagesEl) return
+    const el = document.createElement('div')
+    el.className = 'chat-turn-stats'
+    el.title =
+      `input: ${stats.inputTokens} tokens\n` +
+      `output: ${stats.outputTokens} tokens\n` +
+      `cache hit: ${stats.cacheReadTokens} tokens`
+    el.textContent =
+      `${formatDuration(stats.durationMs)} · ${formatCost(stats.costUsd)} · ` +
+      `${formatTokens(stats.inputTokens)} in / ${formatTokens(stats.outputTokens)} out`
+    this.messagesEl.appendChild(el)
+    this.scrollToBottom()
   }
 
   private handleError(message: string): void {

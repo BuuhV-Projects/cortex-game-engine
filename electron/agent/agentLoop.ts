@@ -47,11 +47,24 @@ export interface ToolExecutionResult {
   isError: boolean
 }
 
+export interface TurnStats {
+  /** Duração total do turno em milissegundos. */
+  durationMs: number
+  /** Custo estimado em USD (já calculado pelo SDK). */
+  costUsd: number
+  /** Tokens de input enviados (não inclui cache hits). */
+  inputTokens: number
+  /** Tokens de output gerados. */
+  outputTokens: number
+  /** Tokens lidos do cache (mais baratos). */
+  cacheReadTokens: number
+}
+
 export interface AgentEvents {
   onTextChunk(text: string): void
   onToolRequest(request: ToolRequest): void
   onToolExecuted(id: string, result: ToolExecutionResult): void
-  onDone(stopReason: string | null): void
+  onDone(stopReason: string | null, stats: TurnStats | null): void
   onError(err: unknown): void
 }
 
@@ -153,8 +166,27 @@ function handleSdkMessage(message: unknown, events: AgentEvents): void {
       return
     }
     case 'result': {
-      const stopReason = (msg as { subtype?: string }).subtype ?? null
-      events.onDone(stopReason)
+      const m = msg as {
+        subtype?: string
+        duration_ms?: number
+        total_cost_usd?: number
+        usage?: {
+          input_tokens?: number
+          output_tokens?: number
+          cache_read_input_tokens?: number
+        }
+      }
+      const stats: TurnStats | null =
+        typeof m.duration_ms === 'number'
+          ? {
+              durationMs: m.duration_ms,
+              costUsd: typeof m.total_cost_usd === 'number' ? m.total_cost_usd : 0,
+              inputTokens: m.usage?.input_tokens ?? 0,
+              outputTokens: m.usage?.output_tokens ?? 0,
+              cacheReadTokens: m.usage?.cache_read_input_tokens ?? 0,
+            }
+          : null
+      events.onDone(m.subtype ?? null, stats)
       return
     }
     default:
