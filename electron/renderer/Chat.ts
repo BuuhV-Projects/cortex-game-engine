@@ -1,5 +1,5 @@
-import { AiToolRequest } from "./types";
-import { renderMarkdown } from "./markdown";
+import type { AiToolRequest, TurnStats } from './types'
+import { renderMarkdown } from './markdown'
 
 interface ChatMessage {
   role: 'user' | 'assistant'

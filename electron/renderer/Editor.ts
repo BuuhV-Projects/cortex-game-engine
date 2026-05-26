@@ -1,6 +1,28 @@
 import * as monaco from 'monaco-editor'
 import { getThemeName } from './theme'
 
+/**
+ * O barrel principal do `monaco-editor` exporta `monaco.languages.typescript`
+ * como `{ deprecated: true }` para sinalizar que existem submódulos com APIs
+ * mais novas. As APIs continuam disponíveis em runtime (usadas pelo plugin
+ * vite-plugin-monaco-editor), só perderam a tipagem aqui. Esse cast acessa
+ * `typescriptDefaults`/`javascriptDefaults` e os enums (`ModuleResolutionKind`
+ * etc.) sem ter que repetir `as any` em cada chamada.
+ */
+type MonacoTypeScript = {
+  typescriptDefaults: {
+    getCompilerOptions(): Record<string, unknown>
+    setCompilerOptions(opts: Record<string, unknown>): void
+    setDiagnosticsOptions(opts: { noSemanticValidation?: boolean; noSyntaxValidation?: boolean }): void
+    addExtraLib(content: string, path: string): void
+  }
+  javascriptDefaults: {
+    setDiagnosticsOptions(opts: { noSemanticValidation?: boolean; noSyntaxValidation?: boolean }): void
+  }
+  ModuleResolutionKind: { NodeJs: number; Classic: number }
+}
+const monacoTs = monaco.languages.typescript as unknown as MonacoTypeScript
+
 // Mapeia extensão de arquivo para a linguagem reconhecida pelo Monaco
 const LANGUAGE_BY_EXT: Record<string, string> = {
   ts: 'typescript',
@@ -79,9 +101,9 @@ export class Editor {
     // como /D:/projeto/main.ts e os types virtuais estão em /node_modules/.
     // O resolver pode parar no drive (/D:/) e não subir até /, falhando.
     // Mapeamos explicitamente via paths + baseUrl para forçar a resolução.
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      ...monaco.languages.typescript.typescriptDefaults.getCompilerOptions(),
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+    monacoTs.typescriptDefaults.setCompilerOptions({
+      ...monacoTs.typescriptDefaults.getCompilerOptions(),
+      moduleResolution: monacoTs.ModuleResolutionKind.NodeJs,
       baseUrl: '/',
       paths: {
         'cortex-game-engine': ['/node_modules/cortex-game-engine/index.d.ts'],
@@ -97,11 +119,11 @@ export class Editor {
     // tem acesso ao node_modules do projeto aberto, então imports
     // não-vendoriados gerariam ruído. Autocomplete via Ctrl+Space continua
     // funcionando para os tipos alimentados via addExtraLib.
-    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    monacoTs.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,
       noSyntaxValidation: false,
     })
-    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+    monacoTs.javascriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,
       noSyntaxValidation: false,
     })
@@ -290,7 +312,7 @@ export class Editor {
       for (const { path, content, navigable } of files) {
         // addExtraLib é essencial para que o TS service resolva `import 'X'`
         // — sem isso o módulo nem é encontrado.
-        monaco.languages.typescript.typescriptDefaults.addExtraLib(content, path)
+        monacoTs.typescriptDefaults.addExtraLib(content, path)
         // createModel adicional só para os arquivos do engine (poucos) —
         // viabiliza Ctrl+click. Para @types/three (~946 arquivos) cair aqui
         // estoura o limite de 200 listeners do Monaco.

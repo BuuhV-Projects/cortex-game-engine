@@ -1,4 +1,5 @@
 import { customPrompt } from './customPrompt'
+import type { FileEntry } from './types'
 
 const STORAGE_KEY = 'fileTree_projectDir'
 
