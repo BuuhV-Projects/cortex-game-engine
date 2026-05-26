@@ -1103,10 +1103,85 @@ body.app-preview-fullscreen #preview-container {
   line-height: 1.5;
 }
 
-/* Mensagens do usuário continuam usando white-space pre-wrap pra preservar
-   quebras manuais — não passam pelo markdown render. */
-.chat-message--user .chat-message-content {
+/* Texto plano do usuário preserva quebras manuais (pre-wrap). O wrapper
+   .chat-message-text também recebe pre-wrap para o caso de coexistir com
+   chips de anexo na mesma mensagem. */
+.chat-message--user .chat-message-text {
   white-space: pre-wrap;
+}
+
+/* Chip inline numa mensagem do usuário já enviada (representa [imagem: path]) */
+.chat-message-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--od-bg-panel);
+  border: 1px solid var(--od-border-soft);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--od-fg-muted);
+  margin: 2px 0;
+}
+
+.chat-message-attachment + .chat-message-attachment {
+  margin-left: 4px;
+}
+
+.chat-message-attachment-icon {
+  font-size: 12px;
+}
+
+/* Linha de anexos pendentes acima do textarea — chips com thumbnail */
+.chat-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px 0;
+  border-top: 1px solid var(--od-border-soft);
+}
+
+.chat-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--od-bg-panel);
+  border: 1px solid var(--od-border-strong);
+  border-radius: 6px;
+  padding: 3px 8px 3px 4px;
+  font-size: 11px;
+  color: var(--od-fg);
+}
+
+.chat-attachment-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  background-color: var(--od-bg);
+}
+
+.chat-attachment-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-attachment-close {
+  background: transparent;
+  border: none;
+  color: var(--od-fg-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.chat-attachment-close:hover {
+  background-color: var(--od-bg-selected);
+  color: var(--od-fg);
 }
 
 /* ── Markdown rendering dentro de .chat-message-content ─────────────────── */

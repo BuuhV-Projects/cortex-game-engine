@@ -28,6 +28,22 @@ function formatTokens(n: number): string {
   return `${(n / 1000).toFixed(1)}k`
 }
 
+/**
+ * Separa as referências `[imagem: <path>]` do resto do texto numa mensagem
+ * do usuário. Usado na renderização: anexos viram chips visuais, texto
+ * remanescente fica como texto plano.
+ */
+function extractImageRefs(content: string): { textOnly: string; attachments: string[] } {
+  const attachments: string[] = []
+  const textOnly = content
+    .replace(/\[imagem:\s*([^\]]+)\]\s*\n?/g, (_match, path: string) => {
+      attachments.push(path.trim())
+      return ''
+    })
+    .trim()
+  return { textOnly, attachments }
+}
+
 // Tools read-only — não mudam o filesystem, então não disparam refresh
 // na sidebar. Qualquer outra tool é tratada como possível mutação.
 const READONLY_TOOLS = new Set(['Read', 'Glob', 'Grep', 'NotebookRead'])
@@ -77,6 +93,14 @@ export class Chat {
   private projectDir: string | null = null
   private streaming = false
   private collapsed = false
+
+  /** Imagens coladas (Ctrl+V) que vão junto na próxima mensagem. */
+  private pendingAttachments: Array<{
+    path: string
+    fileName: string
+    previewUrl: string
+  }> = []
+  private attachmentsEl: HTMLElement | null = null
   /** 'ask' pede aprovação por tool (default); 'auto' aprova tudo direto. */
   private mode: 'ask' | 'auto' = (localStorage.getItem('chat_mode') as 'ask' | 'auto') ?? 'ask'
   private modeToggleEl: HTMLButtonElement | null = null
@@ -108,6 +132,7 @@ export class Chat {
         this.items = []
         this.currentTurnAssistantText = ''
         this.liveAssistantItem = null
+        this.clearAttachments()
         void window.electronAPI.setActiveProject(path)
         void this.loadHistory(path)
       }
@@ -141,13 +166,11 @@ export class Chat {
   }
 
   /**
-   * Salva uma imagem colada (Ctrl+V) em <projeto>/.cortex/paste/ e injeta
-   * uma referência `[imagem: <path>]` no textarea. A IA tem instrução no
-   * system prompt para usar Read no path antes de responder (Read em imagem
-   * retorna content block multimodal pro modelo).
+   * Salva uma imagem colada (Ctrl+V) em <projeto>/.cortex/paste/ e adiciona
+   * um chip de anexo acima do textarea (estilo Claude). A IA tem instrução
+   * no system prompt para usar Read no path antes de responder.
    */
   private async handlePastedImage(file: File): Promise<void> {
-    if (!this.inputEl) return
     if (!this.projectDir) {
       alert('Abra um projeto antes de colar imagens.')
       return
@@ -160,17 +183,69 @@ export class Chat {
         reader.readAsDataURL(file)
       })
       const relPath = await window.electronAPI.saveClipboardImage(dataUrl)
-      const insertion = `[imagem: ${relPath}]\n`
-      const current = this.inputEl.value
-      const cursor = this.inputEl.selectionStart ?? current.length
-      this.inputEl.value = current.slice(0, cursor) + insertion + current.slice(cursor)
-      const next = cursor + insertion.length
-      this.inputEl.selectionStart = next
-      this.inputEl.selectionEnd = next
-      this.inputEl.focus()
+      const fileName = relPath.split('/').pop() ?? relPath
+      // URL.createObjectURL gera URL temporária só pra preview no chip.
+      // Revogada quando o chip é removido ou a mensagem é enviada.
+      const previewUrl = URL.createObjectURL(file)
+      this.pendingAttachments.push({ path: relPath, fileName, previewUrl })
+      this.renderAttachments()
+      this.inputEl?.focus()
     } catch (err) {
       alert(`Erro ao colar imagem: ${String(err)}`)
     }
+  }
+
+  private renderAttachments(): void {
+    if (!this.attachmentsEl) return
+    this.attachmentsEl.innerHTML = ''
+    if (this.pendingAttachments.length === 0) {
+      this.attachmentsEl.style.display = 'none'
+      return
+    }
+    this.attachmentsEl.style.display = ''
+    for (let i = 0; i < this.pendingAttachments.length; i++) {
+      const att = this.pendingAttachments[i]
+      const chip = document.createElement('div')
+      chip.className = 'chat-attachment'
+
+      const img = document.createElement('img')
+      img.className = 'chat-attachment-thumb'
+      img.src = att.previewUrl
+      img.alt = att.fileName
+
+      const label = document.createElement('span')
+      label.className = 'chat-attachment-name'
+      label.textContent = att.fileName
+
+      const close = document.createElement('button')
+      close.type = 'button'
+      close.className = 'chat-attachment-close'
+      close.title = 'Remover anexo'
+      close.textContent = '×'
+      const idx = i
+      close.addEventListener('click', () => this.removeAttachment(idx))
+
+      chip.appendChild(img)
+      chip.appendChild(label)
+      chip.appendChild(close)
+      this.attachmentsEl.appendChild(chip)
+    }
+  }
+
+  private removeAttachment(index: number): void {
+    const att = this.pendingAttachments[index]
+    if (att) URL.revokeObjectURL(att.previewUrl)
+    this.pendingAttachments.splice(index, 1)
+    this.renderAttachments()
+  }
+
+  /** Limpa todos os anexos pendentes (após enviar ou ao trocar projeto). */
+  private clearAttachments(): void {
+    for (const att of this.pendingAttachments) {
+      URL.revokeObjectURL(att.previewUrl)
+    }
+    this.pendingAttachments = []
+    this.renderAttachments()
   }
 
   // ── Modo do agente: ask (default, pede aprovação) vs auto (aprova tudo) ──
@@ -265,6 +340,13 @@ export class Chat {
     messages.innerHTML = '<p class="chat-empty">Pergunte algo sobre o projeto.</p>'
     this.messagesEl = messages
 
+    // Linha de anexos (imagens coladas) — fica acima do textarea quando há
+    // anexos pendentes. Escondida por default.
+    const attachments = document.createElement('div')
+    attachments.className = 'chat-attachments'
+    attachments.style.display = 'none'
+    this.attachmentsEl = attachments
+
     const inputRow = document.createElement('div')
     inputRow.className = 'chat-input-row'
 
@@ -311,6 +393,7 @@ export class Chat {
 
     this.container.appendChild(header)
     this.container.appendChild(messages)
+    this.container.appendChild(attachments)
     this.container.appendChild(inputRow)
   }
 
@@ -326,11 +409,24 @@ export class Chat {
   private async send(): Promise<void> {
     if (!this.inputEl || this.streaming) return
     const text = this.inputEl.value.trim()
-    if (!text) return
+    // Permite enviar só com anexo (sem texto) — IA ainda dá Read na imagem
+    if (!text && this.pendingAttachments.length === 0) return
+
+    // Prefixa o conteúdo com [imagem: <path>] por anexo — a IA lê esses
+    // paths via Read antes de responder (instrução no system prompt).
+    const attachmentPrefix = this.pendingAttachments
+      .map((a) => `[imagem: ${a.path}]`)
+      .join('\n')
+    const finalContent = attachmentPrefix
+      ? text
+        ? `${attachmentPrefix}\n${text}`
+        : attachmentPrefix
+      : text
 
     this.inputEl.value = ''
-    this.messagesSent.push({ role: 'user', content: text })
-    this.appendItem({ kind: 'message', role: 'user', content: text, el: null })
+    this.messagesSent.push({ role: 'user', content: finalContent })
+    this.appendItem({ kind: 'message', role: 'user', content: finalContent, el: null })
+    this.clearAttachments()
     this.currentTurnAssistantText = ''
     this.liveAssistantItem = null
     this.streaming = true
@@ -482,12 +578,31 @@ export class Chat {
     roleEl.textContent = role === 'user' ? 'Você' : 'Assistente'
     const contentEl = document.createElement('div')
     contentEl.className = 'chat-message-content'
-    // Mensagens do assistente são markdown; do usuário ficam como texto plano
-    // (perguntas curtas, sem formatação).
     if (role === 'assistant') {
+      // Mensagens do assistente são markdown
       contentEl.innerHTML = renderMarkdown(content)
     } else {
-      contentEl.textContent = content
+      // Mensagens do usuário: extrai os [imagem: <path>] e renderiza como
+      // chips inline; o resto do texto fica como texto plano.
+      const { textOnly, attachments } = extractImageRefs(content)
+      for (const path of attachments) {
+        const chip = document.createElement('span')
+        chip.className = 'chat-message-attachment'
+        const icon = document.createElement('span')
+        icon.className = 'chat-message-attachment-icon'
+        icon.textContent = '📎'
+        const name = document.createElement('span')
+        name.textContent = path.split('/').pop() ?? path
+        chip.appendChild(icon)
+        chip.appendChild(name)
+        contentEl.appendChild(chip)
+      }
+      if (textOnly) {
+        const textNode = document.createElement('div')
+        textNode.className = 'chat-message-text'
+        textNode.textContent = textOnly
+        contentEl.appendChild(textNode)
+      }
     }
     el.appendChild(roleEl)
     el.appendChild(contentEl)
