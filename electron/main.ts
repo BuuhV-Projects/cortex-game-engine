@@ -433,6 +433,10 @@ ipcMain.handle('run:start', async (_event, projectDir: unknown) => {
 // stdout/stderr vão para o canal 'terminal:output'; conclusão via
 // 'terminal:done' com { code }.
 ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unknown) => {
+  // Erros síncronos (validação) viram rejeição da Promise; o renderer já pega
+  // no catch e libera o input. Para erros assíncronos (spawn error, cwd
+  // inválido) garantimos que 'terminal:done' SEMPRE dispara — sem isso o
+  // input do terminal trava esperando um done que nunca chega.
   const safeDir = validatePath(projectDir)
   if (typeof command !== 'string' || command.trim() === '') {
     throw new Error('command deve ser uma string não vazia')
@@ -441,6 +445,14 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
   if (terminalProcess) {
     killProcessTree(terminalProcess)
     terminalProcess = null
+  }
+
+  let done = false
+  const emitDone = (code: number): void => {
+    if (done) return
+    done = true
+    terminalProcess = null
+    mainWindow?.webContents.send('terminal:done', { code })
   }
 
   const child = spawn(command, [], {
@@ -457,9 +469,10 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
   child.stdout?.on('data', forwardOutput)
   child.stderr?.on('data', forwardOutput)
 
-  child.on('close', (code) => {
-    terminalProcess = null
-    mainWindow?.webContents.send('terminal:done', { code: code ?? -1 })
+  child.on('close', (code) => emitDone(code ?? -1))
+  child.on('error', (err) => {
+    mainWindow?.webContents.send('terminal:output', `\nErro: ${err.message}\n`)
+    emitDone(-1)
   })
 })
 

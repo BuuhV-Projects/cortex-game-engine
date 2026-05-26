@@ -201,6 +201,9 @@ export class BottomPanel {
     this.updateTerminalButtons()
     try {
       await window.electronAPI.runTerminalCommand(this.projectDir, cmd)
+      // O await retorna logo após o spawn — a duração real do comando é
+      // sinalizada por onTerminalDone (que já reseta terminalRunning).
+      // Aqui só cobrimos o caso de o IPC ter rejeitado (validação síncrona):
     } catch (err) {
       this.appendTerminal(`Erro: ${String(err)}\n`, 'error')
       this.terminalRunning = false

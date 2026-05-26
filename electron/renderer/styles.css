@@ -46,6 +46,19 @@ body {
   background-color: var(--od-accent);
 }
 
+.resizer-horizontal {
+  background-color: var(--od-bg);
+  cursor: row-resize;
+  height: 4px;
+  flex-shrink: 0;
+  transition: background-color 120ms;
+}
+
+.resizer-horizontal:hover,
+.resizer-horizontal:active {
+  background-color: var(--od-accent);
+}
+
 /* Coluna esquerda — explorador de arquivos */
 #sidebar {
   background-color: var(--od-bg-panel);

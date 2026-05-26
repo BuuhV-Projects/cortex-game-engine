@@ -40,6 +40,38 @@ const resizer = new Resizer(app, [rightTarget, chatTarget])
 resizer.attach(document.getElementById('resizer-right') as HTMLElement, rightTarget)
 resizer.attach(document.getElementById('resizer-chat') as HTMLElement, chatTarget)
 
+// Resize vertical entre preview e console/terminal — ajusta a altura do
+// #console-container (que é flex-shrink:0 com height fixa).
+const bottomHandle = document.getElementById('resizer-bottom') as HTMLElement
+const consoleEl = consoleContainer
+const MIN_BOTTOM = 80
+const MAX_BOTTOM_RATIO = 0.85
+let bottomDragStartY = 0
+let bottomDragStartHeight = 0
+bottomHandle.addEventListener('mousedown', (e) => {
+  bottomDragStartY = e.clientY
+  bottomDragStartHeight = consoleEl.getBoundingClientRect().height
+  document.body.style.cursor = 'row-resize'
+  document.body.style.userSelect = 'none'
+  const onMove = (ev: MouseEvent): void => {
+    const panelHeight = (consoleEl.parentElement as HTMLElement).getBoundingClientRect().height
+    const delta = bottomDragStartY - ev.clientY
+    const next = Math.min(
+      Math.max(bottomDragStartHeight + delta, MIN_BOTTOM),
+      panelHeight * MAX_BOTTOM_RATIO,
+    )
+    consoleEl.style.height = `${next}px`
+  }
+  const onUp = (): void => {
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  }
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+})
+
 const COLLAPSED_CHAT_WIDTH = 32
 let chatWidthBeforeCollapse = chatTarget.width
 document.addEventListener('chat-collapsed-change', (e) => {
