@@ -23,8 +23,6 @@ interface ElectronAPI {
   setActiveProject(projectDir: string | null): Promise<void>
   decideToolCall(id: string, approved: boolean): Promise<void>
   cancelChat(): Promise<void>
-  checkAuth(): Promise<{ method: 'api-key' | 'oauth' | 'none'; hasCredential: boolean }>
-  loginClaude(): Promise<{ ok: true } | { ok: false; message: string }>
   onLog(callback: (line: string) => void): void
   onProjectStopped(callback: () => void): void
   onTerminalOutput(callback: (text: string) => void): void

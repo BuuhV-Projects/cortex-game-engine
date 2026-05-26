@@ -5,31 +5,8 @@ import { spawn, ChildProcess } from 'child_process'
 import Anthropic from '@anthropic-ai/sdk'
 import { homedir } from 'os'
 import { existsSync, readFileSync } from 'fs'
-import { createRequire } from 'module'
 import { runAgent } from './agent/agentLoop.js'
 import type { ToolRequest, ToolExecutionResult } from './agent/tools.js'
-
-const requireFromMain = createRequire(__filename)
-
-/**
- * Resolve o caminho do binário do Claude Code instalado como dependência da
- * própria IDE (`node_modules/@anthropic-ai/claude-code`). Retorna null se o
- * pacote não estiver instalado — nesse caso o login cai no `claude` global
- * (se houver no PATH).
- */
-function resolveClaudeBin(): string | null {
-  try {
-    const pkgJsonPath = requireFromMain.resolve('@anthropic-ai/claude-code/package.json')
-    const pkgDir = join(pkgJsonPath, '..')
-    const pkg = requireFromMain(pkgJsonPath) as { bin?: string | Record<string, string> }
-    const binEntry =
-      typeof pkg.bin === 'string' ? pkg.bin : (pkg.bin?.['claude'] ?? null)
-    if (!binEntry) return null
-    return join(pkgDir, binEntry)
-  } catch {
-    return null
-  }
-}
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
 let mainWindow: BrowserWindow | null = null
@@ -524,74 +501,6 @@ function buildAnthropicClient(): AnthropicClientResult | null {
     return null
   }
 }
-
-// Estado de autenticação visível ao renderer (banner do chat). 'oauth' =
-// credencial do Claude Code, 'api-key' = ANTHROPIC_API_KEY no env, 'none' =
-// sem credencial (chat bloqueado, mostra botão de login).
-ipcMain.handle('ai:checkAuth', async () => {
-  if (process.env['ANTHROPIC_API_KEY']) {
-    return { method: 'api-key' as const, hasCredential: true }
-  }
-  const credsPath = join(homedir(), '.claude', '.credentials.json')
-  if (existsSync(credsPath)) {
-    try {
-      const raw = readFileSync(credsPath, 'utf-8')
-      const parsed = JSON.parse(raw) as { claudeAiOauth?: { accessToken?: string } }
-      if (parsed.claudeAiOauth?.accessToken) {
-        return { method: 'oauth' as const, hasCredential: true }
-      }
-    } catch {
-      // fallthrough → none
-    }
-  }
-  return { method: 'none' as const, hasCredential: false }
-})
-
-// Abre uma janela externa de terminal e roda `claude login`. O usuário
-// completa o fluxo OAuth no navegador, cola o código no terminal, e
-// volta ao IDE — quando ele tentar usar o chat de novo (ou clicar
-// "verificar"), as credenciais já estarão em ~/.claude/.credentials.json.
-ipcMain.handle('ai:login', async () => {
-  try {
-    // Prefere o claude instalado como dependencia da IDE
-    // (node_modules/@anthropic-ai/claude-code/<bin>) executado via node, pra
-    // funcionar mesmo sem `claude` no PATH global. Fallback: `claude` do PATH.
-    const claudeBin = resolveClaudeBin()
-    if (process.platform === 'win32') {
-      // Usa PowerShell em vez de cmd — o shim `claude` e o `node` ficam no
-      // PATH do PowerShell mas nem sempre no do cmd. Aspas simples no path
-      // funcionam em PowerShell e não conflitam com as aspas duplas do
-      // `-Command` quando cmd repassa o argumento. `start ""` abre uma
-      // janela nova de console; `-NoExit` mantém aberta após o login.
-      const inner = claudeBin ? `node '${claudeBin}' login` : 'claude login'
-      const cmdLine = `start "" powershell -NoExit -Command "${inner}"`
-      spawn(cmdLine, [], {
-        detached: true,
-        shell: true,
-        stdio: 'ignore',
-      })
-    } else if (process.platform === 'darwin') {
-      const command = claudeBin ? `node '${claudeBin}' login` : 'claude login'
-      spawn(
-        'osascript',
-        ['-e', `tell application "Terminal" to do script "${command}"`],
-        { detached: true, stdio: 'ignore' },
-      )
-    } else {
-      const command = claudeBin ? `node "${claudeBin}" login` : 'claude login'
-      spawn('x-terminal-emulator', ['-e', command], {
-        detached: true,
-        stdio: 'ignore',
-      })
-    }
-    return { ok: true as const }
-  } catch (err) {
-    return {
-      ok: false as const,
-      message: err instanceof Error ? err.message : String(err),
-    }
-  }
-})
 
 // Define qual projeto o agente está enxergando. Sem isso, tools de path
 // (list_files, read_file, etc.) recusam executar.
