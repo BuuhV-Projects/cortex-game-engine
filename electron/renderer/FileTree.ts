@@ -2,15 +2,103 @@ import { customPrompt } from './customPrompt'
 
 const STORAGE_KEY = 'fileTree_projectDir'
 
+/**
+ * Mapeia extensão → glyph curto + classe de cor. Glyphs são caracteres
+ * unicode/curtos pra evitar dep de assets/svg externos. Tones casam com
+ * cores definidas em styles.css (.filetree-file-icon--ts, --js, etc.).
+ */
+function fileIconFor(name: string): { glyph: string; tone: string } {
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  switch (ext) {
+    case 'ts':
+    case 'tsx':
+      return { glyph: 'TS', tone: 'ts' }
+    case 'js':
+    case 'jsx':
+    case 'mjs':
+    case 'cjs':
+      return { glyph: 'JS', tone: 'js' }
+    case 'json':
+      return { glyph: '{}', tone: 'json' }
+    case 'html':
+    case 'htm':
+      return { glyph: '<>', tone: 'html' }
+    case 'css':
+      return { glyph: '#', tone: 'css' }
+    case 'md':
+      return { glyph: 'M↓', tone: 'md' }
+    case 'glb':
+    case 'gltf':
+    case 'obj':
+    case 'fbx':
+      return { glyph: '3D', tone: 'model' }
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
+    case 'gif':
+    case 'svg':
+    case 'webp':
+      return { glyph: '◳', tone: 'img' }
+    case 'lock':
+      return { glyph: '🔒', tone: 'default' }
+    default:
+      return { glyph: '·', tone: 'default' }
+  }
+}
+
 export class FileTree {
   private container: HTMLElement
   private projectDir: string | null = null
   private treeArea: HTMLElement | null = null
   private activeContextMenu: HTMLElement | null = null
 
+  // Header estilo Cursor
+  private headerToggleEl: HTMLButtonElement | null = null
+  private projectLabelEl: HTMLElement | null = null
+  private treeCollapsed = false
+
   constructor(container: HTMLElement) {
     this.container = container
     this.projectDir = localStorage.getItem(STORAGE_KEY)
+  }
+
+  // ── Helpers do header ──────────────────────────────────────────────────────
+
+  private projectLabelText(): string {
+    if (!this.projectDir) return 'Nenhum projeto aberto'
+    const name = this.projectDir.split(/[\\/]/).filter(Boolean).pop() ?? this.projectDir
+    return name.toUpperCase()
+  }
+
+  private makeIconButton(icon: string, title: string, onClick: () => void): HTMLButtonElement {
+    const btn = document.createElement('button')
+    btn.className = 'filetree-icon-btn'
+    btn.type = 'button'
+    btn.title = title
+    btn.setAttribute('aria-label', title)
+    btn.textContent = icon
+    btn.addEventListener('click', onClick)
+    return btn
+  }
+
+  private toggleTreeCollapsed(): void {
+    this.treeCollapsed = !this.treeCollapsed
+    if (this.headerToggleEl) {
+      this.headerToggleEl.textContent = this.treeCollapsed ? '›' : '⌄'
+    }
+    if (this.treeArea) {
+      this.treeArea.style.display = this.treeCollapsed ? 'none' : ''
+    }
+  }
+
+  /** Fecha todas as pastas expandidas sem perder o conteúdo carregado. */
+  private collapseAll(): void {
+    if (!this.treeArea) return
+    for (const li of this.treeArea.querySelectorAll<HTMLLIElement>('.filetree-dir.expanded')) {
+      li.classList.remove('expanded')
+      const child = li.querySelector<HTMLUListElement>(':scope > .filetree-list')
+      if (child) child.style.display = 'none'
+    }
   }
 
   async init(): Promise<void> {
@@ -44,6 +132,7 @@ export class FileTree {
   async openProject(path: string): Promise<void> {
     this.projectDir = path
     localStorage.setItem(STORAGE_KEY, this.projectDir)
+    if (this.projectLabelEl) this.projectLabelEl.textContent = this.projectLabelText()
     await this.refresh()
   }
 
@@ -60,42 +149,61 @@ export class FileTree {
     })
     this.container.appendChild(input)
 
-    // Barra de ferramentas com botão "Abrir Projeto" e "+ Arquivo"
-    const toolbar = document.createElement('div')
-    toolbar.className = 'filetree-toolbar'
+    // ── Sub-toolbar superior: Novo Projeto / Abrir Projeto ─────────────────
+    // ProjectManager.init() injeta o '+ Novo Projeto' como primeiro filho
+    // do container; aqui montamos só o 'Abrir Projeto' abaixo dele.
+    const projectActions = document.createElement('div')
+    projectActions.className = 'filetree-project-actions'
 
     const openBtn = document.createElement('button')
     openBtn.textContent = 'Abrir Projeto'
     openBtn.className = 'filetree-open-btn'
     openBtn.addEventListener('click', () => input.click())
-    toolbar.appendChild(openBtn)
+    projectActions.appendChild(openBtn)
 
-    // "+ Arquivo" — cria arquivo na raiz do projeto ativo (ADR-0011)
-    const newFileBtn = document.createElement('button')
-    newFileBtn.textContent = '+ Arquivo'
-    newFileBtn.className = 'filetree-new-file-btn'
-    newFileBtn.title = 'Criar arquivo na raiz do projeto'
-    newFileBtn.addEventListener('click', () => void this.createFileIn(this.projectDir))
-    toolbar.appendChild(newFileBtn)
+    this.container.appendChild(projectActions)
 
-    // "+ Pasta" — cria pasta na raiz do projeto ativo (ADR-0015)
-    const newDirBtn = document.createElement('button')
-    newDirBtn.textContent = '+ Pasta'
-    newDirBtn.className = 'filetree-new-file-btn'
-    newDirBtn.title = 'Criar pasta na raiz do projeto'
-    newDirBtn.addEventListener('click', () => void this.createDirIn(this.projectDir))
-    toolbar.appendChild(newDirBtn)
+    // ── Header da árvore: chevron + nome do projeto + ações à direita ─────
+    const treeHeader = document.createElement('div')
+    treeHeader.className = 'filetree-tree-header'
 
-    // Refresh — útil quando o agente cria arquivos via tools e o auto-refresh
-    // falha, ou quando algo muda fora do IDE (terminal externo, git pull).
-    const refreshBtn = document.createElement('button')
-    refreshBtn.textContent = '↻'
-    refreshBtn.className = 'filetree-refresh-btn'
-    refreshBtn.title = 'Recarregar árvore'
-    refreshBtn.addEventListener('click', () => void this.refresh())
-    toolbar.appendChild(refreshBtn)
+    const headerToggle = document.createElement('button')
+    headerToggle.className = 'filetree-tree-header-toggle'
+    headerToggle.type = 'button'
+    headerToggle.title = 'Recolher/expandir árvore'
+    headerToggle.textContent = this.treeCollapsed ? '›' : '⌄'
+    headerToggle.addEventListener('click', () => this.toggleTreeCollapsed())
+    this.headerToggleEl = headerToggle
 
-    this.container.appendChild(toolbar)
+    const projectLabel = document.createElement('span')
+    projectLabel.className = 'filetree-project-label'
+    projectLabel.textContent = this.projectLabelText()
+    this.projectLabelEl = projectLabel
+
+    const headerActions = document.createElement('div')
+    headerActions.className = 'filetree-header-actions'
+
+    headerActions.appendChild(
+      this.makeIconButton('📄', 'Novo arquivo na raiz do projeto', () =>
+        void this.createFileIn(this.projectDir),
+      ),
+    )
+    headerActions.appendChild(
+      this.makeIconButton('📁', 'Nova pasta na raiz do projeto', () =>
+        void this.createDirIn(this.projectDir),
+      ),
+    )
+    headerActions.appendChild(
+      this.makeIconButton('↻', 'Recarregar árvore', () => void this.refresh()),
+    )
+    headerActions.appendChild(
+      this.makeIconButton('⇡', 'Recolher todas as pastas', () => this.collapseAll()),
+    )
+
+    treeHeader.appendChild(headerToggle)
+    treeHeader.appendChild(projectLabel)
+    treeHeader.appendChild(headerActions)
+    this.container.appendChild(treeHeader)
 
     // Área da árvore
     const treeArea = document.createElement('div')
@@ -161,6 +269,7 @@ export class FileTree {
   }
 
   private async refresh(): Promise<void> {
+    if (this.projectLabelEl) this.projectLabelEl.textContent = this.projectLabelText()
     if (!this.projectDir || !this.treeArea) return
 
     this.treeArea.innerHTML = '<p class="filetree-loading">Carregando...</p>'
@@ -202,7 +311,21 @@ export class FileTree {
 
     const label = document.createElement('span')
     label.className = 'filetree-label'
-    label.textContent = entry.name
+
+    // Ícone por tipo de arquivo (file-icons estilo Cursor)
+    if (!entry.isDir) {
+      const icon = document.createElement('span')
+      const { glyph, tone } = fileIconFor(entry.name)
+      icon.className = `filetree-file-icon filetree-file-icon--${tone}`
+      icon.textContent = glyph
+      label.appendChild(icon)
+    }
+
+    const name = document.createElement('span')
+    name.className = 'filetree-name'
+    name.textContent = entry.name
+    label.appendChild(name)
+
     li.appendChild(label)
 
     // Context menu (botão direito) — Itens dependem se é pasta ou arquivo

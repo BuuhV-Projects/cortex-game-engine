@@ -394,14 +394,15 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
-/* FileTree                                                            */
+/* FileTree — layout estilo Cursor                                     */
 /* ------------------------------------------------------------------ */
 
-.filetree-toolbar {
+/* Ações de projeto (Novo Projeto, Abrir Projeto) na parte superior */
+.filetree-project-actions {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--od-border-soft);
 }
 
@@ -410,7 +411,7 @@ body {
   border: 1px solid var(--od-border-strong);
   color: var(--od-fg);
   font-size: 12px;
-  padding: 2px 8px;
+  padding: 4px 8px;
   border-radius: 3px;
   cursor: pointer;
   white-space: nowrap;
@@ -421,39 +422,63 @@ body {
   border-color: var(--od-accent);
 }
 
-.filetree-new-file-btn {
+/* Header da árvore: chevron + nome do projeto + ações à direita */
+.filetree-tree-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--od-border-soft);
+  user-select: none;
+}
+
+.filetree-tree-header-toggle {
   background: none;
-  border: 1px solid var(--od-border-strong);
-  color: var(--od-fg);
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 3px;
+  border: none;
+  color: var(--od-fg-muted);
   cursor: pointer;
-  white-space: nowrap;
-  margin-left: 6px;
-}
-
-.filetree-new-file-btn:hover {
-  background-color: var(--od-bg-selected);
-  border-color: var(--od-accent);
-}
-
-.filetree-refresh-btn {
-  background: none;
-  border: 1px solid var(--od-border-strong);
-  color: var(--od-fg);
   font-size: 13px;
-  padding: 2px 7px;
+  padding: 0 2px;
+  line-height: 1;
   border-radius: 3px;
+}
+
+.filetree-tree-header-toggle:hover {
+  background-color: var(--od-bg-selected);
+  color: var(--od-fg);
+}
+
+.filetree-project-label {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--od-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filetree-header-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.filetree-icon-btn {
+  background: none;
+  border: none;
+  color: var(--od-fg-muted);
   cursor: pointer;
-  margin-left: 6px;
+  font-size: 13px;
+  padding: 3px 5px;
+  border-radius: 3px;
   line-height: 1;
 }
 
-.filetree-refresh-btn:hover {
+.filetree-icon-btn:hover {
   background-color: var(--od-bg-selected);
-  border-color: var(--od-accent);
-  color: var(--od-fg-strong, #ffffff);
+  color: var(--od-fg);
 }
 
 .filetree-area {
@@ -497,13 +522,17 @@ body {
 }
 
 .filetree-dir > .filetree-label::before {
-  content: '▶ ';
-  font-size: 10px;
+  content: '›';
+  display: inline-block;
+  width: 12px;
+  font-size: 13px;
   color: var(--od-fg-muted);
+  text-align: center;
+  transition: transform 80ms;
 }
 
 .filetree-dir.expanded > .filetree-label::before {
-  content: '▼ ';
+  transform: rotate(90deg);
 }
 
 .filetree-dir.loading > .filetree-label::after {
@@ -512,18 +541,62 @@ body {
 }
 
 .filetree-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 2px 8px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   font-size: 13px;
   color: var(--od-fg);
 }
 
+/* Arquivos não tem o caret de pasta — alinhamos pra ficarem na mesma coluna
+   visual que os nomes de pastas (12px do caret + 6px do gap). */
+.filetree-file > .filetree-label {
+  padding-left: 26px;
+}
+
+.filetree-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .filetree-label:hover {
   background-color: var(--od-bg-selected);
+}
+
+/* Ícones por tipo de arquivo — chip pequeno, 2 caracteres, monospace, cor */
+.filetree-file-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 14px;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+  border-radius: 2px;
+  flex-shrink: 0;
+  color: #ffffff;
+  background-color: #555;
+}
+
+.filetree-file-icon--ts    { background-color: #3178c6; }
+.filetree-file-icon--js    { background-color: #f0db4f; color: #1a1a1a; }
+.filetree-file-icon--json  { background-color: #5b6770; }
+.filetree-file-icon--html  { background-color: #e44d26; }
+.filetree-file-icon--css   { background-color: #2965f1; }
+.filetree-file-icon--md    { background-color: #6a737d; }
+.filetree-file-icon--model { background-color: #8e44ad; }
+.filetree-file-icon--img   { background-color: #16a085; }
+.filetree-file-icon--default {
+  background-color: transparent;
+  color: var(--od-fg-muted);
+  font-weight: 400;
+  font-size: 12px;
 }
 
 /* ------------------------------------------------------------------ */
