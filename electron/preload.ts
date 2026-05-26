@@ -73,6 +73,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Cancela o turno do agente em andamento
   cancelChat: () => ipcRenderer.invoke('ai:cancel'),
 
+  // Salva imagem do clipboard em .cortex/paste/ e retorna path relativo
+  saveClipboardImage: (dataUrl: string) =>
+    ipcRenderer.invoke('clipboard:saveImage', dataUrl),
+
   // Persistência do histórico de chat por projeto (PRD-0001 V2)
   loadChatHistory: (projectDir: string) =>
     ipcRenderer.invoke('chat:load', projectDir),

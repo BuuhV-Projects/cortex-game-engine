@@ -48,6 +48,12 @@ material, helper que existe em three mas não está re-exportado): \
 - Nunca esconda do usuário que está saindo do padrão do engine — \
 transparência > conveniência.
 
+Imagens coladas pelo usuário:
+- Quando a mensagem contiver \`[imagem: <path>]\`, **leia esse arquivo \
+imediatamente via tool \`Read\`** antes de responder. O Read em arquivos \
+de imagem devolve um image block multimodal — você verá o conteúdo da \
+imagem, não só o caminho. Use o que viu pra orientar sua resposta.
+
 Seja conciso. Não repita o que as ferramentas já mostram no output.`
 
 const APPROVED_AUTO_TOOLS = new Set(['Read', 'Glob', 'Grep', 'NotebookRead'])

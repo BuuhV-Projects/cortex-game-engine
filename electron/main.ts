@@ -537,6 +537,27 @@ ipcMain.handle('chat:save', async (_event, projectDir: unknown, messages: unknow
   await writeFile(file, JSON.stringify(messages), 'utf-8')
 })
 
+// Recebe um dataURL de imagem (do clipboard do usuário) e salva em
+// <projectDir>/.cortex/paste/clipboard_<ts>.<ext>. Retorna o path relativo
+// ao projeto pra ser injetado na mensagem do chat — a IA usa Read pra
+// "ver" a imagem via Claude Agent SDK.
+ipcMain.handle('clipboard:saveImage', async (_event, dataUrl: unknown) => {
+  if (!currentProjectDir) throw new Error('Sem projeto ativo')
+  if (typeof dataUrl !== 'string') throw new Error('dataUrl deve ser string')
+  const match = /^data:image\/([a-z0-9+]+);base64,(.+)$/i.exec(dataUrl)
+  if (!match) throw new Error('dataUrl não é uma imagem base64 válida')
+  const ext = match[1].toLowerCase() === 'jpeg' ? 'jpg' : match[1].toLowerCase()
+  const buf = Buffer.from(match[2], 'base64')
+  const dir = join(currentProjectDir, '.cortex', 'paste')
+  await mkdir(dir, { recursive: true })
+  const filePath = join(dir, `clipboard_${Date.now()}.${ext}`)
+  await writeFile(filePath, buf)
+  // Path relativo POSIX-style — o agente lê melhor com / do que com \
+  return filePath
+    .slice(currentProjectDir.length + 1)
+    .replace(/\\/g, '/')
+})
+
 ipcMain.handle('chat:clear', async (_event, projectDir: unknown) => {
   if (typeof projectDir !== 'string' || projectDir === '') return
   const file = chatHistoryPath(validatePath(projectDir))

@@ -140,6 +140,39 @@ export class Chat {
     void window.electronAPI.saveChatHistory(this.projectDir, this.messagesSent)
   }
 
+  /**
+   * Salva uma imagem colada (Ctrl+V) em <projeto>/.cortex/paste/ e injeta
+   * uma referência `[imagem: <path>]` no textarea. A IA tem instrução no
+   * system prompt para usar Read no path antes de responder (Read em imagem
+   * retorna content block multimodal pro modelo).
+   */
+  private async handlePastedImage(file: File): Promise<void> {
+    if (!this.inputEl) return
+    if (!this.projectDir) {
+      alert('Abra um projeto antes de colar imagens.')
+      return
+    }
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(file)
+      })
+      const relPath = await window.electronAPI.saveClipboardImage(dataUrl)
+      const insertion = `[imagem: ${relPath}]\n`
+      const current = this.inputEl.value
+      const cursor = this.inputEl.selectionStart ?? current.length
+      this.inputEl.value = current.slice(0, cursor) + insertion + current.slice(cursor)
+      const next = cursor + insertion.length
+      this.inputEl.selectionStart = next
+      this.inputEl.selectionEnd = next
+      this.inputEl.focus()
+    } catch (err) {
+      alert(`Erro ao colar imagem: ${String(err)}`)
+    }
+  }
+
   // ── Modo do agente: ask (default, pede aprovação) vs auto (aprova tudo) ──
 
   private toggleMode(): void {
@@ -243,6 +276,18 @@ export class Chat {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
         void this.send()
+      }
+    })
+    input.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault()
+          const file = item.getAsFile()
+          if (file) void this.handlePastedImage(file)
+          return
+        }
       }
     })
     this.inputEl = input

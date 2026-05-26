@@ -26,6 +26,7 @@ interface ElectronAPI {
   setActiveProject(projectDir: string | null): Promise<void>
   decideToolCall(id: string, approved: boolean): Promise<void>
   cancelChat(): Promise<void>
+  saveClipboardImage(dataUrl: string): Promise<string>
   loadChatHistory(projectDir: string): Promise<Array<{ role: 'user' | 'assistant'; content: string }>>
   saveChatHistory(projectDir: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<void>
   clearChatHistory(projectDir: string): Promise<void>
