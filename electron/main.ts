@@ -546,11 +546,12 @@ ipcMain.handle('ai:cancel', async () => {
 
 // Turno do agente: extrai a última mensagem do usuário, delega ao SDK
 // (que gerencia stream, tools e sessão), traduz eventos pro renderer.
-ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
+ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
   if (!Array.isArray(messages)) {
     mainWindow?.webContents.send('ai:error', { message: 'messages deve ser array' })
     return
   }
+  const agentMode = mode === 'auto' ? 'auto' : 'ask'
   if (agentRunning) {
     mainWindow?.webContents.send('ai:error', {
       message: 'Outro turno do agente já está em andamento.',
@@ -585,6 +586,7 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
       prompt: lastUserMessage,
       projectRoot: currentProjectDir,
       continueSession,
+      mode: agentMode,
       abortController,
       events: {
         onTextChunk(text) {

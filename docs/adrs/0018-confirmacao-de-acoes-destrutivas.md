@@ -1,7 +1,21 @@
 # 0018 - Confirmação de ações destrutivas no Chat IA
 
-**Data:** 2026-05-25
+**Data:** 2026-05-25 (atualizada 2026-05-26)
 **Status:** aceito (implementa PRD-0002)
+
+> **Atualização 2026-05-26 — Modos Ask/Auto:** o usuário agora alterna
+> entre dois modos via toggle no header do chat:
+> - **Ask** (default): comportamento original desta ADR. Cada tool
+>   destrutiva gera um card e espera Aprovar/Negar.
+> - **Auto**: aprovação implícita — tools rodam direto, mas os cards
+>   continuam aparecendo (com `needsApproval: false`) para transparência
+>   e histórico. O usuário pode cancelar o turno via "Parar" se algo
+>   sair errado.
+>
+> A preferência persiste em `localStorage('chat_mode')` e o renderer
+> envia o `mode` em cada `ai:chat`. O `canUseTool` no agentLoop honra
+> conforme `opts.mode`. Tools read-only (Read/Glob/Grep/NotebookRead)
+> seguem auto-aprovadas em ambos os modos.
 
 ## Contexto
 

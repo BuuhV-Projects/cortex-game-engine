@@ -76,6 +76,9 @@ export class Chat {
   private projectDir: string | null = null
   private streaming = false
   private collapsed = false
+  /** 'ask' pede aprovação por tool (default); 'auto' aprova tudo direto. */
+  private mode: 'ask' | 'auto' = (localStorage.getItem('chat_mode') as 'ask' | 'auto') ?? 'ask'
+  private modeToggleEl: HTMLButtonElement | null = null
 
   // Indicador "Pensando..." mostrado entre o envio da mensagem e o primeiro
   // chunk de texto ou tool_request. Some assim que qualquer feedback do
@@ -136,6 +139,25 @@ export class Chat {
     void window.electronAPI.saveChatHistory(this.projectDir, this.messagesSent)
   }
 
+  // ── Modo do agente: ask (default, pede aprovação) vs auto (aprova tudo) ──
+
+  private toggleMode(): void {
+    this.mode = this.mode === 'ask' ? 'auto' : 'ask'
+    localStorage.setItem('chat_mode', this.mode)
+    this.renderModeToggle()
+  }
+
+  private renderModeToggle(): void {
+    if (!this.modeToggleEl) return
+    const isAuto = this.mode === 'auto'
+    this.modeToggleEl.classList.toggle('chat-mode-btn--auto', isAuto)
+    this.modeToggleEl.classList.toggle('chat-mode-btn--ask', !isAuto)
+    this.modeToggleEl.textContent = isAuto ? 'Auto' : 'Ask'
+    this.modeToggleEl.title = isAuto
+      ? 'Auto: tools rodam sem pedir aprovação. Clique para voltar a Ask.'
+      : 'Ask: cada tool destrutiva pede aprovação. Clique para mudar para Auto.'
+  }
+
   /** Apaga o histórico do projeto ativo e limpa a UI. */
   private async clearHistory(): Promise<void> {
     if (!this.projectDir) return
@@ -176,6 +198,15 @@ export class Chat {
     const title = document.createElement('span')
     title.className = 'chat-header-title'
     title.textContent = 'Chat IA'
+    // Toggle ask/auto — vem antes do clear/minimize. Texto e classe
+    // refletem o mode atual; clique alterna e persiste em localStorage.
+    const modeToggle = document.createElement('button')
+    modeToggle.className = 'chat-mode-btn'
+    modeToggle.type = 'button'
+    modeToggle.addEventListener('click', () => this.toggleMode())
+    this.modeToggleEl = modeToggle
+    this.renderModeToggle()
+
     const clearBtn = document.createElement('button')
     clearBtn.className = 'chat-clear-btn'
     clearBtn.type = 'button'
@@ -191,6 +222,7 @@ export class Chat {
     toggleBtn.addEventListener('click', () => this.toggleCollapsed())
     this.toggleBtn = toggleBtn
     header.appendChild(title)
+    header.appendChild(modeToggle)
     header.appendChild(clearBtn)
     header.appendChild(toggleBtn)
 
@@ -260,7 +292,7 @@ export class Chat {
     this.showThinking()
 
     try {
-      await window.electronAPI.chat(this.messagesSent)
+      await window.electronAPI.chat(this.messagesSent, this.mode)
     } catch (err) {
       this.handleError(String(err))
     }

@@ -96,6 +96,8 @@ export interface AgentApproval {
   requestApproval(request: ToolRequest): Promise<boolean>
 }
 
+export type AgentMode = 'ask' | 'auto'
+
 export interface RunAgentOptions {
   prompt: string
   projectRoot: string | null
@@ -104,6 +106,11 @@ export interface RunAgentOptions {
   abortController: AbortController
   /** true no primeiro turno do projeto; demais turnos usam continue:true */
   continueSession: boolean
+  /**
+   * 'ask' (default): toda tool fora do conjunto auto-aprovado pede confirmação.
+   * 'auto': tudo é aprovado direto; cards de tool aparecem só como histórico.
+   */
+  mode: AgentMode
 }
 
 /**
@@ -125,17 +132,27 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
     abortController: opts.abortController,
     mcpServers,
     canUseTool: async (toolName, input) => {
+      // Tools de leitura pura sempre rodam sem perguntar, em qualquer mode.
       if (APPROVED_AUTO_TOOLS.has(toolName)) {
         return { behavior: 'allow', updatedInput: input } as PermissionResult
       }
+
+      const needsApproval = opts.mode === 'ask'
       const request: ToolRequest = {
         id: makeId(),
         name: toolName,
         input,
         summary: buildSummary(toolName, input),
-        needsApproval: true,
+        needsApproval,
       }
       opts.events.onToolRequest(request)
+
+      if (!needsApproval) {
+        // Em auto-mode o card aparece no chat só pra histórico; aprovação
+        // é implícita e a tool roda imediatamente.
+        return { behavior: 'allow', updatedInput: input } as PermissionResult
+      }
+
       const approved = await opts.approval.requestApproval(request)
       if (!approved) {
         const denied: ToolExecutionResult = {

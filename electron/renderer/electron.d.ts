@@ -19,7 +19,10 @@ interface ElectronAPI {
   stopProject(): Promise<void>
   runTerminalCommand(projectDir: string, command: string): Promise<void>
   stopTerminalCommand(): Promise<void>
-  chat(messages: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<void>
+  chat(
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    mode: 'ask' | 'auto',
+  ): Promise<void>
   setActiveProject(projectDir: string | null): Promise<void>
   decideToolCall(id: string, approved: boolean): Promise<void>
   cancelChat(): Promise<void>

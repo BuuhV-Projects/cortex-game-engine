@@ -880,6 +880,36 @@ body {
   color: var(--od-fg);
 }
 
+.chat-mode-btn {
+  background: transparent;
+  border: 1px solid var(--od-border-strong);
+  color: var(--od-fg-muted);
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  line-height: 1;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.chat-mode-btn:hover {
+  border-color: var(--od-accent);
+  color: var(--od-fg);
+}
+
+.chat-mode-btn--auto {
+  background-color: var(--od-accent);
+  border-color: var(--od-accent);
+  color: var(--od-fg-bright, #ffffff);
+}
+
+.chat-mode-btn--auto:hover {
+  background-color: var(--od-accent-hover, var(--od-accent));
+}
+
 .chat-clear-btn {
   background: transparent;
   border: none;
@@ -889,7 +919,6 @@ body {
   padding: 2px 6px;
   line-height: 1;
   border-radius: 3px;
-  margin-left: auto;
 }
 
 .chat-clear-btn:hover {
