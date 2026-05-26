@@ -150,7 +150,13 @@ export class Chat {
     this.items = []
     this.currentTurnAssistantText = ''
     this.liveAssistantItem = null
+    // Garante que nenhum estado de streaming fantasma sobrevive ao clear —
+    // o input ficava bloqueado quando isso acontecia.
+    this.streaming = false
+    this.hideThinking()
     this.renderAll()
+    this.updateInputState()
+    this.inputEl?.focus()
   }
 
   private buildShell(): void {
