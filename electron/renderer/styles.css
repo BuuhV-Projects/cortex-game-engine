@@ -231,6 +231,50 @@ body {
   letter-spacing: 0.04em;
 }
 
+.preview-fullscreen-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--od-border-strong);
+  color: var(--od-fg-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.preview-fullscreen-btn:hover {
+  color: var(--od-fg);
+  border-color: var(--od-accent);
+}
+
+/* ── Modo fullscreen: preview ocupa toda a janela do IDE ───────────────── */
+body.app-preview-fullscreen #app {
+  display: block;
+}
+
+body.app-preview-fullscreen #sidebar,
+body.app-preview-fullscreen #editor-container,
+body.app-preview-fullscreen #chat-container,
+body.app-preview-fullscreen .resizer,
+body.app-preview-fullscreen .resizer-horizontal,
+body.app-preview-fullscreen #console-container {
+  display: none !important;
+}
+
+body.app-preview-fullscreen #right-panel {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+}
+
+body.app-preview-fullscreen #preview-container {
+  width: 100%;
+  height: 100%;
+}
+
 .preview-viewport {
   flex: 1;
   background-color: var(--od-bg);

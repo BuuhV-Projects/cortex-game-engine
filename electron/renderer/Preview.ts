@@ -17,11 +17,13 @@ export class Preview {
 
   private statusEl: HTMLElement | null = null
   private playBtn: HTMLButtonElement | null = null
+  private fullscreenBtn: HTMLButtonElement | null = null
   private viewportEl: HTMLElement | null = null
 
   private projectDir: string | null = null
   private running = false
   private serverUrl: string | null = null
+  private fullscreen = false
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -40,6 +42,13 @@ export class Preview {
       this.projectDir = path
       localStorage.setItem(STORAGE_KEY, path)
       this.updateButtonState()
+    })
+
+    // ESC sai do fullscreen (sem afetar outros atalhos quando não está em fs)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.fullscreen) {
+        this.toggleFullscreen()
+      }
     })
   }
 
@@ -60,8 +69,19 @@ export class Preview {
     status.textContent = 'Parado'
     this.statusEl = status
 
+    // Fullscreen toggle — esconde todo o resto da UI do IDE e expande o
+    // preview pra ocupar toda a janela. ESC sai.
+    const fullscreenBtn = document.createElement('button')
+    fullscreenBtn.className = 'preview-fullscreen-btn'
+    fullscreenBtn.type = 'button'
+    fullscreenBtn.title = 'Tela cheia (ESC para sair)'
+    fullscreenBtn.textContent = '⛶'
+    fullscreenBtn.addEventListener('click', () => this.toggleFullscreen())
+    this.fullscreenBtn = fullscreenBtn
+
     toolbar.appendChild(playBtn)
     toolbar.appendChild(status)
+    toolbar.appendChild(fullscreenBtn)
 
     const viewport = document.createElement('div')
     viewport.className = 'preview-viewport'
@@ -70,6 +90,17 @@ export class Preview {
 
     this.container.appendChild(toolbar)
     this.container.appendChild(viewport)
+  }
+
+  private toggleFullscreen(): void {
+    this.fullscreen = !this.fullscreen
+    document.body.classList.toggle('app-preview-fullscreen', this.fullscreen)
+    if (this.fullscreenBtn) {
+      this.fullscreenBtn.textContent = this.fullscreen ? '⛶ Sair' : '⛶'
+      this.fullscreenBtn.title = this.fullscreen
+        ? 'Sair da tela cheia (ESC)'
+        : 'Tela cheia (ESC para sair)'
+    }
   }
 
   private updateButtonState(): void {
