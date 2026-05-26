@@ -45,6 +45,11 @@ export class Chat {
   private streaming = false
   private collapsed = false
 
+  // Indicador "Pensando..." mostrado entre o envio da mensagem e o primeiro
+  // chunk de texto ou tool_request. Some assim que qualquer feedback do
+  // assistente aparece (resposta ou tool card).
+  private thinkingEl: HTMLElement | null = null
+
   constructor(container: HTMLElement) {
     this.container = container
   }
@@ -155,6 +160,7 @@ export class Chat {
     this.liveAssistantItem = null
     this.streaming = true
     this.updateInputState()
+    this.showThinking()
 
     try {
       await window.electronAPI.chat(this.messagesSent)
@@ -164,6 +170,7 @@ export class Chat {
   }
 
   private handleChunk(text: string): void {
+    this.hideThinking()
     this.currentTurnAssistantText += text
     if (!this.liveAssistantItem) {
       const item: DisplayItem = { kind: 'message', role: 'assistant', content: '', el: null }
@@ -179,6 +186,7 @@ export class Chat {
   }
 
   private handleToolRequest(request: AiToolRequest): void {
+    this.hideThinking()
     // Encerra o item de assistente em streaming (se houver) — próximas
     // chunks após esse tool call vão começar um novo item.
     this.liveAssistantItem = null
@@ -197,6 +205,7 @@ export class Chat {
   }
 
   private handleDone(): void {
+    this.hideThinking()
     if (this.currentTurnAssistantText.length > 0) {
       this.messagesSent.push({ role: 'assistant', content: this.currentTurnAssistantText })
     }
@@ -207,6 +216,7 @@ export class Chat {
   }
 
   private handleError(message: string): void {
+    this.hideThinking()
     this.liveAssistantItem = null
     this.appendItem({
       kind: 'message',
@@ -217,6 +227,31 @@ export class Chat {
     this.currentTurnAssistantText = ''
     this.streaming = false
     this.updateInputState()
+  }
+
+  // ── Indicador "Pensando..." ─────────────────────────────────────────────────
+
+  private showThinking(): void {
+    if (!this.messagesEl || this.thinkingEl) return
+    const el = document.createElement('div')
+    el.className = 'chat-thinking'
+    const label = document.createElement('span')
+    label.className = 'chat-thinking-label'
+    label.textContent = 'Pensando'
+    const dots = document.createElement('span')
+    dots.className = 'chat-thinking-dots'
+    dots.innerHTML = '<span></span><span></span><span></span>'
+    el.appendChild(label)
+    el.appendChild(dots)
+    this.messagesEl.appendChild(el)
+    this.thinkingEl = el
+    this.scrollToBottom()
+  }
+
+  private hideThinking(): void {
+    if (!this.thinkingEl) return
+    this.thinkingEl.remove()
+    this.thinkingEl = null
   }
 
   private appendItem(item: DisplayItem): void {
