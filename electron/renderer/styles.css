@@ -438,6 +438,24 @@ body {
   border-color: var(--od-accent);
 }
 
+.filetree-refresh-btn {
+  background: none;
+  border: 1px solid var(--od-border-strong);
+  color: var(--od-fg);
+  font-size: 13px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: 6px;
+  line-height: 1;
+}
+
+.filetree-refresh-btn:hover {
+  background-color: var(--od-bg-selected);
+  border-color: var(--od-accent);
+  color: var(--od-fg-strong, #ffffff);
+}
+
 .filetree-area {
   flex: 1;
   overflow-y: auto;

@@ -86,6 +86,15 @@ export class FileTree {
     newDirBtn.addEventListener('click', () => void this.createDirIn(this.projectDir))
     toolbar.appendChild(newDirBtn)
 
+    // Refresh — útil quando o agente cria arquivos via tools e o auto-refresh
+    // falha, ou quando algo muda fora do IDE (terminal externo, git pull).
+    const refreshBtn = document.createElement('button')
+    refreshBtn.textContent = '↻'
+    refreshBtn.className = 'filetree-refresh-btn'
+    refreshBtn.title = 'Recarregar árvore'
+    refreshBtn.addEventListener('click', () => void this.refresh())
+    toolbar.appendChild(refreshBtn)
+
     this.container.appendChild(toolbar)
 
     // Área da árvore

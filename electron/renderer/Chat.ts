@@ -238,7 +238,13 @@ export class Chat {
     // Se a tool pode ter mexido no filesystem do projeto, sinaliza pra
     // FileTree recarregar a árvore. Leituras puras (Read/Glob/Grep) e
     // erros não precisam.
-    if (!result.isError && toolMutatesFs(item.request.name)) {
+    const mutates = toolMutatesFs(item.request.name)
+    console.debug('[chat] tool executed', {
+      name: item.request.name,
+      isError: result.isError,
+      mutates,
+    })
+    if (!result.isError && mutates) {
       document.dispatchEvent(new CustomEvent('filetree-refresh'))
     }
   }
