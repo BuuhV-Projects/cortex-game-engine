@@ -181,22 +181,16 @@ obj.data.materials.append(mat)
 
 ### Exportação GLTF/GLB
 \`\`\`python
-# Exportar toda a cena como GLB (binário)
+# Exportar toda a cena como GLB (binário). Use APENAS os parâmetros abaixo —
+# os demais (export_colors, export_texcoords, export_skins, etc.) mudam de
+# nome entre versões do Blender (4.x → 5.x removeu/renomeou vários) e causam
+# TypeError "got an unexpected keyword argument" quando passados em versões
+# incompatíveis. Os defaults do exportador já cobrem a maioria dos casos.
 bpy.ops.export_scene.gltf(
     filepath=OUTPUT_PATH,         # variável injetada antes da execução
     export_format='GLB',          # 'GLB' (binário, recomendado) ou 'GLTF_EMBEDDED'
     use_selection=False,          # False = exportar tudo
     export_apply=True,            # aplicar modificadores antes de exportar
-    export_materials='EXPORT',    # incluir materiais PBR
-    export_colors=True,           # vertex colors
-    export_texcoords=True,        # UV maps
-    export_normals=True,          # normais
-    export_tangents=False,
-    export_animations=False,      # sem animações para modelos estáticos
-    export_skins=False,
-    export_morph=False,
-    export_lights=False,          # não exportar luzes da cena
-    export_cameras=False,         # não exportar câmeras
 )
 \`\`\`
 
