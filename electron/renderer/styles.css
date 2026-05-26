@@ -1,3 +1,37 @@
+﻿/* ------------------------------------------------------------------ */
+/* Tema Atom One Dark (paleta canônica do Atom/Cursor)                */
+/* Bases neutras + acentos típicos do One Dark.                       */
+/* ------------------------------------------------------------------ */
+:root {
+  --od-bg: #282c34;
+  --od-bg-panel: #21252b;
+  --od-bg-tab: #2c313a;
+  --od-bg-hover: #2c313a;
+  --od-bg-hover-strong: #3a3f4b;
+  --od-bg-selected: #2c313a;
+  --od-bg-deep: #1b1d23;
+
+  --od-border: #181a1f;
+  --od-border-soft: #3e4451;
+  --od-border-strong: #4b5263;
+
+  --od-fg-bright: #dcdfe4;
+  --od-fg: #abb2bf;
+  --od-fg-muted: #828997;
+  --od-fg-dim: #5c6370;
+
+  --od-accent: #61afef;
+  --od-accent-hover: #528bff;
+  --od-cyan: #56b6c2;
+  --od-green: #98c379;
+  --od-green-dark: #6a8b4d;
+  --od-yellow: #e5c07b;
+  --od-orange: #d19a66;
+  --od-magenta: #c678dd;
+  --od-red: #e06c75;
+  --od-red-dark: #9a3a3a;
+}
+
 /* Reset */
 *,
 *::before,
@@ -12,10 +46,10 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #1e1e1e;
+  background-color: var(--od-bg);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
-  color: #cccccc;
+  color: var(--od-fg);
 }
 
 /* Layout principal: 3 colunas em CSS Grid */
@@ -26,24 +60,24 @@ body {
   width: 100%;
   height: 100vh;
   overflow: hidden;
-  background-color: #1e1e1e;
+  background-color: var(--od-bg);
 }
 
 .resizer {
-  background-color: #1e1e1e;
+  background-color: var(--od-bg);
   cursor: col-resize;
   transition: background-color 120ms;
 }
 
 .resizer:hover,
 .resizer:active {
-  background-color: #007acc;
+  background-color: var(--od-accent);
 }
 
 /* Coluna esquerda — explorador de arquivos */
 #sidebar {
-  background-color: #252526;
-  border-right: 1px solid #3c3c3c;
+  background-color: var(--od-bg-panel);
+  border-right: 1px solid var(--od-border-soft);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -52,7 +86,7 @@ body {
 
 /* Coluna central — editor Monaco */
 #editor-container {
-  background-color: #1e1e1e;
+  background-color: var(--od-bg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -62,8 +96,8 @@ body {
 .editor-tabs {
   display: flex;
   flex-direction: row;
-  background-color: #252526;
-  border-bottom: 1px solid #1e1e1e;
+  background-color: var(--od-bg-panel);
+  border-bottom: 1px solid var(--od-bg);
   overflow-x: auto;
   overflow-y: hidden;
   min-height: 32px;
@@ -75,7 +109,7 @@ body {
 }
 
 .editor-tabs::-webkit-scrollbar-thumb {
-  background-color: #3c3c3c;
+  background-color: var(--od-border-soft);
 }
 
 .editor-tab {
@@ -84,9 +118,9 @@ body {
   gap: 6px;
   padding: 0 10px;
   height: 32px;
-  background-color: #2d2d2d;
-  border-right: 1px solid #1e1e1e;
-  color: #969696;
+  background-color: var(--od-bg-tab);
+  border-right: 1px solid var(--od-bg);
+  color: var(--od-fg-muted);
   font-size: 12px;
   white-space: nowrap;
   cursor: pointer;
@@ -94,12 +128,12 @@ body {
 }
 
 .editor-tab:hover {
-  background-color: #333334;
+  background-color: var(--od-bg-hover);
 }
 
 .editor-tab.active {
-  background-color: #1e1e1e;
-  color: #ffffff;
+  background-color: var(--od-bg);
+  color: var(--od-fg-bright);
 }
 
 .editor-tab-label {
@@ -109,7 +143,7 @@ body {
 .editor-tab-close {
   background: none;
   border: none;
-  color: #969696;
+  color: var(--od-fg-muted);
   font-size: 16px;
   line-height: 1;
   padding: 2px 4px;
@@ -118,15 +152,15 @@ body {
 }
 
 .editor-tab-close:hover {
-  background-color: #4a4a4a;
-  color: #ffffff;
+  background-color: var(--od-bg-hover-strong);
+  color: var(--od-fg-bright);
 }
 
 /* Indicador de "modificado, não salvo" — bolinha branca posicionada no mesmo
    slot do botão de fechar. Some no hover para dar lugar ao X. */
 .editor-tab-dot {
   display: none;
-  color: #cccccc;
+  color: var(--od-fg);
   font-size: 14px;
   line-height: 1;
   padding: 2px 4px;
@@ -157,8 +191,8 @@ body {
 
 /* Coluna direita — preview + console */
 #right-panel {
-  background-color: #252526;
-  border-left: 1px solid #3c3c3c;
+  background-color: var(--od-bg-panel);
+  border-left: 1px solid var(--od-border-soft);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -167,9 +201,9 @@ body {
 /* Painel de preview (ocupa o espaço disponível) */
 #preview-container {
   flex: 1;
-  background-color: #1e1e1e;
+  background-color: var(--od-bg);
   overflow: hidden;
-  border-bottom: 1px solid #3c3c3c;
+  border-bottom: 1px solid var(--od-border-soft);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -180,14 +214,14 @@ body {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  background-color: #252526;
-  border-bottom: 1px solid #1e1e1e;
+  background-color: var(--od-bg-panel);
+  border-bottom: 1px solid var(--od-bg);
   flex-shrink: 0;
 }
 
 .preview-play-btn {
-  background-color: #007acc;
-  color: #ffffff;
+  background-color: var(--od-accent);
+  color: var(--od-fg-bright);
   border: none;
   border-radius: 3px;
   padding: 4px 12px;
@@ -196,25 +230,25 @@ body {
 }
 
 .preview-play-btn:hover:not(:disabled) {
-  background-color: #005fa3;
+  background-color: var(--od-accent-hover);
 }
 
 .preview-play-btn:disabled {
-  background-color: #3c3c3c;
-  color: #777777;
+  background-color: var(--od-border-soft);
+  color: var(--od-fg-dim);
   cursor: not-allowed;
 }
 
 .preview-status {
   font-size: 11px;
-  color: #9d9d9d;
+  color: var(--od-fg-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .preview-viewport {
   flex: 1;
-  background-color: #1e1e1e;
+  background-color: var(--od-bg);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -222,7 +256,7 @@ body {
 }
 
 .preview-placeholder {
-  color: #777777;
+  color: var(--od-fg-dim);
   font-size: 13px;
   text-align: center;
   padding: 16px;
@@ -232,13 +266,13 @@ body {
   width: 100%;
   height: 100%;
   border: none;
-  background-color: #000000;
+  background-color: var(--od-bg-deep);
 }
 
 /* Painel inferior — Console + Terminal com abas */
 #console-container {
   height: 220px;
-  background-color: #0e0e0e;
+  background-color: var(--od-bg-deep);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -248,15 +282,15 @@ body {
 .bottom-tabs {
   display: flex;
   align-items: stretch;
-  background-color: #252526;
-  border-bottom: 1px solid #1e1e1e;
+  background-color: var(--od-bg-panel);
+  border-bottom: 1px solid var(--od-bg);
   flex-shrink: 0;
 }
 
 .bottom-tab {
   background: none;
   border: none;
-  color: #9d9d9d;
+  color: var(--od-fg-muted);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -266,19 +300,19 @@ body {
 }
 
 .bottom-tab:hover {
-  color: #cccccc;
+  color: var(--od-fg);
 }
 
 .bottom-tab.active {
-  color: #ffffff;
-  border-bottom-color: #007acc;
+  color: var(--od-fg-bright);
+  border-bottom-color: var(--od-accent);
 }
 
 .bottom-clear-btn {
   margin-left: auto;
   background: none;
-  border: 1px solid #3c3c3c;
-  color: #9d9d9d;
+  border: 1px solid var(--od-border-soft);
+  color: var(--od-fg-muted);
   border-radius: 3px;
   font-size: 11px;
   padding: 2px 8px;
@@ -288,8 +322,8 @@ body {
 }
 
 .bottom-clear-btn:hover {
-  background-color: #3c3c3c;
-  color: #cccccc;
+  background-color: var(--od-border-soft);
+  color: var(--od-fg);
 }
 
 .bottom-pane {
@@ -305,7 +339,7 @@ body {
   font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
   font-size: 12px;
   line-height: 1.5;
-  color: #cccccc;
+  color: var(--od-fg);
   padding: 4px 8px;
 }
 
@@ -315,11 +349,11 @@ body {
 }
 
 .bottom-line--error {
-  color: #f48771;
+  color: var(--od-red);
 }
 
 .bottom-line--system {
-  color: #6a9955;
+  color: var(--od-green);
 }
 
 .bottom-output::-webkit-scrollbar {
@@ -327,32 +361,32 @@ body {
 }
 
 .bottom-output::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: var(--od-bg);
 }
 
 .bottom-output::-webkit-scrollbar-thumb {
-  background: #424242;
+  background: var(--od-bg-hover-strong);
   border-radius: 4px;
 }
 
 .bottom-output::-webkit-scrollbar-thumb:hover {
-  background: #555555;
+  background: var(--od-border-strong);
 }
 
 .terminal-input-row {
   display: flex;
   gap: 6px;
   padding: 6px 8px;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid var(--od-bg);
   flex-shrink: 0;
 }
 
 .terminal-input {
   flex: 1;
-  background-color: #3c3c3c;
-  border: 1px solid #555555;
+  background-color: var(--od-border-soft);
+  border: 1px solid var(--od-border-strong);
   border-radius: 3px;
-  color: #cccccc;
+  color: var(--od-fg);
   font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
   font-size: 12px;
   padding: 4px 8px;
@@ -360,7 +394,7 @@ body {
 }
 
 .terminal-input:focus {
-  border-color: #007acc;
+  border-color: var(--od-accent);
 }
 
 .terminal-input:disabled {
@@ -368,8 +402,8 @@ body {
 }
 
 .terminal-run-btn {
-  background-color: #007acc;
-  color: #ffffff;
+  background-color: var(--od-accent);
+  color: var(--od-fg-bright);
   border: none;
   border-radius: 3px;
   padding: 4px 14px;
@@ -378,12 +412,12 @@ body {
 }
 
 .terminal-run-btn:hover:not(:disabled) {
-  background-color: #005fa3;
+  background-color: var(--od-accent-hover);
 }
 
 .terminal-run-btn:disabled {
-  background-color: #3c3c3c;
-  color: #777777;
+  background-color: var(--od-border-soft);
+  color: var(--od-fg-dim);
   cursor: not-allowed;
 }
 
@@ -396,13 +430,13 @@ body {
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  border-bottom: 1px solid #3c3c3c;
+  border-bottom: 1px solid var(--od-border-soft);
 }
 
 .filetree-open-btn {
   background: none;
-  border: 1px solid #555555;
-  color: #cccccc;
+  border: 1px solid var(--od-border-strong);
+  color: var(--od-fg);
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 3px;
@@ -411,14 +445,14 @@ body {
 }
 
 .filetree-open-btn:hover {
-  background-color: #2a2d2e;
-  border-color: #007acc;
+  background-color: var(--od-bg-selected);
+  border-color: var(--od-accent);
 }
 
 .filetree-new-file-btn {
   background: none;
-  border: 1px solid #555555;
-  color: #cccccc;
+  border: 1px solid var(--od-border-strong);
+  color: var(--od-fg);
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 3px;
@@ -428,8 +462,8 @@ body {
 }
 
 .filetree-new-file-btn:hover {
-  background-color: #2a2d2e;
-  border-color: #007acc;
+  background-color: var(--od-bg-selected);
+  border-color: var(--od-accent);
 }
 
 .filetree-area {
@@ -447,7 +481,7 @@ body {
 }
 
 .filetree-area::-webkit-scrollbar-thumb {
-  background: #424242;
+  background: var(--od-bg-hover-strong);
   border-radius: 3px;
 }
 
@@ -455,11 +489,11 @@ body {
 .filetree-error {
   padding: 8px 12px;
   font-size: 12px;
-  color: #888888;
+  color: var(--od-fg-muted);
 }
 
 .filetree-error {
-  color: #f48771;
+  color: var(--od-red);
 }
 
 .filetree-list {
@@ -475,7 +509,7 @@ body {
 .filetree-dir > .filetree-label::before {
   content: '▶ ';
   font-size: 10px;
-  color: #888888;
+  color: var(--od-fg-muted);
 }
 
 .filetree-dir.expanded > .filetree-label::before {
@@ -484,7 +518,7 @@ body {
 
 .filetree-dir.loading > .filetree-label::after {
   content: ' …';
-  color: #888888;
+  color: var(--od-fg-muted);
 }
 
 .filetree-label {
@@ -495,11 +529,11 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
-  color: #cccccc;
+  color: var(--od-fg);
 }
 
 .filetree-label:hover {
-  background-color: #2a2d2e;
+  background-color: var(--od-bg-selected);
 }
 
 /* ------------------------------------------------------------------ */
@@ -511,8 +545,8 @@ body {
   width: calc(100% - 16px);
   margin: 8px;
   padding: 5px 0;
-  background-color: #007acc;
-  color: #ffffff;
+  background-color: var(--od-accent);
+  color: var(--od-fg-bright);
   border: none;
   border-radius: 3px;
   font-size: 12px;
@@ -523,14 +557,14 @@ body {
 }
 
 .project-manager-new-btn:hover {
-  background-color: #005fa3;
+  background-color: var(--od-accent-hover);
 }
 
 .project-manager-dialog {
-  background-color: #252526;
-  border: 1px solid #454545;
+  background-color: var(--od-bg-panel);
+  border: 1px solid var(--od-border-strong);
   border-radius: 6px;
-  color: #cccccc;
+  color: var(--od-fg);
   padding: 20px 24px;
   min-width: 340px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
@@ -544,7 +578,7 @@ body {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #ffffff;
+  color: var(--od-fg-bright);
 }
 
 .project-manager-field {
@@ -556,23 +590,23 @@ body {
 
 .project-manager-field label {
   font-size: 11px;
-  color: #9d9d9d;
+  color: var(--od-fg-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .project-manager-input {
-  background-color: #3c3c3c;
-  border: 1px solid #555555;
+  background-color: var(--od-border-soft);
+  border: 1px solid var(--od-border-strong);
   border-radius: 3px;
-  color: #cccccc;
+  color: var(--od-fg);
   font-size: 13px;
   padding: 5px 8px;
   outline: none;
 }
 
 .project-manager-input:focus {
-  border-color: #007acc;
+  border-color: var(--od-accent);
 }
 
 .project-manager-actions {
@@ -592,22 +626,22 @@ body {
 }
 
 .project-manager-btn--primary {
-  background-color: #007acc;
-  color: #ffffff;
+  background-color: var(--od-accent);
+  color: var(--od-fg-bright);
 }
 
 .project-manager-btn--primary:hover {
-  background-color: #005fa3;
+  background-color: var(--od-accent-hover);
 }
 
 .project-manager-btn--secondary {
-  background-color: #3c3c3c;
-  color: #cccccc;
-  border: 1px solid #555555;
+  background-color: var(--od-border-soft);
+  color: var(--od-fg);
+  border: 1px solid var(--od-border-strong);
 }
 
 .project-manager-btn--secondary:hover {
-  background-color: #4a4a4a;
+  background-color: var(--od-bg-hover-strong);
 }
 
 .project-manager-dir-row {
@@ -619,7 +653,7 @@ body {
 .project-manager-dir-path {
   flex: 1;
   font-size: 12px;
-  color: #9d9d9d;
+  color: var(--od-fg-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -631,10 +665,10 @@ body {
 /* ------------------------------------------------------------------ */
 
 .custom-prompt-dialog {
-  background-color: #252526;
-  border: 1px solid #3c3c3c;
+  background-color: var(--od-bg-panel);
+  border: 1px solid var(--od-border-soft);
   border-radius: 4px;
-  color: #cccccc;
+  color: var(--od-fg);
   padding: 16px 20px;
   min-width: 320px;
 }
@@ -651,10 +685,10 @@ body {
 
 .custom-prompt-input {
   width: 100%;
-  background-color: #3c3c3c;
-  border: 1px solid #555555;
+  background-color: var(--od-border-soft);
+  border: 1px solid var(--od-border-strong);
   border-radius: 3px;
-  color: #cccccc;
+  color: var(--od-fg);
   font-size: 13px;
   padding: 5px 8px;
   outline: none;
@@ -662,7 +696,7 @@ body {
 }
 
 .custom-prompt-input:focus {
-  border-color: #007acc;
+  border-color: var(--od-accent);
 }
 
 .custom-prompt-actions {
@@ -682,22 +716,22 @@ body {
 }
 
 .custom-prompt-btn--primary {
-  background-color: #007acc;
-  color: #ffffff;
+  background-color: var(--od-accent);
+  color: var(--od-fg-bright);
 }
 
 .custom-prompt-btn--primary:hover {
-  background-color: #005fa3;
+  background-color: var(--od-accent-hover);
 }
 
 .custom-prompt-btn--secondary {
-  background-color: #3c3c3c;
-  color: #cccccc;
-  border: 1px solid #555555;
+  background-color: var(--od-border-soft);
+  color: var(--od-fg);
+  border: 1px solid var(--od-border-strong);
 }
 
 .custom-prompt-btn--secondary:hover {
-  background-color: #4a4a4a;
+  background-color: var(--od-bg-hover-strong);
 }
 
 /* ------------------------------------------------------------------ */
@@ -706,8 +740,8 @@ body {
 
 .filetree-context-menu {
   position: fixed;
-  background-color: #252526;
-  border: 1px solid #3c3c3c;
+  background-color: var(--od-bg-panel);
+  border: 1px solid var(--od-border-soft);
   border-radius: 4px;
   padding: 4px 0;
   min-width: 180px;
@@ -720,7 +754,7 @@ body {
   width: 100%;
   background: none;
   border: none;
-  color: #cccccc;
+  color: var(--od-fg);
   font-size: 12px;
   text-align: left;
   padding: 6px 14px;
@@ -728,15 +762,15 @@ body {
 }
 
 .filetree-context-item:hover {
-  background-color: #094771;
-  color: #ffffff;
+  background-color: var(--od-bg-selected);
+  color: var(--od-fg-bright);
 }
 
 /* Drop target highlight (drag & drop no FileTree) */
 .filetree-area.drop-target,
 .filetree-dir.drop-target > .filetree-label {
   background-color: rgba(0, 122, 204, 0.18);
-  outline: 1px dashed #007acc;
+  outline: 1px dashed var(--od-accent);
   outline-offset: -2px;
 }
 
@@ -747,8 +781,8 @@ body {
 #chat-container {
   display: flex;
   flex-direction: column;
-  background-color: #252526;
-  border-left: 1px solid #1e1e1e;
+  background-color: var(--od-bg-panel);
+  border-left: 1px solid var(--od-bg);
   overflow: hidden;
   min-width: 0;
 }
@@ -757,9 +791,9 @@ body {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #9d9d9d;
+  color: var(--od-fg-muted);
   padding: 8px 12px;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid var(--od-bg);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -770,7 +804,7 @@ body {
 .chat-toggle-btn {
   background: transparent;
   border: none;
-  color: #9d9d9d;
+  color: var(--od-fg-muted);
   cursor: pointer;
   font-size: 12px;
   padding: 2px 6px;
@@ -779,8 +813,8 @@ body {
 }
 
 .chat-toggle-btn:hover {
-  background-color: #2d2d2d;
-  color: #d4d4d4;
+  background-color: var(--od-bg-tab);
+  color: var(--od-fg);
 }
 
 #chat-container.chat-collapsed {
@@ -819,7 +853,7 @@ body {
 }
 
 .chat-empty {
-  color: #777777;
+  color: var(--od-fg-dim);
   font-size: 12px;
   text-align: center;
   margin-top: 24px;
@@ -835,20 +869,20 @@ body {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #9d9d9d;
+  color: var(--od-fg-muted);
 }
 
 .chat-message--user .chat-message-role {
-  color: #4ec9b0;
+  color: var(--od-cyan);
 }
 
 .chat-message--assistant .chat-message-role {
-  color: #007acc;
+  color: var(--od-accent);
 }
 
 .chat-message-content {
   font-size: 13px;
-  color: #d4d4d4;
+  color: var(--od-fg);
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.5;
@@ -859,11 +893,11 @@ body {
 }
 
 .chat-messages::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: var(--od-bg);
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-  background: #424242;
+  background: var(--od-bg-hover-strong);
   border-radius: 4px;
 }
 
@@ -871,16 +905,16 @@ body {
   display: flex;
   gap: 6px;
   padding: 8px;
-  border-top: 1px solid #1e1e1e;
+  border-top: 1px solid var(--od-bg);
   flex-shrink: 0;
 }
 
 .chat-input {
   flex: 1;
-  background-color: #3c3c3c;
-  border: 1px solid #555555;
+  background-color: var(--od-border-soft);
+  border: 1px solid var(--od-border-strong);
   border-radius: 3px;
-  color: #cccccc;
+  color: var(--od-fg);
   font-size: 13px;
   padding: 6px 8px;
   outline: none;
@@ -889,7 +923,7 @@ body {
 }
 
 .chat-input:focus {
-  border-color: #007acc;
+  border-color: var(--od-accent);
 }
 
 .chat-input:disabled {
@@ -897,8 +931,8 @@ body {
 }
 
 .chat-send-btn {
-  background-color: #007acc;
-  color: #ffffff;
+  background-color: var(--od-accent);
+  color: var(--od-fg-bright);
   border: none;
   border-radius: 3px;
   padding: 4px 14px;
@@ -909,18 +943,18 @@ body {
 }
 
 .chat-send-btn:hover:not(:disabled) {
-  background-color: #005fa3;
+  background-color: var(--od-accent-hover);
 }
 
 .chat-send-btn:disabled {
-  background-color: #3c3c3c;
-  color: #777777;
+  background-color: var(--od-border-soft);
+  color: var(--od-fg-dim);
   cursor: not-allowed;
 }
 
 .chat-stop-btn {
-  background-color: #a23a2c;
-  color: #ffffff;
+  background-color: var(--od-red-dark);
+  color: var(--od-fg-bright);
   border: none;
   border-radius: 3px;
   padding: 4px 14px;
@@ -931,7 +965,7 @@ body {
 }
 
 .chat-stop-btn:hover {
-  background-color: #c64a3a;
+  background-color: var(--od-red);
 }
 
 /* ------------------------------------------------------------------ */
@@ -939,9 +973,9 @@ body {
 /* ------------------------------------------------------------------ */
 
 .chat-tool-card {
-  border: 1px solid #3c3c3c;
-  border-left: 3px solid #007acc;
-  background-color: #1e1e1e;
+  border: 1px solid var(--od-border-soft);
+  border-left: 3px solid var(--od-accent);
+  background-color: var(--od-bg);
   border-radius: 3px;
   padding: 8px 10px;
   font-size: 12px;
@@ -957,19 +991,19 @@ body {
 }
 
 .chat-tool-card-name {
-  color: #4ec9b0;
+  color: var(--od-cyan);
   font-family: 'Menlo', 'Consolas', monospace;
   font-size: 11px;
 }
 
 .chat-tool-card-summary {
-  color: #d4d4d4;
+  color: var(--od-fg);
   line-height: 1.4;
 }
 
 .chat-tool-card-details {
   font-size: 11px;
-  color: #9d9d9d;
+  color: var(--od-fg-muted);
 }
 
 .chat-tool-card-details > summary {
@@ -984,9 +1018,9 @@ body {
 .chat-tool-card-params {
   margin: 0;
   padding: 6px 8px;
-  background-color: #252526;
+  background-color: var(--od-bg-panel);
   border-radius: 3px;
-  color: #cccccc;
+  color: var(--od-fg);
   font-family: 'Menlo', 'Consolas', monospace;
   font-size: 11px;
   white-space: pre-wrap;
@@ -1008,23 +1042,23 @@ body {
   padding: 4px 10px;
   font-size: 12px;
   cursor: pointer;
-  color: #ffffff;
+  color: var(--od-fg-bright);
 }
 
 .chat-tool-approve {
-  background-color: #2d7d31;
+  background-color: var(--od-green-dark);
 }
 
 .chat-tool-approve:hover:not(:disabled) {
-  background-color: #3a9a40;
+  background-color: var(--od-green);
 }
 
 .chat-tool-deny {
-  background-color: #6e6e6e;
+  background-color: var(--od-fg-muted);
 }
 
 .chat-tool-deny:hover:not(:disabled) {
-  background-color: #8a8a8a;
+  background-color: var(--od-fg-muted);
 }
 
 .chat-tool-approve:disabled,
@@ -1035,12 +1069,12 @@ body {
 
 .chat-tool-card-status {
   font-size: 11px;
-  color: #9d9d9d;
+  color: var(--od-fg-muted);
   font-style: italic;
 }
 
 .chat-tool-card-result {
-  border-top: 1px solid #3c3c3c;
+  border-top: 1px solid var(--od-border-soft);
   padding-top: 6px;
   display: flex;
   flex-direction: column;
@@ -1054,19 +1088,19 @@ body {
 }
 
 .chat-tool-card-result--ok .chat-tool-card-result-label {
-  color: #4ec9b0;
+  color: var(--od-cyan);
 }
 
 .chat-tool-card-result--error .chat-tool-card-result-label {
-  color: #f48771;
+  color: var(--od-red);
 }
 
 .chat-tool-card-result-body {
   margin: 0;
   padding: 6px 8px;
-  background-color: #252526;
+  background-color: var(--od-bg-panel);
   border-radius: 3px;
-  color: #cccccc;
+  color: var(--od-fg);
   font-family: 'Menlo', 'Consolas', monospace;
   font-size: 11px;
   white-space: pre-wrap;
