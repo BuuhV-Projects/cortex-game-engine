@@ -502,6 +502,63 @@ function buildAnthropicClient(): AnthropicClientResult | null {
   }
 }
 
+// Estado de autenticação visível ao renderer (banner do chat). 'oauth' =
+// credencial do Claude Code, 'api-key' = ANTHROPIC_API_KEY no env, 'none' =
+// sem credencial (chat bloqueado, mostra botão de login).
+ipcMain.handle('ai:checkAuth', async () => {
+  if (process.env['ANTHROPIC_API_KEY']) {
+    return { method: 'api-key' as const, hasCredential: true }
+  }
+  const credsPath = join(homedir(), '.claude', '.credentials.json')
+  if (existsSync(credsPath)) {
+    try {
+      const raw = readFileSync(credsPath, 'utf-8')
+      const parsed = JSON.parse(raw) as { claudeAiOauth?: { accessToken?: string } }
+      if (parsed.claudeAiOauth?.accessToken) {
+        return { method: 'oauth' as const, hasCredential: true }
+      }
+    } catch {
+      // fallthrough → none
+    }
+  }
+  return { method: 'none' as const, hasCredential: false }
+})
+
+// Abre uma janela externa de terminal e roda `claude login`. O usuário
+// completa o fluxo OAuth no navegador, cola o código no terminal, e
+// volta ao IDE — quando ele tentar usar o chat de novo (ou clicar
+// "verificar"), as credenciais já estarão em ~/.claude/.credentials.json.
+ipcMain.handle('ai:login', async () => {
+  try {
+    if (process.platform === 'win32') {
+      // `start` resolve `claude` (script .cmd instalado pelo npm) e abre
+      // uma janela nova de cmd onde o usuário cola o código do navegador.
+      spawn('cmd', ['/c', 'start', '"Claude Login"', 'cmd', '/k', 'claude login'], {
+        detached: true,
+        shell: false,
+        stdio: 'ignore',
+      })
+    } else if (process.platform === 'darwin') {
+      spawn(
+        'osascript',
+        ['-e', 'tell application "Terminal" to do script "claude login"'],
+        { detached: true, stdio: 'ignore' },
+      )
+    } else {
+      spawn('x-terminal-emulator', ['-e', 'claude login'], {
+        detached: true,
+        stdio: 'ignore',
+      })
+    }
+    return { ok: true as const }
+  } catch (err) {
+    return {
+      ok: false as const,
+      message: err instanceof Error ? err.message : String(err),
+    }
+  }
+})
+
 // Define qual projeto o agente está enxergando. Sem isso, tools de path
 // (list_files, read_file, etc.) recusam executar.
 ipcMain.handle('project:setActive', async (_event, projectDir: unknown) => {

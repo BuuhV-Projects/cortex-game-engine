@@ -22,6 +22,8 @@ export class Chat {
   private sendBtn: HTMLButtonElement | null = null
   private stopBtn: HTMLButtonElement | null = null
   private toggleBtn: HTMLButtonElement | null = null
+  private authBannerEl: HTMLElement | null = null
+  private authMethod: 'api-key' | 'oauth' | 'none' = 'none'
 
   // Histórico do envio: só user/assistant text (sem cards). É o seed que
   // mandamos pra main.process. Cards de tool são display-only.
@@ -50,6 +52,7 @@ export class Chat {
   init(): void {
     this.buildShell()
     this.updateInputState()
+    void this.refreshAuth()
 
     window.electronAPI.onAiChunk((text) => this.handleChunk(text))
     window.electronAPI.onAiDone(() => this.handleDone())
@@ -90,6 +93,11 @@ export class Chat {
     header.appendChild(title)
     header.appendChild(toggleBtn)
 
+    const authBanner = document.createElement('div')
+    authBanner.className = 'chat-auth-banner'
+    authBanner.style.display = 'none'
+    this.authBannerEl = authBanner
+
     const messages = document.createElement('div')
     messages.className = 'chat-messages'
     messages.innerHTML = '<p class="chat-empty">Pergunte algo sobre o projeto.</p>'
@@ -128,17 +136,88 @@ export class Chat {
     inputRow.appendChild(stopBtn)
 
     this.container.appendChild(header)
+    this.container.appendChild(authBanner)
     this.container.appendChild(messages)
     this.container.appendChild(inputRow)
   }
 
+  private async refreshAuth(): Promise<void> {
+    try {
+      const status = await window.electronAPI.checkAuth()
+      this.authMethod = status.method
+      this.renderAuthBanner()
+      this.updateInputState()
+    } catch (err) {
+      console.error('checkAuth falhou:', err)
+    }
+  }
+
+  private renderAuthBanner(): void {
+    if (!this.authBannerEl) return
+    if (this.authMethod === 'none') {
+      this.authBannerEl.style.display = ''
+      this.authBannerEl.classList.add('chat-auth-banner--warn')
+      this.authBannerEl.classList.remove('chat-auth-banner--info')
+      this.authBannerEl.innerHTML = ''
+
+      const msg = document.createElement('span')
+      msg.className = 'chat-auth-banner-msg'
+      msg.textContent = 'Sem credencial Claude. Faça login para usar o chat.'
+
+      const loginBtn = document.createElement('button')
+      loginBtn.className = 'chat-auth-banner-btn'
+      loginBtn.textContent = 'Fazer login no Claude'
+      loginBtn.addEventListener('click', () => void this.handleLogin())
+
+      const recheckBtn = document.createElement('button')
+      recheckBtn.className = 'chat-auth-banner-btn chat-auth-banner-btn--secondary'
+      recheckBtn.textContent = 'Verificar'
+      recheckBtn.addEventListener('click', () => void this.refreshAuth())
+
+      this.authBannerEl.appendChild(msg)
+      this.authBannerEl.appendChild(loginBtn)
+      this.authBannerEl.appendChild(recheckBtn)
+    } else {
+      this.authBannerEl.style.display = 'none'
+      this.authBannerEl.innerHTML = ''
+    }
+  }
+
+  private async handleLogin(): Promise<void> {
+    const result = await window.electronAPI.loginClaude()
+    if (!this.authBannerEl) return
+    if (result.ok) {
+      this.authBannerEl.innerHTML = ''
+      const msg = document.createElement('span')
+      msg.className = 'chat-auth-banner-msg'
+      msg.textContent =
+        'Terminal aberto. Complete o login no navegador, cole o código no terminal e clique em Verificar.'
+      const recheckBtn = document.createElement('button')
+      recheckBtn.className = 'chat-auth-banner-btn'
+      recheckBtn.textContent = 'Verificar'
+      recheckBtn.addEventListener('click', () => void this.refreshAuth())
+      this.authBannerEl.appendChild(msg)
+      this.authBannerEl.appendChild(recheckBtn)
+    } else {
+      this.authBannerEl.innerHTML = ''
+      const msg = document.createElement('span')
+      msg.className = 'chat-auth-banner-msg'
+      msg.textContent = `Falhou: ${result.message}. Verifique se o Claude Code CLI está instalado (npm i -g @anthropic-ai/claude-code).`
+      this.authBannerEl.appendChild(msg)
+    }
+  }
+
   private updateInputState(): void {
     if (!this.inputEl || !this.sendBtn || !this.stopBtn) return
-    const enabled = !this.streaming
+    const hasAuth = this.authMethod !== 'none'
+    const enabled = !this.streaming && hasAuth
     this.inputEl.disabled = !enabled
     this.sendBtn.disabled = !enabled
     this.sendBtn.style.display = this.streaming ? 'none' : ''
     this.stopBtn.style.display = this.streaming ? '' : 'none'
+    this.inputEl.placeholder = hasAuth
+      ? 'Pergunte algo... (Enter envia, Shift+Enter quebra linha)'
+      : 'Faça login no Claude para usar o chat'
   }
 
   private async send(): Promise<void> {

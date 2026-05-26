@@ -63,6 +63,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Cancela o turno do agente em andamento
   cancelChat: () => ipcRenderer.invoke('ai:cancel'),
 
+  // Verifica se ha credencial de autenticacao (API key ou OAuth)
+  checkAuth: () => ipcRenderer.invoke('ai:checkAuth'),
+
+  // Abre janela externa de terminal com `claude login` para o usuario fazer OAuth
+  loginClaude: () => ipcRenderer.invoke('ai:login'),
+
   // Eventos do main → renderer. Cada chamada adiciona um listener ao canal;
   // múltiplos componentes (Preview, BottomPanel, etc.) podem se inscrever
   // ao mesmo evento. Os componentes só chamam onX uma vez no init, então

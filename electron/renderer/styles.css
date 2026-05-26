@@ -924,6 +924,55 @@ body {
   cursor: not-allowed;
 }
 
+.chat-auth-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: var(--od-bg-deep);
+  border-bottom: 1px solid var(--od-border-soft);
+  font-size: 12px;
+}
+
+.chat-auth-banner--warn {
+  border-left: 3px solid var(--od-yellow);
+}
+
+.chat-auth-banner--info {
+  border-left: 3px solid var(--od-accent);
+}
+
+.chat-auth-banner-msg {
+  color: var(--od-fg);
+  line-height: 1.4;
+}
+
+.chat-auth-banner-btn {
+  background-color: var(--od-accent);
+  color: var(--od-fg-bright);
+  border: none;
+  border-radius: 3px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.chat-auth-banner-btn:hover {
+  background-color: var(--od-accent-hover);
+}
+
+.chat-auth-banner-btn--secondary {
+  background-color: transparent;
+  color: var(--od-fg-muted);
+  border: 1px solid var(--od-border-soft);
+}
+
+.chat-auth-banner-btn--secondary:hover {
+  background-color: var(--od-bg-hover);
+  color: var(--od-fg);
+}
+
 .chat-stop-btn {
   background-color: var(--od-red-dark);
   color: var(--od-fg-bright);
