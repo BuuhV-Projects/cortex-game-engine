@@ -558,14 +558,19 @@ ipcMain.handle('ai:login', async () => {
     // funcionar mesmo sem `claude` no PATH global. Fallback: `claude` do PATH.
     const claudeBin = resolveClaudeBin()
     if (process.platform === 'win32') {
-      const command = claudeBin ? `node "${claudeBin}" login` : 'claude login'
-      // Passa tudo como UMA string via shell — sem isso o argv de `start`
-      // interpreta "Claude Login" como nome de executável. `start ""` é o
-      // truque pra abrir nova janela sem título (cmd exige um título ali).
-      spawn(`start "" cmd /k ${command}`, [], {
+      // Usa PowerShell em vez de cmd — o shim `claude` e o `node` ficam no
+      // PATH do PowerShell mas nem sempre no do cmd. `Start-Process` abre
+      // uma janela nova; `-NoExit` mantém aberta após o login pra usuário
+      // ver o resultado e fechar quando quiser.
+      const inner = claudeBin
+        ? `node \\"${claudeBin}\\" login`
+        : 'claude login'
+      const psCommand = `Start-Process powershell -ArgumentList '-NoExit','-Command','${inner}'`
+      spawn('powershell.exe', ['-NoProfile', '-Command', psCommand], {
         detached: true,
-        shell: true,
+        shell: false,
         stdio: 'ignore',
+        windowsHide: true,
       })
     } else if (process.platform === 'darwin') {
       const command = claudeBin ? `node '${claudeBin}' login` : 'claude login'
