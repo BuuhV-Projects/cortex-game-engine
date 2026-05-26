@@ -1,99 +1,5 @@
 import * as monaco from 'monaco-editor'
-
-/**
- * Tema Atom One Dark para Monaco — paleta canônica usada pelo Atom e
- * Cursor. Mantemos sincronizado com as cores em styles.css (`:root`).
- */
-const ONE_DARK_THEME: monaco.editor.IStandaloneThemeData = {
-  base: 'vs-dark',
-  inherit: true,
-  rules: [
-    { token: '', foreground: 'abb2bf', background: '282c34' },
-    { token: 'comment', foreground: '5c6370', fontStyle: 'italic' },
-    { token: 'keyword', foreground: 'c678dd' },
-    { token: 'keyword.flow', foreground: 'c678dd' },
-    { token: 'keyword.json', foreground: '61afef' },
-    { token: 'operator', foreground: '56b6c2' },
-    { token: 'delimiter', foreground: 'abb2bf' },
-    { token: 'string', foreground: '98c379' },
-    { token: 'string.escape', foreground: '56b6c2' },
-    { token: 'string.invalid', foreground: 'e06c75' },
-    { token: 'number', foreground: 'd19a66' },
-    { token: 'regexp', foreground: '98c379' },
-    { token: 'constant', foreground: 'd19a66' },
-    { token: 'constant.language', foreground: 'd19a66' },
-    { token: 'identifier', foreground: 'abb2bf' },
-    { token: 'variable', foreground: 'e06c75' },
-    { token: 'variable.predefined', foreground: 'd19a66' },
-    { token: 'variable.parameter', foreground: 'd19a66' },
-    { token: 'type', foreground: 'e5c07b' },
-    { token: 'type.identifier', foreground: 'e5c07b' },
-    { token: 'class', foreground: 'e5c07b' },
-    { token: 'interface', foreground: 'e5c07b' },
-    { token: 'enum', foreground: 'e5c07b' },
-    { token: 'enumMember', foreground: 'd19a66' },
-    { token: 'function', foreground: '61afef' },
-    { token: 'method', foreground: '61afef' },
-    { token: 'tag', foreground: 'e06c75' },
-    { token: 'tag.id', foreground: 'd19a66' },
-    { token: 'tag.class', foreground: 'e5c07b' },
-    { token: 'attribute.name', foreground: 'd19a66' },
-    { token: 'attribute.value', foreground: '98c379' },
-    { token: 'attribute.value.html', foreground: '98c379' },
-    // Markdown / docs
-    { token: 'metatag', foreground: 'c678dd' },
-    { token: 'metatag.content.html', foreground: '98c379' },
-    { token: 'metatag.html', foreground: 'c678dd' },
-    { token: 'metatag.xml', foreground: 'c678dd' },
-    // JSON
-    { token: 'string.key.json', foreground: 'e06c75' },
-    { token: 'string.value.json', foreground: '98c379' },
-    // CSS
-    { token: 'attribute.value.number.css', foreground: 'd19a66' },
-    { token: 'attribute.value.unit.css', foreground: 'd19a66' },
-    { token: 'attribute.value.hex.css', foreground: 'd19a66' },
-  ],
-  colors: {
-    'editor.background': '#282c34',
-    'editor.foreground': '#abb2bf',
-    'editor.lineHighlightBackground': '#2c313a',
-    'editor.lineHighlightBorder': '#2c313a',
-    'editor.selectionBackground': '#3e4451',
-    'editor.selectionHighlightBackground': '#3e445180',
-    'editor.inactiveSelectionBackground': '#3e445180',
-    'editor.wordHighlightBackground': '#484e5b80',
-    'editor.findMatchBackground': '#42557b',
-    'editor.findMatchHighlightBackground': '#314365',
-    'editorCursor.foreground': '#528bff',
-    'editorWhitespace.foreground': '#3b4048',
-    'editorIndentGuide.background': '#3b4048',
-    'editorIndentGuide.activeBackground': '#5c6370',
-    'editorLineNumber.foreground': '#495162',
-    'editorLineNumber.activeForeground': '#abb2bf',
-    'editorGutter.background': '#282c34',
-    'editorRuler.foreground': '#3b4048',
-    'editorBracketMatch.background': '#515a6b40',
-    'editorBracketMatch.border': '#528bff',
-    'editorOverviewRuler.border': '#21252b',
-    'editorWidget.background': '#21252b',
-    'editorWidget.border': '#181a1f',
-    'editorSuggestWidget.background': '#21252b',
-    'editorSuggestWidget.border': '#181a1f',
-    'editorSuggestWidget.foreground': '#abb2bf',
-    'editorSuggestWidget.selectedBackground': '#2c313a',
-    'editorSuggestWidget.highlightForeground': '#61afef',
-    'editorHoverWidget.background': '#21252b',
-    'editorHoverWidget.border': '#181a1f',
-    'scrollbar.shadow': '#23252c',
-    'scrollbarSlider.background': '#4b526380',
-    'scrollbarSlider.hoverBackground': '#5c63708a',
-    'scrollbarSlider.activeBackground': '#747d91a8',
-    'minimap.background': '#282c34',
-    'editorError.foreground': '#e06c75',
-    'editorWarning.foreground': '#e5c07b',
-    'editorInfo.foreground': '#61afef',
-  },
-}
+import { getThemeName } from './theme'
 
 // Mapeia extensão de arquivo para a linguagem reconhecida pelo Monaco
 const LANGUAGE_BY_EXT: Record<string, string> = {
@@ -205,16 +111,17 @@ export class Editor {
 
     this.buildShell()
 
-    monaco.editor.defineTheme('one-dark', ONE_DARK_THEME)
-
     this.instance = monaco.editor.create(this.editorArea as HTMLElement, {
-      theme: 'one-dark',
+      theme: getThemeName(),
       automaticLayout: true,
       fontSize: 13,
       minimap: { enabled: false },
       value: '',
       language: 'plaintext',
-    })
+      // Habilita semantic highlighting do TS worker — sem isso classe/função/
+      // tipo viram tudo 'identifier' no Monarch e ficam sem cor.
+      'semanticHighlighting.enabled': true,
+    } as monaco.editor.IStandaloneEditorConstructionOptions)
 
     this.instance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       void this.save()

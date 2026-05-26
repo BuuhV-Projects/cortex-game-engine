@@ -5,6 +5,10 @@ import { BottomPanel } from './BottomPanel'
 import { ProjectManager } from './ProjectManager'
 import { Chat } from './Chat'
 import { Resizer } from './Resizer'
+import { applyTheme } from './theme'
+
+// Aplica o tema (CSS vars + Monaco) antes de inicializar componentes.
+applyTheme()
 
 const sidebar = document.getElementById('sidebar') as HTMLElement
 const editorContainer = document.getElementById('editor-container') as HTMLElement

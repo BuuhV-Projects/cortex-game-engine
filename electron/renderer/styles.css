@@ -1,36 +1,8 @@
 ﻿/* ------------------------------------------------------------------ */
-/* Tema Atom One Dark (paleta canônica do Atom/Cursor)                */
-/* Bases neutras + acentos típicos do One Dark.                       */
+/* Cores do IDE vivem em themes/*.json e são aplicadas a `:root`      */
+/* via theme.ts no bootstrap do renderer (vide electron/renderer/     */
+/* theme.ts). Este arquivo só consome var(--od-*).                    */
 /* ------------------------------------------------------------------ */
-:root {
-  --od-bg: #282c34;
-  --od-bg-panel: #21252b;
-  --od-bg-tab: #2c313a;
-  --od-bg-hover: #2c313a;
-  --od-bg-hover-strong: #3a3f4b;
-  --od-bg-selected: #2c313a;
-  --od-bg-deep: #1b1d23;
-
-  --od-border: #181a1f;
-  --od-border-soft: #3e4451;
-  --od-border-strong: #4b5263;
-
-  --od-fg-bright: #dcdfe4;
-  --od-fg: #abb2bf;
-  --od-fg-muted: #828997;
-  --od-fg-dim: #5c6370;
-
-  --od-accent: #61afef;
-  --od-accent-hover: #528bff;
-  --od-cyan: #56b6c2;
-  --od-green: #98c379;
-  --od-green-dark: #6a8b4d;
-  --od-yellow: #e5c07b;
-  --od-orange: #d19a66;
-  --od-magenta: #c678dd;
-  --od-red: #e06c75;
-  --od-red-dark: #9a3a3a;
-}
 
 /* Reset */
 *,
