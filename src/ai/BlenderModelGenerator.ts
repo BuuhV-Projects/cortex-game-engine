@@ -1,6 +1,7 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { spawn } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
+import { existsSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -122,10 +123,14 @@ mod.segments = 2
 mod        = obj.modifiers.new(name="Subdiv", type='SUBSURF')
 mod.levels = 2
 
-# Boolean (subtrair/unir meshes)
+# Boolean (subtrair/unir meshes) — Blender ≥ 4.0
 mod           = obj.modifiers.new(name="Bool", type='BOOLEAN')
 mod.operation = 'DIFFERENCE'   # 'UNION' | 'DIFFERENCE' | 'INTERSECT'
 mod.object    = cutter_obj
+# IMPORTANTE: na API moderna (Blender 4.x+) os solvers válidos são apenas
+# 'FLOAT', 'EXACT' ou 'MANIFOLD'. NÃO use 'FAST' — esse enum foi removido
+# e causa TypeError. Se não precisar especificar, omita a linha (default OK).
+# mod.solver = 'EXACT'
 
 # Aplicar modificador
 bpy.ops.object.modifier_apply(modifier=mod.name)
@@ -291,7 +296,20 @@ export class BlenderModelGenerator {
     const blenderBin = process.env['BLENDER_PATH'] ?? 'blender';
     await _runBlender(blenderBin, scriptPath);
 
-    // ── 6. Retornar caminhos ───────────────────────────────────────────────
+    // ── 6. Verificar que o GLB foi escrito ────────────────────────────────
+    // Blender pode sair com exit 0 mesmo quando o script Python crasha antes
+    // do `bpy.ops.export_scene.gltf(...)` (ex.: incompatibilidade de API entre
+    // versões). Sem esta checagem retornaríamos "sucesso" para a IA, que
+    // anunciaria o modelo ao usuário sem o arquivo existir.
+    if (!existsSync(glbPath) || statSync(glbPath).size === 0) {
+      throw new Error(
+        `Blender encerrou sem erro, mas o arquivo ${glbPath} não foi criado. ` +
+          `Provável crash do script Python antes da exportação — inspecione ${scriptPath} ` +
+          `e rode "${blenderBin} --background --python ${scriptPath}" no terminal para ver o traceback.`,
+      );
+    }
+
+    // ── 7. Retornar caminhos ───────────────────────────────────────────────
     return { glbPath, scriptPath };
   }
 }
