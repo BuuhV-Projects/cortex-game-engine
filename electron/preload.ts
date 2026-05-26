@@ -8,6 +8,7 @@ interface TurnStats {
   inputTokens: number
   outputTokens: number
   cacheReadTokens: number
+  sessionId: string | null
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {

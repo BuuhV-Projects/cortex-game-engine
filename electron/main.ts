@@ -517,6 +517,31 @@ function chatHistoryPath(projectDir: string): string {
   return join(app.getPath('userData'), 'chats', `${hash}.json`)
 }
 
+/**
+ * Path do arquivo que guarda o session_id do Claude Agent SDK para um
+ * projeto. Permite retomar a conversa (resume) entre execuções diferentes
+ * do IDE — o backend Claude Code mantém o histórico em ~/.claude/sessions/.
+ */
+function sessionIdPath(projectDir: string): string {
+  const hash = createHash('sha1').update(projectDir).digest('hex').slice(0, 16)
+  return join(app.getPath('userData'), 'sessions', `${hash}.txt`)
+}
+
+async function loadSessionId(projectDir: string): Promise<string | null> {
+  try {
+    const raw = await readFile(sessionIdPath(projectDir), 'utf-8')
+    return raw.trim() || null
+  } catch {
+    return null
+  }
+}
+
+async function saveSessionId(projectDir: string, sessionId: string): Promise<void> {
+  const file = sessionIdPath(projectDir)
+  await mkdir(join(app.getPath('userData'), 'sessions'), { recursive: true })
+  await writeFile(file, sessionId, 'utf-8')
+}
+
 ipcMain.handle('chat:load', async (_event, projectDir: unknown) => {
   if (typeof projectDir !== 'string' || projectDir === '') return []
   const file = chatHistoryPath(validatePath(projectDir))
@@ -537,10 +562,18 @@ ipcMain.handle('chat:save', async (_event, projectDir: unknown, messages: unknow
   await writeFile(file, JSON.stringify(messages), 'utf-8')
 })
 
-// Recebe um dataURL de imagem (do clipboard do usuário) e salva em
-// <projectDir>/.cortex/paste/clipboard_<ts>.<ext>. Retorna o path relativo
-// ao projeto pra ser injetado na mensagem do chat — a IA usa Read pra
-// "ver" a imagem via Claude Agent SDK.
+/**
+ * Diretório onde imagens coladas (Ctrl+V) vivem temporariamente.
+ * Fica em <userData>/cortex-pastes/<hash do projeto>/ — fora do diretório
+ * do projeto pra não poluir o repo do usuário. O agente recebe path
+ * ABSOLUTO na mensagem [imagem: ...] e o system prompt explicita que
+ * paths absolutos retornados pela UI são confiáveis para Read.
+ */
+function pasteDirForProject(projectDir: string): string {
+  const hash = createHash('sha1').update(projectDir).digest('hex').slice(0, 16)
+  return join(app.getPath('userData'), 'cortex-pastes', hash)
+}
+
 ipcMain.handle('clipboard:saveImage', async (_event, dataUrl: unknown) => {
   if (!currentProjectDir) throw new Error('Sem projeto ativo')
   if (typeof dataUrl !== 'string') throw new Error('dataUrl deve ser string')
@@ -548,14 +581,12 @@ ipcMain.handle('clipboard:saveImage', async (_event, dataUrl: unknown) => {
   if (!match) throw new Error('dataUrl não é uma imagem base64 válida')
   const ext = match[1].toLowerCase() === 'jpeg' ? 'jpg' : match[1].toLowerCase()
   const buf = Buffer.from(match[2], 'base64')
-  const dir = join(currentProjectDir, '.cortex', 'paste')
+  const dir = pasteDirForProject(currentProjectDir)
   await mkdir(dir, { recursive: true })
   const filePath = join(dir, `clipboard_${Date.now()}.${ext}`)
   await writeFile(filePath, buf)
-  // Path relativo POSIX-style — o agente lê melhor com / do que com \
-  return filePath
-    .slice(currentProjectDir.length + 1)
-    .replace(/\\/g, '/')
+  // Path absoluto POSIX-style (Read do Claude Code aceita / no Windows)
+  return filePath.replace(/\\/g, '/')
 })
 
 ipcMain.handle('chat:clear', async (_event, projectDir: unknown) => {
@@ -568,19 +599,19 @@ ipcMain.handle('chat:clear', async (_event, projectDir: unknown) => {
   }
 })
 
-// Apaga uma imagem específica de .cortex/paste/<arquivo>. O renderer chama
-// isso após o turno do agente terminar — as imagens só fazem sentido enquanto
-// estão sendo referenciadas. Sandboxed a esse subdiretório pra não virar um
-// deletePath genérico.
-ipcMain.handle('clipboard:deleteImage', async (_event, relPath: unknown) => {
+// Apaga uma imagem de <userData>/cortex-pastes/<projectHash>/. O renderer
+// chama isso após o turno do agente terminar — as imagens só fazem sentido
+// enquanto estão sendo referenciadas. Sandboxed: rejeita paths fora do
+// diretório de pastes pra não virar um deletePath genérico.
+ipcMain.handle('clipboard:deleteImage', async (_event, absolutePath: unknown) => {
   if (!currentProjectDir) return
-  if (typeof relPath !== 'string') return
-  const normalized = relPath.replace(/\\/g, '/')
-  if (!normalized.startsWith('.cortex/paste/')) return
+  if (typeof absolutePath !== 'string') return
+  const expected = pasteDirForProject(currentProjectDir).replace(/\\/g, '/')
+  const normalized = absolutePath.replace(/\\/g, '/')
+  if (!normalized.startsWith(expected + '/')) return
   if (normalized.includes('..') || normalized.includes('\0')) return
-  const absolute = join(currentProjectDir, normalized)
   try {
-    await unlink(absolute)
+    await unlink(normalized)
   } catch {
     // ignora se já não existe
   }
@@ -632,12 +663,16 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
 
   const sessionKey = currentProjectDir ?? '<no-project>'
   const continueSession = sessionStartedFor.has(sessionKey)
+  // Tenta retomar a sessão do passado (outra execução do IDE). Só vale no
+  // primeiro turno desta execução; depois continueSession já mantém vivo.
+  const resumeSessionId = continueSession ? null : await loadSessionId(sessionKey)
 
   try {
     await runAgent({
       prompt: lastUserMessage,
       projectRoot: currentProjectDir,
       continueSession,
+      resumeSessionId,
       mode: agentMode,
       abortController,
       events: {
@@ -651,6 +686,10 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
           mainWindow?.webContents.send('ai:tool_executed', { id, result })
         },
         onDone(stopReason, stats) {
+          // Persiste o session_id atual pra retomar em execuções futuras
+          if (stats?.sessionId) {
+            void saveSessionId(sessionKey, stats.sessionId)
+          }
           mainWindow?.webContents.send('ai:done', { stopReason, stats })
         },
         onError(err) {

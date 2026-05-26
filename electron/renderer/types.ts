@@ -26,6 +26,8 @@ export interface TurnStats {
   inputTokens: number
   outputTokens: number
   cacheReadTokens: number
+  /** Session ID do SDK; persistido por projeto pra retomar entre execuções. */
+  sessionId: string | null
 }
 
 export interface ElectronAPI {

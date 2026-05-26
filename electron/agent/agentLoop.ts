@@ -53,6 +53,10 @@ Imagens coladas pelo usuário:
 imediatamente via tool \`Read\`** antes de responder. O Read em arquivos \
 de imagem devolve um image block multimodal — você verá o conteúdo da \
 imagem, não só o caminho. Use o que viu pra orientar sua resposta.
+- Esses paths são **absolutos** e vivem fora do projeto (em um diretório \
+gerenciado pelo IDE, tipicamente \`<userData>/cortex-pastes/...\`). É \
+seguro fazer Read mesmo que esteja fora do cwd — são imagens que o \
+usuário explicitamente colou. Não é violação do sandbox.
 
 Seja conciso. Não repita o que as ferramentas já mostram no output.`
 
@@ -87,6 +91,12 @@ export interface TurnStats {
   outputTokens: number
   /** Tokens lidos do cache (mais baratos). */
   cacheReadTokens: number
+  /**
+   * Session ID retornado pelo SDK no `result`. Persistido por projeto e
+   * passado como `resume: <id>` nas chamadas seguintes — preserva o
+   * contexto da conversa mesmo entre reinicializações do IDE.
+   */
+  sessionId: string | null
 }
 
 export interface AgentEvents {
@@ -113,6 +123,12 @@ export interface RunAgentOptions {
   /** true no primeiro turno do projeto; demais turnos usam continue:true */
   continueSession: boolean
   /**
+   * Session ID a retomar (persistido por projeto entre execuções do IDE).
+   * Quando presente, tem precedência sobre `continueSession` e restaura o
+   * contexto completo da conversa anterior no backend Claude Code.
+   */
+  resumeSessionId?: string | null
+  /**
    * 'ask' (default): toda tool fora do conjunto auto-aprovado pede confirmação.
    * 'auto': tudo é aprovado direto; cards de tool aparecem só como histórico.
    */
@@ -134,7 +150,12 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
   const queryOptions: Options = {
     cwd: opts.projectRoot ?? undefined,
     systemPrompt: { type: 'preset', preset: 'claude_code', append: AGENT_SYSTEM_PROMPT },
-    continue: opts.continueSession || undefined,
+    // resume tem precedência sobre continue. Se temos um sessionId persistido
+    // do passado (mesmo projeto, outra sessão do IDE), restauramos a conversa
+    // completa no backend. Senão, continue mantém o contexto dentro da mesma
+    // sessão do IDE.
+    resume: opts.resumeSessionId ?? undefined,
+    continue: opts.resumeSessionId ? undefined : opts.continueSession || undefined,
     abortController: opts.abortController,
     mcpServers,
     canUseTool: async (toolName, input) => {
@@ -216,6 +237,7 @@ function handleSdkMessage(message: unknown, events: AgentEvents): void {
         subtype?: string
         duration_ms?: number
         total_cost_usd?: number
+        session_id?: string
         usage?: {
           input_tokens?: number
           output_tokens?: number
@@ -230,6 +252,7 @@ function handleSdkMessage(message: unknown, events: AgentEvents): void {
               inputTokens: m.usage?.input_tokens ?? 0,
               outputTokens: m.usage?.output_tokens ?? 0,
               cacheReadTokens: m.usage?.cache_read_input_tokens ?? 0,
+              sessionId: typeof m.session_id === 'string' ? m.session_id : null,
             }
           : null
       events.onDone(m.subtype ?? null, stats)
