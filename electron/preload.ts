@@ -77,6 +77,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveClipboardImage: (dataUrl: string) =>
     ipcRenderer.invoke('clipboard:saveImage', dataUrl),
 
+  // Apaga uma imagem de .cortex/paste/ (após o turno do agente usar)
+  deleteClipboardImage: (relPath: string) =>
+    ipcRenderer.invoke('clipboard:deleteImage', relPath),
+
   // Persistência do histórico de chat por projeto (PRD-0001 V2)
   loadChatHistory: (projectDir: string) =>
     ipcRenderer.invoke('chat:load', projectDir),

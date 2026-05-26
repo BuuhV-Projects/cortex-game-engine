@@ -568,6 +568,24 @@ ipcMain.handle('chat:clear', async (_event, projectDir: unknown) => {
   }
 })
 
+// Apaga uma imagem específica de .cortex/paste/<arquivo>. O renderer chama
+// isso após o turno do agente terminar — as imagens só fazem sentido enquanto
+// estão sendo referenciadas. Sandboxed a esse subdiretório pra não virar um
+// deletePath genérico.
+ipcMain.handle('clipboard:deleteImage', async (_event, relPath: unknown) => {
+  if (!currentProjectDir) return
+  if (typeof relPath !== 'string') return
+  const normalized = relPath.replace(/\\/g, '/')
+  if (!normalized.startsWith('.cortex/paste/')) return
+  if (normalized.includes('..') || normalized.includes('\0')) return
+  const absolute = join(currentProjectDir, normalized)
+  try {
+    await unlink(absolute)
+  } catch {
+    // ignora se já não existe
+  }
+})
+
 // SDK e resolve as aprovações pendentes como negadas.
 ipcMain.handle('ai:cancel', async () => {
   agentAborted = true

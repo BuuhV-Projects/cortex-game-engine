@@ -101,6 +101,13 @@ export class Chat {
     previewUrl: string
   }> = []
   private attachmentsEl: HTMLElement | null = null
+
+  /**
+   * Paths das imagens enviadas no turno atual — apagados do disco quando o
+   * agente termina (`handleDone`). Imagens só fazem sentido enquanto a IA
+   * está usando; depois ficam órfãs em `.cortex/paste/`.
+   */
+  private pastesToCleanup: string[] = []
   /** 'ask' pede aprovação por tool (default); 'auto' aprova tudo direto. */
   private mode: 'ask' | 'auto' = (localStorage.getItem('chat_mode') as 'ask' | 'auto') ?? 'ask'
   private modeToggleEl: HTMLButtonElement | null = null
@@ -133,6 +140,9 @@ export class Chat {
         this.currentTurnAssistantText = ''
         this.liveAssistantItem = null
         this.clearAttachments()
+        // Pendências de cleanup ficam órfãs no projeto anterior — aceito,
+        // já que o handler usa currentProjectDir do main que também mudou.
+        this.pastesToCleanup = []
         void window.electronAPI.setActiveProject(path)
         void this.loadHistory(path)
       }
@@ -423,6 +433,13 @@ export class Chat {
         : attachmentPrefix
       : text
 
+    // Acumula paths das imagens deste turno pra apagar quando o agente
+    // terminar (handleDone). clearAttachments revoga só as URLs de preview;
+    // os arquivos no disco continuam existindo até o cleanup.
+    for (const att of this.pendingAttachments) {
+      this.pastesToCleanup.push(att.path)
+    }
+
     this.inputEl.value = ''
     this.messagesSent.push({ role: 'user', content: finalContent })
     this.appendItem({ kind: 'message', role: 'user', content: finalContent, el: null })
@@ -499,6 +516,22 @@ export class Chat {
     this.updateInputState()
     if (stats) this.appendStats(stats)
     this.saveHistory()
+    this.cleanupPastes()
+  }
+
+  /**
+   * Apaga do disco as imagens coladas usadas em turnos que já terminaram.
+   * Trade-off: se o usuário pedir no turno seguinte 'olha aquela imagem',
+   * a IA dará erro no Read — precisa colar de novo. Aceito em troca de não
+   * acumular .cortex/paste/ indefinidamente.
+   */
+  private cleanupPastes(): void {
+    if (this.pastesToCleanup.length === 0) return
+    const paths = this.pastesToCleanup
+    this.pastesToCleanup = []
+    for (const path of paths) {
+      void window.electronAPI.deleteClipboardImage(path)
+    }
   }
 
   private appendStats(stats: TurnStats): void {
@@ -528,6 +561,8 @@ export class Chat {
     this.currentTurnAssistantText = ''
     this.streaming = false
     this.updateInputState()
+    // Mesmo em erro, a IA já recebeu as imagens (ou tentou) — limpa o disco.
+    this.cleanupPastes()
   }
 
   // ── Indicador "Pensando..." ─────────────────────────────────────────────────

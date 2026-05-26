@@ -58,6 +58,7 @@ export interface ElectronAPI {
   decideToolCall(id: string, approved: boolean): Promise<void>
   cancelChat(): Promise<void>
   saveClipboardImage(dataUrl: string): Promise<string>
+  deleteClipboardImage(relPath: string): Promise<void>
   loadChatHistory(
     projectDir: string,
   ): Promise<Array<{ role: 'user' | 'assistant'; content: string }>>
