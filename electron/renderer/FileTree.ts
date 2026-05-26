@@ -17,6 +17,11 @@ export class FileTree {
     this.buildShell()
     // Fecha context menu ao clicar fora
     document.addEventListener('click', () => this.dismissContextMenu())
+    // Recarrega a árvore quando o Chat IA executa uma tool que mexe no FS
+    // (Write/Edit/Bash/MCP tools que escrevem arquivos).
+    document.addEventListener('filetree-refresh', () => {
+      void this.refresh()
+    })
     if (this.projectDir) {
       // Anuncia o projeto restaurado do localStorage para os demais
       // componentes (Chat, BottomPanel, Preview). Adia para o próximo

@@ -27,6 +27,16 @@ function formatTokens(n: number): string {
   return `${(n / 1000).toFixed(1)}k`
 }
 
+// Tools read-only — não mudam o filesystem, então não disparam refresh
+// na sidebar. Qualquer outra tool é tratada como possível mutação.
+const READONLY_TOOLS = new Set(['Read', 'Glob', 'Grep', 'NotebookRead'])
+
+function toolMutatesFs(name: string): boolean {
+  // MCP tools chegam prefixadas como mcp__<server>__<tool>; strip pra checar
+  const bare = name.includes('__') ? (name.split('__').pop() ?? name) : name
+  return !READONLY_TOOLS.has(bare)
+}
+
 type DisplayItem =
   | { kind: 'message'; role: 'user' | 'assistant'; content: string; el: HTMLElement | null }
   | { kind: 'tool'; request: AiToolRequest; result: { content: string; isError: boolean } | null; el: HTMLElement | null }
@@ -224,6 +234,13 @@ export class Chat {
     item.result = result
     this.renderToolCard(item)
     this.scrollToBottom()
+
+    // Se a tool pode ter mexido no filesystem do projeto, sinaliza pra
+    // FileTree recarregar a árvore. Leituras puras (Read/Glob/Grep) e
+    // erros não precisam.
+    if (!result.isError && toolMutatesFs(item.request.name)) {
+      document.dispatchEvent(new CustomEvent('filetree-refresh'))
+    }
   }
 
   private handleDone(stats: TurnStats | null): void {
