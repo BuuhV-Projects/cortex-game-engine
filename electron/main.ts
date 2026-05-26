@@ -559,18 +559,16 @@ ipcMain.handle('ai:login', async () => {
     const claudeBin = resolveClaudeBin()
     if (process.platform === 'win32') {
       // Usa PowerShell em vez de cmd — o shim `claude` e o `node` ficam no
-      // PATH do PowerShell mas nem sempre no do cmd. `Start-Process` abre
-      // uma janela nova; `-NoExit` mantém aberta após o login pra usuário
-      // ver o resultado e fechar quando quiser.
-      const inner = claudeBin
-        ? `node \\"${claudeBin}\\" login`
-        : 'claude login'
-      const psCommand = `Start-Process powershell -ArgumentList '-NoExit','-Command','${inner}'`
-      spawn('powershell.exe', ['-NoProfile', '-Command', psCommand], {
+      // PATH do PowerShell mas nem sempre no do cmd. Aspas simples no path
+      // funcionam em PowerShell e não conflitam com as aspas duplas do
+      // `-Command` quando cmd repassa o argumento. `start ""` abre uma
+      // janela nova de console; `-NoExit` mantém aberta após o login.
+      const inner = claudeBin ? `node '${claudeBin}' login` : 'claude login'
+      const cmdLine = `start "" powershell -NoExit -Command "${inner}"`
+      spawn(cmdLine, [], {
         detached: true,
-        shell: false,
+        shell: true,
         stdio: 'ignore',
-        windowsHide: true,
       })
     } else if (process.platform === 'darwin') {
       const command = claudeBin ? `node '${claudeBin}' login` : 'claude login'
