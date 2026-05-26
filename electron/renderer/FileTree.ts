@@ -18,6 +18,14 @@ export class FileTree {
     // Fecha context menu ao clicar fora
     document.addEventListener('click', () => this.dismissContextMenu())
     if (this.projectDir) {
+      // Anuncia o projeto restaurado do localStorage para os demais
+      // componentes (Chat, BottomPanel, Preview) — sem isso o agente roda
+      // sem cwd e acaba tocando arquivos do diretório do processo Electron.
+      document.dispatchEvent(
+        new CustomEvent<{ path: string }>('project-open', {
+          detail: { path: this.projectDir },
+        }),
+      )
       await this.refresh()
     }
   }

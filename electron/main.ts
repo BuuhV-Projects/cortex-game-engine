@@ -514,6 +514,14 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
     })
     return
   }
+  // Salvaguarda: sem projectRoot, o SDK roda com cwd do processo Electron
+  // (o repo do IDE) e o agente pode tocar arquivos fora do sandbox. Recusa.
+  if (!currentProjectDir) {
+    mainWindow?.webContents.send('ai:error', {
+      message: 'Abra um projeto antes de conversar com a IA. O agente só age dentro do projeto ativo.',
+    })
+    return
+  }
   const history = messages as Array<{ role: 'user' | 'assistant'; content: string }>
   const lastUserMessage = [...history].reverse().find((m) => m.role === 'user')?.content
   if (!lastUserMessage) {
