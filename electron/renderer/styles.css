@@ -1042,9 +1042,79 @@ body {
 .chat-message-content {
   font-size: 13px;
   color: var(--od-fg);
-  white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.5;
+}
+
+/* Mensagens do usuário continuam usando white-space pre-wrap pra preservar
+   quebras manuais — não passam pelo markdown render. */
+.chat-message--user .chat-message-content {
+  white-space: pre-wrap;
+}
+
+/* ── Markdown rendering dentro de .chat-message-content ─────────────────── */
+
+.chat-message-content strong {
+  font-weight: 600;
+  color: var(--od-fg-bright, #ffffff);
+}
+
+.chat-message-content em {
+  font-style: italic;
+}
+
+.chat-message-content .md-h {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 8px 0 4px;
+  color: var(--od-fg-bright, #ffffff);
+}
+
+.chat-message-content .md-list {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.chat-message-content .md-list li {
+  margin: 2px 0;
+}
+
+.chat-message-content .md-code {
+  background-color: var(--od-bg-panel);
+  border: 1px solid var(--od-border-soft);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+  font-size: 12px;
+  color: var(--od-accent-soft, var(--od-accent));
+}
+
+.chat-message-content .md-pre {
+  background-color: var(--od-bg-panel);
+  border: 1px solid var(--od-border-soft);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 6px 0;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.chat-message-content .md-pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--od-fg);
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+}
+
+.chat-message-content .md-pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chat-message-content .md-pre::-webkit-scrollbar-thumb {
+  background: var(--od-border-strong);
+  border-radius: 3px;
 }
 
 .chat-messages::-webkit-scrollbar {

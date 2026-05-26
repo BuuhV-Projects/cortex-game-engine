@@ -1,4 +1,5 @@
 import { AiToolRequest } from "./types";
+import { renderMarkdown } from "./markdown";
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -309,7 +310,7 @@ export class Chat {
     if (this.liveAssistantItem.kind === 'message') {
       this.liveAssistantItem.content += text
       const contentEl = this.liveAssistantItem.el?.querySelector('.chat-message-content')
-      if (contentEl) contentEl.textContent = this.liveAssistantItem.content
+      if (contentEl) contentEl.innerHTML = renderMarkdown(this.liveAssistantItem.content)
       this.scrollToBottom()
     }
   }
@@ -436,7 +437,13 @@ export class Chat {
     roleEl.textContent = role === 'user' ? 'Você' : 'Assistente'
     const contentEl = document.createElement('div')
     contentEl.className = 'chat-message-content'
-    contentEl.textContent = content
+    // Mensagens do assistente são markdown; do usuário ficam como texto plano
+    // (perguntas curtas, sem formatação).
+    if (role === 'assistant') {
+      contentEl.innerHTML = renderMarkdown(content)
+    } else {
+      contentEl.textContent = content
+    }
     el.appendChild(roleEl)
     el.appendChild(contentEl)
     return el
