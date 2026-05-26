@@ -559,9 +559,12 @@ ipcMain.handle('ai:login', async () => {
     const claudeBin = resolveClaudeBin()
     if (process.platform === 'win32') {
       const command = claudeBin ? `node "${claudeBin}" login` : 'claude login'
-      spawn('cmd', ['/c', 'start', '"Claude Login"', 'cmd', '/k', command], {
+      // Passa tudo como UMA string via shell — sem isso o argv de `start`
+      // interpreta "Claude Login" como nome de executável. `start ""` é o
+      // truque pra abrir nova janela sem título (cmd exige um título ali).
+      spawn(`start "" cmd /k ${command}`, [], {
         detached: true,
-        shell: false,
+        shell: true,
         stdio: 'ignore',
       })
     } else if (process.platform === 'darwin') {
@@ -572,7 +575,7 @@ ipcMain.handle('ai:login', async () => {
         { detached: true, stdio: 'ignore' },
       )
     } else {
-      const command = claudeBin ? `node ${claudeBin} login` : 'claude login'
+      const command = claudeBin ? `node "${claudeBin}" login` : 'claude login'
       spawn('x-terminal-emulator', ['-e', command], {
         detached: true,
         stdio: 'ignore',
