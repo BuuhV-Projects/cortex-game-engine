@@ -917,3 +917,160 @@ body {
   color: #777777;
   cursor: not-allowed;
 }
+
+.chat-stop-btn {
+  background-color: #a23a2c;
+  color: #ffffff;
+  border: none;
+  border-radius: 3px;
+  padding: 4px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  align-self: flex-end;
+  height: 32px;
+}
+
+.chat-stop-btn:hover {
+  background-color: #c64a3a;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tool cards (ADR-0018)                                              */
+/* ------------------------------------------------------------------ */
+
+.chat-tool-card {
+  border: 1px solid #3c3c3c;
+  border-left: 3px solid #007acc;
+  background-color: #1e1e1e;
+  border-radius: 3px;
+  padding: 8px 10px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-tool-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-tool-card-name {
+  color: #4ec9b0;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 11px;
+}
+
+.chat-tool-card-summary {
+  color: #d4d4d4;
+  line-height: 1.4;
+}
+
+.chat-tool-card-details {
+  font-size: 11px;
+  color: #9d9d9d;
+}
+
+.chat-tool-card-details > summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.chat-tool-card-details[open] > summary {
+  margin-bottom: 4px;
+}
+
+.chat-tool-card-params {
+  margin: 0;
+  padding: 6px 8px;
+  background-color: #252526;
+  border-radius: 3px;
+  color: #cccccc;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.chat-tool-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.chat-tool-approve,
+.chat-tool-deny {
+  flex: 1;
+  border: none;
+  border-radius: 3px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.chat-tool-approve {
+  background-color: #2d7d31;
+}
+
+.chat-tool-approve:hover:not(:disabled) {
+  background-color: #3a9a40;
+}
+
+.chat-tool-deny {
+  background-color: #6e6e6e;
+}
+
+.chat-tool-deny:hover:not(:disabled) {
+  background-color: #8a8a8a;
+}
+
+.chat-tool-approve:disabled,
+.chat-tool-deny:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-tool-card-status {
+  font-size: 11px;
+  color: #9d9d9d;
+  font-style: italic;
+}
+
+.chat-tool-card-result {
+  border-top: 1px solid #3c3c3c;
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-tool-card-result-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.chat-tool-card-result--ok .chat-tool-card-result-label {
+  color: #4ec9b0;
+}
+
+.chat-tool-card-result--error .chat-tool-card-result-label {
+  color: #f48771;
+}
+
+.chat-tool-card-result-body {
+  margin: 0;
+  padding: 6px 8px;
+  background-color: #252526;
+  border-radius: 3px;
+  color: #cccccc;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 240px;
+  overflow-y: auto;
+}

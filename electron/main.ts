@@ -5,6 +5,8 @@ import { spawn, ChildProcess } from 'child_process'
 import Anthropic from '@anthropic-ai/sdk'
 import { homedir } from 'os'
 import { existsSync, readFileSync } from 'fs'
+import { runAgent } from './agent/agentLoop.js'
+import type { ToolRequest, ToolExecutionResult } from './agent/tools.js'
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
 let mainWindow: BrowserWindow | null = null
@@ -15,6 +17,19 @@ let runningProcess: ChildProcess | null = null
 // Processo do terminal embutido (independente do runningProcess — permite
 // rodar `yarn install` enquanto o Play continua ativo). ADR-0012.
 let terminalProcess: ChildProcess | null = null
+
+// Projeto ativo (ADR-0017): sandbox das tools do agente. Atualizado via
+// IPC `project:setActive` quando o renderer dispara o evento `project-open`.
+let currentProjectDir: string | null = null
+
+// Estado do turno do agente em curso (PRD-0002 / ADR-0018): controla
+// aprovação de tools e cancelamento.
+interface PendingApproval {
+  resolve: (approved: boolean) => void
+}
+const pendingApprovals = new Map<string, PendingApproval>()
+let agentAborted = false
+let agentRunning = false
 
 // ---------------------------------------------------------------------------
 // Segurança: validação de path traversal
@@ -453,17 +468,6 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
 
 // Chat IA — envia o histórico para Claude e faz streaming dos chunks de volta
 // para o renderer via canais ai:chunk / ai:done / ai:error (ADR-0014).
-const CLAUDE_CODE_SYSTEM_PREFIX = `You are Claude Code, Anthropic's official CLI for Claude.`
-
-const AI_SYSTEM_PROMPT = `\
-Você é um assistente para o cortex-game-engine — um motor de jogos 3D em \
-TypeScript com arquitetura Entity-Component-System (ECS), renderização via \
-Three.js, e ferramentas de geração de scripts e modelos 3D via IA.
-
-Você ajuda o usuário a criar jogos, explicar código existente, debugar \
-problemas e sugerir mudanças. Responda em português. Quando sugerir código, \
-prefira TypeScript moderno (ES2022+) e siga o padrão ECS do engine.`
-
 const OAUTH_BETA_HEADER = 'oauth-2025-04-20'
 
 /**
@@ -498,9 +502,47 @@ function buildAnthropicClient(): AnthropicClientResult | null {
   }
 }
 
+// Define qual projeto o agente está enxergando. Sem isso, tools de path
+// (list_files, read_file, etc.) recusam executar.
+ipcMain.handle('project:setActive', async (_event, projectDir: unknown) => {
+  if (projectDir === null || projectDir === undefined) {
+    currentProjectDir = null
+    return
+  }
+  currentProjectDir = validatePath(projectDir)
+})
+
+// Decisão do usuário sobre uma tool call pendente (ADR-0018). O renderer
+// chama isso depois de mostrar o card e o usuário clicar Aprovar ou Negar.
+ipcMain.handle('ai:tool_decision', async (_event, id: unknown, approved: unknown) => {
+  if (typeof id !== 'string' || typeof approved !== 'boolean') return
+  const pending = pendingApprovals.get(id)
+  if (!pending) return
+  pendingApprovals.delete(id)
+  pending.resolve(approved)
+})
+
+// Cancela o turno do agente em andamento. Tools pendentes ficam marcadas
+// como negadas; o stream em curso é abortado.
+ipcMain.handle('ai:cancel', async () => {
+  agentAborted = true
+  for (const [id, pending] of pendingApprovals) {
+    pendingApprovals.delete(id)
+    pending.resolve(false)
+  }
+})
+
+// Turno do agente: recebe histórico, faz streaming de texto, executa tools
+// com aprovação, repete até stop_reason !== 'tool_use' (ADR-0017).
 ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
   if (!Array.isArray(messages)) {
     mainWindow?.webContents.send('ai:error', { message: 'messages deve ser array' })
+    return
+  }
+  if (agentRunning) {
+    mainWindow?.webContents.send('ai:error', {
+      message: 'Outro turno do agente já está em andamento.',
+    })
     return
   }
 
@@ -513,31 +555,48 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown) => {
     return
   }
 
-  const systemPrompt = auth.isOAuth
-    ? `${CLAUDE_CODE_SYSTEM_PREFIX}\n\n${AI_SYSTEM_PROMPT}`
-    : AI_SYSTEM_PROMPT
+  agentRunning = true
+  agentAborted = false
 
   try {
-    const stream = auth.client.messages.stream({
+    await runAgent({
+      client: auth.client,
       model: 'claude-sonnet-4-5',
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: messages as Anthropic.MessageParam[],
+      initialMessages: messages as Array<{ role: 'user' | 'assistant'; content: string }>,
+      projectRoot: currentProjectDir,
+      isOAuth: auth.isOAuth,
+      events: {
+        onTextChunk(text) {
+          mainWindow?.webContents.send('ai:chunk', { text })
+        },
+        onToolRequest(request: ToolRequest) {
+          mainWindow?.webContents.send('ai:tool_request', request)
+        },
+        onToolExecuted(id: string, result: ToolExecutionResult) {
+          mainWindow?.webContents.send('ai:tool_executed', { id, result })
+        },
+        onDone(stopReason) {
+          mainWindow?.webContents.send('ai:done', { stopReason })
+        },
+        onError(err) {
+          mainWindow?.webContents.send('ai:error', { message: formatAnthropicError(err) })
+        },
+      },
+      approval: {
+        async requestApproval(request: ToolRequest) {
+          if (agentAborted) return false
+          // O card já foi enviado via events.onToolRequest (announce). Aqui
+          // só esperamos a decisão do usuário que vai chegar por ai:tool_decision.
+          return new Promise<boolean>((resolveApproval) => {
+            pendingApprovals.set(request.id, { resolve: resolveApproval })
+          })
+        },
+      },
+      shouldAbort: () => agentAborted,
     })
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        mainWindow?.webContents.send('ai:chunk', { text: event.delta.text })
-      }
-    }
-
-    const finalMessage = await stream.finalMessage()
-    mainWindow?.webContents.send('ai:done', {
-      stopReason: finalMessage.stop_reason,
-      usage: finalMessage.usage,
-    })
-  } catch (err) {
-    mainWindow?.webContents.send('ai:error', { message: formatAnthropicError(err) })
+  } finally {
+    agentRunning = false
+    pendingApprovals.clear()
   }
 })
 

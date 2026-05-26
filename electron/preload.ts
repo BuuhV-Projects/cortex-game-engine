@@ -48,9 +48,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopTerminalCommand: () =>
     ipcRenderer.invoke('terminal:stop'),
 
-  // Chat IA (ADR-0014)
+  // Chat IA (ADR-0014, ADR-0017)
   chat: (messages: Array<{ role: 'user' | 'assistant'; content: string }>) =>
     ipcRenderer.invoke('ai:chat', messages),
+
+  // Define o projeto que o agente do chat vê (sandbox de tools — ADR-0017)
+  setActiveProject: (projectDir: string | null) =>
+    ipcRenderer.invoke('project:setActive', projectDir),
+
+  // Decisão do usuário sobre uma tool call pendente (ADR-0018)
+  decideToolCall: (id: string, approved: boolean) =>
+    ipcRenderer.invoke('ai:tool_decision', id, approved),
+
+  // Cancela o turno do agente em andamento
+  cancelChat: () => ipcRenderer.invoke('ai:cancel'),
 
   // Eventos do main → renderer. Cada chamada adiciona um listener ao canal;
   // múltiplos componentes (Preview, BottomPanel, etc.) podem se inscrever
@@ -82,5 +93,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   onAiError: (callback: (message: string) => void) => {
     ipcRenderer.on('ai:error', (_event, payload: { message: string }) => callback(payload.message))
+  },
+
+  // Tool calls do agente (ADR-0018)
+  onAiToolRequest: (
+    callback: (request: {
+      id: string
+      name: string
+      input: Record<string, unknown>
+      summary: string
+      needsApproval: boolean
+    }) => void,
+  ) => {
+    ipcRenderer.on('ai:tool_request', (_event, request) => callback(request))
+  },
+
+  onAiToolExecuted: (
+    callback: (payload: { id: string; result: { content: string; isError: boolean } }) => void,
+  ) => {
+    ipcRenderer.on('ai:tool_executed', (_event, payload) => callback(payload))
   },
 })
