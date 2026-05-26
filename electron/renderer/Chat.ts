@@ -151,12 +151,21 @@ export class Chat {
     this.currentTurnAssistantText = ''
     this.liveAssistantItem = null
     // Garante que nenhum estado de streaming fantasma sobrevive ao clear —
-    // o input ficava bloqueado quando isso acontecia.
+    // o input ficava bloqueado quando isso acontecia. Forçamos os atributos
+    // diretamente além de chamar updateInputState() para cobrir o caso de
+    // o DOM ter ficado fora de sync com o estado interno.
     this.streaming = false
     this.hideThinking()
     this.renderAll()
+    if (this.inputEl) {
+      this.inputEl.disabled = false
+      this.inputEl.readOnly = false
+    }
+    if (this.sendBtn) this.sendBtn.disabled = false
     this.updateInputState()
-    this.inputEl?.focus()
+    // Foco no próximo tick — alguns navegadores ignoram focus() dentro do
+    // mesmo task do confirm().
+    setTimeout(() => this.inputEl?.focus(), 0)
   }
 
   private buildShell(): void {
