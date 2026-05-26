@@ -179,6 +179,38 @@ obj.data.materials.append(mat)
 # for face in mesh.polygons: face.material_index = 1
 \`\`\`
 
+### Sistema de coordenadas — leia com atenção
+O Blender usa **Z-up** (Z+ é para cima, -Y é para frente). O formato glTF
+(o destino do export) usa **Y-up** (Y+ para cima, +Z para frente). O
+exportador \`bpy.ops.export_scene.gltf\` **converte automaticamente**
+Z-up → Y-up no momento do export (rotação interna de -90° em X, normals
+e UVs ajustados).
+
+Implicações:
+
+1. **Monte a cena nos eixos nativos do Blender.** Cilindros, planos e
+   cubos criados com \`bpy.ops.mesh.primitive_*_add\` ficam alinhados
+   ao Z (eixo "vertical" do Blender). Não rotacione manualmente para
+   "compensar" a conversão Y-up — o exporter faz isso e dobrar a
+   rotação inverte o modelo.
+
+2. **Posição vertical** vai em \`obj.location.z\`, não em \`.y\`. Um
+   personagem em pé no chão tem \`location = (0, 0, altura_dos_pés)\`,
+   não \`(0, altura, 0)\`.
+
+3. **Orientação "frente"**: em Blender \`-Y\` é a frente; em glTF é
+   \`+Z\`. Se o modelo tem direção (carro, espada, personagem), o
+   exporter alinha automaticamente — modele com a frente apontando
+   para \`-Y\` no Blender.
+
+4. **Rodas/cilindros laterais**: para um pneu de carro (eixo passando
+   pelo centro horizontalmente), o cilindro precisa ter eixo no **X**
+   (não no Z). Crie o cilindro padrão (eixo em Z) e gire-o uma vez no
+   Y: \`bpy.ops.transform.rotate(value=math.radians(90), orient_axis='Y')\`,
+   ou ajuste \`rotation_euler = (0, math.radians(90), 0)\`. Isso é
+   rotação de modelo legítima (orientação da peça), não compensação
+   de eixo.
+
 ### Exportação GLTF/GLB
 \`\`\`python
 # Exportar toda a cena como GLB (binário). Use APENAS os parâmetros abaixo —
