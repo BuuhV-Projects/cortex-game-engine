@@ -807,6 +807,23 @@ body {
   color: var(--od-fg);
 }
 
+.chat-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--od-fg-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+  line-height: 1;
+  border-radius: 3px;
+  margin-left: auto;
+}
+
+.chat-clear-btn:hover {
+  background-color: var(--od-bg-tab);
+  color: var(--od-fg);
+}
+
 #chat-container.chat-collapsed {
   min-width: 0;
 }

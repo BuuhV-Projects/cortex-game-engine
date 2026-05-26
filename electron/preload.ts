@@ -73,6 +73,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Cancela o turno do agente em andamento
   cancelChat: () => ipcRenderer.invoke('ai:cancel'),
 
+  // Persistência do histórico de chat por projeto (PRD-0001 V2)
+  loadChatHistory: (projectDir: string) =>
+    ipcRenderer.invoke('chat:load', projectDir),
+  saveChatHistory: (projectDir: string, messages: Array<{ role: string; content: string }>) =>
+    ipcRenderer.invoke('chat:save', projectDir, messages),
+  clearChatHistory: (projectDir: string) =>
+    ipcRenderer.invoke('chat:clear', projectDir),
+
   // Eventos do main → renderer. Cada chamada adiciona um listener ao canal;
   // múltiplos componentes (Preview, BottomPanel, etc.) podem se inscrever
   // ao mesmo evento. Os componentes só chamam onX uma vez no init, então

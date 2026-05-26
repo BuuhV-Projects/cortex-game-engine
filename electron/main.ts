@@ -1,7 +1,8 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, resolve } from 'path'
-import { readdir, readFile, writeFile, cp, mkdir, rename, rm } from 'fs/promises'
+import { readdir, readFile, writeFile, cp, mkdir, rename, rm, unlink } from 'fs/promises'
 import { spawn, ChildProcess } from 'child_process'
+import { createHash } from 'crypto'
 import { runAgent } from './agent/agentLoop.js'
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
@@ -491,6 +492,48 @@ ipcMain.handle('ai:tool_decision', async (_event, id: unknown, approved: unknown
 })
 
 // Cancela o turno do agente em andamento. Aborta o controller passado ao
+// ── Persistência do histórico do chat (PRD-0001 V2 / ADR-0021) ─────────────
+//
+// Salva em <userData>/chats/<hash>.json, onde <hash> é SHA-1 do path do projeto.
+// Centralizado no IDE (não polui o diretório do projeto) e identificado por
+// path absoluto — se o usuário renomear/mover o projeto, perde o histórico
+// (trade-off assumido pra V1; mais simples que rastrear identidade do projeto).
+
+function chatHistoryPath(projectDir: string): string {
+  const hash = createHash('sha1').update(projectDir).digest('hex').slice(0, 16)
+  return join(app.getPath('userData'), 'chats', `${hash}.json`)
+}
+
+ipcMain.handle('chat:load', async (_event, projectDir: unknown) => {
+  if (typeof projectDir !== 'string' || projectDir === '') return []
+  const file = chatHistoryPath(validatePath(projectDir))
+  try {
+    const raw = await readFile(file, 'utf-8')
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+})
+
+ipcMain.handle('chat:save', async (_event, projectDir: unknown, messages: unknown) => {
+  if (typeof projectDir !== 'string' || projectDir === '') return
+  if (!Array.isArray(messages)) return
+  const file = chatHistoryPath(validatePath(projectDir))
+  await mkdir(join(app.getPath('userData'), 'chats'), { recursive: true })
+  await writeFile(file, JSON.stringify(messages), 'utf-8')
+})
+
+ipcMain.handle('chat:clear', async (_event, projectDir: unknown) => {
+  if (typeof projectDir !== 'string' || projectDir === '') return
+  const file = chatHistoryPath(validatePath(projectDir))
+  try {
+    await unlink(file)
+  } catch {
+    // ignora se não existe
+  }
+})
+
 // SDK e resolve as aprovações pendentes como negadas.
 ipcMain.handle('ai:cancel', async () => {
   agentAborted = true

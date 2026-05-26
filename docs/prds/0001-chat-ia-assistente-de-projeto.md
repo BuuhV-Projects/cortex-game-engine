@@ -54,8 +54,9 @@ ferramentas de IA (Claude/ChatGPT/Copilot). Quer:
 - Configuração da API key via variável de ambiente `ANTHROPIC_API_KEY`.
 
 ### V2 (próxima iteração)
-- Histórico persistido em `<projeto>/.cortex/chat-history.json`.
-- Carregamento automático ao abrir o projeto.
+- ~~Histórico persistido em `<projeto>/.cortex/chat-history.json`.~~ **Feito**, mas decidimos persistir em `<userData>/chats/<hash_sha1_do_path>.json` em vez de dentro do projeto — fica centralizado no IDE, não polui o repo e dispensa `.gitignore`. Trade-off: se o usuário mover/renomear o projeto, o histórico fica órfão.
+- Carregamento automático ao abrir o projeto. **Feito.**
+- Botão "Apagar histórico" no header do chat. **Feito.**
 - Renderização de Markdown e blocos de código com highlighting.
 - Tool use: a IA pode chamar `read_file`, `list_files`, `write_file`,
   `run_command`. `read_file`/`list_files` executam direto;

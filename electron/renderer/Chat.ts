@@ -105,10 +105,52 @@ export class Chat {
         this.currentTurnAssistantText = ''
         this.liveAssistantItem = null
         void window.electronAPI.setActiveProject(path)
-        this.renderAll()
+        void this.loadHistory(path)
       }
       this.updateInputState()
     })
+  }
+
+  /** Carrega histórico persistido em <userData>/chats/<hash>.json (PRD-0001 V2). */
+  private async loadHistory(projectDir: string): Promise<void> {
+    try {
+      const stored = await window.electronAPI.loadChatHistory(projectDir)
+      if (Array.isArray(stored) && stored.length > 0) {
+        this.messagesSent = stored
+        this.items = stored.map((m) => ({
+          kind: 'message' as const,
+          role: m.role,
+          content: m.content,
+          el: null,
+        }))
+      }
+    } catch (err) {
+      console.error('Erro ao carregar histórico:', err)
+    }
+    this.renderAll()
+  }
+
+  /** Salva o histórico após cada turno do agente. Só user/assistant text. */
+  private saveHistory(): void {
+    if (!this.projectDir) return
+    void window.electronAPI.saveChatHistory(this.projectDir, this.messagesSent)
+  }
+
+  /** Apaga o histórico do projeto ativo e limpa a UI. */
+  private async clearHistory(): Promise<void> {
+    if (!this.projectDir) return
+    const ok = window.confirm('Apagar todo o histórico do chat deste projeto?')
+    if (!ok) return
+    try {
+      await window.electronAPI.clearChatHistory(this.projectDir)
+    } catch (err) {
+      console.error('Erro ao limpar histórico:', err)
+    }
+    this.messagesSent = []
+    this.items = []
+    this.currentTurnAssistantText = ''
+    this.liveAssistantItem = null
+    this.renderAll()
   }
 
   private buildShell(): void {
@@ -119,6 +161,13 @@ export class Chat {
     const title = document.createElement('span')
     title.className = 'chat-header-title'
     title.textContent = 'Chat IA'
+    const clearBtn = document.createElement('button')
+    clearBtn.className = 'chat-clear-btn'
+    clearBtn.type = 'button'
+    clearBtn.title = 'Apagar histórico'
+    clearBtn.textContent = '🗑'
+    clearBtn.addEventListener('click', () => void this.clearHistory())
+
     const toggleBtn = document.createElement('button')
     toggleBtn.className = 'chat-toggle-btn'
     toggleBtn.type = 'button'
@@ -127,6 +176,7 @@ export class Chat {
     toggleBtn.addEventListener('click', () => this.toggleCollapsed())
     this.toggleBtn = toggleBtn
     header.appendChild(title)
+    header.appendChild(clearBtn)
     header.appendChild(toggleBtn)
 
     const messages = document.createElement('div')
@@ -259,6 +309,7 @@ export class Chat {
     this.streaming = false
     this.updateInputState()
     if (stats) this.appendStats(stats)
+    this.saveHistory()
   }
 
   private appendStats(stats: TurnStats): void {
