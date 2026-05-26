@@ -3,6 +3,14 @@
 **Data:** 2026-05-26
 **Status:** aceito (substitui a implementação custom dos ADRs 0017/0019)
 
+> **Atualização 2026-05-26 (parcial):** a parte da ADR-0019 sobre
+> `generate_blender_model` foi reativada — não como tool custom no nosso
+> loop (que não existe mais), mas como tool exposta via **MCP server
+> in-process** do próprio Agent SDK (`createSdkMcpServer`). Write/Bash
+> não substituem o `BlenderModelGenerator` porque ele carrega ~200 linhas
+> de system prompt curado sobre `bpy`. Ver ADR-0019 e
+> [electron/agent/tools/blender.ts](../../electron/agent/tools/blender.ts).
+
 ## Contexto
 
 Os ADRs 0017 e 0019 descreviam uma implementação custom do agente:

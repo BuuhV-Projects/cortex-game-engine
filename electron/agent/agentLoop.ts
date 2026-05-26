@@ -1,4 +1,5 @@
 import { query, type Options, type PermissionResult } from '@anthropic-ai/claude-agent-sdk'
+import { createBlenderToolServer } from './tools/blender.js'
 
 /**
  * Loop do agente usando @anthropic-ai/claude-agent-sdk (ADR-0017 V2).
@@ -75,11 +76,18 @@ export interface RunAgentOptions {
  * `continue: true`.
  */
 export async function runAgent(opts: RunAgentOptions): Promise<void> {
+  // Tools customizadas ficam num MCP server in-process — só carregadas quando
+  // há projeto aberto (precisam de projectRoot pra resolver paths relativos).
+  const mcpServers = opts.projectRoot
+    ? { 'cortex-blender': createBlenderToolServer(opts.projectRoot) }
+    : undefined
+
   const queryOptions: Options = {
     cwd: opts.projectRoot ?? undefined,
     systemPrompt: { type: 'preset', preset: 'claude_code', append: AGENT_SYSTEM_PROMPT },
     continue: opts.continueSession || undefined,
     abortController: opts.abortController,
+    mcpServers,
     canUseTool: async (toolName, input) => {
       if (APPROVED_AUTO_TOOLS.has(toolName)) {
         return { behavior: 'allow', updatedInput: input } as PermissionResult
@@ -180,9 +188,15 @@ function buildSummary(toolName: string, input: Record<string, unknown>): string 
       return `Editar notebook ${path}`
     case 'Bash':
       return `Executar: ${command}`
-    default:
-      return toolName
   }
+  // Tools de MCP servers chegam prefixadas como mcp__<server>__<tool>
+  if (toolName.endsWith('generate_blender_model')) {
+    const target = typeof input['target_path'] === 'string' ? input['target_path'] : ''
+    const desc = typeof input['description'] === 'string' ? input['description'] : ''
+    const short = desc.length > 60 ? `${desc.slice(0, 60)}…` : desc
+    return `Gerar modelo 3D em ${target}: "${short}"`
+  }
+  return toolName
 }
 
 function makeId(): string {

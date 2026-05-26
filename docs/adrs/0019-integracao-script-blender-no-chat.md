@@ -1,7 +1,18 @@
 # 0019 - Integração ScriptGenerator e BlenderModelGenerator no Chat IA
 
-**Data:** 2026-05-25
-**Status:** superseded por ADR-0020 (agent SDK não precisa de generators custom — Write/Bash cobre os casos)
+**Data:** 2026-05-25 (reativada 2026-05-26)
+**Status:** parcialmente aceito — `generate_blender_model` reativado como tool MCP custom (ver atualização abaixo). `generate_script` segue não-prioritário; agente usa `Write`+`Edit` para scripts.
+
+> **Atualização 2026-05-26:** o argumento "Write/Bash cobre os casos" não
+> se sustenta para Blender — a IA teria que recriar do zero o conhecimento
+> de `bpy` (~200 linhas de receitas PBR, `bmesh`, exportação GLB) a cada
+> pedido, e ainda lidar com spawn do Blender headless. `generate_blender_model`
+> volta como **tool MCP custom in-process** registrada via
+> `createSdkMcpServer` do Claude Agent SDK ([electron/agent/tools/blender.ts](../../electron/agent/tools/blender.ts)).
+> O server precisa do `projectRoot` (sandbox da ADR-0017), por isso é
+> criado por turno do agente. As demais decisões da ADR original (timeouts,
+> exigência de `ANTHROPIC_API_KEY`, retorno de erro como `tool_result`)
+> seguem valendo.
 
 ## Contexto
 
