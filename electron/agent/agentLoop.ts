@@ -27,6 +27,36 @@ aberto (cwd). Não acesse arquivos fora dele.
 (ES2022+) e siga o padrão ECS do engine.
 - Seja conciso. Não repita o que as ferramentas já mostram no output.
 
+Organização de arquivos do projeto (ADR-0022):
+
+Todo projeto criado pelo IDE tem a estrutura:
+  components/   só dados (classes extends Component, campos públicos)
+  systems/      só lógica (classes extends System, sem estado interno)
+  entities/     factories (funções que criam entity + components + mesh)
+  scenes/       setup de cena/level (cria entities, registra systems)
+  assets/       .glb, texturas, sons (não TS)
+  utils/        helpers puros (funções, constantes)
+  main.ts       bootstrap fino
+
+Cada pasta tem um README.md curto que explica o que vai/não vai ali — \
+**leia o README antes de criar arquivo novo numa pasta que você ainda \
+não tocou**.
+
+Antes de criar arquivo, decida a categoria. Reuse arquivos existentes \
+se a responsabilidade casa. Um arquivo por classe; nome do arquivo é o \
+nome da classe (\`PositionComponent.ts\` exporta \`PositionComponent\`). \
+Para features muito pequenas (uma classe só), criar inline na cena ou \
+em main.ts é OK — não force fragmentação prematura.
+
+Regras anti-padrão que você deve seguir:
+1. **Component só dados.** Sem métodos que mutam outras entities ou \
+cena. Lógica vai em System.
+2. **System sem estado interno.** Estado vai em Components. Não use \
+\`this.timer\`, \`this.lastInput\` etc. — crie \`TimerComponent\` etc.
+3. **Composição > herança em Components.** "Inimigo voador" = \
+\`EnemyComponent\` + \`FlyingComponent\`, não \`class FlyingEnemy extends Enemy\`.
+4. **Limite ~200 linhas por arquivo.** Sinal de "fat system" — quebre.
+
 Uso do cortex-game-engine (importante):
 - O motor vive em \`vendor/cortex-game-engine/\` dentro do projeto. \
 Antes de codar features que envolvem cena, render, input, áudio, física, \

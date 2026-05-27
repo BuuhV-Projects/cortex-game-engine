@@ -1,3 +1,14 @@
+/**
+ * Bootstrap do projeto. Responsabilidades:
+ *   1. Criar World, Scene, Renderer, Camera, GameLoop.
+ *   2. Delegar setup da cena a `scenes/` quando o projeto crescer.
+ *   3. Iniciar o loop.
+ *
+ * Conforme o jogo cresce, mova as criações de Mesh/luzes/entidades pra
+ * `scenes/MainScene.ts` (ou similar) — main.ts deve ser fino. Components
+ * em `components/`, lógica em `systems/`, factories em `entities/`.
+ * Mais regras em README.md.
+ */
 import {
   GameLoop,
   Renderer,
