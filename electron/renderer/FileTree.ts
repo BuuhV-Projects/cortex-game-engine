@@ -140,16 +140,6 @@ export class FileTree {
   private buildShell(): void {
     this.container.innerHTML = ''
 
-    // Input oculto para seleção de pasta via webkitdirectory
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.setAttribute('webkitdirectory', '')
-    input.style.display = 'none'
-    input.addEventListener('change', () => {
-      void this.handleDirSelect(input)
-    })
-    this.container.appendChild(input)
-
     // ── Sub-toolbar superior: Novo Projeto / Abrir Projeto ─────────────────
     // ProjectManager.init() injeta o '+ Novo Projeto' como primeiro filho
     // do container; aqui montamos só o 'Abrir Projeto' abaixo dele.
@@ -159,7 +149,7 @@ export class FileTree {
     const openBtn = document.createElement('button')
     openBtn.textContent = 'Abrir Projeto'
     openBtn.className = 'filetree-open-btn'
-    openBtn.addEventListener('click', () => input.click())
+    openBtn.addEventListener('click', () => void this.handleOpenProject())
     projectActions.appendChild(openBtn)
 
     this.container.appendChild(projectActions)
@@ -247,26 +237,23 @@ export class FileTree {
     }
   }
 
-  private async handleDirSelect(input: HTMLInputElement): Promise<void> {
-    const { files } = input
-    if (!files || files.length === 0) return
-
-    const file = files[0]
-    // Electron adiciona a propriedade não-padrão `.path` com o caminho absoluto do SO
-    const absPath = (file as unknown as { path: string }).path
-    // webkitRelativePath usa sempre `/`: "nomePasta/sub/arquivo.ext"
-    const relPath = file.webkitRelativePath
-    const rootDirName = relPath.split('/')[0]
-
-    // Normaliza para `/` para calcular o comprimento do prefixo
-    // (no Windows, absPath usa `\` mas relPath usa `/`)
-    const normalizedAbs = absPath.replace(/\\/g, '/')
-    const prefixLength = normalizedAbs.length - relPath.length
-    // Reconstrói com os separadores originais do SO
-    this.projectDir = absPath.slice(0, prefixLength + rootDirName.length)
-
-    localStorage.setItem(STORAGE_KEY, this.projectDir)
-    await this.refresh()
+  /**
+   * Abre o diálogo nativo do SO para selecionar a pasta do projeto e
+   * notifica os outros componentes (Chat, Preview, BottomPanel, etc.)
+   * via evento `project-open` — quem escuta esse evento chama de volta
+   * `openProject()` neste mesmo FileTree, atualizando localStorage e
+   * recarregando a árvore.
+   *
+   * Substitui o antigo `<input webkitdirectory>` que dependia da
+   * propriedade não-padrão `File.path` do Electron, removida no
+   * Electron 32+.
+   */
+  private async handleOpenProject(): Promise<void> {
+    const path = await window.electronAPI.selectDirectory()
+    if (!path) return
+    document.dispatchEvent(
+      new CustomEvent<{ path: string }>('project-open', { detail: { path } }),
+    )
   }
 
   private async refresh(): Promise<void> {
