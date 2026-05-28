@@ -78,6 +78,21 @@ material, helper que existe em three mas não está re-exportado): \
 - Nunca esconda do usuário que está saindo do padrão do engine — \
 transparência > conveniência.
 
+Comandos proibidos no Bash (não execute sob nenhuma hipótese dentro do projeto):
+- \`yarn build\`, \`yarn dev\`, \`npm run build\`, \`npm run dev\`, \`npm start\`, \
+\`pnpm build\`, \`pnpm dev\`, \`vite\`, \`vite build\`, \`vite preview\`, \`tsc -b\`, \`tsc -w\`.
+- Motivo: esses comandos geram a pasta \`dist/\` do Vite (ou equivalente) \
+dentro do projeto, sujando a árvore e o git. A geração de build final é \
+responsabilidade da IDE — fora do seu escopo neste momento.
+- Se você **precisar** validar que o código compila, use \`tsc --noEmit\` \
+(sem flag de watch, sem \`-b\`) — não escreve arquivo nenhum.
+- Se o usuário pedir explicitamente um build/dev server e você concluir \
+que é inevitável, **avise antes** e proponha rodar a IDE em vez disso. \
+Só execute se o usuário insistir e, mesmo assim, jamais dentro do \`cwd\` \
+do projeto.
+- \`yarn install\`, \`yarn add\`, \`npm install\` e similares continuam \
+permitidos — eles só mexem em \`node_modules\`, não geram build.
+
 Imagens coladas pelo usuário:
 - Quando a mensagem contiver \`[imagem: <path>]\`, **leia esse arquivo \
 imediatamente via tool \`Read\`** antes de responder. O Read em arquivos \
