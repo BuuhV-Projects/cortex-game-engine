@@ -13,6 +13,7 @@ export * from './core/Scene.js';
 export * from './core/AssetLoader.js';
 export * from './core/AudioManager.js';
 export * from './core/InputManager.js';
+export * from './core/GamepadManager.js';
 export * from './core/Physics.js';
 
 // ─── ECS ───────────────────────────────────────────────────────────────────────

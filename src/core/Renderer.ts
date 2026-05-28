@@ -6,7 +6,11 @@
  * externas do motor importam `PerspectiveCamera` daqui em vez de importar
  * Three.js diretamente.
  *
- * Referência: ADR-0001 (Renderizador baseado em Three.js)
+ * Suporta também split-screen (múltiplas viewports no mesmo canvas) via
+ * `clear()` + `renderViewport()` — ver ADR-0023.
+ *
+ * Referência: ADR-0001 (Renderizador baseado em Three.js),
+ *             ADR-0023 (Split-screen e gamepad no engine)
  */
 
 import * as THREE from 'three';
@@ -25,6 +29,21 @@ export interface RendererOptions {
    * @default true
    */
   antialias?: boolean;
+}
+
+/**
+ * Retângulo de viewport em pixels (origem no canto inferior-esquerdo do
+ * canvas, seguindo a convenção do WebGL).
+ */
+export interface Viewport {
+  /** Coordenada X do canto inferior-esquerdo, em pixels. */
+  x: number;
+  /** Coordenada Y do canto inferior-esquerdo, em pixels. */
+  y: number;
+  /** Largura em pixels. */
+  width: number;
+  /** Altura em pixels. */
+  height: number;
 }
 
 // ─── Re-exportação de câmera ───────────────────────────────────────────────────
@@ -57,6 +76,12 @@ export class Renderer {
     this._renderer = new THREE.WebGLRenderer({ canvas, antialias });
     this._renderer.setSize(width, height);
 
+    // Split-screen exige autoClear=false para que renders sucessivos de
+    // viewports não apaguem os anteriores. O chamador deve usar `clear()`
+    // uma vez por frame antes do primeiro `render*()`. Para o caso mais
+    // comum (1 câmera por frame), `render()` chama `clear()` internamente.
+    this._renderer.autoClear = false;
+
     if (typeof window !== 'undefined') {
       this._renderer.setPixelRatio(window.devicePixelRatio);
     }
@@ -78,9 +103,47 @@ export class Renderer {
   /**
    * Renderiza a `scene` usando a `camera` fornecida.
    * Deve ser chamado a cada frame pelo `GameLoop`.
+   *
+   * Limpa o canvas antes de renderizar — mantém o comportamento "1 câmera
+   * por frame" sem que o chamador precise se preocupar com viewports.
+   * Para split-screen, use `clear()` + `renderViewport()` em vez deste.
    */
   render(scene: THREE.Scene, camera: THREE.Camera): void {
+    this._renderer.clear();
     this._renderer.render(scene, camera);
+  }
+
+  /**
+   * Limpa o canvas inteiro (color, depth e stencil buffers).
+   *
+   * Deve ser chamado uma vez por frame **antes do primeiro `renderViewport()`**
+   * quando se usa split-screen. Sem isso, o frame anterior fica visível
+   * fora das áreas cobertas pelas viewports.
+   */
+  clear(): void {
+    this._renderer.clear();
+  }
+
+  /**
+   * Renderiza `scene` com `camera` em uma região retangular do canvas
+   * (sem limpar — use `clear()` antes do primeiro chamado do frame).
+   *
+   * Internamente liga o scissor test para evitar que pixels fora da
+   * viewport sejam tocados e o desliga ao final.
+   *
+   * @example
+   * // Split-screen horizontal de 2 jogadores:
+   * renderer.clear();
+   * renderer.renderViewport(scene, p1Camera, { x: 0,           y: 0, width: w / 2, height: h });
+   * renderer.renderViewport(scene, p2Camera, { x: w / 2,       y: 0, width: w / 2, height: h });
+   */
+  renderViewport(scene: THREE.Scene, camera: THREE.Camera, viewport: Viewport): void {
+    const { x, y, width, height } = viewport;
+    this._renderer.setViewport(x, y, width, height);
+    this._renderer.setScissor(x, y, width, height);
+    this._renderer.setScissorTest(true);
+    this._renderer.render(scene, camera);
+    this._renderer.setScissorTest(false);
   }
 
   /**
