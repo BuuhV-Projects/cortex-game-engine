@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readDir: (dirPath: string) =>
     ipcRenderer.invoke('fs:readDir', dirPath),
 
+  listProjectFiles: (projectDir: string) =>
+    ipcRenderer.invoke('fs:listProjectFiles', projectDir),
+
   readFile: (filePath: string) =>
     ipcRenderer.invoke('fs:readFile', filePath),
 

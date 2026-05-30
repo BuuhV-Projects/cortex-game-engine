@@ -33,6 +33,7 @@ export interface TurnStats {
 export interface ElectronAPI {
   // Sistema de arquivos
   readDir(dirPath: string): Promise<FileEntry[]>
+  listProjectFiles(projectDir: string): Promise<string[]>
   readFile(filePath: string): Promise<string>
   writeFile(filePath: string, content: string): Promise<void>
   createProject(targetDir: string, name: string): Promise<string>

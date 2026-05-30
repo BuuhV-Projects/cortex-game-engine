@@ -60,6 +60,31 @@ function pathToVirtualUri(realPath: string): monaco.Uri {
   return monaco.Uri.parse(`file://${posix}`)
 }
 
+/**
+ * Inverso de `pathToVirtualUri`. Recebe uma URI sintética do Monaco e devolve
+ * o path real do sistema de arquivos — ou `null` se a URI não representa um
+ * arquivo do projeto (ex.: types virtuais em `/node_modules/...`, que vivem
+ * só na memória do TS service e não têm fs real).
+ *
+ * Usado no `registerEditorOpener` para resolver Ctrl+click em imports relativos
+ * (`./foo`) que apontam para arquivos que o usuário ainda não abriu no editor.
+ */
+function virtualUriToPath(uri: monaco.Uri): string | null {
+  const p = uri.path
+  if (p.startsWith('/node_modules/')) return null
+
+  // Windows: /_drive_d/projeto/foo.ts → D:\projeto\foo.ts
+  const winMatch = /^\/_drive_([a-z])\/(.*)$/i.exec(p)
+  if (winMatch) {
+    return `${winMatch[1].toUpperCase()}:\\${winMatch[2].replace(/\//g, '\\')}`
+  }
+
+  // Unix absoluto: /foo/bar.ts → /foo/bar.ts
+  if (p.startsWith('/')) return p
+
+  return null
+}
+
 interface Tab {
   /** Path real do filesystem (arquivos do projeto) ou URI virtual (engine .d.ts). */
   path: string
@@ -154,15 +179,38 @@ export class Editor {
       void this.openFile(path, name)
     })
 
+    // Pre-carrega models pra todos os fontes do projeto. Sem isso, o
+    // TypeScript service do Monaco não sabe que arquivos como
+    // `./scenes/RaceScene` existem e o Ctrl+click no import nem chega
+    // a chamar registerEditorOpener — não tem destino pra navegar.
+    document.addEventListener('project-open', (e) => {
+      const { path } = (e as CustomEvent<{ path: string }>).detail
+      void this.preloadProjectFiles(path)
+    })
+
     // Intercepta "abrir arquivo" do Monaco (clique no peek/breadcrumb,
     // Ctrl+click numa referência etc.). Sem isso, o editor standalone
     // ignora o request e o usuário não consegue navegar para definições
     // em outros models (ex: o .d.ts do engine).
+    //
+    // Fallback de filesystem: se a URI requisitada ainda não tem model
+    // registrado (caso típico: Ctrl+click num `import './foo'` cujo arquivo
+    // o usuário nunca abriu), tentamos reverter URI → path real e abrir
+    // via `openFile`. Pré-carregar todos os arquivos do projeto na entrada
+    // seria caro em projetos grandes; lazy load aqui é o equilíbrio.
     monaco.editor.registerEditorOpener({
       openCodeEditor: (_source, resource, selectionOrPosition) => {
-        const model = monaco.editor.getModel(resource)
-        if (!model) return false
-        this.openModel(model, selectionOrPosition)
+        const existing = monaco.editor.getModel(resource)
+        if (existing) {
+          this.openModel(existing, selectionOrPosition)
+          return true
+        }
+        const realPath = virtualUriToPath(resource)
+        if (!realPath) return false
+        const name = resource.path.split('/').pop() ?? '(sem nome)'
+        // Async — o Monaco aceita true como "vou cuidar disso" e a aba
+        // aparece logo que readFile responde.
+        void this.openFile(realPath, name, selectionOrPosition)
         return true
       },
     })
@@ -183,16 +231,7 @@ export class Editor {
       this.tabs.set(path, this.makeTab(path, name, model))
     }
     this.activateTab(path)
-
-    if (selectionOrPosition) {
-      if ('startLineNumber' in selectionOrPosition) {
-        this.instance.setSelection(selectionOrPosition)
-        this.instance.revealRangeInCenter(selectionOrPosition)
-      } else {
-        this.instance.setPosition(selectionOrPosition)
-        this.instance.revealPositionInCenter(selectionOrPosition)
-      }
-    }
+    if (selectionOrPosition) this.applyPosition(selectionOrPosition)
   }
 
   /**
@@ -239,6 +278,15 @@ export class Editor {
       if (tab.path === this.activePath) el.classList.add('active')
       if (tab.dirty) el.classList.add('dirty')
       el.addEventListener('click', () => this.activateTab(tab.path))
+      // Middle-click (botão do scroll) fecha a aba — convenção de browsers
+      // e VS Code. `mousedown` é mais previsível que `auxclick` em Electron.
+      // preventDefault evita o cursor de auto-scroll do middle-click.
+      el.addEventListener('mousedown', (e) => {
+        if (e.button === 1) {
+          e.preventDefault()
+          this.closeTab(tab.path)
+        }
+      })
 
       const label = document.createElement('span')
       label.className = 'editor-tab-label'
@@ -306,6 +354,41 @@ export class Editor {
     this.renderTabs()
   }
 
+  /**
+   * Para cada arquivo-fonte do projeto, cria silenciosamente um model no
+   * Monaco (sem abrir aba). Isso alimenta o TypeScript service: imports
+   * relativos (`./foo`) passam a ser resolvíveis e Ctrl+click consegue
+   * navegar pra arquivos que o usuário ainda não abriu manualmente.
+   *
+   * Idempotente: pula arquivos que já têm model. Arquivos que falhem ao
+   * ler são silenciados — perder navegação pra 1 arquivo problemático é
+   * melhor que abortar todo o pre-load. Leituras em paralelo.
+   *
+   * Trade-off: gasta RAM proporcional ao tamanho do projeto. Pra projetos
+   * típicos (< 100 arquivos × poucos KB cada) é desprezível.
+   */
+  private async preloadProjectFiles(projectDir: string): Promise<void> {
+    try {
+      const files = await window.electronAPI.listProjectFiles(projectDir)
+      await Promise.all(
+        files.map(async (path) => {
+          const uri = pathToVirtualUri(path)
+          if (monaco.editor.getModel(uri)) return
+          try {
+            const content = await window.electronAPI.readFile(path)
+            const name = path.split(/[\\/]/).pop() ?? ''
+            const language = detectLanguage(name)
+            monaco.editor.createModel(content, language, uri)
+          } catch {
+            // Arquivo pode ter sumido entre o list e o read — ignora.
+          }
+        }),
+      )
+    } catch (err) {
+      console.error('Erro ao pre-carregar arquivos do projeto:', err)
+    }
+  }
+
   private async loadEngineTypes(): Promise<void> {
     try {
       const files = await window.electronAPI.readEngineTypes()
@@ -328,12 +411,17 @@ export class Editor {
     }
   }
 
-  private async openFile(path: string, name: string): Promise<void> {
+  private async openFile(
+    path: string,
+    name: string,
+    selectionOrPosition?: monaco.IRange | monaco.IPosition,
+  ): Promise<void> {
     if (!this.instance) return
 
     // Arquivo já aberto: apenas ativa a aba existente (preserva o estado do model)
     if (this.tabs.has(path)) {
       this.activateTab(path)
+      if (selectionOrPosition) this.applyPosition(selectionOrPosition)
       return
     }
 
@@ -341,7 +429,7 @@ export class Editor {
       const content = await window.electronAPI.readFile(path)
       const language = detectLanguage(name)
       // URI sintética sem drive — permite que o Node resolver do TS suba até
-      // a raiz virtual `/` e encontre node_modules/. O path real fica salvo
+      // a raiz virtual `/` and encontre node_modules/. O path real fica salvo
       // separadamente em `tab.path` para o save (writeFile).
       const uri = pathToVirtualUri(path)
       const model =
@@ -349,8 +437,21 @@ export class Editor {
 
       this.tabs.set(path, this.makeTab(path, name, model))
       this.activateTab(path)
+      if (selectionOrPosition) this.applyPosition(selectionOrPosition)
     } catch (err) {
       console.error('Erro ao abrir arquivo:', err)
+    }
+  }
+
+  /** Posiciona o cursor e dá scroll. Reusado pelo openModel e openFile. */
+  private applyPosition(target: monaco.IRange | monaco.IPosition): void {
+    if (!this.instance) return
+    if ('startLineNumber' in target) {
+      this.instance.setSelection(target)
+      this.instance.revealRangeInCenter(target)
+    } else {
+      this.instance.setPosition(target)
+      this.instance.revealPositionInCenter(target)
     }
   }
 

@@ -130,6 +130,60 @@ function createWindow(): void {
 // Handlers IPC — sistema de arquivos
 // ---------------------------------------------------------------------------
 
+/**
+ * Lista recursivamente todos os arquivos-fonte do projeto (.ts/.tsx/.js/.jsx),
+ * pulando diretórios que não devem alimentar o TypeScript service do Monaco
+ * (build outputs, dependências, engine vendoriado — esse último tem types
+ * próprios carregados via `engine:readTypes`).
+ *
+ * Usado pelo Editor pra pre-criar models de todos os fontes do projeto e
+ * habilitar Ctrl+click em imports de arquivos que o usuário ainda não abriu
+ * manualmente. Sem isso, o TS service não sabe que esses arquivos existem
+ * e a navegação falha silenciosamente.
+ */
+const PROJECT_SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'])
+const PROJECT_EXCLUDED_DIRS = new Set([
+  'node_modules',
+  'dist',
+  'dist-engine',
+  'dist-app',
+  'build',
+  'src-tauri',
+  'vendor',
+  '.git',
+  '.cortex',
+  'coverage',
+])
+
+ipcMain.handle('fs:listProjectFiles', async (_event, projectDir: unknown) => {
+  const safeDir = validatePath(projectDir)
+  const out: string[] = []
+
+  async function walk(dir: string): Promise<void> {
+    let entries
+    try {
+      entries = await readdir(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (PROJECT_EXCLUDED_DIRS.has(entry.name) || entry.name.startsWith('.')) continue
+        await walk(join(dir, entry.name))
+      } else if (entry.isFile()) {
+        const dot = entry.name.lastIndexOf('.')
+        const ext = dot >= 0 ? entry.name.slice(dot) : ''
+        if (PROJECT_SOURCE_EXTENSIONS.has(ext)) {
+          out.push(join(dir, entry.name))
+        }
+      }
+    }
+  }
+
+  await walk(safeDir)
+  return out
+})
+
 // Retorna as entradas de um diretório como { name, path, isDir }[]
 ipcMain.handle('fs:readDir', async (_event, dirPath: unknown) => {
   const safePath = validatePath(dirPath)
