@@ -1,7 +1,7 @@
 # 0026 - Editor visual de cena com inspector
 
 **Data:** 2026-05-30
-**Status:** aceito (plano em 3 fases — implementação a ser priorizada)
+**Status:** aceito · Fase 1 implementada · Fases 2-3 priorização aberta
 
 ## Contexto
 
@@ -78,6 +78,51 @@ postMessage ou IPC).
 
 **Resolve:** ~60% da dor. Posicionar e dimensionar objetos sem
 ciclo de Play.
+
+#### Implementação final (Fase 1)
+
+A escolha foi colocar o editor **dentro do bundle do jogo**
+(classe `SceneEditor` em `src/core/`) em vez de injetar tudo do
+lado do IDE. Razões:
+
+- Editor acessa direto a `Scene`/`Camera` Three.js — sem
+  serialização cross-iframe.
+- `OrbitControls`, `TransformControls` e `Raycaster` são utilitários
+  Three; faz sentido viverem perto do `Renderer`.
+- IDE ↔ jogo: ponte por `postMessage` simples
+  (`cortex:editor:enable` / `cortex:editor:disable` /
+  `cortex:editor:toggle`). Sem schema acoplado.
+
+Componentes entregues:
+
+- `src/core/SceneEditor.ts` — classe principal. Hotkeys padrão
+  W/E/R/Esc (Blender-like), inspector overlay top-right com
+  Position/Rotation/Scale editáveis em tempo real, botão "Copy as
+  code" que copia snippet TS pra clipboard.
+- `src/core/Renderer.ts` — re-exporta `Camera` e `OrthographicCamera`
+  além do `PerspectiveCamera` já existente, pra tipar variáveis
+  que oscilam entre câmera do jogo e do editor.
+- `src/index-runtime.ts` — re-exporta `SceneEditor`.
+- `templates/new-project/main.ts` — instancia `SceneEditor` no
+  bootstrap e amarra F8 pra toggle. Loop usa câmera ativa (jogo
+  ou editor) via callback `onCameraChange`. Gameplay (rotação do
+  cubo, etc) só roda quando `!editor.isEnabled()`.
+- `electron/renderer/Preview.ts` — botão **✎ Edit** no header
+  (habilitado quando jogo está rodando). Clique dispara
+  `iframe.contentWindow.postMessage({type:'cortex:editor:enable|disable'})`.
+  Estado visual indica modo ativo.
+
+Limitações conhecidas (esperadas pra Fase 1):
+
+- Inspector mostra só Transform + tipo de geometry/material. Lista
+  de Components ECS depende do `World` ser passado pro SceneEditor;
+  primeiro corte só cobre `Object3D.userData` se o usuário plugar.
+- "Copy as code" não sabe a variável real do código do usuário —
+  usa `mesh.name` como placeholder. Suficiente pra "copio o
+  snippet e ajusto a referência".
+- Mudanças não persistem automaticamente. Tem que colar no código.
+- Câmera de editor não preserva estado entre toggles (volta pra
+  posição inicial `(5,5,5)` ao reativar).
 
 ### Fase 2 — Edição de Components custom
 

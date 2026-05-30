@@ -322,6 +322,7 @@ const VENDOR_TYPE_MODULES = {
     'InputManager',
     'GamepadManager',
     'Physics',
+    'SceneEditor',
   ],
   ecs: ['Entity', 'Component', 'System', 'World'],
 } as const

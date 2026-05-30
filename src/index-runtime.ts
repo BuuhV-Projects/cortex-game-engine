@@ -15,6 +15,7 @@ export * from './core/AudioManager.js';
 export * from './core/InputManager.js';
 export * from './core/GamepadManager.js';
 export * from './core/Physics.js';
+export * from './core/SceneEditor.js';
 
 // ─── ECS ───────────────────────────────────────────────────────────────────────
 export * from './ecs/Entity.js';

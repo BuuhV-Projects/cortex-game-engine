@@ -19,13 +19,17 @@ export class Preview {
 
   private statusEl: HTMLElement | null = null
   private playBtn: HTMLButtonElement | null = null
+  private editBtn: HTMLButtonElement | null = null
   private fullscreenBtn: HTMLButtonElement | null = null
   private viewportEl: HTMLElement | null = null
+  private iframeEl: HTMLIFrameElement | null = null
 
   private projectDir: string | null = null
   private running = false
   private serverUrl: string | null = null
   private fullscreen = false
+  /** Estado do SceneEditor do jogo — sincronizado via postMessage. */
+  private editMode = false
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -71,6 +75,16 @@ export class Preview {
     playBtn.addEventListener('click', () => void this.toggle())
     this.playBtn = playBtn
 
+    // Botão Editar — dispara SceneEditor no jogo via postMessage.
+    // Habilitado só quando o jogo está rodando (precisa de iframe ativo).
+    const editBtn = document.createElement('button')
+    editBtn.className = 'preview-edit-btn'
+    editBtn.type = 'button'
+    editBtn.textContent = '✎ Edit'
+    editBtn.title = 'Toggle Scene Editor (F8 no jogo)'
+    editBtn.addEventListener('click', () => this.toggleEditMode())
+    this.editBtn = editBtn
+
     const status = document.createElement('span')
     status.className = 'preview-status'
     status.textContent = t('preview.status_stopped')
@@ -87,6 +101,7 @@ export class Preview {
     this.fullscreenBtn = fullscreenBtn
 
     toolbar.appendChild(playBtn)
+    toolbar.appendChild(editBtn)
     toolbar.appendChild(status)
     toolbar.appendChild(fullscreenBtn)
 
@@ -113,6 +128,12 @@ export class Preview {
   private updateButtonState(): void {
     if (!this.playBtn || !this.statusEl) return
     this.playBtn.disabled = !this.projectDir
+    if (this.editBtn) {
+      // Editar só faz sentido com jogo rodando (precisa de iframe ativo).
+      this.editBtn.disabled = !this.running || !this.serverUrl
+      this.editBtn.textContent = this.editMode ? '▶ Play' : '✎ Edit'
+      this.editBtn.classList.toggle('preview-edit-btn--active', this.editMode)
+    }
     if (!this.projectDir) {
       this.playBtn.textContent = t('preview.play')
       this.statusEl.textContent = t('preview.status_no_project')
@@ -182,5 +203,24 @@ export class Preview {
     iframe.className = 'preview-iframe'
     iframe.src = url
     this.viewportEl.appendChild(iframe)
+    this.iframeEl = iframe
+    // Sai do modo Edit ao trocar/recarregar — o SceneEditor do jogo
+    // anterior morreu junto com o iframe.
+    this.editMode = false
+    this.updateButtonState()
+  }
+
+  /**
+   * Liga/desliga o SceneEditor do jogo via postMessage (ADR-0026 Fase 1).
+   * O bundle do jogo escuta `cortex:editor:enable` / `disable` no `window`
+   * (módulo `SceneEditor` do engine) e troca a câmera + monta inspector
+   * sem que a IDE precise saber detalhes do runtime do jogo.
+   */
+  private toggleEditMode(): void {
+    if (!this.iframeEl?.contentWindow || !this.running || !this.serverUrl) return
+    this.editMode = !this.editMode
+    const type = this.editMode ? 'cortex:editor:enable' : 'cortex:editor:disable'
+    this.iframeEl.contentWindow.postMessage({ type }, '*')
+    this.updateButtonState()
   }
 }

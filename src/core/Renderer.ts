@@ -52,8 +52,12 @@ export interface Viewport {
  * Câmera perspectiva padrão do motor.
  * Re-exportada aqui para que o restante do engine não precise importar
  * Three.js diretamente, mantendo o isolamento definido em ADR-0001.
+ *
+ * `Camera` é a classe base — útil para tipagem de variáveis que podem
+ * receber `PerspectiveCamera` (gameplay) ou `OrthographicCamera`/câmera
+ * de editor (ADR-0026, SceneEditor).
  */
-export { PerspectiveCamera } from 'three';
+export { Camera, PerspectiveCamera, OrthographicCamera } from 'three';
 
 // ─── Classe Renderer ───────────────────────────────────────────────────────────
 
