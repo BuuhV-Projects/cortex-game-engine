@@ -129,12 +129,15 @@ direto no `index.html` do template:
 
 - Markup `<div id="cortex-splash">` + estilos inline (sem dep externa
   pra não puxar fonte de CDN, sem JS extra).
-- Logo = PNG (cérebro estilizado com circuitos, gradient sky → indigo)
-  servido de `public/logo.png` — Vite copia pro `dist/` no build, e o
-  Tauri serve em runtime. Dimensão renderizada 128 × 128 via classe
-  `cortex-splash-logo`. O arquivo fonte tem 1024 × 1024 com fundo
-  transparente; otimização (compressão PNG) recomendada antes de
-  distribuir releases sérias.
+- Logo = PNG embarcado como **data URI base64 inline** no
+  `<img src="data:image/png;base64,...">` do template (cérebro
+  estilizado com circuitos, gradient sky → indigo, 1024 × 1024
+  transparente). Não vive em `public/logo.png` — embarcar inline
+  garante que o asset não pode "sumir" do bundle por engano e que o
+  template do projeto fica self-contained num único arquivo HTML.
+  Dimensão renderizada 128 × 128 via classe `cortex-splash-logo`.
+  Trade-off: o `index.html` fica ~1.9 MB. Otimização (TinyPNG /
+  Squoosh) recomendada antes de releases — alvo < 200 KB.
 - Ativação condicional: o script no `<head>` só adiciona a classe
   `cortex-splash--active` se `__TAURI_INTERNALS__` existir no
   `window` — ou seja, **só no bundle Tauri**. No preview de dev a
