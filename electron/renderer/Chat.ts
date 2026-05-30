@@ -1,5 +1,6 @@
 import type { AiToolRequest, TurnStats } from './types'
 import { renderMarkdown } from './markdown'
+import { t } from './i18n'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -18,7 +19,7 @@ function formatDuration(ms: number): string {
 }
 
 function formatCost(usd: number): string {
-  if (usd === 0) return 'grátis'
+  if (usd === 0) return t('chat.free')
   if (usd < 0.01) return `$${(usd * 100).toFixed(2)}¢`
   return `$${usd.toFixed(usd < 1 ? 4 : 2)}`
 }
@@ -131,6 +132,12 @@ export class Chat {
     window.electronAPI.onAiToolRequest((req) => this.handleToolRequest(req))
     window.electronAPI.onAiToolExecuted((p) => this.handleToolExecuted(p.id, p.result))
 
+    document.addEventListener('locale-change', () => {
+      this.buildShell()
+      this.renderAll()
+      this.updateInputState()
+    })
+
     document.addEventListener('project-open', (e) => {
       const { path } = (e as CustomEvent<{ path: string }>).detail
       if (path !== this.projectDir) {
@@ -182,7 +189,7 @@ export class Chat {
    */
   private async handlePastedImage(file: File): Promise<void> {
     if (!this.projectDir) {
-      alert('Abra um projeto antes de colar imagens.')
+      alert(t('chat.open_first_for_paste'))
       return
     }
     try {
@@ -201,7 +208,7 @@ export class Chat {
       this.renderAttachments()
       this.inputEl?.focus()
     } catch (err) {
-      alert(`Erro ao colar imagem: ${String(err)}`)
+      alert(`${t('chat.error_paste')} ${String(err)}`)
     }
   }
 
@@ -230,7 +237,7 @@ export class Chat {
       const close = document.createElement('button')
       close.type = 'button'
       close.className = 'chat-attachment-close'
-      close.title = 'Remover anexo'
+      close.title = t('chat.tooltip_remove_attachment')
       close.textContent = '×'
       const idx = i
       close.addEventListener('click', () => this.removeAttachment(idx))
@@ -271,16 +278,14 @@ export class Chat {
     const isAuto = this.mode === 'auto'
     this.modeToggleEl.classList.toggle('chat-mode-btn--auto', isAuto)
     this.modeToggleEl.classList.toggle('chat-mode-btn--ask', !isAuto)
-    this.modeToggleEl.textContent = isAuto ? 'Auto' : 'Ask'
-    this.modeToggleEl.title = isAuto
-      ? 'Auto: tools rodam sem pedir aprovação. Clique para voltar a Ask.'
-      : 'Ask: cada tool destrutiva pede aprovação. Clique para mudar para Auto.'
+    this.modeToggleEl.textContent = isAuto ? t('chat.mode_auto') : t('chat.mode_ask')
+    this.modeToggleEl.title = isAuto ? t('chat.tooltip_mode_auto') : t('chat.tooltip_mode_ask')
   }
 
   /** Apaga o histórico do projeto ativo e limpa a UI. */
   private async clearHistory(): Promise<void> {
     if (!this.projectDir) return
-    const ok = window.confirm('Apagar todo o histórico do chat deste projeto?')
+    const ok = window.confirm(t('chat.confirm_clear'))
     if (!ok) return
     try {
       await window.electronAPI.clearChatHistory(this.projectDir)
@@ -316,7 +321,7 @@ export class Chat {
     header.className = 'chat-header'
     const title = document.createElement('span')
     title.className = 'chat-header-title'
-    title.textContent = 'Chat IA'
+    title.textContent = t('chat.title')
     // Toggle ask/auto — vem antes do clear/minimize. Texto e classe
     // refletem o mode atual; clique alterna e persiste em localStorage.
     const modeToggle = document.createElement('button')
@@ -329,14 +334,14 @@ export class Chat {
     const clearBtn = document.createElement('button')
     clearBtn.className = 'chat-clear-btn'
     clearBtn.type = 'button'
-    clearBtn.title = 'Apagar histórico'
+    clearBtn.title = t('chat.tooltip_clear')
     clearBtn.textContent = '🗑'
     clearBtn.addEventListener('click', () => void this.clearHistory())
 
     const toggleBtn = document.createElement('button')
     toggleBtn.className = 'chat-toggle-btn'
     toggleBtn.type = 'button'
-    toggleBtn.title = 'Minimizar chat'
+    toggleBtn.title = t('chat.tooltip_minimize')
     toggleBtn.textContent = '▸'
     toggleBtn.addEventListener('click', () => this.toggleCollapsed())
     this.toggleBtn = toggleBtn
@@ -347,7 +352,7 @@ export class Chat {
 
     const messages = document.createElement('div')
     messages.className = 'chat-messages'
-    messages.innerHTML = '<p class="chat-empty">Pergunte algo sobre o projeto.</p>'
+    messages.innerHTML = `<p class="chat-empty">${t('chat.empty')}</p>`
     this.messagesEl = messages
 
     // Linha de anexos (imagens coladas) — fica acima do textarea quando há
@@ -363,7 +368,7 @@ export class Chat {
     const input = document.createElement('textarea')
     input.className = 'chat-input'
     input.rows = 2
-    input.placeholder = 'Pergunte algo... (Enter envia, Shift+Enter quebra linha)'
+    input.placeholder = t('chat.placeholder_input')
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
@@ -386,13 +391,13 @@ export class Chat {
 
     const sendBtn = document.createElement('button')
     sendBtn.className = 'chat-send-btn'
-    sendBtn.textContent = 'Enviar'
+    sendBtn.textContent = t('chat.send')
     sendBtn.addEventListener('click', () => void this.send())
     this.sendBtn = sendBtn
 
     const stopBtn = document.createElement('button')
     stopBtn.className = 'chat-stop-btn'
-    stopBtn.textContent = 'Parar'
+    stopBtn.textContent = t('chat.stop')
     stopBtn.style.display = 'none'
     stopBtn.addEventListener('click', () => void window.electronAPI.cancelChat())
     this.stopBtn = stopBtn
@@ -573,7 +578,7 @@ export class Chat {
     el.className = 'chat-thinking'
     const label = document.createElement('span')
     label.className = 'chat-thinking-label'
-    label.textContent = 'Pensando'
+    label.textContent = t('chat.thinking')
     const dots = document.createElement('span')
     dots.className = 'chat-thinking-dots'
     dots.innerHTML = '<span></span><span></span><span></span>'
@@ -610,7 +615,7 @@ export class Chat {
     el.className = `chat-message chat-message--${role}`
     const roleEl = document.createElement('div')
     roleEl.className = 'chat-message-role'
-    roleEl.textContent = role === 'user' ? 'Você' : 'Assistente'
+    roleEl.textContent = role === 'user' ? t('chat.role_user') : t('chat.role_assistant')
     const contentEl = document.createElement('div')
     contentEl.className = 'chat-message-content'
     if (role === 'assistant') {
@@ -663,7 +668,7 @@ export class Chat {
     const details = document.createElement('details')
     details.className = 'chat-tool-card-details'
     const detSummary = document.createElement('summary')
-    detSummary.textContent = 'parâmetros'
+    detSummary.textContent = t('chat.params')
     const params = document.createElement('pre')
     params.className = 'chat-tool-card-params'
     params.textContent = JSON.stringify(item.request.input, null, 2)
@@ -676,27 +681,27 @@ export class Chat {
       actions.className = 'chat-tool-card-actions'
       const approve = document.createElement('button')
       approve.className = 'chat-tool-approve'
-      approve.textContent = 'Aprovar'
+      approve.textContent = t('chat.approve')
       approve.addEventListener('click', () => {
         void window.electronAPI.decideToolCall(item.request.id, true)
         approve.disabled = true
         deny.disabled = true
-        this.setToolStatus(el, 'executando...')
+        this.setToolStatus(el, t('chat.tool_running'))
       })
       const deny = document.createElement('button')
       deny.className = 'chat-tool-deny'
-      deny.textContent = 'Negar'
+      deny.textContent = t('chat.deny')
       deny.addEventListener('click', () => {
         void window.electronAPI.decideToolCall(item.request.id, false)
         approve.disabled = true
         deny.disabled = true
-        this.setToolStatus(el, 'negado')
+        this.setToolStatus(el, t('chat.tool_denied'))
       })
       actions.appendChild(approve)
       actions.appendChild(deny)
       el.appendChild(actions)
     } else if (!item.request.needsApproval && item.result === null) {
-      this.setToolStatus(el, 'executando...')
+      this.setToolStatus(el, t('chat.tool_running'))
     }
 
     return el
@@ -717,12 +722,12 @@ export class Chat {
       }`
       const label = document.createElement('div')
       label.className = 'chat-tool-card-result-label'
-      label.textContent = item.result.isError ? 'erro' : 'sucesso'
+      label.textContent = item.result.isError ? t('chat.tool_error') : t('chat.tool_success')
       const body = document.createElement('pre')
       body.className = 'chat-tool-card-result-body'
       body.textContent = item.result.content.slice(0, 2000)
       if (item.result.content.length > 2000) {
-        body.textContent += `\n... (${item.result.content.length - 2000} caracteres truncados)`
+        body.textContent += `\n${t('chat.tool_truncated', { n: item.result.content.length - 2000 })}`
       }
       result.appendChild(label)
       result.appendChild(body)
@@ -742,7 +747,7 @@ export class Chat {
   private renderAll(): void {
     if (!this.messagesEl) return
     if (this.items.length === 0) {
-      this.messagesEl.innerHTML = '<p class="chat-empty">Pergunte algo sobre o projeto.</p>'
+      this.messagesEl.innerHTML = `<p class="chat-empty">${t('chat.empty')}</p>`
       return
     }
     this.messagesEl.innerHTML = ''
@@ -763,7 +768,7 @@ export class Chat {
     this.container.classList.toggle('chat-collapsed', this.collapsed)
     if (this.toggleBtn) {
       this.toggleBtn.textContent = this.collapsed ? '◂' : '▸'
-      this.toggleBtn.title = this.collapsed ? 'Expandir chat' : 'Minimizar chat'
+      this.toggleBtn.title = this.collapsed ? t('chat.tooltip_expand') : t('chat.tooltip_minimize')
     }
     document.dispatchEvent(
       new CustomEvent('chat-collapsed-change', { detail: { collapsed: this.collapsed } }),

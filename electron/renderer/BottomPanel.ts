@@ -1,3 +1,5 @@
+import { t } from './i18n'
+
 type TabId = 'console' | 'terminal'
 
 const STORAGE_KEY = 'bottomPanel_projectDir'
@@ -39,12 +41,19 @@ export class BottomPanel {
     this.updateTerminalButtons()
 
     window.electronAPI.onLog((line) => this.appendConsole(line, 'log'))
-    window.electronAPI.onProjectStopped(() => this.appendConsole('■ Projeto parado.\n', 'system'))
+    window.electronAPI.onProjectStopped(() =>
+      this.appendConsole(`■ ${t('bottomPanel.project_stopped')}\n`, 'system'),
+    )
 
     window.electronAPI.onTerminalOutput((text) => this.appendTerminal(text, 'log'))
     window.electronAPI.onTerminalDone((code) => {
       this.terminalRunning = false
-      this.appendTerminal(`\n[processo encerrado: código ${code}]\n`, 'system')
+      this.appendTerminal(`\n${t('bottomPanel.process_exited', { code })}\n`, 'system')
+      this.updateTerminalButtons()
+    })
+
+    document.addEventListener('locale-change', () => {
+      this.buildShell()
       this.updateTerminalButtons()
     })
 
@@ -97,15 +106,15 @@ export class BottomPanel {
    */
   private async handleBuildInstaller(): Promise<void> {
     if (!this.projectDir) {
-      alert('Abra um projeto antes de gerar o instalador.')
+      alert(t('bottomPanel.installer_no_project'))
       return
     }
     if (this.playRunning) {
-      alert('Pare o Play antes de gerar o instalador.')
+      alert(t('bottomPanel.installer_play_running'))
       return
     }
     if (this.terminalRunning) {
-      alert('Aguarde o comando atual do terminal terminar.')
+      alert(t('bottomPanel.installer_terminal_busy'))
       return
     }
 
@@ -113,36 +122,18 @@ export class BottomPanel {
 
     const status = await window.electronAPI.installerCheck(this.projectDir)
     if (!status.configured) {
-      const ok = confirm(
-        'Este projeto ainda não tem o Tauri configurado.\n\n' +
-          'Posso configurar agora (cópia de src-tauri/, scripts no package.json e @tauri-apps/cli) ' +
-          'e rodar `yarn install` em seguida. Depois você gera os ícones e dispara o build de novo.\n\n' +
-          'Configurar agora?',
-      )
+      const ok = confirm(t('bottomPanel.installer_confirm_setup'))
       if (!ok) return
       try {
-        this.appendTerminal('▸ Configurando Tauri no projeto...\n', 'system')
+        this.appendTerminal(t('bottomPanel.installer_configuring'), 'system')
         const result = await window.electronAPI.installerSetup(this.projectDir)
-        this.appendTerminal('✓ src-tauri/ copiado, package.json atualizado.\n', 'system')
+        this.appendTerminal(t('bottomPanel.installer_setup_done'), 'system')
         if (result.iconsGenerated) {
-          this.appendTerminal(
-            '✓ Ícones placeholder gerados em src-tauri/icons/. ' +
-              'Pra trocar pela arte do jogo depois, rode `yarn tauri icon caminho/icone.png`.\n',
-            'system',
-          )
+          this.appendTerminal(t('bottomPanel.installer_icons_generated'), 'system')
         }
-        this.appendTerminal(
-          '\nPróximos passos:\n' +
-            '  1. Aguardar `yarn install` terminar (vai rodar agora).\n' +
-            '  2. (Se ainda não fez) instalar Rust + MSVC Build Tools (uma vez por máquina):\n' +
-            '     - Rust:  https://rustup.rs/\n' +
-            '     - MSVC:  https://visualstudio.microsoft.com/visual-cpp-build-tools/\n' +
-            '     Detalhes em "Gerar instalador do jogo" no README.md da IDE.\n' +
-            '  3. Clicar Menu → Projeto → Gerar instalador... de novo — agora vai buildar.\n\n',
-          'system',
-        )
+        this.appendTerminal(t('bottomPanel.installer_next_steps'), 'system')
       } catch (err) {
-        this.appendTerminal(`Erro ao configurar Tauri: ${String(err)}\n`, 'error')
+        this.appendTerminal(`${t('bottomPanel.installer_setup_error')} ${String(err)}\n`, 'error')
         return
       }
       await this.runCommandForce('yarn install')
@@ -159,12 +150,12 @@ export class BottomPanel {
 
     this.tabBar = document.createElement('div')
     this.tabBar.className = 'bottom-tabs'
-    this.tabBar.appendChild(this.makeTabButton('console', 'Console'))
-    this.tabBar.appendChild(this.makeTabButton('terminal', 'Terminal'))
+    this.tabBar.appendChild(this.makeTabButton('console', t('bottomPanel.tab_console')))
+    this.tabBar.appendChild(this.makeTabButton('terminal', t('bottomPanel.tab_terminal')))
 
     const clearBtn = document.createElement('button')
     clearBtn.className = 'bottom-clear-btn'
-    clearBtn.textContent = 'Limpar'
+    clearBtn.textContent = t('bottomPanel.clear')
     clearBtn.addEventListener('click', () => this.clearActive())
     this.tabBar.appendChild(clearBtn)
 
@@ -205,7 +196,7 @@ export class BottomPanel {
     const input = document.createElement('input')
     input.type = 'text'
     input.className = 'terminal-input'
-    input.placeholder = 'Digite um comando (ex: yarn install)'
+    input.placeholder = t('bottomPanel.placeholder_default')
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') void this.runCommand()
     })
@@ -213,7 +204,7 @@ export class BottomPanel {
 
     const runBtn = document.createElement('button')
     runBtn.className = 'terminal-run-btn'
-    runBtn.textContent = 'Executar'
+    runBtn.textContent = t('bottomPanel.run')
     runBtn.addEventListener('click', () => void this.runCommand())
     this.terminalRunBtn = runBtn
 
@@ -267,7 +258,7 @@ export class BottomPanel {
    *  setup automático de novo projeto (yarn install). */
   private async runCommandForce(cmd: string): Promise<void> {
     if (!this.projectDir) {
-      this.appendTerminal('Abra um projeto antes de rodar comandos.\n', 'error')
+      this.appendTerminal(`${t('bottomPanel.open_first')}\n`, 'error')
       return
     }
     if (this.terminalRunning) return
@@ -276,11 +267,8 @@ export class BottomPanel {
     this.updateTerminalButtons()
     try {
       await window.electronAPI.runTerminalCommand(this.projectDir, cmd)
-      // O await retorna logo após o spawn — a duração real do comando é
-      // sinalizada por onTerminalDone (que já reseta terminalRunning).
-      // Aqui só cobrimos o caso de o IPC ter rejeitado (validação síncrona):
     } catch (err) {
-      this.appendTerminal(`Erro: ${String(err)}\n`, 'error')
+      this.appendTerminal(`${String(err)}\n`, 'error')
       this.terminalRunning = false
       this.updateTerminalButtons()
     }
@@ -288,21 +276,20 @@ export class BottomPanel {
 
   private updateTerminalButtons(): void {
     if (!this.terminalRunBtn || !this.terminalInput) return
-    this.terminalRunBtn.textContent = this.terminalRunning ? 'Parar' : 'Executar'
-    // Bloqueado se Play ativo OU sem projeto OU comando em execução.
-    // Quando terminalRunning é true (mas Play não), permitimos o botão
-    // 'Parar' funcionar para interromper o comando.
+    this.terminalRunBtn.textContent = this.terminalRunning
+      ? t('bottomPanel.stop')
+      : t('bottomPanel.run')
     const blocked = this.playRunning || !this.projectDir
     this.terminalInput.disabled = blocked || this.terminalRunning
     this.terminalRunBtn.disabled = blocked && !this.terminalRunning
     if (!this.projectDir) {
-      this.terminalInput.placeholder = 'Abra um projeto para usar o terminal'
+      this.terminalInput.placeholder = t('bottomPanel.placeholder_no_project')
     } else if (this.playRunning) {
-      this.terminalInput.placeholder = 'Pare o Play para usar o terminal'
+      this.terminalInput.placeholder = t('bottomPanel.placeholder_play_running')
     } else if (this.terminalRunning) {
-      this.terminalInput.placeholder = 'Comando em execução...'
+      this.terminalInput.placeholder = t('bottomPanel.placeholder_running')
     } else {
-      this.terminalInput.placeholder = 'Digite um comando (ex: yarn install)'
+      this.terminalInput.placeholder = t('bottomPanel.placeholder_default')
     }
   }
 

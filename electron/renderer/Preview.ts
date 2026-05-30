@@ -1,3 +1,5 @@
+import { t } from './i18n'
+
 // Regex que captura a URL local do vite a partir do stdout — algo como
 // "Local:   http://localhost:5174/". O vite imprime com códigos ANSI de
 // cor (ex.: \x1b[36m antes do URL), então strippamos antes de procurar.
@@ -50,6 +52,11 @@ export class Preview {
         this.toggleFullscreen()
       }
     })
+
+    document.addEventListener('locale-change', () => {
+      this.buildShell()
+      this.updateButtonState()
+    })
   }
 
   private buildShell(): void {
@@ -60,13 +67,13 @@ export class Preview {
 
     const playBtn = document.createElement('button')
     playBtn.className = 'preview-play-btn'
-    playBtn.textContent = '▶ Play'
+    playBtn.textContent = t('preview.play')
     playBtn.addEventListener('click', () => void this.toggle())
     this.playBtn = playBtn
 
     const status = document.createElement('span')
     status.className = 'preview-status'
-    status.textContent = 'Parado'
+    status.textContent = t('preview.status_stopped')
     this.statusEl = status
 
     // Fullscreen toggle — esconde todo o resto da UI do IDE e expande o
@@ -74,7 +81,7 @@ export class Preview {
     const fullscreenBtn = document.createElement('button')
     fullscreenBtn.className = 'preview-fullscreen-btn'
     fullscreenBtn.type = 'button'
-    fullscreenBtn.title = 'Tela cheia (ESC para sair)'
+    fullscreenBtn.title = t('preview.tooltip_fullscreen')
     fullscreenBtn.textContent = '⛶'
     fullscreenBtn.addEventListener('click', () => this.toggleFullscreen())
     this.fullscreenBtn = fullscreenBtn
@@ -85,7 +92,7 @@ export class Preview {
 
     const viewport = document.createElement('div')
     viewport.className = 'preview-viewport'
-    viewport.innerHTML = '<p class="preview-placeholder">Clique em Play para executar o projeto.</p>'
+    viewport.innerHTML = `<p class="preview-placeholder">${t('preview.placeholder_start')}</p>`
     this.viewportEl = viewport
 
     this.container.appendChild(toolbar)
@@ -96,10 +103,10 @@ export class Preview {
     this.fullscreen = !this.fullscreen
     document.body.classList.toggle('app-preview-fullscreen', this.fullscreen)
     if (this.fullscreenBtn) {
-      this.fullscreenBtn.textContent = this.fullscreen ? '⛶ Sair' : '⛶'
+      this.fullscreenBtn.textContent = this.fullscreen ? t('preview.fullscreen_exit') : '⛶'
       this.fullscreenBtn.title = this.fullscreen
-        ? 'Sair da tela cheia (ESC)'
-        : 'Tela cheia (ESC para sair)'
+        ? t('preview.tooltip_exit_fullscreen')
+        : t('preview.tooltip_fullscreen')
     }
   }
 
@@ -107,16 +114,18 @@ export class Preview {
     if (!this.playBtn || !this.statusEl) return
     this.playBtn.disabled = !this.projectDir
     if (!this.projectDir) {
-      this.playBtn.textContent = '▶ Play'
-      this.statusEl.textContent = 'Sem projeto'
+      this.playBtn.textContent = t('preview.play')
+      this.statusEl.textContent = t('preview.status_no_project')
       return
     }
     if (this.running) {
-      this.playBtn.textContent = '■ Stop'
-      this.statusEl.textContent = this.serverUrl ? 'Rodando' : 'Iniciando...'
+      this.playBtn.textContent = t('preview.stop')
+      this.statusEl.textContent = this.serverUrl
+        ? t('preview.status_running')
+        : t('preview.status_starting')
     } else {
-      this.playBtn.textContent = '▶ Play'
-      this.statusEl.textContent = 'Parado'
+      this.playBtn.textContent = t('preview.play')
+      this.statusEl.textContent = t('preview.status_stopped')
     }
   }
 
@@ -159,8 +168,8 @@ export class Preview {
       // Se nunca detectamos a URL do vite, é provável que tenha falhado a
       // inicializar — orienta o usuário a instalar deps.
       this.viewportEl.innerHTML = startedSuccessfully
-        ? '<p class="preview-placeholder">Projeto parado.</p>'
-        : '<p class="preview-placeholder">Projeto falhou ao iniciar.<br>Veja o Console. Se faltar o <code>vite</code>, rode <code>yarn install</code> no Terminal.</p>'
+        ? `<p class="preview-placeholder">${t('preview.placeholder_stopped')}</p>`
+        : `<p class="preview-placeholder">${t('preview.placeholder_failed_html')}</p>`
     }
     this.updateButtonState()
     document.dispatchEvent(new CustomEvent('play-stopped'))

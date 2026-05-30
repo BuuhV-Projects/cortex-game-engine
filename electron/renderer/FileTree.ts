@@ -1,4 +1,5 @@
 import { customPrompt } from './customPrompt'
+import { t } from './i18n'
 import type { FileEntry } from './types'
 
 const STORAGE_KEY = 'fileTree_projectDir'
@@ -66,7 +67,7 @@ export class FileTree {
   // ── Helpers do header ──────────────────────────────────────────────────────
 
   private projectLabelText(): string {
-    if (!this.projectDir) return 'Nenhum projeto aberto'
+    if (!this.projectDir) return t('fileTree.no_project')
     const name = this.projectDir.split(/[\\/]/).filter(Boolean).pop() ?? this.projectDir
     return name.toUpperCase()
   }
@@ -106,6 +107,10 @@ export class FileTree {
     this.buildShell()
     // Fecha context menu ao clicar fora
     document.addEventListener('click', () => this.dismissContextMenu())
+    document.addEventListener('locale-change', () => {
+      this.buildShell()
+      void this.refresh()
+    })
     // Recarrega a árvore quando o Chat IA executa uma tool que mexe no FS
     // (Write/Edit/Bash/MCP tools que escrevem arquivos).
     document.addEventListener('filetree-refresh', () => {
@@ -147,7 +152,7 @@ export class FileTree {
     projectActions.className = 'filetree-project-actions'
 
     const openBtn = document.createElement('button')
-    openBtn.textContent = 'Abrir Projeto'
+    openBtn.textContent = t('fileTree.open_project')
     openBtn.className = 'filetree-open-btn'
     openBtn.addEventListener('click', () => void this.handleOpenProject())
     projectActions.appendChild(openBtn)
@@ -161,7 +166,7 @@ export class FileTree {
     const headerToggle = document.createElement('button')
     headerToggle.className = 'filetree-tree-header-toggle'
     headerToggle.type = 'button'
-    headerToggle.title = 'Recolher/expandir árvore'
+    headerToggle.title = t('fileTree.tooltip_toggle_tree')
     headerToggle.textContent = this.treeCollapsed ? '›' : '⌄'
     headerToggle.addEventListener('click', () => this.toggleTreeCollapsed())
     this.headerToggleEl = headerToggle
@@ -175,20 +180,20 @@ export class FileTree {
     headerActions.className = 'filetree-header-actions'
 
     headerActions.appendChild(
-      this.makeIconButton('📄', 'Novo arquivo na raiz do projeto', () =>
+      this.makeIconButton('📄', t('fileTree.tooltip_new_file'), () =>
         void this.createFileIn(this.projectDir),
       ),
     )
     headerActions.appendChild(
-      this.makeIconButton('📁', 'Nova pasta na raiz do projeto', () =>
+      this.makeIconButton('📁', t('fileTree.tooltip_new_folder'), () =>
         void this.createDirIn(this.projectDir),
       ),
     )
     headerActions.appendChild(
-      this.makeIconButton('↻', 'Recarregar árvore', () => void this.refresh()),
+      this.makeIconButton('↻', t('fileTree.tooltip_reload'), () => void this.refresh()),
     )
     headerActions.appendChild(
-      this.makeIconButton('⇡', 'Recolher todas as pastas', () => this.collapseAll()),
+      this.makeIconButton('⇡', t('fileTree.tooltip_collapse_all'), () => this.collapseAll()),
     )
 
     treeHeader.appendChild(headerToggle)
@@ -209,31 +214,35 @@ export class FileTree {
 
   private async createFileIn(dirPath: string | null): Promise<void> {
     if (!dirPath) {
-      alert('Abra um projeto antes de criar arquivos.')
+      alert(t('fileTree.open_first_for_files'))
       return
     }
-    const name = await customPrompt('Nome do arquivo:', { placeholder: 'main.ts' })
+    const name = await customPrompt(t('fileTree.prompt_file_name'), {
+      placeholder: t('fileTree.placeholder_file'),
+    })
     if (!name || name.trim() === '') return
     try {
       await window.electronAPI.createFile(dirPath, name.trim())
       await this.refresh()
     } catch (err) {
-      alert(`Erro ao criar arquivo: ${String(err)}`)
+      alert(`${t('fileTree.error_create_file')} ${String(err)}`)
     }
   }
 
   private async createDirIn(dirPath: string | null): Promise<void> {
     if (!dirPath) {
-      alert('Abra um projeto antes de criar pastas.')
+      alert(t('fileTree.open_first_for_folders'))
       return
     }
-    const name = await customPrompt('Nome da pasta:', { placeholder: 'assets' })
+    const name = await customPrompt(t('fileTree.prompt_folder_name'), {
+      placeholder: t('fileTree.placeholder_folder'),
+    })
     if (!name || name.trim() === '') return
     try {
       await window.electronAPI.createDir(dirPath, name.trim())
       await this.refresh()
     } catch (err) {
-      alert(`Erro ao criar pasta: ${String(err)}`)
+      alert(`${t('fileTree.error_create_folder')} ${String(err)}`)
     }
   }
 
@@ -260,14 +269,14 @@ export class FileTree {
     if (this.projectLabelEl) this.projectLabelEl.textContent = this.projectLabelText()
     if (!this.projectDir || !this.treeArea) return
 
-    this.treeArea.innerHTML = '<p class="filetree-loading">Carregando...</p>'
+    this.treeArea.innerHTML = `<p class="filetree-loading">${t('fileTree.loading')}</p>`
     try {
       const entries = await window.electronAPI.readDir(this.projectDir)
       const ul = this.buildList(entries)
       this.treeArea.innerHTML = ''
       this.treeArea.appendChild(ul)
     } catch (err) {
-      this.treeArea.innerHTML = `<p class="filetree-error">Erro ao ler diretorio: ${String(err)}</p>`
+      this.treeArea.innerHTML = `<p class="filetree-error">${t('fileTree.error_read_dir')} ${String(err)}</p>`
     }
   }
 

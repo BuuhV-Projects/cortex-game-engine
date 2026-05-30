@@ -639,6 +639,48 @@ ipcMain.handle('installer:setup', async (_event, projectDir: unknown) => {
   return { ok: true, iconsGenerated }
 })
 
+// ---------------------------------------------------------------------------
+// Handlers IPC — preferências do usuário (i18n etc — ADR-0025)
+// ---------------------------------------------------------------------------
+
+/**
+ * Path do arquivo de preferências: `<userData>/preferences.json`.
+ * Vive fora de qualquer projeto, é compartilhado entre execuções da IDE.
+ */
+function prefsPath(): string {
+  return join(app.getPath('userData'), 'preferences.json')
+}
+
+interface Preferences {
+  locale?: 'en' | 'pt'
+  welcomed?: boolean
+}
+
+ipcMain.handle('prefs:get', async (): Promise<Preferences> => {
+  try {
+    const raw = await readFile(prefsPath(), 'utf-8')
+    const parsed = JSON.parse(raw) as Preferences
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+})
+
+ipcMain.handle('prefs:set', async (_event, patch: unknown) => {
+  if (!patch || typeof patch !== 'object') return
+  let current: Preferences = {}
+  try {
+    const raw = await readFile(prefsPath(), 'utf-8')
+    current = JSON.parse(raw) as Preferences
+  } catch {
+    /* arquivo novo */
+  }
+  const next = { ...current, ...(patch as Preferences) }
+  await mkdir(app.getPath('userData'), { recursive: true })
+  await writeFile(prefsPath(), JSON.stringify(next, null, 2), 'utf-8')
+  return next
+})
+
 // Abre um diálogo nativo de seleção de pasta. Retorna o path absoluto ou null
 // se o usuário cancelar. Modal à janela principal quando ela existe.
 ipcMain.handle('dialog:openDirectory', async () => {
@@ -1014,47 +1056,114 @@ ipcMain.handle('run:stop', async () => {
 // ---------------------------------------------------------------------------
 
 /**
- * Monta o Menu principal acrescentando o submenu "Projeto" aos defaults do
- * Electron. Itens do submenu disparam eventos pra o renderer via
- * `webContents.send` — o renderer já tem toda a UI (BottomPanel/Terminal)
- * pra mostrar logs e capturar saída do comando.
+ * Strings do menu nativo localizadas. Carregadas no boot via `prefs:get`
+ * e usadas em `buildAppMenu()`. Quando o usuário troca de idioma no
+ * renderer, ele dispara `menu:rebuild` via IPC e o menu é reconstruído.
+ */
+const MENU_STRINGS = {
+  en: {
+    project: 'Project',
+    generate_installer: 'Generate installer...',
+    language: 'Language',
+  },
+  pt: {
+    project: 'Projeto',
+    generate_installer: 'Gerar instalador...',
+    language: 'Idioma',
+  },
+} as const
+
+let currentMenuLocale: 'en' | 'pt' = 'en'
+
+/**
+ * Monta o Menu principal.
  *
- * "Gerar instalador..." dispara `yarn tauri:build` no projeto ativo
- * (ADR-0024). Requer Rust toolchain + MSVC Build Tools + ícones gerados
- * via `yarn tauri icon` — pré-requisitos documentados no README do
- * template.
+ * - Em **release** (`app.isPackaged === true`) só fica visível o submenu
+ *   "Project" (Generate installer + Language). Os defaults do Electron
+ *   (File/Edit/View/Window) somem — não fazem sentido pro usuário final
+ *   da IDE final e "vazam" comportamento de browser (Reload, DevTools).
+ * - Em **dev** (`yarn electron:dev`), os defaults voltam — DevTools,
+ *   Reload e Cut/Copy/Paste continuam acessíveis pra debug.
+ * - macOS sempre mantém o `appMenu` (com Quit/About) porque sem ele o
+ *   Cmd+Q não funciona.
  */
 function buildAppMenu(): Menu {
   const isMac = process.platform === 'darwin'
+  const s = MENU_STRINGS[currentMenuLocale]
 
-  const template: MenuItemConstructorOptions[] = [
-    ...(isMac ? [{ role: 'appMenu' as const }] : []),
-    { role: 'fileMenu' },
-    { role: 'editMenu' },
-    { role: 'viewMenu' },
-    {
-      label: 'Projeto',
-      submenu: [
-        {
-          label: 'Gerar instalador...',
-          accelerator: isMac ? 'Cmd+Shift+B' : 'Ctrl+Shift+B',
-          click: (): void => {
-            mainWindow?.webContents.send('menu:build-installer')
-          },
+  const projectMenu: MenuItemConstructorOptions = {
+    label: s.project,
+    submenu: [
+      {
+        label: s.generate_installer,
+        accelerator: isMac ? 'Cmd+Shift+B' : 'Ctrl+Shift+B',
+        click: (): void => {
+          mainWindow?.webContents.send('menu:build-installer')
         },
-      ],
-    },
-    { role: 'windowMenu' },
-  ]
+      },
+      { type: 'separator' },
+      {
+        label: s.language,
+        submenu: [
+          {
+            label: 'English',
+            type: 'radio',
+            checked: currentMenuLocale === 'en',
+            click: (): void => {
+              mainWindow?.webContents.send('menu:change-locale', 'en')
+            },
+          },
+          {
+            label: 'Português',
+            type: 'radio',
+            checked: currentMenuLocale === 'pt',
+            click: (): void => {
+              mainWindow?.webContents.send('menu:change-locale', 'pt')
+            },
+          },
+        ],
+      },
+    ],
+  }
+
+  const template: MenuItemConstructorOptions[] = app.isPackaged
+    ? [...(isMac ? [{ role: 'appMenu' as const }] : []), projectMenu]
+    : [
+        ...(isMac ? [{ role: 'appMenu' as const }] : []),
+        { role: 'fileMenu' },
+        { role: 'editMenu' },
+        { role: 'viewMenu' },
+        projectMenu,
+        { role: 'windowMenu' },
+      ]
 
   return Menu.buildFromTemplate(template)
 }
+
+// Renderer chama isso quando o usuário troca de idioma no Welcome ou
+// nas configurações — assim o menu nativo acompanha sem reload.
+ipcMain.handle('menu:rebuild', async (_event, locale: unknown) => {
+  if (locale === 'en' || locale === 'pt') {
+    currentMenuLocale = locale
+    Menu.setApplicationMenu(buildAppMenu())
+  }
+})
 
 // ---------------------------------------------------------------------------
 // Ciclo de vida do app
 // ---------------------------------------------------------------------------
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Lê o locale persistido pra montar o menu nativo no idioma certo
+  // já no primeiro frame (evita o "flash" do menu em inglês quando o
+  // usuário tem PT escolhido).
+  try {
+    const raw = await readFile(prefsPath(), 'utf-8')
+    const prefs = JSON.parse(raw) as { locale?: 'en' | 'pt' }
+    if (prefs.locale === 'en' || prefs.locale === 'pt') currentMenuLocale = prefs.locale
+  } catch {
+    /* sem preferências ainda — usa 'en' default */
+  }
   Menu.setApplicationMenu(buildAppMenu())
   createWindow()
 

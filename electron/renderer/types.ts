@@ -88,8 +88,18 @@ export interface ElectronAPI {
 
   // Itens do Menu nativo (ADR-0024)
   onMenuBuildInstaller(callback: () => void): void
+  // Trocar idioma via menu nativo (ADR-0025)
+  onMenuChangeLocale(callback: (locale: 'en' | 'pt') => void): void
 
   // Setup de Tauri em projetos pré-existentes (ADR-0024)
   installerCheck(projectDir: string): Promise<{ configured: boolean }>
   installerSetup(projectDir: string): Promise<{ ok: true; iconsGenerated: boolean }>
+
+  // Preferências persistentes (ADR-0025 — i18n)
+  prefsGet(): Promise<{ locale?: 'en' | 'pt'; welcomed?: boolean }>
+  prefsSet(patch: { locale?: 'en' | 'pt'; welcomed?: boolean }): Promise<{
+    locale?: 'en' | 'pt'
+    welcomed?: boolean
+  }>
+  menuRebuild(locale: 'en' | 'pt'): Promise<void>
 }

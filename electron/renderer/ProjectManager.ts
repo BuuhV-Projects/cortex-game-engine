@@ -1,3 +1,5 @@
+import { t } from './i18n'
+
 export class ProjectManager {
   private container: HTMLElement
   private dialog: HTMLDialogElement | null = null
@@ -12,12 +14,19 @@ export class ProjectManager {
   init(): void {
     this.buildDialog()
     this.injectButton()
+    // Reconstrói tudo se o usuário trocar de idioma na sessão atual.
+    document.addEventListener('locale-change', () => {
+      this.dialog?.remove()
+      this.container.querySelector('.project-manager-new-btn')?.remove()
+      this.buildDialog()
+      this.injectButton()
+    })
   }
 
   /** Insere o botão "+ Novo Projeto" no topo da sidebar. */
   private injectButton(): void {
     const btn = document.createElement('button')
-    btn.textContent = '+ Novo Projeto'
+    btn.textContent = t('projectManager.new_btn')
     btn.className = 'project-manager-new-btn'
     btn.addEventListener('click', () => this.dialog?.showModal())
     this.container.prepend(btn)
@@ -30,21 +39,21 @@ export class ProjectManager {
 
     const title = document.createElement('h2')
     title.className = 'project-manager-dialog-title'
-    title.textContent = 'Novo Projeto'
+    title.textContent = t('projectManager.dialog_title')
 
     // Campo: nome do projeto
     const nameGroup = document.createElement('div')
     nameGroup.className = 'project-manager-field'
 
     const nameLabel = document.createElement('label')
-    nameLabel.textContent = 'Nome do projeto'
+    nameLabel.textContent = t('projectManager.label_name')
     nameLabel.htmlFor = 'pm-name-input'
 
     const nameInput = document.createElement('input')
     nameInput.type = 'text'
     nameInput.id = 'pm-name-input'
     nameInput.className = 'project-manager-input'
-    nameInput.placeholder = 'meu-projeto'
+    nameInput.placeholder = t('projectManager.placeholder_name')
     nameInput.required = true
     this.nameInput = nameInput
 
@@ -56,20 +65,20 @@ export class ProjectManager {
     dirGroup.className = 'project-manager-field'
 
     const dirLabel = document.createElement('label')
-    dirLabel.textContent = 'Pasta destino'
+    dirLabel.textContent = t('projectManager.label_target')
 
     const dirRow = document.createElement('div')
     dirRow.className = 'project-manager-dir-row'
 
     const dirBrowseBtn = document.createElement('button')
     dirBrowseBtn.type = 'button'
-    dirBrowseBtn.textContent = 'Selecionar pasta'
+    dirBrowseBtn.textContent = t('projectManager.select_folder')
     dirBrowseBtn.className = 'project-manager-btn project-manager-btn--secondary'
     dirBrowseBtn.addEventListener('click', () => void this.handleSelectDir())
 
     const dirPathDisplay = document.createElement('span')
     dirPathDisplay.className = 'project-manager-dir-path'
-    dirPathDisplay.textContent = 'Nenhuma pasta selecionada'
+    dirPathDisplay.textContent = t('projectManager.no_folder_selected')
     this.dirPathDisplay = dirPathDisplay
 
     dirRow.appendChild(dirBrowseBtn)
@@ -84,13 +93,13 @@ export class ProjectManager {
 
     const cancelBtn = document.createElement('button')
     cancelBtn.type = 'button'
-    cancelBtn.textContent = 'Cancelar'
+    cancelBtn.textContent = t('projectManager.cancel')
     cancelBtn.className = 'project-manager-btn project-manager-btn--secondary'
     cancelBtn.addEventListener('click', () => this.closeAndReset())
 
     const confirmBtn = document.createElement('button')
     confirmBtn.type = 'button'
-    confirmBtn.textContent = 'Criar'
+    confirmBtn.textContent = t('projectManager.create')
     confirmBtn.className = 'project-manager-btn project-manager-btn--primary'
     confirmBtn.addEventListener('click', () => void this.handleCreate())
 
@@ -108,7 +117,7 @@ export class ProjectManager {
   private closeAndReset(): void {
     if (this.nameInput) this.nameInput.value = ''
     this.selectedDir = null
-    if (this.dirPathDisplay) this.dirPathDisplay.textContent = 'Nenhuma pasta selecionada'
+    if (this.dirPathDisplay) this.dirPathDisplay.textContent = t('projectManager.no_folder_selected')
     this.dialog?.close()
   }
 
@@ -127,16 +136,13 @@ export class ProjectManager {
     }
 
     if (!this.selectedDir) {
-      alert('Selecione uma pasta destino.')
+      alert(t('projectManager.alert_select_folder'))
       return
     }
 
     try {
       const createdPath = await window.electronAPI.createProject(this.selectedDir, name)
       this.closeAndReset()
-      // Sinaliza primeiro que o projeto foi recém-criado (BottomPanel roda
-      // yarn install automaticamente — ADR-0013), depois abre como projeto
-      // ativo (mesma semântica de Abrir Projeto existente).
       document.dispatchEvent(
         new CustomEvent<{ path: string }>('project-created', {
           detail: { path: createdPath },
@@ -148,7 +154,7 @@ export class ProjectManager {
         }),
       )
     } catch (err) {
-      alert(`Erro ao criar projeto: ${String(err)}`)
+      alert(`${t('projectManager.error_create')} ${String(err)}`)
     }
   }
 }

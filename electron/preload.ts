@@ -153,9 +153,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('menu:build-installer', () => callback())
   },
 
+  // Item "Idioma > EN | PT" do Menu nativo (ADR-0025)
+  onMenuChangeLocale: (callback: (locale: 'en' | 'pt') => void) => {
+    ipcRenderer.on('menu:change-locale', (_event, locale: 'en' | 'pt') => callback(locale))
+  },
+
   // Setup de Tauri em projetos pré-existentes (ADR-0024)
   installerCheck: (projectDir: string) =>
     ipcRenderer.invoke('installer:check', projectDir),
   installerSetup: (projectDir: string) =>
     ipcRenderer.invoke('installer:setup', projectDir),
+
+  // Preferências persistentes (ADR-0025 — i18n)
+  prefsGet: () => ipcRenderer.invoke('prefs:get'),
+  prefsSet: (patch: Record<string, unknown>) =>
+    ipcRenderer.invoke('prefs:set', patch),
+  menuRebuild: (locale: 'en' | 'pt') =>
+    ipcRenderer.invoke('menu:rebuild', locale),
 })

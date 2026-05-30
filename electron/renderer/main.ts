@@ -6,9 +6,18 @@ import { ProjectManager } from './ProjectManager'
 import { Chat } from './Chat'
 import { Resizer } from './Resizer'
 import { applyTheme } from './theme'
+import { initI18n } from './i18n'
+import { showWelcomeModal } from './Welcome'
 
 // Aplica o tema (CSS vars + Monaco) antes de inicializar componentes.
 applyTheme()
+
+// i18n é assíncrono (IPC pra ler preferências). Resolvemos antes de
+// construir os componentes pra evitar re-render em pt depois do en.
+const { welcomed } = await initI18n()
+if (!welcomed) {
+  await showWelcomeModal()
+}
 
 const sidebar = document.getElementById('sidebar') as HTMLElement
 const editorContainer = document.getElementById('editor-container') as HTMLElement
@@ -95,4 +104,11 @@ document.addEventListener('project-open', (e) => {
 // escuta o evento DOM e dispara `yarn tauri:build` no projeto ativo.
 window.electronAPI.onMenuBuildInstaller(() => {
   document.dispatchEvent(new CustomEvent('build-installer-requested'))
+})
+
+// Menu nativo "Idioma > English | Português" (ADR-0025). Importa setLocale
+// dinamicamente pra evitar ciclo de dependência com Welcome.ts (que
+// também usa i18n).
+window.electronAPI.onMenuChangeLocale((locale) => {
+  void import('./i18n').then(({ setLocale }) => setLocale(locale))
 })
