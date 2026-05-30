@@ -90,3 +90,9 @@ document.addEventListener('project-open', (e) => {
   const { path } = (e as CustomEvent<{ path: string }>).detail
   void fileTree.openProject(path)
 })
+
+// Menu nativo "Projeto > Gerar instalador..." (ADR-0024). O BottomPanel
+// escuta o evento DOM e dispara `yarn tauri:build` no projeto ativo.
+window.electronAPI.onMenuBuildInstaller(() => {
+  document.dispatchEvent(new CustomEvent('build-installer-requested'))
+})

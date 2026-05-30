@@ -1,9 +1,35 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join, resolve } from 'path'
+import { app, BrowserWindow, ipcMain, dialog, Menu, type MenuItemConstructorOptions } from 'electron'
+import { join, resolve, delimiter } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir, rename, rm, unlink } from 'fs/promises'
+import { existsSync } from 'fs'
 import { spawn, ChildProcess } from 'child_process'
 import { createHash } from 'crypto'
+import { homedir } from 'os'
 import { runAgent } from './agent/agentLoop.js'
+import { writePlaceholderIcons } from './installer-icons.js'
+
+/**
+ * Retorna o ambiente do processo com `~/.cargo/bin` injetado no PATH.
+ *
+ * O Electron captura `process.env.PATH` no momento que inicia — se o
+ * usuário instalou Rust DEPOIS de abrir a IDE (ou se o yarn/node pai
+ * do dev mode ficou em background com PATH velho), `cargo` não aparece
+ * pro spawn por mais que `cargo --version` funcione fora.
+ *
+ * A injeção é idempotente (não duplica se já estiver) e silenciosa
+ * quando `~/.cargo/bin` não existe — esse caso é Rust não instalado,
+ * que aí é problema do usuário resolver.
+ */
+function envWithCargo(): NodeJS.ProcessEnv {
+  const env = { ...process.env }
+  const cargoBin = join(homedir(), '.cargo', 'bin')
+  if (!existsSync(cargoBin)) return env
+  const path = env.PATH ?? env.Path ?? ''
+  const parts = path.split(delimiter)
+  const already = parts.some((p) => p.toLowerCase() === cargoBin.toLowerCase())
+  if (!already) env.PATH = `${cargoBin}${delimiter}${path}`
+  return env
+}
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
 let mainWindow: BrowserWindow | null = null
@@ -45,6 +71,29 @@ function validatePath(inputPath: unknown): string {
     throw new Error('Path contém byte nulo')
   }
   return resolve(inputPath)
+}
+
+/**
+ * Garante (idempotente) que `pattern` está numa linha própria no `.gitignore`
+ * de `projectDir`. Cria o arquivo se não existir.
+ *
+ * A regra `src-tauri/` é injetada por aqui em vez de viver no `.gitignore`
+ * do template porque o git aplica `.gitignore` aninhados também durante
+ * operações no repo da IDE — se o template tivesse `src-tauri/`, o repo
+ * da IDE deixaria de trackear `templates/new-project/src-tauri/`.
+ */
+async function ensureGitignoreEntry(projectDir: string, pattern: string): Promise<void> {
+  const file = join(projectDir, '.gitignore')
+  let content = ''
+  try {
+    content = await readFile(file, 'utf-8')
+  } catch {
+    // arquivo não existe — criamos do zero
+  }
+  const lines = content.split(/\r?\n/).map((l) => l.trim())
+  if (lines.includes(pattern)) return
+  const sep = content.length > 0 && !content.endsWith('\n') ? '\n' : ''
+  await writeFile(file, content + sep + pattern + '\n', 'utf-8')
 }
 
 // ---------------------------------------------------------------------------
@@ -257,6 +306,10 @@ ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unkn
       }),
   )
   await vendorEngine(projectPath)
+  // src-tauri/ é tratada como artefato regenerável (ADR-0024). Adicionar
+  // ao .gitignore aqui — não no template — porque o git aplica .gitignore
+  // aninhados também no repo da IDE.
+  await ensureGitignoreEntry(projectPath, 'src-tauri/')
   return projectPath
 })
 
@@ -366,6 +419,137 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
   return results
 })
 
+// ---------------------------------------------------------------------------
+// Handlers IPC — setup de Tauri (ADR-0024)
+// ---------------------------------------------------------------------------
+
+/**
+ * Verifica se um projeto já tem Tauri configurado: precisa ter
+ * `src-tauri/tauri.conf.json` E o script `tauri:build` no package.json.
+ *
+ * Projetos criados antes do template Tauri-ready não têm nada disso;
+ * `installer:setup` instala. Projetos novos já saem prontos.
+ */
+ipcMain.handle('installer:check', async (_event, projectDir: unknown) => {
+  const safeDir = validatePath(projectDir)
+  try {
+    await readFile(join(safeDir, 'src-tauri', 'tauri.conf.json'), 'utf-8')
+  } catch {
+    return { configured: false }
+  }
+  try {
+    const pkgRaw = await readFile(join(safeDir, 'package.json'), 'utf-8')
+    const pkg = JSON.parse(pkgRaw)
+    if (!pkg?.scripts?.['tauri:build']) return { configured: false }
+  } catch {
+    return { configured: false }
+  }
+  // Detecção de projeto legado: Cargo.toml declara `[lib] name = game_app_lib`
+  // mas src/lib.rs não existe (template inicial estava incompleto). Sem isso,
+  // `cargo metadata` falha. Reaplicar o setup escreve o lib.rs e o main.rs novo.
+  if (!existsSync(join(safeDir, 'src-tauri', 'src', 'lib.rs'))) {
+    return { configured: false }
+  }
+  // Faltam ícones obrigatórios (tauri.conf.json referencia eles): reaplicar
+  // setup gera placeholders cinza-azulado automaticamente.
+  if (!existsSync(join(safeDir, 'src-tauri', 'icons', 'icon.ico'))) {
+    return { configured: false }
+  }
+  return { configured: true }
+})
+
+/**
+ * Configura Tauri num projeto existente: copia `templates/new-project/src-tauri/`
+ * para o projeto (substituindo `{{PROJECT_NAME}}` pelo nome real) e mescla
+ * scripts + devDependencies do template no package.json do projeto.
+ *
+ * Idempotente: se `src-tauri/` já existe, mantém. Se o package.json já tem
+ * os scripts, não duplica. Não toca em vite.config.ts (usuário pode ter
+ * editado) — o README do template explica os ajustes recomendados.
+ */
+ipcMain.handle('installer:setup', async (_event, projectDir: unknown) => {
+  const safeDir = validatePath(projectDir)
+  const projectName = safeDir.split(/[\\/]/).filter(Boolean).pop() ?? 'game'
+
+  // ── 1. Copia src-tauri/ do template ─────────────────────────────────────
+  // cp recursivo com force:false: preenche arquivos faltantes (ex.: lib.rs
+  // novo num projeto legado) sem sobrescrever edições do usuário.
+  const tauriDir = join(safeDir, 'src-tauri')
+  const templateTauriDir = join(app.getAppPath(), 'templates', 'new-project', 'src-tauri')
+  await cp(templateTauriDir, tauriDir, { recursive: true, force: false, errorOnExist: false })
+
+  // Substitui {{PROJECT_NAME}} nos arquivos de texto copiados (Cargo.toml,
+  // tauri.conf.json). Walk recursivo limitado aos arquivos de texto que o
+  // template conhece — evita tocar acidentalmente em binários futuros.
+  const TEXT_FILES = [
+    'Cargo.toml',
+    'tauri.conf.json',
+    'src/main.rs',
+    'src/lib.rs',
+    'build.rs',
+    '.gitignore',
+  ]
+  for (const rel of TEXT_FILES) {
+    const filePath = join(tauriDir, rel)
+    try {
+      const content = await readFile(filePath, 'utf-8')
+      if (content.includes('{{PROJECT_NAME}}')) {
+        await writeFile(filePath, content.replaceAll('{{PROJECT_NAME}}', projectName), 'utf-8')
+      }
+    } catch {
+      // Arquivo pode não existir (ex: .gitignore renomeado); ignorar.
+    }
+  }
+
+  // ── 1.b Sobrescreve arquivos Rust em projetos legados ──────────────────
+  // Projetos configurados pela versão antiga do setup têm um main.rs que
+  // chama `tauri::Builder::default().run(...)` direto e nenhum lib.rs.
+  // Cargo.toml declara `[lib] name = "game_app_lib"`, então `cargo metadata`
+  // falha procurando lib.rs. O cp acima já copiou o lib.rs novo (não
+  // existia no destino), mas o main.rs antigo continua incompatível —
+  // forçar sobrescrita aqui resolve.
+  const mainRsPath = join(tauriDir, 'src', 'main.rs')
+  const mainRsTemplate = await readFile(join(templateTauriDir, 'src', 'main.rs'), 'utf-8')
+  const mainRsCurrent = await readFile(mainRsPath, 'utf-8').catch(() => '')
+  if (!mainRsCurrent.includes('game_app_lib::run')) {
+    await writeFile(mainRsPath, mainRsTemplate, 'utf-8')
+  }
+
+  // ── 1.c Gera ícones placeholder ────────────────────────────────────────
+  // Sem `icons/icon.ico`, o tauri build falha. Geramos um PNG cinza-azulado
+  // sólido em todos os tamanhos exigidos e um .ico com PNG embutido —
+  // suficiente pro primeiro `tauri build` rodar. Usuário substitui depois
+  // com `yarn tauri icon <png>` quando tiver a arte do jogo. Idempotente:
+  // a função pula se `icon.ico` já existe.
+  const iconsGenerated = await writePlaceholderIcons(tauriDir)
+
+  // ── 2. Merge package.json ───────────────────────────────────────────────
+  const pkgPath = join(safeDir, 'package.json')
+  const pkgRaw = await readFile(pkgPath, 'utf-8')
+  const pkg = JSON.parse(pkgRaw) as {
+    scripts?: Record<string, string>
+    devDependencies?: Record<string, string>
+  }
+
+  pkg.scripts = {
+    ...pkg.scripts,
+    build: pkg.scripts?.build ?? 'vite build',
+    tauri: pkg.scripts?.tauri ?? 'tauri',
+    'tauri:dev': pkg.scripts?.['tauri:dev'] ?? 'tauri dev',
+    'tauri:build': pkg.scripts?.['tauri:build'] ?? 'tauri build',
+  }
+  pkg.devDependencies = {
+    ...pkg.devDependencies,
+    '@tauri-apps/cli': pkg.devDependencies?.['@tauri-apps/cli'] ?? '^2',
+  }
+  await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8')
+
+  // Projetos legados podem não ter `src-tauri/` no .gitignore — garante.
+  await ensureGitignoreEntry(safeDir, 'src-tauri/')
+
+  return { ok: true, iconsGenerated }
+})
+
 // Abre um diálogo nativo de seleção de pasta. Retorna o path absoluto ou null
 // se o usuário cancelar. Modal à janela principal quando ela existe.
 ipcMain.handle('dialog:openDirectory', async () => {
@@ -411,6 +595,7 @@ ipcMain.handle('run:start', async (_event, projectDir: unknown) => {
   const child = spawn('vite', [], {
     cwd: safeDir,
     shell: true,
+    env: envWithCargo(),
   })
 
   runningProcess = child
@@ -458,6 +643,7 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
   const child = spawn(command, [], {
     cwd: safeDir,
     shell: true,
+    env: envWithCargo(),
   })
 
   terminalProcess = child
@@ -735,10 +921,52 @@ ipcMain.handle('run:stop', async () => {
 })
 
 // ---------------------------------------------------------------------------
+// Menu nativo da aplicação
+// ---------------------------------------------------------------------------
+
+/**
+ * Monta o Menu principal acrescentando o submenu "Projeto" aos defaults do
+ * Electron. Itens do submenu disparam eventos pra o renderer via
+ * `webContents.send` — o renderer já tem toda a UI (BottomPanel/Terminal)
+ * pra mostrar logs e capturar saída do comando.
+ *
+ * "Gerar instalador..." dispara `yarn tauri:build` no projeto ativo
+ * (ADR-0024). Requer Rust toolchain + MSVC Build Tools + ícones gerados
+ * via `yarn tauri icon` — pré-requisitos documentados no README do
+ * template.
+ */
+function buildAppMenu(): Menu {
+  const isMac = process.platform === 'darwin'
+
+  const template: MenuItemConstructorOptions[] = [
+    ...(isMac ? [{ role: 'appMenu' as const }] : []),
+    { role: 'fileMenu' },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    {
+      label: 'Projeto',
+      submenu: [
+        {
+          label: 'Gerar instalador...',
+          accelerator: isMac ? 'Cmd+Shift+B' : 'Ctrl+Shift+B',
+          click: (): void => {
+            mainWindow?.webContents.send('menu:build-installer')
+          },
+        },
+      ],
+    },
+    { role: 'windowMenu' },
+  ]
+
+  return Menu.buildFromTemplate(template)
+}
+
+// ---------------------------------------------------------------------------
 // Ciclo de vida do app
 // ---------------------------------------------------------------------------
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(buildAppMenu())
   createWindow()
 
   // macOS: recria a janela ao clicar no ícone do dock quando não há janelas abertas

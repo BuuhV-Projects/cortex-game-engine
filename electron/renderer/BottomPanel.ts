@@ -75,6 +75,81 @@ export class BottomPanel {
       this.playRunning = false
       this.updateTerminalButtons()
     })
+
+    // Menu nativo "Projeto > Gerar instalador..." (ADR-0024). Detecta
+    // projetos legados (sem src-tauri/) e oferece setup automático antes
+    // de tentar buildar. Reusa a infra do terminal embutido para logs.
+    document.addEventListener('build-installer-requested', () => {
+      void this.handleBuildInstaller()
+    })
+  }
+
+  /**
+   * Fluxo do menu "Gerar instalador" (ADR-0024):
+   *
+   * 1. Valida estado (projeto aberto, Play parado, terminal livre).
+   * 2. Pergunta ao main se o projeto tem Tauri configurado.
+   *    - Não → confirma setup com o usuário, copia `src-tauri/` do template,
+   *      mescla scripts/devDeps no package.json, encadeia `yarn install`
+   *      e instrui sobre ícones. Para por aqui — o usuário gera ícones e
+   *      dispara de novo.
+   *    - Sim → roda `yarn tauri:build`.
+   */
+  private async handleBuildInstaller(): Promise<void> {
+    if (!this.projectDir) {
+      alert('Abra um projeto antes de gerar o instalador.')
+      return
+    }
+    if (this.playRunning) {
+      alert('Pare o Play antes de gerar o instalador.')
+      return
+    }
+    if (this.terminalRunning) {
+      alert('Aguarde o comando atual do terminal terminar.')
+      return
+    }
+
+    this.activateTab('terminal')
+
+    const status = await window.electronAPI.installerCheck(this.projectDir)
+    if (!status.configured) {
+      const ok = confirm(
+        'Este projeto ainda não tem o Tauri configurado.\n\n' +
+          'Posso configurar agora (cópia de src-tauri/, scripts no package.json e @tauri-apps/cli) ' +
+          'e rodar `yarn install` em seguida. Depois você gera os ícones e dispara o build de novo.\n\n' +
+          'Configurar agora?',
+      )
+      if (!ok) return
+      try {
+        this.appendTerminal('▸ Configurando Tauri no projeto...\n', 'system')
+        const result = await window.electronAPI.installerSetup(this.projectDir)
+        this.appendTerminal('✓ src-tauri/ copiado, package.json atualizado.\n', 'system')
+        if (result.iconsGenerated) {
+          this.appendTerminal(
+            '✓ Ícones placeholder gerados em src-tauri/icons/. ' +
+              'Pra trocar pela arte do jogo depois, rode `yarn tauri icon caminho/icone.png`.\n',
+            'system',
+          )
+        }
+        this.appendTerminal(
+          '\nPróximos passos:\n' +
+            '  1. Aguardar `yarn install` terminar (vai rodar agora).\n' +
+            '  2. (Se ainda não fez) instalar Rust + MSVC Build Tools (uma vez por máquina):\n' +
+            '     - Rust:  https://rustup.rs/\n' +
+            '     - MSVC:  https://visualstudio.microsoft.com/visual-cpp-build-tools/\n' +
+            '     Detalhes em "Gerar instalador do jogo" no README.md da IDE.\n' +
+            '  3. Clicar Menu → Projeto → Gerar instalador... de novo — agora vai buildar.\n\n',
+          'system',
+        )
+      } catch (err) {
+        this.appendTerminal(`Erro ao configurar Tauri: ${String(err)}\n`, 'error')
+        return
+      }
+      await this.runCommandForce('yarn install')
+      return
+    }
+
+    await this.runCommandForce('yarn tauri:build')
   }
 
   // ── Construção da UI ────────────────────────────────────────────────────────

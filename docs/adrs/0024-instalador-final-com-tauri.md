@@ -1,0 +1,133 @@
+# 0024 - Instalador final do jogo com Tauri 2
+
+**Data:** 2026-05-28
+**Status:** aceito
+
+## Contexto
+
+Jogos criados com o `cortex-game-engine` precisam de uma forma de serem
+distribuídos como executável instalável fora do contexto do IDE. Sem
+isso, o jogo só roda no preview do IDE — não há caminho para publicar.
+
+Restrições do primeiro alvo de distribuição (definidas com o usuário):
+
+- **Plataforma**: somente Windows.
+- **Canal**: download direto de site próprio (sem Steam, sem itch.io,
+  sem requisitos de loja).
+- **Sem code signing** nesta fase — o usuário aceita o aviso do
+  SmartScreen para os testes iniciais.
+- **Sem auto-update** nesta fase — toda atualização será um download
+  manual do novo instalador.
+- **Sem custom Rust commands** — o jogo é puramente web (Three.js
+  + cortex-game-engine), o Rust é só a casca que carrega o WebView2.
+
+Alternativas avaliadas:
+
+- **Electron** — empacotaria a stack atual sem mudanças, mas o
+  instalador ficaria em ~150–200 MB porque embute Chromium inteiro.
+  Para download direto de jogo indie, esse peso impacta a conversão.
+- **Tauri 2** — usa o WebView2 do SO (no Windows, Edge baseado em
+  Chromium), instalador ~10–20 MB. WebView2 já vem no Windows 11 e no
+  Windows 10 recente; nos casos raros em que falta, o bootstrapper
+  online resolve.
+- **Transpilação para Rust/C++** — descartada de plano: Three.js +
+  Vite + o engine não transpilam, seria reescrita completa.
+
+## Decisão
+
+Adotar **Tauri 2** como formato de instalador final para os jogos
+criados pelo IDE.
+
+### O que entra agora
+
+- Template de novo projeto ([templates/new-project/](../../templates/new-project/))
+  já vem com `src-tauri/` configurado:
+  - `Cargo.toml` minimalista (somente `tauri` + `tauri-build`,
+    sem plugins).
+  - `src/main.rs` apenas chama `Builder::default().run(...)` — nenhuma
+    capacidade nativa exposta ainda.
+  - `tauri.conf.json` aponta `frontendDist` para `../dist` (saída do
+    Vite) e usa `nsis` como único bundle target.
+- `package.json` ganha `@tauri-apps/cli@^2` em devDependencies e três
+  scripts: `tauri`, `tauri:dev`, `tauri:build`.
+- `vite.config.ts` recebe `clearScreen: false`, `server.strictPort: 5173`
+  e `watch.ignored: ['**/src-tauri/**']` para coexistir bem com o
+  fluxo Tauri.
+- `.gitignore` adiciona `src-tauri/target/`.
+- O README explica os pré-requisitos (Rust, MSVC Build Tools,
+  WebView2) e o fluxo `yarn tauri icon → yarn tauri:build`.
+
+### O que NÃO entra agora (escopo deferido)
+
+- **Code signing** — sem certificado, o SmartScreen exibe "Editor
+  desconhecido". Aceito enquanto for teste; vira ADR/TDR próprio
+  quando a publicação for séria.
+- **Auto-update** — sem `@tauri-apps/plugin-updater`. Versão nova =
+  novo download manual.
+- **Ícones placeholder no template** — o usuário roda
+  `yarn tauri icon <png>` antes do primeiro build, uma vez por
+  projeto. Embutir placeholders binários no template foi descartado
+  pra manter o template enxuto.
+- **Comandos custom Rust** — quando o jogo precisar de algo nativo
+  (escrever save no disco, ler config do usuário, abrir URL), os
+  plugins oficiais (`@tauri-apps/plugin-fs`, `plugin-dialog`, etc.)
+  entram caso a caso, não preventivamente.
+- **Integração com o IDE** — o IDE expõe o build via Menu nativo:
+  **Projeto → Gerar instalador...** (atalho `Ctrl+Shift+B` /
+  `Cmd+Shift+B`). O item dispara `yarn tauri:build` no projeto ativo
+  e usa a aba Terminal do BottomPanel pra mostrar os logs. Reusa a
+  infra existente (`terminal:run` IPC, ADR-0012) — sem novo canal
+  IPC dedicado. Bloqueado enquanto o Play está ativo ou outro
+  comando ocupa o terminal.
+- **Setup automático em projetos legados** — projetos criados antes
+  do template Tauri-ready (sem `src-tauri/` nem scripts no
+  `package.json`) são detectados ao clicar "Gerar instalador". Dois
+  IPCs cobrem o fluxo: `installer:check` (retorna se já está
+  configurado) e `installer:setup` (copia `src-tauri/` do template,
+  substitui `{{PROJECT_NAME}}` e mescla scripts/devDeps no
+  `package.json`). O setup é idempotente e não toca em
+  `vite.config.ts` — o usuário pode ter editado, e os ajustes desse
+  arquivo só importam pro `tauri:dev`, não pro build. Depois do
+  setup, o IDE encadeia `yarn install` e instrui o usuário a gerar
+  os ícones antes do próximo clique.
+- **Pré-requisitos não são validados pela IDE neste momento**: se
+  faltar Rust toolchain, MSVC Build Tools ou os ícones (gerados via
+  `yarn tauri icon`), o erro aparece no próprio terminal — o README
+  do template cobre como resolver. Instalação automática de Rust e
+  MSVC é candidata a TDR próprio.
+- **macOS e Linux** — fora do alvo declarado. Tauri suporta os dois;
+  habilitar depois é só adicionar `dmg`/`appimage` em `bundle.targets`
+  e gerar build na plataforma correspondente (Tauri não cross-compila
+  trivialmente).
+
+## Consequências
+
+- **Positivo**: instalador ~10× menor que Electron, alinhado com
+  distribuição via download direto.
+- **Positivo**: a stack do jogo continua igual — TypeScript + Vite +
+  Three.js + cortex-game-engine. Tauri é apenas a casca, não muda
+  como o jogo é escrito nem como roda no preview do IDE.
+- **Positivo**: o preview do IDE continua sendo o caminho rápido de
+  iteração. Tauri é só para o passo "gerar `.exe` para distribuir".
+- **Negativo**: adiciona dependência de toolchain Rust + MSVC Build
+  Tools na máquina de quem vai gerar instalador. Documentado no README,
+  mas é fricção real para quem nunca usou Rust.
+- **Negativo**: o primeiro `tauri build` baixa e compila várias
+  crates — pode levar 5–10 minutos. Builds subsequentes usam cache
+  (~30s). Aceitável dado que gerar instalador não é operação de loop.
+- **Negativo**: sem code signing, SmartScreen vai assustar usuários
+  finais que baixarem do site. OK pra teste, não pra produção.
+- **Aberto**: validar que o WebGL/WebGPU do WebView2 atende a um jogo
+  Three.js com pós-processamento e split-screen (ADR-0023). Em teoria
+  sim — WebView2 é Chromium recente. Confirmar empiricamente no
+  primeiro build.
+
+## Referências
+
+- ADR-0009 — Vendoring engine inline (define como `vendor/` chega no
+  projeto, que o `tauri build` precisa estar presente para o `dist/`
+  conter o engine).
+- ADR-0022 — Padrão arquitetural de projetos criados pelo IDE
+  (define a estrutura na qual `src-tauri/` se encaixa).
+- ADR-0023 — Split-screen e gamepad no engine (capacidades do
+  runtime que precisam funcionar dentro do WebView2).

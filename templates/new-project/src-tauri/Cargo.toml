@@ -1,0 +1,30 @@
+[package]
+name = "game-app"
+version = "0.0.1"
+description = "{{PROJECT_NAME}} — built with cortex-game-engine"
+edition = "2021"
+rust-version = "1.77"
+
+# Casca Tauri 2 — só um wrapper Rust em torno do build do Vite.
+# Sem comandos custom, sem plugins extras. Caso o jogo precise expor
+# capacidades nativas (fs, dialog, http, etc.) no futuro, adicionar
+# os plugins oficiais de @tauri-apps/plugin-* aqui e no main.rs.
+
+[lib]
+name = "game_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

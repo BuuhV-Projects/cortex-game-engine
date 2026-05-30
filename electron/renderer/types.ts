@@ -84,4 +84,11 @@ export interface ElectronAPI {
   onAiToolExecuted(
     callback: (payload: { id: string; result: { content: string; isError: boolean } }) => void,
   ): void
+
+  // Itens do Menu nativo (ADR-0024)
+  onMenuBuildInstaller(callback: () => void): void
+
+  // Setup de Tauri em projetos pré-existentes (ADR-0024)
+  installerCheck(projectDir: string): Promise<{ configured: boolean }>
+  installerSetup(projectDir: string): Promise<{ ok: true; iconsGenerated: boolean }>
 }

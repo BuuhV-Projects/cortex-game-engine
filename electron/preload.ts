@@ -144,4 +144,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ) => {
     ipcRenderer.on('ai:tool_executed', (_event, payload) => callback(payload))
   },
+
+  // Item "Projeto > Gerar instalador..." do Menu nativo (ADR-0024)
+  onMenuBuildInstaller: (callback: () => void) => {
+    ipcRenderer.on('menu:build-installer', () => callback())
+  },
+
+  // Setup de Tauri em projetos pré-existentes (ADR-0024)
+  installerCheck: (projectDir: string) =>
+    ipcRenderer.invoke('installer:check', projectDir),
+  installerSetup: (projectDir: string) =>
+    ipcRenderer.invoke('installer:setup', projectDir),
 })
