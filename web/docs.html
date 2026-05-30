@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Documentação — cortex-game-engine</title>
+    <title data-i18n-title="docs.page_title">Documentation — cortex-game-engine</title>
     <meta
       name="description"
-      content="Documentação do cortex-game-engine — IDE de jogos 3D com IA + TypeScript."
+      data-i18n-description="docs.page_description"
+      content="Documentation for cortex-game-engine — 3D game IDE with AI + TypeScript."
     />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
@@ -22,23 +23,42 @@
         <nav class="flex items-center gap-1 text-sm">
           <a
             href="/"
+            data-i18n="nav.home"
             class="rounded-md px-3 py-1.5 text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
           >
-            Início
+            Home
           </a>
           <a
             href="/docs.html"
+            data-i18n="nav.docs"
             class="rounded-md bg-zinc-800 px-3 py-1.5 text-white"
             aria-current="page"
           >
-            Documentação
+            Documentation
           </a>
           <a
             href="https://github.com/BuuhV-Projects/cortex-game-engine"
+            data-i18n="nav.github"
             class="rounded-md px-3 py-1.5 text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
           >
             GitHub
           </a>
+          <span class="ml-2 inline-flex items-center gap-0.5 rounded-md border border-zinc-800 p-0.5 text-xs">
+            <button
+              type="button"
+              data-lang="en"
+              class="rounded px-2 py-1 text-zinc-300 transition hover:text-white"
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              data-lang="pt"
+              class="rounded px-2 py-1 text-zinc-300 transition hover:text-white"
+            >
+              PT
+            </button>
+          </span>
         </nav>
       </div>
     </header>
@@ -46,8 +66,8 @@
     <div class="mx-auto flex max-w-6xl gap-8 px-6 py-12">
       <!-- Sidebar com lista de docs (preenchida pelo TS) -->
       <aside class="hidden w-56 flex-shrink-0 md:block">
-        <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
-          Documentação
+        <p data-i18n="docs.sidebar_label" class="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+          Documentation
         </p>
         <nav id="docs-nav" class="flex flex-col gap-0.5 text-sm">
           <!-- Lista renderizada por src/docs.ts -->
@@ -59,7 +79,7 @@
         id="docs-content"
         class="prose-cortex min-w-0 flex-1 leading-relaxed"
       >
-        <p class="text-zinc-500">Carregando...</p>
+        <p data-i18n="docs.loading" class="text-zinc-500">Loading...</p>
       </article>
     </div>
 

@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "title": "cortex-game-engine — 3D game IDE with AI + TypeScript",
+    "description": "Build 3D games for desktop with TypeScript. Model assets with AI, structure your code with AI — all inside a single IDE."
+  },
+  "nav": {
+    "home": "Home",
+    "docs": "Documentation",
+    "github": "GitHub"
+  },
+  "hero": {
+    "eyebrow": "cortex-game-engine",
+    "title_part1": "Build powerful 3D games",
+    "title_part2": "with",
+    "title_typescript": "TypeScript",
+    "title_and": "and",
+    "title_ai": "AI",
+    "title_period": ".",
+    "subtitle": "Model 3D assets with AI. Structure your code with AI. All inside a single IDE focused on 3D games — and ship as a desktop installer with one click.",
+    "cta_download": "Download (soon)",
+    "cta_github": "View on GitHub →"
+  },
+  "features": {
+    "code": {
+      "title": "AI-powered code",
+      "body": "An AI agent lives inside the IDE: it talks with your project, creates ECS components, writes systems, tweaks scenes. Sandboxed to the active project with per-tool approval."
+    },
+    "models": {
+      "title": "AI 3D models",
+      "body_html": "Describe the asset, the AI writes the Blender script and exports the <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.glb</code> ready to drop into the scene. No leaving the IDE."
+    },
+    "desktop": {
+      "title": "Desktop games",
+      "body": "TypeScript + Three.js + ECS. Live preview while you develop. One click to package as a distributable Windows installer."
+    }
+  },
+  "stack": {
+    "title": "All in one place",
+    "body_html": "Monaco editor, embedded terminal, drag-and-drop file tree, hot-reload preview, AI chat in the sidebar and installer generator. Open the IDE, describe what you want and walk out with a playable <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.exe</code>."
+  },
+  "open_source": {
+    "eyebrow": "Open source",
+    "title": "Built in the open. Pull requests welcome.",
+    "body": "The whole engine, the IDE, the AI agent and this website live in a single open repository. Found a bug, see how to improve a feature, or want to extend the engine with new capability? Open a PR — or an issue, if you want to discuss first.",
+    "cta_github": "View on GitHub →",
+    "cta_pr": "Open a PR"
+  },
+  "footer": "built with cortex-game-engine.",
+  "docs": {
+    "page_title": "Documentation — cortex-game-engine",
+    "page_description": "Documentation for cortex-game-engine — 3D game IDE with AI + TypeScript.",
+    "sidebar_label": "Documentation",
+    "loading": "Loading...",
+    "empty_html": "No documents yet. Add a <code>.md</code> file to <code>web/docs-content/en/</code>.",
+    "not_found": "Document not found."
+  },
+  "lang": {
+    "label": "Language",
+    "en": "EN",
+    "pt": "PT"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "title": "cortex-game-engine — IDE de jogos 3D com IA + TypeScript",
+    "description": "Crie jogos 3D para desktop com TypeScript. Modele assets com IA, estruture o código com IA — tudo dentro de uma única IDE."
+  },
+  "nav": {
+    "home": "Início",
+    "docs": "Documentação",
+    "github": "GitHub"
+  },
+  "hero": {
+    "eyebrow": "cortex-game-engine",
+    "title_part1": "Crie jogos 3D poderosos",
+    "title_part2": "com",
+    "title_typescript": "TypeScript",
+    "title_and": "e",
+    "title_ai": "IA",
+    "title_period": ".",
+    "subtitle": "Modele assets 3D com IA. Estruture o código com IA. Tudo dentro de uma única IDE focada em jogos 3D — e empacote como instalador desktop num clique.",
+    "cta_download": "Download (em breve)",
+    "cta_github": "Ver no GitHub →"
+  },
+  "features": {
+    "code": {
+      "title": "Código com IA",
+      "body": "Um agente IA mora dentro da IDE: conversa com o seu projeto, cria componentes ECS, escreve sistemas, ajusta cenas. Com sandbox no projeto ativo e aprovação por ferramenta."
+    },
+    "models": {
+      "title": "Modelos 3D com IA",
+      "body_html": "Descreva o asset, a IA gera o script Blender e exporta o <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.glb</code> pronto pra usar na cena. Sem sair da IDE."
+    },
+    "desktop": {
+      "title": "Jogos para desktop",
+      "body": "TypeScript + Three.js + ECS. Preview ao vivo durante o desenvolvimento. Um clique pra empacotar como instalador Windows distribuível."
+    }
+  },
+  "stack": {
+    "title": "Tudo num lugar só",
+    "body_html": "Editor Monaco, terminal embutido, file tree com drag-and-drop, preview hot-reload, chat IA na sidebar e gerador de instalador. Você abre a IDE, descreve o que quer e sai com um <code class=\"rounded bg-zinc-800 px-1.5 py-0.5 text-xs\">.exe</code> jogável."
+  },
+  "open_source": {
+    "eyebrow": "Open source",
+    "title": "Construído à mostra. Pull requests são bem-vindos.",
+    "body": "Todo o engine, a IDE, o agente IA e este site vivem num único repositório aberto. Achou um bug, viu como melhorar uma feature ou quer estender o engine com uma capacidade nova? Abra um PR — ou um issue, se quiser discutir antes.",
+    "cta_github": "Ver no GitHub →",
+    "cta_pr": "Abrir um PR"
+  },
+  "footer": "feito com cortex-game-engine.",
+  "docs": {
+    "page_title": "Documentação — cortex-game-engine",
+    "page_description": "Documentação do cortex-game-engine — IDE de jogos 3D com IA + TypeScript.",
+    "sidebar_label": "Documentação",
+    "loading": "Carregando...",
+    "empty_html": "Nenhum documento ainda. Adicione um arquivo <code>.md</code> em <code>web/docs-content/pt/</code>.",
+    "not_found": "Documento não encontrado."
+  },
+  "lang": {
+    "label": "Idioma",
+    "en": "EN",
+    "pt": "PT"
+  }
+}

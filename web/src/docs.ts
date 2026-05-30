@@ -1,17 +1,25 @@
 /**
  * Visualizador de documentação para `docs.html`.
  *
- * - Carrega todos os `.md` de `docs-content/` em build-time via
- *   `import.meta.glob` (Vite-only). Cada arquivo é uma página.
+ * - Carrega `.md` de `docs-content/{en,pt}/` em build-time via
+ *   `import.meta.glob`. Cada arquivo é uma página.
  * - Slug = nome do arquivo sem o prefixo numérico de ordenação e sem
- *   a extensão (`01-introducao.md` → `introducao`). A URL fica
- *   `docs.html#introducao`.
+ *   a extensão (`01-introduction.md` → `introduction`). A URL fica
+ *   `docs.html#introduction`.
  * - Título = primeiro `# heading` do markdown; cai para o slug se faltar.
- * - Render: `marked` (single-pass, sem syntax highlighting por ora —
- *   plugin `marked-highlight` + `highlight.js` entram quando precisar).
+ * - Render: `marked` (single-pass, sem syntax highlighting por ora).
+ * - i18n: o conjunto de docs muda quando o usuário troca o idioma
+ *   (evento `locale-change` disparado por `src/i18n.ts`).
  */
 
 import { marked } from 'marked'
+import {
+  applyTranslations,
+  getCurrentLocale,
+  setupLanguageToggle,
+  t,
+  type Locale,
+} from './i18n'
 
 interface Doc {
   slug: string
@@ -20,46 +28,59 @@ interface Doc {
   source: string
 }
 
-// Vite glob: eager + raw = strings carregadas no bundle, sem runtime fetch.
-const MARKDOWN_MODULES = import.meta.glob('../docs-content/*.md', {
+// Glob estática em build-time. Vite resolve uma única vez; runtime só
+// indexa o objeto. Carregar os dois idiomas sempre é trivialmente barato
+// (poucos KB cada) e evita refetch ao trocar de idioma.
+const EN_MODULES = import.meta.glob('../docs-content/en/*.md', {
   eager: true,
   query: '?raw',
   import: 'default',
 }) as Record<string, string>
 
-const DOCS: Doc[] = Object.entries(MARKDOWN_MODULES)
-  .map(([path, source]) => parseDoc(path, source))
-  .sort((a, b) => a.order - b.order)
+const PT_MODULES = import.meta.glob('../docs-content/pt/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>
 
-function parseDoc(path: string, source: string): Doc {
-  // path = "../docs-content/01-introducao.md"
+const DOCS: Record<Locale, Doc[]> = {
+  en: Object.entries(EN_MODULES).map(parseDoc).sort(byOrder),
+  pt: Object.entries(PT_MODULES).map(parseDoc).sort(byOrder),
+}
+
+function parseDoc([path, source]: [string, string]): Doc {
   const filename = path.split('/').pop() ?? path
   const stem = filename.replace(/\.md$/i, '')
-  // Aceita prefixo "NN-" pra controlar ordem; remove pra formar slug
   const match = /^(\d+)-(.+)$/.exec(stem)
   const order = match ? parseInt(match[1], 10) : 999
   const slug = match ? match[2] : stem
-
-  // Primeira heading H1 (ou primeira linha começando com #)
   const titleMatch = /^#\s+(.+)$/m.exec(source)
   const title = titleMatch ? titleMatch[1].trim() : slug
-
   return { slug, title, order, source }
+}
+
+function byOrder(a: Doc, b: Doc): number {
+  return a.order - b.order
 }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
 
+function currentDocs(): Doc[] {
+  return DOCS[getCurrentLocale()]
+}
+
 function currentSlug(): string {
   const hash = window.location.hash.replace(/^#/, '')
-  if (hash && DOCS.some((d) => d.slug === hash)) return hash
-  return DOCS[0]?.slug ?? ''
+  const docs = currentDocs()
+  if (hash && docs.some((d) => d.slug === hash)) return hash
+  return docs[0]?.slug ?? ''
 }
 
 function renderSidebar(activeSlug: string): void {
   const nav = document.getElementById('docs-nav')
   if (!nav) return
   nav.innerHTML = ''
-  for (const doc of DOCS) {
+  for (const doc of currentDocs()) {
     const link = document.createElement('a')
     link.href = `#${doc.slug}`
     link.textContent = doc.title
@@ -74,15 +95,20 @@ function renderSidebar(activeSlug: string): void {
 function renderContent(slug: string): void {
   const container = document.getElementById('docs-content')
   if (!container) return
-  const doc = DOCS.find((d) => d.slug === slug)
+  const doc = currentDocs().find((d) => d.slug === slug)
   if (!doc) {
-    container.innerHTML = '<p class="text-zinc-500">Documento não encontrado.</p>'
+    container.innerHTML = `<p class="text-zinc-500">${escapeHtml(t('docs.not_found'))}</p>`
     return
   }
-  // `marked.parse` é sync quando o input é string; cast pra string explicitamente.
   container.innerHTML = marked.parse(doc.source, { async: false }) as string
-  // Foco no topo a cada navegação — UX padrão de docs com hash routing.
   window.scrollTo({ top: 0, behavior: 'instant' })
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 function update(): void {
@@ -93,13 +119,25 @@ function update(): void {
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 
-if (DOCS.length === 0) {
+applyTranslations()
+setupLanguageToggle()
+
+// Estilo do toggle ativo (mesmo da landing).
+const style = document.createElement('style')
+style.textContent = `[data-lang].active { background: rgb(39 39 42); color: white; }`
+document.head.appendChild(style)
+
+if (currentDocs().length === 0) {
   const container = document.getElementById('docs-content')
   if (container) {
-    container.innerHTML =
-      '<p class="text-zinc-500">Nenhum documento ainda. Adicione um arquivo <code>.md</code> em <code>web/docs-content/</code>.</p>'
+    container.innerHTML = `<p class="text-zinc-500">${t('docs.empty_html')}</p>`
   }
 } else {
   update()
   window.addEventListener('hashchange', update)
+  // Trocar idioma rebuilda a sidebar e re-renderiza o conteúdo.
+  document.addEventListener('locale-change', () => {
+    applyTranslations()
+    update()
+  })
 }

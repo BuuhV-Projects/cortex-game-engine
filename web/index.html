@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>cortex-game-engine — IDE de jogos 3D com IA + TypeScript</title>
+    <title data-i18n-title="meta.title">cortex-game-engine</title>
     <meta
       name="description"
-      content="Crie jogos 3D para desktop com TypeScript. Modele assets com IA, estruture o código com IA — tudo dentro de uma única IDE."
+      data-i18n-description="meta.description"
+      content="Build 3D games for desktop with TypeScript. Model assets with AI, structure your code with AI — all inside a single IDE."
     />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
@@ -22,22 +23,41 @@
         <nav class="flex items-center gap-1 text-sm">
           <a
             href="/"
+            data-i18n="nav.home"
             class="rounded-md px-3 py-1.5 text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
           >
-            Início
+            Home
           </a>
           <a
             href="/docs.html"
+            data-i18n="nav.docs"
             class="rounded-md px-3 py-1.5 text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
           >
-            Documentação
+            Documentation
           </a>
           <a
             href="https://github.com/BuuhV-Projects/cortex-game-engine"
+            data-i18n="nav.github"
             class="rounded-md px-3 py-1.5 text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
           >
             GitHub
           </a>
+          <span class="ml-2 inline-flex items-center gap-0.5 rounded-md border border-zinc-800 p-0.5 text-xs">
+            <button
+              type="button"
+              data-lang="en"
+              class="rounded px-2 py-1 text-zinc-300 transition hover:text-white"
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              data-lang="pt"
+              class="rounded px-2 py-1 text-zinc-300 transition hover:text-white"
+            >
+              PT
+            </button>
+          </span>
         </nav>
       </div>
     </header>
@@ -45,31 +65,37 @@
     <main class="mx-auto max-w-5xl px-6 py-24">
       <!-- Hero -->
       <section class="space-y-6">
-        <p class="text-sm font-medium uppercase tracking-widest text-sky-400">
+        <p data-i18n="hero.eyebrow" class="text-sm font-medium uppercase tracking-widest text-sky-400">
           cortex-game-engine
         </p>
         <h1 class="text-5xl font-semibold leading-tight md:text-6xl">
-          Crie jogos 3D poderosos <br />
-          com <span class="text-sky-400">TypeScript</span> e
-          <span class="text-sky-400">IA</span>.
+          <span data-i18n="hero.title_part1">Build powerful 3D games</span> <br />
+          <span data-i18n="hero.title_part2">with</span>
+          <span data-i18n="hero.title_typescript" class="text-sky-400">TypeScript</span>
+          <span data-i18n="hero.title_and">and</span>
+          <span data-i18n="hero.title_ai" class="text-sky-400">AI</span><span
+            data-i18n="hero.title_period"
+            >.</span
+          >
         </h1>
-        <p class="max-w-2xl text-lg leading-relaxed text-zinc-400">
-          Modele assets 3D com IA. Estruture o código com IA. Tudo dentro
-          de uma única IDE focada em jogos 3D — e empacote como instalador
-          desktop num clique.
+        <p data-i18n="hero.subtitle" class="max-w-2xl text-lg leading-relaxed text-zinc-400">
+          Model 3D assets with AI. Structure your code with AI. All inside a single
+          IDE focused on 3D games — and ship as a desktop installer with one click.
         </p>
         <div class="flex flex-wrap items-center gap-4 pt-4">
           <a
             href="#download"
+            data-i18n="hero.cta_download"
             class="inline-flex items-center rounded-md bg-sky-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-400"
           >
-            Download (em breve)
+            Download (soon)
           </a>
           <a
             href="https://github.com/BuuhV-Projects/cortex-game-engine"
+            data-i18n="hero.cta_github"
             class="inline-flex items-center rounded-md border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500"
           >
-            Ver no GitHub →
+            View on GitHub →
           </a>
         </div>
       </section>
@@ -78,79 +104,79 @@
       <section class="mt-24 grid gap-6 md:grid-cols-3">
         <article class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-6">
           <div class="text-2xl">🧠</div>
-          <h2 class="mt-3 text-lg font-semibold">Código com IA</h2>
-          <p class="mt-2 text-sm leading-relaxed text-zinc-400">
-            Um agente IA mora dentro da IDE: conversa com o seu projeto,
-            cria componentes ECS, escreve sistemas, ajusta cenas. Com
-            sandbox no projeto ativo e aprovação por ferramenta.
+          <h2 data-i18n="features.code.title" class="mt-3 text-lg font-semibold">AI-powered code</h2>
+          <p data-i18n="features.code.body" class="mt-2 text-sm leading-relaxed text-zinc-400">
+            An AI agent lives inside the IDE: it talks with your project, creates
+            ECS components, writes systems, tweaks scenes. Sandboxed to the active
+            project with per-tool approval.
           </p>
         </article>
         <article class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-6">
           <div class="text-2xl">🎨</div>
-          <h2 class="mt-3 text-lg font-semibold">Modelos 3D com IA</h2>
-          <p class="mt-2 text-sm leading-relaxed text-zinc-400">
-            Descreva o asset, a IA gera o script Blender e exporta o
+          <h2 data-i18n="features.models.title" class="mt-3 text-lg font-semibold">AI 3D models</h2>
+          <p data-i18n-html="features.models.body_html" class="mt-2 text-sm leading-relaxed text-zinc-400">
+            Describe the asset, the AI writes the Blender script and exports the
             <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs">.glb</code>
-            pronto pra usar na cena. Sem sair da IDE.
+            ready to drop into the scene. No leaving the IDE.
           </p>
         </article>
         <article class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-6">
           <div class="text-2xl">💻</div>
-          <h2 class="mt-3 text-lg font-semibold">Jogos para desktop</h2>
-          <p class="mt-2 text-sm leading-relaxed text-zinc-400">
-            TypeScript + Three.js + ECS. Preview ao vivo durante o
-            desenvolvimento. Um clique pra empacotar como instalador
-            Windows distribuível.
+          <h2 data-i18n="features.desktop.title" class="mt-3 text-lg font-semibold">Desktop games</h2>
+          <p data-i18n="features.desktop.body" class="mt-2 text-sm leading-relaxed text-zinc-400">
+            TypeScript + Three.js + ECS. Live preview while you develop. One click
+            to package as a distributable Windows installer.
           </p>
         </article>
       </section>
 
       <!-- Mini-narrativa de stack -->
       <section class="mt-24 rounded-lg border border-zinc-800 bg-zinc-900/30 p-8">
-        <h2 class="text-2xl font-semibold">Tudo num lugar só</h2>
-        <p class="mt-3 max-w-3xl text-zinc-400">
-          Editor Monaco, terminal embutido, file tree com drag-and-drop,
-          preview hot-reload, chat IA na sidebar e gerador de instalador.
-          Você abre a IDE, descreve o que quer e sai com um
-          <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs">.exe</code>
-          jogável.
+        <h2 data-i18n="stack.title" class="text-2xl font-semibold">All in one place</h2>
+        <p data-i18n-html="stack.body_html" class="mt-3 max-w-3xl text-zinc-400">
+          Monaco editor, embedded terminal, drag-and-drop file tree, hot-reload
+          preview, AI chat in the sidebar and installer generator. Open the IDE,
+          describe what you want and walk out with a playable
+          <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs">.exe</code>.
         </p>
       </section>
 
       <!-- Open source -->
       <section class="mt-24 flex flex-col gap-6 rounded-lg border border-sky-500/20 bg-gradient-to-br from-sky-500/5 to-transparent p-8 md:flex-row md:items-center md:justify-between">
         <div class="max-w-2xl">
-          <p class="text-sm font-medium uppercase tracking-widest text-sky-400">
+          <p data-i18n="open_source.eyebrow" class="text-sm font-medium uppercase tracking-widest text-sky-400">
             Open source
           </p>
-          <h2 class="mt-2 text-2xl font-semibold">
-            Construído à mostra. Pull requests são bem-vindos.
+          <h2 data-i18n="open_source.title" class="mt-2 text-2xl font-semibold">
+            Built in the open. Pull requests welcome.
           </h2>
-          <p class="mt-3 text-zinc-400">
-            Todo o engine, a IDE, o agente IA e este site vivem num único
-            repositório aberto. Achou um bug, viu como melhorar uma feature
-            ou quer estender o engine com uma capacidade nova? Abra um PR —
-            ou um issue, se quiser discutir antes.
+          <p data-i18n="open_source.body" class="mt-3 text-zinc-400">
+            The whole engine, the IDE, the AI agent and this website live in a
+            single open repository. Found a bug, see how to improve a feature,
+            or want to extend the engine with new capability? Open a PR — or an
+            issue, if you want to discuss first.
           </p>
         </div>
         <div class="flex flex-shrink-0 flex-col gap-3 sm:flex-row md:flex-col">
           <a
             href="https://github.com/BuuhV-Projects/cortex-game-engine"
+            data-i18n="open_source.cta_github"
             class="inline-flex items-center justify-center rounded-md border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500"
           >
-            Ver no GitHub →
+            View on GitHub →
           </a>
           <a
             href="https://github.com/BuuhV-Projects/cortex-game-engine"
+            data-i18n="open_source.cta_pr"
             class="inline-flex items-center justify-center rounded-md bg-sky-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-400"
           >
-            Abrir um PR
+            Open a PR
           </a>
         </div>
       </section>
 
-      <footer class="mt-32 border-t border-zinc-800 pt-8 text-sm text-zinc-500">
-        feito com cortex-game-engine.
+      <footer data-i18n="footer" class="mt-32 border-t border-zinc-800 pt-8 text-sm text-zinc-500">
+        built with cortex-game-engine.
       </footer>
     </main>
 
