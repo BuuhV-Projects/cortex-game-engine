@@ -399,7 +399,18 @@ export class Chat {
     stopBtn.className = 'chat-stop-btn'
     stopBtn.textContent = t('chat.stop')
     stopBtn.style.display = 'none'
-    stopBtn.addEventListener('click', () => void window.electronAPI.cancelChat())
+    stopBtn.addEventListener('click', () => {
+      void window.electronAPI.cancelChat()
+      // Destrava o input imediatamente. Sem isso, ficamos travados até o
+      // `ai:done` chegar do main — que pode demorar (o agente pode estar
+      // no meio de uma tool) ou não chegar (race entre cancel e done).
+      this.streaming = false
+      this.hideThinking()
+      this.liveAssistantItem = null
+      this.currentTurnAssistantText = ''
+      this.updateInputState()
+      this.inputEl?.focus()
+    })
     this.stopBtn = stopBtn
 
     inputRow.appendChild(input)
