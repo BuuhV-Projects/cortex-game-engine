@@ -1,0 +1,54 @@
+name: Build IDE (manual)
+
+# Build manual em todas as plataformas — útil pra debugar a pipeline
+# sem cortar uma release. Não anexa nada a releases nem cria tags.
+# Os instaladores ficam como artifacts do run (14 dias).
+#
+# O fluxo automático de release vive em `release.yml`, disparado em
+# todo push em `main`.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Linux build deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build IDE
+        run: yarn electron:build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cortex-ide-${{ matrix.os }}
+          path: |
+            dist-app/*.exe
+            dist-app/*.dmg
+            dist-app/*.AppImage
+          if-no-files-found: warn
+          retention-days: 14

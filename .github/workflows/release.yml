@@ -1,0 +1,104 @@
+name: Release
+
+# Em todo push em `main` (tipicamente após merge de PR):
+#  1. `release` roda `semantic-release` — analisa os Conventional Commits
+#     desde a última tag, decide o bump (fix → patch, feat → minor,
+#     `feat!`/BREAKING CHANGE → major), atualiza CHANGELOG.md +
+#     package.json, cria a tag `vX.Y.Z` e a GitHub Release.
+#  2. `build` espera o release, e SÓ roda se houver release nova. Faz
+#     `yarn electron:build` em Windows/macOS/Linux em paralelo e anexa
+#     os instaladores à release recém-criada.
+#
+# Pra buildar sem cortar release (debug, dry-run em PR), use
+# `build-ide.yml` que tem trigger manual (`workflow_dispatch`).
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Decide release
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.semantic.outputs.new_release_published }}
+      version: ${{ steps.semantic.outputs.new_release_version }}
+      tag: ${{ steps.semantic.outputs.new_release_git_tag }}
+
+    steps:
+      - name: Checkout (full history pra analisar commits)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # GITHUB_TOKEN é gravado nos credentials pelo checkout — semantic-release
+          # precisa disso pra dar `git push` do commit de release.
+          persist-credentials: true
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run semantic-release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 24
+          extra_plugins: |
+            @semantic-release/changelog@6
+            @semantic-release/git@10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: release
+    if: needs.release.outputs.released == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout no tag de release
+        uses: actions/checkout@v4
+        with:
+          # Faz o checkout da tag recém-criada pelo semantic-release — assim
+          # o build pega a versão bumpada no package.json + o CHANGELOG.
+          ref: ${{ needs.release.outputs.tag }}
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Linux build deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build IDE
+        run: yarn electron:build
+
+      - name: Anexar instaladores à release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release.outputs.tag }}
+          files: |
+            dist-app/*.exe
+            dist-app/*.dmg
+            dist-app/*.AppImage
+          fail_on_unmatched_files: false
