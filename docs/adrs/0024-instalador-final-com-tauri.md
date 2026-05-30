@@ -146,6 +146,45 @@ manualmente o `tauri.conf.json` e o `index.html`. Re-rodar o
 "Gerar instalador..." sozinho não corrige porque o setup não
 sobrescreve esses arquivos no fluxo legado.
 
+### Hardening em runtime (sem code signing)
+
+Code signing fica para uma decisão futura (custo recorrente,
+TDR próprio). Enquanto isso, o template ativa as defesas que
+não dependem de cert:
+
+1. **Content Security Policy estrita** no `tauri.conf.json`
+   (`app.security.csp`). Diretivas principais:
+   - `default-src 'self'` — bloqueia recurso externo por padrão.
+   - `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'`:
+     - `'self'` cobre o bundle do Vite e o engine vendoriado.
+     - `'unsafe-inline'` é necessário pelo script anti-tampering
+       (bloqueador de context menu/F5/F12) embutido no `index.html`.
+     - `'wasm-unsafe-eval'` libera plugins do Three que carregam WASM.
+   - `connect-src 'self' ipc: http://ipc.localhost` — restringe
+     conexões ao próprio bundle + IPC do Tauri. Bloqueia exfiltração
+     pra servidores externos.
+   - `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`,
+     `frame-ancestors 'none'` — fecham vetores clássicos de
+     clickjacking / base-tag hijacking / form hijacking.
+   - `img-src/font-src/media-src/worker-src` com `data:` e `blob:`
+     pra texturas geradas em runtime, fontes embutidas e workers do
+     Three.
+
+2. **Bloqueador de UI WebView** (já documentado acima): impede
+   menu de contexto, F12 e Ctrl+R em release builds.
+
+3. **Fullscreen sem decorations**: reduz vetores de janela
+   (drag/drop entre janelas, visual phishing baseado em
+   sobreposição de barra de título).
+
+Pra a IDE (Electron, distribuída para devs), as defesas estão no
+`createWindow` — `webSecurity:true`,
+`allowRunningInsecureContent:false`, `experimentalFeatures:false`,
+e handlers `will-navigate` + `setWindowOpenHandler` que bloqueiam
+navegação fora da origem do app e popups arbitrários. Toda
+navegação externa precisa passar por `shell.openExternal` no main
+process (explícito, auditável).
+
 ## Consequências
 
 - **Positivo**: instalador ~10× menor que Electron, alinhado com

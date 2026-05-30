@@ -106,13 +106,48 @@ function createWindow(): void {
     height: 800,
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
+      // Camadas de hardening (sem mudar comportamento funcional):
+      // - nodeIntegration:false + contextIsolation:true blindam o renderer
+      //   contra acesso direto a require/process do Node.
+      // - sandbox:false é exigido pelo preload ESM (ADR-0008); compensamos
+      //   com as flags defensivas abaixo.
+      // - webSecurity:true mantém SOP/CORS ativos no renderer.
+      // - allowRunningInsecureContent e experimentalFeatures explícitos em
+      //   false bloqueiam mixed-content e features instáveis do Chromium.
       nodeIntegration: false,
       contextIsolation: true,
-      // Necessário para preload ESM (.mjs). contextIsolation + nodeIntegration:false
-      // continuam protegendo o renderer contra acesso direto ao Node.
       sandbox: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      experimentalFeatures: false,
     },
   })
+
+  // Bloqueia navegação para qualquer URL fora do app — se algum script
+  // tentasse `location.href = 'https://evil'`, o request é abortado.
+  // Em dev permitimos o origem do electron-vite (localhost com porta dinâmica).
+  const allowedOrigins: string[] = []
+  if (process.env['ELECTRON_RENDERER_URL']) {
+    try {
+      allowedOrigins.push(new URL(process.env['ELECTRON_RENDERER_URL']).origin)
+    } catch {
+      /* URL inválida — só ignora e mantém a allowlist vazia */
+    }
+  }
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    try {
+      const origin = new URL(url).origin
+      if (allowedOrigins.includes(origin)) return
+    } catch {
+      /* URL ilegível também cai no deny */
+    }
+    event.preventDefault()
+  })
+
+  // Bloqueia `window.open(...)` e `target="_blank"`. Nenhuma página da IDE
+  // precisa abrir popup; se um dia precisarmos abrir link externo, fazemos
+  // explicitamente via shell.openExternal no main process.
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
   // Em desenvolvimento, electron-vite injeta ELECTRON_RENDERER_URL com o dev server
   if (process.env['ELECTRON_RENDERER_URL']) {
