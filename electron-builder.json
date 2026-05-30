@@ -1,6 +1,6 @@
 {
-  "appId": "com.jsge.studio",
-  "productName": "JS Game Engine Studio",
+  "appId": "com.cortex.studio",
+  "productName": "Cortex Game Engine Studio",
   "directories": {
     "output": "dist-app"
   },
