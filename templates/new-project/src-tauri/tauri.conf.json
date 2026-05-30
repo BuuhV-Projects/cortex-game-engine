@@ -15,8 +15,9 @@
         "title": "{{PROJECT_NAME}}",
         "width": 1280,
         "height": 720,
-        "resizable": true,
-        "fullscreen": false
+        "resizable": false,
+        "fullscreen": true,
+        "decorations": false
       }
     ],
     "security": {

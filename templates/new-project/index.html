@@ -9,6 +9,27 @@
       body { overflow: hidden; }
       canvas { display: block; }
     </style>
+    <script>
+      // No build empacotado via Tauri (ADR-0024), bloqueia o menu de contexto
+      // e os atalhos de browser/WebView (F5, F12, Ctrl+R/Shift+I/U) — o usuário
+      // final não deve ver "Inspecionar" ou conseguir recarregar a página.
+      // A detecção via `__TAURI_INTERNALS__` só fica true dentro do bundle
+      // Tauri; no preview de dev (Vite no browser) tudo continua normal.
+      if ('__TAURI_INTERNALS__' in window) {
+        window.addEventListener('contextmenu', (e) => e.preventDefault())
+        window.addEventListener('keydown', (e) => {
+          const ctrl = e.ctrlKey || e.metaKey
+          const key = e.key.toLowerCase()
+          const blocked =
+            key === 'f5' ||
+            key === 'f12' ||
+            (ctrl && key === 'r') ||
+            (ctrl && key === 'u') ||
+            (ctrl && e.shiftKey && (key === 'i' || key === 'j' || key === 'c'))
+          if (blocked) e.preventDefault()
+        })
+      }
+    </script>
   </head>
   <body>
     <canvas id="canvas"></canvas>

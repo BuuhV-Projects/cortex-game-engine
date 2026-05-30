@@ -100,6 +100,26 @@ criados pelo IDE.
   e gerar build na plataforma correspondente (Tauri não cross-compila
   trivialmente).
 
+### Aparência de "jogo nativo" no executável
+
+O template configura a janela do bundle como **fullscreen sem
+bordas** (`fullscreen: true`, `decorations: false`,
+`resizable: false`) e injeta um pequeno bloqueador em
+`index.html` que desabilita o menu de contexto e os atalhos de
+WebView/browser (F5, F12, Ctrl+R, Ctrl+U, Ctrl+Shift+I/J/C)
+apenas quando rodando dentro do Tauri (`__TAURI_INTERNALS__`).
+No preview de desenvolvimento, o comportamento padrão do browser
+fica intacto.
+
+O objetivo é que o usuário final não consiga distinguir o jogo de
+um executável nativo: sem barra de título, sem "Inspecionar
+elemento", sem recarregar a página. Em release builds o devtools
+já vem desligado pelo Tauri por padrão.
+
+Sair do fullscreen é responsabilidade do jogo (botão "sair", Esc
+tratado pelo `InputManager`, etc.) — o template não oferece UX
+de saída pronta.
+
 ## Consequências
 
 - **Positivo**: instalador ~10× menor que Electron, alinhado com
