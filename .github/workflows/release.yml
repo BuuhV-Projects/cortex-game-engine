@@ -53,7 +53,12 @@ jobs:
             @semantic-release/changelog@6
             @semantic-release/git@10
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # REPO_ACCESS_TOKEN (PAT) tem precedência: GITHUB_TOKEN não dispara
+          # workflows downstream (a tag criada por ele não acorda o trigger de
+          # push), então quem quiser encadear pipelines após a release deve
+          # cadastrar um PAT no secret REPO_ACCESS_TOKEN. github.token serve
+          # como fallback funcional pra commits/release locais ao workflow.
+          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN || github.token }}
 
   build:
     name: Build (${{ matrix.os }})
@@ -91,12 +96,18 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build IDE
+        # electron-builder valida a release no GitHub durante o build e exige
+        # GH_TOKEN (não GITHUB_TOKEN). Sem ele falha com "GitHub Personal
+        # Access Token is not set". Usa o mesmo fallback PAT → github.token.
+        env:
+          GH_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN || github.token }}
         run: yarn electron:build
 
       - name: Anexar instaladores à release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.release.outputs.tag }}
+          token: ${{ secrets.REPO_ACCESS_TOKEN || github.token }}
           files: |
             dist-app/*.exe
             dist-app/*.dmg

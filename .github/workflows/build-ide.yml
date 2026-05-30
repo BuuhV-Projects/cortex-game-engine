@@ -40,6 +40,11 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build IDE
+        # electron-builder exige GH_TOKEN (não GITHUB_TOKEN) durante o build.
+        # PAT em REPO_ACCESS_TOKEN tem precedência; github.token funciona
+        # como fallback pra runs locais ao workflow.
+        env:
+          GH_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN || github.token }}
         run: yarn electron:build
 
       - name: Upload artifact
