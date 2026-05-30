@@ -1,3 +1,10 @@
+## [0.1.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.1.1...v0.1.2) (2026-05-30)
+
+
+### Bug Fixes
+
+* **ci:** usar REPO_ACCESS_TOKEN || github.token + injetar GH_TOKEN no electron-builder ([ebfa68a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ebfa68aede8aaa30f7a0d74cf50848a23fb32354))
+
 ## [0.1.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.1.0...v0.1.1) (2026-05-30)
 
 
