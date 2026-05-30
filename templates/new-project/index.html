@@ -11,6 +11,59 @@
        * sem isso, em alguns drivers WebView2 falha com "Error creating WebGL
        * context" (especialmente em fullscreen+decorations=false). */
       canvas { display: block; width: 100%; height: 100%; }
+
+      /* ─── Cortex splash (só em Tauri-built) ────────────────────────────
+       * Aparece sobre o canvas no boot. Esconde via classe .cortex-splash--gone
+       * (fade-out CSS). Em browser/dev a div nem é renderizada
+       * (display:none por padrão; ativada pelo script no fim do head).
+       */
+      #cortex-splash {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        background: #09090b;
+        color: #f4f4f5;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        transition: opacity 500ms ease-out;
+        cursor: pointer;
+      }
+      #cortex-splash.cortex-splash--active { display: flex; }
+      #cortex-splash.cortex-splash--gone { opacity: 0; pointer-events: none; }
+      .cortex-splash-content { text-align: center; user-select: none; }
+      .cortex-splash-logo {
+        width: 128px;
+        height: 128px;
+        margin: 0 auto 24px;
+        display: block;
+        object-fit: contain;
+        animation: cortex-splash-pulse 2.5s ease-in-out infinite;
+      }
+      .cortex-splash-title {
+        font-size: 1.6rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+        background: linear-gradient(135deg, #0ea5e9, #6366f1);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .cortex-splash-tagline {
+        font-size: 0.9rem;
+        color: #71717a;
+        letter-spacing: 0.02em;
+      }
+      @keyframes cortex-splash-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.85; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #cortex-splash { transition: none; }
+        .cortex-splash-logo { animation: none; }
+      }
     </style>
     <script>
       // No build empacotado via Tauri (ADR-0024), bloqueia o menu de contexto
@@ -31,10 +84,46 @@
             (ctrl && e.shiftKey && (key === 'i' || key === 'j' || key === 'c'))
           if (blocked) e.preventDefault()
         })
+
+        // Cortex splash — mostrado por ~2.5s em Tauri-built. No preview de
+        // dev fica desativado pra não atrapalhar iteração. Clique pula.
+        document.addEventListener('DOMContentLoaded', () => {
+          const splash = document.getElementById('cortex-splash')
+          if (!splash) return
+          splash.classList.add('cortex-splash--active')
+
+          let dismissed = false
+          const dismiss = () => {
+            if (dismissed) return
+            dismissed = true
+            splash.classList.add('cortex-splash--gone')
+            // Remove do DOM depois do fade pra liberar GPU layer
+            window.setTimeout(() => splash.remove(), 600)
+          }
+
+          splash.addEventListener('click', dismiss)
+          window.setTimeout(dismiss, 2500)
+        })
       }
     </script>
   </head>
   <body>
+    <!-- Splash screen: aparece só em Tauri-built. Logo servido de
+         `public/logo.png` (copiado pelo Vite pro dist/ no build). -->
+    <div id="cortex-splash" aria-hidden="true">
+      <div class="cortex-splash-content">
+        <img
+          class="cortex-splash-logo"
+          src="/logo.png"
+          alt="Cortex Game Engine"
+          width="128"
+          height="128"
+        />
+        <h1 class="cortex-splash-title">Cortex Game Engine</h1>
+        <p class="cortex-splash-tagline">by BuuhV Projects</p>
+      </div>
+    </div>
+
     <canvas id="canvas"></canvas>
     <script type="module" src="./main.ts"></script>
   </body>

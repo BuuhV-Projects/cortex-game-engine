@@ -120,6 +120,34 @@ Sair do fullscreen é responsabilidade do jogo (botão "sair", Esc
 tratado pelo `InputManager`, etc.) — o template não oferece UX
 de saída pronta.
 
+### Splash de marca "Cortex Game Engine"
+
+Quando o jogo empacotado abre, mostra por ~2.5 s uma tela
+"**Cortex Game Engine** — by BuuhV Projects" com logo geométrico,
+e depois faz fade-out de 500 ms entrando no jogo. Implementado
+direto no `index.html` do template:
+
+- Markup `<div id="cortex-splash">` + estilos inline (sem dep externa
+  pra não puxar fonte de CDN, sem JS extra).
+- Logo = PNG (cérebro estilizado com circuitos, gradient sky → indigo)
+  servido de `public/logo.png` — Vite copia pro `dist/` no build, e o
+  Tauri serve em runtime. Dimensão renderizada 128 × 128 via classe
+  `cortex-splash-logo`. O arquivo fonte tem 1024 × 1024 com fundo
+  transparente; otimização (compressão PNG) recomendada antes de
+  distribuir releases sérias.
+- Ativação condicional: o script no `<head>` só adiciona a classe
+  `cortex-splash--active` se `__TAURI_INTERNALS__` existir no
+  `window` — ou seja, **só no bundle Tauri**. No preview de dev a
+  div é renderizada com `display:none` e nunca aparece (evita ver
+  splash 100 × por dia desenvolvendo).
+- Comportamento: clique pula, `prefers-reduced-motion: reduce`
+  desativa a animação de pulse no logo e a transição de fade.
+
+Trade-off: cada jogo distribuído carrega o branding "Cortex" — é
+intencional, faz parte do contrato "usou a engine, dá crédito".
+Quem quiser remover edita o `<div id="cortex-splash">` do
+`index.html` do projeto criado.
+
 ### WebGL no WebView2
 
 O `WebGLRenderer` do Three.js falhava ao iniciar dentro do bundle
