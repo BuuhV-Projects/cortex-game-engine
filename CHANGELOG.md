@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.0.0...v1.0.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* **installer:** WebGL no WebView2 + canvas com dimensões válidas ([3129407](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3129407b472747c776bd1538a796a5b91aafa2d7))
+
 # 0.1.0 (2026-05-30)
 
 
