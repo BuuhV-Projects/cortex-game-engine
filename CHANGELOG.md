@@ -1,3 +1,12 @@
+# [0.3.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.2.0...v0.3.0) (2026-05-30)
+
+
+### Features
+
+* **ide:** i18n EN/PT com welcome modal, menu Language e modo release ([d3db13e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d3db13e897fc5093e4cef55f6cded8980e8cd6db))
+* **installer:** splash screen do jogo com logo Cortex real ([0dfcf97](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0dfcf971f22a8ab7fe8c95ed8ab31794d4096b93))
+* **web:** i18n EN/PT na landing e na documentação ([f5b5552](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f5b5552b163ac18e9d34819d8d58a11557f80375))
+
 # [0.2.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.1.2...v0.2.0) (2026-05-30)
 
 
