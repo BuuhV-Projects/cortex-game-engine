@@ -11,7 +11,7 @@ máquina:
 
 | Componente | Onde instalar | Pra que serve |
 |---|---|---|
-| **Node.js 18+** | [nodejs.org](https://nodejs.org/) ou via [Volta](https://volta.sh) / [nvm](https://github.com/nvm-sh/nvm) | Rodar o `vite` que faz o preview ao vivo do jogo dentro da IDE. |
+| **Node.js 24+** | [nodejs.org](https://nodejs.org/) ou via [Volta](https://volta.sh) / [nvm](https://github.com/nvm-sh/nvm) | Rodar o `vite` que faz o preview ao vivo do jogo dentro da IDE. |
 | **Yarn classic (1.x)** | `npm install -g yarn` (depois de ter o Node) | Gerenciar dependências dos projetos criados (a IDE roda `yarn install` automaticamente em projeto novo). |
 | **Blender** | [blender.org/download](https://www.blender.org/download/) | Gerar modelos 3D com IA (`.glb`) a partir de descrição em linguagem natural. Detalhes em [Blender](#blender). |
 | **Claude Code** | [claude.com/product/claude-code](https://claude.com/product/claude-code) | Autenticação do chat IA — a IDE usa a sua assinatura Claude Pro/Max detectada via CLI. Detalhes em [Chat IA](#chat-ia). |
