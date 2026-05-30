@@ -1,4 +1,4 @@
-## [1.0.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v1.0.0...v1.0.1) (2026-05-30)
+## [0.1.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.1.0...v0.1.1) (2026-05-30)
 
 
 ### Bug Fixes
