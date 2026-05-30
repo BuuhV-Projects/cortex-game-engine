@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.1.2...v0.2.0) (2026-05-30)
+
+
+### Features
+
+* **security:** hardening em runtime da IDE e do jogo Tauri ([9963069](https://github.com/BuuhV-Projects/cortex-game-engine/commit/996306915334b6c94557df2294120fb4708b143e))
+
 ## [0.1.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.1.1...v0.1.2) (2026-05-30)
 
 
