@@ -56,4 +56,13 @@ export {
   Quaternion,
   Euler,
   Matrix4,
+  // Animação esqueletal — necessária pra tocar animações de FBX
+  // (rigged characters de Mixamo, etc.)
+  AnimationMixer,
+  AnimationClip,
+  AnimationAction,
+  Clock,
+  SkinnedMesh,
+  Bone,
+  Skeleton,
 } from 'three';

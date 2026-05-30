@@ -320,6 +320,7 @@ const VENDOR_TYPE_MODULES = {
     'AssetLoader',
     'AudioManager',
     'InputManager',
+    'GamepadManager',
     'Physics',
   ],
   ecs: ['Entity', 'Component', 'System', 'World'],

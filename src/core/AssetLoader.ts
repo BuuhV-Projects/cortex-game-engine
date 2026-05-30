@@ -14,6 +14,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 
 // ─── Re-exportação de GLTF ────────────────────────────────────────────────────
 
@@ -26,7 +27,7 @@ export type { GLTF };
 
 // ─── União dos tipos de asset gerenciados pelo loader ─────────────────────────
 
-type Asset = THREE.Texture | GLTF | AudioBuffer;
+type Asset = THREE.Texture | GLTF | AudioBuffer | THREE.Group;
 
 // ─── Classe AssetLoader ───────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ export class AssetLoader {
   /** Instâncias reutilizadas dos loaders do Three.js. */
   private readonly _textureLoader = new THREE.TextureLoader();
   private readonly _gltfLoader = new GLTFLoader();
+  private readonly _fbxLoader = new FBXLoader();
   private readonly _audioLoader = new THREE.AudioLoader();
 
   // ─── Métodos de carregamento ────────────────────────────────────────────────
@@ -79,6 +81,33 @@ export class AssetLoader {
   }
 
   /**
+   * Carrega um modelo FBX a partir da `url` e o armazena em cache.
+   * Chamadas subsequentes com a mesma URL retornam o grupo em cache.
+   *
+   * O `THREE.Group` retornado tem `.animations` populado com os
+   * `AnimationClip`s embarcados no FBX — passe pra um `AnimationMixer`
+   * pra tocar (`mixer.clipAction(group.animations[0]).play()`).
+   *
+   * Suporte adicionado pra abrir caminho a assets de bancos públicos
+   * (Mixamo, Sketchfab) que frequentemente entregam só `.fbx` com rig
+   * e animações. GLTF/GLB continua sendo o formato preferido por ser
+   * mais leve e otimizado pra web.
+   *
+   * @param url - Caminho ou URL absoluta para o arquivo `.fbx`.
+   * @returns Promessa resolvida com `THREE.Group` (com `animations`).
+   */
+  async loadFBX(url: string): Promise<THREE.Group> {
+    const cached = this._cache.get(url);
+    if (cached !== undefined) {
+      return cached as THREE.Group;
+    }
+
+    const group = await this._fbxLoader.loadAsync(url);
+    this._cache.set(url, group);
+    return group;
+  }
+
+  /**
    * Carrega um arquivo de áudio a partir da `url` e o armazena em cache.
    * Chamadas subsequentes com a mesma URL retornam o buffer em cache.
    *
@@ -101,6 +130,7 @@ export class AssetLoader {
    *
    * O tipo de loader é inferido pela extensão do arquivo:
    * - `.gltf` / `.glb` → `loadGLTF`
+   * - `.fbx` → `loadFBX`
    * - `.mp3` / `.wav` / `.ogg` / `.aac` / `.m4a` → `loadAudio`
    * - qualquer outra extensão → `loadTexture` (png, jpg, webp, etc.)
    *
@@ -143,6 +173,10 @@ export class AssetLoader {
 
     if (ext === 'gltf' || ext === 'glb') {
       return this.loadGLTF(url);
+    }
+
+    if (ext === 'fbx') {
+      return this.loadFBX(url);
     }
 
     if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a') {
