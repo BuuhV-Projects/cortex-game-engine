@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{PROJECT_NAME}}</title>
     <style>
-      * { margin: 0; padding: 0; }
-      body { overflow: hidden; }
-      canvas { display: block; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+      /* Canvas precisa ter dimensão válida antes do WebGLRenderer ser criado;
+       * sem isso, em alguns drivers WebView2 falha com "Error creating WebGL
+       * context" (especialmente em fullscreen+decorations=false). */
+      canvas { display: block; width: 100%; height: 100%; }
     </style>
     <script>
       // No build empacotado via Tauri (ADR-0024), bloqueia o menu de contexto

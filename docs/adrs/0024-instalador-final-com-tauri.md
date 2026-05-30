@@ -120,6 +120,32 @@ Sair do fullscreen é responsabilidade do jogo (botão "sair", Esc
 tratado pelo `InputManager`, etc.) — o template não oferece UX
 de saída pronta.
 
+### WebGL no WebView2
+
+O `WebGLRenderer` do Three.js falhava ao iniciar dentro do bundle
+Tauri (`Error: Error creating WebGL context`) por duas causas que
+não acontecem em browser comum:
+
+1. **WebView2 não força aceleração de hardware por padrão** —
+   alguns drivers de GPU caem na blocklist do Chromium e o WebGL
+   fica em software/falha. Resolução: `additionalBrowserArgs` no
+   `tauri.conf.json` do template injeta
+   `--ignore-gpu-blocklist --use-angle=d3d11
+   --enable-features=Vulkan,UseSkiaRenderer`, forçando aceleração
+   via Direct3D 11.
+2. **Canvas com dimensão 0×0** quando o `WebGLRenderer` é criado.
+   Em fullscreen sem decorations, o WebView2 inicializa antes da
+   janela ter layout, e `canvas` herdava 0×0 do CSS antigo. O
+   `index.html` do template agora define
+   `html, body { width:100%; height:100% }` e
+   `canvas { width:100%; height:100% }`, garantindo viewport
+   válido desde o primeiro frame.
+
+Projetos antigos (criados antes desse ajuste) precisam atualizar
+manualmente o `tauri.conf.json` e o `index.html`. Re-rodar o
+"Gerar instalador..." sozinho não corrige porque o setup não
+sobrescreve esses arquivos no fluxo legado.
+
 ## Consequências
 
 - **Positivo**: instalador ~10× menor que Electron, alinhado com
