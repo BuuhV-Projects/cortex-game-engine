@@ -28,6 +28,7 @@ export * from './ecs/World.js';
 // (que não existe — three está embutido no bundle do engine).
 export {
   Mesh,
+  InstancedMesh,
   Object3D,
   Group,
   // Geometrias
@@ -55,7 +56,9 @@ export {
   Vector3,
   Quaternion,
   Euler,
+  Matrix3,
   Matrix4,
+  MathUtils,
   // Animação esqueletal — necessária pra tocar animações de FBX
   // (rigged characters de Mixamo, etc.)
   AnimationMixer,
@@ -65,4 +68,22 @@ export {
   SkinnedMesh,
   Bone,
   Skeleton,
+  // Instancing — N cópias do mesmo mesh com matrices/cores diferentes
+  // numa única draw call. Essencial pra cenários densos (cidade, grama,
+  // partículas, multidão) sem matar o framerate.
+  InstancedBufferAttribute,
+  InstancedBufferGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  Float32BufferAttribute,
+  DynamicDrawUsage,
+  StaticDrawUsage,
+  StreamDrawUsage,
+  // Math/colisão auxiliares úteis pra culling manual em cenários grandes
+  Box3,
+  Sphere,
+  Frustum,
+  Plane,
+  Ray,
+  Raycaster,
 } from 'three';
