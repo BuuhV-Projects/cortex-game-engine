@@ -1,23 +1,54 @@
 # Instalação
 
-A IDE distribuída como app desktop ainda não está pronta — por
-enquanto se roda em modo de desenvolvimento direto do repo.
+A IDE é distribuída como **instalador desktop pronto** — basta
+baixar e executar. Você não precisa clonar o repositório nem ter o
+código-fonte na máquina pra usar.
 
-## Pré-requisitos da IDE
+## Pré-requisitos
 
-- **Node.js 18+** — recomendado via [Volta](https://volta.sh) ou
-  [nvm](https://github.com/nvm-sh/nvm).
-- **Yarn classic (1.x)** — `npm install -g yarn`.
-- **Git** — para clonar o repo.
+Antes de instalar a IDE, garanta que estes componentes estão na sua
+máquina:
+
+| Componente | Onde instalar | Pra que serve |
+|---|---|---|
+| **Node.js 18+** | [nodejs.org](https://nodejs.org/) ou via [Volta](https://volta.sh) / [nvm](https://github.com/nvm-sh/nvm) | Rodar o `vite` que faz o preview ao vivo do jogo dentro da IDE. |
+| **Yarn classic (1.x)** | `npm install -g yarn` (depois de ter o Node) | Gerenciar dependências dos projetos criados (a IDE roda `yarn install` automaticamente em projeto novo). |
+| **Blender** | [blender.org/download](https://www.blender.org/download/) | Gerar modelos 3D com IA (`.glb`) a partir de descrição em linguagem natural. Detalhes em [Blender](#blender). |
+| **Claude Code** | [claude.com/product/claude-code](https://claude.com/product/claude-code) | Autenticação do chat IA — a IDE usa a sua assinatura Claude Pro/Max detectada via CLI. Detalhes em [Chat IA](#chat-ia). |
+
+Os 4 são **obrigatórios**: a IDE é uma combinação de editor + preview
+ao vivo + chat IA + gerador de assets, e cada peça depende de um
+desses componentes.
+
+## Baixar e instalar a IDE
+
+1. Ir até a página de [releases no GitHub](https://github.com/BuuhV-Projects/cortex-game-engine/releases).
+2. Baixar o instalador da sua plataforma na release mais recente:
+   - **Windows** — `.exe` (NSIS).
+   - **macOS** — `.dmg`.
+   - **Linux** — `.AppImage`.
+3. Executar o instalador e seguir o wizard.
+
+<div class="callout callout-info">
+
+**Releases são automáticas.** Cada merge na `main` que traz uma
+feature ou fix dispara o `semantic-release`: ele lê os Conventional
+Commits (`feat:`, `fix:`, `feat!:`), decide o bump de versão, atualiza
+o `CHANGELOG.md` e cria a release com os 3 instaladores anexados.
+Você sempre tem a versão mais nova disponível minutos depois do
+merge.
+
+</div>
 
 ## Pré-requisitos para gerar instalador do jogo (Windows)
 
 <div class="callout callout-warn">
 
-**Importante.** Para empacotar o jogo como `.exe` distribuível, é
-obrigatório instalar **Rust** e **MSVC Build Tools** na máquina
-antes de clicar "Gerar instalador" pela primeira vez. A IDE não
-baixa esses pré-requisitos automaticamente.
+**Importante.** Para empacotar o seu **jogo** como `.exe` distribuível
+(Menu → Projeto → Gerar instalador...), é obrigatório instalar
+**Rust** e **MSVC Build Tools** na máquina antes de clicar pela
+primeira vez. A IDE não baixa esses pré-requisitos automaticamente.
+Isso é separado dos pré-requisitos da IDE acima.
 
 </div>
 
@@ -39,28 +70,10 @@ rustc --version
 <div class="callout callout-info">
 
 **Dica.** Se o `cargo --version` funciona no PowerShell mas a IDE
-não acha, fecha a IDE completamente (incluindo o `electron:dev` pai)
-e reabre. Processos em execução não veem mudanças de PATH feitas
-depois que iniciaram.
+não acha, fecha a IDE completamente e reabre. Processos em execução
+não veem mudanças de PATH feitas depois que iniciaram.
 
 </div>
-
-## Pré-requisitos para usar a IA
-
-Ver [Chat IA](#chat-ia) — a IDE usa a assinatura do **Claude Code**
-do seu computador, então o login é feito uma vez via CLI.
-
-## Rodar a IDE
-
-```bash
-git clone <repo>
-cd cortex-game-engine
-yarn install
-yarn electron:dev
-```
-
-Na primeira vez o `electron:dev` faz o build do engine (`tsc`) antes
-de subir o app — pode levar ~30 segundos.
 
 ## Criar projeto
 
@@ -69,6 +82,22 @@ Dentro da IDE:
 1. Clicar **+ Novo Projeto** na sidebar.
 2. Escolher pasta de destino e nome.
 3. A IDE copia o template, vendoriza o engine em
-   `vendor/cortex-game-engine/` e roda `yarn install` automaticamente.
+   `vendor/cortex-game-engine/` e roda `yarn install`
+   automaticamente — por isso o pré-requisito de **Yarn 1.x**.
 
 Pronto — o projeto abre, o preview liga e você pode editar.
+
+## Rodar a partir do código-fonte (opcional)
+
+Se você quer contribuir com o engine ou a IDE, aí sim faz sentido
+clonar o repo:
+
+```bash
+git clone https://github.com/BuuhV-Projects/cortex-game-engine.git
+cd cortex-game-engine
+yarn install
+yarn electron:dev
+```
+
+Mas pra apenas **usar** a IDE, instalar pelo release é o caminho
+recomendado.
