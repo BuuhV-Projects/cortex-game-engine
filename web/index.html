@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cortex-game-engine — IDE de jogos 3D com IA + TypeScript</title>
+    <meta
+      name="description"
+      content="Crie jogos 3D para desktop com TypeScript. Modele assets com IA, estruture o código com IA — tudo dentro de uma única IDE."
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body class="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
+    <header
+      class="sticky top-0 z-50 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur"
+    >
+      <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <a href="/" class="flex items-center gap-2 text-sm font-semibold tracking-tight">
+          <span class="inline-block h-2 w-2 rounded-full bg-sky-400"></span>
+          cortex-game-engine
+        </a>
+        <nav class="flex items-center gap-1 text-sm">
+          <a
+            href="/"
+            class="rounded-md px-3 py-1.5 text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+          >
+            Início
+          </a>
+          <a
+            href="/docs.html"
+            class="rounded-md px-3 py-1.5 text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+          >
+            Documentação
+          </a>
+          <a
+            href="https://github.com/"
+            class="rounded-md px-3 py-1.5 text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+          >
+            GitHub
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-6 py-24">
+      <!-- Hero -->
+      <section class="space-y-6">
+        <p class="text-sm font-medium uppercase tracking-widest text-sky-400">
+          cortex-game-engine
+        </p>
+        <h1 class="text-5xl font-semibold leading-tight md:text-6xl">
+          Crie jogos 3D poderosos <br />
+          com <span class="text-sky-400">TypeScript</span> e
+          <span class="text-sky-400">IA</span>.
+        </h1>
+        <p class="max-w-2xl text-lg leading-relaxed text-zinc-400">
+          Modele assets 3D com IA. Estruture o código com IA. Tudo dentro
+          de uma única IDE focada em jogos 3D — e empacote como instalador
+          desktop num clique.
+        </p>
+        <div class="flex flex-wrap items-center gap-4 pt-4">
+          <a
+            href="#download"
+            class="inline-flex items-center rounded-md bg-sky-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-400"
+          >
+            Download (em breve)
+          </a>
+          <a
+            href="https://github.com/"
+            class="inline-flex items-center rounded-md border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500"
+          >
+            Ver no GitHub →
+          </a>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="mt-24 grid gap-6 md:grid-cols-3">
+        <article class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-6">
+          <div class="text-2xl">🧠</div>
+          <h2 class="mt-3 text-lg font-semibold">Código com IA</h2>
+          <p class="mt-2 text-sm leading-relaxed text-zinc-400">
+            Um agente IA mora dentro da IDE: conversa com o seu projeto,
+            cria componentes ECS, escreve sistemas, ajusta cenas. Com
+            sandbox no projeto ativo e aprovação por ferramenta.
+          </p>
+        </article>
+        <article class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-6">
+          <div class="text-2xl">🎨</div>
+          <h2 class="mt-3 text-lg font-semibold">Modelos 3D com IA</h2>
+          <p class="mt-2 text-sm leading-relaxed text-zinc-400">
+            Descreva o asset, a IA gera o script Blender e exporta o
+            <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs">.glb</code>
+            pronto pra usar na cena. Sem sair da IDE.
+          </p>
+        </article>
+        <article class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-6">
+          <div class="text-2xl">💻</div>
+          <h2 class="mt-3 text-lg font-semibold">Jogos para desktop</h2>
+          <p class="mt-2 text-sm leading-relaxed text-zinc-400">
+            TypeScript + Three.js + ECS. Preview ao vivo durante o
+            desenvolvimento. Um clique pra empacotar como instalador
+            Windows distribuível.
+          </p>
+        </article>
+      </section>
+
+      <!-- Mini-narrativa de stack -->
+      <section class="mt-24 rounded-lg border border-zinc-800 bg-zinc-900/30 p-8">
+        <h2 class="text-2xl font-semibold">Tudo num lugar só</h2>
+        <p class="mt-3 max-w-3xl text-zinc-400">
+          Editor Monaco, terminal embutido, file tree com drag-and-drop,
+          preview hot-reload, chat IA na sidebar e gerador de instalador.
+          Você abre a IDE, descreve o que quer e sai com um
+          <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs">.exe</code>
+          jogável.
+        </p>
+      </section>
+
+      <!-- Open source -->
+      <section class="mt-24 flex flex-col gap-6 rounded-lg border border-sky-500/20 bg-gradient-to-br from-sky-500/5 to-transparent p-8 md:flex-row md:items-center md:justify-between">
+        <div class="max-w-2xl">
+          <p class="text-sm font-medium uppercase tracking-widest text-sky-400">
+            Open source
+          </p>
+          <h2 class="mt-2 text-2xl font-semibold">
+            Construído à mostra. Pull requests são bem-vindos.
+          </h2>
+          <p class="mt-3 text-zinc-400">
+            Todo o engine, a IDE, o agente IA e este site vivem num único
+            repositório aberto. Achou um bug, viu como melhorar uma feature
+            ou quer estender o engine com uma capacidade nova? Abra um PR —
+            ou um issue, se quiser discutir antes.
+          </p>
+        </div>
+        <div class="flex flex-shrink-0 flex-col gap-3 sm:flex-row md:flex-col">
+          <a
+            href="https://github.com/"
+            class="inline-flex items-center justify-center rounded-md border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500"
+          >
+            Ver no GitHub →
+          </a>
+          <a
+            href="https://github.com/"
+            class="inline-flex items-center justify-center rounded-md bg-sky-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-400"
+          >
+            Abrir um PR
+          </a>
+        </div>
+      </section>
+
+      <footer class="mt-32 border-t border-zinc-800 pt-8 text-sm text-zinc-500">
+        feito com cortex-game-engine.
+      </footer>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
