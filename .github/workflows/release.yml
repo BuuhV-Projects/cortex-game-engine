@@ -39,10 +39,10 @@ jobs:
           # precisa disso pra dar `git push` do commit de release.
           persist-credentials: true
 
-      - name: Setup Node 20
+      - name: Setup Node 24.15.0
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24.15.0
 
       - name: Run semantic-release
         id: semantic
@@ -75,10 +75,10 @@ jobs:
           # o build pega a versão bumpada no package.json + o CHANGELOG.
           ref: ${{ needs.release.outputs.tag }}
 
-      - name: Setup Node 20
+      - name: Setup Node 24.15.0
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24.15.0
           cache: yarn
 
       - name: Linux build deps
