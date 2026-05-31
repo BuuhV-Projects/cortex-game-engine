@@ -151,6 +151,29 @@ intencional, faz parte do contrato "usou a engine, dá crédito".
 Quem quiser remover edita o `<div id="cortex-splash">` do
 `index.html` do projeto criado.
 
+### Assets estáticos no build (plugin `cortex-copy-assets`)
+
+Projetos costumam referenciar assets de áudio/modelo via string em
+runtime (`loader.loadAudio('assets/x.mp3')`), não via `import`. O
+Vite, em modo build, só copia pro `dist/`:
+- arquivos referenciados por `import`/`import.meta.glob`,
+- conteúdo de `public/` (root absoluto, sem prefixo).
+
+Resultado: no `vite dev`, `assets/` é servido a partir da raiz e
+funciona. Mas no `tauri:build`, o `dist/` resultante **não contém**
+a pasta `assets/`, e o `.exe` falha com `EncodingError`,
+`404 on /assets/...`, etc.
+
+Solução adotada no `vite.config.ts` do template: plugin inline
+`cortex-copy-assets` que, no hook `closeBundle`, copia
+recursivamente `./assets/` pra `dist/assets/`. Sem dep externa
+(usa `node:fs.cpSync`). No `apply: 'build'` — não roda em dev.
+
+Trade-off vs. mover `assets/` pra `public/`: a convenção
+`assets/` é mais legível pra dev (separa estáticos de público) e
+casa com o padrão dos demos e do ADR-0022. O custo do plugin é
+~10 linhas e roda uma vez por build.
+
 ### WebGL no WebView2
 
 O `WebGLRenderer` do Three.js falhava ao iniciar dentro do bundle
