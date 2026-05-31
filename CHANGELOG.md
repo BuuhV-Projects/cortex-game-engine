@@ -1,3 +1,10 @@
+## [0.4.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.4.0...v0.4.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* **installer:** copiar recursos de app.asar.unpacked (fs.cp falha dentro do asar) ([139ef28](https://github.com/BuuhV-Projects/cortex-game-engine/commit/139ef2836a3b64cd07bce78796d54704e8244f88))
+
 # [0.4.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.3.0...v0.4.0) (2026-05-31)
 
 
