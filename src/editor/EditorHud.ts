@@ -41,11 +41,11 @@ export function createEditorHud(parent: HTMLElement = document.body): EditorHud 
     'btn-direito girar',
     'Shift correr',
     'T teleporta alvo',
-    'P/C spawn save/clear',
     'click objeto',
     '1/2/3 mover/girar/escalar',
     'F foca no selecionado',
-    'K/L edits save/clear',
+    'K salvar cena',
+    'L limpar cena',
     'Esc desseleciona',
     'F2 fecha',
   ].join(' &nbsp;•&nbsp; ');

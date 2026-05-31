@@ -134,7 +134,7 @@ export class ObjectEditSystem extends System {
     if (this.edge('l') || this.edge('L')) {
       this.onClearEdits();
       this.modified.clear();
-      this.hud.showToast('Edições limpas (recarregue pra ver o original)');
+      this.hud.showToast('Cena limpa (recarregue pra ver o original)');
     }
     if (this.edge('f') || this.edge('F')) {
       if (this.selected && this.onFocusRequest) {
@@ -205,7 +205,7 @@ export class ObjectEditSystem extends System {
       };
     }
     this.onSaveEdits(edits);
-    this.hud.showToast(`${this.modified.size} objeto(s) salvos`);
+    this.hud.showToast(`Cena salva (${this.modified.size} objeto(s) editado(s))`);
   }
 
   private edge(key: string): boolean {

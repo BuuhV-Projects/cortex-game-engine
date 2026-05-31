@@ -22,10 +22,10 @@ Adicionados em `src/editor/`, re-exportados em `src/index-runtime.ts`:
   instruções + coords + toast). Jogos podem injetar a própria implementação da
   interface `EditorHud`.
 - **`EditorCameraSystem`** — câmera de voo livre (WASD/QE/Shift/botão-direito),
-  toggle F2, `focusOn(obj)` estilo Blender, teleporte (T) + save/clear spawn
-  (P/C) via callbacks `onSaveSpawn`/`onClearSpawn`. Generalizado: opera sobre a
-  entidade com `EditableTargetComponent` (não mais `PlayerControlComponent`/
+  toggle F2, `focusOn(obj)` estilo Blender, teleporte (T). Generalizado: opera
+  sobre a entidade com `EditableTargetComponent` (não mais `PlayerControlComponent`/
   `VehicleComponent`); zera `KinematicBodyComponent` ao entrar/teleportar.
+  **Não cuida de persistência** — só câmera/navegação/teleporte.
 - **`ObjectEditSystem`** — gizmo `TransformControls` (r170+ via `getHelper()`),
   seleção por raycast nos `editRoots`, modos translate/rotate/scale, persistência
   por `Object3D.name` via callbacks. Exporta o tipo `ObjectEdit`.
@@ -47,3 +47,8 @@ Adicionados em `src/editor/`, re-exportados em `src/index-runtime.ts`:
   `EditorCameraSystem`/`ObjectEditSystem` do engine; car ganhou
   `EditableTargetComponent`; `VehicleSuspensionSystem`/`VehicleInputSystem`
   importam `EditorState` do engine; 4 arquivos locais removidos.
+- **Save unificado (revisão):** originalmente havia P/C (spawn) + K/L (edições).
+  Como tudo grava no mesmo `scene-data.json` (ADR-0031), unificou-se em **uma
+  tecla**: K = salvar a cena inteira (edições do gizmo + pose do alvo), L = limpar.
+  P/C foram removidos; o `EditorCameraSystem` saiu do negócio de persistência (o
+  spawn é capturado no callback do K, no jogo).

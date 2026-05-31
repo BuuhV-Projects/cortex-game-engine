@@ -22,9 +22,11 @@ export interface EditorPose {
  *
  * Quando ativo: WASD/QE move (Shift = correr), botão direito + mouse rotaciona.
  * Teleporta o alvo (entidade com `EditableTargetComponent`) com T, fazendo snap
- * pro chão via raycast. Salva/limpa o "spawn" via callbacks `onSaveSpawn`/
- * `onClearSpawn` (o que persistir fica a cargo do jogo). `focusOn(obj)` enquadra
- * um objeto estilo Blender.
+ * pro chão via raycast. `focusOn(obj)` enquadra um objeto estilo Blender.
+ *
+ * Não cuida de persistência — só câmera/navegação/teleporte. Salvar a cena
+ * (incluindo a pose do alvo) é responsabilidade do {@link ObjectEditSystem}
+ * (uma única tecla) + o jogo.
  *
  * O `yaw`/`pitch` internos são estado de ferramenta (input acumulado), não de
  * simulação.
@@ -42,8 +44,6 @@ export class EditorCameraSystem extends System {
   private readonly worldUp = new THREE.Vector3(0, 1, 0);
   private prevToggle = false;
   private prevTeleport = false;
-  private prevSave = false;
-  private prevClear = false;
 
   constructor(
     private readonly state: EditorState,
@@ -54,8 +54,6 @@ export class EditorCameraSystem extends System {
     private readonly input: InputManager,
     private readonly ground: THREE.Object3D,
     private readonly hud: EditorHud,
-    private readonly onSaveSpawn: (pose: EditorPose) => void,
-    private readonly onClearSpawn: () => void,
     private readonly moveSpeed = 30,
     private readonly runMultiplier = 4,
     private readonly mouseSensitivity = 0.0035,
@@ -73,20 +71,8 @@ export class EditorCameraSystem extends System {
     if (this.state.active) {
       if (!this.state.gizmoDragging) this.flyCamera(dt);
       this.handleTeleport(target);
-      this.handleClear();
       this.updateHud();
     }
-
-    this.handleSave(target);
-  }
-
-  private handleClear(): void {
-    const down = this.input.isKeyDown('c') || this.input.isKeyDown('C');
-    if (down && !this.prevClear) {
-      this.onClearSpawn();
-      this.hud.showToast('Spawn salvo apagado (recarregue pra usar o fallback)');
-    }
-    this.prevClear = down;
   }
 
   private handleToggle(target: Entity): void {
@@ -166,23 +152,6 @@ export class EditorCameraSystem extends System {
       );
     }
     this.prevTeleport = down;
-  }
-
-  private handleSave(target: Entity): void {
-    const down = this.input.isKeyDown('p') || this.input.isKeyDown('P');
-    if (down && !this.prevSave) {
-      const transform = target.getComponent(TransformComponent)!;
-      this.onSaveSpawn({
-        x: transform.x,
-        y: transform.y,
-        z: transform.z,
-        rotationY: transform.rotationY,
-      });
-      this.hud.showToast(
-        `Spawn salvo: (${transform.x.toFixed(1)}, ${transform.y.toFixed(1)}, ${transform.z.toFixed(1)})`,
-      );
-    }
-    this.prevSave = down;
   }
 
   private updateHud(): void {
