@@ -1,3 +1,21 @@
+# [0.5.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.4.1...v0.5.0) (2026-05-31)
+
+
+### Bug Fixes
+
+* **ide:** playtest spawna vite como comando único (evita DEP0190) ([ac4a7b0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ac4a7b0bb6157459cfddd3de46c7eb317b37ab13))
+
+
+### Features
+
+* **engine:** cena em JSON + IO writers + tela de loading (migração fase 5) ([0bd5f77](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0bd5f776c7a3b354dfcdfb0471d69123ce686da7))
+* **engine:** componentes de gameplay genéricos + Object3DSyncSystem (migração fase 1) ([d47a749](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d47a7498ae039e5a4c417a61ce69a89fbac5b636))
+* **engine:** física cinemática de veículo — gravidade, colisão com deslize, VehiclePhysics (migração fase 2) ([756a1ec](https://github.com/BuuhV-Projects/cortex-game-engine/commit/756a1ec54614956149bda9967a3fd7e37437a363))
+* **engine:** modo editor embutido — câmera livre, gizmo, HUD (migração fase 4) ([2c6277a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2c6277a2aaecbf4dcd2331019f34f7b9ec416d64))
+* **engine:** renderer baseado em WebGPU (obrigatório, sem fallback WebGL) ([b46cca9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b46cca958e52c199f34f05d684f2e490d34338cc))
+* **engine:** ThirdPersonCameraSystem — câmera de perseguição (migração fase 3) ([81bd630](https://github.com/BuuhV-Projects/cortex-game-engine/commit/81bd63053cf3f5e3204bacd7616c2c36029c0a47))
+* **ide:** tool playtest_game — Chat IA roda o jogo, screenshot e lê erros ([c526bed](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c526bedf94352fac86416e8d65b9145db412bd98))
+
 ## [0.4.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.4.0...v0.4.1) (2026-05-31)
 
 
