@@ -101,9 +101,14 @@ document.addEventListener('project-open', (e) => {
 })
 
 // Menu nativo "Projeto > Gerar instalador..." (ADR-0024). O BottomPanel
-// escuta o evento DOM e dispara `yarn tauri:build` no projeto ativo.
-window.electronAPI.onMenuBuildInstaller(() => {
-  document.dispatchEvent(new CustomEvent('build-installer-requested'))
+// escuta o evento DOM e dispara `yarn tauri:build` (release) ou
+// `yarn tauri:build:debug` (com DevTools embutido) no projeto ativo.
+window.electronAPI.onMenuBuildInstaller((payload) => {
+  document.dispatchEvent(
+    new CustomEvent<{ debug: boolean }>('build-installer-requested', {
+      detail: { debug: payload.debug },
+    }),
+  )
 })
 
 // Menu nativo "Idioma > English | Português" (ADR-0025). Importa setLocale

@@ -88,8 +88,9 @@ export class BottomPanel {
     // Menu nativo "Projeto > Gerar instalador..." (ADR-0024). Detecta
     // projetos legados (sem src-tauri/) e oferece setup automático antes
     // de tentar buildar. Reusa a infra do terminal embutido para logs.
-    document.addEventListener('build-installer-requested', () => {
-      void this.handleBuildInstaller()
+    document.addEventListener('build-installer-requested', (e) => {
+      const detail = (e as CustomEvent<{ debug?: boolean }>).detail
+      void this.handleBuildInstaller({ debug: detail?.debug === true })
     })
   }
 
@@ -104,7 +105,7 @@ export class BottomPanel {
    *      dispara de novo.
    *    - Sim → roda `yarn tauri:build`.
    */
-  private async handleBuildInstaller(): Promise<void> {
+  private async handleBuildInstaller(opts: { debug?: boolean } = {}): Promise<void> {
     if (!this.projectDir) {
       alert(t('bottomPanel.installer_no_project'))
       return
@@ -140,7 +141,12 @@ export class BottomPanel {
       return
     }
 
-    await this.runCommandForce('yarn tauri:build')
+    // Release default ou debug (com DevTools embutido via feature Cargo).
+    // O script `tauri:build:debug` precisa existir no package.json do
+    // projeto — projetos novos saem com ele; projetos legados precisam
+    // adicionar manualmente.
+    const script = opts.debug === true ? 'yarn tauri:build:debug' : 'yarn tauri:build'
+    await this.runCommandForce(script)
   }
 
   // ── Construção da UI ────────────────────────────────────────────────────────

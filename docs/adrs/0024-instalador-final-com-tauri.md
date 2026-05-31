@@ -151,6 +151,40 @@ intencional, faz parte do contrato "usou a engine, dá crédito".
 Quem quiser remover edita o `<div id="cortex-splash">` do
 `index.html` do projeto criado.
 
+### Build debug com DevTools (opt-in)
+
+O agente IA / dev às vezes precisa abrir DevTools no `.exe`
+empacotado pra investigar erro de WebGL, falha de assets, exceção
+não tratada. Em release default isso fica off — release real pro
+usuário final não deve expor inspetor. Mas precisa de um caminho
+**fácil e reversível** pra rodar uma build de debug pontual.
+
+Solução adotada:
+
+1. **`Cargo.toml`** do template ganha feature opcional:
+   ```toml
+   [features]
+   default = []
+   devtools = ["tauri/devtools"]
+   ```
+2. **`src/lib.rs`** abre devtools automaticamente quando a feature
+   está ativa, via bloco `#[cfg(feature = "devtools")]`. Sem
+   overhead no release default (o `setup` nem compila).
+3. **`package.json`** ganha script `tauri:build:debug` que invoca
+   `tauri build --features devtools`.
+4. **Menu da IDE** ganha 2 itens:
+   - **Gerar instalador...** (Ctrl+Shift+B) — release sem devtools.
+   - **Gerar instalador (debug)...** (Ctrl+Shift+D) — debug com
+     devtools abrindo automaticamente.
+5. Bloqueio de F12/Ctrl+Shift+I no `index.html` continua ativo
+   mesmo em debug — não atrapalha, porque a janela do DevTools
+   já abre sozinha. Se fechar, o jeito de reabrir é rebuildar (ou
+   comentar manualmente o keydown handler — debugging avançado).
+
+Trade-off: a debug build tem ~50 KB de overhead pelo crate de
+devtools incluído. Por isso o default é off — release pública não
+carrega esse peso.
+
 ### Assets estáticos no build (plugin `cortex-copy-assets`)
 
 Projetos costumam referenciar assets de áudio/modelo via string em
@@ -214,9 +248,12 @@ não dependem de cert:
      - `'unsafe-inline'` é necessário pelo script anti-tampering
        (bloqueador de context menu/F5/F12) embutido no `index.html`.
      - `'wasm-unsafe-eval'` libera plugins do Three que carregam WASM.
-   - `connect-src 'self' ipc: http://ipc.localhost` — restringe
-     conexões ao próprio bundle + IPC do Tauri. Bloqueia exfiltração
-     pra servidores externos.
+   - `connect-src 'self' ipc: http://ipc.localhost blob: data:` —
+     restringe conexões ao próprio bundle + IPC do Tauri + URLs blob
+     e data (Three.js GLTFLoader extrai texturas embutidas no GLB
+     criando blobs via `URL.createObjectURL` e busca via `fetch` —
+     sem `blob:` aqui as texturas falham e meshes ficam cinza).
+     Bloqueia exfiltração pra servidores externos.
    - `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`,
      `frame-ancestors 'none'` — fecham vetores clássicos de
      clickjacking / base-tag hijacking / form hijacking.

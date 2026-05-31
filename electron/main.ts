@@ -1066,11 +1066,13 @@ const MENU_STRINGS = {
   en: {
     project: 'Project',
     generate_installer: 'Generate installer...',
+    generate_installer_debug: 'Generate installer (debug)...',
     language: 'Language',
   },
   pt: {
     project: 'Projeto',
     generate_installer: 'Gerar instalador...',
+    generate_installer_debug: 'Gerar instalador (debug)...',
     language: 'Idioma',
   },
 } as const
@@ -1100,7 +1102,14 @@ function buildAppMenu(): Menu {
         label: s.generate_installer,
         accelerator: isMac ? 'Cmd+Shift+B' : 'Ctrl+Shift+B',
         click: (): void => {
-          mainWindow?.webContents.send('menu:build-installer')
+          mainWindow?.webContents.send('menu:build-installer', { debug: false })
+        },
+      },
+      {
+        label: s.generate_installer_debug,
+        accelerator: isMac ? 'Cmd+Shift+D' : 'Ctrl+Shift+D',
+        click: (): void => {
+          mainWindow?.webContents.send('menu:build-installer', { debug: true })
         },
       },
       { type: 'separator' },

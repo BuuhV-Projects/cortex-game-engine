@@ -87,7 +87,7 @@ export interface ElectronAPI {
   ): void
 
   // Itens do Menu nativo (ADR-0024)
-  onMenuBuildInstaller(callback: () => void): void
+  onMenuBuildInstaller(callback: (payload: { debug: boolean }) => void): void
   // Trocar idioma via menu nativo (ADR-0025)
   onMenuChangeLocale(callback: (locale: 'en' | 'pt') => void): void
 

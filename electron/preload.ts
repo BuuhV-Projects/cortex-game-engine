@@ -148,9 +148,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('ai:tool_executed', (_event, payload) => callback(payload))
   },
 
-  // Item "Projeto > Gerar instalador..." do Menu nativo (ADR-0024)
-  onMenuBuildInstaller: (callback: () => void) => {
-    ipcRenderer.on('menu:build-installer', () => callback())
+  // Item "Projeto > Gerar instalador (debug?)..." do Menu nativo (ADR-0024)
+  onMenuBuildInstaller: (callback: (payload: { debug: boolean }) => void) => {
+    ipcRenderer.on('menu:build-installer', (_event, payload: { debug: boolean }) =>
+      callback(payload),
+    )
   },
 
   // Item "Idioma > EN | PT" do Menu nativo (ADR-0025)
