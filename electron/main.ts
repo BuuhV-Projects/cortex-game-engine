@@ -328,17 +328,35 @@ const VENDOR_TYPE_MODULES = {
 } as const
 
 /**
+ * Base de leitura dos recursos copiados para projetos (templates, bundle do
+ * engine, .d.ts). Em dev é a raiz do repo; em produção é o app.asar do build.
+ *
+ * Porém `fs.cp` NÃO consegue ler de dentro de um app.asar (a camada de asar do
+ * Electron não implementa cp/cpSync — qualquer cópia falha com
+ * "ENOENT, ... not found in app.asar"). Por isso esses recursos são marcados
+ * em `electron-builder.json#asarUnpack`, que os grava fisicamente em
+ * `app.asar.unpacked/` — um diretório real no disco que o `cp` consegue ler.
+ * Aqui mapeamos o path do asar para o `.unpacked` correspondente.
+ *
+ * Leituras via readFile/readdir (ex.: engine:readTypes) funcionam dentro do
+ * asar e não precisam dessa base.
+ */
+function resourceBase(): string {
+  const appPath = app.getAppPath()
+  return appPath.endsWith('.asar') ? `${appPath}.unpacked` : appPath
+}
+
+/**
  * Vendoriza o engine dentro de <projectPath>/vendor/cortex-game-engine/:
  * - index.js: bundle único do engine (com three embutido), de dist-engine/
  * - core/*.d.ts e ecs/*.d.ts: types copiados de dist/src/
  * - index.d.ts: agregador minimal re-exportando só core+ecs
  *
- * Em dev o app.getAppPath() é a raiz do repo; em produção é o app.asar do build.
- * O electron-builder copia dist-engine/ e dist/src/ no pacote (ver
- * electron-builder.json#files).
+ * Os recursos vêm de resourceBase() (app.asar.unpacked em produção) porque o
+ * `cp` não lê de dentro do asar. Ver electron-builder.json#asarUnpack.
  */
 async function vendorEngine(projectPath: string): Promise<void> {
-  const appPath = app.getAppPath()
+  const appPath = resourceBase()
   const vendorDir = join(projectPath, 'vendor', 'cortex-game-engine')
   await mkdir(vendorDir, { recursive: true })
 
@@ -381,7 +399,7 @@ ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unkn
   const projectName = name.trim()
   // Projeto criado em subdiretório dedicado dentro de targetDir
   const projectPath = resolve(safeTarget, projectName)
-  const templateDir = join(app.getAppPath(), 'templates', 'new-project')
+  const templateDir = join(resourceBase(), 'templates', 'new-project')
   await cp(templateDir, projectPath, { recursive: true })
   // Substitui o placeholder {{PROJECT_NAME}} em cada arquivo do template copiado
   const entries = await readdir(projectPath, { withFileTypes: true })
@@ -566,7 +584,7 @@ ipcMain.handle('installer:setup', async (_event, projectDir: unknown) => {
   // cp recursivo com force:false: preenche arquivos faltantes (ex.: lib.rs
   // novo num projeto legado) sem sobrescrever edições do usuário.
   const tauriDir = join(safeDir, 'src-tauri')
-  const templateTauriDir = join(app.getAppPath(), 'templates', 'new-project', 'src-tauri')
+  const templateTauriDir = join(resourceBase(), 'templates', 'new-project', 'src-tauri')
   await cp(templateTauriDir, tauriDir, { recursive: true, force: false, errorOnExist: false })
 
   // Substitui {{PROJECT_NAME}} nos arquivos de texto copiados (Cargo.toml,

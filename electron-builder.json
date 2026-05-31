@@ -12,6 +12,11 @@
     "node_modules/@types/three/**/*.d.ts",
     "node_modules/@types/three/package.json"
   ],
+  "asarUnpack": [
+    "templates/**",
+    "dist-engine/**",
+    "dist/src/**/*.d.ts"
+  ],
   "win": {
     "target": [
       {
