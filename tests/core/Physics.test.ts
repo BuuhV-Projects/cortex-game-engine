@@ -511,3 +511,72 @@ describe('PhysicsSystem — colisão sphere ↔ cylinder', () => {
     expect(rb(sphere).position.x).toBe(5);
   });
 });
+
+// ─── Colisão capsule (ADR-0027 Fase 5) ────────────────────────────────────────
+
+/** Cria uma Entity com shape capsule vertical (eixo Y). */
+function makeCapsule(opts: {
+  x?: number; y?: number; z?: number;
+  vx?: number; vy?: number; vz?: number;
+  isStatic?: boolean;
+  radius?: number; height?: number;
+} = {}): Entity {
+  const entity = new Entity();
+  const r = new RigidBodyComponent();
+  r.position.x = opts.x ?? 0; r.position.y = opts.y ?? 0; r.position.z = opts.z ?? 0;
+  r.velocity.x = opts.vx ?? 0; r.velocity.y = opts.vy ?? 0; r.velocity.z = opts.vz ?? 0;
+  r.isStatic = opts.isStatic ?? false;
+  entity.addComponent(r);
+  const col = new ColliderComponent();
+  col.shape = { kind: 'capsule', radius: opts.radius ?? 0.3, height: opts.height ?? 1.0 };
+  entity.addComponent(col);
+  return entity;
+}
+
+describe('PhysicsSystem — colisão capsule (decomposição em cilindro + 2 esferas)', () => {
+  let system: PhysicsSystem;
+  beforeEach(() => { system = new PhysicsSystem(); system.gravity = 0; });
+
+  it('capsule não colide quando longe', () => {
+    const a = makeCapsule({ x: 0,   radius: 0.3, height: 1 });
+    const b = makeCapsule({ x: 5,   radius: 0.3, height: 1 });
+    system.update([a, b], 16.67);
+    expect(rb(a).position.x).toBe(0);
+  });
+
+  it('capsule colidindo lateralmente com box é empurrada radialmente (corpo cilindro)', () => {
+    const box = makeEntity({ x: 0, y: 0, sizeX: 1, sizeY: 5, sizeZ: 5, isStatic: true });
+    const cap = makeCapsule({ x: 0.6, y: 0, radius: 0.3, height: 1 }); // dist X = 0.6, face em 0.5
+    system.update([box, cap], 16.67);
+    // Empurrado pra +X até cap.x = 0.5 + 0.3 = 0.8
+    expect(rb(cap).position.x).toBeCloseTo(0.8, 5);
+  });
+
+  it('capsule caindo sobre box assenta com a semiesfera de baixo', () => {
+    const box = makeEntity({ x: 0, y: 0, sizeX: 5, sizeY: 1, sizeZ: 5, isStatic: true });
+    // Capsule altura total = h + 2r = 1 + 0.6 = 1.6. Centro em y = 0.9.
+    // Hemisfério inferior centrado em y = 0.9 - 0.5 = 0.4, raio 0.3. Toca a box em y=0.5 → penetra 0.4.
+    const cap = makeCapsule({ x: 0, y: 0.9, radius: 0.3, height: 1 });
+    system.update([box, cap], 16.67);
+    // Após resolução, hemisfério inferior tangente à face superior da box:
+    // centro do hemisfério em y = 0.5 + 0.3 = 0.8 → cap.center.y = 0.8 + h/2 = 1.3.
+    expect(rb(cap).position.y).toBeCloseTo(1.3, 4);
+  });
+
+  it('capsule vs capsule lateralmente: separação radial', () => {
+    const a = makeCapsule({ x: 0,   y: 0, radius: 0.3, height: 1 });
+    const b = makeCapsule({ x: 0.4, y: 0, radius: 0.3, height: 1, isStatic: true });
+    // Corpos cilíndricos sobrepostos em XZ (dist 0.4, soma raios 0.6 → pen 0.2)
+    system.update([a, b], 16.67);
+    expect(rb(a).position.x).toBeCloseTo(-0.2, 4); // empurrado 0.2 em -X
+  });
+
+  it('capsule vs sphere acima dela colide pela semiesfera de cima', () => {
+    const cap    = makeCapsule({ x: 0, y: 0, radius: 0.3, height: 1, isStatic: true });
+    // Centro da semiesfera superior em y = h/2 = 0.5.
+    // Sphere em y=1.0, raio 0.3 → centros distam 0.5, soma raios 0.6 → pen 0.1.
+    const sphere = makeSphere({ x: 0, y: 1.0, radius: 0.3 });
+    system.update([cap, sphere], 16.67);
+    expect(rb(sphere).position.y).toBeCloseTo(1.1, 4); // empurrado 0.1 em +Y
+  });
+});

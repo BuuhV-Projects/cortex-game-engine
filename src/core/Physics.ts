@@ -273,20 +273,23 @@ function collideBoxSphere(
   if (dist === 0) {
     // Centro da sphere está dentro da box — escolhe o eixo de mínima
     // penetração até a face mais próxima e empurra pra esse lado.
+    //
+    // `sign` aponta de box → sphere (= A → B). Pra obedecer a convenção
+    // da tabela (normal B → A, igual ao else não-degenerado abaixo),
+    // negamos no return.
     const px = hx - Math.abs(centerSphere.x - centerBox.x);
     const py = hy - Math.abs(centerSphere.y - centerBox.y);
     const pz = hz - Math.abs(centerSphere.z - centerBox.z);
     if (px <= py && px <= pz) {
       const sign = centerSphere.x < centerBox.x ? -1 : 1;
-      // Normal sai de box(A) → sphere(B); pra B→A invertemos no caller.
-      return { normal: { x: sign, y: 0, z: 0 }, penetration: px + radius };
+      return { normal: { x: -sign, y: 0, z: 0 }, penetration: px + radius };
     }
     if (py <= pz) {
       const sign = centerSphere.y < centerBox.y ? -1 : 1;
-      return { normal: { x: 0, y: sign, z: 0 }, penetration: py + radius };
+      return { normal: { x: 0, y: -sign, z: 0 }, penetration: py + radius };
     }
     const sign = centerSphere.z < centerBox.z ? -1 : 1;
-    return { normal: { x: 0, y: 0, z: sign }, penetration: pz + radius };
+    return { normal: { x: 0, y: 0, z: -sign }, penetration: pz + radius };
   }
 
   // Normal aqui sai de pointOnBox → centerSphere (= A → B). Pra obedecer
@@ -499,6 +502,49 @@ function collideSphereCylinder(
 }
 
 /**
+ * Capsule ↔ qualquer shape: decompõe a capsule em 3 sub-shapes em
+ * coordenadas world — cilindro central de altura `h` + 2 esferas de
+ * raio `r` nas pontas (centros em `y ± h/2`) — e testa cada um
+ * contra o `other`. Fica com a colisão de MAIOR penetração
+ * (representa o contato mais profundo, que é o ponto de impacto
+ * verdadeiro).
+ *
+ * Convenção: capsule é A; retorno tem normal de B → A.
+ *
+ * `other` pode ser box, sphere, cylinder ou outra capsule. Quando
+ * é capsule, a recursão acontece via dispatchPair, então cada
+ * sub-shape de A vs other gera mais 3 testes — 9 no total
+ * (aceitável dado que capsule-capsule é raro fora do par player ↔ NPC).
+ */
+function collideCapsuleAny(
+  centerCap: Vec3, cap: { kind: 'capsule'; radius: number; height: number },
+  centerOther: Vec3, other: ColliderShape,
+): CollisionResult | null {
+  const subShapes: { center: Vec3; shape: ColliderShape }[] = [
+    {
+      center: centerCap,
+      shape: { kind: 'cylinder', radius: cap.radius, height: cap.height },
+    },
+    {
+      center: { x: centerCap.x, y: centerCap.y + cap.height / 2, z: centerCap.z },
+      shape: { kind: 'sphere', radius: cap.radius },
+    },
+    {
+      center: { x: centerCap.x, y: centerCap.y - cap.height / 2, z: centerCap.z },
+      shape: { kind: 'sphere', radius: cap.radius },
+    },
+  ];
+
+  let best: CollisionResult | null = null;
+  for (const sub of subShapes) {
+    const r = dispatchPair(sub.center, sub.shape, centerOther, other);
+    if (r === null) continue;
+    if (best === null || r.penetration > best.penetration) best = r;
+  }
+  return best;
+}
+
+/**
  * Tabela de despacho (kindA, kindB) → função de colisão.
  *
  * As funções recebem `(centerA, shapeA, centerB, shapeB)` e retornam o
@@ -548,7 +594,15 @@ const collisionDispatch: Record<ColliderShape['kind'], Partial<Record<ColliderSh
       return collideCylinderCylinder(cA, sA.radius, sA.height, cB, sB.radius, sB.height);
     },
   },
-  capsule: {},
+  // Capsule: 1 função genérica cobre todos os pares via decomposição em
+  // cilindro central + 2 esferas (cf. collideCapsuleAny). Cada entrada
+  // delega ao mesmo helper.
+  capsule: {
+    box:      (cA, sA, cB, sB) => sA.kind === 'capsule' ? collideCapsuleAny(cA, sA, cB, sB) : null,
+    sphere:   (cA, sA, cB, sB) => sA.kind === 'capsule' ? collideCapsuleAny(cA, sA, cB, sB) : null,
+    cylinder: (cA, sA, cB, sB) => sA.kind === 'capsule' ? collideCapsuleAny(cA, sA, cB, sB) : null,
+    capsule:  (cA, sA, cB, sB) => sA.kind === 'capsule' ? collideCapsuleAny(cA, sA, cB, sB) : null,
+  },
 };
 
 /** Negate normal — usado quando o dispatch foi feito com A/B trocados. */
