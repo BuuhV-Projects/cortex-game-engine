@@ -1,3 +1,28 @@
+# [0.4.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.3.0...v0.4.0) (2026-05-31)
+
+
+### Bug Fixes
+
+* **chat:** destravar input ao clicar Parar sem esperar ai:done ([9af7890](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9af7890dd81344e51f3c94177f9854005b43027b))
+* **installer:** copiar assets/ pro dist/ no vite build do template ([e0ea996](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e0ea9966f404e7f385290d726498755832e23be5))
+
+
+### Features
+
+* **editor:** SceneEditor — Fase 1 do ADR-0026 (edit-in-place) ([1bfe908](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1bfe9080857b34bd2dc28bd72bdcc7e83d6519ed))
+* **engine:** re-exportar instancing + math/colisão do three ([51f03d5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/51f03d5ddea1d9741a588082f70437121d49b220))
+* **engine:** suporte a FBX + re-exports de skeletal animation ([98a6110](https://github.com/BuuhV-Projects/cortex-game-engine/commit/98a611081bb5e5715648e5ab6f4cf590defca9ff))
+* **installer:** build debug opt-in (DevTools) + fix CSP blob: pra texturas GLB ([248ec53](https://github.com/BuuhV-Projects/cortex-game-engine/commit/248ec536d96c7e344458cddfdcb189d42911f165))
+* **physics:** colisão capsule via composição cylinder + 2 esferas (ADR-0027 Fase 5) ([4b20193](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4b20193465ca79a8bf7f05e7af1c7d61dcdd525a))
+* **physics:** colisão cylinder + box↔cylinder + sphere↔cylinder (ADR-0027 Fase 4) ([d90d118](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d90d118f38dc86cc16be467ee8dfabc6255f6740))
+* **physics:** colisão sphere e box↔sphere (ADR-0027 Fase 3) ([076a782](https://github.com/BuuhV-Projects/cortex-game-engine/commit/076a78267729cc2996206027abe1c7a6fa677fd7))
+* **physics:** ColliderComponent ganha shape discriminado (ADR-0027 Fase 1) ([8b7725c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8b7725c94f9171c25520de0531cde63fcffc4629))
+
+
+### Reverts
+
+* **editor:** remover SceneEditor — descartar ADR-0026 Fase 1 ([7d877be](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7d877be54f8ae6caa8c0d1c8dbc144b02a8b7099))
+
 # [0.3.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.2.0...v0.3.0) (2026-05-30)
 
 
