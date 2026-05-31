@@ -33,6 +33,7 @@ export * from './components/EditableTargetComponent.js';
 
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
 export * from './systems/Object3DSyncSystem.js';
+export * from './systems/ThirdPersonCameraSystem.js';
 
 // ─── Física cinemática de veículo (raycast) ────────────────────────────────────
 // Gravidade + ground-snap e colisão lateral com deslize, e o agrupador

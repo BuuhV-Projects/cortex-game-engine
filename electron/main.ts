@@ -332,7 +332,7 @@ const VENDOR_TYPE_MODULES = {
     'FollowCameraTargetComponent',
     'EditableTargetComponent',
   ],
-  systems: ['Object3DSyncSystem'],
+  systems: ['Object3DSyncSystem', 'ThirdPersonCameraSystem'],
   physics: ['VehicleGravitySystem', 'VehicleWallCollisionSystem', 'VehiclePhysics'],
 } as const
 
