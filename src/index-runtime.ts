@@ -42,6 +42,13 @@ export * from './physics/VehicleGravitySystem.js';
 export * from './physics/VehicleWallCollisionSystem.js';
 export * from './physics/VehiclePhysics.js';
 
+// ─── Modo editor (câmera livre + gizmo + HUD) ──────────────────────────────────
+// Ferramenta de autoria embutida no jogo (F2). Browser-only.
+export * from './editor/EditorState.js';
+export * from './editor/EditorHud.js';
+export * from './editor/EditorCameraSystem.js';
+export * from './editor/ObjectEditSystem.js';
+
 // ─── Re-exports de three usados na criação de cenas ───────────────────────────
 // Permite que projetos importem essas classes diretamente de
 // `cortex-game-engine` em vez de depender de `three` no node_modules

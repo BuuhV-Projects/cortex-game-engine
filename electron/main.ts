@@ -334,6 +334,7 @@ const VENDOR_TYPE_MODULES = {
   ],
   systems: ['Object3DSyncSystem', 'ThirdPersonCameraSystem'],
   physics: ['VehicleGravitySystem', 'VehicleWallCollisionSystem', 'VehiclePhysics'],
+  editor: ['EditorState', 'EditorHud', 'EditorCameraSystem', 'ObjectEditSystem'],
 } as const
 
 /**

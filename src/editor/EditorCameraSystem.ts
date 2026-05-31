@@ -1,0 +1,237 @@
+import * as THREE from 'three';
+import { System } from '../ecs/System.js';
+import { Entity } from '../ecs/Entity.js';
+import { InputManager } from '../core/InputManager.js';
+import { TransformComponent } from '../components/TransformComponent.js';
+import { EditableTargetComponent } from '../components/EditableTargetComponent.js';
+import { KinematicBodyComponent } from '../components/KinematicBodyComponent.js';
+import type { EditorState } from './EditorState.js';
+import type { EditorHud } from './EditorHud.js';
+
+/** Pose salva/teleportada: posição + heading (yaw). */
+export interface EditorPose {
+  x: number;
+  y: number;
+  z: number;
+  rotationY: number;
+}
+
+/**
+ * Câmera de voo livre + ações de edição do alvo. Roda em todos os frames; usa
+ * `state.active` pra decidir se intervém.
+ *
+ * Quando ativo: WASD/QE move (Shift = correr), botão direito + mouse rotaciona.
+ * Teleporta o alvo (entidade com `EditableTargetComponent`) com T, fazendo snap
+ * pro chão via raycast. Salva/limpa o "spawn" via callbacks `onSaveSpawn`/
+ * `onClearSpawn` (o que persistir fica a cargo do jogo). `focusOn(obj)` enquadra
+ * um objeto estilo Blender.
+ *
+ * O `yaw`/`pitch` internos são estado de ferramenta (input acumulado), não de
+ * simulação.
+ */
+export class EditorCameraSystem extends System {
+  static override requiredComponents = [TransformComponent, EditableTargetComponent];
+  override priority = 25;
+
+  private yaw = 0;
+  private pitch = -0.3;
+  private readonly raycaster = new THREE.Raycaster();
+  private readonly down = new THREE.Vector3(0, -1, 0);
+  private readonly forward = new THREE.Vector3();
+  private readonly right = new THREE.Vector3();
+  private readonly worldUp = new THREE.Vector3(0, 1, 0);
+  private prevToggle = false;
+  private prevTeleport = false;
+  private prevSave = false;
+  private prevClear = false;
+
+  constructor(
+    private readonly state: EditorState,
+    /** Câmera de voo livre — manipulada por este sistema. */
+    private readonly camera: THREE.PerspectiveCamera,
+    /** Câmera do jogo — copiada pra `camera` ao ativar o editor (continuidade visual). */
+    private readonly gameCamera: THREE.PerspectiveCamera,
+    private readonly input: InputManager,
+    private readonly ground: THREE.Object3D,
+    private readonly hud: EditorHud,
+    private readonly onSaveSpawn: (pose: EditorPose) => void,
+    private readonly onClearSpawn: () => void,
+    private readonly moveSpeed = 30,
+    private readonly runMultiplier = 4,
+    private readonly mouseSensitivity = 0.0035,
+  ) {
+    super();
+  }
+
+  override update(entities: Entity[], deltaTime: number): void {
+    const dt = deltaTime / 1000;
+    const target = entities[0];
+    if (!target) return;
+
+    this.handleToggle(target);
+
+    if (this.state.active) {
+      if (!this.state.gizmoDragging) this.flyCamera(dt);
+      this.handleTeleport(target);
+      this.handleClear();
+      this.updateHud();
+    }
+
+    this.handleSave(target);
+  }
+
+  private handleClear(): void {
+    const down = this.input.isKeyDown('c') || this.input.isKeyDown('C');
+    if (down && !this.prevClear) {
+      this.onClearSpawn();
+      this.hud.showToast('Spawn salvo apagado (recarregue pra usar o fallback)');
+    }
+    this.prevClear = down;
+  }
+
+  private handleToggle(target: Entity): void {
+    const down = this.input.isKeyDown('F2');
+    if (down && !this.prevToggle) {
+      this.state.active = !this.state.active;
+      this.hud.setVisible(this.state.active);
+      if (this.state.active) {
+        this.camera.position.copy(this.gameCamera.position);
+        this.camera.quaternion.copy(this.gameCamera.quaternion);
+        this.syncYawPitchFromCamera();
+        const body = target.getComponent(KinematicBodyComponent);
+        if (body) {
+          body.horizontalSpeed = 0;
+          body.velocityY = 0;
+        }
+        this.hud.showToast('Editor ON — WASD pra voar, T teleporta, P salva');
+      } else {
+        this.hud.showToast('Editor OFF');
+      }
+    }
+    this.prevToggle = down;
+  }
+
+  private flyCamera(dt: number): void {
+    if (this.input.isButtonDown(2)) {
+      const delta = this.input.getMouseDelta();
+      this.yaw -= delta.x * this.mouseSensitivity;
+      this.pitch -= delta.y * this.mouseSensitivity;
+      const limit = Math.PI / 2 - 0.05;
+      if (this.pitch > limit) this.pitch = limit;
+      if (this.pitch < -limit) this.pitch = -limit;
+    } else {
+      this.input.getMouseDelta();
+    }
+
+    this.forward.set(
+      -Math.sin(this.yaw) * Math.cos(this.pitch),
+      Math.sin(this.pitch),
+      -Math.cos(this.yaw) * Math.cos(this.pitch),
+    );
+    this.right.crossVectors(this.forward, this.worldUp).normalize();
+
+    const fast = this.input.isKeyDown('Shift');
+    const step = this.moveSpeed * (fast ? this.runMultiplier : 1) * dt;
+
+    if (this.input.isKeyDown('w') || this.input.isKeyDown('W')) this.camera.position.addScaledVector(this.forward, step);
+    if (this.input.isKeyDown('s') || this.input.isKeyDown('S')) this.camera.position.addScaledVector(this.forward, -step);
+    if (this.input.isKeyDown('a') || this.input.isKeyDown('A')) this.camera.position.addScaledVector(this.right, -step);
+    if (this.input.isKeyDown('d') || this.input.isKeyDown('D')) this.camera.position.addScaledVector(this.right, step);
+    if (this.input.isKeyDown('e') || this.input.isKeyDown('E')) this.camera.position.y += step;
+    if (this.input.isKeyDown('q') || this.input.isKeyDown('Q')) this.camera.position.y -= step;
+
+    this.camera.lookAt(
+      this.camera.position.x + this.forward.x,
+      this.camera.position.y + this.forward.y,
+      this.camera.position.z + this.forward.z,
+    );
+  }
+
+  private handleTeleport(target: Entity): void {
+    const down = this.input.isKeyDown('t') || this.input.isKeyDown('T');
+    if (down && !this.prevTeleport) {
+      const transform = target.getComponent(TransformComponent)!;
+      const groundY = this.raycastGroundAt(this.camera.position.x, this.camera.position.z);
+      transform.x = this.camera.position.x;
+      transform.y = groundY ?? this.camera.position.y;
+      transform.z = this.camera.position.z;
+      transform.rotationY = this.yaw;
+      const body = target.getComponent(KinematicBodyComponent);
+      if (body) {
+        body.horizontalSpeed = 0;
+        body.velocityY = 0;
+      }
+      this.hud.showToast(
+        `Alvo teleportado pra (${transform.x.toFixed(1)}, ${transform.y.toFixed(1)}, ${transform.z.toFixed(1)})`,
+      );
+    }
+    this.prevTeleport = down;
+  }
+
+  private handleSave(target: Entity): void {
+    const down = this.input.isKeyDown('p') || this.input.isKeyDown('P');
+    if (down && !this.prevSave) {
+      const transform = target.getComponent(TransformComponent)!;
+      this.onSaveSpawn({
+        x: transform.x,
+        y: transform.y,
+        z: transform.z,
+        rotationY: transform.rotationY,
+      });
+      this.hud.showToast(
+        `Spawn salvo: (${transform.x.toFixed(1)}, ${transform.y.toFixed(1)}, ${transform.z.toFixed(1)})`,
+      );
+    }
+    this.prevSave = down;
+  }
+
+  private updateHud(): void {
+    const p = this.camera.position;
+    this.hud.coords.textContent =
+      `cam: ${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}  ` +
+      `yaw: ${((this.yaw * 180) / Math.PI).toFixed(0)}°  ` +
+      `pitch: ${((this.pitch * 180) / Math.PI).toFixed(0)}°`;
+  }
+
+  private syncYawPitchFromCamera(): void {
+    const dir = new THREE.Vector3();
+    this.camera.getWorldDirection(dir);
+    this.yaw = Math.atan2(-dir.x, -dir.z);
+    this.pitch = Math.asin(dir.y);
+  }
+
+  /**
+   * Enquadra um objeto: posiciona a câmera a uma distância proporcional ao bbox
+   * (com margem) preservando a direção de visão atual e atualiza yaw/pitch.
+   * Estilo `F` do Blender/Unity.
+   */
+  focusOn(target: THREE.Object3D): void {
+    const bbox = new THREE.Box3().setFromObject(target);
+    const center = new THREE.Vector3();
+    bbox.getCenter(center);
+    const size = new THREE.Vector3();
+    bbox.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+
+    const fovRad = (this.camera.fov * Math.PI) / 180;
+    const distance = (maxDim / (2 * Math.tan(fovRad / 2))) * 1.8;
+
+    const offset = new THREE.Vector3().subVectors(this.camera.position, center);
+    if (offset.lengthSq() < 1e-6) {
+      offset.set(0.6, 0.5, 1).normalize();
+    } else {
+      offset.normalize();
+    }
+
+    this.camera.position.copy(center).addScaledVector(offset, distance);
+    this.camera.lookAt(center);
+    this.syncYawPitchFromCamera();
+  }
+
+  private raycastGroundAt(x: number, z: number): number | null {
+    this.raycaster.set(new THREE.Vector3(x, this.camera.position.y + 500, z), this.down);
+    const hits = this.raycaster.intersectObject(this.ground, true);
+    if (hits.length === 0) return null;
+    return hits[0]!.point.y + 0.5;
+  }
+}
