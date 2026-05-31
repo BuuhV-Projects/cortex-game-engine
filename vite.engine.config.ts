@@ -10,6 +10,15 @@ import { resolve } from 'path'
  * AI/CLI ficam fora (ver src/index-runtime.ts).
  */
 export default defineConfig({
+  resolve: {
+    // Redireciona `three` (bare) para o build `three/webgpu`, que é um superset
+    // (todo o Three.Core + WebGPURenderer + node materials). Assim o renderer,
+    // o core e os addons (que importam `three` internamente) usam UMA única
+    // instância do three — sem isso haveria duas cópias e `instanceof` quebraria
+    // (dual-instance). Só casa o specifier exato `three`, não `three/examples/*`.
+    // Ver ADR-0032.
+    alias: [{ find: /^three$/, replacement: 'three/webgpu' }],
+  },
   build: {
     outDir: 'dist-engine',
     emptyOutDir: true,
@@ -26,3 +35,4 @@ export default defineConfig({
     },
   },
 })
+

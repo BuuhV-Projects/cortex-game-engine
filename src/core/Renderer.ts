@@ -1,19 +1,29 @@
 /**
- * Renderer — encapsula THREE.WebGLRenderer com gerenciamento de canvas,
+ * Renderer — encapsula o `WebGPURenderer` do three com gerenciamento de canvas,
  * redimensionamento automático e câmera padrão.
  *
- * A integração com Three.js fica confinada a `src/core/` (ADR-0001); partes
- * externas do motor importam `PerspectiveCamera` daqui em vez de importar
- * Three.js diretamente.
+ * Usa **WebGPU** como backend **obrigatório** (ADR-0032): se WebGPU não estiver
+ * disponível no ambiente, o construtor lança — não cai silenciosamente pra WebGL.
+ * A opção `forceWebGL` é um escape hatch explícito (ex.: futuro suporte a 2D).
+ * A integração com Three.js fica confinada a `src/core/` (ADR-0001).
  *
- * Suporta também split-screen (múltiplas viewports no mesmo canvas) via
- * `clear()` + `renderViewport()` — ver ADR-0023.
+ * O `WebGPURenderer` exige `await init()` antes do primeiro `render()`. Pra não
+ * forçar todo projeto a virar async, o construtor dispara o init em background e
+ * `render`/`clear`/`renderViewport` viram no-op até o backend ficar pronto
+ * (poucos ms, normalmente escondidos por uma tela de loading). Quem quiser
+ * determinismo pode `await renderer.init()` antes de iniciar o loop.
  *
- * Referência: ADR-0001 (Renderizador baseado em Three.js),
- *             ADR-0023 (Split-screen e gamepad no engine)
+ * Suporta split-screen (múltiplas viewports no mesmo canvas) via `clear()` +
+ * `renderViewport()` — ver ADR-0023.
+ *
+ * Referência: ADR-0001 (Three.js), ADR-0032 (WebGPU), ADR-0023 (split-screen)
  */
 
 import * as THREE from 'three';
+// Importado explicitamente de `three/webgpu` (e não via THREE.*) pra facilitar o
+// mock nos testes. No bundle, um alias `three` → `three/webgpu` unifica tudo numa
+// só instância do three (evita o bug de dual-instance). Ver vite.engine.config.ts.
+import { WebGPURenderer } from 'three/webgpu';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -25,10 +35,17 @@ export interface RendererOptions {
   /** Altura inicial em pixels. */
   height: number;
   /**
-   * Habilita anti-aliasing no WebGLRenderer.
+   * Habilita anti-aliasing.
    * @default true
    */
   antialias?: boolean;
+  /**
+   * Escape hatch: usa o backend WebGL2 em vez de WebGPU. Por padrão o engine
+   * **exige** WebGPU e lança se ele não estiver disponível (sem fallback
+   * silencioso). Reservado para casos específicos (ex.: futuro suporte a 2D).
+   * @default false
+   */
+  forceWebGL?: boolean;
 }
 
 /**
@@ -62,22 +79,41 @@ export { Camera, PerspectiveCamera, OrthographicCamera } from 'three';
 // ─── Classe Renderer ───────────────────────────────────────────────────────────
 
 export class Renderer {
-  private readonly _renderer: THREE.WebGLRenderer;
+  private readonly _renderer: WebGPURenderer;
   /** Handler de resize mantido para remoção no dispose(). */
   private readonly _resizeHandler: () => void;
 
   private _width: number;
   private _height: number;
 
+  /** `true` quando o backend (WebGPU ou fallback WebGL2) terminou o init. */
+  private _initialized = false;
+  /** Promessa do init do backend — resolvida quando `render()` pode ser chamado. */
+  private readonly _ready: Promise<void>;
+
   /**
-   * Cria o renderer e registra o listener de redimensionamento automático
-   * quando executando em ambiente browser (`window` disponível).
+   * Cria o renderer, dispara o init assíncrono do backend em background e
+   * registra o listener de redimensionamento automático quando em browser.
    */
-  constructor({ canvas, width, height, antialias = true }: RendererOptions) {
+  constructor({ canvas, width, height, antialias = true, forceWebGL = false }: RendererOptions) {
     this._width = width;
     this._height = height;
 
-    this._renderer = new THREE.WebGLRenderer({ canvas, antialias });
+    // WebGPU é obrigatório: se o ambiente não expõe `navigator.gpu`, abortamos
+    // em vez de deixar o WebGPURenderer cair silenciosamente pro WebGL2 (o
+    // fallback interno dele não é desligável por opção). `forceWebGL` ignora.
+    if (
+      !forceWebGL &&
+      typeof navigator !== 'undefined' &&
+      !(navigator as Navigator & { gpu?: unknown }).gpu
+    ) {
+      throw new Error(
+        'Renderer: WebGPU não está disponível neste ambiente e é obrigatório. ' +
+          'Atualize o navegador/WebView para um com suporte a WebGPU.',
+      );
+    }
+
+    this._renderer = new WebGPURenderer({ canvas, antialias, forceWebGL });
     this._renderer.setSize(width, height);
 
     // Split-screen exige autoClear=false para que renders sucessivos de
@@ -89,6 +125,17 @@ export class Renderer {
     if (typeof window !== 'undefined') {
       this._renderer.setPixelRatio(window.devicePixelRatio);
     }
+
+    // Init assíncrono do backend (WebGPU → fallback WebGL2). Até resolver, os
+    // métodos de render são no-op. Erros são logados (não derrubam o jogo).
+    this._ready = this._renderer
+      .init()
+      .then(() => {
+        this._initialized = true;
+      })
+      .catch((err: unknown) => {
+        console.error('Renderer: falha ao inicializar o backend WebGPU/WebGL2:', err);
+      });
 
     // Redimensiona para as dimensões internas da janela a cada resize.
     this._resizeHandler = (): void => {
@@ -105,43 +152,57 @@ export class Renderer {
   // ─── Public API ─────────────────────────────────────────────────────────────
 
   /**
+   * Promessa resolvida quando o backend terminou de inicializar. Opcional —
+   * `render()` já pula frames até estar pronto. Útil pra aguardar antes de
+   * esconder uma tela de loading.
+   */
+  init(): Promise<void> {
+    return this._ready;
+  }
+
+  /** `true` quando o backend está pronto e `render()` efetivamente desenha. */
+  get isReady(): boolean {
+    return this._initialized;
+  }
+
+  /**
    * Renderiza a `scene` usando a `camera` fornecida.
-   * Deve ser chamado a cada frame pelo `GameLoop`.
+   * Deve ser chamado a cada frame pelo `GameLoop`. No-op enquanto o backend
+   * ainda não inicializou.
    *
    * Limpa o canvas antes de renderizar — mantém o comportamento "1 câmera
-   * por frame" sem que o chamador precise se preocupar com viewports.
-   * Para split-screen, use `clear()` + `renderViewport()` em vez deste.
+   * por frame". Para split-screen, use `clear()` + `renderViewport()`.
    */
   render(scene: THREE.Scene, camera: THREE.Camera): void {
+    if (!this._initialized) return;
     this._renderer.clear();
     this._renderer.render(scene, camera);
   }
 
   /**
-   * Limpa o canvas inteiro (color, depth e stencil buffers).
+   * Limpa o canvas inteiro (color, depth e stencil buffers). No-op antes do init.
    *
    * Deve ser chamado uma vez por frame **antes do primeiro `renderViewport()`**
-   * quando se usa split-screen. Sem isso, o frame anterior fica visível
-   * fora das áreas cobertas pelas viewports.
+   * quando se usa split-screen.
    */
   clear(): void {
+    if (!this._initialized) return;
     this._renderer.clear();
   }
 
   /**
    * Renderiza `scene` com `camera` em uma região retangular do canvas
-   * (sem limpar — use `clear()` antes do primeiro chamado do frame).
-   *
-   * Internamente liga o scissor test para evitar que pixels fora da
-   * viewport sejam tocados e o desliga ao final.
+   * (sem limpar — use `clear()` antes do primeiro chamado do frame). No-op
+   * antes do init.
    *
    * @example
    * // Split-screen horizontal de 2 jogadores:
    * renderer.clear();
-   * renderer.renderViewport(scene, p1Camera, { x: 0,           y: 0, width: w / 2, height: h });
-   * renderer.renderViewport(scene, p2Camera, { x: w / 2,       y: 0, width: w / 2, height: h });
+   * renderer.renderViewport(scene, p1Camera, { x: 0,     y: 0, width: w / 2, height: h });
+   * renderer.renderViewport(scene, p2Camera, { x: w / 2, y: 0, width: w / 2, height: h });
    */
   renderViewport(scene: THREE.Scene, camera: THREE.Camera, viewport: Viewport): void {
+    if (!this._initialized) return;
     const { x, y, width, height } = viewport;
     this._renderer.setViewport(x, y, width, height);
     this._renderer.setScissor(x, y, width, height);
@@ -162,7 +223,7 @@ export class Renderer {
   }
 
   /**
-   * Remove o listener de resize e libera recursos WebGL do renderer.
+   * Remove o listener de resize e libera os recursos GPU do renderer.
    * Deve ser chamado ao destruir a cena para evitar vazamentos de memória.
    */
   dispose(): void {
@@ -185,7 +246,7 @@ export class Renderer {
   }
 
   /**
-   * Instância interna do `THREE.WebGLRenderer`.
+   * Instância interna do `WebGPURenderer`.
    * Exposta apenas para casos avançados (ex: pós-processamento).
    * Prefira sempre os métodos públicos da classe.
    */

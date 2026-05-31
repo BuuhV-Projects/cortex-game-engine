@@ -1,15 +1,15 @@
 /**
  * Testes unitários para Renderer (src/core/Renderer.ts)
  *
- * Mocka `THREE.WebGLRenderer` (não disponível em Node sem WebGL) para
- * inspecionar a ordem e os argumentos das chamadas internas — em
- * particular o handshake de `setViewport` + `setScissor` + `setScissorTest`
- * usado por split-screen.
+ * Mocka o `WebGPURenderer` de `three/webgpu` (não disponível em Node sem GPU)
+ * para inspecionar a ordem e os argumentos das chamadas internas — em particular
+ * o handshake de `setViewport` + `setScissor` + `setScissorTest` (split-screen)
+ * e o init assíncrono (render/clear são no-op até `init()` resolver).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ─── Mock de three.WebGLRenderer ──────────────────────────────────────────────
+// ─── Mock do WebGPURenderer (three/webgpu) ─────────────────────────────────────
 
 const rendererSpies = {
   setSize: vi.fn(),
@@ -20,23 +20,20 @@ const rendererSpies = {
   render: vi.fn(),
   clear: vi.fn(),
   dispose: vi.fn(),
+  init: vi.fn().mockResolvedValue(undefined),
 };
 
 /** Instância do mock criada no construtor — usada nas asserts. */
 let lastRendererInstance: Record<string, unknown> | null = null;
 
-vi.mock('three', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('three')>();
-  return {
-    ...actual,
-    WebGLRenderer: vi.fn(function (this: Record<string, unknown>) {
-      Object.assign(this, rendererSpies);
-      this.autoClear = true;
-      lastRendererInstance = this;
-      return this;
-    }),
-  };
-});
+vi.mock('three/webgpu', () => ({
+  WebGPURenderer: vi.fn(function (this: Record<string, unknown>) {
+    Object.assign(this, rendererSpies);
+    this.autoClear = true;
+    lastRendererInstance = this;
+    return this;
+  }),
+}));
 
 // Import depois do mock — caso contrário pega a classe real.
 import { Renderer } from '../../src/core/Renderer.js';
@@ -44,9 +41,15 @@ import { Renderer } from '../../src/core/Renderer.js';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeRenderer() {
-  // Canvas fake — o mock do WebGLRenderer ignora o parâmetro de qualquer forma.
   const canvas = {} as HTMLCanvasElement;
   return new Renderer({ canvas, width: 800, height: 600 });
+}
+
+/** Cria o renderer e espera o init do backend (render/clear deixam de ser no-op). */
+async function makeReadyRenderer() {
+  const r = makeRenderer();
+  await r.init();
+  return r;
 }
 
 const fakeScene = {} as import('three').Scene;
@@ -72,30 +75,49 @@ describe('Renderer', () => {
     expect(lastRendererInstance?.autoClear).toBe(false);
   });
 
+  it('chama init() do backend no construtor', () => {
+    makeRenderer();
+    expect(rendererSpies.init).toHaveBeenCalledOnce();
+  });
+
+  // ── init assíncrono ──────────────────────────────────────────────────────────
+
+  it('render() é no-op antes do init resolver', () => {
+    const r = makeRenderer();
+    r.render(fakeScene, fakeCamera);
+    expect(rendererSpies.clear).not.toHaveBeenCalled();
+    expect(rendererSpies.render).not.toHaveBeenCalled();
+    expect(r.isReady).toBe(false);
+  });
+
+  it('fica pronto (isReady) após init()', async () => {
+    const r = await makeReadyRenderer();
+    expect(r.isReady).toBe(true);
+  });
+
   // ── render() ───────────────────────────────────────────────────────────────
 
-  it('render() limpa antes de renderizar', () => {
-    const r = makeRenderer();
+  it('render() limpa antes de renderizar (após init)', async () => {
+    const r = await makeReadyRenderer();
     r.render(fakeScene, fakeCamera);
     expect(rendererSpies.clear).toHaveBeenCalledOnce();
     expect(rendererSpies.render).toHaveBeenCalledOnce();
-    // clear deve vir antes de render
-    expect(rendererSpies.clear.mock.invocationCallOrder[0])
-      .toBeLessThan(rendererSpies.render.mock.invocationCallOrder[0]);
+    expect(rendererSpies.clear.mock.invocationCallOrder[0]!)
+      .toBeLessThan(rendererSpies.render.mock.invocationCallOrder[0]!);
   });
 
   // ── clear() ────────────────────────────────────────────────────────────────
 
-  it('clear() delega para o WebGLRenderer.clear', () => {
-    const r = makeRenderer();
+  it('clear() delega para o renderer (após init)', async () => {
+    const r = await makeReadyRenderer();
     r.clear();
     expect(rendererSpies.clear).toHaveBeenCalledOnce();
   });
 
   // ── renderViewport() ───────────────────────────────────────────────────────
 
-  it('renderViewport() configura viewport + scissor + scissor test e renderiza', () => {
-    const r = makeRenderer();
+  it('renderViewport() configura viewport + scissor + scissor test e renderiza', async () => {
+    const r = await makeReadyRenderer();
     r.renderViewport(fakeScene, fakeCamera, { x: 0, y: 0, width: 400, height: 600 });
 
     expect(rendererSpies.setViewport).toHaveBeenCalledWith(0, 0, 400, 600);
@@ -104,29 +126,27 @@ describe('Renderer', () => {
     expect(rendererSpies.render).toHaveBeenCalledWith(fakeScene, fakeCamera);
   });
 
-  it('renderViewport() desliga scissor test ao final', () => {
-    const r = makeRenderer();
+  it('renderViewport() desliga scissor test ao final', async () => {
+    const r = await makeReadyRenderer();
     r.renderViewport(fakeScene, fakeCamera, { x: 0, y: 0, width: 400, height: 600 });
 
-    const calls = rendererSpies.setScissorTest.mock.calls;
-    expect(calls).toEqual([[true], [false]]);
+    expect(rendererSpies.setScissorTest.mock.calls).toEqual([[true], [false]]);
   });
 
-  it('renderViewport() NÃO chama clear (split-screen depende disso)', () => {
-    const r = makeRenderer();
+  it('renderViewport() NÃO chama clear (split-screen depende disso)', async () => {
+    const r = await makeReadyRenderer();
     r.renderViewport(fakeScene, fakeCamera, { x: 0, y: 0, width: 400, height: 600 });
     expect(rendererSpies.clear).not.toHaveBeenCalled();
   });
 
-  it('split-screen de 2 viewports: 1× clear + 2× setScissorTest(true) + 2× render', () => {
-    const r = makeRenderer();
+  it('split-screen de 2 viewports: 1× clear + 2× setScissorTest(true) + 2× render', async () => {
+    const r = await makeReadyRenderer();
     r.clear();
     r.renderViewport(fakeScene, fakeCamera, { x: 0, y: 0, width: 400, height: 600 });
     r.renderViewport(fakeScene, fakeCamera, { x: 400, y: 0, width: 400, height: 600 });
 
     expect(rendererSpies.clear).toHaveBeenCalledOnce();
     expect(rendererSpies.render).toHaveBeenCalledTimes(2);
-    // Cada renderViewport liga e desliga o scissor test.
     expect(rendererSpies.setScissorTest.mock.calls).toEqual([
       [true], [false],
       [true], [false],
@@ -135,7 +155,7 @@ describe('Renderer', () => {
 
   // ── resize() ───────────────────────────────────────────────────────────────
 
-  it('resize() atualiza dimensões e WebGLRenderer.setSize', () => {
+  it('resize() atualiza dimensões e setSize (independe do init)', () => {
     const r = makeRenderer();
     rendererSpies.setSize.mockClear();
     r.resize(1024, 768);
@@ -146,7 +166,7 @@ describe('Renderer', () => {
 
   // ── dispose() ──────────────────────────────────────────────────────────────
 
-  it('dispose() chama dispose do WebGLRenderer', () => {
+  it('dispose() chama dispose do renderer', () => {
     const r = makeRenderer();
     r.dispose();
     expect(rendererSpies.dispose).toHaveBeenCalledOnce();

@@ -1,7 +1,11 @@
 # 0001 - Renderizador baseado em Three.js
 
 **Data:** 2026-05-24
-**Status:** aceito
+**Status:** aceito (backend atualizado por ADR-0032)
+
+> **Atualização (ADR-0032):** a escolha do Three.js como camada de renderização
+> segue válida, mas o backend deixou de ser `WebGLRenderer` e passou a ser
+> `WebGPURenderer` (WebGPU obrigatório). Ver ADR-0032.
 
 ## Contexto
 
