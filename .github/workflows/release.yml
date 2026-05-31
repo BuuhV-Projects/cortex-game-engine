@@ -1,11 +1,13 @@
 name: Release
 
 # Em todo push em `main` (tipicamente após merge de PR):
-#  1. `release` roda `semantic-release` — analisa os Conventional Commits
+#  1. `test` roda `yarn test` (vitest) — gate de qualidade. Se algum
+#     teste falhar, nenhum dos jobs seguintes roda (release/build).
+#  2. `release` roda `semantic-release` — analisa os Conventional Commits
 #     desde a última tag, decide o bump (fix → patch, feat → minor,
 #     `feat!`/BREAKING CHANGE → major), atualiza CHANGELOG.md +
 #     package.json, cria a tag `vX.Y.Z` e a GitHub Release.
-#  2. `build` espera o release, e SÓ roda se houver release nova. Faz
+#  3. `build` espera o release, e SÓ roda se houver release nova. Faz
 #     `yarn electron:build` em Windows/macOS/Linux em paralelo e anexa
 #     os instaladores à release recém-criada.
 #
@@ -22,8 +24,28 @@ permissions:
   pull-requests: write
 
 jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24.15.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run unit tests
+        run: yarn test
+
   release:
     name: Decide release
+    needs: test
     runs-on: ubuntu-latest
     outputs:
       released: ${{ steps.semantic.outputs.new_release_published }}
@@ -62,7 +84,7 @@ jobs:
 
   build:
     name: Build (${{ matrix.os }})
-    needs: release
+    needs: [test, release]
     if: needs.release.outputs.released == 'true'
 
     strategy:

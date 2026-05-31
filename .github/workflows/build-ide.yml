@@ -4,6 +4,10 @@ name: Build IDE (manual)
 # sem cortar uma release. Não anexa nada a releases nem cria tags.
 # Os instaladores ficam como artifacts do run (14 dias).
 #
+# Mesmo gate de testes do release.yml: o build matrix só roda se o
+# job `test` (yarn test) passar — protege contra publicar artifact
+# de versão com testes quebrados.
+#
 # O fluxo automático de release vive em `release.yml`, disparado em
 # todo push em `main`.
 
@@ -11,8 +15,28 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24.15.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run unit tests
+        run: yarn test
+
   build:
     name: Build (${{ matrix.os }})
+    needs: test
     runs-on: ${{ matrix.os }}
 
     strategy:

@@ -86,7 +86,8 @@ async function ensureGitignoreEntry(projectDir: string, pattern: string): Promis
   const file = join(projectDir, '.gitignore')
   let content = ''
   try {
-    content = await readFile(file, 'utf-8')
+    const raw = await readFile(file, 'utf-8')
+    if (typeof raw === 'string') content = raw
   } catch {
     // arquivo não existe — criamos do zero
   }
