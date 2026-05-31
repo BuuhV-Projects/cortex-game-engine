@@ -85,7 +85,10 @@ export async function runAndCaptureGame(
 
   try {
     // 1) Sobe o vite dedicado (mesmo comando do Play, com porta alternativa).
-    vite = spawn('vite', ['--port', String(port)], {
+    //    Comando como string única (sem array de args) porque com `shell: true`
+    //    passar args separados dispara o DeprecationWarning DEP0190. `port` é um
+    //    inteiro interno controlado — sem risco de injeção.
+    vite = spawn(`vite --port ${port}`, {
       cwd: projectRoot,
       shell: true,
       env: process.env,
