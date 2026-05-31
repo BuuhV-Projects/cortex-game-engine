@@ -398,3 +398,116 @@ describe('PhysicsSystem — colisão box ↔ sphere', () => {
     expect(rb(sphere).velocity.y).toBe(2); // tangencial intacta
   });
 });
+
+// ─── Colisão cylinder (ADR-0027 Fase 4) ──────────────────────────────────────
+
+/** Cria uma Entity com shape cylinder vertical (eixo Y). */
+function makeCylinder(opts: {
+  x?: number; y?: number; z?: number;
+  vx?: number; vy?: number; vz?: number;
+  isStatic?: boolean;
+  radius?: number; height?: number;
+} = {}): Entity {
+  const entity = new Entity();
+  const r = new RigidBodyComponent();
+  r.position.x = opts.x ?? 0; r.position.y = opts.y ?? 0; r.position.z = opts.z ?? 0;
+  r.velocity.x = opts.vx ?? 0; r.velocity.y = opts.vy ?? 0; r.velocity.z = opts.vz ?? 0;
+  r.isStatic = opts.isStatic ?? false;
+  entity.addComponent(r);
+  const col = new ColliderComponent();
+  col.shape = { kind: 'cylinder', radius: opts.radius ?? 0.5, height: opts.height ?? 1.0 };
+  entity.addComponent(col);
+  return entity;
+}
+
+describe('PhysicsSystem — colisão cylinder ↔ cylinder', () => {
+  let system: PhysicsSystem;
+  beforeEach(() => { system = new PhysicsSystem(); system.gravity = 0; });
+
+  it('não colide quando distância XZ > rA+rB', () => {
+    const a = makeCylinder({ x: 0,   radius: 0.5, height: 2 });
+    const b = makeCylinder({ x: 1.5, radius: 0.5, height: 2 });
+    system.update([a, b], 16.67);
+    expect(rb(a).position.x).toBe(0);
+    expect(rb(b).position.x).toBe(1.5);
+  });
+
+  it('não colide quando Y separa (acima/abaixo) mesmo com XZ sobreposto', () => {
+    const a = makeCylinder({ x: 0, y: 0, radius: 0.5, height: 1 }); // y∈[-0.5, 0.5]
+    const b = makeCylinder({ x: 0, y: 3, radius: 0.5, height: 1 }); // y∈[ 2.5, 3.5]
+    system.update([a, b], 16.67);
+    expect(rb(a).position.y).toBeCloseTo(0, 5);
+    expect(rb(b).position.y).toBeCloseTo(3, 5);
+  });
+
+  it('separa radialmente quando overlap XZ < overlap Y (MTV horizontal)', () => {
+    const a = makeCylinder({ x: 0,   y: 0, radius: 0.5, height: 5 });
+    const b = makeCylinder({ x: 0.6, y: 0, radius: 0.5, height: 5, isStatic: true });
+    // overlap XZ = 0.4, overlap Y = 5 → separação radial
+    system.update([a, b], 16.67);
+    expect(rb(a).position.x).toBeCloseTo(-0.4, 5);
+  });
+
+  it('separa verticalmente quando overlap Y < overlap XZ (MTV vertical)', () => {
+    const a = makeCylinder({ x: 0, y: 0,    radius: 5, height: 1 });
+    const b = makeCylinder({ x: 0, y: 0.6,  radius: 5, height: 1, isStatic: true });
+    // overlap XZ = 10 (raio total), overlap Y = 0.4 → MTV vertical
+    system.update([a, b], 16.67);
+    expect(rb(a).position.y).toBeCloseTo(-0.4, 5);
+  });
+});
+
+describe('PhysicsSystem — colisão box ↔ cylinder', () => {
+  let system: PhysicsSystem;
+  beforeEach(() => { system = new PhysicsSystem(); system.gravity = 0; });
+
+  it('cilindro batendo na face X da box é empurrado em +X', () => {
+    const box = makeEntity({ x: 0, sizeX: 1, sizeY: 5, sizeZ: 5, isStatic: true });
+    const cyl = makeCylinder({ x: 0.7, y: 0, radius: 0.5, height: 1 }); // overlap radial = 0.3
+    system.update([box, cyl], 16.67);
+    expect(rb(cyl).position.x).toBeCloseTo(1.0, 5); // face em 0.5 + raio 0.5
+  });
+
+  it('cilindro acima da box assenta na superfície (MTV vertical)', () => {
+    const box = makeEntity({ x: 0, y: 0,  sizeX: 5, sizeY: 1, sizeZ: 5, isStatic: true });
+    const cyl = makeCylinder({ x: 0, y: 0.7, radius: 0.3, height: 1 }); // overlap Y=0.3, overlap radial grande
+    system.update([box, cyl], 16.67);
+    // Cilindro empurrado pra +Y até base na superfície da box (y=0.5) + h/2 = 1.0
+    expect(rb(cyl).position.y).toBeCloseTo(1.0, 5);
+  });
+
+  it('cilindro fora do range Y da box não colide', () => {
+    const box = makeEntity({ x: 0, y: 0, sizeX: 1, sizeY: 1, sizeZ: 1, isStatic: true });
+    const cyl = makeCylinder({ x: 0, y: 3, radius: 0.5, height: 1 });
+    system.update([box, cyl], 16.67);
+    expect(rb(cyl).position.y).toBeCloseTo(3, 5);
+  });
+});
+
+describe('PhysicsSystem — colisão sphere ↔ cylinder', () => {
+  let system: PhysicsSystem;
+  beforeEach(() => { system = new PhysicsSystem(); system.gravity = 0; });
+
+  it('esfera batendo lateralmente no cilindro é empurrada radialmente', () => {
+    const cyl    = makeCylinder({ x: 0,   y: 0,   radius: 0.5, height: 5, isStatic: true });
+    const sphere = makeSphere({ x: 0.7, y: 0,   radius: 0.5 }); // dist XZ = 0.7, soma = 1.0
+    system.update([cyl, sphere], 16.67);
+    // Esfera empurrada pra +X até centerSphere.x = 1.0
+    expect(rb(sphere).position.x).toBeCloseTo(1.0, 5);
+    expect(rb(sphere).position.y).toBeCloseTo(0, 5);
+  });
+
+  it('esfera caindo no topo do cilindro é empurrada pra cima', () => {
+    const cyl    = makeCylinder({ x: 0, y: 0,   radius: 0.5, height: 1, isStatic: true }); // topo em y=0.5
+    const sphere = makeSphere({ x: 0, y: 0.7, radius: 0.3 }); // overlap vertical
+    system.update([cyl, sphere], 16.67);
+    expect(rb(sphere).position.y).toBeCloseTo(0.8, 5); // 0.5 (topo) + 0.3 (raio)
+  });
+
+  it('esfera longe do cilindro não colide', () => {
+    const cyl    = makeCylinder({ x: 0, radius: 0.5, height: 1, isStatic: true });
+    const sphere = makeSphere({ x: 5, radius: 0.5 });
+    system.update([cyl, sphere], 16.67);
+    expect(rb(sphere).position.x).toBe(5);
+  });
+});

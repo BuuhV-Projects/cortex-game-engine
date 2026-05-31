@@ -303,6 +303,202 @@ function clamp(v: number, lo: number, hi: number): number {
 }
 
 /**
+ * Cylinder ↔ Cylinder (vertical-aligned, eixo Y).
+ *
+ * Decompõe em 2 sub-problemas independentes:
+ *   - XZ: dois círculos no plano horizontal (overlap radial).
+ *   - Y:  dois intervalos verticais (overlap por height).
+ *
+ * Há colisão sse os dois sub-problemas têm sobreposição. Normal sai do
+ * eixo de menor penetração (XZ radial vs Y vertical) — análogo ao MTV
+ * de AABB com 2 eixos em vez de 3.
+ */
+function collideCylinderCylinder(
+  centerA: Vec3, rA: number, hA: number,
+  centerB: Vec3, rB: number, hB: number,
+): CollisionResult | null {
+  // XZ
+  const dx = centerA.x - centerB.x;
+  const dz = centerA.z - centerB.z;
+  const distXZSq = dx * dx + dz * dz;
+  const rSum = rA + rB;
+  if (distXZSq >= rSum * rSum) return null;
+  // Y
+  const hHalfA = hA / 2, hHalfB = hB / 2;
+  const minA = centerA.y - hHalfA, maxA = centerA.y + hHalfA;
+  const minB = centerB.y - hHalfB, maxB = centerB.y + hHalfB;
+  const overlapY = Math.min(maxA, maxB) - Math.max(minA, minB);
+  if (overlapY <= 0) return null;
+
+  const distXZ = Math.sqrt(distXZSq);
+  const penetrationXZ = rSum - distXZ;
+
+  // MTV: menor penetração entre XZ (radial) e Y
+  if (penetrationXZ <= overlapY) {
+    // Normal radial. Caso degenerado: eixos coincidem → empurra arbitrário +X.
+    if (distXZ === 0) return { normal: { x: 1, y: 0, z: 0 }, penetration: rSum };
+    const inv = 1 / distXZ;
+    return { normal: { x: dx * inv, y: 0, z: dz * inv }, penetration: penetrationXZ };
+  }
+  const sign = centerA.y < centerB.y ? -1 : 1;
+  return { normal: { x: 0, y: sign, z: 0 }, penetration: overlapY };
+}
+
+/**
+ * Box ↔ Cylinder (cilindro vertical em Y).
+ *
+ * Closest point na box no plano XZ (clamp do eixo do cilindro às faces
+ * X/Z da box) — daí mede distância radial. Em paralelo, checa overlap
+ * vertical Y. Igual a cylinder-cylinder, o MTV é o eixo de menor
+ * penetração entre o radial XZ e o vertical Y.
+ */
+function collideBoxCylinder(
+  centerBox: Vec3, sizeBox: Vec3,
+  centerCyl: Vec3, rCyl: number, hCyl: number,
+): CollisionResult | null {
+  const hx = sizeBox.x / 2, hy = sizeBox.y / 2, hz = sizeBox.z / 2;
+  // Closest point XZ na box do eixo do cilindro
+  const cx = clamp(centerCyl.x, centerBox.x - hx, centerBox.x + hx);
+  const cz = clamp(centerCyl.z, centerBox.z - hz, centerBox.z + hz);
+  const dx = centerCyl.x - cx;
+  const dz = centerCyl.z - cz;
+  const distXZSq = dx * dx + dz * dz;
+  if (distXZSq >= rCyl * rCyl) {
+    // Sem overlap radial — mas vale checar se Y ainda separa pra evitar
+    // colisão fantasma quando cilindro está acima/abaixo da box.
+    return null;
+  }
+  // Y
+  const hHalfCyl = hCyl / 2;
+  const minBoxY = centerBox.y - hy, maxBoxY = centerBox.y + hy;
+  const minCylY = centerCyl.y - hHalfCyl, maxCylY = centerCyl.y + hHalfCyl;
+  const overlapY = Math.min(maxBoxY, maxCylY) - Math.max(minBoxY, minCylY);
+  if (overlapY <= 0) return null;
+
+  const distXZ = Math.sqrt(distXZSq);
+
+  // Calcula a penetração radial REAL incluindo o caso "eixo dentro da box"
+  // (quando distXZ === 0, a esfera estende `rCyl` em todas as direções
+  // radiais e a penetração efetiva pra sair pela face mais próxima é
+  // `min(pxx, pzz) + rCyl`). Isso evita o bug em que a comparação MTV
+  // escolheria separação radial quando a vertical é claramente menor.
+  let penetrationXZ: number;
+  let radialSepX: number, radialSepZ: number; // direção da separação radial (A → B)
+  if (distXZ === 0) {
+    const pxx = hx - Math.abs(centerCyl.x - centerBox.x);
+    const pzz = hz - Math.abs(centerCyl.z - centerBox.z);
+    if (pxx <= pzz) {
+      penetrationXZ = pxx + rCyl;
+      radialSepX = centerCyl.x < centerBox.x ? -1 : 1;
+      radialSepZ = 0;
+    } else {
+      penetrationXZ = pzz + rCyl;
+      radialSepX = 0;
+      radialSepZ = centerCyl.z < centerBox.z ? -1 : 1;
+    }
+  } else {
+    penetrationXZ = rCyl - distXZ;
+    const inv = 1 / distXZ;
+    radialSepX = dx * inv;
+    radialSepZ = dz * inv;
+  }
+
+  // MTV: eixo de menor penetração. Normal sai da box (A) → cilindro (B);
+  // pra B → A invertemos no return.
+  if (penetrationXZ <= overlapY) {
+    return { normal: { x: -radialSepX, y: 0, z: -radialSepZ }, penetration: penetrationXZ };
+  }
+  const sign = centerCyl.y < centerBox.y ? -1 : 1;
+  return { normal: { x: 0, y: -sign, z: 0 }, penetration: overlapY };
+}
+
+/**
+ * Sphere ↔ Cylinder (vertical-aligned).
+ *
+ * Encontra o ponto mais próximo do centro da esfera no eixo do cilindro
+ * (clamp Y do centro da esfera ao intervalo vertical do cilindro). Daí
+ * é uma comparação esfera-esfera virtual entre o centro da esfera real
+ * e esse ponto no eixo.
+ *
+ * Há 2 regimes:
+ *  - Esfera está dentro do range Y do cilindro: distância radial XZ <
+ *    rSphere + rCyl → colisão lateral; normal puramente XZ.
+ *  - Esfera está acima/abaixo: ponto-no-cilindro está num topo/base;
+ *    distância 3D < rSphere → colisão com tampa; normal tem componente Y.
+ *
+ * Registramos como (sphere, cylinder) na tabela. Normal sai de cyl(B)
+ * pra sphere(A) (= B → A) — convenção da tabela.
+ */
+function collideSphereCylinder(
+  centerSphere: Vec3, rSphere: number,
+  centerCyl: Vec3, rCyl: number, hCyl: number,
+): CollisionResult | null {
+  const hHalfCyl = hCyl / 2;
+  const minY = centerCyl.y - hHalfCyl;
+  const maxY = centerCyl.y + hHalfCyl;
+  // Y clamp: ponto no eixo mais próximo da esfera.
+  const ny = clamp(centerSphere.y, minY, maxY);
+  // Closest point: (centerCyl.x, ny, centerCyl.z) — mas precisamos
+  // do ponto no SUPER do cilindro (na superfície), não no eixo.
+  // Vamos calcular em duas partes: distância radial XZ e dy vertical.
+  const dx = centerSphere.x - centerCyl.x;
+  const dz = centerSphere.z - centerCyl.z;
+  const distXZSq = dx * dx + dz * dz;
+  const dy = centerSphere.y - ny; // 0 se sphere dentro do range Y; ≠0 se fora.
+
+  // Closest point na SUPERFÍCIE do cilindro:
+  //  - Se sphere dentro do range Y: ponto na superfície lateral (radial).
+  //  - Se sphere acima/abaixo: ponto no anel da tampa (clamp radial + dy).
+  // Cálculo unificado: clamp radial XZ a [0, rCyl], soma dy vertical.
+  const distXZ = Math.sqrt(distXZSq);
+  let cxRel: number, czRel: number;
+  if (distXZ <= rCyl) {
+    // Esfera dentro do raio do cilindro (em XZ). Ponto na superfície
+    // depende se estamos dentro ou fora do range Y.
+    if (dy === 0) {
+      // Dentro do range Y E dentro do raio XZ: esfera está ESBARRANDO
+      // por dentro do cilindro. Separação radial (empurra pra fora
+      // do cilindro pela direção radial mais próxima).
+      if (distXZ === 0) {
+        // Sphere bem no eixo: empurra arbitrariamente +X.
+        return { normal: { x: 1, y: 0, z: 0 }, penetration: rCyl + rSphere };
+      }
+      const inv = 1 / distXZ;
+      // Ponto na superfície lateral: rCyl na direção radial.
+      cxRel = rCyl * dx * inv;
+      czRel = rCyl * dz * inv;
+    } else {
+      // Acima ou abaixo do cilindro mas alinhado em XZ → tampa.
+      cxRel = dx;
+      czRel = dz;
+    }
+  } else {
+    // Fora do raio (lateral) — closest point é no anel/borda.
+    const inv = 1 / distXZ;
+    cxRel = rCyl * dx * inv;
+    czRel = rCyl * dz * inv;
+  }
+  // Distância da esfera ao closest point na superfície do cilindro.
+  const px = centerSphere.x - (centerCyl.x + cxRel);
+  const py = centerSphere.y - ny;
+  const pz = centerSphere.z - (centerCyl.z + czRel);
+  const dSq = px * px + py * py + pz * pz;
+  if (dSq >= rSphere * rSphere) return null;
+
+  const d = Math.sqrt(dSq);
+  if (d === 0) {
+    // Esfera tocando exatamente a superfície: empurra radialmente.
+    if (distXZ > 0) {
+      const inv = 1 / distXZ;
+      return { normal: { x: dx * inv, y: 0, z: dz * inv }, penetration: rSphere };
+    }
+    return { normal: { x: 0, y: 1, z: 0 }, penetration: rSphere };
+  }
+  const inv = 1 / d;
+  return { normal: { x: px * inv, y: py * inv, z: pz * inv }, penetration: rSphere - d };
+}
+
+/**
  * Tabela de despacho (kindA, kindB) → função de colisão.
  *
  * As funções recebem `(centerA, shapeA, centerB, shapeB)` e retornam o
@@ -331,15 +527,28 @@ const collisionDispatch: Record<ColliderShape['kind'], Partial<Record<ColliderSh
       if (sA.kind !== 'box' || sB.kind !== 'sphere') return null;
       return collideBoxSphere(cA, sA.size, cB, sB.radius);
     },
+    cylinder: (cA, sA, cB, sB) => {
+      if (sA.kind !== 'box' || sB.kind !== 'cylinder') return null;
+      return collideBoxCylinder(cA, sA.size, cB, sB.radius, sB.height);
+    },
   },
   sphere: {
     sphere: (cA, sA, cB, sB) => {
       if (sA.kind !== 'sphere' || sB.kind !== 'sphere') return null;
       return collideSphereSphere(cA, sA.radius, cB, sB.radius);
     },
+    cylinder: (cA, sA, cB, sB) => {
+      if (sA.kind !== 'sphere' || sB.kind !== 'cylinder') return null;
+      return collideSphereCylinder(cA, sA.radius, cB, sB.radius, sB.height);
+    },
   },
-  cylinder: {},
-  capsule:  {},
+  cylinder: {
+    cylinder: (cA, sA, cB, sB) => {
+      if (sA.kind !== 'cylinder' || sB.kind !== 'cylinder') return null;
+      return collideCylinderCylinder(cA, sA.radius, sA.height, cB, sB.radius, sB.height);
+    },
+  },
+  capsule: {},
 };
 
 /** Negate normal — usado quando o dispatch foi feito com A/B trocados. */
