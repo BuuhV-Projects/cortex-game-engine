@@ -22,6 +22,18 @@ export * from './ecs/Component.js';
 export * from './ecs/System.js';
 export * from './ecs/World.js';
 
+// ─── Componentes de gameplay genéricos ────────────────────────────────────────
+// Transform lógico + ligação ao Object3D, corpo cinemático (gravidade/colisão
+// por raycast) e marcadores. Reutilizáveis por qualquer jogo (ver ADR).
+export * from './components/TransformComponent.js';
+export * from './components/Object3DComponent.js';
+export * from './components/KinematicBodyComponent.js';
+export * from './components/FollowCameraTargetComponent.js';
+export * from './components/EditableTargetComponent.js';
+
+// ─── Sistemas genéricos ────────────────────────────────────────────────────────
+export * from './systems/Object3DSyncSystem.js';
+
 // ─── Re-exports de three usados na criação de cenas ───────────────────────────
 // Permite que projetos importem essas classes diretamente de
 // `cortex-game-engine` em vez de depender de `three` no node_modules
@@ -86,4 +98,21 @@ export {
   Plane,
   Ray,
   Raycaster,
+  // Áudio — evita import direto de `three` no projeto (que não tem three no
+  // node_modules). Audio não-posicional, posicional e o listener da câmera.
+  Audio,
+  PositionalAudio,
+  AudioListener,
+  // Constantes de `side` de materiais (projetos usavam o literal 2 por falta delas).
+  DoubleSide,
+  FrontSide,
+  BackSide,
 } from 'three';
+
+// ─── Addons do three (examples/jsm) ───────────────────────────────────────────
+// Não fazem parte do entry principal do three; vêm do path de addons e ficam
+// embutidos no bundle vendoriado.
+// - TransformControls: gizmo de translação/rotação/escala (usado pelo editor).
+// - OrbitControls: câmera orbital (útil em ferramentas/preview).
+export { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
+export { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';

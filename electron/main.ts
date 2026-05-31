@@ -325,6 +325,14 @@ const VENDOR_TYPE_MODULES = {
     'Physics',
   ],
   ecs: ['Entity', 'Component', 'System', 'World'],
+  components: [
+    'TransformComponent',
+    'Object3DComponent',
+    'KinematicBodyComponent',
+    'FollowCameraTargetComponent',
+    'EditableTargetComponent',
+  ],
+  systems: ['Object3DSyncSystem'],
 } as const
 
 /**
@@ -499,16 +507,18 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
   }
 
   // index.d.ts agregador — lê o gerado pelo tsc (inclui core+ecs + re-exports
-  // de three). Strippa o sufixo '.js' dos paths relativos porque o
+  // de three). Strippa o sufixo '.js' de qualquer import porque o
   // moduleResolution default do Monaco TS (Node legacy) não trata `.js` como
-  // mapeamento para `.d.ts`. Os módulos `three` continuam intactos.
+  // mapeamento para `.d.ts`. Vale tanto para paths relativos (`./core/...`)
+  // quanto para addons do three (`three/examples/jsm/...`), que sem isso não
+  // resolveriam contra @types/three. O bare `three` não tem `.js` e fica intacto.
   const indexRuntime = await readFile(
     join(appPath, 'dist', 'src', 'index-runtime.d.ts'),
     'utf-8',
   )
   const aggregatorContent = indexRuntime.replace(
-    /from '(\.\/[^']+)\.js'/g,
-    (_match, relPath: string) => `from '${relPath}'`,
+    /from '([^']+)\.js'/g,
+    (_match, modPath: string) => `from '${modPath}'`,
   )
   results.push({
     path: 'file:///node_modules/cortex-game-engine/index.d.ts',
