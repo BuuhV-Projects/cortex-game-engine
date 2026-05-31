@@ -134,7 +134,20 @@ export class ColliderComponent extends Component {
   }
 }
 
-// ─── AABB helpers (internos) ───────────────────────────────────────────────────
+// ─── Tipos internos de colisão ─────────────────────────────────────────────────
+
+/**
+ * Resultado de uma função de detecção de colisão (narrow phase).
+ *
+ * `normal` aponta **de B para A** (direção pra separar A), unitário.
+ * `penetration` é a profundidade da sobreposição em unidades world.
+ *
+ * Funções retornam `null` quando os shapes não se intersectam.
+ */
+interface CollisionResult {
+  normal: Vec3;
+  penetration: number;
+}
 
 /** Representação de um AABB como min/max nos três eixos. */
 interface AABB {
@@ -143,28 +156,132 @@ interface AABB {
   minZ: number; maxZ: number;
 }
 
-/** Constrói o AABB de uma entidade a partir de seus componentes de física. */
-function buildAABB(rb: RigidBodyComponent, col: ColliderComponent): AABB {
-  const cx = rb.position.x + col.offset.x;
-  const cy = rb.position.y + col.offset.y;
-  const cz = rb.position.z + col.offset.z;
-  const hx = col.size.x / 2;
-  const hy = col.size.y / 2;
-  const hz = col.size.z / 2;
+/** Centro do shape no espaço world (rb.position + shape.offset). */
+function shapeCenter(rb: RigidBodyComponent, col: ColliderComponent): Vec3 {
+  const off = col.offset;
+  return { x: rb.position.x + off.x, y: rb.position.y + off.y, z: rb.position.z + off.z };
+}
+
+/** AABB de um shape 'box' no espaço world. */
+function boxAABB(center: Vec3, size: Vec3): AABB {
+  const hx = size.x / 2, hy = size.y / 2, hz = size.z / 2;
   return {
-    minX: cx - hx, maxX: cx + hx,
-    minY: cy - hy, maxY: cy + hy,
-    minZ: cz - hz, maxZ: cz + hz,
+    minX: center.x - hx, maxX: center.x + hx,
+    minY: center.y - hy, maxY: center.y + hy,
+    minZ: center.z - hz, maxZ: center.z + hz,
   };
 }
 
-/** Retorna `true` se dois AABBs se sobrepõem (colisão). */
+/** Retorna `true` se dois AABBs se sobrepõem. */
 function aabbOverlaps(a: AABB, b: AABB): boolean {
   return (
     a.maxX > b.minX && a.minX < b.maxX &&
     a.maxY > b.minY && a.minY < b.maxY &&
     a.maxZ > b.minZ && a.minZ < b.maxZ
   );
+}
+
+// ─── Algoritmos de colisão por par de shapes (narrow phase) ───────────────────
+
+/**
+ * Box ↔ Box (AABB) — algoritmo original do engine. Calcula sobreposição em
+ * cada eixo, separa pelo eixo de mínima penetração (MTV) com normal
+ * axis-aligned.
+ */
+function collideBoxBox(
+  centerA: Vec3, sizeA: Vec3,
+  centerB: Vec3, sizeB: Vec3,
+): CollisionResult | null {
+  const aabbA = boxAABB(centerA, sizeA);
+  const aabbB = boxAABB(centerB, sizeB);
+  if (!aabbOverlaps(aabbA, aabbB)) return null;
+
+  const overlapX = Math.min(aabbA.maxX, aabbB.maxX) - Math.max(aabbA.minX, aabbB.minX);
+  const overlapY = Math.min(aabbA.maxY, aabbB.maxY) - Math.max(aabbA.minY, aabbB.minY);
+  const overlapZ = Math.min(aabbA.maxZ, aabbB.maxZ) - Math.max(aabbA.minZ, aabbB.minZ);
+
+  // Normal aponta de B → A (componente único, axis-aligned).
+  let nx = 0, ny = 0, nz = 0, penetration: number;
+  if (overlapX <= overlapY && overlapX <= overlapZ) {
+    nx = centerA.x < centerB.x ? -1 : 1;
+    penetration = overlapX;
+  } else if (overlapY <= overlapX && overlapY <= overlapZ) {
+    ny = centerA.y < centerB.y ? -1 : 1;
+    penetration = overlapY;
+  } else {
+    nz = centerA.z < centerB.z ? -1 : 1;
+    penetration = overlapZ;
+  }
+  return { normal: { x: nx, y: ny, z: nz }, penetration };
+}
+
+/**
+ * Tabela de despacho (kindA, kindB) → função de colisão.
+ *
+ * As funções recebem `(centerA, shapeA, centerB, shapeB)` e retornam o
+ * CollisionResult com normal apontando de B para A. Pares assimétricos
+ * (ex.: box ↔ sphere) só precisam ser declarados numa direção — o
+ * resolver inverte o normal automaticamente quando consulta a entrada
+ * espelhada via `dispatchPair`.
+ *
+ * Pares ainda não implementados retornam `null` (placeholder até as
+ * próximas fases da ADR-0027). Como col.size é derivada do shape via
+ * getter, todos os shapes funcionam como AABB até a colisão real
+ * por shape ser plugada.
+ */
+type CollideFn = (
+  centerA: Vec3, shapeA: ColliderShape,
+  centerB: Vec3, shapeB: ColliderShape,
+) => CollisionResult | null;
+
+const collisionDispatch: Record<ColliderShape['kind'], Partial<Record<ColliderShape['kind'], CollideFn>>> = {
+  box: {
+    box: (cA, sA, cB, sB) => {
+      if (sA.kind !== 'box' || sB.kind !== 'box') return null;
+      return collideBoxBox(cA, sA.size, cB, sB.size);
+    },
+  },
+  sphere:   {},
+  cylinder: {},
+  capsule:  {},
+};
+
+/** Negate normal — usado quando o dispatch foi feito com A/B trocados. */
+function negateNormal(r: CollisionResult): CollisionResult {
+  return { normal: { x: -r.normal.x, y: -r.normal.y, z: -r.normal.z }, penetration: r.penetration };
+}
+
+/**
+ * Despacha pra função adequada na tabela. Se o par (a, b) não estiver
+ * declarado, tenta (b, a) e inverte o normal. Fallback final:
+ * **bounding box AABB** dos dois shapes — garante que o jogo nunca
+ * trava esperando uma combinação que ainda não foi implementada.
+ */
+function dispatchPair(
+  centerA: Vec3, shapeA: ColliderShape,
+  centerB: Vec3, shapeB: ColliderShape,
+): CollisionResult | null {
+  const fn = collisionDispatch[shapeA.kind][shapeB.kind];
+  if (fn) return fn(centerA, shapeA, centerB, shapeB);
+  const swapped = collisionDispatch[shapeB.kind][shapeA.kind];
+  if (swapped) {
+    const r = swapped(centerB, shapeB, centerA, shapeA);
+    return r === null ? null : negateNormal(r);
+  }
+  // Fallback: AABB do bounding box. Aproximação grosseira mas sempre
+  // funciona — assim shapes novos (sphere/cylinder/capsule) já se
+  // comportam como sólidos antes das colisões finas serem plugadas.
+  return collideBoxBox(centerA, sizeOfShape(shapeA), centerB, sizeOfShape(shapeB));
+}
+
+/** Bounding box equivalente ao shape (mesma lógica do `col.size` getter). */
+function sizeOfShape(s: ColliderShape): Vec3 {
+  switch (s.kind) {
+    case 'box':      return s.size;
+    case 'sphere':   return { x: s.radius * 2, y: s.radius * 2, z: s.radius * 2 };
+    case 'cylinder': return { x: s.radius * 2, y: s.height,     z: s.radius * 2 };
+    case 'capsule':  return { x: s.radius * 2, y: s.height + s.radius * 2, z: s.radius * 2 };
+  }
 }
 
 // ─── PhysicsSystem ─────────────────────────────────────────────────────────────
@@ -268,87 +385,68 @@ export class PhysicsSystem extends System {
     // Colliders desativados: sem interação
     if (!colA.enabled || !colB.enabled) return;
 
-    const aabbA = buildAABB(rbA, colA);
-    const aabbB = buildAABB(rbB, colB);
+    const centerA = shapeCenter(rbA, colA);
+    const centerB = shapeCenter(rbB, colB);
 
-    if (!aabbOverlaps(aabbA, aabbB)) return;
+    // Narrow phase via tabela de despacho (kind × kind). Pares ainda não
+    // implementados (sphere/cylinder/capsule) caem no fallback AABB.
+    const collision = dispatchPair(centerA, colA.shape, centerB, colB.shape);
+    if (collision === null) return;
 
-    // ── Penetração em cada eixo ──────────────────────────────────────────────
-    const overlapX = Math.min(aabbA.maxX, aabbB.maxX) - Math.max(aabbA.minX, aabbB.minX);
-    const overlapY = Math.min(aabbA.maxY, aabbB.maxY) - Math.max(aabbA.minY, aabbB.minY);
-    const overlapZ = Math.min(aabbA.maxZ, aabbB.maxZ) - Math.max(aabbA.minZ, aabbB.minZ);
-
-    // ── Eixo de mínima penetração (MTV) ─────────────────────────────────────
-    // nx/ny/nz: normal apontando de B para A (apenas um componente é não-zero)
-    let nx = 0;
-    let ny = 0;
-    let nz = 0;
-    let minOverlap: number;
-
-    if (overlapX <= overlapY && overlapX <= overlapZ) {
-      nx = rbA.position.x < rbB.position.x ? -1 : 1;
-      minOverlap = overlapX;
-    } else if (overlapY <= overlapX && overlapY <= overlapZ) {
-      ny = rbA.position.y < rbB.position.y ? -1 : 1;
-      minOverlap = overlapY;
-    } else {
-      nz = rbA.position.z < rbB.position.z ? -1 : 1;
-      minOverlap = overlapZ;
-    }
-
+    const { normal, penetration } = collision;
     const bothDynamic = !rbA.isStatic && !rbB.isStatic;
 
     // ── Separação posicional ─────────────────────────────────────────────────
+    // Normal aponta de B → A; mover A no sentido positivo afasta os corpos.
     if (bothDynamic) {
-      const half = minOverlap / 2;
-      rbA.position.x += nx * half;
-      rbA.position.y += ny * half;
-      rbA.position.z += nz * half;
-      rbB.position.x -= nx * half;
-      rbB.position.y -= ny * half;
-      rbB.position.z -= nz * half;
+      const half = penetration / 2;
+      rbA.position.x += normal.x * half;
+      rbA.position.y += normal.y * half;
+      rbA.position.z += normal.z * half;
+      rbB.position.x -= normal.x * half;
+      rbB.position.y -= normal.y * half;
+      rbB.position.z -= normal.z * half;
     } else if (rbA.isStatic) {
-      // A estático → empurra B para fora
-      rbB.position.x -= nx * minOverlap;
-      rbB.position.y -= ny * minOverlap;
-      rbB.position.z -= nz * minOverlap;
+      rbB.position.x -= normal.x * penetration;
+      rbB.position.y -= normal.y * penetration;
+      rbB.position.z -= normal.z * penetration;
     } else {
-      // B estático → empurra A para fora
-      rbA.position.x += nx * minOverlap;
-      rbA.position.y += ny * minOverlap;
-      rbA.position.z += nz * minOverlap;
+      rbA.position.x += normal.x * penetration;
+      rbA.position.y += normal.y * penetration;
+      rbA.position.z += normal.z * penetration;
     }
 
     // ── Cancelamento de velocidade na direção de colisão ────────────────────
+    // Funciona pra normal arbitrário (não-axis-aligned), o que abre caminho
+    // pra sphere/cylinder/capsule terem normal em qualquer direção.
     if (bothDynamic) {
-      // Impulso elástico 1-D ponderado por massa ao longo do eixo de colisão.
-      // Fórmula: vA' = vA - (2·mB / (mA+mB)) · (vA−vB)·n̂ · n̂
-      //          vB' = vB + (2·mA / (mA+mB)) · (vA−vB)·n̂ · n̂
+      // Impulso elástico 1-D ao longo do normal, ponderado por massa.
+      //   vA' = vA - (2·mB / (mA+mB)) · ((vA − vB) · n̂) · n̂
+      //   vB' = vB + (2·mA / (mA+mB)) · ((vA − vB) · n̂) · n̂
       const mA = rbA.mass > 0 ? rbA.mass : 1;
       const mB = rbB.mass > 0 ? rbB.mass : 1;
       const totalMass = mA + mB;
-      // dot(vA - vB, n) — n tem apenas um componente não-zero (nx|ny|nz ∈ {-1,0,1})
-      const relVn = (rbA.velocity.x - rbB.velocity.x) * nx
-                  + (rbA.velocity.y - rbB.velocity.y) * ny
-                  + (rbA.velocity.z - rbB.velocity.z) * nz;
-      const impA = (2 * mB / totalMass) * relVn; // coef. de A
-      const impB = (2 * mA / totalMass) * relVn; // coef. de B
-      rbA.velocity.x -= impA * nx;
-      rbA.velocity.y -= impA * ny;
-      rbA.velocity.z -= impA * nz;
-      rbB.velocity.x += impB * nx;
-      rbB.velocity.y += impB * ny;
-      rbB.velocity.z += impB * nz;
-    } else if (rbA.isStatic) {
-      // A estático → zeroa a componente de velocidade de B no eixo de colisão
-      if (nx !== 0) rbB.velocity.x = 0;
-      if (ny !== 0) rbB.velocity.y = 0;
-      if (nz !== 0) rbB.velocity.z = 0;
+      const relVn = (rbA.velocity.x - rbB.velocity.x) * normal.x
+                  + (rbA.velocity.y - rbB.velocity.y) * normal.y
+                  + (rbA.velocity.z - rbB.velocity.z) * normal.z;
+      const impA = (2 * mB / totalMass) * relVn;
+      const impB = (2 * mA / totalMass) * relVn;
+      rbA.velocity.x -= impA * normal.x;
+      rbA.velocity.y -= impA * normal.y;
+      rbA.velocity.z -= impA * normal.z;
+      rbB.velocity.x += impB * normal.x;
+      rbB.velocity.y += impB * normal.y;
+      rbB.velocity.z += impB * normal.z;
     } else {
-      // B estático → zeroa a componente de velocidade de A no eixo de colisão
-      if (nx !== 0) rbA.velocity.x = 0;
-      if (ny !== 0) rbA.velocity.y = 0;
-      if (nz !== 0) rbA.velocity.z = 0;
+      // Um lado estático: zera a componente de velocidade do dinâmico na
+      // direção do normal — `v_dyn -= (v_dyn · n̂) · n̂`.
+      const rbDyn = rbA.isStatic ? rbB : rbA;
+      const dot = rbDyn.velocity.x * normal.x
+                + rbDyn.velocity.y * normal.y
+                + rbDyn.velocity.z * normal.z;
+      rbDyn.velocity.x -= dot * normal.x;
+      rbDyn.velocity.y -= dot * normal.y;
+      rbDyn.velocity.z -= dot * normal.z;
     }
   }
 }
