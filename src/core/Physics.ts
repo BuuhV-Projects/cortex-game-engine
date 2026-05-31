@@ -216,6 +216,93 @@ function collideBoxBox(
 }
 
 /**
+ * Sphere ↔ Sphere — comparação de distância. Se a distância entre centros
+ * for menor que a soma dos raios, há colisão. Normal aponta de B → A
+ * (centerA − centerB normalizado); penetração = (rA+rB) − distância.
+ */
+function collideSphereSphere(
+  centerA: Vec3, rA: number,
+  centerB: Vec3, rB: number,
+): CollisionResult | null {
+  const dx = centerA.x - centerB.x;
+  const dy = centerA.y - centerB.y;
+  const dz = centerA.z - centerB.z;
+  const distSq = dx * dx + dy * dy + dz * dz;
+  const rSum = rA + rB;
+  if (distSq >= rSum * rSum) return null;
+
+  const dist = Math.sqrt(distSq);
+  // Caso degenerado: centros coincidem. Empurra arbitrariamente no +Y
+  // pra evitar divisão por zero — qualquer direção serve, esse é um
+  // estado raro de inicialização sobreposta.
+  if (dist === 0) return { normal: { x: 0, y: 1, z: 0 }, penetration: rSum };
+
+  const inv = 1 / dist;
+  return {
+    normal: { x: dx * inv, y: dy * inv, z: dz * inv },
+    penetration: rSum - dist,
+  };
+}
+
+/**
+ * Box ↔ Sphere — encontra o ponto na caixa mais próximo do centro da
+ * esfera (clamp do center da sphere ao AABB). Se a distância desse
+ * ponto pro centro da esfera < raio, colisão. Normal aponta de
+ * pointOnBox → centerSphere (= B → A se A=sphere); inverter no caller
+ * se a tabela registra como (box, sphere) pra manter convenção.
+ *
+ * Aqui registramos como (box, sphere) na tabela e o normal sai de
+ * sphere → box (B → A com A=box) — invertemos no fim.
+ */
+function collideBoxSphere(
+  centerBox: Vec3, sizeBox: Vec3,
+  centerSphere: Vec3, radius: number,
+): CollisionResult | null {
+  const hx = sizeBox.x / 2, hy = sizeBox.y / 2, hz = sizeBox.z / 2;
+  // Closest point on box (clamp do centerSphere às faces do AABB).
+  const cx = clamp(centerSphere.x, centerBox.x - hx, centerBox.x + hx);
+  const cy = clamp(centerSphere.y, centerBox.y - hy, centerBox.y + hy);
+  const cz = clamp(centerSphere.z, centerBox.z - hz, centerBox.z + hz);
+  const dx = centerSphere.x - cx;
+  const dy = centerSphere.y - cy;
+  const dz = centerSphere.z - cz;
+  const distSq = dx * dx + dy * dy + dz * dz;
+  if (distSq >= radius * radius) return null;
+
+  const dist = Math.sqrt(distSq);
+  if (dist === 0) {
+    // Centro da sphere está dentro da box — escolhe o eixo de mínima
+    // penetração até a face mais próxima e empurra pra esse lado.
+    const px = hx - Math.abs(centerSphere.x - centerBox.x);
+    const py = hy - Math.abs(centerSphere.y - centerBox.y);
+    const pz = hz - Math.abs(centerSphere.z - centerBox.z);
+    if (px <= py && px <= pz) {
+      const sign = centerSphere.x < centerBox.x ? -1 : 1;
+      // Normal sai de box(A) → sphere(B); pra B→A invertemos no caller.
+      return { normal: { x: sign, y: 0, z: 0 }, penetration: px + radius };
+    }
+    if (py <= pz) {
+      const sign = centerSphere.y < centerBox.y ? -1 : 1;
+      return { normal: { x: 0, y: sign, z: 0 }, penetration: py + radius };
+    }
+    const sign = centerSphere.z < centerBox.z ? -1 : 1;
+    return { normal: { x: 0, y: 0, z: sign }, penetration: pz + radius };
+  }
+
+  // Normal aqui sai de pointOnBox → centerSphere (= A → B). Pra obedecer
+  // convenção "normal de B → A", invertemos os sinais.
+  const inv = 1 / dist;
+  return {
+    normal: { x: -dx * inv, y: -dy * inv, z: -dz * inv },
+    penetration: radius - dist,
+  };
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return v < lo ? lo : v > hi ? hi : v;
+}
+
+/**
  * Tabela de despacho (kindA, kindB) → função de colisão.
  *
  * As funções recebem `(centerA, shapeA, centerB, shapeB)` e retornam o
@@ -240,8 +327,17 @@ const collisionDispatch: Record<ColliderShape['kind'], Partial<Record<ColliderSh
       if (sA.kind !== 'box' || sB.kind !== 'box') return null;
       return collideBoxBox(cA, sA.size, cB, sB.size);
     },
+    sphere: (cA, sA, cB, sB) => {
+      if (sA.kind !== 'box' || sB.kind !== 'sphere') return null;
+      return collideBoxSphere(cA, sA.size, cB, sB.radius);
+    },
   },
-  sphere:   {},
+  sphere: {
+    sphere: (cA, sA, cB, sB) => {
+      if (sA.kind !== 'sphere' || sB.kind !== 'sphere') return null;
+      return collideSphereSphere(cA, sA.radius, cB, sB.radius);
+    },
+  },
   cylinder: {},
   capsule:  {},
 };

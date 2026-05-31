@@ -268,3 +268,133 @@ describe('PhysicsSystem — resolução de colisão AABB', () => {
     expect(rb(ball).velocity.y).toBe(-5);
   });
 });
+
+// ─── Colisão sphere ↔ sphere (ADR-0027 Fase 3) ───────────────────────────────
+
+/** Cria uma Entity com RigidBody + Collider em shape sphere. */
+function makeSphere(opts: {
+  x?: number; y?: number; z?: number;
+  vx?: number; vy?: number; vz?: number;
+  mass?: number; isStatic?: boolean;
+  radius?: number;
+} = {}): Entity {
+  const entity = new Entity();
+  const r = new RigidBodyComponent();
+  r.position.x = opts.x ?? 0; r.position.y = opts.y ?? 0; r.position.z = opts.z ?? 0;
+  r.velocity.x = opts.vx ?? 0; r.velocity.y = opts.vy ?? 0; r.velocity.z = opts.vz ?? 0;
+  r.mass = opts.mass ?? 1;
+  r.isStatic = opts.isStatic ?? false;
+  entity.addComponent(r);
+  const col = new ColliderComponent();
+  col.shape = { kind: 'sphere', radius: opts.radius ?? 0.5 };
+  entity.addComponent(col);
+  return entity;
+}
+
+describe('PhysicsSystem — colisão sphere ↔ sphere', () => {
+  let system: PhysicsSystem;
+
+  beforeEach(() => {
+    system = new PhysicsSystem();
+    system.gravity = 0;
+  });
+
+  it('não colide quando a distância entre centros é maior que rA + rB', () => {
+    const a = makeSphere({ x: 0,   radius: 0.5 });
+    const b = makeSphere({ x: 1.5, radius: 0.5 }); // distância 1.5, soma 1.0
+    system.update([a, b], 16.67);
+    expect(rb(a).position.x).toBe(0);
+    expect(rb(b).position.x).toBe(1.5);
+  });
+
+  it('separa duas esferas dinâmicas em XY arbitrário (normal diagonal)', () => {
+    // A em (0,0), B em (0.6, 0.6) — penetração ao longo da diagonal (45°)
+    const a = makeSphere({ x: 0,   y: 0,   radius: 0.5 });
+    const b = makeSphere({ x: 0.6, y: 0.6, radius: 0.5 });
+    system.update([a, b], 16.67);
+    // Centros devem estar separados por exatamente rA+rB = 1 após resolução
+    const dx = rb(a).position.x - rb(b).position.x;
+    const dy = rb(a).position.y - rb(b).position.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    expect(dist).toBeCloseTo(1.0, 5);
+  });
+
+  it('esfera dinâmica é empurrada por esfera estática (sem mover a estática)', () => {
+    const dyn    = makeSphere({ x: 0,    radius: 0.5 });
+    const stat   = makeSphere({ x: 0.6, radius: 0.5, isStatic: true });
+    system.update([dyn, stat], 16.67);
+    expect(rb(stat).position.x).toBe(0.6);
+    // dyn empurrado pra -X até distância = 1.0
+    expect(rb(dyn).position.x).toBeCloseTo(-0.4, 5);
+  });
+
+  it('zera velocidade do dinâmico na direção do normal ao colidir com estática', () => {
+    const dyn  = makeSphere({ x: 0,   vx: 5, radius: 0.5 });
+    const stat = makeSphere({ x: 0.6, isStatic: true, radius: 0.5 });
+    system.update([dyn, stat], 16.67);
+    // Normal aponta -X (de stat → dyn é -X). vx era 5 → zera componente.
+    expect(rb(dyn).velocity.x).toBeCloseTo(0, 5);
+  });
+
+  it('preserva velocidade tangencial ao plano de colisão', () => {
+    // dyn com componente vy tangencial; vx puxa contra a stat. Após
+    // colisão, vx é zerada na direção do normal mas vy quase intacta.
+    // Tolerância porque a integração move 1 passo antes da resolução,
+    // tornando o normal levemente desviado do eixo X puro.
+    const dyn  = makeSphere({ x: 0,   vx: 5, vy: 3, radius: 0.5 });
+    const stat = makeSphere({ x: 0.6, isStatic: true, radius: 0.5 });
+    system.update([dyn, stat], 16.67);
+    expect(rb(dyn).velocity.y).toBeCloseTo(3, 0); // dentro de ±0.5
+  });
+});
+
+// ─── Colisão box ↔ sphere (ADR-0027 Fase 3) ──────────────────────────────────
+
+describe('PhysicsSystem — colisão box ↔ sphere', () => {
+  let system: PhysicsSystem;
+
+  beforeEach(() => {
+    system = new PhysicsSystem();
+    system.gravity = 0;
+  });
+
+  it('esfera não colide quando está longe da box', () => {
+    const box    = makeEntity({ x: 0, sizeX: 1, sizeY: 1, sizeZ: 1 });
+    const sphere = makeSphere({ x: 5, radius: 0.5 });
+    system.update([box, sphere], 16.67);
+    expect(rb(sphere).position.x).toBe(5);
+  });
+
+  it('esfera colide com canto da box e é empurrada na direção do canto', () => {
+    // Box (0,0,0) size 1 → cantos em ±0.5. Sphere centro em (0.7, 0.7, 0) r=0.3.
+    // Closest point on box = (0.5, 0.5, 0); distância ao centro = √0.08 ≈ 0.283 < 0.3.
+    const box    = makeEntity({ x: 0,   y: 0,   z: 0, isStatic: true, sizeX: 1, sizeY: 1, sizeZ: 1 });
+    const sphere = makeSphere({ x: 0.7, y: 0.7, z: 0, radius: 0.3 });
+    system.update([box, sphere], 16.67);
+    // Esfera empurrada pra fora ao longo da diagonal XY → centro mais longe da box
+    const dx = rb(sphere).position.x - rb(box).position.x;
+    const dy = rb(sphere).position.y - rb(box).position.y;
+    expect(dx).toBeGreaterThan(0.7);
+    expect(dy).toBeGreaterThan(0.7);
+  });
+
+  it('esfera batendo na face da box é empurrada perpendicular à face', () => {
+    // Sphere a +X da box → normal aponta +X (esfera empurrada pra +X).
+    const box    = makeEntity({ x: 0,   sizeX: 1, sizeY: 1, sizeZ: 1, isStatic: true });
+    const sphere = makeSphere({ x: 0.7, radius: 0.5 }); // overlap 0.3 no eixo X
+    system.update([box, sphere], 16.67);
+    expect(rb(sphere).position.x).toBeCloseTo(1.0, 5); // 0.5 (face) + 0.5 (raio)
+    expect(rb(sphere).position.y).toBe(0);
+    expect(rb(sphere).position.z).toBe(0);
+  });
+
+  it('zera componente perpendicular da velocidade na colisão box↔sphere', () => {
+    const box    = makeEntity({ x: 0,   sizeX: 1, sizeY: 1, sizeZ: 1, isStatic: true });
+    const sphere = makeSphere({ x: 0.7, vx: -5, vy: 2, radius: 0.5 });
+    system.update([box, sphere], 16.67);
+    // Normal aponta +X (esfera tá a +X da box e foi empurrada pra +X).
+    // vx era -5 (na direção da box). Após colisão: zerada na direção do normal.
+    expect(rb(sphere).velocity.x).toBeCloseTo(0, 5);
+    expect(rb(sphere).velocity.y).toBe(2); // tangencial intacta
+  });
+});
