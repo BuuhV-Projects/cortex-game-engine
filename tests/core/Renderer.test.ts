@@ -7,7 +7,7 @@
  * e o init assíncrono (render/clear são no-op até `init()` resolver).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ─── Mock do WebGPURenderer (three/webgpu) ─────────────────────────────────────
 
@@ -61,6 +61,13 @@ describe('Renderer', () => {
   beforeEach(() => {
     Object.values(rendererSpies).forEach((spy) => spy.mockClear());
     lastRendererInstance = null;
+    // Simula um ambiente com WebGPU. O Renderer exige `navigator.gpu` (WebGPU
+    // obrigatório); em Node `navigator` existe mas sem `.gpu`, então stubamos.
+    vi.stubGlobal('navigator', { gpu: {} });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   // ── Construção / configuração ──────────────────────────────────────────────

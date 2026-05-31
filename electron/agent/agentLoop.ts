@@ -1,5 +1,6 @@
 import { query, type Options, type PermissionResult } from '@anthropic-ai/claude-agent-sdk'
 import { createBlenderToolServer } from './tools/blender.js'
+import { createPlaytestToolServer } from './tools/playtest.js'
 
 /**
  * Loop do agente usando @anthropic-ai/claude-agent-sdk (ADR-0017 V2).
@@ -103,6 +104,15 @@ gerenciado pelo IDE, tipicamente \`<userData>/cortex-pastes/...\`). É \
 seguro fazer Read mesmo que esteja fora do cwd — são imagens que o \
 usuário explicitamente colou. Não é violação do sandbox.
 
+Rodar e testar o jogo (tool \`playtest_game\`):
+- Você tem a tool \`playtest_game\`: ela sobe o jogo do projeto numa janela \
+oculta, renderiza alguns frames e devolve um SCREENSHOT (você VÊ a imagem) + \
+os erros de console (runtime). Use-a pra VALIDAR o que implementou — depois de \
+mexer em algo visual/jogável, rode o playtest, observe a tela e os erros, e \
+corrija se necessário, em vez de assumir que funcionou.
+- NÃO tente rodar o jogo via Bash (\`vite\`/\`dev\` são proibidos acima) — use \
+\`playtest_game\`, que é isolado e não suja o projeto.
+
 Seja conciso. Não repita o que as ferramentas já mostram no output.`
 
 const APPROVED_AUTO_TOOLS = new Set(['Read', 'Glob', 'Grep', 'NotebookRead'])
@@ -189,7 +199,10 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
   // Tools customizadas ficam num MCP server in-process — só carregadas quando
   // há projeto aberto (precisam de projectRoot pra resolver paths relativos).
   const mcpServers = opts.projectRoot
-    ? { 'cortex-blender': createBlenderToolServer(opts.projectRoot) }
+    ? {
+        'cortex-blender': createBlenderToolServer(opts.projectRoot),
+        'cortex-playtest': createPlaytestToolServer(opts.projectRoot),
+      }
     : undefined
 
   const queryOptions: Options = {
