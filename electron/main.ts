@@ -323,6 +323,7 @@ const VENDOR_TYPE_MODULES = {
     'InputManager',
     'GamepadManager',
     'Physics',
+    'LoadingScreen',
   ],
   ecs: ['Entity', 'Component', 'System', 'World'],
   components: [
@@ -335,6 +336,8 @@ const VENDOR_TYPE_MODULES = {
   systems: ['Object3DSyncSystem', 'ThirdPersonCameraSystem'],
   physics: ['VehicleGravitySystem', 'VehicleWallCollisionSystem', 'VehiclePhysics'],
   editor: ['EditorState', 'EditorHud', 'EditorCameraSystem', 'ObjectEditSystem'],
+  scene: ['SceneFile', 'SceneLoader'],
+  io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter'],
 } as const
 
 /**
@@ -392,6 +395,17 @@ async function vendorEngine(projectPath: string): Promise<void> {
     join(appPath, 'dist', 'src', 'index-runtime.d.ts'),
     join(vendorDir, 'index.d.ts'),
   )
+
+  // Plugin de Vite (Node-only): copiado como JS compilado (+ .d.ts), pois roda
+  // no vite.config do projeto — fora do bundle do runtime. O projeto importa de
+  // `./vendor/cortex-game-engine/vite/sceneSavePlugin.js`. Ver src/vite/.
+  await mkdir(join(vendorDir, 'vite'), { recursive: true })
+  for (const ext of ['js', 'd.ts'] as const) {
+    await cp(
+      join(appPath, 'dist', 'src', 'vite', `sceneSavePlugin.${ext}`),
+      join(vendorDir, 'vite', `sceneSavePlugin.${ext}`),
+    )
+  }
 }
 
 // Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}

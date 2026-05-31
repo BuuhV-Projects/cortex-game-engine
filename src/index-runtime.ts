@@ -15,6 +15,7 @@ export * from './core/AudioManager.js';
 export * from './core/InputManager.js';
 export * from './core/GamepadManager.js';
 export * from './core/Physics.js';
+export * from './core/LoadingScreen.js';
 
 // ─── ECS ───────────────────────────────────────────────────────────────────────
 export * from './ecs/Entity.js';
@@ -48,6 +49,17 @@ export * from './editor/EditorState.js';
 export * from './editor/EditorHud.js';
 export * from './editor/EditorCameraSystem.js';
 export * from './editor/ObjectEditSystem.js';
+
+// ─── Cena persistida em JSON + IO ──────────────────────────────────────────────
+// SceneFile/SceneLoader (runtime) + writers (HTTP/Tauri). O plugin de Vite
+// (createSceneSavePlugin) é Node-only e NÃO entra aqui — vive em src/vite/ e é
+// distribuído separadamente (vendor/.../vite/sceneSavePlugin.js).
+export * from './scene/SceneFile.js';
+export * from './scene/SceneLoader.js';
+export * from './io/SceneFileWriter.js';
+export * from './io/HttpSceneFileWriter.js';
+export * from './io/TauriSceneFileWriter.js';
+export * from './io/autoDetectSceneFileWriter.js';
 
 // ─── Re-exports de three usados na criação de cenas ───────────────────────────
 // Permite que projetos importem essas classes diretamente de

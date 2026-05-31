@@ -140,8 +140,20 @@ export class AssetLoader {
    * @param urlArray - Lista de URLs a pré-carregar.
    * @returns Promessa resolvida com array de assets na mesma ordem da entrada.
    */
-  preload(urlArray: string[]): Promise<Asset[]> {
-    return Promise.all(urlArray.map((url) => this._dispatchLoad(url)));
+  preload(
+    urlArray: string[],
+    onProgress?: (loaded: number, total: number) => void,
+  ): Promise<Asset[]> {
+    const total = urlArray.length;
+    let loaded = 0;
+    return Promise.all(
+      urlArray.map(async (url) => {
+        const asset = await this._dispatchLoad(url);
+        loaded += 1;
+        onProgress?.(loaded, total);
+        return asset;
+      }),
+    );
   }
 
   // ─── Utilitários do cache ───────────────────────────────────────────────────
