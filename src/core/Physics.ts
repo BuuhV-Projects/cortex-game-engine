@@ -48,22 +48,90 @@ export class RigidBodyComponent extends Component {
   isStatic: boolean = false;
 }
 
+// ─── ColliderShape ─────────────────────────────────────────────────────────────
+
+/**
+ * Forma geométrica do collider (ADR-0027).
+ *
+ * Discriminated union por `kind`. Sphere é o caso mais simples; cylinder e
+ * capsule são sempre **vertical-aligned** (eixo Y) — cobre 95% dos casos
+ * de jogo 3D em terreno horizontal sem precisar de orientação arbitrária
+ * (OBB rotacionada fica pra v2, após o RigidBody ganhar rotation).
+ *
+ * `offset` desloca o centro do collider em relação a `RigidBodyComponent.position`.
+ */
+export type ColliderShape =
+  | { kind: 'box';      size: Vec3;                            offset?: Vec3 }
+  | { kind: 'sphere';   radius: number;                        offset?: Vec3 }
+  | { kind: 'cylinder'; radius: number; height: number;        offset?: Vec3 }
+  | { kind: 'capsule';  radius: number; height: number;        offset?: Vec3 };
+
 // ─── ColliderComponent ─────────────────────────────────────────────────────────
 
 /**
- * Componente que define o volume de colisão AABB da entidade.
+ * Componente que define o volume de colisão da entidade.
  *
- * O AABB é centrado em `RigidBodyComponent.position + offset`, com dimensões
- * totais iguais a `size` (não half-extents). Padrão: cubo 1×1×1 sem offset.
+ * Suporta múltiplas formas via `shape` (ADR-0027): box, sphere, cylinder,
+ * capsule. O centro do collider é `RigidBodyComponent.position + shape.offset`.
+ * Padrão: cubo 1×1×1 sem offset.
+ *
+ * Pra escolher um shape:
+ * ```ts
+ * const col = new ColliderComponent()
+ * col.shape = { kind: 'sphere', radius: 0.5 }
+ * // ou
+ * col.shape = { kind: 'cylinder', radius: 0.4, height: 1.8 }
+ * // ou
+ * col.shape = { kind: 'capsule', radius: 0.25, height: 1.2 }  // h = altura do cilindro central
+ * ```
+ *
+ * **Backwards-compat:** o acesso direto a `col.size` e `col.offset` continua
+ * funcionando como antes:
+ *  - `col.size = {x,y,z}` substitui o `shape` por um box com essas dimensões.
+ *  - `col.size` (getter) retorna o **bounding box equivalente** ao shape atual
+ *    (size literal pra box, `{2r,2r,2r}` pra sphere, `{2r,h,2r}` pra cylinder,
+ *    `{2r, h+2r, 2r}` pra capsule). Útil pra broadphase e debug.
+ *  - `col.offset = v` muta `shape.offset`; `col.offset` retorna `shape.offset ?? {0,0,0}`.
  */
 export class ColliderComponent extends Component {
-  /** Dimensões totais do AABB (largura × altura × profundidade). */
-  size: Vec3 = { x: 1, y: 1, z: 1 };
+  /** Forma do collider — ver {@link ColliderShape}. Default: cubo 1×1×1. */
+  shape: ColliderShape = { kind: 'box', size: { x: 1, y: 1, z: 1 } };
+
+  // ── Aliases backwards-compat ────────────────────────────────────────────────
+
   /**
-   * Deslocamento do centro do collider em relação à posição do RigidBody.
+   * Dimensões totais do bounding box (largura × altura × profundidade).
+   *
+   * Getter deriva do `shape` atual; setter substitui `shape` por um box.
+   * Mantido pra compatibilidade com código pré-ADR-0027.
+   */
+  get size(): Vec3 {
+    const s = this.shape;
+    switch (s.kind) {
+      case 'box':      return s.size;
+      case 'sphere':   return { x: s.radius * 2, y: s.radius * 2, z: s.radius * 2 };
+      case 'cylinder': return { x: s.radius * 2, y: s.height,     z: s.radius * 2 };
+      case 'capsule':  return { x: s.radius * 2, y: s.height + s.radius * 2, z: s.radius * 2 };
+    }
+  }
+  set size(value: Vec3) {
+    // Atribuir size implica "isto é um box" — substitui shape preservando offset.
+    const prevOffset = this.shape.offset;
+    this.shape = prevOffset !== undefined
+      ? { kind: 'box', size: value, offset: prevOffset }
+      : { kind: 'box', size: value };
+  }
+
+  /**
+   * Deslocamento do centro do collider em relação a `RigidBodyComponent.position`.
    * Útil quando a geometria visual não está centrada na origem do corpo.
    */
-  offset: Vec3 = { x: 0, y: 0, z: 0 };
+  get offset(): Vec3 {
+    return this.shape.offset ?? { x: 0, y: 0, z: 0 };
+  }
+  set offset(value: Vec3) {
+    this.shape.offset = value;
+  }
 }
 
 // ─── AABB helpers (internos) ───────────────────────────────────────────────────
