@@ -34,6 +34,13 @@ export * from './components/EditableTargetComponent.js';
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
 export * from './systems/Object3DSyncSystem.js';
 
+// ─── Física cinemática de veículo (raycast) ────────────────────────────────────
+// Gravidade + ground-snap e colisão lateral com deslize, e o agrupador
+// VehiclePhysics. Distinta do PhysicsSystem de impulso (src/core/Physics.js).
+export * from './physics/VehicleGravitySystem.js';
+export * from './physics/VehicleWallCollisionSystem.js';
+export * from './physics/VehiclePhysics.js';
+
 // ─── Re-exports de three usados na criação de cenas ───────────────────────────
 // Permite que projetos importem essas classes diretamente de
 // `cortex-game-engine` em vez de depender de `three` no node_modules

@@ -333,6 +333,7 @@ const VENDOR_TYPE_MODULES = {
     'EditableTargetComponent',
   ],
   systems: ['Object3DSyncSystem'],
+  physics: ['VehicleGravitySystem', 'VehicleWallCollisionSystem', 'VehiclePhysics'],
 } as const
 
 /**
