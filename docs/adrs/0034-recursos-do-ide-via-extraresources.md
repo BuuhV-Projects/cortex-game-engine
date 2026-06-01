@@ -63,9 +63,10 @@ Esses recursos saem do `app.asar` e passam a ser copiados via
 ]
 ```
 
-> A doc da API (`engine-api.md`) entra aqui porque o `vendorEngine` a copia pra
-> cada projeto criado como `vendor/cortex-game-engine/API.md` — o Chat IA lê ela
-> dentro do projeto (e ela viaja com o projeto, inclusive pro build Tauri).
+> A doc da API (`engine-api.md`) entra aqui porque o **Studio a lê em runtime**
+> (`resourceBase()`) e a **injeta no system prompt do Chat IA** (handler
+> `ai:chat` → `runAgent`). Fica no build da IDE, **não** é vendorizada no projeto
+> (logo não vaza pro build Tauri do jogo). Ver agentLoop `engineApiDoc`.
 
 Os destinos preservam os mesmos subpaths que existem na raiz do repo em dev
 (`dist/src`, `dist-engine`, `templates`, `node_modules/@types/three`).

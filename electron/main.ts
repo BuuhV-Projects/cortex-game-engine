@@ -411,15 +411,26 @@ async function vendorEngine(projectPath: string): Promise<void> {
       join(vendorDir, 'vite', `sceneSavePlugin.${ext}`),
     )
   }
+}
 
-  // Doc da API (catálogo + receitas) vendorizada como API.md — o Chat IA lê
-  // dentro do projeto pra saber o que o engine expõe ao criar features, e ela
-  // viaja com o projeto (inclusive pro build Tauri). Fonte:
-  // docs/cortex-game-engine/engine-api.md (ADR-0034 a empacota via extraResources).
-  await cp(
-    join(appPath, 'docs', 'cortex-game-engine', 'engine-api.md'),
-    join(vendorDir, 'API.md'),
-  )
+/**
+ * Lê a doc da API do engine (`docs/cortex-game-engine/engine-api.md`, empacotada
+ * no Studio via extraResources — ADR-0034) e a cacheia. É injetada no system
+ * prompt do agente (ver ai:chat) pra o Chat IA saber o que o engine expõe ao
+ * criar features. Fica no build da IDE, não no projeto.
+ */
+let cachedEngineApiDoc: string | null = null
+async function loadEngineApiDoc(): Promise<string> {
+  if (cachedEngineApiDoc !== null) return cachedEngineApiDoc
+  try {
+    cachedEngineApiDoc = await readFile(
+      join(resourceBase(), 'docs', 'cortex-game-engine', 'engine-api.md'),
+      'utf-8',
+    )
+  } catch {
+    cachedEngineApiDoc = ''
+  }
+  return cachedEngineApiDoc
 }
 
 // Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}
@@ -1044,6 +1055,8 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
   // primeiro turno desta execução; depois continueSession já mantém vivo.
   const resumeSessionId = continueSession ? null : await loadSessionId(sessionKey)
 
+  const engineApiDoc = await loadEngineApiDoc()
+
   try {
     await runAgent({
       prompt: lastUserMessage,
@@ -1051,6 +1064,7 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
       continueSession,
       resumeSessionId,
       mode: agentMode,
+      engineApiDoc,
       abortController,
       events: {
         onTextChunk(text) {

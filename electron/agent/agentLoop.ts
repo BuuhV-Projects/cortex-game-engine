@@ -59,38 +59,12 @@ cena. Lógica vai em System.
 4. **Limite ~200 linhas por arquivo.** Sinal de "fat system" — quebre.
 
 Uso do cortex-game-engine (importante):
-
-Catálogo do que o engine expõe (importe SEMPRE de \`'cortex-game-engine'\`, \
-nunca de \`'three'\` — o three vem embutido e seus tipos são re-exportados):
-- Core: GameLoop, Renderer (+ Camera/PerspectiveCamera/OrthographicCamera), \
-Scene, AssetLoader (+ tipo GLTF), AudioManager, InputManager, GamepadManager, \
-LoadingScreen, Skybox (HDRI), PostFX (pós-processamento).
-- Física: RigidBodyComponent, ColliderComponent, PhysicsSystem (impulso); \
-VehiclePhysics + VehicleGravitySystem + VehicleWallCollisionSystem (veículo).
-- ECS: World, Entity, Component, System.
-- Componentes/sistemas genéricos: TransformComponent, Object3DComponent, \
-KinematicBodyComponent, FollowCameraTargetComponent, EditableTargetComponent; \
-Object3DSyncSystem, ThirdPersonCameraSystem.
-- Editor embutido: EditorState, EditorHud, EditorCameraSystem, ObjectEditSystem.
-- Cena em JSON/IO: SceneFile, SceneLoader, SceneFileWriter, HttpSceneFileWriter, \
-TauriSceneFileWriter, autoDetectSceneFileWriter.
-- Pós-processamento WebGPU (NÃO existe EffectComposer — é WebGL): use PostFX \
-(recomendado) ou RenderPipeline + pass/mrt/output/renderOutput/bloom/fxaa, com \
-constantes de tone mapping (ACESFilmicToneMapping/AgX/Neutral/Reinhard/Cineon/Linear/No).
-- HDRI: Skybox.fromHDRI(scene, url, opts), RGBELoader, EquirectangularReflectionMapping.
-- Re-exports de three: Mesh/InstancedMesh/Object3D/Group/SkinnedMesh/Bone/Skeleton; \
-geometrias (Box/Sphere/Plane/Cylinder/Cone/Torus/Buffer); materiais (MeshStandard/\
-Basic/Phong/Lambert/LineBasic + DoubleSide/FrontSide/BackSide); luzes (Ambient/\
-Directional/Point/Spot/Hemisphere); math (Color/Vector2/Vector3/Quaternion/Euler/\
-Matrix3/Matrix4/MathUtils/Box3/Sphere/Frustum/Plane/Ray/Raycaster); animação \
-(AnimationMixer/AnimationClip/AnimationAction/Clock); instancing (InstancedBuffer*/\
-BufferAttribute/Float32BufferAttribute/*DrawUsage); áudio (Audio/PositionalAudio/\
-AudioListener); addons (TransformControls, OrbitControls, clone de SkeletonUtils — \
-use \`clone(model)\` em vez de \`model.clone(true)\` p/ SkinnedMesh).
-
-- O motor vive em \`vendor/cortex-game-engine/\` dentro do projeto. O catálogo \
-acima é um resumo; para detalhes e receitas de uso, **leia \
-\`vendor/cortex-game-engine/API.md\`**. Para assinaturas exatas, \
+- O que o engine expõe (classes, helpers, re-exports de three) está na \
+**"Referência da API do cortex-game-engine"** anexada ao FINAL destas instruções \
+— catálogo + receitas. Consulte-a antes de codar features de cena, render, input, \
+áudio, física, ECS, pós-processamento, HDRI ou modelos 3D.
+- Importe SEMPRE de \`'cortex-game-engine'\`, nunca de \`'three'\` (o three vem \
+embutido no engine e seus tipos são re-exportados). Para assinaturas exatas, \
 \`vendor/cortex-game-engine/index.d.ts\` (e os \`core/*.d.ts\`/\`ecs/*.d.ts\` ao \
 lado) têm o tipo de cada classe.
 - Imports devem vir de \`'cortex-game-engine'\` (alias do Vite resolve). \
@@ -240,6 +214,12 @@ export interface RunAgentOptions {
    * (ADR-0036).
    */
   mode: AgentMode
+  /**
+   * Conteúdo de `docs/cortex-game-engine/engine-api.md` (catálogo + receitas),
+   * empacotado no Studio e injetado no system prompt pra o agente saber o que o
+   * engine expõe. Lido pelo main via resourceBase(); vazio se indisponível.
+   */
+  engineApiDoc?: string
 }
 
 /**
@@ -257,9 +237,15 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
       }
     : undefined
 
-  // Em modo plan, anexamos as instruções de planejamento ao system prompt.
-  const systemAppend =
-    opts.mode === 'plan' ? `${AGENT_SYSTEM_PROMPT}${PLAN_MODE_PROMPT}` : AGENT_SYSTEM_PROMPT
+  // Monta o append do system prompt: base + referência da API do engine
+  // (injetada pra o agente saber o que existe) + instruções de plan se for o caso.
+  let systemAppend = AGENT_SYSTEM_PROMPT
+  if (opts.engineApiDoc && opts.engineApiDoc.trim().length > 0) {
+    systemAppend += `\n\n===== Referência da API do cortex-game-engine =====\n\n${opts.engineApiDoc}`
+  }
+  if (opts.mode === 'plan') {
+    systemAppend += PLAN_MODE_PROMPT
+  }
 
   const queryOptions: Options = {
     cwd: opts.projectRoot ?? undefined,
