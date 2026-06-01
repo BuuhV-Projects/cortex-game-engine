@@ -3,6 +3,16 @@
 **Data:** 2026-05-31
 **Status:** aceito
 
+> **Atualização (2026-05-31):** a `playtest_game` passou de só *observar* para
+> também *jogar*. Ganhou um parâmetro `actions` — uma timeline de input de teclado
+> (`press`/`release`/`tap`/`wait`/`screenshot`) injetada via
+> `webContents.sendInputEvent` (gera `keydown`/`keyup` DOM reais, que o
+> `InputManager` lê). Permite **múltiplos screenshots** (um por ação `screenshot`,
+> senão um no fim) pra ver a progressão da jogada, e captura as mensagens de
+> console (logs/warns/erros) da sessão inteira (limite subido pra 200). Assim o
+> agente valida comportamento jogável (mover, pular, colidir), não só a tela
+> inicial. Ver `PlaytestOptions.actions`/`InputAction` em `runAndCapture.ts`.
+
 ## Contexto
 
 O Chat IA implementa features no jogo mas não conseguia **ver** o resultado —

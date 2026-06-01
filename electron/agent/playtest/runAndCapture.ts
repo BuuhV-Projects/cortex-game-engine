@@ -1,19 +1,41 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, type WebContents } from 'electron'
 
 /**
  * Sobe o `vite` do projeto, carrega o jogo numa BrowserWindow oculta (fora da
- * tela) do próprio Electron, captura um screenshot e coleta erros de console —
- * tudo no main process. Usado pela tool `playtest_game` do Chat IA pra "ver" o
- * jogo rodando e validar a própria implementação (ADR-0033).
+ * tela) do próprio Electron, opcionalmente injeta input (teclado) pra "jogar",
+ * captura screenshot(s) e coleta as mensagens de console — tudo no main process.
+ * Usado pela tool `playtest_game` do Chat IA pra "ver" e "jogar" o jogo rodando
+ * e validar a própria implementação (ADR-0033).
  *
  * Roda no Electron (não Playwright) de propósito: o engine é WebGPU-only
  * (ADR-0032) e o Chromium do Electron renderiza WebGPU igual ao preview.
+ *
+ * Input: `webContents.sendInputEvent` dispara `keydown`/`keyup` DOM reais, que o
+ * InputManager do engine (escuta `document.body`) lê normalmente.
  */
 
 // Vite imprime "Local:   http://localhost:NNNN/" com códigos ANSI de cor.
 const ANSI_RE = /\x1b\[[0-9;]*m/g
 const VITE_LOCAL_URL_RE = /Local:\s+(https?:\/\/[^\s]+)/
+
+/**
+ * Uma ação na timeline do playtest:
+ * - `press`: pressiona a tecla (keyDown) e a mantém até um `release`.
+ * - `release`: solta a tecla (keyUp).
+ * - `tap`: pressiona e solta rapidamente (keyDown + espera `ms` + keyUp).
+ * - `wait`: só espera `ms` (o jogo continua rodando frames).
+ * - `screenshot`: captura um PNG nesse ponto da timeline.
+ *
+ * `key` usa o valor de `KeyboardEvent.key` (ex.: `"ArrowRight"`, `"a"`, `" "`)
+ * ou aliases amigáveis (`"Right"`, `"Space"`); ver KEY_ALIASES.
+ */
+export type InputAction =
+  | { type: 'press'; key: string }
+  | { type: 'release'; key: string }
+  | { type: 'tap'; key: string; ms?: number }
+  | { type: 'wait'; ms: number }
+  | { type: 'screenshot' }
 
 export interface PlaytestOptions {
   /** Largura da janela/captura. Default 1280. */
@@ -26,11 +48,16 @@ export interface PlaytestOptions {
   port?: number
   /** Timeout esperando o vite imprimir a URL. Default 30000ms. */
   urlTimeoutMs?: number
+  /**
+   * Sequência de input pra "jogar" o jogo. Executada após o `waitMs` inicial.
+   * Se nenhuma ação `screenshot` for incluída, um screenshot é tirado no fim.
+   */
+  actions?: InputAction[]
 }
 
 export interface PlaytestResult {
-  /** PNG do screenshot, ou null se falhou antes de capturar. */
-  pngBuffer: Buffer | null
+  /** PNGs capturados (um por ação `screenshot`, ou um único no fim). */
+  screenshots: Buffer[]
   /** Mensagens de console do jogo (erros/warns/logs), capadas. */
   consoleMessages: string[]
   ok: boolean
@@ -39,7 +66,40 @@ export interface PlaytestResult {
   viteUrl: string | null
 }
 
-const MAX_MESSAGES = 60
+const MAX_MESSAGES = 200
+
+/**
+ * Mapeia `KeyboardEvent.key` (e aliases) → keyCode do Electron (estilo
+ * Accelerator). Letras/dígitos não mapeados são passados como estão
+ * (ex.: `"a"` → `"a"`, que o Chromium entrega como `key: "a"`).
+ */
+const KEY_ALIASES: Record<string, string> = {
+  ArrowUp: 'Up',
+  ArrowDown: 'Down',
+  ArrowLeft: 'Left',
+  ArrowRight: 'Right',
+  Up: 'Up',
+  Down: 'Down',
+  Left: 'Left',
+  Right: 'Right',
+  ' ': 'Space',
+  Space: 'Space',
+  Spacebar: 'Space',
+  Enter: 'Enter',
+  Return: 'Enter',
+  Escape: 'Esc',
+  Esc: 'Esc',
+  Shift: 'Shift',
+  Control: 'Control',
+  Ctrl: 'Control',
+  Alt: 'Alt',
+  Tab: 'Tab',
+  Backspace: 'Backspace',
+}
+
+function toElectronKeyCode(key: string): string {
+  return KEY_ALIASES[key] ?? key
+}
 
 function killTree(proc: ChildProcess): void {
   if (!proc.pid) return
@@ -54,6 +114,10 @@ function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
 }
 
+function sendKey(wc: WebContents, type: 'keyDown' | 'keyUp', key: string): void {
+  wc.sendInputEvent({ type, keyCode: toElectronKeyCode(key) })
+}
+
 /** Normaliza o `console-message` (a assinatura mudou entre versões do Electron). */
 function formatConsole(args: unknown[]): string {
   const first = args[0]
@@ -65,6 +129,41 @@ function formatConsole(args: unknown[]): string {
   return `[${String(args[1] ?? 'log')}] ${String(args[2] ?? '')}`.trim()
 }
 
+/**
+ * Executa a timeline de input, capturando screenshots nas ações `screenshot`.
+ * Teclas mantidas via `press` sem `release` são soltas implicitamente no
+ * teardown (a janela é destruída).
+ */
+async function runActions(
+  wc: WebContents,
+  actions: InputAction[],
+  screenshots: Buffer[],
+): Promise<void> {
+  for (const action of actions) {
+    switch (action.type) {
+      case 'press':
+        sendKey(wc, 'keyDown', action.key)
+        break
+      case 'release':
+        sendKey(wc, 'keyUp', action.key)
+        break
+      case 'tap':
+        sendKey(wc, 'keyDown', action.key)
+        await delay(action.ms ?? 80)
+        sendKey(wc, 'keyUp', action.key)
+        break
+      case 'wait':
+        await delay(action.ms)
+        break
+      case 'screenshot': {
+        const image = await wc.capturePage()
+        screenshots.push(image.toPNG())
+        break
+      }
+    }
+  }
+}
+
 export async function runAndCaptureGame(
   projectRoot: string,
   opts: PlaytestOptions = {},
@@ -74,11 +173,13 @@ export async function runAndCaptureGame(
   const waitMs = opts.waitMs ?? 3000
   const port = opts.port ?? 5180
   const urlTimeoutMs = opts.urlTimeoutMs ?? 30000
+  const actions = opts.actions ?? []
 
   const messages: string[] = []
   const pushMsg = (m: string): void => {
     if (messages.length < MAX_MESSAGES) messages.push(m)
   }
+  const screenshots: Buffer[] = []
 
   let vite: ChildProcess | null = null
   let win: BrowserWindow | null = null
@@ -145,30 +246,42 @@ export async function runAndCaptureGame(
     // ainda assim tentamos screenshotar (pode ter renderizado parcialmente).
     await wc.loadURL(viteUrl).catch((e: unknown) => pushMsg(`[loadURL] ${String(e)}`))
 
+    // Foco pra o sendInputEvent chegar no elemento certo (InputManager escuta
+    // document.body). A janela está fora da tela mas recebe input injetado.
+    win.focus()
+    wc.focus()
+
     // 3) Espera o init assíncrono (WebGPU) + assets + alguns frames.
     await delay(waitMs)
 
-    // 4) Captura.
-    const image = await wc.capturePage()
-    const pngBuffer = image.toPNG()
+    // 4) Executa o input (se houver). Os keydown/keyup chegam ao InputManager.
+    await runActions(wc, actions, screenshots)
 
+    // 5) Se nenhuma ação pediu screenshot, captura uma no fim (comportamento
+    //    padrão: sempre devolver ao menos uma imagem).
+    if (screenshots.length === 0) {
+      const image = await wc.capturePage()
+      screenshots.push(image.toPNG())
+    }
+
+    const playedNote = actions.length > 0 ? ` Executadas ${actions.length} ação(ões) de input.` : ''
     return {
-      pngBuffer,
+      screenshots,
       consoleMessages: messages,
       ok: true,
-      note: `Jogo carregado em ${viteUrl} e capturado (${width}x${height}).`,
+      note: `Jogo carregado em ${viteUrl} e capturado (${width}x${height}).${playedNote}`,
       viteUrl,
     }
   } catch (err) {
     return {
-      pngBuffer: null,
+      screenshots,
       consoleMessages: messages,
       ok: false,
       note: err instanceof Error ? err.message : String(err),
       viteUrl: null,
     }
   } finally {
-    // 5) Teardown — sempre derruba a janela e o vite.
+    // 6) Teardown — sempre derruba a janela e o vite.
     if (win && !win.isDestroyed()) win.destroy()
     if (vite) killTree(vite)
   }

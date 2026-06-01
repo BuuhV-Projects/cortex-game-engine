@@ -107,9 +107,14 @@ usuário explicitamente colou. Não é violação do sandbox.
 Rodar e testar o jogo (tool \`playtest_game\`):
 - Você tem a tool \`playtest_game\`: ela sobe o jogo do projeto numa janela \
 oculta, renderiza alguns frames e devolve um SCREENSHOT (você VÊ a imagem) + \
-os erros de console (runtime). Use-a pra VALIDAR o que implementou — depois de \
-mexer em algo visual/jogável, rode o playtest, observe a tela e os erros, e \
-corrija se necessário, em vez de assumir que funcionou.
+as mensagens de console (logs/warns/erros de runtime). Use-a pra VALIDAR o que \
+implementou — depois de mexer em algo visual/jogável, rode o playtest, observe \
+a tela e os logs, e corrija se necessário, em vez de assumir que funcionou.
+- Você também pode JOGAR: passe \`actions\` (timeline de input de teclado — \
+\`press\`/\`release\`/\`tap\`/\`wait\`/\`screenshot\`) pra mover/pular/colidir e \
+validar comportamento, não só a tela inicial. Ex.: segurar \`ArrowRight\`, \
+esperar, dar \`tap\` em \`Space\` (pulo) e \`screenshot\` nos pontos-chave. Cada \
+\`screenshot\` vira uma imagem no retorno.
 - NÃO tente rodar o jogo via Bash (\`vite\`/\`dev\` são proibidos acima) — use \
 \`playtest_game\`, que é isolado e não suja o projeto.
 
