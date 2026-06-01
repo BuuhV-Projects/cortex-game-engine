@@ -11,7 +11,7 @@
     "docs:engine": "typedoc",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "electron:dev": "yarn build:engine && electron-vite dev",
+    "electron:dev": "yarn build:engine && yarn docs:engine && electron-vite dev",
     "electron:build": "yarn build:engine && electron-vite build && electron-builder",
     "electron:install": "node --use-system-ca node_modules/electron/install.js",
     "postinstall": "node --use-system-ca node_modules/electron/install.js",
