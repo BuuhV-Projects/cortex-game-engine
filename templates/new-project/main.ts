@@ -65,16 +65,18 @@ three.fog = new Fog(SKY, 30, 140)
 // ─── Iluminação (exterior) ────────────────────────────────────────────────────
 // HemisphereLight = luz do céu por cima + cor do chão por baixo (ambiente
 // natural). DirectionalLight faz de "sol", dando volume ao cubo.
-scene.add(new HemisphereLight(SKY, 0x6b6b5a, 0.9))
+scene.add(new HemisphereLight(SKY, 0x5a5d63, 0.9))
 const sun = new DirectionalLight(0xffffff, 1.2)
 sun.position.set(8, 12, 6)
 scene.add(sun)
 
 // ─── Chão "infinito" ──────────────────────────────────────────────────────────
-// Plano grande na horizontal; as bordas somem na névoa.
+// Plano grande na horizontal; as bordas somem na névoa. Cinza neutro (estilo
+// plano default da Unity). Troque a cor por verde (0x4f7a3a) pra grama ou por
+// azul (0x3b6e8f) pra água.
 const ground = new Mesh(
   new PlaneGeometry(500, 500),
-  new MeshStandardMaterial({ color: 0x4f7a3a, roughness: 1 }),
+  new MeshStandardMaterial({ color: 0x8a8d93, roughness: 1 }),
 )
 ground.rotation.x = -Math.PI / 2
 scene.add(ground)
