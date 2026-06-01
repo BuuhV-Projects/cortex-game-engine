@@ -1,31 +1,29 @@
 /**
- * Ponto de entrada público do motor de jogo.
+ * Ponto de entrada público COMPLETO do motor de jogo.
  *
- * Re-exporta todas as classes e tipos públicos dos subsistemas:
- * - Core: GameLoop, Renderer, Scene, AssetLoader, AudioManager, InputManager, GamepadManager
- * - Physics: RigidBodyComponent, ColliderComponent, PhysicsSystem
- * - ECS: Entity, Component, System, World
- * - AI: ScriptGenerator, BlenderModelGenerator
+ * É o superconjunto: tudo que o runtime expõe (`index-runtime.ts`) MAIS os
+ * subsistemas de autoria que são Node-only (AI). Mantido como
+ * `index-runtime + AI` de propósito, pra nunca desincronizar do runtime quando
+ * um módulo novo é adicionado lá.
  *
- * Referências: ADR-0001 (Three.js), ADR-0002 (ECS), ADR-0023 (Split-screen e gamepad)
+ * - Runtime (via `./index-runtime.js`): core (GameLoop, Renderer, Scene,
+ *   AssetLoader, AudioManager, InputManager, GamepadManager, Physics,
+ *   LoadingScreen, Skybox, PostFX), ECS, components, systems, physics de
+ *   veículo, editor, scene/IO, re-exports de three (mesh/geometrias/materiais/
+ *   luzes/áudio/etc.), addons (TransformControls, OrbitControls, clone),
+ *   pós-processamento WebGPU (RenderPipeline, pass, bloom, fxaa, tone mapping…)
+ *   e HDRI (RGBELoader).
+ * - AI: ScriptGenerator, BlenderModelGenerator (dependem de @anthropic-ai/sdk;
+ *   ferramentas de autoria do IDE, NÃO vão pro bundle do projeto — por isso
+ *   ficam aqui e não no `index-runtime.ts`).
+ *
+ * Referências: ADR-0001 (Three.js), ADR-0002 (ECS), ADR-0035 (pós-processamento
+ * e Skybox/HDRI). O bundle vendorizado em projetos usa `index-runtime.ts`.
  */
 
-// ─── Core ──────────────────────────────────────────────────────────────────────
-export * from './core/GameLoop.js';
-export * from './core/Renderer.js';
-export * from './core/Scene.js';
-export * from './core/AssetLoader.js';
-export * from './core/AudioManager.js';
-export * from './core/InputManager.js';
-export * from './core/GamepadManager.js';
-export * from './core/Physics.js';
+// ─── Runtime completo (browser) ─────────────────────────────────────────────────
+export * from './index-runtime.js';
 
-// ─── ECS ───────────────────────────────────────────────────────────────────────
-export * from './ecs/Entity.js';
-export * from './ecs/Component.js';
-export * from './ecs/System.js';
-export * from './ecs/World.js';
-
-// ─── AI ────────────────────────────────────────────────────────────────────────
+// ─── AI (Node-only — autoria do IDE) ───────────────────────────────────────────
 export * from './ai/ScriptGenerator.js';
 export * from './ai/BlenderModelGenerator.js';
