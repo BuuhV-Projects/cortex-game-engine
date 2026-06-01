@@ -60,9 +60,12 @@ O IDE **vendoriza o engine inline** em cada projeto criado:
 3. Copia `dist/src/{core,ecs}/*.d.ts` → `<projeto>/vendor/cortex-game-engine/{core,ecs}/`.
 4. Escreve `<projeto>/vendor/cortex-game-engine/index.d.ts` agregador.
 
-**Empacotamento** (`electron-builder`): `dist-engine/` e `dist/src/**/*.d.ts`
-são listados em `files` — vão pro `app.asar` do build final. `app.getAppPath()`
-resolve corretamente em dev (raiz do repo) e prod (asar root).
+**Empacotamento** (`electron-builder`): ~~`dist-engine/` e `dist/src/**/*.d.ts`
+são listados em `files` — vão pro `app.asar` do build final.~~ **Atualizado pelo
+[ADR-0034](0034-recursos-do-ide-via-extraresources.md):** o electron-builder
+remove todo `.d.ts` do asar (e faz pruning de devDeps como `@types/three`), então
+esses recursos passaram a ser copiados via `extraResources` para `resources/`, e
+`resourceBase()` aponta para `process.resourcesPath` em produção.
 
 **No editor do IDE**: além do vendoring no projeto, o `engine:readTypes` IPC
 alimenta os mesmos `.d.ts` no Monaco TypeScript service (via `addExtraLib` +

@@ -5,17 +5,21 @@
     "output": "dist-app"
   },
   "files": [
-    "out/**",
-    "templates/**",
-    "dist-engine/**",
-    "dist/src/**/*.d.ts",
-    "node_modules/@types/three/**/*.d.ts",
-    "node_modules/@types/three/package.json"
+    "out/**"
   ],
-  "asarUnpack": [
-    "templates/**",
-    "dist-engine/**",
-    "dist/src/**/*.d.ts"
+  "extraResources": [
+    { "from": "templates", "to": "templates" },
+    { "from": "dist-engine", "to": "dist-engine" },
+    {
+      "from": "dist/src",
+      "to": "dist/src",
+      "filter": ["**/*.d.ts", "**/*.js"]
+    },
+    {
+      "from": "node_modules/@types/three",
+      "to": "node_modules/@types/three",
+      "filter": ["**/*.d.ts", "package.json"]
+    }
   ],
   "win": {
     "target": [

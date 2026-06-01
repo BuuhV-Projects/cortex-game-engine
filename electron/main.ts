@@ -341,22 +341,25 @@ const VENDOR_TYPE_MODULES = {
 } as const
 
 /**
- * Base de leitura dos recursos copiados para projetos (templates, bundle do
- * engine, .d.ts). Em dev é a raiz do repo; em produção é o app.asar do build.
+ * Base de leitura dos recursos que o IDE consome via fs (templates, bundle do
+ * engine, `.d.ts` do engine e do three). Em dev é a raiz do repo; em produção é
+ * `process.resourcesPath` (o diretório `resources/` ao lado do `app.asar`).
  *
- * Porém `fs.cp` NÃO consegue ler de dentro de um app.asar (a camada de asar do
- * Electron não implementa cp/cpSync — qualquer cópia falha com
- * "ENOENT, ... not found in app.asar"). Por isso esses recursos são marcados
- * em `electron-builder.json#asarUnpack`, que os grava fisicamente em
- * `app.asar.unpacked/` — um diretório real no disco que o `cp` consegue ler.
- * Aqui mapeamos o path do asar para o `.unpacked` correspondente.
- *
- * Leituras via readFile/readdir (ex.: engine:readTypes) funcionam dentro do
- * asar e não precisam dessa base.
+ * Por que NÃO ficam dentro do `app.asar`: o electron-builder remove
+ * incondicionalmente todo `*.d.ts` do asar (lista `excludedExts` em
+ * app-builder-lib — ver issue electron-userland/electron-builder#7512), e ainda
+ * faz pruning das devDependencies (ex.: `@types/three`). Ou seja, nenhum padrão
+ * em `files`/`asarUnpack` consegue empacotar os `.d.ts` — eles sempre somem.
+ * Além disso `fs.cp` não lê de dentro do asar. Por isso esses recursos são
+ * copiados via `electron-builder.json#extraResources`, que grava árvores reais
+ * em `resources/` (sem strip de `.d.ts`, sem pruning), preservando os mesmos
+ * subpaths (`dist/src`, `dist-engine`, `templates`, `node_modules/@types/three`)
+ * que existem na raiz do repo em dev. Assim os mesmos `join(resourceBase(), …)`
+ * funcionam em dev e prod. Ver ADR-0034.
  */
 function resourceBase(): string {
   const appPath = app.getAppPath()
-  return appPath.endsWith('.asar') ? `${appPath}.unpacked` : appPath
+  return appPath.endsWith('.asar') ? process.resourcesPath : appPath
 }
 
 /**
@@ -365,8 +368,8 @@ function resourceBase(): string {
  * - core/*.d.ts e ecs/*.d.ts: types copiados de dist/src/
  * - index.d.ts: agregador minimal re-exportando só core+ecs
  *
- * Os recursos vêm de resourceBase() (app.asar.unpacked em produção) porque o
- * `cp` não lê de dentro do asar. Ver electron-builder.json#asarUnpack.
+ * Os recursos vêm de resourceBase() (process.resourcesPath em produção, via
+ * electron-builder.json#extraResources). Ver ADR-0034.
  */
 async function vendorEngine(projectPath: string): Promise<void> {
   const appPath = resourceBase()
@@ -493,7 +496,7 @@ interface EngineTypeFile {
 // Lê os .d.ts do engine + os types reais do `three` (de @types/three) e retorna
 // pares { path, content, navigable } para o renderer alimentar o Monaco.
 ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
-  const appPath = app.getAppPath()
+  const appPath = resourceBase()
   const results: EngineTypeFile[] = []
 
   // Types do three — só addExtraLib (resolução de tipos), sem createModel.
