@@ -162,8 +162,22 @@ export { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 // `PostProcessing` é o nome antigo do `RenderPipeline` (deprecado desde r183),
 // mantido aqui por compatibilidade.
 export { RenderPipeline, PostProcessing } from 'three/webgpu';
-export { pass, mrt, output } from 'three/tsl';
+export { pass, mrt, output, renderOutput } from 'three/tsl';
 export { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
+export { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
+
+// Constantes de tone mapping — pra `PostFX.toneMapping` (ou
+// `renderer.threeRenderer.toneMapping`). Sem isso o projeto não tem como
+// referenciar esses modos (não importa `three` direto).
+export {
+  NoToneMapping,
+  LinearToneMapping,
+  ReinhardToneMapping,
+  CineonToneMapping,
+  ACESFilmicToneMapping,
+  AgXToneMapping,
+  NeutralToneMapping,
+} from 'three';
 
 // HDRI: loader e o mapping usados pelo Skybox; expostos pra uso avançado direto.
 export { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
