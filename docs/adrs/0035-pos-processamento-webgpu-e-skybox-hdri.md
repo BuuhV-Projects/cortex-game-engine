@@ -27,13 +27,26 @@ O three tem um caminho de pós-processamento **nativo de WebGPU**: a classe
 **Pós-processamento** — caminho WebGPU, não EffectComposer. Há dois níveis:
 
 1. **`PostFX`** (`src/core/PostFX.ts`) — classe consolidada, o caminho
-   recomendado. Encapsula `RenderPipeline` + `pass` + `bloom`:
+   recomendado. Encapsula `RenderPipeline` + os nós TSL e aplica os efeitos numa
+   ordem fixa correta: **bloom** (HDR) → **tone mapping + exposição**
+   (HDR→LDR via `renderOutput`, com `outputColorTransform=false`) → **vignette**
+   (LDR) → **fxaa** (LDR, por último):
 
    ```ts
-   const postfx = new PostFX(renderer, scene, camera, { bloom: { strength: 0.9 } });
+   const postfx = new PostFX(renderer, scene, camera, {
+     bloom: { strength: 0.9 },
+     vignette: true,
+     fxaa: true,
+     toneMapping: THREE.ACESFilmicToneMapping,
+     exposure: 1.1,
+   });
    // no loop, em vez de renderer.render(...):  postfx.render();
    // ajuste em runtime: postfx.bloom?.strength.value = 1.2;
    ```
+
+   O acumulador do grafo de nós é tipado como `any` internamente (a tipagem
+   estrita do TSL não cobre uma cadeia mutável de nós); a API pública é tipada.
+   A vinheta é um nó TSL escrito à mão (não há nó pronto no three).
 
 2. **Blocos crus** re-exportados pra montar pipelines à mão:
 
