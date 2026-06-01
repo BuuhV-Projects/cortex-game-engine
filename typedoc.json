@@ -1,0 +1,13 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index-runtime.ts"],
+  "tsconfig": "tsconfig.engine.json",
+  "out": "docs/cortex-game-engine/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "excludeExternals": true,
+  "excludeInternal": true,
+  "readme": "none",
+  "githubPages": false,
+  "hideGenerator": true,
+  "gitRevision": "main"
+}

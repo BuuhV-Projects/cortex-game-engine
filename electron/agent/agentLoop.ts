@@ -59,6 +59,35 @@ cena. Lógica vai em System.
 4. **Limite ~200 linhas por arquivo.** Sinal de "fat system" — quebre.
 
 Uso do cortex-game-engine (importante):
+
+Catálogo do que o engine expõe (importe SEMPRE de \`'cortex-game-engine'\`, \
+nunca de \`'three'\` — o three vem embutido e seus tipos são re-exportados):
+- Core: GameLoop, Renderer (+ Camera/PerspectiveCamera/OrthographicCamera), \
+Scene, AssetLoader (+ tipo GLTF), AudioManager, InputManager, GamepadManager, \
+LoadingScreen, Skybox (HDRI), PostFX (pós-processamento).
+- Física: RigidBodyComponent, ColliderComponent, PhysicsSystem (impulso); \
+VehiclePhysics + VehicleGravitySystem + VehicleWallCollisionSystem (veículo).
+- ECS: World, Entity, Component, System.
+- Componentes/sistemas genéricos: TransformComponent, Object3DComponent, \
+KinematicBodyComponent, FollowCameraTargetComponent, EditableTargetComponent; \
+Object3DSyncSystem, ThirdPersonCameraSystem.
+- Editor embutido: EditorState, EditorHud, EditorCameraSystem, ObjectEditSystem.
+- Cena em JSON/IO: SceneFile, SceneLoader, SceneFileWriter, HttpSceneFileWriter, \
+TauriSceneFileWriter, autoDetectSceneFileWriter.
+- Pós-processamento WebGPU (NÃO existe EffectComposer — é WebGL): use PostFX \
+(recomendado) ou RenderPipeline + pass/mrt/output/renderOutput/bloom/fxaa, com \
+constantes de tone mapping (ACESFilmicToneMapping/AgX/Neutral/Reinhard/Cineon/Linear/No).
+- HDRI: Skybox.fromHDRI(scene, url, opts), RGBELoader, EquirectangularReflectionMapping.
+- Re-exports de three: Mesh/InstancedMesh/Object3D/Group/SkinnedMesh/Bone/Skeleton; \
+geometrias (Box/Sphere/Plane/Cylinder/Cone/Torus/Buffer); materiais (MeshStandard/\
+Basic/Phong/Lambert/LineBasic + DoubleSide/FrontSide/BackSide); luzes (Ambient/\
+Directional/Point/Spot/Hemisphere); math (Color/Vector2/Vector3/Quaternion/Euler/\
+Matrix3/Matrix4/MathUtils/Box3/Sphere/Frustum/Plane/Ray/Raycaster); animação \
+(AnimationMixer/AnimationClip/AnimationAction/Clock); instancing (InstancedBuffer*/\
+BufferAttribute/Float32BufferAttribute/*DrawUsage); áudio (Audio/PositionalAudio/\
+AudioListener); addons (TransformControls, OrbitControls, clone de SkeletonUtils — \
+use \`clone(model)\` em vez de \`model.clone(true)\` p/ SkinnedMesh).
+
 - O motor vive em \`vendor/cortex-game-engine/\` dentro do projeto. \
 Antes de codar features que envolvem cena, render, input, áudio, física, \
 ECS ou modelos 3D, **leia \`vendor/cortex-game-engine/index.d.ts\`** para \
