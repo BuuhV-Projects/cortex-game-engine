@@ -324,6 +324,7 @@ const VENDOR_TYPE_MODULES = {
     'GamepadManager',
     'Physics',
     'LoadingScreen',
+    'Skybox',
   ],
   ecs: ['Entity', 'Component', 'System', 'World'],
   components: [

@@ -245,12 +245,18 @@ export class Renderer {
     return this._height;
   }
 
-  /**
-   * Instância interna do `WebGPURenderer`.
-   * Exposta apenas para casos avançados (ex: pós-processamento).
-   * Prefira sempre os métodos públicos da classe.
-   */
+  /** Elemento `<canvas>` onde o renderer desenha. */
   get domElement(): HTMLCanvasElement {
     return this._renderer.domElement;
+  }
+
+  /**
+   * Instância interna do `WebGPURenderer`.
+   * Exposta para casos avançados: pós-processamento (passar pra `PostProcessing`
+   * de `three/webgpu`) e geração de environment maps. Prefira os métodos
+   * públicos da classe sempre que possível.
+   */
+  get threeRenderer(): WebGPURenderer {
+    return this._renderer;
   }
 }

@@ -16,6 +16,7 @@ export * from './core/InputManager.js';
 export * from './core/GamepadManager.js';
 export * from './core/Physics.js';
 export * from './core/LoadingScreen.js';
+export * from './core/Skybox.js';
 
 // ─── ECS ───────────────────────────────────────────────────────────────────────
 export * from './ecs/Entity.js';
@@ -149,3 +150,17 @@ export { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 //   grudadas/invisíveis. Use `clone(model)` em vez de `model.clone(true)` para
 //   instanciar vários inimigos/NPCs do mesmo GLTF skinned.
 export { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+
+// ─── Pós-processamento (WebGPU) ────────────────────────────────────────────────
+// O engine é WebGPU-only (ADR-0032), então o caminho de pós-processamento é a
+// classe `PostProcessing` de `three/webgpu` com nós TSL — NÃO o `EffectComposer`
+// clássico de `examples/jsm/postprocessing/` (esse é WebGL e não funciona com o
+// WebGPURenderer). `new PostProcessing(renderer.threeRenderer)` + nós como
+// `pass(scene, camera)` e `bloom(node)`. Ver ADR-0035.
+export { PostProcessing } from 'three/webgpu';
+export { pass, mrt, output } from 'three/tsl';
+export { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
+
+// HDRI: loader e o mapping usados pelo Skybox; expostos pra uso avançado direto.
+export { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+export { EquirectangularReflectionMapping } from 'three';
