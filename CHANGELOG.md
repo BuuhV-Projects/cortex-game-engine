@@ -1,3 +1,23 @@
+# [0.6.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.5.0...v0.6.0) (2026-06-01)
+
+
+### Bug Fixes
+
+* **installer:** empacota recursos do IDE via extraResources ([ca99bdd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ca99bdde7e44052fdf6fac4ea0b4cb7a88cd3314)), closes [#7512](https://github.com/BuuhV-Projects/cortex-game-engine/issues/7512)
+
+
+### Features
+
+* **engine:** classe PostFX consolida pós-processamento (pipeline+pass+bloom) ([6af4aa7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6af4aa7205748984311596fe63ac313ee7f2c3b3))
+* **engine:** pós-processamento WebGPU (PostProcessing+TSL) e Skybox/HDRI ([18a19b8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/18a19b8ff176f1988200c24a5202a2942425ff09))
+* **engine:** PostFX ganha tone mapping/exposição, vinheta e FXAA ([2d06c51](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2d06c51cec1b577e6516e6719b969af1b1afe5b8))
+* **engine:** re-exporta constantes de tone mapping + fxaa/renderOutput ([fb27839](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fb278392474ab410bfed6fb7eb8fa1e2695fd54f))
+* **engine:** re-exporta SkeletonUtils.clone para clonar SkinnedMesh ([8a0cf7b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8a0cf7b66851173b8c3a8f3cc7839c79630b1317))
+* **ide:** gera doc no build e vendoriza API.md pro Chat IA ([a88f25f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a88f25ffdd0f0cae5655f05f75a3e41fbee49d69))
+* **ide:** plan mode no Chat IA (3º modo do toggle) ([a772760](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a7727603ae403f99f56ba01caac81bd26143b6ca))
+* **ide:** playtest_game injeta input de teclado e captura logs ([db76c28](https://github.com/BuuhV-Projects/cortex-game-engine/commit/db76c288eecd4cf56e05c257c3c9cc04508d4627))
+* **template:** cena starter (céu + chão com névoa + cubo) e expõe Fog ([a574730](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a574730fc5aad6713dcbcea9c859f214d85a1ea3))
+
 # [0.5.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.4.1...v0.5.0) (2026-05-31)
 
 
