@@ -109,9 +109,16 @@ export class Chat {
    * está usando; depois ficam órfãs em `.cortex/paste/`.
    */
   private pastesToCleanup: string[] = []
-  /** 'ask' pede aprovação por tool (default); 'auto' aprova tudo direto. */
-  private mode: 'ask' | 'auto' = (localStorage.getItem('chat_mode') as 'ask' | 'auto') ?? 'ask'
+  /**
+   * 'ask' pede aprovação por tool (default); 'auto' aprova tudo direto;
+   * 'plan' é read-only e o agente devolve um plano pra aprovação (ADR-0036).
+   */
+  private mode: 'ask' | 'auto' | 'plan' =
+    (localStorage.getItem('chat_mode') as 'ask' | 'auto' | 'plan') ?? 'ask'
   private modeToggleEl: HTMLButtonElement | null = null
+
+  /** true quando o turno atual foi enviado em modo plan — dispara a barra de aprovação no fim. */
+  private lastTurnWasPlan = false
 
   // Indicador "Pensando..." mostrado entre o envio da mensagem e o primeiro
   // chunk de texto ou tool_request. Some assim que qualquer feedback do
@@ -265,21 +272,33 @@ export class Chat {
     this.renderAttachments()
   }
 
-  // ── Modo do agente: ask (default, pede aprovação) vs auto (aprova tudo) ──
+  // ── Modo do agente: ask (pede aprovação) → auto (aprova tudo) → plan (planeja) ──
 
   private toggleMode(): void {
-    this.mode = this.mode === 'ask' ? 'auto' : 'ask'
+    this.mode = this.mode === 'ask' ? 'auto' : this.mode === 'auto' ? 'plan' : 'ask'
     localStorage.setItem('chat_mode', this.mode)
     this.renderModeToggle()
   }
 
   private renderModeToggle(): void {
     if (!this.modeToggleEl) return
-    const isAuto = this.mode === 'auto'
-    this.modeToggleEl.classList.toggle('chat-mode-btn--auto', isAuto)
-    this.modeToggleEl.classList.toggle('chat-mode-btn--ask', !isAuto)
-    this.modeToggleEl.textContent = isAuto ? t('chat.mode_auto') : t('chat.mode_ask')
-    this.modeToggleEl.title = isAuto ? t('chat.tooltip_mode_auto') : t('chat.tooltip_mode_ask')
+    this.modeToggleEl.classList.toggle('chat-mode-btn--auto', this.mode === 'auto')
+    this.modeToggleEl.classList.toggle('chat-mode-btn--ask', this.mode === 'ask')
+    this.modeToggleEl.classList.toggle('chat-mode-btn--plan', this.mode === 'plan')
+    const label =
+      this.mode === 'auto'
+        ? t('chat.mode_auto')
+        : this.mode === 'plan'
+          ? t('chat.mode_plan')
+          : t('chat.mode_ask')
+    const tip =
+      this.mode === 'auto'
+        ? t('chat.tooltip_mode_auto')
+        : this.mode === 'plan'
+          ? t('chat.tooltip_mode_plan')
+          : t('chat.tooltip_mode_ask')
+    this.modeToggleEl.textContent = label
+    this.modeToggleEl.title = tip
   }
 
   /** Apaga o histórico do projeto ativo e limpa a UI. */
@@ -408,6 +427,7 @@ export class Chat {
       this.hideThinking()
       this.liveAssistantItem = null
       this.currentTurnAssistantText = ''
+      this.lastTurnWasPlan = false
       this.updateInputState()
       this.inputEl?.focus()
     })
@@ -462,12 +482,34 @@ export class Chat {
     this.clearAttachments()
     this.currentTurnAssistantText = ''
     this.liveAssistantItem = null
+    this.lastTurnWasPlan = this.mode === 'plan'
     this.streaming = true
     this.updateInputState()
     this.showThinking()
 
     try {
       await window.electronAPI.chat(this.messagesSent, this.mode)
+    } catch (err) {
+      this.handleError(String(err))
+    }
+  }
+
+  /**
+   * Envia um turno programático (sem ler o textarea) — usado ao aprovar um
+   * plano pra disparar a implementação. Espelha o essencial de `send()`.
+   */
+  private async sendPrompt(content: string, mode: 'ask' | 'auto' | 'plan'): Promise<void> {
+    if (this.streaming) return
+    this.messagesSent.push({ role: 'user', content })
+    this.appendItem({ kind: 'message', role: 'user', content, el: null })
+    this.currentTurnAssistantText = ''
+    this.liveAssistantItem = null
+    this.lastTurnWasPlan = mode === 'plan'
+    this.streaming = true
+    this.updateInputState()
+    this.showThinking()
+    try {
+      await window.electronAPI.chat(this.messagesSent, mode)
     } catch (err) {
       this.handleError(String(err))
     }
@@ -523,7 +565,8 @@ export class Chat {
 
   private handleDone(stats: TurnStats | null): void {
     this.hideThinking()
-    if (this.currentTurnAssistantText.length > 0) {
+    const hadText = this.currentTurnAssistantText.length > 0
+    if (hadText) {
       this.messagesSent.push({ role: 'assistant', content: this.currentTurnAssistantText })
     }
     this.currentTurnAssistantText = ''
@@ -533,6 +576,58 @@ export class Chat {
     if (stats) this.appendStats(stats)
     this.saveHistory()
     this.cleanupPastes()
+    // Modo plan: terminando com um plano, oferece Aprovar/Recusar.
+    if (this.lastTurnWasPlan && hadText) {
+      this.renderPlanActions()
+    }
+    this.lastTurnWasPlan = false
+  }
+
+  /**
+   * Barra mostrada ao fim de um turno em modo plan: o usuário aprova (dispara a
+   * implementação num turno auto) ou recusa (fica em plan pra refinar). ADR-0036.
+   */
+  private renderPlanActions(): void {
+    if (!this.messagesEl) return
+    const bar = document.createElement('div')
+    bar.className = 'chat-plan-actions'
+
+    const label = document.createElement('div')
+    label.className = 'chat-plan-actions-label'
+    label.textContent = t('chat.plan_ready')
+
+    const buttons = document.createElement('div')
+    buttons.className = 'chat-plan-actions-buttons'
+
+    const approve = document.createElement('button')
+    approve.className = 'chat-plan-approve'
+    approve.textContent = t('chat.plan_approve')
+    approve.addEventListener('click', () => {
+      bar.remove()
+      // Sai de plan pra executar. 'auto' implementa sem reaprovar cada edit — a
+      // aprovação do plano já é o consentimento (ADR-0036). O usuário pode parar
+      // a qualquer momento ou trocar o modo depois.
+      this.mode = 'auto'
+      localStorage.setItem('chat_mode', this.mode)
+      this.renderModeToggle()
+      void this.sendPrompt(t('chat.plan_approved_prompt'), 'auto')
+    })
+
+    const reject = document.createElement('button')
+    reject.className = 'chat-plan-reject'
+    reject.textContent = t('chat.plan_reject')
+    reject.addEventListener('click', () => {
+      // Continua em modo plan; o usuário digita o ajuste que quer no plano.
+      bar.remove()
+      this.inputEl?.focus()
+    })
+
+    buttons.appendChild(approve)
+    buttons.appendChild(reject)
+    bar.appendChild(label)
+    bar.appendChild(buttons)
+    this.messagesEl.appendChild(bar)
+    this.scrollToBottom()
   }
 
   /**
@@ -576,6 +671,7 @@ export class Chat {
     })
     this.currentTurnAssistantText = ''
     this.streaming = false
+    this.lastTurnWasPlan = false
     this.updateInputState()
     // Mesmo em erro, a IA já recebeu as imagens (ou tentou) — limpa o disco.
     this.cleanupPastes()

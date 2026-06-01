@@ -63,8 +63,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('terminal:stop'),
 
   // Chat IA (ADR-0014, ADR-0017)
-  chat: (messages: Array<{ role: 'user' | 'assistant'; content: string }>, mode: 'ask' | 'auto') =>
-    ipcRenderer.invoke('ai:chat', messages, mode),
+  chat: (
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    mode: 'ask' | 'auto' | 'plan',
+  ) => ipcRenderer.invoke('ai:chat', messages, mode),
 
   // Define o projeto que o agente do chat vê (sandbox de tools — ADR-0017)
   setActiveProject: (projectDir: string | null) =>

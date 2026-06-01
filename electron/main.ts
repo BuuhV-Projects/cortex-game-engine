@@ -1002,7 +1002,7 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
     mainWindow?.webContents.send('ai:error', { message: 'messages deve ser array' })
     return
   }
-  const agentMode = mode === 'auto' ? 'auto' : 'ask'
+  const agentMode = mode === 'auto' ? 'auto' : mode === 'plan' ? 'plan' : 'ask'
   if (agentRunning) {
     mainWindow?.webContents.send('ai:error', {
       message: 'Outro turno do agente já está em andamento.',

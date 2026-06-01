@@ -55,7 +55,7 @@ export interface ElectronAPI {
   // Chat IA
   chat(
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    mode: 'ask' | 'auto',
+    mode: 'ask' | 'auto' | 'plan',
   ): Promise<void>
   setActiveProject(projectDir: string | null): Promise<void>
   decideToolCall(id: string, approved: boolean): Promise<void>

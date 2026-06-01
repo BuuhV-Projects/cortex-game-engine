@@ -120,6 +120,21 @@ esperar, dar \`tap\` em \`Space\` (pulo) e \`screenshot\` nos pontos-chave. Cada
 
 Seja conciso. Não repita o que as ferramentas já mostram no output.`
 
+// Anexado ao system prompt só nos turnos em modo PLAN. O agente pesquisa
+// read-only e devolve um plano em texto; a implementação só vem depois que o
+// usuário aprovar (fluxo por turno — ver ADR-0036).
+const PLAN_MODE_PROMPT = `
+
+MODO PLANO (ativo SOMENTE neste turno):
+- Você está PLANEJANDO, não implementando. NÃO crie nem edite arquivos e NÃO \
+rode comandos que modifiquem o projeto — neste modo qualquer tool que não seja \
+de leitura (Read/Glob/Grep) é bloqueada automaticamente.
+- Pesquise o necessário (Read/Grep/Glob) e produza, como sua RESPOSTA FINAL em \
+texto, um PLANO de implementação claro: objetivo, arquivos a criar/editar, \
+passos numerados e pontos de atenção/decisões. Use markdown.
+- Seja específico e conciso. Termine com o plano — a implementação acontece \
+depois que o usuário aprovar o plano.`
+
 const APPROVED_AUTO_TOOLS = new Set(['Read', 'Glob', 'Grep', 'NotebookRead'])
 
 export interface ChatMessage {
@@ -172,7 +187,7 @@ export interface AgentApproval {
   requestApproval(request: ToolRequest): Promise<boolean>
 }
 
-export type AgentMode = 'ask' | 'auto'
+export type AgentMode = 'ask' | 'auto' | 'plan'
 
 export interface RunAgentOptions {
   prompt: string
@@ -191,6 +206,9 @@ export interface RunAgentOptions {
   /**
    * 'ask' (default): toda tool fora do conjunto auto-aprovado pede confirmação.
    * 'auto': tudo é aprovado direto; cards de tool aparecem só como histórico.
+   * 'plan': read-only — toda tool mutante é bloqueada e o agente devolve um
+   * plano em texto. A implementação roda num turno seguinte, após aprovação
+   * (ADR-0036).
    */
   mode: AgentMode
 }
@@ -210,9 +228,13 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
       }
     : undefined
 
+  // Em modo plan, anexamos as instruções de planejamento ao system prompt.
+  const systemAppend =
+    opts.mode === 'plan' ? `${AGENT_SYSTEM_PROMPT}${PLAN_MODE_PROMPT}` : AGENT_SYSTEM_PROMPT
+
   const queryOptions: Options = {
     cwd: opts.projectRoot ?? undefined,
-    systemPrompt: { type: 'preset', preset: 'claude_code', append: AGENT_SYSTEM_PROMPT },
+    systemPrompt: { type: 'preset', preset: 'claude_code', append: systemAppend },
     // resume tem precedência sobre continue. Se temos um sessionId persistido
     // do passado (mesmo projeto, outra sessão do IDE), restauramos a conversa
     // completa no backend. Senão, continue mantém o contexto dentro da mesma
@@ -225,6 +247,19 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
       // Tools de leitura pura sempre rodam sem perguntar, em qualquer mode.
       if (APPROVED_AUTO_TOOLS.has(toolName)) {
         return { behavior: 'allow', updatedInput: input } as PermissionResult
+      }
+
+      // Modo plan: só leitura. Bloqueia qualquer tool que possa modificar o
+      // projeto (Write/Edit/Bash/MCP). O agente deve apresentar o plano em
+      // texto; a implementação roda no turno seguinte, após aprovação. Não
+      // emitimos card (onToolRequest) — a recusa é silenciosa pro usuário.
+      if (opts.mode === 'plan') {
+        return {
+          behavior: 'deny',
+          message:
+            'MODO PLANO: ações que modificam o projeto estão bloqueadas. ' +
+            'Apresente o plano final em texto; a implementação acontece após o usuário aprovar.',
+        } as PermissionResult
       }
 
       const needsApproval = opts.mode === 'ask'
