@@ -24,26 +24,33 @@ O three tem um caminho de pós-processamento **nativo de WebGPU**: a classe
 
 ## Decisão
 
-**Pós-processamento** — re-exportar o caminho WebGPU em `src/index-runtime.ts`,
-não o EffectComposer:
+**Pós-processamento** — caminho WebGPU, não EffectComposer. Há dois níveis:
 
-```ts
-export { PostProcessing } from 'three/webgpu';
-export { pass, mrt, output } from 'three/tsl';
-export { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
-```
+1. **`PostFX`** (`src/core/PostFX.ts`) — classe consolidada, o caminho
+   recomendado. Encapsula `RenderPipeline` + `pass` + `bloom`:
 
-Uso típico (`renderer` é o `Renderer` do engine):
+   ```ts
+   const postfx = new PostFX(renderer, scene, camera, { bloom: { strength: 0.9 } });
+   // no loop, em vez de renderer.render(...):  postfx.render();
+   // ajuste em runtime: postfx.bloom?.strength.value = 1.2;
+   ```
 
-```ts
-const post = new PostProcessing(renderer.threeRenderer);
-const scenePass = pass(scene.getThreeScene(), camera);
-post.outputNode = scenePass.add(bloom(scenePass, 0.8));
-// no loop, em vez de renderer.render(...):  await post.renderAsync();
-```
+2. **Blocos crus** re-exportados pra montar pipelines à mão:
+
+   ```ts
+   export { RenderPipeline, PostProcessing } from 'three/webgpu';
+   export { pass, mrt, output } from 'three/tsl';
+   export { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
+   ```
+
+   `RenderPipeline` é a classe atual; `PostProcessing` é o nome antigo
+   (deprecado desde r183), mantido por compatibilidade. `RenderPipeline.render()`
+   é síncrono (exige `renderer` já inicializado).
 
 Para isso, `Renderer` ganhou o getter **`threeRenderer`** (instância interna do
-`WebGPURenderer`), antes não exposta.
+`WebGPURenderer`), antes não exposta. `PostFX` guarda os defaults de bloom
+(`strength 0.8`, `radius 0`, `threshold 0`) e faz no-op enquanto o backend
+WebGPU não inicializou (mesma guarda do `Renderer.render`).
 
 **Skybox/HDRI** — novo módulo `src/core/Skybox.ts` com `Skybox.fromHDRI(scene,
 url, opts)`: carrega um HDRI equiretangular (`RGBELoader`), seta

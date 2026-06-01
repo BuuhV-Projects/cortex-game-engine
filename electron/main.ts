@@ -325,6 +325,7 @@ const VENDOR_TYPE_MODULES = {
     'Physics',
     'LoadingScreen',
     'Skybox',
+    'PostFX',
   ],
   ecs: ['Entity', 'Component', 'System', 'World'],
   components: [

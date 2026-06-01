@@ -17,6 +17,7 @@ export * from './core/GamepadManager.js';
 export * from './core/Physics.js';
 export * from './core/LoadingScreen.js';
 export * from './core/Skybox.js';
+export * from './core/PostFX.js';
 
 // ─── ECS ───────────────────────────────────────────────────────────────────────
 export * from './ecs/Entity.js';
@@ -152,12 +153,15 @@ export { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 export { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 // ─── Pós-processamento (WebGPU) ────────────────────────────────────────────────
-// O engine é WebGPU-only (ADR-0032), então o caminho de pós-processamento é a
-// classe `PostProcessing` de `three/webgpu` com nós TSL — NÃO o `EffectComposer`
+// O engine é WebGPU-only (ADR-0032), então o caminho de pós-processamento é o
+// `RenderPipeline` de `three/webgpu` com nós TSL — NÃO o `EffectComposer`
 // clássico de `examples/jsm/postprocessing/` (esse é WebGL e não funciona com o
-// WebGPURenderer). `new PostProcessing(renderer.threeRenderer)` + nós como
-// `pass(scene, camera)` e `bloom(node)`. Ver ADR-0035.
-export { PostProcessing } from 'three/webgpu';
+// WebGPURenderer). Para os casos comuns prefira a classe `PostFX` (core), que
+// consolida pipeline + pass + bloom. Para montar pipelines à mão, use
+// `RenderPipeline` + `pass`/`bloom`/`mrt`/`output` direto. Ver ADR-0035.
+// `PostProcessing` é o nome antigo do `RenderPipeline` (deprecado desde r183),
+// mantido aqui por compatibilidade.
+export { RenderPipeline, PostProcessing } from 'three/webgpu';
 export { pass, mrt, output } from 'three/tsl';
 export { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 
