@@ -143,3 +143,9 @@ export {
 // - OrbitControls: câmera orbital (útil em ferramentas/preview).
 export { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 export { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+// - SkeletonUtils.clone: clona corretamente meshes com skin (SkinnedMesh).
+//   O `Object3D.clone()` do three compartilha o mesmo Skeleton entre os clones,
+//   então N cópias de um modelo rigado (Mixamo, characters de GLTF/FBX) ficam
+//   grudadas/invisíveis. Use `clone(model)` em vez de `model.clone(true)` para
+//   instanciar vários inimigos/NPCs do mesmo GLTF skinned.
+export { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
