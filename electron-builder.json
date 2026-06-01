@@ -11,6 +11,10 @@
     { "from": "templates", "to": "templates" },
     { "from": "dist-engine", "to": "dist-engine" },
     {
+      "from": "docs/cortex-game-engine/engine-api.md",
+      "to": "docs/cortex-game-engine/engine-api.md"
+    },
+    {
       "from": "dist/src",
       "to": "dist/src",
       "filter": ["**/*.d.ts", "**/*.js"]

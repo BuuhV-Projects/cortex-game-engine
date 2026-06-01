@@ -411,6 +411,15 @@ async function vendorEngine(projectPath: string): Promise<void> {
       join(vendorDir, 'vite', `sceneSavePlugin.${ext}`),
     )
   }
+
+  // Doc da API (catálogo + receitas) vendorizada como API.md — o Chat IA lê
+  // dentro do projeto pra saber o que o engine expõe ao criar features, e ela
+  // viaja com o projeto (inclusive pro build Tauri). Fonte:
+  // docs/cortex-game-engine/engine-api.md (ADR-0034 a empacota via extraResources).
+  await cp(
+    join(appPath, 'docs', 'cortex-game-engine', 'engine-api.md'),
+    join(vendorDir, 'API.md'),
+  )
 }
 
 // Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}

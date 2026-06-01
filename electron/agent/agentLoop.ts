@@ -88,11 +88,11 @@ BufferAttribute/Float32BufferAttribute/*DrawUsage); áudio (Audio/PositionalAudi
 AudioListener); addons (TransformControls, OrbitControls, clone de SkeletonUtils — \
 use \`clone(model)\` em vez de \`model.clone(true)\` p/ SkinnedMesh).
 
-- O motor vive em \`vendor/cortex-game-engine/\` dentro do projeto. \
-Antes de codar features que envolvem cena, render, input, áudio, física, \
-ECS ou modelos 3D, **leia \`vendor/cortex-game-engine/index.d.ts\`** para \
-saber o que está exportado. Os módulos \`core/*.d.ts\` e \`ecs/*.d.ts\` ao \
-lado têm o detalhe de cada classe.
+- O motor vive em \`vendor/cortex-game-engine/\` dentro do projeto. O catálogo \
+acima é um resumo; para detalhes e receitas de uso, **leia \
+\`vendor/cortex-game-engine/API.md\`**. Para assinaturas exatas, \
+\`vendor/cortex-game-engine/index.d.ts\` (e os \`core/*.d.ts\`/\`ecs/*.d.ts\` ao \
+lado) têm o tipo de cada classe.
 - Imports devem vir de \`'cortex-game-engine'\` (alias do Vite resolve). \
 NÃO importe direto de \`'three'\`: o pacote three não está em \`node_modules\` \
 do projeto e os tipos vêm pelo engine.

@@ -55,11 +55,17 @@ Esses recursos saem do `app.asar` e passam a ser copiados via
 "extraResources": [
   { "from": "templates", "to": "templates" },
   { "from": "dist-engine", "to": "dist-engine" },
+  { "from": "docs/cortex-game-engine/engine-api.md",
+    "to": "docs/cortex-game-engine/engine-api.md" },
   { "from": "dist/src", "to": "dist/src", "filter": ["**/*.d.ts", "**/*.js"] },
   { "from": "node_modules/@types/three", "to": "node_modules/@types/three",
     "filter": ["**/*.d.ts", "package.json"] }
 ]
 ```
+
+> A doc da API (`engine-api.md`) entra aqui porque o `vendorEngine` a copia pra
+> cada projeto criado como `vendor/cortex-game-engine/API.md` — o Chat IA lê ela
+> dentro do projeto (e ela viaja com o projeto, inclusive pro build Tauri).
 
 Os destinos preservam os mesmos subpaths que existem na raiz do repo em dev
 (`dist/src`, `dist-engine`, `templates`, `node_modules/@types/three`).
