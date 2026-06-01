@@ -4,10 +4,11 @@
  *   2. Delegar setup da cena a `scenes/` quando o projeto crescer.
  *   3. Iniciar o loop.
  *
- * Conforme o jogo cresce, mova as criações de Mesh/luzes/entidades pra
- * `scenes/MainScene.ts` (ou similar) — main.ts deve ser fino. Components
- * em `components/`, lógica em `systems/`, factories em `entities/`.
- * Mais regras em README.md.
+ * Começa com uma cena "starter": céu, um chão que some no horizonte (névoa) e um
+ * cubo no centro — ponto de partida pra você construir em cima. Conforme o jogo
+ * cresce, mova as criações de Mesh/luzes/entidades pra `scenes/MainScene.ts`
+ * (ou similar) — main.ts deve ser fino. Components em `components/`, lógica em
+ * `systems/`, factories em `entities/`. Mais regras em README.md.
  */
 import {
   GameLoop,
@@ -16,8 +17,11 @@ import {
   PerspectiveCamera,
   Mesh,
   BoxGeometry,
+  PlaneGeometry,
   MeshStandardMaterial,
-  AmbientLight,
+  Color,
+  Fog,
+  HemisphereLight,
   DirectionalLight,
 } from 'cortex-game-engine'
 
@@ -26,6 +30,7 @@ import {
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
 
 const scene = new Scene()
+const three = scene.getThreeScene()
 
 const renderer = new Renderer({
   canvas,
@@ -34,26 +39,52 @@ const renderer = new Renderer({
 })
 
 const camera = new PerspectiveCamera(
-  75,                                      // field of view (graus)
+  60,                                      // field of view (graus)
   window.innerWidth / window.innerHeight,  // aspect ratio
   0.1,                                     // near plane
   1000,                                    // far plane
 )
-camera.position.z = 5
+camera.position.set(5, 4, 7)
+camera.lookAt(0, 0.5, 0)
 
-// ─── Iluminação ───────────────────────────────────────────────────────────────
+// Mantém a câmera correta quando a janela é redimensionada (o Renderer já
+// ajusta o próprio tamanho sozinho).
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+})
 
-scene.add(new AmbientLight(0xffffff, 0.4))
-const dirLight = new DirectionalLight(0xffffff, 0.8)
-dirLight.position.set(3, 5, 4)
-scene.add(dirLight)
+// ─── Céu + névoa ──────────────────────────────────────────────────────────────
+// Fundo azul-céu e uma névoa da MESMA cor: o chão se dissolve no horizonte,
+// dando a sensação de mundo infinito. Troque a cor por um azul-mar (ex.: 0x3b6e8f)
+// se quiser um "oceano" em vez de céu.
+const SKY = 0x9fc6e0
+three.background = new Color(SKY)
+three.fog = new Fog(SKY, 30, 140)
 
-// ─── Objeto: cubo ─────────────────────────────────────────────────────────────
+// ─── Iluminação (exterior) ────────────────────────────────────────────────────
+// HemisphereLight = luz do céu por cima + cor do chão por baixo (ambiente
+// natural). DirectionalLight faz de "sol", dando volume ao cubo.
+scene.add(new HemisphereLight(SKY, 0x6b6b5a, 0.9))
+const sun = new DirectionalLight(0xffffff, 1.2)
+sun.position.set(8, 12, 6)
+scene.add(sun)
 
+// ─── Chão "infinito" ──────────────────────────────────────────────────────────
+// Plano grande na horizontal; as bordas somem na névoa.
+const ground = new Mesh(
+  new PlaneGeometry(500, 500),
+  new MeshStandardMaterial({ color: 0x4f7a3a, roughness: 1 }),
+)
+ground.rotation.x = -Math.PI / 2
+scene.add(ground)
+
+// ─── Cubo central ─────────────────────────────────────────────────────────────
 const cube = new Mesh(
   new BoxGeometry(1, 1, 1),
   new MeshStandardMaterial({ color: 0x4ec9b0 }),
 )
+cube.position.y = 0.5 // apoiado em cima do chão
 scene.add(cube)
 
 // ─── Loop principal ───────────────────────────────────────────────────────────
@@ -61,8 +92,7 @@ scene.add(cube)
 const loop = new GameLoop({
   onUpdate(deltaTime: number) {
     const dt = deltaTime / 1000
-    cube.rotation.x += 0.6 * dt
-    cube.rotation.y += 0.9 * dt
+    cube.rotation.y += 0.6 * dt // gira devagar só pra mostrar que está rodando
     renderer.render(scene.getThreeScene(), camera)
   },
 })

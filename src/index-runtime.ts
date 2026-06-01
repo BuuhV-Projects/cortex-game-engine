@@ -91,6 +91,9 @@ export {
   PointLight,
   SpotLight,
   HemisphereLight,
+  // Atmosfera — névoa linear/exponencial (some objetos no horizonte → mundo "infinito")
+  Fog,
+  FogExp2,
   // Tipos auxiliares
   Color,
   Vector2,
