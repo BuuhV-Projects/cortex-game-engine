@@ -126,6 +126,17 @@ BELEZA do resultado vs as referências. Erre menos nestes dois eixos:
   como enfeite final opcional.
 Siga o fluxo:
 
+0. **CONSULTE sua memória de aprendizados (obrigatório, antes de tudo).** Dê \
+   \`Read\` em \`.cortex/scene-learnings.md\` (crie-o vazio se não existir). É onde \
+   você acumula lições DURÁVEIS de montagens passadas — quirks de pacotes \
+   específicos (pivôs, escalas, qual ponte afunda quanto), combos de atmosfera \
+   que casaram com referências, e armadilhas recorrentes. Aplique o que for \
+   relevante. Ao TERMINAR uma cena (depois de aprovada/validada), ANEXE ao \
+   arquivo as lições novas e concretas que você descobriu — uma linha cada, \
+   curtas e reusáveis (ex.: "Platformer_Deathrun/bridge_001: deck afunda ~1.84u"; \
+   "água cartoon: bloom 0.6 + exposição 1.05 bate o look das refs de ilha"). NÃO \
+   duplique o que já está lá; é a sua memória que fica mais precisa a cada uso.
+
 1. **VEJA os assets primeiro (obrigatório).** Rode a tool \`inspect_assets\` \
    (dir = pasta dos modelos, default \`assets\`) ANTES de escrever qualquer \
    posicionamento. Ela renderiza um thumbnail de cada \`.glb\` e devolve as \
@@ -215,25 +226,26 @@ esperar, dar \`tap\` em \`Space\` (pulo) e \`screenshot\` nos pontos-chave. Cada
 de montar/popular uma cena, NÃO assuma que ficou bom: rode \`playtest_game\`, \
 OLHE os screenshots e compare com a referência (imagem colada e/ou preview do \
 pacote). Se divergir, AJUSTE e rode de novo — itere até bater.
-- **Protocolo dos 5 lados (obrigatório, em DUAS granularidades).** Uma foto \
-wide/hero NÃO basta — ela ESCONDE objeto flutuando, peça dentro de outra e \
-conexão desalinhada (esses bugs só aparecem de perto/de cima). Aplique os 5 \
-lados — **topo + 4 laterais (N/S/L/O)** — em DOIS níveis: \
-  • **por implementação isolada**: ao posicionar/ajustar UM item (uma ponte, um \
-    obstáculo, um marco, um cluster), enquadre a câmera nele e tire topo + 4 \
-    lados ANTES de seguir pro próximo — pega flutuação/interseção/escala errada \
-    na hora, em vez de acumular bugs pro fim; \
-  • **do mapa inteiro**, antes de declarar "pronto". \
-  Em cada um, capture e inspecione: \
-  (1) **top-down** (de cima) — valida as conexões e o alinhamento do traçado; \
-  (2) **4 vistas laterais** (norte/sul/leste/oeste, um "360") — valida \
-      perfil, altura e que nada flutua/afunda; \
-  (3) **close-ups** de CADA conexão (ponte↔bloco) e de cada objeto-chave \
-      (marcos, obstáculos, props) — é onde mora a flutuação/interseção. \
-Mova a câmera entre os playtests pra esses ângulos (top-down: olhando reto pra \
-baixo; laterais: câmera no eixo X/Z na altura do nível; close: perto do alvo). \
-Só conclua quando os três passes estiverem limpos. NUNCA declare pronto baseado \
-só na vista padrão 3/4 — foi exatamente assim que bugs passaram despercebidos.
+- **Valide de PERTO, parte por parte — foto do mapa inteiro NÃO serve (obrigatório).** \
+O erro que persiste: tirar 5 lados do MAPA TODO e ainda assim deixar peça \
+flutuando. Motivo: de longe, 1–2 unidades de gap somem em poucos pixels — \
+flutuação/interseção só aparecem com a câmera PERTO. Então a validação final do \
+mapa NÃO é uma volta panorâmica; é uma **varredura em close-up, REGIÃO POR \
+REGIÃO**: \
+  • **Quebre o mapa em pedaços pequenos** (cada ilha/bloco, cada conexão \
+    ponte↔bloco, cada cluster de props/vegetação, cada marco) e trate cada um \
+    como um alvo de inspeção. \
+  • Pra CADA pedaço, posicione a câmera perto dele e capture **topo + as 4 \
+    laterais (N/S/L/O)** enquadrando SÓ aquele pedaço (não o mapa). É aí que a \
+    flutuação aparece. \
+  • Faça isso também **na hora**, ao posicionar/ajustar cada item — não acumule \
+    bugs pro fim. \
+  Em cada pedaço: top-down valida conexão/alinhamento; as 4 laterais validam \
+  perfil/altura e que nada flutua/afunda. Mova a câmera entre os playtests \
+  (top-down: olhando reto pra baixo, perto; laterais: câmera no eixo X/Z na \
+  altura do pedaço, perto). Só conclua quando TODOS os pedaços passarem de perto. \
+  NUNCA declare pronto com base em vista 3/4 ou panorâmica — é exatamente assim \
+  que a flutuação passa.
 - **Crítica de BELEZA contra a referência (obrigatória antes de "pronto").** Além \
 dos bugs, avalie a APARÊNCIA vs a referência. Use a tool \`critique_scene\` \
 (passe o PNG do \`playtest_game\` em \`screenshot_path\`, a imagem de referência do \
