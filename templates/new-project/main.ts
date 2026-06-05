@@ -1,82 +1,31 @@
 /**
- * Bootstrap do projeto — usa o facade `Game` do engine.
+ * Bootstrap do projeto — cena **data-driven**.
  *
- * `Game` cria e conecta Renderer, Scene, Câmera, World (ECS), Input e o loop. Em
- * DESENVOLVIMENTO o **modo editor** já vem ligado automaticamente pelo engine
- * (tecla **F2**: câmera de voo livre, gizmo, hierarquia e inspector) — sem nenhuma
- * linha aqui. No build de produção o editor nem entra no bundle, então não pesa
- * no jogo final (ver ADR-0042).
+ * A cena é DADO (arquivos JSON em `scenes/`), não código imperativo: o
+ * `buildScene` instancia os nós (modelos `.glb`, luzes, água, primitivas). Isso
+ * deixa o editor (F2, em dev) editar/remover/adicionar e SALVAR de volta sem
+ * desperdício — o loader é o único ponto de instanciação, então objeto removido
+ * nunca é criado. Lógica de jogo continua em TS (`systems/`, `components/`).
  *
- * O jogo só precisa: criar o `Game`, popular `game.scene`, registrar lógica em
- * `game.onUpdate(...)` (e/ou sistemas em `game.world`) e chamar `start()`. Conforme
- * o jogo cresce, mova a montagem da cena pra `scenes/` e a lógica pra `systems/`.
+ * Os JSON são **importados** (não buscados em runtime), então o Vite os bundla no
+ * build — multi-arquivo em dev, bundle único no build. Em DEV o editor F2 já vem
+ * ligado pelo engine; em produção o editor não entra no bundle (ADR-0042).
  */
-import {
-  Game,
-  Mesh,
-  BoxGeometry,
-  CylinderGeometry,
-  MeshStandardMaterial,
-  Color,
-  Fog,
-  Water,
-  setupOutdoorLighting,
-  placeOnGround,
-} from 'cortex-game-engine'
+import { Game, buildScene, type SceneDefinition } from 'cortex-game-engine'
+import world from './scenes/world.json'
+import props from './scenes/props.json'
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
 
 const game = new Game({ canvas })
-const three = game.scene.getThreeScene()
-
-// ─── Céu + névoa ──────────────────────────────────────────────────────────────
-const SKY = 0x9fd6ee
-three.background = new Color(SKY)
-three.fog = new Fog(SKY, 60, 220)
-
-// ─── Iluminação (preset exterior do engine) ───────────────────────────────────
-// Tone mapping cinematográfico + soft shadows + sol/hemisphere/ambient. Retorna
-// as luzes pra ajuste. Excluir um objeto do shadowMap: setShadows(obj, {castShadow:false}).
-const lights = setupOutdoorLighting(game.renderer, game.scene, { sky: SKY })
-lights.sun.intensity = 3.0
-
-// ─── Água (cartoon, com cáusticas animadas) ───────────────────────────────────
-const water = new Water(game.scene, {
-  y: -0.4,
-  color: 0x70d6ea,
-  causticsUrl: 'assets/textures/caustics.png',
-  repeat: 5,
-  causticsIntensity: 0.35,
-  flowSpeed: [0.012, 0.007],
-})
-
-// ─── Ilha ──────────────────────────────────────────────────────────────────────
-// placeOnGround assenta a BASE em y=-1 (afundada na água) e devolve as bordas/topo
-// reais — use `island.topY` pra apoiar coisas em cima, sem chutar alturas.
-const island = new Mesh(
-  new CylinderGeometry(6, 6.5, 2, 32),
-  new MeshStandardMaterial({ color: 0x6ab150, roughness: 1 }),
-)
-island.castShadow = true
-island.receiveShadow = true
-island.name = 'Island'
-game.scene.add(island)
-const islandBounds = placeOnGround(island, { y: -1 })
-
-// ─── Cubo (apoiado no topo da ilha) ───────────────────────────────────────────
-const cube = new Mesh(
-  new BoxGeometry(1, 1, 1),
-  new MeshStandardMaterial({ color: 0x4ec9b0 }),
-)
-cube.castShadow = true
-cube.receiveShadow = true
-cube.name = 'Cube'
-game.scene.add(cube)
-placeOnGround(cube, { x: 0, z: 0, y: islandBounds.topY })
-
-// ─── Lógica por frame ─────────────────────────────────────────────────────────
-game.onUpdate((dt) => {
-  water.update(dt) // anima as cáusticas
-})
-
 game.start()
+
+// Cast: o tipo inferido do import de JSON é estrutural, não a união discriminada
+// `SceneDefinition` — o conteúdo é validado em runtime pelo schema (zod).
+const scene = await buildScene(game.scene, [world, props] as unknown as SceneDefinition[], {
+  renderer: game.renderer,
+})
+
+game.onUpdate((dt) => {
+  scene.update(dt) // anima as cáusticas da água
+})

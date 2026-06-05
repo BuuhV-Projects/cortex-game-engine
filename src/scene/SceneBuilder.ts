@@ -1,0 +1,248 @@
+import {
+  Color,
+  Fog,
+  Mesh,
+  BoxGeometry,
+  CylinderGeometry,
+  PlaneGeometry,
+  SphereGeometry,
+  MeshStandardMaterial,
+  DirectionalLight,
+  HemisphereLight,
+  AmbientLight,
+  PCFSoftShadowMap,
+  type Object3D,
+} from 'three';
+import { Scene } from '../core/Scene.js';
+import type { Renderer } from '../core/Renderer.js';
+import { loadGLB, instance, placeOnGround } from './SceneAssets.js';
+import { Water } from './Water.js';
+import { setupOutdoorLighting } from './OutdoorLighting.js';
+import { parseSceneNode, type SceneDefinition, type SceneNode } from './SceneDefinition.js';
+import type { SceneFileV1 } from './SceneFile.js';
+
+/**
+ * Constrói a cena a partir de {@link SceneDefinition}(s) data-driven — o ÚNICO
+ * ponto de instanciação. Aplica a **overlay** do editor (um {@link SceneFileV1}):
+ * pula nós deletados (nunca instancia → sem desperdício), sobrescreve transforms
+ * editadas e instancia nós adicionados. Resolve delete/add/persistência de forma
+ * limpa, sem create-then-remove. Ver ADR.
+ */
+
+/** Handle da cena construída. */
+export interface SceneHandle {
+  /** Objetos instanciados, por `id`. */
+  byId: Map<string, Object3D>;
+  /** Chame no loop com dt em **segundos** — anima águas (cáusticas). */
+  update(deltaSeconds: number): void;
+}
+
+export interface BuildSceneOptions {
+  /** Necessário se alguma definição usa o preset `outdoorLighting`. */
+  renderer?: Renderer;
+  /** Overlay do editor (overrides de transform + `data.deleted`/`data.added`). */
+  overlay?: SceneFileV1 | null;
+}
+
+/** Lê `data.deleted` da overlay (ids removidos no editor). */
+export function overlayDeleted(overlay: SceneFileV1 | null | undefined): string[] {
+  const d = overlay?.data?.['deleted'];
+  return Array.isArray(d) ? (d.filter((x) => typeof x === 'string') as string[]) : [];
+}
+
+/** Lê `data.added` da overlay (nós adicionados no editor), validados. */
+export function overlayAdded(overlay: SceneFileV1 | null | undefined): SceneNode[] {
+  const a = overlay?.data?.['added'];
+  if (!Array.isArray(a)) return [];
+  const out: SceneNode[] = [];
+  for (const raw of a) {
+    const node = parseSceneNode(raw);
+    if (node) out.push(node);
+  }
+  return out;
+}
+
+/**
+ * Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
+ * os `nodes` são concatenados; configs de cena como `background`/`fog`/
+ * `outdoorLighting`: o último definido vence).
+ */
+export async function buildScene(
+  scene: Scene,
+  defs: SceneDefinition | SceneDefinition[],
+  options: BuildSceneOptions = {},
+): Promise<SceneHandle> {
+  const list = Array.isArray(defs) ? defs : [defs];
+  const three = scene.getThreeScene();
+  const byId = new Map<string, Object3D>();
+  const waters: Water[] = [];
+  const overlay = options.overlay ?? null;
+  const deleted = new Set<string>(overlayDeleted(overlay));
+  const overrides = overlay?.objects ?? {};
+
+  // ── Config de cena (último arquivo a definir vence) ──────────────────────────
+  let background: number | string | undefined;
+  let fog: SceneDefinition['fog'];
+  let outdoor: SceneDefinition['outdoorLighting'];
+  for (const d of list) {
+    if (d.background !== undefined) background = d.background;
+    if (d.fog) fog = d.fog;
+    if (d.outdoorLighting) outdoor = d.outdoorLighting;
+  }
+  if (background !== undefined) three.background = new Color(background);
+  if (fog) three.fog = new Fog(fog.color, fog.near, fog.far);
+  if (options.renderer) {
+    // Liga soft shadows no renderer pra luzes data-driven com castShadow funcionarem
+    // (o preset outdoorLighting também liga; aqui cobre o caso sem preset).
+    const r = options.renderer.threeRenderer;
+    r.shadowMap.enabled = true;
+    r.shadowMap.type = PCFSoftShadowMap;
+    if (outdoor) setupOutdoorLighting(options.renderer, scene, outdoor);
+  }
+
+  // ── Nós: base (arquivos) + adicionados (overlay) ─────────────────────────────
+  const nodes: SceneNode[] = [...list.flatMap((d) => d.nodes), ...overlayAdded(overlay)];
+  for (const node of nodes) {
+    if (deleted.has(node.id) || byId.has(node.id)) continue;
+    const obj = await instantiate(node, scene, three, waters);
+    if (!obj) continue;
+    obj.name = node.id;
+    // Override do editor (transform exata salva) tem precedência sobre place/transform.
+    const ov = overrides[node.id];
+    if (ov) {
+      obj.position.set(ov.position[0], ov.position[1], ov.position[2]);
+      obj.rotation.set(ov.rotation[0], ov.rotation[1], ov.rotation[2]);
+      obj.scale.set(ov.scale[0], ov.scale[1], ov.scale[2]);
+    }
+    byId.set(node.id, obj);
+  }
+
+  return {
+    byId,
+    update(dt: number): void {
+      for (const w of waters) w.update(dt);
+    },
+  };
+}
+
+async function instantiate(
+  node: SceneNode,
+  scene: Scene,
+  three: import('three').Scene,
+  waters: Water[],
+): Promise<Object3D | null> {
+  switch (node.type) {
+    case 'model': {
+      const obj = instance(await loadGLB(node.url), {
+        castShadow: node.castShadow,
+        receiveShadow: node.receiveShadow,
+      });
+      three.add(obj);
+      applyPlacement(obj, node);
+      return obj;
+    }
+    case 'primitive': {
+      const obj = makePrimitive(node);
+      three.add(obj);
+      applyPlacement(obj, node);
+      return obj;
+    }
+    case 'light': {
+      const light = makeLight(node);
+      three.add(light);
+      return light;
+    }
+    case 'water': {
+      const water = new Water(scene, {
+        y: node.y,
+        color: node.color,
+        causticsUrl: node.causticsUrl,
+        repeat: node.repeat,
+        causticsIntensity: node.causticsIntensity,
+        flowSpeed: node.flowSpeed,
+      });
+      waters.push(water);
+      return water.mesh;
+    }
+  }
+}
+
+/** Aplica `place` (grounding) ou `transform` (pose direta) a um mesh. */
+function applyPlacement(obj: Object3D, node: { place?: unknown; transform?: unknown }): void {
+  const place = node.place as
+    | { x?: number; y?: number; z?: number; rotY?: number; scale?: number }
+    | undefined;
+  const transform = node.transform as
+    | { position?: number[]; rotation?: number[]; scale?: number | number[] }
+    | undefined;
+  if (place) {
+    placeOnGround(obj, place);
+  } else if (transform) {
+    if (transform.position) obj.position.set(transform.position[0]!, transform.position[1]!, transform.position[2]!);
+    if (transform.rotation) obj.rotation.set(transform.rotation[0]!, transform.rotation[1]!, transform.rotation[2]!);
+    if (transform.scale !== undefined) {
+      if (typeof transform.scale === 'number') obj.scale.setScalar(transform.scale);
+      else obj.scale.set(transform.scale[0]!, transform.scale[1]!, transform.scale[2]!);
+    }
+  }
+}
+
+function makePrimitive(node: Extract<SceneNode, { type: 'primitive' }>): Mesh {
+  const s = node.size;
+  const dims: [number, number, number] =
+    s === undefined ? [1, 1, 1] : typeof s === 'number' ? [s, s, s] : [s[0], s[1], s[2]];
+  let geometry;
+  switch (node.shape) {
+    case 'cylinder':
+      geometry = new CylinderGeometry(dims[0] / 2, dims[0] / 2, dims[1], 32);
+      break;
+    case 'plane':
+      geometry = new PlaneGeometry(dims[0], dims[2] || dims[0]);
+      break;
+    case 'sphere':
+      geometry = new SphereGeometry(dims[0] / 2, 32, 16);
+      break;
+    default:
+      geometry = new BoxGeometry(dims[0], dims[1], dims[2]);
+  }
+  const mesh = new Mesh(
+    geometry,
+    new MeshStandardMaterial({
+      color: node.color ?? 0xcccccc,
+      roughness: node.roughness ?? 1,
+      metalness: node.metalness ?? 0,
+    }),
+  );
+  if (node.shape === 'plane') mesh.rotation.x = -Math.PI / 2;
+  mesh.castShadow = node.castShadow ?? true;
+  mesh.receiveShadow = node.receiveShadow ?? true;
+  return mesh;
+}
+
+function makeLight(node: Extract<SceneNode, { type: 'light' }>): Object3D {
+  if (node.light === 'hemisphere') {
+    return new HemisphereLight(node.color ?? 0x9fd6ee, node.groundColor ?? 0xb6e2a8, node.intensity ?? 0.6);
+  }
+  if (node.light === 'ambient') {
+    return new AmbientLight(node.color ?? 0xffffff, node.intensity ?? 0.2);
+  }
+  const sun = new DirectionalLight(node.color ?? 0xfff2cc, node.intensity ?? 3);
+  const p = node.position ?? [35, 55, 25];
+  sun.position.set(p[0], p[1], p[2]);
+  if (node.castShadow) {
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 2048;
+    sun.shadow.mapSize.height = 2048;
+    sun.shadow.bias = -0.0005;
+    sun.shadow.normalBias = 0.05;
+    const cam = sun.shadow.camera;
+    cam.left = -60;
+    cam.right = 60;
+    cam.top = 60;
+    cam.bottom = -60;
+    cam.near = 1;
+    cam.far = 240;
+    cam.updateProjectionMatrix();
+  }
+  return sun;
+}

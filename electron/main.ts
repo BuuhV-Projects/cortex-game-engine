@@ -354,7 +354,15 @@ const VENDOR_TYPE_MODULES = {
   physics: ['VehicleGravitySystem', 'VehicleWallCollisionSystem', 'VehiclePhysics'],
   // Editor NÃO entra: não é exportado pelo runtime (index.d.ts não o referencia).
   // Ele vive só no bundle de dev (index.dev.js), ligado automaticamente pelo Game.
-  scene: ['SceneFile', 'SceneLoader', 'SceneAssets', 'OutdoorLighting', 'Water'],
+  scene: [
+    'SceneFile',
+    'SceneLoader',
+    'SceneDefinition',
+    'SceneBuilder',
+    'SceneAssets',
+    'OutdoorLighting',
+    'Water',
+  ],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter'],
 } as const
 
