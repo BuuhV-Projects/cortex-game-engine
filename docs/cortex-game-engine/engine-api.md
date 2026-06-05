@@ -16,7 +16,8 @@ lado).
 
 | Símbolo | O que é |
 |---|---|
-| `GameLoop` | Loop principal. `new GameLoop({ onUpdate(dt), onFixedUpdate? })`, `.start()`/`.stop()`. |
+| `Game` | **Facade recomendado.** Cria e conecta Renderer+Scene+Câmera+World+Input+loop. `new Game({ canvas })`, `.scene`, `.world`, `.camera`, `.renderer`, `.input`, `.onUpdate(dt=>…)`, `.start()`/`.stop()`. **Em dev liga o modo editor automaticamente** (F2); em build de produção o editor não entra no bundle (ADR-0042). |
+| `GameLoop` | Loop principal (baixo nível; o `Game` já usa). `new GameLoop({ onUpdate(dt), onFixedUpdate? })`, `.start()`/`.stop()`. |
 | `Renderer` | Wrapper do `WebGPURenderer`. `.render(threeScene, camera)`, `.renderViewport(...)` (split-screen), `.resize(w,h)`, `.threeRenderer` (instância crua, p/ pós-processamento), `.isReady`, `.dispose()`. |
 | `Camera`, `PerspectiveCamera`, `OrthographicCamera` | Câmeras (re-exportadas via Renderer). Perspectiva p/ 3D; ortográfica p/ 2.5D/2D. |
 | `Scene` | Wrapper de `THREE.Scene`. `.add(...objs)`, `.remove(...)`, `.clear()`, `.getThreeScene()`. |
@@ -67,86 +68,37 @@ lado).
 `VehiclePhysics` (agrupador), `VehicleGravitySystem` (gravidade + ground-snap),
 `VehicleWallCollisionSystem` (colisão lateral com deslize).
 
-## Modo editor embutido (autoria no jogo)
+## Modo editor embutido (automático em dev)
 
-`EditorState`, `EditorSelection`, `EditorHud`, `EditorOutliner` (hierarquia),
-`EditorInspector` (propriedades), `EditorCameraSystem` (câmera livre),
-`ObjectEditSystem` (gizmo).
-
-**Use SEMPRE este editor pra autoria/posicionamento de cena — NÃO reimplemente
-câmera de voo, seleção por clique ou gizmo à mão.** Ele já vem ligado no template
-(`main.ts`, tecla **F2**). É baseado em ECS: registre os sistemas num `World` e
-chame `world.tick(dt)` no loop; renderize pela câmera de voo livre quando o editor
-estiver ativo.
+**Você NÃO liga o editor — o `Game` faz isso sozinho em desenvolvimento.** Ao usar
+`new Game({ canvas })`, o engine (bundle de dev) injeta o modo editor completo:
+câmera de voo livre, gizmo, **hierarquia** e **inspector**, com reatividade nos
+dois sentidos (mexeu no editor → reflete na cena; mexeu na cena por código →
+reflete na hierarquia/inspector). No build de produção o editor nem entra no
+bundle (ADR-0042), então não pesa. **NÃO reimplemente câmera de voo, seleção ou
+gizmo à mão, e não monte os sistemas de editor manualmente** — é tudo automático.
 
 Controles: **F2** liga/desliga · **WASD/QE** voa (Shift corre) · **botão direito**
-olha · **clique** seleciona · **1/2/3** mover/rotacionar/escalar · **F** enquadra ·
-**T** teleporta o avatar · **P** salva (callback `onSaveEdits`).
-
-Requisitos: um `InputManager` anexado; uma entidade com `TransformComponent` +
-`EditableTargetComponent` (o "avatar" que o editor teleporta — sem ela a câmera
-livre nem o toggle funcionam); objetos selecionáveis precisam de `Object3D.name`.
-
-```ts
-import {
-  World, InputManager, PerspectiveCamera,
-  TransformComponent, Object3DComponent, EditableTargetComponent, Object3DSyncSystem,
-  createEditorState, createEditorHud, EditorCameraSystem, ObjectEditSystem,
-} from 'cortex-game-engine'
-
-const input = new InputManager(); input.attach(document.body)
-const editorState = createEditorState()
-const editorHud = createEditorHud()
-// Câmera separada usada só no editor (voo livre); a do jogo fica intacta.
-const editorCamera = new PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000)
-
-// Avatar editável (qualquer objeto que o editor possa teleportar). Sincronize
-// a mesh ao TransformComponent com Object3DSyncSystem.
-const avatar = world.createEntity()
-avatar.addComponent(new TransformComponent(0, 0.5, 0))
-avatar.addComponent(new Object3DComponent(avatarMesh))   // avatarMesh.name = 'Avatar'
-avatar.addComponent(new EditableTargetComponent())
-world.addSystem(new Object3DSyncSystem())
-
-const editorCam = new EditorCameraSystem(editorState, editorCamera, gameCamera, input, ground, editorHud)
-world.addSystem(editorCam)
-world.addSystem(new ObjectEditSystem(
-  editorState, editorCamera, canvas, scene,
-  [scene.getThreeScene()],          // raiz(es) editável(is): objetos nomeados aqui dentro
-  input, editorHud,
-  (edits) => persistEdits(edits),   // onSaveEdits (P): salve em JSON com SceneFileWriter
-  () => {},                         // onClearEdits
-  undefined,                        // onTransformChange (sync de volta pro ECS)
-  (obj) => editorCam.focusOn(obj),  // onFocusRequest (F)
-))
-
-// No loop:
-world.tick(deltaTime)
-renderer.render(scene.getThreeScene(), editorState.active ? editorCamera : gameCamera)
-```
-
-**Painéis de UI (hierarquia + inspector).** Crie um `EditorSelection`
-compartilhado, passe-o ao `ObjectEditSystem` (último parâmetro) e a UI reage:
-`createEditorOutliner` lista os objetos da cena (clique = seleciona + enquadra) e
-`createEditorInspector` edita posição/rotação/escala, sombra (cast/receive) e
-propriedades de luz (intensidade/cor) do selecionado.
+olha · **clique** (ou item na hierarquia) seleciona · **1/2/3**
+mover/rotacionar/escalar · **F** enquadra · **T** teleporta · **Esc** desseleciona.
+A hierarquia lista os objetos nomeados da cena (dê `Object3D.name` aos seus
+objetos pra eles aparecerem legíveis); o inspector edita posição/rotação/escala,
+sombra (cast/receive) e, em luzes, intensidade/cor.
 
 ```ts
-import { createEditorSelection, createEditorOutliner, createEditorInspector } from 'cortex-game-engine'
+import { Game } from 'cortex-game-engine'
 
-const selection = createEditorSelection()
-// passe `selection` como ÚLTIMO arg do ObjectEditSystem(...)
-const outliner = createEditorOutliner({
-  editRoots: [scene.getThreeScene()], selection,
-  onFocus: (obj) => editorCam.focusOn(obj),
-})
-const inspector = createEditorInspector({ selection })
-// ao ligar/desligar o editor (F2): outliner.setVisible(on) / inspector.setVisible(on);
-// ao abrir, outliner.refresh() (não há evento de scene-change ainda).
+const game = new Game({ canvas })
+game.scene.add(mesh)   // nomeie: mesh.name = 'Player'
+game.onUpdate((dt) => { /* lógica */ })
+game.start()
+// pronto — em dev, F2 abre o editor; em prod ele não existe.
 ```
 
-Pra persistir o que foi editado, ligue `onSaveEdits` ao IO de cena
-(`SceneFileWriter`/`autoDetectSceneFileWriter`, abaixo).
+> Internamente o editor é `EditorState`/`EditorSelection`/`EditorCameraSystem`/
+> `ObjectEditSystem` + `EditorHud`/`EditorOutliner`/`EditorInspector`, ligados por
+> `attachEditor(game)` (só no bundle `index.dev.js`). Isso é detalhe de
+> implementação — o jogo não importa nem referencia esses símbolos.
 
 ## Montar cena com .glb: carregar, instanciar, assentar e conectar
 

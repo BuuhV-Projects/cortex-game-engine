@@ -8,6 +8,7 @@
 
 // ─── Core ──────────────────────────────────────────────────────────────────────
 export * from './core/GameLoop.js';
+export * from './core/Game.js';
 export * from './core/Renderer.js';
 export * from './core/Scene.js';
 export * from './core/AssetLoader.js';
@@ -47,13 +48,9 @@ export * from './physics/VehiclePhysics.js';
 
 // ─── Modo editor (câmera livre + gizmo + HUD) ──────────────────────────────────
 // Ferramenta de autoria embutida no jogo (F2). Browser-only.
-export * from './editor/EditorState.js';
-export * from './editor/EditorSelection.js';
-export * from './editor/EditorHud.js';
-export * from './editor/EditorOutliner.js';
-export * from './editor/EditorInspector.js';
-export * from './editor/EditorCameraSystem.js';
-export * from './editor/ObjectEditSystem.js';
+// NOTA: o modo editor NÃO é exportado aqui — ele é ligado automaticamente pelo
+// `Game` só no bundle de desenvolvimento (`index-dev.ts` → `index.dev.js`), pra
+// ficar fora do build de produção (ver ADR-0042). Não importe editor do runtime.
 
 // ─── Cena persistida em JSON + IO ──────────────────────────────────────────────
 // SceneFile/SceneLoader (runtime) + writers (HTTP/Tauri). O plugin de Vite

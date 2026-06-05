@@ -9,6 +9,12 @@ export interface EditorInspector {
   root: HTMLDivElement;
   /** Mostra/esconde o painel (tipicamente atrelado ao editor ON/OFF). */
   setVisible(v: boolean): void;
+  /**
+   * Relê os valores do objeto selecionado e atualiza os campos (sem pisar no
+   * input em foco). Chame por frame pra refletir mudanças vindas de gameplay/
+   * código, não só do gizmo.
+   */
+  refresh(): void;
 }
 
 export interface EditorInspectorOptions {
@@ -223,6 +229,9 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     root,
     setVisible(v: boolean): void {
       root.style.display = v ? 'block' : 'none';
+    },
+    refresh(): void {
+      for (const r of refreshers) r();
     },
   };
 }

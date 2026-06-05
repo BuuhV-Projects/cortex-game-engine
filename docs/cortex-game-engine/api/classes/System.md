@@ -43,8 +43,6 @@ class MovementSystem extends System {
 - [`ThirdPersonCameraSystem`](ThirdPersonCameraSystem.md)
 - [`VehicleGravitySystem`](VehicleGravitySystem.md)
 - [`VehicleWallCollisionSystem`](VehicleWallCollisionSystem.md)
-- [`EditorCameraSystem`](EditorCameraSystem.md)
-- [`ObjectEditSystem`](ObjectEditSystem.md)
 
 ## Constructors
 
