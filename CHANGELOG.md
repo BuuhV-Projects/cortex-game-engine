@@ -1,3 +1,12 @@
+# [0.8.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.7.0...v0.8.0) (2026-06-05)
+
+
+### Features
+
+* **engine:** Game.setPostFX destrava atmosfera (pós-processamento) ([cabfedf](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cabfedff55387a8d5d2e5c48131462fa93967e5e))
+* **ide:** passe de crítica de beleza via sub-agente (critique_scene) ([ef6aaa0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ef6aaa083e27346ef1a1457ffc54cab61975dad9))
+* **ide:** prompt prioriza ATMOSFERA, spec de referência e crítica de beleza ([532ab32](https://github.com/BuuhV-Projects/cortex-game-engine/commit/532ab32434107ccb6239c1b991a11b8247e010d2))
+
 # [0.7.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.6.0...v0.7.0) (2026-06-05)
 
 
