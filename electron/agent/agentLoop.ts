@@ -1,6 +1,7 @@
 import { query, type Options, type PermissionResult } from '@anthropic-ai/claude-agent-sdk'
 import { createBlenderToolServer } from './tools/blender.js'
 import { createPlaytestToolServer } from './tools/playtest.js'
+import { createAssetToolServer } from './tools/assets.js'
 
 /**
  * Loop do agente usando @anthropic-ai/claude-agent-sdk (ADR-0017 V2).
@@ -107,6 +108,58 @@ gerenciado pelo IDE, tipicamente \`<userData>/cortex-pastes/...\`). É \
 seguro fazer Read mesmo que esteja fora do cwd — são imagens que o \
 usuário explicitamente colou. Não é violação do sandbox.
 
+================================================================
+MONTAGEM DE CENÁRIO / LEVEL DESIGN (leia antes de montar cena com assets)
+================================================================
+
+Quando a tarefa é montar/popular uma cena usando assets \`.glb\` que já existem \
+no projeto (um pacote importado pelo usuário), seu trabalho NÃO é "colocar os \
+modelos na cena" — é **compor um cenário**, como um level designer. O erro mais \
+comum (e o que deixa o resultado feio) é posicionar assets às cegas, espaçados \
+de forma uniforme, sem rotação nem agrupamento. Evite isso seguindo o fluxo:
+
+1. **VEJA os assets primeiro (obrigatório).** Rode a tool \`inspect_assets\` \
+   (dir = pasta dos modelos, default \`assets\`) ANTES de escrever qualquer \
+   posicionamento. Ela renderiza um thumbnail de cada \`.glb\` e devolve as \
+   dimensões reais (largura×altura×profundidade em unidades do engine). Você \
+   **não pode** posicionar bem um modelo que nunca viu nem mediu. Use os \
+   thumbnails pra entender o que cada peça é (ilha, ponte, pedra, árvore, \
+   item) e as dimensões pra espaçar e conectar com precisão.
+
+2. **Procure a cena-referência do pacote.** Pacotes de assets quase sempre \
+   vêm com uma imagem de preview/demo (\`preview.png\`, \`screenshot\`, \`cover\`, \
+   \`demo\`, ou um \`.blend\`/cena exemplo) mostrando como o artista montou tudo. \
+   Procure no diretório do pacote (Glob) e dê \`Read\` nessas imagens — elas \
+   são o seu alvo de composição: escala relativa, densidade, paleta, como as \
+   peças se conectam. Replique a **intenção** dessa referência, não um layout \
+   genérico.
+
+3. **Se o usuário colou uma imagem de referência, ela é o contrato.** Antes \
+   de posicionar, analise-a explicitamente: quantos elementos, como se \
+   conectam (pontes ligando bordas de ilhas?), densidade de vegetação, \
+   agrupamentos, paleta, e o ângulo/enquadramento da câmera. Descreva o \
+   layout em 2-3 linhas e SÓ ENTÃO codifique o posicionamento. Não pule \
+   direto pro código.
+
+Princípios de composição (aplique sempre):
+- **Conecte, não espalhe.** Pontes/caminhos devem encostar nas BORDAS dos \
+  blocos que ligam — use o bounding box (de \`inspect_assets\`) pra calcular a \
+  posição: borda = centro ± dimensão/2. Uma ponte boiando no vão entrega \
+  amadorismo.
+- **Quebre a uniformidade.** Varie rotação (±10–20° no eixo vertical) e escala \
+  (±10%) entre instâncias do mesmo asset (pedras, árvores, arbustos). Grid \
+  perfeito e rotação zero é a marca de cena gerada sem cuidado.
+- **Agrupe, não distribua.** Vegetação e detalhes vêm em CLUSTERS irregulares \
+  (3–5 árvores juntas, pedras encostadas), não espaçados igualmente. Deixe \
+  áreas vazias respirarem.
+- **Assente no chão.** Use a altura (dim Y) pra apoiar cada modelo na \
+  superfície — pés/base no nível do chão, nada flutuando nem afundado.
+- **Câmera que valoriza.** Posicione a câmera num ângulo que mostre a \
+  composição (ex.: 3/4 elevado, como a referência), não de frente chapado.
+- **Reuse o que já existe.** Antes de gerar um modelo novo (\`generate_blender_model\`), \
+  cheque se o pacote já tem um asset que serve — gerar do zero quando há um \
+  pronto piora a consistência visual do conjunto.
+
 Rodar e testar o jogo (tool \`playtest_game\`):
 - Você tem a tool \`playtest_game\`: ela sobe o jogo do projeto numa janela \
 oculta, renderiza alguns frames e devolve um SCREENSHOT (você VÊ a imagem) + \
@@ -120,6 +173,13 @@ esperar, dar \`tap\` em \`Space\` (pulo) e \`screenshot\` nos pontos-chave. Cada
 \`screenshot\` vira uma imagem no retorno.
 - NÃO tente rodar o jogo via Bash (\`vite\`/\`dev\` são proibidos acima) — use \
 \`playtest_game\`, que é isolado e não suja o projeto.
+- **Cenário é trabalho visual — feche o ciclo com seus próprios olhos.** Depois \
+de montar/popular uma cena, NÃO assuma que ficou bom: rode \`playtest_game\`, \
+OLHE o screenshot e compare com a referência (a imagem que o usuário colou \
+e/ou o preview do pacote). Cheque conexões (pontes encostam nas bordas?), \
+espaçamento, agrupamento, nada flutuando. Se divergir, AJUSTE e rode de novo \
+— itere até a composição bater, em vez de entregar a primeira versão. Tire \
+screenshots de ângulos diferentes se ajudar a avaliar.
 
 Seja conciso. Não repita o que as ferramentas já mostram no output.`
 
@@ -242,6 +302,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
     ? {
         'cortex-blender': createBlenderToolServer(opts.projectRoot),
         'cortex-playtest': createPlaytestToolServer(opts.projectRoot),
+        'cortex-assets': createAssetToolServer(opts.projectRoot),
       }
     : undefined
 
