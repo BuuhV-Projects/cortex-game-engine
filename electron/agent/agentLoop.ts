@@ -220,6 +220,14 @@ export interface RunAgentOptions {
    * engine expõe. Lido pelo main via resourceBase(); vazio se indisponível.
    */
   engineApiDoc?: string
+  /**
+   * Ambiente repassado ao subprocesso do SDK (a tool Bash herda dele). No app
+   * empacotado o PATH do processo Electron não inclui yarn/node — o main injeta
+   * os diretórios certos via envForSpawn() e passa aqui. Quando omitido, o SDK
+   * herda `process.env`. ATENÇÃO: o SDK NÃO faz merge com process.env, então
+   * este objeto já deve ser process.env aumentado, não só os extras.
+   */
+  env?: NodeJS.ProcessEnv
 }
 
 /**
@@ -257,6 +265,8 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
     resume: opts.resumeSessionId ?? undefined,
     continue: opts.resumeSessionId ? undefined : opts.continueSession || undefined,
     abortController: opts.abortController,
+    // Repassado ao subprocesso do SDK; a tool Bash herda este env (yarn/node).
+    env: opts.env as Record<string, string | undefined> | undefined,
     mcpServers,
     canUseTool: async (toolName, input) => {
       // Tools de leitura pura sempre rodam sem perguntar, em qualquer mode.

@@ -7,6 +7,10 @@
   "files": [
     "out/**"
   ],
+  "asarUnpack": [
+    "**/node_modules/@anthropic-ai/claude-agent-sdk/**",
+    "**/node_modules/@anthropic-ai/claude-agent-sdk-*/**"
+  ],
   "extraResources": [
     { "from": "templates", "to": "templates" },
     { "from": "dist-engine", "to": "dist-engine" },

@@ -9,25 +9,39 @@ import { runAgent } from './agent/agentLoop.js'
 import { writePlaceholderIcons } from './installer-icons.js'
 
 /**
- * Retorna o ambiente do processo com `~/.cargo/bin` injetado no PATH.
+ * Retorna o ambiente do processo com diretórios de ferramentas de dev
+ * (yarn/npm/node/cargo) injetados no PATH.
  *
- * O Electron captura `process.env.PATH` no momento que inicia — se o
- * usuário instalou Rust DEPOIS de abrir a IDE (ou se o yarn/node pai
- * do dev mode ficou em background com PATH velho), `cargo` não aparece
- * pro spawn por mais que `cargo --version` funcione fora.
+ * O Electron herda o `PATH` que o Explorer tinha quando o app foi aberto —
+ * num app empacotado (instalado pelo NSIS) esse PATH costuma NÃO incluir o
+ * prefixo global do npm (`%APPDATA%\npm`, onde mora `yarn.cmd`) nem a pasta
+ * do Node, então `yarn`/`node`/`cargo` "somem" pro spawn mesmo estando
+ * instalados e funcionando no terminal do usuário. Esse env é usado tanto
+ * nos spawns locais (vite/terminal) quanto repassado ao Claude Agent SDK,
+ * cuja tool Bash herda o env deste processo.
  *
- * A injeção é idempotente (não duplica se já estiver) e silenciosa
- * quando `~/.cargo/bin` não existe — esse caso é Rust não instalado,
- * que aí é problema do usuário resolver.
+ * A injeção é idempotente (não duplica entradas já presentes) e só adiciona
+ * diretórios que existem no disco — candidatos ausentes são ignorados em
+ * silêncio (ferramenta não instalada é problema do usuário resolver).
  */
-function envWithCargo(): NodeJS.ProcessEnv {
+function envForSpawn(): NodeJS.ProcessEnv {
   const env = { ...process.env }
-  const cargoBin = join(homedir(), '.cargo', 'bin')
-  if (!existsSync(cargoBin)) return env
-  const path = env.PATH ?? env.Path ?? ''
-  const parts = path.split(delimiter)
-  const already = parts.some((p) => p.toLowerCase() === cargoBin.toLowerCase())
-  if (!already) env.PATH = `${cargoBin}${delimiter}${path}`
+  const candidates = [
+    join(homedir(), '.cargo', 'bin'),
+    env.APPDATA ? join(env.APPDATA, 'npm') : null, // npm global no Windows (yarn.cmd, etc.)
+    env.ProgramFiles ? join(env.ProgramFiles, 'nodejs') : null, // node + corepack
+    env.LOCALAPPDATA ? join(env.LOCALAPPDATA, 'Yarn', 'bin') : null, // yarn classic (MSI)
+    join(homedir(), '.yarn', 'bin'), // yarn (instalação por script)
+  ].filter((p): p is string => p !== null && existsSync(p))
+
+  // No Windows a chave pode vir como `Path`; preserva a que existir.
+  const key = env.PATH !== undefined ? 'PATH' : env.Path !== undefined ? 'Path' : 'PATH'
+  const current = env[key] ?? ''
+  const present = new Set(current.split(delimiter).map((p) => p.toLowerCase()))
+  const additions = candidates.filter((c) => !present.has(c.toLowerCase()))
+  if (additions.length > 0) {
+    env[key] = [...additions, current].filter(Boolean).join(delimiter)
+  }
   return env
 }
 
@@ -797,7 +811,7 @@ ipcMain.handle('run:start', async (_event, projectDir: unknown) => {
   const child = spawn('vite', [], {
     cwd: safeDir,
     shell: true,
-    env: envWithCargo(),
+    env: envForSpawn(),
   })
 
   runningProcess = child
@@ -845,7 +859,7 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
   const child = spawn(command, [], {
     cwd: safeDir,
     shell: true,
-    env: envWithCargo(),
+    env: envForSpawn(),
   })
 
   terminalProcess = child
@@ -1065,6 +1079,9 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
       resumeSessionId,
       mode: agentMode,
       engineApiDoc,
+      // PATH aumentado: a tool Bash do SDK herda este env, então `yarn`/`node`
+      // resolvem mesmo no app empacotado (onde o PATH do Explorer não os tem).
+      env: envForSpawn(),
       abortController,
       events: {
         onTextChunk(text) {
