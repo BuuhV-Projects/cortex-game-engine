@@ -15,6 +15,7 @@ export * from './editor/EditorSelection.js';
 export * from './editor/EditorHud.js';
 export * from './editor/EditorOutliner.js';
 export * from './editor/EditorInspector.js';
+export * from './editor/EditorAddPanel.js';
 export * from './editor/EditorCameraSystem.js';
 export * from './editor/ObjectEditSystem.js';
 export * from './editor/attachEditor.js';

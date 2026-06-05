@@ -1,4 +1,4 @@
-import { PerspectiveCamera, type Object3D } from 'three';
+import { PerspectiveCamera, Vector3, type Object3D } from 'three';
 import type { Game, GameEditor } from '../core/Game.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { EditableTargetComponent } from '../components/EditableTargetComponent.js';
@@ -7,9 +7,12 @@ import { createEditorSelection } from './EditorSelection.js';
 import { createEditorHud } from './EditorHud.js';
 import { createEditorOutliner } from './EditorOutliner.js';
 import { createEditorInspector } from './EditorInspector.js';
+import { createEditorAddPanel } from './EditorAddPanel.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
 import { SceneLoader } from '../scene/SceneLoader.js';
+import { addSceneNode } from '../scene/SceneBuilder.js';
+import type { SceneNode } from '../scene/SceneDefinition.js';
 import { emptySceneFile, type SceneFileV1 } from '../scene/SceneFile.js';
 import { autoDetectSceneFileWriter } from '../io/autoDetectSceneFileWriter.js';
 
@@ -136,6 +139,41 @@ export function attachEditor(game: Game): GameEditor {
   const outliner = createEditorOutliner({ editRoots: [three], selection, onFocus: (obj) => cameraSystem.focusOn(obj) });
   const inspector = createEditorInspector({ selection });
 
+  // ── Painel "Add": adiciona um asset .glb à cena (clique) e persiste no overlay ─
+  const addedList = (): SceneNode[] => {
+    const a = overlay.data['added'];
+    if (Array.isArray(a)) return a as SceneNode[];
+    const arr: SceneNode[] = [];
+    overlay.data['added'] = arr;
+    return arr;
+  };
+  const addPanel = createEditorAddPanel({
+    onAdd: (url) => {
+      // Posiciona à frente da câmera do editor, no chão (y=0), e seleciona pra mover.
+      const forward = new Vector3();
+      editorCamera.getWorldDirection(forward);
+      const p = editorCamera.position.clone().add(forward.multiplyScalar(12));
+      const node: SceneNode = {
+        type: 'model',
+        id: `add-${Date.now().toString(36)}`,
+        url,
+        place: { x: p.x, z: p.z, y: 0 },
+      };
+      void addSceneNode(game.scene, node).then((obj) => {
+        if (!obj) return;
+        addedList().push(node);
+        persist();
+        selection.requestSelect(obj);
+      });
+    },
+  });
+  if (typeof fetch !== 'undefined') {
+    fetch('/__list-assets')
+      .then((r) => (r.ok ? (r.json() as Promise<string[]>) : []))
+      .then((assets) => addPanel.setAssets(Array.isArray(assets) ? assets : []))
+      .catch(() => addPanel.setAssets([]));
+  }
+
   let wasActive = false;
   let lastChildren = new Set<Object3D>();
   let lastSelected: Object3D | null = null;
@@ -178,6 +216,7 @@ export function attachEditor(game: Game): GameEditor {
         hud.setVisible(editorState.active);
         outliner.setVisible(editorState.active);
         inspector.setVisible(editorState.active);
+        addPanel.setVisible(editorState.active);
         if (editorState.active) {
           outliner.refresh();
           snapshot();

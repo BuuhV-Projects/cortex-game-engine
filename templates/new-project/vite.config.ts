@@ -3,7 +3,7 @@ import { resolve } from 'path'
 import { cpSync, existsSync } from 'node:fs'
 // Plugin (dev) que grava as edições do editor (F2) em assets/scene-data.json.
 // Vendorizado pelo IDE; pareia com o write-back do editor. Ver ADR.
-import { createSceneSavePlugin } from './vendor/cortex-game-engine/vite/sceneSavePlugin.js'
+import { createSceneSavePlugin, createAssetListPlugin } from './vendor/cortex-game-engine/vite/sceneSavePlugin.js'
 
 /**
  * Plugin inline que copia `./assets/` recursivamente pra `dist/assets/`
@@ -35,7 +35,7 @@ function copyAssets(): Plugin {
 export default defineConfig(({ mode }) => ({
   root: '.',
   clearScreen: false,
-  plugins: [copyAssets(), createSceneSavePlugin()],
+  plugins: [copyAssets(), createSceneSavePlugin(), createAssetListPlugin()],
   resolve: {
     alias: {
       // O IDE vendoriza o engine em ./vendor/cortex-game-engine ao criar o projeto.

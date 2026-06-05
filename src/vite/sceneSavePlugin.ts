@@ -1,5 +1,5 @@
-import { writeFile, mkdir } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { writeFile, mkdir, readdir } from 'node:fs/promises';
+import { dirname, resolve, join, relative } from 'node:path';
 import type { Plugin } from 'vite';
 
 /**
@@ -58,4 +58,50 @@ export function createSceneSavePlugin(options: SceneSavePluginOptions = {}): Plu
       });
     },
   };
+}
+
+/**
+ * Plugin de Vite (Node-only, **dev**) que expõe um GET listando os `.glb` sob
+ * `assets/` — usado pelo painel "Add" do editor (F2) pra você adicionar um asset
+ * à cena. Só roda em `vite dev`; no build não há editor.
+ *
+ * @example
+ * import { createAssetListPlugin } from './vendor/cortex-game-engine/vite/sceneSavePlugin.js'
+ * export default defineConfig({ plugins: [createAssetListPlugin()] })
+ */
+export function createAssetListPlugin(options: { dir?: string; endpoint?: string } = {}): Plugin {
+  const dir = options.dir ?? 'assets';
+  const endpoint = options.endpoint ?? '/__list-assets';
+
+  return {
+    name: 'cortex-asset-list',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use(endpoint, (req, res) => {
+        void (async () => {
+          try {
+            const root = resolve(server.config.root, dir);
+            const found: string[] = [];
+            await walk(root, root, found);
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(found.map((p) => `${dir}/${p.replace(/\\/g, '/')}`)));
+          } catch {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end('[]'); // sem pasta de assets → lista vazia
+          }
+        })();
+      });
+    },
+  };
+}
+
+async function walk(base: string, current: string, out: string[]): Promise<void> {
+  const entries = await readdir(current, { withFileTypes: true });
+  for (const e of entries) {
+    const full = join(current, e.name);
+    if (e.isDirectory()) await walk(base, full, out);
+    else if (e.name.toLowerCase().endsWith('.glb')) out.push(relative(base, full));
+  }
 }

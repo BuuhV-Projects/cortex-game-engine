@@ -106,7 +106,6 @@ export async function buildScene(
     if (deleted.has(node.id) || byId.has(node.id)) continue;
     const obj = await instantiate(node, scene, three, waters);
     if (!obj) continue;
-    obj.name = node.id;
     // Override do editor (transform exata salva) tem precedência sobre place/transform.
     const ov = overrides[node.id];
     if (ov) {
@@ -125,33 +124,42 @@ export async function buildScene(
   };
 }
 
+/**
+ * Instancia UM nó de cena e o adiciona à `scene` (modelo `.glb`, primitiva, luz
+ * ou água), já nomeado por `id` e com `place`/`transform` aplicado. Usado pelo
+ * {@link buildScene} e pelo editor pra **adicionar um objeto ao vivo** (F2).
+ *
+ * Nota: água adicionada por aqui não é animada (sem o tick do `buildScene`) até
+ * recarregar — adicionar água ao vivo é caso raro.
+ *
+ * @returns O `Object3D` criado, ou `null` se o tipo for desconhecido.
+ */
+export async function addSceneNode(scene: Scene, node: SceneNode): Promise<Object3D | null> {
+  return instantiate(node, scene, scene.getThreeScene());
+}
+
 async function instantiate(
   node: SceneNode,
   scene: Scene,
   three: import('three').Scene,
-  waters: Water[],
+  waters?: Water[],
 ): Promise<Object3D | null> {
+  let obj: Object3D;
   switch (node.type) {
-    case 'model': {
-      const obj = instance(await loadGLB(node.url), {
-        castShadow: node.castShadow,
-        receiveShadow: node.receiveShadow,
-      });
+    case 'model':
+      obj = instance(await loadGLB(node.url), { castShadow: node.castShadow, receiveShadow: node.receiveShadow });
       three.add(obj);
       applyPlacement(obj, node);
-      return obj;
-    }
-    case 'primitive': {
-      const obj = makePrimitive(node);
+      break;
+    case 'primitive':
+      obj = makePrimitive(node);
       three.add(obj);
       applyPlacement(obj, node);
-      return obj;
-    }
-    case 'light': {
-      const light = makeLight(node);
-      three.add(light);
-      return light;
-    }
+      break;
+    case 'light':
+      obj = makeLight(node);
+      three.add(obj);
+      break;
     case 'water': {
       const water = new Water(scene, {
         y: node.y,
@@ -161,10 +169,13 @@ async function instantiate(
         causticsIntensity: node.causticsIntensity,
         flowSpeed: node.flowSpeed,
       });
-      waters.push(water);
-      return water.mesh;
+      waters?.push(water);
+      obj = water.mesh;
+      break;
     }
   }
+  obj.name = node.id;
+  return obj;
 }
 
 /** Aplica `place` (grounding) ou `transform` (pose direta) a um mesh. */
