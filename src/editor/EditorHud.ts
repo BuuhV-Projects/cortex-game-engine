@@ -44,8 +44,7 @@ export function createEditorHud(parent: HTMLElement = document.body): EditorHud 
     'click objeto',
     '1/2/3 mover/girar/escalar',
     'F foca no selecionado',
-    'K salvar cena',
-    'L limpar cena',
+    'Delete remove',
     'Esc desseleciona',
     'F2 fecha',
   ].join(' &nbsp;•&nbsp; ');

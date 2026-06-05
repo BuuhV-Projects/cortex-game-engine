@@ -72,6 +72,8 @@ export class ObjectEditSystem extends System {
      * {@link EditorSelection}.
      */
     private readonly selection?: EditorSelection,
+    /** Chamado ao deletar (Delete/Backspace) o selecionado — pra persistir a remoção. */
+    private readonly onDelete?: (obj: THREE.Object3D) => void,
   ) {
     super();
 
@@ -142,6 +144,9 @@ export class ObjectEditSystem extends System {
     }
     if (this.edge('Escape')) {
       this.deselect();
+    }
+    if (this.edge('Delete') || this.edge('Backspace')) {
+      this.deleteSelected();
     }
     if (this.edge('k') || this.edge('K')) {
       this.persist();
@@ -230,6 +235,18 @@ export class ObjectEditSystem extends System {
 
   private deselect(): void {
     this.select(null);
+  }
+
+  /** Remove o objeto selecionado da cena (Delete/Backspace) e notifica `onDelete`. */
+  private deleteSelected(): void {
+    const obj = this.selected;
+    if (!obj) return;
+    const label = obj.name || '(sem nome)';
+    this.select(null); // solta o gizmo antes de remover
+    obj.parent?.remove(obj);
+    if (obj.name) this.modified.delete(obj.name);
+    this.onDelete?.(obj);
+    this.hud.showToast(`Removido: ${label}`);
   }
 
   private persist(): void {
