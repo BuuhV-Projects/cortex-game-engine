@@ -36,6 +36,7 @@
 - [VehicleGravitySystem](classes/VehicleGravitySystem.md)
 - [VehiclePhysics](classes/VehiclePhysics.md)
 - [VehicleWallCollisionSystem](classes/VehicleWallCollisionSystem.md)
+- [Water](classes/Water.md)
 - [World](classes/World.md)
 
 ## Interfaces
@@ -69,6 +70,8 @@
 - [VehicleWallCollisionOptions](interfaces/VehicleWallCollisionOptions.md)
 - [Viewport](interfaces/Viewport.md)
 - [VignetteConfig](interfaces/VignetteConfig.md)
+- [WaterOptions](interfaces/WaterOptions.md)
+- [WorldBounds](interfaces/WorldBounds.md)
 
 ## Type Aliases
 
@@ -81,4 +84,6 @@
 - [createEditorHud](functions/createEditorHud.md)
 - [createEditorState](functions/createEditorState.md)
 - [emptySceneFile](functions/emptySceneFile.md)
+- [getWorldBounds](functions/getWorldBounds.md)
 - [parseSceneFile](functions/parseSceneFile.md)
+- [placeOnGround](functions/placeOnGround.md)

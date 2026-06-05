@@ -58,6 +58,8 @@ export * from './editor/ObjectEditSystem.js';
 // distribuído separadamente (vendor/.../vite/sceneSavePlugin.js).
 export * from './scene/SceneFile.js';
 export * from './scene/SceneLoader.js';
+export * from './scene/Placement.js';
+export * from './scene/Water.js';
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';
 export * from './io/TauriSceneFileWriter.js';
@@ -139,6 +141,13 @@ export {
   DoubleSide,
   FrontSide,
   BackSide,
+  // Texturas — carregar/configurar tiling (água, terreno, decals) sem importar
+  // `three` direto. RepeatWrapping/ClampToEdgeWrapping evitam o literal 1000/1001.
+  Texture,
+  TextureLoader,
+  RepeatWrapping,
+  ClampToEdgeWrapping,
+  MirroredRepeatWrapping,
 } from 'three';
 
 // ─── Addons do three (examples/jsm) ───────────────────────────────────────────

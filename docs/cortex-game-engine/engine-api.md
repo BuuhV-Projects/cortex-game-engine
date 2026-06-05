@@ -126,6 +126,62 @@ renderer.render(scene.getThreeScene(), editorState.active ? editorCamera : gameC
 Pra persistir o que foi editado, ligue `onSaveEdits` ao IO de cena
 (`SceneFileWriter`/`autoDetectSceneFileWriter`, abaixo).
 
+## Posicionar e conectar assets (grounding por bounding box)
+
+`getWorldBounds`, `placeOnGround`, `WorldBounds`.
+
+**Ao montar cena com `.glb`, NUNCA defina `position.y` no chute.** O pivô de cada
+modelo é arbitrário — um `y` adivinhado deixa peças flutuando ou afundadas (o bug
+nº1 de cenário). Meça e assente:
+
+- `placeOnGround(obj, groundY = 0)` — desloca `obj` até a **base** da geometria
+  (ponto mais baixo do bounding box em world space) ficar em `groundY`,
+  independente de onde está o pivô. Retorna o `WorldBounds` já reposicionado.
+- `getWorldBounds(obj)` — mede a caixa em world space e devolve
+  `min/max/size/center` + os escalares `minX/maxX/minY/maxY/minZ/maxZ`.
+
+Use as **bordas medidas** pra conectar peças, em vez de chutar coordenadas:
+
+```ts
+import { getWorldBounds, placeOnGround } from 'cortex-game-engine'
+
+// Ilhas afundadas 1.5u na água; medir as bordas reais de cada uma.
+const a = placeOnGround(islandA, -1.5)
+const b = placeOnGround(islandB, -1.5)
+
+// Ponte exatamente no vão entre a borda direita de A e a esquerda de B:
+const bridgeB = placeOnGround(bridge, -1.5)
+bridge.position.x = (a.maxX + b.minX) / 2
+bridge.position.z = a.center.z
+
+// Empilhar um marco no topo de uma ilha (base no topo dela):
+placeOnGround(flag, getWorldBounds(islandB).maxY)
+flag.position.set(b.center.x, flag.position.y, b.center.z)
+```
+
+## Água (experimental)
+
+`Water` — plano de água cartoon com cáusticas opcionais (tiled + animadas).
+Aproximação visual barata (sem reflexão/refração/foam/ondas reais); pra um mar
+realista seria preciso shader custom WebGPU.
+
+```ts
+import { Water } from 'cortex-game-engine'
+
+const water = new Water(scene, {
+  y: -1.5,
+  color: 0x3b6e8f,
+  causticsUrl: 'assets/textures/caustics.png', // opcional; omita pra água lisa
+  repeat: 8,
+})
+// no GameLoop.onUpdate, pra deslizar as cáusticas:
+water.update(deltaTime / 1000)
+```
+
+Texturas agora são re-exportadas pelo engine (não precisa importar de `three` nem
+usar o literal `1000`): `Texture`, `TextureLoader`, `RepeatWrapping`,
+`ClampToEdgeWrapping`, `MirroredRepeatWrapping` (+ `AssetLoader.loadTexture(url)`).
+
 ## Cena persistida em JSON + IO
 
 `SceneFile`, `SceneLoader`, `SceneFileWriter`, `HttpSceneFileWriter`,
