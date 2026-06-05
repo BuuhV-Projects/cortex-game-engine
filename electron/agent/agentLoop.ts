@@ -142,18 +142,24 @@ de forma uniforme, sem rotação nem agrupamento. Evite isso seguindo o fluxo:
    direto pro código.
 
 Princípios de composição (aplique sempre):
-- **Conecte, não espalhe.** Pontes/caminhos devem encostar nas BORDAS dos \
-  blocos que ligam — use o bounding box (de \`inspect_assets\`) pra calcular a \
-  posição: borda = centro ± dimensão/2. Uma ponte boiando no vão entrega \
-  amadorismo.
+- **Assente por bounding box, NUNCA por \`y\` chutado.** O pivô de cada \`.glb\` é \
+  arbitrário — definir \`position.y\` no olho deixa peças flutuando ou afundadas \
+  (o erro mais comum e mais caro: vira um loop de tentativa-erro). Use os \
+  helpers do engine \`placeOnGround(obj, groundY)\` (encaixa a BASE da geometria \
+  em \`groundY\`, independente do pivô) e \`getWorldBounds(obj)\` (mede a caixa em \
+  world space) — ver receita "Posicionar/conectar assets" na Referência da API. \
+  Pra empilhar, passe o topo do alvo: \`placeOnGround(flag, getWorldBounds(island).maxY)\`.
+- **Conecte por bordas MEDIDAS, não por coordenada chutada.** Spawne os blocos \
+  primeiro, meça as bordas reais com \`getWorldBounds\` e derive a posição do \
+  conector do gap real: a ponte vai entre \`ilhaA.maxX\` e \`ilhaB.minX\`, com \
+  overlap pequeno em cada lado pra encostar de verdade. Não escreva números de \
+  X/Z na mão e torça pra encaixar — isso gera ponte boiando ou desconectada.
 - **Quebre a uniformidade.** Varie rotação (±10–20° no eixo vertical) e escala \
   (±10%) entre instâncias do mesmo asset (pedras, árvores, arbustos). Grid \
   perfeito e rotação zero é a marca de cena gerada sem cuidado.
 - **Agrupe, não distribua.** Vegetação e detalhes vêm em CLUSTERS irregulares \
   (3–5 árvores juntas, pedras encostadas), não espaçados igualmente. Deixe \
   áreas vazias respirarem.
-- **Assente no chão.** Use a altura (dim Y) pra apoiar cada modelo na \
-  superfície — pés/base no nível do chão, nada flutuando nem afundado.
 - **Câmera que valoriza.** Posicione a câmera num ângulo que mostre a \
   composição (ex.: 3/4 elevado, como a referência), não de frente chapado.
 - **Reuse o que já existe.** Antes de gerar um modelo novo (\`generate_blender_model\`), \
@@ -185,11 +191,21 @@ esperar, dar \`tap\` em \`Space\` (pulo) e \`screenshot\` nos pontos-chave. Cada
 \`playtest_game\`, que é isolado e não suja o projeto.
 - **Cenário é trabalho visual — feche o ciclo com seus próprios olhos.** Depois \
 de montar/popular uma cena, NÃO assuma que ficou bom: rode \`playtest_game\`, \
-OLHE o screenshot e compare com a referência (a imagem que o usuário colou \
-e/ou o preview do pacote). Cheque conexões (pontes encostam nas bordas?), \
-espaçamento, agrupamento, nada flutuando. Se divergir, AJUSTE e rode de novo \
-— itere até a composição bater, em vez de entregar a primeira versão. Tire \
-screenshots de ângulos diferentes se ajudar a avaliar.
+OLHE os screenshots e compare com a referência (imagem colada e/ou preview do \
+pacote). Se divergir, AJUSTE e rode de novo — itere até bater.
+- **Protocolo de validação de cena (obrigatório antes de declarar "pronto").** \
+Uma foto wide/hero NÃO basta — ela ESCONDE objeto flutuando, peça dentro de \
+outra e conexão desalinhada (esses bugs só aparecem de perto/de cima). Antes de \
+dizer que terminou, capture e inspecione, no mínimo: \
+  (1) **top-down** (de cima) — valida as conexões e o alinhamento do traçado; \
+  (2) **4 vistas laterais** (norte/sul/leste/oeste, um "360" do nível) — valida \
+      perfil, altura e que nada flutua/afunda; \
+  (3) **close-ups** de CADA conexão (ponte↔bloco) e de cada objeto-chave \
+      (marcos, obstáculos, props) — é onde mora a flutuação/interseção. \
+Mova a câmera entre os playtests pra esses ângulos (top-down: olhando reto pra \
+baixo; laterais: câmera no eixo X/Z na altura do nível; close: perto do alvo). \
+Só conclua quando os três passes estiverem limpos. NUNCA declare pronto baseado \
+só na vista padrão 3/4 — foi exatamente assim que bugs passaram despercebidos.
 
 Seja conciso. Não repita o que as ferramentas já mostram no output.`
 
