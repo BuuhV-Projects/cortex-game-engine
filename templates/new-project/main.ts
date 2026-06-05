@@ -11,7 +11,7 @@
  * build — multi-arquivo em dev, bundle único no build. Em DEV o editor F2 já vem
  * ligado pelo engine; em produção o editor não entra no bundle (ADR-0042).
  */
-import { Game, buildScene, type SceneDefinition } from 'cortex-game-engine'
+import { Game, buildScene, SceneLoader, type SceneDefinition } from 'cortex-game-engine'
 import world from './scenes/world.json'
 import props from './scenes/props.json'
 
@@ -20,10 +20,15 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement
 const game = new Game({ canvas })
 game.start()
 
+// Overlay do editor (F2): edições salvas em assets/scene-data.json. Em dev/build
+// é aplicada por cima da cena-base; `null` se ainda não houver edições.
+const overlay = await new SceneLoader().loadSceneFile('assets/scene-data.json')
+
 // Cast: o tipo inferido do import de JSON é estrutural, não a união discriminada
 // `SceneDefinition` — o conteúdo é validado em runtime pelo schema (zod).
 const scene = await buildScene(game.scene, [world, props] as unknown as SceneDefinition[], {
   renderer: game.renderer,
+  overlay,
 })
 
 game.onUpdate((dt) => {
