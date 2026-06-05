@@ -2,6 +2,7 @@ import { query, type Options, type PermissionResult } from '@anthropic-ai/claude
 import { createBlenderToolServer } from './tools/blender.js'
 import { createPlaytestToolServer } from './tools/playtest.js'
 import { createAssetToolServer } from './tools/assets.js'
+import { createCriticToolServer } from './tools/critic.js'
 
 /**
  * Loop do agente usando @anthropic-ai/claude-agent-sdk (ADR-0017 V2).
@@ -214,12 +215,18 @@ esperar, dar \`tap\` em \`Space\` (pulo) e \`screenshot\` nos pontos-chave. Cada
 de montar/popular uma cena, NÃO assuma que ficou bom: rode \`playtest_game\`, \
 OLHE os screenshots e compare com a referência (imagem colada e/ou preview do \
 pacote). Se divergir, AJUSTE e rode de novo — itere até bater.
-- **Protocolo de validação de cena (obrigatório antes de declarar "pronto").** \
-Uma foto wide/hero NÃO basta — ela ESCONDE objeto flutuando, peça dentro de \
-outra e conexão desalinhada (esses bugs só aparecem de perto/de cima). Antes de \
-dizer que terminou, capture e inspecione, no mínimo: \
+- **Protocolo dos 5 lados (obrigatório, em DUAS granularidades).** Uma foto \
+wide/hero NÃO basta — ela ESCONDE objeto flutuando, peça dentro de outra e \
+conexão desalinhada (esses bugs só aparecem de perto/de cima). Aplique os 5 \
+lados — **topo + 4 laterais (N/S/L/O)** — em DOIS níveis: \
+  • **por implementação isolada**: ao posicionar/ajustar UM item (uma ponte, um \
+    obstáculo, um marco, um cluster), enquadre a câmera nele e tire topo + 4 \
+    lados ANTES de seguir pro próximo — pega flutuação/interseção/escala errada \
+    na hora, em vez de acumular bugs pro fim; \
+  • **do mapa inteiro**, antes de declarar "pronto". \
+  Em cada um, capture e inspecione: \
   (1) **top-down** (de cima) — valida as conexões e o alinhamento do traçado; \
-  (2) **4 vistas laterais** (norte/sul/leste/oeste, um "360" do nível) — valida \
+  (2) **4 vistas laterais** (norte/sul/leste/oeste, um "360") — valida \
       perfil, altura e que nada flutua/afunda; \
   (3) **close-ups** de CADA conexão (ponte↔bloco) e de cada objeto-chave \
       (marcos, obstáculos, props) — é onde mora a flutuação/interseção. \
@@ -228,14 +235,15 @@ baixo; laterais: câmera no eixo X/Z na altura do nível; close: perto do alvo).
 Só conclua quando os três passes estiverem limpos. NUNCA declare pronto baseado \
 só na vista padrão 3/4 — foi exatamente assim que bugs passaram despercebidos.
 - **Crítica de BELEZA contra a referência (obrigatória antes de "pronto").** Além \
-dos bugs, compare o screenshot 3/4 lado a lado com a referência e liste, em texto, \
-as diferenças CONCRETAS de aparência: a paleta bate (céu/água/terreno)? a luz tem \
-o mesmo mood (direção/calor/contraste)? falta névoa, bloom ou exposição? a \
-densidade de vegetação/decoração é parecida ou a cena está "pelada"? o \
-enquadramento da câmera valoriza como na referência? Para CADA diferença, ajuste \
-(atmosfera quase sempre rende mais que mover peça) e rode de novo. Não entregue \
-uma cena que você mesmo veria como mais feia/mais vazia/mais sem graça que a \
-referência — itere até a distância visual ser pequena.
+dos bugs, avalie a APARÊNCIA vs a referência. Use a tool \`critique_scene\` \
+(passe o PNG do \`playtest_game\` em \`screenshot_path\`, a imagem de referência do \
+usuário/preview em \`reference_path\`, e o spec em \`goal\`): ela é um crítico de \
+"olhos frescos" e devolve a distância visual (N/10) + correções priorizadas \
+(atmosfera/luz, densidade, composição, câmera). Você está imerso no contexto e \
+tende a achar que ficou bom — o crítico isolado pega o que você não vê. Aplique \
+CADA correção (atmosfera quase sempre rende mais que mover peça), rode o playtest \
+de novo e re-critique até a distância visual ficar pequena. Não entregue uma cena \
+que o crítico (ou você) veria como mais feia/mais vazia que a referência.
 
 Seja conciso. Não repita o que as ferramentas já mostram no output.`
 
@@ -359,6 +367,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
         'cortex-blender': createBlenderToolServer(opts.projectRoot),
         'cortex-playtest': createPlaytestToolServer(opts.projectRoot),
         'cortex-assets': createAssetToolServer(opts.projectRoot),
+        'cortex-critic': createCriticToolServer(opts.projectRoot),
       }
     : undefined
 
