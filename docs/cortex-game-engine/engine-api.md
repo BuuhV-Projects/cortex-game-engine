@@ -126,44 +126,80 @@ renderer.render(scene.getThreeScene(), editorState.active ? editorCamera : gameC
 Pra persistir o que foi editado, ligue `onSaveEdits` ao IO de cena
 (`SceneFileWriter`/`autoDetectSceneFileWriter`, abaixo).
 
-## Posicionar e conectar assets (grounding por bounding box)
+## Montar cena com .glb: carregar, instanciar, assentar e conectar
 
-`getWorldBounds`, `placeOnGround`, `WorldBounds`.
+`loadGLB`, `instance`, `setShadows`, `placeOnGround`, `getWorldBounds`, `scatter`,
+`Bounds`, `ShadowOptions`, `PlaceOptions`.
 
-**Ao montar cena com `.glb`, NUNCA defina `position.y` no chute.** O pivô de cada
-modelo é arbitrário — um `y` adivinhado deixa peças flutuando ou afundadas (o bug
-nº1 de cenário). Meça e assente:
+**NUNCA defina `position.y` no chute.** O pivô de cada `.glb` é arbitrário — um
+`y` adivinhado deixa peças flutuando ou afundadas (o bug nº1 de cenário). O fluxo
+é carregar → instanciar → adicionar → **assentar por bounding box**:
 
-- `placeOnGround(obj, groundY = 0)` — desloca `obj` até a **base** da geometria
-  (ponto mais baixo do bounding box em world space) ficar em `groundY`,
-  independente de onde está o pivô. Retorna o `WorldBounds` já reposicionado.
-- `getWorldBounds(obj)` — mede a caixa em world space e devolve
-  `min/max/size/center` + os escalares `minX/maxX/minY/maxY/minZ/maxZ`.
+- `loadGLB(url)` — carrega (com cache por URL).
+- `instance(gltf, { castShadow?, receiveShadow? })` — clona (seguro pra
+  `SkinnedMesh`) e configura sombras nos meshes (default: projeta e recebe).
+  Pra um objeto **sem sombra**, passe `{ castShadow: false }`.
+- `placeOnGround(obj, { x, y, z, rotY, scale })` — aplica rotação/escala,
+  centra horizontalmente em `(x, z)` e encaixa a **base** da geometria em `y`.
+  Retorna `Bounds` (`minX/maxX/minZ/maxZ`, `topY`, `bottomY`, `size`, `center`).
+- `getWorldBounds(obj)` — mede a caixa em world space **sem mover** o objeto.
+- `setShadows(obj, { castShadow?, receiveShadow? })` — liga/desliga sombras de
+  um objeto já na cena (ex.: excluir a água do shadowMap).
+- `scatter(scene, url, count, area, opts)` — espalha N cópias num retângulo, cada
+  uma assentada com rotação/escala variadas (vegetação em cluster, não em grid).
 
-Use as **bordas medidas** pra conectar peças, em vez de chutar coordenadas:
+Conecte peças pelas **bordas medidas**, não por coordenada chutada:
 
 ```ts
-import { getWorldBounds, placeOnGround } from 'cortex-game-engine'
+import { loadGLB, instance, placeOnGround, scatter } from 'cortex-game-engine'
+
+async function place(url, opts) {
+  const obj = instance(await loadGLB(url))
+  scene.add(obj)
+  return placeOnGround(obj, opts)
+}
 
 // Ilhas afundadas 1.5u na água; medir as bordas reais de cada uma.
-const a = placeOnGround(islandA, -1.5)
-const b = placeOnGround(islandB, -1.5)
+const a = await place('assets/land_a.glb', { x: 0, y: -1.5 })
+const b = await place('assets/land_b.glb', { x: 25, y: -1.5 })
 
-// Ponte exatamente no vão entre a borda direita de A e a esquerda de B:
-const bridgeB = placeOnGround(bridge, -1.5)
-bridge.position.x = (a.maxX + b.minX) / 2
-bridge.position.z = a.center.z
+// Ponte no meio do vão real, deck no topo das ilhas:
+await place('assets/bridge.glb', { x: (a.maxX + b.minX) / 2, y: a.topY, z: a.center.z })
 
-// Empilhar um marco no topo de uma ilha (base no topo dela):
-placeOnGround(flag, getWorldBounds(islandB).maxY)
-flag.position.set(b.center.x, flag.position.y, b.center.z)
+// Marco empilhado no topo da ilha b:
+await place('assets/flag.glb', { x: b.center.x, y: b.topY, z: b.center.z })
+
+// Vegetação em cluster:
+await scatter(scene, 'assets/tree.glb', 5, { x: 0, z: -3, w: 10, d: 4, y: a.topY })
 ```
+
+## Iluminação exterior (preset)
+
+`setupOutdoorLighting`, `OutdoorLighting`, `OutdoorLightingOptions`.
+
+Configura tone mapping cinematográfico (ACES Filmic) + soft shadows no renderer e
+adiciona sol (com sombras) + hemisphere + ambient. Encapsula a config de
+shadow-camera/tone-mapping (que crua exige mexer no `WebGPURenderer` e no
+`DirectionalLight.shadow`). Retorna as luzes pra ajuste em runtime.
+
+```ts
+import { setupOutdoorLighting, setShadows } from 'cortex-game-engine'
+
+const lights = setupOutdoorLighting(renderer, scene, { sky: 0x9fd6ee, exposure: 0.95 })
+lights.sun.intensity = 2.8           // ajuste em runtime
+setShadows(decalMesh, { castShadow: false }) // tira um objeto do shadowMap
+```
+
+Pros meshes entrarem nas sombras, marque `castShadow`/`receiveShadow` (o `instance`
+acima já faz isso pros `.glb`). Constantes de shadow map também exportadas:
+`PCFSoftShadowMap`, `PCFShadowMap`, `BasicShadowMap`, `VSMShadowMap`.
 
 ## Água (experimental)
 
-`Water` — plano de água cartoon com cáusticas opcionais (tiled + animadas).
-Aproximação visual barata (sem reflexão/refração/foam/ondas reais); pra um mar
-realista seria preciso shader custom WebGPU.
+`Water` — plano de água cartoon com cáusticas opcionais. A textura entra como
+**emissiveMap** (áreas claras "acendem" a água puxando-a pro branco) e desliza em
+dois eixos. Recebe sombras. Aproximação visual barata (sem reflexão/refração/foam/
+ondas reais); pra um mar realista seria preciso shader custom WebGPU.
 
 ```ts
 import { Water } from 'cortex-game-engine'
@@ -172,7 +208,7 @@ const water = new Water(scene, {
   y: -1.5,
   color: 0x3b6e8f,
   causticsUrl: 'assets/textures/caustics.png', // opcional; omita pra água lisa
-  repeat: 8,
+  repeat: 5,
 })
 // no GameLoop.onUpdate, pra deslizar as cáusticas:
 water.update(deltaTime / 1000)

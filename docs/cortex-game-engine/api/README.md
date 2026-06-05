@@ -42,6 +42,7 @@
 ## Interfaces
 
 - [BloomConfig](interfaces/BloomConfig.md)
+- [Bounds](interfaces/Bounds.md)
 - [EditorHud](interfaces/EditorHud.md)
 - [EditorPose](interfaces/EditorPose.md)
 - [EditorState](interfaces/EditorState.md)
@@ -59,10 +60,14 @@
 - [MouseMoveEventDetail](interfaces/MouseMoveEventDetail.md)
 - [MousePosition](interfaces/MousePosition.md)
 - [ObjectEdit](interfaces/ObjectEdit.md)
+- [OutdoorLighting](interfaces/OutdoorLighting.md)
+- [OutdoorLightingOptions](interfaces/OutdoorLightingOptions.md)
+- [PlaceOptions](interfaces/PlaceOptions.md)
 - [PostFXOptions](interfaces/PostFXOptions.md)
 - [RendererOptions](interfaces/RendererOptions.md)
 - [SceneFileV1](interfaces/SceneFileV1.md)
 - [SceneFileWriter](interfaces/SceneFileWriter.md)
+- [ShadowOptions](interfaces/ShadowOptions.md)
 - [SoundOptions](interfaces/SoundOptions.md)
 - [ThirdPersonCameraOptions](interfaces/ThirdPersonCameraOptions.md)
 - [VehicleGravityOptions](interfaces/VehicleGravityOptions.md)
@@ -71,7 +76,6 @@
 - [Viewport](interfaces/Viewport.md)
 - [VignetteConfig](interfaces/VignetteConfig.md)
 - [WaterOptions](interfaces/WaterOptions.md)
-- [WorldBounds](interfaces/WorldBounds.md)
 
 ## Type Aliases
 
@@ -85,5 +89,10 @@
 - [createEditorState](functions/createEditorState.md)
 - [emptySceneFile](functions/emptySceneFile.md)
 - [getWorldBounds](functions/getWorldBounds.md)
+- [instance](functions/instance.md)
+- [loadGLB](functions/loadGLB.md)
 - [parseSceneFile](functions/parseSceneFile.md)
 - [placeOnGround](functions/placeOnGround.md)
+- [scatter](functions/scatter.md)
+- [setShadows](functions/setShadows.md)
+- [setupOutdoorLighting](functions/setupOutdoorLighting.md)

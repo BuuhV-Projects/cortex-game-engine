@@ -6,21 +6,14 @@
 
 # Function: placeOnGround()
 
-> **placeOnGround**(`object`, `groundY?`): [`WorldBounds`](../interfaces/WorldBounds.md)
+> **placeOnGround**(`object`, `options?`): [`Bounds`](../interfaces/Bounds.md)
 
-Defined in: src/scene/Placement.ts:92
+Defined in: src/scene/SceneAssets.ts:144
 
-Assenta um objeto no chão: desloca `object.position.y` até que a **base** da
-caixa delimitadora (o ponto mais baixo da geometria) fique exatamente em
-`groundY`. Retorna os limites em world space **já com o objeto reposicionado**
-— use as bordas (`minX`/`maxX`/...) pra conectar a próxima peça.
-
-Resolve o problema nº1 ao montar cena com `.glb`: como o pivô de cada modelo
-é arbitrário, posicionar por um `y` chutado deixa peças flutuando ou afundadas.
-`placeOnGround` mede e encaixa, independente de onde está o pivô.
-
-Pra **empilhar** um objeto em cima de outro, passe o topo do alvo como
-`groundY`: `placeOnGround(flag, getWorldBounds(island).maxY)`.
+Assenta um objeto: aplica `rotY`/`scale`, posiciona o **centro horizontal** em
+`(x, z)` e a **base** da geometria (ponto mais baixo do bbox) em `y` —
+independente de onde está o pivô do `.glb`. Retorna os [Bounds](../interfaces/Bounds.md) já
+reposicionados, pra você conectar peças vizinhas por bordas reais.
 
 ## Parameters
 
@@ -30,23 +23,23 @@ Pra **empilhar** um objeto em cima de outro, passe o topo do alvo como
 
 O objeto a assentar (tipicamente recém-adicionado à cena).
 
-### groundY?
+### options?
 
-`number` = `0`
+[`PlaceOptions`](../interfaces/PlaceOptions.md) = `{}`
 
-Altura em que a base deve ficar. Default `0`.
+Posição/rotação/escala. Ver [PlaceOptions](../interfaces/PlaceOptions.md).
 
 ## Returns
 
-[`WorldBounds`](../interfaces/WorldBounds.md)
+[`Bounds`](../interfaces/Bounds.md)
 
-Os limites em world space após o reposicionamento.
+Os limites em world space após o posicionamento.
 
 ## Example
 
 ```ts
-// Ilha afundada 1.5u na água, e uma bandeira apoiada no topo dela:
-const b = placeOnGround(island, -1.5)
-placeOnGround(flag, b.maxY)
-flag.position.x = b.center.x
+const a = placeOnGround(islandA, { x: 0, y: -1.5 })
+const b = placeOnGround(islandB, { x: 25, y: -1.5 })
+// ponte no meio do gap real, deck no topo das ilhas:
+placeOnGround(bridge, { x: (a.maxX + b.minX) / 2, y: a.topY, z: a.center.z })
 ```

@@ -58,7 +58,8 @@ export * from './editor/ObjectEditSystem.js';
 // distribuído separadamente (vendor/.../vite/sceneSavePlugin.js).
 export * from './scene/SceneFile.js';
 export * from './scene/SceneLoader.js';
-export * from './scene/Placement.js';
+export * from './scene/SceneAssets.js';
+export * from './scene/OutdoorLighting.js';
 export * from './scene/Water.js';
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';
@@ -148,6 +149,11 @@ export {
   RepeatWrapping,
   ClampToEdgeWrapping,
   MirroredRepeatWrapping,
+  // Tipos de shadow map (evita o literal 2). PCFSoft = sombras suaves.
+  BasicShadowMap,
+  PCFShadowMap,
+  PCFSoftShadowMap,
+  VSMShadowMap,
 } from 'three';
 
 // ─── Addons do three (examples/jsm) ───────────────────────────────────────────

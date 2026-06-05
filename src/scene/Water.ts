@@ -31,11 +31,17 @@ export interface WaterOptions {
   /** Metalicidade PBR. Default `0.05`. */
   metalness?: number;
   /**
-   * Velocidade de deslize da textura de cáusticas (offset/seg), pra dar sensação
-   * de movimento. `0` = parada. Requer chamar {@link Water.update} no loop.
-   * Default `0.015`.
+   * Intensidade do brilho das cáusticas (`emissiveIntensity`): a textura é usada
+   * como `emissiveMap`, então áreas claras dela "acendem" a água puxando-a pro
+   * branco. Default `0.35`.
    */
-  flowSpeed?: number;
+  causticsIntensity?: number;
+  /**
+   * Velocidade de deslize das cáusticas (offset/seg) em X e Y — dois eixos com
+   * velocidades distintas dão um fluxo mais orgânico. `0` = parada. Requer
+   * {@link Water.update} no loop. Default `[0.012, 0.007]`.
+   */
+  flowSpeed?: [number, number];
 }
 
 /**
@@ -64,8 +70,10 @@ export class Water {
 
   private readonly material: MeshStandardMaterial;
   private map: Texture | null = null;
-  private readonly flowSpeed: number;
-  private offset = 0;
+  private readonly flowX: number;
+  private readonly flowY: number;
+  private offsetX = 0;
+  private offsetY = 0;
 
   constructor(scene: Scene, options: WaterOptions = {}) {
     const {
@@ -76,28 +84,39 @@ export class Water {
       repeat = 8,
       roughness = 0.35,
       metalness = 0.05,
-      flowSpeed = 0.015,
+      causticsIntensity = 0.35,
+      flowSpeed = [0.012, 0.007],
     } = options;
 
-    this.flowSpeed = flowSpeed;
-    this.material = new MeshStandardMaterial({ color: new Color(color), roughness, metalness });
+    this.flowX = flowSpeed[0];
+    this.flowY = flowSpeed[1];
+    // color = parte escura da água; emissive + emissiveMap = ADICIONA branco
+    // onde a textura de cáusticas é clara (áreas brilhantes "acendem" a água).
+    this.material = new MeshStandardMaterial({
+      color: new Color(color),
+      emissive: new Color(0xffffff),
+      emissiveIntensity: causticsUrl ? causticsIntensity : 0,
+      roughness,
+      metalness,
+    });
 
     this.mesh = new Mesh(new PlaneGeometry(size, size), this.material);
     this.mesh.rotation.x = -Math.PI / 2;
     this.mesh.position.y = y;
     this.mesh.name = 'Water';
+    this.mesh.receiveShadow = true; // sombras das peças se projetam na água
     scene.add(this.mesh);
 
     if (causticsUrl) {
-      // Carrega as cáusticas em segundo plano; aplica como map quando pronta —
-      // não bloqueia o resto do setup da cena.
+      // Carrega as cáusticas em segundo plano; aplica como emissiveMap quando
+      // pronta — não bloqueia o resto do setup da cena.
       new AssetLoader()
         .loadTexture(causticsUrl)
         .then((tex) => {
           tex.wrapS = RepeatWrapping;
           tex.wrapT = RepeatWrapping;
           tex.repeat.set(repeat, repeat);
-          this.material.map = tex;
+          this.material.emissiveMap = tex;
           this.material.needsUpdate = true;
           this.map = tex;
         })
@@ -106,15 +125,16 @@ export class Water {
   }
 
   /**
-   * Anima as cáusticas deslizando o offset da textura. Chame uma vez por frame
-   * passando o delta em **segundos** (`deltaTime / 1000`). No-op se não houver
-   * textura de cáusticas ou se `flowSpeed` for `0`.
+   * Anima as cáusticas deslizando o offset da textura nos dois eixos. Chame uma
+   * vez por frame passando o delta em **segundos** (`deltaTime / 1000`). No-op
+   * se não houver textura de cáusticas.
    *
    * @param deltaSeconds - Tempo decorrido desde o último frame, em segundos.
    */
   update(deltaSeconds: number): void {
-    if (!this.map || this.flowSpeed === 0) return;
-    this.offset = (this.offset + deltaSeconds * this.flowSpeed) % 1;
-    this.map.offset.set(this.offset, this.offset);
+    if (!this.map) return;
+    this.offsetX = (this.offsetX + deltaSeconds * this.flowX) % 1;
+    this.offsetY = (this.offsetY + deltaSeconds * this.flowY) % 1;
+    this.map.offset.set(this.offsetX, this.offsetY);
   }
 }

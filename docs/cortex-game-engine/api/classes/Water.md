@@ -6,7 +6,7 @@
 
 # Class: Water
 
-Defined in: src/scene/Water.ts:61
+Defined in: [src/scene/Water.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L67)
 
 Água simples (experimental) pra cenários de ilhas/plataforma: um plano
 horizontal grande com material PBR cartoon e, opcionalmente, uma textura de
@@ -37,7 +37,7 @@ water.update(deltaTime / 1000)
 
 > **new Water**(`scene`, `options?`): `Water`
 
-Defined in: src/scene/Water.ts:70
+Defined in: [src/scene/Water.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L78)
 
 #### Parameters
 
@@ -59,7 +59,7 @@ Defined in: src/scene/Water.ts:70
 
 > `readonly` **mesh**: `Mesh`
 
-Defined in: src/scene/Water.ts:63
+Defined in: [src/scene/Water.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L69)
 
 O `Mesh` do plano de água, já adicionado à cena.
 
@@ -69,11 +69,11 @@ O `Mesh` do plano de água, já adicionado à cena.
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: src/scene/Water.ts:115
+Defined in: [src/scene/Water.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L134)
 
-Anima as cáusticas deslizando o offset da textura. Chame uma vez por frame
-passando o delta em **segundos** (`deltaTime / 1000`). No-op se não houver
-textura de cáusticas ou se `flowSpeed` for `0`.
+Anima as cáusticas deslizando o offset da textura nos dois eixos. Chame uma
+vez por frame passando o delta em **segundos** (`deltaTime / 1000`). No-op
+se não houver textura de cáusticas.
 
 #### Parameters
 

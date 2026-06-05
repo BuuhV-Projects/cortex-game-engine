@@ -6,15 +6,12 @@
 
 # Function: getWorldBounds()
 
-> **getWorldBounds**(`object`): [`WorldBounds`](../interfaces/WorldBounds.md)
+> **getWorldBounds**(`object`): [`Bounds`](../interfaces/Bounds.md)
 
-Defined in: src/scene/Placement.ts:48
+Defined in: src/scene/SceneAssets.ts:123
 
-Mede a caixa delimitadora de um `Object3D` (incluindo todos os descendentes)
-em **world space**. Atualiza as matrizes de mundo antes de medir, então o
-resultado reflete a posição/rotação/escala atuais — útil logo após carregar
-um `.glb` (cujo pivô é imprevisível) pra saber onde a geometria realmente
-está.
+Mede o bounding box de um objeto em **world space** (sem movê-lo). Atualiza as
+matrizes antes de medir, então reflete posição/rotação/escala atuais.
 
 ## Parameters
 
@@ -22,20 +19,6 @@ está.
 
 `Object3D`
 
-O objeto (ou grupo, ex.: a cena de um glTF) a medir.
-
 ## Returns
 
-[`WorldBounds`](../interfaces/WorldBounds.md)
-
-Os limites em world space, com os escalares desempacotados.
-
-## Example
-
-```ts
-const island = instance(islandGlb)
-scene.add(island)
-const b = getWorldBounds(island)
-// borda direita da ilha (pra encostar a próxima peça):
-nextPiece.position.x = b.maxX
-```
+[`Bounds`](../interfaces/Bounds.md)
