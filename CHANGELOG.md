@@ -1,3 +1,30 @@
+# [0.7.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.6.0...v0.7.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **engine:** seleção do editor ignora objetos internos (gizmo) ([d65e28b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d65e28b6178c8b08993f95fc75edf40130825122))
+* **ide:** chat IA no app empacotado (asar + PATH do yarn/node) ([55d4d61](https://github.com/BuuhV-Projects/cortex-game-engine/commit/55d4d6134c713404cec59fd4ed7be09b4825b4aa))
+* **template:** alinha devUrl do Tauri com a porta do Vite (5174) ([494692e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/494692e540e2b80e828e2aec019321542cd63729))
+
+
+### Features
+
+* **engine:** facade Game com editor automático dev-only (reativo) ([26c1868](https://github.com/BuuhV-Projects/cortex-game-engine/commit/26c186851e82832cee573b8a09c3759394a9746e))
+* **engine:** grounding por bbox, água experimental e exports de textura ([bb25258](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bb25258d64c9fbbe6972288582dbde73f222a63b))
+* **engine:** helpers de autoria de cena (assets, iluminação, água v2) ([35b89ba](https://github.com/BuuhV-Projects/cortex-game-engine/commit/35b89bad24237d0def40ae85d0d9ee755a756f8a))
+* **engine:** hierarquia e inspector no editor com seleção observável ([2e0b3e2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2e0b3e22e777305fed6a67daa7ec27f384bebbf0))
+* **ide:** atualiza regra de grounding no prompt para a nova API de cena ([bc840d6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bc840d664d4945fa8c7e2378ac9b89f6aea62df6))
+* **ide:** disciplina de grounding e validação de cena no prompt do Chat IA ([c2db722](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c2db7225edf5e0d112aa96c5e5c50ccf2ec3cfb6))
+* **ide:** tool inspect_assets e diretrizes de level design no Chat IA ([b76aac4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b76aac45144293a8ef0293f3ee1d75c5465107f3))
+* **ide:** vendoriza os 2 bundles e corrige tipos vendorizados ([1eb1093](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1eb109334f7f74978d6f9ea5c91b0e7d7fac14ca))
+* **template:** bootstrap via Game (zero editor) + água com cáusticas ([1fe9afa](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1fe9afae0a6f26a73866a9684639369e842793dd))
+* **template:** chão cinza neutro (estilo Unity) no starter ([90c527f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/90c527f58d33f92f2ceca9d861b41cc57aa0cd22))
+* **template:** liga hierarquia + inspector ao editor F2 ([eaf4769](https://github.com/BuuhV-Projects/cortex-game-engine/commit/eaf4769dd3741daab6d9e23c1b051de4c5d15096))
+* **template:** liga o editor embutido no starter e orienta a IA a reusá-lo ([1218b09](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1218b096235a7c25d0c800a16256f6d96dd58d45))
+* **template:** starter com água, ilha e iluminação exterior sobre o Editor F2 ([ac0b72d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ac0b72daba63b7faa59465e9f60139c184af9f3e))
+* **template:** tsconfig.json + script typecheck no projeto novo ([61f4c48](https://github.com/BuuhV-Projects/cortex-game-engine/commit/61f4c48995543d38ab40e5cb7776c48a6d8109bf))
+
 # [0.6.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.5.0...v0.6.0) (2026-06-01)
 
 
