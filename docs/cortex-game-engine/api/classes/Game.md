@@ -33,7 +33,7 @@ game.start()
 
 > **new Game**(`options`): `Game`
 
-Defined in: [src/core/Game.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L87)
+Defined in: [src/core/Game.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L88)
 
 #### Parameters
 
@@ -113,7 +113,7 @@ Mundo ECS — registre sistemas com `world.addSystem(...)`.
 
 > **get** **hasEditor**(): `boolean`
 
-Defined in: [src/core/Game.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L130)
+Defined in: [src/core/Game.ts:131](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L131)
 
 `true` se o editor está ligado (bundle de dev).
 
@@ -127,7 +127,7 @@ Defined in: [src/core/Game.ts:130](https://github.com/BuuhV-Projects/cortex-game
 
 > **onUpdate**(`callback`): `void`
 
-Defined in: [src/core/Game.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L125)
+Defined in: [src/core/Game.ts:126](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L126)
 
 Registra um callback chamado a cada frame (delta em **segundos**), antes do
 `world.tick`. É o lugar pra lógica de jogo que não está num System.
@@ -144,11 +144,43 @@ Registra um callback chamado a cada frame (delta em **segundos**), antes do
 
 ***
 
+### setPostFX()
+
+> **setPostFX**(`postfx`): `void`
+
+Defined in: [src/core/Game.ts:147](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L147)
+
+Liga um pipeline de pós-processamento (tipicamente um `PostFX`) usado pra
+renderizar o JOGO — é o principal lugar pra atmosfera (bloom, vignette, tone
+mapping, exposição). Construa-o com `game.renderer/scene/camera` e passe aqui:
+o `Game` chama `postfx.render()` no lugar de `renderer.render(...)`. No modo
+editor, a renderização volta pra câmera livre crua (sem pós). Passe `null`
+pra desligar.
+
+#### Parameters
+
+##### postfx
+
+\{ `render`: `void`; \} \| `null`
+
+#### Returns
+
+`void`
+
+#### Example
+
+```ts
+const fx = new PostFX(game.renderer, game.scene, game.camera, { bloom: { strength: 0.8 } })
+game.setPostFX(fx)
+```
+
+***
+
 ### start()
 
 > **start**(): `void`
 
-Defined in: [src/core/Game.ts:144](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L144)
+Defined in: [src/core/Game.ts:169](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L169)
 
 Inicia o loop.
 
@@ -162,7 +194,7 @@ Inicia o loop.
 
 > **stop**(): `void`
 
-Defined in: [src/core/Game.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L149)
+Defined in: [src/core/Game.ts:174](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L174)
 
 Para o loop.
 

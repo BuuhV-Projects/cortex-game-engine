@@ -192,6 +192,45 @@ Texturas agora são re-exportadas pelo engine (não precisa importar de `three` 
 usar o literal `1000`): `Texture`, `TextureLoader`, `RepeatWrapping`,
 `ClampToEdgeWrapping`, `MirroredRepeatWrapping` (+ `AssetLoader.loadTexture(url)`).
 
+## Atmosfera / mood (o que mais deixa a cena BONITA)
+
+Posicionar bem tira a cena de "quebrada"; **atmosfera** tira de "ok" pra "bonita".
+Combine, e calibre pra casar com a referência:
+
+- **Luz** — `setupOutdoorLighting(game.renderer, game.scene, { sky, sunColor, sunIntensity, exposure })`
+  (sol+sombras+tone mapping). Mood quente (golden hour) = `sunColor` alaranjado +
+  exposição menor; meio-dia = sol branco forte.
+- **Névoa** — `game.scene.getThreeScene().fog = new Fog(cor, near, far)` (a cor da
+  névoa = cor do céu dá profundidade; afasta o horizonte).
+- **Céu/ambiente realista** — `Skybox.fromHDRI(game.scene, 'assets/sky.hdr', { environmentIntensity })`
+  (ilumina a cena com o HDRI — muda tudo numa cena realista).
+- **Pós-processamento** — `PostFX` ligado via `game.setPostFX(...)` (bloom dá o
+  "glow" cartoon, vignette foca o olhar, tone mapping/exposição fecham o look):
+
+```ts
+import { Game, Fog, Color, setupOutdoorLighting, PostFX, ACESFilmicToneMapping } from 'cortex-game-engine'
+
+const game = new Game({ canvas })
+const three = game.scene.getThreeScene()
+const SKY = 0x9fd6ee
+three.background = new Color(SKY)
+three.fog = new Fog(SKY, 60, 220)
+setupOutdoorLighting(game.renderer, game.scene, { sky: SKY, exposure: 0.95 })
+
+// Atmosfera: bloom suave + vignette + ACES. Com o Game, ligue via setPostFX —
+// o Game passa a renderizar o JOGO pelo PostFX (no editor volta pro render cru).
+const fx = new PostFX(game.renderer, game.scene, game.camera, {
+  bloom: { strength: 0.6 }, vignette: true, fxaa: true,
+  toneMapping: ACESFilmicToneMapping, exposure: 1.05,
+})
+game.setPostFX(fx)
+// runtime: fx.bloom?.strength.value = 0.9
+game.start()
+```
+
+Cartoon (suas referências de ilhas): saturação alta, bloom suave, sombras macias,
+céu/água saturados. Realista: HDRI + exposição calibrada + bloom discreto.
+
 ## Cena persistida em JSON + IO
 
 `SceneFile`, `SceneLoader`, `SceneFileWriter`, `HttpSceneFileWriter`,

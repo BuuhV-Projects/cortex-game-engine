@@ -83,6 +83,7 @@ export class Game {
   private readonly _loop: GameLoop;
   private readonly _editor: GameEditor | null;
   private _onUpdate: ((deltaSeconds: number) => void) | null = null;
+  private _postfx: { render(): void } | null = null;
 
   constructor(options: GameOptions) {
     const {
@@ -131,13 +132,37 @@ export class Game {
     return this._editor !== null;
   }
 
+  /**
+   * Liga um pipeline de pós-processamento (tipicamente um `PostFX`) usado pra
+   * renderizar o JOGO — é o principal lugar pra atmosfera (bloom, vignette, tone
+   * mapping, exposição). Construa-o com `game.renderer/scene/camera` e passe aqui:
+   * o `Game` chama `postfx.render()` no lugar de `renderer.render(...)`. No modo
+   * editor, a renderização volta pra câmera livre crua (sem pós). Passe `null`
+   * pra desligar.
+   *
+   * @example
+   * const fx = new PostFX(game.renderer, game.scene, game.camera, { bloom: { strength: 0.8 } })
+   * game.setPostFX(fx)
+   */
+  setPostFX(postfx: { render(): void } | null): void {
+    this._postfx = postfx;
+  }
+
   private _tick(deltaMs: number): void {
     const dt = deltaMs / 1000;
     this._onUpdate?.(dt);
     this.world.tick(deltaMs);
     this._editor?.update(dt);
-    const camera = this._editor?.activeCamera() ?? this.camera;
-    this.renderer.render(this.scene.getThreeScene(), camera);
+    const editorCamera = this._editor?.activeCamera() ?? null;
+    if (editorCamera) {
+      // No editor: render direto pela câmera livre (cena crua, sem pós).
+      this.renderer.render(this.scene.getThreeScene(), editorCamera);
+    } else if (this._postfx) {
+      // No jogo: pipeline de pós-processamento (mood/bloom/etc.).
+      this._postfx.render();
+    } else {
+      this.renderer.render(this.scene.getThreeScene(), this.camera);
+    }
   }
 
   /** Inicia o loop. */
