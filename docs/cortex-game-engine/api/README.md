@@ -90,6 +90,7 @@
 
 ## Functions
 
+- [addSceneNode](functions/addSceneNode.md)
 - [autoDetectSceneFileWriter](functions/autoDetectSceneFileWriter.md)
 - [buildScene](functions/buildScene.md)
 - [createDomLoadingScreen](functions/createDomLoadingScreen.md)

@@ -175,14 +175,22 @@ Siga o fluxo:
    exposição calibrada. Itere isso no playtest junto com a composição.
 
 Princípios de composição (aplique sempre):
+- **Autore a cena como JSON DATA-DRIVEN, não código imperativo.** A cena estática \
+  vai em arquivos \`scenes/*.json\` (nós \`model\`/\`primitive\`/\`light\`/\`water\` com \
+  \`place\`/\`transform\`), carregados por \`buildScene\` no \`main.ts\` — ver receita \
+  "Cena data-driven (JSON)" na Referência da API. Motivo: assim o EDITOR (F2) pode \
+  editar/mover/remover/adicionar e SALVAR de volta (overlay \`assets/scene-data.json\`); \
+  cena hardcodada em código o editor não consegue persistir. Multi-arquivo por \
+  região (\`world.json\`, \`obstaculos.json\`, \`decoracao.json\`). Lógica de jogo \
+  continua em TS (systems/components). Só caia em código imperativo de cena pra \
+  casos com lógica (muitas posições computadas, instanciar condicional).
 - **Assente por bounding box, NUNCA por \`y\` chutado.** O pivô de cada \`.glb\` é \
-  arbitrário — definir \`position.y\` no olho deixa peças flutuando ou afundadas \
-  (o erro mais comum e mais caro: vira um loop de tentativa-erro). Use os \
-  helpers do engine: \`loadGLB\`/\`instance\` pra carregar+clonar (com sombras), e \
-  \`placeOnGround(obj, { x, y, z, rotY, scale })\` que centra em \`(x,z)\` e encaixa \
-  a BASE da geometria em \`y\`, devolvendo \`Bounds\` (\`maxX/minX/...\`, \`topY\`). \
-  \`getWorldBounds(obj)\` mede sem mover. Ver receita "Montar cena com .glb" na \
-  Referência da API. Pra empilhar, use o topo: \`placeOnGround(flag, { x: i.center.x, y: i.topY })\`.
+  arbitrário — chutar \`y\` deixa peças flutuando/afundadas (o erro mais comum e \
+  caro). No JSON, use a diretiva \`place\` (\`{ x, y, z, rotY, scale }\`): o loader \
+  chama \`placeOnGround\` (assenta a BASE em \`y\`, centra em \`x,z\`). Pra computar \
+  \`x\`/\`z\` de conexões na autoria (você não roda código), BAKE o valor a partir \
+  das **dimensões do \`inspect_assets\`**. Em código imperativo, os helpers \
+  \`placeOnGround\`/\`getWorldBounds\`/\`loadGLB\`/\`instance\` seguem disponíveis.
 - **Conecte por bordas MEDIDAS, não por coordenada chutada.** Spawne os blocos \
   primeiro, guarde os \`Bounds\` retornados por \`placeOnGround\` e derive a posição \
   do conector do gap real: a ponte vai em \`x = (ilhaA.maxX + ilhaB.minX) / 2\`, \

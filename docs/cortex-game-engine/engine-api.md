@@ -100,7 +100,72 @@ game.start()
 > `attachEditor(game)` (só no bundle `index.dev.js`). Isso é detalhe de
 > implementação — o jogo não importa nem referencia esses símbolos.
 
-## Montar cena com .glb: carregar, instanciar, assentar e conectar
+## Cena data-driven (JSON) — FORMA RECOMENDADA de autorar a cena
+
+`SceneDefinition`, `SceneNode`, `buildScene`, `addSceneNode`, `parseSceneDefinition`,
+`SceneHandle`, `BuildSceneOptions`.
+
+**Autore a cena como DADO (arquivos JSON em `scenes/`), não como código imperativo.**
+Assim o **editor (F2) edita/move/remove/adiciona e SALVA de volta** (a lógica de
+jogo continua em TS — systems/components). A cena é uma lista de **nós**; o
+`buildScene` é o ÚNICO ponto de instanciação (nó removido nunca é criado → sem
+desperdício). Os JSON são **importados** (o Vite bundla no build; multi-arquivo
+em dev, sem fetch).
+
+Tipos de nó (`type`): `model` (`url` do `.glb`), `primitive` (`shape`:
+box/cylinder/plane/sphere), `light` (`light`: directional/hemisphere/ambient),
+`water`. Campos comuns: `id` (único; vira `Object3D.name` e chave do editor),
+`place` (grounding: assenta a base em `y`, centra em `x,z` — **use no lugar de
+`y` chutado**) ou `transform` (pose direta), `castShadow`/`receiveShadow`. Cores
+aceitam hex string (`"#9fd6ee"`). Cena: `background`, `fog`, `outdoorLighting`.
+
+```jsonc
+// scenes/world.json  (importável: o Vite bundla)
+{
+  "version": 1,
+  "background": "#9fd6ee",
+  "fog": { "color": "#9fd6ee", "near": 60, "far": 220 },
+  "outdoorLighting": { "sky": "#9fd6ee", "exposure": 0.95 },
+  "nodes": [
+    { "type": "water", "id": "water", "y": -1.5, "color": "#3b8fb5", "causticsUrl": "assets/textures/caustics.png" },
+    { "type": "model", "id": "ilha_1", "url": "assets/land_001.glb", "place": { "x": 0, "y": -1.5 } },
+    { "type": "model", "id": "ponte_1", "url": "assets/bridge_001.glb", "place": { "x": 12.5, "y": 0.2 } }
+  ]
+}
+```
+
+```ts
+// main.ts
+import { Game, buildScene, SceneLoader, type SceneDefinition } from 'cortex-game-engine'
+import world from './scenes/world.json'
+import props from './scenes/props.json'
+const game = new Game({ canvas }); game.start()
+const overlay = await new SceneLoader().loadSceneFile('assets/scene-data.json') // edições do editor
+const scene = await buildScene(game.scene, [world, props] as unknown as SceneDefinition[], { renderer: game.renderer, overlay })
+game.onUpdate((dt) => scene.update(dt)) // anima água
+```
+
+**Como autorar bem (a IA é a level designer):**
+- **Conexões/posições:** compute `x`/`z` a partir das **dimensões do `inspect_assets`**
+  (você não roda código na autoria, então BAKE o valor): ex. ponte em
+  `x = (ilhaA_centroX + ilhaA_larguraX/2 + ilhaB_centroX − ilhaB_larguraX/2) / 2`.
+  Use `place.y` pra o grounding (nunca chute `y`).
+- **Multi-arquivo:** quebre por região/feature (`world.json`, `obstaculos.json`,
+  `decoracao.json`) — diffs limpos, edição cirúrgica. `nodes` são concatenados.
+- **Overlay do editor** (`assets/scene-data.json`): o editor grava ali transform
+  overrides + `data.deleted` + `data.added`. O `buildScene` aplica por cima. Pra
+  "achatar" as edições na base depois, leia a overlay e mova as entradas pros
+  arquivos `scenes/*.json` (e limpe a overlay).
+- **Atmosfera** (o que deixa BONITO): use `outdoorLighting`/`fog`/`background` no
+  JSON e, pra bloom/vignette, `game.setPostFX(...)` no `main.ts` (ver Atmosfera).
+- Valide com `playtest_game` (varredura close-up por região) e `critique_scene`.
+
+> Pra cenas/efeitos que precisam de lógica (computar muitas posições, instanciar
+> condicional), os helpers imperativos abaixo (`loadGLB`/`placeOnGround`/`scatter`)
+> seguem disponíveis — são o que o loader usa por dentro. Mas a cena ESTÁTICA
+> deve ser JSON, pra o editor poder editá-la.
+
+## Montar cena com .glb (imperativo — internals / casos com lógica)
 
 `loadGLB`, `instance`, `setShadows`, `placeOnGround`, `getWorldBounds`, `scatter`,
 `Bounds`, `ShadowOptions`, `PlaceOptions`.
