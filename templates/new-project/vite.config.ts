@@ -26,7 +26,8 @@ function copyAssets(): Plugin {
 
 // Algumas configurações abaixo existem para cooperar com Tauri (ADR-0024):
 // - clearScreen:false evita Vite limpar o terminal e esconder logs do Rust.
-// - server.strictPort: Tauri liga em devUrl fixo (5173), então não pode pular.
+// - server.strictPort: Tauri (devUrl) e o Play da IDE ligam na porta fixa 5174,
+//   então o Vite não pode pular pra outra se estiver ocupada.
 // - server.watch.ignored: evita re-bundle ao recompilar a casca Rust.
 export default defineConfig(({ mode }) => ({
   root: '.',
