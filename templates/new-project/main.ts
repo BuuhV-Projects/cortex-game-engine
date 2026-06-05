@@ -36,7 +36,10 @@ import {
   EditableTargetComponent,
   Object3DSyncSystem,
   createEditorState,
+  createEditorSelection,
   createEditorHud,
+  createEditorOutliner,
+  createEditorInspector,
   EditorCameraSystem,
   ObjectEditSystem,
 } from 'cortex-game-engine'
@@ -138,6 +141,7 @@ const input = new InputManager()
 input.attach(document.body)
 
 const editorState = createEditorState()
+const editorSelection = createEditorSelection()
 const editorHud = createEditorHud()
 
 // Câmera separada usada só no modo editor (voo livre). A do jogo fica intacta.
@@ -177,10 +181,24 @@ world.addSystem(
     undefined, // onTransformChange (sync de volta pro ECS) — não necessário aqui
     // onFocusRequest: F enquadra o objeto selecionado, estilo Blender.
     (obj) => editorCameraSystem.focusOn(obj),
+    editorSelection, // espelha a seleção pra a UI (hierarquia + inspector)
   ),
 )
 
+// Painéis de UI do editor: hierarquia (clique = seleciona + enquadra) e inspector
+// (edita posição/rotação/escala, sombra e propriedades de luz do selecionado).
+const editorOutliner = createEditorOutliner({
+  editRoots: [three],
+  selection: editorSelection,
+  onFocus: (obj) => editorCameraSystem.focusOn(obj),
+})
+const editorInspector = createEditorInspector({ selection: editorSelection })
+
 // ─── Loop principal ───────────────────────────────────────────────────────────
+
+// Sincroniza a visibilidade dos painéis com o editor (toggle no F2). Só reage na
+// virada do estado; ao abrir, reconstrói a hierarquia (a cena pode ter mudado).
+let editorWasActive = false
 
 const loop = new GameLoop({
   onUpdate(deltaTime: number) {
@@ -191,6 +209,14 @@ const loop = new GameLoop({
     }
     water.update(dt)      // anima as cáusticas (no-op se não houver textura)
     world.tick(deltaTime) // editor (câmera/gizmo) + Object3DSyncSystem rodam aqui
+
+    if (editorState.active !== editorWasActive) {
+      editorWasActive = editorState.active
+      editorOutliner.setVisible(editorState.active)
+      editorInspector.setVisible(editorState.active)
+      if (editorState.active) editorOutliner.refresh()
+    }
+
     // No editor renderiza pela câmera de voo livre; senão, pela câmera do jogo.
     renderer.render(scene.getThreeScene(), editorState.active ? editorCamera : camera)
   },
