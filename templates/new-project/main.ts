@@ -4,11 +4,12 @@
  *   2. Delegar setup da cena a `scenes/` quando o projeto crescer.
  *   3. Iniciar o loop.
  *
- * Começa com uma cena "starter": céu, um chão que some no horizonte (névoa) e um
- * cubo no centro — ponto de partida pra você construir em cima. Conforme o jogo
- * cresce, mova as criações de Mesh/luzes/entidades pra `scenes/MainScene.ts`
- * (ou similar) — main.ts deve ser fino. Components em `components/`, lógica em
- * `systems/`, factories em `entities/`. Mais regras em README.md.
+ * Começa com uma cena "starter": céu, água, uma ilha e um cubo apoiado nela —
+ * iluminada com o preset exterior do engine (sol + sombras suaves). É um ponto
+ * de partida pra você construir em cima. Conforme o jogo cresce, mova as criações
+ * de Mesh/luzes/entidades pra `scenes/MainScene.ts` (ou similar) — main.ts deve
+ * ser fino. Components em `components/`, lógica em `systems/`, factories em
+ * `entities/`. Mais regras em README.md.
  *
  * Já vem com o MODO EDITOR embutido do engine ligado (tecla F2): câmera de voo
  * livre + gizmo pra posicionar objetos estilo Blender/Unity. Use-o pra montar
@@ -22,12 +23,13 @@ import {
   PerspectiveCamera,
   Mesh,
   BoxGeometry,
-  PlaneGeometry,
+  CylinderGeometry,
   MeshStandardMaterial,
   Color,
   Fog,
-  HemisphereLight,
-  DirectionalLight,
+  Water,
+  setupOutdoorLighting,
+  placeOnGround,
   InputManager,
   TransformComponent,
   Object3DComponent,
@@ -59,8 +61,8 @@ const camera = new PerspectiveCamera(
   0.1,                                     // near plane
   1000,                                    // far plane
 )
-camera.position.set(5, 4, 7)
-camera.lookAt(0, 0.5, 0)
+camera.position.set(8, 6, 10)
+camera.lookAt(0, 1, 0)
 
 // Mantém a câmera correta quando a janela é redimensionada (o Renderer já
 // ajusta o próprio tamanho sozinho).
@@ -70,46 +72,53 @@ window.addEventListener('resize', () => {
 })
 
 // ─── Céu + névoa ──────────────────────────────────────────────────────────────
-// Fundo azul-céu e uma névoa da MESMA cor: o chão se dissolve no horizonte,
-// dando a sensação de mundo infinito. Troque a cor por um azul-mar (ex.: 0x3b6e8f)
-// se quiser um "oceano" em vez de céu.
-const SKY = 0x9fc6e0
+// Fundo azul-céu e uma névoa da MESMA cor: a água se dissolve no horizonte,
+// dando a sensação de mundo infinito.
+const SKY = 0x9fd6ee
 three.background = new Color(SKY)
-three.fog = new Fog(SKY, 30, 140)
+three.fog = new Fog(SKY, 60, 220)
 
-// ─── Iluminação (exterior) ────────────────────────────────────────────────────
-// HemisphereLight = luz do céu por cima + cor do chão por baixo (ambiente
-// natural). DirectionalLight faz de "sol", dando volume ao cubo.
-scene.add(new HemisphereLight(SKY, 0x5a5d63, 0.9))
-const sun = new DirectionalLight(0xffffff, 1.2)
-sun.position.set(8, 12, 6)
-scene.add(sun)
+// ─── Iluminação (preset exterior do engine) ───────────────────────────────────
+// setupOutdoorLighting configura tone mapping cinematográfico + soft shadows no
+// renderer e adiciona sol (com sombras) + hemisphere + ambient. Retorna as luzes
+// pra ajuste fino. Pra excluir um objeto do shadowMap: setShadows(obj, { castShadow:false }).
+const lights = setupOutdoorLighting(renderer, scene, { sky: SKY })
+lights.sun.intensity = 3.0
 
-// ─── Chão "infinito" ──────────────────────────────────────────────────────────
-// Plano grande na horizontal; as bordas somem na névoa. Cinza neutro (estilo
-// plano default da Unity). Troque a cor por verde (0x4f7a3a) pra grama ou por
-// azul (0x3b6e8f) pra água.
-const ground = new Mesh(
-  new PlaneGeometry(500, 500),
-  new MeshStandardMaterial({ color: 0x8a8d93, roughness: 1 }),
+// ─── Água ──────────────────────────────────────────────────────────────────────
+// Plano de água cartoon. Passe `causticsUrl` (uma textura) pra ganhar cáusticas
+// animadas; sem ela, fica uma água lisa colorida. Chame water.update(dt) no loop.
+const water = new Water(scene, { y: -0.4, color: 0x3b8fb5 })
+
+// ─── Ilha ──────────────────────────────────────────────────────────────────────
+// Cilindro baixo como "ilha". placeOnGround assenta a BASE em y=-1 (afundada na
+// água) e devolve as bordas/topo reais — use `island.topY` pra apoiar coisas em
+// cima, em vez de chutar alturas.
+const island = new Mesh(
+  new CylinderGeometry(6, 6.5, 2, 32),
+  new MeshStandardMaterial({ color: 0x6ab150, roughness: 1 }),
 )
-ground.rotation.x = -Math.PI / 2
-ground.name = 'Ground'
-scene.add(ground)
+island.castShadow = true
+island.receiveShadow = true
+island.name = 'Island'
+scene.add(island)
+const islandBounds = placeOnGround(island, { y: -1 })
 
 // ─── Cubo central (avatar editável) ───────────────────────────────────────────
 // O cubo é uma entidade ECS marcada como EditableTargetComponent — é o "avatar"
 // que o modo editor pode teleportar (T). Object3DSyncSystem mantém a mesh
-// alinhada ao TransformComponent a cada frame.
+// alinhada ao TransformComponent a cada frame. Apoiado no topo da ilha.
 const cube = new Mesh(
   new BoxGeometry(1, 1, 1),
   new MeshStandardMaterial({ color: 0x4ec9b0 }),
 )
+cube.castShadow = true
+cube.receiveShadow = true
 cube.name = 'Cube'
 scene.add(cube)
 
 const player = world.createEntity()
-const playerTransform = new TransformComponent(0, 0.5, 0) // apoiado em cima do chão
+const playerTransform = new TransformComponent(0, islandBounds.topY + 0.5, 0) // base no topo da ilha
 player.addComponent(playerTransform)
 player.addComponent(new Object3DComponent(cube))
 player.addComponent(new EditableTargetComponent())
@@ -144,7 +153,7 @@ const editorCameraSystem = new EditorCameraSystem(
   editorCamera,
   camera,
   input,
-  ground, // raycast de teleporte faz snap nesta superfície
+  island, // raycast de teleporte faz snap nesta superfície
   editorHud,
 )
 world.addSystem(editorCameraSystem)
@@ -180,6 +189,7 @@ const loop = new GameLoop({
     if (!editorState.active) {
       playerTransform.rotationY += 0.6 * dt
     }
+    water.update(dt)      // anima as cáusticas (no-op se não houver textura)
     world.tick(deltaTime) // editor (câmera/gizmo) + Object3DSyncSystem rodam aqui
     // No editor renderiza pela câmera de voo livre; senão, pela câmera do jogo.
     renderer.render(scene.getThreeScene(), editorState.active ? editorCamera : camera)
