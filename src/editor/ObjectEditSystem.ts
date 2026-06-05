@@ -167,25 +167,33 @@ export class ObjectEditSystem extends System {
     this.raycaster.setFromCamera(this.ndc, this.camera);
 
     const hits = this.raycaster.intersectObjects(this.editRoots, true);
-    if (hits.length === 0) {
-      this.deselect();
+
+    // Pega o primeiro hit que NÃO seja interno do editor. O helper do gizmo fica
+    // na cena (mesmo invisível) e é raycastável — sem este filtro, clicar através
+    // dele selecionaria o próprio gizmo e o attach() o prenderia em si mesmo,
+    // causando recursão infinita em updateMatrixWorld (tela preta).
+    for (const hit of hits) {
+      if (this.isEditorInternal(hit.object)) continue;
+      const root = this.findOwningRoot(hit.object);
+      if (!root) continue;
+      let target: THREE.Object3D = hit.object;
+      while (target.parent && target.parent !== root) {
+        target = target.parent;
+      }
+      this.select(target);
       return;
     }
+    this.deselect();
+  }
 
-    const hit = hits[0]!.object;
-    const root = this.findOwningRoot(hit);
-    if (!root) {
-      this.deselect();
-      return;
+  /** `true` se o objeto (ou algum ancestral) é marcado interno do editor (gizmo). */
+  private isEditorInternal(obj: THREE.Object3D): boolean {
+    let cur: THREE.Object3D | null = obj;
+    while (cur) {
+      if (cur.userData['editorInternal'] === true) return true;
+      cur = cur.parent;
     }
-
-    let target: THREE.Object3D = hit;
-    while (target.parent && target.parent !== root) {
-      target = target.parent;
-    }
-    if (target === root) target = root;
-
-    this.select(target);
+    return false;
   }
 
   /**
