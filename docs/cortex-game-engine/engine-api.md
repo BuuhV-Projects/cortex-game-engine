@@ -71,6 +71,61 @@ lado).
 
 `EditorState`, `EditorHud`, `EditorCameraSystem` (câmera livre), `ObjectEditSystem` (gizmo).
 
+**Use SEMPRE este editor pra autoria/posicionamento de cena — NÃO reimplemente
+câmera de voo, seleção por clique ou gizmo à mão.** Ele já vem ligado no template
+(`main.ts`, tecla **F2**). É baseado em ECS: registre os sistemas num `World` e
+chame `world.tick(dt)` no loop; renderize pela câmera de voo livre quando o editor
+estiver ativo.
+
+Controles: **F2** liga/desliga · **WASD/QE** voa (Shift corre) · **botão direito**
+olha · **clique** seleciona · **1/2/3** mover/rotacionar/escalar · **F** enquadra ·
+**T** teleporta o avatar · **P** salva (callback `onSaveEdits`).
+
+Requisitos: um `InputManager` anexado; uma entidade com `TransformComponent` +
+`EditableTargetComponent` (o "avatar" que o editor teleporta — sem ela a câmera
+livre nem o toggle funcionam); objetos selecionáveis precisam de `Object3D.name`.
+
+```ts
+import {
+  World, InputManager, PerspectiveCamera,
+  TransformComponent, Object3DComponent, EditableTargetComponent, Object3DSyncSystem,
+  createEditorState, createEditorHud, EditorCameraSystem, ObjectEditSystem,
+} from 'cortex-game-engine'
+
+const input = new InputManager(); input.attach(document.body)
+const editorState = createEditorState()
+const editorHud = createEditorHud()
+// Câmera separada usada só no editor (voo livre); a do jogo fica intacta.
+const editorCamera = new PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000)
+
+// Avatar editável (qualquer objeto que o editor possa teleportar). Sincronize
+// a mesh ao TransformComponent com Object3DSyncSystem.
+const avatar = world.createEntity()
+avatar.addComponent(new TransformComponent(0, 0.5, 0))
+avatar.addComponent(new Object3DComponent(avatarMesh))   // avatarMesh.name = 'Avatar'
+avatar.addComponent(new EditableTargetComponent())
+world.addSystem(new Object3DSyncSystem())
+
+const editorCam = new EditorCameraSystem(editorState, editorCamera, gameCamera, input, ground, editorHud)
+world.addSystem(editorCam)
+world.addSystem(new ObjectEditSystem(
+  editorState, editorCamera, canvas, scene,
+  [scene.getThreeScene()],          // raiz(es) editável(is): objetos nomeados aqui dentro
+  input, editorHud,
+  (edits) => persistEdits(edits),   // onSaveEdits (P): salve em JSON com SceneFileWriter
+  () => {},                         // onClearEdits
+  undefined,                        // onTransformChange (sync de volta pro ECS)
+  (obj) => editorCam.focusOn(obj),  // onFocusRequest (F)
+))
+
+// No loop:
+world.tick(deltaTime)
+renderer.render(scene.getThreeScene(), editorState.active ? editorCamera : gameCamera)
+```
+
+Pra persistir o que foi editado, ligue `onSaveEdits` ao IO de cena
+(`SceneFileWriter`/`autoDetectSceneFileWriter`, abaixo).
+
 ## Cena persistida em JSON + IO
 
 `SceneFile`, `SceneLoader`, `SceneFileWriter`, `HttpSceneFileWriter`,
