@@ -1,7 +1,15 @@
 # 0039 - Primitivas de montagem de cena: grounding, água e disciplina de validação
 
 **Data:** 2026-06-05
-**Status:** aceito
+**Status:** aceito (API de `placeOnGround` e `Water` refinada pelo ADR-0040)
+
+> **Atualização (ADR-0040):** validando o fluxo num projeto real, a API evoluiu.
+> `placeOnGround(obj, groundY)` (só Y) virou `placeOnGround(obj, { x, y, z, rotY,
+> scale })` — centra horizontalmente e aplica rotação/escala, retornando `Bounds`
+> (com `topY`); o módulo `Placement.ts` foi absorvido em `SceneAssets.ts` (que
+> agrega `loadGLB`/`instance`/`setShadows`/`scatter`). O `Water` passou a usar
+> `emissiveMap` + fluxo em 2 eixos. A disciplina de grounding/validação deste ADR
+> segue valendo.
 
 ## Contexto
 
