@@ -13,7 +13,7 @@ com arquitetura ECS (Entity-Component-System).
 ├── scenes/       Setup de cena/level (cria entities, registra systems)
 ├── assets/       .glb, .gltf, texturas, sons (não TypeScript)
 ├── utils/        Helpers genéricos do projeto
-├── main.ts       Bootstrap: World + GameLoop + Renderer + cena inicial
+├── main.ts       Bootstrap: `new Game({ canvas })` + cena inicial (editor F2 automático em dev)
 ├── index.html
 └── vendor/cortex-game-engine/  Motor vendoriado
 ```

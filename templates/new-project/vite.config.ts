@@ -28,16 +28,23 @@ function copyAssets(): Plugin {
 // - clearScreen:false evita Vite limpar o terminal e esconder logs do Rust.
 // - server.strictPort: Tauri liga em devUrl fixo (5173), então não pode pular.
 // - server.watch.ignored: evita re-bundle ao recompilar a casca Rust.
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   root: '.',
   clearScreen: false,
   plugins: [copyAssets()],
   resolve: {
     alias: {
       // O IDE vendoriza o engine em ./vendor/cortex-game-engine ao criar o projeto.
-      // O alias deixa o código fonte usar `import { ... } from 'cortex-game-engine'`
-      // sem precisar de npm install.
-      'cortex-game-engine': resolve(__dirname, 'vendor/cortex-game-engine/index.js'),
+      // O alias deixa o código usar `import { ... } from 'cortex-game-engine'` sem
+      // npm install. Em DEV usa `index.dev.js` (inclui e liga o modo editor
+      // automaticamente); no BUILD de produção usa `index.js` (runtime, sem editor)
+      // — assim o editor não pesa no jogo final. Ver ADR-0042.
+      'cortex-game-engine': resolve(
+        __dirname,
+        mode === 'development'
+          ? 'vendor/cortex-game-engine/index.dev.js'
+          : 'vendor/cortex-game-engine/index.js',
+      ),
     },
   },
   server: {
@@ -47,4 +54,4 @@ export default defineConfig({
       ignored: ['**/src-tauri/**'],
     },
   },
-})
+}))
