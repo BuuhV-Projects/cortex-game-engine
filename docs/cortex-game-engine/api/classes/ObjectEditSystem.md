@@ -6,7 +6,7 @@
 
 # Class: ObjectEditSystem
 
-Defined in: [src/editor/ObjectEditSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L35)
+Defined in: [src/editor/ObjectEditSystem.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L36)
 
 Editor de cena estilo Blender/Unity: clique pra selecionar um objeto dentro
 dos `editRoots`, arrasta os eixos do gizmo (TransformControls) pra mover/
@@ -27,9 +27,9 @@ as edições fica a cargo do jogo (callbacks).
 
 ### Constructor
 
-> **new ObjectEditSystem**(`editorState`, `camera`, `canvas`, `scene`, `editRoots`, `input`, `hud`, `onSaveEdits`, `onClearEdits`, `onTransformChange?`, `onFocusRequest?`): `ObjectEditSystem`
+> **new ObjectEditSystem**(`editorState`, `camera`, `canvas`, `scene`, `editRoots`, `input`, `hud`, `onSaveEdits`, `onClearEdits`, `onTransformChange?`, `onFocusRequest?`, `selection?`): `ObjectEditSystem`
 
-Defined in: [src/editor/ObjectEditSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L48)
+Defined in: [src/editor/ObjectEditSystem.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L49)
 
 #### Parameters
 
@@ -85,6 +85,15 @@ Chamado quando a transform do selecionado muda (durante drag) — sync ECS.
 
 Chamado ao apertar F com algo selecionado — tipicamente liga ao focusOn da câmera.
 
+##### selection?
+
+[`EditorSelection`](../interfaces/EditorSelection.md)
+
+Ponte de seleção observável (opcional). Quando presente, a seleção é
+espelhada nela (pra a UI de hierarquia/inspector reagir) e pedidos de
+seleção vindos da UI (`requestSelect`) são atendidos. Ver
+[EditorSelection](../interfaces/EditorSelection.md).
+
 #### Returns
 
 `ObjectEditSystem`
@@ -99,7 +108,7 @@ Chamado ao apertar F com algo selecionado — tipicamente liga ao focusOn da câ
 
 > **priority**: `number` = `27`
 
-Defined in: [src/editor/ObjectEditSystem.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L37)
+Defined in: [src/editor/ObjectEditSystem.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L38)
 
 Prioridade de execução deste sistema.
 
@@ -116,7 +125,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [src/editor/ObjectEditSystem.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L36)
+Defined in: [src/editor/ObjectEditSystem.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L37)
 
 Construtores dos componentes que este sistema requer.
 
@@ -138,11 +147,36 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 ## Methods
 
+### select()
+
+> **select**(`target`): `void`
+
+Defined in: [src/editor/ObjectEditSystem.ts:199](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L199)
+
+Seleciona um objeto (ou desseleciona com `null`), atacando/soltando o gizmo
+e espelhando na [EditorSelection](../interfaces/EditorSelection.md). Público pra a UI (hierarquia) poder
+dirigir a seleção — embora o caminho recomendado pela UI seja
+`selection.requestSelect(obj)`, que chega aqui.
+
+#### Parameters
+
+##### target
+
+`Object3D`\<`Object3DEventMap`\> \| `null`
+
+Objeto a selecionar, ou `null` pra desselecionar.
+
+#### Returns
+
+`void`
+
+***
+
 ### update()
 
 > **update**(`_entities`): `void`
 
-Defined in: [src/editor/ObjectEditSystem.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L100)
+Defined in: [src/editor/ObjectEditSystem.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L115)
 
 Executa a lógica do sistema para o frame/passo atual.
 

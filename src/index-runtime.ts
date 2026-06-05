@@ -48,7 +48,10 @@ export * from './physics/VehiclePhysics.js';
 // ─── Modo editor (câmera livre + gizmo + HUD) ──────────────────────────────────
 // Ferramenta de autoria embutida no jogo (F2). Browser-only.
 export * from './editor/EditorState.js';
+export * from './editor/EditorSelection.js';
 export * from './editor/EditorHud.js';
+export * from './editor/EditorOutliner.js';
+export * from './editor/EditorInspector.js';
 export * from './editor/EditorCameraSystem.js';
 export * from './editor/ObjectEditSystem.js';
 

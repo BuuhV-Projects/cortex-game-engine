@@ -6,7 +6,7 @@
 
 # Interface: ObjectEdit
 
-Defined in: [src/editor/ObjectEditSystem.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L11)
+Defined in: [src/editor/ObjectEditSystem.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L12)
 
 Transform editada de um objeto, por nome (`Object3D.name`).
 
@@ -16,7 +16,7 @@ Transform editada de um objeto, por nome (`Object3D.name`).
 
 > **px**: `number`
 
-Defined in: [src/editor/ObjectEditSystem.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L12)
+Defined in: [src/editor/ObjectEditSystem.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L13)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/editor/ObjectEditSystem.ts:12](https://github.com/BuuhV-Project
 
 > **py**: `number`
 
-Defined in: [src/editor/ObjectEditSystem.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L13)
+Defined in: [src/editor/ObjectEditSystem.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L14)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [src/editor/ObjectEditSystem.ts:13](https://github.com/BuuhV-Project
 
 > **pz**: `number`
 
-Defined in: [src/editor/ObjectEditSystem.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L14)
+Defined in: [src/editor/ObjectEditSystem.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L15)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [src/editor/ObjectEditSystem.ts:14](https://github.com/BuuhV-Project
 
 > **rx**: `number`
 
-Defined in: [src/editor/ObjectEditSystem.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L15)
+Defined in: [src/editor/ObjectEditSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L16)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [src/editor/ObjectEditSystem.ts:15](https://github.com/BuuhV-Project
 
 > **ry**: `number`
 
-Defined in: [src/editor/ObjectEditSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L16)
+Defined in: [src/editor/ObjectEditSystem.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L17)
 
 ***
 
@@ -56,7 +56,7 @@ Defined in: [src/editor/ObjectEditSystem.ts:16](https://github.com/BuuhV-Project
 
 > **rz**: `number`
 
-Defined in: [src/editor/ObjectEditSystem.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L17)
+Defined in: [src/editor/ObjectEditSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L18)
 
 ***
 
@@ -64,7 +64,7 @@ Defined in: [src/editor/ObjectEditSystem.ts:17](https://github.com/BuuhV-Project
 
 > **sx**: `number`
 
-Defined in: [src/editor/ObjectEditSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L18)
+Defined in: [src/editor/ObjectEditSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L19)
 
 ***
 
@@ -72,7 +72,7 @@ Defined in: [src/editor/ObjectEditSystem.ts:18](https://github.com/BuuhV-Project
 
 > **sy**: `number`
 
-Defined in: [src/editor/ObjectEditSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L19)
+Defined in: [src/editor/ObjectEditSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L20)
 
 ***
 
@@ -80,4 +80,4 @@ Defined in: [src/editor/ObjectEditSystem.ts:19](https://github.com/BuuhV-Project
 
 > **sz**: `number`
 
-Defined in: [src/editor/ObjectEditSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L20)
+Defined in: [src/editor/ObjectEditSystem.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/editor/ObjectEditSystem.ts#L21)

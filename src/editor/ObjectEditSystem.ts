@@ -6,6 +6,7 @@ import { InputManager } from '../core/InputManager.js';
 import { Scene } from '../core/Scene.js';
 import type { EditorState } from './EditorState.js';
 import type { EditorHud } from './EditorHud.js';
+import type { EditorSelection } from './EditorSelection.js';
 
 /** Transform editada de um objeto, por nome (`Object3D.name`). */
 export interface ObjectEdit {
@@ -64,8 +65,19 @@ export class ObjectEditSystem extends System {
     private readonly onTransformChange?: (obj: THREE.Object3D) => void,
     /** Chamado ao apertar F com algo selecionado — tipicamente liga ao focusOn da câmera. */
     private readonly onFocusRequest?: (obj: THREE.Object3D) => void,
+    /**
+     * Ponte de seleção observável (opcional). Quando presente, a seleção é
+     * espelhada nela (pra a UI de hierarquia/inspector reagir) e pedidos de
+     * seleção vindos da UI (`requestSelect`) são atendidos. Ver
+     * {@link EditorSelection}.
+     */
+    private readonly selection?: EditorSelection,
   ) {
     super();
+
+    // A UI (outliner) pede seleção via requestSelect; o sistema é quem ataca o
+    // gizmo e confirma via setCurrent (dentro de select()).
+    this.selection?.onSelectRequest((obj) => this.select(obj));
 
     this.controls = new TransformControls(camera, canvas);
     this.controls.setMode('translate');
@@ -76,6 +88,8 @@ export class ObjectEditSystem extends System {
     const helper = (this.controls as unknown as { getHelper(): THREE.Object3D }).getHelper();
     this.helper = helper;
     helper.visible = false;
+    // Marca o gizmo como interno pra a UI (hierarquia) não listá-lo como objeto.
+    helper.userData['editorInternal'] = true;
     scene.getThreeScene().add(helper);
 
     this.controls.addEventListener('change', () => {
@@ -83,6 +97,7 @@ export class ObjectEditSystem extends System {
       const name = this.selected.name;
       if (name) this.modified.set(name, this.selected);
       this.onTransformChange?.(this.selected);
+      this.selection?.emitTransform();
     });
     this.controls.addEventListener('dragging-changed', ((e: { value: boolean }) => {
       this.editorState.gizmoDragging = e.value;
@@ -170,12 +185,30 @@ export class ObjectEditSystem extends System {
     }
     if (target === root) target = root;
 
+    this.select(target);
+  }
+
+  /**
+   * Seleciona um objeto (ou desseleciona com `null`), atacando/soltando o gizmo
+   * e espelhando na {@link EditorSelection}. Público pra a UI (hierarquia) poder
+   * dirigir a seleção — embora o caminho recomendado pela UI seja
+   * `selection.requestSelect(obj)`, que chega aqui.
+   *
+   * @param target - Objeto a selecionar, ou `null` pra desselecionar.
+   */
+  select(target: THREE.Object3D | null): void {
     if (this.selected === target) return;
     this.selected = target;
-    this.controls.attach(target);
-    this.helper.visible = true;
-    const label = target.name || '(sem nome)';
-    this.hud.showToast(`Selecionado: ${label}`);
+    if (target) {
+      this.controls.attach(target);
+      this.helper.visible = true;
+      this.hud.showToast(`Selecionado: ${target.name || '(sem nome)'}`);
+    } else {
+      this.controls.detach();
+      this.helper.visible = false;
+      this.hud.showToast('Desselecionado');
+    }
+    this.selection?.setCurrent(target);
   }
 
   private findOwningRoot(obj: THREE.Object3D): THREE.Object3D | null {
@@ -188,11 +221,7 @@ export class ObjectEditSystem extends System {
   }
 
   private deselect(): void {
-    if (!this.selected) return;
-    this.selected = null;
-    this.controls.detach();
-    this.helper.visible = false;
-    this.hud.showToast('Desselecionado');
+    this.select(null);
   }
 
   private persist(): void {

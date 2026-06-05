@@ -69,7 +69,9 @@ lado).
 
 ## Modo editor embutido (autoria no jogo)
 
-`EditorState`, `EditorHud`, `EditorCameraSystem` (câmera livre), `ObjectEditSystem` (gizmo).
+`EditorState`, `EditorSelection`, `EditorHud`, `EditorOutliner` (hierarquia),
+`EditorInspector` (propriedades), `EditorCameraSystem` (câmera livre),
+`ObjectEditSystem` (gizmo).
 
 **Use SEMPRE este editor pra autoria/posicionamento de cena — NÃO reimplemente
 câmera de voo, seleção por clique ou gizmo à mão.** Ele já vem ligado no template
@@ -121,6 +123,26 @@ world.addSystem(new ObjectEditSystem(
 // No loop:
 world.tick(deltaTime)
 renderer.render(scene.getThreeScene(), editorState.active ? editorCamera : gameCamera)
+```
+
+**Painéis de UI (hierarquia + inspector).** Crie um `EditorSelection`
+compartilhado, passe-o ao `ObjectEditSystem` (último parâmetro) e a UI reage:
+`createEditorOutliner` lista os objetos da cena (clique = seleciona + enquadra) e
+`createEditorInspector` edita posição/rotação/escala, sombra (cast/receive) e
+propriedades de luz (intensidade/cor) do selecionado.
+
+```ts
+import { createEditorSelection, createEditorOutliner, createEditorInspector } from 'cortex-game-engine'
+
+const selection = createEditorSelection()
+// passe `selection` como ÚLTIMO arg do ObjectEditSystem(...)
+const outliner = createEditorOutliner({
+  editRoots: [scene.getThreeScene()], selection,
+  onFocus: (obj) => editorCam.focusOn(obj),
+})
+const inspector = createEditorInspector({ selection })
+// ao ligar/desligar o editor (F2): outliner.setVisible(on) / inspector.setVisible(on);
+// ao abrir, outliner.refresh() (não há evento de scene-change ainda).
 ```
 
 Pra persistir o que foi editado, ligue `onSaveEdits` ao IO de cena
