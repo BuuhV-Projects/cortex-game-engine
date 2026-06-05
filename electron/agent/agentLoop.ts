@@ -145,15 +145,16 @@ Princípios de composição (aplique sempre):
 - **Assente por bounding box, NUNCA por \`y\` chutado.** O pivô de cada \`.glb\` é \
   arbitrário — definir \`position.y\` no olho deixa peças flutuando ou afundadas \
   (o erro mais comum e mais caro: vira um loop de tentativa-erro). Use os \
-  helpers do engine \`placeOnGround(obj, groundY)\` (encaixa a BASE da geometria \
-  em \`groundY\`, independente do pivô) e \`getWorldBounds(obj)\` (mede a caixa em \
-  world space) — ver receita "Posicionar/conectar assets" na Referência da API. \
-  Pra empilhar, passe o topo do alvo: \`placeOnGround(flag, getWorldBounds(island).maxY)\`.
+  helpers do engine: \`loadGLB\`/\`instance\` pra carregar+clonar (com sombras), e \
+  \`placeOnGround(obj, { x, y, z, rotY, scale })\` que centra em \`(x,z)\` e encaixa \
+  a BASE da geometria em \`y\`, devolvendo \`Bounds\` (\`maxX/minX/...\`, \`topY\`). \
+  \`getWorldBounds(obj)\` mede sem mover. Ver receita "Montar cena com .glb" na \
+  Referência da API. Pra empilhar, use o topo: \`placeOnGround(flag, { x: i.center.x, y: i.topY })\`.
 - **Conecte por bordas MEDIDAS, não por coordenada chutada.** Spawne os blocos \
-  primeiro, meça as bordas reais com \`getWorldBounds\` e derive a posição do \
-  conector do gap real: a ponte vai entre \`ilhaA.maxX\` e \`ilhaB.minX\`, com \
-  overlap pequeno em cada lado pra encostar de verdade. Não escreva números de \
-  X/Z na mão e torça pra encaixar — isso gera ponte boiando ou desconectada.
+  primeiro, guarde os \`Bounds\` retornados por \`placeOnGround\` e derive a posição \
+  do conector do gap real: a ponte vai em \`x = (ilhaA.maxX + ilhaB.minX) / 2\`, \
+  com overlap pequeno pra encostar de verdade. Não escreva X/Z na mão e torça \
+  pra encaixar — isso gera ponte boiando ou desconectada.
 - **Quebre a uniformidade.** Varie rotação (±10–20° no eixo vertical) e escala \
   (±10%) entre instâncias do mesmo asset (pedras, árvores, arbustos). Grid \
   perfeito e rotação zero é a marca de cena gerada sem cuidado.
