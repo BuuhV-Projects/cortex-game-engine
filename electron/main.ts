@@ -330,6 +330,7 @@ ipcMain.handle('fs:writeFile', async (_event, filePath: unknown, content: unknow
 const VENDOR_TYPE_MODULES = {
   core: [
     'GameLoop',
+    'Game',
     'Renderer',
     'Scene',
     'AssetLoader',
@@ -351,8 +352,9 @@ const VENDOR_TYPE_MODULES = {
   ],
   systems: ['Object3DSyncSystem', 'ThirdPersonCameraSystem'],
   physics: ['VehicleGravitySystem', 'VehicleWallCollisionSystem', 'VehiclePhysics'],
-  editor: ['EditorState', 'EditorHud', 'EditorCameraSystem', 'ObjectEditSystem'],
-  scene: ['SceneFile', 'SceneLoader'],
+  // Editor NÃO entra: não é exportado pelo runtime (index.d.ts não o referencia).
+  // Ele vive só no bundle de dev (index.dev.js), ligado automaticamente pelo Game.
+  scene: ['SceneFile', 'SceneLoader', 'SceneAssets', 'OutdoorLighting', 'Water'],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter'],
 } as const
 
@@ -392,8 +394,11 @@ async function vendorEngine(projectPath: string): Promise<void> {
   const vendorDir = join(projectPath, 'vendor', 'cortex-game-engine')
   await mkdir(vendorDir, { recursive: true })
 
-  // Bundle do engine (JS)
+  // Bundle do engine (JS): runtime (index.js) + dev (index.dev.js, com editor).
+  // O vite.config do projeto escolhe qual usar por `mode` (dev→.dev, build→runtime),
+  // então o editor fica fora do build de produção do jogo (ADR-0042).
   await cp(join(appPath, 'dist-engine', 'index.js'), join(vendorDir, 'index.js'))
+  await cp(join(appPath, 'dist-engine', 'index.dev.js'), join(vendorDir, 'index.dev.js'))
 
   // Types: copia *.d.ts de cada módulo (ignora .d.ts.map e .js)
   for (const [subdir, modules] of Object.entries(VENDOR_TYPE_MODULES)) {

@@ -166,16 +166,15 @@ Princípios de composição (aplique sempre):
 - **Reuse o que já existe.** Antes de gerar um modelo novo (\`generate_blender_model\`), \
   cheque se o pacote já tem um asset que serve — gerar do zero quando há um \
   pronto piora a consistência visual do conjunto.
-- **Use o EDITOR embutido do engine — não reinvente.** O engine tem um modo \
-  editor pronto (câmera de voo livre + seleção por clique + gizmo de \
-  mover/rotacionar/escalar, estilo Blender/Unity), já ligado no template \
-  \`main.ts\` na tecla F2: \`EditorState\`, \`EditorCameraSystem\`, \`ObjectEditSystem\`, \
-  \`EditorHud\` (registrados num \`World\`; ver a receita "Modo editor embutido" na \
-  Referência da API). Quando o usuário pedir pra montar/editar fase ou navegar \
-  pela cena em modo de edição, ESTENDA esse editor — NUNCA escreva sua própria \
-  câmera de edição, seleção ou gizmo do zero. Se o \`main.ts\` do projeto ainda \
-  não liga o editor (projeto antigo), ligue-o seguindo a receita, em vez de \
-  criar um sistema paralelo.
+- **Editor é AUTOMÁTICO via \`Game\` — não monte editor à mão.** Projetos novos \
+  usam o facade \`Game\` (\`new Game({ canvas })\`), que em DEV liga sozinho o modo \
+  editor completo (F2: câmera de voo livre + hierarquia + inspector + gizmo, com \
+  reatividade), e some no build de produção. Você NÃO deve criar \`EditorCameraSystem\`/ \
+  \`ObjectEditSystem\`, câmera de edição, seleção por clique ou gizmo — nada disso. \
+  Só dê \`Object3D.name\` aos objetos pra eles aparecerem legíveis na hierarquia. \
+  Se o usuário pedir "editar/navegar a cena", explique que o editor já existe no \
+  F2 (em dev). Para projetos ANTIGOS que ainda fazem bootstrap manual (sem \`Game\`), \
+  prefira migrar pro \`Game\` a recriar editor paralelo.
 
 Rodar e testar o jogo (tool \`playtest_game\`):
 - Você tem a tool \`playtest_game\`: ela sobe o jogo do projeto numa janela \
