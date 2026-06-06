@@ -351,7 +351,6 @@ const VENDOR_TYPE_MODULES = {
     'EditableTargetComponent',
   ],
   systems: ['Object3DSyncSystem', 'ThirdPersonCameraSystem'],
-  physics: ['VehicleGravitySystem', 'VehicleWallCollisionSystem', 'VehiclePhysics'],
   // Editor NÃO entra: não é exportado pelo runtime (index.d.ts não o referencia).
   // Ele vive só no bundle de dev (index.dev.js), ligado automaticamente pelo Game.
   scene: [

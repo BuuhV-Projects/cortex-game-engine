@@ -63,11 +63,6 @@ lado).
 | `Object3DSyncSystem` | Copia `TransformComponent` → `Object3D` da cena a cada frame. |
 | `ThirdPersonCameraSystem` | Câmera de perseguição da entity com `FollowCameraTargetComponent`. |
 
-## Física cinemática de veículo (raycast)
-
-`VehiclePhysics` (agrupador), `VehicleGravitySystem` (gravidade + ground-snap),
-`VehicleWallCollisionSystem` (colisão lateral com deslize).
-
 ## Modo editor embutido (automático em dev)
 
 **Você NÃO liga o editor — o `Game` faz isso sozinho em desenvolvimento.** Ao usar

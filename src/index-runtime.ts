@@ -39,13 +39,6 @@ export * from './components/EditableTargetComponent.js';
 export * from './systems/Object3DSyncSystem.js';
 export * from './systems/ThirdPersonCameraSystem.js';
 
-// ─── Física cinemática de veículo (raycast) ────────────────────────────────────
-// Gravidade + ground-snap e colisão lateral com deslize, e o agrupador
-// VehiclePhysics. Distinta do PhysicsSystem de impulso (src/core/Physics.js).
-export * from './physics/VehicleGravitySystem.js';
-export * from './physics/VehicleWallCollisionSystem.js';
-export * from './physics/VehiclePhysics.js';
-
 // ─── Modo editor (câmera livre + gizmo + HUD) ──────────────────────────────────
 // Ferramenta de autoria embutida no jogo (F2). Browser-only.
 // NOTA: o modo editor NÃO é exportado aqui — ele é ligado automaticamente pelo

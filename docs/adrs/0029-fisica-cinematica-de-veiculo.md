@@ -1,7 +1,11 @@
 # 0029 - Física cinemática de veículo (raycast) no engine
 
 **Data:** 2026-05-31
-**Status:** aceito
+**Status:** removido (2026-06-05) — a física de veículo (`VehicleGravitySystem`,
+`VehicleWallCollisionSystem`, `VehiclePhysics`) foi retirada do engine a pedido do
+usuário; o foco virou cenas de plataforma/ilhas, não veículo. O
+`KinematicBodyComponent` permanece (usado pelo editor). Registro mantido como
+histórico.
 
 ## Contexto
 
