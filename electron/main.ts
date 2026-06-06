@@ -1060,9 +1060,17 @@ ipcMain.handle('clipboard:saveImage', async (_event, dataUrl: unknown) => {
 
 ipcMain.handle('chat:clear', async (_event, projectDir: unknown) => {
   if (typeof projectDir !== 'string' || projectDir === '') return
-  const file = chatHistoryPath(validatePath(projectDir))
+  const dir = validatePath(projectDir)
   try {
-    await unlink(file)
+    await unlink(chatHistoryPath(dir))
+  } catch {
+    // ignora se não existe
+  }
+  // Também descarta o session_id do Agent SDK — senão o próximo turno RETOMA a
+  // sessão antiga no backend (com todo o histórico/imagens acumulados) e a UI
+  // limpa não corresponde ao que é enviado. Apagar = começar de fato do zero.
+  try {
+    await unlink(sessionIdPath(dir))
   } catch {
     // ignora se não existe
   }
