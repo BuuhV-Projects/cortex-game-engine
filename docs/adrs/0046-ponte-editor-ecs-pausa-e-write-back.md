@@ -44,9 +44,13 @@ Ponte mínima entre o editor e o ECS, em duas pontas:
   persiste em disco.
 - `System.pauseWhen` é API pública nova e reutilizável (pausar IA, partículas,
   etc. sob qualquer predicado), não só gameplay-no-editor.
-- O write-back cobre posição e rotação Y (o que o editor 2.5D edita — `lock2D`).
-  Escala e rotações X/Z não são propagadas pro Transform (não fazem parte do
-  fluxo de plataforma); se um dia o editor 3D precisar, estender o callback.
+- O editor é **3D pleno** (todos os eixos livres: mover/rotacionar/escalar em
+  X/Y/Z), mesmo a gameplay sendo 2.5D — útil pra profundidade/parallax em Z e
+  decoração. O write-back cobre só posição + rotação Y porque são os **únicos
+  campos que o `Object3DSyncSystem` sobrescreve**; rotação X/Z e escala não são
+  sincronizadas, então ficam no `Object3D` e persistem sem precisar do Transform.
+  (Histórico: o editor já foi travado no plano XY via `lock2D`, opção que segue
+  existindo no `ObjectEditSystem` mas não é mais usada por padrão.)
 - Só funciona pra objetos com entidade ECS sincronizada (`Object3DComponent` +
   `TransformComponent`); objetos puros de cena seguem editados direto no `Object3D`.
 - Relaciona-se com ADR-0028 (sync Object3D↔Transform), 0030/0041/0042 (editor),

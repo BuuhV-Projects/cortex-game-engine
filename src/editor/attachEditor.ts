@@ -148,8 +148,12 @@ export function attachEditor(game: Game): GameEditor {
         delete overlay.objects[obj.name];
         persist();
       },
-      // Edição 2.5D: trava no plano XY + snap de grade (foco plataformer).
-      { lock2D: true, snap: 0.5 },
+      // Edição com TODOS os eixos livres (mover/rotacionar/escalar em X/Y/Z) +
+      // snap de grade. Embora a gameplay seja 2.5D (plano XY), o editor é 3D pleno
+      // — útil pra profundidade/parallax em Z e decoração. As edições persistem:
+      // posição e rotY pelo write-back no Transform; rotX/Z e escala ficam no
+      // Object3D (o Object3DSyncSystem não as sobrescreve).
+      { snap: 0.5 },
     ),
   );
 
