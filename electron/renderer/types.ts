@@ -35,6 +35,8 @@ export interface ElectronAPI {
   readDir(dirPath: string): Promise<FileEntry[]>
   listProjectFiles(projectDir: string): Promise<string[]>
   readFile(filePath: string): Promise<string>
+  /** Lê um arquivo binário (imagem) como base64 — pro preview de imagem. */
+  readFileBase64(filePath: string): Promise<string>
   writeFile(filePath: string, content: string): Promise<void>
   createProject(targetDir: string, name: string): Promise<string>
   createFile(dirPath: string, name: string): Promise<string>

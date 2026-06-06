@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readFile: (filePath: string) =>
     ipcRenderer.invoke('fs:readFile', filePath),
 
+  readFileBase64: (filePath: string) =>
+    ipcRenderer.invoke('fs:readFileBase64', filePath),
+
   writeFile: (filePath: string, content: string) =>
     ipcRenderer.invoke('fs:writeFile', filePath, content),
 

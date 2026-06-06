@@ -251,6 +251,13 @@ ipcMain.handle('fs:readFile', async (_event, filePath: unknown) => {
   return readFile(safePath, 'utf-8')
 })
 
+// Lê um arquivo binário (ex.: imagem) como base64 — usado pelo preview de imagem
+// do editor (renderizar via data URL, sem depender de file:// no renderer).
+ipcMain.handle('fs:readFileBase64', async (_event, filePath: unknown) => {
+  const safePath = validatePath(filePath)
+  return (await readFile(safePath)).toString('base64')
+})
+
 // Move (renomeia) um arquivo/pasta. Usado pelo drag & drop do FileTree para
 // reorganizar itens entre pastas do projeto (ADR-0016).
 ipcMain.handle('fs:move', async (_event, src: unknown, dest: unknown) => {

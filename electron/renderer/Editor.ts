@@ -97,10 +97,37 @@ interface Tab {
   changeListener: monaco.IDisposable
 }
 
+const IMAGE_MIME: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  bmp: 'image/bmp',
+  ico: 'image/x-icon',
+  avif: 'image/avif',
+}
+
+function extOf(name: string): string {
+  const i = name.lastIndexOf('.')
+  return i >= 0 ? name.slice(i + 1).toLowerCase() : ''
+}
+
+/** `true` se o arquivo é uma imagem (abre como preview, não no editor de código). */
+function isImageFile(name: string): boolean {
+  return extOf(name) in IMAGE_MIME
+}
+
+function mimeForImage(name: string): string {
+  return IMAGE_MIME[extOf(name)] ?? 'application/octet-stream'
+}
+
 export class Editor {
   private container: HTMLElement
   private tabsBar: HTMLElement | null = null
   private editorArea: HTMLElement | null = null
+  private previewEl: HTMLElement | null = null
   private instance: monaco.editor.IStandaloneCodeEditor | null = null
   // Ordem das abas (insertion order do Map é estável)
   private tabs: Map<string, Tab> = new Map()
@@ -176,7 +203,13 @@ export class Editor {
 
     document.addEventListener('file-open', (e) => {
       const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail
-      void this.openFile(path, name)
+      if (isImageFile(name)) {
+        // Imagem abre como PREVIEW, não no editor de código.
+        void this.openImagePreview(path, name)
+      } else {
+        this.hideImagePreview()
+        void this.openFile(path, name)
+      }
     })
 
     // Pre-carrega models pra todos os fontes do projeto. Sem isso, o
@@ -267,6 +300,54 @@ export class Editor {
     this.container.appendChild(editorArea)
     this.tabsBar = tabsBar
     this.editorArea = editorArea
+
+    // Overlay de preview de imagem (cobre o Monaco quando uma imagem é aberta).
+    editorArea.style.position = 'relative'
+    const preview = document.createElement('div')
+    preview.className = 'editor-image-preview'
+    preview.style.cssText = [
+      'position:absolute',
+      'inset:0',
+      'display:none',
+      'flex-direction:column',
+      'align-items:center',
+      'justify-content:center',
+      'gap:10px',
+      'padding:16px',
+      'background:#1e1e1e',
+      'overflow:auto',
+      'z-index:5',
+    ].join(';')
+    const img = document.createElement('img')
+    img.style.cssText = 'max-width:100%;max-height:calc(100% - 28px);object-fit:contain;image-rendering:auto'
+    const caption = document.createElement('div')
+    caption.className = 'editor-preview-caption'
+    caption.style.cssText = 'color:#9aa0ad;font:12px "Segoe UI",Roboto,Arial,sans-serif'
+    preview.append(img, caption)
+    editorArea.appendChild(preview)
+    this.previewEl = preview
+  }
+
+  /** Mostra a imagem como preview (cobre o editor de código). */
+  private async openImagePreview(path: string, name: string): Promise<void> {
+    if (!this.previewEl) return
+    const img = this.previewEl.querySelector('img') as HTMLImageElement | null
+    const caption = this.previewEl.querySelector('.editor-preview-caption') as HTMLElement | null
+    try {
+      const b64 = await window.electronAPI.readFileBase64(path)
+      if (img) img.src = `data:${mimeForImage(name)};base64,${b64}`
+      if (caption) caption.textContent = name
+      this.previewEl.style.display = 'flex'
+    } catch {
+      if (caption) caption.textContent = `Falha ao abrir ${name}`
+      if (img) img.removeAttribute('src')
+      this.previewEl.style.display = 'flex'
+    }
+  }
+
+  /** Esconde o preview de imagem (volta a mostrar o editor de código). */
+  private hideImagePreview(): void {
+    if (this.previewEl) this.previewEl.style.display = 'none'
   }
 
   private renderTabs(): void {
