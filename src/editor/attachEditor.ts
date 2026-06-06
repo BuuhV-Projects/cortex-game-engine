@@ -8,7 +8,7 @@ import { createEditorState } from './EditorState.js';
 import { createEditorSelection } from './EditorSelection.js';
 import { createEditorHud } from './EditorHud.js';
 import { createEditorOutliner } from './EditorOutliner.js';
-import { createEditorInspector, type ColliderReadout } from './EditorInspector.js';
+import { createEditorInspector, type ColliderApi } from './EditorInspector.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -163,24 +163,85 @@ export function attachEditor(game: Game): GameEditor {
   );
 
   const outliner = createEditorOutliner({ editRoots: [three], selection, onFocus: (obj) => cameraSystem.focusOn(obj) });
-  // Casa colliders 2D (entidades ECS, possivelmente DESACOPLADAS do mesh) com o
-  // objeto selecionado pela sobreposição: o centro do collider cai dentro do bbox
-  // XY do objeto. Mostra-os (read-only) no inspector.
-  const _bbox = new Box3();
-  const collidersFor = (obj: Object3D): ColliderReadout[] => {
-    _bbox.setFromObject(obj);
-    const out: ColliderReadout[] = [];
-    for (const e of game.world.query(Collider2DComponent)) {
-      const t = e.getComponent(TransformComponent);
-      const c = e.getComponent(Collider2DComponent);
-      if (!t || !c) continue;
-      if (t.x >= _bbox.min.x && t.x <= _bbox.max.x && t.y >= _bbox.min.y && t.y <= _bbox.max.y) {
-        out.push({ width: c.halfWidth * 2, height: c.halfHeight * 2, solid: c.solid, oneWay: c.oneWay });
-      }
-    }
-    return out;
+
+  // ── Collider como propriedade do objeto (autoria no editor) ──────────────────
+  // O collider é uma entidade ECS ACOPLADA ao mesh (Object3DComponent.object ===
+  // obj) — então movem juntos. Editar/criar/remover persiste em
+  // `overlay.data.colliders[nome]`; o `buildScene` recria no boot (código vence).
+  const collidersMap = (): Record<string, Record<string, number | boolean>> => {
+    const c = overlay.data['colliders'];
+    if (c && typeof c === 'object' && !Array.isArray(c)) return c as Record<string, Record<string, number | boolean>>;
+    const m: Record<string, Record<string, number | boolean>> = {};
+    overlay.data['colliders'] = m;
+    return m;
   };
-  const inspector = createEditorInspector({ selection, collidersFor });
+  const findColliderEntity = (obj: Object3D) => {
+    for (const e of game.world.query(Collider2DComponent)) {
+      if (e.getComponent(Object3DComponent)?.object === obj) return e;
+    }
+    return null;
+  };
+  const colliderApi: ColliderApi = {
+    get(obj) {
+      const e = findColliderEntity(obj);
+      if (!e) return null;
+      const c = e.getComponent(Collider2DComponent)!;
+      // locked = veio do código (não está na overlay editável).
+      const locked = !(obj.name && collidersMap()[obj.name]);
+      return {
+        width: c.halfWidth * 2,
+        height: c.halfHeight * 2,
+        offsetX: c.offsetX,
+        offsetY: c.offsetY,
+        solid: c.solid,
+        oneWay: c.oneWay,
+        locked,
+      };
+    },
+    add(obj) {
+      if (!obj.name || findColliderEntity(obj)) return;
+      const box = new Box3().setFromObject(obj);
+      const size = box.getSize(new Vector3());
+      const center = box.getCenter(new Vector3());
+      const width = Math.max(size.x, 0.1);
+      const height = Math.max(size.y, 0.1);
+      const offX = center.x - obj.position.x;
+      const offY = center.y - obj.position.y;
+      const e = game.world.createEntity();
+      e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
+      e.addComponent(new Object3DComponent(obj));
+      e.addComponent(new Collider2DComponent(width / 2, height / 2, true, false, offX, offY));
+      collidersMap()[obj.name] = { width, height, offsetX: offX, offsetY: offY, solid: true, oneWay: false };
+      persist();
+    },
+    update(obj, patch) {
+      const e = findColliderEntity(obj);
+      if (!e || !obj.name) return;
+      const c = e.getComponent(Collider2DComponent)!;
+      if (patch.width !== undefined) c.halfWidth = patch.width / 2;
+      if (patch.height !== undefined) c.halfHeight = patch.height / 2;
+      if (patch.offsetX !== undefined) c.offsetX = patch.offsetX;
+      if (patch.offsetY !== undefined) c.offsetY = patch.offsetY;
+      if (patch.solid !== undefined) c.solid = patch.solid;
+      if (patch.oneWay !== undefined) c.oneWay = patch.oneWay;
+      collidersMap()[obj.name] = {
+        width: c.halfWidth * 2,
+        height: c.halfHeight * 2,
+        offsetX: c.offsetX,
+        offsetY: c.offsetY,
+        solid: c.solid,
+        oneWay: c.oneWay,
+      };
+      persist();
+    },
+    remove(obj) {
+      const e = findColliderEntity(obj);
+      if (e) game.world.destroyEntity(e);
+      if (obj.name) delete collidersMap()[obj.name];
+      persist();
+    },
+  };
+  const inspector = createEditorInspector({ selection, colliderApi });
 
   // ── Painel "Add": adiciona um asset .glb à cena (clique) e persiste no overlay ─
   const addedList = (): SceneNode[] => {

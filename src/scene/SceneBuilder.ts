@@ -24,7 +24,7 @@ import { FollowCameraTargetComponent } from '../components/FollowCameraTargetCom
 import { loadGLB, instance, placeOnGround, getWorldBounds } from './SceneAssets.js';
 import { Water } from './Water.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
-import { parseSceneNode, type SceneDefinition, type SceneNode } from './SceneDefinition.js';
+import { parseSceneNode, type SceneDefinition, type SceneNode, type ColliderConfig } from './SceneDefinition.js';
 import type { SceneFileV1 } from './SceneFile.js';
 
 /**
@@ -76,6 +76,35 @@ export function overlayAdded(overlay: SceneFileV1 | null | undefined): SceneNode
 }
 
 /**
+ * Lê `data.colliders` da overlay — colliders **autorados no editor**, por nome de
+ * objeto (`{ [nome]: { width?, height?, offsetX?, offsetY?, solid?, oneWay? } }`).
+ * São aplicados pelo `buildScene` aos objetos que **não** têm collider no código
+ * (o `node.collider` vence). Validação leve: campos numéricos/booleanos só.
+ */
+export function overlayColliders(
+  overlay: SceneFileV1 | null | undefined,
+): Record<string, ColliderConfig> {
+  const raw = overlay?.data?.['colliders'];
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, ColliderConfig> = {};
+  for (const [name, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object') continue;
+    const o = v as Record<string, unknown>;
+    const num = (k: string): number | undefined => (typeof o[k] === 'number' ? (o[k] as number) : undefined);
+    const bool = (k: string): boolean | undefined => (typeof o[k] === 'boolean' ? (o[k] as boolean) : undefined);
+    out[name] = {
+      width: num('width'),
+      height: num('height'),
+      offsetX: num('offsetX'),
+      offsetY: num('offsetY'),
+      solid: bool('solid'),
+      oneWay: bool('oneWay'),
+    };
+  }
+  return out;
+}
+
+/**
  * Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
  * os `nodes` são concatenados; configs de cena como `background`/`fog`/
  * `outdoorLighting`: o último definido vence).
@@ -92,6 +121,7 @@ export async function buildScene(
   const overlay = options.overlay ?? null;
   const deleted = new Set<string>(overlayDeleted(overlay));
   const overrides = overlay?.objects ?? {};
+  const editorColliders = overlayColliders(overlay);
 
   // ── Config de cena (último arquivo a definir vence) ──────────────────────────
   let background: number | string | undefined;
@@ -128,9 +158,14 @@ export async function buildScene(
     }
     byId.set(node.id, obj);
 
-    // Plataforma 2.5D: nós com collider/player viram entidades ECS.
-    if (options.world && (node.type === 'model' || node.type === 'primitive') && (node.collider || node.player)) {
-      createPlatformerEntity(options.world, obj, node);
+    // Plataforma 2.5D: nós com collider/player viram entidades ECS acopladas.
+    // Precedência do collider: código (`node.collider`) vence o overlay do editor
+    // (`data.colliders[id]`). Player sempre vira entidade (corpo + câmera).
+    if (options.world && (node.type === 'model' || node.type === 'primitive')) {
+      const colliderCfg = node.collider ?? editorColliders[node.id];
+      if (colliderCfg || node.player) {
+        createPlatformerEntity(options.world, obj, node, colliderCfg);
+      }
     }
   }
 
@@ -156,17 +191,22 @@ export async function addSceneNode(scene: Scene, node: SceneNode): Promise<Objec
   return instantiate(node, scene, scene.getThreeScene());
 }
 
-/** Cria a entidade ECS de um nó de plataforma (collider/player) ligada à mesh. */
+/**
+ * Cria a entidade ECS de um nó de plataforma — **acoplada à mesh** (Object3D +
+ * Transform + Collider2D), então o collider e o objeto movem juntos. `col` é a
+ * config de collider resolvida (código `node.collider` tem precedência sobre o
+ * overlay do editor; ver {@link overlayColliders}).
+ */
 function createPlatformerEntity(
   world: World,
   obj: Object3D,
   node: Extract<SceneNode, { type: 'model' | 'primitive' }>,
+  col: ColliderConfig | undefined,
 ): void {
   const e = world.createEntity();
   e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
   e.addComponent(new Object3DComponent(obj));
 
-  const col = node.collider;
   let halfW: number;
   let halfH: number;
   if (col?.width !== undefined && col?.height !== undefined) {
@@ -177,15 +217,17 @@ function createPlatformerEntity(
     halfW = b.size.x / 2;
     halfH = b.size.y / 2;
   }
+  const offX = col?.offsetX ?? 0;
+  const offY = col?.offsetY ?? 0;
 
   if (node.player) {
     // Player: collider não-sólido (não é parede) + corpo + alvo da câmera.
-    e.addComponent(new Collider2DComponent(halfW, halfH, false, false));
+    e.addComponent(new Collider2DComponent(halfW, halfH, false, false, offX, offY));
     const p = typeof node.player === 'object' ? node.player : {};
     e.addComponent(new PlatformerBodyComponent(p.moveSpeed, p.jumpSpeed, p.gravity, p.maxFall));
     e.addComponent(new FollowCameraTargetComponent());
   } else if (col) {
-    e.addComponent(new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false));
+    e.addComponent(new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false, offX, offY));
   }
 }
 

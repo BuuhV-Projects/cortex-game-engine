@@ -80,6 +80,7 @@
 
 ## Type Aliases
 
+- [ColliderConfig](type-aliases/ColliderConfig.md)
 - [ColliderShape](type-aliases/ColliderShape.md)
 - [EditorAttacher](type-aliases/EditorAttacher.md)
 - [LightNode](type-aliases/LightNode.md)
@@ -101,6 +102,7 @@
 - [instance](functions/instance.md)
 - [loadGLB](functions/loadGLB.md)
 - [overlayAdded](functions/overlayAdded.md)
+- [overlayColliders](functions/overlayColliders.md)
 - [overlayDeleted](functions/overlayDeleted.md)
 - [parseSceneDefinition](functions/parseSceneDefinition.md)
 - [parseSceneFile](functions/parseSceneFile.md)

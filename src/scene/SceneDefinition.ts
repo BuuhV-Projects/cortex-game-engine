@@ -44,7 +44,9 @@ const placeSchema = z
 /**
  * Collider AABB de plataforma 2.5D. Se `width`/`height` forem omitidos, o builder
  * deriva do bounding box do objeto. `solid` (default true) = plataforma/parede;
- * `oneWay` = atravessável por baixo.
+ * `oneWay` = atravessável por baixo. `offsetX`/`offsetY` deslocam o AABB em
+ * relação ao objeto — pra cobrir uma sub-região (ex.: só o "deck", não os
+ * pilares) ou compensar pivô descentralizado, sem desacoplar do mesh.
  */
 const colliderSchema = z
   .object({
@@ -52,6 +54,8 @@ const colliderSchema = z
     height: z.number().optional(),
     solid: z.boolean().optional(),
     oneWay: z.boolean().optional(),
+    offsetX: z.number().optional(),
+    offsetY: z.number().optional(),
   })
   .optional();
 
@@ -135,6 +139,8 @@ const sceneDefinitionSchema = z.object({
 
 // ─── Tipos públicos (inferidos do schema) ─────────────────────────────────────
 
+/** Config de collider 2D (campo `collider` dos nós; ver {@link colliderSchema}). */
+export type ColliderConfig = NonNullable<z.infer<typeof colliderSchema>>;
 export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
 export type LightNode = z.infer<typeof lightNode>;

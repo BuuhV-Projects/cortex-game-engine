@@ -82,6 +82,16 @@ sombra (cast/receive) e, em luzes, intensidade/cor. No modo editor os **collider
 2D aparecem com contorno** (AABB): verde = sólido, âmbar = one-way, azul =
 não-sólido (player/gatilho) — mostra a hitbox real da física, automático.
 
+**Collider é propriedade do objeto (autorável no editor).** No inspector, todo
+objeto nomeado tem uma seção **Collider**: se não tem collider, um botão
+"Adicionar"; se tem, edita tamanho (largura/altura), **offset** (X/Y — pra cobrir
+uma sub-região tipo "deck" ou compensar pivô), e tipo (sólido / one-way) + Remover.
+O collider fica **acoplado ao mesh** (mesma entidade) — **movem juntos**. Persiste
+no overlay (`assets/scene-data.json` → `data.colliders[nome]`). **Precedência:** um
+`collider` definido no código/JSON (`node.collider`) **vence** e aparece read-only
+("definido no código"). Offset também existe na física: collider sólido em que o
+player anda **não trava mais** (a resolução X só vira "parede" na menor penetração).
+
 **Gameplay pausa no editor + edição "gruda".** Enquanto o editor (F2) está ativo,
 `Game.editorActive` fica `true` e os sistemas de gameplay são pausados — basta
 marcar `system.pauseWhen = () => game.editorActive` (o `World` pula o `update`
@@ -178,9 +188,11 @@ game.onUpdate((dt) => scene.update(dt)) // anima água
 O engine é focado em **plataforma 2.5D** (gameplay no plano XY; sobe/desce/lados).
 No JSON data-driven, dois campos extras nos nós `model`/`primitive`:
 
-- **`collider`** — vira plataforma/chão sólido: `{ width?, height?, solid?, oneWay? }`
-  (dims omitidas → do bounding box; `solid` default true; `oneWay` = atravessável
-  por baixo).
+- **`collider`** — vira plataforma/chão sólido, **acoplado ao mesh** (movem juntos):
+  `{ width?, height?, offsetX?, offsetY?, solid?, oneWay? }` (dims omitidas → do
+  bounding box; `solid` default true; `oneWay` = atravessável por baixo;
+  `offsetX/offsetY` deslocam o AABB pra cobrir uma sub-região — ex.: só o "deck" de
+  uma ponte, não os pilares — sem desacoplar do mesh).
 - **`player: true`** (ou `{ moveSpeed?, jumpSpeed?, gravity?, maxFall? }`) — vira o
   personagem (corpo de física + alvo da câmera).
 

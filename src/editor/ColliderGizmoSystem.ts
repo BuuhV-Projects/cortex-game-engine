@@ -78,12 +78,12 @@ export class ColliderGizmoSystem extends System {
         this.setRect(g, col.halfWidth, col.halfHeight);
       }
 
-      // Posição = centro do collider = o TransformComponent da entidade (é o que
-      // a física usa). Vale tanto pro collider acoplado ao mesh (Object3D
-      // sincronizado ao Transform) quanto pro DESACOPLADO (só Transform, sem
-      // Object3D — padrão comum pra pivô descentralizado / collider != visual).
+      // Centro do collider = Transform + offset (é o que a física usa). Vale pro
+      // collider acoplado ao mesh (Object3D sincronizado ao Transform) E pro
+      // desacoplado (só Transform). O offset deixa o contorno na sub-região real
+      // (deck/pivô), não no centro do objeto.
       const t = e.getComponent(TransformComponent)!;
-      g.loop.position.set(t.x, t.y, t.z);
+      g.loop.position.set(t.x + col.offsetX, t.y + col.offsetY, t.z);
 
       const mat = g.loop.material as LineBasicMaterial;
       mat.color.setHex(colorFor(col));

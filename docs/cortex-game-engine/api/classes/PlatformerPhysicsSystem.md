@@ -6,13 +6,24 @@
 
 # Class: PlatformerPhysicsSystem
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L18)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L29)
 
 Física de plataforma 2.5D no plano **XY**: gravidade, movimento horizontal por
 intenção (`PlatformerBodyComponent.moveDir`), pulo, e **colisão AABB por eixo**
 contra os sólidos. Resolve X e depois Y (estilo platformer clássico): pousa no
 topo (`grounded`), bate a cabeça no teto, e bloqueia nas paredes. Plataformas
 `oneWay` só colidem vindo de cima.
+
+O AABB de cada collider é centrado em `Transform + (offsetX, offsetY)` — o
+offset permite collider acoplado ao mesh mas cobrindo uma sub-região (deck,
+pivô descentralizado). Offset `0` = centrado no Transform.
+
+**Resolução X por menor penetração:** o X só bloqueia ("parede") quando a
+penetração horizontal é a MENOR — senão é "pousar/teto" e fica pro passo Y.
+Sem isso, um collider sólido em que o player está em pé dispara um falso
+"encostou na parede" no frame da gravidade (player afunda ~0.01u no topo) e o
+player é teleportado pra borda. Com a regra de menor penetração, **colliders
+sólidos são andáveis** (não precisam ser `oneWay` só pra evitar o trap).
 
 Recebe TODAS as entidades com `Transform` + `Collider` (atores E sólidos);
 separa internamente quem tem `PlatformerBodyComponent` (ator). Roda antes do
@@ -63,7 +74,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `5`
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L20)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L31)
 
 Prioridade de execução deste sistema.
 
@@ -80,7 +91,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`Collider2DComponent`](Collider2DComponent.md))[]
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L19)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L30)
 
 Construtores dos componentes que este sistema requer.
 
@@ -106,7 +117,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L22)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L33)
 
 Executa a lógica do sistema para o frame/passo atual.
 

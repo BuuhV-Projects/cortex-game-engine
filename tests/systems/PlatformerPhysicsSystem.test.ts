@@ -84,6 +84,34 @@ describe('PlatformerPhysicsSystem', () => {
     expect(p.t.y).toBeCloseTo(1.0, 1);
   });
 
+  it('NÃO trata como parede quando a penetração é vertical (anti wall-trap)', () => {
+    // Player levemente afundado no topo dum chão SÓLIDO (não oneWay): penetração
+    // Y minúscula, X enorme → X-resolve deve PULAR (senão teleporta pra borda).
+    const world = new World();
+    world.addSystem(new PlatformerPhysicsSystem());
+    solid(world, 0, 0, 50, 0.5); // chão sólido largo, topo em 0.5
+    const p = actor(world, 0, 0.99); // afundado ~0.01u no topo
+    p.b.moveDir = 1; // tenta andar pra direita
+    world.tick(16);
+    // Sem o fix, o X-resolve empurraria pra x = -50.5 (borda esquerda). Com o fix,
+    // o player só avança normalmente.
+    expect(p.t.x).toBeGreaterThan(0);
+    expect(p.t.x).toBeLessThan(1);
+  });
+
+  it('respeita offsetY do collider (sub-região tipo "deck")', () => {
+    const world = new World();
+    world.addSystem(new PlatformerPhysicsSystem());
+    // Transform em y=0, mas o AABB fino é deslocado pra cima (offsetY=2): topo em 2.2.
+    const e = world.createEntity();
+    e.addComponent(new TransformComponent(0, 0, 0));
+    e.addComponent(new Collider2DComponent(50, 0.2, true, false, 0, 2));
+    const p = actor(world, 0, 6);
+    run(world, 150);
+    expect(p.b.grounded).toBe(true);
+    expect(p.t.y).toBeCloseTo(2.7, 1); // topo efetivo 2.2 + halfH player 0.5
+  });
+
   it('plataforma one-way: não bloqueia vindo de baixo (subindo)', () => {
     const world = new World();
     world.addSystem(new PlatformerPhysicsSystem());

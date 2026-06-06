@@ -17,16 +17,37 @@ export interface EditorInspector {
   refresh(): void;
 }
 
-/** Leitura (read-only) de um collider que casa com o objeto selecionado. */
-export interface ColliderReadout {
+/** Estado do collider 2D de um objeto (largura/altura totais + offset + tipo). */
+export interface ColliderEditState {
   /** Largura total do AABB (2×halfWidth), em unidades do engine. */
   width: number;
   /** Altura total do AABB (2×halfHeight). */
   height: number;
-  /** `true` = parede/chão; `false` = não-sólido (player/gatilho). */
+  /** Offset do centro do AABB em X, relativo ao objeto. */
+  offsetX: number;
+  /** Offset do centro do AABB em Y. */
+  offsetY: number;
+  /** `true` = parede/chão; `false` = não-sólido (gatilho). */
   solid: boolean;
-  /** `true` = plataforma atravessável por baixo. */
+  /** `true` = plataforma atravessável por baixo (só pousa de cima). */
   oneWay: boolean;
+  /** `true` = definido no CÓDIGO (read-only no editor; o código sobrescreve). */
+  locked: boolean;
+}
+
+/**
+ * Ponte de autoria de collider: o inspector lê/edita o collider do objeto
+ * selecionado por aqui. Implementada pelo `attachEditor` contra o `World` + a
+ * overlay de persistência. `get` devolve `null` se o objeto não tem collider.
+ */
+export interface ColliderApi {
+  get(obj: Object3D): ColliderEditState | null;
+  /** Adiciona um collider (tamanho default = bbox do objeto). */
+  add(obj: Object3D): void;
+  /** Atualiza campos do collider e persiste. */
+  update(obj: Object3D, patch: Partial<Omit<ColliderEditState, 'locked'>>): void;
+  /** Remove o collider do objeto. */
+  remove(obj: Object3D): void;
 }
 
 export interface EditorInspectorOptions {
@@ -35,11 +56,11 @@ export interface EditorInspectorOptions {
   /** Onde anexar o painel. Default `document.body`. */
   parent?: HTMLElement;
   /**
-   * Opcional: dado o objeto selecionado, devolve os colliders 2D associados a ele
-   * (casados por sobreposição — funciona até pra collider DESACOPLADO do mesh).
-   * Usado pra mostrar uma seção **Collider** (read-only) no inspector.
+   * Opcional: autoria do collider do objeto selecionado (adicionar/editar/remover).
+   * Quando presente, o inspector mostra a seção **Collider** editável. Colliders
+   * definidos no código vêm `locked` (read-only).
    */
-  collidersFor?: (obj: Object3D) => ColliderReadout[];
+  colliderApi?: ColliderApi;
 }
 
 interface LightLike {
@@ -62,7 +83,7 @@ interface LightLike {
  * Opcional/conveniência (acopla ao DOM) — comece escondido e use `setVisible`.
  */
 export function createEditorInspector(options: EditorInspectorOptions): EditorInspector {
-  const { selection, parent = document.body, collidersFor } = options;
+  const { selection, parent = document.body, colliderApi } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -191,28 +212,70 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
       ),
     );
 
-    // ── Collider (read-only) ───────────────────────────────────────────────────
-    // O collider pode ser uma entidade ECS DESACOPLADA do mesh (sem Object3D), por
-    // isso vem de fora (casado por sobreposição), não do próprio Object3D.
-    const colliders = collidersFor?.(obj) ?? [];
-    if (colliders.length > 0) {
+    // ── Collider (autorável) ───────────────────────────────────────────────────
+    // O collider é uma propriedade do objeto: adicione/configure aqui se não veio
+    // do código. Definido no código vem `locked` (read-only — o código sobrescreve).
+    if (colliderApi) {
       const head = document.createElement('div');
-      head.textContent = colliders.length > 1 ? `Collider (${colliders.length})` : 'Collider';
+      head.textContent = 'Collider';
       head.style.cssText = 'margin:8px 0 2px;color:#9aa0ad;font-weight:600';
       root.append(head);
-      for (const c of colliders) {
-        const kind = c.oneWay ? 'one-way' : c.solid ? 'sólido' : 'não-sólido';
-        const color = c.oneWay ? '#f5a623' : c.solid ? '#3ad17a' : '#4aa3ff';
+
+      const cs = obj.name ? colliderApi.get(obj) : null;
+      if (!obj.name) {
+        const note = document.createElement('div');
+        note.textContent = 'Dê um nome ao objeto pra poder adicionar um collider.';
+        note.style.cssText = 'color:#9aa0ad;font-size:11px';
+        root.append(note);
+      } else if (cs === null) {
+        const btn = document.createElement('button');
+        btn.textContent = '+ Adicionar collider';
+        btn.style.cssText =
+          'width:100%;padding:5px;margin:2px 0;background:#2a2f3a;color:#fff;border:1px solid #3a3f4a;border-radius:3px;cursor:pointer';
+        btn.addEventListener('click', () => {
+          colliderApi.add(obj);
+          build(obj);
+        });
+        root.append(btn);
+      } else if (cs.locked) {
+        const kind = cs.oneWay ? 'one-way' : cs.solid ? 'sólido' : 'não-sólido';
+        const color = cs.oneWay ? '#f5a623' : cs.solid ? '#3ad17a' : '#4aa3ff';
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0';
         const dot = document.createElement('span');
         dot.textContent = '■';
         dot.style.cssText = `color:${color}`;
         const txt = document.createElement('span');
-        txt.textContent = `${c.width.toFixed(2)} × ${c.height.toFixed(2)} · ${kind}`;
+        txt.textContent = `${cs.width.toFixed(2)} × ${cs.height.toFixed(2)} · ${kind}`;
         txt.style.cssText = 'color:#cfd2da';
         row.append(dot, txt);
         root.append(row);
+        const note = document.createElement('div');
+        note.textContent = 'definido no código';
+        note.style.cssText = 'color:#9aa0ad;font-size:11px';
+        root.append(note);
+      } else {
+        // Getters re-leem o collider ao vivo (não o snapshot), pra refreshers do
+        // gizmo não reverterem edições.
+        const live = (k: keyof ColliderEditState): number =>
+          (colliderApi.get(obj)?.[k] as number) ?? 0;
+        root.append(
+          numberRow('Largura', () => live('width'), (v) => colliderApi.update(obj, { width: Math.max(0.01, v) })),
+          numberRow('Altura', () => live('height'), (v) => colliderApi.update(obj, { height: Math.max(0.01, v) })),
+          numberRow('Offset X', () => live('offsetX'), (v) => colliderApi.update(obj, { offsetX: v })),
+          numberRow('Offset Y', () => live('offsetY'), (v) => colliderApi.update(obj, { offsetY: v })),
+          checkboxRow('Sólido', () => colliderApi.get(obj)?.solid ?? true, (v) => colliderApi.update(obj, { solid: v })),
+          checkboxRow('One-way', () => colliderApi.get(obj)?.oneWay ?? false, (v) => colliderApi.update(obj, { oneWay: v })),
+        );
+        const rm = document.createElement('button');
+        rm.textContent = 'Remover collider';
+        rm.style.cssText =
+          'width:100%;padding:5px;margin:4px 0;background:#3a2a2a;color:#f0b0b0;border:1px solid #5a3a3a;border-radius:3px;cursor:pointer';
+        rm.addEventListener('click', () => {
+          colliderApi.remove(obj);
+          build(obj);
+        });
+        root.append(rm);
       }
     }
 

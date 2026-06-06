@@ -6,12 +6,18 @@
 
 # Class: Collider2DComponent
 
-Defined in: [src/components/Collider2DComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L12)
+Defined in: [src/components/Collider2DComponent.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L18)
 
 Caixa de colisão AABB no plano **XY** (plataforma 2.5D), centrada na posição
-do [TransformComponent](TransformComponent.md) da entidade. `solid` = participa da colisão
-(chão/parede/plataforma); `oneWay` = plataforma atravessável por baixo (só
-pousa vindo de cima). Usado pelo [PlatformerPhysicsSystem](PlatformerPhysicsSystem.md).
+do [TransformComponent](TransformComponent.md) da entidade **+ um offset** (`offsetX`/`offsetY`).
+`solid` = participa da colisão (chão/parede/plataforma); `oneWay` = plataforma
+atravessável por baixo (só pousa vindo de cima). Usado pelo
+[PlatformerPhysicsSystem](PlatformerPhysicsSystem.md).
+
+O **offset** permite que o collider seja uma **sub-região** do objeto sem
+desacoplar a entidade: o collider mora na MESMA entidade do mesh (Object3D +
+Transform) e movem juntos, mas pode cobrir só o "deck" (não os pilares) ou
+compensar um pivô descentralizado do GLB. Offset `0` = centrado no Transform.
 
 Distinto do `ColliderComponent` 3D (box/sphere/capsule) do physics de impulso
 (`core/Physics`) — este é o collider simples 2D do plataformer.
@@ -24,9 +30,9 @@ Distinto do `ColliderComponent` 3D (box/sphere/capsule) do physics de impulso
 
 ### Constructor
 
-> **new Collider2DComponent**(`halfWidth?`, `halfHeight?`, `solid?`, `oneWay?`): `Collider2DComponent`
+> **new Collider2DComponent**(`halfWidth?`, `halfHeight?`, `solid?`, `oneWay?`, `offsetX?`, `offsetY?`): `Collider2DComponent`
 
-Defined in: [src/components/Collider2DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L13)
+Defined in: [src/components/Collider2DComponent.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L19)
 
 #### Parameters
 
@@ -53,6 +59,18 @@ Participa da colisão como sólido (chão/parede/plataforma).
 `boolean` = `false`
 
 Plataforma de mão única: só colide vindo de cima (atravessa por baixo).
+
+##### offsetX?
+
+`number` = `0`
+
+Offset do centro do AABB em X, relativo ao Transform. Default `0`.
+
+##### offsetY?
+
+`number` = `0`
+
+Offset do centro do AABB em Y, relativo ao Transform. Default `0`.
 
 #### Returns
 
@@ -82,7 +100,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **halfHeight**: `number` = `0.5`
 
-Defined in: [src/components/Collider2DComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L17)
+Defined in: [src/components/Collider2DComponent.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L23)
 
 Metade da altura (Y).
 
@@ -92,9 +110,29 @@ Metade da altura (Y).
 
 > **halfWidth**: `number` = `0.5`
 
-Defined in: [src/components/Collider2DComponent.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L15)
+Defined in: [src/components/Collider2DComponent.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L21)
 
 Metade da largura (X).
+
+***
+
+### offsetX
+
+> **offsetX**: `number` = `0`
+
+Defined in: [src/components/Collider2DComponent.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L29)
+
+Offset do centro do AABB em X, relativo ao Transform. Default `0`.
+
+***
+
+### offsetY
+
+> **offsetY**: `number` = `0`
+
+Defined in: [src/components/Collider2DComponent.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L31)
+
+Offset do centro do AABB em Y, relativo ao Transform. Default `0`.
 
 ***
 
@@ -102,7 +140,7 @@ Metade da largura (X).
 
 > **oneWay**: `boolean` = `false`
 
-Defined in: [src/components/Collider2DComponent.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L21)
+Defined in: [src/components/Collider2DComponent.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L27)
 
 Plataforma de mão única: só colide vindo de cima (atravessa por baixo).
 
@@ -112,7 +150,7 @@ Plataforma de mão única: só colide vindo de cima (atravessa por baixo).
 
 > **solid**: `boolean` = `true`
 
-Defined in: [src/components/Collider2DComponent.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L19)
+Defined in: [src/components/Collider2DComponent.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L25)
 
 Participa da colisão como sólido (chão/parede/plataforma).
 
