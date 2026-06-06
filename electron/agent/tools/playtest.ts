@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { join, relative } from 'path'
 import { mkdir, writeFile } from 'fs/promises'
 import { runAndCaptureGame, type InputAction } from '../playtest/runAndCapture.js'
+import { toCompactImage } from '../imageCompress.js'
 
 /**
  * MCP server in-process que expõe a tool `playtest_game` ao Chat IA (ADR-0033).
@@ -90,27 +91,31 @@ export function createPlaytestToolServer(projectRoot: string) {
             }
           }
 
-          // Salva os PNGs no sandbox do projeto (histórico + fallback: o agente
-          // pode dar Read na imagem se o bloco de imagem não bastar).
+          // Comprime cada screenshot (JPEG redimensionado) ANTES de virar bloco —
+          // PNGs full-res acumulam na sessão e estouram o limite de 32 MB/request.
+          const compact = result.screenshots.map((png) => toCompactImage(png))
+
+          // Salva os comprimidos no sandbox (histórico + fallback: o agente pode
+          // dar Read na imagem se o bloco não bastar) — disco também fica menor.
           const dir = join(projectRoot, '.cortex', 'playtest')
           const stamp = Date.now()
           const savedRels: string[] = []
           try {
             await mkdir(dir, { recursive: true })
-            for (let i = 0; i < result.screenshots.length; i++) {
-              const suffix = result.screenshots.length > 1 ? `-${i + 1}` : ''
-              const file = join(dir, `${stamp}${suffix}.png`)
-              await writeFile(file, result.screenshots[i]!)
+            for (let i = 0; i < compact.length; i++) {
+              const suffix = compact.length > 1 ? `-${i + 1}` : ''
+              const file = join(dir, `${stamp}${suffix}.${compact[i]!.ext}`)
+              await writeFile(file, compact[i]!.data)
               savedRels.push(relative(projectRoot, file))
             }
           } catch {
             // Se não conseguir salvar, segue só com os blocos de imagem.
           }
 
-          const imageBlocks = result.screenshots.map((png) => ({
+          const imageBlocks = compact.map((c) => ({
             type: 'image' as const,
-            data: png.toString('base64'),
-            mimeType: 'image/png',
+            data: c.data.toString('base64'),
+            mimeType: c.mimeType,
           }))
 
           return {
