@@ -42,6 +42,7 @@ export * from './systems/Object3DSyncSystem.js';
 export * from './systems/ThirdPersonCameraSystem.js';
 export * from './systems/PlatformerPhysicsSystem.js';
 export * from './systems/PlatformerInputSystem.js';
+export * from './systems/FollowCamera2DSystem.js';
 
 // ─── Modo editor (câmera livre + gizmo + HUD) ──────────────────────────────────
 // Ferramenta de autoria embutida no jogo (F2). Browser-only.

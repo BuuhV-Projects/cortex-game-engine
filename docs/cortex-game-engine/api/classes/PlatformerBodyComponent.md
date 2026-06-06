@@ -6,7 +6,7 @@
 
 # Class: PlatformerBodyComponent
 
-Defined in: src/components/PlatformerBodyComponent.ts:11
+Defined in: [src/components/PlatformerBodyComponent.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L11)
 
 Corpo de plataforma (o "ator" que se move): velocidade no plano XY, estado de
 chão, e a **intenção** de movimento (preenchida por um sistema de input ou
@@ -25,7 +25,7 @@ Convenção: Y para cima (pulo = `vy` positivo; gravidade reduz `vy`).
 
 > **new PlatformerBodyComponent**(`moveSpeed?`, `jumpSpeed?`, `gravity?`, `maxFall?`): `PlatformerBodyComponent`
 
-Defined in: src/components/PlatformerBodyComponent.ts:24
+Defined in: [src/components/PlatformerBodyComponent.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L24)
 
 #### Parameters
 
@@ -81,7 +81,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **gravity**: `number` = `40`
 
-Defined in: src/components/PlatformerBodyComponent.ts:30
+Defined in: [src/components/PlatformerBodyComponent.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L30)
 
 Aceleração da gravidade (unidades/seg²).
 
@@ -91,7 +91,7 @@ Aceleração da gravidade (unidades/seg²).
 
 > **grounded**: `boolean` = `false`
 
-Defined in: src/components/PlatformerBodyComponent.ts:17
+Defined in: [src/components/PlatformerBodyComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L17)
 
 `true` se está apoiado no chão neste frame.
 
@@ -101,7 +101,7 @@ Defined in: src/components/PlatformerBodyComponent.ts:17
 
 > **jumpQueued**: `boolean` = `false`
 
-Defined in: src/components/PlatformerBodyComponent.ts:22
+Defined in: [src/components/PlatformerBodyComponent.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L22)
 
 Intenção de pulo neste frame (consumida pelo sistema).
 
@@ -111,7 +111,7 @@ Intenção de pulo neste frame (consumida pelo sistema).
 
 > **jumpSpeed**: `number` = `14`
 
-Defined in: src/components/PlatformerBodyComponent.ts:28
+Defined in: [src/components/PlatformerBodyComponent.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L28)
 
 Velocidade inicial do pulo (unidades/seg).
 
@@ -121,7 +121,7 @@ Velocidade inicial do pulo (unidades/seg).
 
 > **maxFall**: `number` = `25`
 
-Defined in: src/components/PlatformerBodyComponent.ts:32
+Defined in: [src/components/PlatformerBodyComponent.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L32)
 
 Velocidade de queda máxima (terminal).
 
@@ -131,7 +131,7 @@ Velocidade de queda máxima (terminal).
 
 > **moveDir**: `number` = `0`
 
-Defined in: src/components/PlatformerBodyComponent.ts:20
+Defined in: [src/components/PlatformerBodyComponent.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L20)
 
 Intenção horizontal: -1 (esquerda), 0, 1 (direita).
 
@@ -141,7 +141,7 @@ Intenção horizontal: -1 (esquerda), 0, 1 (direita).
 
 > **moveSpeed**: `number` = `8`
 
-Defined in: src/components/PlatformerBodyComponent.ts:26
+Defined in: [src/components/PlatformerBodyComponent.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L26)
 
 Velocidade de corrida (unidades/seg).
 
@@ -151,7 +151,7 @@ Velocidade de corrida (unidades/seg).
 
 > **vx**: `number` = `0`
 
-Defined in: src/components/PlatformerBodyComponent.ts:13
+Defined in: [src/components/PlatformerBodyComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L13)
 
 Velocidade horizontal (X), unidades/seg. Derivada de `moveDir`.
 
@@ -161,7 +161,7 @@ Velocidade horizontal (X), unidades/seg. Derivada de `moveDir`.
 
 > **vy**: `number` = `0`
 
-Defined in: src/components/PlatformerBodyComponent.ts:15
+Defined in: [src/components/PlatformerBodyComponent.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlatformerBodyComponent.ts#L15)
 
 Velocidade vertical (Y), unidades/seg.
 

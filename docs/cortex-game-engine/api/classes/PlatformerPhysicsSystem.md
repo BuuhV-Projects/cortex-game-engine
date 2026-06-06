@@ -6,7 +6,7 @@
 
 # Class: PlatformerPhysicsSystem
 
-Defined in: src/systems/PlatformerPhysicsSystem.ts:18
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L18)
 
 Física de plataforma 2.5D no plano **XY**: gravidade, movimento horizontal por
 intenção (`PlatformerBodyComponent.moveDir`), pulo, e **colisão AABB por eixo**
@@ -42,7 +42,7 @@ separa internamente quem tem `PlatformerBodyComponent` (ator). Roda antes do
 
 > **priority**: `number` = `5`
 
-Defined in: src/systems/PlatformerPhysicsSystem.ts:20
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L20)
 
 Prioridade de execução deste sistema.
 
@@ -59,7 +59,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`Collider2DComponent`](Collider2DComponent.md))[]
 
-Defined in: src/systems/PlatformerPhysicsSystem.ts:19
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L19)
 
 Construtores dos componentes que este sistema requer.
 
@@ -85,7 +85,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/PlatformerPhysicsSystem.ts:22
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L22)
 
 Executa a lógica do sistema para o frame/passo atual.
 

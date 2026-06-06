@@ -6,7 +6,7 @@
 
 # Class: PlatformerInputSystem
 
-Defined in: src/systems/PlatformerInputSystem.ts:14
+Defined in: [src/systems/PlatformerInputSystem.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerInputSystem.ts#L14)
 
 Mapeia o teclado ([InputManager](InputManager.md)) para a **intenção** dos corpos de
 plataforma: ←/A e →/D definem `moveDir`; Espaço/↑/W enfileiram pulo (na borda
@@ -25,7 +25,7 @@ Para input alternativo (gamepad, IA, touch), escreva direto em
 
 > **new PlatformerInputSystem**(`input`): `PlatformerInputSystem`
 
-Defined in: src/systems/PlatformerInputSystem.ts:20
+Defined in: [src/systems/PlatformerInputSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerInputSystem.ts#L20)
 
 #### Parameters
 
@@ -47,7 +47,7 @@ Defined in: src/systems/PlatformerInputSystem.ts:20
 
 > **priority**: `number` = `1`
 
-Defined in: src/systems/PlatformerInputSystem.ts:16
+Defined in: [src/systems/PlatformerInputSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerInputSystem.ts#L16)
 
 Prioridade de execução deste sistema.
 
@@ -64,7 +64,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: *typeof* [`PlatformerBodyComponent`](PlatformerBodyComponent.md)[]
 
-Defined in: src/systems/PlatformerInputSystem.ts:15
+Defined in: [src/systems/PlatformerInputSystem.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerInputSystem.ts#L15)
 
 Construtores dos componentes que este sistema requer.
 
@@ -90,7 +90,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`): `void`
 
-Defined in: src/systems/PlatformerInputSystem.ts:24
+Defined in: [src/systems/PlatformerInputSystem.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerInputSystem.ts#L24)
 
 Executa a lógica do sistema para o frame/passo atual.
 

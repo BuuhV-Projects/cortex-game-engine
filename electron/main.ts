@@ -364,6 +364,7 @@ const VENDOR_TYPE_MODULES = {
     'ThirdPersonCameraSystem',
     'PlatformerPhysicsSystem',
     'PlatformerInputSystem',
+    'FollowCamera2DSystem',
   ],
   // Editor NÃO entra: não é exportado pelo runtime (index.d.ts não o referencia).
   // Ele vive só no bundle de dev (index.dev.js), ligado automaticamente pelo Game.

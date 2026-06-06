@@ -43,6 +43,7 @@ class MovementSystem extends System {
 - [`ThirdPersonCameraSystem`](ThirdPersonCameraSystem.md)
 - [`PlatformerPhysicsSystem`](PlatformerPhysicsSystem.md)
 - [`PlatformerInputSystem`](PlatformerInputSystem.md)
+- [`FollowCamera2DSystem`](FollowCamera2DSystem.md)
 
 ## Constructors
 

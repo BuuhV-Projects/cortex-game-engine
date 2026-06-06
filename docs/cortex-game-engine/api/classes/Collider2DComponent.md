@@ -6,7 +6,7 @@
 
 # Class: Collider2DComponent
 
-Defined in: src/components/Collider2DComponent.ts:12
+Defined in: [src/components/Collider2DComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L12)
 
 Caixa de colisão AABB no plano **XY** (plataforma 2.5D), centrada na posição
 do [TransformComponent](TransformComponent.md) da entidade. `solid` = participa da colisão
@@ -26,7 +26,7 @@ Distinto do `ColliderComponent` 3D (box/sphere/capsule) do physics de impulso
 
 > **new Collider2DComponent**(`halfWidth?`, `halfHeight?`, `solid?`, `oneWay?`): `Collider2DComponent`
 
-Defined in: src/components/Collider2DComponent.ts:13
+Defined in: [src/components/Collider2DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L13)
 
 #### Parameters
 
@@ -82,7 +82,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **halfHeight**: `number` = `0.5`
 
-Defined in: src/components/Collider2DComponent.ts:17
+Defined in: [src/components/Collider2DComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L17)
 
 Metade da altura (Y).
 
@@ -92,7 +92,7 @@ Metade da altura (Y).
 
 > **halfWidth**: `number` = `0.5`
 
-Defined in: src/components/Collider2DComponent.ts:15
+Defined in: [src/components/Collider2DComponent.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L15)
 
 Metade da largura (X).
 
@@ -102,7 +102,7 @@ Metade da largura (X).
 
 > **oneWay**: `boolean` = `false`
 
-Defined in: src/components/Collider2DComponent.ts:21
+Defined in: [src/components/Collider2DComponent.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L21)
 
 Plataforma de mão única: só colide vindo de cima (atravessa por baixo).
 
@@ -112,7 +112,7 @@ Plataforma de mão única: só colide vindo de cima (atravessa por baixo).
 
 > **solid**: `boolean` = `true`
 
-Defined in: src/components/Collider2DComponent.ts:19
+Defined in: [src/components/Collider2DComponent.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L19)
 
 Participa da colisão como sólido (chão/parede/plataforma).
 
