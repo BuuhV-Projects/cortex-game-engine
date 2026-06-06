@@ -152,11 +152,14 @@ Siga o fluxo:
 
 1. **VEJA os assets primeiro (obrigatório).** Rode a tool \`inspect_assets\` \
    (dir = pasta dos modelos, default \`assets\`) ANTES de escrever qualquer \
-   posicionamento. Ela renderiza um thumbnail de cada \`.glb\` e devolve as \
-   dimensões reais (largura×altura×profundidade em unidades do engine). Você \
-   **não pode** posicionar bem um modelo que nunca viu nem mediu. Use os \
-   thumbnails pra entender o que cada peça é (ilha, ponte, pedra, árvore, \
-   item) e as dimensões pra espaçar e conectar com precisão.
+   posicionamento. Ela devolve as **dimensões reais** de cada \`.glb\` \
+   (largura×altura×profundidade em unidades do engine) numa TABELA — essa tabela \
+   é a sua referência durável; use as dimensões pra espaçar e conectar com \
+   precisão. Ela mostra só uma AMOSTRA de thumbnails (o resto fica salvo em \
+   \`.cortex/asset-thumbs/\`). **Não tente ver todos os thumbnails de uma vez** — \
+   isso incha o contexto. Quando precisar confirmar visualmente o que uma peça \
+   específica é antes de posicioná-la, dê \`Read\` no thumbnail DAQUELA peça (uma \
+   ou poucas por vez), não em todos.
 
 2. **Procure a cena-referência do pacote.** Pacotes de assets quase sempre \
    vêm com uma imagem de preview/demo (\`preview.png\`, \`screenshot\`, \`cover\`, \

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { join, relative } from 'path'
 import { mkdir, writeFile } from 'fs/promises'
 import { renderAssetThumbnails, type AssetThumbnail } from '../assets/renderThumbnails.js'
+import { toCompactImage, type CompactImage } from '../imageCompress.js'
 
 /**
  * MCP server in-process que expõe a tool `inspect_assets` ao Chat IA. Renderiza
@@ -15,8 +16,16 @@ import { renderAssetThumbnails, type AssetThumbnail } from '../assets/renderThum
  * com `projectRoot` — uma instância por turno do agente.
  */
 
-/** Máximo de imagens devolvidas como blocos multimodais (o resto vai na tabela). */
-const MAX_IMAGE_BLOCKS = 24
+/**
+ * Máximo de imagens devolvidas como blocos multimodais. Mantido BAIXO de
+ * propósito: com o *resume* do Agent SDK, cada image block enviado fica na
+ * conversa e é reenviado a cada turno — despejar dezenas de thumbnails estoura o
+ * limite de 32MB/request com o tempo. A **tabela de dimensões** (texto) é a
+ * referência durável; as imagens são só uma amostra, e o agente dá `Read` num
+ * thumbnail específico (salvo em `.cortex/asset-thumbs`) quando precisar VER uma
+ * peça antes de posicioná-la.
+ */
+const MAX_IMAGE_BLOCKS = 8
 
 export function createAssetToolServer(projectRoot: string) {
   return createSdkMcpServer({
@@ -62,6 +71,15 @@ export function createAssetToolServer(projectRoot: string) {
             }
           }
 
+          // Comprime cada thumbnail (JPEG 256px) ANTES de salvar/devolver. Com
+          // 100+ assets, os PNGs RGBA full-res (~56KB cada) que a IA recebe E relê
+          // de .cortex/asset-thumbs acumulam na sessão e estouram o limite de 32MB.
+          // JPEG perde o alpha (fundo vira preto), mas o modelo continua reconhecível.
+          const compact = new Map<string, CompactImage>()
+          for (const t of result.thumbnails) {
+            if (t.png) compact.set(t.name, toCompactImage(t.png, 256, 65))
+          }
+
           // Persiste os thumbnails no sandbox (.cortex/asset-thumbs) — assim a IA
           // pode dar Read num thumbnail específico depois, sem re-renderizar tudo.
           const outDir = join(projectRoot, '.cortex', 'asset-thumbs')
@@ -69,9 +87,10 @@ export function createAssetToolServer(projectRoot: string) {
           try {
             await mkdir(outDir, { recursive: true })
             for (const t of result.thumbnails) {
-              if (!t.png) continue
-              const file = join(outDir, `${t.name}.png`)
-              await writeFile(file, t.png)
+              const c = compact.get(t.name)
+              if (!c) continue
+              const file = join(outDir, `${t.name}.${c.ext}`)
+              await writeFile(file, c.data)
               thumbRel.set(t.name, relative(projectRoot, file).replace(/\\/g, '/'))
             }
           } catch {
@@ -80,17 +99,16 @@ export function createAssetToolServer(projectRoot: string) {
 
           const table = buildTable(result.thumbnails, thumbRel)
 
-          // Blocos de imagem (capados): a IA enxerga os modelos diretamente. Os
-          // demais ficam só na tabela + salvos em disco pra Read sob demanda.
-          const withPng = result.thumbnails.filter((t) => t.png)
-          const imageBlocks = withPng.slice(0, MAX_IMAGE_BLOCKS).map((t) => ({
-            type: 'image' as const,
-            data: t.png!.toString('base64'),
-            mimeType: 'image/png',
-          }))
+          // Blocos de imagem (capados e comprimidos): a IA enxerga os modelos
+          // diretamente. Os demais ficam só na tabela + salvos em disco pra Read.
+          const withImg = result.thumbnails.filter((t) => compact.has(t.name))
+          const imageBlocks = withImg.slice(0, MAX_IMAGE_BLOCKS).map((t) => {
+            const c = compact.get(t.name)!
+            return { type: 'image' as const, data: c.data.toString('base64'), mimeType: c.mimeType }
+          })
           const overflowNote =
-            withPng.length > MAX_IMAGE_BLOCKS
-              ? `\n(Mostrando ${MAX_IMAGE_BLOCKS} de ${withPng.length} imagens; os demais thumbnails estão salvos em .cortex/asset-thumbs/ — use Read no caminho da tabela.)`
+            withImg.length > MAX_IMAGE_BLOCKS
+              ? `\n(A tabela acima é a referência completa dos ${withImg.length} assets — use as DIMENSÕES dela pra posicionar. Mostrei só ${MAX_IMAGE_BLOCKS} thumbnails de amostra; os demais estão em .cortex/asset-thumbs/. NÃO leia todos — dê Read só no thumbnail da peça específica que você for posicionar e estiver em dúvida do que é.)`
               : ''
 
           return {
