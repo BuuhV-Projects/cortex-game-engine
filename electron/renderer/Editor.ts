@@ -1,5 +1,6 @@
 import * as monaco from 'monaco-editor'
 import { getThemeName } from './theme'
+import { renderMarkdown } from './markdown'
 
 /**
  * O barrel principal do `monaco-editor` exporta `monaco.languages.typescript`
@@ -119,6 +120,12 @@ function isImageFile(name: string): boolean {
   return extOf(name) in IMAGE_MIME
 }
 
+/** `true` se o arquivo é markdown (abre renderizado como preview). */
+function isMarkdownFile(name: string): boolean {
+  const e = extOf(name)
+  return e === 'md' || e === 'markdown'
+}
+
 function mimeForImage(name: string): string {
   return IMAGE_MIME[extOf(name)] ?? 'application/octet-stream'
 }
@@ -206,6 +213,9 @@ export class Editor {
       if (isImageFile(name)) {
         // Imagem abre como PREVIEW, não no editor de código.
         void this.openImagePreview(path, name)
+      } else if (isMarkdownFile(name)) {
+        // Markdown abre renderizado como PREVIEW.
+        void this.openMarkdownPreview(path, name)
       } else {
         this.hideImagePreview()
         void this.openFile(path, name)
@@ -320,32 +330,63 @@ export class Editor {
     ].join(';')
     const img = document.createElement('img')
     img.style.cssText = 'max-width:100%;max-height:calc(100% - 28px);object-fit:contain;image-rendering:auto'
+    const md = document.createElement('div')
+    md.className = 'editor-preview-md'
+    md.style.cssText =
+      'display:none;width:100%;max-width:860px;margin:0 auto;padding:8px 16px 40px;overflow:auto;color:#d4d4d4;line-height:1.6;font:14px "Segoe UI",Roboto,Arial,sans-serif'
     const caption = document.createElement('div')
     caption.className = 'editor-preview-caption'
     caption.style.cssText = 'color:#9aa0ad;font:12px "Segoe UI",Roboto,Arial,sans-serif'
-    preview.append(img, caption)
+    preview.append(img, md, caption)
     editorArea.appendChild(preview)
     this.previewEl = preview
+  }
+
+  private get previewImg(): HTMLImageElement | null {
+    return this.previewEl?.querySelector('img') ?? null
+  }
+  private get previewMd(): HTMLElement | null {
+    return this.previewEl?.querySelector('.editor-preview-md') ?? null
+  }
+  private get previewCaption(): HTMLElement | null {
+    return this.previewEl?.querySelector('.editor-preview-caption') ?? null
   }
 
   /** Mostra a imagem como preview (cobre o editor de código). */
   private async openImagePreview(path: string, name: string): Promise<void> {
     if (!this.previewEl) return
-    const img = this.previewEl.querySelector('img') as HTMLImageElement | null
-    const caption = this.previewEl.querySelector('.editor-preview-caption') as HTMLElement | null
+    if (this.previewMd) this.previewMd.style.display = 'none'
+    if (this.previewImg) this.previewImg.style.display = ''
+    this.previewEl.style.justifyContent = 'center'
+    if (this.previewCaption) this.previewCaption.textContent = name
+    this.previewEl.style.display = 'flex'
     try {
       const b64 = await window.electronAPI.readFileBase64(path)
-      if (img) img.src = `data:${mimeForImage(name)};base64,${b64}`
-      if (caption) caption.textContent = name
-      this.previewEl.style.display = 'flex'
+      if (this.previewImg) this.previewImg.src = `data:${mimeForImage(name)};base64,${b64}`
     } catch {
-      if (caption) caption.textContent = `Falha ao abrir ${name}`
-      if (img) img.removeAttribute('src')
-      this.previewEl.style.display = 'flex'
+      if (this.previewCaption) this.previewCaption.textContent = `Falha ao abrir ${name}`
+      this.previewImg?.removeAttribute('src')
     }
   }
 
-  /** Esconde o preview de imagem (volta a mostrar o editor de código). */
+  /** Renderiza o markdown como preview (cobre o editor de código). */
+  private async openMarkdownPreview(path: string, name: string): Promise<void> {
+    if (!this.previewEl) return
+    if (this.previewImg) this.previewImg.style.display = 'none'
+    const md = this.previewMd
+    if (md) md.style.display = 'block'
+    this.previewEl.style.justifyContent = 'flex-start'
+    if (this.previewCaption) this.previewCaption.textContent = name
+    this.previewEl.style.display = 'flex'
+    try {
+      const text = await window.electronAPI.readFile(path)
+      if (md) md.innerHTML = renderMarkdown(text)
+    } catch {
+      if (md) md.textContent = `Falha ao abrir ${name}`
+    }
+  }
+
+  /** Esconde o preview (volta a mostrar o editor de código). */
   private hideImagePreview(): void {
     if (this.previewEl) this.previewEl.style.display = 'none'
   }
