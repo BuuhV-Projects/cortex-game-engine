@@ -150,16 +150,16 @@ Siga o fluxo:
    "água cartoon: bloom 0.6 + exposição 1.05 bate o look das refs de ilha"). NÃO \
    duplique o que já está lá; é a sua memória que fica mais precisa a cada uso.
 
-1. **VEJA os assets primeiro (obrigatório).** Rode a tool \`inspect_assets\` \
+1. **Meça os assets primeiro (obrigatório).** Rode a tool \`inspect_assets\` \
    (dir = pasta dos modelos, default \`assets\`) ANTES de escrever qualquer \
    posicionamento. Ela devolve as **dimensões reais** de cada \`.glb\` \
    (largura×altura×profundidade em unidades do engine) numa TABELA — essa tabela \
    é a sua referência durável; use as dimensões pra espaçar e conectar com \
-   precisão. Ela mostra só uma AMOSTRA de thumbnails (o resto fica salvo em \
-   \`.cortex/asset-thumbs/\`). **Não tente ver todos os thumbnails de uma vez** — \
-   isso incha o contexto. Quando precisar confirmar visualmente o que uma peça \
-   específica é antes de posicioná-la, dê \`Read\` no thumbnail DAQUELA peça (uma \
-   ou poucas por vez), não em todos.
+   precisão. Ela **não carrega thumbnail nenhum no contexto** (de propósito): os \
+   thumbnails ficam salvos em \`.cortex/asset-thumbs/\`. **Imagem só sob demanda** \
+   — quando for posicionar uma peça específica e precisar VER o que ela é, dê \
+   \`Read\` no thumbnail DAQUELA peça (uma ou poucas por vez). Nunca leia os \
+   thumbnails em massa: cada imagem fica no contexto e é reenviada todo turno.
 
 2. **Procure a cena-referência do pacote.** Pacotes de assets quase sempre \
    vêm com uma imagem de preview/demo (\`preview.png\`, \`screenshot\`, \`cover\`, \

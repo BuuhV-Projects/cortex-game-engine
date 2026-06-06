@@ -17,15 +17,16 @@ import { toCompactImage, type CompactImage } from '../imageCompress.js'
  */
 
 /**
- * Máximo de imagens devolvidas como blocos multimodais. Mantido BAIXO de
- * propósito: com o *resume* do Agent SDK, cada image block enviado fica na
- * conversa e é reenviado a cada turno — despejar dezenas de thumbnails estoura o
- * limite de 32MB/request com o tempo. A **tabela de dimensões** (texto) é a
- * referência durável; as imagens são só uma amostra, e o agente dá `Read` num
- * thumbnail específico (salvo em `.cortex/asset-thumbs`) quando precisar VER uma
- * peça antes de posicioná-la.
+ * Imagens devolvidas inline como blocos multimodais por padrão: **zero**. Com o
+ * *resume* do Agent SDK, cada image block enviado fica na conversa e é reenviado
+ * a cada turno — então imagem só deve entrar no contexto **quando a tarefa atual
+ * exigir VER aquela peça**, não em massa "por via das dúvidas". A tool devolve a
+ * **tabela de dimensões** (texto, referência durável) e salva os thumbnails em
+ * `.cortex/asset-thumbs`; o agente dá `Read` no thumbnail específico só na hora
+ * de posicionar uma peça que precisa enxergar. Assim o contexto não carrega nada
+ * de imagem sem necessidade.
  */
-const MAX_IMAGE_BLOCKS = 8
+const MAX_IMAGE_BLOCKS = 0
 
 export function createAssetToolServer(projectRoot: string) {
   return createSdkMcpServer({
@@ -99,24 +100,29 @@ export function createAssetToolServer(projectRoot: string) {
 
           const table = buildTable(result.thumbnails, thumbRel)
 
-          // Blocos de imagem (capados e comprimidos): a IA enxerga os modelos
-          // diretamente. Os demais ficam só na tabela + salvos em disco pra Read.
+          // Imagem só sob demanda: por padrão NÃO devolve thumbnail nenhum — só a
+          // tabela (referência durável). Cada `.glb` tem um thumbnail comprimido
+          // salvo em .cortex/asset-thumbs; a IA dá `Read` no caminho da tabela só
+          // quando precisar VER aquela peça pra posicioná-la. Mantém o contexto leve.
           const withImg = result.thumbnails.filter((t) => compact.has(t.name))
-          const imageBlocks = withImg.slice(0, MAX_IMAGE_BLOCKS).map((t) => {
-            const c = compact.get(t.name)!
-            return { type: 'image' as const, data: c.data.toString('base64'), mimeType: c.mimeType }
-          })
-          const overflowNote =
-            withImg.length > MAX_IMAGE_BLOCKS
-              ? `\n(A tabela acima é a referência completa dos ${withImg.length} assets — use as DIMENSÕES dela pra posicionar. Mostrei só ${MAX_IMAGE_BLOCKS} thumbnails de amostra; os demais estão em .cortex/asset-thumbs/. NÃO leia todos — dê Read só no thumbnail da peça específica que você for posicionar e estiver em dúvida do que é.)`
-              : ''
+          const imageBlocks =
+            MAX_IMAGE_BLOCKS > 0
+              ? withImg.slice(0, MAX_IMAGE_BLOCKS).map((t) => {
+                  const c = compact.get(t.name)!
+                  return { type: 'image' as const, data: c.data.toString('base64'), mimeType: c.mimeType }
+                })
+              : []
+          const onDemandNote =
+            `\n(${withImg.length} assets medidos. A TABELA acima é a referência — posicione pelas DIMENSÕES. ` +
+            `Os thumbnails estão salvos em .cortex/asset-thumbs/: dê \`Read\` SÓ no thumbnail da peça que você ` +
+            `for posicionar e precisar enxergar — não carregue imagens em massa.)`
 
           return {
             content: [
               ...imageBlocks,
               {
                 type: 'text' as const,
-                text: `${result.note}\n\n${table}${overflowNote}`,
+                text: `${result.note}\n\n${table}${onDemandNote}`,
               },
             ],
           }
