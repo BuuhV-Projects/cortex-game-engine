@@ -365,6 +365,13 @@ export interface RunAgentOptions {
    */
   engineApiDoc?: string
   /**
+   * Conteúdo da **Game Design Bible** (`docs/game-design-bible/`, todos os `.md`
+   * concatenados) — regras curadas de design de jogos 2.5D/platformer. Injetada
+   * no system prompt pra a IA já vir orientada a level/game design. Lida pelo
+   * main via resourceBase(); vazia se indisponível.
+   */
+  gameDesignBible?: string
+  /**
    * Ambiente repassado ao subprocesso do SDK (a tool Bash herda dele). No app
    * empacotado o PATH do processo Electron não inclui yarn/node — o main injeta
    * os diretórios certos via envForSpawn() e passa aqui. Quando omitido, o SDK
@@ -396,6 +403,11 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
   let systemAppend = AGENT_SYSTEM_PROMPT
   if (opts.engineApiDoc && opts.engineApiDoc.trim().length > 0) {
     systemAppend += `\n\n===== Referência da API do cortex-game-engine =====\n\n${opts.engineApiDoc}`
+  }
+  if (opts.gameDesignBible && opts.gameDesignBible.trim().length > 0) {
+    systemAppend +=
+      `\n\n===== GAME DESIGN BIBLE (regras de design — siga ao criar/montar level e gameplay) =====\n\n` +
+      opts.gameDesignBible
   }
   if (opts.mode === 'plan') {
     systemAppend += PLAN_MODE_PROMPT

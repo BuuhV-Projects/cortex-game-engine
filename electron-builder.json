@@ -18,6 +18,7 @@
       "from": "docs/cortex-game-engine/engine-api.md",
       "to": "docs/cortex-game-engine/engine-api.md"
     },
+    { "from": "docs/game-design-bible", "to": "docs/game-design-bible" },
     {
       "from": "dist/src",
       "to": "dist/src",

@@ -475,6 +475,45 @@ async function loadEngineApiDoc(): Promise<string> {
   return cachedEngineApiDoc
 }
 
+/**
+ * Lê a **Game Design Bible** (`docs/game-design-bible/`, empacotada via
+ * extraResources) — base curada de regras de design de jogos 2.5D/platformer/
+ * low poly. Concatena todos os `.md` (com cabeçalho do caminho) e injeta no
+ * system prompt do agente, pra a IA já vir orientada a level/game design. Cache.
+ */
+let cachedGameDesignBible: string | null = null
+async function loadGameDesignBible(): Promise<string> {
+  if (cachedGameDesignBible !== null) return cachedGameDesignBible
+  const root = join(resourceBase(), 'docs', 'game-design-bible')
+  const parts: string[] = []
+  const walk = async (dir: string): Promise<void> => {
+    let entries
+    try {
+      entries = await readdir(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    entries.sort((a, b) => a.name.localeCompare(b.name))
+    for (const e of entries) {
+      const full = join(dir, e.name)
+      if (e.isDirectory()) {
+        await walk(full)
+      } else if (e.name.toLowerCase().endsWith('.md')) {
+        try {
+          const content = await readFile(full, 'utf-8')
+          const rel = full.slice(root.length + 1).replace(/\\/g, '/')
+          parts.push(`===== game-design-bible/${rel} =====\n\n${content.trim()}`)
+        } catch {
+          /* ignora arquivo ilegível */
+        }
+      }
+    }
+  }
+  await walk(root)
+  cachedGameDesignBible = parts.join('\n\n')
+  return cachedGameDesignBible
+}
+
 // Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}
 // em cada arquivo copiado, vendoriza o engine em vendor/cortex-game-engine/ e
 // retorna o path do novo projeto
@@ -1098,6 +1137,7 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
   const resumeSessionId = continueSession ? null : await loadSessionId(sessionKey)
 
   const engineApiDoc = await loadEngineApiDoc()
+  const gameDesignBible = await loadGameDesignBible()
 
   try {
     await runAgent({
@@ -1107,6 +1147,7 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
       resumeSessionId,
       mode: agentMode,
       engineApiDoc,
+      gameDesignBible,
       // PATH aumentado: a tool Bash do SDK herda este env, então `yarn`/`node`
       // resolvem mesmo no app empacotado (onde o PATH do Explorer não os tem).
       env: envForSpawn(),
