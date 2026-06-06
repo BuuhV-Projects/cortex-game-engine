@@ -1,3 +1,15 @@
+# [0.9.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.8.0...v0.9.0) (2026-06-05)
+
+
+### Features
+
+* **engine:** add de asset pela UI do editor [fase 3] ([55aa018](https://github.com/BuuhV-Projects/cortex-game-engine/commit/55aa01840a78eb969354c4cffdf1fb2031d0b1b3))
+* **engine:** cena data-driven (SceneDefinition + SceneBuilder) [fase 1] ([496ce2e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/496ce2e3141ac3d0205f3b8f0c7ae24d027f67af)), closes [#9fd6](https://github.com/BuuhV-Projects/cortex-game-engine/issues/9fd6)
+* **engine:** editor remove objeto com Delete (preview na sessão) ([4261826](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4261826976f1fbb6fb539237b5b19052fe3b8694))
+* **engine:** write-back do editor via overlay (autosave + delete) [fase 2] ([c4ae95d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c4ae95ddaf71b9df680e5d0822e819c27066ccfa))
+* **ide:** IA autora cena data-driven (JSON) [fase 4] ([f5f46a5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f5f46a5c03b3754310e9a76213d935785b660f03))
+* **ide:** memória de aprendizados + validação de cena por partes em close-up ([9188c70](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9188c7081960323f72a56bf65002779f6ed84ad7))
+
 # [0.8.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.7.0...v0.8.0) (2026-06-05)
 
 
