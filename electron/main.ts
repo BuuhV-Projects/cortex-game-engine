@@ -356,8 +356,15 @@ const VENDOR_TYPE_MODULES = {
     'KinematicBodyComponent',
     'FollowCameraTargetComponent',
     'EditableTargetComponent',
+    'Collider2DComponent',
+    'PlatformerBodyComponent',
   ],
-  systems: ['Object3DSyncSystem', 'ThirdPersonCameraSystem'],
+  systems: [
+    'Object3DSyncSystem',
+    'ThirdPersonCameraSystem',
+    'PlatformerPhysicsSystem',
+    'PlatformerInputSystem',
+  ],
   // Editor NÃO entra: não é exportado pelo runtime (index.d.ts não o referencia).
   // Ele vive só no bundle de dev (index.dev.js), ligado automaticamente pelo Game.
   scene: [

@@ -34,10 +34,14 @@ export * from './components/Object3DComponent.js';
 export * from './components/KinematicBodyComponent.js';
 export * from './components/FollowCameraTargetComponent.js';
 export * from './components/EditableTargetComponent.js';
+export * from './components/Collider2DComponent.js';
+export * from './components/PlatformerBodyComponent.js';
 
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
 export * from './systems/Object3DSyncSystem.js';
 export * from './systems/ThirdPersonCameraSystem.js';
+export * from './systems/PlatformerPhysicsSystem.js';
+export * from './systems/PlatformerInputSystem.js';
 
 // ─── Modo editor (câmera livre + gizmo + HUD) ──────────────────────────────────
 // Ferramenta de autoria embutida no jogo (F2). Browser-only.

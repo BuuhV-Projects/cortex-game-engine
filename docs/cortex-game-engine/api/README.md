@@ -8,6 +8,7 @@
 
 - [AssetLoader](classes/AssetLoader.md)
 - [AudioManager](classes/AudioManager.md)
+- [Collider2DComponent](classes/Collider2DComponent.md)
 - [ColliderComponent](classes/ColliderComponent.md)
 - [Component](classes/Component.md)
 - [EditableTargetComponent](classes/EditableTargetComponent.md)
@@ -22,6 +23,9 @@
 - [Object3DComponent](classes/Object3DComponent.md)
 - [Object3DSyncSystem](classes/Object3DSyncSystem.md)
 - [PhysicsSystem](classes/PhysicsSystem.md)
+- [PlatformerBodyComponent](classes/PlatformerBodyComponent.md)
+- [PlatformerInputSystem](classes/PlatformerInputSystem.md)
+- [PlatformerPhysicsSystem](classes/PlatformerPhysicsSystem.md)
 - [PostFX](classes/PostFX.md)
 - [Renderer](classes/Renderer.md)
 - [RigidBodyComponent](classes/RigidBodyComponent.md)

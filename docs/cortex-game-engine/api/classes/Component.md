@@ -22,6 +22,8 @@ A lógica pertence aos Systems — vide ADR-0002.
 - [`KinematicBodyComponent`](KinematicBodyComponent.md)
 - [`FollowCameraTargetComponent`](FollowCameraTargetComponent.md)
 - [`EditableTargetComponent`](EditableTargetComponent.md)
+- [`Collider2DComponent`](Collider2DComponent.md)
+- [`PlatformerBodyComponent`](PlatformerBodyComponent.md)
 
 ## Constructors
 
