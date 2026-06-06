@@ -133,6 +133,8 @@ export function attachEditor(game: Game): GameEditor {
         delete overlay.objects[obj.name];
         persist();
       },
+      // Edição 2.5D: trava no plano XY + snap de grade (foco plataformer).
+      { lock2D: true, snap: 0.5 },
     ),
   );
 

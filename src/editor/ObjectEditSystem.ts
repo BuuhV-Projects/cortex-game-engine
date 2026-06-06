@@ -74,6 +74,12 @@ export class ObjectEditSystem extends System {
     private readonly selection?: EditorSelection,
     /** Chamado ao deletar (Delete/Backspace) o selecionado — pra persistir a remoção. */
     private readonly onDelete?: (obj: THREE.Object3D) => void,
+    /**
+     * Edição 2.5D: `lock2D` trava o gizmo no plano XY (translate/scale em X/Y;
+     * rotate só no Z = roll in-plane). `snap` = passo de grade (translate/scale).
+     * Bom pra plataformer. Default: sem trava.
+     */
+    private readonly editOptions?: { lock2D?: boolean; snap?: number },
   ) {
     super();
 
@@ -93,6 +99,7 @@ export class ObjectEditSystem extends System {
     // Marca o gizmo como interno pra a UI (hierarquia) não listá-lo como objeto.
     helper.userData['editorInternal'] = true;
     scene.getThreeScene().add(helper);
+    this.apply2DConstraints('translate'); // snap + trava de eixo (se editOptions)
 
     this.controls.addEventListener('change', () => {
       if (!this.selected) return;
@@ -132,14 +139,17 @@ export class ObjectEditSystem extends System {
 
     if (this.edge('1')) {
       this.controls.setMode('translate');
+      this.apply2DConstraints('translate');
       this.hud.showToast('Modo: mover (setas)');
     }
     if (this.edge('2')) {
       this.controls.setMode('rotate');
+      this.apply2DConstraints('rotate');
       this.hud.showToast('Modo: rotacionar (anéis)');
     }
     if (this.edge('3')) {
       this.controls.setMode('scale');
+      this.apply2DConstraints('scale');
       this.hud.showToast('Modo: escalar (cubos)');
     }
     if (this.edge('Escape')) {
@@ -235,6 +245,30 @@ export class ObjectEditSystem extends System {
 
   private deselect(): void {
     this.select(null);
+  }
+
+  /** Aplica snap de grade e a trava de eixo 2.5D (XY) conforme `editOptions`. */
+  private apply2DConstraints(mode: 'translate' | 'rotate' | 'scale'): void {
+    const o = this.editOptions;
+    if (!o) return;
+    if (o.snap !== undefined) {
+      this.controls.setTranslationSnap(o.snap);
+      this.controls.setScaleSnap(o.snap);
+    }
+    if (o.lock2D) {
+      const c = this.controls as unknown as { showX: boolean; showY: boolean; showZ: boolean };
+      if (mode === 'rotate') {
+        // Rotaciona só no Z (roll in-plane do 2.5D).
+        c.showX = false;
+        c.showY = false;
+        c.showZ = true;
+      } else {
+        // Move/escala só no plano XY (Z travado).
+        c.showX = true;
+        c.showY = true;
+        c.showZ = false;
+      }
+    }
   }
 
   /** Remove o objeto selecionado da cena (Delete/Backspace) e notifica `onDelete`. */
