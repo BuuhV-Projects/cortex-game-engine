@@ -17,11 +17,29 @@ export interface EditorInspector {
   refresh(): void;
 }
 
+/** Leitura (read-only) de um collider que casa com o objeto selecionado. */
+export interface ColliderReadout {
+  /** Largura total do AABB (2×halfWidth), em unidades do engine. */
+  width: number;
+  /** Altura total do AABB (2×halfHeight). */
+  height: number;
+  /** `true` = parede/chão; `false` = não-sólido (player/gatilho). */
+  solid: boolean;
+  /** `true` = plataforma atravessável por baixo. */
+  oneWay: boolean;
+}
+
 export interface EditorInspectorOptions {
   /** Ponte de seleção compartilhada (mesma instância do ObjectEditSystem/outliner). */
   selection: EditorSelection;
   /** Onde anexar o painel. Default `document.body`. */
   parent?: HTMLElement;
+  /**
+   * Opcional: dado o objeto selecionado, devolve os colliders 2D associados a ele
+   * (casados por sobreposição — funciona até pra collider DESACOPLADO do mesh).
+   * Usado pra mostrar uma seção **Collider** (read-only) no inspector.
+   */
+  collidersFor?: (obj: Object3D) => ColliderReadout[];
 }
 
 interface LightLike {
@@ -44,7 +62,7 @@ interface LightLike {
  * Opcional/conveniência (acopla ao DOM) — comece escondido e use `setVisible`.
  */
 export function createEditorInspector(options: EditorInspectorOptions): EditorInspector {
-  const { selection, parent = document.body } = options;
+  const { selection, parent = document.body, collidersFor } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -172,6 +190,31 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         (v) => setShadows(obj, { receiveShadow: v }),
       ),
     );
+
+    // ── Collider (read-only) ───────────────────────────────────────────────────
+    // O collider pode ser uma entidade ECS DESACOPLADA do mesh (sem Object3D), por
+    // isso vem de fora (casado por sobreposição), não do próprio Object3D.
+    const colliders = collidersFor?.(obj) ?? [];
+    if (colliders.length > 0) {
+      const head = document.createElement('div');
+      head.textContent = colliders.length > 1 ? `Collider (${colliders.length})` : 'Collider';
+      head.style.cssText = 'margin:8px 0 2px;color:#9aa0ad;font-weight:600';
+      root.append(head);
+      for (const c of colliders) {
+        const kind = c.oneWay ? 'one-way' : c.solid ? 'sólido' : 'não-sólido';
+        const color = c.oneWay ? '#f5a623' : c.solid ? '#3ad17a' : '#4aa3ff';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0';
+        const dot = document.createElement('span');
+        dot.textContent = '■';
+        dot.style.cssText = `color:${color}`;
+        const txt = document.createElement('span');
+        txt.textContent = `${c.width.toFixed(2)} × ${c.height.toFixed(2)} · ${kind}`;
+        txt.style.cssText = 'color:#cfd2da';
+        row.append(dot, txt);
+        root.append(row);
+      }
+    }
 
     // ── Luz (se aplicável) ─────────────────────────────────────────────────────
     const light = obj as unknown as LightLike;

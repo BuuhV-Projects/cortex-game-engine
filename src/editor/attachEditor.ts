@@ -1,13 +1,14 @@
-import { PerspectiveCamera, Vector3, type Object3D } from 'three';
+import { PerspectiveCamera, Vector3, Box3, type Object3D } from 'three';
 import type { Game, GameEditor } from '../core/Game.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
+import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { EditableTargetComponent } from '../components/EditableTargetComponent.js';
 import { createEditorState } from './EditorState.js';
 import { createEditorSelection } from './EditorSelection.js';
 import { createEditorHud } from './EditorHud.js';
 import { createEditorOutliner } from './EditorOutliner.js';
-import { createEditorInspector } from './EditorInspector.js';
+import { createEditorInspector, type ColliderReadout } from './EditorInspector.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -162,7 +163,24 @@ export function attachEditor(game: Game): GameEditor {
   );
 
   const outliner = createEditorOutliner({ editRoots: [three], selection, onFocus: (obj) => cameraSystem.focusOn(obj) });
-  const inspector = createEditorInspector({ selection });
+  // Casa colliders 2D (entidades ECS, possivelmente DESACOPLADAS do mesh) com o
+  // objeto selecionado pela sobreposição: o centro do collider cai dentro do bbox
+  // XY do objeto. Mostra-os (read-only) no inspector.
+  const _bbox = new Box3();
+  const collidersFor = (obj: Object3D): ColliderReadout[] => {
+    _bbox.setFromObject(obj);
+    const out: ColliderReadout[] = [];
+    for (const e of game.world.query(Collider2DComponent)) {
+      const t = e.getComponent(TransformComponent);
+      const c = e.getComponent(Collider2DComponent);
+      if (!t || !c) continue;
+      if (t.x >= _bbox.min.x && t.x <= _bbox.max.x && t.y >= _bbox.min.y && t.y <= _bbox.max.y) {
+        out.push({ width: c.halfWidth * 2, height: c.halfHeight * 2, solid: c.solid, oneWay: c.oneWay });
+      }
+    }
+    return out;
+  };
+  const inspector = createEditorInspector({ selection, collidersFor });
 
   // ── Painel "Add": adiciona um asset .glb à cena (clique) e persiste no overlay ─
   const addedList = (): SceneNode[] => {
