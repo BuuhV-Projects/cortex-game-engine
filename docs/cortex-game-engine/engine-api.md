@@ -193,7 +193,8 @@ import level from './scenes/level.json'
 
 const game = new Game({ canvas })
 const { followCamera } = setupPlatformer(game, { camera: { distance: 16 } })
-// followCamera.setRoll(0.05) // leve giro 2.5D no eixo Z (travado em 0 por padrão)
+// followCamera.setRoll(0.05)  // leve giro 2.5D no eixo Z (travado em 0 por padrão)
+// followCamera.setPitch(0.12) // tilt no eixo X p/ profundidade/parallax (travado em 0)
 game.start()
 await buildScene(game.scene, [level], { renderer: game.renderer, world: game.world })
 ```

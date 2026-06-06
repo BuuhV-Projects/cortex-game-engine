@@ -21,6 +21,14 @@ export interface FollowCamera2DOptions {
    * pra dar vida (estilo Rayman). Default `0`.
    */
   roll?: number;
+  /**
+   * Pitch da câmera (inclinação no eixo X), em radianos — tilta a câmera pra
+   * olhar o plano XY de cima/baixo num ângulo, dando **profundidade/parallax**
+   * (o fundo em Z<0 desce, o primeiro plano em Z>0 sobe). Positivo = olhar de
+   * cima pra baixo. **Travado em 0 por padrão** (olha reto); mude com
+   * {@link FollowCamera2DSystem.setPitch}. Default `0`.
+   */
+  pitch?: number;
   /** Limites de enquadramento: trava o ponto seguido numa região do level. */
   bounds?: { minX?: number; maxX?: number; minY?: number; maxY?: number };
 }
@@ -28,9 +36,10 @@ export interface FollowCamera2DOptions {
 /**
  * Câmera de plataforma 2.5D: segue o alvo (entidade com
  * {@link FollowCameraTargetComponent}) no **plano XY** (sobe/desce/lados), com
- * suavização, limites de enquadramento opcionais e um **roll opcional no eixo Z**
- * (travado em 0; o dev liga se quiser). Olha o plano de uma `distance` no Z, o
- * que dá o leve perspectivado característico do 2.5D.
+ * suavização, limites de enquadramento opcionais, um **roll opcional no eixo Z**
+ * e um **pitch opcional no eixo X** (ambos travados em 0; o dev liga se quiser).
+ * Olha o plano de uma `distance` no Z, o que dá o leve perspectivado
+ * característico do 2.5D — o `pitch` reforça a profundidade/parallax.
  */
 export class FollowCamera2DSystem extends System {
   static override requiredComponents = [TransformComponent, FollowCameraTargetComponent];
@@ -40,6 +49,7 @@ export class FollowCamera2DSystem extends System {
   private readonly distance: number;
   private readonly responsiveness: number;
   private roll: number;
+  private pitch: number;
   private readonly bounds: NonNullable<FollowCamera2DOptions['bounds']>;
   private cx = 0;
   private cy = 0;
@@ -54,12 +64,28 @@ export class FollowCamera2DSystem extends System {
     this.distance = options.distance ?? 18;
     this.responsiveness = options.responsiveness ?? 8;
     this.roll = options.roll ?? 0;
+    this.pitch = options.pitch ?? 0;
     this.bounds = options.bounds ?? {};
   }
 
   /** Muda o roll (Z) da câmera em runtime — o leve giro do 2.5D. */
   setRoll(radians: number): void {
     this.roll = radians;
+  }
+
+  /** Roll (Z) atual da câmera, em radianos. */
+  getRoll(): number {
+    return this.roll;
+  }
+
+  /** Muda o pitch (X) da câmera em runtime — tilt pra profundidade/parallax. */
+  setPitch(radians: number): void {
+    this.pitch = radians;
+  }
+
+  /** Pitch (X) atual da câmera, em radianos. */
+  getPitch(): number {
+    return this.pitch;
   }
 
   override update(entities: Entity[], deltaTime: number): void {
@@ -87,7 +113,11 @@ export class FollowCamera2DSystem extends System {
       this.cy += (fy - this.cy) * a;
     }
 
-    this.camera.position.set(this.cx, this.cy, this.distance);
+    // Pitch (X): orbita a câmera em torno do ponto seguido. pitch=0 → reto em
+    // (cx, cy, distance); pitch>0 → sobe em Y e olha o plano de cima (parallax).
+    const cosP = Math.cos(this.pitch);
+    const sinP = Math.sin(this.pitch);
+    this.camera.position.set(this.cx, this.cy + this.distance * sinP, this.distance * cosP);
     // Banca a câmera no Z via vetor "up" (roll=0 → up padrão (0,1,0)).
     this.camera.up.set(Math.sin(this.roll), Math.cos(this.roll), 0);
     this.camera.lookAt(this.cx, this.cy, 0);

@@ -6,13 +6,14 @@
 
 # Class: FollowCamera2DSystem
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L35)
+Defined in: [src/systems/FollowCamera2DSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L44)
 
 Câmera de plataforma 2.5D: segue o alvo (entidade com
 [FollowCameraTargetComponent](FollowCameraTargetComponent.md)) no **plano XY** (sobe/desce/lados), com
-suavização, limites de enquadramento opcionais e um **roll opcional no eixo Z**
-(travado em 0; o dev liga se quiser). Olha o plano de uma `distance` no Z, o
-que dá o leve perspectivado característico do 2.5D.
+suavização, limites de enquadramento opcionais, um **roll opcional no eixo Z**
+e um **pitch opcional no eixo X** (ambos travados em 0; o dev liga se quiser).
+Olha o plano de uma `distance` no Z, o que dá o leve perspectivado
+característico do 2.5D — o `pitch` reforça a profundidade/parallax.
 
 ## Extends
 
@@ -24,7 +25,7 @@ que dá o leve perspectivado característico do 2.5D.
 
 > **new FollowCamera2DSystem**(`camera`, `options?`): `FollowCamera2DSystem`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L48)
+Defined in: [src/systems/FollowCamera2DSystem.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L58)
 
 #### Parameters
 
@@ -71,7 +72,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L37)
+Defined in: [src/systems/FollowCamera2DSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L46)
 
 Prioridade de execução deste sistema.
 
@@ -88,7 +89,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`FollowCameraTargetComponent`](FollowCameraTargetComponent.md))[]
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L36)
+Defined in: [src/systems/FollowCamera2DSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L45)
 
 Construtores dos componentes que este sistema requer.
 
@@ -110,11 +111,59 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 ## Methods
 
+### getPitch()
+
+> **getPitch**(): `number`
+
+Defined in: [src/systems/FollowCamera2DSystem.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L87)
+
+Pitch (X) atual da câmera, em radianos.
+
+#### Returns
+
+`number`
+
+***
+
+### getRoll()
+
+> **getRoll**(): `number`
+
+Defined in: [src/systems/FollowCamera2DSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L77)
+
+Roll (Z) atual da câmera, em radianos.
+
+#### Returns
+
+`number`
+
+***
+
+### setPitch()
+
+> **setPitch**(`radians`): `void`
+
+Defined in: [src/systems/FollowCamera2DSystem.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L82)
+
+Muda o pitch (X) da câmera em runtime — tilt pra profundidade/parallax.
+
+#### Parameters
+
+##### radians
+
+`number`
+
+#### Returns
+
+`void`
+
+***
+
 ### setRoll()
 
 > **setRoll**(`radians`): `void`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L61)
+Defined in: [src/systems/FollowCamera2DSystem.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L72)
 
 Muda o roll (Z) da câmera em runtime — o leve giro do 2.5D.
 
@@ -134,7 +183,7 @@ Muda o roll (Z) da câmera em runtime — o leve giro do 2.5D.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L65)
+Defined in: [src/systems/FollowCamera2DSystem.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L91)
 
 Executa a lógica do sistema para o frame/passo atual.
 
