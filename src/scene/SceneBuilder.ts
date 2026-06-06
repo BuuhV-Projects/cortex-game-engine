@@ -15,7 +15,13 @@ import {
 } from 'three';
 import { Scene } from '../core/Scene.js';
 import type { Renderer } from '../core/Renderer.js';
-import { loadGLB, instance, placeOnGround } from './SceneAssets.js';
+import type { World } from '../ecs/World.js';
+import { TransformComponent } from '../components/TransformComponent.js';
+import { Object3DComponent } from '../components/Object3DComponent.js';
+import { Collider2DComponent } from '../components/Collider2DComponent.js';
+import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
+import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
+import { loadGLB, instance, placeOnGround, getWorldBounds } from './SceneAssets.js';
 import { Water } from './Water.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import { parseSceneNode, type SceneDefinition, type SceneNode } from './SceneDefinition.js';
@@ -42,6 +48,13 @@ export interface BuildSceneOptions {
   renderer?: Renderer;
   /** Overlay do editor (overrides de transform + `data.deleted`/`data.added`). */
   overlay?: SceneFileV1 | null;
+  /**
+   * Mundo ECS — quando presente, nós com `collider`/`player` viram entidades
+   * (Transform + Object3D + Collider2D [+ PlatformerBody + FollowCameraTarget]),
+   * pra a física de plataforma agir. Registre os sistemas (Object3DSync,
+   * PlatformerPhysics/Input, FollowCamera2D) — ou use `setupPlatformer`.
+   */
+  world?: World;
 }
 
 /** Lê `data.deleted` da overlay (ids removidos no editor). */
@@ -114,6 +127,11 @@ export async function buildScene(
       obj.scale.set(ov.scale[0], ov.scale[1], ov.scale[2]);
     }
     byId.set(node.id, obj);
+
+    // Plataforma 2.5D: nós com collider/player viram entidades ECS.
+    if (options.world && (node.type === 'model' || node.type === 'primitive') && (node.collider || node.player)) {
+      createPlatformerEntity(options.world, obj, node);
+    }
   }
 
   return {
@@ -136,6 +154,39 @@ export async function buildScene(
  */
 export async function addSceneNode(scene: Scene, node: SceneNode): Promise<Object3D | null> {
   return instantiate(node, scene, scene.getThreeScene());
+}
+
+/** Cria a entidade ECS de um nó de plataforma (collider/player) ligada à mesh. */
+function createPlatformerEntity(
+  world: World,
+  obj: Object3D,
+  node: Extract<SceneNode, { type: 'model' | 'primitive' }>,
+): void {
+  const e = world.createEntity();
+  e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
+  e.addComponent(new Object3DComponent(obj));
+
+  const col = node.collider;
+  let halfW: number;
+  let halfH: number;
+  if (col?.width !== undefined && col?.height !== undefined) {
+    halfW = col.width / 2;
+    halfH = col.height / 2;
+  } else {
+    const b = getWorldBounds(obj);
+    halfW = b.size.x / 2;
+    halfH = b.size.y / 2;
+  }
+
+  if (node.player) {
+    // Player: collider não-sólido (não é parede) + corpo + alvo da câmera.
+    e.addComponent(new Collider2DComponent(halfW, halfH, false, false));
+    const p = typeof node.player === 'object' ? node.player : {};
+    e.addComponent(new PlatformerBodyComponent(p.moveSpeed, p.jumpSpeed, p.gravity, p.maxFall));
+    e.addComponent(new FollowCameraTargetComponent());
+  } else if (col) {
+    e.addComponent(new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false));
+  }
 }
 
 async function instantiate(

@@ -5,7 +5,10 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Scene } from '../../src/core/Scene.js';
+import { World } from '../../src/ecs/World.js';
 import { buildScene, overlayDeleted, overlayAdded } from '../../src/scene/SceneBuilder.js';
+import { Collider2DComponent } from '../../src/components/Collider2DComponent.js';
+import { PlatformerBodyComponent } from '../../src/components/PlatformerBodyComponent.js';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
 import type { SceneFileV1 } from '../../src/scene/SceneFile.js';
 
@@ -60,6 +63,33 @@ describe('buildScene', () => {
       }),
     });
     expect(handle.byId.has('c')).toBe(true);
+  });
+});
+
+describe('buildScene (plataformer: entidades ECS)', () => {
+  const lvl: SceneDefinition = {
+    version: 1,
+    nodes: [
+      { type: 'primitive', id: 'chao', shape: 'box', size: [10, 1, 4], place: { y: -3 }, collider: { solid: true } },
+      { type: 'primitive', id: 'player', shape: 'box', size: [0.8, 1.2, 0.8], place: { x: 0, y: 0 }, player: true },
+    ],
+  };
+
+  it('cria entidades para nós com collider/player quando há world', async () => {
+    const world = new World();
+    await buildScene(new Scene(), lvl, { world });
+    const colliders = world.query(Collider2DComponent);
+    const bodies = world.query(PlatformerBodyComponent);
+    expect(colliders.length).toBe(2); // chão + player
+    expect(bodies.length).toBe(1); // só o player tem corpo
+    // collider do player não é sólido; o do chão é
+    expect(bodies[0]!.getComponent(Collider2DComponent)!.solid).toBe(false);
+  });
+
+  it('não cria entidades sem world (só meshes)', async () => {
+    const world = new World();
+    await buildScene(new Scene(), lvl); // sem world
+    expect(world.query(Collider2DComponent).length).toBe(0);
   });
 });
 

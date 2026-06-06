@@ -1,36 +1,33 @@
 /**
- * Bootstrap do projeto — cena **data-driven**.
+ * Bootstrap — jogo de **plataforma 2.5D** (estilo Rayman/Mario Wonder).
  *
- * A cena é DADO (arquivos JSON em `scenes/`), não código imperativo: o
- * `buildScene` instancia os nós (modelos `.glb`, luzes, água, primitivas). Isso
- * deixa o editor (F2, em dev) editar/remover/adicionar e SALVAR de volta sem
- * desperdício — o loader é o único ponto de instanciação, então objeto removido
- * nunca é criado. Lógica de jogo continua em TS (`systems/`, `components/`).
- *
- * Os JSON são **importados** (não buscados em runtime), então o Vite os bundla no
- * build — multi-arquivo em dev, bundle único no build. Em DEV o editor F2 já vem
- * ligado pelo engine; em produção o editor não entra no bundle (ADR-0042).
+ * A cena é DADO (`scenes/level.json`): nós `primitive`/`model` viram plataformas
+ * (campo `collider`) e o `player` (campo `player`). `setupPlatformer` liga a
+ * física (gravidade + colisão AABB), o input (←/→ anda, Espaço/↑ pula) e a câmera
+ * 2D que segue o player no plano XY (sobe/desce/lados). Em DEV o editor F2 vem
+ * ligado; em produção não pesa (ADR-0042). Lógica de jogo continua em TS.
  */
-import { Game, buildScene, SceneLoader, type SceneDefinition } from 'cortex-game-engine'
-import world from './scenes/world.json'
-import props from './scenes/props.json'
+import { Game, buildScene, setupPlatformer, SceneLoader, type SceneDefinition } from 'cortex-game-engine'
+import level from './scenes/level.json'
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
 
 const game = new Game({ canvas })
+
+// Física + input + câmera 2D-follow (offset/distância/roll-Z opcional).
+const { followCamera } = setupPlatformer(game, { camera: { distance: 16, responsiveness: 6 } })
+// Pra dar o leve giro 2.5D estilo Rayman, descomente (em radianos):
+// followCamera.setRoll(0.05)
+void followCamera
+
 game.start()
 
-// Overlay do editor (F2): edições salvas em assets/scene-data.json. Em dev/build
-// é aplicada por cima da cena-base; `null` se ainda não houver edições.
+// Overlay do editor (F2): edições salvas em assets/scene-data.json (null se não houver).
 const overlay = await new SceneLoader().loadSceneFile('assets/scene-data.json')
 
-// Cast: o tipo inferido do import de JSON é estrutural, não a união discriminada
-// `SceneDefinition` — o conteúdo é validado em runtime pelo schema (zod).
-const scene = await buildScene(game.scene, [world, props] as unknown as SceneDefinition[], {
+// `world` faz os nós com collider/player virarem entidades ECS (física/câmera).
+await buildScene(game.scene, [level] as unknown as SceneDefinition[], {
   renderer: game.renderer,
+  world: game.world,
   overlay,
-})
-
-game.onUpdate((dt) => {
-  scene.update(dt) // anima as cáusticas da água
 })

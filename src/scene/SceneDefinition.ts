@@ -41,6 +41,33 @@ const placeSchema = z
   })
   .optional();
 
+/**
+ * Collider AABB de plataforma 2.5D. Se `width`/`height` forem omitidos, o builder
+ * deriva do bounding box do objeto. `solid` (default true) = plataforma/parede;
+ * `oneWay` = atravessável por baixo.
+ */
+const colliderSchema = z
+  .object({
+    width: z.number().optional(),
+    height: z.number().optional(),
+    solid: z.boolean().optional(),
+    oneWay: z.boolean().optional(),
+  })
+  .optional();
+
+/** Marca o nó como o PLAYER (corpo de plataforma + alvo da câmera). */
+const playerSchema = z
+  .union([
+    z.boolean(),
+    z.object({
+      moveSpeed: z.number().optional(),
+      jumpSpeed: z.number().optional(),
+      gravity: z.number().optional(),
+      maxFall: z.number().optional(),
+    }),
+  ])
+  .optional();
+
 const baseFields = {
   /** Identificador único — chave pra overlay/editor e `Object3D.name`. */
   id: z.string().min(1),
@@ -48,6 +75,10 @@ const baseFields = {
   place: placeSchema,
   castShadow: z.boolean().optional(),
   receiveShadow: z.boolean().optional(),
+  /** Collider 2D (plataformer): vira sólido/plataforma. */
+  collider: colliderSchema,
+  /** Marca como player (controller + corpo + alvo da câmera). */
+  player: playerSchema,
 };
 
 const modelNode = z.object({ type: z.literal('model'), url: z.string().min(1), ...baseFields });
