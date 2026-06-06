@@ -81,6 +81,17 @@ bottomHandle.addEventListener('mousedown', (e) => {
   window.addEventListener('mouseup', onUp)
 })
 
+// Editor vazio (sem arquivo/imagem aberto) → o jogo (#right-panel) toma o espaço
+// do editor. Quando um arquivo/imagem/markdown abre, o editor volta ao 1fr.
+document.addEventListener('editor-empty-change', (e) => {
+  const { empty } = (e as CustomEvent<{ empty: boolean }>).detail
+  resizer.editorCollapsed = empty
+  resizer.applyColumns()
+})
+// Estado inicial: nada aberto no editor, então o jogo já começa expandido.
+resizer.editorCollapsed = true
+resizer.applyColumns()
+
 const COLLAPSED_CHAT_WIDTH = 32
 let chatWidthBeforeCollapse = chatTarget.width
 document.addEventListener('chat-collapsed-change', (e) => {

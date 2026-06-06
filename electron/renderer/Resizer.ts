@@ -29,6 +29,13 @@ export class Resizer {
   private grid: HTMLElement
   private targets: ResizeTarget[]
 
+  /**
+   * Quando `true`, o editor está vazio (nenhum arquivo/imagem aberto) e colapsa:
+   * a coluna do editor e seu resizer somem, e o #right-panel (o jogo) vira `1fr`,
+   * tomando o espaço restante. Ver `applyColumns`.
+   */
+  editorCollapsed = false
+
   constructor(grid: HTMLElement, targets: ResizeTarget[]) {
     this.grid = grid
     this.targets = targets
@@ -72,6 +79,13 @@ export class Resizer {
     // Reconstrói grid-template-columns. Estrutura fixa:
     // 240px (sidebar) | 1fr (editor) | 4px | <right-panel> | 4px | <chat>
     const [right, chat] = this.targets
+    if (this.editorCollapsed) {
+      // Editor vazio: zera a coluna do editor e seu resizer; o jogo (right-panel)
+      // vira `1fr` e ocupa o espaço. A largura do right-panel fica preservada em
+      // `right.width` pra restaurar quando um arquivo voltar a ser aberto.
+      this.grid.style.gridTemplateColumns = `240px 0px 0px 1fr 4px ${chat.width}px`
+      return
+    }
     this.grid.style.gridTemplateColumns = `240px 1fr 4px ${right.width}px 4px ${chat.width}px`
   }
 }

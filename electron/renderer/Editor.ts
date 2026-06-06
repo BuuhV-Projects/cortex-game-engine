@@ -139,6 +139,8 @@ export class Editor {
   // Ordem das abas (insertion order do Map é estável)
   private tabs: Map<string, Tab> = new Map()
   private activePath: string | null = null
+  /** Último estado "vazio" notificado — evita disparar o evento à toa. */
+  private lastEmpty: boolean | null = null
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -360,6 +362,7 @@ export class Editor {
     this.previewEl.style.justifyContent = 'center'
     if (this.previewCaption) this.previewCaption.textContent = name
     this.previewEl.style.display = 'flex'
+    this.notifyEmptyState()
     try {
       const b64 = await window.electronAPI.readFileBase64(path)
       if (this.previewImg) this.previewImg.src = `data:${mimeForImage(name)};base64,${b64}`
@@ -378,6 +381,7 @@ export class Editor {
     this.previewEl.style.justifyContent = 'flex-start'
     if (this.previewCaption) this.previewCaption.textContent = name
     this.previewEl.style.display = 'flex'
+    this.notifyEmptyState()
     try {
       const text = await window.electronAPI.readFile(path)
       if (md) md.innerHTML = renderMarkdown(text)
@@ -389,6 +393,21 @@ export class Editor {
   /** Esconde o preview (volta a mostrar o editor de código). */
   private hideImagePreview(): void {
     if (this.previewEl) this.previewEl.style.display = 'none'
+    this.notifyEmptyState()
+  }
+
+  /**
+   * Emite `editor-empty-change` quando o editor passa a (não) ter nada aberto —
+   * sem aba de código E sem preview de imagem/markdown visível. O layout
+   * (`main.ts`/`Resizer`) usa isso pra dar o espaço do editor ao jogo (right-panel)
+   * quando não há nada aberto. Só dispara quando o estado realmente muda.
+   */
+  private notifyEmptyState(): void {
+    const previewVisible = !!this.previewEl && this.previewEl.style.display !== 'none'
+    const empty = this.tabs.size === 0 && !previewVisible
+    if (empty === this.lastEmpty) return
+    this.lastEmpty = empty
+    document.dispatchEvent(new CustomEvent('editor-empty-change', { detail: { empty } }))
   }
 
   private renderTabs(): void {
@@ -434,6 +453,7 @@ export class Editor {
       el.appendChild(close)
       this.tabsBar.appendChild(el)
     }
+    this.notifyEmptyState()
   }
 
   private activateTab(path: string): void {
