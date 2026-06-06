@@ -78,7 +78,9 @@ olha · **clique** (ou item na hierarquia) seleciona · **1/2/3**
 mover/rotacionar/escalar · **F** enquadra · **T** teleporta · **Esc** desseleciona.
 A hierarquia lista os objetos nomeados da cena (dê `Object3D.name` aos seus
 objetos pra eles aparecerem legíveis); o inspector edita posição/rotação/escala,
-sombra (cast/receive) e, em luzes, intensidade/cor.
+sombra (cast/receive) e, em luzes, intensidade/cor. No modo editor os **colliders
+2D aparecem com contorno** (AABB): verde = sólido, âmbar = one-way, azul =
+não-sólido (player/gatilho) — mostra a hitbox real da física, automático.
 
 **Gameplay pausa no editor + edição "gruda".** Enquanto o editor (F2) está ativo,
 `Game.editorActive` fica `true` e os sistemas de gameplay são pausados — basta
