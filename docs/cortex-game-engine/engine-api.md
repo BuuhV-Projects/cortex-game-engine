@@ -160,6 +160,37 @@ game.onUpdate((dt) => scene.update(dt)) // anima água
 > seguem disponíveis — são o que o loader usa por dentro. Mas a cena ESTÁTICA
 > deve ser JSON, pra o editor poder editá-la.
 
+## Plataforma 2.5D (gameplay)
+
+`setupPlatformer`, `PlatformerBodyComponent`, `Collider2DComponent`,
+`PlatformerPhysicsSystem`, `PlatformerInputSystem`, `FollowCamera2DSystem`.
+
+O engine é focado em **plataforma 2.5D** (gameplay no plano XY; sobe/desce/lados).
+No JSON data-driven, dois campos extras nos nós `model`/`primitive`:
+
+- **`collider`** — vira plataforma/chão sólido: `{ width?, height?, solid?, oneWay? }`
+  (dims omitidas → do bounding box; `solid` default true; `oneWay` = atravessável
+  por baixo).
+- **`player: true`** (ou `{ moveSpeed?, jumpSpeed?, gravity?, maxFall? }`) — vira o
+  personagem (corpo de física + alvo da câmera).
+
+`buildScene(..., { world })` cria as entidades ECS desses nós. `setupPlatformer`
+liga os 4 sistemas (sync, input ←/→ + Espaço/↑, física, câmera 2D-follow):
+
+```ts
+import { Game, buildScene, setupPlatformer } from 'cortex-game-engine'
+import level from './scenes/level.json'
+
+const game = new Game({ canvas })
+const { followCamera } = setupPlatformer(game, { camera: { distance: 16 } })
+// followCamera.setRoll(0.05) // leve giro 2.5D no eixo Z (travado em 0 por padrão)
+game.start()
+await buildScene(game.scene, [level], { renderer: game.renderer, world: game.world })
+```
+
+Tunables do pulo/alcance ficam no `player`/`PlatformerBodyComponent`
+(`jumpSpeed`/`gravity`/`moveSpeed`) — use-os pra dimensionar gaps PULÁVEIS no level.
+
 ## Montar cena com .glb (imperativo — internals / casos com lógica)
 
 `loadGLB`, `instance`, `setShadows`, `placeOnGround`, `getWorldBounds`, `scatter`,
