@@ -16,6 +16,8 @@ export interface GameEditor {
   activeCamera(): PerspectiveCamera | null;
   /** Chamado a cada frame, depois do `world.tick`, pra reatividade dos painéis. */
   update(deltaSeconds: number): void;
+  /** `true` quando o editor (F2) está ativo — pra pausar a gameplay. */
+  isActive(): boolean;
 }
 
 /** Função que liga o editor a um {@link Game}. Registrada pelo bundle de dev. */
@@ -130,6 +132,15 @@ export class Game {
   /** `true` se o editor está ligado (bundle de dev). */
   get hasEditor(): boolean {
     return this._editor !== null;
+  }
+
+  /**
+   * `true` quando o editor (F2) está ativo. Use pra pausar a gameplay enquanto
+   * edita: `system.pauseWhen = () => game.editorActive`. `false` se não há editor
+   * (produção) ou está fechado.
+   */
+  get editorActive(): boolean {
+    return this._editor?.isActive() ?? false;
   }
 
   /**

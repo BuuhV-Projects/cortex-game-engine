@@ -30,8 +30,17 @@ export interface PlatformerHandle {
  */
 export function setupPlatformer(game: Game, options: SetupPlatformerOptions = {}): PlatformerHandle {
   game.world.addSystem(new Object3DSyncSystem());
-  game.world.addSystem(new PlatformerInputSystem(game.input));
-  game.world.addSystem(new PlatformerPhysicsSystem());
+
+  // Gameplay (física + input) PAUSA enquanto o editor (F2) está ativo — assim o
+  // player não cai e os objetos não se mexem enquanto você edita.
+  const input = new PlatformerInputSystem(game.input);
+  input.pauseWhen = () => game.editorActive;
+  game.world.addSystem(input);
+
+  const physics = new PlatformerPhysicsSystem();
+  physics.pauseWhen = () => game.editorActive;
+  game.world.addSystem(physics);
+
   const followCamera = new FollowCamera2DSystem(game.camera, options.camera);
   game.world.addSystem(followCamera);
   return { followCamera };

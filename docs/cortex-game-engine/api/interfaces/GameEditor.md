@@ -29,6 +29,20 @@ Câmera a usar no render (a livre do editor quando ativo; `null` = usar a do jog
 
 ***
 
+### isActive()
+
+> **isActive**(): `boolean`
+
+Defined in: [src/core/Game.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L20)
+
+`true` quando o editor (F2) está ativo — pra pausar a gameplay.
+
+#### Returns
+
+`boolean`
+
+***
+
 ### update()
 
 > **update**(`deltaSeconds`): `void`

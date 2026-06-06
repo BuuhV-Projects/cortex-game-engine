@@ -39,7 +39,8 @@ export class ThirdPersonCameraSystem extends System {
   private readonly height: number;
   private readonly lookAhead: number;
   private readonly smoothness: number;
-  private readonly pauseWhen?: () => boolean;
+  // `pauseWhen` é herdado de System (público): o World pula o update quando ele
+  // retorna true. Mantemos a checagem interna por compat/segurança.
 
   constructor(
     private readonly camera: THREE.PerspectiveCamera,

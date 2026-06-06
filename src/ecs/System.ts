@@ -57,6 +57,14 @@ export abstract class System {
   static requiredComponents: ComponentClass[] = [];
 
   /**
+   * Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
+   * `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
+   * a gameplay (física/input) enquanto o editor está ativo
+   * (`pauseWhen = () => game.editorActive`).
+   */
+  pauseWhen?: () => boolean;
+
+  /**
    * Executa a lógica do sistema para o frame/passo atual.
    *
    * @param entities  - Entidades filtradas pelo `World` que possuem todos os

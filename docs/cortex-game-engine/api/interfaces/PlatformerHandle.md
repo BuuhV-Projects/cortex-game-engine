@@ -6,7 +6,7 @@
 
 # Interface: PlatformerHandle
 
-Defined in: src/scene/Platformer.ts:14
+Defined in: [src/scene/Platformer.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Platformer.ts#L14)
 
 Handle de [setupPlatformer](../functions/setupPlatformer.md).
 
@@ -16,6 +16,6 @@ Handle de [setupPlatformer](../functions/setupPlatformer.md).
 
 > **followCamera**: [`FollowCamera2DSystem`](../classes/FollowCamera2DSystem.md)
 
-Defined in: src/scene/Platformer.ts:16
+Defined in: [src/scene/Platformer.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Platformer.ts#L16)
 
 A câmera 2D-follow — use `.setRoll(...)` pra o leve giro 2.5D.

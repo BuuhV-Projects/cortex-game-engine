@@ -25,7 +25,7 @@ Segue a entidade que tiver `TransformComponent` + `FollowCameraTargetComponent`
 
 > **new ThirdPersonCameraSystem**(`camera`, `options?`): `ThirdPersonCameraSystem`
 
-Defined in: [src/systems/ThirdPersonCameraSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L44)
+Defined in: [src/systems/ThirdPersonCameraSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L45)
 
 #### Parameters
 
@@ -46,6 +46,27 @@ Defined in: [src/systems/ThirdPersonCameraSystem.ts:44](https://github.com/BuuhV
 [`System`](System.md).[`constructor`](System.md#constructor)
 
 ## Properties
+
+### pauseWhen?
+
+> `optional` **pauseWhen?**: () => `boolean`
+
+Defined in: [src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
+
+Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
+`World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
+a gameplay (física/input) enquanto o editor está ativo
+(`pauseWhen = () => game.editorActive`).
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`System`](System.md).[`pauseWhen`](System.md#pausewhen)
+
+***
 
 ### priority
 
@@ -94,7 +115,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/ThirdPersonCameraSystem.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L56)
+Defined in: [src/systems/ThirdPersonCameraSystem.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L57)
 
 Executa a lógica do sistema para o frame/passo atual.
 

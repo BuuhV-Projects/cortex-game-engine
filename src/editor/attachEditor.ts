@@ -1,6 +1,7 @@
 import { PerspectiveCamera, Vector3, type Object3D } from 'three';
 import type { Game, GameEditor } from '../core/Game.js';
 import { TransformComponent } from '../components/TransformComponent.js';
+import { Object3DComponent } from '../components/Object3DComponent.js';
 import { EditableTargetComponent } from '../components/EditableTargetComponent.js';
 import { createEditorState } from './EditorState.js';
 import { createEditorSelection } from './EditorSelection.js';
@@ -122,7 +123,21 @@ export function attachEditor(game: Game): GameEditor {
         hud.showToast('Cena salva');
       }, // onSaveEdits (K) — salva já
       () => {}, // onClearEdits
-      undefined, // onTransformChange (autosave cuida disso por frame)
+      (obj) => {
+        // Gizmo → Transform: se o objeto tem entidade ECS (Object3DSync), atualiza
+        // o TransformComponent — senão o sync sobrescreveria o move do gizmo.
+        for (const e of game.world.query(Object3DComponent)) {
+          if (e.getComponent(Object3DComponent)!.object !== obj) continue;
+          const t = e.getComponent(TransformComponent);
+          if (t) {
+            t.x = obj.position.x;
+            t.y = obj.position.y;
+            t.z = obj.position.z;
+            t.rotationY = obj.rotation.y;
+          }
+          break;
+        }
+      },
       (obj) => cameraSystem.focusOn(obj),
       selection,
       (obj) => {
@@ -212,6 +227,7 @@ export function attachEditor(game: Game): GameEditor {
 
   return {
     activeCamera: () => (editorState.active ? editorCamera : null),
+    isActive: () => editorState.active,
     update(): void {
       if (editorState.active !== wasActive) {
         wasActive = editorState.active;

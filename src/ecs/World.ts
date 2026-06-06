@@ -139,6 +139,7 @@ export class World {
    */
   tick(deltaTime: number): void {
     for (const system of this._systems) {
+      if (system.pauseWhen?.()) continue; // sistema pausado (ex.: gameplay no editor)
       const required = (system.constructor as typeof System).requiredComponents;
       const entities = this.query(...required);
       system.update(entities, deltaTime);

@@ -80,6 +80,14 @@ A hierarquia lista os objetos nomeados da cena (dê `Object3D.name` aos seus
 objetos pra eles aparecerem legíveis); o inspector edita posição/rotação/escala,
 sombra (cast/receive) e, em luzes, intensidade/cor.
 
+**Gameplay pausa no editor + edição "gruda".** Enquanto o editor (F2) está ativo,
+`Game.editorActive` fica `true` e os sistemas de gameplay são pausados — basta
+marcar `system.pauseWhen = () => game.editorActive` (o `World` pula o `update`
+desse sistema no tick). `setupPlatformer` já faz isso com física e input, então o
+player não cai nem se move enquanto você edita. E mover/rotacionar um objeto que
+tem entidade ECS (Object3D sincronizado) **escreve de volta no `TransformComponent`**,
+então a edição persiste quando você dá play (não é sobrescrita pelo sync).
+
 ```ts
 import { Game } from 'cortex-game-engine'
 

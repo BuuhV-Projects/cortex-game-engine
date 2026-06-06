@@ -33,3 +33,4 @@ coverage/
 tmp/
 *.tmp.py
 out/
+dist-app/

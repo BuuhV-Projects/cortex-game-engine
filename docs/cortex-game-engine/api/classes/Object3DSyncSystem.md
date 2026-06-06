@@ -39,6 +39,27 @@ contra algo que tenha trocado a ordem.
 
 ## Properties
 
+### pauseWhen?
+
+> `optional` **pauseWhen?**: () => `boolean`
+
+Defined in: [src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
+
+Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
+`World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
+a gameplay (física/input) enquanto o editor está ativo
+(`pauseWhen = () => game.editorActive`).
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`System`](System.md).[`pauseWhen`](System.md#pausewhen)
+
+***
+
 ### priority
 
 > **priority**: `number` = `10`
