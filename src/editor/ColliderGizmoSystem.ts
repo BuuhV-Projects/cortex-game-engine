@@ -9,7 +9,7 @@ import {
 import { System } from '../ecs/System.js';
 import { Entity } from '../ecs/Entity.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
-import { Object3DComponent } from '../components/Object3DComponent.js';
+import { TransformComponent } from '../components/TransformComponent.js';
 import type { EditorState } from './EditorState.js';
 
 // Cores do contorno por tipo de collider (RGB hex). Verde = sólido (chão/parede),
@@ -43,7 +43,7 @@ interface Gizmo {
  * runtime); registrado pelo `attachEditor`.
  */
 export class ColliderGizmoSystem extends System {
-  static override requiredComponents = [Collider2DComponent];
+  static override requiredComponents = [Collider2DComponent, TransformComponent];
   // Depois da física/sync (priority baixa deles), pra ler a posição já atualizada.
   override priority = 200;
 
@@ -78,10 +78,12 @@ export class ColliderGizmoSystem extends System {
         this.setRect(g, col.halfWidth, col.halfHeight);
       }
 
-      // Posição = centro do collider = posição do Object3D (sincronizado ao
-      // Transform). Sem Object3D, não há o que seguir — deixa na origem.
-      const obj = e.getComponent(Object3DComponent)?.object;
-      if (obj) g.loop.position.set(obj.position.x, obj.position.y, obj.position.z);
+      // Posição = centro do collider = o TransformComponent da entidade (é o que
+      // a física usa). Vale tanto pro collider acoplado ao mesh (Object3D
+      // sincronizado ao Transform) quanto pro DESACOPLADO (só Transform, sem
+      // Object3D — padrão comum pra pivô descentralizado / collider != visual).
+      const t = e.getComponent(TransformComponent)!;
+      g.loop.position.set(t.x, t.y, t.z);
 
       const mat = g.loop.material as LineBasicMaterial;
       mat.color.setHex(colorFor(col));
