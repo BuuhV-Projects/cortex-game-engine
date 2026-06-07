@@ -50,6 +50,7 @@ const placeSchema = z
  */
 const colliderSchema = z
   .object({
+    shape: z.enum(['box', 'circle', 'capsule']).optional(),
     width: z.number().optional(),
     height: z.number().optional(),
     solid: z.boolean().optional(),

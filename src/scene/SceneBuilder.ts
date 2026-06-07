@@ -92,7 +92,9 @@ export function overlayColliders(
     const o = v as Record<string, unknown>;
     const num = (k: string): number | undefined => (typeof o[k] === 'number' ? (o[k] as number) : undefined);
     const bool = (k: string): boolean | undefined => (typeof o[k] === 'boolean' ? (o[k] as boolean) : undefined);
+    const shape = o['shape'] === 'circle' || o['shape'] === 'capsule' ? o['shape'] : undefined;
     out[name] = {
+      shape,
       width: num('width'),
       height: num('height'),
       offsetX: num('offsetX'),
@@ -219,15 +221,18 @@ function createPlatformerEntity(
   }
   const offX = col?.offsetX ?? 0;
   const offY = col?.offsetY ?? 0;
+  const shape = col?.shape ?? 'box';
 
   if (node.player) {
     // Player: collider não-sólido (não é parede) + corpo + alvo da câmera.
-    e.addComponent(new Collider2DComponent(halfW, halfH, false, false, offX, offY));
+    e.addComponent(new Collider2DComponent(halfW, halfH, false, false, offX, offY, shape));
     const p = typeof node.player === 'object' ? node.player : {};
     e.addComponent(new PlatformerBodyComponent(p.moveSpeed, p.jumpSpeed, p.gravity, p.maxFall));
     e.addComponent(new FollowCameraTargetComponent());
   } else if (col) {
-    e.addComponent(new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false, offX, offY));
+    e.addComponent(
+      new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false, offX, offY, shape),
+    );
   }
 }
 

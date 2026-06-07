@@ -1,10 +1,22 @@
 import { Component } from '../ecs/Component.js';
 
 /**
- * Caixa de colisão AABB no plano **XY** (plataforma 2.5D), centrada na posição
- * do {@link TransformComponent} da entidade **+ um offset** (`offsetX`/`offsetY`).
- * `solid` = participa da colisão (chão/parede/plataforma); `oneWay` = plataforma
- * atravessável por baixo (só pousa vindo de cima). Usado pelo
+ * Forma do collider 2D do plataformer:
+ * - `box` — retângulo AABB (`halfWidth`×`halfHeight`). Padrão.
+ * - `circle` — círculo de raio `halfWidth` (bom pra pedras/bolas; `halfHeight`
+ *   é ignorado).
+ * - `capsule` — cápsula **vertical**: largura = `2·halfWidth` (raio = `halfWidth`),
+ *   altura total = `2·halfHeight`, com tampas semicirculares de raio `halfWidth`
+ *   (boa pro player escorregar em quinas). Se `halfHeight ≤ halfWidth`, vira um
+ *   círculo.
+ */
+export type ColliderShape2D = 'box' | 'circle' | 'capsule';
+
+/**
+ * Colisor 2D do plataformer (plano **XY**), centrado na posição do
+ * {@link TransformComponent} **+ um offset** (`offsetX`/`offsetY`). `shape` define
+ * a forma (box/circle/capsule). `solid` = participa da colisão (chão/parede);
+ * `oneWay` = plataforma atravessável por baixo (só pousa de cima). Usado pelo
  * {@link PlatformerPhysicsSystem}.
  *
  * O **offset** permite que o collider seja uma **sub-região** do objeto sem
@@ -17,7 +29,7 @@ import { Component } from '../ecs/Component.js';
  */
 export class Collider2DComponent extends Component {
   constructor(
-    /** Metade da largura (X). */
+    /** Metade da largura (X) — também o **raio** quando `shape` é circle/capsule. */
     public halfWidth = 0.5,
     /** Metade da altura (Y). */
     public halfHeight = 0.5,
@@ -25,10 +37,12 @@ export class Collider2DComponent extends Component {
     public solid = true,
     /** Plataforma de mão única: só colide vindo de cima (atravessa por baixo). */
     public oneWay = false,
-    /** Offset do centro do AABB em X, relativo ao Transform. Default `0`. */
+    /** Offset do centro em X, relativo ao Transform. Default `0`. */
     public offsetX = 0,
-    /** Offset do centro do AABB em Y, relativo ao Transform. Default `0`. */
+    /** Offset do centro em Y, relativo ao Transform. Default `0`. */
     public offsetY = 0,
+    /** Forma do collider. Default `box`. Ver {@link ColliderShape2D}. */
+    public shape: ColliderShape2D = 'box',
   ) {
     super();
   }

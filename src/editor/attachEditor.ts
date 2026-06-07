@@ -168,10 +168,11 @@ export function attachEditor(game: Game): GameEditor {
   // O collider é uma entidade ECS ACOPLADA ao mesh (Object3DComponent.object ===
   // obj) — então movem juntos. Editar/criar/remover persiste em
   // `overlay.data.colliders[nome]`; o `buildScene` recria no boot (código vence).
-  const collidersMap = (): Record<string, Record<string, number | boolean>> => {
+  type ColliderEntry = Record<string, number | boolean | string>;
+  const collidersMap = (): Record<string, ColliderEntry> => {
     const c = overlay.data['colliders'];
-    if (c && typeof c === 'object' && !Array.isArray(c)) return c as Record<string, Record<string, number | boolean>>;
-    const m: Record<string, Record<string, number | boolean>> = {};
+    if (c && typeof c === 'object' && !Array.isArray(c)) return c as Record<string, ColliderEntry>;
+    const m: Record<string, ColliderEntry> = {};
     overlay.data['colliders'] = m;
     return m;
   };
@@ -189,6 +190,7 @@ export function attachEditor(game: Game): GameEditor {
       // locked = veio do código (não está na overlay editável).
       const locked = !(obj.name && collidersMap()[obj.name]);
       return {
+        shape: c.shape,
         width: c.halfWidth * 2,
         height: c.halfHeight * 2,
         offsetX: c.offsetX,
@@ -210,8 +212,8 @@ export function attachEditor(game: Game): GameEditor {
       const e = game.world.createEntity();
       e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
       e.addComponent(new Object3DComponent(obj));
-      e.addComponent(new Collider2DComponent(width / 2, height / 2, true, false, offX, offY));
-      collidersMap()[obj.name] = { width, height, offsetX: offX, offsetY: offY, solid: true, oneWay: false };
+      e.addComponent(new Collider2DComponent(width / 2, height / 2, true, false, offX, offY, 'box'));
+      collidersMap()[obj.name] = { shape: 'box', width, height, offsetX: offX, offsetY: offY, solid: true, oneWay: false };
       persist();
     },
     update(obj, patch) {
@@ -224,7 +226,9 @@ export function attachEditor(game: Game): GameEditor {
       if (patch.offsetY !== undefined) c.offsetY = patch.offsetY;
       if (patch.solid !== undefined) c.solid = patch.solid;
       if (patch.oneWay !== undefined) c.oneWay = patch.oneWay;
+      if (patch.shape !== undefined) c.shape = patch.shape;
       collidersMap()[obj.name] = {
+        shape: c.shape,
         width: c.halfWidth * 2,
         height: c.halfHeight * 2,
         offsetX: c.offsetX,

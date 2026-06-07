@@ -3,6 +3,7 @@ import { Entity } from '../ecs/Entity.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
+import { penetrate, type Shape2D } from './collide2d.js';
 
 /**
  * Física de plataforma 2.5D no plano **XY**: gravidade, movimento horizontal por
@@ -56,49 +57,90 @@ export class PlatformerPhysicsSystem extends System {
       b.vy -= b.gravity * dt;
       if (b.vy < -b.maxFall) b.vy = -b.maxFall;
 
-      // ── Eixo X ──────────────────────────────────────────────────────────────
-      t.x += b.vx * dt;
-      for (const s of solids) {
-        if (s === actor) continue;
-        const sc = s.getComponent(Collider2DComponent)!;
-        if (sc.oneWay) continue; // one-way nunca bloqueia na horizontal
-        const st = s.getComponent(TransformComponent)!;
-        const px = penetrationX(t, c, st, sc);
-        const py = penetrationY(t, c, st, sc);
-        if (px <= 0 || py <= 0) continue; // sem overlap
-        // Só é "parede" se a penetração X for a menor; senão é pousar/teto (Y).
-        if (px > py) continue;
-        const scx = st.x + sc.offsetX;
-        if (b.vx > 0) t.x = scx - sc.halfWidth - c.halfWidth - c.offsetX;
-        else if (b.vx < 0) t.x = scx + sc.halfWidth + c.halfWidth - c.offsetX;
-        b.vx = 0;
+      const actorBox = c.shape === 'box';
+      if (actorBox) {
+        // ── Box vs box: resolução por eixo (X depois Y) — caminho clássico,
+        //    inalterado. Só pares box-box passam aqui; sólidos não-box vão pro
+        //    passo MTV abaixo.
+        // Eixo X
+        t.x += b.vx * dt;
+        for (const s of solids) {
+          if (s === actor) continue;
+          const sc = s.getComponent(Collider2DComponent)!;
+          if (sc.shape !== 'box' || sc.oneWay) continue; // one-way nunca bloqueia X
+          const st = s.getComponent(TransformComponent)!;
+          const px = penetrationX(t, c, st, sc);
+          const py = penetrationY(t, c, st, sc);
+          if (px <= 0 || py <= 0) continue;
+          if (px > py) continue; // menor penetração: só X vira "parede"
+          const scx = st.x + sc.offsetX;
+          if (b.vx > 0) t.x = scx - sc.halfWidth - c.halfWidth - c.offsetX;
+          else if (b.vx < 0) t.x = scx + sc.halfWidth + c.halfWidth - c.offsetX;
+          b.vx = 0;
+        }
+        // Eixo Y
+        const prevBottom = t.y + c.offsetY - c.halfHeight;
+        t.y += b.vy * dt;
+        b.grounded = false;
+        for (const s of solids) {
+          if (s === actor) continue;
+          const sc = s.getComponent(Collider2DComponent)!;
+          if (sc.shape !== 'box') continue;
+          const st = s.getComponent(TransformComponent)!;
+          if (penetrationX(t, c, st, sc) <= 0 || penetrationY(t, c, st, sc) <= 0) continue;
+          const scy = st.y + sc.offsetY;
+          if (sc.oneWay) {
+            if (b.vy > 0) continue;
+            if (prevBottom < scy + sc.halfHeight - 0.001) continue;
+          }
+          if (b.vy <= 0) {
+            t.y = scy + sc.halfHeight + c.halfHeight - c.offsetY; // pousa
+            b.vy = 0;
+            b.grounded = true;
+          } else {
+            t.y = scy - sc.halfHeight - c.halfHeight - c.offsetY; // teto
+            b.vy = 0;
+          }
+        }
+      } else {
+        // Ator com forma redonda (circle/capsule): integra e resolve tudo por MTV.
+        t.x += b.vx * dt;
+        t.y += b.vy * dt;
+        b.grounded = false;
       }
 
-      // ── Eixo Y ──────────────────────────────────────────────────────────────
-      const prevBottom = t.y + c.offsetY - c.halfHeight;
-      t.y += b.vy * dt;
-      b.grounded = false;
+      // ── Passo MTV (formas não-box) ───────────────────────────────────────────
+      // Resolve colisão por separação mínima quando ator OU sólido não é box.
+      // (Box-box já foi tratado acima; aqui pulamos esses pares.)
+      const aShape: Shape2D = { kind: c.shape, hw: c.halfWidth, hh: c.halfHeight };
+      const bVyWasUp = b.vy > 0;
       for (const s of solids) {
         if (s === actor) continue;
         const sc = s.getComponent(Collider2DComponent)!;
+        if (actorBox && sc.shape === 'box') continue; // box-box: já resolvido
         const st = s.getComponent(TransformComponent)!;
-        if (penetrationX(t, c, st, sc) <= 0 || penetrationY(t, c, st, sc) <= 0) continue;
-        const scy = st.y + sc.offsetY;
+        const bShape: Shape2D = { kind: sc.shape, hw: sc.halfWidth, hh: sc.halfHeight };
+        const sep = penetrate(
+          t.x + c.offsetX, t.y + c.offsetY, aShape,
+          st.x + sc.offsetX, st.y + sc.offsetY, bShape,
+        );
+        if (!sep) continue;
         if (sc.oneWay) {
-          // Só colide descendo e se a base estava acima do topo da plataforma.
-          if (b.vy > 0) continue;
-          if (prevBottom < scy + sc.halfHeight - 0.001) continue;
+          // One-way: só pousa (normal predominantemente pra cima) e vindo de cima.
+          if (sep.ny < 0.5 || bVyWasUp) continue;
         }
-        if (b.vy <= 0) {
-          // Caindo → pousa no topo do sólido.
-          t.y = scy + sc.halfHeight + c.halfHeight - c.offsetY;
-          b.vy = 0;
+        // Empurra pra fora ao longo da normal.
+        t.x += sep.nx * sep.depth;
+        t.y += sep.ny * sep.depth;
+        // Resposta de velocidade pela normal.
+        if (sep.ny > 0.5) {
+          if (b.vy < 0) b.vy = 0;
           b.grounded = true;
-        } else {
-          // Subindo → bate a cabeça no teto.
-          t.y = scy - sc.halfHeight - c.halfHeight - c.offsetY;
+        } else if (sep.ny < -0.5 && b.vy > 0) {
           b.vy = 0;
         }
+        if (sep.nx > 0.5 && b.vx < 0) b.vx = 0;
+        else if (sep.nx < -0.5 && b.vx > 0) b.vx = 0;
       }
     }
   }

@@ -112,6 +112,33 @@ describe('PlatformerPhysicsSystem', () => {
     expect(p.t.y).toBeCloseTo(2.7, 1); // topo efetivo 2.2 + halfH player 0.5
   });
 
+  it('player (box) pousa em cima de um collider CÍRCULO', () => {
+    const world = new World();
+    world.addSystem(new PlatformerPhysicsSystem());
+    const e = world.createEntity();
+    e.addComponent(new TransformComponent(0, 0, 0));
+    e.addComponent(new Collider2DComponent(1, 1, true, false, 0, 0, 'circle')); // raio 1, topo y=1
+    const p = actor(world, 0, 5);
+    run(world, 200);
+    expect(p.b.grounded).toBe(true);
+    expect(p.t.y).toBeCloseTo(1.5, 1); // base do box (0.5) no topo do círculo (1.0)
+  });
+
+  it('player CÍRCULO pousa no chão (box)', () => {
+    const world = new World();
+    world.addSystem(new PlatformerPhysicsSystem());
+    solid(world, 0, 0, 50, 0.5); // chão box, topo 0.5
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 5, 0);
+    const b = new PlatformerBodyComponent();
+    e.addComponent(t);
+    e.addComponent(new Collider2DComponent(0.5, 0.5, true, false, 0, 0, 'circle'));
+    e.addComponent(b);
+    run(world, 200);
+    expect(b.grounded).toBe(true);
+    expect(t.y).toBeCloseTo(1.0, 1); // raio 0.5 sobre o topo 0.5
+  });
+
   it('plataforma one-way: não bloqueia vindo de baixo (subindo)', () => {
     const world = new World();
     world.addSystem(new PlatformerPhysicsSystem());

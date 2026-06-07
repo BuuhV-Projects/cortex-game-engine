@@ -1,6 +1,7 @@
 import type { Object3D, Mesh } from 'three';
 import { MathUtils } from 'three';
 import { setShadows } from '../scene/SceneAssets.js';
+import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { EditorSelection } from './EditorSelection.js';
 
 /** Painel de propriedades do objeto selecionado no editor. */
@@ -17,15 +18,17 @@ export interface EditorInspector {
   refresh(): void;
 }
 
-/** Estado do collider 2D de um objeto (largura/altura totais + offset + tipo). */
+/** Estado do collider 2D de um objeto (forma + largura/altura + offset + tipo). */
 export interface ColliderEditState {
-  /** Largura total do AABB (2×halfWidth), em unidades do engine. */
+  /** Forma: `box`, `circle` (raio = largura/2) ou `capsule` (vertical). */
+  shape: ColliderShape2D;
+  /** Largura total (2×halfWidth) — **diâmetro** em circle/capsule. */
   width: number;
-  /** Altura total do AABB (2×halfHeight). */
+  /** Altura total (2×halfHeight). Ignorada em `circle`. */
   height: number;
-  /** Offset do centro do AABB em X, relativo ao objeto. */
+  /** Offset do centro em X, relativo ao objeto. */
   offsetX: number;
-  /** Offset do centro do AABB em Y. */
+  /** Offset do centro em Y. */
   offsetY: number;
   /** `true` = parede/chão; `false` = não-sólido (gatilho). */
   solid: boolean;
@@ -246,7 +249,8 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         dot.textContent = '■';
         dot.style.cssText = `color:${color}`;
         const txt = document.createElement('span');
-        txt.textContent = `${cs.width.toFixed(2)} × ${cs.height.toFixed(2)} · ${kind}`;
+        const shp = cs.shape === 'circle' ? 'círculo' : cs.shape === 'capsule' ? 'cápsula' : 'caixa';
+        txt.textContent = `${shp} ${cs.width.toFixed(2)}×${cs.height.toFixed(2)} · ${kind}`;
         txt.style.cssText = 'color:#cfd2da';
         row.append(dot, txt);
         root.append(row);
@@ -259,9 +263,43 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         // gizmo não reverterem edições.
         const live = (k: keyof ColliderEditState): number =>
           (colliderApi.get(obj)?.[k] as number) ?? 0;
+
+        // Forma (caixa / círculo / cápsula) — muda os labels de tamanho.
+        const formRow = document.createElement('div');
+        formRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0';
+        const fl = document.createElement('span');
+        fl.textContent = 'Forma';
+        fl.style.cssText = 'width:54px;color:#cfd2da';
+        const sel = document.createElement('select');
+        sel.style.cssText =
+          'flex:1;background:#11131a;color:#fff;border:1px solid #333;border-radius:3px;padding:2px';
+        for (const [val, label] of [['box', 'Caixa'], ['circle', 'Círculo'], ['capsule', 'Cápsula']] as const) {
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = label;
+          if (cs.shape === val) opt.selected = true;
+          sel.append(opt);
+        }
+        sel.addEventListener('change', () => {
+          colliderApi.update(obj, { shape: sel.value as ColliderShape2D });
+          build(obj); // labels de tamanho mudam conforme a forma
+        });
+        formRow.append(fl, sel);
+        root.append(formRow);
+
+        // Tamanho — rótulos conforme a forma.
+        const widthRow = numberRow(
+          cs.shape === 'box' ? 'Largura' : 'Diâmetro',
+          () => live('width'),
+          (v) => colliderApi.update(obj, { width: Math.max(0.01, v) }),
+        );
+        root.append(widthRow);
+        if (cs.shape !== 'circle') {
+          root.append(
+            numberRow('Altura', () => live('height'), (v) => colliderApi.update(obj, { height: Math.max(0.01, v) })),
+          );
+        }
         root.append(
-          numberRow('Largura', () => live('width'), (v) => colliderApi.update(obj, { width: Math.max(0.01, v) })),
-          numberRow('Altura', () => live('height'), (v) => colliderApi.update(obj, { height: Math.max(0.01, v) })),
           numberRow('Offset X', () => live('offsetX'), (v) => colliderApi.update(obj, { offsetX: v })),
           numberRow('Offset Y', () => live('offsetY'), (v) => colliderApi.update(obj, { offsetY: v })),
           checkboxRow('Sólido', () => colliderApi.get(obj)?.solid ?? true, (v) => colliderApi.update(obj, { solid: v })),

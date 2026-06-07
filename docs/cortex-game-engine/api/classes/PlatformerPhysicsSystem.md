@@ -6,7 +6,7 @@
 
 # Class: PlatformerPhysicsSystem
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L29)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L30)
 
 Física de plataforma 2.5D no plano **XY**: gravidade, movimento horizontal por
 intenção (`PlatformerBodyComponent.moveDir`), pulo, e **colisão AABB por eixo**
@@ -74,7 +74,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `5`
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L31)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L32)
 
 Prioridade de execução deste sistema.
 
@@ -91,7 +91,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`Collider2DComponent`](Collider2DComponent.md))[]
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L30)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L31)
 
 Construtores dos componentes que este sistema requer.
 
@@ -117,7 +117,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/PlatformerPhysicsSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L33)
+Defined in: [src/systems/PlatformerPhysicsSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L34)
 
 Executa a lógica do sistema para o frame/passo atual.
 

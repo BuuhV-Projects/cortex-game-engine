@@ -82,6 +82,7 @@
 
 - [ColliderConfig](type-aliases/ColliderConfig.md)
 - [ColliderShape](type-aliases/ColliderShape.md)
+- [ColliderShape2D](type-aliases/ColliderShape2D.md)
 - [EditorAttacher](type-aliases/EditorAttacher.md)
 - [LightNode](type-aliases/LightNode.md)
 - [ModelNode](type-aliases/ModelNode.md)
