@@ -270,7 +270,11 @@ export class Editor {
     selectionOrPosition?: monaco.IRange | monaco.IPosition,
   ): void {
     if (!this.instance) return
-    const path = model.uri.toString()
+    // `tab.path` precisa ser o PATH REAL (pra o save/writeFile) — não a URI virtual
+    // do Monaco (`/_drive_d/...`). Converte de volta; se for um type virtual de
+    // node_modules (sem fs real), cai pra URI (a aba entra read-only por isso).
+    const real = virtualUriToPath(model.uri)
+    const path = real ?? model.uri.toString()
     if (!this.tabs.has(path)) {
       const name = model.uri.path.split('/').pop() ?? '(sem nome)'
       this.tabs.set(path, this.makeTab(path, name, model))
