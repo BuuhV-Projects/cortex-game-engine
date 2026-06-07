@@ -1,3 +1,10 @@
+# [0.12.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.11.0...v0.12.0) (2026-06-07)
+
+
+### Features
+
+* **editor:** heightfield — arrastar pontos + auto-traçar do mesh ([1d1c645](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1d1c6458736241a1787063c42b33aa91576ea94c))
+
 # [0.11.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.10.0...v0.11.0) (2026-06-07)
 
 
