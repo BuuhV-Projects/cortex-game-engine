@@ -19,8 +19,10 @@ import type { EditorState } from './EditorState.js';
 const COLOR_SOLID = 0x2a9dff;
 const COLOR_ONEWAY = 0xf5a623;
 const COLOR_TRIGGER = 0x28e0e0;
+const COLOR_TERRAIN = 0x5ad17a; // heightfield (perfil de chão)
 
 function colorFor(col: Collider2DComponent): number {
+  if (col.shape === 'heightfield') return COLOR_TERRAIN;
   if (col.oneWay) return COLOR_ONEWAY;
   if (!col.solid) return COLOR_TRIGGER;
   return COLOR_SOLID;
@@ -84,7 +86,7 @@ export class ColliderGizmoSystem extends System {
         this.group.add(g.mesh);
       } else if (g.hw !== col.halfWidth || g.hh !== col.halfHeight || g.shape !== col.shape) {
         // Tamanho/forma mudou — reconstrói a geometria do frame.
-        this.setShape(g, col.shape, col.halfWidth, col.halfHeight);
+        this.setShape(g, col);
       }
 
       // Centro do collider = Transform + offset (é o que a física usa). Vale pro
@@ -117,18 +119,43 @@ export class ColliderGizmoSystem extends System {
     const mesh = new Mesh(new BufferGeometry(), material);
     mesh.renderOrder = 999; // por cima da cena
     const g: Gizmo = { mesh, hw: 0, hh: 0, shape: 'box' };
-    this.setShape(g, col.shape, col.halfWidth, col.halfHeight);
+    this.setShape(g, col);
     return g;
   }
 
   /** (Re)constrói a geometria do frame conforme a forma do collider. */
-  private setShape(g: Gizmo, shape: ColliderShape2D, hw: number, hh: number): void {
-    if (shape === 'box') this.setBoxFrame(g, hw, hh);
+  private setShape(g: Gizmo, col: Collider2DComponent): void {
+    const { shape, halfWidth: hw, halfHeight: hh } = col;
+    if (shape === 'heightfield') this.setPolyline(g, col.points ?? []);
+    else if (shape === 'box') this.setBoxFrame(g, hw, hh);
     else this.setRingFrame(g, outlineOf(shape, hw, hh));
     g.mesh.geometry.computeBoundingSphere();
     g.hw = hw;
     g.hh = hh;
     g.shape = shape;
+  }
+
+  /** Faixa fina seguindo a poli-linha do heightfield (pontos locais). */
+  private setPolyline(g: Gizmo, points: readonly (readonly [number, number])[]): void {
+    const t = 0.06;
+    const verts: number[] = [];
+    for (const p of points) {
+      verts.push(p[0], p[1] + t, 0); // topo
+      verts.push(p[0], p[1] - t, 0); // base
+    }
+    const idx: number[] = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = 2 * i;
+      const b = 2 * i + 1;
+      const c = 2 * (i + 1);
+      const d = 2 * (i + 1) + 1;
+      idx.push(a, b, d, a, d, c);
+    }
+    g.mesh.geometry.setIndex(idx.length ? idx : [0, 0, 0]);
+    g.mesh.geometry.setAttribute(
+      'position',
+      new Float32BufferAttribute(verts.length ? verts : [0, 0, 0], 3),
+    );
   }
 
   /** Frame retangular: anel entre o retângulo externo (hw,hh) e o interno. */

@@ -9,8 +9,12 @@ import { Component } from '../ecs/Component.js';
  *   altura total = `2·halfHeight`, com tampas semicirculares de raio `halfWidth`
  *   (boa pro player escorregar em quinas). Se `halfHeight ≤ halfWidth`, vira um
  *   círculo.
+ * - `heightfield` — **perfil de chão** por pontos (`points`): o player anda
+ *   seguindo a curva (pontes arqueadas, morros, rampas). Floor one-way: pousa
+ *   vindo de cima, atravessa por baixo. `halfWidth`/`halfHeight` viram só o bbox
+ *   (broadphase), derivado dos pontos.
  */
-export type ColliderShape2D = 'box' | 'circle' | 'capsule';
+export type ColliderShape2D = 'box' | 'circle' | 'capsule' | 'heightfield';
 
 /**
  * Colisor 2D do plataformer (plano **XY**), centrado na posição do
@@ -43,6 +47,12 @@ export class Collider2DComponent extends Component {
     public offsetY = 0,
     /** Forma do collider. Default `box`. Ver {@link ColliderShape2D}. */
     public shape: ColliderShape2D = 'box',
+    /**
+     * Pontos do perfil (LOCAL, relativos ao centro = Transform + offset),
+     * **ordenados por X**. Só usado quando `shape` é `heightfield`. Ex.:
+     * `[[-4, 0], [0, -0.8], [4, 0]]` = ponte que afunda 0.8 no meio.
+     */
+    public points?: readonly (readonly [number, number])[],
   ) {
     super();
   }

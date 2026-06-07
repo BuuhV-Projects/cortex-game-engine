@@ -139,6 +139,27 @@ describe('PlatformerPhysicsSystem', () => {
     expect(t.y).toBeCloseTo(1.0, 1); // raio 0.5 sobre o topo 0.5
   });
 
+  it('player segue a curva de um heightfield (afunda no meio)', () => {
+    const land = (startX: number): { t: TransformComponent; b: PlatformerBodyComponent } => {
+      const world = new World();
+      world.addSystem(new PlatformerPhysicsSystem());
+      const e = world.createEntity();
+      e.addComponent(new TransformComponent(0, 0, 0));
+      // perfil que afunda no meio: pontas em y=1, centro em y=-0.5
+      e.addComponent(
+        new Collider2DComponent(5, 1, true, false, 0, 0, 'heightfield', [[-5, 1], [0, -0.5], [5, 1]]),
+      );
+      const p = actor(world, startX, 6);
+      run(world, 200);
+      return p;
+    };
+    const mid = land(0);
+    const edge = land(-4.5);
+    expect(mid.b.grounded).toBe(true);
+    expect(edge.b.grounded).toBe(true);
+    expect(mid.t.y).toBeLessThan(edge.t.y); // o meio fica mais baixo (segue a curva)
+  });
+
   it('plataforma one-way: não bloqueia vindo de baixo (subindo)', () => {
     const world = new World();
     world.addSystem(new PlatformerPhysicsSystem());

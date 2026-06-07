@@ -50,13 +50,15 @@ const placeSchema = z
  */
 const colliderSchema = z
   .object({
-    shape: z.enum(['box', 'circle', 'capsule']).optional(),
+    shape: z.enum(['box', 'circle', 'capsule', 'heightfield']).optional(),
     width: z.number().optional(),
     height: z.number().optional(),
     solid: z.boolean().optional(),
     oneWay: z.boolean().optional(),
     offsetX: z.number().optional(),
     offsetY: z.number().optional(),
+    /** Perfil do chão (LOCAL, ordenado por X) quando `shape` é `heightfield`. */
+    points: z.array(z.tuple([z.number(), z.number()])).optional(),
   })
   .optional();
 

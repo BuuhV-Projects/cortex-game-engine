@@ -3,7 +3,7 @@ import { Entity } from '../ecs/Entity.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
-import { penetrate, type Shape2D } from './collide2d.js';
+import { penetrate, heightfieldY, type Shape2D } from './collide2d.js';
 
 /**
  * Física de plataforma 2.5D no plano **XY**: gravidade, movimento horizontal por
@@ -57,6 +57,10 @@ export class PlatformerPhysicsSystem extends System {
       b.vy -= b.gravity * dt;
       if (b.vy < -b.maxFall) b.vy = -b.maxFall;
 
+      // Base do ator ANTES de integrar — usada pelos checks "one-way" (box e
+      // heightfield): só pousa se estava acima do topo no frame anterior.
+      const prevBottom = t.y + c.offsetY - c.halfHeight;
+
       const actorBox = c.shape === 'box';
       if (actorBox) {
         // ── Box vs box: resolução por eixo (X depois Y) — caminho clássico,
@@ -79,7 +83,6 @@ export class PlatformerPhysicsSystem extends System {
           b.vx = 0;
         }
         // Eixo Y
-        const prevBottom = t.y + c.offsetY - c.halfHeight;
         t.y += b.vy * dt;
         b.grounded = false;
         for (const s of solids) {
@@ -118,6 +121,7 @@ export class PlatformerPhysicsSystem extends System {
         if (s === actor) continue;
         const sc = s.getComponent(Collider2DComponent)!;
         if (actorBox && sc.shape === 'box') continue; // box-box: já resolvido
+        if (sc.shape === 'heightfield') continue; // heightfield: passo dedicado abaixo
         const st = s.getComponent(TransformComponent)!;
         const bShape: Shape2D = { kind: sc.shape, hw: sc.halfWidth, hh: sc.halfHeight };
         const sep = penetrate(
@@ -141,6 +145,37 @@ export class PlatformerPhysicsSystem extends System {
         }
         if (sep.nx > 0.5 && b.vx < 0) b.vx = 0;
         else if (sep.nx < -0.5 && b.vx > 0) b.vx = 0;
+      }
+
+      // ── Passo heightfield (perfil de chão por pontos) ────────────────────────
+      // Floor one-way que segue a curva: amostra a superfície sob a "pegada" do
+      // ator e o pousa nela. Pousa vindo de cima, atravessa por baixo.
+      for (const s of solids) {
+        if (s === actor) continue;
+        const sc = s.getComponent(Collider2DComponent)!;
+        if (sc.shape !== 'heightfield' || !sc.points || sc.points.length === 0) continue;
+        const st = s.getComponent(TransformComponent)!;
+        const baseX = st.x + sc.offsetX;
+        const baseY = st.y + sc.offsetY;
+        const pts = sc.points;
+        const hx0 = baseX + pts[0]![0];
+        const hxN = baseX + pts[pts.length - 1]![0];
+        const ax = t.x + c.offsetX;
+        if (ax + c.halfWidth < hx0 || ax - c.halfWidth > hxN) continue; // fora do alcance X
+        // Amostra esquerda/centro/direita da pegada e pega o ponto mais ALTO
+        // (evita o player "afundar" numa subida íngreme).
+        let surf = -Infinity;
+        for (const sx of [ax - c.halfWidth, ax, ax + c.halfWidth]) {
+          const cx = Math.min(Math.max(sx, hx0), hxN);
+          surf = Math.max(surf, baseY + heightfieldY(pts, cx - baseX));
+        }
+        const actorBottom = t.y + c.offsetY - c.halfHeight;
+        if (actorBottom >= surf) continue; // acima da superfície
+        if (b.vy > 0) continue; // subindo → atravessa
+        if (prevBottom < surf - 0.05) continue; // vinha de baixo → atravessa
+        t.y = surf + c.halfHeight - c.offsetY; // pousa na curva
+        if (b.vy < 0) b.vy = 0;
+        b.grounded = true;
       }
     }
   }

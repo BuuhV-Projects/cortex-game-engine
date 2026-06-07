@@ -85,6 +85,28 @@ function boxVsBox(
   return { nx: 0, ny: ay < by ? -1 : 1, depth: py };
 }
 
+/**
+ * Altura (Y local) do perfil de um heightfield no X local dado. `points` ordenados
+ * por X; fora das pontas, retorna a altura da ponta (clampa). Interpola linear
+ * dentro do segmento. Usado pelo {@link PlatformerPhysicsSystem} pra o player
+ * seguir a curva (ponte/morro).
+ */
+export function heightfieldY(points: readonly (readonly [number, number])[], x: number): number {
+  const n = points.length;
+  if (n === 0) return 0;
+  if (x <= points[0]![0]) return points[0]![1];
+  if (x >= points[n - 1]![0]) return points[n - 1]![1];
+  for (let i = 0; i < n - 1; i++) {
+    const x0 = points[i]![0];
+    const x1 = points[i + 1]![0];
+    if (x >= x0 && x <= x1) {
+      const t = x1 === x0 ? 0 : (x - x0) / (x1 - x0);
+      return points[i]![1] + (points[i + 1]![1] - points[i]![1]) * t;
+    }
+  }
+  return points[n - 1]![1];
+}
+
 /** Reduz circle/capsule ao disco mais próximo de um ponto de referência. */
 function discAt(cx: number, cy: number, s: Shape2D, refX: number, refY: number): { x: number; y: number; r: number } {
   if (s.kind === 'capsule') {

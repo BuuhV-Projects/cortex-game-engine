@@ -92,7 +92,14 @@ export function overlayColliders(
     const o = v as Record<string, unknown>;
     const num = (k: string): number | undefined => (typeof o[k] === 'number' ? (o[k] as number) : undefined);
     const bool = (k: string): boolean | undefined => (typeof o[k] === 'boolean' ? (o[k] as boolean) : undefined);
-    const shape = o['shape'] === 'circle' || o['shape'] === 'capsule' ? o['shape'] : undefined;
+    const sh = o['shape'];
+    const shape = sh === 'circle' || sh === 'capsule' || sh === 'heightfield' ? sh : undefined;
+    let points: [number, number][] | undefined;
+    if (Array.isArray(o['points'])) {
+      points = (o['points'] as unknown[])
+        .filter((p): p is [number, number] => Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number')
+        .map((p) => [p[0], p[1]] as [number, number]);
+    }
     out[name] = {
       shape,
       width: num('width'),
@@ -101,6 +108,7 @@ export function overlayColliders(
       offsetY: num('offsetY'),
       solid: bool('solid'),
       oneWay: bool('oneWay'),
+      points,
     };
   }
   return out;
@@ -209,9 +217,25 @@ function createPlatformerEntity(
   e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
   e.addComponent(new Object3DComponent(obj));
 
+  const offX = col?.offsetX ?? 0;
+  const offY = col?.offsetY ?? 0;
+  const shape = col?.shape ?? 'box';
+  const points = shape === 'heightfield' ? col?.points : undefined;
+
   let halfW: number;
   let halfH: number;
-  if (col?.width !== undefined && col?.height !== undefined) {
+  if (points && points.length > 0) {
+    // Heightfield: bbox derivado dos pontos (broadphase/gizmo).
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const [px, py] of points) {
+      if (px < minX) minX = px;
+      if (px > maxX) maxX = px;
+      if (py < minY) minY = py;
+      if (py > maxY) maxY = py;
+    }
+    halfW = (maxX - minX) / 2;
+    halfH = Math.max((maxY - minY) / 2, 0.01);
+  } else if (col?.width !== undefined && col?.height !== undefined) {
     halfW = col.width / 2;
     halfH = col.height / 2;
   } else {
@@ -219,19 +243,16 @@ function createPlatformerEntity(
     halfW = b.size.x / 2;
     halfH = b.size.y / 2;
   }
-  const offX = col?.offsetX ?? 0;
-  const offY = col?.offsetY ?? 0;
-  const shape = col?.shape ?? 'box';
 
   if (node.player) {
     // Player: collider não-sólido (não é parede) + corpo + alvo da câmera.
-    e.addComponent(new Collider2DComponent(halfW, halfH, false, false, offX, offY, shape));
+    e.addComponent(new Collider2DComponent(halfW, halfH, false, false, offX, offY, shape, points));
     const p = typeof node.player === 'object' ? node.player : {};
     e.addComponent(new PlatformerBodyComponent(p.moveSpeed, p.jumpSpeed, p.gravity, p.maxFall));
     e.addComponent(new FollowCameraTargetComponent());
   } else if (col) {
     e.addComponent(
-      new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false, offX, offY, shape),
+      new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false, offX, offY, shape, points),
     );
   }
 }

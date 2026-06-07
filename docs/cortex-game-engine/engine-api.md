@@ -191,9 +191,11 @@ O engine é focado em **plataforma 2.5D** (gameplay no plano XY; sobe/desce/lado
 No JSON data-driven, dois campos extras nos nós `model`/`primitive`:
 
 - **`collider`** — vira plataforma/chão sólido, **acoplado ao mesh** (movem juntos):
-  `{ shape?, width?, height?, offsetX?, offsetY?, solid?, oneWay? }`.
-  `shape`: `box` (default), `circle` (raio = `width/2`) ou `capsule` (vertical;
-  `width` = diâmetro, `height` = altura total — boa pro player escorregar em quinas).
+  `{ shape?, width?, height?, offsetX?, offsetY?, solid?, oneWay?, points? }`.
+  `shape`: `box` (default), `circle` (raio = `width/2`), `capsule` (vertical;
+  `width` = diâmetro, `height` = altura total — boa pro player escorregar em quinas)
+  ou **`heightfield`** (perfil de chão: `points: [[x,y],…]` LOCAL ordenado por X — o
+  player **segue a curva**; ideal pra pontes arqueadas/morros/rampas; floor one-way).
   Dims omitidas → do bounding box; `solid` default true; `oneWay` = atravessável por
   baixo; `offsetX/offsetY` deslocam pra cobrir uma sub-região (ex.: só o "deck",
   não os pilares) sem desacoplar.

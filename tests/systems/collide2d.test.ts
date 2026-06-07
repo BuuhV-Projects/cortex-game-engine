@@ -3,7 +3,7 @@
  * Normal aponta de B pra A; depth > 0 quando sobrepostos.
  */
 import { describe, it, expect } from 'vitest';
-import { penetrate, type Shape2D } from '../../src/systems/collide2d.js';
+import { penetrate, heightfieldY, type Shape2D } from '../../src/systems/collide2d.js';
 
 const box = (hw = 0.5, hh = 0.5): Shape2D => ({ kind: 'box', hw, hh });
 const circle = (r = 0.5): Shape2D => ({ kind: 'circle', hw: r, hh: r });
@@ -43,5 +43,24 @@ describe('penetrate (collide2d)', () => {
     // círculo (0.4,0) dentro de box (0,0) hw0.5 hh2: face direita mais próxima
     const s = penetrate(0.4, 0, circle(0.3), 0, 0, box(0.5, 2));
     expect(s!.nx).toBeGreaterThan(0.9);
+  });
+});
+
+describe('heightfieldY', () => {
+  const pts = [
+    [-4, 0],
+    [0, -1],
+    [4, 0],
+  ] as const;
+
+  it('interpola dentro do segmento', () => {
+    expect(heightfieldY(pts, 0)).toBeCloseTo(-1, 6);
+    expect(heightfieldY(pts, -2)).toBeCloseTo(-0.5, 6); // meio do 1º segmento
+    expect(heightfieldY(pts, 2)).toBeCloseTo(-0.5, 6);
+  });
+
+  it('clampa fora das pontas', () => {
+    expect(heightfieldY(pts, -10)).toBeCloseTo(0, 6);
+    expect(heightfieldY(pts, 10)).toBeCloseTo(0, 6);
   });
 });

@@ -249,7 +249,11 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         dot.textContent = '■';
         dot.style.cssText = `color:${color}`;
         const txt = document.createElement('span');
-        const shp = cs.shape === 'circle' ? 'círculo' : cs.shape === 'capsule' ? 'cápsula' : 'caixa';
+        const shp =
+          cs.shape === 'circle' ? 'círculo'
+          : cs.shape === 'capsule' ? 'cápsula'
+          : cs.shape === 'heightfield' ? 'perfil'
+          : 'caixa';
         txt.textContent = `${shp} ${cs.width.toFixed(2)}×${cs.height.toFixed(2)} · ${kind}`;
         txt.style.cssText = 'color:#cfd2da';
         row.append(dot, txt);
@@ -258,6 +262,22 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         note.textContent = 'definido no código';
         note.style.cssText = 'color:#9aa0ad;font-size:11px';
         root.append(note);
+      } else if (cs.shape === 'heightfield') {
+        // Heightfield (perfil de chão por pontos) é autorado em código/JSON — não
+        // tem edição de pontos na UI ainda. Mostra só um aviso + opção de remover.
+        const note = document.createElement('div');
+        note.textContent = 'Perfil de chão (heightfield) — pontos definidos no código/JSON.';
+        note.style.cssText = 'color:#9aa0ad;font-size:11px;margin:2px 0';
+        root.append(note);
+        const rm = document.createElement('button');
+        rm.textContent = 'Remover collider';
+        rm.style.cssText =
+          'width:100%;padding:5px;margin:4px 0;background:#3a2a2a;color:#f0b0b0;border:1px solid #5a3a3a;border-radius:3px;cursor:pointer';
+        rm.addEventListener('click', () => {
+          colliderApi.remove(obj);
+          build(obj);
+        });
+        root.append(rm);
       } else {
         // Getters re-leem o collider ao vivo (não o snapshot), pra refreshers do
         // gizmo não reverterem edições.
