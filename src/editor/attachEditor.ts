@@ -189,7 +189,8 @@ export function attachEditor(game: Game): GameEditor {
   const _ndc = new Vector2();
   const _plane = new Plane();
   const _hit = new Vector3();
-  let draw: { obj: Object3D; entity: Entity; points: [number, number][] } | null = null;
+  const _zNormal = new Vector3(0, 0, 1);
+  let draw: { obj: Object3D; entity: Entity; points: [number, number][]; minY: number; maxY: number } | null = null;
 
   const writeHeightfield = (): void => {
     if (!draw) return;
@@ -221,9 +222,24 @@ export function attachEditor(game: Game): GameEditor {
     _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     _ray.setFromCamera(_ndc, editorCamera);
-    _plane.set(new Vector3(0, 0, 1), -draw.obj.position.z); // plano z = z do objeto
-    if (!_ray.ray.intersectPlane(_plane, _hit)) return;
-    draw.points.push([_hit.x - draw.obj.position.x, _hit.y - draw.obj.position.y]);
+    // 1º: raycast no PRÓPRIO mesh do objeto — o ponto pousa na superfície visível,
+    // independente do ângulo da câmera (resolve o "ponto foi pro céu/subsolo").
+    let wx: number;
+    let wy: number;
+    const hits = _ray.intersectObject(draw.obj, true);
+    if (hits.length > 0) {
+      wx = hits[0]!.point.x;
+      wy = hits[0]!.point.y;
+    } else {
+      // Fallback (clicou fora do mesh): plano Z do objeto, com Y CLAMPADO ao redor
+      // do objeto pra nunca escapar pro céu/subsolo se o plano estiver de perfil.
+      _plane.set(_zNormal, -draw.obj.position.z);
+      if (!_ray.ray.intersectPlane(_plane, _hit)) return;
+      const margin = Math.max(draw.maxY - draw.minY, 1);
+      wx = _hit.x;
+      wy = Math.min(Math.max(_hit.y, draw.minY - margin), draw.maxY + margin);
+    }
+    draw.points.push([wx - draw.obj.position.x, wy - draw.obj.position.y]);
     writeHeightfield();
   };
 
@@ -251,9 +267,10 @@ export function attachEditor(game: Game): GameEditor {
     }
     const c = entity.getComponent(Collider2DComponent)!;
     const existing = (c.points ?? []).map((p) => [p[0], p[1]] as [number, number]);
-    draw = { obj, entity, points: existing };
+    const bb = new Box3().setFromObject(obj);
+    draw = { obj, entity, points: existing, minY: bb.min.y, maxY: bb.max.y };
     editorState.drawingHeightfield = true;
-    hud.showToast('Desenhe o chão: CLIQUE adiciona ponto · Backspace desfaz · Enter finaliza');
+    hud.showToast('Desenhe o chão: CLIQUE no objeto adiciona ponto · Backspace desfaz · Enter finaliza');
   };
 
   game.canvas.addEventListener('pointerdown', (e) => {
