@@ -3,6 +3,7 @@ import type { Game, GameEditor } from '../core/Game.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
+import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { EditableTargetComponent } from '../components/EditableTargetComponent.js';
 import type { Entity } from '../ecs/Entity.js';
 import { createEditorState } from './EditorState.js';
@@ -60,6 +61,66 @@ export function attachEditor(game: Game): GameEditor {
   const editorState = createEditorState();
   const selection = createEditorSelection();
   const hud = createEditorHud();
+
+  // **Boot em modo EDIÇÃO por padrão** (estilo Unity): o jogo abre editável, com a
+  // gameplay pausada; o usuário aperta ▶ Play pra jogar. Override `?play` na URL
+  // boota direto em modo jogo (usado pela tool de playtest da IA, que precisa
+  // rodar a gameplay). Em produção não há editor — o jogo sempre roda.
+  const bootPlay = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('play');
+  editorState.active = !bootPlay;
+
+  // Botão ▶ Play / ⏹ Stop sempre visível — alterna edit↔play (F2 faz o mesmo).
+  // Em modo `?play` puro (playtest da IA) não há UI de editor.
+  let playBtn: HTMLButtonElement | null = null;
+  if (typeof document !== 'undefined' && !bootPlay) {
+    playBtn = document.createElement('button');
+    playBtn.style.cssText = [
+      'position:fixed', 'top:8px', 'left:50%', 'transform:translateX(-50%)',
+      'z-index:30', 'padding:6px 18px', 'border:none', 'border-radius:5px',
+      'font-family:"Segoe UI",Roboto,Arial,sans-serif', 'font-size:13px', 'font-weight:600',
+      'cursor:pointer', 'box-shadow:0 2px 8px rgba(0,0,0,0.4)', 'color:#fff',
+    ].join(';');
+    playBtn.addEventListener('click', () => {
+      editorState.active = !editorState.active;
+    });
+    document.body.appendChild(playBtn);
+  }
+  const updatePlayBtn = (): void => {
+    if (!playBtn) return;
+    playBtn.textContent = editorState.active ? '▶ Play' : '⏹ Stop (editar)';
+    playBtn.style.background = editorState.active ? '#2a9d4a' : '#c0392b';
+  };
+  updatePlayBtn();
+
+  // Snapshot/restore do mundo: Play não destrói o estado de edição — ao parar,
+  // tudo volta pra onde estava (estilo Unity). Snapshota ao entrar em Play,
+  // restaura ao voltar pra edição.
+  let worldSnapshot: Map<Entity, { x: number; y: number; z: number; rotationY: number }> | null = null;
+  const snapshotWorld = (): void => {
+    const m = new Map<Entity, { x: number; y: number; z: number; rotationY: number }>();
+    for (const e of game.world.query(TransformComponent)) {
+      const t = e.getComponent(TransformComponent)!;
+      m.set(e, { x: t.x, y: t.y, z: t.z, rotationY: t.rotationY });
+    }
+    worldSnapshot = m;
+  };
+  const restoreWorld = (): void => {
+    if (!worldSnapshot) return;
+    for (const [e, s] of worldSnapshot) {
+      const t = e.getComponent(TransformComponent);
+      if (!t) continue;
+      t.x = s.x;
+      t.y = s.y;
+      t.z = s.z;
+      t.rotationY = s.rotationY;
+      const b = e.getComponent(PlatformerBodyComponent);
+      if (b) {
+        b.vx = 0;
+        b.vy = 0;
+        b.grounded = false;
+      }
+    }
+  };
 
   const editorCamera = new PerspectiveCamera(60, game.camera.aspect, 0.1, 2000);
   if (typeof window !== 'undefined') {
@@ -516,6 +577,11 @@ export function attachEditor(game: Game): GameEditor {
     update(): void {
       if (editorState.active !== wasActive) {
         wasActive = editorState.active;
+        // Play (edit→play) snapshota o mundo; Stop (play→edit) restaura — Play
+        // não destrói o estado de edição.
+        if (editorState.active) restoreWorld();
+        else snapshotWorld();
+        updatePlayBtn();
         hud.setVisible(editorState.active);
         outliner.setVisible(editorState.active);
         inspector.setVisible(editorState.active);

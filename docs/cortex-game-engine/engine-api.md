@@ -73,8 +73,14 @@ reflete na hierarquia/inspector). No build de produção o editor nem entra no
 bundle (ADR-0042), então não pesa. **NÃO reimplemente câmera de voo, seleção ou
 gizmo à mão, e não monte os sistemas de editor manualmente** — é tudo automático.
 
-Controles: **F2** liga/desliga · **WASD/QE** voa (Shift corre) · **botão direito**
-olha · **clique** (ou item na hierarquia) seleciona · **1/2/3**
+**Boot em modo EDIÇÃO (estilo Unity):** em dev o jogo abre **editável** (gameplay
+pausada); um botão **▶ Play** (topo, ou **F2**) entra no modo jogo, e **⏹ Stop**
+volta pra edição **revertendo** o que mudou no play (posições do mundo). A tool de
+playtest da IA boota direto em modo jogo via `?play` na URL. Em produção não há
+editor — o jogo sempre roda.
+
+Controles: **▶ Play / F2** alterna edit↔play · **WASD/QE** voa (Shift corre) ·
+**botão direito** olha · **clique** (ou item na hierarquia) seleciona · **1/2/3**
 mover/rotacionar/escalar · **F** enquadra · **T** teleporta · **Esc** desseleciona.
 A hierarquia lista os objetos nomeados da cena (dê `Object3D.name` aos seus
 objetos pra eles aparecerem legíveis); o inspector edita posição/rotação/escala,

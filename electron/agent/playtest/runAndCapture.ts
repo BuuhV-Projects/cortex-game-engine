@@ -244,7 +244,10 @@ export async function runAndCaptureGame(
 
     // loadURL rejeita em falha de load; não deixamos isso abortar a captura —
     // ainda assim tentamos screenshotar (pode ter renderizado parcialmente).
-    await wc.loadURL(viteUrl).catch((e: unknown) => pushMsg(`[loadURL] ${String(e)}`))
+    // `?play`: o jogo boota em modo EDIÇÃO por padrão (estilo Unity); a IA precisa
+    // rodar a GAMEPLAY, então força o modo jogo via query param.
+    const playUrl = viteUrl + (viteUrl.includes('?') ? '&' : '?') + 'play=1'
+    await wc.loadURL(playUrl).catch((e: unknown) => pushMsg(`[loadURL] ${String(e)}`))
 
     // Foco pra o sendInputEvent chegar no elemento certo (InputManager escuta
     // document.body). A janela está fora da tela mas recebe input injetado.

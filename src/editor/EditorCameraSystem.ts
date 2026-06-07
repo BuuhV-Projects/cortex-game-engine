@@ -44,6 +44,8 @@ export class EditorCameraSystem extends System {
   private readonly worldUp = new THREE.Vector3(0, 1, 0);
   private prevToggle = false;
   private prevTeleport = false;
+  /** Modo ativo no frame anterior — pra reagir à troca por QUALQUER fonte (F2/botão/boot). */
+  private prevActive: boolean | null = null;
 
   constructor(
     private readonly state: EditorState,
@@ -76,25 +78,31 @@ export class EditorCameraSystem extends System {
   }
 
   private handleToggle(target: Entity): void {
+    // F2 alterna o modo (atalho). O botão Play/Stop e o boot também mudam
+    // `state.active` — por isso a reação fica no `prevActive` abaixo, p/ rodar
+    // independente da fonte da troca.
     const down = this.input.isKeyDown('F2');
-    if (down && !this.prevToggle) {
-      this.state.active = !this.state.active;
-      this.hud.setVisible(this.state.active);
-      if (this.state.active) {
-        this.camera.position.copy(this.gameCamera.position);
-        this.camera.quaternion.copy(this.gameCamera.quaternion);
-        this.syncYawPitchFromCamera();
-        const body = target.getComponent(KinematicBodyComponent);
-        if (body) {
-          body.horizontalSpeed = 0;
-          body.velocityY = 0;
-        }
-        this.hud.showToast('Editor ON — WASD pra voar, T teleporta, P salva');
-      } else {
-        this.hud.showToast('Editor OFF');
-      }
-    }
+    if (down && !this.prevToggle) this.state.active = !this.state.active;
     this.prevToggle = down;
+
+    if (this.state.active === this.prevActive) return;
+    const isInitial = this.prevActive === null; // primeira sincronização (boot) — sem toast
+    this.prevActive = this.state.active;
+    this.hud.setVisible(this.state.active);
+    if (this.state.active) {
+      // Entrou em EDIÇÃO: posiciona a câmera livre na pose da câmera do jogo.
+      this.camera.position.copy(this.gameCamera.position);
+      this.camera.quaternion.copy(this.gameCamera.quaternion);
+      this.syncYawPitchFromCamera();
+      const body = target.getComponent(KinematicBodyComponent);
+      if (body) {
+        body.horizontalSpeed = 0;
+        body.velocityY = 0;
+      }
+      if (!isInitial) this.hud.showToast('Modo edição — WASD voa, T teleporta · ▶ Play pra jogar');
+    } else if (!isInitial) {
+      this.hud.showToast('▶ Play');
+    }
   }
 
   private flyCamera(dt: number): void {
