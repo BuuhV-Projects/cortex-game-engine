@@ -396,6 +396,11 @@ export interface RunAgentOptions {
    */
   gameDesignBible?: string
   /**
+   * Tipo do jogo (de `cortex.json`): `2d` (pixel/ortográfica — sprites, tilemap)
+   * ou `2.5d` (malhas 3D/perspectiva, default). Orienta o foco do prompt.
+   */
+  projectType?: '2d' | '2.5d'
+  /**
    * Ambiente repassado ao subprocesso do SDK (a tool Bash herda dele). No app
    * empacotado o PATH do processo Electron não inclui yarn/node — o main injeta
    * os diretórios certos via envForSpawn() e passa aqui. Quando omitido, o SDK
@@ -425,6 +430,23 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
   // Monta o append do system prompt: base + referência da API do engine
   // (injetada pra o agente saber o que existe) + instruções de plan se for o caso.
   let systemAppend = AGENT_SYSTEM_PROMPT
+  if (opts.projectType === '2d') {
+    systemAppend +=
+      `\n\n===== TIPO DO PROJETO: 2D / PIXEL ART =====\n` +
+      `Este é um jogo **2D pixel art** (câmera ortográfica). Use a camada 2D do engine:\n` +
+      `- \`new Game({ projection: 'orthographic', pixelsPerUnit })\` — NÃO use câmera perspectiva.\n` +
+      `- **Sprites** (\`createSprite\`, \`Spritesheet\` + \`createAnimatedSprite\` + \`SpriteAnimationSystem\`), ` +
+      `texturas com \`loadTexture(url, { pixelated: true })\` (nearest filter).\n` +
+      `- **Tilemap** (\`buildTilemap\` + \`addColliders\`) pra níveis por tiles.\n` +
+      `- NÃO use modelos GLB 3D, iluminação PBR, PostFX 3D, água, skybox nem \`inspect_assets\` ` +
+      `de \`.glb\` — isso é do fluxo 2.5D. A física/colisão (Collider2D, setupPlatformer) é a mesma.\n` +
+      `Pra criar/animar personagem e montar fases, pense em **spritesheets e tilesets**, não em malhas.`
+  } else {
+    systemAppend +=
+      `\n\n===== TIPO DO PROJETO: 2.5D =====\n` +
+      `Jogo 2.5D (malhas 3D / perspectiva). Siga a seção "MONTAGEM DE LEVEL (plataforma 2.5D)" ` +
+      `e use modelos GLB + \`inspect_assets\` como de costume.`
+  }
   if (opts.engineApiDoc && opts.engineApiDoc.trim().length > 0) {
     systemAppend += `\n\n===== Referência da API do cortex-game-engine =====\n\n${opts.engineApiDoc}`
   }

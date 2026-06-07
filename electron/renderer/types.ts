@@ -38,7 +38,7 @@ export interface ElectronAPI {
   /** Lê um arquivo binário (imagem) como base64 — pro preview de imagem. */
   readFileBase64(filePath: string): Promise<string>
   writeFile(filePath: string, content: string): Promise<void>
-  createProject(targetDir: string, name: string): Promise<string>
+  createProject(targetDir: string, name: string, kind?: '2d' | '2.5d'): Promise<string>
   createFile(dirPath: string, name: string): Promise<string>
   createDir(dirPath: string, name: string): Promise<string>
   move(src: string, dest: string): Promise<void>

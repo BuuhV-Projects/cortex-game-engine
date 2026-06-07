@@ -28,8 +28,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeFile: (filePath: string, content: string) =>
     ipcRenderer.invoke('fs:writeFile', filePath, content),
 
-  createProject: (targetDir: string, name: string) =>
-    ipcRenderer.invoke('fs:createProject', targetDir, name),
+  createProject: (targetDir: string, name: string, kind?: '2d' | '2.5d') =>
+    ipcRenderer.invoke('fs:createProject', targetDir, name, kind),
 
   createFile: (dirPath: string, name: string) =>
     ipcRenderer.invoke('fs:createFile', dirPath, name),
