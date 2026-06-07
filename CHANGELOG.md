@@ -1,3 +1,18 @@
+# [0.10.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.9.0...v0.10.0) (2026-06-06)
+
+
+### Features
+
+* **editor:** pausa gameplay e grava edições no Transform (ponte editor↔ECS) ([eab93bc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/eab93bc95e544d55131842a81d63ae7d5c387778))
+* **engine:** câmera 2D-follow do plataformer (XY + roll opcional) [pivô fase 2] ([1c3f464](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1c3f46425cc283fa88fef6b9916b69300cb7b38f))
+* **engine:** editor 2.5D — trava no plano XY + snap de grade [pivô fase 4] ([50aa649](https://github.com/BuuhV-Projects/cortex-game-engine/commit/50aa6490471a25467feb78ed19a5e33db934444e))
+* **engine:** física de plataforma 2.5D (controller + colisão AABB) [pivô fase 1] ([1f6e807](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1f6e8072ecf6e0d1b063597b689ce4ce6b6f0270))
+* **engine:** plataformer jogável data-driven (setupPlatformer + level) [pivô fase 3] ([f617b4f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f617b4f06113016cf3e0d47027a25a32577667ac))
+* **ide:** abre imagem como preview, não no editor de código ([9574067](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9574067b4c59a81278bce79155f9e0a20efe9fda))
+* **ide:** abre markdown como preview renderizado ([f5cf29a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f5cf29a02113ecd440f74c30f0ca8ae5b373e6ca))
+* **ide:** carrega a Game Design Bible no system prompt do Chat IA ([73f23dc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/73f23dc8a1c164440ff44cde69be99063102398f))
+* **ide:** reorienta o prompt da IA pra level design de plataforma [pivô fase 5] ([955010b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/955010b1381bf17ab85cce7c741a529a86b291f8))
+
 # [0.9.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.8.0...v0.9.0) (2026-06-05)
 
 
