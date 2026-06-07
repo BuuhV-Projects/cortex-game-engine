@@ -1,3 +1,31 @@
+# [0.11.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.10.0...v0.11.0) (2026-06-07)
+
+
+### Bug Fixes
+
+* **editor:** contorno do collider vira frame de mesh azul (visível no WebGPU) ([464513f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/464513fcd847dc78bfdbf1c6a246329640b4a7da))
+* **editor:** desenho de heightfield raycasta no mesh (não no plano de perfil) ([797edb7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/797edb719a9aa4333bbcb487271de94c969e4d7b))
+* **editor:** gizmo de collider lê posição do TransformComponent ([b34c8f7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b34c8f7eba63ff5b62a21ba19ed7820bbcf58a8e))
+* **editor:** libera todos os eixos no modo edição (3D pleno) ([e027a32](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e027a32785cecab9dd750e4975ce1dfcef398d31))
+* **ide:** 'Apagar histórico' também reseta o session_id do Agent SDK ([5b5c241](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5b5c241f48dbda1a633f256d821c4f735f6d7983))
+* **ide:** comprime screenshots de playtest pra não estourar 32MB/request ([1053548](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1053548a3b8e1543beee08bc685d0351eb7a42ab))
+* **ide:** inspect_assets devolve só a tabela; imagem sob demanda (zero precarga) ([5ab350d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5ab350dacc90c04480471f70923060c22dbb1f78))
+* **ide:** não despeja dezenas de thumbnails no contexto (tabela = referência) ([f9f9c1f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f9f9c1f1ebc536d0a1c7ed44abe31c8bc2fb5aab))
+* **template:** externaliza logo do splash pra public/logo.png ([80c0442](https://github.com/BuuhV-Projects/cortex-game-engine/commit/80c04422bb2c01d3fb39fe39efad5211e327e423))
+* **template:** plataformas alcançáveis e remove textura de água órfã ([a0eb9fc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a0eb9fc3416d247d29c965d5e255fec116f7677b))
+
+
+### Features
+
+* **editor:** contorno (AABB) dos colliders no modo edição ([eb5124e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/eb5124ed008d792d857a31f8b1854982576e9c17))
+* **editor:** ferramenta de desenhar heightfield clicando no viewport ([4a24ae0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4a24ae0ac4e8df1e6e760008b7b23e3909fec672))
+* **editor:** inspector mostra collider 2D do objeto selecionado (read-only) ([6c15838](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6c158384a525d4c7a0ce34ae2a1d39677689213a))
+* **engine:** collider 2D ganha formas círculo e cápsula ([6ba36ee](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6ba36ee5f3502903b9feccaa61836f63467b3f86))
+* **engine:** collider como propriedade do objeto (autorável no editor, acoplado) ([0df0527](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0df05278d35b36fe4316eadb567c6f458b2819da))
+* **engine:** collider heightfield — perfil de chão que o player segue ([578e64b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/578e64b9ae1249a0d554ad1f1e3a53470382025a))
+* **engine:** FollowCamera2DSystem expõe pitch (tilt no eixo X) ([a05b3e5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a05b3e509a932e3aa385da5d46a112a71ca6c49c))
+* **ide:** jogo ocupa o espaço do editor quando nada está aberto ([756de12](https://github.com/BuuhV-Projects/cortex-game-engine/commit/756de12f0e90aa4ce790905a1d5aa0ab7e5b6f89))
+
 # [0.10.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.9.0...v0.10.0) (2026-06-06)
 
 
