@@ -38,7 +38,7 @@ Far plane. Default `1000`.
 
 Defined in: [src/core/Game.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L47)
 
-Field of view da câmera (graus). Default `60`.
+Field of view da câmera perspectiva (graus). Default `60`.
 
 ***
 
@@ -59,6 +59,31 @@ Altura inicial. Default `window.innerHeight`.
 Defined in: [src/core/Game.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L49)
 
 Near plane. Default `0.1`.
+
+***
+
+### pixelsPerUnit?
+
+> `optional` **pixelsPerUnit?**: `number`
+
+Defined in: [src/core/Game.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L64)
+
+Só pra `orthographic`: **pixels de tela por unidade de mundo** (zoom). Ex.:
+`100` = 1 unidade ocupa 100px. Um sprite de 16px de altura vira nítido a
+`1 unidade` com nearest filter. Default `100`.
+
+***
+
+### projection?
+
+> `optional` **projection?**: `"perspective"` \| `"orthographic"`
+
+Defined in: [src/core/Game.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L58)
+
+Projeção da câmera do jogo:
+- `perspective` (default) — 3D / 2.5D com profundidade.
+- `orthographic` — **2D / pixel art** (sem distorção de perspectiva). Use com
+  [GameOptions.pixelsPerUnit](#pixelsperunit) e sprites (ver `createSprite`).
 
 ***
 

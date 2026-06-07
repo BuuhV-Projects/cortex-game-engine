@@ -52,7 +52,7 @@ export class EditorCameraSystem extends System {
     /** Câmera de voo livre — manipulada por este sistema. */
     private readonly camera: THREE.PerspectiveCamera,
     /** Câmera do jogo — copiada pra `camera` ao ativar o editor (continuidade visual). */
-    private readonly gameCamera: THREE.PerspectiveCamera,
+    private readonly gameCamera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
     private readonly input: InputManager,
     private readonly ground: THREE.Object3D,
     private readonly hud: EditorHud,

@@ -358,6 +358,7 @@ const VENDOR_TYPE_MODULES = {
     'EditableTargetComponent',
     'Collider2DComponent',
     'PlatformerBodyComponent',
+    'SpriteAnimationComponent',
   ],
   systems: [
     'Object3DSyncSystem',
@@ -365,6 +366,7 @@ const VENDOR_TYPE_MODULES = {
     'PlatformerPhysicsSystem',
     'PlatformerInputSystem',
     'FollowCamera2DSystem',
+    'SpriteAnimationSystem',
   ],
   // Editor NÃO entra: não é exportado pelo runtime (index.d.ts não o referencia).
   // Ele vive só no bundle de dev (index.dev.js), ligado automaticamente pelo Game.
@@ -377,6 +379,9 @@ const VENDOR_TYPE_MODULES = {
     'SceneAssets',
     'OutdoorLighting',
     'Water',
+    'Sprite',
+    'Spritesheet',
+    'Tilemap',
   ],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter'],
 } as const

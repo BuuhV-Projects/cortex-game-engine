@@ -1,0 +1,129 @@
+[**cortex-game-engine**](../README.md)
+
+***
+
+[cortex-game-engine](../README.md) / SpriteAnimationSystem
+
+# Class: SpriteAnimationSystem
+
+Defined in: src/systems/SpriteAnimationSystem.ts:11
+
+Avança as [SpriteAnimationComponent](SpriteAnimationComponent.md): acumula tempo, calcula o frame atual
+pela cadência (`fps`) e aplica o recorte UV na textura do sprite. Loop ou trava
+no último frame conforme a animação. Troque de animação com
+`component.play('run')` — o sistema reflete no próximo tick.
+
+## Extends
+
+- [`System`](System.md)
+
+## Constructors
+
+### Constructor
+
+> **new SpriteAnimationSystem**(): `SpriteAnimationSystem`
+
+#### Returns
+
+`SpriteAnimationSystem`
+
+#### Inherited from
+
+[`System`](System.md).[`constructor`](System.md#constructor)
+
+## Properties
+
+### pauseWhen?
+
+> `optional` **pauseWhen?**: () => `boolean`
+
+Defined in: [src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
+
+Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
+`World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
+a gameplay (física/input) enquanto o editor está ativo
+(`pauseWhen = () => game.editorActive`).
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`System`](System.md).[`pauseWhen`](System.md#pausewhen)
+
+***
+
+### priority
+
+> **priority**: `number` = `15`
+
+Defined in: src/systems/SpriteAnimationSystem.ts:13
+
+Prioridade de execução deste sistema.
+
+O `World` ordena os sistemas por valor crescente antes de iterar no tick.
+Sistemas com valores menores executam antes. Padrão: `0`.
+
+#### Overrides
+
+[`System`](System.md).[`priority`](System.md#priority)
+
+***
+
+### requiredComponents
+
+> `static` **requiredComponents**: *typeof* [`SpriteAnimationComponent`](SpriteAnimationComponent.md)[]
+
+Defined in: src/systems/SpriteAnimationSystem.ts:12
+
+Construtores dos componentes que este sistema requer.
+
+O `World` usa essa lista para filtrar as entidades antes de chamar `update`,
+garantindo que apenas entidades com todos os componentes declarados sejam
+repassadas ao sistema.
+
+Subclasses devem sobrescrever este campo estático.
+
+#### Example
+
+```ts
+static requiredComponents = [TransformComponent, VelocityComponent];
+```
+
+#### Overrides
+
+[`System`](System.md).[`requiredComponents`](System.md#requiredcomponents)
+
+## Methods
+
+### update()
+
+> **update**(`entities`, `deltaTime`): `void`
+
+Defined in: src/systems/SpriteAnimationSystem.ts:15
+
+Executa a lógica do sistema para o frame/passo atual.
+
+#### Parameters
+
+##### entities
+
+[`Entity`](Entity.md)[]
+
+Entidades filtradas pelo `World` que possuem todos os
+                   componentes declarados em `requiredComponents`.
+
+##### deltaTime
+
+`number`
+
+Tempo decorrido desde o último tick, em segundos.
+
+#### Returns
+
+`void`
+
+#### Overrides
+
+[`System`](System.md).[`update`](System.md#update)

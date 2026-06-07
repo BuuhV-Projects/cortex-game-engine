@@ -51,14 +51,19 @@ export class AssetLoader {
    * @param url - Caminho ou URL absoluta para o arquivo de imagem.
    * @returns Promessa resolvida com `THREE.Texture`.
    */
-  async loadTexture(url: string): Promise<THREE.Texture> {
-    const cached = this._cache.get(url);
-    if (cached !== undefined) {
-      return cached as THREE.Texture;
+  async loadTexture(url: string, options?: { pixelated?: boolean }): Promise<THREE.Texture> {
+    let texture = this._cache.get(url) as THREE.Texture | undefined;
+    if (texture === undefined) {
+      texture = await this._textureLoader.loadAsync(url);
+      this._cache.set(url, texture);
     }
-
-    const texture = await this._textureLoader.loadAsync(url);
-    this._cache.set(url, texture);
+    if (options?.pixelated) {
+      // Pixel art: amostragem **nearest** (sem borrar) e sem mipmaps.
+      texture.magFilter = THREE.NearestFilter;
+      texture.minFilter = THREE.NearestFilter;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
+    }
     return texture;
   }
 

@@ -361,6 +361,35 @@ game.start()
 Cartoon (suas referências de ilhas): saturação alta, bloom suave, sombras macias,
 céu/água saturados. Realista: HDRI + exposição calibrada + bloom discreto.
 
+## 2D / Pixel art (sprite, spritesheet, tilemap)
+
+Pra jogo **pixel 2D**: câmera **ortográfica** + sprites com **nearest filter**. A
+física 2D (`setupPlatformer`, `Collider2DComponent`, etc.) e o editor funcionam
+igual. Símbolos: `createSprite`, `pixelate`, `Spritesheet`, `createAnimatedSprite`,
+`SpriteAnimationComponent`/`System`, `buildTilemap`, `NearestFilter`.
+
+- **Câmera ortográfica:** `new Game({ canvas, projection: 'orthographic',
+  pixelsPerUnit: 16 })` — `pixelsPerUnit` = px de tela por unidade de mundo (zoom).
+- **Sprite:** `createSprite(tex, { pixelsPerUnit })` → quad unlit, transparente,
+  nearest. Textura: `loadTexture(url, { pixelated: true })`.
+- **Animação:** `new Spritesheet(tex, { frameWidth, frameHeight })` +
+  `createAnimatedSprite(sheet, { idle:{frames:[0,1],fps:4}, run:{frames:[2,3,4,5],
+  fps:12} }, { pixelsPerUnit, initial:'idle' })` → `{ sprite, animation }`. Bote
+  `Object3DComponent(sprite)` + `animation` numa entidade; registre
+  `SpriteAnimationSystem`. Troque com `animation.play('run')`.
+- **Tilemap:** `buildTilemap({ tileset, tileWidth, tileHeight, tileSize, data })` →
+  `{ mesh, addColliders }`. `data[linha][coluna]` = índice do tile (`<0` = vazio).
+  `map.addColliders(world)` cria o chão sólido (mescla runs horizontais).
+
+```ts
+const game = new Game({ canvas, projection: 'orthographic', pixelsPerUnit: 16 })
+setupPlatformer(game, { camera: { distance: 8 } })
+const tiles = await new AssetLoader().loadTexture('tiles.png', { pixelated: true })
+const map = buildTilemap({ tileset: tiles, tileWidth: 16, tileHeight: 16, data: level })
+game.scene.add(map.mesh); map.addColliders(game.world)
+game.start()
+```
+
 ## Cena persistida em JSON + IO
 
 `SceneFile`, `SceneLoader`, `SceneFileWriter`, `HttpSceneFileWriter`,

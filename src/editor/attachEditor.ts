@@ -122,7 +122,8 @@ export function attachEditor(game: Game): GameEditor {
     }
   };
 
-  const editorCamera = new PerspectiveCamera(60, game.camera.aspect, 0.1, 2000);
+  const aspect0 = typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 16 / 9;
+  const editorCamera = new PerspectiveCamera(60, aspect0, 0.1, 2000);
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', () => {
       editorCamera.aspect = window.innerWidth / window.innerHeight;

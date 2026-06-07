@@ -36,6 +36,7 @@ export * from './components/FollowCameraTargetComponent.js';
 export * from './components/EditableTargetComponent.js';
 export * from './components/Collider2DComponent.js';
 export * from './components/PlatformerBodyComponent.js';
+export * from './components/SpriteAnimationComponent.js';
 
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
 export * from './systems/Object3DSyncSystem.js';
@@ -43,6 +44,7 @@ export * from './systems/ThirdPersonCameraSystem.js';
 export * from './systems/PlatformerPhysicsSystem.js';
 export * from './systems/PlatformerInputSystem.js';
 export * from './systems/FollowCamera2DSystem.js';
+export * from './systems/SpriteAnimationSystem.js';
 
 // ─── Modo editor (câmera livre + gizmo + HUD) ──────────────────────────────────
 // Ferramenta de autoria embutida no jogo (F2). Browser-only.
@@ -62,6 +64,9 @@ export * from './scene/Platformer.js';
 export * from './scene/SceneAssets.js';
 export * from './scene/OutdoorLighting.js';
 export * from './scene/Water.js';
+export * from './scene/Sprite.js';
+export * from './scene/Spritesheet.js';
+export * from './scene/Tilemap.js';
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';
 export * from './io/TauriSceneFileWriter.js';
@@ -150,6 +155,10 @@ export {
   RepeatWrapping,
   ClampToEdgeWrapping,
   MirroredRepeatWrapping,
+  // Filtros de textura — NearestFilter pra pixel art (sem borrar); LinearFilter
+  // (suave) é o default. Evita o literal 1003/1006.
+  NearestFilter,
+  LinearFilter,
   // Tipos de shadow map (evita o literal 2). PCFSoft = sombras suaves.
   BasicShadowMap,
   PCFShadowMap,

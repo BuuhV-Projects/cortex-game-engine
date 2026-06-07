@@ -1,4 +1,4 @@
-import { PerspectiveCamera } from 'three';
+import { PerspectiveCamera, OrthographicCamera } from 'three';
 import { Renderer } from './Renderer.js';
 import { Scene } from './Scene.js';
 import { InputManager } from './InputManager.js';
@@ -43,12 +43,25 @@ export interface GameOptions {
   width?: number;
   /** Altura inicial. Default `window.innerHeight`. */
   height?: number;
-  /** Field of view da câmera (graus). Default `60`. */
+  /** Field of view da câmera perspectiva (graus). Default `60`. */
   fov?: number;
   /** Near plane. Default `0.1`. */
   near?: number;
   /** Far plane. Default `1000`. */
   far?: number;
+  /**
+   * Projeção da câmera do jogo:
+   * - `perspective` (default) — 3D / 2.5D com profundidade.
+   * - `orthographic` — **2D / pixel art** (sem distorção de perspectiva). Use com
+   *   {@link GameOptions.pixelsPerUnit} e sprites (ver `createSprite`).
+   */
+  projection?: 'perspective' | 'orthographic';
+  /**
+   * Só pra `orthographic`: **pixels de tela por unidade de mundo** (zoom). Ex.:
+   * `100` = 1 unidade ocupa 100px. Um sprite de 16px de altura vira nítido a
+   * `1 unidade` com nearest filter. Default `100`.
+   */
+  pixelsPerUnit?: number;
 }
 
 /**
@@ -73,8 +86,10 @@ export class Game {
   readonly renderer: Renderer;
   /** Cena do jogo. */
   readonly scene: Scene;
-  /** Câmera principal do jogo. */
-  readonly camera: PerspectiveCamera;
+  /** Câmera principal do jogo (perspectiva em 3D/2.5D, ortográfica em 2D/pixel). */
+  readonly camera: PerspectiveCamera | OrthographicCamera;
+  /** Pixels de tela por unidade de mundo (câmera ortográfica). `0` em perspectiva. */
+  readonly pixelsPerUnit: number;
   /** Mundo ECS — registre sistemas com `world.addSystem(...)`. */
   readonly world: World;
   /** Gerenciador de input (já anexado ao `document.body`). */
@@ -95,22 +110,45 @@ export class Game {
       fov = 60,
       near = 0.1,
       far = 1000,
+      projection = 'perspective',
+      pixelsPerUnit = 100,
     } = options;
 
     this.canvas = canvas;
     this.scene = new Scene();
     this.renderer = new Renderer({ canvas, width, height });
-    this.camera = new PerspectiveCamera(fov, width / height, near, far);
-    this.camera.position.set(8, 6, 10);
-    this.camera.lookAt(0, 1, 0);
+
+    if (projection === 'orthographic') {
+      // 2D / pixel art: ortográfica olhando o plano XY de frente. O frustum é
+      // derivado de `pixelsPerUnit` pra mapear unidades de mundo → px de tela.
+      this.pixelsPerUnit = pixelsPerUnit;
+      const cam = new OrthographicCamera(0, 0, 0, 0, near, far);
+      cam.position.set(0, 0, 10);
+      cam.lookAt(0, 0, 0);
+      this.camera = cam;
+      this.applyOrthoFrustum(width, height);
+    } else {
+      this.pixelsPerUnit = 0;
+      const cam = new PerspectiveCamera(fov, width / height, near, far);
+      cam.position.set(8, 6, 10);
+      cam.lookAt(0, 1, 0);
+      this.camera = cam;
+    }
+
     this.world = new World();
     this.input = new InputManager();
     if (typeof document !== 'undefined') this.input.attach(document.body);
 
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', () => {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
-        this.camera.updateProjectionMatrix();
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        if (this.camera instanceof OrthographicCamera) {
+          this.applyOrthoFrustum(w, h);
+        } else {
+          this.camera.aspect = w / h;
+          this.camera.updateProjectionMatrix();
+        }
       });
     }
 
@@ -157,6 +195,18 @@ export class Game {
    */
   setPostFX(postfx: { render(): void } | null): void {
     this._postfx = postfx;
+  }
+
+  /** Ajusta o frustum da câmera ortográfica pra `width`×`height` (px) via `pixelsPerUnit`. */
+  private applyOrthoFrustum(width: number, height: number): void {
+    const cam = this.camera as OrthographicCamera;
+    const hw = width / (2 * this.pixelsPerUnit);
+    const hh = height / (2 * this.pixelsPerUnit);
+    cam.left = -hw;
+    cam.right = hw;
+    cam.top = hh;
+    cam.bottom = -hh;
+    cam.updateProjectionMatrix();
   }
 
   private _tick(deltaMs: number): void {
