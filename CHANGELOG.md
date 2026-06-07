@@ -1,3 +1,11 @@
+# [0.14.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.13.1...v0.14.0) (2026-06-07)
+
+
+### Features
+
+* **engine:** camada 2D / pixel art (ortográfica, sprite, spritesheet, tilemap) ([f786954](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f786954a19f51d1f8fb2ca252140c9c72a2ab250))
+* **ide:** escolher 2D ou 2.5D ao criar projeto (template + Chat IA orientados) ([53b677f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/53b677f6e237b261a8e170d9f215f0932a9b634a))
+
 ## [0.13.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.13.0...v0.13.1) (2026-06-07)
 
 
