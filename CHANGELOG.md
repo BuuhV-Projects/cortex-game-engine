@@ -1,3 +1,10 @@
+# [0.13.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.12.0...v0.13.0) (2026-06-07)
+
+
+### Features
+
+* **editor:** boot em modo edição + botão Play/Stop (estilo Unity) ([e4aa5b4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e4aa5b47bbab6c4ff175c3ec8a2364c49d42f9ba))
+
 # [0.12.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.11.0...v0.12.0) (2026-06-07)
 
 
