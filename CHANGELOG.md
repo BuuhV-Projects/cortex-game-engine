@@ -1,3 +1,10 @@
+## [0.13.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.13.0...v0.13.1) (2026-06-07)
+
+
+### Bug Fixes
+
+* **ide:** salvar arquivo aberto via peek/Ctrl+click usa o path real ([7ace6db](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7ace6db93772fdc9469e9451585f48a31543e2af))
+
 # [0.13.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.12.0...v0.13.0) (2026-06-07)
 
 
