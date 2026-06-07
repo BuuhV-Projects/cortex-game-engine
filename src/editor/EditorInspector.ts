@@ -34,6 +34,8 @@ export interface ColliderEditState {
   solid: boolean;
   /** `true` = plataforma atravessável por baixo (só pousa de cima). */
   oneWay: boolean;
+  /** Nº de pontos (só em `heightfield`). */
+  pointCount: number;
   /** `true` = definido no CÓDIGO (read-only no editor; o código sobrescreve). */
   locked: boolean;
 }
@@ -48,9 +50,15 @@ export interface ColliderApi {
   /** Adiciona um collider (tamanho default = bbox do objeto). */
   add(obj: Object3D): void;
   /** Atualiza campos do collider e persiste. */
-  update(obj: Object3D, patch: Partial<Omit<ColliderEditState, 'locked'>>): void;
+  update(obj: Object3D, patch: Partial<Omit<ColliderEditState, 'locked' | 'pointCount'>>): void;
   /** Remove o collider do objeto. */
   remove(obj: Object3D): void;
+  /**
+   * Entra no **modo de desenho de heightfield** pra esse objeto: cria (ou reusa)
+   * um collider `heightfield` e passa a adicionar pontos a cada clique no viewport
+   * (Enter finaliza, Backspace desfaz). Ver {@link ColliderEditState.shape}.
+   */
+  startHeightfield(obj: Object3D): void;
 }
 
 export interface EditorInspectorOptions {
@@ -224,6 +232,17 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
       head.style.cssText = 'margin:8px 0 2px;color:#9aa0ad;font-weight:600';
       root.append(head);
 
+      const mkBtn = (label: string, onClick: () => void, danger = false): HTMLButtonElement => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        const bg = danger ? '#3a2a2a' : '#2a2f3a';
+        const fg = danger ? '#f0b0b0' : '#fff';
+        const bd = danger ? '#5a3a3a' : '#3a3f4a';
+        btn.style.cssText = `width:100%;padding:5px;margin:2px 0;background:${bg};color:${fg};border:1px solid ${bd};border-radius:3px;cursor:pointer`;
+        btn.addEventListener('click', onClick);
+        return btn;
+      };
+
       const cs = obj.name ? colliderApi.get(obj) : null;
       if (!obj.name) {
         const note = document.createElement('div');
@@ -231,15 +250,13 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         note.style.cssText = 'color:#9aa0ad;font-size:11px';
         root.append(note);
       } else if (cs === null) {
-        const btn = document.createElement('button');
-        btn.textContent = '+ Adicionar collider';
-        btn.style.cssText =
-          'width:100%;padding:5px;margin:2px 0;background:#2a2f3a;color:#fff;border:1px solid #3a3f4a;border-radius:3px;cursor:pointer';
-        btn.addEventListener('click', () => {
-          colliderApi.add(obj);
-          build(obj);
-        });
-        root.append(btn);
+        root.append(
+          mkBtn('+ Adicionar collider', () => {
+            colliderApi.add(obj);
+            build(obj);
+          }),
+          mkBtn('✎ Desenhar chão (heightfield)', () => colliderApi.startHeightfield(obj)),
+        );
       } else if (cs.locked) {
         const kind = cs.oneWay ? 'one-way' : cs.solid ? 'sólido' : 'não-sólido';
         const color = cs.oneWay ? '#f5a623' : cs.solid ? '#2a9dff' : '#28e0e0';
@@ -263,21 +280,22 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         note.style.cssText = 'color:#9aa0ad;font-size:11px';
         root.append(note);
       } else if (cs.shape === 'heightfield') {
-        // Heightfield (perfil de chão por pontos) é autorado em código/JSON — não
-        // tem edição de pontos na UI ainda. Mostra só um aviso + opção de remover.
+        // Perfil de chão (heightfield): traçado clicando no viewport.
         const note = document.createElement('div');
-        note.textContent = 'Perfil de chão (heightfield) — pontos definidos no código/JSON.';
-        note.style.cssText = 'color:#9aa0ad;font-size:11px;margin:2px 0';
+        note.textContent = `Perfil de chão — ${cs.pointCount} ponto(s).`;
+        note.style.cssText = 'color:#cfd2da;font-size:11px;margin:2px 0';
         root.append(note);
-        const rm = document.createElement('button');
-        rm.textContent = 'Remover collider';
-        rm.style.cssText =
-          'width:100%;padding:5px;margin:4px 0;background:#3a2a2a;color:#f0b0b0;border:1px solid #5a3a3a;border-radius:3px;cursor:pointer';
-        rm.addEventListener('click', () => {
-          colliderApi.remove(obj);
-          build(obj);
-        });
-        root.append(rm);
+        const hint = document.createElement('div');
+        hint.textContent = 'Clique no viewport pra adicionar · Backspace desfaz · Enter finaliza.';
+        hint.style.cssText = 'color:#9aa0ad;font-size:11px;margin:0 0 4px';
+        root.append(hint);
+        root.append(
+          mkBtn('✎ Desenhar / continuar', () => colliderApi.startHeightfield(obj)),
+          mkBtn('Remover collider', () => {
+            colliderApi.remove(obj);
+            build(obj);
+          }, true),
+        );
       } else {
         // Getters re-leem o collider ao vivo (não o snapshot), pra refreshers do
         // gizmo não reverterem edições.

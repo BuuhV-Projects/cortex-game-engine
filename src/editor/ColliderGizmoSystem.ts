@@ -38,6 +38,8 @@ interface Gizmo {
   hw: number;
   hh: number;
   shape: ColliderShape2D;
+  /** Nº de pontos do heightfield — pra rebuildar a poli-linha ao desenhar. */
+  nPoints: number;
 }
 
 /**
@@ -84,8 +86,13 @@ export class ColliderGizmoSystem extends System {
         g = this.makeGizmo(col);
         this.gizmos.set(e, g);
         this.group.add(g.mesh);
-      } else if (g.hw !== col.halfWidth || g.hh !== col.halfHeight || g.shape !== col.shape) {
-        // Tamanho/forma mudou — reconstrói a geometria do frame.
+      } else if (
+        g.hw !== col.halfWidth ||
+        g.hh !== col.halfHeight ||
+        g.shape !== col.shape ||
+        g.nPoints !== (col.points?.length ?? 0)
+      ) {
+        // Tamanho/forma/pontos mudaram — reconstrói a geometria do frame.
         this.setShape(g, col);
       }
 
@@ -118,7 +125,7 @@ export class ColliderGizmoSystem extends System {
     });
     const mesh = new Mesh(new BufferGeometry(), material);
     mesh.renderOrder = 999; // por cima da cena
-    const g: Gizmo = { mesh, hw: 0, hh: 0, shape: 'box' };
+    const g: Gizmo = { mesh, hw: 0, hh: 0, shape: 'box', nPoints: 0 };
     this.setShape(g, col);
     return g;
   }
@@ -133,6 +140,7 @@ export class ColliderGizmoSystem extends System {
     g.hw = hw;
     g.hh = hh;
     g.shape = shape;
+    g.nPoints = col.points?.length ?? 0;
   }
 
   /** Faixa fina seguindo a poli-linha do heightfield (pontos locais). */

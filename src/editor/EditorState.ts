@@ -8,8 +8,13 @@ export interface EditorState {
   active: boolean;
   /** `true` enquanto o usuário arrasta o gizmo de transformação. */
   gizmoDragging: boolean;
+  /**
+   * `true` enquanto o usuário **desenha um heightfield** (clica pra adicionar
+   * pontos). Os outros sistemas de clique (seleção/gizmo) cedem o clique.
+   */
+  drawingHeightfield: boolean;
 }
 
 export function createEditorState(): EditorState {
-  return { active: false, gizmoDragging: false };
+  return { active: false, gizmoDragging: false, drawingHeightfield: false };
 }

@@ -1,9 +1,10 @@
-import { PerspectiveCamera, Vector3, Box3, type Object3D } from 'three';
+import { PerspectiveCamera, Vector3, Vector2, Box3, Plane, Raycaster, type Object3D } from 'three';
 import type { Game, GameEditor } from '../core/Game.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { EditableTargetComponent } from '../components/EditableTargetComponent.js';
+import type { Entity } from '../ecs/Entity.js';
 import { createEditorState } from './EditorState.js';
 import { createEditorSelection } from './EditorSelection.js';
 import { createEditorHud } from './EditorHud.js';
@@ -168,7 +169,7 @@ export function attachEditor(game: Game): GameEditor {
   // O collider é uma entidade ECS ACOPLADA ao mesh (Object3DComponent.object ===
   // obj) — então movem juntos. Editar/criar/remover persiste em
   // `overlay.data.colliders[nome]`; o `buildScene` recria no boot (código vence).
-  type ColliderEntry = Record<string, number | boolean | string>;
+  type ColliderEntry = Record<string, unknown>;
   const collidersMap = (): Record<string, ColliderEntry> => {
     const c = overlay.data['colliders'];
     if (c && typeof c === 'object' && !Array.isArray(c)) return c as Record<string, ColliderEntry>;
@@ -176,12 +177,103 @@ export function attachEditor(game: Game): GameEditor {
     overlay.data['colliders'] = m;
     return m;
   };
-  const findColliderEntity = (obj: Object3D) => {
+  const findColliderEntity = (obj: Object3D): Entity | null => {
     for (const e of game.world.query(Collider2DComponent)) {
       if (e.getComponent(Object3DComponent)?.object === obj) return e;
     }
     return null;
   };
+
+  // ── Desenho de heightfield (clica no viewport pra traçar o perfil do chão) ───
+  const _ray = new Raycaster();
+  const _ndc = new Vector2();
+  const _plane = new Plane();
+  const _hit = new Vector3();
+  let draw: { obj: Object3D; entity: Entity; points: [number, number][] } | null = null;
+
+  const writeHeightfield = (): void => {
+    if (!draw) return;
+    const c = draw.entity.getComponent(Collider2DComponent)!;
+    const pts = draw.points.slice().sort((a, b) => a[0] - b[0]);
+    c.shape = 'heightfield';
+    c.points = pts;
+    if (pts.length) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const [x, y] of pts) {
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      }
+      c.halfWidth = Math.max((maxX - minX) / 2, 0.01);
+      c.halfHeight = Math.max((maxY - minY) / 2, 0.01);
+    }
+    if (draw.obj.name) {
+      collidersMap()[draw.obj.name] = {
+        shape: 'heightfield', solid: true, oneWay: false,
+        points: pts.map((p) => [p[0], p[1]]),
+      };
+    }
+    persist();
+  };
+
+  const addDrawPoint = (clientX: number, clientY: number): void => {
+    if (!draw) return;
+    const rect = game.canvas.getBoundingClientRect();
+    _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    _ray.setFromCamera(_ndc, editorCamera);
+    _plane.set(new Vector3(0, 0, 1), -draw.obj.position.z); // plano z = z do objeto
+    if (!_ray.ray.intersectPlane(_plane, _hit)) return;
+    draw.points.push([_hit.x - draw.obj.position.x, _hit.y - draw.obj.position.y]);
+    writeHeightfield();
+  };
+
+  const finishDraw = (): void => {
+    if (!draw) return;
+    const obj = draw.obj;
+    draw = null;
+    editorState.drawingHeightfield = false;
+    hud.showToast('Heightfield salvo');
+    selection.requestSelect(obj); // reabre o inspector com o collider
+  };
+
+  const startDraw = (obj: Object3D): void => {
+    if (!obj.name) {
+      hud.showToast('Dê um nome ao objeto antes de desenhar o chão');
+      return;
+    }
+    selection.requestSelect(null); // solta o gizmo/seleção
+    let entity = findColliderEntity(obj);
+    if (!entity) {
+      entity = game.world.createEntity();
+      entity.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
+      entity.addComponent(new Object3DComponent(obj));
+      entity.addComponent(new Collider2DComponent(0.01, 0.01, true, false, 0, 0, 'heightfield', []));
+    }
+    const c = entity.getComponent(Collider2DComponent)!;
+    const existing = (c.points ?? []).map((p) => [p[0], p[1]] as [number, number]);
+    draw = { obj, entity, points: existing };
+    editorState.drawingHeightfield = true;
+    hud.showToast('Desenhe o chão: CLIQUE adiciona ponto · Backspace desfaz · Enter finaliza');
+  };
+
+  game.canvas.addEventListener('pointerdown', (e) => {
+    if (!draw || e.button !== 0) return;
+    e.preventDefault();
+    addDrawPoint(e.clientX, e.clientY);
+  });
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', (e) => {
+      if (!draw) return;
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        e.preventDefault();
+        finishDraw();
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        draw.points.pop();
+        writeHeightfield();
+      }
+    });
+  }
   const colliderApi: ColliderApi = {
     get(obj) {
       const e = findColliderEntity(obj);
@@ -197,6 +289,7 @@ export function attachEditor(game: Game): GameEditor {
         offsetY: c.offsetY,
         solid: c.solid,
         oneWay: c.oneWay,
+        pointCount: c.points?.length ?? 0,
         locked,
       };
     },
@@ -243,6 +336,9 @@ export function attachEditor(game: Game): GameEditor {
       if (e) game.world.destroyEntity(e);
       if (obj.name) delete collidersMap()[obj.name];
       persist();
+    },
+    startHeightfield(obj) {
+      startDraw(obj);
     },
   };
   const inspector = createEditorInspector({ selection, colliderApi });

@@ -31,9 +31,12 @@ one-way que segue a curva**:
    (broadphase/gizmo) dos pontos e passa `points` ao componente; overlay
    (`data.colliders`) carrega/persiste.
 
-4. **Editor:** o gizmo desenha a **poli-linha** (faixa fina verde); o inspector
-   mostra heightfield como **read-only** ("pontos definidos no código/JSON") — a
-   autoria de pontos por clique na UI fica pra depois.
+4. **Editor:** o gizmo desenha a **poli-linha** (faixa fina verde). O inspector
+   tem um **modo de desenho**: o botão "Desenhar chão (heightfield)" entra num
+   estado (`EditorState.drawingHeightfield`) em que **clicar no viewport adiciona
+   pontos** (raycast pro plano Z do objeto → ponto local), Backspace desfaz e Enter
+   finaliza; a seleção/gizmo cede o clique enquanto desenha. Persiste no overlay a
+   cada ponto. (Colliders de heightfield vindos do código seguem read-only.)
 
 ## Consequências
 
