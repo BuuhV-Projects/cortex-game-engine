@@ -54,11 +54,17 @@ export interface ColliderApi {
   /** Remove o collider do objeto. */
   remove(obj: Object3D): void;
   /**
-   * Entra no **modo de desenho de heightfield** pra esse objeto: cria (ou reusa)
-   * um collider `heightfield` e passa a adicionar pontos a cada clique no viewport
-   * (Enter finaliza, Backspace desfaz). Ver {@link ColliderEditState.shape}.
+   * Entra no **modo de desenho/edição de heightfield** pra esse objeto: cria (ou
+   * reusa) um collider `heightfield` e passa a editar os pontos clicando no
+   * viewport (clique adiciona, arrastar um ponto move, Backspace desfaz, Enter
+   * finaliza). Ver {@link ColliderEditState.shape}.
    */
   startHeightfield(obj: Object3D): void;
+  /**
+   * **Auto-traça** um heightfield amostrando o topo do mesh do objeto (ponto de
+   * partida; refine depois com {@link ColliderApi.startHeightfield}).
+   */
+  autoHeightfield(obj: Object3D): void;
 }
 
 export interface EditorInspectorOptions {
@@ -255,6 +261,10 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
             colliderApi.add(obj);
             build(obj);
           }),
+          mkBtn('⤓ Auto-traçar chão (heightfield)', () => {
+            colliderApi.autoHeightfield(obj);
+            build(obj);
+          }),
           mkBtn('✎ Desenhar chão (heightfield)', () => colliderApi.startHeightfield(obj)),
         );
       } else if (cs.locked) {
@@ -286,11 +296,11 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         note.style.cssText = 'color:#cfd2da;font-size:11px;margin:2px 0';
         root.append(note);
         const hint = document.createElement('div');
-        hint.textContent = 'Clique no viewport pra adicionar · Backspace desfaz · Enter finaliza.';
+        hint.textContent = 'No modo desenho: clique adiciona · arraste um ponto pra mover · Backspace desfaz · Enter finaliza.';
         hint.style.cssText = 'color:#9aa0ad;font-size:11px;margin:0 0 4px';
         root.append(hint);
         root.append(
-          mkBtn('✎ Desenhar / continuar', () => colliderApi.startHeightfield(obj)),
+          mkBtn('✎ Editar / desenhar pontos', () => colliderApi.startHeightfield(obj)),
           mkBtn('Remover collider', () => {
             colliderApi.remove(obj);
             build(obj);

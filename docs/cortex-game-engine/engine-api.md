@@ -87,9 +87,11 @@ automático.
 objeto nomeado tem uma seção **Collider**: se não tem collider, botões "Adicionar"
 e "Desenhar chão (heightfield)"; se tem, edita **forma** (caixa / círculo / cápsula),
 tamanho, **offset** (X/Y — pra cobrir uma sub-região tipo "deck" ou compensar pivô),
-e tipo (sólido / one-way) + Remover. **Heightfield (perfil de chão):** "Desenhar
-chão" entra no modo de traçado — **clique no viewport adiciona pontos** (Backspace
-desfaz, Enter finaliza); ideal pra ponte arqueada/morro. Tudo persiste no overlay.
+e tipo (sólido / one-way) + Remover. **Heightfield (perfil de chão):** "Auto-traçar
+chão" gera o perfil amostrando o topo do mesh; "Desenhar/editar" entra no modo de
+traçado — **clique adiciona ponto, arraste um handle pra mover**, Backspace desfaz,
+Enter finaliza (o clique pousa na superfície do mesh, independe da câmera). Ideal
+pra ponte arqueada/morro. Tudo persiste no overlay.
 O collider fica **acoplado ao mesh** (mesma entidade) — **movem juntos**. Persiste
 no overlay (`assets/scene-data.json` → `data.colliders[nome]`). **Precedência:** um
 `collider` definido no código/JSON (`node.collider`) **vence** e aparece read-only

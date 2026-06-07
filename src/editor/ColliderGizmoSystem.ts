@@ -143,21 +143,32 @@ export class ColliderGizmoSystem extends System {
     g.nPoints = col.points?.length ?? 0;
   }
 
-  /** Faixa fina seguindo a poli-linha do heightfield (pontos locais). */
+  /**
+   * Faixa fina seguindo a poli-linha do heightfield + **um quadradinho (handle)
+   * em cada ponto**, pra ver/agarrar os vértices (arrastar no modo de edição).
+   */
   private setPolyline(g: Gizmo, points: readonly (readonly [number, number])[]): void {
-    const t = 0.06;
+    const t = 0.05; // meia-espessura da faixa
+    const hs = 0.1; // meio-lado do handle
     const verts: number[] = [];
+    const idx: number[] = [];
+    // Faixa (ribbon) entre pontos consecutivos.
     for (const p of points) {
       verts.push(p[0], p[1] + t, 0); // topo
       verts.push(p[0], p[1] - t, 0); // base
     }
-    const idx: number[] = [];
     for (let i = 0; i < points.length - 1; i++) {
       const a = 2 * i;
       const b = 2 * i + 1;
       const c = 2 * (i + 1);
       const d = 2 * (i + 1) + 1;
       idx.push(a, b, d, a, d, c);
+    }
+    // Handles: um quadrado por ponto (4 verts, 2 tris), após os verts da faixa.
+    for (const p of points) {
+      const base = verts.length / 3;
+      verts.push(p[0] - hs, p[1] - hs, 0, p[0] + hs, p[1] - hs, 0, p[0] + hs, p[1] + hs, 0, p[0] - hs, p[1] + hs, 0);
+      idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
     }
     g.mesh.geometry.setIndex(idx.length ? idx : [0, 0, 0]);
     g.mesh.geometry.setAttribute(

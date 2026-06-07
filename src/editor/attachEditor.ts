@@ -184,63 +184,95 @@ export function attachEditor(game: Game): GameEditor {
     return null;
   };
 
-  // ── Desenho de heightfield (clica no viewport pra traçar o perfil do chão) ───
+  // ── Heightfield: desenhar / editar / auto-traçar o perfil do chão ────────────
   const _ray = new Raycaster();
   const _ndc = new Vector2();
   const _plane = new Plane();
   const _hit = new Vector3();
+  const _proj = new Vector3();
   const _zNormal = new Vector3(0, 0, 1);
-  let draw: { obj: Object3D; entity: Entity; points: [number, number][]; minY: number; maxY: number } | null = null;
+  let draw:
+    | { obj: Object3D; entity: Entity; points: [number, number][]; minY: number; maxY: number; dragging: number | null }
+    | null = null;
 
-  const writeHeightfield = (): void => {
-    if (!draw) return;
-    const c = draw.entity.getComponent(Collider2DComponent)!;
-    const pts = draw.points.slice().sort((a, b) => a[0] - b[0]);
+  const ensureHeightfieldEntity = (obj: Object3D): Entity => {
+    let entity = findColliderEntity(obj);
+    if (!entity) {
+      entity = game.world.createEntity();
+      entity.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
+      entity.addComponent(new Object3DComponent(obj));
+      entity.addComponent(new Collider2DComponent(0.01, 0.01, true, false, 0, 0, 'heightfield', []));
+    }
+    return entity;
+  };
+
+  // Escreve os pontos no componente (ORDENADO por X) + overlay. Não muta `pts`.
+  const setHeightfieldPoints = (entity: Entity, obj: Object3D, pts: readonly (readonly [number, number])[]): void => {
+    const sorted = pts.map((p) => [p[0], p[1]] as [number, number]).sort((a, b) => a[0] - b[0]);
+    const c = entity.getComponent(Collider2DComponent)!;
     c.shape = 'heightfield';
-    c.points = pts;
-    if (pts.length) {
+    c.points = sorted;
+    if (sorted.length) {
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      for (const [x, y] of pts) {
+      for (const [x, y] of sorted) {
         minX = Math.min(minX, x); maxX = Math.max(maxX, x);
         minY = Math.min(minY, y); maxY = Math.max(maxY, y);
       }
       c.halfWidth = Math.max((maxX - minX) / 2, 0.01);
       c.halfHeight = Math.max((maxY - minY) / 2, 0.01);
     }
-    if (draw.obj.name) {
-      collidersMap()[draw.obj.name] = {
-        shape: 'heightfield', solid: true, oneWay: false,
-        points: pts.map((p) => [p[0], p[1]]),
-      };
+    if (obj.name) {
+      collidersMap()[obj.name] = { shape: 'heightfield', solid: true, oneWay: false, points: sorted.map((p) => [p[0], p[1]]) };
     }
     persist();
   };
 
-  const addDrawPoint = (clientX: number, clientY: number): void => {
-    if (!draw) return;
+  const writeHeightfield = (): void => {
+    if (draw) setHeightfieldPoints(draw.entity, draw.obj, draw.points);
+  };
+
+  // Posição LOCAL do clique: raycast no mesh (superfície visível); fallback no
+  // plano Z com Y clampado ao bbox (nunca escapa pro céu/subsolo).
+  const localFromClick = (clientX: number, clientY: number): [number, number] | null => {
+    if (!draw) return null;
     const rect = game.canvas.getBoundingClientRect();
     _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     _ray.setFromCamera(_ndc, editorCamera);
-    // 1º: raycast no PRÓPRIO mesh do objeto — o ponto pousa na superfície visível,
-    // independente do ângulo da câmera (resolve o "ponto foi pro céu/subsolo").
+    const hits = _ray.intersectObject(draw.obj, true);
     let wx: number;
     let wy: number;
-    const hits = _ray.intersectObject(draw.obj, true);
     if (hits.length > 0) {
       wx = hits[0]!.point.x;
       wy = hits[0]!.point.y;
     } else {
-      // Fallback (clicou fora do mesh): plano Z do objeto, com Y CLAMPADO ao redor
-      // do objeto pra nunca escapar pro céu/subsolo se o plano estiver de perfil.
       _plane.set(_zNormal, -draw.obj.position.z);
-      if (!_ray.ray.intersectPlane(_plane, _hit)) return;
+      if (!_ray.ray.intersectPlane(_plane, _hit)) return null;
       const margin = Math.max(draw.maxY - draw.minY, 1);
       wx = _hit.x;
       wy = Math.min(Math.max(_hit.y, draw.minY - margin), draw.maxY + margin);
     }
-    draw.points.push([wx - draw.obj.position.x, wy - draw.obj.position.y]);
-    writeHeightfield();
+    return [wx - draw.obj.position.x, wy - draw.obj.position.y];
+  };
+
+  // Índice do ponto do heightfield sob o clique (distância em px), ou -1.
+  const pickPoint = (clientX: number, clientY: number): number => {
+    if (!draw) return -1;
+    const rect = game.canvas.getBoundingClientRect();
+    let best = -1;
+    let bestD = 14; // limiar em px
+    for (let i = 0; i < draw.points.length; i++) {
+      _proj.set(draw.obj.position.x + draw.points[i]![0], draw.obj.position.y + draw.points[i]![1], draw.obj.position.z);
+      _proj.project(editorCamera);
+      const sx = (_proj.x * 0.5 + 0.5) * rect.width + rect.left;
+      const sy = (-_proj.y * 0.5 + 0.5) * rect.height + rect.top;
+      const d = Math.hypot(sx - clientX, sy - clientY);
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    return best;
   };
 
   const finishDraw = (): void => {
@@ -258,25 +290,71 @@ export function attachEditor(game: Game): GameEditor {
       return;
     }
     selection.requestSelect(null); // solta o gizmo/seleção
-    let entity = findColliderEntity(obj);
-    if (!entity) {
-      entity = game.world.createEntity();
-      entity.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
-      entity.addComponent(new Object3DComponent(obj));
-      entity.addComponent(new Collider2DComponent(0.01, 0.01, true, false, 0, 0, 'heightfield', []));
-    }
+    const entity = ensureHeightfieldEntity(obj);
     const c = entity.getComponent(Collider2DComponent)!;
     const existing = (c.points ?? []).map((p) => [p[0], p[1]] as [number, number]);
     const bb = new Box3().setFromObject(obj);
-    draw = { obj, entity, points: existing, minY: bb.min.y, maxY: bb.max.y };
+    draw = { obj, entity, points: existing, minY: bb.min.y, maxY: bb.max.y, dragging: null };
     editorState.drawingHeightfield = true;
-    hud.showToast('Desenhe o chão: CLIQUE no objeto adiciona ponto · Backspace desfaz · Enter finaliza');
+    hud.showToast('Chão: CLIQUE adiciona ponto · ARRASTE um ponto pra mover · Backspace desfaz · Enter finaliza');
+  };
+
+  // Auto-traça o perfil amostrando o TOPO do mesh (raycast pra baixo no z central
+  // — pega o deck e ignora corrimãos, que ficam fora do z central). Ponto de
+  // partida; refine arrastando/desenhando.
+  const autoTraceHeightfield = (obj: Object3D): void => {
+    if (!obj.name) {
+      hud.showToast('Dê um nome ao objeto antes de auto-traçar');
+      return;
+    }
+    const bb = new Box3().setFromObject(obj);
+    const z = obj.position.z;
+    const top = bb.max.y + Math.max(bb.max.y - bb.min.y, 1) * 0.1 + 0.5;
+    const N = 24;
+    const pts: [number, number][] = [];
+    const origin = new Vector3();
+    const down = new Vector3(0, -1, 0);
+    for (let i = 0; i <= N; i++) {
+      const wx = bb.min.x + ((bb.max.x - bb.min.x) * i) / N;
+      origin.set(wx, top, z);
+      _ray.set(origin, down);
+      const hits = _ray.intersectObject(obj, true);
+      if (hits.length > 0) pts.push([wx - obj.position.x, hits[0]!.point.y - obj.position.y]);
+    }
+    if (pts.length < 2) {
+      hud.showToast('Não consegui traçar (sem superfície sob a amostra)');
+      return;
+    }
+    setHeightfieldPoints(ensureHeightfieldEntity(obj), obj, pts);
+    hud.showToast(`Perfil traçado: ${pts.length} pontos (ajuste arrastando se quiser)`);
+    selection.requestSelect(obj);
   };
 
   game.canvas.addEventListener('pointerdown', (e) => {
     if (!draw || e.button !== 0) return;
     e.preventDefault();
-    addDrawPoint(e.clientX, e.clientY);
+    const hit = pickPoint(e.clientX, e.clientY);
+    if (hit >= 0) {
+      draw.dragging = hit; // pegou um ponto existente → arrastar
+      return;
+    }
+    const lp = localFromClick(e.clientX, e.clientY);
+    if (lp) {
+      draw.points.push(lp);
+      writeHeightfield();
+    }
+  });
+  game.canvas.addEventListener('pointermove', (e) => {
+    if (!draw || draw.dragging === null) return;
+    e.preventDefault();
+    const lp = localFromClick(e.clientX, e.clientY);
+    if (lp) {
+      draw.points[draw.dragging] = lp;
+      writeHeightfield();
+    }
+  });
+  game.canvas.addEventListener('pointerup', () => {
+    if (draw) draw.dragging = null;
   });
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', (e) => {
@@ -356,6 +434,9 @@ export function attachEditor(game: Game): GameEditor {
     },
     startHeightfield(obj) {
       startDraw(obj);
+    },
+    autoHeightfield(obj) {
+      autoTraceHeightfield(obj);
     },
   };
   const inspector = createEditorInspector({ selection, colliderApi });

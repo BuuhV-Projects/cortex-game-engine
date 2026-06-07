@@ -31,12 +31,17 @@ one-way que segue a curva**:
    (broadphase/gizmo) dos pontos e passa `points` ao componente; overlay
    (`data.colliders`) carrega/persiste.
 
-4. **Editor:** o gizmo desenha a **poli-linha** (faixa fina verde). O inspector
-   tem um **modo de desenho**: o botão "Desenhar chão (heightfield)" entra num
-   estado (`EditorState.drawingHeightfield`) em que **clicar no viewport adiciona
-   pontos** (raycast pro plano Z do objeto → ponto local), Backspace desfaz e Enter
-   finaliza; a seleção/gizmo cede o clique enquanto desenha. Persiste no overlay a
-   cada ponto. (Colliders de heightfield vindos do código seguem read-only.)
+4. **Editor:** o gizmo desenha a **poli-linha** (faixa fina verde) + um
+   **handle** (quadradinho) em cada ponto. O inspector tem:
+   - **Auto-traçar** (`autoHeightfield`): amostra o topo do mesh (raycast pra
+     baixo no z central — pega o deck, ignora corrimãos fora do z central) e gera
+     o perfil automaticamente. Ponto de partida.
+   - **Desenhar/editar** (`startHeightfield` → `EditorState.drawingHeightfield`):
+     **clicar adiciona** ponto, **arrastar um handle move** o ponto, Backspace
+     desfaz, Enter finaliza. O clique raycasta o **próprio mesh** (superfície
+     visível, independe do ângulo da câmera; fallback no plano Z com Y clampado ao
+     bbox). A seleção/gizmo cede o clique enquanto desenha; persiste no overlay a
+     cada mudança. (Heightfields vindos do código seguem read-only.)
 
 ## Consequências
 
