@@ -6,7 +6,7 @@
 
 # Class: Spritesheet
 
-Defined in: src/scene/Spritesheet.ts:23
+Defined in: [src/scene/Spritesheet.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L23)
 
 **Spritesheet**: uma textura dividida numa grade de frames de tamanho fixo. O
 frame `index` (linha-a-linha, da esquerda pra direita, **0 = topo-esquerda**)
@@ -19,7 +19,7 @@ vira um recorte UV aplicável a uma textura (offset/repeat). Use com
 
 > **new Spritesheet**(`texture`, `opts`): `Spritesheet`
 
-Defined in: src/scene/Spritesheet.ts:29
+Defined in: [src/scene/Spritesheet.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L29)
 
 #### Parameters
 
@@ -43,7 +43,7 @@ Textura da folha (carregue com `loadTexture(url, { pixelated: true })`).
 
 > `readonly` **columns**: `number`
 
-Defined in: src/scene/Spritesheet.ts:26
+Defined in: [src/scene/Spritesheet.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L26)
 
 ***
 
@@ -51,7 +51,7 @@ Defined in: src/scene/Spritesheet.ts:26
 
 > `readonly` **frameHeight**: `number`
 
-Defined in: src/scene/Spritesheet.ts:25
+Defined in: [src/scene/Spritesheet.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L25)
 
 ***
 
@@ -59,7 +59,7 @@ Defined in: src/scene/Spritesheet.ts:25
 
 > `readonly` **frameWidth**: `number`
 
-Defined in: src/scene/Spritesheet.ts:24
+Defined in: [src/scene/Spritesheet.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L24)
 
 ***
 
@@ -67,7 +67,7 @@ Defined in: src/scene/Spritesheet.ts:24
 
 > `readonly` **rows**: `number`
 
-Defined in: src/scene/Spritesheet.ts:27
+Defined in: [src/scene/Spritesheet.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L27)
 
 ***
 
@@ -75,7 +75,7 @@ Defined in: src/scene/Spritesheet.ts:27
 
 > `readonly` **texture**: `Texture`
 
-Defined in: src/scene/Spritesheet.ts:31
+Defined in: [src/scene/Spritesheet.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L31)
 
 Textura da folha (carregue com `loadTexture(url, { pixelated: true })`).
 
@@ -87,7 +87,7 @@ Textura da folha (carregue com `loadTexture(url, { pixelated: true })`).
 
 > **get** **count**(): `number`
 
-Defined in: src/scene/Spritesheet.ts:42
+Defined in: [src/scene/Spritesheet.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L42)
 
 Total de frames da grade.
 
@@ -101,7 +101,7 @@ Total de frames da grade.
 
 > **applyFrame**(`texture`, `index`): `void`
 
-Defined in: src/scene/Spritesheet.ts:50
+Defined in: [src/scene/Spritesheet.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L50)
 
 Aplica o recorte UV do frame `index` numa textura (define `offset`/`repeat`).
 V é invertido (origem do three é embaixo) pra `0` ser o topo-esquerda.

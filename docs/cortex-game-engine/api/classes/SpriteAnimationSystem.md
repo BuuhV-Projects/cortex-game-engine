@@ -6,7 +6,7 @@
 
 # Class: SpriteAnimationSystem
 
-Defined in: src/systems/SpriteAnimationSystem.ts:11
+Defined in: [src/systems/SpriteAnimationSystem.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SpriteAnimationSystem.ts#L11)
 
 Avança as [SpriteAnimationComponent](SpriteAnimationComponent.md): acumula tempo, calcula o frame atual
 pela cadência (`fps`) e aplica o recorte UV na textura do sprite. Loop ou trava
@@ -58,7 +58,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `15`
 
-Defined in: src/systems/SpriteAnimationSystem.ts:13
+Defined in: [src/systems/SpriteAnimationSystem.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SpriteAnimationSystem.ts#L13)
 
 Prioridade de execução deste sistema.
 
@@ -75,7 +75,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: *typeof* [`SpriteAnimationComponent`](SpriteAnimationComponent.md)[]
 
-Defined in: src/systems/SpriteAnimationSystem.ts:12
+Defined in: [src/systems/SpriteAnimationSystem.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SpriteAnimationSystem.ts#L12)
 
 Construtores dos componentes que este sistema requer.
 
@@ -101,7 +101,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/SpriteAnimationSystem.ts:15
+Defined in: [src/systems/SpriteAnimationSystem.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SpriteAnimationSystem.ts#L15)
 
 Executa a lógica do sistema para o frame/passo atual.
 

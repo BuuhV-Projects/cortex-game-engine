@@ -6,7 +6,7 @@
 
 # Class: SpriteAnimationComponent
 
-Defined in: src/components/SpriteAnimationComponent.ts:21
+Defined in: [src/components/SpriteAnimationComponent.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L21)
 
 Estado de **animação de sprite** (spritesheet). Vai numa entidade ECS junto do
 `Object3DComponent` do sprite; o [SpriteAnimationSystem](SpriteAnimationSystem.md) avança os frames
@@ -23,7 +23,7 @@ e aplica o recorte UV na `texture` (clonada do sprite). Troque a animação com
 
 > **new SpriteAnimationComponent**(`sheet`, `anims`, `texture`, `initial?`): `SpriteAnimationComponent`
 
-Defined in: src/components/SpriteAnimationComponent.ts:29
+Defined in: [src/components/SpriteAnimationComponent.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L29)
 
 #### Parameters
 
@@ -65,7 +65,7 @@ Animação inicial.
 
 > `readonly` **anims**: `Record`\<`string`, [`SpriteAnim`](../interfaces/SpriteAnim.md)\>
 
-Defined in: src/components/SpriteAnimationComponent.ts:33
+Defined in: [src/components/SpriteAnimationComponent.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L33)
 
 Animações nomeadas.
 
@@ -75,7 +75,7 @@ Animações nomeadas.
 
 > **current**: `string` \| `null` = `null`
 
-Defined in: src/components/SpriteAnimationComponent.ts:23
+Defined in: [src/components/SpriteAnimationComponent.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L23)
 
 Nome da animação atual (ou `null`).
 
@@ -99,7 +99,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **frameIndex**: `number` = `-1`
 
-Defined in: src/components/SpriteAnimationComponent.ts:27
+Defined in: [src/components/SpriteAnimationComponent.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L27)
 
 Índice do frame atual DENTRO da animação (não o índice na sheet).
 
@@ -109,7 +109,7 @@ Defined in: src/components/SpriteAnimationComponent.ts:27
 
 > `readonly` **sheet**: [`Spritesheet`](Spritesheet.md)
 
-Defined in: src/components/SpriteAnimationComponent.ts:31
+Defined in: [src/components/SpriteAnimationComponent.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L31)
 
 A spritesheet (grade de frames).
 
@@ -119,7 +119,7 @@ A spritesheet (grade de frames).
 
 > `readonly` **texture**: `Texture`
 
-Defined in: src/components/SpriteAnimationComponent.ts:35
+Defined in: [src/components/SpriteAnimationComponent.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L35)
 
 Textura do sprite (clonada da sheet) onde o frame é aplicado.
 
@@ -129,7 +129,7 @@ Textura do sprite (clonada da sheet) onde o frame é aplicado.
 
 > **time**: `number` = `0`
 
-Defined in: src/components/SpriteAnimationComponent.ts:25
+Defined in: [src/components/SpriteAnimationComponent.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L25)
 
 Tempo acumulado na animação atual (s).
 
@@ -161,7 +161,7 @@ Usado por Entity para indexar componentes no Map<string, Component>.
 
 > **play**(`name`): `void`
 
-Defined in: src/components/SpriteAnimationComponent.ts:44
+Defined in: [src/components/SpriteAnimationComponent.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L44)
 
 Troca a animação (reinicia do frame 0). Sem efeito se já é a atual ou não existe.
 
