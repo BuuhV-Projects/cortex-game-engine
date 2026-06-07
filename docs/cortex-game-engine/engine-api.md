@@ -79,8 +79,9 @@ mover/rotacionar/escalar · **F** enquadra · **T** teleporta · **Esc** dessele
 A hierarquia lista os objetos nomeados da cena (dê `Object3D.name` aos seus
 objetos pra eles aparecerem legíveis); o inspector edita posição/rotação/escala,
 sombra (cast/receive) e, em luzes, intensidade/cor. No modo editor os **colliders
-2D aparecem com contorno** (AABB): verde = sólido, âmbar = one-way, azul =
-não-sólido (player/gatilho) — mostra a hitbox real da física, automático.
+2D aparecem com contorno** (frame AABB): **azul = sólido**, âmbar = one-way, ciano =
+não-sólido (player/gatilho) — mostra a hitbox real da física (e seu formato/offset),
+automático.
 
 **Collider é propriedade do objeto (autorável no editor).** No inspector, todo
 objeto nomeado tem uma seção **Collider**: se não tem collider, um botão

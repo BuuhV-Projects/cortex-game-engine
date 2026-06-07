@@ -239,7 +239,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         root.append(btn);
       } else if (cs.locked) {
         const kind = cs.oneWay ? 'one-way' : cs.solid ? 'sólido' : 'não-sólido';
-        const color = cs.oneWay ? '#f5a623' : cs.solid ? '#3ad17a' : '#4aa3ff';
+        const color = cs.oneWay ? '#f5a623' : cs.solid ? '#2a9dff' : '#28e0e0';
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0';
         const dot = document.createElement('span');
