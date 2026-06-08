@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, type MenuItemConstructorOptions } from 'electron'
 import { join, resolve, delimiter } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir, rename, rm, unlink } from 'fs/promises'
-import { existsSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { spawn, ChildProcess } from 'child_process'
 import { createHash } from 'crypto'
 import { homedir } from 'os'
@@ -47,6 +47,54 @@ function envForSpawn(): NodeJS.ProcessEnv {
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
 let mainWindow: BrowserWindow | null = null
+let splashWindow: BrowserWindow | null = null
+
+/** Logo (public/logo.png) como data URL, pra inlinar na splash sem depender de path. */
+function logoDataUrl(): string | null {
+  const candidates = [
+    join(__dirname, '../renderer/logo.png'), // produção (out/renderer)
+    join(app.getAppPath(), 'electron/renderer/public/logo.png'), // dev
+    join(app.getAppPath(), 'out/renderer/logo.png'),
+  ]
+  for (const p of candidates) {
+    try {
+      return `data:image/png;base64,${readFileSync(p).toString('base64')}`
+    } catch {
+      /* tenta o próximo */
+    }
+  }
+  return null
+}
+
+/** Splash com logo (janela sem moldura) enquanto o app carrega; fecha quando a janela principal está pronta. */
+function createSplash(): void {
+  splashWindow = new BrowserWindow({
+    width: 460,
+    height: 300,
+    frame: false,
+    resizable: false,
+    center: true,
+    alwaysOnTop: true,
+    show: false,
+    skipTaskbar: true,
+    webPreferences: { contextIsolation: true, nodeIntegration: false },
+  })
+  const logo = logoDataUrl()
+  const html = `<!doctype html><meta charset="utf-8"><style>
+    html,body{margin:0;height:100%;overflow:hidden;font-family:"Segoe UI",Roboto,Arial,sans-serif}
+    .card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+      background:radial-gradient(120% 90% at 50% 0%,#23252e 0%,#16171c 75%);color:#e6e6e6}
+    img{width:128px;height:auto;filter:drop-shadow(0 8px 22px rgba(0,0,0,.55))}
+    .t{font-size:15px;font-weight:600}.s{font-size:12px;color:#9aa0ad}
+    .bar{width:180px;height:4px;border-radius:3px;background:#2c2e36;overflow:hidden;margin-top:4px}
+    .bar>i{display:block;height:100%;width:38%;background:#3b5bdb;border-radius:3px;animation:s 1.1s ease-in-out infinite}
+    @keyframes s{0%{margin-left:-38%}100%{margin-left:100%}}
+  </style><div class="card">${logo ? `<img src="${logo}">` : ''}
+    <div class="t">Cortex Game Engine Studio</div><div class="s">carregando…</div>
+    <div class="bar"><i></i></div></div>`
+  void splashWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
+  splashWindow.once('ready-to-show', () => splashWindow?.show())
+}
 
 // Processo filho do vite em execução (único de cada vez)
 let runningProcess: ChildProcess | null = null
@@ -119,6 +167,7 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    show: false, // só mostra quando o renderer carregou (a splash cobre o gap)
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       // Camadas de hardening (sem mudar comportamento funcional):
@@ -170,6 +219,13 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  // Renderer pronto → mostra a janela principal e fecha a splash.
+  mainWindow.webContents.once('did-finish-load', () => {
+    mainWindow?.show()
+    splashWindow?.close()
+    splashWindow = null
+  })
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -1379,6 +1435,7 @@ app.whenReady().then(async () => {
     /* sem preferências ainda — usa 'en' default */
   }
   Menu.setApplicationMenu(buildAppMenu())
+  createSplash()
   createWindow()
 
   // macOS: recria a janela ao clicar no ícone do dock quando não há janelas abertas

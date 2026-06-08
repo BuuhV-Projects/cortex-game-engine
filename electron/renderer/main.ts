@@ -4,6 +4,7 @@ import { Preview } from './Preview'
 import { BottomPanel } from './BottomPanel'
 import { ProjectManager } from './ProjectManager'
 import { Chat } from './Chat'
+import { Launcher } from './Launcher'
 import { Resizer } from './Resizer'
 import { applyTheme } from './theme'
 import { initI18n } from './i18n'
@@ -31,6 +32,11 @@ const preview = new Preview(previewContainer)
 const bottomPanel = new BottomPanel(consoleContainer)
 const projectManager = new ProjectManager(sidebar)
 const chat = new Chat(chatContainer)
+
+// Tela inicial (logo + criar/abrir + recentes). Construída ANTES de fileTree.init()
+// pra o listener de `project-open` já pegar a restauração do último projeto (se
+// houver, a tela some na hora; senão fica visível no boot).
+new Launcher()
 
 // FileTree.init() reconstrói o shell da sidebar; ProjectManager.init() prepend o botão depois
 fileTree.init()

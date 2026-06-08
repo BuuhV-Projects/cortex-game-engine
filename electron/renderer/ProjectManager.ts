@@ -15,6 +15,8 @@ export class ProjectManager {
   init(): void {
     this.buildDialog()
     this.injectButton()
+    // A tela inicial (Launcher) pede o dialog de criação por evento.
+    document.addEventListener('request-new-project', () => this.dialog?.showModal())
     // Reconstrói tudo se o usuário trocar de idioma na sessão atual.
     document.addEventListener('locale-change', () => {
       this.dialog?.remove()
