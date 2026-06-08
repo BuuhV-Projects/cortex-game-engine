@@ -1,7 +1,8 @@
 # 0053 - Design system de assets: kit semântico, sockets e temas
 
 **Data:** 2026-06-07
-**Status:** proposto
+**Status:** aceito (implementado: §1 kit.json + §2 attach + §6 role/gameplayRole no
+engine e no Chat IA; pendente: §3 tokens de tema, patterns/setpieces)
 
 ## Contexto
 
