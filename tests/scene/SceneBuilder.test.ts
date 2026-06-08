@@ -6,7 +6,8 @@
 import { describe, it, expect } from 'vitest';
 import { Scene } from '../../src/core/Scene.js';
 import { World } from '../../src/ecs/World.js';
-import { buildScene, overlayDeleted, overlayAdded } from '../../src/scene/SceneBuilder.js';
+import { buildScene, overlayDeleted, overlayAdded, overlayMatte } from '../../src/scene/SceneBuilder.js';
+import { isMatte } from '../../src/scene/SceneAssets.js';
 import { Collider2DComponent } from '../../src/components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../../src/components/PlatformerBodyComponent.js';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
@@ -112,5 +113,35 @@ describe('overlay helpers', () => {
     const added = overlayAdded(ov);
     expect(added).toHaveLength(1);
     expect(added[0]!.id).toBe('c');
+  });
+
+  it('overlayMatte lê só booleans', () => {
+    expect(overlayMatte(overlay({ data: { matte: { a: true, b: false, c: 'x' } } }))).toEqual({ a: true, b: false });
+    expect(overlayMatte(null)).toEqual({});
+  });
+});
+
+describe('matte (fosco) na cena', () => {
+  it('nó com matte:true marca o objeto como fosco', async () => {
+    const handle = await buildScene(new Scene(), {
+      version: 1,
+      nodes: [{ type: 'primitive', id: 'a', shape: 'box', matte: true }],
+    });
+    expect(isMatte(handle.byId.get('a')!)).toBe(true);
+  });
+
+  it('overlay matte:false sobrescreve o matte do nó (precedência)', async () => {
+    const handle = await buildScene(
+      new Scene(),
+      { version: 1, nodes: [{ type: 'primitive', id: 'a', shape: 'box', matte: true }] },
+      { overlay: overlay({ data: { matte: { a: false } } }) },
+    );
+    expect(isMatte(handle.byId.get('a')!)).toBe(false);
+  });
+
+  it('options.matte global deixa todos foscos', async () => {
+    const handle = await buildScene(new Scene(), def, { matte: true });
+    expect(isMatte(handle.byId.get('a')!)).toBe(true);
+    expect(isMatte(handle.byId.get('b')!)).toBe(true);
   });
 });

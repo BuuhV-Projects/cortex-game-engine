@@ -133,6 +133,7 @@
 - [overlayAdded](functions/overlayAdded.md)
 - [overlayColliders](functions/overlayColliders.md)
 - [overlayDeleted](functions/overlayDeleted.md)
+- [overlayMatte](functions/overlayMatte.md)
 - [parseKit](functions/parseKit.md)
 - [parseSceneDefinition](functions/parseSceneDefinition.md)
 - [parseSceneFile](functions/parseSceneFile.md)

@@ -10,7 +10,8 @@ import { createEditorState } from './EditorState.js';
 import { createEditorSelection } from './EditorSelection.js';
 import { createEditorHud } from './EditorHud.js';
 import { createEditorOutliner } from './EditorOutliner.js';
-import { createEditorInspector, type ColliderApi } from './EditorInspector.js';
+import { createEditorInspector, type ColliderApi, type MatteApi } from './EditorInspector.js';
+import { setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -501,7 +502,27 @@ export function attachEditor(game: Game): GameEditor {
       autoTraceHeightfield(obj);
     },
   };
-  const inspector = createEditorInspector({ selection, colliderApi });
+  // ── Fosco (matte) como propriedade autorável ────────────────────────────────
+  // Persiste em `overlay.data.matte[nome]` (true/false explícito — `false`
+  // sobrescreve um matte do código); o `buildScene` reaplica no boot.
+  const matteMap = (): Record<string, boolean> => {
+    const m = overlay.data['matte'];
+    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, boolean>;
+    const obj: Record<string, boolean> = {};
+    overlay.data['matte'] = obj;
+    return obj;
+  };
+  const matteApi: MatteApi = {
+    get: (obj) => isMatte(obj),
+    set: (obj, v) => {
+      if (v) setMatte(obj);
+      else clearMatte(obj);
+      if (obj.name) matteMap()[obj.name] = v;
+      persist();
+    },
+  };
+
+  const inspector = createEditorInspector({ selection, colliderApi, matteApi });
 
   // ── Painel "Add": adiciona um asset .glb à cena (clique) e persiste no overlay ─
   const addedList = (): SceneNode[] => {

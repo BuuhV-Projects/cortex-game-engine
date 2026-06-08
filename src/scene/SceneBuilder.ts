@@ -141,6 +141,22 @@ export function overlayColliders(
 }
 
 /**
+ * Lê `data.matte` da overlay — o estado fosco/cartoon **autorado no editor** por
+ * nome de objeto (`{ [nome]: boolean }`). `true` = fosco; `false` = sobrescreve um
+ * `matte` definido no código/nó pra NÃO-fosco. Ausência = sem opinião (cai pro nó/
+ * global). Ver {@link setMatte}.
+ */
+export function overlayMatte(overlay: SceneFileV1 | null | undefined): Record<string, boolean> {
+  const raw = overlay?.data?.['matte'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, boolean> = {};
+  for (const [name, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v === 'boolean') out[name] = v;
+  }
+  return out;
+}
+
+/**
  * Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
  * os `nodes` são concatenados; configs de cena como `background`/`fog`/
  * `outdoorLighting`: o último definido vence).
@@ -158,6 +174,7 @@ export async function buildScene(
   const deleted = new Set<string>(overlayDeleted(overlay));
   const overrides = overlay?.objects ?? {};
   const editorColliders = overlayColliders(overlay);
+  const editorMatte = overlayMatte(overlay);
 
   // ── Config de cena (último arquivo a definir vence) ──────────────────────────
   let background: number | string | undefined;
@@ -200,9 +217,10 @@ export async function buildScene(
     byId.set(node.id, obj);
     placed.push(node);
 
-    // Look fosco/cartoon: por nó (`matte`) com fallback pro global (`options.matte`).
+    // Look fosco/cartoon. Precedência: overlay do editor (autorado) > nó (`matte`)
+    // > global (`options.matte`). Overlay `false` sobrescreve um matte do código.
     if (node.type === 'model' || node.type === 'primitive') {
-      if (node.matte ?? options.matte) setMatte(obj);
+      if (editorMatte[node.id] ?? node.matte ?? options.matte) setMatte(obj);
     }
   }
 

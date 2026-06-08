@@ -67,6 +67,17 @@ export interface ColliderApi {
   autoHeightfield(obj: Object3D): void;
 }
 
+/**
+ * Ponte de autoria do estado **fosco (matte)** do objeto: o inspector lê/grava por
+ * aqui. Implementada pelo `attachEditor` contra a overlay (persiste em
+ * `data.matte[nome]`), pra o look cartoon ficar autorado (sobrevive ao reload).
+ * Sem ela, o inspector ainda liga/desliga, mas só em runtime.
+ */
+export interface MatteApi {
+  get(obj: Object3D): boolean;
+  set(obj: Object3D, value: boolean): void;
+}
+
 export interface EditorInspectorOptions {
   /** Ponte de seleção compartilhada (mesma instância do ObjectEditSystem/outliner). */
   selection: EditorSelection;
@@ -78,6 +89,8 @@ export interface EditorInspectorOptions {
    * definidos no código vêm `locked` (read-only).
    */
   colliderApi?: ColliderApi;
+  /** Opcional: autoria/persistência do toggle Fosco (matte). Ver {@link MatteApi}. */
+  matteApi?: MatteApi;
 }
 
 interface LightLike {
@@ -100,7 +113,7 @@ interface LightLike {
  * Opcional/conveniência (acopla ao DOM) — comece escondido e use `setVisible`.
  */
 export function createEditorInspector(options: EditorInspectorOptions): EditorInspector {
-  const { selection, parent = document.body, colliderApi } = options;
+  const { selection, parent = document.body, colliderApi, matteApi } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -239,8 +252,8 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     root.append(
       checkboxRow(
         'Fosco (matte)',
-        () => isMatte(obj),
-        (v) => (v ? setMatte(obj) : clearMatte(obj)),
+        () => (matteApi ? matteApi.get(obj) : isMatte(obj)),
+        (v) => (matteApi ? matteApi.set(obj, v) : v ? setMatte(obj) : clearMatte(obj)),
       ),
     );
 
