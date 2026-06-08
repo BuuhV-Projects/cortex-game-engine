@@ -77,7 +77,7 @@ export function attachEditor(game: Game): GameEditor {
     playBtn = document.createElement('button');
     playBtn.style.cssText = [
       'position:fixed', 'top:8px', 'left:50%', 'transform:translateX(-50%)',
-      'z-index:30', 'padding:6px 18px', 'border:none', 'border-radius:5px',
+      'z-index:2147483001', 'padding:6px 18px', 'border:none', 'border-radius:5px',
       'font-family:"Segoe UI",Roboto,Arial,sans-serif', 'font-size:13px', 'font-weight:600',
       'cursor:pointer', 'box-shadow:0 2px 8px rgba(0,0,0,0.4)', 'color:#fff',
     ].join(';');

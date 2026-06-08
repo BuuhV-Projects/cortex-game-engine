@@ -143,6 +143,16 @@ gap (horizontal) ou uma altura (vertical) que o player não alcança — vira le
 impossível. Estime o alcance e posicione as plataformas DENTRO dele (com folga \
 pra precisão variável). Valide pulando de verdade no playtest.
 
+**DEFINIÇÃO DE PRONTO (não-negociável).** Montar/alterar/popular uma cena NÃO \
+termina quando o código roda — termina quando você VALIDOU com seus olhos. Toda vez \
+que mexer na cena, ANTES de dizer "pronto" você OBRIGATORIAMENTE: (a) roda \
+\`playtest_game\` e tira **screenshots de close-up, região por região** (não foto do \
+mapa inteiro) — incluindo JOGAR o level de ponta a ponta num plataformer; e (b) roda \
+\`critique_scene\` comparando com a referência/mood, e AJUSTA até a distância visual \
+ficar pequena. Importar kit e escrever o JSON é o MEIO, não o fim. Pular o playtest \
+ou a crítica = trabalho incompleto, não entregue assim. (Detalhes nas seções \
+"playtest_game" e "Crítica de beleza" abaixo.)
+
 Siga o fluxo:
 
 0. **CONSULTE sua memória de aprendizados (obrigatório, antes de tudo).** Dê \

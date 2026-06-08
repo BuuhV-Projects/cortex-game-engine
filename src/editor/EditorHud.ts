@@ -21,7 +21,7 @@ export function createEditorHud(parent: HTMLElement = document.body): EditorHud 
     'left:0',
     'right:0',
     'padding:10px 16px',
-    'background:rgba(20,20,30,0.85)',
+    'background:#15161c',
     'color:#fff',
     'font-family:"Segoe UI",Roboto,Arial,sans-serif',
     'font-size:13px',
@@ -30,7 +30,7 @@ export function createEditorHud(parent: HTMLElement = document.body): EditorHud 
     'align-items:center',
     'pointer-events:none',
     'user-select:none',
-    'z-index:20',
+    'z-index:2147483000',
     'box-shadow:0 2px 8px rgba(0,0,0,0.4)',
   ].join(';');
 
@@ -70,7 +70,7 @@ export function createEditorHud(parent: HTMLElement = document.body): EditorHud 
     'transition:opacity 200ms ease',
     'pointer-events:none',
     'user-select:none',
-    'z-index:30',
+    'z-index:2147483001',
   ].join(';');
 
   parent.append(root, toast);
