@@ -1,6 +1,6 @@
 import type { Object3D, Mesh } from 'three';
 import { MathUtils } from 'three';
-import { setShadows } from '../scene/SceneAssets.js';
+import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { EditorSelection } from './EditorSelection.js';
 
@@ -226,6 +226,21 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         'Recebe sombra',
         () => mesh?.receiveShadow ?? obj.receiveShadow,
         (v) => setShadows(obj, { receiveShadow: v }),
+      ),
+    );
+
+    // ── Material ───────────────────────────────────────────────────────────────
+    // Fosco (matte): mata o brilho PBR → look cartoon/desenho. Ligar/desligar ao
+    // vivo (clearMatte restaura os valores originais cacheados).
+    const matHead = document.createElement('div');
+    matHead.textContent = 'Material';
+    matHead.style.cssText = 'margin:8px 0 2px;color:#9aa0ad;font-weight:600';
+    root.append(matHead);
+    root.append(
+      checkboxRow(
+        'Fosco (matte)',
+        () => isMatte(obj),
+        (v) => (v ? setMatte(obj) : clearMatte(obj)),
       ),
     );
 

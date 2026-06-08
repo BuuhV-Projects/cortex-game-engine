@@ -118,25 +118,67 @@ export interface MatteOptions {
  * scene.add(tree); setMatte(tree)
  * // ou tudo de uma vez: setMatte(scene.getThreeScene())
  */
-export function setMatte(object: Object3D, options: MatteOptions = {}): void {
-  const { roughness = 1, metalness = 0, envMapIntensity = 0 } = options;
+interface PbrMat {
+  roughness?: number;
+  metalness?: number;
+  envMapIntensity?: number;
+  needsUpdate?: boolean;
+  userData?: Record<string, unknown>;
+}
+
+const MATTE_CACHE = 'cortexOrigPBR';
+const MATTE_FLAG = 'cortexMatte';
+
+function eachMat(object: Object3D, fn: (mat: PbrMat) => void): void {
   object.traverse((child) => {
     const mesh = child as Mesh;
     if (!mesh.isMesh || !mesh.material) return;
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const m of mats) {
-      const mat = m as {
-        roughness?: number;
-        metalness?: number;
-        envMapIntensity?: number;
-        needsUpdate?: boolean;
-      };
-      if (mat.roughness !== undefined) mat.roughness = roughness;
-      if (mat.metalness !== undefined) mat.metalness = metalness;
-      if (mat.envMapIntensity !== undefined) mat.envMapIntensity = envMapIntensity;
-      mat.needsUpdate = true;
-    }
+    for (const m of mats) fn(m as unknown as PbrMat);
   });
+}
+
+export function setMatte(object: Object3D, options: MatteOptions = {}): void {
+  const { roughness = 1, metalness = 0, envMapIntensity = 0 } = options;
+  eachMat(object, (mat) => {
+    // Cacheia o original UMA vez, pra {@link clearMatte} poder restaurar.
+    if (mat.userData && mat.userData[MATTE_CACHE] === undefined) {
+      mat.userData[MATTE_CACHE] = {
+        roughness: mat.roughness,
+        metalness: mat.metalness,
+        envMapIntensity: mat.envMapIntensity,
+      };
+    }
+    if (mat.roughness !== undefined) mat.roughness = roughness;
+    if (mat.metalness !== undefined) mat.metalness = metalness;
+    if (mat.envMapIntensity !== undefined) mat.envMapIntensity = envMapIntensity;
+    mat.needsUpdate = true;
+  });
+  object.userData[MATTE_FLAG] = true;
+}
+
+/**
+ * Desfaz o {@link setMatte}: restaura roughness/metalness/envMapIntensity originais
+ * (cacheados no primeiro `setMatte`). É o "desligar" do toggle de material do editor.
+ */
+export function clearMatte(object: Object3D): void {
+  eachMat(object, (mat) => {
+    const orig = mat.userData?.[MATTE_CACHE] as
+      | { roughness?: number; metalness?: number; envMapIntensity?: number }
+      | undefined;
+    if (!orig) return;
+    if (orig.roughness !== undefined) mat.roughness = orig.roughness;
+    if (orig.metalness !== undefined) mat.metalness = orig.metalness;
+    if (orig.envMapIntensity !== undefined) mat.envMapIntensity = orig.envMapIntensity;
+    if (mat.userData) delete mat.userData[MATTE_CACHE];
+    mat.needsUpdate = true;
+  });
+  object.userData[MATTE_FLAG] = false;
+}
+
+/** `true` se o objeto está fosco (via {@link setMatte}). Pro estado do toggle. */
+export function isMatte(object: Object3D): boolean {
+  return object.userData?.[MATTE_FLAG] === true;
 }
 
 /**

@@ -84,7 +84,7 @@ Controles: **▶ Play / F2** alterna edit↔play · **WASD/QE** voa (Shift corre
 mover/rotacionar/escalar · **F** enquadra · **T** teleporta · **Esc** desseleciona.
 A hierarquia lista os objetos nomeados da cena (dê `Object3D.name` aos seus
 objetos pra eles aparecerem legíveis); o inspector edita posição/rotação/escala,
-sombra (cast/receive) e, em luzes, intensidade/cor. No modo editor os **colliders
+sombra (cast/receive), **material Fosco (matte) liga/desliga** e, em luzes, intensidade/cor. No modo editor os **colliders
 2D aparecem com contorno** (frame AABB): **azul = sólido**, âmbar = one-way, ciano =
 não-sólido (player/gatilho) — mostra a hitbox real da física (e seu formato/offset),
 automático.

@@ -5,7 +5,14 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Mesh, BoxGeometry, MeshStandardMaterial, Group } from 'three';
-import { getWorldBounds, placeOnGround, setShadows, setMatte } from '../../src/scene/SceneAssets.js';
+import {
+  getWorldBounds,
+  placeOnGround,
+  setShadows,
+  setMatte,
+  clearMatte,
+  isMatte,
+} from '../../src/scene/SceneAssets.js';
 
 function box(size = 2): Mesh {
   return new Mesh(new BoxGeometry(size, size, size), new MeshStandardMaterial());
@@ -88,5 +95,20 @@ describe('setMatte', () => {
 
   it('não quebra em objeto sem mesh', () => {
     expect(() => setMatte(new Group())).not.toThrow();
+  });
+
+  it('clearMatte restaura os valores originais (toggle on/off)', () => {
+    const mat = new MeshStandardMaterial({ roughness: 0.2, metalness: 0.6 });
+    mat.envMapIntensity = 0.9;
+    const mesh = new Mesh(new BoxGeometry(), mat);
+    expect(isMatte(mesh)).toBe(false);
+    setMatte(mesh);
+    expect(isMatte(mesh)).toBe(true);
+    expect(mat.roughness).toBe(1);
+    clearMatte(mesh);
+    expect(isMatte(mesh)).toBe(false);
+    expect(mat.roughness).toBeCloseTo(0.2);
+    expect(mat.metalness).toBeCloseTo(0.6);
+    expect(mat.envMapIntensity).toBeCloseTo(0.9);
   });
 });
