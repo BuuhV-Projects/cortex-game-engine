@@ -160,6 +160,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     )
   },
 
+  // Item "Projeto > Fechar projeto" do Menu nativo
+  onMenuCloseProject: (callback: () => void) => {
+    ipcRenderer.on('menu:close-project', () => callback())
+  },
+
   // Item "Idioma > EN | PT" do Menu nativo (ADR-0025)
   onMenuChangeLocale: (callback: (locale: 'en' | 'pt') => void) => {
     ipcRenderer.on('menu:change-locale', (_event, locale: 'en' | 'pt') => callback(locale))

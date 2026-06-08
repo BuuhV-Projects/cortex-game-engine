@@ -2,7 +2,8 @@
  * Tela inicial (launcher) estilo Unity Hub / Android Studio: logo + "Criar novo
  * jogo" / "Abrir jogo existente" + projetos recentes. Aparece quando NENHUM
  * projeto está aberto (boot sem último projeto) e some quando um projeto abre
- * (`project-open`). Um botão ⌂ **fecha o projeto** (`project-close`) e volta pra ela.
+ * (`project-open`). Volta a ela via menu nativo "Projeto > Fechar projeto"
+ * (`project-close`).
  *
  * Recentes ficam em localStorage (`recentProjects`); atualizados a cada
  * `project-open`. "Criar" reusa o dialog do ProjectManager (evento
@@ -39,7 +40,6 @@ function openProject(path: string): void {
 export class Launcher {
   private readonly overlay: HTMLElement
   private readonly recentsEl: HTMLElement
-  private readonly homeBtn: HTMLButtonElement
 
   constructor() {
     const overlay = document.createElement('div')
@@ -92,28 +92,6 @@ export class Launcher {
     this.overlay = overlay
     this.recentsEl = recentsEl
 
-    // Botão ⌂ pra reabrir a tela inicial (canto inferior esquerdo, discreto).
-    const home = document.createElement('button')
-    home.textContent = '⌂'
-    home.title = 'Fechar projeto (tela inicial)'
-    home.style.cssText = [
-      'position:fixed',
-      'left:8px',
-      'bottom:8px',
-      'z-index:30',
-      'width:30px',
-      'height:30px',
-      'border:1px solid #2c2e36',
-      'border-radius:7px',
-      'background:rgba(27,28,34,0.9)',
-      'color:#cfd2da',
-      'cursor:pointer',
-      'font-size:15px',
-    ].join(';')
-    home.addEventListener('click', () => document.dispatchEvent(new CustomEvent('project-close')))
-    document.body.appendChild(home)
-    this.homeBtn = home
-
     // Abrir um projeto (recente, criado, ou via sidebar) some com a tela.
     document.addEventListener('project-open', (e) => {
       const { path } = (e as CustomEvent<{ path: string }>).detail
@@ -130,12 +108,10 @@ export class Launcher {
   show(): void {
     this.renderRecents()
     this.overlay.style.display = 'flex'
-    this.homeBtn.style.display = 'none'
   }
 
   hide(): void {
     this.overlay.style.display = 'none'
-    this.homeBtn.style.display = ''
   }
 
   private async handleOpen(): Promise<void> {

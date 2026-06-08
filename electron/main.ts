@@ -1048,9 +1048,11 @@ let currentAgentAbort: AbortController | null = null
 ipcMain.handle('project:setActive', async (_event, projectDir: unknown) => {
   if (projectDir === null || projectDir === undefined) {
     currentProjectDir = null
-    return
+  } else {
+    currentProjectDir = validatePath(projectDir)
   }
-  currentProjectDir = validatePath(projectDir)
+  // O menu "Projeto" só faz sentido com projeto aberto — reconstrói pra mostrar/ocultar.
+  Menu.setApplicationMenu(buildAppMenu())
 })
 
 // Decisão do usuário sobre uma tool call pendente (ADR-0018). O renderer
@@ -1324,12 +1326,14 @@ ipcMain.handle('run:stop', async () => {
 const MENU_STRINGS = {
   en: {
     project: 'Project',
+    close_project: 'Close project',
     generate_installer: 'Generate installer...',
     generate_installer_debug: 'Generate installer (debug)...',
     language: 'Language',
   },
   pt: {
     project: 'Projeto',
+    close_project: 'Fechar projeto',
     generate_installer: 'Gerar instalador...',
     generate_installer_debug: 'Gerar instalador (debug)...',
     language: 'Idioma',
@@ -1357,6 +1361,13 @@ function buildAppMenu(): Menu {
   const projectMenu: MenuItemConstructorOptions = {
     label: s.project,
     submenu: [
+      {
+        label: s.close_project,
+        click: (): void => {
+          mainWindow?.webContents.send('menu:close-project')
+        },
+      },
+      { type: 'separator' },
       {
         label: s.generate_installer,
         accelerator: isMac ? 'Cmd+Shift+B' : 'Ctrl+Shift+B',
@@ -1396,14 +1407,16 @@ function buildAppMenu(): Menu {
     ],
   }
 
+  // O menu "Projeto" só aparece com um projeto aberto (na tela inicial não há o que fazer).
+  const projectMenus = currentProjectDir ? [projectMenu] : []
   const template: MenuItemConstructorOptions[] = app.isPackaged
-    ? [...(isMac ? [{ role: 'appMenu' as const }] : []), projectMenu]
+    ? [...(isMac ? [{ role: 'appMenu' as const }] : []), ...projectMenus]
     : [
         ...(isMac ? [{ role: 'appMenu' as const }] : []),
         { role: 'fileMenu' },
         { role: 'editMenu' },
         { role: 'viewMenu' },
-        projectMenu,
+        ...projectMenus,
         { role: 'windowMenu' },
       ]
 

@@ -131,6 +131,11 @@ window.electronAPI.onMenuBuildInstaller((payload) => {
   )
 })
 
+// Menu nativo "Projeto > Fechar projeto" → volta pra tela inicial.
+window.electronAPI.onMenuCloseProject(() => {
+  document.dispatchEvent(new CustomEvent('project-close'))
+})
+
 // Menu nativo "Idioma > English | Português" (ADR-0025). Importa setLocale
 // dinamicamente pra evitar ciclo de dependência com Welcome.ts (que
 // também usa i18n).

@@ -90,6 +90,8 @@ export interface ElectronAPI {
 
   // Itens do Menu nativo (ADR-0024)
   onMenuBuildInstaller(callback: (payload: { debug: boolean }) => void): void
+  // Fechar projeto via menu nativo
+  onMenuCloseProject(callback: () => void): void
   // Trocar idioma via menu nativo (ADR-0025)
   onMenuChangeLocale(callback: (locale: 'en' | 'pt') => void): void
 
