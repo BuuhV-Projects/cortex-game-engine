@@ -81,6 +81,13 @@
     "placeholder_stopped": "Project stopped.",
     "placeholder_failed_html": "Project failed to start.<br>Check the Console. If <code>vite</code> is missing, run <code>yarn install</code> in the Terminal."
   },
+  "editor": {
+    "hierarchy": "Hierarchy",
+    "properties": "Properties",
+    "play": "▶ Play",
+    "stop": "⏹ Edit",
+    "nothing_selected": "Nothing selected."
+  },
   "chat": {
     "title": "AI Chat",
     "tooltip_clear": "Discard history",

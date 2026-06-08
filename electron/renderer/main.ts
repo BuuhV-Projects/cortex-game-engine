@@ -120,6 +120,15 @@ document.addEventListener('project-open', (e) => {
 // Fechar projeto: limpa a árvore (os demais componentes têm seu próprio listener).
 document.addEventListener('project-close', () => fileTree.closeProject())
 
+// Painéis do editor (ADR-0056): ao aparecerem, alarga a coluna direita uma vez
+// pra caber jogo + hierarquia/inspector (250px) sem ficar apertado.
+document.addEventListener('editor-panels-visible', () => {
+  if (rightTarget.width < 560) {
+    rightTarget.width = 560
+    resizer.applyColumns()
+  }
+})
+
 // Menu nativo "Projeto > Gerar instalador..." (ADR-0024). O BottomPanel
 // escuta o evento DOM e dispara `yarn tauri:build` (release) ou
 // `yarn tauri:build:debug` (com DevTools embutido) no projeto ativo.

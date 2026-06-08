@@ -1,5 +1,7 @@
 import type { Object3D } from 'three';
 import type { EditorSelection } from './EditorSelection.js';
+import { describeOutliner, createObjectRegistry, type ObjectRegistry } from './EditorModel.js';
+import { createOutlinerView } from './EditorModelDom.js';
 
 /** Painel de hierarquia do editor (lista os objetos da cena). */
 export interface EditorOutliner {
@@ -20,14 +22,20 @@ export interface EditorOutlinerOptions {
   onFocus?: (obj: Object3D) => void;
   /** Onde anexar o painel. Default `document.body`. */
   parent?: HTMLElement;
+  /**
+   * Opcional: registro de ids de objeto compartilhado (ADR-0056). Passe a mesma
+   * instância usada pela ponte/inspector pra os ids baterem entre renderizadores.
+   * Default: um registro novo (suficiente pro caso standalone).
+   */
+  registry?: ObjectRegistry;
 }
 
 /**
  * Cria o painel de **hierarquia** do modo editor: lista os objetos da cena
- * (filhos diretos dos `editRoots`, exceto internos do editor). Clicar num item
- * o **seleciona** (via `selection.requestSelect`, que o {@link ObjectEditSystem}
- * atende atacando o gizmo) e o **enquadra** (via `onFocus`). O item selecionado
- * fica destacado, reagindo a `selection.onChange`.
+ * (filhos diretos dos `editRoots`, exceto internos do editor) a partir do
+ * {@link describeOutliner | modelo declarativo} (ADR-0056). Clicar num item o
+ * **seleciona** (via `selection.requestSelect`) e o **enquadra** (via `onFocus`).
+ * O item selecionado fica destacado, reagindo a `selection.onChange`.
  *
  * É opcional/conveniência (acopla ao DOM) — comece escondido e use `setVisible`.
  *
@@ -40,7 +48,7 @@ export interface EditorOutlinerOptions {
  * // ao ativar o editor: outliner.setVisible(true); outliner.refresh()
  */
 export function createEditorOutliner(options: EditorOutlinerOptions): EditorOutliner {
-  const { editRoots, selection, onFocus, parent = document.body } = options;
+  const { editRoots, selection, onFocus, parent = document.body, registry = createObjectRegistry() } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -72,56 +80,27 @@ export function createEditorOutliner(options: EditorOutlinerOptions): EditorOutl
     'cursor:pointer;background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:3px;padding:1px 7px;font-size:12px';
   header.append(title, refreshBtn);
 
-  const list = document.createElement('div');
-  root.append(header, list);
+  const view = createOutlinerView({
+    onSelect: (id) => {
+      const obj = registry.get(id);
+      if (obj) selection.requestSelect(obj);
+    },
+    onFocus: (id) => {
+      const obj = registry.get(id);
+      if (obj) onFocus?.(obj);
+    },
+  });
+
+  root.append(header, view.root);
   parent.appendChild(root);
 
-  // Mapa item DOM → objeto, pra destacar a seleção atual.
-  const rows = new Map<Object3D, HTMLDivElement>();
-
-  function isInternal(obj: Object3D): boolean {
-    return obj.userData?.['editorInternal'] === true;
-  }
-
-  function label(obj: Object3D): string {
-    return obj.name || `(${obj.type})`;
-  }
-
   function refresh(): void {
-    list.textContent = '';
-    rows.clear();
-    for (const editRoot of editRoots) {
-      for (const child of editRoot.children) {
-        if (isInternal(child)) continue;
-        const item = document.createElement('div');
-        item.textContent = label(child);
-        item.style.cssText =
-          'padding:3px 6px;border-radius:3px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-        item.addEventListener('mouseenter', () => {
-          if (selection.current !== child) item.style.background = 'rgba(255,255,255,0.08)';
-        });
-        item.addEventListener('mouseleave', () => {
-          if (selection.current !== child) item.style.background = 'transparent';
-        });
-        item.addEventListener('click', () => {
-          selection.requestSelect(child);
-          onFocus?.(child);
-        });
-        list.appendChild(item);
-        rows.set(child, item);
-      }
-    }
-    highlight(selection.current);
-  }
-
-  function highlight(current: Object3D | null): void {
-    for (const [obj, item] of rows) {
-      item.style.background = obj === current ? 'rgba(90,140,255,0.45)' : 'transparent';
-    }
+    view.render(describeOutliner(editRoots, registry, selection.current));
   }
 
   refreshBtn.addEventListener('click', refresh);
-  selection.onChange(highlight);
+  // Re-renderiza ao mudar a seleção (atualiza o destaque).
+  selection.onChange(() => refresh());
 
   return {
     root,

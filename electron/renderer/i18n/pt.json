@@ -81,6 +81,13 @@
     "placeholder_stopped": "Projeto parado.",
     "placeholder_failed_html": "Projeto falhou ao iniciar.<br>Veja o Console. Se faltar o <code>vite</code>, rode <code>yarn install</code> no Terminal."
   },
+  "editor": {
+    "hierarchy": "Hierarquia",
+    "properties": "Propriedades",
+    "play": "▶ Play",
+    "stop": "⏹ Editar",
+    "nothing_selected": "Nada selecionado."
+  },
   "chat": {
     "title": "Chat IA",
     "tooltip_clear": "Apagar histórico",

@@ -39,6 +39,8 @@ import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import { autoMapPlayerClips } from '../systems/PlatformerAnimationSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
+import { createObjectRegistry } from './EditorModel.js';
+import { createEditorBridge } from './EditorBridge.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
 import { ColliderGizmoSystem } from './ColliderGizmoSystem.js';
@@ -87,6 +89,9 @@ export function attachEditor(game: Game): GameEditor {
   const three = game.scene.getThreeScene();
   const editorState = createEditorState();
   const selection = createEditorSelection();
+  // Registro de ids compartilhado entre os painéis in-canvas e a ponte com a IDE
+  // (ADR-0056), pra os ids de objeto baterem entre os dois renderizadores.
+  const registry = createObjectRegistry();
   const hud = createEditorHud();
 
   // **Boot em modo EDIÇÃO por padrão** (estilo Unity): o jogo abre editável, com a
@@ -252,7 +257,7 @@ export function attachEditor(game: Game): GameEditor {
     ),
   );
 
-  const outliner = createEditorOutliner({ editRoots: [three], selection, onFocus: (obj) => cameraSystem.focusOn(obj) });
+  const outliner = createEditorOutliner({ editRoots: [three], selection, registry, onFocus: (obj) => cameraSystem.focusOn(obj) });
 
   // A câmera do JOGO vira um objeto visível/selecionável no editor: entra na
   // hierarquia (nomeada) e ganha um frustum (CameraHelper). No modo edição a
@@ -723,6 +728,7 @@ export function attachEditor(game: Game): GameEditor {
 
   const inspector = createEditorInspector({
     selection,
+    registry,
     colliderApi,
     matteApi,
     animationApi,
@@ -764,6 +770,28 @@ export function attachEditor(game: Game): GameEditor {
       .catch(() => addPanel.setAssets([]));
   }
 
+  // ── Ponte com a IDE (ADR-0056) ───────────────────────────────────────────────
+  // Se o jogo roda dentro do iframe do Preview da IDE, publica hierarquia/inspector
+  // como CHROME da IDE (estilo Blender) e esconde os painéis in-canvas. O gizmo, a
+  // câmera livre e o desenho de heightfield continuam no viewport. Fora da IDE
+  // (browser standalone, `?play`) a ponte fica inerte e os painéis in-canvas valem.
+  let bridgedPanelsHidden = false;
+  const bridge = createEditorBridge({
+    editRoots: [three],
+    selection,
+    registry,
+    editorState,
+    ctx: { colliderApi, matteApi, animationApi, playerAnimationsApi },
+    focusOn: (obj) => cameraSystem.focusOn(obj),
+    onBridged: () => {
+      bridgedPanelsHidden = true;
+      outliner.setVisible(false);
+      inspector.setVisible(false);
+      addPanel.setVisible(false);
+      if (playBtn) playBtn.style.display = 'none';
+    },
+  });
+
   let wasActive = false;
   let lastChildren = new Set<Object3D>();
   let lastSelected: Object3D | null = null;
@@ -802,6 +830,9 @@ export function attachEditor(game: Game): GameEditor {
     activeCamera: () => (editorState.active ? editorCamera : null),
     isActive: () => editorState.active,
     update(): void {
+      // Bridged (dentro da IDE): os painéis viram chrome da IDE — não mostramos os
+      // in-canvas. Em ambos os casos o gizmo/câmera/helpers ficam no viewport.
+      const showInCanvas = !bridgedPanelsHidden;
       if (editorState.active !== wasActive) {
         wasActive = editorState.active;
         // Play (edit→play) snapshota o mundo; Stop (play→edit) restaura — Play
@@ -810,27 +841,30 @@ export function attachEditor(game: Game): GameEditor {
         else snapshotWorld();
         updatePlayBtn();
         hud.setVisible(editorState.active);
-        outliner.setVisible(editorState.active);
-        inspector.setVisible(editorState.active);
-        addPanel.setVisible(editorState.active);
+        outliner.setVisible(showInCanvas && editorState.active);
+        inspector.setVisible(showInCanvas && editorState.active);
+        addPanel.setVisible(showInCanvas && editorState.active);
         // Frustum da câmera + helpers de luz: só no modo edição (somem no Play).
         cameraHelper.visible = editorState.active;
         if (editorState.active) cameraHelper.update();
         syncLightHelpers(editorState.active);
         if (editorState.active) {
-          outliner.refresh();
+          if (showInCanvas) outliner.refresh();
           snapshot();
         }
       }
       if (editorState.active) {
         if (sceneChanged()) {
-          outliner.refresh();
+          if (showInCanvas) outliner.refresh();
           snapshot();
           syncLightHelpers(true); // pega luzes adicionadas async (buildScene)
         }
-        inspector.refresh();
+        if (showInCanvas) inspector.refresh();
         autosaveSelected();
       }
+      // Publica pra IDE (no-op fora dela). Roda também em Play, pra os painéis da
+      // IDE refletirem o estado ao vivo — resolve "preciso dar play pra ver".
+      bridge.publish();
     },
   };
 }

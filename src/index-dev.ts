@@ -12,6 +12,9 @@ export * from './index-runtime.js';
 // Editor (só existe neste bundle de dev).
 export * from './editor/EditorState.js';
 export * from './editor/EditorSelection.js';
+export * from './editor/EditorModel.js';
+export * from './editor/EditorModelDom.js';
+export * from './editor/EditorBridge.js';
 export * from './editor/EditorHud.js';
 export * from './editor/EditorOutliner.js';
 export * from './editor/EditorInspector.js';
