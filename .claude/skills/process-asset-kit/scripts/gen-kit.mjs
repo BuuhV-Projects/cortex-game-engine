@@ -23,6 +23,30 @@ const { sizes } = JSON.parse(readFileSync(sizesPath, 'utf8'));
 function classify(name) {
   const n = name.toLowerCase();
   const R = (role, tags, gameplayRole = [], extra = {}) => ({ role, tags, gameplayRole, ...extra });
+
+  // ── Kenney kebab-case (platformer / survival) ──────────────────────────────
+  if (/^block-|^platform/.test(n)) {
+    const biome = n.includes('snow') ? 'snow' : 'grass';
+    const moving = n.includes('moving');
+    return R(moving ? 'platform' : 'ground', ['terrain', biome, ...(moving ? ['moving'] : [])], moving ? ['challenge'] : [], { solid: true });
+  }
+  if (/^floor\b|^floor-/.test(n)) return R('ground', ['terrain', 'floor'], [], { solid: true });
+  if (/spike|^saw\b|^trap|^bomb\b/.test(n)) return R('hazard', ['hazard'], ['challenge', 'hazard']);
+  if (/^coin-|^gem\b|^jewel\b|^key\b|^heart\b|^chest\b|^diamond/.test(n)) return R('collectible', ['treasure'], ['reward']);
+  if (/^resource-/.test(n)) return R('collectible', ['resource', /wood|plank/.test(n) ? 'wood' : 'stone'], ['resource']);
+  if (/^door|^lever\b|^button|^lock\b|^switch\b/.test(n)) return R('prop', ['interactive'], []);
+  if (/^flowers?\b|^mushrooms?\b|^plant\b|^hedge/.test(n)) return R('decoration', ['forest', 'foliage'], []);
+  if (/^sign|^flag\b|^arrow|^poles?\b/.test(n)) return R('decoration', ['guidance'], ['guidance']);
+  if (/^campfire/.test(n)) return R('prop', ['camp', 'fire'], ['safe-zone']);
+  if (/^bedroll|^structure/.test(n)) return R('prop', ['camp', 'shelter'], ['safe-zone'], { solid: true });
+  if (/^tool-|^workbench/.test(n)) return R('prop', ['tool', 'item'], ['resource']);
+  if (/^box\b|^box-/.test(n)) return R('prop', ['container', 'box'], ['resource', 'reward'], { solid: true });
+  if (/^bottle|^fish\b|^fish-/.test(n)) return R('prop', ['item'], []);
+  if (/^stones?\b/.test(n)) return R('prop', ['rock', 'stone'], ['cover'], { solid: true });
+  if (/^signpost/.test(n)) return R('decoration', ['guidance'], ['guidance']);
+  if (/^patch-grass/.test(n)) return R('decoration', ['foliage', 'grass'], []);
+  if (/^rock-|^rock\b/.test(n)) return R('prop', ['rock', 'stone'], ['cover'], { solid: true });
+
   if (/^(copper|gold|iron|silver)_/.test(n)) return R('collectible', [n.split('_')[0], 'metal', 'treasure'], ['reward', 'resource']);
   if (/^resource_/.test(n)) return R('collectible', ['resource', n.includes('lumber') ? 'wood' : 'stone'], ['resource']);
   if (/^wood_log/.test(n)) return R('prop', ['wood', 'log', 'resource'], ['resource'], { solid: true });

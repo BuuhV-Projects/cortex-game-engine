@@ -1,9 +1,58 @@
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
 import { join, relative } from 'path'
-import { mkdir, writeFile } from 'fs/promises'
+import { existsSync } from 'fs'
+import { mkdir, writeFile, readFile } from 'fs/promises'
 import { renderAssetThumbnails, type AssetThumbnail } from '../assets/renderThumbnails.js'
 import { toCompactImage, type CompactImage } from '../imageCompress.js'
+
+/** Semântica de um asset lida do `kit.json` (design system, ADR-0053). */
+interface KitEntry {
+  role?: string
+  tags?: string[]
+  gameplayRole?: string[]
+  anchors?: string[]
+}
+type KitInfo = { map: Map<string, KitEntry>; path: string; theme?: string }
+
+/**
+ * Procura e lê um `kit.json` (manifesto do design system, ADR-0053) próximo ao
+ * diretório inspecionado — assim o `inspect_assets` devolve a SEMÂNTICA de cada
+ * asset (role/tags/gameplayRole/âncoras), não só dimensões. Indexa por basename
+ * do `.glb`. Parse leve e defensivo (sem depender do schema zod do engine).
+ */
+async function loadKitInfo(projectRoot: string, relDir: string): Promise<KitInfo | null> {
+  const candidates = [
+    join(projectRoot, relDir, 'kit.json'),
+    join(projectRoot, relDir, '..', 'kit.json'),
+    join(projectRoot, 'assets', 'kit.json'),
+    join(projectRoot, 'kit.json'),
+  ]
+  for (const p of candidates) {
+    if (!existsSync(p)) continue
+    try {
+      const raw = JSON.parse(await readFile(p, 'utf-8')) as {
+        theme?: string
+        assets?: Record<string, KitEntry & { anchors?: Record<string, unknown> }>
+      }
+      if (!raw?.assets || typeof raw.assets !== 'object') continue
+      const map = new Map<string, KitEntry>()
+      for (const [key, v] of Object.entries(raw.assets)) {
+        const base = key.split('/').pop()!.replace(/\.glb$/i, '')
+        map.set(base, {
+          role: typeof v?.role === 'string' ? v.role : undefined,
+          tags: Array.isArray(v?.tags) ? v.tags : undefined,
+          gameplayRole: Array.isArray(v?.gameplayRole) ? v.gameplayRole : undefined,
+          anchors: v?.anchors && typeof v.anchors === 'object' ? Object.keys(v.anchors) : undefined,
+        })
+      }
+      return { map, path: relative(projectRoot, p).replace(/\\/g, '/'), theme: raw.theme }
+    } catch {
+      // kit.json inválido — segue sem semântica.
+    }
+  }
+  return null
+}
 
 /**
  * MCP server in-process que expõe a tool `inspect_assets` ao Chat IA. Renderiza
@@ -41,7 +90,9 @@ export function createAssetToolServer(projectRoot: string) {
           'Use SEMPRE antes de montar/popular uma cena com assets existentes (pacote ' +
           'importado): sem isso você está cego pros modelos e só conhece o nome do ' +
           'arquivo. As dimensões servem pra espaçar, escalar e conectar peças (ex.: ' +
-          'alinhar uma ponte à borda de uma ilha). Requer Blender no PATH (ou BLENDER_PATH).',
+          'alinhar uma ponte à borda de uma ilha). Se houver um kit.json (design system) ' +
+          'no projeto, a tabela também traz role/gameplayRole/sockets de cada asset — ' +
+          'autore pela intenção e conecte via attach. Requer Blender no PATH (ou BLENDER_PATH).',
         {
           dir: z
             .string()
@@ -98,7 +149,8 @@ export function createAssetToolServer(projectRoot: string) {
             // Sem persistência, segue só com os blocos de imagem.
           }
 
-          const table = buildTable(result.thumbnails, thumbRel)
+          const kit = await loadKitInfo(projectRoot, dir ?? 'assets')
+          const table = buildTable(result.thumbnails, thumbRel, kit)
 
           // Imagem só sob demanda: por padrão NÃO devolve thumbnail nenhum — só a
           // tabela (referência durável). Cada `.glb` tem um thumbnail comprimido
@@ -112,10 +164,18 @@ export function createAssetToolServer(projectRoot: string) {
                   return { type: 'image' as const, data: c.data.toString('base64'), mimeType: c.mimeType }
                 })
               : []
+          const kitNote = kit
+            ? `\n\n**Kit detectado (\`${kit.path}\`${kit.theme ? `, theme \`${kit.theme}\`` : ''}).** A tabela traz ` +
+              `\`role\`/\`gameplayRole\` de cada asset — AUTORE pela INTENÇÃO (chão=\`ground\`/\`platform\`, ` +
+              `perigo=\`hazard\`, prêmio=\`gameplayRole: reward\`, marco=\`landmark\`), não só pela geometria. ` +
+              `Em vez de bakear \`x\`/\`z\` de conexões, use \`attach\` no nó (\`{ socket, to, toSocket }\`) p/ peças ` +
+              `com **âncoras** (col. Sockets) — o \`buildScene({ kit })\` encaixa por socket. Colliders vêm do \`role\`.`
+            : ''
           const onDemandNote =
             `\n(${withImg.length} assets medidos. A TABELA acima é a referência — posicione pelas DIMENSÕES. ` +
             `Os thumbnails estão salvos em .cortex/asset-thumbs/: dê \`Read\` SÓ no thumbnail da peça que você ` +
-            `for posicionar e precisar enxergar — não carregue imagens em massa.)`
+            `for posicionar e precisar enxergar — não carregue imagens em massa.)` +
+            kitNote
 
           return {
             content: [
@@ -132,17 +192,25 @@ export function createAssetToolServer(projectRoot: string) {
   })
 }
 
-/** Tabela markdown com nome, dimensões (LxAxP) e caminhos de cada asset. */
-function buildTable(thumbs: AssetThumbnail[], thumbRel: Map<string, string>): string {
-  const header =
-    '| Asset | Tamanho (L×A×P, unidades) | Caminho .glb | Thumbnail |\n' +
-    '| --- | --- | --- | --- |'
+/**
+ * Tabela markdown com nome, dimensões (LxAxP) e caminhos de cada asset. Quando há
+ * um `kit.json` (design system), acrescenta colunas de **semântica** (role,
+ * gameplayRole, sockets) — pra a IA autorar por intenção e conectar via `attach`.
+ */
+function buildTable(thumbs: AssetThumbnail[], thumbRel: Map<string, string>, kit: KitInfo | null): string {
+  const header = kit
+    ? '| Asset | Tamanho (L×A×P) | Role | GameplayRole | Sockets | Caminho .glb | Thumbnail |\n' +
+      '| --- | --- | --- | --- | --- | --- | --- |'
+    : '| Asset | Tamanho (L×A×P, unidades) | Caminho .glb | Thumbnail |\n' + '| --- | --- | --- | --- |'
   const rows = thumbs.map((t) => {
-    const d = t.dims
-      ? `${t.dims.x} × ${t.dims.y} × ${t.dims.z}`
-      : '— (falhou)'
+    const d = t.dims ? `${t.dims.x} × ${t.dims.y} × ${t.dims.z}` : '— (falhou)'
     const thumb = thumbRel.get(t.name) ?? '—'
-    return `| ${t.name} | ${d} | ${t.assetPath} | ${thumb} |`
+    if (!kit) return `| ${t.name} | ${d} | ${t.assetPath} | ${thumb} |`
+    const e = kit.map.get(t.name)
+    const role = e?.role ?? '—'
+    const gp = e?.gameplayRole?.join(', ') || '—'
+    const sockets = e?.anchors?.join(', ') || '—'
+    return `| ${t.name} | ${d} | ${role} | ${gp} | ${sockets} | ${t.assetPath} | ${thumb} |`
   })
   return [header, ...rows].join('\n')
 }

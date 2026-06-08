@@ -199,6 +199,20 @@ Princípios de composição (aplique sempre):
   (F2) edita/move/remove/adiciona e SALVA de volta (overlay \`assets/scene-data.json\`). \
   Multi-arquivo por trecho (\`level-1.json\`, \`inimigos.json\`, \`decoracao.json\`). \
   Lógica continua em TS. Só caia em código de cena pra casos com lógica.
+- **Se houver \`kit.json\` (design system, ADR-0053), AUTORE pelo VOCABULÁRIO — é a \
+  forma mais confiável.** O \`inspect_assets\` mostra \`role\`/\`gameplayRole\`/sockets de \
+  cada asset. (1) **Escolha peças pela INTENÇÃO**, não só pela geometria: chão/ \
+  plataforma = \`role: ground\`/\`platform\`; perigo = \`role: hazard\`; prêmio = \
+  \`gameplayRole: reward\` (moeda/baú/joia); marco = \`gameplayRole: landmark\`; guia = \
+  \`gameplayRole: guidance\`; refúgio = \`safe-zone\`. Monte o ritmo combinando essas \
+  funções (a bible fala de função, não de asset). (2) **Conecte por \`attach\`, não por \
+  coordenada chutada:** se as peças têm âncoras (col. Sockets), use \`attach\` no nó \
+  (\`{ socket, to, toSocket }\`) — o \`buildScene\` encaixa por socket (análogo do \
+  \`place\` pro plano X/Z; falha alto se errar). Só bakeie \`x\`/\`z\` quando não houver \
+  socket. (3) **Passe o kit pro loader:** \`buildScene(scene, defs, { world, kit })\` \
+  (importe o \`kit.json\` e \`parseKit\`). (4) **Não redefina collider** que já vem do \
+  \`role\` no kit — só sobrescreva num caso específico. Ver "Kit de assets / \
+  vocabulário" na Referência da API.
 - **Assente por bounding box, NUNCA por \`y\` chutado.** O pivô de cada \`.glb\` é \
   arbitrário — chutar \`y\` deixa peças flutuando/afundadas (o erro mais comum e \
   caro). No JSON, use a diretiva \`place\` (\`{ x, y, z, rotY, scale }\`): o loader \
