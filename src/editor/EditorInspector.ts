@@ -78,6 +78,34 @@ export interface MatteApi {
   set(obj: Object3D, value: boolean): void;
 }
 
+/** Estado de animação do objeto selecionado (clipes do `.glb`). */
+export interface AnimationEditState {
+  /** Nomes dos clipes disponíveis. */
+  clips: string[];
+  /** Clipe tocando agora, ou `null`. */
+  current: string | null;
+  /** Repetir em loop. */
+  loop: boolean;
+  /** Velocidade. */
+  speed: number;
+}
+
+/**
+ * Ponte de autoria de **animação** do objeto: o inspector escolhe o clipe, dá
+ * play/stop e ajusta loop/velocidade por aqui. Implementada pelo `attachEditor`
+ * contra o `SceneAnimator` (em `userData.cortexAnim`) + a overlay (persiste em
+ * `data.animation[id]`). `get` devolve `null` se o objeto não tem animação.
+ */
+export interface AnimationApi {
+  get(obj: Object3D): AnimationEditState | null;
+  /** Toca um clipe (e persiste como autoplay). */
+  play(obj: Object3D, clip: string): void;
+  /** Para a animação (persiste autoplay:false). */
+  stop(obj: Object3D): void;
+  setLoop(obj: Object3D, loop: boolean): void;
+  setSpeed(obj: Object3D, speed: number): void;
+}
+
 export interface EditorInspectorOptions {
   /** Ponte de seleção compartilhada (mesma instância do ObjectEditSystem/outliner). */
   selection: EditorSelection;
@@ -91,6 +119,8 @@ export interface EditorInspectorOptions {
   colliderApi?: ColliderApi;
   /** Opcional: autoria/persistência do toggle Fosco (matte). Ver {@link MatteApi}. */
   matteApi?: MatteApi;
+  /** Opcional: controle/persistência de animação (escolher clipe, play/stop). Ver {@link AnimationApi}. */
+  animationApi?: AnimationApi;
 }
 
 interface LightLike {
@@ -113,7 +143,7 @@ interface LightLike {
  * Opcional/conveniência (acopla ao DOM) — comece escondido e use `setVisible`.
  */
 export function createEditorInspector(options: EditorInspectorOptions): EditorInspector {
-  const { selection, parent = document.body, colliderApi, matteApi } = options;
+  const { selection, parent = document.body, colliderApi, matteApi, animationApi } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -256,6 +286,49 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         (v) => (matteApi ? matteApi.set(obj, v) : v ? setMatte(obj) : clearMatte(obj)),
       ),
     );
+
+    // ── Animação (modelos .glb com clipes) ───────────────────────────────────────
+    const animState = animationApi?.get(obj) ?? null;
+    if (animationApi && animState && animState.clips.length > 0) {
+      const head = document.createElement('div');
+      head.textContent = 'Animação';
+      head.style.cssText = 'margin:8px 0 2px;color:#9aa0ad;font-weight:600';
+      root.append(head);
+
+      // Dropdown de clipes — trocar TOCA o clipe.
+      const sel = document.createElement('select');
+      sel.style.cssText =
+        'width:100%;background:#11131a;color:#fff;border:1px solid #333;border-radius:3px;padding:3px 4px;box-sizing:border-box;margin:2px 0';
+      for (const name of animState.clips) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        if (name === animState.current) opt.selected = true;
+        sel.append(opt);
+      }
+      sel.addEventListener('change', () => animationApi.play(obj, sel.value));
+      root.append(sel);
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:6px;margin:3px 0';
+      const btnCss =
+        'flex:1;padding:4px;background:#2a2f3a;color:#fff;border:1px solid #3a3f4a;border-radius:3px;cursor:pointer';
+      const playBtn = document.createElement('button');
+      playBtn.textContent = '▶ Tocar';
+      playBtn.style.cssText = btnCss;
+      playBtn.addEventListener('click', () => animationApi.play(obj, sel.value));
+      const stopBtn = document.createElement('button');
+      stopBtn.textContent = '⏹ Parar';
+      stopBtn.style.cssText = btnCss;
+      stopBtn.addEventListener('click', () => animationApi.stop(obj));
+      row.append(playBtn, stopBtn);
+      root.append(row);
+
+      root.append(
+        checkboxRow('Loop', () => animationApi.get(obj)?.loop ?? true, (v) => animationApi.setLoop(obj, v)),
+        numberRow('Velocidade', () => animationApi.get(obj)?.speed ?? 1, (v) => animationApi.setSpeed(obj, v)),
+      );
+    }
 
     // ── Collider (autorável) ───────────────────────────────────────────────────
     // O collider é uma propriedade do objeto: adicione/configure aqui se não veio

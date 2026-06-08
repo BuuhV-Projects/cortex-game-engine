@@ -27,8 +27,9 @@ import { createEditorState } from './EditorState.js';
 import { createEditorSelection } from './EditorSelection.js';
 import { createEditorHud } from './EditorHud.js';
 import { createEditorOutliner } from './EditorOutliner.js';
-import { createEditorInspector, type ColliderApi, type MatteApi } from './EditorInspector.js';
+import { createEditorInspector, type ColliderApi, type MatteApi, type AnimationApi } from './EditorInspector.js';
 import { setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
+import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -590,7 +591,71 @@ export function attachEditor(game: Game): GameEditor {
     },
   };
 
-  const inspector = createEditorInspector({ selection, colliderApi, matteApi });
+  // ── Animação (escolher clipe + play/stop + loop/velocidade), persistida ──────
+  // Lê o SceneAnimator de `userData.cortexAnim` (criado pelo buildScene) e grava em
+  // `overlay.data.animation[id]` — o buildScene reaplica no boot (overlay > nó JSON).
+  type AnimSave = { clip?: string; loop?: boolean; speed?: number; autoplay?: boolean };
+  const animMap = (): Record<string, AnimSave> => {
+    const m = overlay.data['animation'];
+    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, AnimSave>;
+    const o: Record<string, AnimSave> = {};
+    overlay.data['animation'] = o;
+    return o;
+  };
+  const getAnimator = (obj: Object3D): SceneAnimator | undefined =>
+    (obj.userData as Record<string, unknown>)['cortexAnim'] as SceneAnimator | undefined;
+  const animationApi: AnimationApi = {
+    get(obj) {
+      const an = getAnimator(obj);
+      if (!an) return null;
+      const saved = obj.name ? animMap()[obj.name] : undefined;
+      return { clips: an.clipNames(), current: an.current, loop: saved?.loop ?? true, speed: saved?.speed ?? 1 };
+    },
+    play(obj, clip) {
+      const an = getAnimator(obj);
+      if (!an) return;
+      const saved = (obj.name && animMap()[obj.name]) || {};
+      const loop = saved.loop ?? true;
+      const speed = saved.speed ?? 1;
+      an.play(clip, { loop, speed });
+      if (obj.name) {
+        animMap()[obj.name] = { clip, loop, speed, autoplay: true };
+        persist();
+      }
+    },
+    stop(obj) {
+      const an = getAnimator(obj);
+      if (!an) return;
+      an.stop();
+      if (obj.name) {
+        animMap()[obj.name] = { ...(animMap()[obj.name] ?? {}), autoplay: false };
+        persist();
+      }
+    },
+    setLoop(obj, loop) {
+      const an = getAnimator(obj);
+      if (!an) return;
+      const saved = (obj.name && animMap()[obj.name]) || {};
+      const clip = an.current ?? saved.clip ?? an.clipNames()[0];
+      const speed = saved.speed ?? 1;
+      if (clip) an.play(clip, { loop, speed });
+      if (obj.name) {
+        animMap()[obj.name] = { clip, loop, speed, autoplay: an.current != null };
+        persist();
+      }
+    },
+    setSpeed(obj, speed) {
+      const an = getAnimator(obj);
+      if (!an) return;
+      an.setSpeed(speed);
+      if (obj.name) {
+        animMap()[obj.name] = { ...(animMap()[obj.name] ?? {}), speed };
+        persist();
+      }
+    },
+  };
+
+  const inspector = createEditorInspector({ selection, colliderApi, matteApi, animationApi });
 
   // ── Painel "Add": adiciona um asset .glb à cena (clique) e persiste no overlay ─
   const addedList = (): SceneNode[] => {
