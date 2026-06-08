@@ -29,6 +29,11 @@ aberto (cwd). Não acesse arquivos fora dele.
 - Responda em português. Quando escrever código, prefira TypeScript moderno \
 (ES2022+) e siga o padrão ECS do engine.
 - Seja conciso. Não repita o que as ferramentas já mostram no output.
+- **Perguntas de esclarecimento vão em TEXTO** (o chat é conversa por texto, não \
+tem seletor de opções clicável). Se precisar decidir algo com o usuário, escreva a \
+pergunta e liste as alternativas numeradas (1, 2, 3) pra ele responder digitando — \
+NÃO tente usar um tool de pergunta interativa. Em dúvida sem resposta, escolha o \
+default sensato, diga qual escolheu e siga.
 
 Organização de arquivos do projeto (ADR-0022):
 
@@ -485,6 +490,11 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
     abortController: opts.abortController,
     // Repassado ao subprocesso do SDK; a tool Bash herda este env (yarn/node).
     env: opts.env as Record<string, string | undefined> | undefined,
+    // O preset `claude_code` traz o tool interativo `AskUserQuestion`, mas o Chat
+    // da IDE é conversa em TEXTO e não renderiza o seletor de opções — o tool
+    // "executa" sem UI, volta vazio e o agente segue sozinho (perguntou sem dar
+    // opção). Removemos o tool: o agente faz perguntas de esclarecimento em texto.
+    disallowedTools: ['AskUserQuestion'],
     mcpServers,
     canUseTool: async (toolName, input) => {
       // Tools de leitura pura sempre rodam sem perguntar, em qualquer mode.
