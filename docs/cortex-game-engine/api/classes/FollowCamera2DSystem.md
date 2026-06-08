@@ -6,7 +6,7 @@
 
 # Class: FollowCamera2DSystem
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L44)
+Defined in: [src/systems/FollowCamera2DSystem.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L64)
 
 Câmera de plataforma 2.5D: segue o alvo (entidade com
 [FollowCameraTargetComponent](FollowCameraTargetComponent.md)) no **plano XY** (sobe/desce/lados), com
@@ -25,7 +25,7 @@ característico do 2.5D — o `pitch` reforça a profundidade/parallax.
 
 > **new FollowCamera2DSystem**(`camera`, `options?`): `FollowCamera2DSystem`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L58)
+Defined in: [src/systems/FollowCamera2DSystem.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L79)
 
 #### Parameters
 
@@ -72,7 +72,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L46)
+Defined in: [src/systems/FollowCamera2DSystem.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L66)
 
 Prioridade de execução deste sistema.
 
@@ -89,7 +89,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`FollowCameraTargetComponent`](FollowCameraTargetComponent.md))[]
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L45)
+Defined in: [src/systems/FollowCamera2DSystem.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L65)
 
 Construtores dos componentes que este sistema requer.
 
@@ -115,7 +115,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **getPitch**(): `number`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L87)
+Defined in: [src/systems/FollowCamera2DSystem.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L110)
 
 Pitch (X) atual da câmera, em radianos.
 
@@ -129,7 +129,7 @@ Pitch (X) atual da câmera, em radianos.
 
 > **getRoll**(): `number`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L77)
+Defined in: [src/systems/FollowCamera2DSystem.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L100)
 
 Roll (Z) atual da câmera, em radianos.
 
@@ -139,11 +139,52 @@ Roll (Z) atual da câmera, em radianos.
 
 ***
 
+### getYaw()
+
+> **getYaw**(): `number`
+
+Defined in: [src/systems/FollowCamera2DSystem.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L120)
+
+Yaw (Y) atual da câmera, em radianos.
+
+#### Returns
+
+`number`
+
+***
+
+### setIsometric()
+
+> **setIsometric**(`yaw?`, `pitch?`): `void`
+
+Defined in: [src/systems/FollowCamera2DSystem.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L130)
+
+Aplica o **preset isométrico** (yaw 45° + pitch ≈35.264°). Sem args usa o
+ângulo iso clássico; passe overrides em radianos pra ajustar. Combine com uma
+câmera ortográfica pra isometria verdadeira, ou perspectiva pra "perspectiva
+isométrica".
+
+#### Parameters
+
+##### yaw?
+
+`number` = `ISOMETRIC_YAW`
+
+##### pitch?
+
+`number` = `ISOMETRIC_PITCH`
+
+#### Returns
+
+`void`
+
+***
+
 ### setPitch()
 
 > **setPitch**(`radians`): `void`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L82)
+Defined in: [src/systems/FollowCamera2DSystem.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L105)
 
 Muda o pitch (X) da câmera em runtime — tilt pra profundidade/parallax.
 
@@ -163,9 +204,29 @@ Muda o pitch (X) da câmera em runtime — tilt pra profundidade/parallax.
 
 > **setRoll**(`radians`): `void`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L72)
+Defined in: [src/systems/FollowCamera2DSystem.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L95)
 
 Muda o roll (Z) da câmera em runtime — o leve giro do 2.5D.
+
+#### Parameters
+
+##### radians
+
+`number`
+
+#### Returns
+
+`void`
+
+***
+
+### setYaw()
+
+> **setYaw**(`radians`): `void`
+
+Defined in: [src/systems/FollowCamera2DSystem.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L115)
+
+Muda o yaw (Y vertical) da câmera em runtime — o giro 3/4 isométrico.
 
 #### Parameters
 
@@ -183,7 +244,7 @@ Muda o roll (Z) da câmera em runtime — o leve giro do 2.5D.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/FollowCamera2DSystem.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L91)
+Defined in: [src/systems/FollowCamera2DSystem.ts:135](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FollowCamera2DSystem.ts#L135)
 
 Executa a lógica do sistema para o frame/passo atual.
 

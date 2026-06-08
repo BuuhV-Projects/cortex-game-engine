@@ -8,7 +8,7 @@
 
 > **kitAnchor**(`kits`, `url`, `socket`): \{ `at`: \[`number`, `number`, `number`\]; `dir?`: \[`number`, `number`, `number`\]; `kind`: `"surface"` \| `"connect"`; \} \| `undefined`
 
-Defined in: src/scene/Kit.ts:124
+Defined in: [src/scene/Kit.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L124)
 
 Âncora nomeada de um asset (via [kitAssetFor](kitAssetFor.md)), ou `undefined`.
 

@@ -4,6 +4,11 @@ import { Entity } from '../ecs/Entity.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
 
+/** Yaw isométrico clássico (45° em torno do Y vertical). */
+export const ISOMETRIC_YAW = Math.PI / 4;
+/** Pitch isométrico clássico (`atan(1/√2)` ≈ 35.264°). */
+export const ISOMETRIC_PITCH = Math.atan(1 / Math.SQRT2);
+
 /** Opções da {@link FollowCamera2DSystem}. */
 export interface FollowCamera2DOptions {
   /** Deslocamento do ponto seguido em relação ao alvo (X, Y). Default `[0, 1]`. */
@@ -29,6 +34,21 @@ export interface FollowCamera2DOptions {
    * {@link FollowCamera2DSystem.setPitch}. Default `0`.
    */
   pitch?: number;
+  /**
+   * Yaw da câmera (giro em torno do eixo **Y vertical**), em radianos — orbita o
+   * ponto seguido na horizontal, mostrando profundidade pela lateral. Combinado
+   * com `pitch`, dá o ângulo 3/4 **isométrico** (vista de diorama). **Travado em
+   * 0 por padrão** (olha o plano XY de frente); mude com
+   * {@link FollowCamera2DSystem.setYaw}. Default `0`.
+   */
+  yaw?: number;
+  /**
+   * Atalho: liga o **preset isométrico** (yaw 45° + pitch ≈35.264°). `yaw`/`pitch`
+   * explícitos têm precedência. Use uma câmera **ortográfica** pra isometria
+   * verdadeira (linhas paralelas) ou **perspectiva** pra "perspectiva isométrica"
+   * (leve convergência). Default `false`.
+   */
+  isometric?: boolean;
   /** Limites de enquadramento: trava o ponto seguido numa região do level. */
   bounds?: { minX?: number; maxX?: number; minY?: number; maxY?: number };
 }
@@ -50,6 +70,7 @@ export class FollowCamera2DSystem extends System {
   private readonly responsiveness: number;
   private roll: number;
   private pitch: number;
+  private yaw: number;
   private readonly bounds: NonNullable<FollowCamera2DOptions['bounds']>;
   private cx = 0;
   private cy = 0;
@@ -64,7 +85,9 @@ export class FollowCamera2DSystem extends System {
     this.distance = options.distance ?? 18;
     this.responsiveness = options.responsiveness ?? 8;
     this.roll = options.roll ?? 0;
-    this.pitch = options.pitch ?? 0;
+    const iso = options.isometric ?? false;
+    this.pitch = options.pitch ?? (iso ? ISOMETRIC_PITCH : 0);
+    this.yaw = options.yaw ?? (iso ? ISOMETRIC_YAW : 0);
     this.bounds = options.bounds ?? {};
   }
 
@@ -86,6 +109,27 @@ export class FollowCamera2DSystem extends System {
   /** Pitch (X) atual da câmera, em radianos. */
   getPitch(): number {
     return this.pitch;
+  }
+
+  /** Muda o yaw (Y vertical) da câmera em runtime — o giro 3/4 isométrico. */
+  setYaw(radians: number): void {
+    this.yaw = radians;
+  }
+
+  /** Yaw (Y) atual da câmera, em radianos. */
+  getYaw(): number {
+    return this.yaw;
+  }
+
+  /**
+   * Aplica o **preset isométrico** (yaw 45° + pitch ≈35.264°). Sem args usa o
+   * ângulo iso clássico; passe overrides em radianos pra ajustar. Combine com uma
+   * câmera ortográfica pra isometria verdadeira, ou perspectiva pra "perspectiva
+   * isométrica".
+   */
+  setIsometric(yaw: number = ISOMETRIC_YAW, pitch: number = ISOMETRIC_PITCH): void {
+    this.yaw = yaw;
+    this.pitch = pitch;
   }
 
   override update(entities: Entity[], deltaTime: number): void {
@@ -113,11 +157,17 @@ export class FollowCamera2DSystem extends System {
       this.cy += (fy - this.cy) * a;
     }
 
-    // Pitch (X): orbita a câmera em torno do ponto seguido. pitch=0 → reto em
-    // (cx, cy, distance); pitch>0 → sobe em Y e olha o plano de cima (parallax).
+    // Orbita a câmera em torno do ponto seguido por pitch (X) + yaw (Y vertical).
+    // pitch=0,yaw=0 → reto em (cx, cy, distance); pitch>0 sobe em Y (parallax);
+    // yaw≠0 gira na horizontal. pitch+yaw juntos = ângulo 3/4 isométrico.
     const cosP = Math.cos(this.pitch);
     const sinP = Math.sin(this.pitch);
-    this.camera.position.set(this.cx, this.cy + this.distance * sinP, this.distance * cosP);
+    const horiz = this.distance * cosP; // raio no plano horizontal (XZ)
+    this.camera.position.set(
+      this.cx + horiz * Math.sin(this.yaw),
+      this.cy + this.distance * sinP,
+      horiz * Math.cos(this.yaw),
+    );
     // Banca a câmera no Z via vetor "up" (roll=0 → up padrão (0,1,0)).
     this.camera.up.set(Math.sin(this.roll), Math.cos(this.roll), 0);
     this.camera.lookAt(this.cx, this.cy, 0);

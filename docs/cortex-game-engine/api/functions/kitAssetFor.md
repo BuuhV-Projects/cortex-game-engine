@@ -8,7 +8,7 @@
 
 > **kitAssetFor**(`kits`, `url`): \{ `anchors?`: `Record`\<`string`, \{ `at`: \[`number`, `number`, `number`\]; `dir?`: \[`number`, `number`, `number`\]; `kind`: `"surface"` \| `"connect"`; \}\>; `collider?`: \{ `height?`: `number`; `offsetX?`: `number`; `offsetY?`: `number`; `oneWay?`: `boolean`; `points?`: \[`number`, `number`\][]; `shape?`: `"box"` \| `"capsule"` \| `"circle"` \| `"heightfield"`; `solid?`: `boolean`; `width?`: `number`; \}; `gameplayRole?`: `string`[]; `role`: `"ground"` \| `"platform"` \| `"connector"` \| `"prop"` \| `"hazard"` \| `"collectible"` \| `"decoration"` \| `"cap"` \| `"tile"` \| `"player-start"`; `size?`: \[`number`, `number`, `number`\]; `tags?`: `string`[]; `thumb?`: `string`; \} \| `undefined`
 
-Defined in: src/scene/Kit.ts:106
+Defined in: [src/scene/Kit.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L106)
 
 Acha o [KitAsset](../type-aliases/KitAsset.md) de um `url` de nó. Casa pela **chave exata** do kit
 (`assets/bridge.glb`) ou, em fallback, pelo **basename** (`bridge.glb`) — assim

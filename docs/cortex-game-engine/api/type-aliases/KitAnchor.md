@@ -8,4 +8,4 @@
 
 > **KitAnchor** = `z.infer`\<*typeof* `anchorSchema`\>
 
-Defined in: src/scene/Kit.ts:86
+Defined in: [src/scene/Kit.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L86)

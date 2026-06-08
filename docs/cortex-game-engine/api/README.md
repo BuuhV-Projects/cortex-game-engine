@@ -107,6 +107,8 @@
 
 ## Variables
 
+- [ISOMETRIC\_PITCH](variables/ISOMETRIC_PITCH.md)
+- [ISOMETRIC\_YAW](variables/ISOMETRIC_YAW.md)
 - [KIT\_ROLES](variables/KIT_ROLES.md)
 
 ## Functions

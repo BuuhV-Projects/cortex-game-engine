@@ -8,7 +8,12 @@ import { PerspectiveCamera } from 'three';
 import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
 import { FollowCameraTargetComponent } from '../../src/components/FollowCameraTargetComponent.js';
-import { FollowCamera2DSystem, type FollowCamera2DOptions } from '../../src/systems/FollowCamera2DSystem.js';
+import {
+  FollowCamera2DSystem,
+  ISOMETRIC_YAW,
+  ISOMETRIC_PITCH,
+  type FollowCamera2DOptions,
+} from '../../src/systems/FollowCamera2DSystem.js';
 
 function setup(opts: FollowCamera2DOptions, x: number, y: number) {
   const camera = new PerspectiveCamera(60, 1, 0.1, 1000);
@@ -43,5 +48,26 @@ describe('FollowCamera2DSystem', () => {
     world.tick(16);
     expect(camera.up.x).toBeCloseTo(Math.sin(0.1));
     expect(camera.up.y).toBeCloseTo(Math.cos(0.1));
+  });
+
+  it('preset isometric: yaw 45° + pitch ≈35°, câmera em 3/4 (x≈z>0, y elevado)', () => {
+    const { camera, world, sys } = setup({ offset: [0, 0], distance: 18, responsiveness: 0, isometric: true }, 0, 0);
+    expect(sys.getYaw()).toBeCloseTo(ISOMETRIC_YAW);
+    expect(sys.getPitch()).toBeCloseTo(ISOMETRIC_PITCH);
+    world.tick(16);
+    // horiz = d*cos(pitch); x = horiz*sin(45) = z = horiz*cos(45) → simétrico
+    expect(camera.position.x).toBeCloseTo(camera.position.z);
+    expect(camera.position.x).toBeGreaterThan(0);
+    expect(camera.position.y).toBeGreaterThan(0); // elevado pelo pitch
+  });
+
+  it('setIsometric()/setYaw() em runtime (yaw=0 = frente, default)', () => {
+    const { world, sys } = setup({ responsiveness: 0 }, 0, 0);
+    expect(sys.getYaw()).toBe(0); // retrocompat: sem iso, olha de frente
+    sys.setIsometric();
+    expect(sys.getYaw()).toBeCloseTo(ISOMETRIC_YAW);
+    sys.setYaw(0);
+    world.tick(16);
+    expect(sys.getYaw()).toBe(0);
   });
 });

@@ -260,6 +260,8 @@ const game = new Game({ canvas })
 const { followCamera } = setupPlatformer(game, { camera: { distance: 16 } })
 // followCamera.setRoll(0.05)  // leve giro 2.5D no eixo Z (travado em 0 por padrão)
 // followCamera.setPitch(0.12) // tilt no eixo X p/ profundidade/parallax (travado em 0)
+// followCamera.setYaw(0.4)    // giro no Y vertical (profundidade pela lateral)
+// followCamera.setIsometric() // preset 3/4 isométrico (yaw 45° + pitch ≈35°)
 game.start()
 await buildScene(game.scene, [level], { renderer: game.renderer, world: game.world })
 ```
