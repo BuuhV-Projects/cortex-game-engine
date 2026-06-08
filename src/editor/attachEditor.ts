@@ -27,9 +27,16 @@ import { createEditorState } from './EditorState.js';
 import { createEditorSelection } from './EditorSelection.js';
 import { createEditorHud } from './EditorHud.js';
 import { createEditorOutliner } from './EditorOutliner.js';
-import { createEditorInspector, type ColliderApi, type MatteApi, type AnimationApi } from './EditorInspector.js';
+import {
+  createEditorInspector,
+  type ColliderApi,
+  type MatteApi,
+  type AnimationApi,
+  type PlayerAnimationsApi,
+} from './EditorInspector.js';
 import { setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
+import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -655,7 +662,53 @@ export function attachEditor(game: Game): GameEditor {
     },
   };
 
-  const inspector = createEditorInspector({ selection, colliderApi, matteApi, animationApi });
+  // ── Ações do player (mapa ação→clipe), persistido ───────────────────────────
+  // Lê/grava o PlayerAnimatorComponent da entidade do objeto + overlay
+  // (`data.playerAnimations[id]`); o buildScene reaplica no boot (overlay > nó).
+  const PLAYER_ACTIONS = ['idle', 'walk', 'run', 'jump', 'fall', 'land'];
+  const findPlayerAnim = (obj: Object3D): PlayerAnimatorComponent | null => {
+    for (const e of game.world.query(PlayerAnimatorComponent)) {
+      if (e.getComponent(Object3DComponent)?.object === obj) return e.getComponent(PlayerAnimatorComponent) ?? null;
+    }
+    return null;
+  };
+  const playerAnimMap = (): Record<string, Record<string, string>> => {
+    const m = overlay.data['playerAnimations'];
+    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, Record<string, string>>;
+    const o: Record<string, Record<string, string>> = {};
+    overlay.data['playerAnimations'] = o;
+    return o;
+  };
+  const playerAnimationsApi: PlayerAnimationsApi = {
+    get(obj) {
+      const comp = findPlayerAnim(obj);
+      const animator = getAnimator(obj);
+      if (!comp || !animator) return null;
+      return { actions: PLAYER_ACTIONS, clips: animator.clipNames(), map: { ...comp.clips } };
+    },
+    set(obj, action, clip) {
+      const comp = findPlayerAnim(obj);
+      if (!comp) return;
+      if (clip) comp.clips[action] = clip;
+      else delete comp.clips[action];
+      comp.current = null; // re-avalia a ação no próximo Play
+      if (obj.name) {
+        const cur = playerAnimMap()[obj.name] ?? {};
+        if (clip) cur[action] = clip;
+        else delete cur[action];
+        playerAnimMap()[obj.name] = cur;
+        persist();
+      }
+    },
+  };
+
+  const inspector = createEditorInspector({
+    selection,
+    colliderApi,
+    matteApi,
+    animationApi,
+    playerAnimationsApi,
+  });
 
   // ── Painel "Add": adiciona um asset .glb à cena (clique) e persiste no overlay ─
   const addedList = (): SceneNode[] => {

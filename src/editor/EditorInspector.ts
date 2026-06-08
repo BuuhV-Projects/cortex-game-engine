@@ -106,6 +106,28 @@ export interface AnimationApi {
   setSpeed(obj: Object3D, speed: number): void;
 }
 
+/** Estado do mapa **ação→clipe** do player selecionado. */
+export interface PlayerAnimationsState {
+  /** Ações a exibir (idle/walk/run/jump/fall/land). */
+  actions: string[];
+  /** Clipes disponíveis no modelo. */
+  clips: string[];
+  /** Mapa atual ação→clipe. */
+  map: Record<string, string>;
+}
+
+/**
+ * Ponte de autoria do **mapa de animações por ação do player** (idle/run/jump/…).
+ * Implementada pelo `attachEditor` contra o `PlayerAnimatorComponent` + a overlay
+ * (`data.playerAnimations[id]`). `get` devolve `null` se o objeto não é um player
+ * animado.
+ */
+export interface PlayerAnimationsApi {
+  get(obj: Object3D): PlayerAnimationsState | null;
+  /** Mapeia uma ação a um clipe (`clip` vazio = desmapeia) e persiste. */
+  set(obj: Object3D, action: string, clip: string): void;
+}
+
 export interface EditorInspectorOptions {
   /** Ponte de seleção compartilhada (mesma instância do ObjectEditSystem/outliner). */
   selection: EditorSelection;
@@ -121,6 +143,8 @@ export interface EditorInspectorOptions {
   matteApi?: MatteApi;
   /** Opcional: controle/persistência de animação (escolher clipe, play/stop). Ver {@link AnimationApi}. */
   animationApi?: AnimationApi;
+  /** Opcional: mapa ação→clipe do player (idle/run/jump/…). Ver {@link PlayerAnimationsApi}. */
+  playerAnimationsApi?: PlayerAnimationsApi;
 }
 
 interface LightLike {
@@ -143,7 +167,7 @@ interface LightLike {
  * Opcional/conveniência (acopla ao DOM) — comece escondido e use `setVisible`.
  */
 export function createEditorInspector(options: EditorInspectorOptions): EditorInspector {
-  const { selection, parent = document.body, colliderApi, matteApi, animationApi } = options;
+  const { selection, parent = document.body, colliderApi, matteApi, animationApi, playerAnimationsApi } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -328,6 +352,39 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
         checkboxRow('Loop', () => animationApi.get(obj)?.loop ?? true, (v) => animationApi.setLoop(obj, v)),
         numberRow('Velocidade', () => animationApi.get(obj)?.speed ?? 1, (v) => animationApi.setSpeed(obj, v)),
       );
+    }
+
+    // ── Ações do player (mapa ação→clipe) ────────────────────────────────────────
+    const pa = playerAnimationsApi?.get(obj) ?? null;
+    if (playerAnimationsApi && pa) {
+      const head = document.createElement('div');
+      head.textContent = 'Ações do player';
+      head.style.cssText = 'margin:8px 0 2px;color:#9aa0ad;font-weight:600';
+      root.append(head);
+      for (const action of pa.actions) {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0';
+        const lbl = document.createElement('span');
+        lbl.textContent = action;
+        lbl.style.cssText = 'width:54px;color:#cfd2da';
+        const sel = document.createElement('select');
+        sel.style.cssText =
+          'flex:1;width:100%;background:#11131a;color:#fff;border:1px solid #333;border-radius:3px;padding:2px 4px;box-sizing:border-box';
+        const none = document.createElement('option');
+        none.value = '';
+        none.textContent = '—';
+        sel.append(none);
+        for (const name of pa.clips) {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          if (pa.map[action] === name) opt.selected = true;
+          sel.append(opt);
+        }
+        sel.addEventListener('change', () => playerAnimationsApi.set(obj, action, sel.value));
+        row.append(lbl, sel);
+        root.append(row);
+      }
     }
 
     // ── Collider (autorável) ───────────────────────────────────────────────────
