@@ -75,8 +75,9 @@ export class ObjectEditSystem extends System {
     /** Chamado ao deletar (Delete/Backspace) o selecionado — pra persistir a remoção. */
     private readonly onDelete?: (obj: THREE.Object3D) => void,
     /**
-     * Edição 2.5D: `lock2D` trava o gizmo no plano XY (translate/scale em X/Y;
-     * rotate só no Z = roll in-plane). `snap` = passo de grade (translate/scale).
+     * Edição 2.5D: `lock2D` trava **translate/scale** no plano XY (X/Y; Z travado).
+     * **Rotação é livre** (qualquer eixo — Y vira o personagem de lado). `snap` =
+     * passo de grade (translate/scale).
      * Bom pra plataformer. Default: sem trava.
      */
     private readonly editOptions?: { lock2D?: boolean; snap?: number },
@@ -259,9 +260,10 @@ export class ObjectEditSystem extends System {
     if (o.lock2D) {
       const c = this.controls as unknown as { showX: boolean; showY: boolean; showZ: boolean };
       if (mode === 'rotate') {
-        // Rotaciona só no Z (roll in-plane do 2.5D).
-        c.showX = false;
-        c.showY = false;
+        // 2.5D NÃO trava rotação: gira em qualquer eixo — Y pra virar o personagem
+        // de lado, X pra inclinar, Z pro roll. Só translate/scale ficam no plano XY.
+        c.showX = true;
+        c.showY = true;
         c.showZ = true;
       } else {
         // Move/escala só no plano XY (Z travado).
