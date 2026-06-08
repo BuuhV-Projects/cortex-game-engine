@@ -433,6 +433,7 @@ const VENDOR_TYPE_MODULES = {
     'SceneBuilder',
     'Kit',
     'Background',
+    'SceneAnimator',
     'Platformer',
     'SceneAssets',
     'OutdoorLighting',

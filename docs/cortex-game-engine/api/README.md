@@ -32,6 +32,7 @@
 - [Renderer](classes/Renderer.md)
 - [RigidBodyComponent](classes/RigidBodyComponent.md)
 - [Scene](classes/Scene.md)
+- [SceneAnimator](classes/SceneAnimator.md)
 - [SceneLoader](classes/SceneLoader.md)
 - [Skybox](classes/Skybox.md)
 - [SpriteAnimationComponent](classes/SpriteAnimationComponent.md)
@@ -72,6 +73,7 @@
 - [OutdoorLightingOptions](interfaces/OutdoorLightingOptions.md)
 - [PlaceOptions](interfaces/PlaceOptions.md)
 - [PlatformerHandle](interfaces/PlatformerHandle.md)
+- [PlayOptions](interfaces/PlayOptions.md)
 - [PostFXOptions](interfaces/PostFXOptions.md)
 - [RendererOptions](interfaces/RendererOptions.md)
 - [SceneFileV1](interfaces/SceneFileV1.md)
@@ -92,6 +94,7 @@
 
 ## Type Aliases
 
+- [AnimationConfig](type-aliases/AnimationConfig.md)
 - [AttachConfig](type-aliases/AttachConfig.md)
 - [BackgroundNode](type-aliases/BackgroundNode.md)
 - [ColliderConfig](type-aliases/ColliderConfig.md)
@@ -134,6 +137,7 @@
 - [kitAssetFor](functions/kitAssetFor.md)
 - [loadGLB](functions/loadGLB.md)
 - [overlayAdded](functions/overlayAdded.md)
+- [overlayAnimation](functions/overlayAnimation.md)
 - [overlayColliders](functions/overlayColliders.md)
 - [overlayDeleted](functions/overlayDeleted.md)
 - [overlayMatte](functions/overlayMatte.md)

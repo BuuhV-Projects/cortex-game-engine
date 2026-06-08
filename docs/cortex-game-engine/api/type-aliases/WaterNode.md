@@ -8,4 +8,4 @@
 
 > **WaterNode** = `z.infer`\<*typeof* `waterNode`\>
 
-Defined in: [src/scene/SceneDefinition.ts:196](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L196)
+Defined in: [src/scene/SceneDefinition.ts:215](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L215)

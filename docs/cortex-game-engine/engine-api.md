@@ -229,6 +229,25 @@ await buildScene(game.scene, [level], { renderer: game.renderer, world: game.wor
 `attach` **falha alto** (lança) em socket/âncora ausente ou ciclo — nunca cai numa pose
 chutada. Sockets/`role` vêm do `kit.json`, gerado pela skill `process-asset-kit`.
 
+## Animação de modelos (clipes do .glb)
+
+`SceneAnimator` + campo `animation` no nó `model`.
+
+Modelos `.glb` com clipes embutidos (ex.: personagens KayKit/Quaternius — idle/run/
+jump/…) tocam animação **data-driven**: ponha `animation` no nó (qual clipe, loop,
+velocidade) e o `buildScene` cria um `AnimationMixer` e toca. **O JSON vence o código.**
+
+```jsonc
+{ "type": "model", "id": "hero", "url": "assets/Knight.glb",
+  "animation": { "clip": "Idle", "loop": true, "speed": 1 } }
+```
+
+`clip` (nome; default = 1º), `loop` (default true), `speed` (default 1), `autoplay`
+(default true). O `buildScene` tica os mixers no `handle.update` (chame `scene.update(dt)`
+no loop). Cada modelo animado ganha um `SceneAnimator` em `obj.userData.cortexAnim`
+(`.clipNames()`, `.play(name, { loop, speed })`, `.stop()`) — é o que o **editor** usa
+na seção "Animação" do inspector (escolher clipe + ▶/⏹ + loop/velocidade, persistido).
+
 ## Plataforma 2.5D (gameplay)
 
 `setupPlatformer`, `PlatformerBodyComponent`, `Collider2DComponent`,

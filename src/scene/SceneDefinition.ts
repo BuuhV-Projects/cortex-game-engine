@@ -81,6 +81,21 @@ const attachSchema = z
   })
   .optional();
 
+/**
+ * Animação de um modelo `.glb` (clipes embutidos): qual clipe tocar (`clip`, nome;
+ * default = primeiro), `loop` (default true), `speed` (default 1) e `autoplay`
+ * (default true quando há config). Resolvido pelo {@link buildScene}; o editor pode
+ * sobrescrever via overlay. JSON vence o que o código faria.
+ */
+const animationSchema = z
+  .object({
+    clip: z.string().optional(),
+    loop: z.boolean().optional(),
+    speed: z.number().optional(),
+    autoplay: z.boolean().optional(),
+  })
+  .optional();
+
 /** Marca o nó como o PLAYER (corpo de plataforma + alvo da câmera). */
 const playerSchema = z
   .union([
@@ -109,6 +124,8 @@ const baseFields = {
   player: playerSchema,
   /** Placement por socket (encaixa em outro nó via âncoras do kit). */
   attach: attachSchema,
+  /** Animação do modelo `.glb` (clipe a tocar, loop, velocidade). Ver {@link SceneAnimator}. */
+  animation: animationSchema,
 };
 
 const modelNode = z.object({ type: z.literal('model'), url: z.string().min(1), ...baseFields });
@@ -190,6 +207,8 @@ const sceneDefinitionSchema = z.object({
 export type ColliderConfig = NonNullable<z.infer<typeof colliderSchema>>;
 /** Config de placement por socket (campo `attach` dos nós; ver {@link attachSchema}). */
 export type AttachConfig = NonNullable<z.infer<typeof attachSchema>>;
+/** Config de animação (campo `animation` dos nós; ver {@link animationSchema}). */
+export type AnimationConfig = NonNullable<z.infer<typeof animationSchema>>;
 export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
 export type LightNode = z.infer<typeof lightNode>;

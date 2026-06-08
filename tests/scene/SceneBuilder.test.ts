@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { Scene } from '../../src/core/Scene.js';
 import { World } from '../../src/ecs/World.js';
-import { buildScene, overlayDeleted, overlayAdded, overlayMatte } from '../../src/scene/SceneBuilder.js';
+import { buildScene, overlayDeleted, overlayAdded, overlayMatte, overlayAnimation } from '../../src/scene/SceneBuilder.js';
 import { isMatte } from '../../src/scene/SceneAssets.js';
 import { Collider2DComponent } from '../../src/components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../../src/components/PlatformerBodyComponent.js';
@@ -118,6 +118,14 @@ describe('overlay helpers', () => {
   it('overlayMatte lê só booleans', () => {
     expect(overlayMatte(overlay({ data: { matte: { a: true, b: false, c: 'x' } } }))).toEqual({ a: true, b: false });
     expect(overlayMatte(null)).toEqual({});
+  });
+
+  it('overlayAnimation lê clip/loop/speed por id', () => {
+    const r = overlayAnimation(overlay({ data: { animation: { hero: { clip: 'Run', loop: false, speed: 1.5 } } } }));
+    expect(r['hero']?.clip).toBe('Run');
+    expect(r['hero']?.loop).toBe(false);
+    expect(r['hero']?.speed).toBe(1.5);
+    expect(overlayAnimation(null)).toEqual({});
   });
 });
 

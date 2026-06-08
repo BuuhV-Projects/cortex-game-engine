@@ -33,7 +33,9 @@ import {
   type SceneNode,
   type ColliderConfig,
   type AttachConfig,
+  type AnimationConfig,
 } from './SceneDefinition.js';
+import { SceneAnimator } from './SceneAnimator.js';
 import {
   kitAssetFor,
   kitAnchor,
@@ -165,6 +167,28 @@ export function overlayMatte(overlay: SceneFileV1 | null | undefined): Record<st
 }
 
 /**
+ * Lê `data.animation` da overlay — a animação **autorada no editor** por id
+ * (`{ [id]: { clip?, loop?, speed?, autoplay? } }`). Sobrescreve o `animation` do
+ * nó (JSON), que por sua vez vence o código. Ver {@link SceneAnimator}.
+ */
+export function overlayAnimation(overlay: SceneFileV1 | null | undefined): Record<string, AnimationConfig> {
+  const raw = overlay?.data?.['animation'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, AnimationConfig> = {};
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object') continue;
+    const o = v as Record<string, unknown>;
+    out[id] = {
+      clip: typeof o['clip'] === 'string' ? o['clip'] : undefined,
+      loop: typeof o['loop'] === 'boolean' ? o['loop'] : undefined,
+      speed: typeof o['speed'] === 'number' ? o['speed'] : undefined,
+      autoplay: typeof o['autoplay'] === 'boolean' ? o['autoplay'] : undefined,
+    };
+  }
+  return out;
+}
+
+/**
  * Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
  * os `nodes` são concatenados; configs de cena como `background`/`fog`/
  * `outdoorLighting`: o último definido vence).
@@ -179,11 +203,13 @@ export async function buildScene(
   const byId = new Map<string, Object3D>();
   const waters: Water[] = [];
   const backgrounds: Background[] = [];
+  const animators: SceneAnimator[] = [];
   const overlay = options.overlay ?? null;
   const deleted = new Set<string>(overlayDeleted(overlay));
   const overrides = overlay?.objects ?? {};
   const editorColliders = overlayColliders(overlay);
   const editorMatte = overlayMatte(overlay);
+  const editorAnim = overlayAnimation(overlay);
 
   // ── Config de cena (último arquivo a definir vence) ──────────────────────────
   let background: number | string | undefined;
@@ -245,6 +271,22 @@ export async function buildScene(
     if (node.type === 'model' || node.type === 'primitive') {
       if (editorMatte[node.id] ?? node.matte ?? options.matte) setMatte(obj);
     }
+
+    // Animação: modelos `.glb` com clipes ganham um SceneAnimator (em
+    // `userData.cortexAnim` — o editor controla por ali). Toca o clipe se o nó/
+    // overlay pedir. Precedência: overlay (editor) > nó (JSON).
+    if (node.type === 'model') {
+      const gltf = await loadGLB(node.url);
+      if (gltf.animations && gltf.animations.length > 0) {
+        const animator = new SceneAnimator(obj, gltf.animations);
+        (obj.userData as Record<string, unknown>)['cortexAnim'] = animator;
+        animators.push(animator);
+        const cfg = editorAnim[node.id] ?? node.animation;
+        if (cfg && cfg.autoplay !== false) {
+          animator.play(cfg.clip ?? gltf.animations[0]!.name, { loop: cfg.loop, speed: cfg.speed });
+        }
+      }
+    }
   }
 
   // 2) Resolve `attach` (placement por socket) — após todos posicionados, em ordem
@@ -272,6 +314,7 @@ export async function buildScene(
     update(dt: number): void {
       for (const w of waters) w.update(dt);
       for (const b of backgrounds) b.update();
+      for (const a of animators) a.update(dt);
     },
   };
 }
