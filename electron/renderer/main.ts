@@ -117,6 +117,9 @@ document.addEventListener('project-open', (e) => {
   void fileTree.openProject(path)
 })
 
+// Fechar projeto: limpa a árvore (os demais componentes têm seu próprio listener).
+document.addEventListener('project-close', () => fileTree.closeProject())
+
 // Menu nativo "Projeto > Gerar instalador..." (ADR-0024). O BottomPanel
 // escuta o evento DOM e dispara `yarn tauri:build` (release) ou
 // `yarn tauri:build:debug` (com DevTools embutido) no projeto ativo.

@@ -142,6 +142,14 @@ export class FileTree {
     await this.refresh()
   }
 
+  /** Fecha o projeto: limpa a árvore, o label e o localStorage (volta ao estado sem projeto). */
+  closeProject(): void {
+    this.projectDir = null
+    localStorage.removeItem(STORAGE_KEY)
+    if (this.projectLabelEl) this.projectLabelEl.textContent = this.projectLabelText()
+    if (this.treeArea) this.treeArea.innerHTML = ''
+  }
+
   private buildShell(): void {
     this.container.innerHTML = ''
 

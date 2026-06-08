@@ -162,6 +162,20 @@ export class Chat {
       }
       this.updateInputState()
     })
+
+    // Fechar projeto: desconecta o agente e limpa a conversa.
+    document.addEventListener('project-close', () => {
+      this.projectDir = null
+      this.messagesSent = []
+      this.items = []
+      this.currentTurnAssistantText = ''
+      this.liveAssistantItem = null
+      this.clearAttachments()
+      this.pastesToCleanup = []
+      void window.electronAPI.setActiveProject(null)
+      if (this.messagesEl) this.messagesEl.innerHTML = `<p class="chat-empty">${t('chat.empty')}</p>`
+      this.updateInputState()
+    })
   }
 
   /** Carrega histórico persistido em <userData>/chats/<hash>.json (PRD-0001 V2). */

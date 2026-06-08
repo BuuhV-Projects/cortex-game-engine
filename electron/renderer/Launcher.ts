@@ -2,7 +2,7 @@
  * Tela inicial (launcher) estilo Unity Hub / Android Studio: logo + "Criar novo
  * jogo" / "Abrir jogo existente" + projetos recentes. Aparece quando NENHUM
  * projeto está aberto (boot sem último projeto) e some quando um projeto abre
- * (`project-open`). Um botão ⌂ permite voltar a ela depois.
+ * (`project-open`). Um botão ⌂ **fecha o projeto** (`project-close`) e volta pra ela.
  *
  * Recentes ficam em localStorage (`recentProjects`); atualizados a cada
  * `project-open`. "Criar" reusa o dialog do ProjectManager (evento
@@ -95,7 +95,7 @@ export class Launcher {
     // Botão ⌂ pra reabrir a tela inicial (canto inferior esquerdo, discreto).
     const home = document.createElement('button')
     home.textContent = '⌂'
-    home.title = 'Tela inicial'
+    home.title = 'Fechar projeto (tela inicial)'
     home.style.cssText = [
       'position:fixed',
       'left:8px',
@@ -110,7 +110,7 @@ export class Launcher {
       'cursor:pointer',
       'font-size:15px',
     ].join(';')
-    home.addEventListener('click', () => this.show())
+    home.addEventListener('click', () => document.dispatchEvent(new CustomEvent('project-close')))
     document.body.appendChild(home)
     this.homeBtn = home
 
@@ -120,6 +120,8 @@ export class Launcher {
       if (path) addRecent(path)
       this.hide()
     })
+    // Fechar projeto → volta pra tela inicial.
+    document.addEventListener('project-close', () => this.show())
 
     this.renderRecents()
     this.show() // boot: mostra a tela; FileTree restaura o último projeto → some.

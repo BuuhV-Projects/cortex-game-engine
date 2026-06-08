@@ -46,6 +46,13 @@ export class Preview {
       this.updateButtonState()
     })
 
+    // Fechar projeto: para o jogo se estiver rodando e zera o estado.
+    document.addEventListener('project-close', () => {
+      if (this.running) void window.electronAPI.stopProject()
+      this.projectDir = null
+      this.updateButtonState()
+    })
+
     // ESC sai do fullscreen (sem afetar outros atalhos quando não está em fs)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.fullscreen) {

@@ -64,6 +64,12 @@ export class BottomPanel {
       this.updateTerminalButtons()
     })
 
+    // Fechar projeto: zera o destino do terminal.
+    document.addEventListener('project-close', () => {
+      this.projectDir = null
+      this.updateTerminalButtons()
+    })
+
     // Projeto recém-criado: roda yarn install automaticamente (ADR-0013).
     // Garante que projectDir está setado antes de chamar runCommand.
     document.addEventListener('project-created', (e) => {
