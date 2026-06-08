@@ -139,6 +139,14 @@ export class ObjectEditSystem extends System {
       this.clickPending = null;
     }
 
+    // Não processa atalhos de teclado quando o foco está num campo editável do
+    // inspector — senão digitar Backspace/Delete pra limpar um valor DELETAVA o
+    // objeto da cena (bug), e 1/2/3/F/K viravam atalho enquanto você digitava.
+    const ae = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable)) {
+      return;
+    }
+
     if (this.edge('1')) {
       this.controls.setMode('translate');
       this.apply2DConstraints('translate');
