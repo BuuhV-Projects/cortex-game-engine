@@ -126,6 +126,10 @@ export interface PlayerAnimationsApi {
   get(obj: Object3D): PlayerAnimationsState | null;
   /** Mapeia uma ação a um clipe (`clip` vazio = desmapeia) e persiste. */
   set(obj: Object3D, action: string, clip: string): void;
+  /** Toca um clipe pra PREVIEW (loop, sem persistir). `''` = ignora. */
+  preview(obj: Object3D, clip: string): void;
+  /** Para a preview. */
+  stop(obj: Object3D): void;
 }
 
 export interface EditorInspectorOptions {
@@ -382,9 +386,23 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
           sel.append(opt);
         }
         sel.addEventListener('change', () => playerAnimationsApi.set(obj, action, sel.value));
-        row.append(lbl, sel);
+        // ▶ toca o clipe DESTA ação (preview, sem persistir).
+        const playBtn = document.createElement('button');
+        playBtn.textContent = '▶';
+        playBtn.title = `Tocar ${action}`;
+        playBtn.style.cssText =
+          'flex:0 0 auto;width:26px;padding:2px 0;background:#2a2f3a;color:#fff;border:1px solid #3a3f4a;border-radius:3px;cursor:pointer';
+        playBtn.addEventListener('click', () => playerAnimationsApi.preview(obj, sel.value));
+        row.append(lbl, sel, playBtn);
         root.append(row);
       }
+      // ⏹ para a preview das ações.
+      const stop = document.createElement('button');
+      stop.textContent = '⏹ Parar preview';
+      stop.style.cssText =
+        'width:100%;padding:4px;margin:3px 0;background:#2a2f3a;color:#fff;border:1px solid #3a3f4a;border-radius:3px;cursor:pointer';
+      stop.addEventListener('click', () => playerAnimationsApi.stop(obj));
+      root.append(stop);
     }
 
     // ── Collider (autorável) ───────────────────────────────────────────────────

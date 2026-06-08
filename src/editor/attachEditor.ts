@@ -700,6 +700,13 @@ export function attachEditor(game: Game): GameEditor {
         persist();
       }
     },
+    preview(obj, clip) {
+      const an = getAnimator(obj);
+      if (an && clip) an.play(clip, { loop: true });
+    },
+    stop(obj) {
+      getAnimator(obj)?.stop();
+    },
   };
 
   const inspector = createEditorInspector({
