@@ -1,4 +1,4 @@
-import { PerspectiveCamera, Vector3, Vector2, Box3, Plane, Raycaster, type Object3D } from 'three';
+import { PerspectiveCamera, Vector3, Vector2, Box3, Plane, Raycaster, CameraHelper, type Object3D } from 'three';
 import type { Game, GameEditor } from '../core/Game.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
@@ -227,6 +227,17 @@ export function attachEditor(game: Game): GameEditor {
   );
 
   const outliner = createEditorOutliner({ editRoots: [three], selection, onFocus: (obj) => cameraSystem.focusOn(obj) });
+
+  // A câmera do JOGO vira um objeto visível/selecionável no editor: entra na
+  // hierarquia (nomeada) e ganha um frustum (CameraHelper). No modo edição a
+  // navegação usa uma câmera de voo SEPARADA, então dá pra ver de fora como a
+  // câmera do jogo enquadra a cena. O frustum só aparece no modo edição.
+  if (!game.camera.name) game.camera.name = 'Camera';
+  if (game.camera.parent !== three) three.add(game.camera);
+  const cameraHelper = new CameraHelper(game.camera);
+  cameraHelper.visible = editorState.active; // segue o modo (boot em edição já mostra)
+  three.add(cameraHelper);
+  cameraHelper.update();
 
   // ── Collider como propriedade do objeto (autoria no editor) ──────────────────
   // O collider é uma entidade ECS ACOPLADA ao mesh (Object3DComponent.object ===
@@ -608,6 +619,9 @@ export function attachEditor(game: Game): GameEditor {
         outliner.setVisible(editorState.active);
         inspector.setVisible(editorState.active);
         addPanel.setVisible(editorState.active);
+        // Frustum da câmera do jogo: só no modo edição (some no Play).
+        cameraHelper.visible = editorState.active;
+        if (editorState.active) cameraHelper.update();
         if (editorState.active) {
           outliner.refresh();
           snapshot();
