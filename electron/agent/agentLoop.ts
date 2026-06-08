@@ -2,6 +2,7 @@ import { query, type Options, type PermissionResult } from '@anthropic-ai/claude
 import { createBlenderToolServer } from './tools/blender.js'
 import { createPlaytestToolServer } from './tools/playtest.js'
 import { createAssetToolServer } from './tools/assets.js'
+import { createKitsToolServer } from './tools/kits.js'
 import { createCriticToolServer } from './tools/critic.js'
 
 /**
@@ -244,9 +245,13 @@ Princípios de composição (aplique sempre):
   espaçados igualmente. Deixe áreas respirarem (foco no traçado jogável).
 - **Câmera que valoriza.** Posicione a câmera num ângulo que mostre a \
   composição (ex.: 3/4 elevado, como a referência), não de frente chapado.
-- **Reuse o que já existe.** Antes de gerar um modelo novo (\`generate_blender_model\`), \
-  cheque se o pacote já tem um asset que serve — gerar do zero quando há um \
-  pronto piora a consistência visual do conjunto.
+- **Reuse o que já existe — comece pelos KITS prontos.** O engine vem com **kits de \
+  assets empacotados** (modelos por tema + backdrops): rode \`list_kits\` pra ver o \
+  catálogo (role/tags/temas) e \`import_kit { kit }\` pra copiar o que combina pro \
+  \`assets/<kit>/\` do projeto (com o \`kit.json\`). Aí monte a cena por \`role\`/ \
+  \`gameplayRole\` e \`attach\`, passando o kit ao \`buildScene\`. Só gere modelo novo \
+  (\`generate_blender_model\`) quando NENHUM kit serve — gerar do zero quando há \
+  pronto piora a consistência visual.
 - **Editor é AUTOMÁTICO via \`Game\` — não monte editor à mão.** Projetos novos \
   usam o facade \`Game\` (\`new Game({ canvas })\`), que em DEV liga sozinho o modo \
   editor completo (F2: câmera de voo livre + hierarquia + inspector + gizmo, com \
@@ -423,6 +428,12 @@ export interface RunAgentOptions {
    */
   projectType?: '2d' | '2.5d'
   /**
+   * Diretório dos **kits de assets empacotados** (`<resourceBase>/kits/`, ADR-0053).
+   * Exposto à IA via as tools `list_kits`/`import_kit`. Lido pelo main via
+   * resourceBase(); ausente se indisponível.
+   */
+  kitsDir?: string
+  /**
    * Ambiente repassado ao subprocesso do SDK (a tool Bash herda dele). No app
    * empacotado o PATH do processo Electron não inclui yarn/node — o main injeta
    * os diretórios certos via envForSpawn() e passa aqui. Quando omitido, o SDK
@@ -445,6 +456,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
         'cortex-blender': createBlenderToolServer(opts.projectRoot),
         'cortex-playtest': createPlaytestToolServer(opts.projectRoot),
         'cortex-assets': createAssetToolServer(opts.projectRoot),
+        'cortex-kits': createKitsToolServer(opts.projectRoot, opts.kitsDir),
         'cortex-critic': createCriticToolServer(opts.projectRoot),
       }
     : undefined

@@ -1,0 +1,2426 @@
+{
+  "version": 1,
+  "name": "survival-base",
+  "module": 1,
+  "theme": "TBD",
+  "assets": {
+    "assets/barrel.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "barrel",
+        "S"
+      ],
+      "size": [
+        0.236,
+        0.344,
+        0.236
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "collider": {
+        "shape": "capsule",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.344,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/barrel.png"
+    },
+    "assets/barrel-open.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "barrel",
+        "S"
+      ],
+      "size": [
+        0.236,
+        0.344,
+        0.236
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "collider": {
+        "shape": "capsule",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.344,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/barrel-open.png"
+    },
+    "assets/bedroll.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "S"
+      ],
+      "size": [
+        0.31,
+        0.125,
+        0.608
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.125,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bedroll.png"
+    },
+    "assets/bedroll-frame.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "S"
+      ],
+      "size": [
+        0.272,
+        0.148,
+        0.608
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.148,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bedroll-frame.png"
+    },
+    "assets/bedroll-packed.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "S"
+      ],
+      "size": [
+        0.26,
+        0.09,
+        0.09
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.09,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bedroll-packed.png"
+    },
+    "assets/bottle.glb": {
+      "role": "prop",
+      "tags": [
+        "item",
+        "S"
+      ],
+      "size": [
+        0.053,
+        0.154,
+        0.061
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.154,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bottle.png"
+    },
+    "assets/bottle-large.glb": {
+      "role": "prop",
+      "tags": [
+        "item",
+        "S"
+      ],
+      "size": [
+        0.072,
+        0.144,
+        0.084
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.144,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bottle-large.png"
+    },
+    "assets/box.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "box",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "gameplayRole": [
+        "resource",
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.25,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/box.png"
+    },
+    "assets/box-large.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "box",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.25,
+        0.5
+      ],
+      "gameplayRole": [
+        "resource",
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.25,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/box-large.png"
+    },
+    "assets/box-large-open.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "box",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.306,
+        0.5
+      ],
+      "gameplayRole": [
+        "resource",
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.306,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/box-large-open.png"
+    },
+    "assets/box-open.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "box",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.306,
+        0.25
+      ],
+      "gameplayRole": [
+        "resource",
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.306,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/box-open.png"
+    },
+    "assets/bucket.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "bucket",
+        "S"
+      ],
+      "size": [
+        0.144,
+        0.192,
+        0.144
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.192,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bucket.png"
+    },
+    "assets/campfire-fishing-stand.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "fire",
+        "S"
+      ],
+      "size": [
+        0.395,
+        0.276,
+        0.253
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.276,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/campfire-fishing-stand.png"
+    },
+    "assets/campfire-pit.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "fire",
+        "S"
+      ],
+      "size": [
+        0.278,
+        0.109,
+        0.269
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.109,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/campfire-pit.png"
+    },
+    "assets/campfire-stand.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "fire",
+        "S"
+      ],
+      "size": [
+        0.41,
+        0.281,
+        0.124
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.281,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/campfire-stand.png"
+    },
+    "assets/chest.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.26,
+        0.346,
+        0.304
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.346,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/chest.png"
+    },
+    "assets/fence.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.517,
+        0.043
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.517,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.25,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.25,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence.png"
+    },
+    "assets/fence-doorway.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.517,
+        0.048
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.517,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.25,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.25,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-doorway.png"
+    },
+    "assets/fence-fortified.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.517,
+        0.053
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.517,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.25,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.25,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-fortified.png"
+    },
+    "assets/fish.glb": {
+      "role": "prop",
+      "tags": [
+        "item",
+        "S"
+      ],
+      "size": [
+        0.205,
+        0.106,
+        0.065
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.106,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fish.png"
+    },
+    "assets/fish-large.glb": {
+      "role": "prop",
+      "tags": [
+        "item",
+        "S"
+      ],
+      "size": [
+        0.307,
+        0.159,
+        0.098
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.159,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fish-large.png"
+    },
+    "assets/floor.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "floor",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.051,
+        0.5
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.051,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/floor.png"
+    },
+    "assets/floor-hole.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "floor",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.067,
+        0.5
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.067,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/floor-hole.png"
+    },
+    "assets/floor-old.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "floor",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.051,
+        0.5
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.051,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/floor-old.png"
+    },
+    "assets/grass.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "grass",
+        "S"
+      ],
+      "size": [
+        0.234,
+        0.142,
+        0.257
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.142,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/grass.png"
+    },
+    "assets/grass-large.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "grass",
+        "S"
+      ],
+      "size": [
+        0.476,
+        0.142,
+        0.487
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.142,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/grass-large.png"
+    },
+    "assets/patch-grass.glb": {
+      "role": "decoration",
+      "tags": [
+        "foliage",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.2,
+        0,
+        1.2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/patch-grass.png"
+    },
+    "assets/patch-grass-large.glb": {
+      "role": "decoration",
+      "tags": [
+        "foliage",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.4,
+        0,
+        1.2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/patch-grass-large.png"
+    },
+    "assets/resource-planks.glb": {
+      "role": "collectible",
+      "tags": [
+        "resource",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.373,
+        0.094,
+        0.626
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.094,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/resource-planks.png"
+    },
+    "assets/resource-stone.glb": {
+      "role": "collectible",
+      "tags": [
+        "resource",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.165,
+        0.107,
+        0.142
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.107,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/resource-stone.png"
+    },
+    "assets/resource-stone-large.glb": {
+      "role": "collectible",
+      "tags": [
+        "resource",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.376,
+        0.16,
+        0.337
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.16,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/resource-stone-large.png"
+    },
+    "assets/resource-wood.glb": {
+      "role": "collectible",
+      "tags": [
+        "resource",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.205,
+        0.062,
+        0.087
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.062,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/resource-wood.png"
+    },
+    "assets/rock-a.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.555,
+        0.393,
+        0.622
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.393,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/rock-a.png"
+    },
+    "assets/rock-b.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.835,
+        0.419,
+        0.725
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.419,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/rock-b.png"
+    },
+    "assets/rock-c.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.784,
+        0.51,
+        0.566
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.51,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/rock-c.png"
+    },
+    "assets/rock-flat.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "M"
+      ],
+      "size": [
+        1.786,
+        0.195,
+        1.448
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.195,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/rock-flat.png"
+    },
+    "assets/rock-flat-grass.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "M"
+      ],
+      "size": [
+        1.786,
+        0.226,
+        1.448
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.226,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/rock-flat-grass.png"
+    },
+    "assets/rock-sand-a.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.555,
+        0.393,
+        0.484
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.393,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/rock-sand-a.png"
+    },
+    "assets/rock-sand-b.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.799,
+        0.449,
+        0.789
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.449,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/rock-sand-b.png"
+    },
+    "assets/rock-sand-c.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.784,
+        0.51,
+        0.569
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.51,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/rock-sand-c.png"
+    },
+    "assets/signpost.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "S"
+      ],
+      "size": [
+        0.214,
+        0.46,
+        0.043
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.46,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/signpost.png"
+    },
+    "assets/signpost-single.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "S"
+      ],
+      "size": [
+        0.209,
+        0.46,
+        0.043
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.46,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/signpost-single.png"
+    },
+    "assets/structure.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/structure.png"
+    },
+    "assets/structure-canvas.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/structure-canvas.png"
+    },
+    "assets/structure-floor.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.549,
+        0.5
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.549,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/structure-floor.png"
+    },
+    "assets/structure-roof.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "S"
+      ],
+      "size": [
+        0.535,
+        0.657,
+        0.552
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.657,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/structure-roof.png"
+    },
+    "assets/tent.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "cloth",
+        "S"
+      ],
+      "size": [
+        0.561,
+        0.491,
+        0.561
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.491,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tent.png"
+    },
+    "assets/tent-canvas.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "cloth",
+        "S"
+      ],
+      "size": [
+        0.561,
+        0.491,
+        0.561
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.491,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tent-canvas.png"
+    },
+    "assets/tent-canvas-half.glb": {
+      "role": "prop",
+      "tags": [
+        "camp",
+        "shelter",
+        "cloth",
+        "S"
+      ],
+      "size": [
+        0.561,
+        0.491,
+        0.561
+      ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.491,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tent-canvas-half.png"
+    },
+    "assets/tool-axe.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.114,
+        0.256,
+        0.031
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.256,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-axe.png"
+    },
+    "assets/tool-axe-upgraded.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.147,
+        0.256,
+        0.04
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.256,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-axe-upgraded.png"
+    },
+    "assets/tool-hammer.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.09,
+        0.153,
+        0.04
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.153,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-hammer.png"
+    },
+    "assets/tool-hammer-upgraded.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.116,
+        0.185,
+        0.052
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.185,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-hammer-upgraded.png"
+    },
+    "assets/tool-hoe.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.085,
+        0.24,
+        0.071
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.24,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-hoe.png"
+    },
+    "assets/tool-hoe-upgraded.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.089,
+        0.24,
+        0.091
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.24,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-hoe-upgraded.png"
+    },
+    "assets/tool-pickaxe.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.179,
+        0.24,
+        0.039
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.24,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-pickaxe.png"
+    },
+    "assets/tool-pickaxe-upgraded.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.179,
+        0.24,
+        0.04
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.24,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-pickaxe-upgraded.png"
+    },
+    "assets/tool-shovel.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.071,
+        0.29,
+        0.031
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.29,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-shovel.png"
+    },
+    "assets/tool-shovel-upgraded.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.091,
+        0.29,
+        0.045
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.29,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tool-shovel-upgraded.png"
+    },
+    "assets/tree.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "S"
+      ],
+      "size": [
+        0.553,
+        1.411,
+        0.526
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.411,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree.png"
+    },
+    "assets/tree-autumn.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "S"
+      ],
+      "size": [
+        0.553,
+        1.411,
+        0.526
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.411,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-autumn.png"
+    },
+    "assets/tree-autumn-tall.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "M"
+      ],
+      "size": [
+        0.553,
+        1.711,
+        0.526
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.711,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-autumn-tall.png"
+    },
+    "assets/tree-autumn-trunk.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "S"
+      ],
+      "size": [
+        0.2,
+        0.261,
+        0.2
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.261,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-autumn-trunk.png"
+    },
+    "assets/tree-log.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "S"
+      ],
+      "size": [
+        0.249,
+        0.277,
+        1
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.277,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-log.png"
+    },
+    "assets/tree-log-small.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "S"
+      ],
+      "size": [
+        0.249,
+        0.277,
+        0.65
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.277,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-log-small.png"
+    },
+    "assets/tree-tall.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "M"
+      ],
+      "size": [
+        0.553,
+        1.711,
+        0.526
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.711,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-tall.png"
+    },
+    "assets/tree-trunk.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "S"
+      ],
+      "size": [
+        0.2,
+        0.261,
+        0.2
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.261,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-trunk.png"
+    },
+    "assets/workbench.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.326,
+        0.287,
+        0.296
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.287,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/workbench.png"
+    },
+    "assets/workbench-anvil.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.323,
+        0.336,
+        0.296
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.336,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/workbench-anvil.png"
+    },
+    "assets/workbench-grind.glb": {
+      "role": "prop",
+      "tags": [
+        "tool",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.26,
+        0.282,
+        0.329
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.282,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/workbench-grind.png"
+    }
+  }
+}

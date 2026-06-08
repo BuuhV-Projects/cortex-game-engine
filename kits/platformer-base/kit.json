@@ -1,0 +1,4875 @@
+{
+  "version": 1,
+  "name": "platformer-base",
+  "module": 1,
+  "theme": "TBD",
+  "assets": {
+    "assets/arrow.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "S"
+      ],
+      "size": [
+        0.456,
+        0.6,
+        0.142
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.6,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/arrow.png"
+    },
+    "assets/arrows.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "S"
+      ],
+      "size": [
+        0.502,
+        0.9,
+        0.142
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.9,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/arrows.png"
+    },
+    "assets/barrel.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "barrel",
+        "S"
+      ],
+      "size": [
+        0.236,
+        0.344,
+        0.236
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "collider": {
+        "shape": "capsule",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.344,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/barrel.png"
+    },
+    "assets/block-grass.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass.png"
+    },
+    "assets/block-grass-corner.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.054,
+        1,
+        1.054
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-corner.png"
+    },
+    "assets/block-grass-corner-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.054,
+        0.5,
+        1.054
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-corner-low.png"
+    },
+    "assets/block-grass-corner-overhang.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.054,
+        1,
+        1.054
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-corner-overhang.png"
+    },
+    "assets/block-grass-corner-overhang-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.054,
+        0.5,
+        1.054
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-corner-overhang-low.png"
+    },
+    "assets/block-grass-curve.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        1,
+        1
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-curve.png"
+    },
+    "assets/block-grass-curve-half.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1,
+        1,
+        1
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-curve-half.png"
+    },
+    "assets/block-grass-curve-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        0.5,
+        1
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-curve-low.png"
+    },
+    "assets/block-grass-edge.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-edge.png"
+    },
+    "assets/block-grass-hexagon.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.1,
+        1,
+        1.27
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-hexagon.png"
+    },
+    "assets/block-grass-large.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-large.png"
+    },
+    "assets/block-grass-large-slope.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.759,
+        2.011
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.759,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-large-slope.png"
+    },
+    "assets/block-grass-large-slope-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        1.082,
+        0.759,
+        2.011
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.759,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-large-slope-narrow.png"
+    },
+    "assets/block-grass-large-slope-steep.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1.217,
+        1.857
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.217,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-large-slope-steep.png"
+    },
+    "assets/block-grass-large-slope-steep-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        1.082,
+        1.217,
+        1.857
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.217,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-large-slope-steep-narrow.png"
+    },
+    "assets/block-grass-large-tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        2,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-large-tall.png"
+    },
+    "assets/block-grass-long.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-long.png"
+    },
+    "assets/block-grass-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.082,
+        0.5,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-low.png"
+    },
+    "assets/block-grass-low-hexagon.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.1,
+        0.5,
+        1.27
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-low-hexagon.png"
+    },
+    "assets/block-grass-low-large.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.5,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-low-large.png"
+    },
+    "assets/block-grass-low-long.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.5,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-low-long.png"
+    },
+    "assets/block-grass-low-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        0.782,
+        0.5,
+        0.782
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-low-narrow.png"
+    },
+    "assets/block-grass-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        0.782,
+        1,
+        0.782
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-narrow.png"
+    },
+    "assets/block-grass-overhang-corner.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-corner.png"
+    },
+    "assets/block-grass-overhang-edge.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-edge.png"
+    },
+    "assets/block-grass-overhang-hexagon.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.1,
+        1,
+        1.27
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-hexagon.png"
+    },
+    "assets/block-grass-overhang-large.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-large.png"
+    },
+    "assets/block-grass-overhang-large-slope.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.914,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.914,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-large-slope.png"
+    },
+    "assets/block-grass-overhang-large-slope-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        1.082,
+        0.914,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.914,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-large-slope-narrow.png"
+    },
+    "assets/block-grass-overhang-large-slope-steep.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1.367,
+        1.967
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.367,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-large-slope-steep.png"
+    },
+    "assets/block-grass-overhang-large-slope-steep-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        1.082,
+        1.367,
+        1.967
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.367,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-large-slope-steep-narrow.png"
+    },
+    "assets/block-grass-overhang-large-tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        2,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-large-tall.png"
+    },
+    "assets/block-grass-overhang-long.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-long.png"
+    },
+    "assets/block-grass-overhang-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.082,
+        0.5,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-low.png"
+    },
+    "assets/block-grass-overhang-low-hexagon.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1.1,
+        0.5,
+        1.27
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-low-hexagon.png"
+    },
+    "assets/block-grass-overhang-low-large.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.5,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-low-large.png"
+    },
+    "assets/block-grass-overhang-low-long.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.5,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-low-long.png"
+    },
+    "assets/block-grass-overhang-low-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        0.782,
+        0.5,
+        0.782
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-low-narrow.png"
+    },
+    "assets/block-grass-overhang-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        0.782,
+        1,
+        0.782
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-grass-overhang-narrow.png"
+    },
+    "assets/block-moving.glb": {
+      "role": "platform",
+      "tags": [
+        "terrain",
+        "grass",
+        "moving",
+        "S"
+      ],
+      "size": [
+        1,
+        0.3,
+        1
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.3,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-moving.png"
+    },
+    "assets/block-moving-blue.glb": {
+      "role": "platform",
+      "tags": [
+        "terrain",
+        "grass",
+        "moving",
+        "S"
+      ],
+      "size": [
+        1,
+        0.5,
+        1
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-moving-blue.png"
+    },
+    "assets/block-moving-large.glb": {
+      "role": "platform",
+      "tags": [
+        "terrain",
+        "grass",
+        "moving",
+        "S"
+      ],
+      "size": [
+        1,
+        0.5,
+        1
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-moving-large.png"
+    },
+    "assets/block-snow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow.png"
+    },
+    "assets/block-snow-corner.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.054,
+        1,
+        1.054
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-corner.png"
+    },
+    "assets/block-snow-corner-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.054,
+        0.5,
+        1.054
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-corner-low.png"
+    },
+    "assets/block-snow-corner-overhang.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.054,
+        1,
+        1.054
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-corner-overhang.png"
+    },
+    "assets/block-snow-corner-overhang-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.054,
+        0.5,
+        1.054
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-corner-overhang-low.png"
+    },
+    "assets/block-snow-curve.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2,
+        1,
+        1
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-curve.png"
+    },
+    "assets/block-snow-curve-half.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1,
+        1,
+        1
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-curve-half.png"
+    },
+    "assets/block-snow-curve-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2,
+        0.5,
+        1
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-curve-low.png"
+    },
+    "assets/block-snow-edge.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-edge.png"
+    },
+    "assets/block-snow-hexagon.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.1,
+        1,
+        1.27
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-hexagon.png"
+    },
+    "assets/block-snow-large.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-large.png"
+    },
+    "assets/block-snow-large-slope.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.759,
+        2.011
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.759,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-large-slope.png"
+    },
+    "assets/block-snow-large-slope-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        1.082,
+        0.759,
+        2.011
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.759,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-large-slope-narrow.png"
+    },
+    "assets/block-snow-large-slope-steep.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1.217,
+        1.857
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.217,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-large-slope-steep.png"
+    },
+    "assets/block-snow-large-slope-steep-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        1.082,
+        1.217,
+        1.857
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.217,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-large-slope-steep-narrow.png"
+    },
+    "assets/block-snow-large-tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        2,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-large-tall.png"
+    },
+    "assets/block-snow-long.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-long.png"
+    },
+    "assets/block-snow-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.082,
+        0.5,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-low.png"
+    },
+    "assets/block-snow-low-hexagon.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.1,
+        0.5,
+        1.27
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-low-hexagon.png"
+    },
+    "assets/block-snow-low-large.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.5,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-low-large.png"
+    },
+    "assets/block-snow-low-long.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.5,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-low-long.png"
+    },
+    "assets/block-snow-low-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        0.782,
+        0.5,
+        0.782
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-low-narrow.png"
+    },
+    "assets/block-snow-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        0.782,
+        1,
+        0.782
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-narrow.png"
+    },
+    "assets/block-snow-overhang-corner.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-corner.png"
+    },
+    "assets/block-snow-overhang-edge.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-edge.png"
+    },
+    "assets/block-snow-overhang-hexagon.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.1,
+        1,
+        1.27
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-hexagon.png"
+    },
+    "assets/block-snow-overhang-large.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-large.png"
+    },
+    "assets/block-snow-overhang-large-slope.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.914,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.914,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-large-slope.png"
+    },
+    "assets/block-snow-overhang-large-slope-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        1.082,
+        0.775,
+        2.011
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.775,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-large-slope-narrow.png"
+    },
+    "assets/block-snow-overhang-large-slope-steep.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1.367,
+        1.967
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.367,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-large-slope-steep.png"
+    },
+    "assets/block-snow-overhang-large-slope-steep-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        1.082,
+        1.217,
+        1.857
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.217,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-large-slope-steep-narrow.png"
+    },
+    "assets/block-snow-overhang-large-tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        2,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-large-tall.png"
+    },
+    "assets/block-snow-overhang-long.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        1,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-long.png"
+    },
+    "assets/block-snow-overhang-low.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.082,
+        0.5,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-low.png"
+    },
+    "assets/block-snow-overhang-low-hexagon.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        1.1,
+        0.5,
+        1.27
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-low-hexagon.png"
+    },
+    "assets/block-snow-overhang-low-large.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.5,
+        2.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-low-large.png"
+    },
+    "assets/block-snow-overhang-low-long.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "M"
+      ],
+      "size": [
+        2.082,
+        0.5,
+        1.082
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-low-long.png"
+    },
+    "assets/block-snow-overhang-low-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        0.782,
+        0.5,
+        0.782
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-low-narrow.png"
+    },
+    "assets/block-snow-overhang-narrow.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "snow",
+        "S"
+      ],
+      "size": [
+        0.782,
+        1,
+        0.782
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/block-snow-overhang-narrow.png"
+    },
+    "assets/bomb.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "S"
+      ],
+      "size": [
+        0.342,
+        0.434,
+        0.342
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.434,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bomb.png"
+    },
+    "assets/button-round.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "S"
+      ],
+      "size": [
+        0.58,
+        0.184,
+        0.502
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.184,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/button-round.png"
+    },
+    "assets/button-square.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "S"
+      ],
+      "size": [
+        0.6,
+        0.199,
+        0.6
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.199,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/button-square.png"
+    },
+    "assets/chest.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.26,
+        0.346,
+        0.304
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.346,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/chest.png"
+    },
+    "assets/coin-bronze.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.346,
+        0.4,
+        0.15
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/coin-bronze.png"
+    },
+    "assets/coin-gold.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.346,
+        0.4,
+        0.15
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/coin-gold.png"
+    },
+    "assets/coin-silver.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.346,
+        0.4,
+        0.15
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/coin-silver.png"
+    },
+    "assets/crate.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "crate",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "gameplayRole": [
+        "resource",
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/crate.png"
+    },
+    "assets/crate-item.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "crate",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "gameplayRole": [
+        "resource",
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/crate-item.png"
+    },
+    "assets/crate-item-strong.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "crate",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "gameplayRole": [
+        "resource",
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.6,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/crate-item-strong.png"
+    },
+    "assets/crate-strong.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "crate",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "gameplayRole": [
+        "resource",
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.6,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/crate-strong.png"
+    },
+    "assets/door-large-open.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "S"
+      ],
+      "size": [
+        1,
+        1,
+        0.3
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/door-large-open.png"
+    },
+    "assets/door-open.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "S"
+      ],
+      "size": [
+        0.6,
+        1,
+        0.2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/door-open.png"
+    },
+    "assets/door-rotate.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "S"
+      ],
+      "size": [
+        0.6,
+        1,
+        0.285
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/door-rotate.png"
+    },
+    "assets/door-rotate-large.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "S"
+      ],
+      "size": [
+        1,
+        1,
+        0.437
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/door-rotate-large.png"
+    },
+    "assets/fence-broken.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        1.026,
+        0.4,
+        0.14
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.513,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.513,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-broken.png"
+    },
+    "assets/fence-corner.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.99,
+        0.4,
+        0.99
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.495,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.495,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-corner.png"
+    },
+    "assets/fence-corner-curved.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.99,
+        0.4,
+        0.99
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.495,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.495,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-corner-curved.png"
+    },
+    "assets/fence-low-broken.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        1,
+        0.3,
+        0.2
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.3,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-low-broken.png"
+    },
+    "assets/fence-low-corner.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        1,
+        0.3,
+        1
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.3,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-low-corner.png"
+    },
+    "assets/fence-low-corner-curved.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        1,
+        0.3,
+        1
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.3,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-low-corner-curved.png"
+    },
+    "assets/fence-low-straight.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        1,
+        0.3,
+        0.2
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.3,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-low-straight.png"
+    },
+    "assets/fence-straight.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "S"
+      ],
+      "size": [
+        1,
+        0.4,
+        0.14
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.5,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence-straight.png"
+    },
+    "assets/flag.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "S"
+      ],
+      "size": [
+        0.423,
+        0.9,
+        0.112
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.9,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/flag.png"
+    },
+    "assets/flowers.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "S"
+      ],
+      "size": [
+        0.777,
+        0.137,
+        0.786
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.137,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/flowers.png"
+    },
+    "assets/flowers-tall.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "S"
+      ],
+      "size": [
+        0.546,
+        0.462,
+        0.618
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.462,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/flowers-tall.png"
+    },
+    "assets/grass.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "grass",
+        "S"
+      ],
+      "size": [
+        0.234,
+        0.142,
+        0.257
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.142,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/grass.png"
+    },
+    "assets/heart.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.412,
+        0.384,
+        0.119
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.384,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/heart.png"
+    },
+    "assets/hedge.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "S"
+      ],
+      "size": [
+        1,
+        0.4,
+        0.3
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hedge.png"
+    },
+    "assets/hedge-corner.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "S"
+      ],
+      "size": [
+        1,
+        0.4,
+        1
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hedge-corner.png"
+    },
+    "assets/jewel.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.333,
+        0.37,
+        0.288
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.37,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/jewel.png"
+    },
+    "assets/key.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.407,
+        0.217,
+        0.068
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.217,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/key.png"
+    },
+    "assets/ladder.glb": {
+      "role": "prop",
+      "tags": [
+        "traversal",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.5,
+        1,
+        0.1
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ladder.png"
+    },
+    "assets/ladder-broken.glb": {
+      "role": "prop",
+      "tags": [
+        "traversal",
+        "wood",
+        "S"
+      ],
+      "size": [
+        0.5,
+        1,
+        0.1
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ladder-broken.png"
+    },
+    "assets/ladder-long.glb": {
+      "role": "prop",
+      "tags": [
+        "traversal",
+        "wood",
+        "M"
+      ],
+      "size": [
+        0.5,
+        2,
+        0.1
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ladder-long.png"
+    },
+    "assets/lever.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "S"
+      ],
+      "size": [
+        0.6,
+        0.641,
+        0.45
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.641,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/lever.png"
+    },
+    "assets/lock.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "S"
+      ],
+      "size": [
+        0.293,
+        0.401,
+        0.185
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.401,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/lock.png"
+    },
+    "assets/mushrooms.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "S"
+      ],
+      "size": [
+        0.524,
+        0.295,
+        0.519
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.295,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/mushrooms.png"
+    },
+    "assets/plant.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "S"
+      ],
+      "size": [
+        0.551,
+        0.164,
+        0.478
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.164,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/plant.png"
+    },
+    "assets/platform.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1,
+        0.195,
+        1
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.195,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/platform.png"
+    },
+    "assets/platform-fortified.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1,
+        0.205,
+        1
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.205,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/platform-fortified.png"
+    },
+    "assets/platform-overhang.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1,
+        0.433,
+        0.458
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.433,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/platform-overhang.png"
+    },
+    "assets/platform-ramp.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "S"
+      ],
+      "size": [
+        1,
+        0.57,
+        1.027
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.57,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/platform-ramp.png"
+    },
+    "assets/poles.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "S"
+      ],
+      "size": [
+        1.1,
+        1,
+        0.35
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/poles.png"
+    },
+    "assets/rocks.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.653,
+        0.4,
+        0.662
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.4,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/rocks.png"
+    },
+    "assets/saw.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "S"
+      ],
+      "size": [
+        0.794,
+        0.794,
+        0.303
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.794,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/saw.png"
+    },
+    "assets/sign.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "S"
+      ],
+      "size": [
+        0.483,
+        0.6,
+        0.131
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.6,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/sign.png"
+    },
+    "assets/spike-block.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "S"
+      ],
+      "size": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.9,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/spike-block.png"
+    },
+    "assets/spike-block-wide.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "M"
+      ],
+      "size": [
+        2.4,
+        0.9,
+        0.9
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.9,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/spike-block-wide.png"
+    },
+    "assets/stones.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "S"
+      ],
+      "size": [
+        0.71,
+        0.05,
+        0.79
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.05,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/stones.png"
+    },
+    "assets/trap-spikes.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "S"
+      ],
+      "size": [
+        0.639,
+        0.17,
+        0.637
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.17,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/trap-spikes.png"
+    },
+    "assets/trap-spikes-large.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "S"
+      ],
+      "size": [
+        0.765,
+        0.17,
+        0.765
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.17,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/trap-spikes-large.png"
+    },
+    "assets/tree.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "S"
+      ],
+      "size": [
+        0.553,
+        1.411,
+        0.526
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.411,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree.png"
+    },
+    "assets/tree-pine.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "M"
+      ],
+      "size": [
+        0.948,
+        1.997,
+        0.948
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.997,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-pine.png"
+    },
+    "assets/tree-pine-small.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "S"
+      ],
+      "size": [
+        0.664,
+        1.398,
+        0.664
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.398,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-pine-small.png"
+    },
+    "assets/tree-pine-snow.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "M"
+      ],
+      "size": [
+        0.948,
+        1.997,
+        0.948
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.997,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-pine-snow.png"
+    },
+    "assets/tree-pine-snow-small.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "S"
+      ],
+      "size": [
+        0.664,
+        1.398,
+        0.664
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.398,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-pine-snow-small.png"
+    },
+    "assets/tree-snow.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "M"
+      ],
+      "size": [
+        1.154,
+        1.931,
+        1.173
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.931,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/tree-snow.png"
+    }
+  }
+}

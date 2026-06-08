@@ -1,0 +1,412 @@
+{
+  "version": 1,
+  "name": "backgrounds-base",
+  "theme": "multi",
+  "assets": {
+    "assets/background_adventure_1.jpg": {
+      "role": "background",
+      "tags": [
+        "adventure",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_adventure_1.jpg"
+    },
+    "assets/background_adventure_2.jpg": {
+      "role": "background",
+      "tags": [
+        "adventure",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_adventure_2.jpg"
+    },
+    "assets/background_adventure_3.jpg": {
+      "role": "background",
+      "tags": [
+        "adventure",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_adventure_3.jpg"
+    },
+    "assets/background_adventure_4.jpg": {
+      "role": "background",
+      "tags": [
+        "adventure",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_adventure_4.jpg"
+    },
+    "assets/background_apocalypse_1.jpg": {
+      "role": "background",
+      "tags": [
+        "apocalypse",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_apocalypse_1.jpg"
+    },
+    "assets/background_apocalypse_2.jpg": {
+      "role": "background",
+      "tags": [
+        "apocalypse",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_apocalypse_2.jpg"
+    },
+    "assets/background_apocalypse_3.jpg": {
+      "role": "background",
+      "tags": [
+        "apocalypse",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_apocalypse_3.jpg"
+    },
+    "assets/background_apocalypse_4.jpg": {
+      "role": "background",
+      "tags": [
+        "apocalypse",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_apocalypse_4.jpg"
+    },
+    "assets/background_eastern_1.jpg": {
+      "role": "background",
+      "tags": [
+        "eastern",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_eastern_1.jpg"
+    },
+    "assets/background_eastern_2.jpg": {
+      "role": "background",
+      "tags": [
+        "eastern",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_eastern_2.jpg"
+    },
+    "assets/background_eastern_3.jpg": {
+      "role": "background",
+      "tags": [
+        "eastern",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_eastern_3.jpg"
+    },
+    "assets/background_eastern_4.jpg": {
+      "role": "background",
+      "tags": [
+        "eastern",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_eastern_4.jpg"
+    },
+    "assets/background_factory_1.jpg": {
+      "role": "background",
+      "tags": [
+        "factory",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_factory_1.jpg"
+    },
+    "assets/background_factory_2.jpg": {
+      "role": "background",
+      "tags": [
+        "factory",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_factory_2.jpg"
+    },
+    "assets/background_fairytale_1.jpg": {
+      "role": "background",
+      "tags": [
+        "fairytale",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_fairytale_1.jpg"
+    },
+    "assets/background_fairytale_2.jpg": {
+      "role": "background",
+      "tags": [
+        "fairytale",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_fairytale_2.jpg"
+    },
+    "assets/background_fairytale_3.jpg": {
+      "role": "background",
+      "tags": [
+        "fairytale",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_fairytale_3.jpg"
+    },
+    "assets/background_fairytale_4.jpg": {
+      "role": "background",
+      "tags": [
+        "fairytale",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_fairytale_4.jpg"
+    },
+    "assets/background_holidays_1.jpg": {
+      "role": "background",
+      "tags": [
+        "holidays",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_holidays_1.jpg"
+    },
+    "assets/background_holidays_2.jpg": {
+      "role": "background",
+      "tags": [
+        "holidays",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_holidays_2.jpg"
+    },
+    "assets/background_holidays_3.jpg": {
+      "role": "background",
+      "tags": [
+        "holidays",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_holidays_3.jpg"
+    },
+    "assets/background_holidays_4.jpg": {
+      "role": "background",
+      "tags": [
+        "holidays",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_holidays_4.jpg"
+    },
+    "assets/background_horror_1.jpg": {
+      "role": "background",
+      "tags": [
+        "horror",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_horror_1.jpg"
+    },
+    "assets/background_horror_2.jpg": {
+      "role": "background",
+      "tags": [
+        "horror",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_horror_2.jpg"
+    },
+    "assets/background_horror_3.jpg": {
+      "role": "background",
+      "tags": [
+        "horror",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_horror_3.jpg"
+    },
+    "assets/background_horror_4.jpg": {
+      "role": "background",
+      "tags": [
+        "horror",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_horror_4.jpg"
+    },
+    "assets/background_medieval_1.jpg": {
+      "role": "background",
+      "tags": [
+        "medieval",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_medieval_1.jpg"
+    },
+    "assets/background_medieval_2.jpg": {
+      "role": "background",
+      "tags": [
+        "medieval",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_medieval_2.jpg"
+    },
+    "assets/background_medieval_3.jpg": {
+      "role": "background",
+      "tags": [
+        "medieval",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_medieval_3.jpg"
+    },
+    "assets/background_medieval_4.jpg": {
+      "role": "background",
+      "tags": [
+        "medieval",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_medieval_4.jpg"
+    },
+    "assets/background_military_1.jpg": {
+      "role": "background",
+      "tags": [
+        "military",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_military_1.jpg"
+    },
+    "assets/background_military_2.jpg": {
+      "role": "background",
+      "tags": [
+        "military",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_military_2.jpg"
+    },
+    "assets/background_military_3.jpg": {
+      "role": "background",
+      "tags": [
+        "military",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_military_3.jpg"
+    },
+    "assets/background_seasons_1.jpg": {
+      "role": "background",
+      "tags": [
+        "seasons",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_seasons_1.jpg"
+    },
+    "assets/background_seasons_2.jpg": {
+      "role": "background",
+      "tags": [
+        "seasons",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_seasons_2.jpg"
+    },
+    "assets/background_seasons_3.jpg": {
+      "role": "background",
+      "tags": [
+        "seasons",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_seasons_3.jpg"
+    },
+    "assets/background_seasons_4.jpg": {
+      "role": "background",
+      "tags": [
+        "seasons",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_seasons_4.jpg"
+    },
+    "assets/background_space_1.jpg": {
+      "role": "background",
+      "tags": [
+        "space",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_space_1.jpg"
+    },
+    "assets/background_space_2.jpg": {
+      "role": "background",
+      "tags": [
+        "space",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_space_2.jpg"
+    },
+    "assets/background_space_3.jpg": {
+      "role": "background",
+      "tags": [
+        "space",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_space_3.jpg"
+    },
+    "assets/background_space_4.jpg": {
+      "role": "background",
+      "tags": [
+        "space",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_space_4.jpg"
+    },
+    "assets/background_urban_1.jpg": {
+      "role": "background",
+      "tags": [
+        "urban",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_urban_1.jpg"
+    },
+    "assets/background_urban_2.jpg": {
+      "role": "background",
+      "tags": [
+        "urban",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_urban_2.jpg"
+    },
+    "assets/background_urban_3.jpg": {
+      "role": "background",
+      "tags": [
+        "urban",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_urban_3.jpg"
+    },
+    "assets/background_urban_4.jpg": {
+      "role": "background",
+      "tags": [
+        "urban",
+        "2d",
+        "backdrop"
+      ],
+      "thumb": "assets/background_urban_4.jpg"
+    }
+  }
+}

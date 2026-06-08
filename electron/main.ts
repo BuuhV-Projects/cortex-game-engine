@@ -1192,6 +1192,7 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
       engineApiDoc,
       gameDesignBible,
       projectType,
+      kitsDir: join(resourceBase(), 'kits'),
       // PATH aumentado: a tool Bash do SDK herda este env, então `yarn`/`node`
       // resolvem mesmo no app empacotado (onde o PATH do Explorer não os tem).
       env: envForSpawn(),

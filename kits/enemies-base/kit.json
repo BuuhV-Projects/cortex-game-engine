@@ -1,0 +1,512 @@
+{
+  "version": 1,
+  "name": "enemies-base",
+  "module": 1,
+  "theme": "TBD",
+  "assets": {
+    "assets/Skeleton_Arrow.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Arrow.png"
+    },
+    "assets/Skeleton_Arrow_Broken.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Arrow_Broken.png"
+    },
+    "assets/Skeleton_Arrow_Broken_Half.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Arrow_Broken_Half.png"
+    },
+    "assets/Skeleton_Arrow_Half.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Arrow_Half.png"
+    },
+    "assets/Skeleton_Axe.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.001,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.001,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Axe.png"
+    },
+    "assets/Skeleton_Blade.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.168,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.168,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Blade.png"
+    },
+    "assets/Skeleton_Crossbow.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2.141
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Crossbow.png"
+    },
+    "assets/Skeleton_Mage.glb": {
+      "role": "enemy",
+      "tags": [
+        "skeleton",
+        "undead",
+        "M"
+      ],
+      "size": [
+        1.938,
+        3.63,
+        2
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.63,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Mage.png"
+    },
+    "assets/Skeleton_Minion.glb": {
+      "role": "enemy",
+      "tags": [
+        "skeleton",
+        "undead",
+        "M"
+      ],
+      "size": [
+        1.938,
+        3.166,
+        2
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.166,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Minion.png"
+    },
+    "assets/Skeleton_Quiver.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Quiver.png"
+    },
+    "assets/Skeleton_Rogue.glb": {
+      "role": "enemy",
+      "tags": [
+        "skeleton",
+        "undead",
+        "M"
+      ],
+      "size": [
+        1.943,
+        3.308,
+        2
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.308,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Rogue.png"
+    },
+    "assets/Skeleton_Shield_Large_A.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Shield_Large_A.png"
+    },
+    "assets/Skeleton_Shield_Large_B.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Shield_Large_B.png"
+    },
+    "assets/Skeleton_Shield_Small_A.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Shield_Small_A.png"
+    },
+    "assets/Skeleton_Shield_Small_B.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Shield_Small_B.png"
+    },
+    "assets/Skeleton_Staff.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.255,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.255,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Staff.png"
+    },
+    "assets/Skeleton_Warrior.glb": {
+      "role": "enemy",
+      "tags": [
+        "skeleton",
+        "undead",
+        "M"
+      ],
+      "size": [
+        1.943,
+        3.59,
+        2
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.59,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skeleton_Warrior.png"
+    }
+  }
+}

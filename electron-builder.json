@@ -13,6 +13,7 @@
   ],
   "extraResources": [
     { "from": "templates", "to": "templates" },
+    { "from": "kits", "to": "kits" },
     { "from": "dist-engine", "to": "dist-engine" },
     {
       "from": "docs/cortex-game-engine/engine-api.md",

@@ -1,0 +1,1168 @@
+{
+  "version": 1,
+  "name": "characters-base",
+  "module": 1,
+  "theme": "TBD",
+  "assets": {
+    "assets/Barbarian.glb": {
+      "role": "character",
+      "tags": [
+        "hero",
+        "humanoid",
+        "M"
+      ],
+      "size": [
+        1.943,
+        3.398,
+        2
+      ],
+      "gameplayRole": [
+        "player"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.398,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Barbarian.png"
+    },
+    "assets/Knight.glb": {
+      "role": "character",
+      "tags": [
+        "hero",
+        "humanoid",
+        "M"
+      ],
+      "size": [
+        1.943,
+        3.543,
+        2
+      ],
+      "gameplayRole": [
+        "player"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.543,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Knight.png"
+    },
+    "assets/Mage.glb": {
+      "role": "character",
+      "tags": [
+        "hero",
+        "humanoid",
+        "M"
+      ],
+      "size": [
+        1.943,
+        3.653,
+        2
+      ],
+      "gameplayRole": [
+        "player"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.653,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Mage.png"
+    },
+    "assets/Ranger.glb": {
+      "role": "character",
+      "tags": [
+        "hero",
+        "humanoid",
+        "M"
+      ],
+      "size": [
+        1.943,
+        3.273,
+        2
+      ],
+      "gameplayRole": [
+        "player"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.273,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Ranger.png"
+    },
+    "assets/Rogue.glb": {
+      "role": "character",
+      "tags": [
+        "hero",
+        "humanoid",
+        "M"
+      ],
+      "size": [
+        1.945,
+        3.178,
+        2
+      ],
+      "gameplayRole": [
+        "player"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.178,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Rogue.png"
+    },
+    "assets/Rogue_Hooded.glb": {
+      "role": "character",
+      "tags": [
+        "hero",
+        "humanoid",
+        "M"
+      ],
+      "size": [
+        1.945,
+        3.171,
+        2
+      ],
+      "gameplayRole": [
+        "player"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.171,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Rogue_Hooded.png"
+    },
+    "assets/arrow_bow.glb": {
+      "role": "prop",
+      "tags": [
+        "ammo",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.163,
+        0.142,
+        1.261
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.142,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/arrow_bow.png"
+    },
+    "assets/arrow_bow_bundle.glb": {
+      "role": "prop",
+      "tags": [
+        "ammo",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.438,
+        1.097,
+        0.43
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.097,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/arrow_bow_bundle.png"
+    },
+    "assets/arrow_crossbow.glb": {
+      "role": "prop",
+      "tags": [
+        "ammo",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.117,
+        0.102,
+        0.749
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.102,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/arrow_crossbow.png"
+    },
+    "assets/arrow_crossbow_bundle.glb": {
+      "role": "prop",
+      "tags": [
+        "ammo",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.292,
+        0.732,
+        0.287
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.732,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/arrow_crossbow_bundle.png"
+    },
+    "assets/axe_1handed.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.714,
+        1.244,
+        0.185
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.244,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/axe_1handed.png"
+    },
+    "assets/axe_2handed.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        1.24,
+        1.725,
+        0.262
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.725,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/axe_2handed.png"
+    },
+    "assets/bow.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        0.494,
+        0.156,
+        1.984
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.156,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bow.png"
+    },
+    "assets/bow_withString.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        0.494,
+        0.156,
+        1.984
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.156,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bow_withString.png"
+    },
+    "assets/crossbow_1handed.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.911,
+        0.406,
+        1.222
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.406,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/crossbow_1handed.png"
+    },
+    "assets/crossbow_2handed.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "S"
+      ],
+      "size": [
+        1.223,
+        0.479,
+        1.441
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.479,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/crossbow_2handed.png"
+    },
+    "assets/dagger.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.259,
+        1.206,
+        0.152
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.206,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/dagger.png"
+    },
+    "assets/mug_empty.glb": {
+      "role": "prop",
+      "tags": [
+        "item",
+        "S"
+      ],
+      "size": [
+        0.534,
+        0.487,
+        0.396
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.487,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/mug_empty.png"
+    },
+    "assets/mug_full.glb": {
+      "role": "prop",
+      "tags": [
+        "item",
+        "S"
+      ],
+      "size": [
+        0.534,
+        0.548,
+        0.396
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.548,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/mug_full.png"
+    },
+    "assets/quiver.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.305,
+        0.929,
+        0.194
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.929,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/quiver.png"
+    },
+    "assets/shield_badge.glb": {
+      "role": "prop",
+      "tags": [
+        "shield",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.883,
+        1.022,
+        0.246
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.022,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/shield_badge.png"
+    },
+    "assets/shield_badge_color.glb": {
+      "role": "prop",
+      "tags": [
+        "shield",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.883,
+        1.022,
+        0.246
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.022,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/shield_badge_color.png"
+    },
+    "assets/shield_round.glb": {
+      "role": "prop",
+      "tags": [
+        "shield",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.883,
+        0.883,
+        0.332
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.883,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/shield_round.png"
+    },
+    "assets/shield_round_barbarian.glb": {
+      "role": "prop",
+      "tags": [
+        "shield",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.883,
+        0.883,
+        0.332
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.883,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/shield_round_barbarian.png"
+    },
+    "assets/shield_round_color.glb": {
+      "role": "prop",
+      "tags": [
+        "shield",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.883,
+        0.883,
+        0.332
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.883,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/shield_round_color.png"
+    },
+    "assets/shield_spikes.glb": {
+      "role": "prop",
+      "tags": [
+        "shield",
+        "item",
+        "S"
+      ],
+      "size": [
+        1.007,
+        1.037,
+        0.46
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.037,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/shield_spikes.png"
+    },
+    "assets/shield_spikes_color.glb": {
+      "role": "prop",
+      "tags": [
+        "shield",
+        "item",
+        "S"
+      ],
+      "size": [
+        1.007,
+        1.037,
+        0.46
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.037,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/shield_spikes_color.png"
+    },
+    "assets/shield_square.glb": {
+      "role": "prop",
+      "tags": [
+        "shield",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.883,
+        1.193,
+        0.301
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.193,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/shield_square.png"
+    },
+    "assets/shield_square_color.glb": {
+      "role": "prop",
+      "tags": [
+        "shield",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.883,
+        1.193,
+        0.301
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.193,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/shield_square_color.png"
+    },
+    "assets/smokebomb.glb": {
+      "role": "prop",
+      "tags": [
+        "item",
+        "S"
+      ],
+      "size": [
+        0.383,
+        0.423,
+        0.364
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.423,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/smokebomb.png"
+    },
+    "assets/spellbook_closed.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.293,
+        0.575,
+        0.427
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.575,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/spellbook_closed.png"
+    },
+    "assets/spellbook_open.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.828,
+        0.569,
+        0.222
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.569,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/spellbook_open.png"
+    },
+    "assets/staff.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        0.576,
+        2.155,
+        0.292
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.155,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/staff.png"
+    },
+    "assets/sword_1handed.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        0.503,
+        1.775,
+        0.131
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.775,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/sword_1handed.png"
+    },
+    "assets/sword_2handed.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        0.839,
+        2.366,
+        0.248
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.366,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/sword_2handed.png"
+    },
+    "assets/sword_2handed_color.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "M"
+      ],
+      "size": [
+        0.839,
+        2.366,
+        0.248
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.366,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/sword_2handed_color.png"
+    },
+    "assets/wand.glb": {
+      "role": "prop",
+      "tags": [
+        "weapon",
+        "item",
+        "S"
+      ],
+      "size": [
+        0.161,
+        0.966,
+        0.161
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.966,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/wand.png"
+    }
+  }
+}

@@ -1,0 +1,1961 @@
+{
+  "version": 1,
+  "name": "terrain-hex",
+  "module": 9.6,
+  "theme": "TBD",
+  "assets": {
+    "assets/hex_coast_A.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_A.png"
+    },
+    "assets/hex_coast_A_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_A_waterless.png"
+    },
+    "assets/hex_coast_B.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_B.png"
+    },
+    "assets/hex_coast_B_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        8.314
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_B_waterless.png"
+    },
+    "assets/hex_coast_C.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_C.png"
+    },
+    "assets/hex_coast_C_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        8.314
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_C_waterless.png"
+    },
+    "assets/hex_coast_D.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_D.png"
+    },
+    "assets/hex_coast_D_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        4.8,
+        4.8,
+        8.314
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_D_waterless.png"
+    },
+    "assets/hex_coast_E.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_E.png"
+    },
+    "assets/hex_coast_E_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "coast",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_coast_E_waterless.png"
+    },
+    "assets/hex_grass.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "terrain",
+        "grass",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_grass.png"
+    },
+    "assets/hex_grass_bottom.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "terrain",
+        "grass",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_grass_bottom.png"
+    },
+    "assets/hex_grass_sloped_high.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "terrain",
+        "grass",
+        "L"
+      ],
+      "size": [
+        9.6,
+        9.6,
+        11.083
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            9.6,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_grass_sloped_high.png"
+    },
+    "assets/hex_grass_sloped_low.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "terrain",
+        "grass",
+        "L"
+      ],
+      "size": [
+        9.6,
+        7.2,
+        11.083
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            7.2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_grass_sloped_low.png"
+    },
+    "assets/hex_river_A.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_A.png"
+    },
+    "assets/hex_river_A_curvy.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_A_curvy.png"
+    },
+    "assets/hex_river_A_curvy_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_A_curvy_waterless.png"
+    },
+    "assets/hex_river_A_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_A_waterless.png"
+    },
+    "assets/hex_river_B.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_B.png"
+    },
+    "assets/hex_river_B_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_B_waterless.png"
+    },
+    "assets/hex_river_C.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_C.png"
+    },
+    "assets/hex_river_C_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_C_waterless.png"
+    },
+    "assets/hex_river_D.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_D.png"
+    },
+    "assets/hex_river_D_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_D_waterless.png"
+    },
+    "assets/hex_river_E.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_E.png"
+    },
+    "assets/hex_river_E_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_E_waterless.png"
+    },
+    "assets/hex_river_F.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_F.png"
+    },
+    "assets/hex_river_F_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_F_waterless.png"
+    },
+    "assets/hex_river_G.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_G.png"
+    },
+    "assets/hex_river_G_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_G_waterless.png"
+    },
+    "assets/hex_river_H.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_H.png"
+    },
+    "assets/hex_river_H_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_H_waterless.png"
+    },
+    "assets/hex_river_I.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_I.png"
+    },
+    "assets/hex_river_I_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_I_waterless.png"
+    },
+    "assets/hex_river_J.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_J.png"
+    },
+    "assets/hex_river_J_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_J_waterless.png"
+    },
+    "assets/hex_river_K.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_K.png"
+    },
+    "assets/hex_river_K_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_K_waterless.png"
+    },
+    "assets/hex_river_L.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_L.png"
+    },
+    "assets/hex_river_L_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_L_waterless.png"
+    },
+    "assets/hex_river_crossing_A.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_crossing_A.png"
+    },
+    "assets/hex_river_crossing_A_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_crossing_A_waterless.png"
+    },
+    "assets/hex_river_crossing_B.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_crossing_B.png"
+    },
+    "assets/hex_river_crossing_B_waterless.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "river",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_river_crossing_B_waterless.png"
+    },
+    "assets/hex_road_A.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_A.png"
+    },
+    "assets/hex_road_A_sloped_high.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        9.6,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            9.6,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_A_sloped_high.png"
+    },
+    "assets/hex_road_A_sloped_low.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        7.2,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            7.2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_A_sloped_low.png"
+    },
+    "assets/hex_road_B.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_B.png"
+    },
+    "assets/hex_road_C.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_C.png"
+    },
+    "assets/hex_road_D.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_D.png"
+    },
+    "assets/hex_road_E.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_E.png"
+    },
+    "assets/hex_road_F.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_F.png"
+    },
+    "assets/hex_road_G.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_G.png"
+    },
+    "assets/hex_road_H.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_H.png"
+    },
+    "assets/hex_road_I.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_I.png"
+    },
+    "assets/hex_road_J.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_J.png"
+    },
+    "assets/hex_road_K.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_K.png"
+    },
+    "assets/hex_road_L.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_L.png"
+    },
+    "assets/hex_road_M.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "road",
+        "L"
+      ],
+      "size": [
+        9.6,
+        4.8,
+        11.083
+      ],
+      "gameplayRole": [
+        "guidance",
+        "path"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.8,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_road_M.png"
+    },
+    "assets/hex_water.glb": {
+      "role": "ground",
+      "tags": [
+        "hex",
+        "water",
+        "L"
+      ],
+      "size": [
+        9.6,
+        3.84,
+        11.083
+      ],
+      "gameplayRole": [
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.84,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hex_water.png"
+    }
+  }
+}

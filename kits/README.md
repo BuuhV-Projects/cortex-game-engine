@@ -1,0 +1,37 @@
+# kits/ — kits de assets do engine (ADR-0053)
+
+Kits de assets **prontos e curados**, empacotados na IDE (extraResources →
+`<resourceBase>/kits/`) e oferecidos ao Chat IA pelas tools `list_kits` /
+`import_kit`. Cada kit é um vocabulário do design system: `kit.json` (role / tags /
+gameplayRole / size / collider / anchors / thumb) + os assets + thumbnails.
+
+## Layout de um kit
+
+```
+kits/<nome>/
+├── kit.json            # vocabulário (chaves = assets/<arquivo>)
+├── assets/             # .glb (ou .jpg de backdrop) [+ Textures/ compartilhada]
+└── thumbnails/         # 1 PNG por asset (referência visual; backdrops usam a própria imagem)
+```
+
+## Kits atuais
+
+| Kit | Conteúdo |
+|---|---|
+| `platformer-base` | Kenney platformer: blocos modulares (grass/snow), plataformas, hazards, coletáveis, ladders |
+| `platformer-quaternius` | Quaternius Ultimate Platformer: completo, com player+enemies animados |
+| `survival-base` | Kenney survival: natureza, recursos, caixas, fogueira, tenda, ferramentas |
+| `stylized-fantasy-base` | Quaternius natureza + Kenney recursos: floresta, pedras, metais, madeiras, barris |
+| `terrain-hex` | Tiles hexagonais (terreno/rio/água/estrada) |
+| `characters-base` | KayKit Adventurers: 6 heróis + armas/escudos |
+| `enemies-base` | KayKit Skeletons: inimigos + armas |
+| `backgrounds-base` | 45 backdrops 2D por tema (role `background`, parallax) |
+
+## Como adicionar/atualizar um kit
+
+Use a skill `process-asset-kit` (pack bruto → kit curado). Pra backdrops 2D,
+`gen-backgrounds.mjs`. Os kits são **commitados no git** (binários ~100MB — decisão
+de versionar tudo junto, reprodutível no clone).
+
+> Animações: os meshes Quaternius já embutem clipes; KayKit usa um rig compartilhado
+> (`Rig_Medium`) com a lib de animações à parte (não vem no mesh).

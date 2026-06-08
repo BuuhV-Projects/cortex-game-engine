@@ -1,0 +1,3574 @@
+{
+  "version": 1,
+  "name": "platformer-quaternius",
+  "module": 1,
+  "theme": "TBD",
+  "assets": {
+    "assets/Arrow.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "sign",
+        "M"
+      ],
+      "size": [
+        2.011,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Arrow.png"
+    },
+    "assets/Arrow_Side.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "sign",
+        "M"
+      ],
+      "size": [
+        2.053,
+        3.052,
+        2
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.052,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Arrow_Side.png"
+    },
+    "assets/Arrow_Up.glb": {
+      "role": "decoration",
+      "tags": [
+        "guidance",
+        "sign",
+        "M"
+      ],
+      "size": [
+        1.902,
+        3.701,
+        2
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.701,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Arrow_Up.png"
+    },
+    "assets/Bee.glb": {
+      "role": "enemy",
+      "tags": [
+        "enemy",
+        "M"
+      ],
+      "size": [
+        2.818,
+        2.905,
+        2
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.905,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Bee.png"
+    },
+    "assets/Bomb.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "explosive",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.182,
+        2
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.182,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Bomb.png"
+    },
+    "assets/Bouncer.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "bounce",
+        "M"
+      ],
+      "size": [
+        2.208,
+        2.791,
+        2.208
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.791,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Bouncer.png"
+    },
+    "assets/Bridge_Modular.glb": {
+      "role": "connector",
+      "tags": [
+        "bridge",
+        "M"
+      ],
+      "size": [
+        2.948,
+        2.779,
+        2.242
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.779,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Bridge_Modular.png"
+    },
+    "assets/Bridge_Modular_Center.glb": {
+      "role": "connector",
+      "tags": [
+        "bridge",
+        "M"
+      ],
+      "size": [
+        3,
+        2.99,
+        2.306
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.99,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Bridge_Modular_Center.png"
+    },
+    "assets/Bridge_Small.glb": {
+      "role": "connector",
+      "tags": [
+        "bridge",
+        "L"
+      ],
+      "size": [
+        6.938,
+        3.342,
+        2.638
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.342,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Bridge_Small.png"
+    },
+    "assets/Bush.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "bush",
+        "M"
+      ],
+      "size": [
+        3.524,
+        3.263,
+        3.529
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.263,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Bush.png"
+    },
+    "assets/Bush_Fruit.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "bush",
+        "M"
+      ],
+      "size": [
+        3.524,
+        3.263,
+        3.529
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.263,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Bush_Fruit.png"
+    },
+    "assets/Cannon.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "explosive",
+        "M"
+      ],
+      "size": [
+        3.375,
+        3.737,
+        3.321
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.737,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cannon.png"
+    },
+    "assets/Cannonball.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "explosive",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cannonball.png"
+    },
+    "assets/Character.glb": {
+      "role": "character",
+      "tags": [
+        "hero",
+        "humanoid",
+        "L"
+      ],
+      "size": [
+        2.554,
+        4.69,
+        2.164
+      ],
+      "gameplayRole": [
+        "player"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.69,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Character.png"
+    },
+    "assets/Character_Gun.glb": {
+      "role": "character",
+      "tags": [
+        "hero",
+        "humanoid",
+        "L"
+      ],
+      "size": [
+        3.796,
+        4.69,
+        2.164
+      ],
+      "gameplayRole": [
+        "player"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.69,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Character_Gun.png"
+    },
+    "assets/Chest.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "M"
+      ],
+      "size": [
+        2.136,
+        2.698,
+        3.557
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.698,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Chest.png"
+    },
+    "assets/Cloud_1.glb": {
+      "role": "decoration",
+      "tags": [
+        "sky",
+        "M"
+      ],
+      "size": [
+        3.289,
+        2.978,
+        2.447
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.978,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cloud_1.png"
+    },
+    "assets/Cloud_2.glb": {
+      "role": "decoration",
+      "tags": [
+        "sky",
+        "L"
+      ],
+      "size": [
+        4.006,
+        3.166,
+        2.447
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.166,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cloud_2.png"
+    },
+    "assets/Cloud_3.glb": {
+      "role": "decoration",
+      "tags": [
+        "sky",
+        "L"
+      ],
+      "size": [
+        5.852,
+        3.81,
+        3.493
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.81,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cloud_3.png"
+    },
+    "assets/Coin.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "M"
+      ],
+      "size": [
+        1.918,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Coin.png"
+    },
+    "assets/Crab.glb": {
+      "role": "enemy",
+      "tags": [
+        "enemy",
+        "M"
+      ],
+      "size": [
+        2.543,
+        2.526,
+        2
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.526,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Crab.png"
+    },
+    "assets/Cube_Bricks.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "stone",
+        "M"
+      ],
+      "size": [
+        2.045,
+        2.028,
+        2.061
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.028,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Bricks.png"
+    },
+    "assets/Cube_Crate.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "crate",
+        "M"
+      ],
+      "size": [
+        2.021,
+        2.021,
+        2.021
+      ],
+      "gameplayRole": [
+        "resource",
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.021,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Crate.png"
+    },
+    "assets/Cube_Default.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "stone",
+        "M"
+      ],
+      "size": [
+        2.021,
+        2.021,
+        2.021
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.021,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Default.png"
+    },
+    "assets/Cube_Dirt_1x1Center.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "dirt",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Dirt_1x1Center.png"
+    },
+    "assets/Cube_Dirt_1x1End.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "dirt",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Dirt_1x1End.png"
+    },
+    "assets/Cube_Dirt_Center.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "dirt",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Dirt_Center.png"
+    },
+    "assets/Cube_Dirt_Center_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "dirt",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Dirt_Center_Tall.png"
+    },
+    "assets/Cube_Dirt_Corner.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "dirt",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Dirt_Corner.png"
+    },
+    "assets/Cube_Dirt_Corner_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "dirt",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Dirt_Corner_Tall.png"
+    },
+    "assets/Cube_Dirt_Side.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "dirt",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Dirt_Side.png"
+    },
+    "assets/Cube_Dirt_Side_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "dirt",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Dirt_Side_Tall.png"
+    },
+    "assets/Cube_Dirt_Single.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "dirt",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Dirt_Single.png"
+    },
+    "assets/Cube_Exclamation.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "block",
+        "M"
+      ],
+      "size": [
+        2.021,
+        2.021,
+        2.021
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.021,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Exclamation.png"
+    },
+    "assets/Cube_Grass_1x1Center.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2.233
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_1x1Center.png"
+    },
+    "assets/Cube_Grass_1x1End.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.117,
+        2,
+        2.233
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_1x1End.png"
+    },
+    "assets/Cube_Grass_Bottom_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_Bottom_Tall.png"
+    },
+    "assets/Cube_Grass_Center.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_Center.png"
+    },
+    "assets/Cube_Grass_Center_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_Center_Tall.png"
+    },
+    "assets/Cube_Grass_Corner.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.117,
+        2,
+        2.117
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_Corner.png"
+    },
+    "assets/Cube_Grass_CornerBottom_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_CornerBottom_Tall.png"
+    },
+    "assets/Cube_Grass_CornerCenter_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_CornerCenter_Tall.png"
+    },
+    "assets/Cube_Grass_Corner_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.117,
+        2,
+        2.117
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_Corner_Tall.png"
+    },
+    "assets/Cube_Grass_Side.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2.117
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_Side.png"
+    },
+    "assets/Cube_Grass_SideBottom_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_SideBottom_Tall.png"
+    },
+    "assets/Cube_Grass_SideCenter_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_SideCenter_Tall.png"
+    },
+    "assets/Cube_Grass_Side_Tall.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2.117
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_Side_Tall.png"
+    },
+    "assets/Cube_Grass_Single.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "M"
+      ],
+      "size": [
+        2.233,
+        2,
+        2.233
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Grass_Single.png"
+    },
+    "assets/Cube_Question.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "block",
+        "M"
+      ],
+      "size": [
+        2.021,
+        2.021,
+        2.021
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.021,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Question.png"
+    },
+    "assets/Cube_Spikes.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "spikes",
+        "M"
+      ],
+      "size": [
+        3.151,
+        3.151,
+        3.151
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.151,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Cube_Spikes.png"
+    },
+    "assets/Door.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "L"
+      ],
+      "size": [
+        3.71,
+        5.252,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            5.252,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Door.png"
+    },
+    "assets/Enemy.glb": {
+      "role": "enemy",
+      "tags": [
+        "enemy",
+        "M"
+      ],
+      "size": [
+        1.982,
+        2.643,
+        2
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.643,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Enemy.png"
+    },
+    "assets/Fence_1.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.251,
+        2
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.251,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.951,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.951,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Fence_1.png"
+    },
+    "assets/Fence_Corner.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "M"
+      ],
+      "size": [
+        1.951,
+        2.251,
+        2
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.251,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.976,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.976,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Fence_Corner.png"
+    },
+    "assets/Fence_Middle.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "M"
+      ],
+      "size": [
+        2,
+        2.251,
+        2
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.251,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -1,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            1,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Fence_Middle.png"
+    },
+    "assets/Fruit.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Fruit.png"
+    },
+    "assets/Gem_Blue.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.109,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.109,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Gem_Blue.png"
+    },
+    "assets/Gem_Green.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Gem_Green.png"
+    },
+    "assets/Gem_Pink.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Gem_Pink.png"
+    },
+    "assets/Goal_Flag.glb": {
+      "role": "decoration",
+      "tags": [
+        "goal",
+        "flag",
+        "M"
+      ],
+      "size": [
+        1.902,
+        3.329,
+        2
+      ],
+      "gameplayRole": [
+        "guidance",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.329,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Goal_Flag.png"
+    },
+    "assets/Grass_1.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "grass",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.324,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.324,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Grass_1.png"
+    },
+    "assets/Grass_2.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "grass",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.418,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.418,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Grass_2.png"
+    },
+    "assets/Grass_3.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "foliage",
+        "grass",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.43,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.43,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Grass_3.png"
+    },
+    "assets/Hazard_Cylinder.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "L"
+      ],
+      "size": [
+        2.277,
+        4.856,
+        2.277
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.856,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Hazard_Cylinder.png"
+    },
+    "assets/Hazard_Saw.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "M"
+      ],
+      "size": [
+        3,
+        2.86,
+        2
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.86,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Hazard_Saw.png"
+    },
+    "assets/Hazard_SpikeTrap.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "M"
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Hazard_SpikeTrap.png"
+    },
+    "assets/Heart.glb": {
+      "role": "collectible",
+      "tags": [
+        "health",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Heart.png"
+    },
+    "assets/Heart_Half.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Heart_Half.png"
+    },
+    "assets/Heart_Outline.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Heart_Outline.png"
+    },
+    "assets/Key.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "M"
+      ],
+      "size": [
+        2.392,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Key.png"
+    },
+    "assets/Lever.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.345,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.345,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Lever.png"
+    },
+    "assets/Numbers_0.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_0.png"
+    },
+    "assets/Numbers_1.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_1.png"
+    },
+    "assets/Numbers_2.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_2.png"
+    },
+    "assets/Numbers_3.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_3.png"
+    },
+    "assets/Numbers_4.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_4.png"
+    },
+    "assets/Numbers_5.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_5.png"
+    },
+    "assets/Numbers_6.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_6.png"
+    },
+    "assets/Numbers_7.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_7.png"
+    },
+    "assets/Numbers_8.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_8.png"
+    },
+    "assets/Numbers_9.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "number",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Numbers_9.png"
+    },
+    "assets/Pipe_90.glb": {
+      "role": "prop",
+      "tags": [
+        "pipe",
+        "traversal",
+        "M"
+      ],
+      "size": [
+        1.951,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Pipe_90.png"
+    },
+    "assets/Pipe_End.glb": {
+      "role": "prop",
+      "tags": [
+        "pipe",
+        "traversal",
+        "M"
+      ],
+      "size": [
+        2.182,
+        2.221,
+        2.182
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.221,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Pipe_End.png"
+    },
+    "assets/Pipe_Straight.glb": {
+      "role": "prop",
+      "tags": [
+        "pipe",
+        "traversal",
+        "M"
+      ],
+      "size": [
+        2.081,
+        2,
+        2.081
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Pipe_Straight.png"
+    },
+    "assets/Pipe_T.glb": {
+      "role": "prop",
+      "tags": [
+        "pipe",
+        "traversal",
+        "M"
+      ],
+      "size": [
+        1.951,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Pipe_T.png"
+    },
+    "assets/Plant_Large.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Plant_Large.png"
+    },
+    "assets/Plant_Small.glb": {
+      "role": "prop",
+      "tags": [
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Plant_Small.png"
+    },
+    "assets/RockPlatform_Tall.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "rock",
+        "L"
+      ],
+      "size": [
+        3.585,
+        5.258,
+        3.583
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            5.258,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/RockPlatform_Tall.png"
+    },
+    "assets/RockPlatforms_1.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "rock",
+        "L"
+      ],
+      "size": [
+        6.399,
+        6.374,
+        5.876
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            6.374,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/RockPlatforms_1.png"
+    },
+    "assets/RockPlatforms_2.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "rock",
+        "L"
+      ],
+      "size": [
+        9.319,
+        5.258,
+        6.735
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            5.258,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/RockPlatforms_2.png"
+    },
+    "assets/RockPlatforms_3.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "rock",
+        "L"
+      ],
+      "size": [
+        5.996,
+        5.258,
+        5.44
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            5.258,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/RockPlatforms_3.png"
+    },
+    "assets/RockPlatforms_Large.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "rock",
+        "L"
+      ],
+      "size": [
+        7.379,
+        4.632,
+        5.163
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.632,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/RockPlatforms_Large.png"
+    },
+    "assets/RockPlatforms_Medium.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "rock",
+        "L"
+      ],
+      "size": [
+        4.81,
+        3.911,
+        4.808
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.911,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/RockPlatforms_Medium.png"
+    },
+    "assets/Rock_1.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Rock_1.png"
+    },
+    "assets/Rock_2.glb": {
+      "role": "prop",
+      "tags": [
+        "rock",
+        "stone",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.961,
+        2
+      ],
+      "gameplayRole": [
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.961,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Rock_2.png"
+    },
+    "assets/Skull.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2.44,
+        2
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.44,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Skull.png"
+    },
+    "assets/Spikes.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "L"
+      ],
+      "size": [
+        1.956,
+        4.403,
+        2
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.403,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Spikes.png"
+    },
+    "assets/SpikyBall.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/SpikyBall.png"
+    },
+    "assets/Stairs.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "stairs",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Stairs.png"
+    },
+    "assets/Stairs_Modular_End.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "stairs",
+        "M"
+      ],
+      "size": [
+        2.258,
+        3.319,
+        2.561
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.319,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Stairs_Modular_End.png"
+    },
+    "assets/Stairs_Modular_Middle.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "stairs",
+        "M"
+      ],
+      "size": [
+        2.258,
+        3.339,
+        2.561
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.339,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Stairs_Modular_Middle.png"
+    },
+    "assets/Stairs_Modular_Start.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "stairs",
+        "M"
+      ],
+      "size": [
+        2.237,
+        3.339,
+        2.561
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.339,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Stairs_Modular_Start.png"
+    },
+    "assets/Stairs_Small.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "stairs",
+        "M"
+      ],
+      "size": [
+        1.951,
+        3.135,
+        2.561
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.135,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Stairs_Small.png"
+    },
+    "assets/Star.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Star.png"
+    },
+    "assets/Star_Outline.glb": {
+      "role": "decoration",
+      "tags": [
+        "ui",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Star_Outline.png"
+    },
+    "assets/Thunder.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "M"
+      ],
+      "size": [
+        1.902,
+        2,
+        2
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Thunder.png"
+    },
+    "assets/Tower.glb": {
+      "role": "prop",
+      "tags": [
+        "structure",
+        "L"
+      ],
+      "size": [
+        9.437,
+        15.502,
+        8.976
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            15.502,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Tower.png"
+    },
+    "assets/Tree.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "L"
+      ],
+      "size": [
+        5.534,
+        9.635,
+        5.549
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            9.635,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Tree.png"
+    },
+    "assets/Tree_Fruit.glb": {
+      "role": "decoration",
+      "tags": [
+        "forest",
+        "tree",
+        "L"
+      ],
+      "size": [
+        5.534,
+        9.635,
+        5.549
+      ],
+      "gameplayRole": [
+        "cover",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            9.635,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/Tree_Fruit.png"
+    }
+  }
+}
