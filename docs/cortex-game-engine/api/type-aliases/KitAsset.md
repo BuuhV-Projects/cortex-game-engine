@@ -8,4 +8,4 @@
 
 > **KitAsset** = `z.infer`\<*typeof* `kitAssetSchema`\>
 
-Defined in: [src/scene/Kit.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L87)
+Defined in: [src/scene/Kit.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L89)

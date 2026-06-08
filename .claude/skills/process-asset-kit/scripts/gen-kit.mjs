@@ -24,6 +24,36 @@ function classify(name) {
   const n = name.toLowerCase();
   const R = (role, tags, gameplayRole = [], extra = {}) => ({ role, tags, gameplayRole, ...extra });
 
+  // ── Personagens / inimigos / armas (KayKit + Quaternius) ───────────────────
+  if (/^(barbarian|knight|mage|ranger|rogue|rogue_hooded)$/.test(n)) return R('character', ['hero', 'humanoid'], ['player']);
+  if (/^character/.test(n)) return R('character', ['hero', 'humanoid'], ['player']); // Quaternius Character/_Gun
+  if (/^skeleton_(mage|minion|rogue|warrior)/.test(n)) return R('enemy', ['skeleton', 'undead'], ['challenge']);
+  if (/^(enemy|bee|crab)\b/.test(n)) return R('enemy', ['enemy'], ['challenge']);
+  if (/^arrow_(bow|crossbow)/.test(n)) return R('prop', ['ammo', 'item'], []); // KayKit ammo
+  if (/^(skeleton_)?(sword|axe|dagger|bow|crossbow|staff|wand|spellbook|quiver|mace|spear|blade)/.test(n)) return R('prop', ['weapon', 'item'], ['reward']);
+  if (/^shield/.test(n)) return R('prop', ['shield', 'item'], ['reward']);
+  if (/^(mug|smokebomb)/.test(n)) return R('prop', ['item'], []);
+
+  // ── Quaternius Ultimate Platformer ─────────────────────────────────────────
+  if (/^rockplatform/.test(n)) return R('platform', ['platform', 'rock'], [], { solid: true });
+  if (/^stairs/.test(n)) return R('platform', ['platform', 'stairs'], ['guidance'], { solid: true });
+  if (/^bridge/.test(n)) return R('connector', ['bridge'], ['guidance'], { solid: true });
+  if (/^bouncer/.test(n)) return R('platform', ['platform', 'bounce'], ['challenge'], { solid: true });
+  if (/^pipe/.test(n)) return R('prop', ['pipe', 'traversal'], []);
+  if (/^cube_crate/.test(n)) return R('prop', ['container', 'crate'], ['resource', 'reward'], { solid: true });
+  if (/^cube_spikes/.test(n)) return R('hazard', ['hazard', 'spikes'], ['challenge', 'hazard']);
+  if (/^cube_(question|exclamation)/.test(n)) return R('prop', ['interactive', 'block'], ['reward'], { solid: true });
+  if (/^cube_/.test(n)) return R('ground', ['terrain', /dirt/.test(n) ? 'dirt' : /grass/.test(n) ? 'grass' : 'stone'], [], { solid: true });
+  if (/^star_outline|^heart_outline|^heart_half/.test(n)) return R('decoration', ['ui'], []);
+  if (/^(coin|gem_|star|fruit$|key$|chest$)/.test(n)) return R('collectible', ['treasure'], ['reward']);
+  if (/^heart/.test(n)) return R('collectible', ['health'], ['reward']);
+  if (/^(hazard_|spikyball|thunder|skull)/.test(n)) return R('hazard', ['hazard'], ['challenge', 'hazard']);
+  if (/^(bomb|cannon)/.test(n)) return R('hazard', ['hazard', 'explosive'], ['challenge']);
+  if (/^goal_flag/.test(n)) return R('decoration', ['goal', 'flag'], ['guidance', 'landmark']);
+  if (/^numbers_/.test(n)) return R('decoration', ['ui', 'number'], []);
+  if (/^arrow(_up|_side|_down)?$/.test(n)) return R('decoration', ['guidance', 'sign'], ['guidance']);
+  if (/^tower$/.test(n)) return R('prop', ['structure'], []);
+
   // ── Kenney kebab-case (platformer / survival) ──────────────────────────────
   if (/^block-|^platform/.test(n)) {
     const biome = n.includes('snow') ? 'snow' : 'grass';

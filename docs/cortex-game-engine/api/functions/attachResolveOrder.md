@@ -8,7 +8,7 @@
 
 > **attachResolveOrder**(`items`, `exists`): `string`[]
 
-Defined in: [src/scene/Kit.ts:157](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L157)
+Defined in: [src/scene/Kit.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L159)
 
 Ordena ids de nós com `attach` por dependência (o **alvo é resolvido antes**),
 via ordenação topológica. **Falha alto** (lança) em ciclo ou alvo ausente —
