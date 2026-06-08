@@ -271,6 +271,28 @@ o botão "Auto-mapear pelos nomes" (que GRAVA em `data.playerAnimations[id]`). O
 edita por ação (seção "Ações do player") e dá preview (▶). Precedência: overlay > nó.
 A util `autoMapPlayerClips(clipNames, explicit)` gera o mapa (não roda sozinha).
 
+## Logic Bricks (comportamento como dado — ADR-0055)
+
+`LogicComponent`, `LogicBricksSystem`, `parseLogic` + campo `logic` no nó.
+
+Comportamento de objeto estilo UPBGE: **sensores** (eventos) → **controllers**
+(and/or) → **actuators** (ações), tudo DADO no nó (`logic`) ou na overlay do editor.
+`setupPlatformer` registra o `LogicBricksSystem` (pausa no editor).
+
+```jsonc
+{ "type": "primitive", "id": "porta", "shape": "box",
+  "logic": {
+    "sensors":     [{ "id": "s1", "type": "key", "key": "ArrowRight" }],
+    "controllers": [{ "id": "c1", "op": "and", "sensors": ["s1"], "actuators": ["a1"] }],
+    "actuators":   [{ "id": "a1", "type": "motion", "loc": [2, 0, 0] }]
+  } }
+```
+
+Sensores (mín.): `always`, `key` (`key`, `edge?`). Controllers: `and`/`or` (ligam N
+sensores a N actuators por id). Actuators: `motion` (`loc`/`rot`, `perSecond`),
+`animation` (`clip`, toca no `SceneAnimator` do obj). Precedência overlay > nó. O
+editor de bricks (UI) é a fatia seguinte. **Coexiste** com o platformer (não substitui).
+
 ## Plataforma 2.5D (gameplay)
 
 `setupPlatformer`, `PlatformerBodyComponent`, `Collider2DComponent`,

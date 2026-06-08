@@ -4,6 +4,7 @@ import { PlatformerInputSystem } from '../systems/PlatformerInputSystem.js';
 import { PlatformerPhysicsSystem } from '../systems/PlatformerPhysicsSystem.js';
 import { FollowCamera2DSystem, type FollowCamera2DOptions } from '../systems/FollowCamera2DSystem.js';
 import { PlatformerAnimationSystem } from '../systems/PlatformerAnimationSystem.js';
+import { LogicBricksSystem } from '../systems/LogicBricksSystem.js';
 
 /** Opções de {@link setupPlatformer}. */
 export interface SetupPlatformerOptions {
@@ -50,6 +51,11 @@ export function setupPlatformer(game: Game, options: SetupPlatformerOptions = {}
   const playerAnim = new PlatformerAnimationSystem();
   playerAnim.pauseWhen = () => game.editorActive;
   game.world.addSystem(playerAnim);
+
+  // Logic Bricks (sensores→controllers→actuators) — pausa no editor.
+  const logic = new LogicBricksSystem(game.input);
+  logic.pauseWhen = () => game.editorActive;
+  game.world.addSystem(logic);
 
   return { followCamera };
 }

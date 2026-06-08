@@ -415,6 +415,7 @@ const VENDOR_TYPE_MODULES = {
     'Collider2DComponent',
     'PlatformerBodyComponent',
     'PlayerAnimatorComponent',
+    'LogicComponent',
     'SpriteAnimationComponent',
   ],
   systems: [
@@ -424,6 +425,7 @@ const VENDOR_TYPE_MODULES = {
     'PlatformerInputSystem',
     'FollowCamera2DSystem',
     'PlatformerAnimationSystem',
+    'LogicBricksSystem',
     'SpriteAnimationSystem',
   ],
   // Editor NÃO entra: não é exportado pelo runtime (index.d.ts não o referencia).
@@ -436,6 +438,7 @@ const VENDOR_TYPE_MODULES = {
     'Kit',
     'Background',
     'SceneAnimator',
+    'LogicBricks',
     'Platformer',
     'SceneAssets',
     'OutdoorLighting',

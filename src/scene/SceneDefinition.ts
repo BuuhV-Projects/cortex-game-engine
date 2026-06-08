@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { logicNodeSchema } from './LogicBricks.js';
 
 /**
  * **Definição data-driven de cena** (V1). A cena vira DADO: uma lista de nós que
@@ -133,6 +134,8 @@ const baseFields = {
    * {@link PlayerAnimatorComponent}.
    */
   animations: z.record(z.string(), z.string()).optional(),
+  /** Logic Bricks (sensores→controllers→actuators). Ver {@link LogicBricksSystem}. */
+  logic: logicNodeSchema,
 };
 
 const modelNode = z.object({ type: z.literal('model'), url: z.string().min(1), ...baseFields });

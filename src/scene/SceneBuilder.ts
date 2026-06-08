@@ -24,6 +24,9 @@ import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
+import { LogicComponent } from '../components/LogicComponent.js';
+import { parseLogic, type LogicDefinition } from './LogicBricks.js';
+import type { Entity } from '../ecs/Entity.js';
 import { loadGLB, instance, placeOnGround, getWorldBounds, setMatte } from './SceneAssets.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
@@ -212,6 +215,21 @@ export function overlayPlayerAnimations(
 }
 
 /**
+ * Lê `data.logic` da overlay — os **Logic Bricks** autorados no editor por id
+ * (validados). Sobrescreve o `logic` do nó (JSON). Ver {@link LogicBricksSystem}.
+ */
+export function overlayLogic(overlay: SceneFileV1 | null | undefined): Record<string, LogicDefinition> {
+  const raw = overlay?.data?.['logic'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, LogicDefinition> = {};
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    const def = parseLogic(v);
+    if (def) out[id] = def;
+  }
+  return out;
+}
+
+/**
  * Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
  * os `nodes` são concatenados; configs de cena como `background`/`fog`/
  * `outdoorLighting`: o último definido vence).
@@ -234,6 +252,7 @@ export async function buildScene(
   const editorMatte = overlayMatte(overlay);
   const editorAnim = overlayAnimation(overlay);
   const editorPlayerAnim = overlayPlayerAnimations(overlay);
+  const editorLogic = overlayLogic(overlay);
 
   // ── Config de cena (último arquivo a definir vence) ──────────────────────────
   let background: number | string | undefined;
@@ -327,12 +346,24 @@ export async function buildScene(
       const kitCol =
         node.type === 'model' ? (kitAssetFor(kit, node.url)?.collider as ColliderConfig | undefined) : undefined;
       const colliderCfg = node.collider ?? editorColliders[node.id] ?? kitCol;
+      const obj = byId.get(node.id)!;
+      let entity: Entity | null = null;
       if (colliderCfg || node.player) {
         // Mapa ação→clipe do player: overlay (editor) > nó (`animations`) — auto-map
         // por nome completa o que faltar dentro do createPlatformerEntity.
         const playerAnim =
           node.type === 'model' && node.player ? (editorPlayerAnim[node.id] ?? node.animations) : undefined;
-        createPlatformerEntity(options.world, byId.get(node.id)!, node, colliderCfg, playerAnim);
+        entity = createPlatformerEntity(options.world, obj, node, colliderCfg, playerAnim);
+      }
+      // Logic Bricks: overlay (editor) > nó (`logic`). Na entidade do objeto (cria
+      // uma só com Object3D se ainda não houver — ex.: prop sem collider).
+      const logicDef = editorLogic[node.id] ?? node.logic ?? null;
+      if (logicDef) {
+        if (!entity) {
+          entity = options.world.createEntity();
+          entity.addComponent(new Object3DComponent(obj));
+        }
+        entity.addComponent(new LogicComponent(logicDef));
       }
     }
   }
@@ -373,7 +404,7 @@ function createPlatformerEntity(
   node: Extract<SceneNode, { type: 'model' | 'primitive' }>,
   col: ColliderConfig | undefined,
   playerAnimations?: Record<string, string>,
-): void {
+): Entity {
   const e = world.createEntity();
   e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
   e.addComponent(new Object3DComponent(obj));
@@ -427,6 +458,7 @@ function createPlatformerEntity(
       new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false, offX, offY, shape, points),
     );
   }
+  return e;
 }
 
 /** Âncora `socket` de um nó `model` (via kit), ou `undefined` (primitivas não têm). */
