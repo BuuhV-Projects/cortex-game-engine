@@ -1,3 +1,27 @@
+# [0.16.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.15.0...v0.16.0) (2026-06-08)
+
+
+### Bug Fixes
+
+* **ide:** Chat IA não usa mais AskUserQuestion (perguntava sem dar opção) ([9ce850c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9ce850ce0347d9638b632fb9099c154cbf82a9c2))
+* **ide:** import_kit põe thumbnails em .cortex (fora do build do jogo) ([181c142](https://github.com/BuuhV-Projects/cortex-game-engine/commit/181c1429eeb689fd6fe384d699223dad0b970fea))
+* **ide:** vendorizar os tipos de scene/Kit (módulo novo do ADR-0053) ([23df02a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/23df02a6802108777f4edaf675391cc7bf4d418f))
+
+
+### Features
+
+* **editor:** persistir o toggle Fosco (matte) no overlay (autorar de vez) ([e2036fb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e2036fbc32d7e5d502b13f070c9e730310178344))
+* **editor:** toggle Fosco (matte) no inspector — liga/desliga por objeto ([35742f0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/35742f02fc43ced0503f2edb04dde115ec85c9e5))
+* **engine:** backdrop 2D com parallax (Background + nó background) ([1964e87](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1964e87ca3ac892ef34eae79665d91915b3c9034))
+* **engine:** roles character/enemy no kit (KIT_ROLES) + classify KayKit/Quaternius ([2b4cc84](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2b4cc8429aac73f889bfb7f6c6278f0ff89548a2))
+* **engine:** setMatte — look fosco/cartoon (mata o brilho PBR dos .glb) ([61d1ab5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/61d1ab59b30d9b161bcfd60d06eb69dc944f812f))
+* **ide:** botão Fechar nos previews de glb e imagem/markdown ([6b45ad6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6b45ad632cdb45cb9bf573b5953dfb0f491d4f1a))
+* **ide:** kits de assets dentro do engine + tools list_kits/import_kit (ADR-0053) ([b7354a5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b7354a50cb0d0b33a9745d1988337fdf2e0e3f91))
+* **ide:** preview 3D de .glb/.gltf com lista de animações + playback ([7f4de73](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7f4de734097e1cd88c89a401e9b956f235b08c50))
+* **ide:** splash com logo + tela inicial (criar/abrir jogo + recentes) ([e80e6ed](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e80e6ed697288950bc3cb1fe7a7863754c641028))
+* **skill+ide:** catalogar backdrops 2D (kit role background) + IA usa background node ([dd1642e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dd1642ee10e40692bf6bc5bccc4da25008acebef))
+* **template:** look fosco (matte) por padrão + hints de câmera iso/pitch ([c2f8dd8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c2f8dd8004fe58e5a200089175232213b85bb621))
+
 # [0.15.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.14.0...v0.15.0) (2026-06-08)
 
 
