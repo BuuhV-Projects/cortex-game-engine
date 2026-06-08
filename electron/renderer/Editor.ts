@@ -1,6 +1,7 @@
 import * as monaco from 'monaco-editor'
 import { getThemeName } from './theme'
 import { renderMarkdown } from './markdown'
+import { GlbPreview } from './GlbPreview'
 
 /**
  * O barrel principal do `monaco-editor` exporta `monaco.languages.typescript`
@@ -135,6 +136,7 @@ export class Editor {
   private tabsBar: HTMLElement | null = null
   private editorArea: HTMLElement | null = null
   private previewEl: HTMLElement | null = null
+  private glbPreview: GlbPreview | null = null
   private instance: monaco.editor.IStandaloneCodeEditor | null = null
   // Ordem das abas (insertion order do Map é estável)
   private tabs: Map<string, Tab> = new Map()
@@ -212,13 +214,21 @@ export class Editor {
 
     document.addEventListener('file-open', (e) => {
       const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail
-      if (isImageFile(name)) {
+      if (GlbPreview.handles(name)) {
+        // Modelo 3D abre como PREVIEW (viewport + lista de animações).
+        this.hideImagePreview()
+        void this.glbPreview?.open(path, name)
+        this.notifyEmptyState()
+      } else if (isImageFile(name)) {
         // Imagem abre como PREVIEW, não no editor de código.
+        this.glbPreview?.close()
         void this.openImagePreview(path, name)
       } else if (isMarkdownFile(name)) {
         // Markdown abre renderizado como PREVIEW.
+        this.glbPreview?.close()
         void this.openMarkdownPreview(path, name)
       } else {
+        this.glbPreview?.close()
         this.hideImagePreview()
         void this.openFile(path, name)
       }
@@ -346,6 +356,9 @@ export class Editor {
     preview.append(img, md, caption)
     editorArea.appendChild(preview)
     this.previewEl = preview
+
+    // Preview 3D de .glb/.gltf (overlay próprio, acima do Monaco e do preview de imagem).
+    this.glbPreview = new GlbPreview(editorArea)
   }
 
   private get previewImg(): HTMLImageElement | null {
@@ -408,7 +421,8 @@ export class Editor {
    */
   private notifyEmptyState(): void {
     const previewVisible = !!this.previewEl && this.previewEl.style.display !== 'none'
-    const empty = this.tabs.size === 0 && !previewVisible
+    const glbVisible = this.glbPreview?.isOpen() ?? false
+    const empty = this.tabs.size === 0 && !previewVisible && !glbVisible
     if (empty === this.lastEmpty) return
     this.lastEmpty = empty
     document.dispatchEvent(new CustomEvent('editor-empty-change', { detail: { empty } }))
@@ -463,6 +477,9 @@ export class Editor {
   private activateTab(path: string): void {
     const tab = this.tabs.get(path)
     if (!tab || !this.instance) return
+    // Ativar uma aba de código sai de qualquer preview (3D/imagem) por cima.
+    this.glbPreview?.close()
+    this.hideImagePreview()
     this.instance.setModel(tab.model)
     this.instance.updateOptions({ readOnly: tab.readOnly })
     this.activePath = path
