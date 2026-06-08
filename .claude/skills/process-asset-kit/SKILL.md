@@ -104,6 +104,17 @@ Por ora o kit curado vive na **biblioteca de assets do usuário** (ex.:
 projeto + `kit.json`. Ao consumir num projeto, re-vendorizar conforme ADR-0009.
 **Atualize esta seção quando a Fase 1 definir o destino oficial.**
 
+## Backdrops 2D (background)
+
+Imagens de fundo (jpg/png, por tema) NÃO passam pelo pipeline glb (sem bbox/conversão).
+Use **`scripts/gen-backgrounds.mjs <pasta>`** — cataloga num `kit.json` com `role:
+background` + tags do tema (de `background_<tema>_<n>`), `thumb` = a própria imagem.
+No engine, viram um nó `background` (backdrop com parallax que segue a câmera; precisa
+de `camera` no `buildScene`).
+```bash
+node scripts/gen-backgrounds.mjs "D:/jogos/assets/backgrounds" backgrounds-base
+```
+
 ## Convenções / gotchas
 
 - **Só gltf/glb** — o engine não usa fbx/obj; sempre dropar (é o grosso do peso).

@@ -193,7 +193,10 @@ Siga o fluxo:
    exposição). Ajuste cor/intensidade da luz, densidade/cor da névoa, exposição e \
    bloom até o screenshot ter o MESMO clima da referência. Cena cartoon pede \
    saturação alta + bloom suave + sombras macias; cena realista pede HDRI + \
-   exposição calibrada. Itere isso no playtest junto com a composição.
+   exposição calibrada. **Backdrop:** pra 2.5D/2D, ponha um nó \`background\` (imagem \
+   por tema/mood, com parallax — ver "Backdrop 2D / parallax" na API; no kit os \
+   backdrops têm \`role: background\`) e passe \`camera\` no \`buildScene\`. \
+   Itere isso no playtest junto com a composição.
 
 Princípios de composição (aplique sempre):
 - **Autore o level como JSON DATA-DRIVEN, não código imperativo.** O level vai em \
