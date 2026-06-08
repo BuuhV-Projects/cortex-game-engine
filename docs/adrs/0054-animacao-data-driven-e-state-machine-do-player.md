@@ -54,8 +54,8 @@ SEPARADAS — N fases viram N ações, sem mecanismo extra.
   o editor edita por ação com preview. Tudo discoverable no projeto (nada escondido).
 - O mixer tica no editor (`Game._tick` chama `onUpdate` sempre) e o system pausa no
   editor, então a preview manual não briga com o gameplay.
-- Lógica pura (`deriveLocomotion`/`resolvePlayerClip`/`autoMapPlayerClips`) testável;
-  `evalSensors`-style sem WebGPU.
+- Lógica pura (`deriveLocomotion`/`resolvePlayerClip`/`autoMapPlayerClips`) testável
+  sem WebGPU.
 - **Limitação:** uma ação ainda é **1 clipe** (1:1). Variantes por contexto (duplo
   pulo = 2 clipes na mesma ação) e variações aleatórias pedem `clips[action]` como
   LISTA + seletor de variante — extensão futura (não bloqueia o caso comum).

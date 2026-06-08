@@ -25,7 +25,6 @@ A lógica pertence aos Systems — vide ADR-0002.
 - [`Collider2DComponent`](Collider2DComponent.md)
 - [`PlatformerBodyComponent`](PlatformerBodyComponent.md)
 - [`PlayerAnimatorComponent`](PlayerAnimatorComponent.md)
-- [`LogicComponent`](LogicComponent.md)
 - [`SpriteAnimationComponent`](SpriteAnimationComponent.md)
 
 ## Constructors
