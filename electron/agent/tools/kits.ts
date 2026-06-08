@@ -2,7 +2,7 @@ import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
 import { join, basename } from 'path'
 import { existsSync } from 'fs'
-import { readdir, readFile, mkdir, cp, copyFile } from 'fs/promises'
+import { readdir, readFile, writeFile, mkdir, cp, copyFile } from 'fs/promises'
 
 /**
  * MCP server `cortex-kits`: expõe os **kits de assets empacotados no engine**
@@ -109,38 +109,70 @@ export function createKitsToolServer(projectRoot: string, kitsDir: string | unde
             return { content: [{ type: 'text' as const, text: `Kit "${kit}" não encontrado.` }], isError: true }
           }
           const srcAssets = join(kitsDir, kit, 'assets')
-          const destRoot = join(projectRoot, 'assets', kit)
+          const destRoot = join(projectRoot, 'assets', kit) // assets do JOGO (vão pro build)
+          const thumbRel = `.cortex/kit-thumbs/${kit}` // referência DEV (fora do build)
           await mkdir(destRoot, { recursive: true })
 
+          // 1) Assets do jogo (.glb/.jpg + subpastas tipo Textures/) → assets/<kit>/.
           const want = only ? new Set(only.map((s) => basename(s))) : null
-          let copied = 0
+          const copied = new Set<string>()
           if (existsSync(srcAssets)) {
             for (const f of await readdir(srcAssets, { withFileTypes: true })) {
               if (f.isDirectory()) {
-                // Subpasta (ex.: Textures/ compartilhada) — copia inteira.
                 await cp(join(srcAssets, f.name), join(destRoot, f.name), { recursive: true })
                 continue
               }
               if (want && !want.has(f.name)) continue
               await copyFile(join(srcAssets, f.name), join(destRoot, f.name))
-              copied++
+              copied.add(f.name)
             }
           }
-          // Thumbnails (referência visual) + kit.json (catálogo/vocabulário).
+          const copiedStems = new Set([...copied].map((f) => f.replace(/\.[^.]+$/, '')))
+
+          // 2) Thumbnails → .cortex (referência da IA; o BUILD do jogo NÃO os empacota).
           const srcThumbs = join(kitsDir, kit, 'thumbnails')
-          if (existsSync(srcThumbs)) await cp(srcThumbs, join(destRoot, 'thumbnails'), { recursive: true })
+          const hasThumbs = existsSync(srcThumbs)
+          if (hasThumbs) {
+            await mkdir(join(projectRoot, thumbRel), { recursive: true })
+            for (const t of await readdir(srcThumbs)) {
+              if (!copiedStems.has(t.replace(/\.[^.]+$/, ''))) continue
+              await copyFile(join(srcThumbs, t), join(projectRoot, thumbRel, t))
+            }
+          }
+
+          // 3) kit.json (catálogo, runtime) → assets/<kit>/, com paths reescritos
+          //    project-relative; thumb aponta pro .cortex (ou p/ a própria imagem em backdrops).
           const srcKit = join(kitsDir, kit, 'kit.json')
-          if (existsSync(srcKit)) await copyFile(srcKit, join(destRoot, 'kit.json'))
+          if (existsSync(srcKit)) {
+            let raw: { assets?: Record<string, Record<string, unknown>> } = {}
+            try {
+              raw = JSON.parse(await readFile(srcKit, 'utf-8'))
+            } catch {
+              /* kit.json inválido — escreve catálogo vazio */
+            }
+            const outAssets: Record<string, unknown> = {}
+            for (const [key, a] of Object.entries(raw.assets ?? {})) {
+              const file = basename(key)
+              if (copied.size > 0 && !copied.has(file)) continue // só os importados
+              const na = { ...a }
+              const thumb = a['thumb']
+              if (typeof thumb === 'string') {
+                na['thumb'] = hasThumbs ? `${thumbRel}/${basename(thumb)}` : `assets/${kit}/${file}`
+              }
+              outAssets[`assets/${kit}/${file}`] = na
+            }
+            await writeFile(join(destRoot, 'kit.json'), JSON.stringify({ ...raw, assets: outAssets }, null, 2))
+          }
 
           return {
             content: [
               {
                 type: 'text' as const,
                 text:
-                  `Importado "${kit}" → assets/${kit}/ (${copied} asset(s)${only ? ' do subconjunto' : ''}).\n` +
-                  `Nos nós da cena, use \`url: "assets/${kit}/<arquivo>"\`; importe o catálogo de ` +
-                  `\`assets/${kit}/kit.json\` e passe-o ao \`buildScene({ kit })\` (o collider/role e o ` +
-                  `attach por socket vêm dele). Thumbnails em \`assets/${kit}/thumbnails/\`.`,
+                  `Importado "${kit}" → assets/${kit}/ (${copied.size} asset(s)${only ? ' do subconjunto' : ''}).\n` +
+                  `Nós da cena: \`url: "assets/${kit}/<arquivo>"\`; catálogo em \`assets/${kit}/kit.json\` → ` +
+                  `\`buildScene({ kit })\` (collider/role + attach vêm dele).` +
+                  (hasThumbs ? ` Thumbnails (referência, FORA do build) em \`${thumbRel}/\`.` : ''),
               },
             ],
           }
