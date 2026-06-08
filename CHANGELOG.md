@@ -1,3 +1,13 @@
+# [0.15.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.14.0...v0.15.0) (2026-06-08)
+
+
+### Features
+
+* **engine:** câmera isométrica no 2.5D (yaw + preset isometric) ([93902c6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/93902c6af8d88c2f6655977d6be8d805b759c99e))
+* **engine:** kit.json (vocabulário ADR-0053) + attach por socket no buildScene ([2bdcab8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2bdcab82a59a01fbbb7aff45a79ef0799f9b6e8f))
+* **ide:** Chat IA consome o kit.json (Fase 4+5 do ADR-0053) ([1a81aac](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1a81aac078f8f38ec673d85fb2077079cfa44077))
+* **skill:** process-asset-kit — pack bruto → kit curado + vocabulário (ADR-0053) ([47c2459](https://github.com/BuuhV-Projects/cortex-game-engine/commit/47c2459e131724b79b13e9899ad620c891ec5ae3))
+
 # [0.14.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.13.1...v0.14.0) (2026-06-07)
 
 
