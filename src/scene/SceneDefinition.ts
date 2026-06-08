@@ -62,6 +62,25 @@ const colliderSchema = z
   })
   .optional();
 
+/**
+ * **Placement por socket** (ADR-0053): posiciona este nó encaixando seu socket
+ * `socket` na âncora `toSocket` do nó `to` (resolvido pelo {@link buildScene} a
+ * partir das âncoras do kit). Análogo do `place` para o plano X/Z — declara a
+ * relação em vez de chutar a coordenada. Requer `kit` no `buildScene`.
+ */
+const attachSchema = z
+  .object({
+    /** Socket DESTE asset (nome de âncora no kit). */
+    socket: z.string().min(1),
+    /** `id` do nó-alvo na cena. */
+    to: z.string().min(1),
+    /** Âncora do asset do alvo onde encaixar. */
+    toSocket: z.string().min(1),
+    /** Deslocamento extra `[x,y,z]` após o encaixe. */
+    offset: vec3.optional(),
+  })
+  .optional();
+
 /** Marca o nó como o PLAYER (corpo de plataforma + alvo da câmera). */
 const playerSchema = z
   .union([
@@ -86,6 +105,8 @@ const baseFields = {
   collider: colliderSchema,
   /** Marca como player (controller + corpo + alvo da câmera). */
   player: playerSchema,
+  /** Placement por socket (encaixa em outro nó via âncoras do kit). */
+  attach: attachSchema,
 };
 
 const modelNode = z.object({ type: z.literal('model'), url: z.string().min(1), ...baseFields });
@@ -144,6 +165,8 @@ const sceneDefinitionSchema = z.object({
 
 /** Config de collider 2D (campo `collider` dos nós; ver {@link colliderSchema}). */
 export type ColliderConfig = NonNullable<z.infer<typeof colliderSchema>>;
+/** Config de placement por socket (campo `attach` dos nós; ver {@link attachSchema}). */
+export type AttachConfig = NonNullable<z.infer<typeof attachSchema>>;
 export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
 export type LightNode = z.infer<typeof lightNode>;

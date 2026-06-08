@@ -192,6 +192,43 @@ game.onUpdate((dt) => scene.update(dt)) // anima água
 > seguem disponíveis — são o que o loader usa por dentro. Mas a cena ESTÁTICA
 > deve ser JSON, pra o editor poder editá-la.
 
+## Kit de assets / vocabulário (design system — ADR-0053)
+
+`KitDefinition`, `KitAsset`, `KitAnchor`, `parseKit`, `kitAssetFor`, `kitAnchor`,
+`KIT_ROLES`, `AttachConfig`.
+
+Um **kit** (`kit.json`) é o *vocabulário* de um pacote de assets: tagueia cada `.glb`
+em três eixos — **`role`** (natureza física: `ground`/`connector`/`prop`/`collectible`/
+`decoration`/…), **`tags`** (tema/bioma) e **`gameplayRole`** (função: `guidance`/
+`reward`/`landmark`/`cover`/…) — com `size`, `collider` preset, `anchors` (sockets) e
+`thumb`. Passe o(s) kit(s) ao `buildScene` via `options.kit` pra ganhar duas coisas:
+
+- **Collider por `role`** — um nó `model` cujo `.glb` está no kit **herda** o collider
+  preset do kit se não definir `collider` próprio. Precedência: `node.collider` (explícito)
+  > collider do editor > preset do kit.
+- **`attach` (placement por socket)** — em vez de chutar `x`/`z`, um nó declara que seu
+  socket encaixa numa âncora de outro nó; o `buildScene` resolve a pose (translação) em
+  ordem topológica. É o análogo do `place` (grounding em Y) para o plano X/Z.
+
+```jsonc
+// nó na cena: encaixa o socket "a" da ponte na âncora "edge_right" da ilha_1
+{ "type": "model", "id": "ponte_1", "url": "assets/bridge.glb",
+  "attach": { "socket": "a", "to": "ilha_1", "toSocket": "edge_right" } }
+```
+
+```ts
+import { Game, buildScene, parseKit, setupPlatformer } from 'cortex-game-engine'
+import kitJson from '../assets/kit.json'
+import level from './scenes/level.json'
+
+const kit = parseKit(kitJson)            // valida; null se inválido
+const game = new Game({ canvas }); setupPlatformer(game); game.start()
+await buildScene(game.scene, [level], { renderer: game.renderer, world: game.world, kit: kit! })
+```
+
+`attach` **falha alto** (lança) em socket/âncora ausente ou ciclo — nunca cai numa pose
+chutada. Sockets/`role` vêm do `kit.json`, gerado pela skill `process-asset-kit`.
+
 ## Plataforma 2.5D (gameplay)
 
 `setupPlatformer`, `PlatformerBodyComponent`, `Collider2DComponent`,

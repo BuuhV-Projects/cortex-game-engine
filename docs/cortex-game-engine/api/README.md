@@ -89,10 +89,14 @@
 
 ## Type Aliases
 
+- [AttachConfig](type-aliases/AttachConfig.md)
 - [ColliderConfig](type-aliases/ColliderConfig.md)
 - [ColliderShape](type-aliases/ColliderShape.md)
 - [ColliderShape2D](type-aliases/ColliderShape2D.md)
 - [EditorAttacher](type-aliases/EditorAttacher.md)
+- [KitAnchor](type-aliases/KitAnchor.md)
+- [KitAsset](type-aliases/KitAsset.md)
+- [KitDefinition](type-aliases/KitDefinition.md)
 - [LightNode](type-aliases/LightNode.md)
 - [ModelNode](type-aliases/ModelNode.md)
 - [PrimitiveNode](type-aliases/PrimitiveNode.md)
@@ -101,9 +105,14 @@
 - [Vec3](type-aliases/Vec3.md)
 - [WaterNode](type-aliases/WaterNode.md)
 
+## Variables
+
+- [KIT\_ROLES](variables/KIT_ROLES.md)
+
 ## Functions
 
 - [addSceneNode](functions/addSceneNode.md)
+- [attachResolveOrder](functions/attachResolveOrder.md)
 - [autoDetectSceneFileWriter](functions/autoDetectSceneFileWriter.md)
 - [buildScene](functions/buildScene.md)
 - [buildTilemap](functions/buildTilemap.md)
@@ -113,16 +122,20 @@
 - [emptySceneFile](functions/emptySceneFile.md)
 - [getWorldBounds](functions/getWorldBounds.md)
 - [instance](functions/instance.md)
+- [kitAnchor](functions/kitAnchor.md)
+- [kitAssetFor](functions/kitAssetFor.md)
 - [loadGLB](functions/loadGLB.md)
 - [overlayAdded](functions/overlayAdded.md)
 - [overlayColliders](functions/overlayColliders.md)
 - [overlayDeleted](functions/overlayDeleted.md)
+- [parseKit](functions/parseKit.md)
 - [parseSceneDefinition](functions/parseSceneDefinition.md)
 - [parseSceneFile](functions/parseSceneFile.md)
 - [parseSceneNode](functions/parseSceneNode.md)
 - [pixelate](functions/pixelate.md)
 - [placeOnGround](functions/placeOnGround.md)
 - [registerEditorAttacher](functions/registerEditorAttacher.md)
+- [resolveAttachPosition](functions/resolveAttachPosition.md)
 - [scatter](functions/scatter.md)
 - [setShadows](functions/setShadows.md)
 - [setupOutdoorLighting](functions/setupOutdoorLighting.md)

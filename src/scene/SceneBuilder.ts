@@ -24,7 +24,21 @@ import { FollowCameraTargetComponent } from '../components/FollowCameraTargetCom
 import { loadGLB, instance, placeOnGround, getWorldBounds } from './SceneAssets.js';
 import { Water } from './Water.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
-import { parseSceneNode, type SceneDefinition, type SceneNode, type ColliderConfig } from './SceneDefinition.js';
+import {
+  parseSceneNode,
+  type SceneDefinition,
+  type SceneNode,
+  type ColliderConfig,
+  type AttachConfig,
+} from './SceneDefinition.js';
+import {
+  kitAssetFor,
+  kitAnchor,
+  resolveAttachPosition,
+  attachResolveOrder,
+  type KitAnchor,
+  type KitDefinition,
+} from './Kit.js';
 import type { SceneFileV1 } from './SceneFile.js';
 
 /**
@@ -55,6 +69,13 @@ export interface BuildSceneOptions {
    * PlatformerPhysics/Input, FollowCamera2D) — ou use `setupPlatformer`.
    */
   world?: World;
+  /**
+   * Kit(s) de assets (manifesto(s) `kit.json`, ADR-0053). Quando presente: nós
+   * `model` herdam o **preset de collider por `role`** do kit (se não definirem
+   * `collider` próprio), e nós com `attach` são posicionados por **socket** a
+   * partir das âncoras do kit.
+   */
+  kit?: KitDefinition | KitDefinition[];
 }
 
 /** Lê `data.deleted` da overlay (ids removidos no editor). */
@@ -154,12 +175,17 @@ export async function buildScene(
   }
 
   // ── Nós: base (arquivos) + adicionados (overlay) ─────────────────────────────
-  const nodes: SceneNode[] = [...list.flatMap((d) => d.nodes), ...overlayAdded(overlay)];
-  for (const node of nodes) {
+  const allNodes: SceneNode[] = [...list.flatMap((d) => d.nodes), ...overlayAdded(overlay)];
+  const kit = options.kit;
+
+  // 1) Instancia todos os nós (sem criar entidades ainda — `attach` pode mover a
+  //    pose depois, e a entidade ECS copia a posição final).
+  const placed: SceneNode[] = [];
+  for (const node of allNodes) {
     if (deleted.has(node.id) || byId.has(node.id)) continue;
     const obj = await instantiate(node, scene, three, waters);
     if (!obj) continue;
-    // Override do editor (transform exata salva) tem precedência sobre place/transform.
+    // Override do editor (transform exata salva) tem precedência sobre place/transform/attach.
     const ov = overrides[node.id];
     if (ov) {
       obj.position.set(ov.position[0], ov.position[1], ov.position[2]);
@@ -167,14 +193,25 @@ export async function buildScene(
       obj.scale.set(ov.scale[0], ov.scale[1], ov.scale[2]);
     }
     byId.set(node.id, obj);
+    placed.push(node);
+  }
 
-    // Plataforma 2.5D: nós com collider/player viram entidades ECS acopladas.
-    // Precedência do collider: código (`node.collider`) vence o overlay do editor
-    // (`data.colliders[id]`). Player sempre vira entidade (corpo + câmera).
-    if (options.world && (node.type === 'model' || node.type === 'primitive')) {
-      const colliderCfg = node.collider ?? editorColliders[node.id];
+  // 2) Resolve `attach` (placement por socket) — após todos posicionados, em ordem
+  //    topológica; falha alto em ciclo/alvo ausente. Nós com override do editor
+  //    ficam "pinados" (a edição manual vence o attach).
+  resolveAttachments(placed, byId, kit, new Set(Object.keys(overrides)));
+
+  // 3) Plataforma 2.5D: nós com collider/player viram entidades ECS acopladas
+  //    (posições já finais). Precedência do collider: código (`node.collider`) >
+  //    overlay do editor (`data.colliders[id]`) > preset do `role` no kit.
+  if (options.world) {
+    for (const node of placed) {
+      if (node.type !== 'model' && node.type !== 'primitive') continue;
+      const kitCol =
+        node.type === 'model' ? (kitAssetFor(kit, node.url)?.collider as ColliderConfig | undefined) : undefined;
+      const colliderCfg = node.collider ?? editorColliders[node.id] ?? kitCol;
       if (colliderCfg || node.player) {
-        createPlatformerEntity(options.world, obj, node, colliderCfg);
+        createPlatformerEntity(options.world, byId.get(node.id)!, node, colliderCfg);
       }
     }
   }
@@ -254,6 +291,63 @@ function createPlatformerEntity(
     e.addComponent(
       new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false, offX, offY, shape, points),
     );
+  }
+}
+
+/** Âncora `socket` de um nó `model` (via kit), ou `undefined` (primitivas não têm). */
+function anchorAt(
+  node: SceneNode,
+  socket: string,
+  kit: KitDefinition | KitDefinition[] | undefined,
+): KitAnchor | undefined {
+  return node.type === 'model' ? kitAnchor(kit, node.url, socket) : undefined;
+}
+
+/**
+ * Resolve os nós com `attach` (placement por socket, ADR-0053): posiciona cada um
+ * encaixando seu socket na âncora do alvo, em **ordem topológica** (alvo antes).
+ * **Falha alto** se faltar socket/âncora ou houver ciclo. `pinned` = ids com
+ * override do editor (não move). Sem `kit`, nós com `attach` falham (precisam das
+ * âncoras) — exceto se pinados.
+ */
+function resolveAttachments(
+  nodes: SceneNode[],
+  byId: Map<string, Object3D>,
+  kit: KitDefinition | KitDefinition[] | undefined,
+  pinned: Set<string>,
+): void {
+  const attachers = nodes.filter(
+    (n): n is Extract<SceneNode, { type: 'model' | 'primitive' }> & { attach: AttachConfig } =>
+      (n.type === 'model' || n.type === 'primitive') && !!n.attach && !pinned.has(n.id),
+  );
+  if (attachers.length === 0) return;
+
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const order = attachResolveOrder(
+    attachers.map((n) => ({ id: n.id, to: n.attach.to })),
+    (id) => byId.has(id),
+  );
+
+  for (const id of order) {
+    const node = nodeById.get(id) as Extract<SceneNode, { type: 'model' | 'primitive' }> & { attach: AttachConfig };
+    const att = node.attach;
+    const obj = byId.get(id)!;
+    const targetObj = byId.get(att.to)!; // existência garantida por attachResolveOrder
+    const targetNode = nodeById.get(att.to);
+    const thisAnchor = anchorAt(node, att.socket, kit);
+    const targetAnchor = targetNode ? anchorAt(targetNode, att.toSocket, kit) : undefined;
+    if (!thisAnchor || !targetAnchor) {
+      throw new Error(
+        `attach: âncora ausente — "${id}".${att.socket}=${!!thisAnchor} ou "${att.to}".${att.toSocket}=${!!targetAnchor} (kit carregado?)`,
+      );
+    }
+    const pos = resolveAttachPosition(
+      [targetObj.position.x, targetObj.position.y, targetObj.position.z],
+      targetAnchor.at,
+      thisAnchor.at,
+      att.offset,
+    );
+    obj.position.set(pos[0], pos[1], pos[2]);
   }
 }
 
