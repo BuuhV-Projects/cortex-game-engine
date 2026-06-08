@@ -21,7 +21,7 @@ import { Object3DComponent } from '../components/Object3DComponent.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
-import { loadGLB, instance, placeOnGround, getWorldBounds } from './SceneAssets.js';
+import { loadGLB, instance, placeOnGround, getWorldBounds, setMatte } from './SceneAssets.js';
 import { Water } from './Water.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import {
@@ -76,6 +76,11 @@ export interface BuildSceneOptions {
    * partir das âncoras do kit.
    */
   kit?: KitDefinition | KitDefinition[];
+  /**
+   * Deixa **todos** os modelos foscos (mata o brilho PBR → look cartoon/desenho).
+   * Um nó pode sobrescrever com `matte: false`. Atalho global do {@link setMatte}.
+   */
+  matte?: boolean;
 }
 
 /** Lê `data.deleted` da overlay (ids removidos no editor). */
@@ -194,6 +199,11 @@ export async function buildScene(
     }
     byId.set(node.id, obj);
     placed.push(node);
+
+    // Look fosco/cartoon: por nó (`matte`) com fallback pro global (`options.matte`).
+    if (node.type === 'model' || node.type === 'primitive') {
+      if (node.matte ?? options.matte) setMatte(obj);
+    }
   }
 
   // 2) Resolve `attach` (placement por socket) — após todos posicionados, em ordem

@@ -101,6 +101,8 @@ const baseFields = {
   place: placeSchema,
   castShadow: z.boolean().optional(),
   receiveShadow: z.boolean().optional(),
+  /** Materiais foscos (mata o brilho PBR → look cartoon). Ver {@link setMatte}. */
+  matte: z.boolean().optional(),
   /** Collider 2D (plataformer): vira sólido/plataforma. */
   collider: colliderSchema,
   /** Marca como player (controller + corpo + alvo da câmera). */

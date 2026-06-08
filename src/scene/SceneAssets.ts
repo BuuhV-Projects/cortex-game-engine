@@ -95,6 +95,50 @@ export function setShadows(object: Object3D, options: ShadowOptions): void {
   });
 }
 
+/** Opções de {@link setMatte}. */
+export interface MatteOptions {
+  /** Aspereza (0 = espelho/brilhoso, 1 = fosco total). Default `1`. */
+  roughness?: number;
+  /** Metalicidade (0 = dielétrico, sem reflexo metálico). Default `0`. */
+  metalness?: number;
+  /** Intensidade do reflexo do ambiente (0 = nenhum). Default `0`. */
+  envMapIntensity?: number;
+}
+
+/**
+ * Deixa os materiais de um objeto **foscos** — mata o brilho plástico/PBR que os
+ * `.glb` stylized vêm por padrão. Zera o specular e o reflexo do ambiente
+ * (`roughness=1`, `metalness=0`, `envMapIntensity=0`), dando o aspecto
+ * **cartoon/fosco/desenho** em vez do "brilhoso". As texturas (mapas de cor)
+ * continuam intactas. Aplique no objeto instanciado, ou na raiz da cena pra
+ * deixar tudo fosco de uma vez.
+ *
+ * @example
+ * const tree = instance(await loadGLB('assets/tree.glb'))
+ * scene.add(tree); setMatte(tree)
+ * // ou tudo de uma vez: setMatte(scene.getThreeScene())
+ */
+export function setMatte(object: Object3D, options: MatteOptions = {}): void {
+  const { roughness = 1, metalness = 0, envMapIntensity = 0 } = options;
+  object.traverse((child) => {
+    const mesh = child as Mesh;
+    if (!mesh.isMesh || !mesh.material) return;
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const m of mats) {
+      const mat = m as {
+        roughness?: number;
+        metalness?: number;
+        envMapIntensity?: number;
+        needsUpdate?: boolean;
+      };
+      if (mat.roughness !== undefined) mat.roughness = roughness;
+      if (mat.metalness !== undefined) mat.metalness = metalness;
+      if (mat.envMapIntensity !== undefined) mat.envMapIntensity = envMapIntensity;
+      mat.needsUpdate = true;
+    }
+  });
+}
+
 /**
  * Clona a cena de um GLTF (seguro pra `SkinnedMesh`) e configura sombras nos
  * meshes. Clonar permite spawnar N cópias do mesmo GLTF carregado uma vez.

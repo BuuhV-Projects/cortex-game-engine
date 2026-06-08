@@ -59,6 +59,17 @@ Nome do tema (paleta + atmosfera) — tokens resolvidos à parte (ADR-0053 §3).
 
 ***
 
+### matte?
+
+> `optional` **matte?**: `boolean`
+
+Defined in: [src/scene/SceneBuilder.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L83)
+
+Deixa **todos** os modelos foscos (mata o brilho PBR → look cartoon/desenho).
+Um nó pode sobrescrever com `matte: false`. Atalho global do [setMatte](../functions/setMatte.md).
+
+***
+
 ### overlay?
 
 > `optional` **overlay?**: [`SceneFileV1`](SceneFileV1.md) \| `null`

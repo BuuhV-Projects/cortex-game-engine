@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Mesh, BoxGeometry, MeshStandardMaterial, Group } from 'three';
-import { getWorldBounds, placeOnGround, setShadows } from '../../src/scene/SceneAssets.js';
+import { getWorldBounds, placeOnGround, setShadows, setMatte } from '../../src/scene/SceneAssets.js';
 
 function box(size = 2): Mesh {
   return new Mesh(new BoxGeometry(size, size, size), new MeshStandardMaterial());
@@ -65,5 +65,28 @@ describe('setShadows', () => {
     setShadows(m, { castShadow: true });
     expect(m.castShadow).toBe(true);
     expect(m.receiveShadow).toBe(true); // não alterado
+  });
+});
+
+describe('setMatte', () => {
+  it('zera specular/reflexo (roughness=1, metalness=0, envMapIntensity=0)', () => {
+    const mat = new MeshStandardMaterial({ roughness: 0.1, metalness: 0.8 });
+    mat.envMapIntensity = 1;
+    setMatte(new Mesh(new BoxGeometry(), mat));
+    expect(mat.roughness).toBe(1);
+    expect(mat.metalness).toBe(0);
+    expect(mat.envMapIntensity).toBe(0);
+  });
+
+  it('aceita overrides e percorre arrays de material', () => {
+    const a = new MeshStandardMaterial({ roughness: 0 });
+    const b = new MeshStandardMaterial({ roughness: 0 });
+    setMatte(new Mesh(new BoxGeometry(), [a, b]), { roughness: 0.7 });
+    expect(a.roughness).toBeCloseTo(0.7);
+    expect(b.roughness).toBeCloseTo(0.7);
+  });
+
+  it('não quebra em objeto sem mesh', () => {
+    expect(() => setMatte(new Group())).not.toThrow();
   });
 });

@@ -288,6 +288,11 @@ Tunables do pulo/alcance ficam no `player`/`PlatformerBodyComponent`
 - `getWorldBounds(obj)` — mede a caixa em world space **sem mover** o objeto.
 - `setShadows(obj, { castShadow?, receiveShadow? })` — liga/desliga sombras de
   um objeto já na cena (ex.: excluir a água do shadowMap).
+- `setMatte(obj, opts?)` — deixa os materiais **foscos** (mata o brilho plástico/
+  PBR dos `.glb` stylized → look **cartoon/desenho**): zera specular/reflexo
+  (`roughness=1`, `metalness=0`, `envMapIntensity=0`), mantendo as texturas. Aplique
+  num objeto ou na **raiz da cena** pra deixar tudo fosco. Na cena data-driven, use
+  `matte: true` num nó ou `buildScene(..., { matte: true })` pra **todos** os modelos.
 - `scatter(scene, url, count, area, opts)` — espalha N cópias num retângulo, cada
   uma assentada com rotação/escala variadas (vegetação em cluster, não em grid).
 
