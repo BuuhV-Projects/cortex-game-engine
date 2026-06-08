@@ -1,3 +1,11 @@
+# [0.17.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.16.0...v0.17.0) (2026-06-08)
+
+
+### Features
+
+* **ide:** 'Fechar projeto' no menu Projeto; menu some na tela inicial ([e7f944e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e7f944ee6949a44f1ec9aa7204ddaeb462d2ec52))
+* **ide:** fechar projeto → volta pra tela inicial (recentes/abrir) ([6a58b02](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6a58b021f9c5bfd72c729688020a209c56b86eb8))
+
 # [0.16.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.15.0...v0.16.0) (2026-06-08)
 
 
