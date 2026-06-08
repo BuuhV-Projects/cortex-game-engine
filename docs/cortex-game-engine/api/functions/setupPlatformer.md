@@ -8,7 +8,7 @@
 
 > **setupPlatformer**(`game`, `options?`): [`PlatformerHandle`](../interfaces/PlatformerHandle.md)
 
-Defined in: [src/scene/Platformer.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Platformer.ts#L31)
+Defined in: [src/scene/Platformer.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Platformer.ts#L32)
 
 Registra num [Game](../classes/Game.md) os sistemas de **plataforma 2.5D**: sincronização
 mesh↔transform, input (teclado→intenção), física (gravidade+colisão AABB) e a

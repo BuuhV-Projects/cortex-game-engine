@@ -126,6 +126,13 @@ const baseFields = {
   attach: attachSchema,
   /** Animação do modelo `.glb` (clipe a tocar, loop, velocidade). Ver {@link SceneAnimator}. */
   animation: animationSchema,
+  /**
+   * **Mapa ação→clipe do player** (`{ idle, walk, run, jump, fall, ... }`) — quando o
+   * nó é `player`, o {@link PlatformerAnimationSystem} toca a animação certa por
+   * estado. Ausentes são auto-mapeados pelos nomes dos clipes. Ver
+   * {@link PlayerAnimatorComponent}.
+   */
+  animations: z.record(z.string(), z.string()).optional(),
 };
 
 const modelNode = z.object({ type: z.literal('model'), url: z.string().min(1), ...baseFields });

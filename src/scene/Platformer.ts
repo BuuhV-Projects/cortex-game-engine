@@ -3,6 +3,7 @@ import { Object3DSyncSystem } from '../systems/Object3DSyncSystem.js';
 import { PlatformerInputSystem } from '../systems/PlatformerInputSystem.js';
 import { PlatformerPhysicsSystem } from '../systems/PlatformerPhysicsSystem.js';
 import { FollowCamera2DSystem, type FollowCamera2DOptions } from '../systems/FollowCamera2DSystem.js';
+import { PlatformerAnimationSystem } from '../systems/PlatformerAnimationSystem.js';
 
 /** Opções de {@link setupPlatformer}. */
 export interface SetupPlatformerOptions {
@@ -43,5 +44,12 @@ export function setupPlatformer(game: Game, options: SetupPlatformerOptions = {}
 
   const followCamera = new FollowCamera2DSystem(game.camera, options.camera);
   game.world.addSystem(followCamera);
+
+  // Animação por ação do player (idle/walk/run/jump/fall): toca o clipe certo
+  // conforme o estado do corpo. Pausa no editor (a preview de animação é manual).
+  const playerAnim = new PlatformerAnimationSystem();
+  playerAnim.pauseWhen = () => game.editorActive;
+  game.world.addSystem(playerAnim);
+
   return { followCamera };
 }

@@ -414,6 +414,7 @@ const VENDOR_TYPE_MODULES = {
     'EditableTargetComponent',
     'Collider2DComponent',
     'PlatformerBodyComponent',
+    'PlayerAnimatorComponent',
     'SpriteAnimationComponent',
   ],
   systems: [
@@ -422,6 +423,7 @@ const VENDOR_TYPE_MODULES = {
     'PlatformerPhysicsSystem',
     'PlatformerInputSystem',
     'FollowCamera2DSystem',
+    'PlatformerAnimationSystem',
     'SpriteAnimationSystem',
   ],
   // Editor NÃO entra: não é exportado pelo runtime (index.d.ts não o referencia).

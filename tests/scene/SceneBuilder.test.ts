@@ -6,7 +6,14 @@
 import { describe, it, expect } from 'vitest';
 import { Scene } from '../../src/core/Scene.js';
 import { World } from '../../src/ecs/World.js';
-import { buildScene, overlayDeleted, overlayAdded, overlayMatte, overlayAnimation } from '../../src/scene/SceneBuilder.js';
+import {
+  buildScene,
+  overlayDeleted,
+  overlayAdded,
+  overlayMatte,
+  overlayAnimation,
+  overlayPlayerAnimations,
+} from '../../src/scene/SceneBuilder.js';
 import { isMatte } from '../../src/scene/SceneAssets.js';
 import { Collider2DComponent } from '../../src/components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../../src/components/PlatformerBodyComponent.js';
@@ -126,6 +133,12 @@ describe('overlay helpers', () => {
     expect(r['hero']?.loop).toBe(false);
     expect(r['hero']?.speed).toBe(1.5);
     expect(overlayAnimation(null)).toEqual({});
+  });
+
+  it('overlayPlayerAnimations lê o mapa ação→clipe por id', () => {
+    const r = overlayPlayerAnimations(overlay({ data: { playerAnimations: { p: { idle: 'Idle', run: 'Run' } } } }));
+    expect(r['p']).toEqual({ idle: 'Idle', run: 'Run' });
+    expect(overlayPlayerAnimations(null)).toEqual({});
   });
 });
 

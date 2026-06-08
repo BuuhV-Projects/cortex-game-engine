@@ -24,6 +24,7 @@ A lógica pertence aos Systems — vide ADR-0002.
 - [`EditableTargetComponent`](EditableTargetComponent.md)
 - [`Collider2DComponent`](Collider2DComponent.md)
 - [`PlatformerBodyComponent`](PlatformerBodyComponent.md)
+- [`PlayerAnimatorComponent`](PlayerAnimatorComponent.md)
 - [`SpriteAnimationComponent`](SpriteAnimationComponent.md)
 
 ## Constructors

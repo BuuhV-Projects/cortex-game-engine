@@ -248,6 +248,28 @@ no loop). Cada modelo animado ganha um `SceneAnimator` em `obj.userData.cortexAn
 (`.clipNames()`, `.play(name, { loop, speed })`, `.stop()`) — é o que o **editor** usa
 na seção "Animação" do inspector (escolher clipe + ▶/⏹ + loop/velocidade, persistido).
 
+## Animação do PLAYER por ação (state machine)
+
+`PlayerAnimatorComponent` + `PlatformerAnimationSystem` (registrado pelo `setupPlatformer`).
+
+O player toca a animação certa **por estado**, sem código ad-hoc: o sistema deriva a
+**ação** do `PlatformerBodyComponent` (idle/walk/run no chão, jump/fall no ar) e toca o
+clipe mapeado no `SceneAnimator`. O padrão que a IA preenche é só o **mapa ação→clipe**
+no nó `player` (campo `animations`); ausentes são **auto-mapeados pelos nomes** dos
+clipes (KayKit/Quaternius já casam).
+
+```jsonc
+{ "type": "model", "id": "player", "url": "assets/Knight.glb", "player": true,
+  "animations": { "idle": "Idle_A", "run": "Running_A", "jump": "Jump_Idle", "fall": "Jump_Idle" } }
+```
+
+Ações: `idle`/`walk`/`run`/`jump`/`fall`/`land` (locomoção, automáticas) + custom
+one-shot (`attack`/`hurt`/…) via `entity.getComponent(PlayerAnimatorComponent).trigger('attack')`.
+Fallback automático (run↔walk, fall↔jump, land→idle) cobre clipes faltando. O editor
+edita o mapa por ação (seção "Ações do player"); persiste em `data.playerAnimations[id]`
+(overlay > nó). **Não precisa preencher tudo** — só dê os clipes que existem; o resto
+o auto-map e o fallback resolvem.
+
 ## Plataforma 2.5D (gameplay)
 
 `setupPlatformer`, `PlatformerBodyComponent`, `Collider2DComponent`,

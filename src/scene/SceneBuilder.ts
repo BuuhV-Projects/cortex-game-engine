@@ -23,6 +23,8 @@ import { Object3DComponent } from '../components/Object3DComponent.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
+import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
+import { autoMapPlayerClips } from '../systems/PlatformerAnimationSystem.js';
 import { loadGLB, instance, placeOnGround, getWorldBounds, setMatte } from './SceneAssets.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
@@ -189,6 +191,28 @@ export function overlayAnimation(overlay: SceneFileV1 | null | undefined): Recor
 }
 
 /**
+ * Lê `data.playerAnimations` da overlay — o **mapa ação→clipe do player** autorado
+ * no editor (`{ [id]: { idle, run, jump, … } }`). Sobrescreve o `animations` do nó.
+ * Ver {@link PlayerAnimatorComponent}.
+ */
+export function overlayPlayerAnimations(
+  overlay: SceneFileV1 | null | undefined,
+): Record<string, Record<string, string>> {
+  const raw = overlay?.data?.['playerAnimations'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, Record<string, string>> = {};
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object' || Array.isArray(v)) continue;
+    const m: Record<string, string> = {};
+    for (const [action, clip] of Object.entries(v as Record<string, unknown>)) {
+      if (typeof clip === 'string') m[action] = clip;
+    }
+    out[id] = m;
+  }
+  return out;
+}
+
+/**
  * Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
  * os `nodes` são concatenados; configs de cena como `background`/`fog`/
  * `outdoorLighting`: o último definido vence).
@@ -210,6 +234,7 @@ export async function buildScene(
   const editorColliders = overlayColliders(overlay);
   const editorMatte = overlayMatte(overlay);
   const editorAnim = overlayAnimation(overlay);
+  const editorPlayerAnim = overlayPlayerAnimations(overlay);
 
   // ── Config de cena (último arquivo a definir vence) ──────────────────────────
   let background: number | string | undefined;
@@ -304,7 +329,11 @@ export async function buildScene(
         node.type === 'model' ? (kitAssetFor(kit, node.url)?.collider as ColliderConfig | undefined) : undefined;
       const colliderCfg = node.collider ?? editorColliders[node.id] ?? kitCol;
       if (colliderCfg || node.player) {
-        createPlatformerEntity(options.world, byId.get(node.id)!, node, colliderCfg);
+        // Mapa ação→clipe do player: overlay (editor) > nó (`animations`) — auto-map
+        // por nome completa o que faltar dentro do createPlatformerEntity.
+        const playerAnim =
+          node.type === 'model' && node.player ? (editorPlayerAnim[node.id] ?? node.animations) : undefined;
+        createPlatformerEntity(options.world, byId.get(node.id)!, node, colliderCfg, playerAnim);
       }
     }
   }
@@ -344,6 +373,7 @@ function createPlatformerEntity(
   obj: Object3D,
   node: Extract<SceneNode, { type: 'model' | 'primitive' }>,
   col: ColliderConfig | undefined,
+  playerAnimations?: Record<string, string>,
 ): void {
   const e = world.createEntity();
   e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
@@ -382,6 +412,15 @@ function createPlatformerEntity(
     const p = typeof node.player === 'object' ? node.player : {};
     e.addComponent(new PlatformerBodyComponent(p.moveSpeed, p.jumpSpeed, p.gravity, p.maxFall));
     e.addComponent(new FollowCameraTargetComponent());
+    // Animação por ação: se o modelo tem clipes, o player ganha o mapa ação→clipe
+    // (auto-mapeado pelos nomes + o que veio do JSON/overlay). O
+    // PlatformerAnimationSystem toca a animação certa por estado.
+    const animator = (obj.userData as Record<string, unknown>)['cortexAnim'] as
+      | { clipNames(): string[] }
+      | undefined;
+    if (animator) {
+      e.addComponent(new PlayerAnimatorComponent(autoMapPlayerClips(animator.clipNames(), playerAnimations ?? {})));
+    }
   } else if (col) {
     e.addComponent(
       new Collider2DComponent(halfW, halfH, col.solid ?? true, col.oneWay ?? false, offX, offY, shape, points),

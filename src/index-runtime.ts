@@ -36,6 +36,7 @@ export * from './components/FollowCameraTargetComponent.js';
 export * from './components/EditableTargetComponent.js';
 export * from './components/Collider2DComponent.js';
 export * from './components/PlatformerBodyComponent.js';
+export * from './components/PlayerAnimatorComponent.js';
 export * from './components/SpriteAnimationComponent.js';
 
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
@@ -44,6 +45,7 @@ export * from './systems/ThirdPersonCameraSystem.js';
 export * from './systems/PlatformerPhysicsSystem.js';
 export * from './systems/PlatformerInputSystem.js';
 export * from './systems/FollowCamera2DSystem.js';
+export * from './systems/PlatformerAnimationSystem.js';
 export * from './systems/SpriteAnimationSystem.js';
 
 // ─── Modo editor (câmera livre + gizmo + HUD) ──────────────────────────────────
