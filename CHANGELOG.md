@@ -1,3 +1,19 @@
+# [0.18.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.17.0...v0.18.0) (2026-06-08)
+
+
+### Bug Fixes
+
+* **editor:** painéis opacos + z-index máximo (HUD do jogo não sobrepõe) ([5860e43](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5860e438409f66f98efca36e6a012566a7c44188))
+* **ide:** mata o vite/terminal ao fechar o Studio (before-quit) ([4a771fa](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4a771fa9f726d42803d80beafb5daf87e73c2660))
+
+
+### Features
+
+* **editor:** câmera do jogo visível no editor (hierarquia + frustum) ([a64f222](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a64f22295a4a4984a748cba3ab9b351ef9066408))
+* **editor:** helpers visuais de luz no editor (direção/cone/esfera, estilo Blender) ([d8e1bf4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d8e1bf419c8b80575fca3a9e6d60f5f2dc65160f))
+* **editor:** seção Animação no inspector (escolher clipe + play/stop + loop/velocidade) ([6251a1b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6251a1b28b3c913203b26cd79df2d3e23f2ffdc2)), closes [#4](https://github.com/BuuhV-Projects/cortex-game-engine/issues/4)
+* **engine:** animação data-driven de modelos (SceneAnimator + nó animation) ([6fc02b8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6fc02b8e6b963fc0f29f2ba982c6c48c3a0d4d53))
+
 # [0.17.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.16.0...v0.17.0) (2026-06-08)
 
 
