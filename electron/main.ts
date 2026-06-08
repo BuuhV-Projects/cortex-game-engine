@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, Menu, type MenuItemConstructorOpti
 import { join, resolve, delimiter } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir, rename, rm, unlink } from 'fs/promises'
 import { existsSync, readFileSync } from 'fs'
-import { spawn, ChildProcess } from 'child_process'
+import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { createHash } from 'crypto'
 import { homedir } from 'os'
 import { runAgent } from './agent/agentLoop.js'
@@ -1455,6 +1455,26 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+// Ao fechar o Studio, mata o vite/terminal SINCRONAMENTE — senão o `vite` (neto
+// do shell) vira processo órfão segurando a porta, e na próxima abertura a porta
+// fica presa. `before-quit` cobre o fechamento normal (window-all-closed→quit).
+app.on('before-quit', () => {
+  for (const proc of [runningProcess, terminalProcess]) {
+    if (!proc?.pid) continue
+    try {
+      if (process.platform === 'win32') {
+        spawnSync('taskkill', ['/pid', String(proc.pid), '/T', '/F'])
+      } else {
+        proc.kill('SIGKILL')
+      }
+    } catch {
+      /* best-effort no shutdown */
+    }
+  }
+  runningProcess = null
+  terminalProcess = null
 })
 
 app.on('window-all-closed', () => {
