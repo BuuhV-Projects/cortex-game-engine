@@ -29,8 +29,10 @@ export class GlbPreview {
   private raf = 0
   private clock = new THREE.Clock()
   private loadToken = 0
+  private readonly onClose?: () => void
 
-  constructor(host: HTMLElement) {
+  constructor(host: HTMLElement, onClose?: () => void) {
+    this.onClose = onClose
     const overlay = document.createElement('div')
     overlay.className = 'editor-glb-preview'
     overlay.style.cssText = [
@@ -60,6 +62,24 @@ export class GlbPreview {
       'font:13px "Segoe UI",Roboto,Arial,sans-serif',
     ].join(';')
 
+    const closeBtn = document.createElement('button')
+    closeBtn.textContent = '✕  Fechar preview'
+    closeBtn.style.cssText = [
+      'align-self:flex-start',
+      'padding:5px 10px',
+      'margin-bottom:4px',
+      'border:1px solid #3a3f4a',
+      'border-radius:5px',
+      'background:#2a2f3a',
+      'color:#e6e6e6',
+      'cursor:pointer',
+      'font:12px "Segoe UI",Roboto,Arial,sans-serif',
+    ].join(';')
+    closeBtn.addEventListener('click', () => {
+      this.close()
+      this.onClose?.()
+    })
+
     const title = document.createElement('div')
     title.style.cssText = 'font-weight:600;word-break:break-all;color:#e6e6e6'
     const animHeader = document.createElement('div')
@@ -71,7 +91,7 @@ export class GlbPreview {
     hint.textContent = 'Arraste pra girar · scroll pra zoom'
     hint.style.cssText = 'margin-top:auto;color:#6b7280;font-size:11px'
 
-    side.append(title, animHeader, list, hint)
+    side.append(closeBtn, title, animHeader, list, hint)
     overlay.append(canvasWrap, side)
     host.appendChild(overlay)
 

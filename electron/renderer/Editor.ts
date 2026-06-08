@@ -353,12 +353,31 @@ export class Editor {
     const caption = document.createElement('div')
     caption.className = 'editor-preview-caption'
     caption.style.cssText = 'color:#9aa0ad;font:12px "Segoe UI",Roboto,Arial,sans-serif'
-    preview.append(img, md, caption)
+    // Botão de fechar (volta pro editor de código), no canto superior direito.
+    const closeBtn = document.createElement('button')
+    closeBtn.textContent = '✕'
+    closeBtn.title = 'Fechar preview'
+    closeBtn.style.cssText = [
+      'position:absolute',
+      'top:8px',
+      'right:12px',
+      'width:28px',
+      'height:28px',
+      'border:1px solid #3a3f4a',
+      'border-radius:5px',
+      'background:rgba(42,47,58,0.9)',
+      'color:#e6e6e6',
+      'cursor:pointer',
+      'font:14px "Segoe UI",Roboto,Arial,sans-serif',
+      'z-index:6',
+    ].join(';')
+    closeBtn.addEventListener('click', () => this.hideImagePreview())
+    preview.append(img, md, caption, closeBtn)
     editorArea.appendChild(preview)
     this.previewEl = preview
 
     // Preview 3D de .glb/.gltf (overlay próprio, acima do Monaco e do preview de imagem).
-    this.glbPreview = new GlbPreview(editorArea)
+    this.glbPreview = new GlbPreview(editorArea, () => this.notifyEmptyState())
   }
 
   private get previewImg(): HTMLImageElement | null {
