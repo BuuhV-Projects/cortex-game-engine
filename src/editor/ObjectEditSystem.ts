@@ -165,7 +165,9 @@ export class ObjectEditSystem extends System {
     if (this.edge('Escape')) {
       this.deselect();
     }
-    if (this.edge('Delete') || this.edge('Backspace')) {
+    // Só `Delete` apaga objeto — `Backspace` é tecla de texto (limpar um campo do
+    // inspector com Backspace, mesmo após blur, NÃO pode deletar o objeto).
+    if (this.edge('Delete')) {
       this.deleteSelected();
     }
     if (this.edge('k') || this.edge('K')) {
