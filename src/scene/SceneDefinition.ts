@@ -143,7 +143,28 @@ const waterNode = z.object({
   id: z.string().min(1),
 });
 
-const sceneNodeSchema = z.discriminatedUnion('type', [modelNode, primitiveNode, lightNode, waterNode]);
+const backgroundNode = z.object({
+  type: z.literal('background'),
+  /** URL da imagem (jpg/png) do backdrop — tileável na horizontal. */
+  image: z.string().min(1),
+  /** Parallax 0–1 (0 = travado na tela, 1 = anda com o mundo). Default 0.3. */
+  parallax: z.number().optional(),
+  /** Distância no Z atrás da câmera. Default 40. */
+  distance: z.number().optional(),
+  /** Altura em unidades de mundo. Default 30. */
+  height: z.number().optional(),
+  /** Largura em múltiplos da altura. Default 2.6. */
+  widthFactor: z.number().optional(),
+  id: z.string().min(1),
+});
+
+const sceneNodeSchema = z.discriminatedUnion('type', [
+  modelNode,
+  primitiveNode,
+  lightNode,
+  waterNode,
+  backgroundNode,
+]);
 
 const sceneDefinitionSchema = z.object({
   version: z.literal(1),
@@ -173,6 +194,7 @@ export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
 export type LightNode = z.infer<typeof lightNode>;
 export type WaterNode = z.infer<typeof waterNode>;
+export type BackgroundNode = z.infer<typeof backgroundNode>;
 /** Um nó da cena (união discriminada por `type`). */
 export type SceneNode = z.infer<typeof sceneNodeSchema>;
 /** Uma definição de cena (um arquivo). */

@@ -61,6 +61,7 @@ export * from './scene/SceneLoader.js';
 export * from './scene/SceneDefinition.js';
 export * from './scene/SceneBuilder.js';
 export * from './scene/Kit.js';
+export * from './scene/Background.js';
 export * from './scene/Platformer.js';
 export * from './scene/SceneAssets.js';
 export * from './scene/OutdoorLighting.js';

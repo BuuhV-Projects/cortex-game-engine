@@ -141,7 +141,7 @@ em dev, sem fetch).
 
 Tipos de nó (`type`): `model` (`url` do `.glb`), `primitive` (`shape`:
 box/cylinder/plane/sphere), `light` (`light`: directional/hemisphere/ambient),
-`water`. Campos comuns: `id` (único; vira `Object3D.name` e chave do editor),
+`water`, `background` (backdrop 2D com parallax — ver abaixo). Campos comuns: `id` (único; vira `Object3D.name` e chave do editor),
 `place` (grounding: assenta a base em `y`, centra em `x,z` — **use no lugar de
 `y` chutado**) ou `transform` (pose direta), `castShadow`/`receiveShadow`. Cores
 aceitam hex string (`"#9fd6ee"`). Cena: `background`, `fog`, `outdoorLighting`.
@@ -365,6 +365,28 @@ water.update(deltaTime / 1000)
 Texturas agora são re-exportadas pelo engine (não precisa importar de `three` nem
 usar o literal `1000`): `Texture`, `TextureLoader`, `RepeatWrapping`,
 `ClampToEdgeWrapping`, `MirroredRepeatWrapping` (+ `AssetLoader.loadTexture(url)`).
+
+## Backdrop 2D / parallax (background)
+
+`Background` + nó `background` na cena.
+
+Fundo de cena pra 2.5D/2D: uma imagem (jpg/png, tileável na horizontal) num quad
+**unlit atrás de tudo** que **segue a câmera** (sempre preenche a vista) e **rola em
+parallax** conforme o player anda. Use uma por **tema/mood** (céu/cidade/floresta).
+
+```jsonc
+// nó na cena (precisa de camera no buildScene):
+{ "type": "background", "id": "bg", "image": "assets/bg/adventure.jpg", "parallax": 0.3 }
+```
+```ts
+// main.ts — passe a câmera pro buildScene animar o backdrop:
+await buildScene(game.scene, [level], { renderer: game.renderer, world: game.world, camera: game.camera })
+game.onUpdate((dt) => scene.update(dt)) // tica o parallax do background (e a água)
+```
+
+`parallax` 0–1: `0` = travado na tela (infinitamente longe), `1` = anda com o mundo;
+`0.3` (default) = fundo distante. Imperativo: `new Background(scene, camera, { url, parallax })`
++ `bg.update()` no loop. No kit, backgrounds têm `role: background` + `tags` por tema.
 
 ## Atmosfera / mood (o que mais deixa a cena BONITA)
 

@@ -8,6 +8,6 @@
 
 > **AttachConfig** = `NonNullable`\<`z.infer`\<*typeof* `attachSchema`\>\>
 
-Defined in: [src/scene/SceneDefinition.ts:171](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L171)
+Defined in: [src/scene/SceneDefinition.ts:192](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L192)
 
 Config de placement por socket (campo `attach` dos nós; ver attachSchema).

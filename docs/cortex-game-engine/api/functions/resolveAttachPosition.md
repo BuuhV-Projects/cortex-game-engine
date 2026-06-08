@@ -8,7 +8,7 @@
 
 > **resolveAttachPosition**(`targetPos`, `targetAnchor`, `thisAnchor`, `offset?`): [`Vec3`](../type-aliases/Vec3.md)
 
-Defined in: [src/scene/Kit.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L140)
+Defined in: [src/scene/Kit.ts:141](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L141)
 
 Posição pra o `socket` deste nó coincidir com a âncora `toSocket` do alvo já
 posicionado: `alvo + ancoraAlvo − ancoraEste (+ offset)`. Translação pura — é o

@@ -12,6 +12,8 @@ import {
   AmbientLight,
   PCFSoftShadowMap,
   type Object3D,
+  type PerspectiveCamera,
+  type OrthographicCamera,
 } from 'three';
 import { Scene } from '../core/Scene.js';
 import type { Renderer } from '../core/Renderer.js';
@@ -23,6 +25,7 @@ import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.j
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
 import { loadGLB, instance, placeOnGround, getWorldBounds, setMatte } from './SceneAssets.js';
 import { Water } from './Water.js';
+import { Background } from './Background.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import {
   parseSceneNode,
@@ -81,6 +84,11 @@ export interface BuildSceneOptions {
    * Um nó pode sobrescrever com `matte: false`. Atalho global do {@link setMatte}.
    */
   matte?: boolean;
+  /**
+   * Câmera do jogo — **necessária** se a cena tem nós `background` (o backdrop
+   * segue a câmera e rola em parallax). Passe `game.camera`.
+   */
+  camera?: PerspectiveCamera | OrthographicCamera;
 }
 
 /** Lê `data.deleted` da overlay (ids removidos no editor). */
@@ -170,6 +178,7 @@ export async function buildScene(
   const three = scene.getThreeScene();
   const byId = new Map<string, Object3D>();
   const waters: Water[] = [];
+  const backgrounds: Background[] = [];
   const overlay = options.overlay ?? null;
   const deleted = new Set<string>(overlayDeleted(overlay));
   const overrides = overlay?.objects ?? {};
@@ -205,6 +214,20 @@ export async function buildScene(
   const placed: SceneNode[] = [];
   for (const node of allNodes) {
     if (deleted.has(node.id) || byId.has(node.id)) continue;
+    // Backdrop 2D com parallax — segue a câmera, então precisa dela.
+    if (node.type === 'background') {
+      if (!options.camera) throw new Error(`buildScene: nó background "${node.id}" requer options.camera`);
+      const bg = new Background(scene, options.camera, {
+        url: node.image,
+        parallax: node.parallax,
+        distance: node.distance,
+        height: node.height,
+        widthFactor: node.widthFactor,
+      });
+      backgrounds.push(bg);
+      byId.set(node.id, bg.mesh);
+      continue;
+    }
     const obj = await instantiate(node, scene, three, waters);
     if (!obj) continue;
     // Override do editor (transform exata salva) tem precedência sobre place/transform/attach.
@@ -248,6 +271,7 @@ export async function buildScene(
     byId,
     update(dt: number): void {
       for (const w of waters) w.update(dt);
+      for (const b of backgrounds) b.update();
     },
   };
 }
@@ -414,6 +438,9 @@ async function instantiate(
       obj = water.mesh;
       break;
     }
+    case 'background':
+      // Backdrop precisa da câmera — é criado no buildScene, não por aqui.
+      throw new Error('Nó background não é instanciável isoladamente (use buildScene com options.camera).');
   }
   obj.name = node.id;
   return obj;

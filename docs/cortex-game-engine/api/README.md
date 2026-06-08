@@ -8,6 +8,7 @@
 
 - [AssetLoader](classes/AssetLoader.md)
 - [AudioManager](classes/AudioManager.md)
+- [Background](classes/Background.md)
 - [Collider2DComponent](classes/Collider2DComponent.md)
 - [ColliderComponent](classes/ColliderComponent.md)
 - [Component](classes/Component.md)
@@ -46,6 +47,7 @@
 ## Interfaces
 
 - [AnimatedSpriteOptions](interfaces/AnimatedSpriteOptions.md)
+- [BackgroundOptions](interfaces/BackgroundOptions.md)
 - [BloomConfig](interfaces/BloomConfig.md)
 - [Bounds](interfaces/Bounds.md)
 - [BuildSceneOptions](interfaces/BuildSceneOptions.md)
@@ -91,6 +93,7 @@
 ## Type Aliases
 
 - [AttachConfig](type-aliases/AttachConfig.md)
+- [BackgroundNode](type-aliases/BackgroundNode.md)
 - [ColliderConfig](type-aliases/ColliderConfig.md)
 - [ColliderShape](type-aliases/ColliderShape.md)
 - [ColliderShape2D](type-aliases/ColliderShape2D.md)

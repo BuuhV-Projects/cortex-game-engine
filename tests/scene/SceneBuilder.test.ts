@@ -145,3 +145,11 @@ describe('matte (fosco) na cena', () => {
     expect(isMatte(handle.byId.get('b')!)).toBe(true);
   });
 });
+
+describe('background', () => {
+  it('nó background sem options.camera lança erro claro', async () => {
+    await expect(
+      buildScene(new Scene(), { version: 1, nodes: [{ type: 'background', id: 'bg', image: 'sky.jpg' }] }),
+    ).rejects.toThrow(/camera/);
+  });
+});

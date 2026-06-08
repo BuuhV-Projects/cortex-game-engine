@@ -57,6 +57,7 @@ export const KIT_ROLES = [
   'player-start',
   'character',
   'enemy',
+  'background',
 ] as const;
 
 const kitAssetSchema = z.object({
