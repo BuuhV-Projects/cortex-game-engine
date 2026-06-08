@@ -1,3 +1,21 @@
+# [0.19.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.18.0...v0.19.0) (2026-06-08)
+
+
+### Bug Fixes
+
+* **editor:** atalhos não disparam ao digitar no inspector (Backspace deletava o objeto) ([dcb8049](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dcb8049d7c10f815b4839e12be013c9a73949c98))
+* **editor:** só Delete apaga objeto, não Backspace (robustez do bug do inspector) ([00640dd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/00640dd7d93bb843baaa4c751242acfd94df20f8))
+
+
+### Features
+
+* **editor:** ▶ por ação no 'Ações do player' (preview de cada animação) ([0dd500c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0dd500ca185509c7cc89604e03cdbde175e6a733))
+* **editor:** rotação livre no modo 2.5D (girar o player/objetos) ([ef6aac6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ef6aac62bad274f3cb5e6ad3a0571f92024aaf1f))
+* **editor:** seção 'Ações do player' no inspector (mapa ação→clipe, slice 2) ([f3e6ff0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f3e6ff0e45d9637a5c9e0ed499b8f514bb3f09c9))
+* **engine:** Logic Bricks — fundação (schema + runtime), slice 1 do ADR-0055 ([62a171b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/62a171bd0893ff281e7e1346557a3af84e0e16fa))
+* **engine:** state machine de animação do player (slice 1) ([36efc5a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/36efc5a9fcb9557e276f57c75f42e52ac4352624))
+* **ide:** prompt ensina animação do player por ação (slice 3) ([22a5424](https://github.com/BuuhV-Projects/cortex-game-engine/commit/22a54246c2daf11ae9ca60ca015fb47d0b3c99bc))
+
 # [0.18.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.17.0...v0.18.0) (2026-06-08)
 
 
