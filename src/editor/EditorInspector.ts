@@ -130,6 +130,8 @@ export interface PlayerAnimationsApi {
   preview(obj: Object3D, clip: string): void;
   /** Para a preview. */
   stop(obj: Object3D): void;
+  /** Infere o mapa pelos NOMES dos clipes e GRAVA (preenche só o que falta). */
+  autoMap(obj: Object3D): void;
 }
 
 export interface EditorInspectorOptions {
@@ -365,6 +367,21 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
       head.textContent = 'Ações do player';
       head.style.cssText = 'margin:8px 0 2px;color:#9aa0ad;font-weight:600';
       root.append(head);
+
+      const sels: Record<string, HTMLSelectElement> = {};
+      // "Auto-mapear" infere pelos nomes e GRAVA (não fica escondido).
+      const autoBtn = document.createElement('button');
+      autoBtn.textContent = '🔎 Auto-mapear pelos nomes';
+      autoBtn.title = 'Preenche as ações vazias pelos nomes dos clipes e salva';
+      autoBtn.style.cssText =
+        'width:100%;padding:4px;margin:2px 0;background:#2a2f3a;color:#fff;border:1px solid #3a3f4a;border-radius:3px;cursor:pointer';
+      autoBtn.addEventListener('click', () => {
+        playerAnimationsApi.autoMap(obj);
+        const next = playerAnimationsApi.get(obj);
+        if (next) for (const [a, s] of Object.entries(sels)) s.value = next.map[a] ?? '';
+      });
+      root.append(autoBtn);
+
       for (const action of pa.actions) {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0';
@@ -385,6 +402,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
           if (pa.map[action] === name) opt.selected = true;
           sel.append(opt);
         }
+        sels[action] = sel;
         sel.addEventListener('change', () => playerAnimationsApi.set(obj, action, sel.value));
         // ▶ toca o clipe DESTA ação (preview, sem persistir).
         const playBtn = document.createElement('button');

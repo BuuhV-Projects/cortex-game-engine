@@ -37,6 +37,7 @@ import {
 import { setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
+import { autoMapPlayerClips } from '../systems/PlatformerAnimationSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -706,6 +707,17 @@ export function attachEditor(game: Game): GameEditor {
     },
     stop(obj) {
       getAnimator(obj)?.stop();
+    },
+    autoMap(obj) {
+      const comp = findPlayerAnim(obj);
+      const an = getAnimator(obj);
+      if (!comp || !an) return;
+      // Infere pelos nomes (explícito vence) e GRAVA — materializa a inferência.
+      comp.clips = autoMapPlayerClips(an.clipNames(), comp.clips);
+      if (obj.name) {
+        playerAnimMap()[obj.name] = { ...comp.clips };
+        persist();
+      }
     },
   };
 

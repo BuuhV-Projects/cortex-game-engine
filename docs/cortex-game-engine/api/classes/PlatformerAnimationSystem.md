@@ -6,7 +6,7 @@
 
 # Class: PlatformerAnimationSystem
 
-Defined in: src/systems/PlatformerAnimationSystem.ts:82
+Defined in: [src/systems/PlatformerAnimationSystem.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerAnimationSystem.ts#L82)
 
 Toca a animação do player conforme a **ação** derivada do
 [PlatformerBodyComponent](PlatformerBodyComponent.md): idle/walk/run no chão, jump/fall no ar, e
@@ -60,7 +60,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `35`
 
-Defined in: src/systems/PlatformerAnimationSystem.ts:84
+Defined in: [src/systems/PlatformerAnimationSystem.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerAnimationSystem.ts#L84)
 
 Prioridade de execução deste sistema.
 
@@ -77,7 +77,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`Object3DComponent`](Object3DComponent.md) \| *typeof* [`PlatformerBodyComponent`](PlatformerBodyComponent.md) \| *typeof* [`PlayerAnimatorComponent`](PlayerAnimatorComponent.md))[]
 
-Defined in: src/systems/PlatformerAnimationSystem.ts:83
+Defined in: [src/systems/PlatformerAnimationSystem.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerAnimationSystem.ts#L83)
 
 Construtores dos componentes que este sistema requer.
 
@@ -103,7 +103,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/PlatformerAnimationSystem.ts:86
+Defined in: [src/systems/PlatformerAnimationSystem.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerAnimationSystem.ts#L86)
 
 Executa a lógica do sistema para o frame/passo atual.
 

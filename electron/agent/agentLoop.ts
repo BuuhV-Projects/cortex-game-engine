@@ -218,14 +218,15 @@ Princípios de composição (aplique sempre):
   (F2) edita/move/remove/adiciona e SALVA de volta (overlay \`assets/scene-data.json\`). \
   Multi-arquivo por trecho (\`level-1.json\`, \`inimigos.json\`, \`decoracao.json\`). \
   Lógica continua em TS. Só caia em código de cena pra casos com lógica.
-- **Animação do player é por AÇÃO, não código solto.** Se o player é um \`.glb\` \
-  animado (personagem KayKit/Quaternius), NÃO escreva \`AnimationMixer\` à mão: ponha \
-  o mapa ação→clipe no nó player (campo \`animations\`: \`{ idle, walk, run, jump, fall }\`) \
-  — o \`PlatformerAnimationSystem\` (via \`setupPlatformer\`) toca a animação certa por \
-  estado. Os clipes ausentes são **auto-mapeados pelos nomes** (Idle/Run/Jump…), então \
-  muitas vezes nem precisa preencher; quando preencher, use os NOMES reais dos clipes \
-  (veja-os no preview do .glb / inspect). Ações one-shot (attack/hurt) via \
-  \`PlayerAnimatorComponent.trigger('attack')\` no código. Ver "Animação do PLAYER por ação".
+- **Animação do player é por AÇÃO, e EXPLÍCITA (nada escondido).** Animação NÃO é \
+  obrigatória; mas se você quer o player animado, ESCREVA o mapa ação→clipe no nó \
+  player (campo \`animations\`: \`{ "idle":"Idle", "run":"Run", "jump":"Jump", "fall":"Jump_Idle" }\`) \
+  — NÃO confie em auto-map mágico nem escreva \`AnimationMixer\` à mão. Pra saber os \
+  NOMES reais dos clipes, abra o \`.glb\` (preview/inspect) e use-os. O \
+  \`PlatformerAnimationSystem\` (via \`setupPlatformer\`) toca a ação certa por estado. \
+  Pode INFERIR os nomes, mas o resultado tem que ficar **escrito no JSON** (ou o usuário \
+  preenche no editor → "Ações do player"). Ações one-shot (attack/hurt) via \
+  \`PlayerAnimatorComponent.trigger('attack')\`. Ver "Animação do PLAYER por ação".
 - **Se houver \`kit.json\` (design system, ADR-0053), AUTORE pelo VOCABULÁRIO — é a \
   forma mais confiável.** O \`inspect_assets\` mostra \`role\`/\`gameplayRole\`/sockets de \
   cada asset. (1) **Escolha peças pela INTENÇÃO**, não só pela geometria: chão/ \

@@ -254,9 +254,9 @@ na seção "Animação" do inspector (escolher clipe + ▶/⏹ + loop/velocidade
 
 O player toca a animação certa **por estado**, sem código ad-hoc: o sistema deriva a
 **ação** do `PlatformerBodyComponent` (idle/walk/run no chão, jump/fall no ar) e toca o
-clipe mapeado no `SceneAnimator`. O padrão que a IA preenche é só o **mapa ação→clipe**
-no nó `player` (campo `animations`); ausentes são **auto-mapeados pelos nomes** dos
-clipes (KayKit/Quaternius já casam).
+clipe mapeado no `SceneAnimator`. O mapa ação→clipe é **EXPLÍCITO** no nó `player`
+(campo `animations`) — **nada de auto-map escondido em runtime**. Animação **não é
+obrigatória**: sem `animations`, o player não anima.
 
 ```jsonc
 { "type": "model", "id": "player", "url": "assets/Knight.glb", "player": true,
@@ -265,10 +265,11 @@ clipes (KayKit/Quaternius já casam).
 
 Ações: `idle`/`walk`/`run`/`jump`/`fall`/`land` (locomoção, automáticas) + custom
 one-shot (`attack`/`hurt`/…) via `entity.getComponent(PlayerAnimatorComponent).trigger('attack')`.
-Fallback automático (run↔walk, fall↔jump, land→idle) cobre clipes faltando. O editor
-edita o mapa por ação (seção "Ações do player"); persiste em `data.playerAnimations[id]`
-(overlay > nó). **Não precisa preencher tudo** — só dê os clipes que existem; o resto
-o auto-map e o fallback resolvem.
+Fallback (run↔walk, fall↔jump, land→idle) cobre uma ação sem clipe. **Inferência por
+nome existe mas é materializada**: a IA escreve o mapa no JSON, ou o editor o gera com
+o botão "Auto-mapear pelos nomes" (que GRAVA em `data.playerAnimations[id]`). O editor
+edita por ação (seção "Ações do player") e dá preview (▶). Precedência: overlay > nó.
+A util `autoMapPlayerClips(clipNames, explicit)` gera o mapa (não roda sozinha).
 
 ## Plataforma 2.5D (gameplay)
 

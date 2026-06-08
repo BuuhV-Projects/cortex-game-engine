@@ -24,7 +24,6 @@ import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
-import { autoMapPlayerClips } from '../systems/PlatformerAnimationSystem.js';
 import { loadGLB, instance, placeOnGround, getWorldBounds, setMatte } from './SceneAssets.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
@@ -413,13 +412,15 @@ function createPlatformerEntity(
     e.addComponent(new PlatformerBodyComponent(p.moveSpeed, p.jumpSpeed, p.gravity, p.maxFall));
     e.addComponent(new FollowCameraTargetComponent());
     // Animação por ação: se o modelo tem clipes, o player ganha o mapa ação→clipe
-    // (auto-mapeado pelos nomes + o que veio do JSON/overlay). O
-    // PlatformerAnimationSystem toca a animação certa por estado.
+    // — APENAS o que estiver EXPLÍCITO (JSON `animations` ou overlay do editor).
+    // NÃO auto-mapeia em runtime (nada escondido): mapa vazio = sem animação
+    // (animação não é obrigatória). A inferência por nome é uma conveniência do
+    // editor (botão "Auto-mapear") que GRAVA o resultado — ou a IA escreve no JSON.
     const animator = (obj.userData as Record<string, unknown>)['cortexAnim'] as
       | { clipNames(): string[] }
       | undefined;
     if (animator) {
-      e.addComponent(new PlayerAnimatorComponent(autoMapPlayerClips(animator.clipNames(), playerAnimations ?? {})));
+      e.addComponent(new PlayerAnimatorComponent({ ...(playerAnimations ?? {}) }));
     }
   } else if (col) {
     e.addComponent(
