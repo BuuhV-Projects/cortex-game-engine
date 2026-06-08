@@ -16,8 +16,10 @@ const game = new Game({ canvas })
 
 // Física + input + câmera 2D-follow (offset/distância/roll-Z opcional).
 const { followCamera } = setupPlatformer(game, { camera: { distance: 16, responsiveness: 6 } })
-// Pra dar o leve giro 2.5D estilo Rayman, descomente (em radianos):
-// followCamera.setRoll(0.05)
+// Estilos de câmera 2.5D (descomente um):
+// followCamera.setRoll(0.05)    // leve giro no eixo Z (estilo Rayman)
+// followCamera.setPitch(0.12)   // tilt no eixo X (profundidade/parallax)
+// followCamera.setIsometric()   // câmera 3/4 isométrica (yaw 45° + pitch ~35°)
 void followCamera
 
 game.start()
@@ -26,8 +28,12 @@ game.start()
 const overlay = await new SceneLoader().loadSceneFile('assets/scene-data.json')
 
 // `world` faz os nós com collider/player virarem entidades ECS (física/câmera).
+// `matte: true` deixa os modelos FOSCOS (look cartoon/desenho, mata o brilho PBR
+// dos .glb stylized) — remova pra PBR brilhoso. No editor (F2) dá pra ligar/
+// desligar por objeto na seção Material.
 await buildScene(game.scene, [level] as unknown as SceneDefinition[], {
   renderer: game.renderer,
   world: game.world,
   overlay,
+  matte: true,
 })
