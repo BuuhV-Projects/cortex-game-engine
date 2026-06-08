@@ -1,3 +1,10 @@
+# [0.20.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.19.0...v0.20.0) (2026-06-08)
+
+
+### Features
+
+* **editor:** painéis da IDE como chrome via ponte postMessage (ADR-0056) ([89b589f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/89b589ff24887af51f45883d36cd168176bcb6c6))
+
 # [0.19.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.18.0...v0.19.0) (2026-06-08)
 
 
