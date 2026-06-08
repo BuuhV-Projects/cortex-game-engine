@@ -1,4 +1,21 @@
-import { PerspectiveCamera, Vector3, Vector2, Box3, Plane, Raycaster, CameraHelper, type Object3D } from 'three';
+import {
+  PerspectiveCamera,
+  Vector3,
+  Vector2,
+  Box3,
+  Plane,
+  Raycaster,
+  CameraHelper,
+  DirectionalLight,
+  HemisphereLight,
+  PointLight,
+  SpotLight,
+  DirectionalLightHelper,
+  HemisphereLightHelper,
+  PointLightHelper,
+  SpotLightHelper,
+  type Object3D,
+} from 'three';
 import type { Game, GameEditor } from '../core/Game.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
@@ -238,6 +255,46 @@ export function attachEditor(game: Game): GameEditor {
   cameraHelper.visible = editorState.active; // segue o modo (boot em edição já mostra)
   three.add(cameraHelper);
   cameraHelper.update();
+
+  // Helpers de LUZ (estilo Blender): cada luz ganha um visual no modo edição —
+  // direção (Directional), hemisfério (Hemisphere), esfera (Point), cone (Spot).
+  // Sem isso, clicar numa luz dá só os eixos do gizmo num ponto invisível. Ambient
+  // não tem helper (é global). Ressincronizado quando a cena muda (as luzes
+  // carregam async pelo buildScene).
+  type LightHelper = Object3D & { update?(): void; dispose?(): void };
+  const lightHelpers = new Map<Object3D, LightHelper>();
+  const syncLightHelpers = (visible: boolean): void => {
+    const present = new Set<Object3D>();
+    three.traverse((o) => {
+      const make =
+        o instanceof DirectionalLight
+          ? (): LightHelper => new DirectionalLightHelper(o, 2)
+          : o instanceof HemisphereLight
+            ? (): LightHelper => new HemisphereLightHelper(o, 1)
+            : o instanceof PointLight
+              ? (): LightHelper => new PointLightHelper(o, 0.5)
+              : o instanceof SpotLight
+                ? (): LightHelper => new SpotLightHelper(o)
+                : null;
+      if (!make) return;
+      present.add(o);
+      let h = lightHelpers.get(o);
+      if (!h) {
+        h = make();
+        three.add(h);
+        lightHelpers.set(o, h);
+      }
+      h.visible = visible;
+      h.update?.();
+    });
+    for (const [light, h] of lightHelpers) {
+      if (present.has(light)) continue;
+      three.remove(h);
+      h.dispose?.();
+      lightHelpers.delete(light);
+    }
+  };
+  syncLightHelpers(editorState.active);
 
   // ── Collider como propriedade do objeto (autoria no editor) ──────────────────
   // O collider é uma entidade ECS ACOPLADA ao mesh (Object3DComponent.object ===
@@ -619,9 +676,10 @@ export function attachEditor(game: Game): GameEditor {
         outliner.setVisible(editorState.active);
         inspector.setVisible(editorState.active);
         addPanel.setVisible(editorState.active);
-        // Frustum da câmera do jogo: só no modo edição (some no Play).
+        // Frustum da câmera + helpers de luz: só no modo edição (somem no Play).
         cameraHelper.visible = editorState.active;
         if (editorState.active) cameraHelper.update();
+        syncLightHelpers(editorState.active);
         if (editorState.active) {
           outliner.refresh();
           snapshot();
@@ -631,6 +689,7 @@ export function attachEditor(game: Game): GameEditor {
         if (sceneChanged()) {
           outliner.refresh();
           snapshot();
+          syncLightHelpers(true); // pega luzes adicionadas async (buildScene)
         }
         inspector.refresh();
         autosaveSelected();
