@@ -14,9 +14,12 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
 
-    "sourceMap": true,
-    "outDir": "../dist-electron",
-    "rootDir": "."
+    // O build do electron é feito pelo electron-vite (bundle esbuild/rollup,
+    // vide electron.vite.config.ts) — este tsconfig serve só pra TYPE-CHECK.
+    // Sem rootDir: blender.ts importa de ../../../src/ai legitimamente (fora de
+    // electron/), o que o electron-vite resolve no bundle; rootDir só gerava
+    // falso TS6059. noEmit porque ninguém consome dist-electron.
+    "noEmit": true
   },
   "include": ["main.ts", "preload.ts", "agent/**/*.ts"]
 }
