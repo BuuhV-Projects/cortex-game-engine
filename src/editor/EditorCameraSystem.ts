@@ -144,8 +144,18 @@ export class EditorCameraSystem extends System {
     );
     this.right.crossVectors(this.forward, this.worldUp).normalize();
 
+    // Desacelera perto de superfícies (estilo Blender): raycast à frente; quanto
+    // mais perto a superfície, menor o passo (até ~12% da velocidade). Os helpers
+    // de luz/câmera têm raycast no-op, então não contam.
+    let proximity = 1;
+    this.raycaster.set(this.camera.position, this.forward);
+    this.raycaster.far = 40;
+    const ahead = this.raycaster.intersectObject(this.ground, true);
+    this.raycaster.far = Infinity;
+    if (ahead.length > 0) proximity = Math.min(1, Math.max(0.12, ahead[0]!.distance / 18));
+
     const fast = this.input.isKeyDown('Shift');
-    const step = this.moveSpeed * (fast ? this.runMultiplier : 1) * dt;
+    const step = this.moveSpeed * (fast ? this.runMultiplier : 1) * dt * proximity;
 
     if (this.input.isKeyDown('w') || this.input.isKeyDown('W')) this.camera.position.addScaledVector(this.forward, step);
     if (this.input.isKeyDown('s') || this.input.isKeyDown('S')) this.camera.position.addScaledVector(this.forward, -step);

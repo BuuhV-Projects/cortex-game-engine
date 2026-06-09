@@ -94,11 +94,11 @@ export class EditorPanels {
   private inspectorKey = ''
   private updaters = new Map<string, (f: Field) => void>()
 
-  // Hierarquia: último estado + filtro de busca + nós colapsados.
+  // Hierarquia: último estado + filtro + nós EXPANDIDOS (default = tudo colapsado).
   private lastItems: OutlinerItem[] = []
   private lastOutlinerJson = ''
   private filter = ''
-  private collapsed = new Set<string>()
+  private expanded = new Set<string>()
 
   /**
    * @param outlinerHost  onde a árvore de hierarquia é montada (aba Hierarquia do LeftDock).
@@ -130,6 +130,11 @@ export class EditorPanels {
     // Busca da aba Hierarquia (LeftDock) filtra a árvore.
     document.addEventListener('hierarchy-filter', (e) => {
       this.filter = (((e as CustomEvent<{ query: string }>).detail.query) || '').toLowerCase()
+      this.renderOutliner(this.lastItems)
+    })
+    // Botão "minimizar tudo" (LeftDock): colapsa toda a árvore.
+    document.addEventListener('hierarchy-collapse-all', () => {
+      this.expanded.clear()
       this.renderOutliner(this.lastItems)
     })
   }
@@ -231,8 +236,8 @@ export class EditorPanels {
     const m = typeMeta(item.type)
     const dim = item.label.startsWith('(') || item.label.startsWith('__')
     const hasChildren = item.children.length > 0
-    // Sob filtro a árvore fica toda aberta (pra mostrar os matches aninhados).
-    const isCollapsed = hasChildren && this.collapsed.has(item.id) && !this.filter
+    // Default colapsado: só expande o que o usuário abriu. Sob filtro, tudo aberto.
+    const isCollapsed = hasChildren && !this.expanded.has(item.id) && !this.filter
 
     const chev = hasChildren
       ? icon(isCollapsed ? 'chevR' : 'chevD', { size: 11, color: 'var(--tx-dim)' })
@@ -241,8 +246,8 @@ export class EditorPanels {
       chev.style.cursor = 'pointer'
       chev.addEventListener('click', (e) => {
         e.stopPropagation()
-        if (this.collapsed.has(item.id)) this.collapsed.delete(item.id)
-        else this.collapsed.add(item.id)
+        if (this.expanded.has(item.id)) this.expanded.delete(item.id)
+        else this.expanded.add(item.id)
         this.renderOutliner(this.lastItems)
       })
     }

@@ -15,6 +15,7 @@ export class LeftDock {
   private searchInput!: HTMLInputElement
   private tabHierBtn!: HTMLButtonElement
   private tabFileBtn!: HTMLButtonElement
+  private minBtn!: HTMLButtonElement
   private tab: 'hier' | 'files' = 'hier'
 
   constructor(container: HTMLElement) {
@@ -47,8 +48,15 @@ export class LeftDock {
     this.tabHierBtn = tabHier
     this.tabFileBtn = tabFile
 
+    const minBtn = h('button', {
+      class: 'hbtn',
+      title: 'Minimizar hierarquia',
+      onClick: () => document.dispatchEvent(new CustomEvent('hierarchy-collapse-all')),
+    }, icon('min', { size: 14 }))
+    this.minBtn = minBtn
     const header = h('div', { class: 'panel-h', style: 'padding:0;height:36px' },
       h('div', { class: 'tabs grow' }, tabHier, tabFile),
+      minBtn,
       h('button', { class: 'hbtn', title: t('fileTree.tooltip_new_file'), onClick: () => this.onPlus() }, icon('plus', { size: 14 })),
     )
 
@@ -84,6 +92,7 @@ export class LeftDock {
     this.tabFileBtn.classList.toggle('on', !isHier)
     this.hierPane.style.display = isHier ? '' : 'none'
     this.filePane.style.display = isHier ? 'none' : ''
+    this.minBtn.style.display = isHier ? '' : 'none' // minimizar só faz sentido na hierarquia
     this.searchInput.placeholder = isHier ? 'Filtrar objetos…' : 'Buscar arquivos…'
   }
 
