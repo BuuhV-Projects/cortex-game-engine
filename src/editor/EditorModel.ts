@@ -98,13 +98,15 @@ export interface InspectorModel {
   sections: InspectorSection[];
 }
 
-/** Item da hierarquia (um filho direto de um `editRoot`). */
+/** Item da hierarquia (um nó da árvore de cena). */
 export interface OutlinerItem {
   id: string;
   label: string;
   /** Tipo do `Object3D` (Mesh, Group, DirectionalLight…). */
   type: string;
   selected: boolean;
+  /** Filhos no grafo de cena (aninhamento real — ex.: sub-malhas de um .glb). */
+  children: OutlinerItem[];
 }
 
 /** Modelo da hierarquia (outliner). */
@@ -190,6 +192,21 @@ interface LightLike {
  * Descreve a **hierarquia**: filhos diretos dos `editRoots` (exceto internos do
  * editor), com o item selecionado marcado.
  */
+function describeNode(obj: Object3D, registry: ObjectRegistry, current: Object3D | null): OutlinerItem {
+  const children: OutlinerItem[] = [];
+  for (const c of obj.children) {
+    if (isInternal(c)) continue;
+    children.push(describeNode(c, registry, current));
+  }
+  return {
+    id: registry.idOf(obj),
+    label: obj.name || `(${obj.type})`,
+    type: obj.type,
+    selected: obj === current,
+    children,
+  };
+}
+
 export function describeOutliner(
   editRoots: Object3D[],
   registry: ObjectRegistry,
@@ -199,12 +216,7 @@ export function describeOutliner(
   for (const root of editRoots) {
     for (const child of root.children) {
       if (isInternal(child)) continue;
-      items.push({
-        id: registry.idOf(child),
-        label: child.name || `(${child.type})`,
-        type: child.type,
-        selected: child === current,
-      });
+      items.push(describeNode(child, registry, current));
     }
   }
   return { items };

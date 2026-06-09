@@ -1,5 +1,4 @@
 import { t } from './i18n'
-import { EditorPanels } from './EditorPanels'
 
 // Regex que captura a URL local do vite a partir do stdout — algo como
 // "Local:   http://localhost:5174/". O vite imprime com códigos ANSI de
@@ -22,11 +21,8 @@ export class Preview {
   private playBtn: HTMLButtonElement | null = null
   private fullscreenBtn: HTMLButtonElement | null = null
   private viewportEl: HTMLElement | null = null
-  /** Onde o iframe/placeholder do jogo é trocado (à esquerda dos painéis). */
+  /** Onde o iframe/placeholder do jogo é trocado. */
   private stageEl: HTMLElement | null = null
-  /** Host persistente dos painéis do editor (ADR-0056) — não recriado no rebuild. */
-  private panelsHostEl: HTMLElement | null = null
-  private panels: EditorPanels | null = null
 
   private projectDir: string | null = null
   private running = false
@@ -41,13 +37,6 @@ export class Preview {
   init(): void {
     this.buildShell()
     this.updateButtonState()
-
-    // Painéis do editor (hierarquia + inspector) como chrome da IDE (ADR-0056).
-    // Criado uma vez; o host é re-parentado no rebuild (mantém estado/listeners).
-    if (!this.panels && this.panelsHostEl) {
-      this.panels = new EditorPanels(this.panelsHostEl)
-      this.panels.init()
-    }
 
     window.electronAPI.onLog((line) => this.handleLogLine(line))
     window.electronAPI.onProjectStopped(() => this.handleStopped())
@@ -108,14 +97,7 @@ export class Preview {
     stage.innerHTML = `<p class="preview-placeholder">${t('preview.placeholder_start')}</p>`
     this.stageEl = stage
 
-    // Host dos painéis do editor — criado uma vez e re-parentado no rebuild, pra
-    // não recriar o EditorPanels (e seu listener de message) a cada troca de idioma.
-    if (!this.panelsHostEl) {
-      this.panelsHostEl = document.createElement('div')
-    }
-
     viewport.appendChild(stage)
-    viewport.appendChild(this.panelsHostEl)
 
     this.container.appendChild(viewport)
   }

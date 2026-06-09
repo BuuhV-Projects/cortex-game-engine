@@ -45,21 +45,20 @@ const STUB_BODY = `
   // EditorPanels popular hierarquia + inspector sem o jogo rodando.
   setTimeout(function () {
     var vec = function (id, label, v) { return { kind: 'vec3', id: id, label: label, value: v }; };
+    var node = function (id, label, type, sel, kids) { return { id: id, label: label, type: type, selected: !!sel, children: kids || [] }; };
     var msg = {
       source: 'cortex-editor', type: 'state', editorActive: false,
       outliner: { items: [
-        { id: 'o0', label: '__editor_collider_gizmos', type: 'Group', selected: false },
-        { id: 'o1', label: 'Camera', type: 'PerspectiveCamera', selected: false },
-        { id: 'o2', label: '(CameraHelper)', type: 'CameraHelper', selected: false },
-        { id: 'o3', label: '(HemisphereLight)', type: 'HemisphereLight', selected: false },
-        { id: 'o4', label: '(AmbientLight)', type: 'AmbientLight', selected: false },
-        { id: 'o5', label: '(DirectionalLight)', type: 'DirectionalLight', selected: false },
-        { id: 'o6', label: 'safety_net', type: 'Mesh', selected: false },
-        { id: 'o7', label: 'ground_start', type: 'Mesh', selected: true },
-        { id: 'o8', label: 'ground_start_dirt', type: 'Mesh', selected: false },
-        { id: 'o9', label: 'tree_start', type: 'Mesh', selected: false },
-        { id: 'o10', label: 'bush_start', type: 'Mesh', selected: false },
-        { id: 'o11', label: 'coin_1', type: 'Mesh', selected: false },
+        node('o0', '__editor_collider_gizmos', 'Group', false),
+        node('o1', 'Camera', 'PerspectiveCamera', false, [ node('o2', '(CameraHelper)', 'CameraHelper', false) ]),
+        node('o3', '(HemisphereLight)', 'HemisphereLight', false),
+        node('o4', '(AmbientLight)', 'AmbientLight', false),
+        node('o5', '(DirectionalLight)', 'DirectionalLight', false),
+        node('o6', 'safety_net', 'Mesh', false),
+        node('o7', 'ground_start', 'Mesh', true, [ node('o8', 'ground_start_dirt', 'Mesh', false) ]),
+        node('o9', 'tree_start', 'Mesh', false),
+        node('o10', 'bush_start', 'Mesh', false),
+        node('o11', 'coin_1', 'Mesh', false),
       ] },
       inspector: { title: 'ground_start', empty: false, sections: [
         { fields: [ vec('p:pos', 'Posição', [12, 0, 4.5]), vec('p:rot', 'Rotação (°)', [0, 0, 0]), vec('p:scl', 'Escala', [1, 1, 1]) ] },

@@ -28,6 +28,7 @@ interface OutlinerItem {
   label: string
   type: string
   selected: boolean
+  children: OutlinerItem[]
 }
 interface SelectOption {
   value: string
@@ -66,7 +67,6 @@ const ENGINE = 'cortex-editor'
 const IDE = 'cortex-ide'
 
 export class EditorPanels {
-  private container: HTMLElement
   private outlinerListEl!: HTMLElement
   private inspectorEl!: HTMLElement
 
@@ -74,98 +74,90 @@ export class EditorPanels {
   private target: Window | null = null
   private editorActive = true
   private paused = false
-  /** Avisa o layout pra alargar a coluna direita uma vez (espaço pros painéis). */
-  private announcedVisible = false
 
   // Reconciliação do inspector: chave de estrutura + updaters por campo.
   private inspectorKey = ''
   private updaters = new Map<string, (f: Field) => void>()
 
-  constructor(container: HTMLElement) {
-    this.container = container
-  }
+  // Hierarquia: último estado + filtro de busca + nós colapsados.
+  private lastItems: OutlinerItem[] = []
+  private filter = ''
+  private collapsed = new Set<string>()
+
+  /**
+   * @param outlinerHost  onde a árvore de hierarquia é montada (aba Hierarquia do LeftDock).
+   * @param inspectorHost onde o inspector é montado (dock direito, antes do chat).
+   */
+  constructor(
+    private outlinerHost: HTMLElement,
+    private inspectorHost: HTMLElement,
+  ) {}
 
   init(): void {
-    this.buildShell()
+    this.buildHosts()
     window.addEventListener('message', (ev) => this.onMessage(ev))
-    // Se o projeto para/fecha, o iframe some — esconde os painéis.
+    // Se o projeto para/fecha, o iframe some — limpa os painéis.
     document.addEventListener('play-stopped', () => this.reset())
     document.addEventListener('project-close', () => this.reset())
-    // Troca de idioma: reconstrói o shell (re-traduz títulos). O próximo `state`
-    // do engine repinta o conteúdo.
+    // Troca de idioma: reconstrói os hosts e repinta a partir do último estado.
     document.addEventListener('locale-change', () => {
-      const wasVisible = this.container.style.display !== 'none'
-      this.buildShell()
-      this.setVisible(wasVisible)
+      this.buildHosts()
+      this.renderOutliner(this.lastItems)
     })
-    // Transport da toolbar (Shell) controla a gameplay via a ponte (Unity-style):
-    // Play/Stop alterna edição↔play; Pause congela a gameplay durante o play.
-    document.addEventListener('request-editor-play', () => {
-      this.send({ type: 'editor', active: !this.editorActive })
+    // Transport da toolbar (Shell) controla a gameplay via a ponte (Unity-style).
+    document.addEventListener('request-editor-play', () => this.send({ type: 'editor', active: !this.editorActive }))
+    document.addEventListener('request-editor-pause', () => this.send({ type: 'pause' }))
+    // Busca da aba Hierarquia (LeftDock) filtra a árvore.
+    document.addEventListener('hierarchy-filter', (e) => {
+      this.filter = (((e as CustomEvent<{ query: string }>).detail.query) || '').toLowerCase()
+      this.renderOutliner(this.lastItems)
     })
-    document.addEventListener('request-editor-pause', () => {
-      this.send({ type: 'pause' })
-    })
-    this.setVisible(false)
   }
 
-  private buildShell(): void {
-    this.container.innerHTML = ''
-    this.container.classList.add('cge-editor-panels')
-    // Estrutura recriada — invalida a reconciliação do inspector.
-    this.inspectorKey = ''
-    this.updaters = new Map()
-
-    // Hierarquia (outliner) — painel com header + lista de nós.
-    const oList = h('div', { class: 'tree scroll' })
-    const outliner = h('div', { class: 'panel cge-ep-outliner' },
-      h('div', { class: 'panel-h' }, h('span', { class: 'ttl lit' }, t('editor.hierarchy'))),
-      oList,
-    )
+  private buildHosts(): void {
+    // Hierarquia: só a lista (o header/abas/busca são do LeftDock).
+    this.outlinerHost.innerHTML = ''
+    const oList = h('div', { class: 'tree scroll grow' })
+    this.outlinerHost.append(oList)
     this.outlinerListEl = oList
 
-    // Inspector (propriedades) — painel com header + corpo.
-    const iBody = h('div', { class: 'insp scroll' })
-    const inspector = h('div', { class: 'panel cge-ep-inspector' },
-      h('div', { class: 'panel-h' }, h('span', { class: 'ttl lit' }, t('editor.properties'))),
-      iBody,
+    // Inspector (dock direito): header + corpo.
+    this.inspectorHost.innerHTML = ''
+    this.inspectorHost.className = 'panel inspector-dock'
+    const body = h('div', { class: 'insp scroll grow' })
+    this.inspectorHost.append(
+      h('div', { class: 'panel-h' },
+        h('span', { class: 'ttl lit' }, t('editor.properties')),
+        h('span', { class: 'spacer' }),
+        h('button', { class: 'hbtn', title: 'Travar' }, icon('lock', { size: 13 })),
+        h('button', { class: 'hbtn' }, icon('dots', { size: 15 })),
+      ),
+      body,
     )
-    this.inspectorEl = iBody
-
-    this.container.append(outliner, inspector)
-  }
-
-  private setVisible(v: boolean): void {
-    document.body.classList.toggle('cge-has-editor-panels', v)
-    this.container.style.display = v ? 'flex' : 'none'
-    if (v && !this.announcedVisible) {
-      this.announcedVisible = true
-      document.dispatchEvent(new CustomEvent('editor-panels-visible'))
-    }
+    this.inspectorEl = body
+    this.inspectorKey = ''
+    this.updaters = new Map()
+    this.renderInspector({ title: '', empty: true, sections: [] })
   }
 
   private reset(): void {
     this.target = null
+    this.lastItems = []
+    this.renderOutliner([])
     this.inspectorKey = ''
-    this.updaters.clear()
-    this.outlinerListEl.textContent = ''
-    this.inspectorEl.textContent = ''
-    this.setVisible(false)
+    this.renderInspector({ title: '', empty: true, sections: [] })
   }
 
   private onMessage(ev: MessageEvent): void {
     const data = ev.data as { source?: string; type?: string } | null
     if (!data || data.source !== ENGINE) return
     if (data.type === 'hello') {
-      // O engine pediu handshake: guarda a janela de origem e responde ack.
       this.target = ev.source as Window
-      this.setVisible(true)
       this.send({ type: 'ack' })
       return
     }
     if (data.type === 'state') {
       if (!this.target) this.target = ev.source as Window
-      this.setVisible(true)
       this.renderState(data as StateMessage)
     }
   }
@@ -181,26 +173,65 @@ export class EditorPanels {
     document.dispatchEvent(
       new CustomEvent('editor-active-change', { detail: { active: this.editorActive, paused: this.paused } }),
     )
-    this.renderOutliner(state.outliner.items)
+    this.lastItems = state.outliner.items
+    this.renderOutliner(this.lastItems)
     this.renderInspector(state.inspector)
   }
 
+  // ── Hierarquia (árvore aninhada + filtro de busca) ─────────────────────────
+  /** `true` se o item (ou algum descendente) casa com o filtro. */
+  private matches(item: OutlinerItem): boolean {
+    if (!this.filter) return true
+    if (item.label.toLowerCase().includes(this.filter)) return true
+    return item.children.some((c) => this.matches(c))
+  }
+
   private renderOutliner(items: OutlinerItem[]): void {
+    if (!this.outlinerListEl) return
     this.outlinerListEl.textContent = ''
-    for (const item of items) {
-      const m = typeMeta(item.type)
-      const dim = item.label.startsWith('(') || item.label.startsWith('__')
-      const el = h('div', { class: 'node' + (item.selected ? ' sel' : '') + (dim ? ' dim' : ''), title: item.type },
-        icon('chevR', { size: 11, color: 'var(--tx-dim)' }),
-        h('span', { class: 'ico', style: { color: item.selected ? 'var(--accent)' : m.color } }, icon(m.icon, { size: 13 })),
-        h('span', { class: 'nm' }, item.label),
+    for (const item of items) this.renderNode(item, 0)
+    if (this.outlinerListEl.childElementCount === 0) {
+      this.outlinerListEl.append(
+        h('div', { style: { padding: '8px', color: 'var(--tx-dim)', fontSize: '11px' } },
+          this.filter ? 'Nada encontrado.' : '—'),
       )
-      el.addEventListener('click', () => {
-        this.send({ type: 'select', id: item.id })
-        this.send({ type: 'focus', id: item.id })
-      })
-      this.outlinerListEl.appendChild(el)
     }
+  }
+
+  private renderNode(item: OutlinerItem, depth: number): void {
+    if (!this.matches(item)) return
+    const m = typeMeta(item.type)
+    const dim = item.label.startsWith('(') || item.label.startsWith('__')
+    const hasChildren = item.children.length > 0
+    // Sob filtro a árvore fica toda aberta (pra mostrar os matches aninhados).
+    const isCollapsed = hasChildren && this.collapsed.has(item.id) && !this.filter
+
+    const chev = hasChildren
+      ? icon(isCollapsed ? 'chevR' : 'chevD', { size: 11, color: 'var(--tx-dim)' })
+      : h('span', { class: 'indent', style: { width: '11px' } })
+    if (hasChildren) {
+      chev.style.cursor = 'pointer'
+      chev.addEventListener('click', (e) => {
+        e.stopPropagation()
+        if (this.collapsed.has(item.id)) this.collapsed.delete(item.id)
+        else this.collapsed.add(item.id)
+        this.renderOutliner(this.lastItems)
+      })
+    }
+
+    const node = h('div', { class: 'node' + (item.selected ? ' sel' : '') + (dim ? ' dim' : ''), title: item.type },
+      h('span', { class: 'indent', style: { width: `${depth * 13}px` } }),
+      chev,
+      h('span', { class: 'ico', style: { color: item.selected ? 'var(--accent)' : m.color } }, icon(m.icon, { size: 13 })),
+      h('span', { class: 'nm' }, item.label),
+    )
+    node.addEventListener('click', () => {
+      this.send({ type: 'select', id: item.id })
+      this.send({ type: 'focus', id: item.id })
+    })
+    this.outlinerListEl.append(node)
+
+    if (hasChildren && !isCollapsed) for (const c of item.children) this.renderNode(c, depth + 1)
   }
 
   private structureKey(model: InspectorModel): string {

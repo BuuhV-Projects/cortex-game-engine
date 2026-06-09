@@ -5,8 +5,9 @@ import { BottomPanel } from './BottomPanel'
 import { ProjectManager } from './ProjectManager'
 import { Chat } from './Chat'
 import { Launcher } from './Launcher'
-import { Resizer } from './Resizer'
 import { Shell } from './Shell'
+import { LeftDock } from './LeftDock'
+import { EditorPanels } from './EditorPanels'
 import { applyTheme } from './theme'
 import { initI18n } from './i18n'
 import { showWelcomeModal } from './Welcome'
@@ -21,67 +22,85 @@ if (!welcomed) {
   await showWelcomeModal()
 }
 
-const sidebar = document.getElementById('sidebar') as HTMLElement
+const leftDockEl = document.getElementById('left-dock') as HTMLElement
 const editorContainer = document.getElementById('editor-container') as HTMLElement
 const previewContainer = document.getElementById('preview-container') as HTMLElement
 const consoleContainer = document.getElementById('console-container') as HTMLElement
+const inspectorContainer = document.getElementById('inspector-container') as HTMLElement
 const chatContainer = document.getElementById('chat-container') as HTMLElement
 const menubarContainer = document.getElementById('menubar') as HTMLElement
 const toolbarContainer = document.getElementById('toolbar') as HTMLElement
 
-// Casca nova (redesign / Layout A): menubar + toolbar acima dos docks.
+// Casca (menubar + toolbar) e dock esquerdo (abas Hierarquia/Projeto). O LeftDock
+// monta os panes ANTES dos componentes que vivem dentro deles.
 const shell = new Shell(menubarContainer, toolbarContainer)
+const leftDock = new LeftDock(leftDockEl)
+shell.init()
+leftDock.init()
 
-const fileTree = new FileTree(sidebar)
+// FileTree → aba Projeto; EditorPanels → aba Hierarquia (outliner) + dock Inspector.
+const fileTree = new FileTree(leftDock.filesPane)
+const editorPanels = new EditorPanels(leftDock.hierarchyPane, inspectorContainer)
 const editor = new Editor(editorContainer)
 const preview = new Preview(previewContainer)
 const bottomPanel = new BottomPanel(consoleContainer)
-const projectManager = new ProjectManager(sidebar)
+const projectManager = new ProjectManager(document.body)
 const chat = new Chat(chatContainer)
 
 // Tela inicial (logo + criar/abrir + recentes). Construída ANTES de fileTree.init()
-// pra o listener de `project-open` já pegar a restauração do último projeto (se
-// houver, a tela some na hora; senão fica visível no boot).
+// pra o listener de `project-open` já pegar a restauração do último projeto.
 new Launcher()
 
-// FileTree.init() reconstrói o shell da sidebar; ProjectManager.init() prepend o botão depois
-shell.init()
 fileTree.init()
+editorPanels.init()
 editor.init()
 preview.init()
 bottomPanel.init()
 projectManager.init()
 chat.init()
 
-// Resizers entre as colunas do grid. As larguras iniciais batem com o
-// grid-template-columns definido em styles.css.
-const app = document.getElementById('app') as HTMLElement
-const rightTarget = { columnIndex: 4, width: 320 }
-const chatTarget = { columnIndex: 6, width: 320 }
-const resizer = new Resizer(app, [rightTarget, chatTarget])
-resizer.attach(document.getElementById('resizer-right') as HTMLElement, rightTarget)
-resizer.attach(document.getElementById('resizer-chat') as HTMLElement, chatTarget)
+// ── Resizers (flex) entre os docks ───────────────────────────────────────────
+// `sign`: +1 quando o alvo está à ESQUERDA do handle (arrastar p/ direita alarga);
+// -1 quando está à DIREITA (arrastar p/ esquerda alarga).
+function colResizer(handle: HTMLElement, target: HTMLElement, sign: 1 | -1, min = 170, max = 680): void {
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = target.getBoundingClientRect().width
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    const onMove = (ev: MouseEvent): void => {
+      const w = Math.min(max, Math.max(min, startW + sign * (ev.clientX - startX)))
+      target.style.flex = `0 0 ${w}px`
+      target.style.width = `${w}px`
+    }
+    const onUp = (): void => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  })
+}
+colResizer(document.getElementById('resizer-left') as HTMLElement, leftDockEl, 1)
+colResizer(document.getElementById('resizer-inspector') as HTMLElement, inspectorContainer, -1)
+colResizer(document.getElementById('resizer-chat') as HTMLElement, chatContainer, -1)
 
-// Resize vertical entre preview e console/terminal — ajusta a altura do
-// #console-container (que é flex-shrink:0 com height fixa).
+// Resize vertical entre viewport/editor e console — ajusta a altura do #console-container.
 const bottomHandle = document.getElementById('resizer-bottom') as HTMLElement
 const consoleEl = consoleContainer
 const MIN_BOTTOM = 80
 const MAX_BOTTOM_RATIO = 0.85
-let bottomDragStartY = 0
-let bottomDragStartHeight = 0
 bottomHandle.addEventListener('mousedown', (e) => {
-  bottomDragStartY = e.clientY
-  bottomDragStartHeight = consoleEl.getBoundingClientRect().height
+  const startY = e.clientY
+  const startHeight = consoleEl.getBoundingClientRect().height
   document.body.style.cursor = 'row-resize'
   document.body.style.userSelect = 'none'
   const onMove = (ev: MouseEvent): void => {
     const panelHeight = (consoleEl.parentElement as HTMLElement).getBoundingClientRect().height
-    const delta = bottomDragStartY - ev.clientY
-    const next = Math.min(
-      Math.max(bottomDragStartHeight + delta, MIN_BOTTOM),
-      panelHeight * MAX_BOTTOM_RATIO,
-    )
+    const next = Math.min(Math.max(startHeight + (startY - ev.clientY), MIN_BOTTOM), panelHeight * MAX_BOTTOM_RATIO)
     consoleEl.style.height = `${next}px`
   }
   const onUp = (): void => {
@@ -94,31 +113,23 @@ bottomHandle.addEventListener('mousedown', (e) => {
   window.addEventListener('mouseup', onUp)
 })
 
-// Editor vazio (sem arquivo/imagem aberto) → o jogo (#right-panel) toma o espaço
-// do editor. Quando um arquivo/imagem/markdown abre, o editor volta ao 1fr.
+// Editor vazio (sem arquivo aberto) → esconde o pane do Monaco; o viewport toma o
+// centro. Ao abrir um arquivo, o editor reaparece dividindo o centro com o viewport.
 document.addEventListener('editor-empty-change', (e) => {
   const { empty } = (e as CustomEvent<{ empty: boolean }>).detail
-  resizer.editorCollapsed = empty
-  resizer.applyColumns()
+  editorContainer.style.display = empty ? 'none' : ''
 })
-// Estado inicial: nada aberto no editor, então o jogo já começa expandido.
-resizer.editorCollapsed = true
-resizer.applyColumns()
+editorContainer.style.display = 'none'
 
-const COLLAPSED_CHAT_WIDTH = 32
-let chatWidthBeforeCollapse = chatTarget.width
+// Chat recolhido → vira um trilho fino (rail).
 document.addEventListener('chat-collapsed-change', (e) => {
   const { collapsed } = (e as CustomEvent<{ collapsed: boolean }>).detail
-  if (collapsed) {
-    chatWidthBeforeCollapse = chatTarget.width
-    chatTarget.width = COLLAPSED_CHAT_WIDTH
-  } else {
-    chatTarget.width = chatWidthBeforeCollapse
-  }
-  resizer.applyColumns()
+  const w = collapsed ? 46 : 320
+  chatContainer.style.flex = `0 0 ${w}px`
+  chatContainer.style.width = `${w}px`
 })
 
-// Ao criar um novo projeto, FileTree recarrega apontando para o path criado
+// Ao criar/abrir um projeto, FileTree recarrega apontando para o path.
 document.addEventListener('project-open', (e) => {
   const { path } = (e as CustomEvent<{ path: string }>).detail
   void fileTree.openProject(path)
@@ -127,23 +138,11 @@ document.addEventListener('project-open', (e) => {
 // Fechar projeto: limpa a árvore (os demais componentes têm seu próprio listener).
 document.addEventListener('project-close', () => fileTree.closeProject())
 
-// Painéis do editor (ADR-0056): ao aparecerem, alarga a coluna direita uma vez
-// pra caber jogo + hierarquia/inspector (250px) sem ficar apertado.
-document.addEventListener('editor-panels-visible', () => {
-  if (rightTarget.width < 560) {
-    rightTarget.width = 560
-    resizer.applyColumns()
-  }
-})
-
-// Menu nativo "Projeto > Gerar instalador..." (ADR-0024). O BottomPanel
-// escuta o evento DOM e dispara `yarn tauri:build` (release) ou
-// `yarn tauri:build:debug` (com DevTools embutido) no projeto ativo.
+// Menu nativo "Projeto > Gerar instalador..." (ADR-0024) — também disparado pela
+// menubar custom. O BottomPanel escuta `build-installer-requested`.
 window.electronAPI.onMenuBuildInstaller((payload) => {
   document.dispatchEvent(
-    new CustomEvent<{ debug: boolean }>('build-installer-requested', {
-      detail: { debug: payload.debug },
-    }),
+    new CustomEvent<{ debug: boolean }>('build-installer-requested', { detail: { debug: payload.debug } }),
   )
 })
 
@@ -152,9 +151,7 @@ window.electronAPI.onMenuCloseProject(() => {
   document.dispatchEvent(new CustomEvent('project-close'))
 })
 
-// Menu nativo "Idioma > English | Português" (ADR-0025). Importa setLocale
-// dinamicamente pra evitar ciclo de dependência com Welcome.ts (que
-// também usa i18n).
+// Menu nativo "Idioma > English | Português" (ADR-0025).
 window.electronAPI.onMenuChangeLocale((locale) => {
   void import('./i18n').then(({ setLocale }) => setLocale(locale))
 })

@@ -38,6 +38,7 @@ export class ObjectEditSystem extends System {
   override priority = 27;
 
   private readonly controls: TransformControls;
+  private _mode: 'translate' | 'rotate' | 'scale' = 'translate';
   private readonly helper: THREE.Object3D;
   private readonly raycaster = new THREE.Raycaster();
   private readonly ndc = new THREE.Vector2();
@@ -147,21 +148,9 @@ export class ObjectEditSystem extends System {
       return;
     }
 
-    if (this.edge('1')) {
-      this.controls.setMode('translate');
-      this.apply2DConstraints('translate');
-      this.hud.showToast('Modo: mover (setas)');
-    }
-    if (this.edge('2')) {
-      this.controls.setMode('rotate');
-      this.apply2DConstraints('rotate');
-      this.hud.showToast('Modo: rotacionar (anéis)');
-    }
-    if (this.edge('3')) {
-      this.controls.setMode('scale');
-      this.apply2DConstraints('scale');
-      this.hud.showToast('Modo: escalar (cubos)');
-    }
+    if (this.edge('1')) this.setGizmoMode('translate');
+    if (this.edge('2')) this.setGizmoMode('rotate');
+    if (this.edge('3')) this.setGizmoMode('scale');
     if (this.edge('Escape')) {
       this.deselect();
     }
@@ -231,6 +220,23 @@ export class ObjectEditSystem extends System {
    *
    * @param target - Objeto a selecionar, ou `null` pra desselecionar.
    */
+  /** Modo atual do gizmo (mover/girar/escalar). */
+  get gizmoMode(): 'translate' | 'rotate' | 'scale' {
+    return this._mode;
+  }
+
+  /**
+   * Define o modo do gizmo (mover/girar/escalar). Equivale às teclas 1/2/3 —
+   * usado também pelos botões de ferramenta da IDE (via a ponte do editor).
+   */
+  setGizmoMode(mode: 'translate' | 'rotate' | 'scale'): void {
+    this._mode = mode;
+    this.controls.setMode(mode);
+    this.apply2DConstraints(mode);
+    const label = mode === 'translate' ? 'mover (setas)' : mode === 'rotate' ? 'rotacionar (anéis)' : 'escalar (cubos)';
+    this.hud.showToast(`Modo: ${label}`);
+  }
+
   select(target: THREE.Object3D | null): void {
     if (this.selected === target) return;
     this.selected = target;
