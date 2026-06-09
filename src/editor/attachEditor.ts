@@ -262,12 +262,29 @@ export function attachEditor(game: Game): GameEditor {
   // hierarquia (nomeada) e ganha um frustum (CameraHelper). No modo edição a
   // navegação usa uma câmera de voo SEPARADA, então dá pra ver de fora como a
   // câmera do jogo enquadra a cena. O frustum só aparece no modo edição.
+  // Helpers do editor (frustum da câmera, visuais de luz) NÃO capturam o clique de
+  // seleção (raycast no-op) e ficam translúcidos — senão "roubam" o clique dos
+  // objetos e tampam a cena. Continuam na hierarquia (não viram editorInternal).
+  const prepHelper = (obj: Object3D): void => {
+    obj.traverse((o) => {
+      o.raycast = () => {};
+      const mat = (o as { material?: unknown }).material;
+      const mats = Array.isArray(mat) ? mat : mat ? [mat] : [];
+      for (const m of mats as Array<{ transparent: boolean; opacity: number; depthWrite: boolean }>) {
+        m.transparent = true;
+        m.opacity = 0.5;
+        m.depthWrite = false;
+      }
+    });
+  };
+
   if (!game.camera.name) game.camera.name = 'Camera';
   if (game.camera.parent !== three) three.add(game.camera);
   const cameraHelper = new CameraHelper(game.camera);
   cameraHelper.visible = editorState.active; // segue o modo (boot em edição já mostra)
   three.add(cameraHelper);
   cameraHelper.update();
+  prepHelper(cameraHelper);
 
   // Helpers de LUZ (estilo Blender): cada luz ganha um visual no modo edição —
   // direção (Directional), hemisfério (Hemisphere), esfera (Point), cone (Spot).
@@ -296,6 +313,7 @@ export function attachEditor(game: Game): GameEditor {
         h = make();
         three.add(h);
         lightHelpers.set(o, h);
+        prepHelper(h);
       }
       h.visible = visible;
       h.update?.();
