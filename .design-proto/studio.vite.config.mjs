@@ -28,6 +28,19 @@ const STUB_BODY = `
     readDir: function () { return Promise.resolve(FILES); },
     listProjectFiles: function () { return Promise.resolve([]); },
     readFile: function () { return Promise.resolve(''); },
+    // Gera um spritesheet de exemplo (strip horizontal de 6 frames 64×64) pra
+    // validar o preview de imagem e o player de spritesheet 2D sem fs real.
+    readFileBase64: function () {
+      var c = document.createElement('canvas'); c.width = 384; c.height = 64;
+      var x = c.getContext('2d');
+      for (var i = 0; i < 6; i++) {
+        x.fillStyle = 'hsl(' + (i * 52) + ',68%,55%)';
+        x.fillRect(i * 64, 6, 64, 52);
+        x.fillStyle = '#fff'; x.font = 'bold 26px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+        x.fillText(String(i + 1), i * 64 + 32, 32);
+      }
+      return Promise.resolve(c.toDataURL('image/png').split(',')[1]);
+    },
     readEngineTypes: function () { return Promise.resolve([]); },
     loadChatHistory: function () { return Promise.resolve([
       { role: 'user', content: 'quando eu apago o numero 0 e deixo o input de rotacao vazio, ele apaga o player da cena' },
@@ -106,6 +119,12 @@ const STUB_BODY = `
   // setTimeout(function () {
   //   document.dispatchEvent(new CustomEvent('file-open', { detail: { path: '/proj/assets/Bouncer.glb', name: 'Bouncer.glb' } }));
   //   document.dispatchEvent(new CustomEvent('glb-asset', { detail: { name: 'Bouncer.glb', sizeBytes: 1258291, meshes: 1, materials: 1, animations: 16, triangles: 1248 } }));
+  // }, 2600);
+
+  // (validação do player de spritesheet 2D — abre o .png e clica em "Spritesheet")
+  // setTimeout(function () {
+  //   document.dispatchEvent(new CustomEvent('file-open', { detail: { path: '/proj/assets/hero_run.png', name: 'hero_run.png' } }));
+  //   setTimeout(function () { var b = document.querySelector('.sprite-toggle-btn'); if (b) b.click(); }, 500);
   // }, 2600);
 })();
 `

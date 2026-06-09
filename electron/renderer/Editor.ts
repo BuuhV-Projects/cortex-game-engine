@@ -2,6 +2,8 @@ import * as monaco from 'monaco-editor'
 import { getThemeName } from './theme'
 import { renderMarkdown } from './markdown'
 import { GlbPreview } from './GlbPreview'
+import { SpritePreview } from './SpritePreview'
+import { icon } from './ui'
 
 /**
  * O barrel principal do `monaco-editor` exporta `monaco.languages.typescript`
@@ -137,6 +139,10 @@ export class Editor {
   private editorArea: HTMLElement | null = null
   private previewEl: HTMLElement | null = null
   private glbPreview: GlbPreview | null = null
+  private spritePreview: SpritePreview | null = null
+  /** Path/nome da imagem atualmente em preview (pro botão "Spritesheet"). */
+  private previewImagePath: string | null = null
+  private previewImageName = ''
   private instance: monaco.editor.IStandaloneCodeEditor | null = null
   // Ordem das abas (insertion order do Map é estável)
   private tabs: Map<string, Tab> = new Map()
@@ -410,7 +416,35 @@ export class Editor {
       'z-index:6',
     ].join(';')
     closeBtn.addEventListener('click', () => this.hideImagePreview())
-    preview.append(img, md, caption, closeBtn)
+
+    // Botão "Spritesheet": abre a imagem atual como player de animação 2D
+    // (rota A — grade de frames editável). Só faz sentido pra imagens raster.
+    const spriteBtn = document.createElement('button')
+    spriteBtn.className = 'sprite-toggle-btn'
+    spriteBtn.title = 'Ver como spritesheet (animação 2D)'
+    spriteBtn.append(icon('grid', { size: 13 }), document.createTextNode('Spritesheet'))
+    spriteBtn.style.cssText = [
+      'position:absolute',
+      'top:8px',
+      'right:48px',
+      'height:28px',
+      'display:flex',
+      'align-items:center',
+      'gap:6px',
+      'padding:0 10px',
+      'border:1px solid #3a3f4a',
+      'border-radius:5px',
+      'background:rgba(42,47,58,0.9)',
+      'color:#e6e6e6',
+      'cursor:pointer',
+      'font:12px "Segoe UI",Roboto,Arial,sans-serif',
+      'z-index:6',
+    ].join(';')
+    spriteBtn.addEventListener('click', () => {
+      if (this.previewImagePath) void this.spritePreview?.open(this.previewImagePath, this.previewImageName)
+    })
+
+    preview.append(img, md, caption, spriteBtn, closeBtn)
     editorArea.appendChild(preview)
     this.previewEl = preview
 
@@ -419,6 +453,8 @@ export class Editor {
       this.notifyEmptyState()
       this.notifyDoc(this.tabs.size ? 'code' : 'scene')
     })
+    // Player de spritesheet 2D (overlay acima do preview de imagem).
+    this.spritePreview = new SpritePreview(editorArea)
   }
 
   private get previewImg(): HTMLImageElement | null {
@@ -430,10 +466,17 @@ export class Editor {
   private get previewCaption(): HTMLElement | null {
     return this.previewEl?.querySelector('.editor-preview-caption') ?? null
   }
+  private get spriteBtn(): HTMLElement | null {
+    return this.previewEl?.querySelector('.sprite-toggle-btn') ?? null
+  }
 
   /** Mostra a imagem como preview (cobre o editor de código). */
   private async openImagePreview(path: string, name: string): Promise<void> {
     if (!this.previewEl) return
+    this.spritePreview?.close()
+    this.previewImagePath = path
+    this.previewImageName = name
+    if (this.spriteBtn) this.spriteBtn.style.display = SpritePreview.handles(name) ? 'flex' : 'none'
     if (this.previewMd) this.previewMd.style.display = 'none'
     if (this.previewImg) this.previewImg.style.display = ''
     this.previewEl.style.justifyContent = 'center'
@@ -452,6 +495,8 @@ export class Editor {
   /** Renderiza o markdown como preview (cobre o editor de código). */
   private async openMarkdownPreview(path: string, name: string): Promise<void> {
     if (!this.previewEl) return
+    this.spritePreview?.close()
+    if (this.spriteBtn) this.spriteBtn.style.display = 'none'
     if (this.previewImg) this.previewImg.style.display = 'none'
     const md = this.previewMd
     if (md) md.style.display = 'block'
@@ -469,6 +514,7 @@ export class Editor {
 
   /** Esconde o preview (volta a mostrar o editor de código). */
   private hideImagePreview(): void {
+    this.spritePreview?.close()
     if (this.previewEl) this.previewEl.style.display = 'none'
     this.notifyEmptyState()
   }

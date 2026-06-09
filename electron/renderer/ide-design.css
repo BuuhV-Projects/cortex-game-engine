@@ -350,6 +350,30 @@
 .ide .eq i:nth-child(1){height:40%;animation-delay:0s} .ide .eq i:nth-child(2){height:100%;animation-delay:.15s} .ide .eq i:nth-child(3){height:60%;animation-delay:.3s} .ide .eq i:nth-child(4){height:85%;animation-delay:.1s}
 @keyframes ideEq { 0%,100%{transform:scaleY(.4)} 50%{transform:scaleY(1)} }
 
+/* ---------- spritesheet 2D preview (rota A) ---------- */
+/* Xadrez sutil pra revelar transparência do sprite. */
+.ide .sprite-studio {
+  background-color: var(--bg-0);
+  background-image:
+    linear-gradient(45deg, oklch(1 0 0 / .035) 25%, transparent 25%, transparent 75%, oklch(1 0 0 / .035) 75%),
+    linear-gradient(45deg, oklch(1 0 0 / .035) 25%, transparent 25%, transparent 75%, oklch(1 0 0 / .035) 75%);
+  background-size: 22px 22px;
+  background-position: 0 0, 11px 11px;
+}
+.ide .sprite-grade .sg-body { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 12px; }
+.ide .sprite-grade .sg-row { display: flex; gap: 10px; }
+.ide .sprite-grade .sg-row label { flex: 1 1 0; display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: var(--tx-lo); text-transform: uppercase; letter-spacing: .04em; }
+.ide .sprite-grade input[type=number] {
+  height: 30px; padding: 0 9px; border-radius: var(--r-s);
+  background: var(--bg-3); border: 1px solid var(--line); color: var(--tx-hi);
+  font-family: var(--mono); font-size: 13px; outline: none; width: 100%;
+}
+.ide .sprite-grade input[type=number]:focus { border-color: var(--accent); }
+.ide .sprite-grade .sg-stat { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--tx-lo); }
+.ide .sprite-grade .sg-tog { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--tx); cursor: pointer; }
+.ide .sprite-grade .sg-hint { font-size: 11px; line-height: 1.5; color: var(--tx-dim); margin: 2px 0 0; }
+.sprite-toggle-btn:hover { background: rgba(58, 63, 74, 0.95) !important; }
+
 /* ---------- search ---------- */
 .ide .search {
   display: flex; align-items: center; gap: 7px;
