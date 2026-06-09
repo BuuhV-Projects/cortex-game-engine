@@ -8,7 +8,7 @@
 
 > **getWorldBounds**(`object`): [`Bounds`](../interfaces/Bounds.md)
 
-Defined in: [src/scene/SceneAssets.ts:209](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L209)
+Defined in: [src/scene/SceneAssets.ts:228](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L228)
 
 Mede o bounding box de um objeto em **world space** (sem movê-lo). Atualiza as
 matrizes antes de medir, então reflete posição/rotação/escala atuais.

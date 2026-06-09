@@ -140,6 +140,7 @@
 - [kitAnchor](functions/kitAnchor.md)
 - [kitAssetFor](functions/kitAssetFor.md)
 - [loadGLB](functions/loadGLB.md)
+- [loadTexture](functions/loadTexture.md)
 - [overlayAdded](functions/overlayAdded.md)
 - [overlayAnimation](functions/overlayAnimation.md)
 - [overlayColliders](functions/overlayColliders.md)

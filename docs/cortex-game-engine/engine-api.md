@@ -141,7 +141,8 @@ em dev, sem fetch).
 
 Tipos de nó (`type`): `model` (`url` do `.glb`), `primitive` (`shape`:
 box/cylinder/plane/sphere), `light` (`light`: directional/hemisphere/ambient),
-`water`, `background` (backdrop 2D com parallax — ver abaixo). Campos comuns: `id` (único; vira `Object3D.name` e chave do editor),
+`water`, `background` (backdrop 2D com parallax — ver abaixo), `sprite` (sprite/
+spritesheet 2D — ver abaixo). Campos comuns: `id` (único; vira `Object3D.name` e chave do editor),
 `place` (grounding: assenta a base em `y`, centra em `x,z` — **use no lugar de
 `y` chutado**) ou `transform` (pose direta), `castShadow`/`receiveShadow`. Cores
 aceitam hex string (`"#9fd6ee"`). Cena: `background`, `fog`, `outdoorLighting`.
@@ -429,6 +430,32 @@ game.onUpdate((dt) => scene.update(dt)) // tica o parallax do background (e a á
 `parallax` 0–1: `0` = travado na tela (infinitamente longe), `1` = anda com o mundo;
 `0.3` (default) = fundo distante. Imperativo: `new Background(scene, camera, { url, parallax })`
 + `bg.update()` no loop. No kit, backgrounds têm `role: background` + `tags` por tema.
+
+## Sprite 2D / spritesheet (sprite)
+
+Nó `sprite` na cena (data-driven, ADR-0057) — sprite estático ou **animado** por
+spritesheet. Estático = só `url`. Animado = `url` + grade de frames (`frameWidth/
+frameHeight` **ou** `columns/rows`) + `animations` (`{ nome: { frames, fps?, loop? } }`).
+A grade indexa frames `0 = topo-esquerda`, esquerda→direita. `pixelsPerUnit` (default
+100) dimensiona o quad; `width`/`height` sobrescrevem.
+
+```jsonc
+// sprite estático (placa, ícone, decoração):
+{ "type": "sprite", "id": "placa", "url": "assets/sign.png", "place": { "x": 4, "y": 0 } }
+
+// personagem animado (strip horizontal de 3 frames 128×256 → columns: 3):
+{ "type": "sprite", "id": "hero", "url": "assets/hero_walk.png",
+  "columns": 3, "pixelsPerUnit": 64,
+  "animations": { "idle": { "frames": [0] }, "walk": { "frames": [0, 1, 2], "fps": 8 } },
+  "initial": "walk", "transform": { "position": [0, 1.5, 0] } }
+```
+
+O sprite **animado** precisa de `world` no `buildScene` — ele cria a entidade ECS
+(`Object3DComponent` + `SpriteAnimationComponent`) e liga o `SpriteAnimationSystem`
+sob demanda. Troque de animação em runtime via o componente: `comp.play('idle')`.
+Imperativo: `loadTexture(url)` → `new Spritesheet(tex, { frameWidth, frameHeight })` →
+`createAnimatedSprite(sheet, anims, { initial })`. (Limites: `collider`/`player` no
+sprite e packing de PNGs separados em uma folha ficam fora desta fase — ver ADR-0057.)
 
 ## Atmosfera / mood (o que mais deixa a cena BONITA)
 

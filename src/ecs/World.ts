@@ -98,6 +98,17 @@ export class World {
     }
   }
 
+  /**
+   * `true` se já existe um system registrado da classe `SystemClass`. Útil para
+   * registrar um system **sob demanda só uma vez** (ex.: o `buildScene` liga o
+   * `SpriteAnimationSystem` quando a cena tem sprites animados, sem duplicar).
+   *
+   * @param SystemClass - Construtor da classe do system a procurar.
+   */
+  hasSystem(SystemClass: SystemClass): boolean {
+    return this._systems.some((s) => s instanceof SystemClass);
+  }
+
   // ─── Query ─────────────────────────────────────────────────────────────────
 
   /**

@@ -6,7 +6,7 @@
 
 # Interface: MatteOptions
 
-Defined in: [src/scene/SceneAssets.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L99)
+Defined in: [src/scene/SceneAssets.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L118)
 
 Opções de [setMatte](../functions/setMatte.md).
 
@@ -16,7 +16,7 @@ Opções de [setMatte](../functions/setMatte.md).
 
 > `optional` **envMapIntensity?**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L105)
+Defined in: [src/scene/SceneAssets.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L124)
 
 Intensidade do reflexo do ambiente (0 = nenhum). Default `0`.
 
@@ -26,7 +26,7 @@ Intensidade do reflexo do ambiente (0 = nenhum). Default `0`.
 
 > `optional` **metalness?**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L103)
+Defined in: [src/scene/SceneAssets.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L122)
 
 Metalicidade (0 = dielétrico, sem reflexo metálico). Default `0`.
 
@@ -36,6 +36,6 @@ Metalicidade (0 = dielétrico, sem reflexo metálico). Default `0`.
 
 > `optional` **roughness?**: `number`
 
-Defined in: [src/scene/SceneAssets.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L101)
+Defined in: [src/scene/SceneAssets.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L120)
 
 Aspereza (0 = espelho/brilhoso, 1 = fosco total). Default `1`.

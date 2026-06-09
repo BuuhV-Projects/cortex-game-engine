@@ -1,5 +1,5 @@
 import { Box3, Vector3 } from 'three';
-import type { Object3D, Mesh } from 'three';
+import type { Object3D, Mesh, Texture } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { AssetLoader, type GLTF } from '../core/AssetLoader.js';
 import { Scene } from '../core/Scene.js';
@@ -62,6 +62,7 @@ export interface PlaceOptions {
 
 const _loader = new AssetLoader();
 const _cache = new Map<string, GLTF>();
+const _texCache = new Map<string, Texture>();
 
 /**
  * Carrega um `.glb`/`.gltf` (com cache por URL — chamadas repetidas reusam o
@@ -76,6 +77,24 @@ export async function loadGLB(url: string): Promise<GLTF> {
     _cache.set(url, gltf);
   }
   return gltf;
+}
+
+/**
+ * Carrega uma **textura** (png/jpg/webp) com cache por URL — para sprites 2D /
+ * spritesheets. A textura cacheada é compartilhada; quem precisar animar
+ * independente (cada sprite com seu recorte UV) deve cloná-la (o
+ * {@link createAnimatedSprite} já faz isso).
+ *
+ * @param url - Caminho relativo à raiz do projeto (ex.: `'assets/hero.png'`).
+ * @param pixelated - Nearest filter (pixel art). Default `true`.
+ */
+export async function loadTexture(url: string, pixelated = true): Promise<Texture> {
+  let tex = _texCache.get(url);
+  if (!tex) {
+    tex = await _loader.loadTexture(url, { pixelated });
+    _texCache.set(url, tex);
+  }
+  return tex;
 }
 
 /**

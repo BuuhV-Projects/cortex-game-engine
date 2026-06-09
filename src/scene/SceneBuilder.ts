@@ -25,7 +25,11 @@ import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.j
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import type { Entity } from '../ecs/Entity.js';
-import { loadGLB, instance, placeOnGround, getWorldBounds, setMatte } from './SceneAssets.js';
+import { loadGLB, loadTexture, instance, placeOnGround, getWorldBounds, setMatte } from './SceneAssets.js';
+import { createSprite } from './Sprite.js';
+import { Spritesheet, createAnimatedSprite } from './Spritesheet.js';
+import { SpriteAnimationComponent } from '../components/SpriteAnimationComponent.js';
+import { SpriteAnimationSystem } from '../systems/SpriteAnimationSystem.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
@@ -324,6 +328,21 @@ export async function buildScene(
   //    overlay do editor (`data.colliders[id]`) > preset do `role` no kit.
   if (options.world) {
     for (const node of placed) {
+      // Sprite animado: acopla o SpriteAnimationComponent (stashed em userData)
+      // a uma entidade ECS e liga o SpriteAnimationSystem (uma vez só).
+      if (node.type === 'sprite') {
+        const sObj = byId.get(node.id)!;
+        const anim = (sObj.userData as Record<string, unknown>)['cortexSpriteAnim'] as
+          | SpriteAnimationComponent
+          | undefined;
+        if (anim) {
+          const e = options.world.createEntity();
+          e.addComponent(new Object3DComponent(sObj));
+          e.addComponent(anim);
+          if (!options.world.hasSystem(SpriteAnimationSystem)) options.world.addSystem(new SpriteAnimationSystem());
+        }
+        continue;
+      }
       if (node.type !== 'model' && node.type !== 'primitive') continue;
       const kitCol =
         node.type === 'model' ? (kitAssetFor(kit, node.url)?.collider as ColliderConfig | undefined) : undefined;
@@ -524,12 +543,58 @@ async function instantiate(
       obj = water.mesh;
       break;
     }
+    case 'sprite': {
+      const texture = await loadTexture(node.url, node.pixelated !== false);
+      obj = makeSprite(node, texture);
+      three.add(obj);
+      applyPlacement(obj, node);
+      break;
+    }
     case 'background':
       // Backdrop precisa da câmera — é criado no buildScene, não por aqui.
       throw new Error('Nó background não é instanciável isoladamente (use buildScene com options.camera).');
   }
   obj.name = node.id;
   return obj;
+}
+
+/**
+ * Cria o mesh de um nó `sprite`: estático ({@link createSprite}) ou animado
+ * ({@link createAnimatedSprite}, quando há `animations`). No caso animado, o
+ * {@link SpriteAnimationComponent} fica em `userData.cortexSpriteAnim` — o
+ * {@link buildScene} (com `world`) o acopla a uma entidade ECS e liga o
+ * {@link SpriteAnimationSystem}. A grade vem de `frameWidth/frameHeight` ou de
+ * `columns/rows` (derivado do tamanho da textura).
+ */
+function makeSprite(node: Extract<SceneNode, { type: 'sprite' }>, texture: import('three').Texture): Object3D {
+  const img = texture.image as { width?: number; height?: number } | undefined;
+  const texW = img?.width ?? 0;
+  const texH = img?.height ?? 0;
+  const common = {
+    pixelsPerUnit: node.pixelsPerUnit,
+    width: node.width,
+    height: node.height,
+    alphaTest: node.alphaTest,
+  };
+
+  if (node.animations && Object.keys(node.animations).length > 0) {
+    const frameWidth = Math.max(1, node.frameWidth ?? (node.columns ? Math.floor(texW / node.columns) : texW));
+    const frameHeight = Math.max(1, node.frameHeight ?? (node.rows ? Math.floor(texH / node.rows) : texH));
+    const sheet = new Spritesheet(texture, {
+      frameWidth,
+      frameHeight,
+      ...(node.columns ? { columns: node.columns } : {}),
+      ...(node.rows ? { rows: node.rows } : {}),
+    });
+    const { sprite, animation } = createAnimatedSprite(sheet, node.animations, {
+      ...common,
+      initial: node.initial,
+    });
+    (sprite.userData as Record<string, unknown>)['cortexSpriteAnim'] = animation;
+    return sprite;
+  }
+
+  return createSprite(texture, { ...common, pixelated: node.pixelated });
 }
 
 /** Aplica `place` (grounding) ou `transform` (pose direta) a um mesh. */

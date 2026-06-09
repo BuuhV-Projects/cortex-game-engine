@@ -109,11 +109,35 @@ A entity a ser destruída.
 
 ***
 
+### hasSystem()
+
+> **hasSystem**(`SystemClass`): `boolean`
+
+Defined in: [src/ecs/World.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L108)
+
+`true` se já existe um system registrado da classe `SystemClass`. Útil para
+registrar um system **sob demanda só uma vez** (ex.: o `buildScene` liga o
+`SpriteAnimationSystem` quando a cena tem sprites animados, sem duplicar).
+
+#### Parameters
+
+##### SystemClass
+
+`SystemClass`
+
+Construtor da classe do system a procurar.
+
+#### Returns
+
+`boolean`
+
+***
+
 ### query()
 
 > **query**\<`T`\>(...`componentClasses`): [`Entity`](Entity.md)[]
 
-Defined in: [src/ecs/World.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L114)
+Defined in: [src/ecs/World.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L125)
 
 Retorna todas as entities que possuem **todos** os componentes especificados.
 
@@ -174,7 +198,7 @@ Construtor da classe do system a remover.
 
 > **tick**(`deltaTime`): `void`
 
-Defined in: [src/ecs/World.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L140)
+Defined in: [src/ecs/World.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L151)
 
 Executa um passo de simulação, iterando todos os systems em ordem de
 prioridade crescente.

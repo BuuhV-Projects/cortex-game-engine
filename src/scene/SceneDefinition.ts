@@ -182,12 +182,54 @@ const backgroundNode = z.object({
   id: z.string().min(1),
 });
 
+/** Uma animação de sprite no JSON: índices de frame na grade + cadência. */
+const spriteAnimSchema = z.object({
+  /** Frames (índices na spritesheet, 0 = topo-esquerda), na ordem de exibição. */
+  frames: z.array(z.number().int().nonnegative()).min(1),
+  /** Frames por segundo. Default 10. */
+  fps: z.number().positive().optional(),
+  /** Repete em loop? Default true (false = trava no último frame). */
+  loop: z.boolean().optional(),
+});
+
+const spriteNode = z.object({
+  type: z.literal('sprite'),
+  /** URL da imagem (png/jpg/webp) — o sprite ou a spritesheet. */
+  url: z.string().min(1),
+  /** Largura de um frame em px (spritesheet). Omitir = imagem inteira é 1 frame. */
+  frameWidth: z.number().int().positive().optional(),
+  /** Altura de um frame em px (spritesheet). */
+  frameHeight: z.number().int().positive().optional(),
+  /** Alternativa a frameWidth: nº de colunas (frame = larguraTex / columns). */
+  columns: z.number().int().positive().optional(),
+  /** Alternativa a frameHeight: nº de linhas. */
+  rows: z.number().int().positive().optional(),
+  /** Animações nomeadas (`{ idle: { frames: [0], fps: 4 }, run: {...} }`). */
+  animations: z.record(z.string(), spriteAnimSchema).optional(),
+  /** Animação inicial a tocar. */
+  initial: z.string().optional(),
+  /** Px por unidade de mundo pra dimensionar o sprite. Default 100. */
+  pixelsPerUnit: z.number().positive().optional(),
+  /** Largura em unidades de mundo (sobrescreve o cálculo por pixelsPerUnit). */
+  width: z.number().positive().optional(),
+  /** Altura em unidades de mundo. */
+  height: z.number().positive().optional(),
+  /** Nearest filter (pixel art). Default true. */
+  pixelated: z.boolean().optional(),
+  /** Recorte por alpha (0 = sem corte; 0.5 bom pra borda dura). Default 0.5. */
+  alphaTest: z.number().min(0).max(1).optional(),
+  id: z.string().min(1),
+  transform: transformSchema,
+  place: placeSchema,
+});
+
 const sceneNodeSchema = z.discriminatedUnion('type', [
   modelNode,
   primitiveNode,
   lightNode,
   waterNode,
   backgroundNode,
+  spriteNode,
 ]);
 
 const sceneDefinitionSchema = z.object({
