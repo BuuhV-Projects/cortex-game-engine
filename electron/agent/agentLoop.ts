@@ -266,8 +266,11 @@ Princípios de composição (aplique sempre):
   composição (ex.: 3/4 elevado, como a referência), não de frente chapado.
 - **Reuse o que já existe — comece pelos KITS prontos.** O engine vem com **kits de \
   assets empacotados** (modelos por tema + backdrops): rode \`list_kits\` pra ver o \
-  catálogo (role/tags/temas) e \`import_kit { kit }\` pra copiar o que combina pro \
-  \`assets/<kit>/\` do projeto (com o \`kit.json\`). Aí monte a cena por \`role\`/ \
+  catálogo (role/tags/temas), \`list_kit_assets { kit }\` pra ver os ARQUIVOS do kit \
+  escolhido (filtre por role/gameplayRole/tag) e então \`import_kit { kit, only: [...] }\` \
+  pra copiar **só os assets que a cena vai usar** pro \`assets/<kit>/\` (com o \
+  \`kit.json\`). NÃO importe o kit inteiro (centenas de modelos) — traga só o subconjunto \
+  usado. Aí monte a cena por \`role\`/ \
   \`gameplayRole\` e \`attach\`, passando o kit ao \`buildScene\`. Só gere modelo novo \
   (\`generate_blender_model\`) quando NENHUM kit serve — gerar do zero quando há \
   pronto piora a consistência visual.

@@ -16,6 +16,7 @@ interface KitAssetLite {
   role?: string
   tags?: string[]
   gameplayRole?: string[]
+  size?: number[]
 }
 interface KitJson {
   name?: string
@@ -84,8 +85,66 @@ export function createKitsToolServer(projectRoot: string, kitsDir: string | unde
                 type: 'text' as const,
                 text:
                   rows.join('\n') +
-                  '\n\nUse `import_kit { kit }` pra copiar um kit (ou `only` pra um subconjunto) ' +
-                  'pro `assets/<kit>/` do projeto, com o `kit.json`.',
+                  '\n\nDepois: `list_kit_assets { kit }` pra ver os arquivos e escolher, então ' +
+                  '`import_kit { kit, only: [...] }` pra copiar SÓ os assets usados pro ' +
+                  '`assets/<kit>/` do projeto (com o `kit.json`).',
+              },
+            ],
+          }
+        },
+      ),
+      tool(
+        'list_kit_assets',
+        'Lista os ARQUIVOS de um kit (nome .glb + role/gameplayRole/tamanho/tags) ' +
+          'SEM copiar nada. Use DEPOIS de escolher um kit no list_kits e ANTES do ' +
+          'import_kit: assim você descobre os nomes exatos e escolhe só o que vai ' +
+          'usar, passando-os em `import_kit { only: [...] }` — em vez de importar o ' +
+          'kit inteiro (centenas de modelos). Filtre por `role`/`gameplayRole`/`tag` ' +
+          'pra reduzir a lista.',
+        {
+          kit: z.string().describe('Nome do kit (exato, de list_kits).'),
+          role: z.string().optional().describe('Opcional: só assets com este role (ex. "platform", "decoration").'),
+          gameplayRole: z.string().optional().describe('Opcional: só assets com este gameplayRole (ex. "reward", "hazard").'),
+          tag: z.string().optional().describe('Opcional: só assets com esta tag/tema (ex. "forest").'),
+          limit: z.number().int().positive().optional().describe('Opcional: nº máx. de linhas (default 80).'),
+        },
+        async ({ kit, role, gameplayRole, tag, limit }) => {
+          if (!kitsDir || !existsSync(join(kitsDir, kit))) {
+            return { content: [{ type: 'text' as const, text: `Kit "${kit}" não encontrado.` }], isError: true }
+          }
+          const data = await readKit(kitsDir, kit)
+          const all = Object.entries(data?.assets ?? {})
+          if (all.length === 0) {
+            return { content: [{ type: 'text' as const, text: `Kit "${kit}" não tem assets no kit.json.` }] }
+          }
+          const filtered = all.filter(([, a]) => {
+            if (role && a.role !== role) return false
+            if (gameplayRole && !(a.gameplayRole ?? []).includes(gameplayRole)) return false
+            if (tag && !(a.tags ?? []).includes(tag)) return false
+            return true
+          })
+          const max = limit ?? 80
+          const shown = filtered.slice(0, max)
+          const rows = ['| Arquivo | Role | Gameplay | Tamanho (LAP) | Tags |', '| --- | --- | --- | --- | --- |']
+          for (const [key, a] of shown) {
+            const file = basename(key)
+            const gp = (a.gameplayRole ?? []).join(', ')
+            const sz = a.size ? a.size.map((n) => (Math.round(n * 100) / 100).toString()).join('×') : ''
+            const tags = (a.tags ?? []).filter((t) => !SKIP_TAGS.has(t)).join(', ')
+            rows.push(`| ${file} | ${a.role ?? ''} | ${gp} | ${sz} | ${tags} |`)
+          }
+          const note =
+            filtered.length > shown.length
+              ? `\n\nMostrando ${shown.length} de ${filtered.length} (filtre por role/gameplayRole/tag ou aumente \`limit\`).`
+              : `\n\n${filtered.length} asset(s)${role || gameplayRole || tag ? ' no filtro' : ''}.`
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text:
+                  rows.join('\n') +
+                  note +
+                  `\n\nImporte SÓ os que vai usar: \`import_kit { kit: "${kit}", only: ["arquivo1.glb", ...] }\`.`,
               },
             ],
           }
@@ -93,16 +152,22 @@ export function createKitsToolServer(projectRoot: string, kitsDir: string | unde
       ),
       tool(
         'import_kit',
-        'Copia um kit empacotado (ou só alguns arquivos) pro `assets/<kit>/` do ' +
-          'projeto, junto do kit.json e thumbnails. Depois: referencie os modelos como ' +
-          '`assets/<kit>/<arquivo>` nos nós da cena, importe `assets/<kit>/kit.json` e ' +
-          'passe-o ao `buildScene({ kit })`.',
+        'Copia assets de um kit pro `assets/<kit>/` do projeto, junto do kit.json e ' +
+          'thumbnails. PREFIRA SEMPRE `only` com os arquivos que a cena vai usar ' +
+          '(descubra os nomes com `list_kit_assets`) — assim o projeto só recebe o que ' +
+          'é usado. Importar o kit INTEIRO (omitindo `only`) despeja centenas de modelos ' +
+          'não usados em disco; só faça isso se realmente for usar quase tudo. Depois: ' +
+          'referencie os modelos como `assets/<kit>/<arquivo>` nos nós da cena, importe ' +
+          '`assets/<kit>/kit.json` e passe-o ao `buildScene({ kit })`.',
         {
           kit: z.string().describe('Nome do kit (exato, de list_kits).'),
           only: z
             .array(z.string())
             .optional()
-            .describe('Opcional: só estes arquivos (nome com extensão, ex. "block-grass.glb"). Default: o kit inteiro.'),
+            .describe(
+              'Recomendado: só estes arquivos (nome com extensão, ex. "block-grass.glb"), ' +
+                'os que a cena vai referenciar. Omitir = copia o kit INTEIRO (desperdício).',
+            ),
         },
         async ({ kit, only }) => {
           if (!kitsDir || !existsSync(join(kitsDir, kit))) {
