@@ -182,4 +182,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('prefs:set', patch),
   menuRebuild: (locale: 'en' | 'pt') =>
     ipcRenderer.invoke('menu:rebuild', locale),
+
+  // Controles da janela frameless (redesign / Layout A)
+  windowMinimize: () => ipcRenderer.invoke('window:minimize'),
+  windowMaximize: () => ipcRenderer.invoke('window:maximize'),
+  windowClose: () => ipcRenderer.invoke('window:close'),
 })

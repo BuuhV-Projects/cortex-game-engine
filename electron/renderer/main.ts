@@ -6,6 +6,7 @@ import { ProjectManager } from './ProjectManager'
 import { Chat } from './Chat'
 import { Launcher } from './Launcher'
 import { Resizer } from './Resizer'
+import { Shell } from './Shell'
 import { applyTheme } from './theme'
 import { initI18n } from './i18n'
 import { showWelcomeModal } from './Welcome'
@@ -25,6 +26,11 @@ const editorContainer = document.getElementById('editor-container') as HTMLEleme
 const previewContainer = document.getElementById('preview-container') as HTMLElement
 const consoleContainer = document.getElementById('console-container') as HTMLElement
 const chatContainer = document.getElementById('chat-container') as HTMLElement
+const menubarContainer = document.getElementById('menubar') as HTMLElement
+const toolbarContainer = document.getElementById('toolbar') as HTMLElement
+
+// Casca nova (redesign / Layout A): menubar + toolbar acima dos docks.
+const shell = new Shell(menubarContainer, toolbarContainer)
 
 const fileTree = new FileTree(sidebar)
 const editor = new Editor(editorContainer)
@@ -39,6 +45,7 @@ const chat = new Chat(chatContainer)
 new Launcher()
 
 // FileTree.init() reconstrói o shell da sidebar; ProjectManager.init() prepend o botão depois
+shell.init()
 fileTree.init()
 editor.init()
 preview.init()

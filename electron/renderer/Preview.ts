@@ -77,39 +77,25 @@ export class Preview {
       this.buildShell()
       this.updateButtonState()
     })
+
+    // Transport da toolbar nova (Shell): Play/Stop e recarregar (ADR redesign).
+    document.addEventListener('request-play-toggle', () => void this.toggle())
+    document.addEventListener('request-play-reload', () => {
+      if (this.running) {
+        void window.electronAPI.stopProject().then(() => void this.toggle())
+      } else {
+        void this.toggle()
+      }
+    })
+    // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
+    document.addEventListener('request-fullscreen-toggle', () => this.toggleFullscreen())
   }
 
   private buildShell(): void {
     this.container.innerHTML = ''
 
-    const toolbar = document.createElement('div')
-    toolbar.className = 'preview-toolbar'
-
-    const playBtn = document.createElement('button')
-    playBtn.className = 'preview-play-btn'
-    playBtn.textContent = t('preview.play')
-    playBtn.addEventListener('click', () => void this.toggle())
-    this.playBtn = playBtn
-
-    const status = document.createElement('span')
-    status.className = 'preview-status'
-    status.textContent = t('preview.status_stopped')
-    this.statusEl = status
-
-    // Fullscreen toggle — esconde todo o resto da UI do IDE e expande o
-    // preview pra ocupar toda a janela. ESC sai.
-    const fullscreenBtn = document.createElement('button')
-    fullscreenBtn.className = 'preview-fullscreen-btn'
-    fullscreenBtn.type = 'button'
-    fullscreenBtn.title = t('preview.tooltip_fullscreen')
-    fullscreenBtn.textContent = '⛶'
-    fullscreenBtn.addEventListener('click', () => this.toggleFullscreen())
-    this.fullscreenBtn = fullscreenBtn
-
-    toolbar.appendChild(playBtn)
-    toolbar.appendChild(status)
-    toolbar.appendChild(fullscreenBtn)
-
+    // O transport (Play/Stop) e o fullscreen vivem na toolbar da casca nova
+    // (Shell). O Preview fica só com o viewport (palco do jogo + painéis).
     const viewport = document.createElement('div')
     viewport.className = 'preview-viewport'
     this.viewportEl = viewport
@@ -129,7 +115,6 @@ export class Preview {
     viewport.appendChild(stage)
     viewport.appendChild(this.panelsHostEl)
 
-    this.container.appendChild(toolbar)
     this.container.appendChild(viewport)
   }
 

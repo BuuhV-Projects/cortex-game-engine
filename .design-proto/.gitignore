@@ -1,0 +1,6 @@
+# Artefatos gerados pelo harness de validação (vite-puro + screenshots)
+studio-dist/
+*.png
+*.log
+dom*.html
+node_modules/

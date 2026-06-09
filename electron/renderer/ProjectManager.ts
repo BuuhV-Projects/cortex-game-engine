@@ -14,25 +14,14 @@ export class ProjectManager {
 
   init(): void {
     this.buildDialog()
-    this.injectButton()
-    // A tela inicial (Launcher) pede o dialog de criação por evento.
+    // "Novo Projeto" agora vive na toolbar/menu da casca nova (Shell) e na tela
+    // inicial — ambos pedem o dialog por evento; o botão antigo da sidebar saiu.
     document.addEventListener('request-new-project', () => this.dialog?.showModal())
-    // Reconstrói tudo se o usuário trocar de idioma na sessão atual.
+    // Reconstrói o dialog se o usuário trocar de idioma na sessão atual.
     document.addEventListener('locale-change', () => {
       this.dialog?.remove()
-      this.container.querySelector('.project-manager-new-btn')?.remove()
       this.buildDialog()
-      this.injectButton()
     })
-  }
-
-  /** Insere o botão "+ Novo Projeto" no topo da sidebar. */
-  private injectButton(): void {
-    const btn = document.createElement('button')
-    btn.textContent = t('projectManager.new_btn')
-    btn.className = 'project-manager-new-btn'
-    btn.addEventListener('click', () => this.dialog?.showModal())
-    this.container.prepend(btn)
   }
 
   /** Constrói o <dialog> nativo e o anexa ao <body>. */

@@ -26,15 +26,74 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Layout principal: 3 colunas em CSS Grid */
+/* Casca do redesign (Layout A): coluna full-height com menubar + toolbar + docks. */
+#shell-root {
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Layout dos docks: 3 colunas em CSS Grid (preservado — só vira filho flex). */
 #app {
   display: grid;
   grid-template-columns: 240px 1fr 4px 320px 4px 320px;
-  grid-template-rows: 100vh;
+  grid-template-rows: 100%;
   width: 100%;
-  height: 100vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   background-color: var(--od-bg);
+}
+
+/* Toolbar nova (Novo Projeto / Abrir / transport / câmera / ícones). */
+#shell-root .cge-toolbar {
+  height: 46px;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  gap: 12px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Botões de janela e menus não ficam na faixa arrastável (-webkit-app-region). */
+.menubar .winbtns,
+.menubar .winbtn {
+  -webkit-app-region: no-drag;
+}
+
+/* Dropdown dos menus da menubar. */
+.cge-menu {
+  position: fixed;
+  z-index: 2147483600;
+  min-width: 180px;
+  padding: 5px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-s);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-family: var(--ui);
+}
+.cge-menu-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--tx);
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.cge-menu-item:hover {
+  background: var(--bg-3);
+  color: var(--tx-hi);
+}
+.cge-menu-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 2px;
 }
 
 .resizer {

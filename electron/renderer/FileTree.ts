@@ -153,19 +153,8 @@ export class FileTree {
   private buildShell(): void {
     this.container.innerHTML = ''
 
-    // ── Sub-toolbar superior: Novo Projeto / Abrir Projeto ─────────────────
-    // ProjectManager.init() injeta o '+ Novo Projeto' como primeiro filho
-    // do container; aqui montamos só o 'Abrir Projeto' abaixo dele.
-    const projectActions = document.createElement('div')
-    projectActions.className = 'filetree-project-actions'
-
-    const openBtn = document.createElement('button')
-    openBtn.textContent = t('fileTree.open_project')
-    openBtn.className = 'filetree-open-btn'
-    openBtn.addEventListener('click', () => void this.handleOpenProject())
-    projectActions.appendChild(openBtn)
-
-    this.container.appendChild(projectActions)
+    // "Novo Projeto" e "Abrir Projeto" agora vivem na toolbar/menu da casca nova
+    // (Shell). A sidebar começa direto no header da árvore.
 
     // ── Header da árvore: chevron + nome do projeto + ações à direita ─────
     const treeHeader = document.createElement('div')

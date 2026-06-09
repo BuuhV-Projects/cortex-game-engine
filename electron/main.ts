@@ -168,6 +168,11 @@ function createWindow(): void {
     width: 1280,
     height: 800,
     show: false, // só mostra quando o renderer carregou (a splash cobre o gap)
+    // Janela sem moldura — a casca nova desenha a própria menubar + botões de
+    // janela (redesign / Layout A). A área da menubar é arrastável via CSS
+    // `-webkit-app-region: drag`. Controles de janela via IPC `window:*`.
+    frame: false,
+    backgroundColor: '#0d0e14',
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       // Camadas de hardening (sem mudar comportamento funcional):
@@ -212,6 +217,16 @@ function createWindow(): void {
   // precisa abrir popup; se um dia precisarmos abrir link externo, fazemos
   // explicitamente via shell.openExternal no main process.
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+
+  // Controles da janela frameless (redesign): a menubar custom chama estes via
+  // IPC. Registrados aqui (createWindow roda uma vez).
+  ipcMain.handle('window:minimize', () => mainWindow?.minimize())
+  ipcMain.handle('window:maximize', () => {
+    if (!mainWindow) return
+    if (mainWindow.isMaximized()) mainWindow.unmaximize()
+    else mainWindow.maximize()
+  })
+  ipcMain.handle('window:close', () => mainWindow?.close())
 
   // Em desenvolvimento, electron-vite injeta ELECTRON_RENDERER_URL com o dev server
   if (process.env['ELECTRON_RENDERER_URL']) {

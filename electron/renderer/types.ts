@@ -106,4 +106,10 @@ export interface ElectronAPI {
     welcomed?: boolean
   }>
   menuRebuild(locale: 'en' | 'pt'): Promise<void>
+
+  // Controles da janela frameless (redesign / Layout A). Implementados no
+  // preload+main; em janela com moldura nativa não são usados.
+  windowMinimize(): Promise<void>
+  windowMaximize(): Promise<void>
+  windowClose(): Promise<void>
 }
