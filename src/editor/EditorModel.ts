@@ -188,6 +188,18 @@ function colorToHex(color: unknown): string {
   return '#ffffff';
 }
 
+/**
+ * Cor atual do primeiro material do objeto, em `#rrggbb` — pra o campo "Cor" do
+ * shader nascer com a cor REAL (não `#ffffff` chutado, que clarearia o modelo ao
+ * mexer no seletor sem querer).
+ */
+function firstMeshColorHex(obj: Object3D): string {
+  const mat = firstMesh(obj)?.material;
+  const single = Array.isArray(mat) ? mat[0] : mat;
+  const col = (single as { color?: { getHexString(): string } } | undefined)?.color;
+  return col ? `#${col.getHexString()}` : '#ffffff';
+}
+
 function firstMesh(obj: Object3D): Mesh | null {
   let found: Mesh | null = null;
   obj.traverse((child) => {
@@ -342,9 +354,10 @@ export function describeInspector(
     // Trocar o preset cria uma config nova com defaults e re-descreve (mostra os params).
     handlers.set(fid('shader'), (v) => {
       const t = v as string;
+      const base = firstMeshColorHex(obj); // nasce com a cor REAL do material
       const cfg: MaterialConfig =
-        t === 'unlit' ? { type: 'unlit', color: '#ffffff' }
-        : t === 'toon' ? { type: 'toon', gradientSteps: 3, outline: 0 }
+        t === 'unlit' ? { type: 'unlit', color: base }
+        : t === 'toon' ? { type: 'toon', color: base, gradientSteps: 3, outline: 0 }
         : { type: 'standard' };
       api.set(obj, cfg);
       return { rebuild: true };
@@ -368,10 +381,14 @@ export function describeInspector(
         { kind: 'number', id: fid('matOutline'), label: 'Contorno', value: c.outline ?? 0, step: 0.01 },
       );
       handlers.set(fid('matColor'), (v) => api.set(obj, { ...c, color: v as string }));
-      handlers.set(fid('matSteps'), (v) =>
-        api.set(obj, { ...c, gradientSteps: Math.max(2, Math.min(8, Math.round(v as number))) }),
-      );
-      handlers.set(fid('matOutline'), (v) => api.set(obj, { ...c, outline: Math.max(0, v as number) }));
+      handlers.set(fid('matSteps'), (v) => {
+        const n = Math.round(Number(v));
+        api.set(obj, { ...c, gradientSteps: Number.isFinite(n) ? Math.max(2, Math.min(8, n)) : 3 });
+      });
+      handlers.set(fid('matOutline'), (v) => {
+        const n = Number(v);
+        api.set(obj, { ...c, outline: Number.isFinite(n) ? Math.max(0, n) : 0 });
+      });
     }
     sections.push({ title: 'Shader', fields });
   }

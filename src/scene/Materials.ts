@@ -122,12 +122,15 @@ export function applyMaterial(object: Object3D, config: MaterialConfig): void {
 
   eachMesh(object, (mesh) => {
     cacheOriginal(mesh);
-    const prev = mesh.material;
+    // SEMPRE deriva textura/cor do material ORIGINAL (cacheado), não do material
+    // atual — senão re-aplicar (ex.: mudar a cor) leria de um material já trocado
+    // e podia perder o `map` (textura), deixando o objeto branco/chapado.
+    const source = (mesh.userData?.[CACHE] ?? mesh.material) as Material | Material[];
 
     if (config.type === 'unlit') {
       const transparent = config.transparent ?? (config.opacity !== undefined && config.opacity < 1);
       mesh.material = new MeshBasicMaterial({
-        map: mapOf(prev),
+        map: mapOf(source),
         color: config.color ?? 0xffffff,
         transparent,
         opacity: config.opacity ?? 1,
@@ -139,9 +142,9 @@ export function applyMaterial(object: Object3D, config: MaterialConfig): void {
       });
     } else {
       // toon
-      const baseColor = config.color !== undefined ? new Color(config.color) : (colorOf(prev)?.clone() ?? new Color(0xffffff));
+      const baseColor = config.color !== undefined ? new Color(config.color) : (colorOf(source)?.clone() ?? new Color(0xffffff));
       mesh.material = new MeshToonMaterial({
-        map: mapOf(prev),
+        map: mapOf(source),
         color: baseColor,
         gradientMap: makeGradient(config.gradientSteps ?? 3),
       });
@@ -189,19 +192,20 @@ function addOutline(object: Object3D, thickness: number, color: ColorRepresentat
     shell.userData[OUTLINE] = true;
     mesh.add(shell);
   }
-  object.userData[OUTLINE] = meshes.length > 0;
 }
 
 function clearOutline(object: Object3D): void {
   const toRemove: Object3D[] = [];
   object.traverse((child) => {
-    if (child.userData?.[OUTLINE] === true) toRemove.push(child);
+    // `child !== object`: NUNCA remover o próprio objeto-raiz — só as cascas
+    // (filhas) marcadas. Antes o raiz também era marcado e o clearOutline o
+    // removia da cena (objeto "sumia" ao reaplicar o material).
+    if (child !== object && child.userData?.[OUTLINE] === true) toRemove.push(child);
   });
   for (const o of toRemove) {
     disposeMat((o as Mesh).material);
     o.removeFromParent();
   }
-  delete object.userData[OUTLINE];
 }
 
 /** Rampa de tom (gradientMap) com `steps` bandas — o que dá o look cel/toon. */

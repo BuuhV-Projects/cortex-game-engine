@@ -517,6 +517,12 @@ body.app-preview-fullscreen #preview-container {
   font-size: 12px;
   outline: none;
 }
+/* O popup nativo das opções herda fundo transparente → texto ilegível no tema
+   escuro. Força fundo/cor legíveis nas <option> (Chromium/Electron respeita). */
+.ide .cge-insp-select select option {
+  background-color: var(--bg-2);
+  color: var(--tx-hi);
+}
 .ide .cge-insp-color {
   width: 30px;
   height: 18px;

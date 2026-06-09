@@ -4,7 +4,7 @@
  * `standard`/clearMaterial, contorno toon, e aplicação pelo buildScene.
  */
 import { describe, it, expect } from 'vitest';
-import { Mesh, BoxGeometry, MeshStandardMaterial, MeshBasicMaterial, MeshToonMaterial, Texture } from 'three';
+import { Mesh, Object3D, BoxGeometry, MeshStandardMaterial, MeshBasicMaterial, MeshToonMaterial, Texture } from 'three';
 import { applyMaterial, clearMaterial, getMaterialType } from '../../src/scene/Materials.js';
 import { Scene } from '../../src/core/Scene.js';
 import { buildScene } from '../../src/scene/SceneBuilder.js';
@@ -51,6 +51,30 @@ describe('applyMaterial', () => {
 
     applyMaterial(mesh, { type: 'standard' });
     expect(mesh.children.filter((c) => c.userData['cortexOutline'] === true)).toHaveLength(0);
+  });
+
+  it('re-aplicar (mudar outline) NÃO remove o objeto do pai (regressão: objeto sumia)', () => {
+    const parent = new Object3D();
+    const mesh = box();
+    parent.add(mesh);
+    applyMaterial(mesh, { type: 'toon', outline: 0.02 });
+    expect(mesh.parent).toBe(parent);
+    // o fluxo que sumia: outline 0.02 → 0 reaplica o material (roda clearOutline)
+    applyMaterial(mesh, { type: 'toon', outline: 0 });
+    expect(mesh.parent).toBe(parent); // segue na cena
+    expect(mesh.children.filter((c) => c.userData['cortexOutline'] === true)).toHaveLength(0);
+    applyMaterial(mesh, { type: 'toon', outline: 0.02 });
+    expect(mesh.parent).toBe(parent);
+  });
+
+  it('re-aplicar com cor nova mantém a textura original (não embranquece)', () => {
+    const mesh = box();
+    const origMap = (mesh.material as MeshStandardMaterial).map;
+    applyMaterial(mesh, { type: 'toon' });
+    applyMaterial(mesh, { type: 'toon', color: '#3366ff' });
+    expect((mesh.material as MeshToonMaterial).map).toBe(origMap); // derivado do ORIGINAL
+    applyMaterial(mesh, { type: 'unlit', color: '#ffffff' });
+    expect((mesh.material as MeshBasicMaterial).map).toBe(origMap);
   });
 
   it('clearMaterial restaura sem precisar do preset standard', () => {
