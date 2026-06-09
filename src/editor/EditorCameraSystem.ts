@@ -185,10 +185,18 @@ export class EditorCameraSystem extends System {
   focusOn(target: THREE.Object3D): void {
     const bbox = new THREE.Box3().setFromObject(target);
     const center = new THREE.Vector3();
-    bbox.getCenter(center);
-    const size = new THREE.Vector3();
-    bbox.getSize(size);
-    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    let maxDim: number;
+    if (bbox.isEmpty()) {
+      // Sem geometria (câmera, luz, grupo vazio): a bbox é vazia e getCenter daria
+      // (0,0,0). Enquadra a POSIÇÃO mundial do objeto com um tamanho default.
+      target.getWorldPosition(center);
+      maxDim = 2;
+    } else {
+      bbox.getCenter(center);
+      const size = new THREE.Vector3();
+      bbox.getSize(size);
+      maxDim = Math.max(size.x, size.y, size.z) || 1;
+    }
 
     const fovRad = (this.camera.fov * Math.PI) / 180;
     const distance = (maxDim / (2 * Math.tan(fovRad / 2))) * 1.8;
