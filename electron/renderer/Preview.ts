@@ -1,4 +1,17 @@
 import { t } from './i18n'
+import { h, icon } from './ui'
+
+/** Atalhos do editor exibidos no popover "Atalhos" (pill inferior-esquerda). */
+const SHORTCUTS: Array<[string, string]> = [
+  ['WASD/QE', 'voar'],
+  ['btn-direito', 'girar câmera'],
+  ['Shift', 'correr'],
+  ['1/2/3', 'mover/girar/escalar'],
+  ['F', 'focar seleção'],
+  ['T', 'teleporta alvo'],
+  ['Del', 'remover'],
+  ['Esc', 'desselecionar'],
+]
 
 // Regex que captura a URL local do vite a partir do stdout — algo como
 // "Local:   http://localhost:5174/". O vite imprime com códigos ANSI de
@@ -23,6 +36,10 @@ export class Preview {
   private viewportEl: HTMLElement | null = null
   /** Onde o iframe/placeholder do jogo é trocado. */
   private stageEl: HTMLElement | null = null
+  // Pills flutuantes do viewport (substituem a HUD do engine quando bridged).
+  private selectedPillEl: HTMLElement | null = null
+  private perfPillEl: HTMLElement | null = null
+  private toolBtns: Record<string, HTMLElement> = {}
 
   private projectDir: string | null = null
   private running = false
@@ -80,6 +97,10 @@ export class Preview {
     })
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
     document.addEventListener('request-fullscreen-toggle', () => this.toggleFullscreen())
+    // Pills do viewport (objeto/ferramentas/perf) — info vinda da ponte do editor.
+    document.addEventListener('editor-viewport', (e) => {
+      this.updateOverlay((e as CustomEvent).detail)
+    })
   }
 
   private buildShell(): void {
@@ -98,8 +119,56 @@ export class Preview {
     this.stageEl = stage
 
     viewport.appendChild(stage)
+    viewport.appendChild(this.buildOverlay())
 
     this.container.appendChild(viewport)
+  }
+
+  /** Overlay com as pills flutuantes (objeto · ferramentas · atalhos · perf). */
+  private buildOverlay(): HTMLElement {
+    const selectedPill = h('span', { class: 'vp-pill' }, h('span', { class: 'ico', style: { color: 'var(--accent)' } }, icon('cube', { size: 13 })), h('span', {}, '—'))
+    selectedPill.style.display = 'none'
+    this.selectedPillEl = selectedPill
+
+    const tools = h('div', { class: 'row gap-4' })
+    this.toolBtns = {}
+    for (const [mode, ic] of [['translate', 'move'], ['rotate', 'rotate'], ['scale', 'scale']] as const) {
+      const btn = h('span', { class: 'vp-pill vp-tool', title: mode, onClick: () => document.dispatchEvent(new CustomEvent('request-tool', { detail: { mode } })) }, icon(ic, { size: 15 }))
+      this.toolBtns[mode] = btn
+      tools.append(btn)
+    }
+
+    const legend = h('div', { class: 'vp-legend glass' })
+    legend.style.display = 'none'
+    for (const [keys, lab] of SHORTCUTS) {
+      legend.append(h('div', { class: 'hud-row' }, h('span', { class: 'kbd' }, keys), h('span', { class: 'lab' }, lab)))
+    }
+    const atalhos = h('span', { class: 'vp-pill', style: { cursor: 'pointer' }, onClick: () => { legend.style.display = legend.style.display === 'none' ? '' : 'none' } }, icon('keyboard', { size: 14 }), 'Atalhos')
+
+    const perf = h('span', { class: 'vp-pill mono', style: { fontSize: '10.5px' } }, '—')
+    this.perfPillEl = perf
+
+    return h('div', { class: 'preview-overlay' },
+      h('div', { class: 'vp-tl' }, selectedPill),
+      h('div', { class: 'vp-tr' }, tools),
+      h('div', { class: 'vp-bl' }, h('div', { class: 'col gap-6', style: 'align-items:flex-start' }, legend, atalhos)),
+      h('div', { class: 'vp-br' }, perf),
+    )
+  }
+
+  /** Atualiza as pills com a info do viewport vinda da ponte do editor. */
+  private updateOverlay(info: { camera?: string; fps?: number; objects?: number; lights?: number; selected?: string | null; gizmo?: string }): void {
+    if (this.selectedPillEl) {
+      const sel = info.selected
+      this.selectedPillEl.style.display = sel ? '' : 'none'
+      if (sel) (this.selectedPillEl.lastChild as HTMLElement).textContent = sel
+    }
+    if (this.perfPillEl) {
+      this.perfPillEl.textContent = `${info.fps ?? 0} fps · ${info.objects ?? 0} obj · ${info.lights ?? 0} lights`
+    }
+    for (const [mode, btn] of Object.entries(this.toolBtns)) {
+      btn.classList.toggle('on', mode === info.gizmo)
+    }
   }
 
   private toggleFullscreen(): void {

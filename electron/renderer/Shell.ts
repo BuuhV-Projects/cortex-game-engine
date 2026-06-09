@@ -21,6 +21,7 @@ export class Shell {
   private projectLabelEl: HTMLElement | null = null
   private transportEl: HTMLElement | null = null
   private runChipEl: HTMLElement | null = null
+  private camReadoutEl: HTMLElement | null = null
   // Estado da gameplay (Unity-style): o canvas roda sempre e começa em EDITOR.
   // O transport controla play/pause/restart da gameplay, não o processo do vite.
   private editorActive = true
@@ -62,6 +63,11 @@ export class Shell {
     }
     document.addEventListener('play-stopped', resetGame)
     document.addEventListener('project-close', resetGame)
+    // Leitura de câmera na toolbar, vinda da ponte do editor.
+    document.addEventListener('editor-viewport', (e) => {
+      const cam = (e as CustomEvent<{ camera?: string }>).detail.camera
+      if (this.camReadoutEl) this.camReadoutEl.textContent = cam ? cam.replace(/\s+/g, ' ').trim() : 'cam —'
+    })
     document.addEventListener('locale-change', () => this.build())
     // Fecha menu aberto ao clicar fora / Esc.
     document.addEventListener('click', (e) => {
@@ -176,10 +182,12 @@ export class Shell {
     const runChip = h('span', { class: 'chip run' }, h('span', { class: 'dot' }), tr('preview.status_running', 'Rodando').toUpperCase())
     this.runChipEl = runChip
 
-    // Leitura de câmera (placeholder; ligada ao editor via ponte depois).
+    // Leitura de câmera — atualizada pela ponte do editor (evento editor-viewport).
+    const camReadout = h('span', { class: 'vp-coords', style: { fontSize: '11px' } }, 'cam —')
+    this.camReadoutEl = camReadout
     const camPill = h('span', { class: 'vp-pill', style: { background: 'var(--bg-2)', border: '1px solid var(--line)', color: 'var(--tx)' } },
       icon('camera', { size: 13, color: 'var(--tx-lo)' }),
-      h('span', { class: 'vp-coords', style: { fontSize: '11px' }, html: 'cam <b>—</b>' }),
+      camReadout,
     )
 
     this.toolbarEl.append(

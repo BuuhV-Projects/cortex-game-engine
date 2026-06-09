@@ -76,6 +76,7 @@ const STUB_BODY = `
           { kind: 'button', id: 'p:rm', label: 'Remover collider', variant: 'danger' },
         ] },
       ] },
+      viewport: { camera: 'cam: 10.7, 15.7, 12.7  yaw: 45°  pitch: -35°', fps: 60, objects: 18, lights: 2, selected: 'ground_start', gizmo: 'translate' },
     };
     window.postMessage(msg, '*');
   }, 1800);

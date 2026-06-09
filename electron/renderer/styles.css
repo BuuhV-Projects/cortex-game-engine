@@ -396,9 +396,10 @@ body.app-preview-fullscreen #preview-container {
   display: flex;
   flex-direction: row;
   min-height: 0;
+  position: relative;
 }
 
-/* Palco do jogo (iframe/placeholder) — toma o espaço à esquerda dos painéis. */
+/* Palco do jogo (iframe/placeholder) — ocupa todo o viewport. */
 .preview-stage {
   flex: 1;
   min-width: 0;
@@ -407,6 +408,37 @@ body.app-preview-fullscreen #preview-container {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ── Overlay de pills flutuantes sobre o viewport (substitui a HUD do engine) ── */
+.preview-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.preview-overlay .vp-tl { position: absolute; top: 10px; left: 10px; }
+.preview-overlay .vp-tr { position: absolute; top: 10px; right: 10px; }
+.preview-overlay .vp-bl { position: absolute; bottom: 10px; left: 10px; }
+.preview-overlay .vp-br { position: absolute; bottom: 10px; right: 10px; }
+.preview-overlay .vp-pill { pointer-events: auto; }
+.preview-overlay .vp-tool {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+  cursor: pointer;
+}
+.preview-overlay .vp-tool.on {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+.preview-overlay .vp-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
 }
 
 .preview-placeholder {

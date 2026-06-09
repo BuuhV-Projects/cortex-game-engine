@@ -54,6 +54,14 @@ interface InspectorModel {
   empty: boolean
   sections: Section[]
 }
+interface ViewportInfo {
+  camera?: string
+  fps?: number
+  objects?: number
+  lights?: number
+  selected?: string | null
+  gizmo?: 'translate' | 'rotate' | 'scale'
+}
 interface StateMessage {
   source: 'cortex-editor'
   type: 'state'
@@ -61,6 +69,7 @@ interface StateMessage {
   paused?: boolean
   outliner: { items: OutlinerItem[] }
   inspector: InspectorModel
+  viewport?: ViewportInfo
 }
 
 const ENGINE = 'cortex-editor'
@@ -107,6 +116,10 @@ export class EditorPanels {
     // Transport da toolbar (Shell) controla a gameplay via a ponte (Unity-style).
     document.addEventListener('request-editor-play', () => this.send({ type: 'editor', active: !this.editorActive }))
     document.addEventListener('request-editor-pause', () => this.send({ type: 'pause' }))
+    // Botões de ferramenta (mover/girar/escalar) das pills do viewport.
+    document.addEventListener('request-tool', (e) => {
+      this.send({ type: 'tool', mode: (e as CustomEvent<{ mode: string }>).detail.mode })
+    })
     // Busca da aba Hierarquia (LeftDock) filtra a árvore.
     document.addEventListener('hierarchy-filter', (e) => {
       this.filter = (((e as CustomEvent<{ query: string }>).detail.query) || '').toLowerCase()
@@ -173,6 +186,10 @@ export class EditorPanels {
     document.dispatchEvent(
       new CustomEvent('editor-active-change', { detail: { active: this.editorActive, paused: this.paused } }),
     )
+    // Info do viewport (câmera/perf/seleção/ferramenta) → pills flutuantes (Preview/Shell).
+    if (state.viewport) {
+      document.dispatchEvent(new CustomEvent('editor-viewport', { detail: state.viewport }))
+    }
     this.lastItems = state.outliner.items
     this.renderOutliner(this.lastItems)
     this.renderInspector(state.inspector)

@@ -45,13 +45,17 @@ export interface EditorBridgeOptions {
   editorState: EditorState;
   /** Enquadra um objeto (ligado ao `EditorCameraSystem.focusOn`). */
   focusOn: (obj: Object3D) => void;
+  /** Info do viewport pra IDE (câmera/perf/seleção/ferramenta) — vira pills flutuantes. */
+  viewportInfo?: () => Record<string, unknown>;
+  /** Troca o modo do gizmo (botões de ferramenta da IDE). */
+  onTool?: (mode: 'translate' | 'rotate' | 'scale') => void;
   /** Chamado quando o handshake conclui — o attachEditor esconde os painéis in-canvas. */
   onBridged: () => void;
 }
 
 /** Cria a ponte. Inerte (no-op) fora de um iframe. */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onBridged } = options;
 
   const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
   if (!inIframe) {
@@ -84,6 +88,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
       paused: editorState.paused,
       outliner,
       inspector: described.model,
+      viewport: viewportInfo?.(),
     };
     const json = JSON.stringify(msg);
     if (json === lastJson) return; // diff: nada mudou, não posta
@@ -102,7 +107,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
   };
 
   const onMessage = (ev: MessageEvent): void => {
-    const data = ev.data as { source?: string; type?: string; id?: string; value?: unknown; active?: boolean } | null;
+    const data = ev.data as { source?: string; type?: string; id?: string; value?: unknown; active?: boolean; mode?: string } | null;
     if (!data || data.source !== IDE) return;
     switch (data.type) {
       case 'ack':
@@ -142,6 +147,13 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         // Pausa/retoma a gameplay durante o play (sem sentido no modo editor).
         if (!editorState.active) {
           editorState.paused = typeof data.value === 'boolean' ? data.value : !editorState.paused;
+          lastJson = '';
+          publish();
+        }
+        break;
+      case 'tool':
+        if (data.mode === 'translate' || data.mode === 'rotate' || data.mode === 'scale') {
+          onTool?.(data.mode);
           lastJson = '';
           publish();
         }

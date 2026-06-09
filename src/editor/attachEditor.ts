@@ -209,8 +209,7 @@ export function attachEditor(game: Game): GameEditor {
     }, 500);
   };
 
-  game.world.addSystem(
-    new ObjectEditSystem(
+  const objectEditSystem = new ObjectEditSystem(
       editorState,
       editorCamera,
       game.canvas,
@@ -254,8 +253,8 @@ export function attachEditor(game: Game): GameEditor {
       // posição e rotY pelo write-back no Transform; rotX/Z e escala ficam no
       // Object3D (o Object3DSyncSystem não as sobrescreve).
       { snap: 0.5 },
-    ),
   );
+  game.world.addSystem(objectEditSystem);
 
   const outliner = createEditorOutliner({ editRoots: [three], selection, registry, onFocus: (obj) => cameraSystem.focusOn(obj) });
 
@@ -776,6 +775,33 @@ export function attachEditor(game: Game): GameEditor {
   // câmera livre e o desenho de heightfield continuam no viewport. Fora da IDE
   // (browser standalone, `?play`) a ponte fica inerte e os painéis in-canvas valem.
   let bridgedPanelsHidden = false;
+
+  // ── Info do viewport pra IDE (pills flutuantes: câmera/perf/seleção/ferramenta) ─
+  let fps = 60;
+  let fpsFrames = 0;
+  let fpsSince = typeof performance !== 'undefined' ? performance.now() : 0;
+  const countViewport = (): { objects: number; lights: number } => {
+    let objects = 0;
+    let lights = 0;
+    for (const c of three.children) {
+      if (c.userData?.['editorInternal'] === true) continue;
+      objects++;
+      if ((c as unknown as { isLight?: boolean }).isLight) lights++;
+    }
+    return { objects, lights };
+  };
+  const viewportInfo = (): Record<string, unknown> => {
+    const { objects, lights } = countViewport();
+    return {
+      camera: hud.coords.textContent ?? '',
+      fps,
+      objects,
+      lights,
+      selected: selection.current?.name ?? null,
+      gizmo: objectEditSystem.gizmoMode,
+    };
+  };
+
   const bridge = createEditorBridge({
     editRoots: [three],
     selection,
@@ -783,11 +809,14 @@ export function attachEditor(game: Game): GameEditor {
     editorState,
     ctx: { colliderApi, matteApi, animationApi, playerAnimationsApi },
     focusOn: (obj) => cameraSystem.focusOn(obj),
+    viewportInfo,
+    onTool: (mode) => objectEditSystem.setGizmoMode(mode),
     onBridged: () => {
       bridgedPanelsHidden = true;
       outliner.setVisible(false);
       inspector.setVisible(false);
       addPanel.setVisible(false);
+      hud.setVisible(false); // a barra de HUD vira pills da IDE
       if (playBtn) playBtn.style.display = 'none';
     },
   });
@@ -831,6 +860,16 @@ export function attachEditor(game: Game): GameEditor {
     isActive: () => editorState.active,
     isPaused: () => editorState.paused,
     update(): void {
+      // FPS médio (~a cada 500ms) pra a pill de perf do viewport.
+      if (typeof performance !== 'undefined') {
+        fpsFrames++;
+        const now = performance.now();
+        if (now - fpsSince >= 500) {
+          fps = Math.round((fpsFrames * 1000) / (now - fpsSince));
+          fpsFrames = 0;
+          fpsSince = now;
+        }
+      }
       // Bridged (dentro da IDE): os painéis viram chrome da IDE — não mostramos os
       // in-canvas. Em ambos os casos o gizmo/câmera/helpers ficam no viewport.
       const showInCanvas = !bridgedPanelsHidden;
@@ -844,7 +883,7 @@ export function attachEditor(game: Game): GameEditor {
         if (editorState.active) restoreWorld();
         else snapshotWorld();
         updatePlayBtn();
-        hud.setVisible(editorState.active);
+        hud.setVisible(showInCanvas && editorState.active);
         outliner.setVisible(showInCanvas && editorState.active);
         inspector.setVisible(showInCanvas && editorState.active);
         addPanel.setVisible(showInCanvas && editorState.active);
