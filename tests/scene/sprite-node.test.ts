@@ -80,6 +80,32 @@ describe('buildScene — nó sprite', () => {
     expect(world.hasSystem(SpriteAnimationSystem)).toBe(true);
   });
 
+  it('herda framedata (grade + animações) do kit quando o nó só referencia a url', async () => {
+    const def: SceneDefinition = {
+      version: 1,
+      nodes: [{ type: 'sprite', id: 'hero', url: 'assets/smallburg/hero.png' }],
+    };
+    const kit = {
+      version: 1 as const,
+      name: 'smallburg',
+      assets: {
+        'assets/smallburg/hero.png': {
+          role: 'character' as const,
+          sprite: { columns: 3, animations: { walk: { frames: [0, 1, 2], fps: 8 } }, initial: 'walk' },
+        },
+      },
+    };
+    const scene = new Scene();
+    const world = new World();
+    await buildScene(scene, def, { world, kit });
+
+    const ents = world.query(SpriteAnimationComponent);
+    expect(ents).toHaveLength(1);
+    const anim = ents[0]!.getComponent(SpriteAnimationComponent)!;
+    expect(anim.current).toBe('walk'); // initial do kit
+    expect(anim.sheet.frameWidth).toBe(128); // 384/3 (columns do kit)
+  });
+
   it('liga o SpriteAnimationSystem uma única vez mesmo com vários sprites', async () => {
     const def: SceneDefinition = {
       version: 1,

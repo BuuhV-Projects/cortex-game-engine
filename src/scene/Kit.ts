@@ -60,6 +60,38 @@ export const KIT_ROLES = [
   'background',
 ] as const;
 
+/** Uma animação de sprite num kit 2D: índices de frame + cadência. */
+const kitSpriteAnimSchema = z.object({
+  frames: z.array(z.number().int().nonnegative()).min(1),
+  fps: z.number().positive().optional(),
+  loop: z.boolean().optional(),
+});
+
+/**
+ * **Framedata 2D** de um asset sprite/spritesheet (ADR-0057). Carrega a grade de
+ * frames e as animações nomeadas pra o nó `sprite` da cena herdar do kit (igual
+ * o `collider` por `role`) — assim o nó só referencia a `url` e o kit fornece a
+ * grade/animações. Ausente em assets 3D (`.glb`).
+ */
+const kitSpriteSchema = z
+  .object({
+    /** Largura de um frame em px (ou use `columns`). */
+    frameWidth: z.number().int().positive().optional(),
+    /** Altura de um frame em px (ou use `rows`). */
+    frameHeight: z.number().int().positive().optional(),
+    /** Nº de colunas (frame = larguraTex / columns). */
+    columns: z.number().int().positive().optional(),
+    /** Nº de linhas. */
+    rows: z.number().int().positive().optional(),
+    /** Animações nomeadas (`{ idle: { frames: [0] }, walk: {...} }`). */
+    animations: z.record(z.string(), kitSpriteAnimSchema).optional(),
+    /** Animação inicial. */
+    initial: z.string().optional(),
+    /** Px por unidade de mundo. Default 100. */
+    pixelsPerUnit: z.number().positive().optional(),
+  })
+  .optional();
+
 const kitAssetSchema = z.object({
   role: z.enum(KIT_ROLES),
   /** Tema/bioma + size-class (`forest`, `rock`, `S/M/L`, …). */
@@ -69,6 +101,8 @@ const kitAssetSchema = z.object({
   /** Bounding box `[x, y, z]` em unidades do engine (Y-up). */
   size: vec3.optional(),
   collider: kitColliderSchema,
+  /** Framedata 2D (grade + animações) — só em assets sprite/spritesheet. */
+  sprite: kitSpriteSchema,
   /** Sockets/âncoras por nome (`top`, `edge_left`, …). */
   anchors: z.record(z.string(), anchorSchema).optional(),
   /** Caminho relativo do thumbnail (`thumbnails/<name>.png`). */
@@ -88,6 +122,8 @@ const kitDefinitionSchema = z.object({
 
 export type KitAnchor = z.infer<typeof anchorSchema>;
 export type KitAsset = z.infer<typeof kitAssetSchema>;
+/** Framedata 2D de um asset sprite no kit (grade + animações). Ver {@link KitAsset}. */
+export type KitSprite = NonNullable<KitAsset['sprite']>;
 export type KitDefinition = z.infer<typeof kitDefinitionSchema>;
 
 /** Valida/parseia um objeto desconhecido (ex.: import de `kit.json`) num {@link KitDefinition}. */

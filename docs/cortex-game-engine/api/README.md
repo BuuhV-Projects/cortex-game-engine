@@ -106,6 +106,7 @@
 - [KitAnchor](type-aliases/KitAnchor.md)
 - [KitAsset](type-aliases/KitAsset.md)
 - [KitDefinition](type-aliases/KitDefinition.md)
+- [KitSprite](type-aliases/KitSprite.md)
 - [LightNode](type-aliases/LightNode.md)
 - [ModelNode](type-aliases/ModelNode.md)
 - [PrimitiveNode](type-aliases/PrimitiveNode.md)

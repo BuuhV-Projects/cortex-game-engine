@@ -49,6 +49,7 @@ import {
   attachResolveOrder,
   type KitAnchor,
   type KitDefinition,
+  type KitSprite,
 } from './Kit.js';
 import type { SceneFileV1 } from './SceneFile.js';
 
@@ -283,7 +284,7 @@ export async function buildScene(
       byId.set(node.id, bg.mesh);
       continue;
     }
-    const obj = await instantiate(node, scene, three, waters);
+    const obj = await instantiate(node, scene, three, waters, kit);
     if (!obj) continue;
     // Override do editor (transform exata salva) tem precedência sobre place/transform/attach.
     const ov = overrides[node.id];
@@ -513,6 +514,7 @@ async function instantiate(
   scene: Scene,
   three: import('three').Scene,
   waters?: Water[],
+  kit?: KitDefinition | KitDefinition[],
 ): Promise<Object3D | null> {
   let obj: Object3D;
   switch (node.type) {
@@ -545,7 +547,7 @@ async function instantiate(
     }
     case 'sprite': {
       const texture = await loadTexture(node.url, node.pixelated !== false);
-      obj = makeSprite(node, texture);
+      obj = makeSprite(node, texture, kitAssetFor(kit, node.url)?.sprite);
       three.add(obj);
       applyPlacement(obj, node);
       break;
@@ -566,29 +568,37 @@ async function instantiate(
  * {@link SpriteAnimationSystem}. A grade vem de `frameWidth/frameHeight` ou de
  * `columns/rows` (derivado do tamanho da textura).
  */
-function makeSprite(node: Extract<SceneNode, { type: 'sprite' }>, texture: import('three').Texture): Object3D {
+function makeSprite(
+  node: Extract<SceneNode, { type: 'sprite' }>,
+  texture: import('three').Texture,
+  kitSprite?: KitSprite,
+): Object3D {
   const img = texture.image as { width?: number; height?: number } | undefined;
   const texW = img?.width ?? 0;
   const texH = img?.height ?? 0;
+  // Framedata: campos do nó vencem; o kit (por `url`) preenche o que faltar.
+  const animations = node.animations ?? kitSprite?.animations;
+  const columns = node.columns ?? kitSprite?.columns;
+  const rows = node.rows ?? kitSprite?.rows;
   const common = {
-    pixelsPerUnit: node.pixelsPerUnit,
+    pixelsPerUnit: node.pixelsPerUnit ?? kitSprite?.pixelsPerUnit,
     width: node.width,
     height: node.height,
     alphaTest: node.alphaTest,
   };
 
-  if (node.animations && Object.keys(node.animations).length > 0) {
-    const frameWidth = Math.max(1, node.frameWidth ?? (node.columns ? Math.floor(texW / node.columns) : texW));
-    const frameHeight = Math.max(1, node.frameHeight ?? (node.rows ? Math.floor(texH / node.rows) : texH));
+  if (animations && Object.keys(animations).length > 0) {
+    const frameWidth = Math.max(1, node.frameWidth ?? kitSprite?.frameWidth ?? (columns ? Math.floor(texW / columns) : texW));
+    const frameHeight = Math.max(1, node.frameHeight ?? kitSprite?.frameHeight ?? (rows ? Math.floor(texH / rows) : texH));
     const sheet = new Spritesheet(texture, {
       frameWidth,
       frameHeight,
-      ...(node.columns ? { columns: node.columns } : {}),
-      ...(node.rows ? { rows: node.rows } : {}),
+      ...(columns ? { columns } : {}),
+      ...(rows ? { rows } : {}),
     });
-    const { sprite, animation } = createAnimatedSprite(sheet, node.animations, {
+    const { sprite, animation } = createAnimatedSprite(sheet, animations, {
       ...common,
-      initial: node.initial,
+      initial: node.initial ?? kitSprite?.initial,
     });
     (sprite.userData as Record<string, unknown>)['cortexSpriteAnim'] = animation;
     return sprite;

@@ -453,6 +453,9 @@ A grade indexa frames `0 = topo-esquerda`, esquerda→direita. `pixelsPerUnit` (
 O sprite **animado** precisa de `world` no `buildScene` — ele cria a entidade ECS
 (`Object3DComponent` + `SpriteAnimationComponent`) e liga o `SpriteAnimationSystem`
 sob demanda. Troque de animação em runtime via o componente: `comp.play('idle')`.
+No **kit**, o asset carrega a framedata (`sprite: { columns, animations, initial, … }`)
+e o nó só referencia a `url` — o `buildScene` herda a grade/animações do kit (campos
+do nó vencem), igual ao preset de `collider` por `role`.
 Imperativo: `loadTexture(url)` → `new Spritesheet(tex, { frameWidth, frameHeight })` →
 `createAnimatedSprite(sheet, anims, { initial })`. (Limites: `collider`/`player` no
 sprite e packing de PNGs separados em uma folha ficam fora desta fase — ver ADR-0057.)
