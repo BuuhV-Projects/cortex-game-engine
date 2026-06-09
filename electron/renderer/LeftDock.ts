@@ -57,7 +57,6 @@ export class LeftDock {
     const header = h('div', { class: 'panel-h', style: 'padding:0;height:36px' },
       h('div', { class: 'tabs grow' }, tabHier, tabFile),
       minBtn,
-      h('button', { class: 'hbtn', title: t('fileTree.tooltip_new_file'), onClick: () => this.onPlus() }, icon('plus', { size: 14 })),
     )
 
     const search = h('input', {
@@ -103,8 +102,4 @@ export class LeftDock {
     )
   }
 
-  private onPlus(): void {
-    // Hierarquia: adicionar objeto (futuro). Projeto: novo arquivo.
-    if (this.tab === 'files') document.dispatchEvent(new CustomEvent('request-new-file'))
-  }
 }
