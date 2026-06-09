@@ -370,182 +370,75 @@ body.app-preview-fullscreen #preview-container {
   background-color: var(--od-bg-deep);
 }
 
-/* ── Painéis do editor como chrome da IDE (ADR-0056) ───────────────────────── */
-/* Strip à direita do palco: Hierarquia (em cima) + Propriedades (embaixo). */
+/* ── Painéis do editor como chrome da IDE (ADR-0056 + redesign Layout A) ────── */
+/* Strip à direita do palco: Hierarquia (em cima) + Inspector (embaixo). Usa as
+   classes do design-system (.panel/.tree/.node/.insp/.sec/.field/.vec/.tog). */
 .cge-editor-panels {
   display: none; /* EditorPanels alterna para flex no handshake */
   flex-direction: column;
-  width: 250px;
+  width: 272px;
   flex-shrink: 0;
   height: 100%;
-  background-color: var(--od-bg-panel);
-  border-left: 1px solid var(--od-border-soft);
   overflow: hidden;
-  font-size: 12px;
-  color: var(--od-fg);
 }
 
 .cge-ep-header {
   display: flex;
   align-items: center;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--od-bg);
+  padding: 7px 8px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
-
-.cge-ep-mode {
+.cge-ep-header .btn {
   width: 100%;
-  padding: 4px 10px;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
-  background-color: #c0392b;
 }
 
-.cge-ep-mode.is-play {
-  background-color: #2a9d4a;
-}
-
-.cge-ep-section {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-bottom: 1px solid var(--od-bg);
-}
-
+/* Os dois painéis empilhados (hierarquia ~40% / inspector resto). */
 .cge-ep-outliner {
   flex: 0 0 38%;
+  border-left: none;
 }
-
 .cge-ep-inspector {
-  flex: 1;
+  flex: 1 1 auto;
+  border-left: none;
+  border-top: none;
 }
-
-.cge-ep-title {
-  padding: 5px 8px;
-  font-weight: 600;
-  color: var(--od-fg-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 10px;
-  flex-shrink: 0;
-}
-
-.cge-ep-list,
-.cge-ep-inspector-body {
-  overflow-y: auto;
-  padding: 2px 8px 8px;
+.cge-ep-outliner .tree,
+.cge-ep-inspector .insp {
+  flex: 1 1 auto;
   min-height: 0;
 }
 
-.cge-ep-list {
-  flex: 1;
+/* Tweaks dos campos do inspector que não vêm prontos do design-system. */
+.ide .cge-insp-select {
+  padding: 2px 6px;
 }
-
-.cge-ep-inspector-body {
-  flex: 1;
-}
-
-.cge-ep-item {
-  padding: 3px 6px;
-  border-radius: 3px;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cge-ep-item:hover {
-  background-color: var(--od-bg-tab);
-}
-
-.cge-ep-item.is-selected {
-  background-color: var(--od-accent);
-  color: var(--od-fg-bright);
-}
-
-.cge-ep-empty,
-.cge-ep-note {
-  color: var(--od-fg-muted);
-  font-size: 11px;
-  margin: 2px 0;
-}
-
-.cge-ep-note.is-info {
-  color: var(--od-fg);
-}
-
-.cge-ep-obj-title {
-  font-weight: 600;
-  margin-bottom: 2px;
-  color: var(--od-fg-bright);
-}
-
-.cge-ep-section-head {
-  margin: 8px 0 2px;
-  color: var(--od-fg-muted);
-  font-weight: 600;
-}
-
-.cge-ep-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 3px 0;
-}
-
-.cge-ep-check {
-  cursor: pointer;
-}
-
-.cge-ep-field-label {
-  width: 54px;
-  color: var(--od-fg-muted);
-  flex-shrink: 0;
-}
-
-.cge-ep-input {
-  flex: 1;
+.ide .cge-insp-select select {
   width: 100%;
-  min-width: 0;
-  background-color: var(--od-bg-deep);
-  color: var(--od-fg);
-  border: 1px solid var(--od-border-soft);
-  border-radius: 3px;
-  padding: 2px 4px;
-  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  color: var(--tx-hi);
+  font-family: var(--mono);
+  font-size: 12px;
+  outline: none;
 }
-
-.cge-ep-color {
-  flex: 1;
-  height: 24px;
-  background-color: var(--od-bg-deep);
-  border: 1px solid var(--od-border-soft);
-  border-radius: 3px;
-}
-
-.cge-ep-btn {
-  width: 100%;
-  padding: 5px;
-  margin: 2px 0;
-  background-color: var(--od-bg-tab);
-  color: var(--od-fg);
-  border: 1px solid var(--od-border-soft);
-  border-radius: 3px;
+.ide .cge-insp-color {
+  width: 30px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  background: transparent;
   cursor: pointer;
 }
-
-.cge-ep-btn:hover {
-  border-color: var(--od-accent);
+.ide .cge-insp-btn {
+  width: 100%;
+  border-style: dashed;
 }
-
-.cge-ep-btn.is-danger {
-  background-color: #3a2a2a;
-  color: #f0b0b0;
-  border-color: #5a3a3a;
+.ide .cge-insp-btn.stop {
+  color: var(--stop);
+  border-color: color-mix(in oklch, var(--stop) 40%, transparent);
 }
 
 /* Painel inferior — Console + Terminal com abas */

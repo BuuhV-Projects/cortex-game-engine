@@ -1,4 +1,15 @@
 import { t } from './i18n'
+import { h, icon } from './ui'
+
+/** Ícone + cor por tipo de Object3D na hierarquia (estilo Layout A). */
+function typeMeta(type: string): { icon: string; color: string } {
+  const t = type.toLowerCase()
+  if (t.includes('camera')) return { icon: 'camera', color: 'oklch(0.72 0.13 235)' }
+  if (t.includes('light')) return { icon: 'sun', color: 'oklch(0.82 0.13 85)' }
+  if (t.includes('helper')) return { icon: 'focus', color: 'oklch(0.55 0.012 280)' }
+  if (t.includes('group') || t.includes('scene') || t.includes('object3d')) return { icon: 'folder', color: 'oklch(0.70 0.16 285)' }
+  return { icon: 'cube', color: 'oklch(0.74 0.15 150)' }
+}
 
 /**
  * Painéis **nativos da IDE** do editor (ADR-0056): hierarquia (outliner) +
@@ -97,38 +108,29 @@ export class EditorPanels {
     this.inspectorKey = ''
     this.updaters = new Map()
 
-    // Cabeçalho com o estado do editor + alternância Editar/Play.
-    const header = document.createElement('div')
-    header.className = 'cge-ep-header'
-    const modeBtn = document.createElement('button')
-    modeBtn.className = 'cge-ep-mode'
-    modeBtn.addEventListener('click', () => {
-      this.send({ type: 'editor', active: !this.editorActive })
-    })
-    header.appendChild(modeBtn)
+    // Cabeçalho com alternância Editar/Play (estilo botão da casca).
+    const modeBtn = h('button', {
+      class: 'btn sm',
+      onClick: () => this.send({ type: 'editor', active: !this.editorActive }),
+    }) as HTMLButtonElement
+    const header = h('div', { class: 'cge-ep-header' }, modeBtn)
     this.headerEl = header
     this.modeBtn = modeBtn
 
-    // Outliner (hierarquia).
-    const outliner = document.createElement('div')
-    outliner.className = 'cge-ep-section cge-ep-outliner'
-    const oTitle = document.createElement('div')
-    oTitle.className = 'cge-ep-title'
-    oTitle.textContent = t('editor.hierarchy')
-    const oList = document.createElement('div')
-    oList.className = 'cge-ep-list'
-    outliner.append(oTitle, oList)
+    // Hierarquia (outliner) — painel com header + lista de nós.
+    const oList = h('div', { class: 'tree scroll' })
+    const outliner = h('div', { class: 'panel cge-ep-outliner' },
+      h('div', { class: 'panel-h' }, h('span', { class: 'ttl lit' }, t('editor.hierarchy'))),
+      oList,
+    )
     this.outlinerListEl = oList
 
-    // Inspector (propriedades).
-    const inspector = document.createElement('div')
-    inspector.className = 'cge-ep-section cge-ep-inspector'
-    const iTitle = document.createElement('div')
-    iTitle.className = 'cge-ep-title'
-    iTitle.textContent = t('editor.properties')
-    const iBody = document.createElement('div')
-    iBody.className = 'cge-ep-inspector-body'
-    inspector.append(iTitle, iBody)
+    // Inspector (propriedades) — painel com header + corpo.
+    const iBody = h('div', { class: 'insp scroll' })
+    const inspector = h('div', { class: 'panel cge-ep-inspector' },
+      h('div', { class: 'panel-h' }, h('span', { class: 'ttl lit' }, t('editor.properties'))),
+      iBody,
+    )
     this.inspectorEl = iBody
 
     this.container.append(header, outliner, inspector)
@@ -176,8 +178,12 @@ export class EditorPanels {
 
   private updateModeBtn(): void {
     // Espelha o botão do engine: em edição mostra "▶ Play"; em play, "⏹ Editar".
-    this.modeBtn.textContent = this.editorActive ? t('editor.play') : t('editor.stop')
-    this.modeBtn.classList.toggle('is-play', this.editorActive)
+    this.modeBtn.textContent = ''
+    this.modeBtn.append(
+      icon(this.editorActive ? 'play' : 'stop', { size: 13, fill: true }),
+      this.editorActive ? t('editor.play') : t('editor.stop'),
+    )
+    this.modeBtn.className = 'btn sm ' + (this.editorActive ? 'play' : 'stop')
   }
 
   private renderState(state: StateMessage): void {
@@ -190,10 +196,13 @@ export class EditorPanels {
   private renderOutliner(items: OutlinerItem[]): void {
     this.outlinerListEl.textContent = ''
     for (const item of items) {
-      const el = document.createElement('div')
-      el.className = 'cge-ep-item' + (item.selected ? ' is-selected' : '')
-      el.textContent = item.label
-      el.title = item.type
+      const m = typeMeta(item.type)
+      const dim = item.label.startsWith('(') || item.label.startsWith('__')
+      const el = h('div', { class: 'node' + (item.selected ? ' sel' : '') + (dim ? ' dim' : ''), title: item.type },
+        icon('chevR', { size: 11, color: 'var(--tx-dim)' }),
+        h('span', { class: 'ico', style: { color: item.selected ? 'var(--accent)' : m.color } }, icon(m.icon, { size: 13 })),
+        h('span', { class: 'nm' }, item.label),
+      )
       el.addEventListener('click', () => {
         this.send({ type: 'select', id: item.id })
         this.send({ type: 'focus', id: item.id })
@@ -220,26 +229,29 @@ export class EditorPanels {
     this.inspectorEl.textContent = ''
 
     if (model.empty) {
-      const empty = document.createElement('div')
-      empty.className = 'cge-ep-empty'
-      empty.textContent = t('editor.nothing_selected')
-      this.inspectorEl.appendChild(empty)
+      this.inspectorEl.append(
+        h('div', { class: 'sec-b', style: { color: 'var(--tx-lo)' } }, t('editor.nothing_selected')),
+      )
       return
     }
 
-    const title = document.createElement('div')
-    title.className = 'cge-ep-obj-title'
-    title.textContent = model.title
-    this.inspectorEl.appendChild(title)
+    // Cabeçalho do objeto (chip + nome).
+    this.inspectorEl.append(
+      h('div', { class: 'insp-id' },
+        h('span', { class: 'chip' }, icon('cube', { size: 17 })),
+        h('div', { class: 'col', style: { gap: '2px' } }, h('span', { class: 'nm' }, model.title)),
+      ),
+    )
 
     for (const section of model.sections) {
+      const body = h('div', { class: 'sec-b' })
+      for (const f of section.fields) body.append(this.buildField(f))
+      const sec = h('div', { class: 'sec' })
       if (section.title) {
-        const head = document.createElement('div')
-        head.className = 'cge-ep-section-head'
-        head.textContent = section.title
-        this.inspectorEl.appendChild(head)
+        sec.append(h('div', { class: 'sec-h' }, icon('chevD', { size: 12 }), h('span', { class: 'lbl' }, section.title)))
       }
-      for (const f of section.fields) this.inspectorEl.appendChild(this.buildField(f))
+      sec.append(body)
+      this.inspectorEl.append(sec)
     }
   }
 
@@ -264,91 +276,60 @@ export class EditorPanels {
   }
 
   private buildVec3(f: Field): HTMLElement {
-    const wrap = document.createElement('div')
-    const head = document.createElement('div')
-    head.className = 'cge-ep-section-head'
-    head.textContent = f.label ?? ''
-    wrap.appendChild(head)
     const vals = (f.value as [number, number, number]) ?? [0, 0, 0]
     const inputs: HTMLInputElement[] = []
-    const axes = ['X', 'Y', 'Z']
+    const axes = ['x', 'y', 'z'] as const
     const emit = (): void =>
       this.send({
         type: 'field',
         id: f.id,
         value: [Number(inputs[0].value) || 0, Number(inputs[1].value) || 0, Number(inputs[2].value) || 0],
       })
+    const vec = h('div', { class: 'vec' })
     for (let i = 0; i < 3; i++) {
-      const row = document.createElement('div')
-      row.className = 'cge-ep-row'
-      const lbl = document.createElement('span')
-      lbl.className = 'cge-ep-field-label'
-      lbl.textContent = axes[i]
-      const input = document.createElement('input')
-      input.type = 'number'
+      const input = h('input', { type: 'number', value: fmt(vals[i]), onInput: emit }) as HTMLInputElement
       input.step = String(f.step ?? 0.1)
-      input.value = fmt(vals[i])
-      input.className = 'cge-ep-input'
-      input.addEventListener('input', emit)
       inputs.push(input)
-      row.append(lbl, input)
-      wrap.appendChild(row)
+      vec.append(h('label', { class: 'num' }, h('span', { class: 'ax ' + axes[i] }, axes[i].toUpperCase()), input))
     }
     this.updaters.set(f.id, (nf) => {
       const v = nf.value as [number, number, number]
-      for (let i = 0; i < 3; i++) {
-        if (document.activeElement !== inputs[i]) inputs[i].value = fmt(v[i])
-      }
+      for (let i = 0; i < 3; i++) if (document.activeElement !== inputs[i]) inputs[i].value = fmt(v[i])
     })
-    return wrap
+    return h('div', { class: 'field' }, h('span', { class: 'k' }, f.label ?? ''), vec)
   }
 
   private buildNumber(f: Field): HTMLElement {
-    const row = document.createElement('div')
-    row.className = 'cge-ep-row'
-    const lbl = document.createElement('span')
-    lbl.className = 'cge-ep-field-label'
-    lbl.textContent = f.label ?? ''
-    const input = document.createElement('input')
-    input.type = 'number'
+    const input = h('input', {
+      type: 'number',
+      value: fmt(Number(f.value)),
+      onInput: () => {
+        const v = parseFloat(input.value)
+        if (!Number.isNaN(v)) this.send({ type: 'field', id: f.id, value: v })
+      },
+    }) as HTMLInputElement
     input.step = String(f.step ?? 0.1)
-    input.value = fmt(Number(f.value))
-    input.className = 'cge-ep-input'
-    input.addEventListener('input', () => {
-      const v = parseFloat(input.value)
-      if (!Number.isNaN(v)) this.send({ type: 'field', id: f.id, value: v })
-    })
-    row.append(lbl, input)
     this.updaters.set(f.id, (nf) => {
       if (document.activeElement !== input) input.value = fmt(Number(nf.value))
     })
-    return row
+    return h('div', { class: 'field' }, h('span', { class: 'k' }, f.label ?? ''), h('label', { class: 'num' }, input))
   }
 
   private buildCheckbox(f: Field): HTMLElement {
-    const row = document.createElement('label')
-    row.className = 'cge-ep-row cge-ep-check'
-    const input = document.createElement('input')
-    input.type = 'checkbox'
-    input.checked = Boolean(f.value)
-    input.addEventListener('change', () => this.send({ type: 'field', id: f.id, value: input.checked }))
-    const lbl = document.createElement('span')
-    lbl.textContent = f.label ?? ''
-    row.append(input, lbl)
-    this.updaters.set(f.id, (nf) => {
-      if (document.activeElement !== input) input.checked = Boolean(nf.value)
+    const tog = h('span', { class: 'tog' + (f.value ? ' on' : '') })
+    tog.addEventListener('click', () => {
+      const next = !tog.classList.contains('on')
+      tog.classList.toggle('on', next)
+      this.send({ type: 'field', id: f.id, value: next })
     })
-    return row
+    this.updaters.set(f.id, (nf) => tog.classList.toggle('on', Boolean(nf.value)))
+    return h('div', { class: 'kv' }, h('span', { class: 'k' }, f.label ?? ''), tog)
   }
 
   private buildSelect(f: Field): HTMLElement {
-    const row = document.createElement('div')
-    row.className = 'cge-ep-row'
-    const lbl = document.createElement('span')
-    lbl.className = 'cge-ep-field-label'
-    lbl.textContent = f.label ?? ''
-    const sel = document.createElement('select')
-    sel.className = 'cge-ep-input'
+    const sel = h('select', {
+      onChange: () => this.send({ type: 'field', id: f.id, value: sel.value }),
+    }) as HTMLSelectElement
     for (const opt of f.options ?? []) {
       const o = document.createElement('option')
       o.value = opt.value
@@ -356,45 +337,36 @@ export class EditorPanels {
       if (opt.value === f.value) o.selected = true
       sel.appendChild(o)
     }
-    sel.addEventListener('change', () => this.send({ type: 'field', id: f.id, value: sel.value }))
-    row.append(lbl, sel)
     this.updaters.set(f.id, (nf) => {
       if (document.activeElement !== sel) sel.value = String(nf.value)
     })
-    return row
+    return h('div', { class: 'field' }, h('span', { class: 'k' }, f.label ?? ''), h('label', { class: 'num cge-insp-select' }, sel))
   }
 
   private buildColor(f: Field): HTMLElement {
-    const row = document.createElement('div')
-    row.className = 'cge-ep-row'
-    const lbl = document.createElement('span')
-    lbl.className = 'cge-ep-field-label'
-    lbl.textContent = f.label ?? ''
-    const input = document.createElement('input')
-    input.type = 'color'
-    input.value = String(f.value)
-    input.className = 'cge-ep-color'
-    input.addEventListener('input', () => this.send({ type: 'field', id: f.id, value: input.value }))
-    row.append(lbl, input)
+    const input = h('input', {
+      type: 'color',
+      value: String(f.value),
+      class: 'cge-insp-color',
+      onInput: () => this.send({ type: 'field', id: f.id, value: input.value }),
+    }) as HTMLInputElement
     this.updaters.set(f.id, (nf) => {
       if (document.activeElement !== input) input.value = String(nf.value)
     })
-    return row
+    return h('div', { class: 'kv' }, h('span', { class: 'k' }, f.label ?? ''), input)
   }
 
   private buildButton(f: Field): HTMLElement {
-    const btn = document.createElement('button')
-    btn.className = 'cge-ep-btn' + (f.variant === 'danger' ? ' is-danger' : '')
-    btn.textContent = f.label ?? ''
-    btn.addEventListener('click', () => this.send({ type: 'button', id: f.id }))
-    return btn
+    return h('button', {
+      class: 'btn ghost sm cge-insp-btn' + (f.variant === 'danger' ? ' stop' : ''),
+      onClick: () => this.send({ type: 'button', id: f.id }),
+    }, f.label ?? '')
   }
 
   private buildNote(f: Field): HTMLElement {
-    const note = document.createElement('div')
-    note.className = 'cge-ep-note' + (f.tone === 'info' ? ' is-info' : '')
-    note.textContent = f.text ?? ''
-    return note
+    return h('div', {
+      style: { fontSize: '11px', margin: '2px 0', color: f.tone === 'info' ? 'var(--tx)' : 'var(--tx-lo)' },
+    }, f.text ?? '')
   }
 }
 
