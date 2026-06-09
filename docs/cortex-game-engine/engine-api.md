@@ -460,6 +460,34 @@ Imperativo: `loadTexture(url)` → `new Spritesheet(tex, { frameWidth, frameHeig
 `createAnimatedSprite(sheet, anims, { initial })`. (Limites: `collider`/`player` no
 sprite e packing de PNGs separados em uma folha ficam fora desta fase — ver ADR-0057.)
 
+## Material / shader por objeto (material)
+
+Atribui um "shader" (material do Three) a um objeto pela propriedade `material` do nó
+(ADR-0058) — como na Unity. Presets: `standard` (PBR original do `.glb`), `unlit`
+(textura × cor **sem luz**, look fullbright/vívido — porta o `Supyrb/Unlit/Texture`;
+knobs: `cull`/`depthWrite`/`depthTest`/`opacity`/`alphaTest`), `toon` (cel-shading em
+bandas + `outline` opcional).
+
+```jsonc
+// personagem com look unlit/fullbright (cores chapadas, sem sombra/AO no corpo):
+{ "type": "model", "id": "hero", "url": "assets/Knight.glb",
+  "material": { "type": "unlit", "color": "#ffffff" } }
+
+// look toon/cel (3 bandas de luz + contorno preto fino):
+{ "type": "model", "id": "boss", "url": "assets/Boss.glb",
+  "material": { "type": "toon", "gradientSteps": 3, "outline": 0.03 } }
+```
+```ts
+// imperativo (troca não-destrutiva; standard/clearMaterial restaura o original):
+import { applyMaterial, clearMaterial, getMaterialType } from 'cortex-game-engine'
+applyMaterial(obj, { type: 'unlit', color: 0xffffff })
+clearMaterial(obj) // volta ao material original
+```
+
+`unlit` preserva o `map` (textura de cor) do material original e desliga a luz/tonemap.
+`castShadow` segue valendo (a sombra projetada não depende do material). Limites (S1):
+contorno toon não acompanha skinning; GLSL custom e o dropdown no inspector vêm depois.
+
 ## Atmosfera / mood (o que mais deixa a cena BONITA)
 
 Posicionar bem tira a cena de "quebrada"; **atmosfera** tira de "ok" pra "bonita".

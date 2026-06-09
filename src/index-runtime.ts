@@ -67,6 +67,7 @@ export * from './scene/Background.js';
 export * from './scene/SceneAnimator.js';
 export * from './scene/Platformer.js';
 export * from './scene/SceneAssets.js';
+export * from './scene/Materials.js';
 export * from './scene/OutdoorLighting.js';
 export * from './scene/Water.js';
 export * from './scene/Sprite.js';

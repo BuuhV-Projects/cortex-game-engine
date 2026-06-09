@@ -109,6 +109,35 @@ const playerSchema = z
   ])
   .optional();
 
+/**
+ * **Material/shader por objeto** (ADR-0058) — como atribuir um shader a um objeto
+ * na Unity. `standard` = PBR original do `.glb`; `unlit` = textura×cor sem luz
+ * (porta o `Supyrb/Unlit/Texture`, com cull/zwrite/ztest); `toon` = cel-shading
+ * em bandas + contorno. Aplicado pelo {@link buildScene} (ver `applyMaterial`).
+ */
+const materialSchema = z
+  .discriminatedUnion('type', [
+    z.object({ type: z.literal('standard') }),
+    z.object({
+      type: z.literal('unlit'),
+      color: colorSchema.optional(),
+      opacity: z.number().min(0).max(1).optional(),
+      transparent: z.boolean().optional(),
+      cull: z.enum(['back', 'front', 'none']).optional(),
+      depthWrite: z.boolean().optional(),
+      depthTest: z.boolean().optional(),
+      alphaTest: z.number().min(0).max(1).optional(),
+    }),
+    z.object({
+      type: z.literal('toon'),
+      color: colorSchema.optional(),
+      gradientSteps: z.number().int().min(2).max(8).optional(),
+      outline: z.number().min(0).optional(),
+      outlineColor: colorSchema.optional(),
+    }),
+  ])
+  .optional();
+
 const baseFields = {
   /** Identificador único — chave pra overlay/editor e `Object3D.name`. */
   id: z.string().min(1),
@@ -118,6 +147,8 @@ const baseFields = {
   receiveShadow: z.boolean().optional(),
   /** Materiais foscos (mata o brilho PBR → look cartoon). Ver {@link setMatte}. */
   matte: z.boolean().optional(),
+  /** Material/shader por objeto (standard/unlit/toon). Ver {@link applyMaterial}. */
+  material: materialSchema,
   /** Collider 2D (plataformer): vira sólido/plataforma. */
   collider: colliderSchema,
   /** Marca como player (controller + corpo + alvo da câmera). */

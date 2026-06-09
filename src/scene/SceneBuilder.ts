@@ -26,6 +26,7 @@ import { FollowCameraTargetComponent } from '../components/FollowCameraTargetCom
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import type { Entity } from '../ecs/Entity.js';
 import { loadGLB, loadTexture, instance, placeOnGround, getWorldBounds, setMatte } from './SceneAssets.js';
+import { applyMaterial, type MaterialConfig } from './Materials.js';
 import { createSprite } from './Sprite.js';
 import { Spritesheet, createAnimatedSprite } from './Spritesheet.js';
 import { SpriteAnimationComponent } from '../components/SpriteAnimationComponent.js';
@@ -300,6 +301,9 @@ export async function buildScene(
     // > global (`options.matte`). Overlay `false` sobrescreve um matte do código.
     if (node.type === 'model' || node.type === 'primitive') {
       if (editorMatte[node.id] ?? node.matte ?? options.matte) setMatte(obj);
+      // Material/shader por objeto (ADR-0058) — aplicado DEPOIS do matte, então
+      // um `material` (unlit/toon) que troca a malha vence o tweak de matte.
+      if (node.material) applyMaterial(obj, node.material as MaterialConfig);
     }
 
     // Animação: modelos `.glb` com clipes ganham um SceneAnimator (em

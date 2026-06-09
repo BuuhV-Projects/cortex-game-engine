@@ -8,7 +8,7 @@
 
 > **overlayMatte**(`overlay`): `Record`\<`string`, `boolean`\>
 
-Defined in: [src/scene/SceneBuilder.ts:166](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L166)
+Defined in: [src/scene/SceneBuilder.ts:167](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L167)
 
 Lê `data.matte` da overlay — o estado fosco/cartoon **autorado no editor** por
 nome de objeto (`{ [nome]: boolean }`). `true` = fosco; `false` = sobrescreve um
