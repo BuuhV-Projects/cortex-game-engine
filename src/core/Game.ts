@@ -18,6 +18,8 @@ export interface GameEditor {
   update(deltaSeconds: number): void;
   /** `true` quando o editor (F2) está ativo — pra pausar a gameplay. */
   isActive(): boolean;
+  /** `true` quando a gameplay está PAUSADA durante o play (Unity-style pause). */
+  isPaused(): boolean;
 }
 
 /** Função que liga o editor a um {@link Game}. Registrada pelo bundle de dev. */
@@ -179,6 +181,15 @@ export class Game {
    */
   get editorActive(): boolean {
     return this._editor?.isActive() ?? false;
+  }
+
+  /**
+   * `true` quando a gameplay está **pausada** durante o play (pause Unity-style,
+   * acionado pelo transport da IDE). Combine com `editorActive` pra pausar
+   * sistemas: `system.pauseWhen = () => game.editorActive || game.gameplayPaused`.
+   */
+  get gameplayPaused(): boolean {
+    return this._editor?.isPaused() ?? false;
   }
 
   /**

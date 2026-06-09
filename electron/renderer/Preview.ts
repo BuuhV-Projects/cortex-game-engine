@@ -57,6 +57,9 @@ export class Preview {
       this.projectDir = path
       localStorage.setItem(STORAGE_KEY, path)
       this.updateButtonState()
+      // Unity-style: o canvas SEMPRE roda (começa em modo editor). Auto-inicia o
+      // dev server ao abrir o projeto — não há "ligar/desligar" o canvas.
+      if (!this.running) void this.toggle()
     })
 
     // Fechar projeto: para o jogo se estiver rodando e zera o estado.
@@ -78,14 +81,13 @@ export class Preview {
       this.updateButtonState()
     })
 
-    // Transport da toolbar nova (Shell): Play/Stop e recarregar (ADR redesign).
-    document.addEventListener('request-play-toggle', () => void this.toggle())
-    document.addEventListener('request-play-reload', () => {
-      if (this.running) {
-        void window.electronAPI.stopProject().then(() => void this.toggle())
-      } else {
-        void this.toggle()
-      }
+    // Reiniciar o jogo (botão restart da toolbar): recarrega o iframe do canvas
+    // — volta pro modo editor com o estado fresco. Se o canvas não estiver de pé
+    // ainda, sobe ele.
+    document.addEventListener('request-canvas-reload', () => {
+      const iframe = this.stageEl?.querySelector('iframe') as HTMLIFrameElement | null
+      if (iframe && this.serverUrl) iframe.src = this.serverUrl
+      else if (this.projectDir && !this.running) void this.toggle()
     })
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
     document.addEventListener('request-fullscreen-toggle', () => this.toggleFullscreen())

@@ -35,11 +35,11 @@ export function setupPlatformer(game: Game, options: SetupPlatformerOptions = {}
   // Gameplay (física + input) PAUSA enquanto o editor (F2) está ativo — assim o
   // player não cai e os objetos não se mexem enquanto você edita.
   const input = new PlatformerInputSystem(game.input);
-  input.pauseWhen = () => game.editorActive;
+  input.pauseWhen = () => game.editorActive || game.gameplayPaused;
   game.world.addSystem(input);
 
   const physics = new PlatformerPhysicsSystem();
-  physics.pauseWhen = () => game.editorActive;
+  physics.pauseWhen = () => game.editorActive || game.gameplayPaused;
   game.world.addSystem(physics);
 
   const followCamera = new FollowCamera2DSystem(game.camera, options.camera);
@@ -48,7 +48,7 @@ export function setupPlatformer(game: Game, options: SetupPlatformerOptions = {}
   // Animação por ação do player (idle/walk/run/jump/fall): toca o clipe certo
   // conforme o estado do corpo. Pausa no editor (a preview de animação é manual).
   const playerAnim = new PlatformerAnimationSystem();
-  playerAnim.pauseWhen = () => game.editorActive;
+  playerAnim.pauseWhen = () => game.editorActive || game.gameplayPaused;
   game.world.addSystem(playerAnim);
 
   return { followCamera };

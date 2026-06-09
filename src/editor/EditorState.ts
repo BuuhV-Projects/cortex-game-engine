@@ -6,6 +6,11 @@
  */
 export interface EditorState {
   active: boolean;
+  /**
+   * `true` quando a gameplay está **pausada** durante o play (pause Unity-style).
+   * Só faz sentido com `active === false` (em play); ao voltar pro editor é zerado.
+   */
+  paused: boolean;
   /** `true` enquanto o usuário arrasta o gizmo de transformação. */
   gizmoDragging: boolean;
   /**
@@ -16,5 +21,5 @@ export interface EditorState {
 }
 
 export function createEditorState(): EditorState {
-  return { active: false, gizmoDragging: false, drawingHeightfield: false };
+  return { active: false, paused: false, gizmoDragging: false, drawingHeightfield: false };
 }

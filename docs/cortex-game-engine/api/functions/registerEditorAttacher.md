@@ -8,7 +8,7 @@
 
 > **registerEditorAttacher**(`attacher`): `void`
 
-Defined in: [src/core/Game.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L34)
+Defined in: [src/core/Game.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L36)
 
 Registra a implementação do editor a ser ligada automaticamente em todo
 [Game](../classes/Game.md). **Chamado só pelo bundle de desenvolvimento do engine**

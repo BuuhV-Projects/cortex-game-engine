@@ -829,12 +829,16 @@ export function attachEditor(game: Game): GameEditor {
   return {
     activeCamera: () => (editorState.active ? editorCamera : null),
     isActive: () => editorState.active,
+    isPaused: () => editorState.paused,
     update(): void {
       // Bridged (dentro da IDE): os painéis viram chrome da IDE — não mostramos os
       // in-canvas. Em ambos os casos o gizmo/câmera/helpers ficam no viewport.
       const showInCanvas = !bridgedPanelsHidden;
       if (editorState.active !== wasActive) {
         wasActive = editorState.active;
+        // Trocar de modo zera o pause (entra em play já rodando; volta pro editor
+        // sem estado de pause pendente).
+        editorState.paused = false;
         // Play (edit→play) snapshota o mundo; Stop (play→edit) restaura — Play
         // não destrói o estado de edição.
         if (editorState.active) restoreWorld();

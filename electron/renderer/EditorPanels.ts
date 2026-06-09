@@ -57,6 +57,7 @@ interface StateMessage {
   source: 'cortex-editor'
   type: 'state'
   editorActive: boolean
+  paused?: boolean
   outliner: { items: OutlinerItem[] }
   inspector: InspectorModel
 }
@@ -66,14 +67,13 @@ const IDE = 'cortex-ide'
 
 export class EditorPanels {
   private container: HTMLElement
-  private headerEl!: HTMLElement
-  private modeBtn!: HTMLButtonElement
   private outlinerListEl!: HTMLElement
   private inspectorEl!: HTMLElement
 
   /** Janela do iframe que fez o handshake (destino dos comandos). */
   private target: Window | null = null
   private editorActive = true
+  private paused = false
   /** Avisa o layout pra alargar a coluna direita uma vez (espaço pros painéis). */
   private announcedVisible = false
 
@@ -98,6 +98,14 @@ export class EditorPanels {
       this.buildShell()
       this.setVisible(wasVisible)
     })
+    // Transport da toolbar (Shell) controla a gameplay via a ponte (Unity-style):
+    // Play/Stop alterna edição↔play; Pause congela a gameplay durante o play.
+    document.addEventListener('request-editor-play', () => {
+      this.send({ type: 'editor', active: !this.editorActive })
+    })
+    document.addEventListener('request-editor-pause', () => {
+      this.send({ type: 'pause' })
+    })
     this.setVisible(false)
   }
 
@@ -107,15 +115,6 @@ export class EditorPanels {
     // Estrutura recriada — invalida a reconciliação do inspector.
     this.inspectorKey = ''
     this.updaters = new Map()
-
-    // Cabeçalho com alternância Editar/Play (estilo botão da casca).
-    const modeBtn = h('button', {
-      class: 'btn sm',
-      onClick: () => this.send({ type: 'editor', active: !this.editorActive }),
-    }) as HTMLButtonElement
-    const header = h('div', { class: 'cge-ep-header' }, modeBtn)
-    this.headerEl = header
-    this.modeBtn = modeBtn
 
     // Hierarquia (outliner) — painel com header + lista de nós.
     const oList = h('div', { class: 'tree scroll' })
@@ -133,8 +132,7 @@ export class EditorPanels {
     )
     this.inspectorEl = iBody
 
-    this.container.append(header, outliner, inspector)
-    this.updateModeBtn()
+    this.container.append(outliner, inspector)
   }
 
   private setVisible(v: boolean): void {
@@ -176,19 +174,13 @@ export class EditorPanels {
     this.target?.postMessage({ source: IDE, ...msg }, '*')
   }
 
-  private updateModeBtn(): void {
-    // Espelha o botão do engine: em edição mostra "▶ Play"; em play, "⏹ Editar".
-    this.modeBtn.textContent = ''
-    this.modeBtn.append(
-      icon(this.editorActive ? 'play' : 'stop', { size: 13, fill: true }),
-      this.editorActive ? t('editor.play') : t('editor.stop'),
-    )
-    this.modeBtn.className = 'btn sm ' + (this.editorActive ? 'play' : 'stop')
-  }
-
   private renderState(state: StateMessage): void {
     this.editorActive = state.editorActive
-    this.updateModeBtn()
+    this.paused = state.paused ?? false
+    // Avisa a toolbar (Shell) do estado de play/pause pra refletir o transport.
+    document.dispatchEvent(
+      new CustomEvent('editor-active-change', { detail: { active: this.editorActive, paused: this.paused } }),
+    )
     this.renderOutliner(state.outliner.items)
     this.renderInspector(state.inspector)
   }

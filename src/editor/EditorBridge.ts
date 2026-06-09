@@ -81,6 +81,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
       source: ENGINE,
       type: 'state',
       editorActive: editorState.active,
+      paused: editorState.paused,
       outliner,
       inspector: described.model,
     };
@@ -134,6 +135,19 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         break;
       case 'editor':
         if (typeof data.active === 'boolean') editorState.active = data.active;
+        lastJson = '';
+        publish();
+        break;
+      case 'pause':
+        // Pausa/retoma a gameplay durante o play (sem sentido no modo editor).
+        if (!editorState.active) {
+          editorState.paused = typeof data.value === 'boolean' ? data.value : !editorState.paused;
+          lastJson = '';
+          publish();
+        }
+        break;
+      case 'reload':
+        // O reload do canvas é feito pela IDE (recarrega o iframe); aqui nada a fazer.
         break;
     }
   };

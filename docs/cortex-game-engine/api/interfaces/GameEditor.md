@@ -43,6 +43,20 @@ Defined in: [src/core/Game.ts:20](https://github.com/BuuhV-Projects/cortex-game-
 
 ***
 
+### isPaused()
+
+> **isPaused**(): `boolean`
+
+Defined in: [src/core/Game.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L22)
+
+`true` quando a gameplay está PAUSADA durante o play (Unity-style pause).
+
+#### Returns
+
+`boolean`
+
+***
+
 ### update()
 
 > **update**(`deltaSeconds`): `void`

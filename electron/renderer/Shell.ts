@@ -21,7 +21,11 @@ export class Shell {
   private projectLabelEl: HTMLElement | null = null
   private transportEl: HTMLElement | null = null
   private runChipEl: HTMLElement | null = null
-  private running = false
+  // Estado da gameplay (Unity-style): o canvas roda sempre e começa em EDITOR.
+  // O transport controla play/pause/restart da gameplay, não o processo do vite.
+  private editorActive = true
+  private paused = false
+  private hasGame = false
   private projectName: string | null = null
   private openMenu: HTMLElement | null = null
 
@@ -41,8 +45,23 @@ export class Shell {
       this.projectName = null
       this.syncProjectLabel()
     })
-    document.addEventListener('play-started', () => this.setRunning(true))
-    document.addEventListener('play-stopped', () => this.setRunning(false))
+    // A ponte do editor (via EditorPanels) informa o estado de play/pause.
+    document.addEventListener('editor-active-change', (e) => {
+      const d = (e as CustomEvent<{ active: boolean; paused: boolean }>).detail
+      this.hasGame = true
+      this.editorActive = d.active
+      this.paused = d.paused
+      this.syncTransport()
+    })
+    // Canvas parou / projeto fechou → transport volta ao default (sem jogo).
+    const resetGame = (): void => {
+      this.hasGame = false
+      this.editorActive = true
+      this.paused = false
+      this.syncTransport()
+    }
+    document.addEventListener('play-stopped', resetGame)
+    document.addEventListener('project-close', resetGame)
     document.addEventListener('locale-change', () => this.build())
     // Fecha menu aberto ao clicar fora / Esc.
     document.addEventListener('click', (e) => {
@@ -179,23 +198,30 @@ export class Shell {
 
   // ── Estado ─────────────────────────────────────────────────────────────────
 
-  private setRunning(running: boolean): void {
-    this.running = running
-    this.syncTransport()
-  }
-
   private syncTransport(): void {
     if (!this.transportEl) return
     this.transportEl.textContent = ''
-    const toggle = this.running
-      ? h('button', { class: 'btn stop', onClick: () => document.dispatchEvent(new CustomEvent('request-play-toggle')) }, icon('stop', { size: 13, fill: true }), 'Stop')
-      : h('button', { class: 'btn play', onClick: () => document.dispatchEvent(new CustomEvent('request-play-toggle')) }, icon('play', { size: 13, fill: true }), 'Play')
-    this.transportEl.append(
-      toggle,
-      h('button', { class: 'iconbtn', title: 'Pausar' }, icon('pause', { size: 15 })),
-      h('button', { class: 'iconbtn', title: 'Recarregar', onClick: () => document.dispatchEvent(new CustomEvent('request-play-reload')) }, icon('refresh', { size: 15 })),
-    )
-    if (this.runChipEl) this.runChipEl.style.display = this.running ? '' : 'none'
+    const playing = this.hasGame && !this.editorActive
+    const emit = (name: string) => () => document.dispatchEvent(new CustomEvent(name))
+
+    // Play (em editor) ⇄ Stop (em play). Sempre alterna o modo da gameplay.
+    const main = playing
+      ? h('button', { class: 'btn stop', title: 'Voltar ao editor', onClick: emit('request-editor-play') }, icon('stop', { size: 13, fill: true }), 'Stop')
+      : h('button', { class: 'btn play', title: 'Jogar (entra em play)', onClick: emit('request-editor-play') }, icon('play', { size: 13, fill: true }), 'Play')
+
+    // Pausar/retomar a gameplay — só faz sentido durante o play.
+    const pauseBtn = h('button', {
+      class: 'iconbtn' + (this.paused ? ' on' : ''),
+      title: this.paused ? 'Retomar' : 'Pausar',
+      onClick: emit('request-editor-pause'),
+    }, icon('pause', { size: 15 }))
+    if (!playing) pauseBtn.setAttribute('disabled', '')
+
+    // Reiniciar o jogo — recarrega o canvas (volta pro modo editor).
+    const restartBtn = h('button', { class: 'iconbtn', title: 'Reiniciar', onClick: emit('request-canvas-reload') }, icon('refresh', { size: 15 }))
+
+    this.transportEl.append(main, pauseBtn, restartBtn)
+    if (this.runChipEl) this.runChipEl.style.display = playing ? '' : 'none'
   }
 
   private syncProjectLabel(): void {
