@@ -43,6 +43,10 @@ export function setupPlatformer(game: Game, options: SetupPlatformerOptions = {}
   game.world.addSystem(physics);
 
   const followCamera = new FollowCamera2DSystem(game.camera, options.camera);
+  // Pausa no editor: enquanto edita, o follow NÃO mexe na câmera do jogo (a
+  // navegação usa a câmera livre do editor), então dá pra posicionar/ver o frustum
+  // sem ele brigar. No Play o follow assume e segue o player.
+  followCamera.pauseWhen = () => game.editorActive;
   game.world.addSystem(followCamera);
 
   // Animação por ação do player (idle/walk/run/jump/fall): toca o clipe certo
