@@ -1,5 +1,5 @@
 import * as monaco from 'monaco-editor'
-import oneDark from './themes/one-dark.json'
+import cortexDark from './themes/cortex-dark.json'
 
 /**
  * Tema do IDE carregado de JSON (electron/renderer/themes/*.json).
@@ -24,7 +24,7 @@ interface ThemeFile {
 // Double cast via `unknown` porque o tipo inferido de `oneDark` a partir do
 // JSON usa strings genéricas, e `monaco.editor.IStandaloneThemeData.base`
 // exige a união literal `'vs' | 'vs-dark' | 'hc-black' | 'hc-light'`.
-const theme = oneDark as unknown as ThemeFile
+const theme = cortexDark as unknown as ThemeFile
 
 /**
  * Aplica as CSS vars em `:root` e registra o tema do Monaco. Deve ser
