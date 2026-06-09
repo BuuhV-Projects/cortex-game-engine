@@ -144,6 +144,24 @@ describe('InputManager', () => {
     expect(input.domElement).toBe(el2);
   });
 
+  it('letra solta com Shift segurado NÃO trava (keydown "w" → keyup "W")', () => {
+    input.attach(el);
+    fireKey(el, 'keydown', 'w');
+    expect(input.isKeyDown('w')).toBe(true);
+    // Com Shift segurado, o keyup vem com a tecla MAIÚSCULA — normalizamos pra
+    // não deixar a tecla travada (regressão: câmera do editor andava pra sempre).
+    fireKey(el, 'keyup', 'W');
+    expect(input.isKeyDown('w')).toBe(false);
+    expect(input.isKeyDown('W')).toBe(false);
+  });
+
+  it('isKeyDown casa independente de caixa (W ⇔ w)', () => {
+    input.attach(el);
+    fireKey(el, 'keydown', 'W'); // ex.: pressionado já com Shift
+    expect(input.isKeyDown('w')).toBe(true);
+    expect(input.isKeyDown('W')).toBe(true);
+  });
+
   // ── Teclado ──────────────────────────────────────────────────────────────
 
   it('isKeyDown retorna true enquanto tecla estiver pressionada', () => {

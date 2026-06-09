@@ -60,6 +60,17 @@ export interface MouseMoveEventDetail {
   originalEvent: MouseEvent;
 }
 
+/**
+ * Normaliza uma tecla pra registro/consulta: **letras (1 caractere) viram
+ * minúsculas**. Sem isso, segurar Shift troca o `KeyboardEvent.key` de `"w"` pra
+ * `"W"`, e o `keyup` (com Shift) não casa com o `keydown` (sem Shift) — a tecla
+ * "trava" pressionada (ex.: câmera do editor andando pra sempre). Teclas nomeadas
+ * (`"Shift"`, `"ArrowLeft"`, `" "`) passam intactas.
+ */
+function normKey(key: string): string {
+  return key.length === 1 ? key.toLowerCase() : key;
+}
+
 // ─── Classe InputManager ───────────────────────────────────────────────────────
 
 export class InputManager extends EventTarget {
@@ -105,7 +116,7 @@ export class InputManager extends EventTarget {
     // ── handlers ───────────────────────────────────────────────────────────
 
     this._onKeyDownHandler = (e: KeyboardEvent): void => {
-      this._keysDown.add(e.key);
+      this._keysDown.add(normKey(e.key));
       this.dispatchEvent(
         new CustomEvent<KeyEventDetail>('key:down', {
           detail: { key: e.key, originalEvent: e },
@@ -114,7 +125,7 @@ export class InputManager extends EventTarget {
     };
 
     this._onKeyUpHandler = (e: KeyboardEvent): void => {
-      this._keysDown.delete(e.key);
+      this._keysDown.delete(normKey(e.key));
       this.dispatchEvent(
         new CustomEvent<KeyEventDetail>('key:up', {
           detail: { key: e.key, originalEvent: e },
@@ -240,7 +251,7 @@ export class InputManager extends EventTarget {
    * if (input.isKeyDown('ArrowLeft')) player.moveLeft();
    */
   isKeyDown(key: string): boolean {
-    return this._keysDown.has(key);
+    return this._keysDown.has(normKey(key));
   }
 
   /**
