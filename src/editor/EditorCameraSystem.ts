@@ -44,6 +44,7 @@ export class EditorCameraSystem extends System {
   private readonly worldUp = new THREE.Vector3(0, 1, 0);
   private prevToggle = false;
   private prevTeleport = false;
+  private prevView = false;
   /** Modo ativo no frame anterior — pra reagir à troca por QUALQUER fonte (F2/botão/boot). */
   private prevActive: boolean | null = null;
 
@@ -56,7 +57,7 @@ export class EditorCameraSystem extends System {
     private readonly input: InputManager,
     private readonly ground: THREE.Object3D,
     private readonly hud: EditorHud,
-    private readonly moveSpeed = 30,
+    private readonly moveSpeed = 12,
     private readonly runMultiplier = 4,
     private readonly mouseSensitivity = 0.0035,
   ) {
@@ -73,8 +74,27 @@ export class EditorCameraSystem extends System {
     if (this.state.active) {
       if (!this.state.gizmoDragging) this.flyCamera(dt);
       this.handleTeleport(target);
+      this.handleViewThroughCamera();
       this.updateHud();
     }
+  }
+
+  /**
+   * Tecla `0` (estilo Blender): põe a câmera livre na pose da câmera do jogo —
+   * "ver pela câmera". Ignora quando há um input em foco (pra não disparar ao
+   * digitar 0 num campo do inspector).
+   */
+  private handleViewThroughCamera(): void {
+    const ae = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+    const typing = !!ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable);
+    const down = !typing && this.input.isKeyDown('0');
+    if (down && !this.prevView) {
+      this.camera.position.copy(this.gameCamera.position);
+      this.camera.quaternion.copy(this.gameCamera.quaternion);
+      this.syncYawPitchFromCamera();
+      this.hud.showToast('Visão pela câmera do jogo (0)');
+    }
+    this.prevView = down;
   }
 
   private handleToggle(target: Entity): void {
