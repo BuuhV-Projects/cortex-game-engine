@@ -209,6 +209,23 @@ export function attachEditor(game: Game): GameEditor {
     }, 500);
   };
 
+  // Write-back do transform pro ECS: editar via gizmo OU inspector escreve no
+  // TransformComponent — senão o Object3DSyncSystem sobrescreve no próximo tick
+  // (posição + rotação Y; rotX/Z e escala ficam no Object3D, que o sync não toca).
+  const writeBackTransform = (obj: Object3D): void => {
+    for (const e of game.world.query(Object3DComponent)) {
+      if (e.getComponent(Object3DComponent)!.object !== obj) continue;
+      const t = e.getComponent(TransformComponent);
+      if (t) {
+        t.x = obj.position.x;
+        t.y = obj.position.y;
+        t.z = obj.position.z;
+        t.rotationY = obj.rotation.y;
+      }
+      break;
+    }
+  };
+
   const objectEditSystem = new ObjectEditSystem(
       editorState,
       editorCamera,
@@ -222,21 +239,7 @@ export function attachEditor(game: Game): GameEditor {
         hud.showToast('Cena salva');
       }, // onSaveEdits (K) — salva já
       () => {}, // onClearEdits
-      (obj) => {
-        // Gizmo → Transform: se o objeto tem entidade ECS (Object3DSync), atualiza
-        // o TransformComponent — senão o sync sobrescreveria o move do gizmo.
-        for (const e of game.world.query(Object3DComponent)) {
-          if (e.getComponent(Object3DComponent)!.object !== obj) continue;
-          const t = e.getComponent(TransformComponent);
-          if (t) {
-            t.x = obj.position.x;
-            t.y = obj.position.y;
-            t.z = obj.position.z;
-            t.rotationY = obj.rotation.y;
-          }
-          break;
-        }
-      },
+      writeBackTransform, // gizmo → TransformComponent
       (obj) => cameraSystem.focusOn(obj),
       selection,
       (obj) => {
@@ -750,6 +753,7 @@ export function attachEditor(game: Game): GameEditor {
     matteApi,
     animationApi,
     playerAnimationsApi,
+    writeBack: writeBackTransform,
   });
 
   // ── Painel "Add": adiciona um asset .glb à cena (clique) e persiste no overlay ─
@@ -825,7 +829,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, matteApi, animationApi, playerAnimationsApi },
+    ctx: { colliderApi, matteApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),

@@ -157,6 +157,8 @@ export interface EditorInspectorOptions {
   animationApi?: AnimationApi;
   /** Opcional: mapa ação→clipe do player (idle/run/jump/…). Ver {@link PlayerAnimationsApi}. */
   playerAnimationsApi?: PlayerAnimationsApi;
+  /** Opcional: write-back de transform pro ECS (ver {@link InspectorContext.writeBack}). */
+  writeBack?: (obj: Object3D) => void;
   /**
    * Opcional: registro de ids de objeto compartilhado (ADR-0056). Passe a mesma
    * instância usada pela ponte/outliner pra os ids baterem entre renderizadores.
@@ -185,9 +187,10 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     matteApi,
     animationApi,
     playerAnimationsApi,
+    writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, matteApi, animationApi, playerAnimationsApi };
+  const ctx: InspectorContext = { colliderApi, matteApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

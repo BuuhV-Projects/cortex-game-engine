@@ -137,6 +137,12 @@ export interface InspectorContext {
   matteApi?: MatteApi;
   animationApi?: AnimationApi;
   playerAnimationsApi?: PlayerAnimationsApi;
+  /**
+   * Propaga uma edição de transform (posição/rotação) pro ECS — pra objetos com
+   * entidade sincronizada, escrever só no `Object3D` seria sobrescrito pelo
+   * `Object3DSyncSystem`. Implementado pelo `attachEditor` (mesmo write-back do gizmo).
+   */
+  writeBack?: (obj: Object3D) => void;
 }
 
 /**
@@ -259,14 +265,17 @@ export function describeInspector(
   handlers.set(fid('pos'), (v) => {
     const [x, y, z] = v as [number, number, number];
     obj.position.set(x, y, z);
+    ctx.writeBack?.(obj);
   });
   handlers.set(fid('rot'), (v) => {
     const [x, y, z] = v as [number, number, number];
     obj.rotation.set(MathUtils.degToRad(x), MathUtils.degToRad(y), MathUtils.degToRad(z));
+    ctx.writeBack?.(obj);
   });
   handlers.set(fid('scl'), (v) => {
     const [x, y, z] = v as [number, number, number];
     obj.scale.set(x, y, z);
+    ctx.writeBack?.(obj);
   });
   sections.push({ fields: transform });
 
