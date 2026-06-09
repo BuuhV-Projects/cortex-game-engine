@@ -29,7 +29,10 @@ const STUB_BODY = `
     listProjectFiles: function () { return Promise.resolve([]); },
     readFile: function () { return Promise.resolve(''); },
     readEngineTypes: function () { return Promise.resolve([]); },
-    loadChatHistory: function () { return Promise.resolve([]); },
+    loadChatHistory: function () { return Promise.resolve([
+      { role: 'user', content: 'quando eu apago o numero 0 e deixo o input de rotacao vazio, ele apaga o player da cena' },
+      { role: 'assistant', content: 'Reproduzi o bug. O atalho Backspace vira deletar objeto quando o input perde foco vazio. Agora existe o Inspector pra digitar direto no campo sem o blur capturar a tecla.' },
+    ]); },
     selectDirectory: function () { return Promise.resolve(null); },
   };
   window.electronAPI = new Proxy(mock, {
