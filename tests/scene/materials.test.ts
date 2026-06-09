@@ -77,6 +77,23 @@ describe('applyMaterial', () => {
     expect((mesh.material as MeshBasicMaterial).map).toBe(origMap);
   });
 
+  it('preserva vertexColors e cores POR-MATERIAL (não achata multi-cor)', () => {
+    // mesh com array de 2 materiais (ex.: árvore: folha verde + tronco marrom),
+    // o segundo com vertexColors.
+    const a = new MeshStandardMaterial({ color: 0x2e8b57 }); // verde
+    const b = new MeshStandardMaterial({ color: 0x8b5a2b }); // marrom
+    b.vertexColors = true;
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), [a, b]);
+
+    applyMaterial(mesh, { type: 'toon' });
+    const mats = mesh.material as MeshToonMaterial[];
+    expect(Array.isArray(mats)).toBe(true);
+    expect(mats).toHaveLength(2);
+    expect(mats[0]!.color.getHexString()).toBe('2e8b57'); // preservou o verde
+    expect(mats[1]!.color.getHexString()).toBe('8b5a2b'); // preservou o marrom
+    expect(mats[1]!.vertexColors).toBe(true); // preservou vertexColors
+  });
+
   it('clearMaterial restaura sem precisar do preset standard', () => {
     const mesh = box();
     const orig = mesh.material;

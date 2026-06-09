@@ -40,10 +40,15 @@ Sistema de **material por objeto** data-driven (`src/scene/Materials.ts`):
 
 - Dá pra atribuir um "shader" (preset) por objeto na cena, base pra a UI no inspector
   (S3) e pro modo **GLSL custom** (S2: `ShaderMaterial` com vertex/fragment + uniforms).
+- **Re-sombreamento NÃO-destrutivo das cores:** `unlit`/`toon` são construídos
+  **por-material** (trata array de materiais) preservando `map`, `vertexColors`,
+  `opacity`, `alphaTest` e a `color` própria de cada submaterial — re-sombreia EM
+  CIMA do original sem achatar objetos multi-cor (ex.: árvore com folha verde +
+  tronco marrom). Por isso o inspector **não** expõe edição de cor (evita achatar);
+  o tint fica disponível só na config (engine).
 - **Limitações conhecidas (S1):**
-  - `unlit` colapsa materiais múltiplos (grupos) num só `MeshBasicMaterial` — ok pro
-    caso típico (um `map`); stencil/colorMask/offset do shader Unity não são portados
-    (knobs avançados, extensíveis depois).
+  - stencil/colorMask/offset do shader Unity não são portados (knobs avançados,
+    extensíveis depois).
   - Contorno toon (inverted-hull) **não deforma com skinning** — bom pra malhas
     estáticas; em personagem skinned o contorno não acompanha os ossos. Default `0`
     (desligado). Contorno skinned correto exige shader próprio (fase futura).

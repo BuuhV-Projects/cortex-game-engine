@@ -85,7 +85,6 @@ const STUB_BODY = `
         { title: 'Material', fields: [ { kind: 'checkbox', id: 'p:matte', label: 'Fosco (matte)', value: false } ] },
         { title: 'Shader', fields: [
           { kind: 'select', id: 'p:shader', label: 'Shader', value: 'unlit', options: [ {value:'standard',label:'Padrão (PBR)'}, {value:'unlit',label:'Unlit (fullbright)'}, {value:'toon',label:'Toon (cel)'} ] },
-          { kind: 'color', id: 'p:matColor', label: 'Cor', value: '#ffffff' },
           { kind: 'checkbox', id: 'p:matTwoSided', label: 'Dois lados', value: false },
           { kind: 'checkbox', id: 'p:matTransp', label: 'Transparente', value: false },
         ] },

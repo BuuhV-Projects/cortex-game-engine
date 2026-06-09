@@ -86,14 +86,55 @@ function eachMesh(object: Object3D, fn: (mesh: Mesh) => void): void {
   });
 }
 
-function mapOf(material: Material | Material[]): Texture | null {
-  const m = (Array.isArray(material) ? material[0] : material) as { map?: Texture | null } | undefined;
-  return m?.map ?? null;
+/** Props visuais lidas do material original pra preservar no novo (por-material). */
+interface SrcMat {
+  map?: Texture | null;
+  color?: Color;
+  vertexColors?: boolean;
+  transparent?: boolean;
+  opacity?: number;
+  alphaTest?: number;
 }
 
-function colorOf(material: Material | Material[]): Color | undefined {
-  const m = (Array.isArray(material) ? material[0] : material) as { color?: Color } | undefined;
-  return m?.color;
+/**
+ * Constrói o material `unlit` a partir de UM material original, **preservando**
+ * `map`, `vertexColors` e a `color` própria (a menos que o config force uma cor) —
+ * assim objetos com várias cores (vertex colors / multi-material, ex.: árvore com
+ * folha verde + tronco marrom) não viram uma cor só.
+ */
+function buildUnlit(orig: Material, config: Extract<MaterialConfig, { type: 'unlit' }>): MeshBasicMaterial {
+  const o = orig as unknown as SrcMat;
+  const transparent = config.transparent ?? (config.opacity !== undefined ? config.opacity < 1 : (o.transparent ?? false));
+  return new MeshBasicMaterial({
+    map: o.map ?? null,
+    vertexColors: o.vertexColors ?? false,
+    color: config.color !== undefined ? new Color(config.color) : (o.color?.clone() ?? new Color(0xffffff)),
+    transparent,
+    opacity: config.opacity ?? o.opacity ?? 1,
+    side: sideOf(config.cull),
+    depthWrite: config.depthWrite ?? true,
+    depthTest: config.depthTest ?? true,
+    alphaTest: config.alphaTest ?? o.alphaTest ?? 0,
+    toneMapped: false,
+  });
+}
+
+/**
+ * Constrói o material `toon` (cel-shading) **em cima** de UM material original,
+ * preservando `map`, `vertexColors` e a `color` própria — só troca o modelo de
+ * sombreamento (gradientMap em bandas). Não força cor (preserva as cores reais).
+ */
+function buildToon(orig: Material, config: Extract<MaterialConfig, { type: 'toon' }>): MeshToonMaterial {
+  const o = orig as unknown as SrcMat;
+  return new MeshToonMaterial({
+    map: o.map ?? null,
+    vertexColors: o.vertexColors ?? false,
+    color: config.color !== undefined ? new Color(config.color) : (o.color?.clone() ?? new Color(0xffffff)),
+    transparent: o.transparent ?? false,
+    opacity: o.opacity ?? 1,
+    alphaTest: o.alphaTest ?? 0,
+    gradientMap: makeGradient(config.gradientSteps ?? 3),
+  });
 }
 
 function sideOf(cull: CullMode | undefined): Side {
@@ -120,35 +161,15 @@ export function applyMaterial(object: Object3D, config: MaterialConfig): void {
 
   clearOutline(object);
 
+  const cfg = config;
   eachMesh(object, (mesh) => {
     cacheOriginal(mesh);
-    // SEMPRE deriva textura/cor do material ORIGINAL (cacheado), não do material
-    // atual — senão re-aplicar (ex.: mudar a cor) leria de um material já trocado
-    // e podia perder o `map` (textura), deixando o objeto branco/chapado.
+    // SEMPRE deriva do material ORIGINAL (cacheado), POR-MATERIAL — preserva
+    // textura, vertex colors e a cor de cada submaterial (multi-material/array).
     const source = (mesh.userData?.[CACHE] ?? mesh.material) as Material | Material[];
-
-    if (config.type === 'unlit') {
-      const transparent = config.transparent ?? (config.opacity !== undefined && config.opacity < 1);
-      mesh.material = new MeshBasicMaterial({
-        map: mapOf(source),
-        color: config.color ?? 0xffffff,
-        transparent,
-        opacity: config.opacity ?? 1,
-        side: sideOf(config.cull),
-        depthWrite: config.depthWrite ?? true,
-        depthTest: config.depthTest ?? true,
-        ...(config.alphaTest !== undefined ? { alphaTest: config.alphaTest } : {}),
-        toneMapped: false,
-      });
-    } else {
-      // toon
-      const baseColor = config.color !== undefined ? new Color(config.color) : (colorOf(source)?.clone() ?? new Color(0xffffff));
-      mesh.material = new MeshToonMaterial({
-        map: mapOf(source),
-        color: baseColor,
-        gradientMap: makeGradient(config.gradientSteps ?? 3),
-      });
-    }
+    const build = (orig: Material): Material =>
+      cfg.type === 'unlit' ? buildUnlit(orig, cfg) : buildToon(orig, cfg);
+    mesh.material = Array.isArray(source) ? source.map(build) : build(source);
   });
 
   if (config.type === 'toon' && config.outline && config.outline > 0) {

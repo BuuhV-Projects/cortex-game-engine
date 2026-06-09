@@ -181,24 +181,6 @@ function isInternal(obj: Object3D): boolean {
   return obj.userData?.['editorInternal'] === true;
 }
 
-/** Normaliza uma cor (`#rrggbb` ou número) pra `#rrggbb` (pro campo de cor). */
-function colorToHex(color: unknown): string {
-  if (typeof color === 'string') return color.startsWith('#') ? color : `#${color}`;
-  if (typeof color === 'number') return `#${color.toString(16).padStart(6, '0')}`;
-  return '#ffffff';
-}
-
-/**
- * Cor atual do primeiro material do objeto, em `#rrggbb` — pra o campo "Cor" do
- * shader nascer com a cor REAL (não `#ffffff` chutado, que clarearia o modelo ao
- * mexer no seletor sem querer).
- */
-function firstMeshColorHex(obj: Object3D): string {
-  const mat = firstMesh(obj)?.material;
-  const single = Array.isArray(mat) ? mat[0] : mat;
-  const col = (single as { color?: { getHexString(): string } } | undefined)?.color;
-  return col ? `#${col.getHexString()}` : '#ffffff';
-}
 
 function firstMesh(obj: Object3D): Mesh | null {
   let found: Mesh | null = null;
@@ -352,35 +334,36 @@ export function describeInspector(
       },
     ];
     // Trocar o preset cria uma config nova com defaults e re-descreve (mostra os params).
+    // SEM cor por padrão: o material é re-sombreado EM CIMA do original, preservando
+    // as cores reais (vertex colors / multi-material). Evita achatar tudo numa cor só.
     handlers.set(fid('shader'), (v) => {
       const t = v as string;
-      const base = firstMeshColorHex(obj); // nasce com a cor REAL do material
       const cfg: MaterialConfig =
-        t === 'unlit' ? { type: 'unlit', color: base }
-        : t === 'toon' ? { type: 'toon', color: base, gradientSteps: 3, outline: 0 }
+        t === 'unlit' ? { type: 'unlit' }
+        : t === 'toon' ? { type: 'toon', gradientSteps: 3, outline: 0 }
         : { type: 'standard' };
       api.set(obj, cfg);
       return { rebuild: true };
     });
 
     if (type === 'unlit') {
+      // Unlit porta o shader Unity (textura × cor): mantém o tint opcional, mas o
+      // default preserva as cores do original (cor não-setada = não achata).
       const c = cur as Extract<MaterialConfig, { type: 'unlit' }>;
       fields.push(
-        { kind: 'color', id: fid('matColor'), label: 'Cor', value: colorToHex(c.color) },
         { kind: 'checkbox', id: fid('matTwoSided'), label: 'Dois lados', value: c.cull === 'none' },
         { kind: 'checkbox', id: fid('matTransp'), label: 'Transparente', value: !!c.transparent },
       );
-      handlers.set(fid('matColor'), (v) => api.set(obj, { ...c, color: v as string }));
       handlers.set(fid('matTwoSided'), (v) => api.set(obj, { ...c, cull: (v as boolean) ? 'none' : 'back' }));
       handlers.set(fid('matTransp'), (v) => api.set(obj, { ...c, transparent: v as boolean }));
     } else if (type === 'toon') {
+      // Toon re-sombreia em cima do original (sem trocar cor, a pedido) — preserva
+      // as cores reais do modelo. Só bandas + contorno.
       const c = cur as Extract<MaterialConfig, { type: 'toon' }>;
       fields.push(
-        { kind: 'color', id: fid('matColor'), label: 'Cor', value: colorToHex(c.color) },
         { kind: 'number', id: fid('matSteps'), label: 'Bandas', value: c.gradientSteps ?? 3, step: 1 },
         { kind: 'number', id: fid('matOutline'), label: 'Contorno', value: c.outline ?? 0, step: 0.01 },
       );
-      handlers.set(fid('matColor'), (v) => api.set(obj, { ...c, color: v as string }));
       handlers.set(fid('matSteps'), (v) => {
         const n = Math.round(Number(v));
         api.set(obj, { ...c, gradientSteps: Number.isFinite(n) ? Math.max(2, Math.min(8, n)) : 3 });

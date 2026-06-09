@@ -155,12 +155,13 @@ describe('describeInspector — Shader (material)', () => {
     expect((sel as { value: string }).value).toBe('standard'); // sem autoria
 
     const res = first.handlers.get(sel!.id)!('unlit');
-    expect(saved()).toEqual({ type: 'unlit', color: '#ffffff' });
+    expect(saved()).toEqual({ type: 'unlit' }); // sem cor — preserva as cores do original
     expect(res).toEqual({ rebuild: true });
 
-    // re-descreve: unlit agora expõe cor + dois lados + transparente
+    // re-descreve: unlit expõe dois lados + transparente (sem campo de cor —
+    // o material preserva as cores reais do original, sem achatar).
     const again = describeInspector(mesh, { materialApi: api }, reg);
-    expect(field(again.model, 'matColor')?.kind).toBe('color');
+    expect(field(again.model, 'matColor')).toBeUndefined();
     expect(field(again.model, 'matTwoSided')?.kind).toBe('checkbox');
     again.handlers.get(field(again.model, 'matTwoSided')!.id)!(true);
     expect((saved() as { cull?: string }).cull).toBe('none');
