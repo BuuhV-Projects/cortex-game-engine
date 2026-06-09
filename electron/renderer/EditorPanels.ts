@@ -140,12 +140,7 @@ export class EditorPanels {
     this.inspectorHost.className = 'panel inspector-dock'
     const body = h('div', { class: 'insp scroll grow' })
     this.inspectorHost.append(
-      h('div', { class: 'panel-h' },
-        h('span', { class: 'ttl lit' }, t('editor.properties')),
-        h('span', { class: 'spacer' }),
-        h('button', { class: 'hbtn', title: 'Travar' }, icon('lock', { size: 13 })),
-        h('button', { class: 'hbtn' }, icon('dots', { size: 15 })),
-      ),
+      h('div', { class: 'panel-h' }, h('span', { class: 'ttl lit' }, t('editor.properties'))),
       body,
     )
     this.inspectorEl = body

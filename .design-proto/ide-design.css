@@ -276,6 +276,80 @@
 .ide .chip.run .dot { animation: idePulse 1.4s ease-in-out infinite; }
 @keyframes idePulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 
+/* ---------- document tabs (center editor area) ---------- */
+.ide .doctabs { display: flex; align-items: stretch; height: 36px; flex: 0 0 auto; background: var(--bg-0); border-bottom: 1px solid var(--line); padding: 0 6px; gap: 4px; }
+.ide .doctab {
+  display: flex; align-items: center; gap: 8px; align-self: flex-end;
+  height: 30px; padding: 0 9px 0 12px; border-radius: 8px 8px 0 0;
+  font-size: 12.5px; font-weight: 500; color: var(--tx-lo); cursor: pointer;
+  background: transparent; border: 1px solid transparent; border-bottom: none;
+  max-width: 220px; transition: background .12s, color .12s;
+}
+.ide .doctab:hover { color: var(--tx); background: var(--bg-2); }
+.ide .doctab.on { color: var(--tx-hi); background: var(--bg-1); border-color: var(--line); position: relative; }
+.ide .doctab.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent); border-radius: 2px; }
+.ide .doctab .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ide .doctab .x { width: 17px; height: 17px; border-radius: 5px; display: grid; place-items: center; color: var(--tx-dim); margin-left: 2px; }
+.ide .doctab .x:hover { background: var(--bg-4); color: var(--tx-hi); }
+.ide .doctab .scene-dot { width: 7px; height: 7px; border-radius: 2px; background: var(--accent); flex: 0 0 auto; }
+.ide .doctabs .plus { align-self: center; }
+
+/* ---------- GLB studio preview ---------- */
+.ide .studio { position: relative; overflow: hidden;
+  background:
+    radial-gradient(130% 100% at 50% 8%, oklch(0.32 0.014 280), oklch(0.205 0.012 280) 58%, oklch(0.16 0.01 280) 100%); }
+.ide .studio .floor {
+  position: absolute; left: 50%; bottom: 16%; width: 60%; height: 26%;
+  transform: translateX(-50%); border-radius: 50%;
+  background: radial-gradient(closest-side, oklch(0 0 0 / .42), transparent 78%);
+  filter: blur(2px);
+}
+.ide .studio .floorgrid {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 46%;
+  background-image: linear-gradient(oklch(1 0 0 / .07) 1px, transparent 1px), linear-gradient(90deg, oklch(1 0 0 / .07) 1px, transparent 1px);
+  background-size: 40px 40px;
+  transform: perspective(420px) rotateX(62deg); transform-origin: bottom center;
+  mask-image: radial-gradient(80% 120% at 50% 100%, #000, transparent 75%);
+}
+/* CSS placeholder model — a "bouncer" (spring + cap), echoing the asset */
+.ide .bouncer { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); width: 188px; }
+.ide .bouncer .cap {
+  height: 52px; border-radius: 50% / 60%;
+  background: linear-gradient(168deg, oklch(0.66 0.18 25), oklch(0.5 0.16 25));
+  box-shadow: inset 0 7px 0 oklch(0.74 0.15 24), inset 0 -10px 14px oklch(0.4 0.12 25), 0 10px 24px oklch(0 0 0 / .4);
+  position: relative; z-index: 3;
+}
+.ide .bouncer .coil {
+  height: 26px; margin: -9px auto 0; width: 84%;
+  border-radius: 50%; border: 9px solid transparent;
+  border-top-color: oklch(0.74 0.012 280); border-bottom-color: oklch(0.42 0.012 280);
+  filter: drop-shadow(0 3px 2px oklch(0 0 0 / .3));
+}
+.ide .bouncer .coil:nth-child(3) { width: 78%; } .ide .bouncer .coil:nth-child(4) { width: 72%; } .ide .bouncer .coil:nth-child(5) { width: 66%; }
+.ide .bouncer .base { width: 60%; height: 16px; margin: -6px auto 0; border-radius: 50%; background: linear-gradient(180deg, oklch(0.5 0.012 280), oklch(0.34 0.012 280)); position: relative; z-index: 2; }
+
+.ide .playbar { display: flex; align-items: center; gap: 12px; height: 46px; flex: 0 0 auto; padding: 0 14px; background: var(--bg-1); border-top: 1px solid var(--line); }
+.ide .scrub { position: relative; height: 5px; border-radius: 3px; background: var(--bg-4); flex: 1 1 auto; cursor: pointer; }
+.ide .scrub .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--accent); }
+.ide .scrub .knob { position: absolute; top: 50%; width: 13px; height: 13px; border-radius: 50%; background: #fff; transform: translate(-50%, -50%); box-shadow: 0 1px 4px oklch(0 0 0 / .5), 0 0 0 3px var(--accent-q); }
+.ide .tcode { font-family: var(--mono); font-size: 11px; color: var(--tx-lo); white-space: nowrap; }
+
+/* animations sub-panel (lives inside the preview tab) */
+.ide .animpanel { width: 234px; flex: 0 0 auto; background: var(--bg-1); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.ide .animlist { padding: 6px; display: flex; flex-direction: column; gap: 1px; }
+.ide .anim-row { display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 8px 0 9px; border-radius: 7px; cursor: pointer; color: var(--tx); }
+.ide .anim-row:hover { background: var(--bg-3); }
+.ide .anim-row.on { background: var(--accent-q); color: var(--tx-hi); }
+.ide .anim-row .pic { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; flex: 0 0 auto; color: var(--tx-lo); background: var(--bg-3); }
+.ide .anim-row.on .pic { background: var(--accent); color: #fff; }
+.ide .anim-row .nm { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; }
+.ide .anim-row .dur { font-family: var(--mono); font-size: 10.5px; color: var(--tx-dim); }
+.ide .anim-row.stop { color: var(--tx-lo); }
+.ide .eq { display: inline-flex; align-items: flex-end; gap: 1.5px; height: 11px; }
+.ide .eq i { width: 2px; background: var(--accent); border-radius: 1px; animation: ideEq 0.9s ease-in-out infinite; }
+.ide .eq i:nth-child(1){height:40%;animation-delay:0s} .ide .eq i:nth-child(2){height:100%;animation-delay:.15s} .ide .eq i:nth-child(3){height:60%;animation-delay:.3s} .ide .eq i:nth-child(4){height:85%;animation-delay:.1s}
+@keyframes ideEq { 0%,100%{transform:scaleY(.4)} 50%{transform:scaleY(1)} }
+
 /* ---------- search ---------- */
 .ide .search {
   display: flex; align-items: center; gap: 7px;

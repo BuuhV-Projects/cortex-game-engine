@@ -8,6 +8,7 @@ import { Launcher } from './Launcher'
 import { Shell } from './Shell'
 import { LeftDock } from './LeftDock'
 import { EditorPanels } from './EditorPanels'
+import { AssetInspector } from './AssetInspector'
 import { applyTheme } from './theme'
 import { initI18n } from './i18n'
 import { showWelcomeModal } from './Welcome'
@@ -41,6 +42,8 @@ leftDock.init()
 // FileTree → aba Projeto; EditorPanels → aba Hierarquia (outliner) + dock Inspector.
 const fileTree = new FileTree(leftDock.filesPane)
 const editorPanels = new EditorPanels(leftDock.hierarchyPane, inspectorContainer)
+// Painel "Asset · GLB" — overlay no dock direito quando um .glb está aberto.
+const assetInspector = new AssetInspector(inspectorContainer)
 const editor = new Editor(editorContainer)
 const preview = new Preview(previewContainer)
 const bottomPanel = new BottomPanel(consoleContainer)
@@ -53,6 +56,7 @@ new Launcher()
 
 fileTree.init()
 editorPanels.init()
+assetInspector.init()
 editor.init()
 preview.init()
 bottomPanel.init()
@@ -115,11 +119,22 @@ bottomHandle.addEventListener('mousedown', (e) => {
 
 // Editor vazio (sem arquivo aberto) → esconde o pane do Monaco; o viewport toma o
 // centro. Ao abrir um arquivo, o editor reaparece dividindo o centro com o viewport.
-document.addEventListener('editor-empty-change', (e) => {
-  const { empty } = (e as CustomEvent<{ empty: boolean }>).detail
-  editorContainer.style.display = empty ? 'none' : ''
+// Centro = um doc por vez (estilo aba, Layout A): cena (viewport) OU arquivo
+// (editor de código / preview de glb·imagem·markdown). O dock direito some no
+// editor de CÓDIGO (não há o que inspecionar da cena); em GLB mostra o Asset.
+const resizerInspector = document.getElementById('resizer-inspector') as HTMLElement
+const applyDoc = (kind: 'scene' | 'code' | 'glb' | 'preview'): void => {
+  const onScene = kind === 'scene'
+  previewContainer.style.display = onScene ? '' : 'none'
+  editorContainer.style.display = onScene ? 'none' : ''
+  const hideInspector = kind === 'code'
+  inspectorContainer.style.display = hideInspector ? 'none' : ''
+  resizerInspector.style.display = hideInspector ? 'none' : ''
+}
+document.addEventListener('editor-doc-change', (e) => {
+  applyDoc((e as CustomEvent<{ kind: 'scene' | 'code' | 'glb' | 'preview' }>).detail.kind)
 })
-editorContainer.style.display = 'none'
+applyDoc('scene') // boot: cena ativa
 
 // Chat recolhido → vira um trilho fino (rail).
 document.addEventListener('chat-collapsed-change', (e) => {

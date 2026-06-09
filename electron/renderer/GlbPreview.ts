@@ -1,107 +1,113 @@
 import * as THREE from 'three'
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { h, icon } from './ui'
 
 /**
- * Preview 3D de um `.glb`/`.gltf` clicado no file-tree: renderiza o modelo num
- * viewport WebGL (orbitável) e lista as **animações** embutidas, com play/stop de
- * cada clipe via {@link THREE.AnimationMixer}. Cobre o editor de código (overlay),
- * no mesmo espírito dos previews de imagem/markdown do {@link Editor}.
+ * Preview 3D de um `.glb`/`.gltf` aberto no file-tree (redesign Layout A): um
+ * **studio** WebGL orbitável + uma barra de **playback** + o painel **Animações**,
+ * e emite os stats do asset (`glb-asset`) pro dock direito mostrar "Asset · GLB".
  *
- * Os bytes vêm por IPC (`readFileBase64`) — o renderer não tem acesso a `file://`.
- * Cena/renderer são criados sob demanda e reusados; o modelo é trocado/descartado
- * a cada `open` pra não vazar GPU.
+ * Os bytes vêm por IPC (`readFileBase64`). Cena/renderer são criados sob demanda e
+ * reusados; o modelo é trocado/descartado a cada `open` pra não vazar GPU.
  */
 export class GlbPreview {
   private readonly overlay: HTMLElement
-  private readonly canvasWrap: HTMLElement
+  private readonly studioEl: HTMLElement
   private readonly listEl: HTMLElement
-  private readonly titleEl: HTMLElement
+  private readonly fileIdEl: HTMLElement
+  private readonly metaEl: HTMLElement
+  // Playbar
+  private readonly playBtn: HTMLButtonElement
+  private readonly loopBtn: HTMLButtonElement
+  private readonly scrubFill: HTMLElement
+  private readonly scrubKnob: HTMLElement
+  private readonly tcodeCur: HTMLElement
+  private readonly tcodeTotal: HTMLElement
 
   private renderer: THREE.WebGLRenderer | null = null
   private scene: THREE.Scene | null = null
   private camera: THREE.PerspectiveCamera | null = null
   private controls: OrbitControls | null = null
+  private grid: THREE.GridHelper | null = null
   private mixer: THREE.AnimationMixer | null = null
   private clips: THREE.AnimationClip[] = []
   private current: THREE.AnimationAction | null = null
+  private currentIndex = -1
   private model: THREE.Object3D | null = null
   private raf = 0
   private clock = new THREE.Clock()
   private loadToken = 0
+  private speed = 1
+  private loop = true
+  private currentName = ''
   private readonly onClose?: () => void
 
   constructor(host: HTMLElement, onClose?: () => void) {
     this.onClose = onClose
-    const overlay = document.createElement('div')
-    overlay.className = 'editor-glb-preview'
-    overlay.style.cssText = [
-      'position:absolute',
-      'inset:0',
-      'display:none',
-      'flex-direction:row',
-      'background:#1e1e1e',
-      'z-index:6',
-    ].join(';')
 
-    const canvasWrap = document.createElement('div')
-    canvasWrap.style.cssText = 'flex:1;position:relative;min-width:0;background:#22232a'
+    // ── Studio (canvas WebGL + pills) ──────────────────────────────────────────
+    const studio = h('div', { class: 'studio grow', style: { position: 'relative', minHeight: '0' } })
+    this.studioEl = studio
+    const fileId = h('span', {}, '')
+    this.fileIdEl = fileId
+    const meta = h('span', { class: 'vp-pill mono', style: { fontSize: '10.5px' } }, '—')
+    this.metaEl = meta
+    studio.append(
+      h('div', { style: { position: 'absolute', top: '10px', left: '12px' } },
+        h('span', { class: 'vp-pill' }, h('span', { style: { fontSize: '9px', fontWeight: '800', color: 'var(--accent)', fontFamily: 'var(--mono)' } }, '3D'), fileId)),
+      h('div', { class: 'row gap-4', style: { position: 'absolute', top: '10px', right: '12px' } },
+        h('span', { class: 'vp-pill', title: 'Grade', style: { width: '30px', padding: '0', justifyContent: 'center', cursor: 'pointer' }, onClick: () => this.toggleGrid() }, icon('grid', { size: 15 })),
+        h('span', { class: 'vp-pill', title: 'Reenquadrar', style: { width: '30px', padding: '0', justifyContent: 'center', cursor: 'pointer' }, onClick: () => { if (this.model) this.frameModel(this.model) } }, icon('refresh', { size: 14 })),
+        h('span', { class: 'vp-pill', title: 'Fechar preview', style: { width: '30px', padding: '0', justifyContent: 'center', cursor: 'pointer' }, onClick: () => { this.close(); this.onClose?.() } }, icon('close', { size: 13 })),
+      ),
+      h('div', { style: { position: 'absolute', bottom: '10px', left: '12px' } }, meta),
+    )
 
-    const side = document.createElement('div')
-    side.style.cssText = [
-      'width:230px',
-      'flex:0 0 230px',
-      'display:flex',
-      'flex-direction:column',
-      'gap:6px',
-      'padding:12px',
-      'overflow:auto',
-      'background:#1b1c22',
-      'border-left:1px solid #2c2e36',
-      'color:#d4d4d4',
-      'font:13px "Segoe UI",Roboto,Arial,sans-serif',
-    ].join(';')
+    // ── Playbar ────────────────────────────────────────────────────────────────
+    const playBtn = h('button', { class: 'iconbtn on', style: { width: '32px', height: '32px' }, onClick: () => this.togglePlay() }, icon('play', { size: 15, fill: true })) as HTMLButtonElement
+    const replayBtn = h('button', { class: 'iconbtn', title: 'Reiniciar clipe', onClick: () => this.replay() }, icon('refresh', { size: 15 })) as HTMLButtonElement
+    const loopBtn = h('button', { class: 'iconbtn on', title: 'Loop', onClick: () => this.toggleLoop() }, icon('refresh', { size: 15 })) as HTMLButtonElement
+    const tcodeCur = h('span', { class: 'tcode' }, '0:00')
+    const tcodeTotal = h('span', { class: 'tcode' }, '0:00')
+    const scrubFill = h('div', { class: 'fill', style: { width: '0%' } })
+    const scrubKnob = h('div', { class: 'knob', style: { left: '0%' } })
+    const scrub = h('div', { class: 'scrub' }, scrubFill, scrubKnob)
+    const speedPill = h('span', { class: 'selpill', style: { height: '26px', cursor: 'pointer' }, onClick: () => this.cycleSpeed(speedPill) }, '1.0×')
+    this.playBtn = playBtn
+    this.loopBtn = loopBtn
+    this.scrubFill = scrubFill
+    this.scrubKnob = scrubKnob
+    this.tcodeCur = tcodeCur
+    this.tcodeTotal = tcodeTotal
+    const playbar = h('div', { class: 'playbar' },
+      playBtn, replayBtn, tcodeCur, scrub, tcodeTotal,
+      h('div', { class: 'divx', style: { margin: '8px 2px' } }), loopBtn, speedPill,
+    )
 
-    const closeBtn = document.createElement('button')
-    closeBtn.textContent = '✕  Fechar preview'
-    closeBtn.style.cssText = [
-      'align-self:flex-start',
-      'padding:5px 10px',
-      'margin-bottom:4px',
-      'border:1px solid #3a3f4a',
-      'border-radius:5px',
-      'background:#2a2f3a',
-      'color:#e6e6e6',
-      'cursor:pointer',
-      'font:12px "Segoe UI",Roboto,Arial,sans-serif',
-    ].join(';')
-    closeBtn.addEventListener('click', () => {
-      this.close()
-      this.onClose?.()
-    })
+    // ── Painel Animações ─────────────────────────────────────────────────────────
+    const list = h('div', { class: 'animlist scroll grow' })
+    this.listEl = list
+    const animCount = h('span', { class: 'count' }, '0')
+    this.animCountEl = animCount
+    const animpanel = h('div', { class: 'animpanel' },
+      h('div', { class: 'panel-h' }, h('span', { class: 'ttl lit' }, 'Animações'), animCount, h('span', { class: 'spacer' })),
+      list,
+    )
 
-    const title = document.createElement('div')
-    title.style.cssText = 'font-weight:600;word-break:break-all;color:#e6e6e6'
-    const animHeader = document.createElement('div')
-    animHeader.textContent = 'Animações'
-    animHeader.style.cssText = 'margin-top:8px;color:#9aa0ad;font-size:12px;text-transform:uppercase;letter-spacing:.04em'
-    const list = document.createElement('div')
-    list.style.cssText = 'display:flex;flex-direction:column;gap:4px'
-    const hint = document.createElement('div')
-    hint.textContent = 'Arraste pra girar · scroll pra zoom'
-    hint.style.cssText = 'margin-top:auto;color:#6b7280;font-size:11px'
-
-    side.append(closeBtn, title, animHeader, list, hint)
-    overlay.append(canvasWrap, side)
+    const overlay = h('div', { class: 'editor-glb-preview ide', style: { position: 'absolute', inset: '0', display: 'none', zIndex: '6', background: 'var(--bg-1)' } },
+      h('div', { class: 'row grow', style: { minHeight: '0', alignItems: 'stretch' } },
+        h('div', { class: 'col grow', style: { minWidth: '0' } }, studio, playbar),
+        animpanel,
+      ),
+    )
+    this.overlay = overlay
     host.appendChild(overlay)
 
-    this.overlay = overlay
-    this.canvasWrap = canvasWrap
-    this.listEl = list
-    this.titleEl = title
-
-    new ResizeObserver(() => this.resize()).observe(canvasWrap)
+    new ResizeObserver(() => this.resize()).observe(studio)
   }
+
+  private animCountEl: HTMLElement
 
   /** `true` se a extensão abre neste preview. */
   static handles(name: string): boolean {
@@ -116,22 +122,22 @@ export class GlbPreview {
 
   private ensureThree(): void {
     if (this.renderer) return
-    const renderer = new THREE.WebGLRenderer({ antialias: true })
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.outputColorSpace = THREE.SRGBColorSpace
-    this.canvasWrap.appendChild(renderer.domElement)
-    renderer.domElement.style.cssText = 'width:100%;height:100%;display:block'
+    renderer.domElement.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block'
+    this.studioEl.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x22232a)
     const hemi = new THREE.HemisphereLight(0xffffff, 0x444455, 2.2)
     const dir = new THREE.DirectionalLight(0xffffff, 2.0)
     dir.position.set(3, 6, 4)
     scene.add(hemi, dir)
-    const grid = new THREE.GridHelper(10, 10, 0x3a3d47, 0x2c2e36)
+    const grid = new THREE.GridHelper(10, 10, 0x5a5d72, 0x33354a)
     ;(grid.material as THREE.Material).transparent = true
-    ;(grid.material as THREE.Material).opacity = 0.5
+    ;(grid.material as THREE.Material).opacity = 0.45
     scene.add(grid)
+    this.grid = grid
 
     const camera = new THREE.PerspectiveCamera(50, 1, 0.01, 1000)
     const controls = new OrbitControls(camera, renderer.domElement)
@@ -145,10 +151,15 @@ export class GlbPreview {
 
   /** Abre o preview de um modelo: mostra o overlay, carrega e lista as animações. */
   async open(path: string, name: string): Promise<void> {
-    this.ensureThree()
+    this.currentName = name
     this.overlay.style.display = 'flex'
-    this.titleEl.textContent = name
+    this.fileIdEl.textContent = name
     this.listEl.textContent = ''
+    try {
+      this.ensureThree()
+    } catch {
+      // WebGL indisponível — segue só com a casca (ex.: headless de validação).
+    }
     this.clearModel()
     this.resize()
     this.startLoop()
@@ -156,20 +167,17 @@ export class GlbPreview {
     const token = ++this.loadToken
     try {
       const b64 = await window.electronAPI.readFileBase64(path)
-      if (token !== this.loadToken) return // outro arquivo foi aberto enquanto carregava
+      if (token !== this.loadToken) return
       const buf = base64ToArrayBuffer(b64)
       const loader = new GLTFLoader()
-      const gltf: GLTF = await new Promise((res, rej) =>
-        loader.parse(buf, '', res, rej),
-      )
+      const gltf: GLTF = await new Promise((res, rej) => loader.parse(buf, '', res, rej))
       if (token !== this.loadToken) return
-      this.setModel(gltf)
+      this.setModel(gltf, name, Math.round((b64.length * 3) / 4))
     } catch (err) {
+      const e = h('div', { style: { color: 'var(--stop)', fontSize: '12px', padding: '8px' } },
+        `Falha ao carregar: ${err instanceof Error ? err.message : String(err)}`)
       this.listEl.textContent = ''
-      const e = document.createElement('div')
-      e.style.cssText = 'color:#e06c75;font-size:12px'
-      e.textContent = `Falha ao carregar: ${err instanceof Error ? err.message : String(err)}`
-      this.listEl.appendChild(e)
+      this.listEl.append(e)
     }
   }
 
@@ -178,9 +186,10 @@ export class GlbPreview {
     if (this.overlay.style.display === 'none') return
     this.overlay.style.display = 'none'
     this.stopLoop()
+    document.dispatchEvent(new CustomEvent('glb-asset-close'))
   }
 
-  private setModel(gltf: GLTF): void {
+  private setModel(gltf: GLTF, name: string, sizeBytes: number): void {
     if (!this.scene) return
     this.model = gltf.scene
     this.scene.add(this.model)
@@ -189,37 +198,55 @@ export class GlbPreview {
     this.clips = gltf.animations ?? []
     this.mixer = this.clips.length ? new THREE.AnimationMixer(this.model) : null
     this.renderAnimList()
-    // Toca o primeiro clipe (geralmente idle) por padrão.
     if (this.clips.length) this.play(0)
+
+    // Stats do asset → dock direito "Asset · GLB".
+    let meshes = 0
+    let triangles = 0
+    const mats = new Set<THREE.Material>()
+    this.model.traverse((o) => {
+      const m = o as THREE.Mesh
+      if (!m.isMesh) return
+      meshes++
+      const g = m.geometry
+      if (g) triangles += g.index ? g.index.count / 3 : (g.attributes['position']?.count ?? 0) / 3
+      const mat = m.material
+      if (Array.isArray(mat)) mat.forEach((x) => mats.add(x))
+      else if (mat) mats.add(mat)
+    })
+    document.dispatchEvent(new CustomEvent('glb-asset', {
+      detail: { name, sizeBytes, meshes, materials: mats.size, animations: this.clips.length, triangles: Math.round(triangles) },
+    }))
   }
 
   private renderAnimList(): void {
     this.listEl.textContent = ''
+    this.animCountEl.textContent = String(this.clips.length)
     if (!this.clips.length) {
-      const none = document.createElement('div')
-      none.style.cssText = 'color:#6b7280;font-size:12px'
-      none.textContent = 'nenhuma animação neste modelo'
-      this.listEl.appendChild(none)
+      this.listEl.append(h('div', { style: { color: 'var(--tx-dim)', fontSize: '12px', padding: '8px' } }, 'nenhuma animação neste modelo'))
       return
     }
-    const stop = makeBtn('⏹  Parar', '#2c2e36')
-    stop.addEventListener('click', () => {
-      this.mixer?.stopAllAction()
-      this.current = null
-      this.markActive(-1)
-    })
-    this.listEl.appendChild(stop)
+    const stopRow = h('div', { class: 'anim-row stop', onClick: () => this.stop() },
+      h('span', { class: 'pic' }, icon('stop', { size: 11, fill: true })),
+      h('span', { class: 'nm' }, 'Parar'),
+    )
+    this.listEl.append(stopRow)
     this.clips.forEach((clip, i) => {
-      const b = makeBtn(`▶  ${clip.name || `clip ${i}`}`, '#26282f')
-      b.dataset['i'] = String(i)
-      b.addEventListener('click', () => this.play(i))
-      this.listEl.appendChild(b)
+      const row = h('div', { class: 'anim-row', 'data-i': String(i), onClick: () => this.play(i) },
+        h('span', { class: 'pic' }, icon('play', { size: 11, fill: true })),
+        h('span', { class: 'nm' }, clip.name || `clip ${i}`),
+        h('span', { class: 'dur' }, fmtTime(clip.duration)),
+      )
+      this.listEl.append(row)
     })
   }
 
   private play(i: number): void {
     if (!this.mixer || !this.clips[i]) return
     const next = this.mixer.clipAction(this.clips[i]!)
+    next.setLoop(this.loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity)
+    next.clampWhenFinished = !this.loop
+    next.timeScale = this.speed
     if (this.current && this.current !== next) {
       next.reset()
       this.current.fadeOut(0.2)
@@ -228,15 +255,66 @@ export class GlbPreview {
       next.reset().play()
     }
     this.current = next
+    this.currentIndex = i
+    this.playBtn.classList.add('on')
     this.markActive(i)
   }
 
+  private stop(): void {
+    this.mixer?.stopAllAction()
+    this.current = null
+    this.currentIndex = -1
+    this.markActive(-1)
+  }
+
+  private togglePlay(): void {
+    if (!this.current) {
+      if (this.clips.length) this.play(this.currentIndex >= 0 ? this.currentIndex : 0)
+      return
+    }
+    this.current.paused = !this.current.paused
+    this.playBtn.classList.toggle('on', !this.current.paused)
+  }
+
+  private replay(): void {
+    if (this.current) this.current.reset().play()
+  }
+
+  private toggleLoop(): void {
+    this.loop = !this.loop
+    this.loopBtn.classList.toggle('on', this.loop)
+    if (this.current) {
+      this.current.setLoop(this.loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity)
+      this.current.clampWhenFinished = !this.loop
+    }
+  }
+
+  private cycleSpeed(pill: HTMLElement): void {
+    const steps = [0.25, 0.5, 1, 1.5, 2]
+    this.speed = steps[(steps.indexOf(this.speed) + 1) % steps.length]!
+    pill.textContent = `${this.speed.toFixed(this.speed < 1 ? 2 : 1)}×`
+    if (this.current) this.current.timeScale = this.speed
+  }
+
+  private toggleGrid(): void {
+    if (this.grid) this.grid.visible = !this.grid.visible
+  }
+
   private markActive(i: number): void {
-    for (const el of Array.from(this.listEl.querySelectorAll('button[data-i]'))) {
-      const btn = el as HTMLButtonElement
-      const on = Number(btn.dataset['i']) === i
-      btn.style.background = on ? '#3b5bdb' : '#26282f'
-      btn.style.color = on ? '#fff' : '#d4d4d4'
+    for (const el of Array.from(this.listEl.querySelectorAll('.anim-row[data-i]'))) {
+      const row = el as HTMLElement
+      const on = Number(row.dataset['i']) === i
+      row.classList.toggle('on', on)
+      const pic = row.querySelector('.pic')
+      if (pic) {
+        pic.textContent = ''
+        if (on) {
+          const eq = h('span', { class: 'eq' }, h('i'), h('i'), h('i'), h('i'))
+          pic.append(eq)
+        } else {
+          pic.append(icon('play', { size: 11, fill: true }))
+        }
+      }
     }
   }
 
@@ -257,6 +335,7 @@ export class GlbPreview {
 
   private clearModel(): void {
     this.current = null
+    this.currentIndex = -1
     if (this.mixer) {
       this.mixer.stopAllAction()
       this.mixer = null
@@ -277,10 +356,10 @@ export class GlbPreview {
 
   private resize(): void {
     if (!this.renderer || !this.camera) return
-    const w = this.canvasWrap.clientWidth || 1
-    const h = this.canvasWrap.clientHeight || 1
-    this.renderer.setSize(w, h, false)
-    this.camera.aspect = w / h
+    const w = this.studioEl.clientWidth || 1
+    const h2 = this.studioEl.clientHeight || 1
+    this.renderer.setSize(w, h2, false)
+    this.camera.aspect = w / h2
     this.camera.updateProjectionMatrix()
   }
 
@@ -292,9 +371,27 @@ export class GlbPreview {
       const dt = this.clock.getDelta()
       this.mixer?.update(dt)
       this.controls?.update()
+      this.updatePlayhead()
       if (this.renderer && this.scene && this.camera) this.renderer.render(this.scene, this.camera)
     }
     this.raf = requestAnimationFrame(tick)
+  }
+
+  private updatePlayhead(): void {
+    const clip = this.currentIndex >= 0 ? this.clips[this.currentIndex] : null
+    if (!this.current || !clip || clip.duration <= 0) {
+      this.scrubFill.style.width = '0%'
+      this.scrubKnob.style.left = '0%'
+      this.tcodeCur.textContent = '0:00'
+      this.tcodeTotal.textContent = clip ? fmtTime(clip.duration) : '0:00'
+      return
+    }
+    const tt = (this.current.time % clip.duration) / clip.duration
+    const pct = `${(tt * 100).toFixed(1)}%`
+    this.scrubFill.style.width = pct
+    this.scrubKnob.style.left = pct
+    this.tcodeCur.textContent = fmtTime(this.current.time % clip.duration)
+    this.tcodeTotal.textContent = fmtTime(clip.duration)
   }
 
   private stopLoop(): void {
@@ -303,23 +400,9 @@ export class GlbPreview {
   }
 }
 
-function makeBtn(label: string, bg: string): HTMLButtonElement {
-  const b = document.createElement('button')
-  b.textContent = label
-  b.style.cssText = [
-    'text-align:left',
-    'padding:6px 9px',
-    'border:none',
-    'border-radius:5px',
-    `background:${bg}`,
-    'color:#d4d4d4',
-    'cursor:pointer',
-    'font:12px "Segoe UI",Roboto,Arial,sans-serif',
-    'white-space:nowrap',
-    'overflow:hidden',
-    'text-overflow:ellipsis',
-  ].join(';')
-  return b
+function fmtTime(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
 function base64ToArrayBuffer(b64: string): ArrayBuffer {

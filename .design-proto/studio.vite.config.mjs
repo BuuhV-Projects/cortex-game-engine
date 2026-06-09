@@ -80,6 +80,12 @@ const STUB_BODY = `
     };
     window.postMessage(msg, '*');
   }, 1800);
+
+  // Abre um GLB de exemplo pra validar o preview 3D + o painel Asset.
+  setTimeout(function () {
+    document.dispatchEvent(new CustomEvent('file-open', { detail: { path: '/proj/assets/Bouncer.glb', name: 'Bouncer.glb' } }));
+    document.dispatchEvent(new CustomEvent('glb-asset', { detail: { name: 'Bouncer.glb', sizeBytes: 1258291, meshes: 1, materials: 1, animations: 16, triangles: 1248 } }));
+  }, 2600);
 })();
 `
 

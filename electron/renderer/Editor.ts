@@ -219,18 +219,22 @@ export class Editor {
         this.hideImagePreview()
         void this.glbPreview?.open(path, name)
         this.notifyEmptyState()
+        this.notifyDoc('glb')
       } else if (isImageFile(name)) {
         // Imagem abre como PREVIEW, não no editor de código.
         this.glbPreview?.close()
         void this.openImagePreview(path, name)
+        this.notifyDoc('preview')
       } else if (isMarkdownFile(name)) {
         // Markdown abre renderizado como PREVIEW.
         this.glbPreview?.close()
         void this.openMarkdownPreview(path, name)
+        this.notifyDoc('preview')
       } else {
         this.glbPreview?.close()
         this.hideImagePreview()
         void this.openFile(path, name)
+        this.notifyDoc('code')
       }
     })
 
@@ -377,7 +381,10 @@ export class Editor {
     this.previewEl = preview
 
     // Preview 3D de .glb/.gltf (overlay próprio, acima do Monaco e do preview de imagem).
-    this.glbPreview = new GlbPreview(editorArea, () => this.notifyEmptyState())
+    this.glbPreview = new GlbPreview(editorArea, () => {
+      this.notifyEmptyState()
+      this.notifyDoc(this.tabs.size ? 'code' : 'scene')
+    })
   }
 
   private get previewImg(): HTMLImageElement | null {
@@ -445,6 +452,13 @@ export class Editor {
     if (empty === this.lastEmpty) return
     this.lastEmpty = empty
     document.dispatchEvent(new CustomEvent('editor-empty-change', { detail: { empty } }))
+    // Sem nada aberto → o doc ativo é a cena (dock direito mostra o Inspector).
+    if (empty) this.notifyDoc('scene')
+  }
+
+  /** Avisa qual tipo de documento está ativo, pra o dock direito reagir (Layout A). */
+  private notifyDoc(kind: 'scene' | 'code' | 'glb' | 'preview'): void {
+    document.dispatchEvent(new CustomEvent('editor-doc-change', { detail: { kind } }))
   }
 
   private renderTabs(): void {

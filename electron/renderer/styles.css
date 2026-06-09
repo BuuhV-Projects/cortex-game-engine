@@ -102,8 +102,17 @@ body {
 }
 
 /* Dock do inspector (direito, antes do chat). */
+#inspector-container {
+  position: relative;
+}
 .inspector-dock {
   height: 100%;
+}
+/* Painel "Asset · GLB" — overlay sobre o inspector quando um .glb está aberto. */
+.asset-inspector {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
 }
 
 /* Toolbar nova (Novo Projeto / Abrir / transport / câmera / ícones). */
