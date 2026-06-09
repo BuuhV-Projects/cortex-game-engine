@@ -90,6 +90,7 @@ export class EditorPanels {
 
   // Hierarquia: último estado + filtro de busca + nós colapsados.
   private lastItems: OutlinerItem[] = []
+  private lastOutlinerJson = ''
   private filter = ''
   private collapsed = new Set<string>()
 
@@ -190,8 +191,15 @@ export class EditorPanels {
     if (state.viewport) {
       document.dispatchEvent(new CustomEvent('editor-viewport', { detail: state.viewport }))
     }
+    // Só re-renderiza a hierarquia se os itens mudaram de verdade — senão o
+    // publish frequente (câmera/transform) reconstruía a árvore e jogava o scroll
+    // pro topo.
     this.lastItems = state.outliner.items
-    this.renderOutliner(this.lastItems)
+    const ojson = JSON.stringify(this.lastItems)
+    if (ojson !== this.lastOutlinerJson) {
+      this.lastOutlinerJson = ojson
+      this.renderOutliner(this.lastItems)
+    }
     this.renderInspector(state.inspector)
   }
 
@@ -205,8 +213,10 @@ export class EditorPanels {
 
   private renderOutliner(items: OutlinerItem[]): void {
     if (!this.outlinerListEl) return
+    const scroll = this.outlinerListEl.scrollTop // preserva a posição do scroll
     this.outlinerListEl.textContent = ''
     for (const item of items) this.renderNode(item, 0)
+    this.outlinerListEl.scrollTop = scroll
     if (this.outlinerListEl.childElementCount === 0) {
       this.outlinerListEl.append(
         h('div', { style: { padding: '8px', color: 'var(--tx-dim)', fontSize: '11px' } },

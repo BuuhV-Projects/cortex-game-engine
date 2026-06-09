@@ -58,6 +58,7 @@ export class FileTree {
   private headerToggleEl: HTMLButtonElement | null = null
   private projectLabelEl: HTMLElement | null = null
   private treeCollapsed = false
+  private fileFilter = ''
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -103,6 +104,38 @@ export class FileTree {
     }
   }
 
+  /**
+   * Filtra a árvore renderizada por nome (busca da aba Projeto). Mostra um item se
+   * o nome casa OU se tem um descendente (já carregado) que casa — pastas não
+   * expandidas não têm filhos no DOM (carregamento lazy), então não são varridas.
+   */
+  private applyFileFilter(q: string): void {
+    this.fileFilter = q
+    if (!this.treeArea) return
+    const lis = Array.from(this.treeArea.querySelectorAll<HTMLLIElement>('li'))
+    if (!q) {
+      for (const li of lis) li.style.display = ''
+      return
+    }
+    const selfMatch = new Map<HTMLLIElement, boolean>()
+    for (const li of lis) {
+      const name = (li.querySelector('.filetree-name')?.textContent ?? '').toLowerCase()
+      selfMatch.set(li, name.includes(q))
+    }
+    for (const li of lis) {
+      let show = selfMatch.get(li) ?? false
+      if (!show) {
+        for (const d of li.querySelectorAll<HTMLLIElement>('li')) {
+          if (selfMatch.get(d)) {
+            show = true
+            break
+          }
+        }
+      }
+      li.style.display = show ? '' : 'none'
+    }
+  }
+
   async init(): Promise<void> {
     this.buildShell()
     // Fecha context menu ao clicar fora
@@ -115,6 +148,10 @@ export class FileTree {
     // (Write/Edit/Bash/MCP tools que escrevem arquivos).
     document.addEventListener('filetree-refresh', () => {
       void this.refresh()
+    })
+    // Busca da aba Projeto (LeftDock) — filtra a árvore renderizada por nome.
+    document.addEventListener('files-filter', (e) => {
+      this.applyFileFilter((((e as CustomEvent<{ query: string }>).detail.query) || '').toLowerCase())
     })
     if (this.projectDir) {
       // Anuncia o projeto restaurado do localStorage para os demais
@@ -272,6 +309,7 @@ export class FileTree {
       const ul = this.buildList(entries)
       this.treeArea.innerHTML = ''
       this.treeArea.appendChild(ul)
+      if (this.fileFilter) this.applyFileFilter(this.fileFilter)
     } catch (err) {
       this.treeArea.innerHTML = `<p class="filetree-error">${t('fileTree.error_read_dir')} ${String(err)}</p>`
     }

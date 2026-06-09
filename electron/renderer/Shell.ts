@@ -196,10 +196,7 @@ export class Shell {
       transport, runChip,
       h('span', { class: 'spacer' }),
       camPill,
-      h('button', { class: 'iconbtn', title: 'Layout' }, icon('layout', { size: 16 })),
-      h('button', { class: 'iconbtn', title: 'Grid' }, icon('grid', { size: 16 })),
       h('button', { class: 'iconbtn', title: 'Tela cheia', onClick: () => document.dispatchEvent(new CustomEvent('request-fullscreen-toggle')) }, icon('expand', { size: 15 })),
-      h('button', { class: 'iconbtn', title: 'Configurações' }, icon('gear', { size: 16 })),
     )
     this.syncTransport()
   }
