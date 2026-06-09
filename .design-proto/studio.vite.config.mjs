@@ -78,17 +78,35 @@ const STUB_BODY = `
           { kind: 'checkbox', id: 'p:solid', label: 'Sólido', value: true },
           { kind: 'button', id: 'p:rm', label: 'Remover collider', variant: 'danger' },
         ] },
+        { title: 'Animação', fields: [
+          { kind: 'select', id: 'p:animClip', label: 'Clipe', value: 'Idle', options: [ {value:'Idle',label:'Idle'}, {value:'Walk',label:'Walk'}, {value:'Run',label:'Run'} ] },
+          { kind: 'button', id: 'p:animPlay', label: '▶ Tocar' },
+          { kind: 'button', id: 'p:animStop', label: '⏹ Parar' },
+          { kind: 'checkbox', id: 'p:animLoop', label: 'Loop', value: true },
+          { kind: 'number', id: 'p:animSpeed', label: 'Velocidade', value: 1, step: 0.1 },
+        ] },
+        { title: 'Ações do player', fields: (function(){
+          var acts = [['idle','Idle'],['walk','Walk'],['run','Run'],['jump','Jump'],['fall','Jump_Idle'],['land','Jump_Land']];
+          var clips = ['Idle','Walk','Run','Jump','Jump_Idle','Jump_Land'].map(function(c){return {value:c,label:c}});
+          var fs = [ { kind:'button', id:'p:paAuto', label:'🔎 Auto-mapear pelos nomes' } ];
+          acts.forEach(function(a){
+            fs.push({ kind:'select', id:'p:pa:'+a[0], label:a[0], value:a[1], options:clips });
+            fs.push({ kind:'button', id:'p:paPlay:'+a[0], label:'▶ '+a[0] });
+          });
+          fs.push({ kind:'button', id:'p:paStop', label:'⏹ Parar preview' });
+          return fs;
+        })() },
       ] },
       viewport: { camera: 'cam: 10.7, 15.7, 12.7  yaw: 45°  pitch: -35°', fps: 60, objects: 18, lights: 2, selected: 'ground_start', gizmo: 'translate' },
     };
     window.postMessage(msg, '*');
   }, 1800);
 
-  // Abre um GLB de exemplo pra validar o preview 3D + o painel Asset.
-  setTimeout(function () {
-    document.dispatchEvent(new CustomEvent('file-open', { detail: { path: '/proj/assets/Bouncer.glb', name: 'Bouncer.glb' } }));
-    document.dispatchEvent(new CustomEvent('glb-asset', { detail: { name: 'Bouncer.glb', sizeBytes: 1258291, meshes: 1, materials: 1, animations: 16, triangles: 1248 } }));
-  }, 2600);
+  // (validação do inspector da cena — glb desligado; reative pra testar o preview 3D)
+  // setTimeout(function () {
+  //   document.dispatchEvent(new CustomEvent('file-open', { detail: { path: '/proj/assets/Bouncer.glb', name: 'Bouncer.glb' } }));
+  //   document.dispatchEvent(new CustomEvent('glb-asset', { detail: { name: 'Bouncer.glb', sizeBytes: 1258291, meshes: 1, materials: 1, animations: 16, triangles: 1248 } }));
+  // }, 2600);
 })();
 `
 

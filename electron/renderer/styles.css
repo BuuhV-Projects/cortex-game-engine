@@ -528,11 +528,32 @@ body.app-preview-fullscreen #preview-container {
 }
 .ide .cge-insp-btn {
   width: 100%;
-  border-style: dashed;
 }
-.ide .cge-insp-btn.stop {
+/* Só os botões de "adicionar" (+) são tracejados. */
+.ide .cge-insp-btn.is-add {
+  border-style: dashed;
+  border-color: var(--line-2);
+}
+.ide .cge-insp-btn.stop,
+.ide .cge-insp-action.stop {
   color: var(--stop);
   border-color: color-mix(in oklch, var(--stop) 40%, transparent);
+}
+/* Botão de ação compacto (▶/⏹), inline com o select. */
+.ide .cge-insp-action {
+  flex: 0 0 auto;
+  padding: 0 9px;
+  height: 26px;
+  gap: 5px;
+}
+/* Linha de botões de ação agrupados (▶ Tocar · ⏹ Parar). */
+.ide .cge-btn-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ide .cge-btn-row .cge-insp-action {
+  flex: 1 1 auto;
 }
 
 /* Painel inferior — Console + Terminal com abas */

@@ -1,6 +1,12 @@
 import { t } from './i18n'
 import { h, icon } from './ui'
 
+/** Botão de ação compacto (play/stop) — agrupado/inline no inspector. */
+function isActionBtn(label?: string): boolean {
+  const l = (label ?? '').trim()
+  return l.startsWith('▶') || l.startsWith('⏹')
+}
+
 /** Ícone + cor por tipo de Object3D na hierarquia (estilo Layout A). */
 function typeMeta(type: string): { icon: string; color: string } {
   const t = type.toLowerCase()
@@ -290,7 +296,27 @@ export class EditorPanels {
 
     for (const section of model.sections) {
       const body = h('div', { class: 'sec-b' })
-      for (const f of section.fields) body.append(this.buildField(f))
+      const fs = section.fields
+      let i = 0
+      while (i < fs.length) {
+        const f = fs[i]!
+        const next = fs[i + 1]
+        // select + botão de ação (▶/⏹) → uma linha só (select cresce, botão compacto).
+        if (f.kind === 'select' && next && next.kind === 'button' && isActionBtn(next.label)) {
+          body.append(this.buildSelectAction(f, next))
+          i += 2
+          continue
+        }
+        // sequência de botões de ação → agrupa numa linha (ex.: ▶ Tocar · ⏹ Parar).
+        if (f.kind === 'button' && isActionBtn(f.label)) {
+          const group: Field[] = []
+          while (i < fs.length && fs[i]!.kind === 'button' && isActionBtn(fs[i]!.label)) group.push(fs[i++]!)
+          body.append(h('div', { class: 'cge-btn-row' }, ...group.map((g) => this.buildButton(g, true))))
+          continue
+        }
+        body.append(this.buildField(f))
+        i++
+      }
       const sec = h('div', { class: 'sec' })
       if (section.title) {
         sec.append(h('div', { class: 'sec-h' }, icon('chevD', { size: 12 }), h('span', { class: 'lbl' }, section.title)))
@@ -298,6 +324,17 @@ export class EditorPanels {
       sec.append(body)
       this.inspectorEl.append(sec)
     }
+  }
+
+  /** Linha: rótulo + (select que cresce + botão de ação compacto ▶/⏹). */
+  private buildSelectAction(sel: Field, btn: Field): HTMLElement {
+    return h('div', { class: 'field cge-field-action' },
+      h('span', { class: 'k' }, sel.label ?? ''),
+      h('div', { class: 'row gap-6', style: { minWidth: '0' } },
+        h('label', { class: 'num cge-insp-select', style: { flex: '1 1 auto', minWidth: '0' } }, this.selectControl(sel)),
+        this.buildButton(btn, true),
+      ),
+    )
   }
 
   private buildField(f: Field): HTMLElement {
@@ -371,7 +408,7 @@ export class EditorPanels {
     return h('div', { class: 'kv' }, h('span', { class: 'k' }, f.label ?? ''), tog)
   }
 
-  private buildSelect(f: Field): HTMLElement {
+  private selectControl(f: Field): HTMLSelectElement {
     const sel = h('select', {
       onChange: () => this.send({ type: 'field', id: f.id, value: sel.value }),
     }) as HTMLSelectElement
@@ -385,7 +422,11 @@ export class EditorPanels {
     this.updaters.set(f.id, (nf) => {
       if (document.activeElement !== sel) sel.value = String(nf.value)
     })
-    return h('div', { class: 'field' }, h('span', { class: 'k' }, f.label ?? ''), h('label', { class: 'num cge-insp-select' }, sel))
+    return sel
+  }
+
+  private buildSelect(f: Field): HTMLElement {
+    return h('div', { class: 'field' }, h('span', { class: 'k' }, f.label ?? ''), h('label', { class: 'num cge-insp-select' }, this.selectControl(f)))
   }
 
   private buildColor(f: Field): HTMLElement {
@@ -401,9 +442,13 @@ export class EditorPanels {
     return h('div', { class: 'kv' }, h('span', { class: 'k' }, f.label ?? ''), input)
   }
 
-  private buildButton(f: Field): HTMLElement {
+  private buildButton(f: Field, compact = false): HTMLElement {
+    const add = (f.label ?? '').startsWith('+')
+    const cls = compact
+      ? 'btn ghost sm cge-insp-action'
+      : 'btn ghost sm cge-insp-btn' + (add ? ' is-add' : '')
     return h('button', {
-      class: 'btn ghost sm cge-insp-btn' + (f.variant === 'danger' ? ' stop' : ''),
+      class: cls + (f.variant === 'danger' ? ' stop' : ''),
       onClick: () => this.send({ type: 'button', id: f.id }),
     }, f.label ?? '')
   }
