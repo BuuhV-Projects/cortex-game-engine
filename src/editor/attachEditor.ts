@@ -31,10 +31,12 @@ import {
   createEditorInspector,
   type ColliderApi,
   type MatteApi,
+  type MaterialApi,
   type AnimationApi,
   type PlayerAnimationsApi,
 } from './EditorInspector.js';
 import { setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
+import { applyMaterial, type MaterialConfig } from '../scene/Materials.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import { autoMapPlayerClips } from '../systems/PlatformerAnimationSystem.js';
@@ -624,6 +626,28 @@ export function attachEditor(game: Game): GameEditor {
     },
   };
 
+  // ── Material/shader como propriedade autorável (ADR-0058) ────────────────────
+  // Persiste a MaterialConfig em `overlay.data.material[nome]`; o buildScene
+  // reaplica no boot (overlay > nó JSON). `standard` remove a autoria.
+  const materialMap = (): Record<string, MaterialConfig> => {
+    const m = overlay.data['material'];
+    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, MaterialConfig>;
+    const o: Record<string, MaterialConfig> = {};
+    overlay.data['material'] = o;
+    return o;
+  };
+  const materialApi: MaterialApi = {
+    get: (obj) => (obj.name ? (materialMap()[obj.name] ?? null) : null),
+    set: (obj, config) => {
+      applyMaterial(obj, config);
+      if (obj.name) {
+        if (config.type === 'standard') delete materialMap()[obj.name];
+        else materialMap()[obj.name] = config;
+      }
+      persist();
+    },
+  };
+
   // ── Animação (escolher clipe + play/stop + loop/velocidade), persistida ──────
   // Lê o SceneAnimator de `userData.cortexAnim` (criado pelo buildScene) e grava em
   // `overlay.data.animation[id]` — o buildScene reaplica no boot (overlay > nó JSON).
@@ -751,6 +775,7 @@ export function attachEditor(game: Game): GameEditor {
     registry,
     colliderApi,
     matteApi,
+    materialApi,
     animationApi,
     playerAnimationsApi,
     writeBack: writeBackTransform,
@@ -829,7 +854,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, matteApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, matteApi, materialApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),

@@ -8,7 +8,7 @@
 
 > **MaterialConfig** = \{ `type`: `"standard"`; \} \| \{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `transparent?`: `boolean`; `type`: `"unlit"`; \} \| \{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `type`: `"toon"`; \}
 
-Defined in: src/scene/Materials.ts:41
+Defined in: [src/scene/Materials.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L41)
 
 Configuração de material por objeto (data-driven; vai no nó da cena/overlay).
 

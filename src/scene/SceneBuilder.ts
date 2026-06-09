@@ -175,6 +175,23 @@ export function overlayMatte(overlay: SceneFileV1 | null | undefined): Record<st
 }
 
 /**
+ * Lê `data.material` da overlay — o material/shader **autorado no editor** por id
+ * (`{ [id]: MaterialConfig }`, ADR-0058). Sobrescreve o `material` do nó (JSON).
+ * Ausência = sem opinião (cai pro nó). Ver {@link applyMaterial}.
+ */
+export function overlayMaterial(overlay: SceneFileV1 | null | undefined): Record<string, MaterialConfig> {
+  const raw = overlay?.data?.['material'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, MaterialConfig> = {};
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (v && typeof v === 'object' && typeof (v as { type?: unknown }).type === 'string') {
+      out[id] = v as MaterialConfig;
+    }
+  }
+  return out;
+}
+
+/**
  * Lê `data.animation` da overlay — a animação **autorada no editor** por id
  * (`{ [id]: { clip?, loop?, speed?, autoplay? } }`). Sobrescreve o `animation` do
  * nó (JSON), que por sua vez vence o código. Ver {@link SceneAnimator}.
@@ -239,6 +256,7 @@ export async function buildScene(
   const overrides = overlay?.objects ?? {};
   const editorColliders = overlayColliders(overlay);
   const editorMatte = overlayMatte(overlay);
+  const editorMaterial = overlayMaterial(overlay);
   const editorAnim = overlayAnimation(overlay);
   const editorPlayerAnim = overlayPlayerAnimations(overlay);
 
@@ -303,7 +321,9 @@ export async function buildScene(
       if (editorMatte[node.id] ?? node.matte ?? options.matte) setMatte(obj);
       // Material/shader por objeto (ADR-0058) — aplicado DEPOIS do matte, então
       // um `material` (unlit/toon) que troca a malha vence o tweak de matte.
-      if (node.material) applyMaterial(obj, node.material as MaterialConfig);
+      // Precedência: overlay do editor (autorado) > nó (JSON).
+      const matCfg = editorMaterial[node.id] ?? node.material;
+      if (matCfg) applyMaterial(obj, matCfg as MaterialConfig);
     }
 
     // Animação: modelos `.glb` com clipes ganham um SceneAnimator (em

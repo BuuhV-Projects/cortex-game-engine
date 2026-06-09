@@ -1,7 +1,7 @@
 # 0058 - Sistema de materiais/shader por objeto
 
 **Data:** 2026-06-09
-**Status:** aceito (S1: presets standard/unlit/toon; pendente: S2 GLSL custom, S3 UI no inspector)
+**Status:** aceito (S1 presets standard/unlit/toon + S3 UI no inspector/persistência; pendente: S2 GLSL custom)
 
 ## Contexto
 

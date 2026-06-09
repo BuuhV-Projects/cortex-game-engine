@@ -73,4 +73,16 @@ describe('buildScene — campo material', () => {
     expect(obj.material).toBeInstanceOf(MeshBasicMaterial);
     expect(getMaterialType(obj)).toBe('unlit');
   });
+
+  it('overlay.data.material vence o material do nó (autoria do editor)', async () => {
+    const def: SceneDefinition = {
+      version: 1,
+      nodes: [{ type: 'primitive', id: 'b', shape: 'box', size: 1, material: { type: 'standard' } }],
+    };
+    const overlay = { version: 1 as const, objects: {}, data: { material: { b: { type: 'toon', gradientSteps: 3 } } } };
+    const handle = await buildScene(new Scene(), def, { overlay });
+    const obj = handle.byId.get('b') as Mesh;
+    expect(obj.material).toBeInstanceOf(MeshToonMaterial); // overlay (toon) venceu o nó (standard)
+    expect(getMaterialType(obj)).toBe('toon');
+  });
 });

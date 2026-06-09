@@ -8,7 +8,7 @@
 
 > **overlayAnimation**(`overlay`): `Record`\<`string`, [`AnimationConfig`](../type-aliases/AnimationConfig.md)\>
 
-Defined in: [src/scene/SceneBuilder.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L182)
+Defined in: [src/scene/SceneBuilder.ts:199](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L199)
 
 Lê `data.animation` da overlay — a animação **autorada no editor** por id
 (`{ [id]: { clip?, loop?, speed?, autoplay? } }`). Sobrescreve o `animation` do

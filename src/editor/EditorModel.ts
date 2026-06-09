@@ -2,7 +2,8 @@ import type { Object3D, Mesh } from 'three';
 import { MathUtils } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
-import type { ColliderApi, MatteApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
+import type { MaterialConfig } from '../scene/Materials.js';
+import type { ColliderApi, MatteApi, MaterialApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
 
 /**
  * **Modelo declarativo do editor** (ADR-0056). Descreve a hierarquia e o inspector
@@ -135,6 +136,7 @@ export interface DescribedInspector {
 export interface InspectorContext {
   colliderApi?: ColliderApi;
   matteApi?: MatteApi;
+  materialApi?: MaterialApi;
   animationApi?: AnimationApi;
   playerAnimationsApi?: PlayerAnimationsApi;
   /**
@@ -177,6 +179,13 @@ export function createObjectRegistry(): ObjectRegistry {
 
 function isInternal(obj: Object3D): boolean {
   return obj.userData?.['editorInternal'] === true;
+}
+
+/** Normaliza uma cor (`#rrggbb` ou número) pra `#rrggbb` (pro campo de cor). */
+function colorToHex(color: unknown): string {
+  if (typeof color === 'string') return color.startsWith('#') ? color : `#${color}`;
+  if (typeof color === 'number') return `#${color.toString(16).padStart(6, '0')}`;
+  return '#ffffff';
 }
 
 function firstMesh(obj: Object3D): Mesh | null {
@@ -309,6 +318,63 @@ export function describeInspector(
     else if (on) setMatte(obj);
     else clearMatte(obj);
   });
+
+  // ── Shader / material por objeto (ADR-0058) ──────────────────────────────────
+  // Só pra objetos com malha (luzes/grupos vazios não têm material). Preset +
+  // parâmetros; o materialApi aplica ao vivo e persiste no overlay.
+  if (ctx.materialApi && mesh) {
+    const api = ctx.materialApi;
+    const cur = api.get(obj);
+    const type = cur?.type ?? 'standard';
+    const fields: InspectorField[] = [
+      {
+        kind: 'select',
+        id: fid('shader'),
+        label: 'Shader',
+        value: type,
+        options: [
+          { value: 'standard', label: 'Padrão (PBR)' },
+          { value: 'unlit', label: 'Unlit (fullbright)' },
+          { value: 'toon', label: 'Toon (cel)' },
+        ],
+      },
+    ];
+    // Trocar o preset cria uma config nova com defaults e re-descreve (mostra os params).
+    handlers.set(fid('shader'), (v) => {
+      const t = v as string;
+      const cfg: MaterialConfig =
+        t === 'unlit' ? { type: 'unlit', color: '#ffffff' }
+        : t === 'toon' ? { type: 'toon', gradientSteps: 3, outline: 0 }
+        : { type: 'standard' };
+      api.set(obj, cfg);
+      return { rebuild: true };
+    });
+
+    if (type === 'unlit') {
+      const c = cur as Extract<MaterialConfig, { type: 'unlit' }>;
+      fields.push(
+        { kind: 'color', id: fid('matColor'), label: 'Cor', value: colorToHex(c.color) },
+        { kind: 'checkbox', id: fid('matTwoSided'), label: 'Dois lados', value: c.cull === 'none' },
+        { kind: 'checkbox', id: fid('matTransp'), label: 'Transparente', value: !!c.transparent },
+      );
+      handlers.set(fid('matColor'), (v) => api.set(obj, { ...c, color: v as string }));
+      handlers.set(fid('matTwoSided'), (v) => api.set(obj, { ...c, cull: (v as boolean) ? 'none' : 'back' }));
+      handlers.set(fid('matTransp'), (v) => api.set(obj, { ...c, transparent: v as boolean }));
+    } else if (type === 'toon') {
+      const c = cur as Extract<MaterialConfig, { type: 'toon' }>;
+      fields.push(
+        { kind: 'color', id: fid('matColor'), label: 'Cor', value: colorToHex(c.color) },
+        { kind: 'number', id: fid('matSteps'), label: 'Bandas', value: c.gradientSteps ?? 3, step: 1 },
+        { kind: 'number', id: fid('matOutline'), label: 'Contorno', value: c.outline ?? 0, step: 0.01 },
+      );
+      handlers.set(fid('matColor'), (v) => api.set(obj, { ...c, color: v as string }));
+      handlers.set(fid('matSteps'), (v) =>
+        api.set(obj, { ...c, gradientSteps: Math.max(2, Math.min(8, Math.round(v as number))) }),
+      );
+      handlers.set(fid('matOutline'), (v) => api.set(obj, { ...c, outline: Math.max(0, v as number) }));
+    }
+    sections.push({ title: 'Shader', fields });
+  }
 
   // ── Animação (modelos .glb com clipes) ────────────────────────────────────────
   const animState = ctx.animationApi?.get(obj) ?? null;

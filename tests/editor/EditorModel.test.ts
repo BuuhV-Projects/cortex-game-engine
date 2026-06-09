@@ -8,10 +8,12 @@ import { describe, it, expect } from 'vitest';
 import { Mesh, Object3D, Group } from 'three';
 import {
   createObjectRegistry,
-  describeOutliner,
   describeInspector,
+  describeOutliner,
   type InspectorField,
 } from '../../src/editor/EditorModel.js';
+import type { MaterialApi } from '../../src/editor/EditorInspector.js';
+import type { MaterialConfig } from '../../src/scene/Materials.js';
 
 function allFields(model: { sections: { fields: InspectorField[] }[] }): InspectorField[] {
   return model.sections.flatMap((s) => s.fields);
@@ -129,5 +131,47 @@ describe('describeInspector', () => {
       reg,
     );
     expect(field(model, 'cldAdd')?.kind).toBe('button');
+  });
+});
+
+describe('describeInspector — Shader (material)', () => {
+  function fakeMaterialApi(): { api: MaterialApi; saved: () => MaterialConfig | null } {
+    let saved: MaterialConfig | null = null;
+    return {
+      api: { get: () => saved, set: (_o, c) => { saved = c; } },
+      saved: () => saved,
+    };
+  }
+
+  it('mostra a seção Shader (select) e o handler aplica via materialApi + pede rebuild', () => {
+    const reg = createObjectRegistry();
+    const mesh = new Mesh();
+    mesh.name = 'Hero';
+    const { api, saved } = fakeMaterialApi();
+
+    const first = describeInspector(mesh, { materialApi: api }, reg);
+    const sel = field(first.model, 'shader');
+    expect(sel?.kind).toBe('select');
+    expect((sel as { value: string }).value).toBe('standard'); // sem autoria
+
+    const res = first.handlers.get(sel!.id)!('unlit');
+    expect(saved()).toEqual({ type: 'unlit', color: '#ffffff' });
+    expect(res).toEqual({ rebuild: true });
+
+    // re-descreve: unlit agora expõe cor + dois lados + transparente
+    const again = describeInspector(mesh, { materialApi: api }, reg);
+    expect(field(again.model, 'matColor')?.kind).toBe('color');
+    expect(field(again.model, 'matTwoSided')?.kind).toBe('checkbox');
+    again.handlers.get(field(again.model, 'matTwoSided')!.id)!(true);
+    expect((saved() as { cull?: string }).cull).toBe('none');
+  });
+
+  it('não mostra Shader sem malha (ex.: Object3D vazio)', () => {
+    const reg = createObjectRegistry();
+    const empty = new Object3D();
+    empty.name = 'Empty';
+    const { api } = fakeMaterialApi();
+    const { model } = describeInspector(empty, { materialApi: api }, reg);
+    expect(model.sections.find((s) => s.title === 'Shader')).toBeUndefined();
   });
 });

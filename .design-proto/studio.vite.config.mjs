@@ -83,6 +83,12 @@ const STUB_BODY = `
           { kind: 'checkbox', id: 'p:recv', label: 'Recebe sombra', value: true },
         ] },
         { title: 'Material', fields: [ { kind: 'checkbox', id: 'p:matte', label: 'Fosco (matte)', value: false } ] },
+        { title: 'Shader', fields: [
+          { kind: 'select', id: 'p:shader', label: 'Shader', value: 'unlit', options: [ {value:'standard',label:'Padrão (PBR)'}, {value:'unlit',label:'Unlit (fullbright)'}, {value:'toon',label:'Toon (cel)'} ] },
+          { kind: 'color', id: 'p:matColor', label: 'Cor', value: '#ffffff' },
+          { kind: 'checkbox', id: 'p:matTwoSided', label: 'Dois lados', value: false },
+          { kind: 'checkbox', id: 'p:matTransp', label: 'Transparente', value: false },
+        ] },
         { title: 'Collider', fields: [
           { kind: 'select', id: 'p:shape', label: 'Forma', value: 'box', options: [
             { value: 'box', label: 'Caixa' }, { value: 'circle', label: 'Círculo' }, { value: 'capsule', label: 'Cápsula' } ] },

@@ -151,6 +151,7 @@
 - [overlayAnimation](functions/overlayAnimation.md)
 - [overlayColliders](functions/overlayColliders.md)
 - [overlayDeleted](functions/overlayDeleted.md)
+- [overlayMaterial](functions/overlayMaterial.md)
 - [overlayMatte](functions/overlayMatte.md)
 - [overlayPlayerAnimations](functions/overlayPlayerAnimations.md)
 - [parseKit](functions/parseKit.md)

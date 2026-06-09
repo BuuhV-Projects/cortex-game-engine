@@ -1,5 +1,6 @@
 import type { Object3D } from 'three';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
+import type { MaterialConfig } from '../scene/Materials.js';
 import type { EditorSelection } from './EditorSelection.js';
 import {
   describeInspector,
@@ -84,6 +85,18 @@ export interface MatteApi {
   set(obj: Object3D, value: boolean): void;
 }
 
+/**
+ * Ponte de autoria do **material/shader** do objeto (ADR-0058): o inspector
+ * escolhe o preset (standard/unlit/toon) e os parâmetros por aqui. Implementada
+ * pelo `attachEditor` contra `applyMaterial` + a overlay (`data.material[nome]`),
+ * pra o material ficar autorado (sobrevive ao reload). `get` devolve a config
+ * autorada, ou `null` (= standard / não autorado).
+ */
+export interface MaterialApi {
+  get(obj: Object3D): MaterialConfig | null;
+  set(obj: Object3D, config: MaterialConfig): void;
+}
+
 /** Estado de animação do objeto selecionado (clipes do `.glb`). */
 export interface AnimationEditState {
   /** Nomes dos clipes disponíveis. */
@@ -153,6 +166,8 @@ export interface EditorInspectorOptions {
   colliderApi?: ColliderApi;
   /** Opcional: autoria/persistência do toggle Fosco (matte). Ver {@link MatteApi}. */
   matteApi?: MatteApi;
+  /** Opcional: autoria/persistência do material/shader por objeto. Ver {@link MaterialApi}. */
+  materialApi?: MaterialApi;
   /** Opcional: controle/persistência de animação (escolher clipe, play/stop). Ver {@link AnimationApi}. */
   animationApi?: AnimationApi;
   /** Opcional: mapa ação→clipe do player (idle/run/jump/…). Ver {@link PlayerAnimationsApi}. */
@@ -185,12 +200,13 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     parent = document.body,
     colliderApi,
     matteApi,
+    materialApi,
     animationApi,
     playerAnimationsApi,
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, matteApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, matteApi, materialApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [
