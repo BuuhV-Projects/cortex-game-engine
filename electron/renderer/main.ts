@@ -9,6 +9,7 @@ import { Shell } from './Shell'
 import { LeftDock } from './LeftDock'
 import { EditorPanels } from './EditorPanels'
 import { AssetInspector } from './AssetInspector'
+import { DocTabs } from './DocTabs'
 import { applyTheme } from './theme'
 import { initI18n } from './i18n'
 import { showWelcomeModal } from './Welcome'
@@ -44,6 +45,8 @@ const fileTree = new FileTree(leftDock.filesPane)
 const editorPanels = new EditorPanels(leftDock.hierarchyPane, inspectorContainer)
 // Painel "Asset · GLB" — overlay no dock direito quando um .glb está aberto.
 const assetInspector = new AssetInspector(inspectorContainer)
+// Doc-tabs do centro: Cena · start + abas dos arquivos abertos (código/glb/…).
+const docTabs = new DocTabs(document.getElementById('doc-tabs') as HTMLElement)
 const editor = new Editor(editorContainer)
 const preview = new Preview(previewContainer)
 const bottomPanel = new BottomPanel(consoleContainer)
@@ -57,6 +60,7 @@ new Launcher()
 fileTree.init()
 editorPanels.init()
 assetInspector.init()
+docTabs.init()
 editor.init()
 preview.init()
 bottomPanel.init()

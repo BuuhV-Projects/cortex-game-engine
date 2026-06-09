@@ -238,6 +238,37 @@ export class Editor {
       }
     })
 
+    // DocTabs (barra unificada) pede pra mostrar/fechar um doc já aberto.
+    document.addEventListener('doc-show', (e) => {
+      const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail
+      if (GlbPreview.handles(name)) {
+        this.hideImagePreview()
+        void this.glbPreview?.open(path, name)
+        this.notifyEmptyState()
+        this.notifyDoc('glb')
+      } else if (isImageFile(name)) {
+        this.glbPreview?.close()
+        void this.openImagePreview(path, name)
+        this.notifyDoc('preview')
+      } else if (isMarkdownFile(name)) {
+        this.glbPreview?.close()
+        void this.openMarkdownPreview(path, name)
+        this.notifyDoc('preview')
+      } else {
+        this.glbPreview?.close()
+        this.hideImagePreview()
+        if (this.tabs.has(path)) this.activateTab(path)
+        else void this.openFile(path, name)
+        this.notifyDoc('code')
+      }
+    })
+    document.addEventListener('doc-close', (e) => {
+      const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail
+      if (GlbPreview.handles(name)) this.glbPreview?.close()
+      else if (isImageFile(name) || isMarkdownFile(name)) this.hideImagePreview()
+      else this.closeTab(path)
+    })
+
     // Pre-carrega models pra todos os fontes do projeto. Sem isso, o
     // TypeScript service do Monaco não sabe que arquivos como
     // `./scenes/RaceScene` existem e o Ctrl+click no import nem chega
@@ -324,6 +355,9 @@ export class Editor {
     this.container.innerHTML = ''
     const tabsBar = document.createElement('div')
     tabsBar.className = 'editor-tabs'
+    // A barra de abas unificada (DocTabs, no topo do #center) substitui esta —
+    // mantida só pra a lógica interna de tabs (render/ativar), escondida na UI.
+    tabsBar.style.display = 'none'
     const editorArea = document.createElement('div')
     editorArea.className = 'editor-area'
     this.container.appendChild(tabsBar)

@@ -30,6 +30,10 @@ export class AssetInspector {
     document.addEventListener('glb-asset', (e) => this.show((e as CustomEvent<GlbAsset>).detail))
     document.addEventListener('glb-asset-close', () => this.hide())
     document.addEventListener('project-close', () => this.hide())
+    // Trocar pra Cena/código esconde o Asset (o glb fica aberto, só não está ativo).
+    document.addEventListener('editor-doc-change', (e) => {
+      if ((e as CustomEvent<{ kind: string }>).detail.kind !== 'glb') this.hide()
+    })
   }
 
   private hide(): void {

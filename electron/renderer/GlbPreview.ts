@@ -56,11 +56,6 @@ export class GlbPreview {
     studio.append(
       h('div', { style: { position: 'absolute', top: '10px', left: '12px' } },
         h('span', { class: 'vp-pill' }, h('span', { style: { fontSize: '9px', fontWeight: '800', color: 'var(--accent)', fontFamily: 'var(--mono)' } }, '3D'), fileId)),
-      h('div', { class: 'row gap-4', style: { position: 'absolute', top: '10px', right: '12px' } },
-        h('span', { class: 'vp-pill', title: 'Grade', style: { width: '30px', padding: '0', justifyContent: 'center', cursor: 'pointer' }, onClick: () => this.toggleGrid() }, icon('grid', { size: 15 })),
-        h('span', { class: 'vp-pill', title: 'Reenquadrar', style: { width: '30px', padding: '0', justifyContent: 'center', cursor: 'pointer' }, onClick: () => { if (this.model) this.frameModel(this.model) } }, icon('refresh', { size: 14 })),
-        h('span', { class: 'vp-pill', title: 'Fechar preview', style: { width: '30px', padding: '0', justifyContent: 'center', cursor: 'pointer' }, onClick: () => { this.close(); this.onClose?.() } }, icon('close', { size: 13 })),
-      ),
       h('div', { style: { position: 'absolute', bottom: '10px', left: '12px' } }, meta),
     )
 
@@ -90,8 +85,10 @@ export class GlbPreview {
     this.listEl = list
     const animCount = h('span', { class: 'count' }, '0')
     this.animCountEl = animCount
+    const animSearch = h('input', { placeholder: 'Filtrar clipes…', onInput: () => this.filterAnims(animSearch.value) }) as HTMLInputElement
     const animpanel = h('div', { class: 'animpanel' },
       h('div', { class: 'panel-h' }, h('span', { class: 'ttl lit' }, 'Animações'), animCount, h('span', { class: 'spacer' })),
+      h('div', { style: { padding: '8px 8px 4px' } }, h('div', { class: 'search' }, icon('search', { size: 13 }), animSearch)),
       list,
     )
 
@@ -256,7 +253,7 @@ export class GlbPreview {
     }
     this.current = next
     this.currentIndex = i
-    this.playBtn.classList.add('on')
+    this.setPlayIcon(true)
     this.markActive(i)
   }
 
@@ -264,6 +261,7 @@ export class GlbPreview {
     this.mixer?.stopAllAction()
     this.current = null
     this.currentIndex = -1
+    this.setPlayIcon(false)
     this.markActive(-1)
   }
 
@@ -273,7 +271,25 @@ export class GlbPreview {
       return
     }
     this.current.paused = !this.current.paused
-    this.playBtn.classList.toggle('on', !this.current.paused)
+    this.setPlayIcon(!this.current.paused)
+  }
+
+  /** Ícone do botão principal: pause enquanto toca, play quando parado/pausado. */
+  private setPlayIcon(playing: boolean): void {
+    this.playBtn.textContent = ''
+    this.playBtn.append(icon(playing ? 'pause' : 'play', { size: 15, fill: !playing }))
+    this.playBtn.classList.toggle('on', playing)
+  }
+
+  /** Filtra a lista de animações por nome (busca do painel). */
+  private filterAnims(q: string): void {
+    const query = q.toLowerCase()
+    for (const el of Array.from(this.listEl.querySelectorAll('.anim-row'))) {
+      const row = el as HTMLElement
+      if (row.classList.contains('stop')) continue
+      const name = row.querySelector('.nm')?.textContent?.toLowerCase() ?? ''
+      row.style.display = !query || name.includes(query) ? '' : 'none'
+    }
   }
 
   private replay(): void {
