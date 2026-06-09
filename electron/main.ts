@@ -453,6 +453,7 @@ const VENDOR_TYPE_MODULES = {
     'SceneAnimator',
     'Platformer',
     'SceneAssets',
+    'Materials',
     'OutdoorLighting',
     'Water',
     'Sprite',
