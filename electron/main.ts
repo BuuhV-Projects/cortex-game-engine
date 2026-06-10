@@ -24,9 +24,14 @@ import { writePlaceholderIcons } from './installer-icons.js'
  * diretórios que existem no disco — candidatos ausentes são ignorados em
  * silêncio (ferramenta não instalada é problema do usuário resolver).
  */
-function envForSpawn(): NodeJS.ProcessEnv {
+function envForSpawn(projectDir?: string): NodeJS.ProcessEnv {
   const env = { ...process.env }
   const candidates = [
+    // `node_modules/.bin` do PROJETO primeiro — garante rodar o `vite`/`tsc` LOCAL
+    // (resolve as deps do próprio projeto). Sem isso, `spawn('vite')` dependia de
+    // um vite GLOBAL no PATH (versão diferente) e o dev server falhava com
+    // "Cannot find package 'vite'" mesmo com o vite instalado no projeto.
+    projectDir ? join(projectDir, 'node_modules', '.bin') : null,
     join(homedir(), '.cargo', 'bin'),
     env.APPDATA ? join(env.APPDATA, 'npm') : null, // npm global no Windows (yarn.cmd, etc.)
     env.ProgramFiles ? join(env.ProgramFiles, 'nodejs') : null, // node + corepack
@@ -987,7 +992,7 @@ ipcMain.handle('run:start', async (_event, projectDir: unknown) => {
   const child = spawn('vite', [], {
     cwd: safeDir,
     shell: true,
-    env: envForSpawn(),
+    env: envForSpawn(safeDir),
   })
 
   runningProcess = child
@@ -1035,7 +1040,7 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
   const child = spawn(command, [], {
     cwd: safeDir,
     shell: true,
-    env: envForSpawn(),
+    env: envForSpawn(safeDir),
   })
 
   terminalProcess = child
