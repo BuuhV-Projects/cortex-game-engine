@@ -1,3 +1,30 @@
+# [0.21.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.20.0...v0.21.0) (2026-06-09)
+
+
+### Bug Fixes
+
+* **editor:** editar transform pelo inspector escreve no ECS (rotação não revertia) ([ff0a3a1](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ff0a3a143ba9545826281a481f7a18a44be00c3b))
+* **editor:** F (focar) em objeto sem geometria foca na posição, não na origem ([70b7fbb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/70b7fbbab4f6894b08b5934b3fd58dd31c7e9aae))
+* **editor:** helpers de luz/câmera não roubam o clique nem tampam a cena ([dbe9858](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dbe985898895785480077fda7a2d9d3cc84b607a))
+* **engine:** FollowCamera2D pausa no editor (não briga com a câmera no edit) ([f5aea8d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f5aea8d69dfeb3792511387acea00b9e6a0fd0f9))
+* **ide:** inspector de animação/ações do player menos poluído ([88ba1ba](https://github.com/BuuhV-Projects/cortex-game-engine/commit/88ba1ba766b8665cfd3ee3f3d1183751b558daf3))
+* **ide:** remove o botão + do dock esquerdo (sem função) ([5b15a42](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5b15a424dff37936ca5f8e45af751b9e3784c426))
+* **ide:** scroll da hierarquia, busca da aba Projeto e limpeza da toolbar ([fb40dd8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fb40dd8603e64a5526e67b471e0f38398f5ce439))
+
+
+### Features
+
+* **editor:** câmera desacelera perto de superfícies + hierarquia colapsada por padrão ([597322a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/597322adbdf4d55c0c435b9a6a8f1af2d1669f32))
+* **editor:** câmera livre mais lenta + tecla 0 vê pela câmera do jogo ([be39084](https://github.com/BuuhV-Projects/cortex-game-engine/commit/be3908409ddf486723ee33c2f929b5f6bb972ee2))
+* **ide:** casca do redesign — menubar + toolbar + janela frameless (Layout A) ([4c61e2b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4c61e2bce25c6cdbc8d5cf9c4833bedd333cf5c8))
+* **ide:** doc-tabs (Cena + arquivos) + ajustes do preview GLB ([eb5b43b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/eb5b43bca68912539172dd8a5e0daad5dacef0ba))
+* **ide:** docks do Layout A — hierarquia/projeto à esq, inspector à dir ([75274e5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/75274e555166e679b096559bb129d42e87e2c0e1))
+* **ide:** fundação do redesign — tema cortex-dark + fontes + design-system ([7dd351c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7dd351ce815227295c4f445cfdcae0bd62d20b07))
+* **ide:** preview 3D (GLB) redesenhado + Asset inspector + dock contextual ([8e649a6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8e649a6fffd86e8dae8ccbc09b30013fa2557ca1))
+* **ide:** reskin do inspector/hierarquia pro Layout A (ADR-0056) ([5698dae](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5698dae4c54f2c7be51aa4a5db6300048faab4fa))
+* **ide:** transport controla a gameplay (Unity-style) + pause no engine ([fa129a6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fa129a67fb81d9063ffa5cceb81e49b88c4be4c7))
+* **ide:** viewport limpo — HUD vira pills flutuantes (Layout A 100%) ([a28046d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a28046d808ed05d56776ddc0d7966963b29acfae))
+
 # [0.20.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.19.0...v0.20.0) (2026-06-08)
 
 
