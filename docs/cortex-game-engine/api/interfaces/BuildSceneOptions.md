@@ -6,7 +6,7 @@
 
 # Interface: BuildSceneOptions
 
-Defined in: [src/scene/SceneBuilder.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L73)
+Defined in: [src/scene/SceneBuilder.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L74)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/scene/SceneBuilder.ts:73](https://github.com/BuuhV-Projects/cor
 
 > `optional` **camera?**: `PerspectiveCamera` \| `OrthographicCamera`
 
-Defined in: [src/scene/SceneBuilder.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L101)
+Defined in: [src/scene/SceneBuilder.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L102)
 
 Câmera do jogo — **necessária** se a cena tem nós `background` (o backdrop
 segue a câmera e rola em parallax). Passe `game.camera`.
@@ -25,7 +25,7 @@ segue a câmera e rola em parallax). Passe `game.camera`.
 
 > `optional` **kit?**: \{ `assets`: `Record`\<`string`, \{ `anchors?`: `Record`\<`string`, \{ `at`: \[`number`, `number`, `number`\]; `dir?`: \[`number`, `number`, `number`\]; `kind`: `"surface"` \| `"connect"`; \}\>; `collider?`: \{ `height?`: `number`; `offsetX?`: `number`; `offsetY?`: `number`; `oneWay?`: `boolean`; `points?`: \[`number`, `number`\][]; `shape?`: `"box"` \| `"capsule"` \| `"circle"` \| `"heightfield"`; `solid?`: `boolean`; `width?`: `number`; \}; `gameplayRole?`: `string`[]; `role`: `"background"` \| `"ground"` \| `"platform"` \| `"connector"` \| `"prop"` \| `"hazard"` \| `"collectible"` \| `"decoration"` \| `"cap"` \| `"tile"` \| `"player-start"` \| `"character"` \| `"enemy"`; `size?`: \[`number`, `number`, `number`\]; `sprite?`: \{ `animations?`: `Record`\<`string`, \{ `fps?`: `number`; `frames`: `number`[]; `loop?`: `boolean`; \}\>; `columns?`: `number`; `frameHeight?`: `number`; `frameWidth?`: `number`; `initial?`: `string`; `pixelsPerUnit?`: `number`; `rows?`: `number`; \}; `tags?`: `string`[]; `thumb?`: `string`; \}\>; `module?`: `number`; `name`: `string`; `theme?`: `string`; `version`: `1`; \} \| `object`[]
 
-Defined in: [src/scene/SceneBuilder.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L91)
+Defined in: [src/scene/SceneBuilder.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L92)
 
 Kit(s) de assets (manifesto(s) `kit.json`, ADR-0053). Quando presente: nós
 `model` herdam o **preset de collider por `role`** do kit (se não definirem
@@ -74,7 +74,7 @@ Nome do tema (paleta + atmosfera) — tokens resolvidos à parte (ADR-0053 §3).
 
 > `optional` **matte?**: `boolean`
 
-Defined in: [src/scene/SceneBuilder.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L96)
+Defined in: [src/scene/SceneBuilder.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L97)
 
 Deixa **todos** os modelos foscos (mata o brilho PBR → look cartoon/desenho).
 Um nó pode sobrescrever com `matte: false`. Atalho global do [setMatte](../functions/setMatte.md).
@@ -85,7 +85,7 @@ Um nó pode sobrescrever com `matte: false`. Atalho global do [setMatte](../func
 
 > `optional` **overlay?**: [`SceneFileV1`](SceneFileV1.md) \| `null`
 
-Defined in: [src/scene/SceneBuilder.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L77)
+Defined in: [src/scene/SceneBuilder.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L78)
 
 Overlay do editor (overrides de transform + `data.deleted`/`data.added`).
 
@@ -95,7 +95,7 @@ Overlay do editor (overrides de transform + `data.deleted`/`data.added`).
 
 > `optional` **renderer?**: [`Renderer`](../classes/Renderer.md)
 
-Defined in: [src/scene/SceneBuilder.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L75)
+Defined in: [src/scene/SceneBuilder.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L76)
 
 Necessário se alguma definição usa o preset `outdoorLighting`.
 
@@ -105,7 +105,7 @@ Necessário se alguma definição usa o preset `outdoorLighting`.
 
 > `optional` **world?**: [`World`](../classes/World.md)
 
-Defined in: [src/scene/SceneBuilder.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L84)
+Defined in: [src/scene/SceneBuilder.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L85)
 
 Mundo ECS — quando presente, nós com `collider`/`player` viram entidades
 (Transform + Object3D + Collider2D [+ PlatformerBody + FollowCameraTarget]),

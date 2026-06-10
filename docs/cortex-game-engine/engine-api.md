@@ -161,7 +161,8 @@ em dev, sem fetch).
 Tipos de nó (`type`): `model` (`url` do `.glb`), `primitive` (`shape`:
 box/cylinder/plane/sphere), `light` (`light`: directional/hemisphere/ambient),
 `water`, `background` (backdrop 2D com parallax — ver abaixo), `sprite` (sprite/
-spritesheet 2D — ver abaixo). Campos comuns: `id` (único; vira `Object3D.name` e chave do editor),
+spritesheet 2D — ver abaixo), `terrain` (heightmap horizontal esculpível — ver abaixo).
+Campos comuns: `id` (único; vira `Object3D.name` e chave do editor),
 `place` (grounding: assenta a base em `y`, centra em `x,z` — **use no lugar de
 `y` chutado**) ou `transform` (pose direta), `castShadow`/`receiveShadow`. Cores
 aceitam hex string (`"#9fd6ee"`). Cena: `background`, `fog`, `outdoorLighting`.
@@ -478,6 +479,28 @@ do nó vencem), igual ao preset de `collider` por `role`.
 Imperativo: `loadTexture(url)` → `new Spritesheet(tex, { frameWidth, frameHeight })` →
 `createAnimatedSprite(sheet, anims, { initial })`. (Limites: `collider`/`player` no
 sprite e packing de PNGs separados em uma folha ficam fora desta fase — ver ADR-0057.)
+
+## Terreno heightmap (terrain) — top-down/3D
+
+Nó `terrain` (ADR-0059): um plano horizontal (XZ) subdividido que você **esculpe**
+— `Terrain.sculpt(x, z, raio, delta)` levanta/abaixa a altura (Y) com falloff suave
+(`delta>0` sobe, `<0` abaixa). No editor há a ferramenta de pincel (raise/lower);
+o heightmap esculpido persiste em `overlay.data.terrain[id]`. Combine com a câmera
+top-down pra jogos de fazenda/RPG.
+
+```jsonc
+{ "type": "terrain", "id": "chao", "size": 60, "resolution": 96, "color": "#6ab04c" }
+```
+```ts
+import { Terrain } from 'cortex-game-engine'
+const terrain = new Terrain({ size: 60, resolution: 96 })
+scene.add(terrain.mesh)
+terrain.sculpt(0, 0, 8, 3)        // morro de raio 8 no centro
+const heights = terrain.getHeights() // serializável; terrain.setHeights(...) restaura
+```
+
+`resolution` = segmentos por lado (grade `(res+1)²`). Limites (v1): só raise/lower,
+sem collider ainda (terreno visual); smooth/flatten/pintura de textura vêm depois.
 
 ## Material / shader por objeto (material)
 

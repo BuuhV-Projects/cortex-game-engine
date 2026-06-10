@@ -33,6 +33,7 @@ import { SpriteAnimationComponent } from '../components/SpriteAnimationComponent
 import { SpriteAnimationSystem } from '../systems/SpriteAnimationSystem.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
+import { Terrain } from './Terrain.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import {
   parseSceneNode,
@@ -192,6 +193,20 @@ export function overlayMaterial(overlay: SceneFileV1 | null | undefined): Record
 }
 
 /**
+ * Lê `data.terrain` da overlay — o **heightmap esculpido no editor** por id
+ * (`{ [id]: number[] }`). Sobrescreve o `heights` do nó (JSON). Ver {@link Terrain}.
+ */
+export function overlayTerrain(overlay: SceneFileV1 | null | undefined): Record<string, number[]> {
+  const raw = overlay?.data?.['terrain'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, number[]> = {};
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (Array.isArray(v) && v.every((n) => typeof n === 'number')) out[id] = v as number[];
+  }
+  return out;
+}
+
+/**
  * Lê `data.animation` da overlay — a animação **autorada no editor** por id
  * (`{ [id]: { clip?, loop?, speed?, autoplay? } }`). Sobrescreve o `animation` do
  * nó (JSON), que por sua vez vence o código. Ver {@link SceneAnimator}.
@@ -257,6 +272,7 @@ export async function buildScene(
   const editorColliders = overlayColliders(overlay);
   const editorMatte = overlayMatte(overlay);
   const editorMaterial = overlayMaterial(overlay);
+  const editorTerrain = overlayTerrain(overlay);
   const editorAnim = overlayAnimation(overlay);
   const editorPlayerAnim = overlayPlayerAnimations(overlay);
 
@@ -305,6 +321,11 @@ export async function buildScene(
     }
     const obj = await instantiate(node, scene, three, waters, kit);
     if (!obj) continue;
+    // Terreno: heightmap esculpido no editor (overlay) vence o `heights` do nó (JSON).
+    if (node.type === 'terrain' && editorTerrain[node.id]) {
+      const terrain = (obj.userData as Record<string, unknown>)['cortexTerrain'] as Terrain | undefined;
+      terrain?.setHeights(editorTerrain[node.id]!);
+    }
     // Override do editor (transform exata salva) tem precedência sobre place/transform/attach.
     const ov = overrides[node.id];
     if (ov) {
@@ -575,6 +596,18 @@ async function instantiate(
     case 'sprite': {
       const texture = await loadTexture(node.url, node.pixelated !== false);
       obj = makeSprite(node, texture, kitAssetFor(kit, node.url)?.sprite);
+      three.add(obj);
+      applyPlacement(obj, node);
+      break;
+    }
+    case 'terrain': {
+      const terrain = new Terrain({
+        size: node.size,
+        resolution: node.resolution,
+        heights: node.heights,
+        color: node.color,
+      });
+      obj = terrain.mesh; // o controlador fica em mesh.userData.cortexTerrain (editor esculpe)
       three.add(obj);
       applyPlacement(obj, node);
       break;

@@ -254,6 +254,21 @@ const spriteNode = z.object({
   place: placeSchema,
 });
 
+const terrainNode = z.object({
+  type: z.literal('terrain'),
+  /** Largura × profundidade (XZ) em unidades. Número = quadrado. Default 50. */
+  size: z.union([z.number().positive(), z.tuple([z.number().positive(), z.number().positive()])]).optional(),
+  /** Segmentos por lado (resolução da grade). Default 64. */
+  resolution: z.number().int().positive().optional(),
+  /** Heightmap (row-major, `(res+1)²` alturas) — autoria do editor. */
+  heights: z.array(z.number()).optional(),
+  /** Cor base do material. Default verde-grama. */
+  color: colorSchema.optional(),
+  id: z.string().min(1),
+  transform: transformSchema,
+  place: placeSchema,
+});
+
 const sceneNodeSchema = z.discriminatedUnion('type', [
   modelNode,
   primitiveNode,
@@ -261,6 +276,7 @@ const sceneNodeSchema = z.discriminatedUnion('type', [
   waterNode,
   backgroundNode,
   spriteNode,
+  terrainNode,
 ]);
 
 const sceneDefinitionSchema = z.object({

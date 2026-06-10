@@ -487,6 +487,7 @@ const VENDOR_TYPE_MODULES = {
     'Materials',
     'OutdoorLighting',
     'Water',
+    'Terrain',
     'Sprite',
     'Spritesheet',
     'Tilemap',
