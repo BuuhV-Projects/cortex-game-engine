@@ -1,6 +1,6 @@
 ---
 name: process-asset-kit
-description: Processa um kit de assets 3D bruto (baixado) num kit curado, slim em .glb, com kit.json de vocabulário (design system do engine, ADR-0053). Use quando o usuário pedir para adicionar/importar/processar um pack ou kit de modelos, converter gltf/fbx para glb, mapear o vocabulário de um kit, ou trazer um kit de assets pra dentro do engine.
+description: Processa um kit de assets 3D bruto (baixado) num kit curado, slim em .glb, com kit.json de vocabulário (design system do engine, ADR-0053). Use quando o usuário pedir para adicionar/importar/processar um pack ou kit de modelos 3D, converter gltf/fbx para glb, mapear o vocabulário de um kit, ou trazer um kit de modelos 3D pra dentro do engine. Para SPRITES 2D / pixel art (PNG), use a skill process-asset-kit-2d.
 ---
 
 # Processar kit de assets → kit curado + vocabulário (ADR-0053)
