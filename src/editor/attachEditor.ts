@@ -684,12 +684,14 @@ export function attachEditor(game: Game): GameEditor {
       }
       sculpt = { terrain: terrainOf(obj)!, obj, painting: false };
       editorState.sculptingTerrain = true;
+      objectEditSystem.setGizmoVisible(false); // o gizmo roubaria o clique do pincel
       hud.showToast('Esculpir: CLIQUE/ARRASTE sobe · segure SHIFT pra abaixar');
     },
     stopSculpt: () => {
       saveTerrain();
       sculpt = null;
       editorState.sculptingTerrain = false;
+      objectEditSystem.setGizmoVisible(true); // devolve o gizmo ao objeto selecionado
     },
     setBrush: (radius, strength) => {
       terrainBrush.radius = radius;

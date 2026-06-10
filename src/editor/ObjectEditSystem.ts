@@ -253,6 +253,19 @@ export class ObjectEditSystem extends System {
     this.selection?.setCurrent(target);
   }
 
+  /**
+   * Esconde/mostra o **gizmo** (TransformControls) SEM mexer na seleção — pra
+   * pincéis que precisam do clique no objeto (ex.: esculpir terreno), onde o gizmo
+   * anexado roubaria o ponteiro. `false` desanexa; `true` reanexa ao selecionado.
+   */
+  setGizmoVisible(visible: boolean): void {
+    if (visible) {
+      if (this.selected) this.controls.attach(this.selected);
+    } else {
+      this.controls.detach();
+    }
+  }
+
   private findOwningRoot(obj: THREE.Object3D): THREE.Object3D | null {
     let cur: THREE.Object3D | null = obj;
     while (cur) {
