@@ -4,7 +4,7 @@
  * x/z, aplica rotY/scale) e setShadows. Ver ADR-0039/0040.
  */
 import { describe, it, expect } from 'vitest';
-import { Mesh, BoxGeometry, MeshStandardMaterial, Group } from 'three';
+import { Mesh, BoxGeometry, MeshStandardMaterial, Group, Object3D } from 'three';
 import {
   getWorldBounds,
   placeOnGround,
@@ -12,11 +12,38 @@ import {
   setMatte,
   clearMatte,
   isMatte,
+  instance,
 } from '../../src/scene/SceneAssets.js';
 
 function box(size = 2): Mesh {
   return new Mesh(new BoxGeometry(size, size, size), new MeshStandardMaterial());
 }
+
+describe('instance — frustum culling', () => {
+  function fakeGltf(animated: boolean) {
+    const scene = new Object3D();
+    scene.add(box(1));
+    return { scene, animations: animated ? [{} as never] : [] } as never;
+  }
+  function firstMesh(obj: Object3D): Mesh {
+    let m: Mesh | null = null;
+    obj.traverse((c) => { if (!m && (c as Mesh).isMesh) m = c as Mesh; });
+    return m!;
+  }
+
+  it('recomputa a boundingSphere (evita esfera obsoleta → objeto some no centro)', () => {
+    const obj = instance(fakeGltf(false));
+    expect(firstMesh(obj).geometry.boundingSphere).not.toBeNull();
+  });
+
+  it('desliga frustumCulled em GLB ANIMADO (esfera estática não confiável; ex.: baú que abre)', () => {
+    const animated = instance(fakeGltf(true));
+    expect(firstMesh(animated).frustumCulled).toBe(false);
+    // estático mantém o culling (default true)
+    const stat = instance(fakeGltf(false));
+    expect(firstMesh(stat).frustumCulled).toBe(true);
+  });
+});
 
 describe('getWorldBounds', () => {
   it('mede o bounding box de um cubo na origem', () => {

@@ -1,4 +1,4 @@
-import { Box3, Vector3 } from 'three';
+import { Box3, Vector3, SkinnedMesh } from 'three';
 import type { Object3D, Mesh, Texture } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { AssetLoader, type GLTF } from '../core/AssetLoader.js';
@@ -218,7 +218,25 @@ export function instance(gltf: GLTF, shadows: ShadowOptions = {}): Object3D {
     castShadow: shadows.castShadow ?? true,
     receiveShadow: shadows.receiveShadow ?? true,
   });
+  fixCulling(obj, (gltf.animations?.length ?? 0) > 0);
   return obj;
+}
+
+/**
+ * Conserta o **frustum culling** de um GLB instanciado: recomputa a
+ * `boundingSphere` de cada mesh (clones podem herdar uma esfera obsoleta, fazendo
+ * o objeto **sumir mesmo no centro da tela**) e **desliga** o culling em malhas
+ * cuja esfera estática não é confiável — `SkinnedMesh` ou qualquer mesh de um GLB
+ * **animado** (ex.: baú que abre): a animação move os vértices pra fora da esfera
+ * de descanso e o three corta a malha cedo demais.
+ */
+function fixCulling(obj: Object3D, animated: boolean): void {
+  obj.traverse((child) => {
+    const mesh = child as Mesh;
+    if (!mesh.isMesh) return;
+    mesh.geometry?.computeBoundingSphere();
+    if (animated || (child as SkinnedMesh).isSkinnedMesh) mesh.frustumCulled = false;
+  });
 }
 
 /**
