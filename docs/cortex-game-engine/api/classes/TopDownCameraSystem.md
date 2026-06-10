@@ -6,7 +6,7 @@
 
 # Class: TopDownCameraSystem
 
-Defined in: src/systems/TopDownCameraSystem.ts:46
+Defined in: [src/systems/TopDownCameraSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L46)
 
 **Câmera top-down (vista de cima)** — pra jogos 2D de fazenda/RPG (estilo
 Stardew). Segue o alvo (entidade com [FollowCameraTargetComponent](FollowCameraTargetComponent.md)) no
@@ -36,7 +36,7 @@ game.world.addSystem(cam)
 
 > **new TopDownCameraSystem**(`camera`, `options?`): `TopDownCameraSystem`
 
-Defined in: src/systems/TopDownCameraSystem.ts:59
+Defined in: [src/systems/TopDownCameraSystem.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L59)
 
 #### Parameters
 
@@ -83,7 +83,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: src/systems/TopDownCameraSystem.ts:48
+Defined in: [src/systems/TopDownCameraSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L48)
 
 Prioridade de execução deste sistema.
 
@@ -100,7 +100,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`FollowCameraTargetComponent`](FollowCameraTargetComponent.md))[]
 
-Defined in: src/systems/TopDownCameraSystem.ts:47
+Defined in: [src/systems/TopDownCameraSystem.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L47)
 
 Construtores dos componentes que este sistema requer.
 
@@ -126,7 +126,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **setAngle**(`radians`): `void`
 
-Defined in: src/systems/TopDownCameraSystem.ts:77
+Defined in: [src/systems/TopDownCameraSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L77)
 
 Muda a inclinação (0 = reto pra baixo) em runtime.
 
@@ -146,7 +146,7 @@ Muda a inclinação (0 = reto pra baixo) em runtime.
 
 > **setHeight**(`height`): `void`
 
-Defined in: src/systems/TopDownCameraSystem.ts:72
+Defined in: [src/systems/TopDownCameraSystem.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L72)
 
 Muda a distância/altura da câmera em runtime.
 
@@ -166,7 +166,7 @@ Muda a distância/altura da câmera em runtime.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/TopDownCameraSystem.ts:81
+Defined in: [src/systems/TopDownCameraSystem.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L81)
 
 Executa a lógica do sistema para o frame/passo atual.
 
