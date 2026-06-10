@@ -6,7 +6,7 @@
 
 # Class: InputManager
 
-Defined in: [src/core/InputManager.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L65)
+Defined in: [src/core/InputManager.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L76)
 
 ## Extends
 
@@ -36,7 +36,7 @@ Defined in: node\_modules/typescript/lib/lib.dom.d.ts:14397
 
 > **get** **domElement**(): `HTMLElement` \| `null`
 
-Defined in: [src/core/InputManager.ts:294](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L294)
+Defined in: [src/core/InputManager.ts:305](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L305)
 
 O elemento HTML atualmente anexado, ou `null` se `detach()` foi chamado
 ou `attach()` ainda não foi invocado.
@@ -51,7 +51,7 @@ ou `attach()` ainda não foi invocado.
 
 > **attach**(`domElement`): `void`
 
-Defined in: [src/core/InputManager.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L98)
+Defined in: [src/core/InputManager.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L109)
 
 Registra os listeners de teclado e mouse no `domElement` fornecido.
 Se já houver um elemento anexado, `detach()` é chamado antes.
@@ -74,7 +74,7 @@ Elemento HTML alvo (ex.: `canvas`, `document.body`).
 
 > **detach**(): `void`
 
-Defined in: [src/core/InputManager.ts:193](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L193)
+Defined in: [src/core/InputManager.ts:204](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L204)
 
 Remove todos os listeners do elemento e limpa o estado interno.
 Sem efeito se nenhum elemento estiver anexado.
@@ -89,7 +89,7 @@ Sem efeito se nenhum elemento estiver anexado.
 
 > **getMouseDelta**(): [`MouseDelta`](../interfaces/MouseDelta.md)
 
-Defined in: [src/core/InputManager.ts:282](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L282)
+Defined in: [src/core/InputManager.ts:293](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L293)
 
 Retorna o delta acumulado de movimento do mouse desde a última chamada
 a este método e **reseta** o acumulador interno.
@@ -115,7 +115,7 @@ camera.rotateY(-x * sensitivity);
 
 > **getMousePosition**(): [`MousePosition`](../interfaces/MousePosition.md)
 
-Defined in: [src/core/InputManager.ts:266](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L266)
+Defined in: [src/core/InputManager.ts:277](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L277)
 
 Retorna a posição atual do mouse em coordenadas relativas ao elemento
 anexado.
@@ -133,7 +133,7 @@ mouse ainda não tiver se movido.
 
 > **isButtonDown**(`button`): `boolean`
 
-Defined in: [src/core/InputManager.ts:255](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L255)
+Defined in: [src/core/InputManager.ts:266](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L266)
 
 Retorna `true` se o botão do mouse identificado por `button` estiver
 pressionado.
@@ -162,7 +162,7 @@ if (input.isButtonDown(0)) shoot();
 
 > **isKeyDown**(`key`): `boolean`
 
-Defined in: [src/core/InputManager.ts:242](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L242)
+Defined in: [src/core/InputManager.ts:253](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L253)
 
 Retorna `true` se a tecla identificada por `key` estiver pressionada.
 
