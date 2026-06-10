@@ -44,6 +44,8 @@ import { setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import { applyMaterial, type MaterialConfig } from '../scene/Materials.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
+import { TerrainComponent } from '../components/TerrainComponent.js';
+import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { autoMapPlayerClips } from '../systems/PlatformerAnimationSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { createObjectRegistry } from './EditorModel.js';
@@ -973,16 +975,26 @@ export function attachEditor(game: Game): GameEditor {
     const node: SceneNode = {
       type: 'terrain',
       id: `terrain-${Date.now().toString(36)}`,
-      size: 50,
-      resolution: 64,
+      // Grande e com bastante resolução pra não precisar ESCALAR (escalar deixa a
+      // grade grossa → sculpt pontudo). 128 unidades, ~1u por face.
+      size: 128,
+      resolution: 128,
       transform: { position: [p.x, 0, p.z] },
     };
     void addSceneNode(game.scene, node).then((obj) => {
       if (!obj) return;
       addedList().push(node);
+      // Cria a entidade ECS do terreno + liga a colisão JÁ (addSceneNode só faz o
+      // mesh; sem isso o terreno não era sólido até recarregar). Sólido por padrão.
+      const terrain = (obj.userData as Record<string, unknown>)['cortexTerrain'] as Terrain | undefined;
+      if (terrain) {
+        const e = game.world.createEntity();
+        e.addComponent(new TerrainComponent(terrain, obj));
+        if (!game.world.hasSystem(TerrainCollisionSystem)) game.world.addSystem(new TerrainCollisionSystem());
+      }
       persist();
       selection.requestSelect(obj);
-      hud.showToast('Terreno adicionado — clique "Esculpir" no inspector');
+      hud.showToast('Terreno adicionado (sólido) — clique "Esculpir" no inspector');
     });
   };
 
