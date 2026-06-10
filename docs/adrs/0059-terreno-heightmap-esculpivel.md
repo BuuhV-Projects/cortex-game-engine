@@ -1,7 +1,7 @@
 # 0059 - Terreno heightmap esculpível (estilo Unity)
 
 **Data:** 2026-06-10
-**Status:** aceito (T1: engine — mesh/heightmap/sculpt + nó data-driven; pendente: T2 ferramenta de esculpir no editor)
+**Status:** aceito (T1 engine mesh/heightmap/sculpt + T2 ferramenta de esculpir no editor + T3 colisão sólida; pendente: pintura de textura/splat)
 
 ## Contexto
 

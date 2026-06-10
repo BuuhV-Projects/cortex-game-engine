@@ -31,6 +31,8 @@ import { createSprite } from './Sprite.js';
 import { Spritesheet, createAnimatedSprite } from './Spritesheet.js';
 import { SpriteAnimationComponent } from '../components/SpriteAnimationComponent.js';
 import { SpriteAnimationSystem } from '../systems/SpriteAnimationSystem.js';
+import { TerrainComponent } from '../components/TerrainComponent.js';
+import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
 import { Terrain } from './Terrain.js';
@@ -386,6 +388,18 @@ export async function buildScene(
           e.addComponent(new Object3DComponent(sObj));
           e.addComponent(anim);
           if (!options.world.hasSystem(SpriteAnimationSystem)) options.world.addSystem(new SpriteAnimationSystem());
+        }
+        continue;
+      }
+      // Terreno: vira entidade colidível (sólido por padrão) + liga o
+      // TerrainCollisionSystem (uma vez) — os corpos ficam em cima da superfície.
+      if (node.type === 'terrain') {
+        const tObj = byId.get(node.id)!;
+        const terrain = (tObj.userData as Record<string, unknown>)['cortexTerrain'] as Terrain | undefined;
+        if (terrain) {
+          const e = options.world.createEntity();
+          e.addComponent(new TerrainComponent(terrain, tObj));
+          if (!options.world.hasSystem(TerrainCollisionSystem)) options.world.addSystem(new TerrainCollisionSystem());
         }
         continue;
       }

@@ -43,6 +43,8 @@
 - [System](classes/System.md)
 - [TauriSceneFileWriter](classes/TauriSceneFileWriter.md)
 - [Terrain](classes/Terrain.md)
+- [TerrainCollisionSystem](classes/TerrainCollisionSystem.md)
+- [TerrainComponent](classes/TerrainComponent.md)
 - [ThirdPersonCameraSystem](classes/ThirdPersonCameraSystem.md)
 - [TopDownCameraSystem](classes/TopDownCameraSystem.md)
 - [TransformComponent](classes/TransformComponent.md)

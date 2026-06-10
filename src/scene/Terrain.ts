@@ -141,6 +141,30 @@ export class Terrain {
     return changed;
   }
 
+  /**
+   * Altura (Y **local**) do terreno num ponto `(localX, localZ)` por **interpolação
+   * bilinear** do heightmap — pra colisão/ground (o player fica em cima). Retorna
+   * `null` se o ponto está **fora** da área do terreno. Coords locais (centradas);
+   * use `mesh.worldToLocal` antes pra partir de um ponto de mundo.
+   */
+  heightAt(localX: number, localZ: number): number | null {
+    const hw = this.width / 2;
+    const hd = this.depth / 2;
+    if (localX < -hw || localX > hw || localZ < -hd || localZ > hd) return null;
+    const n = this.resolution + 1;
+    const gx = (localX / this.width + 0.5) * this.resolution; // 0..resolution
+    const gz = (localZ / this.depth + 0.5) * this.resolution;
+    const i0 = Math.min(Math.floor(gx), this.resolution - 1);
+    const j0 = Math.min(Math.floor(gz), this.resolution - 1);
+    const fx = gx - i0;
+    const fz = gz - j0;
+    const h00 = this.heights[j0 * n + i0]!;
+    const h10 = this.heights[j0 * n + i0 + 1]!;
+    const h01 = this.heights[(j0 + 1) * n + i0]!;
+    const h11 = this.heights[(j0 + 1) * n + i0 + 1]!;
+    return (h00 * (1 - fx) + h10 * fx) * (1 - fz) + (h01 * (1 - fx) + h11 * fx) * fz;
+  }
+
   /** Heightmap atual (row-major, `(res+1)²`) — serializável pra persistência. */
   getHeights(): number[] {
     return Array.from(this.heights);

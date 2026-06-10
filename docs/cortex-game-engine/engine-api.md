@@ -499,8 +499,11 @@ terrain.sculpt(0, 0, 8, 3)        // morro de raio 8 no centro
 const heights = terrain.getHeights() // serializável; terrain.setHeights(...) restaura
 ```
 
-`resolution` = segmentos por lado (grade `(res+1)²`). Limites (v1): só raise/lower,
-sem collider ainda (terreno visual); smooth/flatten/pintura de textura vêm depois.
+`resolution` = segmentos por lado (grade `(res+1)²`). **Sólido por padrão**: com
+`world` no `buildScene`, o terreno vira colidível — `TerrainCollisionSystem` mantém
+os corpos (`PlatformerBodyComponent`/`KinematicBodyComponent`) EM CIMA da superfície
+(`Terrain.heightAt(x,z)`), vale pra 3D/2.5D/top-down. Limites (v1): só raise/lower;
+smooth/flatten e **pintura de textura** (splat) vêm depois.
 
 ## Material / shader por objeto (material)
 

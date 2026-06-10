@@ -6,7 +6,7 @@
 
 # Class: Terrain
 
-Defined in: src/scene/Terrain.ts:40
+Defined in: [src/scene/Terrain.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L40)
 
 **Terreno** estilo Unity: um plano horizontal (no chão, XZ) subdividido numa
 grade, com um **heightmap** que você **esculpe** ([Terrain.sculpt](#sculpt)) —
@@ -31,7 +31,7 @@ terrain.sculpt(0, 0, 8, 2) // levanta um morro de raio 8 no centro
 
 > **new Terrain**(`options?`): `Terrain`
 
-Defined in: src/scene/Terrain.ts:53
+Defined in: [src/scene/Terrain.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L53)
 
 #### Parameters
 
@@ -49,7 +49,7 @@ Defined in: src/scene/Terrain.ts:53
 
 > `readonly` **depth**: `number`
 
-Defined in: src/scene/Terrain.ts:48
+Defined in: [src/scene/Terrain.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L48)
 
 Profundidade (Z) em unidades de mundo.
 
@@ -59,7 +59,7 @@ Profundidade (Z) em unidades de mundo.
 
 > `readonly` **mesh**: `Mesh`
 
-Defined in: src/scene/Terrain.ts:42
+Defined in: [src/scene/Terrain.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L42)
 
 O mesh do terreno (adicione à cena).
 
@@ -69,7 +69,7 @@ O mesh do terreno (adicione à cena).
 
 > `readonly` **resolution**: `number`
 
-Defined in: src/scene/Terrain.ts:44
+Defined in: [src/scene/Terrain.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L44)
 
 Segmentos por lado (grade `(resolution+1)²`).
 
@@ -79,7 +79,7 @@ Segmentos por lado (grade `(resolution+1)²`).
 
 > `readonly` **width**: `number`
 
-Defined in: src/scene/Terrain.ts:46
+Defined in: [src/scene/Terrain.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L46)
 
 Largura (X) em unidades de mundo.
 
@@ -89,7 +89,7 @@ Largura (X) em unidades de mundo.
 
 > **getHeights**(): `number`[]
 
-Defined in: src/scene/Terrain.ts:145
+Defined in: [src/scene/Terrain.ts:169](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L169)
 
 Heightmap atual (row-major, `(res+1)²`) — serializável pra persistência.
 
@@ -99,11 +99,38 @@ Heightmap atual (row-major, `(res+1)²`) — serializável pra persistência.
 
 ***
 
+### heightAt()
+
+> **heightAt**(`localX`, `localZ`): `number` \| `null`
+
+Defined in: [src/scene/Terrain.ts:150](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L150)
+
+Altura (Y **local**) do terreno num ponto `(localX, localZ)` por **interpolação
+bilinear** do heightmap — pra colisão/ground (o player fica em cima). Retorna
+`null` se o ponto está **fora** da área do terreno. Coords locais (centradas);
+use `mesh.worldToLocal` antes pra partir de um ponto de mundo.
+
+#### Parameters
+
+##### localX
+
+`number`
+
+##### localZ
+
+`number`
+
+#### Returns
+
+`number` \| `null`
+
+***
+
 ### sculpt()
 
 > **sculpt**(`localX`, `localZ`, `radius`, `delta`): `boolean`
 
-Defined in: src/scene/Terrain.ts:115
+Defined in: [src/scene/Terrain.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L115)
 
 **Esculpe** o terreno: soma `delta` à altura num círculo de `radius` (em
 coordenadas LOCAIS do terreno, no plano XZ centrado), com **falloff suave**
@@ -138,7 +165,7 @@ normais (iluminação acompanha). Retorna `true` se algum vértice mudou.
 
 > **setHeights**(`heights`): `void`
 
-Defined in: src/scene/Terrain.ts:150
+Defined in: [src/scene/Terrain.ts:174](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L174)
 
 Substitui o heightmap inteiro (ex.: restaurar autoria salva) e atualiza o mesh.
 
