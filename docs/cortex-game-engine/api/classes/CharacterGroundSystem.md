@@ -2,20 +2,21 @@
 
 ***
 
-[cortex-game-engine](../README.md) / CharacterPhysicsSystem
+[cortex-game-engine](../README.md) / CharacterGroundSystem
 
-# Class: CharacterPhysicsSystem
+# Class: CharacterGroundSystem
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L16)
+Defined in: src/systems/CharacterGroundSystem.ts:22
 
-Física vertical do [CharacterBodyComponent](CharacterBodyComponent.md) (character controller estilo
-UPBGE): aplica **gravidade** (limitada por `fallSpeedMax`), processa o **pulo**
-(`jumpForce` até `maxJumps`) e integra o Y. O movimento horizontal (X/Z) fica
-com o input do jogo; o **ground** (zera `velocityY`, marca `grounded`, reseta os
-pulos) é feito pelo [TerrainCollisionSystem](TerrainCollisionSystem.md) (e/ou colisão de objetos).
+**Chão por raycast** pra o [CharacterBodyComponent](CharacterBodyComponent.md) — o personagem manda um
+raio pra BAIXO e fica EM CIMA do primeiro mesh abaixo dele (terreno, tiles
+hexagonais, plataformas, qualquer geometria). Assim o chão é o próprio mesh, sem
+precisar marcar collider em cada objeto (modelo estilo UPBGE). `stepHeight`
+permite subir degraus pequenos andando. Aterra (zera `velocityY`, marca
+`grounded`, reseta pulos).
 
-Roda na física (priority 5), **antes** do [TerrainCollisionSystem](TerrainCollisionSystem.md) (7) e do
-`Object3DSyncSystem` (10).
+Precisa das **raízes da cena** pra testar (`new CharacterGroundSystem([scene]))`;
+ignora o próprio mesh do personagem. Roda depois da física (priority 7).
 
 ## Extends
 
@@ -25,13 +26,21 @@ Roda na física (priority 5), **antes** do [TerrainCollisionSystem](TerrainColli
 
 ### Constructor
 
-> **new CharacterPhysicsSystem**(): `CharacterPhysicsSystem`
+> **new CharacterGroundSystem**(`roots`): `CharacterGroundSystem`
+
+Defined in: src/systems/CharacterGroundSystem.ts:27
+
+#### Parameters
+
+##### roots
+
+`Object3D`\<`Object3DEventMap`\>[]
 
 #### Returns
 
-`CharacterPhysicsSystem`
+`CharacterGroundSystem`
 
-#### Inherited from
+#### Overrides
 
 [`System`](System.md).[`constructor`](System.md#constructor)
 
@@ -60,9 +69,9 @@ a gameplay (física/input) enquanto o editor está ativo
 
 ### priority
 
-> **priority**: `number` = `5`
+> **priority**: `number` = `7`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L18)
+Defined in: src/systems/CharacterGroundSystem.ts:24
 
 Prioridade de execução deste sistema.
 
@@ -79,7 +88,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L17)
+Defined in: src/systems/CharacterGroundSystem.ts:23
 
 Construtores dos componentes que este sistema requer.
 
@@ -103,9 +112,9 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 ### update()
 
-> **update**(`entities`, `deltaTime`): `void`
+> **update**(`entities`): `void`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L20)
+Defined in: src/systems/CharacterGroundSystem.ts:31
 
 Executa a lógica do sistema para o frame/passo atual.
 
@@ -117,12 +126,6 @@ Executa a lógica do sistema para o frame/passo atual.
 
 Entidades filtradas pelo `World` que possuem todos os
                    componentes declarados em `requiredComponents`.
-
-##### deltaTime
-
-`number`
-
-Tempo decorrido desde o último tick, em segundos.
 
 #### Returns
 

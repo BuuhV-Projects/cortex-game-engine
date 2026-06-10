@@ -525,6 +525,14 @@ player.addComponent(new CharacterBodyComponent({ radius: 0.4, height: 1.8, jumpF
 Props (UPBGE): `stepHeight` (degrau que sobe andando), `jumpForce` (vel. do pulo),
 `fallSpeedMax` (queda máx.), `maxJumps` (nº de pulos antes de tocar o chão).
 
+**Ficar em cima de QUALQUER mesh** (não só terreno): `CharacterGroundSystem([scene])`
+faz o personagem **raycast pra baixo** e pousar no primeiro mesh embaixo (terreno,
+tiles, plataformas) — o chão é o próprio mesh, sem marcar collider em cada objeto.
+```ts
+import { CharacterGroundSystem } from 'cortex-game-engine'
+game.world.addSystem(new CharacterGroundSystem([game.scene.getThreeScene()]))
+```
+
 ## Material / shader por objeto (material)
 
 Atribui um "shader" (material do Three) a um objeto pela propriedade `material` do nó

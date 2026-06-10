@@ -50,6 +50,7 @@ export * from './systems/FollowCamera2DSystem.js';
 export * from './systems/TopDownCameraSystem.js';
 export * from './systems/TerrainCollisionSystem.js';
 export * from './systems/CharacterPhysicsSystem.js';
+export * from './systems/CharacterGroundSystem.js';
 export * from './systems/PlatformerAnimationSystem.js';
 export * from './systems/SpriteAnimationSystem.js';
 
