@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readDir: (dirPath: string) =>
     ipcRenderer.invoke('fs:readDir', dirPath),
 
+  watchProject: (projectDir: string) =>
+    ipcRenderer.invoke('fs:watchProject', projectDir),
+
   listProjectFiles: (projectDir: string) =>
     ipcRenderer.invoke('fs:listProjectFiles', projectDir),
 
@@ -104,6 +107,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // acumular listeners ao longo da sessão não é problema.
   onLog: (callback: (line: string) => void) => {
     ipcRenderer.on('log', (_event, line: string) => callback(line))
+  },
+  onProjectFilesChanged: (callback: () => void) => {
+    ipcRenderer.on('project:files-changed', () => callback())
   },
 
   onProjectStopped: (callback: () => void) => {

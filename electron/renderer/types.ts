@@ -73,9 +73,14 @@ export interface ElectronAPI {
   ): Promise<void>
   clearChatHistory(projectDir: string): Promise<void>
 
+  /** Observa o projeto no disco (fs.watch) — dispara `onProjectFilesChanged`. */
+  watchProject(projectDir: string): Promise<void>
+
   // Eventos do main → renderer
   onLog(callback: (line: string) => void): void
   onProjectStopped(callback: () => void): void
+  /** Mudou algo no disco do projeto (criar/apagar/salvar/git/build). */
+  onProjectFilesChanged(callback: () => void): void
   onTerminalOutput(callback: (text: string) => void): void
   onTerminalDone(callback: (exitCode: number) => void): void
   onAiChunk(callback: (text: string) => void): void

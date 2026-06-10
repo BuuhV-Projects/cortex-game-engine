@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, type MenuItemConstructorOptions } from 'electron'
 import { join, resolve, delimiter } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir, rename, rm, unlink } from 'fs/promises'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, watch, type FSWatcher } from 'fs'
 import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { createHash } from 'crypto'
 import { homedir } from 'os'
@@ -319,6 +319,29 @@ ipcMain.handle('fs:readDir', async (_event, dirPath: unknown) => {
     path: join(safePath, entry.name),
     isDir: entry.isDirectory(),
   }))
+})
+
+// Observa o diretório do projeto (fs.watch recursivo) e avisa o renderer a cada
+// mudança no disco — a árvore de Projeto atualiza em TEMPO REAL (criar/apagar/
+// salvar/git/build). Um watcher por vez (troca ao abrir outro projeto). Ignora
+// ruído (node_modules/.git/dist) e faz debounce de rajadas no lado do renderer.
+let projectWatcher: FSWatcher | null = null
+const WATCH_IGNORE = /(^|[\\/])(node_modules|\.git|dist|\.cortex)([\\/]|$)/
+ipcMain.handle('fs:watchProject', (_event, projectDir: unknown) => {
+  const safeDir = validatePath(projectDir)
+  if (projectWatcher) {
+    projectWatcher.close()
+    projectWatcher = null
+  }
+  try {
+    // recursive: suportado em Windows e macOS (o público-alvo do Studio).
+    projectWatcher = watch(safeDir, { recursive: true }, (_type, filename) => {
+      if (filename && WATCH_IGNORE.test(String(filename))) return
+      mainWindow?.webContents.send('project:files-changed')
+    })
+  } catch {
+    /* fs.watch pode falhar (dir removido/sem suporte) — sem real-time, mas o app segue */
+  }
 })
 
 // Lê o conteúdo de um arquivo como texto UTF-8

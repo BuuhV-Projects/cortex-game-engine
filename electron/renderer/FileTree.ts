@@ -59,6 +59,10 @@ export class FileTree {
   private projectLabelEl: HTMLElement | null = null
   private treeCollapsed = false
   private fileFilter = ''
+  /** Paths de pastas expandidas — persiste entre refreshes (real-time não colapsa). */
+  private readonly expandedPaths = new Set<string>()
+  /** Debounce do refresh disparado pelo watcher de fs (mudanças em rajada). */
+  private watchTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -96,6 +100,7 @@ export class FileTree {
 
   /** Fecha todas as pastas expandidas sem perder o conteúdo carregado. */
   private collapseAll(): void {
+    this.expandedPaths.clear()
     if (!this.treeArea) return
     for (const li of this.treeArea.querySelectorAll<HTMLLIElement>('.filetree-dir.expanded')) {
       li.classList.remove('expanded')
@@ -149,6 +154,12 @@ export class FileTree {
     document.addEventListener('filetree-refresh', () => {
       void this.refresh()
     })
+    // Tempo real: o main observa o projeto (fs.watch) e avisa aqui a cada mudança
+    // no disco (criar/apagar/salvar/git/etc.). Debounce pra rajadas (ex.: git, build).
+    window.electronAPI.onProjectFilesChanged?.(() => {
+      if (this.watchTimer) clearTimeout(this.watchTimer)
+      this.watchTimer = setTimeout(() => void this.refresh(), 200)
+    })
     // Busca da aba Projeto (LeftDock) — filtra a árvore renderizada por nome.
     document.addEventListener('files-filter', (e) => {
       this.applyFileFilter((((e as CustomEvent<{ query: string }>).detail.query) || '').toLowerCase())
@@ -164,6 +175,7 @@ export class FileTree {
           new CustomEvent<{ path: string }>('project-open', { detail: { path } }),
         )
       })
+      window.electronAPI.watchProject?.(path)
       await this.refresh()
     }
   }
@@ -175,7 +187,9 @@ export class FileTree {
   async openProject(path: string): Promise<void> {
     this.projectDir = path
     localStorage.setItem(STORAGE_KEY, this.projectDir)
+    this.expandedPaths.clear() // outro projeto — estado de expansão não se aplica
     if (this.projectLabelEl) this.projectLabelEl.textContent = this.projectLabelText()
+    window.electronAPI.watchProject?.(path)
     await this.refresh()
   }
 
@@ -303,13 +317,14 @@ export class FileTree {
     if (this.projectLabelEl) this.projectLabelEl.textContent = this.projectLabelText()
     if (!this.projectDir || !this.treeArea) return
 
-    this.treeArea.innerHTML = `<p class="filetree-loading">${t('fileTree.loading')}</p>`
+    const scroll = this.treeArea.scrollTop // preserva o scroll (refresh em tempo real)
     try {
       const entries = await window.electronAPI.readDir(this.projectDir)
-      const ul = this.buildList(entries)
+      const ul = this.buildList(entries) // buildItem re-expande pastas de expandedPaths
       this.treeArea.innerHTML = ''
       this.treeArea.appendChild(ul)
       if (this.fileFilter) this.applyFileFilter(this.fileFilter)
+      this.treeArea.scrollTop = scroll
     } catch (err) {
       this.treeArea.innerHTML = `<p class="filetree-error">${t('fileTree.error_read_dir')} ${String(err)}</p>`
     }
@@ -378,6 +393,8 @@ export class FileTree {
       // Pastas aceitam drop (move arquivo/pasta pra dentro delas)
       this.attachDropTarget(li, () => entry.path)
       this.attachDirBehavior(li, label, entry)
+      // Re-expande pastas que estavam abertas (preserva estado no refresh real-time).
+      if (this.expandedPaths.has(entry.path)) void this.expandDir(li, entry)
     } else {
       label.addEventListener('click', () => {
         document.dispatchEvent(
@@ -393,34 +410,40 @@ export class FileTree {
 
   /** Adiciona comportamento de expansão lazy a um item de diretório. */
   private attachDirBehavior(li: HTMLLIElement, label: HTMLSpanElement, entry: FileEntry): void {
-    let expanded = false
-    let childUl: HTMLUListElement | null = null
-
-    label.addEventListener('click', async () => {
-      expanded = !expanded
-      li.classList.toggle('expanded', expanded)
-
-      if (expanded) {
-        if (!childUl) {
-          li.classList.add('loading')
-          try {
-            const subEntries = await window.electronAPI.readDir(entry.path)
-            childUl = this.buildList(subEntries)
-            li.appendChild(childUl)
-          } catch {
-            li.classList.add('error')
-            expanded = false
-            li.classList.remove('expanded')
-          } finally {
-            li.classList.remove('loading')
-          }
-        } else {
-          childUl.style.display = ''
-        }
-      } else {
-        if (childUl) childUl.style.display = 'none'
-      }
+    label.addEventListener('click', () => {
+      if (li.classList.contains('expanded')) this.collapseDir(li, entry)
+      else void this.expandDir(li, entry)
     })
+  }
+
+  /** Expande uma pasta (carrega filhos lazy) e registra em `expandedPaths`. */
+  private async expandDir(li: HTMLLIElement, entry: FileEntry): Promise<void> {
+    this.expandedPaths.add(entry.path)
+    li.classList.add('expanded')
+    const existing = li.querySelector<HTMLUListElement>(':scope > .filetree-list')
+    if (existing) {
+      existing.style.display = ''
+      return
+    }
+    li.classList.add('loading')
+    try {
+      const subEntries = await window.electronAPI.readDir(entry.path)
+      li.appendChild(this.buildList(subEntries)) // buildList re-expande netos de expandedPaths
+    } catch {
+      li.classList.add('error')
+      li.classList.remove('expanded')
+      this.expandedPaths.delete(entry.path)
+    } finally {
+      li.classList.remove('loading')
+    }
+  }
+
+  /** Recolhe uma pasta (mantém os filhos carregados, só esconde) e desregistra. */
+  private collapseDir(li: HTMLLIElement, entry: FileEntry): void {
+    this.expandedPaths.delete(entry.path)
+    li.classList.remove('expanded')
+    const childUl = li.querySelector<HTMLUListElement>(':scope > .filetree-list')
+    if (childUl) childUl.style.display = 'none'
   }
 
   // ── Drag & Drop ────────────────────────────────────────────────────────────
