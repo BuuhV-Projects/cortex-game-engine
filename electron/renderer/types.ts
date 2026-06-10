@@ -75,6 +75,8 @@ export interface ElectronAPI {
 
   /** Observa o projeto no disco (fs.watch) — dispara `onProjectFilesChanged`. */
   watchProject(projectDir: string): Promise<void>
+  /** Re-vendoriza o engine atual do IDE no `vendor/` do projeto (engine atualizou). */
+  revendorEngine(projectDir: string): Promise<void>
 
   // Eventos do main → renderer
   onLog(callback: (line: string) => void): void

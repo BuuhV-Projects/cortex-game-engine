@@ -19,6 +19,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   watchProject: (projectDir: string) =>
     ipcRenderer.invoke('fs:watchProject', projectDir),
 
+  revendorEngine: (projectDir: string) =>
+    ipcRenderer.invoke('engine:revendor', projectDir),
+
   listProjectFiles: (projectDir: string) =>
     ipcRenderer.invoke('fs:listProjectFiles', projectDir),
 

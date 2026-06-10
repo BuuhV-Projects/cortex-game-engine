@@ -695,6 +695,15 @@ ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unkn
   return projectPath
 })
 
+// Re-vendoriza o engine num projeto JÁ existente (opção do studio): copia o bundle
+// + .d.ts atuais do IDE pro `vendor/cortex-game-engine` do projeto. Útil quando o
+// engine atualizou e o vendor do projeto ficou velho (ex.: símbolo novo "exportado
+// mas não encontrado" no projeto). Em dev, pega o build atual de dist-engine/dist.
+ipcMain.handle('engine:revendor', async (_event, projectDir: unknown) => {
+  const safeDir = validatePath(projectDir)
+  await vendorEngine(safeDir)
+})
+
 /**
  * Inicializa um repo git no projeto novo (branch `main`) e faz o **commit inicial**
  * com o template. Best-effort: se `git` não existir ou algum passo falhar, ignora

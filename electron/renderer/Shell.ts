@@ -112,6 +112,8 @@ export class Shell {
         { label: tr('menu.build_installer', 'Gerar instalador…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: false } })) },
         { label: tr('menu.build_installer_debug', 'Gerar instalador (debug)…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: true } })) },
         { sep: true },
+        { label: tr('menu.revendor_engine', 'Re-vendorizar engine'), run: () => void this.revendorEngine() },
+        { sep: true },
         { label: tr('menu.close_project', 'Fechar projeto'), run: () => document.dispatchEvent(new CustomEvent('project-close')) },
       ]),
       this.menuItem('Window', [
@@ -239,6 +241,25 @@ export class Shell {
     const path = await window.electronAPI.selectDirectory()
     if (!path) return
     document.dispatchEvent(new CustomEvent<{ path: string }>('project-open', { detail: { path } }))
+  }
+
+  /**
+   * Re-vendoriza o engine do IDE no projeto aberto — pra quando o engine atualiza
+   * e o `vendor/` do projeto fica velho (símbolo "exportado mas não encontrado").
+   * Pega o projeto ativo do localStorage (mesma chave do FileTree).
+   */
+  private async revendorEngine(): Promise<void> {
+    const dir = localStorage.getItem('fileTree_projectDir')
+    if (!dir) {
+      alert(tr('menu.revendor_no_project', 'Abra um projeto primeiro.'))
+      return
+    }
+    try {
+      await window.electronAPI.revendorEngine?.(dir)
+      alert(tr('menu.revendor_done', 'Engine re-vendorizado. Rode o Play de novo pra usar a versão nova.'))
+    } catch (err) {
+      alert(`${tr('menu.revendor_fail', 'Falha ao re-vendorizar')}: ${String(err)}`)
+    }
   }
 
   private async setLocale(locale: 'en' | 'pt'): Promise<void> {
