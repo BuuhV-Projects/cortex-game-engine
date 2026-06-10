@@ -443,6 +443,7 @@ const VENDOR_TYPE_MODULES = {
     'PlatformerPhysicsSystem',
     'PlatformerInputSystem',
     'FollowCamera2DSystem',
+    'TopDownCameraSystem',
     'PlatformerAnimationSystem',
     'SpriteAnimationSystem',
   ],

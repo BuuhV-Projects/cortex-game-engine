@@ -45,6 +45,7 @@ export * from './systems/ThirdPersonCameraSystem.js';
 export * from './systems/PlatformerPhysicsSystem.js';
 export * from './systems/PlatformerInputSystem.js';
 export * from './systems/FollowCamera2DSystem.js';
+export * from './systems/TopDownCameraSystem.js';
 export * from './systems/PlatformerAnimationSystem.js';
 export * from './systems/SpriteAnimationSystem.js';
 

@@ -62,6 +62,25 @@ lado).
 |---|---|
 | `Object3DSyncSystem` | Copia `TransformComponent` → `Object3D` da cena a cada frame. |
 | `ThirdPersonCameraSystem` | Câmera de perseguição da entity com `FollowCameraTargetComponent`. |
+| `FollowCamera2DSystem` | Câmera 2.5D de plataforma (segue no plano XY; roll/pitch/yaw e preset isométrico opcionais). |
+| `TopDownCameraSystem` | Câmera **vista de cima** (jogos de fazenda/RPG 2D): segue o alvo no plano **XZ**, câmera acima olhando pra baixo; `angle` de reto top-down a 3/4. |
+
+### Câmera top-down (vista de cima) — jogos de fazenda/RPG 2D
+
+`TopDownCameraSystem` segue a entity-alvo (`FollowCameraTargetComponent`) no **chão
+(plano XZ)**, com a câmera acima. `angle: 0` = vista de cima pura (pixel art);
+aumente pra um 3/4 estilo Stardew. Combine com `Game({ projection: 'orthographic' })`
+pro look achatado. O alvo se move no plano XZ (X/Z) — top-down **não** usa a física
+de plataforma (gravidade no Y); use input/movimento próprios no plano.
+
+```ts
+import { Game, TopDownCameraSystem, FollowCameraTargetComponent } from 'cortex-game-engine'
+const game = new Game({ canvas, projection: 'orthographic' })
+game.world.addSystem(new TopDownCameraSystem(game.camera, { height: 16, angle: 0 }))
+// marque o player como alvo da câmera:
+player.addComponent(new FollowCameraTargetComponent())
+game.start()
+```
 
 ## Modo editor embutido (automático em dev)
 
