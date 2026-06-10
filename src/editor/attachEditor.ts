@@ -32,6 +32,7 @@ import {
   type ColliderApi,
   type MatteApi,
   type MaterialApi,
+  type TerrainApi,
   type AnimationApi,
   type PlayerAnimationsApi,
 } from './EditorInspector.js';
@@ -48,6 +49,7 @@ import { ObjectEditSystem } from './ObjectEditSystem.js';
 import { ColliderGizmoSystem } from './ColliderGizmoSystem.js';
 import { SceneLoader } from '../scene/SceneLoader.js';
 import { addSceneNode } from '../scene/SceneBuilder.js';
+import type { Terrain } from '../scene/Terrain.js';
 import type { SceneNode } from '../scene/SceneDefinition.js';
 import { emptySceneFile, type SceneFileV1 } from '../scene/SceneFile.js';
 import { autoDetectSceneFileWriter } from '../io/autoDetectSceneFileWriter.js';
@@ -648,6 +650,87 @@ export function attachEditor(game: Game): GameEditor {
     },
   };
 
+  // ── Terreno: pincel de esculpir (raise/lower) ────────────────────────────────
+  // Esculpe o Terrain (em userData.cortexTerrain) por raycast no mesh; CLIQUE/ARRASTE
+  // sobe, SHIFT abaixa. Persiste o heightmap em `overlay.data.terrain[nome]` (o
+  // buildScene reaplica via overlayTerrain). ObjectEditSystem cede o clique quando
+  // editorState.sculptingTerrain está ligado.
+  const terrainBrush = { radius: 6, strength: 0.5 };
+  let sculpt: { terrain: Terrain; obj: Object3D; painting: boolean } | null = null;
+  const terrainOf = (obj: Object3D): Terrain | undefined =>
+    (obj.userData as Record<string, unknown>)['cortexTerrain'] as Terrain | undefined;
+  const terrainMap = (): Record<string, number[]> => {
+    const m = overlay.data['terrain'];
+    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, number[]>;
+    const o: Record<string, number[]> = {};
+    overlay.data['terrain'] = o;
+    return o;
+  };
+  const saveTerrain = (): void => {
+    if (sculpt && sculpt.obj.name) {
+      terrainMap()[sculpt.obj.name] = sculpt.terrain.getHeights();
+      persist();
+    }
+  };
+  const terrainApi: TerrainApi = {
+    get: (obj) =>
+      terrainOf(obj)
+        ? { sculpting: sculpt?.obj === obj, radius: terrainBrush.radius, strength: terrainBrush.strength }
+        : null,
+    startSculpt: (obj) => {
+      if (!terrainOf(obj)) {
+        hud.showToast('Esse objeto não é um terreno');
+        return;
+      }
+      sculpt = { terrain: terrainOf(obj)!, obj, painting: false };
+      editorState.sculptingTerrain = true;
+      hud.showToast('Esculpir: CLIQUE/ARRASTE sobe · segure SHIFT pra abaixar');
+    },
+    stopSculpt: () => {
+      saveTerrain();
+      sculpt = null;
+      editorState.sculptingTerrain = false;
+    },
+    setBrush: (radius, strength) => {
+      terrainBrush.radius = radius;
+      terrainBrush.strength = strength;
+    },
+  };
+  // Aplica uma pincelada na posição do ponteiro (raycast no terreno → coords locais).
+  const terrainDab = (clientX: number, clientY: number, lower: boolean): void => {
+    if (!sculpt) return;
+    const rect = game.canvas.getBoundingClientRect();
+    _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    _ray.setFromCamera(_ndc, editorCamera);
+    const hits = _ray.intersectObject(sculpt.obj, true);
+    if (hits.length === 0) return;
+    const p = hits[0]!.point;
+    sculpt.terrain.sculpt(
+      p.x - sculpt.obj.position.x,
+      p.z - sculpt.obj.position.z,
+      terrainBrush.radius,
+      terrainBrush.strength * (lower ? -1 : 1),
+    );
+  };
+  game.canvas.addEventListener('pointerdown', (e) => {
+    if (!sculpt || e.button !== 0) return;
+    sculpt.painting = true;
+    terrainDab(e.clientX, e.clientY, e.shiftKey);
+  });
+  game.canvas.addEventListener('pointermove', (e) => {
+    if (!sculpt || !sculpt.painting) return;
+    terrainDab(e.clientX, e.clientY, e.shiftKey);
+  });
+  const endTerrainPaint = (): void => {
+    if (sculpt?.painting) {
+      sculpt.painting = false;
+      saveTerrain();
+    }
+  };
+  game.canvas.addEventListener('pointerup', endTerrainPaint);
+  game.canvas.addEventListener('pointerleave', endTerrainPaint);
+
   // ── Animação (escolher clipe + play/stop + loop/velocidade), persistida ──────
   // Lê o SceneAnimator de `userData.cortexAnim` (criado pelo buildScene) e grava em
   // `overlay.data.animation[id]` — o buildScene reaplica no boot (overlay > nó JSON).
@@ -776,6 +859,7 @@ export function attachEditor(game: Game): GameEditor {
     colliderApi,
     matteApi,
     materialApi,
+    terrainApi,
     animationApi,
     playerAnimationsApi,
     writeBack: writeBackTransform,
@@ -854,7 +938,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, matteApi, materialApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, matteApi, materialApi, terrainApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),
@@ -925,6 +1009,7 @@ export function attachEditor(game: Game): GameEditor {
         // Trocar de modo zera o pause (entra em play já rodando; volta pro editor
         // sem estado de pause pendente).
         editorState.paused = false;
+        if (sculpt) terrainApi.stopSculpt(); // sai do pincel ao trocar de modo
         // Play (edit→play) snapshota o mundo; Stop (play→edit) restaura — Play
         // não destrói o estado de edição.
         if (editorState.active) restoreWorld();
@@ -944,6 +1029,8 @@ export function attachEditor(game: Game): GameEditor {
         }
       }
       if (editorState.active) {
+        // Esculpir é "preso" ao terreno selecionado: trocar de seleção sai do pincel.
+        if (sculpt && selection.current !== sculpt.obj) terrainApi.stopSculpt();
         if (sceneChanged()) {
           if (showInCanvas) outliner.refresh();
           snapshot();

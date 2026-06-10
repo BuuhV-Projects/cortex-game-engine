@@ -3,7 +3,7 @@ import { MathUtils } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
-import type { ColliderApi, MatteApi, MaterialApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
+import type { ColliderApi, MatteApi, MaterialApi, TerrainApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
 
 /**
  * **Modelo declarativo do editor** (ADR-0056). Descreve a hierarquia e o inspector
@@ -137,6 +137,7 @@ export interface InspectorContext {
   colliderApi?: ColliderApi;
   matteApi?: MatteApi;
   materialApi?: MaterialApi;
+  terrainApi?: TerrainApi;
   animationApi?: AnimationApi;
   playerAnimationsApi?: PlayerAnimationsApi;
   /**
@@ -374,6 +375,33 @@ export function describeInspector(
       });
     }
     sections.push({ title: 'Shader', fields });
+  }
+
+  // ── Terreno (esculpir altura com pincel) ──────────────────────────────────────
+  const terrainState = ctx.terrainApi?.get(obj) ?? null;
+  if (ctx.terrainApi && terrainState) {
+    const api = ctx.terrainApi;
+    const s = terrainState;
+    const fields: InspectorField[] = [
+      { kind: 'button', id: fid('terSculpt'), label: s.sculpting ? '■ Parar de esculpir' : '⛰ Esculpir', variant: s.sculpting ? 'danger' : 'primary' },
+      { kind: 'number', id: fid('terRadius'), label: 'Tamanho do pincel', value: s.radius, step: 1 },
+      { kind: 'number', id: fid('terStrength'), label: 'Força', value: s.strength, step: 0.1 },
+      { kind: 'note', id: fid('terHint'), text: 'Esculpir ligado: CLIQUE/ARRASTE sobe · segure SHIFT pra abaixar.', tone: 'muted' },
+    ];
+    handlers.set(fid('terSculpt'), () => {
+      if (s.sculpting) api.stopSculpt();
+      else api.startSculpt(obj);
+      return { rebuild: true };
+    });
+    handlers.set(fid('terRadius'), (v) => {
+      const r = Math.max(0.5, Number(v) || s.radius);
+      api.setBrush(r, s.strength);
+    });
+    handlers.set(fid('terStrength'), (v) => {
+      const st = Number(v);
+      api.setBrush(s.radius, Number.isFinite(st) ? st : s.strength);
+    });
+    sections.push({ title: 'Terreno', fields });
   }
 
   // ── Animação (modelos .glb com clipes) ────────────────────────────────────────

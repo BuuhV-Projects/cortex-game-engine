@@ -88,6 +88,12 @@ const STUB_BODY = `
           { kind: 'checkbox', id: 'p:matTwoSided', label: 'Dois lados', value: false },
           { kind: 'checkbox', id: 'p:matTransp', label: 'Transparente', value: false },
         ] },
+        { title: 'Terreno', fields: [
+          { kind: 'button', id: 'p:terSculpt', label: '⛰ Esculpir', variant: 'primary' },
+          { kind: 'number', id: 'p:terRadius', label: 'Tamanho do pincel', value: 6, step: 1 },
+          { kind: 'number', id: 'p:terStrength', label: 'Força', value: 0.5, step: 0.1 },
+          { kind: 'note', id: 'p:terHint', text: 'Esculpir ligado: CLIQUE/ARRASTE sobe · segure SHIFT pra abaixar.', tone: 'muted' },
+        ] },
         { title: 'Collider', fields: [
           { kind: 'select', id: 'p:shape', label: 'Forma', value: 'box', options: [
             { value: 'box', label: 'Caixa' }, { value: 'circle', label: 'Círculo' }, { value: 'capsule', label: 'Cápsula' } ] },

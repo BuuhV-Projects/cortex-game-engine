@@ -12,7 +12,7 @@ import {
   describeOutliner,
   type InspectorField,
 } from '../../src/editor/EditorModel.js';
-import type { MaterialApi } from '../../src/editor/EditorInspector.js';
+import type { MaterialApi, TerrainApi } from '../../src/editor/EditorInspector.js';
 import type { MaterialConfig } from '../../src/scene/Materials.js';
 
 function allFields(model: { sections: { fields: InspectorField[] }[] }): InspectorField[] {
@@ -174,5 +174,52 @@ describe('describeInspector — Shader (material)', () => {
     const { api } = fakeMaterialApi();
     const { model } = describeInspector(empty, { materialApi: api }, reg);
     expect(model.sections.find((s) => s.title === 'Shader')).toBeUndefined();
+  });
+});
+
+describe('describeInspector — Terreno (sculpt)', () => {
+  function fakeTerrainApi(isTerrain: boolean): { api: TerrainApi; sculpting: () => boolean } {
+    let sculpting = false;
+    let radius = 6;
+    let strength = 0.5;
+    return {
+      api: {
+        get: () => (isTerrain ? { sculpting, radius, strength } : null),
+        startSculpt: () => { sculpting = true; },
+        stopSculpt: () => { sculpting = false; },
+        setBrush: (r, s) => { radius = r; strength = s; },
+      },
+      sculpting: () => sculpting,
+    };
+  }
+
+  it('mostra a seção Terreno e o botão alterna esculpir', () => {
+    const reg = createObjectRegistry();
+    const obj = new Object3D();
+    obj.name = 'Chao';
+    const { api, sculpting } = fakeTerrainApi(true);
+
+    const first = describeInspector(obj, { terrainApi: api }, reg);
+    expect(first.model.sections.find((s) => s.title === 'Terreno')).toBeDefined();
+    const btn = field(first.model, 'terSculpt');
+    expect(btn?.kind).toBe('button');
+    expect((btn as { label: string }).label).toContain('Esculpir');
+    expect(field(first.model, 'terRadius')?.kind).toBe('number');
+
+    const res = first.handlers.get(btn!.id)!(0);
+    expect(sculpting()).toBe(true);
+    expect(res).toEqual({ rebuild: true });
+    // re-descreve: botão agora oferece parar
+    const again = describeInspector(obj, { terrainApi: api }, reg);
+    expect((field(again.model, 'terSculpt') as { label: string }).label).toContain('Parar');
+  });
+
+  it('não mostra Terreno quando o objeto não é terreno (api.get → null)', () => {
+    const reg = createObjectRegistry();
+    const obj = new Object3D();
+    obj.name = 'Caixa';
+    const { api } = fakeTerrainApi(false);
+    const { model } = describeInspector(obj, { terrainApi: api }, reg);
+    expect(model.sections.find((s) => s.title === 'Terreno')).toBeUndefined();
   });
 });

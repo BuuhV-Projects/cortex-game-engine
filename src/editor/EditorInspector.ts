@@ -97,6 +97,31 @@ export interface MaterialApi {
   set(obj: Object3D, config: MaterialConfig): void;
 }
 
+/** Estado do terreno selecionado (pincel de esculpir). `null` se não é terreno. */
+export interface TerrainEditState {
+  /** Esculpindo agora (pincel ativo no terreno)? */
+  sculpting: boolean;
+  /** Raio do pincel (unidades de mundo). */
+  radius: number;
+  /** Força (quanto sobe/abaixa por pincelada). */
+  strength: number;
+}
+
+/**
+ * Ponte de autoria do **terreno**: o inspector liga/desliga o pincel (raise/lower)
+ * e ajusta tamanho/força. Implementada pelo `attachEditor` contra o {@link Terrain}
+ * (em `mesh.userData.cortexTerrain`) + a overlay (`data.terrain[nome]` = heightmap).
+ * `get` devolve `null` se o objeto não é um terreno.
+ */
+export interface TerrainApi {
+  get(obj: Object3D): TerrainEditState | null;
+  /** Entra/sai do modo esculpir (pincel). */
+  startSculpt(obj: Object3D): void;
+  stopSculpt(): void;
+  /** Ajusta o pincel (raio + força). */
+  setBrush(radius: number, strength: number): void;
+}
+
 /** Estado de animação do objeto selecionado (clipes do `.glb`). */
 export interface AnimationEditState {
   /** Nomes dos clipes disponíveis. */
@@ -168,6 +193,8 @@ export interface EditorInspectorOptions {
   matteApi?: MatteApi;
   /** Opcional: autoria/persistência do material/shader por objeto. Ver {@link MaterialApi}. */
   materialApi?: MaterialApi;
+  /** Opcional: pincel de esculpir terreno. Ver {@link TerrainApi}. */
+  terrainApi?: TerrainApi;
   /** Opcional: controle/persistência de animação (escolher clipe, play/stop). Ver {@link AnimationApi}. */
   animationApi?: AnimationApi;
   /** Opcional: mapa ação→clipe do player (idle/run/jump/…). Ver {@link PlayerAnimationsApi}. */
@@ -201,12 +228,13 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     colliderApi,
     matteApi,
     materialApi,
+    terrainApi,
     animationApi,
     playerAnimationsApi,
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, matteApi, materialApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, matteApi, materialApi, terrainApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

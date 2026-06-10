@@ -117,6 +117,7 @@ export class ObjectEditSystem extends System {
     canvas.addEventListener('pointerdown', (e) => {
       if (!this.editorState.active) return;
       if (this.editorState.drawingHeightfield) return; // desenho de heightfield cede o clique
+      if (this.editorState.sculptingTerrain) return; // pincel de terreno cede o clique
       if (e.button !== 0) return;
       const dragging = (this.controls as unknown as { dragging: boolean }).dragging;
       if (dragging) return;

@@ -18,8 +18,13 @@ export interface EditorState {
    * pontos). Os outros sistemas de clique (seleção/gizmo) cedem o clique.
    */
   drawingHeightfield: boolean;
+  /**
+   * `true` enquanto o usuário **esculpe um terreno** (pincel raise/lower). Os
+   * outros sistemas de clique (seleção/gizmo) cedem o clique pro pincel.
+   */
+  sculptingTerrain: boolean;
 }
 
 export function createEditorState(): EditorState {
-  return { active: false, paused: false, gizmoDragging: false, drawingHeightfield: false };
+  return { active: false, paused: false, gizmoDragging: false, drawingHeightfield: false, sculptingTerrain: false };
 }
