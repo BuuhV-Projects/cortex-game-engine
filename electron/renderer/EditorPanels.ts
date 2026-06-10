@@ -271,7 +271,14 @@ export class EditorPanels {
 
   private structureKey(model: InspectorModel): string {
     const parts: string[] = [model.empty ? 'E' : 'F']
-    for (const s of model.sections) for (const f of s.fields) parts.push(`${f.id}|${f.kind}`)
+    for (const s of model.sections) for (const f of s.fields) {
+      // Botão/nota não têm updater de valor — inclui o TEXTO na chave pra um label
+      // dinâmico (ex.: "Esculpir" ⇄ "Parar de esculpir") forçar o rebuild e aparecer.
+      const dyn = f.kind === 'button' ? `|${(f as { label?: string }).label ?? ''}`
+        : f.kind === 'note' ? `|${(f as { text?: string }).text ?? ''}`
+        : ''
+      parts.push(`${f.id}|${f.kind}${dyn}`)
+    }
     return parts.join(',')
   }
 
