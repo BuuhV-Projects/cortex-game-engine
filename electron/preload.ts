@@ -22,6 +22,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   revendorEngine: (projectDir: string) =>
     ipcRenderer.invoke('engine:revendor', projectDir),
 
+  /** `true` em dev (electron:dev); `false` no build empacotado. */
+  isDev: ipcRenderer.sendSync('app:is-dev') as boolean,
+  toggleDevTools: () => ipcRenderer.invoke('devtools:toggle'),
+
   listProjectFiles: (projectDir: string) =>
     ipcRenderer.invoke('fs:listProjectFiles', projectDir),
 

@@ -77,6 +77,10 @@ export interface ElectronAPI {
   watchProject(projectDir: string): Promise<void>
   /** Re-vendoriza o engine atual do IDE no `vendor/` do projeto (engine atualizou). */
   revendorEngine(projectDir: string): Promise<void>
+  /** `true` em dev (electron:dev). Pra mostrar opções de dev (DevTools). */
+  isDev: boolean
+  /** Abre/fecha o DevTools do studio (só em dev). */
+  toggleDevTools(): Promise<void>
 
   // Eventos do main → renderer
   onLog(callback: (line: string) => void): void

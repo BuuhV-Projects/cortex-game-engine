@@ -107,6 +107,10 @@ export class Shell {
       this.menuItem('View', [
         { label: 'English', run: () => void this.setLocale('en') },
         { label: 'Português', run: () => void this.setLocale('pt') },
+        // DevTools do studio — só em dev (no build empacotado não aparece).
+        ...(window.electronAPI.isDev
+          ? [{ sep: true }, { label: tr('menu.devtools', 'DevTools'), run: () => void window.electronAPI.toggleDevTools?.() }]
+          : []),
       ]),
       this.menuItem('Cena', [
         { label: tr('menu.add_terrain', 'Adicionar terreno'), run: () => document.dispatchEvent(new CustomEvent('request-add-terrain')) },

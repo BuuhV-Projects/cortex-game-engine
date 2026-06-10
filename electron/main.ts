@@ -235,6 +235,17 @@ function createWindow(): void {
   })
   ipcMain.handle('window:close', () => mainWindow?.close())
 
+  // DevTools do STUDIO — só em dev (no build empacotado o estúdio não expõe tools,
+  // por design). A janela é frameless, então o menu nativo (com DevTools) fica
+  // escondido; o item no menubar custom do studio chama isto.
+  ipcMain.handle('devtools:toggle', () => {
+    if (!app.isPackaged) mainWindow?.webContents.toggleDevTools()
+  })
+  // Síncrono: o renderer só MOSTRA o item de DevTools quando em dev.
+  ipcMain.on('app:is-dev', (e) => {
+    e.returnValue = !app.isPackaged
+  })
+
   // Em desenvolvimento, electron-vite injeta ELECTRON_RENDERER_URL com o dev server
   if (process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
