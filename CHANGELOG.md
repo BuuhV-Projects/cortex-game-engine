@@ -1,3 +1,25 @@
+# [0.22.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.21.0...v0.22.0) (2026-06-10)
+
+
+### Bug Fixes
+
+* **editor:** shader — objeto sumia ao mexer no contorno + cor real + dropdown legível ([c09688b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c09688b11657dc5bd66ce8147b510c55d86ca05a))
+* **electron:** tsconfig do electron é type-check puro (corrige TS6059 no blender.ts) ([b3d3927](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b3d3927378c5e9cc57933fa935e7872739cb7d7a))
+* **engine:** material re-sombreia em cima do original sem achatar cores (toon/unlit) ([e25a64d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e25a64daf3be44f3f757a06d2ab21b0ae55a47fe))
+* **engine:** objeto some no editor por frustum culling errado (esfera obsoleta/animado) ([3bd438c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3bd438ca7bba0dc2216fb3537d7b45ba8f5e0243))
+* **input:** tecla não trava ao soltar com Shift (câmera do editor andava pra sempre) ([9136571](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9136571873465a13591d05fe7d7c57f16c394227))
+
+
+### Features
+
+* **editor:** seção Shader no inspector — escolhe material por objeto (ADR-0058 S3) ([5c4b7a8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5c4b7a8fc3892abe562059f27c4071023f5e5817))
+* **engine:** framedata 2D no kit.json — nó sprite herda grade/animações do kit ([d54a08e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d54a08e5a7c564f601f51c35af7d6e6f81a3be35))
+* **engine:** nó sprite 2D data-driven na cena (ADR-0057) ([a9114ab](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a9114abc59ef865eee7b55642de362b4d3ced032))
+* **engine:** sistema de material/shader por objeto — preset unlit (ADR-0058) ([430acc0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/430acc0b7cbe353760d91414a30e331b6558d7ef))
+* **ia:** import_kit traz só os assets usados (list_kit_assets + nudge) ([8039a9d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8039a9daf2ae9ccf70abd1992cee163e30702b74))
+* **ide:** preview/player de spritesheet 2D (rota A) ([26eaf66](https://github.com/BuuhV-Projects/cortex-game-engine/commit/26eaf667c79705e220b2c98264dfbff657df3fd5))
+* **skill:** process-asset-kit-2d — pack de sprites 2D → kit do engine (sem Blender) ([f630d0e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f630d0efe35b938c74d5269f2a629afb879f50da))
+
 # [0.21.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.20.0...v0.21.0) (2026-06-09)
 
 
