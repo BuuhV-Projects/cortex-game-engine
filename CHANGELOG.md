@@ -1,3 +1,10 @@
+## [0.22.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.22.0...v0.22.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* **editor:** rotação editada se perdia ao recarregar (TransformComponent sem rotationY) ([22a7217](https://github.com/BuuhV-Projects/cortex-game-engine/commit/22a7217c06219b8d211be86bf8ba52c283ebc5b8))
+
 # [0.22.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.21.0...v0.22.0) (2026-06-10)
 
 
