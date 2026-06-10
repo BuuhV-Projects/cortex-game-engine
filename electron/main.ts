@@ -473,6 +473,7 @@ const VENDOR_TYPE_MODULES = {
     'PlayerAnimatorComponent',
     'SpriteAnimationComponent',
     'TerrainComponent',
+    'CharacterBodyComponent',
   ],
   systems: [
     'Object3DSyncSystem',
@@ -482,6 +483,7 @@ const VENDOR_TYPE_MODULES = {
     'FollowCamera2DSystem',
     'TopDownCameraSystem',
     'TerrainCollisionSystem',
+    'CharacterPhysicsSystem',
     'PlatformerAnimationSystem',
     'SpriteAnimationSystem',
   ],

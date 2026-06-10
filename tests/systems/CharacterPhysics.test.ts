@@ -1,0 +1,72 @@
+/**
+ * Testes do character controller (CharacterBodyComponent + CharacterPhysicsSystem)
+ * + aterramento no terreno (TerrainCollisionSystem): gravidade limitada, pulo
+ * (jumpForce/maxJumps), e o personagem ficando EM CIMA do terreno.
+ */
+import { describe, it, expect } from 'vitest';
+import { World } from '../../src/ecs/World.js';
+import { Terrain } from '../../src/scene/Terrain.js';
+import { TransformComponent } from '../../src/components/TransformComponent.js';
+import { CharacterBodyComponent } from '../../src/components/CharacterBodyComponent.js';
+import { TerrainComponent } from '../../src/components/TerrainComponent.js';
+import { CharacterPhysicsSystem } from '../../src/systems/CharacterPhysicsSystem.js';
+import { TerrainCollisionSystem } from '../../src/systems/TerrainCollisionSystem.js';
+
+describe('CharacterPhysicsSystem', () => {
+  it('gravidade puxa pra baixo (limitada por fallSpeedMax)', () => {
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem());
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 10, 0);
+    const c = new CharacterBodyComponent({ gravity: 30, fallSpeedMax: 25 });
+    e.addComponent(t);
+    e.addComponent(c);
+    world.tick(100); // 0.1s
+    expect(c.velocityY).toBeCloseTo(-3); // -30*0.1
+    expect(t.y).toBeLessThan(10);
+    // acumula até o teto de queda
+    for (let i = 0; i < 60; i++) world.tick(100);
+    expect(c.velocityY).toBeCloseTo(-25); // limitado por fallSpeedMax
+  });
+
+  it('jump() aplica jumpForce e respeita maxJumps', () => {
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem());
+    const e = world.createEntity();
+    const c = new CharacterBodyComponent({ jumpForce: 9, maxJumps: 1 });
+    e.addComponent(new TransformComponent(0, 0, 0));
+    e.addComponent(c);
+    c.jump();
+    world.tick(16);
+    expect(c.velocityY).toBeGreaterThan(0); // subiu (jumpForce - gravidade do tick)
+    expect(c.jumpsUsed).toBe(1);
+    c.jump(); // sem pulos disponíveis (maxJumps 1, não aterrou)
+    const vBefore = c.velocityY;
+    world.tick(16);
+    expect(c.jumpsUsed).toBe(1); // não pulou de novo
+    expect(c.velocityY).toBeLessThan(vBefore); // só caiu pela gravidade
+  });
+});
+
+describe('CharacterBody + terreno', () => {
+  it('o personagem cai e PARA em cima do terreno (grounded, pulos resetam)', () => {
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem());
+    world.addSystem(new TerrainCollisionSystem());
+    const terrain = new Terrain({ size: 20, resolution: 20 });
+    const te = world.createEntity();
+    te.addComponent(new TerrainComponent(terrain, terrain.mesh)); // plano em y=0
+
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 5, 0); // começa no ar
+    const c = new CharacterBodyComponent();
+    e.addComponent(t);
+    e.addComponent(c);
+
+    for (let i = 0; i < 120; i++) world.tick(16); // ~2s caindo
+    expect(t.y).toBeCloseTo(0); // pousou na superfície (plano = 0)
+    expect(c.grounded).toBe(true);
+    expect(c.velocityY).toBe(0);
+    expect(c.jumpsUsed).toBe(0); // resetou ao aterrar
+  });
+});

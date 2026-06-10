@@ -2,22 +2,20 @@
 
 ***
 
-[cortex-game-engine](../README.md) / TerrainCollisionSystem
+[cortex-game-engine](../README.md) / CharacterPhysicsSystem
 
-# Class: TerrainCollisionSystem
+# Class: CharacterPhysicsSystem
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L24)
+Defined in: src/systems/CharacterPhysicsSystem.ts:16
 
-**Colisão com o terreno** (heightmap) — mantém os corpos EM CIMA da superfície:
-se um corpo cai abaixo da altura do terreno no seu `(x, z)`, é subido até a
-superfície e **aterrado** (zera a velocidade pra baixo, marca `grounded`). Vale
-pra `PlatformerBodyComponent` (2.5D) e `KinematicBodyComponent` (genérico) —
-então serve pra jogos 3D, 2.5D ou top-down (a altura vem de [Terrain.heightAt](Terrain.md#heightat)).
-Terreno é **sólido por padrão**: o [buildScene](../functions/buildScene.md) liga este sistema quando a
-cena tem terreno.
+Física vertical do [CharacterBodyComponent](CharacterBodyComponent.md) (character controller estilo
+UPBGE): aplica **gravidade** (limitada por `fallSpeedMax`), processa o **pulo**
+(`jumpForce` até `maxJumps`) e integra o Y. O movimento horizontal (X/Z) fica
+com o input do jogo; o **ground** (zera `velocityY`, marca `grounded`, reseta os
+pulos) é feito pelo [TerrainCollisionSystem](TerrainCollisionSystem.md) (e/ou colisão de objetos).
 
-Roda **depois da física** (priority 5) e **antes do** `Object3DSyncSystem`
-(priority 10), pra a mesh refletir a posição já corrigida.
+Roda na física (priority 5), **antes** do [TerrainCollisionSystem](TerrainCollisionSystem.md) (7) e do
+`Object3DSyncSystem` (10).
 
 ## Extends
 
@@ -27,11 +25,11 @@ Roda **depois da física** (priority 5) e **antes do** `Object3DSyncSystem`
 
 ### Constructor
 
-> **new TerrainCollisionSystem**(): `TerrainCollisionSystem`
+> **new CharacterPhysicsSystem**(): `CharacterPhysicsSystem`
 
 #### Returns
 
-`TerrainCollisionSystem`
+`CharacterPhysicsSystem`
 
 #### Inherited from
 
@@ -62,9 +60,9 @@ a gameplay (física/input) enquanto o editor está ativo
 
 ### priority
 
-> **priority**: `number` = `7`
+> **priority**: `number` = `5`
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L26)
+Defined in: src/systems/CharacterPhysicsSystem.ts:18
 
 Prioridade de execução deste sistema.
 
@@ -79,9 +77,9 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ### requiredComponents
 
-> `static` **requiredComponents**: `never`[] = `[]`
+> `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L25)
+Defined in: src/systems/CharacterPhysicsSystem.ts:17
 
 Construtores dos componentes que este sistema requer.
 
@@ -105,9 +103,9 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 ### update()
 
-> **update**(`entities`): `void`
+> **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L28)
+Defined in: src/systems/CharacterPhysicsSystem.ts:20
 
 Executa a lógica do sistema para o frame/passo atual.
 
@@ -119,6 +117,12 @@ Executa a lógica do sistema para o frame/passo atual.
 
 Entidades filtradas pelo `World` que possuem todos os
                    componentes declarados em `requiredComponents`.
+
+##### deltaTime
+
+`number`
+
+Tempo decorrido desde o último tick, em segundos.
 
 #### Returns
 

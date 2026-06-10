@@ -505,6 +505,26 @@ os corpos (`PlatformerBodyComponent`/`KinematicBodyComponent`) EM CIMA da superf
 (`Terrain.heightAt(x,z)`), vale pra 3D/2.5D/top-down. Limites (v1): só raise/lower;
 smooth/flatten e **pintura de textura** (splat) vêm depois.
 
+## Character controller (player/NPC com cápsula — estilo UPBGE)
+
+`CharacterBodyComponent` (cápsula `radius`/`height`) + `CharacterPhysicsSystem` =
+character controller com gravidade, **pulo** (`jumpForce`/`maxJumps`), queda
+limitada (`fallSpeedMax`) e `stepHeight`. O `TerrainCollisionSystem` o mantém EM
+CIMA do terreno (anda em morros, não atravessa). Movimento horizontal (X/Z ou X/Y)
+fica com o input do jogo; o sistema cuida do Y. Pivô nos **pés** (`transform.y` = base).
+
+```ts
+import { CharacterBodyComponent, CharacterPhysicsSystem } from 'cortex-game-engine'
+game.world.addSystem(new CharacterPhysicsSystem())
+player.addComponent(new TransformComponent(x, y, z))
+player.addComponent(new CharacterBodyComponent({ radius: 0.4, height: 1.8, jumpForce: 9, maxJumps: 1 }))
+// no input (ex.: espaço): player.getComponent(CharacterBodyComponent)!.jump()
+// terreno sólido vem de graça se a cena tem um nó `terrain` (TerrainCollisionSystem).
+```
+
+Props (UPBGE): `stepHeight` (degrau que sobe andando), `jumpForce` (vel. do pulo),
+`fallSpeedMax` (queda máx.), `maxJumps` (nº de pulos antes de tocar o chão).
+
 ## Material / shader por objeto (material)
 
 Atribui um "shader" (material do Three) a um objeto pela propriedade `material` do nó

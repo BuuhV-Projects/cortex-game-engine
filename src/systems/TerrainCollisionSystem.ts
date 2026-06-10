@@ -5,6 +5,7 @@ import { TransformComponent } from '../components/TransformComponent.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { KinematicBodyComponent } from '../components/KinematicBodyComponent.js';
+import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 
 const _v = new Vector3();
 
@@ -41,13 +42,14 @@ export class TerrainCollisionSystem extends System {
       if (!t) continue;
       const pb = e.getComponent(PlatformerBodyComponent);
       const kb = e.getComponent(KinematicBodyComponent);
-      if (!pb && !kb) continue; // só corpos (o que cai/anda)
+      const cb = e.getComponent(CharacterBodyComponent);
+      if (!pb && !kb && !cb) continue; // só corpos (o que cai/anda)
 
       for (const tc of terrains) {
         const surfaceY = surfaceWorldY(tc, t.x, t.z);
         if (surfaceY === null) continue; // fora da área do terreno
         if (t.y < surfaceY) {
-          t.y = surfaceY;
+          t.y = surfaceY; // sobe até a superfície (pés no terreno)
           if (pb) {
             if (pb.vy < 0) pb.vy = 0;
             pb.grounded = true;
@@ -55,6 +57,11 @@ export class TerrainCollisionSystem extends System {
           if (kb) {
             if (kb.velocityY < 0) kb.velocityY = 0;
             kb.grounded = true;
+          }
+          if (cb) {
+            if (cb.velocityY < 0) cb.velocityY = 0;
+            cb.grounded = true;
+            cb.jumpsUsed = 0; // tocou o chão → reseta os pulos
           }
         }
       }

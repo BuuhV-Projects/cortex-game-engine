@@ -39,6 +39,7 @@ export * from './components/PlatformerBodyComponent.js';
 export * from './components/PlayerAnimatorComponent.js';
 export * from './components/SpriteAnimationComponent.js';
 export * from './components/TerrainComponent.js';
+export * from './components/CharacterBodyComponent.js';
 
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
 export * from './systems/Object3DSyncSystem.js';
@@ -48,6 +49,7 @@ export * from './systems/PlatformerInputSystem.js';
 export * from './systems/FollowCamera2DSystem.js';
 export * from './systems/TopDownCameraSystem.js';
 export * from './systems/TerrainCollisionSystem.js';
+export * from './systems/CharacterPhysicsSystem.js';
 export * from './systems/PlatformerAnimationSystem.js';
 export * from './systems/SpriteAnimationSystem.js';
 

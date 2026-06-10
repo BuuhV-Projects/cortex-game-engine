@@ -46,6 +46,7 @@ class MovementSystem extends System {
 - [`FollowCamera2DSystem`](FollowCamera2DSystem.md)
 - [`TopDownCameraSystem`](TopDownCameraSystem.md)
 - [`TerrainCollisionSystem`](TerrainCollisionSystem.md)
+- [`CharacterPhysicsSystem`](CharacterPhysicsSystem.md)
 - [`PlatformerAnimationSystem`](PlatformerAnimationSystem.md)
 - [`SpriteAnimationSystem`](SpriteAnimationSystem.md)
 
