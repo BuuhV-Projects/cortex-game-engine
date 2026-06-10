@@ -14,6 +14,10 @@ import {
   HemisphereLightHelper,
   PointLightHelper,
   SpotLightHelper,
+  Mesh,
+  RingGeometry,
+  MeshBasicMaterial,
+  DoubleSide,
   type Object3D,
 } from 'three';
 import type { Game, GameEditor } from '../core/Game.js';
@@ -672,6 +676,18 @@ export function attachEditor(game: Game): GameEditor {
       persist();
     }
   };
+  // Anel do pincel (igual à Unity): segue o cursor no terreno, mostra raio/lugar.
+  const brushRing = new Mesh(
+    new RingGeometry(0.9, 1, 48),
+    new MeshBasicMaterial({ color: 0xffe24a, side: DoubleSide, transparent: true, opacity: 0.9, depthTest: false }),
+  );
+  brushRing.rotation.x = -Math.PI / 2; // deitado no plano XZ (chão)
+  brushRing.renderOrder = 999;
+  brushRing.visible = false;
+  brushRing.raycast = () => {}; // não captura clique nem aparece na seleção
+  (brushRing.userData as Record<string, unknown>)['editorInternal'] = true; // fora da hierarquia
+  three.add(brushRing);
+
   const terrainApi: TerrainApi = {
     get: (obj) =>
       terrainOf(obj)
@@ -691,6 +707,7 @@ export function attachEditor(game: Game): GameEditor {
       saveTerrain();
       sculpt = null;
       editorState.sculptingTerrain = false;
+      brushRing.visible = false;
       objectEditSystem.setGizmoVisible(true); // devolve o gizmo ao objeto selecionado
     },
     setBrush: (radius, strength) => {
@@ -698,31 +715,43 @@ export function attachEditor(game: Game): GameEditor {
       terrainBrush.strength = strength;
     },
   };
-  // Aplica uma pincelada na posição do ponteiro (raycast no terreno → coords locais).
-  const terrainDab = (clientX: number, clientY: number, lower: boolean): void => {
-    if (!sculpt) return;
+
+  // Ponto do terreno sob o cursor (world), ou null se o cursor não está no terreno.
+  const terrainHit = (clientX: number, clientY: number): Vector3 | null => {
+    if (!sculpt) return null;
     const rect = game.canvas.getBoundingClientRect();
     _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     _ray.setFromCamera(_ndc, editorCamera);
     const hits = _ray.intersectObject(sculpt.obj, true);
-    if (hits.length === 0) return;
-    const p = hits[0]!.point;
-    sculpt.terrain.sculpt(
-      p.x - sculpt.obj.position.x,
-      p.z - sculpt.obj.position.z,
-      terrainBrush.radius,
-      terrainBrush.strength * (lower ? -1 : 1),
-    );
+    return hits.length ? hits[0]!.point.clone() : null;
+  };
+  // Aplica uma pincelada: converte o ponto world → LOCAL do terreno (respeita
+  // posição/rotação/ESCALA — sem isso a escala 3.5 jogava o pincel fora da grade).
+  const applyDab = (worldHit: Vector3, lower: boolean): void => {
+    if (!sculpt) return;
+    const local = sculpt.obj.worldToLocal(worldHit.clone());
+    const scl = sculpt.obj.scale.x || 1; // raio/força em unidades de MUNDO
+    sculpt.terrain.sculpt(local.x, local.z, terrainBrush.radius / scl, (terrainBrush.strength / scl) * (lower ? -1 : 1));
   };
   game.canvas.addEventListener('pointerdown', (e) => {
     if (!sculpt || e.button !== 0) return;
+    const hit = terrainHit(e.clientX, e.clientY);
+    if (!hit) return; // clique fora do terreno não pinta
     sculpt.painting = true;
-    terrainDab(e.clientX, e.clientY, e.shiftKey);
+    applyDab(hit, e.shiftKey);
   });
   game.canvas.addEventListener('pointermove', (e) => {
-    if (!sculpt || !sculpt.painting) return;
-    terrainDab(e.clientX, e.clientY, e.shiftKey);
+    if (!sculpt) return;
+    const hit = terrainHit(e.clientX, e.clientY);
+    if (hit) {
+      brushRing.position.copy(hit);
+      brushRing.scale.setScalar(Math.max(0.1, terrainBrush.radius)); // raio em mundo
+      brushRing.visible = true;
+    } else {
+      brushRing.visible = false;
+    }
+    if (sculpt.painting && hit) applyDab(hit, e.shiftKey);
   });
   const endTerrainPaint = (): void => {
     if (sculpt?.painting) {
