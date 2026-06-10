@@ -17,6 +17,8 @@ import {
 import { isMatte } from '../../src/scene/SceneAssets.js';
 import { Collider2DComponent } from '../../src/components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../../src/components/PlatformerBodyComponent.js';
+import { TransformComponent } from '../../src/components/TransformComponent.js';
+import { Object3DComponent } from '../../src/components/Object3DComponent.js';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
 import type { SceneFileV1 } from '../../src/scene/SceneFile.js';
 
@@ -98,6 +100,19 @@ describe('buildScene (plataformer: entidades ECS)', () => {
     const world = new World();
     await buildScene(new Scene(), lvl); // sem world
     expect(world.query(Collider2DComponent).length).toBe(0);
+  });
+
+  it('restaura a rotationY do overlay NO TransformComponent (regressão: rotação se perdia ao recarregar)', async () => {
+    const world = new World();
+    const handle = await buildScene(new Scene(), lvl, {
+      world,
+      overlay: overlay({ objects: { chao: { position: [2, -3, 0], rotation: [0, Math.PI / 4, 0], scale: [1, 1, 1] } } }),
+    });
+    // O Object3D recebeu a rotação do overlay…
+    expect(handle.byId.get('chao')!.rotation.y).toBeCloseTo(Math.PI / 4);
+    // …E o TransformComponent também — senão o Object3DSyncSystem zera a rotação Y.
+    const ent = world.query(Collider2DComponent).find((e) => e.getComponent(Object3DComponent)?.object.name === 'chao')!;
+    expect(ent.getComponent(TransformComponent)!.rotationY).toBeCloseTo(Math.PI / 4);
   });
 });
 

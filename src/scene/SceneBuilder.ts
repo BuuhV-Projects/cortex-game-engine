@@ -421,7 +421,10 @@ function createPlatformerEntity(
   playerAnimations?: Record<string, string>,
 ): Entity {
   const e = world.createEntity();
-  e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
+  // rotationY do Object3D (já com override do overlay aplicado) entra no Transform —
+  // senão o Object3DSyncSystem zera a rotação Y restaurada todo frame (rotação
+  // editada no editor se perdia ao recarregar). pos idem; rotX/Z ficam no Object3D.
+  e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
   e.addComponent(new Object3DComponent(obj));
 
   const offX = col?.offsetX ?? 0;

@@ -366,7 +366,7 @@ export function attachEditor(game: Game): GameEditor {
     let entity = findColliderEntity(obj);
     if (!entity) {
       entity = game.world.createEntity();
-      entity.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
+      entity.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
       entity.addComponent(new Object3DComponent(obj));
       entity.addComponent(new Collider2DComponent(0.01, 0.01, true, false, 0, 0, 'heightfield', []));
     }
@@ -565,7 +565,7 @@ export function attachEditor(game: Game): GameEditor {
       const offX = center.x - obj.position.x;
       const offY = center.y - obj.position.y;
       const e = game.world.createEntity();
-      e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z));
+      e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
       e.addComponent(new Object3DComponent(obj));
       e.addComponent(new Collider2DComponent(width / 2, height / 2, true, false, offX, offY, 'box'));
       collidersMap()[obj.name] = { shape: 'box', width, height, offsetX: offX, offsetY: offY, solid: true, oneWay: false };
