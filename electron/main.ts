@@ -103,6 +103,8 @@ function createSplash(): void {
 
 // Processo filho do vite em execução (único de cada vez)
 let runningProcess: ChildProcess | null = null
+// Porta do último Play — pra liberar a porta (matar zumbis) no stop/quit.
+let lastVitePort: number | null = null
 
 // Processo do terminal embutido (independente do runningProcess — permite
 // rodar `yarn install` enquanto o Play continua ativo). ADR-0012.
@@ -1038,10 +1040,43 @@ ipcMain.handle('dialog:openDirectory', async () => {
 function killProcessTree(proc: ChildProcess): void {
   if (!proc.pid) return
   if (process.platform === 'win32') {
-    // /T = mata filhos recursivamente; /F = força (SIGKILL equivalente)
-    spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'])
+    // /T = mata filhos recursivamente; /F = força. spawnSync pra COMPLETAR antes
+    // de seguir (senão o vite zumbi ainda segura a porta quando o próximo Play sobe).
+    spawnSync('taskkill', ['/pid', String(proc.pid), '/T', '/F'])
   } else {
     proc.kill('SIGTERM')
+  }
+}
+
+/** Porta do dev server do projeto (lida do vite.config; default 5174, strictPort). */
+function vitePortOf(projectDir: string): number {
+  try {
+    const cfg = readFileSync(join(projectDir, 'vite.config.ts'), 'utf-8')
+    const m = /port:\s*(\d+)/.exec(cfg)
+    if (m) return Number(m[1])
+  } catch {
+    /* sem vite.config legível — cai no default */
+  }
+  return 5174
+}
+
+/**
+ * Mata QUALQUER processo escutando na `port` — garante que um vite preso/zumbi não
+ * segure a porta e faça o próximo Play falhar (vite usa `strictPort`). Best-effort.
+ */
+function killPort(port: number): void {
+  if (!port) return
+  if (process.platform === 'win32') {
+    const r = spawnSync('netstat', ['-ano'], { encoding: 'utf-8' })
+    const pids = new Set<string>()
+    for (const line of (r.stdout ?? '').split('\n')) {
+      const m = /^\s*TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)/.exec(line)
+      if (m && Number(m[1]) === port) pids.add(m[2]!)
+    }
+    for (const pid of pids) spawnSync('taskkill', ['/pid', pid, '/T', '/F'])
+  } else {
+    const r = spawnSync('sh', ['-c', `lsof -ti tcp:${port} 2>/dev/null || true`], { encoding: 'utf-8' })
+    for (const pid of (r.stdout ?? '').split(/\s+/).filter(Boolean)) spawnSync('kill', ['-9', pid])
   }
 }
 
@@ -1054,6 +1089,11 @@ ipcMain.handle('run:start', async (_event, projectDir: unknown) => {
     killProcessTree(runningProcess)
     runningProcess = null
   }
+  // Libera a porta ANTES de subir: vite usa strictPort, então um zumbi de um Play
+  // anterior (ou crash) seguraria a porta e o Play falharia. Mata quem estiver nela.
+  const port = vitePortOf(safeDir)
+  lastVitePort = port
+  killPort(port)
 
   const child = spawn('vite', [], {
     cwd: safeDir,
@@ -1402,6 +1442,8 @@ ipcMain.handle('run:stop', async () => {
     // ou não disparar em algumas plataformas após kill()
     mainWindow?.webContents.send('project:stopped')
   }
+  // Garante a porta livre mesmo se o tree-kill não pegou o vite (zumbi segurando-a).
+  if (lastVitePort) killPort(lastVitePort)
 })
 
 // ---------------------------------------------------------------------------
@@ -1563,6 +1605,8 @@ app.on('before-quit', () => {
       /* best-effort no shutdown */
     }
   }
+  // Garante a porta do Play livre no shutdown (vite zumbi segurando-a).
+  if (lastVitePort) killPort(lastVitePort)
   runningProcess = null
   terminalProcess = null
 })
