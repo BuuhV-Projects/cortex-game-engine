@@ -664,8 +664,41 @@ ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unkn
   // ao .gitignore aqui — não no template — porque o git aplica .gitignore
   // aninhados também no repo da IDE.
   await ensureGitignoreEntry(projectPath, 'src-tauri/')
+  // git init + commit inicial = "primeira versão do jogo" (o template). node_modules/
+  // dist/src-tauri ficam de fora pelo .gitignore; vendor/ entra (engine é parte do
+  // projeto, ADR-0009). Roda ANTES do install — commit limpo. Falha em silêncio se
+  // git não estiver instalado (o projeto é criado mesmo assim).
+  gitInitialCommit(projectPath)
   return projectPath
 })
+
+/**
+ * Inicializa um repo git no projeto novo (branch `main`) e faz o **commit inicial**
+ * com o template. Best-effort: se `git` não existir ou algum passo falhar, ignora
+ * (criar o projeto não pode quebrar por causa do git). Usa a identidade global do
+ * usuário se houver; senão, um autor padrão só pra o commit não falhar.
+ */
+function gitInitialCommit(projectPath: string): void {
+  const git = (args: string[]): boolean => {
+    const r = spawnSync('git', args, { cwd: projectPath, env: envForSpawn(projectPath) })
+    return r.status === 0
+  }
+  try {
+    // `git init -b main` (git ≥ 2.28). Fallback p/ versões antigas: init + renomeia.
+    if (!git(['init', '-b', 'main'])) {
+      if (!git(['init'])) return // git indisponível — desiste
+      git(['checkout', '-b', 'main'])
+    }
+    if (!git(['add', '-A'])) return
+    const msg = 'chore: projeto inicial (template Cortex)'
+    // Respeita a identidade global; se ausente, commit não falha (autor padrão).
+    if (!git(['commit', '-m', msg])) {
+      git(['-c', 'user.name=Cortex', '-c', 'user.email=cortex@localhost', 'commit', '-m', msg])
+    }
+  } catch {
+    /* best-effort — nunca quebra a criação do projeto */
+  }
+}
 
 /**
  * Lê recursivamente todos os .d.ts dentro de `rootDir`. `monacoBaseUri` é
