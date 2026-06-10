@@ -108,6 +108,9 @@ export class Shell {
         { label: 'English', run: () => void this.setLocale('en') },
         { label: 'Português', run: () => void this.setLocale('pt') },
       ]),
+      this.menuItem('Cena', [
+        { label: tr('menu.add_terrain', 'Adicionar terreno'), run: () => document.dispatchEvent(new CustomEvent('request-add-terrain')) },
+      ]),
       this.menuItem('Projeto', [
         { label: tr('menu.build_installer', 'Gerar instalador…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: false } })) },
         { label: tr('menu.build_installer_debug', 'Gerar instalador (debug)…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: true } })) },

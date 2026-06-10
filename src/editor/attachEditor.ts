@@ -933,6 +933,28 @@ export function attachEditor(game: Game): GameEditor {
     };
   };
 
+  // Cria um terreno à frente da câmera (menu "Adicionar terreno" da IDE) e o
+  // persiste no overlay (added) — igual ao add de asset. Seleciona pra já esculpir.
+  const addTerrain = (): void => {
+    const forward = new Vector3();
+    editorCamera.getWorldDirection(forward);
+    const p = editorCamera.position.clone().add(forward.multiplyScalar(20));
+    const node: SceneNode = {
+      type: 'terrain',
+      id: `terrain-${Date.now().toString(36)}`,
+      size: 50,
+      resolution: 64,
+      transform: { position: [p.x, 0, p.z] },
+    };
+    void addSceneNode(game.scene, node).then((obj) => {
+      if (!obj) return;
+      addedList().push(node);
+      persist();
+      selection.requestSelect(obj);
+      hud.showToast('Terreno adicionado — clique "Esculpir" no inspector');
+    });
+  };
+
   const bridge = createEditorBridge({
     editRoots: [three],
     selection,
@@ -942,6 +964,7 @@ export function attachEditor(game: Game): GameEditor {
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),
+    onAddTerrain: addTerrain,
     onBridged: () => {
       bridgedPanelsHidden = true;
       outliner.setVisible(false);

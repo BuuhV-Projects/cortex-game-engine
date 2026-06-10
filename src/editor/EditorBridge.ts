@@ -49,13 +49,15 @@ export interface EditorBridgeOptions {
   viewportInfo?: () => Record<string, unknown>;
   /** Troca o modo do gizmo (botões de ferramenta da IDE). */
   onTool?: (mode: 'translate' | 'rotate' | 'scale') => void;
+  /** Adiciona um terreno à cena (menu "Adicionar terreno" da IDE). */
+  onAddTerrain?: () => void;
   /** Chamado quando o handshake conclui — o attachEditor esconde os painéis in-canvas. */
   onBridged: () => void;
 }
 
 /** Cria a ponte. Inerte (no-op) fora de um iframe. */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onBridged } = options;
 
   const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
   if (!inIframe) {
@@ -160,6 +162,9 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         break;
       case 'reload':
         // O reload do canvas é feito pela IDE (recarrega o iframe); aqui nada a fazer.
+        break;
+      case 'addTerrain':
+        onAddTerrain?.();
         break;
     }
   };

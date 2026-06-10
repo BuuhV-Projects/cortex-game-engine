@@ -123,6 +123,8 @@ export class EditorPanels {
     // Transport da toolbar (Shell) controla a gameplay via a ponte (Unity-style).
     document.addEventListener('request-editor-play', () => this.send({ type: 'editor', active: !this.editorActive }))
     document.addEventListener('request-editor-pause', () => this.send({ type: 'pause' }))
+    // "Adicionar terreno" (menu Projeto) → cria um terreno na cena via a ponte.
+    document.addEventListener('request-add-terrain', () => this.send({ type: 'addTerrain' }))
     // Botões de ferramenta (mover/girar/escalar) das pills do viewport.
     document.addEventListener('request-tool', (e) => {
       this.send({ type: 'tool', mode: (e as CustomEvent<{ mode: string }>).detail.mode })
