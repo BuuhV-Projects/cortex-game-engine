@@ -1,3 +1,11 @@
+# [0.26.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.25.0...v0.26.0) (2026-06-11)
+
+
+### Features
+
+* **physics:** integração Rapier↔ECS — RapierBodyComponent + RapierPhysicsSystem (ADR-0061) ([6525a42](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6525a4287af7e2a937003c76c139d9c3335303ad))
+* **physics:** spike Rapier — wrapper headless + TDD (fase 2, TDR-0002) ([1bb6f44](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1bb6f44407262d785731de7f36770505ced33d29))
+
 # [0.25.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.24.0...v0.25.0) (2026-06-11)
 
 
