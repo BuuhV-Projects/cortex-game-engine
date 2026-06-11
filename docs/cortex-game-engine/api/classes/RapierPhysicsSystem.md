@@ -6,7 +6,7 @@
 
 # Class: RapierPhysicsSystem
 
-Defined in: src/systems/RapierPhysicsSystem.ts:25
+Defined in: [src/systems/RapierPhysicsSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L25)
 
 Liga o Rapier ao ECS (ADR-0061): cria um corpo por entidade com
 [RapierBodyComponent](RapierBodyComponent.md) + [Object3DComponent](Object3DComponent.md), avança a simulação (passo
@@ -34,7 +34,7 @@ world.addSystem(new RapierPhysicsSystem(physics))
 
 > **new RapierPhysicsSystem**(`physics`): `RapierPhysicsSystem`
 
-Defined in: src/systems/RapierPhysicsSystem.ts:36
+Defined in: [src/systems/RapierPhysicsSystem.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L36)
 
 #### Parameters
 
@@ -77,7 +77,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `8`
 
-Defined in: src/systems/RapierPhysicsSystem.ts:27
+Defined in: [src/systems/RapierPhysicsSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L27)
 
 Prioridade de execução deste sistema.
 
@@ -94,7 +94,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`Object3DComponent`](Object3DComponent.md) \| *typeof* [`RapierBodyComponent`](RapierBodyComponent.md))[]
 
-Defined in: src/systems/RapierPhysicsSystem.ts:26
+Defined in: [src/systems/RapierPhysicsSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L26)
 
 Construtores dos componentes que este sistema requer.
 
@@ -120,7 +120,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/RapierPhysicsSystem.ts:40
+Defined in: [src/systems/RapierPhysicsSystem.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L40)
 
 Executa a lógica do sistema para o frame/passo atual.
 
