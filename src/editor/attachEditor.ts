@@ -33,7 +33,6 @@ import { createEditorHud } from './EditorHud.js';
 import { createEditorOutliner } from './EditorOutliner.js';
 import {
   createEditorInspector,
-  type ColliderApi,
   type TerrainApi,
 } from './EditorInspector.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
@@ -41,6 +40,7 @@ import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { createObjectRegistry } from './EditorModel.js';
 import { createAuthoringContext } from './authoring/AuthoringContext.js';
+import { createColliderApi } from './authoring/ColliderAuthoring.js';
 import { createPhysicsApi } from './authoring/PhysicsAuthoring.js';
 import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
@@ -544,76 +544,12 @@ export function attachEditor(game: Game): GameEditor {
       }
     });
   }
-  const colliderApi: ColliderApi = {
-    get(obj) {
-      const e = findColliderEntity(obj);
-      if (!e) return null;
-      const c = e.getComponent(Collider2DComponent)!;
-      // locked = veio do código (não está na overlay editável).
-      const locked = !(obj.name && collidersMap()[obj.name]);
-      return {
-        shape: c.shape,
-        width: c.halfWidth * 2,
-        height: c.halfHeight * 2,
-        offsetX: c.offsetX,
-        offsetY: c.offsetY,
-        solid: c.solid,
-        oneWay: c.oneWay,
-        pointCount: c.points?.length ?? 0,
-        locked,
-      };
-    },
-    add(obj) {
-      if (!obj.name || findColliderEntity(obj)) return;
-      const box = new Box3().setFromObject(obj);
-      const size = box.getSize(new Vector3());
-      const center = box.getCenter(new Vector3());
-      const width = Math.max(size.x, 0.1);
-      const height = Math.max(size.y, 0.1);
-      const offX = center.x - obj.position.x;
-      const offY = center.y - obj.position.y;
-      const e = game.world.createEntity();
-      e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
-      e.addComponent(new Object3DComponent(obj));
-      e.addComponent(new Collider2DComponent(width / 2, height / 2, true, false, offX, offY, 'box'));
-      collidersMap()[obj.name] = { shape: 'box', width, height, offsetX: offX, offsetY: offY, solid: true, oneWay: false };
-      persist();
-    },
-    update(obj, patch) {
-      const e = findColliderEntity(obj);
-      if (!e || !obj.name) return;
-      const c = e.getComponent(Collider2DComponent)!;
-      if (patch.width !== undefined) c.halfWidth = patch.width / 2;
-      if (patch.height !== undefined) c.halfHeight = patch.height / 2;
-      if (patch.offsetX !== undefined) c.offsetX = patch.offsetX;
-      if (patch.offsetY !== undefined) c.offsetY = patch.offsetY;
-      if (patch.solid !== undefined) c.solid = patch.solid;
-      if (patch.oneWay !== undefined) c.oneWay = patch.oneWay;
-      if (patch.shape !== undefined) c.shape = patch.shape;
-      collidersMap()[obj.name] = {
-        shape: c.shape,
-        width: c.halfWidth * 2,
-        height: c.halfHeight * 2,
-        offsetX: c.offsetX,
-        offsetY: c.offsetY,
-        solid: c.solid,
-        oneWay: c.oneWay,
-      };
-      persist();
-    },
-    remove(obj) {
-      const e = findColliderEntity(obj);
-      if (e) game.world.destroyEntity(e);
-      if (obj.name) delete collidersMap()[obj.name];
-      persist();
-    },
-    startHeightfield(obj) {
-      startDraw(obj);
-    },
-    autoHeightfield(obj) {
-      autoTraceHeightfield(obj);
-    },
-  };
+  // CRUD do collider extraído pra módulo (ADR-0060); o heightfield interativo
+  // (desenho no viewport) fica aqui e é injetado.
+  const colliderApi = createColliderApi(authoring, {
+    startHeightfield: startDraw,
+    autoHeightfield: autoTraceHeightfield,
+  });
 
   // ── Autorias como módulos (ADR-0060): física (tipo de corpo), fosco, material ──
   const physicsApi = createPhysicsApi(authoring, colliderApi);
