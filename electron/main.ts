@@ -484,7 +484,6 @@ const VENDOR_TYPE_MODULES = {
     'TopDownCameraSystem',
     'TerrainCollisionSystem',
     'CharacterPhysicsSystem',
-    'CharacterGroundSystem',
     'PlatformerAnimationSystem',
     'SpriteAnimationSystem',
   ],

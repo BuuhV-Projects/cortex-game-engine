@@ -27,7 +27,6 @@ import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { CharacterPhysicsSystem } from '../systems/CharacterPhysicsSystem.js';
-import { CharacterGroundSystem } from '../systems/CharacterGroundSystem.js';
 import { EditableTargetComponent } from '../components/EditableTargetComponent.js';
 import type { Entity } from '../ecs/Entity.js';
 import { createEditorState } from './EditorState.js';
@@ -626,7 +625,7 @@ export function attachEditor(game: Game): GameEditor {
   // respeita esse override no boot — então dá pra REMOVER/trocar física cravada no
   // código/level.json pelo Inspector (resolve "não tenho controle"). Ver ADR-0058.
   const CHAR_DEFAULTS: CharacterEditState = {
-    radius: 0.4, height: 1.8, gravity: 30, stepHeight: 0.4, jumpForce: 9, fallSpeedMax: 25, maxJumps: 1,
+    radius: 0.4, height: 1.8, gravity: 30, stepHeight: 0.4, jumpForce: 9, fallSpeedMax: 25, maxJumps: 1, groundY: 0,
   };
   const physicsMap = (): Record<string, Record<string, unknown>> => {
     const m = overlay.data['physics'];
@@ -647,22 +646,25 @@ export function attachEditor(game: Game): GameEditor {
       s.pauseWhen = () => game.editorActive;
       game.world.addSystem(s);
     }
-    if (!game.world.hasSystem(CharacterGroundSystem)) {
-      const s = new CharacterGroundSystem([three]);
-      s.pauseWhen = () => game.editorActive;
-      game.world.addSystem(s);
-    }
   };
   // Params efetivos do Character: componente vivo > override no overlay > defaults.
+  // `groundY` (piso plano onde aterra) cai pra altura ATUAL do objeto (fica de pé
+  // onde você o colocou) quando não há valor salvo.
   const effectiveChar = (obj: Object3D): CharacterEditState => {
     const cb = findCharacterEntity(obj)?.getComponent(CharacterBodyComponent);
     const ov = obj.name ? physicsMap()[obj.name] : undefined;
     const pick = (k: keyof CharacterEditState): number =>
       cb ? (cb[k] as number) : typeof ov?.[k] === 'number' ? (ov[k] as number) : CHAR_DEFAULTS[k];
+    const groundY = cb
+      ? cb.groundY
+      : typeof ov?.['groundY'] === 'number'
+        ? (ov['groundY'] as number)
+        : obj.position.y;
     return {
       radius: pick('radius'), height: pick('height'), gravity: pick('gravity'),
       stepHeight: pick('stepHeight'), jumpForce: pick('jumpForce'),
       fallSpeedMax: pick('fallSpeedMax'), maxJumps: pick('maxJumps'),
+      groundY,
     };
   };
   const addCharacterEntity = (obj: Object3D, params: CharacterEditState): void => {

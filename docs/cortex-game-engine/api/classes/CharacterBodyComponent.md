@@ -6,7 +6,7 @@
 
 # Class: CharacterBodyComponent
 
-Defined in: [src/components/CharacterBodyComponent.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L34)
+Defined in: [src/components/CharacterBodyComponent.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L42)
 
 **Corpo de personagem** (player/NPC) — uma **cápsula** com física vertical de
 character controller (estilo UPBGE "Character"): gravidade, pulo (Jump Force /
@@ -33,7 +33,7 @@ player.getComponent(CharacterBodyComponent)!.jump()
 
 > **new CharacterBodyComponent**(`options?`): `CharacterBodyComponent`
 
-Defined in: [src/components/CharacterBodyComponent.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L52)
+Defined in: [src/components/CharacterBodyComponent.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L62)
 
 #### Parameters
 
@@ -69,7 +69,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > `readonly` **fallSpeedMax**: `number`
 
-Defined in: [src/components/CharacterBodyComponent.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L40)
+Defined in: [src/components/CharacterBodyComponent.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L48)
 
 ***
 
@@ -77,7 +77,7 @@ Defined in: [src/components/CharacterBodyComponent.ts:40](https://github.com/Buu
 
 > `readonly` **gravity**: `number`
 
-Defined in: [src/components/CharacterBodyComponent.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L37)
+Defined in: [src/components/CharacterBodyComponent.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L45)
 
 ***
 
@@ -85,9 +85,19 @@ Defined in: [src/components/CharacterBodyComponent.ts:37](https://github.com/Buu
 
 > **grounded**: `boolean` = `false`
 
-Defined in: [src/components/CharacterBodyComponent.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L46)
+Defined in: [src/components/CharacterBodyComponent.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L56)
 
 `true` quando os pés estão no chão (terreno/colisão). Zera os pulos.
+
+***
+
+### groundY
+
+> **groundY**: `number`
+
+Defined in: [src/components/CharacterBodyComponent.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L51)
+
+Piso plano onde aterra (sem raycast). `-Infinity` = sem piso.
 
 ***
 
@@ -95,7 +105,7 @@ Defined in: [src/components/CharacterBodyComponent.ts:46](https://github.com/Buu
 
 > `readonly` **height**: `number`
 
-Defined in: [src/components/CharacterBodyComponent.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L36)
+Defined in: [src/components/CharacterBodyComponent.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L44)
 
 ***
 
@@ -103,7 +113,7 @@ Defined in: [src/components/CharacterBodyComponent.ts:36](https://github.com/Buu
 
 > `readonly` **jumpForce**: `number`
 
-Defined in: [src/components/CharacterBodyComponent.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L39)
+Defined in: [src/components/CharacterBodyComponent.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L47)
 
 ***
 
@@ -111,7 +121,7 @@ Defined in: [src/components/CharacterBodyComponent.ts:39](https://github.com/Buu
 
 > **jumpQueued**: `boolean` = `false`
 
-Defined in: [src/components/CharacterBodyComponent.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L50)
+Defined in: [src/components/CharacterBodyComponent.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L60)
 
 Pedido de pulo pendente (consumido pelo [CharacterPhysicsSystem](CharacterPhysicsSystem.md)).
 
@@ -121,7 +131,7 @@ Pedido de pulo pendente (consumido pelo [CharacterPhysicsSystem](CharacterPhysic
 
 > **jumpsUsed**: `number` = `0`
 
-Defined in: [src/components/CharacterBodyComponent.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L48)
+Defined in: [src/components/CharacterBodyComponent.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L58)
 
 Pulos já usados desde o último contato com o chão.
 
@@ -131,7 +141,7 @@ Pulos já usados desde o último contato com o chão.
 
 > `readonly` **maxJumps**: `number`
 
-Defined in: [src/components/CharacterBodyComponent.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L41)
+Defined in: [src/components/CharacterBodyComponent.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L49)
 
 ***
 
@@ -139,7 +149,7 @@ Defined in: [src/components/CharacterBodyComponent.ts:41](https://github.com/Buu
 
 > `readonly` **radius**: `number`
 
-Defined in: [src/components/CharacterBodyComponent.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L35)
+Defined in: [src/components/CharacterBodyComponent.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L43)
 
 ***
 
@@ -147,7 +157,7 @@ Defined in: [src/components/CharacterBodyComponent.ts:35](https://github.com/Buu
 
 > `readonly` **stepHeight**: `number`
 
-Defined in: [src/components/CharacterBodyComponent.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L38)
+Defined in: [src/components/CharacterBodyComponent.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L46)
 
 ***
 
@@ -155,7 +165,7 @@ Defined in: [src/components/CharacterBodyComponent.ts:38](https://github.com/Buu
 
 > **velocityY**: `number` = `0`
 
-Defined in: [src/components/CharacterBodyComponent.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L44)
+Defined in: [src/components/CharacterBodyComponent.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L54)
 
 Velocidade vertical atual (unidades/s). Integrada pela gravidade/pulo.
 
@@ -187,7 +197,7 @@ Usado por Entity para indexar componentes no Map<string, Component>.
 
 > **jump**(): `void`
 
-Defined in: [src/components/CharacterBodyComponent.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L64)
+Defined in: [src/components/CharacterBodyComponent.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L75)
 
 Pede um pulo — aplicado no próximo tick se ainda houver pulos disponíveis.
 

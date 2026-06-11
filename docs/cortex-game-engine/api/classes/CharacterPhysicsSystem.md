@@ -6,13 +6,16 @@
 
 # Class: CharacterPhysicsSystem
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L16)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L19)
 
 Física vertical do [CharacterBodyComponent](CharacterBodyComponent.md) (character controller estilo
 UPBGE): aplica **gravidade** (limitada por `fallSpeedMax`), processa o **pulo**
 (`jumpForce` até `maxJumps`) e integra o Y. O movimento horizontal (X/Z) fica
-com o input do jogo; o **ground** (zera `velocityY`, marca `grounded`, reseta os
-pulos) é feito pelo [TerrainCollisionSystem](TerrainCollisionSystem.md) (e/ou colisão de objetos).
+com o input do jogo. O **ground** vem de duas fontes (estáveis, sem raycast):
+- o **piso plano** `groundY` do próprio corpo (aterra ali — ideal pra top-down
+  de chão plano; default `-Infinity` = sem piso);
+- e/ou o [TerrainCollisionSystem](TerrainCollisionSystem.md) (terreno esculpido), que roda depois.
+Aterrar zera `velocityY`, marca `grounded` e reseta os pulos.
 
 Roda na física (priority 5), **antes** do [TerrainCollisionSystem](TerrainCollisionSystem.md) (7) e do
 `Object3DSyncSystem` (10).
@@ -62,7 +65,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `5`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L18)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L21)
 
 Prioridade de execução deste sistema.
 
@@ -79,7 +82,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L17)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L20)
 
 Construtores dos componentes que este sistema requer.
 
@@ -105,7 +108,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L20)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L23)
 
 Executa a lógica do sistema para o frame/passo atual.
 

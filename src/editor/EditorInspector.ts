@@ -75,7 +75,7 @@ export interface ColliderApi {
   autoHeightfield(obj: Object3D): void;
 }
 
-/** Parâmetros do corpo de Character (cápsula + gravidade + pulo). */
+/** Parâmetros do corpo de Character (cápsula + gravidade + pulo + piso). */
 export interface CharacterEditState {
   radius: number;
   height: number;
@@ -84,6 +84,8 @@ export interface CharacterEditState {
   jumpForce: number;
   fallSpeedMax: number;
   maxJumps: number;
+  /** Piso plano onde aterra (sem raycast). Default = altura onde o objeto está. */
+  groundY: number;
 }
 
 /** Estado de física do objeto selecionado (tipo de corpo + params do Character). */

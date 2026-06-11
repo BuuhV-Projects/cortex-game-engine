@@ -6,7 +6,7 @@
 
 # Interface: PhysicsOverride
 
-Defined in: [src/scene/SceneBuilder.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L122)
+Defined in: [src/scene/SceneBuilder.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L121)
 
 Override de física por objeto (overlay `data.physics[nome]`).
 
@@ -16,7 +16,7 @@ Override de física por objeto (overlay `data.physics[nome]`).
 
 > `optional` **character?**: `object`
 
-Defined in: [src/scene/SceneBuilder.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L125)
+Defined in: [src/scene/SceneBuilder.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L124)
 
 Parâmetros quando `type === 'character'`.
 
@@ -27,6 +27,12 @@ Parâmetros quando `type === 'character'`.
 #### gravity?
 
 > `optional` **gravity?**: `number`
+
+#### groundY?
+
+> `optional` **groundY?**: `number`
+
+Piso plano onde aterra (sem raycast). Default = altura onde o nó foi posicionado.
 
 #### height?
 
@@ -54,4 +60,4 @@ Parâmetros quando `type === 'character'`.
 
 > **type**: [`BodyType`](../type-aliases/BodyType.md)
 
-Defined in: [src/scene/SceneBuilder.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L123)
+Defined in: [src/scene/SceneBuilder.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L122)

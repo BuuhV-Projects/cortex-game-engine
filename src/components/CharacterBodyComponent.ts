@@ -16,6 +16,14 @@ export interface CharacterBodyOptions {
   fallSpeedMax?: number;
   /** **Max Jumps** — nº máximo de pulos antes de tocar o chão (1 = sem double-jump). Default `1`. */
   maxJumps?: number;
+  /**
+   * **Altura do chão (Y)** — piso plano onde o personagem aterra (pés nessa altura).
+   * Estável e **sem raycast** (não treme): a gravidade puxa e para aqui; o pulo
+   * volta pra cá. Default `-Infinity` = sem piso (cai livre — quem aterra é o
+   * terreno/colisão). Em jogos de chão plano (top-down), use a altura do chão
+   * (ex.: `0`). O editor preenche com a altura onde o objeto foi posicionado.
+   */
+  groundY?: number;
 }
 
 /**
@@ -39,6 +47,8 @@ export class CharacterBodyComponent extends Component {
   readonly jumpForce: number;
   readonly fallSpeedMax: number;
   readonly maxJumps: number;
+  /** Piso plano onde aterra (sem raycast). `-Infinity` = sem piso. */
+  groundY: number;
 
   /** Velocidade vertical atual (unidades/s). Integrada pela gravidade/pulo. */
   velocityY = 0;
@@ -58,6 +68,7 @@ export class CharacterBodyComponent extends Component {
     this.jumpForce = options.jumpForce ?? 9;
     this.fallSpeedMax = options.fallSpeedMax ?? 25;
     this.maxJumps = options.maxJumps ?? 1;
+    this.groundY = options.groundY ?? -Infinity;
   }
 
   /** Pede um pulo — aplicado no próximo tick se ainda houver pulos disponíveis. */

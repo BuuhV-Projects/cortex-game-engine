@@ -10,7 +10,6 @@
 - [AudioManager](classes/AudioManager.md)
 - [Background](classes/Background.md)
 - [CharacterBodyComponent](classes/CharacterBodyComponent.md)
-- [CharacterGroundSystem](classes/CharacterGroundSystem.md)
 - [CharacterPhysicsSystem](classes/CharacterPhysicsSystem.md)
 - [Collider2DComponent](classes/Collider2DComponent.md)
 - [ColliderComponent](classes/ColliderComponent.md)

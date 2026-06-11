@@ -113,6 +113,8 @@ const characterSchema = z
     jumpForce: z.number().nonnegative().optional(),
     fallSpeedMax: z.number().positive().optional(),
     maxJumps: z.number().int().min(0).optional(),
+    /** Piso plano onde aterra (sem raycast). Default = altura onde o nó foi posicionado. */
+    groundY: z.number().optional(),
   })
   .optional();
 

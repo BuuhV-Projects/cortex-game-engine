@@ -48,6 +48,41 @@ describe('CharacterPhysicsSystem', () => {
   });
 });
 
+describe('CharacterBody + piso plano (groundY, sem raycast)', () => {
+  it('cai e PARA no groundY (estável: não passa, não treme)', () => {
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem());
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 5, 0);
+    const c = new CharacterBodyComponent({ groundY: 0 });
+    e.addComponent(t);
+    e.addComponent(c);
+
+    for (let i = 0; i < 120; i++) world.tick(16);
+    expect(t.y).toBe(0); // aterrou exatamente no piso (clamp determinístico)
+    expect(c.grounded).toBe(true);
+    expect(c.velocityY).toBe(0);
+    expect(c.jumpsUsed).toBe(0);
+
+    // mais ticks no chão: continua cravado (sem tremor/oscilação)
+    for (let i = 0; i < 10; i++) world.tick(16);
+    expect(t.y).toBe(0);
+  });
+
+  it('groundY pode ser != 0 (altura de spawn em top-down)', () => {
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem());
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 8, 0);
+    const c = new CharacterBodyComponent({ groundY: 3 });
+    e.addComponent(t);
+    e.addComponent(c);
+    for (let i = 0; i < 120; i++) world.tick(16);
+    expect(t.y).toBe(3);
+    expect(c.grounded).toBe(true);
+  });
+});
+
 describe('CharacterBody + terreno', () => {
   it('o personagem cai e PARA em cima do terreno (grounded, pulos resetam)', () => {
     const world = new World();

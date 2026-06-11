@@ -523,27 +523,32 @@ smooth/flatten e **pintura de textura** (splat) vêm depois.
 
 `CharacterBodyComponent` (cápsula `radius`/`height`) + `CharacterPhysicsSystem` =
 character controller com gravidade, **pulo** (`jumpForce`/`maxJumps`), queda
-limitada (`fallSpeedMax`) e `stepHeight`. O `TerrainCollisionSystem` o mantém EM
-CIMA do terreno (anda em morros, não atravessa). Movimento horizontal (X/Z ou X/Y)
+limitada (`fallSpeedMax`) e `stepHeight`. O **chão é estável (sem raycast → não
+treme)**: aterra num **piso plano** `groundY` (e/ou no terreno via
+`TerrainCollisionSystem`, que anda em morros). Movimento horizontal (X/Z ou X/Y)
 fica com o input do jogo; o sistema cuida do Y. Pivô nos **pés** (`transform.y` = base).
 
 ```ts
 import { CharacterBodyComponent, CharacterPhysicsSystem } from 'cortex-game-engine'
 game.world.addSystem(new CharacterPhysicsSystem())
 player.addComponent(new TransformComponent(x, y, z))
-player.addComponent(new CharacterBodyComponent({ radius: 0.4, height: 1.8, jumpForce: 9, maxJumps: 1 }))
+// groundY = a altura do chão plano onde ele fica de pé (top-down/flat). Sem groundY
+// (default -Infinity) ele só aterra no terreno/colisão.
+player.addComponent(new CharacterBodyComponent({ radius: 0.4, height: 1.8, jumpForce: 9, maxJumps: 1, groundY: 0 }))
 // no input (ex.: espaço): player.getComponent(CharacterBodyComponent)!.jump()
 // terreno sólido vem de graça se a cena tem um nó `terrain` (TerrainCollisionSystem).
 ```
 
 Props (UPBGE): `stepHeight` (degrau que sobe andando), `jumpForce` (vel. do pulo),
-`fallSpeedMax` (queda máx.), `maxJumps` (nº de pulos antes de tocar o chão).
+`fallSpeedMax` (queda máx.), `maxJumps` (nº de pulos antes de tocar o chão),
+`groundY` (piso plano onde aterra — estável, sem raycast).
 
 **Data-driven (preferido — fica editável no Inspector):** marque o nó com
 `character` no `level.json` (ou troque o **Tipo de corpo → Character** no Inspector).
 O `buildScene` cria o `CharacterBodyComponent` e **registra sozinho** o
-`CharacterPhysicsSystem` + `CharacterGroundSystem` (passe `physicsPaused:
-() => game.editorActive` pro personagem não cair durante a edição):
+`CharacterPhysicsSystem` (passe `physicsPaused: () => game.editorActive` pro
+personagem não cair durante a edição). O `groundY` cai pra **altura onde o nó foi
+posicionado** (fica de pé onde você o colocou):
 ```jsonc
 { "type": "model", "id": "hero", "url": "assets/Knight.glb",
   "character": { "radius": 0.4, "height": 1.8, "jumpForce": 9, "maxJumps": 1 } }
@@ -554,14 +559,6 @@ await buildScene(game.scene, defs, { world: game.world, physicsPaused: () => gam
 ```
 Assim o usuário vê/edita/remove o Character pelo Inspector. Evite cravar
 `CharacterBodyComponent` só no código (some do Inspector — ver a regra de física acima).
-
-**Ficar em cima de QUALQUER mesh** (não só terreno): `CharacterGroundSystem([scene])`
-faz o personagem **raycast pra baixo** e pousar no primeiro mesh embaixo (terreno,
-tiles, plataformas) — o chão é o próprio mesh, sem marcar collider em cada objeto.
-```ts
-import { CharacterGroundSystem } from 'cortex-game-engine'
-game.world.addSystem(new CharacterGroundSystem([game.scene.getThreeScene()]))
-```
 
 ## Material / shader por objeto (material)
 

@@ -32,6 +32,20 @@ Gravidade (unidades/s²) que puxa o personagem pra baixo. Default `30`.
 
 ***
 
+### groundY?
+
+> `optional` **groundY?**: `number`
+
+Defined in: [src/components/CharacterBodyComponent.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L26)
+
+**Altura do chão (Y)** — piso plano onde o personagem aterra (pés nessa altura).
+Estável e **sem raycast** (não treme): a gravidade puxa e para aqui; o pulo
+volta pra cá. Default `-Infinity` = sem piso (cai livre — quem aterra é o
+terreno/colisão). Em jogos de chão plano (top-down), use a altura do chão
+(ex.: `0`). O editor preenche com a altura onde o objeto foi posicionado.
+
+***
+
 ### height?
 
 > `optional` **height?**: `number`

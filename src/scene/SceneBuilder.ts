@@ -35,7 +35,6 @@ import { TerrainComponent } from '../components/TerrainComponent.js';
 import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { CharacterPhysicsSystem } from '../systems/CharacterPhysicsSystem.js';
-import { CharacterGroundSystem } from '../systems/CharacterGroundSystem.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
 import { Terrain } from './Terrain.js';
@@ -107,10 +106,10 @@ export interface BuildSceneOptions {
    */
   camera?: PerspectiveCamera | OrthographicCamera;
   /**
-   * Predicado pra **pausar a física de Character** (gravidade/pulo/chão) — os
-   * sistemas que o `buildScene` registra pra nós `character` recebem isso como
-   * `pauseWhen`. Passe `() => game.editorActive` pra o personagem não cair
-   * enquanto você edita a cena no F2. Sem isso, a física roda sempre.
+   * Predicado pra **pausar a física de Character** (gravidade/pulo) — o
+   * `CharacterPhysicsSystem` que o `buildScene` registra pra nós `character`
+   * recebe isso como `pauseWhen`. Passe `() => game.editorActive` pra o personagem
+   * não cair enquanto você edita a cena no F2. Sem isso, a física roda sempre.
    */
   physicsPaused?: () => boolean;
 }
@@ -211,6 +210,7 @@ export function overlayPhysics(
         jumpForce: num('jumpForce'),
         fallSpeedMax: num('fallSpeedMax'),
         maxJumps: num('maxJumps'),
+        groundY: num('groundY'),
       };
     }
     out[name] = { type: t, character };
@@ -488,13 +488,15 @@ export async function buildScene(
         phys?.type ?? (node.character ? 'character' : colliderCfg ? 'static' : 'none');
 
       if (type === 'character') {
-        // Character (UPBGE): cápsula + gravidade + pulo + fica em cima de qualquer mesh.
+        // Character (UPBGE): cápsula + gravidade + pulo. Aterra num piso plano
+        // (estável, sem raycast): groundY = o explícito, senão a altura onde o
+        // objeto foi posicionado (fica de pé onde você colocou).
         const cfg = phys?.character ?? node.character ?? {};
         const e = options.world.createEntity();
         e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
         e.addComponent(new Object3DComponent(obj));
-        e.addComponent(new CharacterBodyComponent(cfg));
-        ensureCharacterSystems(options.world, three, options.physicsPaused);
+        e.addComponent(new CharacterBodyComponent({ ...cfg, groundY: cfg.groundY ?? obj.position.y }));
+        ensureCharacterSystems(options.world, options.physicsPaused);
       } else if (type === 'static') {
         // Estático sólido: collider de plataforma. Sem dims em lugar nenhum (ex.: o
         // Inspector marcou Estático num objeto "pelado"), deriva do bbox dentro do
@@ -530,19 +532,13 @@ export async function addSceneNode(scene: Scene, node: SceneNode): Promise<Objec
 }
 
 /**
- * Registra (uma vez) os sistemas de Character no mundo: {@link CharacterPhysicsSystem}
- * (gravidade/pulo) e {@link CharacterGroundSystem} (fica em cima de qualquer mesh por
- * raycast). `paused` vira o `pauseWhen` dos sistemas (ex.: `() => game.editorActive`)
- * pra o personagem não cair durante a edição no F2.
+ * Registra (uma vez) o {@link CharacterPhysicsSystem} (gravidade/pulo + piso plano
+ * `groundY`) no mundo. `paused` vira o `pauseWhen` do sistema (ex.:
+ * `() => game.editorActive`) pra o personagem não cair durante a edição no F2.
  */
-function ensureCharacterSystems(world: World, three: Object3D, paused?: () => boolean): void {
+function ensureCharacterSystems(world: World, paused?: () => boolean): void {
   if (!world.hasSystem(CharacterPhysicsSystem)) {
     const s = new CharacterPhysicsSystem();
-    if (paused) s.pauseWhen = paused;
-    world.addSystem(s);
-  }
-  if (!world.hasSystem(CharacterGroundSystem)) {
-    const s = new CharacterGroundSystem([three]);
     if (paused) s.pauseWhen = paused;
     world.addSystem(s);
   }
