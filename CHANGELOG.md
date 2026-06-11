@@ -1,3 +1,17 @@
+# [0.23.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.22.1...v0.23.0) (2026-06-10)
+
+
+### Bug Fixes
+
+* **ide:** Play roda o vite LOCAL do projeto (corrige "Cannot find package vite") ([9578c83](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9578c8361de576ac86a16c01666eee9b50e8f589))
+
+
+### Features
+
+* **engine:** TopDownCameraSystem — câmera vista de cima (jogos de fazenda/RPG 2D) ([369950c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/369950cf020bdcb858457d2d095a448c7a7efe7b))
+* **ide:** git init + commit inicial ao criar projeto (template = 1ª versão) ([7439de9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7439de99f49b8126cfc74d9275f9d3164e67e0e4))
+* **ide:** sidebar Projeto atualiza em tempo real (fs.watch) preservando expansão ([baa5306](https://github.com/BuuhV-Projects/cortex-game-engine/commit/baa53066fdc9716b1fb72edbdcd4cf10fbeb959d))
+
 ## [0.22.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.22.0...v0.22.1) (2026-06-10)
 
 
