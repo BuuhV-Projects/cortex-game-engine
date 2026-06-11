@@ -581,11 +581,18 @@ quando o jogo usa física (TDR-0002). Exports: `RapierPhysics`, `RapierPhysicsSy
   `restitution`/`friction`/`isSensor` (trigger). **Atenção: é `bodyType`, não `type`**
   (o ECS usa `type` como chave).
 
+**Pause no editor (importante!):** marque `system.pauseWhen = () => game.editorActive`
+— senão a física **simula em modo de edição (F2)** e os corpos caem enquanto o
+usuário edita a cena. Só deve simular no Play (igual à Unity), como os outros
+sistemas de gameplay.
+
 ```ts
 import { RapierPhysics, RapierPhysicsSystem, RapierBodyComponent, Object3DComponent } from 'cortex-game-engine'
 
 const physics = await RapierPhysics.create({ x: 0, y: -9.81, z: 0 }) // lazy-load do rapier.js
-game.world.addSystem(new RapierPhysicsSystem(physics))
+const physicsSystem = new RapierPhysicsSystem(physics)
+physicsSystem.pauseWhen = () => game.editorActive // NÃO simular no editor
+game.world.addSystem(physicsSystem)
 
 // chão fixo
 const floor = game.world.createEntity()
