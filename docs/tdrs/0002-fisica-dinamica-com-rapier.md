@@ -33,6 +33,19 @@ Encaixa no **módulo de autoria de física** isolado pela decomposição do edit
 (ADR-0060): o overlay vira a fonte de dados (`data.physics[id]`), o Inspector
 visualiza/edita, e o `PhysicsAuthoring` mapeia isso pra corpos/colliders do Rapier.
 
+### Pacote: `@dimforge/rapier3d-compat` (empacotado), não o addon por CDN
+
+O three.js tem um helper `RapierPhysics` (`examples/jsm/physics/RapierPhysics.js`),
+mas ele faz `import()` **dinâmico de um CDN** (`cdn.skypack.dev/@dimforge/rapier3d-compat`)
+— **inviável** pro nosso engine **vendorizado/offline** (a IDE empacotada não pode
+buscar JS em runtime). Então:
+- instalar **`@dimforge/rapier3d-compat`** como dependência e **empacotar no bundle**
+  (a variante `-compat` **embute o WASM inline em base64** no próprio JS → **sem
+  `.wasm` separado**, só um `await RAPIER.init()` async no boot — vendoring simples);
+- usar o addon do three só como **referência** (geometria→shape, step, sync de mesh);
+  a integração real é um **`RapierPhysicsSystem` nosso** (ECS + `GameLoop` de timestep
+  fixo + `KinematicCharacterController`), lendo dos componentes data-driven.
+
 ## Consequências
 
 - **+** Física dinâmica robusta (empurrar/empilhar/juntas), character controller
