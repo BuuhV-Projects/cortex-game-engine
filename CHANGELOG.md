@@ -1,3 +1,27 @@
+# [0.24.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.23.0...v0.24.0) (2026-06-11)
+
+
+### Bug Fixes
+
+* **editor:** pincel de terreno não esculpia — gizmo roubava o clique ([d8be974](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d8be974c80625d33ae1d54687914f029ef49688a))
+* **editor:** pincel de terreno respeita escala + anel de pincel (estilo Unity) ([ad180d7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ad180d7c4a485d9613f96cea24ce90762fc71bd5))
+* **editor:** terreno do editor vira sólido na hora + maior/mais resolução ([decac9c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/decac9cb2766378fa3c7eef9dc554ed2e5a569b3))
+* **ide:** botão do inspector com label dinâmico não atualizava (Esculpir⇄Parar) ([cf0a37a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cf0a37a63f56bc4bc9513b4fef15900e3bb2232f))
+* **ide:** mata vite preso na porta do projeto (Play/stop/quit) ([cc33441](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cc33441ee249cdf4fd2471d649a3411893f433ab))
+
+
+### Features
+
+* **editor:** ferramenta de esculpir terreno — pincel raise/lower (ADR-0059 T2) ([bfd4c09](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bfd4c098998d2dda9ea304d445aed2b46886b370))
+* **editor:** tipo de corpo "Character" no Inspector + física editável (não no código) ([e05ed36](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e05ed36983d595524cde109ce6579a9f557b207f))
+* **engine:** CharacterBodyComponent — character controller estilo UPBGE ([db120ba](https://github.com/BuuhV-Projects/cortex-game-engine/commit/db120ba3a6b559aafe886ed1d92f0a67f048c9e2))
+* **engine:** CharacterGroundSystem — personagem fica em cima de qualquer mesh ([8a8bb97](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8a8bb97281a7bd244604015808700310f0e9b700))
+* **engine:** terreno heightmap esculpível — Terrain + nó data-driven (ADR-0059 T1) ([f6f6057](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f6f6057b612abeb31f22658cc94745b4662eafaa))
+* **engine:** terreno sólido por padrão — colisão por heightmap (ADR-0059 T3) ([f6a152c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f6a152ccfcfdd0d163057ca3a76c1921376f04e4))
+* **ide:** DevTools do studio no menu View (só em dev) ([ab90c81](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ab90c811716bee2ae186af0397c36a005161379f))
+* **ide:** menu Cena → "Adicionar terreno" cria um terreno na cena ([9b2df7c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9b2df7cac287f3cd9a4cba562f069ccc657b0c20))
+* **ide:** opção "Re-vendorizar engine" no menu Projeto ([500bb49](https://github.com/BuuhV-Projects/cortex-game-engine/commit/500bb4964821c968af0a5f18fb626f9495ecdca9))
+
 # [0.23.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.22.1...v0.23.0) (2026-06-10)
 
 
