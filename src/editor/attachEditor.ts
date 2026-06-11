@@ -189,6 +189,8 @@ export function attachEditor(game: Game): GameEditor {
   };
   const writer = autoDetectSceneFileWriter();
   // Semeia com a overlay já existente, pra não sobrescrever edições anteriores.
+  // NOTA: troca o objeto `overlay.data` — por isso o AuthoringContext lê
+  // `overlay.data` dinamicamente (não captura por referência). Ver AuthoringContext.
   void new SceneLoader()
     .loadSceneFile(OVERLAY_PATH)
     .then((f) => {

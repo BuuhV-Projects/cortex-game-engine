@@ -31,13 +31,17 @@ export function createAuthoringContext(
   overlay: SceneFileV1,
   persist: (immediate?: boolean) => void,
 ): EditorAuthoringContext {
-  const data = overlay.data as Record<string, unknown>;
   return {
     game,
     three,
     overlay,
     persist,
     record<T>(key: string): Record<string, T> {
+      // Lê `overlay.data` DINAMICAMENTE (não capturar por referência!): o attachEditor
+      // SUBSTITUI `overlay.data = f.data` ao semear o arquivo (async no boot). Se a
+      // gente capturasse `overlay.data` aqui, a autoria escreveria no objeto antigo
+      // (órfão) e o persist salvaria o novo — a edição se perdia. (Bug do save.)
+      const data = overlay.data as Record<string, unknown>;
       const m = data[key];
       if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, T>;
       const o: Record<string, T> = {};
