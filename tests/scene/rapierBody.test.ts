@@ -11,6 +11,7 @@ import { RapierBodyComponent } from '../../src/components/RapierBodyComponent.js
 import { RapierPhysicsSystem } from '../../src/systems/RapierPhysicsSystem.js';
 import { Object3DComponent } from '../../src/components/Object3DComponent.js';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
+import type { SceneFileV1 } from '../../src/scene/SceneFile.js';
 
 describe('buildScene + rapierBody (data-driven)', () => {
   it('nó com rapierBody vira corpo Rapier + registra o sistema, e cai', async () => {
@@ -49,6 +50,23 @@ describe('buildScene + rapierBody (data-driven)', () => {
     expect(caixaMesh.position.y).toBeLessThan(5); // caiu (nasceu em 8)
     expect(caixaMesh.position.y).toBeGreaterThan(-1); // pousou no chão, não atravessou
     expect(chao.getComponent(Object3DComponent)!.object.position.y).toBeCloseTo(-0.5, 1); // fixo
+  });
+
+  it('override "rigid" do Inspector (overlay) cria o corpo Rapier num nó sem rapierBody', async () => {
+    const scene = new Scene();
+    const world = new World();
+    const defs: SceneDefinition[] = [
+      { version: 1, nodes: [{ type: 'primitive', shape: 'box', id: 'caixa', size: 1, transform: { position: [0, 5, 0] } }] },
+    ];
+    const overlay = {
+      version: 1, objects: {},
+      data: { physics: { caixa: { type: 'rigid', rapier: { bodyType: 'fixed' } } } },
+    } as unknown as SceneFileV1;
+    await buildScene(scene, defs, { world, overlay });
+    const bodies = world.query(RapierBodyComponent);
+    expect(bodies.length).toBe(1);
+    expect(bodies[0]!.getComponent(RapierBodyComponent)!.bodyType).toBe('fixed');
+    expect(world.hasSystem(RapierPhysicsSystem)).toBe(true);
   });
 
   it('physicsPaused pausa a simulação (não cai no editor)', async () => {

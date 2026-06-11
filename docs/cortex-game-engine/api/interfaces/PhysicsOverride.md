@@ -6,7 +6,7 @@
 
 # Interface: PhysicsOverride
 
-Defined in: [src/scene/SceneBuilder.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L124)
+Defined in: [src/scene/SceneBuilder.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L129)
 
 Override de física por objeto (overlay `data.physics[nome]`).
 
@@ -16,7 +16,7 @@ Override de física por objeto (overlay `data.physics[nome]`).
 
 > `optional` **character?**: `object`
 
-Defined in: [src/scene/SceneBuilder.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L127)
+Defined in: [src/scene/SceneBuilder.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L132)
 
 Parâmetros quando `type === 'character'`.
 
@@ -56,8 +56,38 @@ Piso plano de fallback (se não houver geometria embaixo). Default `0`. O chão 
 
 ***
 
+### rapier?
+
+> `optional` **rapier?**: `object`
+
+Defined in: [src/scene/SceneBuilder.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L134)
+
+Parâmetros quando `type === 'rigid'` (corpo Rapier).
+
+#### bodyType?
+
+> `optional` **bodyType?**: `"dynamic"` \| `"fixed"` \| `"kinematic"`
+
+#### friction?
+
+> `optional` **friction?**: `number`
+
+#### isSensor?
+
+> `optional` **isSensor?**: `boolean`
+
+#### restitution?
+
+> `optional` **restitution?**: `number`
+
+#### shape?
+
+> `optional` **shape?**: \{ `kind`: `"auto"`; \} \| \{ `halfExtents`: \{ `x`: `number`; `y`: `number`; `z`: `number`; \}; `kind`: `"box"`; \} \| \{ `kind`: `"ball"`; `radius`: `number`; \} \| \{ `halfHeight`: `number`; `kind`: `"capsule"`; `radius`: `number`; \}
+
+***
+
 ### type
 
 > **type**: [`BodyType`](../type-aliases/BodyType.md)
 
-Defined in: [src/scene/SceneBuilder.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L125)
+Defined in: [src/scene/SceneBuilder.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L130)

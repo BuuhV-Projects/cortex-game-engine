@@ -50,6 +50,7 @@ import {
   type AttachConfig,
   type AnimationConfig,
   type CharacterConfig,
+  type RapierBodyConfig,
 } from './SceneDefinition.js';
 import { SceneAnimator } from './SceneAnimator.js';
 import {
@@ -117,14 +118,20 @@ export interface BuildSceneOptions {
   physicsPaused?: () => boolean;
 }
 
-/** Tipo de corpo físico de um nó (autorado/override do Inspector). */
-export type BodyType = 'none' | 'static' | 'character';
+/**
+ * Tipo de corpo físico de um nó (autorado/override do Inspector). `rigid` = corpo
+ * dinâmico do Rapier (caixa/barril que cai/empilha); `static`/`character` = física
+ * 2.5D/cápsula antiga; `none` = sem física.
+ */
+export type BodyType = 'none' | 'static' | 'character' | 'rigid';
 
 /** Override de física por objeto (overlay `data.physics[nome]`). */
 export interface PhysicsOverride {
   type: BodyType;
   /** Parâmetros quando `type === 'character'`. */
   character?: CharacterConfig;
+  /** Parâmetros quando `type === 'rigid'` (corpo Rapier). */
+  rapier?: RapierBodyConfig;
 }
 
 /** Lê `data.deleted` da overlay (ids removidos no editor). */
@@ -201,10 +208,10 @@ export function overlayPhysics(
     if (!v || typeof v !== 'object') continue;
     const o = v as Record<string, unknown>;
     const t = o['type'];
-    if (t !== 'none' && t !== 'static' && t !== 'character') continue;
+    if (t !== 'none' && t !== 'static' && t !== 'character' && t !== 'rigid') continue;
+    const num = (k: string): number | undefined => (typeof o[k] === 'number' ? (o[k] as number) : undefined);
     let character: CharacterConfig | undefined;
     if (t === 'character') {
-      const num = (k: string): number | undefined => (typeof o[k] === 'number' ? (o[k] as number) : undefined);
       character = {
         radius: num('radius'),
         height: num('height'),
@@ -216,7 +223,18 @@ export function overlayPhysics(
         groundY: num('groundY'),
       };
     }
-    out[name] = { type: t, character };
+    let rapier: RapierBodyConfig | undefined;
+    if (t === 'rigid') {
+      const r = (o['rapier'] && typeof o['rapier'] === 'object' ? o['rapier'] : o) as Record<string, unknown>;
+      const bt = r['bodyType'];
+      rapier = {
+        bodyType: bt === 'dynamic' || bt === 'fixed' || bt === 'kinematic' ? bt : undefined,
+        restitution: typeof r['restitution'] === 'number' ? (r['restitution'] as number) : undefined,
+        friction: typeof r['friction'] === 'number' ? (r['friction'] as number) : undefined,
+        isSensor: typeof r['isSensor'] === 'boolean' ? (r['isSensor'] as boolean) : undefined,
+      };
+    }
+    out[name] = { type: t, character, rapier };
   }
   return out;
 }
@@ -486,20 +504,27 @@ export async function buildScene(
       const colliderCfg = editorColliders[node.id] ?? node.collider ?? kitCol;
       const obj = byId.get(node.id)!;
 
-      // Corpo rígido do Rapier (física dinâmica 3D): cria o componente + garante o
-      // mundo/sistema (lazy). Vence e ignora a física 2.5D antiga neste nó.
-      if (node.rapierBody) {
-        await ensureRapier();
-        const e = world.createEntity();
-        e.addComponent(new Object3DComponent(obj));
-        e.addComponent(new RapierBodyComponent(node.rapierBody));
-        continue;
-      }
-
       // Tipo de corpo: override do Inspector (overlay `data.physics`) é AUTORITATIVO
       // — sobrescreve o que o nó/código declara. `player` NÃO é um override do
       // Inspector (só o nó declara); sem override, deriva do nó.
       const phys = editorPhysics[node.id] as PhysicsOverride | undefined;
+
+      // Corpo rígido do Rapier (física dinâmica 3D): override 'rigid' do Inspector
+      // (autoritativo) OU o nó `rapierBody` (quando não há override dizendo outra
+      // coisa). Cria o componente + garante o mundo/sistema (lazy). Vence a 2.5D.
+      const rapierCfg: RapierBodyConfig | undefined =
+        phys?.type === 'rigid'
+          ? (phys.rapier ?? node.rapierBody ?? {})
+          : !phys && node.rapierBody
+            ? node.rapierBody
+            : undefined;
+      if (rapierCfg) {
+        await ensureRapier();
+        const e = world.createEntity();
+        e.addComponent(new Object3DComponent(obj));
+        e.addComponent(new RapierBodyComponent(rapierCfg));
+        continue;
+      }
 
       if (!phys && node.player) {
         // Mapa ação→clipe do player: overlay (editor) > nó (`animations`) — auto-map

@@ -8,7 +8,7 @@
 
 > **overlayColliders**(`overlay`): `Record`\<`string`, [`ColliderConfig`](../type-aliases/ColliderConfig.md)\>
 
-Defined in: [src/scene/SceneBuilder.ts:154](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L154)
+Defined in: [src/scene/SceneBuilder.ts:161](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L161)
 
 Lê `data.colliders` da overlay — colliders **autorados no editor**, por nome de
 objeto (`{ [nome]: { width?, height?, offsetX?, offsetY?, solid?, oneWay? } }`).

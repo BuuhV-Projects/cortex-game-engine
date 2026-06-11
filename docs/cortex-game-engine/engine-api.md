@@ -119,6 +119,8 @@ nomeado tem uma seção **Física** com um seletor **Tipo de corpo** (estilo UPB
 - **Character** — corpo de personagem (cápsula + gravidade + pulo): edita Raio,
   Altura, Step Height, Jump Force, Fall Speed Max, Max Jumps. Fica **em cima de
   qualquer mesh** (terreno/tiles/plataformas) via raycast; pula no espaço (no Play).
+- **Rígido (Rapier)** — física dinâmica 3D de verdade (cai/empilha/empurra): edita
+  o corpo (Dinâmico/Fixo/Cinemático). Só simula no Play. Ver a seção do Rapier abaixo.
 
 O corpo fica **acoplado ao mesh** (mesma entidade) — **movem juntos**. Persiste no
 overlay (`assets/scene-data.json` → `data.physics[nome]` pro tipo + `data.colliders[nome]`
@@ -619,8 +621,12 @@ WASM) e respeita `physicsPaused` (pause no editor). Não precisa criar a malha/c
 ```ts
 await buildScene(game.scene, defs, { world: game.world, physicsPaused: () => game.editorActive })
 ```
-Prefira isso a montar o Rapier em código — assim a física é DADO da cena (e logo
-fica editável no Inspector). (Autoria via Inspector/overlay: em construção.)
+Prefira isso a montar o Rapier em código — assim a física é DADO da cena e fica
+**editável no Inspector**: seção **Física** → **Tipo de corpo → "Rígido (Rapier)"**,
+com um sub-seletor Dinâmico/Fixo/Cinemático. Marcar/editar persiste no overlay
+(`data.physics[id] = { type: 'rigid', rapier: { bodyType } }`) e o `buildScene`
+reaplica. **Objetos criados em código (não-nós) não persistem** essa autoria — pra
+ser editável no F2, o corpo precisa ser um **nó** (`rapierBody` no JSON acima).
 
 Quando usar **Rapier** vs o resto: Rapier = corpos dinâmicos 3D (caixas, barris,
 ragdoll, empilhar/empurrar). Pro **player/NPC** que anda no chão, o

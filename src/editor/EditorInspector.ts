@@ -2,6 +2,7 @@ import type { Object3D } from 'three';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
+import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 import type { EditorSelection } from './EditorSelection.js';
 import {
   describeInspector,
@@ -88,12 +89,20 @@ export interface CharacterEditState {
   groundY: number;
 }
 
-/** Estado de física do objeto selecionado (tipo de corpo + params do Character). */
+/** Parâmetros do corpo rígido do Rapier (válidos quando `type === 'rigid'`). */
+export interface RapierEditState {
+  /** `dynamic` cai/é empurrado; `fixed` imóvel (chão/parede); `kinematic` você move. */
+  bodyType: RapierBodyType;
+}
+
+/** Estado de física do objeto selecionado (tipo de corpo + params por tipo). */
 export interface PhysicsEditState {
   /** Tipo efetivo (override do Inspector vence o código/level.json). */
   type: BodyType;
   /** Params do Character (válidos quando `type === 'character'`; defaults senão). */
   character: CharacterEditState;
+  /** Params do corpo Rapier (válidos quando `type === 'rigid'`; defaults senão). */
+  rapier: RapierEditState;
 }
 
 /**
@@ -111,6 +120,8 @@ export interface PhysicsApi {
   setType(obj: Object3D, type: BodyType): void;
   /** Ajusta params do Character (aplica ao vivo + persiste). */
   setCharacter(obj: Object3D, patch: Partial<CharacterEditState>): void;
+  /** Ajusta params do corpo Rapier (aplica ao vivo + persiste). */
+  setRapier(obj: Object3D, patch: Partial<RapierEditState>): void;
 }
 
 /**

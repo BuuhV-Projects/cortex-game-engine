@@ -5,6 +5,7 @@ import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
 import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, TerrainApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
+import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
 /**
  * **Modelo declarativo do editor** (ADR-0056). Descreve a hierarquia e o inspector
@@ -490,6 +491,7 @@ export function describeInspector(
           { value: 'none', label: 'Nenhum' },
           { value: 'static', label: 'Estático (sólido)' },
           { value: 'character', label: 'Character' },
+          { value: 'rigid', label: 'Rígido (Rapier)' },
         ],
       });
       handlers.set(fid('physType'), (v) => {
@@ -516,6 +518,23 @@ export function describeInspector(
         handlers.set(fid('chFall'), (v) => papi.setCharacter(obj, { fallSpeedMax: Math.max(0.1, Number(v) || c.fallSpeedMax) }));
         handlers.set(fid('chJumps'), (v) => papi.setCharacter(obj, { maxJumps: Math.max(0, Math.round(Number(v) || 0)) }));
         handlers.set(fid('chGround'), (v) => papi.setCharacter(obj, { groundY: Number(v) || 0 }));
+      } else if (ps.type === 'rigid') {
+        // Corpo rígido do Rapier: física dinâmica 3D (cai/empilha/empurra).
+        fields.push(
+          {
+            kind: 'select',
+            id: fid('rbType'),
+            label: 'Corpo',
+            value: ps.rapier.bodyType,
+            options: [
+              { value: 'dynamic', label: 'Dinâmico (cai/empurra)' },
+              { value: 'fixed', label: 'Fixo (chão/parede)' },
+              { value: 'kinematic', label: 'Cinemático (você move)' },
+            ],
+          },
+          { kind: 'note', id: fid('rbHint'), text: 'Física dinâmica de verdade (Rapier): cai, empilha e empurra. Só simula no Play. A forma do collider é a caixa do objeto (auto).', tone: 'muted' },
+        );
+        handlers.set(fid('rbType'), (v) => papi.setRapier(obj, { bodyType: v as RapierBodyType }));
       } else if (ps.type === 'static' && ctx.colliderApi) {
         // Estático reusa a autoria de Collider2D (forma/tamanho/offset/sólido). Mesmo
         // se veio do código, é editável: editar grava no overlay (que vence o código).
