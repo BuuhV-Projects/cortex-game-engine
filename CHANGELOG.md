@@ -1,3 +1,10 @@
+# [0.28.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.27.0...v0.28.0) (2026-06-11)
+
+
+### Features
+
+* **core:** logger de debug por escopo (debug/setDebug) ligado via .env ([a6da699](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a6da6990eb6d5a8056c30e996f05ee0c09ced5df))
+
 # [0.27.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.26.0...v0.27.0) (2026-06-11)
 
 
