@@ -10,6 +10,7 @@ import type { Entity } from '../../ecs/Entity.js';
 import type { BodyType } from '../../scene/SceneBuilder.js';
 import type { PhysicsApi, ColliderApi, CharacterEditState, RapierEditState } from '../EditorInspector.js';
 import type { EditorAuthoringContext } from './AuthoringContext.js';
+import { debug } from '../../core/debug.js';
 
 const CHAR_DEFAULTS: CharacterEditState = {
   radius: 0.4, height: 1.8, gravity: 30, stepHeight: 0.4, jumpForce: 9, fallSpeedMax: 25, maxJumps: 1, groundY: 0,
@@ -121,6 +122,7 @@ export function createPhysicsApi(ctx: EditorAuthoringContext, colliderApi: Colli
     },
     setType(obj, type) {
       if (!obj.name) return;
+      debug('physics', 'setType', obj.name, '->', type);
       // Limpa qualquer corpo existente (character/rapier/collider) antes do novo.
       const ce = findCharacterEntity(obj);
       if (ce) game.world.destroyEntity(ce);
@@ -143,6 +145,7 @@ export function createPhysicsApi(ctx: EditorAuthoringContext, colliderApi: Colli
         colliderApi.remove(obj);
         physMap()[obj.name] = { type: 'none' };
       }
+      debug('physics', 'overlay.data.physics agora =', physMap());
       ctx.persist(true); // grava na hora: trocar tipo é raro e o user costuma dar Play/reload logo
     },
     setCharacter(obj, patch) {

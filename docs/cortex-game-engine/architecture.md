@@ -146,7 +146,20 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
 - **Persist tem debounce (500ms)**; trocas de física usam `persist(true)` (imediato)
   pra sobreviver a reload/Play logo em seguida.
 
-## 9. Mapa de arquivos
+## 9. Logging de debug (`src/core/debug.ts`)
+
+**Sempre use `debug(escopo, ...)` no lugar de `console.log` cru.** Fica desligado por
+padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
+`debug('physics', 'setType', name)` → `[cortex:physics] setType ...` só quando ligado.
+
+- **Liga via `.env`** (só em `electron:dev`): `VITE_CORTEX_DEBUG=physics,persist` (ou
+  `*`). A IDE (`Preview.ts`) injeta isso como `?cortexDebug=` no iframe do jogo; o
+  engine lê o param. `.env.example` documenta. Também: `localStorage['cortex:debug']`
+  no devtools, ou `setDebug('...')` no código.
+- **Escopos atuais:** `physics` (autoria de física), `persist` (save do overlay),
+  `scene` (buildScene). Crie novos à vontade — o escopo é só a 1ª string.
+
+## 10. Mapa de arquivos
 
 | Área | Onde |
 |---|---|

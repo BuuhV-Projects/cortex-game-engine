@@ -3,6 +3,14 @@
 Instruções específicas deste projeto. Decisões de arquitetura/tooling ficam em
 `docs/adrs/` (ADR) e `docs/tdrs/` (TDR) — leia os relevantes antes de mudar uma área.
 
+## Logging: use `debug(escopo, …)`, não `console.log`
+
+Sempre instrumente com o logger `debug()` de `src/core/debug.ts` (desligado por
+padrão; liga via `VITE_CORTEX_DEBUG` no `.env` em `electron:dev`, ou
+`localStorage['cortex:debug']`, ou `setDebug()`). Nunca deixe `console.log` cru no
+código do engine — ele aparece sempre, inclusive em produção. Ver
+architecture.md §9.
+
 ## Mapa de arquitetura (LEIA antes de mexer; ATUALIZE ao mudar)
 
 `docs/cortex-game-engine/architecture.md` descreve **como tudo se conecta** (ECS,

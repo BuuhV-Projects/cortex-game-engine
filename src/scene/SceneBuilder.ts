@@ -42,6 +42,7 @@ import { Water } from './Water.js';
 import { Background } from './Background.js';
 import { Terrain } from './Terrain.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
+import { debug } from '../core/debug.js';
 import {
   parseSceneNode,
   type SceneDefinition,
@@ -351,6 +352,7 @@ export async function buildScene(
   const overrides = overlay?.objects ?? {};
   const editorColliders = overlayColliders(overlay);
   const editorPhysics = overlayPhysics(overlay);
+  debug('scene', 'buildScene: overlayPhysics =', editorPhysics);
   const editorMatte = overlayMatte(overlay);
   const editorMaterial = overlayMaterial(overlay);
   const editorTerrain = overlayTerrain(overlay);
@@ -518,6 +520,9 @@ export async function buildScene(
           : !phys && node.rapierBody
             ? node.rapierBody
             : undefined;
+      if (node.rapierBody || phys) {
+        debug('scene', 'nó', node.id, 'rapierBody=', node.rapierBody, 'override=', phys, '=> rapierCfg=', rapierCfg);
+      }
       if (rapierCfg) {
         await ensureRapier();
         const e = world.createEntity();

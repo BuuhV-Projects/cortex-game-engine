@@ -19,6 +19,7 @@ export * from './core/Physics.js';
 export * from './core/LoadingScreen.js';
 export * from './core/Skybox.js';
 export * from './core/PostFX.js';
+export * from './core/debug.js';
 
 // ─── ECS ───────────────────────────────────────────────────────────────────────
 export * from './ecs/Entity.js';

@@ -21,6 +21,7 @@ import {
   type Object3D,
 } from 'three';
 import type { Game, GameEditor } from '../core/Game.js';
+import { debug } from '../core/debug.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
@@ -203,15 +204,25 @@ export function attachEditor(game: Game): GameEditor {
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   const persist = (immediate = false): void => {
-    if (!writer) return;
+    if (!writer) {
+      debug('persist', 'SEM WRITER — não salva');
+      return;
+    }
+    const save = (): void => {
+      debug('persist', immediate ? 'imediato' : 'debounced', 'data=', overlay.data);
+      void writer
+        .save(overlay)
+        .then(() => debug('persist', 'OK'))
+        .catch((e) => debug('persist', 'FALHOU', e));
+    };
     if (immediate) {
-      void writer.save(overlay).catch(() => {});
+      save();
       return;
     }
     if (saveTimer) return;
     saveTimer = setTimeout(() => {
       saveTimer = null;
-      void writer.save(overlay).catch(() => {});
+      save();
     }, 500);
   };
 

@@ -93,7 +93,7 @@ export class Preview {
     // ainda, sobe ele.
     document.addEventListener('request-canvas-reload', () => {
       const iframe = this.stageEl?.querySelector('iframe') as HTMLIFrameElement | null
-      if (iframe && this.serverUrl) iframe.src = this.serverUrl
+      if (iframe && this.serverUrl) iframe.src = this.withDebug(this.serverUrl)
       else if (this.projectDir && !this.running) void this.toggle()
     })
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
@@ -253,7 +253,25 @@ export class Preview {
     this.stageEl.innerHTML = ''
     const iframe = document.createElement('iframe')
     iframe.className = 'preview-iframe'
-    iframe.src = url
+    iframe.src = this.withDebug(url)
     this.stageEl.appendChild(iframe)
+  }
+
+  /**
+   * Anexa `?cortexDebug=` ao iframe do jogo a partir de `VITE_CORTEX_DEBUG` do
+   * `.env` — SÓ em dev (`electron:dev`). O engine lê esse param e liga os logs de
+   * debug (ver src/core/debug.ts). Em build empacotado, fica inerte.
+   */
+  private withDebug(url: string): string {
+    const env = import.meta.env as Record<string, string | boolean | undefined>
+    const dbg = env['DEV'] ? (env['VITE_CORTEX_DEBUG'] as string | undefined) : undefined
+    if (!dbg) return url
+    try {
+      const u = new URL(url)
+      u.searchParams.set('cortexDebug', dbg)
+      return u.toString()
+    } catch {
+      return url
+    }
   }
 }
