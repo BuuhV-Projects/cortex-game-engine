@@ -6,7 +6,7 @@
 
 # Interface: QuatLike
 
-Defined in: src/physics/RapierPhysics.ts:28
+Defined in: [src/physics/RapierPhysics.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L34)
 
 Quaternion simples.
 
@@ -16,7 +16,7 @@ Quaternion simples.
 
 > **w**: `number`
 
-Defined in: src/physics/RapierPhysics.ts:32
+Defined in: [src/physics/RapierPhysics.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L38)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: src/physics/RapierPhysics.ts:32
 
 > **x**: `number`
 
-Defined in: src/physics/RapierPhysics.ts:29
+Defined in: [src/physics/RapierPhysics.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L35)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: src/physics/RapierPhysics.ts:29
 
 > **y**: `number`
 
-Defined in: src/physics/RapierPhysics.ts:30
+Defined in: [src/physics/RapierPhysics.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L36)
 
 ***
 
@@ -40,4 +40,4 @@ Defined in: src/physics/RapierPhysics.ts:30
 
 > **z**: `number`
 
-Defined in: src/physics/RapierPhysics.ts:31
+Defined in: [src/physics/RapierPhysics.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L37)

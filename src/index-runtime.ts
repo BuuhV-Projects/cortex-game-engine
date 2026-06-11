@@ -40,6 +40,7 @@ export * from './components/PlayerAnimatorComponent.js';
 export * from './components/SpriteAnimationComponent.js';
 export * from './components/TerrainComponent.js';
 export * from './components/CharacterBodyComponent.js';
+export * from './components/RapierBodyComponent.js';
 
 // ─── Física dinâmica (Rapier — WASM; TDR-0002, fase 2/spike) ───────────────────
 export * from './physics/RapierPhysics.js';
@@ -53,6 +54,7 @@ export * from './systems/FollowCamera2DSystem.js';
 export * from './systems/TopDownCameraSystem.js';
 export * from './systems/TerrainCollisionSystem.js';
 export * from './systems/CharacterPhysicsSystem.js';
+export * from './systems/RapierPhysicsSystem.js';
 export * from './systems/PlatformerAnimationSystem.js';
 export * from './systems/SpriteAnimationSystem.js';
 

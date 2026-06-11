@@ -1,0 +1,63 @@
+[**cortex-game-engine**](../README.md)
+
+***
+
+[cortex-game-engine](../README.md) / RapierBodyOptions
+
+# Interface: RapierBodyOptions
+
+Defined in: src/components/RapierBodyComponent.ts:15
+
+Opções do [RapierBodyComponent](../classes/RapierBodyComponent.md).
+
+## Properties
+
+### bodyType?
+
+> `optional` **bodyType?**: [`RapierBodyType`](../type-aliases/RapierBodyType.md)
+
+Defined in: src/components/RapierBodyComponent.ts:21
+
+`dynamic` cai/é empurrado; `fixed` é imóvel (chão/parede); `kinematic` você move.
+Default `dynamic`. (Não se chama `type` porque a base [Component](../classes/Component.md) usa `type`
+como chave do ECS — campo `type` sombrearia o getter.)
+
+***
+
+### friction?
+
+> `optional` **friction?**: `number`
+
+Defined in: src/components/RapierBodyComponent.ts:27
+
+Atrito.
+
+***
+
+### isSensor?
+
+> `optional` **isSensor?**: `boolean`
+
+Defined in: src/components/RapierBodyComponent.ts:29
+
+`true` = trigger (detecta sobreposição mas NÃO bloqueia).
+
+***
+
+### restitution?
+
+> `optional` **restitution?**: `number`
+
+Defined in: src/components/RapierBodyComponent.ts:25
+
+Quão "quicante" (0 = não quica).
+
+***
+
+### shape?
+
+> `optional` **shape?**: [`RapierBodyShape`](../type-aliases/RapierBodyShape.md)
+
+Defined in: src/components/RapierBodyComponent.ts:23
+
+Forma do collider. Default `{ kind: 'auto' }` (caixa do bounds).

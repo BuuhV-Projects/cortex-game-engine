@@ -6,7 +6,7 @@
 
 # Interface: BodySpec
 
-Defined in: src/physics/RapierPhysics.ts:42
+Defined in: [src/physics/RapierPhysics.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L48)
 
 Spec declarativa de um corpo (vira RigidBody + Collider no Rapier).
 
@@ -16,7 +16,7 @@ Spec declarativa de um corpo (vira RigidBody + Collider no Rapier).
 
 > `optional` **friction?**: `number`
 
-Defined in: src/physics/RapierPhysics.ts:52
+Defined in: [src/physics/RapierPhysics.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L58)
 
 Atrito.
 
@@ -26,7 +26,7 @@ Atrito.
 
 > `optional` **isSensor?**: `boolean`
 
-Defined in: src/physics/RapierPhysics.ts:54
+Defined in: [src/physics/RapierPhysics.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L60)
 
 `true` = trigger (detecta sobreposição mas NÃO bloqueia).
 
@@ -36,7 +36,7 @@ Defined in: src/physics/RapierPhysics.ts:54
 
 > `optional` **position?**: [`Vec3Like`](Vec3Like.md)
 
-Defined in: src/physics/RapierPhysics.ts:46
+Defined in: [src/physics/RapierPhysics.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L52)
 
 Posição inicial. Default origem.
 
@@ -46,7 +46,7 @@ Posição inicial. Default origem.
 
 > `optional` **restitution?**: `number`
 
-Defined in: src/physics/RapierPhysics.ts:50
+Defined in: [src/physics/RapierPhysics.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L56)
 
 Quão "quicante" (0 = não quica).
 
@@ -56,7 +56,7 @@ Quão "quicante" (0 = não quica).
 
 > **shape**: [`PhysicsShape`](../type-aliases/PhysicsShape.md)
 
-Defined in: src/physics/RapierPhysics.ts:48
+Defined in: [src/physics/RapierPhysics.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L54)
 
 Forma do collider.
 
@@ -66,6 +66,6 @@ Forma do collider.
 
 > **type**: `"dynamic"` \| `"fixed"` \| `"kinematic"`
 
-Defined in: src/physics/RapierPhysics.ts:44
+Defined in: [src/physics/RapierPhysics.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L50)
 
 `dynamic` cai/é empurrado; `fixed` é imóvel (chão/parede); `kinematic` você move.

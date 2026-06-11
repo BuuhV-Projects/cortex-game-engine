@@ -474,6 +474,7 @@ const VENDOR_TYPE_MODULES = {
     'SpriteAnimationComponent',
     'TerrainComponent',
     'CharacterBodyComponent',
+    'RapierBodyComponent',
   ],
   systems: [
     'Object3DSyncSystem',
@@ -484,6 +485,7 @@ const VENDOR_TYPE_MODULES = {
     'TopDownCameraSystem',
     'TerrainCollisionSystem',
     'CharacterPhysicsSystem',
+    'RapierPhysicsSystem',
     'PlatformerAnimationSystem',
     'SpriteAnimationSystem',
   ],
@@ -508,6 +510,7 @@ const VENDOR_TYPE_MODULES = {
     'Tilemap',
   ],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter'],
+  physics: ['RapierPhysics'],
 } as const
 
 /**
