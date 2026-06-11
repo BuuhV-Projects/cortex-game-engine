@@ -8,6 +8,6 @@
 
 > **SceneNode** = `z.infer`\<*typeof* `sceneNodeSchema`\>
 
-Defined in: [src/scene/SceneDefinition.ts:314](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L314)
+Defined in: [src/scene/SceneDefinition.ts:338](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L338)
 
 Um nó da cena (união discriminada por `type`).

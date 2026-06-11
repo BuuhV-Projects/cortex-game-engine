@@ -6,7 +6,7 @@
 
 # Class: CharacterGroundSystem
 
-Defined in: src/systems/CharacterGroundSystem.ts:22
+Defined in: [src/systems/CharacterGroundSystem.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterGroundSystem.ts#L22)
 
 **Chão por raycast** pra o [CharacterBodyComponent](CharacterBodyComponent.md) — o personagem manda um
 raio pra BAIXO e fica EM CIMA do primeiro mesh abaixo dele (terreno, tiles
@@ -28,7 +28,7 @@ ignora o próprio mesh do personagem. Roda depois da física (priority 7).
 
 > **new CharacterGroundSystem**(`roots`): `CharacterGroundSystem`
 
-Defined in: src/systems/CharacterGroundSystem.ts:27
+Defined in: [src/systems/CharacterGroundSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterGroundSystem.ts#L27)
 
 #### Parameters
 
@@ -71,7 +71,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `7`
 
-Defined in: src/systems/CharacterGroundSystem.ts:24
+Defined in: [src/systems/CharacterGroundSystem.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterGroundSystem.ts#L24)
 
 Prioridade de execução deste sistema.
 
@@ -88,7 +88,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: src/systems/CharacterGroundSystem.ts:23
+Defined in: [src/systems/CharacterGroundSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterGroundSystem.ts#L23)
 
 Construtores dos componentes que este sistema requer.
 
@@ -114,7 +114,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`): `void`
 
-Defined in: src/systems/CharacterGroundSystem.ts:31
+Defined in: [src/systems/CharacterGroundSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterGroundSystem.ts#L31)
 
 Executa a lógica do sistema para o frame/passo atual.
 

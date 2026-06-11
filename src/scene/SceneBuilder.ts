@@ -33,6 +33,9 @@ import { SpriteAnimationComponent } from '../components/SpriteAnimationComponent
 import { SpriteAnimationSystem } from '../systems/SpriteAnimationSystem.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
 import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
+import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
+import { CharacterPhysicsSystem } from '../systems/CharacterPhysicsSystem.js';
+import { CharacterGroundSystem } from '../systems/CharacterGroundSystem.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
 import { Terrain } from './Terrain.js';
@@ -44,6 +47,7 @@ import {
   type ColliderConfig,
   type AttachConfig,
   type AnimationConfig,
+  type CharacterConfig,
 } from './SceneDefinition.js';
 import { SceneAnimator } from './SceneAnimator.js';
 import {
@@ -102,6 +106,23 @@ export interface BuildSceneOptions {
    * segue a câmera e rola em parallax). Passe `game.camera`.
    */
   camera?: PerspectiveCamera | OrthographicCamera;
+  /**
+   * Predicado pra **pausar a física de Character** (gravidade/pulo/chão) — os
+   * sistemas que o `buildScene` registra pra nós `character` recebem isso como
+   * `pauseWhen`. Passe `() => game.editorActive` pra o personagem não cair
+   * enquanto você edita a cena no F2. Sem isso, a física roda sempre.
+   */
+  physicsPaused?: () => boolean;
+}
+
+/** Tipo de corpo físico de um nó (autorado/override do Inspector). */
+export type BodyType = 'none' | 'static' | 'character';
+
+/** Override de física por objeto (overlay `data.physics[nome]`). */
+export interface PhysicsOverride {
+  type: BodyType;
+  /** Parâmetros quando `type === 'character'`. */
+  character?: CharacterConfig;
 }
 
 /** Lê `data.deleted` da overlay (ids removidos no editor). */
@@ -157,6 +178,42 @@ export function overlayColliders(
       oneWay: bool('oneWay'),
       points,
     };
+  }
+  return out;
+}
+
+/**
+ * Lê `data.physics` da overlay — o **tipo de corpo autorado no Inspector** por
+ * nome de objeto (`{ [nome]: { type: 'none'|'static'|'character', ... } }`). É a
+ * fonte **autoritativa** (sobrescreve o que o código/`level.json` declara): permite
+ * REMOVER um collider cravado no código (`type: 'none'`), trocar pra `character`,
+ * etc. — pra a física ficar sempre visível/editável no Inspector (ADR-0058).
+ */
+export function overlayPhysics(
+  overlay: SceneFileV1 | null | undefined,
+): Record<string, PhysicsOverride> {
+  const raw = overlay?.data?.['physics'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, PhysicsOverride> = {};
+  for (const [name, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object') continue;
+    const o = v as Record<string, unknown>;
+    const t = o['type'];
+    if (t !== 'none' && t !== 'static' && t !== 'character') continue;
+    let character: CharacterConfig | undefined;
+    if (t === 'character') {
+      const num = (k: string): number | undefined => (typeof o[k] === 'number' ? (o[k] as number) : undefined);
+      character = {
+        radius: num('radius'),
+        height: num('height'),
+        gravity: num('gravity'),
+        stepHeight: num('stepHeight'),
+        jumpForce: num('jumpForce'),
+        fallSpeedMax: num('fallSpeedMax'),
+        maxJumps: num('maxJumps'),
+      };
+    }
+    out[name] = { type: t, character };
   }
   return out;
 }
@@ -272,6 +329,7 @@ export async function buildScene(
   const deleted = new Set<string>(overlayDeleted(overlay));
   const overrides = overlay?.objects ?? {};
   const editorColliders = overlayColliders(overlay);
+  const editorPhysics = overlayPhysics(overlay);
   const editorMatte = overlayMatte(overlay);
   const editorMaterial = overlayMaterial(overlay);
   const editorTerrain = overlayTerrain(overlay);
@@ -406,15 +464,44 @@ export async function buildScene(
       if (node.type !== 'model' && node.type !== 'primitive') continue;
       const kitCol =
         node.type === 'model' ? (kitAssetFor(kit, node.url)?.collider as ColliderConfig | undefined) : undefined;
-      const colliderCfg = node.collider ?? editorColliders[node.id] ?? kitCol;
+      // Collider efetivo: overlay do editor (autorado) > nó (`collider`) > preset do
+      // kit. A overlay VENCE o código agora — pra a edição/remoção no Inspector ter
+      // efeito (antes o código vencia e não dava pra mexer; ver ADR-0058).
+      const colliderCfg = editorColliders[node.id] ?? node.collider ?? kitCol;
       const obj = byId.get(node.id)!;
-      if (colliderCfg || node.player) {
+
+      // Tipo de corpo: override do Inspector (overlay `data.physics`) é AUTORITATIVO
+      // — sobrescreve o que o nó/código declara. `player` NÃO é um override do
+      // Inspector (só o nó declara); sem override, deriva do nó.
+      const phys = editorPhysics[node.id] as PhysicsOverride | undefined;
+
+      if (!phys && node.player) {
         // Mapa ação→clipe do player: overlay (editor) > nó (`animations`) — auto-map
         // por nome completa o que faltar dentro do createPlatformerEntity.
         const playerAnim =
           node.type === 'model' && node.player ? (editorPlayerAnim[node.id] ?? node.animations) : undefined;
         createPlatformerEntity(options.world, obj, node, colliderCfg, playerAnim);
+        continue;
       }
+
+      const type: BodyType =
+        phys?.type ?? (node.character ? 'character' : colliderCfg ? 'static' : 'none');
+
+      if (type === 'character') {
+        // Character (UPBGE): cápsula + gravidade + pulo + fica em cima de qualquer mesh.
+        const cfg = phys?.character ?? node.character ?? {};
+        const e = options.world.createEntity();
+        e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
+        e.addComponent(new Object3DComponent(obj));
+        e.addComponent(new CharacterBodyComponent(cfg));
+        ensureCharacterSystems(options.world, three, options.physicsPaused);
+      } else if (type === 'static') {
+        // Estático sólido: collider de plataforma. Sem dims em lugar nenhum (ex.: o
+        // Inspector marcou Estático num objeto "pelado"), deriva do bbox dentro do
+        // createPlatformerEntity passando um collider sólido mínimo.
+        createPlatformerEntity(options.world, obj, node, colliderCfg ?? { solid: true });
+      }
+      // type === 'none' → nenhuma física (override pode ter DESLIGADO um collider do código).
     }
   }
 
@@ -440,6 +527,25 @@ export async function buildScene(
  */
 export async function addSceneNode(scene: Scene, node: SceneNode): Promise<Object3D | null> {
   return instantiate(node, scene, scene.getThreeScene());
+}
+
+/**
+ * Registra (uma vez) os sistemas de Character no mundo: {@link CharacterPhysicsSystem}
+ * (gravidade/pulo) e {@link CharacterGroundSystem} (fica em cima de qualquer mesh por
+ * raycast). `paused` vira o `pauseWhen` dos sistemas (ex.: `() => game.editorActive`)
+ * pra o personagem não cair durante a edição no F2.
+ */
+function ensureCharacterSystems(world: World, three: Object3D, paused?: () => boolean): void {
+  if (!world.hasSystem(CharacterPhysicsSystem)) {
+    const s = new CharacterPhysicsSystem();
+    if (paused) s.pauseWhen = paused;
+    world.addSystem(s);
+  }
+  if (!world.hasSystem(CharacterGroundSystem)) {
+    const s = new CharacterGroundSystem([three]);
+    if (paused) s.pauseWhen = paused;
+    world.addSystem(s);
+  }
 }
 
 /**

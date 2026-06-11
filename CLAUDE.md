@@ -3,6 +3,16 @@
 Instruções específicas deste projeto. Decisões de arquitetura/tooling ficam em
 `docs/adrs/` (ADR) e `docs/tdrs/` (TDR) — leia os relevantes antes de mudar uma área.
 
+## Física = dado da cena, editável no Inspector (não código)
+
+Colisão/corpo é **propriedade do objeto** e tem que ficar **visível e editável no
+Inspector** (seção "Física": Nenhum / Estático / Character). Ao gerar cena (inclui
+o Chat IA), declare física nos **campos do nó** do `level.json` (`collider`, `player`,
+`character`) — o Inspector lê e o usuário pode editar/remover/trocar (o overlay
+`data.physics`/`data.colliders` **vence** o código/JSON). **NUNCA** crave colisão só
+no **código** (`entity.addComponent(new Collider2DComponent/CharacterBodyComponent)`
+espalhado no `main.ts`): some do Inspector e o usuário perde o controle.
+
 ## Documentação da API do engine (gerada)
 
 A referência da API pública do engine é **gerada** a partir dos comentários TSDoc

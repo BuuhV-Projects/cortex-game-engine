@@ -108,20 +108,34 @@ sombra (cast/receive), **material Fosco (matte) liga/desliga** e, em luzes, inte
 não-sólido (player/gatilho) — mostra a hitbox real da física (e seu formato/offset),
 automático.
 
-**Collider é propriedade do objeto (autorável no editor).** No inspector, todo
-objeto nomeado tem uma seção **Collider**: se não tem collider, botões "Adicionar"
-e "Desenhar chão (heightfield)"; se tem, edita **forma** (caixa / círculo / cápsula),
-tamanho, **offset** (X/Y — pra cobrir uma sub-região tipo "deck" ou compensar pivô),
-e tipo (sólido / one-way) + Remover. **Heightfield (perfil de chão):** "Auto-traçar
-chão" gera o perfil amostrando o topo do mesh; "Desenhar/editar" entra no modo de
-traçado — **clique adiciona ponto, arraste um handle pra mover**, Backspace desfaz,
-Enter finaliza (o clique pousa na superfície do mesh, independe da câmera). Ideal
-pra ponte arqueada/morro. Tudo persiste no overlay.
-O collider fica **acoplado ao mesh** (mesma entidade) — **movem juntos**. Persiste
-no overlay (`assets/scene-data.json` → `data.colliders[nome]`). **Precedência:** um
-`collider` definido no código/JSON (`node.collider`) **vence** e aparece read-only
-("definido no código"). Offset também existe na física: collider sólido em que o
-player anda **não trava mais** (a resolução X só vira "parede" na menor penetração).
+**Física é propriedade do objeto (autorável no editor).** No inspector, todo objeto
+nomeado tem uma seção **Física** com um seletor **Tipo de corpo** (estilo UPBGE):
+- **Nenhum** — sem colisão.
+- **Estático (sólido)** — collider de plataforma (chão/parede). Edita **forma**
+  (caixa / círculo / cápsula), tamanho, **offset** (X/Y — sub-região tipo "deck" ou
+  compensar pivô), sólido / one-way, e heightfield (perfil de chão: "Auto-traçar"
+  amostra o topo do mesh; "Desenhar/editar" = clique adiciona ponto, arraste pra
+  mover, Backspace desfaz, Enter finaliza). Ideal pra ponte arqueada/morro.
+- **Character** — corpo de personagem (cápsula + gravidade + pulo): edita Raio,
+  Altura, Step Height, Jump Force, Fall Speed Max, Max Jumps. Fica **em cima de
+  qualquer mesh** (terreno/tiles/plataformas) via raycast; pula no espaço (no Play).
+
+O corpo fica **acoplado ao mesh** (mesma entidade) — **movem juntos**. Persiste no
+overlay (`assets/scene-data.json` → `data.physics[nome]` pro tipo + `data.colliders[nome]`
+pras dims). **Precedência: a autoria do Inspector (overlay) VENCE o código/JSON** —
+você pode **trocar pra Nenhum e REMOVER** um collider declarado em `node.collider`
+(ou herdado do kit), trocar pra Character, etc. Tudo fica visível e editável no
+Inspector (não há mais collider "preso no código" sem controle).
+
+> **Regra pra física (importante pra IA e pra receitas):** declare a física de
+> forma que ela **apareça e seja editável no Inspector** — use os campos do nó
+> (`collider`, `player`, `character`) no `level.json`, que o Inspector lê e o
+> usuário pode **editar/remover/trocar** (overlay vence). **NUNCA** crave colisão
+> só no **código** (ex.: `entity.addComponent(new Collider2DComponent(...))` /
+> `new CharacterBodyComponent(...)` espalhado no `main.ts`): isso fica **invisível
+> ao Inspector** e o usuário "não sabe onde está e não tem controle". Física é dado
+> da cena, não lógica imperativa — quem precisa de chão sólido marca **Estático**;
+> quem é personagem marca **Character**.
 
 **Gameplay pausa no editor + edição "gruda".** Enquanto o editor (F2) está ativo,
 `Game.editorActive` fica `true` e os sistemas de gameplay são pausados — basta
@@ -524,6 +538,22 @@ player.addComponent(new CharacterBodyComponent({ radius: 0.4, height: 1.8, jumpF
 
 Props (UPBGE): `stepHeight` (degrau que sobe andando), `jumpForce` (vel. do pulo),
 `fallSpeedMax` (queda máx.), `maxJumps` (nº de pulos antes de tocar o chão).
+
+**Data-driven (preferido — fica editável no Inspector):** marque o nó com
+`character` no `level.json` (ou troque o **Tipo de corpo → Character** no Inspector).
+O `buildScene` cria o `CharacterBodyComponent` e **registra sozinho** o
+`CharacterPhysicsSystem` + `CharacterGroundSystem` (passe `physicsPaused:
+() => game.editorActive` pro personagem não cair durante a edição):
+```jsonc
+{ "type": "model", "id": "hero", "url": "assets/Knight.glb",
+  "character": { "radius": 0.4, "height": 1.8, "jumpForce": 9, "maxJumps": 1 } }
+```
+```ts
+await buildScene(game.scene, defs, { world: game.world, physicsPaused: () => game.editorActive })
+// pular no espaço: game.world.query(CharacterBodyComponent)[0]?.getComponent(CharacterBodyComponent)!.jump()
+```
+Assim o usuário vê/edita/remove o Character pelo Inspector. Evite cravar
+`CharacterBodyComponent` só no código (some do Inspector — ver a regra de física acima).
 
 **Ficar em cima de QUALQUER mesh** (não só terreno): `CharacterGroundSystem([scene])`
 faz o personagem **raycast pra baixo** e pousar no primeiro mesh embaixo (terreno,

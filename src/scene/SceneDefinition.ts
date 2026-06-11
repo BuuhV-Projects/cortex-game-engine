@@ -96,6 +96,26 @@ const animationSchema = z
   })
   .optional();
 
+/**
+ * **Corpo de personagem** (tipo "Character" do UPBGE) — cápsula com gravidade,
+ * pulo (Jump Force/Max Jumps), queda limitada (Fall Speed Max) e Step Height.
+ * Fica EM CIMA de qualquer mesh (terreno/tiles/plataformas). Presença do campo =
+ * o nó é um Character. Aplicado pelo {@link buildScene} (CharacterBodyComponent +
+ * CharacterPhysicsSystem + CharacterGroundSystem). Editável no Inspector (overlay
+ * `data.physics` sobrescreve). Ver {@link CharacterBodyComponent}.
+ */
+const characterSchema = z
+  .object({
+    radius: z.number().positive().optional(),
+    height: z.number().positive().optional(),
+    gravity: z.number().nonnegative().optional(),
+    stepHeight: z.number().nonnegative().optional(),
+    jumpForce: z.number().nonnegative().optional(),
+    fallSpeedMax: z.number().positive().optional(),
+    maxJumps: z.number().int().min(0).optional(),
+  })
+  .optional();
+
 /** Marca o nó como o PLAYER (corpo de plataforma + alvo da câmera). */
 const playerSchema = z
   .union([
@@ -153,6 +173,8 @@ const baseFields = {
   collider: colliderSchema,
   /** Marca como player (controller + corpo + alvo da câmera). */
   player: playerSchema,
+  /** Marca como **Character** (cápsula + gravidade + pulo + step, estilo UPBGE). Ver {@link CharacterConfig}. */
+  character: characterSchema,
   /** Placement por socket (encaixa em outro nó via âncoras do kit). */
   attach: attachSchema,
   /** Animação do modelo `.glb` (clipe a tocar, loop, velocidade). Ver {@link SceneAnimator}. */
@@ -305,6 +327,8 @@ export type ColliderConfig = NonNullable<z.infer<typeof colliderSchema>>;
 export type AttachConfig = NonNullable<z.infer<typeof attachSchema>>;
 /** Config de animação (campo `animation` dos nós; ver {@link animationSchema}). */
 export type AnimationConfig = NonNullable<z.infer<typeof animationSchema>>;
+/** Config de Character (campo `character` dos nós; ver {@link characterSchema}). */
+export type CharacterConfig = NonNullable<z.infer<typeof characterSchema>>;
 export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
 export type LightNode = z.infer<typeof lightNode>;

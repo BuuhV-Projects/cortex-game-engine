@@ -3,7 +3,8 @@ import { MathUtils } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
-import type { ColliderApi, MatteApi, MaterialApi, TerrainApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
+import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, TerrainApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
+import type { BodyType } from '../scene/SceneBuilder.js';
 
 /**
  * **Modelo declarativo do editor** (ADR-0056). Descreve a hierarquia e o inspector
@@ -135,6 +136,7 @@ export interface DescribedInspector {
 /** Apis de autoria que o inspector usa (implementadas pelo `attachEditor`). */
 export interface InspectorContext {
   colliderApi?: ColliderApi;
+  physicsApi?: PhysicsApi;
   matteApi?: MatteApi;
   materialApi?: MaterialApi;
   terrainApi?: TerrainApi;
@@ -468,15 +470,117 @@ export function describeInspector(
     sections.push({ title: 'Ações do player', fields });
   }
 
-  // ── Collider (autorável) ──────────────────────────────────────────────────────
-  if (ctx.colliderApi) {
-    const api = ctx.colliderApi;
+  // ── Física: tipo de corpo (Nenhum/Estático/Character), estilo UPBGE ───────────
+  // O "Tipo" é a fonte autoritativa e fica SEMPRE editável — inclusive pra
+  // remover/trocar física cravada no código/level.json (ADR-0058). Estático reusa
+  // a autoria de Collider2D; Character mostra os params da cápsula.
+  if (ctx.physicsApi) {
+    const papi = ctx.physicsApi;
     const fields: InspectorField[] = [];
-    const cs = obj.name ? api.get(obj) : null;
-
     if (!obj.name) {
-      fields.push({ kind: 'note', id: fid('cldNoName'), text: 'Dê um nome ao objeto pra poder adicionar um collider.', tone: 'muted' });
-    } else if (cs === null) {
+      fields.push({ kind: 'note', id: fid('physNoName'), text: 'Dê um nome ao objeto pra definir física.', tone: 'muted' });
+    } else {
+      const ps = papi.get(obj);
+      fields.push({
+        kind: 'select',
+        id: fid('physType'),
+        label: 'Tipo de corpo',
+        value: ps.type,
+        options: [
+          { value: 'none', label: 'Nenhum' },
+          { value: 'static', label: 'Estático (sólido)' },
+          { value: 'character', label: 'Character' },
+        ],
+      });
+      handlers.set(fid('physType'), (v) => {
+        papi.setType(obj, v as BodyType);
+        return { rebuild: true };
+      });
+
+      if (ps.type === 'character') {
+        const c = ps.character;
+        fields.push(
+          { kind: 'number', id: fid('chRadius'), label: 'Raio (cápsula)', value: c.radius, step: 0.05 },
+          { kind: 'number', id: fid('chHeight'), label: 'Altura', value: c.height, step: 0.1 },
+          { kind: 'number', id: fid('chStep'), label: 'Altura do degrau', value: c.stepHeight, step: 0.05 },
+          { kind: 'number', id: fid('chJump'), label: 'Força do pulo', value: c.jumpForce, step: 0.5 },
+          { kind: 'number', id: fid('chFall'), label: 'Queda máxima', value: c.fallSpeedMax, step: 1 },
+          { kind: 'number', id: fid('chJumps'), label: 'Pulos máx.', value: c.maxJumps, step: 1 },
+          { kind: 'note', id: fid('chHint'), text: 'Fica em cima de qualquer mesh (terreno/tiles). Pula no espaço (no Play).', tone: 'muted' },
+        );
+        handlers.set(fid('chRadius'), (v) => papi.setCharacter(obj, { radius: Math.max(0.05, Number(v) || c.radius) }));
+        handlers.set(fid('chHeight'), (v) => papi.setCharacter(obj, { height: Math.max(0.1, Number(v) || c.height) }));
+        handlers.set(fid('chStep'), (v) => papi.setCharacter(obj, { stepHeight: Math.max(0, Number(v) || 0) }));
+        handlers.set(fid('chJump'), (v) => papi.setCharacter(obj, { jumpForce: Math.max(0, Number(v) || 0) }));
+        handlers.set(fid('chFall'), (v) => papi.setCharacter(obj, { fallSpeedMax: Math.max(0.1, Number(v) || c.fallSpeedMax) }));
+        handlers.set(fid('chJumps'), (v) => papi.setCharacter(obj, { maxJumps: Math.max(0, Math.round(Number(v) || 0)) }));
+      } else if (ps.type === 'static' && ctx.colliderApi) {
+        // Estático reusa a autoria de Collider2D (forma/tamanho/offset/sólido). Mesmo
+        // se veio do código, é editável: editar grava no overlay (que vence o código).
+        describeColliderFields(ctx.colliderApi, obj, fid, fields, handlers, true);
+      } else if (ps.type === 'none') {
+        fields.push({ kind: 'note', id: fid('physNone'), text: 'Sem física — nada colide com este objeto.', tone: 'muted' });
+      }
+    }
+    sections.push({ title: 'Física', fields });
+  } else if (ctx.colliderApi) {
+    // Fallback (sem physicsApi): a seção Collider clássica.
+    const fields: InspectorField[] = [];
+    describeColliderFields(ctx.colliderApi, obj, fid, fields, handlers, false);
+    sections.push({ title: 'Collider', fields });
+  }
+
+  // ── Luz ───────────────────────────────────────────────────────────────────────
+  const light = obj as unknown as LightLike;
+  if (light.isLight) {
+    const fields: InspectorField[] = [];
+    if (typeof light.intensity === 'number') {
+      fields.push({ kind: 'number', id: fid('lightInt'), label: 'Intens.', value: light.intensity, step: 0.1 });
+      handlers.set(fid('lightInt'), (v) => {
+        light.intensity = v as number;
+      });
+    }
+    if (light.color) {
+      fields.push({ kind: 'color', id: fid('lightColor'), label: 'Cor', value: `#${light.color.getHexString()}` });
+      handlers.set(fid('lightColor'), (v) => {
+        const hex = parseInt((v as string).slice(1), 16);
+        if (!Number.isNaN(hex)) light.color?.set(hex);
+      });
+    }
+    if (light.shadow && typeof light.shadow.intensity === 'number') {
+      fields.push({ kind: 'number', id: fid('lightShadow'), label: 'Sombra', value: light.shadow.intensity, step: 0.1 });
+      handlers.set(fid('lightShadow'), (v) => {
+        if (light.shadow) light.shadow.intensity = Math.max(0, Math.min(1, v as number));
+      });
+    }
+    if (fields.length) sections.push({ title: 'Luz', fields });
+  }
+
+  return { model: { title: obj.name || `(${obj.type})`, empty: false, sections }, handlers };
+}
+
+/**
+ * Constrói os campos de **autoria de Collider2D** (forma/tamanho/offset/sólido,
+ * heightfield, add/remover) no array `fields` + registra handlers. Usado pela seção
+ * **Física** (sub-tipo Estático) e pelo fallback Collider clássico. `allowEditLocked`:
+ * quando `true`, um collider definido no código aparece **editável** (a edição grava
+ * no overlay, que vence o código) em vez de read-only.
+ */
+function describeColliderFields(
+  api: ColliderApi,
+  obj: Object3D,
+  fid: (suffix: string) => string,
+  fields: InspectorField[],
+  handlers: HandlerMap,
+  allowEditLocked: boolean,
+): void {
+  const cs = obj.name ? api.get(obj) : null;
+
+  if (!obj.name) {
+    fields.push({ kind: 'note', id: fid('cldNoName'), text: 'Dê um nome ao objeto pra poder adicionar um collider.', tone: 'muted' });
+    return;
+  }
+  if (cs === null) {
       fields.push(
         { kind: 'button', id: fid('cldAdd'), label: '+ Adicionar collider' },
         { kind: 'button', id: fid('cldAutoHf'), label: '⤓ Auto-traçar chão (heightfield)' },
@@ -491,7 +595,7 @@ export function describeInspector(
         return { rebuild: true };
       });
       handlers.set(fid('cldDrawHf'), () => api.startHeightfield(obj));
-    } else if (cs.locked) {
+    } else if (cs.locked && !allowEditLocked) {
       const kind = cs.oneWay ? 'one-way' : cs.solid ? 'sólido' : 'não-sólido';
       const shp =
         cs.shape === 'circle' ? 'círculo'
@@ -561,34 +665,4 @@ export function describeInspector(
         return { rebuild: true };
       });
     }
-    sections.push({ title: 'Collider', fields });
-  }
-
-  // ── Luz ───────────────────────────────────────────────────────────────────────
-  const light = obj as unknown as LightLike;
-  if (light.isLight) {
-    const fields: InspectorField[] = [];
-    if (typeof light.intensity === 'number') {
-      fields.push({ kind: 'number', id: fid('lightInt'), label: 'Intens.', value: light.intensity, step: 0.1 });
-      handlers.set(fid('lightInt'), (v) => {
-        light.intensity = v as number;
-      });
-    }
-    if (light.color) {
-      fields.push({ kind: 'color', id: fid('lightColor'), label: 'Cor', value: `#${light.color.getHexString()}` });
-      handlers.set(fid('lightColor'), (v) => {
-        const hex = parseInt((v as string).slice(1), 16);
-        if (!Number.isNaN(hex)) light.color?.set(hex);
-      });
-    }
-    if (light.shadow && typeof light.shadow.intensity === 'number') {
-      fields.push({ kind: 'number', id: fid('lightShadow'), label: 'Sombra', value: light.shadow.intensity, step: 0.1 });
-      handlers.set(fid('lightShadow'), (v) => {
-        if (light.shadow) light.shadow.intensity = Math.max(0, Math.min(1, v as number));
-      });
-    }
-    if (fields.length) sections.push({ title: 'Luz', fields });
-  }
-
-  return { model: { title: obj.name || `(${obj.type})`, empty: false, sections }, handlers };
 }

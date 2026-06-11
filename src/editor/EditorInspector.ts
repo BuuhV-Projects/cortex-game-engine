@@ -1,6 +1,7 @@
 import type { Object3D } from 'three';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
+import type { BodyType } from '../scene/SceneBuilder.js';
 import type { EditorSelection } from './EditorSelection.js';
 import {
   describeInspector,
@@ -72,6 +73,42 @@ export interface ColliderApi {
    * partida; refine depois com {@link ColliderApi.startHeightfield}).
    */
   autoHeightfield(obj: Object3D): void;
+}
+
+/** Parâmetros do corpo de Character (cápsula + gravidade + pulo). */
+export interface CharacterEditState {
+  radius: number;
+  height: number;
+  gravity: number;
+  stepHeight: number;
+  jumpForce: number;
+  fallSpeedMax: number;
+  maxJumps: number;
+}
+
+/** Estado de física do objeto selecionado (tipo de corpo + params do Character). */
+export interface PhysicsEditState {
+  /** Tipo efetivo (override do Inspector vence o código/level.json). */
+  type: BodyType;
+  /** Params do Character (válidos quando `type === 'character'`; defaults senão). */
+  character: CharacterEditState;
+}
+
+/**
+ * Ponte de autoria do **tipo de corpo físico** (Nenhum/Estático/Character) — o
+ * seletor "Tipo" do Inspector, estilo UPBGE. É a fonte autoritativa: marca o
+ * objeto e o `attachEditor` aplica AO VIVO (adiciona/remove Collider2D ou
+ * CharacterBody + registra os sistemas) e PERSISTE em `overlay.data.physics[nome]`,
+ * que o `buildScene` respeita no boot (sobrescrevendo collider cravado no código).
+ * Resolve "a física aparece no Inspector e dá pra editar/remover".
+ */
+export interface PhysicsApi {
+  /** Tipo de corpo efetivo + params do Character. Sempre devolve (default `none`). */
+  get(obj: Object3D): PhysicsEditState;
+  /** Troca o tipo de corpo (aplica ao vivo + persiste). */
+  setType(obj: Object3D, type: BodyType): void;
+  /** Ajusta params do Character (aplica ao vivo + persiste). */
+  setCharacter(obj: Object3D, patch: Partial<CharacterEditState>): void;
 }
 
 /**
@@ -189,6 +226,12 @@ export interface EditorInspectorOptions {
    * definidos no código vêm `locked` (read-only).
    */
   colliderApi?: ColliderApi;
+  /**
+   * Opcional: autoria do **tipo de corpo físico** (Nenhum/Estático/Character) — o
+   * seletor "Tipo" estilo UPBGE. Quando presente, o Inspector mostra a seção
+   * **Física**. Ver {@link PhysicsApi}.
+   */
+  physicsApi?: PhysicsApi;
   /** Opcional: autoria/persistência do toggle Fosco (matte). Ver {@link MatteApi}. */
   matteApi?: MatteApi;
   /** Opcional: autoria/persistência do material/shader por objeto. Ver {@link MaterialApi}. */
@@ -226,6 +269,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     selection,
     parent = document.body,
     colliderApi,
+    physicsApi,
     matteApi,
     materialApi,
     terrainApi,
@@ -234,7 +278,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, matteApi, materialApi, terrainApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, matteApi, materialApi, terrainApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [
