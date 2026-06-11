@@ -107,7 +107,7 @@ Marca como **Character** (cápsula + gravidade + pulo + step, estilo UPBGE). Ver
 
 > `optional` **groundY?**: `number`
 
-Piso plano onde aterra (sem raycast). Default = altura onde o nó foi posicionado.
+Piso plano de fallback (se não houver geometria embaixo). Default `0`. O chão principal é colisão real.
 
 ##### character.height?
 
@@ -334,7 +334,7 @@ Marca como **Character** (cápsula + gravidade + pulo + step, estilo UPBGE). Ver
 
 > `optional` **groundY?**: `number`
 
-Piso plano onde aterra (sem raycast). Default = altura onde o nó foi posicionado.
+Piso plano de fallback (se não houver geometria embaixo). Default `0`. O chão principal é colisão real.
 
 ##### character.height?
 

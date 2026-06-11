@@ -6,19 +6,33 @@
 
 # Class: CharacterPhysicsSystem
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L19)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L46)
 
 Física vertical do [CharacterBodyComponent](CharacterBodyComponent.md) (character controller estilo
-UPBGE): aplica **gravidade** (limitada por `fallSpeedMax`), processa o **pulo**
-(`jumpForce` até `maxJumps`) e integra o Y. O movimento horizontal (X/Z) fica
-com o input do jogo. O **ground** vem de duas fontes (estáveis, sem raycast):
-- o **piso plano** `groundY` do próprio corpo (aterra ali — ideal pra top-down
-  de chão plano; default `-Infinity` = sem piso);
-- e/ou o [TerrainCollisionSystem](TerrainCollisionSystem.md) (terreno esculpido), que roda depois.
-Aterrar zera `velocityY`, marca `grounded` e reseta os pulos.
+UPBGE/Unity): aplica **gravidade** (limitada por `fallSpeedMax`), processa o
+**pulo** (`jumpForce` até `maxJumps`), integra o Y e **aterra por COLISÃO** —
+tudo no **mesmo tick** (sem oscilar/tremer).
 
-Roda na física (priority 5), **antes** do [TerrainCollisionSystem](TerrainCollisionSystem.md) (7) e do
-`Object3DSyncSystem` (10).
+**Chão (estável):**
+- **Colisão real (tipo Unity):** se receber as raízes da cena, faz um **raycast
+  pra baixo** sob os pés e pousa na **geometria real** (terreno, tiles,
+  plataformas) em qualquer altura — sobe degraus até `stepHeight`, ignora o
+  próprio mesh. Só aterra **caindo** (velocidade ≤ 0) e quando os pés alcançam a
+  superfície (curta distância por frame), então não "gruda" no ar nem treme.
+- **Piso plano `groundY` (fallback):** rede de segurança — se não houver
+  geometria embaixo, aterra nessa altura (não cai no vazio). Default `-Infinity`.
+
+O movimento horizontal (X/Z ou X/Y) fica com o input do jogo; o sistema cuida do
+Y. Pivô nos **pés** (`transform.y` = base). Roda na física (priority 5).
+
+## Example
+
+```ts
+// com colisão real (recomendado): passe as raízes da cena
+world.addSystem(new CharacterPhysicsSystem([game.scene.getThreeScene()]))
+// sem colisão (só piso plano via CharacterBody.groundY):
+world.addSystem(new CharacterPhysicsSystem())
+```
 
 ## Extends
 
@@ -28,13 +42,23 @@ Roda na física (priority 5), **antes** do [TerrainCollisionSystem](TerrainColli
 
 ### Constructor
 
-> **new CharacterPhysicsSystem**(): `CharacterPhysicsSystem`
+> **new CharacterPhysicsSystem**(`roots?`): `CharacterPhysicsSystem`
+
+Defined in: [src/systems/CharacterPhysicsSystem.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L55)
+
+#### Parameters
+
+##### roots?
+
+`Object3D`\<`Object3DEventMap`\>[] = `[]`
+
+Raízes da cena pra colisão de chão (raycast). Vazio = só `groundY`.
 
 #### Returns
 
 `CharacterPhysicsSystem`
 
-#### Inherited from
+#### Overrides
 
 [`System`](System.md).[`constructor`](System.md#constructor)
 
@@ -65,7 +89,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `5`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L21)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L48)
 
 Prioridade de execução deste sistema.
 
@@ -82,7 +106,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L20)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L47)
 
 Construtores dos componentes que este sistema requer.
 
@@ -108,7 +132,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L23)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L60)
 
 Executa a lógica do sistema para o frame/passo atual.
 

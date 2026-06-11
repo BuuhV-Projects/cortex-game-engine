@@ -1,24 +1,61 @@
+import { Raycaster, Vector3, type Object3D } from 'three';
 import { System } from '../ecs/System.js';
 import { Entity } from '../ecs/Entity.js';
 import { TransformComponent } from '../components/TransformComponent.js';
+import { Object3DComponent } from '../components/Object3DComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
+
+const DOWN = new Vector3(0, -1, 0);
+/** Tolerância de contato (skin width) — folga p/ considerar "tocando o chão". */
+const SKIN = 0.05;
+
+/** `obj` está sob `root` (é ele ou descendente)? Pra ignorar o próprio mesh. */
+function isUnder(obj: Object3D, root: Object3D): boolean {
+  let p: Object3D | null = obj;
+  while (p) {
+    if (p === root) return true;
+    p = p.parent;
+  }
+  return false;
+}
 
 /**
  * Física vertical do {@link CharacterBodyComponent} (character controller estilo
- * UPBGE): aplica **gravidade** (limitada por `fallSpeedMax`), processa o **pulo**
- * (`jumpForce` até `maxJumps`) e integra o Y. O movimento horizontal (X/Z) fica
- * com o input do jogo. O **ground** vem de duas fontes (estáveis, sem raycast):
- * - o **piso plano** `groundY` do próprio corpo (aterra ali — ideal pra top-down
- *   de chão plano; default `-Infinity` = sem piso);
- * - e/ou o {@link TerrainCollisionSystem} (terreno esculpido), que roda depois.
- * Aterrar zera `velocityY`, marca `grounded` e reseta os pulos.
+ * UPBGE/Unity): aplica **gravidade** (limitada por `fallSpeedMax`), processa o
+ * **pulo** (`jumpForce` até `maxJumps`), integra o Y e **aterra por COLISÃO** —
+ * tudo no **mesmo tick** (sem oscilar/tremer).
  *
- * Roda na física (priority 5), **antes** do {@link TerrainCollisionSystem} (7) e do
- * `Object3DSyncSystem` (10).
+ * **Chão (estável):**
+ * - **Colisão real (tipo Unity):** se receber as raízes da cena, faz um **raycast
+ *   pra baixo** sob os pés e pousa na **geometria real** (terreno, tiles,
+ *   plataformas) em qualquer altura — sobe degraus até `stepHeight`, ignora o
+ *   próprio mesh. Só aterra **caindo** (velocidade ≤ 0) e quando os pés alcançam a
+ *   superfície (curta distância por frame), então não "gruda" no ar nem treme.
+ * - **Piso plano `groundY` (fallback):** rede de segurança — se não houver
+ *   geometria embaixo, aterra nessa altura (não cai no vazio). Default `-Infinity`.
+ *
+ * O movimento horizontal (X/Z ou X/Y) fica com o input do jogo; o sistema cuida do
+ * Y. Pivô nos **pés** (`transform.y` = base). Roda na física (priority 5).
+ *
+ * @example
+ * // com colisão real (recomendado): passe as raízes da cena
+ * world.addSystem(new CharacterPhysicsSystem([game.scene.getThreeScene()]))
+ * // sem colisão (só piso plano via CharacterBody.groundY):
+ * world.addSystem(new CharacterPhysicsSystem())
  */
 export class CharacterPhysicsSystem extends System {
   static override requiredComponents = [TransformComponent, CharacterBodyComponent];
   override priority = 5;
+
+  private readonly roots: Object3D[];
+  private readonly ray = new Raycaster();
+  private readonly origin = new Vector3();
+
+  /** @param roots Raízes da cena pra colisão de chão (raycast). Vazio = só `groundY`. */
+  constructor(roots: Object3D[] = []) {
+    super();
+    this.roots = roots;
+  }
 
   override update(entities: Entity[], deltaTime: number): void {
     const dt = deltaTime / 1000;
@@ -36,11 +73,28 @@ export class CharacterPhysicsSystem extends System {
       c.velocityY -= c.gravity * dt;
       if (c.velocityY < -c.fallSpeedMax) c.velocityY = -c.fallSpeedMax;
       t.y += c.velocityY * dt;
-      c.grounded = false; // o ground (piso/terreno) reseta pra true ao aterrar
+      c.grounded = false;
 
-      // Piso plano (sem raycast → não treme): aterra ao tocar/passar de groundY.
-      if (c.velocityY <= 0 && t.y <= c.groundY) {
-        t.y = c.groundY;
+      // Altura do chão sob os pés: piso plano (fallback) ∪ geometria real (raycast).
+      let groundHeight = c.groundY;
+      if (this.roots.length > 0 && c.velocityY <= 0) {
+        const fallDist = Math.max(0, -c.velocityY * dt);
+        this.origin.set(t.x, t.y + c.stepHeight + SKIN, t.z);
+        this.ray.set(this.origin, DOWN);
+        this.ray.far = c.stepHeight + fallDist + SKIN * 2;
+        const self = e.getComponent(Object3DComponent)?.object;
+        const hits = this.ray.intersectObjects(this.roots, true);
+        for (const h of hits) {
+          if (self && isUnder(h.object, self)) continue;
+          if (h.object.userData?.['editorInternal']) continue;
+          if (h.point.y > groundHeight) groundHeight = h.point.y; // o mais alto vence
+          break; // 1ª superfície válida (a mais próxima de cima)
+        }
+      }
+
+      // Aterra (mesmo tick → sem oscilar): caindo e com os pés no/abaixo do chão.
+      if (c.velocityY <= 0 && groundHeight > -Infinity && t.y <= groundHeight + SKIN) {
+        t.y = groundHeight;
         c.velocityY = 0;
         c.grounded = true;
         c.jumpsUsed = 0;

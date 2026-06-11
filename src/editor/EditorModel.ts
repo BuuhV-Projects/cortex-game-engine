@@ -506,8 +506,8 @@ export function describeInspector(
           { kind: 'number', id: fid('chJump'), label: 'Força do pulo', value: c.jumpForce, step: 0.5 },
           { kind: 'number', id: fid('chFall'), label: 'Queda máxima', value: c.fallSpeedMax, step: 1 },
           { kind: 'number', id: fid('chJumps'), label: 'Pulos máx.', value: c.maxJumps, step: 1 },
-          { kind: 'number', id: fid('chGround'), label: 'Altura do chão (Y)', value: c.groundY, step: 0.1 },
-          { kind: 'note', id: fid('chHint'), text: 'Aterra num piso plano em "Altura do chão (Y)" (= onde você o colocou) — estável, sem tremer. Pula no espaço (no Play). "Sobe degrau até" = altura máx. de obstáculo que sobe andando, sem pular.', tone: 'muted' },
+          { kind: 'number', id: fid('chGround'), label: 'Piso de segurança (Y)', value: c.groundY, step: 0.1 },
+          { kind: 'note', id: fid('chHint'), text: 'Cai pela gravidade e pousa na GEOMETRIA real embaixo (terreno/tiles/plataformas) — coloque ele no alto pra ver cair. "Piso de segurança (Y)" é a rede caso não haja nada embaixo. Pula no espaço (no Play). "Sobe degrau até" = altura máx. de obstáculo que sobe andando.', tone: 'muted' },
         );
         handlers.set(fid('chRadius'), (v) => papi.setCharacter(obj, { radius: Math.max(0.05, Number(v) || c.radius) }));
         handlers.set(fid('chHeight'), (v) => papi.setCharacter(obj, { height: Math.max(0.1, Number(v) || c.height) }));

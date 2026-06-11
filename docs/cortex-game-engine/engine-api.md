@@ -523,32 +523,36 @@ smooth/flatten e **pintura de textura** (splat) vêm depois.
 
 `CharacterBodyComponent` (cápsula `radius`/`height`) + `CharacterPhysicsSystem` =
 character controller com gravidade, **pulo** (`jumpForce`/`maxJumps`), queda
-limitada (`fallSpeedMax`) e `stepHeight`. O **chão é estável (sem raycast → não
-treme)**: aterra num **piso plano** `groundY` (e/ou no terreno via
-`TerrainCollisionSystem`, que anda em morros). Movimento horizontal (X/Z ou X/Y)
-fica com o input do jogo; o sistema cuida do Y. Pivô nos **pés** (`transform.y` = base).
+limitada (`fallSpeedMax`) e `stepHeight`. **Chão = colisão real (tipo Unity):**
+passando as **raízes da cena**, o sistema faz **raycast pra baixo** e o personagem
+**cai e pousa na geometria real** (terreno, tiles, plataformas) em qualquer altura
+— sobe degraus até `stepHeight`, ignora o próprio mesh. Aterra e colide **no mesmo
+tick** da gravidade → **não treme**. **Fallback:** o piso plano `groundY` é a rede
+de segurança (não cai no vazio se não houver nada embaixo). Movimento horizontal
+(X/Z ou X/Y) fica com o input do jogo; o sistema cuida do Y. Pivô nos **pés**
+(`transform.y` = base).
 
 ```ts
 import { CharacterBodyComponent, CharacterPhysicsSystem } from 'cortex-game-engine'
-game.world.addSystem(new CharacterPhysicsSystem())
+// COM colisão real (recomendado): passe as raízes da cena → pousa na geometria.
+game.world.addSystem(new CharacterPhysicsSystem([game.scene.getThreeScene()]))
 player.addComponent(new TransformComponent(x, y, z))
-// groundY = a altura do chão plano onde ele fica de pé (top-down/flat). Sem groundY
-// (default -Infinity) ele só aterra no terreno/colisão.
+// groundY = piso de segurança (default -Infinity = sem rede; data-driven usa 0).
 player.addComponent(new CharacterBodyComponent({ radius: 0.4, height: 1.8, jumpForce: 9, maxJumps: 1, groundY: 0 }))
 // no input (ex.: espaço): player.getComponent(CharacterBodyComponent)!.jump()
-// terreno sólido vem de graça se a cena tem um nó `terrain` (TerrainCollisionSystem).
+// SEM raízes (new CharacterPhysicsSystem()) → sem colisão, só o piso groundY.
 ```
 
 Props (UPBGE): `stepHeight` (degrau que sobe andando), `jumpForce` (vel. do pulo),
 `fallSpeedMax` (queda máx.), `maxJumps` (nº de pulos antes de tocar o chão),
-`groundY` (piso plano onde aterra — estável, sem raycast).
+`groundY` (piso plano de fallback se não houver geometria embaixo).
 
 **Data-driven (preferido — fica editável no Inspector):** marque o nó com
 `character` no `level.json` (ou troque o **Tipo de corpo → Character** no Inspector).
 O `buildScene` cria o `CharacterBodyComponent` e **registra sozinho** o
-`CharacterPhysicsSystem` (passe `physicsPaused: () => game.editorActive` pro
-personagem não cair durante a edição). O `groundY` cai pra **altura onde o nó foi
-posicionado** (fica de pé onde você o colocou):
+`CharacterPhysicsSystem` **com colisão real** (raízes da cena) — o personagem cai e
+pousa na geometria. Passe `physicsPaused: () => game.editorActive` pro personagem
+não cair durante a edição. O `groundY` (piso de fallback) é **`0` por padrão**:
 ```jsonc
 { "type": "model", "id": "hero", "url": "assets/Knight.glb",
   "character": { "radius": 0.4, "height": 1.8, "jumpForce": 9, "maxJumps": 1 } }

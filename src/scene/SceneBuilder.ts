@@ -489,14 +489,14 @@ export async function buildScene(
 
       if (type === 'character') {
         // Character (UPBGE): cápsula + gravidade + pulo. Aterra num piso plano
-        // (estável, sem raycast): groundY = o explícito, senão a altura onde o
-        // objeto foi posicionado (fica de pé onde você colocou).
+        // (estável, sem raycast) em `groundY` — default 0 (o chão), então colocar o
+        // personagem no alto faz ele CAIR até 0. Edite groundY pra outro piso.
         const cfg = phys?.character ?? node.character ?? {};
         const e = options.world.createEntity();
         e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
         e.addComponent(new Object3DComponent(obj));
-        e.addComponent(new CharacterBodyComponent({ ...cfg, groundY: cfg.groundY ?? obj.position.y }));
-        ensureCharacterSystems(options.world, options.physicsPaused);
+        e.addComponent(new CharacterBodyComponent({ ...cfg, groundY: cfg.groundY ?? 0 }));
+        ensureCharacterSystems(options.world, [three], options.physicsPaused);
       } else if (type === 'static') {
         // Estático sólido: collider de plataforma. Sem dims em lugar nenhum (ex.: o
         // Inspector marcou Estático num objeto "pelado"), deriva do bbox dentro do
@@ -532,13 +532,15 @@ export async function addSceneNode(scene: Scene, node: SceneNode): Promise<Objec
 }
 
 /**
- * Registra (uma vez) o {@link CharacterPhysicsSystem} (gravidade/pulo + piso plano
- * `groundY`) no mundo. `paused` vira o `pauseWhen` do sistema (ex.:
- * `() => game.editorActive`) pra o personagem não cair durante a edição no F2.
+ * Registra (uma vez) o {@link CharacterPhysicsSystem} (gravidade/pulo + colisão de
+ * chão por raycast na cena + piso `groundY` de fallback) no mundo. `roots` =
+ * raízes da cena pra colisão real (tipo Unity). `paused` vira o `pauseWhen` do
+ * sistema (ex.: `() => game.editorActive`) pra o personagem não cair durante a
+ * edição no F2.
  */
-function ensureCharacterSystems(world: World, paused?: () => boolean): void {
+function ensureCharacterSystems(world: World, roots: Object3D[], paused?: () => boolean): void {
   if (!world.hasSystem(CharacterPhysicsSystem)) {
-    const s = new CharacterPhysicsSystem();
+    const s = new CharacterPhysicsSystem(roots);
     if (paused) s.pauseWhen = paused;
     world.addSystem(s);
   }

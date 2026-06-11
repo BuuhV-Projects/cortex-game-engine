@@ -17,11 +17,10 @@ export interface CharacterBodyOptions {
   /** **Max Jumps** — nº máximo de pulos antes de tocar o chão (1 = sem double-jump). Default `1`. */
   maxJumps?: number;
   /**
-   * **Altura do chão (Y)** — piso plano onde o personagem aterra (pés nessa altura).
-   * Estável e **sem raycast** (não treme): a gravidade puxa e para aqui; o pulo
-   * volta pra cá. Default `-Infinity` = sem piso (cai livre — quem aterra é o
-   * terreno/colisão). Em jogos de chão plano (top-down), use a altura do chão
-   * (ex.: `0`). O editor preenche com a altura onde o objeto foi posicionado.
+   * **Altura do chão (Y)** — piso plano de **fallback** onde o personagem aterra se
+   * NÃO houver geometria embaixo (rede de segurança contra cair no vazio). O chão
+   * principal vem da **colisão real** (raycast na cena) do {@link CharacterPhysicsSystem}.
+   * Default `-Infinity` = sem rede. O editor/data-driven usam `0` por padrão.
    */
   groundY?: number;
 }

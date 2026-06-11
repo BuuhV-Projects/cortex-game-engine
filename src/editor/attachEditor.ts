@@ -642,24 +642,23 @@ export function attachEditor(game: Game): GameEditor {
   };
   const ensureCharacterSystems = (): void => {
     if (!game.world.hasSystem(CharacterPhysicsSystem)) {
-      const s = new CharacterPhysicsSystem();
+      const s = new CharacterPhysicsSystem([three]);
       s.pauseWhen = () => game.editorActive;
       game.world.addSystem(s);
     }
   };
   // Params efetivos do Character: componente vivo > override no overlay > defaults.
-  // `groundY` (piso plano onde aterra) cai pra altura ATUAL do objeto (fica de pé
-  // onde você o colocou) quando não há valor salvo.
+  // `groundY` (piso plano onde aterra) tem default 0 (o chão) — colocar o
+  // personagem no alto faz ele CAIR até 0. Ajuste no campo "Altura do chão (Y)".
   const effectiveChar = (obj: Object3D): CharacterEditState => {
     const cb = findCharacterEntity(obj)?.getComponent(CharacterBodyComponent);
     const ov = obj.name ? physicsMap()[obj.name] : undefined;
     const pick = (k: keyof CharacterEditState): number =>
       cb ? (cb[k] as number) : typeof ov?.[k] === 'number' ? (ov[k] as number) : CHAR_DEFAULTS[k];
-    const groundY = cb
-      ? cb.groundY
-      : typeof ov?.['groundY'] === 'number'
-        ? (ov['groundY'] as number)
-        : obj.position.y;
+    // groundY do componente vivo pode ser -Infinity (corpo de código) — nesse caso
+    // mostra o default editável (0), não -Infinity.
+    const cbGround = cb && Number.isFinite(cb.groundY) ? cb.groundY : undefined;
+    const groundY = cbGround ?? (typeof ov?.['groundY'] === 'number' ? (ov['groundY'] as number) : CHAR_DEFAULTS.groundY);
     return {
       radius: pick('radius'), height: pick('height'), gravity: pick('gravity'),
       stepHeight: pick('stepHeight'), jumpForce: pick('jumpForce'),

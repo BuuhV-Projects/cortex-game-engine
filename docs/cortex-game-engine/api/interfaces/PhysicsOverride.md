@@ -32,7 +32,7 @@ Parâmetros quando `type === 'character'`.
 
 > `optional` **groundY?**: `number`
 
-Piso plano onde aterra (sem raycast). Default = altura onde o nó foi posicionado.
+Piso plano de fallback (se não houver geometria embaixo). Default `0`. O chão principal é colisão real.
 
 #### height?
 
