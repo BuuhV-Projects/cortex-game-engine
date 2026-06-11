@@ -8,6 +8,7 @@ import { Mesh, BoxGeometry, MeshBasicMaterial, Object3D } from 'three';
 import { World } from '../../src/ecs/World.js';
 import { RapierBodyComponent } from '../../src/components/RapierBodyComponent.js';
 import { RapierPhysicsSystem } from '../../src/systems/RapierPhysicsSystem.js';
+import { Object3DComponent } from '../../src/components/Object3DComponent.js';
 import { createAuthoringContext } from '../../src/editor/authoring/AuthoringContext.js';
 import { createColliderApi } from '../../src/editor/authoring/ColliderAuthoring.js';
 import { createPhysicsApi } from '../../src/editor/authoring/PhysicsAuthoring.js';
@@ -63,6 +64,22 @@ describe('PhysicsAuthoring — tipo Rígido (Rapier)', () => {
     expect(world.query(RapierBodyComponent)[0]!.getComponent(RapierBodyComponent)!.bodyType).toBe('fixed');
     expect(physics()['barril']!.rapier!.bodyType).toBe('fixed');
     expect(physicsApi.get(m).rapier.bodyType).toBe('fixed');
+  });
+
+  it('nó com RapierBody do buildScene (overlay vazio) → setType none → fica none e some', () => {
+    const { world, physics, physicsApi } = setup();
+    const m = named('caixa_03');
+    // simula o buildScene: entidade com RapierBody, SEM override no overlay
+    const e = world.createEntity();
+    e.addComponent(new Object3DComponent(m));
+    e.addComponent(new RapierBodyComponent({ bodyType: 'dynamic', shape: { kind: 'auto' } }));
+    expect(physicsApi.get(m).type).toBe('rigid'); // detecta o componente vivo
+
+    physicsApi.setType(m, 'none');
+
+    expect(world.query(RapierBodyComponent).length).toBe(0); // removeu o corpo
+    expect(physics()['caixa_03']).toMatchObject({ type: 'none' });
+    expect(physicsApi.get(m).type).toBe('none'); // NÃO volta pra rigid
   });
 
   it('trocar pra Nenhum remove o corpo Rapier', () => {
