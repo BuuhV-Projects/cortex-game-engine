@@ -69,6 +69,17 @@ describe('buildScene + rapierBody (data-driven)', () => {
     expect(world.hasSystem(RapierPhysicsSystem)).toBe(true);
   });
 
+  it('override "none" do Inspector DESLIGA o rapierBody do nó (não cria corpo)', async () => {
+    const scene = new Scene();
+    const world = new World();
+    const defs: SceneDefinition[] = [
+      { version: 1, nodes: [{ type: 'primitive', shape: 'box', id: 'caixa', size: 1, rapierBody: { bodyType: 'dynamic', shape: { kind: 'auto' } } }] },
+    ];
+    const overlay = { version: 1, objects: {}, data: { physics: { caixa: { type: 'none' } } } } as unknown as SceneFileV1;
+    await buildScene(scene, defs, { world, overlay });
+    expect(world.query(RapierBodyComponent).length).toBe(0); // o override 'none' venceu o nó
+  });
+
   it('physicsPaused pausa a simulação (não cai no editor)', async () => {
     const scene = new Scene();
     const world = new World();
