@@ -31,10 +31,7 @@ import { createEditorState } from './EditorState.js';
 import { createEditorSelection } from './EditorSelection.js';
 import { createEditorHud } from './EditorHud.js';
 import { createEditorOutliner } from './EditorOutliner.js';
-import {
-  createEditorInspector,
-  type TerrainApi,
-} from './EditorInspector.js';
+import { createEditorInspector } from './EditorInspector.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
 import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
@@ -45,6 +42,7 @@ import { createPhysicsApi } from './authoring/PhysicsAuthoring.js';
 import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
 import { createAnimationApi, createPlayerAnimationsApi } from './authoring/AnimationAuthoring.js';
+import { createTerrainAuthoring } from './authoring/TerrainAuthoring.js';
 import { createEditorBridge } from './EditorBridge.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -557,27 +555,10 @@ export function attachEditor(game: Game): GameEditor {
   const materialApi = createMaterialApi(authoring);
 
   // ── Terreno: pincel de esculpir (raise/lower) ────────────────────────────────
-  // Esculpe o Terrain (em userData.cortexTerrain) por raycast no mesh; CLIQUE/ARRASTE
-  // sobe, SHIFT abaixa. Persiste o heightmap em `overlay.data.terrain[nome]` (o
-  // buildScene reaplica via overlayTerrain). ObjectEditSystem cede o clique quando
+  // CRUD/sessão/persistência extraídos pra TerrainAuthoring (ADR-0060); aqui ficam
+  // os efeitos de UI (anel do pincel, gizmo, hud) e a interação no viewport (raycast
+  // do cursor + listeners de ponteiro). ObjectEditSystem cede o clique quando
   // editorState.sculptingTerrain está ligado.
-  const terrainBrush = { radius: 6, strength: 0.5 };
-  let sculpt: { terrain: Terrain; obj: Object3D; painting: boolean } | null = null;
-  const terrainOf = (obj: Object3D): Terrain | undefined =>
-    (obj.userData as Record<string, unknown>)['cortexTerrain'] as Terrain | undefined;
-  const terrainMap = (): Record<string, number[]> => {
-    const m = overlay.data['terrain'];
-    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, number[]>;
-    const o: Record<string, number[]> = {};
-    overlay.data['terrain'] = o;
-    return o;
-  };
-  const saveTerrain = (): void => {
-    if (sculpt && sculpt.obj.name) {
-      terrainMap()[sculpt.obj.name] = sculpt.terrain.getHeights();
-      persist();
-    }
-  };
   // Anel do pincel (igual à Unity): segue o cursor no terreno, mostra raio/lugar.
   const brushRing = new Mesh(
     new RingGeometry(0.9, 1, 48),
@@ -590,75 +571,54 @@ export function attachEditor(game: Game): GameEditor {
   (brushRing.userData as Record<string, unknown>)['editorInternal'] = true; // fora da hierarquia
   three.add(brushRing);
 
-  const terrainApi: TerrainApi = {
-    get: (obj) =>
-      terrainOf(obj)
-        ? { sculpting: sculpt?.obj === obj, radius: terrainBrush.radius, strength: terrainBrush.strength }
-        : null,
-    startSculpt: (obj) => {
-      if (!terrainOf(obj)) {
-        hud.showToast('Esse objeto não é um terreno');
-        return;
-      }
-      sculpt = { terrain: terrainOf(obj)!, obj, painting: false };
+  const terrain = createTerrainAuthoring(authoring, {
+    onSculptStart: () => {
       editorState.sculptingTerrain = true;
       objectEditSystem.setGizmoVisible(false); // o gizmo roubaria o clique do pincel
-      hud.showToast('Esculpir: CLIQUE/ARRASTE sobe · segure SHIFT pra abaixar');
     },
-    stopSculpt: () => {
-      saveTerrain();
-      sculpt = null;
+    onSculptStop: () => {
       editorState.sculptingTerrain = false;
       brushRing.visible = false;
       objectEditSystem.setGizmoVisible(true); // devolve o gizmo ao objeto selecionado
     },
-    setBrush: (radius, strength) => {
-      terrainBrush.radius = radius;
-      terrainBrush.strength = strength;
-    },
-  };
+    toast: (m) => hud.showToast(m),
+  });
+  const terrainApi = terrain.api;
 
   // Ponto do terreno sob o cursor (world), ou null se o cursor não está no terreno.
   const terrainHit = (clientX: number, clientY: number): Vector3 | null => {
-    if (!sculpt) return null;
+    const obj = terrain.sculptObject();
+    if (!obj) return null;
     const rect = game.canvas.getBoundingClientRect();
     _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     _ray.setFromCamera(_ndc, editorCamera);
-    const hits = _ray.intersectObject(sculpt.obj, true);
+    const hits = _ray.intersectObject(obj, true);
     return hits.length ? hits[0]!.point.clone() : null;
   };
-  // Aplica uma pincelada: converte o ponto world → LOCAL do terreno (respeita
-  // posição/rotação/ESCALA — sem isso a escala 3.5 jogava o pincel fora da grade).
-  const applyDab = (worldHit: Vector3, lower: boolean): void => {
-    if (!sculpt) return;
-    const local = sculpt.obj.worldToLocal(worldHit.clone());
-    const scl = sculpt.obj.scale.x || 1; // raio/força em unidades de MUNDO
-    sculpt.terrain.sculpt(local.x, local.z, terrainBrush.radius / scl, (terrainBrush.strength / scl) * (lower ? -1 : 1));
-  };
   game.canvas.addEventListener('pointerdown', (e) => {
-    if (!sculpt || e.button !== 0) return;
+    if (!terrain.isSculpting() || e.button !== 0) return;
     const hit = terrainHit(e.clientX, e.clientY);
     if (!hit) return; // clique fora do terreno não pinta
-    sculpt.painting = true;
-    applyDab(hit, e.shiftKey);
+    terrain.setPainting(true);
+    terrain.paintAt(hit, e.shiftKey);
   });
   game.canvas.addEventListener('pointermove', (e) => {
-    if (!sculpt) return;
+    if (!terrain.isSculpting()) return;
     const hit = terrainHit(e.clientX, e.clientY);
     if (hit) {
       brushRing.position.copy(hit);
-      brushRing.scale.setScalar(Math.max(0.1, terrainBrush.radius)); // raio em mundo
+      brushRing.scale.setScalar(Math.max(0.1, terrain.brush().radius)); // raio em mundo
       brushRing.visible = true;
     } else {
       brushRing.visible = false;
     }
-    if (sculpt.painting && hit) applyDab(hit, e.shiftKey);
+    if (terrain.isPainting() && hit) terrain.paintAt(hit, e.shiftKey);
   });
   const endTerrainPaint = (): void => {
-    if (sculpt?.painting) {
-      sculpt.painting = false;
-      saveTerrain();
+    if (terrain.isPainting()) {
+      terrain.setPainting(false);
+      terrain.save();
     }
   };
   game.canvas.addEventListener('pointerup', endTerrainPaint);
@@ -858,7 +818,7 @@ export function attachEditor(game: Game): GameEditor {
         // Trocar de modo zera o pause (entra em play já rodando; volta pro editor
         // sem estado de pause pendente).
         editorState.paused = false;
-        if (sculpt) terrainApi.stopSculpt(); // sai do pincel ao trocar de modo
+        if (terrain.isSculpting()) terrainApi.stopSculpt(); // sai do pincel ao trocar de modo
         // Play (edit→play) snapshota o mundo; Stop (play→edit) restaura — Play
         // não destrói o estado de edição.
         if (editorState.active) restoreWorld();
@@ -879,7 +839,7 @@ export function attachEditor(game: Game): GameEditor {
       }
       if (editorState.active) {
         // Esculpir é "preso" ao terreno selecionado: trocar de seleção sai do pincel.
-        if (sculpt && selection.current !== sculpt.obj) terrainApi.stopSculpt();
+        if (terrain.isSculpting() && selection.current !== terrain.sculptObject()) terrainApi.stopSculpt();
         if (sceneChanged()) {
           if (showInCanvas) outliner.refresh();
           snapshot();
