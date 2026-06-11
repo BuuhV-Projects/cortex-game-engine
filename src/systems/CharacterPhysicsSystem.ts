@@ -75,22 +75,26 @@ export class CharacterPhysicsSystem extends System {
       t.y += c.velocityY * dt;
       c.grounded = false;
 
-      // Altura do chão sob os pés: piso plano (fallback) ∪ geometria real (raycast).
-      let groundHeight = c.groundY;
+      // Altura do chão sob os pés. A GEOMETRIA REAL (raycast) VENCE: acha a primeira
+      // superfície abaixo (a qualquer distância — ele cai de qualquer altura e pousa
+      // nela). O piso plano `groundY` é só FALLBACK, usado quando NÃO há nada embaixo
+      // (rede de segurança) — nunca sobrepõe o chão real.
+      let groundHeight = -Infinity;
       if (this.roots.length > 0 && c.velocityY <= 0) {
-        const fallDist = Math.max(0, -c.velocityY * dt);
+        // Origem um pouco ACIMA dos pés (até `stepHeight`) pra subir degraus.
         this.origin.set(t.x, t.y + c.stepHeight + SKIN, t.z);
         this.ray.set(this.origin, DOWN);
-        this.ray.far = c.stepHeight + fallDist + SKIN * 2;
+        this.ray.far = Infinity;
         const self = e.getComponent(Object3DComponent)?.object;
         const hits = this.ray.intersectObjects(this.roots, true);
         for (const h of hits) {
           if (self && isUnder(h.object, self)) continue;
           if (h.object.userData?.['editorInternal']) continue;
-          if (h.point.y > groundHeight) groundHeight = h.point.y; // o mais alto vence
-          break; // 1ª superfície válida (a mais próxima de cima)
+          groundHeight = h.point.y; // 1ª superfície válida (a mais próxima abaixo da origem)
+          break;
         }
       }
+      if (groundHeight === -Infinity) groundHeight = c.groundY; // sem geometria → piso de segurança
 
       // Aterra (mesmo tick → sem oscilar): caindo e com os pés no/abaixo do chão.
       if (c.velocityY <= 0 && groundHeight > -Infinity && t.y <= groundHeight + SKIN) {

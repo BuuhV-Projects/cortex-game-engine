@@ -95,18 +95,20 @@ describe('CharacterBody + colisão real (raycast na geometria, tipo Unity)', () 
     return scene;
   }
 
-  it('cai de qualquer altura e POUSA na geometria embaixo (não no groundY)', () => {
+  it('a geometria VENCE o piso de fallback (piso alto não mascara o chão real)', () => {
+    // Regressão do print: marcar Character no alto gravava groundY alto; o piso NÃO
+    // pode sobrepor a geometria embaixo (senão o personagem fica BOIANDO no ar).
     const scene = sceneWithFloor(2); // chão real em y=2
     const world = new World();
     world.addSystem(new CharacterPhysicsSystem([scene]));
     const e = world.createEntity();
     const t = new TransformComponent(0, 12, 0); // bem no alto
-    const c = new CharacterBodyComponent({ groundY: 0 }); // piso de segurança em 0
+    const c = new CharacterBodyComponent({ groundY: 50 }); // piso de segurança ALTO (acima do chão)
     e.addComponent(t);
     e.addComponent(c);
 
     for (let i = 0; i < 200; i++) world.tick(16);
-    expect(t.y).toBeCloseTo(2, 1); // pousou no mesh (2), não caiu até o fallback (0)
+    expect(t.y).toBeCloseTo(2, 1); // pousou no mesh (2), NÃO no piso alto (50)
     expect(c.grounded).toBe(true);
   });
 
