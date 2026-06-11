@@ -24,7 +24,12 @@ export default defineConfig({
       fileName: () => 'index.dev.js',
     },
     rollupOptions: {
-      external: [],
+      // Rapier externo + remapeado pra `./rapier.js` (mesmo do build de runtime) —
+      // fora do bundle base, carregado sob demanda (TDR-0002).
+      external: ['@dimforge/rapier3d-compat'],
+      output: {
+        paths: { '@dimforge/rapier3d-compat': './rapier.js' },
+      },
     },
   },
 })

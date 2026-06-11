@@ -1,13 +1,19 @@
-import RAPIER from '@dimforge/rapier3d-compat';
+// Tipos do Rapier (apagados na compilação) — pra anotar sem trazer o valor.
+// É o default export (namespace), que serve como qualificador de tipo (RAPIER.World).
+import type RAPIER from '@dimforge/rapier3d-compat';
+
+/** Tipo do namespace-valor do Rapier (o default export), carregado sob demanda. */
+type RapierApi = (typeof import('@dimforge/rapier3d-compat'))['default'];
 
 /**
  * **Integração com o Rapier** (motor de física dinâmica em WASM; TDR-0002). Wrapper
  * fino e **headless** (não conhece three.js): cria o mundo, adiciona corpos/colliders
  * e dá passos. A sincronia com o `Object3D` (ECS) fica no `RapierPhysicsSystem`.
  *
- * O Rapier precisa de **init assíncrono** (carrega o WASM uma vez) — por isso
- * {@link RapierPhysics.create} é `async`. Não vaza tipos do Rapier na API pública
- * (devolve {@link PhysicsBody}), pra o `.d.ts`/vendoring ficarem limpos.
+ * O Rapier é **carregado sob demanda** (dynamic import → chunk `rapier.js` separado,
+ * fora do bundle base) e precisa de **init assíncrono** (carrega o WASM uma vez) —
+ * por isso {@link RapierPhysics.create} é `async`. Não vaza tipos do Rapier na API
+ * pública (devolve {@link PhysicsBody}), pra o `.d.ts`/vendoring ficarem limpos.
  *
  * @example
  * const physics = await RapierPhysics.create({ x: 0, y: -9.81, z: 0 })
@@ -64,10 +70,23 @@ export interface PhysicsBody {
   setNextKinematicTranslation(p: Vec3Like): void;
 }
 
+let api: RapierApi | null = null;
 let initPromise: Promise<void> | null = null;
-/** Inicializa o Rapier (carrega o WASM) — uma vez só, idempotente. */
+/**
+ * Carrega o Rapier (dynamic import do chunk `rapier.js`) e inicializa o WASM —
+ * uma vez só, idempotente. Chamado por {@link RapierPhysics.create}.
+ */
 export function initRapier(): Promise<void> {
-  return (initPromise ??= RAPIER.init());
+  return (initPromise ??= (async () => {
+    const mod = await import('@dimforge/rapier3d-compat');
+    api = mod.default;
+    await api.init();
+  })());
+}
+/** O namespace do Rapier já inicializado (erro se chamado antes do init). */
+function rapier(): RapierApi {
+  if (!api) throw new Error('Rapier não inicializado — use RapierPhysics.create() (await).');
+  return api;
 }
 
 class RapierBody implements PhysicsBody {
@@ -96,17 +115,18 @@ export class RapierPhysics {
   /** Inicializa o Rapier (async) e cria o mundo com a gravidade dada. */
   static async create(gravity: Vec3Like = { x: 0, y: -9.81, z: 0 }): Promise<RapierPhysics> {
     await initRapier();
-    return new RapierPhysics(new RAPIER.World(gravity));
+    return new RapierPhysics(new (rapier().World)(gravity));
   }
 
   /** Adiciona um corpo (RigidBody + Collider) e devolve seu handle. */
   addBody(spec: BodySpec): PhysicsBody {
+    const R = rapier();
     const desc =
       spec.type === 'dynamic'
-        ? RAPIER.RigidBodyDesc.dynamic()
+        ? R.RigidBodyDesc.dynamic()
         : spec.type === 'kinematic'
-          ? RAPIER.RigidBodyDesc.kinematicPositionBased()
-          : RAPIER.RigidBodyDesc.fixed();
+          ? R.RigidBodyDesc.kinematicPositionBased()
+          : R.RigidBodyDesc.fixed();
     if (spec.position) desc.setTranslation(spec.position.x, spec.position.y, spec.position.z);
     const body = this.world.createRigidBody(desc);
     this.world.createCollider(this.colliderDesc(spec), body);
@@ -124,11 +144,12 @@ export class RapierPhysics {
   }
 
   private colliderDesc(spec: BodySpec): RAPIER.ColliderDesc {
+    const R = rapier();
     const s = spec.shape;
     let c: RAPIER.ColliderDesc;
-    if (s.kind === 'box') c = RAPIER.ColliderDesc.cuboid(s.halfExtents.x, s.halfExtents.y, s.halfExtents.z);
-    else if (s.kind === 'ball') c = RAPIER.ColliderDesc.ball(s.radius);
-    else c = RAPIER.ColliderDesc.capsule(s.halfHeight, s.radius);
+    if (s.kind === 'box') c = R.ColliderDesc.cuboid(s.halfExtents.x, s.halfExtents.y, s.halfExtents.z);
+    else if (s.kind === 'ball') c = R.ColliderDesc.ball(s.radius);
+    else c = R.ColliderDesc.capsule(s.halfHeight, s.radius);
     if (spec.restitution != null) c.setRestitution(spec.restitution);
     if (spec.friction != null) c.setFriction(spec.friction);
     if (spec.isSensor) c.setSensor(true);

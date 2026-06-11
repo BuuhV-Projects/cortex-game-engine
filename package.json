@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc",
-    "build:engine": "tsc -p tsconfig.engine.json && vite build --config vite.engine.config.ts && vite build --config vite.engine.dev.config.ts",
+    "build:engine": "tsc -p tsconfig.engine.json && vite build --config vite.engine.config.ts && vite build --config vite.engine.dev.config.ts && vite build --config vite.engine.rapier.config.ts",
     "docs:engine": "typedoc",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

@@ -29,9 +29,13 @@ export default defineConfig({
       fileName: () => 'index.js',
     },
     rollupOptions: {
-      // `three` é bundleado dentro do output — projetos criados pelo IDE não
-      // precisam de `three` no node_modules.
-      external: [],
+      // Rapier (WASM ~2 MB) NÃO entra no bundle base: é `external` e o dynamic
+      // import é remapeado pra `./rapier.js` (chunk separado, vendorizado ao lado),
+      // carregado sob demanda só quando há física (TDR-0002). `three` segue embutido.
+      external: ['@dimforge/rapier3d-compat'],
+      output: {
+        paths: { '@dimforge/rapier3d-compat': './rapier.js' },
+      },
     },
   },
 })
