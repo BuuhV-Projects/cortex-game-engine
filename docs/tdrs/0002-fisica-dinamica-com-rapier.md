@@ -50,9 +50,12 @@ buscar JS em runtime). Então:
 
 - **+** Física dinâmica robusta (empurrar/empilhar/juntas), character controller
   pronto, um modelo só alinhado à Unity. Acaba a fragmentação.
-- **−** Nova dependência **WASM** (~bundle): carregar/instanciar o módulo no boot
-  (async), empacotar o `.wasm` no vendor e no build da IDE. Integrar o passo do
-  Rapier ao `GameLoop` (fixed timestep) e sincronizar com o `Object3D` (ECS).
+- **−** Nova dependência **WASM** (~2 MB): instanciar async no boot. **Mitigado por
+  lazy-load** — um build separado gera `dist-engine/rapier.js` (WASM inline) e o
+  bundle base faz `import('./rapier.js')` sob demanda (rollup `external` + `output.paths`),
+  então projetos **sem física pagam 0** (index.js segue ~2,29 MB). O vendoring copia
+  `rapier.js` ao lado do `index.js`. Falta integrar o passo ao `GameLoop` (fixed
+  timestep) e sincronizar com o `Object3D` (ECS) — próximo passo (RapierPhysicsSystem).
 - **−** Migração: mapear/aposentar os 4 mundos atuais sem quebrar jogos existentes
   (plataform-25d, farm-villey) — feito por fases, com fallback enquanto convive.
 - **Pré-requisito:** ADR-0060 (editor decomposto) — pra a física entrar num módulo
