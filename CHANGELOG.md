@@ -1,3 +1,16 @@
+# [0.25.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.24.0...v0.25.0) (2026-06-11)
+
+
+### Bug Fixes
+
+* **character:** geometria vence o piso de fallback (não boia no ar) ([b96c2cc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b96c2ccc09d200230e3f44c0469ef39b63f437d9))
+* **character:** remove grounding por raycast (tremia) — piso plano groundY estável ([36c1d42](https://github.com/BuuhV-Projects/cortex-game-engine/commit/36c1d42eb420f11537957cf3729ea46a48653d66))
+
+
+### Features
+
+* **character:** gravidade com colisão real (tipo Unity) + piso de fallback ([7d409aa](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7d409aa0a5f378d03cbe1fdfd04534d1954a4bb6))
+
 # [0.24.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.23.0...v0.24.0) (2026-06-11)
 
 
