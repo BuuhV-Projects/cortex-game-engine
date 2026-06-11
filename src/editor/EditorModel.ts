@@ -478,8 +478,18 @@ export function describeInspector(
   if (ctx.physicsApi) {
     const papi = ctx.physicsApi;
     const fields: InspectorField[] = [];
+    const isSceneNode = obj.userData?.['cortexSceneNode'] === true;
     if (!obj.name) {
       fields.push({ kind: 'note', id: fid('physNoName'), text: 'Dê um nome ao objeto pra definir física.', tone: 'muted' });
+    } else if (!isSceneNode) {
+      // Objeto criado em CÓDIGO (não é nó da cena): autorar física aqui não persiste
+      // (o buildScene só reconcilia nós). Bloqueia pra não enganar o usuário.
+      fields.push({
+        kind: 'note',
+        id: fid('physNotNode'),
+        text: 'Criado em código — a física deste objeto não é editável aqui. Pra editar no Inspector, declare-o como nó da cena (collider/player/character/rapierBody no level.json).',
+        tone: 'muted',
+      });
     } else {
       const ps = papi.get(obj);
       fields.push({
