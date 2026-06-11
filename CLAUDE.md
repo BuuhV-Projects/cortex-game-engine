@@ -3,6 +3,18 @@
 Instruções específicas deste projeto. Decisões de arquitetura/tooling ficam em
 `docs/adrs/` (ADR) e `docs/tdrs/` (TDR) — leia os relevantes antes de mudar uma área.
 
+## Mapa de arquitetura (LEIA antes de mexer; ATUALIZE ao mudar)
+
+`docs/cortex-game-engine/architecture.md` descreve **como tudo se conecta** (ECS,
+cena data-driven + overlay, editor F2 + autorias + ponte com a IDE, física/Rapier,
+build/vendoring, fluxo de ponta a ponta e **armadilhas conhecidas**). É a fonte de
+verdade viva do desenho.
+
+- **Antes** de mudar um subsistema, leia a seção relevante desse doc.
+- **Sempre que** mudar a arquitetura (novo subsistema/fluxo, novo componente/sistema
+  central, nova armadilha, mudança de precedência/vendoring), **atualize o
+  architecture.md** na mesma mudança — junto do ADR/TDR quando for decisão.
+
 ## Física = dado da cena, editável no Inspector (não código)
 
 Colisão/corpo é **propriedade do objeto** e tem que ficar **visível e editável no
