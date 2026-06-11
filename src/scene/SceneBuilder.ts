@@ -35,6 +35,9 @@ import { TerrainComponent } from '../components/TerrainComponent.js';
 import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { CharacterPhysicsSystem } from '../systems/CharacterPhysicsSystem.js';
+import { RapierBodyComponent } from '../components/RapierBodyComponent.js';
+import { RapierPhysicsSystem } from '../systems/RapierPhysicsSystem.js';
+import { RapierPhysics } from '../physics/RapierPhysics.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
 import { Terrain } from './Terrain.js';
@@ -433,6 +436,19 @@ export async function buildScene(
   //    (posições já finais). Precedência do collider: código (`node.collider`) >
   //    overlay do editor (`data.colliders[id]`) > preset do `role` no kit.
   if (options.world) {
+    // Rapier (física dinâmica): cria o mundo SOB DEMANDA na 1ª vez que um nó
+    // `rapierBody` aparece (carrega o WASM via dynamic import) e registra o sistema
+    // uma vez só. `physicsPaused` pausa no editor (não simula no F2). Ver ADR-0061.
+    const world = options.world;
+    let rapierPhysics: RapierPhysics | undefined;
+    const ensureRapier = async (): Promise<void> => {
+      if (rapierPhysics) return;
+      rapierPhysics = await RapierPhysics.create();
+      const s = new RapierPhysicsSystem(rapierPhysics);
+      if (options.physicsPaused) s.pauseWhen = options.physicsPaused;
+      world.addSystem(s);
+    };
+
     for (const node of placed) {
       // Sprite animado: acopla o SpriteAnimationComponent (stashed em userData)
       // a uma entidade ECS e liga o SpriteAnimationSystem (uma vez só).
@@ -469,6 +485,16 @@ export async function buildScene(
       // efeito (antes o código vencia e não dava pra mexer; ver ADR-0058).
       const colliderCfg = editorColliders[node.id] ?? node.collider ?? kitCol;
       const obj = byId.get(node.id)!;
+
+      // Corpo rígido do Rapier (física dinâmica 3D): cria o componente + garante o
+      // mundo/sistema (lazy). Vence e ignora a física 2.5D antiga neste nó.
+      if (node.rapierBody) {
+        await ensureRapier();
+        const e = world.createEntity();
+        e.addComponent(new Object3DComponent(obj));
+        e.addComponent(new RapierBodyComponent(node.rapierBody));
+        continue;
+      }
 
       // Tipo de corpo: override do Inspector (overlay `data.physics`) é AUTORITATIVO
       // — sobrescreve o que o nó/código declara. `player` NÃO é um override do

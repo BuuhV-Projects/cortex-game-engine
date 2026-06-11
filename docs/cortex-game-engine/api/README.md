@@ -133,6 +133,7 @@
 - [ModelNode](type-aliases/ModelNode.md)
 - [PhysicsShape](type-aliases/PhysicsShape.md)
 - [PrimitiveNode](type-aliases/PrimitiveNode.md)
+- [RapierBodyConfig](type-aliases/RapierBodyConfig.md)
 - [RapierBodyShape](type-aliases/RapierBodyShape.md)
 - [RapierBodyType](type-aliases/RapierBodyType.md)
 - [SceneDefinition](type-aliases/SceneDefinition.md)

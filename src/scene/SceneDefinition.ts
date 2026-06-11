@@ -118,6 +118,32 @@ const characterSchema = z
   })
   .optional();
 
+const vec3Obj = z.object({ x: z.number(), y: z.number(), z: z.number() });
+
+/**
+ * **Corpo rígido do Rapier** (física dinâmica 3D; ADR-0061/TDR-0002) — caixas/barris
+ * que caem, empilham e empurram de verdade. Presença do campo = o nó vira um corpo
+ * Rapier; o {@link buildScene} cria o `RapierBodyComponent` + registra o
+ * `RapierPhysicsSystem` (carrega o WASM sob demanda). `shape: auto` deriva a caixa
+ * do bounds do mesh. Ver {@link RapierBodyComponent}.
+ */
+const rapierBodySchema = z
+  .object({
+    bodyType: z.enum(['dynamic', 'fixed', 'kinematic']).optional(),
+    shape: z
+      .discriminatedUnion('kind', [
+        z.object({ kind: z.literal('auto') }),
+        z.object({ kind: z.literal('box'), halfExtents: vec3Obj }),
+        z.object({ kind: z.literal('ball'), radius: z.number().positive() }),
+        z.object({ kind: z.literal('capsule'), halfHeight: z.number().positive(), radius: z.number().positive() }),
+      ])
+      .optional(),
+    restitution: z.number().min(0).optional(),
+    friction: z.number().min(0).optional(),
+    isSensor: z.boolean().optional(),
+  })
+  .optional();
+
 /** Marca o nó como o PLAYER (corpo de plataforma + alvo da câmera). */
 const playerSchema = z
   .union([
@@ -177,6 +203,8 @@ const baseFields = {
   player: playerSchema,
   /** Marca como **Character** (cápsula + gravidade + pulo + step, estilo UPBGE). Ver {@link CharacterConfig}. */
   character: characterSchema,
+  /** Marca como **corpo rígido do Rapier** (física dinâmica 3D — cai/empilha/empurra). Ver {@link RapierBodyConfig}. */
+  rapierBody: rapierBodySchema,
   /** Placement por socket (encaixa em outro nó via âncoras do kit). */
   attach: attachSchema,
   /** Animação do modelo `.glb` (clipe a tocar, loop, velocidade). Ver {@link SceneAnimator}. */
@@ -331,6 +359,8 @@ export type AttachConfig = NonNullable<z.infer<typeof attachSchema>>;
 export type AnimationConfig = NonNullable<z.infer<typeof animationSchema>>;
 /** Config de Character (campo `character` dos nós; ver {@link characterSchema}). */
 export type CharacterConfig = NonNullable<z.infer<typeof characterSchema>>;
+/** Config de corpo Rapier (campo `rapierBody` dos nós; ver {@link rapierBodySchema}). */
+export type RapierBodyConfig = NonNullable<z.infer<typeof rapierBodySchema>>;
 export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
 export type LightNode = z.infer<typeof lightNode>;

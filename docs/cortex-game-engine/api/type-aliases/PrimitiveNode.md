@@ -8,4 +8,4 @@
 
 > **PrimitiveNode** = `z.infer`\<*typeof* `primitiveNode`\>
 
-Defined in: [src/scene/SceneDefinition.ts:335](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L335)
+Defined in: [src/scene/SceneDefinition.ts:365](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L365)

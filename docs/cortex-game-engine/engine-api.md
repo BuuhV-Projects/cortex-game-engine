@@ -605,6 +605,23 @@ box.addComponent(new Object3DComponent(boxMesh)) // boxMesh.position define onde
 box.addComponent(new RapierBodyComponent({ bodyType: 'dynamic', shape: { kind: 'auto' } }))
 ```
 
+**Data-driven (preferido — sem código no main.ts):** marque o nó com `rapierBody`
+no `level.json`. O `buildScene` cria o corpo, **registra o sistema sozinho** (lazy
+WASM) e respeita `physicsPaused` (pause no editor). Não precisa criar a malha/corpo
+à mão:
+```jsonc
+// chão fixo + caixa que cai
+{ "type": "primitive", "shape": "box", "id": "chao", "size": [20,1,20],
+  "transform": { "position": [0,-0.5,0] }, "rapierBody": { "bodyType": "fixed", "shape": { "kind": "auto" } } },
+{ "type": "primitive", "shape": "box", "id": "caixa", "size": 1,
+  "transform": { "position": [0,8,0] }, "rapierBody": { "bodyType": "dynamic", "shape": { "kind": "auto" } } }
+```
+```ts
+await buildScene(game.scene, defs, { world: game.world, physicsPaused: () => game.editorActive })
+```
+Prefira isso a montar o Rapier em código — assim a física é DADO da cena (e logo
+fica editável no Inspector). (Autoria via Inspector/overlay: em construção.)
+
 Quando usar **Rapier** vs o resto: Rapier = corpos dinâmicos 3D (caixas, barris,
 ragdoll, empilhar/empurrar). Pro **player/NPC** que anda no chão, o
 `CharacterBodyComponent` (cápsula + pulo + chão por raycast, acima) ainda é o caminho
