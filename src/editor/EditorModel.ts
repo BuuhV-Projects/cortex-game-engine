@@ -502,11 +502,11 @@ export function describeInspector(
         fields.push(
           { kind: 'number', id: fid('chRadius'), label: 'Raio (cápsula)', value: c.radius, step: 0.05 },
           { kind: 'number', id: fid('chHeight'), label: 'Altura', value: c.height, step: 0.1 },
-          { kind: 'number', id: fid('chStep'), label: 'Altura do degrau', value: c.stepHeight, step: 0.05 },
+          { kind: 'number', id: fid('chStep'), label: 'Sobe degrau até', value: c.stepHeight, step: 0.05 },
           { kind: 'number', id: fid('chJump'), label: 'Força do pulo', value: c.jumpForce, step: 0.5 },
           { kind: 'number', id: fid('chFall'), label: 'Queda máxima', value: c.fallSpeedMax, step: 1 },
           { kind: 'number', id: fid('chJumps'), label: 'Pulos máx.', value: c.maxJumps, step: 1 },
-          { kind: 'note', id: fid('chHint'), text: 'Fica em cima de qualquer mesh (terreno/tiles). Pula no espaço (no Play).', tone: 'muted' },
+          { kind: 'note', id: fid('chHint'), text: 'Fica em cima de qualquer mesh (terreno/tiles); pula no espaço (no Play). "Sobe degrau até" = altura máx. de obstáculo que ele sobe andando, sem pular.', tone: 'muted' },
         );
         handlers.set(fid('chRadius'), (v) => papi.setCharacter(obj, { radius: Math.max(0.05, Number(v) || c.radius) }));
         handlers.set(fid('chHeight'), (v) => papi.setCharacter(obj, { height: Math.max(0.1, Number(v) || c.height) }));
