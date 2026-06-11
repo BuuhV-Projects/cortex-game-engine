@@ -564,6 +564,47 @@ await buildScene(game.scene, defs, { world: game.world, physicsPaused: () => gam
 Assim o usuário vê/edita/remove o Character pelo Inspector. Evite cravar
 `CharacterBodyComponent` só no código (some do Inspector — ver a regra de física acima).
 
+## Física dinâmica de verdade (Rapier — corpos que caem/empurram/empilham)
+
+Pra física **dinâmica estilo Unity** (gravidade real, colisão, empilhar, empurrar)
+o engine integra o **Rapier** (motor WASM). É **carregado sob demanda** — só baixa
+quando o jogo usa física (TDR-0002). Exports: `RapierPhysics`, `RapierPhysicsSystem`,
+`RapierBodyComponent`.
+
+- **`RapierPhysics.create(gravity?)`** — `async` (inicializa o WASM). Faça no boot.
+- **`RapierPhysicsSystem(physics)`** — dá `step` (passo fixo) e **escreve o `Object3D`**
+  (posição + rotação) a partir da simulação: **o Rapier é o dono do transform**
+  desses objetos. **NÃO** ponha a mesma entidade no `Object3DSyncSystem` (briga).
+- **`RapierBodyComponent`** — declara o corpo: `bodyType` (`'dynamic'` cai/é empurrado,
+  `'fixed'` imóvel = chão/parede, `'kinematic'` você move), `shape`
+  (`{ kind: 'auto' }` = caixa do bounds do mesh, ou `box`/`ball`/`capsule`),
+  `restitution`/`friction`/`isSensor` (trigger). **Atenção: é `bodyType`, não `type`**
+  (o ECS usa `type` como chave).
+
+```ts
+import { RapierPhysics, RapierPhysicsSystem, RapierBodyComponent, Object3DComponent } from 'cortex-game-engine'
+
+const physics = await RapierPhysics.create({ x: 0, y: -9.81, z: 0 }) // lazy-load do rapier.js
+game.world.addSystem(new RapierPhysicsSystem(physics))
+
+// chão fixo
+const floor = game.world.createEntity()
+floor.addComponent(new Object3DComponent(floorMesh))
+floor.addComponent(new RapierBodyComponent({ bodyType: 'fixed', shape: { kind: 'auto' } }))
+
+// caixa que cai e empilha
+const box = game.world.createEntity()
+box.addComponent(new Object3DComponent(boxMesh)) // boxMesh.position define onde nasce
+box.addComponent(new RapierBodyComponent({ bodyType: 'dynamic', shape: { kind: 'auto' } }))
+```
+
+Quando usar **Rapier** vs o resto: Rapier = corpos dinâmicos 3D (caixas, barris,
+ragdoll, empilhar/empurrar). Pro **player/NPC** que anda no chão, o
+`CharacterBodyComponent` (cápsula + pulo + chão por raycast, acima) ainda é o caminho
+simples; a migração do player pro CharacterController do Rapier vem depois (TDR-0002).
+Autoria data-driven do Rapier (nó na cena + Inspector) ainda **não** existe — por ora
+o Rapier é montado em código (`main.ts`).
+
 ## Material / shader por objeto (material)
 
 Atribui um "shader" (material do Three) a um objeto pela propriedade `material` do nó
