@@ -35,20 +35,16 @@ import {
   createEditorInspector,
   type ColliderApi,
   type TerrainApi,
-  type AnimationApi,
-  type PlayerAnimationsApi,
 } from './EditorInspector.js';
-import type { SceneAnimator } from '../scene/SceneAnimator.js';
-import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
 import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
-import { autoMapPlayerClips } from '../systems/PlatformerAnimationSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { createObjectRegistry } from './EditorModel.js';
 import { createAuthoringContext } from './authoring/AuthoringContext.js';
 import { createPhysicsApi } from './authoring/PhysicsAuthoring.js';
 import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
+import { createAnimationApi, createPlayerAnimationsApi } from './authoring/AnimationAuthoring.js';
 import { createEditorBridge } from './EditorBridge.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -732,127 +728,9 @@ export function attachEditor(game: Game): GameEditor {
   game.canvas.addEventListener('pointerup', endTerrainPaint);
   game.canvas.addEventListener('pointerleave', endTerrainPaint);
 
-  // ── Animação (escolher clipe + play/stop + loop/velocidade), persistida ──────
-  // Lê o SceneAnimator de `userData.cortexAnim` (criado pelo buildScene) e grava em
-  // `overlay.data.animation[id]` — o buildScene reaplica no boot (overlay > nó JSON).
-  type AnimSave = { clip?: string; loop?: boolean; speed?: number; autoplay?: boolean };
-  const animMap = (): Record<string, AnimSave> => {
-    const m = overlay.data['animation'];
-    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, AnimSave>;
-    const o: Record<string, AnimSave> = {};
-    overlay.data['animation'] = o;
-    return o;
-  };
-  const getAnimator = (obj: Object3D): SceneAnimator | undefined =>
-    (obj.userData as Record<string, unknown>)['cortexAnim'] as SceneAnimator | undefined;
-  const animationApi: AnimationApi = {
-    get(obj) {
-      const an = getAnimator(obj);
-      if (!an) return null;
-      const saved = obj.name ? animMap()[obj.name] : undefined;
-      return { clips: an.clipNames(), current: an.current, loop: saved?.loop ?? true, speed: saved?.speed ?? 1 };
-    },
-    play(obj, clip) {
-      const an = getAnimator(obj);
-      if (!an) return;
-      const saved = (obj.name && animMap()[obj.name]) || {};
-      const loop = saved.loop ?? true;
-      const speed = saved.speed ?? 1;
-      an.play(clip, { loop, speed });
-      if (obj.name) {
-        animMap()[obj.name] = { clip, loop, speed, autoplay: true };
-        persist();
-      }
-    },
-    stop(obj) {
-      const an = getAnimator(obj);
-      if (!an) return;
-      an.stop();
-      if (obj.name) {
-        animMap()[obj.name] = { ...(animMap()[obj.name] ?? {}), autoplay: false };
-        persist();
-      }
-    },
-    setLoop(obj, loop) {
-      const an = getAnimator(obj);
-      if (!an) return;
-      const saved = (obj.name && animMap()[obj.name]) || {};
-      const clip = an.current ?? saved.clip ?? an.clipNames()[0];
-      const speed = saved.speed ?? 1;
-      if (clip) an.play(clip, { loop, speed });
-      if (obj.name) {
-        animMap()[obj.name] = { clip, loop, speed, autoplay: an.current != null };
-        persist();
-      }
-    },
-    setSpeed(obj, speed) {
-      const an = getAnimator(obj);
-      if (!an) return;
-      an.setSpeed(speed);
-      if (obj.name) {
-        animMap()[obj.name] = { ...(animMap()[obj.name] ?? {}), speed };
-        persist();
-      }
-    },
-  };
-
-  // ── Ações do player (mapa ação→clipe), persistido ───────────────────────────
-  // Lê/grava o PlayerAnimatorComponent da entidade do objeto + overlay
-  // (`data.playerAnimations[id]`); o buildScene reaplica no boot (overlay > nó).
-  const PLAYER_ACTIONS = ['idle', 'walk', 'run', 'jump', 'fall', 'land'];
-  const findPlayerAnim = (obj: Object3D): PlayerAnimatorComponent | null => {
-    for (const e of game.world.query(PlayerAnimatorComponent)) {
-      if (e.getComponent(Object3DComponent)?.object === obj) return e.getComponent(PlayerAnimatorComponent) ?? null;
-    }
-    return null;
-  };
-  const playerAnimMap = (): Record<string, Record<string, string>> => {
-    const m = overlay.data['playerAnimations'];
-    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, Record<string, string>>;
-    const o: Record<string, Record<string, string>> = {};
-    overlay.data['playerAnimations'] = o;
-    return o;
-  };
-  const playerAnimationsApi: PlayerAnimationsApi = {
-    get(obj) {
-      const comp = findPlayerAnim(obj);
-      const animator = getAnimator(obj);
-      if (!comp || !animator) return null;
-      return { actions: PLAYER_ACTIONS, clips: animator.clipNames(), map: { ...comp.clips } };
-    },
-    set(obj, action, clip) {
-      const comp = findPlayerAnim(obj);
-      if (!comp) return;
-      if (clip) comp.clips[action] = clip;
-      else delete comp.clips[action];
-      comp.current = null; // re-avalia a ação no próximo Play
-      if (obj.name) {
-        const cur = playerAnimMap()[obj.name] ?? {};
-        if (clip) cur[action] = clip;
-        else delete cur[action];
-        playerAnimMap()[obj.name] = cur;
-        persist();
-      }
-    },
-    preview(obj, clip) {
-      const an = getAnimator(obj);
-      if (an && clip) an.play(clip, { loop: true });
-    },
-    stop(obj) {
-      getAnimator(obj)?.stop();
-    },
-    autoMap(obj) {
-      const comp = findPlayerAnim(obj);
-      const an = getAnimator(obj);
-      if (!comp || !an) return;
-      // Infere pelos nomes (explícito vence) e GRAVA — materializa a inferência.
-      comp.clips = autoMapPlayerClips(an.clipNames(), comp.clips);
-      if (obj.name) {
-        playerAnimMap()[obj.name] = { ...comp.clips };
-        persist();
-      }
-    },
-  };
+  // ── Animação + Ações do player: módulos de autoria (ADR-0060) ────────────────
+  const animationApi = createAnimationApi(authoring);
+  const playerAnimationsApi = createPlayerAnimationsApi(authoring);
 
   const inspector = createEditorInspector({
     selection,
