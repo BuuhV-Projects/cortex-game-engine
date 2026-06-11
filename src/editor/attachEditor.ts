@@ -38,14 +38,10 @@ import {
   type ColliderApi,
   type PhysicsApi,
   type CharacterEditState,
-  type MatteApi,
-  type MaterialApi,
   type TerrainApi,
   type AnimationApi,
   type PlayerAnimationsApi,
 } from './EditorInspector.js';
-import { setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
-import { applyMaterial, type MaterialConfig } from '../scene/Materials.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
@@ -53,6 +49,9 @@ import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { autoMapPlayerClips } from '../systems/PlatformerAnimationSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { createObjectRegistry } from './EditorModel.js';
+import { createAuthoringContext } from './authoring/AuthoringContext.js';
+import { createMatteApi } from './authoring/MatteAuthoring.js';
+import { createMaterialApi } from './authoring/MaterialAuthoring.js';
 import { createEditorBridge } from './EditorBridge.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -222,6 +221,10 @@ export function attachEditor(game: Game): GameEditor {
       void writer.save(overlay).catch(() => {});
     }, 500);
   };
+
+  // Contexto compartilhado das autorias (ADR-0060) — cada módulo mexe só no seu
+  // pedaço do overlay (ctx.record) + aplica ao vivo. O attachEditor é o compositor.
+  const authoring = createAuthoringContext(game, three, overlay, persist);
 
   // Write-back do transform pro ECS: editar via gizmo OU inspector escreve no
   // TransformComponent — senão o Object3DSyncSystem sobrescreve no próximo tick
@@ -722,47 +725,9 @@ export function attachEditor(game: Game): GameEditor {
       persist();
     },
   };
-  // ── Fosco (matte) como propriedade autorável ────────────────────────────────
-  // Persiste em `overlay.data.matte[nome]` (true/false explícito — `false`
-  // sobrescreve um matte do código); o `buildScene` reaplica no boot.
-  const matteMap = (): Record<string, boolean> => {
-    const m = overlay.data['matte'];
-    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, boolean>;
-    const obj: Record<string, boolean> = {};
-    overlay.data['matte'] = obj;
-    return obj;
-  };
-  const matteApi: MatteApi = {
-    get: (obj) => isMatte(obj),
-    set: (obj, v) => {
-      if (v) setMatte(obj);
-      else clearMatte(obj);
-      if (obj.name) matteMap()[obj.name] = v;
-      persist();
-    },
-  };
-
-  // ── Material/shader como propriedade autorável (ADR-0058) ────────────────────
-  // Persiste a MaterialConfig em `overlay.data.material[nome]`; o buildScene
-  // reaplica no boot (overlay > nó JSON). `standard` remove a autoria.
-  const materialMap = (): Record<string, MaterialConfig> => {
-    const m = overlay.data['material'];
-    if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, MaterialConfig>;
-    const o: Record<string, MaterialConfig> = {};
-    overlay.data['material'] = o;
-    return o;
-  };
-  const materialApi: MaterialApi = {
-    get: (obj) => (obj.name ? (materialMap()[obj.name] ?? null) : null),
-    set: (obj, config) => {
-      applyMaterial(obj, config);
-      if (obj.name) {
-        if (config.type === 'standard') delete materialMap()[obj.name];
-        else materialMap()[obj.name] = config;
-      }
-      persist();
-    },
-  };
+  // ── Fosco (matte) + Material/shader: módulos de autoria (ADR-0060) ───────────
+  const matteApi = createMatteApi(authoring);
+  const materialApi = createMaterialApi(authoring);
 
   // ── Terreno: pincel de esculpir (raise/lower) ────────────────────────────────
   // Esculpe o Terrain (em userData.cortexTerrain) por raycast no mesh; CLIQUE/ARRASTE
