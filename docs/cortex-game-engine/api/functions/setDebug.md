@@ -8,7 +8,7 @@
 
 > **setDebug**(`value`): `void`
 
-Defined in: src/core/debug.ts:57
+Defined in: [src/core/debug.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/debug.ts#L57)
 
 Liga/desliga escopos programaticamente (vence as fontes de runtime).
 
