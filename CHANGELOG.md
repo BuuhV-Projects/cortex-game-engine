@@ -1,3 +1,18 @@
+# [0.27.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.26.0...v0.27.0) (2026-06-11)
+
+
+### Bug Fixes
+
+* **editor:** OverlayStore lê overlay.data dinamicamente (autoria não persistia) ([c7d2394](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c7d2394af55ce7305e5acbf52818f947c1740a79))
+* **physics:** grava a troca de tipo de física na hora (persist imediato) ([255c267](https://github.com/BuuhV-Projects/cortex-game-engine/commit/255c2676da725255822c26b9e3d6299e93eb6acb))
+
+
+### Features
+
+* **editor:** autoria de corpo Rapier no Inspector — Tipo de corpo "Rígido" (ADR-0061) ([262c567](https://github.com/BuuhV-Projects/cortex-game-engine/commit/262c567c0c34918d2bdc79e3d1cad8f885bf3c6a))
+* **editor:** bloqueia autoria de física em objetos criados em código (não-nós) ([e3577d3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e3577d324f331817d3ec2c0b2a21ad52f0f4f7bf))
+* **scene:** rapierBody data-driven — física dinâmica no level.json (ADR-0061) ([cbea85f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cbea85f26b2c9525c2280f0f8114726c06876478))
+
 # [0.26.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.25.0...v0.26.0) (2026-06-11)
 
 
