@@ -41,6 +41,9 @@ export * from './components/SpriteAnimationComponent.js';
 export * from './components/TerrainComponent.js';
 export * from './components/CharacterBodyComponent.js';
 
+// ─── Física dinâmica (Rapier — WASM; TDR-0002, fase 2/spike) ───────────────────
+export * from './physics/RapierPhysics.js';
+
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
 export * from './systems/Object3DSyncSystem.js';
 export * from './systems/ThirdPersonCameraSystem.js';
