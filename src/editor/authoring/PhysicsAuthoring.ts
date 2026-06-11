@@ -143,7 +143,7 @@ export function createPhysicsApi(ctx: EditorAuthoringContext, colliderApi: Colli
         colliderApi.remove(obj);
         physMap()[obj.name] = { type: 'none' };
       }
-      ctx.persist();
+      ctx.persist(true); // grava na hora: trocar tipo é raro e o user costuma dar Play/reload logo
     },
     setCharacter(obj, patch) {
       if (!obj.name) return;
@@ -161,7 +161,7 @@ export function createPhysicsApi(ctx: EditorAuthoringContext, colliderApi: Colli
       if (re) re.getComponent(RapierBodyComponent)!.bodyType = next.bodyType;
       else addRapierEntity(obj, next);
       physMap()[obj.name] = { type: 'rigid', rapier: { ...next } };
-      ctx.persist();
+      ctx.persist(true);
     },
   };
 }
