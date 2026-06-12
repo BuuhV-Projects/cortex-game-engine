@@ -138,3 +138,53 @@ export function blitRGBA(dst, dw, src, sw, sh, dx, dy) {
     src.copy(dst, to, from, from + sw * 4);
   }
 }
+
+/**
+ * Compõe `src` (sw×sh, straight-alpha) **sobre** `dst` (dw×dh) em (dx,dy) — alpha
+ * "over" de Porter-Duff. Ao contrário do {@link blitRGBA} (que copia/substitui),
+ * preserva o que já está no destino sob as áreas transparentes do src. Usado pra
+ * empilhar camadas de personagem (body → roupa → cabelo).
+ */
+export function blitOver(dst, dw, src, sw, sh, dx, dy) {
+  for (let y = 0; y < sh; y++) {
+    for (let x = 0; x < sw; x++) {
+      const si = (y * sw + x) * 4;
+      const sa = src[si + 3];
+      if (sa === 0) continue;
+      const di = ((dy + y) * dw + (dx + x)) * 4;
+      if (sa === 255) {
+        dst[di] = src[si];
+        dst[di + 1] = src[si + 1];
+        dst[di + 2] = src[si + 2];
+        dst[di + 3] = 255;
+        continue;
+      }
+      const a = sa / 255;
+      const da = dst[di + 3] / 255;
+      const oa = a + da * (1 - a); // alpha resultante
+      for (let k = 0; k < 3; k++) {
+        const sc = src[si + k];
+        const dc = dst[di + k];
+        dst[di + k] = oa <= 0 ? 0 : Math.round((sc * a + dc * da * (1 - a)) / oa);
+      }
+      dst[di + 3] = Math.round(oa * 255);
+    }
+  }
+}
+
+/**
+ * Redimensiona uma imagem RGBA (`src` sw×sh) pra dw×dh por **nearest-neighbor**
+ * (preserva pixel art / borda dura). Usado pra thumbnails de assets estáticos
+ * grandes (atlas de cenário) sem dependência externa.
+ */
+export function scaleNearest(src, sw, sh, dw, dh) {
+  const out = Buffer.alloc(dw * dh * 4);
+  for (let y = 0; y < dh; y++) {
+    const sy = Math.min(sh - 1, (y * sh / dh) | 0);
+    for (let x = 0; x < dw; x++) {
+      const sx = Math.min(sw - 1, (x * sw / dw) | 0);
+      src.copy(out, (y * dw + x) * 4, (sy * sw + sx) * 4, (sy * sw + sx) * 4 + 4);
+    }
+  }
+  return out;
+}

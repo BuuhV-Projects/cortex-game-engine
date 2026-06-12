@@ -1,0 +1,1844 @@
+{
+  "version": 1,
+  "name": "kit-smallburg-village",
+  "module": 1,
+  "theme": "village",
+  "assets": {
+    "assets/body_light.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/body_light.png"
+    },
+    "assets/body_brown.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/body_brown.png"
+    },
+    "assets/body_dark.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/body_dark.png"
+    },
+    "assets/premade_villager_green.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/premade_villager_green.png"
+    },
+    "assets/premade_villager_red.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/premade_villager_red.png"
+    },
+    "assets/premade_villager_blue.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/premade_villager_blue.png"
+    },
+    "assets/premade_dapper_brown.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/premade_dapper_brown.png"
+    },
+    "assets/premade_worker_overalls.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/premade_worker_overalls.png"
+    },
+    "assets/premade_scientist_hazmat.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/premade_scientist_hazmat.png"
+    },
+    "assets/premade_lady_pink.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/premade_lady_pink.png"
+    },
+    "assets/premade_kid_yellow.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/premade_kid_yellow.png"
+    },
+    "assets/premade_gent_blue.png": {
+      "role": "character",
+      "tags": [
+        "village",
+        "2d",
+        "character"
+      ],
+      "sprite": {
+        "frameWidth": 64,
+        "frameHeight": 64,
+        "animations": {
+          "idle_down": {
+            "frames": [
+              0,
+              1
+            ],
+            "fps": 6
+          },
+          "idle_right": {
+            "frames": [
+              2,
+              3
+            ],
+            "fps": 6
+          },
+          "idle_left": {
+            "frames": [
+              4,
+              5
+            ],
+            "fps": 6
+          },
+          "idle_up": {
+            "frames": [
+              6,
+              7
+            ],
+            "fps": 6
+          },
+          "walk_down": {
+            "frames": [
+              8,
+              9,
+              10,
+              11,
+              12,
+              13
+            ],
+            "fps": 8
+          },
+          "walk_right": {
+            "frames": [
+              14,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "fps": 8
+          },
+          "walk_left": {
+            "frames": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25
+            ],
+            "fps": 8
+          },
+          "walk_up": {
+            "frames": [
+              26,
+              27,
+              28,
+              29,
+              30,
+              31
+            ],
+            "fps": 8
+          },
+          "run_down": {
+            "frames": [
+              32,
+              33,
+              34,
+              35
+            ],
+            "fps": 12
+          },
+          "run_right": {
+            "frames": [
+              36,
+              37,
+              38,
+              39
+            ],
+            "fps": 12
+          },
+          "run_left": {
+            "frames": [
+              40,
+              41,
+              42,
+              43
+            ],
+            "fps": 12
+          },
+          "run_up": {
+            "frames": [
+              44,
+              45,
+              46,
+              47
+            ],
+            "fps": 12
+          }
+        },
+        "initial": "idle_down",
+        "pixelsPerUnit": 64
+      },
+      "thumb": "thumbnails/premade_gent_blue.png"
+    },
+    "assets/commerce_fishmarket_stall.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "commerce"
+      ],
+      "thumb": "thumbnails/commerce_fishmarket_stall.png"
+    },
+    "assets/commerce_fishmarket_stall_closed.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "commerce"
+      ],
+      "thumb": "thumbnails/commerce_fishmarket_stall_closed.png"
+    },
+    "assets/waepon_gear_stall.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "commerce"
+      ],
+      "thumb": "thumbnails/waepon_gear_stall.png"
+    },
+    "assets/commerce_marketplace_stall.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "commerce"
+      ],
+      "thumb": "thumbnails/commerce_marketplace_stall.png"
+    },
+    "assets/commerce_marketplace_stall_shadow.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "commerce"
+      ],
+      "thumb": "thumbnails/commerce_marketplace_stall_shadow.png"
+    },
+    "assets/commerce_ore_crystals_stall.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "commerce"
+      ],
+      "thumb": "thumbnails/commerce_ore_crystals_stall.png"
+    },
+    "assets/commerce_ore_crystals_stall_shadows.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "commerce"
+      ],
+      "thumb": "thumbnails/commerce_ore_crystals_stall_shadows.png"
+    },
+    "assets/commerce_potion_stall.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "commerce"
+      ],
+      "thumb": "thumbnails/commerce_potion_stall.png"
+    },
+    "assets/commerce_potion_stall_shadow.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "commerce"
+      ],
+      "thumb": "thumbnails/commerce_potion_stall_shadow.png"
+    },
+    "assets/house_doors.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_doors.png"
+    },
+    "assets/house_interiors_assets.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_interiors_assets.png"
+    },
+    "assets/housing_system_roofs.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/housing_system_roofs.png"
+    },
+    "assets/house_building_assets.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets.png"
+    },
+    "assets/house_building_assets_blue.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_blue.png"
+    },
+    "assets/house_building_assets_brown.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_brown.png"
+    },
+    "assets/house_building_assets_brown_light.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_brown_light.png"
+    },
+    "assets/house_building_assets_green.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_green.png"
+    },
+    "assets/house_building_assets_green_light.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_green_light.png"
+    },
+    "assets/house_building_assets_grey.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_grey.png"
+    },
+    "assets/house_building_assets_orange.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_orange.png"
+    },
+    "assets/house_building_assets_pink.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_pink.png"
+    },
+    "assets/house_building_assets_red.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_red.png"
+    },
+    "assets/house_building_assets_red_light.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_red_light.png"
+    },
+    "assets/house_building_assets_shadows.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_shadows.png"
+    },
+    "assets/house_building_assets_teal.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_teal.png"
+    },
+    "assets/house_building_assets_yellow.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "housing"
+      ],
+      "thumb": "thumbnails/house_building_assets_yellow.png"
+    },
+    "assets/bushes_destruction.png": {
+      "role": "decoration",
+      "tags": [
+        "village",
+        "foliage"
+      ],
+      "thumb": "thumbnails/bushes_destruction.png"
+    },
+    "assets/bushes_destruction_shadow.png": {
+      "role": "decoration",
+      "tags": [
+        "village",
+        "foliage"
+      ],
+      "thumb": "thumbnails/bushes_destruction_shadow.png"
+    },
+    "assets/flower_gardens_ciment_empty.png": {
+      "role": "decoration",
+      "tags": [
+        "village",
+        "garden"
+      ],
+      "thumb": "thumbnails/flower_gardens_ciment_empty.png"
+    },
+    "assets/flower_gardens_ciment_plants.png": {
+      "role": "decoration",
+      "tags": [
+        "village",
+        "garden"
+      ],
+      "thumb": "thumbnails/flower_gardens_ciment_plants.png"
+    },
+    "assets/flower_gardens_ciment_soil.png": {
+      "role": "decoration",
+      "tags": [
+        "village",
+        "garden"
+      ],
+      "thumb": "thumbnails/flower_gardens_ciment_soil.png"
+    },
+    "assets/flower_gardens_wood_empty.png": {
+      "role": "decoration",
+      "tags": [
+        "village",
+        "garden"
+      ],
+      "thumb": "thumbnails/flower_gardens_wood_empty.png"
+    },
+    "assets/flower_gardens_wood_plants.png": {
+      "role": "decoration",
+      "tags": [
+        "village",
+        "garden"
+      ],
+      "thumb": "thumbnails/flower_gardens_wood_plants.png"
+    },
+    "assets/flower_gardens_wood_soil.png": {
+      "role": "decoration",
+      "tags": [
+        "village",
+        "garden"
+      ],
+      "thumb": "thumbnails/flower_gardens_wood_soil.png"
+    },
+    "assets/outside_assets_stairs.png": {
+      "role": "prop",
+      "tags": [
+        "village",
+        "stairs"
+      ],
+      "thumb": "thumbnails/outside_assets_stairs.png"
+    },
+    "assets/SmallBurg_outside_assets.png": {
+      "role": "tile",
+      "tags": [
+        "village",
+        "terrain"
+      ],
+      "thumb": "thumbnails/SmallBurg_outside_assets.png"
+    },
+    "assets/SmallBurg_outside_assets_shadows.png": {
+      "role": "tile",
+      "tags": [
+        "village",
+        "terrain"
+      ],
+      "thumb": "thumbnails/SmallBurg_outside_assets_shadows.png"
+    },
+    "assets/smallburg_beach_spring_terrain.png": {
+      "role": "tile",
+      "tags": [
+        "village",
+        "terrain"
+      ],
+      "thumb": "thumbnails/smallburg_beach_spring_terrain.png"
+    },
+    "assets/smallburg_terrain_spring.png": {
+      "role": "tile",
+      "tags": [
+        "village",
+        "terrain"
+      ],
+      "thumb": "thumbnails/smallburg_terrain_spring.png"
+    },
+    "assets/smallburg_terrain_spring_with_shadows.png": {
+      "role": "tile",
+      "tags": [
+        "village",
+        "terrain"
+      ],
+      "thumb": "thumbnails/smallburg_terrain_spring_with_shadows.png"
+    },
+    "assets/terrain_basic_hills.png": {
+      "role": "tile",
+      "tags": [
+        "village",
+        "wip"
+      ],
+      "thumb": "thumbnails/terrain_basic_hills.png"
+    },
+    "assets/terrain_decorated_hills.png": {
+      "role": "tile",
+      "tags": [
+        "village",
+        "wip"
+      ],
+      "thumb": "thumbnails/terrain_decorated_hills.png"
+    }
+  }
+}

@@ -65,24 +65,47 @@ node -e 'import("./dist/src/scene/Kit.js").then(({parseKit})=>console.log(parseK
 
 Nó `sprite` referenciando a `url` do kit — herda frameWidth/height + animations:
 ```jsonc
-{ "type": "sprite", "id": "hero", "url": "assets/kit-smallburg-village/character_premade_01.png",
+{ "type": "sprite", "id": "hero", "url": "assets/premade_villager_green.png",
   "transform": { "position": [0, 1.5, 0] } }
 ```
 Passe o `kit.json` ao `buildScene({ kit })` (igual aos kits 3D). O `SpriteAnimationSystem`
-é ligado sob demanda; troque a animação em runtime via o componente (`play('walk')`).
+é ligado sob demanda; troque a animação em runtime via o componente — com 4 direções,
+use as chaves `<anim>_<dir>` (`play('walk_left')`, `play('idle_down')`).
 Importar pro projeto: copiar `kits/<nome>/assets/*` pra `assets/<nome>/` + o `kit.json`.
 
 ## Convenções / gotchas
 
 - **RGBA8 sem interlace** — o codec não cobre palette/grayscale/interlace; converta antes.
-- **Strips top-down** = N direções: extraia 1 direção (row) por kit; o engine usa
-  **1 tamanho de frame por folha** (não dá pra misturar direções de tamanhos diferentes).
+- **Strips top-down** = N direções. Duas saídas possíveis (o engine usa **1 tamanho
+  de frame por folha**): (a) extrair **1 direção** (row) por kit com `pack-2d-kit.mjs`
+  (`frameSize`/`row`); ou (b) — quando todas as direções têm o **mesmo** frame —
+  manter **as 4 numa folha só** como animações `<anim>_<dir>` (`idle_down`,
+  `walk_left`, …), `initial: "idle_down"`. Ver `pack-2d-village.mjs`.
 - **Frame quadrado** no modo grade (`frameSize`); pro modo tira, frames podem ser
   retangulares (idle 128×256 etc.).
 - **`theme: "TBD"`** se a paleta/atmosfera ainda não foi definida.
-- O codec (`png.mjs`) e o packer ficam pra **reuso** — não apague.
+- O codec (`png.mjs`) e os packers ficam pra **reuso** — não apague. `png.mjs` tem
+  `blitRGBA` (copia), `blitOver` (alpha-over, p/ empilhar camadas) e `scaleNearest`
+  (thumbnails de estáticos grandes).
 
-## Exemplo (Smallburg Village, jun/2026)
-`premades/` (10 personagens, cada um idle/run/walk top-down 4-direções 64×64) →
-`kits/kit-smallburg-village/` (10 folhas frontais 768×64, 12 frames cada:
-idle[0,1]/walk[2–7]/run[8–11]) + `kit.json`. Comando: `pack-2d-kit.mjs … village 64 0`.
+## Caminho "village" — 4 direções + camadas + estáticos (`pack-2d-village.mjs`)
+
+Packs **modulares em camadas** (body + roupas/cabelo em PNGs separados, top-down
+4-direções) não casam com o `pack-2d-kit.mjs` ("1 pasta = 1 char, tira simples").
+O `pack-2d-village.mjs` (feito pro pack Smallburg Village) faz:
+
+- **Personagem** = folha única com **todas as anims × 4 direções** (`idle/walk/run` ×
+  `down/right/left/up`, frame 64×64), animações `<anim>_<dir>`, `initial:"idle_down"`,
+  `pixelsPerUnit:64`. Mapa linha→direção (down/right/left/up) **confirmado por
+  contact-sheet** antes de cravar `DIRS`.
+- **Premade** = body + camadas compostas por célula com `blitOver` (baixo→topo:
+  body → shoes → pernas → torso → cabelo → acessório; one-piece substitui pernas+torso).
+  Camada resolvida por **substrings de pasta** (os nomes variam por anim:
+  `shirt_solids`/`solid_shirts`/`shirt_solid`) + sufixo de cor `_<color>`, com fallback
+  pro 1º token (`green_dark`→`green`) tolerando typos do pack (`browm_dark`).
+- **Estáticos** (commerce/housing/tileset) = cada PNG inteiro vira 1 asset **sem
+  `sprite`** (role `prop`/`tile`/`decoration` por categoria) + thumbnail `scaleNearest`.
+
+Comando: `node scripts/pack-2d-village.mjs <srcDir> [outDir=kits/kit-smallburg-village]`.
+Specs (bodies, premades, roles dos estáticos) são **dados** no topo do script — edite
+lá pra trocar combos/cores. Resultado (jun/2026): 3 bodies + 9 premades + 42 estáticos.

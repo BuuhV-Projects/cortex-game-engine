@@ -26,10 +26,12 @@ kits/<nome>/
 | `characters-base` | KayKit Adventurers: 6 heróis + armas/escudos |
 | `enemies-base` | KayKit Skeletons: inimigos + armas |
 | `backgrounds-base` | 45 backdrops 2D por tema (role `background`, parallax) |
+| `kit-smallburg-village` | Sprites 2D top-down (village): 3 bodies + 9 premades animados (idle/walk/run × 4 direções, anims `<anim>_<dir>`) + 42 estáticos de cenário (commerce/housing/tileset) |
 
 ## Como adicionar/atualizar um kit
 
-Use a skill `process-asset-kit` (pack bruto → kit curado). Pra backdrops 2D,
+Use a skill `process-asset-kit` (pack 3D bruto → kit curado). Pra **sprites 2D**
+(personagens pixel art, tilesets) use `process-asset-kit-2d`. Pra backdrops 2D,
 `gen-backgrounds.mjs`. Os kits são **commitados no git** (binários ~100MB — decisão
 de versionar tudo junto, reprodutível no clone).
 
