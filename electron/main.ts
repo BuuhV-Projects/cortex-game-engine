@@ -649,25 +649,10 @@ async function loadGameDesignBible(): Promise<string> {
   return cachedGameDesignBible
 }
 
-/**
- * Lê o tipo do projeto de `<projectDir>/cortex.json` (`2d` = pixel/ortográfica;
- * `2.5d` = malhas/perspectiva, default). Usado pra orientar o prompt do Chat IA.
- */
-async function loadProjectType(projectDir: string | null): Promise<'2d' | '2.5d'> {
-  if (!projectDir) return '2.5d'
-  try {
-    const raw = await readFile(join(projectDir, 'cortex.json'), 'utf-8')
-    const parsed = JSON.parse(raw) as { type?: unknown }
-    return parsed.type === '2d' ? '2d' : '2.5d'
-  } catch {
-    return '2.5d'
-  }
-}
-
 // Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}
 // em cada arquivo copiado, vendoriza o engine em vendor/cortex-game-engine/ e
 // retorna o path do novo projeto
-ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unknown, kind: unknown) => {
+ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unknown) => {
   const safeTarget = validatePath(targetDir)
   if (typeof name !== 'string' || name.trim() === '') {
     throw new Error('name deve ser uma string não vazia')
@@ -676,21 +661,17 @@ ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unkn
   if (name.includes('/') || name.includes('\\') || name.includes('\0')) {
     throw new Error('name não pode conter separadores de path')
   }
-  // Tipo do jogo: '2.5d' (default, com malhas/perspectiva) ou '2d' (pixel/ortho).
-  const projectKind = kind === '2d' ? '2d' : '2.5d'
   const projectName = name.trim()
   // Projeto criado em subdiretório dedicado dentro de targetDir
   const projectPath = resolve(safeTarget, projectName)
   const templateDir = join(resourceBase(), 'templates', 'new-project')
   await cp(templateDir, projectPath, { recursive: true })
-  // 2D: sobrepõe os arquivos específicos (ex.: main.ts ortográfico) por cima da base.
-  if (projectKind === '2d') {
-    await cp(join(resourceBase(), 'templates', 'variants', '2d'), projectPath, { recursive: true })
-  }
-  // Marca o tipo do projeto — lido pelo Chat IA pra orientar o prompt (2D vs 2.5D).
+  // Marca de projeto do engine — ponto de extensão pra metadados futuros (versão,
+  // flags do Studio). Não há "tipo" de projeto: o engine é 3D por padrão e 2D/2.5D
+  // são questão de câmera/render, decididas no código do jogo (ADR-0062).
   await writeFile(
     join(projectPath, 'cortex.json'),
-    JSON.stringify({ engine: 'cortex-game-engine', type: projectKind }, null, 2) + '\n',
+    JSON.stringify({ engine: 'cortex-game-engine' }, null, 2) + '\n',
     'utf-8',
   )
   // Substitui o placeholder {{PROJECT_NAME}} em cada arquivo do template copiado
@@ -1390,7 +1371,6 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
 
   const engineApiDoc = await loadEngineApiDoc()
   const gameDesignBible = await loadGameDesignBible()
-  const projectType = await loadProjectType(currentProjectDir)
 
   try {
     await runAgent({
@@ -1401,7 +1381,6 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
       mode: agentMode,
       engineApiDoc,
       gameDesignBible,
-      projectType,
       kitsDir: join(resourceBase(), 'kits'),
       // PATH aumentado: a tool Bash do SDK herda este env, então `yarn`/`node`
       // resolvem mesmo no app empacotado (onde o PATH do Explorer não os tem).

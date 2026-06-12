@@ -1,7 +1,7 @@
 # 0052 - Tipo de projeto (2D ou 2.5D) na criação
 
 **Data:** 2026-06-07
-**Status:** aceito
+**Status:** substituído por 0062
 
 ## Contexto
 

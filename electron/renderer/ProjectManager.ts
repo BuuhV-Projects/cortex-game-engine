@@ -6,7 +6,6 @@ export class ProjectManager {
   private nameInput: HTMLInputElement | null = null
   private dirPathDisplay: HTMLSpanElement | null = null
   private selectedDir: string | null = null
-  private kindSelect: HTMLSelectElement | null = null
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -51,25 +50,6 @@ export class ProjectManager {
 
     nameGroup.appendChild(nameLabel)
     nameGroup.appendChild(nameInput)
-
-    // Campo: tipo do jogo (2.5D malhas/perspectiva × 2D pixel/ortográfica). O
-    // template e a orientação do Chat IA vêm configurados conforme a escolha.
-    const kindGroup = document.createElement('div')
-    kindGroup.className = 'project-manager-field'
-    const kindLabel = document.createElement('label')
-    kindLabel.textContent = t('projectManager.label_kind')
-    const kindSelect = document.createElement('select')
-    kindSelect.className = 'project-manager-input'
-    const opt25 = document.createElement('option')
-    opt25.value = '2.5d'
-    opt25.textContent = t('projectManager.kind_25d')
-    const opt2 = document.createElement('option')
-    opt2.value = '2d'
-    opt2.textContent = t('projectManager.kind_2d')
-    kindSelect.append(opt25, opt2)
-    this.kindSelect = kindSelect
-    kindGroup.appendChild(kindLabel)
-    kindGroup.appendChild(kindSelect)
 
     // Campo: pasta destino (diálogo nativo do Electron)
     const dirGroup = document.createElement('div')
@@ -119,7 +99,6 @@ export class ProjectManager {
 
     dialog.appendChild(title)
     dialog.appendChild(nameGroup)
-    dialog.appendChild(kindGroup)
     dialog.appendChild(dirGroup)
     dialog.appendChild(actions)
     document.body.appendChild(dialog)
@@ -153,8 +132,7 @@ export class ProjectManager {
     }
 
     try {
-      const kind = this.kindSelect?.value === '2d' ? '2d' : '2.5d'
-      const createdPath = await window.electronAPI.createProject(this.selectedDir, name, kind)
+      const createdPath = await window.electronAPI.createProject(this.selectedDir, name)
       this.closeAndReset()
       document.dispatchEvent(
         new CustomEvent<{ path: string }>('project-created', {

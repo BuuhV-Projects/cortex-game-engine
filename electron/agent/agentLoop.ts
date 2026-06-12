@@ -445,11 +445,6 @@ export interface RunAgentOptions {
    */
   gameDesignBible?: string
   /**
-   * Tipo do jogo (de `cortex.json`): `2d` (pixel/ortográfica — sprites, tilemap)
-   * ou `2.5d` (malhas 3D/perspectiva, default). Orienta o foco do prompt.
-   */
-  projectType?: '2d' | '2.5d'
-  /**
    * Diretório dos **kits de assets empacotados** (`<resourceBase>/kits/`, ADR-0053).
    * Exposto à IA via as tools `list_kits`/`import_kit`. Lido pelo main via
    * resourceBase(); ausente se indisponível.
@@ -486,23 +481,21 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
   // Monta o append do system prompt: base + referência da API do engine
   // (injetada pra o agente saber o que existe) + instruções de plan se for o caso.
   let systemAppend = AGENT_SYSTEM_PROMPT
-  if (opts.projectType === '2d') {
-    systemAppend +=
-      `\n\n===== TIPO DO PROJETO: 2D / PIXEL ART =====\n` +
-      `Este é um jogo **2D pixel art** (câmera ortográfica). Use a camada 2D do engine:\n` +
-      `- \`new Game({ projection: 'orthographic', pixelsPerUnit })\` — NÃO use câmera perspectiva.\n` +
-      `- **Sprites** (\`createSprite\`, \`Spritesheet\` + \`createAnimatedSprite\` + \`SpriteAnimationSystem\`), ` +
-      `texturas com \`loadTexture(url, { pixelated: true })\` (nearest filter).\n` +
-      `- **Tilemap** (\`buildTilemap\` + \`addColliders\`) pra níveis por tiles.\n` +
-      `- NÃO use modelos GLB 3D, iluminação PBR, PostFX 3D, água, skybox nem \`inspect_assets\` ` +
-      `de \`.glb\` — isso é do fluxo 2.5D. A física/colisão (Collider2D, setupPlatformer) é a mesma.\n` +
-      `Pra criar/animar personagem e montar fases, pense em **spritesheets e tilesets**, não em malhas.`
-  } else {
-    systemAppend +=
-      `\n\n===== TIPO DO PROJETO: 2.5D =====\n` +
-      `Jogo 2.5D (malhas 3D / perspectiva). Siga a seção "MONTAGEM DE LEVEL (plataforma 2.5D)" ` +
-      `e use modelos GLB + \`inspect_assets\` como de costume.`
-  }
+  systemAppend +=
+    `\n\n===== DIMENSÃO DO JOGO (3D por padrão; 2.5D/2D = câmera) =====\n` +
+    `O engine é **3D por padrão** (câmera perspectiva, malhas GLB, PBR). Não existe ` +
+    `"tipo de projeto": 2.5D e 2D são estilos obtidos pelo **sistema de câmeras** e ` +
+    `pela camada de render escolhida no código do jogo — a física/colisão (Collider2D, ` +
+    `setupPlatformer) é a mesma em todos.\n` +
+    `- **3D / 2.5D (malhas):** perspectiva + GLB + \`inspect_assets\`; siga a seção ` +
+    `"MONTAGEM DE LEVEL (plataforma 2.5D)".\n` +
+    `- **2D pixel art:** \`new Game({ projection: 'orthographic', pixelsPerUnit })\`, ` +
+    `**sprites** (\`createSprite\`, \`Spritesheet\` + \`createAnimatedSprite\` + ` +
+    `\`SpriteAnimationSystem\`), texturas \`loadTexture(url, { pixelated: true })\` e ` +
+    `**tilemap** (\`buildTilemap\` + \`addColliders\`). Nesse estilo, evite GLB/PBR/` +
+    `PostFX 3D/skybox — pense em spritesheets e tilesets.\n` +
+    `Detecte o estilo atual pelo código do projeto (opções do \`Game\`, assets usados) ` +
+    `e pelo pedido do usuário; na dúvida, pergunte ou siga o padrão 3D.`
   if (opts.engineApiDoc && opts.engineApiDoc.trim().length > 0) {
     systemAppend += `\n\n===== Referência da API do cortex-game-engine =====\n\n${opts.engineApiDoc}`
   }
