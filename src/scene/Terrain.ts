@@ -11,10 +11,15 @@ import {
   SRGBColorSpace,
   TextureLoader,
   UnsignedByteType,
-  Vector4,
   type ColorRepresentation,
-  type Texture,
 } from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import { texture as textureNode, uv, uniform, mix, clamp, max } from 'three/tsl';
+
+/** Helper só pra extrair o tipo concreto do nó uniform numérico (TS). */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+const uniformNumber = (v: number) => uniform(v);
+type RepeatNode = ReturnType<typeof uniformNumber>;
 
 /** Opções de {@link Terrain}. */
 export interface TerrainOptions {
@@ -87,16 +92,12 @@ export class Terrain {
   private splatTexture: DataTexture | null = null;
   private splatSize = SPLAT_SIZE;
   private readonly layers: TerrainPaintLayer[] = [];
-  private readonly layerRepeat = new Vector4(1, 1, 1, 1);
-  /** Uniforms estáveis do shader de splat (trocar `.value` propaga sem recompilar). */
-  private paintUniforms: {
-    cortexSplatMap: { value: Texture | null };
-    cortexLayer0: { value: Texture };
-    cortexLayer1: { value: Texture };
-    cortexLayer2: { value: Texture };
-    cortexLayer3: { value: Texture };
-    cortexRepeat: { value: Vector4 };
-  } | null = null;
+  // Nós TSL estáveis do blend (trocar `.value` propaga sem reconstruir o material).
+  // O engine renderiza com WebGPURenderer (node-based) — `onBeforeCompile` NÃO
+  // existe nesse pipeline; o blend de splat é um `colorNode` de NodeMaterial.
+  private splatTexNode: ReturnType<typeof textureNode> | null = null;
+  private layerTexNodes: ReturnType<typeof textureNode>[] = [];
+  private repeatNodes: RepeatNode[] = [];
 
   constructor(options: TerrainOptions = {}) {
     const size = options.size ?? 50;
@@ -322,105 +323,97 @@ export class Terrain {
   /** Restaura uma pintura salva ({@link Terrain.getPaint}): camadas + splatmap. */
   setPaint(data: TerrainPaintData): void {
     if (!data.layers.length || !data.splat) return;
-    // Recria o splatmap no tamanho salvo (pode diferir do default).
-    if (this.splatTexture && this.splatSize !== data.size) {
+    if (!this.splatTexture) {
+      this.splatSize = data.size;
+      this.ensurePaint();
+    } else if (this.splatSize !== data.size) {
+      // Recria o splatmap no tamanho salvo e troca no nó (sem reconstruir o material).
+      this.splatSize = data.size;
       this.splatTexture.dispose();
-      this.splatTexture = null;
-      this.splatData = null;
+      this.splatTexture = this.createSplatTexture();
+      this.splatTexNode!.value = this.splatTexture;
     }
-    this.splatSize = data.size;
     this.layers.length = 0;
     for (const l of data.layers.slice(0, TERRAIN_MAX_LAYERS)) {
       this.layers.push({ url: l.url, repeat: l.repeat });
     }
-    this.ensurePaint();
     const bytes = base64ToBytes(data.splat);
     this.splatData!.set(bytes.subarray(0, this.splatData!.length));
     this.splatTexture!.needsUpdate = true;
     for (let i = 0; i < this.layers.length; i++) this.loadLayerTexture(i);
   }
 
+  /** Cria o `DataTexture` RGBA de pesos (`splatSize²`) apontando pro `splatData`. */
+  private createSplatTexture(): DataTexture {
+    const size = this.splatSize;
+    this.splatData = new Uint8Array(size * size * 4);
+    const tex = new DataTexture(this.splatData, size, size, RGBAFormat, UnsignedByteType);
+    tex.magFilter = LinearFilter;
+    tex.minFilter = LinearFilter;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
   /**
-   * Liga a infra de pintura (splatmap + shader) uma única vez: cria o `DataTexture`
-   * RGBA de pesos e injeta o blend das camadas no `MeshStandardMaterial` via
-   * `onBeforeCompile` (a iluminação/sombra do material padrão continua valendo).
+   * Liga a infra de pintura uma única vez: cria o splatmap e troca o material por
+   * um `MeshStandardNodeMaterial` cujo `colorNode` faz o blend das camadas (TSL).
+   * ⚠️ O engine renderiza com **WebGPURenderer** (node-based) — `onBeforeCompile`
+   * é silenciosamente ignorado nesse pipeline; o blend TEM que ser via nós. A
+   * iluminação/sombra do material padrão continua valendo (só a cor é substituída).
    */
   private ensurePaint(): void {
     if (this.splatTexture) return;
-    const size = this.splatSize;
-    this.splatData = new Uint8Array(size * size * 4);
-    this.splatTexture = new DataTexture(this.splatData, size, size, RGBAFormat, UnsignedByteType);
-    this.splatTexture.magFilter = LinearFilter;
-    this.splatTexture.minFilter = LinearFilter;
-    this.splatTexture.needsUpdate = true;
+    this.splatTexture = this.createSplatTexture();
 
     const white = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, RGBAFormat, UnsignedByteType);
     white.needsUpdate = true;
-    this.paintUniforms = {
-      cortexSplatMap: { value: this.splatTexture },
-      cortexLayer0: { value: white },
-      cortexLayer1: { value: white },
-      cortexLayer2: { value: white },
-      cortexLayer3: { value: white },
-      cortexRepeat: { value: this.layerRepeat },
-    };
-    this.syncRepeat();
 
-    const material = this.mesh.material as MeshStandardMaterial;
-    material.defines = { ...material.defines, USE_UV: '' }; // vUv no fragment
-    material.customProgramCacheKey = () => 'cortex-terrain-splat';
-    material.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, this.paintUniforms);
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
-          'void main() {',
-          [
-            'uniform sampler2D cortexSplatMap;',
-            'uniform sampler2D cortexLayer0;',
-            'uniform sampler2D cortexLayer1;',
-            'uniform sampler2D cortexLayer2;',
-            'uniform sampler2D cortexLayer3;',
-            'uniform vec4 cortexRepeat;',
-            'void main() {',
-          ].join('\n'),
-        )
-        .replace(
-          '#include <map_fragment>',
-          [
-            '#include <map_fragment>',
-            'vec4 cortexSplat = texture2D( cortexSplatMap, vUv );',
-            'float cortexW = cortexSplat.r + cortexSplat.g + cortexSplat.b + cortexSplat.a;',
-            'vec3 cortexTex =',
-            '  cortexSplat.r * texture2D( cortexLayer0, vUv * cortexRepeat.x ).rgb +',
-            '  cortexSplat.g * texture2D( cortexLayer1, vUv * cortexRepeat.y ).rgb +',
-            '  cortexSplat.b * texture2D( cortexLayer2, vUv * cortexRepeat.z ).rgb +',
-            '  cortexSplat.a * texture2D( cortexLayer3, vUv * cortexRepeat.w ).rgb;',
-            // Soma < 1 = mistura com a cor base; > 1 = média ponderada das camadas.
-            'diffuseColor.rgb = mix( diffuseColor.rgb, cortexTex / max( cortexW, 1e-4 ), clamp( cortexW, 0.0, 1.0 ) );',
-          ].join('\n'),
-        );
-    };
-    material.needsUpdate = true;
+    const uvNode = uv();
+    this.splatTexNode = textureNode(this.splatTexture, uvNode);
+    this.repeatNodes = [uniformNumber(1), uniformNumber(1), uniformNumber(1), uniformNumber(1)];
+    this.layerTexNodes = this.repeatNodes.map((r) => textureNode(white, uvNode.mul(r)));
+    const splat = this.splatTexNode;
+    const [t0, t1, t2, t3] = this.layerTexNodes;
+    const wsum = splat.r.add(splat.g).add(splat.b).add(splat.a);
+    const blended = t0!.rgb
+      .mul(splat.r)
+      .add(t1!.rgb.mul(splat.g))
+      .add(t2!.rgb.mul(splat.b))
+      .add(t3!.rgb.mul(splat.a))
+      .div(max(wsum, 1e-4)); // média ponderada quando a soma estoura 1
+
+    const old = this.mesh.material as MeshStandardMaterial;
+    const material = new MeshStandardNodeMaterial();
+    material.color.copy(old.color);
+    material.roughness = old.roughness;
+    material.metalness = old.metalness;
+    // Soma < 1 = mistura com a cor base (uniform aponta pro material.color — edições
+    // na MESMA instância de Color propagam ao vivo).
+    material.colorNode = mix(uniform(material.color).rgb, blended, clamp(wsum, 0, 1));
+    this.mesh.material = material;
+    old.dispose();
+    this.syncRepeat();
   }
 
-  /** Carrega a textura da camada `index` e a coloca no uniform (browser; no-op sem DOM). */
+  /** Carrega a textura da camada `index` e a põe no nó (browser; no-op sem DOM). */
   private loadLayerTexture(index: number): void {
     const layer = this.layers[index];
-    if (!layer || !this.paintUniforms) return;
+    const node = this.layerTexNodes[index];
+    if (!layer || !node) return;
     this.syncRepeat();
     if (typeof document === 'undefined') return; // testes/SSR: sem ImageLoader
     const texture = new TextureLoader().load(layer.url);
     texture.wrapS = RepeatWrapping;
     texture.wrapT = RepeatWrapping;
     texture.colorSpace = SRGBColorSpace;
-    const key = `cortexLayer${index}` as 'cortexLayer0' | 'cortexLayer1' | 'cortexLayer2' | 'cortexLayer3';
-    this.paintUniforms[key].value = texture;
+    node.value = texture;
   }
 
-  /** Espelha o `repeat` das camadas no uniform vec4. */
+  /** Espelha o `repeat` das camadas nos uniforms (tiling ao vivo, sem rebuild). */
   private syncRepeat(): void {
-    const r = this.layerRepeat;
-    r.set(this.layers[0]?.repeat ?? 1, this.layers[1]?.repeat ?? 1, this.layers[2]?.repeat ?? 1, this.layers[3]?.repeat ?? 1);
+    for (let i = 0; i < this.repeatNodes.length; i++) {
+      this.repeatNodes[i]!.value = this.layers[i]?.repeat ?? 1;
+    }
   }
 }
 

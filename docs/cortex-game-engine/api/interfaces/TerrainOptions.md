@@ -6,7 +6,7 @@
 
 # Interface: TerrainOptions
 
-Defined in: [src/scene/Terrain.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L20)
+Defined in: [src/scene/Terrain.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L25)
 
 Opções de [Terrain](../classes/Terrain.md).
 
@@ -16,7 +16,7 @@ Opções de [Terrain](../classes/Terrain.md).
 
 > `optional` **color?**: `ColorRepresentation`
 
-Defined in: [src/scene/Terrain.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L31)
+Defined in: [src/scene/Terrain.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L36)
 
 Cor base do material. Default verde-grama.
 
@@ -26,7 +26,7 @@ Cor base do material. Default verde-grama.
 
 > `optional` **heights?**: `number`[]
 
-Defined in: [src/scene/Terrain.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L29)
+Defined in: [src/scene/Terrain.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L34)
 
 Heightmap inicial (row-major, `(res+1)²` alturas) — restaura a autoria.
 
@@ -36,7 +36,7 @@ Heightmap inicial (row-major, `(res+1)²` alturas) — restaura a autoria.
 
 > `optional` **resolution?**: `number`
 
-Defined in: [src/scene/Terrain.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L27)
+Defined in: [src/scene/Terrain.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L32)
 
 Segmentos por lado (resolução da grade) — `(resolution+1)²` vértices. Mais =
 detalhe mais fino, heightmap maior. Default `64`.
@@ -47,6 +47,6 @@ detalhe mais fino, heightmap maior. Default `64`.
 
 > `optional` **size?**: `number` \| \[`number`, `number`\]
 
-Defined in: [src/scene/Terrain.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L22)
+Defined in: [src/scene/Terrain.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L27)
 
 Largura × profundidade em unidades de mundo (XZ). Número = quadrado. Default `50`.

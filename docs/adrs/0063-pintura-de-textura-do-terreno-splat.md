@@ -23,10 +23,14 @@ as texturas disponíveis no projeto.
   Quando a soma dos canais estoura 255, as outras camadas são reduzidas
   proporcionalmente (pintar por cima substitui; onde nada foi pintado a **cor base**
   aparece).
-- **Shader**: blend injetado no `MeshStandardMaterial` via `onBeforeCompile`
-  (substitui `#include <map_fragment>`; define `USE_UV`) — iluminação/sombras do
-  material padrão continuam valendo. Uniforms estáveis (`cortexSplatMap`,
-  `cortexLayer0..3`, `cortexRepeat`) — trocar textura/tiling não recompila.
+- **Shader**: blend em **TSL/NodeMaterial** — ao ligar a pintura o material vira um
+  `MeshStandardNodeMaterial` com `colorNode = mix(corBase, blendDasCamadas, soma)`.
+  **Por quê:** o engine renderiza com `WebGPURenderer` (node-based), onde
+  `material.onBeforeCompile` é **silenciosamente ignorado** (a 1ª implementação usou
+  onBeforeCompile: funcionava no WebGLRenderer clássico e não no engine — nada de
+  erro, só a textura não aparecia). Iluminação/sombras do material padrão continuam
+  valendo. Nós estáveis (texture/uniform): trocar textura/tiling só troca `.value`,
+  sem reconstruir o material.
 - **`getPaint()/setPaint()`**: serialização (camadas + splatmap em **base64**).
 
 **Persistência** — overlay `data.terrainPaint[id] = { layers, size, splat }`

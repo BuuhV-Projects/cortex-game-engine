@@ -155,6 +155,11 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   objeto.
 - **Persist tem debounce (500ms)**; trocas de física usam `persist(true)` (imediato)
   pra sobreviver a reload/Play logo em seguida.
+- **`onBeforeCompile` NÃO roda no `WebGPURenderer`** (o renderer do engine é
+  node-based, mesmo no fallback `forceWebGL`) — falha **silenciosa**: sem erro, o
+  efeito só não aparece. Efeito custom de shader tem que ser **TSL/NodeMaterial**
+  (`colorNode` etc.; ex.: splat do terreno, ADR-0063). Valide rendering no harness
+  (`.design-proto/`) com `WebGPURenderer`, não com `WebGLRenderer` clássico.
 
 ## 9. Logging de debug (`src/core/debug.ts`)
 
