@@ -147,29 +147,53 @@ export interface MaterialApi {
   set(obj: Object3D, config: MaterialConfig): void;
 }
 
-/** Estado do terreno selecionado (pincel de esculpir). `null` se não é terreno. */
+/** Modo do pincel de terreno: esculpir altura ou pintar textura. */
+export type TerrainBrushMode = 'sculpt' | 'paint';
+
+/** Estado do terreno selecionado (pincel). `null` se não é terreno. */
 export interface TerrainEditState {
-  /** Esculpindo agora (pincel ativo no terreno)? */
+  /** Pincel ativo no terreno (esculpindo/pintando)? */
   sculpting: boolean;
+  /** Modo do pincel: `sculpt` (altura) ou `paint` (textura). */
+  mode: TerrainBrushMode;
   /** Raio do pincel (unidades de mundo). */
   radius: number;
-  /** Força (quanto sobe/abaixa por pincelada). */
+  /** Força (quanto sobe/abaixa, ou opacidade da pintura, por pincelada). */
   strength: number;
+  /** Texturas disponíveis no projeto (caminhos, ex. `assets/textures/grama.png`). */
+  textures: string[];
+  /** Textura ativa do modo pintar, ou `null` (nenhuma escolhida). */
+  texture: string | null;
+  /** Tiling da textura ativa (repetições ao longo do terreno). */
+  repeat: number;
 }
 
 /**
- * Ponte de autoria do **terreno**: o inspector liga/desliga o pincel (raise/lower)
- * e ajusta tamanho/força. Implementada pelo `attachEditor` contra o {@link Terrain}
- * (em `mesh.userData.cortexTerrain`) + a overlay (`data.terrain[nome]` = heightmap).
- * `get` devolve `null` se o objeto não é um terreno.
+ * Ponte de autoria do **terreno**: o inspector liga/desliga o pincel, alterna o
+ * modo (esculpir altura / texturizar) e escolhe/importa a textura. Implementada
+ * pelo `attachEditor` contra o {@link Terrain} (em `mesh.userData.cortexTerrain`) +
+ * a overlay (`data.terrain[nome]` = heightmap; `data.terrainPaint[nome]` =
+ * camadas + splatmap). `get` devolve `null` se o objeto não é um terreno.
  */
 export interface TerrainApi {
   get(obj: Object3D): TerrainEditState | null;
-  /** Entra/sai do modo esculpir (pincel). */
+  /** Entra/sai do modo pincel (esculpir/pintar conforme o modo). */
   startSculpt(obj: Object3D): void;
   stopSculpt(): void;
   /** Ajusta o pincel (raio + força). */
   setBrush(radius: number, strength: number): void;
+  /** Troca o modo do pincel (esculpir altura ⇄ pintar textura). */
+  setMode(mode: TerrainBrushMode): void;
+  /** Escolhe a textura ativa do modo pintar (aloca uma camada no terreno). */
+  setTexture(obj: Object3D, url: string): void;
+  /** Ajusta o tiling da textura ativa e persiste. */
+  setRepeat(obj: Object3D, repeat: number): void;
+  /**
+   * **Importa** uma textura pra dentro do projeto (grava em `assets/textures/` via
+   * o endpoint de upload do dev server) e a torna a textura ativa. `dataUrl` é o
+   * conteúdo do arquivo (data URL lida do seletor de arquivo).
+   */
+  importTexture(obj: Object3D, name: string, dataUrl: string): void;
 }
 
 /** Estado de animação do objeto selecionado (clipes do `.glb`). */

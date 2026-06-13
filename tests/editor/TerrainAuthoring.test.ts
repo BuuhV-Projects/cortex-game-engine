@@ -43,7 +43,15 @@ describe('TerrainAuthoring', () => {
     const { ta } = setup();
     expect(ta.api.get(new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial()))).toBeNull();
     const { mesh } = terrainMesh('t');
-    expect(ta.api.get(mesh)).toEqual({ sculpting: false, radius: 6, strength: 0.5 });
+    expect(ta.api.get(mesh)).toEqual({
+      sculpting: false,
+      mode: 'sculpt',
+      radius: 6,
+      strength: 0.5,
+      textures: [],
+      texture: null,
+      repeat: 5, // default: 1 tile a cada ~4u (size 20 → 5 repetições)
+    });
   });
 
   it('setBrush atualiza raio/força', () => {
@@ -91,6 +99,64 @@ describe('TerrainAuthoring', () => {
     // hit no mundo em (2,0,0) → local (1,0,0) na grade; deve subir perto dali
     ta.paintAt(new Vector3(2, 0, 0), false);
     expect(terrain.heightAt(1, 0)!).toBeGreaterThan(0);
+  });
+
+  it('modo paint: setTexture aloca camada, paintAt pinta o splat, SHIFT apaga', () => {
+    const { ta } = setup();
+    const { mesh, terrain } = terrainMesh('t');
+    ta.setAvailableTextures(['assets/textures/grama.png']);
+    ta.api.startSculpt(mesh);
+    ta.api.setMode('paint');
+    expect(ta.mode()).toBe('paint');
+    ta.api.setTexture(mesh, 'assets/textures/grama.png');
+    expect(terrain.getLayers().map((l) => l.url)).toEqual(['assets/textures/grama.png']);
+    ta.paintAt(new Vector3(0, 0, 0), false);
+    const painted = terrain.getPaint()!;
+    expect(Buffer.from(painted.splat, 'base64').some((b) => b > 0)).toBe(true); // pintou
+    // não mexeu na ALTURA (paint ≠ sculpt)
+    expect(terrain.getHeights().every((h) => h === 0)).toBe(true);
+    // SHIFT apaga (reduz o peso)
+    ta.paintAt(new Vector3(0, 0, 0), true);
+    const max = (b64: string): number => Buffer.from(b64, 'base64').reduce((m, b) => (b > m ? b : m), 0);
+    expect(max(terrain.getPaint()!.splat)).toBeLessThanOrEqual(max(painted.splat));
+  });
+
+  it('modo paint sem textura escolhida: não pinta e avisa (toast)', () => {
+    const { ta, calls } = setup();
+    const { mesh, terrain } = terrainMesh('t');
+    ta.api.startSculpt(mesh);
+    ta.api.setMode('paint');
+    const toasts = calls.toasts.length;
+    ta.paintAt(new Vector3(0, 0, 0), false);
+    expect(terrain.getPaint()).toBeNull();
+    expect(calls.toasts.length).toBeGreaterThan(toasts);
+  });
+
+  it('setRepeat ajusta o tiling da textura ativa e persiste', () => {
+    const { ta, overlay, persists } = setup();
+    const { mesh, terrain } = terrainMesh('terreno1');
+    ta.api.startSculpt(mesh);
+    ta.api.setMode('paint');
+    ta.api.setTexture(mesh, 'assets/textures/grama.png');
+    const before = persists();
+    ta.api.setRepeat(mesh, 12);
+    expect(terrain.getLayers()[0]!.repeat).toBe(12);
+    expect(persists()).toBe(before + 1);
+    const saved = (overlay.data['terrainPaint'] as Record<string, { layers: { repeat: number }[] }>)['terreno1'];
+    expect(saved.layers[0]!.repeat).toBe(12);
+  });
+
+  it('stopSculpt no modo paint salva a pintura em data.terrainPaint[nome]', () => {
+    const { ta, overlay } = setup();
+    const { mesh } = terrainMesh('terreno1');
+    ta.api.startSculpt(mesh);
+    ta.api.setMode('paint');
+    ta.api.setTexture(mesh, 'assets/textures/grama.png');
+    ta.paintAt(new Vector3(0, 0, 0), false);
+    ta.api.stopSculpt();
+    const saved = (overlay.data['terrainPaint'] as Record<string, { layers: { url: string }[]; splat: string }>)['terreno1'];
+    expect(saved.layers[0]!.url).toBe('assets/textures/grama.png');
+    expect(saved.splat.length).toBeGreaterThan(0);
   });
 
   it('stopSculpt salva o heightmap no overlay + persiste + onSculptStop', () => {

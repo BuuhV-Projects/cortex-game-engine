@@ -178,18 +178,28 @@ describe('describeInspector — Shader (material)', () => {
 });
 
 describe('describeInspector — Terreno (sculpt)', () => {
-  function fakeTerrainApi(isTerrain: boolean): { api: TerrainApi; sculpting: () => boolean } {
+  function fakeTerrainApi(isTerrain: boolean): { api: TerrainApi; sculpting: () => boolean; mode: () => string } {
     let sculpting = false;
     let radius = 6;
     let strength = 0.5;
+    let mode: 'sculpt' | 'paint' = 'sculpt';
+    let texture: string | null = null;
     return {
       api: {
-        get: () => (isTerrain ? { sculpting, radius, strength } : null),
+        get: () =>
+          isTerrain
+            ? { sculpting, mode, radius, strength, textures: ['assets/textures/grama.png'], texture, repeat: 5 }
+            : null,
         startSculpt: () => { sculpting = true; },
         stopSculpt: () => { sculpting = false; },
         setBrush: (r, s) => { radius = r; strength = s; },
+        setMode: (m) => { mode = m; },
+        setTexture: (_o, url) => { texture = url || null; },
+        setRepeat: () => {},
+        importTexture: () => {},
       },
       sculpting: () => sculpting,
+      mode: () => mode,
     };
   }
 
@@ -212,6 +222,37 @@ describe('describeInspector — Terreno (sculpt)', () => {
     // re-descreve: botão agora oferece parar
     const again = describeInspector(obj, { terrainApi: api }, reg);
     expect((field(again.model, 'terSculpt') as { label: string }).label).toContain('Parar');
+  });
+
+  it('modo Texturizar: expõe seletor de textura, importação (file) e repetição', () => {
+    const reg = createObjectRegistry();
+    const obj = new Object3D();
+    obj.name = 'Chao';
+    const { api, mode } = fakeTerrainApi(true);
+
+    const first = describeInspector(obj, { terrainApi: api }, reg);
+    const modeField = field(first.model, 'terMode');
+    expect(modeField?.kind).toBe('select');
+    // sculpt: sem campos de textura
+    expect(field(first.model, 'terTexture')).toBeUndefined();
+
+    const res = first.handlers.get(modeField!.id)!('paint');
+    expect(mode()).toBe('paint');
+    expect(res).toEqual({ rebuild: true });
+
+    // re-descreve em paint: textura (select com as imagens do projeto) + import (file)
+    const paint = describeInspector(obj, { terrainApi: api }, reg);
+    const tex = field(paint.model, 'terTexture');
+    expect(tex?.kind).toBe('select');
+    expect((tex as { options: { value: string }[] }).options.map((o) => o.value)).toContain('assets/textures/grama.png');
+    expect(field(paint.model, 'terImport')?.kind).toBe('file');
+    // sem textura ativa ainda: sem campo Repetição
+    expect(field(paint.model, 'terRepeat')).toBeUndefined();
+
+    // escolhe a textura → re-descreve com Repetição
+    paint.handlers.get(tex!.id)!('assets/textures/grama.png');
+    const withTex = describeInspector(obj, { terrainApi: api }, reg);
+    expect(field(withTex.model, 'terRepeat')?.kind).toBe('number');
   });
 
   it('não mostra Terreno quando o objeto não é terreno (api.get → null)', () => {

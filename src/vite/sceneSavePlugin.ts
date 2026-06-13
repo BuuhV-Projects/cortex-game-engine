@@ -1,5 +1,5 @@
 import { writeFile, mkdir, readdir } from 'node:fs/promises';
-import { dirname, resolve, join, relative } from 'node:path';
+import { dirname, resolve, join, relative, basename, extname } from 'node:path';
 import type { Plugin } from 'vite';
 
 /**
@@ -10,11 +10,22 @@ export interface SceneSavePluginOptions {
   target?: string;
   /** Endpoint do POST. Default '/__save-scene-data'. */
   endpoint?: string;
+  /** Endpoint de upload de asset (importar textura do editor). Default '/__upload-asset'. */
+  uploadEndpoint?: string;
+  /** Pasta destino dos uploads, relativa à raiz. Default 'assets/textures'. */
+  uploadDir?: string;
 }
 
+/** Extensões de imagem aceitas no upload e listadas como textura. */
+const IMAGE_EXTS = ['.png', '.jpg', '.jpeg', '.webp'];
+
 /**
- * Plugin de Vite (Node-only, **dev**) que expõe um endpoint POST para gravar o
- * `SceneFileV1` em disco. Pareia com o `HttpSceneFileWriter` do runtime.
+ * Plugin de Vite (Node-only, **dev**) que expõe endpoints do editor:
+ * - POST `endpoint` (default `/__save-scene-data`): grava o `SceneFileV1` em
+ *   disco. Pareia com o `HttpSceneFileWriter` do runtime.
+ * - POST `uploadEndpoint` (default `/__upload-asset?name=arquivo.png`): grava o
+ *   corpo binário em `uploadDir` (default `assets/textures/`) — usado pelo botão
+ *   "Importar textura…" do pincel de terreno. Responde o caminho gravado.
  *
  * Importe num `vite.config` (em projetos vendoriados, do caminho copiado, ex.:
  * `./vendor/cortex-game-engine/vite/sceneSavePlugin.js`):
@@ -26,6 +37,8 @@ export interface SceneSavePluginOptions {
 export function createSceneSavePlugin(options: SceneSavePluginOptions = {}): Plugin {
   const target = options.target ?? 'assets/scene-data.json';
   const endpoint = options.endpoint ?? '/__save-scene-data';
+  const uploadEndpoint = options.uploadEndpoint ?? '/__upload-asset';
+  const uploadDir = options.uploadDir ?? 'assets/textures';
 
   return {
     name: 'cortex-scene-save',
@@ -56,14 +69,48 @@ export function createSceneSavePlugin(options: SceneSavePluginOptions = {}): Plu
           })();
         });
       });
+
+      server.middlewares.use(uploadEndpoint, (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('Method Not Allowed');
+          return;
+        }
+        // Sanitiza: só o basename (sem path traversal) e só extensões de imagem.
+        const url = new URL(req.url ?? '', 'http://localhost');
+        const raw = url.searchParams.get('name') ?? '';
+        const name = basename(raw).replace(/[^a-zA-Z0-9._-]/g, '_');
+        if (!name || !IMAGE_EXTS.includes(extname(name).toLowerCase())) {
+          res.statusCode = 400;
+          res.end('Nome inválido (esperado arquivo de imagem: png/jpg/jpeg/webp)');
+          return;
+        }
+        const chunks: Buffer[] = [];
+        req.on('data', (chunk: Buffer) => chunks.push(chunk));
+        req.on('end', () => {
+          void (async () => {
+            try {
+              const outDir = resolve(server.config.root, uploadDir);
+              await mkdir(outDir, { recursive: true });
+              await writeFile(join(outDir, name), Buffer.concat(chunks));
+              res.statusCode = 200;
+              res.end(`${uploadDir.replace(/\\/g, '/')}/${name}`);
+            } catch (err) {
+              res.statusCode = 500;
+              res.end(String(err));
+            }
+          })();
+        });
+      });
     },
   };
 }
 
 /**
- * Plugin de Vite (Node-only, **dev**) que expõe um GET listando os `.glb` sob
- * `assets/` — usado pelo painel "Add" do editor (F2) pra você adicionar um asset
- * à cena. Só roda em `vite dev`; no build não há editor.
+ * Plugin de Vite (Node-only, **dev**) que expõe um GET listando os assets sob
+ * `assets/` (`.glb` + imagens) — o painel "Add" do editor (F2) usa os `.glb`;
+ * o pincel de texturizar terreno usa as imagens. Só roda em `vite dev`; no
+ * build não há editor.
  *
  * @example
  * import { createAssetListPlugin } from './vendor/cortex-game-engine/vite/sceneSavePlugin.js'
@@ -102,6 +149,9 @@ async function walk(base: string, current: string, out: string[]): Promise<void>
   for (const e of entries) {
     const full = join(current, e.name);
     if (e.isDirectory()) await walk(base, full, out);
-    else if (e.name.toLowerCase().endsWith('.glb')) out.push(relative(base, full));
+    else {
+      const ext = extname(e.name).toLowerCase();
+      if (ext === '.glb' || IMAGE_EXTS.includes(ext)) out.push(relative(base, full));
+    }
   }
 }

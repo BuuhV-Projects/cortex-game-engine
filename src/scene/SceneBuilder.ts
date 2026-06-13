@@ -40,7 +40,7 @@ import { RapierPhysicsSystem } from '../systems/RapierPhysicsSystem.js';
 import { RapierPhysics } from '../physics/RapierPhysics.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
-import { Terrain } from './Terrain.js';
+import { Terrain, type TerrainPaintData } from './Terrain.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import { debug } from '../core/debug.js';
 import {
@@ -288,6 +288,25 @@ export function overlayTerrain(overlay: SceneFileV1 | null | undefined): Record<
 }
 
 /**
+ * Lê `data.terrainPaint` da overlay — a **pintura de textura do terreno** autorada
+ * no editor por id (`{ [id]: TerrainPaintData }`: camadas + splatmap base64). Ver
+ * {@link Terrain.setPaint}.
+ */
+export function overlayTerrainPaint(overlay: SceneFileV1 | null | undefined): Record<string, TerrainPaintData> {
+  const raw = overlay?.data?.['terrainPaint'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, TerrainPaintData> = {};
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object') continue;
+    const o = v as Record<string, unknown>;
+    if (Array.isArray(o['layers']) && typeof o['size'] === 'number' && typeof o['splat'] === 'string') {
+      out[id] = o as unknown as TerrainPaintData;
+    }
+  }
+  return out;
+}
+
+/**
  * Lê `data.animation` da overlay — a animação **autorada no editor** por id
  * (`{ [id]: { clip?, loop?, speed?, autoplay? } }`). Sobrescreve o `animation` do
  * nó (JSON), que por sua vez vence o código. Ver {@link SceneAnimator}.
@@ -356,6 +375,7 @@ export async function buildScene(
   const editorMatte = overlayMatte(overlay);
   const editorMaterial = overlayMaterial(overlay);
   const editorTerrain = overlayTerrain(overlay);
+  const editorTerrainPaint = overlayTerrainPaint(overlay);
   const editorAnim = overlayAnimation(overlay);
   const editorPlayerAnim = overlayPlayerAnimations(overlay);
 
@@ -404,10 +424,11 @@ export async function buildScene(
     }
     const obj = await instantiate(node, scene, three, waters, kit);
     if (!obj) continue;
-    // Terreno: heightmap esculpido no editor (overlay) vence o `heights` do nó (JSON).
-    if (node.type === 'terrain' && editorTerrain[node.id]) {
+    // Terreno: heightmap/pintura autorados no editor (overlay) vencem o nó (JSON).
+    if (node.type === 'terrain' && (editorTerrain[node.id] || editorTerrainPaint[node.id])) {
       const terrain = (obj.userData as Record<string, unknown>)['cortexTerrain'] as Terrain | undefined;
-      terrain?.setHeights(editorTerrain[node.id]!);
+      if (editorTerrain[node.id]) terrain?.setHeights(editorTerrain[node.id]!);
+      if (editorTerrainPaint[node.id]) terrain?.setPaint(editorTerrainPaint[node.id]!);
     }
     // Override do editor (transform exata salva) tem precedência sobre place/transform/attach.
     const ov = overrides[node.id];

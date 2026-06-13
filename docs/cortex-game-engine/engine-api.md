@@ -500,9 +500,12 @@ sprite e packing de PNGs separados em uma folha ficam fora desta fase — ver AD
 
 Nó `terrain` (ADR-0059): um plano horizontal (XZ) subdividido que você **esculpe**
 — `Terrain.sculpt(x, z, raio, delta)` levanta/abaixa a altura (Y) com falloff suave
-(`delta>0` sobe, `<0` abaixa). No editor há a ferramenta de pincel (raise/lower);
-o heightmap esculpido persiste em `overlay.data.terrain[id]`. Combine com a câmera
-top-down pra jogos de fazenda/RPG.
+(`delta>0` sobe, `<0` abaixa). No editor o pincel tem dois **modos** (seção Terreno
+do Inspector, ADR-0063): **Esculpir** (altura) e **Texturizar** (pinta textura —
+escolha uma imagem do projeto ou importe com "Importar textura…"; SHIFT apaga). O
+heightmap persiste em `overlay.data.terrain[id]` e a pintura em
+`overlay.data.terrainPaint[id]`. Combine com a câmera top-down pra jogos de
+fazenda/RPG.
 
 ```jsonc
 { "type": "terrain", "id": "chao", "size": 60, "resolution": 96, "color": "#6ab04c" }
@@ -513,13 +516,20 @@ const terrain = new Terrain({ size: 60, resolution: 96 })
 scene.add(terrain.mesh)
 terrain.sculpt(0, 0, 8, 3)        // morro de raio 8 no centro
 const heights = terrain.getHeights() // serializável; terrain.setHeights(...) restaura
+
+// Pintura de textura (splat, até 4 camadas — uma por canal RGBA do splatmap):
+const grama = terrain.layerFor('assets/textures/grama.png') // aloca/reusa camada
+terrain.paint(0, 0, 8, 1, grama)  // pinta raio 8 no centro (amount<0 apaga)
+terrain.setLayerRepeat(grama, 16) // tiling (repetições ao longo do terreno)
+const paint = terrain.getPaint()  // serializável; terrain.setPaint(...) restaura
 ```
 
 `resolution` = segmentos por lado (grade `(res+1)²`). **Sólido por padrão**: com
 `world` no `buildScene`, o terreno vira colidível — `TerrainCollisionSystem` mantém
 os corpos (`PlatformerBodyComponent`/`KinematicBodyComponent`) EM CIMA da superfície
-(`Terrain.heightAt(x,z)`), vale pra 3D/2.5D/top-down. Limites (v1): só raise/lower;
-smooth/flatten e **pintura de textura** (splat) vêm depois.
+(`Terrain.heightAt(x,z)`), vale pra 3D/2.5D/top-down. Limites: sculpt só raise/lower
+(smooth/flatten vêm depois); máx. 4 texturas por terreno; trocar o Shader (ADR-0058)
+do objeto-terreno desfaz o blend de splat.
 
 ## Character controller (player/NPC com cápsula — estilo UPBGE)
 

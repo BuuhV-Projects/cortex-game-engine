@@ -69,4 +69,75 @@ describe('Terrain', () => {
     const terrain = mesh.userData['cortexTerrain'] as Terrain;
     expect(terrain.getHeights()[12]).toBe(5); // overlay restaurado
   });
+
+  // ── Pintura de textura (splat) ───────────────────────────────────────────────
+
+  it('layerFor aloca camadas (reusa por url) e limita a 4', () => {
+    const t = new Terrain({ size: 20, resolution: 20 });
+    expect(t.layerFor('assets/a.png')).toBe(0);
+    expect(t.layerFor('assets/b.png')).toBe(1);
+    expect(t.layerFor('assets/a.png')).toBe(0); // reusa
+    expect(t.layerFor('assets/c.png')).toBe(2);
+    expect(t.layerFor('assets/d.png')).toBe(3);
+    expect(t.layerFor('assets/e.png')).toBe(-1); // cheio
+    expect(t.getLayers().map((l) => l.url)).toEqual(['assets/a.png', 'assets/b.png', 'assets/c.png', 'assets/d.png']);
+  });
+
+  it('paint grava peso no canal da camada com falloff; SHIFT (amount<0) apaga', () => {
+    const t = new Terrain({ size: 20, resolution: 20 });
+    const layer = t.layerFor('assets/grama.png');
+    expect(t.paint(0, 0, 5, 1, layer)).toBe(true);
+    const p1 = t.getPaint()!;
+    const size = p1.size;
+    const bytes = Buffer.from(p1.splat, 'base64');
+    const center = ((Math.floor(size / 2) * size) + Math.floor(size / 2)) * 4 + layer;
+    expect(bytes[center]).toBeGreaterThan(200); // centro pintado forte
+    // canto longe do pincel ficou zerado
+    expect(bytes[layer]).toBe(0);
+    // apagar (amount negativo) reduz
+    t.paint(0, 0, 5, -1, layer);
+    const bytes2 = Buffer.from(t.getPaint()!.splat, 'base64');
+    expect(bytes2[center]).toBeLessThan(bytes[center]!);
+  });
+
+  it('pintar uma camada por cima reduz a outra (pesos disputam o texel)', () => {
+    const t = new Terrain({ size: 20, resolution: 20 });
+    const a = t.layerFor('assets/a.png');
+    const b = t.layerFor('assets/b.png');
+    t.paint(0, 0, 5, 1, a);
+    t.paint(0, 0, 5, 1, b);
+    const p = t.getPaint()!;
+    const bytes = Buffer.from(p.splat, 'base64');
+    const size = p.size;
+    const base = ((Math.floor(size / 2) * size) + Math.floor(size / 2)) * 4;
+    expect(bytes[base + b]).toBeGreaterThan(200); // b venceu por cima
+    expect(bytes[base + a]! + bytes[base + b]!).toBeLessThanOrEqual(255); // soma não estoura
+  });
+
+  it('getPaint/setPaint faz round-trip (persistência da pintura)', () => {
+    const a = new Terrain({ size: 20, resolution: 20 });
+    const layer = a.layerFor('assets/grama.png');
+    a.setLayerRepeat(layer, 8);
+    a.paint(2, -3, 4, 0.7, layer);
+    const saved = a.getPaint()!;
+    const b = new Terrain({ size: 20, resolution: 20 });
+    b.setPaint(saved);
+    expect(b.getPaint()).toEqual(saved);
+    expect(b.getLayers()).toEqual([{ url: 'assets/grama.png', repeat: 8 }]);
+  });
+
+  it('buildScene restaura a pintura do overlay (data.terrainPaint)', async () => {
+    const painted = new Terrain({ size: 10, resolution: 4 });
+    painted.paint(0, 0, 4, 1, painted.layerFor('assets/grama.png'));
+    const paint = painted.getPaint()!;
+    const def: SceneDefinition = {
+      version: 1,
+      nodes: [{ type: 'terrain', id: 'chao', size: 10, resolution: 4 }],
+    };
+    const overlay = { version: 1 as const, objects: {}, data: { terrainPaint: { chao: paint } } };
+    const handle = await buildScene(new Scene(), def, { overlay });
+    const mesh = handle.byId.get('chao') as Mesh;
+    const terrain = mesh.userData['cortexTerrain'] as Terrain;
+    expect(terrain.getPaint()).toEqual(paint);
+  });
 });

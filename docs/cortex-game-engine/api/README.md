@@ -103,6 +103,8 @@
 - [SpriteOptions](interfaces/SpriteOptions.md)
 - [SpritesheetOptions](interfaces/SpritesheetOptions.md)
 - [TerrainOptions](interfaces/TerrainOptions.md)
+- [TerrainPaintData](interfaces/TerrainPaintData.md)
+- [TerrainPaintLayer](interfaces/TerrainPaintLayer.md)
 - [ThirdPersonCameraOptions](interfaces/ThirdPersonCameraOptions.md)
 - [Tilemap](interfaces/Tilemap.md)
 - [TilemapOptions](interfaces/TilemapOptions.md)
@@ -146,6 +148,7 @@
 - [ISOMETRIC\_PITCH](variables/ISOMETRIC_PITCH.md)
 - [ISOMETRIC\_YAW](variables/ISOMETRIC_YAW.md)
 - [KIT\_ROLES](variables/KIT_ROLES.md)
+- [TERRAIN\_MAX\_LAYERS](variables/TERRAIN_MAX_LAYERS.md)
 
 ## Functions
 
@@ -183,6 +186,7 @@
 - [overlayPhysics](functions/overlayPhysics.md)
 - [overlayPlayerAnimations](functions/overlayPlayerAnimations.md)
 - [overlayTerrain](functions/overlayTerrain.md)
+- [overlayTerrainPaint](functions/overlayTerrainPaint.md)
 - [parseKit](functions/parseKit.md)
 - [parseSceneDefinition](functions/parseSceneDefinition.md)
 - [parseSceneFile](functions/parseSceneFile.md)

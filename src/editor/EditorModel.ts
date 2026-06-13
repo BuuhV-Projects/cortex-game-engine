@@ -75,6 +75,19 @@ export interface NoteField {
   text: string;
   tone?: 'muted' | 'info';
 }
+/**
+ * Seletor de **arquivo local** (importação de asset). Cada renderizador abre o
+ * file picker NATIVO no seu próprio frame (o clique do usuário acontece lá — um
+ * picker aberto via postMessage seria bloqueado por falta de user activation) e
+ * entrega ao handler uma string JSON `{ name, dataUrl }` com o conteúdo lido.
+ */
+export interface FileField {
+  kind: 'file';
+  id: string;
+  label: string;
+  /** Filtro do seletor (atributo `accept`), ex. `image/*`. */
+  accept?: string;
+}
 
 /** União de todos os tipos de campo do inspector. */
 export type InspectorField =
@@ -84,7 +97,8 @@ export type InspectorField =
   | SelectField
   | ColorField
   | ButtonField
-  | NoteField;
+  | NoteField
+  | FileField;
 
 /** Seção do inspector (um grupo de campos com título opcional). */
 export interface InspectorSection {
@@ -380,21 +394,36 @@ export function describeInspector(
     sections.push({ title: 'Shader', fields });
   }
 
-  // ── Terreno (esculpir altura com pincel) ──────────────────────────────────────
+  // ── Terreno (pincel: esculpir altura OU texturizar/pintar) ────────────────────
   const terrainState = ctx.terrainApi?.get(obj) ?? null;
   if (ctx.terrainApi && terrainState) {
     const api = ctx.terrainApi;
     const s = terrainState;
+    const paint = s.mode === 'paint';
+    const verb = paint ? 'Texturizar' : 'Esculpir';
     const fields: InspectorField[] = [
-      { kind: 'button', id: fid('terSculpt'), label: s.sculpting ? '■ Parar de esculpir' : '⛰ Esculpir', variant: s.sculpting ? 'danger' : 'primary' },
+      { kind: 'button', id: fid('terSculpt'), label: s.sculpting ? '■ Parar pincel' : `${paint ? '🖌' : '⛰'} ${verb}`, variant: s.sculpting ? 'danger' : 'primary' },
+      {
+        kind: 'select',
+        id: fid('terMode'),
+        label: 'Modo',
+        value: s.mode,
+        options: [
+          { value: 'sculpt', label: 'Esculpir (altura)' },
+          { value: 'paint', label: 'Texturizar (pintar)' },
+        ],
+      },
       { kind: 'number', id: fid('terRadius'), label: 'Tamanho do pincel', value: s.radius, step: 1 },
-      { kind: 'number', id: fid('terStrength'), label: 'Força', value: s.strength, step: 0.1 },
-      { kind: 'note', id: fid('terHint'), text: 'Esculpir ligado: CLIQUE/ARRASTE sobe · segure SHIFT pra abaixar.', tone: 'muted' },
+      { kind: 'number', id: fid('terStrength'), label: paint ? 'Opacidade' : 'Força', value: s.strength, step: 0.1 },
     ];
     handlers.set(fid('terSculpt'), () => {
       if (s.sculpting) api.stopSculpt();
       else api.startSculpt(obj);
       return { rebuild: true };
+    });
+    handlers.set(fid('terMode'), (v) => {
+      api.setMode(v as 'sculpt' | 'paint');
+      return { rebuild: true }; // mostra/esconde os campos de textura
     });
     handlers.set(fid('terRadius'), (v) => {
       const r = Math.max(0.5, Number(v) || s.radius);
@@ -404,6 +433,46 @@ export function describeInspector(
       const st = Number(v);
       api.setBrush(s.radius, Number.isFinite(st) ? st : s.strength);
     });
+
+    if (paint) {
+      // Textura ativa: lista as imagens do projeto + importação de arquivo local
+      // (o arquivo importado é copiado pra assets/textures/ e entra na lista).
+      const baseName = (p: string): string => p.split('/').pop() ?? p;
+      fields.push({
+        kind: 'select',
+        id: fid('terTexture'),
+        label: 'Textura',
+        value: s.texture ?? '',
+        options: [
+          { value: '', label: '— escolha —' },
+          ...s.textures.map((u) => ({ value: u, label: baseName(u) })),
+        ],
+      });
+      fields.push({ kind: 'file', id: fid('terImport'), label: '⬆ Importar textura…', accept: 'image/*' });
+      handlers.set(fid('terTexture'), (v) => {
+        api.setTexture(obj, v as string);
+        return { rebuild: true }; // o campo Repetição reflete a textura escolhida
+      });
+      handlers.set(fid('terImport'), (v) => {
+        try {
+          const f = JSON.parse(v as string) as { name?: string; dataUrl?: string };
+          if (f.name && f.dataUrl) api.importTexture(obj, f.name, f.dataUrl);
+        } catch {
+          /* valor inválido do seletor — ignora */
+        }
+        return { rebuild: true };
+      });
+      if (s.texture) {
+        fields.push({ kind: 'number', id: fid('terRepeat'), label: 'Repetição', value: s.repeat, step: 1 });
+        handlers.set(fid('terRepeat'), (v) => {
+          const r = Number(v);
+          if (Number.isFinite(r) && r > 0) api.setRepeat(obj, r);
+        });
+      }
+      fields.push({ kind: 'note', id: fid('terHint'), text: 'Pincel ligado: CLIQUE/ARRASTE pinta a textura · SHIFT apaga. Até 4 texturas por terreno.', tone: 'muted' });
+    } else {
+      fields.push({ kind: 'note', id: fid('terHint'), text: 'Pincel ligado: CLIQUE/ARRASTE sobe · segure SHIFT pra abaixar.', tone: 'muted' });
+    }
     sections.push({ title: 'Terreno', fields });
   }
 

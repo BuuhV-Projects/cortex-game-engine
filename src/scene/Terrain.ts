@@ -1,10 +1,19 @@
 import {
   BufferGeometry,
+  DataTexture,
   Float32BufferAttribute,
+  LinearFilter,
   Mesh,
   MeshStandardMaterial,
   Color,
+  RepeatWrapping,
+  RGBAFormat,
+  SRGBColorSpace,
+  TextureLoader,
+  UnsignedByteType,
+  Vector4,
   type ColorRepresentation,
+  type Texture,
 } from 'three';
 
 /** Opções de {@link Terrain}. */
@@ -21,6 +30,29 @@ export interface TerrainOptions {
   /** Cor base do material. Default verde-grama. */
   color?: ColorRepresentation;
 }
+
+/** Uma camada de textura pintável do terreno (splat). */
+export interface TerrainPaintLayer {
+  /** Caminho da textura (relativo ao projeto, ex. `assets/textures/grama.png`). */
+  url: string;
+  /** Quantas vezes a textura repete ao longo do terreno inteiro (tiling). */
+  repeat: number;
+}
+
+/** Pintura do terreno serializável (camadas + splatmap) — persistência do editor. */
+export interface TerrainPaintData {
+  /** Camadas em uso (1–4; o índice é o canal RGBA do splatmap). */
+  layers: TerrainPaintLayer[];
+  /** Lado do splatmap (quadrado, `size×size` texels). */
+  size: number;
+  /** Pesos RGBA do splatmap (`size*size*4` bytes) em base64. */
+  splat: string;
+}
+
+/** Lado default do splatmap (256² texels — suficiente pra terrenos de ~128u). */
+const SPLAT_SIZE = 256;
+/** Máximo de camadas pintáveis (1 canal RGBA do splatmap por camada). */
+export const TERRAIN_MAX_LAYERS = 4;
 
 /**
  * **Terreno** estilo Unity: um plano horizontal (no chão, XZ) subdividido numa
@@ -49,6 +81,22 @@ export class Terrain {
 
   private readonly heights: Float32Array;
   private readonly geometry: BufferGeometry;
+
+  // ── Pintura de textura (splat) — criada sob demanda no primeiro paint/setPaint ──
+  private splatData: Uint8Array | null = null;
+  private splatTexture: DataTexture | null = null;
+  private splatSize = SPLAT_SIZE;
+  private readonly layers: TerrainPaintLayer[] = [];
+  private readonly layerRepeat = new Vector4(1, 1, 1, 1);
+  /** Uniforms estáveis do shader de splat (trocar `.value` propaga sem recompilar). */
+  private paintUniforms: {
+    cortexSplatMap: { value: Texture | null };
+    cortexLayer0: { value: Texture };
+    cortexLayer1: { value: Texture };
+    cortexLayer2: { value: Texture };
+    cortexLayer3: { value: Texture };
+    cortexRepeat: { value: Vector4 };
+  } | null = null;
 
   constructor(options: TerrainOptions = {}) {
     const size = options.size ?? 50;
@@ -180,4 +228,218 @@ export class Terrain {
     this.geometry.computeVertexNormals();
     this.geometry.computeBoundingSphere();
   }
+
+  // ── Pintura de textura (splat) ────────────────────────────────────────────────
+
+  /** Camadas de textura em uso (cópia; índice = canal RGBA do splatmap). */
+  getLayers(): TerrainPaintLayer[] {
+    return this.layers.map((l) => ({ ...l }));
+  }
+
+  /**
+   * Índice da camada da textura `url` — reusa se já existe, senão **aloca** a
+   * próxima livre (carrega a textura e liga o shader de splat). Retorna `-1` se as
+   * {@link TERRAIN_MAX_LAYERS} camadas já estão ocupadas por outras texturas.
+   */
+  layerFor(url: string, repeat?: number): number {
+    const existing = this.layers.findIndex((l) => l.url === url);
+    if (existing >= 0) return existing;
+    if (this.layers.length >= TERRAIN_MAX_LAYERS) return -1;
+    const index = this.layers.length;
+    this.layers.push({ url, repeat: repeat ?? Math.max(1, Math.round(Math.max(this.width, this.depth) / 4)) });
+    this.ensurePaint();
+    this.loadLayerTexture(index);
+    return index;
+  }
+
+  /** Ajusta o tiling (repetições ao longo do terreno) de uma camada. */
+  setLayerRepeat(index: number, repeat: number): void {
+    const layer = this.layers[index];
+    if (!layer) return;
+    layer.repeat = Math.max(0.01, repeat);
+    this.syncRepeat();
+  }
+
+  /**
+   * **Pinta** textura no terreno: soma `amount` (0..1 por pincelada; negativo
+   * apaga) ao peso da camada `layer` num círculo de `radius` (coords LOCAIS, como
+   * {@link Terrain.sculpt}), com o mesmo falloff smoothstep. Pesos das outras
+   * camadas são reduzidos quando a soma estoura (a base aparece onde nada foi
+   * pintado). Retorna `true` se algum texel mudou.
+   */
+  paint(localX: number, localZ: number, radius: number, amount: number, layer: number): boolean {
+    if (radius <= 0 || amount === 0 || layer < 0 || layer >= this.layers.length) return false;
+    this.ensurePaint();
+    const data = this.splatData!;
+    const size = this.splatSize;
+    const r2 = radius * radius;
+    // Faixa de texels que o círculo cobre (texel k ↔ local ((k/(size-1))-0.5)*width).
+    const toLocalX = (i: number): number => (i / (size - 1) - 0.5) * this.width;
+    const toLocalZ = (j: number): number => (j / (size - 1) - 0.5) * this.depth;
+    const i0 = Math.max(0, Math.floor(((localX - radius) / this.width + 0.5) * (size - 1)));
+    const i1 = Math.min(size - 1, Math.ceil(((localX + radius) / this.width + 0.5) * (size - 1)));
+    const j0 = Math.max(0, Math.floor(((localZ - radius) / this.depth + 0.5) * (size - 1)));
+    const j1 = Math.min(size - 1, Math.ceil(((localZ + radius) / this.depth + 0.5) * (size - 1)));
+    let changed = false;
+    for (let j = j0; j <= j1; j++) {
+      for (let i = i0; i <= i1; i++) {
+        const dx = toLocalX(i) - localX;
+        const dz = toLocalZ(j) - localZ;
+        const d2 = dx * dx + dz * dz;
+        if (d2 > r2) continue;
+        const tdist = 1 - Math.sqrt(d2) / radius;
+        const w = tdist * tdist * (3 - 2 * tdist); // smoothstep (igual ao sculpt)
+        const base = (j * size + i) * 4;
+        const cur = data[base + layer]!;
+        const next = Math.max(0, Math.min(255, Math.round(cur + amount * 255 * w)));
+        if (next === cur) continue;
+        data[base + layer] = next;
+        // Soma > 255 = camadas disputando o texel: reduz as OUTRAS proporcionalmente
+        // (pintar por cima substitui; onde nada foi pintado a cor base aparece).
+        let others = 0;
+        for (let c = 0; c < 4; c++) if (c !== layer) others += data[base + c]!;
+        if (next + others > 255 && others > 0) {
+          const scale = (255 - next) / others;
+          for (let c = 0; c < 4; c++) if (c !== layer) data[base + c] = Math.floor(data[base + c]! * scale);
+        }
+        changed = true;
+      }
+    }
+    if (changed && this.splatTexture) this.splatTexture.needsUpdate = true;
+    return changed;
+  }
+
+  /** Pintura atual (camadas + splatmap em base64) — serializável, ou `null` se nunca pintou. */
+  getPaint(): TerrainPaintData | null {
+    if (!this.splatData || this.layers.length === 0) return null;
+    return {
+      layers: this.getLayers(),
+      size: this.splatSize,
+      splat: bytesToBase64(this.splatData),
+    };
+  }
+
+  /** Restaura uma pintura salva ({@link Terrain.getPaint}): camadas + splatmap. */
+  setPaint(data: TerrainPaintData): void {
+    if (!data.layers.length || !data.splat) return;
+    // Recria o splatmap no tamanho salvo (pode diferir do default).
+    if (this.splatTexture && this.splatSize !== data.size) {
+      this.splatTexture.dispose();
+      this.splatTexture = null;
+      this.splatData = null;
+    }
+    this.splatSize = data.size;
+    this.layers.length = 0;
+    for (const l of data.layers.slice(0, TERRAIN_MAX_LAYERS)) {
+      this.layers.push({ url: l.url, repeat: l.repeat });
+    }
+    this.ensurePaint();
+    const bytes = base64ToBytes(data.splat);
+    this.splatData!.set(bytes.subarray(0, this.splatData!.length));
+    this.splatTexture!.needsUpdate = true;
+    for (let i = 0; i < this.layers.length; i++) this.loadLayerTexture(i);
+  }
+
+  /**
+   * Liga a infra de pintura (splatmap + shader) uma única vez: cria o `DataTexture`
+   * RGBA de pesos e injeta o blend das camadas no `MeshStandardMaterial` via
+   * `onBeforeCompile` (a iluminação/sombra do material padrão continua valendo).
+   */
+  private ensurePaint(): void {
+    if (this.splatTexture) return;
+    const size = this.splatSize;
+    this.splatData = new Uint8Array(size * size * 4);
+    this.splatTexture = new DataTexture(this.splatData, size, size, RGBAFormat, UnsignedByteType);
+    this.splatTexture.magFilter = LinearFilter;
+    this.splatTexture.minFilter = LinearFilter;
+    this.splatTexture.needsUpdate = true;
+
+    const white = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, RGBAFormat, UnsignedByteType);
+    white.needsUpdate = true;
+    this.paintUniforms = {
+      cortexSplatMap: { value: this.splatTexture },
+      cortexLayer0: { value: white },
+      cortexLayer1: { value: white },
+      cortexLayer2: { value: white },
+      cortexLayer3: { value: white },
+      cortexRepeat: { value: this.layerRepeat },
+    };
+    this.syncRepeat();
+
+    const material = this.mesh.material as MeshStandardMaterial;
+    material.defines = { ...material.defines, USE_UV: '' }; // vUv no fragment
+    material.customProgramCacheKey = () => 'cortex-terrain-splat';
+    material.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, this.paintUniforms);
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          'void main() {',
+          [
+            'uniform sampler2D cortexSplatMap;',
+            'uniform sampler2D cortexLayer0;',
+            'uniform sampler2D cortexLayer1;',
+            'uniform sampler2D cortexLayer2;',
+            'uniform sampler2D cortexLayer3;',
+            'uniform vec4 cortexRepeat;',
+            'void main() {',
+          ].join('\n'),
+        )
+        .replace(
+          '#include <map_fragment>',
+          [
+            '#include <map_fragment>',
+            'vec4 cortexSplat = texture2D( cortexSplatMap, vUv );',
+            'float cortexW = cortexSplat.r + cortexSplat.g + cortexSplat.b + cortexSplat.a;',
+            'vec3 cortexTex =',
+            '  cortexSplat.r * texture2D( cortexLayer0, vUv * cortexRepeat.x ).rgb +',
+            '  cortexSplat.g * texture2D( cortexLayer1, vUv * cortexRepeat.y ).rgb +',
+            '  cortexSplat.b * texture2D( cortexLayer2, vUv * cortexRepeat.z ).rgb +',
+            '  cortexSplat.a * texture2D( cortexLayer3, vUv * cortexRepeat.w ).rgb;',
+            // Soma < 1 = mistura com a cor base; > 1 = média ponderada das camadas.
+            'diffuseColor.rgb = mix( diffuseColor.rgb, cortexTex / max( cortexW, 1e-4 ), clamp( cortexW, 0.0, 1.0 ) );',
+          ].join('\n'),
+        );
+    };
+    material.needsUpdate = true;
+  }
+
+  /** Carrega a textura da camada `index` e a coloca no uniform (browser; no-op sem DOM). */
+  private loadLayerTexture(index: number): void {
+    const layer = this.layers[index];
+    if (!layer || !this.paintUniforms) return;
+    this.syncRepeat();
+    if (typeof document === 'undefined') return; // testes/SSR: sem ImageLoader
+    const texture = new TextureLoader().load(layer.url);
+    texture.wrapS = RepeatWrapping;
+    texture.wrapT = RepeatWrapping;
+    texture.colorSpace = SRGBColorSpace;
+    const key = `cortexLayer${index}` as 'cortexLayer0' | 'cortexLayer1' | 'cortexLayer2' | 'cortexLayer3';
+    this.paintUniforms[key].value = texture;
+  }
+
+  /** Espelha o `repeat` das camadas no uniform vec4. */
+  private syncRepeat(): void {
+    const r = this.layerRepeat;
+    r.set(this.layers[0]?.repeat ?? 1, this.layers[1]?.repeat ?? 1, this.layers[2]?.repeat ?? 1, this.layers[3]?.repeat ?? 1);
+  }
+}
+
+/** Bytes → base64 (Node usa Buffer; browser, btoa em blocos pra não estourar a pilha). */
+function bytesToBase64(bytes: Uint8Array): string {
+  if (typeof Buffer !== 'undefined') return Buffer.from(bytes).toString('base64');
+  let bin = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(bin);
+}
+
+/** Base64 → bytes (inverso de {@link bytesToBase64}). */
+function base64ToBytes(b64: string): Uint8Array {
+  if (typeof Buffer !== 'undefined') return new Uint8Array(Buffer.from(b64, 'base64'));
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
 }

@@ -622,6 +622,8 @@ export function attachEditor(game: Game): GameEditor {
     if (hit) {
       brushRing.position.copy(hit);
       brushRing.scale.setScalar(Math.max(0.1, terrain.brush().radius)); // raio em mundo
+      // Cor por modo: amarelo = esculpir altura, azul = pintar textura.
+      (brushRing.material as MeshBasicMaterial).color.setHex(terrain.mode() === 'paint' ? 0x4ac1ff : 0xffe24a);
       brushRing.visible = true;
     } else {
       brushRing.visible = false;
@@ -683,9 +685,16 @@ export function attachEditor(game: Game): GameEditor {
     },
   });
   if (typeof fetch !== 'undefined') {
+    // O endpoint lista TODOS os assets (modelos + imagens): .glb vai pro painel
+    // Add; imagens viram as texturas disponíveis do pincel de terreno.
+    const isImage = (p: string): boolean => /\.(png|jpe?g|webp)$/i.test(p);
     fetch('/__list-assets')
       .then((r) => (r.ok ? (r.json() as Promise<string[]>) : []))
-      .then((assets) => addPanel.setAssets(Array.isArray(assets) ? assets : []))
+      .then((assets) => {
+        const list = Array.isArray(assets) ? assets : [];
+        addPanel.setAssets(list.filter((a) => a.toLowerCase().endsWith('.glb')));
+        terrain.setAvailableTextures(list.filter(isImage));
+      })
       .catch(() => addPanel.setAssets([]));
   }
 

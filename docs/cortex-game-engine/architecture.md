@@ -52,8 +52,9 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   autorável). Lê o **overlay** e aplica suas precedências.
 - **Overlay** (`assets/scene-data.json`, um `SceneFileV1`) — as edições do editor:
   `objects[id]` (transform exato) + `data.*` por concern:
-  `deleted`, `added`, `colliders`, `physics`, `matte`, `material`, `terrain`,
-  `animation`, `playerAnimations`. **Precedência: overlay > nó/código** (ADR-0058) —
+  `deleted`, `added`, `colliders`, `physics`, `matte`, `material`, `terrain`
+  (heightmap), `terrainPaint` (pintura de textura/splat, ADR-0063), `animation`,
+  `playerAnimations`. **Precedência: overlay > nó/código** (ADR-0058) —
   o `buildScene` lê `editorX[id] ?? node.X`. Ex.: `data.physics[id].type` é
   autoritativo (dá pra desligar/trocar física cravada no JSON).
 
@@ -65,7 +66,8 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
 - **Autorias** (`src/editor/authoring/`, ADR-0060) — cada concern numa factory
   `createXApi(ctx)` que mexe **só no seu pedaço** do overlay e aplica ao vivo:
   `MatteAuthoring`, `MaterialAuthoring`, `PhysicsAuthoring`, `ColliderAuthoring`
-  (+ heightfield injetado), `TerrainAuthoring`, `AnimationAuthoring`.
+  (+ heightfield injetado), `TerrainAuthoring` (pincel com **modo**: esculpir altura
+  ou **texturizar/pintar** — escolhe/importa textura, ADR-0063), `AnimationAuthoring`.
   - **`EditorAuthoringContext`** (`AuthoringContext.ts`) — o **OverlayStore**
     compartilhado: `ctx.record<T>(key)` devolve `overlay.data[key]` (lido
     **dinamicamente**), `ctx.persist()`, `ctx.game`, `ctx.three`.
@@ -77,6 +79,14 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   publica o `describeInspector`/outliner por **postMessage**; os painéis nativos da
   IDE (`electron/renderer/EditorPanels.ts`) renderizam e mandam de volta `field`/
   `button`/`select` → a ponte chama o handler → re-descreve → republica.
+  - Campo **`file`** (importar asset, ex. textura do terreno): o file picker abre
+    **no frame do renderizador** (clique do usuário = user activation; abrir no
+    iframe do engine via postMessage seria bloqueado) e o conteúdo viaja como JSON
+    `{ name, dataUrl }`; o handler sobe pro projeto via `POST /__upload-asset`
+    (plugin Vite, grava em `assets/textures/`).
+  - Selects com **opções dinâmicas** (ex.: lista de texturas) entram na chave de
+    estrutura dos renderizadores — senão a opção nova não aparece (o updater só
+    troca o valor).
 
 ## 5. Física
 

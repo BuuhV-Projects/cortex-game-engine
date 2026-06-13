@@ -31,7 +31,12 @@ export interface InspectorViewCallbacks {
 
 function structureKey(model: InspectorModel): string {
   const parts: string[] = [model.empty ? 'E' : 'F'];
-  for (const s of model.sections) for (const f of s.fields) parts.push(`${f.id}|${f.kind}`);
+  for (const s of model.sections) for (const f of s.fields) {
+    // Opções de select entram na chave: uma lista dinâmica (ex.: texturas do
+    // projeto após importar) precisa de rebuild — o updater só troca o VALOR.
+    const dyn = f.kind === 'select' ? `|${f.options.map((o) => o.value).join('§')}` : '';
+    parts.push(`${f.id}|${f.kind}${dyn}`);
+  }
   return parts.join(',');
 }
 
@@ -172,6 +177,32 @@ export function createInspectorView(cb: InspectorViewCallbacks): InspectorView {
         note.textContent = f.text;
         note.style.cssText = `font-size:11px;margin:2px 0;color:${f.tone === 'info' ? '#cfd2da' : '#9aa0ad'}`;
         return note;
+      }
+      case 'file': {
+        // Botão que abre o file picker NESTE frame (clique direto = user activation)
+        // e entrega o arquivo lido como JSON { name, dataUrl } pro handler.
+        const btn = document.createElement('button');
+        btn.textContent = f.label;
+        btn.style.cssText =
+          'width:100%;padding:5px;margin:2px 0;background:#2a2f3a;color:#fff;border:1px solid #3a3f4a;border-radius:3px;cursor:pointer';
+        const input = document.createElement('input');
+        input.type = 'file';
+        if (f.accept) input.accept = f.accept;
+        input.style.display = 'none';
+        input.addEventListener('change', () => {
+          const file = input.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            cb.onInput(f.id, JSON.stringify({ name: file.name, dataUrl: String(reader.result) }));
+            input.value = '';
+          };
+          reader.readAsDataURL(file);
+        });
+        btn.addEventListener('click', () => input.click());
+        const wrap = document.createElement('div');
+        wrap.append(btn, input);
+        return wrap;
       }
     }
   }

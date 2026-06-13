@@ -41,7 +41,7 @@ interface SelectOption {
   label: string
 }
 interface Field {
-  kind: 'vec3' | 'number' | 'checkbox' | 'select' | 'color' | 'button' | 'note'
+  kind: 'vec3' | 'number' | 'checkbox' | 'select' | 'color' | 'button' | 'note' | 'file'
   id: string
   label?: string
   value?: number | boolean | string | [number, number, number]
@@ -50,6 +50,7 @@ interface Field {
   variant?: 'normal' | 'primary' | 'danger'
   text?: string
   tone?: 'muted' | 'info'
+  accept?: string
 }
 interface Section {
   title?: string
@@ -276,6 +277,9 @@ export class EditorPanels {
       // dinâmico (ex.: "Esculpir" ⇄ "Parar de esculpir") forçar o rebuild e aparecer.
       const dyn = f.kind === 'button' ? `|${(f as { label?: string }).label ?? ''}`
         : f.kind === 'note' ? `|${(f as { text?: string }).text ?? ''}`
+        // Opções dinâmicas de select (ex.: texturas do projeto após importar)
+        // forçam rebuild — o updater só atualiza o VALOR, não a lista.
+        : f.kind === 'select' ? `|${(f.options ?? []).map((o) => o.value).join('§')}`
         : ''
       parts.push(`${f.id}|${f.kind}${dyn}`)
     }
@@ -365,6 +369,8 @@ export class EditorPanels {
         return this.buildColor(f)
       case 'button':
         return this.buildButton(f)
+      case 'file':
+        return this.buildFile(f)
       case 'note':
       default:
         return this.buildNote(f)
@@ -465,6 +471,32 @@ export class EditorPanels {
       class: cls + (f.variant === 'danger' ? ' stop' : ''),
       onClick: () => this.send({ type: 'button', id: f.id }),
     }, f.label ?? '')
+  }
+
+  /**
+   * Campo de importação de arquivo: abre o file picker AQUI (o clique do usuário
+   * acontece neste frame — abrir no iframe do engine via postMessage seria
+   * bloqueado por falta de user activation) e manda o conteúdo lido pra ponte
+   * como JSON `{ name, dataUrl }`.
+   */
+  private buildFile(f: Field): HTMLElement {
+    const input = h('input', { type: 'file', style: { display: 'none' } }) as HTMLInputElement
+    if (f.accept) input.accept = f.accept
+    input.addEventListener('change', () => {
+      const file = input.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        this.send({ type: 'field', id: f.id, value: JSON.stringify({ name: file.name, dataUrl: String(reader.result) }) })
+        input.value = ''
+      }
+      reader.readAsDataURL(file)
+    })
+    const btn = h('button', {
+      class: 'btn ghost sm cge-insp-btn',
+      onClick: () => input.click(),
+    }, f.label ?? '')
+    return h('div', {}, btn, input)
   }
 
   private buildNote(f: Field): HTMLElement {
