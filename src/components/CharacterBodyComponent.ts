@@ -23,6 +23,14 @@ export interface CharacterBodyOptions {
    * Default `-Infinity` = sem rede. O editor/data-driven usam `0` por padrão.
    */
   groundY?: number;
+  /**
+   * **Offset dos pés** — distância da ORIGEM do mesh até a sua BASE (pés). Modelos com
+   * origem nos pés = `0`; primitivas (cilindro/box/esfera) têm origem no **centro**, então
+   * `footOffset = altura/2`. A física ancora os **pés** (`transform.y − footOffset`) no
+   * chão; sem isso o mesh **afunda** metade da altura. O {@link buildScene} calcula do
+   * bounds do mesh. Default `0`.
+   */
+  footOffset?: number;
 }
 
 /**
@@ -48,6 +56,8 @@ export class CharacterBodyComponent extends Component {
   readonly maxJumps: number;
   /** Piso plano onde aterra (sem raycast). `-Infinity` = sem piso. */
   groundY: number;
+  /** Distância da origem do mesh até os pés (base). `0` = origem nos pés. */
+  footOffset: number;
 
   /** Velocidade vertical atual (unidades/s). Integrada pela gravidade/pulo. */
   velocityY = 0;
@@ -68,6 +78,7 @@ export class CharacterBodyComponent extends Component {
     this.fallSpeedMax = options.fallSpeedMax ?? 25;
     this.maxJumps = options.maxJumps ?? 1;
     this.groundY = options.groundY ?? -Infinity;
+    this.footOffset = options.footOffset ?? 0;
   }
 
   /** Pede um pulo — aplicado no próximo tick se ainda houver pulos disponíveis. */

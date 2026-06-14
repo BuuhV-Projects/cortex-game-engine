@@ -90,6 +90,10 @@ export class CharacterPhysicsSystem extends System {
       t.y += c.velocityY * dt;
       const wasGrounded = c.grounded; // estado do tick anterior (pro snap de descida)
       c.grounded = false;
+      // Os PÉS ficam `footOffset` abaixo da origem do transform (primitivas têm origem
+      // no centro). Toda a checagem de chão é feita nos pés; o transform.y volta a ser
+      // pés + footOffset ao aterrar — senão o mesh afunda metade da altura.
+      const feet = t.y - c.footOffset;
 
       // Altura do chão sob os pés. A GEOMETRIA REAL (raycast) VENCE: acha a primeira
       // superfície abaixo (a qualquer distância — ele cai de qualquer altura e pousa
@@ -98,7 +102,7 @@ export class CharacterPhysicsSystem extends System {
       let groundHeight = -Infinity;
       if (this.roots.length > 0 && c.velocityY <= 0) {
         // Origem um pouco ACIMA dos pés (até `stepHeight`) pra subir degraus.
-        this.origin.set(t.x, t.y + c.stepHeight + SKIN, t.z);
+        this.origin.set(t.x, feet + c.stepHeight + SKIN, t.z);
         this.ray.set(this.origin, DOWN);
         this.ray.far = Infinity;
         const self = e.getComponent(Object3DComponent)?.object;
@@ -123,9 +127,9 @@ export class CharacterPhysicsSystem extends System {
       if (
         c.velocityY <= 0 &&
         groundHeight > -Infinity &&
-        (t.y <= groundHeight + SKIN || (wasGrounded && t.y - groundHeight <= c.stepHeight))
+        (feet <= groundHeight + SKIN || (wasGrounded && feet - groundHeight <= c.stepHeight))
       ) {
-        t.y = groundHeight;
+        t.y = groundHeight + c.footOffset; // pés no chão → origem fica footOffset acima
         c.velocityY = 0;
         c.grounded = true;
         c.jumpsUsed = 0;

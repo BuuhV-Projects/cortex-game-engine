@@ -170,6 +170,12 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   objeto.
 - **Persist tem debounce (500ms)**; trocas de física usam `persist(true)` (imediato)
   pra sobreviver a reload/Play logo em seguida.
+- **Character visível afunda se o mesh tiver origem no centro.** O `CharacterBody`
+  ancora os **pés** no chão. Modelos de personagem têm origem nos pés (ok), mas as
+  **primitivas** (cilindro/box/esfera) têm origem no **centro** → sem compensar, o mesh
+  afundava metade da altura. O `buildScene` calcula `footOffset` (origem→base) do bounds
+  e o `CharacterPhysicsSystem` ancora `t.y − footOffset`. No FPS não aparecia (corpo
+  escondido); apareceu no top-down (corpo visível).
 - **Raycast de gameplay tem que ignorar o chrome do editor.** O gizmo
   (`TransformControls`) e helpers ficam **na mesma cena** (bundle de dev). O
   `editorInternal` fica na **raiz** do helper, mas o raycast acerta as **peças

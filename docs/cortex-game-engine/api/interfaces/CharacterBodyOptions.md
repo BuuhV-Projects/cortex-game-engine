@@ -22,6 +22,20 @@ Defined in: [src/components/CharacterBodyComponent.ts:16](https://github.com/Buu
 
 ***
 
+### footOffset?
+
+> `optional` **footOffset?**: `number`
+
+Defined in: [src/components/CharacterBodyComponent.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L33)
+
+**Offset dos pés** — distância da ORIGEM do mesh até a sua BASE (pés). Modelos com
+origem nos pés = `0`; primitivas (cilindro/box/esfera) têm origem no **centro**, então
+`footOffset = altura/2`. A física ancora os **pés** (`transform.y − footOffset`) no
+chão; sem isso o mesh **afunda** metade da altura. O [buildScene](../functions/buildScene.md) calcula do
+bounds do mesh. Default `0`.
+
+***
+
 ### gravity?
 
 > `optional` **gravity?**: `number`

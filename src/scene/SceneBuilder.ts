@@ -572,7 +572,11 @@ export async function buildScene(
         const e = options.world.createEntity();
         e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
         e.addComponent(new Object3DComponent(obj));
-        e.addComponent(new CharacterBodyComponent({ ...cfg, groundY: cfg.groundY ?? 0 }));
+        // footOffset: distância da origem do mesh até os pés (base). Primitivas têm
+        // origem no centro → sem isso o mesh AFUNDA metade no chão (a física ancora os
+        // pés). Modelos com origem nos pés → ~0. Ver CharacterBodyComponent.
+        const footOffset = Math.max(0, obj.position.y - getWorldBounds(obj).bottomY);
+        e.addComponent(new CharacterBodyComponent({ ...cfg, groundY: cfg.groundY ?? 0, footOffset }));
         ensureCharacterSystems(options.world, [three], options.physicsPaused);
       } else if (type === 'static') {
         // Estático sólido: collider de plataforma. Sem dims em lugar nenhum (ex.: o
