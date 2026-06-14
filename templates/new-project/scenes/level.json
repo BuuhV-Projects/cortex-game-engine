@@ -1,52 +1,23 @@
 {
   "version": 1,
-  "background": "#7ec0ee",
-  "outdoorLighting": { "sky": "#7ec0ee", "sunIntensity": 2.6, "exposure": 1.0 },
+  "background": "#9ec9e8",
+  "outdoorLighting": { "sky": "#9ec9e8", "sunIntensity": 2.6, "exposure": 1.0 },
   "nodes": [
     {
-      "type": "primitive",
-      "id": "chao",
-      "shape": "box",
-      "size": [40, 1, 4],
-      "color": "#5a8f3a",
-      "place": { "x": 8, "y": -3 },
-      "collider": { "solid": true }
-    },
-    {
-      "type": "primitive",
-      "id": "plataforma_1",
-      "shape": "box",
-      "size": [4, 0.6, 4],
-      "color": "#9a6a3a",
-      "place": { "x": 5, "y": -1.3 },
-      "collider": { "solid": true }
-    },
-    {
-      "type": "primitive",
-      "id": "plataforma_2",
-      "shape": "box",
-      "size": [4, 0.6, 4],
-      "color": "#9a6a3a",
-      "place": { "x": 10, "y": 0 },
-      "collider": { "solid": true }
-    },
-    {
-      "type": "primitive",
-      "id": "plataforma_3",
-      "shape": "box",
-      "size": [3, 0.4, 4],
-      "color": "#c0c0c0",
-      "place": { "x": 15, "y": 1.5 },
-      "collider": { "solid": true, "oneWay": true }
+      "type": "terrain",
+      "id": "terreno",
+      "size": 60,
+      "resolution": 64,
+      "color": "#6ab04c"
     },
     {
       "type": "primitive",
       "id": "player",
-      "shape": "box",
-      "size": [0.8, 1.2, 0.8],
+      "shape": "cylinder",
+      "size": [0.8, 1.8, 0.8],
       "color": "#e04848",
-      "place": { "x": 0, "y": -2 },
-      "player": true
+      "place": { "x": 0, "y": 2 },
+      "character": { "radius": 0.4, "height": 1.8, "jumpForce": 9, "groundY": 0 }
     }
   ]
 }

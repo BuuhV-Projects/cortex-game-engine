@@ -62,6 +62,7 @@ lado).
 |---|---|
 | `Object3DSyncSystem` | Copia `TransformComponent` → `Object3D` da cena a cada frame. |
 | `ThirdPersonCameraSystem` | Câmera de perseguição da entity com `FollowCameraTargetComponent`. |
+| `FirstPersonCameraSystem` | Câmera/controle de **1ª pessoa** (FPS): mouse-look (pointer lock) + WASD + pulo sobre o player `CharacterBodyComponent`. Helper: `setupFirstPerson(game)`. |
 | `FollowCamera2DSystem` | Câmera 2.5D de plataforma (segue no plano XY; roll/pitch/yaw e preset isométrico opcionais). |
 | `TopDownCameraSystem` | Câmera **vista de cima** (jogos de fazenda/RPG 2D): segue o alvo no plano **XZ**, câmera acima olhando pra baixo; `angle` de reto top-down a 3/4. |
 
@@ -81,6 +82,29 @@ game.world.addSystem(new TopDownCameraSystem(game.camera, { height: 16, angle: 0
 player.addComponent(new FollowCameraTargetComponent())
 game.start()
 ```
+
+### Câmera/controle de 1ª pessoa (FPS) — demo padrão de projeto novo
+
+`setupFirstPerson(game)` liga a câmera/controle de primeira pessoa: **clique no
+canvas** trava o cursor (mouse-look), **WASD** anda relativo ao olhar, **Espaço**
+pula. O **player é um nó `character`** na cena (cápsula — física editável no
+Inspector) e o terreno colidível um nó `terrain`; o `buildScene` registra sozinho
+a física vertical do player (`CharacterPhysicsSystem` — gravidade/pulo/aterrar no
+terreno por raycast). O movimento/look **não** é dado da cena — é wiring de gameplay
+no `main.ts`. É o **demo do `templates/new-project/`** (terreno vazio + 1ª pessoa).
+
+```ts
+import { Game, buildScene, setupFirstPerson } from 'cortex-game-engine'
+import level from './scenes/level.json'  // nó `terrain` + nó `player` com `character`
+const game = new Game({ canvas })
+setupFirstPerson(game, { camera: { moveSpeed: 6, eyeHeight: 1.6 } })
+await buildScene(game.scene, [level], { renderer: game.renderer, world: game.world })
+game.start()
+```
+
+O sistema mira o **único** player (entity com `TransformComponent` +
+`CharacterBodyComponent`). Pausa no editor (F2) e no pause do play — não rouba o
+mouse nem move o player enquanto você edita.
 
 ## Modo editor embutido (automático em dev)
 

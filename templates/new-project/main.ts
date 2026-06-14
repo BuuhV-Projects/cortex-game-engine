@@ -1,33 +1,32 @@
 /**
- * Bootstrap — jogo de **plataforma 2.5D** (estilo Rayman/Mario Wonder).
+ * Bootstrap — jogo 3D em **primeira pessoa** (FPS).
  *
- * A cena é DADO (`scenes/level.json`): nós `primitive`/`model` viram plataformas
- * (campo `collider`) e o `player` (campo `player`). `setupPlatformer` liga a
- * física (gravidade + colisão AABB), o input (←/→ anda, Espaço/↑ pula) e a câmera
- * 2D que segue o player no plano XY (sobe/desce/lados). Em DEV o editor F2 vem
- * ligado; em produção não pesa (ADR-0042). Lógica de jogo continua em TS.
+ * A cena é DADO (`scenes/level.json`): um nó `terrain` (terreno colidível,
+ * esculpível no editor) e o `player` — um nó `character` (cápsula com gravidade/
+ * pulo). `setupFirstPerson` liga a câmera/controle FPS: **clique no canvas** trava
+ * o cursor (mouse-look), **WASD** anda, **Espaço** pula. A física vertical do
+ * player (cair/aterrar no terreno) o `buildScene` liga sozinho (nó `character`).
+ * Em DEV o editor F2 vem ligado; em produção não pesa (ADR-0042). Lógica de jogo
+ * continua em TS.
  */
-import { Game, buildScene, setupPlatformer, SceneLoader, type SceneDefinition } from 'cortex-game-engine'
+import { Game, buildScene, setupFirstPerson, SceneLoader, type SceneDefinition } from 'cortex-game-engine'
 import level from './scenes/level.json'
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
 
 const game = new Game({ canvas })
 
-// Física + input + câmera 2D-follow (offset/distância/roll-Z opcional).
-const { followCamera } = setupPlatformer(game, { camera: { distance: 16, responsiveness: 6 } })
-// Estilos de câmera 2.5D (descomente um):
-// followCamera.setRoll(0.05)    // leve giro no eixo Z (estilo Rayman)
-// followCamera.setPitch(0.12)   // tilt no eixo X (profundidade/parallax)
-// followCamera.setIsometric()   // câmera 3/4 isométrica (yaw 45° + pitch ~35°)
-void followCamera
+// Câmera/controle de 1ª pessoa: mouse-look (clique p/ travar o cursor) + WASD + pulo.
+const { camera } = setupFirstPerson(game, { camera: { moveSpeed: 6, eyeHeight: 1.6 } })
+// Ajustes: camera mira o player automaticamente. Ex.: camera.pauseWhen = () => ...
+void camera
 
 game.start()
 
 // Overlay do editor (F2): edições salvas em assets/scene-data.json (null se não houver).
 const overlay = await new SceneLoader().loadSceneFile('assets/scene-data.json')
 
-// `world` faz os nós com collider/player virarem entidades ECS (física/câmera).
+// `world` faz os nós com física (player `character` / terrain) virarem entidades ECS.
 // `matte: true` deixa os modelos FOSCOS (look cartoon/desenho, mata o brilho PBR
 // dos .glb stylized) — remova pra PBR brilhoso. No editor (F2) dá pra ligar/
 // desligar por objeto na seção Material.
@@ -36,4 +35,7 @@ await buildScene(game.scene, [level] as unknown as SceneDefinition[], {
   world: game.world,
   overlay,
   matte: true,
+  // Pausa a física do player (cápsula `character`) enquanto o editor (F2) está
+  // ativo — senão ele cai/treme e o autosave fica salvando em loop ao editar.
+  physicsPaused: () => game.editorActive || game.gameplayPaused,
 })

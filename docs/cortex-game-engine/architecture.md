@@ -112,6 +112,21 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
 - **CharacterBody** (`CharacterBodyComponent`+`CharacterPhysicsSystem`) — controller
   cápsula (gravidade/pulo/step) com **chão por raycast** + piso `groundY` de
   fallback. Pro player/NPC simples até a migração pro CharacterController do Rapier.
+  - ⚠️ **Autoridade única de chão pro Character = o raycast.** O `TerrainCollisionSystem`
+    (que aterra pela altura **bilinear** `heightAt`) **não** trata Character — só
+    `Platformer`/`Kinematic`. Os dois aterrando o mesmo corpo faziam ele **quicar** em
+    rampas (raycast pousa no triângulo da malha, `heightAt` interpola → divergem). O
+    raycast já mira o terreno (é filho da cena), então cobre o caso.
+  - ⚠️ Pra **pausar no editor**, o `buildScene` precisa do `physicsPaused`
+    (`() => game.editorActive || game.gameplayPaused`). **Sem ele a física do
+    Character roda no F2** — o player cai/treme editando e o autosave do editor
+    persiste em **loop**. O `setupFirstPerson`/template já passam isso.
+  - **Câmera/controle FPS** (`FirstPersonCameraSystem` + helper `setupFirstPerson`,
+    ADR-0064) — mouse-look (pointer lock) + WASD + pulo sobre o CharacterBody. É o
+    **demo padrão de projeto novo** (`templates/new-project/`): terreno vazio + player
+    cápsula em 1ª pessoa (alinha com o "engine 3D por padrão" do ADR-0062). O
+    movimento/look é **wiring de gameplay no `main.ts`** (não dado da cena); só a
+    física do player (nó `character`) e o terreno (nó `terrain`) são dado.
 
 ## 6. Build & vendoring
 
@@ -155,6 +170,14 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   objeto.
 - **Persist tem debounce (500ms)**; trocas de física usam `persist(true)` (imediato)
   pra sobreviver a reload/Play logo em seguida.
+- **Raycast de gameplay tem que ignorar o chrome do editor.** O gizmo
+  (`TransformControls`) e helpers ficam **na mesma cena** (bundle de dev). O
+  `editorInternal` fica na **raiz** do helper, mas o raycast acerta as **peças
+  filhas** (XYZ/X/Y/Z/AXIS…) sem o flag — então o `CharacterPhysicsSystem` "aterrava
+  no gizmo" e o player **subia** ao andar (com o gizmo seguindo o player selecionado).
+  Quem faz raycast na cena (`[three]`) deve pular `editorInternal` subindo a cadeia de
+  **ancestrais** (não só o objeto-folha) — ver `isEditorChrome` no
+  `CharacterPhysicsSystem` e `isEditorInternal` no `ObjectEditSystem`.
 - **`onBeforeCompile` NÃO roda no `WebGPURenderer`** (o renderer do engine é
   node-based, mesmo no fallback `forceWebGL`) — falha **silenciosa**: sem erro, o
   efeito só não aparece. Efeito custom de shader tem que ser **TSL/NodeMaterial**

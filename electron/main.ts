@@ -479,6 +479,7 @@ const VENDOR_TYPE_MODULES = {
   systems: [
     'Object3DSyncSystem',
     'ThirdPersonCameraSystem',
+    'FirstPersonCameraSystem',
     'PlatformerPhysicsSystem',
     'PlatformerInputSystem',
     'FollowCamera2DSystem',
@@ -500,6 +501,7 @@ const VENDOR_TYPE_MODULES = {
     'Background',
     'SceneAnimator',
     'Platformer',
+    'FirstPerson',
     'SceneAssets',
     'Materials',
     'OutdoorLighting',

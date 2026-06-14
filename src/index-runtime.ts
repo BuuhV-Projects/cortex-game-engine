@@ -49,6 +49,7 @@ export * from './physics/RapierPhysics.js';
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
 export * from './systems/Object3DSyncSystem.js';
 export * from './systems/ThirdPersonCameraSystem.js';
+export * from './systems/FirstPersonCameraSystem.js';
 export * from './systems/PlatformerPhysicsSystem.js';
 export * from './systems/PlatformerInputSystem.js';
 export * from './systems/FollowCamera2DSystem.js';
@@ -77,6 +78,7 @@ export * from './scene/Kit.js';
 export * from './scene/Background.js';
 export * from './scene/SceneAnimator.js';
 export * from './scene/Platformer.js';
+export * from './scene/FirstPerson.js';
 export * from './scene/SceneAssets.js';
 export * from './scene/Materials.js';
 export * from './scene/OutdoorLighting.js';
