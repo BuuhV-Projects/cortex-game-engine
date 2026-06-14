@@ -1,0 +1,158 @@
+[**cortex-game-engine**](../README.md)
+
+***
+
+[cortex-game-engine](../README.md) / TopDownMovementSystem
+
+# Class: TopDownMovementSystem
+
+Defined in: src/systems/TopDownMovementSystem.ts:40
+
+Movimento **top-down** (farm sim / RPG estilo Stardew): lê o **eixo** de um
+[MoveAxisProvider](../type-aliases/MoveAxisProvider.md) fornecido pelo jogo e move o player no **plano XZ**
+(`x` = ±X, `y` cima = −Z), respeitando o **analógico** (anda devagar com pouco
+tilt), e faz o personagem **virar na direção do movimento** (`transform.rotationY`).
+O **Y** (gravidade/aterrar) fica com o [CharacterBodyComponent](CharacterBodyComponent.md) +
+`CharacterPhysicsSystem`. O engine não conhece o esquema de input — o jogo passa o
+eixo (ADR-0066).
+
+Mira o único player (entidade com [TransformComponent](TransformComponent.md) +
+[CharacterBodyComponent](CharacterBodyComponent.md), `entities[0]`) e o **marca como alvo da câmera**
+([FollowCameraTargetComponent](FollowCameraTargetComponent.md)) no 1º update se faltar. Tipicamente montado
+via `setupTopDown`.
+
+## Example
+
+```ts
+// o jogo passa o eixo do controle dele:
+const move = new TopDownMovementSystem(() => meuControle.moveAxis(), { moveSpeed: 5 })
+move.pauseWhen = () => game.editorActive
+game.world.addSystem(move)
+```
+
+## Extends
+
+- [`System`](System.md)
+
+## Constructors
+
+### Constructor
+
+> **new TopDownMovementSystem**(`readMove`, `options?`): `TopDownMovementSystem`
+
+Defined in: src/systems/TopDownMovementSystem.ts:46
+
+#### Parameters
+
+##### readMove
+
+[`MoveAxisProvider`](../type-aliases/MoveAxisProvider.md)
+
+##### options?
+
+[`TopDownMovementOptions`](../interfaces/TopDownMovementOptions.md) = `{}`
+
+#### Returns
+
+`TopDownMovementSystem`
+
+#### Overrides
+
+[`System`](System.md).[`constructor`](System.md#constructor)
+
+## Properties
+
+### pauseWhen?
+
+> `optional` **pauseWhen?**: () => `boolean`
+
+Defined in: [src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
+
+Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
+`World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
+a gameplay (física/input) enquanto o editor está ativo
+(`pauseWhen = () => game.editorActive`).
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`System`](System.md).[`pauseWhen`](System.md#pausewhen)
+
+***
+
+### priority
+
+> **priority**: `number` = `2`
+
+Defined in: src/systems/TopDownMovementSystem.ts:42
+
+Prioridade de execução deste sistema.
+
+O `World` ordena os sistemas por valor crescente antes de iterar no tick.
+Sistemas com valores menores executam antes. Padrão: `0`.
+
+#### Overrides
+
+[`System`](System.md).[`priority`](System.md#priority)
+
+***
+
+### requiredComponents
+
+> `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
+
+Defined in: src/systems/TopDownMovementSystem.ts:41
+
+Construtores dos componentes que este sistema requer.
+
+O `World` usa essa lista para filtrar as entidades antes de chamar `update`,
+garantindo que apenas entidades com todos os componentes declarados sejam
+repassadas ao sistema.
+
+Subclasses devem sobrescrever este campo estático.
+
+#### Example
+
+```ts
+static requiredComponents = [TransformComponent, VelocityComponent];
+```
+
+#### Overrides
+
+[`System`](System.md).[`requiredComponents`](System.md#requiredcomponents)
+
+## Methods
+
+### update()
+
+> **update**(`entities`, `deltaTime`): `void`
+
+Defined in: src/systems/TopDownMovementSystem.ts:54
+
+Executa a lógica do sistema para o frame/passo atual.
+
+#### Parameters
+
+##### entities
+
+[`Entity`](Entity.md)[]
+
+Entidades filtradas pelo `World` que possuem todos os
+                   componentes declarados em `requiredComponents`.
+
+##### deltaTime
+
+`number`
+
+Tempo decorrido desde o último tick, em segundos.
+
+#### Returns
+
+`void`
+
+#### Overrides
+
+[`System`](System.md).[`update`](System.md#update)

@@ -65,6 +65,7 @@ lado).
 | `FirstPersonCameraSystem` | Câmera/controle de **1ª pessoa** (FPS): mouse-look (pointer lock) + WASD + pulo sobre o player `CharacterBodyComponent`. Helper: `setupFirstPerson(game)`. |
 | `FollowCamera2DSystem` | Câmera 2.5D de plataforma (segue no plano XY; roll/pitch/yaw e preset isométrico opcionais). |
 | `TopDownCameraSystem` | Câmera **vista de cima** (jogos de fazenda/RPG 2D): segue o alvo no plano **XZ**, câmera acima olhando pra baixo; `angle` de reto top-down a 3/4. |
+| `TopDownMovementSystem` | Movimento top-down (plano XZ + vira na direção). Recebe um `readMove: () => {x,y}` que o **jogo** fornece (input é do jogo, ADR-0066). Helper: `setupTopDown(game)`. |
 
 ### Câmera top-down (vista de cima) — jogos de fazenda/RPG 2D
 
@@ -105,6 +106,46 @@ game.start()
 O sistema mira o **único** player (entity com `TransformComponent` +
 `CharacterBodyComponent`). Pausa no editor (F2) e no pause do play — não rouba o
 mouse nem move o player enquanto você edita.
+
+### Top-down (farm sim / RPG estilo Stardew)
+
+`setupTopDown(game, { readMove })` liga o estilo **vista de cima 3/4**: movimento no
+plano XZ (vira na direção do andar) + câmera 3/4 que segue o player. O **player é um nó
+`character`** (cápsula — física editável no Inspector); o `buildScene` cuida do Y
+(gravidade/aterrar). Use **perspectiva** (default do `Game`).
+
+**Input é responsabilidade do JOGO** (ADR-0066): o engine só dá os recursos crus —
+`InputManager` (teclado) e `GamepadManager` (gamepad, polled: `getAxis(slot,i)` /
+`isButtonDown(slot,i)`). O **jogo** monta a camada de controle dele (ações, mapeamento,
+até as constantes de botão do Xbox, factory teclado/joystick) e passa o **eixo de
+movimento** ao `setupTopDown` via `readMove: () => ({ x, y })` (−1..1; analógico no stick).
+
+```ts
+import { Game, buildScene, setupTopDown, GamepadManager } from 'cortex-game-engine'
+import level from './scenes/level.json'  // chão/terrain + player nó `character`
+
+const game = new Game({ canvas })
+
+// O JOGO define seu controle (aqui simples; o A do Xbox é o índice 0 no layout padrão):
+const pad = new GamepadManager()
+const moveAxis = () => {
+  pad.poll()
+  const kx = (game.input.isKeyDown('d') ? 1 : 0) - (game.input.isKeyDown('a') ? 1 : 0)
+  const ky = (game.input.isKeyDown('s') ? 1 : 0) - (game.input.isKeyDown('w') ? 1 : 0)
+  return { x: pad.getAxis(0, 0) || kx, y: pad.getAxis(0, 1) || ky }
+}
+const interact = () => game.input.isKeyDown('e') || pad.isButtonDown(0, 0 /* A */)
+
+setupTopDown(game, { readMove: moveAxis, move: { moveSpeed: 5 }, camera: { angle: 0.9, height: 18 } })
+await buildScene(game.scene, [level], { renderer: game.renderer, world: game.world,
+  physicsPaused: () => game.editorActive || game.gameplayPaused })
+game.start()
+game.onUpdate(() => { if (interact()) usarFerramenta() })
+```
+
+> Camada de controle robusta (ações nomeadas, rebinding, edge-detection, factory por
+> dispositivo, constantes de layout Xbox) é código **do jogo** — o engine não crava
+> nada disso. Ver `utils/controls.ts` do hearthvale-game como exemplo.
 
 ## Modo editor embutido (automático em dev)
 
