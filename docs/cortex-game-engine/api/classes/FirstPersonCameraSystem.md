@@ -6,7 +6,7 @@
 
 # Class: FirstPersonCameraSystem
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:57
+Defined in: [src/systems/FirstPersonCameraSystem.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L57)
 
 Câmera + controle de **primeira pessoa** (FPS). Mira o único [Entity](Entity.md) com
 [TransformComponent](TransformComponent.md) + [CharacterBodyComponent](CharacterBodyComponent.md) (o player cápsula) e:
@@ -48,7 +48,7 @@ game.world.addSystem(fps)
 
 > **new FirstPersonCameraSystem**(`camera`, `input`, `canvas`, `options?`): `FirstPersonCameraSystem`
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:73
+Defined in: [src/systems/FirstPersonCameraSystem.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L73)
 
 #### Parameters
 
@@ -103,7 +103,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `20`
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:59
+Defined in: [src/systems/FirstPersonCameraSystem.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L59)
 
 Prioridade de execução deste sistema.
 
@@ -120,7 +120,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:58
+Defined in: [src/systems/FirstPersonCameraSystem.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L58)
 
 Construtores dos componentes que este sistema requer.
 
@@ -146,7 +146,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:95
+Defined in: [src/systems/FirstPersonCameraSystem.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L95)
 
 Executa a lógica do sistema para o frame/passo atual.
 

@@ -6,7 +6,7 @@
 
 # Interface: SetupFirstPersonOptions
 
-Defined in: src/scene/FirstPerson.ts:9
+Defined in: [src/scene/FirstPerson.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/FirstPerson.ts#L9)
 
 Opções de [setupFirstPerson](../functions/setupFirstPerson.md).
 
@@ -16,6 +16,6 @@ Opções de [setupFirstPerson](../functions/setupFirstPerson.md).
 
 > `optional` **camera?**: [`FirstPersonCameraOptions`](FirstPersonCameraOptions.md)
 
-Defined in: src/scene/FirstPerson.ts:11
+Defined in: [src/scene/FirstPerson.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/FirstPerson.ts#L11)
 
 Opções da câmera/controle FPS (moveSpeed, eyeHeight, sensitivity…).

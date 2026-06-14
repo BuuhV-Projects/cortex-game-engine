@@ -615,7 +615,22 @@ quando o jogo usa física (TDR-0002). Exports: `RapierPhysics`, `RapierPhysicsSy
   `'fixed'` imóvel = chão/parede, `'kinematic'` você move), `shape`
   (`{ kind: 'auto' }` = caixa do bounds do mesh, ou `box`/`ball`/`capsule`),
   `restitution`/`friction`/`isSensor` (trigger). **Atenção: é `bodyType`, não `type`**
-  (o ECS usa `type` como chave).
+  (o ECS usa `type` como chave). O **handle** do corpo fica em `.body` (`PhysicsBody`,
+  `null` até o 1º tick criar).
+- **`PhysicsBody`** (o `.body` do componente) — controla o corpo dinâmico em gameplay
+  **sem furar pro Rapier interno**: `applyImpulse({x,y,z})` (chutar/empurrar),
+  `applyTorqueImpulse`, `setLinvel`/`linvel()`, `setAngvel`/`angvel()`,
+  `setTranslation`/`setRotation` (teleporte), `wakeUp()`, e `reset(pos?, rot?)` (zera
+  velocidades + opcionalmente teleporta — recolocar a bola no centro). `translation()`/
+  `rotation()` leem a pose. Pegue via `entity.getComponent(RapierBodyComponent)!.body`.
+
+```ts
+// chutar a bola na direção dir (Vec3 normalizado) com força `power`:
+const ball = ballEntity.getComponent(RapierBodyComponent)!.body
+ball?.applyImpulse({ x: dir.x * power, y: 0, z: dir.z * power })
+// recolocar no centro do campo (sem sair voando com a velocidade antiga):
+ball?.reset({ x: 0, y: 0.5, z: 0 })
+```
 
 **Pause no editor (importante!):** marque `system.pauseWhen = () => game.editorActive`
 — senão a física **simula em modo de edição (F2)** e os corpos caem enquanto o

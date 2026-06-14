@@ -6,7 +6,7 @@
 
 # Class: RapierPhysics
 
-Defined in: [src/physics/RapierPhysics.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L107)
+Defined in: [src/physics/RapierPhysics.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L182)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/physics/RapierPhysics.ts:107](https://github.com/BuuhV-Projects
 
 > `readonly` **world**: `World`
 
-Defined in: [src/physics/RapierPhysics.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L109)
+Defined in: [src/physics/RapierPhysics.ts:184](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L184)
 
 Mundo do Rapier (uso avançado).
 
@@ -24,7 +24,7 @@ Mundo do Rapier (uso avançado).
 
 > **addBody**(`spec`): [`PhysicsBody`](../interfaces/PhysicsBody.md)
 
-Defined in: [src/physics/RapierPhysics.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L122)
+Defined in: [src/physics/RapierPhysics.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L197)
 
 Adiciona um corpo (RigidBody + Collider) e devolve seu handle.
 
@@ -44,7 +44,7 @@ Adiciona um corpo (RigidBody + Collider) e devolve seu handle.
 
 > **dispose**(): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:142](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L142)
+Defined in: [src/physics/RapierPhysics.ts:217](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L217)
 
 Libera o mundo (memória WASM).
 
@@ -58,7 +58,7 @@ Libera o mundo (memória WASM).
 
 > **step**(): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:137](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L137)
+Defined in: [src/physics/RapierPhysics.ts:212](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L212)
 
 Avança a simulação um passo (timestep fixo configurado no mundo).
 
@@ -72,7 +72,7 @@ Avança a simulação um passo (timestep fixo configurado no mundo).
 
 > `static` **create**(`gravity?`): `Promise`\<`RapierPhysics`\>
 
-Defined in: [src/physics/RapierPhysics.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L116)
+Defined in: [src/physics/RapierPhysics.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L191)
 
 Inicializa o Rapier (async) e cria o mundo com a gravidade dada.
 

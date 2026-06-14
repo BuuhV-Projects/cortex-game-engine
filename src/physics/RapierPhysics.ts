@@ -60,14 +60,54 @@ export interface BodySpec {
   isSensor?: boolean;
 }
 
-/** Handle de um corpo físico (não vaza o tipo do Rapier). */
+/**
+ * Handle de um corpo físico (não vaza o tipo do Rapier). Além de ler a pose
+ * ({@link PhysicsBody.translation}/{@link PhysicsBody.rotation}), expõe as operações
+ * comuns de corpo **dinâmico** pra gameplay (chutar uma bola, dar um pulo, resetar a
+ * posição) sem precisar furar pro `RigidBody` interno. Pegue o handle via
+ * `entity.getComponent(RapierBodyComponent)!.body` (existe depois do 1º tick).
+ *
+ * @example
+ * // chutar a bola na direção `dir` (Vec3) com força `power`:
+ * const ball = entity.getComponent(RapierBodyComponent)!.body
+ * ball?.applyImpulse({ x: dir.x * power, y: 0, z: dir.z * power })
+ * // resetar a bola pro centro do campo (zera velocidade + teleporta):
+ * ball?.reset({ x: 0, y: 0.5, z: 0 })
+ */
 export interface PhysicsBody {
   /** Posição atual (centro do corpo). */
   translation(): Vec3Like;
   /** Rotação atual (quaternion). */
   rotation(): QuatLike;
+  /** Velocidade linear atual (unidades/s). */
+  linvel(): Vec3Like;
+  /** Velocidade angular atual (rad/s). */
+  angvel(): Vec3Like;
   /** Move um corpo `kinematic` (aplicado no próximo `step`). */
   setNextKinematicTranslation(p: Vec3Like): void;
+  /**
+   * Aplica um **impulso** (mudança instantânea de momento) no centro do corpo —
+   * o jeito típico de "chutar"/"empurrar" um corpo dinâmico. Acorda o corpo.
+   */
+  applyImpulse(impulse: Vec3Like, wakeUp?: boolean): void;
+  /** Aplica um **impulso de torque** (gira o corpo). Acorda o corpo. */
+  applyTorqueImpulse(torque: Vec3Like, wakeUp?: boolean): void;
+  /** Define a **velocidade linear** diretamente (sobrescreve a atual). Acorda o corpo. */
+  setLinvel(velocity: Vec3Like, wakeUp?: boolean): void;
+  /** Define a **velocidade angular** diretamente. Acorda o corpo. */
+  setAngvel(velocity: Vec3Like, wakeUp?: boolean): void;
+  /** **Teleporta** o corpo (pose). Pra dinâmico, considere {@link PhysicsBody.reset}. */
+  setTranslation(p: Vec3Like, wakeUp?: boolean): void;
+  /** Define a rotação (quaternion) diretamente. */
+  setRotation(q: QuatLike, wakeUp?: boolean): void;
+  /** Acorda o corpo (corpos parados "dormem" e ignoram forças até serem acordados). */
+  wakeUp(): void;
+  /**
+   * **Reseta** o corpo: zera as velocidades (linear+angular) e, se passar `position`/
+   * `rotation`, teleporta pra lá. Ideal pra "recolocar a bola no centro" sem o corpo
+   * sair voando com a velocidade que tinha.
+   */
+  reset(position?: Vec3Like, rotation?: QuatLike): void;
 }
 
 let api: RapierApi | null = null;
@@ -99,8 +139,43 @@ class RapierBody implements PhysicsBody {
     const r = this.body.rotation();
     return { x: r.x, y: r.y, z: r.z, w: r.w };
   }
+  linvel(): Vec3Like {
+    const v = this.body.linvel();
+    return { x: v.x, y: v.y, z: v.z };
+  }
+  angvel(): Vec3Like {
+    const v = this.body.angvel();
+    return { x: v.x, y: v.y, z: v.z };
+  }
   setNextKinematicTranslation(p: Vec3Like): void {
     this.body.setNextKinematicTranslation(p);
+  }
+  applyImpulse(impulse: Vec3Like, wakeUp = true): void {
+    this.body.applyImpulse(impulse, wakeUp);
+  }
+  applyTorqueImpulse(torque: Vec3Like, wakeUp = true): void {
+    this.body.applyTorqueImpulse(torque, wakeUp);
+  }
+  setLinvel(velocity: Vec3Like, wakeUp = true): void {
+    this.body.setLinvel(velocity, wakeUp);
+  }
+  setAngvel(velocity: Vec3Like, wakeUp = true): void {
+    this.body.setAngvel(velocity, wakeUp);
+  }
+  setTranslation(p: Vec3Like, wakeUp = true): void {
+    this.body.setTranslation(p, wakeUp);
+  }
+  setRotation(q: QuatLike, wakeUp = true): void {
+    this.body.setRotation(q, wakeUp);
+  }
+  wakeUp(): void {
+    this.body.wakeUp();
+  }
+  reset(position?: Vec3Like, rotation?: QuatLike): void {
+    this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    if (position) this.body.setTranslation(position, true);
+    if (rotation) this.body.setRotation(rotation, true);
   }
 }
 

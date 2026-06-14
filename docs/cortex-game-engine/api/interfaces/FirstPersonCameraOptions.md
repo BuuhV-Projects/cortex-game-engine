@@ -6,7 +6,7 @@
 
 # Interface: FirstPersonCameraOptions
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:10
+Defined in: [src/systems/FirstPersonCameraSystem.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L10)
 
 Opções do [FirstPersonCameraSystem](../classes/FirstPersonCameraSystem.md).
 
@@ -16,7 +16,7 @@ Opções do [FirstPersonCameraSystem](../classes/FirstPersonCameraSystem.md).
 
 > `optional` **eyeHeight?**: `number`
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:14
+Defined in: [src/systems/FirstPersonCameraSystem.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L14)
 
 Altura dos olhos acima dos **pés** do personagem. Default `1.6`.
 
@@ -26,7 +26,7 @@ Altura dos olhos acima dos **pés** do personagem. Default `1.6`.
 
 > `optional` **moveSpeed?**: `number`
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:12
+Defined in: [src/systems/FirstPersonCameraSystem.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L12)
 
 Velocidade de caminhada no plano (unidades/s). Default `6`.
 
@@ -36,7 +36,7 @@ Velocidade de caminhada no plano (unidades/s). Default `6`.
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:23
+Defined in: [src/systems/FirstPersonCameraSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L23)
 
 Predicado de **pausa** (ex.: `() => game.editorActive`). Quando `true`, o
 sistema não move/olha (e **mostra** o mesh do player pra editar). Diferente do
@@ -53,6 +53,6 @@ roda** pra poder restaurar a visibilidade do corpo ao voltar pro editor.
 
 > `optional` **sensitivity?**: `number`
 
-Defined in: src/systems/FirstPersonCameraSystem.ts:16
+Defined in: [src/systems/FirstPersonCameraSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L16)
 
 Sensibilidade do mouse (rad por pixel de movimento). Default `0.0022`.
