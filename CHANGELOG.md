@@ -1,3 +1,15 @@
+# [0.29.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.28.0...v0.29.0) (2026-06-13)
+
+
+### Bug Fixes
+
+* **terrain:** blend de splat via TSL/NodeMaterial (onBeforeCompile não roda no WebGPURenderer) ([397cd43](https://github.com/BuuhV-Projects/cortex-game-engine/commit/397cd43fbeca5a2d5b1e9799572f67be0cd82aa8))
+
+
+### Features
+
+* **terrain:** pintura de textura com pincel (modo texturizar) no editor ([d3eccef](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d3eccef99f38bb27a9397a975319135421a23bba))
+
 # [0.28.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.27.0...v0.28.0) (2026-06-11)
 
 
