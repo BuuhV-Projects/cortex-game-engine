@@ -11,6 +11,7 @@
     "docs:engine": "typedoc",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "prepare": "husky",
     "electron:dev": "yarn build:engine && yarn docs:engine && electron-vite dev",
     "electron:build": "yarn build:engine && yarn docs:engine && electron-vite build && electron-builder",
     "electron:install": "node --use-system-ca node_modules/electron/install.js",
@@ -27,17 +28,10 @@
   },
   "devDependencies": {
     "@types/three": "^0.184.1",
-    "electron": "latest",
-    "electron-builder": "latest",
-    "electron-vite": "latest",
-    "eslint": "latest",
-    "monaco-editor": "latest",
+    "husky": "^9.1.7",
     "typedoc": "^0.28.19",
     "typedoc-plugin-markdown": "^4.11.0",
-    "typescript": "^6.0.3",
-    "vite": "latest",
-    "vite-plugin-monaco-editor": "latest",
-    "vitest": "latest"
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": ">=18.0.0"
