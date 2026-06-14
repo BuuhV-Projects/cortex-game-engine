@@ -6,7 +6,7 @@
 
 # Interface: TopDownHandle
 
-Defined in: src/scene/TopDown.ts:26
+Defined in: [src/scene/TopDown.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/TopDown.ts#L26)
 
 Handle de [setupTopDown](../functions/setupTopDown.md).
 
@@ -16,7 +16,7 @@ Handle de [setupTopDown](../functions/setupTopDown.md).
 
 > **camera**: [`TopDownCameraSystem`](../classes/TopDownCameraSystem.md)
 
-Defined in: src/scene/TopDown.ts:28
+Defined in: [src/scene/TopDown.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/TopDown.ts#L28)
 
 A câmera top-down — ajuste `setHeight`/`setAngle` em runtime.
 
@@ -26,6 +26,6 @@ A câmera top-down — ajuste `setHeight`/`setAngle` em runtime.
 
 > **move**: [`TopDownMovementSystem`](../classes/TopDownMovementSystem.md)
 
-Defined in: src/scene/TopDown.ts:30
+Defined in: [src/scene/TopDown.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/TopDown.ts#L30)
 
 O sistema de movimento (dirigido pelo `readMove` do jogo).

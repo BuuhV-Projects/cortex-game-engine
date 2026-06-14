@@ -8,7 +8,7 @@
 
 > **setupTopDown**(`game`, `options?`): [`TopDownHandle`](../interfaces/TopDownHandle.md)
 
-Defined in: src/scene/TopDown.ts:51
+Defined in: [src/scene/TopDown.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/TopDown.ts#L51)
 
 Registra num [Game](../classes/Game.md) os sistemas de **top-down** (farm sim / RPG estilo
 Stardew): sincronização mesh↔transform, movimento no plano XZ (vira na direção do

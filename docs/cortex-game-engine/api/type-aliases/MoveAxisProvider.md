@@ -8,7 +8,7 @@
 
 > **MoveAxisProvider** = () => `object`
 
-Defined in: src/systems/TopDownMovementSystem.ts:12
+Defined in: [src/systems/TopDownMovementSystem.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L12)
 
 Provedor do **eixo de movimento** top-down (−1..1 em cada componente), implementado
 pelo **jogo** lendo o controle dele (teclado/joystick). O engine não sabe de onde
