@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.150",
-    "@anthropic-ai/sdk": "latest",
+    "@anthropic-ai/sdk": "^0.98.0",
     "@dimforge/rapier3d-compat": "^0.19.3",
     "commander": "~14.0.3",
     "three": "~0.184.0",
@@ -28,10 +28,21 @@
   },
   "devDependencies": {
     "@types/three": "^0.184.1",
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "eslint": "^10.5.0",
     "husky": "^9.1.7",
+    "monaco-editor": "^0.55.1",
     "typedoc": "^0.28.19",
     "typedoc-plugin-markdown": "^4.11.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vite-plugin-monaco-editor": "^1.1.0",
+    "vitest": "^4.1.8"
+  },
+  "resolutions": {
+    "vite": "^8.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
