@@ -157,16 +157,34 @@ describe('CharacterBody + colisão real (raycast na geometria, tipo Unity)', () 
     expect(t.y).toBe(1);
     expect(c.grounded).toBe(true);
   });
+
+  it('footOffset ancora os PÉS no chão (mesh de origem central não afunda)', () => {
+    // Primitiva (cilindro/box) tem origem no CENTRO; footOffset = altura/2. A física
+    // ancora os pés (t.y − footOffset) no chão → a origem fica footOffset acima.
+    const scene = sceneWithFloor(0); // chão em y=0
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 5, 0);
+    const c = new CharacterBodyComponent({ footOffset: 0.8 });
+    e.addComponent(t);
+    e.addComponent(c);
+    for (let i = 0; i < 200; i++) world.tick(16);
+    expect(t.y).toBeCloseTo(0.8, 1); // pés em 0 → origem em 0.8 (não afundou pra 0)
+    expect(c.grounded).toBe(true);
+  });
 });
 
 describe('CharacterBody + terreno', () => {
-  it('o personagem cai e PARA em cima do terreno (grounded, pulos resetam)', () => {
+  it('o personagem cai e PARA em cima do terreno via RAYCAST (grounded, pulos resetam)', () => {
+    // O chão do character vem do raycast do CharacterPhysicsSystem (o terreno entra
+    // como raiz), NÃO do TerrainCollisionSystem (que não trata Character — ver abaixo).
     const world = new World();
-    world.addSystem(new CharacterPhysicsSystem());
-    world.addSystem(new TerrainCollisionSystem());
-    const terrain = new Terrain({ size: 20, resolution: 20 });
-    const te = world.createEntity();
-    te.addComponent(new TerrainComponent(terrain, terrain.mesh)); // plano em y=0
+    const terrain = new Terrain({ size: 20, resolution: 20 }); // plano em y=0
+    const scene = new Object3D();
+    scene.add(terrain.mesh);
+    scene.updateMatrixWorld(true);
+    world.addSystem(new CharacterPhysicsSystem([scene]));
 
     const e = world.createEntity();
     const t = new TransformComponent(0, 5, 0); // começa no ar
@@ -175,9 +193,28 @@ describe('CharacterBody + terreno', () => {
     e.addComponent(c);
 
     for (let i = 0; i < 120; i++) world.tick(16); // ~2s caindo
-    expect(t.y).toBeCloseTo(0); // pousou na superfície (plano = 0)
+    expect(t.y).toBeCloseTo(0, 1); // pousou na superfície (plano = 0)
     expect(c.grounded).toBe(true);
     expect(c.velocityY).toBe(0);
     expect(c.jumpsUsed).toBe(0); // resetou ao aterrar
+  });
+
+  it('TerrainCollisionSystem NÃO move o CharacterBody (raycast é a autoridade única)', () => {
+    // Regressão: antes os dois aterravam o character e ele QUICAVA em rampas (raycast
+    // no triângulo vs heightAt bilinear divergem). Agora o TerrainCollision ignora
+    // Character — quem aterra é o raycast.
+    const world = new World();
+    world.addSystem(new TerrainCollisionSystem());
+    const terrain = new Terrain({ size: 20, resolution: 20 }); // plano em y=0
+    const te = world.createEntity();
+    te.addComponent(new TerrainComponent(terrain, terrain.mesh));
+
+    const e = world.createEntity();
+    const t = new TransformComponent(0, -5, 0); // ABAIXO do terreno
+    e.addComponent(t);
+    e.addComponent(new CharacterBodyComponent());
+
+    world.tick(16);
+    expect(t.y).toBe(-5); // TerrainCollision não subiu o character pra superfície
   });
 });
