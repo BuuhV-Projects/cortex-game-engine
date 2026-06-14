@@ -5,7 +5,6 @@ import { TransformComponent } from '../components/TransformComponent.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { KinematicBodyComponent } from '../components/KinematicBodyComponent.js';
-import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 
 const _v = new Vector3();
 
@@ -17,6 +16,12 @@ const _v = new Vector3();
  * então serve pra jogos 3D, 2.5D ou top-down (a altura vem de {@link Terrain.heightAt}).
  * Terreno é **sólido por padrão**: o {@link buildScene} liga este sistema quando a
  * cena tem terreno.
+ *
+ * ⚠️ **NÃO** trata `CharacterBodyComponent`: o personagem (cápsula) já aterra no
+ * terreno pelo **raycast** do `CharacterPhysicsSystem` (que mira a malha real da
+ * cena, terreno incluso). Ter os dois aterrando o mesmo corpo fazia ele **quicar**
+ * em rampas — o raycast pousa no triângulo da malha e o `heightAt` é bilinear, então
+ * as alturas divergem e brigavam a cada frame. Uma autoridade só (o raycast).
  *
  * Roda **depois da física** (priority 5) e **antes do** `Object3DSyncSystem`
  * (priority 10), pra a mesh refletir a posição já corrigida.
@@ -42,8 +47,7 @@ export class TerrainCollisionSystem extends System {
       if (!t) continue;
       const pb = e.getComponent(PlatformerBodyComponent);
       const kb = e.getComponent(KinematicBodyComponent);
-      const cb = e.getComponent(CharacterBodyComponent);
-      if (!pb && !kb && !cb) continue; // só corpos (o que cai/anda)
+      if (!pb && !kb) continue; // só corpos (o que cai/anda); Character aterra por raycast
 
       for (const tc of terrains) {
         const surfaceY = surfaceWorldY(tc, t.x, t.z);
@@ -57,11 +61,6 @@ export class TerrainCollisionSystem extends System {
           if (kb) {
             if (kb.velocityY < 0) kb.velocityY = 0;
             kb.grounded = true;
-          }
-          if (cb) {
-            if (cb.velocityY < 0) cb.velocityY = 0;
-            cb.grounded = true;
-            cb.jumpsUsed = 0; // tocou o chão → reseta os pulos
           }
         }
       }

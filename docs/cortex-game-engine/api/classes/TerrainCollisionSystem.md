@@ -6,7 +6,7 @@
 
 # Class: TerrainCollisionSystem
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L24)
+Defined in: [src/systems/TerrainCollisionSystem.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L29)
 
 **Colisão com o terreno** (heightmap) — mantém os corpos EM CIMA da superfície:
 se um corpo cai abaixo da altura do terreno no seu `(x, z)`, é subido até a
@@ -15,6 +15,12 @@ pra `PlatformerBodyComponent` (2.5D) e `KinematicBodyComponent` (genérico) —
 então serve pra jogos 3D, 2.5D ou top-down (a altura vem de [Terrain.heightAt](Terrain.md#heightat)).
 Terreno é **sólido por padrão**: o [buildScene](../functions/buildScene.md) liga este sistema quando a
 cena tem terreno.
+
+⚠️ **NÃO** trata `CharacterBodyComponent`: o personagem (cápsula) já aterra no
+terreno pelo **raycast** do `CharacterPhysicsSystem` (que mira a malha real da
+cena, terreno incluso). Ter os dois aterrando o mesmo corpo fazia ele **quicar**
+em rampas — o raycast pousa no triângulo da malha e o `heightAt` é bilinear, então
+as alturas divergem e brigavam a cada frame. Uma autoridade só (o raycast).
 
 Roda **depois da física** (priority 5) e **antes do** `Object3DSyncSystem`
 (priority 10), pra a mesh refletir a posição já corrigida.
@@ -64,7 +70,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `7`
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L26)
+Defined in: [src/systems/TerrainCollisionSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L31)
 
 Prioridade de execução deste sistema.
 
@@ -81,7 +87,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L25)
+Defined in: [src/systems/TerrainCollisionSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L30)
 
 Construtores dos componentes que este sistema requer.
 
@@ -107,7 +113,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`): `void`
 
-Defined in: [src/systems/TerrainCollisionSystem.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L28)
+Defined in: [src/systems/TerrainCollisionSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TerrainCollisionSystem.ts#L33)
 
 Executa a lógica do sistema para o frame/passo atual.
 

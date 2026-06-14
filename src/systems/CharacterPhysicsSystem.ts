@@ -20,6 +20,21 @@ function isUnder(obj: Object3D, root: Object3D): boolean {
 }
 
 /**
+ * `obj` é chrome do editor (gizmo/helper)? Checa o objeto **e seus ancestrais** —
+ * o `editorInternal` fica na RAIZ do helper (ex.: o `TransformControls`), mas o
+ * raycast acerta as peças FILHAS (XYZ/X/Y/Z/AXIS…) que não têm o flag. Sem subir a
+ * cadeia, o personagem "aterrava" no gizmo (a alça do gizmo lá em cima) e subia.
+ */
+function isEditorChrome(obj: Object3D): boolean {
+  let p: Object3D | null = obj;
+  while (p) {
+    if (p.userData?.['editorInternal'] === true) return true;
+    p = p.parent;
+  }
+  return false;
+}
+
+/**
  * Física vertical do {@link CharacterBodyComponent} (character controller estilo
  * UPBGE/Unity): aplica **gravidade** (limitada por `fallSpeedMax`), processa o
  * **pulo** (`jumpForce` até `maxJumps`), integra o Y e **aterra por COLISÃO** —
@@ -73,6 +88,7 @@ export class CharacterPhysicsSystem extends System {
       c.velocityY -= c.gravity * dt;
       if (c.velocityY < -c.fallSpeedMax) c.velocityY = -c.fallSpeedMax;
       t.y += c.velocityY * dt;
+      const wasGrounded = c.grounded; // estado do tick anterior (pro snap de descida)
       c.grounded = false;
 
       // Altura do chão sob os pés. A GEOMETRIA REAL (raycast) VENCE: acha a primeira
@@ -88,16 +104,27 @@ export class CharacterPhysicsSystem extends System {
         const self = e.getComponent(Object3DComponent)?.object;
         const hits = this.ray.intersectObjects(this.roots, true);
         for (const h of hits) {
-          if (self && isUnder(h.object, self)) continue;
-          if (h.object.userData?.['editorInternal']) continue;
+          if (self && isUnder(h.object, self)) continue; // ignora o próprio mesh
+          if (isEditorChrome(h.object)) continue; // ignora gizmo/helpers do editor
           groundHeight = h.point.y; // 1ª superfície válida (a mais próxima abaixo da origem)
           break;
         }
       }
       if (groundHeight === -Infinity) groundHeight = c.groundY; // sem geometria → piso de segurança
 
-      // Aterra (mesmo tick → sem oscilar): caindo e com os pés no/abaixo do chão.
-      if (c.velocityY <= 0 && groundHeight > -Infinity && t.y <= groundHeight + SKIN) {
+      // Aterra OU "gruda" no chão (mesmo tick → sem oscilar):
+      // - **Pousa** quando os pés alcançam a superfície (`t.y <= chão`).
+      // - **Snap pra baixo** quando JÁ estava no chão e ele desceu dentro de um
+      //   degrau (`stepHeight`): andar em terreno ondulado sobe na hora (a lógica de
+      //   degrau é instantânea) mas a descida era só pela gravidade — então o
+      //   personagem ia **catracando pra cima** (subia rápido, descia devagar) e
+      //   nunca recuperava a altura. Grudar na descida elimina esse acúmulo.
+      //   Pulando (`velocityY > 0`) nem entra aqui, então não gruda no ar.
+      if (
+        c.velocityY <= 0 &&
+        groundHeight > -Infinity &&
+        (t.y <= groundHeight + SKIN || (wasGrounded && t.y - groundHeight <= c.stepHeight))
+      ) {
         t.y = groundHeight;
         c.velocityY = 0;
         c.grounded = true;
