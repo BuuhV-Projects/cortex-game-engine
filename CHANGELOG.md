@@ -1,3 +1,18 @@
+# [0.30.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.29.0...v0.30.0) (2026-06-15)
+
+
+### Bug Fixes
+
+* **physics:** estabilizar aterrar de Character no terreno ([92bc43b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/92bc43bb453f61892b09714552828153b14683fe))
+* **physics:** footOffset — character com mesh de origem central não afunda ([23e5b33](https://github.com/BuuhV-Projects/cortex-game-engine/commit/23e5b339faba11a74a39ddabb11ec8aea6055653))
+
+
+### Features
+
+* **engine:** demo padrão em 1ª pessoa (terreno + player cápsula) ([d8501c1](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d8501c1b843bf470888b81eca2c2c4addac0775a))
+* **engine:** setupTopDown + movimento top-down por eixo (input é do jogo) ([e47702f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e47702f122db519c0614ac4be5e11735130304fa))
+* **physics:** expor impulso/velocidade/reset no PhysicsBody ([7b7c697](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7b7c697b4aef7052b9aca600b04809633dea2725))
+
 # [0.29.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.28.0...v0.29.0) (2026-06-13)
 
 
