@@ -302,6 +302,61 @@ describe('GamepadManager', () => {
     expect(connectHandler).toHaveBeenCalledTimes(2);
   });
 
+  // ── Reconexão via eventos do window (Chromium/Electron) ────────────────────
+  // O Chromium só re-expõe o pad em getGamepads() após `gamepadconnected`; o
+  // manager ouve esse evento e re-sincroniza na hora (ADR-0067).
+
+  it('redetecta o pad ao receber `gamepadconnected` do window', () => {
+    const win = new EventTarget();
+    vi.stubGlobal('window', win);
+
+    const gm = new GamepadManager();
+    const connectHandler = vi.fn();
+    gm.addEventListener('gamepad:connect', connectHandler);
+
+    // O pad religado já aparece em getGamepads(); o evento do window dispara o sync.
+    currentGamepads[0] = makeBrowserGamepad({ index: 0, id: 'xbox', buttons: [false], axes: [0] });
+    win.dispatchEvent(new Event('gamepadconnected'));
+
+    expect(connectHandler).toHaveBeenCalledOnce();
+    expect(gm.getGamepad(0)?.id).toBe('xbox');
+    gm.dispose();
+  });
+
+  it('limpa o slot ao receber `gamepaddisconnected` do window', () => {
+    const win = new EventTarget();
+    vi.stubGlobal('window', win);
+
+    const gm = new GamepadManager();
+    currentGamepads[0] = makeBrowserGamepad({ index: 0, buttons: [false], axes: [0] });
+    gm.poll();
+    expect(gm.getGamepad(0)).not.toBeNull();
+
+    const disconnectHandler = vi.fn();
+    gm.addEventListener('gamepad:disconnect', disconnectHandler);
+    currentGamepads[0] = null;
+    win.dispatchEvent(new Event('gamepaddisconnected'));
+
+    expect(disconnectHandler).toHaveBeenCalledOnce();
+    expect(gm.getGamepad(0)).toBeNull();
+    gm.dispose();
+  });
+
+  it('dispose remove os listeners (não re-sincroniza depois)', () => {
+    const win = new EventTarget();
+    vi.stubGlobal('window', win);
+
+    const gm = new GamepadManager();
+    gm.dispose();
+
+    const connectHandler = vi.fn();
+    gm.addEventListener('gamepad:connect', connectHandler);
+    currentGamepads[0] = makeBrowserGamepad({ index: 0, buttons: [false], axes: [0] });
+    win.dispatchEvent(new Event('gamepadconnected'));
+
+    expect(connectHandler).not.toHaveBeenCalled();
+  });
+
   // ── Extende EventTarget ────────────────────────────────────────────────────
 
   it('GamepadManager é instância de EventTarget', () => {

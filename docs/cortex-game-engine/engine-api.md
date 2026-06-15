@@ -120,6 +120,10 @@ plano XZ (vira na direção do andar) + câmera 3/4 que segue o player. O **play
 até as constantes de botão do Xbox, factory teclado/joystick) e passa o **eixo de
 movimento** ao `setupTopDown` via `readMove: () => ({ x, y })` (−1..1; analógico no stick).
 
+> O `GamepadManager` já ouve `gamepadconnected`/`gamepaddisconnected` no `window`
+> pra **reconexão confiável** — religar o controle volta a funcionar sem reiniciar
+> (ADR-0067). Continue só chamando `poll()` por frame; use `dispose()` no teardown.
+
 ```ts
 import { Game, buildScene, setupTopDown, GamepadManager } from 'cortex-game-engine'
 import level from './scenes/level.json'  // chão/terrain + player nó `character`

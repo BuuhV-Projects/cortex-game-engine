@@ -67,13 +67,43 @@ const MAX_GAMEPADS = 4;
 export class GamepadManager extends EventTarget {
   private readonly _deadzone: number;
   private readonly _states: (GamepadState | null)[] = new Array(MAX_GAMEPADS).fill(null);
+  /**
+   * Re-sincroniza o estado na (re)conexão/desconexão do `window`. Ver o motivo no
+   * construtor; a função é guardada pra poder ser removida em {@link dispose}.
+   */
+  private readonly _handleConnectionChange = (): void => {
+    this.poll();
+  };
 
   constructor(options: GamepadManagerOptions = {}) {
     super();
     this._deadzone = options.deadzone ?? 0.15;
+
+    // Reconexão confiável (Chromium/Electron): depois de RELIGAR um gamepad, o
+    // `navigator.getGamepads()` só volta a expor o dispositivo após o evento
+    // `gamepadconnected` (disparado quando o usuário aperta um botão). Sem ouvir
+    // esse evento, o polling sozinho pode nunca redetectar o pad reconectado — daí
+    // a queixa de "liguei o controle de novo e não reconecta". Os listeners forçam
+    // um `poll()` imediato na (re)conexão/desconexão; o poll por frame continua
+    // sendo a fonte de verdade do estado. Ver ADR-0067. No-op fora do browser.
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('gamepadconnected', this._handleConnectionChange);
+      window.addEventListener('gamepaddisconnected', this._handleConnectionChange);
+    }
   }
 
   // ─── Public API ─────────────────────────────────────────────────────────────
+
+  /**
+   * Remove os listeners de (re)conexão registrados no `window`. Chame ao descartar
+   * o manager (hot-reload/teardown) pra não vazar listeners. No-op fora do browser.
+   */
+  dispose(): void {
+    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+      window.removeEventListener('gamepadconnected', this._handleConnectionChange);
+      window.removeEventListener('gamepaddisconnected', this._handleConnectionChange);
+    }
+  }
 
   /**
    * Lê o estado atual de todos os gamepads do `navigator`, atualiza o
