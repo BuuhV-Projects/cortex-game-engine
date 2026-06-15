@@ -6,7 +6,7 @@
 
 # Class: TopDownMovementSystem
 
-Defined in: [src/systems/TopDownMovementSystem.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L40)
+Defined in: [src/systems/TopDownMovementSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L44)
 
 Movimento **top-down** (farm sim / RPG estilo Stardew): lê o **eixo** de um
 [MoveAxisProvider](../type-aliases/MoveAxisProvider.md) fornecido pelo jogo e move o player no **plano XZ**
@@ -40,7 +40,7 @@ game.world.addSystem(move)
 
 > **new TopDownMovementSystem**(`readMove`, `options?`): `TopDownMovementSystem`
 
-Defined in: [src/systems/TopDownMovementSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L46)
+Defined in: [src/systems/TopDownMovementSystem.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L51)
 
 #### Parameters
 
@@ -87,7 +87,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `2`
 
-Defined in: [src/systems/TopDownMovementSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L42)
+Defined in: [src/systems/TopDownMovementSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L46)
 
 Prioridade de execução deste sistema.
 
@@ -104,7 +104,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [src/systems/TopDownMovementSystem.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L41)
+Defined in: [src/systems/TopDownMovementSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L45)
 
 Construtores dos componentes que este sistema requer.
 
@@ -130,7 +130,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/TopDownMovementSystem.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L54)
+Defined in: [src/systems/TopDownMovementSystem.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L60)
 
 Executa a lógica do sistema para o frame/passo atual.
 

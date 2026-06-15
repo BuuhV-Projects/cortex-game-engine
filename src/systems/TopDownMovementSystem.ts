@@ -13,8 +13,12 @@ export type MoveAxisProvider = () => { x: number; y: number };
 
 /** Opções do {@link TopDownMovementSystem}. */
 export interface TopDownMovementOptions {
-  /** Velocidade de caminhada no plano (unidades/s). Default `5`. */
-  moveSpeed?: number;
+  /**
+   * Velocidade no plano (unidades/s). Pode ser um **número fixo** ou uma **função
+   * lida por frame** — o jogo a usa pra marchas (walk/run), zonas lentas, status, etc.
+   * (o engine só aplica `eixo × velocidade`; a política é do jogo, ADR-0066). Default `5`.
+   */
+  moveSpeed?: number | (() => number);
 }
 
 /**
@@ -41,14 +45,16 @@ export class TopDownMovementSystem extends System {
   static override requiredComponents = [TransformComponent, CharacterBodyComponent];
   override priority = 2;
 
-  private readonly moveSpeed: number;
+  /** Velocidade resolvida por frame (número vira função constante). */
+  private readonly moveSpeed: () => number;
 
   constructor(
     private readonly readMove: MoveAxisProvider,
     options: TopDownMovementOptions = {},
   ) {
     super();
-    this.moveSpeed = options.moveSpeed ?? 5;
+    const speed = options.moveSpeed ?? 5;
+    this.moveSpeed = typeof speed === 'function' ? speed : (): number => speed;
   }
 
   override update(entities: Entity[], deltaTime: number): void {
@@ -70,7 +76,8 @@ export class TopDownMovementSystem extends System {
     if (len > 0) {
       // Clampa a magnitude a 1 (diagonal de teclado não acelera), mas PRESERVA o
       // analógico do stick (len < 1 = andar mais devagar).
-      const scale = (this.moveSpeed * dt * (len > 1 ? 1 : len)) / len;
+      const moveSpeed = this.moveSpeed();
+      const scale = (moveSpeed * dt * (len > 1 ? 1 : len)) / len;
       t.x += dx * scale;
       t.z += dz * scale;
       // Vira pra direção do movimento (modelo com frente no +Z). Ajustável por modelo.

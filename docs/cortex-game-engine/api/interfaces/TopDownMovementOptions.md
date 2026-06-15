@@ -14,8 +14,10 @@ Opções do [TopDownMovementSystem](../classes/TopDownMovementSystem.md).
 
 ### moveSpeed?
 
-> `optional` **moveSpeed?**: `number`
+> `optional` **moveSpeed?**: `number` \| (() => `number`)
 
-Defined in: [src/systems/TopDownMovementSystem.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L17)
+Defined in: [src/systems/TopDownMovementSystem.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L21)
 
-Velocidade de caminhada no plano (unidades/s). Default `5`.
+Velocidade no plano (unidades/s). Pode ser um **número fixo** ou uma **função
+lida por frame** — o jogo a usa pra marchas (walk/run), zonas lentas, status, etc.
+(o engine só aplica `eixo × velocidade`; a política é do jogo, ADR-0066). Default `5`.

@@ -67,6 +67,24 @@ describe('TopDownMovementSystem', () => {
     expect(t.rotationY).toBe(1.23); // mantém (não recalcula sem movimento)
   });
 
+  it('moveSpeed pode ser função lida por frame (marcha walk/run)', () => {
+    const axis = { x: 1, y: 0 };
+    let speed = 2; // walk
+    const world = new World();
+    world.addSystem(new TopDownMovementSystem(() => axis, { moveSpeed: () => speed }));
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 0, 0);
+    e.addComponent(t);
+    e.addComponent(new CharacterBodyComponent());
+
+    world.tick(1000);
+    expect(t.x).toBeCloseTo(2); // andou na velocidade walk
+
+    speed = 5; // run (a função é relida no próximo frame)
+    world.tick(1000);
+    expect(t.x).toBeCloseTo(2 + 5); // acelerou sem recriar o sistema
+  });
+
   it('marca o player como alvo da câmera (FollowCameraTargetComponent) no 1º tick', () => {
     const world = new World();
     world.addSystem(new TopDownMovementSystem(() => ({ x: 0, y: 0 })));
