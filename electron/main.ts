@@ -501,6 +501,7 @@ const VENDOR_TYPE_MODULES = {
     'Kit',
     'Background',
     'SceneAnimator',
+    'ModularCharacter',
     'Platformer',
     'FirstPerson',
     'TopDown',

@@ -151,6 +151,27 @@ game.onUpdate(() => { if (interact()) usarFerramenta() })
 > dispositivo, constantes de layout Xbox) é código **do jogo** — o engine não crava
 > nada disso. Ver `utils/controls.ts` do hearthvale-game como exemplo.
 
+### Personagem modular (criador de personagem) — ADR-0068
+
+`composeModularCharacter(rig, parts)` / `loadModularCharacter(rigUrl, partUrls[])`
+montam um personagem de **peças que compartilham o mesmo esqueleto** (corpo/pele,
+rosto, cabelo, roupa), rebindando cada peça nos ossos do rig **por nome** — base de um
+criador com **mistura livre** (sem pré-assar combinações). O `rig.glb` traz esqueleto +
+animações (o mesh próprio dele é descartado); cada peça é um `.glb` skinado no mesmo
+esqueleto, sem clips. Retorna `{ object, animator }` — adicione `object` à cena e dê
+`animator.update(dt)` no loop (o personagem composto **não** passa pelo
+`builtScene.update`). Pés/origem: o composto tem origem nos pés (como qualquer `.glb`).
+
+```ts
+import { loadModularCharacter } from 'cortex-game-engine'
+const { object, animator } = await loadModularCharacter('assets/models/parts/rig.v1.glb',
+  ['body_10.v1.glb', 'outfit_01.v1.glb', 'face_f_usual02.v1.glb', 'hair_f_03.v1.glb'])
+object.scale.setScalar(1.3)
+scene.add(object)          // ou: playerObject.add(object) pra herdar a física do nó character
+animator.play('Idle_Relaxed')
+game.onUpdate((dt) => animator.update(dt))
+```
+
 ## Modo editor embutido (automático em dev)
 
 **Você NÃO liga o editor — o `Game` faz isso sozinho em desenvolvimento.** Ao usar

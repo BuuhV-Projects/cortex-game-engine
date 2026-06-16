@@ -78,6 +78,7 @@ export * from './scene/SceneBuilder.js';
 export * from './scene/Kit.js';
 export * from './scene/Background.js';
 export * from './scene/SceneAnimator.js';
+export * from './scene/ModularCharacter.js';
 export * from './scene/Platformer.js';
 export * from './scene/FirstPerson.js';
 export * from './scene/TopDown.js';
