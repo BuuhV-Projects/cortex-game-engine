@@ -1,3 +1,10 @@
+## [0.30.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.30.0...v0.30.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **input:** GamepadManager reconecta o controle via eventos do window ([b092d88](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b092d888870ec739a73878bdb5e7fe30fdfc6bf2))
+
 # [0.30.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.29.0...v0.30.0) (2026-06-15)
 
 
