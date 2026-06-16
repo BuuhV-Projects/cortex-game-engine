@@ -172,6 +172,28 @@ animator.play('Idle_Relaxed')
 game.onUpdate((dt) => animator.update(dt))
 ```
 
+### Multi-cena (telas alternativas) — ADR-0069
+
+`game.setActiveScene(scene, camera)` troca a cena/câmera renderizadas por frame — pra
+**criador de personagem, menus, troca de região** sem a cena do jogo atrás. Volte com
+`game.setActiveScene(game.scene, game.camera)`. O `world`/input são compartilhados:
+**pause o gameplay** (`pauseWhen`) na tela alternativa. Combine com a tela de loading.
+
+```ts
+import { Scene, PerspectiveCamera, AmbientLight, DirectionalLight, Color, createDomLoadingScreen } from 'cortex-game-engine'
+const menu = new Scene()
+menu.getThreeScene().background = new Color('#1b2b1b')
+menu.add(new AmbientLight(0xffffff, 1), new DirectionalLight(0xffffff, 0.8))
+const menuCam = new PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100)
+menuCam.position.set(0, 1.4, 3); menuCam.lookAt(0, 1, 0)
+
+const loading = createDomLoadingScreen()
+loading.show()
+// ...monte a cena (loadGLB/loadModularCharacter)...
+game.setActiveScene(menu, menuCam)
+loading.hide()
+```
+
 ## Modo editor embutido (automático em dev)
 
 **Você NÃO liga o editor — o `Game` faz isso sozinho em desenvolvimento.** Ao usar

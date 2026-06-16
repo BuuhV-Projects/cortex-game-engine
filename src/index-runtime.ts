@@ -104,6 +104,9 @@ export {
   InstancedMesh,
   Object3D,
   Group,
+  // Câmeras (pra multi-cena: criar uma câmera própria de menu/criador)
+  PerspectiveCamera,
+  OrthographicCamera,
   // Geometrias
   BoxGeometry,
   SphereGeometry,

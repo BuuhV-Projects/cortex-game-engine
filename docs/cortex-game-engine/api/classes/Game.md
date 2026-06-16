@@ -33,7 +33,7 @@ game.start()
 
 > **new Game**(`options`): `Game`
 
-Defined in: [src/core/Game.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L107)
+Defined in: [src/core/Game.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L111)
 
 #### Parameters
 
@@ -123,7 +123,7 @@ Mundo ECS — registre sistemas com `world.addSystem(...)`.
 
 > **get** **editorActive**(): `boolean`
 
-Defined in: [src/core/Game.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L182)
+Defined in: [src/core/Game.ts:188](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L188)
 
 `true` quando o editor (F2) está ativo. Use pra pausar a gameplay enquanto
 edita: `system.pauseWhen = () => game.editorActive`. `false` se não há editor
@@ -141,7 +141,7 @@ edita: `system.pauseWhen = () => game.editorActive`. `false` se não há editor
 
 > **get** **gameplayPaused**(): `boolean`
 
-Defined in: [src/core/Game.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L191)
+Defined in: [src/core/Game.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L197)
 
 `true` quando a gameplay está **pausada** durante o play (pause Unity-style,
 acionado pelo transport da IDE). Combine com `editorActive` pra pausar
@@ -159,7 +159,7 @@ sistemas: `system.pauseWhen = () => game.editorActive || game.gameplayPaused`.
 
 > **get** **hasEditor**(): `boolean`
 
-Defined in: [src/core/Game.ts:173](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L173)
+Defined in: [src/core/Game.ts:179](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L179)
 
 `true` se o editor está ligado (bundle de dev).
 
@@ -173,7 +173,7 @@ Defined in: [src/core/Game.ts:173](https://github.com/BuuhV-Projects/cortex-game
 
 > **onUpdate**(`callback`): `void`
 
-Defined in: [src/core/Game.ts:168](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L168)
+Defined in: [src/core/Game.ts:174](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L174)
 
 Registra um callback chamado a cada frame (delta em **segundos**), antes do
 `world.tick`. É o lugar pra lógica de jogo que não está num System.
@@ -190,11 +190,50 @@ Registra um callback chamado a cada frame (delta em **segundos**), antes do
 
 ***
 
+### setActiveScene()
+
+> **setActiveScene**(`scene`, `camera`): `void`
+
+Defined in: [src/core/Game.ts:232](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L232)
+
+**Multi-cena:** define a cena + câmera renderizadas a cada frame. Use pra telas
+alternativas (criador de personagem, menus, troca de região) sem recriar o `Game`.
+Sem argumentos (ou passando `game.scene`/`game.camera`), volta pra cena do jogo.
+
+O `world` (ECS) e o input continuam os mesmos — pause os sistemas de gameplay
+(`pauseWhen`) enquanto mostra outra cena. A cena alternativa renderiza **direto**
+(sem o PostFX da cena do jogo). Tipicamente combinado com uma tela de loading
+([createDomLoadingScreen](../functions/createDomLoadingScreen.md)) na transição. Ver ADR-0069.
+
+#### Parameters
+
+##### scene
+
+[`Scene`](Scene.md)
+
+##### camera
+
+`PerspectiveCamera` \| `OrthographicCamera`
+
+#### Returns
+
+`void`
+
+#### Example
+
+```ts
+game.setActiveScene(creatorScene, creatorCamera) // mostra o criador
+// ...ao confirmar:
+game.setActiveScene(game.scene, game.camera)      // volta pro jogo
+```
+
+***
+
 ### setPostFX()
 
 > **setPostFX**(`postfx`): `void`
 
-Defined in: [src/core/Game.ts:207](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L207)
+Defined in: [src/core/Game.ts:213](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L213)
 
 Liga um pipeline de pós-processamento (tipicamente um `PostFX`) usado pra
 renderizar o JOGO — é o principal lugar pra atmosfera (bloom, vignette, tone
@@ -226,7 +265,7 @@ game.setPostFX(fx)
 
 > **start**(): `void`
 
-Defined in: [src/core/Game.ts:241](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L241)
+Defined in: [src/core/Game.ts:268](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L268)
 
 Inicia o loop.
 
@@ -240,7 +279,7 @@ Inicia o loop.
 
 > **stop**(): `void`
 
-Defined in: [src/core/Game.ts:246](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L246)
+Defined in: [src/core/Game.ts:273](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L273)
 
 Para o loop.
 

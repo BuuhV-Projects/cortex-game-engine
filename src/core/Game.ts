@@ -103,6 +103,10 @@ export class Game {
   private readonly _editor: GameEditor | null;
   private _onUpdate: ((deltaSeconds: number) => void) | null = null;
   private _postfx: { render(): void } | null = null;
+  /** Cena/câmera renderizadas a cada frame. Por padrão são as do jogo; troque com
+   * {@link setActiveScene} pra multi-cena (criador de personagem, menus, regiões). */
+  private _activeScene: Scene;
+  private _activeCamera: PerspectiveCamera | OrthographicCamera;
 
   constructor(options: GameOptions) {
     const {
@@ -158,6 +162,8 @@ export class Game {
     // ninguém registrou → _editor fica null e o jogo roda sem editor.
     this._editor = _editorAttacher ? _editorAttacher(this) : null;
 
+    this._activeScene = this.scene;
+    this._activeCamera = this.camera;
     this._loop = new GameLoop({ onUpdate: (dtMs) => this._tick(dtMs) });
   }
 
@@ -208,6 +214,26 @@ export class Game {
     this._postfx = postfx;
   }
 
+  /**
+   * **Multi-cena:** define a cena + câmera renderizadas a cada frame. Use pra telas
+   * alternativas (criador de personagem, menus, troca de região) sem recriar o `Game`.
+   * Sem argumentos (ou passando `game.scene`/`game.camera`), volta pra cena do jogo.
+   *
+   * O `world` (ECS) e o input continuam os mesmos — pause os sistemas de gameplay
+   * (`pauseWhen`) enquanto mostra outra cena. A cena alternativa renderiza **direto**
+   * (sem o PostFX da cena do jogo). Tipicamente combinado com uma tela de loading
+   * ({@link createDomLoadingScreen}) na transição. Ver ADR-0069.
+   *
+   * @example
+   * game.setActiveScene(creatorScene, creatorCamera) // mostra o criador
+   * // ...ao confirmar:
+   * game.setActiveScene(game.scene, game.camera)      // volta pro jogo
+   */
+  setActiveScene(scene: Scene, camera: PerspectiveCamera | OrthographicCamera): void {
+    this._activeScene = scene;
+    this._activeCamera = camera;
+  }
+
   /** Ajusta o frustum da câmera ortográfica pra `width`×`height` (px) via `pixelsPerUnit`. */
   private applyOrthoFrustum(width: number, height: number): void {
     const cam = this.camera as OrthographicCamera;
@@ -228,12 +254,13 @@ export class Game {
     const editorCamera = this._editor?.activeCamera() ?? null;
     if (editorCamera) {
       // No editor: render direto pela câmera livre (cena crua, sem pós).
-      this.renderer.render(this.scene.getThreeScene(), editorCamera);
-    } else if (this._postfx) {
-      // No jogo: pipeline de pós-processamento (mood/bloom/etc.).
+      this.renderer.render(this._activeScene.getThreeScene(), editorCamera);
+    } else if (this._postfx && this._activeScene === this.scene) {
+      // No jogo: pipeline de pós-processamento (mood/bloom/etc.). Só na cena do jogo —
+      // cenas alternativas (criador/menu) renderizam direto.
       this._postfx.render();
     } else {
-      this.renderer.render(this.scene.getThreeScene(), this.camera);
+      this.renderer.render(this._activeScene.getThreeScene(), this._activeCamera);
     }
   }
 

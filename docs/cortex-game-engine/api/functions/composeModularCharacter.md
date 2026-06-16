@@ -8,7 +8,7 @@
 
 > **composeModularCharacter**(`rig`, `parts`): [`ModularCharacter`](../interfaces/ModularCharacter.md)
 
-Defined in: src/scene/ModularCharacter.ts:49
+Defined in: [src/scene/ModularCharacter.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ModularCharacter.ts#L49)
 
 Compõe um personagem **modular** a partir de um **rig** (esqueleto + animações) e de
 **peças** (corpo/pele, rosto, cabelo, roupa…) que foram exportadas do **mesmo
