@@ -1,3 +1,12 @@
+# [0.31.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.30.1...v0.31.0) (2026-06-16)
+
+
+### Features
+
+* **core:** multi-cena via game.setActiveScene (+ export PerspectiveCamera/Ortho) ([093ec3a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/093ec3a7435faf55bc3b7ddbe17f1331a827914a))
+* **scene:** personagem modular (composeModularCharacter) p/ criador ([63f22da](https://github.com/BuuhV-Projects/cortex-game-engine/commit/63f22da3e50e7b6e030f7c3a541dcd14de990957))
+* **topdown:** moveSpeed dinâmico (número ou função por frame) ([033ead7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/033ead766c323472a21a3e15b92fa9ebc165898a))
+
 ## [0.30.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.30.0...v0.30.1) (2026-06-15)
 
 
