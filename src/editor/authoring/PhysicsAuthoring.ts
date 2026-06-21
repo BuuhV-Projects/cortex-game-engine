@@ -8,6 +8,7 @@ import { RapierPhysicsSystem } from '../../systems/RapierPhysicsSystem.js';
 import { RapierPhysics } from '../../physics/RapierPhysics.js';
 import type { Entity } from '../../ecs/Entity.js';
 import type { BodyType } from '../../scene/SceneBuilder.js';
+import { getWorldBounds } from '../../scene/SceneAssets.js';
 import type { PhysicsApi, ColliderApi, CharacterEditState, RapierEditState } from '../EditorInspector.js';
 import type { EditorAuthoringContext } from './AuthoringContext.js';
 import { debug } from '../../core/debug.js';
@@ -63,7 +64,13 @@ export function createPhysicsApi(ctx: EditorAuthoringContext, colliderApi: Colli
     const e = game.world.createEntity();
     e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
     e.addComponent(new Object3DComponent(obj));
-    e.addComponent(new CharacterBodyComponent(params));
+    // footOffset: distância da origem do mesh até os pés (base). Sem isso, a
+    // primitiva (origem no CENTRO) afunda metade da altura ao aterrar. Calculado
+    // igual ao buildScene (SceneBuilder §character) pra a autoria ao vivo bater com
+    // a cena recarregada — senão um Character criado pelo Inspector afunda e o
+    // declarado no JSON não.
+    const footOffset = Math.max(0, obj.position.y - getWorldBounds(obj).bottomY);
+    e.addComponent(new CharacterBodyComponent({ ...params, footOffset }));
     ensureCharacterSystems();
   };
 

@@ -175,7 +175,12 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   **primitivas** (cilindro/box/esfera) têm origem no **centro** → sem compensar, o mesh
   afundava metade da altura. O `buildScene` calcula `footOffset` (origem→base) do bounds
   e o `CharacterPhysicsSystem` ancora `t.y − footOffset`. No FPS não aparecia (corpo
-  escondido); apareceu no top-down (corpo visível).
+  escondido); apareceu no top-down (corpo visível). ⚠️ A **autoria ao vivo** (Inspector
+  → Física → Character, `PhysicsAuthoring.addCharacterEntity`) calcula o **mesmo**
+  `footOffset` — senão um Character criado pelo Inspector afundava no Play (`footOffset`
+  0) enquanto o declarado no JSON não. **Nota de design:** Character é p/ quem **anda**
+  (player/NPC com gravidade); NPC/prop **parado** deve ser `static`, não Character (o
+  Character é dirigido pela física, então o gizmo "briga" com ele no editor).
 - **Raycast de gameplay tem que ignorar o chrome do editor.** O gizmo
   (`TransformControls`) e helpers ficam **na mesma cena** (bundle de dev). O
   `editorInternal` fica na **raiz** do helper, mas o raycast acerta as **peças
