@@ -194,6 +194,45 @@ game.setActiveScene(menu, menuCam)
 loading.hide()
 ```
 
+## Diálogo + UI in-game (narrativa) — ADR-0070
+
+Primeira **UI de runtime** do engine (DOM overlay, vai pro build). Diálogo é **DADO**:
+um grafo (nós com fala + escolhas) que o `DialogueRunner` (lógica pura) percorre.
+Escolhas/nós podem **gravar flags** (`set` → `StoryState`) e **conceder pistas**
+(`give` → callback `onClue`, que o **jogo** liga ao seu sistema de investigação — o
+engine não sabe o que é uma pista). `startDialogue` conecta runner + UI + teclado.
+
+```ts
+import { startDialogue, StoryState, parseDialogueGraph } from 'cortex-game-engine'
+
+const story = new StoryState() // flags de história (base do save narrativo)
+const graph = parseDialogueGraph({
+  id: 'marlene-001', start: 'intro',
+  nodes: [
+    { id: 'intro', speaker: 'Marlene', text: 'Você veio pelo Gabriel?', choices: [
+      { text: 'Vim. Me conta.', next: 'conta', set: { ouviu_marlene: true } },
+      { text: 'Quem é você?', next: null },
+    ]},
+    { id: 'conta', speaker: 'Marlene', text: 'Ele foi à feira...', give: 'pista_feira', next: null },
+  ],
+})
+
+const dlg = startDialogue(graph, {
+  story,
+  onClue: (id) => caso.collectClue(id),   // 'pista_feira' → investigação DO JOGO
+  onEnd: () => { /* retomar gameplay */ },
+})
+// pause o gameplay enquanto conversa: system.pauseWhen = () => dlg.active
+```
+
+- **`DialogueRunner`** (puro, testável): `start()`, `choose(i)`, `advance()`, `done`.
+  Avançar linha simples = `advance()`; escolher = `choose(indiceOriginal)`.
+- **`StoryState`**: `get/set/has/hasAll/apply/toJSON/fromJSON`. `requires` numa escolha
+  só a mostra quando as flags estão ligadas.
+- **UI**: caixa DOM no rodapé; `[E]/Enter/Espaço` avança, `1..9`/clique escolhem.
+- O grafo pode vir de `.json` importado (`import g from './dialogues/x.json'` →
+  `parseDialogueGraph(g)`).
+
 ## Modo editor embutido (automático em dev)
 
 **Você NÃO liga o editor — o `Game` faz isso sozinho em desenvolvimento.** Ao usar

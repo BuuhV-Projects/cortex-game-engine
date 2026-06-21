@@ -95,6 +95,15 @@ export * from './io/HttpSceneFileWriter.js';
 export * from './io/TauriSceneFileWriter.js';
 export * from './io/autoDetectSceneFileWriter.js';
 
+// ─── Narrativa: estado de história + diálogo (ADR-0070) ───────────────────────
+// StoryState (flags / base do save narrativo) + diálogo data-driven: grafo (Zod),
+// runner puro (testável) e a 1ª UI de runtime do engine (DOM overlay).
+export * from './narrative/StoryState.js';
+export * from './dialogue/DialogueGraph.js';
+export * from './dialogue/DialogueRunner.js';
+export * from './dialogue/DialogueUI.js';
+export * from './dialogue/startDialogue.js';
+
 // ─── Re-exports de three usados na criação de cenas ───────────────────────────
 // Permite que projetos importem essas classes diretamente de
 // `cortex-game-engine` em vez de depender de `three` no node_modules

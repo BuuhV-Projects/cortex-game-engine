@@ -190,6 +190,27 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   (`colorNode` etc.; ex.: splat do terreno, ADR-0063). Valide rendering no harness
   (`.design-proto/`) com `WebGPURenderer`, não com `WebGLRenderer` clássico.
 
+## 8b. Narrativa: diálogo + UI de runtime (`src/dialogue/`, `src/narrative/`) — ADR-0070
+
+Primeiro pedaço de **UI de runtime** do engine e a base de jogos narrativos. Tudo
+**desacoplado** do resto (sem ECS, sem Three): diálogo é **dado** (como animação,
+ADR-0054), não comportamento — passa no teste do ADR-0055 (não há conflito de dono;
+não escreve transform).
+
+- **`DialogueGraph`** (Zod) — grafo de conversa: nós (`text`/`speaker`/`choices`/`next`)
+  com efeitos `set` (flags) e `give` (pista). `parseDialogueGraph` valida + checa
+  integridade referencial.
+- **`DialogueRunner`** — percorre o grafo. **Lógica pura/testável**: `start`/`choose`/
+  `advance`/`done`. Aplica `set` no `StoryState` e emite `give` via `onClue`.
+- **`StoryState`** (`src/narrative/`) — store de flags, serializável. **Base do save
+  narrativo.** O engine **não** tem sistema de investigação/caso — isso é do jogo
+  (decisão registrada no ADR-009 do DDD-61); a ponte é só o callback `onClue` (id de
+  pista, string). O engine não sabe o que é uma pista.
+- **UI** (`DialogueUI` + `startDialogue`) — **DOM overlay** (espelha
+  `createDomLoadingScreen`, §6/`LoadingScreen`), não quads no Three. `startDialogue`
+  liga runner+UI+teclado e devolve um handle com `active` (use em `pauseWhen`). ⚠️ O
+  gameplay (WASD/mouse-look) deve **pausar/ignorar** input enquanto `active`.
+
 ## 9. Logging de debug (`src/core/debug.ts`)
 
 **Sempre use `debug(escopo, ...)` no lugar de `console.log` cru.** Fica desligado por
@@ -210,6 +231,7 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | ECS | `src/ecs/` |
 | Componentes / Sistemas | `src/components/` · `src/systems/` |
 | Cena data-driven | `src/scene/` (`SceneDefinition`, `SceneBuilder`) |
+| Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) |
