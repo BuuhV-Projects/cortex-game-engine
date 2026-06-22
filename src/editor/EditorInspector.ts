@@ -264,6 +264,8 @@ export interface TerrainApi {
    * conteúdo do arquivo (data URL lida do seletor de arquivo).
    */
   importTexture(obj: Object3D, name: string, dataUrl: string): void;
+  /** Abre o modal de seleção de textura com preview (atribuído pelo attachEditor). Opcional. */
+  pickTexture?(obj: Object3D): void;
 }
 
 /** Estado de animação do objeto selecionado (clipes do `.glb`). */

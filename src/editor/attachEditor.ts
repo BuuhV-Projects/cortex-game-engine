@@ -577,6 +577,7 @@ export function attachEditor(game: Game): GameEditor {
   // Estradas (ADR-0072): autoria + seletor de textura em modal (preview).
   const roadApiCore = createRoadApi(authoring);
   let roadTextures: TextureItem<{ diffuse: string; normal?: string }>[] = [];
+  let terrainTextures: TextureItem<string>[] = [];
   let refreshUI: () => void = () => {};
   const texturePicker = createEditorTexturePicker();
   const roadApi = {
@@ -644,7 +645,15 @@ export function attachEditor(game: Game): GameEditor {
     },
     toast: (m) => hud.showToast(m),
   });
-  const terrainApi = terrain.api;
+  // Textura do terreno via o MESMO modal com preview das estradas (padrão — ADR-0073).
+  const terrainApi = {
+    ...terrain.api,
+    pickTexture: (obj: import('three').Object3D) =>
+      texturePicker.open('Textura do terreno', terrainTextures, (url) => {
+        terrain.api.setTexture(obj, url);
+        refreshUI();
+      }),
+  };
 
   // Ponto do terreno sob o cursor (world), ou null se o cursor não está no terreno.
   const terrainHit = (clientX: number, clientY: number): Vector3 | null => {
@@ -744,6 +753,11 @@ export function attachEditor(game: Game): GameEditor {
         const list = Array.isArray(assets) ? assets : [];
         addPanel.setAssets(list.filter((a) => a.toLowerCase().endsWith('.glb')));
         terrain.setAvailableTextures(list.filter(isImage));
+        // Texturas do terreno pro modal (imagens; sem normal maps — não são superfícies).
+        terrainTextures = list
+          .filter((p) => isImage(p) && !/normal\.(png|jpe?g|webp)$/i.test(p))
+          .sort()
+          .map((p) => ({ name: p.split('/').pop() ?? p, thumb: p, value: p }));
         // Superfícies de pista pro modal: só *Diffuse.png na RAIZ de assets/roads/
         // (exclui subpastas Markers/Signs/FedSigns — faixas com alpha que ficam feias)
         // e tira barreiras/placas/postes/túnel (não são superfícies tileáveis).

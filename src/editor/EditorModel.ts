@@ -527,24 +527,27 @@ export function describeInspector(
     });
 
     if (paint) {
-      // Textura ativa: lista as imagens do projeto + importação de arquivo local
-      // (o arquivo importado é copiado pra assets/textures/ e entra na lista).
+      // Textura ativa: modal com PREVIEW (padrão — ADR-0073) + importação de arquivo
+      // local (copiado pra assets/textures/ e entra na lista). Mostra a textura atual.
       const baseName = (p: string): string => p.split('/').pop() ?? p;
-      fields.push({
-        kind: 'select',
-        id: fid('terTexture'),
-        label: 'Textura',
-        value: s.texture ?? '',
-        options: [
-          { value: '', label: '— escolha —' },
-          ...s.textures.map((u) => ({ value: u, label: baseName(u) })),
-        ],
-      });
+      if (api.pickTexture) {
+        fields.push({ kind: 'note', id: fid('terTexCur'), text: s.texture ? `Textura: ${baseName(s.texture)}` : 'Nenhuma textura', tone: 'muted' });
+        fields.push({ kind: 'button', id: fid('terPick'), label: '🖼 Escolher textura…' });
+        handlers.set(fid('terPick'), () => {
+          api.pickTexture!(obj);
+        });
+      } else {
+        // Fallback (sem modal injetado): dropdown simples.
+        fields.push({
+          kind: 'select', id: fid('terTexture'), label: 'Textura', value: s.texture ?? '',
+          options: [{ value: '', label: '— escolha —' }, ...s.textures.map((u) => ({ value: u, label: baseName(u) }))],
+        });
+        handlers.set(fid('terTexture'), (v) => {
+          api.setTexture(obj, v as string);
+          return { rebuild: true };
+        });
+      }
       fields.push({ kind: 'file', id: fid('terImport'), label: '⬆ Importar textura…', accept: 'image/*' });
-      handlers.set(fid('terTexture'), (v) => {
-        api.setTexture(obj, v as string);
-        return { rebuild: true }; // o campo Repetição reflete a textura escolhida
-      });
       handlers.set(fid('terImport'), (v) => {
         try {
           const f = JSON.parse(v as string) as { name?: string; dataUrl?: string };
