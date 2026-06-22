@@ -90,6 +90,23 @@ export * from './scene/Terrain.js';
 export * from './scene/Sprite.js';
 export * from './scene/Spritesheet.js';
 export * from './scene/Tilemap.js';
+// ─── ProBuilder: malhas de blockout editáveis (ADR-0071) ──────────────────────
+// Formas paramétricas (cubo/escada/rampa/arco/parede…) + malha poligonal editável
+// (toBufferGeometry flat-shaded + extrusão). Dado puro; a edição vive no editor.
+// `Vec3` NÃO é re-exportado aqui (já vem de SceneDefinition — evita ambiguidade).
+export {
+  toBufferGeometry,
+  extrudeFace,
+  faceNormal,
+  faceCentroid,
+  meshEdges,
+  cloneMesh,
+  type EditableMesh,
+  type MeshPickMaps,
+  type RenderMesh,
+} from './probuilder/EditableMesh.js';
+export * from './probuilder/shapes.js';
+
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';
 export * from './io/TauriSceneFileWriter.js';

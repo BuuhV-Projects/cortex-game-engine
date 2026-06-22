@@ -8,7 +8,7 @@
 
 > **FlagValue** = `boolean` \| `number` \| `string`
 
-Defined in: src/narrative/StoryState.ts:16
+Defined in: [src/narrative/StoryState.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L16)
 
 StoryState — store de **flags de história** (ADR-0070).
 

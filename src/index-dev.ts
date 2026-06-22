@@ -19,8 +19,12 @@ export * from './editor/EditorHud.js';
 export * from './editor/EditorOutliner.js';
 export * from './editor/EditorInspector.js';
 export * from './editor/EditorAddPanel.js';
+export * from './editor/EditorShapePanel.js';
 export * from './editor/EditorCameraSystem.js';
 export * from './editor/ObjectEditSystem.js';
+export * from './editor/MeshEditSystem.js';
+export * from './editor/MeshEditToolbar.js';
+export * from './editor/ShapeDrawSystem.js';
 export * from './editor/attachEditor.js';
 
 // Liga o editor a todo Game criado (efeito colateral de importar este bundle).

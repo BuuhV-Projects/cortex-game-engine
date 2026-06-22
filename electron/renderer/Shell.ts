@@ -114,6 +114,23 @@ export class Shell {
       ]),
       this.menuItem('Cena', [
         { label: tr('menu.add_terrain', 'Adicionar terreno'), run: () => document.dispatchEvent(new CustomEvent('request-add-terrain')) },
+        { label: tr('menu.draw_box', '✏️ Desenhar caixa no chão'), run: () => document.dispatchEvent(new CustomEvent('request-draw-shape')) },
+        { sep: true },
+        // Blockout (ProBuilder — ADR-0071): cria um nó `mesh` paramétrico via a ponte.
+        ...([
+          ['cube', 'Cubo'],
+          ['plane', 'Plano'],
+          ['cylinder', 'Cilindro'],
+          ['sphere', 'Esfera'],
+          ['cone', 'Cone'],
+          ['stairs', 'Escada'],
+          ['ramp', 'Rampa'],
+          ['arch', 'Arco'],
+          ['wallOpening', 'Parede c/ vão'],
+        ] as const).map(([kind, label]) => ({
+          label: tr(`menu.shape.${kind}`, `Forma: ${label}`),
+          run: () => document.dispatchEvent(new CustomEvent('request-add-shape', { detail: { kind } })),
+        })),
       ]),
       this.menuItem('Projeto', [
         { label: tr('menu.build_installer', 'Gerar instalador…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: false } })) },

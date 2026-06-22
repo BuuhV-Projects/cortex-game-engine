@@ -23,8 +23,29 @@ export interface EditorState {
    * outros sistemas de clique (seleção/gizmo) cedem o clique pro pincel.
    */
   sculptingTerrain: boolean;
+  /**
+   * **Modo de edição de malha** (blockout/ProBuilder — ADR-0071). `object` (default)
+   * = seleção/gizmo normal de objeto; `vertex`/`edge`/`face` = edição de elementos
+   * da malha selecionada (o {@link MeshEditSystem} assume o clique/gizmo e o
+   * {@link ObjectEditSystem} cede). Só faz sentido com `active === true`.
+   */
+  meshEditMode: 'object' | 'vertex' | 'edge' | 'face';
+  /**
+   * `true` enquanto o usuário **desenha uma caixa no chão** (ProBuilder "New Shape" —
+   * arrasta a base no terreno, puxa a altura). Os sistemas de clique (seleção/gizmo/
+   * edição de malha) cedem o clique pro {@link ShapeDrawSystem}.
+   */
+  drawingShape: boolean;
 }
 
 export function createEditorState(): EditorState {
-  return { active: false, paused: false, gizmoDragging: false, drawingHeightfield: false, sculptingTerrain: false };
+  return {
+    active: false,
+    paused: false,
+    gizmoDragging: false,
+    drawingHeightfield: false,
+    sculptingTerrain: false,
+    meshEditMode: 'object',
+    drawingShape: false,
+  };
 }

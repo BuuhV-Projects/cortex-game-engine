@@ -126,6 +126,11 @@ export class EditorPanels {
     document.addEventListener('request-editor-pause', () => this.send({ type: 'pause' }))
     // "Adicionar terreno" (menu Projeto) → cria um terreno na cena via a ponte.
     document.addEventListener('request-add-terrain', () => this.send({ type: 'addTerrain' }))
+    // "Forma: …" (menu Cena, blockout/ProBuilder — ADR-0071) → cria um nó `mesh`.
+    document.addEventListener('request-add-shape', (e) =>
+      this.send({ type: 'addShape', kind: (e as CustomEvent<{ kind: string }>).detail.kind }))
+    // "Desenhar caixa no chão" (menu Cena, ProBuilder New Shape) → arma o desenho.
+    document.addEventListener('request-draw-shape', () => this.send({ type: 'drawShape' }))
     // Botões de ferramenta (mover/girar/escalar) das pills do viewport.
     document.addEventListener('request-tool', (e) => {
       this.send({ type: 'tool', mode: (e as CustomEvent<{ mode: string }>).detail.mode })

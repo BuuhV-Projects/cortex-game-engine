@@ -43,8 +43,11 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
 ## 3. Cena data-driven (`src/scene/`)
 
 - **`SceneDefinition`** (Zod) — o schema do `level.json`: nós `model`/`primitive`/
-  `light`/`water`/`background`/`sprite`/`terrain`, cada um com campos (`transform`,
-  `collider`, `player`, `character`, `rapierBody`, `material`, `matte`, …).
+  `mesh`/`light`/`water`/`background`/`sprite`/`terrain`, cada um com campos
+  (`transform`, `collider`, `player`, `character`, `rapierBody`, `material`,
+  `matte`, …). O nó **`mesh`** é a malha de blockout editável (ProBuilder, ADR-0071):
+  carrega uma **receita de forma** (`shape`) OU geometria explícita
+  (`positions`/`faces`); ver §11.
 - **`buildScene(scene, defs, opts)`** — **único ponto de instanciação**. Instancia
   os nós (via `instantiate`), aplica `place`/`attach`, e — se há `world` — cria as
   **entidades ECS** (corpos de física, sprites animados, terreno). Marca cada nó
@@ -67,7 +70,11 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   `createXApi(ctx)` que mexe **só no seu pedaço** do overlay e aplica ao vivo:
   `MatteAuthoring`, `MaterialAuthoring`, `PhysicsAuthoring`, `ColliderAuthoring`
   (+ heightfield injetado), `TerrainAuthoring` (pincel com **modo**: esculpir altura
-  ou **texturizar/pintar** — escolhe/importa textura, ADR-0063), `AnimationAuthoring`.
+  ou **texturizar/pintar** — escolhe/importa textura, ADR-0063), `AnimationAuthoring`,
+  `MeshAuthoring` (forma de blockout: params da receita + override de geometria; §11).
+- **Blockout / ProBuilder** (ADR-0071) — paleta de formas (`EditorShapePanel`) cria
+  nós `mesh`; o `MeshEditSystem` faz a **edição de elementos** (vértice/aresta/face +
+  extrudar) com gizmo próprio. Ver §11.
   - **`EditorAuthoringContext`** (`AuthoringContext.ts`) — o **OverlayStore**
     compartilhado: `ctx.record<T>(key)` devolve `overlay.data[key]` (lido
     **dinamicamente**), `ctx.persist()`, `ctx.game`, `ctx.three`.
@@ -111,7 +118,15 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     e registra o sistema sozinho (lazy). `physicsPaused` pausa no editor.
 - **CharacterBody** (`CharacterBodyComponent`+`CharacterPhysicsSystem`) — controller
   cápsula (gravidade/pulo/step) com **chão por raycast** + piso `groundY` de
-  fallback. Pro player/NPC simples até a migração pro CharacterController do Rapier.
+  fallback, e **colisão de parede** (horizontal): depenetra a cápsula de geometria
+  marcada `userData.cortexSolid` (posta pelo `buildScene` em nós **static**) por
+  raycasts em ±X/±Z (`resolveWallPush`, puro/testável). É o que faz o **blockout
+  estático virar parede de verdade** no FPS (ADR-0071). ⚠️ o `FirstPersonCameraSystem`
+  posiciona a câmera a partir da posição **já depenetrada** (antes de aplicar o
+  movimento do frame) — senão a câmera aparecia "dentro" da parede por 1 frame.
+  ⚠️ Marcar **static** (Inspector → Física) cria um Collider2D (mundo 2.5D, que o
+  Character ignora) **e** a flag `cortexSolid` (que o Character usa) — é a flag que
+  bloqueia o player. Pro player/NPC simples até a migração pro CharacterController do Rapier.
   - ⚠️ **Autoridade única de chão pro Character = o raycast.** O `TerrainCollisionSystem`
     (que aterra pela altura **bilinear** `heightAt`) **não** trata Character — só
     `Platformer`/`Kinematic`. Os dois aterrando o mesmo corpo faziam ele **quicar** em
@@ -237,8 +252,57 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | Componentes / Sistemas | `src/components/` · `src/systems/` |
 | Cena data-driven | `src/scene/` (`SceneDefinition`, `SceneBuilder`) |
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
+| Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (ADR-0071) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
+
+## 11. Blockout / ProBuilder — malha de nó editável (`src/probuilder/`, ADR-0071)
+
+Ferramenta de **blockout** estilo ProBuilder da Unity: criar formas paramétricas e
+editar a malha por vértice/aresta/face no editor F2. Encaixa no princípio central
+(**cena = DADO**): a malha é conteúdo autoral, igual ao heightmap (ADR-0059).
+
+- **Dado puro** (`src/probuilder/`, sem editor/ECS): `EditableMesh` =
+  `{ positions: Vec3[], faces: number[][] }` (faces poligonais, quads). `shapes.ts`
+  são funções puras `kind → EditableMesh` (cubo/plano/cilindro/esfera/cone +
+  escada/rampa/arco/parede-com-vão), com **metadados de params** pro Inspector.
+  `toBufferGeometry` triangula com **flat-shading** (look facetado) e guarda mapas de
+  **picking** (`tri→face`, `render-vert→vértice lógico`) no `userData.cortexMesh`.
+- **Nó `mesh`** (`SceneDefinition`): receita `shape` (regenerável) **ou** geometria
+  explícita. O `buildScene` (`makeEditableMesh`) usa `DoubleSide` (sem fragilidade de
+  winding). Tem `baseFields` → collider/rapierBody/material/matte de graça.
+- **Precedência da geometria** (overlay vence): `overlay.data.geometry[id]`
+  (edição de elementos) **>** receita `shape` **>** geometria explícita do nó. O
+  `MeshAuthoring` edita params da receita (no nó em `data.added`) e grava o override.
+- **Edição de elementos** (`MeshEditSystem`, prioridade 28): quando
+  `editorState.meshEditMode !== 'object'`, assume o clique/gizmo (o `ObjectEditSystem`
+  **cede**, igual ao pincel de terreno). Picking: face por raycast (mapa `tri→face`),
+  vértice/aresta por **proximidade em NDC**. Move via **gizmo num proxy** no centróide
+  (delta em espaço local → `translateVertices`), live sem persistir; persiste no
+  `dragging-changed=false`. **Extrudar face** (`extrudeFace`) é a op-chave.
+  Atalhos: `Tab` entra/sai, `1/2/3` vértice/aresta/face, `E` extruda.
+- **Desenhar no chão** (`ShapeDrawSystem`, prioridade 26 — ProBuilder "New Shape"):
+  arma via paleta/menu (toggle; `editorState.drawingShape`, os outros cedem o clique).
+  **Modo persistente** — fica armado pra criar vários; **CTRL+arrasta** a base no
+  terreno (snap em **grade de 0,25 m**), **solta**, **move o mouse** pra puxar a altura,
+  **clica** pra confirmar → cria um nó `mesh` cubo **já `static`** (`collider.solid`,
+  colide). Hover (anel no chão) mostra onde vai começar (verde = CTRL pronto). Dimensões
+  em metros ao vivo no HUD. `boxFromDrag` (puro) calcula centro+dimensões. Esc/botão sai.
+  - Nota: a paleta/menu/desenho criam o nó `mesh` e já chamam `physicsApi.setType(obj,
+    'static')` (autoritativo: grava `data.physics`, o Inspector mostra **Estático**,
+    aplica o collider ao vivo e marca `cortexSolid`). Pôr só `node.collider` **não**
+    aparecia no Inspector (a seção Física lê `data.physics`).
+  - **Delete** (`attachEditor` `deleteNode`): destrói as entidades de física vivas
+    (collider/character/rapier — senão o gizmo do `ColliderGizmoSystem` fica **fantasma**
+    na cena) + limpa as entradas de overlay por-objeto; nó **adicionado no editor** sai
+    de `data.added` (some de vez), nó **base** (level.json) entra em `data.deleted`.
+- **UI**: paleta `EditorShapePanel` (in-canvas) cria nós `mesh` + botão "Desenhar no
+  chão"; barra flutuante `MeshEditToolbar` (Unity-like, **não** some no bridge) ao
+  selecionar malha; pontes `addShape`/`drawShape` + menu "Cena" da IDE. No Inspector,
+  seção **"Forma"**: params da receita, "Resetar forma" e botões de edição de elemento.
+- ⚠️ A triangulação é **fan** (assume face **convexa**); as formas geradas são
+  convexas por face. Boolean/bevel/inset/bridge, material por face, UV e export `.glb`
+  ficam **fora de escopo** (abrir ADR quando for).

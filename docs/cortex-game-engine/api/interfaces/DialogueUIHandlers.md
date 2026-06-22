@@ -6,7 +6,7 @@
 
 # Interface: DialogueUIHandlers
 
-Defined in: src/dialogue/DialogueUI.ts:22
+Defined in: [src/dialogue/DialogueUI.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L22)
 
 Callbacks da UI.
 
@@ -16,7 +16,7 @@ Callbacks da UI.
 
 > **onAdvance**(): `void`
 
-Defined in: src/dialogue/DialogueUI.ts:26
+Defined in: [src/dialogue/DialogueUI.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L26)
 
 Jogador avançou uma linha simples (clique/tecla).
 
@@ -30,7 +30,7 @@ Jogador avançou uma linha simples (clique/tecla).
 
 > **onChoose**(`index`): `void`
 
-Defined in: src/dialogue/DialogueUI.ts:24
+Defined in: [src/dialogue/DialogueUI.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L24)
 
 Jogador escolheu a opção de índice `index` (índice original do nó).
 

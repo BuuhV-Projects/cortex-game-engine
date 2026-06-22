@@ -6,7 +6,7 @@
 
 # Interface: StartDialogueOptions
 
-Defined in: src/dialogue/startDialogue.ts:15
+Defined in: [src/dialogue/startDialogue.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L15)
 
 Opções de [startDialogue](../functions/startDialogue.md).
 
@@ -20,7 +20,7 @@ Opções de [startDialogue](../functions/startDialogue.md).
 
 > `optional` **accent?**: `string`
 
-Defined in: src/dialogue/DialogueUI.ts:31
+Defined in: [src/dialogue/DialogueUI.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L31)
 
 #### Inherited from
 
@@ -32,7 +32,7 @@ Defined in: src/dialogue/DialogueUI.ts:31
 
 > `optional` **advanceKeys?**: `string`[]
 
-Defined in: src/dialogue/startDialogue.ts:26
+Defined in: [src/dialogue/startDialogue.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L26)
 
 Teclas que avançam linhas simples. Default `['e', 'Enter', ' ']`. Escolhas
 são por clique (e teclas numéricas `1..9`).
@@ -43,7 +43,7 @@ são por clique (e teclas numéricas `1..9`).
 
 > `optional` **onClue?**: (`clueId`) => `void`
 
-Defined in: src/dialogue/startDialogue.ts:19
+Defined in: [src/dialogue/startDialogue.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L19)
 
 Recebe pistas concedidas (`give`) — ligue ao sistema de investigação do jogo.
 
@@ -63,7 +63,7 @@ Recebe pistas concedidas (`give`) — ligue ao sistema de investigação do jogo
 
 > `optional` **onEnd?**: () => `void`
 
-Defined in: src/dialogue/startDialogue.ts:21
+Defined in: [src/dialogue/startDialogue.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L21)
 
 Chamado quando a conversa termina (naturalmente ou via `stop`).
 
@@ -77,7 +77,7 @@ Chamado quando a conversa termina (naturalmente ou via `stop`).
 
 > `optional` **parent?**: `HTMLElement`
 
-Defined in: src/dialogue/DialogueUI.ts:30
+Defined in: [src/dialogue/DialogueUI.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L30)
 
 #### Inherited from
 
@@ -89,6 +89,6 @@ Defined in: src/dialogue/DialogueUI.ts:30
 
 > `optional` **story?**: [`StoryState`](../classes/StoryState.md)
 
-Defined in: src/dialogue/startDialogue.ts:17
+Defined in: [src/dialogue/startDialogue.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L17)
 
 Estado de história pra `requires`/`set`.

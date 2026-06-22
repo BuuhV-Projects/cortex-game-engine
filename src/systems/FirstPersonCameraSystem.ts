@@ -120,6 +120,16 @@ export class FirstPersonCameraSystem extends System {
       if (this.pitch < -PITCH_LIMIT) this.pitch = -PITCH_LIMIT;
     }
 
+    // ── Posiciona a câmera ANTES de aplicar o movimento deste frame ───────────
+    // A câmera usa a posição JÁ corrigida pela física (gravidade/chão/parede rodam
+    // em priority 5, antes daqui). Posicionar antes de mover o player evita mostrar
+    // a câmera "dentro" da parede por 1 frame (a depenetração de parede do
+    // CharacterPhysicsSystem corrige a penetração do frame anterior). Custo: ~16ms
+    // de lag visual imperceptível. Ver CharacterPhysicsSystem (colisão de parede).
+    this.camera.position.set(t.x, t.y + this.eyeHeight, t.z);
+    this.camera.rotation.order = 'YXZ';
+    this.camera.rotation.set(this.pitch, this.yaw, 0);
+
     // ── Caminhada no plano XZ, relativa ao yaw ────────────────────────────────
     const sin = Math.sin(this.yaw);
     const cos = Math.cos(this.yaw);
@@ -144,10 +154,5 @@ export class FirstPersonCameraSystem extends System {
     const jumpDown = k.isKeyDown(' ');
     if (jumpDown && !this.prevJump) body.jump();
     this.prevJump = jumpDown;
-
-    // ── Posiciona a câmera nos olhos, olhando em (yaw, pitch) ─────────────────
-    this.camera.position.set(t.x, t.y + this.eyeHeight, t.z);
-    this.camera.rotation.order = 'YXZ';
-    this.camera.rotation.set(this.pitch, this.yaw, 0);
   }
 }

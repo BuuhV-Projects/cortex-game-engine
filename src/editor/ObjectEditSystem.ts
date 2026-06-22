@@ -118,6 +118,8 @@ export class ObjectEditSystem extends System {
       if (!this.editorState.active) return;
       if (this.editorState.drawingHeightfield) return; // desenho de heightfield cede o clique
       if (this.editorState.sculptingTerrain) return; // pincel de terreno cede o clique
+      if (this.editorState.drawingShape) return; // desenho de caixa cede o clique
+      if (this.editorState.meshEditMode !== 'object') return; // edição de malha assume o clique
       if (e.button !== 0) return;
       const dragging = (this.controls as unknown as { dragging: boolean }).dragging;
       if (dragging) return;
@@ -133,6 +135,22 @@ export class ObjectEditSystem extends System {
       }
       this.controls.enabled = false;
       return;
+    }
+    // Edição de malha (vertex/edge/face) ou desenho de caixa: outro sistema assume o
+    // clique/gizmo. Escondemos o gizmo de objeto e cedemos os atalhos.
+    if (this.editorState.meshEditMode !== 'object' || this.editorState.drawingShape) {
+      if (this.helper.visible) {
+        this.helper.visible = false;
+        this.controls.detach();
+      }
+      this.controls.enabled = false;
+      this.clickPending = null;
+      return;
+    }
+    // Reanexa o gizmo de objeto ao voltar pro modo objeto (se há seleção).
+    if (this.selected && !this.helper.visible) {
+      this.controls.attach(this.selected);
+      this.helper.visible = true;
     }
     this.controls.enabled = true;
 

@@ -8,7 +8,7 @@
 
 > **startDialogue**(`graph`, `options?`): [`DialogueController`](../interfaces/DialogueController.md)
 
-Defined in: src/dialogue/startDialogue.ts:41
+Defined in: [src/dialogue/startDialogue.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L41)
 
 Abre um diálogo: conecta [DialogueRunner](../classes/DialogueRunner.md) (lógica) + [createDialogueUI](createDialogueUI.md)
 (DOM) + teclado, e devolve um [DialogueController](../interfaces/DialogueController.md) (ADR-0070).

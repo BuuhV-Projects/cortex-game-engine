@@ -135,6 +135,11 @@ export function createPhysicsApi(ctx: EditorAuthoringContext, colliderApi: Colli
       if (ce) game.world.destroyEntity(ce);
       const re = findRapierEntity(obj);
       if (re) game.world.destroyEntity(re);
+      // `cortexSolid` = vira PAREDE pro player (CharacterPhysicsSystem). Só estático
+      // marca; os outros tipos limpam. Espelha o que o buildScene faz no boot.
+      const ud = obj.userData as Record<string, unknown>;
+      if (type === 'static') ud['cortexSolid'] = true;
+      else delete ud['cortexSolid'];
       if (type === 'rigid') {
         colliderApi.remove(obj);
         const params = effectiveRapier(obj);

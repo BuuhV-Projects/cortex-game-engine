@@ -326,7 +326,8 @@ desperdício). Os JSON são **importados** (o Vite bundla no build; multi-arquiv
 em dev, sem fetch).
 
 Tipos de nó (`type`): `model` (`url` do `.glb`), `primitive` (`shape`:
-box/cylinder/plane/sphere), `light` (`light`: directional/hemisphere/ambient),
+box/cylinder/plane/sphere), `mesh` (malha de **blockout** editável — ver abaixo),
+`light` (`light`: directional/hemisphere/ambient),
 `water`, `background` (backdrop 2D com parallax — ver abaixo), `sprite` (sprite/
 spritesheet 2D — ver abaixo), `terrain` (heightmap horizontal esculpível — ver abaixo).
 Campos comuns: `id` (único; vira `Object3D.name` e chave do editor),
@@ -379,6 +380,41 @@ game.onUpdate((dt) => scene.update(dt)) // anima água
 > condicional), os helpers imperativos abaixo (`loadGLB`/`placeOnGround`/`scatter`)
 > seguem disponíveis — são o que o loader usa por dentro. Mas a cena ESTÁTICA
 > deve ser JSON, pra o editor poder editá-la.
+
+## Blockout / ProBuilder — nó `mesh` editável (ADR-0071)
+
+`MeshNode`, `buildShape`, `SHAPES`, `ShapeKind`, `EditableMesh`, `toBufferGeometry`,
+`extrudeFace`. Pra **rascunhar volumes/layout** de um nível (escada, rampa, arco,
+parede com porta) sem modelar fora — estilo ProBuilder da Unity.
+
+O nó `mesh` carrega uma **receita de forma** (`shape`, paramétrica/regenerável) **ou**
+geometria explícita (`positions`/`faces`). Tem os campos comuns + física/material, então
+vira chão/parede sólida marcando `collider`/`rapierBody`/`character`.
+
+Formas (`shape.kind`): **básicas** `cube`, `plane`, `cylinder`, `sphere`, `cone`;
+**arquitetura** `stairs`, `ramp`, `arch`, `wallOpening`. Cada uma tem `params` (ex.:
+`stairs` = `width/height/depth/steps`; `wallOpening` = `width/height/depth/openingWidth/
+openingHeight/sill`). Params ausentes caem no default.
+
+```jsonc
+{
+  "type": "mesh", "id": "escada_1",
+  "shape": { "kind": "stairs", "params": { "width": 2, "height": 2, "depth": 3, "steps": 6 } },
+  "place": { "x": 0, "y": 0 },
+  "color": "#b0b4bd",
+  "collider": { "solid": true }   // vira degraus sólidos (blockout jogável)
+}
+```
+
+**No editor (F2):** a paleta **"Formas (blockout)"** cria o nó; o Inspector mostra a
+seção **"Forma"** (edita os params → regenera) e os botões de **edição de elemento**
+(Vértice/Aresta/Face) + **Extrudar face**. Atalhos no viewport: `Tab` entra/sai da
+edição de malha, `1/2/3` escolhe vértice/aresta/face, `E` extruda a face, gizmo move.
+A geometria editada é salva no overlay (`data.geometry[id]`, **vence** a receita);
+"Resetar forma" volta à receita.
+
+> Ao **gerar cena** (Chat IA), prefira `primitive`/`model`; use `mesh` quando o usuário
+> pedir blockout/escada/rampa/arco/parede-com-vão. Declare física nos campos do nó.
 
 ## Kit de assets / vocabulário (design system — ADR-0053)
 

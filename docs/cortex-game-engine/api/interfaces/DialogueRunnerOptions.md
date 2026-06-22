@@ -6,7 +6,7 @@
 
 # Interface: DialogueRunnerOptions
 
-Defined in: src/dialogue/DialogueRunner.ts:29
+Defined in: [src/dialogue/DialogueRunner.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L29)
 
 Opções do [DialogueRunner](../classes/DialogueRunner.md).
 
@@ -16,7 +16,7 @@ Opções do [DialogueRunner](../classes/DialogueRunner.md).
 
 > `optional` **onClue?**: (`clueId`) => `void`
 
-Defined in: src/dialogue/DialogueRunner.ts:33
+Defined in: [src/dialogue/DialogueRunner.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L33)
 
 Chamado quando um nó/escolha concede uma pista (`give`). O jogo decide o efeito.
 
@@ -36,6 +36,6 @@ Chamado quando um nó/escolha concede uma pista (`give`). O jogo decide o efeito
 
 > `optional` **story?**: [`StoryState`](../classes/StoryState.md)
 
-Defined in: src/dialogue/DialogueRunner.ts:31
+Defined in: [src/dialogue/DialogueRunner.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L31)
 
 Estado de história pra `requires`/`set` (criado vazio se omitido).

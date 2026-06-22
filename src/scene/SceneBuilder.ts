@@ -7,6 +7,7 @@ import {
   PlaneGeometry,
   SphereGeometry,
   MeshStandardMaterial,
+  DoubleSide,
   DirectionalLight,
   HemisphereLight,
   AmbientLight,
@@ -40,6 +41,8 @@ import { RapierPhysicsSystem } from '../systems/RapierPhysicsSystem.js';
 import { RapierPhysics } from '../physics/RapierPhysics.js';
 import { Water } from './Water.js';
 import { Background } from './Background.js';
+import { toBufferGeometry, type EditableMesh } from '../probuilder/EditableMesh.js';
+import { buildShape } from '../probuilder/shapes.js';
 import { Terrain, type TerrainPaintData } from './Terrain.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import { debug } from '../core/debug.js';
@@ -307,6 +310,25 @@ export function overlayTerrainPaint(overlay: SceneFileV1 | null | undefined): Re
 }
 
 /**
+ * Lê `data.geometry` da overlay — a **geometria editada** (vértice/face) de nós
+ * `mesh` autorada no editor, por id (`{ [id]: { positions, faces } }`). **Vence** a
+ * receita `shape`/geometria do nó (ADR-0071). "Resetar forma" remove a entrada.
+ */
+export function overlayGeometry(overlay: SceneFileV1 | null | undefined): Record<string, EditableMesh> {
+  const raw = overlay?.data?.['geometry'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, EditableMesh> = {};
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object') continue;
+    const o = v as Record<string, unknown>;
+    if (Array.isArray(o['positions']) && Array.isArray(o['faces'])) {
+      out[id] = { positions: o['positions'] as EditableMesh['positions'], faces: o['faces'] as number[][] };
+    }
+  }
+  return out;
+}
+
+/**
  * Lê `data.animation` da overlay — a animação **autorada no editor** por id
  * (`{ [id]: { clip?, loop?, speed?, autoplay? } }`). Sobrescreve o `animation` do
  * nó (JSON), que por sua vez vence o código. Ver {@link SceneAnimator}.
@@ -376,6 +398,7 @@ export async function buildScene(
   const editorMaterial = overlayMaterial(overlay);
   const editorTerrain = overlayTerrain(overlay);
   const editorTerrainPaint = overlayTerrainPaint(overlay);
+  const editorGeometry = overlayGeometry(overlay);
   const editorAnim = overlayAnimation(overlay);
   const editorPlayerAnim = overlayPlayerAnimations(overlay);
 
@@ -422,7 +445,7 @@ export async function buildScene(
       byId.set(node.id, bg.mesh);
       continue;
     }
-    const obj = await instantiate(node, scene, three, waters, kit);
+    const obj = await instantiate(node, scene, three, waters, kit, editorGeometry[node.id]);
     if (!obj) continue;
     // Terreno: heightmap/pintura autorados no editor (overlay) vencem o nó (JSON).
     if (node.type === 'terrain' && (editorTerrain[node.id] || editorTerrainPaint[node.id])) {
@@ -442,7 +465,7 @@ export async function buildScene(
 
     // Look fosco/cartoon. Precedência: overlay do editor (autorado) > nó (`matte`)
     // > global (`options.matte`). Overlay `false` sobrescreve um matte do código.
-    if (node.type === 'model' || node.type === 'primitive') {
+    if (node.type === 'model' || node.type === 'primitive' || node.type === 'mesh') {
       if (editorMatte[node.id] ?? node.matte ?? options.matte) setMatte(obj);
       // Material/shader por objeto (ADR-0058) — aplicado DEPOIS do matte, então
       // um `material` (unlit/toon) que troca a malha vence o tweak de matte.
@@ -518,7 +541,7 @@ export async function buildScene(
         }
         continue;
       }
-      if (node.type !== 'model' && node.type !== 'primitive') continue;
+      if (node.type !== 'model' && node.type !== 'primitive' && node.type !== 'mesh') continue;
       const kitCol =
         node.type === 'model' ? (kitAssetFor(kit, node.url)?.collider as ColliderConfig | undefined) : undefined;
       // Collider efetivo: overlay do editor (autorado) > nó (`collider`) > preset do
@@ -583,6 +606,10 @@ export async function buildScene(
         // Inspector marcou Estático num objeto "pelado"), deriva do bbox dentro do
         // createPlatformerEntity passando um collider sólido mínimo.
         createPlatformerEntity(options.world, obj, node, colliderCfg ?? { solid: true });
+        // Marca SÓLIDO: o CharacterPhysicsSystem trata como PAREDE (colisão horizontal
+        // por cápsula). Sem isso, o player (Character/raycast) atravessa o blockout
+        // estático — o Collider2D acima é do mundo 2.5D, que o Character ignora.
+        (obj.userData as Record<string, unknown>)['cortexSolid'] = true;
       }
       // type === 'none' → nenhuma física (override pode ter DESLIGADO um collider do código).
     }
@@ -636,7 +663,7 @@ function ensureCharacterSystems(world: World, roots: Object3D[], paused?: () => 
 function createPlatformerEntity(
   world: World,
   obj: Object3D,
-  node: Extract<SceneNode, { type: 'model' | 'primitive' }>,
+  node: Extract<SceneNode, { type: 'model' | 'primitive' | 'mesh' }>,
   col: ColliderConfig | undefined,
   playerAnimations?: Record<string, string>,
 ): Entity {
@@ -762,6 +789,7 @@ async function instantiate(
   three: import('three').Scene,
   waters?: Water[],
   kit?: KitDefinition | KitDefinition[],
+  meshGeometry?: EditableMesh,
 ): Promise<Object3D | null> {
   let obj: Object3D;
   switch (node.type) {
@@ -772,6 +800,11 @@ async function instantiate(
       break;
     case 'primitive':
       obj = makePrimitive(node);
+      three.add(obj);
+      applyPlacement(obj, node);
+      break;
+    case 'mesh':
+      obj = makeEditableMesh(node, meshGeometry);
       three.add(obj);
       applyPlacement(obj, node);
       break;
@@ -919,6 +952,37 @@ function makePrimitive(node: Extract<SceneNode, { type: 'primitive' }>): Mesh {
   if (node.shape === 'plane') mesh.rotation.x = -Math.PI / 2;
   mesh.castShadow = node.castShadow ?? true;
   mesh.receiveShadow = node.receiveShadow ?? true;
+  return mesh;
+}
+
+/**
+ * Cria o mesh de um nó `mesh` (blockout editável — ADR-0071). Precedência da
+ * geometria: `geomOverride` (overlay do editor) > geometria explícita do nó
+ * (`positions`/`faces`) > receita `shape` > cubo default. Flat-shaded + DoubleSide
+ * (look facetado, sem fragilidade de winding). Os **mapas de picking** e a malha
+ * lógica ficam em `userData.cortexMesh` (a edição de elementos lê daqui).
+ */
+function makeEditableMesh(node: Extract<SceneNode, { type: 'mesh' }>, geomOverride?: EditableMesh): Mesh {
+  const logical: EditableMesh =
+    geomOverride ??
+    (node.positions && node.faces
+      ? { positions: node.positions as EditableMesh['positions'], faces: node.faces }
+      : node.shape
+        ? buildShape(node.shape.kind, node.shape.params)
+        : buildShape('cube'));
+  const { geometry, maps } = toBufferGeometry(logical);
+  const mesh = new Mesh(
+    geometry,
+    new MeshStandardMaterial({
+      color: node.color ?? 0xb0b4bd,
+      roughness: node.roughness ?? 1,
+      metalness: node.metalness ?? 0,
+      side: DoubleSide,
+    }),
+  );
+  mesh.castShadow = node.castShadow ?? true;
+  mesh.receiveShadow = node.receiveShadow ?? true;
+  (mesh.userData as Record<string, unknown>)['cortexMesh'] = { logical, maps };
   return mesh;
 }
 

@@ -8,7 +8,7 @@
 
 > **BodyType** = `"none"` \| `"static"` \| `"character"` \| `"rigid"`
 
-Defined in: [src/scene/SceneBuilder.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L127)
+Defined in: [src/scene/SceneBuilder.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L130)
 
 Tipo de corpo físico de um nó (autorado/override do Inspector). `rigid` = corpo
 dinâmico do Rapier (caixa/barril que cai/empilha); `static`/`character` = física

@@ -8,6 +8,6 @@
 
 > **SceneDefinition** = `z.infer`\<*typeof* `sceneDefinitionSchema`\>
 
-Defined in: [src/scene/SceneDefinition.ts:372](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L372)
+Defined in: [src/scene/SceneDefinition.ts:401](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L401)
 
 Uma definição de cena (um arquivo).

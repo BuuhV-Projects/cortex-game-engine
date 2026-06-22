@@ -19,6 +19,33 @@ function isUnder(obj: Object3D, root: Object3D): boolean {
   return false;
 }
 
+/** `obj` (ou ancestral) é marcado SÓLIDO (`cortexSolid`) — vira parede pro Character. */
+function isSolid(obj: Object3D): boolean {
+  let p: Object3D | null = obj;
+  while (p) {
+    if (p.userData?.['cortexSolid'] === true) return true;
+    p = p.parent;
+  }
+  return false;
+}
+
+/**
+ * Empurrão horizontal pra **sair de paredes**: dado o hit mais próximo em cada
+ * direção de eixo (`±X`/`±Z`, distância ou `null` se livre) e o raio da cápsula,
+ * devolve o deslocamento (dx,dz) que tira o personagem de dentro da parede. Puro
+ * (testável) — o {@link CharacterPhysicsSystem} faz os raycasts e aplica.
+ */
+export function resolveWallPush(
+  near: { px: number | null; nx: number | null; pz: number | null; nz: number | null },
+  radius: number,
+): { dx: number; dz: number } {
+  const pen = (d: number | null): number => (d !== null && radius - d > 0 ? radius - d : 0);
+  return {
+    dx: pen(near.nx) - pen(near.px), // parede em +X empurra pra −X
+    dz: pen(near.nz) - pen(near.pz),
+  };
+}
+
 /**
  * `obj` é chrome do editor (gizmo/helper)? Checa o objeto **e seus ancestrais** —
  * o `editorInternal` fica na RAIZ do helper (ex.: o `TransformControls`), mas o
@@ -65,6 +92,7 @@ export class CharacterPhysicsSystem extends System {
   private readonly roots: Object3D[];
   private readonly ray = new Raycaster();
   private readonly origin = new Vector3();
+  private readonly wallDir = new Vector3();
 
   /** @param roots Raízes da cena pra colisão de chão (raycast). Vazio = só `groundY`. */
   constructor(roots: Object3D[] = []) {
@@ -133,6 +161,41 @@ export class CharacterPhysicsSystem extends System {
         c.velocityY = 0;
         c.grounded = true;
         c.jumpsUsed = 0;
+      }
+
+      // ── Colisão de PAREDE (horizontal) ──────────────────────────────────────────
+      // O chão é o raycast pra baixo (acima); aqui o personagem é EMPURRADO pra fora
+      // de geometria marcada SÓLIDA (`cortexSolid` — estático/collider, posto pelo
+      // buildScene). Faz o blockout virar parede de verdade no FPS/top-down. Amostra
+      // 3 alturas da cápsula em ±X/±Z e depenetra por eixo. Ver ADR-0071 / TDR-0002.
+      if (this.roots.length > 0) {
+        const r = c.radius;
+        const feetY = t.y - c.footOffset;
+        const self = e.getComponent(Object3DComponent)?.object;
+        const ys = [feetY + Math.min(r, c.height * 0.5), feetY + c.height * 0.5, feetY + Math.max(c.height - r, c.height * 0.5)];
+        const cast = (dx: number, dz: number): number | null => {
+          this.wallDir.set(dx, 0, dz);
+          let nearest: number | null = null;
+          for (const sy of ys) {
+            this.origin.set(t.x, sy, t.z);
+            this.ray.set(this.origin, this.wallDir);
+            this.ray.far = r + SKIN;
+            for (const h of this.ray.intersectObjects(this.roots, true)) {
+              if (self && isUnder(h.object, self)) continue;
+              if (isEditorChrome(h.object)) continue;
+              if (!isSolid(h.object)) continue;
+              if (nearest === null || h.distance < nearest) nearest = h.distance;
+              break;
+            }
+          }
+          return nearest;
+        };
+        const push = resolveWallPush(
+          { px: cast(1, 0), nx: cast(-1, 0), pz: cast(0, 1), nz: cast(0, -1) },
+          r,
+        );
+        t.x += push.dx;
+        t.z += push.dz;
       }
     }
   }

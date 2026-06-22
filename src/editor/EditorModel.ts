@@ -3,7 +3,7 @@ import { MathUtils } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
-import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, TerrainApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
+import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, TerrainApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
@@ -154,6 +154,7 @@ export interface InspectorContext {
   physicsApi?: PhysicsApi;
   matteApi?: MatteApi;
   materialApi?: MaterialApi;
+  meshApi?: MeshApi;
   terrainApi?: TerrainApi;
   animationApi?: AnimationApi;
   playerAnimationsApi?: PlayerAnimationsApi;
@@ -392,6 +393,65 @@ export function describeInspector(
       });
     }
     sections.push({ title: 'Shader', fields });
+  }
+
+  // ── Forma (blockout — ProBuilder, ADR-0071) ──────────────────────────────────
+  // Nó `mesh`: edita os parâmetros da receita (regenera ao vivo) ou reseta a
+  // edição de elementos. Some quando o objeto não é um mesh editável.
+  const meshState = ctx.meshApi?.get(obj) ?? null;
+  if (ctx.meshApi && meshState) {
+    const api = ctx.meshApi;
+    const fields: InspectorField[] = [];
+    if (meshState.edited) {
+      // Geometria editada por vértice/face: a receita ficou "detached".
+      fields.push({ kind: 'note', id: fid('shapeEdited'), text: 'Malha editada por elemento.', tone: 'info' });
+      fields.push({ kind: 'button', id: fid('shapeReset'), label: '↺ Resetar forma', variant: 'danger' });
+      handlers.set(fid('shapeReset'), () => {
+        api.resetGeometry(obj);
+        return { rebuild: true };
+      });
+    } else if (meshState.kind) {
+      for (const p of meshState.params) {
+        const pid = fid(`shapeP_${p.key}`);
+        // Medidas em metros (engine trabalha em metros); contagens (lados/degraus) não.
+        const label = p.int ? p.label : `${p.label} (m)`;
+        fields.push({ kind: 'number', id: pid, label, value: p.value, step: p.step ?? (p.int ? 1 : 0.25) });
+        handlers.set(pid, (v) => {
+          let n = Number(v);
+          if (!Number.isFinite(n)) return;
+          if (p.int) n = Math.round(n);
+          if (p.min !== undefined) n = Math.max(p.min, n);
+          if (p.max !== undefined) n = Math.min(p.max, n);
+          api.setParam(obj, p.key, n);
+        });
+      }
+    }
+    // Edição de elementos (Fase 2): botões de modo + extrudar. Só quando o
+    // MeshEditSystem está ligado (api.editMode presente).
+    if (api.editMode && api.setEditMode) {
+      const cur = api.editMode(obj);
+      const modeBtn = (mode: 'vertex' | 'edge' | 'face', label: string): void => {
+        const bid = fid(`meshMode_${mode}`);
+        fields.push({ kind: 'button', id: bid, label: cur === mode ? `● ${label}` : label, variant: cur === mode ? 'primary' : 'normal' });
+        handlers.set(bid, () => {
+          api.setEditMode!(obj, cur === mode ? 'object' : mode);
+          return { rebuild: true };
+        });
+      };
+      fields.push({ kind: 'note', id: fid('meshEditNote'), text: 'Editar elementos:', tone: 'muted' });
+      modeBtn('vertex', 'Vértice');
+      modeBtn('edge', 'Aresta');
+      modeBtn('face', 'Face');
+      if (cur === 'face' && api.extrudeSelected) {
+        fields.push({ kind: 'button', id: fid('meshExtrude'), label: '⬆ Extrudar face', variant: 'normal' });
+        handlers.set(fid('meshExtrude'), () => {
+          api.extrudeSelected!();
+          return { rebuild: true };
+        });
+      }
+    }
+
+    if (fields.length) sections.push({ title: 'Forma', fields });
   }
 
   // ── Terreno (pincel: esculpir altura OU texturizar/pintar) ────────────────────

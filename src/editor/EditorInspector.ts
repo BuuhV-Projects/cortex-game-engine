@@ -147,6 +147,51 @@ export interface MaterialApi {
   set(obj: Object3D, config: MaterialConfig): void;
 }
 
+/** Um parâmetro editável da forma de blockout (ADR-0071), já com o valor atual. */
+export interface MeshShapeParam {
+  key: string;
+  label: string;
+  value: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  int?: boolean;
+}
+
+/** Estado da forma de um nó `mesh` selecionado (`null` se não é mesh editável). */
+export interface MeshShapeState {
+  /** Tipo da forma (`cube`/`stairs`/…) — `null` se a malha é freeform (sem receita). */
+  kind: string | null;
+  /** Parâmetros da receita (vazio se freeform). */
+  params: MeshShapeParam[];
+  /** A geometria foi editada por elemento (override de `data.geometry` presente)? */
+  edited: boolean;
+}
+
+/**
+ * Ponte de autoria das **malhas de blockout** (ProBuilder — ADR-0071): o inspector
+ * lê os parâmetros da forma e os ajusta (regenera ao vivo), ou reseta a edição de
+ * elementos. Implementada pelo `attachEditor` contra o nó em `overlay.data.added`
+ * (receita) + `overlay.data.geometry[nome]` (override de geometria). `get` devolve
+ * `null` se o objeto não é um nó `mesh`.
+ */
+export interface MeshApi {
+  get(obj: Object3D): MeshShapeState | null;
+  /** Ajusta um parâmetro da forma → regenera a malha ao vivo + persiste. */
+  setParam(obj: Object3D, key: string, value: number): void;
+  /** Remove a edição de elementos (volta à receita paramétrica). */
+  resetGeometry(obj: Object3D): void;
+  // ── Edição de elementos (Fase 2 — só quando o MeshEditSystem está ligado) ──────
+  /** Modo de edição atual (`object`/`vertex`/`edge`/`face`). */
+  editMode?(obj: Object3D): 'object' | 'vertex' | 'edge' | 'face';
+  /** Entra/sai da edição de elementos (`object` = sair). */
+  setEditMode?(obj: Object3D, mode: 'object' | 'vertex' | 'edge' | 'face'): void;
+  /** Há uma face selecionada (habilita "Extrudar")? */
+  hasFaceSelected?(): boolean;
+  /** Extruda a face selecionada. */
+  extrudeSelected?(): void;
+}
+
 /** Modo do pincel de terreno: esculpir altura ou pintar textura. */
 export type TerrainBrushMode = 'sculpt' | 'paint';
 
@@ -273,6 +318,8 @@ export interface EditorInspectorOptions {
   matteApi?: MatteApi;
   /** Opcional: autoria/persistência do material/shader por objeto. Ver {@link MaterialApi}. */
   materialApi?: MaterialApi;
+  /** Opcional: autoria das malhas de blockout (forma paramétrica/reset). Ver {@link MeshApi}. */
+  meshApi?: MeshApi;
   /** Opcional: pincel de esculpir terreno. Ver {@link TerrainApi}. */
   terrainApi?: TerrainApi;
   /** Opcional: controle/persistência de animação (escolher clipe, play/stop). Ver {@link AnimationApi}. */
@@ -309,13 +356,14 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     physicsApi,
     matteApi,
     materialApi,
+    meshApi,
     terrainApi,
     animationApi,
     playerAnimationsApi,
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, matteApi, materialApi, terrainApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, matteApi, materialApi, meshApi, terrainApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

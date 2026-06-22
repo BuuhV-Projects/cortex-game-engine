@@ -51,13 +51,17 @@ export interface EditorBridgeOptions {
   onTool?: (mode: 'translate' | 'rotate' | 'scale') => void;
   /** Adiciona um terreno à cena (menu "Adicionar terreno" da IDE). */
   onAddTerrain?: () => void;
+  /** Adiciona uma forma de blockout à cena (paleta de Formas da IDE — ADR-0071). */
+  onAddShape?: (kind: string) => void;
+  /** Arma o "desenhar caixa no chão" (ProBuilder New Shape — ADR-0071). */
+  onDrawShape?: () => void;
   /** Chamado quando o handshake conclui — o attachEditor esconde os painéis in-canvas. */
   onBridged: () => void;
 }
 
 /** Cria a ponte. Inerte (no-op) fora de um iframe. */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onBridged } = options;
 
   const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
   if (!inIframe) {
@@ -109,7 +113,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
   };
 
   const onMessage = (ev: MessageEvent): void => {
-    const data = ev.data as { source?: string; type?: string; id?: string; value?: unknown; active?: boolean; mode?: string } | null;
+    const data = ev.data as { source?: string; type?: string; id?: string; value?: unknown; active?: boolean; mode?: string; kind?: string } | null;
     if (!data || data.source !== IDE) return;
     switch (data.type) {
       case 'ack':
@@ -165,6 +169,12 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         break;
       case 'addTerrain':
         onAddTerrain?.();
+        break;
+      case 'addShape':
+        if (typeof data.kind === 'string') onAddShape?.(data.kind);
+        break;
+      case 'drawShape':
+        onDrawShape?.();
         break;
     }
   };

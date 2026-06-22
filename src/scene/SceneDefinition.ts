@@ -228,6 +228,32 @@ const primitiveNode = z.object({
   metalness: z.number().optional(),
   ...baseFields,
 });
+
+/**
+ * **Malha de blockout editável** (ProBuilder — ADR-0071). Carrega uma **receita de
+ * forma** paramétrica (`shape`, regenerável: cubo/escada/rampa/arco/parede…) OU
+ * **geometria explícita** (`positions`/`faces`, malha "freeform" após edição de
+ * elementos). Precedência no {@link buildScene}: override do editor
+ * (`overlay.data.geometry[id]`) > `shape` > geometria explícita. Como tem todos os
+ * `baseFields`, collider/rapierBody/material/matte funcionam no Inspector.
+ */
+const meshNode = z.object({
+  type: z.literal('mesh'),
+  shape: z
+    .object({
+      kind: z.enum(['cube', 'plane', 'cylinder', 'sphere', 'cone', 'stairs', 'ramp', 'arch', 'wallOpening']),
+      params: z.record(z.string(), z.number()).optional(),
+    })
+    .optional(),
+  /** Vértices lógicos (malha freeform). Usado quando não há `shape`. */
+  positions: z.array(vec3).optional(),
+  /** Faces poligonais (índices em `positions`), em ordem CCW. */
+  faces: z.array(z.array(z.number().int().nonnegative())).optional(),
+  color: colorSchema.optional(),
+  roughness: z.number().optional(),
+  metalness: z.number().optional(),
+  ...baseFields,
+});
 const lightNode = z.object({
   type: z.literal('light'),
   light: z.enum(['directional', 'hemisphere', 'ambient']),
@@ -324,6 +350,7 @@ const terrainNode = z.object({
 const sceneNodeSchema = z.discriminatedUnion('type', [
   modelNode,
   primitiveNode,
+  meshNode,
   lightNode,
   waterNode,
   backgroundNode,
@@ -363,6 +390,8 @@ export type CharacterConfig = NonNullable<z.infer<typeof characterSchema>>;
 export type RapierBodyConfig = NonNullable<z.infer<typeof rapierBodySchema>>;
 export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
+/** Nó de malha de blockout editável (ver {@link meshNode}; ADR-0071). */
+export type MeshNode = z.infer<typeof meshNode>;
 export type LightNode = z.infer<typeof lightNode>;
 export type WaterNode = z.infer<typeof waterNode>;
 export type BackgroundNode = z.infer<typeof backgroundNode>;

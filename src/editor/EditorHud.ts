@@ -46,6 +46,7 @@ export function createEditorHud(parent: HTMLElement = document.body): EditorHud 
     'F foca no selecionado',
     'Delete remove',
     'Esc desseleciona',
+    'malha: Tab edita • 1/2/3 vértice/aresta/face • E extruda',
     'F2 fecha',
   ].join(' &nbsp;•&nbsp; ');
   const coords = document.createElement('span');

@@ -36,12 +36,18 @@ import { createEditorInspector } from './EditorInspector.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
 import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
+import { createEditorShapePanel } from './EditorShapePanel.js';
+import { SHAPES, type ShapeKind } from '../probuilder/shapes.js';
 import { createObjectRegistry } from './EditorModel.js';
 import { createAuthoringContext } from './authoring/AuthoringContext.js';
 import { createColliderApi } from './authoring/ColliderAuthoring.js';
 import { createPhysicsApi } from './authoring/PhysicsAuthoring.js';
 import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
+import { createMeshApi } from './authoring/MeshAuthoring.js';
+import { MeshEditSystem } from './MeshEditSystem.js';
+import { createMeshEditToolbar } from './MeshEditToolbar.js';
+import { ShapeDrawSystem } from './ShapeDrawSystem.js';
 import { createAnimationApi, createPlayerAnimationsApi } from './authoring/AnimationAuthoring.js';
 import { createTerrainAuthoring } from './authoring/TerrainAuthoring.js';
 import { createEditorBridge } from './EditorBridge.js';
@@ -181,6 +187,9 @@ export function attachEditor(game: Game): GameEditor {
 
   // ── Overlay de persistência ──────────────────────────────────────────────────
   const overlay: SceneFileV1 = emptySceneFile();
+  // Limpeza ao deletar um nó (atribuída adiante, quando physicsApi/addedList existem).
+  // Default no-op pra cobrir a janela antes da atribuição.
+  let deleteNode: (obj: import('three').Object3D) => void = () => {};
   const deletedList = (): string[] => {
     const d = overlay.data['deleted'];
     if (Array.isArray(d)) return d as string[];
@@ -263,14 +272,7 @@ export function attachEditor(game: Game): GameEditor {
       writeBackTransform, // gizmo → TransformComponent
       (obj) => cameraSystem.focusOn(obj),
       selection,
-      (obj) => {
-        // onDelete (Delete) — persiste a remoção no overlay (loader pula no boot).
-        if (!obj.name) return;
-        const d = deletedList();
-        if (!d.includes(obj.name)) d.push(obj.name);
-        delete overlay.objects[obj.name];
-        persist();
-      },
+      (obj) => deleteNode(obj), // limpeza completa (física + overlay); ver `deleteNode` abaixo
       // Edição com TODOS os eixos livres (mover/rotacionar/escalar em X/Y/Z) +
       // snap de grade. Embora a gameplay seja 2.5D (plano XY), o editor é 3D pleno
       // — útil pra profundidade/parallax em Z e decoração. As edições persistem:
@@ -567,6 +569,36 @@ export function attachEditor(game: Game): GameEditor {
   const matteApi = createMatteApi(authoring);
   const materialApi = createMaterialApi(authoring);
 
+  // ── Blockout (ProBuilder — ADR-0071): autoria de forma + edição de elementos ──
+  const meshAuthoring = createMeshApi(authoring);
+  // Barra flutuante estilo Unity (chrome de viewport — NÃO some no modo bridge da IDE).
+  const meshToolbar = createMeshEditToolbar({
+    onMode: (mode) => (mode === 'object' ? meshEditSystem.exit() : meshEditSystem.enter(mode)),
+    onExtrude: () => meshEditSystem.extrudeSelected(),
+  });
+  const meshEditSystem = new MeshEditSystem(
+    editorState,
+    editorCamera,
+    game.canvas,
+    game.scene,
+    game.input,
+    hud,
+    selection,
+    meshAuthoring,
+    meshToolbar,
+  );
+  game.world.addSystem(meshEditSystem);
+  // O `meshApi` do Inspector = autoria de forma + controles de edição de elemento
+  // (delegam ao MeshEditSystem). Mantém a UI declarativa (EditorModel) desacoplada.
+  const meshApi = {
+    ...meshAuthoring,
+    editMode: () => meshEditSystem.mode,
+    setEditMode: (_obj: import('three').Object3D, mode: 'object' | 'vertex' | 'edge' | 'face') =>
+      mode === 'object' ? meshEditSystem.exit() : meshEditSystem.enter(mode),
+    hasFaceSelected: () => meshEditSystem.hasFaceSelected(),
+    extrudeSelected: () => meshEditSystem.extrudeSelected(),
+  };
+
   // ── Terreno: pincel de esculpir (raise/lower) ────────────────────────────────
   // CRUD/sessão/persistência extraídos pra TerrainAuthoring (ADR-0060); aqui ficam
   // os efeitos de UI (anel do pincel, gizmo, hud) e a interação no viewport (raycast
@@ -650,6 +682,7 @@ export function attachEditor(game: Game): GameEditor {
     physicsApi,
     matteApi,
     materialApi,
+    meshApi,
     terrainApi,
     animationApi,
     playerAnimationsApi,
@@ -697,6 +730,73 @@ export function attachEditor(game: Game): GameEditor {
       })
       .catch(() => addPanel.setAssets([]));
   }
+
+  // ── Blockout (ADR-0071): cria um nó `mesh`, persiste no overlay, seleciona e o
+  // deixa ESTÁTICO já (via physicsApi — autoritativo: o Inspector mostra "Estático",
+  // aplica o collider ao vivo e marca `cortexSolid` pra colidir com o player).
+  const createMeshNode = (node: SceneNode): void => {
+    void addSceneNode(game.scene, node).then((obj) => {
+      if (!obj) return;
+      addedList().push(node);
+      // ANTES de selecionar: deixa estático (grava data.physics) pra o Inspector já
+      // descrever "Estático" ao reagir à seleção (senão mostra "Nenhum" até reselecionar).
+      physicsApi.setType(obj, 'static'); // nasce sólido — desligável no Inspector
+      persist();
+      selection.requestSelect(obj);
+    });
+  };
+  const addShape = (kind: string): void => {
+    if (!(kind in SHAPES)) return; // ignora kind inválido vindo da ponte
+    const forward = new Vector3();
+    editorCamera.getWorldDirection(forward);
+    const p = editorCamera.position.clone().add(forward.multiplyScalar(12));
+    createMeshNode({
+      type: 'mesh',
+      id: `mesh-${Date.now().toString(36)}`,
+      shape: { kind: kind as ShapeKind },
+      place: { x: p.x, z: p.z, y: 0 },
+    });
+  };
+
+  // Limpeza completa ao DELETAR um nó (preenche o hook usado pelo ObjectEditSystem):
+  // 1) destrói entidades de física vivas (collider/character/rapier) → some o gizmo
+  //    de collider (senão fica "fantasma" na cena); 2) nó ADICIONADO no editor sai de
+  //    `data.added` de vez (não faz sentido marcar "deletado" — não há base pra pular,
+  //    nem undo); nó BASE (level.json) entra em `data.deleted` pro buildScene pular;
+  //    3) limpa as entradas de overlay por-objeto (transform + concerns).
+  deleteNode = (obj) => {
+    if (!obj.name) return;
+    const name = obj.name;
+    physicsApi.setType(obj, 'none'); // destrói collider/character/rapier + tira cortexSolid
+    const added = addedList();
+    const i = added.findIndex((n) => (n as { id?: string }).id === name);
+    if (i >= 0) added.splice(i, 1); // criado no editor → some de vez
+    else {
+      const d = deletedList(); // nó do level.json → marca pra pular no boot
+      if (!d.includes(name)) d.push(name);
+    }
+    delete overlay.objects[name];
+    for (const key of ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint']) {
+      const m = (overlay.data as Record<string, unknown>)[key];
+      if (m && typeof m === 'object' && !Array.isArray(m)) delete (m as Record<string, unknown>)[name];
+    }
+    persist(true);
+  };
+  const shapeDrawSystem = new ShapeDrawSystem(
+    editorState,
+    editorCamera,
+    game.canvas,
+    game.scene,
+    game.input,
+    hud,
+    createMeshNode,
+  );
+  game.world.addSystem(shapeDrawSystem);
+
+  const shapePanel = createEditorShapePanel({
+    onAddShape: addShape,
+    onDrawBox: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
+  });
 
   // ── Ponte com a IDE (ADR-0056) ───────────────────────────────────────────────
   // Se o jogo roda dentro do iframe do Preview da IDE, publica hierarquia/inspector
@@ -768,16 +868,19 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, physicsApi, matteApi, materialApi, terrainApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, physicsApi, matteApi, materialApi, meshApi, terrainApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),
     onAddTerrain: addTerrain,
+    onAddShape: addShape,
+    onDrawShape: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
     onBridged: () => {
       bridgedPanelsHidden = true;
       outliner.setVisible(false);
       inspector.setVisible(false);
       addPanel.setVisible(false);
+      shapePanel.setVisible(false);
       hud.setVisible(false); // a barra de HUD vira pills da IDE
       if (playBtn) playBtn.style.display = 'none';
     },
@@ -850,6 +953,7 @@ export function attachEditor(game: Game): GameEditor {
         outliner.setVisible(showInCanvas && editorState.active);
         inspector.setVisible(showInCanvas && editorState.active);
         addPanel.setVisible(showInCanvas && editorState.active);
+        shapePanel.setVisible(showInCanvas && editorState.active);
         // Frustum da câmera + helpers de luz: só no modo edição (somem no Play).
         cameraHelper.visible = editorState.active;
         if (editorState.active) cameraHelper.update();
