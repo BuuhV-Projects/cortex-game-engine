@@ -193,6 +193,7 @@
 
 - [addSceneNode](functions/addSceneNode.md)
 - [applyMaterial](functions/applyMaterial.md)
+- [applyRoad](functions/applyRoad.md)
 - [attachResolveOrder](functions/attachResolveOrder.md)
 - [autoDetectSceneFileWriter](functions/autoDetectSceneFileWriter.md)
 - [autoMapPlayerClips](functions/autoMapPlayerClips.md)

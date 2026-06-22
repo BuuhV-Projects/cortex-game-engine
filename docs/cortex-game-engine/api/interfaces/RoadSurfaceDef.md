@@ -6,7 +6,7 @@
 
 # Interface: RoadSurfaceDef
 
-Defined in: src/road/surfaces.ts:12
+Defined in: [src/road/surfaces.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/surfaces.ts#L12)
 
 Superfície resolvida: caminhos das texturas + cor de fallback + tile.
 
@@ -16,7 +16,7 @@ Superfície resolvida: caminhos das texturas + cor de fallback + tile.
 
 > **color**: `string` \| `number`
 
-Defined in: src/road/surfaces.ts:14
+Defined in: [src/road/surfaces.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/surfaces.ts#L14)
 
 Cor base (hex number ou string — three aceita ambos). Usada sem textura.
 
@@ -26,7 +26,7 @@ Cor base (hex number ou string — three aceita ambos). Usada sem textura.
 
 > `optional` **diffuse?**: `string`
 
-Defined in: src/road/surfaces.ts:16
+Defined in: [src/road/surfaces.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/surfaces.ts#L16)
 
 Caminho do diffuse (relativo ao projeto), ou `undefined` p/ cor sólida.
 
@@ -36,7 +36,7 @@ Caminho do diffuse (relativo ao projeto), ou `undefined` p/ cor sólida.
 
 > `optional` **normal?**: `string`
 
-Defined in: src/road/surfaces.ts:18
+Defined in: [src/road/surfaces.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/surfaces.ts#L18)
 
 Caminho do normal map (opcional).
 
@@ -46,6 +46,6 @@ Caminho do normal map (opcional).
 
 > **repeat**: `number`
 
-Defined in: src/road/surfaces.ts:20
+Defined in: [src/road/surfaces.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/surfaces.ts#L20)
 
 Unidades de mundo por tile no comprimento (default 8 m).

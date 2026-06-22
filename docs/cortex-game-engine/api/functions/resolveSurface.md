@@ -8,7 +8,7 @@
 
 > **resolveSurface**(`surface`): [`RoadSurfaceDef`](../interfaces/RoadSurfaceDef.md)
 
-Defined in: src/road/surfaces.ts:43
+Defined in: [src/road/surfaces.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/surfaces.ts#L43)
 
 Resolve a [RoadSurface](../type-aliases/RoadSurface.md) do nó numa [RoadSurfaceDef](../interfaces/RoadSurfaceDef.md) concreta.
 

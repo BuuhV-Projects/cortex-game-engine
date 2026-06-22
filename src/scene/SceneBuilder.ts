@@ -11,6 +11,9 @@ import {
   Raycaster,
   Vector3,
   RepeatWrapping,
+  SRGBColorSpace,
+  LinearFilter,
+  LinearMipmapLinearFilter,
   DirectionalLight,
   HemisphereLight,
   AmbientLight,
@@ -1004,6 +1007,22 @@ function makeEditableMesh(node: Extract<SceneNode, { type: 'mesh' }>, geomOverri
  * async). Guarda a spline em `userData.cortexRoad` (o editor edita os nós). O `three`
  * já tem o terreno instanciado (o nó terrain vem antes na ordem da cena).
  */
+/**
+ * Ajusta uma textura pra **tilear bem numa pista** (ADR-0072): repeat + mipmaps +
+ * filtragem linear + anisotropia (mata o granulado/aliasing ao longe). `albedo` =
+ * setar sRGB (diffuse); normal map fica linear. Força os filtros mesmo se a textura
+ * veio do cache com NearestFilter.
+ */
+function smoothTiled(t: import('three').Texture, albedo: boolean): void {
+  t.wrapS = t.wrapT = RepeatWrapping;
+  t.anisotropy = 8;
+  t.generateMipmaps = true;
+  t.minFilter = LinearMipmapLinearFilter;
+  t.magFilter = LinearFilter;
+  if (albedo) t.colorSpace = SRGBColorSpace;
+  t.needsUpdate = true;
+}
+
 function makeRoad(node: Extract<SceneNode, { type: 'road' }>, three: Object3D): Mesh {
   const mesh = new Mesh();
   mesh.receiveShadow = true;
@@ -1047,17 +1066,19 @@ export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>
   mesh.geometry = toRoadGeometry(samples, width, surf.repeat);
   // Cor BRANCA quando há textura (o map é multiplicado pela cor — cor escura =
   // pista preta). Sem textura, usa a cor da superfície como fallback.
-  const material = new MeshStandardMaterial({ color: surf.diffuse ? 0xffffff : surf.color, roughness: 1, metalness: 0 });
+  const material = new MeshStandardMaterial({ color: surf.diffuse ? 0xffffff : surf.color, roughness: 0.95, metalness: 0 });
   if (surf.diffuse) {
-    void loadTexture(surf.diffuse).then((t) => {
-      t.wrapS = t.wrapT = RepeatWrapping;
+    // pixelated=false → filtragem LINEAR + mipmaps (senão a pista fica granulada/aliased
+    // ao longe). + anisotropia (nitidez em ângulo rasante) + sRGB (albedo).
+    void loadTexture(surf.diffuse, false).then((t) => {
+      smoothTiled(t, true);
       material.map = t;
       material.needsUpdate = true;
     }).catch(() => {});
   }
   if (surf.normal) {
-    void loadTexture(surf.normal).then((t) => {
-      t.wrapS = t.wrapT = RepeatWrapping;
+    void loadTexture(surf.normal, false).then((t) => {
+      smoothTiled(t, false); // normal map é dado LINEAR — não setar colorSpace sRGB
       material.normalMap = t;
       material.needsUpdate = true;
     }).catch(() => {});

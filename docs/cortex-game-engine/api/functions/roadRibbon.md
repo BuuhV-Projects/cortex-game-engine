@@ -8,7 +8,7 @@
 
 > **roadRibbon**(`samples`, `width`, `uvScale?`): [`RoadRibbon`](../interfaces/RoadRibbon.md)
 
-Defined in: src/road/RoadMesh.ts:36
+Defined in: [src/road/RoadMesh.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L36)
 
 Gera a faixa da pista. `width` em metros; `uvScale` = quantas unidades de mundo
 equivalem a 1 tile da textura ao longo do comprimento (default 8 m → asfalto tila

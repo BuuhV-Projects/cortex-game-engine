@@ -744,11 +744,13 @@ export function attachEditor(game: Game): GameEditor {
         const list = Array.isArray(assets) ? assets : [];
         addPanel.setAssets(list.filter((a) => a.toLowerCase().endsWith('.glb')));
         terrain.setAvailableTextures(list.filter(isImage));
-        // Texturas de estrada (qualquer *Diffuse.png em assets/roads/) pro modal de
-        // superfície. Normal = sibling *Normal.png, se existir na lista.
+        // Superfícies de pista pro modal: só *Diffuse.png na RAIZ de assets/roads/
+        // (exclui subpastas Markers/Signs/FedSigns — faixas com alpha que ficam feias)
+        // e tira barreiras/placas/postes/túnel (não são superfícies tileáveis).
         const lower = new Set(list.map((p) => p.toLowerCase()));
+        const notSurface = /barrier|barrel|railing|beam|pole|tunnel|light|cable|sign|marker|rumble|utility|flare/i;
         roadTextures = list
-          .filter((p) => /assets\/roads\/.*diffuse\.png$/i.test(p))
+          .filter((p) => /assets\/roads\/[^/]*diffuse\.png$/i.test(p) && !notSurface.test(p))
           .sort()
           .map((p) => {
             const normal = p.replace(/Diffuse\.png$/i, 'Normal.png');

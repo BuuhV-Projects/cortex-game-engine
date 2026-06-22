@@ -8,7 +8,7 @@
 
 > **sampleSpline**(`nodes`, `stepsPerSegment?`): [`RoadSample`](../interfaces/RoadSample.md)[]
 
-Defined in: src/road/RoadSpline.ts:55
+Defined in: [src/road/RoadSpline.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L55)
 
 Amostra a spline que passa pelos `nodes` (≥2). `stepsPerSegment` = densidade de
 amostras por segmento entre dois nós (default 12). Os extremos são duplicados
