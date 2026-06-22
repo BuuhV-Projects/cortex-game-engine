@@ -45,6 +45,7 @@ import { createPhysicsApi } from './authoring/PhysicsAuthoring.js';
 import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
 import { createMeshApi } from './authoring/MeshAuthoring.js';
+import { createRoadApi } from './authoring/RoadAuthoring.js';
 import { MeshEditSystem } from './MeshEditSystem.js';
 import { createMeshEditToolbar } from './MeshEditToolbar.js';
 import { ShapeDrawSystem } from './ShapeDrawSystem.js';
@@ -572,6 +573,7 @@ export function attachEditor(game: Game): GameEditor {
 
   // ── Blockout (ProBuilder — ADR-0071): autoria de forma + edição de elementos ──
   const meshAuthoring = createMeshApi(authoring);
+  const roadApi = createRoadApi(authoring); // estradas (ADR-0072)
   // Barra flutuante estilo Unity (chrome de viewport — NÃO some no modo bridge da IDE).
   const meshToolbar = createMeshEditToolbar({
     onMode: (mode) => (mode === 'object' ? meshEditSystem.exit() : meshEditSystem.enter(mode)),
@@ -684,6 +686,7 @@ export function attachEditor(game: Game): GameEditor {
     matteApi,
     materialApi,
     meshApi,
+    roadApi,
     terrainApi,
     animationApi,
     playerAnimationsApi,
@@ -883,7 +886,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, physicsApi, matteApi, materialApi, meshApi, terrainApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, physicsApi, matteApi, materialApi, meshApi, roadApi, terrainApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),

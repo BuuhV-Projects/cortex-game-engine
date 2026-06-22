@@ -192,6 +192,27 @@ export interface MeshApi {
   extrudeSelected?(): void;
 }
 
+/** Estado de uma estrada selecionada (ADR-0072). `null` se não é um nó `road`. */
+export interface RoadEditState {
+  /** Nome da superfície atual (`asphalt`/…) ou `'custom'` se URLs explícitas. */
+  surface: string;
+  /** Largura da pista (m). */
+  width: number;
+}
+
+/**
+ * Ponte de autoria de **estradas** (Road Architect → Cortex, ADR-0072): o inspector
+ * escolhe a superfície (asfalto/concreto/…) e a largura; regenera a malha ao vivo e
+ * persiste no nó (`data.added`). `get` devolve `null` se o objeto não é uma estrada.
+ */
+export interface RoadApi {
+  get(obj: Object3D): RoadEditState | null;
+  /** Troca a superfície (nome do catálogo) → regenera + persiste. */
+  setSurface(obj: Object3D, name: string): void;
+  /** Ajusta a largura (m) → regenera + persiste. */
+  setWidth(obj: Object3D, width: number): void;
+}
+
 /** Modo do pincel de terreno: esculpir altura ou pintar textura. */
 export type TerrainBrushMode = 'sculpt' | 'paint';
 
@@ -320,6 +341,8 @@ export interface EditorInspectorOptions {
   materialApi?: MaterialApi;
   /** Opcional: autoria das malhas de blockout (forma paramétrica/reset). Ver {@link MeshApi}. */
   meshApi?: MeshApi;
+  /** Opcional: autoria de estradas (superfície/largura). Ver {@link RoadApi}. */
+  roadApi?: RoadApi;
   /** Opcional: pincel de esculpir terreno. Ver {@link TerrainApi}. */
   terrainApi?: TerrainApi;
   /** Opcional: controle/persistência de animação (escolher clipe, play/stop). Ver {@link AnimationApi}. */
@@ -357,13 +380,14 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     matteApi,
     materialApi,
     meshApi,
+    roadApi,
     terrainApi,
     animationApi,
     playerAnimationsApi,
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, matteApi, materialApi, meshApi, terrainApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, matteApi, materialApi, meshApi, roadApi, terrainApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

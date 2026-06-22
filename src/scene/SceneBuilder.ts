@@ -815,7 +815,7 @@ async function instantiate(
       applyPlacement(obj, node);
       break;
     case 'road':
-      obj = await makeRoad(node, three);
+      obj = makeRoad(node, three);
       three.add(obj);
       applyPlacement(obj, node);
       break;
@@ -1004,38 +1004,50 @@ function makeEditableMesh(node: Extract<SceneNode, { type: 'mesh' }>, geomOverri
  * async). Guarda a spline em `userData.cortexRoad` (o editor edita os nós). O `three`
  * já tem o terreno instanciado (o nó terrain vem antes na ordem da cena).
  */
-async function makeRoad(node: Extract<SceneNode, { type: 'road' }>, three: import('three').Scene): Promise<Mesh> {
+function makeRoad(node: Extract<SceneNode, { type: 'road' }>, three: Object3D): Mesh {
+  const mesh = new Mesh();
+  mesh.receiveShadow = true;
+  applyRoad(mesh, node, three);
+  return mesh;
+}
+
+/**
+ * (Re)gera a malha + material de uma estrada num `mesh` existente (ADR-0072).
+ * Amostra a spline dos `nodes`, **conforma ao terreno** (raycast pra baixo por amostra
+ * → `terrenoY + yOffset`), monta o ribbon e aplica a superfície. Quando há textura, a
+ * cor base vira **branca** (senão o `color` escuro escureceria a textura). Atualiza
+ * `userData.cortexRoad`. Exportado pra o editor regenerar ao vivo (trocar superfície/
+ * largura). `three` = raiz da cena (pra achar o terreno).
+ */
+export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>, three: Object3D): void {
   const surf = resolveSurface(node.surface);
   const width = node.width ?? 8;
   const yOffset = node.yOffset ?? 0.05;
   const samples = sampleSpline(node.nodes as [number, number, number][], node.steps ?? 12);
 
   // Conformar ao terreno: raycast pra baixo contra os meshes de terreno da cena.
-  if (node.conformTerrain !== false) {
-    const terrains: Object3D[] = [];
-    three.traverse((o) => {
-      if ((o.userData as Record<string, unknown>)['cortexTerrain']) terrains.push(o);
-    });
-    if (terrains.length > 0) {
-      const ray = new Raycaster();
-      const down = new Vector3(0, -1, 0);
-      const origin = new Vector3();
-      for (const s of samples) {
-        origin.set(s.pos[0], 1e4, s.pos[2]);
-        ray.set(origin, down);
-        const hit = ray.intersectObjects(terrains, true)[0];
-        s.pos[1] = (hit ? hit.point.y : s.pos[1]) + yOffset;
-      }
-    } else {
-      for (const s of samples) s.pos[1] += yOffset;
+  const conform = node.conformTerrain !== false;
+  const terrains: Object3D[] = [];
+  if (conform) three.traverse((o) => { if ((o.userData as Record<string, unknown>)['cortexTerrain']) terrains.push(o); });
+  if (conform && terrains.length > 0) {
+    const ray = new Raycaster();
+    const down = new Vector3(0, -1, 0);
+    const origin = new Vector3();
+    for (const s of samples) {
+      origin.set(s.pos[0], 1e4, s.pos[2]);
+      ray.set(origin, down);
+      const hit = ray.intersectObjects(terrains, true)[0];
+      s.pos[1] = (hit ? hit.point.y : s.pos[1]) + yOffset;
     }
   } else {
     for (const s of samples) s.pos[1] += yOffset;
   }
 
-  const geometry = toRoadGeometry(samples, width, surf.repeat);
-  const material = new MeshStandardMaterial({ color: surf.color, roughness: 1, metalness: 0 });
-  // Texturas (diffuse/normal) — carregadas sob demanda; tile via RepeatWrapping.
+  mesh.geometry?.dispose();
+  mesh.geometry = toRoadGeometry(samples, width, surf.repeat);
+  // Cor BRANCA quando há textura (o map é multiplicado pela cor — cor escura =
+  // pista preta). Sem textura, usa a cor da superfície como fallback.
+  const material = new MeshStandardMaterial({ color: surf.diffuse ? 0xffffff : surf.color, roughness: 1, metalness: 0 });
   if (surf.diffuse) {
     void loadTexture(surf.diffuse).then((t) => {
       t.wrapS = t.wrapT = RepeatWrapping;
@@ -1050,17 +1062,16 @@ async function makeRoad(node: Extract<SceneNode, { type: 'road' }>, three: impor
       material.needsUpdate = true;
     }).catch(() => {});
   }
-  const mesh = new Mesh(geometry, material);
-  mesh.receiveShadow = true;
+  (mesh.material as MeshStandardMaterial | undefined)?.dispose();
+  mesh.material = material;
   (mesh.userData as Record<string, unknown>)['cortexRoad'] = {
     nodes: node.nodes,
     width,
     surface: node.surface ?? 'asphalt',
-    conformTerrain: node.conformTerrain !== false,
+    conformTerrain: conform,
     steps: node.steps ?? 12,
     yOffset,
   };
-  return mesh;
 }
 
 function makeLight(node: Extract<SceneNode, { type: 'light' }>): Object3D {

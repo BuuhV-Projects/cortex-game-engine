@@ -3,7 +3,7 @@ import { MathUtils } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
-import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, TerrainApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
+import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
@@ -155,6 +155,7 @@ export interface InspectorContext {
   matteApi?: MatteApi;
   materialApi?: MaterialApi;
   meshApi?: MeshApi;
+  roadApi?: RoadApi;
   terrainApi?: TerrainApi;
   animationApi?: AnimationApi;
   playerAnimationsApi?: PlayerAnimationsApi;
@@ -452,6 +453,30 @@ export function describeInspector(
     }
 
     if (fields.length) sections.push({ title: 'Forma', fields });
+  }
+
+  // ── Estrada (superfície + largura — ADR-0072) ────────────────────────────────
+  const roadState = ctx.roadApi?.get(obj) ?? null;
+  if (ctx.roadApi && roadState) {
+    const api = ctx.roadApi;
+    const surfaces = ['asphalt', 'concrete', 'dirt', 'brick', 'cobblestone'];
+    const labels: Record<string, string> = {
+      asphalt: 'Asfalto', concrete: 'Concreto', dirt: 'Terra', brick: 'Tijolo', cobblestone: 'Paralelepípedo', custom: 'Custom',
+    };
+    const opts = surfaces.map((s) => ({ value: s, label: labels[s]! }));
+    if (roadState.surface === 'custom') opts.unshift({ value: 'custom', label: 'Custom' });
+    const fields: InspectorField[] = [
+      { kind: 'select', id: fid('roadSurface'), label: 'Superfície', value: roadState.surface, options: opts },
+      { kind: 'number', id: fid('roadWidth'), label: 'Largura (m)', value: roadState.width, step: 0.5 },
+    ];
+    handlers.set(fid('roadSurface'), (v) => {
+      api.setSurface(obj, String(v));
+    });
+    handlers.set(fid('roadWidth'), (v) => {
+      const n = Number(v);
+      if (Number.isFinite(n)) api.setWidth(obj, n);
+    });
+    sections.push({ title: 'Estrada', fields });
   }
 
   // ── Terreno (pincel: esculpir altura OU texturizar/pintar) ────────────────────
