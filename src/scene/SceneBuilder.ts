@@ -1042,28 +1042,38 @@ export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>
   const surf = resolveSurface(node.surface);
   const width = node.width ?? 8;
   const yOffset = node.yOffset ?? 0.05;
-  const samples = sampleSpline(node.nodes as [number, number, number][], node.steps ?? 16);
+  // Densidade generosa (fiel ao Road Architect): muitas amostras no comprimento +
+  // colunas ao longo da largura → conforma de verdade ao relevo (não só inclina).
+  const samples = sampleSpline(node.nodes as [number, number, number][], node.steps ?? 24);
+  const widthSegments = Math.max(2, Math.min(16, Math.round(width / 1.5)));
 
-  // Conformar ao terreno: raycast pra baixo contra os meshes de terreno da cena.
+  mesh.geometry?.dispose();
+  const geometry = toRoadGeometry(samples, width, surf.repeat, widthSegments);
+
+  // Conformar ao terreno: raycast pra baixo em CADA vértice da grade (bordas + meio),
+  // fixa o Y em terrenoY + yOffset, e RECALCULA as normais (sombreamento na rampa).
   const conform = node.conformTerrain !== false;
   const terrains: Object3D[] = [];
   if (conform) three.traverse((o) => { if ((o.userData as Record<string, unknown>)['cortexTerrain']) terrains.push(o); });
+  const pos = geometry.getAttribute('position');
   if (conform && terrains.length > 0) {
     const ray = new Raycaster();
     const down = new Vector3(0, -1, 0);
     const origin = new Vector3();
-    for (const s of samples) {
-      origin.set(s.pos[0], 1e4, s.pos[2]);
+    for (let i = 0; i < pos.count; i++) {
+      origin.set(pos.getX(i), 1e4, pos.getZ(i));
       ray.set(origin, down);
       const hit = ray.intersectObjects(terrains, true)[0];
-      s.pos[1] = (hit ? hit.point.y : s.pos[1]) + yOffset;
+      pos.setY(i, (hit ? hit.point.y : pos.getY(i)) + yOffset);
     }
   } else {
-    for (const s of samples) s.pos[1] += yOffset;
+    for (let i = 0; i < pos.count; i++) pos.setY(i, pos.getY(i) + yOffset);
   }
-
-  mesh.geometry?.dispose();
-  mesh.geometry = toRoadGeometry(samples, width, surf.repeat);
+  pos.needsUpdate = true;
+  geometry.computeVertexNormals(); // normais reais da superfície conformada
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  mesh.geometry = geometry;
   // Cor BRANCA quando há textura (o map é multiplicado pela cor — cor escura =
   // pista preta). Sem textura, usa a cor da superfície como fallback.
   const material = new MeshStandardMaterial({ color: surf.diffuse ? 0xffffff : surf.color, roughness: 0.95, metalness: 0 });

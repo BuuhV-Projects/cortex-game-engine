@@ -61,9 +61,9 @@ function segmentSteps(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, curveDensity: numb
   const t1 = norm(sub(p2, p0)); // tangente ~ em p1
   const t2 = norm(sub(p3, p1)); // tangente ~ em p2
   const bend = Math.acos(Math.max(-1, Math.min(1, dot(t1, t2)))); // 0..π (quanto dobra)
-  const byLen = Math.ceil(segLen / 2);
+  const byLen = Math.ceil(segLen); // ~1 amostra/m (segue bem o relevo)
   const byCurve = Math.ceil((bend / (Math.PI / 2)) * curveDensity);
-  return Math.max(2, Math.min(64, Math.max(byLen, byCurve)));
+  return Math.max(2, Math.min(256, Math.max(byLen, byCurve)));
 }
 
 /**

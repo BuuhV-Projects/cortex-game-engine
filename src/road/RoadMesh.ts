@@ -29,16 +29,20 @@ export interface RoadRibbon {
 }
 
 /**
- * Gera a faixa da pista. `width` em metros; `uvScale` = quantas unidades de mundo
- * equivalem a 1 tile da textura ao longo do comprimento (default 8 m → asfalto tila
- * a cada 8 m). A largura inteira = 1 tile em U.
+ * Gera a faixa da pista como uma **grade** (subdividida ao longo do comprimento E
+ * **através da largura**, estilo Road Architect — pra a pista conformar bem ao terreno
+ * com relevo, não só inclinar). `width` em metros; `uvScale` = unidades de mundo por
+ * tile no comprimento (default 8 m); `widthSegments` = colunas ao longo da largura
+ * (default 1 = só bordas esquerda/direita). UV: U atravessa 0..1, V por distância.
  */
-export function roadRibbon(samples: RoadSample[], width: number, uvScale = 8): RoadRibbon {
+export function roadRibbon(samples: RoadSample[], width: number, uvScale = 8, widthSegments = 1): RoadRibbon {
   const positions: number[] = [];
   const uvs: number[] = [];
   const normals: number[] = [];
   const indices: number[] = [];
   const half = Math.max(0.05, width / 2);
+  const cols = Math.max(1, Math.floor(widthSegments));
+  const vertsPerRow = cols + 1;
 
   let dist = 0;
   for (let i = 0; i < samples.length; i++) {
@@ -48,33 +52,33 @@ export function roadRibbon(samples: RoadSample[], width: number, uvScale = 8): R
       dist += Math.hypot(s.pos[0] - p[0], s.pos[1] - p[1], s.pos[2] - p[2]);
     }
     // Lateral = up × tangente (direita da pista, +X p/ tangente +Z; mão direita →
-    // winding pra cima). Normal = up (pista ~plana).
+    // winding pra cima). Normal = up (recalculada após conformar ao terreno).
     const right = normalize(cross(UP, s.tangent));
-    const lx = s.pos[0] - right[0] * half;
-    const ly = s.pos[1] - right[1] * half;
-    const lz = s.pos[2] - right[2] * half;
-    const rx = s.pos[0] + right[0] * half;
-    const ry = s.pos[1] + right[1] * half;
-    const rz = s.pos[2] + right[2] * half;
-    positions.push(lx, ly, lz, rx, ry, rz);
-    normals.push(0, 1, 0, 0, 1, 0);
     const v = dist / uvScale;
-    uvs.push(0, v, 1, v);
+    for (let j = 0; j <= cols; j++) {
+      const f = j / cols; // 0 (esquerda) .. 1 (direita)
+      const off = (f - 0.5) * (half * 2); // -half .. +half
+      positions.push(s.pos[0] + right[0] * off, s.pos[1] + right[1] * off, s.pos[2] + right[2] * off);
+      normals.push(0, 1, 0);
+      uvs.push(f, v);
+    }
   }
-  // Quads entre amostras consecutivas (2 tris). Vértice esquerdo = 2i, direito = 2i+1.
+  // Quads na grade entre amostras (linhas) × colunas.
   for (let i = 0; i < samples.length - 1; i++) {
-    const a = 2 * i;
-    const b = 2 * i + 1;
-    const c = 2 * (i + 1);
-    const d = 2 * (i + 1) + 1;
-    indices.push(a, c, b, b, c, d); // CCW visto de cima (+Y)
+    for (let j = 0; j < cols; j++) {
+      const a = i * vertsPerRow + j;
+      const b = i * vertsPerRow + j + 1;
+      const c = (i + 1) * vertsPerRow + j;
+      const d = (i + 1) * vertsPerRow + j + 1;
+      indices.push(a, c, b, b, c, d); // CCW visto de cima (+Y)
+    }
   }
   return { positions, uvs, normals, indices };
 }
 
 /** Monta a {@link BufferGeometry} da pista a partir das amostras + largura. */
-export function toRoadGeometry(samples: RoadSample[], width: number, uvScale = 8): BufferGeometry {
-  const r = roadRibbon(samples, width, uvScale);
+export function toRoadGeometry(samples: RoadSample[], width: number, uvScale = 8, widthSegments = 1): BufferGeometry {
+  const r = roadRibbon(samples, width, uvScale, widthSegments);
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(r.positions, 3));
   g.setAttribute('normal', new Float32BufferAttribute(r.normals, 3));
