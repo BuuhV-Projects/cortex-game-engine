@@ -6,13 +6,14 @@
 
 # Function: sampleSpline()
 
-> **sampleSpline**(`nodes`, `stepsPerSegment?`): [`RoadSample`](../interfaces/RoadSample.md)[]
+> **sampleSpline**(`nodes`, `curveDensity?`): [`RoadSample`](../interfaces/RoadSample.md)[]
 
-Defined in: [src/road/RoadSpline.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L55)
+Defined in: [src/road/RoadSpline.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadSpline.ts#L77)
 
-Amostra a spline que passa pelos `nodes` (≥2). `stepsPerSegment` = densidade de
-amostras por segmento entre dois nós (default 12). Os extremos são duplicados
-(clamp) pra a curva começar/terminar exatamente nos nós das pontas.
+Amostra a spline que passa pelos `nodes` (≥2) com **tessellation adaptativa**:
+`curveDensity` = amostras por **90° de curvatura** (default 16) — curvas fechadas
+ganham mais faces (sem facetar), retas usam poucas (1 a cada ~2 m, pra seguir o
+terreno). Os extremos são duplicados (clamp) pra começar/terminar nos nós das pontas.
 
 ## Parameters
 
@@ -20,9 +21,9 @@ amostras por segmento entre dois nós (default 12). Os extremos são duplicados
 
 `Vec3`[]
 
-### stepsPerSegment?
+### curveDensity?
 
-`number` = `12`
+`number` = `16`
 
 ## Returns
 

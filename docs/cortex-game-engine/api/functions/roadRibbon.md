@@ -6,13 +6,15 @@
 
 # Function: roadRibbon()
 
-> **roadRibbon**(`samples`, `width`, `uvScale?`): [`RoadRibbon`](../interfaces/RoadRibbon.md)
+> **roadRibbon**(`samples`, `width`, `uvScale?`, `widthSegments?`): [`RoadRibbon`](../interfaces/RoadRibbon.md)
 
-Defined in: [src/road/RoadMesh.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L36)
+Defined in: [src/road/RoadMesh.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L38)
 
-Gera a faixa da pista. `width` em metros; `uvScale` = quantas unidades de mundo
-equivalem a 1 tile da textura ao longo do comprimento (default 8 m → asfalto tila
-a cada 8 m). A largura inteira = 1 tile em U.
+Gera a faixa da pista como uma **grade** (subdividida ao longo do comprimento E
+**através da largura**, estilo Road Architect — pra a pista conformar bem ao terreno
+com relevo, não só inclinar). `width` em metros; `uvScale` = unidades de mundo por
+tile no comprimento (default 8 m); `widthSegments` = colunas ao longo da largura
+(default 1 = só bordas esquerda/direita). UV: U atravessa 0..1, V por distância.
 
 ## Parameters
 
@@ -27,6 +29,10 @@ a cada 8 m). A largura inteira = 1 tile em U.
 ### uvScale?
 
 `number` = `8`
+
+### widthSegments?
+
+`number` = `1`
 
 ## Returns
 

@@ -889,7 +889,7 @@ Pontos de controle da spline (≥2), em metros.
 
 > `optional` **steps?**: `number`
 
-Amostras por segmento da spline (densidade). Default 12.
+Densidade da tessellation: amostras por 90° de curvatura (adaptativa). Default 16.
 
 #### surface?
 

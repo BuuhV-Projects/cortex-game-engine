@@ -8,7 +8,7 @@
 
 > **addSceneNode**(`scene`, `node`): `Promise`\<`Object3D`\<`Object3DEventMap`\> \| `null`\>
 
-Defined in: [src/scene/SceneBuilder.ts:644](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L644)
+Defined in: [src/scene/SceneBuilder.ts:647](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L647)
 
 Instancia UM nó de cena e o adiciona à `scene` (modelo `.glb`, primitiva, luz
 ou água), já nomeado por `id` e com `place`/`transform` aplicado. Usado pelo
@@ -896,7 +896,7 @@ Pontos de controle da spline (≥2), em metros.
 
 `number` = `...`
 
-Amostras por segmento da spline (densidade). Default 12.
+Densidade da tessellation: amostras por 90° de curvatura (adaptativa). Default 16.
 
 ##### surface?
 

@@ -142,6 +142,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     cápsula em 1ª pessoa (alinha com o "engine 3D por padrão" do ADR-0062). O
     movimento/look é **wiring de gameplay no `main.ts`** (não dado da cena); só a
     física do player (nó `character`) e o terreno (nó `terrain`) são dado.
+  - **Câmera/controle 3ª pessoa** (`ThirdPersonControlSystem` + `setupThirdPerson`,
+    ADR-0074) — porta o Unity StarterAssets ThirdPerson: câmera orbital por mouse + WASD
+    relativo à câmera + Shift corre + Espaço pula; o personagem vira pra direção do
+    movimento e **anima** (idle/walk/run/jump/fall via `deriveLocomotion`/`SceneAnimator`).
+    Player = nó `model` `.glb` rigado marcado `character`. ⚠️ a **arte** do StarterAssets é
+    placeholder sob **Unity Companion License** (só vale junto com a Unity) — substituir
+    por arte própria/CC0. GLB do personagem vai no template via Git LFS.
 
 ## 6. Build & vendoring
 

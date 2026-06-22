@@ -6,9 +6,9 @@
 
 # Function: toRoadGeometry()
 
-> **toRoadGeometry**(`samples`, `width`, `uvScale?`): `BufferGeometry`
+> **toRoadGeometry**(`samples`, `width`, `uvScale?`, `widthSegments?`): `BufferGeometry`
 
-Defined in: [src/road/RoadMesh.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L76)
+Defined in: [src/road/RoadMesh.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadMesh.ts#L80)
 
 Monta a BufferGeometry da pista a partir das amostras + largura.
 
@@ -25,6 +25,10 @@ Monta a BufferGeometry da pista a partir das amostras + largura.
 ### uvScale?
 
 `number` = `8`
+
+### widthSegments?
+
+`number` = `1`
 
 ## Returns
 

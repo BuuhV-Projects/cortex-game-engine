@@ -107,6 +107,29 @@ O sistema mira o **único** player (entity com `TransformComponent` +
 `CharacterBodyComponent`). Pausa no editor (F2) e no pause do play — não rouba o
 mouse nem move o player enquanto você edita.
 
+### Câmera/controle de 3ª pessoa (StarterAssets-like) — ADR-0074
+
+`setupThirdPerson(game)` liga a câmera **orbital por mouse** (clique trava o cursor)
++ controle: **WASD** anda relativo à câmera, **Shift** corre, **Espaço** pula; o
+personagem **vira** pra direção do movimento e **anima** (idle/walk/run/jump/fall) os
+clipes do `.glb`. O **player é um nó `model` `.glb` rigado** marcado `character` (o
+`buildScene` cria a física vertical + o `SceneAnimator`). Porta o comportamento do
+Unity StarterAssets ThirdPerson (a arte é placeholder — ver ADR-0074).
+
+```ts
+import { Game, buildScene, setupThirdPerson } from 'cortex-game-engine'
+import level from './scenes/level.json' // nó terrain + nó player (model .glb, character)
+const game = new Game({ canvas })
+setupThirdPerson(game, { control: { moveSpeed: 2, sprintSpeed: 5.335 } })
+await buildScene(game.scene, [level], { renderer: game.renderer, world: game.world })
+game.start()
+```
+
+O player no JSON: `{ "type":"model", "id":"player", "url":"assets/characters/player.glb",
+"character": { "radius":0.4, "height":1.8, "jumpForce":9, "groundY":0 } }`. As animações
+são auto-mapeadas pelos nomes dos clipes (idle/walk/run/jump/fall). Opção `facingOffset`
+se o modelo nascer virado ao contrário.
+
 ### Top-down (farm sim / RPG estilo Stardew)
 
 `setupTopDown(game, { readMove })` liga o estilo **vista de cima 3/4**: movimento no
