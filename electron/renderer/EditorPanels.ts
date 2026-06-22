@@ -131,6 +131,8 @@ export class EditorPanels {
       this.send({ type: 'addShape', kind: (e as CustomEvent<{ kind: string }>).detail.kind }))
     // "Desenhar caixa no chão" (menu Cena, ProBuilder New Shape) → arma o desenho.
     document.addEventListener('request-draw-shape', () => this.send({ type: 'drawShape' }))
+    // "Desenhar estrada" (menu Cena, Road Architect — ADR-0072) → arma o desenho.
+    document.addEventListener('request-draw-road', () => this.send({ type: 'drawRoad' }))
     // Botões de ferramenta (mover/girar/escalar) das pills do viewport.
     document.addEventListener('request-tool', (e) => {
       this.send({ type: 'tool', mode: (e as CustomEvent<{ mode: string }>).detail.mode })

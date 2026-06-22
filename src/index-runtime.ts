@@ -107,6 +107,13 @@ export {
 } from './probuilder/EditableMesh.js';
 export * from './probuilder/shapes.js';
 
+// ─── Estradas por spline (Road Architect → Cortex, ADR-0072) ──────────────────
+// `Vec3` NÃO é re-exportado (já vem de SceneDefinition). Núcleo puro: spline +
+// ribbon mesh + catálogo de superfícies.
+export { sampleSpline, splineLength, type RoadSample } from './road/RoadSpline.js';
+export * from './road/RoadMesh.js';
+export * from './road/surfaces.js';
+
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';
 export * from './io/TauriSceneFileWriter.js';

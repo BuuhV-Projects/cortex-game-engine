@@ -6,7 +6,7 @@
 
 # Interface: ShapeParamDef
 
-Defined in: src/probuilder/shapes.ts:27
+Defined in: [src/probuilder/shapes.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L27)
 
 Metadados de um parâmetro de forma (pro Inspector montar o campo numérico).
 
@@ -16,7 +16,7 @@ Metadados de um parâmetro de forma (pro Inspector montar o campo numérico).
 
 > **default**: `number`
 
-Defined in: src/probuilder/shapes.ts:30
+Defined in: [src/probuilder/shapes.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L30)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: src/probuilder/shapes.ts:30
 
 > `optional` **int?**: `boolean`
 
-Defined in: src/probuilder/shapes.ts:35
+Defined in: [src/probuilder/shapes.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L35)
 
 Inteiro (ex.: nº de degraus/lados) — o Inspector arredonda.
 
@@ -34,7 +34,7 @@ Inteiro (ex.: nº de degraus/lados) — o Inspector arredonda.
 
 > **key**: `string`
 
-Defined in: src/probuilder/shapes.ts:28
+Defined in: [src/probuilder/shapes.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L28)
 
 ***
 
@@ -42,7 +42,7 @@ Defined in: src/probuilder/shapes.ts:28
 
 > **label**: `string`
 
-Defined in: src/probuilder/shapes.ts:29
+Defined in: [src/probuilder/shapes.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L29)
 
 ***
 
@@ -50,7 +50,7 @@ Defined in: src/probuilder/shapes.ts:29
 
 > `optional` **max?**: `number`
 
-Defined in: src/probuilder/shapes.ts:32
+Defined in: [src/probuilder/shapes.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L32)
 
 ***
 
@@ -58,7 +58,7 @@ Defined in: src/probuilder/shapes.ts:32
 
 > `optional` **min?**: `number`
 
-Defined in: src/probuilder/shapes.ts:31
+Defined in: [src/probuilder/shapes.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L31)
 
 ***
 
@@ -66,4 +66,4 @@ Defined in: src/probuilder/shapes.ts:31
 
 > `optional` **step?**: `number`
 
-Defined in: src/probuilder/shapes.ts:33
+Defined in: [src/probuilder/shapes.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L33)

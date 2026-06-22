@@ -48,6 +48,7 @@ import { createMeshApi } from './authoring/MeshAuthoring.js';
 import { MeshEditSystem } from './MeshEditSystem.js';
 import { createMeshEditToolbar } from './MeshEditToolbar.js';
 import { ShapeDrawSystem } from './ShapeDrawSystem.js';
+import { RoadDrawSystem } from './RoadDrawSystem.js';
 import { createAnimationApi, createPlayerAnimationsApi } from './authoring/AnimationAuthoring.js';
 import { createTerrainAuthoring } from './authoring/TerrainAuthoring.js';
 import { createEditorBridge } from './EditorBridge.js';
@@ -793,9 +794,23 @@ export function attachEditor(game: Game): GameEditor {
   );
   game.world.addSystem(shapeDrawSystem);
 
+  // Estrada (ADR-0072): cria o nó `road` (conformado ao terreno) e seleciona. Sem
+  // física estática (a pista fica em cima do terreno, que já colide).
+  const createRoadNode = (node: SceneNode): void => {
+    void addSceneNode(game.scene, node).then((obj) => {
+      if (!obj) return;
+      addedList().push(node);
+      persist();
+      selection.requestSelect(obj);
+    });
+  };
+  const roadDrawSystem = new RoadDrawSystem(editorState, editorCamera, game.canvas, game.scene, game.input, hud, createRoadNode);
+  game.world.addSystem(roadDrawSystem);
+
   const shapePanel = createEditorShapePanel({
     onAddShape: addShape,
     onDrawBox: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
+    onDrawRoad: () => roadDrawSystem.setArmed(!roadDrawSystem.isArmed),
   });
 
   // ── Ponte com a IDE (ADR-0056) ───────────────────────────────────────────────
@@ -875,6 +890,7 @@ export function attachEditor(game: Game): GameEditor {
     onAddTerrain: addTerrain,
     onAddShape: addShape,
     onDrawShape: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
+    onDrawRoad: () => roadDrawSystem.setArmed(!roadDrawSystem.isArmed),
     onBridged: () => {
       bridgedPanelsHidden = true;
       outliner.setVisible(false);

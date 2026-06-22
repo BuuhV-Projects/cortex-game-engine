@@ -8,4 +8,4 @@
 
 > **LightNode** = `z.infer`\<*typeof* `lightNode`\>
 
-Defined in: [src/scene/SceneDefinition.ts:395](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L395)
+Defined in: [src/scene/SceneDefinition.ts:433](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L433)

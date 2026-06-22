@@ -8,7 +8,7 @@
 
 > **extrudeFace**(`mesh`, `faceIndex`, `distance`): `object`
 
-Defined in: src/probuilder/EditableMesh.ts:199
+Defined in: [src/probuilder/EditableMesh.ts:199](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/EditableMesh.ts#L199)
 
 **Extruda uma face** ao longo da sua normal por `distance` (op-chave de
 blockout). Cria vértices novos (a face deslocada) + paredes laterais ligando o

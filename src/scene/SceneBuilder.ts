@@ -8,6 +8,9 @@ import {
   SphereGeometry,
   MeshStandardMaterial,
   DoubleSide,
+  Raycaster,
+  Vector3,
+  RepeatWrapping,
   DirectionalLight,
   HemisphereLight,
   AmbientLight,
@@ -43,6 +46,9 @@ import { Water } from './Water.js';
 import { Background } from './Background.js';
 import { toBufferGeometry, type EditableMesh } from '../probuilder/EditableMesh.js';
 import { buildShape } from '../probuilder/shapes.js';
+import { sampleSpline } from '../road/RoadSpline.js';
+import { toRoadGeometry } from '../road/RoadMesh.js';
+import { resolveSurface } from '../road/surfaces.js';
 import { Terrain, type TerrainPaintData } from './Terrain.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import { debug } from '../core/debug.js';
@@ -808,6 +814,11 @@ async function instantiate(
       three.add(obj);
       applyPlacement(obj, node);
       break;
+    case 'road':
+      obj = await makeRoad(node, three);
+      three.add(obj);
+      applyPlacement(obj, node);
+      break;
     case 'light':
       obj = makeLight(node);
       three.add(obj);
@@ -983,6 +994,72 @@ function makeEditableMesh(node: Extract<SceneNode, { type: 'mesh' }>, geomOverri
   mesh.castShadow = node.castShadow ?? true;
   mesh.receiveShadow = node.receiveShadow ?? true;
   (mesh.userData as Record<string, unknown>)['cortexMesh'] = { logical, maps };
+  return mesh;
+}
+
+/**
+ * Cria a malha de uma **estrada** (spline → ribbon — ADR-0072). Amostra a spline dos
+ * `nodes`, opcionalmente **conforma ao terreno** (raycast pra baixo por amostra, fixa
+ * o Y em `terrenoY + yOffset`), gera a faixa e aplica a textura da superfície (carrega
+ * async). Guarda a spline em `userData.cortexRoad` (o editor edita os nós). O `three`
+ * já tem o terreno instanciado (o nó terrain vem antes na ordem da cena).
+ */
+async function makeRoad(node: Extract<SceneNode, { type: 'road' }>, three: import('three').Scene): Promise<Mesh> {
+  const surf = resolveSurface(node.surface);
+  const width = node.width ?? 8;
+  const yOffset = node.yOffset ?? 0.05;
+  const samples = sampleSpline(node.nodes as [number, number, number][], node.steps ?? 12);
+
+  // Conformar ao terreno: raycast pra baixo contra os meshes de terreno da cena.
+  if (node.conformTerrain !== false) {
+    const terrains: Object3D[] = [];
+    three.traverse((o) => {
+      if ((o.userData as Record<string, unknown>)['cortexTerrain']) terrains.push(o);
+    });
+    if (terrains.length > 0) {
+      const ray = new Raycaster();
+      const down = new Vector3(0, -1, 0);
+      const origin = new Vector3();
+      for (const s of samples) {
+        origin.set(s.pos[0], 1e4, s.pos[2]);
+        ray.set(origin, down);
+        const hit = ray.intersectObjects(terrains, true)[0];
+        s.pos[1] = (hit ? hit.point.y : s.pos[1]) + yOffset;
+      }
+    } else {
+      for (const s of samples) s.pos[1] += yOffset;
+    }
+  } else {
+    for (const s of samples) s.pos[1] += yOffset;
+  }
+
+  const geometry = toRoadGeometry(samples, width, surf.repeat);
+  const material = new MeshStandardMaterial({ color: surf.color, roughness: 1, metalness: 0 });
+  // Texturas (diffuse/normal) — carregadas sob demanda; tile via RepeatWrapping.
+  if (surf.diffuse) {
+    void loadTexture(surf.diffuse).then((t) => {
+      t.wrapS = t.wrapT = RepeatWrapping;
+      material.map = t;
+      material.needsUpdate = true;
+    }).catch(() => {});
+  }
+  if (surf.normal) {
+    void loadTexture(surf.normal).then((t) => {
+      t.wrapS = t.wrapT = RepeatWrapping;
+      material.normalMap = t;
+      material.needsUpdate = true;
+    }).catch(() => {});
+  }
+  const mesh = new Mesh(geometry, material);
+  mesh.receiveShadow = true;
+  (mesh.userData as Record<string, unknown>)['cortexRoad'] = {
+    nodes: node.nodes,
+    width,
+    surface: node.surface ?? 'asphalt',
+    conformTerrain: node.conformTerrain !== false,
+    steps: node.steps ?? 12,
+    yOffset,
+  };
   return mesh;
 }
 

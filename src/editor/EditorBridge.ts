@@ -55,13 +55,15 @@ export interface EditorBridgeOptions {
   onAddShape?: (kind: string) => void;
   /** Arma o "desenhar caixa no chão" (ProBuilder New Shape — ADR-0071). */
   onDrawShape?: () => void;
+  /** Arma o "desenhar estrada" (Road Architect — ADR-0072). */
+  onDrawRoad?: () => void;
   /** Chamado quando o handshake conclui — o attachEditor esconde os painéis in-canvas. */
   onBridged: () => void;
 }
 
 /** Cria a ponte. Inerte (no-op) fora de um iframe. */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onDrawRoad, onBridged } = options;
 
   const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
   if (!inIframe) {
@@ -175,6 +177,9 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         break;
       case 'drawShape':
         onDrawShape?.();
+        break;
+      case 'drawRoad':
+        onDrawRoad?.();
         break;
     }
   };

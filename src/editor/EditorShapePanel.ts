@@ -17,6 +17,8 @@ export interface EditorShapePanelOptions {
   onAddShape: (kind: ShapeKind) => void;
   /** Chamado ao clicar em "Desenhar no chão" — arma o desenho de caixa (ADR-0071). */
   onDrawBox?: () => void;
+  /** Chamado ao clicar em "Estrada" — arma o desenho de estrada (ADR-0072). */
+  onDrawRoad?: () => void;
   parent?: HTMLElement;
 }
 
@@ -24,7 +26,7 @@ export interface EditorShapePanelOptions {
 const ORDER: ShapeKind[] = ['cube', 'plane', 'cylinder', 'sphere', 'cone', 'stairs', 'ramp', 'arch', 'wallOpening'];
 
 export function createEditorShapePanel(options: EditorShapePanelOptions): EditorShapePanel {
-  const { onAddShape, onDrawBox, parent = document.body } = options;
+  const { onAddShape, onDrawBox, onDrawRoad, parent = document.body } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -91,6 +93,26 @@ export function createEditorShapePanel(options: EditorShapePanelOptions): Editor
     ].join(';');
     draw.addEventListener('click', onDrawBox);
     root.append(draw);
+  }
+
+  // "Estrada" (ProBuilder-like road): clicar pontos no terreno pra traçar a spline.
+  if (onDrawRoad) {
+    const road = document.createElement('button');
+    road.textContent = '🛣 Estrada';
+    road.title = 'Clique pontos no terreno pra traçar uma estrada (Enter finaliza)';
+    road.style.cssText = [
+      'margin-top:4px',
+      'width:100%',
+      'padding:7px 4px',
+      'border:1px solid #4a4a4a',
+      'border-radius:4px',
+      'background:#33363f',
+      'color:#fff',
+      'cursor:pointer',
+      'font-size:12px',
+    ].join(';');
+    road.addEventListener('click', onDrawRoad);
+    root.append(road);
   }
 
   parent.appendChild(root);

@@ -253,11 +253,37 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | Cena data-driven | `src/scene/` (`SceneDefinition`, `SceneBuilder`) |
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (ADR-0071) |
+| Estradas (spline) | `src/road/` (`RoadSpline` + `RoadMesh` + `surfaces`) · editor: `RoadDrawSystem` · nó `road` (ADR-0072) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
+
+## 12. Estradas por spline (`src/road/`, ADR-0072)
+
+Sistema de estradas inspirado no **Road Architect** (MicroGSD, MIT) — mesmo molde
+data-driven do ProBuilder. **Fase 1** (atual): estrada plana conformada ao terreno.
+
+- **Núcleo puro** (`src/road/`, sem editor/ECS): `RoadSpline` (Catmull-Rom: amostra
+  posição+tangente pelos nós de controle), `RoadMesh` (`roadRibbon`/`toRoadGeometry` —
+  faixa de quads; `right = up × tangent`; UV: U na largura, V por distância → tile),
+  `surfaces` (catálogo `ROAD_SURFACES`: asfalto/concreto/terra/tijolo/paralelepípedo →
+  texturas do Road Architect em `assets/roads/`). Testável isolado.
+- **Nó `road`** (`SceneDefinition`): `nodes` (pontos), `width`, `surface`, `steps`,
+  `conformTerrain`, `yOffset`. `buildScene` (`makeRoad`): amostra a spline, **conforma
+  ao terreno** (raycast pra baixo por amostra → `terrenoY + yOffset`; o terrain já está
+  na cena), gera o ribbon e carrega as texturas (RepeatWrapping). Guarda a spline em
+  `userData.cortexRoad`. Colisão: a pista fica sobre o terreno (que já colide).
+- **Editor** (`RoadDrawSystem`, prioridade 26): "Desenhar estrada" (paleta/menu/ponte
+  `drawRoad`) — clicar pontos no terreno (prévia = linha central + hover), **Enter**/
+  duplo-clique finaliza, **Backspace** remove o último, **Esc** cancela → cria nó `road`
+  em `data.added`. Usa `editorState.drawingShape` (mesma porteira dos outros draw tools).
+- ⚠️ **Texturas (MIT, MicroGSD)** são **assets do projeto** (`assets/roads/`, ~63 MB o
+  pack inteiro) — não vão no bundle do engine. Considerar Git LFS se entrarem no repo.
+- **Fora de escopo na Fase 1** (ver ADR-0072): achatar terreno sob a pista, faixas/
+  marcação, acostamento, interseções, pontes, edição de nós da spline, guard-rails,
+  placas, semáforos.
 
 ## 11. Blockout / ProBuilder — malha de nó editável (`src/probuilder/`, ADR-0071)
 

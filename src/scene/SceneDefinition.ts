@@ -254,6 +254,41 @@ const meshNode = z.object({
   metalness: z.number().optional(),
   ...baseFields,
 });
+/**
+ * **Estrada por spline** (Road Architect → Cortex, ADR-0072). `nodes` são os pontos
+ * de controle (Catmull-Rom passa por eles); o {@link buildScene} gera a malha-faixa
+ * (ribbon) com a textura da `surface`. `conformTerrain` faz a pista acompanhar a
+ * altura do terreno (raycast por amostra). Editável no F2 (overlay vence).
+ */
+const roadNode = z.object({
+  type: z.literal('road'),
+  /** Pontos de controle da spline (≥2), em metros. */
+  nodes: z.array(vec3).min(2),
+  /** Largura da pista (m). Default 8 (≈2 faixas). */
+  width: z.number().positive().optional(),
+  /** Superfície: nome embutido (`asphalt`/…) ou URLs explícitas (diffuse/normal/repeat). */
+  surface: z
+    .union([
+      z.enum(['asphalt', 'concrete', 'dirt', 'brick', 'cobblestone']),
+      z.object({
+        color: colorSchema.optional(),
+        diffuse: z.string().optional(),
+        normal: z.string().optional(),
+        repeat: z.number().positive().optional(),
+      }),
+    ])
+    .optional(),
+  /** Amostras por segmento da spline (densidade). Default 12. */
+  steps: z.number().int().positive().optional(),
+  /** A pista acompanha a altura do terreno (raycast por amostra). Default true. */
+  conformTerrain: z.boolean().optional(),
+  /** Levanta a pista acima do chão (evita z-fight). Default 0.05 m. */
+  yOffset: z.number().optional(),
+  id: z.string().min(1),
+  transform: transformSchema,
+  collider: colliderSchema,
+});
+
 const lightNode = z.object({
   type: z.literal('light'),
   light: z.enum(['directional', 'hemisphere', 'ambient']),
@@ -351,6 +386,7 @@ const sceneNodeSchema = z.discriminatedUnion('type', [
   modelNode,
   primitiveNode,
   meshNode,
+  roadNode,
   lightNode,
   waterNode,
   backgroundNode,
@@ -392,6 +428,8 @@ export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
 /** Nó de malha de blockout editável (ver {@link meshNode}; ADR-0071). */
 export type MeshNode = z.infer<typeof meshNode>;
+/** Nó de estrada por spline (ver {@link roadNode}; ADR-0072). */
+export type RoadNode = z.infer<typeof roadNode>;
 export type LightNode = z.infer<typeof lightNode>;
 export type WaterNode = z.infer<typeof waterNode>;
 export type BackgroundNode = z.infer<typeof backgroundNode>;

@@ -416,6 +416,36 @@ A geometria editada é salva no overlay (`data.geometry[id]`, **vence** a receit
 > Ao **gerar cena** (Chat IA), prefira `primitive`/`model`; use `mesh` quando o usuário
 > pedir blockout/escada/rampa/arco/parede-com-vão. Declare física nos campos do nó.
 
+## Estradas por spline (nó `road` — ADR-0072)
+
+`RoadNode`, `sampleSpline`, `toRoadGeometry`, `roadRibbon`, `ROAD_SURFACES`,
+`resolveSurface`. Sistema de estradas inspirado no Road Architect (MIT). A estrada é
+**dado**: uma spline (Catmull-Rom pelos `nodes`) que vira malha de pista, **conformada
+ao terreno**.
+
+Campos: `nodes` (pontos de controle, ≥2, em metros), `width` (default 8 m), `surface`
+(`asphalt`/`concrete`/`dirt`/`brick`/`cobblestone` ou `{ diffuse, normal, repeat, color }`),
+`steps` (densidade, default 12), `conformTerrain` (default true), `yOffset` (default 0.05 m).
+
+```jsonc
+{
+  "type": "road", "id": "estrada_principal",
+  "nodes": [[0,0,0],[0,0,30],[20,0,60],[40,0,60]],
+  "width": 8, "surface": "asphalt", "conformTerrain": true
+}
+```
+
+As **texturas** (do Road Architect) ficam em `assets/roads/` no projeto. A pista segue
+a altura do terreno (raycast por amostra) e fica `yOffset` acima (evita z-fighting); a
+colisão pra dirigir/andar vem do próprio terreno embaixo.
+
+**No editor (F2):** "🛣 Estrada" (paleta de Formas / menu Cena) — clique pontos no
+terreno pra traçar (prévia ao vivo), **Enter** ou duplo-clique finaliza, **Backspace**
+desfaz o último ponto, **Esc** cancela.
+
+> Ao gerar cena (Chat IA): use `road` pra ruas/estradas; declare os `nodes` no plano XZ
+> (o Y é resolvido pelo terreno). Curvas saem suaves (Catmull-Rom passa pelos pontos).
+
 ## Kit de assets / vocabulário (design system — ADR-0053)
 
 `KitDefinition`, `KitAsset`, `KitAnchor`, `parseKit`, `kitAssetFor`, `kitAnchor`,
