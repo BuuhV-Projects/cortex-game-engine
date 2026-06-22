@@ -1042,7 +1042,7 @@ export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>
   const surf = resolveSurface(node.surface);
   const width = node.width ?? 8;
   const yOffset = node.yOffset ?? 0.05;
-  const samples = sampleSpline(node.nodes as [number, number, number][], node.steps ?? 12);
+  const samples = sampleSpline(node.nodes as [number, number, number][], node.steps ?? 16);
 
   // Conformar ao terreno: raycast pra baixo contra os meshes de terreno da cena.
   const conform = node.conformTerrain !== false;

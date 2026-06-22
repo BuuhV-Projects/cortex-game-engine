@@ -278,7 +278,7 @@ const roadNode = z.object({
       }),
     ])
     .optional(),
-  /** Amostras por segmento da spline (densidade). Default 12. */
+  /** Densidade da tessellation: amostras por 90° de curvatura (adaptativa). Default 16. */
   steps: z.number().int().positive().optional(),
   /** A pista acompanha a altura do terreno (raycast por amostra). Default true. */
   conformTerrain: z.boolean().optional(),

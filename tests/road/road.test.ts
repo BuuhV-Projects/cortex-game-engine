@@ -25,10 +25,15 @@ describe('sampleSpline (Catmull-Rom)', () => {
     expect(s[s.length - 1]!.pos[2]).toBeCloseTo(20);
   });
 
-  it('produz amostras suficientes (steps por segmento)', () => {
-    const s = sampleSpline(line, 10);
-    // 2 segmentos × 10 + 1 (primeiro nó) = 21
-    expect(s.length).toBe(21);
+  it('tessellation adaptativa: curva fechada gera MAIS amostras que reta de mesmo tamanho', () => {
+    const straight = sampleSpline([[0, 0, 0], [0, 0, 10], [0, 0, 20]], 16);
+    const curve = sampleSpline([[0, 0, 0], [10, 0, 10], [0, 0, 20]], 16); // "S"/cotovelo
+    expect(curve.length).toBeGreaterThan(straight.length);
+  });
+
+  it('reta longa ainda é amostrada (segue o terreno, ~1 a cada 2 m)', () => {
+    const s = sampleSpline([[0, 0, 0], [0, 0, 40]], 16);
+    expect(s.length).toBeGreaterThanOrEqual(20); // 40 m / 2 ≈ 20
   });
 
   it('tangente aponta ao longo da reta (+Z)', () => {

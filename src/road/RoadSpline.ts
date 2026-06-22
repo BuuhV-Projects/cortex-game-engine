@@ -45,25 +45,47 @@ function catmullRom(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, t: number): RoadSamp
   return { pos, tangent: norm(tan) };
 }
 
+function dot(a: Vec3, b: Vec3): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
 /**
- * Amostra a spline que passa pelos `nodes` (≥2). `stepsPerSegment` = densidade de
- * amostras por segmento entre dois nós (default 12). Os extremos são duplicados
- * (clamp) pra a curva começar/terminar exatamente nos nós das pontas.
+ * Subdivisões **adaptativas** de um segmento: mais onde a curva dobra mais (pra não
+ * ficar facetada/"tremida") e o suficiente pra acompanhar o terreno em trechos longos.
+ * - `byLen`: ~1 amostra a cada 2 m (segue o relevo em retas longas).
+ * - `byCurve`: `curveDensity` amostras por **90°** de curvatura no segmento.
+ * Resultado: reta longa = poucas faces; curva fechada = muitas. Limitado a [2, 64].
+ */
+function segmentSteps(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, curveDensity: number): number {
+  const segLen = Math.hypot(...(sub(p2, p1) as Vec3));
+  const t1 = norm(sub(p2, p0)); // tangente ~ em p1
+  const t2 = norm(sub(p3, p1)); // tangente ~ em p2
+  const bend = Math.acos(Math.max(-1, Math.min(1, dot(t1, t2)))); // 0..π (quanto dobra)
+  const byLen = Math.ceil(segLen / 2);
+  const byCurve = Math.ceil((bend / (Math.PI / 2)) * curveDensity);
+  return Math.max(2, Math.min(64, Math.max(byLen, byCurve)));
+}
+
+/**
+ * Amostra a spline que passa pelos `nodes` (≥2) com **tessellation adaptativa**:
+ * `curveDensity` = amostras por **90° de curvatura** (default 16) — curvas fechadas
+ * ganham mais faces (sem facetar), retas usam poucas (1 a cada ~2 m, pra seguir o
+ * terreno). Os extremos são duplicados (clamp) pra começar/terminar nos nós das pontas.
  *
  * @returns lista de {@link RoadSample} do início ao fim (inclui os dois extremos).
  */
-export function sampleSpline(nodes: Vec3[], stepsPerSegment = 12): RoadSample[] {
+export function sampleSpline(nodes: Vec3[], curveDensity = 16): RoadSample[] {
   if (nodes.length < 2) {
     // Degenerado: 0/1 nó — devolve o que dá (tangente +Z arbitrária).
     return nodes.map((p) => ({ pos: [p[0], p[1], p[2]] as Vec3, tangent: [0, 0, 1] as Vec3 }));
   }
-  const steps = Math.max(1, Math.floor(stepsPerSegment));
   const out: RoadSample[] = [];
   for (let i = 0; i < nodes.length - 1; i++) {
     const p0 = nodes[i - 1] ?? nodes[i]!; // clamp nos extremos
     const p1 = nodes[i]!;
     const p2 = nodes[i + 1]!;
     const p3 = nodes[i + 2] ?? nodes[i + 1]!;
+    const steps = segmentSteps(p0, p1, p2, p3, curveDensity);
     // Inclui t=0 do 1º segmento; nos seguintes começa em t=1/steps pra não duplicar o nó.
     const startK = i === 0 ? 0 : 1;
     for (let k = startK; k <= steps; k++) {
