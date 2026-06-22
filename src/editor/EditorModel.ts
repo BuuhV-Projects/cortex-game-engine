@@ -476,6 +476,13 @@ export function describeInspector(
       const n = Number(v);
       if (Number.isFinite(n)) api.setWidth(obj, n);
     });
+    // Modal com preview de TODAS as texturas de assets/roads/ (ADR-0072).
+    if (api.pickSurface) {
+      fields.push({ kind: 'button', id: fid('roadPick'), label: '🖼 Escolher textura…' });
+      handlers.set(fid('roadPick'), () => {
+        api.pickSurface!(obj);
+      });
+    }
     sections.push({ title: 'Estrada', fields });
   }
 

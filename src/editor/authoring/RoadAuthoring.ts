@@ -40,6 +40,14 @@ export function createRoadApi(ctx: EditorAuthoringContext): RoadApi {
       ctx.persist();
     },
 
+    setSurfaceTexture(obj: Object3D, surface: { diffuse: string; normal?: string }): void {
+      const node = nodeOf(obj);
+      if (!node || !(obj instanceof Mesh)) return;
+      node.surface = { diffuse: surface.diffuse, ...(surface.normal ? { normal: surface.normal } : {}) };
+      applyRoad(obj, node, ctx.three);
+      ctx.persist();
+    },
+
     setWidth(obj: Object3D, width: number): void {
       const node = nodeOf(obj);
       if (!node || !(obj instanceof Mesh)) return;

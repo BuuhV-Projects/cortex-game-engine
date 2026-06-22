@@ -46,6 +46,7 @@ import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
 import { createMeshApi } from './authoring/MeshAuthoring.js';
 import { createRoadApi } from './authoring/RoadAuthoring.js';
+import { createEditorTexturePicker, type TextureItem } from './EditorTexturePicker.js';
 import { MeshEditSystem } from './MeshEditSystem.js';
 import { createMeshEditToolbar } from './MeshEditToolbar.js';
 import { ShapeDrawSystem } from './ShapeDrawSystem.js';
@@ -573,7 +574,19 @@ export function attachEditor(game: Game): GameEditor {
 
   // ── Blockout (ProBuilder — ADR-0071): autoria de forma + edição de elementos ──
   const meshAuthoring = createMeshApi(authoring);
-  const roadApi = createRoadApi(authoring); // estradas (ADR-0072)
+  // Estradas (ADR-0072): autoria + seletor de textura em modal (preview).
+  const roadApiCore = createRoadApi(authoring);
+  let roadTextures: TextureItem<{ diffuse: string; normal?: string }>[] = [];
+  let refreshUI: () => void = () => {};
+  const texturePicker = createEditorTexturePicker();
+  const roadApi = {
+    ...roadApiCore,
+    pickSurface: (obj: import('three').Object3D) =>
+      texturePicker.open('Superfície da estrada', roadTextures, (s) => {
+        roadApiCore.setSurfaceTexture(obj, s);
+        refreshUI();
+      }),
+  };
   // Barra flutuante estilo Unity (chrome de viewport — NÃO some no modo bridge da IDE).
   const meshToolbar = createMeshEditToolbar({
     onMode: (mode) => (mode === 'object' ? meshEditSystem.exit() : meshEditSystem.enter(mode)),
@@ -731,6 +744,20 @@ export function attachEditor(game: Game): GameEditor {
         const list = Array.isArray(assets) ? assets : [];
         addPanel.setAssets(list.filter((a) => a.toLowerCase().endsWith('.glb')));
         terrain.setAvailableTextures(list.filter(isImage));
+        // Texturas de estrada (qualquer *Diffuse.png em assets/roads/) pro modal de
+        // superfície. Normal = sibling *Normal.png, se existir na lista.
+        const lower = new Set(list.map((p) => p.toLowerCase()));
+        roadTextures = list
+          .filter((p) => /assets\/roads\/.*diffuse\.png$/i.test(p))
+          .sort()
+          .map((p) => {
+            const normal = p.replace(/Diffuse\.png$/i, 'Normal.png');
+            return {
+              name: (p.split('/').pop() ?? p).replace(/Diffuse\.png$/i, ''),
+              thumb: p,
+              value: { diffuse: p, ...(lower.has(normal.toLowerCase()) ? { normal } : {}) },
+            };
+          });
       })
       .catch(() => addPanel.setAssets([]));
   }
@@ -904,6 +931,13 @@ export function attachEditor(game: Game): GameEditor {
       if (playBtn) playBtn.style.display = 'none';
     },
   });
+
+  // Atualiza os dois renderizadores do inspector (in-canvas + IDE) após uma edição
+  // assíncrona fora dos handlers (ex.: escolher textura no modal de superfície).
+  refreshUI = (): void => {
+    inspector.refresh();
+    bridge.publish();
+  };
 
   let wasActive = false;
   let lastChildren = new Set<Object3D>();

@@ -209,8 +209,12 @@ export interface RoadApi {
   get(obj: Object3D): RoadEditState | null;
   /** Troca a superfície (nome do catálogo) → regenera + persiste. */
   setSurface(obj: Object3D, name: string): void;
+  /** Define a superfície por URLs de textura (diffuse + normal opcional) → regenera. */
+  setSurfaceTexture(obj: Object3D, surface: { diffuse: string; normal?: string }): void;
   /** Ajusta a largura (m) → regenera + persiste. */
   setWidth(obj: Object3D, width: number): void;
+  /** Abre o modal de seleção de textura (atribuído pelo attachEditor). Opcional. */
+  pickSurface?(obj: Object3D): void;
 }
 
 /** Modo do pincel de terreno: esculpir altura ou pintar textura. */

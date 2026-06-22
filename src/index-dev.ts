@@ -26,6 +26,7 @@ export * from './editor/MeshEditSystem.js';
 export * from './editor/MeshEditToolbar.js';
 export * from './editor/ShapeDrawSystem.js';
 export * from './editor/RoadDrawSystem.js';
+export * from './editor/EditorTexturePicker.js';
 export * from './editor/attachEditor.js';
 
 // Liga o editor a todo Game criado (efeito colateral de importar este bundle).
