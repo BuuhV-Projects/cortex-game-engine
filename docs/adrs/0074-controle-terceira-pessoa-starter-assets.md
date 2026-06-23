@@ -43,19 +43,25 @@ NLA tracks e exporta **um GLB** com mesh rigado + clipes nomeados. O `buildScene
 o `SceneAnimator` pra `model` com clipes; o player é um nó `model` `.glb` marcado
 `character`. Animações **auto-mapeadas** pelos nomes (clipes já se chamam idle/walk/…).
 
-### 3. Distribuição da arte
-Por escolha do dono do projeto, o GLB do personagem vai no **template**
-(`templates/new-project/assets/characters/player.glb`) rastreado por **Git LFS**
-(`.gitattributes`: `templates/new-project/assets/**/*.glb`), pra novos projetos já virem
-com um player 3ª pessoa. É **placeholder** (UCL) — trocar por arte própria/CC0/Mixamo.
+### 3. Arte do personagem — **KayKit (CC0)**, não a da Unity
+O port do mannequin Humanoid da Unity (StarterAssets) ficou ruim: animação Humanoid não
+casa direto com o rig exportado (bugava/travava) **e** a arte é UCL (proibida fora da
+Unity). **Decisão revista:** usar o **KayKit Character Animations** (Kay Lousberg, **CC0**),
+que é **glTF-nativo** (sem retarget) e livre. Merge no Blender
+(`.stage/convert_kaykit.py`): `Mannequin_Medium.glb` (mesh+rig) + clipes escolhidos dos
+`Rig_Medium_*.glb` (Idle_A→idle, Walking_A→walk, Running_A→run, Jump_Full_Long→jump,
+Jump_Idle→fall, Jump_Land→land) → **um GLB** (~0,6 MB). Vai no **template**
+(`templates/new-project/assets/characters/player.glb`) via **Git LFS**. Sem problema de
+licença. (O `convert_thirdperson.py` do FBX da Unity fica como referência, não usado.)
 
 ## Consequências
 
 - **3ª pessoa numa linha** (`setupThirdPerson`) ao lado de `setupFirstPerson`/`setupTopDown`.
 - **Reusa** CharacterBody/CharacterPhysics (gravidade/pulo/colisão de parede — ADR-0071) e
   o sistema de animação data-driven (ADR-0054). Sem física nova.
-- **Risco de licença assumido pelo dono** — a arte do StarterAssets é temporária. Se for
-  publicar, **substituir** por arte com licença compatível.
+- **Sem risco de licença:** a arte virou **KayKit CC0** (a do Unity StarterAssets foi
+  descartada — UCL + animação Humanoid bugava no port). O **comportamento** (controller)
+  segue inspirado no StarterAssets, reescrito.
 - **Fora de escopo:** strafe/aim-mode, animações de virar parado, footstep SFX, blend de
   velocidade (usa crossfade simples). Câmera com colisão (não atravessar parede) também.
 - **API pública nova** (`setupThirdPerson`, `ThirdPersonControlSystem`) → `docs:engine`,
