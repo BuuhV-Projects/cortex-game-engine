@@ -6,6 +6,11 @@ export class ProjectManager {
   private nameInput: HTMLInputElement | null = null
   private dirPathDisplay: HTMLSpanElement | null = null
   private selectedDir: string | null = null
+  // Refs das ações + flag de criação em andamento (trava duplo-clique e ESC).
+  private confirmBtn: HTMLButtonElement | null = null
+  private cancelBtn: HTMLButtonElement | null = null
+  private dirBrowseBtn: HTMLButtonElement | null = null
+  private creating = false
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -66,6 +71,7 @@ export class ProjectManager {
     dirBrowseBtn.textContent = t('projectManager.select_folder')
     dirBrowseBtn.className = 'project-manager-btn project-manager-btn--secondary'
     dirBrowseBtn.addEventListener('click', () => void this.handleSelectDir())
+    this.dirBrowseBtn = dirBrowseBtn
 
     const dirPathDisplay = document.createElement('span')
     dirPathDisplay.className = 'project-manager-dir-path'
@@ -86,13 +92,18 @@ export class ProjectManager {
     cancelBtn.type = 'button'
     cancelBtn.textContent = t('projectManager.cancel')
     cancelBtn.className = 'project-manager-btn project-manager-btn--secondary'
-    cancelBtn.addEventListener('click', () => this.closeAndReset())
+    cancelBtn.addEventListener('click', () => {
+      if (this.creating) return // não cancela no meio da criação
+      this.closeAndReset()
+    })
+    this.cancelBtn = cancelBtn
 
     const confirmBtn = document.createElement('button')
     confirmBtn.type = 'button'
     confirmBtn.textContent = t('projectManager.create')
     confirmBtn.className = 'project-manager-btn project-manager-btn--primary'
     confirmBtn.addEventListener('click', () => void this.handleCreate())
+    this.confirmBtn = confirmBtn
 
     actions.appendChild(cancelBtn)
     actions.appendChild(confirmBtn)
@@ -101,11 +112,30 @@ export class ProjectManager {
     dialog.appendChild(nameGroup)
     dialog.appendChild(dirGroup)
     dialog.appendChild(actions)
+    // Bloqueia o ESC (evento `cancel` do <dialog>) enquanto cria — senão fecharia
+    // o modal com a criação ainda em andamento.
+    dialog.addEventListener('cancel', (e) => {
+      if (this.creating) e.preventDefault()
+    })
     document.body.appendChild(dialog)
     this.dialog = dialog
   }
 
+  /** Liga/desliga o estado "criando": trava botões/ESC e mostra o spinner no Criar. */
+  private setBusy(busy: boolean): void {
+    this.creating = busy
+    if (this.confirmBtn) {
+      this.confirmBtn.disabled = busy
+      this.confirmBtn.classList.toggle('project-manager-btn--loading', busy)
+      this.confirmBtn.textContent = busy ? t('projectManager.creating') : t('projectManager.create')
+    }
+    if (this.cancelBtn) this.cancelBtn.disabled = busy
+    if (this.dirBrowseBtn) this.dirBrowseBtn.disabled = busy
+    if (this.nameInput) this.nameInput.disabled = busy
+  }
+
   private closeAndReset(): void {
+    this.setBusy(false)
     if (this.nameInput) this.nameInput.value = ''
     this.selectedDir = null
     if (this.dirPathDisplay) this.dirPathDisplay.textContent = t('projectManager.no_folder_selected')
@@ -120,6 +150,8 @@ export class ProjectManager {
   }
 
   private async handleCreate(): Promise<void> {
+    if (this.creating) return // já criando — ignora cliques repetidos no "Criar"
+
     const name = this.nameInput?.value.trim() ?? ''
     if (!name) {
       this.nameInput?.reportValidity()
@@ -131,6 +163,7 @@ export class ProjectManager {
       return
     }
 
+    this.setBusy(true)
     try {
       const createdPath = await window.electronAPI.createProject(this.selectedDir, name)
       this.closeAndReset()
@@ -145,6 +178,7 @@ export class ProjectManager {
         }),
       )
     } catch (err) {
+      this.setBusy(false) // reabilita pra tentar de novo
       alert(`${t('projectManager.error_create')} ${String(err)}`)
     }
   }

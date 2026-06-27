@@ -60,6 +60,7 @@
     "no_folder_selected": "Nenhuma pasta selecionada",
     "cancel": "Cancelar",
     "create": "Criar",
+    "creating": "Criando…",
     "placeholder_name": "meu-projeto",
     "alert_select_folder": "Selecione uma pasta destino.",
     "error_create": "Erro ao criar projeto:"

@@ -60,6 +60,7 @@
     "no_folder_selected": "No folder selected",
     "cancel": "Cancel",
     "create": "Create",
+    "creating": "Creating…",
     "placeholder_name": "my-project",
     "alert_select_folder": "Select a target folder.",
     "error_create": "Error creating project:"
