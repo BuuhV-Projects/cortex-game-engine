@@ -8,7 +8,7 @@
 
 > **smoothGrade**(`samples`, `terrainY`, `opts?`): `number`[]
 
-Defined in: src/road/RoadGrade.ts:51
+Defined in: [src/road/RoadGrade.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L51)
 
 **Greide suavizado** da estrada: dado o perfil de altura do terreno sob cada
 amostra da spline (`terrainY`, mesmo tamanho de `samples`), devolve um Y por

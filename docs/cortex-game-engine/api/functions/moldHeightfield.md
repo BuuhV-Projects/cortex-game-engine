@@ -8,7 +8,7 @@
 
 > **moldHeightfield**(`grid`, `centerline`, `halfWidth`, `taludeWidth`): `Float32Array`
 
-Defined in: src/road/RoadGrade.ts:143
+Defined in: [src/road/RoadGrade.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L143)
 
 **Molda o terreno à estrada** (cut & fill + talude). Para cada vértice da grade,
 acha o ponto mais próximo do eixo da pista (`centerline`, coords locais com Y =
