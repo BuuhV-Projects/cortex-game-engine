@@ -55,6 +55,7 @@ import { toRoadGeometry } from '../road/RoadMesh.js';
 import { resolveSurface, resolveMarking, type RoadMarking } from '../road/surfaces.js';
 import { smoothGrade, moldHeightfield, mergeDeltas, type GradePoint } from '../road/RoadGrade.js';
 import { Terrain, type TerrainPaintData } from './Terrain.js';
+import { Vegetation, makePlaceholderVegetation } from './Vegetation.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import { debug } from '../core/debug.js';
 import {
@@ -828,6 +829,11 @@ async function instantiate(
       three.add(obj);
       applyPlacement(obj, node);
       break;
+    case 'vegetation':
+      obj = await makeVegetation(node);
+      three.add(obj);
+      applyPlacement(obj, node);
+      break;
     case 'light':
       obj = makeLight(node);
       three.add(obj);
@@ -1237,6 +1243,21 @@ export function moldTerrainToRoads(three: Object3D): void {
     }
     terrain.setRoadMolding(mergeDeltas(deltas)); // null (sem cutfill) limpa a moldagem
   }
+}
+
+/**
+ * **Vegetação instanciada** (ADR-0077): carrega o `.glb` do `model` (ou um placeholder
+ * procedural se omitido), cria a {@link Vegetation} (uma {@link InstancedMesh} por
+ * sub-malha) e espalha as `instances` do nó. O controlador fica em
+ * `group.userData.cortexVegetation` — o pincel do editor espalha/apaga por ali.
+ */
+async function makeVegetation(node: Extract<SceneNode, { type: 'vegetation' }>): Promise<Object3D> {
+  const source = node.model ? instance(await loadGLB(node.model), { castShadow: true }) : makePlaceholderVegetation(node.kind ?? 'tree');
+  const veg = new Vegetation(source, node.capacity ?? 8192);
+  if (node.instances && node.instances.length) veg.setInstances(node.instances);
+  (veg.group.userData as Record<string, unknown>)['cortexVegetation'] = veg;
+  (veg.group.userData as Record<string, unknown>)['cortexVegetationKind'] = node.kind ?? (node.model ? 'model' : 'tree');
+  return veg.group;
 }
 
 function makeLight(node: Extract<SceneNode, { type: 'light' }>): Object3D {

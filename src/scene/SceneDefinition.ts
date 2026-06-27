@@ -404,6 +404,25 @@ const terrainNode = z.object({
   place: placeSchema,
 });
 
+/**
+ * **Vegetação instanciada** (ADR-0077): espalha muitas cópias de um modelo (árvore/
+ * grama/arbusto) numa malha instanciada. As `instances` (plano `[x,y,z,rotY,scale]`)
+ * são autoradas pelo pincel do editor; `model` é o `.glb` (omitido = placeholder).
+ */
+const vegetationNode = z.object({
+  type: z.literal('vegetation'),
+  /** URL do `.glb` do modelo. Omitido = placeholder procedural (ver `kind`). */
+  model: z.string().optional(),
+  /** Placeholder quando sem `model`: `tree` (default) ou `grass`. */
+  kind: z.enum(['tree', 'grass']).optional(),
+  /** Instâncias espalhadas: plano `[x,y,z,rotY,scale]` por instância. */
+  instances: z.array(z.number()).optional(),
+  /** Capacidade máxima de instâncias (buffer pré-alocado). Default 8192. */
+  capacity: z.number().int().positive().optional(),
+  id: z.string().min(1),
+  transform: transformSchema,
+});
+
 const sceneNodeSchema = z.discriminatedUnion('type', [
   modelNode,
   primitiveNode,
@@ -414,6 +433,7 @@ const sceneNodeSchema = z.discriminatedUnion('type', [
   backgroundNode,
   spriteNode,
   terrainNode,
+  vegetationNode,
 ]);
 
 const sceneDefinitionSchema = z.object({
@@ -452,6 +472,9 @@ export type PrimitiveNode = z.infer<typeof primitiveNode>;
 export type MeshNode = z.infer<typeof meshNode>;
 /** Nó de estrada por spline (ver {@link roadNode}; ADR-0072). */
 export type RoadNode = z.infer<typeof roadNode>;
+
+/** Nó de vegetação instanciada (ver {@link vegetationNode}; ADR-0077). */
+export type VegetationNode = z.infer<typeof vegetationNode>;
 export type LightNode = z.infer<typeof lightNode>;
 export type WaterNode = z.infer<typeof waterNode>;
 export type BackgroundNode = z.infer<typeof backgroundNode>;

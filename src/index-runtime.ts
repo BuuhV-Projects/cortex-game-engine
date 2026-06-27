@@ -89,6 +89,7 @@ export * from './scene/Materials.js';
 export * from './scene/OutdoorLighting.js';
 export * from './scene/Water.js';
 export * from './scene/Terrain.js';
+export * from './scene/Vegetation.js';
 export * from './scene/Sprite.js';
 export * from './scene/Spritesheet.js';
 export * from './scene/Tilemap.js';

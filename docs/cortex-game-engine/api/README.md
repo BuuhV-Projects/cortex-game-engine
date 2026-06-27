@@ -58,6 +58,7 @@
 - [TopDownCameraSystem](classes/TopDownCameraSystem.md)
 - [TopDownMovementSystem](classes/TopDownMovementSystem.md)
 - [TransformComponent](classes/TransformComponent.md)
+- [Vegetation](classes/Vegetation.md)
 - [Water](classes/Water.md)
 - [World](classes/World.md)
 
@@ -144,6 +145,7 @@
 - [TopDownHandle](interfaces/TopDownHandle.md)
 - [TopDownMovementOptions](interfaces/TopDownMovementOptions.md)
 - [Vec3Like](interfaces/Vec3Like.md)
+- [VegetationInstance](interfaces/VegetationInstance.md)
 - [Viewport](interfaces/Viewport.md)
 - [VignetteConfig](interfaces/VignetteConfig.md)
 - [WaterOptions](interfaces/WaterOptions.md)
@@ -187,10 +189,12 @@
 - [SceneNode](type-aliases/SceneNode.md)
 - [ShapeKind](type-aliases/ShapeKind.md)
 - [Vec3](type-aliases/Vec3.md)
+- [VegetationNode](type-aliases/VegetationNode.md)
 - [WaterNode](type-aliases/WaterNode.md)
 
 ## Variables
 
+- [FLOATS\_PER\_INSTANCE](variables/FLOATS_PER_INSTANCE.md)
 - [ISOMETRIC\_PITCH](variables/ISOMETRIC_PITCH.md)
 - [ISOMETRIC\_YAW](variables/ISOMETRIC_YAW.md)
 - [KIT\_ROLES](variables/KIT_ROLES.md)
@@ -240,6 +244,7 @@
 - [loadGLB](functions/loadGLB.md)
 - [loadModularCharacter](functions/loadModularCharacter.md)
 - [loadTexture](functions/loadTexture.md)
+- [makePlaceholderVegetation](functions/makePlaceholderVegetation.md)
 - [mergeDeltas](functions/mergeDeltas.md)
 - [mergeMeshes](functions/mergeMeshes.md)
 - [meshEdges](functions/meshEdges.md)

@@ -481,6 +481,23 @@ desfaz o último ponto, **Esc** cancela.
 > Pra estradas que cruzam relevo acidentado, use `terrainMode: "cutfill"` — o terreno
 > se molda à pista (em vez da pista ondular seguindo cada bossa do morro).
 
+## Vegetação instanciada (nó `vegetation` — ADR-0077)
+
+`Vegetation`, `makePlaceholderVegetation`. Povoa o terreno com **árvores/grama/arbustos**
+via instancing (um draw call por sub-malha — aguenta milhares). É **dado**: o modelo + a
+lista de instâncias espalhadas (autoradas pelo pincel do editor).
+
+Campos: `model` (`.glb`; omitido = placeholder procedural), `kind` (`tree`/`grass`,
+placeholder), `instances` (plano `[x,y,z,rotY,scale]` por instância), `capacity` (default 8192).
+
+```jsonc
+{ "type": "vegetation", "id": "floresta", "kind": "tree",
+  "instances": [10,0,5, 0, 1.2,  -8,0,12, 1.57, 0.9] }  // 2 árvores
+```
+
+O controlador vive em `group.userData.cortexVegetation` (o pincel do editor espalha/apaga).
+Sem `model`, usa uma árvore/grama placeholder — troque por `.glb` quando tiver arte.
+
 ## Kit de assets / vocabulário (design system — ADR-0053)
 
 `KitDefinition`, `KitAsset`, `KitAnchor`, `parseKit`, `kitAssetFor`, `kitAnchor`,
