@@ -50,3 +50,44 @@ export function resolveSurface(surface: RoadSurface | undefined): RoadSurfaceDef
     repeat: surface.repeat ?? 8,
   };
 }
+
+// ── Marcação de pista (overlay — ADR-0076) ──────────────────────────────────────
+
+/** Diretório das texturas de marcação (overlays RGBA do Road Architect). */
+export const ROAD_MARKINGS_DIR = `${ROAD_TEXTURE_DIR}Markers/`;
+
+/** Marcação resolvida: textura overlay (transparente) + tile no comprimento. */
+export interface RoadMarkingDef {
+  /** Caminho do overlay RGBA (linhas opacas sobre fundo transparente). */
+  url: string;
+  /** Unidades de mundo por tile no comprimento (ciclo do tracejado). */
+  repeat: number;
+}
+
+/** Nomes de marcação embutidos (layout de 2 faixas — o padrão do nó `road`). */
+export type RoadMarkingName = 'dashed' | 'single-yellow' | 'double-yellow' | 'passing' | 'lane';
+
+const mk = (name: string): string => `${ROAD_MARKINGS_DIR}${name}`;
+
+/**
+ * Catálogo de marcações (texturas `Markers/` do Road Architect — MIT MicroGSD). São
+ * **overlays RGBA** desenhados pra atravessar a largura (U 0..1) com as linhas já na
+ * posição certa de uma pista de 2 faixas; tilam ao longo do comprimento (V).
+ */
+export const ROAD_MARKINGS: Record<RoadMarkingName, RoadMarkingDef> = {
+  dashed: { url: mk('WhiteSingleDotted_Diffuse.png'), repeat: 12 }, // eixo tracejado branco
+  'single-yellow': { url: mk('WhiteYellowSingle_Diffuse.png'), repeat: 12 }, // eixo amarelo + bordas
+  'double-yellow': { url: mk('WhiteYellowDouble_Diffuse.png'), repeat: 12 }, // eixo amarelo duplo
+  passing: { url: mk('WhiteYellowPassBoth_Diffuse.png'), repeat: 12 }, // zona de ultrapassagem
+  lane: { url: mk('OneLane-BothWhite.png'), repeat: 12 }, // faixa única, bordas brancas
+};
+
+/** Config de marcação aceita no nó `road`: nome embutido OU URL explícita. */
+export type RoadMarking = RoadMarkingName | { url: string; repeat?: number };
+
+/** Resolve a {@link RoadMarking} do nó numa {@link RoadMarkingDef}, ou `null` (sem marcação). */
+export function resolveMarking(marking: RoadMarking | undefined): RoadMarkingDef | null {
+  if (marking === undefined) return null;
+  if (typeof marking === 'string') return ROAD_MARKINGS[marking] ?? null;
+  return { url: marking.url, repeat: marking.repeat ?? 12 };
+}

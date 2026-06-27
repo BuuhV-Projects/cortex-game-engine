@@ -278,6 +278,16 @@ const roadNode = z.object({
       }),
     ])
     .optional(),
+  /**
+   * Marcação de pista (overlay, ADR-0076): nome embutido (`dashed`/`single-yellow`/
+   * `double-yellow`/`passing`/`lane`) ou `{ url, repeat }`. Ausente = sem marcação.
+   */
+  markings: z
+    .union([
+      z.enum(['dashed', 'single-yellow', 'double-yellow', 'passing', 'lane']),
+      z.object({ url: z.string(), repeat: z.number().positive().optional() }),
+    ])
+    .optional(),
   /** Densidade da tessellation: amostras por 90° de curvatura (adaptativa). Default 16. */
   steps: z.number().int().positive().optional(),
   /** A pista acompanha a altura do terreno (raycast por amostra). Default true. */

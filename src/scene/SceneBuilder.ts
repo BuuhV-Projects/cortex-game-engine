@@ -18,6 +18,7 @@ import {
   HemisphereLight,
   AmbientLight,
   PCFSoftShadowMap,
+  type BufferGeometry,
   type Object3D,
   type PerspectiveCamera,
   type OrthographicCamera,
@@ -51,7 +52,7 @@ import { toBufferGeometry, type EditableMesh } from '../probuilder/EditableMesh.
 import { buildShape } from '../probuilder/shapes.js';
 import { sampleSpline } from '../road/RoadSpline.js';
 import { toRoadGeometry } from '../road/RoadMesh.js';
-import { resolveSurface } from '../road/surfaces.js';
+import { resolveSurface, resolveMarking, type RoadMarking } from '../road/surfaces.js';
 import { smoothGrade, moldHeightfield, mergeDeltas, type GradePoint } from '../road/RoadGrade.js';
 import { Terrain, type TerrainPaintData } from './Terrain.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
@@ -1127,10 +1128,17 @@ export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>
   }
   (mesh.material as MeshStandardMaterial | undefined)?.dispose();
   mesh.material = material;
+
+  // Marcação de pista (ADR-0076): overlay RGBA transparente um tiquinho ACIMA da pista,
+  // reusando a MESMA geometria conformada (clonada). A textura atravessa a largura (U)
+  // com as linhas no lugar; tila no comprimento (V) pelo `repeat` da marcação.
+  applyRoadMarkings(mesh, geometry, node.markings, surf.repeat);
+
   (mesh.userData as Record<string, unknown>)['cortexRoad'] = {
     nodes: node.nodes,
     width,
     surface: node.surface ?? 'asphalt',
+    markings: node.markings ?? null,
     conformTerrain: conform,
     terrainMode: mode,
     taludeWidth: node.taludeWidth ?? 6,
@@ -1138,6 +1146,53 @@ export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>
     yOffset,
     centerline, // eixo + greide (coords de mundo) — consumido por moldTerrainToRoads
   };
+}
+
+/**
+ * Gera (ou remove/atualiza) o **overlay de marcação** de uma estrada (ADR-0076). Clona a
+ * geometria conformada da pista, **levanta** os vértices um epsilon e reescala o V do UV
+ * pro tile da marcação; aplica um material **transparente** (`depthWrite:false` +
+ * `polygonOffset` evitam z-fight). O overlay vive como filho do mesh da pista
+ * (`userData.cortexRoadMarkings`) — chamado a cada {@link applyRoad}, então primeiro
+ * descarta o overlay anterior (regen ao vivo no editor).
+ */
+function applyRoadMarkings(mesh: Mesh, roadGeo: BufferGeometry, markings: RoadMarking | undefined, surfRepeat: number): void {
+  const prev = mesh.children.find((c) => (c.userData as Record<string, unknown>)['cortexRoadMarkings']) as Mesh | undefined;
+  if (prev) {
+    mesh.remove(prev);
+    prev.geometry?.dispose();
+    (prev.material as MeshStandardMaterial | undefined)?.dispose();
+  }
+  const def = resolveMarking(markings);
+  if (!def) return;
+
+  const geo = roadGeo.clone();
+  const pos = geo.getAttribute('position');
+  for (let i = 0; i < pos.count; i++) pos.setY(i, pos.getY(i) + 0.02); // acima da pista
+  pos.needsUpdate = true;
+  // roadV = dist/surfRepeat ⇒ markV = dist/markRepeat = roadV·(surfRepeat/markRepeat).
+  const uvAttr = geo.getAttribute('uv');
+  const scaleV = surfRepeat / def.repeat;
+  for (let i = 0; i < uvAttr.count; i++) uvAttr.setY(i, uvAttr.getY(i) * scaleV);
+  uvAttr.needsUpdate = true;
+
+  const omat = new MeshStandardMaterial({
+    transparent: true,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    roughness: 0.9,
+    metalness: 0,
+  });
+  void loadTexture(def.url, false).then((t) => {
+    smoothTiled(t, true);
+    omat.map = t;
+    omat.needsUpdate = true;
+  }).catch(() => {});
+  const omesh = new Mesh(geo, omat);
+  omesh.receiveShadow = true;
+  (omesh.userData as Record<string, unknown>)['cortexRoadMarkings'] = true;
+  mesh.add(omesh);
 }
 
 /**

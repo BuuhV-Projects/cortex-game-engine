@@ -8,6 +8,6 @@
 
 > **AnimationConfig** = `NonNullable`\<`z.infer`\<*typeof* `animationSchema`\>\>
 
-Defined in: [src/scene/SceneDefinition.ts:433](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L433)
+Defined in: [src/scene/SceneDefinition.ts:443](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L443)
 
 Config de animação (campo `animation` dos nós; ver animationSchema).

@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { sampleSpline, splineLength, type Vec3 } from '../../src/road/RoadSpline.js';
 import { roadRibbon, toRoadGeometry } from '../../src/road/RoadMesh.js';
-import { resolveSurface, ROAD_SURFACES } from '../../src/road/surfaces.js';
+import { resolveSurface, ROAD_SURFACES, resolveMarking, ROAD_MARKINGS } from '../../src/road/surfaces.js';
 import { Mesh } from 'three';
 import { Scene } from '../../src/core/Scene.js';
 import { buildScene } from '../../src/scene/SceneBuilder.js';
@@ -139,6 +139,44 @@ describe('nó road cutfill: terreno se adapta à pista (ADR-0072 Fase 2)', () =>
     };
     expect(cr.terrainMode).toBe('cutfill');
     expect(Array.isArray(cr.centerline)).toBe(true);
+  });
+});
+
+describe('marcação de pista (overlay — ADR-0076)', () => {
+  it('resolveMarking: nome embutido → textura em Markers/; undefined → null', () => {
+    expect(resolveMarking('dashed')).toEqual(ROAD_MARKINGS.dashed);
+    expect(resolveMarking('dashed')!.url).toContain('assets/roads/Markers/');
+    expect(resolveMarking(undefined)).toBeNull();
+  });
+  it('resolveMarking: nome desconhecido → null; URL explícita preserva', () => {
+    expect(resolveMarking('xyz' as never)).toBeNull();
+    expect(resolveMarking({ url: 'm.png' })).toEqual({ url: 'm.png', repeat: 12 });
+  });
+
+  it('buildScene: com markings cria um overlay filho (cortexRoadMarkings)', async () => {
+    const scene = new Scene();
+    const def: SceneDefinition = {
+      version: 1,
+      nodes: [{ type: 'road', id: 'r1', nodes: [[0, 0, 0], [0, 0, 10], [0, 0, 20]], conformTerrain: false, markings: 'dashed' }],
+    };
+    const handle = await buildScene(scene, def);
+    const road = handle.byId.get('r1') as Mesh;
+    const overlay = road.children.find((c) => (c.userData as Record<string, unknown>)['cortexRoadMarkings']) as Mesh;
+    expect(overlay).toBeInstanceOf(Mesh);
+    // overlay tem a mesma topologia da pista (clone) e fica ACIMA dela (epsilon em Y)
+    expect(overlay.geometry.getAttribute('position').count).toBe(road.geometry.getAttribute('position').count);
+    expect(overlay.geometry.getAttribute('position').getY(0)).toBeGreaterThan(road.geometry.getAttribute('position').getY(0));
+    expect((overlay.material as { transparent: boolean }).transparent).toBe(true);
+  });
+
+  it('buildScene: sem markings NÃO cria overlay', async () => {
+    const def: SceneDefinition = {
+      version: 1,
+      nodes: [{ type: 'road', id: 'r2', nodes: [[0, 0, 0], [0, 0, 10]], conformTerrain: false }],
+    };
+    const handle = await buildScene(new Scene(), def);
+    const road = handle.byId.get('r2') as Mesh;
+    expect(road.children.some((c) => (c.userData as Record<string, unknown>)['cortexRoadMarkings'])).toBe(false);
   });
 });
 

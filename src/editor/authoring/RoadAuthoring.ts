@@ -25,12 +25,13 @@ export function createRoadApi(ctx: EditorAuthoringContext): RoadApi {
   return {
     get(obj: Object3D): RoadEditState | null {
       const cr = (obj.userData as Record<string, unknown>)['cortexRoad'] as
-        | { surface?: unknown; width?: number; terrainMode?: string; taludeWidth?: number }
+        | { surface?: unknown; width?: number; terrainMode?: string; taludeWidth?: number; markings?: unknown }
         | undefined;
       if (!cr) return null; // não é uma estrada
       const surface = typeof cr.surface === 'string' ? cr.surface : 'custom';
       const terrainMode = cr.terrainMode === 'cutfill' ? 'cutfill' : 'conform';
-      return { surface, width: cr.width ?? 8, terrainMode, taludeWidth: cr.taludeWidth ?? 6 };
+      const markings = cr.markings == null ? 'none' : typeof cr.markings === 'string' ? cr.markings : 'custom';
+      return { surface, width: cr.width ?? 8, terrainMode, taludeWidth: cr.taludeWidth ?? 6, markings };
     },
 
     setSurface(obj: Object3D, name: string): void {
@@ -73,6 +74,15 @@ export function createRoadApi(ctx: EditorAuthoringContext): RoadApi {
       node.taludeWidth = Math.max(0, taludeWidth);
       applyRoad(obj, node, ctx.three); // guarda o talude novo em cortexRoad
       moldTerrainToRoads(ctx.three);
+      ctx.persist();
+    },
+
+    setMarkings(obj: Object3D, name: string): void {
+      const node = nodeOf(obj);
+      if (!node || !(obj instanceof Mesh)) return;
+      if (name === 'none') delete node.markings;
+      else node.markings = name as RoadAddedNode['markings'];
+      applyRoad(obj, node, ctx.three); // regenera o overlay de marcação
       ctx.persist();
     },
   };

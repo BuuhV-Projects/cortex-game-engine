@@ -8,7 +8,7 @@
 
 > **applyRoad**(`mesh`, `node`, `three`): `void`
 
-Defined in: [src/scene/SceneBuilder.ts:1046](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1046)
+Defined in: [src/scene/SceneBuilder.ts:1047](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1047)
 
 (Re)gera a malha + material de uma estrada num `mesh` existente (ADR-0072).
 Amostra a spline dos `nodes`, **conforma ao terreno** (raycast pra baixo por amostra
@@ -72,6 +72,13 @@ A pista acompanha a altura do terreno (raycast por amostra). Default true.
 #### id
 
 `string` = `...`
+
+#### markings?
+
+`"dashed"` \| `"single-yellow"` \| `"double-yellow"` \| `"passing"` \| `"lane"` \| \{ `repeat?`: `number`; `url`: `string`; \} = `...`
+
+Marcação de pista (overlay, ADR-0076): nome embutido (`dashed`/`single-yellow`/
+`double-yellow`/`passing`/`lane`) ou `{ url, repeat }`. Ausente = sem marcação.
 
 #### maxSlope?
 

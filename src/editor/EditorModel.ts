@@ -478,6 +478,17 @@ export function describeInspector(
     if (roadState.terrainMode === 'cutfill') {
       fields.push({ kind: 'number', id: fid('roadTalude'), label: 'Talude (m)', value: roadState.taludeWidth, step: 0.5 });
     }
+    // Marcação de pista (overlay — ADR-0076).
+    const markOpts = [
+      { value: 'none', label: 'Sem marcação' },
+      { value: 'dashed', label: 'Eixo tracejado' },
+      { value: 'single-yellow', label: 'Amarela simples' },
+      { value: 'double-yellow', label: 'Amarela dupla' },
+      { value: 'passing', label: 'Ultrapassagem' },
+      { value: 'lane', label: 'Faixa única' },
+    ];
+    if (roadState.markings === 'custom') markOpts.unshift({ value: 'custom', label: 'Custom' });
+    fields.push({ kind: 'select', id: fid('roadMarkings'), label: 'Marcação', value: roadState.markings, options: markOpts });
     handlers.set(fid('roadSurface'), (v) => {
       api.setSurface(obj, String(v));
     });
@@ -491,6 +502,9 @@ export function describeInspector(
     handlers.set(fid('roadTalude'), (v) => {
       const n = Number(v);
       if (Number.isFinite(n)) api.setTalude(obj, n);
+    });
+    handlers.set(fid('roadMarkings'), (v) => {
+      api.setMarkings(obj, String(v));
     });
     // Modal com preview de TODAS as texturas de assets/roads/ (ADR-0072).
     if (api.pickSurface) {

@@ -439,12 +439,12 @@ A geometria editada é salva no overlay (`data.geometry[id]`, **vence** a receit
 > Ao **gerar cena** (Chat IA), prefira `primitive`/`model`; use `mesh` quando o usuário
 > pedir blockout/escada/rampa/arco/parede-com-vão. Declare física nos campos do nó.
 
-## Estradas por spline (nó `road` — ADR-0072 + ADR-0075)
+## Estradas por spline (nó `road` — ADR-0072 + ADR-0075 + ADR-0076)
 
 `RoadNode`, `sampleSpline`, `toRoadGeometry`, `roadRibbon`, `smoothGrade`,
-`moldHeightfield`, `ROAD_SURFACES`, `resolveSurface`. Sistema de estradas inspirado no
-Road Architect (MIT). A estrada é **dado**: uma spline (Catmull-Rom pelos `nodes`) que
-vira malha de pista.
+`moldHeightfield`, `ROAD_SURFACES`, `resolveSurface`, `ROAD_MARKINGS`, `resolveMarking`.
+Sistema de estradas inspirado no Road Architect (MIT). A estrada é **dado**: uma spline
+(Catmull-Rom pelos `nodes`) que vira malha de pista.
 
 Campos: `nodes` (pontos de controle, ≥2, em metros), `width` (default 8 m), `surface`
 (`asphalt`/`concrete`/`dirt`/`brick`/`cobblestone` ou `{ diffuse, normal, repeat, color }`),
@@ -455,13 +455,17 @@ Campos: `nodes` (pontos de controle, ≥2, em metros), `width` (default 8 m), `s
   laterais (`taludeWidth`, default 6 m) e inclinação máx. do greide (`maxSlope`, default
   0.08). Não-destrutivo (recalculado a cada build; não salva no heightmap).
 - `conformTerrain` (default true): só relevante no modo `conform`.
+- `markings`: marcação de pista (overlay) — `dashed` (eixo tracejado), `single-yellow`,
+  `double-yellow`, `passing` (ultrapassagem), `lane` (faixa única), ou `{ url, repeat }`.
+  Ausente = sem marcação. Reusa a geometria da pista, então funciona em `conform` e `cutfill`.
 
 ```jsonc
 {
   "type": "road", "id": "estrada_principal",
   "nodes": [[0,0,0],[0,0,30],[20,0,60],[40,0,60]],
   "width": 8, "surface": "asphalt",
-  "terrainMode": "cutfill", "taludeWidth": 6   // o terreno se adapta à pista
+  "terrainMode": "cutfill", "taludeWidth": 6,  // o terreno se adapta à pista
+  "markings": "dashed"                          // eixo tracejado branco
 }
 ```
 

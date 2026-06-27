@@ -260,18 +260,18 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | Cena data-driven | `src/scene/` (`SceneDefinition`, `SceneBuilder`) |
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (ADR-0071) |
-| Estradas (spline) | `src/road/` (`RoadSpline` + `RoadMesh` + `RoadGrade` + `surfaces`) · editor: `RoadDrawSystem` · nó `road` (ADR-0072/0075) |
+| Estradas (spline) | `src/road/` (`RoadSpline` + `RoadMesh` + `RoadGrade` + `surfaces`/marcação) · editor: `RoadDrawSystem` · nó `road` (ADR-0072/0075/0076) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
 
-## 12. Estradas por spline (`src/road/`, ADR-0072 + ADR-0075)
+## 12. Estradas por spline (`src/road/`, ADR-0072 + ADR-0075 + ADR-0076)
 
 Sistema de estradas inspirado no **Road Architect** (MicroGSD, MIT) — mesmo molde
-data-driven do ProBuilder. **Fase 1**: estrada plana conformada ao terreno. **Fase 2**
-(ADR-0075): o **terreno se adapta à pista** (cut & fill).
+data-driven do ProBuilder. **Fase 1**: estrada plana conformada ao terreno. **Fase 2**:
+o **terreno se adapta à pista** (cut & fill, ADR-0075) + **marcação** de pista (ADR-0076).
 
 - **Núcleo puro** (`src/road/`, sem editor/ECS): `RoadSpline` (Catmull-Rom: amostra
   posição+tangente pelos nós de controle), `RoadMesh` (`roadRibbon`/`toRoadGeometry` —
@@ -291,6 +291,12 @@ data-driven do ProBuilder. **Fase 1**: estrada plana conformada ao terreno. **Fa
     autorada (`getHeights`/serialização) não muda; mesh+colisão usam **base+delta**;
     recalculado a cada build (mover/remover a estrada re-ajeita o terreno, sem cicatriz).
   Guarda a spline em `userData.cortexRoad`. Colisão: a pista fica sobre o terreno (que já colide).
+- **Marcação** (ADR-0076): `markings` (`dashed`/`single-yellow`/`double-yellow`/`passing`/
+  `lane` ou `{url, repeat}`) gera um **overlay** que **clona a geometria conformada** da
+  pista, levanta um epsilon e usa material **transparente** (`depthWrite:false` +
+  `polygonOffset`) com as texturas `Markers/` (RGBA). Vive como filho do mesh
+  (`userData.cortexRoadMarkings`), regenerado por `applyRoad`. U herda a largura (linhas no
+  lugar), V reescala pro ciclo do tracejado (`ROAD_MARKINGS`/`resolveMarking`).
 - **Editor** (`RoadDrawSystem`, prioridade 26): "Desenhar estrada" (paleta/menu/ponte
   `drawRoad`) — clicar pontos no terreno (prévia = linha central + hover), **Enter**/
   duplo-clique finaliza, **Backspace** remove o último, **Esc** cancela → cria nó `road`
