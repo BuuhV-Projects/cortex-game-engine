@@ -468,13 +468,29 @@ export function describeInspector(
     const fields: InspectorField[] = [
       { kind: 'select', id: fid('roadSurface'), label: 'Superfície', value: roadState.surface, options: opts },
       { kind: 'number', id: fid('roadWidth'), label: 'Largura (m)', value: roadState.width, step: 0.5 },
+      // Fase 2: quem se adapta a quem (pista↔terreno). Ver ADR-0072.
+      { kind: 'select', id: fid('roadTerrain'), label: 'Terreno', value: roadState.terrainMode, options: [
+        { value: 'conform', label: 'Pista acompanha relevo' },
+        { value: 'cutfill', label: 'Terreno se adapta (corte/aterro)' },
+      ] },
     ];
+    // Talude só faz sentido (e só é editável) no modo cut & fill.
+    if (roadState.terrainMode === 'cutfill') {
+      fields.push({ kind: 'number', id: fid('roadTalude'), label: 'Talude (m)', value: roadState.taludeWidth, step: 0.5 });
+    }
     handlers.set(fid('roadSurface'), (v) => {
       api.setSurface(obj, String(v));
     });
     handlers.set(fid('roadWidth'), (v) => {
       const n = Number(v);
       if (Number.isFinite(n)) api.setWidth(obj, n);
+    });
+    handlers.set(fid('roadTerrain'), (v) => {
+      api.setTerrainMode(obj, v === 'cutfill' ? 'cutfill' : 'conform');
+    });
+    handlers.set(fid('roadTalude'), (v) => {
+      const n = Number(v);
+      if (Number.isFinite(n)) api.setTalude(obj, n);
     });
     // Modal com preview de TODAS as texturas de assets/roads/ (ADR-0072).
     if (api.pickSurface) {

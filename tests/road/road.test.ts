@@ -108,6 +108,40 @@ describe('nó road no buildScene', () => {
   });
 });
 
+describe('nó road cutfill: terreno se adapta à pista (ADR-0072 Fase 2)', () => {
+  it('molda o terreno ao greide SEM destruir a base (heightmap autorado intacto)', async () => {
+    const scene = new Scene();
+    const n = 9; // res 8 → 81 vértices
+    const heights = new Array(n * n).fill(0);
+    const center = 4 * n + 4; // (0,0) num terreno 20×20 res 8
+    heights[center] = 6; // bossa de 6 m bem no caminho da estrada
+    const def: SceneDefinition = {
+      version: 1,
+      nodes: [
+        { type: 'terrain', id: 'chao', size: 20, resolution: 8 },
+        // estrada cruzando a bossa ao longo de X, no modo cutfill
+        { type: 'road', id: 'via', nodes: [[-10, 0, 0], [0, 0, 0], [10, 0, 0]], width: 8, terrainMode: 'cutfill' },
+      ],
+    };
+    const overlay = { version: 1 as const, objects: {}, data: { terrain: { chao: heights } } };
+    const handle = await buildScene(scene, def, { overlay });
+    const terrain = (handle.byId.get('chao')!.userData as Record<string, unknown>)['cortexTerrain'] as {
+      getHeights(): number[];
+      heightAt(x: number, z: number): number | null;
+    };
+    // NÃO-destrutivo: a base autorada (serialização) continua com a bossa de 6.
+    expect(terrain.getHeights()[center]).toBe(6);
+    // Mas o terreno EFETIVO sob a pista foi cortado pro greide (bem abaixo de 6).
+    expect(terrain.heightAt(0, 0)!).toBeLessThan(6);
+    // A estrada guardou o eixo+greide pro post-pass (centerline).
+    const cr = (handle.byId.get('via')!.userData as Record<string, unknown>)['cortexRoad'] as {
+      terrainMode: string; centerline?: unknown[];
+    };
+    expect(cr.terrainMode).toBe('cutfill');
+    expect(Array.isArray(cr.centerline)).toBe(true);
+  });
+});
+
 describe('resolveSurface', () => {
   it('nome embutido resolve diffuse/normal', () => {
     expect(resolveSurface('asphalt')).toEqual(ROAD_SURFACES.asphalt);

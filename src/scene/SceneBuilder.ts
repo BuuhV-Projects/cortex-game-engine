@@ -52,6 +52,7 @@ import { buildShape } from '../probuilder/shapes.js';
 import { sampleSpline } from '../road/RoadSpline.js';
 import { toRoadGeometry } from '../road/RoadMesh.js';
 import { resolveSurface } from '../road/surfaces.js';
+import { smoothGrade, moldHeightfield, mergeDeltas, type GradePoint } from '../road/RoadGrade.js';
 import { Terrain, type TerrainPaintData } from './Terrain.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import { debug } from '../core/debug.js';
@@ -504,6 +505,10 @@ export async function buildScene(
   //    topológica; falha alto em ciclo/alvo ausente. Nós com override do editor
   //    ficam "pinados" (a edição manual vence o attach).
   resolveAttachments(placed, byId, kit, new Set(Object.keys(overrides)));
+
+  // 2.5) Terreno se adapta às estradas `cutfill` (cut & fill + talude, ADR-0072 Fase 2).
+  //      Depois de tudo posicionado — não-destrutivo, recalculado a cada build.
+  moldTerrainToRoads(three);
 
   // 3) Plataforma 2.5D: nós com collider/player viram entidades ECS acopladas
   //    (posições já finais). Precedência do collider: código (`node.collider`) >
@@ -1050,13 +1055,40 @@ export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>
   mesh.geometry?.dispose();
   const geometry = toRoadGeometry(samples, width, surf.repeat, widthSegments);
 
-  // Conformar ao terreno: raycast pra baixo em CADA vértice da grade (bordas + meio),
-  // fixa o Y em terrenoY + yOffset, e RECALCULA as normais (sombreamento na rampa).
+  // Relação pista↔terreno (ADR-0072). `conform` (Fase 1): a PISTA se deforma seguindo
+  // o relevo (raycast por vértice). `cutfill` (Fase 2): a pista tem GREIDE suavizado e
+  // o TERRENO é moldado a ela (corte/aterro + talude) — a moldagem em si acontece no
+  // post-pass `moldTerrainToRoads`; aqui só fixamos o Y da pista no greide + guardamos
+  // o eixo (centerline) pro post-pass reusar o MESMO greide.
+  const mode = node.terrainMode ?? 'conform';
   const conform = node.conformTerrain !== false;
   const terrains: Object3D[] = [];
-  if (conform) three.traverse((o) => { if ((o.userData as Record<string, unknown>)['cortexTerrain']) terrains.push(o); });
+  three.traverse((o) => { if ((o.userData as Record<string, unknown>)['cortexTerrain']) terrains.push(o); });
   const pos = geometry.getAttribute('position');
-  if (conform && terrains.length > 0) {
+  const vertsPerRow = widthSegments + 1;
+  let centerline: GradePoint[] | undefined;
+
+  if (mode === 'cutfill' && terrains.length > 0) {
+    // Altura do terreno sob cada amostra do eixo → greide suavizado (média móvel +
+    // clamp de inclinação). A pista fica PLANA na largura e segue o greide no comprimento.
+    const ray = new Raycaster();
+    const down = new Vector3(0, -1, 0);
+    const origin = new Vector3();
+    const terrainY = samples.map((s) => {
+      origin.set(s.pos[0], 1e4, s.pos[2]);
+      ray.set(origin, down);
+      const hit = ray.intersectObjects(terrains, true)[0];
+      return hit ? hit.point.y : s.pos[1];
+    });
+    const grade = smoothGrade(samples, terrainY, { maxSlope: node.maxSlope });
+    for (let i = 0; i < pos.count; i++) {
+      const row = Math.min(grade.length - 1, Math.floor(i / vertsPerRow));
+      pos.setY(i, grade[row]! + yOffset);
+    }
+    centerline = samples.map((s, i) => ({ x: s.pos[0], z: s.pos[2], y: grade[i]! }));
+  } else if (conform && terrains.length > 0) {
+    // Conformar (Fase 1): raycast pra baixo em CADA vértice da grade (bordas + meio),
+    // fixa o Y em terrenoY + yOffset, e RECALCULA as normais (sombreamento na rampa).
     const ray = new Raycaster();
     const down = new Vector3(0, -1, 0);
     const origin = new Vector3();
@@ -1100,9 +1132,55 @@ export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>
     width,
     surface: node.surface ?? 'asphalt',
     conformTerrain: conform,
+    terrainMode: mode,
+    taludeWidth: node.taludeWidth ?? 6,
     steps: node.steps ?? 12,
     yOffset,
+    centerline, // eixo + greide (coords de mundo) — consumido por moldTerrainToRoads
   };
+}
+
+/**
+ * **Post-pass: o terreno se adapta às estradas `cutfill`** (ADR-0072 Fase 2). Depois
+ * de todos os nós posicionados, para cada terreno acumula o *cut & fill* (+ talude) de
+ * cada estrada `cutfill` (reusando o greide já calculado em {@link applyRoad}, guardado
+ * em `cortexRoad.centerline`) e aplica via {@link Terrain.setRoadMolding} —
+ * **não-destrutivo** (recalculado a cada build; mover/remover a estrada re-ajeita o
+ * terreno sem cicatriz salva). Sem estradas `cutfill`, limpa a moldagem (idempotente).
+ * Exportado pra o editor remoldar ao vivo após {@link applyRoad}.
+ */
+export function moldTerrainToRoads(three: Object3D): void {
+  const terrains: Object3D[] = [];
+  const roads: { width: number; talude: number; centerline: GradePoint[] }[] = [];
+  three.traverse((o) => {
+    const ud = o.userData as Record<string, unknown>;
+    if (ud['cortexTerrain']) terrains.push(o);
+    const cr = ud['cortexRoad'] as
+      | { terrainMode?: string; width?: number; taludeWidth?: number; centerline?: GradePoint[] }
+      | undefined;
+    if (cr && cr.terrainMode === 'cutfill' && Array.isArray(cr.centerline) && cr.centerline.length >= 2) {
+      roads.push({ width: cr.width ?? 8, talude: cr.taludeWidth ?? 6, centerline: cr.centerline });
+    }
+  });
+  if (terrains.length === 0) return;
+
+  const v = new Vector3();
+  for (const t of terrains) {
+    const terrain = (t.userData as Record<string, unknown>)['cortexTerrain'] as Terrain;
+    t.updateMatrixWorld(true);
+    const grid = { width: terrain.width, depth: terrain.depth, resolution: terrain.resolution, base: terrain.getHeights() };
+    const deltas: Float32Array[] = [];
+    for (const road of roads) {
+      // Eixo da estrada (mundo) → coords LOCAIS do terreno (X/Z no plano, Y = greide).
+      const local: GradePoint[] = road.centerline.map((p) => {
+        v.set(p.x, p.y, p.z);
+        t.worldToLocal(v);
+        return { x: v.x, z: v.z, y: v.y };
+      });
+      deltas.push(moldHeightfield(grid, local, road.width / 2, road.talude));
+    }
+    terrain.setRoadMolding(mergeDeltas(deltas)); // null (sem cutfill) limpa a moldagem
+  }
 }
 
 function makeLight(node: Extract<SceneNode, { type: 'light' }>): Object3D {

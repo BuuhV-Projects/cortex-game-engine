@@ -198,6 +198,13 @@ export interface RoadEditState {
   surface: string;
   /** Largura da pista (m). */
   width: number;
+  /**
+   * Como o terreno se relaciona com a pista (Fase 2): `'conform'` (a pista se deforma
+   * no relevo) ou `'cutfill'` (o terreno se adapta à pista — corte/aterro + talude).
+   */
+  terrainMode: 'conform' | 'cutfill';
+  /** Largura do talude (transição) por lado, m. Só relevante em `cutfill`. */
+  taludeWidth: number;
 }
 
 /**
@@ -213,6 +220,10 @@ export interface RoadApi {
   setSurfaceTexture(obj: Object3D, surface: { diffuse: string; normal?: string }): void;
   /** Ajusta a largura (m) → regenera + persiste. */
   setWidth(obj: Object3D, width: number): void;
+  /** Troca o modo de terreno (`conform`/`cutfill`) → regenera pista + remolda terreno. */
+  setTerrainMode(obj: Object3D, mode: 'conform' | 'cutfill'): void;
+  /** Ajusta a largura do talude (m, modo `cutfill`) → remolda o terreno. */
+  setTalude(obj: Object3D, taludeWidth: number): void;
   /** Abre o modal de seleção de textura (atribuído pelo attachEditor). Opcional. */
   pickSurface?(obj: Object3D): void;
 }

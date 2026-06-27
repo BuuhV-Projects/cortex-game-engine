@@ -8,6 +8,6 @@
 
 > **MeshNode** = `z.infer`\<*typeof* `meshNode`\>
 
-Defined in: [src/scene/SceneDefinition.ts:430](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L430)
+Defined in: [src/scene/SceneDefinition.ts:441](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L441)
 
 Nó de malha de blockout editável (ver meshNode; ADR-0071).

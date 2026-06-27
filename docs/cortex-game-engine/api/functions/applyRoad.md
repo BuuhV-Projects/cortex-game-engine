@@ -8,7 +8,7 @@
 
 > **applyRoad**(`mesh`, `node`, `three`): `void`
 
-Defined in: [src/scene/SceneBuilder.ts:1041](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1041)
+Defined in: [src/scene/SceneBuilder.ts:1046](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1046)
 
 (Re)gera a malha + material de uma estrada num `mesh` existente (ADR-0072).
 Amostra a spline dos `nodes`, **conforma ao terreno** (raycast pra baixo por amostra
@@ -73,6 +73,12 @@ A pista acompanha a altura do terreno (raycast por amostra). Default true.
 
 `string` = `...`
 
+#### maxSlope?
+
+`number` = `...`
+
+Inclinação máx. do greide (Δalt/Δhoriz). Só `cutfill`. Default 0.08 (8%).
+
 #### nodes
 
 \[`number`, `number`, `number`\][] = `...`
@@ -90,6 +96,21 @@ Densidade da tessellation: amostras por 90° de curvatura (adaptativa). Default 
 `"asphalt"` \| `"concrete"` \| `"dirt"` \| `"brick"` \| `"cobblestone"` \| \{ `color?`: `string` \| `number`; `diffuse?`: `string`; `normal?`: `string`; `repeat?`: `number`; \} = `...`
 
 Superfície: nome embutido (`asphalt`/…) ou URLs explícitas (diffuse/normal/repeat).
+
+#### taludeWidth?
+
+`number` = `...`
+
+Largura do talude (transição terreno↔pista) em cada lado, m. Só `cutfill`. Default 6.
+
+#### terrainMode?
+
+`"conform"` \| `"cutfill"` = `...`
+
+Como a pista se relaciona com o terreno (ADR-0072 Fase 2):
+- `'conform'` (default): a **pista** se deforma acompanhando o relevo (Fase 1).
+- `'cutfill'`: o **terreno** se adapta à pista — greide suavizado + *cut & fill*
+  (corta morro acima, aterra vale abaixo) com talude nas laterais. Não-destrutivo.
 
 #### transform?
 

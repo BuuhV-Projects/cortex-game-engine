@@ -56,6 +56,47 @@ describe('Terrain', () => {
     expect(b.getHeights()).toEqual(saved);
   });
 
+  // ── Moldagem da estrada (cut & fill — não-destrutivo, ADR-0072 Fase 2) ──────────
+
+  it('setRoadMolding aplica delta no mesh/colisão SEM mexer na base (getHeights)', () => {
+    const t = new Terrain({ size: 8, resolution: 4 }); // 5×5 = 25
+    const delta = new Float32Array(25);
+    const center = 12;
+    delta[center] = 3; // aterra +3 no centro
+    t.setRoadMolding(delta);
+    // base intacta (serialização não muda) — NÃO-destrutivo
+    expect(t.getHeights()[center]).toBe(0);
+    // mesh reflete base+delta
+    const pos = t.mesh.geometry.getAttribute('position') as Float32BufferAttribute;
+    expect(pos.getY(center)).toBeCloseTo(3);
+    // colisão (heightAt) também segue o terreno moldado
+    expect(t.heightAt(0, 0)).toBeCloseTo(3);
+  });
+
+  it('setRoadMolding(null) remove a moldagem (volta à base)', () => {
+    const t = new Terrain({ size: 8, resolution: 4 });
+    const delta = new Float32Array(25);
+    delta[12] = 3;
+    t.setRoadMolding(delta);
+    t.setRoadMolding(null);
+    const pos = t.mesh.geometry.getAttribute('position') as Float32BufferAttribute;
+    expect(pos.getY(12)).toBeCloseTo(0);
+    expect(t.heightAt(0, 0)).toBeCloseTo(0);
+  });
+
+  it('sculpt na base soma ao delta da estrada (mesh = base + delta)', () => {
+    const t = new Terrain({ size: 20, resolution: 20 });
+    const n = t.resolution + 1;
+    const center = (n * n - 1) / 2;
+    const delta = new Float32Array(n * n);
+    delta[center] = 2;
+    t.setRoadMolding(delta);
+    t.sculpt(0, 0, 5, 4); // levanta a base +4 no centro
+    const pos = t.mesh.geometry.getAttribute('position') as Float32BufferAttribute;
+    // mesh = base esculpida (~4) + delta (2) ≈ 6
+    expect(pos.getY(center)).toBeCloseTo(t.getHeights()[center]! + 2);
+  });
+
   it('buildScene instancia o nó terrain e restaura heights do overlay', async () => {
     const def: SceneDefinition = {
       version: 1,

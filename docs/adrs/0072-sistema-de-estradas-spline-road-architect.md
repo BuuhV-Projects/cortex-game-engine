@@ -65,8 +65,9 @@ amigável → diffuse/normal/repeat. `surface` aceita o nome ou URLs explícitas
 ### Roadmap (fases)
 1. **MVP (esta):** nó `road` + spline + ribbon + textura + conformar terreno + desenhar/
    editar spline no F2 + colisão (dirigível). Testes do core.
-2. Achatar terreno sob a pista; largura/faixas; **marcação** (linha central/laterais);
-   acostamento/sarjeta.
+2. Achatar terreno sob a pista (**cut & fill** — feito no [ADR-0075](0075-estrada-molda-terreno-cut-and-fill.md):
+   greide suavizado + o terreno se adapta à pista, não-destrutivo); largura/faixas;
+   **marcação** (linha central/laterais); acostamento/sarjeta.
 3. **Interseções** (T/X), rampas, pontes/elevado.
 4. Props ao longo da spline: guard-rails (extrusão), placas, semáforos (portar
    meshes/texturas).

@@ -8,7 +8,7 @@
 
 > **overlayPlayerAnimations**(`overlay`): `Record`\<`string`, `Record`\<`string`, `string`\>\>
 
-Defined in: [src/scene/SceneBuilder.ts:367](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L367)
+Defined in: [src/scene/SceneBuilder.ts:368](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L368)
 
 Lê `data.playerAnimations` da overlay — o **mapa ação→clipe do player** autorado
 no editor (`{ [id]: { idle, run, jump, … } }`). Sobrescreve o `animations` do nó.

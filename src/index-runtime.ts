@@ -114,6 +114,7 @@ export * from './probuilder/shapes.js';
 // ribbon mesh + catálogo de superfícies.
 export { sampleSpline, splineLength, type RoadSample } from './road/RoadSpline.js';
 export * from './road/RoadMesh.js';
+export * from './road/RoadGrade.js';
 export * from './road/surfaces.js';
 
 export * from './io/SceneFileWriter.js';

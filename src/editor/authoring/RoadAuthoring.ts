@@ -2,7 +2,7 @@ import { Mesh } from 'three';
 import type { Object3D } from 'three';
 import type { RoadApi, RoadEditState } from '../EditorInspector.js';
 import type { EditorAuthoringContext } from './AuthoringContext.js';
-import { applyRoad } from '../../scene/SceneBuilder.js';
+import { applyRoad, moldTerrainToRoads } from '../../scene/SceneBuilder.js';
 import type { SceneNode } from '../../scene/SceneDefinition.js';
 
 /** Nó `road` como persistido em `overlay.data.added`. */
@@ -25,11 +25,12 @@ export function createRoadApi(ctx: EditorAuthoringContext): RoadApi {
   return {
     get(obj: Object3D): RoadEditState | null {
       const cr = (obj.userData as Record<string, unknown>)['cortexRoad'] as
-        | { surface?: unknown; width?: number }
+        | { surface?: unknown; width?: number; terrainMode?: string; taludeWidth?: number }
         | undefined;
       if (!cr) return null; // não é uma estrada
       const surface = typeof cr.surface === 'string' ? cr.surface : 'custom';
-      return { surface, width: cr.width ?? 8 };
+      const terrainMode = cr.terrainMode === 'cutfill' ? 'cutfill' : 'conform';
+      return { surface, width: cr.width ?? 8, terrainMode, taludeWidth: cr.taludeWidth ?? 6 };
     },
 
     setSurface(obj: Object3D, name: string): void {
@@ -53,6 +54,25 @@ export function createRoadApi(ctx: EditorAuthoringContext): RoadApi {
       if (!node || !(obj instanceof Mesh)) return;
       node.width = Math.max(0.5, width);
       applyRoad(obj, node, ctx.three);
+      moldTerrainToRoads(ctx.three); // largura muda a faixa moldada
+      ctx.persist();
+    },
+
+    setTerrainMode(obj: Object3D, mode: 'conform' | 'cutfill'): void {
+      const node = nodeOf(obj);
+      if (!node || !(obj instanceof Mesh)) return;
+      node.terrainMode = mode;
+      applyRoad(obj, node, ctx.three); // regenera a pista (greide ou conform)
+      moldTerrainToRoads(ctx.three); // aplica/limpa o cut & fill no terreno
+      ctx.persist();
+    },
+
+    setTalude(obj: Object3D, taludeWidth: number): void {
+      const node = nodeOf(obj);
+      if (!node || !(obj instanceof Mesh)) return;
+      node.taludeWidth = Math.max(0, taludeWidth);
+      applyRoad(obj, node, ctx.three); // guarda o talude novo em cortexRoad
+      moldTerrainToRoads(ctx.three);
       ctx.persist();
     },
   };

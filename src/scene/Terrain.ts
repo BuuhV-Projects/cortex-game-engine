@@ -85,6 +85,12 @@ export class Terrain {
   readonly depth: number;
 
   private readonly heights: Float32Array;
+  /**
+   * Delta de moldagem por estrada (cut & fill, ADR-0072 Fase 2) — **não-destrutivo**:
+   * o mesh/colisão usam `heights + roadDelta`, mas {@link Terrain.getHeights} devolve
+   * só a base autorada (a cicatriz da estrada é recalculada a cada build, não salva).
+   */
+  private roadDelta: Float32Array | null = null;
   private readonly geometry: BufferGeometry;
 
   // ── Pintura de textura (splat) — criada sob demanda no primeiro paint/setPaint ──
@@ -155,6 +161,33 @@ export class Terrain {
     return [(i / this.resolution - 0.5) * this.width, (j / this.resolution - 0.5) * this.depth];
   }
 
+  /** Altura **efetiva** de um vértice = base autorada + delta de moldagem da estrada. */
+  private effectiveY(idx: number): number {
+    return this.heights[idx]! + (this.roadDelta ? this.roadDelta[idx]! : 0);
+  }
+
+  /** Reescreve TODO o Y do mesh com a altura efetiva (base+delta) + normais/bounds. */
+  private applyHeights(): void {
+    const n = this.resolution + 1;
+    const pos = this.geometry.getAttribute('position') as Float32BufferAttribute;
+    for (let k = 0; k < n * n; k++) pos.setY(k, this.effectiveY(k));
+    pos.needsUpdate = true;
+    this.geometry.computeVertexNormals();
+    this.geometry.computeBoundingSphere();
+  }
+
+  /**
+   * **Molda o terreno à(s) estrada(s)** (cut & fill, ADR-0072 Fase 2): aplica um
+   * `delta` de altura (mesmo tamanho do heightmap) **por cima** da base autorada —
+   * **não-destrutivo** (a base/serialização não muda; `null` remove a moldagem). O
+   * {@link buildScene} chama isto a cada build a partir das splines de estrada, então
+   * mover/remover a estrada re-ajeita o terreno (sem cicatriz salva).
+   */
+  setRoadMolding(delta: Float32Array | null): void {
+    this.roadDelta = delta && delta.length === this.heights.length ? delta : null;
+    this.applyHeights();
+  }
+
   /**
    * **Esculpe** o terreno: soma `delta` à altura num círculo de `radius` (em
    * coordenadas LOCAIS do terreno, no plano XZ centrado), com **falloff suave**
@@ -178,7 +211,7 @@ export class Terrain {
         const w = tdist * tdist * (3 - 2 * tdist); // smoothstep
         const idx = j * n + i;
         this.heights[idx]! += delta * w;
-        pos.setY(idx, this.heights[idx]!);
+        pos.setY(idx, this.effectiveY(idx)); // mesh = base (recém-esculpida) + delta da estrada
         changed = true;
       }
     }
@@ -192,7 +225,8 @@ export class Terrain {
 
   /**
    * Altura (Y **local**) do terreno num ponto `(localX, localZ)` por **interpolação
-   * bilinear** do heightmap — pra colisão/ground (o player fica em cima). Retorna
+   * bilinear** do heightmap — pra colisão/ground (o player fica em cima). Inclui o
+   * delta de moldagem da estrada (o player anda sobre o terreno moldado). Retorna
    * `null` se o ponto está **fora** da área do terreno. Coords locais (centradas);
    * use `mesh.worldToLocal` antes pra partir de um ponto de mundo.
    */
@@ -207,10 +241,10 @@ export class Terrain {
     const j0 = Math.min(Math.floor(gz), this.resolution - 1);
     const fx = gx - i0;
     const fz = gz - j0;
-    const h00 = this.heights[j0 * n + i0]!;
-    const h10 = this.heights[j0 * n + i0 + 1]!;
-    const h01 = this.heights[(j0 + 1) * n + i0]!;
-    const h11 = this.heights[(j0 + 1) * n + i0 + 1]!;
+    const h00 = this.effectiveY(j0 * n + i0);
+    const h10 = this.effectiveY(j0 * n + i0 + 1);
+    const h01 = this.effectiveY((j0 + 1) * n + i0);
+    const h11 = this.effectiveY((j0 + 1) * n + i0 + 1);
     return (h00 * (1 - fx) + h10 * fx) * (1 - fz) + (h01 * (1 - fx) + h11 * fx) * fz;
   }
 
@@ -219,15 +253,12 @@ export class Terrain {
     return Array.from(this.heights);
   }
 
-  /** Substitui o heightmap inteiro (ex.: restaurar autoria salva) e atualiza o mesh. */
+  /** Substitui o heightmap **base** inteiro (ex.: restaurar autoria salva) e atualiza
+   * o mesh (mantendo o delta de moldagem da estrada por cima, se houver). */
   setHeights(heights: number[]): void {
     const n = this.resolution + 1;
     this.heights.set(heights.slice(0, n * n));
-    const pos = this.geometry.getAttribute('position') as Float32BufferAttribute;
-    for (let k = 0; k < n * n; k++) pos.setY(k, this.heights[k]!);
-    pos.needsUpdate = true;
-    this.geometry.computeVertexNormals();
-    this.geometry.computeBoundingSphere();
+    this.applyHeights(); // base + delta da estrada
   }
 
   // ── Pintura de textura (splat) ────────────────────────────────────────────────

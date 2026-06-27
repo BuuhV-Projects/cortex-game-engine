@@ -282,6 +282,17 @@ const roadNode = z.object({
   steps: z.number().int().positive().optional(),
   /** A pista acompanha a altura do terreno (raycast por amostra). Default true. */
   conformTerrain: z.boolean().optional(),
+  /**
+   * Como a pista se relaciona com o terreno (ADR-0072 Fase 2):
+   * - `'conform'` (default): a **pista** se deforma acompanhando o relevo (Fase 1).
+   * - `'cutfill'`: o **terreno** se adapta à pista — greide suavizado + *cut & fill*
+   *   (corta morro acima, aterra vale abaixo) com talude nas laterais. Não-destrutivo.
+   */
+  terrainMode: z.enum(['conform', 'cutfill']).optional(),
+  /** Largura do talude (transição terreno↔pista) em cada lado, m. Só `cutfill`. Default 6. */
+  taludeWidth: z.number().nonnegative().optional(),
+  /** Inclinação máx. do greide (Δalt/Δhoriz). Só `cutfill`. Default 0.08 (8%). */
+  maxSlope: z.number().positive().optional(),
   /** Levanta a pista acima do chão (evita z-fight). Default 0.05 m. */
   yOffset: z.number().optional(),
   id: z.string().min(1),
