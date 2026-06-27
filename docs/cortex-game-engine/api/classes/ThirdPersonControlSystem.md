@@ -6,7 +6,7 @@
 
 # Class: ThirdPersonControlSystem
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:55
+Defined in: [src/systems/ThirdPersonControlSystem.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L55)
 
 **Controle de terceira pessoa** — porta o `ThirdPersonController` do Unity
 StarterAssets (comportamento; a arte é separada): câmera **orbital por mouse**
@@ -29,7 +29,7 @@ Roda em `priority = 20` (depois da física). Pausa no editor via `pauseWhen`.
 
 > **new ThirdPersonControlSystem**(`camera`, `input`, `canvas`, `options?`): `ThirdPersonControlSystem`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:76
+Defined in: [src/systems/ThirdPersonControlSystem.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L76)
 
 #### Parameters
 
@@ -84,7 +84,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `20`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:57
+Defined in: [src/systems/ThirdPersonControlSystem.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L57)
 
 Prioridade de execução deste sistema.
 
@@ -101,7 +101,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:56
+Defined in: [src/systems/ThirdPersonControlSystem.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L56)
 
 Construtores dos componentes que este sistema requer.
 
@@ -127,7 +127,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:101
+Defined in: [src/systems/ThirdPersonControlSystem.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L101)
 
 Executa a lógica do sistema para o frame/passo atual.
 

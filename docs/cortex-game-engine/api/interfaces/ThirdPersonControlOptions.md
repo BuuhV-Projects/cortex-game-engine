@@ -6,7 +6,7 @@
 
 # Interface: ThirdPersonControlOptions
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:12
+Defined in: [src/systems/ThirdPersonControlSystem.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L12)
 
 Opções do [ThirdPersonControlSystem](../classes/ThirdPersonControlSystem.md) (porta o ThirdPersonController do Unity StarterAssets).
 
@@ -16,7 +16,7 @@ Opções do [ThirdPersonControlSystem](../classes/ThirdPersonControlSystem.md) (
 
 > `optional` **cameraDistance?**: `number`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:22
+Defined in: [src/systems/ThirdPersonControlSystem.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L22)
 
 Distância da câmera atrás do personagem (m). Default 5.5.
 
@@ -26,7 +26,7 @@ Distância da câmera atrás do personagem (m). Default 5.5.
 
 > `optional` **cameraHeight?**: `number`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:24
+Defined in: [src/systems/ThirdPersonControlSystem.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L24)
 
 Altura do alvo que a câmera mira (m, acima dos pés). Default 1.5.
 
@@ -36,7 +36,7 @@ Altura do alvo que a câmera mira (m, acima dos pés). Default 1.5.
 
 > `optional` **facingOffset?**: `number`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:28
+Defined in: [src/systems/ThirdPersonControlSystem.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L28)
 
 Offset de orientação do modelo (rad) se o personagem nascer virado ao contrário. Default 0.
 
@@ -46,7 +46,7 @@ Offset de orientação do modelo (rad) se o personagem nascer virado ao contrár
 
 > `optional` **moveSpeed?**: `number`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:14
+Defined in: [src/systems/ThirdPersonControlSystem.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L14)
 
 Velocidade de caminhada (u/s). Default 2.0 (Unity MoveSpeed).
 
@@ -56,7 +56,7 @@ Velocidade de caminhada (u/s). Default 2.0 (Unity MoveSpeed).
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:30
+Defined in: [src/systems/ThirdPersonControlSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L30)
 
 Pausa (ex.: `() => game.editorActive`). Quando true, não move/olha (mostra o corpo).
 
@@ -70,7 +70,7 @@ Pausa (ex.: `() => game.editorActive`). Quando true, não move/olha (mostra o co
 
 > `optional` **rotationSmoothTime?**: `number`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:20
+Defined in: [src/systems/ThirdPersonControlSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L20)
 
 Suavização da rotação do personagem ao virar (s). Default 0.12 (Unity RotationSmoothTime).
 
@@ -80,7 +80,7 @@ Suavização da rotação do personagem ao virar (s). Default 0.12 (Unity Rotati
 
 > `optional` **runThreshold?**: `number`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:26
+Defined in: [src/systems/ThirdPersonControlSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L26)
 
 Acima de qual velocidade troca walk→run (u/s). Default 3.5.
 
@@ -90,7 +90,7 @@ Acima de qual velocidade troca walk→run (u/s). Default 3.5.
 
 > `optional` **sensitivity?**: `number`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:18
+Defined in: [src/systems/ThirdPersonControlSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L18)
 
 Sensibilidade do mouse (rad/px). Default 0.0022.
 
@@ -100,6 +100,6 @@ Sensibilidade do mouse (rad/px). Default 0.0022.
 
 > `optional` **sprintSpeed?**: `number`
 
-Defined in: src/systems/ThirdPersonControlSystem.ts:16
+Defined in: [src/systems/ThirdPersonControlSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L16)
 
 Velocidade de corrida com Shift (u/s). Default 5.335 (Unity SprintSpeed).
