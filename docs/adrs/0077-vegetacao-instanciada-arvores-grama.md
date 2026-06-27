@@ -1,7 +1,7 @@
 # 0077 - Vegetação instanciada (árvores, grama, arbustos)
 
 **Data:** 2026-06-27
-**Status:** aceito — Fase 1 (núcleo instanciado + nó) feita; Fase 2 (pincel de espalhar no editor) em seguida
+**Status:** aceito — Fase 1 (núcleo instanciado + nó) e Fase 2 (pincel de espalhar no editor) feitas
 
 ## Contexto
 
@@ -52,7 +52,9 @@ simples (tronco+copa / quads de grama). O sistema é **agnóstico de modelo** �
 - **Nó `vegetation` novo** no `SceneDefinition` + `buildScene` (`makeVegetation`).
 - **Instancing** = milhares de plantas a custo baixo; `frustumCulled=false` nas
   InstancedMesh (o bounding muda com o espalhamento).
-- **Fase 2 (a seguir):** pincel de espalhar no editor (densidade/jitter/escala, snap no
-  terreno, borracha) + Inspector + persistência no overlay. Colisão das árvores: fora
-  de escopo por ora (cenário; abrir registro se precisar).
+- **Fase 2 (feita):** **pincel de espalhar** no editor (`VegetationAuthoring`): paleta/menu
+  "🌳 Árvore"/"🌿 Grama" cria o nó e liga o pincel; CLIQUE/ARRASTE no terreno espalha
+  (densidade/jitter/escala aleatória, assenta na altura do terreno via raycast,
+  espaçamento mínimo); **SHIFT apaga**. Persiste mutando `node.instances` (data.added).
+  Inspector: raio/densidade/escala. Colisão das árvores: fora de escopo por ora.
 - **API pública nova** → `yarn docs:engine`, `engine-api.md`/`architecture.md`, vendor.

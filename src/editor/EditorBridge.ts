@@ -57,13 +57,15 @@ export interface EditorBridgeOptions {
   onDrawShape?: () => void;
   /** Arma o "desenhar estrada" (Road Architect — ADR-0072). */
   onDrawRoad?: () => void;
+  /** Cria um nó de vegetação e liga o pincel de espalhar (ADR-0077). */
+  onAddVegetation?: (kind: 'tree' | 'grass') => void;
   /** Chamado quando o handshake conclui — o attachEditor esconde os painéis in-canvas. */
   onBridged: () => void;
 }
 
 /** Cria a ponte. Inerte (no-op) fora de um iframe. */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onDrawRoad, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onDrawRoad, onAddVegetation, onBridged } = options;
 
   const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
   if (!inIframe) {
@@ -180,6 +182,9 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         break;
       case 'drawRoad':
         onDrawRoad?.();
+        break;
+      case 'addVegetation':
+        if (data.kind === 'tree' || data.kind === 'grass') onAddVegetation?.(data.kind);
         break;
     }
   };

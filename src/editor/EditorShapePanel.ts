@@ -19,6 +19,8 @@ export interface EditorShapePanelOptions {
   onDrawBox?: () => void;
   /** Chamado ao clicar em "Estrada" — arma o desenho de estrada (ADR-0072). */
   onDrawRoad?: () => void;
+  /** Chamado ao clicar em "Árvore"/"Grama" — cria um nó `vegetation` e liga o pincel (ADR-0077). */
+  onAddVegetation?: (kind: 'tree' | 'grass') => void;
   parent?: HTMLElement;
 }
 
@@ -26,7 +28,7 @@ export interface EditorShapePanelOptions {
 const ORDER: ShapeKind[] = ['cube', 'plane', 'cylinder', 'sphere', 'cone', 'stairs', 'ramp', 'arch', 'wallOpening'];
 
 export function createEditorShapePanel(options: EditorShapePanelOptions): EditorShapePanel {
-  const { onAddShape, onDrawBox, onDrawRoad, parent = document.body } = options;
+  const { onAddShape, onDrawBox, onDrawRoad, onAddVegetation, parent = document.body } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -113,6 +115,22 @@ export function createEditorShapePanel(options: EditorShapePanelOptions): Editor
     ].join(';');
     road.addEventListener('click', onDrawRoad);
     root.append(road);
+  }
+
+  // "Árvore" / "Grama" (vegetação): cria o nó + liga o pincel de espalhar (ADR-0077).
+  if (onAddVegetation) {
+    const vegRow = document.createElement('div');
+    vegRow.style.cssText = 'margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:4px';
+    const mk = (label: string, kind: 'tree' | 'grass'): HTMLButtonElement => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.title = `${label} — clique e espalhe no terreno`;
+      b.style.cssText = 'padding:7px 4px;border:1px solid #3f7d3a;border-radius:4px;background:#2c4a2a;color:#fff;cursor:pointer;font-size:12px';
+      b.addEventListener('click', () => onAddVegetation(kind));
+      return b;
+    };
+    vegRow.append(mk('🌳 Árvore', 'tree'), mk('🌿 Grama', 'grass'));
+    root.append(vegRow);
   }
 
   parent.appendChild(root);

@@ -289,6 +289,38 @@ export interface TerrainApi {
   pickTexture?(obj: Object3D): void;
 }
 
+/** Estado da vegetação selecionada (pincel de espalhar — ADR-0077). `null` se não é. */
+export interface VegetationEditState {
+  /** Pincel ativo nesta vegetação? */
+  painting: boolean;
+  /** Raio do pincel (unidades de mundo). */
+  radius: number;
+  /** Quantas instâncias por pincelada (densidade). */
+  density: number;
+  /** Escala mínima/máxima sorteada por instância. */
+  scaleMin: number;
+  scaleMax: number;
+  /** Quantas instâncias já espalhadas. */
+  count: number;
+}
+
+/**
+ * Ponte de autoria da **vegetação** (ADR-0077): o inspector liga/desliga o pincel de
+ * espalhar e ajusta raio/densidade/escala. Implementada pelo `attachEditor` contra a
+ * {@link Vegetation} (em `userData.cortexVegetation`); as instâncias persistem no nó
+ * (`data.added`). `get` devolve `null` se o objeto não é vegetação.
+ */
+export interface VegetationApi {
+  get(obj: Object3D): VegetationEditState | null;
+  /** Entra/sai do modo pincel. */
+  startPaint(obj: Object3D): void;
+  stopPaint(): void;
+  /** Ajusta o pincel (raio + densidade). */
+  setBrush(radius: number, density: number): void;
+  /** Ajusta a faixa de escala sorteada por instância. */
+  setScale(min: number, max: number): void;
+}
+
 /** Estado de animação do objeto selecionado (clipes do `.glb`). */
 export interface AnimationEditState {
   /** Nomes dos clipes disponíveis. */
@@ -372,6 +404,8 @@ export interface EditorInspectorOptions {
   roadApi?: RoadApi;
   /** Opcional: pincel de esculpir terreno. Ver {@link TerrainApi}. */
   terrainApi?: TerrainApi;
+  /** Opcional: pincel de espalhar vegetação. Ver {@link VegetationApi}. */
+  vegetationApi?: VegetationApi;
   /** Opcional: controle/persistência de animação (escolher clipe, play/stop). Ver {@link AnimationApi}. */
   animationApi?: AnimationApi;
   /** Opcional: mapa ação→clipe do player (idle/run/jump/…). Ver {@link PlayerAnimationsApi}. */
@@ -409,12 +443,13 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     meshApi,
     roadApi,
     terrainApi,
+    vegetationApi,
     animationApi,
     playerAnimationsApi,
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, matteApi, materialApi, meshApi, roadApi, terrainApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

@@ -54,6 +54,7 @@ import { ShapeDrawSystem } from './ShapeDrawSystem.js';
 import { RoadDrawSystem } from './RoadDrawSystem.js';
 import { createAnimationApi, createPlayerAnimationsApi } from './authoring/AnimationAuthoring.js';
 import { createTerrainAuthoring } from './authoring/TerrainAuthoring.js';
+import { createVegetationAuthoring } from './authoring/VegetationAuthoring.js';
 import { createEditorBridge } from './EditorBridge.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
@@ -710,6 +711,73 @@ export function attachEditor(game: Game): GameEditor {
   game.canvas.addEventListener('pointerup', endTerrainPaint);
   game.canvas.addEventListener('pointerleave', endTerrainPaint);
 
+  // ── Vegetação: pincel de espalhar (ADR-0077) ─────────────────────────────────
+  // Raycast genérico contra os terrenos da cena (o terrainHit acima só vale na sessão
+  // de esculpir). Reusa o anel do pincel (verde = espalhar, vermelho = apagar).
+  const terrainMeshes = (): import('three').Object3D[] => {
+    const out: import('three').Object3D[] = [];
+    three.traverse((o) => { if ((o.userData as Record<string, unknown>)['cortexTerrain']) out.push(o); });
+    return out;
+  };
+  const groundHit = (clientX: number, clientY: number): Vector3 | null => {
+    const ts = terrainMeshes();
+    if (!ts.length) return null;
+    const rect = game.canvas.getBoundingClientRect();
+    _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    _ray.setFromCamera(_ndc, editorCamera);
+    const hits = _ray.intersectObjects(ts, true);
+    return hits.length ? hits[0]!.point.clone() : null;
+  };
+  const vegetation = createVegetationAuthoring(authoring, {
+    onPaintStart: () => {
+      editorState.sculptingTerrain = true; // mesma porteira: ObjectEditSystem cede o clique
+      objectEditSystem.setGizmoVisible(false);
+    },
+    onPaintStop: () => {
+      editorState.sculptingTerrain = false;
+      brushRing.visible = false;
+      objectEditSystem.setGizmoVisible(true);
+    },
+    toast: (m) => hud.showToast(m),
+    groundAt: (x, z) => {
+      const ts = terrainMeshes();
+      if (!ts.length) return null;
+      _ray.set(new Vector3(x, 1e4, z), new Vector3(0, -1, 0));
+      const hits = _ray.intersectObjects(ts, true);
+      return hits.length ? hits[0]!.point.y : null;
+    },
+  });
+  const vegetationApi = vegetation.api;
+  game.canvas.addEventListener('pointerdown', (e) => {
+    if (!vegetation.isPainting() || e.button !== 0) return;
+    const hit = groundHit(e.clientX, e.clientY);
+    if (!hit) return;
+    vegetation.setStroking(true);
+    vegetation.scatterAt(hit.x, hit.z, e.shiftKey);
+  });
+  game.canvas.addEventListener('pointermove', (e) => {
+    if (!vegetation.isPainting()) return;
+    const hit = groundHit(e.clientX, e.clientY);
+    if (hit) {
+      brushRing.position.copy(hit);
+      brushRing.scale.setScalar(Math.max(0.1, vegetation.brushRadius()));
+      (brushRing.material as MeshBasicMaterial).color.setHex(e.shiftKey ? 0xff5a4a : 0x6ad06a);
+      brushRing.visible = true;
+    } else {
+      brushRing.visible = false;
+    }
+    if (vegetation.isStroking() && hit) vegetation.scatterAt(hit.x, hit.z, e.shiftKey);
+  });
+  const endVegPaint = (): void => {
+    if (vegetation.isStroking()) {
+      vegetation.setStroking(false);
+      vegetation.save();
+    }
+  };
+  game.canvas.addEventListener('pointerup', endVegPaint);
+  game.canvas.addEventListener('pointerleave', endVegPaint);
+
   // ── Animação + Ações do player: módulos de autoria (ADR-0060) ────────────────
   const animationApi = createAnimationApi(authoring);
   const playerAnimationsApi = createPlayerAnimationsApi(authoring);
@@ -724,6 +792,7 @@ export function attachEditor(game: Game): GameEditor {
     meshApi,
     roadApi,
     terrainApi,
+    vegetationApi,
     animationApi,
     playerAnimationsApi,
     writeBack: writeBackTransform,
@@ -867,10 +936,24 @@ export function attachEditor(game: Game): GameEditor {
   const roadDrawSystem = new RoadDrawSystem(editorState, editorCamera, game.canvas, game.scene, game.input, hud, createRoadNode);
   game.world.addSystem(roadDrawSystem);
 
+  // Vegetação (ADR-0077): cria o nó `vegetation` (placeholder) e JÁ liga o pincel de
+  // espalhar — o usuário clica/arrasta no terreno pra povoar.
+  const createVegetationNode = (kind: 'tree' | 'grass'): void => {
+    const node = { type: 'vegetation' as const, id: `veg-${Date.now().toString(36)}`, kind, instances: [] };
+    void addSceneNode(game.scene, node).then((obj) => {
+      if (!obj) return;
+      addedList().push(node);
+      persist();
+      selection.requestSelect(obj);
+      vegetation.api.startPaint(obj);
+    });
+  };
+
   const shapePanel = createEditorShapePanel({
     onAddShape: addShape,
     onDrawBox: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
     onDrawRoad: () => roadDrawSystem.setArmed(!roadDrawSystem.isArmed),
+    onAddVegetation: createVegetationNode,
   });
 
   // ── Ponte com a IDE (ADR-0056) ───────────────────────────────────────────────
@@ -943,7 +1026,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, physicsApi, matteApi, materialApi, meshApi, roadApi, terrainApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, physicsApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),
@@ -951,6 +1034,7 @@ export function attachEditor(game: Game): GameEditor {
     onAddShape: addShape,
     onDrawShape: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
     onDrawRoad: () => roadDrawSystem.setArmed(!roadDrawSystem.isArmed),
+    onAddVegetation: createVegetationNode,
     onBridged: () => {
       bridgedPanelsHidden = true;
       outliner.setVisible(false);

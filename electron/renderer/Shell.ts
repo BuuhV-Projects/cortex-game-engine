@@ -116,6 +116,8 @@ export class Shell {
         { label: tr('menu.add_terrain', 'Adicionar terreno'), run: () => document.dispatchEvent(new CustomEvent('request-add-terrain')) },
         { label: tr('menu.draw_box', '✏️ Desenhar caixa no chão'), run: () => document.dispatchEvent(new CustomEvent('request-draw-shape')) },
         { label: tr('menu.draw_road', '🛣 Desenhar estrada'), run: () => document.dispatchEvent(new CustomEvent('request-draw-road')) },
+        { label: tr('menu.veg_tree', '🌳 Árvore (espalhar)'), run: () => document.dispatchEvent(new CustomEvent('request-add-vegetation', { detail: { kind: 'tree' } })) },
+        { label: tr('menu.veg_grass', '🌿 Grama (espalhar)'), run: () => document.dispatchEvent(new CustomEvent('request-add-vegetation', { detail: { kind: 'grass' } })) },
         { sep: true },
         // Blockout (ProBuilder — ADR-0071): cria um nó `mesh` paramétrico via a ponte.
         ...([

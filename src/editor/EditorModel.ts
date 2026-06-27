@@ -3,7 +3,7 @@ import { MathUtils } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
-import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
+import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
@@ -157,6 +157,7 @@ export interface InspectorContext {
   meshApi?: MeshApi;
   roadApi?: RoadApi;
   terrainApi?: TerrainApi;
+  vegetationApi?: VegetationApi;
   animationApi?: AnimationApi;
   playerAnimationsApi?: PlayerAnimationsApi;
   /**
@@ -610,6 +611,46 @@ export function describeInspector(
       fields.push({ kind: 'note', id: fid('terHint'), text: 'Pincel ligado: CLIQUE/ARRASTE sobe · segure SHIFT pra abaixar.', tone: 'muted' });
     }
     sections.push({ title: 'Terreno', fields });
+  }
+
+  // ── Vegetação (pincel de espalhar árvores/grama — ADR-0077) ───────────────────
+  const vegState = ctx.vegetationApi?.get(obj) ?? null;
+  if (ctx.vegetationApi && vegState) {
+    const api = ctx.vegetationApi;
+    const v = vegState;
+    const fields: InspectorField[] = [
+      { kind: 'button', id: fid('vegPaint'), label: v.painting ? '■ Parar pincel' : '🌳 Espalhar', variant: v.painting ? 'danger' : 'primary' },
+      { kind: 'number', id: fid('vegRadius'), label: 'Tamanho do pincel', value: v.radius, step: 1 },
+      { kind: 'number', id: fid('vegDensity'), label: 'Densidade', value: v.density, step: 1 },
+      { kind: 'number', id: fid('vegScaleMin'), label: 'Escala mín.', value: v.scaleMin, step: 0.1 },
+      { kind: 'number', id: fid('vegScaleMax'), label: 'Escala máx.', value: v.scaleMax, step: 0.1 },
+      { kind: 'note', id: fid('vegCount'), text: `${v.count} instância(s)`, tone: 'muted' },
+    ];
+    handlers.set(fid('vegPaint'), () => {
+      if (v.painting) api.stopPaint();
+      else api.startPaint(obj);
+      return { rebuild: true };
+    });
+    handlers.set(fid('vegRadius'), (val) => {
+      const r = Math.max(0.5, Number(val) || v.radius);
+      api.setBrush(r, v.density);
+    });
+    handlers.set(fid('vegDensity'), (val) => {
+      const d = Math.max(1, Number(val) || v.density);
+      api.setBrush(v.radius, d);
+    });
+    handlers.set(fid('vegScaleMin'), (val) => {
+      const n = Number(val);
+      if (Number.isFinite(n)) api.setScale(n, v.scaleMax);
+    });
+    handlers.set(fid('vegScaleMax'), (val) => {
+      const n = Number(val);
+      if (Number.isFinite(n)) api.setScale(v.scaleMin, n);
+    });
+    if (v.painting) {
+      fields.push({ kind: 'note', id: fid('vegHint'), text: 'Pincel ligado: CLIQUE/ARRASTE espalha · segure SHIFT pra apagar.', tone: 'muted' });
+    }
+    sections.push({ title: 'Vegetação', fields });
   }
 
   // ── Animação (modelos .glb com clipes) ────────────────────────────────────────

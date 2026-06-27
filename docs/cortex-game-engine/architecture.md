@@ -261,7 +261,7 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (ADR-0071) |
 | Estradas (spline) | `src/road/` (`RoadSpline` + `RoadMesh` + `RoadGrade` + `surfaces`/marcação) · editor: `RoadDrawSystem`/`RoadEditSystem` · nó `road` (ADR-0072/0075/0076) |
-| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · nó `vegetation` (ADR-0077) |
+| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (ADR-0077) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) |
