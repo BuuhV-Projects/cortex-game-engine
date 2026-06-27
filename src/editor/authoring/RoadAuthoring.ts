@@ -1,9 +1,11 @@
 import { Mesh } from 'three';
 import type { Object3D } from 'three';
 import type { RoadApi, RoadEditState } from '../EditorInspector.js';
+import type { RoadEditApi } from '../RoadEditSystem.js';
 import type { EditorAuthoringContext } from './AuthoringContext.js';
 import { applyRoad, moldTerrainToRoads } from '../../scene/SceneBuilder.js';
 import type { SceneNode } from '../../scene/SceneDefinition.js';
+import type { Vec3 } from '../../road/RoadSpline.js';
 
 /** Nó `road` como persistido em `overlay.data.added`. */
 type RoadAddedNode = Extract<SceneNode, { type: 'road' }>;
@@ -92,6 +94,39 @@ export function createRoadApi(ctx: EditorAuthoringContext): RoadApi {
       if (name === 'none') delete node.markings;
       else node.markings = name as RoadAddedNode['markings'];
       applyRoad(obj, node, ctx.three); // regenera o overlay de marcação
+      ctx.persist();
+    },
+  };
+}
+
+/**
+ * Autoria do **traçado** da estrada (ADR-0072): mover os pontos de controle da spline.
+ * Usada pelo {@link RoadEditSystem} — `setNode` regenera a pista ao vivo (sem remoldar
+ * o terreno, pra arrastar fluido) e `commit` remolda o terreno + persiste (ao soltar).
+ * Só edita estradas criadas no editor (vivem em `overlay.data.added`).
+ */
+export function createRoadEditApi(ctx: EditorAuthoringContext): RoadEditApi {
+  const added = (): RoadAddedNode[] => {
+    const a = ctx.overlay.data['added'];
+    return Array.isArray(a) ? (a as RoadAddedNode[]) : [];
+  };
+  const nodeOf = (obj: Object3D): RoadAddedNode | undefined =>
+    added().find((n) => n.type === 'road' && n.id === obj.name);
+
+  return {
+    nodesOf(obj: Object3D): [number, number, number][] | null {
+      const node = nodeOf(obj);
+      return node ? node.nodes.map((p) => [p[0], p[1], p[2]]) : null;
+    },
+    setNode(obj: Object3D, index: number, pos: [number, number, number]): void {
+      const node = nodeOf(obj);
+      if (!node || !(obj instanceof Mesh) || !node.nodes[index]) return;
+      node.nodes[index] = [pos[0], pos[1], pos[2]] as Vec3;
+      applyRoad(obj, node, ctx.three); // pista segue o ponto (sem remoldar o terreno ainda)
+    },
+    commit(obj: Object3D): void {
+      if (!nodeOf(obj)) return;
+      moldTerrainToRoads(ctx.three); // terreno se reajusta ao traçado novo
       ctx.persist();
     },
   };

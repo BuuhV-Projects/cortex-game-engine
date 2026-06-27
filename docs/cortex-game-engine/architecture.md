@@ -297,10 +297,15 @@ o **terreno se adapta à pista** (cut & fill, ADR-0075) + **marcação** de pist
   `polygonOffset`) com as texturas `Markers/` (RGBA). Vive como filho do mesh
   (`userData.cortexRoadMarkings`), regenerado por `applyRoad`. U herda a largura (linhas no
   lugar), V reescala pro ciclo do tracejado (`ROAD_MARKINGS`/`resolveMarking`).
-- **Editor** (`RoadDrawSystem`, prioridade 26): "Desenhar estrada" (paleta/menu/ponte
-  `drawRoad`) — clicar pontos no terreno (prévia = linha central + hover), **Enter**/
+- **Editor — desenhar** (`RoadDrawSystem`, prioridade 26): "Desenhar estrada" (paleta/menu/
+  ponte `drawRoad`) — clicar pontos no terreno (prévia = linha central + hover), **Enter**/
   duplo-clique finaliza, **Backspace** remove o último, **Esc** cancela → cria nó `road`
   em `data.added`. Usa `editorState.drawingShape` (mesma porteira dos outros draw tools).
+- **Editor — editar traçado** (`RoadEditSystem`, prioridade 29): botão "Editar traçado" no
+  Inspector liga `editorState.editingRoad` (o `ObjectEditSystem` cede). Mostra um **handle**
+  por ponto de controle; arrastar regenera a pista ao vivo (`applyRoad`) e, ao **soltar**, o
+  **terreno se reajusta** (`moldTerrainToRoads`) + persiste. `Esc`/`Tab` saem. Autoria em
+  `createRoadEditApi` (`nodesOf`/`setNode`/`commit`). Edita estradas de `data.added`.
 - ⚠️ **Texturas (MIT, MicroGSD)** são **assets do projeto** (`assets/roads/`, ~63 MB o
   pack inteiro) — não vão no bundle do engine. Considerar Git LFS se entrarem no repo.
 - **Fora de escopo** (ver ADR-0072/0075): faixas/marcação, acostamento, interseções,

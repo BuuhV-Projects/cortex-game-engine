@@ -491,6 +491,11 @@ export function describeInspector(
     ];
     if (roadState.markings === 'custom') markOpts.unshift({ value: 'custom', label: 'Custom' });
     fields.push({ kind: 'select', id: fid('roadMarkings'), label: 'Marcação', value: roadState.markings, options: markOpts });
+    // Editar o traçado: handles arrastáveis nos pontos da spline (RoadEditSystem).
+    if (api.editNodes) {
+      fields.push({ kind: 'button', id: fid('roadEdit'), label: '✏ Editar traçado' });
+      handlers.set(fid('roadEdit'), () => api.editNodes!(obj));
+    }
     handlers.set(fid('roadSurface'), (v) => {
       api.setSurface(obj, String(v));
     });

@@ -59,8 +59,9 @@ amigável → diffuse/normal/repeat. `surface` aceita o nome ou URLs explícitas
 ### Editor F2 (autoria da spline)
 - **Desenhar estrada**: clicar pontos no terreno pra traçar a spline (reusa o padrão do
   `ShapeDrawSystem`), Enter/duplo-clique/Esc finaliza → cria o nó `road` em `data.added`.
-- **Editar nós**: handles nos nós da spline (reusa o padrão do `MeshEditSystem`) — mover/
-  inserir/remover; regenera ao vivo; persiste em `data.roadGeometry[id]` (override vence).
+- **Editar nós**: handles nos nós da spline (`RoadEditSystem`, padrão do `MeshEditSystem`) —
+  **mover** (feito): arrasta o ponto, regenera a pista ao vivo e o terreno se reajusta ao
+  soltar (cut & fill). Inserir/remover nó ainda não. Edita estradas de `data.added`.
 
 ### Roadmap (fases)
 1. **MVP (esta):** nó `road` + spline + ribbon + textura + conformar terreno + desenhar/

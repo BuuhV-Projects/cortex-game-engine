@@ -36,6 +36,12 @@ export interface EditorState {
    * edição de malha) cedem o clique pro {@link ShapeDrawSystem}.
    */
   drawingShape: boolean;
+  /**
+   * **Editando o traçado de uma estrada** (ADR-0072): arrastando os pontos de controle
+   * da spline. O {@link RoadEditSystem} assume o clique/gizmo e o {@link ObjectEditSystem}
+   * cede. Só faz sentido com `active === true`.
+   */
+  editingRoad: boolean;
 }
 
 export function createEditorState(): EditorState {
@@ -47,5 +53,6 @@ export function createEditorState(): EditorState {
     sculptingTerrain: false,
     meshEditMode: 'object',
     drawingShape: false,
+    editingRoad: false,
   };
 }

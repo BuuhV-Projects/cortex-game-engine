@@ -45,7 +45,8 @@ import { createPhysicsApi } from './authoring/PhysicsAuthoring.js';
 import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
 import { createMeshApi } from './authoring/MeshAuthoring.js';
-import { createRoadApi } from './authoring/RoadAuthoring.js';
+import { createRoadApi, createRoadEditApi } from './authoring/RoadAuthoring.js';
+import { RoadEditSystem } from './RoadEditSystem.js';
 import { createEditorTexturePicker, type TextureItem } from './EditorTexturePicker.js';
 import { MeshEditSystem } from './MeshEditSystem.js';
 import { createMeshEditToolbar } from './MeshEditToolbar.js';
@@ -580,6 +581,18 @@ export function attachEditor(game: Game): GameEditor {
   let terrainTextures: TextureItem<string>[] = [];
   let refreshUI: () => void = () => {};
   const texturePicker = createEditorTexturePicker();
+  // Edição de traçado (handles arrastáveis nos pontos da spline — ADR-0072).
+  const roadEditSystem = new RoadEditSystem(
+    editorState,
+    editorCamera,
+    game.canvas,
+    game.scene,
+    game.input,
+    hud,
+    selection,
+    createRoadEditApi(authoring),
+  );
+  game.world.addSystem(roadEditSystem);
   const roadApi = {
     ...roadApiCore,
     pickSurface: (obj: import('three').Object3D) =>
@@ -587,6 +600,7 @@ export function attachEditor(game: Game): GameEditor {
         roadApiCore.setSurfaceTexture(obj, s);
         refreshUI();
       }),
+    editNodes: (obj: import('three').Object3D) => roadEditSystem.enter(obj),
   };
   // Barra flutuante estilo Unity (chrome de viewport — NÃO some no modo bridge da IDE).
   const meshToolbar = createMeshEditToolbar({

@@ -234,6 +234,8 @@ export interface RoadApi {
   setMarkings(obj: Object3D, name: string): void;
   /** Abre o modal de seleção de textura (atribuído pelo attachEditor). Opcional. */
   pickSurface?(obj: Object3D): void;
+  /** Entra na edição do traçado (handles nos pontos — atribuído pelo attachEditor). Opcional. */
+  editNodes?(obj: Object3D): void;
 }
 
 /** Modo do pincel de terreno: esculpir altura ou pintar textura. */
