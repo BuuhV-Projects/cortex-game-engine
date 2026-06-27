@@ -11,12 +11,11 @@
       "color": "#6ab04c"
     },
     {
-      "type": "primitive",
+      "type": "model",
       "id": "player",
-      "shape": "cylinder",
-      "size": [0.8, 1.8, 0.8],
-      "color": "#e04848",
+      "url": "assets/characters/player.glb",
       "place": { "x": 0, "y": 2 },
+      "matte": false,
       "character": { "radius": 0.4, "height": 1.8, "jumpForce": 9, "groundY": 0 }
     }
   ]

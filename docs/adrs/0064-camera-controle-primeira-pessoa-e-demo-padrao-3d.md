@@ -1,7 +1,7 @@
 # 0064 - Câmera/controle de 1ª pessoa (FPS) e demo padrão 3D
 
 **Data:** 2026-06-13
-**Status:** aceito
+**Status:** aceito; demo padrão (item 3) substituída por ADR-0076 (starter agora é 3ª pessoa). `FirstPersonCameraSystem`/`setupFirstPerson` seguem disponíveis.
 
 ## Contexto
 
