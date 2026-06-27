@@ -47,16 +47,74 @@ export function createEditorTexturePicker(parent: HTMLElement = document.body): 
   closeBtn.style.cssText = 'background:transparent;border:none;color:#cfd3dc;font-size:16px;cursor:pointer;padding:2px 6px';
   header.append(title, closeBtn);
 
+  // Caixa de pesquisa: filtra a grade pelo nome (case-insensitive) ao digitar.
+  const searchRow = document.createElement('div');
+  searchRow.style.cssText = 'padding:10px 16px 0';
+  const search = document.createElement('input');
+  search.type = 'search';
+  search.placeholder = 'Pesquisar textura…';
+  search.style.cssText = [
+    'width:100%', 'box-sizing:border-box', 'padding:7px 10px',
+    'background:#13151b', 'border:1px solid #2c2f3a', 'border-radius:6px',
+    'color:#e6e8ee', 'font-size:12px', 'outline:none',
+  ].join(';');
+  search.addEventListener('focus', () => (search.style.borderColor = '#3b6fd4'));
+  search.addEventListener('blur', () => (search.style.borderColor = '#2c2f3a'));
+  searchRow.append(search);
+
   const grid = document.createElement('div');
   grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;padding:14px 16px;overflow-y:auto';
 
-  panel.append(header, grid);
+  panel.append(header, searchRow, grid);
   backdrop.append(panel);
   parent.appendChild(backdrop);
+
+  // Estado do modal atual (pra re-renderizar ao filtrar sem reabrir).
+  let currentItems: TextureItem<unknown>[] = [];
+  let currentOnPick: (value: unknown) => void = () => {};
+
+  /** (Re)desenha a grade com os itens cujo nome casa com a query. */
+  const renderGrid = (query: string): void => {
+    grid.textContent = '';
+    const q = query.trim().toLowerCase();
+    const shown = q ? currentItems.filter((it) => it.name.toLowerCase().includes(q)) : currentItems;
+    if (shown.length === 0) {
+      const empty = document.createElement('div');
+      empty.textContent = currentItems.length === 0 ? 'Nenhuma textura disponível' : `Nada encontrado para "${query.trim()}"`;
+      empty.style.cssText = 'color:#9aa0ad;font-size:12px;grid-column:1/-1';
+      grid.append(empty);
+      return;
+    }
+    for (const it of shown) {
+      const card = document.createElement('button');
+      card.title = it.name;
+      card.style.cssText = [
+        'display:flex', 'flex-direction:column', 'gap:4px', 'padding:6px',
+        'background:#23262f', 'border:1px solid #2c2f3a', 'border-radius:6px',
+        'cursor:pointer', 'color:#cfd3dc', 'font-size:10px', 'text-align:center',
+      ].join(';');
+      const img = document.createElement('img');
+      img.src = it.thumb;
+      img.loading = 'lazy';
+      img.style.cssText = 'width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;background:#0e0f13';
+      const label = document.createElement('span');
+      label.textContent = it.name;
+      label.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+      card.append(img, label);
+      card.addEventListener('mouseenter', () => (card.style.borderColor = '#3b6fd4'));
+      card.addEventListener('mouseleave', () => (card.style.borderColor = '#2c2f3a'));
+      card.addEventListener('click', () => {
+        currentOnPick(it.value);
+        close();
+      });
+      grid.append(card);
+    }
+  };
 
   const close = (): void => {
     backdrop.style.display = 'none';
     grid.textContent = '';
+    currentItems = [];
   };
   closeBtn.addEventListener('click', close);
   backdrop.addEventListener('click', (e) => {
@@ -65,44 +123,20 @@ export function createEditorTexturePicker(parent: HTMLElement = document.body): 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && backdrop.style.display !== 'none') close();
   });
+  search.addEventListener('input', () => renderGrid(search.value));
 
   return {
     root: backdrop,
     close,
     open<T>(t: string, items: TextureItem<T>[], onPick: (value: T) => void): void {
       title.textContent = t;
-      grid.textContent = '';
-      if (items.length === 0) {
-        const empty = document.createElement('div');
-        empty.textContent = 'Nenhuma textura em assets/roads/';
-        empty.style.cssText = 'color:#9aa0ad;font-size:12px;grid-column:1/-1';
-        grid.append(empty);
-      }
-      for (const it of items) {
-        const card = document.createElement('button');
-        card.title = it.name;
-        card.style.cssText = [
-          'display:flex', 'flex-direction:column', 'gap:4px', 'padding:6px',
-          'background:#23262f', 'border:1px solid #2c2f3a', 'border-radius:6px',
-          'cursor:pointer', 'color:#cfd3dc', 'font-size:10px', 'text-align:center',
-        ].join(';');
-        const img = document.createElement('img');
-        img.src = it.thumb;
-        img.loading = 'lazy';
-        img.style.cssText = 'width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;background:#0e0f13';
-        const label = document.createElement('span');
-        label.textContent = it.name;
-        label.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-        card.append(img, label);
-        card.addEventListener('mouseenter', () => (card.style.borderColor = '#3b6fd4'));
-        card.addEventListener('mouseleave', () => (card.style.borderColor = '#2c2f3a'));
-        card.addEventListener('click', () => {
-          onPick(it.value);
-          close();
-        });
-        grid.append(card);
-      }
+      currentItems = items as TextureItem<unknown>[];
+      currentOnPick = onPick as (value: unknown) => void;
+      search.value = '';
+      renderGrid('');
       backdrop.style.display = 'flex';
+      // Foco na busca pra já digitar (listas grandes — Road Architect tem dezenas).
+      setTimeout(() => search.focus(), 0);
     },
   };
 }
