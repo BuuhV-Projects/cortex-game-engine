@@ -84,7 +84,8 @@ Marcação de pista (overlay, ADR-0076): nome embutido (`dashed`/`single-yellow`
 
 `number` = `...`
 
-Inclinação máx. do greide (Δalt/Δhoriz). Só `cutfill`. Default 0.08 (8%).
+Inclinação máx. do greide (Δalt/Δhoriz). Só `cutfill`. Default 0.25 (25% — a
+estrada sobe o morro fazendo ladeira; baixe pra pista mais plana que aplaina mais).
 
 #### nodes
 

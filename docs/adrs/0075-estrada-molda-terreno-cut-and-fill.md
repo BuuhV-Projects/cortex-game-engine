@@ -24,7 +24,14 @@ no heightmap/TerrainAuthoring").
 Novo campo `terrainMode` no nó `road`:
 - `'conform'` (**default**, retrocompatível): comportamento da Fase 1 (a pista se deforma).
 - `'cutfill'`: o terreno se adapta à pista. Acompanham `taludeWidth` (largura da transição
-  por lado, default 6 m) e `maxSlope` (inclinação máx. do greide, default 0.08 = 8%).
+  por lado, default 6 m) e `maxSlope` (inclinação máx. do greide, **default 0.25 = 25%**).
+
+> **Nota (2026-06-27):** o default do `maxSlope` nasceu 0.08 (8%, realista pra rodovia),
+> mas na prática **aplainava morros inteiros** — o greide manso não conseguia subir a
+> elevação, então o cut & fill escavava tudo. Subimos pra **0.25 (25%)**: a estrada
+> **sobe o morro fazendo ladeira** (escava só um canal da largura da pista, mantendo o
+> resto do relevo). É editável por estrada no Inspector ("Inclinação máx. (%)") — baixe
+> pra pista mais plana/drivável, suba pra acompanhar mais a montanha.
 
 Segue a regra do CLAUDE.md (física/relação = **dado**, editável no Inspector, overlay vence)
 — não é comportamento cravado em código.
@@ -39,9 +46,15 @@ controle, mais trabalho; descartada como default por exigir autoria fina.)*
 
 ### Moldagem do terreno (`moldHeightfield`, puro)
 Para cada vértice da grade do terreno: acha o ponto mais próximo do eixo da pista + o greide
-ali. Dentro de `halfWidth` → **greide** (corta/aterra); dentro de `halfWidth + taludeWidth`
-→ `smoothstep` do greide até a base (talude); fora → base. Devolve o **delta** (alvo − base).
+ali. Dentro de `halfWidth + ombro` (**platô**) → **greide** (corta/aterra); no `taludeWidth`
+seguinte → `smoothstep` do greide até a base; fora → base. Devolve o **delta** (alvo − base).
 `mergeDeltas` combina várias estradas (vence o de maior magnitude no vértice compartilhado).
+
+**Ombro (acostamento) — evita vão na borda:** a grade do terreno costuma ser mais grossa
+que a pista, então sem isso o vértice logo fora da borda cai no talude e o terreno
+**descola da pista** (vão/penhasco na beira — observado na prática). O platô (terreno no
+nível do greide) estende-se além da borda por `max(shoulder, ~1,5 célula da grade)`,
+garantindo que a borda da pista sempre caia sobre terreno colado no nível do greide.
 
 ### Não-destrutivo (recalculado a cada build)
 O `Terrain` ganha **base + delta**: `heights` continua sendo a **base autorada** (e

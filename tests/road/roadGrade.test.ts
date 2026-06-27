@@ -54,21 +54,28 @@ describe('moldHeightfield (cut & fill + talude)', () => {
   const idx = (i: number, j: number): number => j * n + i; // i=col(x), j=row(z)
   // z=0 → j=4. x: i=4→0, i=5→2.5, i=7→7.5, i=8→10.
 
+  // cell = 20/8 = 2.5 → ombro mín. ~3.75 → platô vai até half(2)+3.75 = 5.75; talude até 8.75.
   it('sob a pista crava no greide (delta = greide − base)', () => {
     const d = moldHeightfield(grid, centerline, 2, 3); // half 2, talude 3
     expect(d[idx(4, 4)]).toBeCloseTo(2, 5); // x=0: aterra 0→2
   });
 
+  it('ombro: vértice logo fora da pista fica COLADO no nível do greide (sem vão)', () => {
+    const d = moldHeightfield(grid, centerline, 2, 3);
+    // x=2.5 está fora da meia-largura (2) mas dentro do platô (ombro) → cravado no greide
+    expect(d[idx(5, 4)]).toBeCloseTo(2, 5);
+  });
+
   it('no talude a transição é suave (entre greide e base)', () => {
     const d = moldHeightfield(grid, centerline, 2, 3);
-    const mid = d[idx(5, 4)]!; // x=2.5: dentro do talude (2 < 2.5 < 5)
+    const mid = d[idx(7, 4)]!; // x=7.5: dentro do talude (5.75 < 7.5 < 8.75)
     expect(mid).toBeGreaterThan(0);
     expect(mid).toBeLessThan(2);
   });
 
-  it('fora do alcance (pista+talude) o terreno fica intacto (delta 0)', () => {
+  it('fora do alcance (platô+talude) o terreno fica intacto (delta 0)', () => {
     const d = moldHeightfield(grid, centerline, 2, 3);
-    expect(d[idx(8, 4)]).toBe(0); // x=10, bem fora
+    expect(d[idx(8, 4)]).toBe(0); // x=10, além do alcance (8.75)
   });
 
   it('corte: greide ABAIXO da base gera delta negativo sob a pista', () => {

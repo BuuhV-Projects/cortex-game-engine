@@ -474,9 +474,11 @@ export function describeInspector(
         { value: 'cutfill', label: 'Terreno se adapta (corte/aterro)' },
       ] },
     ];
-    // Talude só faz sentido (e só é editável) no modo cut & fill.
+    // Talude + inclinação máx. só fazem sentido (e só são editáveis) no modo cut & fill.
     if (roadState.terrainMode === 'cutfill') {
       fields.push({ kind: 'number', id: fid('roadTalude'), label: 'Talude (m)', value: roadState.taludeWidth, step: 0.5 });
+      // maxSlope guardado como razão; exibido em % (8 = 8%). Maior = sobe mais o morro.
+      fields.push({ kind: 'number', id: fid('roadSlope'), label: 'Inclinação máx. (%)', value: Math.round(roadState.maxSlope * 100), step: 1 });
     }
     // Marcação de pista (overlay — ADR-0076).
     const markOpts = [
@@ -502,6 +504,10 @@ export function describeInspector(
     handlers.set(fid('roadTalude'), (v) => {
       const n = Number(v);
       if (Number.isFinite(n)) api.setTalude(obj, n);
+    });
+    handlers.set(fid('roadSlope'), (v) => {
+      const pct = Number(v);
+      if (Number.isFinite(pct)) api.setMaxSlope(obj, Math.max(0.5, pct) / 100); // % → razão
     });
     handlers.set(fid('roadMarkings'), (v) => {
       api.setMarkings(obj, String(v));

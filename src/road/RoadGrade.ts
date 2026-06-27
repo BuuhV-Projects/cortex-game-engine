@@ -15,9 +15,10 @@ import type { RoadSample, Vec3 } from './RoadSpline.js';
 /** Opções do greide suavizado. */
 export interface GradeOptions {
   /**
-   * Inclinação **máxima** do greide (Δaltura / Δhorizontal). Default `0.08` (8% —
-   * limite confortável pra estrada). O greide nunca sobe/desce mais íngreme que isso,
-   * cortando/aterrando o terreno pra compensar.
+   * Inclinação **máxima** do greide (Δaltura / Δhorizontal). Default `0.25` (25% —
+   * deixa a estrada **subir o morro** fazendo ladeira, escavando só um canal). Valores
+   * baixos (ex. 0.08) deixam a pista mais plana mas **aplainam o relevo**; altos seguem
+   * mais o terreno. O greide nunca sobe/desce mais íngreme que isso.
    */
   maxSlope?: number;
   /**
@@ -51,7 +52,7 @@ function horiz(a: Vec3, b: Vec3): number {
 export function smoothGrade(samples: RoadSample[], terrainY: number[], opts: GradeOptions = {}): number[] {
   const n = samples.length;
   if (n < 2) return terrainY.slice(0, n);
-  const maxSlope = Math.max(0, opts.maxSlope ?? 0.08);
+  const maxSlope = Math.max(0, opts.maxSlope ?? 0.25);
   const smoothMeters = Math.max(0, opts.smoothMeters ?? 12);
 
   // Distância acumulada (pra janela em metros + clamp de inclinação por segmento).
@@ -128,23 +129,31 @@ function projectToSegment(px: number, pz: number, a: GradePoint, b: GradePoint):
 }
 
 /**
- * **Molda o terreno à estrada** (cut & fill + talude). Para cada vértice da grade,
- * acha o ponto mais próximo do eixo da pista (`centerline`, coords locais com Y =
- * greide) e calcula a altura-alvo:
- * - dentro de `halfWidth` (sob a pista) → **greide** (corta/aterra até a pista);
- * - dentro de `halfWidth + taludeWidth` (talude) → `smoothstep` do greide → base;
+ * **Molda o terreno à estrada** (cut & fill + ombro + talude). Para cada vértice da
+ * grade, acha o ponto mais próximo do eixo da pista (`centerline`, coords locais com
+ * Y = greide) e calcula a altura-alvo:
+ * - dentro de `halfWidth + ombro` (**platô** = sob a pista + acostamento) → **greide**
+ *   (o terreno fica cravado no nível da pista, **colado na borda** sem vão);
+ * - no `taludeWidth` seguinte → `smoothstep` do greide → base;
  * - fora → base (delta 0).
+ *
+ * O **ombro** é crucial: a grade do terreno costuma ser mais grossa que a pista, então
+ * sem ele o vértice logo fora da borda cai no talude e o terreno "descola" da pista
+ * (vão/penhasco na beira). O ombro estende o platô pelo menos ~1,5 célula da grade além
+ * da borda, garantindo que a borda da pista sempre caia sobre terreno no nível do greide.
  *
  * Devolve o **delta** (`alvo − base`) por vértice — somado à base pelo {@link Terrain}
  * (não-destrutivo). Acumule deltas de várias estradas com {@link mergeDeltas}.
  *
- * Puro. `centerline` com <2 pontos = nenhuma moldagem (delta tudo 0).
+ * Puro. `centerline` com <2 pontos = nenhuma moldagem (delta tudo 0). `shoulder` é o
+ * acostamento mínimo (m); o efetivo é `max(shoulder, ~1,5 célula)` pra cobrir a grade.
  */
 export function moldHeightfield(
   grid: HeightfieldGrid,
   centerline: GradePoint[],
   halfWidth: number,
   taludeWidth: number,
+  shoulder = 0,
 ): Float32Array {
   const res = grid.resolution;
   const n = res + 1;
@@ -152,7 +161,11 @@ export function moldHeightfield(
   if (centerline.length < 2) return delta;
   const half = Math.max(0.05, halfWidth);
   const talude = Math.max(0, taludeWidth);
-  const reach = half + talude;
+  // Platô (terreno no nível da pista) = meia-largura + ombro. O ombro é, no mínimo,
+  // ~1,5 célula da grade — senão a borda da pista descola do terreno (grade grossa).
+  const cell = Math.max(grid.width, grid.depth) / res;
+  const flat = half + Math.max(shoulder, cell * 1.5);
+  const reach = flat + talude;
   const reach2 = reach * reach;
 
   for (let j = 0; j < n; j++) {
@@ -171,11 +184,11 @@ export function moldHeightfield(
       const baseY = grid.base[idx]!;
       const d = Math.sqrt(bestD2);
       let targetY: number;
-      if (d <= half) {
-        targetY = bestY; // sob a pista: cravado no greide
+      if (d <= flat) {
+        targetY = bestY; // platô (pista + ombro): cravado no greide, colado na borda
       } else {
-        // Talude: t=0 na borda da pista (greide) → t=1 na borda externa (base).
-        const t = (d - half) / talude;
+        // Talude: t=0 na borda do platô (greide) → t=1 na borda externa (base).
+        const t = (d - flat) / talude;
         targetY = bestY + (baseY - bestY) * smoothstep(t);
       }
       delta[idx] = targetY - baseY;

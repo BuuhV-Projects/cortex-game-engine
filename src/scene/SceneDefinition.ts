@@ -301,7 +301,8 @@ const roadNode = z.object({
   terrainMode: z.enum(['conform', 'cutfill']).optional(),
   /** Largura do talude (transição terreno↔pista) em cada lado, m. Só `cutfill`. Default 6. */
   taludeWidth: z.number().nonnegative().optional(),
-  /** Inclinação máx. do greide (Δalt/Δhoriz). Só `cutfill`. Default 0.08 (8%). */
+  /** Inclinação máx. do greide (Δalt/Δhoriz). Só `cutfill`. Default 0.25 (25% — a
+   * estrada sobe o morro fazendo ladeira; baixe pra pista mais plana que aplaina mais). */
   maxSlope: z.number().positive().optional(),
   /** Levanta a pista acima do chão (evita z-fight). Default 0.05 m. */
   yOffset: z.number().optional(),

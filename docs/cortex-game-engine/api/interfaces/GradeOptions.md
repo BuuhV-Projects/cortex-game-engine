@@ -16,11 +16,12 @@ Opções do greide suavizado.
 
 > `optional` **maxSlope?**: `number`
 
-Defined in: [src/road/RoadGrade.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L22)
+Defined in: [src/road/RoadGrade.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L23)
 
-Inclinação **máxima** do greide (Δaltura / Δhorizontal). Default `0.08` (8% —
-limite confortável pra estrada). O greide nunca sobe/desce mais íngreme que isso,
-cortando/aterrando o terreno pra compensar.
+Inclinação **máxima** do greide (Δaltura / Δhorizontal). Default `0.25` (25% —
+deixa a estrada **subir o morro** fazendo ladeira, escavando só um canal). Valores
+baixos (ex. 0.08) deixam a pista mais plana mas **aplainam o relevo**; altos seguem
+mais o terreno. O greide nunca sobe/desce mais íngreme que isso.
 
 ***
 
@@ -28,7 +29,7 @@ cortando/aterrando o terreno pra compensar.
 
 > `optional` **smoothMeters?**: `number`
 
-Defined in: [src/road/RoadGrade.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L28)
+Defined in: [src/road/RoadGrade.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L29)
 
 Janela da média móvel em **metros** (alisa bossas pequenas antes do clamp de
 inclinação). Default `12`. Maior = greide mais reto (mais cut & fill); menor =

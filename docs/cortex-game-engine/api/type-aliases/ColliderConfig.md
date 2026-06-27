@@ -8,6 +8,6 @@
 
 > **ColliderConfig** = `NonNullable`\<`z.infer`\<*typeof* `colliderSchema`\>\>
 
-Defined in: [src/scene/SceneDefinition.ts:439](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L439)
+Defined in: [src/scene/SceneDefinition.ts:440](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L440)
 
 Config de collider 2D (campo `collider` dos nós; ver colliderSchema).

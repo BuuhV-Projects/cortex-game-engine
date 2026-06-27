@@ -205,6 +205,8 @@ export interface RoadEditState {
   terrainMode: 'conform' | 'cutfill';
   /** Largura do talude (transição) por lado, m. Só relevante em `cutfill`. */
   taludeWidth: number;
+  /** Inclinação máx. do greide (razão Δalt/Δhoriz). Só relevante em `cutfill`. */
+  maxSlope: number;
   /** Marcação de pista: nome embutido, `'custom'` (URL), ou `'none'`. */
   markings: string;
 }
@@ -226,6 +228,8 @@ export interface RoadApi {
   setTerrainMode(obj: Object3D, mode: 'conform' | 'cutfill'): void;
   /** Ajusta a largura do talude (m, modo `cutfill`) → remolda o terreno. */
   setTalude(obj: Object3D, taludeWidth: number): void;
+  /** Ajusta a inclinação máx. do greide (razão, modo `cutfill`) → regenera + remolda. */
+  setMaxSlope(obj: Object3D, maxSlope: number): void;
   /** Troca a marcação de pista (nome do catálogo ou `'none'`) → regenera o overlay. */
   setMarkings(obj: Object3D, name: string): void;
   /** Abre o modal de seleção de textura (atribuído pelo attachEditor). Opcional. */

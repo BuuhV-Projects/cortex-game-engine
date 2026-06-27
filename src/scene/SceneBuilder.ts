@@ -1142,6 +1142,7 @@ export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>
     conformTerrain: conform,
     terrainMode: mode,
     taludeWidth: node.taludeWidth ?? 6,
+    maxSlope: node.maxSlope ?? 0.25,
     steps: node.steps ?? 12,
     yOffset,
     centerline, // eixo + greide (coords de mundo) — consumido por moldTerrainToRoads

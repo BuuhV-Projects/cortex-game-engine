@@ -140,6 +140,35 @@ describe('nó road cutfill: terreno se adapta à pista (ADR-0072 Fase 2)', () =>
     expect(cr.terrainMode).toBe('cutfill');
     expect(Array.isArray(cr.centerline)).toBe(true);
   });
+
+  it('maxSlope alto = estrada SOBE o morro (corta menos que maxSlope baixo)', async () => {
+    const n = 9;
+    const buildOver = async (maxSlope: number): Promise<number> => {
+      const heights = new Array(n * n).fill(0);
+      // rampa subindo ao longo de Z (morro): cada linha mais alta que a anterior
+      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) heights[j * n + i] = j * 1.5;
+      const def: SceneDefinition = {
+        version: 1,
+        nodes: [
+          { type: 'terrain', id: 'chao', size: 20, resolution: 8 },
+          // estrada subindo a rampa (ao longo de Z), modo cutfill
+          { type: 'road', id: 'via', nodes: [[0, 0, -10], [0, 0, 0], [0, 0, 10]], width: 6, terrainMode: 'cutfill', maxSlope },
+        ],
+      };
+      const overlay = { version: 1 as const, objects: {}, data: { terrain: { chao: heights } } };
+      const handle = await buildScene(new Scene(), def, { overlay });
+      const terrain = (handle.byId.get('chao')!.userData as Record<string, unknown>)['cortexTerrain'] as {
+        getHeights(): number[]; heightAt(x: number, z: number): number | null;
+      };
+      // quanto o terreno EFETIVO sob a pista difere da base (no topo da rampa, z≈+8)
+      const base = terrain.getHeights()[8 * n + 4]!; // canto alto da rampa
+      const eff = terrain.heightAt(0, 8)!;
+      return Math.abs(eff - base); // corte/aterro aplicado ali
+    };
+    const cutGentle = await buildOver(0.08); // greide manso → achata o morro (corta muito)
+    const cutSteep = await buildOver(0.6); // greide acompanha a rampa → corta pouco
+    expect(cutSteep).toBeLessThan(cutGentle);
+  });
 });
 
 describe('marcação de pista (overlay — ADR-0076)', () => {

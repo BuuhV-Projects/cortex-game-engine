@@ -25,13 +25,13 @@ export function createRoadApi(ctx: EditorAuthoringContext): RoadApi {
   return {
     get(obj: Object3D): RoadEditState | null {
       const cr = (obj.userData as Record<string, unknown>)['cortexRoad'] as
-        | { surface?: unknown; width?: number; terrainMode?: string; taludeWidth?: number; markings?: unknown }
+        | { surface?: unknown; width?: number; terrainMode?: string; taludeWidth?: number; maxSlope?: number; markings?: unknown }
         | undefined;
       if (!cr) return null; // não é uma estrada
       const surface = typeof cr.surface === 'string' ? cr.surface : 'custom';
       const terrainMode = cr.terrainMode === 'cutfill' ? 'cutfill' : 'conform';
       const markings = cr.markings == null ? 'none' : typeof cr.markings === 'string' ? cr.markings : 'custom';
-      return { surface, width: cr.width ?? 8, terrainMode, taludeWidth: cr.taludeWidth ?? 6, markings };
+      return { surface, width: cr.width ?? 8, terrainMode, taludeWidth: cr.taludeWidth ?? 6, maxSlope: cr.maxSlope ?? 0.25, markings };
     },
 
     setSurface(obj: Object3D, name: string): void {
@@ -74,6 +74,15 @@ export function createRoadApi(ctx: EditorAuthoringContext): RoadApi {
       node.taludeWidth = Math.max(0, taludeWidth);
       applyRoad(obj, node, ctx.three); // guarda o talude novo em cortexRoad
       moldTerrainToRoads(ctx.three);
+      ctx.persist();
+    },
+
+    setMaxSlope(obj: Object3D, maxSlope: number): void {
+      const node = nodeOf(obj);
+      if (!node || !(obj instanceof Mesh)) return;
+      node.maxSlope = Math.max(0.005, maxSlope); // >0; maior = sobe mais o morro (corta menos)
+      applyRoad(obj, node, ctx.three); // recalcula o greide
+      moldTerrainToRoads(ctx.three); // remolda o terreno ao greide novo
       ctx.persist();
     },
 
