@@ -59,6 +59,7 @@ import { createEditorBridge } from './EditorBridge.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
 import { ColliderGizmoSystem } from './ColliderGizmoSystem.js';
+import { CharacterColliderGizmoSystem } from './CharacterColliderGizmoSystem.js';
 import { SceneLoader } from '../scene/SceneLoader.js';
 import { addSceneNode } from '../scene/SceneBuilder.js';
 import type { Terrain } from '../scene/Terrain.js';
@@ -189,6 +190,8 @@ export function attachEditor(game: Game): GameEditor {
 
   // Contorno dos colliders (AABB) — visível só no modo editor, pra "ver" as hitboxes.
   game.world.addSystem(new ColliderGizmoSystem(editorState, three));
+  // Cápsula 3D do player/NPC (CharacterBody), estilo Unity Character Controller.
+  game.world.addSystem(new CharacterColliderGizmoSystem(editorState, three));
 
   // ── Overlay de persistência ──────────────────────────────────────────────────
   const overlay: SceneFileV1 = emptySceneFile();
