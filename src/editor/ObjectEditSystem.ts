@@ -42,6 +42,8 @@ export class ObjectEditSystem extends System {
   private readonly helper: THREE.Object3D;
   private readonly raycaster = new THREE.Raycaster();
   private readonly ndc = new THREE.Vector2();
+  private readonly pickBox = new THREE.Box3(); // bbox p/ o fallback de clique skinado
+  private readonly pickPoint = new THREE.Vector3();
   private readonly modified = new Map<string, THREE.Object3D>();
   private clickPending: { x: number; y: number } | null = null;
   private selected: THREE.Object3D | null = null;
@@ -204,18 +206,12 @@ export class ObjectEditSystem extends System {
 
     const hits = this.raycaster.intersectObjects(this.editRoots, true);
 
-    // Pega o primeiro hit que NÃO seja interno do editor. O helper do gizmo fica
-    // na cena (mesmo invisível) e é raycastável — sem este filtro, clicar através
-    // dele selecionaria o próprio gizmo e o attach() o prenderia em si mesmo,
-    // causando recursão infinita em updateMatrixWorld (tela preta).
+    // 1) Hit PRECISO mais próximo que não seja interno do editor (gizmos ficam na
+    // cena e são raycastáveis — sem o filtro, clicar num selecionaria o próprio
+    // gizmo e o attach() causaria recursão em updateMatrixWorld → tela preta).
+    let bestDist = Infinity;
+    let bestTarget: THREE.Object3D | null = null;
     for (const hit of hits) {
-      // Proxy de clique (ex.: cápsula do CharacterBody, cujo modelo skinado o raycast
-      // erra): seleciona o objeto apontado, mesmo sendo um gizmo interno.
-      const proxy = this.findPickProxy(hit.object);
-      if (proxy) {
-        this.select(this.findOwningRoot(proxy) ?? proxy);
-        return;
-      }
       if (this.isEditorInternal(hit.object)) continue;
       const root = this.findOwningRoot(hit.object);
       if (!root) continue;
@@ -223,21 +219,41 @@ export class ObjectEditSystem extends System {
       while (target.parent && target.parent !== root) {
         target = target.parent;
       }
-      this.select(target);
-      return;
+      bestTarget = target;
+      bestDist = hit.distance;
+      break; // hits já vêm ordenados por distância
     }
-    this.deselect();
+
+    // 2) Fallback p/ modelos SKINADOS: o raycast preciso erra a malha animada (a
+    // bounding fica na bind-pose), então o clique atravessa o personagem. Testa a
+    // bbox COM skinning (`setFromObject(..., true)`) dos nós de topo skinados; vence
+    // se estiver mais perto que o hit preciso.
+    for (const node of this.skinnedTopNodes()) {
+      this.pickBox.setFromObject(node, true);
+      if (this.pickBox.isEmpty()) continue;
+      const hit = this.raycaster.ray.intersectBox(this.pickBox, this.pickPoint);
+      if (!hit) continue;
+      const d = this.raycaster.ray.origin.distanceTo(this.pickPoint);
+      if (d < bestDist) {
+        bestDist = d;
+        bestTarget = node;
+      }
+    }
+
+    if (bestTarget) this.select(bestTarget);
+    else this.deselect();
   }
 
-  /** Objeto-alvo de um proxy de clique (`cortexPickProxy`), subindo a hierarquia. */
-  private findPickProxy(obj: THREE.Object3D): THREE.Object3D | null {
-    let cur: THREE.Object3D | null = obj;
-    while (cur) {
-      const p = cur.userData['cortexPickProxy'] as THREE.Object3D | undefined;
-      if (p) return p;
-      cur = cur.parent;
+  /** Nós de topo (filhos diretos das raízes) que contêm uma malha skinada. */
+  private skinnedTopNodes(): THREE.Object3D[] {
+    const out: THREE.Object3D[] = [];
+    for (const root of this.editRoots) {
+      for (const node of root.children) {
+        if (this.isEditorInternal(node)) continue;
+        if (hasSkinnedMesh(node)) out.push(node);
+      }
     }
-    return null;
+    return out;
   }
 
   /** `true` se o objeto (ou algum ancestral) é marcado interno do editor (gizmo). */
@@ -372,4 +388,13 @@ export class ObjectEditSystem extends System {
     this.prev.set(key, now);
     return now && !before;
   }
+}
+
+/** `true` se `obj` (ou algum descendente) é uma malha skinada (modelo animado/rigado). */
+export function hasSkinnedMesh(obj: THREE.Object3D): boolean {
+  let found = false;
+  obj.traverse((o) => {
+    if ((o as THREE.SkinnedMesh).isSkinnedMesh) found = true;
+  });
+  return found;
 }
