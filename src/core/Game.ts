@@ -2,6 +2,7 @@ import { PerspectiveCamera, OrthographicCamera } from 'three';
 import { Renderer } from './Renderer.js';
 import { Scene } from './Scene.js';
 import { InputManager } from './InputManager.js';
+import { GamepadManager } from './GamepadManager.js';
 import { GameLoop } from './GameLoop.js';
 import { World } from '../ecs/World.js';
 
@@ -96,6 +97,14 @@ export class Game {
   readonly world: World;
   /** Gerenciador de input (já anexado ao `document.body`). */
   readonly input: InputManager;
+
+  /**
+   * Gamepad (Xbox-first): polado automaticamente 1×/frame no início do `_tick`, antes
+   * dos sistemas/`onUpdate` — então qualquer System lê o estado fresco via
+   * `game.gamepad.getAxis(0, …)` / `isButtonDown(0, …)`. Layout padrão: A=0, B=1, X=2,
+   * Y=3, LB=4, RB=5, LT=6, RT=7; eixos 0/1=stick esquerdo, 2/3=stick direito.
+   */
+  readonly gamepad: GamepadManager;
   /** Canvas de render. */
   readonly canvas: HTMLCanvasElement;
 
@@ -144,6 +153,7 @@ export class Game {
     this.world = new World();
     this.input = new InputManager();
     if (typeof document !== 'undefined') this.input.attach(document.body);
+    this.gamepad = new GamepadManager();
 
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', () => {
@@ -248,6 +258,7 @@ export class Game {
 
   private _tick(deltaMs: number): void {
     const dt = deltaMs / 1000;
+    this.gamepad.poll(); // estado fresco do gamepad antes dos sistemas/onUpdate (Xbox-first)
     this._onUpdate?.(dt);
     this.world.tick(deltaMs);
     this._editor?.update(dt);

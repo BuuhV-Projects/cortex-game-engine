@@ -5,6 +5,7 @@ import { TransformComponent } from '../components/TransformComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import type { InputManager } from '../core/InputManager.js';
+import type { GamepadManager } from '../core/GamepadManager.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { deriveLocomotion, autoMapPlayerClips } from './PlatformerAnimationSystem.js';
 
@@ -26,6 +27,12 @@ export interface ThirdPersonControlOptions {
   runThreshold?: number;
   /** Offset de orientação do modelo (rad) se o personagem nascer virado ao contrário. Default 0. */
   facingOffset?: number;
+  /** Velocidade de orbita da câmera pelo stick direito do gamepad (rad/s). Default 2.6. */
+  padLookSpeed?: number;
+  /** Inverte o eixo Y do stick direito (olhar). Default false. */
+  invertLookY?: boolean;
+  /** Slot do gamepad (0..3). Default 0. */
+  padIndex?: number;
   /** Pausa (ex.: `() => game.editorActive`). Quando true, não move/olha (mostra o corpo). */
   pauseWhen?: () => boolean;
 }
@@ -64,6 +71,9 @@ export class ThirdPersonControlSystem extends System {
   private readonly camHeight: number;
   private readonly runThreshold: number;
   private readonly facingOffset: number;
+  private readonly padLookSpeed: number;
+  private readonly invertLookY: boolean;
+  private readonly padIndex: number;
   private readonly shouldPause?: () => boolean;
 
   private yaw = 0;
@@ -78,6 +88,7 @@ export class ThirdPersonControlSystem extends System {
     private readonly input: InputManager,
     private readonly canvas: HTMLElement,
     options: ThirdPersonControlOptions = {},
+    private readonly gamepad?: GamepadManager,
   ) {
     super();
     this.moveSpeed = options.moveSpeed ?? 2.0;
@@ -88,6 +99,9 @@ export class ThirdPersonControlSystem extends System {
     this.camHeight = options.cameraHeight ?? 1.5;
     this.runThreshold = options.runThreshold ?? 3.5;
     this.facingOffset = options.facingOffset ?? 0;
+    this.padLookSpeed = options.padLookSpeed ?? 2.6;
+    this.invertLookY = options.invertLookY ?? false;
+    this.padIndex = options.padIndex ?? 0;
     this.shouldPause = options.pauseWhen;
 
     if (typeof document !== 'undefined') {
@@ -110,34 +124,53 @@ export class ThirdPersonControlSystem extends System {
       return;
     }
     const dt = deltaTime / 1000;
+    const k = this.input;
+    const gp = this.gamepad;
+    const pad = this.padIndex;
 
-    // ── Mouse-look (orbita a câmera; só com pointer lock) ─────────────────────
+    // ── Olhar: mouse (pointer lock) + stick direito do gamepad (Xbox-first) ────
     if (typeof document !== 'undefined' && document.pointerLockElement === this.canvas) {
       const md = this.input.getMouseDelta();
       this.yaw -= md.x * this.sensitivity;
       this.pitch += md.y * this.sensitivity;
-      if (this.pitch > TOP_CLAMP) this.pitch = TOP_CLAMP;
-      if (this.pitch < BOTTOM_CLAMP) this.pitch = BOTTOM_CLAMP;
     }
+    if (gp) {
+      this.yaw -= gp.getAxis(pad, 2) * this.padLookSpeed * dt;
+      this.pitch += (this.invertLookY ? -1 : 1) * gp.getAxis(pad, 3) * this.padLookSpeed * dt;
+    }
+    if (this.pitch > TOP_CLAMP) this.pitch = TOP_CLAMP;
+    if (this.pitch < BOTTOM_CLAMP) this.pitch = BOTTOM_CLAMP;
 
-    // ── Movimento relativo à câmera (XZ) ──────────────────────────────────────
+    // ── Direção relativa à câmera (XZ) ────────────────────────────────────────
     const sin = Math.sin(this.yaw);
     const cos = Math.cos(this.yaw);
     const fx = -sin, fz = -cos; // frente da câmera projetada no chão
     const rx = cos, rz = -sin; // direita
-    let mx = 0, mz = 0;
-    const k = this.input;
-    if (k.isKeyDown('w') || k.isKeyDown('ArrowUp')) { mx += fx; mz += fz; }
-    if (k.isKeyDown('s') || k.isKeyDown('ArrowDown')) { mx -= fx; mz -= fz; }
-    if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) { mx += rx; mz += rz; }
-    if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) { mx -= rx; mz -= rz; }
 
-    const len = Math.hypot(mx, mz);
-    const sprint = k.isKeyDown('Shift') || k.isKeyDown('shift');
-    const speed = sprint ? this.sprintSpeed : this.moveSpeed;
+    // Stick esquerdo (analógico) tem prioridade; senão WASD (direção unitária).
+    const lx = gp ? gp.getAxis(pad, 0) : 0;
+    const ly = gp ? gp.getAxis(pad, 1) : 0;
+    const stickMag = Math.hypot(lx, ly);
+    let mx = 0, mz = 0, inputMag = 0;
+    if (stickMag > 0) {
+      mx = fx * -ly + rx * lx; // stick pra cima (ly<0) = frente
+      mz = fz * -ly + rz * lx;
+      inputMag = Math.min(1, stickMag);
+    } else {
+      if (k.isKeyDown('w') || k.isKeyDown('ArrowUp')) { mx += fx; mz += fz; }
+      if (k.isKeyDown('s') || k.isKeyDown('ArrowDown')) { mx -= fx; mz -= fz; }
+      if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) { mx += rx; mz += rz; }
+      if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) { mx -= rx; mz -= rz; }
+      if (mx !== 0 || mz !== 0) inputMag = 1;
+    }
+
+    // Corre: Shift (teclado) ou RT (botão 7) do gamepad.
+    const sprint = k.isKeyDown('Shift') || k.isKeyDown('shift') || (gp?.isButtonDown(pad, 7) ?? false);
+    const dirLen = Math.hypot(mx, mz);
     let movingSpeed = 0;
-    if (len > 0) {
-      const dx = mx / len, dz = mz / len;
+    if (dirLen > 0 && inputMag > 0) {
+      const dx = mx / dirLen, dz = mz / dirLen;
+      const speed = (sprint ? this.sprintSpeed : this.moveSpeed) * inputMag; // analógico
       t.x += dx * speed * dt;
       t.z += dz * speed * dt;
       movingSpeed = speed;
@@ -147,8 +180,8 @@ export class ThirdPersonControlSystem extends System {
       t.rotationY = approachAngle(t.rotationY, targetYaw, smoothT);
     }
 
-    // ── Pulo (borda de pressão) ───────────────────────────────────────────────
-    const jumpDown = k.isKeyDown(' ');
+    // ── Pulo (borda de pressão): Espaço ou A (botão 0) ────────────────────────
+    const jumpDown = k.isKeyDown(' ') || (gp?.isButtonDown(pad, 0) ?? false);
     if (jumpDown && !this.prevJump) body.jump();
     this.prevJump = jumpDown;
 

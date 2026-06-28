@@ -40,6 +40,7 @@ export function setupThirdPerson(game: Game, options: SetupThirdPersonOptions = 
     game.input,
     game.canvas,
     { ...options.control, pauseWhen: () => game.editorActive || game.gameplayPaused },
+    game.gamepad,
   );
   game.world.addSystem(control);
 
