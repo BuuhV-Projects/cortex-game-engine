@@ -28,6 +28,7 @@ A lógica pertence aos Systems — vide ADR-0002.
 - [`SpriteAnimationComponent`](SpriteAnimationComponent.md)
 - [`TerrainComponent`](TerrainComponent.md)
 - [`CharacterBodyComponent`](CharacterBodyComponent.md)
+- [`InteractionComponent`](InteractionComponent.md)
 - [`RapierBodyComponent`](RapierBodyComponent.md)
 
 ## Constructors

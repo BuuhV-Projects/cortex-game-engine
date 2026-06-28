@@ -49,6 +49,7 @@ class MovementSystem extends System {
 - [`TopDownMovementSystem`](TopDownMovementSystem.md)
 - [`TerrainCollisionSystem`](TerrainCollisionSystem.md)
 - [`CharacterPhysicsSystem`](CharacterPhysicsSystem.md)
+- [`InteractionSystem`](InteractionSystem.md)
 - [`ThirdPersonControlSystem`](ThirdPersonControlSystem.md)
 - [`RapierPhysicsSystem`](RapierPhysicsSystem.md)
 - [`PlatformerAnimationSystem`](PlatformerAnimationSystem.md)
