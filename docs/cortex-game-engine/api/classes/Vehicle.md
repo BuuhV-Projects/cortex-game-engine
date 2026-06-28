@@ -126,7 +126,7 @@ Velocidade LATERAL (eixo +X local) do chassi, m/s — alto = derrapando/drift.
 
 > **reset**(`position?`, `rotation?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:457](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L457)
+Defined in: [src/physics/RapierPhysics.ts:472](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L472)
 
 Reseta o chassi (respawn): zera velocidades + (opcional) posiciona/orienta.
 
@@ -267,6 +267,36 @@ A roda `i` está tocando o chão?
 #### Returns
 
 `boolean`
+
+***
+
+### wheelLocalTransform()
+
+> **wheelLocalTransform**(`i`, `outPos`, `outQuat`): `void`
+
+Defined in: [src/physics/RapierPhysics.ts:461](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L461)
+
+Transform LOCAL da roda `i` (relativo ao chassi) — pra sincronizar a malha da roda
+quando ela é **filha** do carro (que já segue o chassi). Inclui suspensão (sobe/desce),
+esterço (gira no Y) e rolagem (gira no eixo X).
+
+#### Parameters
+
+##### i
+
+`number`
+
+##### outPos
+
+`Vector3`
+
+##### outQuat
+
+`Quaternion`
+
+#### Returns
+
+`void`
 
 ***
 

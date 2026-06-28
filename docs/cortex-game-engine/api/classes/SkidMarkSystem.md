@@ -6,7 +6,7 @@
 
 # Class: SkidMarkSystem
 
-Defined in: src/systems/SkidMarkSystem.ts:52
+Defined in: [src/systems/SkidMarkSystem.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SkidMarkSystem.ts#L52)
 
 Desenha **marcas de pneu** no chão quando o carro derrapa ou freia forte (ADR-0081).
 Lê o contato das rodas do [Vehicle](Vehicle.md) (no WASM) e acumula segmentos numa única
@@ -33,7 +33,7 @@ new SkidMarkSystem(vehicle, scene.getThreeScene(), {
 
 > **new SkidMarkSystem**(`vehicle`, `root`, `options?`): `SkidMarkSystem`
 
-Defined in: src/systems/SkidMarkSystem.ts:64
+Defined in: [src/systems/SkidMarkSystem.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SkidMarkSystem.ts#L64)
 
 #### Parameters
 
@@ -84,7 +84,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `31`
 
-Defined in: src/systems/SkidMarkSystem.ts:54
+Defined in: [src/systems/SkidMarkSystem.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SkidMarkSystem.ts#L54)
 
 Prioridade de execução deste sistema.
 
@@ -101,7 +101,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: src/systems/SkidMarkSystem.ts:53
+Defined in: [src/systems/SkidMarkSystem.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SkidMarkSystem.ts#L53)
 
 Construtores dos componentes que este sistema requer.
 
@@ -127,7 +127,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **clear**(): `void`
 
-Defined in: src/systems/SkidMarkSystem.ts:151
+Defined in: [src/systems/SkidMarkSystem.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SkidMarkSystem.ts#L151)
 
 Apaga todas as marcas.
 
@@ -141,7 +141,7 @@ Apaga todas as marcas.
 
 > **update**(`_entities`, `_deltaTime`): `void`
 
-Defined in: src/systems/SkidMarkSystem.ts:106
+Defined in: [src/systems/SkidMarkSystem.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/SkidMarkSystem.ts#L106)
 
 Executa a lógica do sistema para o frame/passo atual.
 

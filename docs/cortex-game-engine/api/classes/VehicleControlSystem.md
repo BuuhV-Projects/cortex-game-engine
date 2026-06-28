@@ -6,7 +6,7 @@
 
 # Class: VehicleControlSystem
 
-Defined in: [src/systems/VehicleControlSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L42)
+Defined in: [src/systems/VehicleControlSystem.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L66)
 
 Dirige um [Vehicle](Vehicle.md) do Rapier (ADR-0081), gamepad-first com **fallback
 teclado**: com controle, **RT** acelera, **LT** freia (e dá ré parado), **stick X**
@@ -26,7 +26,7 @@ sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de
 
 > **new VehicleControlSystem**(`physics`, `vehicle`, `car`, `camera`, `gamepad`, `input?`, `options?`): `VehicleControlSystem`
 
-Defined in: [src/systems/VehicleControlSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L48)
+Defined in: [src/systems/VehicleControlSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L77)
 
 #### Parameters
 
@@ -95,7 +95,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: [src/systems/VehicleControlSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L44)
+Defined in: [src/systems/VehicleControlSystem.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L68)
 
 Prioridade de execução deste sistema.
 
@@ -112,7 +112,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [src/systems/VehicleControlSystem.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L43)
+Defined in: [src/systems/VehicleControlSystem.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L67)
 
 Construtores dos componentes que este sistema requer.
 
@@ -138,7 +138,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`_entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/VehicleControlSystem.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L62)
+Defined in: [src/systems/VehicleControlSystem.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L91)
 
 Executa a lógica do sistema para o frame/passo atual.
 
