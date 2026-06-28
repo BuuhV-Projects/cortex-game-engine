@@ -58,6 +58,9 @@ import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
 import { ColliderGizmoSystem } from './ColliderGizmoSystem.js';
 import { CharacterColliderGizmoSystem } from './CharacterColliderGizmoSystem.js';
+import { VegetationGizmoSystem } from './VegetationGizmoSystem.js';
+import type { VegetationPickHook } from './ObjectEditSystem.js';
+import type { Vegetation } from '../scene/Vegetation.js';
 import { SceneLoader } from '../scene/SceneLoader.js';
 import { addSceneNode } from '../scene/SceneBuilder.js';
 import type { Terrain } from '../scene/Terrain.js';
@@ -262,6 +265,46 @@ export function attachEditor(game: Game): GameEditor {
     }
   };
 
+  // Seleção por INSTÂNCIA de vegetação (ADR-0077 fase 3): clicar numa árvore mostra a
+  // caixa só nela; selecionar o grupo mostra em todas; Delete remove a árvore clicada.
+  // `deleteVegInstance` é late-bound (a autoria de vegetação nasce mais abaixo).
+  const vegGizmo = new VegetationGizmoSystem(editorState, three);
+  game.world.addSystem(vegGizmo);
+  let vegSel: { obj: Object3D; veg: Vegetation; index: number } | null = null;
+  let deleteVegInstance: ((obj: Object3D, index: number) => boolean) | null = null;
+  const vegOfGroup = (g: Object3D): Vegetation | undefined =>
+    (g.userData as Record<string, unknown>)['cortexVegetation'] as Vegetation | undefined;
+  const vegHook: VegetationPickHook = {
+    onInstance: (group, index) => {
+      const veg = vegOfGroup(group);
+      if (!veg) return;
+      vegSel = { obj: group, veg, index };
+      vegGizmo.show(veg, group, index);
+    },
+    onGroup: (group) => {
+      const veg = vegOfGroup(group);
+      if (!veg) {
+        vegHook.onOther();
+        return;
+      }
+      vegSel = { obj: group, veg, index: -1 };
+      vegGizmo.show(veg, group, -1);
+    },
+    onOther: () => {
+      vegSel = null;
+      vegGizmo.hide();
+    },
+    onDelete: () => {
+      if (!vegSel || vegSel.index < 0) return false;
+      const ok = deleteVegInstance?.(vegSel.obj, vegSel.index) ?? false;
+      if (ok) {
+        vegGizmo.hide();
+        vegSel = null;
+      }
+      return ok;
+    },
+  };
+
   const objectEditSystem = new ObjectEditSystem(
       editorState,
       editorCamera,
@@ -285,6 +328,7 @@ export function attachEditor(game: Game): GameEditor {
       // posição e rotY pelo write-back no Transform; rotX/Z e escala ficam no
       // Object3D (o Object3DSyncSystem não as sobrescreve).
       { snap: 0.5 },
+      vegHook, // seleção/Delete por instância de árvore
   );
   game.world.addSystem(objectEditSystem);
 
@@ -749,6 +793,8 @@ export function attachEditor(game: Game): GameEditor {
       return hits.length ? hits[0]!.point.y : null;
     },
   });
+  // Liga o Delete-de-instância (definido no vegHook lá em cima) à autoria de vegetação.
+  deleteVegInstance = (obj, index) => vegetation.api.deleteInstance(obj, index);
   // Modal com PREVIEW (thumbnails) pra escolher o modelo da vegetação (igual estrada/terreno).
   const vegetationApi = {
     ...vegetation.api,

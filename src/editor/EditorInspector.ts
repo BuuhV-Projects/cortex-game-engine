@@ -329,6 +329,8 @@ export interface VegetationApi {
   setModel(obj: Object3D, url: string): void;
   /** Liga/desliga a colisão com o player (`cortexSolid`). */
   setCollide(obj: Object3D, on: boolean): void;
+  /** Remove UMA instância (árvore) do grupo pelo índice + persiste. `true` se removeu. */
+  deleteInstance(obj: Object3D, index: number): boolean;
   /** Abre o modal de seleção de modelo com preview (atribuído pelo attachEditor). Opcional. */
   pickModel?(obj: Object3D): void;
 }

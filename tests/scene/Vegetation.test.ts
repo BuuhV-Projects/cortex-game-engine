@@ -3,7 +3,7 @@
  * round-trip serializável e o modelo placeholder. O pincel do editor fica de fora.
  */
 import { describe, it, expect } from 'vitest';
-import { Mesh, BoxGeometry, MeshBasicMaterial, InstancedMesh, Group, Object3D } from 'three';
+import { Mesh, BoxGeometry, MeshBasicMaterial, InstancedMesh, Group, Object3D, Box3, Vector3 } from 'three';
 import { Vegetation, makePlaceholderVegetation, FLOATS_PER_INSTANCE } from '../../src/scene/Vegetation.js';
 import { Scene } from '../../src/core/Scene.js';
 import { buildScene } from '../../src/scene/SceneBuilder.js';
@@ -35,6 +35,25 @@ describe('Vegetation', () => {
     expect(veg.add(1, 0, 1, 0, 1)).toBe(true);
     expect(veg.add(2, 0, 2, 0, 1)).toBe(false); // estourou
     expect(veg.count).toBe(2);
+  });
+
+  it('instanceAt lê a transform da instância; removeAt remove uma pelo índice', () => {
+    const veg = new Vegetation(source());
+    veg.setInstances([0, 0, 0, 0, 1, 10, 2, 5, Math.PI, 3]); // 2 instâncias
+    expect(veg.instanceAt(1)).toEqual({ x: 10, y: 2, z: 5, rotY: Math.PI, scale: 3 });
+    expect(veg.instanceAt(9)).toBeNull(); // fora de faixa
+    expect(veg.removeAt(0)).toBe(true);
+    expect(veg.count).toBe(1);
+    expect(veg.instanceAt(0)).toEqual({ x: 10, y: 2, z: 5, rotY: Math.PI, scale: 3 }); // sobrou a 2ª
+    expect(veg.removeAt(5)).toBe(false); // índice inválido
+  });
+
+  it('modelBounds devolve o bbox do modelo (escala 1)', () => {
+    const veg = new Vegetation(new Mesh(new BoxGeometry(2, 4, 2), new MeshBasicMaterial()));
+    const size = veg.modelBounds(new Box3()).getSize(new Vector3());
+    expect(size.x).toBeCloseTo(2, 5);
+    expect(size.y).toBeCloseTo(4, 5);
+    expect(size.z).toBeCloseTo(2, 5);
   });
 
   it('removeNear apaga as instâncias no raio (XZ)', () => {

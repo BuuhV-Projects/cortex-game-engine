@@ -6,6 +6,7 @@ import {
   Matrix4,
   Quaternion,
   Vector3,
+  Box3,
   Euler,
   CylinderGeometry,
   ConeGeometry,
@@ -160,6 +161,41 @@ export class Vegetation {
       this.sync();
     }
     return removed;
+  }
+
+  /** Transform da instância `i` (`[x,y,z,rotY,scale]`), ou `null` se fora de faixa. */
+  instanceAt(i: number): { x: number; y: number; z: number; rotY: number; scale: number } | null {
+    const b = i * FLOATS_PER_INSTANCE;
+    if (b < 0 || b >= this.instances.length) return null;
+    return {
+      x: this.instances[b]!,
+      y: this.instances[b + 1]!,
+      z: this.instances[b + 2]!,
+      rotY: this.instances[b + 3]!,
+      scale: this.instances[b + 4]!,
+    };
+  }
+
+  /** Remove a instância `i` (seleção individual no editor). Retorna `true` se removeu. */
+  removeAt(i: number): boolean {
+    const b = i * FLOATS_PER_INSTANCE;
+    if (b < 0 || b >= this.instances.length) return false;
+    this.instances.splice(b, FLOATS_PER_INSTANCE);
+    this.sync();
+    return true;
+  }
+
+  /** Bounding box do MODELO em escala 1 (união das sub-malhas) — p/ gizmos de seleção. */
+  modelBounds(out: Box3): Box3 {
+    out.makeEmpty();
+    const tmp = new Box3();
+    for (const { mesh, local } of this.subs) {
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+      tmp.copy(mesh.geometry.boundingBox!).applyMatrix4(local);
+      out.union(tmp);
+    }
+    if (out.isEmpty()) out.set(new Vector3(-0.5, 0, -0.5), new Vector3(0.5, 1, 0.5));
+    return out;
   }
 
   /** Reescreve as matrizes de instância de todas as sub-malhas a partir de `instances`. */

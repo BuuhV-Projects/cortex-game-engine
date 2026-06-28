@@ -183,6 +183,15 @@ export function createVegetationAuthoring(ctx: EditorAuthoringContext, hooks: Ve
       if (!on) delete (obj.userData as Record<string, unknown>)['cortexSolid'];
       ctx.persist();
     },
+    deleteInstance: (obj, index) => {
+      const veg = vegOf(obj);
+      const node = nodeOf(obj);
+      if (!veg || !node) return false;
+      if (!veg.removeAt(index)) return false;
+      node.instances = veg.getInstances(); // persiste a remoção da árvore individual
+      ctx.persist();
+      return true;
+    },
   };
 
   return {

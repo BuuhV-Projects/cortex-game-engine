@@ -8,6 +8,19 @@ import type { EditorState } from './EditorState.js';
 import type { EditorHud } from './EditorHud.js';
 import type { EditorSelection } from './EditorSelection.js';
 
+/**
+ * Hook de seleção por INSTÂNCIA de vegetação. O {@link ObjectEditSystem} chama
+ * `onInstance` ao clicar numa árvore, `onGroup` ao selecionar o grupo inteiro,
+ * `onOther` ao selecionar outra coisa, e `onDelete` no Delete (devolve `true` se
+ * tratou — apagar a instância — pra não deletar o grupo).
+ */
+export interface VegetationPickHook {
+  onInstance(group: import('three').Object3D, index: number): void;
+  onGroup(group: import('three').Object3D): void;
+  onOther(): void;
+  onDelete(): boolean;
+}
+
 /** Transform editada de um objeto, por nome (`Object3D.name`). */
 export interface ObjectEdit {
   px: number;
@@ -84,6 +97,12 @@ export class ObjectEditSystem extends System {
      * Bom pra plataformer. Default: sem trava.
      */
     private readonly editOptions?: { lock2D?: boolean; snap?: number },
+    /**
+     * Seleção por INSTÂNCIA de vegetação (ADR-0077 fase 3): clicar numa árvore
+     * roteia pra cá (a vegetação é InstancedMesh, não objetos da cena). `onDelete`
+     * deve devolver `true` quando consumir o Delete (apagar a instância selecionada).
+     */
+    private readonly vegHook?: VegetationPickHook,
   ) {
     super();
 
@@ -211,6 +230,7 @@ export class ObjectEditSystem extends System {
     // gizmo e o attach() causaria recursão em updateMatrixWorld → tela preta).
     let bestDist = Infinity;
     let bestTarget: THREE.Object3D | null = null;
+    let bestHit: THREE.Intersection | null = null;
     for (const hit of hits) {
       if (this.isEditorInternal(hit.object)) continue;
       const root = this.findOwningRoot(hit.object);
@@ -221,6 +241,7 @@ export class ObjectEditSystem extends System {
       }
       bestTarget = target;
       bestDist = hit.distance;
+      bestHit = hit;
       break; // hits já vêm ordenados por distância
     }
 
@@ -240,8 +261,27 @@ export class ObjectEditSystem extends System {
       }
     }
 
-    if (bestTarget) this.select(bestTarget);
-    else this.deselect();
+    if (bestTarget) {
+      this.select(bestTarget);
+      this.routeVegetation(bestTarget, bestHit);
+    } else {
+      this.deselect();
+      this.vegHook?.onOther();
+    }
+  }
+
+  /** Roteia o clique pro hook de vegetação: instância (árvore) vs grupo vs outro. */
+  private routeVegetation(target: THREE.Object3D, hit: THREE.Intersection | null): void {
+    if (!this.vegHook) return;
+    if (!target.userData['cortexVegetation']) {
+      this.vegHook.onOther();
+      return;
+    }
+    if (hit && hit.instanceId != null && hit.object.userData['cortexVegetationSub']) {
+      this.vegHook.onInstance(target, hit.instanceId);
+    } else {
+      this.vegHook.onGroup(target);
+    }
   }
 
   /** Nós de topo (filhos diretos das raízes) que contêm uma malha skinada. */
@@ -295,8 +335,17 @@ export class ObjectEditSystem extends System {
     if (this.selected === target) return;
     this.selected = target;
     if (target) {
-      this.controls.attach(target);
-      this.helper.visible = true;
+      // Vegetação é InstancedMesh: o gizmo de mover no pivô central do grupo (no chão)
+      // confunde e não diz QUAL árvore. Pra ela, sem gizmo central — o feedback é a
+      // caixa por instância (VegetationGizmoSystem). Demais objetos: gizmo normal.
+      const isVeg = target.userData['cortexVegetation'] != null;
+      if (isVeg) {
+        this.controls.detach();
+        this.helper.visible = false;
+      } else {
+        this.controls.attach(target);
+        this.helper.visible = true;
+      }
       this.hud.showToast(`Selecionado: ${target.name || '(sem nome)'}`);
     } else {
       this.controls.detach();
@@ -359,6 +408,12 @@ export class ObjectEditSystem extends System {
 
   /** Remove o objeto selecionado da cena (Delete/Backspace) e notifica `onDelete`. */
   private deleteSelected(): void {
+    // Vegetação: se uma ÁRVORE (instância) está selecionada, o Delete remove só ela —
+    // o grupo continua. O hook devolve `true` quando consome o Delete.
+    if (this.vegHook?.onDelete()) {
+      this.hud.showToast('Árvore removida');
+      return;
+    }
     const obj = this.selected;
     if (!obj) return;
     const label = obj.name || '(sem nome)';
