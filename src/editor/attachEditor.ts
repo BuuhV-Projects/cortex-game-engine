@@ -7,11 +7,9 @@ import {
   Raycaster,
   CameraHelper,
   DirectionalLight,
-  HemisphereLight,
   PointLight,
   SpotLight,
   DirectionalLightHelper,
-  HemisphereLightHelper,
   PointLightHelper,
   SpotLightHelper,
   Mesh,
@@ -321,10 +319,11 @@ export function attachEditor(game: Game): GameEditor {
   prepHelper(cameraHelper);
 
   // Helpers de LUZ (estilo Blender): cada luz ganha um visual no modo edição —
-  // direção (Directional), hemisfério (Hemisphere), esfera (Point), cone (Spot).
-  // Sem isso, clicar numa luz dá só os eixos do gizmo num ponto invisível. Ambient
-  // não tem helper (é global). Ressincronizado quando a cena muda (as luzes
-  // carregam async pelo buildScene).
+  // direção (Directional), esfera (Point), cone (Spot). Sem isso, clicar numa luz dá
+  // só os eixos do gizmo num ponto invisível. Ambient E Hemisphere NÃO têm helper
+  // (são globais/sem posição útil — o octaedro da hemisférica só poluía a cena, na
+  // origem, embaixo do player). Ressincronizado quando a cena muda (luzes carregam
+  // async pelo buildScene).
   type LightHelper = Object3D & { update?(): void; dispose?(): void };
   const lightHelpers = new Map<Object3D, LightHelper>();
   const syncLightHelpers = (visible: boolean): void => {
@@ -333,13 +332,11 @@ export function attachEditor(game: Game): GameEditor {
       const make =
         o instanceof DirectionalLight
           ? (): LightHelper => new DirectionalLightHelper(o, 2)
-          : o instanceof HemisphereLight
-            ? (): LightHelper => new HemisphereLightHelper(o, 1)
-            : o instanceof PointLight
-              ? (): LightHelper => new PointLightHelper(o, 0.5)
-              : o instanceof SpotLight
-                ? (): LightHelper => new SpotLightHelper(o)
-                : null;
+          : o instanceof PointLight
+            ? (): LightHelper => new PointLightHelper(o, 0.5)
+            : o instanceof SpotLight
+              ? (): LightHelper => new SpotLightHelper(o)
+              : null;
       if (!make) return;
       present.add(o);
       let h = lightHelpers.get(o);
