@@ -45,6 +45,7 @@ export function setupThirdPerson(game: Game, options: SetupThirdPersonOptions = 
     game.canvas,
     { ...options.control, pauseWhen: () => game.editorActive || game.gameplayPaused || (userPause?.() ?? false) },
     game.gamepad,
+    game.scene.getThreeScene(), // colisão de câmera (spring arm) contra a cena
   );
   game.world.addSystem(control);
 

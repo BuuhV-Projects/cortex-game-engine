@@ -39,6 +39,20 @@ export interface ThirdPersonControlOptions {
 
 const TOP_CLAMP = (70 * Math.PI) / 180; // Unity TopClamp 70°
 const BOTTOM_CLAMP = (-30 * Math.PI) / 180; // Unity BottomClamp -30°
+/** Distância mínima alvo↔câmera (não entra dentro do personagem) e folga da colisão. */
+const CAM_MIN_DIST = 0.8;
+const CAM_SKIN = 0.3;
+
+/** A câmera ignora (não colide com) o próprio player e os gizmos/chrome do editor. */
+function isCamIgnored(obj: THREE.Object3D, self?: THREE.Object3D): boolean {
+  let p: THREE.Object3D | null = obj;
+  while (p) {
+    if (self && p === self) return true;
+    if (p.userData['editorInternal']) return true;
+    p = p.parent;
+  }
+  return false;
+}
 
 /** Interpola um ângulo (rad) em direção a `target` pelo menor caminho (smoothing exponencial). */
 function approachAngle(current: number, target: number, t: number): number {
@@ -82,6 +96,8 @@ export class ThirdPersonControlSystem extends System {
   private clipMap: Record<string, string> | null = null;
   private currentClip: string | null = null;
   private readonly lookTarget = new THREE.Vector3();
+  private readonly camRay = new THREE.Raycaster();
+  private readonly camBack = new THREE.Vector3();
 
   constructor(
     private readonly camera: THREE.PerspectiveCamera,
@@ -89,6 +105,9 @@ export class ThirdPersonControlSystem extends System {
     private readonly canvas: HTMLElement,
     options: ThirdPersonControlOptions = {},
     private readonly gamepad?: GamepadManager,
+    /** Raiz da cena pra COLISÃO de câmera (spring arm): se algo fica entre o alvo e a
+     * câmera (chão/árvore/parede), a câmera é puxada pra dentro. Opcional. */
+    private readonly collisionRoot?: THREE.Object3D,
   ) {
     super();
     this.moveSpeed = options.moveSpeed ?? 2.0;
@@ -120,7 +139,7 @@ export class ThirdPersonControlSystem extends System {
     const obj = player.getComponent(Object3DComponent)?.object;
     if (this.shouldPause?.()) {
       // No editor o corpo fica visível e parado; ainda assim posiciona a câmera.
-      this.placeCamera(t);
+      this.placeCamera(t, obj);
       return;
     }
     const dt = deltaTime / 1000;
@@ -185,23 +204,37 @@ export class ThirdPersonControlSystem extends System {
     if (jumpDown && !this.prevJump) body.jump();
     this.prevJump = jumpDown;
 
-    // ── Câmera orbital atrás do personagem ────────────────────────────────────
-    this.placeCamera(t);
+    // ── Câmera orbital atrás do personagem (com colisão) ──────────────────────
+    this.placeCamera(t, obj);
 
     // ── Animação (idle/walk/run/jump/fall) ────────────────────────────────────
     if (obj) this.drive(obj, movingSpeed, body);
   }
 
   /** Posiciona a câmera atrás/acima conforme yaw/pitch, mirando a cabeça do alvo. */
-  private placeCamera(t: TransformComponent): void {
+  private placeCamera(t: TransformComponent, self?: THREE.Object3D): void {
     const cp = Math.cos(this.pitch);
-    const back = new THREE.Vector3(Math.sin(this.yaw) * cp, Math.sin(this.pitch), Math.cos(this.yaw) * cp);
-    this.camera.position.set(
-      t.x + back.x * this.camDist,
-      t.y + this.camHeight + back.y * this.camDist,
-      t.z + back.z * this.camDist,
-    );
+    this.camBack.set(Math.sin(this.yaw) * cp, Math.sin(this.pitch), Math.cos(this.yaw) * cp);
     this.lookTarget.set(t.x, t.y + this.camHeight, t.z);
+
+    // Colisão (spring arm): se algo (chão/árvore/parede) fica entre o alvo e a câmera,
+    // puxa a câmera pra dentro — nunca atravessa o chão. Raio do alvo na direção da câmera.
+    let dist = this.camDist;
+    if (this.collisionRoot) {
+      this.camRay.set(this.lookTarget, this.camBack);
+      this.camRay.far = this.camDist;
+      for (const h of this.camRay.intersectObject(this.collisionRoot, true)) {
+        if (isCamIgnored(h.object, self)) continue;
+        dist = Math.max(h.distance - CAM_SKIN, CAM_MIN_DIST);
+        break; // 1ª superfície bloqueante (hits vêm ordenados por distância)
+      }
+    }
+
+    this.camera.position.set(
+      this.lookTarget.x + this.camBack.x * dist,
+      this.lookTarget.y + this.camBack.y * dist,
+      this.lookTarget.z + this.camBack.z * dist,
+    );
     this.camera.lookAt(this.lookTarget);
   }
 

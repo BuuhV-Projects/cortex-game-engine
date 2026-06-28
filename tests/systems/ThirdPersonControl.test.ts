@@ -88,3 +88,43 @@ describe('ThirdPersonControlSystem (gamepad-first)', () => {
     expect(t.z).toBe(0);
   });
 });
+
+describe('ThirdPersonControlSystem — colisão de câmera (spring arm)', () => {
+  function setupCam(scene: THREE.Object3D) {
+    const world = new World();
+    const camera = new THREE.PerspectiveCamera();
+    const sys = new ThirdPersonControlSystem(
+      camera,
+      noKeys as never,
+      {} as HTMLElement,
+      { cameraDistance: 5.5, cameraHeight: 1.5 },
+      undefined,
+      scene,
+    );
+    world.addSystem(sys);
+    const e = world.createEntity();
+    e.addComponent(new TransformComponent(0, 0, 0, 0));
+    e.addComponent(new CharacterBodyComponent());
+    scene.updateMatrixWorld(true); // sem render no teste; o raycast usa matrixWorld
+    return { world, camera };
+  }
+  const target = new THREE.Vector3(0, 1.5, 0); // alvo = player + cameraHeight
+
+  it('puxa a câmera pra dentro quando há obstáculo entre o alvo e a câmera', () => {
+    const scene = new THREE.Scene();
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 0.5));
+    wall.position.set(0, 0, 2); // entre o alvo (z=0) e a câmera (atrás, +Z)
+    scene.add(wall);
+    const { world, camera } = setupCam(scene);
+    world.tick(16);
+    const dist = camera.position.distanceTo(target);
+    expect(dist).toBeLessThan(5.5); // não foi até a distância cheia
+    expect(dist).toBeGreaterThanOrEqual(0.8); // respeita a distância mínima
+  });
+
+  it('sem obstáculo: câmera fica na distância cheia', () => {
+    const { world, camera } = setupCam(new THREE.Scene());
+    world.tick(16);
+    expect(camera.position.distanceTo(target)).toBeCloseTo(5.5, 1);
+  });
+});
