@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
 import { CharacterBodyComponent } from '../../src/components/CharacterBodyComponent.js';
+import { Object3DComponent } from '../../src/components/Object3DComponent.js';
 import { ThirdPersonControlSystem } from '../../src/systems/ThirdPersonControlSystem.js';
 
 /** Stub de gamepad: eixos/botões fixos (sem deadzone — valores crus). */
@@ -126,5 +127,67 @@ describe('ThirdPersonControlSystem — colisão de câmera (spring arm)', () => 
     const { world, camera } = setupCam(new THREE.Scene());
     world.tick(16);
     expect(camera.position.distanceTo(target)).toBeCloseTo(5.5, 1);
+  });
+});
+
+describe('ThirdPersonControlSystem — transições run_stop / run_jump', () => {
+  function mockAnimator() {
+    const played: string[] = [];
+    return {
+      clipNames: () => ['idle', 'walk', 'run', 'jump', 'fall', 'run_stop', 'run_jump'],
+      play: (n: string) => { played.push(n); },
+      played,
+    };
+  }
+  function mutPad() {
+    const p = { ax: [0, 0] as number[], bt: [] as number[] };
+    return {
+      pad: { getAxis: (_i: number, a: number) => p.ax[a] ?? 0, isButtonDown: (_i: number, b: number) => p.bt[b] === 1 },
+      set: (ax: number[], bt: number[] = []) => { p.ax = ax; p.bt = bt; },
+    };
+  }
+  function setupAnim(animator: unknown, pad: unknown) {
+    const world = new World();
+    const sys = new ThirdPersonControlSystem(
+      new THREE.PerspectiveCamera(), noKeys as never, {} as HTMLElement,
+      { sprintSpeed: 6, runThreshold: 3.5 }, pad as never,
+    );
+    world.addSystem(sys);
+    const e = world.createEntity();
+    e.addComponent(new TransformComponent(0, 0, 0, 0));
+    const body = new CharacterBodyComponent();
+    e.addComponent(body);
+    const obj = new THREE.Object3D();
+    (obj.userData as Record<string, unknown>)['cortexAnim'] = animator;
+    e.addComponent(new Object3DComponent(obj));
+    return { world, body };
+  }
+
+  it('correndo + pular toca run_jump (em vez de jump)', () => {
+    const anim = mockAnimator();
+    const mp = mutPad();
+    const { world, body } = setupAnim(anim, mp.pad);
+    mp.set([0, -1], [0, 0, 0, 0, 0, 0, 0, 1]); // stick cheio pra frente + RT (corre)
+    body.grounded = true;
+    world.tick(16);
+    expect(anim.played).toContain('run');
+    body.grounded = false; // pulo: no ar, subindo
+    body.velocityY = 5;
+    world.tick(16);
+    expect(anim.played).toContain('run_jump');
+    expect(anim.played).not.toContain('jump');
+  });
+
+  it('correndo e parar toca run_stop', () => {
+    const anim = mockAnimator();
+    const mp = mutPad();
+    const { world, body } = setupAnim(anim, mp.pad);
+    mp.set([0, -1], [0, 0, 0, 0, 0, 0, 0, 1]); // corre
+    body.grounded = true;
+    world.tick(16);
+    mp.set([0, 0], []); // solta tudo (para)
+    body.grounded = true; body.velocityY = 0;
+    world.tick(16);
+    expect(anim.played).toContain('run_stop');
   });
 });

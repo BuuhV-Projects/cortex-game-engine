@@ -42,6 +42,8 @@ const BOTTOM_CLAMP = (-30 * Math.PI) / 180; // Unity BottomClamp -30°
 /** Distância mínima alvo↔câmera (não entra dentro do personagem) e folga da colisão. */
 const CAM_MIN_DIST = 0.8;
 const CAM_SKIN = 0.3;
+/** Duração (s) que o clipe `run_stop` segura antes de cair pro idle. */
+const RUN_STOP_DUR = 0.45;
 
 /** A câmera ignora (não colide com) o próprio player e os gizmos/chrome do editor. */
 function isCamIgnored(obj: THREE.Object3D, self?: THREE.Object3D): boolean {
@@ -94,7 +96,10 @@ export class ThirdPersonControlSystem extends System {
   private pitch = 0.35; // levemente de cima
   private prevJump = false;
   private clipMap: Record<string, string> | null = null;
+  private clipSet: Set<string> | null = null; // nomes de clipe disponíveis (run_stop/run_jump?)
   private currentClip: string | null = null;
+  private wasRunning = false; // corria no último frame no chão (persiste no ar p/ run_jump)
+  private oneShotLock = 0; // s restantes segurando um one-shot (run_stop)
   private readonly lookTarget = new THREE.Vector3();
   private readonly camRay = new THREE.Raycaster();
   private readonly camBack = new THREE.Vector3();
@@ -207,8 +212,8 @@ export class ThirdPersonControlSystem extends System {
     // ── Câmera orbital atrás do personagem (com colisão) ──────────────────────
     this.placeCamera(t, obj);
 
-    // ── Animação (idle/walk/run/jump/fall) ────────────────────────────────────
-    if (obj) this.drive(obj, movingSpeed, body);
+    // ── Animação (idle/walk/run/jump/fall + run_stop/run_jump) ────────────────
+    if (obj) this.drive(obj, movingSpeed, body, dt);
   }
 
   /** Posiciona a câmera atrás/acima conforme yaw/pitch, mirando a cabeça do alvo. */
@@ -238,18 +243,45 @@ export class ThirdPersonControlSystem extends System {
     this.camera.lookAt(this.lookTarget);
   }
 
-  /** Escolhe e toca o clipe de locomoção pelo estado do CharacterBody. */
-  private drive(obj: THREE.Object3D, horizontalSpeed: number, body: CharacterBodyComponent): void {
+  /**
+   * Escolhe e toca o clipe de locomoção pelo estado do CharacterBody, com transições
+   * contextuais: **correndo + pular** → `run_jump`; **correndo → parar** → `run_stop`
+   * (one-shot que segura por {@link RUN_STOP_DUR} antes do idle). Usa esses clipes só
+   * se existirem no `.glb` (senão cai no jump/idle normal).
+   */
+  private drive(obj: THREE.Object3D, horizontalSpeed: number, body: CharacterBodyComponent, dt: number): void {
     const animator = (obj.userData as Record<string, unknown>)['cortexAnim'] as SceneAnimator | undefined;
     if (!animator) return;
-    if (!this.clipMap) this.clipMap = autoMapPlayerClips(animator.clipNames());
-    const state = deriveLocomotion(
-      { vx: horizontalSpeed, vy: body.velocityY, grounded: body.grounded },
-      this.runThreshold,
-    );
+    if (!this.clipMap) {
+      this.clipMap = autoMapPlayerClips(animator.clipNames());
+      this.clipSet = new Set(animator.clipNames());
+    }
+    const grounded = body.grounded;
+    const speed = Math.abs(horizontalSpeed);
+
+    // One-shot em andamento (run_stop): segura até acabar; mover/pular interrompe.
+    if (this.oneShotLock > 0) {
+      if (speed > 0.1 || !grounded) {
+        this.oneShotLock = 0;
+      } else {
+        this.oneShotLock -= dt;
+        return;
+      }
+    }
+
+    let state = deriveLocomotion({ vx: horizontalSpeed, vy: body.velocityY, grounded }, this.runThreshold);
+    if (state === 'jump' && this.wasRunning && this.clipSet?.has('run_jump')) {
+      state = 'run_jump';
+    } else if (state === 'idle' && this.wasRunning && this.clipSet?.has('run_stop')) {
+      state = 'run_stop';
+      this.oneShotLock = RUN_STOP_DUR;
+    }
+    // `wasRunning` só atualiza no chão (persiste no ar → o run_jump dura a subida toda).
+    if (grounded) this.wasRunning = speed >= this.runThreshold;
+
     const clip = this.clipMap[state] ?? state;
     if (clip !== this.currentClip) {
-      const oneShot = state === 'jump';
+      const oneShot = state === 'jump' || state === 'run_jump' || state === 'run_stop';
       animator.play(clip, { loop: !oneShot });
       this.currentClip = clip;
     }
