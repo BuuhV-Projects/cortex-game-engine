@@ -134,7 +134,7 @@ describe('ThirdPersonControlSystem — transições run_stop / run_jump', () => 
   function mockAnimator() {
     const played: string[] = [];
     return {
-      clipNames: () => ['idle', 'walk', 'run', 'jump', 'fall', 'run_stop', 'run_jump'],
+      clipNames: () => ['idle', 'walk', 'run', 'jump', 'fall', 'run_stop', 'run_jump', 'punch'],
       play: (n: string) => { played.push(n); },
       played,
     };
@@ -160,7 +160,7 @@ describe('ThirdPersonControlSystem — transições run_stop / run_jump', () => 
     const obj = new THREE.Object3D();
     (obj.userData as Record<string, unknown>)['cortexAnim'] = animator;
     e.addComponent(new Object3DComponent(obj));
-    return { world, body };
+    return { world, body, sys };
   }
 
   it('correndo + pular toca run_jump (em vez de jump)', () => {
@@ -176,6 +176,18 @@ describe('ThirdPersonControlSystem — transições run_stop / run_jump', () => 
     world.tick(16);
     expect(anim.played).toContain('run_jump');
     expect(anim.played).not.toContain('jump');
+  });
+
+  it('playAction toca um clipe one-shot (punch) e volta à locomoção depois', () => {
+    const anim = mockAnimator();
+    const mp = mutPad();
+    const { world, body, sys } = setupAnim(anim, mp.pad);
+    body.grounded = true; // parado no chão
+    sys.playAction('punch', 0.3);
+    world.tick(16);
+    expect(anim.played).toContain('punch');
+    for (let i = 0; i < 25; i++) world.tick(16); // > 0.3s → ação acaba
+    expect(anim.played.at(-1)).toBe('idle');
   });
 
   it('correndo e parar toca run_stop', () => {

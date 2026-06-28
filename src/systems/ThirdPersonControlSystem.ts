@@ -35,6 +35,8 @@ export interface ThirdPersonControlOptions {
   padIndex?: number;
   /** Pausa (ex.: `() => game.editorActive`). Quando true, não move/olha (mostra o corpo). */
   pauseWhen?: () => boolean;
+  /** Bloqueia o pulo quando `true` — ex.: há interação em alcance, então A vira "interagir". */
+  jumpBlocked?: () => boolean;
 }
 
 const TOP_CLAMP = (70 * Math.PI) / 180; // Unity TopClamp 70°
@@ -91,6 +93,7 @@ export class ThirdPersonControlSystem extends System {
   private readonly invertLookY: boolean;
   private readonly padIndex: number;
   private readonly shouldPause?: () => boolean;
+  private readonly jumpBlocked?: () => boolean;
 
   private yaw = 0;
   private pitch = 0.35; // levemente de cima
@@ -100,6 +103,8 @@ export class ThirdPersonControlSystem extends System {
   private currentClip: string | null = null;
   private wasRunning = false; // corria no último frame no chão (persiste no ar p/ run_jump)
   private oneShotLock = 0; // s restantes segurando um one-shot (run_stop)
+  private actionClip: string | null = null; // ação one-shot pedida pelo jogo (soco, etc.)
+  private actionLock = 0; // s restantes segurando a ação
   private readonly lookTarget = new THREE.Vector3();
   private readonly camRay = new THREE.Raycaster();
   private readonly camBack = new THREE.Vector3();
@@ -127,6 +132,7 @@ export class ThirdPersonControlSystem extends System {
     this.invertLookY = options.invertLookY ?? false;
     this.padIndex = options.padIndex ?? 0;
     this.shouldPause = options.pauseWhen;
+    this.jumpBlocked = options.jumpBlocked;
 
     if (typeof document !== 'undefined') {
       this.canvas.addEventListener('mousedown', () => {
@@ -134,6 +140,16 @@ export class ThirdPersonControlSystem extends System {
         if (document.pointerLockElement !== this.canvas) this.canvas.requestPointerLock?.();
       });
     }
+  }
+
+  /**
+   * Toca uma **ação one-shot** (soco, aceno, etc.) por `duration` segundos, sobrepondo
+   * a locomoção — o jogo chama isso num botão (combate/interação). O clipe precisa
+   * existir no `.glb`; senão é ignorado.
+   */
+  playAction(clip: string, duration: number): void {
+    this.actionClip = clip;
+    this.actionLock = duration;
   }
 
   override update(entities: Entity[], deltaTime: number): void {
@@ -205,8 +221,9 @@ export class ThirdPersonControlSystem extends System {
     }
 
     // ── Pulo (borda de pressão): Espaço ou A (botão 0) ────────────────────────
+    // Bloqueado quando há interação em alcance (A vira "interagir", não pula).
     const jumpDown = k.isKeyDown(' ') || (gp?.isButtonDown(pad, 0) ?? false);
-    if (jumpDown && !this.prevJump) body.jump();
+    if (jumpDown && !this.prevJump && !(this.jumpBlocked?.() ?? false)) body.jump();
     this.prevJump = jumpDown;
 
     // ── Câmera orbital atrás do personagem (com colisão) ──────────────────────
@@ -258,6 +275,19 @@ export class ThirdPersonControlSystem extends System {
     }
     const grounded = body.grounded;
     const speed = Math.abs(horizontalSpeed);
+
+    // Ação one-shot do jogo (soco/etc.) tem prioridade: segura o clipe até acabar.
+    if (this.actionLock > 0) {
+      this.actionLock -= dt;
+      if (this.actionClip && this.clipSet?.has(this.actionClip)) {
+        if (this.currentClip !== this.actionClip) {
+          animator.play(this.actionClip, { loop: false });
+          this.currentClip = this.actionClip;
+        }
+        return;
+      }
+      this.actionLock = 0; // clipe inexistente → cancela
+    }
 
     // One-shot em andamento (run_stop): segura até acabar; mover/pular interrompe.
     if (this.oneShotLock > 0) {
