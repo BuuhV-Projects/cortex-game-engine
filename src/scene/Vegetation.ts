@@ -88,9 +88,10 @@ export class Vegetation {
       inst.castShadow = m.castShadow;
       inst.receiveShadow = m.receiveShadow;
       inst.frustumCulled = false; // o bounding muda com o espalhamento; evita sumir
-      // NÃO entra em raycast: a colisão do player com a vegetação é por cilindro barato
-      // (CharacterPhysicsSystem), não pela malha densa — raycastear floresta = perf no chão.
-      inst.raycast = () => {};
+      // Raycast LIGADO pro editor poder SELECIONAR a vegetação. A física não a testa
+      // (usa só terreno/solid/groundMeshes; a colisão é por cilindro/`trunks`), então
+      // não há custo de raycast de floresta no chão. `cortexVegetationSub` a mantém
+      // fora dos raycasts da física.
       (inst.userData as Record<string, unknown>)['cortexVegetationSub'] = true;
       this.subs.push({ mesh: inst, local });
       this.group.add(inst);

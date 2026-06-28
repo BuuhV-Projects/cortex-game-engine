@@ -41,12 +41,22 @@ const TRUNK_RADIUS = 0.4;
  * - `trunks` (`[x,z,raio]`): vegetação sólida → colisão por cilindro (sem raycast).
  * - `solidMeshes`: blockout `cortexSolid` → alvo do empurrão de PAREDE.
  * - `terrainMeshes`: `cortexTerrain` → alvo do clamp ANTI-CLIP.
- * Sub-malhas de vegetação (`cortexVegetationSub`) ficam de fora (raycast desligado nelas).
+ * - `groundMeshes`: tudo PISÁVEL (terreno/road/solid/modelos) → alvo do raycast de CHÃO.
+ * A **vegetação fica fora de todos os raycasts** (colisão é por cilindro/`trunks`),
+ * então o raycast dela pode ficar LIGADO pro editor selecioná-la sem custo na física.
+ * Sub-malhas de vegetação, gizmos do editor e a decoração de marcação ficam de fora.
  */
-function collectScene(roots: Object3D[], trunks: number[], solidMeshes: Object3D[], terrainMeshes: Object3D[]): void {
+function collectScene(
+  roots: Object3D[],
+  trunks: number[],
+  solidMeshes: Object3D[],
+  terrainMeshes: Object3D[],
+  groundMeshes: Object3D[],
+): void {
   trunks.length = 0;
   solidMeshes.length = 0;
   terrainMeshes.length = 0;
+  groundMeshes.length = 0;
   for (const root of roots) {
     root.traverse((o) => {
       const ud = o.userData as Record<string, unknown>;
@@ -56,8 +66,10 @@ function collectScene(roots: Object3D[], trunks: number[], solidMeshes: Object3D
         return;
       }
       if (!(o as { isMesh?: boolean }).isMesh || ud['cortexVegetationSub']) return;
+      if (ud['editorInternal'] || ud['cortexRoadMarkings']) return; // gizmo/decoração: fora da física
       if (ud['cortexTerrain']) terrainMeshes.push(o);
       else if (isSolid(o)) solidMeshes.push(o);
+      groundMeshes.push(o); // superfície pisável (terreno/road/solid/modelo), exceto vegetação
     });
   }
 }
@@ -129,6 +141,7 @@ export class CharacterPhysicsSystem extends System {
   private readonly trunks: number[] = []; // [x, z, raio] por instância de vegetação sólida
   private readonly solidMeshes: Object3D[] = []; // blockout sólido (alvo do empurrão de parede)
   private readonly terrainMeshes: Object3D[] = []; // terreno (alvo do anti-clip)
+  private readonly groundMeshes: Object3D[] = []; // tudo pisável (alvo do raycast de chão), sem vegetação
 
   /** @param roots Raízes da cena pra colisão de chão (raycast). Vazio = só `groundY`. */
   constructor(roots: Object3D[] = []) {
@@ -139,7 +152,7 @@ export class CharacterPhysicsSystem extends System {
   override update(entities: Entity[], deltaTime: number): void {
     const dt = deltaTime / 1000;
     // 1x por frame: separa troncos (cilindro) / sólidos (parede) / terreno (anti-clip).
-    collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes);
+    collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes, this.groundMeshes);
     for (const e of entities) {
       const t = e.getComponent(TransformComponent)!;
       const c = e.getComponent(CharacterBodyComponent)!;
@@ -166,13 +179,13 @@ export class CharacterPhysicsSystem extends System {
       // nela). O piso plano `groundY` é só FALLBACK, usado quando NÃO há nada embaixo
       // (rede de segurança) — nunca sobrepõe o chão real.
       let groundHeight = -Infinity;
-      if (this.roots.length > 0 && c.velocityY <= 0) {
+      if (this.groundMeshes.length > 0 && c.velocityY <= 0) {
         // Origem um pouco ACIMA dos pés (até `stepHeight`) pra subir degraus.
         this.origin.set(t.x, feet + c.stepHeight + SKIN, t.z);
         this.ray.set(this.origin, DOWN);
         this.ray.far = Infinity;
         const self = e.getComponent(Object3DComponent)?.object;
-        const hits = this.ray.intersectObjects(this.roots, true);
+        const hits = this.ray.intersectObjects(this.groundMeshes, true);
         for (const h of hits) {
           if (self && isUnder(h.object, self)) continue; // ignora o próprio mesh
           if (isEditorChrome(h.object)) continue; // ignora gizmo/helpers do editor
