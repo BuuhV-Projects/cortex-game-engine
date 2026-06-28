@@ -1,5 +1,5 @@
 import type { Object3D, Mesh } from 'three';
-import { MathUtils } from 'three';
+import { MathUtils, Box3, Vector3 } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
@@ -253,6 +253,18 @@ export function describeOutliner(
 }
 
 /**
+ * Tamanho **real em metros** do objeto (bounding box no mundo) — a Escala é só um
+ * multiplicador (1 = tamanho nativo), então este readout mostra a proporção métrica
+ * de fato (ex.: carro `2.27 larg × 1.40 alt × 4.85 prof m` com escala 1).
+ */
+function sizeLabel(obj: Object3D): string {
+  const s = new Box3().setFromObject(obj).getSize(new Vector3());
+  if (!Number.isFinite(s.x) || (s.x === 0 && s.y === 0 && s.z === 0)) return 'Tamanho real: —';
+  const f = (n: number): string => n.toFixed(2);
+  return `Tamanho real: ${f(s.x)} larg × ${f(s.y)} alt × ${f(s.z)} prof (m)`;
+}
+
+/**
  * Descreve o **inspector** do objeto selecionado como modelo + handlers. Espelha
  * o que o inspector mostra hoje (transform, sombra, matte, animação, ações do
  * player, collider, luz). Cada campo registra seu handler em `handlers`.
@@ -285,6 +297,14 @@ export function describeInspector(
       ],
     },
     { kind: 'vec3', id: fid('scl'), label: 'Escala', value: [obj.scale.x, obj.scale.y, obj.scale.z] },
+    {
+      kind: 'note',
+      id: fid('size'),
+      // Escala é multiplicador (1 = tamanho nativo); este é o tamanho REAL em metros
+      // (bounding box no mundo) — pra conferir proporção métrica de qualquer objeto.
+      text: sizeLabel(obj),
+      tone: 'muted',
+    },
   ];
   handlers.set(fid('pos'), (v) => {
     const [x, y, z] = v as [number, number, number];

@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { Mesh, Object3D, Group } from 'three';
+import { Mesh, Object3D, Group, BoxGeometry } from 'three';
 import {
   createObjectRegistry,
   describeInspector,
@@ -79,6 +79,20 @@ describe('describeInspector', () => {
     // sombra + matte.
     expect(field(model, 'cast')?.kind).toBe('checkbox');
     expect(field(model, 'matte')?.kind).toBe('checkbox');
+  });
+
+  it('mostra o tamanho REAL em metros (bbox), não o multiplicador de escala', () => {
+    const reg = createObjectRegistry();
+    const mesh = new Mesh(new BoxGeometry(2, 2, 2));
+    const { model } = describeInspector(mesh, {}, reg);
+    const note = field(model, 'size');
+    expect(note?.kind).toBe('note');
+    expect((note as { text: string }).text).toContain('2.00 larg × 2.00 alt × 2.00 prof');
+
+    // Escala 3 (multiplicador) → tamanho real 6 m; o campo Escala segue mostrando "3".
+    mesh.scale.set(3, 3, 3);
+    const { model: m2 } = describeInspector(mesh, {}, reg);
+    expect((field(m2, 'size') as { text: string }).text).toContain('6.00 larg × 6.00 alt × 6.00 prof');
   });
 
   it('handler de posição (vec3) escreve no objeto', () => {
