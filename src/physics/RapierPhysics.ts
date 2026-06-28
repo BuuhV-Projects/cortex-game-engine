@@ -517,6 +517,27 @@ export class Vehicle {
     }
   }
 
+  /**
+   * **Anti-capotamento** (estabilizador de rolagem): corrige a INCLINAÇÃO lateral do
+   * carro (rotação no eixo de avanço) de volta pra cima, sem mexer no esterço (yaw). Use
+   * por frame ANTES do `physics.step()`. `strength` puxa pra cima; `damping` freia a
+   * rolagem. Não impede capotar de propósito a baixa força — só evita tombar em
+   * curva/relevo. Mexe na velocidade angular (independe da inércia → fácil de tunar).
+   */
+  keepUpright(strength: number, damping: number, dt: number): void {
+    const r = this.body.rotation();
+    _wq.set(r.x, r.y, r.z, r.w);
+    const rightY = _wv.set(1, 0, 0).applyQuaternion(_wq).y; // 0 = de pé; ≠0 = inclinado
+    _wax.set(0, 0, 1).applyQuaternion(_wq); // forward = eixo da rolagem
+    const av = this.body.angvel();
+    const rollRate = av.x * _wax.x + av.y * _wax.y + av.z * _wax.z;
+    const delta = (-rightY * strength - rollRate * damping) * dt;
+    this.body.setAngvel(
+      { x: av.x + _wax.x * delta, y: av.y + _wax.y * delta, z: av.z + _wax.z * delta },
+      true,
+    );
+  }
+
   /** Reseta o chassi (respawn): zera velocidades + (opcional) posiciona/orienta. */
   reset(position?: Vec3Like, rotation?: QuatLike): void {
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);

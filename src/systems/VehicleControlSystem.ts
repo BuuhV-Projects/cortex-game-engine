@@ -33,6 +33,10 @@ export interface VehicleControlOptions {
   steerSpeedReduction?: number;
   /** Velocidade (m/s) em que a redução de esterço chega ao máximo. Default 28. */
   steerSpeedRef?: number;
+  /** Força do estabilizador anti-capotamento (puxa o carro pra cima). 0 = desliga. Default 14. */
+  uprightStrength?: number;
+  /** Amortecimento da rolagem (anti-capotamento). Default 7. */
+  uprightDamping?: number;
   /**
    * Malhas das rodas (na ORDEM das rodas do veículo) — sincronizadas a cada frame
    * (suspensão sobe/desce, esterço, rolagem). Devem ser filhas do `car`.
@@ -157,6 +161,8 @@ export class VehicleControlSystem extends System {
     }
 
     this.vehicle.update(dt);
+    const upright = o.uprightStrength ?? 14;
+    if (upright > 0) this.vehicle.keepUpright(upright, o.uprightDamping ?? 7, dt); // anti-capotamento
     this.physics.step();
 
     // Sincroniza a malha do carro ao chassi.
