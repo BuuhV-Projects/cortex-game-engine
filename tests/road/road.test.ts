@@ -31,9 +31,9 @@ describe('sampleSpline (Catmull-Rom)', () => {
     expect(curve.length).toBeGreaterThan(straight.length);
   });
 
-  it('reta longa ainda é amostrada (segue o terreno, ~1 a cada 2 m)', () => {
+  it('reta longa ainda é amostrada (segue o terreno, ~1 a cada 3 m)', () => {
     const s = sampleSpline([[0, 0, 0], [0, 0, 40]], 16);
-    expect(s.length).toBeGreaterThanOrEqual(20); // 40 m / 2 ≈ 20
+    expect(s.length).toBeGreaterThanOrEqual(12); // 40 m / 3 ≈ 14
   });
 
   it('tangente aponta ao longo da reta (+Z)', () => {

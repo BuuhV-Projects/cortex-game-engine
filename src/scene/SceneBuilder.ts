@@ -1198,6 +1198,7 @@ function applyRoadMarkings(mesh: Mesh, roadGeo: BufferGeometry, markings: RoadMa
   }).catch(() => {});
   const omesh = new Mesh(geo, omat);
   omesh.receiveShadow = true;
+  omesh.raycast = () => {}; // decoração: fora dos raycasts (chão/parede do personagem)
   (omesh.userData as Record<string, unknown>)['cortexRoadMarkings'] = true;
   mesh.add(omesh);
 }

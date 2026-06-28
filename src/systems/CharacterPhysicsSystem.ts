@@ -29,16 +29,6 @@ function isSolid(obj: Object3D): boolean {
   return false;
 }
 
-/** `obj` (ou ancestral) é um terreno (`cortexTerrain`) — pro clamp anti-clip de morro. */
-function hasTerrain(obj: Object3D): boolean {
-  let p: Object3D | null = obj;
-  while (p) {
-    if (p.userData?.['cortexTerrain']) return true;
-    p = p.parent;
-  }
-  return false;
-}
-
 /** Altura (acima dos pés) de onde sai o raycast SÓ-terreno do clamp anti-clip. */
 const TERRAIN_PROBE = 1000;
 
@@ -46,18 +36,28 @@ const TERRAIN_PROBE = 1000;
 const TRUNK_RADIUS = 0.4;
 
 /**
- * Coleta os **troncos** (x, z, raio) de toda vegetação sólida (`cortexVegetation` +
- * `cortexSolid`) nas raízes — pra colisão barata por cilindro (sem raycast na malha
- * densa). Empilha em `out` no formato `[x, z, radius]` por instância.
+ * Varre a cena UMA vez por frame e separa o que cada checagem precisa (em vez de cada
+ * raycast testar a cena inteira — caro com road/terreno densos):
+ * - `trunks` (`[x,z,raio]`): vegetação sólida → colisão por cilindro (sem raycast).
+ * - `solidMeshes`: blockout `cortexSolid` → alvo do empurrão de PAREDE.
+ * - `terrainMeshes`: `cortexTerrain` → alvo do clamp ANTI-CLIP.
+ * Sub-malhas de vegetação (`cortexVegetationSub`) ficam de fora (raycast desligado nelas).
  */
-function collectTrunks(roots: Object3D[], out: number[]): void {
-  out.length = 0;
+function collectScene(roots: Object3D[], trunks: number[], solidMeshes: Object3D[], terrainMeshes: Object3D[]): void {
+  trunks.length = 0;
+  solidMeshes.length = 0;
+  terrainMeshes.length = 0;
   for (const root of roots) {
     root.traverse((o) => {
       const ud = o.userData as Record<string, unknown>;
-      if (!ud['cortexVegetation'] || ud['cortexSolid'] !== true) return;
-      const inst = (ud['cortexVegetation'] as { getInstances(): number[] }).getInstances();
-      for (let i = 0; i < inst.length; i += 5) out.push(inst[i]!, inst[i + 2]!, TRUNK_RADIUS * inst[i + 4]!);
+      if (ud['cortexVegetation'] && ud['cortexSolid'] === true) {
+        const inst = (ud['cortexVegetation'] as { getInstances(): number[] }).getInstances();
+        for (let i = 0; i < inst.length; i += 5) trunks.push(inst[i]!, inst[i + 2]!, TRUNK_RADIUS * inst[i + 4]!);
+        return;
+      }
+      if (!(o as { isMesh?: boolean }).isMesh || ud['cortexVegetationSub']) return;
+      if (ud['cortexTerrain']) terrainMeshes.push(o);
+      else if (isSolid(o)) solidMeshes.push(o);
     });
   }
 }
@@ -127,6 +127,8 @@ export class CharacterPhysicsSystem extends System {
   private readonly origin = new Vector3();
   private readonly wallDir = new Vector3();
   private readonly trunks: number[] = []; // [x, z, raio] por instância de vegetação sólida
+  private readonly solidMeshes: Object3D[] = []; // blockout sólido (alvo do empurrão de parede)
+  private readonly terrainMeshes: Object3D[] = []; // terreno (alvo do anti-clip)
 
   /** @param roots Raízes da cena pra colisão de chão (raycast). Vazio = só `groundY`. */
   constructor(roots: Object3D[] = []) {
@@ -136,7 +138,8 @@ export class CharacterPhysicsSystem extends System {
 
   override update(entities: Entity[], deltaTime: number): void {
     const dt = deltaTime / 1000;
-    collectTrunks(this.roots, this.trunks); // troncos da vegetação sólida (1x por frame)
+    // 1x por frame: separa troncos (cilindro) / sólidos (parede) / terreno (anti-clip).
+    collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes);
     for (const e of entities) {
       const t = e.getComponent(TransformComponent)!;
       const c = e.getComponent(CharacterBodyComponent)!;
@@ -205,20 +208,16 @@ export class CharacterPhysicsSystem extends System {
       // terreno (`cortexTerrain`), sobe o personagem até a superfície quando ele está
       // abaixo dela: escala o morro em vez de atravessar. Específico do terreno (não
       // mexe no blockout sólido, que tem colisão de parede própria abaixo).
-      if (this.roots.length > 0 && c.velocityY <= 0) {
+      if (this.terrainMeshes.length > 0 && c.velocityY <= 0) {
         const feetNow = t.y - c.footOffset;
         this.origin.set(t.x, feetNow + TERRAIN_PROBE, t.z);
         this.ray.set(this.origin, DOWN);
         this.ray.far = Infinity;
-        for (const h of this.ray.intersectObjects(this.roots, true)) {
-          if (isEditorChrome(h.object)) continue;
-          if (!hasTerrain(h.object)) continue;
-          if (feetNow < h.point.y - SKIN) {
-            t.y = h.point.y + c.footOffset; // sobe pra superfície do terreno
-            c.velocityY = 0;
-            c.grounded = true;
-          }
-          break; // 1ª superfície de terreno sob a origem
+        const h = this.ray.intersectObjects(this.terrainMeshes, true)[0]; // só terreno
+        if (h && feetNow < h.point.y - SKIN) {
+          t.y = h.point.y + c.footOffset; // sobe pra superfície do terreno
+          c.velocityY = 0;
+          c.grounded = true;
         }
       }
 
@@ -227,7 +226,7 @@ export class CharacterPhysicsSystem extends System {
       // de geometria marcada SÓLIDA (`cortexSolid` — estático/collider, posto pelo
       // buildScene). Faz o blockout virar parede de verdade no FPS/top-down. Amostra
       // 3 alturas da cápsula em ±X/±Z e depenetra por eixo. Ver ADR-0071 / TDR-0002.
-      if (this.roots.length > 0) {
+      if (this.solidMeshes.length > 0) {
         const r = c.radius;
         const feetY = t.y - c.footOffset;
         const self = e.getComponent(Object3DComponent)?.object;
@@ -239,10 +238,9 @@ export class CharacterPhysicsSystem extends System {
             this.origin.set(t.x, sy, t.z);
             this.ray.set(this.origin, this.wallDir);
             this.ray.far = r + SKIN;
-            for (const h of this.ray.intersectObjects(this.roots, true)) {
+            for (const h of this.ray.intersectObjects(this.solidMeshes, true)) {
               if (self && isUnder(h.object, self)) continue;
               if (isEditorChrome(h.object)) continue;
-              if (!isSolid(h.object)) continue;
               if (nearest === null || h.distance < nearest) nearest = h.distance;
               break;
             }
