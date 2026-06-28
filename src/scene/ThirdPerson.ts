@@ -35,11 +35,15 @@ export interface ThirdPersonHandle {
 export function setupThirdPerson(game: Game, options: SetupThirdPersonOptions = {}): ThirdPersonHandle {
   game.world.addSystem(new Object3DSyncSystem());
 
+  // Combina a pausa interna (editor/pause de gameplay) com uma `pauseWhen` do jogo —
+  // assim o jogo pode congelar o personagem em estados próprios (ex.: dirigindo um
+  // carro) sem reimplementar o setup.
+  const userPause = options.control?.pauseWhen;
   const control = new ThirdPersonControlSystem(
     game.camera as import('three').PerspectiveCamera,
     game.input,
     game.canvas,
-    { ...options.control, pauseWhen: () => game.editorActive || game.gameplayPaused },
+    { ...options.control, pauseWhen: () => game.editorActive || game.gameplayPaused || (userPause?.() ?? false) },
     game.gamepad,
   );
   game.world.addSystem(control);
