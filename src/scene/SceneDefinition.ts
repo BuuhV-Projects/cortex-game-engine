@@ -209,9 +209,11 @@ const vehicleSchema = z
     suspensionCompression: z.number().optional(),
     suspensionRelaxation: z.number().optional(),
     maxSuspensionTravel: z.number().optional(),
-    /** Centro de massa (offset da caixa): z = frente/trás, y = altura. */
+    /** Posição da caixa do chassi (collider) relativa à origem. */
     chassisOffset: z.object({ x: z.number(), y: z.number(), z: z.number() }).partial().optional(),
     chassisHalfExtents: z.object({ x: z.number(), y: z.number(), z: z.number() }).partial().optional(),
+    /** Centro de massa: y = altura (BAIXO = estável, não capota), z = frente/trás. */
+    centerOfMass: z.object({ x: z.number(), y: z.number(), z: z.number() }).partial().optional(),
     /** Velocidade no fim do velocímetro (km/h). */
     maxSpeed: z.number().optional(),
     wheelSpinRate: z.number().optional(),

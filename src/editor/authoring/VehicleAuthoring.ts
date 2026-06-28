@@ -18,7 +18,7 @@ const DEFAULTS: VehicleEditState = {
   maxSpeed: 260,
 };
 
-type Cfg = Record<string, unknown> & { chassisOffset?: { x?: number; y?: number; z?: number } };
+type Cfg = Record<string, unknown> & { centerOfMass?: { x?: number; y?: number; z?: number } };
 
 function n(v: unknown, fallback: number): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
@@ -43,7 +43,7 @@ export function createVehicleApi(ctx: EditorAuthoringContext): VehicleApi {
       const base = baseOf(obj);
       if (!base) return null; // não é um veículo
       const merged: Cfg = { ...base, ...store()[obj.name] };
-      const co = merged.chassisOffset ?? {};
+      const co = merged.centerOfMass ?? {};
       return {
         engineForce: n(merged['engineForce'], DEFAULTS.engineForce),
         maxBrake: n(merged['maxBrake'], DEFAULTS.maxBrake),
@@ -68,8 +68,8 @@ export function createVehicleApi(ctx: EditorAuthoringContext): VehicleApi {
 
       if (key === 'comY' || key === 'comZ') {
         const axis = key === 'comY' ? 'y' : 'z';
-        cfg.chassisOffset = { ...(cfg.chassisOffset ?? live.chassisOffset ?? {}), [axis]: value };
-        live.chassisOffset = { ...(live.chassisOffset ?? {}), [axis]: value };
+        cfg.centerOfMass = { ...(cfg.centerOfMass ?? live.centerOfMass ?? {}), [axis]: value };
+        live.centerOfMass = { ...(live.centerOfMass ?? {}), [axis]: value };
       } else {
         cfg[key] = value;
         live[key] = value;

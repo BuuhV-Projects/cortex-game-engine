@@ -85,6 +85,13 @@ export interface VehicleSpec {
    * antes das rodas e o carro **flutua**. Default `{0,0,0}`.
    */
   chassisOffset?: Vec3Like;
+  /**
+   * Centro de massa EXPLÍCITO (relativo à origem do corpo). **Baixo = anti-capotamento**
+   * (carro estável em curva rápida); ex.: `{x:0,y:0,z:0}` (nível das rodas) ou negativo.
+   * Quando definido, a massa vem daqui (o collider fica sem massa). Default: CM automático
+   * do collider (no centro da caixa — alto, capota fácil).
+   */
+  centerOfMass?: Vec3Like;
   /** Massa do chassi (kg). Default 1200. */
   mass?: number;
   /** Atrito do chassi ao raspar. Default 0.4. */
@@ -303,11 +310,29 @@ export class RapierPhysics {
     if (spec.position) desc.setTranslation(spec.position.x, spec.position.y, spec.position.z);
     desc.setCanSleep(false); // veículo do player nunca "dorme"
     const chassis = this.world.createRigidBody(desc);
-    const cd = R.ColliderDesc.cuboid(he.x, he.y, he.z)
-      .setMass(spec.mass ?? 1200)
-      .setFriction(spec.chassisFriction ?? 0.4);
+    const mass = spec.mass ?? 1200;
+    const cd = R.ColliderDesc.cuboid(he.x, he.y, he.z).setFriction(spec.chassisFriction ?? 0.4);
     if (spec.chassisOffset) cd.setTranslation(spec.chassisOffset.x, spec.chassisOffset.y, spec.chassisOffset.z);
-    this.world.createCollider(cd, chassis);
+    if (spec.centerOfMass) {
+      // CM EXPLÍCITO (anti-capotamento): collider sem massa + massa/CM/inércia setados à
+      // mão, pra abaixar o centro de massa SEM mover a caixa (que precisa cobrir o corpo).
+      // CM baixo = carro estável em curva rápida. Inércia ≈ caixa (m/3·(a²+b²)).
+      cd.setDensity(0);
+      this.world.createCollider(cd, chassis);
+      const ix = (mass / 3) * (he.y * he.y + he.z * he.z);
+      const iy = (mass / 3) * (he.x * he.x + he.z * he.z);
+      const iz = (mass / 3) * (he.x * he.x + he.y * he.y);
+      chassis.setAdditionalMassProperties(
+        mass,
+        { x: spec.centerOfMass.x, y: spec.centerOfMass.y, z: spec.centerOfMass.z },
+        { x: ix, y: iy, z: iz },
+        { x: 0, y: 0, z: 0, w: 1 },
+        true,
+      );
+    } else {
+      cd.setMass(mass);
+      this.world.createCollider(cd, chassis);
+    }
 
     const ctrl = this.world.createVehicleController(chassis);
     ctrl.indexUpAxis = 1; // Y é "pra cima" (a API é propriedade, não método)

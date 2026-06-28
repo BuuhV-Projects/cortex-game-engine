@@ -27,6 +27,13 @@ export interface VehicleControlOptions {
   /** Suavização do esterço (1/s). Default 8. */
   steerSmooth?: number;
   /**
+   * Reduz o esterço na velocidade (0..1) — curva mais suave rápido, **anti-capotamento**.
+   * Ex.: 0.5 = perde metade do esterço a partir de `steerSpeedRef`. Default 0.5.
+   */
+  steerSpeedReduction?: number;
+  /** Velocidade (m/s) em que a redução de esterço chega ao máximo. Default 28. */
+  steerSpeedRef?: number;
+  /**
    * Malhas das rodas (na ORDEM das rodas do veículo) — sincronizadas a cada frame
    * (suspensão sobe/desce, esterço, rolagem). Devem ser filhas do `car`.
    */
@@ -139,7 +146,9 @@ export class VehicleControlSystem extends System {
               : 0,
       );
 
-      const target = -steerIn * (o.maxSteer ?? 0.7);
+      // Esterço diminui com a velocidade (curva mais suave rápido → não capota).
+      const reduction = (o.steerSpeedReduction ?? 0.5) * Math.min(1, Math.abs(fwd) / (o.steerSpeedRef ?? 28));
+      const target = -steerIn * (o.maxSteer ?? 0.7) * (1 - reduction);
       this.steer += (target - this.steer) * Math.min(1, dt * (o.steerSmooth ?? 8));
       this.vehicle.setSteering(this.steer);
     } else {
