@@ -487,7 +487,9 @@ export function describeInspector(
   const vehState = ctx.vehicleApi?.get(obj) ?? null;
   if (ctx.vehicleApi && vehState) {
     const api = ctx.vehicleApi;
-    const num = (key: keyof typeof vehState, label: string, step: number): InspectorField => {
+    // Só os campos numéricos (engineSound é string, tratado à parte).
+    type NumKey = Exclude<keyof typeof vehState, 'engineSound'>;
+    const num = (key: NumKey, label: string, step: number): InspectorField => {
       const fieldId = fid(`veh_${key}`);
       handlers.set(fieldId, (v) => {
         const n = Number(v);
@@ -495,23 +497,30 @@ export function describeInspector(
       });
       return { kind: 'number', id: fieldId, label, value: vehState[key], step };
     };
-    sections.push({
-      title: 'Veículo',
-      fields: [
-        num('engineForce', 'Força do motor', 100),
-        num('maxBrake', 'Freio', 5),
-        num('handbrakeForce', 'Freio de mão', 5),
-        num('rollingResistance', 'Freio-motor', 1),
-        num('maxSteer', 'Esterço máx. (rad)', 0.05),
-        num('frictionSlip', 'Aderência (grip)', 0.5),
-        num('suspensionStiffness', 'Suspensão: rigidez', 1),
-        num('suspensionRestLength', 'Suspensão: altura', 0.05),
-        num('comZ', 'Centro de massa: frente/trás', 0.05),
-        num('comY', 'Centro de massa: altura', 0.05),
-        num('mass', 'Massa (kg)', 50),
-        num('maxSpeed', 'Velocímetro máx. (km/h)', 10),
-      ],
+    const vehFields: InspectorField[] = [
+      num('engineForce', 'Força do motor', 100),
+      num('maxBrake', 'Freio', 5),
+      num('handbrakeForce', 'Freio de mão', 5),
+      num('rollingResistance', 'Freio-motor', 1),
+      num('maxSteer', 'Esterço máx. (rad)', 0.05),
+      num('frictionSlip', 'Aderência (grip)', 0.5),
+      num('suspensionStiffness', 'Suspensão: rigidez', 1),
+      num('suspensionRestLength', 'Suspensão: altura', 0.05),
+      num('comZ', 'Centro de massa: frente/trás', 0.05),
+      num('comY', 'Centro de massa: altura', 0.05),
+      num('mass', 'Massa (kg)', 50),
+      num('maxSpeed', 'Velocímetro máx. (km/h)', 10),
+    ];
+    // Áudio do motor: mostra o associado + importar (FileField → upload → grava path).
+    const soundName = vehState.engineSound ? vehState.engineSound.split('/').pop() : '(nenhum)';
+    vehFields.push({ kind: 'note', id: fid('vehSound'), text: `Som do motor: ${soundName}`, tone: 'muted' });
+    vehFields.push({ kind: 'file', id: fid('vehSoundPick'), label: '⬆ Escolher áudio do motor…', accept: 'audio/*' });
+    handlers.set(fid('vehSoundPick'), (v) => {
+      const f = JSON.parse(v as string) as { name?: string; dataUrl?: string };
+      if (f.name && f.dataUrl) api.importSound(obj, f.name, f.dataUrl);
+      return { rebuild: true };
     });
+    sections.push({ title: 'Veículo', fields: vehFields });
   }
 
   // ── Estrada (superfície + largura — ADR-0072) ────────────────────────────────

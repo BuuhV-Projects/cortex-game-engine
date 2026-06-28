@@ -1,6 +1,7 @@
 import type { Object3D } from 'three';
 import type { VehicleApi, VehicleEditState } from '../EditorInspector.js';
 import type { EditorAuthoringContext } from './AuthoringContext.js';
+import { debug } from '../../core/debug.js';
 
 /** Defaults (batem com os defaults do engine) pra preencher o que faltar. */
 const DEFAULTS: VehicleEditState = {
@@ -16,6 +17,7 @@ const DEFAULTS: VehicleEditState = {
   comY: 0,
   comZ: 0,
   maxSpeed: 260,
+  engineSound: '',
 };
 
 type Cfg = Record<string, unknown> & { centerOfMass?: { x?: number; y?: number; z?: number } };
@@ -57,6 +59,7 @@ export function createVehicleApi(ctx: EditorAuthoringContext): VehicleApi {
         comY: n(co.y, DEFAULTS.comY),
         comZ: n(co.z, DEFAULTS.comZ),
         maxSpeed: n(merged['maxSpeed'], DEFAULTS.maxSpeed),
+        engineSound: typeof merged['engineSound'] === 'string' ? (merged['engineSound'] as string) : '',
       };
     },
 
@@ -75,6 +78,26 @@ export function createVehicleApi(ctx: EditorAuthoringContext): VehicleApi {
         live[key] = value;
       }
       ctx.persist();
+    },
+
+    importSound(obj: Object3D, name: string, dataUrl: string): void {
+      if (typeof fetch === 'undefined' || !obj.name) return;
+      void (async () => {
+        try {
+          const blob = await (await fetch(dataUrl)).blob();
+          const res = await fetch(`/__upload-asset?name=${encodeURIComponent(name)}`, { method: 'POST', body: blob });
+          if (!res.ok) throw new Error(await res.text());
+          const path = (await res.text()).trim();
+          const rec = store();
+          const cfg: Cfg = rec[obj.name] ?? (rec[obj.name] = {});
+          cfg['engineSound'] = path;
+          const live = baseOf(obj) ?? ((obj.userData as Record<string, unknown>)['cortexVehicle'] = {} as Cfg);
+          live['engineSound'] = path;
+          ctx.persist(true);
+        } catch (e) {
+          debug('editor', 'falha ao importar áudio do motor:', e);
+        }
+      })();
     },
   };
 }

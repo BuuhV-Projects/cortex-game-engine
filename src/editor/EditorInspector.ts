@@ -408,6 +408,8 @@ export interface VehicleEditState {
   comY: number;
   comZ: number;
   maxSpeed: number;
+  /** Caminho do áudio do motor (ou '' se nenhum). */
+  engineSound: string;
 }
 
 /**
@@ -420,6 +422,11 @@ export interface VehicleApi {
   get(obj: Object3D): VehicleEditState | null;
   /** Edita um campo (`engineForce`, `comZ`, …) e persiste no overlay. */
   set(obj: Object3D, key: keyof VehicleEditState, value: number): void;
+  /**
+   * Importa um ÁUDIO de motor (FileField → `{ name, dataUrl }`): faz upload pro projeto
+   * e grava `engineSound` com o caminho. Aplica ao dar play (o jogo carrega o som).
+   */
+  importSound(obj: Object3D, name: string, dataUrl: string): void;
 }
 
 export interface EditorInspectorOptions {
