@@ -6,7 +6,7 @@
 
 # Class: CharacterPhysicsSystem
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L101)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L121)
 
 Física vertical do [CharacterBodyComponent](CharacterBodyComponent.md) (character controller estilo
 UPBGE/Unity): aplica **gravidade** (limitada por `fallSpeedMax`), processa o
@@ -44,7 +44,7 @@ world.addSystem(new CharacterPhysicsSystem())
 
 > **new CharacterPhysicsSystem**(`roots?`): `CharacterPhysicsSystem`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L111)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L134)
 
 #### Parameters
 
@@ -89,7 +89,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `5`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L103)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L123)
 
 Prioridade de execução deste sistema.
 
@@ -106,7 +106,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L102)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L122)
 
 Construtores dos componentes que este sistema requer.
 
@@ -132,7 +132,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/CharacterPhysicsSystem.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L116)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:139](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L139)
 
 Executa a lógica do sistema para o frame/passo atual.
 

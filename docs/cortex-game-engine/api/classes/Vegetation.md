@@ -69,7 +69,7 @@ Adicione à cena. Contém as InstancedMesh (uma por sub-malha do modelo).
 
 > **get** **count**(): `number`
 
-Defined in: [src/scene/Vegetation.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L113)
+Defined in: [src/scene/Vegetation.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L116)
 
 Número de instâncias espalhadas.
 
@@ -83,7 +83,7 @@ Número de instâncias espalhadas.
 
 > **add**(`x`, `y`, `z`, `rotY`, `scale`): `boolean`
 
-Defined in: [src/scene/Vegetation.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L130)
+Defined in: [src/scene/Vegetation.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L133)
 
 Adiciona uma instância. Retorna `false` se a capacidade estourou.
 
@@ -119,7 +119,7 @@ Adiciona uma instância. Retorna `false` se a capacidade estourou.
 
 > **dispose**(): `void`
 
-Defined in: [src/scene/Vegetation.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L183)
+Defined in: [src/scene/Vegetation.ts:186](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L186)
 
 Libera as geometrias/materiais das instâncias.
 
@@ -133,7 +133,7 @@ Libera as geometrias/materiais das instâncias.
 
 > **getInstances**(): `number`[]
 
-Defined in: [src/scene/Vegetation.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L125)
+Defined in: [src/scene/Vegetation.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L128)
 
 Instâncias atuais no formato plano serializável (`[x,y,z,rotY,scale]`).
 
@@ -147,7 +147,7 @@ Instâncias atuais no formato plano serializável (`[x,y,z,rotY,scale]`).
 
 > **removeNear**(`x`, `z`, `radius`): `number`
 
-Defined in: [src/scene/Vegetation.ts:141](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L141)
+Defined in: [src/scene/Vegetation.ts:144](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L144)
 
 Remove instâncias cujo XZ está dentro de `radius` de `(x,z)` (borracha do pincel).
 Retorna quantas removeu.
@@ -176,7 +176,7 @@ Retorna quantas removeu.
 
 > **setInstances**(`flat`): `void`
 
-Defined in: [src/scene/Vegetation.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L118)
+Defined in: [src/scene/Vegetation.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L121)
 
 Substitui todas as instâncias (ex.: restaurar do overlay) e atualiza as malhas.
 
@@ -196,7 +196,7 @@ Substitui todas as instâncias (ex.: restaurar do overlay) e atualiza as malhas.
 
 > **setSource**(`source`): `void`
 
-Defined in: [src/scene/Vegetation.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L102)
+Defined in: [src/scene/Vegetation.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L105)
 
 **Troca o modelo** mantendo o grupo (mesmo `Object3D` na cena) e as instâncias —
 descarta as InstancedMesh atuais, reconstrói a partir do `source` novo e
