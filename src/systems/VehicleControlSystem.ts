@@ -33,12 +33,13 @@ const _camPos = new Vector3();
  * Dirige um {@link Vehicle} do Rapier (ADR-0081), gamepad-first: **RT** acelera, **LT**
  * freia (e dá ré parado), **stick X** esterça (suave). Roda `vehicle.update(dt)` e o
  * `physics.step()` (DEPOIS — convenção do Rapier), sincroniza a malha do carro ao
- * chassi e posiciona a **chase cam**. `priority = 6` (cedo, antes da câmera de 3ª
- * pessoa). Substitui o controlador arcade. As rodas raycastam no WASM (sem custo de CPU).
+ * chassi e posiciona a **chase cam**. `priority = 30` (DEPOIS da câmera de 3ª pessoa,
+ * que é 20 — senão ela sobrescreveria a chase cam ao dirigir). Substitui o controlador
+ * arcade. As rodas raycastam no WASM (sem custo de CPU).
  */
 export class VehicleControlSystem extends System {
   static override requiredComponents = [];
-  override priority = 6;
+  override priority = 30;
 
   private steer = 0;
 
