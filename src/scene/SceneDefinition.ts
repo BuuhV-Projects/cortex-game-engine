@@ -215,6 +215,8 @@ const vehicleSchema = z
     /** Velocidade no fim do velocímetro (km/h). */
     maxSpeed: z.number().optional(),
     wheelSpinRate: z.number().optional(),
+    /** Caminho do áudio do MOTOR (loop, pitch varia com a velocidade). Ver {@link EngineSound}. */
+    engineSound: z.string().optional(),
   })
   .optional();
 
