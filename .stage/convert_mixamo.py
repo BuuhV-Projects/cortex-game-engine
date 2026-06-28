@@ -14,14 +14,31 @@ argv = sys.argv[sys.argv.index("--") + 1:]
 SRC, OUT = argv[0], argv[1]
 BASE = argv[2] if len(argv) > 2 else None
 
-# alvo lógico -> arquivo de anim (Mixamo)
-CLIPS = [
-    ("idle", "Idle.fbx"),
-    ("walk", "Walking.fbx"),
-    ("run", "Running.fbx"),
-    ("jump", "Jumping.fbx"),
-    ("fall", "Falling.fbx"),
-]
+# alvo lógico -> arquivo de anim (Mixamo). Aceita variações de nome do Mixamo.
+# idle/walk/run/jump/fall são os que o ThirdPersonControlSystem auto-mapeia; o resto
+# fica disponível como clipe extra pra lógica do jogo.
+CLIP_ALIASES = {
+    "idle": ["Idle.fbx", "Neutral Idle.fbx"],
+    "walk": ["Walking.fbx"],
+    "run": ["Running.fbx"],
+    "jump": ["Jumping.fbx", "Jump.fbx"],
+    "fall": ["Falling.fbx", "Falling Idle.fbx"],
+    "fight_idle": ["Fighting Idle.fbx"],
+    "punch": ["Punching.fbx"],
+    "run_stop": ["Run To Stop.fbx"],
+    "run_jump": ["Running Jump.fbx"],
+}
+
+
+def resolve_clip(target, src):
+    for name in CLIP_ALIASES[target]:
+        p = os.path.join(src, name)
+        if os.path.exists(p):
+            return p
+    return None
+
+
+CLIPS = [(t, t) for t in CLIP_ALIASES]  # (target, target) — o arquivo é resolvido por alias
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -47,12 +64,12 @@ def push(arm, act, name):
     print("CLIPE OK:", name)
 
 
-# 1) Base (mesh + rig + textura). BASE_FBX (personagem) ou o Idle.fbx.
+# 1) Base (mesh + rig + textura). BASE_FBX (personagem) ou o 1º clip (idle).
 clips = list(CLIPS)
 if BASE:
     base_objs, _ = import_fbx(BASE)
 else:
-    base_objs, base_acts = import_fbx(os.path.join(SRC, CLIPS[0][1]))
+    base_objs, base_acts = import_fbx(resolve_clip(CLIPS[0][0], SRC))
 
 main_arm = next((o for o in base_objs if o.type == "ARMATURE"), None)
 assert main_arm, "armature nao encontrado na base"
@@ -60,15 +77,15 @@ if not main_arm.animation_data:
     main_arm.animation_data_create()
 
 if not BASE:
-    assert base_acts, "sem action no Idle.fbx"
+    assert base_acts, "sem action no idle"
     push(main_arm, base_acts[0], "idle")
     clips = CLIPS[1:]  # idle já veio da base
 
 # 2) Demais (ou todas, se BASE): importa, pega a action, remove objetos dup, NLA.
-for target, fname in clips:
-    path = os.path.join(SRC, fname)
-    if not os.path.exists(path):
-        print("FALTA:", fname)
+for target, _t in clips:
+    path = resolve_clip(target, SRC)
+    if not path:
+        print("FALTA clip:", target)
         continue
     objs, acts = import_fbx(path)
     act = acts[0] if acts else None
@@ -82,21 +99,32 @@ for target, fname in clips:
         continue
     push(main_arm, act, target)
 
-# 2.4) BAKE do transform da armature → raiz identidade. O FBX do Mixamo deixa a
-# armature com scale ~0.18; Blender/Unity aplicam no skin, mas o three.js renderiza o
-# skin no tamanho dos OSSOS (esqueleto-raiz escalado) → fica gigante só no engine.
-# Aplicar (location/rotation/scale) baixa a escala pros ossos e zera a raiz.
-bpy.ops.object.select_all(action="DESELECT")
-bpy.context.view_layer.objects.active = main_arm
-main_arm.select_set(True)
-for ch in list(main_arm.children):
-    if ch.type == "MESH":
-        ch.select_set(True)
-try:
-    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    print("APPLY TRANSFORM OK; armature scale ->", tuple(round(s, 4) for s in main_arm.scale))
-except Exception as e:
-    print("APPLY TRANSFORM FALHOU:", e)
+# OBS: NÃO aplicar transform na armature (transform_apply quebra o bind do skin →
+# malha esparrama/deita). O tamanho "gigante" no engine (esqueleto-raiz com scale 0.18,
+# que o three.js trata diferente do Blender/Unity) é resolvido por escala no nó do
+# player (place.scale) e/ou normalização no carregamento do engine.
+
+# 2.45) Materiais: Mixamo nonPBR exporta com alphaMode BLEND (transparência indevida →
+# personagem "vazado") e metallic ~0.5 (brilho). Corrige: OPACO + não-metálico + fosco.
+for mat in bpy.data.materials:
+    if not mat.use_nodes:
+        continue
+    try:
+        mat.blend_method = "OPAQUE"  # pode não existir no Blender 5.1; o desconectar abaixo garante
+    except Exception:
+        pass
+    bsdf = next((n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+    if bsdf:
+        bsdf.inputs["Metallic"].default_value = 0.0
+        r = bsdf.inputs["Roughness"]
+        r.default_value = max(r.default_value, 0.7)
+        # Desconecta o ALPHA (o nonPBR do Mixamo liga o alpha da textura → glTF vira
+        # BLEND e o personagem fica "vazado"). Sem alpha = OPAQUE.
+        a = bsdf.inputs["Alpha"]
+        for link in list(a.links):
+            mat.node_tree.links.remove(link)
+        a.default_value = 1.0
+    print("MAT FIX:", mat.name)
 
 # 2.5) Texturas do Mixamo vêm em 2K/4K (glb fica pesado). Cap em 1024 (suficiente pro jogo).
 MAXTEX = 1024
