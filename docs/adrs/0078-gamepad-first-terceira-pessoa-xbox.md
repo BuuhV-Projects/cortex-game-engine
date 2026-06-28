@@ -37,6 +37,8 @@ mudam nada.
   DDD-61-CORTEX, que entra/sai por proximidade + botão A) — o veículo é **lógica do
   jogo**, não do engine.
 - O poll é único e central (1×/frame); Systems nunca chamam `poll()`.
-- Triggers (LT/RT) são lidos como **booleano** (`.pressed`) pelo `GamepadManager`, não
-  analógico — suficiente pra corrida/acelerar arcade; se precisar de eixo contínuo do
-  gatilho no futuro, estender o `GamepadManager` (guardar `.value`).
+- Triggers (LT=6/RT=7) têm leitura **analógica** via `gamepad.getButtonValue(i, btn)`
+  (0..1, guarda `.value` no poll) além do booleano `isButtonDown`. Usado pelo carro do
+  DDD-61-CORTEX (RT acelera, LT freia/ré com pressão proporcional).
+- Auto-reconexão do gamepad já vem do `GamepadManager` (ADR-0067): o poll redetecta o
+  pad e os listeners `gamepadconnected`/`disconnected` forçam re-sync — coberto por teste.

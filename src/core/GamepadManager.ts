@@ -30,6 +30,8 @@ export interface GamepadState {
   connected: boolean;
   /** Estado de cada botão (`true` = pressionado). */
   buttons: boolean[];
+  /** Valor analógico de cada botão (0..1) — útil pros gatilhos LT/RT. */
+  values: number[];
   /** Valor de cada eixo já com deadzone aplicada (-1.0 .. 1.0). */
   axes: number[];
 }
@@ -143,6 +145,7 @@ export class GamepadManager extends EventTarget {
           id: browserPad.id,
           connected: true,
           buttons: browserPad.buttons.map((b) => b.pressed),
+          values: browserPad.buttons.map((b) => b.value),
           axes: browserPad.axes.map((a) => this._applyDeadzone(a)),
         };
         this._states[i] = fresh;
@@ -191,6 +194,7 @@ export class GamepadManager extends EventTarget {
         id: browserPad.id,
         connected: true,
         buttons: newButtons,
+        values: browserPad.buttons.map((b) => b.value),
         axes: browserPad.axes.map((a) => this._applyDeadzone(a)),
       };
     }
@@ -210,6 +214,7 @@ export class GamepadManager extends EventTarget {
       id: state.id,
       connected: state.connected,
       buttons: [...state.buttons],
+      values: [...state.values],
       axes: [...state.axes],
     };
   }
@@ -222,6 +227,17 @@ export class GamepadManager extends EventTarget {
     const state = this._states[gamepadIndex];
     if (!state) return false;
     return state.buttons[button] === true;
+  }
+
+  /**
+   * Retorna o valor **analógico** do botão `button` (0..1). Útil pros gatilhos
+   * LT (6) / RT (7), que no Xbox são analógicos. Retorna 0 se desconectado ou
+   * o botão não existir. (`isButtonDown` continua dando o booleano `pressed`.)
+   */
+  getButtonValue(gamepadIndex: number, button: number): number {
+    const state = this._states[gamepadIndex];
+    if (!state) return 0;
+    return state.values[button] ?? 0;
   }
 
   /**

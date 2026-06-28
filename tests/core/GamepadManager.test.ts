@@ -18,16 +18,17 @@ function makeBrowserGamepad(opts: {
   id?: string;
   connected?: boolean;
   buttons?: boolean[];
+  values?: number[];
   axes?: number[];
 }): Gamepad {
   return {
     index: opts.index,
     id: opts.id ?? `pad-${opts.index}`,
     connected: opts.connected ?? true,
-    buttons: (opts.buttons ?? []).map((pressed) => ({
+    buttons: (opts.buttons ?? []).map((pressed, i) => ({
       pressed,
       touched: pressed,
-      value: pressed ? 1 : 0,
+      value: opts.values?.[i] ?? (pressed ? 1 : 0),
     })) as readonly GamepadButton[],
     axes: opts.axes ?? [],
     timestamp: 0,
@@ -83,6 +84,21 @@ describe('GamepadManager', () => {
   });
 
   // ── Conexão ────────────────────────────────────────────────────────────────
+
+  it('getButtonValue retorna o valor analógico do botão (gatilhos LT/RT)', () => {
+    const gm = new GamepadManager();
+    currentGamepads[0] = makeBrowserGamepad({
+      index: 0,
+      buttons: [false, false, false, false, false, false, true, true],
+      values: [0, 0, 0, 0, 0, 0, 0.4, 0.85], // LT=6 a 40%, RT=7 a 85%
+      axes: [],
+    });
+    gm.poll();
+    expect(gm.getButtonValue(0, 7)).toBeCloseTo(0.85);
+    expect(gm.getButtonValue(0, 6)).toBeCloseTo(0.4);
+    expect(gm.getButtonValue(0, 0)).toBe(0);
+    expect(gm.getButtonValue(1, 7)).toBe(0); // slot desconectado
+  });
 
   it('emite gamepad:connect na primeira vez que detecta um pad', () => {
     const gm = new GamepadManager();

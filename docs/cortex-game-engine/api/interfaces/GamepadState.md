@@ -18,7 +18,7 @@ estado interno.
 
 > **axes**: `number`[]
 
-Defined in: [src/core/GamepadManager.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L34)
+Defined in: [src/core/GamepadManager.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L36)
 
 Valor de cada eixo já com deadzone aplicada (-1.0 .. 1.0).
 
@@ -61,3 +61,13 @@ Identificador do dispositivo (vendor/product).
 Defined in: [src/core/GamepadManager.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L26)
 
 Índice do slot (0..3).
+
+***
+
+### values
+
+> **values**: `number`[]
+
+Defined in: [src/core/GamepadManager.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L34)
+
+Valor analógico de cada botão (0..1) — útil pros gatilhos LT/RT.
