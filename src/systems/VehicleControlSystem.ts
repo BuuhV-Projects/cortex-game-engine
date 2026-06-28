@@ -195,7 +195,7 @@ export class VehicleControlSystem extends System {
     if (this.input && typeof document !== 'undefined' && document.pointerLockElement) {
       const md = this.input.getMouseDelta();
       dYaw -= md.x * (o.lookSensitivity ?? 0.0022);
-      dPitch -= md.y * (o.lookSensitivity ?? 0.0022);
+      dPitch += md.y * (o.lookSensitivity ?? 0.0022); // mesmo sinal do 3ª pessoa (não inverter)
     }
     const padLook = o.padLookSpeed ?? 2.5;
     dYaw -= this.gamepad.getAxis(0, 2) * padLook * dt;
