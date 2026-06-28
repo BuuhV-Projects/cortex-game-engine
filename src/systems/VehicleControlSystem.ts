@@ -20,10 +20,15 @@ export interface VehicleControlOptions {
   rollingResistance?: number;
   /** Suavização do acelerador (1/s) — evita arranque brusco/empinada. Default 3. */
   throttleSmooth?: number;
-  /** Esterço máximo (rad). Default 0.55. */
+  /** Esterço máximo (rad). Default 0.65. */
   maxSteer?: number;
   /** Suavização do esterço (1/s). Default 8. */
   steerSmooth?: number;
+  /**
+   * Malhas das rodas (na ORDEM das rodas do veículo) — sincronizadas a cada frame
+   * (suspensão sobe/desce, esterço, rolagem). Devem ser filhas do `car`.
+   */
+  wheelObjects?: Object3D[];
   /** Câmera chase: distância e altura. Default 8 / 3.5. */
   camDistance?: number;
   camHeight?: number;
@@ -36,6 +41,8 @@ export interface VehicleControlOptions {
 const _fwd = new Vector3();
 const _q = new Quaternion();
 const _camPos = new Vector3();
+const _wp = new Vector3();
+const _wq = new Quaternion();
 
 /**
  * Dirige um {@link Vehicle} do Rapier (ADR-0081), gamepad-first com **fallback
@@ -80,10 +87,12 @@ export class VehicleControlSystem extends System {
       let accel = this.gamepad.getButtonValue(0, 7); // RT
       let brakeIn = this.gamepad.getButtonValue(0, 6); // LT
       let steerIn = this.gamepad.getAxis(0, 0);
+      let handbrake = this.gamepad.isButtonDown(0, 0); // A = freio de mão (controle)
       if (this.input) {
         const k = this.input;
         if (accel < 0.05 && (k.isKeyDown('w') || k.isKeyDown('ArrowUp'))) accel = 1;
         if (brakeIn < 0.05 && (k.isKeyDown('s') || k.isKeyDown('ArrowDown'))) brakeIn = 1;
+        if (k.isKeyDown(' ')) handbrake = true; // Espaço = freio (handbrake)
         if (Math.abs(steerIn) < 0.05) {
           if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) steerIn = 1;
           else if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) steerIn = -1;
@@ -93,17 +102,21 @@ export class VehicleControlSystem extends System {
 
       // Acelerador com RAMPA (suaviza o arranque, evita empinar a frente).
       this.throttle += (accel - this.throttle) * Math.min(1, dt * (o.throttleSmooth ?? 3));
+      const maxBrake = o.maxBrake ?? 50;
 
       // Acelera pra frente; LT andando pra frente = freio; LT ~parado/ré = motor reverso.
-      const reversing = brakeIn > 0.1 && fwd < 1;
-      this.vehicle.setEngineForce(this.throttle * engine - (reversing ? brakeIn * (o.reverseForce ?? engine * 0.45) : 0));
-      // Freio: LT andando pra frente. Ao SOLTAR tudo, freio-motor leve (senão não desacelera).
-      const coasting = this.throttle < 0.05 && brakeIn < 0.05;
+      const reversing = !handbrake && brakeIn > 0.1 && fwd < 1;
+      this.vehicle.setEngineForce(
+        handbrake ? 0 : this.throttle * engine - (reversing ? brakeIn * (o.reverseForce ?? engine * 0.45) : 0),
+      );
+      // Freio: Espaço/A (handbrake, sempre), ou LT andando pra frente; ao soltar tudo,
+      // freio-motor leve (senão não desacelera).
+      const coasting = !handbrake && this.throttle < 0.05 && brakeIn < 0.05;
       this.vehicle.setBrake(
-        brakeIn > 0.1 && fwd >= 1 ? brakeIn * (o.maxBrake ?? 50) : coasting ? (o.rollingResistance ?? 4) : 0,
+        handbrake ? maxBrake : brakeIn > 0.1 && fwd >= 1 ? brakeIn * maxBrake : coasting ? (o.rollingResistance ?? 4) : 0,
       );
 
-      const target = -steerIn * (o.maxSteer ?? 0.55);
+      const target = -steerIn * (o.maxSteer ?? 0.65);
       this.steer += (target - this.steer) * Math.min(1, dt * (o.steerSmooth ?? 8));
       this.vehicle.setSteering(this.steer);
     } else {
@@ -119,6 +132,18 @@ export class VehicleControlSystem extends System {
     const r = this.vehicle.chassisRotation();
     this.car.position.set(t.x, t.y, t.z);
     this.car.quaternion.set(r.x, r.y, r.z, r.w);
+
+    // Sincroniza as rodas (filhas do carro): suspensão + esterço + rolagem.
+    const wheels = o.wheelObjects;
+    if (wheels) {
+      for (let i = 0; i < wheels.length; i++) {
+        const w = wheels[i];
+        if (!w) continue;
+        this.vehicle.wheelLocalTransform(i, _wp, _wq);
+        w.position.copy(_wp);
+        w.quaternion.copy(_wq);
+      }
+    }
 
     if (driving) this.placeCamera(t, r);
   }

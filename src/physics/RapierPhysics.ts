@@ -453,6 +453,21 @@ export class Vehicle {
     outQuat.multiply(_wq2.setFromAxisAngle(_wax.set(1, 0, 0), spin)); // giro (eixo X)
   }
 
+  /**
+   * Transform LOCAL da roda `i` (relativo ao chassi) — pra sincronizar a malha da roda
+   * quando ela é **filha** do carro (que já segue o chassi). Inclui suspensão (sobe/desce),
+   * esterço (gira no Y) e rolagem (gira no eixo X).
+   */
+  wheelLocalTransform(i: number, outPos: Vector3, outQuat: Quaternion): void {
+    const cp = this.ctrl.wheelChassisConnectionPointCs(i) ?? { x: 0, y: 0, z: 0 };
+    const len = this.ctrl.wheelSuspensionLength(i) ?? 0;
+    outPos.set(cp.x, cp.y - len, cp.z);
+    const steer = this.ctrl.wheelSteering(i) ?? 0;
+    const spin = this.ctrl.wheelRotation(i) ?? 0;
+    outQuat.setFromAxisAngle(_wax.set(0, 1, 0), steer); // esterço (Y)
+    outQuat.multiply(_wq2.setFromAxisAngle(_wax.set(1, 0, 0), spin)); // giro (eixo X)
+  }
+
   /** Reseta o chassi (respawn): zera velocidades + (opcional) posiciona/orienta. */
   reset(position?: Vec3Like, rotation?: QuatLike): void {
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
