@@ -115,15 +115,17 @@ for mat in bpy.data.materials:
         pass
     bsdf = next((n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
     if bsdf:
+        nt = mat.node_tree
+        # Desconecta os mapas de Metallic/Roughness/Alpha (o nonPBR do Mixamo liga um
+        # mapa metallic-roughness que sobrepõe o escalar → BRILHO; e o alpha da textura
+        # → transparência). Fica só albedo + normal; escalares forçam fosco e opaco.
+        for inp in ("Metallic", "Roughness", "Alpha"):
+            sock = bsdf.inputs[inp]
+            for link in list(sock.links):
+                nt.links.remove(link)
         bsdf.inputs["Metallic"].default_value = 0.0
-        r = bsdf.inputs["Roughness"]
-        r.default_value = max(r.default_value, 0.7)
-        # Desconecta o ALPHA (o nonPBR do Mixamo liga o alpha da textura → glTF vira
-        # BLEND e o personagem fica "vazado"). Sem alpha = OPAQUE.
-        a = bsdf.inputs["Alpha"]
-        for link in list(a.links):
-            mat.node_tree.links.remove(link)
-        a.default_value = 1.0
+        bsdf.inputs["Roughness"].default_value = 1.0
+        bsdf.inputs["Alpha"].default_value = 1.0
     print("MAT FIX:", mat.name)
 
 # 2.5) Texturas do Mixamo vêm em 2K/4K (glb fica pesado). Cap em 1024 (suficiente pro jogo).
