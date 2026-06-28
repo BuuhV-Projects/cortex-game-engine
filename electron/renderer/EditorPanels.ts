@@ -133,9 +133,8 @@ export class EditorPanels {
     document.addEventListener('request-draw-shape', () => this.send({ type: 'drawShape' }))
     // "Desenhar estrada" (menu Cena, Road Architect — ADR-0072) → arma o desenho.
     document.addEventListener('request-draw-road', () => this.send({ type: 'drawRoad' }))
-    // "Vegetação: Árvore/Grama" (menu Cena — ADR-0077) → cria o nó e liga o pincel.
-    document.addEventListener('request-add-vegetation', (e) =>
-      this.send({ type: 'addVegetation', kind: (e as CustomEvent<{ kind: 'tree' | 'grass' }>).detail.kind }))
+    // "Vegetação" (menu Cena — ADR-0077) → cria o nó e liga o pincel (modelo no Inspector).
+    document.addEventListener('request-add-vegetation', () => this.send({ type: 'addVegetation' }))
     // Botões de ferramenta (mover/girar/escalar) das pills do viewport.
     document.addEventListener('request-tool', (e) => {
       this.send({ type: 'tool', mode: (e as CustomEvent<{ mode: string }>).detail.mode })

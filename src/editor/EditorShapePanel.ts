@@ -19,8 +19,8 @@ export interface EditorShapePanelOptions {
   onDrawBox?: () => void;
   /** Chamado ao clicar em "Estrada" — arma o desenho de estrada (ADR-0072). */
   onDrawRoad?: () => void;
-  /** Chamado ao clicar em "Árvore"/"Grama" — cria um nó `vegetation` e liga o pincel (ADR-0077). */
-  onAddVegetation?: (kind: 'tree' | 'grass') => void;
+  /** Chamado ao clicar em "Vegetação" — cria um nó `vegetation` e liga o pincel (ADR-0077). */
+  onAddVegetation?: () => void;
   parent?: HTMLElement;
 }
 
@@ -117,20 +117,15 @@ export function createEditorShapePanel(options: EditorShapePanelOptions): Editor
     root.append(road);
   }
 
-  // "Árvore" / "Grama" (vegetação): cria o nó + liga o pincel de espalhar (ADR-0077).
+  // "Vegetação": cria o nó + liga o pincel; o MODELO (árvore/arbusto/…) se escolhe no
+  // Inspector (modal com preview). Um único botão — sem grama/árvore redundante (ADR-0077).
   if (onAddVegetation) {
-    const vegRow = document.createElement('div');
-    vegRow.style.cssText = 'margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:4px';
-    const mk = (label: string, kind: 'tree' | 'grass'): HTMLButtonElement => {
-      const b = document.createElement('button');
-      b.textContent = label;
-      b.title = `${label} — clique e espalhe no terreno`;
-      b.style.cssText = 'padding:7px 4px;border:1px solid #3f7d3a;border-radius:4px;background:#2c4a2a;color:#fff;cursor:pointer;font-size:12px';
-      b.addEventListener('click', () => onAddVegetation(kind));
-      return b;
-    };
-    vegRow.append(mk('🌳 Árvore', 'tree'), mk('🌿 Grama', 'grass'));
-    root.append(vegRow);
+    const b = document.createElement('button');
+    b.textContent = '🌿 Vegetação';
+    b.title = 'Cria vegetação e liga o pincel — escolha o modelo no Inspector';
+    b.style.cssText = 'margin-top:4px;width:100%;padding:7px 4px;border:1px solid #3f7d3a;border-radius:4px;background:#2c4a2a;color:#fff;cursor:pointer;font-size:12px';
+    b.addEventListener('click', () => onAddVegetation());
+    root.append(b);
   }
 
   parent.appendChild(root);

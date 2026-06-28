@@ -58,7 +58,7 @@ export interface EditorBridgeOptions {
   /** Arma o "desenhar estrada" (Road Architect — ADR-0072). */
   onDrawRoad?: () => void;
   /** Cria um nó de vegetação e liga o pincel de espalhar (ADR-0077). */
-  onAddVegetation?: (kind: 'tree' | 'grass') => void;
+  onAddVegetation?: () => void;
   /** Chamado quando o handshake conclui — o attachEditor esconde os painéis in-canvas. */
   onBridged: () => void;
 }
@@ -184,7 +184,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         onDrawRoad?.();
         break;
       case 'addVegetation':
-        if (data.kind === 'tree' || data.kind === 'grass') onAddVegetation?.(data.kind);
+        onAddVegetation?.();
         break;
     }
   };

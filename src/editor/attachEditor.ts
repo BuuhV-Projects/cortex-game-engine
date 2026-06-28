@@ -960,13 +960,10 @@ export function attachEditor(game: Game): GameEditor {
 
   // Vegetação (ADR-0077): cria o nó `vegetation` (placeholder) e JÁ liga o pincel de
   // espalhar — o usuário clica/arrasta no terreno pra povoar.
-  const createVegetationNode = (kind: 'tree' | 'grass'): void => {
-    // Árvore: já vem com um .glb real de default (cai no placeholder se o asset faltar).
-    // Grama: placeholder (ainda não há .glb de grama).
-    const node =
-      kind === 'tree'
-        ? { type: 'vegetation' as const, id: `veg-${Date.now().toString(36)}`, kind, model: 'assets/vegetation/scotspine-a.glb', instances: [] }
-        : { type: 'vegetation' as const, id: `veg-${Date.now().toString(36)}`, kind, instances: [] };
+  const createVegetationNode = (): void => {
+    // Default: um .glb real de árvore (cai no placeholder se o asset faltar). O modelo
+    // (árvore/arbusto/futura grama) se troca no Inspector pelo modal com preview.
+    const node = { type: 'vegetation' as const, id: `veg-${Date.now().toString(36)}`, kind: 'tree' as const, model: 'assets/vegetation/scotspine-a.glb', instances: [] };
     void addSceneNode(game.scene, node).then((obj) => {
       if (!obj) return;
       addedList().push(node);
