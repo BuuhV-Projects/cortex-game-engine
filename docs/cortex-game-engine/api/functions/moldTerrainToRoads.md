@@ -8,7 +8,7 @@
 
 > **moldTerrainToRoads**(`three`): `void`
 
-Defined in: [src/scene/SceneBuilder.ts:1225](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1225)
+Defined in: [src/scene/SceneBuilder.ts:1232](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1232)
 
 **Post-pass: o terreno se adapta às estradas `cutfill`** (ADR-0072 Fase 2). Depois
 de todos os nós posicionados, para cada terreno acumula o *cut & fill* (+ talude) de

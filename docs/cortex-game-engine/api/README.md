@@ -61,6 +61,7 @@
 - [TopDownMovementSystem](classes/TopDownMovementSystem.md)
 - [TransformComponent](classes/TransformComponent.md)
 - [Vegetation](classes/Vegetation.md)
+- [Vehicle](classes/Vehicle.md)
 - [Water](classes/Water.md)
 - [World](classes/World.md)
 
@@ -150,6 +151,8 @@
 - [TopDownMovementOptions](interfaces/TopDownMovementOptions.md)
 - [Vec3Like](interfaces/Vec3Like.md)
 - [VegetationInstance](interfaces/VegetationInstance.md)
+- [VehicleSpec](interfaces/VehicleSpec.md)
+- [VehicleWheelSpec](interfaces/VehicleWheelSpec.md)
 - [Viewport](interfaces/Viewport.md)
 - [VignetteConfig](interfaces/VignetteConfig.md)
 - [WaterOptions](interfaces/WaterOptions.md)

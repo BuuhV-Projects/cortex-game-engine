@@ -52,6 +52,20 @@ Inverte o eixo Y do stick direito (olhar). Default false.
 
 ***
 
+### jumpBlocked?
+
+> `optional` **jumpBlocked?**: () => `boolean`
+
+Defined in: [src/systems/ThirdPersonControlSystem.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L39)
+
+Bloqueia o pulo quando `true` — ex.: há interação em alcance, então A vira "interagir".
+
+#### Returns
+
+`boolean`
+
+***
+
 ### moveSpeed?
 
 > `optional` **moveSpeed?**: `number`

@@ -6,7 +6,7 @@
 
 # Class: InteractionComponent
 
-Defined in: src/components/InteractionComponent.ts:23
+Defined in: [src/components/InteractionComponent.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L23)
 
 **Ação de interação** padronizada (ADR-0080): marca um objeto como interagível —
 o [InteractionSystem](InteractionSystem.md) mostra um prompt quando o player ativo chega a `range`
@@ -30,7 +30,7 @@ carEntity.addComponent(new InteractionComponent({ prompt: 'Entrar', range: 3.5, 
 
 > **new InteractionComponent**(`options?`): `InteractionComponent`
 
-Defined in: src/components/InteractionComponent.ts:28
+Defined in: [src/components/InteractionComponent.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L28)
 
 #### Parameters
 
@@ -66,7 +66,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **onInteract**: () => `void`
 
-Defined in: src/components/InteractionComponent.ts:26
+Defined in: [src/components/InteractionComponent.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L26)
 
 #### Returns
 
@@ -78,7 +78,7 @@ Defined in: src/components/InteractionComponent.ts:26
 
 > **prompt**: `string`
 
-Defined in: src/components/InteractionComponent.ts:24
+Defined in: [src/components/InteractionComponent.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L24)
 
 ***
 
@@ -86,7 +86,7 @@ Defined in: src/components/InteractionComponent.ts:24
 
 > **range**: `number`
 
-Defined in: src/components/InteractionComponent.ts:25
+Defined in: [src/components/InteractionComponent.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L25)
 
 ## Accessors
 

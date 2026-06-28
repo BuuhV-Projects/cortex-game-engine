@@ -1,7 +1,11 @@
 # 0029 - Física cinemática de veículo (raycast) no engine
 
 **Data:** 2026-05-31
-**Status:** removido (2026-06-05) — a física de veículo (`VehicleGravitySystem`,
+**Status:** substituído por [0081](0081-veiculo-raycast-rapier.md) (2026-06-28) — o
+veículo voltou ao engine, agora como **raycast vehicle do Rapier** (superior ao
+cinemático). Histórico abaixo.
+
+Antes: removido (2026-06-05) — a física de veículo (`VehicleGravitySystem`,
 `VehicleWallCollisionSystem`, `VehiclePhysics`) foi retirada do engine a pedido do
 usuário; o foco virou cenas de plataforma/ilhas, não veículo. O
 `KinematicBodyComponent` permanece (usado pelo editor). Registro mantido como

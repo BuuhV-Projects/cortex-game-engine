@@ -6,7 +6,7 @@
 
 # Class: InteractionSystem
 
-Defined in: src/systems/InteractionSystem.ts:33
+Defined in: [src/systems/InteractionSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L33)
 
 **Sistema de interação** (ADR-0080): a cada frame acha o [InteractionComponent](InteractionComponent.md)
 **mais próximo** do interator ativo dentro do seu `range`, avisa a HUD via `onPrompt`
@@ -25,7 +25,7 @@ então funciona com o player a pé ou o carro (o "player do momento"). `priority
 
 > **new InteractionSystem**(`options`, `gamepad?`, `input?`): `InteractionSystem`
 
-Defined in: src/systems/InteractionSystem.ts:40
+Defined in: [src/systems/InteractionSystem.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L40)
 
 #### Parameters
 
@@ -76,7 +76,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `25`
 
-Defined in: src/systems/InteractionSystem.ts:35
+Defined in: [src/systems/InteractionSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L35)
 
 Prioridade de execução deste sistema.
 
@@ -93,7 +93,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`InteractionComponent`](InteractionComponent.md))[]
 
-Defined in: src/systems/InteractionSystem.ts:34
+Defined in: [src/systems/InteractionSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L34)
 
 Construtores dos componentes que este sistema requer.
 
@@ -121,7 +121,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **get** **active**(): [`InteractionComponent`](InteractionComponent.md) \| `null`
 
-Defined in: src/systems/InteractionSystem.ts:50
+Defined in: [src/systems/InteractionSystem.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L50)
 
 Interação atualmente em alcance (ou `null`) — útil pra HUD externa.
 
@@ -135,7 +135,7 @@ Interação atualmente em alcance (ou `null`) — útil pra HUD externa.
 
 > **update**(`entities`): `void`
 
-Defined in: src/systems/InteractionSystem.ts:54
+Defined in: [src/systems/InteractionSystem.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L54)
 
 Executa a lógica do sistema para o frame/passo atual.
 

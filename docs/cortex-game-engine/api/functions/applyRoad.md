@@ -8,7 +8,7 @@
 
 > **applyRoad**(`mesh`, `node`, `three`): `void`
 
-Defined in: [src/scene/SceneBuilder.ts:1063](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1063)
+Defined in: [src/scene/SceneBuilder.ts:1070](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1070)
 
 (Re)gera a malha + material de uma estrada num `mesh` existente (ADR-0072).
 Amostra a spline dos `nodes`, **conforma ao terreno** (raycast pra baixo por amostra

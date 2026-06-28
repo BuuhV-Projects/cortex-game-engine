@@ -6,7 +6,7 @@
 
 # Interface: PhysicsBody
 
-Defined in: [src/physics/RapierPhysics.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L77)
+Defined in: [src/physics/RapierPhysics.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L110)
 
 Handle de um corpo físico (não vaza o tipo do Rapier). Além de ler a pose
 ([PhysicsBody.translation](#translation)/[PhysicsBody.rotation](#rotation)), expõe as operações
@@ -30,7 +30,7 @@ ball?.reset({ x: 0, y: 0.5, z: 0 })
 
 > **angvel**(): [`Vec3Like`](Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L85)
+Defined in: [src/physics/RapierPhysics.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L118)
 
 Velocidade angular atual (rad/s).
 
@@ -44,7 +44,7 @@ Velocidade angular atual (rad/s).
 
 > **applyImpulse**(`impulse`, `wakeUp?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L92)
+Defined in: [src/physics/RapierPhysics.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L125)
 
 Aplica um **impulso** (mudança instantânea de momento) no centro do corpo —
 o jeito típico de "chutar"/"empurrar" um corpo dinâmico. Acorda o corpo.
@@ -69,7 +69,7 @@ o jeito típico de "chutar"/"empurrar" um corpo dinâmico. Acorda o corpo.
 
 > **applyTorqueImpulse**(`torque`, `wakeUp?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L94)
+Defined in: [src/physics/RapierPhysics.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L127)
 
 Aplica um **impulso de torque** (gira o corpo). Acorda o corpo.
 
@@ -93,7 +93,7 @@ Aplica um **impulso de torque** (gira o corpo). Acorda o corpo.
 
 > **linvel**(): [`Vec3Like`](Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L83)
+Defined in: [src/physics/RapierPhysics.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L116)
 
 Velocidade linear atual (unidades/s).
 
@@ -107,7 +107,7 @@ Velocidade linear atual (unidades/s).
 
 > **reset**(`position?`, `rotation?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L110)
+Defined in: [src/physics/RapierPhysics.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L143)
 
 **Reseta** o corpo: zera as velocidades (linear+angular) e, se passar `position`/
 `rotation`, teleporta pra lá. Ideal pra "recolocar a bola no centro" sem o corpo
@@ -133,7 +133,7 @@ sair voando com a velocidade que tinha.
 
 > **rotation**(): [`QuatLike`](QuatLike.md)
 
-Defined in: [src/physics/RapierPhysics.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L81)
+Defined in: [src/physics/RapierPhysics.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L114)
 
 Rotação atual (quaternion).
 
@@ -147,7 +147,7 @@ Rotação atual (quaternion).
 
 > **setAngvel**(`velocity`, `wakeUp?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L98)
+Defined in: [src/physics/RapierPhysics.ts:131](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L131)
 
 Define a **velocidade angular** diretamente. Acorda o corpo.
 
@@ -171,7 +171,7 @@ Define a **velocidade angular** diretamente. Acorda o corpo.
 
 > **setLinvel**(`velocity`, `wakeUp?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L96)
+Defined in: [src/physics/RapierPhysics.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L129)
 
 Define a **velocidade linear** diretamente (sobrescreve a atual). Acorda o corpo.
 
@@ -195,7 +195,7 @@ Define a **velocidade linear** diretamente (sobrescreve a atual). Acorda o corpo
 
 > **setNextKinematicTranslation**(`p`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L87)
+Defined in: [src/physics/RapierPhysics.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L120)
 
 Move um corpo `kinematic` (aplicado no próximo `step`).
 
@@ -215,7 +215,7 @@ Move um corpo `kinematic` (aplicado no próximo `step`).
 
 > **setRotation**(`q`, `wakeUp?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L102)
+Defined in: [src/physics/RapierPhysics.ts:135](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L135)
 
 Define a rotação (quaternion) diretamente.
 
@@ -239,7 +239,7 @@ Define a rotação (quaternion) diretamente.
 
 > **setTranslation**(`p`, `wakeUp?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L100)
+Defined in: [src/physics/RapierPhysics.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L133)
 
 **Teleporta** o corpo (pose). Pra dinâmico, considere [PhysicsBody.reset](#reset).
 
@@ -263,7 +263,7 @@ Defined in: [src/physics/RapierPhysics.ts:100](https://github.com/BuuhV-Projects
 
 > **translation**(): [`Vec3Like`](Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L79)
+Defined in: [src/physics/RapierPhysics.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L112)
 
 Posição atual (centro do corpo).
 
@@ -277,7 +277,7 @@ Posição atual (centro do corpo).
 
 > **wakeUp**(): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L104)
+Defined in: [src/physics/RapierPhysics.ts:137](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L137)
 
 Acorda o corpo (corpos parados "dormem" e ignoram forças até serem acordados).
 

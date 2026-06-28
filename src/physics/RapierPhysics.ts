@@ -1,6 +1,7 @@
 // Tipos do Rapier (apagados na compilação) — pra anotar sem trazer o valor.
 // É o default export (namespace), que serve como qualificador de tipo (RAPIER.World).
 import type RAPIER from '@dimforge/rapier3d-compat';
+import { Vector3, Quaternion } from 'three';
 
 /** Tipo do namespace-valor do Rapier (o default export), carregado sob demanda. */
 type RapierApi = (typeof import('@dimforge/rapier3d-compat'))['default'];
@@ -58,6 +59,38 @@ export interface BodySpec {
   friction?: number;
   /** `true` = trigger (detecta sobreposição mas NÃO bloqueia). */
   isSensor?: boolean;
+}
+
+/** Uma roda do {@link Vehicle} (posição relativa ao chassi + flags). */
+export interface VehicleWheelSpec {
+  /** Posição da roda relativa ao centro do chassi. */
+  position: Vec3Like;
+  /** Raio da roda (m). */
+  radius: number;
+  /** Esterça? (dianteiras = `true`). */
+  steering?: boolean;
+  /** Tem tração (motor)? */
+  powered?: boolean;
+}
+
+/** Config de {@link RapierPhysics.createVehicle} (ADR-0081). */
+export interface VehicleSpec {
+  position?: Vec3Like;
+  /** Meia-extensão do chassi (box collider) — ex.: carro 4.85×1.4×2.27 → {2.42,0.7,1.13}. */
+  chassisHalfExtents: Vec3Like;
+  /** Massa do chassi (kg). Default 1200. */
+  mass?: number;
+  /** Atrito do chassi ao raspar. Default 0.4. */
+  chassisFriction?: number;
+  /** As rodas (tipicamente 4: FL/FR dianteiras steering, RL/RR traseiras powered). */
+  wheels: VehicleWheelSpec[];
+  suspensionRestLength?: number; // default 0.3
+  suspensionStiffness?: number; // default 24
+  suspensionCompression?: number; // default 0.82
+  suspensionRelaxation?: number; // default 0.88
+  maxSuspensionTravel?: number; // default 0.3
+  /** Grip lateral/longitudinal. Maior = mais aderente (arcade). Default 2.5. */
+  frictionSlip?: number;
 }
 
 /**
@@ -213,6 +246,47 @@ export class RapierPhysics {
     this.world.step();
   }
 
+  /**
+   * Cria um **veículo raycast** (ADR-0081) — chassi (rigid body dinâmico + box) +
+   * rodas por raycast com suspensão/esterço/motor/freio, via o
+   * `DynamicRayCastVehicleController` do Rapier. As rodas raycastam o mundo Rapier
+   * (terreno precisa ser collider), tudo no WASM (sem custo de CPU/JS). Ver {@link Vehicle}.
+   */
+  createVehicle(spec: VehicleSpec): Vehicle {
+    const R = rapier();
+    const he = spec.chassisHalfExtents;
+    const desc = R.RigidBodyDesc.dynamic();
+    if (spec.position) desc.setTranslation(spec.position.x, spec.position.y, spec.position.z);
+    desc.setCanSleep(false); // veículo do player nunca "dorme"
+    const chassis = this.world.createRigidBody(desc);
+    const cd = R.ColliderDesc.cuboid(he.x, he.y, he.z)
+      .setMass(spec.mass ?? 1200)
+      .setFriction(spec.chassisFriction ?? 0.4);
+    this.world.createCollider(cd, chassis);
+
+    const ctrl = this.world.createVehicleController(chassis);
+    ctrl.indexUpAxis = 1; // Y é "pra cima" (a API é propriedade, não método)
+
+    const restLen = spec.suspensionRestLength ?? 0.3;
+    spec.wheels.forEach((w) => {
+      ctrl.addWheel(
+        { x: w.position.x, y: w.position.y, z: w.position.z },
+        { x: 0, y: -1, z: 0 }, // suspensão aponta pra baixo
+        { x: -1, y: 0, z: 0 }, // eixo da roda = X (→ frente = +Z)
+        restLen,
+        w.radius,
+      );
+    });
+    for (let i = 0; i < spec.wheels.length; i++) {
+      ctrl.setWheelSuspensionStiffness(i, spec.suspensionStiffness ?? 24);
+      ctrl.setWheelSuspensionCompression(i, spec.suspensionCompression ?? 0.82);
+      ctrl.setWheelSuspensionRelaxation(i, spec.suspensionRelaxation ?? 0.88);
+      ctrl.setWheelMaxSuspensionTravel(i, spec.maxSuspensionTravel ?? 0.3);
+      ctrl.setWheelFrictionSlip(i, spec.frictionSlip ?? 2.5); // grip arcade-real
+    }
+    return new Vehicle(ctrl, chassis, spec.wheels);
+  }
+
   /** Libera o mundo (memória WASM). */
   dispose(): void {
     this.world.free();
@@ -229,5 +303,90 @@ export class RapierPhysics {
     if (spec.friction != null) c.setFriction(spec.friction);
     if (spec.isSensor) c.setSensor(true);
     return c;
+  }
+}
+
+// Scratch reutilizável (sem alocar por frame) pro transform das rodas.
+const _wv = new Vector3();
+const _wq = new Quaternion();
+const _wq2 = new Quaternion();
+const _wax = new Vector3();
+
+/**
+ * **Veículo raycast** (ADR-0081) — wrapper do `DynamicRayCastVehicleController` do
+ * Rapier. Aplica motor/freio/esterço, avança a simulação do veículo e expõe o
+ * transform do chassi e de cada roda (pra sincronizar as malhas do `.glb`). As rodas
+ * raycastam o mundo Rapier (terreno = collider) no WASM. Crie via
+ * {@link RapierPhysics.createVehicle}; chame {@link Vehicle.update} APÓS `physics.step()`.
+ */
+export class Vehicle {
+  constructor(
+    private readonly ctrl: RAPIER.DynamicRayCastVehicleController,
+    private readonly body: RAPIER.RigidBody,
+    /** As rodas, na ordem em que foram adicionadas. */
+    readonly wheels: VehicleWheelSpec[],
+  ) {}
+
+  /** Força do motor nas rodas com tração (N). 0 = desliga. */
+  setEngineForce(force: number): void {
+    for (let i = 0; i < this.wheels.length; i++) {
+      if (this.wheels[i]!.powered) this.ctrl.setWheelEngineForce(i, force);
+    }
+  }
+  /** Freio em todas as rodas. */
+  setBrake(force: number): void {
+    for (let i = 0; i < this.wheels.length; i++) this.ctrl.setWheelBrake(i, force);
+  }
+  /** Ângulo de esterço (rad) nas rodas que esterçam. */
+  setSteering(angle: number): void {
+    for (let i = 0; i < this.wheels.length; i++) {
+      if (this.wheels[i]!.steering) this.ctrl.setWheelSteering(i, angle);
+    }
+  }
+  /** Avança a física do veículo. Chame DEPOIS de `physics.step()`. */
+  update(dt: number): void {
+    this.ctrl.updateVehicle(dt);
+  }
+
+  /** Velocidade ao longo do forward (+Z local) do chassi, m/s (sinal = frente/ré). */
+  forwardSpeed(): number {
+    const v = this.body.linvel();
+    const r = this.body.rotation();
+    _wv.set(0, 0, 1).applyQuaternion(_wq.set(r.x, r.y, r.z, r.w));
+    return v.x * _wv.x + v.y * _wv.y + v.z * _wv.z;
+  }
+
+  chassisTranslation(): Vec3Like {
+    const t = this.body.translation();
+    return { x: t.x, y: t.y, z: t.z };
+  }
+  chassisRotation(): QuatLike {
+    const r = this.body.rotation();
+    return { x: r.x, y: r.y, z: r.z, w: r.w };
+  }
+
+  /** Escreve em `outPos`/`outQuat` o transform MUNDIAL da roda `i` (pra a malha). */
+  wheelTransform(i: number, outPos: Vector3, outQuat: Quaternion): void {
+    const t = this.body.translation();
+    const r = this.body.rotation();
+    _wq.set(r.x, r.y, r.z, r.w); // rotação do chassi
+    const cp = this.ctrl.wheelChassisConnectionPointCs(i) ?? { x: 0, y: 0, z: 0 };
+    const len = this.ctrl.wheelSuspensionLength(i) ?? 0;
+    outPos.set(cp.x, cp.y - len, cp.z).applyQuaternion(_wq); // conexão + suspensão (baixo)
+    outPos.x += t.x;
+    outPos.y += t.y;
+    outPos.z += t.z;
+    const steer = this.ctrl.wheelSteering(i) ?? 0;
+    const spin = this.ctrl.wheelRotation(i) ?? 0;
+    outQuat.copy(_wq).multiply(_wq2.setFromAxisAngle(_wax.set(0, 1, 0), steer)); // esterço (Y)
+    outQuat.multiply(_wq2.setFromAxisAngle(_wax.set(1, 0, 0), spin)); // giro (eixo X)
+  }
+
+  /** Reseta o chassi (respawn): zera velocidades + (opcional) posiciona/orienta. */
+  reset(position?: Vec3Like, rotation?: QuatLike): void {
+    this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    if (position) this.body.setTranslation(position, true);
+    if (rotation) this.body.setRotation(rotation, true);
   }
 }

@@ -6,7 +6,7 @@
 
 # Interface: InteractionSystemOptions
 
-Defined in: src/systems/InteractionSystem.ts:9
+Defined in: [src/systems/InteractionSystem.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L9)
 
 Opções do [InteractionSystem](../classes/InteractionSystem.md).
 
@@ -16,7 +16,7 @@ Opções do [InteractionSystem](../classes/InteractionSystem.md).
 
 > `optional` **button?**: `number`
 
-Defined in: src/systems/InteractionSystem.ts:18
+Defined in: [src/systems/InteractionSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L18)
 
 Botão do gamepad pra interagir. Default `0` (A).
 
@@ -26,7 +26,7 @@ Botão do gamepad pra interagir. Default `0` (A).
 
 > **interactor**: () => \{ `x`: `number`; `z`: `number`; \} \| `null`
 
-Defined in: src/systems/InteractionSystem.ts:14
+Defined in: [src/systems/InteractionSystem.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L14)
 
 Posição (XZ) do **interator ativo** — quem interage: player a pé OU carro, o que
 estiver no controle no momento. O jogo fornece (devolve `null` = ninguém interage).
@@ -41,7 +41,7 @@ estiver no controle no momento. O jogo fornece (devolve `null` = ninguém intera
 
 > `optional` **key?**: `string`
 
-Defined in: src/systems/InteractionSystem.ts:20
+Defined in: [src/systems/InteractionSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L20)
 
 Tecla pra interagir. Default `e`.
 
@@ -51,7 +51,7 @@ Tecla pra interagir. Default `e`.
 
 > `optional` **onPrompt?**: (`interaction`) => `void`
 
-Defined in: src/systems/InteractionSystem.ts:16
+Defined in: [src/systems/InteractionSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L16)
 
 Mostra/esconde o prompt na HUD; `null` = nada em alcance. O jogo renderiza.
 
@@ -71,7 +71,7 @@ Mostra/esconde o prompt na HUD; `null` = nada em alcance. O jogo renderiza.
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: src/systems/InteractionSystem.ts:22
+Defined in: [src/systems/InteractionSystem.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L22)
 
 Pausa (ex.: `() => game.editorActive`).
 
