@@ -306,6 +306,8 @@ export interface VegetationEditState {
   model: string;
   /** `.glb` disponíveis no projeto (pra o seletor de modelo). */
   models: string[];
+  /** Colide com o player (vira `cortexSolid`). */
+  collide: boolean;
 }
 
 /**
@@ -325,6 +327,8 @@ export interface VegetationApi {
   setScale(min: number, max: number): void;
   /** Troca o modelo (`.glb` URL, ou `''` = placeholder) — reconstrói as instâncias. */
   setModel(obj: Object3D, url: string): void;
+  /** Liga/desliga a colisão com o player (`cortexSolid`). */
+  setCollide(obj: Object3D, on: boolean): void;
 }
 
 /** Estado de animação do objeto selecionado (clipes do `.glb`). */

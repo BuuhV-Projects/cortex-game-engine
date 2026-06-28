@@ -629,11 +629,15 @@ export function describeInspector(
       { kind: 'number', id: fid('vegDensity'), label: 'Densidade', value: v.density, step: 1 },
       { kind: 'number', id: fid('vegScaleMin'), label: 'Escala mín.', value: v.scaleMin, step: 0.1 },
       { kind: 'number', id: fid('vegScaleMax'), label: 'Escala máx.', value: v.scaleMax, step: 0.1 },
+      { kind: 'checkbox', id: fid('vegCollide'), label: 'Colisão (player não atravessa)', value: v.collide },
       // (a contagem viva NÃO entra como nota: o texto mudaria a cada pincelada e forçaria
       //  o inspector da IDE a reconstruir, derrubando o input que você está editando.)
     ];
     handlers.set(fid('vegModel'), (val) => {
       api.setModel(obj, String(val));
+    });
+    handlers.set(fid('vegCollide'), (val) => {
+      api.setCollide(obj, val === true || val === 'true');
     });
     handlers.set(fid('vegPaint'), () => {
       if (v.painting) api.stopPaint();

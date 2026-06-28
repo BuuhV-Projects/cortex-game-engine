@@ -56,5 +56,13 @@ simples (tronco+copa / quads de grama). O sistema é **agnóstico de modelo** �
   "🌳 Árvore"/"🌿 Grama" cria o nó e liga o pincel; CLIQUE/ARRASTE no terreno espalha
   (densidade/jitter/escala aleatória, assenta na altura do terreno via raycast,
   espaçamento mínimo); **SHIFT apaga**. Persiste mutando `node.instances` (data.added).
-  Inspector: raio/densidade/escala. Colisão das árvores: fora de escopo por ora.
+  Inspector: raio/densidade/escala.
+- **Modelo real (`.glb`):** seletor "Modelo" no Inspector lista `assets/vegetation/*.glb`;
+  `Vegetation.setSource` troca a malha mantendo grupo + instâncias. Árvore criada já vem
+  com um `.glb` real de default (cai no placeholder se o asset faltar — `makeVegetation`
+  resiliente). Modelos importados da Unity via glTFast (folhas alpha-cutout = `alphaMode
+  MASK`).
+- **Colisão:** `collide` no nó (default: liga p/ árvore/modelo, desliga p/ grama) marca o
+  grupo `cortexSolid` → o `CharacterPhysicsSystem` empurra o player pra fora dos troncos.
+  Toggle "Colisão" no Inspector.
 - **API pública nova** → `yarn docs:engine`, `engine-api.md`/`architecture.md`, vendor.

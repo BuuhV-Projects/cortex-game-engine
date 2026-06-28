@@ -1252,11 +1252,25 @@ export function moldTerrainToRoads(three: Object3D): void {
  * `group.userData.cortexVegetation` — o pincel do editor espalha/apaga por ali.
  */
 async function makeVegetation(node: Extract<SceneNode, { type: 'vegetation' }>): Promise<Object3D> {
-  const source = node.model ? instance(await loadGLB(node.model), { castShadow: true }) : makePlaceholderVegetation(node.kind ?? 'tree');
+  // Modelo `.glb` quando houver; se faltar/falhar, cai no placeholder (não quebra a cena).
+  let source: Object3D;
+  if (node.model) {
+    try {
+      source = instance(await loadGLB(node.model), { castShadow: true });
+    } catch {
+      debug('vegetation', 'modelo falhou, usando placeholder:', node.model);
+      source = makePlaceholderVegetation(node.kind ?? 'tree');
+    }
+  } else {
+    source = makePlaceholderVegetation(node.kind ?? 'tree');
+  }
   const veg = new Vegetation(source, node.capacity ?? 8192);
   if (node.instances && node.instances.length) veg.setInstances(node.instances);
-  (veg.group.userData as Record<string, unknown>)['cortexVegetation'] = veg;
-  (veg.group.userData as Record<string, unknown>)['cortexVegetationKind'] = node.kind ?? (node.model ? 'model' : 'tree');
+  const ud = veg.group.userData as Record<string, unknown>;
+  ud['cortexVegetation'] = veg;
+  ud['cortexVegetationKind'] = node.kind ?? (node.model ? 'model' : 'tree');
+  // Colisão (player não atravessa os troncos). Default: liga, exceto grama.
+  if (node.collide ?? node.kind !== 'grass') ud['cortexSolid'] = true;
   return veg.group;
 }
 

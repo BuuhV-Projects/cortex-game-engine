@@ -419,6 +419,11 @@ const vegetationNode = z.object({
   instances: z.array(z.number()).optional(),
   /** Capacidade máxima de instâncias (buffer pré-alocado). Default 8192. */
   capacity: z.number().int().positive().optional(),
+  /**
+   * Colide com o player (vira `cortexSolid` — o personagem é empurrado pra fora dos
+   * troncos). Default: liga pra árvores/modelos, desliga pra `kind: 'grass'`.
+   */
+  collide: z.boolean().optional(),
   id: z.string().min(1),
   transform: transformSchema,
 });

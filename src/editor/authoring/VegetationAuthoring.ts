@@ -129,6 +129,7 @@ export function createVegetationAuthoring(ctx: EditorAuthoringContext, hooks: Ve
         count: veg.count,
         model: typeof node?.model === 'string' ? node.model : '',
         models: availableModels,
+        collide: node ? (node.collide ?? node.kind !== 'grass') : true,
       };
       return state;
     },
@@ -173,6 +174,14 @@ export function createVegetationAuthoring(ctx: EditorAuthoringContext, hooks: Ve
       void loadGLB(url)
         .then((gltf) => apply(instance(gltf, { castShadow: true })))
         .catch(() => hooks.toast(`Falha ao carregar modelo: ${url}`));
+    },
+    setCollide: (obj, on) => {
+      const node = nodeOf(obj);
+      if (!node) return;
+      node.collide = on;
+      (obj.userData as Record<string, unknown>)['cortexSolid'] = on ? true : undefined;
+      if (!on) delete (obj.userData as Record<string, unknown>)['cortexSolid'];
+      ctx.persist();
     },
   };
 

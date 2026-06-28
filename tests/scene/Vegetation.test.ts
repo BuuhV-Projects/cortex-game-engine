@@ -90,4 +90,31 @@ describe('Vegetation', () => {
     expect(veg).toBeInstanceOf(Vegetation);
     expect(veg.count).toBe(2);
   });
+
+  it('árvore colide por default (cortexSolid); grama não', async () => {
+    const def: SceneDefinition = {
+      version: 1,
+      nodes: [
+        { type: 'vegetation', id: 'arv', kind: 'tree' },
+        { type: 'vegetation', id: 'grama', kind: 'grass' },
+      ],
+    };
+    const handle = await buildScene(new Scene(), def);
+    expect((handle.byId.get('arv')!.userData as Record<string, unknown>)['cortexSolid']).toBe(true);
+    expect((handle.byId.get('grama')!.userData as Record<string, unknown>)['cortexSolid']).toBeUndefined();
+  });
+
+  it('collide:false desliga a colisão mesmo em árvore', async () => {
+    const def: SceneDefinition = { version: 1, nodes: [{ type: 'vegetation', id: 'arv', kind: 'tree', collide: false }] };
+    const handle = await buildScene(new Scene(), def);
+    expect((handle.byId.get('arv')!.userData as Record<string, unknown>)['cortexSolid']).toBeUndefined();
+  });
+
+  it('model inexistente cai no placeholder (não quebra a cena)', async () => {
+    const def: SceneDefinition = { version: 1, nodes: [{ type: 'vegetation', id: 'arv', kind: 'tree', model: 'assets/nao-existe.glb', instances: [0, 0, 0, 0, 1] }] };
+    const handle = await buildScene(new Scene(), def);
+    const veg = (handle.byId.get('arv')!.userData as Record<string, unknown>)['cortexVegetation'] as Vegetation;
+    expect(veg).toBeInstanceOf(Vegetation); // construiu com placeholder
+    expect(veg.count).toBe(1);
+  });
 });
