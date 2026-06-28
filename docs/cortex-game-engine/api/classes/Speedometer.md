@@ -42,7 +42,7 @@ O container do widget (pra estilizar/posicionar por fora se quiser).
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/Speedometer.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L125)
+Defined in: [src/ui/Speedometer.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L127)
 
 Remove o widget do DOM.
 
@@ -56,7 +56,7 @@ Remove o widget do DOM.
 
 > **setVisible**(`visible`): `void`
 
-Defined in: [src/ui/Speedometer.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L120)
+Defined in: [src/ui/Speedometer.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L122)
 
 Mostra/esconde o velocímetro (ex.: só ao dirigir).
 

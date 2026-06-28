@@ -487,8 +487,8 @@ export function describeInspector(
   const vehState = ctx.vehicleApi?.get(obj) ?? null;
   if (ctx.vehicleApi && vehState) {
     const api = ctx.vehicleApi;
-    // Só os campos numéricos (engineSound é string, tratado à parte).
-    type NumKey = Exclude<keyof typeof vehState, 'engineSound'>;
+    // Só os campos numéricos (layers é objeto de áudios, tratado à parte).
+    type NumKey = Exclude<keyof typeof vehState, 'layers'>;
     const num = (key: NumKey, label: string, step: number): InspectorField => {
       const fieldId = fid(`veh_${key}`);
       handlers.set(fieldId, (v) => {
@@ -511,15 +511,22 @@ export function describeInspector(
       num('mass', 'Massa (kg)', 50),
       num('maxSpeed', 'Velocímetro máx. (km/h)', 10),
     ];
-    // Áudio do motor: mostra o associado + importar (FileField → upload → grava path).
-    const soundName = vehState.engineSound ? vehState.engineSound.split('/').pop() : '(nenhum)';
-    vehFields.push({ kind: 'note', id: fid('vehSound'), text: `Som do motor: ${soundName}`, tone: 'muted' });
-    vehFields.push({ kind: 'file', id: fid('vehSoundPick'), label: '⬆ Escolher áudio do motor…', accept: 'audio/*' });
-    handlers.set(fid('vehSoundPick'), (v) => {
-      const f = JSON.parse(v as string) as { name?: string; dataUrl?: string };
-      if (f.name && f.dataUrl) api.importSound(obj, f.name, f.dataUrl);
-      return { rebuild: true };
-    });
+    // Áudio do motor EM CAMADAS: um slot por faixa (on/off × RPM). Cada FileField importa
+    // pro projeto e mostra o arquivo associado.
+    const soundSlots: Array<[string, string]> = [
+      ['onLow', 'Motor on / baixa'], ['onMid', 'Motor on / média'], ['onHigh', 'Motor on / alta'],
+      ['offLow', 'Solto / baixa'], ['offMid', 'Solto / média'], ['offHigh', 'Solto / alta'], ['offVeryHigh', 'Solto / muito alta'],
+    ];
+    vehFields.push({ kind: 'note', id: fid('vehSndHdr'), text: 'Som do motor (camadas):', tone: 'muted' });
+    for (const [slot, label] of soundSlots) {
+      const cur = vehState.layers[slot] ? vehState.layers[slot]!.split('/').pop() : '—';
+      vehFields.push({ kind: 'file', id: fid(`snd_${slot}`), label: `${label}: ${cur}`, accept: 'audio/*' });
+      handlers.set(fid(`snd_${slot}`), (v) => {
+        const f = JSON.parse(v as string) as { name?: string; dataUrl?: string };
+        if (f.name && f.dataUrl) api.importSound(obj, slot, f.name, f.dataUrl);
+        return { rebuild: true };
+      });
+    }
     sections.push({ title: 'Veículo', fields: vehFields });
   }
 

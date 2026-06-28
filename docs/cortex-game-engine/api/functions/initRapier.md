@@ -8,7 +8,7 @@
 
 > **initRapier**(): `Promise`\<`void`\>
 
-Defined in: [src/physics/RapierPhysics.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L159)
+Defined in: [src/physics/RapierPhysics.ts:166](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L166)
 
 Carrega o Rapier (dynamic import do chunk `rapier.js`) e inicializa o WASM —
 uma vez só, idempotente. Chamado por [RapierPhysics.create](../classes/RapierPhysics.md#create).

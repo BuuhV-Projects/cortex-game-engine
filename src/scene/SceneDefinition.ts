@@ -196,6 +196,7 @@ const vehicleSchema = z
     maxBrake: z.number().optional(),
     handbrakeForce: z.number().optional(),
     reverseForce: z.number().optional(),
+    maxReverseSpeed: z.number().optional(),
     rollingResistance: z.number().optional(),
     throttleSmooth: z.number().optional(),
     maxSteer: z.number().optional(),
@@ -217,8 +218,19 @@ const vehicleSchema = z
     /** Velocidade no fim do velocímetro (km/h). */
     maxSpeed: z.number().optional(),
     wheelSpinRate: z.number().optional(),
-    /** Caminho do áudio do MOTOR (loop, pitch varia com a velocidade). Ver {@link EngineSound}. */
+    /** Caminho do áudio do MOTOR (loop único — fallback simples). Ver {@link EngineSound}. */
     engineSound: z.string().optional(),
+    /**
+     * Áudio do motor em CAMADAS (crossfade on/off × faixas de RPM) — som realista.
+     * Cada slot é um caminho de áudio (loop). Tem prioridade sobre `engineSound`.
+     */
+    engineLayers: z
+      .object({
+        onLow: z.string(), onMid: z.string(), onHigh: z.string(),
+        offLow: z.string(), offMid: z.string(), offHigh: z.string(), offVeryHigh: z.string(),
+      })
+      .partial()
+      .optional(),
   })
   .optional();
 

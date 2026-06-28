@@ -9,8 +9,12 @@ import type { InputManager } from '../core/InputManager.js';
 export interface VehicleControlOptions {
   /** Força do motor (N) com acelerador no talo. Default 5000. */
   engineForce?: number;
-  /** Força de ré com LT parado. Default `engineForce * 0.45`. */
+  /** Força de ré (acelera de ré). Default `engineForce * 0.7`. */
   reverseForce?: number;
+  /** Velocidade MÁXIMA de ré (m/s). Default 8.33 (~30 km/h). */
+  maxReverseSpeed?: number;
+  /** Velocidade MÁXIMA pra frente (km/h) — limita o carro (e o ponteiro). Default sem limite. */
+  maxSpeedKmh?: number;
   /** Freio máximo (LT andando pra frente). Default 50. */
   maxBrake?: number;
   /** Freio de mão (Espaço/A) — trava as rodas. Default 120 (mais forte que o freio normal). */
@@ -132,11 +136,15 @@ export class VehicleControlSystem extends System {
       this.throttle += (accel - this.throttle) * Math.min(1, dt * (o.throttleSmooth ?? 3));
       const maxBrake = o.maxBrake ?? 50;
 
-      // Acelera pra frente; LT andando pra frente = freio; LT ~parado/ré = motor reverso.
-      const reversing = !handbrake && brakeIn > 0.1 && fwd < 1;
-      this.vehicle.setEngineForce(
-        handbrake ? 0 : this.throttle * engine - (reversing ? brakeIn * (o.reverseForce ?? engine * 0.45) : 0),
-      );
+      // Limitador de velocidade MÁX (km/h → m/s): corta o motor no teto (o ponteiro/carro
+      // não passam do valor definido).
+      const topSpeed = o.maxSpeedKmh ? o.maxSpeedKmh / 3.6 : Infinity;
+      const forwardForce = fwd >= topSpeed ? 0 : this.throttle * engine;
+      // Ré: acelera de ré (mais forte) até o teto de ré (maxReverseSpeed, ~30 km/h).
+      const maxRev = o.maxReverseSpeed ?? 8.33;
+      const reversing = !handbrake && brakeIn > 0.1 && fwd < 1 && fwd > -maxRev;
+      const reverseForce = reversing ? brakeIn * (o.reverseForce ?? engine * 0.7) : 0;
+      this.vehicle.setEngineForce(handbrake ? 0 : forwardForce - reverseForce);
       // Freio: Espaço/A (handbrake, sempre), ou LT andando pra frente; ao soltar tudo,
       // freio-motor leve (senão não desacelera).
       const coasting = !handbrake && this.throttle < 0.05 && brakeIn < 0.05;

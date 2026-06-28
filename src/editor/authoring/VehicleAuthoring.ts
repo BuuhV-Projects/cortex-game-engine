@@ -17,10 +17,16 @@ const DEFAULTS: VehicleEditState = {
   comY: 0,
   comZ: 0,
   maxSpeed: 260,
-  engineSound: '',
+  layers: {},
 };
 
-type Cfg = Record<string, unknown> & { centerOfMass?: { x?: number; y?: number; z?: number } };
+/** Slots de áudio do motor (camadas on/off × faixa de RPM). */
+export const ENGINE_SOUND_SLOTS = ['onLow', 'onMid', 'onHigh', 'offLow', 'offMid', 'offHigh', 'offVeryHigh'] as const;
+
+type Cfg = Record<string, unknown> & {
+  centerOfMass?: { x?: number; y?: number; z?: number };
+  engineLayers?: Record<string, string>;
+};
 
 function n(v: unknown, fallback: number): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
@@ -59,7 +65,9 @@ export function createVehicleApi(ctx: EditorAuthoringContext): VehicleApi {
         comY: n(co.y, DEFAULTS.comY),
         comZ: n(co.z, DEFAULTS.comZ),
         maxSpeed: n(merged['maxSpeed'], DEFAULTS.maxSpeed),
-        engineSound: typeof merged['engineSound'] === 'string' ? (merged['engineSound'] as string) : '',
+        layers: Object.fromEntries(
+          ENGINE_SOUND_SLOTS.map((s) => [s, typeof merged.engineLayers?.[s] === 'string' ? merged.engineLayers[s]! : '']),
+        ),
       };
     },
 
@@ -80,7 +88,7 @@ export function createVehicleApi(ctx: EditorAuthoringContext): VehicleApi {
       ctx.persist();
     },
 
-    importSound(obj: Object3D, name: string, dataUrl: string): void {
+    importSound(obj: Object3D, slot: string, name: string, dataUrl: string): void {
       if (typeof fetch === 'undefined' || !obj.name) return;
       void (async () => {
         try {
@@ -90,9 +98,9 @@ export function createVehicleApi(ctx: EditorAuthoringContext): VehicleApi {
           const path = (await res.text()).trim();
           const rec = store();
           const cfg: Cfg = rec[obj.name] ?? (rec[obj.name] = {});
-          cfg['engineSound'] = path;
+          cfg.engineLayers = { ...cfg.engineLayers, [slot]: path };
           const live = baseOf(obj) ?? ((obj.userData as Record<string, unknown>)['cortexVehicle'] = {} as Cfg);
-          live['engineSound'] = path;
+          live.engineLayers = { ...live.engineLayers, [slot]: path };
           ctx.persist(true);
         } catch (e) {
           debug('editor', 'falha ao importar áudio do motor:', e);

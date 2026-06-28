@@ -408,8 +408,8 @@ export interface VehicleEditState {
   comY: number;
   comZ: number;
   maxSpeed: number;
-  /** Caminho do áudio do motor (ou '' se nenhum). */
-  engineSound: string;
+  /** Caminhos dos áudios do motor em camadas, por slot (`onLow`, `offHigh`, …); '' se vazio. */
+  layers: Record<string, string>;
 }
 
 /**
@@ -423,10 +423,10 @@ export interface VehicleApi {
   /** Edita um campo (`engineForce`, `comZ`, …) e persiste no overlay. */
   set(obj: Object3D, key: keyof VehicleEditState, value: number): void;
   /**
-   * Importa um ÁUDIO de motor (FileField → `{ name, dataUrl }`): faz upload pro projeto
-   * e grava `engineSound` com o caminho. Aplica ao dar play (o jogo carrega o som).
+   * Importa um ÁUDIO de motor pra um `slot` de camada (`onLow`, `offHigh`, …): faz upload
+   * pro projeto e grava em `engineLayers[slot]`. Aplica ao dar play (o jogo carrega).
    */
-  importSound(obj: Object3D, name: string, dataUrl: string): void;
+  importSound(obj: Object3D, slot: string, name: string, dataUrl: string): void;
 }
 
 export interface EditorInspectorOptions {

@@ -113,7 +113,9 @@ export class Speedometer {
     const t = this.maxSpeed > 0 ? Math.min(1, speed / this.maxSpeed) : 0;
     const angle = this.minAngle + (this.maxAngle - this.minAngle) * t;
     this.needlePivot.style.transform = `rotate(${angle}deg)`;
-    this.label.textContent = `${Math.round(speed)} ${this.units === 'mph' ? 'mph' : 'km/h'}`;
+    // Ponteiro e número travados no máximo definido.
+    const shown = Math.round(Math.min(speed, this.maxSpeed));
+    this.label.textContent = `${shown} ${this.units === 'mph' ? 'mph' : 'km/h'}`;
   }
 
   /** Mostra/esconde o velocímetro (ex.: só ao dirigir). */
