@@ -32,6 +32,16 @@ export interface VehicleControlOptions {
   /** Câmera chase: distância e altura. Default 8 / 3.5. */
   camDistance?: number;
   camHeight?: number;
+  /** Sensibilidade do mouse pra orbitar a câmera (rad/px). Default 0.0022. */
+  lookSensitivity?: number;
+  /** Velocidade de órbita pelo 2º stick (rad/s). Default 2.5. */
+  padLookSpeed?: number;
+  /** Inverte o eixo Y do olhar. Default false. */
+  invertLookY?: boolean;
+  /** Quão rápido a câmera recentra atrás ao dirigir (1/s). Default 2. */
+  camFollowRate?: number;
+  /** Tempo sem olhar (s) até começar a recentrar atrás. Default 1.2. */
+  recenterDelay?: number;
   /** Só dirige/posiciona a câmera quando `true` (ex.: `() => car.driving`). Default sempre. */
   active?: () => boolean;
   /** Pausa total (ex.: `() => game.editorActive`). */
@@ -59,6 +69,10 @@ export class VehicleControlSystem extends System {
 
   private steer = 0;
   private throttle = 0;
+  private camYaw = 0;
+  private camPitch = 0.32;
+  private lookIdle = 999;
+  private camInit = false;
 
   constructor(
     private readonly physics: RapierPhysics,
@@ -145,14 +159,56 @@ export class VehicleControlSystem extends System {
       }
     }
 
-    if (driving) this.placeCamera(t, r);
+    if (driving) this.placeCamera(t, r, dt);
   }
 
-  private placeCamera(t: { x: number; y: number; z: number }, r: { x: number; y: number; z: number; w: number }): void {
-    const dist = this.options.camDistance ?? 8;
-    const height = this.options.camHeight ?? 3.5;
-    _fwd.set(0, 0, 1).applyQuaternion(_q.set(r.x, r.y, r.z, r.w)); // forward do carro (+Z)
-    _camPos.set(t.x - _fwd.x * dist, t.y + height, t.z - _fwd.z * dist);
+  /**
+   * Chase cam ORBITAL: mouse (pointer lock) + 2º stick giram a câmera em volta do carro;
+   * ao dirigir pra frente sem olhar, recentra atrás (auto-follow). Igual ao 3ª pessoa.
+   */
+  private placeCamera(t: { x: number; y: number; z: number }, r: { x: number; y: number; z: number; w: number }, dt: number): void {
+    const o = this.options;
+    const dist = o.camDistance ?? 8;
+    const height = o.camHeight ?? 3.5;
+
+    // Heading do carro (yaw do forward +Z).
+    _fwd.set(0, 0, 1).applyQuaternion(_q.set(r.x, r.y, r.z, r.w));
+    const carYaw = Math.atan2(_fwd.x, _fwd.z);
+    if (!this.camInit) { this.camYaw = carYaw; this.camInit = true; }
+
+    // Olhar: mouse (pointer lock) + 2º stick (eixos 2/3).
+    let dYaw = 0;
+    let dPitch = 0;
+    if (this.input && typeof document !== 'undefined' && document.pointerLockElement) {
+      const md = this.input.getMouseDelta();
+      dYaw -= md.x * (o.lookSensitivity ?? 0.0022);
+      dPitch -= md.y * (o.lookSensitivity ?? 0.0022);
+    }
+    const padLook = o.padLookSpeed ?? 2.5;
+    dYaw -= this.gamepad.getAxis(0, 2) * padLook * dt;
+    dPitch += (o.invertLookY ? -1 : 1) * this.gamepad.getAxis(0, 3) * padLook * dt;
+
+    const looking = Math.abs(dYaw) > 1e-4 || Math.abs(dPitch) > 1e-4;
+    this.camYaw += dYaw;
+    this.camPitch = Math.max(-0.2, Math.min(1.2, this.camPitch + dPitch));
+    this.lookIdle = looking ? 0 : this.lookIdle + dt;
+
+    // Auto-follow: sem olhar há um tempo + andando, recentra atrás do carro.
+    if (this.lookIdle > (o.recenterDelay ?? 1.2) && Math.abs(this.vehicle.forwardSpeed()) > 2) {
+      let diff = carYaw - this.camYaw;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      this.camYaw += diff * Math.min(1, dt * (o.camFollowRate ?? 2));
+    }
+
+    const cosP = Math.cos(this.camPitch);
+    const fx = Math.sin(this.camYaw);
+    const fz = Math.cos(this.camYaw);
+    _camPos.set(
+      t.x - fx * dist * cosP,
+      t.y + height + dist * Math.sin(this.camPitch),
+      t.z - fz * dist * cosP,
+    );
     this.camera.position.copy(_camPos);
     this.camera.lookAt(t.x, t.y + 1, t.z);
   }
