@@ -74,6 +74,8 @@ export interface OutdoorLightingOptions {
   shadowDistance?: number;
   /** Margem da luz do CSM (quão atrás da câmera o sol "vê" pra projetar). Default `200`. */
   lightMargin?: number;
+  /** Suaviza a transição entre cascatas do CSM (tira a "linha de corte"). Default `true`. */
+  shadowFade?: boolean;
 }
 
 /** Luzes criadas por {@link setupOutdoorLighting} — ajuste-as em runtime. */
@@ -126,6 +128,7 @@ export function setupOutdoorLighting(
     shadowCascades = 3,
     shadowDistance = 250,
     lightMargin = 200,
+    shadowFade = true,
   } = options;
 
   const three = renderer.threeRenderer;
@@ -160,12 +163,14 @@ export function setupOutdoorLighting(
     // CSM (Cascaded Shadow Maps, WebGPU): cascatas que seguem a câmera ativa — cobre o
     // mundo todo com nitidez perto. Substitui o frustum único acima (que vira fallback).
     if (csm) {
-      (sun.shadow as unknown as { shadowNode: unknown }).shadowNode = new CameraFollowingCSM(sun, {
+      const csmNode = new CameraFollowingCSM(sun, {
         cascades: shadowCascades,
         maxFar: shadowDistance,
         mode: 'practical',
         lightMargin,
       });
+      (csmNode as unknown as { fade: boolean }).fade = shadowFade; // suaviza a emenda das cascatas
+      (sun.shadow as unknown as { shadowNode: unknown }).shadowNode = csmNode;
     }
   }
   scene.add(sun);
