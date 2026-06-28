@@ -30,9 +30,16 @@ verdade" sem trazer Cannon (evita 2 físicas).
 
 - Substitui o `CarControlSystem` arcade do jogo por um veículo físico real (suspensão,
   grip, capota se exagerar — tunado "arcade-real").
-- **Exige infra Rapier no jogo**: o terreno vira collider Rapier (heightfield) e o
-  `RapierPhysicsSystem` passa a rodar. O personagem a pé segue no CharacterPhysics
-  (custom) por ora.
-- Pendente (próximos passos): terreno→collider Rapier, `VehicleControlSystem` (gamepad
-  + sync malha/rodas + chase cam), fiação no jogo, e **tuning** do handling dirigindo.
+- **Exige infra Rapier no jogo**: terreno+road viram colliders trimesh
+  (`addTrimeshFromObject` por `cortexTerrain`/`cortexRoad`). O personagem a pé segue no
+  CharacterPhysics (custom).
+- **Implementado** (DDD-61-CORTEX `main.ts`): `RapierPhysics.create()` + colliders +
+  `createVehicle` (chassi + 4 rodas nas posições do `car.glb`) + `VehicleControlSystem`
+  (`active: () => driving`). Switch a pé↔carro pela interação (A entra, B sai); player
+  some ao dirigir. O `VehicleControlSystem` (priority 30) roda DEPOIS da câmera de 3ª
+  pessoa pra a chase cam vencer ao dirigir.
+- **Tuning pendente** (só dirigindo): força do motor/ré, grip (`frictionSlip`),
+  suspensão, alinhamento chassi×malha e posição/raio das rodas. Sem spin/esterço visual
+  das rodas em v1 (a malha do carro segue o chassi inteiro) — `wheelTransform(i)` já
+  existe pra ligar isso depois.
 - Ver [[engine-terceira-pessoa-adr-0074]] (gamepad-first reusado no controle do carro).
