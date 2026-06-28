@@ -469,6 +469,29 @@ export class Vehicle {
     outQuat.multiply(_wq2.setFromAxisAngle(_wax.set(1, 0, 0), spinAngle)); // giro (eixo X)
   }
 
+  /**
+   * Aplica AO VIVO parâmetros de suspensão/grip em TODAS as rodas (ex.: editar no
+   * Inspector sem reiniciar). Só mexe nos campos informados. (Massa e centro de massa
+   * NÃO mudam aqui — precisam recriar o veículo.)
+   */
+  applyTuning(t: {
+    suspensionStiffness?: number;
+    suspensionRestLength?: number;
+    suspensionCompression?: number;
+    suspensionRelaxation?: number;
+    maxSuspensionTravel?: number;
+    frictionSlip?: number;
+  }): void {
+    for (let i = 0; i < this.wheels.length; i++) {
+      if (t.suspensionStiffness != null) this.ctrl.setWheelSuspensionStiffness(i, t.suspensionStiffness);
+      if (t.suspensionRestLength != null) this.ctrl.setWheelSuspensionRestLength(i, t.suspensionRestLength);
+      if (t.suspensionCompression != null) this.ctrl.setWheelSuspensionCompression(i, t.suspensionCompression);
+      if (t.suspensionRelaxation != null) this.ctrl.setWheelSuspensionRelaxation(i, t.suspensionRelaxation);
+      if (t.maxSuspensionTravel != null) this.ctrl.setWheelMaxSuspensionTravel(i, t.maxSuspensionTravel);
+      if (t.frictionSlip != null) this.ctrl.setWheelFrictionSlip(i, t.frictionSlip);
+    }
+  }
+
   /** Reseta o chassi (respawn): zera velocidades + (opcional) posiciona/orienta. */
   reset(position?: Vec3Like, rotation?: QuatLike): void {
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
