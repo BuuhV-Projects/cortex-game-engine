@@ -2,6 +2,7 @@ import {
   Mesh,
   CapsuleGeometry,
   MeshBasicMaterial,
+  DoubleSide,
   Group,
   type BufferGeometry,
   type Object3D,
@@ -10,6 +11,7 @@ import { System } from '../ecs/System.js';
 import { Entity } from '../ecs/Entity.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { TransformComponent } from '../components/TransformComponent.js';
+import { Object3DComponent } from '../components/Object3DComponent.js';
 import type { EditorState } from './EditorState.js';
 
 /** Verde estilo Unity Character Controller (cápsula do player/NPC). */
@@ -74,6 +76,11 @@ export class CharacterColliderGizmoSystem extends System {
       const t = e.getComponent(TransformComponent)!;
       const feetY = t.y - body.footOffset;
       g.mesh.position.set(t.x, feetY + body.height / 2, t.z);
+
+      // Proxy de CLIQUE: o raycast do editor erra a malha skinada (bounding na
+      // bind-pose); então clicar na cápsula seleciona o PRÓPRIO personagem.
+      const owner = e.getComponent(Object3DComponent)?.object;
+      if (owner) g.mesh.userData['cortexPickProxy'] = owner;
     }
 
     // Limpa gizmos de entidades que sumiram.
@@ -93,6 +100,7 @@ export class CharacterColliderGizmoSystem extends System {
       depthTest: false,
       transparent: true,
       opacity: 0.6,
+      side: DoubleSide, // raycast de clique pega a cápsula de qualquer face (proxy)
     });
     const mesh = new Mesh(capsuleGeometry(body), material);
     mesh.renderOrder = 998;

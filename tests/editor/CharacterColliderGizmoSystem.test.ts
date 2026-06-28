@@ -8,6 +8,7 @@ import { Scene, Mesh, Group } from 'three';
 import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
 import { CharacterBodyComponent } from '../../src/components/CharacterBodyComponent.js';
+import { Object3DComponent } from '../../src/components/Object3DComponent.js';
 import { CharacterColliderGizmoSystem } from '../../src/editor/CharacterColliderGizmoSystem.js';
 
 function setup(active: boolean) {
@@ -18,8 +19,10 @@ function setup(active: boolean) {
   const e = world.createEntity();
   e.addComponent(new TransformComponent(3, 1, -2, 0));
   e.addComponent(new CharacterBodyComponent({ radius: 0.4, height: 1.8, footOffset: 0 }));
+  const playerObj = new Mesh();
+  e.addComponent(new Object3DComponent(playerObj));
   const group = scene.children.find((c) => c.name === '__editor_character_gizmos') as Group;
-  return { world, e, group, state };
+  return { world, e, group, state, playerObj };
 }
 
 describe('CharacterColliderGizmoSystem', () => {
@@ -45,6 +48,12 @@ describe('CharacterColliderGizmoSystem', () => {
     const { world, group } = setup(false);
     world.tick(16);
     expect(group.visible).toBe(false);
+  });
+
+  it('aponta a cápsula como proxy de clique pro personagem (cortexPickProxy)', () => {
+    const { world, group, playerObj } = setup(true);
+    world.tick(16);
+    expect((group.children[0] as Mesh).userData['cortexPickProxy']).toBe(playerObj);
   });
 
   it('marca o grupo/cápsula como editorInternal (fora do outliner/export)', () => {

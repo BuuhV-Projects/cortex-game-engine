@@ -209,6 +209,13 @@ export class ObjectEditSystem extends System {
     // dele selecionaria o próprio gizmo e o attach() o prenderia em si mesmo,
     // causando recursão infinita em updateMatrixWorld (tela preta).
     for (const hit of hits) {
+      // Proxy de clique (ex.: cápsula do CharacterBody, cujo modelo skinado o raycast
+      // erra): seleciona o objeto apontado, mesmo sendo um gizmo interno.
+      const proxy = this.findPickProxy(hit.object);
+      if (proxy) {
+        this.select(this.findOwningRoot(proxy) ?? proxy);
+        return;
+      }
       if (this.isEditorInternal(hit.object)) continue;
       const root = this.findOwningRoot(hit.object);
       if (!root) continue;
@@ -220,6 +227,17 @@ export class ObjectEditSystem extends System {
       return;
     }
     this.deselect();
+  }
+
+  /** Objeto-alvo de um proxy de clique (`cortexPickProxy`), subindo a hierarquia. */
+  private findPickProxy(obj: THREE.Object3D): THREE.Object3D | null {
+    let cur: THREE.Object3D | null = obj;
+    while (cur) {
+      const p = cur.userData['cortexPickProxy'] as THREE.Object3D | undefined;
+      if (p) return p;
+      cur = cur.parent;
+    }
+    return null;
   }
 
   /** `true` se o objeto (ou algum ancestral) é marcado interno do editor (gizmo). */
