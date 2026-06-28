@@ -458,12 +458,12 @@ export class Vehicle {
    * quando ela é **filha** do carro (que já segue o chassi). Inclui suspensão (sobe/desce),
    * esterço (gira no Y) e rolagem (gira no eixo X).
    */
-  wheelLocalTransform(i: number, outPos: Vector3, outQuat: Quaternion): void {
+  wheelLocalTransform(i: number, outPos: Vector3, outQuat: Quaternion, extraSpin = 0): void {
     const cp = this.ctrl.wheelChassisConnectionPointCs(i) ?? { x: 0, y: 0, z: 0 };
     const len = this.ctrl.wheelSuspensionLength(i) ?? 0;
     outPos.set(cp.x, cp.y - len, cp.z);
     const steer = this.ctrl.wheelSteering(i) ?? 0;
-    const spin = this.ctrl.wheelRotation(i) ?? 0;
+    const spin = (this.ctrl.wheelRotation(i) ?? 0) + extraSpin; // rolagem real + giro extra (ex.: wheelspin)
     outQuat.setFromAxisAngle(_wax.set(0, 1, 0), steer); // esterço (Y)
     outQuat.multiply(_wq2.setFromAxisAngle(_wax.set(1, 0, 0), spin)); // giro (eixo X)
   }
