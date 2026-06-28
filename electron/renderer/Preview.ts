@@ -253,6 +253,9 @@ export class Preview {
     this.stageEl.innerHTML = ''
     const iframe = document.createElement('iframe')
     iframe.className = 'preview-iframe'
+    // Delega a Gamepad API ao iframe — sem isto a Permissions Policy bloqueia
+    // `navigator.getGamepads()` no jogo (cross-origin) e o controle Xbox não conecta.
+    iframe.allow = 'gamepad *; fullscreen'
     iframe.src = this.withDebug(url)
     this.stageEl.appendChild(iframe)
   }
