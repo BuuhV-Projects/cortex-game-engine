@@ -314,25 +314,13 @@ export class RapierPhysics {
     const cd = R.ColliderDesc.cuboid(he.x, he.y, he.z).setFriction(spec.chassisFriction ?? 0.4);
     if (spec.chassisOffset) cd.setTranslation(spec.chassisOffset.x, spec.chassisOffset.y, spec.chassisOffset.z);
     if (spec.centerOfMass) {
-      // CM EXPLÍCITO (anti-capotamento): collider sem massa + massa/CM/inércia setados à
-      // mão, pra abaixar o centro de massa SEM mover a caixa (que precisa cobrir o corpo).
-      // CM baixo = carro estável em curva rápida. Inércia ≈ caixa (m/3·(a²+b²)).
+      // CM EXPLÍCITO (anti-capotamento): collider sem massa; massa/CM/inércia vão por
+      // `vehicle.setMassProperties` (abaixo) — também usado pra editar massa/CM AO VIVO.
       cd.setDensity(0);
-      this.world.createCollider(cd, chassis);
-      const ix = (mass / 3) * (he.y * he.y + he.z * he.z);
-      const iy = (mass / 3) * (he.x * he.x + he.z * he.z);
-      const iz = (mass / 3) * (he.x * he.x + he.y * he.y);
-      chassis.setAdditionalMassProperties(
-        mass,
-        { x: spec.centerOfMass.x, y: spec.centerOfMass.y, z: spec.centerOfMass.z },
-        { x: ix, y: iy, z: iz },
-        { x: 0, y: 0, z: 0, w: 1 },
-        true,
-      );
     } else {
       cd.setMass(mass);
-      this.world.createCollider(cd, chassis);
     }
+    this.world.createCollider(cd, chassis);
 
     const ctrl = this.world.createVehicleController(chassis);
     ctrl.indexUpAxis = 1; // Y é "pra cima" (a API é propriedade, não método)
@@ -354,7 +342,9 @@ export class RapierPhysics {
       ctrl.setWheelMaxSuspensionTravel(i, spec.maxSuspensionTravel ?? 0.3);
       ctrl.setWheelFrictionSlip(i, spec.frictionSlip ?? 2.5); // grip arcade-real
     }
-    return new Vehicle(ctrl, chassis, spec.wheels);
+    const vehicle = new Vehicle(ctrl, chassis, spec.wheels, he);
+    if (spec.centerOfMass) vehicle.setMassProperties(mass, spec.centerOfMass);
+    return vehicle;
   }
 
   /** Libera o mundo (memória WASM). */
@@ -395,7 +385,28 @@ export class Vehicle {
     private readonly body: RAPIER.RigidBody,
     /** As rodas, na ordem em que foram adicionadas. */
     readonly wheels: VehicleWheelSpec[],
+    /** Meia-extensão do chassi (pra recalcular a inércia ao mudar massa/CM). */
+    private readonly halfExtents: Vec3Like = { x: 1, y: 0.5, z: 2 },
   ) {}
+
+  /**
+   * Define massa + centro de massa AO VIVO (sem recriar o veículo) — ex.: editar no
+   * Inspector. A inércia é recalculada como caixa (`m/3·(a²+b²)`). Requer o veículo criado
+   * com `centerOfMass` (collider sem massa).
+   */
+  setMassProperties(mass: number, centerOfMass: Vec3Like): void {
+    const he = this.halfExtents;
+    const ix = (mass / 3) * (he.y * he.y + he.z * he.z);
+    const iy = (mass / 3) * (he.x * he.x + he.z * he.z);
+    const iz = (mass / 3) * (he.x * he.x + he.y * he.y);
+    this.body.setAdditionalMassProperties(
+      mass,
+      { x: centerOfMass.x, y: centerOfMass.y, z: centerOfMass.z },
+      { x: ix, y: iy, z: iz },
+      { x: 0, y: 0, z: 0, w: 1 },
+      true,
+    );
+  }
 
   /** Força do motor nas rodas com tração (N). 0 = desliga. */
   setEngineForce(force: number): void {
