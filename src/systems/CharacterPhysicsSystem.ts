@@ -29,6 +29,19 @@ function isSolid(obj: Object3D): boolean {
   return false;
 }
 
+/** `obj` (ou ancestral) é um terreno (`cortexTerrain`) — pro clamp anti-clip de morro. */
+function hasTerrain(obj: Object3D): boolean {
+  let p: Object3D | null = obj;
+  while (p) {
+    if (p.userData?.['cortexTerrain']) return true;
+    p = p.parent;
+  }
+  return false;
+}
+
+/** Altura (acima dos pés) de onde sai o raycast SÓ-terreno do clamp anti-clip. */
+const TERRAIN_PROBE = 1000;
+
 /**
  * Empurrão horizontal pra **sair de paredes**: dado o hit mais próximo em cada
  * direção de eixo (`±X`/`±Z`, distância ou `null` se livre) e o raio da cápsula,
@@ -161,6 +174,30 @@ export class CharacterPhysicsSystem extends System {
         c.velocityY = 0;
         c.grounded = true;
         c.jumpsUsed = 0;
+      }
+
+      // ── Anti-clip do TERRENO: nunca fica abaixo da superfície ───────────────────
+      // O raycast de chão acima parte de pés+stepHeight; num morro ÍNGREME a superfície
+      // do terreno fica ACIMA dessa origem e ele não a acha — o personagem **atravessa
+      // o morro** (cai no `groundY` plano). Aqui um raycast de BEM ALTO, só contra o
+      // terreno (`cortexTerrain`), sobe o personagem até a superfície quando ele está
+      // abaixo dela: escala o morro em vez de atravessar. Específico do terreno (não
+      // mexe no blockout sólido, que tem colisão de parede própria abaixo).
+      if (this.roots.length > 0 && c.velocityY <= 0) {
+        const feetNow = t.y - c.footOffset;
+        this.origin.set(t.x, feetNow + TERRAIN_PROBE, t.z);
+        this.ray.set(this.origin, DOWN);
+        this.ray.far = Infinity;
+        for (const h of this.ray.intersectObjects(this.roots, true)) {
+          if (isEditorChrome(h.object)) continue;
+          if (!hasTerrain(h.object)) continue;
+          if (feetNow < h.point.y - SKIN) {
+            t.y = h.point.y + c.footOffset; // sobe pra superfície do terreno
+            c.velocityY = 0;
+            c.grounded = true;
+          }
+          break; // 1ª superfície de terreno sob a origem
+        }
       }
 
       // ── Colisão de PAREDE (horizontal) ──────────────────────────────────────────

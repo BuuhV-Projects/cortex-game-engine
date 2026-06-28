@@ -199,6 +199,48 @@ describe('CharacterBody + terreno', () => {
     expect(c.jumpsUsed).toBe(0); // resetou ao aterrar
   });
 
+  it('NÃO atravessa morro íngreme: anti-clip sobe o personagem até a superfície', () => {
+    // Regressão: num morro esculpido mais íngreme que o stepHeight, o raycast de chão
+    // (origem em pés+stepHeight) não enxerga a superfície ACIMA dele → o personagem caía
+    // no groundY plano e ATRAVESSAVA o morro. O clamp anti-clip (raycast só-terreno de
+    // bem alto) sobe o personagem até a superfície.
+    const world = new World();
+    const terrain = new Terrain({ size: 20, resolution: 20 });
+    terrain.sculpt(0, 0, 4, 10); // morro íngreme de ~10u no centro
+    const surface = terrain.heightAt(0, 0)!;
+    expect(surface).toBeGreaterThan(8); // sanity: morro alto
+
+    const scene = new Object3D();
+    scene.add(terrain.mesh);
+    scene.updateMatrixWorld(true);
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 1, 0); // DENTRO do morro (abaixo da superfície ~10)
+    const c = new CharacterBodyComponent({ groundY: 0 });
+    e.addComponent(t);
+    e.addComponent(c);
+
+    world.tick(16);
+    expect(t.y).toBeGreaterThan(surface - 0.5); // subiu pra superfície (não atravessou)
+    expect(c.grounded).toBe(true);
+  });
+
+  it('anti-clip NÃO afeta quem está sobre o terreno plano (não levanta indevidamente)', () => {
+    const world = new World();
+    const terrain = new Terrain({ size: 20, resolution: 20 }); // plano em y=0
+    const scene = new Object3D();
+    scene.add(terrain.mesh);
+    scene.updateMatrixWorld(true);
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 3, 0);
+    e.addComponent(t);
+    e.addComponent(new CharacterBodyComponent());
+    for (let i = 0; i < 120; i++) world.tick(16);
+    expect(t.y).toBeCloseTo(0, 1); // pousou no plano (0), o anti-clip não empurrou pra cima
+  });
+
   it('TerrainCollisionSystem NÃO move o CharacterBody (raycast é a autoridade única)', () => {
     // Regressão: antes os dois aterravam o character e ele QUICAVA em rampas (raycast
     // no triângulo vs heightAt bilinear divergem). Agora o TerrainCollision ignora
