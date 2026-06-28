@@ -11,6 +11,26 @@ import { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js';
 import { Renderer } from '../core/Renderer.js';
 import { Scene } from '../core/Scene.js';
 
+/**
+ * CSM que SEGUE a câmera que está renderizando (a do frame), não a cacheada no 1º render.
+ * Sem isso, o CSM trava na primeira câmera vista (a do editor) — mexer no editor afetava a
+ * sombra no play, e a sombra não acompanhava o jogador. Troca a câmera por frame +
+ * recomputa as cascatas quando ela muda (editor ↔ play).
+ */
+class CameraFollowingCSM extends CSMShadowNode {
+  override updateBefore(
+    frame: Parameters<CSMShadowNode['updateBefore']>[0],
+  ): ReturnType<CSMShadowNode['updateBefore']> {
+    const cam = (frame as unknown as { camera?: unknown } | null)?.camera;
+    const self = this as unknown as { camera: unknown; updateFrustums: () => void };
+    if (cam && self.camera && cam !== self.camera) {
+      self.camera = cam;
+      self.updateFrustums();
+    }
+    return super.updateBefore(frame);
+  }
+}
+
 /** Opções de {@link setupOutdoorLighting}. Todas opcionais — defaults "verão". */
 export interface OutdoorLightingOptions {
   /** Cor do céu (topo do hemisphere). Default `0x9fd6ee`. */
@@ -140,7 +160,7 @@ export function setupOutdoorLighting(
     // CSM (Cascaded Shadow Maps, WebGPU): cascatas que seguem a câmera ativa — cobre o
     // mundo todo com nitidez perto. Substitui o frustum único acima (que vira fallback).
     if (csm) {
-      (sun.shadow as unknown as { shadowNode: unknown }).shadowNode = new CSMShadowNode(sun, {
+      (sun.shadow as unknown as { shadowNode: unknown }).shadowNode = new CameraFollowingCSM(sun, {
         cascades: shadowCascades,
         maxFar: shadowDistance,
         mode: 'practical',
