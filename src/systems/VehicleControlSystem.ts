@@ -7,12 +7,19 @@ import type { InputManager } from '../core/InputManager.js';
 
 /** Opções do {@link VehicleControlSystem}. */
 export interface VehicleControlOptions {
-  /** Força do motor (N) com RT no talo. Default 9000. */
+  /** Força do motor (N) com acelerador no talo. Default 5000. */
   engineForce?: number;
   /** Força de ré com LT parado. Default `engineForce * 0.45`. */
   reverseForce?: number;
   /** Freio máximo (LT andando pra frente). Default 50. */
   maxBrake?: number;
+  /**
+   * Freio de **resistência ao rolamento / freio-motor** aplicado ao soltar acelerador e
+   * freio (senão o carro não desacelera). Default 4.
+   */
+  rollingResistance?: number;
+  /** Suavização do acelerador (1/s) — evita arranque brusco/empinada. Default 3. */
+  throttleSmooth?: number;
   /** Esterço máximo (rad). Default 0.55. */
   maxSteer?: number;
   /** Suavização do esterço (1/s). Default 8. */
@@ -44,6 +51,7 @@ export class VehicleControlSystem extends System {
   override priority = 30;
 
   private steer = 0;
+  private throttle = 0;
 
   constructor(
     private readonly physics: RapierPhysics,
@@ -63,7 +71,7 @@ export class VehicleControlSystem extends System {
     const dt = deltaTime / 1000;
     const o = this.options;
     const driving = o.active?.() ?? true;
-    const engine = o.engineForce ?? 9000;
+    const engine = o.engineForce ?? 5000;
 
     if (driving) {
       // Gamepad-first; o teclado PREENCHE quando o controle está ocioso — sem controle
@@ -83,10 +91,17 @@ export class VehicleControlSystem extends System {
       }
       const fwd = this.vehicle.forwardSpeed();
 
-      // RT = motor pra frente. LT andando pra frente = freio; LT ~parado/ré = motor reverso.
+      // Acelerador com RAMPA (suaviza o arranque, evita empinar a frente).
+      this.throttle += (accel - this.throttle) * Math.min(1, dt * (o.throttleSmooth ?? 3));
+
+      // Acelera pra frente; LT andando pra frente = freio; LT ~parado/ré = motor reverso.
       const reversing = brakeIn > 0.1 && fwd < 1;
-      this.vehicle.setEngineForce(accel * engine - (reversing ? brakeIn * (o.reverseForce ?? engine * 0.45) : 0));
-      this.vehicle.setBrake(brakeIn > 0.1 && fwd >= 1 ? brakeIn * (o.maxBrake ?? 50) : 0);
+      this.vehicle.setEngineForce(this.throttle * engine - (reversing ? brakeIn * (o.reverseForce ?? engine * 0.45) : 0));
+      // Freio: LT andando pra frente. Ao SOLTAR tudo, freio-motor leve (senão não desacelera).
+      const coasting = this.throttle < 0.05 && brakeIn < 0.05;
+      this.vehicle.setBrake(
+        brakeIn > 0.1 && fwd >= 1 ? brakeIn * (o.maxBrake ?? 50) : coasting ? (o.rollingResistance ?? 4) : 0,
+      );
 
       const target = -steerIn * (o.maxSteer ?? 0.55);
       this.steer += (target - this.steer) * Math.min(1, dt * (o.steerSmooth ?? 8));
