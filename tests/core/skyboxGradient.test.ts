@@ -18,9 +18,9 @@ describe('Skybox.fromGradient', () => {
     expect(tex.image.height).toBe(64);
 
     const data = tex.image.data as Uint8Array;
-    const zenithR = data[(64 - 1) * 4]; // topo (+Y)
-    const zenithB = data[(64 - 1) * 4 + 2];
-    const midR = data[32 * 4]; // horizonte
+    const zenithR = data[0]; // linha 0 = zênite (topo, por flipY=false)
+    const zenithB = data[2];
+    const midR = data[32 * 4]; // horizonte (meio)
     expect(zenithB).toBeGreaterThan(120); // zênite é azul
     expect(zenithR).toBeLessThan(midR); // zênite menos vermelho que o horizonte pálido
   });

@@ -102,13 +102,14 @@ export class Skybox {
     const ground = new THREE.Color(options.bottom ?? '#8f8268');
     const h = Math.max(8, options.resolution ?? 128);
 
-    // Equiret 1×h: row 0 = nadir (-Y), row h-1 = zênite (+Y). Lerp em espaço linear,
-    // grava em sRGB (a textura é sRGB) pras cores baterem com o hex informado.
+    // Equiret 1×h: como no HDRI (flipY=false), a linha 0 renderiza no TOPO (zênite) e a
+    // última no chão (nadir) — por isso `t = 1 - i/(h-1)` (i=0 → zênite). Lerp em espaço
+    // linear, grava em sRGB (a textura é sRGB) pras cores baterem com o hex informado.
     const data = new Uint8Array(h * 4);
     const c = new THREE.Color();
     const out = { r: 0, g: 0, b: 0 };
     for (let i = 0; i < h; i++) {
-      const t = i / (h - 1);
+      const t = 1 - i / (h - 1);
       if (t < 0.5) c.copy(ground).lerp(horizon, t / 0.5);
       else c.copy(horizon).lerp(zenith, (t - 0.5) / 0.5);
       c.getRGB(out, THREE.SRGBColorSpace);

@@ -401,6 +401,32 @@ export class Vehicle {
     return v.x * _wv.x + v.y * _wv.y + v.z * _wv.z;
   }
 
+  /** Velocidade LATERAL (eixo +X local) do chassi, m/s — alto = derrapando/drift. */
+  lateralSpeed(): number {
+    const v = this.body.linvel();
+    const r = this.body.rotation();
+    _wv.set(1, 0, 0).applyQuaternion(_wq.set(r.x, r.y, r.z, r.w));
+    return v.x * _wv.x + v.y * _wv.y + v.z * _wv.z;
+  }
+
+  /** A roda `i` está tocando o chão? */
+  wheelIsInContact(i: number): boolean {
+    return this.ctrl.wheelIsInContact(i);
+  }
+
+  /** Escreve em `out` o ponto de contato MUNDIAL da roda `i`; `false` se não há contato. */
+  wheelContactPoint(i: number, out: Vector3): boolean {
+    const p = this.ctrl.wheelContactPoint(i);
+    if (!p) return false;
+    out.set(p.x, p.y, p.z);
+    return true;
+  }
+
+  /** Número de rodas. */
+  get wheelCount(): number {
+    return this.wheels.length;
+  }
+
   chassisTranslation(): Vec3Like {
     const t = this.body.translation();
     return { x: t.x, y: t.y, z: t.z };

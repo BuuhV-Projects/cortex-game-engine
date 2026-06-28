@@ -60,6 +60,8 @@ export * from './systems/TerrainCollisionSystem.js';
 export * from './systems/CharacterPhysicsSystem.js';
 export * from './systems/InteractionSystem.js';
 export * from './systems/VehicleControlSystem.js';
+export * from './systems/SkidMarkSystem.js';
+export * from './ui/Speedometer.js';
 export * from './systems/ThirdPersonControlSystem.js';
 export * from './systems/RapierPhysicsSystem.js';
 export * from './systems/PlatformerAnimationSystem.js';

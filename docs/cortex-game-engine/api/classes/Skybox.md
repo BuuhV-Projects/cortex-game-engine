@@ -24,7 +24,7 @@ Defined in: [src/core/Skybox.ts:52](https://github.com/BuuhV-Projects/cortex-gam
 
 > `static` **clear**(`scene`): `void`
 
-Defined in: [src/core/Skybox.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L140)
+Defined in: [src/core/Skybox.ts:141](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L141)
 
 Remove o environment/background da cena (volta ao fundo padrão).
 Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.

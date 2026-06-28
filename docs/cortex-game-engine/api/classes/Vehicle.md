@@ -52,13 +52,29 @@ Defined in: [src/physics/RapierPhysics.ts:372](https://github.com/BuuhV-Projects
 
 As rodas, na ordem em que foram adicionadas.
 
+## Accessors
+
+### wheelCount
+
+#### Get Signature
+
+> **get** **wheelCount**(): `number`
+
+Defined in: [src/physics/RapierPhysics.ts:426](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L426)
+
+Número de rodas.
+
+##### Returns
+
+`number`
+
 ## Methods
 
 ### chassisRotation()
 
 > **chassisRotation**(): [`QuatLike`](../interfaces/QuatLike.md)
 
-Defined in: [src/physics/RapierPhysics.ts:408](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L408)
+Defined in: [src/physics/RapierPhysics.ts:434](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L434)
 
 #### Returns
 
@@ -70,7 +86,7 @@ Defined in: [src/physics/RapierPhysics.ts:408](https://github.com/BuuhV-Projects
 
 > **chassisTranslation**(): [`Vec3Like`](../interfaces/Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:404](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L404)
+Defined in: [src/physics/RapierPhysics.ts:430](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L430)
 
 #### Returns
 
@@ -92,11 +108,25 @@ Velocidade ao longo do forward (+Z local) do chassi, m/s (sinal = frente/ré).
 
 ***
 
+### lateralSpeed()
+
+> **lateralSpeed**(): `number`
+
+Defined in: [src/physics/RapierPhysics.ts:405](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L405)
+
+Velocidade LATERAL (eixo +X local) do chassi, m/s — alto = derrapando/drift.
+
+#### Returns
+
+`number`
+
+***
+
 ### reset()
 
 > **reset**(`position?`, `rotation?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:431](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L431)
+Defined in: [src/physics/RapierPhysics.ts:457](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L457)
 
 Reseta o chassi (respawn): zera velocidades + (opcional) posiciona/orienta.
 
@@ -196,11 +226,55 @@ Avança a física do veículo. Chame DEPOIS de `physics.step()`.
 
 ***
 
+### wheelContactPoint()
+
+> **wheelContactPoint**(`i`, `out`): `boolean`
+
+Defined in: [src/physics/RapierPhysics.ts:418](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L418)
+
+Escreve em `out` o ponto de contato MUNDIAL da roda `i`; `false` se não há contato.
+
+#### Parameters
+
+##### i
+
+`number`
+
+##### out
+
+`Vector3`
+
+#### Returns
+
+`boolean`
+
+***
+
+### wheelIsInContact()
+
+> **wheelIsInContact**(`i`): `boolean`
+
+Defined in: [src/physics/RapierPhysics.ts:413](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L413)
+
+A roda `i` está tocando o chão?
+
+#### Parameters
+
+##### i
+
+`number`
+
+#### Returns
+
+`boolean`
+
+***
+
 ### wheelTransform()
 
 > **wheelTransform**(`i`, `outPos`, `outQuat`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:414](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L414)
+Defined in: [src/physics/RapierPhysics.ts:440](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L440)
 
 Escreve em `outPos`/`outQuat` o transform MUNDIAL da roda `i` (pra a malha).
 
