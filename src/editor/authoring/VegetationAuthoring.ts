@@ -55,7 +55,7 @@ export interface VegetationAuthoring {
  * **espaçamento mínimo** pra não amontoar. `erase` remove num raio (borracha).
  */
 export function createVegetationAuthoring(ctx: EditorAuthoringContext, hooks: VegetationEditorHooks): VegetationAuthoring {
-  const brush = { radius: 6, density: 4, scaleMin: 0.8, scaleMax: 1.3 };
+  const brush = { radius: 6, density: 4, scaleMin: 0.8, scaleMax: 1.0 };
   let availableModels: string[] = [];
   let sess: { veg: Vegetation; obj: Object3D; stroking: boolean; dirty: boolean } | null = null;
 
