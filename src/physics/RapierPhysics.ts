@@ -78,6 +78,13 @@ export interface VehicleSpec {
   position?: Vec3Like;
   /** Meia-extensão do chassi (box collider) — ex.: carro 4.85×1.4×2.27 → {2.42,0.7,1.13}. */
   chassisHalfExtents: Vec3Like;
+  /**
+   * Desloca a CAIXA do chassi em relação à origem do corpo (= origem do `.glb`).
+   * **Importante:** se a origem do modelo fica embaixo (nas rodas), suba a caixa
+   * (`{x:0,y:~0.6,z:0}`) pra ela ficar ACIMA das rodas — senão a caixa encosta no chão
+   * antes das rodas e o carro **flutua**. Default `{0,0,0}`.
+   */
+  chassisOffset?: Vec3Like;
   /** Massa do chassi (kg). Default 1200. */
   mass?: number;
   /** Atrito do chassi ao raspar. Default 0.4. */
@@ -299,6 +306,7 @@ export class RapierPhysics {
     const cd = R.ColliderDesc.cuboid(he.x, he.y, he.z)
       .setMass(spec.mass ?? 1200)
       .setFriction(spec.chassisFriction ?? 0.4);
+    if (spec.chassisOffset) cd.setTranslation(spec.chassisOffset.x, spec.chassisOffset.y, spec.chassisOffset.z);
     this.world.createCollider(cd, chassis);
 
     const ctrl = this.world.createVehicleController(chassis);
