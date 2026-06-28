@@ -1,7 +1,7 @@
 # 0082 - Sombras de mundo aberto: Cascaded Shadow Maps (CSM) no WebGPU
 
 **Data:** 2026-06-28
-**Status:** aceito
+**Status:** aceito (opção do engine), mas **não usado pelo DDD-61-CORTEX** — ver nota no fim.
 
 ## Contexto
 
@@ -35,3 +35,15 @@ no nosso renderer, ADR-0032).
 - `CSMShadowNode` é addon `examples/jsm` (não core) — pode pedir ajuste em updates do three.
 - Evolução possível: expor no Inspector (seção de cena/iluminação) e tunar fade entre
   cascatas. Ver [[engine-estradas-adr-0072]] (mesma cena grande).
+
+## Nota (2026-06-28) — CSM bugou na prática; jogo usa "follow-shadow"
+
+O `CSMShadowNode` (addon `examples/jsm`) deu artefato persistente neste setup WebGPU: a
+sombra cobria o **frustum de UMA câmera** e aparecia uma "cunha"/linha diagonal cortando a
+visão (mesmo com 1 cascata + fade + o fix de seguir a câmera de visão). Depois de várias
+tentativas, o **DDD-61-CORTEX desligou o CSM** (`csm:false`) e usa uma **sombra única que
+segue o player/carro**: o `main.ts` acha o `DirectionalLight` e move `sun.position`+`target`
+junto do alvo ativo a cada frame (mantendo a direção), com `shadowArea` ~110 + `shadowMapSize`
+4096 + **névoa** escondendo a borda. Simples, sem cunha, nítida em volta e em qualquer ponto
+do mapa. O CSM fica como opção do engine pra quem quiser tentar/no futuro (talvez via CSM
+em TSL nativo quando o three amadurecer).
