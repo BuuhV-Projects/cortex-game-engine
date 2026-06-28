@@ -509,6 +509,16 @@ const sceneDefinitionSchema = z.object({
       /** Ambient (levanta sombras sem matar contraste). Default 0.18. */
       ambientIntensity: z.number().optional(),
       exposure: z.number().optional(),
+      /** **CSM** (Cascaded Shadow Maps): sombra que segue a câmera, cobre o mundo. Default false. */
+      csm: z.boolean().optional(),
+      /** Nº de cascatas do CSM. Default 3. */
+      shadowCascades: z.number().optional(),
+      /** Distância máx. de sombra (CSM, m). Default 250. */
+      shadowDistance: z.number().optional(),
+      /** Resolução do shadow map (px). Default 2048. */
+      shadowMapSize: z.number().optional(),
+      /** Meia-extensão do frustum de sombra único (sem CSM). Default 60. */
+      shadowArea: z.number().optional(),
       /** URL de um HDRI equiretangular (`.hdr`) → céu visível + luz por imagem (IBL). */
       hdri: z.string().optional(),
       /** Borrão do HDRI de fundo (0 = nítido). */

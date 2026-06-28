@@ -6,7 +6,7 @@
 
 # Interface: OutdoorLighting
 
-Defined in: [src/scene/OutdoorLighting.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L47)
+Defined in: [src/scene/OutdoorLighting.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L60)
 
 Luzes criadas por [setupOutdoorLighting](../functions/setupOutdoorLighting.md) â€” ajuste-as em runtime.
 
@@ -16,7 +16,7 @@ Luzes criadas por [setupOutdoorLighting](../functions/setupOutdoorLighting.md) â
 
 > **ambient**: `AmbientLight`
 
-Defined in: [src/scene/OutdoorLighting.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L50)
+Defined in: [src/scene/OutdoorLighting.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L63)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/scene/OutdoorLighting.ts:50](https://github.com/BuuhV-Projects/
 
 > **hemisphere**: `HemisphereLight`
 
-Defined in: [src/scene/OutdoorLighting.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L49)
+Defined in: [src/scene/OutdoorLighting.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L62)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [src/scene/OutdoorLighting.ts:49](https://github.com/BuuhV-Projects/
 
 > **sun**: `DirectionalLight`
 
-Defined in: [src/scene/OutdoorLighting.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L48)
+Defined in: [src/scene/OutdoorLighting.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L61)

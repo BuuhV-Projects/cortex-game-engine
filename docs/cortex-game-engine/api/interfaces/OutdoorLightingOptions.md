@@ -6,7 +6,7 @@
 
 # Interface: OutdoorLightingOptions
 
-Defined in: [src/scene/OutdoorLighting.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L14)
+Defined in: [src/scene/OutdoorLighting.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L15)
 
 Opções de [setupOutdoorLighting](../functions/setupOutdoorLighting.md). Todas opcionais — defaults "verão".
 
@@ -16,9 +16,21 @@ Opções de [setupOutdoorLighting](../functions/setupOutdoorLighting.md). Todas 
 
 > `optional` **ambientIntensity?**: `number`
 
-Defined in: [src/scene/OutdoorLighting.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L28)
+Defined in: [src/scene/OutdoorLighting.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L29)
 
 Intensidade do ambient (levanta as sombras sem matar contraste). Default `0.18`.
+
+***
+
+### csm?
+
+> `optional` **csm?**: `boolean`
+
+Defined in: [src/scene/OutdoorLighting.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L50)
+
+Liga **Cascaded Shadow Maps** (estilo Unity, WebGPU): cascatas de sombra que
+SEGUEM a câmera ativa — nítidas perto, cobertura longe, no mapa inteiro. Ideal pra
+mundo aberto (substitui o frustum único do `shadowArea`). Default `false`.
 
 ***
 
@@ -26,7 +38,7 @@ Intensidade do ambient (levanta as sombras sem matar contraste). Default `0.18`.
 
 > `optional` **exposure?**: `number`
 
-Defined in: [src/scene/OutdoorLighting.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L30)
+Defined in: [src/scene/OutdoorLighting.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L31)
 
 Exposição do tone mapping (ACES Filmic). Default `0.95`.
 
@@ -36,7 +48,7 @@ Exposição do tone mapping (ACES Filmic). Default `0.95`.
 
 > `optional` **ground?**: `ColorRepresentation`
 
-Defined in: [src/scene/OutdoorLighting.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L18)
+Defined in: [src/scene/OutdoorLighting.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L19)
 
 Cor refletida do chão (base do hemisphere). Default `0xb6e2a8`.
 
@@ -46,9 +58,19 @@ Cor refletida do chão (base do hemisphere). Default `0xb6e2a8`.
 
 > `optional` **hemisphereIntensity?**: `number`
 
-Defined in: [src/scene/OutdoorLighting.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L26)
+Defined in: [src/scene/OutdoorLighting.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L27)
 
 Intensidade do hemisphere (preenchimento azul-céu). Default `0.55`.
+
+***
+
+### lightMargin?
+
+> `optional` **lightMargin?**: `number`
+
+Defined in: [src/scene/OutdoorLighting.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L56)
+
+Margem da luz do CSM (quão atrás da câmera o sol "vê" pra projetar). Default `200`.
 
 ***
 
@@ -56,7 +78,7 @@ Intensidade do hemisphere (preenchimento azul-céu). Default `0.55`.
 
 > `optional` **shadowArea?**: `number`
 
-Defined in: [src/scene/OutdoorLighting.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L39)
+Defined in: [src/scene/OutdoorLighting.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L40)
 
 Meia-extensão do frustum de sombra (cobre `±area` em X/Z ao redor da
 origem). Aumente pra cenas maiores; menor = sombras mais nítidas. Default `60`.
@@ -67,9 +89,29 @@ origem). Aumente pra cenas maiores; menor = sombras mais nítidas. Default `60`.
 
 > `optional` **shadowBias?**: `number`
 
-Defined in: [src/scene/OutdoorLighting.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L41)
+Defined in: [src/scene/OutdoorLighting.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L42)
 
 Bias da sombra (combate shadow acne). Default `-0.0005`.
+
+***
+
+### shadowCascades?
+
+> `optional` **shadowCascades?**: `number`
+
+Defined in: [src/scene/OutdoorLighting.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L52)
+
+Nº de cascatas (CSM). Mais = transição mais suave, mais custo. Default `3`.
+
+***
+
+### shadowDistance?
+
+> `optional` **shadowDistance?**: `number`
+
+Defined in: [src/scene/OutdoorLighting.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L54)
+
+Distância máxima de sombra (CSM, m) — além disso não há sombra. Default `250`.
 
 ***
 
@@ -77,7 +119,7 @@ Bias da sombra (combate shadow acne). Default `-0.0005`.
 
 > `optional` **shadowMapSize?**: `number`
 
-Defined in: [src/scene/OutdoorLighting.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L34)
+Defined in: [src/scene/OutdoorLighting.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L35)
 
 Resolução do shadow map (lado, em px). Default `2048`.
 
@@ -87,7 +129,7 @@ Resolução do shadow map (lado, em px). Default `2048`.
 
 > `optional` **shadowNormalBias?**: `number`
 
-Defined in: [src/scene/OutdoorLighting.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L43)
+Defined in: [src/scene/OutdoorLighting.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L44)
 
 Normal bias da sombra (combate peter-panning). Default `0.05`.
 
@@ -97,7 +139,7 @@ Normal bias da sombra (combate peter-panning). Default `0.05`.
 
 > `optional` **shadows?**: `boolean`
 
-Defined in: [src/scene/OutdoorLighting.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L32)
+Defined in: [src/scene/OutdoorLighting.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L33)
 
 Liga shadowMap + `sun.castShadow`. Default `true`.
 
@@ -107,7 +149,7 @@ Liga shadowMap + `sun.castShadow`. Default `true`.
 
 > `optional` **sky?**: `ColorRepresentation`
 
-Defined in: [src/scene/OutdoorLighting.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L16)
+Defined in: [src/scene/OutdoorLighting.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L17)
 
 Cor do céu (topo do hemisphere). Default `0x9fd6ee`.
 
@@ -117,7 +159,7 @@ Cor do céu (topo do hemisphere). Default `0x9fd6ee`.
 
 > `optional` **sunColor?**: `ColorRepresentation`
 
-Defined in: [src/scene/OutdoorLighting.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L20)
+Defined in: [src/scene/OutdoorLighting.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L21)
 
 Cor do sol. Default `0xfff2cc` (luz quente).
 
@@ -127,7 +169,7 @@ Cor do sol. Default `0xfff2cc` (luz quente).
 
 > `optional` **sunIntensity?**: `number`
 
-Defined in: [src/scene/OutdoorLighting.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L22)
+Defined in: [src/scene/OutdoorLighting.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L23)
 
 Intensidade do sol. Default `3.2`.
 
@@ -137,6 +179,6 @@ Intensidade do sol. Default `3.2`.
 
 > `optional` **sunPosition?**: \[`number`, `number`, `number`\]
 
-Defined in: [src/scene/OutdoorLighting.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L24)
+Defined in: [src/scene/OutdoorLighting.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/OutdoorLighting.ts#L25)
 
 Posição/direção do sol. Default `[35, 55, 25]`.

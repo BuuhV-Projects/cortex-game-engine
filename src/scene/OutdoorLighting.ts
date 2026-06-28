@@ -7,6 +7,7 @@ import {
   PCFSoftShadowMap,
   type ColorRepresentation,
 } from 'three';
+import { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js';
 import { Renderer } from '../core/Renderer.js';
 import { Scene } from '../core/Scene.js';
 
@@ -41,6 +42,18 @@ export interface OutdoorLightingOptions {
   shadowBias?: number;
   /** Normal bias da sombra (combate peter-panning). Default `0.05`. */
   shadowNormalBias?: number;
+  /**
+   * Liga **Cascaded Shadow Maps** (estilo Unity, WebGPU): cascatas de sombra que
+   * SEGUEM a câmera ativa — nítidas perto, cobertura longe, no mapa inteiro. Ideal pra
+   * mundo aberto (substitui o frustum único do `shadowArea`). Default `false`.
+   */
+  csm?: boolean;
+  /** Nº de cascatas (CSM). Mais = transição mais suave, mais custo. Default `3`. */
+  shadowCascades?: number;
+  /** Distância máxima de sombra (CSM, m) — além disso não há sombra. Default `250`. */
+  shadowDistance?: number;
+  /** Margem da luz do CSM (quão atrás da câmera o sol "vê" pra projetar). Default `200`. */
+  lightMargin?: number;
 }
 
 /** Luzes criadas por {@link setupOutdoorLighting} — ajuste-as em runtime. */
@@ -89,6 +102,10 @@ export function setupOutdoorLighting(
     shadowArea = 60,
     shadowBias = -0.0005,
     shadowNormalBias = 0.05,
+    csm = false,
+    shadowCascades = 3,
+    shadowDistance = 250,
+    lightMargin = 200,
   } = options;
 
   const three = renderer.threeRenderer;
@@ -119,6 +136,17 @@ export function setupOutdoorLighting(
     cam.near = 1;
     cam.far = shadowArea * 4;
     cam.updateProjectionMatrix();
+
+    // CSM (Cascaded Shadow Maps, WebGPU): cascatas que seguem a câmera ativa — cobre o
+    // mundo todo com nitidez perto. Substitui o frustum único acima (que vira fallback).
+    if (csm) {
+      (sun.shadow as unknown as { shadowNode: unknown }).shadowNode = new CSMShadowNode(sun, {
+        cascades: shadowCascades,
+        maxFar: shadowDistance,
+        mode: 'practical',
+        lightMargin,
+      });
+    }
   }
   scene.add(sun);
 
