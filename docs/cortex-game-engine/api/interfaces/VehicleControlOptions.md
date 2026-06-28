@@ -16,7 +16,7 @@ Opções do [VehicleControlSystem](../classes/VehicleControlSystem.md).
 
 > `optional` **active?**: () => `boolean`
 
-Defined in: [src/systems/VehicleControlSystem.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L50)
+Defined in: [src/systems/VehicleControlSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L48)
 
 Só dirige/posiciona a câmera quando `true` (ex.: `() => car.driving`). Default sempre.
 
@@ -30,7 +30,7 @@ Só dirige/posiciona a câmera quando `true` (ex.: `() => car.driving`). Default
 
 > `optional` **camDistance?**: `number`
 
-Defined in: [src/systems/VehicleControlSystem.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L37)
+Defined in: [src/systems/VehicleControlSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L35)
 
 Câmera chase: distância e altura. Default 8 / 3.5.
 
@@ -40,7 +40,7 @@ Câmera chase: distância e altura. Default 8 / 3.5.
 
 > `optional` **camFollowRate?**: `number`
 
-Defined in: [src/systems/VehicleControlSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L46)
+Defined in: [src/systems/VehicleControlSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L44)
 
 Quão rápido a câmera recentra atrás ao dirigir (1/s). Default 2.
 
@@ -50,7 +50,7 @@ Quão rápido a câmera recentra atrás ao dirigir (1/s). Default 2.
 
 > `optional` **camHeight?**: `number`
 
-Defined in: [src/systems/VehicleControlSystem.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L38)
+Defined in: [src/systems/VehicleControlSystem.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L36)
 
 ***
 
@@ -78,7 +78,7 @@ Freio de mão (Espaço/A) — trava as rodas. Default 120 (mais forte que o frei
 
 > `optional` **invertLookY?**: `boolean`
 
-Defined in: [src/systems/VehicleControlSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L44)
+Defined in: [src/systems/VehicleControlSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L42)
 
 Inverte o eixo Y do olhar. Default false.
 
@@ -88,7 +88,7 @@ Inverte o eixo Y do olhar. Default false.
 
 > `optional` **lookSensitivity?**: `number`
 
-Defined in: [src/systems/VehicleControlSystem.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L40)
+Defined in: [src/systems/VehicleControlSystem.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L38)
 
 Sensibilidade do mouse pra orbitar a câmera (rad/px). Default 0.0022.
 
@@ -108,7 +108,7 @@ Freio máximo (LT andando pra frente). Default 50.
 
 > `optional` **maxSteer?**: `number`
 
-Defined in: [src/systems/VehicleControlSystem.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L28)
+Defined in: [src/systems/VehicleControlSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L26)
 
 Esterço máximo (rad). Default 0.7.
 
@@ -118,7 +118,7 @@ Esterço máximo (rad). Default 0.7.
 
 > `optional` **padLookSpeed?**: `number`
 
-Defined in: [src/systems/VehicleControlSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L42)
+Defined in: [src/systems/VehicleControlSystem.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L40)
 
 Velocidade de órbita pelo 2º stick (rad/s). Default 2.5.
 
@@ -128,7 +128,7 @@ Velocidade de órbita pelo 2º stick (rad/s). Default 2.5.
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/systems/VehicleControlSystem.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L52)
+Defined in: [src/systems/VehicleControlSystem.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L50)
 
 Pausa total (ex.: `() => game.editorActive`).
 
@@ -142,7 +142,7 @@ Pausa total (ex.: `() => game.editorActive`).
 
 > `optional` **recenterDelay?**: `number`
 
-Defined in: [src/systems/VehicleControlSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L48)
+Defined in: [src/systems/VehicleControlSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L46)
 
 Tempo sem olhar (s) até começar a recentrar atrás. Default 1.2.
 
@@ -173,7 +173,7 @@ freio (senão o carro não desacelera). Default 4.
 
 > `optional` **steerSmooth?**: `number`
 
-Defined in: [src/systems/VehicleControlSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L30)
+Defined in: [src/systems/VehicleControlSystem.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L28)
 
 Suavização do esterço (1/s). Default 8.
 
@@ -193,17 +193,7 @@ Suavização do acelerador (1/s) — evita arranque brusco/empinada. Default 3.
 
 > `optional` **wheelObjects?**: `Object3D`\<`Object3DEventMap`\>[]
 
-Defined in: [src/systems/VehicleControlSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L35)
+Defined in: [src/systems/VehicleControlSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L33)
 
 Malhas das rodas (na ORDEM das rodas do veículo) — sincronizadas a cada frame
 (suspensão sobe/desce, esterço, rolagem). Devem ser filhas do `car`.
-
-***
-
-### wheelSpinRate?
-
-> `optional` **wheelSpinRate?**: `number`
-
-Defined in: [src/systems/VehicleControlSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L26)
-
-Giro EXTRA das rodas com tração sob aceleração (rad/s no talo) — wheelspin visual. Default 18.

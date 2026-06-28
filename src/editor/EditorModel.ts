@@ -3,7 +3,7 @@ import { MathUtils, Box3, Vector3 } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
-import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi } from './EditorInspector.js';
+import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi, VehicleApi } from './EditorInspector.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
@@ -152,6 +152,7 @@ export interface DescribedInspector {
 export interface InspectorContext {
   colliderApi?: ColliderApi;
   physicsApi?: PhysicsApi;
+  vehicleApi?: VehicleApi;
   matteApi?: MatteApi;
   materialApi?: MaterialApi;
   meshApi?: MeshApi;
@@ -480,6 +481,37 @@ export function describeInspector(
     }
 
     if (fields.length) sections.push({ title: 'Forma', fields });
+  }
+
+  // ── Veículo (motor/freio/suspensão/centro de massa — ADR-0081) ───────────────
+  const vehState = ctx.vehicleApi?.get(obj) ?? null;
+  if (ctx.vehicleApi && vehState) {
+    const api = ctx.vehicleApi;
+    const num = (key: keyof typeof vehState, label: string, step: number): InspectorField => {
+      const fieldId = fid(`veh_${key}`);
+      handlers.set(fieldId, (v) => {
+        const n = Number(v);
+        if (Number.isFinite(n)) api.set(obj, key, n);
+      });
+      return { kind: 'number', id: fieldId, label, value: vehState[key], step };
+    };
+    sections.push({
+      title: 'Veículo',
+      fields: [
+        num('engineForce', 'Força do motor', 100),
+        num('maxBrake', 'Freio', 5),
+        num('handbrakeForce', 'Freio de mão', 5),
+        num('rollingResistance', 'Freio-motor', 1),
+        num('maxSteer', 'Esterço máx. (rad)', 0.05),
+        num('frictionSlip', 'Aderência (grip)', 0.5),
+        num('suspensionStiffness', 'Suspensão: rigidez', 1),
+        num('suspensionRestLength', 'Suspensão: altura', 0.05),
+        num('comZ', 'Centro de massa: frente/trás', 0.05),
+        num('comY', 'Centro de massa: altura', 0.05),
+        num('mass', 'Massa (kg)', 50),
+        num('maxSpeed', 'Velocímetro máx. (km/h)', 10),
+      ],
+    });
   }
 
   // ── Estrada (superfície + largura — ADR-0072) ────────────────────────────────

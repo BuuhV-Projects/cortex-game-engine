@@ -126,7 +126,7 @@ Velocidade LATERAL (eixo +X local) do chassi, m/s — alto = derrapando/drift.
 
 > **reset**(`position?`, `rotation?`): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:472](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L472)
+Defined in: [src/physics/RapierPhysics.ts:473](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L473)
 
 Reseta o chassi (respawn): zera velocidades + (opcional) posiciona/orienta.
 
@@ -272,7 +272,7 @@ A roda `i` está tocando o chão?
 
 ### wheelLocalTransform()
 
-> **wheelLocalTransform**(`i`, `outPos`, `outQuat`, `extraSpin?`): `void`
+> **wheelLocalTransform**(`i`, `outPos`, `outQuat`, `spinAngle?`): `void`
 
 Defined in: [src/physics/RapierPhysics.ts:461](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L461)
 
@@ -294,7 +294,7 @@ esterço (gira no Y) e rolagem (gira no eixo X).
 
 `Quaternion`
 
-##### extraSpin?
+##### spinAngle?
 
 `number` = `0`
 

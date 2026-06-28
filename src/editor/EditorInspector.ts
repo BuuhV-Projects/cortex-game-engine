@@ -391,6 +391,37 @@ export interface PlayerAnimationsApi {
   autoMap(obj: Object3D): void;
 }
 
+/**
+ * Estado editável do **veículo** (ADR-0081) — valores efetivos (dado da cena + overlay).
+ * `comY`/`comZ` = centro de massa (altura / frente-trás), mapeados pra `chassisOffset`.
+ */
+export interface VehicleEditState {
+  engineForce: number;
+  maxBrake: number;
+  handbrakeForce: number;
+  rollingResistance: number;
+  maxSteer: number;
+  mass: number;
+  frictionSlip: number;
+  suspensionStiffness: number;
+  suspensionRestLength: number;
+  comY: number;
+  comZ: number;
+  maxSpeed: number;
+}
+
+/**
+ * Autoria do **veículo** — seção "Veículo" do Inspector (ADR-0081). Lê/grava a config do
+ * carro (`data.vehicle[id]` no overlay; nó marcado com `userData.cortexVehicle`). Aplica
+ * ao recarregar/dar play (o jogo lê a config ao criar o veículo).
+ */
+export interface VehicleApi {
+  /** Estado efetivo, ou `null` se o objeto não é um veículo. */
+  get(obj: Object3D): VehicleEditState | null;
+  /** Edita um campo (`engineForce`, `comZ`, …) e persiste no overlay. */
+  set(obj: Object3D, key: keyof VehicleEditState, value: number): void;
+}
+
 export interface EditorInspectorOptions {
   /** Ponte de seleção compartilhada (mesma instância do ObjectEditSystem/outliner). */
   selection: EditorSelection;
@@ -408,6 +439,8 @@ export interface EditorInspectorOptions {
    * **Física**. Ver {@link PhysicsApi}.
    */
   physicsApi?: PhysicsApi;
+  /** Opcional: autoria do **veículo** (motor/freio/suspensão/centro de massa) — seção "Veículo". Ver {@link VehicleApi}. */
+  vehicleApi?: VehicleApi;
   /** Opcional: autoria/persistência do toggle Fosco (matte). Ver {@link MatteApi}. */
   matteApi?: MatteApi;
   /** Opcional: autoria/persistência do material/shader por objeto. Ver {@link MaterialApi}. */
@@ -452,6 +485,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     parent = document.body,
     colliderApi,
     physicsApi,
+    vehicleApi,
     matteApi,
     materialApi,
     meshApi,
@@ -463,7 +497,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

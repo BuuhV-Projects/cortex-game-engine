@@ -273,6 +273,21 @@ export function overlayMatte(overlay: SceneFileV1 | null | undefined): Record<st
 }
 
 /**
+ * Lê `data.vehicle` da overlay — a config do **veículo** autorada no Inspector por id
+ * (`{ [id]: VehicleConfig }`, ADR-0081). Sobrescreve o `vehicle` do nó (JSON). É só
+ * mesclada no `userData.cortexVehicle` (o jogo lê ao criar o veículo).
+ */
+export function overlayVehicle(overlay: SceneFileV1 | null | undefined): Record<string, Record<string, unknown>> {
+  const raw = overlay?.data?.['vehicle'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, Record<string, unknown>> = {};
+  for (const [name, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (v && typeof v === 'object' && !Array.isArray(v)) out[name] = v as Record<string, unknown>;
+  }
+  return out;
+}
+
+/**
  * Lê `data.material` da overlay — o material/shader **autorado no editor** por id
  * (`{ [id]: MaterialConfig }`, ADR-0058). Sobrescreve o `material` do nó (JSON).
  * Ausência = sem opinião (cai pro nó). Ver {@link applyMaterial}.
@@ -414,6 +429,7 @@ export async function buildScene(
   const editorGeometry = overlayGeometry(overlay);
   const editorAnim = overlayAnimation(overlay);
   const editorPlayerAnim = overlayPlayerAnimations(overlay);
+  const editorVehicle = overlayVehicle(overlay);
 
   // ── Config de cena (último arquivo a definir vence) ──────────────────────────
   let background: number | string | undefined;
@@ -477,6 +493,11 @@ export async function buildScene(
     }
     const obj = await instantiate(node, scene, three, waters, kit, editorGeometry[node.id]);
     if (!obj) continue;
+    // Veículo (ADR-0081): config do nó + overlay → userData.cortexVehicle (o jogo lê pra
+    // criar o veículo; o Inspector edita). Marca o nó como veículo pro Inspector mostrar a seção.
+    if (node.type === 'model' && (node.vehicle || editorVehicle[node.id])) {
+      (obj.userData as Record<string, unknown>)['cortexVehicle'] = { ...node.vehicle, ...editorVehicle[node.id] };
+    }
     // Terreno: heightmap/pintura autorados no editor (overlay) vencem o nó (JSON).
     if (node.type === 'terrain' && (editorTerrain[node.id] || editorTerrainPaint[node.id])) {
       const terrain = (obj.userData as Record<string, unknown>)['cortexTerrain'] as Terrain | undefined;

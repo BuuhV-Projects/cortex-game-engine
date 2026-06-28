@@ -8,7 +8,7 @@
 
 > **overlayMaterial**(`overlay`): `Record`\<`string`, [`MaterialConfig`](../type-aliases/MaterialConfig.md)\>
 
-Defined in: [src/scene/SceneBuilder.ts:280](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L280)
+Defined in: [src/scene/SceneBuilder.ts:295](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L295)
 
 Lê `data.material` da overlay — o material/shader **autorado no editor** por id
 (`{ [id]: MaterialConfig }`, ADR-0058). Sobrescreve o `material` do nó (JSON).
