@@ -39,4 +39,4 @@ Som com acelerador (loop).
 
 Defined in: [src/scene/EngineSound.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L9)
 
-RPM normalizado (0..1) onde esta camada é o pico.
+RPM normalizado (0..1) — usado pra ordenar (low→high).

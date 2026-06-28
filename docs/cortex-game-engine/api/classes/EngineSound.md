@@ -6,21 +6,19 @@
 
 # Class: EngineSound
 
-Defined in: [src/scene/EngineSound.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L42)
+Defined in: [src/scene/EngineSound.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L44)
 
-**Som de motor em CAMADAS** (ADR-0081): faz crossfade entre faixas de RPM (low→mid→
-high→veryhigh) e entre **com/sem acelerador** (on/off), como um motor de verdade — em
-vez de um único loop com pitch. Todas as camadas tocam em loop simultâneo; o volume de
-cada uma é cruzado por RPM e acelerador. Use um `THREE.Audio` por camada
-(`audioManager.createSound(buf, { loop: true })`).
+**Som de motor com MARCHAS** (ADR-0081). Em vez de só cruzar volumes (que soa
+artificial), o tom (playbackRate) **sobe com a rotação dentro da marcha e CAI ao trocar
+de marcha** — a sensação de um carro acelerando e trocando o câmbio. As camadas (faixas
+de RPM) dão variação de timbre: marchas baixas usam a amostra grave, altas a aguda. Faz
+crossfade on/off (acelerador) e suaviza a troca de amostra (sem clique).
 
 ## Example
 
 ```ts
 const eng = new EngineSound([
-  { rpm: 0.0, on: onLow,  off: offLow },
-  { rpm: 0.5, on: onMid,  off: offMid },
-  { rpm: 1.0, on: onHigh, off: offHigh },
+  { rpm: 0, on: onLow, off: offLow }, { rpm: 0.5, on: onMid, off: offMid }, { rpm: 1, on: onHigh, off: offHigh },
 ]);
 eng.start(); // por frame: eng.update(speed/maxSpeed, throttle)
 ```
@@ -31,7 +29,7 @@ eng.start(); // por frame: eng.update(speed/maxSpeed, throttle)
 
 > **new EngineSound**(`layers`, `options?`): `EngineSound`
 
-Defined in: [src/scene/EngineSound.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L45)
+Defined in: [src/scene/EngineSound.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L48)
 
 #### Parameters
 
@@ -53,7 +51,7 @@ Defined in: [src/scene/EngineSound.ts:45](https://github.com/BuuhV-Projects/cort
 
 > **dispose**(): `void`
 
-Defined in: [src/scene/EngineSound.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L103)
+Defined in: [src/scene/EngineSound.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L111)
 
 Para e libera.
 
@@ -67,9 +65,9 @@ Para e libera.
 
 > **start**(): `void`
 
-Defined in: [src/scene/EngineSound.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L58)
+Defined in: [src/scene/EngineSound.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L60)
 
-Toca todas as camadas em loop (volume 0; o [update](#update) faz o crossfade).
+Toca todas as camadas em loop (volume 0; o [update](#update) controla).
 
 #### Returns
 
@@ -81,7 +79,7 @@ Toca todas as camadas em loop (volume 0; o [update](#update) faz o crossfade).
 
 > **stop**(): `void`
 
-Defined in: [src/scene/EngineSound.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L66)
+Defined in: [src/scene/EngineSound.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L68)
 
 Pausa todas as camadas.
 
@@ -93,15 +91,15 @@ Pausa todas as camadas.
 
 ### update()
 
-> **update**(`rpm`, `throttle`): `void`
+> **update**(`speedRatio`, `throttle`): `void`
 
-Defined in: [src/scene/EngineSound.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L73)
+Defined in: [src/scene/EngineSound.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L75)
 
-Crossfade por `rpm` (0..1) + `throttle` (0..1). Chame por frame ao dirigir.
+Atualiza por frame: `speedRatio` (0..1) define a marcha+rotação; `throttle` (0..1) o on/off.
 
 #### Parameters
 
-##### rpm
+##### speedRatio
 
 `number`
 
