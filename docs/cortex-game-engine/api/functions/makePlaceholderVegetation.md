@@ -8,7 +8,7 @@
 
 > **makePlaceholderVegetation**(`kind?`): `Object3D`
 
-Defined in: src/scene/Vegetation.ts:173
+Defined in: [src/scene/Vegetation.ts:193](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L193)
 
 Modelo **placeholder** procedural de vegetação (até ter `.glb` reais). `tree` = tronco
 (cilindro marrom) + copa (cone verde); `grass` = dois quads cruzados verdes. Centrado

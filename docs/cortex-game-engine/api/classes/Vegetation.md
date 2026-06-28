@@ -6,7 +6,7 @@
 
 # Class: Vegetation
 
-Defined in: src/scene/Vegetation.ts:53
+Defined in: [src/scene/Vegetation.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L53)
 
 **Vegetação instanciada** (ADR-0077): espalha muitas cópias de um modelo (árvore,
 grama, arbusto…) numa única malha por geometria via InstancedMesh — aguenta
@@ -33,7 +33,7 @@ veg.add(10, 0, 5, 0, 1.2) // uma árvore em (10,5), escala 1.2
 
 > **new Vegetation**(`source`, `capacity?`): `Vegetation`
 
-Defined in: src/scene/Vegetation.ts:70
+Defined in: [src/scene/Vegetation.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L70)
 
 `capacity` = máximo de instâncias (buffer pré-alocado). Default 8192.
 
@@ -57,7 +57,7 @@ Defined in: src/scene/Vegetation.ts:70
 
 > `readonly` **group**: `Group`\<`Object3DEventMap`\>
 
-Defined in: src/scene/Vegetation.ts:55
+Defined in: [src/scene/Vegetation.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L55)
 
 Adicione à cena. Contém as InstancedMesh (uma por sub-malha do modelo).
 
@@ -69,7 +69,7 @@ Adicione à cena. Contém as InstancedMesh (uma por sub-malha do modelo).
 
 > **get** **count**(): `number`
 
-Defined in: src/scene/Vegetation.ts:93
+Defined in: [src/scene/Vegetation.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L113)
 
 Número de instâncias espalhadas.
 
@@ -83,7 +83,7 @@ Número de instâncias espalhadas.
 
 > **add**(`x`, `y`, `z`, `rotY`, `scale`): `boolean`
 
-Defined in: src/scene/Vegetation.ts:110
+Defined in: [src/scene/Vegetation.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L130)
 
 Adiciona uma instância. Retorna `false` se a capacidade estourou.
 
@@ -119,7 +119,7 @@ Adiciona uma instância. Retorna `false` se a capacidade estourou.
 
 > **dispose**(): `void`
 
-Defined in: src/scene/Vegetation.ts:163
+Defined in: [src/scene/Vegetation.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L183)
 
 Libera as geometrias/materiais das instâncias.
 
@@ -133,7 +133,7 @@ Libera as geometrias/materiais das instâncias.
 
 > **getInstances**(): `number`[]
 
-Defined in: src/scene/Vegetation.ts:105
+Defined in: [src/scene/Vegetation.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L125)
 
 Instâncias atuais no formato plano serializável (`[x,y,z,rotY,scale]`).
 
@@ -147,7 +147,7 @@ Instâncias atuais no formato plano serializável (`[x,y,z,rotY,scale]`).
 
 > **removeNear**(`x`, `z`, `radius`): `number`
 
-Defined in: src/scene/Vegetation.ts:121
+Defined in: [src/scene/Vegetation.ts:141](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L141)
 
 Remove instâncias cujo XZ está dentro de `radius` de `(x,z)` (borracha do pincel).
 Retorna quantas removeu.
@@ -176,7 +176,7 @@ Retorna quantas removeu.
 
 > **setInstances**(`flat`): `void`
 
-Defined in: src/scene/Vegetation.ts:98
+Defined in: [src/scene/Vegetation.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L118)
 
 Substitui todas as instâncias (ex.: restaurar do overlay) e atualiza as malhas.
 
@@ -185,6 +185,28 @@ Substitui todas as instâncias (ex.: restaurar do overlay) e atualiza as malhas.
 ##### flat
 
 `number`[]
+
+#### Returns
+
+`void`
+
+***
+
+### setSource()
+
+> **setSource**(`source`): `void`
+
+Defined in: [src/scene/Vegetation.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L102)
+
+**Troca o modelo** mantendo o grupo (mesmo `Object3D` na cena) e as instâncias —
+descarta as InstancedMesh atuais, reconstrói a partir do `source` novo e
+reaplica o espalhamento. Usado pelo editor pra trocar placeholder → `.glb` real.
+
+#### Parameters
+
+##### source
+
+`Object3D`
 
 #### Returns
 

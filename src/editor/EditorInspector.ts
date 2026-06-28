@@ -302,6 +302,10 @@ export interface VegetationEditState {
   scaleMax: number;
   /** Quantas instâncias já espalhadas. */
   count: number;
+  /** Modelo atual (`.glb` URL) ou `''` = placeholder procedural. */
+  model: string;
+  /** `.glb` disponíveis no projeto (pra o seletor de modelo). */
+  models: string[];
 }
 
 /**
@@ -319,6 +323,8 @@ export interface VegetationApi {
   setBrush(radius: number, density: number): void;
   /** Ajusta a faixa de escala sorteada por instância. */
   setScale(min: number, max: number): void;
+  /** Troca o modelo (`.glb` URL, ou `''` = placeholder) — reconstrói as instâncias. */
+  setModel(obj: Object3D, url: string): void;
 }
 
 /** Estado de animação do objeto selecionado (clipes do `.glb`). */

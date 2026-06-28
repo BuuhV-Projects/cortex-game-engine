@@ -618,14 +618,23 @@ export function describeInspector(
   if (ctx.vegetationApi && vegState) {
     const api = ctx.vegetationApi;
     const v = vegState;
+    const modelName = (u: string): string => (u.split('/').pop() ?? u).replace(/\.glb$/i, '');
     const fields: InspectorField[] = [
+      {
+        kind: 'select', id: fid('vegModel'), label: 'Modelo', value: v.model,
+        options: [{ value: '', label: 'Placeholder' }, ...v.models.map((u) => ({ value: u, label: modelName(u) }))],
+      },
       { kind: 'button', id: fid('vegPaint'), label: v.painting ? '■ Parar pincel' : '🌳 Espalhar', variant: v.painting ? 'danger' : 'primary' },
       { kind: 'number', id: fid('vegRadius'), label: 'Tamanho do pincel', value: v.radius, step: 1 },
       { kind: 'number', id: fid('vegDensity'), label: 'Densidade', value: v.density, step: 1 },
       { kind: 'number', id: fid('vegScaleMin'), label: 'Escala mín.', value: v.scaleMin, step: 0.1 },
       { kind: 'number', id: fid('vegScaleMax'), label: 'Escala máx.', value: v.scaleMax, step: 0.1 },
-      { kind: 'note', id: fid('vegCount'), text: `${v.count} instância(s)`, tone: 'muted' },
+      // (a contagem viva NÃO entra como nota: o texto mudaria a cada pincelada e forçaria
+      //  o inspector da IDE a reconstruir, derrubando o input que você está editando.)
     ];
+    handlers.set(fid('vegModel'), (val) => {
+      api.setModel(obj, String(val));
+    });
     handlers.set(fid('vegPaint'), () => {
       if (v.painting) api.stopPaint();
       else api.startPaint(obj);

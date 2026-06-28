@@ -69,6 +69,11 @@ export class Vegetation {
   /** `capacity` = máximo de instâncias (buffer pré-alocado). Default 8192. */
   constructor(source: Object3D, capacity = 8192) {
     this.capacity = Math.max(1, capacity);
+    this.buildFrom(source);
+  }
+
+  /** (Re)constrói as {@link InstancedMesh} a partir do `source` (modelo .glb ou placeholder). */
+  private buildFrom(source: Object3D): void {
     source.updateWorldMatrix(true, true);
     const rootInv = new Matrix4().copy(source.matrixWorld).invert();
     source.traverse((o) => {
@@ -87,6 +92,21 @@ export class Vegetation {
       this.subs.push({ mesh: inst, local });
       this.group.add(inst);
     });
+  }
+
+  /**
+   * **Troca o modelo** mantendo o grupo (mesmo `Object3D` na cena) e as instâncias —
+   * descarta as {@link InstancedMesh} atuais, reconstrói a partir do `source` novo e
+   * reaplica o espalhamento. Usado pelo editor pra trocar placeholder → `.glb` real.
+   */
+  setSource(source: Object3D): void {
+    for (const { mesh } of this.subs) {
+      this.group.remove(mesh);
+      mesh.dispose();
+    }
+    this.subs.length = 0;
+    this.buildFrom(source);
+    this.sync(); // reaplica as instâncias atuais no modelo novo
   }
 
   /** Número de instâncias espalhadas. */

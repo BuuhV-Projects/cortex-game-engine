@@ -2,7 +2,8 @@ import type { Object3D } from 'three';
 import type { VegetationApi, VegetationEditState } from '../EditorInspector.js';
 import type { EditorAuthoringContext } from './AuthoringContext.js';
 import type { SceneNode } from '../../scene/SceneDefinition.js';
-import type { Vegetation } from '../../scene/Vegetation.js';
+import { Vegetation, makePlaceholderVegetation } from '../../scene/Vegetation.js';
+import { loadGLB, instance } from '../../scene/SceneAssets.js';
 
 /** Nó `vegetation` como persistido em `overlay.data.added`. */
 type VegetationAddedNode = Extract<SceneNode, { type: 'vegetation' }>;
@@ -41,6 +42,8 @@ export interface VegetationAuthoring {
   scatterAt(x: number, z: number, erase: boolean): void;
   /** Grava as instâncias no nó (`data.added`) + persiste (ao soltar). */
   save(): void;
+  /** Informa os `.glb` disponíveis no projeto (pro seletor de modelo). */
+  setAvailableModels(urls: string[]): void;
 }
 
 /**
@@ -53,6 +56,7 @@ export interface VegetationAuthoring {
  */
 export function createVegetationAuthoring(ctx: EditorAuthoringContext, hooks: VegetationEditorHooks): VegetationAuthoring {
   const brush = { radius: 6, density: 4, scaleMin: 0.8, scaleMax: 1.3 };
+  let availableModels: string[] = [];
   let sess: { veg: Vegetation; obj: Object3D; stroking: boolean; dirty: boolean } | null = null;
 
   const added = (): VegetationAddedNode[] => {
@@ -115,6 +119,7 @@ export function createVegetationAuthoring(ctx: EditorAuthoringContext, hooks: Ve
     get: (obj) => {
       const veg = vegOf(obj);
       if (!veg) return null;
+      const node = nodeOf(obj);
       const state: VegetationEditState = {
         painting: sess?.obj === obj,
         radius: brush.radius,
@@ -122,6 +127,8 @@ export function createVegetationAuthoring(ctx: EditorAuthoringContext, hooks: Ve
         scaleMin: brush.scaleMin,
         scaleMax: brush.scaleMax,
         count: veg.count,
+        model: typeof node?.model === 'string' ? node.model : '',
+        models: availableModels,
       };
       return state;
     },
@@ -148,6 +155,25 @@ export function createVegetationAuthoring(ctx: EditorAuthoringContext, hooks: Ve
       brush.scaleMin = Math.max(0.05, min);
       brush.scaleMax = Math.max(brush.scaleMin, max);
     },
+    setModel: (obj, url) => {
+      const veg = vegOf(obj);
+      const node = nodeOf(obj);
+      if (!veg || !node) return;
+      // `url` vazio = volta ao placeholder procedural; senão carrega o .glb e troca a fonte.
+      const apply = (source: Object3D): void => {
+        veg.setSource(source); // mantém o grupo + as instâncias, troca a malha
+        if (url) node.model = url;
+        else delete node.model;
+        ctx.persist();
+      };
+      if (!url) {
+        apply(makePlaceholderVegetation(node.kind ?? 'tree'));
+        return;
+      }
+      void loadGLB(url)
+        .then((gltf) => apply(instance(gltf, { castShadow: true })))
+        .catch(() => hooks.toast(`Falha ao carregar modelo: ${url}`));
+    },
   };
 
   return {
@@ -161,5 +187,8 @@ export function createVegetationAuthoring(ctx: EditorAuthoringContext, hooks: Ve
     },
     scatterAt,
     save,
+    setAvailableModels: (urls) => {
+      availableModels = urls;
+    },
   };
 }

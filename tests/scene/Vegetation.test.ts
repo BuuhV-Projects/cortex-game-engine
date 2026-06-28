@@ -67,6 +67,18 @@ describe('Vegetation', () => {
     expect(veg.count).toBe(1);
   });
 
+  it('setSource troca o modelo mantendo grupo e instâncias', () => {
+    const veg = new Vegetation(makePlaceholderVegetation('tree')); // 2 sub-malhas
+    const group = veg.group;
+    veg.setInstances([0, 0, 0, 0, 1, 5, 0, 5, 0, 1]); // 2 instâncias
+    expect(veg.group.children).toHaveLength(2);
+    veg.setSource(source()); // troca pra 1 sub-malha (box)
+    expect(veg.group).toBe(group); // MESMO grupo (Object3D não trocou na cena)
+    expect(veg.group.children).toHaveLength(1); // só a sub-malha nova
+    expect(veg.count).toBe(2); // instâncias preservadas
+    expect((veg.group.children[0] as InstancedMesh).count).toBe(2);
+  });
+
   it('buildScene instancia o nó vegetation (placeholder) com as instâncias', async () => {
     const def: SceneDefinition = {
       version: 1,

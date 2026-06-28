@@ -835,6 +835,8 @@ export function attachEditor(game: Game): GameEditor {
       .then((assets) => {
         const list = Array.isArray(assets) ? assets : [];
         addPanel.setAssets(list.filter((a) => a.toLowerCase().endsWith('.glb')));
+        // Modelos pra vegetação: .glb de assets/vegetation/ (árvores/grama importadas).
+        vegetation.setAvailableModels(list.filter((a) => /assets\/vegetation\/.*\.glb$/i.test(a)));
         terrain.setAvailableTextures(list.filter(isImage));
         // Texturas do terreno pro modal (imagens; sem normal maps — não são superfícies).
         terrainTextures = list
