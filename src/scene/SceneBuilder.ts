@@ -57,6 +57,7 @@ import { smoothGrade, moldHeightfield, mergeDeltas, type GradePoint } from '../r
 import { Terrain, type TerrainPaintData } from './Terrain.js';
 import { Vegetation, makePlaceholderVegetation } from './Vegetation.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
+import { Skybox } from '../core/Skybox.js';
 import { debug } from '../core/debug.js';
 import {
   parseSceneNode,
@@ -431,7 +432,16 @@ export async function buildScene(
     const r = options.renderer.threeRenderer;
     r.shadowMap.enabled = true;
     r.shadowMap.type = PCFSoftShadowMap;
-    if (outdoor) setupOutdoorLighting(options.renderer, scene, outdoor);
+    if (outdoor) {
+      setupOutdoorLighting(options.renderer, scene, outdoor);
+      // HDRI (céu visível + luz por imagem). Sobrepõe o `background` de cor.
+      if (outdoor.hdri) {
+        await Skybox.fromHDRI(scene, outdoor.hdri, {
+          backgroundBlurriness: outdoor.hdriBlur ?? 0,
+          environmentIntensity: outdoor.hdriIntensity ?? 1,
+        });
+      }
+    }
   }
 
   // ── Nós: base (arquivos) + adicionados (overlay) ─────────────────────────────

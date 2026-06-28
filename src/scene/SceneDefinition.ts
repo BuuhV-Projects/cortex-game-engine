@@ -454,7 +454,17 @@ const sceneDefinitionSchema = z.object({
       sky: colorSchema.optional(),
       sunColor: colorSchema.optional(),
       sunIntensity: z.number().optional(),
+      /** Preenchimento hemisfério (céu/chão). Default 0.55. */
+      hemisphereIntensity: z.number().optional(),
+      /** Ambient (levanta sombras sem matar contraste). Default 0.18. */
+      ambientIntensity: z.number().optional(),
       exposure: z.number().optional(),
+      /** URL de um HDRI equiretangular (`.hdr`) → céu visível + luz por imagem (IBL). */
+      hdri: z.string().optional(),
+      /** Borrão do HDRI de fundo (0 = nítido). */
+      hdriBlur: z.number().optional(),
+      /** Intensidade da luz do HDRI (IBL). Default 1. */
+      hdriIntensity: z.number().optional(),
     })
     .optional(),
 });
