@@ -22,8 +22,6 @@ export interface VehicleControlOptions {
   rollingResistance?: number;
   /** Suavização do acelerador (1/s) — evita arranque brusco/empinada. Default 3. */
   throttleSmooth?: number;
-  /** Giro EXTRA das rodas com tração sob aceleração (rad/s no talo) — wheelspin visual. Default 18. */
-  wheelSpinRate?: number;
   /** Esterço máximo (rad). Default 0.7. */
   maxSteer?: number;
   /** Suavização do esterço (1/s). Default 8. */
@@ -73,7 +71,7 @@ export class VehicleControlSystem extends System {
 
   private steer = 0;
   private throttle = 0;
-  private wheelSpin = 0; // giro extra acumulado (wheelspin sob aceleração)
+  private wheelRoll = 0; // ângulo de rolagem acumulado (todas as rodas, pela velocidade)
   private camYaw = 0;
   private camPitch = 0.32;
   private lookIdle = 999;
@@ -121,7 +119,6 @@ export class VehicleControlSystem extends System {
 
       // Acelerador com RAMPA (suaviza o arranque, evita empinar a frente).
       this.throttle += (accel - this.throttle) * Math.min(1, dt * (o.throttleSmooth ?? 3));
-      this.wheelSpin += this.throttle * (o.wheelSpinRate ?? 18) * dt; // wheelspin visual sob aceleração
       const maxBrake = o.maxBrake ?? 50;
 
       // Acelera pra frente; LT andando pra frente = freio; LT ~parado/ré = motor reverso.
@@ -159,14 +156,17 @@ export class VehicleControlSystem extends System {
     this.car.position.set(t.x, t.y, t.z);
     this.car.quaternion.set(r.x, r.y, r.z, r.w);
 
-    // Sincroniza as rodas (filhas do carro): suspensão + esterço + rolagem.
+    // Sincroniza as rodas (filhas do carro): suspensão + esterço + ROLAGEM por velocidade.
+    // A rolagem vem da velocidade do carro (todas as rodas giram quando há velocidade,
+    // acelerando ou não) — o wheelRotation do Rapier não é confiável pra isso.
     const wheels = o.wheelObjects;
     if (wheels) {
+      const radius = this.vehicle.wheels[0]?.radius ?? 0.4;
+      this.wheelRoll += (this.vehicle.forwardSpeed() / radius) * dt; // rad
       for (let i = 0; i < wheels.length; i++) {
         const w = wheels[i];
         if (!w) continue;
-        const extra = this.vehicle.wheels[i]?.powered ? this.wheelSpin : 0; // wheelspin só nas com tração
-        this.vehicle.wheelLocalTransform(i, _wp, _wq, extra);
+        this.vehicle.wheelLocalTransform(i, _wp, _wq, this.wheelRoll);
         w.position.copy(_wp);
         w.quaternion.copy(_wq);
       }

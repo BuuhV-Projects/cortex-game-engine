@@ -458,14 +458,15 @@ export class Vehicle {
    * quando ela é **filha** do carro (que já segue o chassi). Inclui suspensão (sobe/desce),
    * esterço (gira no Y) e rolagem (gira no eixo X).
    */
-  wheelLocalTransform(i: number, outPos: Vector3, outQuat: Quaternion, extraSpin = 0): void {
+  wheelLocalTransform(i: number, outPos: Vector3, outQuat: Quaternion, spinAngle = 0): void {
     const cp = this.ctrl.wheelChassisConnectionPointCs(i) ?? { x: 0, y: 0, z: 0 };
     const len = this.ctrl.wheelSuspensionLength(i) ?? 0;
     outPos.set(cp.x, cp.y - len, cp.z);
     const steer = this.ctrl.wheelSteering(i) ?? 0;
-    const spin = (this.ctrl.wheelRotation(i) ?? 0) + extraSpin; // rolagem real + giro extra (ex.: wheelspin)
+    // `spinAngle` (rolagem) é fornecido pelo chamador — o wheelRotation do Rapier não é
+    // confiável pra visual, então o sistema acumula o giro pela velocidade do carro.
     outQuat.setFromAxisAngle(_wax.set(0, 1, 0), steer); // esterço (Y)
-    outQuat.multiply(_wq2.setFromAxisAngle(_wax.set(1, 0, 0), spin)); // giro (eixo X)
+    outQuat.multiply(_wq2.setFromAxisAngle(_wax.set(1, 0, 0), spinAngle)); // giro (eixo X)
   }
 
   /** Reseta o chassi (respawn): zera velocidades + (opcional) posiciona/orienta. */
