@@ -405,6 +405,12 @@ export interface VehicleEditState {
   frictionSlip: number;
   suspensionStiffness: number;
   suspensionRestLength: number;
+  /** Curso máximo da suspensão (quanto comprime). */
+  maxSuspensionTravel: number;
+  /** Amortecimento na compressão (sobe = quica menos ao comprimir). */
+  suspensionCompression: number;
+  /** Amortecimento no retorno (sobe = assenta mais rápido, menos balanço). */
+  suspensionRelaxation: number;
   comY: number;
   comZ: number;
   maxSpeed: number;
