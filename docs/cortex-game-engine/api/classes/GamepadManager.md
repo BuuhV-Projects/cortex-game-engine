@@ -42,7 +42,7 @@ Defined in: [src/core/GamepadManager.ts:80](https://github.com/BuuhV-Projects/co
 
 > **get** **deadzone**(): `number`
 
-Defined in: [src/core/GamepadManager.ts:257](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L257)
+Defined in: [src/core/GamepadManager.ts:266](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L266)
 
 Limiar de deadzone configurado no construtor.
 
@@ -160,6 +160,28 @@ pressionado. Retorna `false` se o gamepad não estiver conectado.
 ##### button
 
 `number`
+
+#### Returns
+
+`boolean`
+
+***
+
+### isConnected()
+
+> **isConnected**(`index?`): `boolean`
+
+Defined in: [src/core/GamepadManager.ts:259](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L259)
+
+`true` se há um gamepad conectado no slot `index` (default 0), sem alocar.
+Útil pra fazer **fallback teclado/mouse** quando não há controle: leia o gamepad
+se `isConnected()`, senão leia o teclado.
+
+#### Parameters
+
+##### index?
+
+`number` = `0`
 
 #### Returns
 

@@ -35,6 +35,20 @@ export interface HDRISkyboxOptions {
   environmentIntensity?: number;
 }
 
+/** Opções do {@link Skybox.fromGradient} (céu gradiente procedural). */
+export interface GradientSkyOptions {
+  /** Cor do zênite (topo). @default '#1f72d8' (azul forte) */
+  top?: string | number;
+  /** Cor do horizonte (meio). @default '#d6ecfb' (azul pálido) */
+  middle?: string | number;
+  /** Cor abaixo do horizonte (chão/IBL). @default '#8f8268' */
+  bottom?: string | number;
+  /** Resolução vertical do gradiente. @default 128 */
+  resolution?: number;
+  /** Intensidade da luz que o céu lança (environment). @default 1 */
+  environmentIntensity?: number;
+}
+
 export class Skybox {
   /**
    * Carrega um HDRI equiretangular e o aplica como iluminação (e fundo) da cena.
@@ -71,6 +85,52 @@ export class Skybox {
     }
 
     return texture;
+  }
+
+  /**
+   * Céu **gradiente procedural** (sem arquivo) — zênite → horizonte → chão, aplicado
+   * como `background` visível E `environment` (luz/reflexo suave). Ideal pra um céu
+   * limpo e ensolarado (ex.: Brasília: azul forte). Funciona em WebGPU usando uma
+   * `DataTexture` equiretangular 1×N (gradiente vertical), igual ao HDRI.
+   *
+   * @example
+   * Skybox.fromGradient(scene, { top: '#1f72d8', middle: '#d6ecfb' }); // céu azul limpo
+   */
+  static fromGradient(scene: Scene, options: GradientSkyOptions = {}): THREE.DataTexture {
+    const zenith = new THREE.Color(options.top ?? '#1f72d8');
+    const horizon = new THREE.Color(options.middle ?? '#d6ecfb');
+    const ground = new THREE.Color(options.bottom ?? '#8f8268');
+    const h = Math.max(8, options.resolution ?? 128);
+
+    // Equiret 1×h: row 0 = nadir (-Y), row h-1 = zênite (+Y). Lerp em espaço linear,
+    // grava em sRGB (a textura é sRGB) pras cores baterem com o hex informado.
+    const data = new Uint8Array(h * 4);
+    const c = new THREE.Color();
+    const out = { r: 0, g: 0, b: 0 };
+    for (let i = 0; i < h; i++) {
+      const t = i / (h - 1);
+      if (t < 0.5) c.copy(ground).lerp(horizon, t / 0.5);
+      else c.copy(horizon).lerp(zenith, (t - 0.5) / 0.5);
+      c.getRGB(out, THREE.SRGBColorSpace);
+      const o = i * 4;
+      data[o] = Math.round(out.r * 255);
+      data[o + 1] = Math.round(out.g * 255);
+      data[o + 2] = Math.round(out.b * 255);
+      data[o + 3] = 255;
+    }
+    const tex = new THREE.DataTexture(data, 1, h, THREE.RGBAFormat);
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+
+    const three = scene.getThreeScene();
+    three.background = tex;
+    three.backgroundBlurriness = 0;
+    three.environment = tex;
+    three.environmentIntensity = options.environmentIntensity ?? 1;
+    return tex;
   }
 
   /**

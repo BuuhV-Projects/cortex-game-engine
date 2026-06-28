@@ -465,6 +465,16 @@ const sceneDefinitionSchema = z.object({
       hdriBlur: z.number().optional(),
       /** Intensidade da luz do HDRI (IBL). Default 1. */
       hdriIntensity: z.number().optional(),
+      /**
+       * Céu GRADIENTE procedural (sem arquivo) — usado quando NÃO há `hdri`. Defina ao
+       * menos `skyTop`/`skyMiddle` pra ligar (ex.: céu limpo de Brasília: top azul forte,
+       * middle azul pálido). Vira fundo visível + luz suave (IBL).
+       */
+      skyTop: colorSchema.optional(),
+      skyMiddle: colorSchema.optional(),
+      skyBottom: colorSchema.optional(),
+      /** Intensidade da luz do céu gradiente (IBL). Default 1. */
+      skyGradientIntensity: z.number().optional(),
     })
     .optional(),
 });

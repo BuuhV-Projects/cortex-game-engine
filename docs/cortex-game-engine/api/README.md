@@ -62,6 +62,7 @@
 - [TransformComponent](classes/TransformComponent.md)
 - [Vegetation](classes/Vegetation.md)
 - [Vehicle](classes/Vehicle.md)
+- [VehicleControlSystem](classes/VehicleControlSystem.md)
 - [Water](classes/Water.md)
 - [World](classes/World.md)
 
@@ -93,6 +94,7 @@
 - [GamepadState](interfaces/GamepadState.md)
 - [GradeOptions](interfaces/GradeOptions.md)
 - [GradePoint](interfaces/GradePoint.md)
+- [GradientSkyOptions](interfaces/GradientSkyOptions.md)
 - [HDRISkyboxOptions](interfaces/HDRISkyboxOptions.md)
 - [HeightfieldGrid](interfaces/HeightfieldGrid.md)
 - [InteractionOptions](interfaces/InteractionOptions.md)
@@ -151,6 +153,7 @@
 - [TopDownMovementOptions](interfaces/TopDownMovementOptions.md)
 - [Vec3Like](interfaces/Vec3Like.md)
 - [VegetationInstance](interfaces/VegetationInstance.md)
+- [VehicleControlOptions](interfaces/VehicleControlOptions.md)
 - [VehicleSpec](interfaces/VehicleSpec.md)
 - [VehicleWheelSpec](interfaces/VehicleWheelSpec.md)
 - [Viewport](interfaces/Viewport.md)

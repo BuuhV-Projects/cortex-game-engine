@@ -440,6 +440,14 @@ export async function buildScene(
           backgroundBlurriness: outdoor.hdriBlur ?? 0,
           environmentIntensity: outdoor.hdriIntensity ?? 1,
         });
+      } else if (outdoor.skyTop || outdoor.skyMiddle || outdoor.skyBottom) {
+        // Céu gradiente procedural (sem arquivo) — céu limpo/ensolarado.
+        Skybox.fromGradient(scene, {
+          top: outdoor.skyTop,
+          middle: outdoor.skyMiddle,
+          bottom: outdoor.skyBottom,
+          environmentIntensity: outdoor.skyGradientIntensity ?? 1,
+        });
       }
     }
   }
