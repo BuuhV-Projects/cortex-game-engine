@@ -42,4 +42,13 @@ verdade" sem trazer Cannon (evita 2 físicas).
   suspensão, alinhamento chassi×malha e posição/raio das rodas. Sem spin/esterço visual
   das rodas em v1 (a malha do carro segue o chassi inteiro) — `wheelTransform(i)` já
   existe pra ligar isso depois.
+- **Config como DADO (em andamento):** os tunáveis (motor, freio, freio-de-mão,
+  suspensão altura/rigidez, grip, esterço, **centro de massa** via `chassisOffset`, massa,
+  velocidade máx do velocímetro) viram campo `vehicle` no nó da cena (`SceneDefinition`),
+  lido pelo jogo — em vez de cravado no código. **Camada 1** (schema + leitura) feita;
+  **Camada 2** (seção "Veículo" no Inspector + overlay) pendente. Segue a regra do projeto
+  (física = dado editável, não código).
+- Extras: `wheelLocalTransform` (sync das rodas: suspensão+esterço+rolagem) + `extraSpin`
+  (wheelspin sob aceleração); chase cam ORBITAL (mouse/2º stick + auto-follow);
+  handbrake (Espaço/A).
 - Ver [[engine-terceira-pessoa-adr-0074]] (gamepad-first reusado no controle do carro).

@@ -186,6 +186,38 @@ const materialSchema = z
   ])
   .optional();
 
+/**
+ * Config do **veículo** (ADR-0081) como DADO da cena — editável no Inspector
+ * (seção "Veículo") em vez de cravado no código. Tudo opcional (usa defaults do engine).
+ */
+const vehicleSchema = z
+  .object({
+    engineForce: z.number().optional(),
+    maxBrake: z.number().optional(),
+    handbrakeForce: z.number().optional(),
+    reverseForce: z.number().optional(),
+    rollingResistance: z.number().optional(),
+    throttleSmooth: z.number().optional(),
+    maxSteer: z.number().optional(),
+    steerSmooth: z.number().optional(),
+    mass: z.number().optional(),
+    frictionSlip: z.number().optional(),
+    /** Sensibilidade da suspensão (rigidez). */
+    suspensionStiffness: z.number().optional(),
+    /** Altura/curso de repouso da suspensão. */
+    suspensionRestLength: z.number().optional(),
+    suspensionCompression: z.number().optional(),
+    suspensionRelaxation: z.number().optional(),
+    maxSuspensionTravel: z.number().optional(),
+    /** Centro de massa (offset da caixa): z = frente/trás, y = altura. */
+    chassisOffset: z.object({ x: z.number(), y: z.number(), z: z.number() }).partial().optional(),
+    chassisHalfExtents: z.object({ x: z.number(), y: z.number(), z: z.number() }).partial().optional(),
+    /** Velocidade no fim do velocímetro (km/h). */
+    maxSpeed: z.number().optional(),
+    wheelSpinRate: z.number().optional(),
+  })
+  .optional();
+
 const baseFields = {
   /** Identificador único — chave pra overlay/editor e `Object3D.name`. */
   id: z.string().min(1),
@@ -205,6 +237,8 @@ const baseFields = {
   character: characterSchema,
   /** Marca como **corpo rígido do Rapier** (física dinâmica 3D — cai/empilha/empurra). Ver {@link RapierBodyConfig}. */
   rapierBody: rapierBodySchema,
+  /** Config do **veículo** (motor/freio/suspensão/centro de massa) — editável no Inspector. Ver ADR-0081. */
+  vehicle: vehicleSchema,
   /** Placement por socket (encaixa em outro nó via âncoras do kit). */
   attach: attachSchema,
   /** Animação do modelo `.glb` (clipe a tocar, loop, velocidade). Ver {@link SceneAnimator}. */

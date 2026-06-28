@@ -272,7 +272,7 @@ A roda `i` está tocando o chão?
 
 ### wheelLocalTransform()
 
-> **wheelLocalTransform**(`i`, `outPos`, `outQuat`): `void`
+> **wheelLocalTransform**(`i`, `outPos`, `outQuat`, `extraSpin?`): `void`
 
 Defined in: [src/physics/RapierPhysics.ts:461](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L461)
 
@@ -293,6 +293,10 @@ esterço (gira no Y) e rolagem (gira no eixo X).
 ##### outQuat
 
 `Quaternion`
+
+##### extraSpin?
+
+`number` = `0`
 
 #### Returns
 
