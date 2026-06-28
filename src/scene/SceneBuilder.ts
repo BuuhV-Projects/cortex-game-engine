@@ -626,6 +626,13 @@ export async function buildScene(
         // pés). Modelos com origem nos pés → ~0. Ver CharacterBodyComponent.
         const footOffset = Math.max(0, obj.position.y - getWorldBounds(obj).bottomY);
         e.addComponent(new CharacterBodyComponent({ ...cfg, groundY: cfg.groundY ?? 0, footOffset }));
+        // PERF: o personagem é uma malha SKINADA (raycast por vértice com os ossos é
+        // caríssimo na CPU) e NUNCA é obstáculo (câmera/chão/carro). Desliga o raycast
+        // dele — o que derrubava o FPS no play. A seleção no editor usa o fallback por
+        // bbox (ObjectEditSystem), então continua clicável.
+        obj.traverse((o) => {
+          if ((o as { isMesh?: boolean }).isMesh) o.raycast = (): void => {};
+        });
         ensureCharacterSystems(options.world, [three], options.physicsPaused);
       } else if (type === 'static') {
         // Estático sólido: collider de plataforma. Sem dims em lugar nenhum (ex.: o
