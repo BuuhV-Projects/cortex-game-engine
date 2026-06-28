@@ -47,4 +47,18 @@ describe('Vehicle (Rapier raycast)', () => {
 
     phys.dispose();
   });
+
+  it('apoia num chão TRIMESH (addTrimesh) — pro terreno virar collider', async () => {
+    const phys = await RapierPhysics.create();
+    // quad plano 100×100 em y=0 (2 triângulos)
+    const verts = new Float32Array([-50, 0, -50, 50, 0, -50, 50, 0, 50, -50, 0, 50]);
+    const idx = new Uint32Array([0, 1, 2, 0, 2, 3]);
+    phys.addTrimesh(verts, idx);
+    const veh = makeVehicle(phys);
+    for (let i = 0; i < 120; i++) { veh.update(1 / 60); phys.step(); }
+    const y = veh.chassisTranslation().y;
+    expect(y).toBeGreaterThan(0); // apoiou no trimesh (não atravessou)
+    expect(y).toBeLessThan(1.2);
+    phys.dispose();
+  });
 });

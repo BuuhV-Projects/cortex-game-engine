@@ -1,7 +1,7 @@
 // Tipos do Rapier (apagados na compilação) — pra anotar sem trazer o valor.
 // É o default export (namespace), que serve como qualificador de tipo (RAPIER.World).
 import type RAPIER from '@dimforge/rapier3d-compat';
-import { Vector3, Quaternion } from 'three';
+import { Vector3, Quaternion, type Object3D, type Mesh } from 'three';
 
 /** Tipo do namespace-valor do Rapier (o default export), carregado sob demanda. */
 type RapierApi = (typeof import('@dimforge/rapier3d-compat'))['default'];
@@ -244,6 +244,43 @@ export class RapierPhysics {
   /** Avança a simulação um passo (timestep fixo configurado no mundo). */
   step(): void {
     this.world.step();
+  }
+
+  /** Adiciona um collider **trimesh estático** (fixo) — pro chão/terreno/road. */
+  addTrimesh(vertices: Float32Array, indices: Uint32Array, position?: Vec3Like): void {
+    const R = rapier();
+    const desc = R.RigidBodyDesc.fixed();
+    if (position) desc.setTranslation(position.x, position.y, position.z);
+    const body = this.world.createRigidBody(desc);
+    this.world.createCollider(R.ColliderDesc.trimesh(vertices, indices), body);
+  }
+
+  /**
+   * Cria colliders trimesh estáticos a partir das MALHAS de um `Object3D` (geometria
+   * em espaço-mundo) — ex.: terreno + road viram chão pras rodas do {@link Vehicle}
+   * raycastarem. Uma malha = um collider.
+   */
+  addTrimeshFromObject(obj: Object3D): void {
+    obj.updateWorldMatrix(true, true);
+    const v = new Vector3();
+    obj.traverse((o) => {
+      const mesh = o as Mesh;
+      if (!(mesh as { isMesh?: boolean }).isMesh || !mesh.geometry) return;
+      const pos = mesh.geometry.attributes['position'];
+      if (!pos) return;
+      const verts = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+        verts[i * 3] = v.x;
+        verts[i * 3 + 1] = v.y;
+        verts[i * 3 + 2] = v.z;
+      }
+      const idx = mesh.geometry.index;
+      const indices = idx
+        ? Uint32Array.from(idx.array)
+        : Uint32Array.from({ length: pos.count }, (_, i) => i);
+      this.addTrimesh(verts, indices);
+    });
   }
 
   /**
