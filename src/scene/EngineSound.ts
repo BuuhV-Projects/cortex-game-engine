@@ -5,7 +5,7 @@ import type { Audio } from 'three';
  * **sem** (`off`). Ambos em loop. Camadas faltando são ignoradas.
  */
 export interface EngineLayer {
-  /** RPM normalizado (0..1) onde esta camada é o pico. */
+  /** RPM normalizado (0..1) — usado pra ordenar (low→high). */
   rpm: number;
   /** Som com acelerador (loop). */
   on?: Audio;
@@ -15,35 +15,37 @@ export interface EngineLayer {
 
 /** Opções do {@link EngineSound}. */
 export interface EngineSoundOptions {
-  /** Pitch (playbackRate) em RPM 0 / RPM 1. Default 0.9 / 1.25 — variação sutil sobre as camadas. */
+  /** Nº de "marchas" — o tom sobe dentro da marcha e CAI ao trocar (sensação de câmbio). Default 5. */
+  gears?: number;
+  /** Pitch no início / fim de cada marcha (rotação baixa → corte). Default 0.8 / 1.6. */
   idleRate?: number;
   maxRate?: number;
   /** Volume mestre. Default 0.9. */
   volume?: number;
+  /** Suavização do volume entre camadas (0..1 por frame) — evita clique na troca. Default 0.25. */
+  volumeSmooth?: number;
 }
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /**
- * **Som de motor em CAMADAS** (ADR-0081): faz crossfade entre faixas de RPM (low→mid→
- * high→veryhigh) e entre **com/sem acelerador** (on/off), como um motor de verdade — em
- * vez de um único loop com pitch. Todas as camadas tocam em loop simultâneo; o volume de
- * cada uma é cruzado por RPM e acelerador. Use um `THREE.Audio` por camada
- * (`audioManager.createSound(buf, { loop: true })`).
+ * **Som de motor com MARCHAS** (ADR-0081). Em vez de só cruzar volumes (que soa
+ * artificial), o tom (playbackRate) **sobe com a rotação dentro da marcha e CAI ao trocar
+ * de marcha** — a sensação de um carro acelerando e trocando o câmbio. As camadas (faixas
+ * de RPM) dão variação de timbre: marchas baixas usam a amostra grave, altas a aguda. Faz
+ * crossfade on/off (acelerador) e suaviza a troca de amostra (sem clique).
  *
  * @example
  * const eng = new EngineSound([
- *   { rpm: 0.0, on: onLow,  off: offLow },
- *   { rpm: 0.5, on: onMid,  off: offMid },
- *   { rpm: 1.0, on: onHigh, off: offHigh },
+ *   { rpm: 0, on: onLow, off: offLow }, { rpm: 0.5, on: onMid, off: offMid }, { rpm: 1, on: onHigh, off: offHigh },
  * ]);
  * eng.start(); // por frame: eng.update(speed/maxSpeed, throttle)
  */
 export class EngineSound {
   private readonly layers: EngineLayer[];
+  private readonly vol = new Map<Audio, number>(); // volume atual (pra suavizar)
 
   constructor(layers: EngineLayer[], private readonly options: EngineSoundOptions = {}) {
-    // Ordena por RPM (o crossfade assume crescente).
     this.layers = [...layers].sort((a, b) => a.rpm - b.rpm);
   }
 
@@ -54,7 +56,7 @@ export class EngineSound {
     }
   }
 
-  /** Toca todas as camadas em loop (volume 0; o {@link update} faz o crossfade). */
+  /** Toca todas as camadas em loop (volume 0; o {@link update} controla). */
   start(): void {
     this.each((s) => {
       s.setVolume(0);
@@ -69,34 +71,40 @@ export class EngineSound {
     });
   }
 
-  /** Crossfade por `rpm` (0..1) + `throttle` (0..1). Chame por frame ao dirigir. */
-  update(rpm: number, throttle: number): void {
+  /** Atualiza por frame: `speedRatio` (0..1) define a marcha+rotação; `throttle` (0..1) o on/off. */
+  update(speedRatio: number, throttle: number): void {
     const o = this.options;
-    rpm = clamp01(rpm);
+    speedRatio = clamp01(speedRatio);
     throttle = clamp01(throttle);
+    const gears = Math.max(1, o.gears ?? 5);
     const master = o.volume ?? 0.9;
-    const rate = (o.idleRate ?? 0.9) + ((o.maxRate ?? 1.25) - (o.idleRate ?? 0.9)) * rpm;
+    const smooth = o.volumeSmooth ?? 0.25;
 
-    const ls = this.layers;
-    for (let i = 0; i < ls.length; i++) {
-      // Peso triangular: 1 no rpm da camada, cai a 0 no rpm das vizinhas.
-      const p = ls[i]!.rpm;
-      const prev = i > 0 ? ls[i - 1]!.rpm : p - 0.5;
-      const next = i < ls.length - 1 ? ls[i + 1]!.rpm : p + 0.5;
-      let w = 0;
-      if (rpm <= p) w = prev === p ? 1 : clamp01((rpm - prev) / (p - prev));
-      else w = next === p ? 1 : clamp01((next - rpm) / (next - p));
-      const on = ls[i]!.on;
-      const off = ls[i]!.off;
-      if (on) {
-        on.setVolume(w * throttle * master);
-        on.setPlaybackRate(rate);
-      }
-      if (off) {
-        off.setVolume(w * (1 - throttle) * master);
-        off.setPlaybackRate(rate);
-      }
+    // Marcha + rotação dentro dela → tom sobe e CAI na troca (dente-de-serra).
+    const pos = speedRatio * gears;
+    const gear = Math.min(gears - 1, Math.floor(pos));
+    const inGear = pos - gear; // 0..1
+    const rate = (o.idleRate ?? 0.8) + ((o.maxRate ?? 1.6) - (o.idleRate ?? 0.8)) * inGear;
+
+    // Amostra (timbre) pela marcha: baixas usam a grave, altas a aguda.
+    const band = Math.min(this.layers.length - 1, Math.floor((gear / gears) * this.layers.length));
+
+    for (let i = 0; i < this.layers.length; i++) {
+      const active = i === band ? 1 : 0;
+      const on = this.layers[i]!.on;
+      const off = this.layers[i]!.off;
+      this.apply(on, active * throttle * master, rate, smooth);
+      this.apply(off, active * (1 - throttle) * master, rate, smooth);
     }
+  }
+
+  private apply(sound: Audio | undefined, target: number, rate: number, smooth: number): void {
+    if (!sound) return;
+    const cur = this.vol.get(sound) ?? 0;
+    const next = cur + (target - cur) * smooth; // suaviza (sem clique na troca de amostra)
+    this.vol.set(sound, next);
+    sound.setVolume(next);
+    sound.setPlaybackRate(rate);
   }
 
   /** Para e libera. */
