@@ -21,9 +21,12 @@ class CameraFollowingCSM extends CSMShadowNode {
   override updateBefore(
     frame: Parameters<CSMShadowNode['updateBefore']>[0],
   ): ReturnType<CSMShadowNode['updateBefore']> {
-    const cam = (frame as unknown as { camera?: unknown } | null)?.camera;
+    // Segue SÓ a câmera de visão (perspectiva). O `frame.camera` durante o passe de
+    // profundidade das cascatas é a câmera ORTOGRÁFICA da sombra — segui-la travava a
+    // sombra numa direção fixa (a "cunha"). Por isso o filtro `isPerspectiveCamera`.
+    const cam = (frame as unknown as { camera?: { isPerspectiveCamera?: boolean } } | null)?.camera;
     const self = this as unknown as { camera: unknown; updateFrustums: () => void };
-    if (cam && self.camera && cam !== self.camera) {
+    if (cam?.isPerspectiveCamera && cam !== self.camera) {
       self.camera = cam;
       self.updateFrustums();
     }
