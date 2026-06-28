@@ -66,20 +66,20 @@ export class VehicleControlSystem extends System {
     const engine = o.engineForce ?? 9000;
 
     if (driving) {
-      // Gamepad-first; sem controle conectado, cai pro teclado (W/S/A/D + setas).
-      let accel = 0;
-      let brakeIn = 0;
-      let steerIn = 0;
-      if (this.gamepad.isConnected(0)) {
-        accel = this.gamepad.getButtonValue(0, 7); // RT
-        brakeIn = this.gamepad.getButtonValue(0, 6); // LT
-        steerIn = this.gamepad.getAxis(0, 0);
-      } else if (this.input) {
+      // Gamepad-first; o teclado PREENCHE quando o controle está ocioso — sem controle
+      // OU controle-fantasma "conectado" mas parado (Electron às vezes reporta um). Por
+      // isso combinamos em vez de travar em `isConnected`: assim o teclado sempre dirige.
+      let accel = this.gamepad.getButtonValue(0, 7); // RT
+      let brakeIn = this.gamepad.getButtonValue(0, 6); // LT
+      let steerIn = this.gamepad.getAxis(0, 0);
+      if (this.input) {
         const k = this.input;
-        if (k.isKeyDown('w') || k.isKeyDown('ArrowUp')) accel = 1;
-        if (k.isKeyDown('s') || k.isKeyDown('ArrowDown')) brakeIn = 1;
-        if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) steerIn += 1;
-        if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) steerIn -= 1;
+        if (accel < 0.05 && (k.isKeyDown('w') || k.isKeyDown('ArrowUp'))) accel = 1;
+        if (brakeIn < 0.05 && (k.isKeyDown('s') || k.isKeyDown('ArrowDown'))) brakeIn = 1;
+        if (Math.abs(steerIn) < 0.05) {
+          if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) steerIn = 1;
+          else if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) steerIn = -1;
+        }
       }
       const fwd = this.vehicle.forwardSpeed();
 
