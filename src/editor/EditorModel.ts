@@ -253,18 +253,6 @@ export function describeOutliner(
 }
 
 /**
- * Tamanho **real em metros** do objeto (bounding box no mundo) — a Escala é só um
- * multiplicador (1 = tamanho nativo), então este readout mostra a proporção métrica
- * de fato (ex.: carro `2.27 larg × 1.40 alt × 4.85 prof m` com escala 1).
- */
-function sizeLabel(obj: Object3D): string {
-  const s = new Box3().setFromObject(obj).getSize(new Vector3());
-  if (!Number.isFinite(s.x) || (s.x === 0 && s.y === 0 && s.z === 0)) return 'Tamanho real: —';
-  const f = (n: number): string => n.toFixed(2);
-  return `Tamanho real: ${f(s.x)} larg × ${f(s.y)} alt × ${f(s.z)} prof (m)`;
-}
-
-/**
  * Descreve o **inspector** do objeto selecionado como modelo + handlers. Espelha
  * o que o inspector mostra hoje (transform, sombra, matte, animação, ações do
  * player, collider, luz). Cada campo registra seu handler em `handlers`.
@@ -284,6 +272,11 @@ export function describeInspector(
   const sections: InspectorSection[] = [];
 
   // ── Transform ───────────────────────────────────────────────────────────────
+  // Tamanho REAL em metros (bounding box no mundo) + escala capturada agora — pra o
+  // handler de "Tamanho (m)" converter metros→escala (alvo ÷ tamanho nativo). Exato
+  // com o objeto sem rotação (frouxo se rotacionado: usa o AABB).
+  const worldSize = new Box3().setFromObject(obj).getSize(new Vector3());
+  const capScale: [number, number, number] = [obj.scale.x, obj.scale.y, obj.scale.z];
   const transform: InspectorField[] = [
     { kind: 'vec3', id: fid('pos'), label: 'Posição', value: [obj.position.x, obj.position.y, obj.position.z] },
     {
@@ -296,14 +289,14 @@ export function describeInspector(
         MathUtils.radToDeg(obj.rotation.z),
       ],
     },
-    { kind: 'vec3', id: fid('scl'), label: 'Escala', value: [obj.scale.x, obj.scale.y, obj.scale.z] },
+    { kind: 'vec3', id: fid('scl'), label: 'Escala (×)', value: capScale },
     {
-      kind: 'note',
+      // Edita o tamanho direto em METROS; sincroniza com a Escala (multiplicador).
+      kind: 'vec3',
       id: fid('size'),
-      // Escala é multiplicador (1 = tamanho nativo); este é o tamanho REAL em metros
-      // (bounding box no mundo) — pra conferir proporção métrica de qualquer objeto.
-      text: sizeLabel(obj),
-      tone: 'muted',
+      label: 'Tamanho (m)',
+      value: [worldSize.x, worldSize.y, worldSize.z],
+      step: 0.1,
     },
   ];
   handlers.set(fid('pos'), (v) => {
@@ -319,6 +312,19 @@ export function describeInspector(
   handlers.set(fid('scl'), (v) => {
     const [x, y, z] = v as [number, number, number];
     obj.scale.set(x, y, z);
+    ctx.writeBack?.(obj);
+  });
+  handlers.set(fid('size'), (v) => {
+    // Metros → escala por eixo: novaEscala = alvo × escalaAtual / tamanhoAtual
+    // (= alvo ÷ tamanho nativo). Eixo sem tamanho mensurável mantém a escala.
+    const [tx, ty, tz] = v as [number, number, number];
+    const toScale = (target: number, cur: number, scl: number): number =>
+      cur > 1e-6 && Number.isFinite(target) ? (target * scl) / cur : scl;
+    obj.scale.set(
+      toScale(tx, worldSize.x, capScale[0]),
+      toScale(ty, worldSize.y, capScale[1]),
+      toScale(tz, worldSize.z, capScale[2]),
+    );
     ctx.writeBack?.(obj);
   });
   sections.push({ fields: transform });

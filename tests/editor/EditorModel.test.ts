@@ -81,18 +81,29 @@ describe('describeInspector', () => {
     expect(field(model, 'matte')?.kind).toBe('checkbox');
   });
 
-  it('mostra o tamanho REAL em metros (bbox), não o multiplicador de escala', () => {
+  it('mostra o tamanho em metros (bbox) como vec3, refletindo a escala', () => {
     const reg = createObjectRegistry();
     const mesh = new Mesh(new BoxGeometry(2, 2, 2));
     const { model } = describeInspector(mesh, {}, reg);
-    const note = field(model, 'size');
-    expect(note?.kind).toBe('note');
-    expect((note as { text: string }).text).toContain('2.00 larg × 2.00 alt × 2.00 prof');
+    const size = field(model, 'size');
+    expect(size?.kind).toBe('vec3');
+    expect((size as { value: number[] }).value.map((n) => +n.toFixed(2))).toEqual([2, 2, 2]);
 
-    // Escala 3 (multiplicador) → tamanho real 6 m; o campo Escala segue mostrando "3".
+    // Escala 3 (multiplicador) → tamanho real 6 m.
     mesh.scale.set(3, 3, 3);
     const { model: m2 } = describeInspector(mesh, {}, reg);
-    expect((field(m2, 'size') as { text: string }).text).toContain('6.00 larg × 6.00 alt × 6.00 prof');
+    expect((field(m2, 'size') as { value: number[] }).value.map((n) => +n.toFixed(2))).toEqual([6, 6, 6]);
+  });
+
+  it('editar "Tamanho (m)" converte metros → escala (alvo ÷ tamanho nativo)', () => {
+    const reg = createObjectRegistry();
+    const mesh = new Mesh(new BoxGeometry(2, 2, 2)); // nativo 2 m
+    const { handlers } = describeInspector(mesh, {}, reg);
+    // pede 6 m no X (e mantém 2 m em Y/Z) → escala X = 3, Y/Z = 1
+    handlers.get(`${reg.idOf(mesh)}:size`)?.([6, 2, 2]);
+    expect(mesh.scale.x).toBeCloseTo(3, 5);
+    expect(mesh.scale.y).toBeCloseTo(1, 5);
+    expect(mesh.scale.z).toBeCloseTo(1, 5);
   });
 
   it('handler de posição (vec3) escreve no objeto', () => {
