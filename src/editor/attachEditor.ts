@@ -580,6 +580,7 @@ export function attachEditor(game: Game): GameEditor {
   const roadApiCore = createRoadApi(authoring);
   let roadTextures: TextureItem<{ diffuse: string; normal?: string }>[] = [];
   let terrainTextures: TextureItem<string>[] = [];
+  let vegModels: TextureItem<string>[] = []; // modelos de vegetação (.glb) com thumbnail
   let refreshUI: () => void = () => {};
   const texturePicker = createEditorTexturePicker();
   // Edição de traçado (handles arrastáveis nos pontos da spline — ADR-0072).
@@ -748,7 +749,15 @@ export function attachEditor(game: Game): GameEditor {
       return hits.length ? hits[0]!.point.y : null;
     },
   });
-  const vegetationApi = vegetation.api;
+  // Modal com PREVIEW (thumbnails) pra escolher o modelo da vegetação (igual estrada/terreno).
+  const vegetationApi = {
+    ...vegetation.api,
+    pickModel: (obj: import('three').Object3D) =>
+      texturePicker.open('Modelo da vegetação', vegModels, (url) => {
+        vegetation.api.setModel(obj, url);
+        refreshUI();
+      }),
+  };
   game.canvas.addEventListener('pointerdown', (e) => {
     if (!vegetation.isPainting() || e.button !== 0) return;
     const hit = groundHit(e.clientX, e.clientY);
@@ -836,7 +845,18 @@ export function attachEditor(game: Game): GameEditor {
         const list = Array.isArray(assets) ? assets : [];
         addPanel.setAssets(list.filter((a) => a.toLowerCase().endsWith('.glb')));
         // Modelos pra vegetação: .glb de assets/vegetation/ (árvores/grama importadas).
-        vegetation.setAvailableModels(list.filter((a) => /assets\/vegetation\/.*\.glb$/i.test(a)));
+        const vegGlb = list.filter((a) => /assets\/vegetation\/[^/]*\.glb$/i.test(a)).sort();
+        vegetation.setAvailableModels(vegGlb);
+        // Items do modal de modelo (thumbnail em assets/vegetation/thumbs/<nome>.png).
+        const placeholderThumb = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+        vegModels = [
+          { name: 'Placeholder', thumb: placeholderThumb, value: '' },
+          ...vegGlb.map((p) => ({
+            name: (p.split('/').pop() ?? p).replace(/\.glb$/i, ''),
+            thumb: p.replace(/\/([^/]*)\.glb$/i, '/thumbs/$1.png'),
+            value: p,
+          })),
+        ];
         terrain.setAvailableTextures(list.filter(isImage));
         // Texturas do terreno pro modal (imagens; sem normal maps — não são superfícies).
         terrainTextures = list

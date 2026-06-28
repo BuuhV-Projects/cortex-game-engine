@@ -619,12 +619,20 @@ export function describeInspector(
     const api = ctx.vegetationApi;
     const v = vegState;
     const modelName = (u: string): string => (u.split('/').pop() ?? u).replace(/\.glb$/i, '');
-    const fields: InspectorField[] = [
-      {
+    const fields: InspectorField[] = [];
+    // Modelo: modal com PREVIEW (thumbnails) quando o picker está injetado; senão dropdown.
+    if (api.pickModel) {
+      fields.push({ kind: 'note', id: fid('vegModelCur'), text: `Modelo: ${v.model ? modelName(v.model) : 'Placeholder'}`, tone: 'muted' });
+      fields.push({ kind: 'button', id: fid('vegPick'), label: '🖼 Escolher modelo…' });
+    } else {
+      fields.push({
         kind: 'select', id: fid('vegModel'), label: 'Modelo', value: v.model,
         options: [{ value: '', label: 'Placeholder' }, ...v.models.map((u) => ({ value: u, label: modelName(u) }))],
-      },
-      { kind: 'button', id: fid('vegPaint'), label: v.painting ? '■ Parar pincel' : '🌳 Espalhar', variant: v.painting ? 'danger' : 'primary' },
+      });
+    }
+    fields.push(
+      { kind: 'button', id: fid('vegPaint'), label: v.painting ? '■ Parar pincel' : '🌳 Espalhar', variant: v.painting ? 'danger' : 'primary' });
+    fields.push(
       { kind: 'number', id: fid('vegRadius'), label: 'Tamanho do pincel', value: v.radius, step: 1 },
       { kind: 'number', id: fid('vegDensity'), label: 'Densidade', value: v.density, step: 1 },
       { kind: 'number', id: fid('vegScaleMin'), label: 'Escala mín.', value: v.scaleMin, step: 0.1 },
@@ -632,10 +640,11 @@ export function describeInspector(
       { kind: 'checkbox', id: fid('vegCollide'), label: 'Colisão (player não atravessa)', value: v.collide },
       // (a contagem viva NÃO entra como nota: o texto mudaria a cada pincelada e forçaria
       //  o inspector da IDE a reconstruir, derrubando o input que você está editando.)
-    ];
+    );
     handlers.set(fid('vegModel'), (val) => {
       api.setModel(obj, String(val));
     });
+    handlers.set(fid('vegPick'), () => api.pickModel?.(obj));
     handlers.set(fid('vegCollide'), (val) => {
       api.setCollide(obj, val === true || val === 'true');
     });

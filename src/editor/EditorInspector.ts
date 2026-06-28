@@ -329,6 +329,8 @@ export interface VegetationApi {
   setModel(obj: Object3D, url: string): void;
   /** Liga/desliga a colisão com o player (`cortexSolid`). */
   setCollide(obj: Object3D, on: boolean): void;
+  /** Abre o modal de seleção de modelo com preview (atribuído pelo attachEditor). Opcional. */
+  pickModel?(obj: Object3D): void;
 }
 
 /** Estado de animação do objeto selecionado (clipes do `.glb`). */
