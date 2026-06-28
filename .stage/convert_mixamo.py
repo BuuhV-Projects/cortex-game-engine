@@ -29,7 +29,10 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 def import_fbx(path):
     before_objs = set(bpy.data.objects)
     before_acts = set(bpy.data.actions)
-    bpy.ops.import_scene.fbx(filepath=path, automatic_bone_orientation=True)
+    # automatic_bone_orientation=False: mantém a orientação NATIVA do Mixamo (idêntica
+    # entre personagem e clips). Com True, o Blender recalcula por arquivo e desalinha
+    # as actions → malha deformada ao animar. ignore_leaf_bones=False mantém o rig igual.
+    bpy.ops.import_scene.fbx(filepath=path, automatic_bone_orientation=False, ignore_leaf_bones=False)
     new_objs = [o for o in bpy.data.objects if o not in before_objs]
     new_acts = [a for a in bpy.data.actions if a not in before_acts]
     return new_objs, new_acts
@@ -78,6 +81,22 @@ for target, fname in clips:
         print("SEM ACTION:", fname)
         continue
     push(main_arm, act, target)
+
+# 2.4) BAKE do transform da armature → raiz identidade. O FBX do Mixamo deixa a
+# armature com scale ~0.18; Blender/Unity aplicam no skin, mas o three.js renderiza o
+# skin no tamanho dos OSSOS (esqueleto-raiz escalado) → fica gigante só no engine.
+# Aplicar (location/rotation/scale) baixa a escala pros ossos e zera a raiz.
+bpy.ops.object.select_all(action="DESELECT")
+bpy.context.view_layer.objects.active = main_arm
+main_arm.select_set(True)
+for ch in list(main_arm.children):
+    if ch.type == "MESH":
+        ch.select_set(True)
+try:
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    print("APPLY TRANSFORM OK; armature scale ->", tuple(round(s, 4) for s in main_arm.scale))
+except Exception as e:
+    print("APPLY TRANSFORM FALHOU:", e)
 
 # 2.5) Texturas do Mixamo vêm em 2K/4K (glb fica pesado). Cap em 1024 (suficiente pro jogo).
 MAXTEX = 1024
