@@ -13,6 +13,8 @@ export interface VehicleControlOptions {
   reverseForce?: number;
   /** Freio máximo (LT andando pra frente). Default 50. */
   maxBrake?: number;
+  /** Freio de mão (Espaço/A) — trava as rodas. Default 120 (mais forte que o freio normal). */
+  handbrakeForce?: number;
   /**
    * Freio de **resistência ao rolamento / freio-motor** aplicado ao soltar acelerador e
    * freio (senão o carro não desacelera). Default 4.
@@ -22,7 +24,7 @@ export interface VehicleControlOptions {
   throttleSmooth?: number;
   /** Giro EXTRA das rodas com tração sob aceleração (rad/s no talo) — wheelspin visual. Default 18. */
   wheelSpinRate?: number;
-  /** Esterço máximo (rad). Default 0.65. */
+  /** Esterço máximo (rad). Default 0.7. */
   maxSteer?: number;
   /** Suavização do esterço (1/s). Default 8. */
   steerSmooth?: number;
@@ -131,10 +133,16 @@ export class VehicleControlSystem extends System {
       // freio-motor leve (senão não desacelera).
       const coasting = !handbrake && this.throttle < 0.05 && brakeIn < 0.05;
       this.vehicle.setBrake(
-        handbrake ? maxBrake : brakeIn > 0.1 && fwd >= 1 ? brakeIn * maxBrake : coasting ? (o.rollingResistance ?? 4) : 0,
+        handbrake
+          ? (o.handbrakeForce ?? 120) // freio de mão: trava forte
+          : brakeIn > 0.1 && fwd >= 1
+            ? brakeIn * maxBrake
+            : coasting
+              ? (o.rollingResistance ?? 4)
+              : 0,
       );
 
-      const target = -steerIn * (o.maxSteer ?? 0.65);
+      const target = -steerIn * (o.maxSteer ?? 0.7);
       this.steer += (target - this.steer) * Math.min(1, dt * (o.steerSmooth ?? 8));
       this.vehicle.setSteering(this.steer);
     } else {
