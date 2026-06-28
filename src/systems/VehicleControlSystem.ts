@@ -3,6 +3,7 @@ import { System } from '../ecs/System.js';
 import type { Entity } from '../ecs/Entity.js';
 import type { RapierPhysics, Vehicle } from '../physics/RapierPhysics.js';
 import type { GamepadManager } from '../core/GamepadManager.js';
+import type { InputManager } from '../core/InputManager.js';
 
 /** Opções do {@link VehicleControlSystem}. */
 export interface VehicleControlOptions {
@@ -30,12 +31,13 @@ const _q = new Quaternion();
 const _camPos = new Vector3();
 
 /**
- * Dirige um {@link Vehicle} do Rapier (ADR-0081), gamepad-first: **RT** acelera, **LT**
- * freia (e dá ré parado), **stick X** esterça (suave). Roda `vehicle.update(dt)` e o
- * `physics.step()` (DEPOIS — convenção do Rapier), sincroniza a malha do carro ao
- * chassi e posiciona a **chase cam**. `priority = 30` (DEPOIS da câmera de 3ª pessoa,
- * que é 20 — senão ela sobrescreveria a chase cam ao dirigir). Substitui o controlador
- * arcade. As rodas raycastam no WASM (sem custo de CPU).
+ * Dirige um {@link Vehicle} do Rapier (ADR-0081), gamepad-first com **fallback
+ * teclado**: com controle, **RT** acelera, **LT** freia (e dá ré parado), **stick X**
+ * esterça; SEM controle (`gamepad.isConnected(0) === false`), **W/↑** acelera, **S/↓**
+ * freia/ré, **A·D / ←·→** esterça. Roda `vehicle.update(dt)` e o `physics.step()`
+ * (DEPOIS — convenção do Rapier), sincroniza a malha do carro ao chassi e posiciona a
+ * **chase cam**. `priority = 30` (DEPOIS da câmera de 3ª pessoa, que é 20 — senão ela
+ * sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de CPU).
  */
 export class VehicleControlSystem extends System {
   static override requiredComponents = [];
@@ -49,6 +51,8 @@ export class VehicleControlSystem extends System {
     private readonly car: Object3D,
     private readonly camera: PerspectiveCamera,
     private readonly gamepad: GamepadManager,
+    /** Teclado (fallback quando não há controle). Opcional. */
+    private readonly input?: InputManager,
     private readonly options: VehicleControlOptions = {},
   ) {
     super();
@@ -62,9 +66,21 @@ export class VehicleControlSystem extends System {
     const engine = o.engineForce ?? 9000;
 
     if (driving) {
-      const accel = this.gamepad.getButtonValue(0, 7); // RT
-      const brakeIn = this.gamepad.getButtonValue(0, 6); // LT
-      const steerIn = this.gamepad.getAxis(0, 0);
+      // Gamepad-first; sem controle conectado, cai pro teclado (W/S/A/D + setas).
+      let accel = 0;
+      let brakeIn = 0;
+      let steerIn = 0;
+      if (this.gamepad.isConnected(0)) {
+        accel = this.gamepad.getButtonValue(0, 7); // RT
+        brakeIn = this.gamepad.getButtonValue(0, 6); // LT
+        steerIn = this.gamepad.getAxis(0, 0);
+      } else if (this.input) {
+        const k = this.input;
+        if (k.isKeyDown('w') || k.isKeyDown('ArrowUp')) accel = 1;
+        if (k.isKeyDown('s') || k.isKeyDown('ArrowDown')) brakeIn = 1;
+        if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) steerIn += 1;
+        if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) steerIn -= 1;
+      }
       const fwd = this.vehicle.forwardSpeed();
 
       // RT = motor pra frente. LT andando pra frente = freio; LT ~parado/ré = motor reverso.

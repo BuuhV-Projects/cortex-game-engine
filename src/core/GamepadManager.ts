@@ -251,6 +251,15 @@ export class GamepadManager extends EventTarget {
     return state.axes[axis] ?? 0;
   }
 
+  /**
+   * `true` se há um gamepad conectado no slot `index` (default 0), sem alocar.
+   * Útil pra fazer **fallback teclado/mouse** quando não há controle: leia o gamepad
+   * se `isConnected()`, senão leia o teclado.
+   */
+  isConnected(index = 0): boolean {
+    return this._states[index]?.connected === true;
+  }
+
   // ─── Getters ─────────────────────────────────────────────────────────────────
 
   /** Limiar de deadzone configurado no construtor. */
