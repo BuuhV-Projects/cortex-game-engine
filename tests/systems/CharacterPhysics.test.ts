@@ -13,6 +13,7 @@ import { CharacterBodyComponent } from '../../src/components/CharacterBodyCompon
 import { TerrainComponent } from '../../src/components/TerrainComponent.js';
 import { CharacterPhysicsSystem } from '../../src/systems/CharacterPhysicsSystem.js';
 import { TerrainCollisionSystem } from '../../src/systems/TerrainCollisionSystem.js';
+import { Vegetation, makePlaceholderVegetation } from '../../src/scene/Vegetation.js';
 
 describe('CharacterPhysicsSystem', () => {
   it('gravidade puxa pra baixo (limitada por fallSpeedMax)', () => {
@@ -239,6 +240,43 @@ describe('CharacterBody + terreno', () => {
     e.addComponent(new CharacterBodyComponent());
     for (let i = 0; i < 120; i++) world.tick(16);
     expect(t.y).toBeCloseTo(0, 1); // pousou no plano (0), o anti-clip não empurrou pra cima
+  });
+
+  it('vegetação sólida empurra o player pra fora do tronco (cilindro, sem raycast)', () => {
+    const world = new World();
+    const veg = new Vegetation(makePlaceholderVegetation('tree'));
+    veg.setInstances([0, 0, 0, 0, 1]); // uma árvore na origem (escala 1)
+    veg.group.userData['cortexVegetation'] = veg; // (makeVegetation faz isso no engine)
+    veg.group.userData['cortexSolid'] = true; // colide
+    const scene = new Object3D();
+    scene.add(veg.group);
+    scene.updateMatrixWorld(true);
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+
+    const e = world.createEntity();
+    const t = new TransformComponent(0.1, 0, 0); // quase no centro do tronco
+    e.addComponent(t);
+    e.addComponent(new CharacterBodyComponent({ radius: 0.4, groundY: 0 }));
+
+    world.tick(16);
+    const dist = Math.hypot(t.x, t.z);
+    expect(dist).toBeGreaterThan(0.7); // empurrado pra fora (raio tronco 0.4 + player 0.4)
+  });
+
+  it('vegetação SEM cortexSolid não empurra (grama é atravessável)', () => {
+    const world = new World();
+    const veg = new Vegetation(makePlaceholderVegetation('grass'));
+    veg.setInstances([0, 0, 0, 0, 1]);
+    const scene = new Object3D();
+    scene.add(veg.group); // sem cortexSolid
+    scene.updateMatrixWorld(true);
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+    const e = world.createEntity();
+    const t = new TransformComponent(0.1, 0, 0);
+    e.addComponent(t);
+    e.addComponent(new CharacterBodyComponent({ radius: 0.4, groundY: 0 }));
+    world.tick(16);
+    expect(Math.hypot(t.x, t.z)).toBeCloseTo(0.1, 5); // não foi empurrado
   });
 
   it('TerrainCollisionSystem NÃO move o CharacterBody (raycast é a autoridade única)', () => {

@@ -42,6 +42,26 @@ function hasTerrain(obj: Object3D): boolean {
 /** Altura (acima dos pés) de onde sai o raycast SÓ-terreno do clamp anti-clip. */
 const TERRAIN_PROBE = 1000;
 
+/** Raio-base do tronco (×escala da instância) pra colisão barata com vegetação. */
+const TRUNK_RADIUS = 0.4;
+
+/**
+ * Coleta os **troncos** (x, z, raio) de toda vegetação sólida (`cortexVegetation` +
+ * `cortexSolid`) nas raízes — pra colisão barata por cilindro (sem raycast na malha
+ * densa). Empilha em `out` no formato `[x, z, radius]` por instância.
+ */
+function collectTrunks(roots: Object3D[], out: number[]): void {
+  out.length = 0;
+  for (const root of roots) {
+    root.traverse((o) => {
+      const ud = o.userData as Record<string, unknown>;
+      if (!ud['cortexVegetation'] || ud['cortexSolid'] !== true) return;
+      const inst = (ud['cortexVegetation'] as { getInstances(): number[] }).getInstances();
+      for (let i = 0; i < inst.length; i += 5) out.push(inst[i]!, inst[i + 2]!, TRUNK_RADIUS * inst[i + 4]!);
+    });
+  }
+}
+
 /**
  * Empurrão horizontal pra **sair de paredes**: dado o hit mais próximo em cada
  * direção de eixo (`±X`/`±Z`, distância ou `null` se livre) e o raio da cápsula,
@@ -106,6 +126,7 @@ export class CharacterPhysicsSystem extends System {
   private readonly ray = new Raycaster();
   private readonly origin = new Vector3();
   private readonly wallDir = new Vector3();
+  private readonly trunks: number[] = []; // [x, z, raio] por instância de vegetação sólida
 
   /** @param roots Raízes da cena pra colisão de chão (raycast). Vazio = só `groundY`. */
   constructor(roots: Object3D[] = []) {
@@ -115,6 +136,7 @@ export class CharacterPhysicsSystem extends System {
 
   override update(entities: Entity[], deltaTime: number): void {
     const dt = deltaTime / 1000;
+    collectTrunks(this.roots, this.trunks); // troncos da vegetação sólida (1x por frame)
     for (const e of entities) {
       const t = e.getComponent(TransformComponent)!;
       const c = e.getComponent(CharacterBodyComponent)!;
@@ -233,6 +255,23 @@ export class CharacterPhysicsSystem extends System {
         );
         t.x += push.dx;
         t.z += push.dz;
+      }
+
+      // ── Colisão com VEGETAÇÃO (troncos = cilindros) ─────────────────────────────
+      // A malha das árvores NÃO entra em raycast (perf na floresta densa). A colisão é
+      // este empurrão barato: tira o personagem de dentro do raio do tronco de cada
+      // instância sólida próxima. O(nº de instâncias) por frame.
+      for (let i = 0; i < this.trunks.length; i += 3) {
+        const dx = t.x - this.trunks[i]!;
+        const dz = t.z - this.trunks[i + 1]!;
+        const minD = this.trunks[i + 2]! + c.radius;
+        const d2 = dx * dx + dz * dz;
+        if (d2 < minD * minD && d2 > 1e-8) {
+          const d = Math.sqrt(d2);
+          const k = (minD - d) / d; // fração radial pra empurrar pra fora
+          t.x += dx * k;
+          t.z += dz * k;
+        }
       }
     }
   }
