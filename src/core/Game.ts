@@ -159,6 +159,7 @@ export class Game {
       window.addEventListener('resize', () => {
         const w = window.innerWidth;
         const h = window.innerHeight;
+        if (w <= 0 || h <= 0) return; // janela/painel 0×0: não mexe na câmera (aspect NaN/∞)
         if (this.camera instanceof OrthographicCamera) {
           this.applyOrthoFrustum(w, h);
         } else {

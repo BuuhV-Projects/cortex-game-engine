@@ -174,7 +174,7 @@ export class Renderer {
    * por frame". Para split-screen, use `clear()` + `renderViewport()`.
    */
   render(scene: THREE.Scene, camera: THREE.Camera): void {
-    if (!this._initialized) return;
+    if (!this._initialized || this._width <= 0 || this._height <= 0) return; // canvas 0×0 → WebGPU recusa
     this._renderer.clear();
     this._renderer.render(scene, camera);
   }
@@ -186,7 +186,7 @@ export class Renderer {
    * quando se usa split-screen.
    */
   clear(): void {
-    if (!this._initialized) return;
+    if (!this._initialized || this._width <= 0 || this._height <= 0) return;
     this._renderer.clear();
   }
 
@@ -202,7 +202,7 @@ export class Renderer {
    * renderer.renderViewport(scene, p2Camera, { x: w / 2, y: 0, width: w / 2, height: h });
    */
   renderViewport(scene: THREE.Scene, camera: THREE.Camera, viewport: Viewport): void {
-    if (!this._initialized) return;
+    if (!this._initialized || this._width <= 0 || this._height <= 0) return;
     const { x, y, width, height } = viewport;
     this._renderer.setViewport(x, y, width, height);
     this._renderer.setScissor(x, y, width, height);
@@ -217,6 +217,10 @@ export class Renderer {
    * chamado manualmente quando o canvas não ocupa a janela inteira.
    */
   resize(width: number, height: number): void {
+    // WebGPU não cria swapchain/depth buffer de tamanho 0 (canvas oculto, painel recolhido
+    // ou resize transitório pra 0×0) → invalidaria o device com "texture of size 0". Ignora
+    // dimensões inválidas; mantém o último tamanho bom.
+    if (!(width > 0) || !(height > 0)) return;
     this._width = width;
     this._height = height;
     this._renderer.setSize(width, height);

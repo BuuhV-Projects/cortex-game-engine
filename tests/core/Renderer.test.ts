@@ -171,6 +171,27 @@ describe('Renderer', () => {
     expect(rendererSpies.setSize).toHaveBeenCalledWith(1024, 768);
   });
 
+  it('resize() IGNORA tamanho 0 (WebGPU recusa texture 0×0) — mantém o último bom', () => {
+    const r = makeRenderer(); // 800×600
+    rendererSpies.setSize.mockClear();
+    r.resize(0, 600);
+    r.resize(800, 0);
+    r.resize(-10, 100);
+    expect(rendererSpies.setSize).not.toHaveBeenCalled();
+    expect(r.width).toBe(800);
+    expect(r.height).toBe(600);
+  });
+
+  it('render() é no-op com canvas 0×0 (mesmo após init)', async () => {
+    const canvas = {} as HTMLCanvasElement;
+    const r = new Renderer({ canvas, width: 0, height: 0 });
+    await r.init();
+    r.render(fakeScene, fakeCamera);
+    r.clear();
+    expect(rendererSpies.render).not.toHaveBeenCalled();
+    expect(rendererSpies.clear).not.toHaveBeenCalled();
+  });
+
   // ── dispose() ──────────────────────────────────────────────────────────────
 
   it('dispose() chama dispose do renderer', () => {
