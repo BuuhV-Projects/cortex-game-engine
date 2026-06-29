@@ -42,10 +42,6 @@ export class EditorCameraSystem extends System {
   private readonly forward = new THREE.Vector3();
   private readonly right = new THREE.Vector3();
   private readonly worldUp = new THREE.Vector3(0, 1, 0);
-  /** Centro do último objeto focado — `Shift` (sem WASD) aproxima a câmera dele. */
-  private readonly focusCenter = new THREE.Vector3();
-  private hasFocus = false;
-  private readonly _approach = new THREE.Vector3();
   private prevToggle = false;
   private prevTeleport = false;
   private prevView = false;
@@ -175,21 +171,6 @@ export class EditorCameraSystem extends System {
     if (this.input.isKeyDown('e') || this.input.isKeyDown('E')) this.camera.position.y += step;
     if (this.input.isKeyDown('q') || this.input.isKeyDown('Q')) this.camera.position.y -= step;
 
-    // Shift SOZINHO (sem WASD/QE) = aproxima do objeto em foco. Passo ∝ distância:
-    // longe = rápido, perto = devagar (ease-in), sem passar do alvo.
-    const moving =
-      this.input.isKeyDown('w') || this.input.isKeyDown('W') || this.input.isKeyDown('s') || this.input.isKeyDown('S') ||
-      this.input.isKeyDown('a') || this.input.isKeyDown('A') || this.input.isKeyDown('d') || this.input.isKeyDown('D') ||
-      this.input.isKeyDown('e') || this.input.isKeyDown('E') || this.input.isKeyDown('q') || this.input.isKeyDown('Q');
-    if (fast && !moving && this.hasFocus) {
-      this._approach.subVectors(this.focusCenter, this.camera.position);
-      const dist = this._approach.length();
-      if (dist > 1.5) {
-        const s = Math.min(dist - 1.5, dist * 2.5 * dt); // 2.5/s, proporcional → ease-in
-        this.camera.position.addScaledVector(this._approach.normalize(), s);
-      }
-    }
-
     this.camera.lookAt(
       this.camera.position.x + this.forward.x,
       this.camera.position.y + this.forward.y,
@@ -269,8 +250,6 @@ export class EditorCameraSystem extends System {
       else offset.normalize();
     }
 
-    this.focusCenter.copy(center); // Shift (sem WASD) aproxima daqui
-    this.hasFocus = true;
     this.camera.position.copy(center).addScaledVector(offset, distance);
     this.camera.lookAt(center);
     // Garante que o objeto inteiro caiba sem ser cortado pelo far plane (mundo grande).
