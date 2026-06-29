@@ -1,7 +1,9 @@
 # 0087 - EasyRoad estendido: perfis, cruzamentos declarados, nav e specs de região
 
 **Data:** 2026-06-29
-**Status:** aceito (design — implementação em fases, ainda não construída)
+**Status:** parcialmente substituído por 0088 — a **geração de malha procedural** foi abandonada
+(qualidade insuficiente; geometria final vai pro Blender). Os **dados** (perfis, RegionSpec, navGraph)
+continuam disponíveis/úteis (navegação, blockout), mas **não** são o caminho da malha final.
 
 ## Contexto
 
