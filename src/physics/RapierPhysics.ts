@@ -92,6 +92,12 @@ export interface VehicleSpec {
    * do collider (no centro da caixa — alto, capota fácil).
    */
   centerOfMass?: Vec3Like;
+  /**
+   * Escala da inércia de GUINADA (curva). `< 1` = carro mais ágil/leve pra virar (arcade);
+   * `1` = físico (pode dar entendimento — vira a roda mas o carro custa a rodar). Default 1.
+   * Só com `centerOfMass` definido. Editável ao vivo via {@link Vehicle.setMassProperties}.
+   */
+  yawInertiaScale?: number;
   /** Massa do chassi (kg). Default 1200. */
   mass?: number;
   /** Atrito do chassi ao raspar. Default 0.4. */
@@ -343,7 +349,7 @@ export class RapierPhysics {
       ctrl.setWheelFrictionSlip(i, spec.frictionSlip ?? 2.5); // grip arcade-real
     }
     const vehicle = new Vehicle(ctrl, chassis, spec.wheels, he);
-    if (spec.centerOfMass) vehicle.setMassProperties(mass, spec.centerOfMass);
+    if (spec.centerOfMass) vehicle.setMassProperties(mass, spec.centerOfMass, spec.yawInertiaScale ?? 1);
     return vehicle;
   }
 
@@ -394,10 +400,12 @@ export class Vehicle {
    * Inspector. A inércia é recalculada como caixa (`m/3·(a²+b²)`). Requer o veículo criado
    * com `centerOfMass` (collider sem massa).
    */
-  setMassProperties(mass: number, centerOfMass: Vec3Like): void {
+  setMassProperties(mass: number, centerOfMass: Vec3Like, yawInertiaScale = 1): void {
     const he = this.halfExtents;
     const ix = (mass / 3) * (he.y * he.y + he.z * he.z);
-    const iy = (mass / 3) * (he.x * he.x + he.z * he.z);
+    // Inércia de GUINADA (eixo Y / curva): escalar < 1 deixa o carro mais ágil pra virar
+    // (menos "pesado"); 1 = físico. Entendimento (vira a roda mas o carro não roda) cai com isso.
+    const iy = (mass / 3) * (he.x * he.x + he.z * he.z) * yawInertiaScale;
     const iz = (mass / 3) * (he.x * he.x + he.y * he.y);
     this.body.setAdditionalMassProperties(
       mass,

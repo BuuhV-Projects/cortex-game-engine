@@ -511,6 +511,7 @@ export function describeInspector(
       num('suspensionCompression', 'Suspensão: amortec. (compressão)', 0.1),
       num('comZ', 'Centro de massa: frente/trás', 0.05),
       num('comY', 'Centro de massa: altura', 0.05),
+      num('yawInertiaScale', 'Agilidade na curva (↓ vira mais fácil)', 0.05),
       num('mass', 'Massa (kg)', 50),
       num('maxSpeed', 'Velocímetro máx. (km/h)', 10),
     ];

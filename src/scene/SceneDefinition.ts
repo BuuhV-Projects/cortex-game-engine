@@ -215,6 +215,8 @@ const vehicleSchema = z
     chassisHalfExtents: z.object({ x: z.number(), y: z.number(), z: z.number() }).partial().optional(),
     /** Centro de massa: y = altura (BAIXO = estável, não capota), z = frente/trás. */
     centerOfMass: z.object({ x: z.number(), y: z.number(), z: z.number() }).partial().optional(),
+    /** Escala da inércia de curva (yaw): <1 = vira mais fácil/ágil; 1 = físico. */
+    yawInertiaScale: z.number().optional(),
     /** Velocidade no fim do velocímetro (km/h). */
     maxSpeed: z.number().optional(),
     wheelSpinRate: z.number().optional(),

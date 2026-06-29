@@ -19,6 +19,7 @@ const DEFAULTS: VehicleEditState = {
   suspensionRelaxation: 0.88,
   comY: 0,
   comZ: 0,
+  yawInertiaScale: 1,
   maxSpeed: 260,
   layers: {},
 };
@@ -70,6 +71,7 @@ export function createVehicleApi(ctx: EditorAuthoringContext): VehicleApi {
         suspensionRelaxation: n(merged['suspensionRelaxation'], DEFAULTS.suspensionRelaxation),
         comY: n(co.y, DEFAULTS.comY),
         comZ: n(co.z, DEFAULTS.comZ),
+        yawInertiaScale: n(merged['yawInertiaScale'], DEFAULTS.yawInertiaScale),
         maxSpeed: n(merged['maxSpeed'], DEFAULTS.maxSpeed),
         layers: Object.fromEntries(
           ENGINE_SOUND_SLOTS.map((s) => [s, typeof merged.engineLayers?.[s] === 'string' ? merged.engineLayers[s]! : '']),

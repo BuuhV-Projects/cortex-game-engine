@@ -413,6 +413,8 @@ export interface VehicleEditState {
   suspensionRelaxation: number;
   comY: number;
   comZ: number;
+  /** Escala da inércia de curva (yaw): <1 = vira mais fácil. */
+  yawInertiaScale: number;
   maxSpeed: number;
   /** Caminhos dos áudios do motor em camadas, por slot (`onLow`, `offHigh`, …); '' se vazio. */
   layers: Record<string, string>;
