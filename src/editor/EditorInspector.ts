@@ -498,6 +498,12 @@ export interface ScriptApi {
   removeScript(obj: Object3D, index: number): void;
   /** Edita um campo do script (ao vivo + persiste). */
   setField(obj: Object3D, index: number, name: string, value: unknown): void;
+  /**
+   * Abre o **modal de escolher script** (com busca) e anexa o escolhido. Injetado pelo
+   * `attachEditor` (usa o {@link EditorTexturePicker}). Ausente → o Inspector cai num
+   * dropdown simples.
+   */
+  pickScript?(obj: Object3D): void;
 }
 
 export interface EditorInspectorOptions {

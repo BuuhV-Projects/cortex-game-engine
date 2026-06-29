@@ -599,7 +599,15 @@ export function describeInspector(
         return { rebuild: true };
       });
     });
-    if (st.available.length) {
+    if (api.pickScript) {
+      // Estilo Unity: botão abre um modal COM BUSCA listando os scripts do projeto.
+      const addId = fid('scrAdd');
+      sf.push({ kind: 'button', id: addId, label: '➕ Adicionar Componente (Script)…', variant: 'primary' });
+      handlers.set(addId, () => {
+        api.pickScript?.(obj);
+      });
+    } else if (st.available.length) {
+      // Fallback (sem modal injetado): dropdown simples.
       const addId = fid('scrAdd');
       sf.push({
         kind: 'select',
@@ -616,7 +624,7 @@ export function describeInspector(
         return undefined;
       });
     } else {
-      sf.push({ kind: 'note', id: fid('scrNone'), text: 'Nenhum script registrado (use registerScript no jogo).', tone: 'muted' });
+      sf.push({ kind: 'note', id: fid('scrNone'), text: 'Nenhum script no projeto (crie em scripts/*.ts).', tone: 'muted' });
     }
     sections.push({ title: 'Scripts', fields: sf });
   }

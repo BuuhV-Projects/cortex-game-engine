@@ -849,6 +849,20 @@ export function attachEditor(game: Game): GameEditor {
         refreshUI();
       }),
   };
+  // "Adicionar Componente (Script)" estilo Unity: modal COM BUSCA listando os scripts do
+  // projeto (registrados via import.meta.glob no jogo). Ícone genérico (scripts não têm thumb).
+  const SCRIPT_ICON =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="10" fill="#23262f"/><text x="48" y="62" font-size="40" fill="#7fd1ff" text-anchor="middle" font-family="monospace">{ }</text></svg>',
+    );
+  scriptApi.pickScript = (obj) => {
+    const items = scriptApi.get(obj).available.map((n) => ({ name: n, thumb: SCRIPT_ICON, value: n }));
+    texturePicker.open('Adicionar Script', items, (name) => {
+      scriptApi.addScript(obj, name);
+      refreshUI();
+    });
+  };
   game.canvas.addEventListener('pointerdown', (e) => {
     if (!vegetation.isPainting() || e.button !== 0) return;
     const hit = groundHit(e.clientX, e.clientY);
