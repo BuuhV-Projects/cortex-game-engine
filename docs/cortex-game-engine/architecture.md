@@ -40,6 +40,32 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
 - **`World`** — guarda entidades/sistemas; `tick(dt)` roda cada sistema com as
   entidades que casam `requiredComponents`. `query(...classes)`, `hasSystem`.
 
+### 2.1 Scripts anexáveis (MonoBehaviour — ADR-0085/0086)
+
+Camada de **comportamento por objeto** em cima do ECS: `ScriptBehavior`
+(`onStart/onUpdate(dt em s)/onDestroy` + `static fields` editáveis no Inspector) →
+`ScriptComponent` (N slots por nó) → **`ScriptHostSystem`** instancia/roda (pausa no editor).
+O jogo registra (`registerScript`, normalmente via `import.meta.glob('./scripts/*.ts')`) e
+adiciona o host no boot. Nó declara `scripts: [{ type, fields }]` no `level.json`; overlay
+`data.scripts[id]` vence.
+
+**Quando usar System (ECS) vs Script** (regra de ouro — detalhe no ADR-0086):
+- **System** = simulação/infra pra **muitas** entidades, reutilizável, sensível à ordem do
+  frame/física, ou que roda no editor (física, câmera, render, character, **veículo**). É o
+  "built-in" estilo Rigidbody/WheelCollider.
+- **Script** = comportamento **de UM objeto**, específico do jogo, anexável/configurável no
+  Inspector, roda só no Play (porta, NPC, invocar carro, soco). Era a cola do `main.ts`.
+- **Híbrido** (carro): simulação = System (`setupVehicle`/`VehicleControlSystem`); orquestração
+  = Script (`CarroController`). Não fragmentar em micro-scripts.
+
+**Handoff script↔infra:** scripts não têm args de construtor → o boot expõe handles em
+`object3d.userData` (ex.: `cortexCarRig`, `cortexControl`) e o script lê; infra→script via flag
+no rig. Genéricos: `this.ctx` (world/input/gamepad/scene/camera), `this.object3d`, `world.query`.
+
+⚠️ **Módulo público novo** (incl. um System/Component novo do engine): além de exportar no
+`index-runtime.ts` + `docs:engine`, **registre em `VENDOR_TYPE_MODULES`** (`electron/main.ts`),
+senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSense não).
+
 ## 3. Cena data-driven (`src/scene/`)
 
 - **`SceneDefinition`** (Zod) — o schema do `level.json`: nós `model`/`primitive`/

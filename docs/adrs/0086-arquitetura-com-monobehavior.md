@@ -23,9 +23,26 @@ repensado. Pergunta central: **o que vira script e o que continua sistema do eng
 4. **`main.ts` = só boot**: `Game` + registra scripts (`import.meta.glob`) + adiciona os
    Systems de infra (ou `setupX`) + `ScriptHostSystem` + `buildScene`. Sem cola de gameplay.
 
-**Regra de ouro — System vs Script:**
-- Opera sobre **muitas** entidades / é infra cross-cutting (física, câmera, render) → **System** (engine).
-- Comportamento **de UM objeto** (spawn, interação, patrulha de NPC, porta que abre) → **Script**.
+**Regra de ouro — System (ECS) vs Script:**
+
+Pergunta-chave: *é simulação/infra que vale pra MUITAS entidades, ou comportamento de UM objeto?*
+
+| Use **System (ECS)** quando… | Use **Script (`ScriptBehavior`)** quando… |
+|---|---|
+| Opera sobre **muitas** entidades via `requiredComponents` (física, render, câmera, animação, movimento) | É comportamento **de UM nó/objeto** (porta que abre, NPC que patrulha, invocar o carro, soco, prop girando) |
+| É **infra reutilizável** entre jogos (não específico do jogo) | É **lógica específica do jogo** (a "cola" que era hardcoded no `main.ts`) |
+| Depende da **ordem do frame/física** (precisa de `priority` certa, roda junto do passo da física) | A ordem não importa muito (roda na prioridade do `ScriptHostSystem`) |
+| Precisa rodar **no editor** também (preview ao vivo) | Só faz sentido **no Play** (o host pausa no editor, igual Unity) |
+| É **simulação pesada/compartilhada** (física do veículo, character controller) — o "built-in" estilo Rigidbody/WheelCollider | Precisa ser **anexável e configurável no Inspector** (campos editáveis, dado de cena) |
+
+**Sinais de que escolheu errado:**
+- Um "script" que faz `world.query` de muitas entidades e simula → era pra ser **System**.
+- Um "system" que só existe pra UM objeto e devia ser editável no Inspector → era pra ser **Script**.
+- Caso híbrido (ex.: carro): **simulação** = System (`VehicleControlSystem`/`setupVehicle`); **orquestração**
+  (invocar/entrar/sair) = Script (`CarroController`). Divida por *simulação vs comportamento*.
+
+**Não fragmentar:** poucos scripts COESOS por objeto, não 20 micro-scripts que precisam conversar entre si
+(custo de coordenação). Deps compartilhadas → o **handoff via `userData`** (abaixo), não um script por dependência.
 
 ## Plano de migração (DDD-61-CORTEX) + status
 
