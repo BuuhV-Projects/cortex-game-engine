@@ -130,6 +130,10 @@ export { sampleSpline, splineLength, type RoadSample } from './road/RoadSpline.j
 export * from './road/RoadMesh.js';
 export * from './road/RoadGrade.js';
 export * from './road/surfaces.js';
+export * from './road/profiles.js';
+export * from './road/roadProfileMesh.js';
+export * from './road/citySpec.js';
+export * from './road/navGraph.js';
 
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';
