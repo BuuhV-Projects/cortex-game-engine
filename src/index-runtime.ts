@@ -88,7 +88,6 @@ export * from './scene/SceneFile.js';
 export * from './scene/SceneLoader.js';
 export * from './scene/SceneDefinition.js';
 export * from './scene/SceneBuilder.js';
-export * from './scene/Kit.js';
 export * from './scene/Background.js';
 export * from './scene/SceneAnimator.js';
 export * from './scene/ModularCharacter.js';
@@ -122,19 +121,6 @@ export {
   type RenderMesh,
 } from './probuilder/EditableMesh.js';
 export * from './probuilder/shapes.js';
-
-// ─── Estradas por spline (Road Architect → Cortex, ADR-0072) ──────────────────
-// `Vec3` NÃO é re-exportado (já vem de SceneDefinition). Núcleo puro: spline +
-// ribbon mesh + catálogo de superfícies.
-export { sampleSpline, splineLength, type RoadSample } from './road/RoadSpline.js';
-export * from './road/RoadMesh.js';
-export * from './road/RoadGrade.js';
-export * from './road/surfaces.js';
-export * from './road/profiles.js';
-export * from './road/roadProfileMesh.js';
-export * from './road/citySpec.js';
-export * from './road/navGraph.js';
-export * from './road/compileCity.js';
 
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';

@@ -75,7 +75,7 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   carrega uma **receita de forma** (`shape`) OU geometria explícita
   (`positions`/`faces`); ver §11.
 - **`buildScene(scene, defs, opts)`** — **único ponto de instanciação**. Instancia
-  os nós (via `instantiate`), aplica `place`/`attach`, e — se há `world` — cria as
+  os nós (via `instantiate`), aplica `place`, e — se há `world` — cria as
   **entidades ECS** (corpos de física, sprites animados, terreno). Marca cada nó
   com `obj.userData.cortexSceneNode = true` (o editor usa pra saber o que é
   autorável). Lê o **overlay** e aplica suas precedências.
@@ -286,57 +286,12 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | Cena data-driven | `src/scene/` (`SceneDefinition`, `SceneBuilder`) |
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (ADR-0071) |
-| Estradas (spline) | `src/road/` (`RoadSpline` + `RoadMesh` + `RoadGrade` + `surfaces`/marcação) · editor: `RoadDrawSystem`/`RoadEditSystem` · nó `road` (ADR-0072/0075/0076) |
 | Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (ADR-0077) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
-
-## 12. Estradas por spline (`src/road/`, ADR-0072 + ADR-0075 + ADR-0076)
-
-Sistema de estradas inspirado no **Road Architect** (MicroGSD, MIT) — mesmo molde
-data-driven do ProBuilder. **Fase 1**: estrada plana conformada ao terreno. **Fase 2**:
-o **terreno se adapta à pista** (cut & fill, ADR-0075) + **marcação** de pista (ADR-0076).
-
-- **Núcleo puro** (`src/road/`, sem editor/ECS): `RoadSpline` (Catmull-Rom: amostra
-  posição+tangente pelos nós de controle), `RoadMesh` (`roadRibbon`/`toRoadGeometry` —
-  faixa de quads; `right = up × tangent`; UV: U na largura, V por distância → tile),
-  `RoadGrade` (`smoothGrade` — greide suavizado; `moldHeightfield` — delta de cut & fill
-  + talude; `mergeDeltas`), `surfaces` (catálogo `ROAD_SURFACES`: asfalto/concreto/terra/
-  tijolo/paralelepípedo → texturas do Road Architect em `assets/roads/`). Testável isolado.
-- **Nó `road`** (`SceneDefinition`): `nodes` (pontos), `width`, `surface`, `steps`,
-  `conformTerrain`, `yOffset`, e (Fase 2) `terrainMode` (`'conform'` default | `'cutfill'`),
-  `taludeWidth`, `maxSlope`. `buildScene` (`makeRoad`/`applyRoad`): amostra a spline e:
-  - `conform` (Fase 1): **a pista se conforma** ao terreno (raycast por vértice → `terrenoY
-    + yOffset`).
-  - `cutfill` (Fase 2): a pista segue um **greide suavizado** (`smoothGrade` sobre o terreno
-    sob o eixo) e guarda o eixo+greide em `cortexRoad.centerline`. O post-pass
-    `moldTerrainToRoads` (depois de tudo posicionado) calcula o **delta** de cut & fill
-    (`moldHeightfield`) e o aplica via `Terrain.setRoadMolding` — **não-destrutivo**: a base
-    autorada (`getHeights`/serialização) não muda; mesh+colisão usam **base+delta**;
-    recalculado a cada build (mover/remover a estrada re-ajeita o terreno, sem cicatriz).
-  Guarda a spline em `userData.cortexRoad`. Colisão: a pista fica sobre o terreno (que já colide).
-- **Marcação** (ADR-0076): `markings` (`dashed`/`single-yellow`/`double-yellow`/`passing`/
-  `lane` ou `{url, repeat}`) gera um **overlay** que **clona a geometria conformada** da
-  pista, levanta um epsilon e usa material **transparente** (`depthWrite:false` +
-  `polygonOffset`) com as texturas `Markers/` (RGBA). Vive como filho do mesh
-  (`userData.cortexRoadMarkings`), regenerado por `applyRoad`. U herda a largura (linhas no
-  lugar), V reescala pro ciclo do tracejado (`ROAD_MARKINGS`/`resolveMarking`).
-- **Editor — desenhar** (`RoadDrawSystem`, prioridade 26): "Desenhar estrada" (paleta/menu/
-  ponte `drawRoad`) — clicar pontos no terreno (prévia = linha central + hover), **Enter**/
-  duplo-clique finaliza, **Backspace** remove o último, **Esc** cancela → cria nó `road`
-  em `data.added`. Usa `editorState.drawingShape` (mesma porteira dos outros draw tools).
-- **Editor — editar traçado** (`RoadEditSystem`, prioridade 29): botão "Editar traçado" no
-  Inspector liga `editorState.editingRoad` (o `ObjectEditSystem` cede). Mostra um **handle**
-  por ponto de controle; arrastar regenera a pista ao vivo (`applyRoad`) e, ao **soltar**, o
-  **terreno se reajusta** (`moldTerrainToRoads`) + persiste. `Esc`/`Tab` saem. Autoria em
-  `createRoadEditApi` (`nodesOf`/`setNode`/`commit`). Edita estradas de `data.added`.
-- ⚠️ **Texturas (MIT, MicroGSD)** são **assets do projeto** (`assets/roads/`, ~63 MB o
-  pack inteiro) — não vão no bundle do engine. Considerar Git LFS se entrarem no repo.
-- **Fora de escopo** (ver ADR-0072/0075): faixas/marcação, acostamento, interseções,
-  pontes, guard-rails, placas, semáforos, *banking*/superelevação nas curvas.
 
 ## 11. Blockout / ProBuilder — malha de nó editável (`src/probuilder/`, ADR-0071)
 

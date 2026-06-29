@@ -85,12 +85,6 @@ export class Terrain {
   readonly depth: number;
 
   private readonly heights: Float32Array;
-  /**
-   * Delta de moldagem por estrada (cut & fill, ADR-0072 Fase 2) — **não-destrutivo**:
-   * o mesh/colisão usam `heights + roadDelta`, mas {@link Terrain.getHeights} devolve
-   * só a base autorada (a cicatriz da estrada é recalculada a cada build, não salva).
-   */
-  private roadDelta: Float32Array | null = null;
   private readonly geometry: BufferGeometry;
 
   // ── Pintura de textura (splat) — criada sob demanda no primeiro paint/setPaint ──
@@ -161,9 +155,9 @@ export class Terrain {
     return [(i / this.resolution - 0.5) * this.width, (j / this.resolution - 0.5) * this.depth];
   }
 
-  /** Altura **efetiva** de um vértice = base autorada + delta de moldagem da estrada. */
+  /** Altura de um vértice (base autorada). */
   private effectiveY(idx: number): number {
-    return this.heights[idx]! + (this.roadDelta ? this.roadDelta[idx]! : 0);
+    return this.heights[idx]!;
   }
 
   /** Reescreve TODO o Y do mesh com a altura efetiva (base+delta) + normais/bounds. */
@@ -176,17 +170,6 @@ export class Terrain {
     this.geometry.computeBoundingSphere();
   }
 
-  /**
-   * **Molda o terreno à(s) estrada(s)** (cut & fill, ADR-0072 Fase 2): aplica um
-   * `delta` de altura (mesmo tamanho do heightmap) **por cima** da base autorada —
-   * **não-destrutivo** (a base/serialização não muda; `null` remove a moldagem). O
-   * {@link buildScene} chama isto a cada build a partir das splines de estrada, então
-   * mover/remover a estrada re-ajeita o terreno (sem cicatriz salva).
-   */
-  setRoadMolding(delta: Float32Array | null): void {
-    this.roadDelta = delta && delta.length === this.heights.length ? delta : null;
-    this.applyHeights();
-  }
 
   /**
    * **Esculpe** o terreno: soma `delta` à altura num círculo de `radius` (em

@@ -62,24 +62,6 @@ const colliderSchema = z
   })
   .optional();
 
-/**
- * **Placement por socket** (ADR-0053): posiciona este nó encaixando seu socket
- * `socket` na âncora `toSocket` do nó `to` (resolvido pelo {@link buildScene} a
- * partir das âncoras do kit). Análogo do `place` para o plano X/Z — declara a
- * relação em vez de chutar a coordenada. Requer `kit` no `buildScene`.
- */
-const attachSchema = z
-  .object({
-    /** Socket DESTE asset (nome de âncora no kit). */
-    socket: z.string().min(1),
-    /** `id` do nó-alvo na cena. */
-    to: z.string().min(1),
-    /** Âncora do asset do alvo onde encaixar. */
-    toSocket: z.string().min(1),
-    /** Deslocamento extra `[x,y,z]` após o encaixe. */
-    offset: vec3.optional(),
-  })
-  .optional();
 
 /**
  * Animação de um modelo `.glb` (clipes embutidos): qual clipe tocar (`clip`, nome;
@@ -257,8 +239,6 @@ const baseFields = {
   rapierBody: rapierBodySchema,
   /** Config do **veículo** (motor/freio/suspensão/centro de massa) — editável no Inspector. Ver ADR-0081. */
   vehicle: vehicleSchema,
-  /** Placement por socket (encaixa em outro nó via âncoras do kit). */
-  attach: attachSchema,
   /** Animação do modelo `.glb` (clipe a tocar, loop, velocidade). Ver {@link SceneAnimator}. */
   animation: animationSchema,
   /**
@@ -313,70 +293,6 @@ const meshNode = z.object({
   roughness: z.number().optional(),
   metalness: z.number().optional(),
   ...baseFields,
-});
-/**
- * **Estrada por spline** (Road Architect → Cortex, ADR-0072). `nodes` são os pontos
- * de controle (Catmull-Rom passa por eles); o {@link buildScene} gera a malha-faixa
- * (ribbon) com a textura da `surface`. `conformTerrain` faz a pista acompanhar a
- * altura do terreno (raycast por amostra). Editável no F2 (overlay vence).
- */
-const roadNode = z.object({
-  type: z.literal('road'),
-  /** Pontos de controle da spline (≥2), em metros. */
-  nodes: z.array(vec3).min(2),
-  /** Largura da pista (m). Default 8 (≈2 faixas). */
-  width: z.number().positive().optional(),
-  /** Superfície: nome embutido (`asphalt`/…) ou URLs explícitas (diffuse/normal/repeat). */
-  surface: z
-    .union([
-      z.enum(['asphalt', 'concrete', 'dirt', 'brick', 'cobblestone']),
-      z.object({
-        color: colorSchema.optional(),
-        diffuse: z.string().optional(),
-        normal: z.string().optional(),
-        repeat: z.number().positive().optional(),
-      }),
-    ])
-    .optional(),
-  /**
-   * Marcação de pista (overlay, ADR-0076): nome embutido (`dashed`/`single-yellow`/
-   * `double-yellow`/`passing`/`lane`) ou `{ url, repeat }`. Ausente = sem marcação.
-   */
-  markings: z
-    .union([
-      z.enum(['dashed', 'single-yellow', 'double-yellow', 'passing', 'lane']),
-      z.object({ url: z.string(), repeat: z.number().positive().optional() }),
-    ])
-    .optional(),
-  /** Densidade da tessellation: amostras por 90° de curvatura (adaptativa). Default 16. */
-  steps: z.number().int().positive().optional(),
-  /**
-   * **Perfil de via** (ADR-0087): em vez da fita única (`width`), extruda uma seção
-   * transversal (pista + calçada + meio-fio) → vira um `Group` com partes por papel
-   * (pista vira collider `cortexRoad`). `width`/`markings` são ignorados quando há perfil.
-   */
-  profile: z
-    .enum(['highway', 'arterial', 'urban_primary', 'urban_secondary', 'residential', 'industrial', 'dirt', 'pedestrian_market', 'alley'])
-    .optional(),
-  /** A pista acompanha a altura do terreno (raycast por amostra). Default true. */
-  conformTerrain: z.boolean().optional(),
-  /**
-   * Como a pista se relaciona com o terreno (ADR-0072 Fase 2):
-   * - `'conform'` (default): a **pista** se deforma acompanhando o relevo (Fase 1).
-   * - `'cutfill'`: o **terreno** se adapta à pista — greide suavizado + *cut & fill*
-   *   (corta morro acima, aterra vale abaixo) com talude nas laterais. Não-destrutivo.
-   */
-  terrainMode: z.enum(['conform', 'cutfill']).optional(),
-  /** Largura do talude (transição terreno↔pista) em cada lado, m. Só `cutfill`. Default 6. */
-  taludeWidth: z.number().nonnegative().optional(),
-  /** Inclinação máx. do greide (Δalt/Δhoriz). Só `cutfill`. Default 0.25 (25% — a
-   * estrada sobe o morro fazendo ladeira; baixe pra pista mais plana que aplaina mais). */
-  maxSlope: z.number().positive().optional(),
-  /** Levanta a pista acima do chão (evita z-fight). Default 0.05 m. */
-  yOffset: z.number().optional(),
-  id: z.string().min(1),
-  transform: transformSchema,
-  collider: colliderSchema,
 });
 
 const lightNode = z.object({
@@ -520,7 +436,6 @@ const sceneNodeSchema = z.discriminatedUnion('type', [
   modelNode,
   primitiveNode,
   meshNode,
-  roadNode,
   lightNode,
   waterNode,
   backgroundNode,
@@ -582,8 +497,6 @@ const sceneDefinitionSchema = z.object({
 
 /** Config de collider 2D (campo `collider` dos nós; ver {@link colliderSchema}). */
 export type ColliderConfig = NonNullable<z.infer<typeof colliderSchema>>;
-/** Config de placement por socket (campo `attach` dos nós; ver {@link attachSchema}). */
-export type AttachConfig = NonNullable<z.infer<typeof attachSchema>>;
 /** Config de animação (campo `animation` dos nós; ver {@link animationSchema}). */
 export type AnimationConfig = NonNullable<z.infer<typeof animationSchema>>;
 /** Config de Character (campo `character` dos nós; ver {@link characterSchema}). */
@@ -594,8 +507,6 @@ export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
 /** Nó de malha de blockout editável (ver {@link meshNode}; ADR-0071). */
 export type MeshNode = z.infer<typeof meshNode>;
-/** Nó de estrada por spline (ver {@link roadNode}; ADR-0072). */
-export type RoadNode = z.infer<typeof roadNode>;
 
 /** Nó de vegetação instanciada (ver {@link vegetationNode}; ADR-0077). */
 export type VegetationNode = z.infer<typeof vegetationNode>;

@@ -53,12 +53,6 @@ import { Water } from './Water.js';
 import { Background } from './Background.js';
 import { toBufferGeometry, type EditableMesh } from '../probuilder/EditableMesh.js';
 import { buildShape } from '../probuilder/shapes.js';
-import { sampleSpline } from '../road/RoadSpline.js';
-import { toRoadGeometry, ribbonToGeometry } from '../road/RoadMesh.js';
-import { resolveSurface, resolveMarking, type RoadMarking, type RoadSurfaceName } from '../road/surfaces.js';
-import { getProfile } from '../road/profiles.js';
-import { profileMesh } from '../road/roadProfileMesh.js';
-import { smoothGrade, moldHeightfield, mergeDeltas, type GradePoint } from '../road/RoadGrade.js';
 import { Terrain, type TerrainPaintData } from './Terrain.js';
 import { Vegetation, makePlaceholderVegetation } from './Vegetation.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
@@ -69,21 +63,11 @@ import {
   type SceneDefinition,
   type SceneNode,
   type ColliderConfig,
-  type AttachConfig,
   type AnimationConfig,
   type CharacterConfig,
   type RapierBodyConfig,
 } from './SceneDefinition.js';
 import { SceneAnimator } from './SceneAnimator.js';
-import {
-  kitAssetFor,
-  kitAnchor,
-  resolveAttachPosition,
-  attachResolveOrder,
-  type KitAnchor,
-  type KitDefinition,
-  type KitSprite,
-} from './Kit.js';
 import type { SceneFileV1 } from './SceneFile.js';
 
 /**
@@ -114,13 +98,6 @@ export interface BuildSceneOptions {
    * PlatformerPhysics/Input, FollowCamera2D) — ou use `setupPlatformer`.
    */
   world?: World;
-  /**
-   * Kit(s) de assets (manifesto(s) `kit.json`, ADR-0053). Quando presente: nós
-   * `model` herdam o **preset de collider por `role`** do kit (se não definirem
-   * `collider` próprio), e nós com `attach` são posicionados por **socket** a
-   * partir das âncoras do kit.
-   */
-  kit?: KitDefinition | KitDefinition[];
   /**
    * Deixa **todos** os modelos foscos (mata o brilho PBR → look cartoon/desenho).
    * Um nó pode sobrescrever com `matte: false`. Atalho global do {@link setMatte}.
@@ -513,7 +490,6 @@ export async function buildScene(
 
   // ── Nós: base (arquivos) + adicionados (overlay) ─────────────────────────────
   const allNodes: SceneNode[] = [...list.flatMap((d) => d.nodes), ...overlayAdded(overlay)];
-  const kit = options.kit;
 
   // 1) Instancia todos os nós (sem criar entidades ainda — `attach` pode mover a
   //    pose depois, e a entidade ECS copia a posição final).
@@ -534,7 +510,7 @@ export async function buildScene(
       byId.set(node.id, bg.mesh);
       continue;
     }
-    const obj = await instantiate(node, scene, three, waters, kit, editorGeometry[node.id]);
+    const obj = await instantiate(node, scene, three, waters, editorGeometry[node.id]);
     if (!obj) continue;
     // Veículo (ADR-0081): config do nó + overlay → userData.cortexVehicle (o jogo lê pra
     // criar o veículo; o Inspector edita). Marca o nó como veículo pro Inspector mostrar a seção.
@@ -599,16 +575,7 @@ export async function buildScene(
     }
   }
 
-  // 2) Resolve `attach` (placement por socket) — após todos posicionados, em ordem
-  //    topológica; falha alto em ciclo/alvo ausente. Nós com override do editor
-  //    ficam "pinados" (a edição manual vence o attach).
-  resolveAttachments(placed, byId, kit, new Set(Object.keys(overrides)));
-
-  // 2.5) Terreno se adapta às estradas `cutfill` (cut & fill + talude, ADR-0072 Fase 2).
-  //      Depois de tudo posicionado — não-destrutivo, recalculado a cada build.
-  moldTerrainToRoads(three);
-
-  // 3) Plataforma 2.5D: nós com collider/player viram entidades ECS acopladas
+  // 2) Plataforma 2.5D: nós com collider/player viram entidades ECS acopladas
   //    (posições já finais). Precedência do collider: código (`node.collider`) >
   //    overlay do editor (`data.colliders[id]`) > preset do `role` no kit.
   if (options.world) {
@@ -666,12 +633,9 @@ export async function buildScene(
         continue;
       }
       if (node.type !== 'model' && node.type !== 'primitive' && node.type !== 'mesh') continue;
-      const kitCol =
-        node.type === 'model' ? (kitAssetFor(kit, node.url)?.collider as ColliderConfig | undefined) : undefined;
-      // Collider efetivo: overlay do editor (autorado) > nó (`collider`) > preset do
-      // kit. A overlay VENCE o código agora — pra a edição/remoção no Inspector ter
-      // efeito (antes o código vencia e não dava pra mexer; ver ADR-0058).
-      const colliderCfg = editorColliders[node.id] ?? node.collider ?? kitCol;
+      // Collider efetivo: overlay do editor (autorado) > nó (`collider`). A overlay
+      // VENCE o código — pra a edição/remoção no Inspector ter efeito (ver ADR-0058).
+      const colliderCfg = editorColliders[node.id] ?? node.collider;
       const obj = byId.get(node.id)!;
 
       // Tipo de corpo: override do Inspector (overlay `data.physics`) é AUTORITATIVO
@@ -857,69 +821,11 @@ function createPlatformerEntity(
   return e;
 }
 
-/** Âncora `socket` de um nó `model` (via kit), ou `undefined` (primitivas não têm). */
-function anchorAt(
-  node: SceneNode,
-  socket: string,
-  kit: KitDefinition | KitDefinition[] | undefined,
-): KitAnchor | undefined {
-  return node.type === 'model' ? kitAnchor(kit, node.url, socket) : undefined;
-}
-
-/**
- * Resolve os nós com `attach` (placement por socket, ADR-0053): posiciona cada um
- * encaixando seu socket na âncora do alvo, em **ordem topológica** (alvo antes).
- * **Falha alto** se faltar socket/âncora ou houver ciclo. `pinned` = ids com
- * override do editor (não move). Sem `kit`, nós com `attach` falham (precisam das
- * âncoras) — exceto se pinados.
- */
-function resolveAttachments(
-  nodes: SceneNode[],
-  byId: Map<string, Object3D>,
-  kit: KitDefinition | KitDefinition[] | undefined,
-  pinned: Set<string>,
-): void {
-  const attachers = nodes.filter(
-    (n): n is Extract<SceneNode, { type: 'model' | 'primitive' }> & { attach: AttachConfig } =>
-      (n.type === 'model' || n.type === 'primitive') && !!n.attach && !pinned.has(n.id),
-  );
-  if (attachers.length === 0) return;
-
-  const nodeById = new Map(nodes.map((n) => [n.id, n]));
-  const order = attachResolveOrder(
-    attachers.map((n) => ({ id: n.id, to: n.attach.to })),
-    (id) => byId.has(id),
-  );
-
-  for (const id of order) {
-    const node = nodeById.get(id) as Extract<SceneNode, { type: 'model' | 'primitive' }> & { attach: AttachConfig };
-    const att = node.attach;
-    const obj = byId.get(id)!;
-    const targetObj = byId.get(att.to)!; // existência garantida por attachResolveOrder
-    const targetNode = nodeById.get(att.to);
-    const thisAnchor = anchorAt(node, att.socket, kit);
-    const targetAnchor = targetNode ? anchorAt(targetNode, att.toSocket, kit) : undefined;
-    if (!thisAnchor || !targetAnchor) {
-      throw new Error(
-        `attach: âncora ausente — "${id}".${att.socket}=${!!thisAnchor} ou "${att.to}".${att.toSocket}=${!!targetAnchor} (kit carregado?)`,
-      );
-    }
-    const pos = resolveAttachPosition(
-      [targetObj.position.x, targetObj.position.y, targetObj.position.z],
-      targetAnchor.at,
-      thisAnchor.at,
-      att.offset,
-    );
-    obj.position.set(pos[0], pos[1], pos[2]);
-  }
-}
-
 async function instantiate(
   node: SceneNode,
   scene: Scene,
   three: import('three').Scene,
   waters?: Water[],
-  kit?: KitDefinition | KitDefinition[],
   meshGeometry?: EditableMesh,
 ): Promise<Object3D | null> {
   let obj: Object3D;
@@ -936,11 +842,6 @@ async function instantiate(
       break;
     case 'mesh':
       obj = makeEditableMesh(node, meshGeometry);
-      three.add(obj);
-      applyPlacement(obj, node);
-      break;
-    case 'road':
-      obj = makeRoad(node, three);
       three.add(obj);
       applyPlacement(obj, node);
       break;
@@ -973,7 +874,7 @@ async function instantiate(
     }
     case 'sprite': {
       const texture = await loadTexture(node.url, node.pixelated !== false);
-      obj = makeSprite(node, texture, kitAssetFor(kit, node.url)?.sprite);
+      obj = makeSprite(node, texture);
       three.add(obj);
       applyPlacement(obj, node);
       break;
@@ -1013,25 +914,23 @@ async function instantiate(
 function makeSprite(
   node: Extract<SceneNode, { type: 'sprite' }>,
   texture: import('three').Texture,
-  kitSprite?: KitSprite,
 ): Object3D {
   const img = texture.image as { width?: number; height?: number } | undefined;
   const texW = img?.width ?? 0;
   const texH = img?.height ?? 0;
-  // Framedata: campos do nó vencem; o kit (por `url`) preenche o que faltar.
-  const animations = node.animations ?? kitSprite?.animations;
-  const columns = node.columns ?? kitSprite?.columns;
-  const rows = node.rows ?? kitSprite?.rows;
+  const animations = node.animations;
+  const columns = node.columns;
+  const rows = node.rows;
   const common = {
-    pixelsPerUnit: node.pixelsPerUnit ?? kitSprite?.pixelsPerUnit,
+    pixelsPerUnit: node.pixelsPerUnit,
     width: node.width,
     height: node.height,
     alphaTest: node.alphaTest,
   };
 
   if (animations && Object.keys(animations).length > 0) {
-    const frameWidth = Math.max(1, node.frameWidth ?? kitSprite?.frameWidth ?? (columns ? Math.floor(texW / columns) : texW));
-    const frameHeight = Math.max(1, node.frameHeight ?? kitSprite?.frameHeight ?? (rows ? Math.floor(texH / rows) : texH));
+    const frameWidth = Math.max(1, node.frameWidth ?? (columns ? Math.floor(texW / columns) : texW));
+    const frameHeight = Math.max(1, node.frameHeight ?? (rows ? Math.floor(texH / rows) : texH));
     const sheet = new Spritesheet(texture, {
       frameWidth,
       frameHeight,
@@ -1040,7 +939,7 @@ function makeSprite(
     });
     const { sprite, animation } = createAnimatedSprite(sheet, animations, {
       ...common,
-      initial: node.initial ?? kitSprite?.initial,
+      initial: node.initial,
     });
     (sprite.userData as Record<string, unknown>)['cortexSpriteAnim'] = animation;
     return sprite;
@@ -1158,291 +1057,6 @@ function makeEditableMesh(node: Extract<SceneNode, { type: 'mesh' }>, geomOverri
   mesh.receiveShadow = node.receiveShadow ?? true;
   (mesh.userData as Record<string, unknown>)['cortexMesh'] = { logical, maps };
   return mesh;
-}
-
-/**
- * Cria a malha de uma **estrada** (spline → ribbon — ADR-0072). Amostra a spline dos
- * `nodes`, opcionalmente **conforma ao terreno** (raycast pra baixo por amostra, fixa
- * o Y em `terrenoY + yOffset`), gera a faixa e aplica a textura da superfície (carrega
- * async). Guarda a spline em `userData.cortexRoad` (o editor edita os nós). O `three`
- * já tem o terreno instanciado (o nó terrain vem antes na ordem da cena).
- */
-/**
- * Ajusta uma textura pra **tilear bem numa pista** (ADR-0072): repeat + mipmaps +
- * filtragem linear + anisotropia (mata o granulado/aliasing ao longe). `albedo` =
- * setar sRGB (diffuse); normal map fica linear. Força os filtros mesmo se a textura
- * veio do cache com NearestFilter.
- */
-function smoothTiled(t: import('three').Texture, albedo: boolean): void {
-  t.wrapS = t.wrapT = RepeatWrapping;
-  t.anisotropy = 8;
-  t.generateMipmaps = true;
-  t.minFilter = LinearMipmapLinearFilter;
-  t.magFilter = LinearFilter;
-  if (albedo) t.colorSpace = SRGBColorSpace;
-  t.needsUpdate = true;
-}
-
-function makeRoad(node: Extract<SceneNode, { type: 'road' }>, three: Object3D): Object3D {
-  if (node.profile) return makeProfiledRoad(node, three); // ADR-0087: seção transversal
-  const mesh = new Mesh();
-  mesh.receiveShadow = true;
-  applyRoad(mesh, node, three);
-  return mesh;
-}
-
-/**
- * **Via com perfil** (ADR-0087): extruda a seção transversal ({@link profileMesh}) ao longo da
- * spline → um `Group` com uma malha por parte (pista/calçada/meio-fio), cada uma conformada ao
- * terreno (raycast por vértice + yOffset) e com material flat stylized (cor da superfície). As
- * partes dirigíveis + o meio-fio viram collider do carro (`cortexRoad`). Editor live-edit de
- * perfil ainda não suportado (regenera só no reload).
- */
-function makeProfiledRoad(node: Extract<SceneNode, { type: 'road' }>, three: Object3D): Object3D {
-  const group = new Group();
-  const profile = getProfile(node.profile!);
-  const yOffset = node.yOffset ?? 0.05;
-  const samples = sampleSpline(node.nodes as [number, number, number][], node.steps ?? 24);
-  const parts = profileMesh(samples, profile);
-
-  const terrains: Object3D[] = [];
-  three.traverse((o) => { if ((o.userData as Record<string, unknown>)['cortexTerrain']) terrains.push(o); });
-  const conform = node.conformTerrain !== false && terrains.length > 0;
-  const ray = new Raycaster();
-  const down = new Vector3(0, -1, 0);
-  const origin = new Vector3();
-
-  for (const part of parts) {
-    const geometry = ribbonToGeometry(part.ribbon);
-    const pos = geometry.getAttribute('position');
-    for (let i = 0; i < pos.count; i++) {
-      let y = pos.getY(i);
-      if (conform) {
-        origin.set(pos.getX(i), 1e4, pos.getZ(i));
-        ray.set(origin, down);
-        const hit = ray.intersectObjects(terrains, true)[0];
-        y = (hit ? hit.point.y : 0) + part.ribbon.positions[i * 3 + 1]!; // mantém o degrau do perfil
-      }
-      pos.setY(i, y + yOffset);
-    }
-    pos.needsUpdate = true;
-    geometry.computeVertexNormals();
-    geometry.computeBoundingBox();
-    geometry.computeBoundingSphere();
-    const surf = resolveSurface(part.surface as RoadSurfaceName | undefined);
-    const mesh = new Mesh(geometry, new MeshStandardMaterial({ color: surf.color, roughness: 1, metalness: 0 }));
-    mesh.receiveShadow = true;
-    mesh.name = `${node.id}_${part.role}`;
-    // Pista + meio-fio = collider do carro (o chassi bate no meio-fio e fica na pista).
-    if (part.drivable || part.role === 'curb') (mesh.userData as Record<string, unknown>)['cortexRoad'] = true;
-    group.add(mesh);
-  }
-  (group.userData as Record<string, unknown>)['cortexRoadProfile'] = { id: node.id, profile: node.profile };
-  return group;
-}
-
-/**
- * (Re)gera a malha + material de uma estrada num `mesh` existente (ADR-0072).
- * Amostra a spline dos `nodes`, **conforma ao terreno** (raycast pra baixo por amostra
- * → `terrenoY + yOffset`), monta o ribbon e aplica a superfície. Quando há textura, a
- * cor base vira **branca** (senão o `color` escuro escureceria a textura). Atualiza
- * `userData.cortexRoad`. Exportado pra o editor regenerar ao vivo (trocar superfície/
- * largura). `three` = raiz da cena (pra achar o terreno).
- */
-export function applyRoad(mesh: Mesh, node: Extract<SceneNode, { type: 'road' }>, three: Object3D): void {
-  const surf = resolveSurface(node.surface);
-  const width = node.width ?? 8;
-  const yOffset = node.yOffset ?? 0.05;
-  // Densidade generosa (fiel ao Road Architect): muitas amostras no comprimento +
-  // colunas ao longo da largura → conforma de verdade ao relevo (não só inclina).
-  const samples = sampleSpline(node.nodes as [number, number, number][], node.steps ?? 24);
-  const widthSegments = Math.max(2, Math.min(16, Math.round(width / 1.5)));
-
-  mesh.geometry?.dispose();
-  const geometry = toRoadGeometry(samples, width, surf.repeat, widthSegments);
-
-  // Relação pista↔terreno (ADR-0072). `conform` (Fase 1): a PISTA se deforma seguindo
-  // o relevo (raycast por vértice). `cutfill` (Fase 2): a pista tem GREIDE suavizado e
-  // o TERRENO é moldado a ela (corte/aterro + talude) — a moldagem em si acontece no
-  // post-pass `moldTerrainToRoads`; aqui só fixamos o Y da pista no greide + guardamos
-  // o eixo (centerline) pro post-pass reusar o MESMO greide.
-  const mode = node.terrainMode ?? 'conform';
-  const conform = node.conformTerrain !== false;
-  const terrains: Object3D[] = [];
-  three.traverse((o) => { if ((o.userData as Record<string, unknown>)['cortexTerrain']) terrains.push(o); });
-  const pos = geometry.getAttribute('position');
-  const vertsPerRow = widthSegments + 1;
-  let centerline: GradePoint[] | undefined;
-
-  if (mode === 'cutfill' && terrains.length > 0) {
-    // Altura do terreno sob cada amostra do eixo → greide suavizado (média móvel +
-    // clamp de inclinação). A pista fica PLANA na largura e segue o greide no comprimento.
-    const ray = new Raycaster();
-    const down = new Vector3(0, -1, 0);
-    const origin = new Vector3();
-    const terrainY = samples.map((s) => {
-      origin.set(s.pos[0], 1e4, s.pos[2]);
-      ray.set(origin, down);
-      const hit = ray.intersectObjects(terrains, true)[0];
-      return hit ? hit.point.y : s.pos[1];
-    });
-    const grade = smoothGrade(samples, terrainY, { maxSlope: node.maxSlope });
-    for (let i = 0; i < pos.count; i++) {
-      const row = Math.min(grade.length - 1, Math.floor(i / vertsPerRow));
-      pos.setY(i, grade[row]! + yOffset);
-    }
-    centerline = samples.map((s, i) => ({ x: s.pos[0], z: s.pos[2], y: grade[i]! }));
-  } else if (conform && terrains.length > 0) {
-    // Conformar (Fase 1): raycast pra baixo em CADA vértice da grade (bordas + meio),
-    // fixa o Y em terrenoY + yOffset, e RECALCULA as normais (sombreamento na rampa).
-    const ray = new Raycaster();
-    const down = new Vector3(0, -1, 0);
-    const origin = new Vector3();
-    for (let i = 0; i < pos.count; i++) {
-      origin.set(pos.getX(i), 1e4, pos.getZ(i));
-      ray.set(origin, down);
-      const hit = ray.intersectObjects(terrains, true)[0];
-      pos.setY(i, (hit ? hit.point.y : pos.getY(i)) + yOffset);
-    }
-  } else {
-    for (let i = 0; i < pos.count; i++) pos.setY(i, pos.getY(i) + yOffset);
-  }
-  pos.needsUpdate = true;
-  geometry.computeVertexNormals(); // normais reais da superfície conformada
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  mesh.geometry = geometry;
-  // Cor BRANCA quando há textura (o map é multiplicado pela cor — cor escura =
-  // pista preta). Sem textura, usa a cor da superfície como fallback.
-  const material = new MeshStandardMaterial({ color: surf.diffuse ? 0xffffff : surf.color, roughness: 0.95, metalness: 0 });
-  if (surf.diffuse) {
-    // pixelated=false → filtragem LINEAR + mipmaps (senão a pista fica granulada/aliased
-    // ao longe). + anisotropia (nitidez em ângulo rasante) + sRGB (albedo).
-    void loadTexture(surf.diffuse, false).then((t) => {
-      smoothTiled(t, true);
-      material.map = t;
-      material.needsUpdate = true;
-    }).catch(() => {});
-  }
-  if (surf.normal) {
-    void loadTexture(surf.normal, false).then((t) => {
-      smoothTiled(t, false); // normal map é dado LINEAR — não setar colorSpace sRGB
-      material.normalMap = t;
-      material.needsUpdate = true;
-    }).catch(() => {});
-  }
-  (mesh.material as MeshStandardMaterial | undefined)?.dispose();
-  mesh.material = material;
-
-  // Marcação de pista (ADR-0076): overlay RGBA transparente um tiquinho ACIMA da pista,
-  // reusando a MESMA geometria conformada (clonada). A textura atravessa a largura (U)
-  // com as linhas no lugar; tila no comprimento (V) pelo `repeat` da marcação.
-  applyRoadMarkings(mesh, geometry, node.markings, surf.repeat);
-
-  (mesh.userData as Record<string, unknown>)['cortexRoad'] = {
-    nodes: node.nodes,
-    width,
-    surface: node.surface ?? 'asphalt',
-    markings: node.markings ?? null,
-    conformTerrain: conform,
-    terrainMode: mode,
-    taludeWidth: node.taludeWidth ?? 6,
-    maxSlope: node.maxSlope ?? 0.25,
-    steps: node.steps ?? 12,
-    yOffset,
-    centerline, // eixo + greide (coords de mundo) — consumido por moldTerrainToRoads
-  };
-}
-
-/**
- * Gera (ou remove/atualiza) o **overlay de marcação** de uma estrada (ADR-0076). Clona a
- * geometria conformada da pista, **levanta** os vértices um epsilon e reescala o V do UV
- * pro tile da marcação; aplica um material **transparente** (`depthWrite:false` +
- * `polygonOffset` evitam z-fight). O overlay vive como filho do mesh da pista
- * (`userData.cortexRoadMarkings`) — chamado a cada {@link applyRoad}, então primeiro
- * descarta o overlay anterior (regen ao vivo no editor).
- */
-function applyRoadMarkings(mesh: Mesh, roadGeo: BufferGeometry, markings: RoadMarking | undefined, surfRepeat: number): void {
-  const prev = mesh.children.find((c) => (c.userData as Record<string, unknown>)['cortexRoadMarkings']) as Mesh | undefined;
-  if (prev) {
-    mesh.remove(prev);
-    prev.geometry?.dispose();
-    (prev.material as MeshStandardMaterial | undefined)?.dispose();
-  }
-  const def = resolveMarking(markings);
-  if (!def) return;
-
-  const geo = roadGeo.clone();
-  const pos = geo.getAttribute('position');
-  for (let i = 0; i < pos.count; i++) pos.setY(i, pos.getY(i) + 0.02); // acima da pista
-  pos.needsUpdate = true;
-  // roadV = dist/surfRepeat ⇒ markV = dist/markRepeat = roadV·(surfRepeat/markRepeat).
-  const uvAttr = geo.getAttribute('uv');
-  const scaleV = surfRepeat / def.repeat;
-  for (let i = 0; i < uvAttr.count; i++) uvAttr.setY(i, uvAttr.getY(i) * scaleV);
-  uvAttr.needsUpdate = true;
-
-  const omat = new MeshStandardMaterial({
-    transparent: true,
-    depthWrite: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -1,
-    roughness: 0.9,
-    metalness: 0,
-  });
-  void loadTexture(def.url, false).then((t) => {
-    smoothTiled(t, true);
-    omat.map = t;
-    omat.needsUpdate = true;
-  }).catch(() => {});
-  const omesh = new Mesh(geo, omat);
-  omesh.receiveShadow = true;
-  omesh.raycast = () => {}; // decoração: fora dos raycasts (chão/parede do personagem)
-  (omesh.userData as Record<string, unknown>)['cortexRoadMarkings'] = true;
-  mesh.add(omesh);
-}
-
-/**
- * **Post-pass: o terreno se adapta às estradas `cutfill`** (ADR-0072 Fase 2). Depois
- * de todos os nós posicionados, para cada terreno acumula o *cut & fill* (+ talude) de
- * cada estrada `cutfill` (reusando o greide já calculado em {@link applyRoad}, guardado
- * em `cortexRoad.centerline`) e aplica via {@link Terrain.setRoadMolding} —
- * **não-destrutivo** (recalculado a cada build; mover/remover a estrada re-ajeita o
- * terreno sem cicatriz salva). Sem estradas `cutfill`, limpa a moldagem (idempotente).
- * Exportado pra o editor remoldar ao vivo após {@link applyRoad}.
- */
-export function moldTerrainToRoads(three: Object3D): void {
-  const terrains: Object3D[] = [];
-  const roads: { width: number; talude: number; centerline: GradePoint[] }[] = [];
-  three.traverse((o) => {
-    const ud = o.userData as Record<string, unknown>;
-    if (ud['cortexTerrain']) terrains.push(o);
-    const cr = ud['cortexRoad'] as
-      | { terrainMode?: string; width?: number; taludeWidth?: number; centerline?: GradePoint[] }
-      | undefined;
-    if (cr && cr.terrainMode === 'cutfill' && Array.isArray(cr.centerline) && cr.centerline.length >= 2) {
-      roads.push({ width: cr.width ?? 8, talude: cr.taludeWidth ?? 6, centerline: cr.centerline });
-    }
-  });
-  if (terrains.length === 0) return;
-
-  const v = new Vector3();
-  for (const t of terrains) {
-    const terrain = (t.userData as Record<string, unknown>)['cortexTerrain'] as Terrain;
-    t.updateMatrixWorld(true);
-    const grid = { width: terrain.width, depth: terrain.depth, resolution: terrain.resolution, base: terrain.getHeights() };
-    const deltas: Float32Array[] = [];
-    for (const road of roads) {
-      // Eixo da estrada (mundo) → coords LOCAIS do terreno (X/Z no plano, Y = greide).
-      const local: GradePoint[] = road.centerline.map((p) => {
-        v.set(p.x, p.y, p.z);
-        t.worldToLocal(v);
-        return { x: v.x, z: v.z, y: v.y };
-      });
-      deltas.push(moldHeightfield(grid, local, road.width / 2, road.talude));
-    }
-    terrain.setRoadMolding(mergeDeltas(deltas)); // null (sem cutfill) limpa a moldagem
-  }
 }
 
 /**

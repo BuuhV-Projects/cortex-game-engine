@@ -46,13 +46,10 @@ import { createScriptApi } from './authoring/ScriptAuthoring.js';
 import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
 import { createMeshApi } from './authoring/MeshAuthoring.js';
-import { createRoadApi, createRoadEditApi } from './authoring/RoadAuthoring.js';
-import { RoadEditSystem } from './RoadEditSystem.js';
 import { createEditorTexturePicker, type TextureItem } from './EditorTexturePicker.js';
 import { MeshEditSystem } from './MeshEditSystem.js';
 import { createMeshEditToolbar } from './MeshEditToolbar.js';
 import { ShapeDrawSystem } from './ShapeDrawSystem.js';
-import { RoadDrawSystem } from './RoadDrawSystem.js';
 import { createAnimationApi, createPlayerAnimationsApi } from './authoring/AnimationAuthoring.js';
 import { createTerrainAuthoring } from './authoring/TerrainAuthoring.js';
 import { createVegetationAuthoring } from './authoring/VegetationAuthoring.js';
@@ -665,34 +662,10 @@ export function attachEditor(game: Game): GameEditor {
 
   // ── Blockout (ProBuilder — ADR-0071): autoria de forma + edição de elementos ──
   const meshAuthoring = createMeshApi(authoring);
-  // Estradas (ADR-0072): autoria + seletor de textura em modal (preview).
-  const roadApiCore = createRoadApi(authoring);
-  let roadTextures: TextureItem<{ diffuse: string; normal?: string }>[] = [];
   let terrainTextures: TextureItem<string>[] = [];
   let vegModels: TextureItem<string>[] = []; // modelos de vegetação (.glb) com thumbnail
   let refreshUI: () => void = () => {};
   const texturePicker = createEditorTexturePicker();
-  // Edição de traçado (handles arrastáveis nos pontos da spline — ADR-0072).
-  const roadEditSystem = new RoadEditSystem(
-    editorState,
-    editorCamera,
-    game.canvas,
-    game.scene,
-    game.input,
-    hud,
-    selection,
-    createRoadEditApi(authoring),
-  );
-  game.world.addSystem(roadEditSystem);
-  const roadApi = {
-    ...roadApiCore,
-    pickSurface: (obj: import('three').Object3D) =>
-      texturePicker.open('Superfície da estrada', roadTextures, (s) => {
-        roadApiCore.setSurfaceTexture(obj, s);
-        refreshUI();
-      }),
-    editNodes: (obj: import('three').Object3D) => roadEditSystem.enter(obj),
-  };
   // Barra flutuante estilo Unity (chrome de viewport — NÃO some no modo bridge da IDE).
   const meshToolbar = createMeshEditToolbar({
     onMode: (mode) => (mode === 'object' ? meshEditSystem.exit() : meshEditSystem.enter(mode)),
@@ -907,7 +880,6 @@ export function attachEditor(game: Game): GameEditor {
     matteApi,
     materialApi,
     meshApi,
-    roadApi,
     terrainApi,
     vegetationApi,
     animationApi,
@@ -972,22 +944,6 @@ export function attachEditor(game: Game): GameEditor {
           .filter((p) => isImage(p) && !/normal\.(png|jpe?g|webp)$/i.test(p))
           .sort()
           .map((p) => ({ name: p.split('/').pop() ?? p, thumb: p, value: p }));
-        // Superfícies de pista pro modal: só *Diffuse.png na RAIZ de assets/roads/
-        // (exclui subpastas Markers/Signs/FedSigns — faixas com alpha que ficam feias)
-        // e tira barreiras/placas/postes/túnel (não são superfícies tileáveis).
-        const lower = new Set(list.map((p) => p.toLowerCase()));
-        const notSurface = /barrier|barrel|railing|beam|pole|tunnel|light|cable|sign|marker|rumble|utility|flare/i;
-        roadTextures = list
-          .filter((p) => /assets\/roads\/[^/]*diffuse\.png$/i.test(p) && !notSurface.test(p))
-          .sort()
-          .map((p) => {
-            const normal = p.replace(/Diffuse\.png$/i, 'Normal.png');
-            return {
-              name: (p.split('/').pop() ?? p).replace(/Diffuse\.png$/i, ''),
-              thumb: p,
-              value: { diffuse: p, ...(lower.has(normal.toLowerCase()) ? { normal } : {}) },
-            };
-          });
       })
       .catch(() => addPanel.setAssets([]));
   }
@@ -1144,19 +1100,6 @@ export function attachEditor(game: Game): GameEditor {
   );
   game.world.addSystem(shapeDrawSystem);
 
-  // Estrada (ADR-0072): cria o nó `road` (conformado ao terreno) e seleciona. Sem
-  // física estática (a pista fica em cima do terreno, que já colide).
-  const createRoadNode = (node: SceneNode): void => {
-    void addSceneNode(game.scene, node).then((obj) => {
-      if (!obj) return;
-      addedList().push(node);
-      persist();
-      selection.requestSelect(obj);
-      pushAddCommand(obj, node); // CTRL+Z desfaz a adição
-    });
-  };
-  const roadDrawSystem = new RoadDrawSystem(editorState, editorCamera, game.canvas, game.scene, game.input, hud, createRoadNode);
-  game.world.addSystem(roadDrawSystem);
 
   // Vegetação (ADR-0077): cria o nó `vegetation` (placeholder) e JÁ liga o pincel de
   // espalhar — o usuário clica/arrasta no terreno pra povoar.
@@ -1177,7 +1120,6 @@ export function attachEditor(game: Game): GameEditor {
   const shapePanel = createEditorShapePanel({
     onAddShape: addShape,
     onDrawBox: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
-    onDrawRoad: () => roadDrawSystem.setArmed(!roadDrawSystem.isArmed),
     onAddVegetation: createVegetationNode,
   });
 
@@ -1252,14 +1194,13 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),
     onAddTerrain: addTerrain,
     onAddShape: addShape,
     onDrawShape: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
-    onDrawRoad: () => roadDrawSystem.setArmed(!roadDrawSystem.isArmed),
     onAddVegetation: createVegetationNode,
     onBridged: () => {
       bridgedPanelsHidden = true;

@@ -3,7 +3,7 @@ import { MathUtils, Box3, Vector3 } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
-import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi, VehicleApi, UnderlayApi, ScriptApi } from './EditorInspector.js';
+import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi, VehicleApi, UnderlayApi, ScriptApi } from './EditorInspector.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
@@ -157,7 +157,6 @@ export interface InspectorContext {
   matteApi?: MatteApi;
   materialApi?: MaterialApi;
   meshApi?: MeshApi;
-  roadApi?: RoadApi;
   terrainApi?: TerrainApi;
   vegetationApi?: VegetationApi;
   animationApi?: AnimationApi;
@@ -627,78 +626,6 @@ export function describeInspector(
       sf.push({ kind: 'note', id: fid('scrNone'), text: 'Nenhum script no projeto (crie em scripts/*.ts).', tone: 'muted' });
     }
     sections.push({ title: 'Scripts', fields: sf });
-  }
-
-  // ── Estrada (superfície + largura — ADR-0072) ────────────────────────────────
-  const roadState = ctx.roadApi?.get(obj) ?? null;
-  if (ctx.roadApi && roadState) {
-    const api = ctx.roadApi;
-    const surfaces = ['asphalt', 'concrete', 'dirt', 'brick', 'cobblestone'];
-    const labels: Record<string, string> = {
-      asphalt: 'Asfalto', concrete: 'Concreto', dirt: 'Terra', brick: 'Tijolo', cobblestone: 'Paralelepípedo', custom: 'Custom',
-    };
-    const opts = surfaces.map((s) => ({ value: s, label: labels[s]! }));
-    if (roadState.surface === 'custom') opts.unshift({ value: 'custom', label: 'Custom' });
-    const fields: InspectorField[] = [
-      { kind: 'select', id: fid('roadSurface'), label: 'Superfície', value: roadState.surface, options: opts },
-      { kind: 'number', id: fid('roadWidth'), label: 'Largura (m)', value: roadState.width, step: 0.5 },
-      // Fase 2: quem se adapta a quem (pista↔terreno). Ver ADR-0072.
-      { kind: 'select', id: fid('roadTerrain'), label: 'Terreno', value: roadState.terrainMode, options: [
-        { value: 'conform', label: 'Pista acompanha relevo' },
-        { value: 'cutfill', label: 'Terreno se adapta (corte/aterro)' },
-      ] },
-    ];
-    // Talude + inclinação máx. só fazem sentido (e só são editáveis) no modo cut & fill.
-    if (roadState.terrainMode === 'cutfill') {
-      fields.push({ kind: 'number', id: fid('roadTalude'), label: 'Talude (m)', value: roadState.taludeWidth, step: 0.5 });
-      // maxSlope guardado como razão; exibido em % (8 = 8%). Maior = sobe mais o morro.
-      fields.push({ kind: 'number', id: fid('roadSlope'), label: 'Inclinação máx. (%)', value: Math.round(roadState.maxSlope * 100), step: 1 });
-    }
-    // Marcação de pista (overlay — ADR-0076).
-    const markOpts = [
-      { value: 'none', label: 'Sem marcação' },
-      { value: 'dashed', label: 'Eixo tracejado' },
-      { value: 'single-yellow', label: 'Amarela simples' },
-      { value: 'double-yellow', label: 'Amarela dupla' },
-      { value: 'passing', label: 'Ultrapassagem' },
-      { value: 'lane', label: 'Faixa única' },
-    ];
-    if (roadState.markings === 'custom') markOpts.unshift({ value: 'custom', label: 'Custom' });
-    fields.push({ kind: 'select', id: fid('roadMarkings'), label: 'Marcação', value: roadState.markings, options: markOpts });
-    // Editar o traçado: handles arrastáveis nos pontos da spline (RoadEditSystem).
-    if (api.editNodes) {
-      fields.push({ kind: 'button', id: fid('roadEdit'), label: '✏ Editar traçado' });
-      handlers.set(fid('roadEdit'), () => api.editNodes!(obj));
-    }
-    handlers.set(fid('roadSurface'), (v) => {
-      api.setSurface(obj, String(v));
-    });
-    handlers.set(fid('roadWidth'), (v) => {
-      const n = Number(v);
-      if (Number.isFinite(n)) api.setWidth(obj, n);
-    });
-    handlers.set(fid('roadTerrain'), (v) => {
-      api.setTerrainMode(obj, v === 'cutfill' ? 'cutfill' : 'conform');
-    });
-    handlers.set(fid('roadTalude'), (v) => {
-      const n = Number(v);
-      if (Number.isFinite(n)) api.setTalude(obj, n);
-    });
-    handlers.set(fid('roadSlope'), (v) => {
-      const pct = Number(v);
-      if (Number.isFinite(pct)) api.setMaxSlope(obj, Math.max(0.5, pct) / 100); // % → razão
-    });
-    handlers.set(fid('roadMarkings'), (v) => {
-      api.setMarkings(obj, String(v));
-    });
-    // Modal com preview de TODAS as texturas de assets/roads/ (ADR-0072).
-    if (api.pickSurface) {
-      fields.push({ kind: 'button', id: fid('roadPick'), label: '🖼 Escolher textura…' });
-      handlers.set(fid('roadPick'), () => {
-        api.pickSurface!(obj);
-      });
-    }
-    sections.push({ title: 'Estrada', fields });
   }
 
   // ── Terreno (pincel: esculpir altura OU texturizar/pintar) ────────────────────

@@ -469,48 +469,6 @@ A geometria editada é salva no overlay (`data.geometry[id]`, **vence** a receit
 > Ao **gerar cena** (Chat IA), prefira `primitive`/`model`; use `mesh` quando o usuário
 > pedir blockout/escada/rampa/arco/parede-com-vão. Declare física nos campos do nó.
 
-## Estradas por spline (nó `road` — ADR-0072 + ADR-0075 + ADR-0076)
-
-`RoadNode`, `sampleSpline`, `toRoadGeometry`, `roadRibbon`, `smoothGrade`,
-`moldHeightfield`, `ROAD_SURFACES`, `resolveSurface`, `ROAD_MARKINGS`, `resolveMarking`.
-Sistema de estradas inspirado no Road Architect (MIT). A estrada é **dado**: uma spline
-(Catmull-Rom pelos `nodes`) que vira malha de pista.
-
-Campos: `nodes` (pontos de controle, ≥2, em metros), `width` (default 8 m), `surface`
-(`asphalt`/`concrete`/`dirt`/`brick`/`cobblestone` ou `{ diffuse, normal, repeat, color }`),
-`steps` (densidade, default 12), `yOffset` (default 0.05 m), e a **relação com o terreno**:
-- `terrainMode: 'conform'` (**default**): a **pista se deforma** acompanhando o relevo.
-- `terrainMode: 'cutfill'`: o **terreno se adapta à pista** — a pista ganha um greide
-  suavizado e o terreno é **cortado/aterrado** pra encostar nela, com **talude** nas
-  laterais (`taludeWidth`, default 6 m) e inclinação máx. do greide (`maxSlope`, default
-  0.08). Não-destrutivo (recalculado a cada build; não salva no heightmap).
-- `conformTerrain` (default true): só relevante no modo `conform`.
-- `markings`: marcação de pista (overlay) — `dashed` (eixo tracejado), `single-yellow`,
-  `double-yellow`, `passing` (ultrapassagem), `lane` (faixa única), ou `{ url, repeat }`.
-  Ausente = sem marcação. Reusa a geometria da pista, então funciona em `conform` e `cutfill`.
-
-```jsonc
-{
-  "type": "road", "id": "estrada_principal",
-  "nodes": [[0,0,0],[0,0,30],[20,0,60],[40,0,60]],
-  "width": 8, "surface": "asphalt",
-  "terrainMode": "cutfill", "taludeWidth": 6,  // o terreno se adapta à pista
-  "markings": "dashed"                          // eixo tracejado branco
-}
-```
-
-As **texturas** (do Road Architect) ficam em `assets/roads/` no projeto. A colisão pra
-dirigir/andar vem do próprio terreno embaixo (que, no modo `cutfill`, já vem moldado à pista).
-
-**No editor (F2):** "🛣 Estrada" (paleta de Formas / menu Cena) — clique pontos no
-terreno pra traçar (prévia ao vivo), **Enter** ou duplo-clique finaliza, **Backspace**
-desfaz o último ponto, **Esc** cancela.
-
-> Ao gerar cena (Chat IA): use `road` pra ruas/estradas; declare os `nodes` no plano XZ
-> (o Y é resolvido pelo terreno). Curvas saem suaves (Catmull-Rom passa pelos pontos).
-> Pra estradas que cruzam relevo acidentado, use `terrainMode: "cutfill"` — o terreno
-> se molda à pista (em vez da pista ondular seguindo cada bossa do morro).
-
 ## Vegetação instanciada (nó `vegetation` — ADR-0077)
 
 `Vegetation`, `makePlaceholderVegetation`. Povoa o terreno com **árvores/grama/arbustos**
@@ -527,43 +485,6 @@ placeholder), `instances` (plano `[x,y,z,rotY,scale]` por instância), `capacity
 
 O controlador vive em `group.userData.cortexVegetation` (o pincel do editor espalha/apaga).
 Sem `model`, usa uma árvore/grama placeholder — troque por `.glb` quando tiver arte.
-
-## Kit de assets / vocabulário (design system — ADR-0053)
-
-`KitDefinition`, `KitAsset`, `KitAnchor`, `parseKit`, `kitAssetFor`, `kitAnchor`,
-`KIT_ROLES`, `AttachConfig`.
-
-Um **kit** (`kit.json`) é o *vocabulário* de um pacote de assets: tagueia cada `.glb`
-em três eixos — **`role`** (natureza física: `ground`/`connector`/`prop`/`collectible`/
-`decoration`/…), **`tags`** (tema/bioma) e **`gameplayRole`** (função: `guidance`/
-`reward`/`landmark`/`cover`/…) — com `size`, `collider` preset, `anchors` (sockets) e
-`thumb`. Passe o(s) kit(s) ao `buildScene` via `options.kit` pra ganhar duas coisas:
-
-- **Collider por `role`** — um nó `model` cujo `.glb` está no kit **herda** o collider
-  preset do kit se não definir `collider` próprio. Precedência: `node.collider` (explícito)
-  > collider do editor > preset do kit.
-- **`attach` (placement por socket)** — em vez de chutar `x`/`z`, um nó declara que seu
-  socket encaixa numa âncora de outro nó; o `buildScene` resolve a pose (translação) em
-  ordem topológica. É o análogo do `place` (grounding em Y) para o plano X/Z.
-
-```jsonc
-// nó na cena: encaixa o socket "a" da ponte na âncora "edge_right" da ilha_1
-{ "type": "model", "id": "ponte_1", "url": "assets/bridge.glb",
-  "attach": { "socket": "a", "to": "ilha_1", "toSocket": "edge_right" } }
-```
-
-```ts
-import { Game, buildScene, parseKit, setupPlatformer } from 'cortex-game-engine'
-import kitJson from '../assets/kit.json'
-import level from './scenes/level.json'
-
-const kit = parseKit(kitJson)            // valida; null se inválido
-const game = new Game({ canvas }); setupPlatformer(game); game.start()
-await buildScene(game.scene, [level], { renderer: game.renderer, world: game.world, kit: kit! })
-```
-
-`attach` **falha alto** (lança) em socket/âncora ausente ou ciclo — nunca cai numa pose
-chutada. Sockets/`role` vêm do `kit.json`, gerado pela skill `process-asset-kit`.
 
 ## Animação de modelos (clipes do .glb)
 

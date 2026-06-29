@@ -31,7 +31,7 @@ terrain.sculpt(0, 0, 8, 2) // levanta um morro de raio 8 no centro
 
 > **new Terrain**(`options?`): `Terrain`
 
-Defined in: [src/scene/Terrain.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L108)
+Defined in: [src/scene/Terrain.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L102)
 
 #### Parameters
 
@@ -89,7 +89,7 @@ Largura (X) em unidades de mundo.
 
 > **getHeights**(): `number`[]
 
-Defined in: [src/scene/Terrain.ts:252](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L252)
+Defined in: [src/scene/Terrain.ts:235](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L235)
 
 Heightmap atual (row-major, `(res+1)²`) — serializável pra persistência.
 
@@ -103,7 +103,7 @@ Heightmap atual (row-major, `(res+1)²`) — serializável pra persistência.
 
 > **getLayers**(): [`TerrainPaintLayer`](../interfaces/TerrainPaintLayer.md)[]
 
-Defined in: [src/scene/Terrain.ts:267](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L267)
+Defined in: [src/scene/Terrain.ts:250](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L250)
 
 Camadas de textura em uso (cópia; índice = canal RGBA do splatmap).
 
@@ -117,7 +117,7 @@ Camadas de textura em uso (cópia; índice = canal RGBA do splatmap).
 
 > **getPaint**(): [`TerrainPaintData`](../interfaces/TerrainPaintData.md) \| `null`
 
-Defined in: [src/scene/Terrain.ts:345](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L345)
+Defined in: [src/scene/Terrain.ts:328](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L328)
 
 Pintura atual (camadas + splatmap em base64) — serializável, ou `null` se nunca pintou.
 
@@ -131,7 +131,7 @@ Pintura atual (camadas + splatmap em base64) — serializável, ou `null` se nun
 
 > **heightAt**(`localX`, `localZ`): `number` \| `null`
 
-Defined in: [src/scene/Terrain.ts:233](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L233)
+Defined in: [src/scene/Terrain.ts:216](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L216)
 
 Altura (Y **local**) do terreno num ponto `(localX, localZ)` por **interpolação
 bilinear** do heightmap — pra colisão/ground (o player fica em cima). Inclui o
@@ -159,7 +159,7 @@ use `mesh.worldToLocal` antes pra partir de um ponto de mundo.
 
 > **layerFor**(`url`, `repeat?`): `number`
 
-Defined in: [src/scene/Terrain.ts:276](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L276)
+Defined in: [src/scene/Terrain.ts:259](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L259)
 
 Índice da camada da textura `url` — reusa se já existe, senão **aloca** a
 próxima livre (carrega a textura e liga o shader de splat). Retorna `-1` se as
@@ -185,7 +185,7 @@ próxima livre (carrega a textura e liga o shader de splat). Retorna `-1` se as
 
 > **paint**(`localX`, `localZ`, `radius`, `amount`, `layer`): `boolean`
 
-Defined in: [src/scene/Terrain.ts:302](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L302)
+Defined in: [src/scene/Terrain.ts:285](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L285)
 
 **Pinta** textura no terreno: soma `amount` (0..1 por pincelada; negativo
 apaga) ao peso da camada `layer` num círculo de `radius` (coords LOCAIS, como
@@ -225,7 +225,7 @@ pintado). Retorna `true` se algum texel mudou.
 
 > **sculpt**(`localX`, `localZ`, `radius`, `delta`): `boolean`
 
-Defined in: [src/scene/Terrain.ts:197](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L197)
+Defined in: [src/scene/Terrain.ts:180](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L180)
 
 **Esculpe** o terreno: soma `delta` à altura num círculo de `radius` (em
 coordenadas LOCAIS do terreno, no plano XZ centrado), com **falloff suave**
@@ -260,7 +260,7 @@ normais (iluminação acompanha). Retorna `true` se algum vértice mudou.
 
 > **setHeights**(`heights`): `void`
 
-Defined in: [src/scene/Terrain.ts:258](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L258)
+Defined in: [src/scene/Terrain.ts:241](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L241)
 
 Substitui o heightmap **base** inteiro (ex.: restaurar autoria salva) e atualiza
 o mesh (mantendo o delta de moldagem da estrada por cima, se houver).
@@ -281,7 +281,7 @@ o mesh (mantendo o delta de moldagem da estrada por cima, se houver).
 
 > **setLayerRepeat**(`index`, `repeat`): `void`
 
-Defined in: [src/scene/Terrain.ts:288](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L288)
+Defined in: [src/scene/Terrain.ts:271](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L271)
 
 Ajusta o tiling (repetições ao longo do terreno) de uma camada.
 
@@ -305,7 +305,7 @@ Ajusta o tiling (repetições ao longo do terreno) de uma camada.
 
 > **setPaint**(`data`): `void`
 
-Defined in: [src/scene/Terrain.ts:355](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L355)
+Defined in: [src/scene/Terrain.ts:338](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L338)
 
 Restaura uma pintura salva ([Terrain.getPaint](#getpaint)): camadas + splatmap.
 
@@ -314,30 +314,6 @@ Restaura uma pintura salva ([Terrain.getPaint](#getpaint)): camadas + splatmap.
 ##### data
 
 [`TerrainPaintData`](../interfaces/TerrainPaintData.md)
-
-#### Returns
-
-`void`
-
-***
-
-### setRoadMolding()
-
-> **setRoadMolding**(`delta`): `void`
-
-Defined in: [src/scene/Terrain.ts:186](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Terrain.ts#L186)
-
-**Molda o terreno à(s) estrada(s)** (cut & fill, ADR-0072 Fase 2): aplica um
-`delta` de altura (mesmo tamanho do heightmap) **por cima** da base autorada —
-**não-destrutivo** (a base/serialização não muda; `null` remove a moldagem). O
-[buildScene](../functions/buildScene.md) chama isto a cada build a partir das splines de estrada, então
-mover/remover a estrada re-ajeita o terreno (sem cicatriz salva).
-
-#### Parameters
-
-##### delta
-
-`Float32Array`\<`ArrayBufferLike`\> \| `null`
 
 #### Returns
 

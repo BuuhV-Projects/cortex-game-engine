@@ -193,52 +193,6 @@ export interface MeshApi {
   extrudeSelected?(): void;
 }
 
-/** Estado de uma estrada selecionada (ADR-0072). `null` se não é um nó `road`. */
-export interface RoadEditState {
-  /** Nome da superfície atual (`asphalt`/…) ou `'custom'` se URLs explícitas. */
-  surface: string;
-  /** Largura da pista (m). */
-  width: number;
-  /**
-   * Como o terreno se relaciona com a pista (Fase 2): `'conform'` (a pista se deforma
-   * no relevo) ou `'cutfill'` (o terreno se adapta à pista — corte/aterro + talude).
-   */
-  terrainMode: 'conform' | 'cutfill';
-  /** Largura do talude (transição) por lado, m. Só relevante em `cutfill`. */
-  taludeWidth: number;
-  /** Inclinação máx. do greide (razão Δalt/Δhoriz). Só relevante em `cutfill`. */
-  maxSlope: number;
-  /** Marcação de pista: nome embutido, `'custom'` (URL), ou `'none'`. */
-  markings: string;
-}
-
-/**
- * Ponte de autoria de **estradas** (Road Architect → Cortex, ADR-0072): o inspector
- * escolhe a superfície (asfalto/concreto/…) e a largura; regenera a malha ao vivo e
- * persiste no nó (`data.added`). `get` devolve `null` se o objeto não é uma estrada.
- */
-export interface RoadApi {
-  get(obj: Object3D): RoadEditState | null;
-  /** Troca a superfície (nome do catálogo) → regenera + persiste. */
-  setSurface(obj: Object3D, name: string): void;
-  /** Define a superfície por URLs de textura (diffuse + normal opcional) → regenera. */
-  setSurfaceTexture(obj: Object3D, surface: { diffuse: string; normal?: string }): void;
-  /** Ajusta a largura (m) → regenera + persiste. */
-  setWidth(obj: Object3D, width: number): void;
-  /** Troca o modo de terreno (`conform`/`cutfill`) → regenera pista + remolda terreno. */
-  setTerrainMode(obj: Object3D, mode: 'conform' | 'cutfill'): void;
-  /** Ajusta a largura do talude (m, modo `cutfill`) → remolda o terreno. */
-  setTalude(obj: Object3D, taludeWidth: number): void;
-  /** Ajusta a inclinação máx. do greide (razão, modo `cutfill`) → regenera + remolda. */
-  setMaxSlope(obj: Object3D, maxSlope: number): void;
-  /** Troca a marcação de pista (nome do catálogo ou `'none'`) → regenera o overlay. */
-  setMarkings(obj: Object3D, name: string): void;
-  /** Abre o modal de seleção de textura (atribuído pelo attachEditor). Opcional. */
-  pickSurface?(obj: Object3D): void;
-  /** Entra na edição do traçado (handles nos pontos — atribuído pelo attachEditor). Opcional. */
-  editNodes?(obj: Object3D): void;
-}
-
 /** Modo do pincel de terreno: esculpir altura ou pintar textura. */
 export type TerrainBrushMode = 'sculpt' | 'paint';
 
@@ -535,8 +489,6 @@ export interface EditorInspectorOptions {
   materialApi?: MaterialApi;
   /** Opcional: autoria das malhas de blockout (forma paramétrica/reset). Ver {@link MeshApi}. */
   meshApi?: MeshApi;
-  /** Opcional: autoria de estradas (superfície/largura). Ver {@link RoadApi}. */
-  roadApi?: RoadApi;
   /** Opcional: pincel de esculpir terreno. Ver {@link TerrainApi}. */
   terrainApi?: TerrainApi;
   /** Opcional: pincel de espalhar vegetação. Ver {@link VegetationApi}. */
@@ -579,7 +531,6 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     matteApi,
     materialApi,
     meshApi,
-    roadApi,
     terrainApi,
     vegetationApi,
     animationApi,
@@ -587,7 +538,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [
