@@ -95,6 +95,7 @@ export * from './scene/ModularCharacter.js';
 export * from './scene/Platformer.js';
 export * from './scene/FirstPerson.js';
 export * from './scene/ThirdPerson.js';
+export * from './scene/VehicleSetup.js';
 export * from './scene/TopDown.js';
 export * from './scene/SceneAssets.js';
 export * from './scene/Materials.js';
