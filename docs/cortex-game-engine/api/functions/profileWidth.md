@@ -8,7 +8,7 @@
 
 > **profileWidth**(`profile`): `number`
 
-Defined in: src/road/profiles.ts:75
+Defined in: [src/road/profiles.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L75)
 
 Largura total (m) de um perfil = soma das faixas.
 

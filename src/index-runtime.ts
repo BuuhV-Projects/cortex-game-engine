@@ -134,6 +134,7 @@ export * from './road/profiles.js';
 export * from './road/roadProfileMesh.js';
 export * from './road/citySpec.js';
 export * from './road/navGraph.js';
+export * from './road/compileCity.js';
 
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';

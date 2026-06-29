@@ -8,7 +8,7 @@
 
 > `const` **ROAD\_PROFILES**: `Record`\<[`RoadProfileName`](../type-aliases/RoadProfileName.md), [`RoadProfile`](../interfaces/RoadProfile.md)\>
 
-Defined in: src/road/profiles.ts:57
+Defined in: [src/road/profiles.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L57)
 
 **Catálogo dos 9 perfis** (ADR-0087). Larguras em metros (total = soma das faixas). Stylized:
 use com `matte` + `surfaces` tiláveis. Pista = `roadway`/`shoulder` (drivable), calçada =

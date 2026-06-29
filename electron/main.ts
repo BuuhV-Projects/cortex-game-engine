@@ -533,7 +533,7 @@ const VENDOR_TYPE_MODULES = {
   dialogue: ['DialogueGraph', 'DialogueRunner', 'DialogueUI', 'startDialogue'],
   narrative: ['StoryState'],
   probuilder: ['EditableMesh', 'shapes'],
-  road: ['RoadGrade', 'RoadMesh', 'RoadSpline', 'surfaces', 'profiles', 'roadProfileMesh', 'citySpec', 'navGraph'],
+  road: ['RoadGrade', 'RoadMesh', 'RoadSpline', 'surfaces', 'profiles', 'roadProfileMesh', 'citySpec', 'navGraph', 'compileCity'],
 } as const
 
 /**

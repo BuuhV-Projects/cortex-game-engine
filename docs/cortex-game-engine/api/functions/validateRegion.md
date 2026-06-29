@@ -8,7 +8,7 @@
 
 > **validateRegion**(`input`): `object`
 
-Defined in: src/road/citySpec.ts:81
+Defined in: [src/road/citySpec.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/citySpec.ts#L81)
 
 Valida uma [RegionSpec](../type-aliases/RegionSpec.md): schema (zod) + **rede** (cruzamento referenciando via
 inexistente, via com pontos colineares degenerados, ids duplicados). Retorna `{ ok, issues }`

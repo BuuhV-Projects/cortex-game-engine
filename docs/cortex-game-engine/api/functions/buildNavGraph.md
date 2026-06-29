@@ -8,7 +8,7 @@
 
 > **buildNavGraph**(`spec`): [`NavGraph`](../interfaces/NavGraph.md)
 
-Defined in: src/road/navGraph.ts:49
+Defined in: [src/road/navGraph.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/navGraph.ts#L49)
 
 **Constrói o grafo de navegação dos carros** a partir da [RegionSpec](../type-aliases/RegionSpec.md) (ADR-0087). Nós =
 cruzamentos declarados + pontas de via (snap por proximidade `SNAP`). Arestas = um trecho por

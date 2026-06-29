@@ -8,7 +8,7 @@
 
 > **applyRoad**(`mesh`, `node`, `three`): `void`
 
-Defined in: [src/scene/SceneBuilder.ts:1199](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1199)
+Defined in: [src/scene/SceneBuilder.ts:1252](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L1252)
 
 (Re)gera a malha + material de uma estrada num `mesh` existente (ADR-0072).
 Amostra a spline dos `nodes`, **conforma ao terreno** (raycast pra baixo por amostra
@@ -92,6 +92,14 @@ estrada sobe o morro fazendo ladeira; baixe pra pista mais plana que aplaina mai
 \[`number`, `number`, `number`\][] = `...`
 
 Pontos de controle da spline (≥2), em metros.
+
+#### profile?
+
+`"dirt"` \| `"highway"` \| `"arterial"` \| `"urban_primary"` \| `"urban_secondary"` \| `"residential"` \| `"industrial"` \| `"pedestrian_market"` \| `"alley"` = `...`
+
+**Perfil de via** (ADR-0087): em vez da fita única (`width`), extruda uma seção
+transversal (pista + calçada + meio-fio) → vira um `Group` com partes por papel
+(pista vira collider `cortexRoad`). `width`/`markings` são ignorados quando há perfil.
 
 #### steps?
 

@@ -78,7 +78,11 @@ export function roadRibbon(samples: RoadSample[], width: number, uvScale = 8, wi
 
 /** Monta a {@link BufferGeometry} da pista a partir das amostras + largura. */
 export function toRoadGeometry(samples: RoadSample[], width: number, uvScale = 8, widthSegments = 1): BufferGeometry {
-  const r = roadRibbon(samples, width, uvScale, widthSegments);
+  return ribbonToGeometry(roadRibbon(samples, width, uvScale, widthSegments));
+}
+
+/** Converte um {@link RoadRibbon} (posições/uvs/normais/índices) numa `BufferGeometry`. */
+export function ribbonToGeometry(r: RoadRibbon): BufferGeometry {
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(r.positions, 3));
   g.setAttribute('normal', new Float32BufferAttribute(r.normals, 3));

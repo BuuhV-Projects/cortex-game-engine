@@ -4,6 +4,7 @@ import { profileMesh } from '../../src/road/roadProfileMesh.js';
 import type { RoadSample } from '../../src/road/RoadSpline.js';
 import { validateRegion } from '../../src/road/citySpec.js';
 import { buildNavGraph, navConnected } from '../../src/road/navGraph.js';
+import { compileCity } from '../../src/road/compileCity.js';
 
 /** Reta ao longo de +Z (tangente [0,0,1] → direita = +X), 3 amostras. */
 const straight: RoadSample[] = [
@@ -121,5 +122,21 @@ describe('road/navGraph', () => {
       }],
     }).spec!;
     expect(navConnected(buildNavGraph(r2))).toBe(false);
+  });
+});
+
+describe('road/compileCity', () => {
+  it('compila vias (highways + cidades) em nós road + nav', () => {
+    const spec = validateRegion({
+      name: 'df', size: { x: 200, z: 200 },
+      highways: [{ id: 'anel', profile: 'highway', points: [[0, 0], [0, 100]] }],
+      cities: [{ id: 'c', bounds: [[0, 0], [50, 0], [50, 50]], roads: [{ id: 'av', profile: 'arterial', points: [[0, 0], [50, 0]] }] }],
+    }).spec!;
+    const { roads, nav } = compileCity(spec);
+    expect(roads.length).toBe(2);
+    expect(roads.every((r) => r.type === 'road' && r.conformTerrain)).toBe(true);
+    expect(roads[0]!.nodes[0]).toEqual([0, 0, 0]); // [x,z] → [x,0,z]
+    expect(roads.find((r) => r.id === 'av')!.profile).toBe('arterial');
+    expect(nav.edges.length).toBe(2);
   });
 });

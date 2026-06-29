@@ -8,7 +8,7 @@
 
 > **getProfile**(`name`): [`RoadProfile`](../interfaces/RoadProfile.md)
 
-Defined in: src/road/profiles.ts:70
+Defined in: [src/road/profiles.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L70)
 
 Perfil por nome (cai em `residential` se não existir).
 

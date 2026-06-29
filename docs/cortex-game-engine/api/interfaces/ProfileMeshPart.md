@@ -6,7 +6,7 @@
 
 # Interface: ProfileMeshPart
 
-Defined in: src/road/roadProfileMesh.ts:15
+Defined in: [src/road/roadProfileMesh.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadProfileMesh.ts#L15)
 
 Um pedaço da malha do perfil: uma faixa (ou um meio-fio) com seu papel/material/colisão.
 
@@ -16,7 +16,7 @@ Um pedaço da malha do perfil: uma faixa (ou um meio-fio) com seu papel/material
 
 > **drivable**: `boolean`
 
-Defined in: src/road/roadProfileMesh.ts:18
+Defined in: [src/road/roadProfileMesh.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadProfileMesh.ts#L18)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: src/road/roadProfileMesh.ts:18
 
 > **ribbon**: [`RoadRibbon`](RoadRibbon.md)
 
-Defined in: src/road/roadProfileMesh.ts:20
+Defined in: [src/road/roadProfileMesh.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadProfileMesh.ts#L20)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: src/road/roadProfileMesh.ts:20
 
 > **role**: `"roadway"` \| `"sidewalk"` \| `"curb"` \| `"median"` \| `"shoulder"`
 
-Defined in: src/road/roadProfileMesh.ts:16
+Defined in: [src/road/roadProfileMesh.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadProfileMesh.ts#L16)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: src/road/roadProfileMesh.ts:16
 
 > `optional` **surface?**: `string`
 
-Defined in: src/road/roadProfileMesh.ts:17
+Defined in: [src/road/roadProfileMesh.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadProfileMesh.ts#L17)
 
 ***
 
@@ -48,4 +48,4 @@ Defined in: src/road/roadProfileMesh.ts:17
 
 > **walkable**: `boolean`
 
-Defined in: src/road/roadProfileMesh.ts:19
+Defined in: [src/road/roadProfileMesh.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadProfileMesh.ts#L19)

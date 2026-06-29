@@ -8,7 +8,7 @@
 
 > **profileMesh**(`samples`, `profile`, `uvScale?`): [`ProfileMeshPart`](../interfaces/ProfileMeshPart.md)[]
 
-Defined in: src/road/roadProfileMesh.ts:74
+Defined in: [src/road/roadProfileMesh.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/roadProfileMesh.ts#L74)
 
 **Extruda o perfil ([RoadProfile](../interfaces/RoadProfile.md)) ao longo das amostras da spline** (ADR-0087) — o
 coração do EasyRoad estendido. Cada faixa vira uma tira plana na sua altura; entre faixas de

@@ -350,6 +350,14 @@ const roadNode = z.object({
     .optional(),
   /** Densidade da tessellation: amostras por 90° de curvatura (adaptativa). Default 16. */
   steps: z.number().int().positive().optional(),
+  /**
+   * **Perfil de via** (ADR-0087): em vez da fita única (`width`), extruda uma seção
+   * transversal (pista + calçada + meio-fio) → vira um `Group` com partes por papel
+   * (pista vira collider `cortexRoad`). `width`/`markings` são ignorados quando há perfil.
+   */
+  profile: z
+    .enum(['highway', 'arterial', 'urban_primary', 'urban_secondary', 'residential', 'industrial', 'dirt', 'pedestrian_market', 'alley'])
+    .optional(),
   /** A pista acompanha a altura do terreno (raycast por amostra). Default true. */
   conformTerrain: z.boolean().optional(),
   /**

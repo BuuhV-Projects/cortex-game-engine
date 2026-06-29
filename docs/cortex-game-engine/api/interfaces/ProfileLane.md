@@ -6,7 +6,7 @@
 
 # Interface: ProfileLane
 
-Defined in: src/road/profiles.ts:9
+Defined in: [src/road/profiles.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L9)
 
 **Seção transversal de uma via** (ADR-0087). Uma faixa do perfil, da esquerda pra direita;
 a soma das larguras = largura total da via. Calçada e meio-fio são faixas (não código
@@ -19,7 +19,7 @@ vertical automático** entre faixas de alturas diferentes (ver [profileMesh](../
 
 > **drivable**: `boolean`
 
-Defined in: src/road/profiles.ts:18
+Defined in: [src/road/profiles.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L18)
 
 Entra no collider de PISTA do carro (`cortexRoad`).
 
@@ -29,7 +29,7 @@ Entra no collider de PISTA do carro (`cortexRoad`).
 
 > **height**: `number`
 
-Defined in: src/road/profiles.ts:14
+Defined in: [src/road/profiles.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L14)
 
 Altura (Y) da faixa: 0 = pista; ~0.15 = calçada (degrau = meio-fio).
 
@@ -39,7 +39,7 @@ Altura (Y) da faixa: 0 = pista; ~0.15 = calçada (degrau = meio-fio).
 
 > **role**: `"roadway"` \| `"sidewalk"` \| `"curb"` \| `"median"` \| `"shoulder"`
 
-Defined in: src/road/profiles.ts:10
+Defined in: [src/road/profiles.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L10)
 
 ***
 
@@ -47,7 +47,7 @@ Defined in: src/road/profiles.ts:10
 
 > `optional` **surface?**: [`RoadSurfaceName`](../type-aliases/RoadSurfaceName.md)
 
-Defined in: src/road/profiles.ts:16
+Defined in: [src/road/profiles.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L16)
 
 Superfície (override do default da via).
 
@@ -57,7 +57,7 @@ Superfície (override do default da via).
 
 > **walkable**: `boolean`
 
-Defined in: src/road/profiles.ts:20
+Defined in: [src/road/profiles.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L20)
 
 Entra na navegação de PEDESTRE.
 
@@ -67,6 +67,6 @@ Entra na navegação de PEDESTRE.
 
 > **width**: `number`
 
-Defined in: src/road/profiles.ts:12
+Defined in: [src/road/profiles.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/profiles.ts#L12)
 
 Largura da faixa em metros.

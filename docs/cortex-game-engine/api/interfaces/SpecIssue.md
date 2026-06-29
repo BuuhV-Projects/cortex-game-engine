@@ -6,7 +6,7 @@
 
 # Interface: SpecIssue
 
-Defined in: src/road/citySpec.ts:71
+Defined in: [src/road/citySpec.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/citySpec.ts#L71)
 
 Problemas encontrados na validação de rede (além do schema).
 
@@ -16,7 +16,7 @@ Problemas encontrados na validação de rede (além do schema).
 
 > **level**: `"error"` \| `"warning"`
 
-Defined in: src/road/citySpec.ts:72
+Defined in: [src/road/citySpec.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/citySpec.ts#L72)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: src/road/citySpec.ts:72
 
 > **message**: `string`
 
-Defined in: src/road/citySpec.ts:73
+Defined in: [src/road/citySpec.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/citySpec.ts#L73)

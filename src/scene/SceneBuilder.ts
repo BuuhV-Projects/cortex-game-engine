@@ -54,8 +54,10 @@ import { Background } from './Background.js';
 import { toBufferGeometry, type EditableMesh } from '../probuilder/EditableMesh.js';
 import { buildShape } from '../probuilder/shapes.js';
 import { sampleSpline } from '../road/RoadSpline.js';
-import { toRoadGeometry } from '../road/RoadMesh.js';
-import { resolveSurface, resolveMarking, type RoadMarking } from '../road/surfaces.js';
+import { toRoadGeometry, ribbonToGeometry } from '../road/RoadMesh.js';
+import { resolveSurface, resolveMarking, type RoadMarking, type RoadSurfaceName } from '../road/surfaces.js';
+import { getProfile } from '../road/profiles.js';
+import { profileMesh } from '../road/roadProfileMesh.js';
 import { smoothGrade, moldHeightfield, mergeDeltas, type GradePoint } from '../road/RoadGrade.js';
 import { Terrain, type TerrainPaintData } from './Terrain.js';
 import { Vegetation, makePlaceholderVegetation } from './Vegetation.js';
@@ -1181,11 +1183,62 @@ function smoothTiled(t: import('three').Texture, albedo: boolean): void {
   t.needsUpdate = true;
 }
 
-function makeRoad(node: Extract<SceneNode, { type: 'road' }>, three: Object3D): Mesh {
+function makeRoad(node: Extract<SceneNode, { type: 'road' }>, three: Object3D): Object3D {
+  if (node.profile) return makeProfiledRoad(node, three); // ADR-0087: seção transversal
   const mesh = new Mesh();
   mesh.receiveShadow = true;
   applyRoad(mesh, node, three);
   return mesh;
+}
+
+/**
+ * **Via com perfil** (ADR-0087): extruda a seção transversal ({@link profileMesh}) ao longo da
+ * spline → um `Group` com uma malha por parte (pista/calçada/meio-fio), cada uma conformada ao
+ * terreno (raycast por vértice + yOffset) e com material flat stylized (cor da superfície). As
+ * partes dirigíveis + o meio-fio viram collider do carro (`cortexRoad`). Editor live-edit de
+ * perfil ainda não suportado (regenera só no reload).
+ */
+function makeProfiledRoad(node: Extract<SceneNode, { type: 'road' }>, three: Object3D): Object3D {
+  const group = new Group();
+  const profile = getProfile(node.profile!);
+  const yOffset = node.yOffset ?? 0.05;
+  const samples = sampleSpline(node.nodes as [number, number, number][], node.steps ?? 24);
+  const parts = profileMesh(samples, profile);
+
+  const terrains: Object3D[] = [];
+  three.traverse((o) => { if ((o.userData as Record<string, unknown>)['cortexTerrain']) terrains.push(o); });
+  const conform = node.conformTerrain !== false && terrains.length > 0;
+  const ray = new Raycaster();
+  const down = new Vector3(0, -1, 0);
+  const origin = new Vector3();
+
+  for (const part of parts) {
+    const geometry = ribbonToGeometry(part.ribbon);
+    const pos = geometry.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) {
+      let y = pos.getY(i);
+      if (conform) {
+        origin.set(pos.getX(i), 1e4, pos.getZ(i));
+        ray.set(origin, down);
+        const hit = ray.intersectObjects(terrains, true)[0];
+        y = (hit ? hit.point.y : 0) + part.ribbon.positions[i * 3 + 1]!; // mantém o degrau do perfil
+      }
+      pos.setY(i, y + yOffset);
+    }
+    pos.needsUpdate = true;
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    const surf = resolveSurface(part.surface as RoadSurfaceName | undefined);
+    const mesh = new Mesh(geometry, new MeshStandardMaterial({ color: surf.color, roughness: 1, metalness: 0 }));
+    mesh.receiveShadow = true;
+    mesh.name = `${node.id}_${part.role}`;
+    // Pista + meio-fio = collider do carro (o chassi bate no meio-fio e fica na pista).
+    if (part.drivable || part.role === 'curb') (mesh.userData as Record<string, unknown>)['cortexRoad'] = true;
+    group.add(mesh);
+  }
+  (group.userData as Record<string, unknown>)['cortexRoadProfile'] = { id: node.id, profile: node.profile };
+  return group;
 }
 
 /**

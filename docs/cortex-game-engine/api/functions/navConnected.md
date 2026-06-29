@@ -8,7 +8,7 @@
 
 > **navConnected**(`graph`): `boolean`
 
-Defined in: src/road/navGraph.ts:114
+Defined in: [src/road/navGraph.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/navGraph.ts#L114)
 
 `true` se TODO nó com aresta é alcançável a partir do primeiro (grafo conexo) — teste de
 sanidade: garante que todo setor é alcançável (ex.: da Delegacia). Grafo vazio = `true`.

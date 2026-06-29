@@ -6,7 +6,7 @@
 
 # Interface: NavNode
 
-Defined in: src/road/navGraph.ts:5
+Defined in: [src/road/navGraph.ts:5](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/navGraph.ts#L5)
 
 Nó de navegação: cruzamento ou ponta de via.
 
@@ -16,7 +16,7 @@ Nó de navegação: cruzamento ou ponta de via.
 
 > **at**: [`Vec2`](../type-aliases/Vec2.md)
 
-Defined in: src/road/navGraph.ts:7
+Defined in: [src/road/navGraph.ts:7](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/navGraph.ts#L7)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: src/road/navGraph.ts:7
 
 > **id**: `string`
 
-Defined in: src/road/navGraph.ts:6
+Defined in: [src/road/navGraph.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/navGraph.ts#L6)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: src/road/navGraph.ts:6
 
 > **kind**: `"intersection"` \| `"endpoint"`
 
-Defined in: src/road/navGraph.ts:8
+Defined in: [src/road/navGraph.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/navGraph.ts#L8)
