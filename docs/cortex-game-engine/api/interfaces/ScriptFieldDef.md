@@ -6,7 +6,7 @@
 
 # Interface: ScriptFieldDef
 
-Defined in: src/scripts/ScriptBehavior.ts:12
+Defined in: [src/scripts/ScriptBehavior.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L12)
 
 Descritor de um campo editável (no `static fields` da subclasse de [ScriptBehavior](../classes/ScriptBehavior.md)).
 
@@ -16,7 +16,7 @@ Descritor de um campo editável (no `static fields` da subclasse de [ScriptBehav
 
 > **default**: `unknown`
 
-Defined in: src/scripts/ScriptBehavior.ts:15
+Defined in: [src/scripts/ScriptBehavior.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L15)
 
 Valor inicial se a cena não declarar nada.
 
@@ -26,7 +26,7 @@ Valor inicial se a cena não declarar nada.
 
 > `optional` **label?**: `string`
 
-Defined in: src/scripts/ScriptBehavior.ts:17
+Defined in: [src/scripts/ScriptBehavior.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L17)
 
 Rótulo amigável no Inspector (default: o nome do campo).
 
@@ -36,7 +36,7 @@ Rótulo amigável no Inspector (default: o nome do campo).
 
 > `optional` **options?**: `string`[]
 
-Defined in: src/scripts/ScriptBehavior.ts:19
+Defined in: [src/scripts/ScriptBehavior.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L19)
 
 Opções do `select`.
 
@@ -46,4 +46,4 @@ Opções do `select`.
 
 > **type**: [`ScriptFieldType`](../type-aliases/ScriptFieldType.md)
 
-Defined in: src/scripts/ScriptBehavior.ts:13
+Defined in: [src/scripts/ScriptBehavior.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L13)

@@ -37,7 +37,7 @@ registra o listener de redimensionamento automático quando em browser.
 
 > **get** **domElement**(): `HTMLCanvasElement`
 
-Defined in: [src/core/Renderer.ts:249](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L249)
+Defined in: [src/core/Renderer.ts:253](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L253)
 
 Elemento `<canvas>` onde o renderer desenha.
 
@@ -53,7 +53,7 @@ Elemento `<canvas>` onde o renderer desenha.
 
 > **get** **height**(): `number`
 
-Defined in: [src/core/Renderer.ts:244](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L244)
+Defined in: [src/core/Renderer.ts:248](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L248)
 
 Altura atual do canvas em pixels.
 
@@ -85,7 +85,7 @@ Defined in: [src/core/Renderer.ts:164](https://github.com/BuuhV-Projects/cortex-
 
 > **get** **threeRenderer**(): `WebGPURenderer`
 
-Defined in: [src/core/Renderer.ts:259](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L259)
+Defined in: [src/core/Renderer.ts:263](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L263)
 
 Instância interna do `WebGPURenderer`.
 Exposta para casos avançados: pós-processamento (passar pra `PostProcessing`
@@ -104,7 +104,7 @@ públicos da classe sempre que possível.
 
 > **get** **width**(): `number`
 
-Defined in: [src/core/Renderer.ts:239](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L239)
+Defined in: [src/core/Renderer.ts:243](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L243)
 
 Largura atual do canvas em pixels.
 
@@ -135,7 +135,7 @@ quando se usa split-screen.
 
 > **dispose**(): `void`
 
-Defined in: [src/core/Renderer.ts:229](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L229)
+Defined in: [src/core/Renderer.ts:233](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L233)
 
 Remove o listener de resize e libera os recursos GPU do renderer.
 Deve ser chamado ao destruir a cena para evitar vazamentos de memória.

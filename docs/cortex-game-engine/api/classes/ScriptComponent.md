@@ -6,7 +6,7 @@
 
 # Class: ScriptComponent
 
-Defined in: src/components/ScriptComponent.ts:27
+Defined in: [src/components/ScriptComponent.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L27)
 
 Componente que carrega **um ou mais scripts** ([ScriptBehavior](ScriptBehavior.md)) anexados a um nó —
 ADR-0085. O [ScriptHostSystem](ScriptHostSystem.md) instancia/roda os slots; o `object` é o `Object3D` do
@@ -23,7 +23,7 @@ nó (injetado nos scripts como `this.object3d`). Um nó tem **um** ScriptCompone
 
 > **new ScriptComponent**(`object`, `scripts?`): `ScriptComponent`
 
-Defined in: src/components/ScriptComponent.ts:30
+Defined in: [src/components/ScriptComponent.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L30)
 
 #### Parameters
 
@@ -65,7 +65,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **object**: `Object3D`\<`Object3DEventMap`\> \| `null`
 
-Defined in: src/components/ScriptComponent.ts:32
+Defined in: [src/components/ScriptComponent.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L32)
 
 O `Object3D` do nó (injetado nos scripts como `object3d`).
 
@@ -75,7 +75,7 @@ O `Object3D` do nó (injetado nos scripts como `object3d`).
 
 > **scripts**: [`ScriptSlot`](../interfaces/ScriptSlot.md)[]
 
-Defined in: src/components/ScriptComponent.ts:28
+Defined in: [src/components/ScriptComponent.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L28)
 
 ## Accessors
 

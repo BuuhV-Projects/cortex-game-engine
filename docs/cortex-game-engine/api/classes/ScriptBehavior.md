@@ -6,7 +6,7 @@
 
 # Abstract Class: ScriptBehavior
 
-Defined in: src/scripts/ScriptBehavior.ts:53
+Defined in: [src/scripts/ScriptBehavior.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L53)
 
 **Base de comportamento anexável a um objeto** (estilo MonoBehaviour da Unity) — ADR-0085.
 
@@ -42,7 +42,7 @@ registerScript('Girar', Girar);
 
 > **ctx**: [`ScriptContext`](../interfaces/ScriptContext.md)
 
-Defined in: src/scripts/ScriptBehavior.ts:59
+Defined in: [src/scripts/ScriptBehavior.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L59)
 
 Handles do engine (world, input, gamepad, scene, camera). Injetado.
 
@@ -52,7 +52,7 @@ Handles do engine (world, input, gamepad, scene, camera). Injetado.
 
 > **entity**: [`Entity`](Entity.md)
 
-Defined in: src/scripts/ScriptBehavior.ts:55
+Defined in: [src/scripts/ScriptBehavior.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L55)
 
 A entidade ECS que hospeda este script (injetada).
 
@@ -62,7 +62,7 @@ A entidade ECS que hospeda este script (injetada).
 
 > **object3d**: `Object3D`\<`Object3DEventMap`\> \| `null` = `null`
 
-Defined in: src/scripts/ScriptBehavior.ts:57
+Defined in: [src/scripts/ScriptBehavior.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L57)
 
 O `Object3D` do nó ao qual o script está anexado (ou `null`). Injetado.
 
@@ -72,7 +72,7 @@ O `Object3D` do nó ao qual o script está anexado (ou `null`). Injetado.
 
 > `static` `optional` **fields?**: [`ScriptFieldSchema`](../type-aliases/ScriptFieldSchema.md)
 
-Defined in: src/scripts/ScriptBehavior.ts:69
+Defined in: [src/scripts/ScriptBehavior.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L69)
 
 Schema dos campos editáveis no Inspector — declare como `static fields` na subclasse.
 
@@ -82,7 +82,7 @@ Schema dos campos editáveis no Inspector — declare como `static fields` na su
 
 > `optional` **onDestroy**(): `void`
 
-Defined in: src/scripts/ScriptBehavior.ts:66
+Defined in: [src/scripts/ScriptBehavior.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L66)
 
 Chamado ao remover o script (Inspector) ou destruir a entidade.
 
@@ -96,7 +96,7 @@ Chamado ao remover o script (Inspector) ou destruir a entidade.
 
 > `optional` **onStart**(): `void`
 
-Defined in: src/scripts/ScriptBehavior.ts:62
+Defined in: [src/scripts/ScriptBehavior.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L62)
 
 Chamado UMA vez, no primeiro frame de Play após o script existir.
 
@@ -110,7 +110,7 @@ Chamado UMA vez, no primeiro frame de Play após o script existir.
 
 > `optional` **onUpdate**(`dt`): `void`
 
-Defined in: src/scripts/ScriptBehavior.ts:64
+Defined in: [src/scripts/ScriptBehavior.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L64)
 
 Chamado todo frame de Play. `dt` em **segundos**.
 

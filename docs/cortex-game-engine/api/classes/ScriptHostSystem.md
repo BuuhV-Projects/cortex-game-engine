@@ -6,7 +6,7 @@
 
 # Class: ScriptHostSystem
 
-Defined in: src/systems/ScriptHostSystem.ts:30
+Defined in: [src/systems/ScriptHostSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L30)
 
 **Roda os scripts** ([ScriptBehavior](ScriptBehavior.md)) anexados via [ScriptComponent](ScriptComponent.md) — ADR-0085.
 Instancia cada slot pelo nome (registro), injeta `entity`/`object3d`/`ctx`, aplica os campos,
@@ -26,7 +26,7 @@ adiciona este sistema no boot com o contexto (input/gamepad/scene/camera).
 
 > **new ScriptHostSystem**(`ctx`, `isEditing?`): `ScriptHostSystem`
 
-Defined in: src/systems/ScriptHostSystem.ts:34
+Defined in: [src/systems/ScriptHostSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L34)
 
 #### Parameters
 
@@ -75,7 +75,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `50`
 
-Defined in: src/systems/ScriptHostSystem.ts:32
+Defined in: [src/systems/ScriptHostSystem.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L32)
 
 Prioridade de execução deste sistema.
 
@@ -92,7 +92,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: *typeof* [`ScriptComponent`](ScriptComponent.md)[]
 
-Defined in: src/systems/ScriptHostSystem.ts:31
+Defined in: [src/systems/ScriptHostSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L31)
 
 Construtores dos componentes que este sistema requer.
 
@@ -118,7 +118,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/ScriptHostSystem.ts:43
+Defined in: [src/systems/ScriptHostSystem.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L43)
 
 Executa a lógica do sistema para o frame/passo atual.
 

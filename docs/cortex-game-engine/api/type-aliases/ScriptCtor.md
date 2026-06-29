@@ -8,7 +8,7 @@
 
 > **ScriptCtor** = () => [`ScriptBehavior`](../classes/ScriptBehavior.md) & `object`
 
-Defined in: src/scripts/ScriptRegistry.ts:4
+Defined in: [src/scripts/ScriptRegistry.ts:4](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptRegistry.ts#L4)
 
 Construtor de um [ScriptBehavior](../classes/ScriptBehavior.md) (sem args — o host injeta as deps depois).
 

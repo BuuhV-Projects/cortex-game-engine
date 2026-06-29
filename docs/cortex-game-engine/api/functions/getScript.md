@@ -8,7 +8,7 @@
 
 > **getScript**(`name`): [`ScriptCtor`](../type-aliases/ScriptCtor.md) \| `undefined`
 
-Defined in: src/scripts/ScriptRegistry.ts:22
+Defined in: [src/scripts/ScriptRegistry.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptRegistry.ts#L22)
 
 Construtor registrado sob `name`, ou `undefined`.
 
