@@ -923,6 +923,7 @@ export function attachEditor(game: Game): GameEditor {
         addedList().push(node);
         persist();
         selection.requestSelect(obj);
+        pushAddCommand(obj, node); // CTRL+Z desfaz a adição
       });
     },
   });
@@ -986,6 +987,7 @@ export function attachEditor(game: Game): GameEditor {
       physicsApi.setType(obj, 'static'); // nasce sólido — desligável no Inspector
       persist();
       selection.requestSelect(obj);
+      pushAddCommand(obj, node); // CTRL+Z desfaz a adição
     });
   };
   const addShape = (kind: string): void => {
@@ -1007,9 +1009,35 @@ export function attachEditor(game: Game): GameEditor {
   //    `data.added` de vez (não faz sentido marcar "deletado" — não há base pra pular,
   //    nem undo); nó BASE (level.json) entra em `data.deleted` pro buildScene pular;
   //    3) limpa as entradas de overlay por-objeto (transform + concerns).
-  deleteNode = (obj) => {
-    if (!obj.name) return;
-    const name = obj.name;
+  // Chaves de overlay por-objeto (concerns) — limpas no delete, capturadas/restauradas no undo.
+  const CONCERN_KEYS = ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle', 'underlay'] as const;
+  const cloneJson = <T>(v: T): T => (v === undefined ? v : (JSON.parse(JSON.stringify(v)) as T));
+
+  /** Snapshot de TUDO de um nó (transform + concerns + def se foi criado no editor) — pro undo. */
+  interface NodeSnapshot {
+    transform?: SceneFileV1['objects'][string];
+    concerns: Record<string, unknown>;
+    addedNode?: SceneNode; // presente se o nó veio de `data.added` (criado no editor)
+  }
+  const snapshotNode = (name: string): NodeSnapshot => {
+    const concerns: Record<string, unknown> = {};
+    for (const key of CONCERN_KEYS) {
+      const m = (overlay.data as Record<string, unknown>)[key];
+      if (m && typeof m === 'object' && !Array.isArray(m)) {
+        const v = (m as Record<string, unknown>)[name];
+        if (v !== undefined) concerns[key] = cloneJson(v);
+      }
+    }
+    const added = addedList().find((n) => (n as { id?: string }).id === name);
+    return {
+      transform: overlay.objects[name] ? { ...overlay.objects[name] } : undefined,
+      concerns,
+      addedNode: added ? cloneJson(added) : undefined,
+    };
+  };
+
+  /** Limpeza pura ao deletar (sem registrar undo nem remover da cena — o chamador remove). */
+  const deleteNodeCleanup = (obj: Object3D, name: string): void => {
     physicsApi.setType(obj, 'none'); // destrói collider/character/rapier + tira cortexSolid
     const added = addedList();
     const i = added.findIndex((n) => (n as { id?: string }).id === name);
@@ -1019,11 +1047,74 @@ export function attachEditor(game: Game): GameEditor {
       if (!d.includes(name)) d.push(name);
     }
     delete overlay.objects[name];
-    for (const key of ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle', 'underlay']) {
+    for (const key of CONCERN_KEYS) {
       const m = (overlay.data as Record<string, unknown>)[key];
       if (m && typeof m === 'object' && !Array.isArray(m)) delete (m as Record<string, unknown>)[name];
     }
     persist(true);
+  };
+
+  /** Restaura um nó deletado/adicionado-desfeito: re-anexa o MESMO Object3D + overlay + física viva. */
+  const restoreNode = (obj: Object3D, name: string, snap: NodeSnapshot): void => {
+    three.add(obj); // o obj fica vivo (só desanexado) — re-anexar traz de volta visual/geometria
+    if (snap.transform) overlay.objects[name] = { ...snap.transform };
+    if (snap.addedNode) {
+      const a = addedList();
+      if (!a.some((n) => (n as { id?: string }).id === name)) a.push(cloneJson(snap.addedNode));
+    } else {
+      const d = deletedList();
+      const di = d.indexOf(name);
+      if (di >= 0) d.splice(di, 1); // nó base volta a aparecer no boot
+    }
+    for (const key of CONCERN_KEYS) {
+      const m = ((overlay.data as Record<string, unknown>)[key] ??= {}) as Record<string, unknown>;
+      if (snap.concerns[key] !== undefined) m[name] = cloneJson(snap.concerns[key]);
+      else delete m[name];
+    }
+    // Recria o corpo físico vivo a partir do tipo salvo (params exatos voltam no reload via overlay).
+    const phys = snap.concerns['physics'] as { type?: string } | undefined;
+    if (phys?.type && phys.type !== 'none') {
+      physicsApi.setType(obj, phys.type as 'static' | 'character' | 'rigid');
+      overlay.data['physics'] = (overlay.data['physics'] ?? {}) as Record<string, unknown>;
+      (overlay.data['physics'] as Record<string, unknown>)[name] = cloneJson(phys); // setType pode ter sobrescrito
+    }
+    persist(true);
+    selection.requestSelect(obj);
+  };
+
+  deleteNode = (obj) => {
+    if (!obj.name) return;
+    const name = obj.name;
+    const snap = snapshotNode(name); // captura ANTES de limpar
+    deleteNodeCleanup(obj, name);
+    history.push({
+      label: 'Deletar',
+      undo: () => restoreNode(obj, name, snap),
+      redo: () => {
+        selection.requestSelect(null);
+        obj.parent?.remove(obj);
+        deleteNodeCleanup(obj, name);
+      },
+    });
+  };
+
+  /** Registra o undo de ADICIONAR um nó (desfazer remove; refazer re-anexa o mesmo obj). */
+  const pushAddCommand = (obj: Object3D, node: SceneNode): void => {
+    const name = (node as { id?: string }).id;
+    if (!name) return;
+    let snap: NodeSnapshot | null = null;
+    history.push({
+      label: `Adicionar ${node.type}`,
+      undo: () => {
+        snap = snapshotNode(name); // estado atual (inclui edições feitas após adicionar)
+        selection.requestSelect(null);
+        obj.parent?.remove(obj);
+        deleteNodeCleanup(obj, name);
+      },
+      redo: () => {
+        if (snap) restoreNode(obj, name, snap);
+      },
+    });
   };
   const shapeDrawSystem = new ShapeDrawSystem(
     editorState,
@@ -1044,6 +1135,7 @@ export function attachEditor(game: Game): GameEditor {
       addedList().push(node);
       persist();
       selection.requestSelect(obj);
+      pushAddCommand(obj, node); // CTRL+Z desfaz a adição
     });
   };
   const roadDrawSystem = new RoadDrawSystem(editorState, editorCamera, game.canvas, game.scene, game.input, hud, createRoadNode);
@@ -1061,6 +1153,7 @@ export function attachEditor(game: Game): GameEditor {
       persist();
       selection.requestSelect(obj);
       vegetation.api.startPaint(obj);
+      pushAddCommand(obj, node); // CTRL+Z desfaz a adição
     });
   };
 
@@ -1132,6 +1225,7 @@ export function attachEditor(game: Game): GameEditor {
       }
       persist();
       selection.requestSelect(obj);
+      pushAddCommand(obj, node); // CTRL+Z desfaz a adição
       hud.showToast('Terreno adicionado (sólido) — clique "Esculpir" no inspector');
     });
   };

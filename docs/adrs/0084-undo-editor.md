@@ -21,7 +21,12 @@ Implementado **em fases** (a superfície é grande e a UI do editor só é valid
   `dragging-changed` (start), registra o comando ao soltar (se mudou). `ObjectEditSystem`
   expõe `onTransformCommit`; o `attachEditor` empilha (aplica pos/rot/escala + write-back +
   `overlay.objects` + persist + re-seleciona).
-- **Fase 1b (pendente):** add/delete de nó (re-instanciar / restaurar overlay).
+- **Fase 1b (feita):** add/delete de nó. O Object3D é mantido **vivo** (delete só
+  desanexa) → undo re-anexa o mesmo obj + restaura `overlay.objects`/concerns (snapshot
+  JSON) + lista `added`/`deleted` + recria o corpo físico vivo (`physicsApi.setType` pelo
+  tipo salvo; params exatos voltam no reload via overlay). `add` e `delete` compartilham
+  `snapshotNode`/`restoreNode`/`deleteNodeCleanup`. **Limitação:** params finos do corpo
+  (massa/velocidade) voltam como default ao vivo até o próximo reload.
 - **Fase 2:** seções de autoria (física/material/matte/collider/veículo/underlay/animação)
   — comando com snapshot antes/depois da entrada do `overlay.data[concern][id]` + re-aplicar.
 - **Fase 3:** sculpt (heightmap), spray de vegetação, edição de malha — comandos em LOTE
