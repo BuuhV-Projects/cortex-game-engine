@@ -1040,14 +1040,15 @@ async function makeUnderlay(node: Extract<SceneNode, { type: 'underlay' }>): Pro
     transparent: true,
     opacity: node.opacity ?? 0.6,
     depthWrite: false,
+    depthTest: false, // overlay: desenha SEM testar profundidade → sem z-fight com o terreno
     toneMapped: false, // a referência sai com a cor da imagem (sem ACES)
     side: DoubleSide,
   });
   if (node.image) mat.map = await loadTexture(node.image, false);
   const plane = new Mesh(new PlaneGeometry(size, size), mat);
   plane.rotation.x = -Math.PI / 2; // deita no plano XZ (chão)
-  plane.position.y = node.height ?? 0.05; // acima do terreno (sem z-fight)
-  plane.renderOrder = -1;
+  plane.position.y = node.height ?? 0.05;
+  plane.renderOrder = 10; // desenha por cima da cena (translúcido); blockouts aparecem através
   plane.raycast = () => {}; // clica ATRAVÉS → dá pra posicionar blockouts por cima
   const group = new Group();
   group.add(plane);
