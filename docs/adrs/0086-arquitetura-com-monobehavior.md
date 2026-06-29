@@ -33,17 +33,27 @@ repensado. Pergunta central: **o que vira script e o que continua sistema do eng
 |---|---|---|
 | Física do carro (`createVehicle`/`VehicleControlSystem`/skid/som) | **fica infra** (futuro helper `setupVehicle`) | mantém |
 | sun-follow | Script `SeguirAlvo` no Sol | **bloqueado** — Sol é preset, não nó (ver abaixo); `SeguirAlvo` criado como padrão |
-| spawn (P/Y) + entrar/sair do carro | Script no nó `carro` | pendente |
-| soco | Script `Combate` no nó `player` | pendente |
-| gating/live-edit no `onUpdate` | dissolve nos scripts/systems | pendente |
+| spawn (P/Y) + entrar/sair do carro | Script `CarroController` no nó `carro` | **feito** |
+| soco | Script `Combate` no nó `player` | **feito** |
+| gating/live-edit no `onUpdate` | fica infra (velocímetro/som/tunáveis do veículo) | mantém |
+
+## Padrão de handoff script↔infra (RESOLVIDO)
+
+Scripts são instanciados por **dado** (sem args de construtor), então não capturam os closures
+do boot. Padrão adotado: **o boot expõe os handles de infra em `object3d.userData`; o script lê**.
+Ex.: `playerObj.userData.cortexControl = control` (Combate chama `playAction`);
+`carObj.userData.cortexCarRig = { vehicle, state, player, playerT, getEngineSound, enterRequested }`
+(CarroController orquestra). Comunicação infra→script por **flag** no rig (a interação "Entrar"
+faz `rig.enterRequested = true`; o script consome). Genéricos: `this.ctx`
+(world/input/gamepad/scene/camera), `this.object3d`, `world.query(Componente)`.
 
 ## Pontos em aberto (decisões ao migrar)
 
-- **Acesso a outro sistema/entidade:** o script usa `this.ctx` (world/input/gamepad/scene/
-  camera), `this.object3d`, `this.entity`, e `world.query(Componente)` pra achar outras
-  entidades. Casos que precisam de um System (ex.: pegar o `Vehicle` do Rapier) → expor via um
-  componente consultável ou estender o `ctx`. Comunicação script↔script: por ora via world/
-  componentes; um event-bus pode vir depois se necessário.
+- **Comunicação script↔script:** por ora via world/componentes/`userData`; um event-bus pode vir
+  depois se necessário.
+- **Overlay vence (atenção):** `data.scripts[id]` (Inspector) sobrescreve `node.scripts` do
+  `level.json` — inclusive uma lista **vazia** (remoção no editor "gruda"). Ao autorar scripts no
+  `level.json`, garanta que o overlay não tenha uma entrada vazia pra aquele nó.
 - **Ordem de execução:** todos os scripts rodam na prioridade do `ScriptHostSystem` (50). Se
   surgir dependência de ordem, criar prioridade por script (campo) — adiar até precisar.
 - **Sol é preset, não nó:** `outdoorLighting` cria as luzes programaticamente → não há nó pra
