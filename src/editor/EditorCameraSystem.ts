@@ -215,7 +215,9 @@ export class EditorCameraSystem extends System {
   focusOn(target: THREE.Object3D): void {
     const bbox = new THREE.Box3().setFromObject(target);
     const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
     let maxDim: number;
+    let flat = false;
     if (bbox.isEmpty()) {
       // Sem geometria (câmera, luz, grupo vazio): a bbox é vazia e getCenter daria
       // (0,0,0). Enquadra a POSIÇÃO mundial do objeto com um tamanho default.
@@ -223,23 +225,32 @@ export class EditorCameraSystem extends System {
       maxDim = 2;
     } else {
       bbox.getCenter(center);
-      const size = new THREE.Vector3();
       bbox.getSize(size);
       maxDim = Math.max(size.x, size.y, size.z) || 1;
+      // PLANO (terreno, plataforma larga): altura << largura/profundidade → enquadra TOP-DOWN.
+      flat = size.y < 0.3 * Math.max(size.x, size.z);
     }
 
     const fovRad = (this.camera.fov * Math.PI) / 180;
-    const distance = (maxDim / (2 * Math.tan(fovRad / 2))) * 1.8;
+    const distance = (maxDim / (2 * Math.tan(fovRad / 2))) * 1.25;
 
-    const offset = new THREE.Vector3().subVectors(this.camera.position, center);
-    if (offset.lengthSq() < 1e-6) {
-      offset.set(0.6, 0.5, 1).normalize();
+    const offset = new THREE.Vector3();
+    if (flat) {
+      offset.set(0, 1, 0.18).normalize(); // quase de cima (leve inclinação pra orientar)
     } else {
-      offset.normalize();
+      offset.subVectors(this.camera.position, center);
+      if (offset.lengthSq() < 1e-6) offset.set(0.6, 0.5, 1).normalize();
+      else offset.normalize();
     }
 
     this.camera.position.copy(center).addScaledVector(offset, distance);
     this.camera.lookAt(center);
+    // Garante que o objeto inteiro caiba sem ser cortado pelo far plane (mundo grande).
+    const needFar = distance + maxDim;
+    if (this.camera.far < needFar) {
+      this.camera.far = needFar * 1.5;
+      this.camera.updateProjectionMatrix();
+    }
     this.syncYawPitchFromCamera();
   }
 
