@@ -46,6 +46,26 @@ export interface ObjectEdit {
  * Persiste por `Object3D.name` (objetos sem nome são ignorados). O que fazer com
  * as edições fica a cargo do jogo (callbacks).
  */
+/** Transform capturada pra undo do gizmo (posição/rotação/escala). */
+export interface GizmoTransform {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+}
+function snapTransform(o: THREE.Object3D): GizmoTransform {
+  return {
+    position: [o.position.x, o.position.y, o.position.z],
+    rotation: [o.rotation.x, o.rotation.y, o.rotation.z],
+    scale: [o.scale.x, o.scale.y, o.scale.z],
+  };
+}
+function sameT(a: GizmoTransform, b: GizmoTransform): boolean {
+  for (let i = 0; i < 3; i++) {
+    if (a.position[i] !== b.position[i] || a.rotation[i] !== b.rotation[i] || a.scale[i] !== b.scale[i]) return false;
+  }
+  return true;
+}
+
 export class ObjectEditSystem extends System {
   static override requiredComponents = [];
   override priority = 27;
@@ -61,6 +81,10 @@ export class ObjectEditSystem extends System {
   private clickPending: { x: number; y: number } | null = null;
   private selected: THREE.Object3D | null = null;
   private prev = new Map<string, boolean>();
+  /** Transform capturada no início do arraste (pra registrar o undo ao soltar). */
+  private _dragBefore: GizmoTransform | null = null;
+  /** Chamado ao SOLTAR o gizmo se a transform mudou — liga ao histórico (undo). */
+  onTransformCommit?: (obj: THREE.Object3D, before: GizmoTransform, after: GizmoTransform) => void;
 
   constructor(
     private readonly editorState: EditorState,
@@ -133,6 +157,14 @@ export class ObjectEditSystem extends System {
     });
     this.controls.addEventListener('dragging-changed', ((e: { value: boolean }) => {
       this.editorState.gizmoDragging = e.value;
+      // Undo: captura a transform ANTES de arrastar; ao soltar, se mudou, registra o comando.
+      if (e.value) {
+        this._dragBefore = this.selected ? snapTransform(this.selected) : null;
+      } else if (this.selected && this._dragBefore) {
+        const after = snapTransform(this.selected);
+        if (!sameT(this._dragBefore, after)) this.onTransformCommit?.(this.selected, this._dragBefore, after);
+        this._dragBefore = null;
+      }
     }) as unknown as (e: unknown) => void);
 
     canvas.addEventListener('pointerdown', (e) => {

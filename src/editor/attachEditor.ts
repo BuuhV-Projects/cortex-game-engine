@@ -58,6 +58,8 @@ import { createVegetationAuthoring } from './authoring/VegetationAuthoring.js';
 import { createEditorBridge } from './EditorBridge.js';
 import { EditorCameraSystem } from './EditorCameraSystem.js';
 import { ObjectEditSystem } from './ObjectEditSystem.js';
+import { CommandStack } from './CommandStack.js';
+import type { GizmoTransform } from './ObjectEditSystem.js';
 import { ColliderGizmoSystem } from './ColliderGizmoSystem.js';
 import { CharacterColliderGizmoSystem } from './CharacterColliderGizmoSystem.js';
 import { VegetationGizmoSystem } from './VegetationGizmoSystem.js';
@@ -307,6 +309,7 @@ export function attachEditor(game: Game): GameEditor {
     },
   };
 
+  const history = new CommandStack(); // CTRL+Z (ADR-0084) — fase 1: transform/add/delete
   const objectEditSystem = new ObjectEditSystem(
       editorState,
       editorCamera,
@@ -333,6 +336,42 @@ export function attachEditor(game: Game): GameEditor {
       vegHook, // seleção/Delete por instância de árvore
   );
   game.world.addSystem(objectEditSystem);
+
+  // Undo de TRANSFORM: ao soltar o gizmo (mudou), registra antes/depois no histórico.
+  objectEditSystem.onTransformCommit = (obj, before, after) => {
+    const apply = (t: GizmoTransform): void => {
+      obj.position.set(t.position[0], t.position[1], t.position[2]);
+      obj.rotation.set(t.rotation[0], t.rotation[1], t.rotation[2]);
+      obj.scale.set(t.scale[0], t.scale[1], t.scale[2]);
+      writeBackTransform(obj);
+      if (obj.name) {
+        (overlay.objects ??= {})[obj.name] = {
+          position: [...t.position], rotation: [...t.rotation], scale: [...t.scale],
+        };
+      }
+      persist();
+      selection.requestSelect(obj); // gizmo segue o objeto desfeito/refeito
+      refreshUI();
+    };
+    history.push({ label: 'Transform', undo: () => apply(before), redo: () => apply(after) });
+  };
+
+  // CTRL+Z desfaz / CTRL+SHIFT+Z (ou CTRL+Y) refaz — só no editor, fora de campos de texto.
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', (e) => {
+      if (!editorState.active || !(e.ctrlKey || e.metaKey)) return;
+      const ae = document.activeElement;
+      if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        hud.showToast(history.undo() ? '↶ Desfez' : 'Nada pra desfazer');
+      } else if (k === 'y' || (k === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        hud.showToast(history.redo() ? '↷ Refez' : 'Nada pra refazer');
+      }
+    });
+  }
 
   const outliner = createEditorOutliner({ editRoots: [three], selection, registry, onFocus: (obj) => cameraSystem.focusOn(obj) });
 
