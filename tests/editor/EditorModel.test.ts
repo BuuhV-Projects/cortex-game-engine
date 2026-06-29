@@ -213,14 +213,14 @@ describe('describeInspector — Terreno (sculpt)', () => {
       api: {
         get: () =>
           isTerrain
-            ? { sculpting, mode, radius, strength, textures: ['assets/textures/grama.png'], texture, repeat: 5 }
+            ? { sculpting, mode, radius, strength, textures: ['assets/textures/grama.png'], texture, tileMeters: 4 }
             : null,
         startSculpt: () => { sculpting = true; },
         stopSculpt: () => { sculpting = false; },
         setBrush: (r, s) => { radius = r; strength = s; },
         setMode: (m) => { mode = m; },
         setTexture: (_o, url) => { texture = url || null; },
-        setRepeat: () => {},
+        setTileSize: () => {},
         importTexture: () => {},
       },
       sculpting: () => sculpting,
@@ -271,13 +271,13 @@ describe('describeInspector — Terreno (sculpt)', () => {
     expect(tex?.kind).toBe('select');
     expect((tex as { options: { value: string }[] }).options.map((o) => o.value)).toContain('assets/textures/grama.png');
     expect(field(paint.model, 'terImport')?.kind).toBe('file');
-    // sem textura ativa ainda: sem campo Repetição
-    expect(field(paint.model, 'terRepeat')).toBeUndefined();
+    // sem textura ativa ainda: sem campo Tile (m)
+    expect(field(paint.model, 'terTile')).toBeUndefined();
 
-    // escolhe a textura → re-descreve com Repetição
+    // escolhe a textura → re-descreve com Tile (m)
     paint.handlers.get(tex!.id)!('assets/textures/grama.png');
     const withTex = describeInspector(obj, { terrainApi: api }, reg);
-    expect(field(withTex.model, 'terRepeat')?.kind).toBe('number');
+    expect(field(withTex.model, 'terTile')?.kind).toBe('number');
   });
 
   it('não mostra Terreno quando o objeto não é terreno (api.get → null)', () => {

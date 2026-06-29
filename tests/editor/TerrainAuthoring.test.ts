@@ -50,7 +50,7 @@ describe('TerrainAuthoring', () => {
       strength: 0.5,
       textures: [],
       texture: null,
-      repeat: 5, // default: 1 tile a cada ~4u (size 20 → 5 repetições)
+      tileMeters: 4, // default: ~1 tile a cada 4m (size 20, escala 1 → tile de 4m)
     });
   });
 
@@ -132,18 +132,18 @@ describe('TerrainAuthoring', () => {
     expect(calls.toasts.length).toBeGreaterThan(toasts);
   });
 
-  it('setRepeat ajusta o tiling da textura ativa e persiste', () => {
+  it('setTileSize converte metros→tiles (ciente da escala) e persiste', () => {
     const { ta, overlay, persists } = setup();
-    const { mesh, terrain } = terrainMesh('terreno1');
+    const { mesh, terrain } = terrainMesh('terreno1'); // size 20, escala 1 → mundo 20m
     ta.api.startSculpt(mesh);
     ta.api.setMode('paint');
     ta.api.setTexture(mesh, 'assets/textures/grama.png');
     const before = persists();
-    ta.api.setRepeat(mesh, 12);
-    expect(terrain.getLayers()[0]!.repeat).toBe(12);
+    ta.api.setTileSize(mesh, 2); // tile de 2m → 20/2 = 10 tiles
+    expect(terrain.getLayers()[0]!.repeat).toBe(10);
     expect(persists()).toBe(before + 1);
     const saved = (overlay.data['terrainPaint'] as Record<string, { layers: { repeat: number }[] }>)['terreno1'];
-    expect(saved.layers[0]!.repeat).toBe(12);
+    expect(saved.layers[0]!.repeat).toBe(10);
   });
 
   it('stopSculpt no modo paint salva a pintura em data.terrainPaint[nome]', () => {

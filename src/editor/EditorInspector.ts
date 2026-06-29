@@ -255,8 +255,8 @@ export interface TerrainEditState {
   textures: string[];
   /** Textura ativa do modo pintar, ou `null` (nenhuma escolhida). */
   texture: string | null;
-  /** Tiling da textura ativa (repetições ao longo do terreno). */
-  repeat: number;
+  /** Tamanho do tile da textura ativa, em METROS de mundo (ciente da escala do terreno). */
+  tileMeters: number;
 }
 
 /**
@@ -277,8 +277,8 @@ export interface TerrainApi {
   setMode(mode: TerrainBrushMode): void;
   /** Escolhe a textura ativa do modo pintar (aloca uma camada no terreno). */
   setTexture(obj: Object3D, url: string): void;
-  /** Ajusta o tiling da textura ativa e persiste. */
-  setRepeat(obj: Object3D, repeat: number): void;
+  /** Ajusta o tamanho do tile (em metros de mundo) da textura ativa e persiste. */
+  setTileSize(obj: Object3D, meters: number): void;
   /**
    * **Importa** uma textura pra dentro do projeto (grava em `assets/textures/` via
    * o endpoint de upload do dev server) e a torna a textura ativa. `dataUrl` é o

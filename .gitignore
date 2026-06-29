@@ -24,6 +24,8 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+# Local History (extensão do VSCode) — versões locais de arquivos, nunca versionar
+.history/
 
 # Vitest / coverage
 coverage/

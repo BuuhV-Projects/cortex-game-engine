@@ -705,10 +705,12 @@ export function describeInspector(
         return { rebuild: true };
       });
       if (s.texture) {
-        fields.push({ kind: 'number', id: fid('terRepeat'), label: 'Repetição', value: s.repeat, step: 1 });
-        handlers.set(fid('terRepeat'), (v) => {
-          const r = Number(v);
-          if (Number.isFinite(r) && r > 0) api.setRepeat(obj, r);
+        // Tamanho do tile em METROS (ex.: 3 = grama tileia a cada 3 m). Bem mais intuitivo
+        // que "repetições" e ciente da escala do terreno — evita textura esticada.
+        fields.push({ kind: 'number', id: fid('terTile'), label: 'Tile (m)', value: Math.round(s.tileMeters * 10) / 10, step: 0.5 });
+        handlers.set(fid('terTile'), (v) => {
+          const m = Number(v);
+          if (Number.isFinite(m) && m > 0) api.setTileSize(obj, m);
         });
       }
       fields.push({ kind: 'note', id: fid('terHint'), text: 'Pincel ligado: CLIQUE/ARRASTE pinta a textura · SHIFT apaga. Até 4 texturas por terreno.', tone: 'muted' });

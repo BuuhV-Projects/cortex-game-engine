@@ -70,14 +70,21 @@ export function createTerrainAuthoring(ctx: EditorAuthoringContext, hooks: Terra
     }
   };
 
-  /** Tiling default de uma camada nova (1 tile a cada ~4 unidades de mundo). */
-  const defaultRepeat = (t: Terrain): number => Math.max(1, Math.round(Math.max(t.width, t.depth) / 4));
+  /** Tamanho do terreno no MUNDO (lado maior, em metros) = dimensão do mesh × escala do nó. */
+  const worldSize = (t: Terrain): number =>
+    Math.max(t.width * Math.abs(t.mesh.scale.x), t.depth * Math.abs(t.mesh.scale.z));
 
-  /** Repeat da textura ativa no terreno (camada existente), ou o default. */
-  const repeatOf = (t: Terrain): number => {
+  /** Tiling default de uma camada nova: ~1 tile a cada 4 m de MUNDO (ciente da escala). */
+  const defaultRepeat = (t: Terrain): number => Math.max(1, Math.round(worldSize(t) / 4));
+
+  /** Repeat (nº de tiles ao longo do terreno) da textura ativa, ou o default. */
+  const repeatTilesOf = (t: Terrain): number => {
     const layer = activeTexture ? t.getLayers().find((l) => l.url === activeTexture) : undefined;
     return layer?.repeat ?? defaultRepeat(t);
   };
+
+  /** Tamanho do tile em METROS (o que o Inspector mostra) = mundo ÷ tiles. */
+  const tileMetersOf = (t: Terrain): number => worldSize(t) / Math.max(0.001, repeatTilesOf(t));
 
   /** Garante a camada da textura ativa no terreno; `-1` (e toast) se as 4 já estão em uso. */
   const ensureLayer = (t: Terrain): number => {
@@ -103,7 +110,7 @@ export function createTerrainAuthoring(ctx: EditorAuthoringContext, hooks: Terra
         strength: brush.strength,
         textures: availableTextures,
         texture: activeTexture,
-        repeat: repeatOf(t),
+        tileMeters: tileMetersOf(t),
       };
     },
     startSculpt: (obj) => {
@@ -138,12 +145,12 @@ export function createTerrainAuthoring(ctx: EditorAuthoringContext, hooks: Terra
         }
       }
     },
-    setRepeat: (obj, repeat) => {
+    setTileSize: (obj, meters) => {
       const t = terrainOf(obj);
-      if (!t || !activeTexture) return;
+      if (!t || !activeTexture || !(meters > 0)) return;
       const idx = t.getLayers().findIndex((l) => l.url === activeTexture);
       if (idx < 0) return;
-      t.setLayerRepeat(idx, repeat);
+      t.setLayerRepeat(idx, worldSize(t) / meters); // metros por tile → nº de tiles
       if (obj.name) {
         const paint = t.getPaint();
         if (paint) {
