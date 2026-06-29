@@ -43,11 +43,17 @@ export * from './components/TerrainComponent.js';
 export * from './components/CharacterBodyComponent.js';
 export * from './components/InteractionComponent.js';
 export * from './components/RapierBodyComponent.js';
+export * from './components/ScriptComponent.js';
+
+// ─── Scripts anexáveis (estilo MonoBehaviour — ADR-0085) ──────────────────────
+export * from './scripts/ScriptBehavior.js';
+export * from './scripts/ScriptRegistry.js';
 
 // ─── Física dinâmica (Rapier — WASM; TDR-0002, fase 2/spike) ───────────────────
 export * from './physics/RapierPhysics.js';
 
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
+export * from './systems/ScriptHostSystem.js';
 export * from './systems/Object3DSyncSystem.js';
 export * from './systems/ThirdPersonCameraSystem.js';
 export * from './systems/FirstPersonCameraSystem.js';

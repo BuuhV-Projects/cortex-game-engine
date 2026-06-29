@@ -1,0 +1,19 @@
+[**cortex-game-engine**](../README.md)
+
+***
+
+[cortex-game-engine](../README.md) / ScriptCtor
+
+# Type Alias: ScriptCtor
+
+> **ScriptCtor** = () => [`ScriptBehavior`](../classes/ScriptBehavior.md) & `object`
+
+Defined in: src/scripts/ScriptRegistry.ts:4
+
+Construtor de um [ScriptBehavior](../classes/ScriptBehavior.md) (sem args — o host injeta as deps depois).
+
+## Type Declaration
+
+### fields?
+
+> `optional` **fields?**: [`ScriptFieldSchema`](ScriptFieldSchema.md)

@@ -30,6 +30,7 @@ A lógica pertence aos Systems — vide ADR-0002.
 - [`CharacterBodyComponent`](CharacterBodyComponent.md)
 - [`InteractionComponent`](InteractionComponent.md)
 - [`RapierBodyComponent`](RapierBodyComponent.md)
+- [`ScriptComponent`](ScriptComponent.md)
 
 ## Constructors
 

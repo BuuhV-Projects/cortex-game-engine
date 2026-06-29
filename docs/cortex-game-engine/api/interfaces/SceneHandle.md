@@ -6,7 +6,7 @@
 
 # Interface: SceneHandle
 
-Defined in: [src/scene/SceneBuilder.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L95)
+Defined in: [src/scene/SceneBuilder.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L96)
 
 Handle da cena construída.
 
@@ -16,7 +16,7 @@ Handle da cena construída.
 
 > **byId**: `Map`\<`string`, `Object3D`\<`Object3DEventMap`\>\>
 
-Defined in: [src/scene/SceneBuilder.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L97)
+Defined in: [src/scene/SceneBuilder.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L98)
 
 Objetos instanciados, por `id`.
 
@@ -26,7 +26,7 @@ Objetos instanciados, por `id`.
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: [src/scene/SceneBuilder.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L99)
+Defined in: [src/scene/SceneBuilder.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L100)
 
 Chame no loop com dt em **segundos** — anima águas (cáusticas).
 

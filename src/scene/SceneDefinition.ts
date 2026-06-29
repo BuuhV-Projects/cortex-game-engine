@@ -268,6 +268,14 @@ const baseFields = {
    * {@link PlayerAnimatorComponent}.
    */
   animations: z.record(z.string(), z.string()).optional(),
+  /**
+   * **Scripts anexados** (estilo MonoBehaviour — ADR-0085): comportamentos por nome
+   * registrado + valores dos campos. O {@link ScriptHostSystem} roda no Play; o Inspector
+   * adiciona/edita ("Adicionar Componente → Script"). Overlay `data.scripts[id]` vence.
+   */
+  scripts: z
+    .array(z.object({ type: z.string().min(1), fields: z.record(z.string(), z.unknown()).optional() }))
+    .optional(),
 };
 
 const modelNode = z.object({ type: z.literal('model'), url: z.string().min(1), ...baseFields });

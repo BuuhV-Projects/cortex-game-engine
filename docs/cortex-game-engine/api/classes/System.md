@@ -39,6 +39,7 @@ class MovementSystem extends System {
 ## Extended by
 
 - [`PhysicsSystem`](PhysicsSystem.md)
+- [`ScriptHostSystem`](ScriptHostSystem.md)
 - [`Object3DSyncSystem`](Object3DSyncSystem.md)
 - [`ThirdPersonCameraSystem`](ThirdPersonCameraSystem.md)
 - [`FirstPersonCameraSystem`](FirstPersonCameraSystem.md)

@@ -42,6 +42,7 @@ import { createColliderApi } from './authoring/ColliderAuthoring.js';
 import { createPhysicsApi } from './authoring/PhysicsAuthoring.js';
 import { createVehicleApi } from './authoring/VehicleAuthoring.js';
 import { createUnderlayApi } from './authoring/UnderlayAuthoring.js';
+import { createScriptApi } from './authoring/ScriptAuthoring.js';
 import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
 import { createMeshApi } from './authoring/MeshAuthoring.js';
@@ -658,6 +659,7 @@ export function attachEditor(game: Game): GameEditor {
   const physicsApi = createPhysicsApi(authoring, colliderApi);
   const vehicleApi = createVehicleApi(authoring);
   const underlayApi = createUnderlayApi(authoring);
+  const scriptApi = createScriptApi(authoring);
   const matteApi = createMatteApi(authoring);
   const materialApi = createMaterialApi(authoring);
 
@@ -887,6 +889,7 @@ export function attachEditor(game: Game): GameEditor {
     physicsApi,
     vehicleApi,
     underlayApi,
+    scriptApi,
     matteApi,
     materialApi,
     meshApi,
@@ -1010,7 +1013,7 @@ export function attachEditor(game: Game): GameEditor {
   //    nem undo); nó BASE (level.json) entra em `data.deleted` pro buildScene pular;
   //    3) limpa as entradas de overlay por-objeto (transform + concerns).
   // Chaves de overlay por-objeto (concerns) — limpas no delete, capturadas/restauradas no undo.
-  const CONCERN_KEYS = ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle', 'underlay'] as const;
+  const CONCERN_KEYS = ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle', 'underlay', 'scripts'] as const;
   const cloneJson = <T>(v: T): T => (v === undefined ? v : (JSON.parse(JSON.stringify(v)) as T));
 
   /** Snapshot de TUDO de um nó (transform + concerns + def se foi criado no editor) — pro undo. */
@@ -1235,7 +1238,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),

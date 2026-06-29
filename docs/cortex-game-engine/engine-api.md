@@ -66,6 +66,36 @@ lado).
 | `FollowCamera2DSystem` | Câmera 2.5D de plataforma (segue no plano XY; roll/pitch/yaw e preset isométrico opcionais). |
 | `TopDownCameraSystem` | Câmera **vista de cima** (jogos de fazenda/RPG 2D): segue o alvo no plano **XZ**, câmera acima olhando pra baixo; `angle` de reto top-down a 3/4. |
 | `TopDownMovementSystem` | Movimento top-down (plano XZ + vira na direção). Recebe um `readMove: () => {x,y}` que o **jogo** fornece (input é do jogo, ADR-0066). Helper: `setupTopDown(game)`. |
+| `ScriptHostSystem` | Roda os **scripts anexáveis** (`ScriptComponent`) — ver abaixo. |
+
+## Scripts anexáveis (componente Script no Inspector — ADR-0085)
+
+Comportamento estilo **MonoBehaviour**: escreva uma subclasse de `ScriptBehavior`, registre, e
+anexe a um objeto pelo **Inspector** ("Adicionar Componente → Script") ou pelo `level.json`
+(`node.scripts`). Roda **só no Play** (pausa no editor). Não cole lógica no `main.ts` — vire script.
+
+```ts
+import { Game, ScriptBehavior, ScriptHostSystem, registerScript } from 'cortex-game-engine'
+
+class Girar extends ScriptBehavior {
+  // Campos editáveis no Inspector (schema estático). Tipos: number | boolean | select | vector3.
+  static fields = { rpm: { type: 'number', default: 30, label: 'Rotação (rpm)' } } as const
+  rpm = 30 // injetado pelo host a partir do campo
+  onStart() { /* uma vez no 1º frame de Play */ }
+  onUpdate(dt: number) { if (this.object3d) this.object3d.rotation.y += (this.rpm / 60) * Math.PI * 2 * dt } // dt em SEGUNDOS
+  onDestroy() { /* ao remover */ }
+}
+registerScript('Girar', Girar)
+
+// No boot do jogo: adicione o host UMA vez, com o contexto e a pausa de editor.
+game.world.addSystem(new ScriptHostSystem(
+  { world: game.world, input: game.input, gamepad: game.gamepad, scene: game.scene, camera: game.camera },
+  () => game.editorActive,
+))
+```
+
+Dentro do script: `this.object3d` (o nó), `this.entity` (ECS), `this.ctx` (`world/input/gamepad/scene/camera`).
+Persistência: o Inspector grava em `overlay.data.scripts[id]`; o `buildScene` reanexa no reload (overlay vence).
 
 ### Câmera top-down (vista de cima) — jogos de fazenda/RPG 2D
 

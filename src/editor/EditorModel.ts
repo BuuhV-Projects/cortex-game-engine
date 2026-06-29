@@ -3,7 +3,7 @@ import { MathUtils, Box3, Vector3 } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
-import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi, VehicleApi, UnderlayApi } from './EditorInspector.js';
+import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi, VehicleApi, UnderlayApi, ScriptApi } from './EditorInspector.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
@@ -162,6 +162,7 @@ export interface InspectorContext {
   vegetationApi?: VegetationApi;
   animationApi?: AnimationApi;
   playerAnimationsApi?: PlayerAnimationsApi;
+  scriptApi?: ScriptApi;
   /**
    * Propaga uma edição de transform (posição/rotação) pro ECS — pra objetos com
    * entidade sincronizada, escrever só no `Object3D` seria sobrescrito pelo
@@ -559,6 +560,65 @@ export function describeInspector(
       if (Number.isFinite(n)) api.setHeight(obj, n);
     });
     sections.push({ title: 'Underlay', fields });
+  }
+
+  // ── Scripts (componentes anexáveis estilo MonoBehaviour — ADR-0085) ───────────
+  if (ctx.scriptApi) {
+    const api = ctx.scriptApi;
+    const st = api.get(obj);
+    const sf: InspectorField[] = [];
+    st.scripts.forEach((s, i) => {
+      sf.push({ kind: 'note', id: fid(`scrHdr_${i}`), text: `▸ ${s.type}`, tone: 'info' });
+      for (const f of s.fields) {
+        const fieldId = fid(`scr_${i}_${f.name}`);
+        if (f.type === 'number') {
+          sf.push({ kind: 'number', id: fieldId, label: f.label, value: Number(f.value) || 0, step: 0.1 });
+          handlers.set(fieldId, (v) => {
+            const n = Number(v);
+            if (Number.isFinite(n)) api.setField(obj, i, f.name, n);
+          });
+        } else if (f.type === 'boolean') {
+          sf.push({ kind: 'checkbox', id: fieldId, label: f.label, value: f.value === true });
+          handlers.set(fieldId, (v) => api.setField(obj, i, f.name, v === true || v === 'true'));
+        } else if (f.type === 'select') {
+          sf.push({ kind: 'select', id: fieldId, label: f.label, value: String(f.value ?? ''), options: (f.options ?? []).map((o) => ({ value: o, label: o })) });
+          handlers.set(fieldId, (v) => api.setField(obj, i, f.name, String(v)));
+        } else if (f.type === 'vector3') {
+          const arr = Array.isArray(f.value) ? (f.value as number[]) : [0, 0, 0];
+          sf.push({ kind: 'vec3', id: fieldId, label: f.label, value: [arr[0] ?? 0, arr[1] ?? 0, arr[2] ?? 0] });
+          handlers.set(fieldId, (v) => api.setField(obj, i, f.name, v));
+        } else {
+          // string/asset: sem widget de texto/upload por ora (fase 2 do Inspector de scripts)
+          sf.push({ kind: 'note', id: fieldId, text: `${f.label}: ${String(f.value ?? '')} (editar no JSON)`, tone: 'muted' });
+        }
+      }
+      const delId = fid(`scrDel_${i}`);
+      sf.push({ kind: 'button', id: delId, label: `✕ Remover ${s.type}`, variant: 'danger' });
+      handlers.set(delId, () => {
+        api.removeScript(obj, i);
+        return { rebuild: true };
+      });
+    });
+    if (st.available.length) {
+      const addId = fid('scrAdd');
+      sf.push({
+        kind: 'select',
+        id: addId,
+        label: '+ Adicionar Script',
+        value: '',
+        options: [{ value: '', label: '— escolher —' }, ...st.available.map((n) => ({ value: n, label: n }))],
+      });
+      handlers.set(addId, (v) => {
+        if (v) {
+          api.addScript(obj, String(v));
+          return { rebuild: true };
+        }
+        return undefined;
+      });
+    } else {
+      sf.push({ kind: 'note', id: fid('scrNone'), text: 'Nenhum script registrado (use registerScript no jogo).', tone: 'muted' });
+    }
+    sections.push({ title: 'Scripts', fields: sf });
   }
 
   // ── Estrada (superfície + largura — ADR-0072) ────────────────────────────────

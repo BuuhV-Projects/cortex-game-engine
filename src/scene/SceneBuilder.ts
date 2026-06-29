@@ -30,6 +30,7 @@ import type { Renderer } from '../core/Renderer.js';
 import type { World } from '../ecs/World.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
+import { ScriptComponent, type ScriptDecl } from '../components/ScriptComponent.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
@@ -416,6 +417,29 @@ export function overlayPlayerAnimations(
 }
 
 /**
+ * Scripts anexados por nó vindos do overlay do editor (`data.scripts[id]` = lista de
+ * `{ type, fields }`). Vence o `node.scripts` do código/JSON. Ver ADR-0085.
+ */
+export function overlayScripts(overlay: SceneFileV1 | null | undefined): Record<string, ScriptDecl[]> {
+  const raw = overlay?.data?.['scripts'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, ScriptDecl[]> = {};
+  for (const [name, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!Array.isArray(v)) continue;
+    const decls: ScriptDecl[] = [];
+    for (const s of v) {
+      if (s && typeof s === 'object' && typeof (s as { type?: unknown }).type === 'string') {
+        const o = s as { type: string; fields?: unknown };
+        const fields = o.fields && typeof o.fields === 'object' && !Array.isArray(o.fields) ? (o.fields as Record<string, unknown>) : {};
+        decls.push({ type: o.type, fields });
+      }
+    }
+    out[name] = decls;
+  }
+  return out;
+}
+
+/**
  * Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
  * os `nodes` são concatenados; configs de cena como `background`/`fog`/
  * `outdoorLighting`: o último definido vence).
@@ -436,6 +460,7 @@ export async function buildScene(
   const overrides = overlay?.objects ?? {};
   const editorColliders = overlayColliders(overlay);
   const editorPhysics = overlayPhysics(overlay);
+  const editorScripts = overlayScripts(overlay);
   debug('scene', 'buildScene: overlayPhysics =', editorPhysics);
   const editorMatte = overlayMatte(overlay);
   const editorMaterial = overlayMaterial(overlay);
@@ -599,6 +624,18 @@ export async function buildScene(
     };
 
     for (const node of placed) {
+      // Scripts anexados (ADR-0085): overlay (`data.scripts[id]`) VENCE o nó (`node.scripts`).
+      // Vale pra QUALQUER tipo de nó — entidade dedicada com o Object3D do nó. O
+      // ScriptHostSystem (adicionado pelo jogo, com o contexto) roda no Play.
+      const scriptDecls = editorScripts[node.id] ?? (node as { scripts?: ScriptDecl[] }).scripts;
+      if (scriptDecls && scriptDecls.length) {
+        const sObj = byId.get(node.id);
+        if (sObj) {
+          const e = world.createEntity();
+          e.addComponent(new ScriptComponent(sObj, scriptDecls));
+        }
+      }
+
       // Sprite animado: acopla o SpriteAnimationComponent (stashed em userData)
       // a uma entidade ECS e liga o SpriteAnimationSystem (uma vez só).
       if (node.type === 'sprite') {

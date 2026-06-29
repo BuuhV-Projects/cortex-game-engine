@@ -1,4 +1,5 @@
 import type { Object3D } from 'three';
+import type { ScriptFieldType } from '../scripts/ScriptBehavior.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
@@ -462,6 +463,43 @@ export interface UnderlayApi {
   importImage(obj: Object3D, name: string, dataUrl: string): void;
 }
 
+/** Um campo editável de um script (renderizado no Inspector). */
+export interface ScriptFieldView {
+  name: string;
+  type: ScriptFieldType;
+  label: string;
+  value: unknown;
+  /** Opções do `select`. */
+  options?: string[];
+}
+/** Um script anexado (tipo + campos). */
+export interface AttachedScriptView {
+  type: string;
+  fields: ScriptFieldView[];
+}
+/** Estado da seção **Scripts** do Inspector. */
+export interface ScriptEditState {
+  /** Scripts registrados (pro dropdown "Adicionar"). */
+  available: string[];
+  /** Scripts anexados ao objeto. */
+  scripts: AttachedScriptView[];
+}
+/**
+ * Autoria de **scripts anexados** (estilo MonoBehaviour — ADR-0085). Adiciona/remove
+ * componentes Script no objeto e edita seus campos — **tudo ao vivo** (a instância em
+ * execução é mutada) e persistido em `overlay.data.scripts[id]`.
+ */
+export interface ScriptApi {
+  /** Estado (sempre presente — todo objeto pode receber scripts). */
+  get(obj: Object3D): ScriptEditState;
+  /** Anexa um script pelo nome registrado. */
+  addScript(obj: Object3D, type: string): void;
+  /** Remove o script no índice. */
+  removeScript(obj: Object3D, index: number): void;
+  /** Edita um campo do script (ao vivo + persiste). */
+  setField(obj: Object3D, index: number, name: string, value: unknown): void;
+}
+
 export interface EditorInspectorOptions {
   /** Ponte de seleção compartilhada (mesma instância do ObjectEditSystem/outliner). */
   selection: EditorSelection;
@@ -483,6 +521,8 @@ export interface EditorInspectorOptions {
   vehicleApi?: VehicleApi;
   /** Opcional: autoria do **underlay** (imagem de referência) — seção "Underlay". Ver {@link UnderlayApi}. */
   underlayApi?: UnderlayApi;
+  /** Opcional: autoria de **scripts** anexados (MonoBehaviour) — seção "Scripts". Ver {@link ScriptApi}. */
+  scriptApi?: ScriptApi;
   /** Opcional: autoria/persistência do toggle Fosco (matte). Ver {@link MatteApi}. */
   matteApi?: MatteApi;
   /** Opcional: autoria/persistência do material/shader por objeto. Ver {@link MaterialApi}. */
@@ -529,6 +569,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     physicsApi,
     vehicleApi,
     underlayApi,
+    scriptApi,
     matteApi,
     materialApi,
     meshApi,
@@ -540,7 +581,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [
