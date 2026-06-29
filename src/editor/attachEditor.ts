@@ -1130,6 +1130,7 @@ export function attachEditor(game: Game): GameEditor {
   };
 
   let wasActive = false;
+  let savedFog: import('three').Scene['fog'] = null; // névoa real (off no editor, on no play)
   let lastChildren = new Set<Object3D>();
   let lastSelected: Object3D | null = null;
   let lastEdit: SavedTransform | null = null;
@@ -1181,6 +1182,11 @@ export function attachEditor(game: Game): GameEditor {
       // Bridged (dentro da IDE): os painéis viram chrome da IDE — não mostramos os
       // in-canvas. Em ambos os casos o gizmo/câmera/helpers ficam no viewport.
       const showInCanvas = !bridgedPanelsHidden;
+      // Névoa: OFF no editor (vê a cena inteira), ON no play. Captura a névoa real assim
+      // que o buildScene a define (mesmo bootando em edição), depois alterna por modo.
+      const scene3 = game.scene.getThreeScene();
+      if (scene3.fog) savedFog = scene3.fog;
+      scene3.fog = editorState.active ? null : savedFog;
       if (editorState.active !== wasActive) {
         wasActive = editorState.active;
         // Trocar de modo zera o pause (entra em play já rodando; volta pro editor
@@ -1201,6 +1207,10 @@ export function attachEditor(game: Game): GameEditor {
         cameraHelper.visible = editorState.active;
         if (editorState.active) cameraHelper.update();
         syncLightHelpers(editorState.active);
+        // Underlay (imagem de referência): aid de edição — some no Play.
+        scene3.traverse((o) => {
+          if ((o.userData as Record<string, unknown>)['cortexUnderlay']) o.visible = editorState.active;
+        });
         if (editorState.active) {
           if (showInCanvas) outliner.refresh();
           snapshot();
