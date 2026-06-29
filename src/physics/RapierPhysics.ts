@@ -71,6 +71,8 @@ export interface VehicleWheelSpec {
   steering?: boolean;
   /** Tem tração (motor)? */
   powered?: boolean;
+  /** Multiplica o grip desta roda (ex.: traseira 0.7 = escapa mais → sobreesterço). Default 1. */
+  gripScale?: number;
 }
 
 /** Config de {@link RapierPhysics.createVehicle} (ADR-0081). */
@@ -346,7 +348,7 @@ export class RapierPhysics {
       ctrl.setWheelSuspensionCompression(i, spec.suspensionCompression ?? 0.82);
       ctrl.setWheelSuspensionRelaxation(i, spec.suspensionRelaxation ?? 0.88);
       ctrl.setWheelMaxSuspensionTravel(i, spec.maxSuspensionTravel ?? 0.3);
-      ctrl.setWheelFrictionSlip(i, spec.frictionSlip ?? 2.5); // grip arcade-real
+      ctrl.setWheelFrictionSlip(i, (spec.frictionSlip ?? 2.5) * (spec.wheels[i]?.gripScale ?? 1)); // grip (×escala da roda)
     }
     const vehicle = new Vehicle(ctrl, chassis, spec.wheels, he);
     if (spec.centerOfMass) vehicle.setMassProperties(mass, spec.centerOfMass, spec.yawInertiaScale ?? 1);
@@ -532,7 +534,7 @@ export class Vehicle {
       if (t.suspensionCompression != null) this.ctrl.setWheelSuspensionCompression(i, t.suspensionCompression);
       if (t.suspensionRelaxation != null) this.ctrl.setWheelSuspensionRelaxation(i, t.suspensionRelaxation);
       if (t.maxSuspensionTravel != null) this.ctrl.setWheelMaxSuspensionTravel(i, t.maxSuspensionTravel);
-      if (t.frictionSlip != null) this.ctrl.setWheelFrictionSlip(i, t.frictionSlip);
+      if (t.frictionSlip != null) this.ctrl.setWheelFrictionSlip(i, t.frictionSlip * (this.wheels[i]?.gripScale ?? 1));
     }
   }
 
