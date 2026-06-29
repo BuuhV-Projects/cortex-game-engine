@@ -30,14 +30,17 @@ export interface CompiledCity {
  * await buildScene(game.scene, [{ nodes: roads } as any], { world: game.world })
  */
 export function compileCity(region: RegionSpec): CompiledCity {
+  const [ox, oz] = region.origin ?? [0, 0]; // coords de mapa → mundo (mundo centrado: [-2500,-2500])
   const all = [...region.highways, ...region.cities.flatMap((c) => c.roads)];
   const roads: CompiledRoad[] = all.map((r) => ({
     type: 'road',
     id: r.id,
     profile: r.profile,
     conformTerrain: true,
-    nodes: r.points.map(([x, z]) => [x, 0, z] as [number, number, number]),
+    nodes: r.points.map(([x, z]) => [x + ox, 0, z + oz] as [number, number, number]),
     ...(r.surface ? { surface: r.surface } : {}),
   }));
-  return { roads, nav: buildNavGraph(region) };
+  const nav = buildNavGraph(region);
+  for (const n of nav.nodes) n.at = [n.at[0] + ox, n.at[1] + oz]; // nav em coords de mundo
+  return { roads, nav };
 }

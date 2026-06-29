@@ -8,4 +8,4 @@
 
 > **RegionSpec** = `z.infer`\<*typeof* [`regionSpecSchema`](../variables/regionSpecSchema.md)\>
 
-Defined in: [src/road/citySpec.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/citySpec.ts#L68)
+Defined in: [src/road/citySpec.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/citySpec.ts#L73)

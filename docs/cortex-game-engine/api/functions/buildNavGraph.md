@@ -35,6 +35,13 @@ via (com faixas/oneway/largura/velocidade do perfil). Vias não-dirigíveis
 
 `string` = `...`
 
+#### origin?
+
+\[`number`, `number`\] = `...`
+
+Posição de MUNDO do ponto de mapa `[0,0]` (canto da planta/underlay). A spec fica em
+coords de mapa (0..size); a `compile` soma a origem. Mundo centrado de 5000m → `[-2500,-2500]`.
+
 #### size
 
 \{ `x`: `number`; `z`: `number`; \} = `...`

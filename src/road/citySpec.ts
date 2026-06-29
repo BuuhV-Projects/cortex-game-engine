@@ -60,6 +60,11 @@ export type CitySpec = z.infer<typeof citySpecSchema>;
 export const regionSpecSchema = z.object({
   name: z.string().min(1),
   size: z.object({ x: z.number().positive(), z: z.number().positive() }),
+  /**
+   * Posição de MUNDO do ponto de mapa `[0,0]` (canto da planta/underlay). A spec fica em
+   * coords de mapa (0..size); a `compile` soma a origem. Mundo centrado de 5000m → `[-2500,-2500]`.
+   */
+  origin: vec2.optional(),
   underlay: z.string().optional(),
   highways: z.array(roadSpecSchema).default([]),
   interchanges: z.array(intersectionSpecSchema).default([]),

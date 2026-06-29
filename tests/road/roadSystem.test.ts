@@ -139,4 +139,14 @@ describe('road/compileCity', () => {
     expect(roads.find((r) => r.id === 'av')!.profile).toBe('arterial');
     expect(nav.edges.length).toBe(2);
   });
+
+  it('aplica origin (coords de mapa → mundo centrado)', () => {
+    const spec = validateRegion({
+      name: 'df', size: { x: 5000, z: 5000 }, origin: [-2500, -2500],
+      cities: [{ id: 'c', bounds: [[0, 0], [10, 0], [10, 10]], roads: [{ id: 'r', profile: 'residential', points: [[1000, 3750], [1500, 3750]] }] }],
+    }).spec!;
+    const { roads, nav } = compileCity(spec);
+    expect(roads[0]!.nodes[0]).toEqual([-1500, 0, 1250]); // 1000-2500, 3750-2500
+    expect(nav.nodes[0]!.at).toEqual([-1500, 1250]);
+  });
 });

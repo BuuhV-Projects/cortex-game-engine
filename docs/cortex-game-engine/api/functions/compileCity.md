@@ -8,7 +8,7 @@
 
 > **compileCity**(`region`): [`CompiledCity`](../interfaces/CompiledCity.md)
 
-Defined in: src/road/compileCity.ts:32
+Defined in: [src/road/compileCity.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/compileCity.ts#L32)
 
 **Compila uma [RegionSpec](../type-aliases/RegionSpec.md) em nós de cena** (ADR-0087): cada via (rodovias + ruas das
 cidades) vira um nó `road` com `profile` (renderizado pelo `buildScene`/`makeProfiledRoad`,
@@ -35,6 +35,13 @@ altura vem do conform). Cruzamentos/quadras (ProBuilder)/landmarks são camadas 
 #### name
 
 `string` = `...`
+
+#### origin?
+
+\[`number`, `number`\] = `...`
+
+Posição de MUNDO do ponto de mapa `[0,0]` (canto da planta/underlay). A spec fica em
+coords de mapa (0..size); a `compile` soma a origem. Mundo centrado de 5000m → `[-2500,-2500]`.
 
 #### size
 
