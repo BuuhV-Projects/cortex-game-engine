@@ -460,6 +460,7 @@ const VENDOR_TYPE_MODULES = {
     'LoadingScreen',
     'Skybox',
     'PostFX',
+    'debug',
   ],
   ecs: ['Entity', 'Component', 'System', 'World'],
   components: [
@@ -475,6 +476,8 @@ const VENDOR_TYPE_MODULES = {
     'TerrainComponent',
     'CharacterBodyComponent',
     'RapierBodyComponent',
+    'InteractionComponent',
+    'ScriptComponent',
   ],
   systems: [
     'Object3DSyncSystem',
@@ -490,6 +493,11 @@ const VENDOR_TYPE_MODULES = {
     'RapierPhysicsSystem',
     'PlatformerAnimationSystem',
     'SpriteAnimationSystem',
+    'InteractionSystem',
+    'ThirdPersonControlSystem',
+    'VehicleControlSystem',
+    'SkidMarkSystem',
+    'ScriptHostSystem',
   ],
   // Editor NÃO entra: não é exportado pelo runtime (index.d.ts não o referencia).
   // Ele vive só no bundle de dev (index.dev.js), ligado automaticamente pelo Game.
@@ -513,9 +521,19 @@ const VENDOR_TYPE_MODULES = {
     'Sprite',
     'Spritesheet',
     'Tilemap',
+    'ThirdPerson',
+    'EngineSound',
+    'Vegetation',
+    'VehicleSetup',
   ],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter'],
   physics: ['RapierPhysics'],
+  scripts: ['ScriptBehavior', 'ScriptRegistry'],
+  ui: ['Speedometer'],
+  dialogue: ['DialogueGraph', 'DialogueRunner', 'DialogueUI', 'startDialogue'],
+  narrative: ['StoryState'],
+  probuilder: ['EditableMesh', 'shapes'],
+  road: ['RoadGrade', 'RoadMesh', 'RoadSpline', 'surfaces'],
 } as const
 
 /**
