@@ -437,6 +437,31 @@ export interface VehicleApi {
   importSound(obj: Object3D, slot: string, name: string, dataUrl: string): void;
 }
 
+/** Estado editável do **underlay** (imagem de referência). */
+export interface UnderlayEditState {
+  /** Caminho da imagem (ou '' se nenhuma). */
+  image: string;
+  /** Opacidade (0..1). */
+  opacity: number;
+  /** Altura acima do chão (m). */
+  height: number;
+}
+
+/**
+ * Autoria do **underlay** — seção "Underlay" do Inspector. Imagem de referência no chão
+ * pra desenhar blockouts por cima. Tudo aplica ao vivo (mutação do material/mesh).
+ */
+export interface UnderlayApi {
+  /** Estado, ou `null` se o objeto não é um underlay. */
+  get(obj: Object3D): UnderlayEditState | null;
+  /** Opacidade (0..1) — ao vivo. */
+  setOpacity(obj: Object3D, value: number): void;
+  /** Altura acima do chão (m) — ao vivo. */
+  setHeight(obj: Object3D, value: number): void;
+  /** Importa a imagem de referência (FileField → `{ name, dataUrl }`) — upload + aplica. */
+  importImage(obj: Object3D, name: string, dataUrl: string): void;
+}
+
 export interface EditorInspectorOptions {
   /** Ponte de seleção compartilhada (mesma instância do ObjectEditSystem/outliner). */
   selection: EditorSelection;
@@ -456,6 +481,8 @@ export interface EditorInspectorOptions {
   physicsApi?: PhysicsApi;
   /** Opcional: autoria do **veículo** (motor/freio/suspensão/centro de massa) — seção "Veículo". Ver {@link VehicleApi}. */
   vehicleApi?: VehicleApi;
+  /** Opcional: autoria do **underlay** (imagem de referência) — seção "Underlay". Ver {@link UnderlayApi}. */
+  underlayApi?: UnderlayApi;
   /** Opcional: autoria/persistência do toggle Fosco (matte). Ver {@link MatteApi}. */
   matteApi?: MatteApi;
   /** Opcional: autoria/persistência do material/shader por objeto. Ver {@link MaterialApi}. */
@@ -501,6 +528,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     colliderApi,
     physicsApi,
     vehicleApi,
+    underlayApi,
     matteApi,
     materialApi,
     meshApi,
@@ -512,7 +540,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

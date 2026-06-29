@@ -2,11 +2,13 @@ import {
   Color,
   Fog,
   Mesh,
+  Group,
   BoxGeometry,
   CylinderGeometry,
   PlaneGeometry,
   SphereGeometry,
   MeshStandardMaterial,
+  MeshBasicMaterial,
   DoubleSide,
   Raycaster,
   Vector3,
@@ -287,6 +289,19 @@ export function overlayVehicle(overlay: SceneFileV1 | null | undefined): Record<
   return out;
 }
 
+/** Lê `data.underlay` da overlay — imagem/opacidade/altura do underlay autoradas no editor. */
+export function overlayUnderlay(
+  overlay: SceneFileV1 | null | undefined,
+): Record<string, { image?: string; opacity?: number; height?: number }> {
+  const raw = overlay?.data?.['underlay'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, { image?: string; opacity?: number; height?: number }> = {};
+  for (const [name, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (v && typeof v === 'object' && !Array.isArray(v)) out[name] = v as { image?: string; opacity?: number; height?: number };
+  }
+  return out;
+}
+
 /**
  * Lê `data.material` da overlay — o material/shader **autorado no editor** por id
  * (`{ [id]: MaterialConfig }`, ADR-0058). Sobrescreve o `material` do nó (JSON).
@@ -430,6 +445,7 @@ export async function buildScene(
   const editorAnim = overlayAnimation(overlay);
   const editorPlayerAnim = overlayPlayerAnimations(overlay);
   const editorVehicle = overlayVehicle(overlay);
+  const editorUnderlay = overlayUnderlay(overlay);
 
   // ── Config de cena (último arquivo a definir vence) ──────────────────────────
   let background: number | string | undefined;
@@ -497,6 +513,20 @@ export async function buildScene(
     // criar o veículo; o Inspector edita). Marca o nó como veículo pro Inspector mostrar a seção.
     if (node.type === 'model' && (node.vehicle || editorVehicle[node.id])) {
       (obj.userData as Record<string, unknown>)['cortexVehicle'] = { ...node.vehicle, ...editorVehicle[node.id] };
+    }
+    // Underlay: aplica imagem/opacidade/altura autoradas no editor (overlay) — sobrevive ao reload.
+    if (node.type === 'underlay' && editorUnderlay[node.id]) {
+      const ov = editorUnderlay[node.id]!;
+      const plane = (obj.userData as Record<string, unknown>)['cortexUnderlay'] as Mesh | undefined;
+      const mat = plane?.material as MeshBasicMaterial | undefined;
+      if (plane && mat) {
+        if (typeof ov.opacity === 'number') mat.opacity = ov.opacity;
+        if (typeof ov.height === 'number') plane.position.y = ov.height;
+        if (ov.image) {
+          (obj.userData as Record<string, unknown>)['cortexUnderlayImage'] = ov.image;
+          void loadTexture(ov.image, false).then((t) => { mat.map = t; mat.needsUpdate = true; });
+        }
+      }
     }
     // Terreno: heightmap/pintura autorados no editor (overlay) vencem o nó (JSON).
     if (node.type === 'terrain' && (editorTerrain[node.id] || editorTerrainPaint[node.id])) {
@@ -884,6 +914,11 @@ async function instantiate(
       obj = makeLight(node);
       three.add(obj);
       break;
+    case 'underlay':
+      obj = await makeUnderlay(node);
+      three.add(obj);
+      applyPlacement(obj, node);
+      break;
     case 'water': {
       const water = new Water(scene, {
         y: node.y,
@@ -993,6 +1028,33 @@ function applyPlacement(obj: Object3D, node: { place?: unknown; transform?: unkn
       else obj.scale.set(transform.scale[0]!, transform.scale[1]!, transform.scale[2]!);
     }
   }
+}
+
+/**
+ * Underlay — plano texturizado deitado no chão (imagem de referência pra blockout).
+ * `userData.cortexUnderlay` aponta pra o mesh (o Inspector edita material/altura).
+ */
+async function makeUnderlay(node: Extract<SceneNode, { type: 'underlay' }>): Promise<Object3D> {
+  const size = node.size ?? 128;
+  const mat = new MeshBasicMaterial({
+    transparent: true,
+    opacity: node.opacity ?? 0.6,
+    depthWrite: false,
+    toneMapped: false, // a referência sai com a cor da imagem (sem ACES)
+    side: DoubleSide,
+  });
+  if (node.image) mat.map = await loadTexture(node.image, false);
+  const plane = new Mesh(new PlaneGeometry(size, size), mat);
+  plane.rotation.x = -Math.PI / 2; // deita no plano XZ (chão)
+  plane.position.y = node.height ?? 0.05; // acima do terreno (sem z-fight)
+  plane.renderOrder = -1;
+  plane.raycast = () => {}; // clica ATRAVÉS → dá pra posicionar blockouts por cima
+  const group = new Group();
+  group.add(plane);
+  const ud = group.userData as Record<string, unknown>;
+  ud['cortexUnderlay'] = plane;
+  ud['cortexUnderlayImage'] = node.image ?? '';
+  return group;
 }
 
 function makePrimitive(node: Extract<SceneNode, { type: 'primitive' }>): Mesh {

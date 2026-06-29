@@ -3,7 +3,7 @@ import { MathUtils, Box3, Vector3 } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
-import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi, VehicleApi } from './EditorInspector.js';
+import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, RoadApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi, VehicleApi, UnderlayApi } from './EditorInspector.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
@@ -153,6 +153,7 @@ export interface InspectorContext {
   colliderApi?: ColliderApi;
   physicsApi?: PhysicsApi;
   vehicleApi?: VehicleApi;
+  underlayApi?: UnderlayApi;
   matteApi?: MatteApi;
   materialApi?: MaterialApi;
   meshApi?: MeshApi;
@@ -532,6 +533,32 @@ export function describeInspector(
       });
     }
     sections.push({ title: 'Veículo', fields: vehFields });
+  }
+
+  // ── Underlay (imagem de referência pra blockout) ─────────────────────────────
+  const underlayState = ctx.underlayApi?.get(obj) ?? null;
+  if (ctx.underlayApi && underlayState) {
+    const api = ctx.underlayApi;
+    const fields: InspectorField[] = [];
+    const imgName = underlayState.image ? underlayState.image.split('/').pop() : '(nenhuma)';
+    fields.push({ kind: 'note', id: fid('ulImg'), text: `Imagem: ${imgName}`, tone: 'muted' });
+    fields.push({ kind: 'file', id: fid('ulPick'), label: '⬆ Escolher imagem…', accept: 'image/*' });
+    handlers.set(fid('ulPick'), (v) => {
+      const f = JSON.parse(v as string) as { name?: string; dataUrl?: string };
+      if (f.name && f.dataUrl) api.importImage(obj, f.name, f.dataUrl);
+      return { rebuild: true };
+    });
+    fields.push({ kind: 'number', id: fid('ulOpacity'), label: 'Opacidade', value: underlayState.opacity, step: 0.05 });
+    handlers.set(fid('ulOpacity'), (v) => {
+      const n = Number(v);
+      if (Number.isFinite(n)) api.setOpacity(obj, n);
+    });
+    fields.push({ kind: 'number', id: fid('ulHeight'), label: 'Altura (m)', value: underlayState.height, step: 0.05 });
+    handlers.set(fid('ulHeight'), (v) => {
+      const n = Number(v);
+      if (Number.isFinite(n)) api.setHeight(obj, n);
+    });
+    sections.push({ title: 'Underlay', fields });
   }
 
   // ── Estrada (superfície + largura — ADR-0072) ────────────────────────────────

@@ -278,6 +278,7 @@
 - [overlayPlayerAnimations](functions/overlayPlayerAnimations.md)
 - [overlayTerrain](functions/overlayTerrain.md)
 - [overlayTerrainPaint](functions/overlayTerrainPaint.md)
+- [overlayUnderlay](functions/overlayUnderlay.md)
 - [overlayVehicle](functions/overlayVehicle.md)
 - [parseDialogueGraph](functions/parseDialogueGraph.md)
 - [parseKit](functions/parseKit.md)

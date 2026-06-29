@@ -480,6 +480,26 @@ const vegetationNode = z.object({
   transform: transformSchema,
 });
 
+/**
+ * **Underlay** — imagem de referência (plano texturizado no chão) pra desenhar blockouts
+ * por cima (tipo "blueprint"). Não colide, clica através. Posição/escala pelo gizmo;
+ * imagem/opacidade/altura no Inspector.
+ */
+const underlayNode = z.object({
+  type: z.literal('underlay'),
+  id: z.string().min(1),
+  /** Caminho da imagem de referência. */
+  image: z.string().optional(),
+  /** Lado do plano (m). Default 128. */
+  size: z.number().positive().optional(),
+  /** Opacidade (0..1). Default 0.6. */
+  opacity: z.number().optional(),
+  /** Altura acima do chão (m) — evita z-fighting com o terreno. Default 0.05. */
+  height: z.number().optional(),
+  transform: transformSchema,
+  place: placeSchema,
+});
+
 const sceneNodeSchema = z.discriminatedUnion('type', [
   modelNode,
   primitiveNode,
@@ -491,6 +511,7 @@ const sceneNodeSchema = z.discriminatedUnion('type', [
   spriteNode,
   terrainNode,
   vegetationNode,
+  underlayNode,
 ]);
 
 const sceneDefinitionSchema = z.object({

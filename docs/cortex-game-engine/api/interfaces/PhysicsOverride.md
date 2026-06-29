@@ -6,7 +6,7 @@
 
 # Interface: PhysicsOverride
 
-Defined in: [src/scene/SceneBuilder.ts:146](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L146)
+Defined in: [src/scene/SceneBuilder.ts:148](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L148)
 
 Override de física por objeto (overlay `data.physics[nome]`).
 
@@ -16,7 +16,7 @@ Override de física por objeto (overlay `data.physics[nome]`).
 
 > `optional` **character?**: `object`
 
-Defined in: [src/scene/SceneBuilder.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L149)
+Defined in: [src/scene/SceneBuilder.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L151)
 
 Parâmetros quando `type === 'character'`.
 
@@ -60,7 +60,7 @@ Piso plano de fallback (se não houver geometria embaixo). Default `0`. O chão 
 
 > `optional` **rapier?**: `object`
 
-Defined in: [src/scene/SceneBuilder.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L151)
+Defined in: [src/scene/SceneBuilder.ts:153](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L153)
 
 Parâmetros quando `type === 'rigid'` (corpo Rapier).
 
@@ -90,4 +90,4 @@ Parâmetros quando `type === 'rigid'` (corpo Rapier).
 
 > **type**: [`BodyType`](../type-aliases/BodyType.md)
 
-Defined in: [src/scene/SceneBuilder.ts:147](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L147)
+Defined in: [src/scene/SceneBuilder.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L149)

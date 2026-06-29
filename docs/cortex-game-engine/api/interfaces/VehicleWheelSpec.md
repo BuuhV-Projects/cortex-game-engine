@@ -12,6 +12,16 @@ Uma roda do [Vehicle](../classes/Vehicle.md) (posição relativa ao chassi + fla
 
 ## Properties
 
+### gripScale?
+
+> `optional` **gripScale?**: `number`
+
+Defined in: [src/physics/RapierPhysics.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L75)
+
+Multiplica o grip desta roda (ex.: traseira 0.7 = escapa mais → sobreesterço). Default 1.
+
+***
+
 ### position
 
 > **position**: [`Vec3Like`](Vec3Like.md)

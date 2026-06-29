@@ -41,6 +41,7 @@ import { createAuthoringContext } from './authoring/AuthoringContext.js';
 import { createColliderApi } from './authoring/ColliderAuthoring.js';
 import { createPhysicsApi } from './authoring/PhysicsAuthoring.js';
 import { createVehicleApi } from './authoring/VehicleAuthoring.js';
+import { createUnderlayApi } from './authoring/UnderlayAuthoring.js';
 import { createMatteApi } from './authoring/MatteAuthoring.js';
 import { createMaterialApi } from './authoring/MaterialAuthoring.js';
 import { createMeshApi } from './authoring/MeshAuthoring.js';
@@ -617,6 +618,7 @@ export function attachEditor(game: Game): GameEditor {
   // ── Autorias como módulos (ADR-0060): física (tipo de corpo), fosco, material ──
   const physicsApi = createPhysicsApi(authoring, colliderApi);
   const vehicleApi = createVehicleApi(authoring);
+  const underlayApi = createUnderlayApi(authoring);
   const matteApi = createMatteApi(authoring);
   const materialApi = createMaterialApi(authoring);
 
@@ -845,6 +847,7 @@ export function attachEditor(game: Game): GameEditor {
     colliderApi,
     physicsApi,
     vehicleApi,
+    underlayApi,
     matteApi,
     materialApi,
     meshApi,
@@ -977,7 +980,7 @@ export function attachEditor(game: Game): GameEditor {
       if (!d.includes(name)) d.push(name);
     }
     delete overlay.objects[name];
-    for (const key of ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle']) {
+    for (const key of ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle', 'underlay']) {
       const m = (overlay.data as Record<string, unknown>)[key];
       if (m && typeof m === 'object' && !Array.isArray(m)) delete (m as Record<string, unknown>)[name];
     }
@@ -1099,7 +1102,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, physicsApi, vehicleApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, matteApi, materialApi, meshApi, roadApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),

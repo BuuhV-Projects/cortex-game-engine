@@ -8,4 +8,4 @@
 
 > **ModelNode** = `z.infer`\<*typeof* `modelNode`\>
 
-Defined in: [src/scene/SceneDefinition.ts:554](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L554)
+Defined in: [src/scene/SceneDefinition.ts:577](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L577)

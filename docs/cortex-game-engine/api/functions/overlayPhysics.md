@@ -8,7 +8,7 @@
 
 > **overlayPhysics**(`overlay`): `Record`\<`string`, [`PhysicsOverride`](../interfaces/PhysicsOverride.md)\>
 
-Defined in: [src/scene/SceneBuilder.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L218)
+Defined in: [src/scene/SceneBuilder.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L220)
 
 Lê `data.physics` da overlay — o **tipo de corpo autorado no Inspector** por
 nome de objeto (`{ [nome]: { type: 'none'|'static'|'character', ... } }`). É a

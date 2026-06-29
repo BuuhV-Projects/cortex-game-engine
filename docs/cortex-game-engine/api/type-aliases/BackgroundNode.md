@@ -8,4 +8,4 @@
 
 > **BackgroundNode** = `z.infer`\<*typeof* `backgroundNode`\>
 
-Defined in: [src/scene/SceneDefinition.ts:565](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L565)
+Defined in: [src/scene/SceneDefinition.ts:588](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L588)
