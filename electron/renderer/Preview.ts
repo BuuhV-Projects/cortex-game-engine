@@ -39,6 +39,8 @@ export class Preview {
   private stageEl: HTMLElement | null = null
   /** Overlay que captura o drop de asset sobre o palco (ADR-0090). */
   private dropZoneEl: HTMLElement | null = null
+  /** Botão flutuante "sair da tela cheia" (o chrome some no fullscreen). */
+  private exitFsBtn: HTMLElement | null = null
   // Pills flutuantes do viewport (substituem a HUD do engine quando bridged).
   private selectedPillEl: HTMLElement | null = null
   private perfPillEl: HTMLElement | null = null
@@ -217,6 +219,26 @@ export class Preview {
       this.fullscreenBtn.title = this.fullscreen
         ? t('preview.tooltip_exit_fullscreen')
         : t('preview.tooltip_fullscreen')
+    }
+    // Botão flutuante de SAÍDA (só em fullscreen): o chrome da IDE (toolbar com o
+    // ⛶) some sob o preview (z-100), e o ESC do documento morre quando o foco
+    // está DENTRO do iframe do jogo (pointer lock) — sem isto não havia volta.
+    if (this.fullscreen) {
+      if (!this.exitFsBtn) {
+        const btn = document.createElement('button')
+        btn.textContent = t('preview.fullscreen_exit') // a chave já inclui o ⛶
+        btn.title = `${t('preview.tooltip_exit_fullscreen')} (ESC)`
+        btn.style.cssText =
+          'position:fixed;top:10px;right:12px;z-index:120;padding:6px 12px;' +
+          'background:rgba(20,20,28,0.75);color:#fff;border:1px solid rgba(255,255,255,0.25);' +
+          'border-radius:999px;cursor:pointer;font-size:12px;backdrop-filter:blur(4px)'
+        btn.addEventListener('click', () => this.toggleFullscreen())
+        document.body.appendChild(btn)
+        this.exitFsBtn = btn
+      }
+      this.exitFsBtn.style.display = 'block'
+    } else if (this.exitFsBtn) {
+      this.exitFsBtn.style.display = 'none'
     }
   }
 
