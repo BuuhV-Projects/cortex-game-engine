@@ -143,6 +143,8 @@ export class Editor {
   /** Path/nome da imagem atualmente em preview (pro botão "Spritesheet"). */
   private previewImagePath: string | null = null
   private previewImageName = ''
+  /** Path do doc em preview (imagem OU markdown) — pro doc-close só fechar o próprio. */
+  private previewDocPath: string | null = null
   private instance: monaco.editor.IStandaloneCodeEditor | null = null
   // Ordem das abas (insertion order do Map é estável)
   private tabs: Map<string, Tab> = new Map()
@@ -270,9 +272,17 @@ export class Editor {
     })
     document.addEventListener('doc-close', (e) => {
       const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail
-      if (GlbPreview.handles(name)) this.glbPreview?.close()
-      else if (isImageFile(name) || isMarkdownFile(name)) this.hideImagePreview()
-      else this.closeTab(path)
+      // PATH-AWARE: só fecha se o preview ainda mostra AQUELE doc. A aba de
+      // preview do DocTabs (estilo VSCode) fecha o doc substituído DEPOIS que o
+      // novo já abriu — fechar incondicionalmente apagava o conteúdo novo (o
+      // usuário tinha que clicar 2× pro glb carregar).
+      if (GlbPreview.handles(name)) {
+        if (this.glbPreview?.currentPath === path) this.glbPreview.close()
+      } else if (isImageFile(name) || isMarkdownFile(name)) {
+        if (this.previewDocPath === path) this.hideImagePreview()
+      } else {
+        this.closeTab(path)
+      }
     })
 
     // Pre-carrega models pra todos os fontes do projeto. Sem isso, o
@@ -474,6 +484,7 @@ export class Editor {
   private async openImagePreview(path: string, name: string): Promise<void> {
     if (!this.previewEl) return
     this.spritePreview?.close()
+    this.previewDocPath = path
     this.previewImagePath = path
     this.previewImageName = name
     if (this.spriteBtn) this.spriteBtn.style.display = SpritePreview.handles(name) ? 'flex' : 'none'
@@ -496,6 +507,7 @@ export class Editor {
   private async openMarkdownPreview(path: string, name: string): Promise<void> {
     if (!this.previewEl) return
     this.spritePreview?.close()
+    this.previewDocPath = path
     if (this.spriteBtn) this.spriteBtn.style.display = 'none'
     if (this.previewImg) this.previewImg.style.display = 'none'
     const md = this.previewMd
@@ -514,6 +526,7 @@ export class Editor {
 
   /** Esconde o preview (volta a mostrar o editor de código). */
   private hideImagePreview(): void {
+    this.previewDocPath = null
     this.spritePreview?.close()
     if (this.previewEl) this.previewEl.style.display = 'none'
     this.notifyEmptyState()

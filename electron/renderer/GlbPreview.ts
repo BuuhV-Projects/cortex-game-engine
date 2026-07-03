@@ -41,6 +41,8 @@ export class GlbPreview {
   private speed = 1
   private loop = true
   private currentName = ''
+  /** Path do modelo em exibição (null = fechado) — pro doc-close só fechar o próprio. */
+  currentPath: string | null = null
   private readonly onClose?: () => void
 
   constructor(host: HTMLElement, onClose?: () => void) {
@@ -148,6 +150,7 @@ export class GlbPreview {
 
   /** Abre o preview de um modelo: mostra o overlay, carrega e lista as animações. */
   async open(path: string, name: string): Promise<void> {
+    this.currentPath = path
     this.currentName = name
     this.overlay.style.display = 'flex'
     this.fileIdEl.textContent = name
@@ -180,6 +183,7 @@ export class GlbPreview {
 
   /** Esconde o overlay e pausa o loop (mantém renderer/cena pra reuso). */
   close(): void {
+    this.currentPath = null
     if (this.overlay.style.display === 'none') return
     this.overlay.style.display = 'none'
     this.stopLoop()
