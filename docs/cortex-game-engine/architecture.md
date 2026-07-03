@@ -120,6 +120,13 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   - Selects com **opções dinâmicas** (ex.: lista de texturas) entram na chave de
     estrutura dos renderizadores — senão a opção nova não aparece (o updater só
     troca o valor).
+- **Renomear objeto (ADR-0091, `RenameAuthoring`)** — seção "Objeto" do
+  Inspector com campo de texto (kind `text`, novo nos dois renderizadores;
+  commit no Enter/blur). **Só nós adicionados no editor** (id vive em
+  `data.added` → sobrevive ao reload); nome validado (`[A-Za-z0-9_-]`, único) e
+  o rename **migra todas as chaves do overlay** (`objects` + `NAME_KEYED_DATA`
+  + `added`/`deleted`), com undo. Nó de código: nome vira nota. ⚠️ Nova chave
+  de `data.*` por nome → atualizar `NAME_KEYED_DATA`.
 - **Arrastar asset pra cena (ADR-0090, `assetDrop.ts`)** — o **posicionamento é
   sempre do engine**: raycast da câmera do editor pelo cursor → o modelo nasce
   **na geometria sob o mouse** (ignora chrome `editorInternal`; fallback plano

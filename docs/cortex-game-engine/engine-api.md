@@ -52,7 +52,7 @@ lado).
 |---|---|
 | `TransformComponent` | Posição/rotação/escala lógicas. `new TransformComponent(x, y, z)`. |
 | `Object3DComponent` | Liga a entity a um `Object3D`/mesh da cena. `new Object3DComponent(mesh)`. |
-| `entityByObjectName(world, name)` | Entidade pelo NOME do objeto de cena (o `buildScene` nomeia pelo `id` do nó; acha também por nome de filho dentro do glb). Use quando query por componente é ambíguo — vários characters — e você quer UM: `entityByObjectName(world, 'boss-1')`. Convenção: nome alfanumérico + hífen. |
+| `entityByObjectName(world, name)` | Entidade pelo NOME do objeto de cena (o `buildScene` nomeia pelo `id` do nó; acha também por nome de filho dentro do glb). Use quando query por componente é ambíguo — vários characters — e você quer UM: `entityByObjectName(world, 'boss-1')`. Convenção: nome alfanumérico, hífen e underline. |
 | `KinematicBodyComponent` | Corpo cinemático (gravidade/colisão por raycast). |
 | `FollowCameraTargetComponent` | Marcador: a câmera de perseguição segue esta entity. |
 | `EditableTargetComponent` | Marcador: editável no modo editor. |

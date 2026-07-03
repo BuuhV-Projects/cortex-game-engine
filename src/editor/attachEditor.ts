@@ -35,6 +35,7 @@ import { TerrainComponent } from '../components/TerrainComponent.js';
 import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { assetUrlFromDataTransfer, isAssetDrag, isEditorInternalHit, ndcFromClient, worldDropPoint } from './assetDrop.js';
+import { createRenameApi, type RenameApi } from './authoring/RenameAuthoring.js';
 import { createEditorShapePanel } from './EditorShapePanel.js';
 import { SHAPES, type ShapeKind } from '../probuilder/shapes.js';
 import { createObjectRegistry } from './EditorModel.js';
@@ -870,6 +871,29 @@ export function attachEditor(game: Game): GameEditor {
   const animationApi = createAnimationApi(authoring);
   const playerAnimationsApi = createPlayerAnimationsApi(authoring);
 
+  // Nós adicionados no editor (persistem em `data.added` do overlay).
+  const addedList = (): SceneNode[] => {
+    const a = overlay.data['added'];
+    if (Array.isArray(a)) return a as SceneNode[];
+    const arr: SceneNode[] = [];
+    overlay.data['added'] = arr;
+    return arr;
+  };
+
+  // ── Renomear objeto (ADR-0091): só nós adicionados no editor; migra as chaves
+  // do overlay, com undo (CTRL+Z) e toast de feedback.
+  const renameApi: RenameApi = createRenameApi(authoring, {
+    isAdded: (name) => addedList().some((n) => (n as { id?: string }).id === name),
+    notify: (msg) => hud.showToast(msg),
+    onRenamed: (obj, oldName, newName) => {
+      history.push({
+        label: 'Renomear',
+        undo: () => renameApi.applyRename(obj, newName, oldName),
+        redo: () => renameApi.applyRename(obj, oldName, newName),
+      });
+    },
+  });
+
   const inspector = createEditorInspector({
     selection,
     registry,
@@ -885,17 +909,11 @@ export function attachEditor(game: Game): GameEditor {
     vegetationApi,
     animationApi,
     playerAnimationsApi,
+    renameApi,
     writeBack: writeBackTransform,
   });
 
-  // ── Painel "Add": adiciona um asset .glb à cena (clique) e persiste no overlay ─
-  const addedList = (): SceneNode[] => {
-    const a = overlay.data['added'];
-    if (Array.isArray(a)) return a as SceneNode[];
-    const arr: SceneNode[] = [];
-    overlay.data['added'] = arr;
-    return arr;
-  };
+  // ── Painel "Add": adiciona um asset .glb à cena (clique/arrasto) e persiste ──
   // Adiciona um modelo `.glb` à cena em `at` (mundo), persiste na overlay,
   // seleciona e registra no CTRL+Z. Usado pelo clique do painel Add e pelo
   // arrastar-e-soltar (painel Add / árvore de arquivos da IDE → viewport).
@@ -1228,7 +1246,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),

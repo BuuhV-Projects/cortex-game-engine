@@ -178,6 +178,31 @@ export function createInspectorView(cb: InspectorViewCallbacks): InspectorView {
         note.style.cssText = `font-size:11px;margin:2px 0;color:${f.tone === 'info' ? '#cfd2da' : '#9aa0ad'}`;
         return note;
       }
+      case 'text': {
+        // Texto livre (ex.: renomear objeto) — commit no Enter/blur (evento change),
+        // não a cada tecla (renomear por keystroke migraria o overlay no meio da digitação).
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;margin:3px 0';
+        const lbl = document.createElement('span');
+        lbl.textContent = f.label;
+        lbl.style.cssText = 'width:54px;color:#cfd2da';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = f.value;
+        if (f.placeholder) input.placeholder = f.placeholder;
+        input.style.cssText =
+          'flex:1;min-width:0;background:#1a1d24;color:#fff;border:1px solid #3a3f4a;border-radius:3px;padding:3px 6px';
+        input.addEventListener('change', () => cb.onInput(f.id, input.value));
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') input.blur();
+          e.stopPropagation(); // teclas de atalho do editor não roubam a digitação
+        });
+        row.append(lbl, input);
+        updaters.set(f.id, (nf) => {
+          if (nf.kind === 'text' && document.activeElement !== input) input.value = nf.value;
+        });
+        return row;
+      }
       case 'file': {
         // Botão que abre o file picker NESTE frame (clique direto = user activation)
         // e entrega o arquivo lido como JSON { name, dataUrl } pro handler.

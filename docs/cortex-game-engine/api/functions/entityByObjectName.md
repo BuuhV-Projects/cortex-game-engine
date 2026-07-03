@@ -16,8 +16,8 @@ objeto é arrastado pro viewport no editor), então o nome é o identificador
 estável de um objeto da cena. Use quando um query por componentes for ambíguo
 (vários personagens/NPCs) e você precisa de UM objeto específico.
 
-Convenção de nome: **alfanumérico e hífen** (`[A-Za-z0-9-]`), sem espaço —
-ids gerados pelo editor já seguem isso.
+Convenção de nome: **alfanumérico, hífen e underline** (`[A-Za-z0-9_-]`),
+sem espaço — ids gerados pelo editor já seguem isso.
 
 ## Parameters
 

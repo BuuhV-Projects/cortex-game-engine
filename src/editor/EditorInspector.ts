@@ -5,6 +5,7 @@ import type { MaterialConfig } from '../scene/Materials.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 import type { EditorSelection } from './EditorSelection.js';
+import type { RenameApi } from './authoring/RenameAuthoring.js';
 import {
   describeInspector,
   createObjectRegistry,
@@ -497,6 +498,8 @@ export interface EditorInspectorOptions {
   animationApi?: AnimationApi;
   /** Opcional: mapa ação→clipe do player (idle/run/jump/…). Ver {@link PlayerAnimationsApi}. */
   playerAnimationsApi?: PlayerAnimationsApi;
+  /** Opcional: renomear objetos adicionados no editor (ADR-0091). Ver {@link RenameApi}. */
+  renameApi?: RenameApi;
   /** Opcional: write-back de transform pro ECS (ver {@link InspectorContext.writeBack}). */
   writeBack?: (obj: Object3D) => void;
   /**
@@ -535,10 +538,11 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     vegetationApi,
     animationApi,
     playerAnimationsApi,
+    renameApi,
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

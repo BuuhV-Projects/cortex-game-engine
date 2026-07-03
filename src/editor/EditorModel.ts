@@ -4,6 +4,7 @@ import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
 import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi, VehicleApi, UnderlayApi, ScriptApi } from './EditorInspector.js';
+import type { RenameApi } from './authoring/RenameAuthoring.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
@@ -89,6 +90,15 @@ export interface FileField {
   accept?: string;
 }
 
+/** Campo de **texto livre** (ex.: renomear objeto). Commit no Enter/blur. */
+export interface TextField {
+  kind: 'text';
+  id: string;
+  label: string;
+  value: string;
+  placeholder?: string;
+}
+
 /** União de todos os tipos de campo do inspector. */
 export type InspectorField =
   | Vec3Field
@@ -98,7 +108,8 @@ export type InspectorField =
   | ColorField
   | ButtonField
   | NoteField
-  | FileField;
+  | FileField
+  | TextField;
 
 /** Seção do inspector (um grupo de campos com título opcional). */
 export interface InspectorSection {
@@ -162,6 +173,7 @@ export interface InspectorContext {
   animationApi?: AnimationApi;
   playerAnimationsApi?: PlayerAnimationsApi;
   scriptApi?: ScriptApi;
+  renameApi?: RenameApi;
   /**
    * Propaga uma edição de transform (posição/rotação) pro ECS — pra objetos com
    * entidade sincronizada, escrever só no `Object3D` seria sobrescrito pelo
@@ -272,6 +284,29 @@ export function describeInspector(
   const id = registry.idOf(obj);
   const fid = (suffix: string): string => `${id}:${suffix}`;
   const sections: InspectorSection[] = [];
+
+  // ── Objeto: nome (ADR-0091) ─────────────────────────────────────────────────
+  // Renomeável só quando é nó ADICIONADO no editor (o id vive no overlay e o
+  // rename migra todas as chaves). Nó declarado no código: nome como nota.
+  if (ctx.renameApi?.isRenamable(obj)) {
+    sections.push({
+      title: 'Objeto',
+      fields: [
+        { kind: 'text', id: fid('name'), label: 'Nome', value: obj.name, placeholder: 'letras_numeros-hifen' },
+      ],
+    });
+    handlers.set(fid('name'), (v) => {
+      ctx.renameApi!.rename(obj, String(v));
+      return { rebuild: true }; // sucesso OU erro: re-descreve (mostra o nome vigente)
+    });
+  } else if (obj.name) {
+    sections.push({
+      title: 'Objeto',
+      fields: [
+        { kind: 'note', id: fid('nameNote'), text: `Nome: ${obj.name} (declarado no código)`, tone: 'muted' },
+      ],
+    });
+  }
 
   // ── Transform ───────────────────────────────────────────────────────────────
   // Tamanho REAL em metros (bounding box no mundo) + escala capturada agora — pra o

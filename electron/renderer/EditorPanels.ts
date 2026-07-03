@@ -41,7 +41,7 @@ interface SelectOption {
   label: string
 }
 interface Field {
-  kind: 'vec3' | 'number' | 'checkbox' | 'select' | 'color' | 'button' | 'note' | 'file'
+  kind: 'vec3' | 'number' | 'checkbox' | 'select' | 'color' | 'button' | 'note' | 'file' | 'text'
   id: string
   label?: string
   value?: number | boolean | string | [number, number, number]
@@ -51,6 +51,7 @@ interface Field {
   text?: string
   tone?: 'muted' | 'info'
   accept?: string
+  placeholder?: string
 }
 interface Section {
   title?: string
@@ -386,10 +387,27 @@ export class EditorPanels {
         return this.buildButton(f)
       case 'file':
         return this.buildFile(f)
+      case 'text':
+        return this.buildText(f)
       case 'note':
       default:
         return this.buildNote(f)
     }
+  }
+
+  /** Texto livre (ex.: renomear objeto) — commit no Enter/blur, não por tecla. */
+  private buildText(f: Field): HTMLElement {
+    const input = h('input', { type: 'text', value: String(f.value ?? '') }) as HTMLInputElement
+    if (f.placeholder) input.placeholder = f.placeholder
+    input.addEventListener('change', () => this.send({ type: 'field', id: f.id, value: input.value }))
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') input.blur()
+      e.stopPropagation()
+    })
+    this.updaters.set(f.id, (nf) => {
+      if (document.activeElement !== input) input.value = String(nf.value ?? '')
+    })
+    return h('div', { class: 'field' }, h('span', { class: 'k' }, f.label ?? ''), h('label', { class: 'num' }, input))
   }
 
   private buildVec3(f: Field): HTMLElement {
