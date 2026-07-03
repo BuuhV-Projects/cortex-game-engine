@@ -6,7 +6,7 @@
 
 # Class: Object3DComponent
 
-Defined in: [src/components/Object3DComponent.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L10)
+Defined in: [src/components/Object3DComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L12)
 
 Liga uma entidade ao seu `Object3D` (Mesh/Group) na cena Three.js.
 
@@ -23,7 +23,7 @@ O `Object3DSyncSystem` copia o `TransformComponent` da entidade para
 
 > **new Object3DComponent**(`object`): `Object3DComponent`
 
-Defined in: [src/components/Object3DComponent.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L11)
+Defined in: [src/components/Object3DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L13)
 
 #### Parameters
 
@@ -59,7 +59,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **object**: `Object3D`
 
-Defined in: [src/components/Object3DComponent.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L11)
+Defined in: [src/components/Object3DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L13)
 
 ## Accessors
 

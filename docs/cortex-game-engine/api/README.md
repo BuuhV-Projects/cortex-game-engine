@@ -237,6 +237,7 @@
 - [defaultShapeParams](functions/defaultShapeParams.md)
 - [deriveLocomotion](functions/deriveLocomotion.md)
 - [emptySceneFile](functions/emptySceneFile.md)
+- [entityByObjectName](functions/entityByObjectName.md)
 - [extrudeFace](functions/extrudeFace.md)
 - [faceCentroid](functions/faceCentroid.md)
 - [faceNormal](functions/faceNormal.md)
