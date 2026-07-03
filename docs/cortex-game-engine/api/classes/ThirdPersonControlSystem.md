@@ -6,7 +6,7 @@
 
 # Class: ThirdPersonControlSystem
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L80)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L86)
 
 **Controle de terceira pessoa** — porta o `ThirdPersonController` do Unity
 StarterAssets (comportamento; a arte é separada): câmera **orbital por mouse**
@@ -29,7 +29,7 @@ Roda em `priority = 20` (depois da física). Pausa no editor via `pauseWhen`.
 
 > **new ThirdPersonControlSystem**(`camera`, `input`, `canvas`, `options?`, `gamepad?`, `collisionRoot?`): `ThirdPersonControlSystem`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L112)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L118)
 
 #### Parameters
 
@@ -95,7 +95,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `20`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L82)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L88)
 
 Prioridade de execução deste sistema.
 
@@ -112,7 +112,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L81)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L87)
 
 Construtores dos componentes que este sistema requer.
 
@@ -138,7 +138,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **playAction**(`clip`, `duration`): `void`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:150](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L150)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:156](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L156)
 
 Toca uma **ação one-shot** (soco, aceno, etc.) por `duration` segundos, sobrepondo
 a locomoção — o jogo chama isso num botão (combate/interação). O clipe precisa
@@ -164,7 +164,7 @@ existir no `.glb`; senão é ignorado.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L155)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:161](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L161)
 
 Executa a lógica do sistema para o frame/passo atual.
 
