@@ -180,6 +180,24 @@ describe('matte (fosco) na cena', () => {
     expect(isMatte(handle.byId.get('a')!)).toBe(true);
     expect(isMatte(handle.byId.get('b')!)).toBe(true);
   });
+
+  it('água: matte AUTORADO no editor persiste no boot (overlay aplica)', async () => {
+    const handle = await buildScene(
+      new Scene(),
+      { version: 1, nodes: [{ type: 'water', id: 'sea', y: -6 }] },
+      { overlay: overlay({ data: { matte: { sea: true } } }) },
+    );
+    expect(isMatte(handle.byId.get('sea')!)).toBe(true);
+  });
+
+  it('água: NÃO herda o matte global (default brilhante preservado)', async () => {
+    const handle = await buildScene(
+      new Scene(),
+      { version: 1, nodes: [{ type: 'water', id: 'sea', y: -6 }] },
+      { matte: true },
+    );
+    expect(isMatte(handle.byId.get('sea')!)).toBe(false);
+  });
 });
 
 describe('background', () => {

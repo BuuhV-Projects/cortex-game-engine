@@ -556,6 +556,11 @@ export async function buildScene(
       // Precedência: overlay do editor (autorado) > nó (JSON).
       const matCfg = editorMaterial[node.id] ?? node.material;
       if (matCfg) applyMaterial(obj, matCfg as MaterialConfig);
+    } else if (node.type === 'water' && editorMatte[node.id]) {
+      // Água: o matte AUTORADO no Inspector persiste (sem isso o toggle sumia no
+      // reload). Só o overlay — sem herdar `options.matte` global, pra não mudar
+      // o default brilhante da água nos projetos que ligam matte global.
+      setMatte(obj);
     }
 
     // Animação: modelos `.glb` com clipes ganham um SceneAnimator (em
