@@ -77,6 +77,16 @@ export class FileTree {
     return name.toUpperCase()
   }
 
+  /** Caminho relativo ao projeto com `/` (URL servível pelo Vite), ou null se fora dele. */
+  private projectRelative(absPath: string): string | null {
+    if (!this.projectDir) return null
+    const norm = (p: string): string => p.replace(/\\/g, '/').replace(/\/+$/, '')
+    const root = norm(this.projectDir)
+    const abs = norm(absPath)
+    if (!abs.toLowerCase().startsWith(`${root.toLowerCase()}/`)) return null
+    return abs.slice(root.length + 1)
+  }
+
   private makeIconButton(icon: string, title: string, onClick: () => void): HTMLButtonElement {
     const btn = document.createElement('button')
     btn.className = 'filetree-icon-btn'
@@ -382,11 +392,25 @@ export class FileTree {
       this.showContextMenuFor(entry, e.clientX, e.clientY)
     })
 
-    // Drag para mover (arquivos e pastas)
+    // Drag para mover (arquivos e pastas). Modelos 3D também carregam o MIME de
+    // asset com a URL relativa ao projeto — soltar no viewport do Preview adiciona
+    // o modelo à cena onde o mouse aponta (o editor no iframe trata o drop; DnD
+    // nativo cruza a fronteira do iframe). ADR-0090.
     label.draggable = true
     label.addEventListener('dragstart', (e) => {
       e.dataTransfer?.setData('text/plain', entry.path)
       e.dataTransfer!.effectAllowed = 'move'
+      const rel = this.projectRelative(entry.path)
+      if (!entry.isDir && rel && /\.(glb|gltf)$/i.test(entry.name)) {
+        e.dataTransfer?.setData('application/x-cortex-asset', rel)
+        e.dataTransfer!.effectAllowed = 'copyMove'
+        // Avisa o Preview pra armar o overlay de drop sobre o palco (o Electron
+        // não entrega DnD nativo pra dentro do iframe do jogo).
+        document.dispatchEvent(new CustomEvent('asset-drag', { detail: { active: true, url: rel } }))
+      }
+    })
+    label.addEventListener('dragend', () => {
+      document.dispatchEvent(new CustomEvent('asset-drag', { detail: { active: false, url: '' } }))
     })
 
     if (entry.isDir) {

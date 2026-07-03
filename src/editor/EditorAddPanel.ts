@@ -1,4 +1,6 @@
-/** Painel "Add" do editor: lista assets `.glb` e adiciona o clicado à cena. */
+import { ASSET_DRAG_MIME } from './assetDrop.js';
+
+/** Painel "Add" do editor: lista assets `.glb` e adiciona à cena (clique ou arrastar). */
 export interface EditorAddPanel {
   root: HTMLDivElement;
   setVisible(v: boolean): void;
@@ -65,6 +67,13 @@ export function createEditorAddPanel(options: EditorAddPanelOptions): EditorAddP
       item.addEventListener('mouseenter', () => (item.style.background = 'rgba(255,255,255,0.08)'));
       item.addEventListener('mouseleave', () => (item.style.background = 'transparent'));
       item.addEventListener('click', () => onAdd(url));
+      // Arrastar pro viewport: solta o modelo ONDE o mouse aponta (o drop é
+      // tratado no attachEditor via raycast). Clique continua = add na frente da câmera.
+      item.draggable = true;
+      item.addEventListener('dragstart', (e) => {
+        e.dataTransfer?.setData(ASSET_DRAG_MIME, url);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copy';
+      });
       list.append(item);
     }
   }

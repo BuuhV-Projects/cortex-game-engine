@@ -135,6 +135,12 @@ export class EditorPanels {
     document.addEventListener('request-draw-road', () => this.send({ type: 'drawRoad' }))
     // "Vegetação" (menu Cena — ADR-0077) → cria o nó e liga o pincel (modelo no Inspector).
     document.addEventListener('request-add-vegetation', () => this.send({ type: 'addVegetation' }))
+    // Drop de asset no viewport (ADR-0090): o Preview captura o drop no overlay e
+    // repassa url + posição normalizada; o engine raycasta e adiciona o modelo lá.
+    document.addEventListener('request-drop-asset', (e) => {
+      const { url, nx, ny } = (e as CustomEvent<{ url: string; nx: number; ny: number }>).detail
+      this.send({ type: 'dropAsset', url, nx, ny })
+    })
     // Botões de ferramenta (mover/girar/escalar) das pills do viewport.
     document.addEventListener('request-tool', (e) => {
       this.send({ type: 'tool', mode: (e as CustomEvent<{ mode: string }>).detail.mode })

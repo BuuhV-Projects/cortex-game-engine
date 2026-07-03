@@ -37,6 +37,8 @@ export class Preview {
   private viewportEl: HTMLElement | null = null
   /** Onde o iframe/placeholder do jogo é trocado. */
   private stageEl: HTMLElement | null = null
+  /** Overlay que captura o drop de asset sobre o palco (ADR-0090). */
+  private dropZoneEl: HTMLElement | null = null
   // Pills flutuantes do viewport (substituem a HUD do engine quando bridged).
   private selectedPillEl: HTMLElement | null = null
   private perfPillEl: HTMLElement | null = null
@@ -102,6 +104,41 @@ export class Preview {
     document.addEventListener('editor-viewport', (e) => {
       this.updateOverlay((e as CustomEvent).detail)
     })
+    // Arrastar asset da árvore → viewport (ADR-0090): o Electron NÃO entrega DnD
+    // nativo pra dentro do iframe, então durante o drag um overlay transparente
+    // cobre o palco, captura o drop e repassa (url + posição normalizada) pra
+    // ponte do editor via evento (EditorPanels → postMessage `dropAsset`).
+    document.addEventListener('asset-drag', (e) => {
+      const { active, url } = (e as CustomEvent<{ active: boolean; url: string }>).detail
+      this.setAssetDropTarget(active, url)
+    })
+  }
+
+  /** Liga/desliga o overlay que captura o drop de asset sobre o palco. */
+  private setAssetDropTarget(active: boolean, url: string): void {
+    this.dropZoneEl?.remove()
+    this.dropZoneEl = null
+    if (!active || !this.stageEl) return
+    const zone = document.createElement('div')
+    zone.style.cssText =
+      'position:absolute;inset:0;z-index:60;background:rgba(124,111,255,0.06);' +
+      'outline:2px dashed rgba(124,111,255,0.55);outline-offset:-4px'
+    zone.addEventListener('dragover', (ev) => {
+      ev.preventDefault()
+      if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy'
+    })
+    zone.addEventListener('drop', (ev) => {
+      ev.preventDefault()
+      const rect = zone.getBoundingClientRect()
+      const nx = (ev.clientX - rect.left) / rect.width
+      const ny = (ev.clientY - rect.top) / rect.height
+      document.dispatchEvent(new CustomEvent('request-drop-asset', { detail: { url, nx, ny } }))
+      this.setAssetDropTarget(false, '')
+    })
+    // Garante posicionamento do palco pro overlay ancorar.
+    if (getComputedStyle(this.stageEl).position === 'static') this.stageEl.style.position = 'relative'
+    this.stageEl.appendChild(zone)
+    this.dropZoneEl = zone
   }
 
   private buildShell(): void {

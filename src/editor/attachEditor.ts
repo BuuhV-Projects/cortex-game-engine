@@ -34,6 +34,7 @@ import { createEditorInspector } from './EditorInspector.js';
 import { TerrainComponent } from '../components/TerrainComponent.js';
 import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
+import { assetUrlFromDataTransfer, isAssetDrag, isEditorInternalHit, ndcFromClient, worldDropPoint } from './assetDrop.js';
 import { createEditorShapePanel } from './EditorShapePanel.js';
 import { SHAPES, type ShapeKind } from '../probuilder/shapes.js';
 import { createObjectRegistry } from './EditorModel.js';
@@ -895,26 +896,59 @@ export function attachEditor(game: Game): GameEditor {
     overlay.data['added'] = arr;
     return arr;
   };
+  // Adiciona um modelo `.glb` à cena em `at` (mundo), persiste na overlay,
+  // seleciona e registra no CTRL+Z. Usado pelo clique do painel Add e pelo
+  // arrastar-e-soltar (painel Add / árvore de arquivos da IDE → viewport).
+  const addModelNode = (url: string, at: Vector3): void => {
+    const node: SceneNode = {
+      type: 'model',
+      id: `add-${Date.now().toString(36)}`,
+      url,
+      place: { x: at.x, y: at.y, z: at.z },
+    };
+    void addSceneNode(game.scene, node).then((obj) => {
+      if (!obj) return;
+      addedList().push(node);
+      persist();
+      selection.requestSelect(obj);
+      pushAddCommand(obj, node); // CTRL+Z desfaz a adição
+    });
+  };
   const addPanel = createEditorAddPanel({
     onAdd: (url) => {
-      // Posiciona à frente da câmera do editor, no chão (y=0), e seleciona pra mover.
+      // Clique: posiciona à frente da câmera do editor, no chão (y=0).
       const forward = new Vector3();
       editorCamera.getWorldDirection(forward);
       const p = editorCamera.position.clone().add(forward.multiplyScalar(12));
-      const node: SceneNode = {
-        type: 'model',
-        id: `add-${Date.now().toString(36)}`,
-        url,
-        place: { x: p.x, z: p.z, y: 0 },
-      };
-      void addSceneNode(game.scene, node).then((obj) => {
-        if (!obj) return;
-        addedList().push(node);
-        persist();
-        selection.requestSelect(obj);
-        pushAddCommand(obj, node); // CTRL+Z desfaz a adição
-      });
+      p.y = 0;
+      addModelNode(url, p);
     },
+  });
+  // ── Arrastar-e-soltar asset no viewport (ADR-0090): o drag pode nascer no
+  // painel Add (standalone) ou na árvore de arquivos da IDE — DnD nativo cruza a
+  // fronteira do iframe, então o drop é tratado AQUI (uma implementação só). O
+  // modelo nasce onde o mouse aponta: raycast na geometria da cena (pousa na
+  // plataforma/terreno sob o cursor), fallback no plano y=0.
+  game.canvas.addEventListener('dragover', (e) => {
+    if (!editorState.active || !isAssetDrag(e.dataTransfer?.types)) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  });
+  game.canvas.addEventListener('drop', (e) => {
+    if (!editorState.active) return;
+    const url = assetUrlFromDataTransfer(e.dataTransfer);
+    if (!url) return;
+    e.preventDefault();
+    const rect = game.canvas.getBoundingClientRect();
+    const [nx, ny] = ndcFromClient(e.clientX, e.clientY, rect);
+    const at = worldDropPoint(
+      editorCamera,
+      nx,
+      ny,
+      game.scene.getThreeScene().children,
+      (hit) => !isEditorInternalHit(hit),
+    );
+    addModelNode(url, at);
   });
   if (typeof fetch !== 'undefined') {
     // O endpoint lista TODOS os assets (modelos + imagens): .glb vai pro painel
@@ -1202,6 +1236,20 @@ export function attachEditor(game: Game): GameEditor {
     onAddShape: addShape,
     onDrawShape: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
     onAddVegetation: createVegetationNode,
+    // Drop de asset vindo da IDE (overlay sobre o iframe — o Electron não entrega
+    // DnD nativo pra dentro do iframe): nx/ny normalizados (0..1) → NDC → mesmo
+    // fluxo do drop in-canvas (raycast na geometria sob o cursor).
+    onDropAsset: (url, nx, ny) => {
+      if (!editorState.active) return;
+      const at = worldDropPoint(
+        editorCamera,
+        nx * 2 - 1,
+        -(ny * 2 - 1),
+        game.scene.getThreeScene().children,
+        (hit) => !isEditorInternalHit(hit),
+      );
+      addModelNode(url, at);
+    },
     onBridged: () => {
       bridgedPanelsHidden = true;
       outliner.setVisible(false);

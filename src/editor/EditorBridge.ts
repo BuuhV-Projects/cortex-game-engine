@@ -57,13 +57,20 @@ export interface EditorBridgeOptions {
   onDrawShape?: () => void;
   /** Cria um nó de vegetação e liga o pincel de espalhar (ADR-0077). */
   onAddVegetation?: () => void;
+  /**
+   * Solta um asset arrastado da IDE no viewport (ADR-0090): `nx`/`ny` são a
+   * posição do drop normalizada (0..1) dentro do viewport — o Electron NÃO
+   * entrega DnD nativo através da fronteira do iframe, então a IDE captura o
+   * drop num overlay e repassa por aqui.
+   */
+  onDropAsset?: (url: string, nx: number, ny: number) => void;
   /** Chamado quando o handshake conclui — o attachEditor esconde os painéis in-canvas. */
   onBridged: () => void;
 }
 
 /** Cria a ponte. Inerte (no-op) fora de um iframe. */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onDropAsset, onBridged } = options;
 
   const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
   if (!inIframe) {
@@ -115,7 +122,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
   };
 
   const onMessage = (ev: MessageEvent): void => {
-    const data = ev.data as { source?: string; type?: string; id?: string; value?: unknown; active?: boolean; mode?: string; kind?: string } | null;
+    const data = ev.data as { source?: string; type?: string; id?: string; value?: unknown; active?: boolean; mode?: string; kind?: string; url?: string; nx?: number; ny?: number } | null;
     if (!data || data.source !== IDE) return;
     switch (data.type) {
       case 'ack':
@@ -180,6 +187,11 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         break;
       case 'addVegetation':
         onAddVegetation?.();
+        break;
+      case 'dropAsset':
+        if (typeof data.url === 'string' && typeof data.nx === 'number' && typeof data.ny === 'number') {
+          onDropAsset?.(data.url, data.nx, data.ny);
+        }
         break;
     }
   };

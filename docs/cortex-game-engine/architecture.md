@@ -120,6 +120,17 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   - Selects com **opções dinâmicas** (ex.: lista de texturas) entram na chave de
     estrutura dos renderizadores — senão a opção nova não aparece (o updater só
     troca o valor).
+- **Arrastar asset pra cena (ADR-0090, `assetDrop.ts`)** — o **posicionamento é
+  sempre do engine**: raycast da câmera do editor pelo cursor → o modelo nasce
+  **na geometria sob o mouse** (ignora chrome `editorInternal`; fallback plano
+  y=0), persiste em `overlay.data.added`, seleciona, CTRL+Z. Duas rotas de
+  captura: **standalone** = DnD nativo no canvas (MIME
+  `application/x-cortex-asset`; `text/plain` absoluto só é aceito com segmento
+  `assets/` — recorta a URL dali); **Studio** = ⚠️ o Electron NÃO entrega DnD
+  através da fronteira do iframe (🚫 no cursor) — o `FileTree` anuncia o drag
+  (`asset-drag`), o `Preview` arma um **overlay transparente sobre o palco** que
+  captura o drop e a posição normalizada viaja pela ponte (`dropAsset`) até o
+  mesmo fluxo de posicionamento.
 
 ## 5. Física
 
@@ -207,6 +218,11 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
 
 ## 8. Armadilhas conhecidas (já mordemos)
 
+- **Electron não entrega drag-and-drop nativo pra DENTRO do iframe do Preview** —
+  arrastar da IDE pro viewport mostra 🚫 e o `drop` nunca dispara no documento do
+  jogo (em browser puro funciona). Qualquer feature de DnD IDE→viewport precisa
+  capturar o drop **no documento da IDE** (overlay sobre o palco) e repassar pela
+  ponte postMessage (ver ADR-0090).
 - **`overlay.data` é SUBSTITUÍDO no seed** do `attachEditor` (`overlay.data = f.data`,
   async). Por isso o `OverlayStore` lê `overlay.data` **dinamicamente** — capturar
   por referência fazia a autoria escrever num objeto órfão e o save perder tudo.
