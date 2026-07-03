@@ -6,6 +6,7 @@ import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 import type { EditorSelection } from './EditorSelection.js';
 import type { RenameApi } from './authoring/RenameAuthoring.js';
+import type { ShadowApi } from './authoring/ShadowAuthoring.js';
 import {
   describeInspector,
   createObjectRegistry,
@@ -500,6 +501,8 @@ export interface EditorInspectorOptions {
   playerAnimationsApi?: PlayerAnimationsApi;
   /** Opcional: renomear objetos adicionados no editor (ADR-0091). Ver {@link RenameApi}. */
   renameApi?: RenameApi;
+  /** Opcional: persistência dos toggles de sombra (data.shadow). Ver {@link ShadowApi}. */
+  shadowApi?: ShadowApi;
   /** Opcional: write-back de transform pro ECS (ver {@link InspectorContext.writeBack}). */
   writeBack?: (obj: Object3D) => void;
   /**
@@ -539,10 +542,11 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     animationApi,
     playerAnimationsApi,
     renameApi,
+    shadowApi,
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, shadowApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

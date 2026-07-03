@@ -5,6 +5,7 @@ import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
 import type { ColliderApi, PhysicsApi, MatteApi, MaterialApi, MeshApi, TerrainApi, VegetationApi, AnimationApi, PlayerAnimationsApi, VehicleApi, UnderlayApi, ScriptApi } from './EditorInspector.js';
 import type { RenameApi } from './authoring/RenameAuthoring.js';
+import type { ShadowApi } from './authoring/ShadowAuthoring.js';
 import type { BodyType } from '../scene/SceneBuilder.js';
 import type { RapierBodyType } from '../components/RapierBodyComponent.js';
 
@@ -174,6 +175,7 @@ export interface InspectorContext {
   playerAnimationsApi?: PlayerAnimationsApi;
   scriptApi?: ScriptApi;
   renameApi?: RenameApi;
+  shadowApi?: ShadowApi;
   /**
    * Propaga uma edição de transform (posição/rotação) pro ECS — pra objetos com
    * entidade sincronizada, escrever só no `Object3D` seria sobrescrito pelo
@@ -375,8 +377,14 @@ export function describeInspector(
       { kind: 'checkbox', id: fid('recv'), label: 'Recebe sombra', value: mesh?.receiveShadow ?? obj.receiveShadow },
     ],
   });
-  handlers.set(fid('cast'), (v) => setShadows(obj, { castShadow: v as boolean }));
-  handlers.set(fid('recv'), (v) => setShadows(obj, { receiveShadow: v as boolean }));
+  // Persistência: via shadowApi (grava em data.shadow — reload mantém); fallback
+  // aplica só ao vivo (uso standalone sem autoria).
+  handlers.set(fid('cast'), (v) =>
+    ctx.shadowApi ? ctx.shadowApi.set(obj, { castShadow: v as boolean }) : setShadows(obj, { castShadow: v as boolean }),
+  );
+  handlers.set(fid('recv'), (v) =>
+    ctx.shadowApi ? ctx.shadowApi.set(obj, { receiveShadow: v as boolean }) : setShadows(obj, { receiveShadow: v as boolean }),
+  );
 
   // ── Material (fosco/matte) ────────────────────────────────────────────────────
   sections.push({

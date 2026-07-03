@@ -36,7 +36,7 @@ import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.j
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import type { Entity } from '../ecs/Entity.js';
-import { loadGLB, loadTexture, instance, placeOnGround, getWorldBounds, setMatte } from './SceneAssets.js';
+import { loadGLB, loadTexture, instance, placeOnGround, getWorldBounds, setMatte, setShadows } from './SceneAssets.js';
 import { applyMaterial, type MaterialConfig } from './Materials.js';
 import { createSprite } from './Sprite.js';
 import { Spritesheet, createAnimatedSprite } from './Spritesheet.js';
@@ -244,6 +244,28 @@ export function overlayPhysics(
  * `matte` definido no código/nó pra NÃO-fosco. Ausência = sem opinião (cai pro nó/
  * global). Ver {@link setMatte}.
  */
+/**
+ * Lê `data.shadow` da overlay — os toggles Projeta/Recebe sombra **autorados no
+ * Inspector** por nome (`{ [nome]: { cast?, recv? } }`; campo ausente = sem
+ * opinião, vale o nó/default). Aplicados pelo `buildScene` no boot.
+ */
+export function overlayShadow(
+  overlay: SceneFileV1 | null | undefined,
+): Record<string, { cast?: boolean; recv?: boolean }> {
+  const raw = overlay?.data?.['shadow'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, { cast?: boolean; recv?: boolean }> = {};
+  for (const [name, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== 'object') continue;
+    const e = v as { cast?: unknown; recv?: unknown };
+    const entry: { cast?: boolean; recv?: boolean } = {};
+    if (typeof e.cast === 'boolean') entry.cast = e.cast;
+    if (typeof e.recv === 'boolean') entry.recv = e.recv;
+    out[name] = entry;
+  }
+  return out;
+}
+
 export function overlayMatte(overlay: SceneFileV1 | null | undefined): Record<string, boolean> {
   const raw = overlay?.data?.['matte'];
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
@@ -442,6 +464,7 @@ export async function buildScene(
   const editorScripts = overlayScripts(overlay);
   debug('scene', 'buildScene: overlayPhysics =', editorPhysics);
   const editorMatte = overlayMatte(overlay);
+  const editorShadow = overlayShadow(overlay);
   const editorMaterial = overlayMaterial(overlay);
   const editorTerrain = overlayTerrain(overlay);
   const editorTerrainPaint = overlayTerrainPaint(overlay);
@@ -561,6 +584,13 @@ export async function buildScene(
       // reload). Só o overlay — sem herdar `options.matte` global, pra não mudar
       // o default brilhante da água nos projetos que ligam matte global.
       setMatte(obj);
+    }
+
+    // Sombras autoradas no Inspector (`data.shadow` — Projeta/Recebe): reaplica
+    // no boot POR CIMA do default do nó. Campo ausente = sem opinião.
+    const shadowOv = editorShadow[node.id];
+    if (shadowOv) {
+      setShadows(obj, { castShadow: shadowOv.cast, receiveShadow: shadowOv.recv });
     }
 
     // Animação: modelos `.glb` com clipes ganham um SceneAnimator (em

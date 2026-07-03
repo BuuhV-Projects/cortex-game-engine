@@ -200,6 +200,19 @@ describe('matte (fosco) na cena', () => {
   });
 });
 
+describe('sombra autorada no editor (data.shadow)', () => {
+  it('reaplica os toggles no boot por cima do default do nó', async () => {
+    const handle = await buildScene(
+      new Scene(),
+      { version: 1, nodes: [{ type: 'primitive', id: 'a', shape: 'box' }] },
+      { overlay: overlay({ data: { shadow: { a: { recv: false } } } }) },
+    );
+    const mesh = handle.byId.get('a') as import('three').Mesh;
+    expect(mesh.receiveShadow).toBe(false); // default do primitive era true
+    expect(mesh.castShadow).toBe(true); // cast não autorado → default preservado
+  });
+});
+
 describe('background', () => {
   it('nó background sem options.camera lança erro claro', async () => {
     await expect(

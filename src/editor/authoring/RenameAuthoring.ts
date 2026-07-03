@@ -33,6 +33,7 @@ const NAME_KEYED_DATA = [
   'colliders',
   'physics',
   'matte',
+  'shadow',
   'material',
   'animation',
   'playerAnimations',

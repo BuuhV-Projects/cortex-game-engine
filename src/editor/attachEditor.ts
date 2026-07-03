@@ -37,6 +37,7 @@ import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { assetUrlFromDataTransfer, isAssetDrag, isEditorInternalHit, ndcFromClient, worldDropPoint } from './assetDrop.js';
 import { createRenameApi, type RenameApi } from './authoring/RenameAuthoring.js';
+import { createShadowApi } from './authoring/ShadowAuthoring.js';
 import { createEditorShapePanel } from './EditorShapePanel.js';
 import { SHAPES, type ShapeKind } from '../probuilder/shapes.js';
 import { createObjectRegistry } from './EditorModel.js';
@@ -870,6 +871,7 @@ export function attachEditor(game: Game): GameEditor {
 
   // ── Animação + Ações do player: módulos de autoria (ADR-0060) ────────────────
   const animationApi = createAnimationApi(authoring);
+  const shadowApi = createShadowApi(authoring);
   const playerAnimationsApi = createPlayerAnimationsApi(authoring);
 
   // Nós adicionados no editor (persistem em `data.added` do overlay).
@@ -911,6 +913,7 @@ export function attachEditor(game: Game): GameEditor {
     animationApi,
     playerAnimationsApi,
     renameApi,
+    shadowApi,
     writeBack: writeBackTransform,
   });
 
@@ -1247,7 +1250,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, shadowApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),
