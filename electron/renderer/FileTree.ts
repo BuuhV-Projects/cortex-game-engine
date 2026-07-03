@@ -420,10 +420,19 @@ export class FileTree {
       // Re-expande pastas que estavam abertas (preserva estado no refresh real-time).
       if (this.expandedPaths.has(entry.path)) void this.expandDir(li, entry)
     } else {
+      // Clique simples abre em aba de PREVIEW (reutilizada — estilo VSCode);
+      // duplo clique abre/FIXA a aba (`pin`). O DocTabs interpreta.
       label.addEventListener('click', () => {
         document.dispatchEvent(
           new CustomEvent<{ path: string; name: string }>('file-open', {
             detail: { path: entry.path, name: entry.name },
+          }),
+        )
+      })
+      label.addEventListener('dblclick', () => {
+        document.dispatchEvent(
+          new CustomEvent<{ path: string; name: string; pin: boolean }>('file-open', {
+            detail: { path: entry.path, name: entry.name, pin: true },
           }),
         )
       })

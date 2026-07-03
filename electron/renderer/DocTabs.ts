@@ -4,6 +4,8 @@ interface Doc {
   path: string
   name: string
   kind: 'code' | 'glb' | 'image' | 'md'
+  /** Aba de PREVIEW (estilo VSCode): título em itálico, reutilizada pelo próximo clique. */
+  preview: boolean
 }
 
 function kindOf(name: string): Doc['kind'] {
@@ -19,6 +21,11 @@ function kindOf(name: string): Doc['kind'] {
  * (o viewport do jogo) + uma aba por documento aberto (código / glb / imagem / md).
  * É a fonte única das abas — o Editor esconde a sua barra interna e só reage a
  * `doc-show` / `doc-close`. Clicar na Cena volta pro viewport.
+ *
+ * **Abas de preview (estilo VSCode):** clique simples na árvore abre uma aba de
+ * preview (itálico) que é REUTILIZADA pelo próximo arquivo clicado — não acumula
+ * abas. Fixar: duplo clique na aba (ou no arquivo na árvore → `pin: true` no
+ * `file-open`). Clique com o botão do MEIO fecha qualquer aba de documento.
  */
 export class DocTabs {
   private bar: HTMLElement
@@ -30,10 +37,25 @@ export class DocTabs {
   }
 
   init(): void {
-    // Abrir um arquivo → vira aba e fica ativo.
+    // Abrir um arquivo → vira aba e fica ativo. `pin` (duplo clique na árvore)
+    // abre já fixa; sem `pin`, abre como preview reutilizando a aba de preview
+    // existente (fecha o doc antigo — o Editor/preview reage ao doc-close).
     document.addEventListener('file-open', (e) => {
-      const { path, name } = (e as CustomEvent<{ path: string; name: string }>).detail
-      if (!this.docs.some((d) => d.path === path)) this.docs.push({ path, name, kind: kindOf(name) })
+      const { path, name, pin } = (e as CustomEvent<{ path: string; name: string; pin?: boolean }>).detail
+      const existing = this.docs.find((d) => d.path === path)
+      if (existing) {
+        if (pin) existing.preview = false
+      } else {
+        const doc: Doc = { path, name, kind: kindOf(name), preview: !pin }
+        const previewIdx = this.docs.findIndex((d) => d.preview)
+        if (!pin && previewIdx >= 0) {
+          const old = this.docs[previewIdx]
+          this.docs[previewIdx] = doc // reutiliza o slot (mesma posição na barra)
+          document.dispatchEvent(new CustomEvent('doc-close', { detail: { path: old.path, name: old.name } }))
+        } else {
+          this.docs.push(doc)
+        }
+      }
       this.active = path
       this.render()
     })
@@ -70,9 +92,24 @@ export class DocTabs {
       e.stopPropagation()
       this.closeDoc(d.path)
     })
-    return h('div', { class: 'doctab' + (this.active === d.path ? ' on' : ''), title: d.path, onClick: () => this.activate(d.path) },
-      badge, h('span', { class: 'nm' }, d.name), close,
+    const nm = h('span', { class: 'nm' }, d.name)
+    if (d.preview) nm.style.fontStyle = 'italic' // sinal de aba de preview (VSCode)
+    const tab = h('div', { class: 'doctab' + (this.active === d.path ? ' on' : ''), title: d.path, onClick: () => this.activate(d.path) },
+      badge, nm, close,
     )
+    // Duplo clique na aba FIXA a preview (vira permanente).
+    tab.addEventListener('dblclick', () => {
+      if (!d.preview) return
+      d.preview = false
+      this.render()
+    })
+    // Botão do MEIO fecha a aba (padrão VSCode/browser).
+    tab.addEventListener('auxclick', (e) => {
+      if (e.button !== 1) return
+      e.preventDefault()
+      this.closeDoc(d.path)
+    })
+    return tab
   }
 
   private activate(id: string): void {
