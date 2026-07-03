@@ -8,7 +8,7 @@
 
 > **getMaterialType**(`object`): `string`
 
-Defined in: [src/scene/Materials.ts:196](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L196)
+Defined in: [src/scene/Materials.ts:207](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L207)
 
 Preset de material ativo no objeto (`'standard'` se nenhum). Pro inspector.
 

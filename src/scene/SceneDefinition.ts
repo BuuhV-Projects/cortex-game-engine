@@ -157,6 +157,9 @@ const materialSchema = z
       depthWrite: z.boolean().optional(),
       depthTest: z.boolean().optional(),
       alphaTest: z.number().min(0).max(1).optional(),
+      // Contorno de silhueta (o mesmo do toon) — "unlit toon": cor chapada + borda.
+      outline: z.number().min(0).optional(),
+      outlineColor: colorSchema.optional(),
     }),
     z.object({
       type: z.literal('toon'),

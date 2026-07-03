@@ -27,7 +27,9 @@ import {
  * - `standard` — restaura o material original (PBR do `.glb`).
  * - `unlit` — `MeshBasicMaterial` (textura × cor, **sem iluminação**), com os
  *   controles de render do shader Unity portados (cull→`side`, zwrite→`depthWrite`,
- *   ztest→`depthTest`, color, opacity). Reproduz o `Supyrb/Unlit/Texture`.
+ *   ztest→`depthTest`, color, opacity). Reproduz o `Supyrb/Unlit/Texture`. Aceita
+ *   o mesmo **contorno** do toon (inverted-hull) — "unlit toon": cor chapada +
+ *   borda de silhueta.
  * - `toon` — `MeshToonMaterial` (cel-shading em bandas) + contorno opcional
  *   (inverted-hull).
  *
@@ -56,6 +58,14 @@ export type MaterialConfig =
       depthTest?: boolean;
       /** Recorte por alpha (0 = sem corte). */
       alphaTest?: number;
+      /**
+       * Espessura do contorno (inverted-hull, em unidades de mundo). 0 = sem
+       * contorno. O mesmo contorno do `toon` — "unlit toon": cor chapada sem
+       * iluminação + borda de silhueta.
+       */
+      outline?: number;
+      /** Cor do contorno. Default preto. */
+      outlineColor?: ColorRepresentation;
     }
   | {
       type: 'toon';
@@ -172,7 +182,8 @@ export function applyMaterial(object: Object3D, config: MaterialConfig): void {
     mesh.material = Array.isArray(source) ? source.map(build) : build(source);
   });
 
-  if (config.type === 'toon' && config.outline && config.outline > 0) {
+  // Contorno (toon E unlit — o inverted-hull é independente do material base).
+  if ((config.type === 'toon' || config.type === 'unlit') && config.outline && config.outline > 0) {
     addOutline(object, config.outline, config.outlineColor ?? 0x000000);
   }
 

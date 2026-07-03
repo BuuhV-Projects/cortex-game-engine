@@ -8,7 +8,7 @@
 
 > **clearMaterial**(`object`): `void`
 
-Defined in: [src/scene/Materials.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L183)
+Defined in: [src/scene/Materials.ts:194](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L194)
 
 Restaura o material original cacheado (desfaz o swap).
 

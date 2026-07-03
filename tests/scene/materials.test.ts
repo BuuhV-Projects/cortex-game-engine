@@ -53,6 +53,17 @@ describe('applyMaterial', () => {
     expect(mesh.children.filter((c) => c.userData['cortexOutline'] === true)).toHaveLength(0);
   });
 
+  it('unlit também aceita o contorno ("unlit toon": chapado + borda de silhueta)', () => {
+    const mesh = box();
+    applyMaterial(mesh, { type: 'unlit', outline: 0.03 });
+    expect(mesh.material).toBeInstanceOf(MeshBasicMaterial);
+    expect(mesh.children.filter((c) => c.userData['cortexOutline'] === true)).toHaveLength(1);
+    // sem outline → casca some; material segue unlit
+    applyMaterial(mesh, { type: 'unlit', outline: 0 });
+    expect(mesh.material).toBeInstanceOf(MeshBasicMaterial);
+    expect(mesh.children.filter((c) => c.userData['cortexOutline'] === true)).toHaveLength(0);
+  });
+
   it('re-aplicar (mudar outline) NÃO remove o objeto do pai (regressão: objeto sumia)', () => {
     const parent = new Object3D();
     const mesh = box();

@@ -6,9 +6,9 @@
 
 # Type Alias: MaterialConfig
 
-> **MaterialConfig** = \{ `type`: `"standard"`; \} \| \{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `transparent?`: `boolean`; `type`: `"unlit"`; \} \| \{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `type`: `"toon"`; \}
+> **MaterialConfig** = \{ `type`: `"standard"`; \} \| \{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `transparent?`: `boolean`; `type`: `"unlit"`; \} \| \{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `type`: `"toon"`; \}
 
-Defined in: [src/scene/Materials.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L41)
+Defined in: [src/scene/Materials.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L43)
 
 Configuração de material por objeto (data-driven; vai no nó da cena/overlay).
 
@@ -22,7 +22,7 @@ Configuração de material por objeto (data-driven; vai no nó da cena/overlay).
 
 ### Type Literal
 
-\{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `transparent?`: `boolean`; `type`: `"unlit"`; \}
+\{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `transparent?`: `boolean`; `type`: `"unlit"`; \}
 
 #### alphaTest?
 
@@ -59,6 +59,20 @@ Escreve no depth buffer (ZWrite). Default `true`.
 > `optional` **opacity?**: `number`
 
 Opacidade 0–1 (liga `transparent` se < 1).
+
+#### outline?
+
+> `optional` **outline?**: `number`
+
+Espessura do contorno (inverted-hull, em unidades de mundo). 0 = sem
+contorno. O mesmo contorno do `toon` — "unlit toon": cor chapada sem
+iluminação + borda de silhueta.
+
+#### outlineColor?
+
+> `optional` **outlineColor?**: `ColorRepresentation`
+
+Cor do contorno. Default preto.
 
 #### transparent?
 

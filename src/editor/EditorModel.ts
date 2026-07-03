@@ -433,13 +433,19 @@ export function describeInspector(
     if (type === 'unlit') {
       // Unlit porta o shader Unity (textura × cor): mantém o tint opcional, mas o
       // default preserva as cores do original (cor não-setada = não achata).
+      // Contorno = o mesmo inverted-hull do toon ("unlit toon": chapado + borda).
       const c = cur as Extract<MaterialConfig, { type: 'unlit' }>;
       fields.push(
         { kind: 'checkbox', id: fid('matTwoSided'), label: 'Dois lados', value: c.cull === 'none' },
         { kind: 'checkbox', id: fid('matTransp'), label: 'Transparente', value: !!c.transparent },
+        { kind: 'number', id: fid('matOutline'), label: 'Contorno', value: c.outline ?? 0, step: 0.01 },
       );
       handlers.set(fid('matTwoSided'), (v) => api.set(obj, { ...c, cull: (v as boolean) ? 'none' : 'back' }));
       handlers.set(fid('matTransp'), (v) => api.set(obj, { ...c, transparent: v as boolean }));
+      handlers.set(fid('matOutline'), (v) => {
+        const n = Number(v);
+        api.set(obj, { ...c, outline: Number.isFinite(n) ? Math.max(0, n) : 0 });
+      });
     } else if (type === 'toon') {
       // Toon re-sombreia em cima do original (sem trocar cor, a pedido) — preserva
       // as cores reais do modelo. Só bandas + contorno.

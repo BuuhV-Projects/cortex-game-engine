@@ -886,8 +886,9 @@ o Rapier é montado em código (`main.ts`).
 Atribui um "shader" (material do Three) a um objeto pela propriedade `material` do nó
 (ADR-0058) — como na Unity. Presets: `standard` (PBR original do `.glb`), `unlit`
 (textura × cor **sem luz**, look fullbright/vívido — porta o `Supyrb/Unlit/Texture`;
-knobs: `cull`/`depthWrite`/`depthTest`/`opacity`/`alphaTest`), `toon` (cel-shading em
-bandas + `outline` opcional).
+knobs: `cull`/`depthWrite`/`depthTest`/`opacity`/`alphaTest`, e `outline`/
+`outlineColor` opcionais — "unlit toon": cor chapada + borda de silhueta), `toon`
+(cel-shading em bandas + `outline` opcional).
 
 ```jsonc
 // personagem com look unlit/fullbright (cores chapadas, sem sombra/AO no corpo):
