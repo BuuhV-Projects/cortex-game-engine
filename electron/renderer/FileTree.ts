@@ -59,6 +59,12 @@ export class FileTree {
   private projectLabelEl: HTMLElement | null = null
   private treeCollapsed = false
   private fileFilter = ''
+  /**
+   * Re-expansões async em andamento (refresh reconstrói a árvore e re-expande as
+   * pastas de `expandedPaths` em background). O `refresh` espera TODAS antes de
+   * restaurar o scroll — restaurar com a árvore ainda curta clampava pro topo.
+   */
+  private pendingExpands: Promise<void>[] = []
   /** Paths de pastas expandidas — persiste entre refreshes (real-time não colapsa). */
   private readonly expandedPaths = new Set<string>()
   /** Debounce do refresh disparado pelo watcher de fs (mudanças em rajada). */
@@ -334,6 +340,9 @@ export class FileTree {
       this.treeArea.innerHTML = ''
       this.treeArea.appendChild(ul)
       if (this.fileFilter) this.applyFileFilter(this.fileFilter)
+      // Espera as re-expansões (recursivas: expandir pai agenda os filhos) antes
+      // de restaurar o scroll — com a árvore curta, o scrollTop clampava pro topo.
+      while (this.pendingExpands.length) await Promise.all(this.pendingExpands.splice(0))
       this.treeArea.scrollTop = scroll
     } catch (err) {
       this.treeArea.innerHTML = `<p class="filetree-error">${t('fileTree.error_read_dir')} ${String(err)}</p>`
@@ -418,7 +427,8 @@ export class FileTree {
       this.attachDropTarget(li, () => entry.path)
       this.attachDirBehavior(li, label, entry)
       // Re-expande pastas que estavam abertas (preserva estado no refresh real-time).
-      if (this.expandedPaths.has(entry.path)) void this.expandDir(li, entry)
+      // Registrada em pendingExpands: o refresh espera antes de restaurar o scroll.
+      if (this.expandedPaths.has(entry.path)) this.pendingExpands.push(this.expandDir(li, entry))
     } else {
       // Clique simples abre em aba de PREVIEW (reutilizada — estilo VSCode);
       // duplo clique abre/FIXA a aba (`pin`). O DocTabs interpreta.
