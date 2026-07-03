@@ -23,6 +23,7 @@ import { debug } from '../core/debug.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { Collider2DComponent } from '../components/Collider2DComponent.js';
+import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.js';
 import { EditableTargetComponent } from '../components/EditableTargetComponent.js';
 import type { Entity } from '../ecs/Entity.js';
@@ -1350,6 +1351,15 @@ export function attachEditor(game: Game): GameEditor {
         // sem estado de pause pendente).
         editorState.paused = false;
         if (terrain.isSculpting()) terrainApi.stopSculpt(); // sai do pincel ao trocar de modo
+        // Restaura a visibilidade dos characters ao ABRIR o editor: o occlusion
+        // fade da câmera 3ª pessoa pode ter ocultado o player no instante da
+        // pausa (o sistema pausado não roda pra restaurar sozinho).
+        if (editorState.active) {
+          for (const e of game.world.query(CharacterBodyComponent)) {
+            const o = e.getComponent(Object3DComponent)?.object;
+            if (o) o.visible = true;
+          }
+        }
         // Play (edit→play) snapshota o mundo; Stop (play→edit) restaura — Play
         // não destrói o estado de edição.
         if (editorState.active) restoreWorld();

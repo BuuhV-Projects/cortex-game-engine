@@ -44,6 +44,12 @@ const BOTTOM_CLAMP = (-30 * Math.PI) / 180; // Unity BottomClamp -30°
 /** Distância mínima alvo↔câmera (não entra dentro do personagem) e folga da colisão. */
 const CAM_MIN_DIST = 0.8;
 const CAM_SKIN = 0.3;
+/**
+ * Distância abaixo da qual o PERSONAGEM é ocultado (occlusion fade estilo Unity):
+ * quando o spring arm puxa a câmera pra muito perto (parede/árvore atrás), sem
+ * isso a câmera entra DENTRO da cabeça do modelo (near plane corta a malha).
+ */
+const CAM_HIDE_DIST = 1.05;
 /** Duração (s) que o clipe `run_stop` segura antes de cair pro idle. */
 const RUN_STOP_DUR = 0.45;
 
@@ -258,6 +264,11 @@ export class ThirdPersonControlSystem extends System {
       this.lookTarget.z + this.camBack.z * dist,
     );
     this.camera.lookAt(this.lookTarget);
+
+    // Occlusion fade: câmera colada (parede/árvore atrás) → oculta o personagem
+    // em vez de mostrar o interior da cabeça. Restaura assim que afasta. (O editor
+    // também restaura ao abrir — proteção pra pausa com o player oculto.)
+    if (self) self.visible = dist > CAM_HIDE_DIST;
   }
 
   /**
