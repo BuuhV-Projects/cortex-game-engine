@@ -208,10 +208,14 @@ export class EditorPanels {
   }
 
   private renderState(state: StateMessage): void {
+    // Só avisa a toolbar quando active/paused MUDAM de verdade: em Play a ponte
+    // publica ~12×/s (transforms), e re-emitir a cada state fazia o Shell
+    // reconstruir os botões do transport sob o cursor (piscar + clique perdido).
+    const changed = this.editorActive !== state.editorActive || this.paused !== (state.paused ?? false)
     this.editorActive = state.editorActive
     this.paused = state.paused ?? false
     // Avisa a toolbar (Shell) do estado de play/pause pra refletir o transport.
-    document.dispatchEvent(
+    if (changed) document.dispatchEvent(
       new CustomEvent('editor-active-change', { detail: { active: this.editorActive, paused: this.paused } }),
     )
     // Info do viewport (câmera/perf/seleção/ferramenta) → pills flutuantes (Preview/Shell).

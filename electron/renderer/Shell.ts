@@ -20,6 +20,9 @@ export class Shell {
   private toolbarEl: HTMLElement
   private projectLabelEl: HTMLElement | null = null
   private transportEl: HTMLElement | null = null
+  /** Assinatura do último estado renderizado no transport — evita reconstruir os
+   * botões sem mudança real (reconstruir sob o cursor pisca e engole cliques). */
+  private transportKey: string | null = null
   private runChipEl: HTMLElement | null = null
   private camReadoutEl: HTMLElement | null = null
   // Estado da gameplay (Unity-style): o canvas roda sempre e começa em EDITOR.
@@ -206,6 +209,7 @@ export class Shell {
     // Transport (Play/Stop + pause + refresh).
     const transport = h('div', { class: 'row gap-6' })
     this.transportEl = transport
+    this.transportKey = null // container novo → força o próximo syncTransport a popular
 
     // Chip RODANDO (visível só rodando).
     const runChip = h('span', { class: 'chip run' }, h('span', { class: 'dot' }), tr('preview.status_running', 'Rodando').toUpperCase())
@@ -234,6 +238,9 @@ export class Shell {
 
   private syncTransport(): void {
     if (!this.transportEl) return
+    const key = `${this.hasGame}|${this.editorActive}|${this.paused}`
+    if (key === this.transportKey) return
+    this.transportKey = key
     this.transportEl.textContent = ''
     const playing = this.hasGame && !this.editorActive
     const emit = (name: string) => () => document.dispatchEvent(new CustomEvent(name))
