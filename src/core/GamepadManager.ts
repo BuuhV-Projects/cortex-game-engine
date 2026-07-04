@@ -260,6 +260,18 @@ export class GamepadManager extends EventTarget {
     return this._states[index]?.connected === true;
   }
 
+  /**
+   * Índice do **primeiro slot com gamepad conectado**, ou `-1` se nenhum. No
+   * Windows é comum o controle real cair no slot 1+ (dispositivo fantasma ocupa
+   * o 0) — sistemas single-player devem ler este slot em vez de fixar o 0.
+   */
+  firstConnectedIndex(): number {
+    for (let i = 0; i < MAX_GAMEPADS; i++) {
+      if (this._states[i]?.connected === true) return i;
+    }
+    return -1;
+  }
+
   // ─── Getters ─────────────────────────────────────────────────────────────────
 
   /** Limiar de deadzone configurado no construtor. */

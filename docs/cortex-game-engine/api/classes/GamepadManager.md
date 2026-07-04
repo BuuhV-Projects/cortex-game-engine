@@ -42,7 +42,7 @@ Defined in: [src/core/GamepadManager.ts:80](https://github.com/BuuhV-Projects/co
 
 > **get** **deadzone**(): `number`
 
-Defined in: [src/core/GamepadManager.ts:266](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L266)
+Defined in: [src/core/GamepadManager.ts:278](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L278)
 
 Limiar de deadzone configurado no construtor.
 
@@ -64,6 +64,22 @@ o manager (hot-reload/teardown) pra não vazar listeners. No-op fora do browser.
 #### Returns
 
 `void`
+
+***
+
+### firstConnectedIndex()
+
+> **firstConnectedIndex**(): `number`
+
+Defined in: [src/core/GamepadManager.ts:268](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L268)
+
+Índice do **primeiro slot com gamepad conectado**, ou `-1` se nenhum. No
+Windows é comum o controle real cair no slot 1+ (dispositivo fantasma ocupa
+o 0) — sistemas single-player devem ler este slot em vez de fixar o 0.
+
+#### Returns
+
+`number`
 
 ***
 

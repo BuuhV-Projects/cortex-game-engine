@@ -203,7 +203,15 @@ export class ThirdPersonControlSystem extends System {
     const dt = deltaTime / 1000;
     const k = this.input;
     const gp = this.gamepad;
-    const pad = this.padIndex;
+    // Slot do pad: usa o configurado se conectado; senão cai pro PRIMEIRO
+    // conectado (no Windows o controle real às vezes ocupa o slot 1+ porque um
+    // dispositivo fantasma pega o 0 — com slot fixo o controle "não funciona").
+    // Checagem defensiva: testes/stubs podem passar um gamepad mínimo.
+    let pad = this.padIndex;
+    if (gp && typeof gp.isConnected === 'function' && typeof gp.firstConnectedIndex === 'function' && !gp.isConnected(pad)) {
+      const first = gp.firstConnectedIndex();
+      if (first >= 0) pad = first;
+    }
 
     // ── Olhar: mouse (pointer lock) + stick direito do gamepad (Xbox-first) ────
     // Modo `locked`: yaw/pitch são FIXOS (câmera de perseguição elevada) — o
