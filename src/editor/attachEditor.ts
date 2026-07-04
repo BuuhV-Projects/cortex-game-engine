@@ -78,6 +78,9 @@ import { autoDetectSceneFileWriter } from '../io/autoDetectSceneFileWriter.js';
 // O caminho do overlay vem de `game.sceneDataUrl` (por fase — default
 // 'assets/scene-data.json', pareia com o target default do createSceneSavePlugin).
 
+/** Layer (0–31) dos helpers de edição — habilitada SÓ na câmera do editor. */
+const EDITOR_HELPER_LAYER = 30;
+
 type SavedTransform = SceneFileV1['objects'][string];
 
 function transformOf(o: Object3D): SavedTransform {
@@ -182,6 +185,9 @@ export function attachEditor(game: Game): GameEditor {
 
   const aspect0 = typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 16 / 9;
   const editorCamera = new PerspectiveCamera(60, aspect0, 0.1, 5000); // far grande: mundo de 640m+ não corta (céu não "cobre")
+  // Layer exclusiva dos helpers de edição (frustum da câmera, luzes): só a
+  // câmera do EDITOR a renderiza — na câmera do jogo eles não existem.
+  editorCamera.layers.enable(EDITOR_HELPER_LAYER);
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', () => {
       editorCamera.aspect = window.innerWidth / window.innerHeight;
@@ -404,6 +410,10 @@ export function attachEditor(game: Game): GameEditor {
   const prepHelper = (obj: Object3D): void => {
     obj.traverse((o) => {
       o.raycast = () => {};
+      // Helpers vivem numa LAYER que só a câmera do editor renderiza (abaixo):
+      // a câmera do JOGO nunca os desenha — sem isso, o cross do far-plane do
+      // CameraHelper aparecia como listras no meio da tela durante o Play.
+      o.layers.set(EDITOR_HELPER_LAYER);
       const mat = (o as { material?: unknown }).material;
       const mats = Array.isArray(mat) ? mat : mat ? [mat] : [];
       for (const m of mats as Array<{ transparent: boolean; opacity: number; depthWrite: boolean }>) {
