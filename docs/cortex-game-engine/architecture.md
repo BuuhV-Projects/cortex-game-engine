@@ -127,6 +127,11 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   o rename **migra todas as chaves do overlay** (`objects` + `NAME_KEYED_DATA`
   + `added`/`deleted`), com undo. Nó de código: nome vira nota. ⚠️ Nova chave
   de `data.*` por nome → atualizar `NAME_KEYED_DATA`.
+- **Picker "Adicionar modelo (.glb)" (ADR-0093)** — modal com busca (reusa o
+  `EditorTexturePicker`, que vive no frame do jogo → funciona no standalone e no
+  Studio) listando todos os `.glb` do projeto; escolher adiciona pelo fluxo do
+  painel Add (persiste/seleciona/CTRL+Z). Gatilhos: botão na paleta de Formas e
+  menu Cena → "Adicionar modelo (.glb)…" (ponte `openModelPicker`).
 - **Arrastar asset pra cena (ADR-0090, `assetDrop.ts`)** — o **posicionamento é
   sempre do engine**: raycast da câmera do editor pelo cursor → o modelo nasce
   **na geometria sob o mouse** (ignora chrome `editorInternal`; fallback plano

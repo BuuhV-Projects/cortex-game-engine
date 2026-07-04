@@ -3,7 +3,7 @@
  * `boxFromDrag` deriva centro + dimensões de dois pontos no chão + altura.
  */
 import { describe, it, expect } from 'vitest';
-import { boxFromDrag } from '../../src/editor/ShapeDrawSystem.js';
+import { boxFromDrag, fitModelToBox } from '../../src/editor/ShapeDrawSystem.js';
 import { resolveWallPush } from '../../src/systems/CharacterPhysicsSystem.js';
 
 describe('boxFromDrag', () => {
@@ -25,6 +25,37 @@ describe('boxFromDrag', () => {
     expect(params.width).toBeGreaterThanOrEqual(0.1);
     expect(params.depth).toBeGreaterThanOrEqual(0.1);
     expect(params.height).toBeGreaterThanOrEqual(0.1);
+  });
+});
+
+describe('fitModelToBox (desenhar blockout com .glb — ADR-0093)', () => {
+  // Modelo nativo 2×1×2 com pivô na base-centro (min y=0), como as peças de kit.
+  const native = { min: [-1, 0, -1] as [number, number, number], max: [1, 1, 1] as [number, number, number] };
+
+  it('escala por eixo pra preencher a caixa desenhada', () => {
+    const box = boxFromDrag([0, 0, 0], [8, 0, 4], 3); // 8×3×4 na origem do chão
+    const { scale } = fitModelToBox(native, box);
+    expect(scale[0]).toBeCloseTo(4); // 8/2
+    expect(scale[1]).toBeCloseTo(3); // 3/1
+    expect(scale[2]).toBeCloseTo(2); // 4/2
+  });
+
+  it('alinha a BASE do bbox ao chão e centra em X/Z', () => {
+    const box = boxFromDrag([2, 5, 2], [6, 5, 6], 2); // chão em y=5
+    const { position, scale } = fitModelToBox(native, box);
+    expect(position[0]).toBeCloseTo(4); // centro X (pivô centrado)
+    expect(position[2]).toBeCloseTo(4);
+    expect(position[1]).toBeCloseTo(5); // min.y nativo = 0 → pivô no chão
+    // bbox final: base = pos.y + min.y*scale = 5 ✓; topo = 5 + 1*scale[1] = 7 ✓
+    expect(5 + 1 * scale[1]).toBeCloseTo(7);
+  });
+
+  it('pivô deslocado (min.y < 0) compensa pra base não afundar', () => {
+    const off = { min: [0, -0.5, 0] as [number, number, number], max: [2, 0.5, 2] as [number, number, number] };
+    const box = boxFromDrag([0, 0, 0], [2, 0, 2], 1);
+    const { position, scale } = fitModelToBox(off, box);
+    // base do bbox = pos.y + (-0.5)*scale.y deve cair no chão (0)
+    expect(position[1] + -0.5 * scale[1]).toBeCloseTo(0);
   });
 });
 

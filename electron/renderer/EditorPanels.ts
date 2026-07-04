@@ -136,6 +136,8 @@ export class EditorPanels {
     document.addEventListener('request-draw-road', () => this.send({ type: 'drawRoad' }))
     // "Vegetação" (menu Cena — ADR-0077) → cria o nó e liga o pincel (modelo no Inspector).
     document.addEventListener('request-add-vegetation', () => this.send({ type: 'addVegetation' }))
+    // Picker "Adicionar modelo (.glb)" (ADR-0093): o modal abre NO frame do jogo.
+    document.addEventListener('request-add-model', () => this.send({ type: 'openModelPicker' }))
     // Drop de asset no viewport (ADR-0090): o Preview captura o drop no overlay e
     // repassa url + posição normalizada; o engine raycasta e adiciona o modelo lá.
     document.addEventListener('request-drop-asset', (e) => {

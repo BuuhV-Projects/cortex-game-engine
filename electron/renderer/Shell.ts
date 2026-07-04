@@ -114,7 +114,8 @@ export class Shell {
       ]),
       this.menuItem('Cena', [
         { label: tr('menu.add_terrain', 'Adicionar terreno'), run: () => document.dispatchEvent(new CustomEvent('request-add-terrain')) },
-        { label: tr('menu.draw_box', '✏️ Desenhar caixa no chão'), run: () => document.dispatchEvent(new CustomEvent('request-draw-shape')) },
+        { label: tr('menu.draw_box', '✏️ Desenhar blockout'), run: () => document.dispatchEvent(new CustomEvent('request-draw-shape')) },
+        { label: tr('menu.add_model', '📦 Adicionar modelo (.glb)…'), run: () => document.dispatchEvent(new CustomEvent('request-add-model')) },
         { label: tr('menu.draw_road', '🛣 Desenhar estrada'), run: () => document.dispatchEvent(new CustomEvent('request-draw-road')) },
         { label: tr('menu.veg', '🌿 Vegetação (espalhar)'), run: () => document.dispatchEvent(new CustomEvent('request-add-vegetation')) },
         { sep: true },

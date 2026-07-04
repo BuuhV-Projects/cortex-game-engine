@@ -6,6 +6,7 @@ import { Scene } from '../core/Scene.js';
 import type { EditorState } from './EditorState.js';
 import type { EditorHud } from './EditorHud.js';
 import type { SceneNode } from '../scene/SceneDefinition.js';
+import { loadGLB, instance } from '../scene/SceneAssets.js';
 
 /** `[x, y, z]`. */
 type V3 = [number, number, number];
@@ -40,10 +41,41 @@ export function boxFromDrag(
 }
 
 /**
- * **Desenhar caixa no chão** (ProBuilder "New Shape" — ADR-0071). Fluxo igual ao do
+ * **Encaixa um modelo na caixa desenhada** (modo GLB do desenhar — ADR-0093):
+ * dado o bounding box NATIVO do modelo (escala 1) e a caixa desenhada
+ * (centro + dimensões, base no chão), devolve `scale` por eixo e a `position`
+ * do pivô que fazem o bbox do modelo preencher a caixa — base alinhada ao chão,
+ * centrado em X/Z. Pura — testável.
+ */
+export function fitModelToBox(
+  native: { min: V3; max: V3 },
+  box: { position: V3; params: { width: number; height: number; depth: number } },
+): { position: V3; scale: V3 } {
+  const nw = Math.max(1e-4, native.max[0] - native.min[0]);
+  const nh = Math.max(1e-4, native.max[1] - native.min[1]);
+  const nd = Math.max(1e-4, native.max[2] - native.min[2]);
+  const scale: V3 = [box.params.width / nw, box.params.height / nh, box.params.depth / nd];
+  const groundY = box.position[1] - box.params.height / 2;
+  const ncx = (native.min[0] + native.max[0]) / 2;
+  const ncz = (native.min[2] + native.max[2]) / 2;
+  return {
+    position: [
+      box.position[0] - ncx * scale[0], // centro X do bbox no centro da caixa
+      groundY - native.min[1] * scale[1], // BASE do bbox no chão
+      box.position[2] - ncz * scale[2],
+    ],
+    scale,
+  };
+}
+
+/**
+ * **Desenhar blockout** (ProBuilder "New Shape" — ADR-0071). Fluxo igual ao do
  * Unity: arme o modo, **arraste no terreno** pra definir a base (retângulo no XZ),
  * **solte** e **mova o mouse pra cima/baixo** pra definir a altura, **clique** pra
- * confirmar. Cria um nó `mesh` (cubo) com a pose/tamanho desenhados.
+ * confirmar. Cria um nó `mesh` (cubo) com a pose/tamanho desenhados — OU, com um
+ * **modelo escolhido** ({@link ShapeDrawSystem.setModel}), um nó `model` com o
+ * `.glb` **moldado à caixa** (escala por eixo; o preview do próprio modelo escala
+ * AO VIVO durante o desenho — ADR-0093).
  *
  * Enquanto desenha, `editorState.drawingShape = true` — o ObjectEditSystem e o
  * MeshEditSystem cedem o clique. `Esc` cancela. Mostra um preview translúcido.
@@ -66,6 +98,14 @@ export class ShapeDrawSystem extends System {
   private preview: THREE.Mesh | null = null;
   private hover: THREE.Mesh | null = null;
   private readonly prev = new Map<string, boolean>();
+  /** Modo modelo (ADR-0093): url do `.glb` que o desenho molda (null = caixa). */
+  private modelUrl: string | null = null;
+  /** Preview vivo do modelo (escala junto do arrasto). */
+  private modelPreview: THREE.Object3D | null = null;
+  /** BBox nativo do modelo em escala 1 (pra calcular o encaixe). */
+  private modelNative: { min: V3; max: V3 } | null = null;
+  /** Sessão de desenho — invalida loads async de sessões canceladas. */
+  private drawToken = 0;
 
   constructor(
     private readonly editorState: EditorState,
@@ -128,6 +168,15 @@ export class ShapeDrawSystem extends System {
     });
   }
 
+  /**
+   * Define O QUE o desenho cria (ADR-0093): `null` = caixa paramétrica (mesh);
+   * uma URL `.glb` = nó `model` moldado à caixa desenhada (escala por eixo).
+   */
+  setModel(url: string | null): void {
+    this.modelUrl = url;
+    this.modelNative = null;
+  }
+
   /** Liga/desliga o modo desenhar (persistente: cria vários com CTRL+arraste). */
   setArmed(on: boolean): void {
     this.armed = on;
@@ -135,7 +184,8 @@ export class ShapeDrawSystem extends System {
     this.stage = 'idle';
     if (on) {
       this.showHover();
-      this.hud.showToast('CTRL + arraste pra criar a base · Esc pra sair');
+      const alvo = this.modelUrl ? this.modelUrl.split('/').pop() : 'caixa';
+      this.hud.showToast(`Desenhar ${alvo}: CTRL + arraste pra base · Esc pra sair`);
     } else {
       this.cancel();
     }
@@ -151,13 +201,25 @@ export class ShapeDrawSystem extends System {
   }
 
   private confirm(): void {
-    const { position, params } = boxFromDrag(this.p0, this.p1, this.height);
-    const node: SceneNode = {
-      type: 'mesh',
-      id: `mesh-${Date.now().toString(36)}`,
-      shape: { kind: 'cube', params },
-      transform: { position },
-    };
+    const box = boxFromDrag(this.p0, this.p1, this.height);
+    let node: SceneNode;
+    if (this.modelUrl && this.modelNative) {
+      // Modo modelo: nó `model` com o glb MOLDADO à caixa desenhada.
+      const fit = fitModelToBox(this.modelNative, box);
+      node = {
+        type: 'model',
+        id: `draw-${Date.now().toString(36)}`,
+        url: this.modelUrl,
+        transform: { position: fit.position, scale: fit.scale },
+      } as SceneNode;
+    } else {
+      node = {
+        type: 'mesh',
+        id: `mesh-${Date.now().toString(36)}`,
+        shape: { kind: 'cube', params: box.params },
+        transform: { position: box.position },
+      };
+    }
     this.cleanupPreview();
     this.stage = 'idle';
     this.onCreate(node);
@@ -182,14 +244,40 @@ export class ShapeDrawSystem extends System {
     this.preview = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat);
     this.preview.userData['editorInternal'] = true;
     this.three.add(this.preview);
+    // Modo modelo: carrega o glb (async) e mostra o PRÓPRIO modelo escalando
+    // junto do arrasto (a caixa translúcida vira guia por cima). editorInternal:
+    // o raycast do chão ignora o preview (senão a base "sobe" nele mesmo).
+    if (this.modelUrl) {
+      const url = this.modelUrl;
+      const token = ++this.drawToken;
+      void loadGLB(url).then((gltf) => {
+        if (token !== this.drawToken || this.stage === 'idle' || url !== this.modelUrl) return;
+        const obj = instance(gltf, {});
+        obj.traverse((c) => (c.userData['editorInternal'] = true));
+        obj.userData['editorInternal'] = true;
+        const b = new THREE.Box3().setFromObject(obj);
+        this.modelNative = { min: [b.min.x, b.min.y, b.min.z], max: [b.max.x, b.max.y, b.max.z] };
+        this.modelPreview = obj;
+        this.three.add(obj);
+        this.updatePreview();
+      });
+    }
     this.updatePreview();
   }
 
   private updatePreview(): void {
-    if (!this.preview) return;
-    const { position, params } = boxFromDrag(this.p0, this.p1, this.height);
-    this.preview.scale.set(params.width, params.height, params.depth);
-    this.preview.position.set(position[0], position[1], position[2]);
+    const box = boxFromDrag(this.p0, this.p1, this.height);
+    if (this.preview) {
+      this.preview.scale.set(box.params.width, box.params.height, box.params.depth);
+      this.preview.position.set(box.position[0], box.position[1], box.position[2]);
+      // Com o modelo visível, a caixa vira um guia bem sutil.
+      (this.preview.material as THREE.MeshBasicMaterial).opacity = this.modelPreview ? 0.12 : 0.35;
+    }
+    if (this.modelPreview && this.modelNative) {
+      const fit = fitModelToBox(this.modelNative, box);
+      this.modelPreview.scale.set(fit.scale[0], fit.scale[1], fit.scale[2]);
+      this.modelPreview.position.set(fit.position[0], fit.position[1], fit.position[2]);
+    }
   }
 
   /** Mostra as dimensões em metros ao vivo (HUD). */
@@ -238,6 +326,11 @@ export class ShapeDrawSystem extends System {
   }
 
   private cleanupPreview(): void {
+    this.drawToken++; // invalida loads async pendentes da sessão
+    if (this.modelPreview) {
+      this.three.remove(this.modelPreview);
+      this.modelPreview = null;
+    }
     if (!this.preview) return;
     this.three.remove(this.preview);
     this.preview.geometry.dispose();

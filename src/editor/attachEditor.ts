@@ -37,6 +37,7 @@ import { TerrainCollisionSystem } from '../systems/TerrainCollisionSystem.js';
 import { createEditorAddPanel } from './EditorAddPanel.js';
 import { assetUrlFromDataTransfer, isAssetDrag, isEditorInternalHit, ndcFromClient, worldDropPoint } from './assetDrop.js';
 import { createRenameApi, type RenameApi } from './authoring/RenameAuthoring.js';
+import { modelThumb } from './ModelThumbs.js';
 import { createShadowApi } from './authoring/ShadowAuthoring.js';
 import { createEditorShapePanel } from './EditorShapePanel.js';
 import { SHAPES, type ShapeKind } from '../probuilder/shapes.js';
@@ -258,6 +259,7 @@ export function attachEditor(game: Game): GameEditor {
   // TransformComponent — senão o Object3DSyncSystem sobrescreve no próximo tick
   // (posição + rotação Y; rotX/Z e escala ficam no Object3D, que o sync não toca).
   const writeBackTransform = (obj: Object3D): void => {
+    let matched = false;
     for (const e of game.world.query(Object3DComponent)) {
       if (e.getComponent(Object3DComponent)!.object !== obj) continue;
       const t = e.getComponent(TransformComponent);
@@ -266,9 +268,13 @@ export function attachEditor(game: Game): GameEditor {
         t.y = obj.position.y;
         t.z = obj.position.z;
         t.rotationY = obj.rotation.y;
+        matched = true;
       }
-      break;
+      // NÃO parar na primeira: pode haver mais de uma entidade presa ao mesmo
+      // Object3D — todas precisam do transform novo (a última que o sync escrever
+      // venceria com o valor VELHO).
     }
+    debug('editor', 'writeBack', obj.name || '(sem nome)', 'entidade?', matched, 'rotY', obj.rotation.y.toFixed(3));
   };
 
   // Seleção por INSTÂNCIA de vegetação (ADR-0077 fase 3): clicar numa árvore mostra a
@@ -668,6 +674,7 @@ export function attachEditor(game: Game): GameEditor {
   const meshAuthoring = createMeshApi(authoring);
   let terrainTextures: TextureItem<string>[] = [];
   let vegModels: TextureItem<string>[] = []; // modelos de vegetação (.glb) com thumbnail
+  let allModelUrls: string[] = []; // todos os .glb do projeto (picker "Adicionar modelo")
   let refreshUI: () => void = () => {};
   const texturePicker = createEditorTexturePicker();
   // Barra flutuante estilo Unity (chrome de viewport — NÃO some no modo bridge da IDE).
@@ -980,7 +987,8 @@ export function attachEditor(game: Game): GameEditor {
       .then((r) => (r.ok ? (r.json() as Promise<string[]>) : []))
       .then((assets) => {
         const list = Array.isArray(assets) ? assets : [];
-        addPanel.setAssets(list.filter((a) => a.toLowerCase().endsWith('.glb')));
+        allModelUrls = list.filter((a) => a.toLowerCase().endsWith('.glb')).sort();
+        addPanel.setAssets(allModelUrls);
         // Modelos pra vegetação: .glb de assets/vegetation/ (árvores/grama importadas).
         const vegGlb = list.filter((a) => /assets\/vegetation\/[^/]*\.glb$/i.test(a)).sort();
         vegetation.setAvailableModels(vegGlb);
@@ -1003,6 +1011,35 @@ export function attachEditor(game: Game): GameEditor {
       })
       .catch(() => addPanel.setAssets([]));
   }
+
+  // ── Picker "Adicionar modelo (.glb)" (ADR-0093): modal com busca listando TODOS
+  // os .glb do projeto — escolher adiciona à frente da câmera (mesmo fluxo do
+  // painel Add: persiste na overlay, seleciona, CTRL+Z). Vive no frame do jogo,
+  // então funciona igual no standalone e no Studio (bridge).
+  const MODEL_THUMB =
+    'data:image/svg+xml,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+        '<rect width="64" height="64" rx="8" fill="#0e0f13"/>' +
+        '<path d="M32 12 52 23v18L32 52 12 41V23z" fill="none" stroke="#7c6fff" stroke-width="2.5"/>' +
+        '<path d="M12 23l20 11 20-11M32 34v18" fill="none" stroke="#7c6fff" stroke-width="2.5" opacity="0.6"/>' +
+        '</svg>',
+    );
+  const openModelPicker = (): void => {
+    const items: TextureItem<string>[] = allModelUrls.map((p) => ({
+      name: p.replace(/^assets\//, '').replace(/\.glb$/i, ''),
+      thumb: MODEL_THUMB,
+      loadThumb: () => modelThumb(p), // render 3D em miniatura, lazy + cache
+      value: p,
+    }));
+    texturePicker.open('Adicionar modelo (.glb)', items, (url) => {
+      const forward = new Vector3();
+      editorCamera.getWorldDirection(forward);
+      const p = editorCamera.position.clone().add(forward.multiplyScalar(12));
+      p.y = 0;
+      addModelNode(url, p);
+    });
+  };
 
   // ── Blockout (ADR-0071): cria um nó `mesh`, persiste no overlay, seleciona e o
   // deixa ESTÁTICO já (via physicsApi — autoritativo: o Inspector mostra "Estático",
@@ -1173,9 +1210,29 @@ export function attachEditor(game: Game): GameEditor {
     });
   };
 
+  // ── "Desenhar blockout" (ADR-0093): escolhe O QUE o desenho cria — a caixa
+  // paramétrica (padrão) ou um .glb que SE MOLDA à caixa desenhada (o preview do
+  // próprio modelo escala ao vivo durante o arrasto; ver ShapeDrawSystem.setModel).
+  const openDrawBlockoutPicker = (): void => {
+    const items: TextureItem<string>[] = [
+      { name: 'Caixa (padrão)', thumb: MODEL_THUMB, value: '' },
+      ...allModelUrls.map((p) => ({
+        name: p.replace(/^assets\//, '').replace(/\.glb$/i, ''),
+        thumb: MODEL_THUMB,
+        loadThumb: () => modelThumb(p),
+        value: p,
+      })),
+    ];
+    texturePicker.open('Desenhar blockout — escolha a peça', items, (url) => {
+      shapeDrawSystem.setModel(url === '' ? null : url);
+      shapeDrawSystem.setArmed(true); // mesmo gesto: CTRL+arraste base → altura → clique
+    });
+  };
+
   const shapePanel = createEditorShapePanel({
+    onPickModel: openModelPicker,
     onAddShape: addShape,
-    onDrawBox: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
+    onDrawBox: openDrawBlockoutPicker,
     onAddVegetation: createVegetationNode,
   });
 
@@ -1256,8 +1313,9 @@ export function attachEditor(game: Game): GameEditor {
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),
     onAddTerrain: addTerrain,
     onAddShape: addShape,
-    onDrawShape: () => shapeDrawSystem.setArmed(!shapeDrawSystem.isArmed),
+    onDrawShape: openDrawBlockoutPicker,
     onAddVegetation: createVegetationNode,
+    onOpenModelPicker: openModelPicker,
     // Drop de asset vindo da IDE (overlay sobre o iframe — o Electron não entrega
     // DnD nativo pra dentro do iframe): nx/ny normalizados (0..1) → NDC → mesmo
     // fluxo do drop in-canvas (raycast na geometria sob o cursor).

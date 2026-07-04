@@ -57,6 +57,8 @@ export interface EditorBridgeOptions {
   onDrawShape?: () => void;
   /** Cria um nó de vegetação e liga o pincel de espalhar (ADR-0077). */
   onAddVegetation?: () => void;
+  /** Abre o picker "Adicionar modelo (.glb)" no frame do jogo (ADR-0093). */
+  onOpenModelPicker?: () => void;
   /**
    * Solta um asset arrastado da IDE no viewport (ADR-0090): `nx`/`ny` são a
    * posição do drop normalizada (0..1) dentro do viewport — o Electron NÃO
@@ -70,7 +72,7 @@ export interface EditorBridgeOptions {
 
 /** Cria a ponte. Inerte (no-op) fora de um iframe. */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onDropAsset, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onOpenModelPicker, onDropAsset, onBridged } = options;
 
   const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
   if (!inIframe) {
@@ -187,6 +189,9 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         break;
       case 'addVegetation':
         onAddVegetation?.();
+        break;
+      case 'openModelPicker':
+        onOpenModelPicker?.();
         break;
       case 'dropAsset':
         if (typeof data.url === 'string' && typeof data.nx === 'number' && typeof data.ny === 'number') {

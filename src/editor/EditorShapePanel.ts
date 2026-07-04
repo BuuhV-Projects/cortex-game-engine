@@ -15,10 +15,12 @@ export interface EditorShapePanel {
 export interface EditorShapePanelOptions {
   /** Chamado ao clicar numa forma — recebe o tipo (`cube`/`stairs`/…). */
   onAddShape: (kind: ShapeKind) => void;
-  /** Chamado ao clicar em "Desenhar no chão" — arma o desenho de caixa (ADR-0071). */
+  /** Chamado ao clicar em "Desenhar blockout" — arma o desenho de caixa (ADR-0071). */
   onDrawBox?: () => void;
   /** Chamado ao clicar em "Vegetação" — cria um nó `vegetation` e liga o pincel (ADR-0077). */
   onAddVegetation?: () => void;
+  /** Abre o picker "Adicionar modelo (.glb)" (modal com busca — ADR-0093). */
+  onPickModel?: () => void;
   parent?: HTMLElement;
 }
 
@@ -26,7 +28,7 @@ export interface EditorShapePanelOptions {
 const ORDER: ShapeKind[] = ['cube', 'plane', 'cylinder', 'sphere', 'cone', 'stairs', 'ramp', 'arch', 'wallOpening'];
 
 export function createEditorShapePanel(options: EditorShapePanelOptions): EditorShapePanel {
-  const { onAddShape, onDrawBox, onAddVegetation, parent = document.body } = options;
+  const { onAddShape, onDrawBox, onAddVegetation, onPickModel, parent = document.body } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -78,7 +80,7 @@ export function createEditorShapePanel(options: EditorShapePanelOptions): Editor
   // "Desenhar no chão" (ProBuilder New Shape): arraste a base no terreno + puxe a altura.
   if (onDrawBox) {
     const draw = document.createElement('button');
-    draw.textContent = '✏️ Desenhar no chão';
+    draw.textContent = '✏️ Desenhar blockout';
     draw.title = 'Arraste a base no terreno e mova pra cima pra criar uma caixa';
     draw.style.cssText = [
       'margin-top:6px',
@@ -95,6 +97,17 @@ export function createEditorShapePanel(options: EditorShapePanelOptions): Editor
     root.append(draw);
   }
 
+
+  // "Modelo (.glb)": abre o picker com busca (ADR-0093) — level design com as
+  // peças reais dos kits, não só primitivas.
+  if (onPickModel) {
+    const m = document.createElement('button');
+    m.textContent = '📦 Modelo (.glb)…';
+    m.title = 'Escolher um modelo dos assets do projeto (modal com busca)';
+    m.style.cssText = 'margin-top:4px;width:100%;padding:7px 4px;border:1px solid #7c6fff;border-radius:4px;background:#3a3466;color:#fff;cursor:pointer;font-size:12px';
+    m.addEventListener('click', () => onPickModel());
+    root.append(m);
+  }
 
   // "Vegetação": cria o nó + liga o pincel; o MODELO (árvore/arbusto/…) se escolhe no
   // Inspector (modal com preview). Um único botão — sem grama/árvore redundante (ADR-0077).

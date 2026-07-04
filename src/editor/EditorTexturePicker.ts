@@ -10,8 +10,14 @@
 export interface TextureItem<T> {
   /** Rótulo exibido sob a miniatura. */
   name: string;
-  /** URL da imagem de preview (diffuse). */
+  /** URL da imagem de preview (diffuse) — ou placeholder, se houver `loadThumb`. */
   thumb: string;
+  /**
+   * Thumbnail LAZY: chamada quando o card entra na área visível do modal
+   * (IntersectionObserver) — a promessa resolve com o src final (ex.: render 3D
+   * do modelo via ModelThumbs). Falhou/rejeitou = mantém o placeholder.
+   */
+  loadThumb?: () => Promise<string>;
   /** Valor entregue ao `onPick` (ex.: `{ diffuse, normal }`). */
   value: T;
 }
@@ -72,10 +78,28 @@ export function createEditorTexturePicker(parent: HTMLElement = document.body): 
   // Estado do modal atual (pra re-renderizar ao filtrar sem reabrir).
   let currentItems: TextureItem<unknown>[] = [];
   let currentOnPick: (value: unknown) => void = () => {};
+  /** Observa os cards visíveis pra carregar thumbs lazy (render 3D sob demanda). */
+  let thumbObserver: IntersectionObserver | null = null;
 
   /** (Re)desenha a grade com os itens cujo nome casa com a query. */
   const renderGrid = (query: string): void => {
     grid.textContent = '';
+    thumbObserver?.disconnect();
+    thumbObserver =
+      typeof IntersectionObserver !== 'undefined'
+        ? new IntersectionObserver(
+            (entries) => {
+              for (const en of entries) {
+                if (!en.isIntersecting) continue;
+                const img = en.target as HTMLImageElement;
+                thumbObserver?.unobserve(img);
+                const load = (img as unknown as { _loadThumb?: () => Promise<string> })._loadThumb;
+                void load?.().then((src) => (img.src = src)).catch(() => {});
+              }
+            },
+            { root: grid },
+          )
+        : null;
     const q = query.trim().toLowerCase();
     const shown = q ? currentItems.filter((it) => it.name.toLowerCase().includes(q)) : currentItems;
     if (shown.length === 0) {
@@ -96,6 +120,10 @@ export function createEditorTexturePicker(parent: HTMLElement = document.body): 
       const img = document.createElement('img');
       img.src = it.thumb;
       img.loading = 'lazy';
+      if (it.loadThumb) {
+        (img as unknown as { _loadThumb?: () => Promise<string> })._loadThumb = it.loadThumb;
+        thumbObserver?.observe(img);
+      }
       img.style.cssText = 'width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;background:#0e0f13';
       const label = document.createElement('span');
       label.textContent = it.name;
