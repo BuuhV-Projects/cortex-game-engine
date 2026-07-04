@@ -50,3 +50,10 @@ O caminho do overlay passa a ser **estado do `Game`**, mutável em runtime:
 - Limitação conhecida: trocar `sceneDataUrl` NÃO reconstrói a cena — é
   responsabilidade do jogo (o fluxo esperado é escolher a fase antes do
   `buildScene`, ou recarregar a página ao trocar).
+- **Correção pós-incidente (mesmo dia):** o seed do boot parte do caminho
+  default e o jogo troca o `sceneDataUrl` logo depois — se o fetch antigo
+  resolvesse por último, sobrescrevia a base em memória com o overlay de
+  OUTRA fase e o auto-save gravava isso no arquivo da fase atual (perdeu as
+  edições da fase 2 do teste4). Proteções: (1) cada seed confere se o caminho
+  ainda é o vigente antes de aplicar; (2) `persist` encadeia atrás do
+  `seedPromise` — nunca salva num arquivo que ainda não foi lido.

@@ -228,10 +228,20 @@ export function attachEditor(game: Game): GameEditor {
   // NOTA: troca o objeto `overlay.data` — por isso o AuthoringContext lê
   // `overlay.data` dinamicamente (não captura por referência). Ver AuthoringContext.
   let writer = autoDetectSceneFileWriter({ path: game.sceneDataUrl });
+  // ⚠️ DUAS proteções contra corrida (perda de dados real no teste4):
+  // 1. O seed do boot parte do caminho DEFAULT; o jogo troca o sceneDataUrl
+  //    logo depois. Se o fetch antigo resolver POR ÚLTIMO, ele sobrescreveria a
+  //    base com o overlay de OUTRA fase (e o auto-save gravaria isso no arquivo
+  //    da fase atual). → cada seed confere se o caminho ainda é o vigente.
+  // 2. Salvar antes do seed terminar gravaria uma base vazia/errada por cima do
+  //    arquivo. → `persist` encadeia atrás do `seedPromise` vigente.
+  let seedPromise: Promise<void> = Promise.resolve();
   const seedOverlay = (): void => {
-    void new SceneLoader()
-      .loadSceneFile(game.sceneDataUrl)
+    const path = game.sceneDataUrl;
+    seedPromise = new SceneLoader()
+      .loadSceneFile(path)
       .then((f) => {
+        if (path !== game.sceneDataUrl) return; // trocou de fase no meio — descarta
         overlay.objects = f ? f.objects : {};
         overlay.data = f ? f.data : {};
       })
@@ -252,9 +262,10 @@ export function attachEditor(game: Game): GameEditor {
     }
     const save = (): void => {
       debug('persist', immediate ? 'imediato' : 'debounced', 'data=', overlay.data);
-      // Lê `writer` NA HORA do save (é `let`: troca junto com o sceneDataUrl).
-      void writer
-        ?.save(overlay)
+      // Espera a base ser lida (seedPromise) e lê `writer` NA HORA do save
+      // (ambos trocam junto com o sceneDataUrl).
+      void seedPromise
+        .then(() => writer?.save(overlay))
         .then(() => debug('persist', 'OK'))
         .catch((e) => debug('persist', 'FALHOU', e));
     };
