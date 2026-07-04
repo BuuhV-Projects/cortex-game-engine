@@ -138,6 +138,12 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   Studio) listando todos os `.glb` do projeto; escolher adiciona pelo fluxo do
   painel Add (persiste/seleciona/CTRL+Z). Gatilhos: botão na paleta de Formas e
   menu Cena → "Adicionar modelo (.glb)…" (ponte `openModelPicker`).
+- **Copiar/colar (ADR-0095, `clipboardNode.ts`)** — CTRL+C no modelo selecionado
+  captura o def do nó (`userData.cortexNodeDef`, guardado pelo `makeNode`) + o
+  transform ATUAL; CTRL+V cola pelo fluxo do drag-and-drop (`addSceneNode` +
+  `data.added` + CTRL+Z), com offset 1m em X/Z e sem `player`/`character`
+  (singletons). Autorias por nome do original são clonadas pro nome novo.
+  Só `model` (.glb) na v1; scripts/física da cópia valem no próximo Play/reload.
 - **Arrastar asset pra cena (ADR-0090, `assetDrop.ts`)** — o **posicionamento é
   sempre do engine**: raycast da câmera do editor pelo cursor → o modelo nasce
   **na geometria sob o mouse** (ignora chrome `editorInternal`; fallback plano

@@ -74,6 +74,7 @@ import type { Terrain } from '../scene/Terrain.js';
 import type { SceneNode } from '../scene/SceneDefinition.js';
 import { emptySceneFile, type SceneFileV1 } from '../scene/SceneFile.js';
 import { autoDetectSceneFileWriter } from '../io/autoDetectSceneFileWriter.js';
+import { buildPastedNode, type NodeClipboard } from './clipboardNode.js';
 
 // O caminho do overlay vem de `game.sceneDataUrl` (por fase — default
 // 'assets/scene-data.json', pareia com o target default do createSceneSavePlugin).
@@ -381,7 +382,8 @@ export function attachEditor(game: Game): GameEditor {
     history.push({ label: 'Transform', undo: () => apply(before), redo: () => apply(after) });
   };
 
-  // CTRL+Z desfaz / CTRL+SHIFT+Z (ou CTRL+Y) refaz — só no editor, fora de campos de texto.
+  // CTRL+Z desfaz / CTRL+SHIFT+Z (ou CTRL+Y) refaz; CTRL+C copia / CTRL+V cola
+  // (ADR-0095) — só no editor, fora de campos de texto.
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', (e) => {
       if (!editorState.active || !(e.ctrlKey || e.metaKey)) return;
@@ -394,6 +396,12 @@ export function attachEditor(game: Game): GameEditor {
       } else if (k === 'y' || (k === 'z' && e.shiftKey)) {
         e.preventDefault();
         hud.showToast(history.redo() ? '↷ Refez' : 'Nada pra refazer');
+      } else if (k === 'c' && !e.shiftKey) {
+        // Não rouba o CTRL+C de texto selecionado na página.
+        if (window.getSelection()?.toString()) return;
+        copySelected();
+      } else if (k === 'v' && !e.shiftKey) {
+        pasteClipboard();
       }
     });
   }
@@ -1097,7 +1105,7 @@ export function attachEditor(game: Game): GameEditor {
   //    nem undo); nó BASE (level.json) entra em `data.deleted` pro buildScene pular;
   //    3) limpa as entradas de overlay por-objeto (transform + concerns).
   // Chaves de overlay por-objeto (concerns) — limpas no delete, capturadas/restauradas no undo.
-  const CONCERN_KEYS = ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle', 'underlay', 'scripts'] as const;
+  const CONCERN_KEYS = ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle', 'underlay', 'scripts', 'shadow'] as const;
   const cloneJson = <T>(v: T): T => (v === undefined ? v : (JSON.parse(JSON.stringify(v)) as T));
 
   /** Snapshot de TUDO de um nó (transform + concerns + def se foi criado no editor) — pro undo. */
@@ -1203,6 +1211,63 @@ export function attachEditor(game: Game): GameEditor {
       },
     });
   };
+  // ── CTRL+C / CTRL+V (ADR-0095): duplica o modelo selecionado ─────────────────
+  // Copia o DEF do nó (userData.cortexNodeDef — vale pra nó do código/JSON E pra
+  // adicionado no editor) + o transform ATUAL do Object3D. Colar cria um nó
+  // `added` (mesmo caminho do drag-and-drop): persiste no overlay, seleciona e
+  // entra no CTRL+Z. Scripts/física do def valem já no próximo Play/reload
+  // (o addSceneNode ao vivo instancia só o visual — mesma regra do drop).
+  let clipboard: NodeClipboard | null = null;
+  const copySelected = (): void => {
+    let src: Object3D | null = selection.current;
+    while (src && (src.userData as Record<string, unknown>)['cortexSceneNode'] !== true) src = src.parent;
+    const def = src ? ((src.userData as Record<string, unknown>)['cortexNodeDef'] as SceneNode | undefined) : undefined;
+    if (!src || !def) {
+      hud.showToast('Selecione um objeto da cena pra copiar');
+      return;
+    }
+    if (def.type !== 'model') {
+      hud.showToast('Copiar/colar: só modelos (.glb) por enquanto');
+      return;
+    }
+    clipboard = {
+      def: cloneJson(def),
+      position: [src.position.x, src.position.y, src.position.z],
+      rotation: [src.rotation.x, src.rotation.y, src.rotation.z],
+      scale: [src.scale.x, src.scale.y, src.scale.z],
+    };
+    hud.showToast(`📋 Copiado: ${src.name || def.id}`);
+  };
+  const pasteClipboard = (): void => {
+    const clip = clipboard;
+    if (!clip) {
+      hud.showToast('Nada copiado — CTRL+C num modelo primeiro');
+      return;
+    }
+    const id = `add-${Date.now().toString(36)}`;
+    const node = buildPastedNode(clip, id);
+    const srcName = clip.def.id;
+    void addSceneNode(game.scene, node).then((obj) => {
+      if (!obj) return;
+      addedList().push(node);
+      // Autorias do ORIGINAL (registros por nome no overlay) valem pra cópia.
+      for (const key of CONCERN_KEYS) {
+        const m = (overlay.data as Record<string, unknown>)[key];
+        if (m && typeof m === 'object' && !Array.isArray(m)) {
+          const rec = m as Record<string, unknown>;
+          if (rec[srcName] !== undefined) rec[id] = cloneJson(rec[srcName]);
+        }
+      }
+      // CTRL+V repetido escada a partir da última cópia (não empilha no mesmo lugar).
+      const t = (node as { transform?: { position?: [number, number, number] } }).transform?.position;
+      if (t) clip.position = [t[0], t[1], t[2]];
+      persist();
+      selection.requestSelect(obj);
+      pushAddCommand(obj, node); // CTRL+Z desfaz a colagem
+      hud.showToast(`📋 Colado: ${id}`);
+    });
+  };
+
   const shapeDrawSystem = new ShapeDrawSystem(
     editorState,
     editorCamera,

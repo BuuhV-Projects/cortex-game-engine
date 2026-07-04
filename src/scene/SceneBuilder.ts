@@ -935,6 +935,9 @@ async function instantiate(
   // Rapier) em nós (o overlay reconcilia no boot). Objetos criados em código não
   // têm essa marca → o Inspector bloqueia, pra não enganar com edição que se perde.
   (obj.userData as Record<string, unknown>)['cortexSceneNode'] = true;
+  // Guarda o DEF do nó (referência, custo zero): o editor usa pra duplicar o
+  // objeto com tudo (url, scripts, collider…) — CTRL+C/CTRL+V (ADR-0095).
+  (obj.userData as Record<string, unknown>)['cortexNodeDef'] = node;
   return obj;
 }
 
