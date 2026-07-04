@@ -37,6 +37,17 @@ export interface ThirdPersonControlOptions {
   pauseWhen?: () => boolean;
   /** Bloqueia o pulo quando `true` — ex.: há interação em alcance, então A vira "interagir". */
   jumpBlocked?: () => boolean;
+  /**
+   * Modo da câmera: `free` (default) = orbital por mouse/stick (pointer lock);
+   * `locked` = ângulo FIXO (yaw/pitch/distância) — câmera de perseguição elevada
+   * estilo obstacle course (Fall Guys): segue o player sem o jogador pilotar.
+   * Troque em runtime com {@link ThirdPersonControlSystem.setOrbit}.
+   */
+  orbit?: 'free' | 'locked';
+  /** Yaw inicial da câmera (rad). Default 0 (câmera atrás de +Z). */
+  initialYaw?: number;
+  /** Pitch inicial da câmera (rad; positivo = de cima). Default 0.35. */
+  initialPitch?: number;
 }
 
 const TOP_CLAMP = (70 * Math.PI) / 180; // Unity TopClamp 70°
@@ -91,7 +102,8 @@ export class ThirdPersonControlSystem extends System {
   private readonly sprintSpeed: number;
   private readonly sensitivity: number;
   private readonly rotSmooth: number;
-  private readonly camDist: number;
+  private camDist: number; // mutável: setOrbit pode trocar a distância (A/B de câmera)
+  private orbitMode: 'free' | 'locked';
   private readonly camHeight: number;
   private readonly runThreshold: number;
   private readonly facingOffset: number;
@@ -139,12 +151,31 @@ export class ThirdPersonControlSystem extends System {
     this.padIndex = options.padIndex ?? 0;
     this.shouldPause = options.pauseWhen;
     this.jumpBlocked = options.jumpBlocked;
+    this.orbitMode = options.orbit ?? 'free';
+    this.yaw = options.initialYaw ?? 0;
+    this.pitch = options.initialPitch ?? 0.35;
 
     if (typeof document !== 'undefined') {
       this.canvas.addEventListener('mousedown', () => {
         if (this.shouldPause?.()) return;
+        if (this.orbitMode === 'locked') return; // câmera fixa: sem pointer lock
         if (document.pointerLockElement !== this.canvas) this.canvas.requestPointerLock?.();
       });
+    }
+  }
+
+  /**
+   * Troca o modo de câmera em runtime (ótimo pra A/B testar): `locked` fixa
+   * yaw/pitch/distância nos valores passados (ou mantém os atuais); `free` volta
+   * a órbita por mouse/stick. Sai do pointer lock ao travar.
+   */
+  setOrbit(mode: 'free' | 'locked', angles?: { yaw?: number; pitch?: number; distance?: number }): void {
+    this.orbitMode = mode;
+    if (angles?.yaw !== undefined) this.yaw = angles.yaw;
+    if (angles?.pitch !== undefined) this.pitch = angles.pitch;
+    if (angles?.distance !== undefined) this.camDist = angles.distance;
+    if (mode === 'locked' && typeof document !== 'undefined' && document.pointerLockElement === this.canvas) {
+      document.exitPointerLock?.();
     }
   }
 
@@ -175,17 +206,21 @@ export class ThirdPersonControlSystem extends System {
     const pad = this.padIndex;
 
     // ── Olhar: mouse (pointer lock) + stick direito do gamepad (Xbox-first) ────
-    if (typeof document !== 'undefined' && document.pointerLockElement === this.canvas) {
-      const md = this.input.getMouseDelta();
-      this.yaw -= md.x * this.sensitivity;
-      this.pitch += md.y * this.sensitivity;
+    // Modo `locked`: yaw/pitch são FIXOS (câmera de perseguição elevada) — o
+    // jogador não pilota a câmera; mouse/stick direito são ignorados.
+    if (this.orbitMode === 'free') {
+      if (typeof document !== 'undefined' && document.pointerLockElement === this.canvas) {
+        const md = this.input.getMouseDelta();
+        this.yaw -= md.x * this.sensitivity;
+        this.pitch += md.y * this.sensitivity;
+      }
+      if (gp) {
+        this.yaw -= gp.getAxis(pad, 2) * this.padLookSpeed * dt;
+        this.pitch += (this.invertLookY ? -1 : 1) * gp.getAxis(pad, 3) * this.padLookSpeed * dt;
+      }
+      if (this.pitch > TOP_CLAMP) this.pitch = TOP_CLAMP;
+      if (this.pitch < BOTTOM_CLAMP) this.pitch = BOTTOM_CLAMP;
     }
-    if (gp) {
-      this.yaw -= gp.getAxis(pad, 2) * this.padLookSpeed * dt;
-      this.pitch += (this.invertLookY ? -1 : 1) * gp.getAxis(pad, 3) * this.padLookSpeed * dt;
-    }
-    if (this.pitch > TOP_CLAMP) this.pitch = TOP_CLAMP;
-    if (this.pitch < BOTTOM_CLAMP) this.pitch = BOTTOM_CLAMP;
 
     // ── Direção relativa à câmera (XZ) ────────────────────────────────────────
     const sin = Math.sin(this.yaw);

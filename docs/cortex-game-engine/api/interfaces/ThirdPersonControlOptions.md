@@ -42,6 +42,26 @@ Offset de orientação do modelo (rad) se o personagem nascer virado ao contrár
 
 ***
 
+### initialPitch?
+
+> `optional` **initialPitch?**: `number`
+
+Defined in: [src/systems/ThirdPersonControlSystem.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L50)
+
+Pitch inicial da câmera (rad; positivo = de cima). Default 0.35.
+
+***
+
+### initialYaw?
+
+> `optional` **initialYaw?**: `number`
+
+Defined in: [src/systems/ThirdPersonControlSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L48)
+
+Yaw inicial da câmera (rad). Default 0 (câmera atrás de +Z).
+
+***
+
 ### invertLookY?
 
 > `optional` **invertLookY?**: `boolean`
@@ -73,6 +93,19 @@ Bloqueia o pulo quando `true` — ex.: há interação em alcance, então A vira
 Defined in: [src/systems/ThirdPersonControlSystem.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L15)
 
 Velocidade de caminhada (u/s). Default 2.0 (Unity MoveSpeed).
+
+***
+
+### orbit?
+
+> `optional` **orbit?**: `"free"` \| `"locked"`
+
+Defined in: [src/systems/ThirdPersonControlSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L46)
+
+Modo da câmera: `free` (default) = orbital por mouse/stick (pointer lock);
+`locked` = ângulo FIXO (yaw/pitch/distância) — câmera de perseguição elevada
+estilo obstacle course (Fall Guys): segue o player sem o jogador pilotar.
+Troque em runtime com [ThirdPersonControlSystem.setOrbit](../classes/ThirdPersonControlSystem.md#setorbit).
 
 ***
 

@@ -267,6 +267,7 @@
 - [overlayPhysics](functions/overlayPhysics.md)
 - [overlayPlayerAnimations](functions/overlayPlayerAnimations.md)
 - [overlayScripts](functions/overlayScripts.md)
+- [overlayShadow](functions/overlayShadow.md)
 - [overlayTerrain](functions/overlayTerrain.md)
 - [overlayTerrainPaint](functions/overlayTerrainPaint.md)
 - [overlayUnderlay](functions/overlayUnderlay.md)
