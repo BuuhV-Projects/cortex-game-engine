@@ -108,6 +108,9 @@ export class Game {
   /** Canvas de render. */
   readonly canvas: HTMLCanvasElement;
 
+  private _sceneDataUrl = 'assets/scene-data.json';
+  private readonly _sceneDataUrlListeners: Array<(url: string) => void> = [];
+
   private readonly _loop: GameLoop;
   private readonly _editor: GameEditor | null;
   private _onUpdate: ((deltaSeconds: number) => void) | null = null;
@@ -176,6 +179,41 @@ export class Game {
     this._activeScene = this.scene;
     this._activeCamera = this.camera;
     this._loop = new GameLoop({ onUpdate: (dtMs) => this._tick(dtMs) });
+  }
+
+  /**
+   * Caminho do **overlay de cena** (scene-data) da fase/cena ATUAL — é de onde o
+   * editor carrega e pra onde salva as edições (transform, física, scripts,
+   * added/deleted…). Default `assets/scene-data.json`.
+   *
+   * Jogos com **mais de uma fase** devem dar um arquivo POR FASE (senão objetos
+   * adicionados numa fase vazam pra outra e o auto-save de uma sobrescreve as
+   * edições da outra). Defina **logo depois de escolher a fase, antes do
+   * `buildScene`** — o editor recarrega o overlay do caminho novo (edições
+   * feitas antes da troca não são migradas). Use o MESMO caminho no
+   * `SceneLoader.loadSceneFile(...)` que alimenta o `buildScene`.
+   *
+   * @example
+   * const level = await showMenu(LEVELS)
+   * game.sceneDataUrl = level.overlayUrl // ex.: 'assets/scene-data-fase2.json'
+   * const overlay = await new SceneLoader().loadSceneFile(level.overlayUrl)
+   */
+  get sceneDataUrl(): string {
+    return this._sceneDataUrl;
+  }
+
+  set sceneDataUrl(url: string) {
+    if (url === this._sceneDataUrl) return;
+    this._sceneDataUrl = url;
+    for (const cb of this._sceneDataUrlListeners) cb(url);
+  }
+
+  /**
+   * Registra um callback pra mudança do {@link sceneDataUrl} (o editor usa pra
+   * recarregar o overlay quando o jogo troca de fase).
+   */
+  onSceneDataUrlChange(callback: (url: string) => void): void {
+    this._sceneDataUrlListeners.push(callback);
   }
 
   /**

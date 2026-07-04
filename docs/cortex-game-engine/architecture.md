@@ -79,7 +79,11 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   **entidades ECS** (corpos de física, sprites animados, terreno). Marca cada nó
   com `obj.userData.cortexSceneNode = true` (o editor usa pra saber o que é
   autorável). Lê o **overlay** e aplica suas precedências.
-- **Overlay** (`assets/scene-data.json`, um `SceneFileV1`) — as edições do editor:
+- **Overlay** (um `SceneFileV1`; caminho em **`game.sceneDataUrl`**, default
+  `assets/scene-data.json` — **um arquivo POR FASE** em jogos multi-fase, senão
+  `added`/`deleted` vazam entre fases e o auto-save de uma sobrescreve a outra;
+  o jogo define o caminho após escolher a fase e ANTES do `buildScene`,
+  ADR-0094) — as edições do editor:
   `objects[id]` (transform exato) + `data.*` por concern:
   `deleted`, `added`, `colliders`, `physics`, `matte`, `material`, `terrain`
   (heightmap), `terrainPaint` (pintura de textura/splat, ADR-0063), `animation`,
@@ -90,8 +94,10 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
 ## 4. Editor embutido (`src/editor/`, F2 — só no bundle de dev)
 
 - **`attachEditor(game)`** — o **compositor**: cria câmera livre, gizmo, outliner,
-  HUD, o **overlay** (semeado do arquivo — ⚠️ **substitui `overlay.data`**, ver §8),
-  o `persist` (salva o overlay) e instancia as **autorias**.
+  HUD, o **overlay** (semeado de `game.sceneDataUrl` — ⚠️ **substitui
+  `overlay.data`**, ver §8; re-semeia e retroca o writer quando o jogo muda o
+  `sceneDataUrl`, ADR-0094), o `persist` (salva o overlay) e instancia as
+  **autorias**.
 - **Autorias** (`src/editor/authoring/`, ADR-0060) — cada concern numa factory
   `createXApi(ctx)` que mexe **só no seu pedaço** do overlay e aplica ao vivo:
   `MatteAuthoring`, `MaterialAuthoring`, `PhysicsAuthoring`, `ColliderAuthoring`

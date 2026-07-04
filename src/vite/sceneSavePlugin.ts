@@ -20,9 +20,25 @@ export interface SceneSavePluginOptions {
 const IMAGE_EXTS = ['.png', '.jpg', '.jpeg', '.webp'];
 
 /**
+ * Sanitiza o `?path=` do save de cena (overlay por fase): tem que ser um
+ * caminho **relativo**, sem `..`/absoluto/drive, terminando em `.json`.
+ * Retorna o caminho normalizado (`/`), o `fallback` quando não veio `path`,
+ * ou `null` se o pedido for inválido (o endpoint responde 400).
+ */
+export function sanitizeScenePath(raw: string | null | undefined, fallback: string): string | null {
+  if (raw == null || raw === '') return fallback;
+  const norm = raw.replace(/\\/g, '/');
+  if (!/^[\w@ .-]+(\/[\w@ .-]+)*\.json$/.test(norm)) return null;
+  if (norm.split('/').some((seg) => /^\.+$/.test(seg))) return null; // '.', '..', '...'
+  return norm;
+}
+
+/**
  * Plugin de Vite (Node-only, **dev**) que expõe endpoints do editor:
  * - POST `endpoint` (default `/__save-scene-data`): grava o `SceneFileV1` em
- *   disco. Pareia com o `HttpSceneFileWriter` do runtime.
+ *   disco. Pareia com o `HttpSceneFileWriter` do runtime. Aceita `?path=` pra
+ *   escolher o arquivo (overlay **por fase** — ver `Game.sceneDataUrl`),
+ *   sanitizado por {@link sanitizeScenePath}.
  * - POST `uploadEndpoint` (default `/__upload-asset?name=arquivo.png`): grava o
  *   corpo binário em `uploadDir` (default `assets/textures/`) — usado pelo botão
  *   "Importar textura…" do pincel de terreno. Responde o caminho gravado.
@@ -50,6 +66,15 @@ export function createSceneSavePlugin(options: SceneSavePluginOptions = {}): Plu
           res.end('Method Not Allowed');
           return;
         }
+        // `?path=` opcional escolhe o arquivo (overlay POR FASE) — sanitizado
+        // pra ficar dentro da raiz do projeto. Sem `path`, usa o `target`.
+        const reqUrl = new URL(req.url ?? '', 'http://localhost');
+        const scenePath = sanitizeScenePath(reqUrl.searchParams.get('path'), target);
+        if (!scenePath) {
+          res.statusCode = 400;
+          res.end('path inválido (esperado caminho relativo .json, sem "..")');
+          return;
+        }
         let body = '';
         req.on('data', (chunk: Buffer) => {
           body += chunk.toString();
@@ -57,7 +82,7 @@ export function createSceneSavePlugin(options: SceneSavePluginOptions = {}): Plu
         req.on('end', () => {
           void (async () => {
             try {
-              const outPath = resolve(server.config.root, target);
+              const outPath = resolve(server.config.root, scenePath);
               await mkdir(dirname(outPath), { recursive: true });
               await writeFile(outPath, body, 'utf-8');
               res.statusCode = 200;

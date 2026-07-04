@@ -426,6 +426,11 @@ game.onUpdate((dt) => scene.update(dt)) // anima água
   overrides + `data.deleted` + `data.added`. O `buildScene` aplica por cima. Pra
   "achatar" as edições na base depois, leia a overlay e mova as entradas pros
   arquivos `scenes/*.json` (e limpe a overlay).
+- **Jogo com VÁRIAS fases** (ADR-0094): dê um overlay POR FASE — defina
+  `game.sceneDataUrl = 'assets/scene-data-<fase>.json'` logo depois de escolher
+  a fase (antes do `buildScene`) e carregue o MESMO caminho no
+  `loadSceneFile(...)`. Compartilhar um arquivo vaza `added`/`deleted` entre
+  fases e o auto-save de uma sobrescreve as edições da outra.
 - **Atmosfera** (o que deixa BONITO): use `outdoorLighting`/`fog`/`background` no
   JSON e, pra bloom/vignette, `game.setPostFX(...)` no `main.ts` (ver Atmosfera).
 - Valide com `playtest_game` (varredura close-up por região) e `critique_scene`.

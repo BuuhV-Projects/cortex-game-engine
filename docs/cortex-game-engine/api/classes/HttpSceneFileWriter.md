@@ -6,11 +6,15 @@
 
 # Class: HttpSceneFileWriter
 
-Defined in: [src/io/HttpSceneFileWriter.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L9)
+Defined in: [src/io/HttpSceneFileWriter.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L13)
 
 Escreve o `SceneFileV1` via POST para um endpoint do dev server (Vite), que
 grava o arquivo em disco. Pareia com `createSceneSavePlugin`
 (cortex-game-engine/vite — plugin Node-only). Só funciona em `vite dev`.
+
+`path` (opcional) escolhe o arquivo de destino, relativo à raiz do projeto
+(ex.: `assets/scene-data-fase2.json` — overlay por fase). Sem `path`, o
+plugin grava no `target` configurado nele (default `assets/scene-data.json`).
 
 ## Implements
 
@@ -20,15 +24,19 @@ grava o arquivo em disco. Pareia com `createSceneSavePlugin`
 
 ### Constructor
 
-> **new HttpSceneFileWriter**(`url?`): `HttpSceneFileWriter`
+> **new HttpSceneFileWriter**(`url?`, `path?`): `HttpSceneFileWriter`
 
-Defined in: [src/io/HttpSceneFileWriter.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L10)
+Defined in: [src/io/HttpSceneFileWriter.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L14)
 
 #### Parameters
 
 ##### url?
 
 `string` = `'/__save-scene-data'`
+
+##### path?
+
+`string`
 
 #### Returns
 
@@ -40,7 +48,7 @@ Defined in: [src/io/HttpSceneFileWriter.ts:10](https://github.com/BuuhV-Projects
 
 > **save**(`file`): `Promise`\<`void`\>
 
-Defined in: [src/io/HttpSceneFileWriter.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L12)
+Defined in: [src/io/HttpSceneFileWriter.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L19)
 
 #### Parameters
 

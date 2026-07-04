@@ -75,8 +75,8 @@ import type { SceneNode } from '../scene/SceneDefinition.js';
 import { emptySceneFile, type SceneFileV1 } from '../scene/SceneFile.js';
 import { autoDetectSceneFileWriter } from '../io/autoDetectSceneFileWriter.js';
 
-/** Caminho do overlay — pareia com `createSceneSavePlugin` (target default). */
-const OVERLAY_PATH = 'assets/scene-data.json';
+// O caminho do overlay vem de `game.sceneDataUrl` (por fase — default
+// 'assets/scene-data.json', pareia com o target default do createSceneSavePlugin).
 
 type SavedTransform = SceneFileV1['objects'][string];
 
@@ -104,7 +104,8 @@ function sameTransform(a: SavedTransform, b: SavedTransform): boolean {
  * (`index.dev.js`); em produção o editor não está no bundle (ADR-0042).
  *
  * **Persistência (write-back):** as edições do editor são salvas numa *overlay*
- * (`SceneFileV1` em `assets/scene-data.json`) via `autoDetectSceneFileWriter`
+ * (`SceneFileV1` no caminho de `game.sceneDataUrl` — default
+ * `assets/scene-data.json`, um arquivo POR FASE) via `autoDetectSceneFileWriter`
  * (dev: POST pro `createSceneSavePlugin`; Tauri: fs). O `buildScene` aplica essa
  * overlay no boot — mover/rotacionar persiste (override), Delete persiste (o nó
  * é pulado pelo loader, **sem create-then-remove**). Auto-save (sem precisar de
@@ -213,19 +214,28 @@ export function attachEditor(game: Game): GameEditor {
     overlay.data['deleted'] = arr;
     return arr;
   };
-  const writer = autoDetectSceneFileWriter();
-  // Semeia com a overlay já existente, pra não sobrescrever edições anteriores.
+  // Overlay POR FASE (ver Game.sceneDataUrl): o caminho vem do jogo e pode
+  // mudar quando ele troca de fase (menu) — aí recarregamos a base e passamos
+  // a salvar no arquivo novo. Semear com a overlay já existente evita
+  // sobrescrever edições anteriores; arquivo ausente = base vazia.
   // NOTA: troca o objeto `overlay.data` — por isso o AuthoringContext lê
   // `overlay.data` dinamicamente (não captura por referência). Ver AuthoringContext.
-  void new SceneLoader()
-    .loadSceneFile(OVERLAY_PATH)
-    .then((f) => {
-      if (f) {
-        overlay.objects = f.objects;
-        overlay.data = f.data;
-      }
-    })
-    .catch(() => {});
+  let writer = autoDetectSceneFileWriter({ path: game.sceneDataUrl });
+  const seedOverlay = (): void => {
+    void new SceneLoader()
+      .loadSceneFile(game.sceneDataUrl)
+      .then((f) => {
+        overlay.objects = f ? f.objects : {};
+        overlay.data = f ? f.data : {};
+      })
+      .catch(() => {});
+  };
+  seedOverlay();
+  game.onSceneDataUrlChange((url) => {
+    debug('persist', 'sceneDataUrl mudou →', url);
+    writer = autoDetectSceneFileWriter({ path: url });
+    seedOverlay();
+  });
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   const persist = (immediate = false): void => {
@@ -235,8 +245,9 @@ export function attachEditor(game: Game): GameEditor {
     }
     const save = (): void => {
       debug('persist', immediate ? 'imediato' : 'debounced', 'data=', overlay.data);
+      // Lê `writer` NA HORA do save (é `let`: troca junto com o sceneDataUrl).
       void writer
-        .save(overlay)
+        ?.save(overlay)
         .then(() => debug('persist', 'OK'))
         .catch((e) => debug('persist', 'FALHOU', e));
     };

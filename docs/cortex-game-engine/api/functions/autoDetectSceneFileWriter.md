@@ -28,11 +28,19 @@ Retorna `null` fora do browser.
 
 Endpoint do plugin Vite (dev).
 
+#### path?
+
+`string`
+
+Caminho do scene-data relativo à raiz do projeto (ex.:
+`assets/scene-data-fase2.json` — overlay por fase). Vale pros dois
+ambientes; sem ele, cada writer usa seu default.
+
 #### tauriPath?
 
 `string`
 
-Caminho do arquivo no Tauri.
+Caminho do arquivo no Tauri (tem precedência sobre `path` no Tauri).
 
 ## Returns
 
