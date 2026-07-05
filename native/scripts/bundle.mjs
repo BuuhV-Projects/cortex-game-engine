@@ -20,6 +20,10 @@ const threeWebGpuAlias = {
     pluginBuild.onResolve({ filter: /^three$/ }, () => ({
       path: resolve('node_modules/three/build/three.webgpu.js'),
     }));
+    // Rapier: no host o WASM-compat é substituído pelo adaptador nativo.
+    pluginBuild.onResolve({ filter: /^@dimforge\/rapier3d-compat$/ }, () => ({
+      path: resolve('native/js/src/shims/rapier-compat.js'),
+    }));
   },
 };
 

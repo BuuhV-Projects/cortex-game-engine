@@ -4,6 +4,7 @@
 import './prelude.js';
 import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 const WIDTH = 1280;
 const HEIGHT = 720;
@@ -42,9 +43,33 @@ function smokeTestInput() {
   print('[m1] gamepads conectados: ' + navigator.getGamepads().length);
 }
 
+// Smoke da frente 4 — Rapier NATIVO com a forma da API compat: bola
+// dinâmica cai sobre chão fixo e repousa (mesmo código que rodaria no
+// browser com o WASM).
+async function smokeTestRapier() {
+  await RAPIER.init();
+  const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
+  const ground = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+  world.createCollider(RAPIER.ColliderDesc.cuboid(10, 0.5, 10), ground);
+  const ballBody = world.createRigidBody(
+    RAPIER.RigidBodyDesc.dynamic().setTranslation(0, 5, 0),
+  );
+  world.createCollider(
+    RAPIER.ColliderDesc.ball(0.5).setRestitution(0.4),
+    ballBody,
+  );
+  for (let i = 0; i < 180; i++) world.step();
+  const y = ballBody.translation().y;
+  const resting = y > 0.9 && y < 1.1; // raio 0.5 sobre chão de topo 0.5
+  print('[m1] smoke frente 4 (rapier nativo): y=' + y.toFixed(3) + ' ' +
+    (resting ? 'OK (repousou sobre o chão)' : 'FALHOU'));
+  world.free();
+}
+
 async function main() {
   smokeTestBrowserShims();
   smokeTestInput();
+  await smokeTestRapier();
   print('[three] criando WebGPURenderer...');
   const canvas = __cortexCreateCanvas(WIDTH, HEIGHT);
   const renderer = new THREE.WebGPURenderer({ canvas, antialias: false });

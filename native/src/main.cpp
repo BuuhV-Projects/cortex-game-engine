@@ -16,6 +16,7 @@
 #include "shims/files.h"
 #include "shims/image_decode.h"
 #include "shims/input.h"
+#include "shims/rapier.h"
 #include "shims/timers.h"
 #include "webgpu/bindings.h"
 
@@ -63,6 +64,7 @@ int main(int, char**) {
     shims::registerInput(js.env());
     shims::registerFiles(js.env(), baseDir);
     shims::registerImageDecode(js.env());
+    shims::registerRapier(js.env());
     webgpu::registerBindings(js.env(), &gpu);
 
     if (!js.runBoot(baseDir)) return 1;

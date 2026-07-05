@@ -1,0 +1,18 @@
+# Rapier NATIVO do CortexNative (M1 frente 4, PRD-0004): o Hermes não roda
+# WASM, então o rapier3d-compat é substituído por este cdylib com C ABI
+# minimalista; a forma da API compat é reconstruída em JS
+# (js/src/shims/rapier-compat.js).
+[package]
+name = "rapier_native"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rapier3d = "0.22.0"
+
+[profile.release]
+opt-level = 3
+lto = true

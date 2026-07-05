@@ -18,6 +18,7 @@ add_executable(cortex_host
   src/shims/files.cpp
   src/shims/image_decode.cpp
   src/shims/input.cpp
+  src/shims/rapier.cpp
   src/shims/timers.cpp
   src/webgpu/buffers.cpp
   src/webgpu/commands.cpp
@@ -61,10 +62,15 @@ target_include_directories(cortex_host PRIVATE
   ${TP}/hermes/build/native/include/node-api
 )
 
+# Rapier nativo (crate Rust em rapier-native/ — `cargo build --release` lá
+# antes do build; o fetch-deps NÃO cobre isso porque é código nosso)
+set(RAPIER_NATIVE ${CMAKE_CURRENT_SOURCE_DIR}/rapier-native/target/release)
+
 target_link_libraries(cortex_host PRIVATE
   ${TP}/SDL3/lib/x64/SDL3.lib
   ${TP}/wgpu/lib/wgpu_native.dll.lib
   ${TP}/hermes/build/native/win32/x64/hermes.lib
+  ${RAPIER_NATIVE}/rapier_native.dll.lib
 )
 
 # DLLs ao lado do executável
@@ -73,5 +79,6 @@ add_custom_command(TARGET cortex_host POST_BUILD
     ${TP}/SDL3/lib/x64/SDL3.dll
     ${TP}/wgpu/lib/wgpu_native.dll
     ${TP}/hermes/build/native/win32/x64/hermes.dll
+    ${RAPIER_NATIVE}/rapier_native.dll
     $<TARGET_FILE_DIR:cortex_host>
 )

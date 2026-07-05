@@ -46,6 +46,10 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/shims/timers.*` | `setTimeout`/`clearTimeout`/`setImmediate`. O Hermes agenda async/await via `setImmediate` — obrigatório. |
 | `native/src/shims/animation_frame.*` | `requestAnimationFrame` (uma geração de callbacks por frame; JS re-registra). |
 | `native/src/shims/input.*` | Eventos SDL→JS (keydown/keyup/pointer via `__cortexDispatchInput`) + Gamepad API (`__cortexInput.getGamepads`, layout standard W3C sobre SDL_Gamepad). |
+| `native/src/shims/files.*` | `__cortexReadFile` (fetch lê daqui; base = pasta do exe → futuro XPackage). |
+| `native/src/shims/image_decode.*` | `__cortexDecodeImage` (stb_image → RGBA8) pro createImageBitmap. |
+| `native/src/shims/rapier.*` | Ponte C ABI do crate rapier-native → `__rapierNative` (funções achatadas, f64). |
+| `native/rapier-native/` | Crate Rust (cdylib): Rapier de verdade com C ABI mínima espelhando o que o engine usa. |
 | `native/src/webgpu/bindings.h` | API pública do módulo: `registerBindings`, `presentIfAcquired`. Fora do módulo, só inclua este. |
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |
 | `native/src/webgpu/navigator.cpp` | `navigator.gpu` (requestAdapter, formato preferido) + dono do `gpuState()`. |
@@ -168,7 +172,17 @@ Plano completo com inventário e ordem de ataque:
 - ✅ Frente 1 — event bus (CustomEvent via document) + DOM-lite inerte
 - ✅ Frente 2 — input: keydown/keyup/pointer SDL→JS (validado com tecla real)
   + Gamepad API standard sobre SDL_Gamepad
-- ⬜ Frente 3 — fetch + decode de textura (força writeTexture no shim)
-- ⬜ Frente 4 — Rapier nativo (bindings espelhando rapier3d-compat)
+- ✅ Frente 3 — fetch/assets: GLB do kit do teste4 renderizado COM textura
+  (files.cpp + stb_image + writeTexture/copyExternalImageToTexture +
+  TextDecoder/atob/Blob/createImageBitmap em JS)
+- ✅ Frente 4 (core) — Rapier NATIVO: crate Rust `native/rapier-native`
+  (C ABI achatada, scratch compartilhado) + shims/rapier.cpp + adaptador
+  `rapier-compat.js` com a forma da API compat (o bundle aponta o import
+  do @dimforge/rapier3d-compat pra ele). Smoke: bola repousa no chão.
+  **Pendências**: DynamicRayCastVehicleController (carro) e
+  setAdditionalMassProperties — lança erro claro se usados.
 - ⬜ Frente 5 — WebAudio-lite
 - ⬜ Frente 6 — UI do engine sem DOM (ADR próprio; 6a inerte ✅ via DOM-lite)
+
+Build do Rapier nativo: `cargo build --release` em `native/rapier-native/`
+(1x; o CMake linka `target/release/rapier_native.dll.lib` e copia a dll).
