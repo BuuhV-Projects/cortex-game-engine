@@ -1,4 +1,7 @@
-import { z } from 'zod';
+// zod/v3: o runtime do engine roda também no CortexNative (Hermes), onde o
+// core do zod v4 quebra; o v3 é o mesmo que o ecossistema React Native usa.
+// O electron/ (Agent SDK) continua no v4 — ver docs/cortex-native/architecture.md.
+import { z } from 'zod/v3';
 
 /**
  * Formato persistido da cena (estado editável: transforms de objetos por nome +

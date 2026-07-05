@@ -101,8 +101,10 @@ Native (que roda milhares de libs sobre Hermes em produção):
   TextDecoder, crypto...) — a lista cresce por demanda; faltou algo, é um
   shim novo, não um beco.
 - **Não funcionam**: libs Node-only (fs/net), WASM, Intl pesado (Luxon;
-  preferir dayjs/date-fns), e metaprogramação exótica (zod v4 — caso real;
-  o bypass zod-lite foi seguro SÓ porque a validação já roda no Studio).
+  preferir dayjs/date-fns), e metaprogramação exótica (caso real: o CORE do
+  zod v4 quebra no Hermes — resolvido trocando o runtime do engine pra
+  `zod/v3` (subpath do próprio pacote v4), que roda no Hermes e valida DE
+  VERDADE no host; o electron/Agent SDK segue no v4).
 - Pendência de tooling: verificação de compatibilidade no BUILD (compilar a
   lib com hermesc + smoke) pra o dev descobrir na hora do bundle, não no
   console.

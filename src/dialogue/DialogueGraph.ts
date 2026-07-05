@@ -1,4 +1,5 @@
-import { z } from 'zod';
+// zod/v3 — compatível com Hermes/CortexNative (ver SceneFile.ts).
+import { z } from 'zod/v3';
 import type { FlagValue } from '../narrative/StoryState.js';
 
 /**

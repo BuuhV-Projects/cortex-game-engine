@@ -52,11 +52,8 @@ const gamePlugin = {
     pluginBuild.onResolve({ filter: /^cortex-game-engine$/ }, () => ({
       path: resolve('src/index-runtime.ts'),
     }));
-    // zod v4 quebra no Hermes e no host a validação é passthrough (o JSON
-    // já foi validado no Studio) — ver zod-lite.js.
-    pluginBuild.onResolve({ filter: /^zod(\/.*)?$/ }, () => ({
-      path: resolve('native/js/src/shims/zod-lite.js'),
-    }));
+    // zod: o engine importa 'zod/v3' (core v4 quebra no Hermes) — validação
+    // REAL roda no host também; nenhum stub necessário.
 
     // Transforma o main.ts do jogo: expande import.meta.glob e embrulha o
     // corpo (após os imports) num async IIFE — iife não aceita TLA.
