@@ -191,5 +191,14 @@ Plano completo com inventário e ordem de ataque:
   renderer (host/console); DialogueUI/LoadingScreen/Speedometer migram, e os
   jogos trocam HUD de divs pela API. Última frente antes do teste4 jogável.
 
+**TESTE PRÁTICO (2026-07-05): o teste4 REAL roda no host.** Pipeline:
+`node native/scripts/bundle.mjs <out> D:/jogos/teste4/main.ts` (CORTEX_LEVEL
+pula o menu) → hermesc → `cortex_host.exe D:\jogos\teste4`. Cena, player
+skinned com física, scripts, áudio e loop — validado com screenshot.
+Pendências do teste: (1) textura colormap do kit falha (tudo branco) —
+investigar caminho ImageBitmapLoader; (2) água invisível (blend states
+ignorados no pipeline — implementar); (3) HUD invisível (frente 6);
+(4) empacotamento (boot.hbc gerado à mão na pasta do jogo).
+
 Build do Rapier nativo: `cargo build --release` em `native/rapier-native/`
 (1x; o CMake linka `target/release/rapier_native.dll.lib` e copia a dll).
