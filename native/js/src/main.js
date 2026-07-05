@@ -29,8 +29,21 @@ function smokeTestBrowserShims() {
     (ok ? 'OK' : 'FALHOU'));
 }
 
+// Smoke da frente 2 — cadeia SDL→C++→JS: teclado como o browser entrega
+// (window/document/body) e Gamepad API.
+function smokeTestInput() {
+  window.addEventListener('keydown', function (e) {
+    print('[m1] keydown: key=' + e.key + ' code=' + e.code);
+  });
+  document.body.addEventListener('pointerdown', function (e) {
+    print('[m1] pointerdown em ' + e.clientX + ',' + e.clientY);
+  });
+  print('[m1] gamepads conectados: ' + navigator.getGamepads().length);
+}
+
 async function main() {
   smokeTestBrowserShims();
+  smokeTestInput();
   print('[three] criando WebGPURenderer...');
   const canvas = __cortexCreateCanvas(WIDTH, HEIGHT);
   const renderer = new THREE.WebGPURenderer({ canvas, antialias: false });

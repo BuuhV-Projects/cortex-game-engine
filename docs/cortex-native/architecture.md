@@ -45,6 +45,7 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/napi/napi_util.*` | Helpers Node-API genéricos (namespace `njs`): propriedades, wrap/unwrap de handles, chamadas JS com log de exceção. Zero dependência de WebGPU/SDL. |
 | `native/src/shims/timers.*` | `setTimeout`/`clearTimeout`/`setImmediate`. O Hermes agenda async/await via `setImmediate` — obrigatório. |
 | `native/src/shims/animation_frame.*` | `requestAnimationFrame` (uma geração de callbacks por frame; JS re-registra). |
+| `native/src/shims/input.*` | Eventos SDL→JS (keydown/keyup/pointer via `__cortexDispatchInput`) + Gamepad API (`__cortexInput.getGamepads`, layout standard W3C sobre SDL_Gamepad). |
 | `native/src/webgpu/bindings.h` | API pública do módulo: `registerBindings`, `presentIfAcquired`. Fora do módulo, só inclua este. |
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |
 | `native/src/webgpu/navigator.cpp` | `navigator.gpu` (requestAdapter, formato preferido) + dono do `gpuState()`. |
@@ -61,7 +62,8 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/js/src/shims/globals.js` | self, console→print, performance. |
 | `native/js/src/shims/event-target.js` | EventTarget-lite + Event/CustomEvent — o "event bus via document" que os jogos usam (rush:*). |
 | `native/js/src/shims/dom-lite.js` | DOM inerte (createElement/appendChild/innerHTML rodam, nada renderiza) + window/document com bus próprio. Etapa 6a do M1. |
-| `native/js/src/shims/webgpu-extras.js` | Constantes GPU*, features/limits no adapter/device, canvas fake, navigator.getGamepads placeholder. |
+| `native/js/src/shims/webgpu-extras.js` | Constantes GPU*, features/limits no adapter/device, canvas fake. |
+| `native/js/src/shims/input-bridge.js` | Redistribui eventos do host pra window/document/body (como o browser) e liga navigator.getGamepads ao nativo. |
 | `native/js/examples/triangle.js` | Referência: triângulo WebGPU puro (Marcos C–D), sem Three. |
 | `native/scripts/bundle.mjs` | esbuild (bundle es2018) + Babel (classes loose + arrows) → IIFE único pro hermesc. |
 | `native/scripts/fetch-deps.ps1` | Baixa deps prebuilt **pinadas** (SDL3, wgpu-native, Hermes NuGet). |
@@ -164,7 +166,8 @@ texturizados); MSAA não testado (antialias: false no boot).
 Plano completo com inventário e ordem de ataque:
 `docs/cortex-native/m1-inventario-teste4.md`. Estado:
 - ✅ Frente 1 — event bus (CustomEvent via document) + DOM-lite inerte
-- ⬜ Frente 2 — input (keydown/pointer + Gamepad API sobre SDL3)
+- ✅ Frente 2 — input: keydown/keyup/pointer SDL→JS (validado com tecla real)
+  + Gamepad API standard sobre SDL_Gamepad
 - ⬜ Frente 3 — fetch + decode de textura (força writeTexture no shim)
 - ⬜ Frente 4 — Rapier nativo (bindings espelhando rapier3d-compat)
 - ⬜ Frente 5 — WebAudio-lite

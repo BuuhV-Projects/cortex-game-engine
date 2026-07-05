@@ -13,14 +13,16 @@
 #include "core/host_gpu.h"
 #include "core/js_runtime.h"
 #include "shims/animation_frame.h"
+#include "shims/input.h"
 #include "shims/timers.h"
 #include "webgpu/bindings.h"
 
 namespace {
 
-bool pollEvents(SDL_Window* window, HostGpu* gpu) {
+bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
+    if (shims::handleSdlInputEvent(env, event)) continue;
     if (!core::handleEvent(event, window, gpu)) return false;
   }
   return true;
@@ -54,6 +56,7 @@ int main(int, char**) {
     core::JsRuntime js;
     shims::registerTimers(js.env());
     shims::registerAnimationFrame(js.env());
+    shims::registerInput(js.env());
     webgpu::registerBindings(js.env(), &gpu);
 
     const char* basePath = SDL_GetBasePath();
@@ -63,11 +66,12 @@ int main(int, char**) {
     const uint64_t t0 = SDL_GetTicksNS();
     bool running = true;
     while (running) {
-      running = pollEvents(window, &gpu);
+      running = pollEvents(js.env(), window, &gpu);
       double elapsedMs =
           static_cast<double>(SDL_GetTicksNS() - t0) / 1'000'000.0;
       runFrame(js, &gpu, elapsedMs);
     }
+    shims::closeGamepads();
   }  // ~JsRuntime antes de liberar a GPU (JS pode segurar handles)
 
   shutdownGpu(&gpu);

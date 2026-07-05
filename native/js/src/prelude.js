@@ -5,10 +5,12 @@ import { installGlobals } from './shims/globals.js';
 import { installEventClasses } from './shims/event-target.js';
 import { installDomLite } from './shims/dom-lite.js';
 import { installWebGpuExtras, createCanvas } from './shims/webgpu-extras.js';
+import { installInputBridge } from './shims/input-bridge.js';
 
 installGlobals();
 installEventClasses();
 installDomLite();
 installWebGpuExtras();
+installInputBridge();
 
 globalThis.__cortexCreateCanvas = createCanvas;

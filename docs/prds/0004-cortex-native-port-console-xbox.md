@@ -25,14 +25,15 @@ Existem dois caminhos pra chegar ao Xbox:
 2. **Caminho completo (este PRD):** host nativo GDK que executa o JavaScript do
    jogo sem browser e sem WebGL — o "CortexNative".
 
-**Restrição de produto:** o suporte a PC standalone **continua sendo via Tauri**
-(ADR-0024). O CortexNative é um **alvo adicional** de export, não um substituto.
-Matriz de alvos após este PRD:
+**Restrição de produto (ATUALIZADA em 2026-07-05, ADR-0095):** o CortexNative
+passa a ser **também o export PC**, substituindo o Tauri (congelado até o M1
+completar). PC e console compartilham a mesma pilha — o PC é o campo de prova
+diário do caminho de console. Matriz de alvos:
 
 | Alvo | Casca | Status |
 |---|---|---|
-| Studio / dev | Electron | existente |
-| PC standalone | Tauri | existente — **permanece** |
+| Studio / dev | Electron | existente — **permanece** |
+| PC standalone | **CortexNative** | ADR-0095 (antes Tauri/ADR-0024, congelado) |
 | Xbox (nativo) | CortexNative (GDK) | este PRD |
 
 ## Decisão de arquitetura (proposta)
