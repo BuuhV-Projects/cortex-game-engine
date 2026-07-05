@@ -13,6 +13,8 @@
 #include "core/host_gpu.h"
 #include "core/js_runtime.h"
 #include "shims/animation_frame.h"
+#include "shims/files.h"
+#include "shims/image_decode.h"
 #include "shims/input.h"
 #include "shims/timers.h"
 #include "webgpu/bindings.h"
@@ -54,13 +56,16 @@ int main(int, char**) {
 
   {
     core::JsRuntime js;
+    const char* basePath = SDL_GetBasePath();
+    std::string baseDir = basePath ? basePath : "";
     shims::registerTimers(js.env());
     shims::registerAnimationFrame(js.env());
     shims::registerInput(js.env());
+    shims::registerFiles(js.env(), baseDir);
+    shims::registerImageDecode(js.env());
     webgpu::registerBindings(js.env(), &gpu);
 
-    const char* basePath = SDL_GetBasePath();
-    if (!js.runBoot(basePath ? basePath : "")) return 1;
+    if (!js.runBoot(baseDir)) return 1;
     js.drainMicrotasks();
 
     const uint64_t t0 = SDL_GetTicksNS();

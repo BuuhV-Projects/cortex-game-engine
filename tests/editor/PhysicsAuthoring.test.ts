@@ -51,8 +51,12 @@ describe('PhysicsAuthoring — tipo Rígido (Rapier)', () => {
     expect(physics()['caixa']).toMatchObject({ type: 'rigid', rapier: { bodyType: 'dynamic' } });
     expect(physicsApi.get(m).type).toBe('rigid');
 
-    // o RapierPhysicsSystem registra async (carrega o WASM)
-    await new Promise((r) => setTimeout(r, 300));
+    // o RapierPhysicsSystem registra async (carrega o WASM) — polling em vez
+    // de espera fixa: 300ms flakeava com a máquina sob carga
+    const deadline = Date.now() + 5000;
+    while (!world.hasSystem(RapierPhysicsSystem) && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
     expect(world.hasSystem(RapierPhysicsSystem)).toBe(true);
   });
 

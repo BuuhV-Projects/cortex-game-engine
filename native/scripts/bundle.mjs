@@ -9,6 +9,19 @@
 import { build } from 'esbuild';
 import { transformAsync } from '@babel/core';
 import { readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
+// Só o import BARE 'three' (dos addons/loaders) vai pro build WebGPU —
+// alias do esbuild não serve porque reescreve subpaths ('three/webgpu'
+// viraria 'three/webgpu/webgpu').
+const threeWebGpuAlias = {
+  name: 'three-webgpu-alias',
+  setup(pluginBuild) {
+    pluginBuild.onResolve({ filter: /^three$/ }, () => ({
+      path: resolve('node_modules/three/build/three.webgpu.js'),
+    }));
+  },
+};
 
 const outfile = process.argv[2];
 if (!outfile) {
@@ -21,6 +34,7 @@ await build({
   bundle: true,
   format: 'iife',
   target: 'es2018',
+  plugins: [threeWebGpuAlias],
   outfile,
   define: { 'process.env.NODE_ENV': '"production"' },
 });

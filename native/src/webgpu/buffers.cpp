@@ -19,10 +19,13 @@ void finalizeBindGroup(napi_env, void* data, void*) {
   if (data) wgpuBindGroupRelease(static_cast<WGPUBindGroup>(data));
 }
 
+}  // namespace
+
 // Extrai (ponteiro, bytes totais, bytes/elemento) de um TypedArray ou
 // ArrayBuffer JS. elementSize=1 pra ArrayBuffer (offsets em bytes).
-bool getBytes(napi_env env, napi_value value, void** data, size_t* size,
-              size_t* elementSize) {
+// Compartilhado com textures.cpp (declarado no internal.h).
+bool getJsBytes(napi_env env, napi_value value, void** data, size_t* size,
+                size_t* elementSize) {
   bool isTypedArray = false;
   napi_is_typedarray(env, value, &isTypedArray);
   if (isTypedArray) {
@@ -60,6 +63,8 @@ bool getBytes(napi_env env, napi_value value, void** data, size_t* size,
   }
   return false;
 }
+
+namespace {
 
 napi_value bufferDestroy(napi_env env, napi_callback_info info) {
   size_t argc = 0;
@@ -220,7 +225,7 @@ napi_value queueWriteBuffer(napi_env env, napi_callback_info info) {
   void* data = nullptr;
   size_t totalBytes = 0;
   size_t elementSize = 1;
-  if (!buffer || !getBytes(env, args[2], &data, &totalBytes, &elementSize))
+  if (!buffer || !getJsBytes(env, args[2], &data, &totalBytes, &elementSize))
     return njs::undefined(env);
 
   double dataOffsetElements = 0;

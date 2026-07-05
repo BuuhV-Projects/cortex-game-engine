@@ -135,6 +135,9 @@ napi_value makeDeviceObject(napi_env env, WGPUDevice device) {
   napi_value queue = njs::makeObject(env);
   njs::setMethod(env, queue, "submit", queueSubmit);
   njs::setMethod(env, queue, "writeBuffer", queueWriteBuffer);
+  njs::setMethod(env, queue, "writeTexture", queueWriteTexture);
+  njs::setMethod(env, queue, "copyExternalImageToTexture",
+                 queueCopyExternalImageToTexture);
   napi_set_named_property(env, obj, "queue", queue);
   return obj;
 }

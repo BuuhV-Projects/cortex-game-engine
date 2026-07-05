@@ -15,6 +15,8 @@ add_executable(cortex_host
   src/core/js_runtime.cpp
   src/napi/napi_util.cpp
   src/shims/animation_frame.cpp
+  src/shims/files.cpp
+  src/shims/image_decode.cpp
   src/shims/input.cpp
   src/shims/timers.cpp
   src/webgpu/buffers.cpp
@@ -32,7 +34,7 @@ add_executable(cortex_host
 # → boot.hbc (console não faz parse de JS em runtime; PC segue igual por
 # paridade). O esbuild resolve o three no node_modules da raiz do repo.
 set(HERMESC ${TP}/hermes/tools/native/release/x86/hermes.exe)
-file(GLOB BOOT_JS_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/js/src/*.js)
+file(GLOB_RECURSE BOOT_JS_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/js/src/*.js)
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/boot.bundle.js
   COMMAND node ${CMAKE_CURRENT_SOURCE_DIR}/scripts/bundle.mjs
@@ -53,6 +55,7 @@ add_dependencies(cortex_host boot_hbc)
 
 target_include_directories(cortex_host PRIVATE
   ${TP}/SDL3/include
+  ${TP}/stb
   ${TP}/wgpu/include
   ${TP}/hermes/build/native/include
   ${TP}/hermes/build/native/include/node-api

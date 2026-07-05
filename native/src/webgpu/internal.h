@@ -42,11 +42,17 @@ napi_value deviceCreateBuffer(napi_env env, napi_callback_info info);
 napi_value deviceCreateBindGroup(napi_env env, napi_callback_info info);
 napi_value queueWriteBuffer(napi_env env, napi_callback_info info);
 void registerBufferUsageGlobals(napi_env env);
+// util compartilhado: bytes de TypedArray/ArrayBuffer (elementSize=1 pra AB)
+bool getJsBytes(napi_env env, napi_value value, void** data, size_t* size,
+                size_t* elementSize);
 
-// textures.cpp — recursos de imagem (GPUTexture, views, samplers)
+// textures.cpp — recursos de imagem (GPUTexture, views, samplers, upload)
 napi_value deviceCreateTexture(napi_env env, napi_callback_info info);
 napi_value deviceCreateSampler(napi_env env, napi_callback_info info);
 napi_value makeTextureViewMethods(napi_env env, napi_value textureObj);
+napi_value queueWriteTexture(napi_env env, napi_callback_info info);
+napi_value queueCopyExternalImageToTexture(napi_env env,
+                                           napi_callback_info info);
 
 // layouts.cpp — layouts explícitos (o three não usa layout 'auto')
 napi_value deviceCreateBindGroupLayout(napi_env env, napi_callback_info info);

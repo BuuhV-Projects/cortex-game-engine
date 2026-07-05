@@ -39,6 +39,15 @@ if (-not (Test-Path $wgpuDir)) {
     Expand-Archive $wgpuZip -DestinationPath $wgpuDir
 }
 
+# ── stb_image (decode de PNG/JPG das texturas GLB; header único, pinado) ──
+$STB_COMMIT = '5c205738c191bcb0abc65c4febfa9bd25ff35234'
+$stbDir = Join-Path $tp 'stb'
+if (-not (Test-Path (Join-Path $stbDir 'stb_image.h'))) {
+    New-Item -ItemType Directory -Force $stbDir | Out-Null
+    Write-Host 'baixando stb_image ...' -ForegroundColor Cyan
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nothings/stb/$STB_COMMIT/stb_image.h" -OutFile (Join-Path $stbDir 'stb_image.h')
+}
+
 # ── Hermes (runtime JS; fork Windows da Microsoft, via NuGet) ──
 $hermesZip = Fetch 'Hermes' "https://www.nuget.org/api/v2/package/Microsoft.JavaScript.Hermes/$HERMES_VERSION" "hermes-$HERMES_VERSION.nupkg.zip"
 $hermesDir = Join-Path $tp 'hermes'

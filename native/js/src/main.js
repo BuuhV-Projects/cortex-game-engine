@@ -3,6 +3,7 @@
 // navigator.gpu. Se isto renderiza, o conceito CortexNative está validado.
 import './prelude.js';
 import * as THREE from 'three/webgpu';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const WIDTH = 1280;
 const HEIGHT = 720;
@@ -58,10 +59,32 @@ async function main() {
 
   // MeshNormalMaterial: faces coloridas sem luz/textura — o caso mínimo.
   const cube = new THREE.Mesh(
-    new THREE.BoxGeometry(1.2, 1.2, 1.2),
+    new THREE.BoxGeometry(0.6, 0.6, 0.6),
     new THREE.MeshNormalMaterial(),
   );
+  cube.position.x = -1.2;
   scene.add(cube);
+
+  // Frente 3 do M1: GLB REAL do teste4 (kit Deathrun) carregado via fetch
+  // nativo + GLTFLoader. Luz porque o kit usa materiais PBR.
+  scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.0);
+  sun.position.set(3, 5, 4);
+  scene.add(sun);
+
+  new GLTFLoader().load(
+    'block-grass-large.glb',
+    function (gltf) {
+      const model = gltf.scene;
+      model.position.set(0.8, -0.3, 0);
+      scene.add(model);
+      print('[m1] GLB do teste4 carregado e na cena!');
+    },
+    undefined,
+    function (error) {
+      print('[m1] GLB ERRO: ' + error + (error && error.stack ? '\n' + error.stack : ''));
+    },
+  );
 
   function frame(tMs) {
     const t = tMs / 1000;
