@@ -94,6 +94,11 @@ napi_value devicePopErrorScope(napi_env env, napi_callback_info info) {
   };
   wgpuDevicePopErrorScope(device, cb);
   while (!result.done) wgpuInstanceProcessEvents(gpu->instance);
+  if (result.hasError) {
+    // Também no stderr do host: o three engole/atrasa o log do escopo e
+    // ficaríamos sem a causa real de pipelines inválidos.
+    std::fprintf(stderr, "[webgpu escopo] %s\n", result.message.c_str());
+  }
 
   napi_value out = nullptr;
   if (result.hasError) {

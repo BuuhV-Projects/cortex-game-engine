@@ -20,9 +20,20 @@ void logPendingException(napi_env env, const char* where) {
   if (!pending) return;
   napi_value exception = nullptr;
   napi_get_and_clear_last_exception(env, &exception);
+
+  // Preferir .stack (mensagem + stack trace); cair pra coerção em string.
+  napi_value stack = nullptr;
   napi_value asString = nullptr;
-  if (napi_coerce_to_string(env, exception, &asString) != napi_ok) return;
-  char buffer[2048];
+  bool hasStack = false;
+  if (napi_get_named_property(env, exception, "stack", &stack) == napi_ok) {
+    napi_valuetype type = napi_undefined;
+    napi_typeof(env, stack, &type);
+    hasStack = type == napi_string;
+  }
+  if (napi_coerce_to_string(env, hasStack ? stack : exception, &asString) !=
+      napi_ok)
+    return;
+  char buffer[4096];
   size_t length = 0;
   napi_get_value_string_utf8(env, asString, buffer, sizeof(buffer), &length);
   std::fprintf(stderr, "[%s] exceção JS: %.*s\n", where,

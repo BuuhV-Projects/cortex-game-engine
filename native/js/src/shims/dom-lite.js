@@ -67,8 +67,14 @@ export function installDomLite() {
     createElement: makeInertElement,
     createElementNS(_ns, tag) { return makeInertElement(tag); },
     createTextNode(text) { return { textContent: text }; },
-    getElementById() { return null; },
-    querySelector() { return null; },
+    // A canvas do jogo: getElementById('canvas')/querySelector('canvas')
+    // devolvem a canvas do HOST (instalada pelo webgpu-extras).
+    getElementById(id) {
+      return id === 'canvas' ? (globalThis.__cortexCanvas || null) : null;
+    },
+    querySelector(selector) {
+      return selector === 'canvas' ? (globalThis.__cortexCanvas || null) : null;
+    },
     querySelectorAll() { return []; },
     addEventListener: documentBus.addEventListener,
     removeEventListener: documentBus.removeEventListener,

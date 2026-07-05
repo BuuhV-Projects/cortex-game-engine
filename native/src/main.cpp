@@ -52,15 +52,21 @@ void shutdownGpu(HostGpu* gpu) {
 
 }  // namespace
 
-int main(int, char**) {
+int main(int argc, char** argv) {
   HostGpu gpu;
   SDL_Window* window = core::createAppWindow(&gpu, "cortex-native (M0)", 1280, 720);
   if (!window) return 1;
 
   {
     core::JsRuntime js;
+    // Diretório do jogo: argv[1] (boot.hbc + assets lidos de lá) ou, sem
+    // argumento, a pasta do exe.
     const char* basePath = SDL_GetBasePath();
     std::string baseDir = basePath ? basePath : "";
+    if (argc > 1 && argv[1] && argv[1][0]) {
+      baseDir = argv[1];
+      if (baseDir.back() != '\\' && baseDir.back() != '/') baseDir += '\\';
+    }
     shims::registerTimers(js.env());
     shims::registerAnimationFrame(js.env());
     shims::registerInput(js.env());

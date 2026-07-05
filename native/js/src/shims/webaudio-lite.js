@@ -68,7 +68,12 @@ function BufferSourceNode(context) {
     setValueAtTime: function (v) { this.value = v; },
     setTargetAtTime: function (v) { this.value = v; },
   };
-  this.detune = { value: 0 };
+  this.detune = {
+    value: 0,
+    setValueAtTime: function (v) { this.value = v; },
+    setTargetAtTime: function (v) { this.value = v; },
+    linearRampToValueAtTime: function (v) { this.value = v; },
+  };
   this.onended = null;
   this.__next = null;
   this.__voice = 0;

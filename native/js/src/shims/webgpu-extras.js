@@ -71,6 +71,14 @@ export function installWebGpuExtras() {
   }
 }
 
+// Canvas singleton do host — o que o jogo recebe via getElementById('canvas').
+export function installHostCanvas() {
+  globalThis.__cortexCanvas = createCanvas(
+    globalThis.innerWidth || 1280,
+    globalThis.innerHeight || 720,
+  );
+}
+
 export function createCanvas(width, height) {
   return {
     width,

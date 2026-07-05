@@ -32,7 +32,16 @@ export function createEventBus() {
   };
 }
 
+// Classe EventTarget (o three/engine estendem — EventDispatcher etc.).
+function EventTargetClass() {
+  const bus = createEventBus();
+  this.addEventListener = bus.addEventListener;
+  this.removeEventListener = bus.removeEventListener;
+  this.dispatchEvent = bus.dispatchEvent;
+}
+
 export function installEventClasses() {
+  globalThis.EventTarget = EventTargetClass;
   function Event(type, init) {
     this.type = type;
     this.bubbles = !!(init && init.bubbles);

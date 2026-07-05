@@ -2,10 +2,35 @@
 // Sem rede: "fetch" aqui é leitura do pacote do jogo (PC: pasta do exe;
 // console: XPackage). data: URIs são decodificadas em JS.
 
-function BlobLite(bytes, type) {
-  this.__bytes = bytes; // ArrayBuffer
+// Assinatura da spec: new Blob(parts[], { type }) — o three cria blobs de
+// texturas embutidas assim (new Blob([bufferView], { type: mimeType })).
+// Uso interno (Response.blob) passa ArrayBuffer direto — aceita os dois.
+function BlobLite(parts, options) {
+  let bytes;
+  if (parts instanceof ArrayBuffer) {
+    bytes = parts;
+  } else {
+    const arrays = (parts || []).map(function (part) {
+      if (part instanceof ArrayBuffer) return new Uint8Array(part);
+      if (part && part.buffer instanceof ArrayBuffer) {
+        return new Uint8Array(part.buffer, part.byteOffset, part.byteLength);
+      }
+      const text = String(part);
+      return new TextEncoder().encode(text);
+    });
+    let total = 0;
+    for (const a of arrays) total += a.length;
+    const merged = new Uint8Array(total);
+    let offset = 0;
+    for (const a of arrays) {
+      merged.set(a, offset);
+      offset += a.length;
+    }
+    bytes = merged.buffer;
+  }
+  this.__bytes = bytes;
   this.size = bytes.byteLength;
-  this.type = type || '';
+  this.type = (options && options.type) || (typeof options === 'string' ? options : '');
 }
 BlobLite.prototype.arrayBuffer = function () {
   return Promise.resolve(this.__bytes);
