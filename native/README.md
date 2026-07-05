@@ -16,7 +16,7 @@ extensão. Toda mudança estrutural atualiza esse doc na mesma mudança.
 | Doc | O que explica |
 |---|---|
 | [PRD-0004](../docs/prds/0004-cortex-native-port-console-xbox.md) | Por que existe, plano completo do port console (M0–M4), portões ID@Xbox |
-| [ADR-0094](../docs/adrs/0094-cortex-native-stack-do-host-m0.md) | Decisões de stack: Hermes/NuGet, wgpu-native/D3D12, SDL3, bytecode, SOLID |
+| [ADR-0100](../docs/adrs/0100-cortex-native-stack-do-host-m0.md) | Decisões de stack: Hermes/NuGet, wgpu-native/D3D12, SDL3, bytecode, SOLID |
 | [architecture.md](../docs/cortex-native/architecture.md) | **Mapa vivo**: módulos, frame, regras, armadilhas, receitas, build |
 
 ## Status: **M0 CONCLUÍDO** (2026-07-05)

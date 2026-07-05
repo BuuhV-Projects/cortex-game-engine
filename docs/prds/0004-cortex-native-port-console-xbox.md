@@ -3,7 +3,7 @@
 **Data:** 2026-07-04
 **Status:** em execução — **M0 CONCLUÍDO em 2026-07-05** (`native/`): Three.js
 WebGPURenderer renderizando cubo girando em bytecode Hermes sobre D3D12, sem
-browser — conceito validado de ponta a ponta. Stack: ADR-0094. Mapa vivo:
+browser — conceito validado de ponta a ponta. Stack: ADR-0100. Mapa vivo:
 `docs/cortex-native/architecture.md`. Próximo: M1 (engine completo no host),
 validado com o jogo real `D:\jogos\teste4` (branch de refactor) — cobre as
 frentes que o M0 não exercitou: Rapier (física), HUD DOM (canvas/document) e
@@ -25,7 +25,7 @@ Existem dois caminhos pra chegar ao Xbox:
 2. **Caminho completo (este PRD):** host nativo GDK que executa o JavaScript do
    jogo sem browser e sem WebGL — o "CortexNative".
 
-**Restrição de produto (ATUALIZADA em 2026-07-05, ADR-0095):** o CortexNative
+**Restrição de produto (ATUALIZADA em 2026-07-05, ADR-0101):** o CortexNative
 passa a ser **também o export PC**, substituindo o Tauri (congelado até o M1
 completar). PC e console compartilham a mesma pilha — o PC é o campo de prova
 diário do caminho de console. Matriz de alvos:
@@ -33,7 +33,7 @@ diário do caminho de console. Matriz de alvos:
 | Alvo | Casca | Status |
 |---|---|---|
 | Studio / dev | Electron | existente — **permanece** |
-| PC standalone | **CortexNative** | ADR-0095 (antes Tauri/ADR-0024, congelado) |
+| PC standalone | **CortexNative** | ADR-0101 (antes Tauri/ADR-0024, congelado) |
 | Xbox (nativo) | CortexNative (GDK) | este PRD |
 
 ## Decisão de arquitetura (proposta)

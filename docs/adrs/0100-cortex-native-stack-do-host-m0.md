@@ -1,4 +1,4 @@
-# 0094 - CortexNative: stack do host nativo (M0)
+# 0100 - CortexNative: stack do host nativo (M0)
 
 **Data:** 2026-07-05
 **Status:** aceito

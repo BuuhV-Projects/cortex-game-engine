@@ -1,7 +1,7 @@
 # 0024 - Instalador final do jogo com Tauri 2
 
 **Data:** 2026-05-28
-**Status:** substituído por 0095 (export PC → CortexNative; Tauri congelado
+**Status:** substituído por 0101 (export PC → CortexNative; Tauri congelado
 até o M1 do PRD-0004 completar)
 
 ## Contexto

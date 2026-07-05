@@ -6,7 +6,7 @@
 > sessão de IA (ou um humano novo) pegar qualquer parte sem arqueologia.
 >
 > Contexto de produto: `docs/prds/0004-cortex-native-port-console-xbox.md`.
-> Decisões de stack: `docs/adrs/0094-cortex-native-stack-do-host-m0.md`.
+> Decisões de stack: `docs/adrs/0100-cortex-native-stack-do-host-m0.md`.
 
 ## O que é
 

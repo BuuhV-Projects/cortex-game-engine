@@ -1,4 +1,4 @@
-# 0095 - CortexNative substitui o Tauri como export PC
+# 0101 - CortexNative substitui o Tauri como export PC
 
 **Data:** 2026-07-05
 **Status:** aceito
@@ -7,7 +7,7 @@
 
 O ADR-0024 definiu o Tauri como caminho de distribuição PC (WebView2 +
 instalador NSIS). Com o CortexNative validado (M0: Three.js rodando em
-Hermes + WebGPU/D3D12 sem browser — PRD-0004, ADR-0094), manter dois
+Hermes + WebGPU/D3D12 sem browser — PRD-0004, ADR-0100), manter dois
 runtimes de publicação cria dupla manutenção e diverge do console: o Tauri
 roda no WebView2 (Chromium), o Xbox roda no CortexNative — bugs de
 plataforma só apareceriam no console.
