@@ -11,7 +11,30 @@ set(TP ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
 add_executable(cortex_host
   src/main.cpp
+  src/core/app_window.cpp
+  src/core/js_runtime.cpp
+  src/napi/napi_util.cpp
+  src/shims/animation_frame.cpp
+  src/shims/timers.cpp
+  src/webgpu/commands.cpp
+  src/webgpu/device.cpp
+  src/webgpu/enums.cpp
+  src/webgpu/navigator.cpp
+  src/webgpu/surface.cpp
 )
+
+# boot.js → boot.hbc (bytecode Hermes, compilado no build — console não faz
+# parse de JS em runtime; o PC segue o mesmo caminho por paridade)
+set(HERMESC ${TP}/hermes/tools/native/release/x86/hermes.exe)
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/boot.hbc
+  COMMAND ${HERMESC} -emit-binary -O -out ${CMAKE_BINARY_DIR}/boot.hbc
+          ${CMAKE_CURRENT_SOURCE_DIR}/js/boot.js
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/js/boot.js
+  COMMENT "hermesc: boot.js -> boot.hbc"
+)
+add_custom_target(boot_hbc ALL DEPENDS ${CMAKE_BINARY_DIR}/boot.hbc)
+add_dependencies(cortex_host boot_hbc)
 
 target_include_directories(cortex_host PRIVATE
   ${TP}/SDL3/include
