@@ -7,7 +7,30 @@ import * as THREE from 'three/webgpu';
 const WIDTH = 1280;
 const HEIGHT = 720;
 
+// Smoke test da frente 1 do M1 — o padrão exato do teste4:
+// event bus via document + HUD DOM inerte.
+function smokeTestBrowserShims() {
+  let received = null;
+  document.addEventListener('rush:coin-collected', function (e) {
+    received = e.detail;
+  });
+  document.dispatchEvent(
+    new CustomEvent('rush:coin-collected', { detail: { total: 7 } }),
+  );
+
+  const hud = document.createElement('div');
+  hud.style.position = 'fixed';
+  hud.innerHTML = '<b>x7</b>';
+  document.body.appendChild(hud);
+
+  const ok = received && received.total === 7 &&
+    document.body.children.length === 1;
+  print('[m1] smoke frente 1 (event bus + DOM-lite): ' +
+    (ok ? 'OK' : 'FALHOU'));
+}
+
 async function main() {
+  smokeTestBrowserShims();
   print('[three] criando WebGPURenderer...');
   const canvas = __cortexCreateCanvas(WIDTH, HEIGHT);
   const renderer = new THREE.WebGPURenderer({ canvas, antialias: false });

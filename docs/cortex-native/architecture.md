@@ -56,8 +56,12 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/webgpu/commands.cpp` | Encoder, render pass (color+depth attachments), setBindGroup/setVertexBuffer/setIndexBuffer/viewport/scissor, draw/drawIndexed, queue.submit. |
 | `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. |
 | `native/src/webgpu/enums.*` | Mapas string↔enum (formatos, compare, cull, vertex formats...). |
-| `native/js/src/main.js` | Boot do jogo (hoje: cubo Three.js girando). Entry do bundle. |
-| `native/js/src/prelude.js` | Shims de browser EM JS (console, performance, canvas fake, limits/features do adapter/device, constantes GPU*). Regra: o que dá pra shimar em JS fica aqui. |
+| `native/js/src/main.js` | Boot do jogo (hoje: cubo Three.js girando + smoke tests do M1). Entry do bundle. |
+| `native/js/src/prelude.js` | Orquestrador dos shims JS (importa js/src/shims/ na ordem certa). Regra: o que dá pra shimar em JS fica em shims/. |
+| `native/js/src/shims/globals.js` | self, console→print, performance. |
+| `native/js/src/shims/event-target.js` | EventTarget-lite + Event/CustomEvent — o "event bus via document" que os jogos usam (rush:*). |
+| `native/js/src/shims/dom-lite.js` | DOM inerte (createElement/appendChild/innerHTML rodam, nada renderiza) + window/document com bus próprio. Etapa 6a do M1. |
+| `native/js/src/shims/webgpu-extras.js` | Constantes GPU*, features/limits no adapter/device, canvas fake, navigator.getGamepads placeholder. |
 | `native/js/examples/triangle.js` | Referência: triângulo WebGPU puro (Marcos C–D), sem Three. |
 | `native/scripts/bundle.mjs` | esbuild (bundle es2018) + Babel (classes loose + arrows) → IIFE único pro hermesc. |
 | `native/scripts/fetch-deps.ps1` | Baixa deps prebuilt **pinadas** (SDL3, wgpu-native, Hermes NuGet). |
@@ -156,10 +160,12 @@ Limitações conhecidas (M1): mapAsync (readback) não existe; blend states são
 ignorados (transparência); writeTexture/copyTexture* não existem (materiais
 texturizados); MSAA não testado (antialias: false no boot).
 
-**M1 — engine cortex completo no host** (validar com o jogo real
-`D:\jogos\teste4`, branch de refactor): Rapier NATIVO com bindings JSI
-espelhando o rapier3d-compat (Hermes não roda WASM), input SDL3→Gamepad API,
-áudio, fetch/assets, e a frente maior — **HUD DOM**: o engine usa
-canvas/document pra UI HTML (DialogueUI, LoadingScreen, HUD dos jogos);
-console não tem DOM → abstração de UI com backend DOM (PC) e backend
-renderer (console), conforme PRD-0004 §mudanças no engine.
+**M1 — engine cortex completo no host**, validado com o jogo real teste4.
+Plano completo com inventário e ordem de ataque:
+`docs/cortex-native/m1-inventario-teste4.md`. Estado:
+- ✅ Frente 1 — event bus (CustomEvent via document) + DOM-lite inerte
+- ⬜ Frente 2 — input (keydown/pointer + Gamepad API sobre SDL3)
+- ⬜ Frente 3 — fetch + decode de textura (força writeTexture no shim)
+- ⬜ Frente 4 — Rapier nativo (bindings espelhando rapier3d-compat)
+- ⬜ Frente 5 — WebAudio-lite
+- ⬜ Frente 6 — UI do engine sem DOM (ADR próprio; 6a inerte ✅ via DOM-lite)
