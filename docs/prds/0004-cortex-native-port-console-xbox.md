@@ -1,9 +1,10 @@
 # PRD 0004 - CortexNative: port 100% nativo para console (Xbox)
 
 **Data:** 2026-07-04
-**Status:** em execução — M0 iniciado em 2026-07-05 (`native/`): Marcos A e B
-provados no PC (SDL3 + wgpu-native D3D12 + Hermes executando JS que comanda o
-frame). Ver `native/README.md`.
+**Status:** em execução — M0 iniciado em 2026-07-05 (`native/`): Marcos A–C
+provados no PC (SDL3 + wgpu-native D3D12 + Hermes rodando bytecode .hbc; JS
+comanda tudo via navigator.gpu — triângulo WGSL). Stack: ADR-0094. Mapa vivo:
+`docs/cortex-native/architecture.md`.
 
 ## Problema
 

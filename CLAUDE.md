@@ -13,6 +13,11 @@ architecture.md §9.
 
 ## Mapa de arquitetura (LEIA antes de mexer; ATUALIZE ao mudar)
 
+> **Host nativo (`native/`, port console/Xbox):** tem mapa PRÓPRIO em
+> `docs/cortex-native/architecture.md` — leia antes de mexer lá e atualize na
+> mesma mudança. Regras do native/: SOLID/arquivos pequenos, API fiel ao
+> browser, manutenção AI-first (PRD-0004, ADR-0094).
+
 `docs/cortex-game-engine/architecture.md` descreve **como tudo se conecta** (ECS,
 cena data-driven + overlay, editor F2 + autorias + ponte com a IDE, física/Rapier,
 build/vendoring, fluxo de ponta a ponta e **armadilhas conhecidas**). É a fonte de
