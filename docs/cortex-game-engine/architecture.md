@@ -45,9 +45,13 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
 Camada de **comportamento por objeto** em cima do ECS: `ScriptBehavior`
 (`onStart/onUpdate(dt em s)/onDestroy` + `static fields` editáveis no Inspector) →
 `ScriptComponent` (N slots por nó) → **`ScriptHostSystem`** instancia/roda (pausa no editor).
-O jogo registra (`registerScript`, normalmente via `import.meta.glob('./scripts/*.ts')`) e
-adiciona o host no boot. Nó declara `scripts: [{ type, fields }]` no `level.json`; overlay
-`data.scripts[id]` vence.
+O jogo **auto-registra** a pasta `scripts/` no boot (ADR-0096):
+`registerScripts(import.meta.glob('./scripts/*.ts', { eager: true }))` — o nome no
+Inspector/cena é o **nome do arquivo** (estilo Unity; `static scriptName` sobrepõe,
+`class.name` só em arquivo multi-script — minifica em prod!). `registerScript(nome,
+classe)` manual continua valendo. Nó declara `scripts: [{ type, fields }]` no
+`level.json`; overlay `data.scripts[id]` vence. ⚠️ O nome do script é DADO persistido —
+renomear arquivo/scriptName exige atualizar as cenas que o usam.
 
 **Quando usar System (ECS) vs Script** (regra de ouro — detalhe no ADR-0086):
 - **System** = simulação/infra pra **muitas** entidades, reutilizável, sensível à ordem do

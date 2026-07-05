@@ -76,23 +76,32 @@ anexe a um objeto pelo **Inspector** ("Adicionar Componente → Script") ou pelo
 (`node.scripts`). Roda **só no Play** (pausa no editor). Não cole lógica no `main.ts` — vire script.
 
 ```ts
-import { Game, ScriptBehavior, ScriptHostSystem, registerScript } from 'cortex-game-engine'
+// scripts/Girar.ts — nome no Inspector = nome do ARQUIVO (auto-registro, ADR-0096)
+import { ScriptBehavior } from 'cortex-game-engine'
 
-class Girar extends ScriptBehavior {
-  // Campos editáveis no Inspector (schema estático). Tipos: number | boolean | select | vector3.
+export class Girar extends ScriptBehavior {
+  // static scriptName = 'OutroNome'  // opcional: sobrepõe o nome do arquivo
+  // Campos editáveis no Inspector (schema estático). Tipos: number | string | boolean | select | vector3 | asset.
   static fields = { rpm: { type: 'number', default: 30, label: 'Rotação (rpm)' } } as const
   rpm = 30 // injetado pelo host a partir do campo
   onStart() { /* uma vez no 1º frame de Play */ }
   onUpdate(dt: number) { if (this.object3d) this.object3d.rotation.y += (this.rpm / 60) * Math.PI * 2 * dt } // dt em SEGUNDOS
   onDestroy() { /* ao remover */ }
 }
-registerScript('Girar', Girar)
+```
 
-// No boot do jogo: adicione o host UMA vez, com o contexto e a pausa de editor.
+```ts
+// main.ts — boot (o template já vem assim): auto-registra a pasta scripts/ e
+// adiciona o host UMA vez. Criar arquivo novo em scripts/ = pronto, sem glue.
+import { registerScripts, ScriptHostSystem } from 'cortex-game-engine'
+registerScripts(import.meta.glob('./scripts/*.ts', { eager: true }))
 game.world.addSystem(new ScriptHostSystem(
   { world: game.world, input: game.input, gamepad: game.gamepad, scene: game.scene, camera: game.camera },
-  () => game.editorActive,
+  () => game.editorActive || game.gameplayPaused,
 ))
+// registerScript('Nome', Classe) manual continua existindo (nome alternativo).
+// ⚠️ o nome do script é persistido nas cenas — renomear arquivo/scriptName
+// exige atualizar level.json/scene-data que o referenciam.
 ```
 
 Dentro do script: `this.object3d` (o nó), `this.entity` (ECS), `this.ctx` (`world/input/gamepad/scene/camera`).

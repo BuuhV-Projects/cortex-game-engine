@@ -10,12 +10,31 @@
  * vertical o `buildScene` liga sozinho (nó `character`). Em DEV o editor F2 vem
  * ligado; em produção não pesa (ADR-0042). Lógica de jogo continua em TS.
  */
-import { Game, buildScene, setupThirdPerson, SceneLoader, type SceneDefinition } from 'cortex-game-engine'
+import {
+  Game,
+  buildScene,
+  setupThirdPerson,
+  SceneLoader,
+  registerScripts,
+  ScriptHostSystem,
+  type SceneDefinition,
+} from 'cortex-game-engine'
 import level from './scenes/level.json'
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
 
 const game = new Game({ canvas })
+
+// Scripts anexáveis (ADR-0085): TODO arquivo em `scripts/` é auto-registrado —
+// o nome no Inspector ("Adicionar Componente → Script") é o nome do ARQUIVO
+// (estilo Unity; `static scriptName` na classe sobrepõe). Crie o arquivo e pronto.
+registerScripts(import.meta.glob('./scripts/*.ts', { eager: true }))
+game.world.addSystem(
+  new ScriptHostSystem(
+    { world: game.world, input: game.input, gamepad: game.gamepad, scene: game.scene, camera: game.camera },
+    () => game.editorActive || game.gameplayPaused,
+  ),
+)
 
 // Câmera/controle de 3ª pessoa (porta do Unity StarterAssets ThirdPerson): mouse
 // orbita (clique p/ travar o cursor), WASD relativo à câmera, Shift corre, Espaço

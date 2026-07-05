@@ -51,6 +51,15 @@ export interface ScriptContext {
  * registerScript('Girar', Girar);
  */
 export abstract class ScriptBehavior {
+  /**
+   * Nome do script no registro/Inspector (opcional). Com o auto-registro
+   * (`registerScripts` + glob), o default é o **nome do arquivo** (estilo
+   * Unity) — declare `static scriptName = 'MeuNome'` só pra um nome amigável
+   * diferente (ex.: em português). É o nome que a cena PERSISTE — mudá-lo
+   * depois exige atualizar level.json/scene-data que o referenciam.
+   */
+  static scriptName?: string;
+
   /** A entidade ECS que hospeda este script (injetada). */
   entity!: Entity;
   /** O `Object3D` do nó ao qual o script está anexado (ou `null`). Injetado. */

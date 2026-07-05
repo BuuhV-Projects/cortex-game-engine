@@ -8,7 +8,7 @@
 
 > **listScripts**(): `string`[]
 
-Defined in: [src/scripts/ScriptRegistry.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptRegistry.ts#L27)
+Defined in: [src/scripts/ScriptRegistry.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptRegistry.ts#L66)
 
 Nomes registrados (ordenados) — pro dropdown do Inspector.
 

@@ -17,3 +17,7 @@ Construtor de um [ScriptBehavior](../classes/ScriptBehavior.md) (sem args — o 
 ### fields?
 
 > `optional` **fields?**: [`ScriptFieldSchema`](ScriptFieldSchema.md)
+
+### scriptName?
+
+> `optional` **scriptName?**: `string`

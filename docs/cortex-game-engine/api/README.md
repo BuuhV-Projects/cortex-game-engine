@@ -280,6 +280,7 @@
 - [placeOnGround](functions/placeOnGround.md)
 - [registerEditorAttacher](functions/registerEditorAttacher.md)
 - [registerScript](functions/registerScript.md)
+- [registerScripts](functions/registerScripts.md)
 - [resolvePlayerClip](functions/resolvePlayerClip.md)
 - [resolveWallPush](functions/resolveWallPush.md)
 - [scatter](functions/scatter.md)
