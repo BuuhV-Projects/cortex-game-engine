@@ -110,6 +110,43 @@ napi_value passDraw(napi_env env, napi_callback_info info) {
   return njs::undefined(env);
 }
 
+napi_value passSetBindGroup(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value args[2];
+  auto* pass = static_cast<WGPURenderPassEncoder>(
+      njs::unwrapThis(env, info, &argc, args));
+  if (pass && argc >= 2) {
+    double index = 0;
+    napi_get_value_double(env, args[0], &index);
+    auto* group = static_cast<WGPUBindGroup>(njs::unwrapValue(env, args[1]));
+    if (group) {
+      wgpuRenderPassEncoderSetBindGroup(
+          pass, static_cast<uint32_t>(index), group, 0, nullptr);
+    }
+  }
+  return njs::undefined(env);
+}
+
+napi_value passSetVertexBuffer(napi_env env, napi_callback_info info) {
+  size_t argc = 3;
+  napi_value args[3];
+  auto* pass = static_cast<WGPURenderPassEncoder>(
+      njs::unwrapThis(env, info, &argc, args));
+  if (pass && argc >= 2) {
+    double slot = 0;
+    napi_get_value_double(env, args[0], &slot);
+    auto* buffer = static_cast<WGPUBuffer>(njs::unwrapValue(env, args[1]));
+    double offset = 0;
+    if (argc >= 3) napi_get_value_double(env, args[2], &offset);
+    if (buffer) {
+      wgpuRenderPassEncoderSetVertexBuffer(
+          pass, static_cast<uint32_t>(slot), buffer,
+          static_cast<uint64_t>(offset), WGPU_WHOLE_SIZE);
+    }
+  }
+  return njs::undefined(env);
+}
+
 napi_value passEnd(napi_env env, napi_callback_info info) {
   size_t argc = 0;
   auto* pass = static_cast<WGPURenderPassEncoder>(
@@ -121,6 +158,8 @@ napi_value passEnd(napi_env env, napi_callback_info info) {
 napi_value makePassObject(napi_env env, WGPURenderPassEncoder pass) {
   napi_value obj = njs::wrapHandle(env, pass, finalizePass);
   njs::setMethod(env, obj, "setPipeline", passSetPipeline);
+  njs::setMethod(env, obj, "setBindGroup", passSetBindGroup);
+  njs::setMethod(env, obj, "setVertexBuffer", passSetVertexBuffer);
   njs::setMethod(env, obj, "draw", passDraw);
   njs::setMethod(env, obj, "end", passEnd);
   return obj;

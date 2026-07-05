@@ -31,6 +31,16 @@ WGPUStoreOp storeOpFromString(const std::string& s) {
   return WGPUStoreOp_Store;
 }
 
+WGPUVertexFormat vertexFormatFromString(const std::string& s) {
+  if (s == "float32") return WGPUVertexFormat_Float32;
+  if (s == "float32x2") return WGPUVertexFormat_Float32x2;
+  if (s == "float32x3") return WGPUVertexFormat_Float32x3;
+  if (s == "float32x4") return WGPUVertexFormat_Float32x4;
+  if (s == "uint32") return WGPUVertexFormat_Uint32;
+  if (s == "sint32") return WGPUVertexFormat_Sint32;
+  return WGPUVertexFormat_Float32x3;
+}
+
 WGPUPrimitiveTopology topologyFromString(const std::string& s) {
   if (s == "point-list") return WGPUPrimitiveTopology_PointList;
   if (s == "line-list") return WGPUPrimitiveTopology_LineList;

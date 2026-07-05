@@ -13,5 +13,6 @@ const char* formatToString(WGPUTextureFormat format);
 WGPULoadOp loadOpFromString(const std::string& s);
 WGPUStoreOp storeOpFromString(const std::string& s);
 WGPUPrimitiveTopology topologyFromString(const std::string& s);
+WGPUVertexFormat vertexFormatFromString(const std::string& s);
 
 }  // namespace webgpu

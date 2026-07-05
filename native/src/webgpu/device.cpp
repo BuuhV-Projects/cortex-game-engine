@@ -59,6 +59,33 @@ void finalizePipeline(napi_env, void* data, void*) {
   if (data) wgpuRenderPipelineRelease(static_cast<WGPURenderPipeline>(data));
 }
 
+void finalizeBindGroupLayout(napi_env, void* data, void*) {
+  if (data)
+    wgpuBindGroupLayoutRelease(static_cast<WGPUBindGroupLayout>(data));
+}
+
+napi_value pipelineGetBindGroupLayout(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value args[1];
+  auto* pipeline = static_cast<WGPURenderPipeline>(
+      njs::unwrapThis(env, info, &argc, args));
+  if (!pipeline || argc < 1) {
+    njs::throwError(env, "getBindGroupLayout: índice obrigatório");
+    return njs::undefined(env);
+  }
+  double index = 0;
+  napi_get_value_double(env, args[0], &index);
+  WGPUBindGroupLayout layout = wgpuRenderPipelineGetBindGroupLayout(
+      pipeline, static_cast<uint32_t>(index));
+  return njs::wrapHandle(env, layout, finalizeBindGroupLayout);
+}
+
+napi_value makePipelineObject(napi_env env, WGPURenderPipeline pipeline) {
+  napi_value obj = njs::wrapHandle(env, pipeline, finalizePipeline);
+  njs::setMethod(env, obj, "getBindGroupLayout", pipelineGetBindGroupLayout);
+  return obj;
+}
+
 napi_value deviceCreateShaderModule(napi_env env, napi_callback_info info) {
   size_t argc = 1;
   napi_value args[1];
@@ -78,11 +105,64 @@ napi_value deviceCreateShaderModule(napi_env env, napi_callback_info info) {
   return njs::wrapHandle(env, module, finalizeShaderModule);
 }
 
+// Storage dos layouts de vertex buffer — os arrays precisam viver até a
+// chamada de criação do pipeline.
+struct VertexLayoutStorage {
+  std::vector<std::vector<WGPUVertexAttribute>> attributes;
+  std::vector<WGPUVertexBufferLayout> layouts;
+};
+
+WGPUVertexAttribute parseVertexAttribute(napi_env env, napi_value attr) {
+  WGPUVertexAttribute out = WGPU_VERTEX_ATTRIBUTE_INIT;
+  out.format = vertexFormatFromString(
+      njs::getNamedString(env, attr, "format", "float32x3"));
+  out.offset =
+      static_cast<uint64_t>(njs::getNamedNumber(env, attr, "offset", 0));
+  out.shaderLocation = static_cast<uint32_t>(
+      njs::getNamedNumber(env, attr, "shaderLocation", 0));
+  return out;
+}
+
+void parseVertexBuffers(napi_env env, napi_value vertex,
+                        WGPURenderPipelineDescriptor* desc,
+                        VertexLayoutStorage* storage) {
+  napi_value buffers = nullptr;
+  if (!njs::getNamed(env, vertex, "buffers", &buffers)) return;
+  uint32_t count = 0;
+  napi_get_array_length(env, buffers, &count);
+  for (uint32_t i = 0; i < count; ++i) {
+    napi_value buffer = nullptr;
+    napi_get_element(env, buffers, i, &buffer);
+
+    std::vector<WGPUVertexAttribute> attrs;
+    napi_value attrsValue = nullptr;
+    if (njs::getNamed(env, buffer, "attributes", &attrsValue)) {
+      uint32_t attrCount = 0;
+      napi_get_array_length(env, attrsValue, &attrCount);
+      for (uint32_t a = 0; a < attrCount; ++a) {
+        napi_value attr = nullptr;
+        napi_get_element(env, attrsValue, a, &attr);
+        attrs.push_back(parseVertexAttribute(env, attr));
+      }
+    }
+    storage->attributes.push_back(std::move(attrs));
+
+    WGPUVertexBufferLayout layout = WGPU_VERTEX_BUFFER_LAYOUT_INIT;
+    layout.arrayStride = static_cast<uint64_t>(
+        njs::getNamedNumber(env, buffer, "arrayStride", 0));
+    layout.attributeCount = storage->attributes.back().size();
+    layout.attributes = storage->attributes.back().data();
+    storage->layouts.push_back(layout);
+  }
+  desc->vertex.bufferCount = storage->layouts.size();
+  desc->vertex.buffers = storage->layouts.data();
+}
+
 // Sub-parsers do descriptor de pipeline — as strings de entryPoint precisam
 // viver até a chamada de criação, por isso são passadas por referência.
 void parseVertexState(napi_env env, napi_value descriptor,
                       WGPURenderPipelineDescriptor* desc,
-                      std::string* vsEntry) {
+                      std::string* vsEntry, VertexLayoutStorage* storage) {
   napi_value vertex = nullptr;
   if (!njs::getNamed(env, descriptor, "vertex", &vertex)) return;
   napi_value module = nullptr;
@@ -92,6 +172,7 @@ void parseVertexState(napi_env env, napi_value descriptor,
   *vsEntry = njs::getNamedString(env, vertex, "entryPoint", "");
   if (!vsEntry->empty())
     desc->vertex.entryPoint = {vsEntry->data(), vsEntry->size()};
+  parseVertexBuffers(env, vertex, desc, storage);
 }
 
 bool parseFragmentState(napi_env env, napi_value descriptor,
@@ -149,7 +230,8 @@ napi_value deviceCreateRenderPipeline(napi_env env, napi_callback_info info) {
   // layout: 'auto' → NULL (pipeline layout automático do WebGPU)
   WGPURenderPipelineDescriptor desc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
   std::string vsEntry;
-  parseVertexState(env, args[0], &desc, &vsEntry);
+  VertexLayoutStorage vertexStorage;
+  parseVertexState(env, args[0], &desc, &vsEntry, &vertexStorage);
 
   WGPUFragmentState fragment = WGPU_FRAGMENT_STATE_INIT;
   std::vector<WGPUColorTargetState> targets;
@@ -160,7 +242,7 @@ napi_value deviceCreateRenderPipeline(napi_env env, napi_callback_info info) {
   parsePrimitiveState(env, args[0], &desc);
 
   WGPURenderPipeline pipeline = wgpuDeviceCreateRenderPipeline(device, &desc);
-  return njs::wrapHandle(env, pipeline, finalizePipeline);
+  return makePipelineObject(env, pipeline);
 }
 
 }  // namespace
@@ -171,9 +253,12 @@ napi_value makeDeviceObject(napi_env env, WGPUDevice device) {
   njs::setMethod(env, obj, "createShaderModule", deviceCreateShaderModule);
   njs::setMethod(env, obj, "createRenderPipeline", deviceCreateRenderPipeline);
   njs::setMethod(env, obj, "createCommandEncoder", deviceCreateCommandEncoder);
+  njs::setMethod(env, obj, "createBuffer", deviceCreateBuffer);
+  njs::setMethod(env, obj, "createBindGroup", deviceCreateBindGroup);
 
   napi_value queue = njs::makeObject(env);
   njs::setMethod(env, queue, "submit", queueSubmit);
+  njs::setMethod(env, queue, "writeBuffer", queueWriteBuffer);
   napi_set_named_property(env, obj, "queue", queue);
   return obj;
 }

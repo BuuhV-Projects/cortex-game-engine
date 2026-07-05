@@ -49,7 +49,8 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |
 | `native/src/webgpu/navigator.cpp` | `navigator.gpu` (requestAdapter, formato preferido) + dono do `gpuState()`. |
 | `native/src/webgpu/device.cpp` | requestDevice, createShaderModule (WGSL), createRenderPipeline (parsers por sub-estado). |
-| `native/src/webgpu/commands.cpp` | Encoder, render pass (parsers de attachment/clearValue), queue.submit. |
+| `native/src/webgpu/buffers.cpp` | Recursos de DADOS: createBuffer, writeBuffer (TypedArray/ArrayBuffer→GPU), createBindGroup, global `GPUBufferUsage`. |
+| `native/src/webgpu/commands.cpp` | Encoder, render pass (parsers de attachment/clearValue), setBindGroup/setVertexBuffer, queue.submit. |
 | `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. |
 | `native/src/webgpu/enums.*` | Mapas string↔enum ('bgra8unorm', 'triangle-list'...). |
 | `native/js/boot.js` | Script de boot (hoje: triângulo WGSL). Compilado pra `boot.hbc` no build. |
@@ -122,6 +123,10 @@ Saída esperada hoje (M0, Marco C): janela com triângulo violeta, e no console
 - ✅ A: janela SDL3 + clear via WebGPU nativo (D3D12)
 - ✅ B: Hermes embutido (bytecode .hbc), JS comanda o frame
 - ✅ C: triângulo WGSL 100% definido em JS via navigator.gpu
-- ⬜ D: buffers/bind groups/uniforms (triângulo animado por uniform)
+- ✅ D: vertex buffer + uniform + bind group (triângulo girando; JS escreve o
+  uniform por frame via queue.writeBuffer)
 - ⬜ E: superfície WebGPU que o Three WebGPURenderer usa + shims DOM mínimos
   (canvas, TextDecoder...) → **cubo do Three.js girando = fim do M0**
+
+Limitação conhecida do Marco D: mapeamento de buffer (mapAsync/getMappedRange
+/mappedAtCreation) ainda não existe — só escrita via queue.writeBuffer.

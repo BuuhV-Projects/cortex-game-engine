@@ -29,6 +29,12 @@ napi_value makeDeviceObject(napi_env env, WGPUDevice device);
 napi_value deviceCreateCommandEncoder(napi_env env, napi_callback_info info);
 napi_value queueSubmit(napi_env env, napi_callback_info info);
 
+// buffers.cpp — recursos de dados (GPUBuffer, bind groups)
+napi_value deviceCreateBuffer(napi_env env, napi_callback_info info);
+napi_value deviceCreateBindGroup(napi_env env, napi_callback_info info);
+napi_value queueWriteBuffer(napi_env env, napi_callback_info info);
+void registerBufferUsageGlobals(napi_env env);
+
 // surface.cpp
 napi_value contextConfigure(napi_env env, napi_callback_info info);
 napi_value contextGetCurrentTexture(napi_env env, napi_callback_info info);

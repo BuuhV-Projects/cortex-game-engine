@@ -107,6 +107,8 @@ void registerBindings(napi_env env, HostGpu* gpu) {
   njs::setMethod(env, context, "configure", contextConfigure);
   njs::setMethod(env, context, "getCurrentTexture", contextGetCurrentTexture);
   napi_set_named_property(env, global, "gpuContext", context);
+
+  registerBufferUsageGlobals(env);
 }
 
 }  // namespace webgpu

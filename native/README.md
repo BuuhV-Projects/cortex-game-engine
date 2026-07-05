@@ -24,7 +24,7 @@ extensão. Toda mudança estrutural atualiza esse doc na mesma mudança.
 - ✅ **Marco A** — janela SDL3 + clear via WebGPU nativo, backend D3D12
 - ✅ **Marco B** — Hermes embutido; boot em bytecode `.hbc` (hermesc no build)
 - ✅ **Marco C** — triângulo WGSL 100% comandado pelo JS via `navigator.gpu`
-- ⬜ **Marco D** — buffers/bind groups/uniforms
+- ✅ **Marco D** — vertex buffer + uniform + bind group (triângulo girando)
 - ⬜ **Marco E** — Three.js WebGPURenderer renderizando um cubo (fim do M0)
 
 ## Build rápido
