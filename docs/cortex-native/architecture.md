@@ -90,6 +90,23 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 5. **Deps pinadas** — nunca "latest". Atualização de versão é mudança
    deliberada (edite fetch-deps.ps1 e reteste os 3 marcos).
 
+## Libs de terceiros no export nativo (regra de compatibilidade)
+
+A promessa "o dev instala libs npm" continua, com a MESMA regra do React
+Native (que roda milhares de libs sobre Hermes em produção):
+
+- **JS puro funciona** (moment, dayjs, date-fns, lodash, uuid...) — sintaxe
+  moderna é resolvida pelo pipeline (esbuild es2018 + Babel classes/arrows).
+- **APIs de browser** funcionam SE estiverem nos shims (fetch, timers,
+  TextDecoder, crypto...) — a lista cresce por demanda; faltou algo, é um
+  shim novo, não um beco.
+- **Não funcionam**: libs Node-only (fs/net), WASM, Intl pesado (Luxon;
+  preferir dayjs/date-fns), e metaprogramação exótica (zod v4 — caso real;
+  o bypass zod-lite foi seguro SÓ porque a validação já roda no Studio).
+- Pendência de tooling: verificação de compatibilidade no BUILD (compilar a
+  lib com hermesc + smoke) pra o dev descobrir na hora do bundle, não no
+  console.
+
 ## Armadilhas conhecidas
 
 - **`wgpuInstanceWaitAny` → panic "not implemented"** (wgpu-native v29).
