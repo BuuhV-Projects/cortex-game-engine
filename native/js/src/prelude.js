@@ -9,6 +9,7 @@ import { installInputBridge } from './shims/input-bridge.js';
 import { installTextShims } from './shims/text.js';
 import { installNetShims } from './shims/net.js';
 import { installImageShims } from './shims/image.js';
+import { installWebAudioLite } from './shims/webaudio-lite.js';
 
 installGlobals();
 installEventClasses();
@@ -18,5 +19,6 @@ installInputBridge();
 installTextShims();
 installNetShims();
 installImageShims();
+installWebAudioLite();
 
 globalThis.__cortexCreateCanvas = createCanvas;

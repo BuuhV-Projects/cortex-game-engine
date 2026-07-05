@@ -13,6 +13,7 @@
 #include "core/host_gpu.h"
 #include "core/js_runtime.h"
 #include "shims/animation_frame.h"
+#include "shims/audio.h"
 #include "shims/files.h"
 #include "shims/image_decode.h"
 #include "shims/input.h"
@@ -37,6 +38,7 @@ void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs) {
   js.drainMicrotasks();
   shims::runAnimationFrames(js.env(), elapsedMs);
   js.drainMicrotasks();
+  shims::updateAudio();
   webgpu::presentIfAcquired(gpu);
 }
 
@@ -65,6 +67,7 @@ int main(int, char**) {
     shims::registerFiles(js.env(), baseDir);
     shims::registerImageDecode(js.env());
     shims::registerRapier(js.env());
+    shims::registerAudio(js.env());
     webgpu::registerBindings(js.env(), &gpu);
 
     if (!js.runBoot(baseDir)) return 1;
@@ -79,6 +82,7 @@ int main(int, char**) {
       runFrame(js, &gpu, elapsedMs);
     }
     shims::closeGamepads();
+    shims::shutdownAudio();
   }  // ~JsRuntime antes de liberar a GPU (JS pode segurar handles)
 
   shutdownGpu(&gpu);

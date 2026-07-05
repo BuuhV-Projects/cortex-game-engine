@@ -48,6 +48,15 @@ if (-not (Test-Path (Join-Path $stbDir 'stb_image.h'))) {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nothings/stb/$STB_COMMIT/stb_image.h" -OutFile (Join-Path $stbDir 'stb_image.h')
 }
 
+# ── miniaudio (DECODE de wav/mp3/flac; header único, pinado por tag) ──
+$MINIAUDIO_TAG = '0.11.21'
+$maDir = Join-Path $tp 'miniaudio'
+if (-not (Test-Path (Join-Path $maDir 'miniaudio.h'))) {
+    New-Item -ItemType Directory -Force $maDir | Out-Null
+    Write-Host 'baixando miniaudio ...' -ForegroundColor Cyan
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mackron/miniaudio/$MINIAUDIO_TAG/miniaudio.h" -OutFile (Join-Path $maDir 'miniaudio.h')
+}
+
 # ── Hermes (runtime JS; fork Windows da Microsoft, via NuGet) ──
 $hermesZip = Fetch 'Hermes' "https://www.nuget.org/api/v2/package/Microsoft.JavaScript.Hermes/$HERMES_VERSION" "hermes-$HERMES_VERSION.nupkg.zip"
 $hermesDir = Join-Path $tp 'hermes'

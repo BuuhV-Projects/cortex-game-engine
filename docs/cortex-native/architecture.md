@@ -49,6 +49,7 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/shims/files.*` | `__cortexReadFile` (fetch lê daqui; base = pasta do exe → futuro XPackage). |
 | `native/src/shims/image_decode.*` | `__cortexDecodeImage` (stb_image → RGBA8) pro createImageBitmap. |
 | `native/src/shims/rapier.*` | Ponte C ABI do crate rapier-native → `__rapierNative` (funções achatadas, f64). |
+| `native/src/shims/audio.*` | `__cortexAudio`: decode (miniaudio) + playback (streams SDL3; loop/gain/pitch); `updateAudio()` por frame. |
 | `native/rapier-native/` | Crate Rust (cdylib): Rapier de verdade com C ABI mínima espelhando o que o engine usa. |
 | `native/src/webgpu/bindings.h` | API pública do módulo: `registerBindings`, `presentIfAcquired`. Fora do módulo, só inclua este. |
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |
@@ -181,8 +182,14 @@ Plano completo com inventário e ordem de ataque:
   do @dimforge/rapier3d-compat pra ele). Smoke: bola repousa no chão.
   **Pendências**: DynamicRayCastVehicleController (carro) e
   setAdditionalMassProperties — lança erro claro se usados.
-- ⬜ Frente 5 — WebAudio-lite
-- ⬜ Frente 6 — UI do engine sem DOM (ADR próprio; 6a inerte ✅ via DOM-lite)
+- ✅ Frente 5 — áudio: decode via miniaudio (wav/mp3/flac, pinado) +
+  playback por streams SDL3 (gain/pitch nativos, loop realimentado por
+  frame); WebAudio-lite em JS com a forma que o THREE.Audio usa.
+  **Pendência**: espacialização do PannerNode (PositionalAudio toca sem 3D).
+- ⬜ Frente 6 — UI do engine sem DOM (ADR próprio; 6a inerte ✅ via DOM-lite).
+  É mudança de ENGINE: API de UI com backend DOM (PC/Studio) e backend
+  renderer (host/console); DialogueUI/LoadingScreen/Speedometer migram, e os
+  jogos trocam HUD de divs pela API. Última frente antes do teste4 jogável.
 
 Build do Rapier nativo: `cargo build --release` em `native/rapier-native/`
 (1x; o CMake linka `target/release/rapier_native.dll.lib` e copia a dll).

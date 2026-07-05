@@ -42,7 +42,7 @@ void handleResize(SDL_Window* window, HostGpu* gpu) {
 
 SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
                             int height) {
-  if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
+  if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD | SDL_INIT_AUDIO)) {
     std::fprintf(stderr, "SDL_Init falhou: %s\n", SDL_GetError());
     return nullptr;
   }

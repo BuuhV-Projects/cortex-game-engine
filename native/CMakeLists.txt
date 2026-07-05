@@ -15,6 +15,7 @@ add_executable(cortex_host
   src/core/js_runtime.cpp
   src/napi/napi_util.cpp
   src/shims/animation_frame.cpp
+  src/shims/audio.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp
   src/shims/input.cpp
@@ -56,6 +57,7 @@ add_dependencies(cortex_host boot_hbc)
 
 target_include_directories(cortex_host PRIVATE
   ${TP}/SDL3/include
+  ${TP}/miniaudio
   ${TP}/stb
   ${TP}/wgpu/include
   ${TP}/hermes/build/native/include

@@ -66,10 +66,34 @@ async function smokeTestRapier() {
   world.free();
 }
 
+// Smoke da frente 5 — o caminho exato do THREE.AudioLoader/Audio:
+// fetch(wav) → decodeAudioData → bufferSource → gain → destination.
+async function smokeTestAudio() {
+  const response = await fetch('coin.wav');
+  if (!response.ok) {
+    print('[m1] smoke frente 5 (audio): coin.wav ausente — pulado');
+    return;
+  }
+  const data = await response.arrayBuffer();
+  const ctx = new AudioContext();
+  const buffer = await ctx.decodeAudioData(data);
+  const gain = ctx.createGain();
+  gain.connect(ctx.destination);
+  gain.gain.value = 0.5;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(gain);
+  source.start(0);
+  print('[m1] smoke frente 5 (audio): tocando coin.wav — duração ' +
+    buffer.duration.toFixed(2) + 's @' + buffer.sampleRate + 'Hz ' +
+    (source.__voice > 0 ? 'OK (voz ' + source.__voice + ')' : 'FALHOU'));
+}
+
 async function main() {
   smokeTestBrowserShims();
   smokeTestInput();
   await smokeTestRapier();
+  await smokeTestAudio();
   print('[three] criando WebGPURenderer...');
   const canvas = __cortexCreateCanvas(WIDTH, HEIGHT);
   const renderer = new THREE.WebGPURenderer({ canvas, antialias: false });
