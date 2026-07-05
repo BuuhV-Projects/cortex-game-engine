@@ -20,19 +20,32 @@ add_executable(cortex_host
   src/webgpu/commands.cpp
   src/webgpu/device.cpp
   src/webgpu/enums.cpp
+  src/webgpu/layouts.cpp
   src/webgpu/navigator.cpp
+  src/webgpu/pipeline.cpp
   src/webgpu/surface.cpp
+  src/webgpu/textures.cpp
 )
 
-# boot.js → boot.hbc (bytecode Hermes, compilado no build — console não faz
-# parse de JS em runtime; o PC segue o mesmo caminho por paridade)
+# js/src (prelude + main + three/webgpu) → esbuild → bundle único → hermesc
+# → boot.hbc (console não faz parse de JS em runtime; PC segue igual por
+# paridade). O esbuild resolve o three no node_modules da raiz do repo.
 set(HERMESC ${TP}/hermes/tools/native/release/x86/hermes.exe)
+file(GLOB BOOT_JS_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/js/src/*.js)
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/boot.bundle.js
+  COMMAND node ${CMAKE_CURRENT_SOURCE_DIR}/scripts/bundle.mjs
+          ${CMAKE_BINARY_DIR}/boot.bundle.js
+  DEPENDS ${BOOT_JS_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/bundle.mjs
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+  COMMENT "esbuild: js/src -> boot.bundle.js"
+)
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/boot.hbc
-  COMMAND ${HERMESC} -emit-binary -O -out ${CMAKE_BINARY_DIR}/boot.hbc
-          ${CMAKE_CURRENT_SOURCE_DIR}/js/boot.js
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/js/boot.js
-  COMMENT "hermesc: boot.js -> boot.hbc"
+  COMMAND ${HERMESC} -emit-binary -w
+          -out ${CMAKE_BINARY_DIR}/boot.hbc ${CMAKE_BINARY_DIR}/boot.bundle.js
+  DEPENDS ${CMAKE_BINARY_DIR}/boot.bundle.js
+  COMMENT "hermesc: boot.bundle.js -> boot.hbc"
 )
 add_custom_target(boot_hbc ALL DEPENDS ${CMAKE_BINARY_DIR}/boot.hbc)
 add_dependencies(cortex_host boot_hbc)

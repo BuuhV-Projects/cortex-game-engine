@@ -10,19 +10,6 @@
 namespace webgpu {
 namespace {
 
-void finalizeTextureView(napi_env, void* data, void*) {
-  if (data) wgpuTextureViewRelease(static_cast<WGPUTextureView>(data));
-}
-
-napi_value textureCreateView(napi_env env, napi_callback_info info) {
-  size_t argc = 0;
-  auto* texture =
-      static_cast<WGPUTexture>(njs::unwrapThis(env, info, &argc, nullptr));
-  if (!texture) return njs::undefined(env);
-  WGPUTextureView view = wgpuTextureCreateView(texture, nullptr);
-  return njs::wrapHandle(env, view, finalizeTextureView);
-}
-
 bool isSurfaceTextureUsable(const WGPUSurfaceTexture& st) {
   return st.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal ||
          st.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal;
@@ -74,10 +61,10 @@ napi_value contextGetCurrentTexture(napi_env env, napi_callback_info) {
   }
   if (!gpu->currentTexture) gpu->currentTexture = acquireSurfaceTexture(gpu);
 
-  // Não-own: o host apresenta e libera no fim do frame.
+  // Não-own: o host apresenta e libera no fim do frame. Métodos de view
+  // vêm do textures.cpp (createView com/sem descriptor).
   napi_value obj = njs::wrapHandle(env, gpu->currentTexture, njs::finalizeNoop);
-  njs::setMethod(env, obj, "createView", textureCreateView);
-  return obj;
+  return makeTextureViewMethods(env, obj);
 }
 
 void presentIfAcquired(HostGpu* gpu) {

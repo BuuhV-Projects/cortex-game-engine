@@ -29,6 +29,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@babel/plugin-transform-classes": "7.28.4",
     "@types/three": "^0.184.1",
     "electron": "^42.4.0",
     "electron-builder": "^26.15.3",

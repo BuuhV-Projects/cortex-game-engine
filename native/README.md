@@ -19,13 +19,18 @@ extensão. Toda mudança estrutural atualiza esse doc na mesma mudança.
 | [ADR-0094](../docs/adrs/0094-cortex-native-stack-do-host-m0.md) | Decisões de stack: Hermes/NuGet, wgpu-native/D3D12, SDL3, bytecode, SOLID |
 | [architecture.md](../docs/cortex-native/architecture.md) | **Mapa vivo**: módulos, frame, regras, armadilhas, receitas, build |
 
-## Status: M0 em andamento
+## Status: **M0 CONCLUÍDO** (2026-07-05)
 
 - ✅ **Marco A** — janela SDL3 + clear via WebGPU nativo, backend D3D12
 - ✅ **Marco B** — Hermes embutido; boot em bytecode `.hbc` (hermesc no build)
 - ✅ **Marco C** — triângulo WGSL 100% comandado pelo JS via `navigator.gpu`
 - ✅ **Marco D** — vertex buffer + uniform + bind group (triângulo girando)
-- ⬜ **Marco E** — Three.js WebGPURenderer renderizando um cubo (fim do M0)
+- ✅ **Marco E** — **Three.js WebGPURenderer renderizando cubo girando** —
+  conceito CortexNative validado de ponta a ponta
+
+Próximo: **M1** — engine cortex completo no host (Rapier nativo, input,
+áudio, HUD sem DOM), validado com o jogo real `D:\jogos\teste4`. Ver o mapa
+vivo pra detalhes.
 
 ## Build rápido
 

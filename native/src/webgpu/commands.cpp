@@ -61,6 +61,36 @@ WGPURenderPassColorAttachment parseColorAttachment(napi_env env,
   return out;
 }
 
+// depthStencilAttachment: {view, depthClearValue, depthLoadOp, depthStoreOp,
+// stencilLoadOp?, stencilStoreOp?}
+bool parseDepthStencilAttachment(napi_env env, napi_value descriptor,
+                                 WGPURenderPassDepthStencilAttachment* out) {
+  napi_value att = nullptr;
+  if (!njs::getNamed(env, descriptor, "depthStencilAttachment", &att))
+    return false;
+  napi_value view = nullptr;
+  if (njs::getNamed(env, att, "view", &view))
+    out->view = static_cast<WGPUTextureView>(njs::unwrapValue(env, view));
+  out->depthClearValue = static_cast<float>(
+      njs::getNamedNumber(env, att, "depthClearValue", 1.0));
+  std::string depthLoad = njs::getNamedString(env, att, "depthLoadOp", "");
+  if (!depthLoad.empty()) out->depthLoadOp = loadOpFromString(depthLoad);
+  std::string depthStore = njs::getNamedString(env, att, "depthStoreOp", "");
+  if (!depthStore.empty()) out->depthStoreOp = storeOpFromString(depthStore);
+  std::string stencilLoad =
+      njs::getNamedString(env, att, "stencilLoadOp", "");
+  if (!stencilLoad.empty()) {
+    out->stencilLoadOp = loadOpFromString(stencilLoad);
+    out->stencilClearValue = static_cast<uint32_t>(
+        njs::getNamedNumber(env, att, "stencilClearValue", 0));
+  }
+  std::string stencilStore =
+      njs::getNamedString(env, att, "stencilStoreOp", "");
+  if (!stencilStore.empty())
+    out->stencilStoreOp = storeOpFromString(stencilStore);
+  return true;
+}
+
 std::vector<WGPURenderPassColorAttachment> parseColorAttachments(
     napi_env env, napi_value descriptor) {
   std::vector<WGPURenderPassColorAttachment> out;
@@ -147,6 +177,71 @@ napi_value passSetVertexBuffer(napi_env env, napi_callback_info info) {
   return njs::undefined(env);
 }
 
+napi_value passSetIndexBuffer(napi_env env, napi_callback_info info) {
+  size_t argc = 4;
+  napi_value args[4];
+  auto* pass = static_cast<WGPURenderPassEncoder>(
+      njs::unwrapThis(env, info, &argc, args));
+  if (!pass || argc < 2) return njs::undefined(env);
+  auto* buffer = static_cast<WGPUBuffer>(njs::unwrapValue(env, args[0]));
+  WGPUIndexFormat format =
+      indexFormatFromString(njs::toString(env, args[1]));
+  double offset = 0;
+  if (argc >= 3) napi_get_value_double(env, args[2], &offset);
+  if (buffer) {
+    wgpuRenderPassEncoderSetIndexBuffer(pass, buffer, format,
+                                        static_cast<uint64_t>(offset),
+                                        WGPU_WHOLE_SIZE);
+  }
+  return njs::undefined(env);
+}
+
+napi_value passDrawIndexed(napi_env env, napi_callback_info info) {
+  size_t argc = 5;
+  napi_value args[5];
+  auto* pass = static_cast<WGPURenderPassEncoder>(
+      njs::unwrapThis(env, info, &argc, args));
+  if (!pass || argc < 1) return njs::undefined(env);
+  // indexCount, instanceCount, firstIndex, baseVertex, firstInstance
+  double values[5] = {0, 1, 0, 0, 0};
+  for (size_t i = 0; i < argc && i < 5; ++i)
+    napi_get_value_double(env, args[i], &values[i]);
+  wgpuRenderPassEncoderDrawIndexed(
+      pass, static_cast<uint32_t>(values[0]),
+      static_cast<uint32_t>(values[1]), static_cast<uint32_t>(values[2]),
+      static_cast<int32_t>(values[3]), static_cast<uint32_t>(values[4]));
+  return njs::undefined(env);
+}
+
+napi_value passSetViewport(napi_env env, napi_callback_info info) {
+  size_t argc = 6;
+  napi_value args[6];
+  auto* pass = static_cast<WGPURenderPassEncoder>(
+      njs::unwrapThis(env, info, &argc, args));
+  if (!pass || argc < 6) return njs::undefined(env);
+  double v[6] = {0, 0, 0, 0, 0, 1};
+  for (size_t i = 0; i < 6; ++i) napi_get_value_double(env, args[i], &v[i]);
+  wgpuRenderPassEncoderSetViewport(
+      pass, static_cast<float>(v[0]), static_cast<float>(v[1]),
+      static_cast<float>(v[2]), static_cast<float>(v[3]),
+      static_cast<float>(v[4]), static_cast<float>(v[5]));
+  return njs::undefined(env);
+}
+
+napi_value passSetScissorRect(napi_env env, napi_callback_info info) {
+  size_t argc = 4;
+  napi_value args[4];
+  auto* pass = static_cast<WGPURenderPassEncoder>(
+      njs::unwrapThis(env, info, &argc, args));
+  if (!pass || argc < 4) return njs::undefined(env);
+  double v[4] = {0, 0, 0, 0};
+  for (size_t i = 0; i < 4; ++i) napi_get_value_double(env, args[i], &v[i]);
+  wgpuRenderPassEncoderSetScissorRect(
+      pass, static_cast<uint32_t>(v[0]), static_cast<uint32_t>(v[1]),
+      static_cast<uint32_t>(v[2]), static_cast<uint32_t>(v[3]));
+  return njs::undefined(env);
+}
+
 napi_value passEnd(napi_env env, napi_callback_info info) {
   size_t argc = 0;
   auto* pass = static_cast<WGPURenderPassEncoder>(
@@ -160,7 +255,11 @@ napi_value makePassObject(napi_env env, WGPURenderPassEncoder pass) {
   njs::setMethod(env, obj, "setPipeline", passSetPipeline);
   njs::setMethod(env, obj, "setBindGroup", passSetBindGroup);
   njs::setMethod(env, obj, "setVertexBuffer", passSetVertexBuffer);
+  njs::setMethod(env, obj, "setIndexBuffer", passSetIndexBuffer);
+  njs::setMethod(env, obj, "setViewport", passSetViewport);
+  njs::setMethod(env, obj, "setScissorRect", passSetScissorRect);
   njs::setMethod(env, obj, "draw", passDraw);
+  njs::setMethod(env, obj, "drawIndexed", passDrawIndexed);
   njs::setMethod(env, obj, "end", passEnd);
   return obj;
 }
@@ -187,6 +286,10 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
   WGPURenderPassDescriptor desc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
   desc.colorAttachmentCount = attachments.size();
   desc.colorAttachments = attachments.data();
+  WGPURenderPassDepthStencilAttachment depthAttachment =
+      WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
+  if (parseDepthStencilAttachment(env, args[0], &depthAttachment))
+    desc.depthStencilAttachment = &depthAttachment;
   WGPURenderPassEncoder pass =
       wgpuCommandEncoderBeginRenderPass(encoder, &desc);
   return makePassObject(env, pass);

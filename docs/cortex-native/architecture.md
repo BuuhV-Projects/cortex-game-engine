@@ -48,12 +48,18 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/webgpu/bindings.h` | API pública do módulo: `registerBindings`, `presentIfAcquired`. Fora do módulo, só inclua este. |
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |
 | `native/src/webgpu/navigator.cpp` | `navigator.gpu` (requestAdapter, formato preferido) + dono do `gpuState()`. |
-| `native/src/webgpu/device.cpp` | requestDevice, createShaderModule (WGSL), createRenderPipeline (parsers por sub-estado). |
-| `native/src/webgpu/buffers.cpp` | Recursos de DADOS: createBuffer, writeBuffer (TypedArray/ArrayBuffer→GPU), createBindGroup, global `GPUBufferUsage`. |
-| `native/src/webgpu/commands.cpp` | Encoder, render pass (parsers de attachment/clearValue), setBindGroup/setVertexBuffer, queue.submit. |
+| `native/src/webgpu/device.cpp` | Aquisição do device, composição do objeto JS `device`, error scopes (push/popErrorScope). |
+| `native/src/webgpu/pipeline.cpp` | Shader modules (WGSL) e render pipelines — sub-parsers por sub-estado (vertex/fragment/primitive/depth/multisample/layout). |
+| `native/src/webgpu/layouts.cpp` | Bind group layouts e pipeline layouts explícitos (o Three não usa 'auto'). |
+| `native/src/webgpu/buffers.cpp` | Recursos de DADOS: createBuffer (+mappedAtCreation/getMappedRange/unmap), writeBuffer (assinatura completa da spec, offsets em ELEMENTOS), createBindGroup, global `GPUBufferUsage`. |
+| `native/src/webgpu/textures.cpp` | Recursos de IMAGEM: createTexture, views com descriptor (depth do Three), samplers. Marca `__kind` nos objetos p/ o parseBindGroupEntry. |
+| `native/src/webgpu/commands.cpp` | Encoder, render pass (color+depth attachments), setBindGroup/setVertexBuffer/setIndexBuffer/viewport/scissor, draw/drawIndexed, queue.submit. |
 | `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. |
-| `native/src/webgpu/enums.*` | Mapas string↔enum ('bgra8unorm', 'triangle-list'...). |
-| `native/js/boot.js` | Script de boot (hoje: triângulo WGSL). Compilado pra `boot.hbc` no build. |
+| `native/src/webgpu/enums.*` | Mapas string↔enum (formatos, compare, cull, vertex formats...). |
+| `native/js/src/main.js` | Boot do jogo (hoje: cubo Three.js girando). Entry do bundle. |
+| `native/js/src/prelude.js` | Shims de browser EM JS (console, performance, canvas fake, limits/features do adapter/device, constantes GPU*). Regra: o que dá pra shimar em JS fica aqui. |
+| `native/js/examples/triangle.js` | Referência: triângulo WebGPU puro (Marcos C–D), sem Three. |
+| `native/scripts/bundle.mjs` | esbuild (bundle es2018) + Babel (classes loose + arrows) → IIFE único pro hermesc. |
 | `native/scripts/fetch-deps.ps1` | Baixa deps prebuilt **pinadas** (SDL3, wgpu-native, Hermes NuGet). |
 
 ## Regras do projeto (não quebrar)
@@ -81,6 +87,20 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 - **`setImmediate` ausente = async/await morto**: o Hermes (fila de jobs
   nativa inativa) agenda continuações via `setImmediate`. Sem o shim, o boot
   morre com `ReferenceError` depois do primeiro `await`.
+- **O Hermes NÃO tem sintaxe `class`** (nem async arrows). Por isso o
+  bundle.mjs roda Babel depois do esbuild: `plugin-transform-classes` em
+  **loose** (o modo spec usa Reflect.construct e morre com "super() hasn't
+  been called") + `plugin-transform-arrow-functions` **no mesmo passe**
+  (se o esbuild rebaixar arrows antes, ele iça `var _this = this` pra antes
+  do super() e o transform de classes quebra). NÃO usar `-Xes6-class` do
+  hermesc: o bytecode exige um runtime compilado com a flag
+  (`HermesES6Internal` não existe na hermes.dll da Microsoft).
+- **Booleans JS não passam em `napi_get_value_double`**: flags de descriptor
+  (`mappedAtCreation`, `depthWriteEnabled`...) SEMPRE via `njs::getNamedBool`
+  — foi bug real (buffer nunca mapeado → panic no getMappedRange).
+- **`writeBuffer` tem 5 argumentos** na spec: (buffer, bufferOffset, data,
+  dataOffset, size) com dataOffset/size em **elementos** do TypedArray.
+  O Three usa todos — ignorar os dois últimos estoura o buffer.
 - **`SDL_SetMainReady`/`SDL_main.h`**: não usamos; `main` puro funciona no
   SDL3. Incluir `SDL_main.h` redefine `main` e quebra o link.
 - **hermes.exe é x86** (roda via WOW64) — caminho `tools/native/release/x86`.
@@ -120,13 +140,26 @@ Saída esperada hoje (M0, Marco C): janela com triângulo violeta, e no console
 
 ## Estado e próximos marcos
 
+**M0 CONCLUÍDO em 2026-07-05** — conceito CortexNative validado de ponta a
+ponta: Three.js WebGPURenderer renderizando cubo girando (MeshNormalMaterial,
+depth, perspectiva) em bytecode Hermes sobre D3D12, sem browser.
+
 - ✅ A: janela SDL3 + clear via WebGPU nativo (D3D12)
 - ✅ B: Hermes embutido (bytecode .hbc), JS comanda o frame
 - ✅ C: triângulo WGSL 100% definido em JS via navigator.gpu
-- ✅ D: vertex buffer + uniform + bind group (triângulo girando; JS escreve o
-  uniform por frame via queue.writeBuffer)
-- ⬜ E: superfície WebGPU que o Three WebGPURenderer usa + shims DOM mínimos
-  (canvas, TextDecoder...) → **cubo do Three.js girando = fim do M0**
+- ✅ D: vertex buffer + uniform + bind group (triângulo girando)
+- ✅ E: **cubo do Three.js girando** — bundle esbuild+Babel do three/webgpu,
+  prelude de shims JS, layouts explícitos, depth texture, index buffer,
+  viewport/scissor, mapeamento de buffer, error scopes
 
-Limitação conhecida do Marco D: mapeamento de buffer (mapAsync/getMappedRange
-/mappedAtCreation) ainda não existe — só escrita via queue.writeBuffer.
+Limitações conhecidas (M1): mapAsync (readback) não existe; blend states são
+ignorados (transparência); writeTexture/copyTexture* não existem (materiais
+texturizados); MSAA não testado (antialias: false no boot).
+
+**M1 — engine cortex completo no host** (validar com o jogo real
+`D:\jogos\teste4`, branch de refactor): Rapier NATIVO com bindings JSI
+espelhando o rapier3d-compat (Hermes não roda WASM), input SDL3→Gamepad API,
+áudio, fetch/assets, e a frente maior — **HUD DOM**: o engine usa
+canvas/document pra UI HTML (DialogueUI, LoadingScreen, HUD dos jogos);
+console não tem DOM → abstração de UI com backend DOM (PC) e backend
+renderer (console), conforme PRD-0004 §mudanças no engine.

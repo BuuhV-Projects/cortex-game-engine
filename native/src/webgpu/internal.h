@@ -1,7 +1,11 @@
 // Contratos INTERNOS do módulo webgpu/ — callbacks Node-API repartidos entre
 // os arquivos por responsabilidade:
 //   navigator.cpp — navigator.gpu (requestAdapter, formato preferido)
-//   device.cpp    — device + fábricas (shader module, pipeline, encoder)
+//   device.cpp    — aquisição do device + composição do objeto JS `device`
+//   pipeline.cpp  — shader modules e render pipelines (sub-parsers)
+//   layouts.cpp   — bind group layouts e pipeline layouts explícitos
+//   buffers.cpp   — GPUBuffer (write/map) e bind groups
+//   textures.cpp  — GPUTexture, views e samplers
 //   commands.cpp  — encoder/render pass/queue.submit
 //   surface.cpp   — gpuContext (configure, getCurrentTexture) e present
 //   enums.*       — mapas string ↔ enum do WebGPU
@@ -25,6 +29,10 @@ napi_value gpuGetPreferredCanvasFormat(napi_env env, napi_callback_info info);
 napi_value adapterRequestDevice(napi_env env, napi_callback_info info);
 napi_value makeDeviceObject(napi_env env, WGPUDevice device);
 
+// pipeline.cpp
+napi_value deviceCreateShaderModule(napi_env env, napi_callback_info info);
+napi_value deviceCreateRenderPipeline(napi_env env, napi_callback_info info);
+
 // commands.cpp
 napi_value deviceCreateCommandEncoder(napi_env env, napi_callback_info info);
 napi_value queueSubmit(napi_env env, napi_callback_info info);
@@ -34,6 +42,15 @@ napi_value deviceCreateBuffer(napi_env env, napi_callback_info info);
 napi_value deviceCreateBindGroup(napi_env env, napi_callback_info info);
 napi_value queueWriteBuffer(napi_env env, napi_callback_info info);
 void registerBufferUsageGlobals(napi_env env);
+
+// textures.cpp — recursos de imagem (GPUTexture, views, samplers)
+napi_value deviceCreateTexture(napi_env env, napi_callback_info info);
+napi_value deviceCreateSampler(napi_env env, napi_callback_info info);
+napi_value makeTextureViewMethods(napi_env env, napi_value textureObj);
+
+// layouts.cpp — layouts explícitos (o three não usa layout 'auto')
+napi_value deviceCreateBindGroupLayout(napi_env env, napi_callback_info info);
+napi_value deviceCreatePipelineLayout(napi_env env, napi_callback_info info);
 
 // surface.cpp
 napi_value contextConfigure(napi_env env, napi_callback_info info);

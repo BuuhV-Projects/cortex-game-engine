@@ -28,6 +28,10 @@ std::string getNamedString(napi_env env, napi_value obj, const char* name,
                            const char* fallback);
 double getNamedNumber(napi_env env, napi_value obj, const char* name,
                       double fallback);
+// Coage boolean/número/etc. — use pra flags JS (`true` não passa em
+// napi_get_value_double; foi bug real com mappedAtCreation).
+bool getNamedBool(napi_env env, napi_value obj, const char* name,
+                  bool fallback);
 
 napi_value makeObject(napi_env env);
 void setMethod(napi_env env, napi_value obj, const char* name,

@@ -8,6 +8,16 @@ WGPUTextureFormat formatFromString(const std::string& s) {
   if (s == "rgba8unorm") return WGPUTextureFormat_RGBA8Unorm;
   if (s == "rgba8unorm-srgb") return WGPUTextureFormat_RGBA8UnormSrgb;
   if (s == "rgba16float") return WGPUTextureFormat_RGBA16Float;
+  if (s == "rgba32float") return WGPUTextureFormat_RGBA32Float;
+  if (s == "r8unorm") return WGPUTextureFormat_R8Unorm;
+  if (s == "r16float") return WGPUTextureFormat_R16Float;
+  if (s == "r32float") return WGPUTextureFormat_R32Float;
+  if (s == "rg16float") return WGPUTextureFormat_RG16Float;
+  if (s == "depth16unorm") return WGPUTextureFormat_Depth16Unorm;
+  if (s == "depth24plus") return WGPUTextureFormat_Depth24Plus;
+  if (s == "depth24plus-stencil8")
+    return WGPUTextureFormat_Depth24PlusStencil8;
+  if (s == "depth32float") return WGPUTextureFormat_Depth32Float;
   return WGPUTextureFormat_Undefined;
 }
 
@@ -38,7 +48,77 @@ WGPUVertexFormat vertexFormatFromString(const std::string& s) {
   if (s == "float32x4") return WGPUVertexFormat_Float32x4;
   if (s == "uint32") return WGPUVertexFormat_Uint32;
   if (s == "sint32") return WGPUVertexFormat_Sint32;
+  if (s == "uint16x2") return WGPUVertexFormat_Uint16x2;
+  if (s == "uint16x4") return WGPUVertexFormat_Uint16x4;
+  if (s == "uint8x4") return WGPUVertexFormat_Uint8x4;
+  if (s == "unorm8x4") return WGPUVertexFormat_Unorm8x4;
+  if (s == "snorm8x4") return WGPUVertexFormat_Snorm8x4;
   return WGPUVertexFormat_Float32x3;
+}
+
+WGPUCompareFunction compareFromString(const std::string& s) {
+  if (s == "never") return WGPUCompareFunction_Never;
+  if (s == "less") return WGPUCompareFunction_Less;
+  if (s == "equal") return WGPUCompareFunction_Equal;
+  if (s == "less-equal") return WGPUCompareFunction_LessEqual;
+  if (s == "greater") return WGPUCompareFunction_Greater;
+  if (s == "not-equal") return WGPUCompareFunction_NotEqual;
+  if (s == "greater-equal") return WGPUCompareFunction_GreaterEqual;
+  if (s == "always") return WGPUCompareFunction_Always;
+  return WGPUCompareFunction_Undefined;
+}
+
+WGPUCullMode cullModeFromString(const std::string& s) {
+  if (s == "front") return WGPUCullMode_Front;
+  if (s == "back") return WGPUCullMode_Back;
+  return WGPUCullMode_None;
+}
+
+WGPUFrontFace frontFaceFromString(const std::string& s) {
+  if (s == "cw") return WGPUFrontFace_CW;
+  return WGPUFrontFace_CCW;
+}
+
+WGPUIndexFormat indexFormatFromString(const std::string& s) {
+  if (s == "uint16") return WGPUIndexFormat_Uint16;
+  return WGPUIndexFormat_Uint32;
+}
+
+WGPUVertexStepMode stepModeFromString(const std::string& s) {
+  if (s == "instance") return WGPUVertexStepMode_Instance;
+  return WGPUVertexStepMode_Vertex;
+}
+
+WGPUTextureViewDimension viewDimensionFromString(const std::string& s) {
+  if (s == "1d") return WGPUTextureViewDimension_1D;
+  if (s == "2d") return WGPUTextureViewDimension_2D;
+  if (s == "2d-array") return WGPUTextureViewDimension_2DArray;
+  if (s == "cube") return WGPUTextureViewDimension_Cube;
+  if (s == "cube-array") return WGPUTextureViewDimension_CubeArray;
+  if (s == "3d") return WGPUTextureViewDimension_3D;
+  return WGPUTextureViewDimension_Undefined;
+}
+
+WGPUTextureAspect aspectFromString(const std::string& s) {
+  if (s == "stencil-only") return WGPUTextureAspect_StencilOnly;
+  if (s == "depth-only") return WGPUTextureAspect_DepthOnly;
+  return WGPUTextureAspect_All;
+}
+
+WGPUFilterMode filterModeFromString(const std::string& s) {
+  if (s == "linear") return WGPUFilterMode_Linear;
+  return WGPUFilterMode_Nearest;
+}
+
+WGPUMipmapFilterMode mipmapFilterFromString(const std::string& s) {
+  if (s == "linear") return WGPUMipmapFilterMode_Linear;
+  return WGPUMipmapFilterMode_Nearest;
+}
+
+WGPUAddressMode addressModeFromString(const std::string& s) {
+  if (s == "repeat") return WGPUAddressMode_Repeat;
+  if (s == "mirror-repeat") return WGPUAddressMode_MirrorRepeat;
+  return WGPUAddressMode_ClampToEdge;
 }
 
 WGPUPrimitiveTopology topologyFromString(const std::string& s) {

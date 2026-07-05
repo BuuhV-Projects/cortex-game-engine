@@ -77,6 +77,17 @@ double getNamedNumber(napi_env env, napi_value obj, const char* name,
   return out;
 }
 
+bool getNamedBool(napi_env env, napi_value obj, const char* name,
+                  bool fallback) {
+  napi_value v = nullptr;
+  if (!getNamed(env, obj, name, &v)) return fallback;
+  napi_value coerced = nullptr;
+  if (napi_coerce_to_bool(env, v, &coerced) != napi_ok) return fallback;
+  bool out = fallback;
+  napi_get_value_bool(env, coerced, &out);
+  return out;
+}
+
 napi_value makeObject(napi_env env) {
   napi_value obj = nullptr;
   napi_create_object(env, &obj);

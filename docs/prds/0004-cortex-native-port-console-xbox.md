@@ -1,10 +1,13 @@
 # PRD 0004 - CortexNative: port 100% nativo para console (Xbox)
 
 **Data:** 2026-07-04
-**Status:** em execução — M0 iniciado em 2026-07-05 (`native/`): Marcos A–C
-provados no PC (SDL3 + wgpu-native D3D12 + Hermes rodando bytecode .hbc; JS
-comanda tudo via navigator.gpu — triângulo WGSL). Stack: ADR-0094. Mapa vivo:
-`docs/cortex-native/architecture.md`.
+**Status:** em execução — **M0 CONCLUÍDO em 2026-07-05** (`native/`): Three.js
+WebGPURenderer renderizando cubo girando em bytecode Hermes sobre D3D12, sem
+browser — conceito validado de ponta a ponta. Stack: ADR-0094. Mapa vivo:
+`docs/cortex-native/architecture.md`. Próximo: M1 (engine completo no host),
+validado com o jogo real `D:\jogos\teste4` (branch de refactor) — cobre as
+frentes que o M0 não exercitou: Rapier (física), HUD DOM (canvas/document) e
+assets.
 
 ## Problema
 
