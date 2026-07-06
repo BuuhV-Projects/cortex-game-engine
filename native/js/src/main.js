@@ -106,12 +106,33 @@ async function main() {
   const camera = new THREE.PerspectiveCamera(60, WIDTH / HEIGHT, 0.1, 100);
   camera.position.z = 3;
 
-  // MeshNormalMaterial: faces coloridas sem luz/textura — o caso mínimo.
+  // ── Bisseção de luzes (debug do delta Studio×native) ──────────────────
+  // 3 materiais × esferas: standard branco, toon com gradientMap, metal.
+  // Luzes: ambient + hemisphere + directional — se alguma não contribuir
+  // no wgpu-native, a diferença aparece aqui isolada.
+  const gradientData = new Uint8Array([0, 128, 255]);
+  const gradientMap = new THREE.DataTexture(gradientData, 3, 1, THREE.RedFormat);
+  gradientMap.magFilter = THREE.NearestFilter;
+  gradientMap.minFilter = THREE.NearestFilter;
+  gradientMap.needsUpdate = true;
+  const mats = [
+    new THREE.MeshStandardMaterial({ color: 0x88cc88 }),
+    new THREE.MeshToonMaterial({ color: 0x88cc88, gradientMap }),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1, roughness: 0.2 }),
+  ];
+  mats.forEach((mat, i) => {
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 16), mat);
+    ball.position.set(-1.4 + i * 1.0, 0.6, 0);
+    scene.add(ball);
+  });
+  scene.add(new THREE.HemisphereLight(0xbfd8ff, 0x5a4632, 1.0));
+  const amb = new THREE.AmbientLight(0xffffff, 0.35);
+  scene.add(amb);
   const cube = new THREE.Mesh(
     new THREE.BoxGeometry(0.6, 0.6, 0.6),
     new THREE.MeshNormalMaterial(),
   );
-  cube.position.x = -1.2;
+  cube.position.set(-1.2, -0.9, 0);
   scene.add(cube);
 
   // Frente 3 do M1: GLB REAL do teste4 (kit Deathrun) carregado via fetch

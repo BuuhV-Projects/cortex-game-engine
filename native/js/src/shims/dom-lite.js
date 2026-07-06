@@ -64,8 +64,14 @@ export function installDomLite() {
     body,
     head,
     documentElement: makeInertElement('html'),
-    createElement: makeInertElement,
-    createElementNS(_ns, tag) { return makeInertElement(tag); },
+    createElement(tag) {
+      // <img> de verdade (fetch+decode) — TextureLoader do three usa isto.
+      if (String(tag).toLowerCase() === 'img' && globalThis.Image) {
+        return new globalThis.Image();
+      }
+      return makeInertElement(tag);
+    },
+    createElementNS(_ns, tag) { return this.createElement(tag); },
     createTextNode(text) { return { textContent: text }; },
     // A canvas do jogo: getElementById('canvas')/querySelector('canvas')
     // devolvem a canvas do HOST (instalada pelo webgpu-extras).
