@@ -140,6 +140,15 @@ Native (que roda milhares de libs sobre Hermes em produção):
   O bytecode gerado é portátil; a dll do runtime é x64.
 - **vcvars64 obrigatório** pro CMake/Ninja acharem o `cl.exe` (Build Tools
   em `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools`).
+- **Color space do swapchain**: o browser SEMPRE reporta o formato de canvas
+  SEM `-srgb` (o Three converte gamma no shader). O wgpu-native reporta
+  `bgra8unorm-srgb` como preferido → aceitar isso causa DUPLA conversão sRGB
+  (iluminação/gamma erradas). `getPreferredCanvasFormat` faz `stripSrgb`
+  (navigator.cpp) pra igualar o browser.
+- **MSAA precisa de `resolveTarget`**: com `antialias:true`, o Three renderiza
+  numa textura multisampled e resolve pro swapchain via `resolveTarget` no
+  color attachment. Sem parsear esse campo (commands.cpp), o antialias vira
+  no-op → serrilhado nas bordas.
 
 ## Superfície WebGPU coberta (2026-07-06)
 

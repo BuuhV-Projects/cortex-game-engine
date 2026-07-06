@@ -51,6 +51,13 @@ WGPURenderPassColorAttachment parseColorAttachment(napi_env env,
   napi_value view = nullptr;
   if (njs::getNamed(env, att, "view", &view))
     out.view = static_cast<WGPUTextureView>(njs::unwrapValue(env, view));
+  // resolveTarget: MSAA. Com antialias, o Three renderiza numa textura
+  // multisampled (view) e RESOLVE pro swapchain (resolveTarget) no fim do
+  // pass. Sem parsear isto, o antialias vira no-op → serrilhado.
+  napi_value resolve = nullptr;
+  if (njs::getNamed(env, att, "resolveTarget", &resolve))
+    out.resolveTarget =
+        static_cast<WGPUTextureView>(njs::unwrapValue(env, resolve));
   out.loadOp =
       loadOpFromString(njs::getNamedString(env, att, "loadOp", "clear"));
   out.storeOp =

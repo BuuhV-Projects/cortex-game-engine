@@ -45,10 +45,22 @@ WGPUAdapter acquireAdapter(HostGpu* gpu) {
   return result.adapter;
 }
 
+// Variante LINEAR (não-sRGB) de um formato de surface. O browser SEMPRE
+// reporta o formato de canvas sem -srgb e o Three faz a conversão gamma no
+// shader (outputColorSpace). O wgpu-native reporta -srgb como preferido →
+// se aceitássemos, haveria DUPLA conversão sRGB (gamma/iluminação erradas).
+WGPUTextureFormat stripSrgb(WGPUTextureFormat format) {
+  switch (format) {
+    case WGPUTextureFormat_BGRA8UnormSrgb: return WGPUTextureFormat_BGRA8Unorm;
+    case WGPUTextureFormat_RGBA8UnormSrgb: return WGPUTextureFormat_RGBA8Unorm;
+    default: return format;
+  }
+}
+
 void cachePreferredFormat(HostGpu* gpu) {
   WGPUSurfaceCapabilities caps = WGPU_SURFACE_CAPABILITIES_INIT;
   wgpuSurfaceGetCapabilities(gpu->surface, gpu->adapter, &caps);
-  if (caps.formatCount > 0) gpu->preferredFormat = caps.formats[0];
+  if (caps.formatCount > 0) gpu->preferredFormat = stripSrgb(caps.formats[0]);
   wgpuSurfaceCapabilitiesFreeMembers(caps);
 }
 
