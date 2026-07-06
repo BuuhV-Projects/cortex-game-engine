@@ -310,9 +310,13 @@ export class Game {
    */
   get ui(): UiLayer {
     if (!this._ui) {
+      // Viewport da UI em pixels LÓGICOS (CSS), não no backing do canvas. Com
+      // devicePixelRatio > 1 (ex.: monitor HiDPI, ou o SSAA do host nativo que
+      // usa dpr=renderScale) `canvas.width` = lógico × dpr — usar ele encolheria
+      // a UI. `renderer.width/height` é o tamanho lógico (getSize, sem o dpr).
       this._ui = createUiLayer(this.renderer, () => ({
-        width: this.canvas.width,
-        height: this.canvas.height,
+        width: this.renderer.width,
+        height: this.renderer.height,
       }));
     }
     return this._ui;

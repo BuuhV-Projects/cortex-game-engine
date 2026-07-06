@@ -39,13 +39,20 @@ Implementação (novo `native/src/webgpu/supersample.{h,cpp}`, ~SRP):
   sampler linear + bind group layout), 1 draw de 3 vértices.
 - `surface.cpp`: `getCurrentTexture` devolve a offscreen (SS) quando ligada;
   `presentIfAcquired` adquire a swapchain real, faz o blit downscale e apresenta.
-- `main.cpp`: lê `CORTEX_RENDER_SCALE` (clamp 1.0–4.0, padrão 2.0) e injeta a
-  canvas no tamanho SS (`__cortexWidth/Height = nativo × renderScale`). O
-  callback de resize (`__cortexResize`) TAMBÉM passa o tamanho SS — senão o
-  three volta pro tamanho nativo e o depth (nativo) desbate do color (SS).
+- `main.cpp`: lê `CORTEX_RENDER_SCALE` (clamp 1.0–4.0, padrão 2.0) e injeta o
+  tamanho **lógico** (nativo) em `__cortexWidth/Height` + `devicePixelRatio =
+  renderScale` em `__cortexPixelRatio`. **Modelo fiel ao browser:** o engine faz
+  layout em px LÓGICOS (`innerWidth` = nativo) e o three multiplica por
+  `devicePixelRatio` pro backing (o offscreen SS = nativo × renderScale). O
+  resize (`__cortexResize`) passa o tamanho lógico (nativo); o dpr leva pro SS.
+- **UI em px lógicos:** o viewport do `UiLayer` (`Game.ts`) passou a usar o
+  tamanho LÓGICO do renderer (`renderer.width/height`, via `getSize()`) em vez de
+  `canvas.width` (backing = lógico × dpr). Sem isso, a UI encolheria pela metade
+  no export (canvas.width = SS): a fonte 16px virava 8px depois do downscale. É
+  também uma correção de HiDPI válida no browser (dpr > 1 no Studio).
 
-Efeito colateral aproveitado: a canvas maior também dá **nitidez em monitor com
-escala** (a pendência de high-DPI de ADR-0100/surface), sem re-config de surface.
+Efeito colateral aproveitado: o dpr também dá **nitidez em monitor com escala**
+(a pendência de high-DPI de ADR-0100/surface), sem re-config de surface.
 
 Também nasceu daqui o **deep-link de fase** (`CORTEX_LAUNCH_QUERY` →
 `location.search`), usado na validação headless e útil pro atalho/export abrir

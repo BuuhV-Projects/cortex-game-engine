@@ -174,16 +174,17 @@ Native (que roda milhares de libs sobre Hermes em produção):
   `HIGH_PIXEL_DENSITY` também dependia de re-config). O host injeta o tamanho
   fixo no JS (`__cortexWidth/Height`) antes do boot. Nitidez em monitor com
   escala: resolvida de graça pelo **SSAA** (canvas maior; ver abaixo).
-- **SSAA: o tamanho que o three renderiza PRECISA casar com a offscreen**
-  (ADR-0103). O host força `getCurrentTexture` a devolver a offscreen (SS =
-  nativo × `renderScale`); se o three renderizar noutro tamanho, o depth (que
-  ele dimensiona sozinho) desbate do color (a offscreen) e o wgpu aborta com
-  "Attachments have differing sizes". Por isso a injeção inicial
-  (`__cortexWidth/Height`) E o callback de resize (`__cortexResize`) usam os
-  DOIS o tamanho SS (`gpu.width × renderScale`). Foi bug real: o resize passava
-  o tamanho nativo e o primeiro `PIXEL_SIZE_CHANGED` (logo após criar a janela)
-  encolhia o three de volta pro nativo → crash na entrada da fase. Qualquer
-  caminho novo que avise o JS de tamanho tem que multiplicar por `renderScale`.
+- **SSAA usa o modelo de dpr do browser** (ADR-0103), NÃO um innerWidth
+  inflado. O host injeta `innerWidth/Height = nativo` (px lógicos) +
+  `devicePixelRatio = renderScale`; o three multiplica logical × dpr pro backing
+  (= offscreen SS = `gpu.width × renderScale`). Assim o depth (backing) casa com
+  o color (offscreen) e a UI, que faz layout em px lógicos, NÃO encolhe.
+  - Tentativa 1 (abandonada): `innerWidth = SS`, dpr=1. Casava depth×color mas
+    a UI (px absolutos num canvas SS) ficava minúscula depois do downscale.
+  - O viewport da UI (`Game.ts`) tem que ser o tamanho LÓGICO
+    (`renderer.width/height` = `getSize()`), não `canvas.width` (backing = SS).
+  - `__cortexResize` passa o tamanho LÓGICO (nativo); o dpr persiste no three e
+    leva pro SS. Passar SS aqui dobraria a escala.
 
 ## Superfície WebGPU coberta (2026-07-06)
 

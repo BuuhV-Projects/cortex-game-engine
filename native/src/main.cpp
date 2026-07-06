@@ -37,11 +37,12 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
       napi_get_global(env, &global);
       napi_value fn = nullptr;
       if (njs::getNamed(env, global, "__cortexResize", &fn)) {
-        // Tamanho SS (× renderScale) — o engine renderiza no offscreen desse
-        // tamanho; passar o nativo aqui dessincroniza depth×color e crasha.
+        // Tamanho LÓGICO (nativo) — o dpr (renderScale) leva pro backing SS via
+        // three, casando com o offscreen (nativo × renderScale). Passar SS aqui
+        // dobraria a escala.
         napi_value args[2];
-        napi_create_double(env, gpu->width * gpu->renderScale, &args[0]);
-        napi_create_double(env, gpu->height * gpu->renderScale, &args[1]);
+        napi_create_double(env, gpu->width, &args[0]);
+        napi_create_double(env, gpu->height, &args[1]);
         njs::callJsLogged(env, fn, 2, args, "resize");
       }
     }
@@ -122,17 +123,21 @@ int main(int argc, char** argv) {
       }
     }
 
-    // Tamanho da canvas (pixels) pro JS ANTES do boot — o prelude cria a canvas
-    // fake com ele. Com SSAA é o tamanho SS (o offscreen tem esse tamanho); o
-    // host reduz pra resolução nativa no present.
+    // Tamanho LÓGICO da canvas (nativo) + devicePixelRatio = renderScale, pro
+    // JS ANTES do boot. Modelo fiel ao browser: o engine faz layout em px
+    // lógicos (innerWidth = nativo) e o three multiplica por dpr pro backing
+    // (o offscreen SS). Assim a UI (px lógicos) NÃO encolhe com o SSAA — antes,
+    // com innerWidth = SS, o menu ficava minúsculo depois do downscale.
     {
       napi_value global = nullptr;
       napi_get_global(js.env(), &global);
-      napi_value w = nullptr, h = nullptr;
-      napi_create_double(js.env(), gpu.width * gpu.renderScale, &w);
-      napi_create_double(js.env(), gpu.height * gpu.renderScale, &h);
+      napi_value w = nullptr, h = nullptr, dpr = nullptr;
+      napi_create_double(js.env(), gpu.width, &w);
+      napi_create_double(js.env(), gpu.height, &h);
+      napi_create_double(js.env(), gpu.renderScale, &dpr);
       napi_set_named_property(js.env(), global, "__cortexWidth", w);
       napi_set_named_property(js.env(), global, "__cortexHeight", h);
+      napi_set_named_property(js.env(), global, "__cortexPixelRatio", dpr);
     }
 
     if (!js.runBoot(baseDir)) return 1;

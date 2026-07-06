@@ -94,13 +94,14 @@ export function installDomLite() {
   globalThis.addEventListener = windowBus.addEventListener;
   globalThis.removeEventListener = windowBus.removeEventListener;
   globalThis.dispatchEvent = windowBus.dispatchEvent;
-  // Tamanho REAL da janela (pixels físicos) — o host injeta __cortexWidth/
-  // Height antes do boot; default só se rodar sem host.
+  // Tamanho LÓGICO (CSS) da janela — o host injeta __cortexWidth/Height (nativo)
+  // antes do boot; default só se rodar sem host.
   globalThis.innerWidth = globalThis.__cortexWidth || globalThis.innerWidth || 1280;
   globalThis.innerHeight = globalThis.__cortexHeight || globalThis.innerHeight || 720;
-  // A resolução física já está em innerWidth (renderizamos 1:1 nos pixels do
-  // device, não em pixels lógicos) — então DPR=1.
-  globalThis.devicePixelRatio = 1;
+  // devicePixelRatio = fator de SSAA (host injeta __cortexPixelRatio = renderScale).
+  // Modelo fiel ao browser: o engine faz layout em px lógicos (innerWidth) e o
+  // three multiplica por dpr pro backing (supersampling). Sem host = 1.
+  globalThis.devicePixelRatio = globalThis.__cortexPixelRatio || 1;
 
   // Chamado pelo host quando a janela redimensiona: atualiza innerWidth/Height,
   // a canvas e dispara 'resize' (o engine re-configura o renderer).
