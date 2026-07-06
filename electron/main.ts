@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, Menu, type MenuItemConstructorOptions } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell, type MenuItemConstructorOptions } from 'electron'
 import { join, resolve, delimiter } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir, rename, rm, unlink } from 'fs/promises'
 import { existsSync, readFileSync, watch, type FSWatcher } from 'fs'
@@ -906,7 +906,18 @@ ipcMain.handle('export:native', async (_event, projectDir: unknown) => {
       windowsHide: true,
     })
     let output = ''
-    child.stdout?.on('data', (d: Buffer) => { output += d.toString() })
+    // Marcadores `[export:step] <key>` (prepare/bundle/bytecode/runtime/assets/
+    // done) do script viram eventos pro modal de progresso do renderer. O parse
+    // é por linha porque um chunk de stdout pode conter várias.
+    const emitSteps = (chunk: string): void => {
+      for (const line of chunk.split('\n')) {
+        const m = /^\[export:step\]\s+(\w+)/.exec(line.trim())
+        if (m && !_event.sender.isDestroyed()) {
+          _event.sender.send('export:progress', m[1])
+        }
+      }
+    }
+    child.stdout?.on('data', (d: Buffer) => { const s = d.toString(); output += s; emitSteps(s) })
     child.stderr?.on('data', (d: Buffer) => { output += d.toString() })
     child.on('close', (code) => {
       resolvePromise({
@@ -917,6 +928,12 @@ ipcMain.handle('export:native', async (_event, projectDir: unknown) => {
     })
     child.on('error', (err) => resolvePromise({ ok: false, output: String(err) }))
   })
+})
+
+/** Abre uma pasta no explorador do SO (ex.: dist-native após o export). */
+ipcMain.handle('shell:openPath', async (_event, target: unknown) => {
+  const safe = validatePath(target)
+  await shell.openPath(safe)
 })
 
 // ---------------------------------------------------------------------------

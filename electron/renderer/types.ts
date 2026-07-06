@@ -79,6 +79,10 @@ export interface ElectronAPI {
   revendorEngine(projectDir: string): Promise<void>
   /** Export CortexNative (ADR-0101): gera `dist-native/` do projeto. */
   exportNative(projectDir: string): Promise<{ ok: boolean; output: string; distDir?: string }>
+  /** Progresso do export (etapas). Retorna função de cancelamento do listener. */
+  onExportProgress(callback: (step: string) => void): () => void
+  /** Abre uma pasta no explorador do SO (ex.: dist-native após o export). */
+  openPath(target: string): Promise<void>
   /** `true` em dev (electron:dev). Pra mostrar opções de dev (DevTools). */
   isDev: boolean
   /** Abre/fecha o DevTools do studio (só em dev). */

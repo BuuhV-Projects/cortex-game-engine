@@ -19,6 +19,11 @@ if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
   process.exit(1);
 }
 
+// Marcador de etapa legível por máquina — o Studio (main.ts) faz parse destas
+// linhas pra alimentar o modal de progresso do export. As chaves batem com os
+// passos exibidos: prepare → bundle → bytecode → runtime → assets → done.
+const step = (key) => console.log(`[export:step] ${key}`);
+
 const gameName = path.basename(gameDir);
 const dist = path.join(gameDir, 'dist-native');
 const hostBuild = path.join(engineRoot, 'native', 'build');
@@ -31,6 +36,7 @@ const hermesc = path.join(
 // espera e tenta de novo. Se ainda assim falhar, não apaga a pasta inteira:
 // limpa só os arquivos que vamos regravar (o exe travado por um jogo aberto
 // não impede o resto).
+step('prepare');
 try {
   fs.rmSync(dist, { recursive: true, force: true, maxRetries: 10, retryDelay: 150 });
 } catch (err) {
@@ -39,6 +45,7 @@ try {
 fs.mkdirSync(dist, { recursive: true });
 
 // 1. bundle do jogo (esbuild + babel — mesmo pipeline do dev)
+step('bundle');
 console.log(`[export] bundle de ${gameName}...`);
 const bundlePath = path.join(dist, 'boot.bundle.js');
 execFileSync(
@@ -48,6 +55,7 @@ execFileSync(
 );
 
 // 2. bytecode Hermes
+step('bytecode');
 console.log('[export] hermesc → boot.hbc...');
 execFileSync(hermesc, ['-emit-binary', '-O', '-w', '-out', path.join(dist, 'boot.hbc'), bundlePath], {
   stdio: 'inherit',
@@ -55,6 +63,7 @@ execFileSync(hermesc, ['-emit-binary', '-O', '-w', '-out', path.join(dist, 'boot
 fs.rmSync(bundlePath);
 
 // 3. runtime: exe (renomeado pro jogo) + dlls + fonte
+step('runtime');
 console.log('[export] runtime...');
 const runtimeFiles = [
   ['cortex_host.exe', `${gameName}.exe`],
@@ -69,6 +78,7 @@ for (const [from, to] of runtimeFiles) {
 }
 
 // 4. assets do jogo: assets/ inteiro + JSONs de cena/overlay + cortex.json
+step('assets');
 console.log('[export] assets...');
 const assetsDir = path.join(gameDir, 'assets');
 if (fs.existsSync(assetsDir)) {
@@ -89,6 +99,7 @@ for (const extra of ['cortex.json']) {
   if (fs.existsSync(src)) fs.copyFileSync(src, path.join(dist, extra));
 }
 
+step('done');
 const files = fs.readdirSync(dist);
 console.log(`[export] OK → ${dist} (${files.length} itens na raiz)`);
 console.log(`[export] rode: ${path.join(dist, `${gameName}.exe`)}`);

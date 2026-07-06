@@ -30,6 +30,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
       distDir?: string
     }>,
 
+  /**
+   * Progresso do export (marcadores de etapa do script). Retorna uma função
+   * de cancelamento — chame ao fechar o modal pra não acumular listeners
+   * entre exports sucessivos.
+   */
+  onExportProgress: (callback: (step: string) => void): (() => void) => {
+    const handler = (_event: unknown, step: string): void => callback(step)
+    ipcRenderer.on('export:progress', handler)
+    return () => ipcRenderer.removeListener('export:progress', handler)
+  },
+
+  /** Abre uma pasta no explorador do SO (ex.: dist-native após o export). */
+  openPath: (target: string) => ipcRenderer.invoke('shell:openPath', target),
+
   /** `true` em dev (electron:dev); `false` no build empacotado. */
   isDev: ipcRenderer.sendSync('app:is-dev') as boolean,
   toggleDevTools: () => ipcRenderer.invoke('devtools:toggle'),

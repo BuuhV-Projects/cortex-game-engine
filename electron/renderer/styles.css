@@ -1146,6 +1146,147 @@ body.app-preview-fullscreen #preview-container {
   background-color: var(--od-bg-hover-strong);
 }
 
+/* ── Modal de progresso do export (CortexNative, ADR-0101) ─────────────────── */
+.export-modal {
+  background-color: var(--od-bg-panel);
+  border: 1px solid var(--od-border-soft);
+  border-radius: 6px;
+  color: var(--od-fg);
+  padding: 20px 24px;
+  min-width: 380px;
+  max-width: 460px;
+}
+
+/* Backdrop nativo do <dialog> — escurece e bloqueia toda a Studio. */
+.export-modal::backdrop {
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(1.5px);
+}
+
+.export-modal__header {
+  margin-bottom: 16px;
+}
+
+.export-modal__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--od-fg-bright);
+}
+
+.export-modal__subtitle {
+  font-size: 11px;
+  color: var(--od-fg-muted);
+  margin-top: 2px;
+}
+
+.export-modal__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.export-modal__step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.export-modal__icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* Pendente: círculo vazio e texto apagado. */
+.export-modal__step[data-state='pending'] .export-modal__icon {
+  border: 1.5px solid var(--od-border-strong);
+}
+.export-modal__step[data-state='pending'] .export-modal__label {
+  color: var(--od-fg-dim);
+}
+
+/* Ativo: spinner girando e texto em destaque. */
+.export-modal__step[data-state='active'] .export-modal__icon {
+  border: 1.5px solid var(--od-accent);
+  border-top-color: transparent;
+  animation: export-spin 0.7s linear infinite;
+}
+.export-modal__step[data-state='active'] .export-modal__label {
+  color: var(--od-fg-bright);
+  font-weight: 500;
+}
+
+/* Concluído: check verde. */
+.export-modal__step[data-state='done'] .export-modal__icon {
+  background-color: var(--od-green);
+  color: var(--od-bg-deep);
+  font-weight: 700;
+}
+.export-modal__step[data-state='done'] .export-modal__label {
+  color: var(--od-fg);
+}
+
+@keyframes export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.export-modal__status {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--od-fg-muted);
+}
+.export-modal__status--ok {
+  color: var(--od-green);
+  font-weight: 500;
+}
+.export-modal__status--fail {
+  color: var(--od-red);
+  font-weight: 500;
+}
+
+.export-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.export-modal__btn {
+  padding: 6px 16px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+.export-modal__btn--primary {
+  background-color: var(--od-accent);
+  color: var(--od-fg-bright);
+}
+.export-modal__btn--primary:hover {
+  background-color: var(--od-accent-hover);
+}
+.export-modal__btn--secondary {
+  background-color: var(--od-border-soft);
+  color: var(--od-fg);
+  border: 1px solid var(--od-border-strong);
+}
+.export-modal__btn--secondary:hover {
+  background-color: var(--od-bg-hover-strong);
+}
+
 /* ------------------------------------------------------------------ */
 /* Context menu do FileTree                                            */
 /* ------------------------------------------------------------------ */

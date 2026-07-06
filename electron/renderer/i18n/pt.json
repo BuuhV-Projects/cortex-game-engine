@@ -49,7 +49,20 @@
     "installer_setup_done": "✓ src-tauri/ copiado, package.json atualizado.\n",
     "installer_icons_generated": "✓ Ícones placeholder gerados em src-tauri/icons/. Pra trocar pela arte do jogo depois, rode `yarn tauri icon caminho/icone.png`.\n",
     "installer_next_steps": "\nPróximos passos:\n  1. Aguardar `yarn install` terminar (vai rodar agora).\n  2. (Se ainda não fez) instalar Rust + MSVC Build Tools (uma vez por máquina):\n     - Rust:  https://rustup.rs/\n     - MSVC:  https://visualstudio.microsoft.com/visual-cpp-build-tools/\n     Detalhes em \"Gerar instalador do jogo\" no README.md da IDE.\n  3. Clicar Menu → Projeto → Gerar instalador... de novo — agora vai buildar.\n\n",
-    "installer_setup_error": "Erro ao configurar Tauri:"
+    "installer_setup_error": "Erro ao configurar Tauri:",
+    "export_title": "Exportando o jogo",
+    "export_subtitle": "PC / Xbox — CortexNative",
+    "export_hint": "Não feche o Studio durante o export.",
+    "export_step_prepare": "Preparando pasta de saída",
+    "export_step_bundle": "Empacotando o jogo (bundle)",
+    "export_step_bytecode": "Compilando bytecode (Hermes)",
+    "export_step_runtime": "Copiando runtime (exe + libs)",
+    "export_step_assets": "Copiando assets e cenas",
+    "export_step_done": "Finalizado",
+    "export_done_ok": "Export concluído",
+    "export_done_fail": "O export falhou — veja o terminal.",
+    "export_open_folder": "Abrir pasta",
+    "export_close": "Fechar"
   },
   "projectManager": {
     "new_btn": "+ Novo Projeto",

@@ -1,4 +1,5 @@
 import { t } from './i18n'
+import { ExportProgressModal } from './ExportProgressModal'
 
 type TabId = 'console' | 'terminal'
 
@@ -175,6 +176,11 @@ export class BottomPanel {
     }
     this.activateTab('terminal')
     this.appendTerminal('Exportando nativo (PC/Xbox) — bundle + bytecode + runtime…\n', 'system')
+
+    // Modal de progresso: o backdrop nativo do <dialog> BLOQUEIA a Studio
+    // inteira até o export terminar. As etapas chegam via onExportProgress.
+    const modal = new ExportProgressModal()
+    const unsubscribe = window.electronAPI.onExportProgress((step) => modal.step(step))
     try {
       const result = await window.electronAPI.exportNative(this.projectDir)
       this.appendTerminal(result.output, result.ok ? 'log' : 'error')
@@ -183,8 +189,12 @@ export class BottomPanel {
       } else if (!result.ok) {
         this.appendTerminal('Export falhou — veja a saída acima.\n', 'error')
       }
+      modal.finish(result.ok, result.distDir)
     } catch (err) {
       this.appendTerminal(`Export falhou: ${String(err)}\n`, 'error')
+      modal.finish(false)
+    } finally {
+      unsubscribe()
     }
   }
 
