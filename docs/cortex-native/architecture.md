@@ -149,6 +149,14 @@ Native (que roda milhares de libs sobre Hermes em produção):
   numa textura multisampled e resolve pro swapchain via `resolveTarget` no
   color attachment. Sem parsear esse campo (commands.cpp), o antialias vira
   no-op → serrilhado nas bordas.
+- **Fullscreen + `SDL_SyncWindow`**: o host abre em fullscreen na resolução
+  do desktop (sharp, tamanho fixo). Pega o tamanho de
+  `SDL_GetDesktopDisplayMode` (`w * pixel_density`), NÃO de
+  `SDL_GetWindowSizeInPixels` — este devolve o tamanho inicial da janela até
+  a transição assentar. E chama `SDL_SyncWindow(window)` logo após criar:
+  sem ele, o engine cria os alvos a 1280×720 (tamanho de criação) enquanto a
+  swapchain assume a resolução do display (1920×1080) → mismatch depth×color
+  → crash. `CORTEX_WINDOWED=1` abre em janela pra debug.
 - **Reconfigurar a surface = CRASH** ("Invalid surface" no wgpuSurfaceConfigure,
   D3D12/wgpu-native): a PRIMEIRA config funciona; qualquer RE-config pra um
   tamanho diferente (resize/maximizar) crasha o processo — nem recriar a
