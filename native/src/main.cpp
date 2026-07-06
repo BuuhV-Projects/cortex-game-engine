@@ -37,9 +37,11 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
       napi_get_global(env, &global);
       napi_value fn = nullptr;
       if (njs::getNamed(env, global, "__cortexResize", &fn)) {
+        // Tamanho SS (× renderScale) — o engine renderiza no offscreen desse
+        // tamanho; passar o nativo aqui dessincroniza depth×color e crasha.
         napi_value args[2];
-        napi_create_double(env, gpu->width, &args[0]);
-        napi_create_double(env, gpu->height, &args[1]);
+        napi_create_double(env, gpu->width * gpu->renderScale, &args[0]);
+        napi_create_double(env, gpu->height * gpu->renderScale, &args[1]);
         njs::callJsLogged(env, fn, 2, args, "resize");
       }
     }
@@ -95,14 +97,40 @@ int main(int argc, char** argv) {
     shims::registerTextRaster(js.env(), baseDir, basePath ? basePath : "");
     webgpu::registerBindings(js.env(), &gpu);
 
-    // Tamanho REAL da janela (pixels físicos) pro JS ANTES do boot — o
-    // prelude cria a canvas fake com ele (renderiza na resolução real).
+    // SSAA (supersampling): o engine renderiza numa canvas MAIOR (nativo ×
+    // renderScale) num alvo offscreen; o host faz downscale bilinear no
+    // present. Mata o serrilhado dos contornos finos (moedas) que o MSAA 4x
+    // sozinho não suaviza. CORTEX_RENDER_SCALE ajusta (padrão 2.0; 1.0 desliga).
+    {
+      const char* scaleEnv = SDL_getenv("CORTEX_RENDER_SCALE");
+      float scale = scaleEnv ? static_cast<float>(SDL_atof(scaleEnv)) : 2.0f;
+      if (scale < 1.0f) scale = 1.0f;
+      if (scale > 4.0f) scale = 4.0f;  // teto de sanidade (VRAM/fill-rate)
+      gpu.renderScale = scale;
+    }
+
+    // Deep-link de fase / query de lançamento (env CORTEX_LAUNCH_QUERY →
+    // location.search): atalho/export pode abrir direto numa fase
+    // ("?level=fase-1"); vazio = fluxo normal (menu).
+    {
+      const char* query = SDL_getenv("CORTEX_LAUNCH_QUERY");
+      if (query && query[0]) {
+        napi_value global = nullptr, s = nullptr;
+        napi_get_global(js.env(), &global);
+        napi_create_string_utf8(js.env(), query, NAPI_AUTO_LENGTH, &s);
+        napi_set_named_property(js.env(), global, "__cortexSearch", s);
+      }
+    }
+
+    // Tamanho da canvas (pixels) pro JS ANTES do boot — o prelude cria a canvas
+    // fake com ele. Com SSAA é o tamanho SS (o offscreen tem esse tamanho); o
+    // host reduz pra resolução nativa no present.
     {
       napi_value global = nullptr;
       napi_get_global(js.env(), &global);
       napi_value w = nullptr, h = nullptr;
-      napi_create_double(js.env(), gpu.width, &w);
-      napi_create_double(js.env(), gpu.height, &h);
+      napi_create_double(js.env(), gpu.width * gpu.renderScale, &w);
+      napi_create_double(js.env(), gpu.height * gpu.renderScale, &h);
       napi_set_named_property(js.env(), global, "__cortexWidth", w);
       napi_set_named_property(js.env(), global, "__cortexHeight", h);
     }

@@ -50,12 +50,16 @@ export function installGlobals() {
     },
   };
 
-  // location + URLSearchParams (o suficiente pra `?level=`/`?overview`)
+  // location + URLSearchParams (o suficiente pra `?level=`/`?overview`).
+  // `search` vem do host (env CORTEX_LAUNCH_QUERY → __cortexSearch): permite
+  // deep-link de fase no export/atalho (ex.: "?level=fase-1") e a validação
+  // headless. Vazio = fluxo normal (menu).
+  const search = globalThis.__cortexSearch || '';
   globalThis.location = {
-    href: 'app://cortex/',
+    href: 'app://cortex/' + search,
     origin: 'app://cortex',
     pathname: '/',
-    search: '',
+    search,
     hash: '',
   };
   globalThis.URLSearchParams = function URLSearchParams(init) {

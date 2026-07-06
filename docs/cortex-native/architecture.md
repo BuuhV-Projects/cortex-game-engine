@@ -27,8 +27,13 @@ main.cpp (loop)
  │                                          e submete comandos WebGPU aqui)
  ├─ drainMicrotasks
  └─ presentIfAcquired     webgpu/surface    present + release da textura, se o
-                                            JS chamou getCurrentTexture()
+                                            JS chamou getCurrentTexture(). Com
+                                            SSAA: blit downscale offscreen→swap.
 ```
+
+Com SSAA ligado (padrão), o JS não desenha na swapchain: `getCurrentTexture`
+devolve a textura **offscreen** (nativo × `renderScale`) e o `presentIfAcquired`
+adquire a swapchain real, faz o blit downscale (webgpu/supersample) e apresenta.
 
 No boot: `main` cria janela+surface (D3D12), cria `JsRuntime`, registra shims
 e bindings, executa `boot.hbc` (bytecode) e drena microtasks — o `async main()`
@@ -62,7 +67,8 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/webgpu/buffers.cpp` | Recursos de DADOS: createBuffer (+mappedAtCreation/getMappedRange/unmap), writeBuffer (assinatura completa da spec, offsets em ELEMENTOS), createBindGroup, global `GPUBufferUsage`. |
 | `native/src/webgpu/textures.cpp` | Recursos de IMAGEM: createTexture, views com descriptor (depth do Three), samplers. Marca `__kind` nos objetos p/ o parseBindGroupEntry. |
 | `native/src/webgpu/commands.cpp` | Encoder, render pass (color+depth attachments), setBindGroup/setVertexBuffer/setIndexBuffer/viewport/scissor, draw/drawIndexed, queue.submit. |
-| `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. |
+| `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. Com SSAA, `getCurrentTexture` devolve a offscreen (SS) e o present faz o blit downscale. |
+| `native/src/webgpu/supersample.*` | SSAA (ADR-0103): alvo offscreen (nativo × `renderScale`) onde o JS desenha + pipeline de blit (fullscreen-triangle + sampler linear) que reduz pra swapchain no present. Mata o serrilhado do contorno inverted-hull. |
 | `native/src/webgpu/enums.*` | Mapas string↔enum (formatos, compare, cull, vertex formats...). |
 | `native/js/src/main.js` | Boot do jogo (hoje: cubo Three.js girando + smoke tests do M1). Entry do bundle. |
 | `native/js/src/prelude.js` | Orquestrador dos shims JS (importa js/src/shims/ na ordem certa). Regra: o que dá pra shimar em JS fica em shims/. |
@@ -166,9 +172,18 @@ Native (que roda milhares de libs sobre Hermes em produção):
   1ª vez e na recuperação de Outdated/Lost (sempre pro MESMO tamanho).
   Consequência: sem resize/maximizar e **sem high-DPI** (a flag
   `HIGH_PIXEL_DENSITY` também dependia de re-config). O host injeta o tamanho
-  fixo no JS (`__cortexWidth/Height`) antes do boot. Pendências: nitidez em
-  monitor com escala e resize dinâmico → via **SSAA offscreen** (render num
-  alvo maior + downscale no present), que NÃO mexe na config da surface.
+  fixo no JS (`__cortexWidth/Height`) antes do boot. Nitidez em monitor com
+  escala: resolvida de graça pelo **SSAA** (canvas maior; ver abaixo).
+- **SSAA: o tamanho que o three renderiza PRECISA casar com a offscreen**
+  (ADR-0103). O host força `getCurrentTexture` a devolver a offscreen (SS =
+  nativo × `renderScale`); se o three renderizar noutro tamanho, o depth (que
+  ele dimensiona sozinho) desbate do color (a offscreen) e o wgpu aborta com
+  "Attachments have differing sizes". Por isso a injeção inicial
+  (`__cortexWidth/Height`) E o callback de resize (`__cortexResize`) usam os
+  DOIS o tamanho SS (`gpu.width × renderScale`). Foi bug real: o resize passava
+  o tamanho nativo e o primeiro `PIXEL_SIZE_CHANGED` (logo após criar a janela)
+  encolhia o three de volta pro nativo → crash na entrada da fase. Qualquer
+  caminho novo que avise o JS de tamanho tem que multiplicar por `renderScale`.
 
 ## Superfície WebGPU coberta (2026-07-06)
 
@@ -226,6 +241,13 @@ native/build/cortex_host.exe
 
 Saída esperada hoje (M0, Marco C): janela com triângulo violeta, e no console
 `[js] [boot] pipeline criado — WGSL compilado no backend D3D12`.
+
+**Env vars do host** (export/atalho ou debug):
+- `CORTEX_WINDOWED=1` — abre em janela (padrão é fullscreen na resolução do desktop).
+- `CORTEX_RENDER_SCALE=<n>` — fator de SSAA (ADR-0103). Padrão `2.0`; `1.0`
+  desliga; teto `4.0`. Regula nitidez do contorno × custo de fill-rate.
+- `CORTEX_LAUNCH_QUERY=<query>` — vira `location.search` (deep-link de fase, ex.:
+  `?level=fase-1`); vazio = fluxo normal (menu).
 
 ## Estado e próximos marcos
 

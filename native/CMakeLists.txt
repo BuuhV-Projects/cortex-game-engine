@@ -29,6 +29,7 @@ add_executable(cortex_host
   src/webgpu/layouts.cpp
   src/webgpu/navigator.cpp
   src/webgpu/pipeline.cpp
+  src/webgpu/supersample.cpp
   src/webgpu/surface.cpp
   src/webgpu/textures.cpp
 )

@@ -6,6 +6,7 @@
 #include "bindings.h"
 #include "enums.h"
 #include "internal.h"
+#include "supersample.h"
 
 #include <webgpu/wgpu.h>
 
@@ -90,6 +91,16 @@ napi_value contextGetCurrentTexture(napi_env env, napi_callback_info) {
     njs::throwError(env, "getCurrentTexture: surface não configurada");
     return njs::undefined(env);
   }
+  // SSAA: o JS desenha no OFFSCREEN (maior); o host faz downscale no present.
+  WGPUTextureView offscreen = ensureOffscreen(gpu);
+  if (offscreen) {
+    // Não-own: a textura offscreen vive no HostGpu. Devolve os métodos de
+    // view (createView etc.) sobre a textura offscreen.
+    napi_value obj =
+        njs::wrapHandle(env, gpu->offscreenTexture, njs::finalizeNoop);
+    return makeTextureViewMethods(env, obj);
+  }
+
   if (!gpu->currentTexture) gpu->currentTexture = acquireSurfaceTexture(gpu);
   if (!gpu->currentTexture) {
     // Surface temporariamente inválida (meio de um resize) — devolve null;
@@ -106,6 +117,18 @@ napi_value contextGetCurrentTexture(napi_env env, napi_callback_info) {
 }
 
 void presentIfAcquired(HostGpu* gpu) {
+  // SSAA: o JS desenhou no offscreen; adquire a swapchain, faz downscale e
+  // apresenta.
+  if (gpu->offscreenView && gpu->configured) {
+    WGPUTexture swap = acquireSurfaceTexture(gpu);
+    if (!swap) return;  // surface temporariamente indisponível → pula frame
+    WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);
+    blitToSwapchain(gpu, swapView);
+    wgpuTextureViewRelease(swapView);
+    wgpuSurfacePresent(gpu->surface);
+    wgpuTextureRelease(swap);
+    return;
+  }
   if (!gpu->currentTexture) return;
   wgpuSurfacePresent(gpu->surface);
   wgpuTextureRelease(gpu->currentTexture);

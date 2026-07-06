@@ -38,4 +38,15 @@ struct HostGpu {
   // Textura do frame corrente (adquirida no getCurrentTexture do JS;
   // apresentada e liberada pelo host no fim do frame).
   WGPUTexture currentTexture = nullptr;
+
+  // ── SSAA (supersampling) ──────────────────────────────────────────────────
+  // O JS renderiza num alvo OFFSCREEN maior (nativo × renderScale) e o host
+  // faz downscale pra swapchain no present — antialiasing dos contornos finos
+  // (o MSAA 4x sozinho serrilha linhas de alto contraste, ex.: moedas).
+  // renderScale = 1.0 desliga (renderiza direto na swapchain).
+  float renderScale = 1.0f;
+  WGPUTexture offscreenTexture = nullptr;  // alvo SS que o JS desenha
+  WGPUTextureView offscreenView = nullptr;
+  int offscreenWidth = 0;
+  int offscreenHeight = 0;
 };
