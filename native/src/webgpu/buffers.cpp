@@ -111,6 +111,40 @@ napi_value bufferUnmap(napi_env env, napi_callback_info info) {
   return njs::undefined(env);
 }
 
+// mapAsync(mode[, offset[, size]]) → Promise. Readback real: bombeia
+// ProcessEvents até o map completar (o three usa em getMappedRange depois).
+napi_value bufferMapAsync(napi_env env, napi_callback_info info) {
+  size_t argc = 3;
+  napi_value args[3];
+  auto* buffer =
+      static_cast<WGPUBuffer>(njs::unwrapThis(env, info, &argc, args));
+  HostGpu* gpu = gpuState();
+  if (!buffer || !gpu) return njs::resolvedPromise(env, njs::undefined(env));
+
+  double mode = 1, offset = 0;
+  if (argc >= 1) napi_get_value_double(env, args[0], &mode);
+  if (argc >= 2) napi_get_value_double(env, args[1], &offset);
+  double size = argc >= 3 ? 0 : -1;
+  if (argc >= 3) napi_get_value_double(env, args[2], &size);
+  uint64_t mapSize = size < 0
+      ? (wgpuBufferGetSize(buffer) - static_cast<uint64_t>(offset))
+      : static_cast<uint64_t>(size);
+
+  struct MapResult {
+    bool done = false;
+  } result;
+  WGPUBufferMapCallbackInfo cb = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+  cb.mode = WGPUCallbackMode_AllowProcessEvents;
+  cb.userdata1 = &result;
+  cb.callback = [](WGPUMapAsyncStatus, WGPUStringView, void* u1, void*) {
+    static_cast<MapResult*>(u1)->done = true;
+  };
+  wgpuBufferMapAsync(buffer, static_cast<WGPUMapMode>(mode),
+                     static_cast<uint64_t>(offset), mapSize, cb);
+  while (!result.done) wgpuInstanceProcessEvents(gpu->instance);
+  return njs::resolvedPromise(env, njs::undefined(env));
+}
+
 // resource de bind group: {buffer} | GPUTextureView | GPUSampler.
 // Views e samplers carregam a marca `__kind` (definida ao criar o objeto)
 // porque o napi_wrap não distingue o tipo do handle.
@@ -167,6 +201,14 @@ napi_value deviceCreateBuffer(napi_env env, napi_callback_info info) {
   njs::setMethod(env, obj, "destroy", bufferDestroy);
   njs::setMethod(env, obj, "getMappedRange", bufferGetMappedRange);
   njs::setMethod(env, obj, "unmap", bufferUnmap);
+  njs::setMethod(env, obj, "mapAsync", bufferMapAsync);
+  // GPUBuffer.size/usage (o three lê size em várias operações).
+  napi_value sizeValue = nullptr;
+  napi_create_double(env, static_cast<double>(desc.size), &sizeValue);
+  napi_set_named_property(env, obj, "size", sizeValue);
+  napi_value usageValue = nullptr;
+  napi_create_uint32(env, static_cast<uint32_t>(desc.usage), &usageValue);
+  napi_set_named_property(env, obj, "usage", usageValue);
   return obj;
 }
 

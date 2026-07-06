@@ -296,4 +296,71 @@ napi_value deviceCreateRenderPipeline(napi_env env, napi_callback_info info) {
   return makePipelineObject(env, pipeline);
 }
 
+/** Versão async da spec — no host a criação é síncrona; devolve Promise. */
+napi_value deviceCreateRenderPipelineAsync(napi_env env,
+                                           napi_callback_info info) {
+  return njs::resolvedPromise(env, deviceCreateRenderPipeline(env, info));
+}
+
+// ── compute pipelines (renderer.compute/TSL compute dos jogos) ─────────────
+
+napi_value deviceCreateComputePipeline(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value args[1];
+  auto* device =
+      static_cast<WGPUDevice>(njs::unwrapThis(env, info, &argc, args));
+  if (!device || argc < 1) {
+    njs::throwError(env, "createComputePipeline: descriptor obrigatório");
+    return njs::undefined(env);
+  }
+
+  WGPUComputePipelineDescriptor desc = WGPU_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
+  // layout: 'auto' → NULL; objeto → unwrap (mesma regra do render pipeline)
+  napi_value layout = nullptr;
+  if (njs::getNamed(env, args[0], "layout", &layout)) {
+    napi_valuetype type = napi_undefined;
+    napi_typeof(env, layout, &type);
+    if (type == napi_object)
+      desc.layout = static_cast<WGPUPipelineLayout>(njs::unwrapValue(env, layout));
+  }
+  std::string entry;
+  napi_value compute = nullptr;
+  if (njs::getNamed(env, args[0], "compute", &compute)) {
+    napi_value module = nullptr;
+    njs::getNamed(env, compute, "module", &module);
+    desc.compute.module =
+        static_cast<WGPUShaderModule>(njs::unwrapValue(env, module));
+    entry = njs::getNamedString(env, compute, "entryPoint", "");
+    if (!entry.empty()) desc.compute.entryPoint = {entry.data(), entry.size()};
+  }
+
+  WGPUComputePipeline pipeline =
+      wgpuDeviceCreateComputePipeline(device, &desc);
+  napi_value obj = njs::wrapHandle(env, pipeline, [](napi_env, void* d, void*) {
+    if (d) wgpuComputePipelineRelease(static_cast<WGPUComputePipeline>(d));
+  });
+  njs::setMethod(env, obj, "getBindGroupLayout", [](napi_env e, napi_callback_info i) -> napi_value {
+    size_t ac = 1;
+    napi_value av[1];
+    auto* p = static_cast<WGPUComputePipeline>(njs::unwrapThis(e, i, &ac, av));
+    double index = 0;
+    if (ac >= 1) napi_get_value_double(e, av[0], &index);
+    if (!p) return njs::undefined(e);
+    WGPUBindGroupLayout l = wgpuComputePipelineGetBindGroupLayout(
+        p, static_cast<uint32_t>(index));
+    return njs::wrapHandle(e, l, [](napi_env, void* d, void*) {
+      if (d) wgpuBindGroupLayoutRelease(static_cast<WGPUBindGroupLayout>(d));
+    });
+  });
+  napi_value marker = nullptr;
+  napi_get_boolean(env, true, &marker);
+  napi_set_named_property(env, obj, "__isComputePipeline", marker);
+  return obj;
+}
+
+napi_value deviceCreateComputePipelineAsync(napi_env env,
+                                            napi_callback_info info) {
+  return njs::resolvedPromise(env, deviceCreateComputePipeline(env, info));
+}
+
 }  // namespace webgpu

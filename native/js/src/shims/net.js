@@ -135,6 +135,13 @@ function AbortControllerLite() {
 AbortControllerLite.prototype.abort = function () {
   this.signal.aborted = true;
 };
+// AbortSignal.any([...]) — o three usa pra combinar signals no ImageBitmapLoader.
+AbortSignalLite.any = function (signals) {
+  const combined = new AbortSignalLite();
+  for (const s of signals || []) if (s && s.aborted) combined.aborted = true;
+  return combined;
+};
+AbortSignalLite.timeout = function () { return new AbortSignalLite(); };
 
 export function installNetShims() {
   globalThis.AbortController = AbortControllerLite;

@@ -130,8 +130,10 @@ WGPUOrigin3D parseOrigin(napi_env env, napi_value value) {
   return out;
 }
 
-// destino de cópia: {texture, mipLevel?, origin?, aspect?}
-WGPUTexelCopyTextureInfo parseCopyDestination(napi_env env, napi_value dest) {
+}  // namespace
+
+/** Origem/destino de cópia: {texture, mipLevel?, origin?, aspect?}. */
+WGPUTexelCopyTextureInfo parseCopyTexture(napi_env env, napi_value dest) {
   WGPUTexelCopyTextureInfo out = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
   napi_value texture = nullptr;
   if (njs::getNamed(env, dest, "texture", &texture))
@@ -146,7 +148,10 @@ WGPUTexelCopyTextureInfo parseCopyDestination(napi_env env, napi_value dest) {
   return out;
 }
 
-}  // namespace
+/** Tamanho de cópia: {width,height,depthOrArrayLayers} ou [w,h,d]. */
+WGPUExtent3D parseCopyExtent(napi_env env, napi_value value) {
+  return parseExtent(env, value);
+}
 
 napi_value makeTextureViewMethods(napi_env env, napi_value textureObj) {
   njs::setMethod(env, textureObj, "createView",
@@ -185,6 +190,21 @@ napi_value deviceCreateTexture(napi_env env, napi_callback_info info) {
 
   WGPUTexture texture = wgpuDeviceCreateTexture(device, &desc);
   napi_value obj = njs::wrapHandle(env, texture, finalizeTexture);
+  // GPUTexture.width/height/depthOrArrayLayers/format/mipLevelCount/
+  // sampleCount/dimension (o three lê no upload de mips e em render targets).
+  napi_value v = nullptr;
+  napi_create_uint32(env, desc.size.width, &v);
+  napi_set_named_property(env, obj, "width", v);
+  napi_create_uint32(env, desc.size.height, &v);
+  napi_set_named_property(env, obj, "height", v);
+  napi_create_uint32(env, desc.size.depthOrArrayLayers, &v);
+  napi_set_named_property(env, obj, "depthOrArrayLayers", v);
+  napi_create_uint32(env, desc.mipLevelCount, &v);
+  napi_set_named_property(env, obj, "mipLevelCount", v);
+  napi_create_uint32(env, desc.sampleCount, &v);
+  napi_set_named_property(env, obj, "sampleCount", v);
+  napi_create_string_utf8(env, formatToString(desc.format), NAPI_AUTO_LENGTH, &v);
+  napi_set_named_property(env, obj, "format", v);
   return makeTextureViewMethods(env, obj);
 }
 
@@ -200,7 +220,7 @@ napi_value queueWriteTexture(napi_env env, napi_callback_info info) {
     return njs::undefined(env);
   }
 
-  WGPUTexelCopyTextureInfo destination = parseCopyDestination(env, args[0]);
+  WGPUTexelCopyTextureInfo destination = parseCopyTexture(env, args[0]);
   void* data = nullptr;
   size_t size = 0;
   size_t elementSize = 1;
@@ -260,7 +280,7 @@ napi_value queueCopyExternalImageToTexture(napi_env env,
     return njs::undefined(env);
   }
 
-  WGPUTexelCopyTextureInfo destination = parseCopyDestination(env, args[1]);
+  WGPUTexelCopyTextureInfo destination = parseCopyTexture(env, args[1]);
   if (!destination.texture) return njs::undefined(env);
 
   const size_t rowBytes = static_cast<size_t>(width) * 4;

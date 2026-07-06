@@ -38,7 +38,7 @@ Defined in: [src/ui/runtime/UiLayer.ts:36](https://github.com/BuuhV-Projects/cor
 
 > **get** **focused**(): [`UiButton`](UiButton.md) \| `null`
 
-Defined in: [src/ui/runtime/UiLayer.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L66)
+Defined in: [src/ui/runtime/UiLayer.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L71)
 
 Widget focado no momento (ou null).
 
@@ -52,7 +52,7 @@ Widget focado no momento (ou null).
 
 > **activate**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L123)
+Defined in: [src/ui/runtime/UiLayer.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L128)
 
 Ativa o botão focado (Enter/A).
 
@@ -106,7 +106,7 @@ Remove todos os widgets (troca de tela).
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L128)
+Defined in: [src/ui/runtime/UiLayer.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L133)
 
 Desmonta a camada (listeners + visuais).
 
@@ -120,7 +120,7 @@ Desmonta a camada (listeners + visuais).
 
 > **focus**(`button`): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L72)
+Defined in: [src/ui/runtime/UiLayer.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L77)
 
 Foca um botão específico (ex.: primeiro item do menu).
 
@@ -140,7 +140,7 @@ Foca um botão específico (ex.: primeiro item do menu).
 
 > **navigate**(`dx`, `dy`): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L93)
+Defined in: [src/ui/runtime/UiLayer.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L98)
 
 Move o foco na direção dada (navegação espacial).
 
@@ -184,7 +184,7 @@ Remove um widget.
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L88)
+Defined in: [src/ui/runtime/UiLayer.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L93)
 
 Desenha (backend renderer; no DOM é no-op). Chamado pelo `Game`.
 
@@ -198,7 +198,7 @@ Desenha (backend renderer; no DOM é no-op). Chamado pelo `Game`.
 
 > **update**(`_dt`): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L80)
+Defined in: [src/ui/runtime/UiLayer.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L85)
 
 Por frame: consome teclado (setas/Enter) e gamepad (d-pad/A) pra navegar
 e ativar; depois sincroniza o backend. Chamado pelo `Game`.
@@ -212,3 +212,17 @@ e ativar; depois sincroniza o backend. Chamado pelo `Game`.
 #### Returns
 
 `void`
+
+***
+
+### viewport()
+
+> **viewport**(): [`UiViewport`](../interfaces/UiViewport.md)
+
+Defined in: [src/ui/runtime/UiLayer.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L66)
+
+Viewport atual da UI (px do canvas) — usado por layouts de template.
+
+#### Returns
+
+[`UiViewport`](../interfaces/UiViewport.md)

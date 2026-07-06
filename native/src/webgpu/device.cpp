@@ -121,6 +121,12 @@ napi_value makeDeviceObject(napi_env env, WGPUDevice device) {
   // pipeline.cpp
   njs::setMethod(env, obj, "createShaderModule", deviceCreateShaderModule);
   njs::setMethod(env, obj, "createRenderPipeline", deviceCreateRenderPipeline);
+  njs::setMethod(env, obj, "createRenderPipelineAsync",
+                 deviceCreateRenderPipelineAsync);
+  njs::setMethod(env, obj, "createComputePipeline",
+                 deviceCreateComputePipeline);
+  njs::setMethod(env, obj, "createComputePipelineAsync",
+                 deviceCreateComputePipelineAsync);
   // layouts.cpp
   njs::setMethod(env, obj, "createBindGroupLayout",
                  deviceCreateBindGroupLayout);
@@ -133,6 +139,8 @@ napi_value makeDeviceObject(napi_env env, WGPUDevice device) {
   njs::setMethod(env, obj, "createSampler", deviceCreateSampler);
   // commands.cpp
   njs::setMethod(env, obj, "createCommandEncoder", deviceCreateCommandEncoder);
+  njs::setMethod(env, obj, "createRenderBundleEncoder",
+                 deviceCreateRenderBundleEncoder);
   // error scopes (este arquivo)
   njs::setMethod(env, obj, "pushErrorScope", devicePushErrorScope);
   njs::setMethod(env, obj, "popErrorScope", devicePopErrorScope);
@@ -143,6 +151,8 @@ napi_value makeDeviceObject(napi_env env, WGPUDevice device) {
   njs::setMethod(env, queue, "writeTexture", queueWriteTexture);
   njs::setMethod(env, queue, "copyExternalImageToTexture",
                  queueCopyExternalImageToTexture);
+  njs::setMethod(env, queue, "onSubmittedWorkDone",
+                 queueOnSubmittedWorkDone);
   napi_set_named_property(env, obj, "queue", queue);
   return obj;
 }

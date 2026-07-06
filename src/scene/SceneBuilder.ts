@@ -507,6 +507,18 @@ export async function buildScene(
           bottom: outdoor.skyBottom,
           environmentIntensity: outdoor.skyGradientIntensity ?? 1,
         });
+      } else {
+        // Environment DEFAULT derivado do céu (IBL suave): sem environment,
+        // materiais metálicos/reflexivos ficam PRETOS (fisicamente correto,
+        // visualmente errado pro cartoon) — e o resultado divergia entre
+        // preview e export nativo. Intensidade branda; ajuste com
+        // `skyGradientIntensity` ou defina hdri/skyTop pra assumir o controle.
+        Skybox.fromGradient(scene, {
+          top: outdoor.sky,
+          middle: outdoor.sky,
+          bottom: outdoor.sky, // uniforme: mesmo tom do background de cor
+          environmentIntensity: outdoor.skyGradientIntensity ?? 0.5,
+        });
       }
     }
   }

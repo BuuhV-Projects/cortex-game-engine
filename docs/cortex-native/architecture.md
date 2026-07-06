@@ -141,6 +141,33 @@ Native (que roda milhares de libs sobre Hermes em produção):
 - **vcvars64 obrigatório** pro CMake/Ninja acharem o `cl.exe` (Build Tools
   em `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools`).
 
+## Superfície WebGPU coberta (2026-07-06)
+
+O shim cobre a API que o Three.js WebGPURenderer usa, incluindo:
+- **Render**: pipelines (render/compute, + versões async), bind group/pipeline
+  layouts explícitos, render pass (color+depth, viewport/scissor,
+  draw/drawIndexed, index/vertex buffers), **render bundles**
+  (createRenderBundleEncoder/executeBundles — o three gera **mipmaps** com
+  eles; sem isso, environment/skybox quebram) e **compute pass**
+  (beginComputePass/dispatchWorkgroups).
+- **Recursos**: buffers (map/mapAsync/getMappedRange, size/usage), texturas
+  (createTexture com width/height/format/mip/sampleCount expostos; views com
+  descriptor; samplers), copies (buffer↔buffer, texture↔texture,
+  writeTexture, copyExternalImageToTexture).
+- **Sinais**: onSubmittedWorkDone, popErrorScope (resolvem sincronamente — o
+  host submete/apresenta no mesmo frame).
+
+**Imagens/texturas** (fora do WebGPU): `Image`/`HTMLImageElement` fake
+(shims/image.js) — fetch+stb_image, herda de ImageBitmap; é o que faz o
+TextureLoader (skybox, environment, cáusticas, backgrounds) funcionar.
+Sem ele, TODA textura por URL falhava em silêncio (água/céu sumiam).
+
+**Impossíveis por design (não são shim)**: JIT/eval, WASM (por isso Rapier
+é nativo), DOM real com layout/CSS (a UI é a de runtime, ADR-0102). Deltas
+visuais restantes são de RENDER (wgpu-native vs Dawn), não de API — o
+environment default (IBL do céu) foi adicionado no engine (SceneBuilder)
+porque metais ficavam pretos sem ele, o que divergia entre preview e export.
+
 ## Como estender (receitas)
 
 **Expor uma API WebGPU nova pro JS** (ex.: `createBuffer`):

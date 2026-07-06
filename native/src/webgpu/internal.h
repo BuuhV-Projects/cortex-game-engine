@@ -32,10 +32,18 @@ napi_value makeDeviceObject(napi_env env, WGPUDevice device);
 // pipeline.cpp
 napi_value deviceCreateShaderModule(napi_env env, napi_callback_info info);
 napi_value deviceCreateRenderPipeline(napi_env env, napi_callback_info info);
+napi_value deviceCreateRenderPipelineAsync(napi_env env,
+                                           napi_callback_info info);
+napi_value deviceCreateComputePipeline(napi_env env, napi_callback_info info);
+napi_value deviceCreateComputePipelineAsync(napi_env env,
+                                            napi_callback_info info);
 
 // commands.cpp
 napi_value deviceCreateCommandEncoder(napi_env env, napi_callback_info info);
 napi_value queueSubmit(napi_env env, napi_callback_info info);
+napi_value queueOnSubmittedWorkDone(napi_env env, napi_callback_info info);
+napi_value deviceCreateRenderBundleEncoder(napi_env env,
+                                           napi_callback_info info);
 
 // buffers.cpp — recursos de dados (GPUBuffer, bind groups)
 napi_value deviceCreateBuffer(napi_env env, napi_callback_info info);
@@ -53,6 +61,9 @@ napi_value makeTextureViewMethods(napi_env env, napi_value textureObj);
 napi_value queueWriteTexture(napi_env env, napi_callback_info info);
 napi_value queueCopyExternalImageToTexture(napi_env env,
                                            napi_callback_info info);
+// parsers compartilhados de cópia (usados também pelo commands.cpp)
+WGPUTexelCopyTextureInfo parseCopyTexture(napi_env env, napi_value value);
+WGPUExtent3D parseCopyExtent(napi_env env, napi_value value);
 
 // layouts.cpp — layouts explícitos (o three não usa layout 'auto')
 napi_value deviceCreateBindGroupLayout(napi_env env, napi_callback_info info);
