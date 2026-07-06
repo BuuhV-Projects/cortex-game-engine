@@ -70,6 +70,8 @@ void shutdownGpu(HostGpu* gpu) {
 
 int main(int argc, char** argv) {
   HostGpu gpu;
+  // Tamanho só do modo janela (CORTEX_WINDOWED); em fullscreen usa a
+  // resolução do display.
   SDL_Window* window = core::createAppWindow(&gpu, "cortex-native (M0)", 1280, 720);
   if (!window) return 1;
 

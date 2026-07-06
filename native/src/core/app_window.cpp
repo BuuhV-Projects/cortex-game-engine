@@ -48,20 +48,22 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
     std::fprintf(stderr, "SDL_Init falhou: %s\n", SDL_GetError());
     return nullptr;
   }
-  // HIGH_PIXEL_DENSITY: sem isso, a janela renderiza em pixels lógicos e o
-  // compositor faz UPSCALE borrado pro tamanho físico (monitor com escala).
-  // Com a flag, SDL_GetWindowSizeInPixels devolve os pixels físicos e
-  // renderizamos na resolução real — igual ao Studio (Electron é high-DPI).
-  // Janela de tamanho FIXO (sem RESIZABLE): reconfigurar a surface do
-  // wgpu-native/D3D12 após um resize dá "Invalid surface" e crasha o
-  // processo (bug conhecido do backend). Sem resize, a surface configura
-  // UMA vez e nunca mais é tocada. Resize/high-DPI = pendência (via SSAA
-  // offscreen no futuro, que não mexe na config da surface).
-  SDL_Window* window = SDL_CreateWindow(title, width, height, 0);
+  // FULLSCREEN por padrão (como jogo/console): renderiza na resolução NATIVA
+  // do desktop — imagem SHARP (sem o upscale borrado do modo janela) — e é de
+  // tamanho FIXO. Reconfigurar a surface do wgpu-native/D3D12 após um resize
+  // dá "Invalid surface" e crasha (bug do backend); em tamanho fixo a surface
+  // configura UMA vez e nunca mais. Trocar de resolução = reiniciar o jogo.
+  // Debug: CORTEX_WINDOWED=1 abre em janela (mais fácil de inspecionar).
+  const bool windowed = SDL_getenv("CORTEX_WINDOWED") != nullptr;
+  SDL_Window* window = SDL_CreateWindow(
+      title, width, height, windowed ? 0 : SDL_WINDOW_FULLSCREEN);
   if (!window) {
     std::fprintf(stderr, "SDL_CreateWindow falhou: %s\n", SDL_GetError());
     return nullptr;
   }
+  // Deixa o fullscreen assentar ANTES de ler o tamanho (senão o engine cria
+  // os alvos no tamanho inicial da janela e não bate com a swapchain).
+  SDL_SyncWindow(window);
 
   gpu->instance = createInstanceD3D12();
   if (!gpu->instance) {
@@ -73,7 +75,21 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
     std::fprintf(stderr, "wgpuInstanceCreateSurface falhou\n");
     return nullptr;
   }
-  SDL_GetWindowSizeInPixels(window, &gpu->width, &gpu->height);
+  // Em FULLSCREEN a swapchain assume a resolução do DISPLAY — pego ela direto
+  // do modo do desktop (o GetWindowSizeInPixels pode devolver o tamanho
+  // inicial antes da transição assentar → mismatch depth×color e crash).
+  if (!windowed) {
+    SDL_DisplayID display = SDL_GetDisplayForWindow(window);
+    if (display == 0) display = SDL_GetPrimaryDisplay();  // ainda não assentou
+    const SDL_DisplayMode* mode = SDL_GetDesktopDisplayMode(display);
+    if (mode) {
+      gpu->width = static_cast<int>(mode->w * mode->pixel_density);
+      gpu->height = static_cast<int>(mode->h * mode->pixel_density);
+    }
+  }
+  if (gpu->width <= 0 || gpu->height <= 0) {
+    SDL_GetWindowSizeInPixels(window, &gpu->width, &gpu->height);
+  }
   return window;
 }
 
