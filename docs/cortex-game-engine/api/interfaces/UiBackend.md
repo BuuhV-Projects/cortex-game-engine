@@ -6,7 +6,7 @@
 
 # Interface: UiBackend
 
-Defined in: src/ui/runtime/UiBackend.ts:11
+Defined in: [src/ui/runtime/UiBackend.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L11)
 
 ## Methods
 
@@ -14,7 +14,7 @@ Defined in: src/ui/runtime/UiBackend.ts:11
 
 > **dispose**(): `void`
 
-Defined in: src/ui/runtime/UiBackend.ts:17
+Defined in: [src/ui/runtime/UiBackend.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L17)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -28,7 +28,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: src/ui/runtime/UiBackend.ts:15
+Defined in: [src/ui/runtime/UiBackend.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L15)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
@@ -42,7 +42,7 @@ Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
 > **sync**(`widgets`, `viewport`): `void`
 
-Defined in: src/ui/runtime/UiBackend.ts:13
+Defined in: [src/ui/runtime/UiBackend.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L13)
 
 Sincroniza visuais com a lista de widgets (cria/atualiza/remove).
 

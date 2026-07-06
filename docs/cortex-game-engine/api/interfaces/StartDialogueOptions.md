@@ -6,7 +6,7 @@
 
 # Interface: StartDialogueOptions
 
-Defined in: [src/dialogue/startDialogue.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L15)
+Defined in: [src/dialogue/startDialogue.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L16)
 
 Opções de [startDialogue](../functions/startDialogue.md).
 
@@ -20,7 +20,7 @@ Opções de [startDialogue](../functions/startDialogue.md).
 
 > `optional` **accent?**: `string`
 
-Defined in: [src/dialogue/DialogueUI.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L31)
+Defined in: [src/dialogue/DialogueUI.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L33)
 
 #### Inherited from
 
@@ -32,7 +32,7 @@ Defined in: [src/dialogue/DialogueUI.ts:31](https://github.com/BuuhV-Projects/co
 
 > `optional` **advanceKeys?**: `string`[]
 
-Defined in: [src/dialogue/startDialogue.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L26)
+Defined in: [src/dialogue/startDialogue.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L27)
 
 Teclas que avançam linhas simples. Default `['e', 'Enter', ' ']`. Escolhas
 são por clique (e teclas numéricas `1..9`).
@@ -43,7 +43,7 @@ são por clique (e teclas numéricas `1..9`).
 
 > `optional` **onClue?**: (`clueId`) => `void`
 
-Defined in: [src/dialogue/startDialogue.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L19)
+Defined in: [src/dialogue/startDialogue.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L20)
 
 Recebe pistas concedidas (`give`) — ligue ao sistema de investigação do jogo.
 
@@ -63,7 +63,7 @@ Recebe pistas concedidas (`give`) — ligue ao sistema de investigação do jogo
 
 > `optional` **onEnd?**: () => `void`
 
-Defined in: [src/dialogue/startDialogue.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L21)
+Defined in: [src/dialogue/startDialogue.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L22)
 
 Chamado quando a conversa termina (naturalmente ou via `stop`).
 
@@ -77,7 +77,7 @@ Chamado quando a conversa termina (naturalmente ou via `stop`).
 
 > `optional` **parent?**: `HTMLElement`
 
-Defined in: [src/dialogue/DialogueUI.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L30)
+Defined in: [src/dialogue/DialogueUI.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L32)
 
 #### Inherited from
 
@@ -89,6 +89,17 @@ Defined in: [src/dialogue/DialogueUI.ts:30](https://github.com/BuuhV-Projects/co
 
 > `optional` **story?**: [`StoryState`](../classes/StoryState.md)
 
-Defined in: [src/dialogue/startDialogue.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L17)
+Defined in: [src/dialogue/startDialogue.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L18)
 
 Estado de história pra `requires`/`set`.
+
+***
+
+### ui?
+
+> `optional` **ui?**: [`UiLayer`](../classes/UiLayer.md)
+
+Defined in: [src/dialogue/startDialogue.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/startDialogue.ts#L32)
+
+`game.ui` — usa a UI de runtime (ADR-0102): funciona no console e as
+escolhas ficam navegáveis por d-pad/A. Sem isso, DOM legado (browser).

@@ -74,6 +74,7 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/js/examples/triangle.js` | Referência: triângulo WebGPU puro (Marcos C–D), sem Three. |
 | `native/scripts/bundle.mjs` | esbuild (bundle es2018) + Babel (classes loose + arrows) → IIFE único pro hermesc. |
 | `native/scripts/fetch-deps.ps1` | Baixa deps prebuilt **pinadas** (SDL3, wgpu-native, Hermes NuGet). |
+| `native/scripts/export-game.mjs` | Export distribuível (ADR-0101): bundle+hermesc -O+exe+dlls+assets → `<jogo>/dist-native/`. |
 
 ## Regras do projeto (não quebrar)
 
@@ -213,15 +214,26 @@ Plano completo com inventário e ordem de ataque:
   stb_truetype/Roboto pinada; **descarte de textura ADIADO 2 frames** —
   dispose imediato derruba o frame em voo). teste4 migrado (MainMenu +
   HUD do RushSystem): menu navegável e HUD ao vivo no host (screenshots).
-  **Pendências**: migrar DialogueUI/LoadingScreen/Speedometer pra API;
-  texto maior que o botão não recorta; re-vendorizar .d.ts pros jogos.
+  LoadingScreen (createLoadingScreen) e DialogueUI (createUiDialogueUI +
+  opção `ui` no startDialogue — escolhas navegáveis por d-pad/A) migrados;
+  Speedometer fica pós-M1 JUNTO do vehicle controller (só tem uso com carro
+  e precisa de widget de imagem/rotação). Pendência menor: texto maior que
+  o botão não recorta.
 
 **TESTE PRÁTICO (2026-07-05): o teste4 REAL é JOGÁVEL no host.** Pipeline:
 `node native/scripts/bundle.mjs <out> D:/jogos/teste4/main.ts` (CORTEX_LEVEL
 opcional pula o menu) → hermesc → `cortex_host.exe D:\jogos\teste4`.
 Menu nativo navegável → fase com visual COMPLETO (texturas embutidas via
-URL/objectURL; blend ok) → HUD ao vivo (moedas/cronômetro). Pendência de
-produto: empacotamento (boot.hbc gerado à mão na pasta do jogo).
+URL/objectURL; blend ok) → HUD ao vivo (moedas/cronômetro).
+
+**M1 CONCLUÍDO (2026-07-06).** Export empacotado:
+`node native/scripts/export-game.mjs <gameDir>` → `<gameDir>/dist-native/`
+com `<jogo>.exe` + dlls + Roboto + boot.hbc (-O) + assets/ + scenes/*.json —
+validado: teste4.exe roda STANDALONE da pasta dist. Re-vendor de projeto:
+build:engine completo + tsc → copiar dist-engine/* e .d.ts conforme
+VENDOR_TYPE_MODULES (o teste4 já recebeu os tipos da UI).
+Pós-M1: Speedometer+vehicle controller; espacialização do Panner;
+mapAsync/copyTextureToTexture/MSAA; instalador (NSIS/MSIX) pro dist.
 
 Build do Rapier nativo: `cargo build --release` em `native/rapier-native/`
 (1x; o CMake linka `target/release/rapier_native.dll.lib` e copia a dll).

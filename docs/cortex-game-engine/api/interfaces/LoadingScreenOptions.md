@@ -6,7 +6,7 @@
 
 # Interface: LoadingScreenOptions
 
-Defined in: [src/core/LoadingScreen.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L11)
+Defined in: [src/core/LoadingScreen.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L19)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/core/LoadingScreen.ts:11](https://github.com/BuuhV-Projects/cor
 
 > `optional` **accent?**: `string`
 
-Defined in: [src/core/LoadingScreen.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L15)
+Defined in: [src/core/LoadingScreen.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L23)
 
 Cor da barra de progresso.
 
@@ -24,7 +24,7 @@ Cor da barra de progresso.
 
 > `optional` **background?**: `string`
 
-Defined in: [src/core/LoadingScreen.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L12)
+Defined in: [src/core/LoadingScreen.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L20)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [src/core/LoadingScreen.ts:12](https://github.com/BuuhV-Projects/cor
 
 > `optional` **message?**: `string`
 
-Defined in: [src/core/LoadingScreen.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L13)
+Defined in: [src/core/LoadingScreen.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L21)
 
 ***
 
@@ -40,4 +40,4 @@ Defined in: [src/core/LoadingScreen.ts:13](https://github.com/BuuhV-Projects/cor
 
 > `optional` **parent?**: `HTMLElement`
 
-Defined in: [src/core/LoadingScreen.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L16)
+Defined in: [src/core/LoadingScreen.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L24)

@@ -6,7 +6,7 @@
 
 # Interface: UiViewport
 
-Defined in: src/ui/runtime/layout.ts:25
+Defined in: [src/ui/runtime/layout.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L25)
 
 Viewport lógico da UI (pixels do canvas).
 
@@ -16,7 +16,7 @@ Viewport lógico da UI (pixels do canvas).
 
 > **height**: `number`
 
-Defined in: src/ui/runtime/layout.ts:27
+Defined in: [src/ui/runtime/layout.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L27)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: src/ui/runtime/layout.ts:27
 
 > **width**: `number`
 
-Defined in: src/ui/runtime/layout.ts:26
+Defined in: [src/ui/runtime/layout.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L26)

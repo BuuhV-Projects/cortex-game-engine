@@ -6,10 +6,7 @@
 
 # Interface: LoadingScreen
 
-Defined in: [src/core/LoadingScreen.ts:5](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L5)
-
-Tela de loading DOM simples — cobre a tela enquanto assets/cena carregam.
-`setProgress` atualiza um rótulo e uma barra (0..1).
+Defined in: [src/core/LoadingScreen.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L13)
 
 ## Methods
 
@@ -17,7 +14,7 @@ Tela de loading DOM simples — cobre a tela enquanto assets/cena carregam.
 
 > **hide**(): `void`
 
-Defined in: [src/core/LoadingScreen.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L8)
+Defined in: [src/core/LoadingScreen.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L16)
 
 #### Returns
 
@@ -29,7 +26,7 @@ Defined in: [src/core/LoadingScreen.ts:8](https://github.com/BuuhV-Projects/cort
 
 > **setProgress**(`label`, `fraction`): `void`
 
-Defined in: [src/core/LoadingScreen.ts:7](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L7)
+Defined in: [src/core/LoadingScreen.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L15)
 
 #### Parameters
 
@@ -51,7 +48,7 @@ Defined in: [src/core/LoadingScreen.ts:7](https://github.com/BuuhV-Projects/cort
 
 > **show**(): `void`
 
-Defined in: [src/core/LoadingScreen.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L6)
+Defined in: [src/core/LoadingScreen.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L14)
 
 #### Returns
 

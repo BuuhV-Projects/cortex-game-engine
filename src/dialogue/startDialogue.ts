@@ -1,7 +1,8 @@
 import { type DialogueGraph } from './DialogueGraph.js';
 import { DialogueRunner } from './DialogueRunner.js';
-import { createDialogueUI, type DialogueUIOptions } from './DialogueUI.js';
+import { createDialogueUI, createUiDialogueUI, type DialogueUIOptions } from './DialogueUI.js';
 import type { StoryState } from '../narrative/StoryState.js';
+import type { UiLayer } from '../ui/runtime/UiLayer.js';
 
 /** Handle de um diálogo em andamento, devolvido por {@link startDialogue}. */
 export interface DialogueController {
@@ -24,6 +25,11 @@ export interface StartDialogueOptions extends DialogueUIOptions {
    * são por clique (e teclas numéricas `1..9`).
    */
   advanceKeys?: string[];
+  /**
+   * `game.ui` — usa a UI de runtime (ADR-0102): funciona no console e as
+   * escolhas ficam navegáveis por d-pad/A. Sem isso, DOM legado (browser).
+   */
+  ui?: UiLayer;
 }
 
 /**
@@ -73,10 +79,18 @@ export function startDialogue(
     step(runner.advance());
   };
 
-  const ui = createDialogueUI(
-    { onChoose: choose, onAdvance: advance },
-    { parent: options.parent, accent: options.accent },
-  );
+  // Com `ui` (game.ui): diálogo sobre a UI de runtime (ADR-0102) — funciona
+  // no console e ganha navegação por d-pad/A. Sem: DOM legado (browser).
+  const ui = options.ui
+    ? createUiDialogueUI(
+        options.ui,
+        { onChoose: choose, onAdvance: advance },
+        { accent: options.accent },
+      )
+    : createDialogueUI(
+        { onChoose: choose, onAdvance: advance },
+        { parent: options.parent, accent: options.accent },
+      );
 
   const onKey = (e: KeyboardEvent): void => {
     if (!active) return;

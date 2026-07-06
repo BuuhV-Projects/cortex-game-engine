@@ -4,11 +4,11 @@
 
 [cortex-game-engine](../README.md) / createDomLoadingScreen
 
-# Function: createDomLoadingScreen()
+# ~~Function: createDomLoadingScreen()~~
 
 > **createDomLoadingScreen**(`options?`): [`LoadingScreen`](../interfaces/LoadingScreen.md)
 
-Defined in: [src/core/LoadingScreen.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L19)
+Defined in: [src/core/LoadingScreen.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L97)
 
 ## Parameters
 
@@ -19,3 +19,7 @@ Defined in: [src/core/LoadingScreen.ts:19](https://github.com/BuuhV-Projects/cor
 ## Returns
 
 [`LoadingScreen`](../interfaces/LoadingScreen.md)
+
+## Deprecated
+
+Prefira [createLoadingScreen](createLoadingScreen.md) (funciona no console).

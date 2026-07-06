@@ -1,6 +1,9 @@
 # M1 — Inventário do teste4 e plano do "engine completo no host"
 
 **Data:** 2026-07-05 · **Base:** `D:\jogos\teste4`, branch `refactor/port-console-xbox`
+**STATUS: CONCLUÍDO em 2026-07-06** (critério atingido + export
+empacotado; detalhes/pendências pós-M1 no architecture.md).
+
 **Meta do M1:** o teste4 (Cute Obstacle Rush) bootando e jogável no
 `cortex_host.exe` — o jogo real valida o que o cubo do M0 não exercitou.
 

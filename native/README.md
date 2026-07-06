@@ -28,9 +28,11 @@ extensão. Toda mudança estrutural atualiza esse doc na mesma mudança.
 - ✅ **Marco E** — **Three.js WebGPURenderer renderizando cubo girando** —
   conceito CortexNative validado de ponta a ponta
 
-Próximo: **M1** — engine cortex completo no host (Rapier nativo, input,
-áudio, HUD sem DOM), validado com o jogo real `D:\jogos\teste4`. Ver o mapa
-vivo pra detalhes.
+**M1 CONCLUÍDO (2026-07-06)**: o teste4 é JOGÁVEL no host (menu navegável
+no controle, fase com visual completo, física, moedas, cronômetro, áudio) e
+o export empacotado existe (`native/scripts/export-game.mjs` →
+`dist-native/` standalone). UI de runtime (ADR-0102) no engine com 2
+backends. Ver o mapa vivo pra pendências pós-M1.
 
 ## Build rápido
 
