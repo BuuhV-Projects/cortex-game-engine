@@ -22,7 +22,7 @@ canto arredondado e borda — nada de CSS arbitrário.
 
 > **new UiPanel**(`props?`): `UiPanel`
 
-Defined in: [src/ui/runtime/widgets.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L66)
+Defined in: [src/ui/runtime/widgets.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L73)
 
 #### Parameters
 
@@ -113,6 +113,19 @@ Sujo = backend precisa re-sincronizar este widget.
 #### Inherited from
 
 [`UiWidget`](UiWidget.md).[`dirty`](UiWidget.md#dirty)
+
+***
+
+### fill
+
+> **fill**: `boolean` = `false`
+
+Defined in: [src/ui/runtime/widgets.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L72)
+
+Painel de fundo do tamanho do viewport (atributo `fill` do template). Quando
+`true`, o UiLayer redimensiona width/height pro viewport ATUAL a cada frame —
+sem isso o painel ficaria travado no tamanho de quando foi criado e não
+cobriria a tela após um resize (ex.: entrar em fullscreen).
 
 ***
 

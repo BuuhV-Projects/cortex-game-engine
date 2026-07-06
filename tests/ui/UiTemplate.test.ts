@@ -23,7 +23,10 @@ describe('UiTemplate — HTML que compila pra UI nativa (ADR-0102)', () => {
     });
 
     const [panel, label, button] = inst.widgets as [UiPanel, UiLabel, UiButton];
-    expect(panel.width).toBe(1280); // fill = viewport
+    // `fill` não trava o tamanho no template: marca a flag e o UiLayer
+    // redimensiona pro viewport a cada frame (acompanha resize/fullscreen).
+    expect(panel.fill).toBe(true);
+    expect(panel.anchor).toBe('top-left');
     expect(label.text).toBe('Meu Jogo'); // {{titulo}} substituído
     expect(label.fontSize).toBe(40); // class do <style>
     button.onPress!();

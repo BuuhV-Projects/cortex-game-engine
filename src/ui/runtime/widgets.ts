@@ -63,6 +63,13 @@ export class UiPanel extends UiWidget {
   borderWidth = 0;
   /** Cor da borda. */
   borderColor = '#ffffff';
+  /**
+   * Painel de fundo do tamanho do viewport (atributo `fill` do template). Quando
+   * `true`, o UiLayer redimensiona width/height pro viewport ATUAL a cada frame —
+   * sem isso o painel ficaria travado no tamanho de quando foi criado e não
+   * cobriria a tela após um resize (ex.: entrar em fullscreen).
+   */
+  fill = false;
   constructor(
     props: UiWidgetProps &
       Partial<Pick<UiPanel, 'background' | 'backgroundTo' | 'cornerRadius' | 'borderWidth' | 'borderColor'>> = {},

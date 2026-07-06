@@ -374,7 +374,7 @@ game.setPostFX(fx)
 
 > **start**(): `void`
 
-Defined in: [src/core/Game.ts:343](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L343)
+Defined in: [src/core/Game.ts:347](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L347)
 
 Inicia o loop.
 
@@ -388,7 +388,7 @@ Inicia o loop.
 
 > **stop**(): `void`
 
-Defined in: [src/core/Game.ts:348](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L348)
+Defined in: [src/core/Game.ts:352](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L352)
 
 Para o loop.
 

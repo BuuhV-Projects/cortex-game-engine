@@ -72,9 +72,10 @@ export class UiTemplate {
       widget.x += extraX;
       widget.y += extraY;
       if (node.attrs['fill'] !== undefined && widget instanceof UiPanel) {
+        // Não trava o tamanho aqui: o UiLayer redimensiona pro viewport ATUAL a
+        // cada frame (senão o painel não acompanha resize/fullscreen).
         widget.anchor = 'top-left';
-        widget.width = viewport.width;
-        widget.height = viewport.height;
+        widget.fill = true;
       }
       widgets.push(ui.add(widget));
       if (node.attrs['id']) byId.set(node.attrs['id'], widget);

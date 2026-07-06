@@ -13,7 +13,7 @@
 import type { UiBackend } from './UiBackend.js';
 import type { UiViewport } from './layout.js';
 import { resolveRect } from './layout.js';
-import { UiButton, UiWidget } from './widgets.js';
+import { UiButton, UiPanel, UiWidget } from './widgets.js';
 
 /** Botões do mapeamento standard usados na navegação. */
 const GP_A = 0;
@@ -59,7 +59,7 @@ export class UiLayer {
   clear(): void {
     this._widgets.length = 0;
     this._focusIndex = -1;
-    this._backend.sync(this._widgets, this._viewportOf());
+    this._syncBackend();
   }
 
   /** Viewport atual da UI (px do canvas) — usado por layouts de template. */
@@ -86,7 +86,26 @@ export class UiLayer {
     for (const key of this._pendingKeys) this._handleKey(key);
     this._pendingKeys.length = 0;
     this._pollGamepad();
-    this._backend.sync(this._widgets, this._viewportOf());
+    this._syncBackend();
+  }
+
+  /**
+   * Redimensiona os painéis `fill` pro viewport ATUAL e sincroniza o backend.
+   * Feito a cada sync pra o fundo acompanhar resize/fullscreen (sem isto o
+   * painel fica no tamanho de quando o template foi criado).
+   */
+  private _syncBackend(): void {
+    const viewport = this._viewportOf();
+    for (const widget of this._widgets) {
+      if (widget instanceof UiPanel && widget.fill) {
+        if (widget.width !== viewport.width || widget.height !== viewport.height) {
+          widget.width = viewport.width;
+          widget.height = viewport.height;
+          widget.dirty = true;
+        }
+      }
+    }
+    this._backend.sync(this._widgets, viewport);
   }
 
   /** Desenha (backend renderer; no DOM é no-op). Chamado pelo `Game`. */

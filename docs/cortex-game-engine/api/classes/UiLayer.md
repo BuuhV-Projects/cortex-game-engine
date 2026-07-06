@@ -52,7 +52,7 @@ Widget focado no momento (ou null).
 
 > **activate**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L128)
+Defined in: [src/ui/runtime/UiLayer.ts:147](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L147)
 
 Ativa o botão focado (Enter/A).
 
@@ -106,7 +106,7 @@ Remove todos os widgets (troca de tela).
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L133)
+Defined in: [src/ui/runtime/UiLayer.ts:152](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L152)
 
 Desmonta a camada (listeners + visuais).
 
@@ -140,7 +140,7 @@ Foca um botão específico (ex.: primeiro item do menu).
 
 > **navigate**(`dx`, `dy`): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L98)
+Defined in: [src/ui/runtime/UiLayer.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L117)
 
 Move o foco na direção dada (navegação espacial).
 
@@ -184,7 +184,7 @@ Remove um widget.
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L93)
+Defined in: [src/ui/runtime/UiLayer.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L112)
 
 Desenha (backend renderer; no DOM é no-op). Chamado pelo `Game`.
 

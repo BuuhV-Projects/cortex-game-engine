@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { anchorFraction, resolveRect } from '../../src/ui/runtime/layout.js';
-import { UiButton, UiLabel } from '../../src/ui/runtime/widgets.js';
+import { UiButton, UiLabel, UiPanel } from '../../src/ui/runtime/widgets.js';
 import { UiLayer } from '../../src/ui/runtime/UiLayer.js';
 import type { UiBackend } from '../../src/ui/runtime/UiBackend.js';
 
@@ -36,6 +36,36 @@ describe('layout — âncoras (mesma matemática nos 2 backends, ADR-0102)', () 
     const r = resolveRect('center', 0, 0, 200, 50, VIEWPORT);
     expect(r.x).toBe((1280 - 200) / 2);
     expect(r.y).toBe((720 - 50) / 2);
+  });
+});
+
+describe('UiLayer — painel `fill` acompanha o viewport (resize/fullscreen)', () => {
+  it('redimensiona o painel fill pro viewport ATUAL a cada update', () => {
+    let viewport = { width: 1280, height: 720 };
+    const layer = new UiLayer(stubBackend(), () => viewport);
+    const bg = layer.add(new UiPanel({ anchor: 'top-left' }));
+    bg.fill = true;
+
+    layer.update(0);
+    expect(bg.width).toBe(1280);
+    expect(bg.height).toBe(720);
+
+    // Entra em fullscreen: viewport cresce → o painel deve acompanhar.
+    viewport = { width: 1920, height: 1080 };
+    layer.update(0);
+    expect(bg.width).toBe(1920);
+    expect(bg.height).toBe(1080);
+  });
+
+  it('não mexe em painéis sem fill', () => {
+    let viewport = { width: 1280, height: 720 };
+    const layer = new UiLayer(stubBackend(), () => viewport);
+    const box = layer.add(new UiPanel({ anchor: 'center', width: 300, height: 100 }));
+
+    viewport = { width: 1920, height: 1080 };
+    layer.update(0);
+    expect(box.width).toBe(300);
+    expect(box.height).toBe(100);
   });
 });
 
