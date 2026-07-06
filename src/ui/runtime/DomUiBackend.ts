@@ -69,13 +69,19 @@ export class DomUiBackend implements UiBackend {
   }
 
   private _apply(widget: UiWidget, node: HTMLElement, viewport: UiViewport): void {
-    node.style.display = widget.visible ? 'block' : 'none';
     node.style.opacity = String(widget.opacity);
 
     if (widget instanceof UiButton) {
+      node.style.display = widget.visible ? 'flex' : 'none';
       node.textContent = widget.text;
       node.style.font = uiFont(widget.fontSize);
       node.style.color = widget.color;
+      // Texto centralizado (H+V) IGUAL ao backend renderer do export — senão o
+      // Studio alinha à esquerda e o export centraliza (WYSIWYG quebrado).
+      node.style.alignItems = 'center';
+      node.style.justifyContent = 'center';
+      node.style.textAlign = 'center';
+      node.style.whiteSpace = 'nowrap';
       node.style.background = widget.focused ? widget.focusBackground : widget.background;
       node.style.padding = `${widget.paddingY}px ${widget.paddingX}px`;
       node.style.borderRadius = `${widget.cornerRadius}px`;
@@ -88,11 +94,14 @@ export class DomUiBackend implements UiBackend {
       node.style.cursor = 'pointer';
       node.onclick = () => widget.onPress?.();
     } else if (widget instanceof UiLabel) {
+      node.style.display = widget.visible ? 'block' : 'none';
       node.textContent = widget.text;
       node.style.font = uiFont(widget.fontSize);
       node.style.color = widget.color;
       node.style.background = 'transparent';
+      node.style.whiteSpace = 'nowrap';
     } else if (widget instanceof UiPanel) {
+      node.style.display = widget.visible ? 'block' : 'none';
       node.style.background = widget.backgroundTo
         ? `linear-gradient(180deg, ${widget.background}, ${widget.backgroundTo})`
         : widget.background;

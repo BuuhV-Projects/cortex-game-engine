@@ -68,6 +68,15 @@ proprietária e não existe fora do Windows (nem via `stb_truetype`, que lê um
   Latin, ~16KB, data-URI) via `@font-face` e o `DomUiBackend` usa
   `font-family: 'Cortex UI'` peso 500. O Latin cobre os acentos do PT.
 
+Além da fonte, dois ajustes de fidelidade Studio ↔ export (WYSIWYG):
+- **Tamanho**: o raster nativo usava `stbtt_ScaleForPixelHeight` (escala pela
+  altura ascent-descent), que dá glifos ~15% MENORES que o `font-size` do CSS
+  (que mapeia o EM). Trocado por `stbtt_ScaleForMappingEmToPixels` — mesma
+  semântica do DOM, texto do export no mesmo tamanho do Studio.
+- **Alinhamento**: o `DomUiBackend` alinhava o texto do botão à esquerda
+  enquanto o `RendererUiBackend` centraliza. Agora o DOM centraliza (flex,
+  H+V) igual ao renderer.
+
 ## Consequências
 
 - **Contorno das moedas (e tudo) suave**: validado com a Fase 1 do teste4 —

@@ -73,8 +73,12 @@ napi_value jsRasterText(napi_env env, napi_callback_info info) {
   napi_get_value_double(env, args[1], &sizePx);
   if (text.empty() || sizePx <= 0) return nullValue;
 
+  // Escala por EM (não por ascent-descent): CSS `font-size: N px` mapeia o EM
+  // da fonte pra N px. `ScaleForPixelHeight` (altura ascent-descent → N) daria
+  // glifos ~15% MENORES que o DOM do Studio pro mesmo fontSize — texto do
+  // export sairia menor. `ScaleForMappingEmToPixels` casa com o CSS/DOM.
   const float scale =
-      stbtt_ScaleForPixelHeight(&g_font, static_cast<float>(sizePx));
+      stbtt_ScaleForMappingEmToPixels(&g_font, static_cast<float>(sizePx));
   int ascent = 0, descent = 0, lineGap = 0;
   stbtt_GetFontVMetrics(&g_font, &ascent, &descent, &lineGap);
   const int baseline = static_cast<int>(std::ceil(ascent * scale));
