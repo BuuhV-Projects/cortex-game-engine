@@ -537,6 +537,7 @@ const VENDOR_TYPE_MODULES = {
     'DomUiBackend',
     'RendererUiBackend',
     'createUiLayer',
+    'UiStylesheet',
   ],
   dialogue: ['DialogueGraph', 'DialogueRunner', 'DialogueUI', 'startDialogue'],
   narrative: ['StoryState'],
@@ -873,6 +874,48 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
   })
 
   return results
+})
+
+// ---------------------------------------------------------------------------
+// Handler IPC — export CortexNative (ADR-0101: o export PC oficial)
+// ---------------------------------------------------------------------------
+
+/**
+ * Roda `native/scripts/export-game.mjs <projeto>` gerando `dist-native/`
+ * (exe + dlls + boot.hbc + assets). Usa o próprio binário do Electron como
+ * Node (`ELECTRON_RUN_AS_NODE`) — não depende de node no PATH. Só em DEV por
+ * enquanto: o Studio empacotado ainda não embarca o host compilado
+ * (pendência registrada no mapa do CortexNative).
+ */
+ipcMain.handle('export:native', async (_event, projectDir: unknown) => {
+  const safeDir = validatePath(projectDir)
+  const script = join(resourceBase(), 'native', 'scripts', 'export-game.mjs')
+  if (!existsSync(script)) {
+    return {
+      ok: false,
+      output:
+        'Export nativo indisponível neste build do Studio (host CortexNative não embarcado). ' +
+        'Rode em dev: node native/scripts/export-game.mjs <projeto>',
+    }
+  }
+  return await new Promise((resolvePromise) => {
+    const child = spawn(process.execPath, [script, safeDir], {
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      cwd: resourceBase(),
+      windowsHide: true,
+    })
+    let output = ''
+    child.stdout?.on('data', (d: Buffer) => { output += d.toString() })
+    child.stderr?.on('data', (d: Buffer) => { output += d.toString() })
+    child.on('close', (code) => {
+      resolvePromise({
+        ok: code === 0,
+        output,
+        distDir: code === 0 ? join(safeDir, 'dist-native') : undefined,
+      })
+    })
+    child.on('error', (err) => resolvePromise({ ok: false, output: String(err) }))
+  })
 })
 
 // ---------------------------------------------------------------------------

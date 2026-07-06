@@ -94,6 +94,11 @@ export class BottomPanel {
     // Menu nativo "Projeto > Gerar instalador..." (ADR-0024). Detecta
     // projetos legados (sem src-tauri/) e oferece setup automático antes
     // de tentar buildar. Reusa a infra do terminal embutido para logs.
+    // Export CortexNative (ADR-0101): dist-native/ com exe+dlls+hbc+assets.
+    document.addEventListener('export-native-requested', () => {
+      void this.exportNative()
+    })
+
     document.addEventListener('build-installer-requested', (e) => {
       const detail = (e as CustomEvent<{ debug?: boolean }>).detail
       void this.handleBuildInstaller({ debug: detail?.debug === true })
@@ -153,6 +158,34 @@ export class BottomPanel {
     // adicionar manualmente.
     const script = opts.debug === true ? 'yarn tauri:build:debug' : 'yarn tauri:build'
     await this.runCommandForce(script)
+  }
+
+  /**
+   * Export CortexNative (ADR-0101): valida guardas, roda o script no main
+   * (ELECTRON_RUN_AS_NODE) e imprime a saída no terminal do painel.
+   */
+  private async exportNative(): Promise<void> {
+    if (!this.projectDir) {
+      alert(t('bottomPanel.installer_no_project'))
+      return
+    }
+    if (this.playRunning) {
+      alert(t('bottomPanel.installer_play_running'))
+      return
+    }
+    this.setActiveTab('terminal')
+    this.appendTerminal('Exportando nativo (PC/Xbox) — bundle + bytecode + runtime…\n', 'system')
+    try {
+      const result = await window.electronAPI.exportNative(this.projectDir)
+      this.appendTerminal(result.output, result.ok ? 'log' : 'error')
+      if (result.ok && result.distDir) {
+        this.appendTerminal(`Export pronto: ${result.distDir}\n`, 'system')
+      } else if (!result.ok) {
+        this.appendTerminal('Export falhou — veja a saída acima.\n', 'error')
+      }
+    } catch (err) {
+      this.appendTerminal(`Export falhou: ${String(err)}\n`, 'error')
+    }
   }
 
   // ── Construção da UI ────────────────────────────────────────────────────────

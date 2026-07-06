@@ -14,7 +14,13 @@
 import { build } from 'esbuild';
 import { transformAsync } from '@babel/core';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
-import { resolve, dirname } from 'node:path';
+import path, { resolve as resolvePath, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Caminhos relativos à RAIZ DO ENGINE (não ao cwd) — o export do Studio
+// spawna este script com cwd do projeto do jogo.
+const ENGINE_ROOT = path.resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const resolve = (...parts) => resolvePath(ENGINE_ROOT, ...parts);
 
 // Só o import BARE 'three' (dos addons/loaders) vai pro build WebGPU —
 // alias do esbuild não serve porque reescreve subpaths ('three/webgpu'
@@ -101,7 +107,8 @@ const gamePlugin = {
 };
 
 await build({
-  entryPoints: [gameMain ? 'native/js/src/game-entry.js' : 'native/js/src/main.js'],
+  entryPoints: [resolve(gameMain ? 'native/js/src/game-entry.js' : 'native/js/src/main.js')],
+  absWorkingDir: ENGINE_ROOT,
   bundle: true,
   format: 'iife',
   target: 'es2018',
@@ -129,6 +136,7 @@ const result = await transformAsync(bundled, {
     ['@babel/plugin-transform-classes', { loose: true }],
     '@babel/plugin-transform-arrow-functions',
   ],
+  cwd: ENGINE_ROOT, // resolução dos plugins independe do cwd do chamador
   compact: true,
   babelrc: false,
   configFile: false,

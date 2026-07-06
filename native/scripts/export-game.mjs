@@ -8,8 +8,11 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const engineRoot = process.cwd();
+// Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
+// spawnado pelo Studio com cwd do projeto).
+const engineRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const gameDir = process.argv[2] ? path.resolve(process.argv[2]) : null;
 if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
   console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts>');

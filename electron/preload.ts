@@ -22,6 +22,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   revendorEngine: (projectDir: string) =>
     ipcRenderer.invoke('engine:revendor', projectDir),
 
+  /** Export CortexNative (ADR-0101): gera dist-native/ do projeto. */
+  exportNative: (projectDir: string) =>
+    ipcRenderer.invoke('export:native', projectDir) as Promise<{
+      ok: boolean
+      output: string
+      distDir?: string
+    }>,
+
   /** `true` em dev (electron:dev); `false` no build empacotado. */
   isDev: ipcRenderer.sendSync('app:is-dev') as boolean,
   toggleDevTools: () => ipcRenderer.invoke('devtools:toggle'),

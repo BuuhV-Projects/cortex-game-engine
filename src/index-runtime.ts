@@ -77,6 +77,7 @@ export * from './ui/runtime/UiLayer.js';
 export * from './ui/runtime/DomUiBackend.js';
 export * from './ui/runtime/RendererUiBackend.js';
 export * from './ui/runtime/createUiLayer.js';
+export * from './ui/runtime/UiStylesheet.js';
 export * from './systems/ThirdPersonControlSystem.js';
 export * from './systems/RapierPhysicsSystem.js';
 export * from './systems/PlatformerAnimationSystem.js';

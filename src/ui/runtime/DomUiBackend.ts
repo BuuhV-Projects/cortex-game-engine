@@ -70,7 +70,12 @@ export class DomUiBackend implements UiBackend {
       node.style.color = widget.color;
       node.style.background = widget.focused ? widget.focusBackground : widget.background;
       node.style.padding = `${widget.paddingY}px ${widget.paddingX}px`;
-      node.style.borderRadius = '10px';
+      node.style.borderRadius = `${widget.cornerRadius}px`;
+      node.style.border =
+        widget.focused && widget.focusBorderWidth > 0
+          ? `${widget.focusBorderWidth}px solid ${widget.focusBorderColor}`
+          : `${widget.focusBorderWidth > 0 ? widget.focusBorderWidth : 0}px solid transparent`;
+      node.style.boxSizing = 'border-box';
       node.style.pointerEvents = 'auto';
       node.style.cursor = 'pointer';
       node.onclick = () => widget.onPress?.();
@@ -80,8 +85,13 @@ export class DomUiBackend implements UiBackend {
       node.style.color = widget.color;
       node.style.background = 'transparent';
     } else if (widget instanceof UiPanel) {
-      node.style.background = widget.background;
-      node.style.borderRadius = '12px';
+      node.style.background = widget.backgroundTo
+        ? `linear-gradient(180deg, ${widget.background}, ${widget.backgroundTo})`
+        : widget.background;
+      node.style.borderRadius = `${widget.cornerRadius}px`;
+      node.style.border =
+        widget.borderWidth > 0 ? `${widget.borderWidth}px solid ${widget.borderColor}` : 'none';
+      node.style.boxSizing = 'border-box';
     }
 
     // Mede (DOM sabe o tamanho do texto) e posiciona com a MESMA matemática

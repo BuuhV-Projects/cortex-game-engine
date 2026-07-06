@@ -47,11 +47,26 @@ export abstract class UiWidget {
   }
 }
 
-/** Caixa de cor sólida (fundo de HUD, faixa de banner, moldura de menu). */
+/**
+ * Caixa (fundo de HUD, card de menu, faixa de banner). O estilo é um SUBSET
+ * que os DOIS backends desenham igual (ADR-0102): cor/gradiente vertical,
+ * canto arredondado e borda — nada de CSS arbitrário.
+ */
 export class UiPanel extends UiWidget {
   /** Cor CSS (`#rrggbb`). */
   background = '#000000';
-  constructor(props: UiWidgetProps & Partial<Pick<UiPanel, 'background'>> = {}) {
+  /** Se definida, gradiente vertical `background` (topo) → `backgroundTo` (base). */
+  backgroundTo: string | null = null;
+  /** Raio dos cantos em px (0 = reto). */
+  cornerRadius = 0;
+  /** Largura da borda em px (0 = sem borda). */
+  borderWidth = 0;
+  /** Cor da borda. */
+  borderColor = '#ffffff';
+  constructor(
+    props: UiWidgetProps &
+      Partial<Pick<UiPanel, 'background' | 'backgroundTo' | 'cornerRadius' | 'borderWidth' | 'borderColor'>> = {},
+  ) {
     super();
     Object.assign(this, props);
   }
@@ -75,6 +90,12 @@ export class UiButton extends UiLabel {
   background = '#222233';
   /** Cor do fundo quando focado (navegação por d-pad/setas). */
   focusBackground = '#5546a8';
+  /** Raio dos cantos em px. */
+  cornerRadius = 10;
+  /** Borda quando FOCADO (destaque de seleção). 0 = sem. */
+  focusBorderWidth = 0;
+  /** Cor da borda de foco. */
+  focusBorderColor = '#ffd94d';
   paddingX = 14;
   paddingY = 8;
   focused = false;
@@ -87,7 +108,23 @@ export class UiButton extends UiLabel {
   onPress: (() => void) | null = null;
   constructor(
     props: UiWidgetProps &
-      Partial<Pick<UiButton, 'text' | 'fontSize' | 'color' | 'background' | 'focusBackground' | 'paddingX' | 'paddingY' | 'onPress' | 'focusable'>> = {},
+      Partial<
+        Pick<
+          UiButton,
+          | 'text'
+          | 'fontSize'
+          | 'color'
+          | 'background'
+          | 'focusBackground'
+          | 'cornerRadius'
+          | 'focusBorderWidth'
+          | 'focusBorderColor'
+          | 'paddingX'
+          | 'paddingY'
+          | 'onPress'
+          | 'focusable'
+        >
+      > = {},
   ) {
     super();
     Object.assign(this, props);

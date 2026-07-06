@@ -139,6 +139,8 @@ export class Shell {
         })),
       ]),
       this.menuItem('Projeto', [
+        { label: tr('menu.export_native', 'Exportar nativo (PC/Xbox)…'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested')) },
+        { sep: true },
         { label: tr('menu.build_installer', 'Gerar instalador…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: false } })) },
         { label: tr('menu.build_installer_debug', 'Gerar instalador (debug)…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: true } })) },
         { sep: true },

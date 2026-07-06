@@ -40,6 +40,21 @@ DOIS backends selecionados por detecção de ambiente:
    RushSystem). O overlay DOM cru continua PERMITIDO em jogos que só miram
    browser — mas o template e a doc apontam pra API nova.
 
+## Adendo (2026-07-06): estilo rico + CSS que compila pro subset
+
+- O subset de estilo cresceu: **gradiente vertical, canto arredondado e
+  borda** (+ borda de foco em botões). No backend DOM viram CSS; no backend
+  renderer são desenhados por **SDF em TSL** (um shader de rounded-rect com
+  uniforms — estilo muda sem recompilar pipeline).
+- **`parseUiCss` (UiStylesheet)**: o dev escreve um SUBSET de CSS familiar
+  (`.classe { ... }` e `.classe:focus`) que **compila** pros estilos de
+  widget — idêntico nos dois backends. Propriedade/seletor fora do subset =
+  **erro claro na compilação** (mesma filosofia do pipeline JS: falhar no
+  build do PC, nunca no console). CSS COMPLETO (layout arbitrário, flex,
+  animações) segue fora de escopo; se a ambição de UI crescer, o caminho
+  avaliado é RmlUi (HTML/CSS pra jogos, usado em títulos de console) — 
+  decisão futura com ADR próprio.
+
 ## Consequências
 
 - HUD/menus funcionam idênticos no Studio, no export PC e no console — e

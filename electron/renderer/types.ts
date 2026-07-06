@@ -77,6 +77,8 @@ export interface ElectronAPI {
   watchProject(projectDir: string): Promise<void>
   /** Re-vendoriza o engine atual do IDE no `vendor/` do projeto (engine atualizou). */
   revendorEngine(projectDir: string): Promise<void>
+  /** Export CortexNative (ADR-0101): gera `dist-native/` do projeto. */
+  exportNative(projectDir: string): Promise<{ ok: boolean; output: string; distDir?: string }>
   /** `true` em dev (electron:dev). Pra mostrar opções de dev (DevTools). */
   isDev: boolean
   /** Abre/fecha o DevTools do studio (só em dev). */

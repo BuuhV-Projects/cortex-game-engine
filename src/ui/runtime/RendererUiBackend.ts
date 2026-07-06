@@ -6,6 +6,8 @@
  * quando o texto/tamanho muda).
  */
 import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { abs, float, length, max, min, mix, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
 import type { UiBackend } from './UiBackend.js';
 import type { UiViewport } from './layout.js';
 import { resolveRect } from './layout.js';
@@ -31,8 +33,26 @@ export function hasNativeTextRaster(): boolean {
   return typeof (globalThis as Record<string, unknown>)['__cortexRasterText'] === 'function';
 }
 
+/**
+ * Uniforms do material de caixa (rounded-rect SDF via TSL). Tipados como
+ * `any` porque o d.ts do `uniform()` do three ainda devolve
+ * `UniformNode<unknown>` (sem os operadores encadeáveis) — runtime correto.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+interface PanelUniforms {
+  size: any;
+  radius: any;
+  borderWidth: any;
+  colorTop: any;
+  colorBottom: any;
+  borderColor: any;
+  fillOpacity: any;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 interface WidgetVisual {
   background?: THREE.Mesh;
+  panelUniforms?: PanelUniforms;
   text?: THREE.Mesh;
   texture?: THREE.DataTexture;
   lastText?: string;
@@ -121,24 +141,15 @@ export class RendererUiBackend implements UiBackend {
     const height = widget.height || widget.measuredHeight;
     const rect = resolveRect(widget.anchor, widget.x, widget.y, width, height, viewport);
 
-    // ── fundo (Panel/Button) ──
+    // ── fundo (Panel/Button): rounded-rect SDF (gradiente/borda/canto) ──
     if (widget instanceof UiPanel || widget instanceof UiButton) {
       if (!visual.background) {
-        visual.background = new THREE.Mesh(
-          this._quad,
-          new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false }),
-        );
+        const { material, uniforms } = this._makeBoxMaterial();
+        visual.panelUniforms = uniforms;
+        visual.background = new THREE.Mesh(this._quad, material);
         this._scene.add(visual.background);
       }
-      const material = visual.background.material as THREE.MeshBasicMaterial;
-      const color =
-        widget instanceof UiButton
-          ? widget.focused
-            ? widget.focusBackground
-            : widget.background
-          : (widget as UiPanel).background;
-      material.color.set(color);
-      material.opacity = widget.opacity * (widget instanceof UiButton ? 0.92 : 1);
+      this._updateBoxStyle(widget, visual.panelUniforms!, rect.width, rect.height);
       visual.background.visible = widget.visible;
       visual.background.renderOrder = order * 2;
       visual.background.scale.set(rect.width, rect.height, 1);
@@ -159,6 +170,81 @@ export class RendererUiBackend implements UiBackend {
       visual.text.position.set(rect.x + rect.width / 2, -(rect.y + rect.height / 2), 0);
     }
     widget.dirty = false;
+  }
+
+  /**
+   * Material de caixa: rounded-rect por SDF em TSL (WGSL nos dois mundos) —
+   * gradiente vertical, canto arredondado e borda, tudo por UNIFORM (estilo
+   * muda sem recompilar shader).
+   */
+  private _makeBoxMaterial(): { material: MeshBasicNodeMaterial; uniforms: PanelUniforms } {
+    const uniforms: PanelUniforms = {
+      size: uniform(new THREE.Vector2(100, 40)),
+      radius: uniform(0),
+      borderWidth: uniform(0),
+      colorTop: uniform(new THREE.Color('#000000')),
+      colorBottom: uniform(new THREE.Color('#000000')),
+      borderColor: uniform(new THREE.Color('#ffffff')),
+      fillOpacity: uniform(1),
+    };
+
+    // SDF de retângulo arredondado no espaço em px do widget.
+    const p = uv().sub(vec2(0.5, 0.5)).mul(uniforms.size);
+    const half = uniforms.size.mul(0.5);
+    const b = half.sub(vec2(uniforms.radius, uniforms.radius));
+    const q = abs(p).sub(b);
+    const dist = length(max(q, vec2(0, 0)))
+      .add(min(max(q.x, q.y), float(0)))
+      .sub(uniforms.radius);
+
+    const fill = mix(uniforms.colorTop, uniforms.colorBottom, uv().y.oneMinus());
+    const borderMask = smoothstep(
+      uniforms.borderWidth.negate().sub(0.75),
+      uniforms.borderWidth.negate().add(0.75),
+      dist,
+    ).mul(min(uniforms.borderWidth, float(1))); // borderWidth 0 → sem borda
+    const color = mix(fill, uniforms.borderColor, borderMask);
+    const alpha = smoothstep(float(0.75), float(-0.75), dist).mul(uniforms.fillOpacity);
+
+    const material = new MeshBasicNodeMaterial({
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    material.colorNode = vec4(color, alpha);
+    return { material, uniforms };
+  }
+
+  private _updateBoxStyle(
+    widget: UiPanel | UiButton,
+    uniforms: PanelUniforms,
+    width: number,
+    height: number,
+  ): void {
+    const isButton = widget instanceof UiButton;
+    const background = isButton
+      ? widget.focused
+        ? widget.focusBackground
+        : widget.background
+      : widget.background;
+    const backgroundTo = !isButton && (widget as UiPanel).backgroundTo
+      ? ((widget as UiPanel).backgroundTo as string)
+      : background;
+    const radius = isButton ? widget.cornerRadius : (widget as UiPanel).cornerRadius;
+    const borderWidth = isButton
+      ? widget.focused
+        ? widget.focusBorderWidth
+        : 0
+      : (widget as UiPanel).borderWidth;
+    const borderColor = isButton ? widget.focusBorderColor : (widget as UiPanel).borderColor;
+
+    (uniforms.size.value as THREE.Vector2).set(width, height);
+    uniforms.radius.value = Math.min(radius, Math.min(width, height) / 2);
+    uniforms.borderWidth.value = borderWidth;
+    (uniforms.colorTop.value as THREE.Color).set(background);
+    (uniforms.colorBottom.value as THREE.Color).set(backgroundTo);
+    (uniforms.borderColor.value as THREE.Color).set(borderColor);
+    uniforms.fillOpacity.value = widget.opacity * (isButton ? 0.96 : 1);
   }
 
   private _rasterInto(visual: WidgetVisual, label: UiLabel): void {
