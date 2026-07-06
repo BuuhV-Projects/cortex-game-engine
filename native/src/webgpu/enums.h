@@ -24,5 +24,7 @@ WGPUTextureAspect aspectFromString(const std::string& s);
 WGPUFilterMode filterModeFromString(const std::string& s);
 WGPUMipmapFilterMode mipmapFilterFromString(const std::string& s);
 WGPUAddressMode addressModeFromString(const std::string& s);
+WGPUBlendFactor blendFactorFromString(const std::string& s);
+WGPUBlendOperation blendOperationFromString(const std::string& s);
 
 }  // namespace webgpu

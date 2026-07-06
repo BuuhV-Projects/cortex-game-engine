@@ -120,9 +120,25 @@ void parseVertexState(napi_env env, napi_value descriptor,
   parseVertexBuffers(env, vertex, desc, storage);
 }
 
+// blend: {color:{srcFactor,dstFactor,operation}, alpha:{...}} (spec WebGPU)
+WGPUBlendComponent parseBlendComponent(napi_env env, napi_value blend,
+                                       const char* name) {
+  WGPUBlendComponent out = WGPU_BLEND_COMPONENT_INIT;
+  napi_value component = nullptr;
+  if (!njs::getNamed(env, blend, name, &component)) return out;
+  out.srcFactor = blendFactorFromString(
+      njs::getNamedString(env, component, "srcFactor", "one"));
+  out.dstFactor = blendFactorFromString(
+      njs::getNamedString(env, component, "dstFactor", "zero"));
+  out.operation = blendOperationFromString(
+      njs::getNamedString(env, component, "operation", "add"));
+  return out;
+}
+
 bool parseFragmentState(napi_env env, napi_value descriptor,
                         WGPUFragmentState* fragment,
                         std::vector<WGPUColorTargetState>* targets,
+                        std::vector<WGPUBlendState>* blends,
                         std::string* fsEntry) {
   napi_value fragmentValue = nullptr;
   if (!njs::getNamed(env, descriptor, "fragment", &fragmentValue))
@@ -140,12 +156,25 @@ bool parseFragmentState(napi_env env, napi_value descriptor,
   if (njs::getNamed(env, fragmentValue, "targets", &targetsValue)) {
     uint32_t count = 0;
     napi_get_array_length(env, targetsValue, &count);
+    // blends é pré-alocado pra não invalidar os ponteiros já guardados.
+    blends->reserve(count);
     for (uint32_t i = 0; i < count; ++i) {
       napi_value target = nullptr;
       napi_get_element(env, targetsValue, i, &target);
       WGPUColorTargetState state = WGPU_COLOR_TARGET_STATE_INIT;
       state.format = formatFromString(
           njs::getNamedString(env, target, "format", "bgra8unorm"));
+      double writeMask = njs::getNamedNumber(env, target, "writeMask", -1);
+      if (writeMask >= 0)
+        state.writeMask = static_cast<WGPUColorWriteMask>(writeMask);
+      napi_value blend = nullptr;
+      if (njs::getNamed(env, target, "blend", &blend)) {
+        WGPUBlendState blendState;
+        blendState.color = parseBlendComponent(env, blend, "color");
+        blendState.alpha = parseBlendComponent(env, blend, "alpha");
+        blends->push_back(blendState);
+        state.blend = &blends->back();
+      }
       targets->push_back(state);
     }
   }
@@ -252,8 +281,9 @@ napi_value deviceCreateRenderPipeline(napi_env env, napi_callback_info info) {
 
   WGPUFragmentState fragment = WGPU_FRAGMENT_STATE_INIT;
   std::vector<WGPUColorTargetState> targets;
+  std::vector<WGPUBlendState> blends;
   std::string fsEntry;
-  if (parseFragmentState(env, args[0], &fragment, &targets, &fsEntry))
+  if (parseFragmentState(env, args[0], &fragment, &targets, &blends, &fsEntry))
     desc.fragment = &fragment;
 
   parsePrimitiveState(env, args[0], &desc);

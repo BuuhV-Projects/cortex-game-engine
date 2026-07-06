@@ -140,6 +140,31 @@ WGPUAddressMode addressModeFromString(const std::string& s) {
   return WGPUAddressMode_ClampToEdge;
 }
 
+WGPUBlendFactor blendFactorFromString(const std::string& s) {
+  if (s == "zero") return WGPUBlendFactor_Zero;
+  if (s == "one") return WGPUBlendFactor_One;
+  if (s == "src") return WGPUBlendFactor_Src;
+  if (s == "one-minus-src") return WGPUBlendFactor_OneMinusSrc;
+  if (s == "src-alpha") return WGPUBlendFactor_SrcAlpha;
+  if (s == "one-minus-src-alpha") return WGPUBlendFactor_OneMinusSrcAlpha;
+  if (s == "dst") return WGPUBlendFactor_Dst;
+  if (s == "one-minus-dst") return WGPUBlendFactor_OneMinusDst;
+  if (s == "dst-alpha") return WGPUBlendFactor_DstAlpha;
+  if (s == "one-minus-dst-alpha") return WGPUBlendFactor_OneMinusDstAlpha;
+  if (s == "src-alpha-saturated") return WGPUBlendFactor_SrcAlphaSaturated;
+  if (s == "constant") return WGPUBlendFactor_Constant;
+  if (s == "one-minus-constant") return WGPUBlendFactor_OneMinusConstant;
+  return WGPUBlendFactor_One;
+}
+
+WGPUBlendOperation blendOperationFromString(const std::string& s) {
+  if (s == "subtract") return WGPUBlendOperation_Subtract;
+  if (s == "reverse-subtract") return WGPUBlendOperation_ReverseSubtract;
+  if (s == "min") return WGPUBlendOperation_Min;
+  if (s == "max") return WGPUBlendOperation_Max;
+  return WGPUBlendOperation_Add;
+}
+
 WGPUPrimitiveTopology topologyFromString(const std::string& s) {
   if (s == "point-list") return WGPUPrimitiveTopology_PointList;
   if (s == "line-list") return WGPUPrimitiveTopology_LineList;

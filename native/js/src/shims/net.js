@@ -86,6 +86,31 @@ ResponseLite.prototype.clone = function () {
   return new ResponseLite(this.url, this.__bytes, this.ok, this.status);
 };
 
+// URL-lite + object URLs (blob:) — o GLTFLoader cria object URLs pra
+// texturas EMBUTIDAS (bufferView → Blob → createObjectURL → fetch).
+const objectUrls = new Map();
+let nextObjectUrl = 1;
+
+function URLLite(url, base) {
+  const path = String(url);
+  this.href = base && path.indexOf(':') < 0
+    ? String(base).replace(/\/[^/]*$/, '/') + path
+    : path;
+  this.pathname = this.href.replace(/^[a-z]+:/i, '').split('?')[0];
+  this.search = this.href.indexOf('?') >= 0
+    ? this.href.slice(this.href.indexOf('?'))
+    : '';
+}
+URLLite.prototype.toString = function () { return this.href; };
+URLLite.createObjectURL = function (blob) {
+  const key = 'blob:cortex/' + nextObjectUrl++;
+  objectUrls.set(key, blob);
+  return key;
+};
+URLLite.revokeObjectURL = function (key) {
+  objectUrls.delete(key);
+};
+
 function dataUriToBytes(url) {
   const comma = url.indexOf(',');
   const meta = url.substring(5, comma);
@@ -114,6 +139,7 @@ AbortControllerLite.prototype.abort = function () {
 export function installNetShims() {
   globalThis.AbortController = AbortControllerLite;
   globalThis.AbortSignal = AbortSignalLite;
+  globalThis.URL = URLLite;
   globalThis.Blob = BlobLite;
   globalThis.Headers = HeadersLite;
   globalThis.Request = RequestLite;
@@ -123,6 +149,13 @@ export function installNetShims() {
     const url = typeof input === 'string' ? input : input.url;
     if (url.indexOf('data:') === 0) {
       return Promise.resolve(new ResponseLite(url, dataUriToBytes(url), true, 200));
+    }
+    if (url.indexOf('blob:') === 0) {
+      const blob = objectUrls.get(url);
+      if (!blob) {
+        return Promise.resolve(new ResponseLite(url, new ArrayBuffer(0), false, 404));
+      }
+      return Promise.resolve(new ResponseLite(url, blob.__bytes, true, 200));
     }
     const bytes = __cortexReadFile(url);
     if (bytes === null) {

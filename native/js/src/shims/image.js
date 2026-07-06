@@ -13,10 +13,14 @@ export function installImageShims() {
   globalThis.createImageBitmap = function (source, options) {
     const bytes = extractBytes(source);
     if (!bytes) {
+      print('[image] createImageBitmap: fonte não suportada (tipo=' +
+        (source && source.constructor ? source.constructor.name : typeof source) + ')');
       return Promise.reject(new Error('createImageBitmap: fonte não suportada'));
     }
     const decoded = __cortexDecodeImage(bytes);
     if (!decoded) {
+      print('[image] createImageBitmap: decode falhou (' + bytes.byteLength +
+        ' bytes, magic=' + new Uint8Array(bytes, 0, 4).join(',') + ')');
       return Promise.reject(new Error('createImageBitmap: decode falhou'));
     }
     // imageOrientation 'flipY': invertemos aqui (uma vez, no decode) pra não
