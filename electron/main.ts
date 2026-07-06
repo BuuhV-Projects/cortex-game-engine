@@ -538,6 +538,7 @@ const VENDOR_TYPE_MODULES = {
     'RendererUiBackend',
     'createUiLayer',
     'UiStylesheet',
+    'UiTemplate',
   ],
   dialogue: ['DialogueGraph', 'DialogueRunner', 'DialogueUI', 'startDialogue'],
   narrative: ['StoryState'],

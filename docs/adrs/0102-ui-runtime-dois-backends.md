@@ -55,6 +55,12 @@ DOIS backends selecionados por detecção de ambiente:
   avaliado é RmlUi (HTML/CSS pra jogos, usado em títulos de console) — 
   decisão futura com ADR próprio.
 
+- **Templates HTML dinâmicos (parseUiTemplate/loadUiTemplate)**: telas
+  autoradas em arquivos .html de asset (vocabulário: panel/label/button/
+  stack + <style> do subset + {{data}} + onpress/id), carregados via fetch
+  em runtime — o menu do teste4 vive em ssets/ui/menu.html. Tag fora do
+  vocabulário = erro claro na compilação.
+
 ## Consequências
 
 - HUD/menus funcionam idênticos no Studio, no export PC e no console — e

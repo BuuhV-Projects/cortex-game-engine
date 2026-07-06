@@ -6,9 +6,11 @@
 
 # Class: UiPanel
 
-Defined in: [src/ui/runtime/widgets.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L51)
+Defined in: [src/ui/runtime/widgets.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L55)
 
-Caixa de cor sólida (fundo de HUD, faixa de banner, moldura de menu).
+Caixa (fundo de HUD, card de menu, faixa de banner). O estilo é um SUBSET
+que os DOIS backends desenham igual (ADR-0102): cor/gradiente vertical,
+canto arredondado e borda — nada de CSS arbitrário.
 
 ## Extends
 
@@ -20,13 +22,13 @@ Caixa de cor sólida (fundo de HUD, faixa de banner, moldura de menu).
 
 > **new UiPanel**(`props?`): `UiPanel`
 
-Defined in: [src/ui/runtime/widgets.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L54)
+Defined in: [src/ui/runtime/widgets.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L66)
 
 #### Parameters
 
 ##### props?
 
-[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiPanel`, `"background"`\>\> = `{}`
+[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiPanel`, `"background"` \| `"backgroundTo"` \| `"cornerRadius"` \| `"borderWidth"` \| `"borderColor"`\>\> = `{}`
 
 #### Returns
 
@@ -54,9 +56,49 @@ Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cor
 
 > **background**: `string` = `'#000000'`
 
-Defined in: [src/ui/runtime/widgets.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L53)
+Defined in: [src/ui/runtime/widgets.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L57)
 
 Cor CSS (`#rrggbb`).
+
+***
+
+### backgroundTo
+
+> **backgroundTo**: `string` \| `null` = `null`
+
+Defined in: [src/ui/runtime/widgets.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L59)
+
+Se definida, gradiente vertical `background` (topo) → `backgroundTo` (base).
+
+***
+
+### borderColor
+
+> **borderColor**: `string` = `'#ffffff'`
+
+Defined in: [src/ui/runtime/widgets.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L65)
+
+Cor da borda.
+
+***
+
+### borderWidth
+
+> **borderWidth**: `number` = `0`
+
+Defined in: [src/ui/runtime/widgets.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L63)
+
+Largura da borda em px (0 = sem borda).
+
+***
+
+### cornerRadius
+
+> **cornerRadius**: `number` = `0`
+
+Defined in: [src/ui/runtime/widgets.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L61)
+
+Raio dos cantos em px (0 = reto).
 
 ***
 

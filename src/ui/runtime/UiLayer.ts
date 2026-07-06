@@ -62,6 +62,11 @@ export class UiLayer {
     this._backend.sync(this._widgets, this._viewportOf());
   }
 
+  /** Viewport atual da UI (px do canvas) — usado por layouts de template. */
+  viewport(): UiViewport {
+    return this._viewportOf();
+  }
+
   /** Widget focado no momento (ou null). */
   get focused(): UiButton | null {
     const buttons = this._buttons();

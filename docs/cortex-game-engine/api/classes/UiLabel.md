@@ -6,7 +6,7 @@
 
 # Class: UiLabel
 
-Defined in: [src/ui/runtime/widgets.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L61)
+Defined in: [src/ui/runtime/widgets.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L76)
 
 Texto de uma linha (contador, título, banner).
 
@@ -24,7 +24,7 @@ Texto de uma linha (contador, título, banner).
 
 > **new UiLabel**(`props?`): `UiLabel`
 
-Defined in: [src/ui/runtime/widgets.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L67)
+Defined in: [src/ui/runtime/widgets.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L82)
 
 #### Parameters
 
@@ -58,7 +58,7 @@ Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cor
 
 > **color**: `string` = `'#ffffff'`
 
-Defined in: [src/ui/runtime/widgets.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L66)
+Defined in: [src/ui/runtime/widgets.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L81)
 
 Cor CSS do texto.
 
@@ -82,7 +82,7 @@ Sujo = backend precisa re-sincronizar este widget.
 
 > **fontSize**: `number` = `18`
 
-Defined in: [src/ui/runtime/widgets.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L64)
+Defined in: [src/ui/runtime/widgets.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L79)
 
 Altura da fonte em px.
 
@@ -154,7 +154,7 @@ Defined in: [src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cor
 
 > **text**: `string` = `''`
 
-Defined in: [src/ui/runtime/widgets.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L62)
+Defined in: [src/ui/runtime/widgets.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L77)
 
 ***
 
