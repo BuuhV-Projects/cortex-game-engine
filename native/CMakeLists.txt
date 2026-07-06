@@ -84,6 +84,6 @@ add_custom_command(TARGET cortex_host POST_BUILD
     ${TP}/wgpu/lib/wgpu_native.dll
     ${TP}/hermes/build/native/win32/x64/hermes.dll
     ${RAPIER_NATIVE}/rapier_native.dll
-    ${TP}/fonts/Roboto-Regular.ttf
+    ${TP}/fonts/Roboto-Medium.ttf
     $<TARGET_FILE_DIR:cortex_host>
 )

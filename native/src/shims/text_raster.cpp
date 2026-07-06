@@ -153,11 +153,16 @@ napi_value jsRasterText(napi_env env, napi_callback_info info) {
 
 void registerTextRaster(napi_env env, const std::string& baseDir,
                         const std::string& exeDir) {
-  g_fontReady = loadFontFile(baseDir + "Roboto-Regular.ttf") ||
+  // Roboto MEDIUM = fonte oficial da UI (ADR-0103): o Studio (DOM) usa a mesma
+  // via @font-face, então o preview bate com o export. Fallback pra Regular só
+  // se a Medium faltar (build antigo).
+  g_fontReady = loadFontFile(baseDir + "Roboto-Medium.ttf") ||
+                loadFontFile(exeDir + "Roboto-Medium.ttf") ||
+                loadFontFile(baseDir + "Roboto-Regular.ttf") ||
                 loadFontFile(exeDir + "Roboto-Regular.ttf");
   if (!g_fontReady) {
     std::fprintf(stderr,
-                 "[ui] Roboto-Regular.ttf não encontrada (%s | %s) — "
+                 "[ui] Roboto-Medium.ttf não encontrada (%s | %s) — "
                  "UI de runtime sem texto\n",
                  baseDir.c_str(), exeDir.c_str());
   }

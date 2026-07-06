@@ -58,6 +58,16 @@ Também nasceu daqui o **deep-link de fase** (`CORTEX_LAUNCH_QUERY` →
 `location.search`), usado na validação headless e útil pro atalho/export abrir
 direto numa fase.
 
+**Fonte da UI unificada (WYSIWYG Studio ↔ export ↔ Xbox).** O backend DOM do
+Studio usava `600 system-ui` (= Segoe UI no Windows), enquanto o export
+rasterizava **Roboto** — fontes diferentes no preview e no jogo. Segoe é
+proprietária e não existe fora do Windows (nem via `stb_truetype`, que lê um
+`.ttf` bundled), então a escolha cross-platform é **Roboto Medium** nos dois:
+- Native: `text_raster` carrega `Roboto-Medium.ttf` (fetch-deps pinado v2.138).
+- Studio/DOM: `src/ui/runtime/uiFont.ts` embute a Roboto Medium (woff2 subset
+  Latin, ~16KB, data-URI) via `@font-face` e o `DomUiBackend` usa
+  `font-family: 'Cortex UI'` peso 500. O Latin cobre os acentos do PT.
+
 ## Consequências
 
 - **Contorno das moedas (e tudo) suave**: validado com a Fase 1 do teste4 —

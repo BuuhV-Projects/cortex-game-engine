@@ -52,12 +52,14 @@ if (-not (Test-Path (Join-Path $stbDir 'stb_truetype.h'))) {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nothings/stb/$STB_COMMIT/stb_truetype.h" -OutFile (Join-Path $stbDir 'stb_truetype.h')
 }
 
-# ── fonte default da UI de runtime (ADR-0102) — Roboto, tag pinada ──
+# ── fonte oficial da UI de runtime (ADR-0102/0103) — Roboto MEDIUM, tag pinada.
+# É a MESMA que o Studio embute via @font-face (src/ui/runtime/uiFont.ts), pro
+# preview bater com o export. ──
 $fontDir = Join-Path $tp 'fonts'
-if (-not (Test-Path (Join-Path $fontDir 'Roboto-Regular.ttf'))) {
+if (-not (Test-Path (Join-Path $fontDir 'Roboto-Medium.ttf'))) {
     New-Item -ItemType Directory -Force $fontDir | Out-Null
-    Write-Host 'baixando Roboto ...' -ForegroundColor Cyan
-    Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/googlefonts/roboto-2/v2.138/src/hinted/Roboto-Regular.ttf' -OutFile (Join-Path $fontDir 'Roboto-Regular.ttf')
+    Write-Host 'baixando Roboto Medium ...' -ForegroundColor Cyan
+    Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/googlefonts/roboto-2/v2.138/src/hinted/Roboto-Medium.ttf' -OutFile (Join-Path $fontDir 'Roboto-Medium.ttf')
 }
 
 # ── miniaudio (DECODE de wav/mp3/flac; header único, pinado por tag) ──

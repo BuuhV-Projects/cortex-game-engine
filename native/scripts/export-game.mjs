@@ -71,7 +71,7 @@ const runtimeFiles = [
   ['wgpu_native.dll', 'wgpu_native.dll'],
   ['hermes.dll', 'hermes.dll'],
   ['rapier_native.dll', 'rapier_native.dll'],
-  ['Roboto-Regular.ttf', 'Roboto-Regular.ttf'],
+  ['Roboto-Medium.ttf', 'Roboto-Medium.ttf'],
 ];
 for (const [from, to] of runtimeFiles) {
   fs.copyFileSync(path.join(hostBuild, from), path.join(dist, to));

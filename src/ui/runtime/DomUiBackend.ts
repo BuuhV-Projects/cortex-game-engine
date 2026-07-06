@@ -7,9 +7,16 @@
 import type { UiBackend } from './UiBackend.js';
 import type { UiViewport } from './layout.js';
 import { resolveRect } from './layout.js';
+import { installUiFont, UI_FONT_FAMILY } from './uiFont.js';
 import { UiButton, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 
-const FONT = "600 16px system-ui, 'Segoe UI', sans-serif";
+/**
+ * Fonte da UI = Roboto Medium (`UI_FONT_FAMILY`, embutida via {@link installUiFont}),
+ * a MESMA do export nativo — o `system-ui`/Segoe é só fallback até o woff2 carregar.
+ * Peso 500 pra casar com o Roboto-Medium.ttf que o renderer nativo rasteriza.
+ */
+const uiFont = (px: number): string =>
+  `500 ${px}px '${UI_FONT_FAMILY}', system-ui, 'Segoe UI', sans-serif`;
 
 export class DomUiBackend implements UiBackend {
   private readonly _root: HTMLElement;
@@ -17,9 +24,10 @@ export class DomUiBackend implements UiBackend {
   private _lastViewport: UiViewport = { width: 0, height: 0 };
 
   constructor(container?: HTMLElement) {
+    installUiFont();
     this._root = document.createElement('div');
     this._root.style.cssText =
-      'position:fixed;inset:0;pointer-events:none;z-index:40;font:' + FONT;
+      'position:fixed;inset:0;pointer-events:none;z-index:40;font:' + uiFont(16);
     (container ?? document.body).appendChild(this._root);
   }
 
@@ -66,7 +74,7 @@ export class DomUiBackend implements UiBackend {
 
     if (widget instanceof UiButton) {
       node.textContent = widget.text;
-      node.style.font = `600 ${widget.fontSize}px system-ui, 'Segoe UI', sans-serif`;
+      node.style.font = uiFont(widget.fontSize);
       node.style.color = widget.color;
       node.style.background = widget.focused ? widget.focusBackground : widget.background;
       node.style.padding = `${widget.paddingY}px ${widget.paddingX}px`;
@@ -81,7 +89,7 @@ export class DomUiBackend implements UiBackend {
       node.onclick = () => widget.onPress?.();
     } else if (widget instanceof UiLabel) {
       node.textContent = widget.text;
-      node.style.font = `600 ${widget.fontSize}px system-ui, 'Segoe UI', sans-serif`;
+      node.style.font = uiFont(widget.fontSize);
       node.style.color = widget.color;
       node.style.background = 'transparent';
     } else if (widget instanceof UiPanel) {
