@@ -12,6 +12,7 @@
 #include "core/app_window.h"
 #include "core/host_gpu.h"
 #include "core/js_runtime.h"
+#include "napi/napi_util.h"
 #include "shims/animation_frame.h"
 #include "shims/audio.h"
 #include "shims/files.h"
@@ -29,6 +30,19 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
   while (SDL_PollEvent(&event)) {
     if (shims::handleSdlInputEvent(env, event)) continue;
     if (!core::handleEvent(event, window, gpu)) return false;
+    // Resize: o host já reconfigurou a surface; avisa o JS pra o engine
+    // re-dimensionar o renderer (câmeras/targets) na resolução nova.
+    if (event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED && gpu->width > 0) {
+      napi_value global = nullptr;
+      napi_get_global(env, &global);
+      napi_value fn = nullptr;
+      if (njs::getNamed(env, global, "__cortexResize", &fn)) {
+        napi_value args[2];
+        napi_create_double(env, gpu->width, &args[0]);
+        napi_create_double(env, gpu->height, &args[1]);
+        njs::callJsLogged(env, fn, 2, args, "resize");
+      }
+    }
   }
   return true;
 }
@@ -77,6 +91,18 @@ int main(int argc, char** argv) {
     shims::registerAudio(js.env());
     shims::registerTextRaster(js.env(), baseDir, basePath ? basePath : "");
     webgpu::registerBindings(js.env(), &gpu);
+
+    // Tamanho REAL da janela (pixels físicos) pro JS ANTES do boot — o
+    // prelude cria a canvas fake com ele (renderiza na resolução real).
+    {
+      napi_value global = nullptr;
+      napi_get_global(js.env(), &global);
+      napi_value w = nullptr, h = nullptr;
+      napi_create_double(js.env(), gpu.width, &w);
+      napi_create_double(js.env(), gpu.height, &h);
+      napi_set_named_property(js.env(), global, "__cortexWidth", w);
+      napi_set_named_property(js.env(), global, "__cortexHeight", h);
+    }
 
     if (!js.runBoot(baseDir)) return 1;
     js.drainMicrotasks();

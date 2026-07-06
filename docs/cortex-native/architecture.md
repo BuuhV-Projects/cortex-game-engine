@@ -149,6 +149,14 @@ Native (que roda milhares de libs sobre Hermes em produção):
   numa textura multisampled e resolve pro swapchain via `resolveTarget` no
   color attachment. Sem parsear esse campo (commands.cpp), o antialias vira
   no-op → serrilhado nas bordas.
+- **Janela high-DPI**: sem `SDL_WINDOW_HIGH_PIXEL_DENSITY`, a janela renderiza
+  em pixels LÓGICOS (ex.: 1280×720) e o compositor faz upscale borrado pro
+  tamanho físico do monitor com escala — enquanto o Studio (Electron) é
+  high-DPI e renderiza na resolução real. Com a flag,
+  `SDL_GetWindowSizeInPixels` devolve os pixels físicos. O host injeta esse
+  tamanho no JS (`__cortexWidth/Height`) ANTES do boot (a canvas fake nasce
+  com ele) e chama `__cortexResize(w,h)` no resize → o engine re-configura.
+  DPR fica 1 (a resolução física já está em innerWidth).
 
 ## Superfície WebGPU coberta (2026-07-06)
 

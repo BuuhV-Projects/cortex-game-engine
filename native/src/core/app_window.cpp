@@ -46,8 +46,13 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
     std::fprintf(stderr, "SDL_Init falhou: %s\n", SDL_GetError());
     return nullptr;
   }
-  SDL_Window* window =
-      SDL_CreateWindow(title, width, height, SDL_WINDOW_RESIZABLE);
+  // HIGH_PIXEL_DENSITY: sem isso, a janela renderiza em pixels lógicos e o
+  // compositor faz UPSCALE borrado pro tamanho físico (monitor com escala).
+  // Com a flag, SDL_GetWindowSizeInPixels devolve os pixels físicos e
+  // renderizamos na resolução real — igual ao Studio (Electron é high-DPI).
+  SDL_Window* window = SDL_CreateWindow(
+      title, width, height,
+      SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
   if (!window) {
     std::fprintf(stderr, "SDL_CreateWindow falhou: %s\n", SDL_GetError());
     return nullptr;

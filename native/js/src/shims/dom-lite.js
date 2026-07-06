@@ -94,7 +94,25 @@ export function installDomLite() {
   globalThis.addEventListener = windowBus.addEventListener;
   globalThis.removeEventListener = windowBus.removeEventListener;
   globalThis.dispatchEvent = windowBus.dispatchEvent;
-  globalThis.innerWidth = globalThis.innerWidth || 1280;
-  globalThis.innerHeight = globalThis.innerHeight || 720;
+  // Tamanho REAL da janela (pixels físicos) — o host injeta __cortexWidth/
+  // Height antes do boot; default só se rodar sem host.
+  globalThis.innerWidth = globalThis.__cortexWidth || globalThis.innerWidth || 1280;
+  globalThis.innerHeight = globalThis.__cortexHeight || globalThis.innerHeight || 720;
+  // A resolução física já está em innerWidth (renderizamos 1:1 nos pixels do
+  // device, não em pixels lógicos) — então DPR=1.
   globalThis.devicePixelRatio = 1;
+
+  // Chamado pelo host quando a janela redimensiona: atualiza innerWidth/Height,
+  // a canvas e dispara 'resize' (o engine re-configura o renderer).
+  globalThis.__cortexResize = function (w, h) {
+    globalThis.innerWidth = w;
+    globalThis.innerHeight = h;
+    if (globalThis.__cortexCanvas) {
+      globalThis.__cortexCanvas.width = w;
+      globalThis.__cortexCanvas.height = h;
+      globalThis.__cortexCanvas.clientWidth = w;
+      globalThis.__cortexCanvas.clientHeight = h;
+    }
+    globalThis.dispatchEvent(new Event('resize'));
+  };
 }
