@@ -55,6 +55,18 @@ describe('UiTemplate — HTML que compila pra UI nativa (ADR-0102)', () => {
     expect((inst.get('placar') as UiLabel).text).toBe('x7');
   });
 
+  it('ignora o lixo do dev server (script do vite, doctype, meta)', () => {
+    const ui = new UiLayer(backend(), () => VIEWPORT);
+    const inst = parseUiTemplate(`
+      <!DOCTYPE html>
+      <script type="module" src="/@vite/client"></script>
+      <meta charset="utf-8">
+      <label anchor="center">Oi</label>
+    `).build(ui);
+    expect(inst.widgets.length).toBe(1);
+    expect((inst.widgets[0] as UiLabel).text).toBe('Oi');
+  });
+
   it('tag fora do vocabulário = erro claro', () => {
     expect(() => parseUiTemplate('<div>oi</div>')).toThrow(/<div>/);
     expect(() => parseUiTemplate('<panel>')).toThrow(/não fechada/);

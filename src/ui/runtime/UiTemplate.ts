@@ -189,6 +189,14 @@ export interface UiTemplateInstance {
 /** Compila o texto de um template (erros claros de tag/atributo). */
 export function parseUiTemplate(source: string): UiTemplate {
   let html = source.replace(/<!--[^]*?-->/g, '');
+  // Lixo de DEV SERVER: o vite injeta <script src="/@vite/client"> em todo
+  // .html servido em dev (HMR). Scripts/doctype/meta/link são descartados —
+  // template não executa código; tags DESCONHECIDAS continuam sendo erro.
+  html = html
+    .replace(/<script\b[^>]*>[^]*?<\/script>/gi, '')
+    .replace(/<!DOCTYPE[^>]*>/gi, '')
+    .replace(/<\/?(?:html|head|body)[^>]*>/gi, '')
+    .replace(/<(?:meta|link)\b[^>]*\/?>/gi, '');
   let sheet: UiStylesheet | null = null;
   html = html.replace(/<style>([^]*?)<\/style>/i, (_m, css: string) => {
     sheet = parseUiCss(css);
