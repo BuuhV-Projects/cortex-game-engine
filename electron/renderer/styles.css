@@ -1148,11 +1148,19 @@ body.app-preview-fullscreen #preview-container {
 
 /* ── Modal de progresso do export (CortexNative, ADR-0101) ─────────────────── */
 .export-modal {
+  /* O reset global (`* { margin: 0 }`) anula o `margin: auto` que o browser
+     usa pra centralizar o <dialog> modal — sem isto, ele cola no canto
+     superior-esquerdo. `inset: 0` + `margin: auto` = centralizado nos 2 eixos. */
+  position: fixed;
+  inset: 0;
+  margin: auto;
   background-color: var(--od-bg-panel);
   border: 1px solid var(--od-border-soft);
   border-radius: 6px;
   color: var(--od-fg);
   padding: 20px 24px;
+  width: max-content;
+  height: max-content;
   min-width: 380px;
   max-width: 460px;
 }
