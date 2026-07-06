@@ -167,13 +167,12 @@ export class BottomPanel {
    */
   private async exportNative(): Promise<void> {
     if (!this.projectDir) {
-      alert(t('bottomPanel.installer_no_project'))
+      alert(t('bottomPanel.export_no_project'))
       return
     }
-    if (this.playRunning) {
-      alert(t('bottomPanel.installer_play_running'))
-      return
-    }
+    // Sem guard de Play: o export roda um processo Node à parte que só LÊ o
+    // código-fonte do projeto e escreve dist-native/ — não usa o dev server do
+    // Play (ao contrário do instalador Tauri, que rebuilda o mesmo projeto).
     this.activateTab('terminal')
     this.appendTerminal('Exportando nativo (PC/Xbox) — bundle + bytecode + runtime…\n', 'system')
 

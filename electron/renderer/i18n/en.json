@@ -50,6 +50,7 @@
     "installer_icons_generated": "✓ Placeholder icons generated in src-tauri/icons/. To swap for your game art later, run `yarn tauri icon path/to/icon.png`.\n",
     "installer_next_steps": "\nNext steps:\n  1. Wait for `yarn install` to finish (running now).\n  2. (If not done yet) install Rust + MSVC Build Tools (once per machine):\n     - Rust:  https://rustup.rs/\n     - MSVC:  https://visualstudio.microsoft.com/visual-cpp-build-tools/\n     See \"Generate game installer\" in the IDE README for details.\n  3. Click Menu → Project → Generate installer... again — this time it'll build.\n\n",
     "installer_setup_error": "Error setting up Tauri:",
+    "export_no_project": "Open a project before exporting.",
     "export_title": "Exporting the game",
     "export_subtitle": "PC / Xbox — CortexNative",
     "export_hint": "Don't close the Studio during export.",
