@@ -173,7 +173,7 @@ export class BottomPanel {
       alert(t('bottomPanel.installer_play_running'))
       return
     }
-    this.setActiveTab('terminal')
+    this.activateTab('terminal')
     this.appendTerminal('Exportando nativo (PC/Xbox) — bundle + bytecode + runtime…\n', 'system')
     try {
       const result = await window.electronAPI.exportNative(this.projectDir)
