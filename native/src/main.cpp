@@ -47,7 +47,8 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
   return true;
 }
 
-// Um frame: timers vencidos → rAF (o JS grava e submete) → present.
+// Um frame: timers → rAF (o JS grava e submete; a surface reconfigura
+// sozinha no getCurrentTexture se a janela mudou) → present.
 void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs) {
   shims::runTimers(js.env(), elapsedMs);
   js.drainMicrotasks();

@@ -149,14 +149,18 @@ Native (que roda milhares de libs sobre Hermes em produção):
   numa textura multisampled e resolve pro swapchain via `resolveTarget` no
   color attachment. Sem parsear esse campo (commands.cpp), o antialias vira
   no-op → serrilhado nas bordas.
-- **Janela high-DPI**: sem `SDL_WINDOW_HIGH_PIXEL_DENSITY`, a janela renderiza
-  em pixels LÓGICOS (ex.: 1280×720) e o compositor faz upscale borrado pro
-  tamanho físico do monitor com escala — enquanto o Studio (Electron) é
-  high-DPI e renderiza na resolução real. Com a flag,
-  `SDL_GetWindowSizeInPixels` devolve os pixels físicos. O host injeta esse
-  tamanho no JS (`__cortexWidth/Height`) ANTES do boot (a canvas fake nasce
-  com ele) e chama `__cortexResize(w,h)` no resize → o engine re-configura.
-  DPR fica 1 (a resolução física já está em innerWidth).
+- **Reconfigurar a surface = CRASH** ("Invalid surface" no wgpuSurfaceConfigure,
+  D3D12/wgpu-native): a PRIMEIRA config funciona; qualquer RE-config pra um
+  tamanho diferente (resize/maximizar) crasha o processo — nem recriar a
+  surface, `wgpuDevicePoll`, ou `getCapabilities` resolvem. Por isso a janela
+  é de **tamanho FIXO** (`SDL_CreateWindow` sem `SDL_WINDOW_RESIZABLE`): a
+  surface configura UMA vez e nunca mais. `configureSurface` só é chamado na
+  1ª vez e na recuperação de Outdated/Lost (sempre pro MESMO tamanho).
+  Consequência: sem resize/maximizar e **sem high-DPI** (a flag
+  `HIGH_PIXEL_DENSITY` também dependia de re-config). O host injeta o tamanho
+  fixo no JS (`__cortexWidth/Height`) antes do boot. Pendências: nitidez em
+  monitor com escala e resize dinâmico → via **SSAA offscreen** (render num
+  alvo maior + downscale no present), que NÃO mexe na config da surface.
 
 ## Superfície WebGPU coberta (2026-07-06)
 

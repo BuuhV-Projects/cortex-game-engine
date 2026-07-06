@@ -8,16 +8,28 @@
 struct HostGpu {
   WGPUInstance instance = nullptr;
   WGPUSurface surface = nullptr;
+  // Fonte da surface (HWND/HINSTANCE) — pra RECRIAR a surface no resize
+  // (reconfigurar a mesma dá "Invalid surface" no wgpu-native/D3D12).
+  void* hwnd = nullptr;
+  void* hinstance = nullptr;
 
   // Preenchidos pelos bindings quando o JS pede adapter/device.
   WGPUAdapter adapter = nullptr;
   WGPUDevice device = nullptr;
   WGPUQueue queue = nullptr;
 
-  // Configuração corrente da surface (bindings configuram; host reusa no resize).
+  // Configuração corrente da surface. A reconfiguração NÃO acontece no
+  // contextConfigure (JS) nem no resize direto — os dois só marcam
+  // `wantConfigure`; o `ensureSurfaceConfigured` reconfigura UMA vez por
+  // frame, no início, sem textura adquirida (senão o wgpu dá "Invalid
+  // surface" e crasha o processo).
   WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
   WGPUTextureFormat preferredFormat = WGPUTextureFormat_BGRA8Unorm;
-  bool configured = false;
+  WGPUTextureFormat requestedFormat = WGPUTextureFormat_BGRA8Unorm;
+  bool configured = false;   // já foi configurada ao menos uma vez
+  bool wantConfigure = false; // resize/configure pendente pro próximo frame
+  int configuredWidth = 0;
+  int configuredHeight = 0;
 
   // Dimensões atuais da janela (mantidas pelo host).
   int width = 0;

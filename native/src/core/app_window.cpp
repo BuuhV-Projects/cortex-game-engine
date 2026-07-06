@@ -18,24 +18,26 @@ WGPUInstance createInstanceD3D12() {
   return wgpuCreateInstance(&desc);
 }
 
-WGPUSurface createWindowSurface(WGPUInstance instance, SDL_Window* window) {
+WGPUSurface createWindowSurface(WGPUInstance instance, SDL_Window* window,
+                                HostGpu* gpu) {
   SDL_PropertiesID props = SDL_GetWindowProperties(window);
-  WGPUSurfaceSourceWindowsHWND source = WGPU_SURFACE_SOURCE_WINDOWS_HWND_INIT;
-  source.hwnd = SDL_GetPointerProperty(
+  gpu->hwnd = SDL_GetPointerProperty(
       props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
-  source.hinstance = SDL_GetPointerProperty(
+  gpu->hinstance = SDL_GetPointerProperty(
       props, SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER, nullptr);
+  WGPUSurfaceSourceWindowsHWND source = WGPU_SURFACE_SOURCE_WINDOWS_HWND_INIT;
+  source.hwnd = gpu->hwnd;
+  source.hinstance = gpu->hinstance;
   WGPUSurfaceDescriptor desc = WGPU_SURFACE_DESCRIPTOR_INIT;
   desc.nextInChain = &source.chain;
   return wgpuInstanceCreateSurface(instance, &desc);
 }
 
 void handleResize(SDL_Window* window, HostGpu* gpu) {
+  // SÓ atualiza as dimensões. A surface se reconfigura sozinha no próximo
+  // getCurrentTexture (ponto sem textura viva) quando detecta a mudança —
+  // reconfigurar aqui, no meio do frame, dava "Invalid surface" e crash.
   SDL_GetWindowSizeInPixels(window, &gpu->width, &gpu->height);
-  if (!gpu->configured || gpu->width <= 0 || gpu->height <= 0) return;
-  gpu->config.width = static_cast<uint32_t>(gpu->width);
-  gpu->config.height = static_cast<uint32_t>(gpu->height);
-  wgpuSurfaceConfigure(gpu->surface, &gpu->config);
 }
 
 }  // namespace
@@ -50,9 +52,12 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
   // compositor faz UPSCALE borrado pro tamanho físico (monitor com escala).
   // Com a flag, SDL_GetWindowSizeInPixels devolve os pixels físicos e
   // renderizamos na resolução real — igual ao Studio (Electron é high-DPI).
-  SDL_Window* window = SDL_CreateWindow(
-      title, width, height,
-      SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+  // Janela de tamanho FIXO (sem RESIZABLE): reconfigurar a surface do
+  // wgpu-native/D3D12 após um resize dá "Invalid surface" e crasha o
+  // processo (bug conhecido do backend). Sem resize, a surface configura
+  // UMA vez e nunca mais é tocada. Resize/high-DPI = pendência (via SSAA
+  // offscreen no futuro, que não mexe na config da surface).
+  SDL_Window* window = SDL_CreateWindow(title, width, height, 0);
   if (!window) {
     std::fprintf(stderr, "SDL_CreateWindow falhou: %s\n", SDL_GetError());
     return nullptr;
@@ -63,7 +68,7 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
     std::fprintf(stderr, "wgpuCreateInstance falhou\n");
     return nullptr;
   }
-  gpu->surface = createWindowSurface(gpu->instance, window);
+  gpu->surface = createWindowSurface(gpu->instance, window, gpu);
   if (!gpu->surface) {
     std::fprintf(stderr, "wgpuInstanceCreateSurface falhou\n");
     return nullptr;
