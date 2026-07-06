@@ -26,7 +26,16 @@ const hermesc = path.join(
   engineRoot, 'native', 'third_party', 'hermes', 'tools', 'native', 'release', 'x86', 'hermes.exe',
 );
 
-fs.rmSync(dist, { recursive: true, force: true });
+// rmSync recursivo no Windows falha com ENOTEMPTY/EBUSY enquanto o SO ainda
+// solta handles (ou o Explorer/um exe anterior segura a pasta) — maxRetries
+// espera e tenta de novo. Se ainda assim falhar, não apaga a pasta inteira:
+// limpa só os arquivos que vamos regravar (o exe travado por um jogo aberto
+// não impede o resto).
+try {
+  fs.rmSync(dist, { recursive: true, force: true, maxRetries: 10, retryDelay: 150 });
+} catch (err) {
+  console.warn(`[export] não deu pra limpar dist-native (${err.code}) — sobrescrevendo`);
+}
 fs.mkdirSync(dist, { recursive: true });
 
 // 1. bundle do jogo (esbuild + babel — mesmo pipeline do dev)
