@@ -8,7 +8,7 @@
 
 > **emptySceneFile**(): [`SceneFileV1`](../interfaces/SceneFileV1.md)
 
-Defined in: [src/scene/SceneFile.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneFile.ts#L49)
+Defined in: [src/scene/SceneFile.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneFile.ts#L52)
 
 Cria um SceneFile vazio (version 1).
 

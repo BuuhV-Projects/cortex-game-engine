@@ -1,0 +1,44 @@
+[**cortex-game-engine**](../README.md)
+
+***
+
+[cortex-game-engine](../README.md) / resolveRect
+
+# Function: resolveRect()
+
+> **resolveRect**(`anchor`, `offsetX`, `offsetY`, `width`, `height`, `viewport`): [`UiRect`](../interfaces/UiRect.md)
+
+Defined in: src/ui/runtime/layout.ts:56
+
+Resolve a posição final (canto superior-esquerdo, px) de um widget:
+ponto da âncora no viewport − pivô (mesma fração) no tamanho + offset.
+
+## Parameters
+
+### anchor
+
+[`UiAnchor`](../type-aliases/UiAnchor.md)
+
+### offsetX
+
+`number`
+
+### offsetY
+
+`number`
+
+### width
+
+`number`
+
+### height
+
+`number`
+
+### viewport
+
+[`UiViewport`](../interfaces/UiViewport.md)
+
+## Returns
+
+[`UiRect`](../interfaces/UiRect.md)

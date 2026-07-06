@@ -39,7 +39,7 @@ Defined in: [src/scene/Background.ts:51](https://github.com/BuuhV-Projects/corte
 
 ##### camera
 
-`PerspectiveCamera` \| `OrthographicCamera`
+`OrthographicCamera` \| `PerspectiveCamera`
 
 ##### options
 

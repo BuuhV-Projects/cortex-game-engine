@@ -8,7 +8,7 @@
 
 > **DialogueNode** = `z.infer`\<*typeof* `dialogueNodeSchema`\> & `object`
 
-Defined in: [src/dialogue/DialogueGraph.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueGraph.ts#L74)
+Defined in: [src/dialogue/DialogueGraph.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueGraph.ts#L75)
 
 ## Type Declaration
 

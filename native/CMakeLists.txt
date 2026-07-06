@@ -20,6 +20,7 @@ add_executable(cortex_host
   src/shims/image_decode.cpp
   src/shims/input.cpp
   src/shims/rapier.cpp
+  src/shims/text_raster.cpp
   src/shims/timers.cpp
   src/webgpu/buffers.cpp
   src/webgpu/commands.cpp
@@ -82,5 +83,6 @@ add_custom_command(TARGET cortex_host POST_BUILD
     ${TP}/wgpu/lib/wgpu_native.dll
     ${TP}/hermes/build/native/win32/x64/hermes.dll
     ${RAPIER_NATIVE}/rapier_native.dll
+    ${TP}/fonts/Roboto-Regular.ttf
     $<TARGET_FILE_DIR:cortex_host>
 )

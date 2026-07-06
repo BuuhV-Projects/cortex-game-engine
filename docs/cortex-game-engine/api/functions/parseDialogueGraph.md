@@ -8,7 +8,7 @@
 
 > **parseDialogueGraph**(`data`): `object`
 
-Defined in: [src/dialogue/DialogueGraph.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueGraph.ts#L84)
+Defined in: [src/dialogue/DialogueGraph.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueGraph.ts#L85)
 
 Valida e normaliza um objeto cru (ex.: JSON importado) num [DialogueGraph](../type-aliases/DialogueGraph.md).
 Lança `ZodError` com mensagem clara se o dado for inválido. Também checa

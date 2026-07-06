@@ -5,6 +5,8 @@ import { InputManager } from './InputManager.js';
 import { GamepadManager } from './GamepadManager.js';
 import { GameLoop } from './GameLoop.js';
 import { World } from '../ecs/World.js';
+import { UiLayer } from '../ui/runtime/UiLayer.js';
+import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 
 /**
  * Handle do editor injetado no {@link Game} (só existe no bundle de
@@ -115,6 +117,7 @@ export class Game {
   private readonly _editor: GameEditor | null;
   private _onUpdate: ((deltaSeconds: number) => void) | null = null;
   private _postfx: { render(): void } | null = null;
+  private _ui: UiLayer | null = null;
   /** Cena/câmera renderizadas a cada frame. Por padrão são as do jogo; troque com
    * {@link setActiveScene} pra multi-cena (criador de personagem, menus, regiões). */
   private _activeScene: Scene;
@@ -295,11 +298,32 @@ export class Game {
     cam.updateProjectionMatrix();
   }
 
+  /**
+   * **UI de runtime** (ADR-0102): HUD/menus/diálogos que funcionam idênticos
+   * no Studio (DOM) e no CortexNative/console (renderer) com navegação por
+   * gamepad embutida. Criada sob demanda; o `Game` atualiza e desenha por
+   * frame automaticamente.
+   *
+   * @example
+   * const coins = game.ui.add(new UiLabel({ anchor: 'top-left', x: 16, y: 12, text: 'x0' }));
+   * coins.set({ text: 'x7' });
+   */
+  get ui(): UiLayer {
+    if (!this._ui) {
+      this._ui = createUiLayer(this.renderer, () => ({
+        width: this.canvas.width,
+        height: this.canvas.height,
+      }));
+    }
+    return this._ui;
+  }
+
   private _tick(deltaMs: number): void {
     const dt = deltaMs / 1000;
     this.gamepad.poll(); // estado fresco do gamepad antes dos sistemas/onUpdate (Xbox-first)
     this._onUpdate?.(dt);
     this.world.tick(deltaMs);
+    this._ui?.update(dt); // navegação/sync da UI de runtime (ADR-0102)
     this._editor?.update(dt);
     const editorCamera = this._editor?.activeCamera() ?? null;
     if (editorCamera) {
@@ -312,6 +336,7 @@ export class Game {
     } else {
       this.renderer.render(this._activeScene.getThreeScene(), this._activeCamera);
     }
+    this._ui?.render(); // UI por cima do frame (backend renderer; DOM é no-op)
   }
 
   /** Inicia o loop. */

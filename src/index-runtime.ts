@@ -69,6 +69,14 @@ export * from './systems/VehicleControlSystem.js';
 export * from './systems/SkidMarkSystem.js';
 export * from './scene/EngineSound.js';
 export * from './ui/Speedometer.js';
+// UI de runtime (ADR-0102): HUD/menu/diálogo com 2 backends (DOM e renderer)
+export * from './ui/runtime/layout.js';
+export * from './ui/runtime/widgets.js';
+export * from './ui/runtime/UiBackend.js';
+export * from './ui/runtime/UiLayer.js';
+export * from './ui/runtime/DomUiBackend.js';
+export * from './ui/runtime/RendererUiBackend.js';
+export * from './ui/runtime/createUiLayer.js';
 export * from './systems/ThirdPersonControlSystem.js';
 export * from './systems/RapierPhysicsSystem.js';
 export * from './systems/PlatformerAnimationSystem.js';

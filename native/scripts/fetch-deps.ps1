@@ -42,10 +42,22 @@ if (-not (Test-Path $wgpuDir)) {
 # ── stb_image (decode de PNG/JPG das texturas GLB; header único, pinado) ──
 $STB_COMMIT = '5c205738c191bcb0abc65c4febfa9bd25ff35234'
 $stbDir = Join-Path $tp 'stb'
+New-Item -ItemType Directory -Force $stbDir | Out-Null
 if (-not (Test-Path (Join-Path $stbDir 'stb_image.h'))) {
-    New-Item -ItemType Directory -Force $stbDir | Out-Null
     Write-Host 'baixando stb_image ...' -ForegroundColor Cyan
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nothings/stb/$STB_COMMIT/stb_image.h" -OutFile (Join-Path $stbDir 'stb_image.h')
+}
+if (-not (Test-Path (Join-Path $stbDir 'stb_truetype.h'))) {
+    Write-Host 'baixando stb_truetype ...' -ForegroundColor Cyan
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nothings/stb/$STB_COMMIT/stb_truetype.h" -OutFile (Join-Path $stbDir 'stb_truetype.h')
+}
+
+# ── fonte default da UI de runtime (ADR-0102) — Roboto, tag pinada ──
+$fontDir = Join-Path $tp 'fonts'
+if (-not (Test-Path (Join-Path $fontDir 'Roboto-Regular.ttf'))) {
+    New-Item -ItemType Directory -Force $fontDir | Out-Null
+    Write-Host 'baixando Roboto ...' -ForegroundColor Cyan
+    Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/googlefonts/roboto-2/v2.138/src/hinted/Roboto-Regular.ttf' -OutFile (Join-Path $fontDir 'Roboto-Regular.ttf')
 }
 
 # ── miniaudio (DECODE de wav/mp3/flac; header único, pinado por tag) ──

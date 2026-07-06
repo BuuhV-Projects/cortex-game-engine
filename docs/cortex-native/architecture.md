@@ -50,6 +50,8 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/shims/image_decode.*` | `__cortexDecodeImage` (stb_image → RGBA8) pro createImageBitmap. |
 | `native/src/shims/rapier.*` | Ponte C ABI do crate rapier-native → `__rapierNative` (funções achatadas, f64). |
 | `native/src/shims/audio.*` | `__cortexAudio`: decode (miniaudio) + playback (streams SDL3; loop/gain/pitch); `updateAudio()` por frame. |
+| `native/src/shims/text_raster.*` | `__cortexRasterText` (stb_truetype + Roboto pinada) → bitmap RGBA branco pro RendererUiBackend (ADR-0102). |
+| `src/ui/runtime/` (ENGINE) | UI de runtime ADR-0102: UiLayer/widgets/layout + DomUiBackend e RendererUiBackend. |
 | `native/rapier-native/` | Crate Rust (cdylib): Rapier de verdade com C ABI mínima espelhando o que o engine usa. |
 | `native/src/webgpu/bindings.h` | API pública do módulo: `registerBindings`, `presentIfAcquired`. Fora do módulo, só inclua este. |
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |
@@ -182,9 +184,8 @@ depth, perspectiva) em bytecode Hermes sobre D3D12, sem browser.
   prelude de shims JS, layouts explícitos, depth texture, index buffer,
   viewport/scissor, mapeamento de buffer, error scopes
 
-Limitações conhecidas (M1): mapAsync (readback) não existe; blend states são
-ignorados (transparência); writeTexture/copyTexture* não existem (materiais
-texturizados); MSAA não testado (antialias: false no boot).
+Limitações conhecidas: mapAsync (readback) e copyTextureToTexture não
+existem; MSAA não testado.
 
 **M1 — engine cortex completo no host**, validado com o jogo real teste4.
 Plano completo com inventário e ordem de ataque:
@@ -205,19 +206,22 @@ Plano completo com inventário e ordem de ataque:
   playback por streams SDL3 (gain/pitch nativos, loop realimentado por
   frame); WebAudio-lite em JS com a forma que o THREE.Audio usa.
   **Pendência**: espacialização do PannerNode (PositionalAudio toca sem 3D).
-- ⬜ Frente 6 — UI do engine sem DOM (ADR próprio; 6a inerte ✅ via DOM-lite).
-  É mudança de ENGINE: API de UI com backend DOM (PC/Studio) e backend
-  renderer (host/console); DialogueUI/LoadingScreen/Speedometer migram, e os
-  jogos trocam HUD de divs pela API. Última frente antes do teste4 jogável.
+- ✅ Frente 6 — **UI de runtime (ADR-0102) implementada e provada no jogo**:
+  `src/ui/runtime/` no ENGINE (UiLayer + Panel/Label/Button ancorados, foco
+  d-pad/setas NA API, `game.ui`) com DomUiBackend (Studio) e
+  RendererUiBackend (host: cena ortográfica + `__cortexRasterText` via
+  stb_truetype/Roboto pinada; **descarte de textura ADIADO 2 frames** —
+  dispose imediato derruba o frame em voo). teste4 migrado (MainMenu +
+  HUD do RushSystem): menu navegável e HUD ao vivo no host (screenshots).
+  **Pendências**: migrar DialogueUI/LoadingScreen/Speedometer pra API;
+  texto maior que o botão não recorta; re-vendorizar .d.ts pros jogos.
 
-**TESTE PRÁTICO (2026-07-05): o teste4 REAL roda no host.** Pipeline:
+**TESTE PRÁTICO (2026-07-05): o teste4 REAL é JOGÁVEL no host.** Pipeline:
 `node native/scripts/bundle.mjs <out> D:/jogos/teste4/main.ts` (CORTEX_LEVEL
-pula o menu) → hermesc → `cortex_host.exe D:\jogos\teste4`. Cena, player
-skinned com física, scripts, áudio e loop — validado com screenshot.
-Pendências do teste: (1) textura colormap do kit falha (tudo branco) —
-investigar caminho ImageBitmapLoader; (2) água invisível (blend states
-ignorados no pipeline — implementar); (3) HUD invisível (frente 6);
-(4) empacotamento (boot.hbc gerado à mão na pasta do jogo).
+opcional pula o menu) → hermesc → `cortex_host.exe D:\jogos\teste4`.
+Menu nativo navegável → fase com visual COMPLETO (texturas embutidas via
+URL/objectURL; blend ok) → HUD ao vivo (moedas/cronômetro). Pendência de
+produto: empacotamento (boot.hbc gerado à mão na pasta do jogo).
 
 Build do Rapier nativo: `cargo build --release` em `native/rapier-native/`
 (1x; o CMake linka `target/release/rapier_native.dll.lib` e copia a dll).

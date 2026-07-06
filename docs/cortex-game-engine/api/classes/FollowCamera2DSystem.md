@@ -31,7 +31,7 @@ Defined in: [src/systems/FollowCamera2DSystem.ts:79](https://github.com/BuuhV-Pr
 
 ##### camera
 
-`PerspectiveCamera` \| `OrthographicCamera`
+`OrthographicCamera` \| `PerspectiveCamera`
 
 ##### options?
 

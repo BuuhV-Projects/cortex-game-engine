@@ -42,7 +42,7 @@ Defined in: [src/systems/TopDownCameraSystem.ts:59](https://github.com/BuuhV-Pro
 
 ##### camera
 
-`PerspectiveCamera` \| `OrthographicCamera`
+`OrthographicCamera` \| `PerspectiveCamera`
 
 ##### options?
 

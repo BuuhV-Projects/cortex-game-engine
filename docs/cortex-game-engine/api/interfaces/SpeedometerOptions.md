@@ -74,7 +74,7 @@ Onde anexar. Default `document.body`.
 
 ### position?
 
-> `optional` **position?**: `Partial`\<`Record`\<`"top"` \| `"right"` \| `"bottom"` \| `"left"`, `string`\>\>
+> `optional` **position?**: `Partial`\<`Record`\<`"top"` \| `"bottom"` \| `"left"` \| `"right"`, `string`\>\>
 
 Defined in: [src/ui/Speedometer.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L28)
 

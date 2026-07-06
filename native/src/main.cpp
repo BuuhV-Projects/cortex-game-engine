@@ -18,6 +18,7 @@
 #include "shims/image_decode.h"
 #include "shims/input.h"
 #include "shims/rapier.h"
+#include "shims/text_raster.h"
 #include "shims/timers.h"
 #include "webgpu/bindings.h"
 
@@ -74,6 +75,7 @@ int main(int argc, char** argv) {
     shims::registerImageDecode(js.env());
     shims::registerRapier(js.env());
     shims::registerAudio(js.env());
+    shims::registerTextRaster(js.env(), baseDir, basePath ? basePath : "");
     webgpu::registerBindings(js.env(), &gpu);
 
     if (!js.runBoot(baseDir)) return 1;
