@@ -153,6 +153,18 @@ Native (que roda milhares de libs sobre Hermes em produção):
   `bgra8unorm-srgb` como preferido → aceitar isso causa DUPLA conversão sRGB
   (iluminação/gamma erradas). `getPreferredCanvasFormat` faz `stripSrgb`
   (navigator.cpp) pra igualar o browser.
+- **UI NÃO pode passar pelo tone mapping do jogo** (cores do menu "lavadas/frias"
+  no export): a UI de runtime (RendererUiBackend) desenha pela MESMA
+  câmera/renderer do jogo, que tem `ACESFilmicToneMapping` ligado
+  (`outdoorLighting`). Cor de INTERFACE é sRGB autorada, NÃO cena — o ACES
+  esfria/dessatura. `material.toneMapped=false` NÃO pega no `colorNode` custom
+  do painel; o fix é `Renderer.renderViewport(..., { noToneMapping })`, que a UI
+  passa (desliga o ACES só no pass da UI; UI e cena usam materiais disjuntos →
+  sem recompile por frame). No DOM (Studio) não ocorre (CSS puro, sem tone
+  mapping). **Além disso:** a opacidade dos widgets tem que casar com o DOM —
+  botão com `fillOpacity` < 1 deixa o backdrop claro vazar e LAVA a cor (era um
+  `*0.96` fantasma). Regressão travada em `tests/ui/RendererUiBackend.test.ts` +
+  `tests/core/Renderer.test.ts` (noToneMapping liga/restaura).
 - **MSAA precisa de `resolveTarget`**: com `antialias:true`, o Three renderiza
   numa textura multisampled e resolve pro swapchain via `resolveTarget` no
   color attachment. Sem parsear esse campo (commands.cpp), o antialias vira
