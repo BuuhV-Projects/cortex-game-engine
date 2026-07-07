@@ -338,52 +338,36 @@ export class RendererUiBackend implements UiBackend {
 
   /**
    * Carrega a imagem de fundo do Panel numa textura e cria/atualiza o quad.
-   * Via `fetch` + `createImageBitmap` (não `TextureLoader`/`Image.src`, que
-   * dependem do DOM): no host CortexNative os shims decodificam com stb e
-   * devolvem `{width, height, rgba}` — vira uma `DataTexture` (mesma via do
-   * texto). `imageOrientation: 'flipY'` deixa a textura pronta pro quad.
+   * `TextureLoader` funciona no host CortexNative: o `ImageLoader` do three usa
+   * `<img>.src`, que o shim `FakeImage` (native/js) implementa via fetch + stb.
    */
   private _loadImage(visual: WidgetVisual, widget: UiWidget, url: string): void {
-    void fetch(url)
-      .then((r) => r.arrayBuffer())
-      .then((buf) => createImageBitmap(new Blob([buf]), { imageOrientation: 'flipY' }))
-      .then((bitmap) => {
-        if (visual.lastImage !== url) return; // trocou enquanto carregava
-        const b = bitmap as unknown as { width: number; height: number; rgba?: ArrayBuffer };
-        let texture: THREE.Texture;
-        if (b.rgba) {
-          // Native: RGBA cru → DataTexture (mesma via do texto rasterizado).
-          texture = new THREE.DataTexture(new Uint8Array(b.rgba), b.width, b.height, THREE.RGBAFormat);
-        } else {
-          // Browser (fallback): ImageBitmap direto.
-          texture = new THREE.Texture(bitmap as unknown as HTMLImageElement);
-        }
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.magFilter = THREE.LinearFilter;
-        texture.minFilter = THREE.LinearFilter;
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.needsUpdate = true;
-        const old = visual.imageTexture;
-        visual.imageTexture = texture;
-        if (!visual.image) {
-          const material = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, map: texture });
-          visual.image = new THREE.Mesh(this._quad, material);
-          this._scene.add(visual.image);
-        } else {
-          (visual.image.material as THREE.MeshBasicMaterial).map = texture;
-          (visual.image.material as THREE.MeshBasicMaterial).needsUpdate = true;
-        }
-        if (old) this._graveyard.push({ frames: 2, dispose: () => old.dispose() });
-        // A carga é ASSÍNCRONA: o _apply que criou o mesh já limpou o `dirty`,
-        // então o posicionamento/escala do mesh (no _apply) não rodaria de novo
-        // e a imagem ficaria 1×1 na origem (invisível). Marcar dirty faz o
-        // próximo sync reaplicar (posiciona + escala + torna visível).
-        widget.dirty = true;
-      })
-      .catch(() => {
-        /* imagem faltando/decode falhou: mantém a cor/gradiente de fallback */
-      });
+    new THREE.TextureLoader().load(url, (texture) => {
+      if (visual.lastImage !== url) {
+        // A URL mudou enquanto carregava (widget reusado) — descarta.
+        texture.dispose();
+        return;
+      }
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      const old = visual.imageTexture;
+      visual.imageTexture = texture;
+      if (!visual.image) {
+        const material = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, map: texture });
+        visual.image = new THREE.Mesh(this._quad, material);
+        this._scene.add(visual.image);
+      } else {
+        (visual.image.material as THREE.MeshBasicMaterial).map = texture;
+        (visual.image.material as THREE.MeshBasicMaterial).needsUpdate = true;
+      }
+      if (old) this._graveyard.push({ frames: 2, dispose: () => old.dispose() });
+      // A carga é ASSÍNCRONA: o _apply que disparou o load já limpou o `dirty`,
+      // então o posicionamento/escala do mesh (no _apply) não rodaria de novo e
+      // a imagem ficaria 1×1 na origem (invisível). Marcar dirty faz o próximo
+      // sync reaplicar (posiciona + escala + torna visível). Era ESTE o bug.
+      widget.dirty = true;
+    });
   }
 
   /** "cover": ajusta repeat/offset da textura pra preencher o rect sem distorcer. */
