@@ -352,4 +352,28 @@ export class Game {
   stop(): void {
     this._loop.stop();
   }
+
+  /**
+   * Reseta o jogo pra **trocar de cena/fase** sem recriar o `Game` (renderer,
+   * câmera e canvas continuam): para o loop, esvazia o world com `dispose` dos
+   * sistemas ({@link World.clear} — libera o mundo do Rapier etc.), libera a GPU
+   * da cena ({@link Scene.disposeAll}), limpa a UI e zera o `onUpdate`.
+   *
+   * O ESTADO DO JOGO fora do engine (áudio, música, timers próprios) é
+   * responsabilidade do chamador. Depois do reset, re-registre os sistemas e
+   * monte a próxima cena (ex.: `setupThirdPerson` + `buildScene`).
+   *
+   * @example
+   * // "Voltar ao menu" sem recarregar a página (funciona no export nativo):
+   * game.reset();
+   * const level = await showMainMenu(game, LEVELS);
+   * // ...re-setup + buildScene + game.start()...
+   */
+  reset(): void {
+    this.stop();
+    this.world.clear();
+    this.scene.disposeAll();
+    this._ui?.clear();
+    this._onUpdate = null;
+  }
 }

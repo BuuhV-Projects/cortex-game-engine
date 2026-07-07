@@ -51,6 +51,40 @@ export class Scene {
   }
 
   /**
+   * Remove TODOS os filhos E libera os recursos de GPU deles (geometrias,
+   * materiais e texturas). Diferente de {@link clear} (que só desanexa e deixa
+   * a GPU vazar): use ao **trocar de cena/fase** pra não acumular memória de
+   * vídeo. Também limpa `background`/`environment`.
+   */
+  disposeAll(): this {
+    const seenTex = new Set<THREE.Texture>();
+    const disposeMaterial = (m: THREE.Material): void => {
+      for (const value of Object.values(m as unknown as Record<string, unknown>)) {
+        if (value instanceof THREE.Texture && !seenTex.has(value)) {
+          seenTex.add(value);
+          value.dispose();
+        }
+      }
+      m.dispose();
+    };
+    for (const child of [...this._scene.children]) {
+      child.traverse((obj) => {
+        const mesh = obj as Partial<THREE.Mesh>;
+        mesh.geometry?.dispose();
+        const mat = mesh.material;
+        if (Array.isArray(mat)) mat.forEach(disposeMaterial);
+        else if (mat) disposeMaterial(mat);
+      });
+    }
+    this._scene.clear();
+    const asAny = this._scene as unknown as { background?: unknown; environment?: THREE.Texture | null };
+    if (asAny.environment) asAny.environment.dispose();
+    asAny.background = null;
+    asAny.environment = null;
+    return this;
+  }
+
+  /**
    * Retorna a instância interna do `THREE.Scene`.
    * Necessário para passar ao `Renderer.render(scene, camera)`.
    * Prefira sempre os métodos desta classe para manipular a cena.

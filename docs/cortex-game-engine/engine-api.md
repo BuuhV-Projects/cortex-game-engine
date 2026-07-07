@@ -271,6 +271,27 @@ game.start() // só DEPOIS da carga
 `createLoadingScreen(game.ui)` (baixo nível) e `createDomLoadingScreen()` (DOM
 legado, só browser) seguem disponíveis se você quiser controlar o loop na mão.
 
+**Voltar ao menu / trocar de fase** (sem `location.reload`, funciona no export
+nativo): estruture o jogo num LOOP `menu → fase → (voltar) → menu`. No "voltar",
+`game.reset()` desmonta a fase — para o loop, esvazia o `world` chamando
+`dispose()` de cada sistema (`World.clear`; o `RapierPhysicsSystem` libera o
+mundo do Rapier), libera a GPU da cena (`Scene.disposeAll`) e limpa a UI. Depois
+re-registre os sistemas e monte a próxima fase. O que ADICIONA listener global
+(no `document`/`window`) precisa de `dispose()` pra removê-lo (senão empilha ao
+trocar de fase) — em System, sobrescreva `dispose()`; o `World.clear` o chama.
+
+```ts
+async function enterFase(level) {
+  game.world.addSystem(new MeuSistema())   // sistemas/controle da fase
+  const scene = await runWithLoadingScreen(game.ui, async (p) => buildScene(...))
+  game.onUpdate((dt) => scene.update(dt))
+  game.start()
+  await esperaVoltarAoMenu()                // botão/atalho resolve
+  game.reset()                              // desmonta tudo
+}
+for (;;) { await enterFase(await showMainMenu(game, LEVELS)) }
+```
+
 ## Diálogo + UI in-game (narrativa) — ADR-0070
 
 Primeira **UI de runtime** do engine (DOM overlay, vai pro build). Diálogo é **DADO**:

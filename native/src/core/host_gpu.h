@@ -49,4 +49,10 @@ struct HostGpu {
   WGPUTextureView offscreenView = nullptr;
   int offscreenWidth = 0;
   int offscreenHeight = 0;
+  // SSAA: só apresenta (blit do offscreen) nos frames em que o JS DE FATO
+  // renderizou (chamou getCurrentTexture). Sem isto o present rodava TODO frame
+  // (offscreenView é persistente) e o vsync travava o host em ~60fps —
+  // serializando trabalho assíncrono pesado que renderiza pouco (ex.: buildScene
+  // sob uma tela de loading): 0,7s virava ~18s.
+  bool ssaaPending = false;
 };

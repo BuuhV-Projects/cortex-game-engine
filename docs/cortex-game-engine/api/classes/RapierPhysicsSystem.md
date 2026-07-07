@@ -116,11 +116,29 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 ## Methods
 
+### dispose()
+
+> **dispose**(): `void`
+
+Defined in: [src/systems/RapierPhysicsSystem.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L41)
+
+Libera o mundo do Rapier (handle nativo/WASM) — chamado no World.clear.
+
+#### Returns
+
+`void`
+
+#### Overrides
+
+[`System`](System.md).[`dispose`](System.md#dispose)
+
+***
+
 ### update()
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/RapierPhysicsSystem.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L40)
+Defined in: [src/systems/RapierPhysicsSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L45)
 
 Executa a lógica do sistema para o frame/passo atual.
 

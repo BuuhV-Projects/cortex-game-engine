@@ -237,5 +237,59 @@ describe('World', () => {
     it('removeSystem sem efeito quando o tipo não está registrado', () => {
       expect(() => world.removeSystem(AnySystem)).not.toThrow();
     });
+
+    it('removeSystem chama dispose() do sistema removido', () => {
+      class Disposable extends System {
+        readonly onDispose = vi.fn();
+        update(): void {}
+        override dispose(): void {
+          this.onDispose();
+        }
+      }
+      const s = new Disposable();
+      world.addSystem(s);
+      world.removeSystem(Disposable);
+      expect(s.onDispose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ── clear (troca de cena/fase) ──────────────────────────────────────────────
+  describe('clear', () => {
+    it('remove todas as entities e systems', () => {
+      world.createEntity();
+      world.createEntity();
+      world.addSystem(new AnySystem());
+      world.clear();
+      expect(world.query()).toHaveLength(0);
+      expect(world.hasSystem(AnySystem)).toBe(false);
+    });
+
+    it('chama dispose() em cada sistema (libera handles nativos)', () => {
+      class Disposable extends System {
+        readonly onDispose = vi.fn();
+        update(): void {}
+        override dispose(): void {
+          this.onDispose();
+        }
+      }
+      const a = new Disposable();
+      const b = new Disposable();
+      world.addSystem(a);
+      world.addSystem(b);
+      world.clear();
+      expect(a.onDispose).toHaveBeenCalledTimes(1);
+      expect(b.onDispose).toHaveBeenCalledTimes(1);
+    });
+
+    it('o mesmo World segue utilizável após clear (referência preservada)', () => {
+      world.addSystem(new AnySystem());
+      world.clear();
+      const e = world.createEntity();
+      const s = new AnySystem();
+      world.addSystem(s);
+      world.tick(1);
+      expect(world.query()).toContain(e);
+      expect(s.spy).toHaveBeenCalledTimes(1);
+    });
   });
 });

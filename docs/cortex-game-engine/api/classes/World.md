@@ -70,6 +70,25 @@ Instância do system a registrar.
 
 ***
 
+### clear()
+
+> **clear**(): `void`
+
+Defined in: [src/ecs/World.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L110)
+
+Esvazia o world: chama `dispose()` em cada sistema (libera handles nativos,
+ex.: mundo do Rapier) e remove TODAS as entities e systems. Use pra trocar
+de fase/cena sem vazar — depois re-registre os systems da próxima cena.
+
+O objeto `World` continua o MESMO (só é esvaziado), então referências a
+`game.world` seguem válidas.
+
+#### Returns
+
+`void`
+
+***
+
 ### createEntity()
 
 > **createEntity**(): [`Entity`](Entity.md)
@@ -113,7 +132,7 @@ A entity a ser destruída.
 
 > **hasSystem**(`SystemClass`): `boolean`
 
-Defined in: [src/ecs/World.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L108)
+Defined in: [src/ecs/World.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L123)
 
 `true` se já existe um system registrado da classe `SystemClass`. Útil para
 registrar um system **sob demanda só uma vez** (ex.: o `buildScene` liga o
@@ -137,7 +156,7 @@ Construtor da classe do system a procurar.
 
 > **query**\<`T`\>(...`componentClasses`): [`Entity`](Entity.md)[]
 
-Defined in: [src/ecs/World.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L125)
+Defined in: [src/ecs/World.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L140)
 
 Retorna todas as entities que possuem **todos** os componentes especificados.
 
@@ -198,7 +217,7 @@ Construtor da classe do system a remover.
 
 > **tick**(`deltaTime`): `void`
 
-Defined in: [src/ecs/World.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L151)
+Defined in: [src/ecs/World.ts:166](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L166)
 
 Executa um passo de simulação, iterando todos os systems em ordem de
 prioridade crescente.

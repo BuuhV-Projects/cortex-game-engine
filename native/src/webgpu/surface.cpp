@@ -94,6 +94,10 @@ napi_value contextGetCurrentTexture(napi_env env, napi_callback_info) {
   // SSAA: o JS desenha no OFFSCREEN (maior); o host faz downscale no present.
   WGPUTextureView offscreen = ensureOffscreen(gpu);
   if (offscreen) {
+    // Marca que o JS renderizou ESTE frame — o present só blita quando há um
+    // frame novo (senão o vsync travaria o host mesmo sem render, serializando
+    // carga assíncrona; ver ssaaPending em host_gpu.h).
+    gpu->ssaaPending = true;
     // Não-own: a textura offscreen vive no HostGpu. Devolve os métodos de
     // view (createView etc.) sobre a textura offscreen.
     napi_value obj =
@@ -118,8 +122,11 @@ napi_value contextGetCurrentTexture(napi_env env, napi_callback_info) {
 
 void presentIfAcquired(HostGpu* gpu) {
   // SSAA: o JS desenhou no offscreen; adquire a swapchain, faz downscale e
-  // apresenta.
+  // apresenta. SÓ apresenta se o JS renderizou este frame (ssaaPending) —
+  // senão o vsync do present travaria o host mesmo sem frame novo.
   if (gpu->offscreenView && gpu->configured) {
+    if (!gpu->ssaaPending) return;  // sem frame novo → não bloqueia no vsync
+    gpu->ssaaPending = false;
     WGPUTexture swap = acquireSurfaceTexture(gpu);
     if (!swap) return;  // surface temporariamente indisponível → pula frame
     WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);

@@ -122,6 +122,23 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 ## Methods
 
+### dispose()
+
+> **dispose**(): `void`
+
+Defined in: [src/ecs/System.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L82)
+
+Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
+pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
+handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
+[RapierPhysicsSystem](RapierPhysicsSystem.md)). Essencial pra trocar de cena/fase sem vazar.
+
+#### Returns
+
+`void`
+
+***
+
 ### update()
 
 > `abstract` **update**(`entities`, `deltaTime`): `void`

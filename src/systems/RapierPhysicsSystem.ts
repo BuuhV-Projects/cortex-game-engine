@@ -37,6 +37,11 @@ export class RapierPhysicsSystem extends System {
     super();
   }
 
+  /** Libera o mundo do Rapier (handle nativo/WASM) — chamado no World.clear. */
+  override dispose(): void {
+    this.physics.dispose();
+  }
+
   override update(entities: Entity[], deltaTime: number): void {
     // 1) Cria os corpos que ainda não existem (a partir da pose atual do Object3D).
     for (const e of entities) {

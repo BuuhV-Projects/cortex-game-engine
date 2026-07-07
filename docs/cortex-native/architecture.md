@@ -186,6 +186,18 @@ Native (que roda milhares de libs sobre Hermes em produção):
   - `__cortexResize` passa o tamanho LÓGICO (nativo); o dpr persiste no three e
     leva pro SS. Passar SS aqui dobraria a escala.
 
+- **SSAA: presente SÓ quando o JS renderizou o frame** (`ssaaPending` em
+  host_gpu.h). O `offscreenView` é persistente; se o present blitasse todo frame
+  (checando só `offscreenView != null`), o vsync travaria o host em ~60fps MESMO
+  sem frame novo — serializando trabalho assíncrono que renderiza pouco (uma
+  carga de ~0,7s virava ~18s). `getCurrentTexture` marca `ssaaPending=true`; o
+  `presentIfAcquired` só blita/apresenta se está marcado (e limpa). Foi o que
+  fazia o "menu congelado mó tempão": o menu criava o offscreen e o `buildScene`
+  seguinte ficava gated a 60fps.
+- **`cancelAnimationFrame` é obrigatório** (não só `requestAnimationFrame`): o
+  `game.stop()`/`GameLoop.stop()` o chama; sem ele dava `ReferenceError` e
+  ABORTAVA o teardown de cena (trocar de fase/voltar ao menu). O shim
+  (animation_frame.cpp) devolve um id no rAF e o cancela por id.
 - **Loop de render durante carga = carga MAIS LENTA** (present = vsync). O loop
   principal do host só bloqueia no `wgpuSurfacePresent` (FIFO/vsync) QUANDO algo
   desenhou no frame; sem render, ele gira livre e pompa timers/microtasks (onde

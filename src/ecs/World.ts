@@ -94,8 +94,23 @@ export class World {
   removeSystem(SystemClass: SystemClass): void {
     const index = this._systems.findIndex((s) => s instanceof SystemClass);
     if (index !== -1) {
+      this._systems[index].dispose();
       this._systems.splice(index, 1);
     }
+  }
+
+  /**
+   * Esvazia o world: chama `dispose()` em cada sistema (libera handles nativos,
+   * ex.: mundo do Rapier) e remove TODAS as entities e systems. Use pra trocar
+   * de fase/cena sem vazar — depois re-registre os systems da próxima cena.
+   *
+   * O objeto `World` continua o MESMO (só é esvaziado), então referências a
+   * `game.world` seguem válidas.
+   */
+  clear(): void {
+    for (const system of this._systems) system.dispose();
+    this._systems = [];
+    this._entities.clear();
   }
 
   /**

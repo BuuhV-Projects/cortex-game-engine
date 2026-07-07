@@ -72,4 +72,12 @@ export abstract class System {
    * @param deltaTime - Tempo decorrido desde o último tick, em segundos.
    */
   abstract update(entities: Entity[], deltaTime: number): void;
+
+  /**
+   * Libera recursos ao remover o sistema — chamado por {@link World.clear} (e
+   * pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
+   * handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
+   * {@link RapierPhysicsSystem}). Essencial pra trocar de cena/fase sem vazar.
+   */
+  dispose(): void {}
 }

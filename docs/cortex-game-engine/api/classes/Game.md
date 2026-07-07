@@ -299,6 +299,36 @@ Registra um callback chamado a cada frame (delta em **segundos**), antes do
 
 ***
 
+### reset()
+
+> **reset**(): `void`
+
+Defined in: [src/core/Game.ts:372](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L372)
+
+Reseta o jogo pra **trocar de cena/fase** sem recriar o `Game` (renderer,
+câmera e canvas continuam): para o loop, esvazia o world com `dispose` dos
+sistemas ([World.clear](World.md#clear) — libera o mundo do Rapier etc.), libera a GPU
+da cena ([Scene.disposeAll](Scene.md#disposeall)), limpa a UI e zera o `onUpdate`.
+
+O ESTADO DO JOGO fora do engine (áudio, música, timers próprios) é
+responsabilidade do chamador. Depois do reset, re-registre os sistemas e
+monte a próxima cena (ex.: `setupThirdPerson` + `buildScene`).
+
+#### Returns
+
+`void`
+
+#### Example
+
+```ts
+// "Voltar ao menu" sem recarregar a página (funciona no export nativo):
+game.reset();
+const level = await showMainMenu(game, LEVELS);
+// ...re-setup + buildScene + game.start()...
+```
+
+***
+
 ### setActiveScene()
 
 > **setActiveScene**(`scene`, `camera`): `void`

@@ -59,11 +59,28 @@ Equivale a `THREE.Scene.clear()`.
 
 ***
 
+### disposeAll()
+
+> **disposeAll**(): `this`
+
+Defined in: [src/core/Scene.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L59)
+
+Remove TODOS os filhos E libera os recursos de GPU deles (geometrias,
+materiais e texturas). Diferente de [clear](#clear) (que só desanexa e deixa
+a GPU vazar): use ao **trocar de cena/fase** pra não acumular memória de
+vídeo. Também limpa `background`/`environment`.
+
+#### Returns
+
+`this`
+
+***
+
 ### getThreeScene()
 
 > **getThreeScene**(): `Scene`
 
-Defined in: [src/core/Scene.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L58)
+Defined in: [src/core/Scene.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L92)
 
 Retorna a instância interna do `THREE.Scene`.
 Necessário para passar ao `Renderer.render(scene, camera)`.
