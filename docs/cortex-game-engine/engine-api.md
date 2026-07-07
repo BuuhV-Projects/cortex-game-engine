@@ -26,7 +26,8 @@ lado).
 | `AudioManager` | Áudio. `.setMasterVolume(v)`, sons via `SoundOptions`. |
 | `InputManager` | Teclado/mouse. `.attach(document.body)`, `.isKeyDown('ArrowLeft')`, `.isButtonDown(0)`, `.getMousePosition()`, `.getMouseDelta()`. |
 | `GamepadManager` | Gamepads. `.isButtonDown(i, btn)`, `.getAxis(i, axis)`. |
-| `LoadingScreen` | Tela de carregamento. `.show()`/`.hide()`. |
+| `LoadingScreen` | Tela de carregamento. `.show()`/`.setProgress()`/`.hide()`/`.destroy()`. |
+| `runWithLoadingScreen` | Roda uma task async sob uma tela de loading **dirigindo o loop de render** (Studio + export nativo). Use no menu→cena (antes do `game.start()`, quando não há loop). |
 | `Skybox` | Iluminação/fundo por HDRI. `Skybox.fromHDRI(scene, url, opts)`, `Skybox.clear(scene)`. |
 | `PostFX` | Pós-processamento consolidado (ver seção própria). |
 
@@ -242,20 +243,33 @@ game.onUpdate((dt) => animator.update(dt))
 `game.setActiveScene(game.scene, game.camera)`. O `world`/input são compartilhados:
 **pause o gameplay** (`pauseWhen`) na tela alternativa. Combine com a tela de loading.
 
-```ts
-import { Scene, PerspectiveCamera, AmbientLight, DirectionalLight, Color, createDomLoadingScreen } from 'cortex-game-engine'
-const menu = new Scene()
-menu.getThreeScene().background = new Color('#1b2b1b')
-menu.add(new AmbientLight(0xffffff, 1), new DirectionalLight(0xffffff, 0.8))
-const menuCam = new PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100)
-menuCam.position.set(0, 1.4, 3); menuCam.lookAt(0, 1, 0)
+**Tela de loading entre menu e jogo** — o caso clássico do "menu congelado":
+entre escolher a fase e o `game.start()` NÃO há loop de render, então o
+carregamento pesado (GLBs, física, áudio) trava a última imagem. Use
+`runWithLoadingScreen(game.ui, task)` — ele mostra a barra e **dirige o loop de
+render** durante a carga, no Studio E no export nativo. Renderiza só nas trocas
+de etapa (não gatilha 60 fps/vsync, que serializaria a carga no host).
 
-const loading = createDomLoadingScreen()
-loading.show()
-// ...monte a cena (loadGLB/loadModularCharacter)...
-game.setActiveScene(menu, menuCam)
-loading.hide()
+```ts
+import { buildScene, runWithLoadingScreen } from 'cortex-game-engine'
+
+const level = await showMainMenu(game, LEVELS) // menu escolhe a fase
+const scene = await runWithLoadingScreen(
+  game.ui,
+  async (progress) => {
+    progress('Montando cena…', 0.4)
+    const s = await buildScene(game.scene, [level.def], { renderer: game.renderer, world: game.world })
+    progress('Áudio…', 0.9)
+    await setupAudio(game)
+    return s
+  },
+  { message: 'Carregando…', background: '#1e8fc4', accent: '#ffd94d' },
+)
+game.start() // só DEPOIS da carga
 ```
+
+`createLoadingScreen(game.ui)` (baixo nível) e `createDomLoadingScreen()` (DOM
+legado, só browser) seguem disponíveis se você quiser controlar o loop na mão.
 
 ## Diálogo + UI in-game (narrativa) — ADR-0070
 

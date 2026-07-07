@@ -10,6 +10,20 @@ Defined in: [src/core/LoadingScreen.ts:13](https://github.com/BuuhV-Projects/cor
 
 ## Methods
 
+### destroy()
+
+> **destroy**(): `void`
+
+Defined in: [src/core/LoadingScreen.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L18)
+
+Remove os elementos da tela (widgets do UiLayer / nó do DOM).
+
+#### Returns
+
+`void`
+
+***
+
 ### hide()
 
 > **hide**(): `void`

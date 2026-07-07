@@ -310,6 +310,7 @@
 - [resolvePlayerClip](functions/resolvePlayerClip.md)
 - [resolveRect](functions/resolveRect.md)
 - [resolveWallPush](functions/resolveWallPush.md)
+- [runWithLoadingScreen](functions/runWithLoadingScreen.md)
 - [scatter](functions/scatter.md)
 - [setDebug](functions/setDebug.md)
 - [setMatte](functions/setMatte.md)

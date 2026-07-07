@@ -186,6 +186,14 @@ Native (que roda milhares de libs sobre Hermes em produção):
   - `__cortexResize` passa o tamanho LÓGICO (nativo); o dpr persiste no three e
     leva pro SS. Passar SS aqui dobraria a escala.
 
+- **Loop de render durante carga = carga MAIS LENTA** (present = vsync). O loop
+  principal do host só bloqueia no `wgpuSurfacePresent` (FIFO/vsync) QUANDO algo
+  desenhou no frame; sem render, ele gira livre e pompa timers/microtasks (onde
+  o carregamento assíncrono avança) na velocidade máxima. Por isso a tela de
+  loading (`runWithLoadingScreen`) desenha SÓ nas trocas de etapa: renderizar
+  todo quadro travaria o host em 60 fps e serializaria o `buildScene` (carga de
+  ~1,5 s virava ~25 s). O último quadro apresentado fica na tela no intervalo.
+
 ## Superfície WebGPU coberta (2026-07-06)
 
 O shim cobre a API que o Three.js WebGPURenderer usa, incluindo:

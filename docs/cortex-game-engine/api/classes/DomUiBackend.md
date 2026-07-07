@@ -6,7 +6,7 @@
 
 # Class: DomUiBackend
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L14)
+Defined in: [src/ui/runtime/DomUiBackend.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L21)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [src/ui/runtime/DomUiBackend.ts:14](https://github.com/BuuhV-Project
 
 > **new DomUiBackend**(`container?`): `DomUiBackend`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L19)
+Defined in: [src/ui/runtime/DomUiBackend.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L26)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [src/ui/runtime/DomUiBackend.ts:19](https://github.com/BuuhV-Project
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L58)
+Defined in: [src/ui/runtime/DomUiBackend.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L66)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -54,7 +54,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L54)
+Defined in: [src/ui/runtime/DomUiBackend.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L62)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
@@ -72,7 +72,7 @@ Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
 > **sync**(`widgets`, `viewport`): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L26)
+Defined in: [src/ui/runtime/DomUiBackend.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L34)
 
 Sincroniza visuais com a lista de widgets (cria/atualiza/remove).
 
