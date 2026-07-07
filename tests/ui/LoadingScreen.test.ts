@@ -69,6 +69,34 @@ describe('LoadingScreen', () => {
     }
   });
 
+  it('runWithLoadingScreen: enabled=false roda a task SEM criar a tela (editor)', async () => {
+    const ui = fakeUi();
+    const orig = globalThis.requestAnimationFrame;
+    let rafCalls = 0;
+    globalThis.requestAnimationFrame = ((): number => {
+      rafCalls++;
+      return rafCalls;
+    }) as typeof globalThis.requestAnimationFrame;
+    try {
+      const seen: string[] = [];
+      const result = await runWithLoadingScreen(
+        ui,
+        async (progress) => {
+          progress('Carregando…', 0.5); // no-op quando desligada
+          seen.push('rodou');
+          return 7;
+        },
+        { enabled: false },
+      );
+      expect(result).toBe(7);
+      expect(seen).toEqual(['rodou']); // a task rodou normalmente
+      expect(ui._widgets.length).toBe(0); // nenhum widget de loading criado
+      expect(rafCalls).toBe(0); // sem loop de render
+    } finally {
+      globalThis.requestAnimationFrame = orig;
+    }
+  });
+
   it('runWithLoadingScreen: propaga erro da task e ainda limpa a tela', async () => {
     const ui = fakeUi();
     const orig = globalThis.requestAnimationFrame;

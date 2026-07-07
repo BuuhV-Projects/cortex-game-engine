@@ -24,6 +24,16 @@ export interface LoadingScreenOptions {
   /** Cor da barra de progresso. */
   accent?: string;
   parent?: HTMLElement;
+  /**
+   * Liga/desliga a tela visível — só afeta {@link runWithLoadingScreen} (default
+   * `true`). Passe `false` no **editor** (`{ enabled: !game.editorActive }`): lá o
+   * usuário itera direto e **editar um script recarrega a página** (HMR do Vite),
+   * então um overlay a cada reload atrapalha e "reinicia a cena" visualmente. Com
+   * `false` a `task` roda igual, só **sem a tela** (nem o loop de render) — como o
+   * boot fazia antes da tela existir. Em **Play/export** deixe `true` (cobre o
+   * carregamento pesado e o frame congelado antes do `game.start()`).
+   */
+  enabled?: boolean;
 }
 
 /**
@@ -125,6 +135,13 @@ export async function runWithLoadingScreen<T>(
   task: (progress: (label: string, fraction: number) => void) => Promise<T>,
   options: Omit<LoadingScreenOptions, 'parent'> = {},
 ): Promise<T> {
+  // Desligada (editor): roda a task SEM overlay nem loop de render — igual ao
+  // boot pré-tela-de-loading. `progress` vira no-op. Evita o overlay piscar a
+  // cada reload de HMR (editar script) durante a edição no Studio.
+  if (options.enabled === false) {
+    return task(() => {});
+  }
+
   const loading = createLoadingScreen(ui, options);
   loading.show();
 

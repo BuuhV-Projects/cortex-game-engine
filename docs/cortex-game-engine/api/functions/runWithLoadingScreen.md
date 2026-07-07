@@ -8,7 +8,7 @@
 
 > **runWithLoadingScreen**\<`T`\>(`ui`, `task`, `options?`): `Promise`\<`T`\>
 
-Defined in: [src/core/LoadingScreen.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L123)
+Defined in: [src/core/LoadingScreen.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L133)
 
 Mostra uma tela de loading e **dirige o loop de render da UI** enquanto
 `task` roda, escondendo tudo ao terminar. Resolve o caso clássico do menu
