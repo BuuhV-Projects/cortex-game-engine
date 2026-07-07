@@ -201,13 +201,25 @@ export class Renderer {
    * renderer.renderViewport(scene, p1Camera, { x: 0,     y: 0, width: w / 2, height: h });
    * renderer.renderViewport(scene, p2Camera, { x: w / 2, y: 0, width: w / 2, height: h });
    */
-  renderViewport(scene: THREE.Scene, camera: THREE.Camera, viewport: Viewport): void {
+  renderViewport(
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+    viewport: Viewport,
+    opts?: { noToneMapping?: boolean },
+  ): void {
     if (!this._initialized || this._width <= 0 || this._height <= 0) return;
     const { x, y, width, height } = viewport;
     this._renderer.setViewport(x, y, width, height);
     this._renderer.setScissor(x, y, width, height);
     this._renderer.setScissorTest(true);
+    // A UI de runtime pede `noToneMapping`: cor de interface (sRGB) não pode
+    // passar pelo ACES do jogo (esfriava/lavava o menu no export nativo). UI e
+    // cena usam materiais DISJUNTOS, então cada um mantém sua variante de shader
+    // compilada — sem recompilar por frame ao alternar o toneMapping do renderer.
+    const prevToneMapping = this._renderer.toneMapping;
+    if (opts?.noToneMapping) this._renderer.toneMapping = THREE.NoToneMapping;
     this._renderer.render(scene, camera);
+    if (opts?.noToneMapping) this._renderer.toneMapping = prevToneMapping;
     this._renderer.setScissorTest(false);
   }
 

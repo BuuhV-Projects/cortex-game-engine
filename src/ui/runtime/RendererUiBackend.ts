@@ -25,6 +25,9 @@ export interface UiRenderTarget {
     scene: THREE.Scene,
     camera: THREE.Camera,
     viewport: { x: number; y: number; width: number; height: number },
+    /** `noToneMapping`: a UI é cor de interface (sRGB), NÃO cena — não pode
+     * passar pelo ACES do jogo (que esfria/lava os tons). Ver Renderer. */
+    opts?: { noToneMapping?: boolean },
   ): void;
 }
 
@@ -106,12 +109,12 @@ export class RendererUiBackend implements UiBackend {
 
   render(): void {
     if (this._viewport.width === 0) return;
-    this._target.renderViewport(this._scene, this._camera, {
-      x: 0,
-      y: 0,
-      width: this._viewport.width,
-      height: this._viewport.height,
-    });
+    this._target.renderViewport(
+      this._scene,
+      this._camera,
+      { x: 0, y: 0, width: this._viewport.width, height: this._viewport.height },
+      { noToneMapping: true },
+    );
     this._graveyard = this._graveyard.filter((entry) => {
       if (--entry.frames > 0) return true;
       entry.dispose();
@@ -271,7 +274,9 @@ export class RendererUiBackend implements UiBackend {
     (uniforms.colorTop.value as THREE.Color).set(background);
     (uniforms.colorBottom.value as THREE.Color).set(backgroundTo);
     (uniforms.borderColor.value as THREE.Color).set(borderColor);
-    uniforms.fillOpacity.value = widget.opacity * (isButton ? 0.96 : 1);
+    // Opacidade = a do widget (igual ao DOM). Sem o antigo `*0.96` nos botões:
+    // deixava 4% do fundo (claro) vazar e LAVAVA a cor sobre backdrops claros.
+    uniforms.fillOpacity.value = widget.opacity;
   }
 
   private _rasterInto(visual: WidgetVisual, label: UiLabel): void {
