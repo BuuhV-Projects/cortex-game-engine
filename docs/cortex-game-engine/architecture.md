@@ -281,6 +281,18 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   Quem faz raycast na cena (`[three]`) deve pular `editorInternal` subindo a cadeia de
   **ancestrais** (não só o objeto-folha) — ver `isEditorChrome` no
   `CharacterPhysicsSystem` e `isEditorInternal` no `ObjectEditSystem`.
+- **O chrome do editor tem que SOBREVIVER à troca de fase.** Voltar ao menu e entrar
+  noutra fase chama `game.reset()` → `World.clear()` + `Scene.disposeAll()`. Os
+  **sistemas/entidades** do editor sobrevivem via `keepOnClear` (câmera livre, seleção,
+  gizmos, o "alvo" invisível — marcados em `attachEditor`). Mas os **objetos visuais**
+  deles vivem na **mesma cena** e seriam apagados pelo `disposeAll` — foi assim que o
+  **gizmo de seleção (eixos) sumia** ao trocar de fase (o sistema vivia, mas seu
+  `TransformControls` fora desanexado + disposto). Regra: `Scene.disposeAll` **preserva**
+  (não remove nem dispõe) filhos marcados `userData.editorInternal` (gizmo de eixos,
+  contornos de collider/character/vegetação, anel de pincel) **ou** `userData.cortexKeep`
+  (helpers de luz/câmera e a câmera do jogo — que ficam na **hierarquia**, então NÃO são
+  `editorInternal`). Ao adicionar um overlay visual novo do editor à cena, marque um dos
+  dois — senão ele some na 2ª fase. Em produção não há editor (nada marcado) → dispõe tudo.
 - **`onBeforeCompile` NÃO roda no `WebGPURenderer`** (o renderer do engine é
   node-based, mesmo no fallback `forceWebGL`) — falha **silenciosa**: sem erro, o
   efeito só não aparece. Efeito custom de shader tem que ser **TSL/NodeMaterial**

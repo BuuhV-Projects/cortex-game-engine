@@ -48,4 +48,38 @@ describe('Scene.disposeAll', () => {
     expect(geoSpy).toHaveBeenCalledTimes(1);
     expect(scene.getThreeScene().children).toHaveLength(0);
   });
+
+  // Overlays do editor sobrevivem à troca de fase (gizmo de eixos, helpers): sem
+  // isto, voltar ao menu e entrar noutra fase apagava o gizmo de seleção.
+  it('PRESERVA (não dispõe nem remove) os overlays do editor', () => {
+    const scene = new Scene();
+
+    const gizmoGeo = new THREE.BoxGeometry();
+    const gizmoGeoSpy = vi.spyOn(gizmoGeo, 'dispose');
+    const gizmo = new THREE.Mesh(gizmoGeo, new THREE.MeshBasicMaterial());
+    gizmo.userData['editorInternal'] = true;
+
+    const helperGeo = new THREE.BoxGeometry();
+    const helperGeoSpy = vi.spyOn(helperGeo, 'dispose');
+    const helper = new THREE.Mesh(helperGeo, new THREE.MeshBasicMaterial());
+    helper.userData['cortexKeep'] = true;
+
+    const sceneGeo = new THREE.BoxGeometry();
+    const sceneGeoSpy = vi.spyOn(sceneGeo, 'dispose');
+    const sceneObj = new THREE.Mesh(sceneGeo, new THREE.MeshBasicMaterial());
+
+    scene.add(gizmo, helper, sceneObj);
+
+    scene.disposeAll();
+
+    // Objeto de cena: removido e disposto.
+    expect(sceneGeoSpy).toHaveBeenCalledTimes(1);
+    // Overlays do editor: continuam na cena e a GPU deles NÃO foi liberada.
+    expect(gizmoGeoSpy).not.toHaveBeenCalled();
+    expect(helperGeoSpy).not.toHaveBeenCalled();
+    const remaining = scene.getThreeScene().children;
+    expect(remaining).toContain(gizmo);
+    expect(remaining).toContain(helper);
+    expect(remaining).not.toContain(sceneObj);
+  });
 });

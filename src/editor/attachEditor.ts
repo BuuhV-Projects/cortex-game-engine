@@ -439,6 +439,10 @@ export function attachEditor(game: Game): GameEditor {
   // seleção (raycast no-op) e ficam translúcidos — senão "roubam" o clique dos
   // objetos e tampam a cena. Continuam na hierarquia (não viram editorInternal).
   const prepHelper = (obj: Object3D): void => {
+    // Sobrevive à troca de fase (Scene.disposeAll preserva cortexKeep). Os helpers
+    // NÃO são editorInternal de propósito (aparecem na hierarquia como a câmera/luz
+    // que espelham), então marcamos o keep à parte pra não serem dispostos no reset.
+    (obj.userData as Record<string, unknown>)['cortexKeep'] = true;
     obj.traverse((o) => {
       o.raycast = () => {};
       // Helpers vivem numa LAYER que só a câmera do editor renderiza (abaixo):
@@ -456,6 +460,9 @@ export function attachEditor(game: Game): GameEditor {
   };
 
   if (!game.camera.name) game.camera.name = 'Camera';
+  // A câmera do jogo é filha da cena (o CameraHelper espelha seu frustum) e precisa
+  // sobreviver à troca de fase — senão o reset a removeria e o frustum ficaria órfão.
+  (game.camera.userData as Record<string, unknown>)['cortexKeep'] = true;
   if (game.camera.parent !== three) three.add(game.camera);
   const cameraHelper = new CameraHelper(game.camera);
   cameraHelper.visible = editorState.active; // segue o modo (boot em edição já mostra)

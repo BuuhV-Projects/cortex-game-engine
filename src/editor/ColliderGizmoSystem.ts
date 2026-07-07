@@ -69,6 +69,10 @@ export class ColliderGizmoSystem extends System {
   ) {
     super();
     this.group.name = '__editor_collider_gizmos';
+    // Overlay puramente visual do editor: fora da hierarquia/seleção e SOBREVIVE à
+    // troca de fase (Scene.disposeAll preserva editorInternal). Igual aos gizmos de
+    // character/vegetação — sem isto o contorno de collider sumia ao trocar de fase.
+    this.group.userData['editorInternal'] = true;
     parent.add(this.group);
   }
 

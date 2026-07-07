@@ -55,6 +55,14 @@ export class Scene {
    * materiais e texturas). Diferente de {@link clear} (que só desanexa e deixa
    * a GPU vazar): use ao **trocar de cena/fase** pra não acumular memória de
    * vídeo. Também limpa `background`/`environment`.
+   *
+   * **Exceção:** PRESERVA (não remove nem dispõe) os overlays do editor — filhos
+   * marcados `userData.editorInternal` (gizmo de seleção/eixos, contornos de
+   * collider, anel de pincel) ou `userData.cortexKeep` (helpers de luz/câmera, a
+   * câmera livre). São chrome de edição que sobrevive à troca de fase junto dos
+   * sistemas `keepOnClear`; dispô-los deixava os eixos sumirem ao voltar ao menu
+   * e entrar noutra fase. Ver attachEditor / World.clear. Em produção não há
+   * editor (esses objetos não existem), então dispõe tudo normalmente.
    */
   disposeAll(): this {
     const seenTex = new Set<THREE.Texture>();
@@ -68,6 +76,8 @@ export class Scene {
       m.dispose();
     };
     for (const child of [...this._scene.children]) {
+      const ud = child.userData as Record<string, unknown>;
+      if (ud['editorInternal'] === true || ud['cortexKeep'] === true) continue; // overlay do editor: sobrevive
       child.traverse((obj) => {
         const mesh = obj as Partial<THREE.Mesh>;
         mesh.geometry?.dispose();
@@ -75,8 +85,8 @@ export class Scene {
         if (Array.isArray(mat)) mat.forEach(disposeMaterial);
         else if (mat) disposeMaterial(mat);
       });
+      this._scene.remove(child);
     }
-    this._scene.clear();
     const asAny = this._scene as unknown as { background?: unknown; environment?: THREE.Texture | null };
     if (asAny.environment) asAny.environment.dispose();
     asAny.background = null;

@@ -63,12 +63,20 @@ Equivale a `THREE.Scene.clear()`.
 
 > **disposeAll**(): `this`
 
-Defined in: [src/core/Scene.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L59)
+Defined in: [src/core/Scene.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L67)
 
 Remove TODOS os filhos E libera os recursos de GPU deles (geometrias,
 materiais e texturas). Diferente de [clear](#clear) (que só desanexa e deixa
 a GPU vazar): use ao **trocar de cena/fase** pra não acumular memória de
 vídeo. Também limpa `background`/`environment`.
+
+**Exceção:** PRESERVA (não remove nem dispõe) os overlays do editor — filhos
+marcados `userData.editorInternal` (gizmo de seleção/eixos, contornos de
+collider, anel de pincel) ou `userData.cortexKeep` (helpers de luz/câmera, a
+câmera livre). São chrome de edição que sobrevive à troca de fase junto dos
+sistemas `keepOnClear`; dispô-los deixava os eixos sumirem ao voltar ao menu
+e entrar noutra fase. Ver attachEditor / World.clear. Em produção não há
+editor (esses objetos não existem), então dispõe tudo normalmente.
 
 #### Returns
 
@@ -80,7 +88,7 @@ vídeo. Também limpa `background`/`environment`.
 
 > **getThreeScene**(): `Scene`
 
-Defined in: [src/core/Scene.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L92)
+Defined in: [src/core/Scene.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L102)
 
 Retorna a instância interna do `THREE.Scene`.
 Necessário para passar ao `Renderer.render(scene, camera)`.
