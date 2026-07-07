@@ -188,7 +188,10 @@ export class BottomPanel {
       } else if (!result.ok) {
         this.appendTerminal('Export falhou — veja a saída acima.\n', 'error')
       }
-      modal.finish(result.ok, result.distDir)
+      // Arquivo travado (jogo exportado aberto) é a falha nº 1 — mostra a dica
+      // clara no próprio modal em vez do genérico "veja o terminal".
+      const locked = !result.ok && /TRAVADO|EPERM|EBUSY|EACCES/.test(result.output)
+      modal.finish(result.ok, result.distDir, locked ? t('bottomPanel.export_locked') : undefined)
     } catch (err) {
       this.appendTerminal(`Export falhou: ${String(err)}\n`, 'error')
       modal.finish(false)

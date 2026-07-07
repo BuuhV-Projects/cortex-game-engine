@@ -94,15 +94,19 @@ export class ExportProgressModal {
     }
   }
 
-  /** Encerra o modal: libera o fechamento e mostra o rodapé com o resultado. */
-  finish(ok: boolean, distDir?: string): void {
+  /**
+   * Encerra o modal: libera o fechamento e mostra o rodapé com o resultado.
+   * `failMessage` sobrescreve a mensagem de erro padrão (ex.: dica de arquivo
+   * travado — jogo aberto).
+   */
+  finish(ok: boolean, distDir?: string, failMessage?: string): void {
     this.running = false
     this.distDir = distDir ?? null
     if (ok) for (const k of STEPS) this.setState(k, 'done')
 
     this.statusEl.textContent = ok
       ? t('bottomPanel.export_done_ok')
-      : t('bottomPanel.export_done_fail')
+      : (failMessage ?? t('bottomPanel.export_done_fail'))
     this.statusEl.classList.toggle('export-modal__status--ok', ok)
     this.statusEl.classList.toggle('export-modal__status--fail', !ok)
 

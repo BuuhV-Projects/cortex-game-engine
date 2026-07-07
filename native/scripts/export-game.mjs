@@ -31,6 +31,27 @@ const hermesc = path.join(
   engineRoot, 'native', 'third_party', 'hermes', 'tools', 'native', 'release', 'x86', 'hermes.exe',
 );
 
+// Erros de arquivo TRAVADO no Windows (o jogo exportado aberto, ou o Explorer
+// na pasta, segurando o exe/dll/asset). A causa nº 1 de export falho: dá uma
+// mensagem CLARA e acionável em vez de um stack cru.
+const LOCK_CODES = new Set(['EPERM', 'EBUSY', 'EACCES', 'ENOTEMPTY']);
+function guardLocks(label, fn) {
+  try {
+    fn();
+  } catch (err) {
+    if (LOCK_CODES.has(err.code)) {
+      console.error(
+        `\n[export] FALHOU no passo "${label}": um arquivo em dist-native está ` +
+          `TRAVADO (${err.code}).\n[export] O jogo exportado (${gameName}.exe) ` +
+          `provavelmente está ABERTO — FECHE-O (e feche o Explorer na pasta ` +
+          `dist-native) e exporte de novo.`,
+      );
+      process.exit(1);
+    }
+    throw err;
+  }
+}
+
 // rmSync recursivo no Windows falha com ENOTEMPTY/EBUSY enquanto o SO ainda
 // solta handles (ou o Explorer/um exe anterior segura a pasta) — maxRetries
 // espera e tenta de novo. Se ainda assim falhar, não apaga a pasta inteira:
@@ -73,31 +94,35 @@ const runtimeFiles = [
   ['rapier_native.dll', 'rapier_native.dll'],
   ['Roboto-Medium.ttf', 'Roboto-Medium.ttf'],
 ];
-for (const [from, to] of runtimeFiles) {
-  fs.copyFileSync(path.join(hostBuild, from), path.join(dist, to));
-}
+guardLocks('runtime', () => {
+  for (const [from, to] of runtimeFiles) {
+    fs.copyFileSync(path.join(hostBuild, from), path.join(dist, to));
+  }
+});
 
 // 4. assets do jogo: assets/ inteiro + JSONs de cena/overlay + cortex.json
 step('assets');
 console.log('[export] assets...');
-const assetsDir = path.join(gameDir, 'assets');
-if (fs.existsSync(assetsDir)) {
-  fs.cpSync(assetsDir, path.join(dist, 'assets'), { recursive: true });
-}
-const scenesDir = path.join(gameDir, 'scenes');
-if (fs.existsSync(scenesDir)) {
-  for (const entry of fs.readdirSync(scenesDir, { recursive: true })) {
-    const rel = String(entry);
-    if (!rel.endsWith('.json')) continue;
-    const target = path.join(dist, 'scenes', rel);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(path.join(scenesDir, rel), target);
+guardLocks('assets', () => {
+  const assetsDir = path.join(gameDir, 'assets');
+  if (fs.existsSync(assetsDir)) {
+    fs.cpSync(assetsDir, path.join(dist, 'assets'), { recursive: true });
   }
-}
-for (const extra of ['cortex.json']) {
-  const src = path.join(gameDir, extra);
-  if (fs.existsSync(src)) fs.copyFileSync(src, path.join(dist, extra));
-}
+  const scenesDir = path.join(gameDir, 'scenes');
+  if (fs.existsSync(scenesDir)) {
+    for (const entry of fs.readdirSync(scenesDir, { recursive: true })) {
+      const rel = String(entry);
+      if (!rel.endsWith('.json')) continue;
+      const target = path.join(dist, 'scenes', rel);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(path.join(scenesDir, rel), target);
+    }
+  }
+  for (const extra of ['cortex.json']) {
+    const src = path.join(gameDir, extra);
+    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(dist, extra));
+  }
+});
 
 step('done');
 const files = fs.readdirSync(dist);

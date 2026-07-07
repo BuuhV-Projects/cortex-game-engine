@@ -62,6 +62,7 @@
     "export_step_done": "Finished",
     "export_done_ok": "Export complete",
     "export_done_fail": "Export failed — check the terminal.",
+    "export_locked": "Close the exported game and try again — a file is locked.",
     "export_open_folder": "Open folder",
     "export_close": "Close"
   },
