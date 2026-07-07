@@ -178,6 +178,15 @@ Native (que roda milhares de libs sobre Hermes em produção):
   `fillOpacity` < 1 deixa o backdrop claro vazar e LAVA a cor (era um `*0.96`
   fantasma). Regressão travada em `tests/ui/RendererUiBackend.test.ts`
   (toneMapped=false + opacidade).
+- **Imagem de fundo da UI sai "sem cor" no native vs Studio** (não é a mesma
+  coisa do item acima): a `menu-bg.png` é apresentada FIEL ao PNG nos dois, mas
+  no Studio a UI é **DOM/CSS** e ganha o **color management do monitor** (fica
+  mais rica), enquanto a janela nativa (SDL/wgpu) mostra o sRGB cru — no monitor
+  parece mais clara/lavada. Não há bug de pixel (colorSpace sRGB + toneMapped
+  false já corretos). Compensação empírica: `NATIVE_UI_IMAGE_TINT` (0.9) no
+  RendererUiBackend multiplica SÓ a imagem (native-only; Studio usa DomUiBackend)
+  → escurece de leve, levanta contraste/saturação aparente. Tunável; travado por
+  teste.
 - **MSAA precisa de `resolveTarget`**: com `antialias:true`, o Three renderiza
   numa textura multisampled e resolve pro swapchain via `resolveTarget` no
   color attachment. Sem parsear esse campo (commands.cpp), o antialias vira
