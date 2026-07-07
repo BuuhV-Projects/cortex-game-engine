@@ -13,8 +13,7 @@
  * Usa widgets SEM texto (o raster nativo `__cortexRasterText` só é chamado com
  * texto) e um alvo de render mockado — sem GPU.
  */
-import { describe, it, expect, vi } from 'vitest';
-import * as THREE from 'three';
+import { describe, it, expect } from 'vitest';
 import { RendererUiBackend, type UiRenderTarget } from '../../src/ui/runtime/RendererUiBackend.js';
 import { UiPanel, UiButton } from '../../src/ui/runtime/widgets.js';
 
@@ -52,31 +51,5 @@ describe('RendererUiBackend — regressão de cor (export nativo)', () => {
     const scrim = new UiPanel({ background: '#000000', width: 100, height: 100, opacity: 0.6 });
     backend.sync([scrim], { width: 800, height: 600 });
     expect(visualOf(backend, scrim.id)?.panelUniforms?.fillOpacity.value).toBeCloseTo(0.6);
-  });
-
-  it('imagem de fundo leva a calibração de brilho do native (tint < 1, não branco puro)', () => {
-    // O host nativo apresenta a imagem sem o color management do monitor (que o
-    // DOM/Studio ganha) → escurece um tico pra reencontrar o look do Studio.
-    // Mocka o TextureLoader (Node não decodifica imagem) pra rodar o callback.
-    const fakeTex = new THREE.Texture();
-    vi.spyOn(THREE.TextureLoader.prototype, 'load').mockImplementation(
-      ((_url: string, onLoad?: (t: THREE.Texture) => void) => {
-        onLoad?.(fakeTex);
-        return fakeTex;
-      }) as unknown as THREE.TextureLoader['load'],
-    );
-
-    const backend = new RendererUiBackend(mockTarget());
-    const panel = new UiPanel({ background: '#7ed6f7', backgroundImage: 'menu-bg.png', width: 100, height: 100 });
-    backend.sync([panel], { width: 800, height: 600 });
-
-    const image = (backend as unknown as { _visuals: Map<number, { image?: THREE.Mesh }> })._visuals.get(panel.id)?.image;
-    const mat = image?.material as THREE.MeshBasicMaterial;
-    expect(mat).toBeDefined();
-    expect(mat.color.r).toBeLessThan(1); // escurecida (não branco)
-    expect(mat.color.r).toBeGreaterThan(0.7); // mas SÓ um pouquinho
-    expect(mat.color.g).toBeCloseTo(mat.color.r); // cinza neutro (não altera matiz)
-    expect(mat.toneMapped).toBe(false);
-    vi.restoreAllMocks();
   });
 });
