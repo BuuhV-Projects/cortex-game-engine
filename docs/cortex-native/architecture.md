@@ -157,14 +157,15 @@ Native (que roda milhares de libs sobre Hermes em produção):
   no export): a UI de runtime (RendererUiBackend) desenha pela MESMA
   câmera/renderer do jogo, que tem `ACESFilmicToneMapping` ligado
   (`outdoorLighting`). Cor de INTERFACE é sRGB autorada, NÃO cena — o ACES
-  esfria/dessatura. `material.toneMapped=false` NÃO pega no `colorNode` custom
-  do painel; o fix é `Renderer.renderViewport(..., { noToneMapping })`, que a UI
-  passa (desliga o ACES só no pass da UI; UI e cena usam materiais disjuntos →
-  sem recompile por frame). No DOM (Studio) não ocorre (CSS puro, sem tone
-  mapping). **Além disso:** a opacidade dos widgets tem que casar com o DOM —
-  botão com `fillOpacity` < 1 deixa o backdrop claro vazar e LAVA a cor (era um
-  `*0.96` fantasma). Regressão travada em `tests/ui/RendererUiBackend.test.ts` +
-  `tests/core/Renderer.test.ts` (noToneMapping liga/restaura).
+  esfria/dessatura. Fix: **`material.toneMapped = false`** nos três materiais da
+  UI (box do painel, texto, imagem) — inclusive no `colorNode` custom do painel
+  (MeshBasicNodeMaterial), onde FUNCIONA (validado medindo o export). NÃO
+  alternar `renderer.toneMapping` por frame: além de desnecessário, arrisca
+  recompile de shader → FPS. No DOM (Studio) não ocorre (CSS puro). **Além
+  disso:** a opacidade dos widgets tem que casar com o DOM — botão com
+  `fillOpacity` < 1 deixa o backdrop claro vazar e LAVA a cor (era um `*0.96`
+  fantasma). Regressão travada em `tests/ui/RendererUiBackend.test.ts`
+  (toneMapped=false + opacidade).
 - **MSAA precisa de `resolveTarget`**: com `antialias:true`, o Three renderiza
   numa textura multisampled e resolve pro swapchain via `resolveTarget` no
   color attachment. Sem parsear esse campo (commands.cpp), o antialias vira
