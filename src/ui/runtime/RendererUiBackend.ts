@@ -13,6 +13,17 @@ import type { UiViewport } from './layout.js';
 import { resolveRect } from './layout.js';
 import { UiButton, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 
+/**
+ * Calibração de brilho da **imagem de fundo** da UI no export nativo. Este
+ * backend só roda no CortexNative (no Studio a UI é DOM/CSS, que ganha o color
+ * management do monitor e sai mais rica). A janela nativa (SDL/wgpu) apresenta
+ * a imagem fiel ao PNG, mas SEM esse color management — no monitor sai um tico
+ * mais clara/lavada. Multiplicar a imagem por < 1 a escurece de leve, o que
+ * levanta o contraste/saturação aparente pra reencontrar o look do Studio.
+ * `1` = sem calibração. Ajuste fino aqui.
+ */
+const NATIVE_UI_IMAGE_TINT = 0.9;
+
 /** Assinatura do raster nativo (host). */
 type RasterTextFn = (
   text: string,
@@ -363,7 +374,14 @@ export class RendererUiBackend implements UiBackend {
       const old = visual.imageTexture;
       visual.imageTexture = texture;
       if (!visual.image) {
-        const material = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, map: texture, toneMapped: false });
+        const material = new THREE.MeshBasicMaterial({
+          transparent: true,
+          depthTest: false,
+          depthWrite: false,
+          map: texture,
+          color: new THREE.Color(NATIVE_UI_IMAGE_TINT, NATIVE_UI_IMAGE_TINT, NATIVE_UI_IMAGE_TINT), // calibração de brilho do native
+          toneMapped: false,
+        });
         visual.image = new THREE.Mesh(this._quad, material);
         this._scene.add(visual.image);
       } else {
