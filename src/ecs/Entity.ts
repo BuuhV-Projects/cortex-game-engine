@@ -21,6 +21,13 @@ export class Entity {
   /** Identificador único gerado via `crypto.randomUUID()`. */
   readonly id: string;
 
+  /**
+   * Se `true`, `World.clear()` PRESERVA esta entidade (não a remove ao
+   * trocar de cena). Usado por overlays que sobrevivem à troca de fase — ex.: o
+   * "alvo" invisível do editor F2. Por padrão `false` (entidade da cena, morre).
+   */
+  keepOnClear = false;
+
   private readonly _components: Map<string, Component> = new Map();
 
   constructor() {

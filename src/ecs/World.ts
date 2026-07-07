@@ -100,17 +100,25 @@ export class World {
   }
 
   /**
-   * Esvazia o world: chama `dispose()` em cada sistema (libera handles nativos,
-   * ex.: mundo do Rapier) e remove TODAS as entities e systems. Use pra trocar
-   * de fase/cena sem vazar — depois re-registre os systems da próxima cena.
+   * Esvazia o world pra trocar de fase/cena: remove entities e systems, chamando
+   * `dispose()` nos systems removidos (libera handles nativos, ex.: mundo do
+   * Rapier). PRESERVA os marcados `keepOnClear` — overlays que sobrevivem à
+   * troca (ex.: os sistemas + o alvo do editor F2). Depois re-registre os
+   * systems da próxima cena.
    *
    * O objeto `World` continua o MESMO (só é esvaziado), então referências a
    * `game.world` seguem válidas.
    */
   clear(): void {
-    for (const system of this._systems) system.dispose();
-    this._systems = [];
-    this._entities.clear();
+    const kept: System[] = [];
+    for (const system of this._systems) {
+      if (system.keepOnClear) kept.push(system);
+      else system.dispose();
+    }
+    this._systems = kept;
+    for (const entity of [...this._entities]) {
+      if (!entity.keepOnClear) this._entities.delete(entity);
+    }
   }
 
   /**

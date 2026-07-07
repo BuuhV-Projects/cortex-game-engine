@@ -281,6 +281,33 @@ describe('World', () => {
       expect(b.onDispose).toHaveBeenCalledTimes(1);
     });
 
+    it('preserva systems e entities marcados keepOnClear (ex.: editor F2)', () => {
+      class Persistent extends System {
+        keepOnClear = true;
+        readonly onDispose = vi.fn();
+        update(): void {}
+        override dispose(): void {
+          this.onDispose();
+        }
+      }
+      const persistent = new Persistent();
+      const transient = new AnySystem();
+      world.addSystem(persistent);
+      world.addSystem(transient);
+      const kept = world.createEntity();
+      kept.keepOnClear = true;
+      const gone = world.createEntity();
+
+      world.clear();
+
+      expect(world.hasSystem(Persistent)).toBe(true);
+      expect(persistent.onDispose).not.toHaveBeenCalled(); // preservado, não dispõe
+      expect(world.hasSystem(AnySystem)).toBe(false);
+      const remaining = world.query();
+      expect(remaining).toContain(kept);
+      expect(remaining).not.toContain(gone);
+    });
+
     it('o mesmo World segue utilizável após clear (referência preservada)', () => {
       world.addSystem(new AnySystem());
       world.clear();

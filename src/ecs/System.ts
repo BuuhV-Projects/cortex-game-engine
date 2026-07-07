@@ -43,6 +43,14 @@ export abstract class System {
   priority: number = 0;
 
   /**
+   * Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
+   * nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
+   * — ex.: os sistemas do editor F2 (câmera livre, seleção, gizmos). Por padrão
+   * `false` (sistema da cena/jogo, é removido no clear).
+   */
+  keepOnClear: boolean = false;
+
+  /**
    * Construtores dos componentes que este sistema requer.
    *
    * O `World` usa essa lista para filtrar as entidades antes de chamar `update`,

@@ -52,11 +52,28 @@ Defined in: [src/systems/RapierPhysicsSystem.ts:36](https://github.com/BuuhV-Pro
 
 ## Properties
 
+### keepOnClear
+
+> **keepOnClear**: `boolean` = `false`
+
+Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+
+Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
+nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
+— ex.: os sistemas do editor F2 (câmera livre, seleção, gizmos). Por padrão
+`false` (sistema da cena/jogo, é removido no clear).
+
+#### Inherited from
+
+[`System`](System.md).[`keepOnClear`](System.md#keeponclear)
+
+***
+
 ### pauseWhen?
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
+Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar

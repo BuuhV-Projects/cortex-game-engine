@@ -75,6 +75,7 @@ import type { SceneNode } from '../scene/SceneDefinition.js';
 import { emptySceneFile, type SceneFileV1 } from '../scene/SceneFile.js';
 import { autoDetectSceneFileWriter } from '../io/autoDetectSceneFileWriter.js';
 import { buildPastedNode, type NodeClipboard } from './clipboardNode.js';
+import type { System } from '../ecs/System.ts';
 
 // O caminho do overlay vem de `game.sceneDataUrl` (por fase — default
 // 'assets/scene-data.json', pareia com o target default do createSceneSavePlugin).
@@ -119,6 +120,16 @@ export function attachEditor(game: Game): GameEditor {
   const three = game.scene.getThreeScene();
   const editorState = createEditorState();
   const selection = createEditorSelection();
+
+  // Sistemas do editor SOBREVIVEM ao `game.reset()`/`World.clear` (troca de fase):
+  // sem isto, voltar ao menu e entrar noutra fase apagaria a câmera livre, a
+  // seleção e os gizmos (os listeners globais ficam, mas os sistemas que agem
+  // sumiriam → editor "congelado"). Ver World.clear (keepOnClear).
+  const addEditorSystem = <T extends System>(system: T): T => {
+    system.keepOnClear = true;
+    game.world.addSystem(system);
+    return system;
+  };
   // Registro de ids compartilhado entre os painéis in-canvas e a ponte com a IDE
   // (ADR-0056), pra os ids de objeto baterem entre os dois renderizadores.
   const registry = createObjectRegistry();
@@ -198,16 +209,17 @@ export function attachEditor(game: Game): GameEditor {
 
   // Alvo editável "invisível" pra a câmera livre/teleporte/F2 funcionarem sem avatar.
   const target = game.world.createEntity();
+  target.keepOnClear = true; // sobrevive à troca de fase (game.reset)
   target.addComponent(new TransformComponent(0, 0, 0));
   target.addComponent(new EditableTargetComponent());
 
   const cameraSystem = new EditorCameraSystem(editorState, editorCamera, game.camera, game.input, three, hud);
-  game.world.addSystem(cameraSystem);
+  addEditorSystem(cameraSystem);
 
   // Contorno dos colliders (AABB) — visível só no modo editor, pra "ver" as hitboxes.
-  game.world.addSystem(new ColliderGizmoSystem(editorState, three));
+  addEditorSystem(new ColliderGizmoSystem(editorState, three));
   // Cápsula 3D do player/NPC (CharacterBody), estilo Unity Character Controller.
-  game.world.addSystem(new CharacterColliderGizmoSystem(editorState, three));
+  addEditorSystem(new CharacterColliderGizmoSystem(editorState, three));
 
   // ── Overlay de persistência ──────────────────────────────────────────────────
   const overlay: SceneFileV1 = emptySceneFile();
@@ -310,7 +322,7 @@ export function attachEditor(game: Game): GameEditor {
   // caixa só nela; selecionar o grupo mostra em todas; Delete remove a árvore clicada.
   // `deleteVegInstance` é late-bound (a autoria de vegetação nasce mais abaixo).
   const vegGizmo = new VegetationGizmoSystem(editorState, three);
-  game.world.addSystem(vegGizmo);
+  addEditorSystem(vegGizmo);
   let vegSel: { obj: Object3D; veg: Vegetation; index: number } | null = null;
   let deleteVegInstance: ((obj: Object3D, index: number) => boolean) | null = null;
   const vegOfGroup = (g: Object3D): Vegetation | undefined =>
@@ -372,7 +384,7 @@ export function attachEditor(game: Game): GameEditor {
       { snap: 0.5 },
       vegHook, // seleção/Delete por instância de árvore
   );
-  game.world.addSystem(objectEditSystem);
+  addEditorSystem(objectEditSystem);
 
   // Undo de TRANSFORM: ao soltar o gizmo (mudou), registra antes/depois no histórico.
   objectEditSystem.onTransformCommit = (obj, before, after) => {
@@ -733,7 +745,7 @@ export function attachEditor(game: Game): GameEditor {
     meshAuthoring,
     meshToolbar,
   );
-  game.world.addSystem(meshEditSystem);
+  addEditorSystem(meshEditSystem);
   // O `meshApi` do Inspector = autoria de forma + controles de edição de elemento
   // (delegam ao MeshEditSystem). Mantém a UI declarativa (EditorModel) desacoplada.
   const meshApi = {
@@ -1288,7 +1300,7 @@ export function attachEditor(game: Game): GameEditor {
     hud,
     createMeshNode,
   );
-  game.world.addSystem(shapeDrawSystem);
+  addEditorSystem(shapeDrawSystem);
 
 
   // Vegetação (ADR-0077): cria o nó `vegetation` (placeholder) e JÁ liga o pincel de
