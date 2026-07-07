@@ -164,7 +164,7 @@ export class RendererUiBackend implements UiBackend {
     if (widget instanceof UiPanel && widget.backgroundImage) {
       if (visual.lastImage !== widget.backgroundImage) {
         visual.lastImage = widget.backgroundImage;
-        this._loadImage(visual, widget.backgroundImage);
+        this._loadImage(visual, widget, widget.backgroundImage);
       }
       if (visual.image) {
         visual.image.visible = widget.visible;
@@ -343,7 +343,7 @@ export class RendererUiBackend implements UiBackend {
    * devolvem `{width, height, rgba}` — vira uma `DataTexture` (mesma via do
    * texto). `imageOrientation: 'flipY'` deixa a textura pronta pro quad.
    */
-  private _loadImage(visual: WidgetVisual, url: string): void {
+  private _loadImage(visual: WidgetVisual, widget: UiWidget, url: string): void {
     void fetch(url)
       .then((r) => r.arrayBuffer())
       .then((buf) => createImageBitmap(new Blob([buf]), { imageOrientation: 'flipY' }))
@@ -375,6 +375,11 @@ export class RendererUiBackend implements UiBackend {
           (visual.image.material as THREE.MeshBasicMaterial).needsUpdate = true;
         }
         if (old) this._graveyard.push({ frames: 2, dispose: () => old.dispose() });
+        // A carga é ASSÍNCRONA: o _apply que criou o mesh já limpou o `dirty`,
+        // então o posicionamento/escala do mesh (no _apply) não rodaria de novo
+        // e a imagem ficaria 1×1 na origem (invisível). Marcar dirty faz o
+        // próximo sync reaplicar (posiciona + escala + torna visível).
+        widget.dirty = true;
       })
       .catch(() => {
         /* imagem faltando/decode falhou: mantém a cor/gradiente de fallback */
