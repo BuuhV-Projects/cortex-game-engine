@@ -57,6 +57,10 @@ interface WidgetVisual {
   texture?: THREE.DataTexture;
   lastText?: string;
   lastFontSize?: number;
+  /** Imagem de fundo do Panel (quad texturizado, "cover"). */
+  image?: THREE.Mesh;
+  imageTexture?: THREE.Texture;
+  lastImage?: string | null;
 }
 
 export class RendererUiBackend implements UiBackend {
@@ -154,6 +158,25 @@ export class RendererUiBackend implements UiBackend {
       visual.background.renderOrder = order * 2;
       visual.background.scale.set(rect.width, rect.height, 1);
       visual.background.position.set(rect.x + rect.width / 2, -(rect.y + rect.height / 2), 0);
+    }
+
+    // ── imagem de fundo do Panel (quad texturizado, "cover") ──
+    if (widget instanceof UiPanel && widget.backgroundImage) {
+      if (visual.lastImage !== widget.backgroundImage) {
+        visual.lastImage = widget.backgroundImage;
+        this._loadImage(visual, widget.backgroundImage);
+      }
+      if (visual.image) {
+        visual.image.visible = widget.visible;
+        visual.image.renderOrder = order * 2 + 1; // acima do fundo, abaixo do texto
+        (visual.image.material as THREE.MeshBasicMaterial).opacity = widget.opacity;
+        visual.image.scale.set(rect.width, rect.height, 1);
+        visual.image.position.set(rect.x + rect.width / 2, -(rect.y + rect.height / 2), 0);
+        this._coverTexture(visual.imageTexture, rect.width, rect.height);
+      }
+    } else if (visual.image) {
+      visual.image.visible = false;
+      visual.lastImage = null;
     }
 
     // ── malha do texto ──
@@ -313,6 +336,52 @@ export class RendererUiBackend implements UiBackend {
     return label instanceof UiButton ? base + label.paddingY * 2 : base;
   }
 
+  /** Carrega a imagem de fundo do Panel numa textura e cria/atualiza o quad. */
+  private _loadImage(visual: WidgetVisual, url: string): void {
+    new THREE.TextureLoader().load(url, (texture) => {
+      // A URL pode ter mudado enquanto carregava (widget reusado) — descarta.
+      if (visual.lastImage !== url) {
+        texture.dispose();
+        return;
+      }
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      const old = visual.imageTexture;
+      visual.imageTexture = texture;
+      if (!visual.image) {
+        const material = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, map: texture });
+        visual.image = new THREE.Mesh(this._quad, material);
+        this._scene.add(visual.image);
+      } else {
+        (visual.image.material as THREE.MeshBasicMaterial).map = texture;
+        (visual.image.material as THREE.MeshBasicMaterial).needsUpdate = true;
+      }
+      if (old) this._graveyard.push({ frames: 2, dispose: () => old.dispose() });
+    });
+  }
+
+  /** "cover": ajusta repeat/offset da textura pra preencher o rect sem distorcer. */
+  private _coverTexture(texture: THREE.Texture | undefined, rectW: number, rectH: number): void {
+    if (!texture || !texture.image || rectW <= 0 || rectH <= 0) return;
+    const img = texture.image as { width?: number; height?: number };
+    const imgW = img.width ?? 0;
+    const imgH = img.height ?? 0;
+    if (!imgW || !imgH) return;
+    const rectAspect = rectW / rectH;
+    const imgAspect = imgW / imgH;
+    if (imgAspect > rectAspect) {
+      // Imagem mais larga: encaixa na altura, corta as laterais.
+      const r = rectAspect / imgAspect;
+      texture.repeat.set(r, 1);
+      texture.offset.set((1 - r) / 2, 0);
+    } else {
+      const r = imgAspect / rectAspect;
+      texture.repeat.set(1, r);
+      texture.offset.set(0, (1 - r) / 2);
+    }
+  }
+
   private _destroy(visual: WidgetVisual): void {
     if (visual.background) {
       this._scene.remove(visual.background);
@@ -322,6 +391,11 @@ export class RendererUiBackend implements UiBackend {
       this._scene.remove(visual.text);
       (visual.text.material as THREE.Material).dispose();
     }
+    if (visual.image) {
+      this._scene.remove(visual.image);
+      (visual.image.material as THREE.Material).dispose();
+    }
     visual.texture?.dispose();
+    visual.imageTexture?.dispose();
   }
 }

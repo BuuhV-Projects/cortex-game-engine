@@ -22,13 +22,13 @@ canto arredondado e borda — nada de CSS arbitrário.
 
 > **new UiPanel**(`props?`): `UiPanel`
 
-Defined in: [src/ui/runtime/widgets.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L73)
+Defined in: [src/ui/runtime/widgets.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L81)
 
 #### Parameters
 
 ##### props?
 
-[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiPanel`, `"background"` \| `"backgroundTo"` \| `"cornerRadius"` \| `"borderWidth"` \| `"borderColor"`\>\> = `{}`
+[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiPanel`, `"background"` \| `"backgroundTo"` \| `"cornerRadius"` \| `"borderWidth"` \| `"borderColor"` \| `"backgroundImage"`\>\> = `{}`
 
 #### Returns
 
@@ -59,6 +59,20 @@ Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cor
 Defined in: [src/ui/runtime/widgets.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L57)
 
 Cor CSS (`#rrggbb`).
+
+***
+
+### backgroundImage
+
+> **backgroundImage**: `string` \| `null` = `null`
+
+Defined in: [src/ui/runtime/widgets.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L73)
+
+URL de uma **imagem de fundo** (ex.: arte do menu). Cobre o painel
+("cover" — preenche sem distorcer, corta o excedente) por cima da
+cor/gradiente (que ficam de fallback enquanto a imagem carrega). `null` =
+sem imagem. Funciona nos dois backends (DOM: `background-image`; console:
+quad texturizado). Atributo `image` no template.
 
 ***
 
@@ -120,7 +134,7 @@ Sujo = backend precisa re-sincronizar este widget.
 
 > **fill**: `boolean` = `false`
 
-Defined in: [src/ui/runtime/widgets.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L72)
+Defined in: [src/ui/runtime/widgets.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L80)
 
 Painel de fundo do tamanho do viewport (atributo `fill` do template). Quando
 `true`, o UiLayer redimensiona width/height pro viewport ATUAL a cada frame —

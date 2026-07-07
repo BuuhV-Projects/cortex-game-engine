@@ -64,6 +64,14 @@ export class UiPanel extends UiWidget {
   /** Cor da borda. */
   borderColor = '#ffffff';
   /**
+   * URL de uma **imagem de fundo** (ex.: arte do menu). Cobre o painel
+   * ("cover" — preenche sem distorcer, corta o excedente) por cima da
+   * cor/gradiente (que ficam de fallback enquanto a imagem carrega). `null` =
+   * sem imagem. Funciona nos dois backends (DOM: `background-image`; console:
+   * quad texturizado). Atributo `image` no template.
+   */
+  backgroundImage: string | null = null;
+  /**
    * Painel de fundo do tamanho do viewport (atributo `fill` do template). Quando
    * `true`, o UiLayer redimensiona width/height pro viewport ATUAL a cada frame —
    * sem isso o painel ficaria travado no tamanho de quando foi criado e não
@@ -72,7 +80,9 @@ export class UiPanel extends UiWidget {
   fill = false;
   constructor(
     props: UiWidgetProps &
-      Partial<Pick<UiPanel, 'background' | 'backgroundTo' | 'cornerRadius' | 'borderWidth' | 'borderColor'>> = {},
+      Partial<
+        Pick<UiPanel, 'background' | 'backgroundTo' | 'cornerRadius' | 'borderWidth' | 'borderColor' | 'backgroundImage'>
+      > = {},
   ) {
     super();
     Object.assign(this, props);

@@ -13,7 +13,8 @@
  *   estático calculado na compilação; alturas de label ≈ fontSize).
  * - `<style>` — CSS do subset ({@link parseUiCss}) embutido no template.
  * - Atributos: `class`, `id`, `anchor`, `x`, `y`, `width`, `height`,
- *   `onpress="acao"` (button), `fill` (panel do tamanho do viewport).
+ *   `onpress="acao"` (button), `fill` (panel do tamanho do viewport),
+ *   `image="url"` (imagem de fundo do panel — aceita `{{chave}}`).
  *
  * @example  assets/ui/menu.html
  * <style>
@@ -156,6 +157,12 @@ export class UiTemplate {
     }
     if (widget instanceof UiLabel) {
       widget.text = node.text.replace(/\{\{(\w+)\}\}/g, (_m, key: string) =>
+        String(data[key] ?? ''),
+      );
+    }
+    if (node.attrs['image'] && widget instanceof UiPanel) {
+      // Imagem de fundo (URL). Suporta `{{chave}}` (mesma interpolação do texto).
+      widget.backgroundImage = node.attrs['image'].replace(/\{\{(\w+)\}\}/g, (_m, key: string) =>
         String(data[key] ?? ''),
       );
     }

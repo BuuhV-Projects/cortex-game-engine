@@ -102,9 +102,13 @@ export class DomUiBackend implements UiBackend {
       node.style.whiteSpace = 'nowrap';
     } else if (widget instanceof UiPanel) {
       node.style.display = widget.visible ? 'block' : 'none';
-      node.style.background = widget.backgroundTo
+      const fill = widget.backgroundTo
         ? `linear-gradient(180deg, ${widget.background}, ${widget.backgroundTo})`
         : widget.background;
+      // Imagem "cover" por cima da cor/gradiente (fallback enquanto carrega).
+      node.style.background = widget.backgroundImage
+        ? `url("${widget.backgroundImage}") center / cover no-repeat, ${fill}`
+        : fill;
       node.style.borderRadius = `${widget.cornerRadius}px`;
       node.style.border =
         widget.borderWidth > 0 ? `${widget.borderWidth}px solid ${widget.borderColor}` : 'none';

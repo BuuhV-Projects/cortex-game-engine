@@ -6,7 +6,7 @@
 
 # Class: UiButton
 
-Defined in: [src/ui/runtime/widgets.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L96)
+Defined in: [src/ui/runtime/widgets.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L106)
 
 Botão focável: Label + fundo + `onPress` (Enter/A com foco).
 
@@ -20,7 +20,7 @@ Botão focável: Label + fundo + `onPress` (Enter/A com foco).
 
 > **new UiButton**(`props?`): `UiButton`
 
-Defined in: [src/ui/runtime/widgets.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L116)
+Defined in: [src/ui/runtime/widgets.ts:126](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L126)
 
 #### Parameters
 
@@ -54,7 +54,7 @@ Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cor
 
 > **background**: `string` = `'#222233'`
 
-Defined in: [src/ui/runtime/widgets.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L97)
+Defined in: [src/ui/runtime/widgets.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L107)
 
 ***
 
@@ -62,7 +62,7 @@ Defined in: [src/ui/runtime/widgets.ts:97](https://github.com/BuuhV-Projects/cor
 
 > **color**: `string` = `'#ffffff'`
 
-Defined in: [src/ui/runtime/widgets.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L88)
+Defined in: [src/ui/runtime/widgets.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L98)
 
 Cor CSS do texto.
 
@@ -76,7 +76,7 @@ Cor CSS do texto.
 
 > **cornerRadius**: `number` = `10`
 
-Defined in: [src/ui/runtime/widgets.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L101)
+Defined in: [src/ui/runtime/widgets.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L111)
 
 Raio dos cantos em px.
 
@@ -100,7 +100,7 @@ Sujo = backend precisa re-sincronizar este widget.
 
 > **focusable**: `boolean` = `true`
 
-Defined in: [src/ui/runtime/widgets.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L114)
+Defined in: [src/ui/runtime/widgets.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L124)
 
 Entra na navegação por d-pad/setas? `false` pra botões acionados só por
 clique/atalho (ex.: "Fases" durante o gameplay — senão o A do pulo
@@ -112,7 +112,7 @@ ativaria o botão focado).
 
 > **focusBackground**: `string` = `'#5546a8'`
 
-Defined in: [src/ui/runtime/widgets.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L99)
+Defined in: [src/ui/runtime/widgets.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L109)
 
 Cor do fundo quando focado (navegação por d-pad/setas).
 
@@ -122,7 +122,7 @@ Cor do fundo quando focado (navegação por d-pad/setas).
 
 > **focusBorderColor**: `string` = `'#ffd94d'`
 
-Defined in: [src/ui/runtime/widgets.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L105)
+Defined in: [src/ui/runtime/widgets.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L115)
 
 Cor da borda de foco.
 
@@ -132,7 +132,7 @@ Cor da borda de foco.
 
 > **focusBorderWidth**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L103)
+Defined in: [src/ui/runtime/widgets.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L113)
 
 Borda quando FOCADO (destaque de seleção). 0 = sem.
 
@@ -142,7 +142,7 @@ Borda quando FOCADO (destaque de seleção). 0 = sem.
 
 > **focused**: `boolean` = `false`
 
-Defined in: [src/ui/runtime/widgets.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L108)
+Defined in: [src/ui/runtime/widgets.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L118)
 
 ***
 
@@ -150,7 +150,7 @@ Defined in: [src/ui/runtime/widgets.ts:108](https://github.com/BuuhV-Projects/co
 
 > **fontSize**: `number` = `18`
 
-Defined in: [src/ui/runtime/widgets.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L86)
+Defined in: [src/ui/runtime/widgets.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L96)
 
 Altura da fonte em px.
 
@@ -214,7 +214,7 @@ Tamanho MEDIDO pelo backend (texto rasterizado) — leitura.
 
 > **onPress**: (() => `void`) \| `null` = `null`
 
-Defined in: [src/ui/runtime/widgets.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L115)
+Defined in: [src/ui/runtime/widgets.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L125)
 
 ***
 
@@ -234,7 +234,7 @@ Defined in: [src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cor
 
 > **paddingX**: `number` = `14`
 
-Defined in: [src/ui/runtime/widgets.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L106)
+Defined in: [src/ui/runtime/widgets.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L116)
 
 ***
 
@@ -242,7 +242,7 @@ Defined in: [src/ui/runtime/widgets.ts:106](https://github.com/BuuhV-Projects/co
 
 > **paddingY**: `number` = `8`
 
-Defined in: [src/ui/runtime/widgets.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L107)
+Defined in: [src/ui/runtime/widgets.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L117)
 
 ***
 
@@ -250,7 +250,7 @@ Defined in: [src/ui/runtime/widgets.ts:107](https://github.com/BuuhV-Projects/co
 
 > **text**: `string` = `''`
 
-Defined in: [src/ui/runtime/widgets.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L84)
+Defined in: [src/ui/runtime/widgets.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L94)
 
 #### Inherited from
 
