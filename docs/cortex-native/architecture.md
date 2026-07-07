@@ -178,6 +178,17 @@ Native (que roda milhares de libs sobre Hermes em produção):
   `fillOpacity` < 1 deixa o backdrop claro vazar e LAVA a cor (era um `*0.96`
   fantasma). Regressão travada em `tests/ui/RendererUiBackend.test.ts`
   (toneMapped=false + opacidade).
+- **Blend de TRANSPARÊNCIA da UI: linear no native vs sRGB no DOM** (ADR-0105).
+  O `WebGPURenderer` do Three blenda num buffer linear interno; o CSS/DOM
+  (DomUiBackend, Studio) compõe em sRGB/gama. Medido: scrim `#0a2a3c`@0.6 sobre
+  branco = **(170,172,175)** no native (linear) vs **(108,127,138)** no Chrome
+  (sRGB). Só translúcidos divergem (opacity < 1: scrim, overlays, botão
+  desabilitado); cor OPACA é bit-idêntica. Por isso os menus de resultado/pausa
+  saem "com muito brilho/pouco contraste" no native. NÃO é MSAA/SSAA/HDR/ICC (o
+  monitor é sRGB puro; Chrome faz identidade). Fix (a implementar, ADR-0105):
+  renderizar a UI do native em "pass-through sRGB" (cor/textura cru + sem OETF de
+  saída no passe da UI) pra o blend virar gama. NÃO deixar gambiarra de
+  compensação (tint/exposição/present-mode já foram tentados e revertidos).
 - **MSAA precisa de `resolveTarget`**: com `antialias:true`, o Three renderiza
   numa textura multisampled e resolve pro swapchain via `resolveTarget` no
   color attachment. Sem parsear esse campo (commands.cpp), o antialias vira
