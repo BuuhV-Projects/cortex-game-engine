@@ -234,6 +234,10 @@ export class RendererUiBackend implements UiBackend {
       depthTest: false,
       depthWrite: false,
     });
+    // A UI é COR DE INTERFACE (sRGB autorada), não cena — NÃO pode passar pelo
+    // tone mapping do renderer (ACESFilmic do jogo esfria/dessatura os tons, o
+    // que deixava o menu "frio" no native vs "quente" no Studio/DOM).
+    material.toneMapped = false;
     material.colorNode = vec4(color, alpha);
     return { material, uniforms };
   }
@@ -317,6 +321,7 @@ export class RendererUiBackend implements UiBackend {
       depthTest: false,
       depthWrite: false,
       map: texture,
+      toneMapped: false, // cor de UI (sRGB), fora do tone mapping do jogo
     });
     if (!visual.text) {
       visual.text = new THREE.Mesh(this._quad, material);
@@ -354,7 +359,7 @@ export class RendererUiBackend implements UiBackend {
       const old = visual.imageTexture;
       visual.imageTexture = texture;
       if (!visual.image) {
-        const material = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, map: texture });
+        const material = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, map: texture, toneMapped: false });
         visual.image = new THREE.Mesh(this._quad, material);
         this._scene.add(visual.image);
       } else {
