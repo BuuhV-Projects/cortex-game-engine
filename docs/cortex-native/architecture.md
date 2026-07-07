@@ -122,6 +122,18 @@ Native (que roda milhares de libs sobre Hermes em produção):
 
 ## Armadilhas conhecidas
 
+- **FPS do gameplay é CPU-bound no RENDER (three.js WebGPU no Hermes), não na
+  física nem no SSAA.** Medido no teste4 (fase-1, ~86 objetos): frame ~28ms →
+  `world.tick` (física Rapier + scripts + ECS) ~3ms, **render ~20ms**, PostFX
+  +4ms, UI ~2ms. O Studio (V8) faz o MESMO trabalho em ~13ms → 60-75fps; o
+  native cai pra ~35 porque o Hermes (interpretador, sem JIT) roda o custo de
+  CPU do WebGPURenderer (travessia da cena + avaliação de node materials +
+  encoding por objeto) ~2× mais devagar. **Diagnóstico**: `CORTEX_RENDER_SCALE`
+  1.0 vs 2.0 NÃO muda o FPS (⇒ não é fill de GPU) e present mode Mailbox também
+  fica em ~35 (⇒ não é o cliff de meio-rate do vsync Fifo). **Alavancas** (todas
+  reduzem o custo POR-FRAME de CPU do renderer, não a GPU): menos objetos
+  (merge/instancing da geometria da fase), materiais mais simples, e desligar/
+  reduzir o PostFX no native (~4ms/~6fps). Sombras quase não pesaram aqui (~1ms).
 - **`wgpuInstanceWaitAny` → panic "not implemented"** (wgpu-native v29).
   Aquisição assíncrona SEMPRE com `AllowProcessEvents` + loop de
   `wgpuInstanceProcessEvents` (ver `acquireAdapter`/`acquireDevice`).
