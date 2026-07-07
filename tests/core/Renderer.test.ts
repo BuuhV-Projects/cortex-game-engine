@@ -8,7 +8,6 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { NoToneMapping, ACESFilmicToneMapping } from 'three';
 
 // ─── Mock do WebGPURenderer (three/webgpu) ─────────────────────────────────────
 
@@ -161,36 +160,6 @@ describe('Renderer', () => {
     ]);
   });
 
-  // ── Tone mapping da UI (regressão de COR no export nativo) ────────────────────
-  // A UI de runtime renderiza pela mesma câmera/renderer do jogo (ACESFilmic
-  // ligado). `noToneMapping` desliga o ACES só no pass da UI — sem isto a cor de
-  // interface (sRGB) saía esfriada/lavada no export. Ver RendererUiBackend.
-
-  it('renderViewport({ noToneMapping }) desliga o tone mapping DURANTE o render e restaura depois', async () => {
-    const r = await makeReadyRenderer();
-    const inst = lastRendererInstance!;
-    inst['toneMapping'] = ACESFilmicToneMapping; // estado do jogo (cena)
-    let duringRender: unknown;
-    rendererSpies.render.mockImplementationOnce(function (this: Record<string, unknown>) {
-      duringRender = this['toneMapping'];
-    });
-    r.renderViewport(fakeScene, fakeCamera, { x: 0, y: 0, width: 400, height: 600 }, { noToneMapping: true });
-    expect(duringRender).toBe(NoToneMapping); // UI desenhada sem ACES
-    expect(inst['toneMapping']).toBe(ACESFilmicToneMapping); // cena não é afetada depois
-  });
-
-  it('renderViewport() sem opts NÃO mexe no tone mapping (split-screen 3D mantém o ACES)', async () => {
-    const r = await makeReadyRenderer();
-    const inst = lastRendererInstance!;
-    inst['toneMapping'] = ACESFilmicToneMapping;
-    let duringRender: unknown;
-    rendererSpies.render.mockImplementationOnce(function (this: Record<string, unknown>) {
-      duringRender = this['toneMapping'];
-    });
-    r.renderViewport(fakeScene, fakeCamera, { x: 0, y: 0, width: 400, height: 600 });
-    expect(duringRender).toBe(ACESFilmicToneMapping); // não desligou
-    expect(inst['toneMapping']).toBe(ACESFilmicToneMapping);
-  });
 
   // ── resize() ───────────────────────────────────────────────────────────────
 

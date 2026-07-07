@@ -25,9 +25,6 @@ export interface UiRenderTarget {
     scene: THREE.Scene,
     camera: THREE.Camera,
     viewport: { x: number; y: number; width: number; height: number },
-    /** `noToneMapping`: a UI é cor de interface (sRGB), NÃO cena — não pode
-     * passar pelo ACES do jogo (que esfria/lava os tons). Ver Renderer. */
-    opts?: { noToneMapping?: boolean },
   ): void;
 }
 
@@ -109,12 +106,14 @@ export class RendererUiBackend implements UiBackend {
 
   render(): void {
     if (this._viewport.width === 0) return;
-    this._target.renderViewport(
-      this._scene,
-      this._camera,
-      { x: 0, y: 0, width: this._viewport.width, height: this._viewport.height },
-      { noToneMapping: true },
-    );
+    // Cor de UI (sRGB autorada) fica FORA do tone mapping do jogo pelos materiais
+    // (`toneMapped=false` no box/texto/imagem) — sem esfriar/lavar no export.
+    this._target.renderViewport(this._scene, this._camera, {
+      x: 0,
+      y: 0,
+      width: this._viewport.width,
+      height: this._viewport.height,
+    });
     this._graveyard = this._graveyard.filter((entry) => {
       if (--entry.frames > 0) return true;
       entry.dispose();

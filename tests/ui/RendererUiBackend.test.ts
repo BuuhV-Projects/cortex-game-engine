@@ -4,7 +4,9 @@
  * jogo (ACESFilmic ligado). Sem cuidado, a cor de interface (sRGB autorada)
  * sai esfriada/lavada no export — foi o bug reportado. Estes testes travam os
  * dois pontos do fix:
- *   1. `render()` pede `noToneMapping` (UI fora do ACES do jogo).
+ *   1. Os materiais da UI têm `toneMapped=false` — a UI fica FORA do ACES do
+ *      jogo (por MATERIAL; sem alternar o tone mapping do renderer por frame,
+ *      que causava recompile de shader → queda de FPS).
  *   2. Botão renderiza OPACO (fillOpacity = opacity do widget, sem o antigo
  *      `*0.96` que deixava o fundo claro vazar e LAVAVA a cor).
  *
@@ -15,49 +17,39 @@ import { describe, it, expect } from 'vitest';
 import { RendererUiBackend, type UiRenderTarget } from '../../src/ui/runtime/RendererUiBackend.js';
 import { UiPanel, UiButton } from '../../src/ui/runtime/widgets.js';
 
-type RenderOpts = { noToneMapping?: boolean } | undefined;
+const mockTarget = (): UiRenderTarget => ({ renderViewport: () => {} });
 
-function mockTarget(): { target: UiRenderTarget; opts: RenderOpts[] } {
-  const opts: RenderOpts[] = [];
-  const target: UiRenderTarget = {
-    renderViewport: (_scene, _camera, _viewport, o) => {
-      opts.push(o);
-    },
-  };
-  return { target, opts };
-}
-
-/** Acessa os visuais internos (Map por id) pra inspecionar o uniform do painel. */
-function fillOpacityOf(backend: RendererUiBackend, id: number): number | undefined {
-  const visuals = (backend as unknown as {
-    _visuals: Map<number, { panelUniforms?: { fillOpacity: { value: number } } }>;
-  })._visuals;
-  return visuals.get(id)?.panelUniforms?.fillOpacity.value;
+/** Visuais internos (Map por id) — pra inspecionar material/uniform do widget. */
+function visualOf(
+  backend: RendererUiBackend,
+  id: number,
+): { background?: { material: { toneMapped: boolean } }; panelUniforms?: { fillOpacity: { value: number } } } | undefined {
+  return (
+    backend as unknown as {
+      _visuals: Map<number, { background?: { material: { toneMapped: boolean } }; panelUniforms?: { fillOpacity: { value: number } } }>;
+    }
+  )._visuals.get(id);
 }
 
 describe('RendererUiBackend — regressão de cor (export nativo)', () => {
-  it('render() pede noToneMapping (UI não passa pelo ACES do jogo)', () => {
-    const { target, opts } = mockTarget();
-    const backend = new RendererUiBackend(target);
-    backend.sync([new UiPanel({ background: '#ffb03a', width: 100, height: 40 })], { width: 800, height: 600 });
-    backend.render();
-    expect(opts).toHaveLength(1);
-    expect(opts[0]).toEqual({ noToneMapping: true });
+  it('material do painel tem toneMapped=false (UI fora do ACES do jogo)', () => {
+    const backend = new RendererUiBackend(mockTarget());
+    const panel = new UiPanel({ background: '#ffb03a', width: 100, height: 40 });
+    backend.sync([panel], { width: 800, height: 600 });
+    expect(visualOf(backend, panel.id)?.background?.material.toneMapped).toBe(false);
   });
 
   it('botão renderiza OPACO — fillOpacity = opacity do widget (sem o *0.96 que lavava a cor)', () => {
-    const { target } = mockTarget();
-    const backend = new RendererUiBackend(target);
+    const backend = new RendererUiBackend(mockTarget());
     const button = new UiButton({ background: '#5aa0c0', width: 120, height: 48, opacity: 1 });
     backend.sync([button], { width: 800, height: 600 });
-    expect(fillOpacityOf(backend, button.id)).toBe(1);
+    expect(visualOf(backend, button.id)?.panelUniforms?.fillOpacity.value).toBe(1);
   });
 
   it('painel respeita a opacity do widget (translúcido continua translúcido)', () => {
-    const { target } = mockTarget();
-    const backend = new RendererUiBackend(target);
+    const backend = new RendererUiBackend(mockTarget());
     const scrim = new UiPanel({ background: '#000000', width: 100, height: 100, opacity: 0.6 });
     backend.sync([scrim], { width: 800, height: 600 });
-    expect(fillOpacityOf(backend, scrim.id)).toBeCloseTo(0.6);
+    expect(visualOf(backend, scrim.id)?.panelUniforms?.fillOpacity.value).toBeCloseTo(0.6);
   });
 });
