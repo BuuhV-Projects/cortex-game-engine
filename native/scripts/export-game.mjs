@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { packDir } from './pak.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
@@ -100,13 +101,17 @@ guardLocks('runtime', () => {
   }
 });
 
-// 4. assets do jogo: assets/ inteiro + JSONs de cena/overlay + cortex.json
+// 4. assets do jogo: assets/ vira um CONTAINER assets.pak (ADR-0104) — 1 arquivo
+// em vez de centenas soltos, com XOR leve (barreira contra extração casual). O
+// host lê dele via __cortexReadFile (files.cpp); no dev fica solto. Cenas
+// (JSON) + cortex.json seguem soltos (config pequena).
 step('assets');
-console.log('[export] assets...');
+console.log('[export] assets → assets.pak...');
 guardLocks('assets', () => {
   const assetsDir = path.join(gameDir, 'assets');
   if (fs.existsSync(assetsDir)) {
-    fs.cpSync(assetsDir, path.join(dist, 'assets'), { recursive: true });
+    const r = packDir(assetsDir, path.join(dist, 'assets.pak'), 'assets/');
+    console.log(`[export] assets.pak: ${r.files} arquivos, ${(r.bytes / 1e6).toFixed(1)} MB`);
   }
   const scenesDir = path.join(gameDir, 'scenes');
   if (fs.existsSync(scenesDir)) {

@@ -19,6 +19,7 @@ add_executable(cortex_host
   src/shims/files.cpp
   src/shims/image_decode.cpp
   src/shims/input.cpp
+  src/shims/pak.cpp
   src/shims/rapier.cpp
   src/shims/text_raster.cpp
   src/shims/timers.cpp
