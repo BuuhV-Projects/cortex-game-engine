@@ -6,7 +6,7 @@
 
 # Type Alias: MaterialConfig
 
-> **MaterialConfig** = \{ `type`: `"standard"`; \} \| \{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `transparent?`: `boolean`; `type`: `"unlit"`; \} \| \{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `type`: `"toon"`; \}
+> **MaterialConfig** = \{ `type`: `"standard"`; \} \| \{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `textured?`: `boolean`; `transparent?`: `boolean`; `type`: `"unlit"`; \} \| \{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `type`: `"toon"`; \}
 
 Defined in: [src/scene/Materials.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L43)
 
@@ -22,7 +22,7 @@ Configuração de material por objeto (data-driven; vai no nó da cena/overlay).
 
 ### Type Literal
 
-\{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `transparent?`: `boolean`; `type`: `"unlit"`; \}
+\{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `textured?`: `boolean`; `transparent?`: `boolean`; `type`: `"unlit"`; \}
 
 #### alphaTest?
 
@@ -73,6 +73,17 @@ iluminação + borda de silhueta.
 > `optional` **outlineColor?**: `ColorRepresentation`
 
 Cor do contorno. Default preto.
+
+#### textured?
+
+> `optional` **textured?**: `boolean`
+
+Usa a textura (`map`) do modelo. Default `true`. `false` = cor
+**CHAPADA**, ignorando o texture do GLB — some com o `map` e pinta a
+malha com `color` puro. Útil quando o asset embute um **atlas de paleta**
+(a UV amostra um swatch fixo): aí `color` sozinho só multiplica o swatch
+e não consegue clarear/trocar o matiz; com `textured: false` a cor é
+exatamente a escolhida (ex.: moeda amarelo-sol, independente do swatch).
 
 #### transparent?
 

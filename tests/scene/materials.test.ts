@@ -32,6 +32,23 @@ describe('applyMaterial', () => {
     expect(getMaterialType(mesh)).toBe('standard');
   });
 
+  it('unlit textured:false → cor CHAPADA (descarta o map do atlas de paleta)', () => {
+    const mesh = box();
+    const origMap = (mesh.material as MeshStandardMaterial).map;
+    expect(origMap).not.toBeNull(); // o mesh de teste tem textura
+
+    // Sem a flag: preserva o map (multiplica a cor pelo swatch).
+    applyMaterial(mesh, { type: 'unlit', color: '#ffd83a' });
+    expect((mesh.material as MeshBasicMaterial).map).toBe(origMap);
+
+    // textured:false: some com o map → a cor é exatamente a escolhida.
+    applyMaterial(mesh, { type: 'unlit', color: '#ffd83a', textured: false });
+    const m = mesh.material as MeshBasicMaterial;
+    expect(m.map).toBeNull();
+    expect(m.color.getHexString()).toBe('ffd83a');
+    expect(m.toneMapped).toBe(false); // segue fora do tone mapping
+  });
+
   it('unlit porta os knobs do shader Unity (cull→side, zwrite/ztest→depth)', () => {
     const mesh = box();
     applyMaterial(mesh, { type: 'unlit', cull: 'none', depthWrite: false, depthTest: false, opacity: 0.5 });

@@ -46,6 +46,15 @@ export type MaterialConfig =
       type: 'unlit';
       /** Tint multiplicado na textura (`_Color`). Default branco. */
       color?: ColorRepresentation;
+      /**
+       * Usa a textura (`map`) do modelo. Default `true`. `false` = cor
+       * **CHAPADA**, ignorando o texture do GLB — some com o `map` e pinta a
+       * malha com `color` puro. Útil quando o asset embute um **atlas de paleta**
+       * (a UV amostra um swatch fixo): aí `color` sozinho só multiplica o swatch
+       * e não consegue clarear/trocar o matiz; com `textured: false` a cor é
+       * exatamente a escolhida (ex.: moeda amarelo-sol, independente do swatch).
+       */
+      textured?: boolean;
       /** Opacidade 0–1 (liga `transparent` se < 1). */
       opacity?: number;
       /** Força transparência (alpha blending). */
@@ -116,7 +125,8 @@ function buildUnlit(orig: Material, config: Extract<MaterialConfig, { type: 'unl
   const o = orig as unknown as SrcMat;
   const transparent = config.transparent ?? (config.opacity !== undefined ? config.opacity < 1 : (o.transparent ?? false));
   return new MeshBasicMaterial({
-    map: o.map ?? null,
+    // `textured: false` → cor chapada: descarta o map do modelo (atlas de paleta).
+    map: config.textured === false ? null : (o.map ?? null),
     vertexColors: o.vertexColors ?? false,
     color: config.color !== undefined ? new Color(config.color) : (o.color?.clone() ?? new Color(0xffffff)),
     transparent,

@@ -935,7 +935,10 @@ o Rapier é montado em código (`main.ts`).
 Atribui um "shader" (material do Three) a um objeto pela propriedade `material` do nó
 (ADR-0058) — como na Unity. Presets: `standard` (PBR original do `.glb`), `unlit`
 (textura × cor **sem luz**, look fullbright/vívido — porta o `Supyrb/Unlit/Texture`;
-knobs: `cull`/`depthWrite`/`depthTest`/`opacity`/`alphaTest`, e `outline`/
+knobs: `cull`/`depthWrite`/`depthTest`/`opacity`/`alphaTest`, `textured` (default
+`true`; `false` = cor **CHAPADA** ignorando o `map` do GLB — some com a textura e
+pinta com `color` puro; essencial quando o asset embute um **atlas de paleta**, aí
+`color` sozinho só multiplica o swatch e não troca o matiz), e `outline`/
 `outlineColor` opcionais — "unlit toon": cor chapada + borda de silhueta), `toon`
 (cel-shading em bandas + `outline` opcional).
 
@@ -943,6 +946,10 @@ knobs: `cull`/`depthWrite`/`depthTest`/`opacity`/`alphaTest`, e `outline`/
 // personagem com look unlit/fullbright (cores chapadas, sem sombra/AO no corpo):
 { "type": "model", "id": "hero", "url": "assets/Knight.glb",
   "material": { "type": "unlit", "color": "#ffffff" } }
+
+// item com atlas de paleta → cor sólida escolhida (ignora o swatch do texture):
+{ "type": "model", "id": "coin", "url": "assets/coin.glb",
+  "material": { "type": "unlit", "color": "#ffd83a", "textured": false } }
 
 // look toon/cel (3 bandas de luz + contorno preto fino):
 { "type": "model", "id": "boss", "url": "assets/Boss.glb",
@@ -955,7 +962,8 @@ applyMaterial(obj, { type: 'unlit', color: 0xffffff })
 clearMaterial(obj) // volta ao material original
 ```
 
-`unlit` preserva o `map` (textura de cor) do material original e desliga a luz/tonemap.
+`unlit` preserva o `map` (textura de cor) do material original e desliga a luz/tonemap
+(use `textured: false` pra descartar o `map` e usar `color` chapado).
 `castShadow` segue valendo (a sombra projetada não depende do material). Limites (S1):
 contorno toon não acompanha skinning; GLSL custom e o dropdown no inspector vêm depois.
 

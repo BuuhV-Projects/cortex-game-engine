@@ -37,7 +37,7 @@ registra o listener de redimensionamento automático quando em browser.
 
 > **get** **domElement**(): `HTMLCanvasElement`
 
-Defined in: [src/core/Renderer.ts:265](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L265)
+Defined in: [src/core/Renderer.ts:253](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L253)
 
 Elemento `<canvas>` onde o renderer desenha.
 
@@ -53,7 +53,7 @@ Elemento `<canvas>` onde o renderer desenha.
 
 > **get** **height**(): `number`
 
-Defined in: [src/core/Renderer.ts:260](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L260)
+Defined in: [src/core/Renderer.ts:248](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L248)
 
 Altura atual do canvas em pixels.
 
@@ -85,7 +85,7 @@ Defined in: [src/core/Renderer.ts:164](https://github.com/BuuhV-Projects/cortex-
 
 > **get** **threeRenderer**(): `WebGPURenderer`
 
-Defined in: [src/core/Renderer.ts:275](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L275)
+Defined in: [src/core/Renderer.ts:263](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L263)
 
 Instância interna do `WebGPURenderer`.
 Exposta para casos avançados: pós-processamento (passar pra `PostProcessing`
@@ -104,7 +104,7 @@ públicos da classe sempre que possível.
 
 > **get** **width**(): `number`
 
-Defined in: [src/core/Renderer.ts:255](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L255)
+Defined in: [src/core/Renderer.ts:243](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L243)
 
 Largura atual do canvas em pixels.
 
@@ -135,7 +135,7 @@ quando se usa split-screen.
 
 > **dispose**(): `void`
 
-Defined in: [src/core/Renderer.ts:245](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L245)
+Defined in: [src/core/Renderer.ts:233](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L233)
 
 Remove o listener de resize e libera os recursos GPU do renderer.
 Deve ser chamado ao destruir a cena para evitar vazamentos de memória.
@@ -193,7 +193,7 @@ por frame". Para split-screen, use `clear()` + `renderViewport()`.
 
 ### renderViewport()
 
-> **renderViewport**(`scene`, `camera`, `viewport`, `opts?`): `void`
+> **renderViewport**(`scene`, `camera`, `viewport`): `void`
 
 Defined in: [src/core/Renderer.ts:204](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L204)
 
@@ -215,12 +215,6 @@ antes do init.
 
 [`Viewport`](../interfaces/Viewport.md)
 
-##### opts?
-
-###### noToneMapping?
-
-`boolean`
-
 #### Returns
 
 `void`
@@ -240,7 +234,7 @@ renderer.renderViewport(scene, p2Camera, { x: w / 2, y: 0, width: w / 2, height:
 
 > **resize**(`width`, `height`): `void`
 
-Defined in: [src/core/Renderer.ts:231](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L231)
+Defined in: [src/core/Renderer.ts:219](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L219)
 
 Redimensiona o canvas e o viewport do renderer.
 Chamado automaticamente pelo listener de `window.resize`; também pode ser
