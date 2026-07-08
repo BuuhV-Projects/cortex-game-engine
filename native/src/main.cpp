@@ -21,9 +21,26 @@
 #include "shims/rapier.h"
 #include "shims/text_raster.h"
 #include "shims/timers.h"
+#include "shims/user_storage.h"
 #include "webgpu/bindings.h"
 
 namespace {
+
+// Nome do jogo pra pasta de saves do usuário. Em dev vem do dir passado
+// (`cortex_host.exe D:\jogos\teste4` → "teste4"); no export (sem argv[1]) vem do
+// nome do EXE (`teste4.exe` → "teste4"). Basename sem extensão nem separador.
+std::string deriveGameName(int argc, char** argv, const std::string& baseDir) {
+  std::string src = (argc > 1 && argv[1] && argv[1][0]) ? std::string(argv[1])
+                    : (argc > 0 && argv[0]) ? std::string(argv[0])
+                                            : baseDir;
+  // Tira a barra final (dir do jogo costuma vir com ela).
+  while (!src.empty() && (src.back() == '\\' || src.back() == '/')) src.pop_back();
+  size_t slash = src.find_last_of("\\/");
+  std::string name = slash == std::string::npos ? src : src.substr(slash + 1);
+  size_t dot = name.rfind('.');  // tira ".exe"
+  if (dot != std::string::npos) name = name.substr(0, dot);
+  return name;
+}
 
 bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
   SDL_Event event;
@@ -53,12 +70,50 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
 // Um frame: timers → rAF (o JS grava e submete; a surface reconfigura
 // sozinha no getCurrentTexture se a janela mudou) → present.
 void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs) {
+  gpu->drawCalls = 0;  // [TEMP-DIAG] zera antes do rAF do frame
   shims::runTimers(js.env(), elapsedMs);
   js.drainMicrotasks();
+  // [TEMP-DIAG] cronometra o encode de render (rAF do JS = gargalo CPU-bound) e
+  // o present separadamente. O tempo de render revela o custo real mesmo com o
+  // FPS capado no vsync (FIFO).
+  const uint64_t tR0 = SDL_GetTicksNS();
   shims::runAnimationFrames(js.env(), elapsedMs);
   js.drainMicrotasks();
+  const uint64_t tR1 = SDL_GetTicksNS();
   shims::updateAudio();
   webgpu::presentIfAcquired(gpu);
+  const uint64_t tP1 = SDL_GetTicksNS();
+
+  // Acumula por ~1s: média do tempo de render + present + pico + draw calls.
+  static double lastLog = 0;
+  static int frames = 0;
+  static double sumRender = 0, sumPresent = 0, maxRender = 0;
+  const double renderMs = (tR1 - tR0) / 1'000'000.0;
+  const double presentMs = (tP1 - tR1) / 1'000'000.0;
+  sumRender += renderMs;
+  sumPresent += presentMs;
+  if (renderMs > maxRender) maxRender = renderMs;
+  frames++;
+  if (elapsedMs - lastLog >= 1000.0) {
+    const double fps = frames * 1000.0 / (elapsedMs - lastLog);
+    std::fprintf(stderr,
+                 "[perf] fps=%.0f render=%.1fms(max %.1f) present=%.1fms draws=%u\n",
+                 fps, sumRender / frames, maxRender, sumPresent / frames,
+                 gpu->drawCalls);
+    // [TEMP-DIAG] Linha do tempo por segundo num perf.log ao lado do exe — jogue
+    // e atravesse a ponte; a queda de fps + os draws aparecem aqui. Remover depois.
+    static std::FILE* perfLog = std::fopen("perf.log", "w");
+    if (perfLog) {
+      std::fprintf(perfLog,
+                   "t=%3.0fs fps=%2.0f render=%4.1fms(max %4.1f) draws=%u\n",
+                   elapsedMs / 1000.0, fps, sumRender / frames, maxRender,
+                   gpu->drawCalls);
+      std::fflush(perfLog);
+    }
+    frames = 0;
+    lastLog = elapsedMs;
+    sumRender = sumPresent = maxRender = 0;
+  }
 }
 
 void shutdownGpu(HostGpu* gpu) {
@@ -92,6 +147,7 @@ int main(int argc, char** argv) {
     shims::registerAnimationFrame(js.env());
     shims::registerInput(js.env());
     shims::registerFiles(js.env(), baseDir);
+    shims::registerUserStorage(js.env(), deriveGameName(argc, argv, baseDir));
     shims::registerImageDecode(js.env());
     shims::registerRapier(js.env());
     shims::registerAudio(js.env());

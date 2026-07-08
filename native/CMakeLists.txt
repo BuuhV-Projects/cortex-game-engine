@@ -23,6 +23,7 @@ add_executable(cortex_host
   src/shims/rapier.cpp
   src/shims/text_raster.cpp
   src/shims/timers.cpp
+  src/shims/user_storage.cpp
   src/webgpu/buffers.cpp
   src/webgpu/commands.cpp
   src/webgpu/device.cpp

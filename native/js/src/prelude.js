@@ -12,6 +12,7 @@ import {
 import { installInputBridge } from './shims/input-bridge.js';
 import { installTextShims } from './shims/text.js';
 import { installNetShims } from './shims/net.js';
+import { installStorageShims } from './shims/storage.js';
 import { installImageShims } from './shims/image.js';
 import { installWebAudioLite } from './shims/webaudio-lite.js';
 
@@ -22,6 +23,7 @@ installWebGpuExtras();
 installInputBridge();
 installTextShims();
 installNetShims();
+installStorageShims();
 installImageShims();
 installWebAudioLite();
 installHostCanvas();

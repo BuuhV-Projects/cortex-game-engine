@@ -51,7 +51,8 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/shims/timers.*` | `setTimeout`/`clearTimeout`/`setImmediate`. O Hermes agenda async/await via `setImmediate` — obrigatório. |
 | `native/src/shims/animation_frame.*` | `requestAnimationFrame` (uma geração de callbacks por frame; JS re-registra). |
 | `native/src/shims/input.*` | Eventos SDL→JS (keydown/keyup/pointer via `__cortexDispatchInput`) + Gamepad API (`__cortexInput.getGamepads`, layout standard W3C sobre SDL_Gamepad). |
-| `native/src/shims/files.*` | `__cortexReadFile` (fetch lê daqui). Tenta o `assets.pak` (via pak.*) e cai pro arquivo solto no disco (dev). |
+| `native/src/shims/files.*` | `__cortexReadFile` (fetch lê daqui). Tenta o `assets.pak` (via pak.*) e cai pro arquivo solto no disco (dev). SÓ leitura (assets). |
+| `native/src/shims/user_storage.*` | `__cortexReadUserFile`/`__cortexWriteUserFile` — persistência GRAVÁVEL do usuário em `SDL_GetPrefPath(<jogo>, "saves")` (`<appdata>/<jogo>/saves/`). Único caminho de escrita; serve o shim de `localStorage` (ADR-0106). No console → XGameSave. |
 | `native/src/shims/pak.*` | Leitor do container `assets.pak` (ADR-0104): parse header+índice, lê slice + desembaralha (XOR). Formato em sync com `native/scripts/pak.mjs`. |
 | `native/src/shims/image_decode.*` | `__cortexDecodeImage` (stb_image → RGBA8) pro createImageBitmap. |
 | `native/src/shims/rapier.*` | Ponte C ABI do crate rapier-native → `__rapierNative` (funções achatadas, f64). |
@@ -376,8 +377,12 @@ com `<jogo>.exe` + dlls + Roboto + boot.hbc (-O) + assets/ + scenes/*.json —
 validado: teste4.exe roda STANDALONE da pasta dist. Re-vendor de projeto:
 build:engine completo + tsc → copiar dist-engine/* e .d.ts conforme
 VENDOR_TYPE_MODULES (o teste4 já recebeu os tipos da UI).
-Pós-M1: Speedometer+vehicle controller; espacialização do Panner;
-mapAsync/copyTextureToTexture/MSAA; instalador (NSIS/MSIX) pro dist.
+Pós-M1 (feito): **save persistente no host** — `localStorage` sobre
+`user_storage.*` (`SDL_GetPrefPath`), ADR-0106. O `SaveGame` do teste4
+(progressão da spec 0003) agora persiste entre sessões no `.exe`.
+Pós-M1 (aberto): Speedometer+vehicle controller; espacialização do Panner;
+mapAsync/copyTextureToTexture/MSAA; instalador (NSIS/MSIX) pro dist;
+persistência no CONSOLE (trocar o backend de user_storage por XGameSave).
 
 Build do Rapier nativo: `cargo build --release` em `native/rapier-native/`
 (1x; o CMake linka `target/release/rapier_native.dll.lib` e copia a dll).
