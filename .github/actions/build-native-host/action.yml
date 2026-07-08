@@ -1,0 +1,47 @@
+name: Build CortexNative host
+description: >-
+  Compila o host nativo (cortex_host.exe + rapier_native.dll) e instala o
+  toolchain de export auto-contido, pra o Studio empacotado exportar nativo
+  sem dev (TDR-0003). Windows-only — quem chama gateia com
+  `if: matrix.os == 'windows-latest'`.
+
+runs:
+  using: composite
+  steps:
+    # Toolchain de compilação do host: Rust (crate rapier-native), Ninja+CMake
+    # (host C++) e o ambiente MSVC (vcvars) pra o cl.exe entrar no PATH dos
+    # steps seguintes deste job.
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Setup Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v5
+
+    - name: Setup MSVC (vcvars)
+      uses: ilammy/msvc-dev-cmd@v1
+
+    # Deps prebuilt PINADAS do host (SDL3, wgpu-native, Hermes, stb, miniaudio,
+    # fonte). Baixa em native/third_party/.
+    - name: Fetch deps nativas (pinadas)
+      shell: pwsh
+      run: powershell -ExecutionPolicy Bypass -File native/scripts/fetch-deps.ps1
+
+    # 1) crate Rust (cdylib) → target/release/rapier_native.dll(.lib); o CMake
+    # linka o .lib e copia a dll pro native/build.
+    - name: Build rapier-native (cargo)
+      shell: pwsh
+      run: cargo build --release --manifest-path native/rapier-native/Cargo.toml
+
+    # 2) host C++ (Ninja) → native/build com cortex_host.exe + dlls + fontes.
+    - name: Build host (CMake + Ninja)
+      shell: pwsh
+      run: |
+        cmake -G Ninja -S native -B native/build -DCMAKE_BUILD_TYPE=Release
+        cmake --build native/build
+
+    # 3) toolchain de export auto-contido (esbuild/babel/three/zod) — copiado
+    # pra resources/node_modules pelo electron-builder (win.extraResources).
+    - name: Install export toolchain
+      shell: pwsh
+      working-directory: native/export-toolchain
+      run: yarn install --frozen-lockfile

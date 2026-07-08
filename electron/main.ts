@@ -884,9 +884,11 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
 /**
  * Roda `native/scripts/export-game.mjs <projeto>` gerando `dist-native/`
  * (exe + dlls + boot.hbc + assets). Usa o próprio binário do Electron como
- * Node (`ELECTRON_RUN_AS_NODE`) — não depende de node no PATH. Só em DEV por
- * enquanto: o Studio empacotado ainda não embarca o host compilado
- * (pendência registrada no mapa do CortexNative).
+ * Node (`ELECTRON_RUN_AS_NODE`) — não depende de node no PATH. O host + o
+ * toolchain de export vão embarcados no Studio **Windows** via
+ * `electron-builder.json#win.extraResources` (TDR-0003); em dev, resolvem do
+ * próprio repo. macOS/Linux não embarcam o host (D3D12/Windows-only) — lá o
+ * `script` não existe e o handler informa que é só no Studio Windows.
  */
 ipcMain.handle('export:native', async (_event, projectDir: unknown) => {
   const safeDir = validatePath(projectDir)
@@ -895,8 +897,8 @@ ipcMain.handle('export:native', async (_event, projectDir: unknown) => {
     return {
       ok: false,
       output:
-        'Export nativo indisponível neste build do Studio (host CortexNative não embarcado). ' +
-        'Rode em dev: node native/scripts/export-game.mjs <projeto>',
+        'Export nativo (CortexNative) disponível apenas no Studio para Windows — ' +
+        'o host é D3D12/Windows-only por enquanto (TDR-0003).',
     }
   }
   return await new Promise((resolvePromise) => {

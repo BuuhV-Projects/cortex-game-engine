@@ -37,6 +37,22 @@
         "target": "nsis",
         "arch": ["x64"]
       }
+    ],
+    "extraResources": [
+      {
+        "from": "native/build",
+        "to": "native/build",
+        "filter": ["cortex_host.exe", "*.dll", "Roboto-Medium.ttf"]
+      },
+      { "from": "native/scripts", "to": "native/scripts" },
+      { "from": "native/js", "to": "native/js" },
+      {
+        "from": "native/third_party/hermes/tools/native/release/x86",
+        "to": "native/third_party/hermes/tools/native/release/x86",
+        "filter": ["hermes.exe"]
+      },
+      { "from": "src", "to": "src" },
+      { "from": "native/export-toolchain/node_modules", "to": "node_modules" }
     ]
   },
   "mac": {

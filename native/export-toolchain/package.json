@@ -1,0 +1,16 @@
+{
+  "name": "cortex-native-export-toolchain",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Toolchain auto-contido do export CortexNative embarcado no Studio (TDR-0003). NÃO é workspace do repo: tem node_modules próprio, instalado no CI e copiado pra resources/node_modules. Versões PINADAS iguais às da engine — atualizar junto quando o bundle.mjs mudar de deps.",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/core": "7.29.7",
+    "@babel/plugin-transform-arrow-functions": "7.29.7",
+    "@babel/plugin-transform-classes": "7.28.4",
+    "esbuild": "0.25.12",
+    "three": "0.184.0",
+    "three-mesh-bvh": "0.9.10",
+    "zod": "4.4.3"
+  }
+}

@@ -119,6 +119,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      # Host CortexNative + toolchain de export (só Windows): embarca o host
+      # compilado no instalador pra exportar nativo sem dev (TDR-0003).
+      - name: Build native host (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: ./.github/actions/build-native-host
+
       - name: Build IDE
         # electron-builder valida a release no GitHub durante o build e exige
         # GH_TOKEN (não GITHUB_TOKEN). Sem ele falha com "GitHub Personal

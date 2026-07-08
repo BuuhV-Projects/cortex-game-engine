@@ -83,6 +83,7 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/scripts/bundle.mjs` | esbuild (bundle es2018) + Babel (classes loose + arrows) → IIFE único pro hermesc. |
 | `native/scripts/fetch-deps.ps1` | Baixa deps prebuilt **pinadas** (SDL3, wgpu-native, Hermes NuGet). |
 | `native/scripts/export-game.mjs` | Export distribuível (ADR-0101): bundle+hermesc -O+exe+dlls+assets.pak → `<jogo>/dist-native/`. |
+| `native/export-toolchain/` | Toolchain de export AUTO-CONTIDO (TDR-0003): `package.json`+`yarn.lock` pinados (esbuild/babel/three/three-mesh-bvh/zod) que o `bundle.mjs` usa em runtime. O CI instala e o electron-builder copia o `node_modules` pra `resources/node_modules` (só Windows), pro Studio empacotado exportar sem dev. |
 | `native/scripts/pak.mjs` | Empacota uma pasta num container `.pak` (ADR-0104): índice binário + XOR leve. Formato em sync com `native/src/shims/pak.cpp`. |
 
 ## Regras do projeto (não quebrar)
@@ -380,6 +381,13 @@ VENDOR_TYPE_MODULES (o teste4 já recebeu os tipos da UI).
 Pós-M1 (feito): **save persistente no host** — `localStorage` sobre
 `user_storage.*` (`SDL_GetPrefPath`), ADR-0106. O `SaveGame` do teste4
 (progressão da spec 0003) agora persiste entre sessões no `.exe`.
+Pós-M1 (feito): **export nativo embarcado no Studio Windows** (TDR-0003) — o
+`.exe` instalado exporta nativo sem dev. O host compilado + o toolchain de
+export auto-contido (`native/export-toolchain/`) + o `src/` da engine vão no
+instalador via `electron-builder.json#win.extraResources`; o CI (composite
+`.github/actions/build-native-host`) compila o host no runner Windows
+(Rust+MSVC+Ninja/CMake → `fetch-deps` → `cargo` → `cmake`) antes do
+`electron:build`. macOS/Linux ficam sem export nativo (host é D3D12/Windows).
 Pós-M1 (aberto): Speedometer+vehicle controller; espacialização do Panner;
 mapAsync/copyTextureToTexture/MSAA; instalador (NSIS/MSIX) pro dist;
 persistência no CONSOLE (trocar o backend de user_storage por XGameSave).
