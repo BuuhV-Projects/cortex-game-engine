@@ -1,5 +1,27 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { copyFileSync, mkdirSync } from 'fs'
+
+/**
+ * Copia o transcoder Basis (WASM) do three pra `dist-engine/basis/` — o
+ * `KTX2Loader` do browser (Studio/web) o carrega em runtime pra texturas KTX2
+ * (ADR-0108). O `setTranscoderPath` do engine aponta pra cá (via vendor). No
+ * host nativo isto NÃO é usado (transcoder C++). Roda no closeBundle deste
+ * config (o 1º; emptyOutDir só aqui) — os configs seguintes não apagam `basis/`.
+ */
+function copyBasisTranscoder() {
+  return {
+    name: 'cortex-copy-basis-transcoder',
+    closeBundle() {
+      const src = resolve(__dirname, 'node_modules/three/examples/jsm/libs/basis')
+      const dst = resolve(__dirname, 'dist-engine/basis')
+      mkdirSync(dst, { recursive: true })
+      for (const f of ['basis_transcoder.js', 'basis_transcoder.wasm']) {
+        copyFileSync(resolve(src, f), resolve(dst, f))
+      }
+    },
+  }
+}
 
 /**
  * Build do engine em library mode, gerando um bundle único ESM com `three`
@@ -10,6 +32,7 @@ import { resolve } from 'path'
  * AI/CLI ficam fora (ver src/index-runtime.ts).
  */
 export default defineConfig({
+  plugins: [copyBasisTranscoder()],
   resolve: {
     // Redireciona `three` (bare) para o build `three/webgpu`, que é um superset
     // (todo o Three.Core + WebGPURenderer + node materials). Assim o renderer,

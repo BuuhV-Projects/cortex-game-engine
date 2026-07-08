@@ -64,7 +64,11 @@ export async function loadKtx2Native(url: string): Promise<DataTexture> {
 }
 
 // ── Caminho browser: KTX2Loader do three (WASM), preguiçoso + configurável ────
-let _transcoderPath = 'basis/'; // onde os basis_transcoder.js/.wasm são servidos
+// Onde o KTX2Loader do browser acha o transcoder Basis (WASM). Default aponta
+// pro `basis/` vendorizado ao lado do engine (o IDE copia dist-engine/basis/ →
+// vendor/cortex-game-engine/basis/). Servido pela raiz do projeto (vite),
+// resolve em `/vendor/cortex-game-engine/basis/`. Override via setKtx2TranscoderPath.
+let _transcoderPath = 'vendor/cortex-game-engine/basis/';
 let _ktx2Loader: KTX2Loader | null = null;
 
 /**

@@ -2,8 +2,9 @@
 
 **Data:** 2026-07-08
 **Status:** aceito (Fase 1 ✅ transcode→RGBA + loader; Fase 3 ✅ pipeline
-PNG→KTX2 e GLB→KTX2 provados; falta converter os assets do teste4 + validar o
-caminho browser no Studio. Fase 2 — formatos de bloco BC — pendente)
+PNG→KTX2 e GLB→KTX2 provados; caminho browser ✅ validado no Chrome real com a
+WASM vendorizada. Falta converter os assets do teste4 em lote. Fase 2 — formatos
+de bloco BC no host nativo — pendente; no BROWSER o KTX2Loader já entrega bloco)
 
 ## Contexto
 

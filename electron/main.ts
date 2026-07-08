@@ -590,6 +590,10 @@ async function vendorEngine(projectPath: string): Promise<void> {
   // Chunk separado do Rapier (WASM ~2 MB): o index.js/index.dev.js o carregam via
   // dynamic import `./rapier.js` SÓ quando há física (TDR-0002). Vai ao lado deles.
   await cp(join(appPath, 'dist-engine', 'rapier.js'), join(vendorDir, 'rapier.js'))
+  // Transcoder Basis (WASM) do KTX2Loader — texturas KTX2 no Studio/browser
+  // (ADR-0108). O `loadKtx2` aponta o setTranscoderPath pra `vendor/cortex-game-engine/basis/`.
+  // No export nativo não é usado (transcoder C++), então NÃO vai pro pak.
+  await cp(join(appPath, 'dist-engine', 'basis'), join(vendorDir, 'basis'), { recursive: true }).catch(() => {})
 
   // Types: copia *.d.ts de cada módulo (ignora .d.ts.map e .js)
   for (const [subdir, modules] of Object.entries(VENDOR_TYPE_MODULES)) {
