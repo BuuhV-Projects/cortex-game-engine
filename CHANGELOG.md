@@ -1,3 +1,10 @@
+# [0.34.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.33.0...v0.34.0) (2026-07-08)
+
+
+### Features
+
+* **build:** export nativo embarcado no Studio Windows (TDR-0003) ([2920830](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2920830d089467d52bf7f716e8b6cb853b165ebf))
+
 # [0.33.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.32.0...v0.33.0) (2026-07-08)
 
 
