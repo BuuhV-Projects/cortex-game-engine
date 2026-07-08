@@ -340,18 +340,22 @@ node native/scripts/gdk-package.mjs <layoutDir> "<AppName>" <exe.exe>  # gera co
 # registrar p/ rodar (dev): wdapp register <layout>\MicrosoftGame.config
 ```
 `gdk-package.mjs` gera um `MicrosoftGame.config` válido (Identity/Executable/
-ShellVisuals) + logos placeholder nas dimensões exatas que o validador exige
-(Square44/150/480, StoreLogo 100², Splash 1920×1080) + `KnownDependency VC14`
-(o VC++ Redist que o exe/dlls precisam). Validado: o `makepkg validate` **parseia
-o config e gera a identity**; os achados de logo/dep foram corrigidos.
+ShellVisuals + `<DesktopRegistration><DependencyList><KnownDependency VC14>` — o
+VC++ Redist que o exe/dlls puxam) + logos placeholder nas dimensões exatas que o
+validador exige (Square44/150/480, StoreLogo 100², Splash 1920×1080).
 
-**Portões conhecidos (pós esta etapa):**
-- **`wdapp register`/rodar** exige **Modo de Desenvolvedor** do Windows (Configurações).
+**✅ App model validado de ponta a ponta no PC (sem NDA):** `wdapp register` do
+loose layout → rodar o exe → `XGameRuntimeInitialize OK` + **package identity**
+(`XPackageGetCurrentProcessPackageIdentifier`). Com identidade, XUser/XGameSave/
+achievements passam a funcionar. (`wdapp register` exige **Modo de Desenvolvedor**
+ligado; `wdapp unregister <id>` desfaz.)
+
+**Portões/próximos:**
+- **Binary scan** (`makepkg validate`): o exe precisa do **build platform completo
+  `Gaming.Desktop.x64`** (props do GDK: extension libs, flags) — hoje é CMake plano
+  linkando só o `xgameruntime.lib`. **Próximo passo técnico** (antes de XGameSave).
 - **`makepkg validate` completo** (submission validator) precisa de `XtfApi.dll`
-  (ferramenta de console, não vem no GDK **público**) — some no dev PC.
-- **Binary scan**: o exe precisa do **build platform completo `Gaming.Desktop.x64`**
-  (props do GDK: extension libs, flags) — hoje é CMake plano linkando só o
-  `xgameruntime.lib`. **Esse é o próximo passo técnico** (antes de XGameSave/etc.).
+  (tooling de console, não vem no GDK **público**).
 - **Console** (`Gaming.Xbox.*`): ID@Xbox + GDKX (NDA) + o backend gráfico D3D12X
   (risco nº 1 — wgpu não serve lá).
 

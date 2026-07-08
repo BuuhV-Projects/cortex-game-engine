@@ -66,9 +66,11 @@ function configXml(appName, exeName) {
     BackgroundColor="#1e2028"
     ForegroundText="light"
     Description="${appName}" />
-  <DependencyList>
-    <KnownDependency Name="VC14" />
-  </DependencyList>
+  <DesktopRegistration>
+    <DependencyList>
+      <KnownDependency Name="VC14" />
+    </DependencyList>
+  </DesktopRegistration>
 </Game>
 `;
 }
