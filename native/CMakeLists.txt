@@ -12,6 +12,7 @@ set(TP ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 add_executable(cortex_host
   src/main.cpp
   src/core/app_window.cpp
+  src/core/gdk.cpp
   src/core/js_runtime.cpp
   src/napi/napi_util.cpp
   src/shims/animation_frame.cpp
@@ -90,6 +91,27 @@ target_link_libraries(cortex_host PRIVATE
   ${TP}/hermes/build/native/win32/x64/hermes.lib
   ${RAPIER_NATIVE}/rapier_native.dll.lib
 )
+
+# ── Microsoft GDK (app model console/Xbox — M3, PRD-0004) ────────────────────
+# OPT-IN: -DCORTEX_GDK=ON liga o app model GDK (XGameRuntime). O GDK é
+# PRÉ-REQUISITO (instalado à parte, não vem no fetch-deps — ver architecture.md).
+# Público (Gaming.Desktop.x64) roda sem NDA; alvos de console exigem ID@Xbox+GDKX.
+option(CORTEX_GDK "Linka o Microsoft GDK (XGameRuntime) — app model console/Xbox" OFF)
+if(CORTEX_GDK)
+  # Acha o XGameRuntime.h da MAIOR versão instalada do GDK (windows/ = desktop).
+  file(GLOB _gdk_hdrs "C:/Program Files (x86)/Microsoft GDK/*/windows/include/XGameRuntime.h")
+  if(NOT _gdk_hdrs)
+    message(FATAL_ERROR "CORTEX_GDK=ON mas o GDK não foi achado — instale: https://github.com/microsoft/GDK#installation")
+  endif()
+  list(SORT _gdk_hdrs)
+  list(GET _gdk_hdrs -1 _gdk_hdr)
+  get_filename_component(GDK_INC "${_gdk_hdr}" DIRECTORY)          # .../windows/include
+  get_filename_component(GDK_WIN "${GDK_INC}" DIRECTORY)          # .../windows
+  message(STATUS "GDK: ${GDK_WIN}")
+  target_include_directories(cortex_host PRIVATE "${GDK_INC}")
+  target_link_libraries(cortex_host PRIVATE "${GDK_WIN}/lib/x64/xgameruntime.lib")
+  target_compile_definitions(cortex_host PRIVATE CORTEX_GDK=1)
+endif()
 
 # DLLs ao lado do executável
 add_custom_command(TARGET cortex_host POST_BUILD

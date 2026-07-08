@@ -10,6 +10,7 @@
 #include <string>
 
 #include "core/app_window.h"
+#include "core/gdk.h"
 #include "core/host_gpu.h"
 #include "core/js_runtime.h"
 #include "napi/napi_util.h"
@@ -90,6 +91,10 @@ void shutdownGpu(HostGpu* gpu) {
 }  // namespace
 
 int main(int argc, char** argv) {
+  // App model do GDK (console/Xbox): inicializa o Game Runtime cedo, antes de
+  // qualquer outra API do GDK. No-op no build desktop (sem CORTEX_GDK).
+  core::initGameRuntime();
+
   HostGpu gpu;
   // Tamanho só do modo janela (CORTEX_WINDOWED); em fullscreen usa a
   // resolução do display.
@@ -178,6 +183,7 @@ int main(int argc, char** argv) {
   shutdownGpu(&gpu);
   SDL_DestroyWindow(window);
   SDL_Quit();
+  core::shutdownGameRuntime();  // no-op sem CORTEX_GDK
   std::printf("cortex-native encerrou\n");
   return 0;
 }

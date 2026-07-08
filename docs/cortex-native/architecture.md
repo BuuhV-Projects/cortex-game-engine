@@ -47,6 +47,7 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/core/host_gpu.h` | Estado gráfico compartilhado (instance, surface, device, config, textura do frame). Structs, sem comportamento. |
 | `native/src/core/app_window.*` | SDL3: janela, instância WebGPU (D3D12 forçado), surface, eventos (quit/resize). |
 | `native/src/core/js_runtime.*` | Ciclo de vida do Hermes (API C `jsr_*`), `print()`, boot `.hbc`→fallback `.js`, drain de microtasks. |
+| `native/src/core/gdk.*` | App model do Microsoft GDK (M3): `initGameRuntime`/`shutdownGameRuntime` (XGameRuntime). **No-op** sem `-DCORTEX_GDK`; com o flag, linka `xgameruntime.lib` e inicializa o runtime do GDK. Base p/ XUser/XGameSave/suspend-resume e alvos de console. |
 | `native/src/napi/napi_util.*` | Helpers Node-API genéricos (namespace `njs`): propriedades, wrap/unwrap de handles, chamadas JS com log de exceção. Zero dependência de WebGPU/SDL. |
 | `native/src/shims/timers.*` | `setTimeout`/`clearTimeout`/`setImmediate`. O Hermes agenda async/await via `setImmediate` — obrigatório. |
 | `native/src/shims/animation_frame.*` | `requestAnimationFrame` (uma geração de callbacks por frame; JS re-registra). |
@@ -323,6 +324,16 @@ cmake -G Ninja -S native -B native/build -DCMAKE_BUILD_TYPE=Release
 cmake --build native/build
 native/build/cortex_host.exe
 ```
+
+**App model do GDK (M3)** — opt-in, exige o GDK instalado (pré-requisito acima):
+```powershell
+cmake -G Ninja -S native -B native/build-gdk -DCMAKE_BUILD_TYPE=Release -DCORTEX_GDK=ON
+cmake --build native/build-gdk   # linka xgameruntime.lib; XGameRuntimeInitialize no boot
+```
+O CMake acha a maior versão do GDK em `C:\Program Files (x86)\Microsoft GDK\*\windows`.
+Hoje: compila+linka e o `XGameRuntimeInitialize` retorna OK no desktop. Próximo:
+`MicrosoftGame.config` + empacotar/registrar (MakePkg) o app `Gaming.Desktop.x64`,
+depois XGameSave/XUser/suspend-resume; console (`Gaming.Xbox.*`) exige ID@Xbox+GDKX.
 
 Saída esperada hoje (M0, Marco C): janela com triângulo violeta, e no console
 `[js] [boot] pipeline criado — WGSL compilado no backend D3D12`.
