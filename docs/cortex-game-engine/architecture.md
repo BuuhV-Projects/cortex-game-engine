@@ -192,6 +192,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   ⚠️ Marcar **static** (Inspector → Física) cria um Collider2D (mundo 2.5D, que o
   Character ignora) **e** a flag `cortexSolid` (que o Character usa) — é a flag que
   bloqueia o player. Pro player/NPC simples até a migração pro CharacterController do Rapier.
+  - ⚡ **Raycast acelerado por BVH** (`src/physics/raycastAccel.ts`, ADR-0108): os
+    ~13 raycasts/frame testam a **geometria real** — O(triângulos). Num prop denso
+    (ponte de corda ~2000 tris) isso derrubava o FPS **no export nativo (Hermes)**.
+    `three-mesh-bvh` constrói uma árvore por geometria (>512 tris) no `collectScene` →
+    O(log n). Patch global seguro (cai no raycast padrão sem árvore). **Não** use mesh
+    detalhado como colisão achando que é de graça — agora é barato, mas frestas na
+    malha (vãos entre tábuas) ainda deixam o raycast de chão passar (tunneling).
   - ⚠️ **Autoridade única de chão pro Character = o raycast.** O `TerrainCollisionSystem`
     (que aterra pela altura **bilinear** `heightAt`) **não** trata Character — só
     `Platformer`/`Kinematic`. Os dois aterrando o mesmo corpo faziam ele **quicar** em

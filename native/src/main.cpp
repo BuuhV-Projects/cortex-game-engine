@@ -70,50 +70,12 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
 // Um frame: timers → rAF (o JS grava e submete; a surface reconfigura
 // sozinha no getCurrentTexture se a janela mudou) → present.
 void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs) {
-  gpu->drawCalls = 0;  // [TEMP-DIAG] zera antes do rAF do frame
   shims::runTimers(js.env(), elapsedMs);
   js.drainMicrotasks();
-  // [TEMP-DIAG] cronometra o encode de render (rAF do JS = gargalo CPU-bound) e
-  // o present separadamente. O tempo de render revela o custo real mesmo com o
-  // FPS capado no vsync (FIFO).
-  const uint64_t tR0 = SDL_GetTicksNS();
   shims::runAnimationFrames(js.env(), elapsedMs);
   js.drainMicrotasks();
-  const uint64_t tR1 = SDL_GetTicksNS();
   shims::updateAudio();
   webgpu::presentIfAcquired(gpu);
-  const uint64_t tP1 = SDL_GetTicksNS();
-
-  // Acumula por ~1s: média do tempo de render + present + pico + draw calls.
-  static double lastLog = 0;
-  static int frames = 0;
-  static double sumRender = 0, sumPresent = 0, maxRender = 0;
-  const double renderMs = (tR1 - tR0) / 1'000'000.0;
-  const double presentMs = (tP1 - tR1) / 1'000'000.0;
-  sumRender += renderMs;
-  sumPresent += presentMs;
-  if (renderMs > maxRender) maxRender = renderMs;
-  frames++;
-  if (elapsedMs - lastLog >= 1000.0) {
-    const double fps = frames * 1000.0 / (elapsedMs - lastLog);
-    std::fprintf(stderr,
-                 "[perf] fps=%.0f render=%.1fms(max %.1f) present=%.1fms draws=%u\n",
-                 fps, sumRender / frames, maxRender, sumPresent / frames,
-                 gpu->drawCalls);
-    // [TEMP-DIAG] Linha do tempo por segundo num perf.log ao lado do exe — jogue
-    // e atravesse a ponte; a queda de fps + os draws aparecem aqui. Remover depois.
-    static std::FILE* perfLog = std::fopen("perf.log", "w");
-    if (perfLog) {
-      std::fprintf(perfLog,
-                   "t=%3.0fs fps=%2.0f render=%4.1fms(max %4.1f) draws=%u\n",
-                   elapsedMs / 1000.0, fps, sumRender / frames, maxRender,
-                   gpu->drawCalls);
-      std::fflush(perfLog);
-    }
-    frames = 0;
-    lastLog = elapsedMs;
-    sumRender = sumPresent = maxRender = 0;
-  }
 }
 
 void shutdownGpu(HostGpu* gpu) {

@@ -4,6 +4,7 @@ import { Entity } from '../ecs/Entity.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
+import { ensureBoundsTree } from '../physics/raycastAccel.js';
 
 const DOWN = new Vector3(0, -1, 0);
 /** Tolerância de contato (skin width) — folga p/ considerar "tocando o chão". */
@@ -67,6 +68,10 @@ function collectScene(
       }
       if (!(o as { isMesh?: boolean }).isMesh || ud['cortexVegetationSub']) return;
       if (ud['editorInternal'] || ud['cortexRoadMarkings']) return; // gizmo/decoração: fora da física
+      // Props detalhados (ponte de corda, cenário) ganham árvore BVH → raycast
+      // O(log n) em vez de O(nº de triângulos). Sem isso, encostar num prop de
+      // ~2000 tris derruba o FPS no export nativo (Hermes lento). Ver raycastAccel.
+      ensureBoundsTree(o);
       if (ud['cortexTerrain']) terrainMeshes.push(o);
       else if (isSolid(o)) solidMeshes.push(o);
       groundMeshes.push(o); // superfície pisável (terreno/road/solid/modelo), exceto vegetação

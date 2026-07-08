@@ -26,6 +26,7 @@
     "@dimforge/rapier3d-compat": "^0.19.3",
     "commander": "~14.0.3",
     "three": "~0.184.0",
+    "three-mesh-bvh": "0.9.10",
     "zod": "^4.4.3"
   },
   "devDependencies": {
