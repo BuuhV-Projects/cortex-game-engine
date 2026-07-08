@@ -26,11 +26,42 @@ export interface UiRenderTarget {
     camera: THREE.Camera,
     viewport: { x: number; y: number; width: number; height: number },
   ): void;
+  /**
+   * Caminho de composição em gama (ADR-0105): renderiza a UI numa RenderTarget
+   * própria (linear) e devolve o GPUTexture do backend pro host compor sobre o
+   * jogo. Opcional (mock de teste / hosts antigos não têm).
+   */
+  renderUiLayer?(scene: THREE.Scene, camera: THREE.Camera, width: number, height: number): unknown;
 }
 
 /** O host expõe o raster? (é assim que o backend renderer é selecionado.) */
 export function hasNativeTextRaster(): boolean {
   return typeof (globalThis as Record<string, unknown>)['__cortexRasterText'] === 'function';
+}
+
+/**
+ * O host expõe o compositor de UI em gama (`__cortexUiLayer`, ADR-0105)? Quando
+ * sim, a UI vai pra uma RenderTarget própria e o host compõe sobre o jogo em
+ * gama (blend igual ao DOM). Quando não (host antigo), cai no caminho
+ * `renderViewport` por cima do frame (blend linear, lavado).
+ */
+function hasUiCompositor(): boolean {
+  return typeof (globalThis as Record<string, unknown>)['__cortexUiLayer'] === 'function';
+}
+
+/**
+ * Blend pra escrever numa RenderTarget com ALPHA correto (ADR-0105): rgb
+ * premultiplicado + alpha "over" reto. O `NormalBlending` do three elevaria o
+ * alpha ao quadrado sobre o alvo transparente (scrim 0.6 → 0.36 → composição
+ * fraca). Só no caminho de composição nativa; o caminho antigo usa NormalBlending.
+ */
+function setUiCompositeBlend(material: THREE.Material): void {
+  material.blending = THREE.CustomBlending;
+  material.blendEquation = THREE.AddEquation;
+  material.blendSrc = THREE.SrcAlphaFactor;
+  material.blendDst = THREE.OneMinusSrcAlphaFactor;
+  material.blendSrcAlpha = THREE.OneFactor;
+  material.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
 }
 
 /**
@@ -71,6 +102,11 @@ export class RendererUiBackend implements UiBackend {
   private readonly _quad = new THREE.PlaneGeometry(1, 1);
   private _viewport: UiViewport = { width: 0, height: 0 };
   /**
+   * Compor em gama via host (ADR-0105)? Decidido uma vez: define o blend dos
+   * materiais (premult) E o caminho do `render()` (RT + `__cortexUiLayer`).
+   */
+  private readonly _composite = hasUiCompositor();
+  /**
    * Descarte ADIADO de texturas/materiais de texto: o frame em voo ainda
    * referencia os antigos — dispose imediato = "Texture has been destroyed"
    * no submit. Liberamos 2 frames depois da troca.
@@ -108,12 +144,30 @@ export class RendererUiBackend implements UiBackend {
     if (this._viewport.width === 0) return;
     // Cor de UI (sRGB autorada) fica FORA do tone mapping do jogo pelos materiais
     // (`toneMapped=false` no box/texto/imagem) — sem esfriar/lavar no export.
-    this._target.renderViewport(this._scene, this._camera, {
-      x: 0,
-      y: 0,
-      width: this._viewport.width,
-      height: this._viewport.height,
-    });
+    if (this._composite) {
+      // Composição em gama (ADR-0105): UI numa RenderTarget própria (linear) e o
+      // host compõe sobre o jogo em gama — blend translúcido igual ao DOM.
+      const layer = (globalThis as Record<string, unknown>)['__cortexUiLayer'] as (t: unknown) => void;
+      if (this._visuals.size === 0) {
+        layer(null); // sem widgets → host pula a composição (desenha só o jogo)
+      } else {
+        const tex = this._target.renderUiLayer?.(
+          this._scene,
+          this._camera,
+          this._viewport.width,
+          this._viewport.height,
+        );
+        layer(tex ?? null);
+      }
+    } else {
+      // Host antigo (sem compositor): desenha por cima do frame — blend linear.
+      this._target.renderViewport(this._scene, this._camera, {
+        x: 0,
+        y: 0,
+        width: this._viewport.width,
+        height: this._viewport.height,
+      });
+    }
     this._graveyard = this._graveyard.filter((entry) => {
       if (--entry.frames > 0) return true;
       entry.dispose();
@@ -241,6 +295,7 @@ export class RendererUiBackend implements UiBackend {
     // que deixava o menu "frio" no native vs "quente" no Studio/DOM).
     material.toneMapped = false;
     material.colorNode = vec4(color, alpha);
+    if (this._composite) setUiCompositeBlend(material); // alpha correto na RT (ADR-0105)
     return { material, uniforms };
   }
 
@@ -327,6 +382,7 @@ export class RendererUiBackend implements UiBackend {
       map: texture,
       toneMapped: false, // cor de UI (sRGB), fora do tone mapping do jogo
     });
+    if (this._composite) setUiCompositeBlend(material); // alpha correto na RT (ADR-0105)
     if (!visual.text) {
       visual.text = new THREE.Mesh(this._quad, material);
       this._scene.add(visual.text);
@@ -364,6 +420,7 @@ export class RendererUiBackend implements UiBackend {
       visual.imageTexture = texture;
       if (!visual.image) {
         const material = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, map: texture, toneMapped: false });
+        if (this._composite) setUiCompositeBlend(material); // alpha correto na RT (ADR-0105)
         visual.image = new THREE.Mesh(this._quad, material);
         this._scene.add(visual.image);
       } else {

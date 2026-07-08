@@ -13,7 +13,8 @@
  * Usa widgets SEM texto (o raster nativo `__cortexRasterText` só é chamado com
  * texto) e um alvo de render mockado — sem GPU.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { CustomBlending, NormalBlending } from 'three';
 import { RendererUiBackend, type UiRenderTarget } from '../../src/ui/runtime/RendererUiBackend.js';
 import { UiPanel, UiButton } from '../../src/ui/runtime/widgets.js';
 
@@ -51,5 +52,59 @@ describe('RendererUiBackend — regressão de cor (export nativo)', () => {
     const scrim = new UiPanel({ background: '#000000', width: 100, height: 100, opacity: 0.6 });
     backend.sync([scrim], { width: 800, height: 600 });
     expect(visualOf(backend, scrim.id)?.panelUniforms?.fillOpacity.value).toBeCloseTo(0.6);
+  });
+});
+
+describe('RendererUiBackend — composição em gama via host (ADR-0105)', () => {
+  const g = globalThis as Record<string, unknown>;
+  afterEach(() => {
+    delete g['__cortexUiLayer'];
+  });
+
+  function blendOf(backend: RendererUiBackend, id: number): number | undefined {
+    return (
+      backend as unknown as { _visuals: Map<number, { background?: { material: { blending: number } } }> }
+    )._visuals.get(id)?.background?.material.blending;
+  }
+
+  it('SEM __cortexUiLayer: render() usa renderViewport (fallback) e blend NORMAL', () => {
+    let viewportCalls = 0;
+    const target: UiRenderTarget = { renderViewport: () => void viewportCalls++ };
+    const backend = new RendererUiBackend(target); // _composite lido no construtor
+    const panel = new UiPanel({ background: '#0d3a52', width: 100, height: 40 });
+    backend.sync([panel], { width: 800, height: 600 });
+    backend.render();
+    expect(viewportCalls).toBe(1);
+    expect(blendOf(backend, panel.id)).toBe(NormalBlending);
+  });
+
+  it('COM __cortexUiLayer: render() desenha na RT e passa a textura pro host; blend premult (CustomBlending)', () => {
+    const fakeTexture = { id: 'ui-rt' };
+    let handed: unknown = 'nao-chamado';
+    g['__cortexUiLayer'] = (t: unknown): void => {
+      handed = t;
+    };
+    const target: UiRenderTarget = {
+      renderViewport: () => {},
+      renderUiLayer: () => fakeTexture,
+    };
+    const backend = new RendererUiBackend(target);
+    const panel = new UiPanel({ background: '#0d3a52', width: 100, height: 40 });
+    backend.sync([panel], { width: 800, height: 600 });
+    backend.render();
+    expect(handed).toBe(fakeTexture); // handle da RT entregue ao host
+    expect(blendOf(backend, panel.id)).toBe(CustomBlending); // alpha premult correto
+  });
+
+  it('COM __cortexUiLayer mas SEM widgets: passa null (host pula a composição)', () => {
+    let handed: unknown = 'nao-chamado';
+    g['__cortexUiLayer'] = (t: unknown): void => {
+      handed = t;
+    };
+    const backend = new RendererUiBackend({ renderViewport: () => {}, renderUiLayer: () => ({}) });
+    // sem sync de widgets, mas o viewport precisa estar setado pra render() não sair cedo
+    backend.sync([], { width: 800, height: 600 });
+    backend.render();
+    expect(handed).toBeNull();
   });
 });

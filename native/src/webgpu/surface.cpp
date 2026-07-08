@@ -121,14 +121,43 @@ napi_value contextGetCurrentTexture(napi_env env, napi_callback_info) {
 }
 
 void presentIfAcquired(HostGpu* gpu) {
-  // SSAA: o JS desenhou no offscreen; adquire a swapchain, faz downscale e
-  // apresenta. SÓ apresenta se o JS renderizou este frame (ssaaPending) —
-  // senão o vsync do present travaria o host mesmo sem frame novo.
+  // ── Composição da UI em gama (ADR-0105) ──────────────────────────────────
+  // Apresenta quando o jogo renderizou (ssaaPending) OU a UI foi submetida
+  // (uiPending) — as telas de MENU rodam um loop só-UI, sem render do jogo.
+  // Compõe SEMPRE via offscreen: com frame do jogo, a UI vai POR CIMA dele; sem
+  // (menu), limpa o offscreen e desenha só a UI. Sem UI nem jogo → não apresenta
+  // (não trava o vsync em loads pesados que renderizam pouco).
+  // Gate por `device` (não `configured`): nas telas de MENU o three renderiza só
+  // na RT da UI e NUNCA na canvas, então `context.configure` do JS pode não ter
+  // rodado. `acquireSurfaceTexture` auto-configura a surface na 1ª aquisição.
+  if (gpu->uiCompositor && gpu->device) {
+    const bool gameRendered = gpu->ssaaPending;
+    if (!gameRendered && !gpu->uiPending) return;  // nada novo
+    WGPUTextureView off = ensureOffscreen(gpu);    // garante a base da composição
+    if (!off) {
+      gpu->ssaaPending = false;
+      gpu->uiPending = false;
+      return;
+    }
+    if (!gameRendered) clearOffscreen(gpu);  // menu: base limpa (jogo não desenhou)
+    gpu->ssaaPending = false;
+    gpu->uiPending = false;
+    WGPUTexture swap = acquireSurfaceTexture(gpu);
+    if (!swap) return;  // surface temporariamente indisponível → pula frame
+    WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);
+    blitToSwapchain(gpu, swapView);  // downscale + compõe a UI em gama
+    wgpuTextureViewRelease(swapView);
+    wgpuSurfacePresent(gpu->surface);
+    wgpuTextureRelease(swap);
+    return;
+  }
+
+  // ── SSAA sem compositor de UI (host antigo / sem UI de runtime) ───────────
   if (gpu->offscreenView && gpu->configured) {
     if (!gpu->ssaaPending) return;  // sem frame novo → não bloqueia no vsync
     gpu->ssaaPending = false;
     WGPUTexture swap = acquireSurfaceTexture(gpu);
-    if (!swap) return;  // surface temporariamente indisponível → pula frame
+    if (!swap) return;
     WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);
     blitToSwapchain(gpu, swapView);
     wgpuTextureViewRelease(swapView);

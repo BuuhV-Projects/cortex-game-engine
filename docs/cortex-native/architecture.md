@@ -61,15 +61,15 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/rapier-native/` | Crate Rust (cdylib): Rapier de verdade com C ABI mínima espelhando o que o engine usa. |
 | `native/src/webgpu/bindings.h` | API pública do módulo: `registerBindings`, `presentIfAcquired`. Fora do módulo, só inclua este. |
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |
-| `native/src/webgpu/navigator.cpp` | `navigator.gpu` (requestAdapter, formato preferido) + dono do `gpuState()`. |
+| `native/src/webgpu/navigator.cpp` | `navigator.gpu` (requestAdapter, formato preferido) + dono do `gpuState()`. Registra o binding global `__cortexUiLayer(textureOrNull)` (ADR-0105): o JS entrega a textura da RT da UI pro host compor em gama. |
 | `native/src/webgpu/device.cpp` | Aquisição do device, composição do objeto JS `device`, error scopes (push/popErrorScope). |
 | `native/src/webgpu/pipeline.cpp` | Shader modules (WGSL) e render pipelines — sub-parsers por sub-estado (vertex/fragment/primitive/depth/multisample/layout). |
 | `native/src/webgpu/layouts.cpp` | Bind group layouts e pipeline layouts explícitos (o Three não usa 'auto'). |
 | `native/src/webgpu/buffers.cpp` | Recursos de DADOS: createBuffer (+mappedAtCreation/getMappedRange/unmap), writeBuffer (assinatura completa da spec, offsets em ELEMENTOS), createBindGroup, global `GPUBufferUsage`. |
 | `native/src/webgpu/textures.cpp` | Recursos de IMAGEM: createTexture, views com descriptor (depth do Three), samplers. Marca `__kind` nos objetos p/ o parseBindGroupEntry. |
 | `native/src/webgpu/commands.cpp` | Encoder, render pass (color+depth attachments), setBindGroup/setVertexBuffer/setIndexBuffer/viewport/scissor, draw/drawIndexed, queue.submit. |
-| `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. Com SSAA, `getCurrentTexture` devolve a offscreen (SS) e o present faz o blit downscale. |
-| `native/src/webgpu/supersample.*` | SSAA (ADR-0103): alvo offscreen (nativo × `renderScale`) onde o JS desenha + pipeline de blit (fullscreen-triangle + sampler linear) que reduz pra swapchain no present. Mata o serrilhado do contorno inverted-hull. |
+| `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. Com SSAA, `getCurrentTexture` devolve a offscreen (SS) e o present faz o blit downscale. Com compositor de UI (ADR-0105), o present dispara por `ssaaPending` OU `uiPending` (menus rodam loop só-UI, sem render do jogo) e é gate por `gpu->device` (não `configured` — o menu não chama `context.configure`). |
+| `native/src/webgpu/supersample.*` | SSAA (ADR-0103): alvo offscreen (nativo × `renderScale`) onde o JS desenha + pipeline de blit (fullscreen-triangle + sampler linear) que reduz pra swapchain no present. Mata o serrilhado do contorno inverted-hull. **Também COMPÕE a UI de runtime EM GAMA** (ADR-0105): amostra a textura da UI (`gpu->uiTexture`) e blenda sobre o jogo com `out = game·(1−a) + OETF(ui/a)·a` (= blend sRGB do DOM); `ensureOffscreen` força o offscreen quando há compositor de UI (pra rodar mesmo em `renderScale=1`). |
 | `native/src/webgpu/enums.*` | Mapas string↔enum (formatos, compare, cull, vertex formats...). |
 | `native/js/src/main.js` | Boot do jogo (hoje: cubo Three.js girando + smoke tests do M1). Entry do bundle. |
 | `native/js/src/prelude.js` | Orquestrador dos shims JS (importa js/src/shims/ na ordem certa). Regra: o que dá pra shimar em JS fica em shims/. |
@@ -184,11 +184,18 @@ Native (que roda milhares de libs sobre Hermes em produção):
   branco = **(170,172,175)** no native (linear) vs **(108,127,138)** no Chrome
   (sRGB). Só translúcidos divergem (opacity < 1: scrim, overlays, botão
   desabilitado); cor OPACA é bit-idêntica. Por isso os menus de resultado/pausa
-  saem "com muito brilho/pouco contraste" no native. NÃO é MSAA/SSAA/HDR/ICC (o
-  monitor é sRGB puro; Chrome faz identidade). Fix (a implementar, ADR-0105):
-  renderizar a UI do native em "pass-through sRGB" (cor/textura cru + sem OETF de
-  saída no passe da UI) pra o blend virar gama. NÃO deixar gambiarra de
-  compensação (tint/exposição/present-mode já foram tentados e revertidos).
+  saíam "com muito brilho/pouco contraste" no native. NÃO é MSAA/SSAA/HDR/ICC (o
+  monitor é sRGB puro; Chrome faz identidade). **RESOLVIDO (ADR-0105):** a UI de
+  runtime vai pra uma **RenderTarget própria** do three (escreve LINEAR, sem OETF,
+  sem tocar estado global do renderer) e o **blit compõe EM GAMA** sobre o jogo
+  (`out = game·(1−a) + OETF(ui/a)·a` — supersample.cpp). O engine entrega a textura
+  da RT via `__cortexUiLayer` (navigator.cpp). Medido: scrim (170,172,175)→(108,127,138)
+  = DOM; opacos bit-exatos; jogo intacto. **ARMADILHA (tentativa 1 falhou):** togglar
+  `outputColorSpace` por frame pra pular o OETF NÃO funciona — o three faz o OETF num
+  passe de saída do FRAME INTEIRO (buffer de trabalho linear), então togglar escurece o
+  JOGO (o cache de pipeline do host serve o shader do jogo sem OETF de forma
+  persistente). Regra geral: **nunca togglar estado global do renderer por frame** (vale
+  pra `outputColorSpace`, `toneMapping`, etc. — vaza pro jogo via os caches three×host).
 - **MSAA precisa de `resolveTarget`**: com `antialias:true`, o Three renderiza
   numa textura multisampled e resolve pro swapchain via `resolveTarget` no
   color attachment. Sem parsear esse campo (commands.cpp), o antialias vira

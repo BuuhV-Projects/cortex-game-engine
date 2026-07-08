@@ -100,11 +100,37 @@ napi_value gpuGetPreferredCanvasFormat(napi_env env, napi_callback_info) {
   return out;
 }
 
+// __cortexUiLayer(textureOrNull) — o JS (RendererUiBackend, ADR-0105) passa a
+// textura da UI (RenderTarget própria, linear premultiplicado) pra o host compor
+// sobre o jogo EM GAMA no present. `null`/sem-arg = sem UI neste frame (só o jogo).
+// A textura é NÃO-own (a RT vive no three/JS); vale durante o frame corrente.
+napi_value cortexUiLayer(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value args[1];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  HostGpu* gpu = gpuState();
+  if (!gpu) return njs::undefined(env);
+  // O JS usa o caminho de composição → daqui pra frente sempre via offscreen
+  // (pra o blit/composição rodar mesmo com renderScale=1).
+  gpu->uiCompositor = true;
+  WGPUTexture tex = nullptr;
+  if (argc >= 1) {
+    napi_valuetype type = napi_undefined;
+    napi_typeof(env, args[0], &type);
+    if (type == napi_object)
+      tex = static_cast<WGPUTexture>(njs::unwrapValue(env, args[0]));
+  }
+  gpu->uiTexture = tex;
+  gpu->uiPending = true;  // apresenta este frame mesmo sem render do jogo (menus)
+  return njs::undefined(env);
+}
+
 void registerBindings(napi_env env, HostGpu* gpu) {
   g_gpu = gpu;
 
   napi_value global = nullptr;
   napi_get_global(env, &global);
+  njs::setMethod(env, global, "__cortexUiLayer", cortexUiLayer);
 
   napi_value gpuObj = njs::makeObject(env);
   njs::setMethod(env, gpuObj, "requestAdapter", gpuRequestAdapter);

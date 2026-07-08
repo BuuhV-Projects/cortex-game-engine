@@ -55,4 +55,18 @@ struct HostGpu {
   // serializando trabalho assíncrono pesado que renderiza pouco (ex.: buildScene
   // sob uma tela de loading): 0,7s virava ~18s.
   bool ssaaPending = false;
+
+  // ── UI composta EM GAMA (ADR-0105) ────────────────────────────────────────
+  // O JS (RendererUiBackend) desenha a UI de runtime numa RenderTarget PRÓPRIA
+  // (linear premultiplicado) e passa a textura por `__cortexUiLayer` a cada
+  // frame; o blit compõe sobre o offscreen do jogo EM GAMA
+  // (out = game_srgb·(1−a) + OETF(ui/a)·a), casando o blend translúcido com o
+  // DOM/CSS (o overlay linear do three saía lavado). Ver webgpu/supersample.cpp.
+  bool uiCompositor = false;  // o JS usa o caminho de composição? (força offscreen)
+  WGPUTexture uiTexture = nullptr;  // textura da UI do frame (NÃO-own: vive no three/JS)
+  // A UI foi submetida NESTE frame? Dispara o present mesmo quando o jogo NÃO
+  // renderizou (telas de menu rodam um loop só-UI, sem getCurrentTexture da
+  // canvas). Resetado após o present — sem isso, o present rodaria todo frame do
+  // host e o vsync serializaria trabalho async pesado (ver ssaaPending).
+  bool uiPending = false;
 };

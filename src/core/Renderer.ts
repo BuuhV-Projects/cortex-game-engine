@@ -86,6 +86,14 @@ export class Renderer {
   private _width: number;
   private _height: number;
 
+  /**
+   * RenderTarget própria da UI de runtime no host nativo (ADR-0105). A UI é
+   * desenhada aqui (em LINEAR, sem OETF — RenderTarget própria não passa pelo
+   * output color space do three) e o host compõe sobre o jogo EM GAMA, casando
+   * o blend translúcido com o DOM/CSS. Criada sob demanda em `renderUiLayer`.
+   */
+  private _uiTarget: THREE.RenderTarget | null = null;
+
   /** `true` quando o backend (WebGPU ou fallback WebGL2) terminou o init. */
   private _initialized = false;
   /** Promessa do init do backend — resolvida quando `render()` pode ser chamado. */
@@ -212,6 +220,63 @@ export class Renderer {
   }
 
   /**
+   * Renderiza `scene` (a UI de runtime) numa **RenderTarget própria** e devolve o
+   * objeto GPUTexture do backend, pro host nativo compor sobre o jogo EM GAMA
+   * (ADR-0105). Diferente de `renderViewport` (que desenha por cima do frame e
+   * blenda no buffer LINEAR interno do three → lavado), uma RenderTarget própria:
+   * - escreve **LINEAR premultiplicado, sem OETF** (o three só aplica o output
+   *   color space no caminho do canvas, não numa RT própria); e
+   * - **não toca estado global** do renderer (`outputColorSpace`/`toneMapping`).
+   *
+   * O host desembrulha a textura e compõe `out = game_srgb·(1−a) + OETF(ui/a)·a`
+   * (blend em gama = igual ao CSS). Devolve `null` se o backend ainda não iniciou
+   * ou se não der pra obter a textura (o chamador cai no caminho antigo).
+   *
+   * As cores de UI **não** precisam de tratamento especial: saem lineares aqui e o
+   * `OETF(ui/a)` do host recupera a cor sRGB autorada (opaco fica bit-exato).
+   */
+  renderUiLayer(
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+    width: number,
+    height: number,
+  ): unknown {
+    if (!this._initialized || width <= 0 || height <= 0) return null;
+    if (!this._uiTarget || this._uiTarget.width !== width || this._uiTarget.height !== height) {
+      this._uiTarget?.dispose();
+      this._uiTarget = new THREE.RenderTarget(width, height, {
+        type: THREE.HalfFloatType, // linear em 16f: sem banding nos tons escuros do scrim
+        format: THREE.RGBAFormat,
+        depthBuffer: false,
+        stencilBuffer: false,
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+      });
+    }
+    // Clear transparente do alvo da UI (autoClear é false globalmente → explícito).
+    // Salva/restaura a cor de clear global pra não vazar pro render do jogo.
+    const prevColor = new THREE.Color();
+    // getClearColor do WebGPURenderer tipa `Color4` (com `.a`); em runtime aceita
+    // um `Color` (só preenche r/g/b). O alpha vem do getClearAlpha à parte.
+    (this._renderer.getClearColor as unknown as (t: THREE.Color) => void)(prevColor);
+    const prevAlpha = this._renderer.getClearAlpha();
+    this._renderer.setRenderTarget(this._uiTarget);
+    this._renderer.setClearColor(0x000000, 0);
+    this._renderer.clear(true, false, false);
+    this._renderer.render(scene, camera);
+    this._renderer.setRenderTarget(null);
+    this._renderer.setClearColor(prevColor, prevAlpha);
+    // Handle da GPUTexture do backend (o host embrulha as texturas com wrapHandle,
+    // então este mesmo objeto desembrulha pro WGPUTexture no passe de composição).
+    const backend = (
+      this._renderer as unknown as {
+        backend?: { get(t: unknown): { texture?: unknown } | undefined };
+      }
+    ).backend;
+    return backend?.get(this._uiTarget.texture)?.texture ?? null;
+  }
+
+  /**
    * Redimensiona o canvas e o viewport do renderer.
    * Chamado automaticamente pelo listener de `window.resize`; também pode ser
    * chamado manualmente quando o canvas não ocupa a janela inteira.
@@ -234,6 +299,8 @@ export class Renderer {
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this._resizeHandler);
     }
+    this._uiTarget?.dispose();
+    this._uiTarget = null;
     this._renderer.dispose();
   }
 
