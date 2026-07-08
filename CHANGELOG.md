@@ -1,3 +1,72 @@
+# [0.33.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.32.0...v0.33.0) (2026-07-08)
+
+
+### Bug Fixes
+
+* **editor:** editor sobrevive à troca de fase (keepOnClear no World.clear) ([0ddee1e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0ddee1e855aa6d05d96b0ca601139db52882d614))
+* **editor:** gizmo de seleção (eixos) sobrevive à troca de fase ([ff0ec46](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ff0ec466d2cca86abd1139af9e69d8929aae59d8))
+* **export:** rmSync com maxRetries — ENOTEMPTY do Windows ao limpar dist-native ([de56f34](https://github.com/BuuhV-Projects/cortex-game-engine/commit/de56f34043c8ca812e2c217b89b66f8617f35152))
+* **native:** color space (sRGB) + MSAA resolveTarget — export identico ao Studio ([5fd6d65](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5fd6d65afe7ca2dd23eb42949779b6525fb14f7b))
+* **native:** Image/HTMLImageElement fake — TextureLoader funciona no host ([3dfa335](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3dfa3355c0ac27cec4f5104ba8a4123df4911c2e))
+* **native:** janela de tamanho fixo — resolve o crash "ao entrar na fase fecha" ([bd60ffd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bd60ffdbedbf402c5898f690e594bd8cc8d24b44))
+* **native:** janela high-DPI + resolucao real — outline nitido (era upscale borrado) ([4e4588e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4e4588e6090333e816a815e7323a159b5c7b82c3))
+* **native:** SSAA usa modelo de dpr (UI nao encolhe no export) — ADR-0103 ([72fa19a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/72fa19abd66fbfbfff1938ff2ba215fbbc2c3114))
+* **native:** URL/objectURL (texturas embutidas) + blend states — teste4 100% texturizado ([14fc855](https://github.com/BuuhV-Projects/cortex-game-engine/commit/14fc8557bdab8aa04509d4c515b5a19ecd34f127))
+* **scene,dialogue:** runtime do engine usa zod/v3 — validacao REAL no CortexNative ([545e672](https://github.com/BuuhV-Projects/cortex-game-engine/commit/545e672f4810823accc4aca67124d6f380b04914))
+* **studio:** centraliza o modal de export (reset global anulava o margin:auto) ([d56d4d5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d56d4d50bbd5ad820230773eb91a5640c897aa74))
+* **studio:** export com arquivo travado dá mensagem clara (feche o jogo) ([38a786f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/38a786fa3cb1612ef8eaab81c5d74459aa247542))
+* **studio:** export nativo nao exige parar o Play (e mensagem correta) ([0032c47](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0032c471c84f8364a7713d614d43678f17b9f850))
+* **studio:** export nativo usava setActiveTab inexistente -> activateTab ([b40c8bb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b40c8bbe8243f4e7d022aa9c8ec4459728a72122))
+* **ui:** backgroundImage carrega no export nativo (fetch + createImageBitmap) ([a12f4c0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a12f4c0b8badf65a06139d38b9ac6d31f848347e))
+* **ui:** cores da UI no export nativo batem com o Studio (tone mapping + opacidade) ([867d47a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/867d47addfc1a242656b227dd87cf65b7f8e8bd7)), closes [#ffb03](https://github.com/BuuhV-Projects/cortex-game-engine/issues/ffb03) [#fff3](https://github.com/BuuhV-Projects/cortex-game-engine/issues/fff3) [#a0416](https://github.com/BuuhV-Projects/cortex-game-engine/issues/a0416)
+* **ui:** export = Studio no texto (tamanho por em + botao centralizado) ([5e9e23f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5e9e23fc86cbf7f402658fbda1ac6cf31ece9b15))
+* **ui:** imagem de fundo aparece no export nativo (mesh reposicionado apos load) ([680fc27](https://github.com/BuuhV-Projects/cortex-game-engine/commit/680fc27eba78ccb2e2b2adaadd777ed52bdf35c6))
+* **ui:** painel `fill` acompanha o viewport (fundo cobre o fullscreen) ([4a1cc31](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4a1cc312f9e25cb16772f737f63e75e2aa4d4ffd))
+* **ui:** UI do export nativo fora do tone mapping (cores batem com o Studio) ([c62c927](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c62c927bffbd4101d11d03e616918ad1b5fb6f59))
+* **ui:** UiTemplate ignora lixo de dev server (script do vite, doctype, meta/link) ([08ebf05](https://github.com/BuuhV-Projects/cortex-game-engine/commit/08ebf05a93ce5cde903fd9b1c0b67c29f077c14a))
+
+
+### Features
+
+* **engine:** runWithLoadingScreen — tela de loading que dirige o render loop ([7ce1a6f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7ce1a6f8e10a3522cfb28630d4fc2f64baaf4d6c))
+* **engine:** voltar ao menu / trocar de fase sem reload (game.reset + teardown) ([2236c19](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2236c1955029598119ea17168a7aa06b6c79c5bf))
+* **io:** save assinado + ofuscado (anti-adulteração) — ADR-0107 ([190ec1d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/190ec1d769c949eec81b3d6cd7358a7c7b4376ad))
+* **loading:** opção `enabled` — sem tela de loading no editor ([eef86a2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/eef86a2451e304f2615e36d912e807c18654bfb2))
+* **materials:** unlit ganha `textured:false` (cor CHAPADA, ignora o map) ([35eb264](https://github.com/BuuhV-Projects/cortex-game-engine/commit/35eb264840b870c8c4b03d85302d4e5152085cd2)), closes [#ffd83](https://github.com/BuuhV-Projects/cortex-game-engine/issues/ffd83)
+* **native,engine:** superficie WebGPU completa + environment default — teste4 identico ao Studio ([7d89452](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7d89452b3f8fce2c2c0254c1a2933514d177d963))
+* **native:** assets viram um container .pak no export (ADR-0104) ([418c6fc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/418c6fc8ace51e9d53f2c957ac59aa11870fd690))
+* **native:** CortexNative M0 — host SDL3 + WebGPU (D3D12) + Hermes (PRD-0004) ([382d6f4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/382d6f47708687fcbfc15097986de4316ef09a74))
+* **native:** fullscreen por padrao na resolucao nativa (sharp, sem crash) ([da0d925](https://github.com/BuuhV-Projects/cortex-game-engine/commit/da0d925706c6500dca50c661f968d6293cede4dd))
+* **native:** M1 frente 1 — event bus (CustomEvent) + DOM-lite; spec do M1 ([444fd79](https://github.com/BuuhV-Projects/cortex-game-engine/commit/444fd794a72052b2793b2d6692155fe025daa64b))
+* **native:** M1 frente 2 — input SDL->JS + Gamepad API; ADR-0095 (export PC = CortexNative) ([daa507b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/daa507b2c750a475e29061cb4620ee7247c1f644))
+* **native:** M1 frente 3 — fetch/assets: GLB real do teste4 renderizado com textura ([87d3b86](https://github.com/BuuhV-Projects/cortex-game-engine/commit/87d3b86793b6952281acc0c28a86c3ade722d6f7))
+* **native:** M1 frente 4 — Rapier NATIVO (Rust) com a forma da API compat ([d0e56b9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d0e56b91d778a9694644c1ddda1e233765999464))
+* **native:** M1 frente 5 — audio nativo (miniaudio decode + streams SDL3) ([1ceebdc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1ceebdc4c113a4416a297cc5f37daac5aa9b4551))
+* **native:** Marco C — triangulo WGSL 100% comandado pelo JS via navigator.gpu ([d38ad40](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d38ad40d3874e99a16902872c3f8185052c3d2a0))
+* **native:** Marco D — vertex buffer + uniform + bind group (triangulo girando) ([ae8f3b4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ae8f3b41b169f7f58625f7ecfaa32fa6cdcacc5b))
+* **native:** Marco E — CUBO DO THREE.JS GIRANDO no host nativo (M0 CONCLUIDO) ([4a6a985](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4a6a985f80a75b6291d1b8331b7238c368f14b0d))
+* **native:** save persistente no host — localStorage sobre user_storage (ADR-0106) ([071139e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/071139e72eb411152eb718fe0f6622ec85319999))
+* **native:** SSAA (supersampling) mata o serrilhado do contorno das moedas (ADR-0103) ([ea21f8a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ea21f8a502dc6e8ab0080918bfee3dd5a74d1ee7))
+* **native:** TESTE PRATICO — teste4 real bootando e rodando no host ([301c6f6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/301c6f693c0a3d4b0b46088dc9aade2152a645b4))
+* **studio:** modal de progresso + overlay bloqueante no export nativo ([8d7217f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8d7217f23e3232fe684d1841196c4a851d9fc10d))
+* **ui,native:** M1 CONCLUIDO — UIs do engine migradas + export empacotado + re-vendor ([a30d12c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a30d12c2cc6b909ad480bbc3ae6f088d01527deb))
+* **ui/native:** composição da UI de runtime em gama (ADR-0105) ([c909e76](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c909e763c9ab48d21b77115847d4da43c0480419))
+* **ui:** estilo rico (gradiente/canto/borda via SDF-TSL) + CSS que compila pro nativo + export no Studio ([12cb606](https://github.com/BuuhV-Projects/cortex-game-engine/commit/12cb6063ab7bd6d60a0a545c1c03dabe7b124e63))
+* **ui:** fonte unificada Roboto Medium (Studio == export == Xbox) ([66dc028](https://github.com/BuuhV-Projects/cortex-game-engine/commit/66dc0287eaa92d6c6b8b8bad55f3bd695a73f0f2))
+* **ui:** imagem de fundo no UiPanel (backgroundImage) — ADR-0102 ([f983849](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f9838497f04b62174a5bfb54dea6550f58b4eee4))
+* **ui:** templates HTML dinamicos (parseUiTemplate/loadUiTemplate) ([830adf9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/830adf98b9c163eebd98290efc1ec13552ac9e06))
+* **ui:** UI de runtime com 2 backends (ADR-0102) — fase 6 COMPLETA e provada no teste4 ([421ec2c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/421ec2c6ea244dc40cb942c7689679e194fdad82))
+
+
+### Performance Improvements
+
+* **physics:** BVH acelera o raycast de colisão do Character (ADR-0108) ([c53d404](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c53d404d0242b104f607e240a5b3826be8bd9bb0))
+
+
+### Reverts
+
+* **ui:** volta ao TextureLoader (o fetch nao era o fix) — mantem o dirty ([61b6ba4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/61b6ba4d2cf663346d2931e844becd36bcc169f2))
+
 # [0.32.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.31.0...v0.32.0) (2026-07-05)
 
 
