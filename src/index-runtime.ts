@@ -17,6 +17,7 @@ export * from './core/InputManager.js';
 export * from './core/GamepadManager.js';
 export * from './core/Physics.js';
 export * from './core/LoadingScreen.js';
+export * from './core/loadKtx2.js';
 export * from './core/Skybox.js';
 export * from './core/PostFX.js';
 export * from './core/debug.js';

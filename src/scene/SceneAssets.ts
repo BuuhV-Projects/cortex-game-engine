@@ -2,6 +2,7 @@ import { Box3, Vector3, SkinnedMesh } from 'three';
 import type { Object3D, Mesh, Texture } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { AssetLoader, type GLTF } from '../core/AssetLoader.js';
+import { loadKtx2 } from '../core/loadKtx2.js';
 import { Scene } from '../core/Scene.js';
 
 /**
@@ -85,13 +86,17 @@ export async function loadGLB(url: string): Promise<GLTF> {
  * independente (cada sprite com seu recorte UV) deve cloná-la (o
  * {@link createAnimatedSprite} já faz isso).
  *
+ * Texturas **`.ktx2`** (Basis, ADR-0108) são roteadas pro {@link loadKtx2}
+ * (transcoder nativo no host / `KTX2Loader` no browser) — comprimidas e
+ * portáveis pro console; o `pixelated` é ignorado (KTX2 usa linear + mipmaps).
+ *
  * @param url - Caminho relativo à raiz do projeto (ex.: `'assets/hero.png'`).
- * @param pixelated - Nearest filter (pixel art). Default `true`.
+ * @param pixelated - Nearest filter (pixel art). Default `true`. Ignorado p/ KTX2.
  */
 export async function loadTexture(url: string, pixelated = true): Promise<Texture> {
   let tex = _texCache.get(url);
   if (!tex) {
-    tex = await _loader.loadTexture(url, { pixelated });
+    tex = /\.ktx2$/i.test(url) ? await loadKtx2(url) : await _loader.loadTexture(url, { pixelated });
     _texCache.set(url, tex);
   }
   return tex;
