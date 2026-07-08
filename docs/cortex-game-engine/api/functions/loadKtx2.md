@@ -8,7 +8,7 @@
 
 > **loadKtx2**(`url`, `renderer?`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: src/core/loadKtx2.ts:98
+Defined in: [src/core/loadKtx2.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L100)
 
 Carrega uma textura **KTX2** escolhendo o transcoder do ambiente:
 - host nativo → [loadKtx2Native](loadKtx2Native.md) (basis_universal em C++);

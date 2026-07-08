@@ -31,6 +31,9 @@
   },
   "devDependencies": {
     "@babel/plugin-transform-classes": "7.28.4",
+    "@gltf-transform/core": "^4.4.1",
+    "@gltf-transform/extensions": "^4.4.1",
+    "@gltf-transform/functions": "^4.4.1",
     "@types/three": "^0.184.1",
     "electron": "^42.4.0",
     "electron-builder": "^26.15.3",

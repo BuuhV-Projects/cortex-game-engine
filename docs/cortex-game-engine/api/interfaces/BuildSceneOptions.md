@@ -6,7 +6,7 @@
 
 # Interface: BuildSceneOptions
 
-Defined in: [src/scene/SceneBuilder.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L89)
+Defined in: [src/scene/SceneBuilder.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L90)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/scene/SceneBuilder.ts:89](https://github.com/BuuhV-Projects/cor
 
 > `optional` **camera?**: `OrthographicCamera` \| `PerspectiveCamera`
 
-Defined in: [src/scene/SceneBuilder.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L110)
+Defined in: [src/scene/SceneBuilder.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L111)
 
 Câmera do jogo — **necessária** se a cena tem nós `background` (o backdrop
 segue a câmera e rola em parallax). Passe `game.camera`.
@@ -25,7 +25,7 @@ segue a câmera e rola em parallax). Passe `game.camera`.
 
 > `optional` **matte?**: `boolean`
 
-Defined in: [src/scene/SceneBuilder.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L105)
+Defined in: [src/scene/SceneBuilder.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L106)
 
 Deixa **todos** os modelos foscos (mata o brilho PBR → look cartoon/desenho).
 Um nó pode sobrescrever com `matte: false`. Atalho global do [setMatte](../functions/setMatte.md).
@@ -36,7 +36,7 @@ Um nó pode sobrescrever com `matte: false`. Atalho global do [setMatte](../func
 
 > `optional` **overlay?**: [`SceneFileV1`](SceneFileV1.md) \| `null`
 
-Defined in: [src/scene/SceneBuilder.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L93)
+Defined in: [src/scene/SceneBuilder.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L94)
 
 Overlay do editor (overrides de transform + `data.deleted`/`data.added`).
 
@@ -46,7 +46,7 @@ Overlay do editor (overrides de transform + `data.deleted`/`data.added`).
 
 > `optional` **physicsPaused?**: () => `boolean`
 
-Defined in: [src/scene/SceneBuilder.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L117)
+Defined in: [src/scene/SceneBuilder.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L118)
 
 Predicado pra **pausar a física de Character** (gravidade/pulo) — o
 `CharacterPhysicsSystem` que o `buildScene` registra pra nós `character`
@@ -63,7 +63,7 @@ não cair enquanto você edita a cena no F2. Sem isso, a física roda sempre.
 
 > `optional` **renderer?**: [`Renderer`](../classes/Renderer.md)
 
-Defined in: [src/scene/SceneBuilder.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L91)
+Defined in: [src/scene/SceneBuilder.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L92)
 
 Necessário se alguma definição usa o preset `outdoorLighting`.
 
@@ -73,7 +73,7 @@ Necessário se alguma definição usa o preset `outdoorLighting`.
 
 > `optional` **world?**: [`World`](../classes/World.md)
 
-Defined in: [src/scene/SceneBuilder.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L100)
+Defined in: [src/scene/SceneBuilder.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L101)
 
 Mundo ECS — quando presente, nós com `collider`/`player` viram entidades
 (Transform + Object3D + Collider2D [+ PlatformerBody + FollowCameraTarget]),

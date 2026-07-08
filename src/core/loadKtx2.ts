@@ -17,6 +17,8 @@ import {
   UnsignedByteType,
   LinearFilter,
   LinearMipmapLinearFilter,
+  Loader,
+  type LoadingManager,
   type Texture,
 } from 'three';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
@@ -97,4 +99,60 @@ function browserKtx2Loader(renderer?: unknown): KTX2Loader {
  */
 export async function loadKtx2(url: string, renderer?: unknown): Promise<Texture> {
   return hasNativeKtx2() ? loadKtx2Native(url) : browserKtx2Loader(renderer).loadAsync(url);
+}
+
+// Renderer p/ o `detectSupport` do caminho browser das texturas de GLB (o
+// KTX2Loader do three exige um renderer antes de carregar). No host nativo é
+// ignorado. O `Game`/`buildScene` chama `setKtx2Renderer(renderer)` no boot.
+let _renderer: unknown = null;
+export function setKtx2Renderer(renderer: unknown): void {
+  _renderer = renderer;
+}
+
+/**
+ * Loader de KTX2 no formato que o `GLTFLoader` do three espera
+ * (`setKTX2Loader`) — carrega as texturas **embutidas em GLB** (extensão
+ * `KHR_texture_basisu`). Dois caminhos, escolhidos por ambiente (ADR-0108):
+ * - host nativo → transcoder C++ ({@link loadKtx2Native}), sem renderer;
+ * - browser/Studio → `KTX2Loader` do three (WASM), com `detectSupport` do
+ *   renderer registrado em {@link setKtx2Renderer}.
+ *
+ * O `GLTFLoader` passa uma URL `blob:` (bytes da textura no bufferView) — o
+ * mesmo mecanismo que já carrega PNG embutido no host (M1).
+ */
+export class CortexKtx2Loader extends Loader {
+  private _browser: KTX2Loader | null = null;
+
+  constructor(manager?: LoadingManager) {
+    super(manager);
+  }
+
+  private browser(): KTX2Loader {
+    if (!this._browser) {
+      this._browser = new KTX2Loader(this.manager).setTranscoderPath(_transcoderPath);
+      if (_renderer) (this._browser as unknown as { detectSupport(r: unknown): void }).detectSupport(_renderer);
+    }
+    return this._browser;
+  }
+
+  /** Chamado pelo GLTFLoader por textura KTX2. `url` é um `blob:` (bufferView). */
+  override load(
+    url: string,
+    onLoad: (texture: Texture) => void,
+    onProgress?: (event: ProgressEvent) => void,
+    onError?: (err: unknown) => void,
+  ): void {
+    if (hasNativeKtx2()) {
+      loadKtx2Native(url)
+        .then((tex) => onLoad(tex))
+        .catch((e) => onError?.(e));
+      return;
+    }
+    this.browser().load(url, onLoad, onProgress, onError);
+  }
+
+  dispose(): this {
+    this._browser?.dispose();
+    return this;
+  }
 }

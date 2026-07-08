@@ -15,6 +15,7 @@
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { CortexKtx2Loader } from './loadKtx2.js';
 
 // ─── Re-exportação de GLTF ────────────────────────────────────────────────────
 
@@ -40,6 +41,13 @@ export class AssetLoader {
   private readonly _gltfLoader = new GLTFLoader();
   private readonly _fbxLoader = new FBXLoader();
   private readonly _audioLoader = new THREE.AudioLoader();
+
+  constructor() {
+    // Texturas KTX2/Basis embutidas em GLB (KHR_texture_basisu, ADR-0108):
+    // transcoder C++ no host / KTX2Loader do three no browser. Sem isto, um GLB
+    // com textura KTX2 falha ("requires KTX2Loader").
+    this._gltfLoader.setKTX2Loader(new CortexKtx2Loader() as never);
+  }
 
   // ─── Métodos de carregamento ────────────────────────────────────────────────
 

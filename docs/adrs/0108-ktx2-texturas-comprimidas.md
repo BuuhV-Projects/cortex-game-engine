@@ -1,7 +1,9 @@
 # 0108 - KTX2 / Basis: texturas comprimidas no host nativo
 
 **Data:** 2026-07-08
-**Status:** aceito (Fase 1 — transcode → RGBA; Fases 2–3 pendentes)
+**Status:** aceito (Fase 1 ✅ transcode→RGBA + loader; Fase 3 ✅ pipeline
+PNG→KTX2 e GLB→KTX2 provados; falta converter os assets do teste4 + validar o
+caminho browser no Studio. Fase 2 — formatos de bloco BC — pendente)
 
 ## Contexto
 
