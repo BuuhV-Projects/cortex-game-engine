@@ -389,9 +389,15 @@ instalador via `electron-builder.json#win.extraResources`; o CI (composite
 `.github/actions/build-native-host`) compila o host no runner Windows
 (Rust+MSVC+Ninja/CMake → `fetch-deps` → `cargo` → `cmake`) antes do
 `electron:build`. macOS/Linux ficam sem export nativo (host é D3D12/Windows).
+Pós-M1 (feito): **instalador PC** — `native/scripts/make-installer.mjs` empacota
+o `dist-native/` num `<jogo>-setup.exe` (NSIS portátil do fetch-deps; template
+estático `installer.nsi` com valores por `/D`). Instala POR USUÁRIO
+(`%LOCALAPPDATA%\Programs\<app>`, sem admin): atalhos + Adicionar/Remover +
+desinstalador. Também: **KTX2** cozido no export (ADR-0108) e save persistente
+(ADR-0106/0107).
 Pós-M1 (aberto): Speedometer+vehicle controller; espacialização do Panner;
-mapAsync/copyTextureToTexture/MSAA; instalador (NSIS/MSIX) pro dist;
-persistência no CONSOLE (trocar o backend de user_storage por XGameSave).
+mapAsync/copyTextureToTexture/MSAA; formatos BC no host (VRAM); persistência no
+CONSOLE (trocar o backend de user_storage por XGameSave).
 
 Build do Rapier nativo: `cargo build --release` em `native/rapier-native/`
 (1x; o CMake linka `target/release/rapier_native.dll.lib` e copia a dll).

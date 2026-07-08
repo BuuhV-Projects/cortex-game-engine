@@ -102,6 +102,21 @@ if (-not (Test-Path (Join-Path $encDir 'basis_encoder.wasm'))) {
     }
 }
 
+# ── NSIS (portable) — gera o instalador do export PC (make-installer.mjs).
+# Build tool; fica em tools/ (gitignorado). ──
+$NSIS_VERSION = '3.10'
+$nsisDir = Join-Path $root 'tools/nsis'
+if (-not (Test-Path (Join-Path $nsisDir 'Bin/makensis.exe'))) {
+    $nsisZip = Fetch 'NSIS' "https://downloads.sourceforge.net/project/nsis/NSIS%203/$NSIS_VERSION/nsis-$NSIS_VERSION.zip" "nsis-$NSIS_VERSION.zip"
+    $tmp = Join-Path $dl 'nsis-extract'
+    if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+    Expand-Archive $nsisZip -DestinationPath $tmp
+    $r = Get-ChildItem $tmp -Directory | Select-Object -First 1  # nsis-3.10/
+    New-Item -ItemType Directory -Force (Split-Path $nsisDir) | Out-Null
+    Move-Item $r.FullName $nsisDir
+    Remove-Item $tmp -Recurse -Force
+}
+
 # ── Hermes (runtime JS; fork Windows da Microsoft, via NuGet) ──
 $hermesZip = Fetch 'Hermes' "https://www.nuget.org/api/v2/package/Microsoft.JavaScript.Hermes/$HERMES_VERSION" "hermes-$HERMES_VERSION.nupkg.zip"
 $hermesDir = Join-Path $tp 'hermes'
