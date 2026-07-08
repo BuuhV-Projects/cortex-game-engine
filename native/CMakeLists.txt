@@ -24,6 +24,8 @@ add_executable(cortex_host
   src/shims/text_raster.cpp
   src/shims/timers.cpp
   src/shims/user_storage.cpp
+  src/shims/ktx2.cpp
+  ${TP}/basisu/basisu_transcoder.cpp
   src/webgpu/buffers.cpp
   src/webgpu/commands.cpp
   src/webgpu/device.cpp
@@ -63,9 +65,19 @@ target_include_directories(cortex_host PRIVATE
   ${TP}/SDL3/include
   ${TP}/miniaudio
   ${TP}/stb
+  ${TP}/basisu
   ${TP}/wgpu/include
   ${TP}/hermes/build/native/include
   ${TP}/hermes/build/native/include/node-api
+)
+
+# basis_universal transcoder (ADR-0108): habilita KTX2, sem a dependência de Zstd
+# (nosso encoder não usa supercompressão Zstd — evita puxar a lib). Vale pro
+# basisu_transcoder.cpp E pro ktx2.cpp (que inclui o header e precisa ver o
+# ktx2_transcoder, gated por BASISD_SUPPORT_KTX2).
+target_compile_definitions(cortex_host PRIVATE
+  BASISD_SUPPORT_KTX2=1
+  BASISD_SUPPORT_KTX2_ZSTD=0
 )
 
 # Rapier nativo (crate Rust em rapier-native/ — `cargo build --release` lá

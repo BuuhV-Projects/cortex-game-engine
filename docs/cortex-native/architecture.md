@@ -55,6 +55,7 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/shims/user_storage.*` | `__cortexReadUserFile`/`__cortexWriteUserFile` — persistência GRAVÁVEL do usuário em `SDL_GetPrefPath(<jogo>, "saves")` (`<appdata>/<jogo>/saves/`). Único caminho de escrita; serve o shim de `localStorage` (ADR-0106). No console → XGameSave. |
 | `native/src/shims/pak.*` | Leitor do container `assets.pak` (ADR-0104): parse header+índice, lê slice + desembaralha (XOR). Formato em sync com `native/scripts/pak.mjs`. |
 | `native/src/shims/image_decode.*` | `__cortexDecodeImage` (stb_image → RGBA8) pro createImageBitmap. |
+| `native/src/shims/ktx2.*` | `__cortexTranscodeKtx2` (basis_universal transcoder → RGBA8) pra texturas KTX2/Basis (ADR-0108, Fase 1). Espelha o image_decode; reusa o upload RGBA. Lib em `third_party/basisu/` (só `transcoder/`, pinada). |
 | `native/src/shims/rapier.*` | Ponte C ABI do crate rapier-native → `__rapierNative` (funções achatadas, f64). |
 | `native/src/shims/audio.*` | `__cortexAudio`: decode (miniaudio) + playback (streams SDL3; loop/gain/pitch); `updateAudio()` por frame. |
 | `native/src/shims/text_raster.*` | `__cortexRasterText` (stb_truetype + Roboto pinada) → bitmap RGBA branco pro RendererUiBackend (ADR-0102). |

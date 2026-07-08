@@ -71,6 +71,24 @@ if (-not (Test-Path (Join-Path $maDir 'miniaudio.h'))) {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mackron/miniaudio/$MINIAUDIO_TAG/miniaudio.h" -OutFile (Join-Path $maDir 'miniaudio.h')
 }
 
+# ── basis_universal transcoder (decode KTX2/Basis → RGBA no host; ADR-0108) ──
+# Só a pasta transcoder/ (headers + 1 .cpp + tabelas .inc/.inl), pinado por commit.
+# Baixa arquivo-a-arquivo (o archive do repo tem ~120 MB de assets de teste; a
+# transcoder/ tem ~3 MB). A lista vem da API do GitHub no commit pinado.
+$BASISU_COMMIT = '1b33fd5098c6e7b58324146b8f5518cbb4cdfb72'
+$basisuDir = Join-Path $tp 'basisu'
+if (-not (Test-Path (Join-Path $basisuDir 'basisu_transcoder.cpp'))) {
+    Write-Host 'baixando basis_universal (transcoder/) ...' -ForegroundColor Cyan
+    New-Item -ItemType Directory -Force $basisuDir | Out-Null
+    $listUrl = "https://api.github.com/repos/BinomialLLC/basis_universal/contents/transcoder?ref=$BASISU_COMMIT"
+    $entries = Invoke-RestMethod -Uri $listUrl -Headers @{ 'User-Agent' = 'cortex-fetch-deps' }
+    foreach ($e in $entries) {
+        if ($e.type -ne 'file') { continue }
+        $raw = "https://raw.githubusercontent.com/BinomialLLC/basis_universal/$BASISU_COMMIT/transcoder/$($e.name)"
+        Invoke-WebRequest -Uri $raw -OutFile (Join-Path $basisuDir $e.name)
+    }
+}
+
 # ── Hermes (runtime JS; fork Windows da Microsoft, via NuGet) ──
 $hermesZip = Fetch 'Hermes' "https://www.nuget.org/api/v2/package/Microsoft.JavaScript.Hermes/$HERMES_VERSION" "hermes-$HERMES_VERSION.nupkg.zip"
 $hermesDir = Join-Path $tp 'hermes'

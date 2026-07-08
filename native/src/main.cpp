@@ -18,6 +18,7 @@
 #include "shims/files.h"
 #include "shims/image_decode.h"
 #include "shims/input.h"
+#include "shims/ktx2.h"
 #include "shims/rapier.h"
 #include "shims/text_raster.h"
 #include "shims/timers.h"
@@ -111,6 +112,7 @@ int main(int argc, char** argv) {
     shims::registerFiles(js.env(), baseDir);
     shims::registerUserStorage(js.env(), deriveGameName(argc, argv, baseDir));
     shims::registerImageDecode(js.env());
+    shims::registerKtx2(js.env());
     shims::registerRapier(js.env());
     shims::registerAudio(js.env());
     shims::registerTextRaster(js.env(), baseDir, basePath ? basePath : "");
