@@ -89,6 +89,19 @@ if (-not (Test-Path (Join-Path $basisuDir 'basisu_transcoder.cpp'))) {
     }
 }
 
+# ── basis_universal ENCODER (WASM) — ferramenta de BUILD (converter PNG→KTX2,
+# scripts/encode-ktx2.mjs). NÃO vai pro runtime; roda no Node. Mesmo commit do
+# transcoder. Fica em tools/ (não third_party/, que é dep de compilação). ──
+$encDir = Join-Path $root 'tools/basis-encoder'
+if (-not (Test-Path (Join-Path $encDir 'basis_encoder.wasm'))) {
+    Write-Host 'baixando basis_encoder (WASM, build tool) ...' -ForegroundColor Cyan
+    New-Item -ItemType Directory -Force $encDir | Out-Null
+    foreach ($f in @('basis_encoder.js', 'basis_encoder.wasm')) {
+        $raw = "https://raw.githubusercontent.com/BinomialLLC/basis_universal/$BASISU_COMMIT/webgl/encoder/build/$f"
+        Invoke-WebRequest -Uri $raw -OutFile (Join-Path $encDir $f)
+    }
+}
+
 # ── Hermes (runtime JS; fork Windows da Microsoft, via NuGet) ──
 $hermesZip = Fetch 'Hermes' "https://www.nuget.org/api/v2/package/Microsoft.JavaScript.Hermes/$HERMES_VERSION" "hermes-$HERMES_VERSION.nupkg.zip"
 $hermesDir = Join-Path $tp 'hermes'
