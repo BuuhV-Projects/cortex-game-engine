@@ -1,11 +1,13 @@
 # cortex-game-engine
 
-IDE Electron + motor de jogos 3D em TypeScript com arquitetura
-Entity-Component-System (ECS) e renderização via Three.js. Os jogos são
-criados, editados e testados na própria IDE; o build final é empacotado
-como instalador Windows com Tauri (ver [ADR-0024](docs/adrs/0024-instalador-final-com-tauri.md)).
+IDE (Electron) + motor de jogos 3D em TypeScript, com arquitetura
+Entity-Component-System (ECS) e renderização Three.js (WebGPU). Você **cria,
+edita e testa o jogo dentro da própria IDE** (o "Studio"): editor de cena visual,
+Inspector, física data-driven e um **Chat IA** que monta cenário a partir dos
+seus assets. O export de PC é **nativo, sem browser** — o CortexNative
+([ADR-0101](docs/adrs/0101-cortexnative-como-export-pc.md)).
 
-## Rodar a IDE em desenvolvimento
+## Rodar o Studio em desenvolvimento
 
 ```bash
 yarn install
@@ -14,86 +16,95 @@ yarn electron:dev
 
 ## Criar e abrir projetos
 
-- **Novo projeto**: clicar **+ Novo Projeto** na sidebar — pede pasta e
-  nome, copia o template, vendoriza o engine e roda `yarn install`
-  automaticamente (ADR-0013).
-- **Abrir projeto existente**: botão **Abrir Projeto** logo abaixo —
-  abre o diálogo nativo do SO. Persiste no localStorage; abre
-  automaticamente da próxima vez.
+- **Novo projeto**: **+ Novo Projeto** na sidebar — pede pasta e nome, copia o
+  template, vendoriza o engine e roda `yarn install` automaticamente
+  ([ADR-0013](docs/adrs/0013-yarn-install-automatico-apos-criar-projeto.md)).
+- **Abrir projeto existente**: **Abrir Projeto** — diálogo nativo do SO.
+  Persiste no `localStorage` e reabre da próxima vez.
 
-## Gerar instalador do jogo (Windows)
+## O que o engine oferece
 
-Cada projeto criado pela IDE pode ser empacotado como `.exe` instalador
-NSIS via **Tauri 2** (ADR-0024). Projetos novos já saem configurados;
-projetos antigos a IDE configura na hora.
+- **ECS + cena data-driven**: a cena é um `level.json` versionável, com um
+  overlay de edição do editor que vence o código/JSON
+  ([ADR-0044](docs/adrs/0044-cena-data-driven-json-com-overlay-do-editor.md)).
+- **Editor visual (F2)**: mover/rotacionar/escalar, hierarquia, Inspector,
+  `Ctrl+Z` ([ADR-0084](docs/adrs/0084-undo-editor.md)), blockout
+  paramétrico estilo ProBuilder
+  ([ADR-0071](docs/adrs/0071-probuilder-blockout-mesh-editavel.md)).
+- **Física editável no Inspector** (Rapier): colisão é **propriedade do
+  objeto** (Nenhum / Estático / Character), declarada nos campos do nó — não
+  cravada no código ([TDR-0002](docs/tdrs/0002-fisica-dinamica-com-rapier.md)).
+- **Scripts anexáveis** estilo MonoBehaviour: componente Script no Inspector
+  ([ADR-0085](docs/adrs/0085-scripts-anexaveis.md)).
+- **Diálogo + UI de runtime** data-driven, com dois backends (DOM e renderer)
+  ([ADR-0070](docs/adrs/0070-sistema-de-dialogo-e-ui-in-game.md),
+  [ADR-0102](docs/adrs/0102-ui-runtime-dois-backends.md)).
+- **Kits de assets semânticos**: vocabulário curado (`kit.json`) que o Studio e
+  o Chat IA usam pra montar cena
+  ([ADR-0053](docs/adrs/0053-design-system-de-assets-kit-semantico-sockets-temas.md)).
+- **Chat IA agente**: vê os assets do projeto e monta/edita cenário
+  (PRDs [0001](docs/prds/0001-chat-ia-assistente-de-projeto.md)/[0002](docs/prds/0002-chat-ia-como-agente.md)).
+- **API pública documentada** — gerada com TypeDoc: `yarn docs:engine`
+  (referência em `docs/cortex-game-engine/api/`).
 
-### Pré-requisitos (uma vez por máquina)
+## Exportar o jogo para PC (Windows) — CortexNative
 
-Instalar manualmente — a IDE não baixa automaticamente nesta versão:
+O export de PC gera um `.exe` **nativo, sem browser**: o JavaScript do jogo roda
+em Hermes + WebGPU nativo (D3D12) + SDL3, com física Rapier nativa
+([ADR-0100](docs/adrs/0100-cortex-native-stack-do-host-m0.md)/[ADR-0101](docs/adrs/0101-cortexnative-como-export-pc.md)).
+O alvo final é **console/Xbox** ([PRD-0004](docs/prds/0004-cortex-native-port-console-xbox.md)).
 
-1. **Rust toolchain** → [rustup.rs](https://rustup.rs/)
-   Baixar `rustup-init.exe` e executar com defaults. Necessário pra
-   compilar a casca Tauri.
-2. **Microsoft C++ Build Tools** → [visualstudio.microsoft.com/visual-cpp-build-tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-   No instalador, marcar **"Desktop development with C++"**. Tauri
-   precisa do linker MSVC pra gerar o `.exe`.
-3. **WebView2 Runtime** → [developer.microsoft.com/microsoft-edge/webview2](https://developer.microsoft.com/microsoft-edge/webview2/)
-   Já vem instalado no Windows 11 e no Windows 10 recente. Se faltar,
-   baixar o **Evergreen Bootstrapper**.
+> Substitui o antigo instalador Tauri ([ADR-0024](docs/adrs/0024-instalador-final-com-tauri.md),
+> congelado). Hoje é **Windows-only** (o host é D3D12).
 
-Validar Rust no terminal:
+### Pelo Studio instalado
+
+Abra o projeto e use o **Export nativo** — sai uma pasta `dist-native/` com o
+`<jogo>.exe` + dlls + bytecode + `assets.pak`, rodável standalone. O host e o
+toolchain de export já vêm embarcados no Studio Windows, então **não precisa de
+nada instalado** ([TDR-0003](docs/tdrs/0003-export-nativo-embarcado-no-studio.md)).
+
+### Em desenvolvimento (electron:dev)
+
+Pra exportar rodando o Studio em dev você precisa **compilar o host uma vez**
+(Rust + MSVC + Ninja/CMake). Passo a passo e armadilhas em
+[docs/cortex-native/architecture.md](docs/cortex-native/architecture.md#build--run).
+O export em si:
 
 ```bash
-cargo --version
-rustc --version
+node native/scripts/export-game.mjs <pasta-do-projeto>
 ```
-
-### Fluxo na IDE
-
-1. Abrir o projeto na IDE.
-2. **Menu → Projeto → Gerar instalador...** (atalho `Ctrl+Shift+B`).
-   - Se for projeto antigo (sem `src-tauri/`), a IDE pergunta e
-     configura na hora: copia o esqueleto Tauri, gera **ícones
-     placeholder** (cinza-azulado), mescla os scripts no
-     `package.json` e roda `yarn install`.
-3. Clicar **Gerar instalador...** de novo. O `.exe` sai em:
-   ```
-   src-tauri/target/release/bundle/nsis/<NOME>_0.0.1_x64-setup.exe
-   ```
-4. **Trocar pelos ícones reais quando tiver a arte**:
-   ```bash
-   yarn tauri icon caminho/para/icone.png
-   ```
-   PNG quadrado, idealmente 1024×1024. Sobrescreve os placeholders.
-
-### Limitações conhecidas (ADR-0024)
-
-- **Sem code signing** — o SmartScreen do Windows vai exibir
-  "Editor desconhecido" no primeiro execute. Aceito enquanto for
-  teste; certificado vira decisão própria quando publicar.
-- **Sem auto-update** — toda atualização do jogo = novo download
-  manual do instalador.
-- **Só Windows** — macOS/Linux fora do alvo declarado.
 
 ## Estrutura do repositório
 
 | Pasta | Conteúdo |
 |---|---|
-| [src/](src/) | Código do engine (core, ecs, ai). Vendorizado em cada projeto. |
-| [electron/](electron/) | IDE: main process, preload, renderer, agente IA. |
-| [templates/new-project/](templates/new-project/) | Esqueleto copiado em cada projeto novo. |
-| [docs/adrs/](docs/adrs/) | Decisões arquiteturais numeradas. |
-| [tests/](tests/) | Testes vitest do engine. |
+| [src/](src/) | Engine: `core`, `ecs`, `components`, `systems`, `physics`, `editor`, `scene`, `probuilder`, `dialogue`, `ui`, `io`, `scripts`, `ai`. Vendorizado em cada projeto. |
+| [native/](native/) | Host CortexNative (C++/Rust): runtime nativo do jogo + scripts de export. Mapa próprio em [docs/cortex-native/](docs/cortex-native/). |
+| [electron/](electron/) | Studio (IDE): main process, preload, renderer, agente IA. |
+| [kits/](kits/) | Kits de assets curados (ADR-0053), empacotados no Studio. |
+| [templates/](templates/) | Esqueleto copiado em cada projeto novo. |
+| [web/](web/) | Website institucional (workspace independente). |
+| [docs/](docs/) | `adrs/` + `tdrs/` (decisões), `cortex-game-engine/` (arquitetura + API), `cortex-native/`, `prds/`, `game-design-bible/`. |
+| [tests/](tests/) | Testes Vitest do engine. |
+
+## Testes
+
+```bash
+yarn test        # vitest
+yarn typecheck   # tsc --noEmit
+```
 
 ## Decisões importantes
 
-Os ADRs em [docs/adrs/](docs/adrs/) registram cada decisão grande. Os
-mais relevantes pra entender a forma do projeto:
+As decisões grandes ficam em [docs/adrs/](docs/adrs/) (arquitetura) e
+[docs/tdrs/](docs/tdrs/) (tooling/infra). Fundamentais pra entender a forma do
+projeto:
 
-- **[ADR-0001](docs/adrs/0001-renderizador-threejs.md)** — Three.js como renderer.
 - **[ADR-0002](docs/adrs/0002-arquitetura-ecs.md)** — ECS como modelo de jogo.
 - **[ADR-0009](docs/adrs/0009-vendoring-engine-em-projetos-criados.md)** — Vendoring do engine nos projetos.
-- **[ADR-0021](docs/adrs/0021-agente-deve-preferir-engine-sobre-three-direto.md)** — Agente IA usa engine, não Three direto.
-- **[ADR-0022](docs/adrs/0022-padrao-arquitetural-de-projetos-criados.md)** — Padrão de pastas dos projetos.
-- **[ADR-0023](docs/adrs/0023-split-screen-e-gamepad-no-engine.md)** — Split-screen e gamepad.
-- **[ADR-0024](docs/adrs/0024-instalador-final-com-tauri.md)** — Instalador final com Tauri.
+- **[ADR-0044](docs/adrs/0044-cena-data-driven-json-com-overlay-do-editor.md)** — Cena data-driven + overlay do editor.
+- **[ADR-0053](docs/adrs/0053-design-system-de-assets-kit-semantico-sockets-temas.md)** — Design system de assets (kits).
+- **[ADR-0085](docs/adrs/0085-scripts-anexaveis.md)** — Scripts anexáveis (MonoBehaviour).
+- **[ADR-0100](docs/adrs/0100-cortex-native-stack-do-host-m0.md)/[0101](docs/adrs/0101-cortexnative-como-export-pc.md)** — CortexNative (host nativo, export PC).
+</content>
