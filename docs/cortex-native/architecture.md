@@ -298,6 +298,22 @@ porque metais ficavam pretos sem ele, o que divergia entre preview e export.
 com par `register*()`/`run*()` se precisar de tick do loop; registre no
 `main.cpp`.
 
+## Pré-requisitos (toolchain — instalação à parte, NÃO vêm no fetch-deps)
+
+Regra de deps: **libs pequenas e livres** (SDL3, wgpu, hermes, stb, miniaudio,
+basisu, NSIS) → `fetch-deps.ps1` (baixadas, pinadas, gitignoradas). **Toolchains
+grandes/licenciados** → **pré-requisito**, o dev instala uma vez (não dá pra
+vendorizar por tamanho/licença/integração com o VS):
+
+- **Visual Studio / MSVC (x64)** — compilador C++ (build num prompt `vcvars64`).
+- **Rust (cargo)** — compila o `rapier-native` (`cargo build --release` lá).
+- **Microsoft GDK** (só pro export **console/Xbox**, M3) — SDK grande (GB+),
+  licenciado, integra com o VS. **Público** (`Gaming.Desktop.x64`) cobre todo o
+  dev de app-model **sem NDA**; os alvos de console (`Gaming.Xbox.*`) exigem
+  **ID@Xbox** + GDKX (sob NDA). Instalação: https://github.com/microsoft/GDK#installation
+  (via winget: `winget install Microsoft.Gaming.GDK`). O Studio **detecta** o GDK
+  (env `GameDK`/`GRDKLatest`) e orienta — **não** instala.
+
 ## Build & run
 
 ```powershell
