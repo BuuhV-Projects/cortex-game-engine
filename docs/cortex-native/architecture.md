@@ -331,9 +331,29 @@ cmake -G Ninja -S native -B native/build-gdk -DCMAKE_BUILD_TYPE=Release -DCORTEX
 cmake --build native/build-gdk   # linka xgameruntime.lib; XGameRuntimeInitialize no boot
 ```
 O CMake acha a maior versão do GDK em `C:\Program Files (x86)\Microsoft GDK\*\windows`.
-Hoje: compila+linka e o `XGameRuntimeInitialize` retorna OK no desktop. Próximo:
-`MicrosoftGame.config` + empacotar/registrar (MakePkg) o app `Gaming.Desktop.x64`,
-depois XGameSave/XUser/suspend-resume; console (`Gaming.Xbox.*`) exige ID@Xbox+GDKX.
+Compila+linka e o `XGameRuntimeInitialize` retorna OK no desktop.
+
+**Empacotar como app GDK** (`MicrosoftGame.config` + logos):
+```powershell
+node native/scripts/gdk-package.mjs <layoutDir> "<AppName>" <exe.exe>  # gera config + logos
+# valida (config-level): makepkg validate /d <layout> /pd <out>
+# registrar p/ rodar (dev): wdapp register <layout>\MicrosoftGame.config
+```
+`gdk-package.mjs` gera um `MicrosoftGame.config` válido (Identity/Executable/
+ShellVisuals) + logos placeholder nas dimensões exatas que o validador exige
+(Square44/150/480, StoreLogo 100², Splash 1920×1080) + `KnownDependency VC14`
+(o VC++ Redist que o exe/dlls precisam). Validado: o `makepkg validate` **parseia
+o config e gera a identity**; os achados de logo/dep foram corrigidos.
+
+**Portões conhecidos (pós esta etapa):**
+- **`wdapp register`/rodar** exige **Modo de Desenvolvedor** do Windows (Configurações).
+- **`makepkg validate` completo** (submission validator) precisa de `XtfApi.dll`
+  (ferramenta de console, não vem no GDK **público**) — some no dev PC.
+- **Binary scan**: o exe precisa do **build platform completo `Gaming.Desktop.x64`**
+  (props do GDK: extension libs, flags) — hoje é CMake plano linkando só o
+  `xgameruntime.lib`. **Esse é o próximo passo técnico** (antes de XGameSave/etc.).
+- **Console** (`Gaming.Xbox.*`): ID@Xbox + GDKX (NDA) + o backend gráfico D3D12X
+  (risco nº 1 — wgpu não serve lá).
 
 Saída esperada hoje (M0, Marco C): janela com triângulo violeta, e no console
 `[js] [boot] pipeline criado — WGSL compilado no backend D3D12`.
