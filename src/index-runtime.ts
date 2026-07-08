@@ -136,6 +136,7 @@ export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';
 export * from './io/TauriSceneFileWriter.js';
 export * from './io/autoDetectSceneFileWriter.js';
+export * from './io/signedSave.js';
 
 // ─── Narrativa: estado de história + diálogo (ADR-0070) ───────────────────────
 // StoryState (flags / base do save narrativo) + diálogo data-driven: grafo (Zod),

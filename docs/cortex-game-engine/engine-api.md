@@ -1040,6 +1040,26 @@ game.start()
 `SceneFile`, `SceneLoader`, `SceneFileWriter`, `HttpSceneFileWriter`,
 `TauriSceneFileWriter`, `autoDetectSceneFileWriter`.
 
+### Save assinado (anti-adulteração) — `encodeSignedSave` / `decodeSignedSave` (ADR-0107)
+
+Embrulha o texto do save num token opaco assinado (HMAC-SHA256) + ofuscado, pra
+o jogador não editar o progresso no bloco de notas. JS puro (roda no host
+nativo). Detecta adulteração: token mexido → `decodeSignedSave` devolve `null`.
+Limite honesto: a chave fica embutida (sobe a barra pra cheat casual; não é
+segurança de servidor). Use por cima do `localStorage`:
+
+```ts
+import { encodeSignedSave, decodeSignedSave } from 'cortex-game-engine'
+const SECRET = 'meu-jogo/save/v1/…' // chave DESTE jogo (bump o sufixo = reset dos saves)
+
+// salvar
+localStorage.setItem('save', encodeSignedSave(JSON.stringify(dados), SECRET))
+// carregar (null = ausente / adulterado / formato legado → comece limpo)
+const raw = localStorage.getItem('save')
+const json = raw ? decodeSignedSave(raw, SECRET) : null
+const dados = json ? JSON.parse(json) : novoSave()
+```
+
 ---
 
 ## Pós-processamento (WebGPU)

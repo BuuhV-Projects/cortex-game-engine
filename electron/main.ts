@@ -525,7 +525,7 @@ const VENDOR_TYPE_MODULES = {
     'Vegetation',
     'VehicleSetup',
   ],
-  io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter'],
+  io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter', 'signedSave'],
   physics: ['RapierPhysics'],
   scripts: ['ScriptBehavior', 'ScriptRegistry'],
   ui: ['Speedometer'],
