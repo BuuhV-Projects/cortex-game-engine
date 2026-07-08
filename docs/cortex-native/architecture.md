@@ -53,7 +53,7 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/shims/animation_frame.*` | `requestAnimationFrame` (uma geração de callbacks por frame; JS re-registra). |
 | `native/src/shims/input.*` | Eventos SDL→JS (keydown/keyup/pointer via `__cortexDispatchInput`) + Gamepad API (`__cortexInput.getGamepads`, layout standard W3C sobre SDL_Gamepad). |
 | `native/src/shims/files.*` | `__cortexReadFile` (fetch lê daqui). Tenta o `assets.pak` (via pak.*) e cai pro arquivo solto no disco (dev). SÓ leitura (assets). |
-| `native/src/shims/user_storage.*` | `__cortexReadUserFile`/`__cortexWriteUserFile` — persistência GRAVÁVEL do usuário em `SDL_GetPrefPath(<jogo>, "saves")` (`<appdata>/<jogo>/saves/`). Único caminho de escrita; serve o shim de `localStorage` (ADR-0106). No console → XGameSave. |
+| `native/src/shims/user_storage.*` | `__cortexReadUserFile`/`__cortexWriteUserFile` — persistência GRAVÁVEL do usuário; serve o shim de `localStorage` (ADR-0106). Resolve a pasta de save: com `-DCORTEX_GDK` tenta **XGameSave** (`XUser` + `XGameSaveFilesGetFolderWithUi`, por-usuário + sync na nuvem) quando há usuário assinado + SCID (`CORTEX_SCID`); senão cai pro arquivo `SDL_GetPrefPath(<jogo>, "saves")`. É file I/O comum na pasta resolvida. |
 | `native/src/shims/pak.*` | Leitor do container `assets.pak` (ADR-0104): parse header+índice, lê slice + desembaralha (XOR). Formato em sync com `native/scripts/pak.mjs`. |
 | `native/src/shims/image_decode.*` | `__cortexDecodeImage` (stb_image → RGBA8) pro createImageBitmap. |
 | `native/src/shims/ktx2.*` | `__cortexTranscodeKtx2` (basis_universal transcoder → RGBA8) pra texturas KTX2/Basis (ADR-0108, Fase 1). Espelha o image_decode; reusa o upload RGBA. Lib em `third_party/basisu/` (só `transcoder/`, pinada). |
@@ -349,6 +349,12 @@ loose layout → rodar o exe → `XGameRuntimeInitialize OK` + **package identit
 (`XPackageGetCurrentProcessPackageIdentifier`). Com identidade, XUser/XGameSave/
 achievements passam a funcionar. (`wdapp register` exige **Modo de Desenvolvedor**
 ligado; `wdapp unregister <id>` desfaz.)
+
+**XGameSave** (`user_storage.*`): o backend de save já tenta o XGameSave sob GDK
+(`XUser` + `XGameSaveFilesGetFolderWithUi`) e **cai pro arquivo** sem SCID/usuário
+— validado: compila+linka e faz fallback no dev PC (log `[storage] XGameSave
+indisponível`). Ativa com um **título configurado** (SCID via `CORTEX_SCID`) +
+usuário Xbox assinado (Partner Center/ID@Xbox).
 
 **Portões/próximos:**
 - **Binary scan** (`makepkg validate`): o exe precisa do **build platform completo
