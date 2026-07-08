@@ -59,6 +59,7 @@
     "export_step_bytecode": "Compilando bytecode (Hermes)",
     "export_step_runtime": "Copiando runtime (exe + libs)",
     "export_step_assets": "Copiando assets e cenas",
+    "export_cook": "Comprimindo texturas → KTX2… {done}/{total}",
     "export_step_done": "Finalizado",
     "export_done_ok": "Export concluído",
     "export_done_fail": "O export falhou — veja o terminal.",

@@ -26,12 +26,16 @@ function walk(dir, out = []) {
 /**
  * Cozinha `assetsDir` → `cookedDir` (GLB com texturas KTX2; resto copiado).
  * `cacheDir` guarda GLB cozidos por hash da fonte (persiste entre exports).
+ * `onProgress(done, total)` é chamado por arquivo processado (pro modal do export).
  */
-export async function cookAssets(assetsDir, cookedDir, cacheDir) {
+export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress) {
   fs.mkdirSync(cacheDir, { recursive: true });
   const stats = { glbConverted: 0, glbCached: 0, glbNoTex: 0, copied: 0, before: 0, after: 0 };
 
-  for (const full of walk(assetsDir)) {
+  const all = walk(assetsDir);
+  const total = all.length;
+  let done = 0;
+  for (const full of all) {
     const rel = path.relative(assetsDir, full);
     const out = path.join(cookedDir, rel);
     fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -41,6 +45,7 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir) {
       fs.copyFileSync(full, out);
       stats.copied++;
       stats.after += fs.statSync(out).size;
+      onProgress?.(++done, total);
       continue;
     }
 
@@ -67,6 +72,7 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir) {
       }
     }
     stats.after += fs.statSync(out).size;
+    onProgress?.(++done, total);
   }
   return stats;
 }

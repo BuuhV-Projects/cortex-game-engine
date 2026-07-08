@@ -116,7 +116,11 @@ if (fs.existsSync(assetsDir)) {
   console.log('[export] cozinhando texturas (GLB → KTX2)...');
   const cookedDir = path.join(dist, '.cooked-assets');
   const cacheDir = path.join(gameDir, '.cortex-cache', 'ktx2');
-  const cs = await cookAssets(assetsDir, cookedDir, cacheDir);
+  // Progresso por arquivo pro modal do Studio (marcador parseado no main.ts).
+  // Throttle: 1 a cada 3 (+ o último) pra não floodar o stdout com centenas.
+  const cs = await cookAssets(assetsDir, cookedDir, cacheDir, (done, total) => {
+    if (done === total || done % 3 === 0) console.log(`[export:cook] ${done}/${total}`);
+  });
   console.log(
     `[export] cook: ${cs.glbConverted} GLB convertidos (+${cs.glbCached} do cache, ${cs.glbNoTex} sem textura) · ` +
       `assets ${(cs.before / 1e6).toFixed(1)} → ${(cs.after / 1e6).toFixed(1)} MB`,

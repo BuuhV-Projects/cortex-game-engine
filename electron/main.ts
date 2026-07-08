@@ -914,10 +914,14 @@ ipcMain.handle('export:native', async (_event, projectDir: unknown) => {
     // é por linha porque um chunk de stdout pode conter várias.
     const emitSteps = (chunk: string): void => {
       for (const line of chunk.split('\n')) {
-        const m = /^\[export:step\]\s+(\w+)/.exec(line.trim())
-        if (m && !_event.sender.isDestroyed()) {
-          _event.sender.send('export:progress', m[1])
-        }
+        const trimmed = line.trim()
+        const step = /^\[export:step\]\s+(\w+)/.exec(trimmed)
+        // Sub-progresso da conversão de texturas: `[export:cook] 45/118` → o modal
+        // mostra a contagem no passo "assets" (a parte mais lenta do export).
+        const cook = /^\[export:cook\]\s+(\d+)\/(\d+)/.exec(trimmed)
+        if (_event.sender.isDestroyed()) continue
+        if (step) _event.sender.send('export:progress', step[1])
+        else if (cook) _event.sender.send('export:progress', `cook:${cook[1]}/${cook[2]}`)
       }
     }
     child.stdout?.on('data', (d: Buffer) => { const s = d.toString(); output += s; emitSteps(s) })

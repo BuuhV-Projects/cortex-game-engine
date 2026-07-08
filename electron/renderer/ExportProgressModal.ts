@@ -81,6 +81,18 @@ export class ExportProgressModal {
 
   /** Marca a etapa recebida como ativa e todas as anteriores como concluídas. */
   step(key: string): void {
+    // Sub-progresso da conversão de texturas (KTX2), dentro do passo "assets":
+    // `cook:<feitos>/<total>` — mostra a contagem por arquivo no rótulo do passo
+    // e na linha de status (a conversão é a parte mais lenta do export).
+    if (key.startsWith('cook:')) {
+      const [done, total] = key.slice(5).split('/')
+      this.setState('assets', 'active')
+      const msg = t('bottomPanel.export_cook', { done: done ?? '0', total: total ?? '?' })
+      const label = this.rows.get('assets')?.querySelector('.export-modal__label')
+      if (label) label.textContent = msg
+      this.statusEl.textContent = msg
+      return
+    }
     if (key === 'done') {
       for (const k of STEPS) this.setState(k, 'done')
       return
