@@ -37,7 +37,6 @@ import { FollowCameraTargetComponent } from '../components/FollowCameraTargetCom
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import type { Entity } from '../ecs/Entity.js';
 import { loadGLB, loadTexture, instance, placeOnGround, getWorldBounds, setMatte, setShadows } from './SceneAssets.js';
-import { setKtx2Renderer } from '../core/loadKtx2.js';
 import { applyMaterial, type MaterialConfig } from './Materials.js';
 import { createSprite } from './Sprite.js';
 import { Spritesheet, createAnimatedSprite } from './Spritesheet.js';
@@ -492,9 +491,6 @@ export async function buildScene(
     const r = options.renderer.threeRenderer;
     r.shadowMap.enabled = true;
     r.shadowMap.type = PCFSoftShadowMap;
-    // Renderer p/ o detectSupport do KTX2Loader (texturas KTX2 de GLB no browser;
-    // no host nativo é ignorado). ADR-0108.
-    setKtx2Renderer(r);
     if (outdoor) {
       setupOutdoorLighting(options.renderer, scene, outdoor);
       // HDRI (céu visível + luz por imagem). Sobrepõe o `background` de cor.

@@ -8,12 +8,11 @@
 
 > **loadKtx2Native**(`url`): `Promise`\<`DataTexture`\>
 
-Defined in: [src/core/loadKtx2.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L44)
+Defined in: [src/core/loadKtx2.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L42)
 
-Caminho NATIVO: baixa o `.ktx2`, transcoda no host (basis_universal) e monta
-uma `DataTexture` RGBA. `flipY = false` (raster top-down do KTX2, igual à
-convenção do `KTX2Loader` do three). `colorSpace` fica no default — o chamador
-define (ex.: `SRGBColorSpace` p/ cor), igual ao `TextureLoader`.
+Baixa o `.ktx2`, transcoda no host (basis_universal) e monta uma `DataTexture`
+RGBA. `flipY = false` (raster top-down do KTX2). `colorSpace` fica no default —
+o chamador define (ex.: `SRGBColorSpace` p/ cor), igual ao `TextureLoader`.
 
 ## Parameters
 

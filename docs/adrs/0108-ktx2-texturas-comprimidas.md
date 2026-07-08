@@ -1,10 +1,17 @@
 # 0108 - KTX2 / Basis: texturas comprimidas no host nativo
 
 **Data:** 2026-07-08
-**Status:** aceito (Fase 1 ✅ transcode→RGBA + loader; Fase 3 ✅ pipeline
-PNG→KTX2 e GLB→KTX2 provados; caminho browser ✅ validado no Chrome real com a
-WASM vendorizada. Falta converter os assets do teste4 em lote. Fase 2 — formatos
-de bloco BC no host nativo — pendente; no BROWSER o KTX2Loader já entrega bloco)
+**Status:** aceito · **conversão acontece no EXPORT** (a fonte `assets/` fica PNG).
+
+> **Revisão (2026-07-08):** a conversão é **cozida no export** (`export-game.mjs`
+> → `cook-assets.mjs`), numa CÓPIA, com cache por hash — a pasta `assets/` fonte
+> fica **PNG** (editável/sem perda no Studio). Só o host nativo lê KTX2
+> (transcoder C++). O **caminho browser** (KTX2Loader/WASM vendorizado,
+> `setKtx2Renderer`, `setKtx2TranscoderPath`) foi **removido** — o Studio usa a
+> fonte PNG, então não precisava; só valeria pra um export WEB (fora do PRD-0004).
+> `loadKtx2` ficou **native-only**. Convert só quando o KTX2 **encolhe** (atlas
+> minúsculo continua PNG). Provado no teste4: `.pak` **92,4 → 39,6 MB (−57%)**,
+> fonte intocada, fase-1 carrega no `.exe`.
 
 ## Contexto
 

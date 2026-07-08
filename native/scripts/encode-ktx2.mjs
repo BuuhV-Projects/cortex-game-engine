@@ -27,7 +27,9 @@ function loadEncoderFactory() {
 /** Encoda os bytes de uma imagem (PNG/JPG) num KTX2 (Uint8Array). */
 export async function encodeKtx2(imageBytes, { uastc = false, srgb = true, quality = 128 } = {}) {
   const BASIS = loadEncoderFactory();
-  const Module = await BASIS({ locateFile: (p) => path.join(encoderDir, p) });
+  // print/printErr no-op: silencia o log verboso do emscripten (Slice:…, stats)
+  // — importante ao converter em lote (centenas de texturas).
+  const Module = await BASIS({ locateFile: (p) => path.join(encoderDir, p), print: () => {}, printErr: () => {} });
   Module.initializeBasis();
   const enc = new Module.BasisEncoder();
   try {

@@ -6,29 +6,18 @@
 
 # Function: loadKtx2()
 
-> **loadKtx2**(`url`, `renderer?`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
+> **loadKtx2**(`url`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: [src/core/loadKtx2.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L104)
+Defined in: [src/core/loadKtx2.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L68)
 
-Carrega uma textura **KTX2** escolhendo o transcoder do ambiente:
-- host nativo → [loadKtx2Native](loadKtx2Native.md) (basis_universal em C++);
-- browser/Studio → `KTX2Loader` do three (WASM). Passe o `renderer` p/
-  `detectSupport` — sem ele cai pra RGBA32 (ok na Fase 1, que já é RGBA).
-
-Use direto pra `.ktx2`; pra "qualquer textura" o ponto único é o
-`loadTexture` do `SceneAssets` (que chama este quando a URL é `.ktx2`).
+Carrega uma textura `.ktx2` (só no host nativo). Lança se não houver
+transcoder — no Studio use os assets FONTE (PNG), não KTX2.
 
 ## Parameters
 
 ### url
 
 `string`
-
-### renderer?
-
-`unknown`
-
-o `WebGPURenderer`/`WebGLRenderer` (só no caminho browser).
 
 ## Returns
 

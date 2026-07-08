@@ -8,7 +8,7 @@
 
 > **overlayGeometry**(`overlay`): `Record`\<`string`, [`EditableMesh`](../interfaces/EditableMesh.md)\>
 
-Defined in: [src/scene/SceneBuilder.ts:363](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L363)
+Defined in: [src/scene/SceneBuilder.ts:362](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L362)
 
 Lê `data.geometry` da overlay — a **geometria editada** (vértice/face) de nós
 `mesh` autorada no editor, por id (`{ [id]: { positions, faces } }`). **Vence** a

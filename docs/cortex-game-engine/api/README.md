@@ -319,8 +319,6 @@
 - [runWithLoadingScreen](functions/runWithLoadingScreen.md)
 - [scatter](functions/scatter.md)
 - [setDebug](functions/setDebug.md)
-- [setKtx2Renderer](functions/setKtx2Renderer.md)
-- [setKtx2TranscoderPath](functions/setKtx2TranscoderPath.md)
 - [setMatte](functions/setMatte.md)
 - [setShadows](functions/setShadows.md)
 - [setupFirstPerson](functions/setupFirstPerson.md)

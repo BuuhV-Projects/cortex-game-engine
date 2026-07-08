@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packDir } from './pak.mjs';
+import { cookAssets } from './cook-assets.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
@@ -107,12 +108,26 @@ guardLocks('runtime', () => {
 // (JSON) + cortex.json seguem soltos (config pequena).
 step('assets');
 console.log('[export] assets → assets.pak...');
-guardLocks('assets', () => {
-  const assetsDir = path.join(gameDir, 'assets');
-  if (fs.existsSync(assetsDir)) {
-    const r = packDir(assetsDir, path.join(dist, 'assets.pak'), 'assets/');
+const assetsDir = path.join(gameDir, 'assets');
+if (fs.existsSync(assetsDir)) {
+  // "Cook" (ADR-0108): converte texturas de GLB pra KTX2 numa CÓPIA (assets/
+  // fonte fica PNG). Cache por hash em .cortex-cache/ — re-export só reconverte
+  // o que mudou. O host lê KTX2 via transcoder C++ (não precisa de WASM).
+  console.log('[export] cozinhando texturas (GLB → KTX2)...');
+  const cookedDir = path.join(dist, '.cooked-assets');
+  const cacheDir = path.join(gameDir, '.cortex-cache', 'ktx2');
+  const cs = await cookAssets(assetsDir, cookedDir, cacheDir);
+  console.log(
+    `[export] cook: ${cs.glbConverted} GLB convertidos (+${cs.glbCached} do cache, ${cs.glbNoTex} sem textura) · ` +
+      `assets ${(cs.before / 1e6).toFixed(1)} → ${(cs.after / 1e6).toFixed(1)} MB`,
+  );
+  guardLocks('assets', () => {
+    const r = packDir(cookedDir, path.join(dist, 'assets.pak'), 'assets/');
     console.log(`[export] assets.pak: ${r.files} arquivos, ${(r.bytes / 1e6).toFixed(1)} MB`);
-  }
+  });
+  fs.rmSync(cookedDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+}
+guardLocks('assets', () => {
   const scenesDir = path.join(gameDir, 'scenes');
   if (fs.existsSync(scenesDir)) {
     for (const entry of fs.readdirSync(scenesDir, { recursive: true })) {

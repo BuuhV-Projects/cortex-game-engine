@@ -25,14 +25,28 @@ function classifyLinear(doc) {
 /** Converte as texturas do doc pra KTX2 (in-place). Devolve nº convertidas. */
 export async function convertGlbTextures(doc) {
   const linear = classifyLinear(doc);
-  doc.createExtension(KHRTextureBasisu).setRequired(true);
+  const pending = doc
+    .getRoot()
+    .listTextures()
+    .filter((t) => t.getMimeType() !== 'image/ktx2' && t.getImage());
   let n = 0;
-  for (const texture of doc.getRoot().listTextures()) {
-    if (texture.getMimeType() === 'image/ktx2') continue; // já convertida
-    const image = texture.getImage();
-    if (!image) continue;
+  let created = false;
+  for (const texture of pending) {
+    const src = texture.getImage();
     const isLinear = linear.has(texture);
-    const ktx2 = await encodeKtx2(image, { uastc: isLinear, srgb: !isLinear });
+    let ktx2;
+    try {
+      ktx2 = await encodeKtx2(src, { uastc: isLinear, srgb: !isLinear });
+    } catch {
+      continue; // encode falhou (ex.: JPG/formato incomum) → mantém o original
+    }
+    // Só troca se REALMENTE encolheu — KTX2 tem overhead (header+mipmaps), então
+    // textura minúscula (ex.: atlas 8 KB do kit) ficaria MAIOR. Mantém a menor.
+    if (!ktx2 || ktx2.length >= src.length) continue;
+    if (!created) {
+      doc.createExtension(KHRTextureBasisu).setRequired(true);
+      created = true;
+    }
     texture.setImage(ktx2).setMimeType('image/ktx2');
     n++;
   }

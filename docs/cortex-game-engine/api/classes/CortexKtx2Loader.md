@@ -6,17 +6,13 @@
 
 # Class: CortexKtx2Loader
 
-Defined in: [src/core/loadKtx2.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L127)
+Defined in: [src/core/loadKtx2.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L82)
 
-Loader de KTX2 no formato que o `GLTFLoader` do three espera
-(`setKTX2Loader`) — carrega as texturas **embutidas em GLB** (extensão
-`KHR_texture_basisu`). Dois caminhos, escolhidos por ambiente (ADR-0108):
-- host nativo → transcoder C++ ([loadKtx2Native](../functions/loadKtx2Native.md)), sem renderer;
-- browser/Studio → `KTX2Loader` do three (WASM), com `detectSupport` do
-  renderer registrado em [setKtx2Renderer](../functions/setKtx2Renderer.md).
-
-O `GLTFLoader` passa uma URL `blob:` (bytes da textura no bufferView) — o
-mesmo mecanismo que já carrega PNG embutido no host (M1).
+Loader de KTX2 no formato que o `GLTFLoader` do three espera (`setKTX2Loader`)
+— carrega as texturas **embutidas em GLB** (`KHR_texture_basisu`) no host. O
+`GLTFLoader` passa uma URL `blob:` (bytes do bufferView), o mesmo mecanismo
+que já carrega PNG embutido no host (M1). Só caminho nativo — ver escopo no
+topo do módulo.
 
 ## Extends
 
@@ -28,7 +24,7 @@ mesmo mecanismo que já carrega PNG embutido no host (M1).
 
 > **new CortexKtx2Loader**(`manager?`): `CortexKtx2Loader`
 
-Defined in: [src/core/loadKtx2.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L130)
+Defined in: [src/core/loadKtx2.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L83)
 
 #### Parameters
 
@@ -46,23 +42,11 @@ Defined in: [src/core/loadKtx2.ts:130](https://github.com/BuuhV-Projects/cortex-
 
 ## Methods
 
-### dispose()
-
-> **dispose**(): `this`
-
-Defined in: [src/core/loadKtx2.ts:158](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L158)
-
-#### Returns
-
-`this`
-
-***
-
 ### load()
 
-> **load**(`url`, `onLoad`, `onProgress?`, `onError?`): `void`
+> **load**(`url`, `onLoad`, `_onProgress?`, `onError?`): `void`
 
-Defined in: [src/core/loadKtx2.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L143)
+Defined in: [src/core/loadKtx2.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L88)
 
 Chamado pelo GLTFLoader por textura KTX2. `url` é um `blob:` (bufferView).
 
@@ -76,7 +60,7 @@ Chamado pelo GLTFLoader por textura KTX2. `url` é um `blob:` (bufferView).
 
 (`texture`) => `void`
 
-##### onProgress?
+##### \_onProgress?
 
 (`event`) => `void`
 
