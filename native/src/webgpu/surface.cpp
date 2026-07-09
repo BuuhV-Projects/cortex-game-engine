@@ -39,8 +39,11 @@ void configureSurface(HostGpu* gpu, int w, int h) {
   gpu->configuredHeight = h;
 }
 
+}  // namespace
+
 // Adquire a textura do frame. 1ª vez: configura com o tamanho da janela.
 // Recuperação (Outdated/Lost): reconfigura pro MESMO tamanho já validado.
+// Linkage externo (declarada em internal.h): a splash também apresenta um frame.
 WGPUTexture acquireSurfaceTexture(HostGpu* gpu) {
   if (gpu->width <= 0 || gpu->height <= 0) return nullptr;  // minimizada
   if (gpu->configuredWidth == 0) configureSurface(gpu, gpu->width, gpu->height);
@@ -59,8 +62,6 @@ WGPUTexture acquireSurfaceTexture(HostGpu* gpu) {
   }
   return st.texture;
 }
-
-}  // namespace
 
 // JS/engine chama configure — aqui só REGISTRAMOS a intenção (formato +
 // pendência). A reconfiguração real é no ensureSurfaceConfigured, no início

@@ -72,5 +72,9 @@ napi_value deviceCreatePipelineLayout(napi_env env, napi_callback_info info);
 // surface.cpp
 napi_value contextConfigure(napi_env env, napi_callback_info info);
 napi_value contextGetCurrentTexture(napi_env env, napi_callback_info info);
+// Adquire a textura da swapchain (auto-configura a surface na 1ª vez). Devolve
+// nullptr se a surface estiver indisponível no frame. Usada pelo present e pela
+// splash (splash.cpp), que apresenta um frame próprio por cima.
+WGPUTexture acquireSurfaceTexture(HostGpu* gpu);
 
 }  // namespace webgpu

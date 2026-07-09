@@ -26,6 +26,7 @@
 #include "shims/timers.h"
 #include "shims/user_storage.h"
 #include "webgpu/bindings.h"
+#include "webgpu/splash.h"
 
 namespace {
 
@@ -71,8 +72,13 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
 }
 
 // Um frame: timers → rAF (o JS grava e submete; a surface reconfigura
-// sozinha no getCurrentTexture se a janela mudou) → present.
-void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs) {
+// sozinha no getCurrentTexture se a janela mudou) → present → splash.
+//
+// A splash (ADR-0109) vem DEPOIS do present: ela adquire a própria textura de
+// surface e apresenta por cima, sem disputar a `currentTexture` que o JS possa
+// ter adquirido neste frame. Enquanto ativa, cobre o carregamento do jogo.
+void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
+              bool splashEnabled) {
   shims::runTimers(js.env(), elapsedMs);
   js.drainMicrotasks();
   shims::runAnimationFrames(js.env(), elapsedMs);
@@ -80,6 +86,7 @@ void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs) {
   shims::updateAudio();
   core::runSteamCallbacks();  // overlay/conquistas — no-op sem CORTEX_STEAM
   webgpu::presentIfAcquired(gpu);
+  if (splashEnabled) webgpu::splashFrame(gpu, elapsedMs);
 }
 
 void shutdownGpu(HostGpu* gpu) {
@@ -174,14 +181,21 @@ int main(int argc, char** argv) {
     if (!js.runBoot(baseDir)) return 1;
     js.drainMicrotasks();
 
+    // Splash da engine (ADR-0109): obrigatória no jogo EXPORTADO. Só o dev pode
+    // pulá-la (CORTEX_NO_SPLASH), e só quando roda o host apontando pra pasta do
+    // jogo (`cortex_host.exe D:\jogos\teste4`) — o export nunca passa argv[1].
+    const bool devRun = argc > 1 && argv[1] && argv[1][0];
+    const bool splashEnabled = !(devRun && SDL_getenv("CORTEX_NO_SPLASH"));
+
     const uint64_t t0 = SDL_GetTicksNS();
     bool running = true;
     while (running) {
       running = pollEvents(js.env(), window, &gpu);
       double elapsedMs =
           static_cast<double>(SDL_GetTicksNS() - t0) / 1'000'000.0;
-      runFrame(js, &gpu, elapsedMs);
+      runFrame(js, &gpu, elapsedMs, splashEnabled);
     }
+    webgpu::shutdownSplash();  // idempotente (a splash já se libera ao terminar)
     shims::closeGamepads();
     shims::shutdownAudio();
   }  // ~JsRuntime antes de liberar a GPU (JS pode segurar handles)
