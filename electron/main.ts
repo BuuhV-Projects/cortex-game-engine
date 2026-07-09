@@ -891,7 +891,7 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
  * próprio repo. macOS/Linux não embarcam o host (D3D12/Windows-only) — lá o
  * `script` não existe e o handler informa que é só no Studio Windows.
  */
-ipcMain.handle('export:native', async (_event, projectDir: unknown) => {
+ipcMain.handle('export:native', async (_event, projectDir: unknown, mode: unknown) => {
   const safeDir = validatePath(projectDir)
   const script = join(resourceBase(), 'native', 'scripts', 'export-game.mjs')
   if (!existsSync(script)) {
@@ -902,8 +902,10 @@ ipcMain.handle('export:native', async (_event, projectDir: unknown) => {
         'o host é D3D12/Windows-only por enquanto (TDR-0003).',
     }
   }
+  // Alvo do submenu Exportar ›: pc (desktop) | steam (--steam) | xbox (--xbox/GDK).
+  const flags = mode === 'steam' ? ['--steam'] : mode === 'xbox' ? ['--xbox'] : []
   return await new Promise((resolvePromise) => {
-    const child = spawn(process.execPath, [script, safeDir], {
+    const child = spawn(process.execPath, [script, safeDir, ...flags], {
       env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
       cwd: resourceBase(),
       windowsHide: true,

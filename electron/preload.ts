@@ -23,8 +23,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('engine:revendor', projectDir),
 
   /** Export CortexNative (ADR-0101): gera dist-native/ do projeto. */
-  exportNative: (projectDir: string) =>
-    ipcRenderer.invoke('export:native', projectDir) as Promise<{
+  exportNative: (projectDir: string, mode = 'pc') =>
+    ipcRenderer.invoke('export:native', projectDir, mode) as Promise<{
       ok: boolean
       output: string
       distDir?: string

@@ -7,6 +7,9 @@ function tr(key: string, fallback: string): string {
   return v === key ? fallback : v
 }
 
+/** Entrada de menu: item comum (`run`), separador (`sep`) ou submenu (`submenu`). */
+type MenuEntry = { label?: string; sep?: boolean; run?: () => void; submenu?: MenuEntry[] }
+
 /**
  * Casca nova do studio (redesign / Layout A): **MenuBar** (marca + menus
  * funcionais + botões de janela) e **Toolbar** (Novo Projeto / Abrir / transport
@@ -139,7 +142,14 @@ export class Shell {
         })),
       ]),
       this.menuItem('Projeto', [
-        { label: tr('menu.export_native', 'Exportar nativo (PC/Xbox)…'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested')) },
+        {
+          label: tr('menu.export_native', 'Exportar ›'),
+          submenu: [
+            { label: tr('menu.export_pc', 'PC only'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested', { detail: { mode: 'pc' } })) },
+            { label: tr('menu.export_steam', 'PC (Steam)'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested', { detail: { mode: 'steam' } })) },
+            { label: tr('menu.export_xbox', 'Xbox'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested', { detail: { mode: 'xbox' } })) },
+          ],
+        },
         { sep: true },
         { label: tr('menu.build_installer', 'Gerar instalador…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: false } })) },
         { label: tr('menu.build_installer_debug', 'Gerar instalador (debug)…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: true } })) },
@@ -167,7 +177,7 @@ export class Shell {
     this.menubarEl.append(brand, menus, h('span', { class: 'spacer' }), label, winbtns)
   }
 
-  private menuItem(name: string, items: Array<{ label?: string; sep?: boolean; run?: () => void }>): HTMLElement {
+  private menuItem(name: string, items: Array<MenuEntry>): HTMLElement {
     const btn = h('span', { class: 'mi' }, name)
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
@@ -178,22 +188,43 @@ export class Shell {
       this.closeMenu()
       const rect = btn.getBoundingClientRect()
       const menu = h('div', { class: 'cge-menu', 'data-for': name, style: { left: `${rect.left}px`, top: `${rect.bottom + 2}px` } })
-      for (const it of items) {
-        if (it.sep) {
-          menu.append(h('div', { class: 'cge-menu-sep' }))
-          continue
-        }
-        const item = h('button', { class: 'cge-menu-item' }, it.label ?? '')
-        item.addEventListener('click', () => {
-          this.closeMenu()
-          it.run?.()
-        })
-        menu.append(item)
-      }
+      for (const it of items) menu.append(this.menuEntry(it))
       document.body.append(menu)
       this.openMenu = menu
     })
     return btn
+  }
+
+  /** Renderiza uma entrada de menu — item comum, separador ou submenu (flyout ›). */
+  private menuEntry(it: MenuEntry): HTMLElement {
+    if (it.sep) return h('div', { class: 'cge-menu-sep' })
+
+    // Submenu: item com seta › que abre um flyout à direita no hover. É um <div>
+    // (não <button>) pra os <button> do flyout não ficarem aninhados num button.
+    if (it.submenu) {
+      const item = h(
+        'div',
+        { class: 'cge-menu-item cge-menu-item--submenu', style: { position: 'relative', display: 'flex', alignItems: 'center' } },
+        it.label ?? '',
+      )
+      item.append(h('span', { style: { marginLeft: 'auto', paddingLeft: '16px', opacity: '.6' } }, '›'))
+      const fly = h('div', {
+        class: 'cge-menu',
+        style: { display: 'none', position: 'absolute', left: '100%', top: '-5px', marginLeft: '2px' },
+      })
+      for (const sub of it.submenu) fly.append(this.menuEntry(sub))
+      item.append(fly)
+      item.addEventListener('mouseenter', () => (fly.style.display = 'block'))
+      item.addEventListener('mouseleave', () => (fly.style.display = 'none'))
+      return item
+    }
+
+    const item = h('button', { class: 'cge-menu-item' }, it.label ?? '')
+    item.addEventListener('click', () => {
+      this.closeMenu()
+      it.run?.()
+    })
+    return item
   }
 
   private closeMenu(): void {

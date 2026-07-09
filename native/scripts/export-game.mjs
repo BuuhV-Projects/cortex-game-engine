@@ -20,9 +20,13 @@ const args = process.argv.slice(2);
 // steam_api64.dll. O app id fica BAKED no host (-DCORTEX_STEAM_APPID no build);
 // o steam_appid.txt (dev/480) NÃO vai pro release.
 const steam = args.includes('--steam');
+// --xbox: host GDK (native/build-gdk, CORTEX_GDK) + gera MicrosoftGame.config +
+// logos (app model GDK / Gaming.Desktop.x64). O alvo de console (Scarlett) exige
+// GXDK+ID@Xbox — ver architecture.md; hoje produz o pacote do app model no PC.
+const gdk = args.includes('--xbox');
 const gameDir = args.find((a) => !a.startsWith('--')) ? path.resolve(args.find((a) => !a.startsWith('--'))) : null;
 if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
-  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--steam]');
+  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--steam|--xbox]');
   process.exit(1);
 }
 
@@ -33,12 +37,13 @@ const step = (key) => console.log(`[export:step] ${key}`);
 
 const gameName = path.basename(gameDir);
 const dist = path.join(gameDir, 'dist-native');
-// Host: build-steam (CORTEX_STEAM) no modo Steam; build (desktop) senão.
-const hostBuild = path.join(engineRoot, 'native', steam ? 'build-steam' : 'build');
+// Host por alvo: build-steam (CORTEX_STEAM) / build-gdk (CORTEX_GDK) / build (desktop).
+const hostBuild = path.join(engineRoot, 'native', steam ? 'build-steam' : gdk ? 'build-gdk' : 'build');
 if (!fs.existsSync(path.join(hostBuild, 'cortex_host.exe'))) {
   console.error(
     `[export] host não buildado em ${hostBuild}` +
-      (steam ? ' — build o host com -DCORTEX_STEAM=ON primeiro (ver architecture.md).' : '.'),
+      (steam ? ' — build o host com -DCORTEX_STEAM=ON primeiro (ver architecture.md).'
+        : gdk ? ' — build o host com -DCORTEX_GDK=ON primeiro (ver architecture.md).' : '.'),
   );
   process.exit(1);
 }
@@ -117,6 +122,15 @@ guardLocks('runtime', () => {
     fs.copyFileSync(path.join(hostBuild, from), path.join(dist, to));
   }
 });
+
+// Modo Xbox/GDK: gera o MicrosoftGame.config + logos (app model GDK). Registrar
+// p/ rodar: `wdapp register <dist>\MicrosoftGame.config` (Modo Dev). Alvo de
+// console (Scarlett) exige GXDK+ID@Xbox (recompilar) — ver architecture.md.
+if (gdk) {
+  const { writeGdkPackageFiles } = await import('./gdk-package.mjs');
+  writeGdkPackageFiles(dist, gameName, `${gameName}.exe`);
+  console.log('[export] MicrosoftGame.config + logos (GDK) gerados');
+}
 
 // 4. assets do jogo: assets/ vira um CONTAINER assets.pak (ADR-0104) — 1 arquivo
 // em vez de centenas soltos, com XOR leve (barreira contra extração casual). O
