@@ -159,7 +159,14 @@ if (fs.existsSync(assetsDir)) {
     const r = packDir(cookedDir, path.join(dist, 'assets.pak'), 'assets/');
     console.log(`[export] assets.pak: ${r.files} arquivos, ${(r.bytes / 1e6).toFixed(1)} MB`);
   });
-  fs.rmSync(cookedDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  // Limpeza do temp é BEST-EFFORT: no Windows um antivírus/handle pode segurar um
+  // arquivo (EPERM/EBUSY) logo após gravar. Não é fatal — o pak já foi gerado, e o
+  // `prepare` do próximo export limpa o dist-native inteiro. Só avisa.
+  try {
+    fs.rmSync(cookedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  } catch (err) {
+    console.warn(`[export] não deu pra limpar ${path.basename(cookedDir)} (${err.code}) — inofensivo.`);
+  }
 }
 guardLocks('assets', () => {
   const scenesDir = path.join(gameDir, 'scenes');

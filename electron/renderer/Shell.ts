@@ -207,14 +207,15 @@ export class Shell {
         { class: 'cge-menu-item cge-menu-item--submenu', style: { position: 'relative', display: 'flex', alignItems: 'center' } },
         it.label ?? '',
       )
-      item.append(h('span', { style: { marginLeft: 'auto', paddingLeft: '16px', opacity: '.6' } }, '›'))
       const fly = h('div', {
         class: 'cge-menu',
+        // display:none escondido; ao abrir usa 'flex' (o .cge-menu é flex-column —
+        // usar 'block' aqui anulava o flex e deitava os itens na horizontal).
         style: { display: 'none', position: 'absolute', left: '100%', top: '-5px', marginLeft: '2px' },
       })
       for (const sub of it.submenu) fly.append(this.menuEntry(sub))
       item.append(fly)
-      item.addEventListener('mouseenter', () => (fly.style.display = 'block'))
+      item.addEventListener('mouseenter', () => (fly.style.display = 'flex'))
       item.addEventListener('mouseleave', () => (fly.style.display = 'none'))
       return item
     }
