@@ -36,10 +36,15 @@ frame do loop do host** e:
 - desenha por ~1,9 s: fade-in 350 ms → hold 1100 ms → fade-out 450 ms;
 - libera os recursos e retorna `false` para sempre ao terminar.
 
-Ela roda **depois** de `webgpu::presentIfAcquired()` e **apresenta um frame
-próprio**: adquire a própria textura de swapchain e faz `wgpuSurfacePresent`. Com
-isso não disputa a `currentTexture` que o JS possa ter adquirido no mesmo frame —
-o custo é um present extra durante ~1,9 s, irrelevante.
+Enquanto `splashPending()`, a splash é a **única a apresentar**: o host chama
+`splashFrame()` **no lugar** de `webgpu::presentIfAcquired()`, e o frame que o JS
+preparou é descartado (`discardGameFrame`: solta a `currentTexture` e limpa
+`ssaaPending`/`uiPending`). O jogo continua carregando por trás, sem nunca ser
+exibido.
+
+> A primeira versão apresentava os dois — o present do jogo e, logo depois, o da
+> splash. Resultado: dois presents no mesmo vsync, e o jogo **vazava entre os
+> frames**; a splash parecia piscar. Só uma coisa pode ser dona da tela.
 
 O desenho é um triângulo fullscreen: limpa com o `bg-deep` do tema
 (`#0d0e14`) e compõe a marca centrada, preservando o aspecto, com
@@ -70,6 +75,8 @@ ignorada.
   (2800×840 RGBA), liberados ao fim da splash.
 - `webgpu::acquireSurfaceTexture` deixou o namespace anônimo de `surface.cpp` e
   passou a ser declarada em `internal.h` — a splash precisa apresentar sozinha.
+- Os ~1,9 s iniciais do jogo **não são apresentados**. Se o jogo tiver uma tela
+  de loading própria, ela fica escondida atrás da splash (era o objetivo).
 
 ## Alternativas descartadas
 

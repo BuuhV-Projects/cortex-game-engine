@@ -72,11 +72,11 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
 }
 
 // Um frame: timers → rAF (o JS grava e submete; a surface reconfigura
-// sozinha no getCurrentTexture se a janela mudou) → present → splash.
+// sozinha no getCurrentTexture se a janela mudou) → present.
 //
-// A splash (ADR-0109) vem DEPOIS do present: ela adquire a própria textura de
-// surface e apresenta por cima, sem disputar a `currentTexture` que o JS possa
-// ter adquirido neste frame. Enquanto ativa, cobre o carregamento do jogo.
+// Enquanto a splash (ADR-0109) está no ar ela é a ÚNICA a apresentar: o frame do
+// jogo é descartado, e o jogo carrega por trás sem aparecer. Apresentar os dois
+// no mesmo vsync fazia a splash piscar, deixando o jogo vazar entre os frames.
 void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
               bool splashEnabled) {
   shims::runTimers(js.env(), elapsedMs);
@@ -85,8 +85,11 @@ void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
   js.drainMicrotasks();
   shims::updateAudio();
   core::runSteamCallbacks();  // overlay/conquistas — no-op sem CORTEX_STEAM
-  webgpu::presentIfAcquired(gpu);
-  if (splashEnabled) webgpu::splashFrame(gpu, elapsedMs);
+  if (splashEnabled && webgpu::splashPending()) {
+    webgpu::splashFrame(gpu, elapsedMs);
+  } else {
+    webgpu::presentIfAcquired(gpu);
+  }
 }
 
 void shutdownGpu(HostGpu* gpu) {

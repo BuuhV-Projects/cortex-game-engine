@@ -212,11 +212,29 @@ void logoRect(const HostGpu* gpu, float out[4]) {
 
 }  // namespace
 
+bool splashPending() { return !g_finished && !g_failed; }
+
+/**
+ * Joga fora o frame que o JS preparou. Enquanto a splash está no ar ela é a
+ * ÚNICA a apresentar: se o present do jogo também rodasse, os dois se
+ * alternariam no vsync e a splash pareceria piscar com o jogo por trás.
+ */
+static void discardGameFrame(HostGpu* gpu) {
+  if (gpu->currentTexture) {
+    wgpuTextureRelease(gpu->currentTexture);
+    gpu->currentTexture = nullptr;
+  }
+  gpu->ssaaPending = false;
+  gpu->uiPending = false;
+}
+
 bool splashFrame(HostGpu* gpu, double elapsedMs) {
   if (g_finished || g_failed) return false;
   // O device só existe depois que o JS pediu (navigator.gpu). Até lá, espera —
   // sem contar o tempo, senão a splash "vence" durante o boot e ninguém a vê.
   if (!gpu->device || !gpu->queue || gpu->width <= 0 || gpu->height <= 0) return false;
+
+  discardGameFrame(gpu);  // a splash é dona da tela enquanto durar
 
   if (g_startMs < 0.0) g_startMs = elapsedMs;
   const double t = elapsedMs - g_startMs;

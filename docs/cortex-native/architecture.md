@@ -26,12 +26,12 @@ main.cpp (loop)
  ├─ runAnimationFrames    shims/animation_frame  callbacks de rAF (o JS grava
  │                                          e submete comandos WebGPU aqui)
  ├─ drainMicrotasks
- ├─ presentIfAcquired     webgpu/surface    present + release da textura, se o
- │                                          JS chamou getCurrentTexture(). Com
- │                                          SSAA: blit downscale offscreen→swap.
- └─ splashFrame           webgpu/splash     splash OBRIGATÓRIA da engine nos
-                                            ~1,9s iniciais (ADR-0109). Apresenta
-                                            um frame PRÓPRIO por cima.
+ └─ splashPending()?      webgpu/splash     nos ~1,9s iniciais a splash da engine
+    ├─ sim: splashFrame                     é a ÚNICA a apresentar (ADR-0109) —
+    │                                       o frame do jogo é DESCARTADO.
+    └─ não: presentIfAcquired  webgpu/surface  present + release da textura, se o
+                                            JS chamou getCurrentTexture(). Com
+                                            SSAA: blit downscale offscreen→swap.
 ```
 
 Com SSAA ligado (padrão), o JS não desenha na swapchain: `getCurrentTexture`
@@ -44,9 +44,10 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 
 **A splash não pode rodar antes disso**: o `WGPUDevice` só nasce quando o JS
 pede (`navigator.gpu`), então `splashFrame` espera o device aparecer e só aí
-começa a contar seus ~1,9 s — cobrindo justamente a carga do jogo. Ela vem
-DEPOIS do present (adquire e apresenta uma swapchain própria) pra não disputar a
-`currentTexture` do JS. Ver ADR-0109.
+começa a contar seus ~1,9 s — cobrindo justamente a carga do jogo. Enquanto ela
+está no ar é a **única a apresentar**, e o frame do jogo é descartado. Apresentar
+os dois no mesmo vsync faz o jogo vazar entre os frames e a splash piscar.
+Ver ADR-0109.
 
 ## Mapa de módulos (quem faz o quê)
 
@@ -83,7 +84,7 @@ DEPOIS do present (adquire e apresenta uma swapchain própria) pra não disputar
 | `native/src/webgpu/commands.cpp` | Encoder, render pass (color+depth attachments), setBindGroup/setVertexBuffer/setIndexBuffer/viewport/scissor, draw/drawIndexed, queue.submit. |
 | `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. Com SSAA, `getCurrentTexture` devolve a offscreen (SS) e o present faz o blit downscale. Com compositor de UI (ADR-0105), o present dispara por `ssaaPending` OU `uiPending` (menus rodam loop só-UI, sem render do jogo) e é gate por `gpu->device` (não `configured` — o menu não chama `context.configure`). |
 | `native/src/webgpu/supersample.*` | SSAA (ADR-0103): alvo offscreen (nativo × `renderScale`) onde o JS desenha + pipeline de blit (fullscreen-triangle + sampler linear) que reduz pra swapchain no present. Mata o serrilhado do contorno inverted-hull. **Também COMPÕE a UI de runtime EM GAMA** (ADR-0105): amostra a textura da UI (`gpu->uiTexture`) e blenda sobre o jogo com `out = game·(1−a) + OETF(ui/a)·a` (= blend sRGB do DOM); `ensureOffscreen` força o offscreen quando há compositor de UI (pra rodar mesmo em `renderScale=1`). |
-| `native/src/webgpu/splash.*` | Splash OBRIGATÓRIA da engine (ADR-0109): a marca TS Cortex Studio nos ~1,9 s iniciais (fade-in 350 / hold 1100 / fade-out 450), cobrindo a carga do jogo. Só começa quando o `device` — pedido pelo JS — existe; apresenta um frame PRÓPRIO **depois** do present, então não disputa a `currentTexture`. Se o decode/pipeline falhar, desliga-se sozinha e o jogo segue. `CORTEX_NO_SPLASH=1` só vale no dev-run (com `argv[1]`). |
+| `native/src/webgpu/splash.*` | Splash OBRIGATÓRIA da engine (ADR-0109): a marca TS Cortex Studio nos ~1,9 s iniciais (fade-in 350 / hold 1100 / fade-out 450), cobrindo a carga do jogo. Só começa quando o `device` — pedido pelo JS — existe. Enquanto `splashPending()`, ela substitui o `presentIfAcquired` e **descarta** o frame do jogo (`discardGameFrame`): dois presents no mesmo vsync faziam o jogo vazar e a splash piscar. Se o decode/pipeline falhar, desliga-se sozinha e o jogo segue. `CORTEX_NO_SPLASH=1` só vale no dev-run (com `argv[1]`). |
 | `native/src/brand/splash_png.h` | PNG da marca EMBUTIDO no binário (nada de arquivo removível ao lado do exe). Gerado de `brand/*.svg` por `native/scripts/gen-brand.mjs` — **não edite à mão**. |
 | `native/src/webgpu/enums.*` | Mapas string↔enum (formatos, compare, cull, vertex formats...). |
 | `native/js/src/main.js` | Boot do jogo (hoje: cubo Three.js girando + smoke tests do M1). Entry do bundle. |

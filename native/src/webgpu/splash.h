@@ -12,15 +12,23 @@
 namespace webgpu {
 
 /**
+ * A splash ainda tem trabalho a fazer? (não terminou nem falhou)
+ *
+ * Enquanto isto for true o host NÃO deve apresentar o frame do jogo — a splash
+ * é dona da tela. Apresentar os dois no mesmo vsync faz a splash "piscar" com o
+ * jogo aparecendo por trás.
+ */
+bool splashPending();
+
+/**
  * Desenha um frame da splash na swapchain e apresenta.
  *
- * Chame UMA vez por frame do host, DEPOIS do present normal: a splash adquire a
- * própria textura de surface e apresenta por cima, então não disputa a
- * `currentTexture` que o JS possa ter adquirido.
+ * Chame UMA vez por frame do host, NO LUGAR do present normal (ver
+ * `splashPending`). Descarta o frame que o JS tenha preparado: o jogo carrega
+ * por trás, sem ser exibido.
  *
- * @return true enquanto a splash estiver visível (o host segue chamando);
- *         false quando terminou (e os recursos já foram liberados) ou enquanto
- *         o device ainda não existe.
+ * @return true se apresentou; false enquanto o device (pedido pelo JS) ainda
+ *         não existe, ou quando a splash acabou de terminar.
  */
 bool splashFrame(HostGpu* gpu, double elapsedMs);
 
