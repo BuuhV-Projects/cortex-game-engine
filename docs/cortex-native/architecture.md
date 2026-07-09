@@ -339,6 +339,11 @@ Sem `-DCORTEX_STEAM_APPID` usa 480 (Spacewar) p/ testar. Rodando com o cliente
 Steam aberto: `[steam] init OK` (conecta à conta). Validado. No release, use o app
 id real e NÃO inclua o `steam_appid.txt`.
 
+**Export modo Steam:** `node native/scripts/export-game.mjs <gameDir> --steam`
+usa o host `build-steam` + inclui a `steam_api64.dll` (o app id já está baked no
+host; o `steam_appid.txt` dev NÃO vai). O `dist-native` resultante é o que sobe
+pra Steam (via SteamPipe). Sem `--steam`, é o export desktop normal.
+
 **App model do GDK (M3)** — opt-in, exige o GDK instalado (pré-requisito acima):
 ```powershell
 cmake -G Ninja -S native -B native/build-gdk -DCMAKE_BUILD_TYPE=Release -DCORTEX_GDK=ON

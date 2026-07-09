@@ -15,9 +15,14 @@ import { cookAssets } from './cook-assets.mjs';
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
 const engineRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const gameDir = process.argv[2] ? path.resolve(process.argv[2]) : null;
+const args = process.argv.slice(2);
+// --steam: usa o host buildado com CORTEX_STEAM (native/build-steam) + inclui a
+// steam_api64.dll. O app id fica BAKED no host (-DCORTEX_STEAM_APPID no build);
+// o steam_appid.txt (dev/480) NÃO vai pro release.
+const steam = args.includes('--steam');
+const gameDir = args.find((a) => !a.startsWith('--')) ? path.resolve(args.find((a) => !a.startsWith('--'))) : null;
 if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
-  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts>');
+  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--steam]');
   process.exit(1);
 }
 
@@ -28,7 +33,15 @@ const step = (key) => console.log(`[export:step] ${key}`);
 
 const gameName = path.basename(gameDir);
 const dist = path.join(gameDir, 'dist-native');
-const hostBuild = path.join(engineRoot, 'native', 'build');
+// Host: build-steam (CORTEX_STEAM) no modo Steam; build (desktop) senão.
+const hostBuild = path.join(engineRoot, 'native', steam ? 'build-steam' : 'build');
+if (!fs.existsSync(path.join(hostBuild, 'cortex_host.exe'))) {
+  console.error(
+    `[export] host não buildado em ${hostBuild}` +
+      (steam ? ' — build o host com -DCORTEX_STEAM=ON primeiro (ver architecture.md).' : '.'),
+  );
+  process.exit(1);
+}
 const hermesc = path.join(
   engineRoot, 'native', 'third_party', 'hermes', 'tools', 'native', 'release', 'x86', 'hermes.exe',
 );
@@ -87,7 +100,7 @@ fs.rmSync(bundlePath);
 
 // 3. runtime: exe (renomeado pro jogo) + dlls + fonte
 step('runtime');
-console.log('[export] runtime...');
+console.log(`[export] runtime...${steam ? ' (modo Steam)' : ''}`);
 const runtimeFiles = [
   ['cortex_host.exe', `${gameName}.exe`],
   ['SDL3.dll', 'SDL3.dll'],
@@ -96,6 +109,9 @@ const runtimeFiles = [
   ['rapier_native.dll', 'rapier_native.dll'],
   ['Roboto-Medium.ttf', 'Roboto-Medium.ttf'],
 ];
+// Modo Steam: a steam_api64.dll fica ao lado do exe. O app id está BAKED no host
+// (build) — o steam_appid.txt (dev/480) NÃO vai pro release (a Steam informa o id).
+if (steam) runtimeFiles.push(['steam_api64.dll', 'steam_api64.dll']);
 guardLocks('runtime', () => {
   for (const [from, to] of runtimeFiles) {
     fs.copyFileSync(path.join(hostBuild, from), path.join(dist, to));
