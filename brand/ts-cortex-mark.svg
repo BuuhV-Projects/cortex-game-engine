@@ -1,0 +1,28 @@
+<!--
+  Marca isolada (só o monograma TS no hexágono) — usada pro ÍCONE (exe, atalho,
+  favicon). Quadrada e com folga nas bordas pra sobreviver ao arredondamento que
+  o Windows aplica em alguns contextos. Gerada em PNG por gen-brand.mjs.
+  Ver brand/ts-cortex-studio.svg pro lockup completo e a paleta.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="hexFace" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#aaa0ff" />
+      <stop offset="0.55" stop-color="#968dfd" />
+      <stop offset="1" stop-color="#5b4fc4" />
+    </linearGradient>
+    <linearGradient id="hexEdge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55" />
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.06" />
+      <stop offset="1" stop-color="#00bcc5" stop-opacity="0.45" />
+    </linearGradient>
+  </defs>
+
+  <!-- Hexágono flat-top: centro (256,256), r=210 → x 46..466, y 74..438. -->
+  <polygon points="466,256 361,438 151,438 46,256 151,74 361,74" fill="url(#hexFace)" />
+  <polygon points="466,256 361,438 151,438 46,256 151,74 361,74"
+           fill="none" stroke="url(#hexEdge)" stroke-width="6" />
+  <text x="256" y="260" text-anchor="middle" dominant-baseline="central"
+        font-family="Segoe UI, Arial, sans-serif" font-size="176" font-weight="800"
+        letter-spacing="3" fill="#ffffff">TS</text>
+</svg>
