@@ -3,28 +3,29 @@
   FONTE VETORIAL da marca — os PNGs (splash do host, ícones) são GERADOS daqui
   por `node native/scripts/gen-brand.mjs`. Não edite os PNGs à mão.
 
-  Paleta = tema cortex-dark do Studio (electron/renderer/themes/cortex-dark.json):
-    accent #968dfd · accent-hover #aaa0ff · cyan #00bcc5
-    fg-bright #f1f1f4 · fg-muted #84858d · bg-deep #0d0e14
+  Cor da marca = AZUL DO TYPESCRIPT (#3178c6), a linguagem em que a engine é
+  escrita. Texto/fundo seguem o tema cortex-dark do Studio
+  (electron/renderer/themes/cortex-dark.json): fg-bright #f1f1f4, bg-deep #0d0e14.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 420" width="1400" height="420">
   <defs>
-    <!-- Face do hexágono: violeta do accent descendo pra um roxo profundo. -->
+    <!-- Face do hexágono: azul TS clareado no topo, aprofundado na base. -->
     <linearGradient id="hexFace" x1="0" y1="0" x2="0.35" y2="1">
-      <stop offset="0" stop-color="#aaa0ff" />
-      <stop offset="0.55" stop-color="#968dfd" />
-      <stop offset="1" stop-color="#5b4fc4" />
+      <stop offset="0" stop-color="#5aa7e8" />
+      <stop offset="0.55" stop-color="#3178c6" />
+      <stop offset="1" stop-color="#1c508c" />
     </linearGradient>
-    <!-- Fio de luz no topo (bevel) + toque de ciano na base, pra dar volume. -->
+    <!-- Fio de luz no topo (bevel) + azul claro na base, pra dar volume. -->
     <linearGradient id="hexEdge" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#ffffff" stop-opacity="0.55" />
       <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.06" />
-      <stop offset="1" stop-color="#00bcc5" stop-opacity="0.45" />
+      <stop offset="1" stop-color="#7fd8ff" stop-opacity="0.45" />
     </linearGradient>
+    <!-- Halo azul: matriz = rgb(#3178c6) normalizado. -->
     <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
       <feGaussianBlur stdDeviation="18" result="b" />
       <feColorMatrix in="b" type="matrix"
-        values="0 0 0 0 0.588  0 0 0 0 0.553  0 0 0 0 0.992  0 0 0 0.55 0" result="g" />
+        values="0 0 0 0 0.192  0 0 0 0 0.471  0 0 0 0 0.776  0 0 0 0.55 0" result="g" />
       <feMerge><feMergeNode in="g" /><feMergeNode in="SourceGraphic" /></feMerge>
     </filter>
   </defs>
@@ -41,10 +42,8 @@
         font-family="Segoe UI, Arial, sans-serif" font-size="126" font-weight="800"
         letter-spacing="2" fill="#ffffff">TS</text>
 
-  <!-- Wordmark -->
-  <text x="428" y="196" font-family="Segoe UI, Arial, sans-serif"
+  <!-- Wordmark: alinhado ao centro do hexágono (y = 210). -->
+  <text x="428" y="212" dominant-baseline="central"
+        font-family="Segoe UI, Arial, sans-serif"
         font-size="78" font-weight="800" letter-spacing="5" fill="#f1f1f4">TS CORTEX STUDIO</text>
-  <line x1="430" y1="238" x2="1290" y2="238" stroke="#968dfd" stroke-width="3" stroke-linecap="round" />
-  <text x="430" y="304" font-family="Segoe UI, Arial, sans-serif"
-        font-size="38" font-weight="500" letter-spacing="6" fill="#84858d">by BuuhV Projects</text>
 </svg>
