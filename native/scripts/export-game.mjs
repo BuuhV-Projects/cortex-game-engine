@@ -7,6 +7,7 @@
 //    rapier-native buildado — ver docs/cortex-native/architecture.md)
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packDir } from './pak.mjs';
@@ -144,7 +145,14 @@ if (fs.existsSync(assetsDir)) {
   // fonte fica PNG). Cache por hash em .cortex-cache/ — re-export só reconverte
   // o que mudou. O host lê KTX2 via transcoder C++ (não precisa de WASM).
   console.log('[export] cozinhando texturas (GLB → KTX2)...');
-  const cookedDir = path.join(dist, '.cooked-assets');
+  // Cozinha FORA do dist-native, num temp do SO único por processo. Se o
+  // dist-native estiver travado (Explorer aberto, exe de um export anterior,
+  // antivírus indexando), o `prepare` só consegue sobrescrever — deixando um
+  // `.cooked-assets` velho e travado lá dentro que fazia o mkdir das subpastas
+  // do cook estourar EPERM. Em %TEMP% não há essa disputa; só o pak final entra
+  // no dist (via guardLocks). Único por PID: cada export é um processo novo.
+  const cookedDir = path.join(os.tmpdir(), `cortex-cook-${process.pid}`);
+  fs.rmSync(cookedDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   const cacheDir = path.join(gameDir, '.cortex-cache', 'ktx2');
   // Progresso por arquivo pro modal do Studio (marcador parseado no main.ts).
   // Throttle: 1 a cada 3 (+ o último) pra não floodar o stdout com centenas.
@@ -160,8 +168,8 @@ if (fs.existsSync(assetsDir)) {
     console.log(`[export] assets.pak: ${r.files} arquivos, ${(r.bytes / 1e6).toFixed(1)} MB`);
   });
   // Limpeza do temp é BEST-EFFORT: no Windows um antivírus/handle pode segurar um
-  // arquivo (EPERM/EBUSY) logo após gravar. Não é fatal — o pak já foi gerado, e o
-  // `prepare` do próximo export limpa o dist-native inteiro. Só avisa.
+  // arquivo (EPERM/EBUSY) logo após gravar. Não é fatal — o pak já foi gerado. Um
+  // eventual resíduo em %TEMP%\cortex-cook-* é do SO limpar. Só avisa.
   try {
     fs.rmSync(cookedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   } catch (err) {
