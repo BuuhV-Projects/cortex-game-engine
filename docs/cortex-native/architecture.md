@@ -48,6 +48,7 @@ do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 | `native/src/core/app_window.*` | SDL3: janela, instância WebGPU (D3D12 forçado), surface, eventos (quit/resize). |
 | `native/src/core/js_runtime.*` | Ciclo de vida do Hermes (API C `jsr_*`), `print()`, boot `.hbc`→fallback `.js`, drain de microtasks. |
 | `native/src/core/gdk.*` | App model do Microsoft GDK (M3): `initGameRuntime`/`shutdownGameRuntime` (XGameRuntime). **No-op** sem `-DCORTEX_GDK`; com o flag, linka `xgameruntime.lib` e inicializa o runtime do GDK. Base p/ XUser/XGameSave/suspend-resume e alvos de console. |
+| `native/src/core/steam.*` | Integração Steamworks (release PC/Steam): `initSteam` (relaunch-via-Steam + `SteamAPI_Init`) / `runSteamCallbacks` (por frame) / `shutdownSteam`. **No-op** sem `-DCORTEX_STEAM`; com o flag, linka `steam_api64`. Base p/ overlay/conquistas/cloud. Irmão do `gdk.*` (Steam no PC ↔ GDK no console, mesma arquitetura). |
 | `native/src/napi/napi_util.*` | Helpers Node-API genéricos (namespace `njs`): propriedades, wrap/unwrap de handles, chamadas JS com log de exceção. Zero dependência de WebGPU/SDL. |
 | `native/src/shims/timers.*` | `setTimeout`/`clearTimeout`/`setImmediate`. O Hermes agenda async/await via `setImmediate` — obrigatório. |
 | `native/src/shims/animation_frame.*` | `requestAnimationFrame` (uma geração de callbacks por frame; JS re-registra). |
@@ -308,6 +309,10 @@ vendorizar por tamanho/licença/integração com o VS):
 
 - **Visual Studio / MSVC (x64)** — compilador C++ (build num prompt `vcvars64`).
 - **Rust (cargo)** — compila o `rapier-native` (`cargo build --release` lá).
+- **Steamworks SDK** (só pro release **PC/Steam**) — baixe em
+  partner.steamgames.com (atrás de login de parceiro, como o GDK; **não** vem no
+  fetch-deps). Extraia p/ `native/third_party/steamworks` (ou defina
+  `STEAMWORKS_SDK`). Habilita overlay/conquistas/cloud via `-DCORTEX_STEAM=ON`.
 - **Microsoft GDK** (só pro export **console/Xbox**, M3) — SDK grande (GB+),
   licenciado, integra com o VS. **Público** (`Gaming.Desktop.x64`) cobre todo o
   dev de app-model **sem NDA**; os alvos de console (`Gaming.Xbox.*`) exigem
@@ -324,6 +329,15 @@ cmake -G Ninja -S native -B native/build -DCMAKE_BUILD_TYPE=Release
 cmake --build native/build
 native/build/cortex_host.exe
 ```
+
+**Release Steam (PC)** — opt-in, exige o Steamworks SDK (pré-requisito acima):
+```powershell
+cmake -G Ninja -S native -B native/build-steam -DCMAKE_BUILD_TYPE=Release -DCORTEX_STEAM=ON -DCORTEX_STEAM_APPID=<seuAppId>
+cmake --build native/build-steam   # linka steam_api64; copia dll + steam_appid.txt (480 dev)
+```
+Sem `-DCORTEX_STEAM_APPID` usa 480 (Spacewar) p/ testar. Rodando com o cliente
+Steam aberto: `[steam] init OK` (conecta à conta). Validado. No release, use o app
+id real e NÃO inclua o `steam_appid.txt`.
 
 **App model do GDK (M3)** — opt-in, exige o GDK instalado (pré-requisito acima):
 ```powershell

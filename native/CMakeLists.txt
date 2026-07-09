@@ -13,6 +13,7 @@ add_executable(cortex_host
   src/main.cpp
   src/core/app_window.cpp
   src/core/gdk.cpp
+  src/core/steam.cpp
   src/core/js_runtime.cpp
   src/napi/napi_util.cpp
   src/shims/animation_frame.cpp
@@ -111,6 +112,37 @@ if(CORTEX_GDK)
   target_include_directories(cortex_host PRIVATE "${GDK_INC}")
   target_link_libraries(cortex_host PRIVATE "${GDK_WIN}/lib/x64/xgameruntime.lib")
   target_compile_definitions(cortex_host PRIVATE CORTEX_GDK=1)
+endif()
+
+# ── Steamworks SDK (release PC/Steam) ───────────────────────────────────────
+# OPT-IN: -DCORTEX_STEAM=ON. O SDK é PRÉ-REQUISITO (baixe em partner.steamgames.com
+# — atrás de login, como o GDK; não vem no fetch-deps). Ponha em
+# native/third_party/steamworks (ou defina STEAMWORKS_SDK). App id de release via
+# -DCORTEX_STEAM_APPID=<id> (default 480 = Spacewar, p/ testar).
+option(CORTEX_STEAM "Linka o Steamworks SDK (release PC/Steam)" OFF)
+set(CORTEX_STEAM_APPID "" CACHE STRING "App id da Steam (vazio = 480/Spacewar p/ teste)")
+if(CORTEX_STEAM)
+  set(STEAM_SDK "$ENV{STEAMWORKS_SDK}")
+  if(NOT STEAM_SDK)
+    set(STEAM_SDK "${CMAKE_CURRENT_SOURCE_DIR}/third_party/steamworks")
+  endif()
+  if(NOT EXISTS "${STEAM_SDK}/public/steam/steam_api.h")
+    message(FATAL_ERROR "CORTEX_STEAM=ON mas o Steamworks SDK não foi achado em '${STEAM_SDK}' — baixe em partner.steamgames.com e extraia p/ native/third_party/steamworks (ou defina STEAMWORKS_SDK).")
+  endif()
+  message(STATUS "Steamworks SDK: ${STEAM_SDK}")
+  target_include_directories(cortex_host PRIVATE "${STEAM_SDK}/public")
+  target_link_libraries(cortex_host PRIVATE "${STEAM_SDK}/redistributable_bin/win64/steam_api64.lib")
+  target_compile_definitions(cortex_host PRIVATE CORTEX_STEAM=1)
+  if(CORTEX_STEAM_APPID)
+    target_compile_definitions(cortex_host PRIVATE CORTEX_STEAM_APPID=${CORTEX_STEAM_APPID})
+  endif()
+  # steam_api64.dll + steam_appid.txt (DEV — 480; NÃO incluir no release) ao lado do exe
+  add_custom_command(TARGET cortex_host POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${STEAM_SDK}/redistributable_bin/win64/steam_api64.dll"
+      "${CMAKE_CURRENT_SOURCE_DIR}/steam/steam_appid.txt"
+      $<TARGET_FILE_DIR:cortex_host>
+  )
 endif()
 
 # DLLs ao lado do executável

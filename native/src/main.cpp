@@ -13,6 +13,7 @@
 #include "core/gdk.h"
 #include "core/host_gpu.h"
 #include "core/js_runtime.h"
+#include "core/steam.h"
 #include "napi/napi_util.h"
 #include "shims/animation_frame.h"
 #include "shims/audio.h"
@@ -77,6 +78,7 @@ void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs) {
   shims::runAnimationFrames(js.env(), elapsedMs);
   js.drainMicrotasks();
   shims::updateAudio();
+  core::runSteamCallbacks();  // overlay/conquistas — no-op sem CORTEX_STEAM
   webgpu::presentIfAcquired(gpu);
 }
 
@@ -91,6 +93,10 @@ void shutdownGpu(HostGpu* gpu) {
 }  // namespace
 
 int main(int argc, char** argv) {
+  // Steam (release PC): checa relaunch-via-Steam + init ANTES de tudo. Se a Steam
+  // vai relançar (app aberto fora dela), sai já. No-op sem CORTEX_STEAM.
+  if (!core::initSteam()) return 0;
+
   // App model do GDK (console/Xbox): inicializa o Game Runtime cedo, antes de
   // qualquer outra API do GDK. No-op no build desktop (sem CORTEX_GDK).
   core::initGameRuntime();
@@ -184,6 +190,7 @@ int main(int argc, char** argv) {
   SDL_DestroyWindow(window);
   SDL_Quit();
   core::shutdownGameRuntime();  // no-op sem CORTEX_GDK
+  core::shutdownSteam();        // no-op sem CORTEX_STEAM
   std::printf("cortex-native encerrou\n");
   return 0;
 }
