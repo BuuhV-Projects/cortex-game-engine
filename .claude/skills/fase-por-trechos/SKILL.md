@@ -80,6 +80,9 @@ emenda simples; `difficulty` em crescendo (calmo → médio → clímax).
    órfã, emenda desnivelada, portal de lado.
 3. **Defeito novo de playtest vira REGRA nova do lint** — nunca só um conserto
    pontual. É assim que o sistema melhora a cada ciclo.
+4. O sweep NÃO é opcional quando só "o cenário" mudou: o lint cobre os TRECHOS,
+   mas o cenário gerado pelo COMPOSITOR (dunas, poças, balões, conectores) só o
+   sweep enxerga — foi onde dunas invadindo a pista passaram sem lint acusar.
 
 ## Gotchas que custaram iteração (não repita)
 
