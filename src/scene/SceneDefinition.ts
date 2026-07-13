@@ -152,6 +152,10 @@ const materialSchema = z
     z.object({
       type: z.literal('unlit'),
       color: colorSchema.optional(),
+      // `false` = descarta o `map` do modelo → COR CHAPADA (a moeda amarela do
+      // teste4). Faltava aqui: o zod descartava a chave em silêncio e a cena
+      // data-driven (level.json / Chat IA) não conseguia pedir cor chapada.
+      textured: z.boolean().optional(),
       opacity: z.number().min(0).max(1).optional(),
       transparent: z.boolean().optional(),
       cull: z.enum(['back', 'front', 'none']).optional(),

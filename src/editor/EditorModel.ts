@@ -273,6 +273,22 @@ export function describeOutliner(
  * o que o inspector mostra hoje (transform, sombra, matte, animação, ações do
  * player, collider, luz). Cada campo registra seu handler em `handlers`.
  */
+/** A config atual como `unlit` (ou `null` se for outro preset) — pra ler `textured`. */
+function unlitOf(cfg: MaterialConfig | null): Extract<MaterialConfig, { type: 'unlit' }> | null {
+  return cfg?.type === 'unlit' ? cfg : null;
+}
+
+/**
+ * Cor do material como `#rrggbb` pro seletor do Inspector. A `MaterialConfig`
+ * aceita string (`'#ffd83a'`) OU número (`0xffd83a`) — o campo `color` só fala
+ * string. Sem cor = branco (o unlit sem tint preserva a cor do original).
+ */
+function colorHex(color: unknown): string {
+  if (typeof color === 'string') return color;
+  if (typeof color === 'number') return `#${color.toString(16).padStart(6, '0')}`;
+  return '#ffffff';
+}
+
 export function describeInspector(
   obj: Object3D | null,
   ctx: InspectorContext,
@@ -425,14 +441,24 @@ export function describeInspector(
         ],
       },
     ];
-    // Trocar o preset cria uma config nova com defaults e re-descreve (mostra os params).
-    // SEM cor por padrão: o material é re-sombreado EM CIMA do original, preservando
-    // as cores reais (vertex colors / multi-material). Evita achatar tudo numa cor só.
+    // Trocar o preset PRESERVA os parâmetros comuns do material atual (cor,
+    // contorno…) em vez de recriar do zero — senão só abrir o dropdown e
+    // reescolher o mesmo shader APAGAVA o que a cena declarou no nó (a moeda
+    // `unlit + color + textured:false + outline` virava unlit branco com a
+    // textura do .glb, porque o overlay do editor vence o nó no buildScene).
+    // SEM cor por padrão quando não havia nenhuma: o material é re-sombreado EM
+    // CIMA do original, preservando as cores reais (vertex colors / multi-material).
     handlers.set(fid('shader'), (v) => {
       const t = v as string;
+      const prev = cur as Partial<Extract<MaterialConfig, { type: 'unlit' | 'toon' }>> | null;
+      const keep = {
+        ...(prev?.color !== undefined ? { color: prev.color } : {}),
+        ...(prev?.outline !== undefined ? { outline: prev.outline } : {}),
+        ...(prev?.outlineColor !== undefined ? { outlineColor: prev.outlineColor } : {}),
+      };
       const cfg: MaterialConfig =
-        t === 'unlit' ? { type: 'unlit' }
-        : t === 'toon' ? { type: 'toon', gradientSteps: 3, outline: 0 }
+        t === 'unlit' ? { type: 'unlit', ...keep, ...(unlitOf(cur)?.textured !== undefined ? { textured: unlitOf(cur)!.textured } : {}) }
+        : t === 'toon' ? { type: 'toon', gradientSteps: 3, outline: 0, ...keep }
         : { type: 'standard' };
       api.set(obj, cfg);
       return { rebuild: true };
@@ -442,12 +468,19 @@ export function describeInspector(
       // Unlit porta o shader Unity (textura × cor): mantém o tint opcional, mas o
       // default preserva as cores do original (cor não-setada = não achata).
       // Contorno = o mesmo inverted-hull do toon ("unlit toon": chapado + borda).
+      // `Cor` e `Usar textura` são EDITÁVEIS aqui: sem eles, um objeto que a cena
+      // declara com cor chapada (`textured:false`) não podia ser reproduzido/
+      // corrigido pelo Inspector — e qualquer toque no painel perdia o look.
       const c = cur as Extract<MaterialConfig, { type: 'unlit' }>;
       fields.push(
+        { kind: 'color', id: fid('matColor'), label: 'Cor', value: colorHex(c.color) },
+        { kind: 'checkbox', id: fid('matTextured'), label: 'Usar textura', value: c.textured !== false },
         { kind: 'checkbox', id: fid('matTwoSided'), label: 'Dois lados', value: c.cull === 'none' },
         { kind: 'checkbox', id: fid('matTransp'), label: 'Transparente', value: !!c.transparent },
         { kind: 'number', id: fid('matOutline'), label: 'Contorno', value: c.outline ?? 0, step: 0.01 },
       );
+      handlers.set(fid('matColor'), (v) => api.set(obj, { ...c, color: String(v) }));
+      handlers.set(fid('matTextured'), (v) => api.set(obj, { ...c, textured: v as boolean }));
       handlers.set(fid('matTwoSided'), (v) => api.set(obj, { ...c, cull: (v as boolean) ? 'none' : 'back' }));
       handlers.set(fid('matTransp'), (v) => api.set(obj, { ...c, transparent: v as boolean }));
       handlers.set(fid('matOutline'), (v) => {

@@ -183,13 +183,49 @@ describe('describeInspector — Shader (material)', () => {
     expect(saved()).toEqual({ type: 'unlit' }); // sem cor — preserva as cores do original
     expect(res).toEqual({ rebuild: true });
 
-    // re-descreve: unlit expõe dois lados + transparente (sem campo de cor —
-    // o material preserva as cores reais do original, sem achatar).
+    // re-descreve: unlit expõe cor, textura, dois lados, transparente e contorno.
     const again = describeInspector(mesh, { materialApi: api }, reg);
-    expect(field(again.model, 'matColor')).toBeUndefined();
     expect(field(again.model, 'matTwoSided')?.kind).toBe('checkbox');
     again.handlers.get(field(again.model, 'matTwoSided')!.id)!(true);
     expect((saved() as { cull?: string }).cull).toBe('none');
+  });
+
+  it('unlit: edita COR e USAR TEXTURA (cor chapada = textured:false)', () => {
+    const reg = createObjectRegistry();
+    const mesh = new Mesh();
+    mesh.name = 'Coin';
+    const { api, saved } = fakeMaterialApi();
+    api.set(mesh, { type: 'unlit', color: '#ffd83a', textured: false });
+
+    const { model, handlers } = describeInspector(mesh, { materialApi: api }, reg);
+    // O painel REFLETE o material autorado (antes não havia campo pra isso).
+    expect((field(model, 'matColor') as { value: string }).value).toBe('#ffd83a');
+    expect((field(model, 'matTextured') as { value: boolean }).value).toBe(false);
+
+    handlers.get(field(model, 'matColor')!.id)!('#00ff00');
+    expect(saved()).toMatchObject({ type: 'unlit', color: '#00ff00', textured: false });
+    handlers.get(field(model, 'matTextured')!.id)!(true);
+    expect(saved()).toMatchObject({ textured: true });
+  });
+
+  it('trocar o preset PRESERVA cor/textura/contorno do material atual (regressão)', () => {
+    // Bug real (moeda do teste4): a cena declara `unlit + color + textured:false
+    // + outline`; encostar no dropdown de Shader recriava a config do ZERO e o
+    // overlay (que vence o nó no buildScene) degradava a moeda pra unlit branco
+    // com a textura do .glb. Trocar de preset não pode APAGAR o que já existe.
+    const reg = createObjectRegistry();
+    const mesh = new Mesh();
+    mesh.name = 'Coin';
+    const { api, saved } = fakeMaterialApi();
+    api.set(mesh, { type: 'unlit', color: '#ffd83a', textured: false, outline: 0.02 });
+
+    const { model, handlers } = describeInspector(mesh, { materialApi: api }, reg);
+    handlers.get(field(model, 'shader')!.id)!('toon'); // unlit → toon
+    expect(saved()).toMatchObject({ type: 'toon', color: '#ffd83a', outline: 0.02 });
+
+    const back = describeInspector(mesh, { materialApi: api }, reg);
+    back.handlers.get(field(back.model, 'shader')!.id)!('unlit'); // toon → unlit
+    expect(saved()).toMatchObject({ type: 'unlit', color: '#ffd83a', outline: 0.02 });
   });
 
   it('não mostra Shader sem malha (ex.: Object3D vazio)', () => {
