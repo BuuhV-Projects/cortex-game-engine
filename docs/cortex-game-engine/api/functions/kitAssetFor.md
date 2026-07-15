@@ -8,7 +8,7 @@
 
 > **kitAssetFor**(`kits`, `url`): \{ `anchors?`: `Record`\<`string`, \{ `at`: \[`number`, `number`, `number`\]; `dir?`: \[`number`, `number`, `number`\]; `kind`: `"surface"` \| `"connect"`; \}\>; `collider?`: \{ `oneWay?`: `boolean`; `shape?`: `"box"` \| `"capsule"` \| `"circle"` \| `"heightfield"`; `solid?`: `boolean`; \}; `gameplayRole?`: `string`[]; `role`: `string`; `size?`: \[`number`, `number`, `number`\]; `tags?`: `string`[]; `thumb?`: `string`; \} \| `undefined`
 
-Defined in: src/scene/Kit.ts:88
+Defined in: [src/scene/Kit.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L88)
 
 Acha os metadados de um asset pelo `url` do nó da cena. As chaves do
 `kit.json` são relativas ao kit (`assets/rock.glb`); os `url` da cena

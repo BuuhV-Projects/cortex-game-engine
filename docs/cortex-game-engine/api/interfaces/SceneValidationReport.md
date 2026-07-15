@@ -6,7 +6,7 @@
 
 # Interface: SceneValidationReport
 
-Defined in: src/scene/validateScene.ts:29
+Defined in: [src/scene/validateScene.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L29)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: src/scene/validateScene.ts:29
 
 > **errors**: [`SceneViolation`](SceneViolation.md)[]
 
-Defined in: src/scene/validateScene.ts:30
+Defined in: [src/scene/validateScene.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L30)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: src/scene/validateScene.ts:30
 
 > **stats**: `object`
 
-Defined in: src/scene/validateScene.ts:33
+Defined in: [src/scene/validateScene.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L33)
 
 Nós avaliados/pulados (sem size conhecido) — transparência de cobertura.
 
@@ -44,4 +44,4 @@ Nós avaliados/pulados (sem size conhecido) — transparência de cobertura.
 
 > **warnings**: [`SceneViolation`](SceneViolation.md)[]
 
-Defined in: src/scene/validateScene.ts:31
+Defined in: [src/scene/validateScene.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L31)

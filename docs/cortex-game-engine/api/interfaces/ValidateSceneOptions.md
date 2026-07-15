@@ -6,7 +6,7 @@
 
 # Interface: ValidateSceneOptions
 
-Defined in: src/scene/validateScene.ts:36
+Defined in: [src/scene/validateScene.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L36)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: src/scene/validateScene.ts:36
 
 > `optional` **kit?**: \{ `assets`: `Record`\<`string`, \{ `anchors?`: `Record`\<`string`, \{ `at`: \[`number`, `number`, `number`\]; `dir?`: \[`number`, `number`, `number`\]; `kind`: `"surface"` \| `"connect"`; \}\>; `collider?`: \{ `oneWay?`: `boolean`; `shape?`: `"box"` \| `"capsule"` \| `"circle"` \| `"heightfield"`; `solid?`: `boolean`; \}; `gameplayRole?`: `string`[]; `role`: `string`; `size?`: \[`number`, `number`, `number`\]; `tags?`: `string`[]; `thumb?`: `string`; \}\>; `module?`: `number`; `name`: `string`; `theme?`: `string`; `version`: `1`; \} \| `object`[]
 
-Defined in: src/scene/validateScene.ts:37
+Defined in: [src/scene/validateScene.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L37)
 
 #### Union Members
 
@@ -58,7 +58,7 @@ Design tokens de atmosfera (nome do tema).
 
 > `optional` **maxGap?**: `number`
 
-Defined in: src/scene/validateScene.ts:40
+Defined in: [src/scene/validateScene.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L40)
 
 Maior vão horizontal pulável (unidades). Default 2.8 (lint R4).
 
@@ -68,7 +68,7 @@ Maior vão horizontal pulável (unidades). Default 2.8 (lint R4).
 
 > `optional` **maxRise?**: `number`
 
-Defined in: src/scene/validateScene.ts:42
+Defined in: [src/scene/validateScene.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L42)
 
 Maior subida entre plataformas vizinhas. Default 3.
 
@@ -78,4 +78,4 @@ Maior subida entre plataformas vizinhas. Default 3.
 
 > `optional` **overlay?**: [`SceneFileV1`](SceneFileV1.md) \| `null`
 
-Defined in: src/scene/validateScene.ts:38
+Defined in: [src/scene/validateScene.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L38)

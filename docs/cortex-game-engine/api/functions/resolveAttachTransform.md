@@ -8,7 +8,7 @@
 
 > **resolveAttachTransform**(`target`, `targetAnchor`, `ownAnchor`, `own`): `object`
 
-Defined in: src/scene/Kit.ts:136
+Defined in: [src/scene/Kit.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L136)
 
 Resolve o transform de um nó com `attach` (ADR-0053 §2): computa a pose que
 faz o socket próprio (`ownAnchor`) **coincidir** com o socket do alvo
