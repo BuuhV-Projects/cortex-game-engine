@@ -460,9 +460,11 @@ game.onUpdate((dt) => scene.update(dt)) // anima água
 ```
 
 **Como autorar bem (a IA é a level designer):**
-- **Conexões/posições:** compute `x`/`z` a partir das **dimensões do `inspect_assets`**
-  (você não roda código na autoria, então BAKE o valor): ex. ponte em
-  `x = (ilhaA_centroX + ilhaA_larguraX/2 + ilhaB_centroX − ilhaB_larguraX/2) / 2`.
+- **Conexões: prefira `attach` (encaixe por socket)** quando o asset tem entrada
+  no `kit.json` — ver "Kit de assets / vocabulário" abaixo. Só bakeie `x`/`z` à
+  mão quando NÃO houver socket: compute a partir das **dimensões do
+  `inspect_assets`** (você não roda código na autoria, então BAKE o valor): ex.
+  ponte em `x = (ilhaA_centroX + ilhaA_larguraX/2 + ilhaB_centroX − ilhaB_larguraX/2) / 2`.
   Use `place.y` pra o grounding (nunca chute `y`).
 - **Multi-arquivo:** quebre por região/feature (`world.json`, `obstaculos.json`,
   `decoracao.json`) — diffs limpos, edição cirúrgica. `nodes` são concatenados.
@@ -483,6 +485,48 @@ game.onUpdate((dt) => scene.update(dt)) // anima água
 > condicional), os helpers imperativos abaixo (`loadGLB`/`placeOnGround`/`scatter`)
 > seguem disponíveis — são o que o loader usa por dentro. Mas a cena ESTÁTICA
 > deve ser JSON, pra o editor poder editá-la.
+
+## Kit de assets / vocabulário — `kit.json` + `attach` (ADR-0053)
+
+`parseKit`, `kitAssetFor`, `resolveAttachTransform`, `KitManifest`, `KitAsset`,
+`KitAnchor`, `AttachConfig`; campo `attach` nos nós; `BuildSceneOptions.kit`.
+
+Kits curados trazem um **`kit.json`**: `role` (natureza física), `tags` (tema +
+S/M/L), `gameplayRole` (função de design), `size` (bbox), preset de `collider` e
+**`anchors`** (sockets nomeados, espaço local). Com o kit passado ao `buildScene`,
+o nó declara **relação** em vez de coordenada — o análogo do `place` pro plano X/Z:
+
+```jsonc
+{ "type": "model", "id": "ilha_1",  "url": "assets/ilhas/ilha.glb",  "place": { "x": 0, "y": -1.5 } },
+{ "type": "model", "id": "ponte_1", "url": "assets/ilhas/ponte.glb",
+  "attach": { "socket": "a", "to": "ilha_1", "toSocket": "edge_right" } }
+```
+
+```ts
+import { buildScene, parseKit } from 'cortex-game-engine'
+import kitJson from '../assets/ilhas/kit.json'
+const kit = parseKit(kitJson)               // null se inválido — trate como erro
+const scene = await buildScene(game.scene, defs, { world, kit, overlay })
+```
+
+Regras:
+- **Resolução determinística em ordem de dependência** (alvo antes do dependente;
+  cadeias funcionam). Sockets `connect` se acoplam com as `dir` se **encarando**
+  (o yaw do dependente é realinhado); `surface` pousa sem mudar o yaw autorado.
+- **Falha ALTO** (o build lança, nunca silencia numa pose chutada): alvo/socket
+  inexistente (a mensagem lista os sockets disponíveis), nó sem entrada no kit,
+  ciclo de attach.
+- **O override do editor vence**: nó movido à mão no F2 (overlay `objects[id]`)
+  não é re-encaixado.
+- **Preset de collider por `role`**: sem `collider` no nó/overlay, o preset do
+  kit vale (`editor > nó > kit`). Não redefina collider que já vem do role.
+- `attach` requer nós `model` (dependente e alvo) com entrada no kit.
+
+**Validação geométrica estática** (`validateScene(defs, { kit, overlay })`,
+ADR-0112): checa interpenetração, peça flutuando, gameplay tombado/desalinhado,
+vão/subida impulável e attach quebrado — direto dos DADOS (JSON + `size` do kit),
+sem three/GPU. Devolve `{ errors, warnings, stats }`. No Chat IA existe como a
+tool `validate_scene` (0 erros = pré-requisito antes de playtest/critique).
 
 ## Blockout / ProBuilder — nó `mesh` editável (ADR-0071)
 

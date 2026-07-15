@@ -2,23 +2,19 @@
 
 ***
 
-[cortex-game-engine](../README.md) / buildScene
+[cortex-game-engine](../README.md) / validateScene
 
-# Function: buildScene()
+# Function: validateScene()
 
-> **buildScene**(`scene`, `defs`, `options?`): `Promise`\<[`SceneHandle`](../interfaces/SceneHandle.md)\>
+> **validateScene**(`defs`, `options?`): [`SceneValidationReport`](../interfaces/SceneValidationReport.md)
 
-Defined in: [src/scene/SceneBuilder.ts:455](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L455)
+Defined in: src/scene/validateScene.ts:83
 
-Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
-os `nodes` são concatenados; configs de cena como `background`/`fog`/
-`outdoorLighting`: o último definido vence).
+Valida a cena estaticamente. Nunca lança por problema DE CENA — problemas
+viram violações no report (inclusive attach quebrado, que no `buildScene`
+falharia alto).
 
 ## Parameters
-
-### scene
-
-[`Scene`](../classes/Scene.md)
 
 ### defs
 
@@ -170,8 +166,8 @@ middle azul pálido). Vira fundo visível + luz suave (IBL).
 
 ### options?
 
-[`BuildSceneOptions`](../interfaces/BuildSceneOptions.md) = `{}`
+[`ValidateSceneOptions`](../interfaces/ValidateSceneOptions.md) = `{}`
 
 ## Returns
 
-`Promise`\<[`SceneHandle`](../interfaces/SceneHandle.md)\>
+[`SceneValidationReport`](../interfaces/SceneValidationReport.md)
