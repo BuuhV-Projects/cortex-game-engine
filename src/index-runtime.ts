@@ -99,6 +99,10 @@ export * from './scene/SceneFile.js';
 export * from './scene/SceneLoader.js';
 export * from './scene/SceneDefinition.js';
 export * from './scene/SceneBuilder.js';
+// Kit de assets (kit.json + sockets/attach — ADR-0053): parseKit + resolver puro.
+export * from './scene/Kit.js';
+// Validação geométrica estática da cena (overlap/floating/tilted/gap) — dados puros.
+export * from './scene/validateScene.js';
 export * from './scene/Background.js';
 export * from './scene/SceneAnimator.js';
 export * from './scene/ModularCharacter.js';

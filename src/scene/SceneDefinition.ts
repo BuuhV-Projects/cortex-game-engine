@@ -226,11 +226,33 @@ const vehicleSchema = z
   })
   .optional();
 
+/**
+ * **Encaixe por socket** (ADR-0053 §2) — o análogo do `place` pro plano X/Z: em
+ * vez de chutar coordenada, o nó declara a RELAÇÃO ("meu socket `a` no socket
+ * `edge_right` de `ilha_1`") e o {@link buildScene} resolve o transform de forma
+ * determinística usando as âncoras do `kit.json` (passe `options.kit`). Exige
+ * que o nó e o alvo sejam `model` com entrada no kit; socket inexistente, alvo
+ * ausente ou ciclo de attach **falham alto** (build lança). O override do editor
+ * (overlay `objects[id]`) vence o attach.
+ */
+const attachSchema = z
+  .object({
+    /** Socket PRÓPRIO (nome de âncora no `kit.json` deste asset). */
+    socket: z.string().min(1),
+    /** `id` do nó alvo na cena. */
+    to: z.string().min(1),
+    /** Socket do ALVO (nome de âncora no `kit.json` do asset do alvo). */
+    toSocket: z.string().min(1),
+  })
+  .optional();
+
 const baseFields = {
   /** Identificador único — chave pra overlay/editor e `Object3D.name`. */
   id: z.string().min(1),
   transform: transformSchema,
   place: placeSchema,
+  /** Encaixe por socket no lugar de coordenadas (ver {@link attachSchema}; ADR-0053). */
+  attach: attachSchema,
   castShadow: z.boolean().optional(),
   receiveShadow: z.boolean().optional(),
   /** Materiais foscos (mata o brilho PBR → look cartoon). Ver {@link setMatte}. */
@@ -505,6 +527,8 @@ const sceneDefinitionSchema = z.object({
 
 /** Config de collider 2D (campo `collider` dos nós; ver {@link colliderSchema}). */
 export type ColliderConfig = NonNullable<z.infer<typeof colliderSchema>>;
+/** Config de encaixe por socket (campo `attach` dos nós; ver {@link attachSchema}; ADR-0053). */
+export type AttachConfig = NonNullable<z.infer<typeof attachSchema>>;
 /** Config de animação (campo `animation` dos nós; ver {@link animationSchema}). */
 export type AnimationConfig = NonNullable<z.infer<typeof animationSchema>>;
 /** Config de Character (campo `character` dos nós; ver {@link characterSchema}). */

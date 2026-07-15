@@ -79,10 +79,20 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   carrega uma **receita de forma** (`shape`) OU geometria explícita
   (`positions`/`faces`); ver §11.
 - **`buildScene(scene, defs, opts)`** — **único ponto de instanciação**. Instancia
-  os nós (via `instantiate`), aplica `place`, e — se há `world` — cria as
-  **entidades ECS** (corpos de física, sprites animados, terreno). Marca cada nó
-  com `obj.userData.cortexSceneNode = true` (o editor usa pra saber o que é
+  os nós (via `instantiate`), aplica `place`, resolve os **`attach`** (encaixe por
+  socket — ver abaixo) e — se há `world` — cria as **entidades ECS** (corpos de
+  física, sprites animados, terreno). Marca cada nó com
+  `obj.userData.cortexSceneNode = true` (o editor usa pra saber o que é
   autorável). Lê o **overlay** e aplica suas precedências.
+- **Kit / sockets (`Kit.ts`, ADR-0053)** — `parseKit` valida o `kit.json`
+  (role/tags/gameplayRole/size/collider/anchors por asset); com `opts.kit`, nós
+  `model` podem declarar `attach { socket, to, toSocket }` e o `buildScene`
+  resolve o transform **deterministicamente** (ordem de dependência; `connect`
+  alinha as `dir` se encarando; `surface` pousa sem girar) via
+  `resolveAttachTransform` (matemática pura, unit-testável). **Falha alto** em
+  alvo/socket ausente ou ciclo. Precedências: override do editor
+  (`objects[id]`) **vence o attach**; collider efetivo = overlay > nó > preset
+  do `role` no kit.
 - **Overlay** (um `SceneFileV1`; caminho em **`game.sceneDataUrl`**, default
   `assets/scene-data.json` — **um arquivo POR FASE** em jogos multi-fase, senão
   `added`/`deleted` vazam entre fases e o auto-save de uma sobrescreve a outra;

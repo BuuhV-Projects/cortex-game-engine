@@ -37,6 +37,7 @@ import { FollowCameraTargetComponent } from '../components/FollowCameraTargetCom
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import type { Entity } from '../ecs/Entity.js';
 import { loadGLB, loadTexture, instance, placeOnGround, getWorldBounds, setMatte, setShadows } from './SceneAssets.js';
+import { kitAssetFor, resolveAttachTransform, type KitManifest } from './Kit.js';
 import { applyMaterial, type MaterialConfig } from './Materials.js';
 import { createSprite } from './Sprite.js';
 import { Spritesheet, createAnimatedSprite } from './Spritesheet.js';
@@ -115,6 +116,12 @@ export interface BuildSceneOptions {
    * não cair enquanto você edita a cena no F2. Sem isso, a física roda sempre.
    */
   physicsPaused?: () => boolean;
+  /**
+   * Manifesto(s) de kit (`kit.json` parseado com {@link parseKit}; ADR-0053) —
+   * habilita o encaixe por socket (`attach` nos nós) e o preset de collider por
+   * `role` do asset (o `collider` do nó/overlay vence o preset).
+   */
+  kit?: KitManifest | KitManifest[];
 }
 
 /**
@@ -622,9 +629,14 @@ export async function buildScene(
     }
   }
 
+  // 1.5) attach (ADR-0053 §2): encaixe por socket, resolvido em ordem de
+  //      dependência ANTES das entidades (que copiam a pose final). Falha alto
+  //      em alvo/socket ausente ou ciclo. Override do editor vence o attach.
+  resolveAttachments(placed, byId, options.kit, overrides);
+
   // 2) Plataforma 2.5D: nós com collider/player viram entidades ECS acopladas
-  //    (posições já finais). Precedência do collider: código (`node.collider`) >
-  //    overlay do editor (`data.colliders[id]`) > preset do `role` no kit.
+  //    (posições já finais). Precedência do collider: overlay do editor
+  //    (`data.colliders[id]`) > nó (`collider`) > preset do `role` no kit.
   if (options.world) {
     // Rapier (física dinâmica): cria o mundo SOB DEMANDA na 1ª vez que um nó
     // `rapierBody` aparece (carrega o WASM via dynamic import) e registra o sistema
@@ -680,9 +692,12 @@ export async function buildScene(
         continue;
       }
       if (node.type !== 'model' && node.type !== 'primitive' && node.type !== 'mesh') continue;
-      // Collider efetivo: overlay do editor (autorado) > nó (`collider`). A overlay
-      // VENCE o código — pra a edição/remoção no Inspector ter efeito (ver ADR-0058).
-      const colliderCfg = editorColliders[node.id] ?? node.collider;
+      // Collider efetivo: overlay do editor (autorado) > nó (`collider`) > preset
+      // do `role` no kit (ADR-0053). A overlay VENCE o código — pra a edição/
+      // remoção no Inspector ter efeito (ver ADR-0058).
+      const kitPreset =
+        node.type === 'model' ? kitAssetFor(options.kit, node.url)?.collider : undefined;
+      const colliderCfg = editorColliders[node.id] ?? node.collider ?? kitPreset;
       const obj = byId.get(node.id)!;
 
       // Tipo de corpo: override do Inspector (overlay `data.physics`) é AUTORITATIVO
@@ -996,6 +1011,108 @@ function makeSprite(
   }
 
   return createSprite(texture, { ...common, pixelated: node.pixelated });
+}
+
+/**
+ * Resolve os nós com `attach` (encaixe por socket, ADR-0053 §2): em ordem de
+ * dependência (alvo antes do dependente), computa a pose que faz os sockets
+ * coincidirem (via {@link resolveAttachTransform}) e aplica no `Object3D`.
+ *
+ * Falha ALTO (lança) em: nó/alvo sem entrada no kit, socket inexistente, alvo
+ * ausente, alvo que não é `model`, ou ciclo de attach — nunca silencia numa
+ * pose chutada. O override do editor (`overlay.objects[id]`) VENCE o attach:
+ * nó movido à mão no editor não é re-encaixado.
+ */
+function resolveAttachments(
+  placed: SceneNode[],
+  byId: Map<string, Object3D>,
+  kits: KitManifest | KitManifest[] | undefined,
+  overrides: Record<string, unknown>,
+): void {
+  const pending = placed.filter(
+    (n): n is SceneNode & { attach: { socket: string; to: string; toSocket: string } } =>
+      typeof (n as { attach?: unknown }).attach === 'object' && (n as { attach?: unknown }).attach !== null,
+  );
+  if (pending.length === 0) return;
+
+  const nodesById = new Map(placed.map((n) => [n.id, n]));
+  const resolved = new Set<string>();
+  const visiting = new Set<string>();
+
+  const anchorsDe = (url: string, quem: string) => {
+    const asset = kitAssetFor(kits, url);
+    if (!asset) {
+      throw new Error(
+        `buildScene: attach — ${quem} ("${url}") não tem entrada no kit. Passe o kit.json em options.kit (parseKit).`,
+      );
+    }
+    return asset.anchors ?? {};
+  };
+
+  const resolve = (node: (typeof pending)[number]): void => {
+    if (resolved.has(node.id)) return;
+    if (visiting.has(node.id)) throw new Error(`buildScene: ciclo de attach envolvendo "${node.id}"`);
+    visiting.add(node.id);
+
+    // Nó movido no editor: a pose salva é final — não re-encaixa.
+    if (overrides[node.id]) {
+      visiting.delete(node.id);
+      resolved.add(node.id);
+      return;
+    }
+    if (node.type !== 'model') {
+      throw new Error(`buildScene: attach em "${node.id}" requer nó \`model\` com entrada no kit (tipo: ${node.type})`);
+    }
+    const targetNode = nodesById.get(node.attach.to);
+    if (!targetNode) {
+      throw new Error(`buildScene: attach de "${node.id}" aponta pra nó inexistente/deletado "${node.attach.to}"`);
+    }
+    if (targetNode.type !== 'model') {
+      throw new Error(`buildScene: attach de "${node.id}" — alvo "${targetNode.id}" não é nó \`model\` (tipo: ${targetNode.type})`);
+    }
+    const targetAttach = (targetNode as { attach?: unknown }).attach;
+    if (targetAttach) resolve(targetNode as (typeof pending)[number]);
+
+    const obj = byId.get(node.id);
+    const targetObj = byId.get(targetNode.id);
+    if (!obj || !targetObj) {
+      throw new Error(`buildScene: attach de "${node.id}" — objeto não instanciado (nó ou alvo "${targetNode.id}")`);
+    }
+
+    const ownAnchors = anchorsDe(node.url, `o nó "${node.id}"`);
+    const targetAnchors = anchorsDe(targetNode.url, `o alvo "${targetNode.id}"`);
+    const ownAnchor = ownAnchors[node.attach.socket];
+    if (!ownAnchor) {
+      throw new Error(
+        `buildScene: attach — socket "${node.attach.socket}" não existe em "${node.id}" (disponíveis: ${Object.keys(ownAnchors).join(', ') || 'nenhum'})`,
+      );
+    }
+    const targetAnchor = targetAnchors[node.attach.toSocket];
+    if (!targetAnchor) {
+      throw new Error(
+        `buildScene: attach — socket "${node.attach.toSocket}" não existe no alvo "${targetNode.id}" (disponíveis: ${Object.keys(targetAnchors).join(', ') || 'nenhum'})`,
+      );
+    }
+
+    const pose = resolveAttachTransform(
+      {
+        position: [targetObj.position.x, targetObj.position.y, targetObj.position.z],
+        rotationY: targetObj.rotation.y,
+        scale: [targetObj.scale.x, targetObj.scale.y, targetObj.scale.z],
+      },
+      targetAnchor,
+      ownAnchor,
+      { rotationY: obj.rotation.y, scale: [obj.scale.x, obj.scale.y, obj.scale.z] },
+    );
+    obj.position.set(pose.position[0], pose.position[1], pose.position[2]);
+    obj.rotation.y = pose.rotationY;
+    debug('scene', 'attach:', node.id, `(${node.attach.socket})`, '→', targetNode.id, `(${node.attach.toSocket})`, '=>', pose);
+
+    visiting.delete(node.id);
+    resolved.add(node.id);
+  };
+
+  for (const n of pending) resolve(n);
 }
 
 /** Aplica `place` (grounding) ou `transform` (pose direta) a um mesh. */
