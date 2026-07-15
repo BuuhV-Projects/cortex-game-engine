@@ -104,6 +104,35 @@ Por ora o kit curado vive na **biblioteca de assets do usuário** (ex.:
 projeto + `kit.json`. Ao consumir num projeto, re-vendorizar conforme ADR-0009.
 **Atualize esta seção quando a Fase 1 definir o destino oficial.**
 
+## Pack de personagem modular (esqueleto compartilhado, ADR-0068)
+
+Packs tipo "character creator" (1 showroom `.glb` com TODAS as peças skinnadas num
+esqueleto único + cópias estáticas soltas) NÃO passam pela triagem/convert comum.
+Fluxo próprio (validado no `characters-cute`, jul/2026):
+
+1. **Diagnóstico**: ler o header do GLB — se as peças separadas têm `skins=0` e o
+   showroom tem 1 armature com centenas de filhos skinnados, a fonte é o **showroom**
+   (as separadas perderam o skin; re-skinnar por transfer é lossy — não faça).
+2. **`extract-modular.py`** (Blender headless): exporta `rig.glb` (esqueleto puro,
+   0 meshes) + um `.glb` por peça (esqueleto em bind pose + 1 mesh skinnado, sem
+   clips — formato exato do `composeModularCharacter`). Exclui `Test_*`. Emite
+   `sizes.json` no formato do convert.py.
+   ```bash
+   "$BLENDER" -b -P scripts/extract-modular.py -- <showroom.glb> <kit>/assets <stage>/sizes.json
+   ```
+3. **`externalize-texture.mjs`** (node): peças de um mesmo pack compartilham 1 atlas;
+   embutido em cada `.glb` o kit explode (ex.: 172MB). O script extrai o atlas UMA
+   vez pra `assets/<nome>.png`, reescreve cada GLB pra `uri` externa e reconstrói o
+   BIN sem a imagem (172MB → 23MB no characters-cute). O loader do engine resolve
+   uri relativa — mas **copiar a textura junto** ao vendorizar (gotcha da montar-jogo).
+   ```bash
+   node scripts/externalize-texture.mjs <kit>/assets
+   ```
+4. Thumbnails + gen-kit normais (fases 4–5). Vocabulário: peças viram role
+   **`character-part`** com `tags = [slot, ...]` (body/hair/hat/outfit/face/…),
+   esqueleto vira role **`rig`** — ambos SEM âncoras/collider (não são posicionados
+   na cena; são compostos em runtime via `loadModularCharacter`).
+
 ## Backdrops 2D (background)
 
 Imagens de fundo (jpg/png, por tema) NÃO passam pelo pipeline glb (sem bbox/conversão).

@@ -1,0 +1,5021 @@
+{
+  "version": 1,
+  "name": "characters-cute",
+  "module": 1,
+  "theme": "TBD",
+  "assets": {
+    "assets/Bandage_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "accessory",
+        "S"
+      ],
+      "size": [
+        0.487,
+        0.401,
+        0.514
+      ],
+      "thumb": "thumbnails/Bandage_01.png"
+    },
+    "assets/Beard_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.299,
+        0.219,
+        0.192
+      ],
+      "thumb": "thumbnails/Beard_01.png"
+    },
+    "assets/Beard_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.572,
+        0.264,
+        0.296
+      ],
+      "thumb": "thumbnails/Beard_02.png"
+    },
+    "assets/Beard_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.572,
+        0.334,
+        0.281
+      ],
+      "thumb": "thumbnails/Beard_03.png"
+    },
+    "assets/Body_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_01.png"
+    },
+    "assets/Body_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_02.png"
+    },
+    "assets/Body_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_03.png"
+    },
+    "assets/Body_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_04.png"
+    },
+    "assets/Body_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_05.png"
+    },
+    "assets/Body_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_06.png"
+    },
+    "assets/Body_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_07.png"
+    },
+    "assets/Body_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_08.png"
+    },
+    "assets/Body_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_09.png"
+    },
+    "assets/Body_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_10.png"
+    },
+    "assets/Body_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_11.png"
+    },
+    "assets/Body_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_12.png"
+    },
+    "assets/Body_13.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_13.png"
+    },
+    "assets/Body_14.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_14.png"
+    },
+    "assets/Body_15.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_15.png"
+    },
+    "assets/Body_16.glb": {
+      "role": "character-part",
+      "tags": [
+        "body",
+        "humanoid",
+        "S"
+      ],
+      "size": [
+        0.828,
+        1.152,
+        0.497
+      ],
+      "thumb": "thumbnails/Body_16.png"
+    },
+    "assets/Clown_nose_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "accessory",
+        "S"
+      ],
+      "size": [
+        0.088,
+        0.088,
+        0.088
+      ],
+      "thumb": "thumbnails/Clown_nose_01.png"
+    },
+    "assets/Costume_10_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.666,
+        0.278,
+        0.227
+      ],
+      "thumb": "thumbnails/Costume_10_01.png"
+    },
+    "assets/Costume_10_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.68,
+        0.631,
+        0.736
+      ],
+      "thumb": "thumbnails/Costume_10_02.png"
+    },
+    "assets/Costume_10_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.124,
+        0.118
+      ],
+      "thumb": "thumbnails/Costume_10_03.png"
+    },
+    "assets/Costume_10_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.294,
+        0.165
+      ],
+      "thumb": "thumbnails/Costume_10_04.png"
+    },
+    "assets/Costume_10_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.242,
+        0.112,
+        0.177
+      ],
+      "thumb": "thumbnails/Costume_10_05.png"
+    },
+    "assets/Costume_11_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.679,
+        0.295,
+        0.217
+      ],
+      "thumb": "thumbnails/Costume_11_01.png"
+    },
+    "assets/Costume_11_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.745,
+        0.634,
+        0.683
+      ],
+      "thumb": "thumbnails/Costume_11_02.png"
+    },
+    "assets/Costume_11_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.216,
+        0.133,
+        0.079
+      ],
+      "thumb": "thumbnails/Costume_11_03.png"
+    },
+    "assets/Costume_11_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.124,
+        0.118
+      ],
+      "thumb": "thumbnails/Costume_11_04.png"
+    },
+    "assets/Costume_11_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.275,
+        0.265,
+        0.179
+      ],
+      "thumb": "thumbnails/Costume_11_05.png"
+    },
+    "assets/Costume_11_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.244,
+        0.141,
+        0.185
+      ],
+      "thumb": "thumbnails/Costume_11_06.png"
+    },
+    "assets/Costume_12_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.645,
+        0.484,
+        0.194
+      ],
+      "thumb": "thumbnails/Costume_12_01.png"
+    },
+    "assets/Costume_12_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.669,
+        0.717,
+        0.639
+      ],
+      "thumb": "thumbnails/Costume_12_02.png"
+    },
+    "assets/Costume_12_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.208,
+        0.087,
+        0.053
+      ],
+      "thumb": "thumbnails/Costume_12_03.png"
+    },
+    "assets/Costume_13_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.846,
+        0.616,
+        0.269
+      ],
+      "thumb": "thumbnails/Costume_13_01.png"
+    },
+    "assets/Costume_13_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.669,
+        0.595,
+        0.671
+      ],
+      "thumb": "thumbnails/Costume_13_02.png"
+    },
+    "assets/Costume_14_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.677,
+        0.315,
+        0.237
+      ],
+      "thumb": "thumbnails/Costume_14_01.png"
+    },
+    "assets/Costume_14_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.951,
+        0.554,
+        0.815
+      ],
+      "thumb": "thumbnails/Costume_14_02.png"
+    },
+    "assets/Costume_14_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.254,
+        0.388,
+        0.246
+      ],
+      "thumb": "thumbnails/Costume_14_03.png"
+    },
+    "assets/Costume_1_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.846,
+        0.497,
+        0.21
+      ],
+      "thumb": "thumbnails/Costume_1_01.png"
+    },
+    "assets/Costume_1_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.673,
+        0.88,
+        0.56
+      ],
+      "thumb": "thumbnails/Costume_1_02.png"
+    },
+    "assets/Costume_1_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.264,
+        0.122,
+        0.192
+      ],
+      "thumb": "thumbnails/Costume_1_03.png"
+    },
+    "assets/Costume_2_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.661,
+        0.31,
+        0.203
+      ],
+      "thumb": "thumbnails/Costume_2_01.png"
+    },
+    "assets/Costume_2_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.723,
+        0.778,
+        0.625
+      ],
+      "thumb": "thumbnails/Costume_2_02.png"
+    },
+    "assets/Costume_2_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.244,
+        0.294,
+        0.165
+      ],
+      "thumb": "thumbnails/Costume_2_03.png"
+    },
+    "assets/Costume_2_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.556,
+        0.283,
+        0.291
+      ],
+      "thumb": "thumbnails/Costume_2_04.png"
+    },
+    "assets/Costume_3_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.616,
+        0.252,
+        0.199
+      ],
+      "thumb": "thumbnails/Costume_3_01.png"
+    },
+    "assets/Costume_3_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.669,
+        0.611,
+        0.546
+      ],
+      "thumb": "thumbnails/Costume_3_02.png"
+    },
+    "assets/Costume_3_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.124,
+        0.118
+      ],
+      "thumb": "thumbnails/Costume_3_03.png"
+    },
+    "assets/Costume_3_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.24,
+        0.209,
+        0.17
+      ],
+      "thumb": "thumbnails/Costume_3_04.png"
+    },
+    "assets/Costume_3_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.243,
+        0.163,
+        0.182
+      ],
+      "thumb": "thumbnails/Costume_3_05.png"
+    },
+    "assets/Costume_4_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.629,
+        0.499,
+        0.19
+      ],
+      "thumb": "thumbnails/Costume_4_01.png"
+    },
+    "assets/Costume_4_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.669,
+        0.581,
+        0.561
+      ],
+      "thumb": "thumbnails/Costume_4_02.png"
+    },
+    "assets/Costume_4_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.132,
+        0.119
+      ],
+      "thumb": "thumbnails/Costume_4_03.png"
+    },
+    "assets/Costume_4_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.242,
+        0.112,
+        0.18
+      ],
+      "thumb": "thumbnails/Costume_4_04.png"
+    },
+    "assets/Costume_5_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.537,
+        0.465,
+        0.199
+      ],
+      "thumb": "thumbnails/Costume_5_01.png"
+    },
+    "assets/Costume_5_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.669,
+        0.585,
+        0.574
+      ],
+      "thumb": "thumbnails/Costume_5_02.png"
+    },
+    "assets/Costume_5_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.166,
+        0.127
+      ],
+      "thumb": "thumbnails/Costume_5_03.png"
+    },
+    "assets/Costume_5_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.242,
+        0.15,
+        0.184
+      ],
+      "thumb": "thumbnails/Costume_5_04.png"
+    },
+    "assets/Costume_6_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.846,
+        0.616,
+        0.269
+      ],
+      "thumb": "thumbnails/Costume_6_01.png"
+    },
+    "assets/Costume_6_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.669,
+        0.606,
+        0.624
+      ],
+      "thumb": "thumbnails/Costume_6_02.png"
+    },
+    "assets/Costume_7_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.619,
+        0.622,
+        0.222
+      ],
+      "thumb": "thumbnails/Costume_7_01.png"
+    },
+    "assets/Costume_7_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.689,
+        0.597,
+        0.546
+      ],
+      "thumb": "thumbnails/Costume_7_02.png"
+    },
+    "assets/Costume_7_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.124,
+        0.118
+      ],
+      "thumb": "thumbnails/Costume_7_03.png"
+    },
+    "assets/Costume_8_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.65,
+        0.6,
+        0.259
+      ],
+      "thumb": "thumbnails/Costume_8_01.png"
+    },
+    "assets/Costume_8_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.891,
+        0.565,
+        0.815
+      ],
+      "thumb": "thumbnails/Costume_8_02.png"
+    },
+    "assets/Costume_9_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.266,
+        0.401,
+        0.23
+      ],
+      "thumb": "thumbnails/Costume_9_01.png"
+    },
+    "assets/Costume_9_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.728,
+        0.807,
+        0.595
+      ],
+      "thumb": "thumbnails/Costume_9_02.png"
+    },
+    "assets/Costume_9_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.479,
+        0.159,
+        0.195
+      ],
+      "thumb": "thumbnails/Costume_9_03.png"
+    },
+    "assets/Costume_9_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.671,
+        0.135,
+        0.126
+      ],
+      "thumb": "thumbnails/Costume_9_04.png"
+    },
+    "assets/Costume_9_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.252,
+        0.163,
+        0.18
+      ],
+      "thumb": "thumbnails/Costume_9_05.png"
+    },
+    "assets/Earrings_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "accessory",
+        "S"
+      ],
+      "size": [
+        0.594,
+        0.164,
+        0.156
+      ],
+      "thumb": "thumbnails/Earrings_01.png"
+    },
+    "assets/Ears_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_01.png"
+    },
+    "assets/Ears_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_02.png"
+    },
+    "assets/Ears_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_03.png"
+    },
+    "assets/Ears_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_04.png"
+    },
+    "assets/Ears_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_05.png"
+    },
+    "assets/Ears_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_06.png"
+    },
+    "assets/Ears_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_07.png"
+    },
+    "assets/Ears_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_08.png"
+    },
+    "assets/Ears_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_09.png"
+    },
+    "assets/Ears_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_10.png"
+    },
+    "assets/Ears_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_11.png"
+    },
+    "assets/Ears_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_12.png"
+    },
+    "assets/Ears_13.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_13.png"
+    },
+    "assets/Ears_14.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_14.png"
+    },
+    "assets/Ears_15.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_15.png"
+    },
+    "assets/Ears_16.glb": {
+      "role": "character-part",
+      "tags": [
+        "ears",
+        "S"
+      ],
+      "size": [
+        0.655,
+        0.129,
+        0.076
+      ],
+      "thumb": "thumbnails/Ears_16.png"
+    },
+    "assets/Female_Emotion_Anger_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.239,
+        0.224,
+        0.085
+      ],
+      "thumb": "thumbnails/Female_Emotion_Anger_01.png"
+    },
+    "assets/Female_Emotion_Angry_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.21,
+        0.164,
+        0.047
+      ],
+      "thumb": "thumbnails/Female_Emotion_Angry_01.png"
+    },
+    "assets/Female_Emotion_Angry_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.239,
+        0.193,
+        0.055
+      ],
+      "thumb": "thumbnails/Female_Emotion_Angry_02.png"
+    },
+    "assets/Female_Emotion_Confuse_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.243,
+        0.204,
+        0.049
+      ],
+      "thumb": "thumbnails/Female_Emotion_Confuse_01.png"
+    },
+    "assets/Female_Emotion_Cry_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.273,
+        0.169,
+        0.047
+      ],
+      "thumb": "thumbnails/Female_Emotion_Cry_01.png"
+    },
+    "assets/Female_Emotion_Evil_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.21,
+        0.171,
+        0.043
+      ],
+      "thumb": "thumbnails/Female_Emotion_Evil_01.png"
+    },
+    "assets/Female_Emotion_Evil_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.239,
+        0.204,
+        0.047
+      ],
+      "thumb": "thumbnails/Female_Emotion_Evil_02.png"
+    },
+    "assets/Female_Emotion_Happy_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.321,
+        0.256,
+        0.122
+      ],
+      "thumb": "thumbnails/Female_Emotion_Happy_01.png"
+    },
+    "assets/Female_Emotion_Happy_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.304,
+        0.25,
+        0.066
+      ],
+      "thumb": "thumbnails/Female_Emotion_Happy_02.png"
+    },
+    "assets/Female_Emotion_Love_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.302,
+        0.236,
+        0.12
+      ],
+      "thumb": "thumbnails/Female_Emotion_Love_01.png"
+    },
+    "assets/Female_Emotion_Neutral_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.256,
+        0.186,
+        0.049
+      ],
+      "thumb": "thumbnails/Female_Emotion_Neutral_01.png"
+    },
+    "assets/Female_Emotion_Neutral_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.275,
+        0.199,
+        0.046
+      ],
+      "thumb": "thumbnails/Female_Emotion_Neutral_02.png"
+    },
+    "assets/Female_Emotion_Sad_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.304,
+        0.232,
+        0.064
+      ],
+      "thumb": "thumbnails/Female_Emotion_Sad_01.png"
+    },
+    "assets/Female_Emotion_Sad_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.308,
+        0.221,
+        0.072
+      ],
+      "thumb": "thumbnails/Female_Emotion_Sad_02.png"
+    },
+    "assets/Female_Emotion_Shout_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.238,
+        0.234,
+        0.097
+      ],
+      "thumb": "thumbnails/Female_Emotion_Shout_01.png"
+    },
+    "assets/Female_Emotion_Surpriced_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.244,
+        0.256,
+        0.086
+      ],
+      "thumb": "thumbnails/Female_Emotion_Surpriced_01.png"
+    },
+    "assets/Female_Emotion_Surpriced_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.261,
+        0.272,
+        0.09
+      ],
+      "thumb": "thumbnails/Female_Emotion_Surpriced_02.png"
+    },
+    "assets/Female_Emotion_Tongue_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.275,
+        0.217,
+        0.064
+      ],
+      "thumb": "thumbnails/Female_Emotion_Tongue_01.png"
+    },
+    "assets/Female_Emotion_Usual_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.256,
+        0.195,
+        0.045
+      ],
+      "thumb": "thumbnails/Female_Emotion_Usual_01.png"
+    },
+    "assets/Female_Emotion_Usual_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.275,
+        0.201,
+        0.046
+      ],
+      "thumb": "thumbnails/Female_Emotion_Usual_02.png"
+    },
+    "assets/Glasses_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.54,
+        0.189,
+        0.054
+      ],
+      "thumb": "thumbnails/Glasses_01.png"
+    },
+    "assets/Glasses_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.445,
+        0.213,
+        0.021
+      ],
+      "thumb": "thumbnails/Glasses_02.png"
+    },
+    "assets/Glasses_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.518,
+        0.188,
+        0.053
+      ],
+      "thumb": "thumbnails/Glasses_03.png"
+    },
+    "assets/Glasses_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.264,
+        0.279,
+        0.345
+      ],
+      "thumb": "thumbnails/Glasses_04.png"
+    },
+    "assets/Glasses_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.537,
+        0.2,
+        0.055
+      ],
+      "thumb": "thumbnails/Glasses_05.png"
+    },
+    "assets/Glasses_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.418,
+        0.208,
+        0.037
+      ],
+      "thumb": "thumbnails/Glasses_06.png"
+    },
+    "assets/Glasses_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.588,
+        0.234,
+        0.564
+      ],
+      "thumb": "thumbnails/Glasses_07.png"
+    },
+    "assets/Glasses_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.276,
+        0.099,
+        0.033
+      ],
+      "thumb": "thumbnails/Glasses_08.png"
+    },
+    "assets/Glasses_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.606,
+        0.183,
+        0.365
+      ],
+      "thumb": "thumbnails/Glasses_09.png"
+    },
+    "assets/Glasses_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.608,
+        0.197,
+        0.376
+      ],
+      "thumb": "thumbnails/Glasses_10.png"
+    },
+    "assets/Glasses_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.606,
+        0.189,
+        0.37
+      ],
+      "thumb": "thumbnails/Glasses_11.png"
+    },
+    "assets/Glasses_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.606,
+        0.219,
+        0.376
+      ],
+      "thumb": "thumbnails/Glasses_12.png"
+    },
+    "assets/Glasses_13.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.488,
+        0.173,
+        0.049
+      ],
+      "thumb": "thumbnails/Glasses_13.png"
+    },
+    "assets/Glasses_14.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.594,
+        0.187,
+        0.367
+      ],
+      "thumb": "thumbnails/Glasses_14.png"
+    },
+    "assets/Glasses_15.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.595,
+        0.178,
+        0.346
+      ],
+      "thumb": "thumbnails/Glasses_15.png"
+    },
+    "assets/Glasses_16.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.611,
+        0.215,
+        0.385
+      ],
+      "thumb": "thumbnails/Glasses_16.png"
+    },
+    "assets/Glasses_17.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.651,
+        0.156,
+        0.019
+      ],
+      "thumb": "thumbnails/Glasses_17.png"
+    },
+    "assets/Glasses_18.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.607,
+        0.172,
+        0.354
+      ],
+      "thumb": "thumbnails/Glasses_18.png"
+    },
+    "assets/Glasses_19.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.487,
+        0.185,
+        0.024
+      ],
+      "thumb": "thumbnails/Glasses_19.png"
+    },
+    "assets/Glasses_20.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.419,
+        0.195,
+        0.024
+      ],
+      "thumb": "thumbnails/Glasses_20.png"
+    },
+    "assets/Glasses_21.glb": {
+      "role": "character-part",
+      "tags": [
+        "glasses",
+        "S"
+      ],
+      "size": [
+        0.516,
+        0.2,
+        0.144
+      ],
+      "thumb": "thumbnails/Glasses_21.png"
+    },
+    "assets/Gloves_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.124,
+        0.118
+      ],
+      "thumb": "thumbnails/Gloves_01.png"
+    },
+    "assets/Gloves_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.115,
+        0.118
+      ],
+      "thumb": "thumbnails/Gloves_02.png"
+    },
+    "assets/Gloves_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.115,
+        0.118
+      ],
+      "thumb": "thumbnails/Gloves_03.png"
+    },
+    "assets/Gloves_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.124,
+        0.118
+      ],
+      "thumb": "thumbnails/Gloves_04.png"
+    },
+    "assets/Gloves_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.804,
+        0.102,
+        0.117
+      ],
+      "thumb": "thumbnails/Gloves_05.png"
+    },
+    "assets/Gloves_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.804,
+        0.102,
+        0.117
+      ],
+      "thumb": "thumbnails/Gloves_06.png"
+    },
+    "assets/Gloves_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.115,
+        0.118
+      ],
+      "thumb": "thumbnails/Gloves_07.png"
+    },
+    "assets/Gloves_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.807,
+        0.153,
+        0.12
+      ],
+      "thumb": "thumbnails/Gloves_08.png"
+    },
+    "assets/Gloves_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.807,
+        0.153,
+        0.12
+      ],
+      "thumb": "thumbnails/Gloves_09.png"
+    },
+    "assets/Gloves_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.115,
+        0.118
+      ],
+      "thumb": "thumbnails/Gloves_10.png"
+    },
+    "assets/Gloves_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.115,
+        0.118
+      ],
+      "thumb": "thumbnails/Gloves_11.png"
+    },
+    "assets/Gloves_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "gloves",
+        "S"
+      ],
+      "size": [
+        0.845,
+        0.166,
+        0.133
+      ],
+      "thumb": "thumbnails/Gloves_12.png"
+    },
+    "assets/Hairstyle_Female_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.725,
+        0.617,
+        0.598
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_01.png"
+    },
+    "assets/Hairstyle_Female_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.705,
+        0.75,
+        0.643
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_02.png"
+    },
+    "assets/Hairstyle_Female_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.681,
+        0.588,
+        0.559
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_03.png"
+    },
+    "assets/Hairstyle_Female_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.734,
+        0.633,
+        0.587
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_04.png"
+    },
+    "assets/Hairstyle_Female_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.693,
+        0.542,
+        0.53
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_05.png"
+    },
+    "assets/Hairstyle_Female_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.809,
+        0.712,
+        0.801
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_06.png"
+    },
+    "assets/Hairstyle_Female_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.688,
+        0.623,
+        0.604
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_07.png"
+    },
+    "assets/Hairstyle_Female_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.71,
+        0.588,
+        0.689
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_08.png"
+    },
+    "assets/Hairstyle_Female_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.617,
+        0.731,
+        0.668
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_09.png"
+    },
+    "assets/Hairstyle_Female_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.843,
+        0.673,
+        0.781
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_10.png"
+    },
+    "assets/Hairstyle_Female_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.788,
+        0.642,
+        0.699
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_11.png"
+    },
+    "assets/Hairstyle_Female_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "female",
+        "S"
+      ],
+      "size": [
+        0.72,
+        0.567,
+        0.615
+      ],
+      "thumb": "thumbnails/Hairstyle_Female_12.png"
+    },
+    "assets/Hairstyle_Male_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.648,
+        0.545,
+        0.573
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_01.png"
+    },
+    "assets/Hairstyle_Male_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.634,
+        0.528,
+        0.565
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_02.png"
+    },
+    "assets/Hairstyle_Male_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.614,
+        0.555,
+        0.569
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_03.png"
+    },
+    "assets/Hairstyle_Male_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.66,
+        0.59,
+        0.608
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_04.png"
+    },
+    "assets/Hairstyle_Male_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.609,
+        0.502,
+        0.594
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_05.png"
+    },
+    "assets/Hairstyle_Male_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.73,
+        0.642,
+        0.694
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_06.png"
+    },
+    "assets/Hairstyle_Male_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.79,
+        0.607,
+        0.602
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_07.png"
+    },
+    "assets/Hairstyle_Male_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.642,
+        0.625,
+        0.63
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_08.png"
+    },
+    "assets/Hairstyle_Male_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.607,
+        0.544,
+        0.604
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_09.png"
+    },
+    "assets/Hairstyle_Male_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.631,
+        0.64,
+        0.592
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_10.png"
+    },
+    "assets/Hairstyle_Male_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.058,
+        0.485,
+        0.613
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_11.png"
+    },
+    "assets/Hairstyle_Male_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.672,
+        0.345,
+        0.663
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_12.png"
+    },
+    "assets/Hairstyle_Male_13.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.605,
+        0.416,
+        0.506
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_13.png"
+    },
+    "assets/Hairstyle_Male_14.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.604,
+        0.404,
+        0.504
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_14.png"
+    },
+    "assets/Hairstyle_Male_15.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.6,
+        0.402,
+        0.519
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_15.png"
+    },
+    "assets/Hairstyle_Male_16.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.605,
+        0.416,
+        0.506
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_16.png"
+    },
+    "assets/Hairstyle_Male_17.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.604,
+        0.404,
+        0.504
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_17.png"
+    },
+    "assets/Hairstyle_Male_18.glb": {
+      "role": "character-part",
+      "tags": [
+        "hair",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.6,
+        0.402,
+        0.519
+      ],
+      "thumb": "thumbnails/Hairstyle_Male_18.png"
+    },
+    "assets/Hat_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.933,
+        0.436,
+        0.842
+      ],
+      "thumb": "thumbnails/Hat_01.png"
+    },
+    "assets/Hat_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.821,
+        0.665,
+        0.78
+      ],
+      "thumb": "thumbnails/Hat_02.png"
+    },
+    "assets/Hat_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        1.096,
+        0.548,
+        0.869
+      ],
+      "thumb": "thumbnails/Hat_03.png"
+    },
+    "assets/Hat_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        1.043,
+        0.229,
+        1.043
+      ],
+      "thumb": "thumbnails/Hat_04.png"
+    },
+    "assets/Hat_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.65,
+        0.496,
+        0.552
+      ],
+      "thumb": "thumbnails/Hat_05.png"
+    },
+    "assets/Hat_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.677,
+        0.983,
+        0.629
+      ],
+      "thumb": "thumbnails/Hat_06.png"
+    },
+    "assets/Hat_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.743,
+        0.505,
+        0.204
+      ],
+      "thumb": "thumbnails/Hat_07.png"
+    },
+    "assets/Hat_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.729,
+        0.478,
+        0.707
+      ],
+      "thumb": "thumbnails/Hat_08.png"
+    },
+    "assets/Hat_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.761,
+        0.468,
+        0.678
+      ],
+      "thumb": "thumbnails/Hat_09.png"
+    },
+    "assets/Hat_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.645,
+        0.789,
+        0.194
+      ],
+      "thumb": "thumbnails/Hat_10.png"
+    },
+    "assets/Hat_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.705,
+        0.417,
+        0.63
+      ],
+      "thumb": "thumbnails/Hat_11.png"
+    },
+    "assets/Hat_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.752,
+        0.521,
+        0.643
+      ],
+      "thumb": "thumbnails/Hat_12.png"
+    },
+    "assets/Hat_13.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        1.118,
+        0.771,
+        0.778
+      ],
+      "thumb": "thumbnails/Hat_13.png"
+    },
+    "assets/Hat_14.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.912,
+        0.46,
+        0.865
+      ],
+      "thumb": "thumbnails/Hat_14.png"
+    },
+    "assets/Hat_15.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.677,
+        0.725,
+        0.72
+      ],
+      "thumb": "thumbnails/Hat_15.png"
+    },
+    "assets/Hat_16.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.761,
+        0.503,
+        0.701
+      ],
+      "thumb": "thumbnails/Hat_16.png"
+    },
+    "assets/Hat_17.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.737,
+        0.591,
+        0.599
+      ],
+      "thumb": "thumbnails/Hat_17.png"
+    },
+    "assets/Hat_18.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.847,
+        0.618,
+        0.759
+      ],
+      "thumb": "thumbnails/Hat_18.png"
+    },
+    "assets/Hat_19.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.712,
+        0.464,
+        0.633
+      ],
+      "thumb": "thumbnails/Hat_19.png"
+    },
+    "assets/Hat_20.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.708,
+        0.467,
+        0.683
+      ],
+      "thumb": "thumbnails/Hat_20.png"
+    },
+    "assets/Hat_21.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.715,
+        0.488,
+        0.671
+      ],
+      "thumb": "thumbnails/Hat_21.png"
+    },
+    "assets/Hat_22.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.656,
+        0.497,
+        0.725
+      ],
+      "thumb": "thumbnails/Hat_22.png"
+    },
+    "assets/Hat_23.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.778,
+        0.876,
+        0.568
+      ],
+      "thumb": "thumbnails/Hat_23.png"
+    },
+    "assets/Hat_24.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.739,
+        0.675,
+        0.711
+      ],
+      "thumb": "thumbnails/Hat_24.png"
+    },
+    "assets/Hat_25.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.671,
+        0.403,
+        0.768
+      ],
+      "thumb": "thumbnails/Hat_25.png"
+    },
+    "assets/Hat_26.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.832,
+        0.581,
+        0.686
+      ],
+      "thumb": "thumbnails/Hat_26.png"
+    },
+    "assets/Hat_27.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.983,
+        0.42,
+        0.965
+      ],
+      "thumb": "thumbnails/Hat_27.png"
+    },
+    "assets/Hat_28.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.633,
+        0.404,
+        0.757
+      ],
+      "thumb": "thumbnails/Hat_28.png"
+    },
+    "assets/Hat_29.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        1.031,
+        0.543,
+        0.996
+      ],
+      "thumb": "thumbnails/Hat_29.png"
+    },
+    "assets/Hat_30.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.76,
+        0.552,
+        0.685
+      ],
+      "thumb": "thumbnails/Hat_30.png"
+    },
+    "assets/Hat_31.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.709,
+        0.636,
+        0.639
+      ],
+      "thumb": "thumbnails/Hat_31.png"
+    },
+    "assets/Hat_32.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.881,
+        0.596,
+        0.842
+      ],
+      "thumb": "thumbnails/Hat_32.png"
+    },
+    "assets/Hat_33.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.798,
+        0.547,
+        0.798
+      ],
+      "thumb": "thumbnails/Hat_33.png"
+    },
+    "assets/Hat_34.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.73,
+        0.875,
+        0.674
+      ],
+      "thumb": "thumbnails/Hat_34.png"
+    },
+    "assets/Hat_35.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.714,
+        0.803,
+        0.712
+      ],
+      "thumb": "thumbnails/Hat_35.png"
+    },
+    "assets/Hat_36.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.904,
+        0.589,
+        0.898
+      ],
+      "thumb": "thumbnails/Hat_36.png"
+    },
+    "assets/Hat_37.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.979,
+        0.591,
+        0.599
+      ],
+      "thumb": "thumbnails/Hat_37.png"
+    },
+    "assets/Hat_38.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        1.02,
+        0.355,
+        1.087
+      ],
+      "thumb": "thumbnails/Hat_38.png"
+    },
+    "assets/Hat_39.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.981,
+        0.406,
+        0.968
+      ],
+      "thumb": "thumbnails/Hat_39.png"
+    },
+    "assets/Hat_40.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.849,
+        0.478,
+        0.766
+      ],
+      "thumb": "thumbnails/Hat_40.png"
+    },
+    "assets/Hat_41.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.792,
+        0.64,
+        0.629
+      ],
+      "thumb": "thumbnails/Hat_41.png"
+    },
+    "assets/Hat_42.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.649,
+        0.457,
+        0.668
+      ],
+      "thumb": "thumbnails/Hat_42.png"
+    },
+    "assets/Hat_43.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.678,
+        0.55,
+        0.627
+      ],
+      "thumb": "thumbnails/Hat_43.png"
+    },
+    "assets/Hat_44.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.829,
+        0.477,
+        0.869
+      ],
+      "thumb": "thumbnails/Hat_44.png"
+    },
+    "assets/Hat_45.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        1.1,
+        0.769,
+        1.245
+      ],
+      "thumb": "thumbnails/Hat_45.png"
+    },
+    "assets/Hat_46.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        1.279,
+        0.447,
+        0.58
+      ],
+      "thumb": "thumbnails/Hat_46.png"
+    },
+    "assets/Hat_47.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.646,
+        0.725,
+        0.661
+      ],
+      "thumb": "thumbnails/Hat_47.png"
+    },
+    "assets/Hat_48.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.597,
+        0.877,
+        0.809
+      ],
+      "thumb": "thumbnails/Hat_48.png"
+    },
+    "assets/Hat_49.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.77,
+        0.775,
+        0.568
+      ],
+      "thumb": "thumbnails/Hat_49.png"
+    },
+    "assets/Hat_50.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.582,
+        0.804,
+        0.601
+      ],
+      "thumb": "thumbnails/Hat_50.png"
+    },
+    "assets/Hat_51.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.667,
+        0.592,
+        0.567
+      ],
+      "thumb": "thumbnails/Hat_51.png"
+    },
+    "assets/Hat_52.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.702,
+        0.615,
+        0.68
+      ],
+      "thumb": "thumbnails/Hat_52.png"
+    },
+    "assets/Hat_53.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.643,
+        0.773,
+        0.575
+      ],
+      "thumb": "thumbnails/Hat_53.png"
+    },
+    "assets/Hat_54.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.613,
+        0.662,
+        0.551
+      ],
+      "thumb": "thumbnails/Hat_54.png"
+    },
+    "assets/Hat_55.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.914,
+        1.036,
+        0.67
+      ],
+      "thumb": "thumbnails/Hat_55.png"
+    },
+    "assets/Hat_56.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.732,
+        0.709,
+        0.643
+      ],
+      "thumb": "thumbnails/Hat_56.png"
+    },
+    "assets/Hat_57.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.623,
+        0.58,
+        0.564
+      ],
+      "thumb": "thumbnails/Hat_57.png"
+    },
+    "assets/Hat_58.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        0.59,
+        0.754,
+        0.74
+      ],
+      "thumb": "thumbnails/Hat_58.png"
+    },
+    "assets/Hat_59.glb": {
+      "role": "character-part",
+      "tags": [
+        "hat",
+        "S"
+      ],
+      "size": [
+        1.003,
+        0.588,
+        0.918
+      ],
+      "thumb": "thumbnails/Hat_59.png"
+    },
+    "assets/Headphones_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "accessory",
+        "S"
+      ],
+      "size": [
+        0.648,
+        0.127,
+        0.078
+      ],
+      "thumb": "thumbnails/Headphones_02.png"
+    },
+    "assets/Male_Emotion_Anger_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.229,
+        0.216,
+        0.081
+      ],
+      "thumb": "thumbnails/Male_Emotion_Anger_01.png"
+    },
+    "assets/Male_Emotion_Angry_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.227,
+        0.178,
+        0.05
+      ],
+      "thumb": "thumbnails/Male_Emotion_Angry_01.png"
+    },
+    "assets/Male_Emotion_Angry_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.238,
+        0.168,
+        0.052
+      ],
+      "thumb": "thumbnails/Male_Emotion_Angry_02.png"
+    },
+    "assets/Male_Emotion_Confuse_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.21,
+        0.206,
+        0.048
+      ],
+      "thumb": "thumbnails/Male_Emotion_Confuse_01.png"
+    },
+    "assets/Male_Emotion_Cry_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.273,
+        0.172,
+        0.048
+      ],
+      "thumb": "thumbnails/Male_Emotion_Cry_01.png"
+    },
+    "assets/Male_Emotion_Evil_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.238,
+        0.179,
+        0.05
+      ],
+      "thumb": "thumbnails/Male_Emotion_Evil_01.png"
+    },
+    "assets/Male_Emotion_Evil_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.227,
+        0.189,
+        0.048
+      ],
+      "thumb": "thumbnails/Male_Emotion_Evil_02.png"
+    },
+    "assets/Male_Emotion_Happy_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.258,
+        0.234,
+        0.083
+      ],
+      "thumb": "thumbnails/Male_Emotion_Happy_01.png"
+    },
+    "assets/Male_Emotion_Happy_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.238,
+        0.225,
+        0.077
+      ],
+      "thumb": "thumbnails/Male_Emotion_Happy_02.png"
+    },
+    "assets/Male_Emotion_Love_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.302,
+        0.236,
+        0.12
+      ],
+      "thumb": "thumbnails/Male_Emotion_Love_01.png"
+    },
+    "assets/Male_Emotion_Neutral_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.217,
+        0.19,
+        0.055
+      ],
+      "thumb": "thumbnails/Male_Emotion_Neutral_01.png"
+    },
+    "assets/Male_Emotion_Neutral_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.258,
+        0.193,
+        0.047
+      ],
+      "thumb": "thumbnails/Male_Emotion_Neutral_02.png"
+    },
+    "assets/Male_Emotion_Sad_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.254,
+        0.204,
+        0.052
+      ],
+      "thumb": "thumbnails/Male_Emotion_Sad_01.png"
+    },
+    "assets/Male_Emotion_Sad_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.199,
+        0.053
+      ],
+      "thumb": "thumbnails/Male_Emotion_Sad_02.png"
+    },
+    "assets/Male_Emotion_Shout_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.238,
+        0.227,
+        0.098
+      ],
+      "thumb": "thumbnails/Male_Emotion_Shout_01.png"
+    },
+    "assets/Male_Emotion_Surpriced_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.267,
+        0.27,
+        0.084
+      ],
+      "thumb": "thumbnails/Male_Emotion_Surpriced_01.png"
+    },
+    "assets/Male_Emotion_Surpriced_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.256,
+        0.292,
+        0.088
+      ],
+      "thumb": "thumbnails/Male_Emotion_Surpriced_02.png"
+    },
+    "assets/Male_Emotion_Tongue_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.247,
+        0.228,
+        0.065
+      ],
+      "thumb": "thumbnails/Male_Emotion_Tongue_01.png"
+    },
+    "assets/Male_Emotion_Usual_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.258,
+        0.198,
+        0.05
+      ],
+      "thumb": "thumbnails/Male_Emotion_Usual_01.png"
+    },
+    "assets/Male_Emotion_Usual_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "face",
+        "male",
+        "S"
+      ],
+      "size": [
+        0.206,
+        0.191,
+        0.052
+      ],
+      "thumb": "thumbnails/Male_Emotion_Usual_02.png"
+    },
+    "assets/Mask_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "accessory",
+        "S"
+      ],
+      "size": [
+        0.58,
+        0.21,
+        0.516
+      ],
+      "thumb": "thumbnails/Mask_01.png"
+    },
+    "assets/Mask_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "accessory",
+        "S"
+      ],
+      "size": [
+        0.567,
+        0.211,
+        0.512
+      ],
+      "thumb": "thumbnails/Mask_02.png"
+    },
+    "assets/Mustache_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.224,
+        0.073,
+        0.061
+      ],
+      "thumb": "thumbnails/Mustache_01.png"
+    },
+    "assets/Mustache_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.238,
+        0.071,
+        0.062
+      ],
+      "thumb": "thumbnails/Mustache_02.png"
+    },
+    "assets/Mustache_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.289,
+        0.061,
+        0.067
+      ],
+      "thumb": "thumbnails/Mustache_03.png"
+    },
+    "assets/Mustache_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.329,
+        0.151,
+        0.044
+      ],
+      "thumb": "thumbnails/Mustache_04.png"
+    },
+    "assets/Mustache_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.108,
+        0.051,
+        0.039
+      ],
+      "thumb": "thumbnails/Mustache_05.png"
+    },
+    "assets/Mustache_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.211,
+        0.054,
+        0.03
+      ],
+      "thumb": "thumbnails/Mustache_06.png"
+    },
+    "assets/Mustache_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.138,
+        0.036,
+        0.034
+      ],
+      "thumb": "thumbnails/Mustache_07.png"
+    },
+    "assets/Mustache_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.189,
+        0.07,
+        0.061
+      ],
+      "thumb": "thumbnails/Mustache_08.png"
+    },
+    "assets/Mustache_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.487,
+        0.097,
+        0.034
+      ],
+      "thumb": "thumbnails/Mustache_09.png"
+    },
+    "assets/Mustache_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.305,
+        0.172,
+        0.097
+      ],
+      "thumb": "thumbnails/Mustache_10.png"
+    },
+    "assets/Mustache_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.22,
+        0.062,
+        0.052
+      ],
+      "thumb": "thumbnails/Mustache_11.png"
+    },
+    "assets/Mustache_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.294,
+        0.057,
+        0.029
+      ],
+      "thumb": "thumbnails/Mustache_12.png"
+    },
+    "assets/Mustache_13.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.071,
+        0.052,
+        0.036
+      ],
+      "thumb": "thumbnails/Mustache_13.png"
+    },
+    "assets/Mustache_14.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.187,
+        0.186,
+        0.046
+      ],
+      "thumb": "thumbnails/Mustache_14.png"
+    },
+    "assets/Mustache_15.glb": {
+      "role": "character-part",
+      "tags": [
+        "facial-hair",
+        "S"
+      ],
+      "size": [
+        0.207,
+        0.073,
+        0.05
+      ],
+      "thumb": "thumbnails/Mustache_15.png"
+    },
+    "assets/Outfit_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.643,
+        0.391,
+        0.237
+      ],
+      "thumb": "thumbnails/Outfit_01.png"
+    },
+    "assets/Outfit_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.394,
+        0.37,
+        0.244
+      ],
+      "thumb": "thumbnails/Outfit_02.png"
+    },
+    "assets/Outfit_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.643,
+        0.392,
+        0.237
+      ],
+      "thumb": "thumbnails/Outfit_03.png"
+    },
+    "assets/Outfit_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.643,
+        0.362,
+        0.237
+      ],
+      "thumb": "thumbnails/Outfit_04.png"
+    },
+    "assets/Outfit_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.624,
+        0.505,
+        0.203
+      ],
+      "thumb": "thumbnails/Outfit_05.png"
+    },
+    "assets/Outfit_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.657,
+        0.395,
+        0.206
+      ],
+      "thumb": "thumbnails/Outfit_06.png"
+    },
+    "assets/Outfit_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.402,
+        0.479,
+        0.221
+      ],
+      "thumb": "thumbnails/Outfit_07.png"
+    },
+    "assets/Outfit_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.642,
+        0.505,
+        0.217
+      ],
+      "thumb": "thumbnails/Outfit_08.png"
+    },
+    "assets/Outfit_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "outfit",
+        "S"
+      ],
+      "size": [
+        0.391,
+        0.356,
+        0.237
+      ],
+      "thumb": "thumbnails/Outfit_09.png"
+    },
+    "assets/Outwear_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.653,
+        0.318,
+        0.243
+      ],
+      "thumb": "thumbnails/Outwear_01.png"
+    },
+    "assets/Outwear_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.658,
+        0.281,
+        0.223
+      ],
+      "thumb": "thumbnails/Outwear_02.png"
+    },
+    "assets/Outwear_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.486,
+        0.298,
+        0.201
+      ],
+      "thumb": "thumbnails/Outwear_03.png"
+    },
+    "assets/Outwear_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.626,
+        0.355,
+        0.258
+      ],
+      "thumb": "thumbnails/Outwear_04.png"
+    },
+    "assets/Outwear_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.661,
+        0.317,
+        0.197
+      ],
+      "thumb": "thumbnails/Outwear_05.png"
+    },
+    "assets/Outwear_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.463,
+        0.261,
+        0.211
+      ],
+      "thumb": "thumbnails/Outwear_06.png"
+    },
+    "assets/Outwear_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.64,
+        0.307,
+        0.254
+      ],
+      "thumb": "thumbnails/Outwear_07.png"
+    },
+    "assets/Outwear_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.613,
+        0.257,
+        0.209
+      ],
+      "thumb": "thumbnails/Outwear_08.png"
+    },
+    "assets/Outwear_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.63,
+        0.337,
+        0.207
+      ],
+      "thumb": "thumbnails/Outwear_09.png"
+    },
+    "assets/Outwear_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.645,
+        0.296,
+        0.233
+      ],
+      "thumb": "thumbnails/Outwear_10.png"
+    },
+    "assets/Outwear_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.622,
+        0.35,
+        0.216
+      ],
+      "thumb": "thumbnails/Outwear_11.png"
+    },
+    "assets/Outwear_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.63,
+        0.346,
+        0.242
+      ],
+      "thumb": "thumbnails/Outwear_12.png"
+    },
+    "assets/Outwear_13.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.622,
+        0.338,
+        0.209
+      ],
+      "thumb": "thumbnails/Outwear_13.png"
+    },
+    "assets/Outwear_14.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.644,
+        0.31,
+        0.201
+      ],
+      "thumb": "thumbnails/Outwear_14.png"
+    },
+    "assets/Outwear_15.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.622,
+        0.378,
+        0.243
+      ],
+      "thumb": "thumbnails/Outwear_15.png"
+    },
+    "assets/Outwear_16.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.636,
+        0.301,
+        0.255
+      ],
+      "thumb": "thumbnails/Outwear_16.png"
+    },
+    "assets/Outwear_17.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.611,
+        0.348,
+        0.254
+      ],
+      "thumb": "thumbnails/Outwear_17.png"
+    },
+    "assets/Outwear_18.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.247,
+        0.191,
+        0.199
+      ],
+      "thumb": "thumbnails/Outwear_18.png"
+    },
+    "assets/Outwear_19.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.404,
+        0.19,
+        0.202
+      ],
+      "thumb": "thumbnails/Outwear_19.png"
+    },
+    "assets/Outwear_20.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.441,
+        0.213,
+        0.2
+      ],
+      "thumb": "thumbnails/Outwear_20.png"
+    },
+    "assets/Outwear_21.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.643,
+        0.2,
+        0.205
+      ],
+      "thumb": "thumbnails/Outwear_21.png"
+    },
+    "assets/Outwear_22.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.639,
+        0.197,
+        0.204
+      ],
+      "thumb": "thumbnails/Outwear_22.png"
+    },
+    "assets/Outwear_23.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.648,
+        0.22,
+        0.2
+      ],
+      "thumb": "thumbnails/Outwear_23.png"
+    },
+    "assets/Outwear_24.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.647,
+        0.216,
+        0.211
+      ],
+      "thumb": "thumbnails/Outwear_24.png"
+    },
+    "assets/Outwear_25.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.248,
+        0.292,
+        0.2
+      ],
+      "thumb": "thumbnails/Outwear_25.png"
+    },
+    "assets/Outwear_26.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.356,
+        0.274,
+        0.205
+      ],
+      "thumb": "thumbnails/Outwear_26.png"
+    },
+    "assets/Outwear_27.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.416,
+        0.269,
+        0.203
+      ],
+      "thumb": "thumbnails/Outwear_27.png"
+    },
+    "assets/Outwear_28.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.412,
+        0.283,
+        0.21
+      ],
+      "thumb": "thumbnails/Outwear_28.png"
+    },
+    "assets/Outwear_29.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.424,
+        0.284,
+        0.202
+      ],
+      "thumb": "thumbnails/Outwear_29.png"
+    },
+    "assets/Outwear_30.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.402,
+        0.263,
+        0.208
+      ],
+      "thumb": "thumbnails/Outwear_30.png"
+    },
+    "assets/Outwear_31.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.268,
+        0.276,
+        0.202
+      ],
+      "thumb": "thumbnails/Outwear_31.png"
+    },
+    "assets/Outwear_32.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.262,
+        0.239,
+        0.193
+      ],
+      "thumb": "thumbnails/Outwear_32.png"
+    },
+    "assets/Outwear_33.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.408,
+        0.321,
+        0.218
+      ],
+      "thumb": "thumbnails/Outwear_33.png"
+    },
+    "assets/Outwear_34.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.418,
+        0.274,
+        0.196
+      ],
+      "thumb": "thumbnails/Outwear_34.png"
+    },
+    "assets/Outwear_35.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.622,
+        0.346,
+        0.209
+      ],
+      "thumb": "thumbnails/Outwear_35.png"
+    },
+    "assets/Outwear_36.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.64,
+        0.316,
+        0.198
+      ],
+      "thumb": "thumbnails/Outwear_36.png"
+    },
+    "assets/Outwear_37.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.632,
+        0.303,
+        0.22
+      ],
+      "thumb": "thumbnails/Outwear_37.png"
+    },
+    "assets/Outwear_38.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.642,
+        0.299,
+        0.225
+      ],
+      "thumb": "thumbnails/Outwear_38.png"
+    },
+    "assets/Outwear_39.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.644,
+        0.306,
+        0.205
+      ],
+      "thumb": "thumbnails/Outwear_39.png"
+    },
+    "assets/Outwear_40.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.638,
+        0.352,
+        0.229
+      ],
+      "thumb": "thumbnails/Outwear_40.png"
+    },
+    "assets/Outwear_41.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.622,
+        0.378,
+        0.236
+      ],
+      "thumb": "thumbnails/Outwear_41.png"
+    },
+    "assets/Outwear_42.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.612,
+        0.3,
+        0.218
+      ],
+      "thumb": "thumbnails/Outwear_42.png"
+    },
+    "assets/Outwear_43.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.275,
+        0.277,
+        0.249
+      ],
+      "thumb": "thumbnails/Outwear_43.png"
+    },
+    "assets/Outwear_44.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.404,
+        0.263,
+        0.202
+      ],
+      "thumb": "thumbnails/Outwear_44.png"
+    },
+    "assets/Outwear_45.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.402,
+        0.263,
+        0.208
+      ],
+      "thumb": "thumbnails/Outwear_45.png"
+    },
+    "assets/Outwear_46.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.404,
+        0.263,
+        0.202
+      ],
+      "thumb": "thumbnails/Outwear_46.png"
+    },
+    "assets/Outwear_47.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.408,
+        0.321,
+        0.218
+      ],
+      "thumb": "thumbnails/Outwear_47.png"
+    },
+    "assets/Outwear_48.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.268,
+        0.276,
+        0.202
+      ],
+      "thumb": "thumbnails/Outwear_48.png"
+    },
+    "assets/Outwear_49.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.402,
+        0.263,
+        0.208
+      ],
+      "thumb": "thumbnails/Outwear_49.png"
+    },
+    "assets/Outwear_50.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.402,
+        0.263,
+        0.208
+      ],
+      "thumb": "thumbnails/Outwear_50.png"
+    },
+    "assets/Outwear_51.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.416,
+        0.269,
+        0.203
+      ],
+      "thumb": "thumbnails/Outwear_51.png"
+    },
+    "assets/Outwear_52.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.424,
+        0.284,
+        0.202
+      ],
+      "thumb": "thumbnails/Outwear_52.png"
+    },
+    "assets/Outwear_53.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.356,
+        0.274,
+        0.205
+      ],
+      "thumb": "thumbnails/Outwear_53.png"
+    },
+    "assets/Outwear_54.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.412,
+        0.283,
+        0.21
+      ],
+      "thumb": "thumbnails/Outwear_54.png"
+    },
+    "assets/Outwear_55.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.418,
+        0.274,
+        0.196
+      ],
+      "thumb": "thumbnails/Outwear_55.png"
+    },
+    "assets/Outwear_56.glb": {
+      "role": "character-part",
+      "tags": [
+        "outwear",
+        "S"
+      ],
+      "size": [
+        0.29,
+        0.319,
+        0.226
+      ],
+      "thumb": "thumbnails/Outwear_56.png"
+    },
+    "assets/Pacifier_001.glb": {
+      "role": "character-part",
+      "tags": [
+        "accessory",
+        "S"
+      ],
+      "size": [
+        0.165,
+        0.163,
+        0.068
+      ],
+      "thumb": "thumbnails/Pacifier_001.png"
+    },
+    "assets/Pants_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.244,
+        0.294,
+        0.165
+      ],
+      "thumb": "thumbnails/Pants_01.png"
+    },
+    "assets/Pants_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.296,
+        0.179
+      ],
+      "thumb": "thumbnails/Pants_02.png"
+    },
+    "assets/Pants_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.258,
+        0.306,
+        0.168
+      ],
+      "thumb": "thumbnails/Pants_03.png"
+    },
+    "assets/Pants_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.296,
+        0.179
+      ],
+      "thumb": "thumbnails/Pants_04.png"
+    },
+    "assets/Pants_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.257,
+        0.294,
+        0.172
+      ],
+      "thumb": "thumbnails/Pants_05.png"
+    },
+    "assets/Pants_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.267,
+        0.296,
+        0.179
+      ],
+      "thumb": "thumbnails/Pants_06.png"
+    },
+    "assets/Pants_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.248,
+        0.294,
+        0.172
+      ],
+      "thumb": "thumbnails/Pants_07.png"
+    },
+    "assets/Pants_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.256,
+        0.312,
+        0.179
+      ],
+      "thumb": "thumbnails/Pants_08.png"
+    },
+    "assets/Pants_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.264,
+        0.293,
+        0.172
+      ],
+      "thumb": "thumbnails/Pants_09.png"
+    },
+    "assets/Pants_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.245,
+        0.288,
+        0.174
+      ],
+      "thumb": "thumbnails/Pants_10.png"
+    },
+    "assets/Pants_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.246,
+        0.304,
+        0.161
+      ],
+      "thumb": "thumbnails/Pants_11.png"
+    },
+    "assets/Pants_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.247,
+        0.284,
+        0.172
+      ],
+      "thumb": "thumbnails/Pants_12.png"
+    },
+    "assets/Pants_13.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.271,
+        0.299,
+        0.179
+      ],
+      "thumb": "thumbnails/Pants_13.png"
+    },
+    "assets/Pants_14.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.261,
+        0.303,
+        0.175
+      ],
+      "thumb": "thumbnails/Pants_14.png"
+    },
+    "assets/Pants_15.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.274,
+        0.298,
+        0.179
+      ],
+      "thumb": "thumbnails/Pants_15.png"
+    },
+    "assets/Shoe_Slippers_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.068,
+        0.183
+      ],
+      "thumb": "thumbnails/Shoe_Slippers_01.png"
+    },
+    "assets/Shoe_Slippers_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.258,
+        0.08,
+        0.205
+      ],
+      "thumb": "thumbnails/Shoe_Slippers_02.png"
+    },
+    "assets/Shoe_Slippers_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.262,
+        0.066,
+        0.212
+      ],
+      "thumb": "thumbnails/Shoe_Slippers_03.png"
+    },
+    "assets/Shoe_Slippers_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.272,
+        0.102,
+        0.22
+      ],
+      "thumb": "thumbnails/Shoe_Slippers_04.png"
+    },
+    "assets/Shoe_Slippers_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.27,
+        0.08,
+        0.212
+      ],
+      "thumb": "thumbnails/Shoe_Slippers_05.png"
+    },
+    "assets/Shoe_Slippers_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.258,
+        0.08,
+        0.206
+      ],
+      "thumb": "thumbnails/Shoe_Slippers_06.png"
+    },
+    "assets/Shoe_Slippers_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.256,
+        0.077,
+        0.176
+      ],
+      "thumb": "thumbnails/Shoe_Slippers_07.png"
+    },
+    "assets/Shoe_Sneakers_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.249,
+        0.103,
+        0.203
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_01.png"
+    },
+    "assets/Shoe_Sneakers_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.249,
+        0.097,
+        0.205
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_02.png"
+    },
+    "assets/Shoe_Sneakers_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.254,
+        0.094,
+        0.204
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_03.png"
+    },
+    "assets/Shoe_Sneakers_04.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.255,
+        0.109,
+        0.231
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_04.png"
+    },
+    "assets/Shoe_Sneakers_05.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.271,
+        0.076,
+        0.219
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_05.png"
+    },
+    "assets/Shoe_Sneakers_06.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.26,
+        0.127,
+        0.226
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_06.png"
+    },
+    "assets/Shoe_Sneakers_07.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.249,
+        0.123,
+        0.224
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_07.png"
+    },
+    "assets/Shoe_Sneakers_08.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.103,
+        0.221
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_08.png"
+    },
+    "assets/Shoe_Sneakers_09.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.25,
+        0.107,
+        0.223
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_09.png"
+    },
+    "assets/Shoe_Sneakers_10.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.26,
+        0.099,
+        0.248
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_10.png"
+    },
+    "assets/Shoe_Sneakers_11.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.268,
+        0.098,
+        0.232
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_11.png"
+    },
+    "assets/Shoe_Sneakers_12.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.255,
+        0.087,
+        0.222
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_12.png"
+    },
+    "assets/Shoe_Sneakers_13.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.258,
+        0.098,
+        0.246
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_13.png"
+    },
+    "assets/Shoe_Sneakers_14.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.255,
+        0.106,
+        0.228
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_14.png"
+    },
+    "assets/Shoe_Sneakers_15.glb": {
+      "role": "character-part",
+      "tags": [
+        "shoes",
+        "S"
+      ],
+      "size": [
+        0.258,
+        0.105,
+        0.213
+      ],
+      "thumb": "thumbnails/Shoe_Sneakers_15.png"
+    },
+    "assets/Shorts_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.246,
+        0.206,
+        0.165
+      ],
+      "thumb": "thumbnails/Shorts_01.png"
+    },
+    "assets/Shorts_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.237,
+        0.111,
+        0.165
+      ],
+      "thumb": "thumbnails/Shorts_02.png"
+    },
+    "assets/Shorts_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "pants",
+        "S"
+      ],
+      "size": [
+        0.237,
+        0.138,
+        0.165
+      ],
+      "thumb": "thumbnails/Shorts_03.png"
+    },
+    "assets/Socks_01.glb": {
+      "role": "character-part",
+      "tags": [
+        "socks",
+        "S"
+      ],
+      "size": [
+        0.23,
+        0.092,
+        0.099
+      ],
+      "thumb": "thumbnails/Socks_01.png"
+    },
+    "assets/Socks_02.glb": {
+      "role": "character-part",
+      "tags": [
+        "socks",
+        "S"
+      ],
+      "size": [
+        0.224,
+        0.19,
+        0.099
+      ],
+      "thumb": "thumbnails/Socks_02.png"
+    },
+    "assets/Socks_03.glb": {
+      "role": "character-part",
+      "tags": [
+        "socks",
+        "S"
+      ],
+      "size": [
+        0.23,
+        0.231,
+        0.107
+      ],
+      "thumb": "thumbnails/Socks_03.png"
+    },
+    "assets/rig.glb": {
+      "role": "rig",
+      "tags": [
+        "skeleton",
+        "S"
+      ],
+      "size": [
+        0.818,
+        0.663,
+        0.119
+      ],
+      "thumb": "thumbnails/rig.png"
+    }
+  }
+}

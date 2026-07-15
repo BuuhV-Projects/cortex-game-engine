@@ -51,13 +51,26 @@ for thumbs_dir, assets_dir in pairs:
         try:
             clear_meshes()
             bpy.ops.import_scene.gltf(filepath=os.path.join(assets_dir, f).replace("\\", "/"))
+            # bounds pela geometria AVALIADA (depsgraph): bound_box*matrix_world mente
+            # pra mesh skinnado (o transform visual vem dos bones, não do objeto).
+            deps = bpy.context.evaluated_depsgraph_get()
             mn = Vector((1e9,)*3); mx = Vector((-1e9,)*3)
             for o in bpy.context.scene.objects:
-                if o.type != "MESH":
+                # Icosphere = shape de display de bone criado pelo importador glTF
+                # (artefato, escondido do render) — fora dos bounds.
+                if o.type != "MESH" or o.hide_render or o.name.startswith("Icosphere"):
                     continue
-                for c in o.bound_box:
-                    wv = o.matrix_world @ Vector(c)
+                oe = o.evaluated_get(deps)
+                me = oe.to_mesh()
+                src = me.vertices if len(me.vertices) else []
+                for v in src:
+                    wv = oe.matrix_world @ v.co
                     mn = Vector((min(mn[i], wv[i]) for i in range(3))); mx = Vector((max(mx[i], wv[i]) for i in range(3)))
+                if not len(me.vertices):
+                    for c in o.bound_box:
+                        wv = o.matrix_world @ Vector(c)
+                        mn = Vector((min(mn[i], wv[i]) for i in range(3))); mx = Vector((max(mx[i], wv[i]) for i in range(3)))
+                oe.to_mesh_clear()
             center = (mn + mx) / 2; radius = max((mx - mn).length / 2, 0.01)
             cam.location = center + DIR * radius * 4
             cam.rotation_euler = (center - cam.location).to_track_quat("-Z", "Y").to_euler()

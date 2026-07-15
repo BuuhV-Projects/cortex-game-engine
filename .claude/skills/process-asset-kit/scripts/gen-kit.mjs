@@ -24,6 +24,25 @@ function classify(name) {
   const n = name.toLowerCase();
   const R = (role, tags, gameplayRole = [], extra = {}) => ({ role, tags, gameplayRole, ...extra });
 
+  // ── Personagem modular (ADR-0068): rig compartilhado + peças skinnadas ─────
+  // role `rig` = esqueleto (+clips futuros); `character-part` = peça vestível,
+  // tags = [slot, ...]; compostas em runtime via composeModularCharacter.
+  if (/^rig$/.test(n)) return R('rig', ['skeleton'], []);
+  if (/^body_/.test(n)) return R('character-part', ['body', 'humanoid'], []);
+  if (/^ears_/.test(n)) return R('character-part', ['ears'], []);
+  if (/^(male|female)_emotion_/.test(n)) return R('character-part', ['face', n.split('_')[0]], []);
+  if (/^hairstyle_(male|female)/.test(n)) return R('character-part', ['hair', n.split('_')[1]], []);
+  if (/^(beard|mustache)_/.test(n)) return R('character-part', ['facial-hair'], []);
+  if (/^hat_/.test(n)) return R('character-part', ['hat'], []);
+  if (/^(costume|outfit)_/.test(n)) return R('character-part', ['outfit'], []);
+  if (/^outwear_/.test(n)) return R('character-part', ['outwear'], []);
+  if (/^(pants|shorts)_/.test(n)) return R('character-part', ['pants'], []);
+  if (/^shoe_/.test(n)) return R('character-part', ['shoes'], []);
+  if (/^socks_/.test(n)) return R('character-part', ['socks'], []);
+  if (/^gloves_/.test(n)) return R('character-part', ['gloves'], []);
+  if (/^glasses_/.test(n)) return R('character-part', ['glasses'], []);
+  if (/^(mask|earrings|headphones|bandage|clown_nose|pacifier)/.test(n)) return R('character-part', ['accessory'], []);
+
   // ── Personagens / inimigos / armas (KayKit + Quaternius) ───────────────────
   if (/^(barbarian|knight|mage|ranger|rogue|rogue_hooded)$/.test(n)) return R('character', ['hero', 'humanoid'], ['player']);
   if (/^character/.test(n)) return R('character', ['hero', 'humanoid'], ['player']); // Quaternius Character/_Gun
@@ -124,12 +143,15 @@ for (const dir of kitDirs) {
     const a = { role: c.role, tags: [...c.tags, sizeClass(size)], size };
     if (c.gameplayRole.length) a.gameplayRole = c.gameplayRole;
     if (c.solid || c.shape) a.collider = { shape: c.shape ?? 'box', solid: c.solid ?? true };
-    const anchors = { top: { at: [0, +h.toFixed(3), 0], kind: 'surface', dir: [0, 1, 0] } };
-    if (c.connectX) {
-      anchors.edge_left = { at: [+(-w / 2).toFixed(3), 0, 0], kind: 'connect', dir: [-1, 0, 0] };
-      anchors.edge_right = { at: [+(w / 2).toFixed(3), 0, 0], kind: 'connect', dir: [1, 0, 0] };
+    // Peça de personagem modular / rig não é posicionada na cena — sem âncoras.
+    if (c.role !== 'character-part' && c.role !== 'rig') {
+      const anchors = { top: { at: [0, +h.toFixed(3), 0], kind: 'surface', dir: [0, 1, 0] } };
+      if (c.connectX) {
+        anchors.edge_left = { at: [+(-w / 2).toFixed(3), 0, 0], kind: 'connect', dir: [-1, 0, 0] };
+        anchors.edge_right = { at: [+(w / 2).toFixed(3), 0, 0], kind: 'connect', dir: [1, 0, 0] };
+      }
+      a.anchors = anchors;
     }
-    a.anchors = anchors;
     a.thumb = `thumbnails/${name}.png`;
     assets[`assets/${name}.glb`] = a;
   }
