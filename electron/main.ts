@@ -6,6 +6,7 @@ import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { createHash } from 'crypto'
 import { homedir } from 'os'
 import { runAgent } from './agent/agentLoop.js'
+import { detectPendingCorrections } from './agent/learning.js'
 import { writePlaceholderIcons } from './installer-icons.js'
 
 /**
@@ -1471,6 +1472,16 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
 
   const engineApiDoc = await loadEngineApiDoc()
   const gameDesignBible = await loadGameDesignBible()
+  // Correções do dev pendentes (overlay divergiu do baseline)? Checagem barata
+  // por hash — só no 1º turno da sessão, pro agente oferecer aprendizado uma vez.
+  let pendingCorrections: string[] = []
+  if (!continueSession && currentProjectDir) {
+    try {
+      pendingCorrections = await detectPendingCorrections(currentProjectDir)
+    } catch {
+      /* detecção é best-effort — nunca bloqueia o chat */
+    }
+  }
 
   try {
     await runAgent({
@@ -1481,6 +1492,7 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
       mode: agentMode,
       engineApiDoc,
       gameDesignBible,
+      pendingCorrections,
       kitsDir: join(resourceBase(), 'kits'),
       // PATH aumentado: a tool Bash do SDK herda este env, então `yarn`/`node`
       // resolvem mesmo no app empacotado (onde o PATH do Explorer não os tem).

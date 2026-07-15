@@ -105,6 +105,8 @@
   },
   "chat": {
     "title": "Chat IA",
+    "tooltip_learn": "Aprender com meus ajustes",
+    "learn_message": "Aprenda com os meus ajustes na cena: rode diff_corrections, me proponha as licoes ANTES de gravar, e depois atualize o baseline.",
     "tooltip_clear": "Apagar histórico",
     "tooltip_minimize": "Minimizar chat",
     "tooltip_expand": "Expandir chat",

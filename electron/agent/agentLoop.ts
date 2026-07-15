@@ -4,6 +4,8 @@ import { createPlaytestToolServer } from './tools/playtest.js'
 import { createAssetToolServer } from './tools/assets.js'
 import { createKitsToolServer } from './tools/kits.js'
 import { createCriticToolServer } from './tools/critic.js'
+import { createValidateToolServer } from './tools/validate.js'
+import { createLearnToolServer } from './tools/learn.js'
 
 /**
  * Loop do agente usando @anthropic-ai/claude-agent-sdk (ADR-0017 V2).
@@ -144,14 +146,38 @@ impossível. Estime o alcance e posicione as plataformas DENTRO dele (com folga 
 pra precisão variável). Valide pulando de verdade no playtest.
 
 **DEFINIÇÃO DE PRONTO (não-negociável).** Montar/alterar/popular uma cena NÃO \
-termina quando o código roda — termina quando você VALIDOU com seus olhos. Toda vez \
-que mexer na cena, ANTES de dizer "pronto" você OBRIGATORIAMENTE: (a) roda \
-\`playtest_game\` e tira **screenshots de close-up, região por região** (não foto do \
-mapa inteiro) — incluindo JOGAR o level de ponta a ponta num plataformer; e (b) roda \
-\`critique_scene\` comparando com a referência/mood, e AJUSTA até a distância visual \
-ficar pequena. Importar kit e escrever o JSON é o MEIO, não o fim. Pular o playtest \
-ou a crítica = trabalho incompleto, não entregue assim. (Detalhes nas seções \
-"playtest_game" e "Crítica de beleza" abaixo.)
+termina quando o código roda. A validação tem DUAS etapas, NESTA ordem: \
+(1) **GEOMETRIA por código:** rode \`validate_scene\` depois de TODA escrita de \
+scenes/*.json e corrija até **0 erros** (interpenetração, peça flutuando, gameplay \
+tombado, attach quebrado, vão impulável). É determinístico e barato — erro \
+geométrico se conserta AQUI, nunca caçando em screenshot. \
+(2) **VISUAL com seus olhos**, só com a geometria limpa: (a) \`playtest_game\` com \
+**screenshots de close-up, região por região** (não foto do mapa inteiro) — \
+incluindo JOGAR o level de ponta a ponta num plataformer; e (b) \`critique_scene\` \
+comparando com a referência/mood (composição, paleta, ritmo — beleza, não \
+geometria), e AJUSTE até a distância visual ficar pequena. Importar kit e escrever \
+o JSON é o MEIO, não o fim. Pular o validate_scene, o playtest ou a crítica = \
+trabalho incompleto, não entregue assim. (Detalhes nas seções "playtest_game" e \
+"Crítica de beleza" abaixo.)
+
+**APRENDER COM AS CORREÇÕES DO DEV (ciclo de baseline).** O que o dev corrige no \
+editor é o feedback mais valioso que existe — e o sistema captura isso de graça \
+(overlay por id). O ciclo: \
+(1) Ao TERMINAR uma cena (validada), rode \`save_baseline { fase }\` — snapshot do \
+estado que você entregou. \
+(2) Quando o dev pedir pra aprender ("aprende com meus ajustes"), aceitar sua \
+oferta, ou houver correções pendentes: rode \`diff_corrections { fase }\` — devolve \
+o diff SEMÂNTICO (por role × mudança: "hazard: 4× moved, média 1.3u, tendência \
+X+"). NUNCA leia o overlay cru pra isso (contexto). \
+(3) **Proponha as lições ao dev ANTES de gravar** — nem toda edição é princípio; \
+às vezes é gosto pontual daquela fase, e o dev veta. Ex.: "vou registrar: hazards \
+a ≥1.5m entre si; decor com rotY variado — confirma?". \
+(4) Grave cada lição aprovada no destino certo: regra GEOMÉTRICA → proponha ajuste \
+de threshold/regra no validate_scene (via código do projeto ou anote no learnings \
+com prefixo "[validador]"); lição de ESTILO/atmosfera → \`.cortex/scene-learnings.md\` \
+(deduplicada — atualize a linha existente em vez de acrescentar repetida). \
+(5) Rode \`save_baseline { fase }\` de novo — SEMPRE, inclusive se o dev vetou \
+(veto é sobre a lição, não sobre o marco; sem isso o mesmo diff volta pra sempre).
 
 Siga o fluxo:
 
@@ -164,7 +190,10 @@ Siga o fluxo:
    arquivo as lições novas e concretas que você descobriu — uma linha cada, \
    curtas e reusáveis (ex.: "Platformer_Deathrun/bridge_001: deck afunda ~1.84u"; \
    "água cartoon: bloom 0.6 + exposição 1.05 bate o look das refs de ilha"). NÃO \
-   duplique o que já está lá; é a sua memória que fica mais precisa a cada uso.
+   duplique o que já está lá — lição repetida ATUALIZA a linha existente (número \
+   mais preciso, caso a mais). TETO: se o arquivo passar de ~200 linhas, consolide \
+   (funda lições parecidas, apague obsoletas) — ele entra no seu contexto toda \
+   sessão; memória gorda é contexto desperdiçado.
 
 1. **Meça os assets primeiro (obrigatório).** Rode a tool \`inspect_assets\` \
    (dir = pasta dos modelos, default \`assets\`) ANTES de escrever qualquer \
@@ -451,6 +480,12 @@ export interface RunAgentOptions {
    */
   kitsDir?: string
   /**
+   * Fases com **correções do dev não processadas** (overlay divergiu do baseline;
+   * detectado pelo main via `detectPendingCorrections` — checagem barata de hash).
+   * Quando presente, o agente OFERECE aprender com as correções (uma vez, sem spam).
+   */
+  pendingCorrections?: string[]
+  /**
    * Ambiente repassado ao subprocesso do SDK (a tool Bash herda dele). No app
    * empacotado o PATH do processo Electron não inclui yarn/node — o main injeta
    * os diretórios certos via envForSpawn() e passa aqui. Quando omitido, o SDK
@@ -475,6 +510,8 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
         'cortex-assets': createAssetToolServer(opts.projectRoot),
         'cortex-kits': createKitsToolServer(opts.projectRoot, opts.kitsDir),
         'cortex-critic': createCriticToolServer(opts.projectRoot),
+        'cortex-validate': createValidateToolServer(opts.projectRoot),
+        'cortex-learn': createLearnToolServer(opts.projectRoot),
       }
     : undefined
 
@@ -503,6 +540,15 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
     systemAppend +=
       `\n\n===== GAME DESIGN BIBLE (regras de design — siga ao criar/montar level e gameplay) =====\n\n` +
       opts.gameDesignBible
+  }
+  if (opts.pendingCorrections && opts.pendingCorrections.length > 0) {
+    systemAppend +=
+      `\n\n===== CORREÇÕES DO DEV PENDENTES =====\n` +
+      `O dev editou a(s) fase(s) [${opts.pendingCorrections.join(', ')}] no editor desde o último ` +
+      `baseline. Na PRIMEIRA resposta desta sessão, ofereça (em UMA frase, sem interromper o ` +
+      `pedido atual): aprender com essas correções via \`diff_corrections\`. Se o dev aceitar, ` +
+      `siga o ciclo de aprendizado; se recusar/ignorar, rode \`save_baseline\` da(s) fase(s) ` +
+      `pra não re-oferecer o mesmo diff, e não insista.`
   }
   if (opts.mode === 'plan') {
     systemAppend += PLAN_MODE_PROMPT

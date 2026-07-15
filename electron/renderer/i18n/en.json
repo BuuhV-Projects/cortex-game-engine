@@ -105,6 +105,8 @@
   },
   "chat": {
     "title": "AI Chat",
+    "tooltip_learn": "Learn from my edits",
+    "learn_message": "Learn from my scene edits: run diff_corrections, propose the lessons to me BEFORE saving them, then update the baseline.",
     "tooltip_clear": "Discard history",
     "tooltip_minimize": "Minimize chat",
     "tooltip_expand": "Expand chat",
