@@ -1,3 +1,38 @@
+# [0.35.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.34.0...v0.35.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **editor:** trocar de shader não pode apagar o material autorado na cena (ADR-0110) ([dc24f9c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dc24f9c62c1e37fe714e3d0de2f99562085f2159)), closes [#ffd83](https://github.com/BuuhV-Projects/cortex-game-engine/issues/ffd83)
+* **export:** cozinha assets em %TEMP%, fora do dist-native (evita EPERM de lock) ([41005b2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/41005b2ac40e618f60377ea4f3d6650a2404d627))
+* **native:** splash é a única a apresentar — some o piscar com o jogo por trás ([20347de](https://github.com/BuuhV-Projects/cortex-game-engine/commit/20347de5fdd6c9323216fe947f346f7df2c5573b)), closes [#0d0e14](https://github.com/BuuhV-Projects/cortex-game-engine/issues/0d0e14)
+* **studio:** submenu Exportar empilha vertical + sem seta; export não crasha na limpeza ([7215fbd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7215fbde8656db8a95e04ede82b2381ac9097372))
+
+
+### Features
+
+* **brand:** logo TS Cortex Studio (monograma TS em hexágono) + gerador SVG→PNG ([98d485a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/98d485aaaaf4720f7cf781f1c6991b57c0e8d68f)), closes [#968](https://github.com/BuuhV-Projects/cortex-game-engine/issues/968)
+* **brand:** marca em azul TypeScript ([#3178](https://github.com/BuuhV-Projects/cortex-game-engine/issues/3178)c6) e sem a assinatura ([b1b4031](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b1b4031b7b36bf6fc3acab4ffa89f48fe217e71a)), closes [#3178c6](https://github.com/BuuhV-Projects/cortex-game-engine/issues/3178c6)
+* **engine:** caminho browser do KTX2 (basis WASM vendorizado) — M2, ADR-0108 ([2226c3e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2226c3e38dcbf9dcce8fbc203f9580df0b4079ea))
+* **engine:** KTX2 em GLB (KHR_texture_basisu) + pipeline de conversão — M2 Fase 3 ([077f312](https://github.com/BuuhV-Projects/cortex-game-engine/commit/077f312c2fce30d8947e1cf2b2f303cf89885a3b))
+* **engine:** loader de textura KTX2 (nativo + browser) — M2 Fase 1, ADR-0108 ([7086bd7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7086bd7062e729299295d44d17fc4745d198c41e))
+* **export:** instalador PC (NSIS) do dist-native — M2 ([f00a55c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f00a55c5093d8dba8bd438d9f732faa9cc101acb))
+* **export:** modo Steam (--steam) — host CORTEX_STEAM + steam_api64.dll ([7d0d747](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7d0d7470e309827d420fa7d6b397589e6a133889))
+* **export:** progresso da conversão KTX2 no modal (por arquivo) ([29ed78e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/29ed78e77f44126b5ce2b60e2a4a7bdaf6db6c9c))
+* **ia:** aprendizado por correcoes do dev (baselines + diff semantico) ([16a88f3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/16a88f39dfb0afe36a20d262a3791c3e44962f59))
+* **kits:** adicionar kit characters-cute (personagem modular, ADR-0068) ([87afdd4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/87afdd4542778993fd4d26a8fdc430c4b43dfccd))
+* **native:** app GDK registra + roda com package identity (M3, passo 2 fechado) ([900be0e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/900be0e5e1d357b34b963d9c9b2513032aa18aac))
+* **native:** app model do GDK — XGameRuntime inicializando (M3, início) ([5595d29](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5595d295e57db92728fffd16db977a847b315d04))
+* **native:** encoder PNG→KTX2 (basis WASM) — pipeline M2 Fase 3, ADR-0108 ([94bc79b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/94bc79b398da3965396f615ec69ddc172dc23033))
+* **native:** integração Steamworks (release PC/Steam) — opt-in, validada ([d9d6984](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d9d6984ce5e9becd41a8eeb5ccd767c2ef1651e2))
+* **native:** KTX2/Basis — transcoder nativo → RGBA (M2 Fase 1, ADR-0108) ([f3aad6e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f3aad6ef90ace17839557958da6e15cad772ff92))
+* **native:** MicrosoftGame.config + logos p/ app GDK (M3, passo 2) ([018c6dd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/018c6dd4347193dac0661eb89df22d41a9038132))
+* **native:** splash obrigatória da engine no host (ADR-0109) ([b6c106f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b6c106f66bbf1b271229d39f53b13504b373ec63))
+* **native:** XGameSave no backend de save (GDK) com fallback pra arquivo (M3) ([44ea889](https://github.com/BuuhV-Projects/cortex-game-engine/commit/44ea8890240a2958e0ab4cd6a4feba6c91c05921))
+* **scene:** encaixe por socket (attach) e parseKit no runtime (ADR-0053 §2) ([c83890a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c83890a6e84e86389574da4192b147bc34438ffa))
+* **scene:** validacao geometrica estatica (validateScene + tool validate_scene) ([f7077eb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f7077ebff559ff0f9f7d64a501fd5b2f841a5f50))
+* **studio:** submenu Exportar › (PC only / PC Steam / Xbox) ([ccf1cdc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ccf1cdcbe0a489a41ddeace1ea2bb9bf8eecd30b))
+
 # [0.34.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.33.0...v0.34.0) (2026-07-08)
 
 
