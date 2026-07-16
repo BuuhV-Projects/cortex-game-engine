@@ -2,9 +2,10 @@ import { createHash } from 'crypto'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { readdir, readFile, writeFile, mkdir } from 'fs/promises'
-import { parseSceneDefinition, type SceneNode } from '../../src/scene/SceneDefinition.js'
+import { parseSceneDefinition, type SceneDefinition, type SceneNode } from '../../src/scene/SceneDefinition.js'
 import { parseKit, kitAssetFor, type KitManifest } from '../../src/scene/Kit.js'
 import type { SceneFileV1 } from '../../src/scene/SceneFile.js'
+import { validateScene, type ValidateSceneOptions } from '../../src/scene/validateScene.js'
 
 /**
  * **Loop de aprendizado por correções do dev** (núcleo determinístico).
@@ -29,6 +30,8 @@ export interface EffectiveNode {
   rotY: number
   s: [number, number, number]
   type: string
+  /** URL do modelo (permite RECONSTRUIR o nó pra replay de validação — ADR-0115). */
+  url?: string
   role?: string
   physics: string
   /** JSON canônico do collider efetivo (comparável). */
@@ -140,6 +143,7 @@ export async function effectiveState(
       rotY,
       s,
       type: node.type,
+      ...(n.url ? { url: n.url } : {}),
       ...(role ? { role } : {}),
       physics: physType,
       ...(collider ? { collider: JSON.stringify(collider) } : {}),
@@ -272,6 +276,96 @@ function summarize(changes: NodeChange[]): string {
     lines.push(line)
   }
   return lines.join('\n')
+}
+
+/**
+ * **Overlay sintético que reproduz o estado do BASELINE** sobre os scenes/*.json
+ * atuais — o "replay" da cena como ela era ANTES das correções do dev, sem
+ * precisar guardar a cena inteira. Usado pela checagem de regressão de regra
+ * aprendida (ADR-0115): a regra nova tem que REPROVAR este estado e APROVAR o
+ * corrigido. Nós irreconstruíveis (attach estrutural, model sem url em baseline
+ * antigo) vão em `unreconstructed` — cobertura honesta, nunca silenciosa.
+ */
+export function baselineOverlay(
+  baseline: Baseline,
+  sceneNodeIds: Set<string>,
+): { overlay: SceneFileV1; unreconstructed: string[] } {
+  const objects: NonNullable<SceneFileV1['objects']> = {}
+  const physics: Record<string, { type: string }> = {}
+  const colliders: Record<string, unknown> = {}
+  const added: SceneNode[] = []
+  const unreconstructed: string[] = []
+
+  for (const [id, n] of Object.entries(baseline.nodes)) {
+    physics[id] = { type: n.physics }
+    if (n.collider) colliders[id] = JSON.parse(n.collider)
+    if (sceneNodeIds.has(id)) {
+      // Nó ainda existe no scene JSON: a pose do baseline vira override.
+      if (n.p) objects[id] = { position: [...n.p], rotation: [0, n.rotY, 0], scale: [...n.s] }
+      // p === null (attach): pose estrutural — o próprio scene JSON resolve.
+    } else if (n.p && n.type === 'model' && n.url) {
+      // Nó que o dev DELETOU: re-adiciona reconstruído a partir do baseline.
+      added.push({
+        type: 'model',
+        id,
+        url: n.url,
+        transform: { position: [...n.p], rotation: [0, n.rotY, 0], scale: [...n.s] },
+        ...(n.collider ? { collider: JSON.parse(n.collider) } : {}),
+      } as unknown as SceneNode)
+    } else {
+      unreconstructed.push(id)
+    }
+  }
+  // Nós que NÃO existiam no baseline (dev/agente adicionou depois): fora do replay.
+  const deleted = [...sceneNodeIds].filter((id) => !baseline.nodes[id])
+  return {
+    overlay: { version: 1, objects, data: { added, deleted, physics, colliders } } as SceneFileV1,
+    unreconstructed,
+  }
+}
+
+export interface RuleCheck {
+  /** Violações por regra no estado ANTIGO (baseline reconstruído). */
+  before: Record<string, number>
+  /** Violações por regra no estado ATUAL (com as correções do dev). */
+  after: Record<string, number>
+  /** Nós do baseline fora do replay (attach, model sem url) — cobertura honesta. */
+  unreconstructed: string[]
+}
+
+/**
+ * **Checagem de regressão de regra aprendida**: valida a cena DUAS vezes com a
+ * regra candidata — no estado do baseline (antes das correções) e no atual
+ * (corrigido). Uma regra só "captura" a correção se reprova o antes e aprova o
+ * depois; senão é gosto pontual, não princípio — vira texto, não código.
+ */
+export async function checkRuleAgainstBaseline(
+  projectRoot: string,
+  fase: string,
+  overlayRel: string,
+  ruleOptions: Pick<ValidateSceneOptions, 'maxGap' | 'maxRise' | 'maxPenetration' | 'severity'>,
+): Promise<RuleCheck | null> {
+  const baseline = await readJson<Baseline>(baselinePath(projectRoot, fase))
+  if (!baseline) return null
+  const kits = await loadKits(projectRoot)
+  const defs: SceneDefinition[] = []
+  for (const rel of await sceneFiles(projectRoot)) {
+    const def = parseSceneDefinition(await readJson(join(projectRoot, rel)))
+    if (def) defs.push(def)
+  }
+  const sceneIds = new Set(defs.flatMap((d) => d.nodes.map((n) => n.id)))
+  const { overlay: oldOverlay, unreconstructed } = baselineOverlay(baseline, sceneIds)
+  const overlayPath = join(projectRoot, overlayRel)
+  const currentRaw = existsSync(overlayPath) ? await readFile(overlayPath, 'utf-8') : ''
+  const currentOv = currentRaw ? (JSON.parse(currentRaw) as SceneFileV1) : null
+
+  const countByRule = (overlay: SceneFileV1 | null): Record<string, number> => {
+    const r = validateScene(defs, { kit: kits, overlay, ...ruleOptions })
+    const acc: Record<string, number> = {}
+    for (const v of [...r.errors, ...r.warnings]) acc[v.rule] = (acc[v.rule] ?? 0) + 1
+    return acc
+  }
+  return { before: countByRule(oldOverlay), after: countByRule(currentOv), unreconstructed }
 }
 
 /**

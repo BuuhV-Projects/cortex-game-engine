@@ -11,6 +11,9 @@ import {
   saveBaseline,
   diffCorrections,
   detectPendingCorrections,
+  baselineOverlay,
+  checkRuleAgainstBaseline,
+  type Baseline,
 } from '../../electron/agent/learning.js'
 
 let root: string
@@ -94,5 +97,66 @@ describe('learning (baseline + diff de correções)', () => {
 
   it('diff sem baseline retorna null (tool orienta criar)', async () => {
     expect(await diffCorrections(root, 'inexistente', 'assets/scene-data.json')).toBeNull()
+  })
+})
+
+describe('baselineOverlay (replay do estado antigo)', () => {
+  const base: Baseline = {
+    version: 1,
+    savedAt: '2026-07-16T00:00:00Z',
+    overlay: 'assets/scene-data.json',
+    overlayHash: 'x',
+    scenes: ['scenes/level.json'],
+    nodes: {
+      keep: { p: [1, 2, 3], rotY: 0.5, s: [1, 1, 1], type: 'model', url: 'assets/k/bomba.glb', physics: 'none' },
+      gone: { p: [9, 0, 0], rotY: 0, s: [2, 2, 2], type: 'model', url: 'assets/k/arvore.glb', physics: 'static', collider: '{"shape":"box"}' },
+      semUrl: { p: [0, 0, 0], rotY: 0, s: [1, 1, 1], type: 'model', physics: 'none' },
+    },
+  }
+
+  it('pose do baseline vira override; nó deletado pelo dev é re-adicionado; nó novo é excluído do replay', () => {
+    const { overlay, unreconstructed } = baselineOverlay(base, new Set(['keep', 'novo_do_dev']))
+    expect(overlay.objects!['keep']).toEqual({ position: [1, 2, 3], rotation: [0, 0.5, 0], scale: [1, 1, 1] })
+    const added = overlay.data!['added'] as Array<{ id: string; collider?: object }>
+    expect(added.map((n) => n.id)).toEqual(['gone'])
+    expect(added[0]!.collider).toEqual({ shape: 'box' })
+    expect(overlay.data!['deleted']).toEqual(['novo_do_dev'])
+    // model deletado SEM url não tem como voltar — reportado, nunca silencioso.
+    expect(unreconstructed).toEqual(['semUrl'])
+  })
+})
+
+describe('checkRuleAgainstBaseline (regressão de regra aprendida)', () => {
+  // Duas plataformas com vão de 2u; player presente (regra "gap" só roda com player).
+  const gapScene = {
+    version: 1,
+    nodes: [
+      { type: 'primitive', id: 'a', shape: 'box', size: [4, 1, 4], transform: { position: [0, 0.5, 0] }, collider: { shape: 'box' } },
+      { type: 'primitive', id: 'b', shape: 'box', size: [4, 1, 4], transform: { position: [6, 0.5, 0] }, collider: { shape: 'box' } },
+      { type: 'model', id: 'p', url: 'assets/k/bomba.glb', place: { x: 0, y: 1 }, player: true },
+    ],
+  }
+
+  it('regra que captura a correção discrimina: reprova o antes, aprova o depois', async () => {
+    writeFileSync(join(root, 'scenes/level.json'), JSON.stringify(gapScene))
+    await saveBaseline(root, 'fase1', 'assets/scene-data.json') // IA entregou vão de 2u
+    // Dev encurtou o vão pra 1u (pulo deste jogo é curto) → lição: maxGap 1.5.
+    writeOverlay({ b: { position: [5, 0.5, 0], rotation: [0, 0, 0], scale: [1, 1, 1] } })
+    const check = (await checkRuleAgainstBaseline(root, 'fase1', 'assets/scene-data.json', { maxGap: 1.5 }))!
+    expect(check.before['gap']).toBe(1) // estado antigo reprova
+    expect(check.after['gap'] ?? 0).toBe(0) // corrigido passa
+  })
+
+  it('regra frouxa não discrimina (antes e depois passam) — não captura a correção', async () => {
+    writeFileSync(join(root, 'scenes/level.json'), JSON.stringify(gapScene))
+    await saveBaseline(root, 'fase1', 'assets/scene-data.json')
+    writeOverlay({ b: { position: [5, 0.5, 0], rotation: [0, 0, 0], scale: [1, 1, 1] } })
+    const check = (await checkRuleAgainstBaseline(root, 'fase1', 'assets/scene-data.json', { maxGap: 5 }))!
+    expect(check.before['gap'] ?? 0).toBe(0)
+    expect(check.after['gap'] ?? 0).toBe(0)
+  })
+
+  it('sem baseline retorna null', async () => {
+    expect(await checkRuleAgainstBaseline(root, 'nada', 'assets/scene-data.json', { maxGap: 1 })).toBeNull()
   })
 })

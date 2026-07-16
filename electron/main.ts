@@ -526,6 +526,8 @@ const VENDOR_TYPE_MODULES = {
     'EngineSound',
     'Vegetation',
     'VehicleSetup',
+    'Kit',
+    'validateScene',
   ],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter', 'signedSave'],
   physics: ['RapierPhysics'],
@@ -626,18 +628,18 @@ async function vendorEngine(projectPath: string): Promise<void> {
 
 /**
  * Lê a doc da API do engine (`docs/cortex-game-engine/engine-api.md`, empacotada
- * no Studio via extraResources — ADR-0034) e a cacheia. É injetada no system
- * prompt do agente (ver ai:chat) pra o Chat IA saber o que o engine expõe ao
- * criar features. Fica no build da IDE, não no projeto.
+ * no Studio via extraResources — ADR-0034) e a cacheia. O agentLoop injeta o
+ * ÍNDICE dela no system prompt e o agente lê seções sob demanda via Read
+ * (ADR-0114). Fica no build da IDE, não no projeto.
  */
 let cachedEngineApiDoc: string | null = null
+function engineApiDocPath(): string {
+  return join(resourceBase(), 'docs', 'cortex-game-engine', 'engine-api.md')
+}
 async function loadEngineApiDoc(): Promise<string> {
   if (cachedEngineApiDoc !== null) return cachedEngineApiDoc
   try {
-    cachedEngineApiDoc = await readFile(
-      join(resourceBase(), 'docs', 'cortex-game-engine', 'engine-api.md'),
-      'utf-8',
-    )
+    cachedEngineApiDoc = await readFile(engineApiDocPath(), 'utf-8')
   } catch {
     cachedEngineApiDoc = ''
   }
@@ -1491,6 +1493,9 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
       resumeSessionId,
       mode: agentMode,
       engineApiDoc,
+      // Com o path, o agentLoop injeta só o ÍNDICE do doc e o agente lê as
+      // seções sob demanda via Read (ADR-0114). Sem doc lido, sem path.
+      engineApiPath: engineApiDoc ? engineApiDocPath() : undefined,
       gameDesignBible,
       pendingCorrections,
       kitsDir: join(resourceBase(), 'kits'),

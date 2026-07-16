@@ -51,10 +51,11 @@ com TypeDoc — **não edite à mão** os arquivos em `docs/cortex-game-engine/a
   `src/physics/`, `src/editor/`, `src/scene/`, `src/io/` — rode `yarn docs:engine`
   e **commite a doc regenerada** junto da mudança.
 - `docs/cortex-game-engine/engine-api.md` — guia **curado** (catálogo + receitas),
-  **não** gerado. É a fonte que a IDE empacota (extraResources) e **injeta no
-  system prompt do Chat IA** (lida em runtime via `resourceBase()` no `ai:chat`),
-  pra a IA já saber o que o engine expõe. Mantenha-o atualizado ao mudar a API
-  pública (adicione classes/exports novos e receitas relevantes).
+  **não** gerado. É a fonte que a IDE empacota (extraResources) e injeta no Chat IA
+  como **ÍNDICE no system prompt** (seções + linhas + símbolos, derivado em runtime
+  por `electron/agent/engineApiIndex.ts`; o agente lê seções completas sob demanda
+  via Read — ADR-0114). Mantenha-o atualizado ao mudar a API pública (adicione
+  classes/exports novos e receitas relevantes) — o índice deriva dele sozinho.
 
 > Bons comentários TSDoc nas classes/métodos públicos viram boa doc
 > automaticamente — descreva propósito, parâmetros e um `@example` quando ajudar.

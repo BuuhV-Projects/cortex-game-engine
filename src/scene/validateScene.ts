@@ -40,6 +40,15 @@ export interface ValidateSceneOptions {
   maxGap?: number;
   /** Maior subida entre plataformas vizinhas. Default 3. */
   maxRise?: number;
+  /** Interpenetração acima disso é `error` (abaixo, `warning`). Default 0.15. */
+  maxPenetration?: number;
+  /**
+   * Override de severidade POR REGRA (`overlap`, `floating`, `gap`…): força
+   * `error`/`warning` ou suprime com `off`. É por onde regras APRENDIDAS do
+   * projeto (`.cortex/validation-rules.json`, ADR-0115) endurecem ou relaxam o
+   * validador sem mudar o código do engine.
+   */
+  severity?: Record<string, 'error' | 'warning' | 'off'>;
 }
 
 interface NodeBox {
@@ -88,6 +97,7 @@ export function validateScene(
   const overlay = options.overlay ?? null;
   const maxGap = options.maxGap ?? 2.8;
   const maxRise = options.maxRise ?? 3;
+  const maxPenetration = options.maxPenetration ?? EPS_PENETRATION;
   const violations: SceneViolation[] = [];
   const skipped: string[] = [];
 
@@ -258,7 +268,7 @@ export function validateScene(
       const depth = Math.min(ox, oy, oz);
       violations.push({
         rule: 'overlap',
-        severity: depth > EPS_PENETRATION ? 'error' : 'warning',
+        severity: depth > maxPenetration ? 'error' : 'warning',
         nodeId: a.id,
         otherId: b.id,
         message: `"${a.id}" interpenetra "${b.id}" (${depth.toFixed(2)}u no eixo mais raso)`,
@@ -354,9 +364,18 @@ export function validateScene(
     }
   }
 
+  // Overrides de severidade por regra (regras aprendidas do projeto).
+  const sev = options.severity ?? {};
+  const finalViolations = violations
+    .filter((v) => sev[v.rule] !== 'off')
+    .map((v) => {
+      const s = sev[v.rule];
+      return s && s !== v.severity ? { ...v, severity: s as 'error' | 'warning' } : v;
+    });
+
   return {
-    errors: violations.filter((v) => v.severity === 'error'),
-    warnings: violations.filter((v) => v.severity === 'warning'),
+    errors: finalViolations.filter((v) => v.severity === 'error'),
+    warnings: finalViolations.filter((v) => v.severity === 'warning'),
     stats: { nodes: nodes.length, boxed: boxes.length, skipped },
   };
 }

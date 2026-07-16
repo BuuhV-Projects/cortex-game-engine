@@ -7,6 +7,7 @@ import { parseSceneDefinition, type SceneDefinition } from '../../../src/scene/S
 import { parseKit, type KitManifest } from '../../../src/scene/Kit.js'
 import { validateScene, type SceneValidationReport } from '../../../src/scene/validateScene.js'
 import type { SceneFileV1 } from '../../../src/scene/SceneFile.js'
+import { loadValidationRules, VALIDATION_RULES_REL, type ValidationRules } from '../validationRules.js'
 
 /**
  * MCP server `cortex-validate`: validação GEOMÉTRICA estática da cena
@@ -19,6 +20,10 @@ import type { SceneFileV1 } from '../../../src/scene/SceneFile.js'
  * código; screenshot é pra composição/beleza. O relatório COMPLETO vai pra
  * `.cortex/validation/` (leia com Read se precisar); a resposta traz só o
  * resumo (orçamento de contexto).
+ *
+ * Regras APRENDIDAS do projeto (`.cortex/validation-rules.json`, gravadas pelo
+ * ciclo de aprendizado via `save_rule` — ADR-0115) são carregadas AUTOMATICAMENTE
+ * como default de thresholds/severidade; parâmetro explícito da chamada vence.
  */
 
 const MAX_SHOWN = 10
@@ -74,6 +79,14 @@ function formatReport(name: string, r: SceneValidationReport, reportPath: string
   }
   lines.push(`Relatório completo: ${reportPath}`)
   return lines.join('\n')
+}
+
+/** Uma linha com o que o arquivo de regras muda ("maxGap=2.5, gap:error"). */
+function describeRules(rules: ValidationRules): string {
+  const parts: string[] = []
+  for (const [k, v] of Object.entries(rules.thresholds ?? {})) parts.push(`${k}=${v}`)
+  for (const [k, v] of Object.entries(rules.severity ?? {})) parts.push(`${k}:${v}`)
+  return parts.join(', ') || 'nenhuma mudança efetiva'
 }
 
 export function createValidateToolServer(projectRoot: string) {
@@ -140,8 +153,18 @@ export function createValidateToolServer(projectRoot: string) {
           const overlayPath = join(projectRoot, overlayRel)
           const ov = existsSync(overlayPath) ? await readJson<SceneFileV1>(overlayPath) : null
 
-          // 3) Valida e grava o relatório completo em disco (contexto enxuto).
-          const report = validateScene(defs, { kit: kits, overlay: ov, maxGap, maxRise })
+          // 3) Regras aprendidas do projeto como default; parâmetro explícito vence.
+          const rules = await loadValidationRules(projectRoot)
+
+          // 4) Valida e grava o relatório completo em disco (contexto enxuto).
+          const report = validateScene(defs, {
+            kit: kits,
+            overlay: ov,
+            maxGap: maxGap ?? rules?.thresholds?.maxGap,
+            maxRise: maxRise ?? rules?.thresholds?.maxRise,
+            maxPenetration: rules?.thresholds?.maxPenetration,
+            severity: rules?.severity,
+          })
           const outDir = join(projectRoot, '.cortex', 'validation')
           await mkdir(outDir, { recursive: true })
           const name = scenePaths.length === 1 ? basename(scenePaths[0]!, '.json') : 'cena'
@@ -152,6 +175,7 @@ export function createValidateToolServer(projectRoot: string) {
           )
 
           let text = formatReport(name, report, reportRel)
+          if (rules) text += `\nRegras aprendidas do projeto aplicadas (${VALIDATION_RULES_REL}): ${describeRules(rules)}.`
           if (invalid.length) text += `\nAviso: parse falhou em ${invalid.join(', ')} (não validadas).`
           if (kits.length === 0) {
             text += '\nAviso: nenhum kit.json em assets/*/ — cobertura reduzida (só primitivas/terreno têm bbox).'

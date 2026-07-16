@@ -246,7 +246,32 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   No fluxo de dev deste repo, re-vendorizamos à mão pros projetos de teste
   (`D:/jogos/*`) após mudar o engine.
 - **Doc da API** é **gerada** (`yarn docs:engine`, TypeDoc → `api/`). `engine-api.md`
-  é curado e **injetado no system prompt do Chat IA** — mantenha-o ao mudar a API.
+  é curado e alimenta o Chat IA como **ÍNDICE no system prompt** (título + faixa de
+  linhas + símbolos por seção, gerado em runtime por `electron/agent/engineApiIndex.ts`);
+  o agente lê a seção completa sob demanda via Read (ADR-0114). Mantenha o doc ao
+  mudar a API — o índice deriva dele automaticamente, sem passo de build.
+
+## 6b. Chat IA: validação geométrica + aprendizado por correções
+
+- **`validateScene`** (`src/scene/validateScene.ts`, ADR-0112): validação estática
+  (dados, sem GPU) — interpenetração, flutuação, tombado, vão impulável, attach.
+  Tool `validate_scene` (electron): 0 erros é pré-requisito antes de playtest/critique.
+- **Ciclo de aprendizado** (ADR-0113, `electron/agent/learning.ts` + tools
+  `cortex-learn`): a IA entrega cena → `save_baseline` (snapshot do estado efetivo);
+  dev corrige no editor (overlay por id) → `diff_corrections` mede só a intervenção
+  humana (diff semântico por role × mudança); lição aprovada pelo dev grava no
+  destino certo e o baseline avança SEMPRE (inclusive com veto).
+- **Regras aprendidas viram DADO por projeto** (ADR-0115,
+  `electron/agent/validationRules.ts`): lição geométrica → `save_rule` grava
+  thresholds/severidade em `.cortex/validation-rules.json`, que o `validate_scene`
+  carrega sozinho dali em diante (parâmetro explícito vence). A tool roda uma
+  **checagem de regressão** antes de gravar: reconstrói o estado do baseline como
+  overlay sintético (`baselineOverlay`) e só aceita regra que reprova o "antes" e
+  melhora o "depois" — senão a lição é gosto pontual e vira texto no
+  `.cortex/scene-learnings.md`. Ordem no ciclo: `save_rule` ANTES do
+  `save_baseline` final (a checagem usa o baseline antigo como contraprova).
+  Conhecimento aprendido (`validation-rules.json` + `scene-learnings.md`) é
+  versionado; o resto de `.cortex/` é cache (gitignore do template).
 
 ## 7. Fluxo de ponta a ponta (um nó vira jogo)
 

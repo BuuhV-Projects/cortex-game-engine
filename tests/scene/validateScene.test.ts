@@ -117,4 +117,24 @@ describe('validateScene', () => {
     const r = validateScene(def(alien), { kit });
     expect(r.stats.skipped).toContain('x');
   });
+
+  it('severity override (regra aprendida): gap warning vira error; "off" suprime a regra', () => {
+    const player = { type: 'model', id: 'p', url: 'assets/moeda.glb', place: { x: 0, y: 2 }, player: true };
+    const cena = def(bloco('a', 0), bloco('b', 12), player);
+    const endurecida = validateScene(cena, { kit, severity: { gap: 'error' } });
+    expect(endurecida.errors.some((e) => e.rule === 'gap')).toBe(true);
+    expect(endurecida.warnings.filter((w) => w.rule === 'gap')).toEqual([]);
+    const desligada = validateScene(cena, { kit, severity: { gap: 'off' } });
+    expect(desligada.errors.concat(desligada.warnings).filter((v) => v.rule === 'gap')).toEqual([]);
+  });
+
+  it('maxPenetration configurável: penetração vira warning quando dentro da nova tolerância', () => {
+    // a: x∈[-2,2], b: x∈[1.5,5.5] → penetração 0.5u no eixo mais raso.
+    const cena = def(bloco('a', 0), bloco('b', 3.5));
+    const padrao = validateScene(cena, { kit });
+    expect(padrao.errors.some((e) => e.rule === 'overlap')).toBe(true);
+    const tolerante = validateScene(cena, { kit, maxPenetration: 1 });
+    expect(tolerante.errors.filter((e) => e.rule === 'overlap')).toEqual([]);
+    expect(tolerante.warnings.some((w) => w.rule === 'overlap')).toBe(true);
+  });
 });

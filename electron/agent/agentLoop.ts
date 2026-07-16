@@ -6,6 +6,7 @@ import { createKitsToolServer } from './tools/kits.js'
 import { createCriticToolServer } from './tools/critic.js'
 import { createValidateToolServer } from './tools/validate.js'
 import { createLearnToolServer } from './tools/learn.js'
+import { buildEngineApiIndex } from './engineApiIndex.js'
 
 /**
  * Loop do agente usando @anthropic-ai/claude-agent-sdk (ADR-0017 V2).
@@ -27,7 +28,8 @@ renderização via Three.js.
 
 Diretrizes gerais:
 - Todos os arquivos que você edita ou cria devem ficar dentro do projeto \
-aberto (cwd). Não acesse arquivos fora dele.
+aberto (cwd). Fora do projeto, nada de escrita; leitura só quando estas \
+instruções indicarem explicitamente (ex.: a Referência da API do engine).
 - Sempre que possível, leia arquivos existentes antes de propor mudanças.
 - Responda em português. Quando escrever código, prefira TypeScript moderno \
 (ES2022+) e siga o padrão ECS do engine.
@@ -70,9 +72,12 @@ cena. Lógica vai em System.
 
 Uso do cortex-game-engine (importante):
 - O que o engine expõe (classes, helpers, re-exports de three) está na \
-**"Referência da API do cortex-game-engine"** anexada ao FINAL destas instruções \
-— catálogo + receitas. Consulte-a antes de codar features de cena, render, input, \
-áudio, física, ECS, pós-processamento, HDRI ou modelos 3D.
+**"Referência da API do cortex-game-engine"** anexada ao FINAL destas instruções. \
+Quando ela for um ÍNDICE (título + linhas + símbolos), LEIA a seção relevante do \
+arquivo completo com a tool Read (o caminho e as faixas de linha estão no próprio \
+índice) ANTES de codar features de cena, render, input, áudio, física, ECS, \
+pós-processamento, HDRI ou modelos 3D — o índice diz o que existe; assinaturas e \
+receitas estão no arquivo.
 - Importe SEMPRE de \`'cortex-game-engine'\`, nunca de \`'three'\` (o three vem \
 embutido no engine e seus tipos são re-exportados). Para assinaturas exatas, \
 \`vendor/cortex-game-engine/index.d.ts\` (e os \`core/*.d.ts\`/\`ecs/*.d.ts\` ao \
@@ -172,12 +177,19 @@ X+"). NUNCA leia o overlay cru pra isso (contexto). \
 (3) **Proponha as lições ao dev ANTES de gravar** — nem toda edição é princípio; \
 às vezes é gosto pontual daquela fase, e o dev veta. Ex.: "vou registrar: hazards \
 a ≥1.5m entre si; decor com rotY variado — confirma?". \
-(4) Grave cada lição aprovada no destino certo: regra GEOMÉTRICA → proponha ajuste \
-de threshold/regra no validate_scene (via código do projeto ou anote no learnings \
-com prefixo "[validador]"); lição de ESTILO/atmosfera → \`.cortex/scene-learnings.md\` \
-(deduplicada — atualize a linha existente em vez de acrescentar repetida). \
-(5) Rode \`save_baseline { fase }\` de novo — SEMPRE, inclusive se o dev vetou \
-(veto é sobre a lição, não sobre o marco; sem isso o mesmo diff volta pra sempre).
+(4) Grave cada lição aprovada no destino certo: regra GEOMÉTRICA (threshold de \
+vão/subida/interpenetração, severidade de regra) → \`save_rule { fase, motivo, ... }\` \
+— vira REGRA DURÁVEL em \`.cortex/validation-rules.json\` que o validate_scene aplica \
+sozinho dali em diante (código não regride). A tool roda uma checagem de regressão \
+(a regra tem que reprovar o estado ANTIGO e melhorar o corrigido); se não \
+discriminar, ela recusa — aí a lição é gosto pontual: vai pro \
+\`.cortex/scene-learnings.md\` como texto. Lição de ESTILO/atmosfera → \
+\`.cortex/scene-learnings.md\` direto (deduplicada — atualize a linha existente em \
+vez de acrescentar repetida). \
+(5) Rode \`save_baseline { fase }\` de novo, POR ÚLTIMO — SEMPRE, inclusive se o dev \
+vetou (veto é sobre a lição, não sobre o marco; sem isso o mesmo diff volta pra \
+sempre). Ordem importa: \`save_rule\` ANTES do \`save_baseline\` (a checagem usa o \
+baseline antigo como contraprova).
 
 Siga o fluxo:
 
@@ -462,10 +474,18 @@ export interface RunAgentOptions {
   mode: AgentMode
   /**
    * Conteúdo de `docs/cortex-game-engine/engine-api.md` (catálogo + receitas),
-   * empacotado no Studio e injetado no system prompt pra o agente saber o que o
-   * engine expõe. Lido pelo main via resourceBase(); vazio se indisponível.
+   * empacotado no Studio. Com `engineApiPath` presente, vira um ÍNDICE compacto
+   * no system prompt (ADR-0114) e o agente lê seções sob demanda via Read; sem
+   * o path, o doc inteiro é injetado (fallback). Lido pelo main via
+   * resourceBase(); vazio se indisponível.
    */
   engineApiDoc?: string
+  /**
+   * Caminho ABSOLUTO do `engine-api.md` empacotado (mesmo arquivo de
+   * `engineApiDoc`). Referenciado no índice pra tool Read buscar a seção
+   * completa sob demanda (Read é auto-aprovada, sem prompt de permissão).
+   */
+  engineApiPath?: string
   /**
    * Conteúdo da **Game Design Bible** (`docs/game-design-bible/`, todos os `.md`
    * concatenados) — regras curadas de design de jogos 2.5D/platformer. Injetada
@@ -534,7 +554,17 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
     `Detecte o estilo atual pelo código do projeto (opções do \`Game\`, assets usados) ` +
     `e pelo pedido do usuário; na dúvida, pergunte ou siga o padrão 3D.`
   if (opts.engineApiDoc && opts.engineApiDoc.trim().length > 0) {
-    systemAppend += `\n\n===== Referência da API do cortex-game-engine =====\n\n${opts.engineApiDoc}`
+    if (opts.engineApiPath) {
+      // Índice + leitura sob demanda (ADR-0114): o doc inteiro (~18k tokens)
+      // pesava no cache write do 1º turno de toda sessão. O índice preserva o
+      // vocabulário (o que existe + onde ler) e a seção completa é lida via
+      // Read quando a feature pede.
+      systemAppend +=
+        `\n\n===== Referência da API do cortex-game-engine (ÍNDICE — leia seções sob demanda) =====\n\n` +
+        buildEngineApiIndex(opts.engineApiDoc, opts.engineApiPath)
+    } else {
+      systemAppend += `\n\n===== Referência da API do cortex-game-engine =====\n\n${opts.engineApiDoc}`
+    }
   }
   if (opts.gameDesignBible && opts.gameDesignBible.trim().length > 0) {
     systemAppend +=
