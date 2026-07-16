@@ -278,7 +278,7 @@ export class FileTree {
 
   private async createFileIn(dirPath: string | null): Promise<void> {
     if (!dirPath) {
-      alert(t('fileTree.open_first_for_files'))
+      void window.electronAPI.infoDialog(t('fileTree.open_first_for_files'))
       return
     }
     const name = await customPrompt(t('fileTree.prompt_file_name'), {
@@ -289,13 +289,13 @@ export class FileTree {
       await window.electronAPI.createFile(dirPath, name.trim())
       await this.refresh()
     } catch (err) {
-      alert(`${t('fileTree.error_create_file')} ${String(err)}`)
+      void window.electronAPI.errorDialog(t('fileTree.error_create_file'), String(err))
     }
   }
 
   private async createDirIn(dirPath: string | null): Promise<void> {
     if (!dirPath) {
-      alert(t('fileTree.open_first_for_folders'))
+      void window.electronAPI.infoDialog(t('fileTree.open_first_for_folders'))
       return
     }
     const name = await customPrompt(t('fileTree.prompt_folder_name'), {
@@ -306,7 +306,7 @@ export class FileTree {
       await window.electronAPI.createDir(dirPath, name.trim())
       await this.refresh()
     } catch (err) {
-      alert(`${t('fileTree.error_create_folder')} ${String(err)}`)
+      void window.electronAPI.errorDialog(t('fileTree.error_create_folder'), String(err))
     }
   }
 
@@ -527,7 +527,7 @@ export class FileTree {
       await window.electronAPI.move(src, dest)
       await this.refresh()
     } catch (err) {
-      alert(`Erro ao mover: ${String(err)}`)
+      void window.electronAPI.errorDialog('Erro ao mover', String(err))
     }
   }
 
@@ -576,13 +576,17 @@ export class FileTree {
   }
 
   private async deleteEntry(entry: FileEntry): Promise<void> {
-    const ok = window.confirm(`Apagar ${entry.isDir ? 'pasta' : 'arquivo'} "${entry.name}"?`)
+    // Diálogos nativos via IPC — window.confirm/alert quebram o foco do
+    // renderer no Electron (teclado para de funcionar até re-focar a janela).
+    const ok = await window.electronAPI.confirmDialog(
+      `Apagar ${entry.isDir ? 'pasta' : 'arquivo'} "${entry.name}"?`,
+    )
     if (!ok) return
     try {
       await window.electronAPI.deletePath(entry.path)
       await this.refresh()
     } catch (err) {
-      alert(`Erro ao apagar: ${String(err)}`)
+      void window.electronAPI.errorDialog('Erro ao apagar', String(err))
     }
   }
 }

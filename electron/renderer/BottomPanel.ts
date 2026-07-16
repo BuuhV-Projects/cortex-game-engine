@@ -121,15 +121,15 @@ export class BottomPanel {
    */
   private async handleBuildInstaller(opts: { debug?: boolean } = {}): Promise<void> {
     if (!this.projectDir) {
-      alert(t('bottomPanel.installer_no_project'))
+      void window.electronAPI.infoDialog(t('bottomPanel.installer_no_project'))
       return
     }
     if (this.playRunning) {
-      alert(t('bottomPanel.installer_play_running'))
+      void window.electronAPI.infoDialog(t('bottomPanel.installer_play_running'))
       return
     }
     if (this.terminalRunning) {
-      alert(t('bottomPanel.installer_terminal_busy'))
+      void window.electronAPI.infoDialog(t('bottomPanel.installer_terminal_busy'))
       return
     }
 
@@ -137,7 +137,7 @@ export class BottomPanel {
 
     const status = await window.electronAPI.installerCheck(this.projectDir)
     if (!status.configured) {
-      const ok = confirm(t('bottomPanel.installer_confirm_setup'))
+      const ok = await window.electronAPI.confirmDialog(t('bottomPanel.installer_confirm_setup'))
       if (!ok) return
       try {
         this.appendTerminal(t('bottomPanel.installer_configuring'), 'system')
@@ -169,7 +169,7 @@ export class BottomPanel {
    */
   private async exportNative(mode = 'pc'): Promise<void> {
     if (!this.projectDir) {
-      alert(t('bottomPanel.export_no_project'))
+      void window.electronAPI.infoDialog(t('bottomPanel.export_no_project'))
       return
     }
     // Sem guard de Play: o export roda um processo Node à parte que só LÊ o

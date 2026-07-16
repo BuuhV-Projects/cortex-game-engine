@@ -288,6 +288,13 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
 
 ## 8. Armadilhas conhecidas (já mordemos)
 
+- **`window.confirm`/`alert` quebram o foco do renderer no Electron** — os diálogos
+  síncronos do Chromium fazem os inputs da página pararem de aceitar teclado até a
+  janela perder e recuperar o foco (foi o "input do chat travado até CTRL+R" após
+  limpar o histórico). No renderer da IDE use **sempre** a ponte IPC:
+  `window.electronAPI.confirmDialog/infoDialog/errorDialog` (handlers `dialog:confirm`/
+  `dialog:info`/`dialog:error` no `electron/main.ts`, via `dialog.showMessageBox`/
+  `showErrorBox` nativos, que não têm o bug).
 - **Electron não entrega drag-and-drop nativo pra DENTRO do iframe do Preview** —
   arrastar da IDE pro viewport mostra 🚫 e o `drop` nunca dispara no documento do
   jogo (em browser puro funciona). Qualquer feature de DnD IDE→viewport precisa

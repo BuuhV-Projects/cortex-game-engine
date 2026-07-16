@@ -20,6 +20,11 @@ vi.mock('electron', () => ({
     on: vi.fn(),
     quit: vi.fn(),
   },
+  dialog: {
+    showMessageBox: vi.fn(),
+    showErrorBox: vi.fn(),
+    showOpenDialog: vi.fn(),
+  },
   BrowserWindow: vi.fn(() => ({
     loadURL: vi.fn(),
     loadFile: vi.fn(),
@@ -42,7 +47,7 @@ vi.mock('child_process', () => ({
 
 // ── Imports (após mocks) ──────────────────────────────────────────────────────
 
-import { ipcMain, app } from 'electron'
+import { ipcMain, app, dialog } from 'electron'
 import * as fsp from 'fs/promises'
 
 // Efeito colateral: registra todos os ipcMain.handle do main process
@@ -212,5 +217,79 @@ describe('fs:readDir', () => {
       { name: 'main.ts', path: path.join(dirPath, 'main.ts'), isDir: false },
       { name: 'src', path: path.join(dirPath, 'src'), isDir: true },
     ])
+  })
+})
+
+// Diálogos nativos via IPC (substituem window.confirm/alert no renderer, que
+// quebram o foco do Chromium no Electron — input travado até re-focar).
+describe('dialog:confirm', () => {
+  afterEach(() => {
+    vi.mocked(dialog.showMessageBox).mockReset()
+  })
+
+  it('retorna true quando o usuário confirma (response 0)', async () => {
+    vi.mocked(dialog.showMessageBox).mockResolvedValueOnce({ response: 0 } as never)
+    const handler = getIpcHandler('dialog:confirm')
+    await expect(handler(null, 'Limpar histórico?')).resolves.toBe(true)
+    expect(vi.mocked(dialog.showMessageBox)).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Limpar histórico?', cancelId: 1 }),
+    )
+  })
+
+  it('retorna false quando o usuário cancela (response 1)', async () => {
+    vi.mocked(dialog.showMessageBox).mockResolvedValueOnce({ response: 1 } as never)
+    const handler = getIpcHandler('dialog:confirm')
+    await expect(handler(null, 'Limpar histórico?')).resolves.toBe(false)
+  })
+
+  it('retorna false sem abrir diálogo para mensagem inválida', async () => {
+    const handler = getIpcHandler('dialog:confirm')
+    await expect(handler(null, '')).resolves.toBe(false)
+    await expect(handler(null, 42)).resolves.toBe(false)
+    expect(vi.mocked(dialog.showMessageBox)).not.toHaveBeenCalled()
+  })
+})
+
+describe('dialog:error', () => {
+  afterEach(() => {
+    vi.mocked(dialog.showErrorBox).mockReset()
+  })
+
+  it('mostra showErrorBox com título e mensagem', async () => {
+    const handler = getIpcHandler('dialog:error')
+    await handler(null, 'Erro ao apagar', 'ENOENT')
+    expect(vi.mocked(dialog.showErrorBox)).toHaveBeenCalledWith('Erro ao apagar', 'ENOENT')
+  })
+
+  it('usa título default quando o título é inválido e ignora mensagem inválida', async () => {
+    const handler = getIpcHandler('dialog:error')
+    await handler(null, '', 'falhou')
+    expect(vi.mocked(dialog.showErrorBox)).toHaveBeenCalledWith('Erro', 'falhou')
+
+    vi.mocked(dialog.showErrorBox).mockClear()
+    await handler(null, 'Título', 123)
+    expect(vi.mocked(dialog.showErrorBox)).not.toHaveBeenCalled()
+  })
+})
+
+describe('dialog:info', () => {
+  afterEach(() => {
+    vi.mocked(dialog.showMessageBox).mockReset()
+  })
+
+  it('mostra showMessageBox tipo info com a mensagem', async () => {
+    vi.mocked(dialog.showMessageBox).mockResolvedValueOnce({ response: 0 } as never)
+    const handler = getIpcHandler('dialog:info')
+    await handler(null, 'Abra um projeto primeiro.')
+    expect(vi.mocked(dialog.showMessageBox)).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'info', message: 'Abra um projeto primeiro.' }),
+    )
+  })
+
+  it('ignora mensagem inválida sem abrir diálogo', async () => {
+    const handler = getIpcHandler('dialog:info')
+    await handler(null, '')
+    await handler(null, null)
+    expect(vi.mocked(dialog.showMessageBox)).not.toHaveBeenCalled()
   })
 })

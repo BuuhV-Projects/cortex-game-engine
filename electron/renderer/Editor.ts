@@ -281,7 +281,7 @@ export class Editor {
       } else if (isImageFile(name) || isMarkdownFile(name)) {
         if (this.previewDocPath === path) this.hideImagePreview()
       } else {
-        this.closeTab(path)
+        void this.closeTab(path)
       }
     })
 
@@ -569,7 +569,7 @@ export class Editor {
       el.addEventListener('mousedown', (e) => {
         if (e.button === 1) {
           e.preventDefault()
-          this.closeTab(tab.path)
+          void this.closeTab(tab.path)
         }
       })
 
@@ -589,7 +589,7 @@ export class Editor {
       close.title = 'Fechar'
       close.addEventListener('click', (e) => {
         e.stopPropagation()
-        this.closeTab(tab.path)
+        void this.closeTab(tab.path)
       })
 
       el.appendChild(label)
@@ -612,12 +612,14 @@ export class Editor {
     this.renderTabs()
   }
 
-  private closeTab(path: string): void {
+  private async closeTab(path: string): Promise<void> {
     const tab = this.tabs.get(path)
     if (!tab) return
 
     if (tab.dirty) {
-      const ok = window.confirm(
+      // Diálogo nativo via IPC — window.confirm quebra o foco do renderer
+      // no Electron (teclado para de funcionar até re-focar a janela).
+      const ok = await window.electronAPI.confirmDialog(
         `"${tab.name}" tem alterações não salvas. Fechar mesmo assim?`,
       )
       if (!ok) return

@@ -44,6 +44,16 @@ export interface ElectronAPI {
   move(src: string, dest: string): Promise<void>
   deletePath(targetPath: string): Promise<void>
   selectDirectory(): Promise<string | null>
+  /**
+   * Confirmação nativa (dialog.showMessageBox). Use no lugar de
+   * window.confirm — o confirm síncrono quebra o foco do renderer no
+   * Electron (input para de aceitar teclado até re-focar a janela).
+   */
+  confirmDialog(message: string): Promise<boolean>
+  /** Aviso de erro nativo (dialog.showErrorBox). Use no lugar de window.alert. */
+  errorDialog(title: string, message: string): Promise<void>
+  /** Aviso informativo nativo (showMessageBox). Use no lugar de window.alert. */
+  infoDialog(message: string): Promise<void>
   readEngineTypes(): Promise<Array<{ path: string; content: string; navigable: boolean }>>
 
   // Execução de projeto (Play/Stop)

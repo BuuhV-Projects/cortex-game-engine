@@ -159,7 +159,7 @@ export class ProjectManager {
     }
 
     if (!this.selectedDir) {
-      alert(t('projectManager.alert_select_folder'))
+      void window.electronAPI.infoDialog(t('projectManager.alert_select_folder'))
       return
     }
 
@@ -179,7 +179,7 @@ export class ProjectManager {
       )
     } catch (err) {
       this.setBusy(false) // reabilita pra tentar de novo
-      alert(`${t('projectManager.error_create')} ${String(err)}`)
+      void window.electronAPI.errorDialog(t('projectManager.error_create'), String(err))
     }
   }
 }

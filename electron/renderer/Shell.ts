@@ -319,14 +319,16 @@ export class Shell {
   private async revendorEngine(): Promise<void> {
     const dir = localStorage.getItem('fileTree_projectDir')
     if (!dir) {
-      alert(tr('menu.revendor_no_project', 'Abra um projeto primeiro.'))
+      void window.electronAPI.infoDialog(tr('menu.revendor_no_project', 'Abra um projeto primeiro.'))
       return
     }
     try {
       await window.electronAPI.revendorEngine?.(dir)
-      alert(tr('menu.revendor_done', 'Engine re-vendorizado. Rode o Play de novo pra usar a versão nova.'))
+      void window.electronAPI.infoDialog(
+        tr('menu.revendor_done', 'Engine re-vendorizado. Rode o Play de novo pra usar a versão nova.'),
+      )
     } catch (err) {
-      alert(`${tr('menu.revendor_fail', 'Falha ao re-vendorizar')}: ${String(err)}`)
+      void window.electronAPI.errorDialog(tr('menu.revendor_fail', 'Falha ao re-vendorizar'), String(err))
     }
   }
 

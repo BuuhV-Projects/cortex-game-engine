@@ -79,6 +79,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectDirectory: () =>
     ipcRenderer.invoke('dialog:openDirectory'),
 
+  // Confirmação/erro nativos (showMessageBox/showErrorBox). Use SEMPRE estes
+  // no lugar de window.confirm/alert — os diálogos síncronos do Chromium
+  // quebram o foco do renderer no Electron (input para de aceitar teclado).
+  confirmDialog: (message: string): Promise<boolean> =>
+    ipcRenderer.invoke('dialog:confirm', message),
+  errorDialog: (title: string, message: string) =>
+    ipcRenderer.invoke('dialog:error', title, message),
+  infoDialog: (message: string) =>
+    ipcRenderer.invoke('dialog:info', message),
+
   // Types do engine para alimentar o Monaco
   readEngineTypes: () =>
     ipcRenderer.invoke('engine:readTypes'),

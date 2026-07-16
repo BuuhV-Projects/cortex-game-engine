@@ -210,7 +210,7 @@ export class Chat {
    */
   private async handlePastedImage(file: File): Promise<void> {
     if (!this.projectDir) {
-      alert(t('chat.open_first_for_paste'))
+      void window.electronAPI.infoDialog(t('chat.open_first_for_paste'))
       return
     }
     try {
@@ -229,7 +229,7 @@ export class Chat {
       this.renderAttachments()
       this.inputEl?.focus()
     } catch (err) {
-      alert(`${t('chat.error_paste')} ${String(err)}`)
+      void window.electronAPI.errorDialog(t('chat.error_paste'), String(err))
     }
   }
 
@@ -318,7 +318,9 @@ export class Chat {
   /** Apaga o histórico do projeto ativo e limpa a UI. */
   private async clearHistory(): Promise<void> {
     if (!this.projectDir) return
-    const ok = window.confirm(t('chat.confirm_clear'))
+    // Diálogo nativo via IPC — window.confirm quebra o foco do renderer no
+    // Electron (o input ficava travado até um CTRL+R depois de limpar).
+    const ok = await window.electronAPI.confirmDialog(t('chat.confirm_clear'))
     if (!ok) return
     try {
       await window.electronAPI.clearChatHistory(this.projectDir)
@@ -342,9 +344,7 @@ export class Chat {
     }
     if (this.sendBtn) this.sendBtn.disabled = false
     this.updateInputState()
-    // Foco no próximo tick — alguns navegadores ignoram focus() dentro do
-    // mesmo task do confirm().
-    setTimeout(() => this.inputEl?.focus(), 0)
+    this.inputEl?.focus()
   }
 
   private buildShell(): void {
