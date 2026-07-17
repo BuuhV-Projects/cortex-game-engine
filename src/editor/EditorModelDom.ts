@@ -35,7 +35,8 @@ function structureKey(model: InspectorModel): string {
     // Opções de select entram na chave: uma lista dinâmica (ex.: texturas do
     // projeto após importar) precisa de rebuild — o updater só troca o VALOR.
     const dyn = f.kind === 'select' ? `|${f.options.map((o) => o.value).join('§')}` : '';
-    parts.push(`${f.id}|${f.kind}${dyn}`);
+    // `disabled` também: mudar multi↔single precisa reconstruir (re-habilitar).
+    parts.push(`${f.id}|${f.kind}${dyn}${f.disabled ? '|D' : ''}`);
   }
   return parts.join(',');
 }
@@ -253,7 +254,16 @@ export function createInspectorView(cb: InspectorViewCallbacks): InspectorView {
         head.style.cssText = HEAD;
         root.append(head);
       }
-      for (const f of section.fields) root.append(buildField(f));
+      for (const f of section.fields) {
+        const el = buildField(f);
+        // Desativado (multi-seleção: campo que só editaria o primário): acinzenta
+        // e bloqueia interação — o que fica ativo é o que aplica ao conjunto.
+        if (f.disabled) {
+          el.style.opacity = '0.4';
+          el.style.pointerEvents = 'none';
+        }
+        root.append(el);
+      }
     }
   }
 

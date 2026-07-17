@@ -195,4 +195,31 @@ describe('describeInspector — multi-seleção', () => {
     expect([b.position.x, b.position.y, b.position.z]).toEqual([1, 2, 3]);
     expect([a.position.x, a.position.y, a.position.z]).toEqual([0, 0, 0]);
   });
+
+  it('campos que NÃO aplicam ao conjunto aparecem DESATIVADOS (disabled); os de lote não', () => {
+    const reg = createObjectRegistry();
+    const a = namedMesh('A');
+    const b = namedMesh('B');
+    const { api } = fakeMaterialApi();
+    const { model } = describeInspector(b, { materialApi: api }, reg, [a, b]);
+
+    // Por-objeto: transform desativado.
+    expect(field(model, 'pos')?.disabled).toBe(true);
+    expect(field(model, 'rot')?.disabled).toBe(true);
+    expect(field(model, 'size')?.disabled).toBe(true);
+    // Lote: sombra/matte/shader seguem ativos.
+    expect(field(model, 'cast')?.disabled).toBeUndefined();
+    expect(field(model, 'matte')?.disabled).toBeUndefined();
+    expect(field(model, 'shader')?.disabled).toBeUndefined();
+    // Notas seguem legíveis (não são editáveis — não precisam acinzentar).
+    expect(field(model, 'multiNote')?.disabled).toBeUndefined();
+  });
+
+  it('com um só selecionado nenhum campo fica desativado', () => {
+    const reg = createObjectRegistry();
+    const a = namedMesh('A');
+    const { api } = fakeMaterialApi();
+    const { model } = describeInspector(a, { materialApi: api }, reg, [a]);
+    expect(allFields(model).some((f) => f.disabled)).toBe(false);
+  });
 });

@@ -52,6 +52,8 @@ interface Field {
   tone?: 'muted' | 'info'
   accept?: string
   placeholder?: string
+  /** Desativado (multi-seleção: campo que só editaria o primário) — acinzenta e bloqueia. */
+  disabled?: boolean
 }
 interface Section {
   title?: string
@@ -306,7 +308,8 @@ export class EditorPanels {
         // forçam rebuild — o updater só atualiza o VALOR, não a lista.
         : f.kind === 'select' ? `|${(f.options ?? []).map((o) => o.value).join('§')}`
         : ''
-      parts.push(`${f.id}|${f.kind}${dyn}`)
+      // `disabled` na chave: multi↔single precisa reconstruir (re-habilitar campos).
+      parts.push(`${f.id}|${f.kind}${dyn}${f.disabled ? '|D' : ''}`)
     }
     return parts.join(',')
   }
@@ -346,7 +349,7 @@ export class EditorPanels {
         const next = fs[i + 1]
         // select + botão de ação (▶/⏹) → uma linha só (select cresce, botão compacto).
         if (f.kind === 'select' && next && next.kind === 'button' && isActionBtn(next.label)) {
-          body.append(this.buildSelectAction(f, next))
+          body.append(this.withDisabled(this.buildSelectAction(f, next), f))
           i += 2
           continue
         }
@@ -354,10 +357,10 @@ export class EditorPanels {
         if (f.kind === 'button' && isActionBtn(f.label)) {
           const group: Field[] = []
           while (i < fs.length && fs[i]!.kind === 'button' && isActionBtn(fs[i]!.label)) group.push(fs[i++]!)
-          body.append(h('div', { class: 'cge-btn-row' }, ...group.map((g) => this.buildButton(g, true))))
+          body.append(h('div', { class: 'cge-btn-row' }, ...group.map((g) => this.withDisabled(this.buildButton(g, true), g))))
           continue
         }
-        body.append(this.buildField(f))
+        body.append(this.withDisabled(this.buildField(f), f))
         i++
       }
       const sec = h('div', { class: 'sec' })
@@ -367,6 +370,15 @@ export class EditorPanels {
       sec.append(body)
       this.inspectorEl.append(sec)
     }
+  }
+
+  /** Acinzenta e bloqueia um campo desativado (multi-seleção: só edita o primário). */
+  private withDisabled(el: HTMLElement, f: Field): HTMLElement {
+    if (f.disabled) {
+      el.style.opacity = '0.4'
+      el.style.pointerEvents = 'none'
+    }
+    return el
   }
 
   /** Linha: rótulo + (select que cresce + botão de ação compacto ▶/⏹). */

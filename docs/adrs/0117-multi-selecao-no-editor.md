@@ -44,6 +44,12 @@ três pontos de entrada: viewport (`ObjectEditSystem`), outliner in-canvas
    - No Shader, cada alvo **preserva os próprios parâmetros** quando já tem o
      mesmo preset (mudar a cor de 5 unlit não apaga o contorno de cada um);
      alvo com preset diferente é convertido herdando a config derivada do primário.
+   - Os campos que **não** aplicam ao conjunto aparecem **desativados e
+     acinzentados** (`InspectorField.disabled` — opacidade 0.4 + sem interação nos
+     dois renderizadores), em vez de editar silenciosamente só o primário: o que
+     está ativo é exatamente o que vale pra todos. Notas seguem legíveis. O
+     `disabled` entra na chave de estrutura dos renderizadores (multi↔single
+     precisa de rebuild pra re-habilitar).
 4. **`describeOutliner(..., selectedItems?)`** marca todo o conjunto (não só o
    primário) nos dois renderizadores.
 

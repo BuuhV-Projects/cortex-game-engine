@@ -101,7 +101,7 @@ export interface TextField {
 }
 
 /** União de todos os tipos de campo do inspector. */
-export type InspectorField =
+export type InspectorField = (
   | Vec3Field
   | NumberField
   | CheckboxField
@@ -110,7 +110,15 @@ export type InspectorField =
   | ButtonField
   | NoteField
   | FileField
-  | TextField;
+  | TextField
+) & {
+  /**
+   * Campo desativado (acinzentado, sem edição). Usado na multi-seleção: as
+   * seções que só editam o primário aparecem desabilitadas — o que está ativo
+   * é exatamente o que aplica ao conjunto inteiro.
+   */
+  disabled?: boolean;
+};
 
 /** Seção do inspector (um grupo de campos com título opcional). */
 export interface InspectorSection {
@@ -326,7 +334,7 @@ export function describeInspector(
       fields: [{
         kind: 'note',
         id: fid('multiNote'),
-        text: `${multi.length} objetos selecionados — Sombra, Material, Shader e Física (tipo) aplicam a todos; as demais seções editam só o primário.`,
+        text: `${multi.length} objetos selecionados — Sombra, Material, Shader e Física (tipo) aplicam a todos; o resto fica desativado (selecione um objeto só pra editar).`,
         tone: 'info',
       }],
     });
@@ -1093,6 +1101,21 @@ export function describeInspector(
       });
     }
     if (fields.length) sections.push({ title: 'Luz', fields });
+  }
+
+  // Multi-seleção: o que não aplica ao conjunto aparece DESATIVADO (acinzentado)
+  // em vez de editar silenciosamente só o primário — o usuário vê na hora o que
+  // vale pra todos. Notas seguem legíveis (são informativas, não editáveis).
+  if (multi) {
+    const batchable = new Set(
+      ['cast', 'recv', 'matte', 'shader', 'matColor', 'matTextured', 'matTwoSided', 'matTransp', 'matOutline', 'matSteps', 'physType'].map(fid),
+    );
+    for (const s of sections) {
+      for (const f of s.fields) {
+        if (f.kind === 'note') continue;
+        if (!batchable.has(f.id)) f.disabled = true;
+      }
+    }
   }
 
   const title = obj.name || `(${obj.type})`;
