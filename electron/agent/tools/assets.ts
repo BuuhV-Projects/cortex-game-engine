@@ -1,9 +1,10 @@
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
-import { join, relative } from 'path'
+import { join, relative, resolve, isAbsolute } from 'path'
 import { existsSync } from 'fs'
 import { mkdir, writeFile, readFile } from 'fs/promises'
 import { renderAssetThumbnails, type AssetThumbnail } from '../assets/renderThumbnails.js'
+import { measureGlb } from '../assets/measureGlb.js'
 import { toCompactImage, type CompactImage } from '../imageCompress.js'
 
 /** Semântica de um asset lida do `kit.json` (design system, ADR-0053). */
@@ -185,6 +186,56 @@ export function createAssetToolServer(projectRoot: string) {
                 text: `${result.note}\n\n${table}${onDemandNote}`,
               },
             ],
+          }
+        },
+      ),
+      tool(
+        'measure_glb',
+        'Mede as DIMENSÕES (bounding box em metros, eixos L×A×P) de arquivos .glb ' +
+          'específicos, lendo o binário direto (Node puro — instantâneo, SEM Blender). ' +
+          'Use quando só precisar das medidas de um ou poucos assets (conferir proporção ' +
+          'em metros, espaçar/escalar uma peça) — é muito mais barato que `inspect_assets` ' +
+          '(que renderiza thumbnails de um diretório inteiro via Blender). Atenção: mesh ' +
+          'skinned (personagem rigado) reporta o bbox da BIND POSE, que pode não bater ' +
+          'com a pose animada.',
+        {
+          paths: z
+            .array(z.string().min(1))
+            .min(1)
+            .max(50)
+            .describe('Caminhos dos .glb, relativos à raiz do projeto (ex.: ["assets/bridge.glb"]).'),
+        },
+        async ({ paths }) => {
+          const lines: string[] = [
+            '| Asset | Tamanho (L×A×P, m) | min (x,y,z) | max (x,y,z) | Obs |',
+            '| --- | --- | --- | --- | --- |',
+          ]
+          const fmt = (n: number): string => n.toFixed(2)
+          let anyOk = false
+          for (const p of paths) {
+            const absolute = isAbsolute(p) ? p : resolve(projectRoot, p)
+            const rel = relative(projectRoot, absolute).replace(/\\/g, '/')
+            if (rel.startsWith('..') || isAbsolute(rel)) {
+              lines.push(`| ${p} | — | — | — | fora do projeto |`)
+              continue
+            }
+            try {
+              const m = measureGlb(await readFile(absolute))
+              anyOk = true
+              const obs = m.hasSkinnedMesh ? '⚠️ skinned (bbox = bind pose)' : '—'
+              lines.push(
+                `| ${rel} | ${fmt(m.size.x)} × ${fmt(m.size.y)} × ${fmt(m.size.z)} ` +
+                  `| ${fmt(m.min.x)}, ${fmt(m.min.y)}, ${fmt(m.min.z)} ` +
+                  `| ${fmt(m.max.x)}, ${fmt(m.max.y)}, ${fmt(m.max.z)} | ${obs} |`,
+              )
+            } catch (err) {
+              const message = err instanceof Error ? err.message : String(err)
+              lines.push(`| ${rel} | — | — | — | erro: ${message} |`)
+            }
+          }
+          return {
+            content: [{ type: 'text' as const, text: lines.join('\n') }],
+            ...(anyOk ? {} : { isError: true as const }),
           }
         },
       ),

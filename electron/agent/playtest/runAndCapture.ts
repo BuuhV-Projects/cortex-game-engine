@@ -49,6 +49,22 @@ export interface PlaytestOptions {
   /** Timeout esperando o vite imprimir a URL. Default 30000ms. */
   urlTimeoutMs?: number
   /**
+   * Espera DETERMINÍSTICA por boot: expressão JS avaliada na página a cada
+   * 500ms até virar truthy (ex.: `window.__bootStage === 'pronto'`), em vez do
+   * `waitMs` cego. Roda ANTES do `waitMs` (que vira só o settle de frames).
+   * No timeout, o diagnóstico (último valor + recursos de rede pendentes) vai
+   * pras mensagens de console e a captura segue mesmo assim.
+   */
+  waitFor?: string
+  /** Timeout da espera `waitFor`. Default 60000ms. */
+  waitForTimeoutMs?: number
+  /**
+   * JS arbitrário executado após o boot (waitFor/waitMs), ANTES das actions —
+   * ex.: teleportar o player pra um checkpoint ou ligar câmera overview antes
+   * da foto. O valor retornado vai pras mensagens de console (`[eval] …`).
+   */
+  evalJs?: string
+  /**
    * Sequência de input pra "jogar" o jogo. Executada após o `waitMs` inicial.
    * Se nenhuma ação `screenshot` for incluída, um screenshot é tirado no fim.
    */
@@ -112,6 +128,33 @@ function killTree(proc: ChildProcess): void {
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
+}
+
+/**
+ * Faz polling de `probe` até retornar truthy ou estourar `timeoutMs`.
+ * Exceções do probe contam como falsy (a página pode ainda não ter o global).
+ * Devolve `{ ok, lastValue, elapsedMs }` — puro sobre as dependências
+ * injetadas, testável sem Electron.
+ */
+export async function pollUntilTruthy(
+  probe: () => Promise<unknown>,
+  timeoutMs: number,
+  intervalMs = 500,
+  sleep: (ms: number) => Promise<void> = delay,
+  now: () => number = Date.now,
+): Promise<{ ok: boolean; lastValue: unknown; elapsedMs: number }> {
+  const t0 = now()
+  let lastValue: unknown
+  for (;;) {
+    try {
+      lastValue = await probe()
+      if (lastValue) return { ok: true, lastValue, elapsedMs: now() - t0 }
+    } catch (err) {
+      lastValue = `(exceção: ${err instanceof Error ? err.message : String(err)})`
+    }
+    if (now() - t0 >= timeoutMs) return { ok: false, lastValue, elapsedMs: now() - t0 }
+    await sleep(intervalMs)
+  }
 }
 
 function sendKey(wc: WebContents, type: 'keyDown' | 'keyUp', key: string): void {
@@ -254,8 +297,40 @@ export async function runAndCaptureGame(
     win.focus()
     wc.focus()
 
-    // 3) Espera o init assíncrono (WebGPU) + assets + alguns frames.
+    // 3a) Espera determinística (opcional): polling da expressão `waitFor` até
+    //     truthy. No timeout, coleta diagnóstico (último valor + recursos de
+    //     rede pendentes) e SEGUE pra captura — a foto parcial + console ainda
+    //     ajudam o modelo a diagnosticar o boot travado.
+    let bootNote = ''
+    if (opts.waitFor) {
+      const timeoutMs = opts.waitForTimeoutMs ?? 60000
+      const probe = (): Promise<unknown> => wc.executeJavaScript(opts.waitFor!, true)
+      const poll = await pollUntilTruthy(probe, timeoutMs)
+      if (poll.ok) {
+        bootNote = ` waitFor OK em ${(poll.elapsedMs / 1000).toFixed(1)}s.`
+      } else {
+        bootNote = ` ⚠️ waitFor NÃO virou truthy em ${timeoutMs}ms (último valor: ${JSON.stringify(poll.lastValue)}).`
+        const pendingExpr =
+          `performance.getEntriesByType('resource').slice(-8)` +
+          `.map(r => r.name.split('/').pop() + (r.responseEnd ? '' : ' [PENDENTE]')).join(', ')`
+        const pending = await wc.executeJavaScript(pendingExpr, true).catch(() => '(indisponível)')
+        pushMsg(`[waitFor-timeout] últimos recursos de rede: ${String(pending)}`)
+      }
+    }
+
+    // 3b) Espera o init assíncrono (WebGPU) + assets + alguns frames.
     await delay(waitMs)
+
+    // 3c) Eval pós-boot (opcional): teleporte pra checkpoint, câmera overview,
+    //     disparo de evento — qualquer setup antes do input/foto.
+    if (opts.evalJs) {
+      try {
+        const value: unknown = await wc.executeJavaScript(opts.evalJs, true)
+        if (value !== undefined) pushMsg(`[eval] ${JSON.stringify(value)}`)
+      } catch (err) {
+        pushMsg(`[eval-error] ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
 
     // 4) Executa o input (se houver). Os keydown/keyup chegam ao InputManager.
     await runActions(wc, actions, screenshots)
@@ -272,7 +347,7 @@ export async function runAndCaptureGame(
       screenshots,
       consoleMessages: messages,
       ok: true,
-      note: `Jogo carregado em ${viteUrl} e capturado (${width}x${height}).${playedNote}`,
+      note: `Jogo carregado em ${viteUrl} e capturado (${width}x${height}).${bootNote}${playedNote}`,
       viteUrl,
     }
   } catch (err) {

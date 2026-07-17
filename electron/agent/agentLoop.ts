@@ -216,7 +216,10 @@ Siga o fluxo:
    thumbnails ficam salvos em \`.cortex/asset-thumbs/\`. **Imagem só sob demanda** \
    — quando for posicionar uma peça específica e precisar VER o que ela é, dê \
    \`Read\` no thumbnail DAQUELA peça (uma ou poucas por vez). Nunca leia os \
-   thumbnails em massa: cada imagem fica no contexto e é reenviada todo turno.
+   thumbnails em massa: cada imagem fica no contexto e é reenviada todo turno. \
+   Pra medir UM ou POUCOS .glb específicos (conferir proporção em metros, ajustar \
+   escala/espaçamento), use \`measure_glb\` (instantâneo, sem Blender) em vez de \
+   re-rodar \`inspect_assets\` no diretório inteiro.
 
 2. **Procure a cena-referência do pacote.** Pacotes de assets quase sempre \
    vêm com uma imagem de preview/demo (\`preview.png\`, \`screenshot\`, \`cover\`, \
@@ -396,7 +399,15 @@ passos numerados e pontos de atenção/decisões. Use markdown.
 - Seja específico e conciso. Termine com o plano — a implementação acontece \
 depois que o usuário aprovar o plano.`
 
-const APPROVED_AUTO_TOOLS = new Set(['Read', 'Glob', 'Grep', 'NotebookRead'])
+// `measure_glb` entra aqui por ser leitura pura (parseia o .glb em memória):
+// roda sem card de aprovação e continua disponível no modo plan.
+const APPROVED_AUTO_TOOLS = new Set([
+  'Read',
+  'Glob',
+  'Grep',
+  'NotebookRead',
+  'mcp__cortex-assets__measure_glb',
+])
 
 export interface ChatMessage {
   role: 'user' | 'assistant'

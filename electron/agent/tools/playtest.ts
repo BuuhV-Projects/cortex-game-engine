@@ -37,6 +37,22 @@ export function createPlaytestToolServer(projectRoot: string) {
             .max(15000)
             .optional()
             .describe('Espera (ms) após o load, antes do input/captura, pra dar tempo de assets/init. Default 3000.'),
+          wait_for: z
+            .string()
+            .optional()
+            .describe(
+              'Espera DETERMINÍSTICA: expressão JS avaliada na página a cada 500ms até virar ' +
+                'truthy (ex.: "window.__bootStage === \'pronto\'" se o jogo expõe um marco de boot). ' +
+                'Prefira isso a aumentar waitMs às cegas. No timeout (60s), o diagnóstico vai pro ' +
+                'console e a captura segue mesmo assim.',
+            ),
+          eval_js: z
+            .string()
+            .optional()
+            .describe(
+              'JS executado após o boot, ANTES das actions — ex.: teleportar o player pra um ' +
+                'checkpoint ou ativar câmera overview antes da foto. O retorno aparece no console ([eval]).',
+            ),
           width: z.number().int().min(160).max(3840).optional().describe('Largura da captura. Default 1280.'),
           height: z.number().int().min(120).max(2160).optional().describe('Altura da captura. Default 720.'),
           actions: z
@@ -71,11 +87,13 @@ export function createPlaytestToolServer(projectRoot: string) {
                 '{type:"screenshot"},{type:"release",key:"ArrowRight"}].',
             ),
         },
-        async ({ waitMs, width, height, actions }) => {
+        async ({ waitMs, width, height, actions, wait_for, eval_js }) => {
           const result = await runAndCaptureGame(projectRoot, {
             waitMs,
             width,
             height,
+            waitFor: wait_for,
+            evalJs: eval_js,
             actions: actions as InputAction[] | undefined,
           })
 

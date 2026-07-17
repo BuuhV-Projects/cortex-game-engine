@@ -272,6 +272,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   `save_baseline` final (a checagem usa o baseline antigo como contraprova).
   Conhecimento aprendido (`validation-rules.json` + `scene-learnings.md`) é
   versionado; o resto de `.cortex/` é cache (gitignore do template).
+- **Percepção rápida + playtest determinístico** (ADR-0116): `measure_glb`
+  (server `cortex-assets`) mede bounding box de `.glb` específicos em **Node
+  puro** (`electron/agent/assets/measureGlb.ts`, sem Blender; marca skinned =
+  bbox de bind pose) — leitura pura, roda sem aprovação e no modo plan. O
+  `playtest_game` aceita `wait_for` (expressão JS até truthy, com diagnóstico
+  de recursos pendentes no timeout — em vez de inflar `waitMs` no chute) e
+  `eval_js` (setup pós-boot: teleporte/câmera overview antes da foto).
 
 ## 7. Fluxo de ponta a ponta (um nó vira jogo)
 
