@@ -81,9 +81,9 @@ export function createEditorOutliner(options: EditorOutlinerOptions): EditorOutl
   header.append(title, refreshBtn);
 
   const view = createOutlinerView({
-    onSelect: (id) => {
+    onSelect: (id, additive) => {
       const obj = registry.get(id);
-      if (obj) selection.requestSelect(obj);
+      if (obj) selection.requestSelect(obj, { additive });
     },
     onFocus: (id) => {
       const obj = registry.get(id);
@@ -95,7 +95,7 @@ export function createEditorOutliner(options: EditorOutlinerOptions): EditorOutl
   parent.appendChild(root);
 
   function refresh(): void {
-    view.render(describeOutliner(editRoots, registry, selection.current));
+    view.render(describeOutliner(editRoots, registry, selection.current, selection.items));
   }
 
   refreshBtn.addEventListener('click', refresh);

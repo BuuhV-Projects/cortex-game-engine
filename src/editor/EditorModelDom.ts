@@ -276,7 +276,8 @@ export interface OutlinerView {
 }
 
 export interface OutlinerViewCallbacks {
-  onSelect(id: string): void;
+  /** `additive` = Ctrl/Cmd+click (multi-seleção: alterna o item no conjunto). */
+  onSelect(id: string, additive: boolean): void;
   onFocus(id: string): void;
 }
 
@@ -296,9 +297,12 @@ export function createOutlinerView(cb: OutlinerViewCallbacks): OutlinerView {
       el.addEventListener('mouseleave', () => {
         if (!item.selected) el.style.background = 'transparent';
       });
-      el.addEventListener('click', () => {
-        cb.onSelect(item.id);
-        cb.onFocus(item.id);
+      el.addEventListener('click', (e) => {
+        const additive = e.ctrlKey || e.metaKey;
+        cb.onSelect(item.id, additive);
+        // Ctrl+click não enquadra a câmera — você está montando um conjunto,
+        // não navegando até o objeto.
+        if (!additive) cb.onFocus(item.id);
       });
       root.append(el);
     }

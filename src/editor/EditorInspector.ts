@@ -583,13 +583,13 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
   root.append(view.root);
 
   function rebuild(): void {
-    const d = describeInspector(selection.current, ctx, registry);
+    const d = describeInspector(selection.current, ctx, registry, selection.items);
     handlers = d.handlers;
     view.render(d.model);
   }
 
   function refresh(): void {
-    const d = describeInspector(selection.current, ctx, registry);
+    const d = describeInspector(selection.current, ctx, registry, selection.items);
     handlers = d.handlers;
     if (view.sameStructure(d.model)) view.refreshValues(d.model);
     else view.render(d.model);

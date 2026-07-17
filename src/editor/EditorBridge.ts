@@ -95,8 +95,8 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
     if (!bridged) return;
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     if (!force && now - lastSentAt < MIN_INTERVAL_MS) return;
-    const outliner = describeOutliner(editRoots, registry, selection.current);
-    const described = describeInspector(selection.current, ctx, registry);
+    const outliner = describeOutliner(editRoots, registry, selection.current, selection.items);
+    const described = describeInspector(selection.current, ctx, registry, selection.items);
     lastHandlers = described.handlers;
     const msg = {
       source: ENGINE,
@@ -124,7 +124,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
   };
 
   const onMessage = (ev: MessageEvent): void => {
-    const data = ev.data as { source?: string; type?: string; id?: string; value?: unknown; active?: boolean; mode?: string; kind?: string; url?: string; nx?: number; ny?: number } | null;
+    const data = ev.data as { source?: string; type?: string; id?: string; additive?: boolean; value?: unknown; active?: boolean; mode?: string; kind?: string; url?: string; nx?: number; ny?: number } | null;
     if (!data || data.source !== IDE) return;
     switch (data.type) {
       case 'ack':
@@ -141,7 +141,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         break;
       case 'select': {
         const obj = data.id ? registry.get(data.id) : null;
-        selection.requestSelect(obj ?? null);
+        selection.requestSelect(obj ?? null, { additive: data.additive === true });
         break;
       }
       case 'focus': {

@@ -128,6 +128,15 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   declarativo** (seções + campos + handlers), sem DOM. Fonte ÚNICA pros dois
   renderizadores: o painel in-canvas (`EditorInspector`/`EditorModelDom`) e os
   painéis nativos da IDE.
+- **Multi-seleção (ADR-0117)** — Ctrl/Cmd+click **alterna** o objeto no conjunto
+  (viewport, outliner e hierarquia da IDE — a mensagem `select` da ponte leva
+  `additive`). `EditorSelection.items` guarda o conjunto (último = **primário**,
+  que continua em `current` — consumidores antigos seguem corretos). Gizmo no
+  primário + `BoxHelper` nos demais; mover carrega o grupo (mesmo delta);
+  `Delete` remove todos. No Inspector, **Sombra/Matte/Shader/Física (tipo)**
+  aplicam a TODOS os selecionados válidos (loop pelas `*Api` por-nó — as
+  autorias não mudaram); as demais seções editam só o primário. ⚠️ Ctrl+click no
+  vazio NÃO desseleciona (proposital: errar o clique não descarta o conjunto).
 - **Ponte (ADR-0056, `EditorBridge`)** — quando roda dentro do iframe da IDE,
   publica o `describeInspector`/outliner por **postMessage**; os painéis nativos da
   IDE (`electron/renderer/EditorPanels.ts`) renderizam e mandam de volta `field`/

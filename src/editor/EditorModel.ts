@@ -236,19 +236,24 @@ interface LightLike {
 
 /**
  * Descreve a **hierarquia**: filhos diretos dos `editRoots` (exceto internos do
- * editor), com o item selecionado marcado.
+ * editor), com os itens selecionados marcados (multi-seleção: todo o conjunto).
  */
-function describeNode(obj: Object3D, registry: ObjectRegistry, current: Object3D | null): OutlinerItem {
+function describeNode(
+  obj: Object3D,
+  registry: ObjectRegistry,
+  current: Object3D | null,
+  selectedSet: ReadonlySet<Object3D> | null,
+): OutlinerItem {
   const children: OutlinerItem[] = [];
   for (const c of obj.children) {
     if (isInternal(c)) continue;
-    children.push(describeNode(c, registry, current));
+    children.push(describeNode(c, registry, current, selectedSet));
   }
   return {
     id: registry.idOf(obj),
     label: obj.name || `(${obj.type})`,
     type: obj.type,
-    selected: obj === current,
+    selected: selectedSet ? selectedSet.has(obj) : obj === current,
     children,
   };
 }
@@ -257,12 +262,15 @@ export function describeOutliner(
   editRoots: Object3D[],
   registry: ObjectRegistry,
   current: Object3D | null,
+  /** Conjunto multi-selecionado (`selection.items`) — marca todos, não só o primário. */
+  selectedItems?: readonly Object3D[],
 ): OutlinerModel {
+  const selectedSet = selectedItems && selectedItems.length > 0 ? new Set(selectedItems) : null;
   const items: OutlinerItem[] = [];
   for (const root of editRoots) {
     for (const child of root.children) {
       if (isInternal(child)) continue;
-      items.push(describeNode(child, registry, current));
+      items.push(describeNode(child, registry, current, selectedSet));
     }
   }
   return { items };
@@ -293,15 +301,36 @@ export function describeInspector(
   obj: Object3D | null,
   ctx: InspectorContext,
   registry: ObjectRegistry,
+  /**
+   * Conjunto multi-selecionado (`selection.items`; `obj` é o primário). Com 2+
+   * objetos, as seções **Sombra/Material/Shader/Física (tipo)** aplicam a TODOS
+   * — os campos mostram os valores do primário. As demais seções (transform,
+   * scripts, animação…) seguem editando só o primário.
+   */
+  selectedItems?: readonly Object3D[],
 ): DescribedInspector {
   const handlers: HandlerMap = new Map();
   if (!obj) {
     return { model: { title: '', empty: true, sections: [] }, handlers };
   }
 
+  // Alvos das seções que aplicam em lote (multi-seleção). `null` = seleção simples.
+  const multi = selectedItems && selectedItems.length > 1 && selectedItems.includes(obj) ? selectedItems : null;
+
   const id = registry.idOf(obj);
   const fid = (suffix: string): string => `${id}:${suffix}`;
   const sections: InspectorSection[] = [];
+
+  if (multi) {
+    sections.push({
+      fields: [{
+        kind: 'note',
+        id: fid('multiNote'),
+        text: `${multi.length} objetos selecionados — Sombra, Material, Shader e Física (tipo) aplicam a todos; as demais seções editam só o primário.`,
+        tone: 'info',
+      }],
+    });
+  }
 
   // ── Objeto: nome (ADR-0091) ─────────────────────────────────────────────────
   // Renomeável só quando é nó ADICIONADO no editor (o id vive no overlay e o
@@ -394,13 +423,18 @@ export function describeInspector(
     ],
   });
   // Persistência: via shadowApi (grava em data.shadow — reload mantém); fallback
-  // aplica só ao vivo (uso standalone sem autoria).
-  handlers.set(fid('cast'), (v) =>
-    ctx.shadowApi ? ctx.shadowApi.set(obj, { castShadow: v as boolean }) : setShadows(obj, { castShadow: v as boolean }),
-  );
-  handlers.set(fid('recv'), (v) =>
-    ctx.shadowApi ? ctx.shadowApi.set(obj, { receiveShadow: v as boolean }) : setShadows(obj, { receiveShadow: v as boolean }),
-  );
+  // aplica só ao vivo (uso standalone sem autoria). Multi-seleção: aplica a todos.
+  const shadowTargets = multi ?? [obj];
+  handlers.set(fid('cast'), (v) => {
+    for (const t of shadowTargets)
+      if (ctx.shadowApi) ctx.shadowApi.set(t, { castShadow: v as boolean });
+      else setShadows(t, { castShadow: v as boolean });
+  });
+  handlers.set(fid('recv'), (v) => {
+    for (const t of shadowTargets)
+      if (ctx.shadowApi) ctx.shadowApi.set(t, { receiveShadow: v as boolean });
+      else setShadows(t, { receiveShadow: v as boolean });
+  });
 
   // ── Material (fosco/matte) ────────────────────────────────────────────────────
   sections.push({
@@ -416,9 +450,11 @@ export function describeInspector(
   });
   handlers.set(fid('matte'), (v) => {
     const on = v as boolean;
-    if (ctx.matteApi) ctx.matteApi.set(obj, on);
-    else if (on) setMatte(obj);
-    else clearMatte(obj);
+    for (const t of multi ?? [obj]) {
+      if (ctx.matteApi) ctx.matteApi.set(t, on);
+      else if (on) setMatte(t);
+      else clearMatte(t);
+    }
   });
 
   // ── Shader / material por objeto (ADR-0058) ──────────────────────────────────
@@ -428,6 +464,17 @@ export function describeInspector(
     const api = ctx.materialApi;
     const cur = api.get(obj);
     const type = cur?.type ?? 'standard';
+    // Multi-seleção: aplica o shader a TODOS os selecionados com malha (luzes/
+    // grupos vazios ficam de fora — não têm material). Os campos mostram o
+    // primário; cada alvo preserva os PRÓPRIOS parâmetros quando já tem o mesmo
+    // preset (mudar a cor de 5 unlit não apaga o contorno de cada um).
+    const matTargets = multi ? multi.filter((t) => t === obj || firstMesh(t)) : [obj];
+    const setAll = (mk: (base: MaterialConfig | null) => MaterialConfig): void => {
+      for (const t of matTargets) {
+        const own = t === obj ? cur : api.get(t);
+        api.set(t, mk(own?.type === type ? own : cur));
+      }
+    };
     const fields: InspectorField[] = [
       {
         kind: 'select',
@@ -450,17 +497,21 @@ export function describeInspector(
     // CIMA do original, preservando as cores reais (vertex colors / multi-material).
     handlers.set(fid('shader'), (v) => {
       const t = v as string;
-      const prev = cur as Partial<Extract<MaterialConfig, { type: 'unlit' | 'toon' }>> | null;
-      const keep = {
-        ...(prev?.color !== undefined ? { color: prev.color } : {}),
-        ...(prev?.outline !== undefined ? { outline: prev.outline } : {}),
-        ...(prev?.outlineColor !== undefined ? { outlineColor: prev.outlineColor } : {}),
-      };
-      const cfg: MaterialConfig =
-        t === 'unlit' ? { type: 'unlit', ...keep, ...(unlitOf(cur)?.textured !== undefined ? { textured: unlitOf(cur)!.textured } : {}) }
-        : t === 'toon' ? { type: 'toon', gradientSteps: 3, outline: 0, ...keep }
-        : { type: 'standard' };
-      api.set(obj, cfg);
+      // Multi: cada alvo preserva os SEUS parâmetros comuns (não os do primário).
+      for (const target of matTargets) {
+        const own = target === obj ? cur : api.get(target);
+        const prev = own as Partial<Extract<MaterialConfig, { type: 'unlit' | 'toon' }>> | null;
+        const keep = {
+          ...(prev?.color !== undefined ? { color: prev.color } : {}),
+          ...(prev?.outline !== undefined ? { outline: prev.outline } : {}),
+          ...(prev?.outlineColor !== undefined ? { outlineColor: prev.outlineColor } : {}),
+        };
+        const cfg: MaterialConfig =
+          t === 'unlit' ? { type: 'unlit', ...keep, ...(unlitOf(own)?.textured !== undefined ? { textured: unlitOf(own)!.textured } : {}) }
+          : t === 'toon' ? { type: 'toon', gradientSteps: 3, outline: 0, ...keep }
+          : { type: 'standard' };
+        api.set(target, cfg);
+      }
       return { rebuild: true };
     });
 
@@ -479,13 +530,13 @@ export function describeInspector(
         { kind: 'checkbox', id: fid('matTransp'), label: 'Transparente', value: !!c.transparent },
         { kind: 'number', id: fid('matOutline'), label: 'Contorno', value: c.outline ?? 0, step: 0.01 },
       );
-      handlers.set(fid('matColor'), (v) => api.set(obj, { ...c, color: String(v) }));
-      handlers.set(fid('matTextured'), (v) => api.set(obj, { ...c, textured: v as boolean }));
-      handlers.set(fid('matTwoSided'), (v) => api.set(obj, { ...c, cull: (v as boolean) ? 'none' : 'back' }));
-      handlers.set(fid('matTransp'), (v) => api.set(obj, { ...c, transparent: v as boolean }));
+      handlers.set(fid('matColor'), (v) => setAll((base) => ({ ...(base as typeof c), color: String(v) })));
+      handlers.set(fid('matTextured'), (v) => setAll((base) => ({ ...(base as typeof c), textured: v as boolean })));
+      handlers.set(fid('matTwoSided'), (v) => setAll((base) => ({ ...(base as typeof c), cull: (v as boolean) ? 'none' : 'back' })));
+      handlers.set(fid('matTransp'), (v) => setAll((base) => ({ ...(base as typeof c), transparent: v as boolean })));
       handlers.set(fid('matOutline'), (v) => {
         const n = Number(v);
-        api.set(obj, { ...c, outline: Number.isFinite(n) ? Math.max(0, n) : 0 });
+        setAll((base) => ({ ...(base as typeof c), outline: Number.isFinite(n) ? Math.max(0, n) : 0 }));
       });
     } else if (type === 'toon') {
       // Toon re-sombreia em cima do original (sem trocar cor, a pedido) — preserva
@@ -497,11 +548,11 @@ export function describeInspector(
       );
       handlers.set(fid('matSteps'), (v) => {
         const n = Math.round(Number(v));
-        api.set(obj, { ...c, gradientSteps: Number.isFinite(n) ? Math.max(2, Math.min(8, n)) : 3 });
+        setAll((base) => ({ ...(base as typeof c), gradientSteps: Number.isFinite(n) ? Math.max(2, Math.min(8, n)) : 3 }));
       });
       handlers.set(fid('matOutline'), (v) => {
         const n = Number(v);
-        api.set(obj, { ...c, outline: Number.isFinite(n) ? Math.max(0, n) : 0 });
+        setAll((base) => ({ ...(base as typeof c), outline: Number.isFinite(n) ? Math.max(0, n) : 0 }));
       });
     }
     sections.push({ title: 'Shader', fields });
@@ -957,7 +1008,12 @@ export function describeInspector(
         ],
       });
       handlers.set(fid('physType'), (v) => {
-        papi.setType(obj, v as BodyType);
+        // Multi-seleção: aplica o tipo a todos os selecionados que são nós de cena
+        // nomeados (mesmo gate do primário) — ex.: marcar 10 paredes como Estático.
+        const physTargets = multi
+          ? multi.filter((t) => t.name && t.userData?.['cortexSceneNode'] === true)
+          : [obj];
+        for (const t of physTargets) papi.setType(t, v as BodyType);
         return { rebuild: true };
       });
 
@@ -1039,7 +1095,8 @@ export function describeInspector(
     if (fields.length) sections.push({ title: 'Luz', fields });
   }
 
-  return { model: { title: obj.name || `(${obj.type})`, empty: false, sections }, handlers };
+  const title = obj.name || `(${obj.type})`;
+  return { model: { title: multi ? `${title} (+${multi.length - 1})` : title, empty: false, sections }, handlers };
 }
 
 /**

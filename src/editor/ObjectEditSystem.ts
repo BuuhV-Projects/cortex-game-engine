@@ -39,7 +39,9 @@ export interface ObjectEdit {
  * dos `editRoots`, arrasta os eixos do gizmo (TransformControls) pra mover/
  * rotacionar/escalar. Só roda quando `editorState.active`.
  *
- * Teclas: click = selecionar; 1/2/3 = translate/rotate/scale; Esc = desselecionar;
+ * Teclas: click = selecionar; Ctrl+click = seleção aditiva (alterna no conjunto —
+ * o gizmo fica no primário e mover carrega o grupo); 1/2/3 = translate/rotate/scale;
+ * Esc = desselecionar;
  * K = salvar edições (callback `onSaveEdits`); L = limpar (`onClearEdits`);
  * F = focar no selecionado (`onFocusRequest`).
  *
@@ -58,6 +60,11 @@ function snapTransform(o: THREE.Object3D): GizmoTransform {
     rotation: [o.rotation.x, o.rotation.y, o.rotation.z],
     scale: [o.scale.x, o.scale.y, o.scale.z],
   };
+}
+function sameSet(a: readonly THREE.Object3D[], b: readonly THREE.Object3D[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
 }
 function sameT(a: GizmoTransform, b: GizmoTransform): boolean {
   for (let i = 0; i < 3; i++) {
@@ -78,11 +85,19 @@ export class ObjectEditSystem extends System {
   private readonly pickBox = new THREE.Box3(); // bbox p/ o fallback de clique skinado
   private readonly pickPoint = new THREE.Vector3();
   private readonly modified = new Map<string, THREE.Object3D>();
-  private clickPending: { x: number; y: number } | null = null;
+  private clickPending: { x: number; y: number; additive: boolean } | null = null;
   private selected: THREE.Object3D | null = null;
+  /** Conjunto selecionado (ordem de seleção; o último é o primário = `selected`). */
+  private selectedItems: THREE.Object3D[] = [];
+  /** Realce dos selecionados no viewport (uma caixa por objeto — o gizmo só marca o primário). */
+  private readonly selectionBoxes = new Map<THREE.Object3D, THREE.BoxHelper>();
+  private readonly threeScene: THREE.Scene;
   private prev = new Map<string, boolean>();
   /** Transform capturada no início do arraste (pra registrar o undo ao soltar). */
   private _dragBefore: GizmoTransform | null = null;
+  /** Posições dos DEMAIS selecionados no início do arraste (grupo-move no translate). */
+  private _dragBeforeOthers: Map<THREE.Object3D, GizmoTransform> | null = null;
+  private readonly _groupDelta = new THREE.Vector3();
   /** Chamado ao SOLTAR o gizmo se a transform mudou — liga ao histórico (undo). */
   onTransformCommit?: (obj: THREE.Object3D, before: GizmoTransform, after: GizmoTransform) => void;
 
@@ -130,9 +145,11 @@ export class ObjectEditSystem extends System {
   ) {
     super();
 
+    this.threeScene = scene.getThreeScene();
+
     // A UI (outliner) pede seleção via requestSelect; o sistema é quem ataca o
     // gizmo e confirma via setCurrent (dentro de select()).
-    this.selection?.onSelectRequest((obj) => this.select(obj));
+    this.selection?.onSelectRequest((obj, opts) => this.select(obj, opts?.additive === true));
 
     this.controls = new TransformControls(camera, canvas);
     this.controls.setMode('translate');
@@ -152,18 +169,51 @@ export class ObjectEditSystem extends System {
       if (!this.selected) return;
       const name = this.selected.name;
       if (name) this.modified.set(name, this.selected);
+      // Multi-seleção: arrastar o gizmo de MOVER carrega o conjunto junto (mesmo
+      // delta do primário). Rotação/escala ficam só no primário (girar um grupo
+      // em volta de um pivô é outra feature).
+      if (this._dragBeforeOthers && this._dragBefore && this._mode === 'translate') {
+        this._groupDelta.set(
+          this.selected.position.x - this._dragBefore.position[0],
+          this.selected.position.y - this._dragBefore.position[1],
+          this.selected.position.z - this._dragBefore.position[2],
+        );
+        for (const [obj, before] of this._dragBeforeOthers) {
+          obj.position.set(
+            before.position[0] + this._groupDelta.x,
+            before.position[1] + this._groupDelta.y,
+            before.position[2] + this._groupDelta.z,
+          );
+          if (obj.name) this.modified.set(obj.name, obj);
+          this.onTransformChange?.(obj);
+        }
+      }
       this.onTransformChange?.(this.selected);
       this.selection?.emitTransform();
     });
     this.controls.addEventListener('dragging-changed', ((e: { value: boolean }) => {
       this.editorState.gizmoDragging = e.value;
-      // Undo: captura a transform ANTES de arrastar; ao soltar, se mudou, registra o comando.
+      // Undo: captura a transform ANTES de arrastar; ao soltar, se mudou, registra o
+      // comando — um por objeto movido (primário + carregados no grupo-move).
       if (e.value) {
         this._dragBefore = this.selected ? snapTransform(this.selected) : null;
-      } else if (this.selected && this._dragBefore) {
-        const after = snapTransform(this.selected);
-        if (!sameT(this._dragBefore, after)) this.onTransformCommit?.(this.selected, this._dragBefore, after);
+        this._dragBeforeOthers =
+          this.selectedItems.length > 1
+            ? new Map(this.selectedItems.filter((o) => o !== this.selected).map((o) => [o, snapTransform(o)]))
+            : null;
+      } else {
+        if (this.selected && this._dragBefore) {
+          const after = snapTransform(this.selected);
+          if (!sameT(this._dragBefore, after)) this.onTransformCommit?.(this.selected, this._dragBefore, after);
+        }
+        if (this._dragBeforeOthers) {
+          for (const [obj, before] of this._dragBeforeOthers) {
+            const after = snapTransform(obj);
+            if (!sameT(before, after)) this.onTransformCommit?.(obj, before, after);
+          }
+        }
         this._dragBefore = null;
+        this._dragBeforeOthers = null;
       }
     }) as unknown as (e: unknown) => void);
 
@@ -176,7 +226,8 @@ export class ObjectEditSystem extends System {
       if (e.button !== 0) return;
       const dragging = (this.controls as unknown as { dragging: boolean }).dragging;
       if (dragging) return;
-      this.clickPending = { x: e.clientX, y: e.clientY };
+      // Ctrl (ou Cmd no mac) = seleção aditiva: alterna o objeto clicado no conjunto.
+      this.clickPending = { x: e.clientX, y: e.clientY, additive: e.ctrlKey || e.metaKey };
     });
   }
 
@@ -186,9 +237,11 @@ export class ObjectEditSystem extends System {
         this.helper.visible = false;
         this.controls.detach();
       }
+      for (const box of this.selectionBoxes.values()) box.visible = false;
       this.controls.enabled = false;
       return;
     }
+    for (const box of this.selectionBoxes.values()) box.visible = true;
     // Edição de malha (vertex/edge/face) ou desenho de caixa: outro sistema assume o
     // clique/gizmo. Escondemos o gizmo de objeto e cedemos os atalhos.
     if (this.editorState.meshEditMode !== 'object' || this.editorState.drawingShape) {
@@ -208,9 +261,12 @@ export class ObjectEditSystem extends System {
     this.controls.enabled = true;
 
     if (this.clickPending) {
-      this.handleSelection(this.clickPending.x, this.clickPending.y);
+      this.handleSelection(this.clickPending.x, this.clickPending.y, this.clickPending.additive);
       this.clickPending = null;
     }
+
+    // Realce da multi-seleção: as caixas seguem os objetos (que podem se mover).
+    for (const box of this.selectionBoxes.values()) box.update();
 
     // Não processa atalhos de teclado quando o foco está num campo editável do
     // inspector — senão digitar Backspace/Delete pra limpar um valor DELETAVA o
@@ -248,7 +304,7 @@ export class ObjectEditSystem extends System {
     }
   }
 
-  private handleSelection(clientX: number, clientY: number): void {
+  private handleSelection(clientX: number, clientY: number, additive: boolean): void {
     const rect = this.canvas.getBoundingClientRect();
     this.ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     this.ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
@@ -293,9 +349,11 @@ export class ObjectEditSystem extends System {
     }
 
     if (bestTarget) {
-      this.select(bestTarget);
+      this.select(bestTarget, additive);
       this.routeVegetation(bestTarget, bestHit);
-    } else {
+    } else if (!additive) {
+      // Ctrl+click no vazio NÃO limpa a seleção (errar o clique num objeto
+      // pequeno não pode jogar fora um conjunto montado à mão).
       this.deselect();
       this.vegHook?.onOther();
     }
@@ -362,28 +420,70 @@ export class ObjectEditSystem extends System {
     this.hud.showToast(`Modo: ${label}`);
   }
 
-  select(target: THREE.Object3D | null): void {
-    if (this.selected === target) return;
-    this.selected = target;
-    if (target) {
+  select(target: THREE.Object3D | null, additive = false): void {
+    // Novo conjunto: aditivo alterna o objeto (Ctrl+click); normal troca tudo.
+    let items: THREE.Object3D[];
+    if (!target) {
+      items = [];
+    } else if (additive && this.selectedItems.length > 0) {
+      items = this.selectedItems.includes(target)
+        ? this.selectedItems.filter((o) => o !== target)
+        : [...this.selectedItems, target];
+    } else {
+      items = [target];
+    }
+    // Primário = o alvo (se ficou no conjunto) ou o último restante do toggle-off.
+    const primary = items.length === 0 ? null : items.includes(target!) ? target : items[items.length - 1]!;
+
+    if (this.selected === primary && sameSet(this.selectedItems, items)) return;
+    this.selected = primary;
+    this.selectedItems = items;
+    this.syncSelectionBoxes();
+
+    if (primary) {
       // Vegetação é InstancedMesh: o gizmo de mover no pivô central do grupo (no chão)
       // confunde e não diz QUAL árvore. Pra ela, sem gizmo central — o feedback é a
       // caixa por instância (VegetationGizmoSystem). Demais objetos: gizmo normal.
-      const isVeg = target.userData['cortexVegetation'] != null;
+      const isVeg = primary.userData['cortexVegetation'] != null;
       if (isVeg) {
         this.controls.detach();
         this.helper.visible = false;
       } else {
-        this.controls.attach(target);
+        this.controls.attach(primary);
         this.helper.visible = true;
       }
-      this.hud.showToast(`Selecionado: ${target.name || '(sem nome)'}`);
+      this.hud.showToast(
+        items.length > 1
+          ? `Selecionados: ${items.length} objetos (Ctrl+click alterna)`
+          : `Selecionado: ${primary.name || '(sem nome)'}`,
+      );
     } else {
       this.controls.detach();
       this.helper.visible = false;
       this.hud.showToast('Desselecionado');
     }
-    this.selection?.setCurrent(target);
+    this.selection?.setCurrent(primary, items);
+  }
+
+  /**
+   * Sincroniza o realce do conjunto: uma {@link THREE.BoxHelper} por selecionado
+   * (o gizmo só marca o primário — sem as caixas, os demais ficariam invisíveis).
+   */
+  private syncSelectionBoxes(): void {
+    for (const [obj, box] of this.selectionBoxes) {
+      if (!this.selectedItems.includes(obj)) {
+        this.threeScene.remove(box);
+        box.dispose();
+        this.selectionBoxes.delete(obj);
+      }
+    }
+    for (const obj of this.selectedItems) {
+      if (this.selectionBoxes.has(obj)) continue;
+      const box = new THREE.BoxHelper(obj, 0x5a8cff);
+      box.userData['editorInternal'] = true; // fora do outliner e do raycast de picking
+      this.threeScene.add(box);
+      this.selectionBoxes.set(obj, box);
+    }
   }
 
   /**
@@ -437,7 +537,7 @@ export class ObjectEditSystem extends System {
     }
   }
 
-  /** Remove o objeto selecionado da cena (Delete/Backspace) e notifica `onDelete`. */
+  /** Remove os objetos selecionados da cena (Delete) e notifica `onDelete` por objeto. */
   private deleteSelected(): void {
     // Vegetação: se uma ÁRVORE (instância) está selecionada, o Delete remove só ela —
     // o grupo continua. O hook devolve `true` quando consome o Delete.
@@ -445,13 +545,15 @@ export class ObjectEditSystem extends System {
       this.hud.showToast('Árvore removida');
       return;
     }
-    const obj = this.selected;
-    if (!obj) return;
-    const label = obj.name || '(sem nome)';
+    if (!this.selected) return;
+    const items = [...this.selectedItems];
+    const label = items.length > 1 ? `${items.length} objetos` : items[0]!.name || '(sem nome)';
     this.select(null); // solta o gizmo antes de remover
-    obj.parent?.remove(obj);
-    if (obj.name) this.modified.delete(obj.name);
-    this.onDelete?.(obj);
+    for (const obj of items) {
+      obj.parent?.remove(obj);
+      if (obj.name) this.modified.delete(obj.name);
+      this.onDelete?.(obj);
+    }
     this.hud.showToast(`Removido: ${label}`);
   }
 

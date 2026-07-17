@@ -283,9 +283,12 @@ export class EditorPanels {
       h('span', { class: 'ico', style: { color: item.selected ? 'var(--accent)' : m.color } }, icon(m.icon, { size: 13 })),
       h('span', { class: 'nm' }, item.label),
     )
-    node.addEventListener('click', () => {
-      this.send({ type: 'select', id: item.id })
-      this.send({ type: 'focus', id: item.id })
+    node.addEventListener('click', (e) => {
+      // Ctrl/Cmd+click = multi-seleção aditiva (o engine alterna o item no conjunto);
+      // nesse caso não enquadra a câmera — o usuário está montando um conjunto.
+      const additive = e.ctrlKey || e.metaKey
+      this.send({ type: 'select', id: item.id, additive })
+      if (!additive) this.send({ type: 'focus', id: item.id })
     })
     this.outlinerListEl.append(node)
 
