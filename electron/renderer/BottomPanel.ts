@@ -98,8 +98,8 @@ export class BottomPanel {
     // Export CortexNative (ADR-0101): dist-native/ com exe+dlls+hbc+assets.
     // O submenu Exportar › manda o alvo em detail.mode: pc | steam | xbox.
     document.addEventListener('export-native-requested', (e) => {
-      const mode = ((e as CustomEvent).detail?.mode as string) ?? 'pc'
-      void this.exportNative(mode)
+      const detail = (e as CustomEvent<{ mode?: string; debug?: boolean }>).detail
+      void this.exportNative(detail?.mode ?? 'pc', detail?.debug === true)
     })
 
     document.addEventListener('build-installer-requested', (e) => {
@@ -167,7 +167,7 @@ export class BottomPanel {
    * Export CortexNative (ADR-0101): valida guardas, roda o script no main
    * (ELECTRON_RUN_AS_NODE) e imprime a saída no terminal do painel.
    */
-  private async exportNative(mode = 'pc'): Promise<void> {
+  private async exportNative(mode = 'pc', debug = false): Promise<void> {
     if (!this.projectDir) {
       void window.electronAPI.infoDialog(t('bottomPanel.export_no_project'))
       return
@@ -175,7 +175,7 @@ export class BottomPanel {
     // Sem guard de Play: o export roda um processo Node à parte que só LÊ o
     // código-fonte do projeto e escreve dist-native/ — não usa o dev server do
     // Play (ao contrário do instalador Tauri, que rebuilda o mesmo projeto).
-    const alvo = mode === 'steam' ? 'PC (Steam)' : mode === 'xbox' ? 'Xbox' : 'PC'
+    const alvo = (mode === 'steam' ? 'PC (Steam)' : mode === 'xbox' ? 'Xbox' : 'PC') + (debug ? ' · com métricas' : '')
     this.activateTab('terminal')
     this.appendTerminal(`Exportando (${alvo}) — bundle + bytecode + runtime…\n`, 'system')
 
@@ -184,7 +184,7 @@ export class BottomPanel {
     const modal = new ExportProgressModal()
     const unsubscribe = window.electronAPI.onExportProgress((step) => modal.step(step))
     try {
-      const result = await window.electronAPI.exportNative(this.projectDir, mode)
+      const result = await window.electronAPI.exportNative(this.projectDir, mode, debug)
       this.appendTerminal(result.output, result.ok ? 'log' : 'error')
       if (result.ok && result.distDir) {
         this.appendTerminal(`Export pronto: ${result.distDir}\n`, 'system')

@@ -111,6 +111,10 @@ export class Shell {
         { label: tr('menu.reload_tree', 'Recarregar árvore'), run: () => document.dispatchEvent(new CustomEvent('filetree-refresh')) },
       ]),
       this.menuItem('View', [
+        // Alterna o HUD de FPS/CPU/memória/GPU no Preview (ponte do editor →
+        // Game.setDebugHud). Mesmo HUD do export --debug.
+        { label: tr('menu.debug_hud', '📊 HUD de métricas (liga/desliga)'), run: () => document.dispatchEvent(new CustomEvent('request-debug-hud')) },
+        { sep: true },
         { label: 'English', run: () => void this.setLocale('en') },
         { label: 'Português', run: () => void this.setLocale('pt') },
         // DevTools do studio — só em dev (no build empacotado não aparece).
@@ -144,10 +148,15 @@ export class Shell {
       this.menuItem('Projeto', [
         {
           label: tr('menu.export_native', 'Exportar ›'),
+          // Cada alvo em release e em modo DEBUG (--debug: HUD de métricas na
+          // tela — FPS/CPU/memória/GPU; mesmo runtime, só o bundle muda).
           submenu: [
             { label: tr('menu.export_pc', 'PC only'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested', { detail: { mode: 'pc' } })) },
+            { label: tr('menu.export_pc_debug', 'PC only — com métricas'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested', { detail: { mode: 'pc', debug: true } })) },
             { label: tr('menu.export_steam', 'PC (Steam)'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested', { detail: { mode: 'steam' } })) },
+            { label: tr('menu.export_steam_debug', 'PC (Steam) — com métricas'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested', { detail: { mode: 'steam', debug: true } })) },
             { label: tr('menu.export_xbox', 'Xbox'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested', { detail: { mode: 'xbox' } })) },
+            { label: tr('menu.export_xbox_debug', 'Xbox — com métricas'), run: () => document.dispatchEvent(new CustomEvent('export-native-requested', { detail: { mode: 'xbox', debug: true } })) },
           ],
         },
         { sep: true },

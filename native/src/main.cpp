@@ -135,6 +135,9 @@ int main(int argc, char** argv) {
       baseDir = argv[1];
       if (baseDir.back() != '\\' && baseDir.back() != '/') baseDir += '\\';
     }
+    // Com o dir do jogo resolvido, o crash handler passa a gravar
+    // <jogo>/error_log.txt além do stderr.
+    core::installCrashHandler(baseDir.c_str());
     shims::registerTimers(js.env());
     shims::registerAnimationFrame(js.env());
     shims::registerInput(js.env());

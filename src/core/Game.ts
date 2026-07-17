@@ -178,6 +178,16 @@ export class Game {
       });
     }
 
+    // Toggle do HUD de métricas vindo de fora (menu do Studio via ponte do
+    // editor, ou o próprio jogo): evento DOM desacoplado — quem dispara não
+    // precisa da referência do Game.
+    if (typeof document !== 'undefined') {
+      document.addEventListener('cortex:debug-hud', (e) => {
+        const on = (e as CustomEvent<{ on?: boolean }>).detail?.on;
+        this.setDebugHud(on);
+      });
+    }
+
     // Liga o editor SE houver um attacher registrado (bundle de dev). Em prod
     // ninguém registrou → _editor fica null e o jogo roda sem editor.
     this._editor = _editorAttacher ? _editorAttacher(this) : null;
@@ -345,14 +355,33 @@ export class Game {
     }
     this._ui?.render(); // UI por cima do frame (backend renderer; DOM é no-op)
 
-    // HUD de métricas do modo debug (export --debug ou ?cortexHud=1): criado
-    // preguiçosamente no 1º frame e alimentado com o delta CRU do loop.
+    // HUD de métricas do modo debug (export --debug, ?cortexHud=1 ou o toggle
+    // do menu do Studio): criado preguiçosamente e alimentado com o delta CRU.
     if (this._debugHud === undefined) {
-      this._debugHud = debugHudRequested()
-        ? new DebugHud(this.ui, () => (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info ?? null)
-        : null;
+      this._debugHud = debugHudRequested() ? this.createDebugHud() : null;
     }
     this._debugHud?.frame(deltaMs);
+  }
+
+  /**
+   * Liga/desliga o **HUD de métricas** (FPS/frame ms, CPU, memória, GPU) em
+   * runtime — é o que o menu **View › HUD de métricas** do Studio aciona (via
+   * ponte do editor) e que o export `--debug` liga por padrão. Sem argumento,
+   * alterna o estado atual.
+   */
+  setDebugHud(enabled?: boolean): void {
+    const on = enabled ?? !(this._debugHud instanceof DebugHud && this._debugHud.visible);
+    if (on) {
+      if (!this._debugHud) this._debugHud = this.createDebugHud();
+      this._debugHud.setVisible(true);
+    } else {
+      this._debugHud?.setVisible(false);
+      if (this._debugHud === undefined) this._debugHud = null; // decisão tomada
+    }
+  }
+
+  private createDebugHud(): DebugHud {
+    return new DebugHud(this.ui, () => (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info ?? null);
   }
 
   /** Inicia o loop. */

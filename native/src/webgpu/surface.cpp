@@ -143,7 +143,13 @@ void presentIfAcquired(HostGpu* gpu) {
     if (!gameRendered) clearOffscreen(gpu);  // menu: base limpa (jogo não desenhou)
     gpu->ssaaPending = false;
     gpu->uiPending = false;
-    WGPUTexture swap = acquireSurfaceTexture(gpu);
+    // Transição do render DIRETO (renderScale=1 antes do compositor de UI
+    // nascer): o JS pode ter adquirido a swapchain neste mesmo frame
+    // (currentTexture). Adquirir DE NOVO panica o wgpu ("Surface image is
+    // already acquired") — reusa a textura já adquirida como alvo do blit
+    // (1 frame de transição; do próximo em diante o offscreen assume).
+    WGPUTexture swap = gpu->currentTexture ? gpu->currentTexture : acquireSurfaceTexture(gpu);
+    gpu->currentTexture = nullptr;
     if (!swap) return;  // surface temporariamente indisponível → pula frame
     WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);
     blitToSwapchain(gpu, swapView);  // downscale + compõe a UI em gama
@@ -157,7 +163,9 @@ void presentIfAcquired(HostGpu* gpu) {
   if (gpu->offscreenView && gpu->configured) {
     if (!gpu->ssaaPending) return;  // sem frame novo → não bloqueia no vsync
     gpu->ssaaPending = false;
-    WGPUTexture swap = acquireSurfaceTexture(gpu);
+    // Mesma proteção da transição do render direto (ver acima).
+    WGPUTexture swap = gpu->currentTexture ? gpu->currentTexture : acquireSurfaceTexture(gpu);
+    gpu->currentTexture = nullptr;
     if (!swap) return;
     WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);
     blitToSwapchain(gpu, swapView);

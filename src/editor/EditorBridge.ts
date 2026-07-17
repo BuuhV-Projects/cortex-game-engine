@@ -178,6 +178,15 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
       case 'reload':
         // O reload do canvas é feito pela IDE (recarrega o iframe); aqui nada a fazer.
         break;
+      case 'debugHud':
+        // Menu View › HUD de métricas do Studio. `value` boolean força; ausente
+        // alterna. O Game ouve o evento DOM (desacoplado da ponte).
+        document.dispatchEvent(
+          new CustomEvent('cortex:debug-hud', {
+            detail: { on: typeof data.value === 'boolean' ? data.value : undefined },
+          }),
+        );
+        break;
       case 'addTerrain':
         onAddTerrain?.();
         break;

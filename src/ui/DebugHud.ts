@@ -49,6 +49,7 @@ export function debugHudRequested(): boolean {
 const UPDATE_MS = 500;
 
 export class DebugHud {
+  private readonly panel: UiPanel;
   private readonly fps: UiLabel;
   private readonly cpu: UiLabel;
   private readonly mem: UiLabel;
@@ -57,6 +58,7 @@ export class DebugHud {
   private frames = 0;
   private elapsed = 0;
   private worst = 0;
+  private _visible = true;
 
   /** @param ui Camada de UI de runtime (`game.ui`).
    *  @param rendererInfo Acessor opcional do `renderer.info` do three. */
@@ -65,7 +67,7 @@ export class DebugHud {
     private readonly rendererInfo?: () => RendererInfoLike | null,
   ) {
     // Painel discreto no canto inferior esquerdo (o HUD dos jogos usa o topo).
-    ui.add(new UiPanel({ anchor: 'bottom-left', x: 10, y: -10, width: 236, height: 92, background: '#000000', opacity: 0.55, cornerRadius: 6 }));
+    this.panel = ui.add(new UiPanel({ anchor: 'bottom-left', x: 10, y: -10, width: 236, height: 92, background: '#000000', opacity: 0.55, cornerRadius: 6 }));
     const mk = (dy: number): UiLabel =>
       ui.add(new UiLabel({ anchor: 'bottom-left', x: 18, y: dy, text: '…', fontSize: 13, color: '#8ef58a' }));
     this.fps = mk(-82);
@@ -74,8 +76,24 @@ export class DebugHud {
     this.gpu = mk(-22);
   }
 
+  /** Visível? O toggle do Studio (menu View) liga/desliga em runtime. */
+  get visible(): boolean {
+    return this._visible;
+  }
+
+  /** Mostra/esconde o HUD (some da tela e para de medir/rasterizar). */
+  setVisible(visible: boolean): void {
+    if (this._visible === visible) return;
+    this._visible = visible;
+    for (const w of [this.panel, this.fps, this.cpu, this.mem, this.gpu]) w.set({ visible });
+    this.frames = 0;
+    this.elapsed = 0;
+    this.worst = 0;
+  }
+
   /** Alimente 1×/frame com o delta em ms (o {@link Game} faz isso). */
   frame(deltaMs: number): void {
+    if (!this._visible) return;
     this.frames++;
     this.elapsed += deltaMs;
     if (deltaMs > this.worst) this.worst = deltaMs;

@@ -22,9 +22,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   revendorEngine: (projectDir: string) =>
     ipcRenderer.invoke('engine:revendor', projectDir),
 
-  /** Export CortexNative (ADR-0101): gera dist-native/ do projeto. */
-  exportNative: (projectDir: string, mode = 'pc') =>
-    ipcRenderer.invoke('export:native', projectDir, mode) as Promise<{
+  /** Export CortexNative (ADR-0101): gera dist-native/ do projeto. `debug` = HUD de métricas no bundle. */
+  exportNative: (projectDir: string, mode = 'pc', debug = false) =>
+    ipcRenderer.invoke('export:native', projectDir, mode, debug) as Promise<{
       ok: boolean
       output: string
       distDir?: string

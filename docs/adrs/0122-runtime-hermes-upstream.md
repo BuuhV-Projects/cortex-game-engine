@@ -64,10 +64,10 @@ no Windows/Ninja).
 - Bench proxy DENTRO do host: 93,5 ms (fork MS) → **32–52 ms** (2–3×; o clang
   no Linux chega a 21,8 — o codegen do MSVC fica atrás; clang-cl é um follow-up
   possível).
-- Jogo: 41 → **~50 fps**; o frame agora é lógica ~4 ms + render ~15,6 ms, e o
-  render passou a ser dominado pelas CHAMADAS wgpu/NAPI + driver (não aceleram
-  com interpretador). Próximo lever de 60 fps: PostFX off no export (~4 ms) e
-  reduzir chamadas WebGPU por frame.
+- Jogo: 41 → **~60 fps** (58–62 medidos com a máquina ociosa; ~50 sob carga);
+  frame = lógica ~4 ms + render ~15,6 ms — o render passou a ser dominado
+  pelas CHAMADAS wgpu/NAPI + driver (não aceleram com interpretador). Levers
+  seguintes: PostFX off no export (~4 ms) e menos chamadas WebGPU por frame.
 - Boot/carregamento (JS pesado: parse GLB, zod, scripts) ganha os 2–3× cheios.
 - Console (M4): o mesmo runtime precisa compilar na toolchain GDKX — anotado no
   plano; sem bifurcação de runtime PC/console.
@@ -77,6 +77,12 @@ no Windows/Ninja).
   novo se aplica aos três).
 - O fork MS (`third_party/hermes`) sai do fetch-deps e pode ser apagado do
   disco; `hermes.dll` some do export e do instalador (runtime ESTÁTICO no exe).
-- Bug conhecido (pré-existente, agora visível): `CORTEX_RENDER_SCALE=1` (SSAA
-  off) pode dar panic do wgpu "Surface image is already acquired" no present —
-  o caminho default (SSAA 2×) não é afetado.
+- ~~Bug do `CORTEX_RENDER_SCALE=1`~~ **CORRIGIDO**: o panic "Surface image is
+  already acquired" era o frame de TRANSIÇÃO do render direto (scale=1 antes do
+  compositor de UI nascer) — o JS tinha adquirido a swapchain e o present
+  adquiria de novo. O `presentIfAcquired` agora REUSA a textura já adquirida
+  como alvo do blit nesse frame (rastreado com prints: `game=0 held=1` no exato
+  frame da troca).
+- **`error_log.txt`**: o crash handler agora também APENDA o backtrace (e
+  aborts/panics do wgpu, via handler de SIGABRT) em `<jogo>/error_log.txt` —
+  jogador manda o arquivo quando o jogo fechar sozinho.

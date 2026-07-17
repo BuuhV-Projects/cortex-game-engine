@@ -129,6 +129,8 @@ export class EditorPanels {
     document.addEventListener('request-editor-pause', () => this.send({ type: 'pause' }))
     // "Adicionar terreno" (menu Projeto) → cria um terreno na cena via a ponte.
     document.addEventListener('request-add-terrain', () => this.send({ type: 'addTerrain' }))
+    // View › HUD de métricas: alterna o DebugHud do jogo (sem value = toggle).
+    document.addEventListener('request-debug-hud', () => this.send({ type: 'debugHud' }))
     // "Forma: …" (menu Cena, blockout/ProBuilder — ADR-0071) → cria um nó `mesh`.
     document.addEventListener('request-add-shape', (e) =>
       this.send({ type: 'addShape', kind: (e as CustomEvent<{ kind: string }>).detail.kind }))
