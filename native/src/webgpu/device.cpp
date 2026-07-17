@@ -26,8 +26,18 @@ void logUncapturedError(WGPUDevice const*, WGPUErrorType type,
                        static_cast<int>(message.length), message.data);
 }
 
+// Log INTERNO do wgpu-native: erro de validação FATAL (que vira panic no
+// submit/present) imprime aqui ANTES de abortar — é a mensagem "Caused by: …"
+// que o uncapturedError não vê. Registrado no acquireDevice (1×).
+void wgpuInternalLog(WGPULogLevel level, WGPUStringView message, void*) {
+  if (level > WGPULogLevel_Error) return;  // só erro (warn é ruidoso por frame)
+  core::appendErrorLog("[wgpu] %.*s", static_cast<int>(message.length), message.data);
+}
+
 // Aquisição síncrona (mesmo padrão do acquireAdapter — ver navigator.cpp).
 WGPUDevice acquireDevice(HostGpu* gpu, WGPUAdapter adapter) {
+  wgpuSetLogLevel(WGPULogLevel_Error);
+  wgpuSetLogCallback(wgpuInternalLog, nullptr);
   DeviceResult result;
   WGPUDeviceDescriptor desc = WGPU_DEVICE_DESCRIPTOR_INIT;
   // Erros não capturados (shader inválido, uso errado da API) viram log —

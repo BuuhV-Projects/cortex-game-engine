@@ -146,6 +146,16 @@ void installCrashHandler(const char* logDir) {
     if (len > 0 && g_logDir[len - 1] != '\\' && g_logDir[len - 1] != '/') {
       strncat_s(g_logDir, "\\", _TRUNCATE);
     }
+    // Sem console (export aberto por 2-clique): o stderr é um buraco negro —
+    // redireciona pro error_log.txt, capturando o que NÃO passa pelos nossos
+    // handlers (ex.: o texto do panic do Rust/wgpu "Caused by: …"). Rodando
+    // de um terminal (dev), o stderr fica onde está.
+    if (GetConsoleWindow() == nullptr) {
+      char path[MAX_PATH];
+      snprintf(path, sizeof(path), "%serror_log.txt", g_logDir);
+      FILE* redirected = nullptr;
+      freopen_s(&redirected, path, "ab", stderr);
+    }
   }
   SetUnhandledExceptionFilter(onCrash);
   std::signal(SIGABRT, onAbort);
