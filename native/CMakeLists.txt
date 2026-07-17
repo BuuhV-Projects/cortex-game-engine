@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(cortex-native CXX)
+project(cortex-native C CXX)
 
 # Host nativo do cortex-game-engine (PRD-0004, M0).
 # Deps prebuilt em third_party/ — rode native/scripts/fetch-deps.ps1 antes.
@@ -28,6 +28,7 @@ add_executable(cortex_host
   src/shims/user_storage.cpp
   src/shims/ktx2.cpp
   ${TP}/basisu/basisu_transcoder.cpp
+  ${TP}/zstd/zstddeclib.c
   src/webgpu/buffers.cpp
   src/webgpu/commands.cpp
   src/webgpu/device.cpp
@@ -74,14 +75,19 @@ target_include_directories(cortex_host PRIVATE
   ${TP}/hermes/build/native/include/node-api
 )
 
-# basis_universal transcoder (ADR-0108): habilita KTX2, sem a dependência de Zstd
-# (nosso encoder não usa supercompressão Zstd — evita puxar a lib). Vale pro
-# basisu_transcoder.cpp E pro ktx2.cpp (que inclui o header e precisa ver o
-# ktx2_transcoder, gated por BASISD_SUPPORT_KTX2).
+# basis_universal transcoder (ADR-0108): habilita KTX2 COM supercompressão Zstd
+# (ADR-0119: cor vira UASTC+RDO+zstd — ETC1S bandava os atlas de gradiente dos
+# kits). O decoder é o zstddeclib.c single-file vendorizado do próprio basis
+# (fetch-deps baixa). Vale pro basisu_transcoder.cpp E pro ktx2.cpp (que inclui
+# o header e precisa ver o ktx2_transcoder, gated por BASISD_SUPPORT_KTX2).
 target_compile_definitions(cortex_host PRIVATE
   BASISD_SUPPORT_KTX2=1
-  BASISD_SUPPORT_KTX2_ZSTD=0
+  BASISD_SUPPORT_KTX2_ZSTD=1
 )
+# zstddeclib.c é C (não C++) — compila como C pra não quebrar no MSVC. O layout
+# third_party/zstd/{zstd.h,zstddeclib.c} espelha o repo do basis (o transcoder
+# inclui "../zstd/zstd.h").
+set_source_files_properties(${TP}/zstd/zstddeclib.c PROPERTIES LANGUAGE C)
 
 # Rapier nativo (crate Rust em rapier-native/ — `cargo build --release` lá
 # antes do build; o fetch-deps NÃO cobre isso porque é código nosso)

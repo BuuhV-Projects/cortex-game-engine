@@ -88,6 +88,18 @@ if (-not (Test-Path (Join-Path $basisuDir 'basisu_transcoder.cpp'))) {
         Invoke-WebRequest -Uri $raw -OutFile (Join-Path $basisuDir $e.name)
     }
 }
+# Decoder Zstd single-file (vendorizado no próprio basis) — o transcoder do host
+# builda com BASISD_SUPPORT_KTX2_ZSTD=1 (ADR-0119: cor em UASTC+RDO+zstd). O
+# layout third_party/zstd/ espelha o repo (o transcoder inclui "../zstd/zstd.h").
+$zstdDir = Join-Path $tp 'zstd'
+if (-not (Test-Path (Join-Path $zstdDir 'zstddeclib.c'))) {
+    Write-Host 'baixando zstd (basis_universal/zstd) ...' -ForegroundColor Cyan
+    New-Item -ItemType Directory -Force $zstdDir | Out-Null
+    foreach ($f in @('zstd.h', 'zstd_errors.h', 'zstddeclib.c')) {
+        $raw = "https://raw.githubusercontent.com/BinomialLLC/basis_universal/$BASISU_COMMIT/zstd/$f"
+        Invoke-WebRequest -Uri $raw -OutFile (Join-Path $zstdDir $f)
+    }
+}
 
 # ── basis_universal ENCODER (WASM) — ferramenta de BUILD (converter PNG→KTX2,
 # scripts/encode-ktx2.mjs). NÃO vai pro runtime; roda no Node. Mesmo commit do

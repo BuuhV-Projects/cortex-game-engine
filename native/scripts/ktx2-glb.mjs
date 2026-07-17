@@ -4,7 +4,8 @@
 // o encoder WASM (encode-ktx2.mjs). Roda no Node, sem instalar nada externo.
 //
 // Uso: node native/scripts/ktx2-glb.mjs <in.glb> <out.glb>
-//   cor (baseColor/emissive) → ETC1S sRGB · normal/dados → UASTC linear.
+//   cor (baseColor/emissive) → UASTC sRGB + RDO + Zstd · normal/dados → UASTC
+//   linear sem RDO (ADR-0119 — ETC1S bandava os atlas de gradiente dos kits).
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRTextureBasisu } from '@gltf-transform/extensions';
 import { readFileSync } from 'node:fs';
@@ -36,7 +37,8 @@ export async function convertGlbTextures(doc) {
     const isLinear = linear.has(texture);
     let ktx2;
     try {
-      ktx2 = await encodeKtx2(src, { uastc: isLinear, srgb: !isLinear });
+      // Tudo UASTC+Zstd; RDO só na COR (em normal map o RDO distorce vetores).
+      ktx2 = await encodeKtx2(src, { uastc: true, srgb: !isLinear, rdoScalar: isLinear ? 0 : 1.0 });
     } catch {
       continue; // encode falhou (ex.: JPG/formato incomum) → mantém o original
     }

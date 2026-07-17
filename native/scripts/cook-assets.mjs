@@ -14,6 +14,12 @@ import { convertGlbTextures } from './ktx2-glb.mjs';
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
+/**
+ * Versão da política de cook — entra no hash do cache. BUMP ao mudar formato/
+ * qualidade do encode (v2 = UASTC+RDO+Zstd pra cor, ADR-0119).
+ */
+const COOK_VERSION = 'cook-v2';
+
 function walk(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {
     const full = path.join(dir, name);
@@ -50,7 +56,12 @@ export async function cookAssets(assetsDir, cookedDir, cacheDir, onProgress) {
     }
 
     const bytes = fs.readFileSync(full);
-    const cached = path.join(cacheDir, createHash('sha1').update(bytes).digest('hex') + '.glb');
+    // COOK_VERSION entra no hash: mudar a política de encode (ex.: ETC1S→UASTC,
+    // ADR-0119) invalida o cache — senão o export re-usa GLB cozido no formato velho.
+    const cached = path.join(
+      cacheDir,
+      createHash('sha1').update(COOK_VERSION).update(bytes).digest('hex') + '.glb',
+    );
     if (fs.existsSync(cached)) {
       fs.copyFileSync(cached, out);
       stats.glbCached++;
