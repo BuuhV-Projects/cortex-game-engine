@@ -68,6 +68,7 @@ Ver ADR-0109.
 | `native/src/shims/pak.*` | Leitor do container `assets.pak` (ADR-0104): parse header+índice, lê slice + desembaralha (XOR). Formato em sync com `native/scripts/pak.mjs`. |
 | `native/src/shims/image_decode.*` | `__cortexDecodeImage` (stb_image → RGBA8) pro createImageBitmap. |
 | `native/src/shims/ktx2.*` | `__cortexTranscodeKtx2` (basis_universal transcoder → RGBA8) pra texturas KTX2/Basis (ADR-0108, Fase 1). Espelha o image_decode; reusa o upload RGBA. Lib em `third_party/basisu/` (só `transcoder/`, pinada) + `third_party/zstd/` (zstddeclib single-file do próprio basis) — o build liga `BASISD_SUPPORT_KTX2_ZSTD=1` porque o cook gera **UASTC+RDO+Zstd** pra cor (ADR-0119; ETC1S bandava os atlas de gradiente dos kits). |
+| `native/src/shims/quit.*` | `__cortexQuit()` (ADR-0120): encerramento pedido pelo JOGO — empurra `SDL_EVENT_QUIT` na fila, o loop encerra pelo MESMO teardown do fechar-janela. O dom-lite mapeia `window.close()` pra cá. |
 | `native/src/shims/rapier.*` | Ponte C ABI do crate rapier-native → `__rapierNative` (funções achatadas, f64). |
 | `native/src/shims/audio.*` | `__cortexAudio`: decode (miniaudio) + playback (streams SDL3; loop/gain/pitch); `updateAudio()` por frame. |
 | `native/src/shims/text_raster.*` | `__cortexRasterText` (stb_truetype + Roboto pinada) → bitmap RGBA branco pro RendererUiBackend (ADR-0102). |
@@ -91,7 +92,7 @@ Ver ADR-0109.
 | `native/js/src/prelude.js` | Orquestrador dos shims JS (importa js/src/shims/ na ordem certa). Regra: o que dá pra shimar em JS fica em shims/. |
 | `native/js/src/shims/globals.js` | self, console→print, performance. |
 | `native/js/src/shims/event-target.js` | EventTarget-lite + Event/CustomEvent — o "event bus via document" que os jogos usam (rush:*). |
-| `native/js/src/shims/dom-lite.js` | DOM inerte (createElement/appendChild/innerHTML rodam, nada renderiza) + window/document com bus próprio. Etapa 6a do M1. |
+| `native/js/src/shims/dom-lite.js` | DOM inerte (createElement/appendChild/innerHTML rodam, nada renderiza) + window/document com bus próprio. Etapa 6a do M1. `window.close()` → `__cortexQuit` (ADR-0120; sem host = no-op, como aba de browser). |
 | `native/js/src/shims/webgpu-extras.js` | Constantes GPU*, features/limits no adapter/device, canvas fake. |
 | `native/js/src/shims/input-bridge.js` | Redistribui eventos do host pra window/document/body (como o browser) e liga navigator.getGamepads ao nativo. |
 | `native/js/examples/triangle.js` | Referência: triângulo WebGPU puro (Marcos C–D), sem Three. |
