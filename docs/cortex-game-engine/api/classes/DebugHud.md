@@ -6,7 +6,7 @@
 
 # Class: DebugHud
 
-Defined in: src/ui/DebugHud.ts:51
+Defined in: [src/ui/DebugHud.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L51)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: src/ui/DebugHud.ts:51
 
 > **new DebugHud**(`ui`, `rendererInfo?`): `DebugHud`
 
-Defined in: src/ui/DebugHud.ts:63
+Defined in: [src/ui/DebugHud.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L65)
 
 #### Parameters
 
@@ -34,13 +34,29 @@ Acessor opcional do `renderer.info` do three.
 
 `DebugHud`
 
+## Accessors
+
+### visible
+
+#### Get Signature
+
+> **get** **visible**(): `boolean`
+
+Defined in: [src/ui/DebugHud.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L80)
+
+Visível? O toggle do Studio (menu View) liga/desliga em runtime.
+
+##### Returns
+
+`boolean`
+
 ## Methods
 
 ### frame()
 
 > **frame**(`deltaMs`): `void`
 
-Defined in: src/ui/DebugHud.ts:78
+Defined in: [src/ui/DebugHud.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L95)
 
 Alimente 1×/frame com o delta em ms (o [Game](Game.md) faz isso).
 
@@ -49,6 +65,26 @@ Alimente 1×/frame com o delta em ms (o [Game](Game.md) faz isso).
 ##### deltaMs
 
 `number`
+
+#### Returns
+
+`void`
+
+***
+
+### setVisible()
+
+> **setVisible**(`visible`): `void`
+
+Defined in: [src/ui/DebugHud.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L85)
+
+Mostra/esconde o HUD (some da tela e para de medir/rasterizar).
+
+#### Parameters
+
+##### visible
+
+`boolean`
 
 #### Returns
 

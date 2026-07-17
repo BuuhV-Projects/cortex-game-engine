@@ -11,4 +11,10 @@ namespace core {
 // error_log.txt é gravado (dir do jogo); nullptr/vazio = só stderr.
 void installCrashHandler(const char* logDir = nullptr);
 
+// Apenda uma linha no error_log.txt (e stderr). Usado pelos pontos de erro
+// não-fatais que precisam sobreviver num exe sem console: erro de validação
+// do WebGPU, exceção JS não tratada — o CONTEXTO que explica o crash que vem
+// em seguida.
+void appendErrorLog(const char* fmt, ...);
+
 }  // namespace core

@@ -785,7 +785,7 @@ export async function buildScene(
   // dos nós individuais; daqui pra frente só o render enxerga a fusão. Default:
   // liga no host nativo (CPU-bound por draw call), fica fora no browser/Studio
   // (o editor F2 seleciona/move objetos individuais).
-  if (options.mergeStatic ?? isNativeHost()) {
+  if (options.mergeStatic ?? false) {
     // Objetos com animação de cena (SceneAnimator) são dinâmicos — o mixer anima
     // ESSAS malhas; fundidas, congelariam.
     const animated = animators.map((a) => a.mixer.getRoot() as Object3D);

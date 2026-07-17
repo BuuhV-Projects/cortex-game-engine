@@ -8,7 +8,7 @@
 
 > **debugHudRequested**(): `boolean`
 
-Defined in: src/ui/DebugHud.ts:38
+Defined in: [src/ui/DebugHud.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L38)
 
 O modo debug foi pedido? `true` quando o export foi feito com `--debug`
 (o bundle define `globalThis.__cortexDebugHud`) ou a página/host roda com

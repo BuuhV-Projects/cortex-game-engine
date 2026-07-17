@@ -3,6 +3,8 @@
 // Hermes (hermesNapi_obj) — ver native/CMakeLists.txt.
 #include "hermes_embed.h"
 
+#include "crash_handler.h"
+
 #include <hermes_napi.h>
 
 #include <hermes/Public/RuntimeConfig.h>
@@ -26,13 +28,15 @@ Runtime* rt(void* handle) {
   return static_cast<RuntimeHolder*>(handle)->runtime.get();
 }
 
-// Loga a exceção pendente do VM no stderr (e limpa).
+// Loga a exceção pendente do VM no stderr + error_log.txt (e limpa).
 void logThrown(void* handle, const char* label) {
   Runtime& runtime = *rt(handle);
   hermes::vm::GCScope scope{runtime};
-  std::fprintf(stderr, "[hermes] exceção em %s:\n", label);
-  runtime.printException(llvh::errs(), runtime.makeHandle(runtime.getThrownValue()));
+  std::string text;
+  llvh::raw_string_ostream os{text};
+  runtime.printException(os, runtime.makeHandle(runtime.getThrownValue()));
   runtime.clearThrownValue();
+  core::appendErrorLog("[hermes] exceção em %s:\n%s", label, os.str().c_str());
 }
 
 }  // namespace

@@ -197,6 +197,12 @@ napi_value makeGamepadSnapshot(napi_env env, SDL_Gamepad* pad,
 napi_value jsGetGamepads(napi_env env, napi_callback_info) {
   napi_value out = nullptr;
   napi_create_array(env, &out);
+  // Gate de FOCO (paridade com o browser): sem foco de teclado na janela, o
+  // controle não é lido — senão o MESMO controle físico ecoa em toda instância
+  // aberta (o export em segundo plano andava sozinho enquanto o dev usava o
+  // Studio, e vice-versa).
+  SDL_Window* focused = SDL_GetKeyboardFocus();
+  if (!focused) return out;  // lista vazia = nenhum pad (padrão do browser)
   for (uint32_t i = 0; i < g_gamepads.size(); ++i) {
     napi_set_element(env, out, i, makeGamepadSnapshot(env, g_gamepads[i], i));
   }

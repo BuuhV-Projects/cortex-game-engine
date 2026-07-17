@@ -1,5 +1,7 @@
 #include "napi_util.h"
 
+#include "../core/crash_handler.h"
+
 #include <cstdio>
 
 namespace njs {
@@ -36,7 +38,8 @@ void logPendingException(napi_env env, const char* where) {
   char buffer[4096];
   size_t length = 0;
   napi_get_value_string_utf8(env, asString, buffer, sizeof(buffer), &length);
-  std::fprintf(stderr, "[%s] exceção JS: %.*s\n", where,
+  // stderr + error_log.txt (num exe sem console, e o unico rastro da excecao).
+  core::appendErrorLog("[%s] excecao JS: %.*s", where,
                static_cast<int>(length), buffer);
 }
 

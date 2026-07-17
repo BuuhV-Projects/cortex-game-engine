@@ -379,4 +379,20 @@ describe('GamepadManager', () => {
     const gm = new GamepadManager();
     expect(gm).toBeInstanceOf(EventTarget);
   });
+
+  it('gate de foco: sem foco na janela NÃO lê o controle (eco entre instâncias)', () => {
+    // O mesmo controle físico alimenta toda instância viva (Studio + export).
+    // Sem foco, o poll congela — senão o Preview em segundo plano "anda sozinho"
+    // repetindo os inputs de quem joga na outra janela.
+    const gm = new GamepadManager();
+    currentGamepads[0] = makeBrowserGamepad({ index: 0, buttons: [true] });
+
+    vi.stubGlobal('document', { hasFocus: () => false });
+    gm.poll();
+    expect(gm.isButtonDown(0, 0)).toBe(false); // ignorado sem foco
+
+    vi.stubGlobal('document', { hasFocus: () => true });
+    gm.poll();
+    expect(gm.isButtonDown(0, 0)).toBe(true); // com foco volta a ler
+  });
 });

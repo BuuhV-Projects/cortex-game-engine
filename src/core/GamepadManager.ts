@@ -119,6 +119,16 @@ export class GamepadManager extends EventTarget {
       return;
     }
 
+    // Gate de FOCO: sem foco na janela/aba, congela o estado (não lê o
+    // controle). Sem isso, o mesmo controle físico "ecoa" em toda instância
+    // viva ao mesmo tempo — o Preview do Studio em segundo plano andava/pulava
+    // sozinho enquanto o dev jogava o EXPORT (player "respawnava parado").
+    // No host nativo `document.hasFocus` não existe → sempre focado (o shim
+    // SDL faz o próprio gate por janela).
+    if (typeof document !== 'undefined' && typeof document.hasFocus === 'function' && !document.hasFocus()) {
+      return;
+    }
+
     const browserGamepads = navigator.getGamepads();
 
     for (let i = 0; i < MAX_GAMEPADS; i++) {

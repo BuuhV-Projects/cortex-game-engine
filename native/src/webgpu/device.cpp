@@ -6,6 +6,7 @@
 
 #include <cstdio>
 
+#include "../core/crash_handler.h"
 #include "../napi/napi_util.h"
 #include "internal.h"
 
@@ -19,8 +20,10 @@ struct DeviceResult {
 
 void logUncapturedError(WGPUDevice const*, WGPUErrorType type,
                         WGPUStringView message, void*, void*) {
-  std::fprintf(stderr, "[webgpu erro %d] %.*s\n", static_cast<int>(type),
-               static_cast<int>(message.length), message.data);
+  // Também no error_log.txt: num exe sem console é o CONTEXTO que explica o
+  // crash/panic do wgpu que costuma vir logo depois.
+  core::appendErrorLog("[webgpu erro %d] %.*s", static_cast<int>(type),
+                       static_cast<int>(message.length), message.data);
 }
 
 // Aquisição síncrona (mesmo padrão do acquireAdapter — ver navigator.cpp).

@@ -19,12 +19,9 @@ char g_logDir[MAX_PATH] = "";
 
 // Escreve a MESMA linha no stderr e no error_log.txt (aberto por linha —
 // estamos crashando, melhor durabilidade do que elegância).
-void logLine(const char* fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  char line[1024];
+void logLineV(const char* fmt, va_list args) {
+  char line[2048];
   vsnprintf(line, sizeof(line), fmt, args);
-  va_end(args);
 
   std::fprintf(stderr, "%s\n", line);
   if (g_logDir[0]) {
@@ -36,6 +33,13 @@ void logLine(const char* fmt, ...) {
     }
   }
   std::fflush(stderr);
+}
+
+void logLine(const char* fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  logLineV(fmt, args);
+  va_end(args);
 }
 
 void logHeader(const char* kind) {
@@ -127,6 +131,13 @@ void onAbort(int) {
 }
 
 }  // namespace
+
+void appendErrorLog(const char* fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  logLineV(fmt, args);
+  va_end(args);
+}
 
 void installCrashHandler(const char* logDir) {
   if (logDir && logDir[0]) {
