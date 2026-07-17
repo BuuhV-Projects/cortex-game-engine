@@ -122,6 +122,9 @@ await build({
     'import.meta.env': '{}',
     // Atalho de fase pro teste no host (CORTEX_LEVEL=fase-1 no ambiente).
     '__CORTEX_LEVEL': JSON.stringify(process.env.CORTEX_LEVEL || ''),
+    // Export em modo DEBUG (export-game --debug): liga o DebugHud do engine
+    // (FPS/CPU/memória/GPU na tela) via globalThis no game-diagnostics.
+    '__CORTEX_DEBUG_HUD': JSON.stringify(process.env.CORTEX_DEBUG_HUD === '1'),
   },
 });
 

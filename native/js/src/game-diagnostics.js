@@ -9,6 +9,13 @@ if (SKIP_LEVEL) {
   print('[game] pulando menu: ' + globalThis.location.search);
 }
 
+// Export em modo DEBUG (export-game --debug): o define liga o DebugHud do
+// engine (FPS/CPU/memória/GPU na tela — src/ui/DebugHud.ts, lê este global).
+if (typeof __CORTEX_DEBUG_HUD !== 'undefined' && __CORTEX_DEBUG_HUD) {
+  globalThis.__cortexDebugHud = true;
+  print('[game] modo debug: HUD de métricas ligado');
+}
+
 // Medidor de FPS do host, opt-in de runtime: liga com `globalThis.__cortexPerf
 // = true` antes do boot, ou incluindo 'cortexPerf=1' na CORTEX_LAUNCH_QUERY.
 // Conta rAF por janela de ~2s e imprime média + pior frame — foi o instrumento

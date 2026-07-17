@@ -7,6 +7,7 @@ import { GameLoop } from './GameLoop.js';
 import { World } from '../ecs/World.js';
 import { UiLayer } from '../ui/runtime/UiLayer.js';
 import { createUiLayer } from '../ui/runtime/createUiLayer.js';
+import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
 
 /**
  * Handle do editor injetado no {@link Game} (só existe no bundle de
@@ -116,6 +117,8 @@ export class Game {
   private readonly _loop: GameLoop;
   private readonly _editor: GameEditor | null;
   private _onUpdate: ((deltaSeconds: number) => void) | null = null;
+  /** HUD de métricas (modo debug). `undefined` = ainda não decidido; `null` = off. */
+  private _debugHud: DebugHud | null | undefined = undefined;
   private _postfx: { render(): void } | null = null;
   private _ui: UiLayer | null = null;
   /** Cena/câmera renderizadas a cada frame. Por padrão são as do jogo; troque com
@@ -341,6 +344,15 @@ export class Game {
       this.renderer.render(this._activeScene.getThreeScene(), this._activeCamera);
     }
     this._ui?.render(); // UI por cima do frame (backend renderer; DOM é no-op)
+
+    // HUD de métricas do modo debug (export --debug ou ?cortexHud=1): criado
+    // preguiçosamente no 1º frame e alimentado com o delta CRU do loop.
+    if (this._debugHud === undefined) {
+      this._debugHud = debugHudRequested()
+        ? new DebugHud(this.ui, () => (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info ?? null)
+        : null;
+    }
+    this._debugHud?.frame(deltaMs);
   }
 
   /** Inicia o loop. */

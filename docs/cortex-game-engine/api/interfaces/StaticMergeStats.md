@@ -6,7 +6,7 @@
 
 # Interface: StaticMergeStats
 
-Defined in: src/scene/StaticMerge.ts:46
+Defined in: [src/scene/StaticMerge.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L46)
 
 **Merge da geometria estática da cena** (ADR-0120) — reduz draw calls fundindo
 as malhas paradas do cenário (ilhas, árvores, pedras, decoração) em poucas
@@ -43,7 +43,7 @@ chão/parede do Character enxerga a malha fundida (que preserva
 
 > **groups**: `number`
 
-Defined in: src/scene/StaticMerge.ts:50
+Defined in: [src/scene/StaticMerge.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L50)
 
 Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
@@ -53,7 +53,7 @@ Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
 > **kept**: `number`
 
-Defined in: src/scene/StaticMerge.ts:52
+Defined in: [src/scene/StaticMerge.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L52)
 
 Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
@@ -63,6 +63,6 @@ Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
 > **merged**: `number`
 
-Defined in: src/scene/StaticMerge.ts:48
+Defined in: [src/scene/StaticMerge.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L48)
 
 Malhas originais fundidas (removidas da cena).

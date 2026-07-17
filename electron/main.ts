@@ -533,7 +533,7 @@ const VENDOR_TYPE_MODULES = {
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter', 'signedSave'],
   physics: ['RapierPhysics'],
   scripts: ['ScriptBehavior', 'ScriptRegistry'],
-  ui: ['Speedometer'],
+  ui: ['Speedometer', 'DebugHud'],
   'ui/runtime': [
     'layout',
     'widgets',
