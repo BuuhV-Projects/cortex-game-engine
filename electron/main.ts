@@ -528,6 +528,7 @@ const VENDOR_TYPE_MODULES = {
     'VehicleSetup',
     'Kit',
     'validateScene',
+    'StaticMerge',
   ],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter', 'signedSave'],
   physics: ['RapierPhysics'],

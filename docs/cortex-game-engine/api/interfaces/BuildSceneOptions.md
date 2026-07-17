@@ -6,7 +6,7 @@
 
 # Interface: BuildSceneOptions
 
-Defined in: [src/scene/SceneBuilder.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L90)
+Defined in: [src/scene/SceneBuilder.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L91)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/scene/SceneBuilder.ts:90](https://github.com/BuuhV-Projects/cor
 
 > `optional` **camera?**: `OrthographicCamera` \| `PerspectiveCamera`
 
-Defined in: [src/scene/SceneBuilder.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L111)
+Defined in: [src/scene/SceneBuilder.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L112)
 
 Câmera do jogo — **necessária** se a cena tem nós `background` (o backdrop
 segue a câmera e rola em parallax). Passe `game.camera`.
@@ -25,7 +25,7 @@ segue a câmera e rola em parallax). Passe `game.camera`.
 
 > `optional` **kit?**: \{ `assets`: `Record`\<`string`, \{ `anchors?`: `Record`\<`string`, \{ `at`: \[`number`, `number`, `number`\]; `dir?`: \[`number`, `number`, `number`\]; `kind`: `"surface"` \| `"connect"`; \}\>; `collider?`: \{ `oneWay?`: `boolean`; `shape?`: `"box"` \| `"capsule"` \| `"circle"` \| `"heightfield"`; `solid?`: `boolean`; \}; `gameplayRole?`: `string`[]; `role`: `string`; `size?`: \[`number`, `number`, `number`\]; `tags?`: `string`[]; `thumb?`: `string`; \}\>; `module?`: `number`; `name`: `string`; `theme?`: `string`; `version`: `1`; \} \| `object`[]
 
-Defined in: [src/scene/SceneBuilder.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L124)
+Defined in: [src/scene/SceneBuilder.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L125)
 
 Manifesto(s) de kit (`kit.json` parseado com [parseKit](../functions/parseKit.md); ADR-0053) —
 habilita o encaixe por socket (`attach` nos nós) e o preset de collider por
@@ -73,10 +73,24 @@ Design tokens de atmosfera (nome do tema).
 
 > `optional` **matte?**: `boolean`
 
-Defined in: [src/scene/SceneBuilder.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L106)
+Defined in: [src/scene/SceneBuilder.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L107)
 
 Deixa **todos** os modelos foscos (mata o brilho PBR → look cartoon/desenho).
 Um nó pode sobrescrever com `matte: false`. Atalho global do [setMatte](../functions/setMatte.md).
+
+***
+
+### mergeStatic?
+
+> `optional` **mergeStatic?**: `boolean`
+
+Defined in: [src/scene/SceneBuilder.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L133)
+
+Funde a geometria ESTÁTICA da cena em poucas malhas por material ao final do
+build (ADR-0120, [mergeStaticScene](../functions/mergeStaticScene.md)) — derruba draw calls onde o render
+é CPU-bound (host nativo/Hermes). Default: **liga sozinho no host nativo**
+(`isNativeHost()`), desligado no browser/Studio (o editor F2 precisa dos
+objetos individuais). `true`/`false` força.
 
 ***
 
@@ -84,7 +98,7 @@ Um nó pode sobrescrever com `matte: false`. Atalho global do [setMatte](../func
 
 > `optional` **overlay?**: [`SceneFileV1`](SceneFileV1.md) \| `null`
 
-Defined in: [src/scene/SceneBuilder.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L94)
+Defined in: [src/scene/SceneBuilder.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L95)
 
 Overlay do editor (overrides de transform + `data.deleted`/`data.added`).
 
@@ -94,7 +108,7 @@ Overlay do editor (overrides de transform + `data.deleted`/`data.added`).
 
 > `optional` **physicsPaused?**: () => `boolean`
 
-Defined in: [src/scene/SceneBuilder.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L118)
+Defined in: [src/scene/SceneBuilder.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L119)
 
 Predicado pra **pausar a física de Character** (gravidade/pulo) — o
 `CharacterPhysicsSystem` que o `buildScene` registra pra nós `character`
@@ -111,7 +125,7 @@ não cair enquanto você edita a cena no F2. Sem isso, a física roda sempre.
 
 > `optional` **renderer?**: [`Renderer`](../classes/Renderer.md)
 
-Defined in: [src/scene/SceneBuilder.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L92)
+Defined in: [src/scene/SceneBuilder.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L93)
 
 Necessário se alguma definição usa o preset `outdoorLighting`.
 
@@ -121,7 +135,7 @@ Necessário se alguma definição usa o preset `outdoorLighting`.
 
 > `optional` **world?**: [`World`](../classes/World.md)
 
-Defined in: [src/scene/SceneBuilder.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L101)
+Defined in: [src/scene/SceneBuilder.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L102)
 
 Mundo ECS — quando presente, nós com `collider`/`player` viram entidades
 (Transform + Object3D + Collider2D [+ PlatformerBody + FollowCameraTarget]),

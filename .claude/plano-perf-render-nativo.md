@@ -8,7 +8,15 @@ render ~19 ms/frame, física+ECS ~2 ms, UI ~2 ms. Menu (sem cena) faz 250+ fps.
 
 ---
 
-## Item 2 — Merge estático no export (alvo: 60 fps, esforço médio)
+## Item 2 — Merge estático no export — ✅ FEITO, resultado abaixo do previsto
+
+> **Resultado medido (2026-07-17, ADR-0121):** implementado e ligado por default
+> no host nativo (`mergeStaticScene`, auto no `buildScene`). Fase 1: 57 malhas
+> → 15 grupos, física/visual intactos — mas fps foi só de 41 → ~43. Draw call
+> NÃO era o gargalo restante: com/sem merge e com SSAA 1×/2× o frame fica
+> ~23 ms ⇒ o custo dominante é o overhead por-frame do WebGPURenderer no
+> interpretador. Fica ligado (custo zero, ajuda em cena maior), mas o salto de
+> fps real depende do **item 3**. Plano original abaixo, mantido pra histórico.
 
 **Ideia:** o custo do render é ∝ nº de draw calls (~90 na fase 1: cada ilha,
 árvore, pedra, moeda, flor). Cozinhar a parte ESTÁTICA da cena em ~10–15 meshes
@@ -58,19 +66,29 @@ Três rotas, em ordem de recomendação:
 - Risco: shermes é experimental; bundle de 2,6 MB pode expor bugs — o spike
   responde rápido.
 
-### Rota B — Hermes com JIT (só PC)
-- O Hermes tem JIT experimental (HERMES_ENABLE_JIT). Ganho menor que shermes
-  AOT e **não serve pro Xbox** (JIT proibido em console) → bifurca o
-  comportamento PC vs console. Só vale como tapa-buraco.
+### Rota B — Hermes com JIT (DESCARTADA, decisão 2026-07-17)
+- **Consoles proíbem JIT** (W^X: página de memória não pode ser gravável E
+  executável; todo código executável vem assinado no pacote — vale pra Xbox/
+  GDK, PlayStation e Switch). JIT só rodaria no export PC → bifurca PC rápido /
+  Xbox lento e mata a razão de ser do host único (PRD-0004). Além disso o JIT
+  do Hermes é experimental e focado em arm64, não x86-64. Não seguir.
 
-### Rota C — Trocar o motor (V8/JSC embarcado)
-- V8 embarcado dá o desempenho do Studio, mas: binário +30–60 MB, JIT proibido
-  no Xbox (V8 jitless ≈ interpretador de novo), NAPI reescrita. Não recomendo —
-  perde a razão de ser do host único PC/console.
+### Rota C — Trocar o motor (V8/JSC embarcado) (DESCARTADA)
+- V8 embarcado dá o desempenho do Studio no PC, mas no Xbox só roda jitless
+  (≈ interpretador de novo), binário +30–60 MB e NAPI reescrita. Não seguir.
 
-### Sequência sugerida
-1. Item 2 primeiro (independe de motor, ganho garantido, destrava 60 fps).
-2. Spike da Rota A (1–2 dias, mede e decide com número).
+### Nota "IL2CPP da engine" (pergunta do dev)
+A alternativa AOT análoga ao IL2CPP da Unity **é exatamente a Rota A**: IL2CPP
+compila IL/C# → C++ → nativo; shermes compila JS → C → nativo. Mesma categoria
+permitida em console (código pré-compilado e assinado, zero codegen em
+runtime). Outras rotas AOT avaliadas e descartadas: AssemblyScript/WASM
+(reescrever a engine num subset de TS, abandona o three), Porffor (imaturo),
+reescrever o render em C++/Rust no host (abandona o WebGPURenderer — escopo de
+outra engine).
+
+### Sequência DECIDIDA (2026-07-17)
+1. **Item 2 primeiro** (em execução) — independe de motor, ganho garantido.
+2. Spike da Rota A/shermes (1–2 dias, mede e decide com número).
 3. Se shermes entregar ≥2×: migração num milestone próprio (M5?), com ADR.
 
 ---

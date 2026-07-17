@@ -532,6 +532,15 @@ pré-requisito antes de playtest/critique); ela carrega automaticamente as **reg
 aprendidas do projeto** (`.cortex/validation-rules.json`, gravadas pelo ciclo de
 aprendizado via `save_rule` — ADR-0115) como default dessas opções.
 
+**Merge estático** (`mergeStaticScene(root, world?, extraDynamicRoots?)`,
+`isNativeHost()`, ADR-0121): funde a geometria PARADA do cenário em poucas
+malhas por material (transform baked) pra reduzir draw calls. O `buildScene`
+chama sozinho no host nativo (opt-out `mergeStatic: false` nas opções); nunca
+roda no Studio (o editor precisa dos objetos individuais). Ficam de fora:
+entidades dinâmicas (scripts/player/Rapier), animados, skinned, vegetação,
+terreno, água. Física preservada (`cortexSolid` sobrevive; colliders derivam
+antes).
+
 ## Blockout / ProBuilder — nó `mesh` editável (ADR-0071)
 
 `MeshNode`, `buildShape`, `SHAPES`, `ShapeKind`, `EditableMesh`, `toBufferGeometry`,

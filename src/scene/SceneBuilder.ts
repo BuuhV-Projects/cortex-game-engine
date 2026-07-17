@@ -51,6 +51,7 @@ import { RapierBodyComponent } from '../components/RapierBodyComponent.js';
 import { RapierPhysicsSystem } from '../systems/RapierPhysicsSystem.js';
 import { RapierPhysics } from '../physics/RapierPhysics.js';
 import { Water } from './Water.js';
+import { mergeStaticScene, isNativeHost } from './StaticMerge.js';
 import { Background } from './Background.js';
 import { toBufferGeometry, type EditableMesh } from '../probuilder/EditableMesh.js';
 import { buildShape } from '../probuilder/shapes.js';
@@ -122,6 +123,14 @@ export interface BuildSceneOptions {
    * `role` do asset (o `collider` do nó/overlay vence o preset).
    */
   kit?: KitManifest | KitManifest[];
+  /**
+   * Funde a geometria ESTÁTICA da cena em poucas malhas por material ao final do
+   * build (ADR-0120, {@link mergeStaticScene}) — derruba draw calls onde o render
+   * é CPU-bound (host nativo/Hermes). Default: **liga sozinho no host nativo**
+   * (`isNativeHost()`), desligado no browser/Studio (o editor F2 precisa dos
+   * objetos individuais). `true`/`false` força.
+   */
+  mergeStatic?: boolean;
 }
 
 /**
@@ -770,6 +779,17 @@ export async function buildScene(
       }
       // type === 'none' → nenhuma física (override pode ter DESLIGADO um collider do código).
     }
+  }
+
+  // ── Merge estático (ADR-0120) — POR ÚLTIMO: colliders/entidades já derivaram
+  // dos nós individuais; daqui pra frente só o render enxerga a fusão. Default:
+  // liga no host nativo (CPU-bound por draw call), fica fora no browser/Studio
+  // (o editor F2 seleciona/move objetos individuais).
+  if (options.mergeStatic ?? isNativeHost()) {
+    // Objetos com animação de cena (SceneAnimator) são dinâmicos — o mixer anima
+    // ESSAS malhas; fundidas, congelariam.
+    const animated = animators.map((a) => a.mixer.getRoot() as Object3D);
+    mergeStaticScene(three, options.world, animated);
   }
 
   return {

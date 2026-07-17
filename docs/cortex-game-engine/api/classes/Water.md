@@ -69,7 +69,7 @@ O `Mesh` do plano de água, já adicionado à cena.
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: [src/scene/Water.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L134)
+Defined in: [src/scene/Water.ts:137](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L137)
 
 Anima as cáusticas deslizando o offset da textura nos dois eixos. Chame uma
 vez por frame passando o delta em **segundos** (`deltaTime / 1000`). No-op

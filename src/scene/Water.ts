@@ -105,6 +105,9 @@ export class Water {
     this.mesh.position.y = y;
     this.mesh.name = 'Water';
     this.mesh.receiveShadow = true; // sombras das peças se projetam na água
+    // Marca a água pra outros sistemas (ex.: StaticMerge NÃO pode fundi-la — o
+    // update() anima ESTA malha/material; fundida, congelaria).
+    this.mesh.userData['cortexWater'] = true;
     scene.add(this.mesh);
 
     if (causticsUrl) {

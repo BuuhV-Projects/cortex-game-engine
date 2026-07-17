@@ -83,7 +83,10 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   socket — ver abaixo) e — se há `world` — cria as **entidades ECS** (corpos de
   física, sprites animados, terreno). Marca cada nó com
   `obj.userData.cortexSceneNode = true` (o editor usa pra saber o que é
-  autorável). Lê o **overlay** e aplica suas precedências.
+  autorável). Lê o **overlay** e aplica suas precedências. **No host nativo**,
+  ao final, funde a geometria ESTÁTICA por material (`mergeStaticScene`,
+  ADR-0121; opt-out `opts.mergeStatic`) — menos draw calls, física/visual
+  intactos; nunca roda no Studio (o F2 precisa dos objetos individuais).
 - **Kit / sockets (`Kit.ts`, ADR-0053)** — `parseKit` valida o `kit.json`
   (role/tags/gameplayRole/size/collider/anchors por asset); com `opts.kit`, nós
   `model` podem declarar `attach { socket, to, toSocket }` e o `buildScene`
