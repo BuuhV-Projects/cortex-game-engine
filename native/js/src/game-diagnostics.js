@@ -9,6 +9,36 @@ if (SKIP_LEVEL) {
   print('[game] pulando menu: ' + globalThis.location.search);
 }
 
+// Medidor de FPS do host, opt-in de runtime: liga com `globalThis.__cortexPerf
+// = true` antes do boot, ou incluindo 'cortexPerf=1' na CORTEX_LAUNCH_QUERY.
+// Conta rAF por janela de ~2s e imprime média + pior frame — foi o instrumento
+// que caçou o bug dos 4,7 fps (raycast em SkinnedMesh, ADR-0118); fica
+// disponível pra diagnósticos futuros.
+const PERF_ON =
+  globalThis.__cortexPerf === true ||
+  String((globalThis.location && globalThis.location.search) || '').indexOf('cortexPerf=1') >= 0;
+if (PERF_ON) {
+  let perfCount = 0;
+  let perfStart = 0;
+  let perfPrev = 0;
+  let perfWorst = 0;
+  const perfTick = (ts) => {
+    if (!perfStart) { perfStart = ts; perfPrev = ts; }
+    perfCount++;
+    const gap = ts - perfPrev;
+    if (gap > perfWorst) perfWorst = gap;
+    perfPrev = ts;
+    const span = ts - perfStart;
+    if (span >= 2000) {
+      const fps = (perfCount / span) * 1000;
+      print('[perf] fps=' + fps.toFixed(1) + ' worst=' + perfWorst.toFixed(0) + 'ms frames=' + perfCount);
+      perfCount = 0; perfStart = ts; perfWorst = 0;
+    }
+    requestAnimationFrame(perfTick);
+  };
+  requestAnimationFrame(perfTick);
+}
+
 // Estágio do bootstrap visível no console do host (o main.ts marca
 // window.__bootStage a cada etapa: fase → scene → audio → pronto).
 let lastStage = '';
