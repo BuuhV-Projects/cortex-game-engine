@@ -51,7 +51,51 @@ agrupados por material derruba o custo por frame sem mudar nada do gameplay.
    - `data.matte`/`shadow` por nó: nós com settings distintos caem em grupos
      distintos.
 
-## Item 3 — Motor JS com JIT / Static Hermes (alvo: 2–5× todo o JS, esforço alto)
+## Item 3 — RESULTADO DO SPIKE (2026-07-17): a alavanca é ATUALIZAR o runtime, não o shermes
+
+Spike executado num container Ubuntu (Docker) buildando o facebook/hermes main
+(hermes + shermes + hermesc, clang 18, Release) e rodando um bench proxy do
+frame (core real do three.js headless: updateMatrixWorld de 1200 nós, culling,
+13 raycasts, mixer 59 ossos, loop numérico — `bench.js`, mesmo arquivo es5 em
+todos os runtimes):
+
+| Runtime | ms/frame (proxy) | vs host atual |
+|---|---|---|
+| **Host real** (hermes.dll MS 0.1.27 vendorizado, via boot.hbc no cortex_host) | **93,5** | 1× |
+| MS hermes.exe CLI (build DEBUG — só referência) | 117,9 | — |
+| facebook-main **interpretado** (Linux, mesmo CPU) | **21,8** | **~4,3×** |
+| facebook-main **shermes AOT** (untyped) | 16,0 | ~5,8× (só 1,4× sobre o interpretador novo) |
+| node/V8 | 1,3–1,7 | ~60× |
+
+**Conclusões:**
+1. **O hermes.dll vendorizado (MS 0.1.27, o mais novo do NuGet) é ~4,3× mais
+   lento que o interpretador atual do facebook/hermes main** no mesmo código e
+   CPU. O NuGet da MS está parado — não existe drop-in mais novo.
+2. **shermes untyped dá só ~1,4×** sobre o interpretador novo — os 2–5×
+   prometidos são do modo TIPADO, e o three.js é untyped. Não vale a migração
+   de toolchain. (O boot.bundle.js real de 2,6 MB COMPILA no shermes em ~4 min,
+   se um dia valer.)
+3. **Rota decidida: portar o host pro runtime do facebook/hermes main.**
+   Potencial: render ~19 ms → ~5 ms ⇒ 60 fps folgado, sem tocar no jogo.
+   O facebook main tem a camada NAPI (`API/napi`, upstream do fork MS) e
+   `hermes_napi_create_env(runtime)` — o porte é o `js_runtime.cpp` (trocar
+   `jsr_*` por HermesRuntime C++ + hermes_napi) + buildar o Hermes pra Windows
+   (MSVC/clang-cl — risco principal; o fork MS existia por isso). AOT de
+   bytecode continua igual (hermesc do mesmo commit).
+4. JIT segue descartado (console proíbe) e V8 segue descartado (jitless no
+   Xbox); o interpretador novo roda em qualquer console (zero codegen).
+
+**Próximos passos (nova sequência do item 3):**
+1. Buildar facebook/hermes main no Windows (Release, clang-cl ou MSVC) —
+   hermes.dll/lib + hermesc.exe novos.
+2. Portar `native/src/core/js_runtime.cpp` pra HermesRuntime + hermes_napi.
+3. Rodar o bench no host portado (meta: ~22 ms de proxy → ganho ~4×) e o
+   teste4 fase 1 (meta: 60 fps).
+4. ADR + atualizar hermesc no export + fetch-deps.
+
+---
+
+## (histórico) Item 3 — Motor JS com JIT / Static Hermes (alvo: 2–5× todo o JS, esforço alto)
 
 **Ideia:** o multiplicador de TUDO (render, física, scripts) é o interpretador.
 Três rotas, em ordem de recomendação:
