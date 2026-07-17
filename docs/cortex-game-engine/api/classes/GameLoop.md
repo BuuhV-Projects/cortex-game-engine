@@ -6,7 +6,7 @@
 
 # Class: GameLoop
 
-Defined in: [src/core/GameLoop.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L27)
+Defined in: [src/core/GameLoop.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L43)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/core/GameLoop.ts:27](https://github.com/BuuhV-Projects/cortex-g
 
 > **new GameLoop**(`options`): `GameLoop`
 
-Defined in: [src/core/GameLoop.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L43)
+Defined in: [src/core/GameLoop.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L59)
 
 #### Parameters
 
@@ -34,7 +34,7 @@ Defined in: [src/core/GameLoop.ts:43](https://github.com/BuuhV-Projects/cortex-g
 
 > **get** **isPaused**(): `boolean`
 
-Defined in: [src/core/GameLoop.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L101)
+Defined in: [src/core/GameLoop.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L117)
 
 Indica se o loop está pausado.
 
@@ -50,7 +50,7 @@ Indica se o loop está pausado.
 
 > **get** **isRunning**(): `boolean`
 
-Defined in: [src/core/GameLoop.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L96)
+Defined in: [src/core/GameLoop.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L112)
 
 Indica se o loop está ativo (inclui estado pausado).
 
@@ -64,7 +64,7 @@ Indica se o loop está ativo (inclui estado pausado).
 
 > **pause**(): `void`
 
-Defined in: [src/core/GameLoop.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L76)
+Defined in: [src/core/GameLoop.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L92)
 
 Pausa o loop sem resetar o estado. Use `resume()` para continuar.
 Sem efeito se não estiver rodando ou já estiver pausado.
@@ -79,7 +79,7 @@ Sem efeito se não estiver rodando ou já estiver pausado.
 
 > **resume**(): `void`
 
-Defined in: [src/core/GameLoop.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L87)
+Defined in: [src/core/GameLoop.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L103)
 
 Retoma o loop após `pause()`. Reinicializa `lastTime` para evitar um
 spike de deltaTime acumulado durante a pausa.
@@ -95,7 +95,7 @@ Sem efeito se não estiver rodando ou não estiver pausado.
 
 > **start**(): `void`
 
-Defined in: [src/core/GameLoop.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L54)
+Defined in: [src/core/GameLoop.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L70)
 
 Inicia o loop. Sem efeito se já estiver rodando.
 
@@ -109,7 +109,7 @@ Inicia o loop. Sem efeito se já estiver rodando.
 
 > **stop**(): `void`
 
-Defined in: [src/core/GameLoop.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L66)
+Defined in: [src/core/GameLoop.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L82)
 
 Para o loop completamente e reseta o estado interno.
 

@@ -4,7 +4,7 @@ import { Entity } from '../ecs/Entity.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
-import { ensureBoundsTree } from '../physics/raycastAccel.js';
+import { ensureBoundsTree, isSkinned } from '../physics/raycastAccel.js';
 
 const DOWN = new Vector3(0, -1, 0);
 /** Tolerância de contato (skin width) — folga p/ considerar "tocando o chão". */
@@ -68,6 +68,9 @@ function collectScene(
       }
       if (!(o as { isMesh?: boolean }).isMesh || ud['cortexVegetationSub']) return;
       if (ud['editorInternal'] || ud['cortexRoadMarkings']) return; // gizmo/decoração: fora da física
+      // Personagem/NPC (SkinnedMesh) NUNCA é chão/parede — e raycast em malha
+      // skinada computa o skinning por vértice na CPU a cada raio (ver isSkinned).
+      if (isSkinned(o)) return;
       // Props detalhados (ponte de corda, cenário) ganham árvore BVH → raycast
       // O(log n) em vez de O(nº de triângulos). Sem isso, encostar num prop de
       // ~2000 tris derruba o FPS no export nativo (Hermes lento). Ver raycastAccel.

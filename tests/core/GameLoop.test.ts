@@ -127,6 +127,25 @@ describe('GameLoop', () => {
     expect(deltaTime).toBeGreaterThan(0);
   });
 
+  it('deltaTime é limitado a 100 ms num hitch gigante (anti-tunneling, ADR-0118)', () => {
+    // Um frame pode demorar QUALQUER tempo (GC, background, máquina lenta).
+    // Sem o clamp, a física integra um passo gigante e o personagem atravessa
+    // o chão (respawn infinito no export nativo a <9 fps).
+    const onUpdate = vi.fn();
+    const loop = new GameLoop({ onUpdate, fixedStep: 50 });
+    loop.start();
+    vi.advanceTimersByTime(50); // tick normal (dt ~50)
+    const before = onUpdate.mock.calls.length;
+    // Hitch: o relógio salta 5 s até o próximo tick do interval.
+    const frozen = performance.now() + 5000;
+    const spy = vi.spyOn(performance, 'now').mockReturnValue(frozen);
+    vi.advanceTimersByTime(50);
+    spy.mockRestore();
+    const dt = (onUpdate.mock.calls[before] as [number])[0];
+    expect(dt).toBe(100); // clamp: nunca repassa o salto inteiro
+    loop.stop();
+  });
+
   // ── onFixedUpdate ───────────────────────────────────────────────────────
 
   it('onFixedUpdate é chamado com o passo fixo configurado', () => {

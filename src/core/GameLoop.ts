@@ -10,7 +10,11 @@
  */
 
 export interface GameLoopOptions {
-  /** Chamado a cada frame com o tempo decorrido em ms desde o frame anterior. */
+  /**
+   * Chamado a cada frame com o tempo decorrido em ms desde o frame anterior,
+   * **limitado a 100 ms** (frames mais lentos desaceleram o jogo em vez de
+   * entregar um passo gigante que tunela a física — ver `MAX_DELTA_MS`).
+   */
   onUpdate: (deltaTime: number) => void;
   /**
    * Chamado em passo fixo com `fixedDeltaTime` constante.
@@ -23,6 +27,18 @@ export interface GameLoopOptions {
    */
   fixedStep?: number;
 }
+
+/**
+ * Teto do `deltaTime` repassado ao `onUpdate` (ms). Um frame pode demorar
+ * QUALQUER tempo (hitch de GC, aba em background, máquina lenta, load de shader):
+ * repassar o dt cru faz a física integrar um passo gigante — com gravidade,
+ * `y += v*dt` atravessa o chão num único tick (o raycast de pouso, que parte de
+ * `pés + stepHeight`, nasce ABAIXO da superfície e não a vê) e o personagem cai
+ * no vazio ("respawn infinito" no export nativo a <9 fps). Com o clamp, abaixo
+ * de ~10 fps o JOGO desacelera (time dilation) em vez de teleportar/tunelar —
+ * o comportamento padrão de engines (Unity `maximumDeltaTime`).
+ */
+const MAX_DELTA_MS = 100;
 
 export class GameLoop {
   private readonly _onUpdate: (dt: number) => void;
@@ -147,7 +163,9 @@ export class GameLoop {
    */
   private _step(): void {
     const now = this._now();
-    const deltaTime = now - this._lastTime;
+    // Clamp anti-tunneling: ver MAX_DELTA_MS. O relógio do jogo desacelera num
+    // frame lento; nunca entrega um passo que atravessa geometria.
+    const deltaTime = Math.min(now - this._lastTime, MAX_DELTA_MS);
     this._lastTime = now;
 
     // Passo variável

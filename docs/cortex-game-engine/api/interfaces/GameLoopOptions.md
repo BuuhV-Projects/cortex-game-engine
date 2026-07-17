@@ -23,7 +23,7 @@ a cada passo fixo de física.
 
 > `optional` **fixedStep?**: `number`
 
-Defined in: [src/core/GameLoop.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L24)
+Defined in: [src/core/GameLoop.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L28)
 
 Intervalo do passo fixo em ms.
 
@@ -39,7 +39,7 @@ Intervalo do passo fixo em ms.
 
 > `optional` **onFixedUpdate?**: (`fixedDeltaTime`) => `void`
 
-Defined in: [src/core/GameLoop.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L19)
+Defined in: [src/core/GameLoop.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L23)
 
 Chamado em passo fixo com `fixedDeltaTime` constante.
 Ideal para física e lógica determinística (ex: `World.tick` do ECS).
@@ -60,9 +60,11 @@ Ideal para física e lógica determinística (ex: `World.tick` do ECS).
 
 > **onUpdate**: (`deltaTime`) => `void`
 
-Defined in: [src/core/GameLoop.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L14)
+Defined in: [src/core/GameLoop.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L18)
 
-Chamado a cada frame com o tempo decorrido em ms desde o frame anterior.
+Chamado a cada frame com o tempo decorrido em ms desde o frame anterior,
+**limitado a 100 ms** (frames mais lentos desaceleram o jogo em vez de
+entregar um passo gigante que tunela a física — ver `MAX_DELTA_MS`).
 
 #### Parameters
 

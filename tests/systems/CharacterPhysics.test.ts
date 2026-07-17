@@ -4,7 +4,7 @@
  * (jumpForce/maxJumps), e o personagem ficando EM CIMA do terreno.
  */
 import { describe, it, expect } from 'vitest';
-import { Object3D, Mesh, BoxGeometry, MeshBasicMaterial } from 'three';
+import { Object3D, Mesh, SkinnedMesh, BoxGeometry, MeshBasicMaterial } from 'three';
 import { World } from '../../src/ecs/World.js';
 import { Terrain } from '../../src/scene/Terrain.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
@@ -172,6 +172,32 @@ describe('CharacterBody + colisão real (raycast na geometria, tipo Unity)', () 
     e.addComponent(c);
     for (let i = 0; i < 200; i++) world.tick(16);
     expect(t.y).toBeCloseTo(0.8, 1); // pés em 0 → origem em 0.8 (não afundou pra 0)
+    expect(c.grounded).toBe(true);
+  });
+});
+
+describe('SkinnedMesh nunca é chão (ADR-0118)', () => {
+  it('personagem NÃO se apoia em malha skinada (cai até o groundY)', () => {
+    // Raycast em SkinnedMesh computa o skinning por vértice na CPU a cada raio —
+    // catastrófico no Hermes (~150 ms/frame; teste4 caiu a 4,7 fps quando o
+    // cute_player denso entrou na cena). Personagem/NPC nunca é superfície
+    // pisável, então o collectScene pula skinned por completo.
+    const scene = new Object3D();
+    const npc = new SkinnedMesh(new BoxGeometry(40, 1, 40), new MeshBasicMaterial());
+    npc.position.y = 4.5; // "chão" skinado em y=5, entre o spawn e o groundY
+    scene.add(npc);
+    scene.updateMatrixWorld(true);
+
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 10, 0);
+    const c = new CharacterBodyComponent({ groundY: 0 });
+    e.addComponent(t);
+    e.addComponent(c);
+
+    for (let i = 0; i < 200; i++) world.tick(16);
+    expect(t.y).toBe(0); // atravessou o skinned e pousou no piso de segurança
     expect(c.grounded).toBe(true);
   });
 });

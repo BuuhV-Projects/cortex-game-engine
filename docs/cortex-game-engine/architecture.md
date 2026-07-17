@@ -338,6 +338,18 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   0) enquanto o declarado no JSON não. **Nota de design:** Character é p/ quem **anda**
   (player/NPC com gravidade); NPC/prop **parado** deve ser `static`, não Character (o
   Character é dirigido pela física, então o gizmo "briga" com ele no editor).
+- **Raycast por-frame NUNCA pode incluir `SkinnedMesh`** (ADR-0118). O `three`
+  computa o skinning **por vértice na CPU a cada raio** (`boneTransform`) e o BVH
+  (ADR-0108) pula skinned de propósito — um personagem denso na cena derrubou o
+  export nativo (Hermes) de ~40 pra **4,7 fps** (~190 ms/frame só de raycast), e
+  o raycast do three **não pula objeto invisível** (o mannequin oculto sob a casca
+  cute custava igual). Filtrar **ANTES** do `intersectObjects` (montando a lista
+  de alvos sem skinned — ver `isSkinned` em `raycastAccel.ts`), nunca só nos hits
+  (`isUnder`/`isCamIgnored` rodavam DEPOIS da interseção já paga). O picking do
+  editor pode raycastar skinned (custo pontual de clique). Colado nisso: o
+  `GameLoop` **limita o deltaTime a 100 ms** — sem o clamp, um frame lento faz a
+  gravidade integrar um passo maior que o `stepHeight` e o personagem atravessa o
+  chão (era o "respawn infinito" do export a <9 fps).
 - **Raycast de gameplay tem que ignorar o chrome do editor.** O gizmo
   (`TransformControls`) e helpers ficam **na mesma cena** (bundle de dev). O
   `editorInternal` fica na **raiz** do helper, mas o raycast acerta as **peças

@@ -33,6 +33,19 @@ if (!geoProto.computeBoundsTree) {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
+ * `obj` é uma malha skinada (personagem/NPC)? Raycast em `SkinnedMesh` computa o
+ * **skinning por vértice na CPU a cada raio** (`boneTransform`) — num raycast de
+ * física por frame isso é catastrófico (no Hermes do export nativo, ~150 ms/frame
+ * com um personagem denso na cena; derrubou a fase a ~5 fps). Personagem nunca é
+ * chão/parede/obstáculo de câmera — os sistemas de física e câmera devem **pular**
+ * malhas skinadas ao montar as listas de raycast. O picking do editor continua
+ * raycastando skinned normalmente (custo pontual de um clique, não por frame).
+ */
+export function isSkinned(obj: Object3D): boolean {
+  return (obj as { isSkinnedMesh?: boolean }).isSkinnedMesh === true;
+}
+
+/**
  * Abaixo disto o BVH não compensa: montar a árvore custa mais que o ganho no
  * raycast de uma malha pequena (tiles/itens do kit têm ~80–300 tris).
  */

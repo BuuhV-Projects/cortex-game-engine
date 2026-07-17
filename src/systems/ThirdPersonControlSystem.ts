@@ -8,6 +8,7 @@ import type { InputManager } from '../core/InputManager.js';
 import type { GamepadManager } from '../core/GamepadManager.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { deriveLocomotion, autoMapPlayerClips } from './PlatformerAnimationSystem.js';
+import { isSkinned } from '../physics/raycastAccel.js';
 
 /** Opções do {@link ThirdPersonControlSystem} (porta o ThirdPersonController do Unity StarterAssets). */
 export interface ThirdPersonControlOptions {
@@ -126,6 +127,7 @@ export class ThirdPersonControlSystem extends System {
   private readonly lookTarget = new THREE.Vector3();
   private readonly camRay = new THREE.Raycaster();
   private readonly camBack = new THREE.Vector3();
+  private readonly camTargets: THREE.Object3D[] = []; // alvos do spring arm (sem skinned/self)
 
   constructor(
     private readonly camera: THREE.PerspectiveCamera,
@@ -292,13 +294,20 @@ export class ThirdPersonControlSystem extends System {
     // puxa a câmera pra dentro — nunca atravessa o chão. Raio do alvo na direção da câmera.
     let dist = this.camDist;
     if (this.collisionRoot) {
+      // Alvos coletados ANTES do raycast, pulando malha skinada: o raio nasce na
+      // cabeça do personagem e raycast em SkinnedMesh computa o skinning por
+      // vértice na CPU a cada raio (ver isSkinned em raycastAccel) — filtrar nos
+      // HITS (isCamIgnored) já pagava esse custo todo frame.
+      this.camTargets.length = 0;
+      this.collisionRoot.traverse((o) => {
+        if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
+        if (isCamIgnored(o, self)) return;
+        this.camTargets.push(o);
+      });
       this.camRay.set(this.lookTarget, this.camBack);
       this.camRay.far = this.camDist;
-      for (const h of this.camRay.intersectObject(this.collisionRoot, true)) {
-        if (isCamIgnored(h.object, self)) continue;
-        dist = Math.max(h.distance - CAM_SKIN, CAM_MIN_DIST);
-        break; // 1ª superfície bloqueante (hits vêm ordenados por distância)
-      }
+      const h = this.camRay.intersectObjects(this.camTargets, false)[0];
+      if (h) dist = Math.max(h.distance - CAM_SKIN, CAM_MIN_DIST); // 1ª superfície bloqueante
     }
 
     this.camera.position.set(
