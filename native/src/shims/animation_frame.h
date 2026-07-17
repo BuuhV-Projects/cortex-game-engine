@@ -2,7 +2,7 @@
 // frame do loop nativo (o JS re-registra a cada frame, como no browser).
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 namespace shims {
 

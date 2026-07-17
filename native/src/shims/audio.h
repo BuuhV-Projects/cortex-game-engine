@@ -4,7 +4,7 @@
 // reconstruída em js/src/shims/webaudio-lite.js.
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 namespace shims {
 

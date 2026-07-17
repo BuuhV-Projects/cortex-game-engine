@@ -6,7 +6,7 @@
 // mantendo a mesma API JS.
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 #include <string>
 

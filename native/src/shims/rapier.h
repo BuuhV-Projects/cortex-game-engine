@@ -3,7 +3,7 @@
 // rapier3d-compat é reconstruída em JS (js/src/shims/rapier-compat.js).
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 namespace shims {
 

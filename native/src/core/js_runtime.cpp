@@ -4,6 +4,7 @@
 #include <cstdlib>
 
 #include "../napi/napi_util.h"
+#include "hermes_embed.h"
 
 namespace core {
 namespace {
@@ -38,28 +39,35 @@ uint8_t* readFile(const std::string& path, size_t* outSize) {
 
 }  // namespace
 
-JsRuntime::JsRuntime() {
-  jsr_config config = nullptr;
-  jsr_create_config(&config);
-  jsr_create_runtime(config, &runtime_);
-  jsr_delete_config(config);
-  jsr_runtime_get_node_api_env(runtime_, &env_);
-  jsr_open_napi_env_scope(env_, &scope_);
+JsRuntime::HandleScope::HandleScope(napi_env env) : env_(env) {
+  napi_open_handle_scope(env_, &scope_);
+}
 
+JsRuntime::HandleScope::~HandleScope() {
+  if (scope_) napi_close_handle_scope(env_, scope_);
+}
+
+JsRuntime::JsRuntime() {
+  runtime_ = cortexHermesCreateRuntime();
+  env_ = cortexHermesCreateEnv(runtime_);
+
+  HandleScope scope{env_};
   napi_value global = nullptr;
   napi_get_global(env_, &global);
   njs::setMethod(env_, global, "print", jsPrint);
 }
 
 JsRuntime::~JsRuntime() {
-  jsr_close_napi_env_scope(env_, scope_);
-  jsr_delete_runtime(runtime_);
+  // O runtime é dono do env (hermes_napi): destruir o runtime derruba o env.
+  cortexHermesDestroyRuntime(runtime_);
 }
 
 bool JsRuntime::runBoot(const std::string& baseDir) {
+  HandleScope scope{env_};
   size_t size = 0;
   if (uint8_t* data = readFile(baseDir + "boot.hbc", &size)) {
-    if (!runPreparedBytecode(data, size)) return false;
+    // O hermes toma posse de `data` (libera quando não precisar mais).
+    if (!cortexHermesRunBytecode(runtime_, env_, data, size, "boot.hbc")) return false;
     std::printf("boot: bytecode boot.hbc executado\n");
     return true;
   }
@@ -72,43 +80,18 @@ bool JsRuntime::runBoot(const std::string& baseDir) {
   return false;
 }
 
-bool JsRuntime::runPreparedBytecode(uint8_t* data, size_t size) {
-  jsr_prepared_script prepared = nullptr;
-  napi_status status = jsr_create_prepared_script(
-      env_, data, size, [](void* d, void*) { std::free(d); }, nullptr,
-      "boot.hbc", &prepared);
-  if (status != napi_ok) {
-    njs::logPendingException(env_, "prepare boot.hbc");
-    return false;
-  }
-  napi_value result = nullptr;
-  status = jsr_prepared_script_run(env_, prepared, &result);
-  jsr_delete_prepared_script(env_, prepared);
-  if (status != napi_ok) {
-    njs::logPendingException(env_, "run boot.hbc");
-    return false;
-  }
-  return true;
-}
-
 bool JsRuntime::runSourceFile(const std::string& path) {
   size_t size = 0;
   uint8_t* data = readFile(path, &size);
   if (!data) return false;
-  napi_value source = nullptr;
-  napi_create_string_utf8(env_, reinterpret_cast<char*>(data), size, &source);
+  const bool ok = cortexHermesRunScript(
+      runtime_, env_, reinterpret_cast<char*>(data), size, "boot.js");
   std::free(data);
-  napi_value result = nullptr;
-  if (jsr_run_script(env_, source, "boot.js", &result) != napi_ok) {
-    njs::logPendingException(env_, "run boot.js");
-    return false;
-  }
-  return true;
+  return ok;
 }
 
 void JsRuntime::drainMicrotasks() {
-  bool hasMore = false;
-  jsr_drain_microtasks(env_, -1, &hasMore);
+  cortexHermesDrainJobs(runtime_);
 }
 
 }  // namespace core

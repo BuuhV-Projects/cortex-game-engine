@@ -10,6 +10,7 @@
 #include <string>
 
 #include "core/app_window.h"
+#include "core/crash_handler.h"
 #include "core/gdk.h"
 #include "core/host_gpu.h"
 #include "core/js_runtime.h"
@@ -21,6 +22,7 @@
 #include "shims/image_decode.h"
 #include "shims/input.h"
 #include "shims/ktx2.h"
+#include "shims/perf_stats.h"
 #include "shims/quit.h"
 #include "shims/rapier.h"
 #include "shims/text_raster.h"
@@ -104,6 +106,7 @@ void shutdownGpu(HostGpu* gpu) {
 }  // namespace
 
 int main(int argc, char** argv) {
+  core::installCrashHandler();  // segfault vira backtrace no stderr, não exit mudo
   // Steam (release PC): checa relaunch-via-Steam + init ANTES de tudo. Se a Steam
   // vai relançar (app aberto fora dela), sai já. No-op sem CORTEX_STEAM.
   if (!core::initSteam()) return 0;
@@ -120,6 +123,10 @@ int main(int argc, char** argv) {
 
   {
     core::JsRuntime js;
+    // Scope raiz do embedding: cobre o REGISTRO dos shims e os globals do boot
+    // (valores criados fora de callback JS precisam de scope — ver
+    // JsRuntime::HandleScope). Os frames abrem scopes próprios aninhados.
+    core::JsRuntime::HandleScope bootScope{js.env()};
     // Diretório do jogo: argv[1] (boot.hbc + assets lidos de lá) ou, sem
     // argumento, a pasta do exe.
     const char* basePath = SDL_GetBasePath();
@@ -135,6 +142,7 @@ int main(int argc, char** argv) {
     shims::registerUserStorage(js.env(), deriveGameName(argc, argv, baseDir));
     shims::registerImageDecode(js.env());
     shims::registerKtx2(js.env());
+    shims::registerPerfStats(js.env());
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());
     shims::registerAudio(js.env());
@@ -195,6 +203,11 @@ int main(int argc, char** argv) {
     const uint64_t t0 = SDL_GetTicksNS();
     bool running = true;
     while (running) {
+      // UM handle scope NAPI por frame: todo valor criado do lado nativo
+      // (input, args de timers/rAF, perf stats) nasce e morre aqui — sem
+      // scope aberto o NAPI upstream corrompe a marcação do GC (ver
+      // JsRuntime::HandleScope).
+      core::JsRuntime::HandleScope frameScope{js.env()};
       running = pollEvents(js.env(), window, &gpu);
       double elapsedMs =
           static_cast<double>(SDL_GetTicksNS() - t0) / 1'000'000.0;

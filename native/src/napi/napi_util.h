@@ -3,7 +3,7 @@
 // WebGPU/SDL: é a camada utilitária de TODOS os bindings.
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 #include <string>
 

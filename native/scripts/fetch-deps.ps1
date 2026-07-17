@@ -6,7 +6,8 @@ $ErrorActionPreference = 'Stop'
 
 $SDL_VERSION   = '3.4.12'
 $WGPU_VERSION  = 'v29.0.1.1'
-$HERMES_VERSION = '0.1.27'   # NuGet Microsoft.JavaScript.Hermes (fork microsoft/hermes-windows)
+# (o runtime Hermes agora vem do clone pinado de facebook/hermes — ver o fim
+#  deste script; o NuGet da MS foi aposentado no ADR-0122)
 
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $tp = Join-Path $root 'third_party'
@@ -129,11 +130,33 @@ if (-not (Test-Path (Join-Path $nsisDir 'Bin/makensis.exe'))) {
     Remove-Item $tmp -Recurse -Force
 }
 
-# ── Hermes (runtime JS; fork Windows da Microsoft, via NuGet) ──
-$hermesZip = Fetch 'Hermes' "https://www.nuget.org/api/v2/package/Microsoft.JavaScript.Hermes/$HERMES_VERSION" "hermes-$HERMES_VERSION.nupkg.zip"
-$hermesDir = Join-Path $tp 'hermes'
-if (-not (Test-Path $hermesDir)) {
-    Expand-Archive $hermesZip -DestinationPath $hermesDir
+# ── Hermes UPSTREAM (facebook/hermes) — runtime JS do host (ADR-0122) ──
+# Clonado no commit pinado; o native/CMakeLists builda como SUBPROJETO (flags/
+# ABI idênticos entre VM e glue). Substituiu o fork MS do NuGet (0.1.27, ~4×
+# mais lento no mesmo bytecode; o pacote está parado).
+$HERMES_COMMIT = 'efcf68e285865fd9d952070b08e751bcad63f25e'
+$hermesUp = Join-Path $tp 'hermes-upstream/src'
+if (-not (Test-Path (Join-Path $hermesUp 'CMakeLists.txt'))) {
+    Write-Host 'clonando facebook/hermes (pinado) ...' -ForegroundColor Cyan
+    New-Item -ItemType Directory -Force $hermesUp | Out-Null
+    git -C $hermesUp init -q
+    git -C $hermesUp remote add origin https://github.com/facebook/hermes.git
+    git -C $hermesUp fetch -q --depth 1 origin $HERMES_COMMIT
+    git -C $hermesUp checkout -q FETCH_HEAD
+    Set-Content (Join-Path $tp 'hermes-upstream/PINNED_COMMIT') $HERMES_COMMIT
+}
+# Patch: os testes NAPI geram regras duplicadas de .lib no Windows/Ninja
+# (test_exception.lib) — gate atrás de HERMES_NAPI_TESTS (off por default).
+$extCmake = Join-Path $hermesUp 'external/CMakeLists.txt'
+$extSrc = Get-Content $extCmake -Raw
+if ($extSrc -notmatch 'HERMES_NAPI_TESTS') {
+    $extSrc = $extSrc -replace 'if\(HERMES_ENABLE_NAPI\)', @'
+# [cortex] testes NAPI desligados: geram regras duplicadas de .lib no
+# Windows/Ninja (test_exception.lib) e nao fazem parte do runtime embarcado.
+if(HERMES_ENABLE_NAPI AND HERMES_NAPI_TESTS)
+'@
+    Set-Content $extCmake $extSrc -Encoding utf8
+    Write-Host 'hermes: patch dos testes NAPI aplicado' -ForegroundColor Cyan
 }
 
 Write-Host "deps prontas em native/third_party/" -ForegroundColor Green

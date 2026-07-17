@@ -4,7 +4,7 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 namespace shims {
 

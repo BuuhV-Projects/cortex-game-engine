@@ -4,7 +4,7 @@
 // que já existe (Fase 1: sem formatos de bloco no shim WebGPU).
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 namespace shims {
 

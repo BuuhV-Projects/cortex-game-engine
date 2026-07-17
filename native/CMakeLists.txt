@@ -12,6 +12,7 @@ set(TP ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 add_executable(cortex_host
   src/main.cpp
   src/core/app_window.cpp
+  src/core/crash_handler.cpp
   src/core/gdk.cpp
   src/core/steam.cpp
   src/core/js_runtime.cpp
@@ -22,6 +23,7 @@ add_executable(cortex_host
   src/shims/image_decode.cpp
   src/shims/input.cpp
   src/shims/pak.cpp
+  src/shims/perf_stats.cpp
   src/shims/quit.cpp
   src/shims/rapier.cpp
   src/shims/text_raster.cpp
@@ -43,10 +45,54 @@ add_executable(cortex_host
   src/webgpu/textures.cpp
 )
 
+# ── Hermes UPSTREAM (facebook/hermes) como SUBPROJETO (ADR-0122) ─────────────
+# Substitui o fork Microsoft (jsr_*, NuGet 0.1.27 — ~4× mais lento no mesmo
+# bytecode). Buildar do fonte no MESMO build garante flags/ABI idênticos entre
+# o VM e o glue (hermes_embed) — headers do VM com defines diferentes quebram
+# ABI em silêncio. fetch-deps clona o commit pinado em third_party/hermes-upstream/src.
+set(HERMES_UPSTREAM ${TP}/hermes-upstream/src)
+if(NOT EXISTS ${HERMES_UPSTREAM}/CMakeLists.txt)
+  message(FATAL_ERROR "Hermes upstream não encontrado em ${HERMES_UPSTREAM} — rode native/scripts/fetch-deps.ps1")
+endif()
+set(HERMES_ENABLE_TEST_SUITE OFF CACHE BOOL "" FORCE)
+add_subdirectory(${HERMES_UPSTREAM} hermes-upstream EXCLUDE_FROM_ALL)
+
+# Glue de embedding: alvo próprio que herda includes/defines EXATOS do build do
+# Hermes (via hermesNapi_obj) — o resto do host só vê napi_env + a API C dele.
+add_library(cortex_hermes_embed STATIC src/core/hermes_embed.cpp)
+target_link_libraries(cortex_hermes_embed PUBLIC hermesNapi_obj)
+# ABI: o glue compila com as MESMAS defines de diretório do Hermes (HERMESVM_*,
+# STATIC_HERMES, boost context…) — headers do VM com defines diferentes mudam
+# layout em silêncio. A propriedade de diretório carrega o que o CMakeLists do
+# Hermes declara via add_definitions, e se auto-atualiza num bump de commit.
+get_directory_property(HERMES_DIR_DEFS DIRECTORY ${HERMES_UPSTREAM} COMPILE_DEFINITIONS)
+target_compile_definitions(cortex_hermes_embed PRIVATE ${HERMES_DIR_DEFS})
+if(MSVC)
+  # Espelha o Hermes.cmake: sem exceções/RTTI (modelo do VM) + supressões dos
+  # headers (C4576 compound literals, C4141 __forceinline+inline).
+  # (as target_compile_options vêm DEPOIS do CMAKE_CXX_FLAGS na linha do cl —
+  #  o último /EH vence, então o /EHsc global é sobrescrito aqui.)
+  target_compile_options(cortex_hermes_embed PRIVATE /EHs-c- /GR- /wd4576 /wd4141)
+endif()
+target_include_directories(cortex_hermes_embed PRIVATE
+  ${HERMES_UPSTREAM}/API/napi
+  ${HERMES_UPSTREAM}/include/hermes/napi
+  # llvh + gerados: o hermes injeta estes includes por diretório (não pela
+  # interface dos targets) — espelham a linha de compile das TUs do próprio VM.
+  # O llvh/gen/include tem os .inc pré-gerados (Attributes.inc etc.).
+  ${HERMES_UPSTREAM}/external
+  ${HERMES_UPSTREAM}/external/llvh/include
+  ${HERMES_UPSTREAM}/external/llvh/gen/include
+  ${CMAKE_BINARY_DIR}/hermes-upstream/include
+  ${CMAKE_BINARY_DIR}/hermes-upstream/external/llvh/include
+  ${CMAKE_BINARY_DIR}/hermes-upstream/lib/config
+)
+
 # js/src (prelude + main + three/webgpu) → esbuild → bundle único → hermesc
 # → boot.hbc (console não faz parse de JS em runtime; PC segue igual por
 # paridade). O esbuild resolve o three no node_modules da raiz do repo.
-set(HERMESC ${TP}/hermes/tools/native/release/x86/hermes.exe)
+# hermesc é o do MESMO commit do runtime (bytecode acoplado à versão do VM).
+set(HERMESC $<TARGET_FILE:hermesc>)
 file(GLOB_RECURSE BOOT_JS_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/js/src/*.js)
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/boot.bundle.js
@@ -60,7 +106,7 @@ add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/boot.hbc
   COMMAND ${HERMESC} -emit-binary -w
           -out ${CMAKE_BINARY_DIR}/boot.hbc ${CMAKE_BINARY_DIR}/boot.bundle.js
-  DEPENDS ${CMAKE_BINARY_DIR}/boot.bundle.js
+  DEPENDS ${CMAKE_BINARY_DIR}/boot.bundle.js hermesc
   COMMENT "hermesc: boot.bundle.js -> boot.hbc"
 )
 add_custom_target(boot_hbc ALL DEPENDS ${CMAKE_BINARY_DIR}/boot.hbc)
@@ -72,8 +118,8 @@ target_include_directories(cortex_host PRIVATE
   ${TP}/stb
   ${TP}/basisu
   ${TP}/wgpu/include
-  ${TP}/hermes/build/native/include
-  ${TP}/hermes/build/native/include/node-api
+  # node_api.h/js_native_api.h vendorizados no próprio hermes upstream.
+  ${HERMES_UPSTREAM}/include/hermes/napi
 )
 
 # basis_universal transcoder (ADR-0108): habilita KTX2 COM supercompressão Zstd
@@ -94,10 +140,25 @@ set_source_files_properties(${TP}/zstd/zstddeclib.c PROPERTIES LANGUAGE C)
 # antes do build; o fetch-deps NÃO cobre isso porque é código nosso)
 set(RAPIER_NATIVE ${CMAKE_CURRENT_SOURCE_DIR}/rapier-native/target/release)
 
+# Stack de 10 MB como os executáveis do próprio Hermes (Hermes.cmake): o
+# interpretador usa stack nativa funda — com o 1 MB default do MSVC o bundle
+# grande do jogo estourava (segfault no boot).
+if(MSVC)
+  target_link_options(cortex_host PRIVATE /STACK:10000000)
+endif()
+
 target_link_libraries(cortex_host PRIVATE
   ${TP}/SDL3/lib/x64/SDL3.lib
   ${TP}/wgpu/lib/wgpu_native.dll.lib
-  ${TP}/hermes/build/native/win32/x64/hermes.lib
+  cortex_hermes_embed
+  hermesNapi
+  # Fecho transitivo do runtime upstream: o hermescompiler é o agregado com
+  # LLVHSupport/hermesSupport/HBC etc. (o LINK_OBJLIBS do hermes não propaga
+  # tudo pra consumidores externos); jsi/hermesapi completam a JSI usada pelo VM.
+  hermescompiler
+  hermesapi
+  hermesInternalBytecode
+  jsi
   ${RAPIER_NATIVE}/rapier_native.dll.lib
 )
 
@@ -154,11 +215,11 @@ if(CORTEX_STEAM)
 endif()
 
 # DLLs ao lado do executável
+# (hermes agora é ESTÁTICO no exe — sem hermes.dll; ADR-0122)
 add_custom_command(TARGET cortex_host POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
     ${TP}/SDL3/lib/x64/SDL3.dll
     ${TP}/wgpu/lib/wgpu_native.dll
-    ${TP}/hermes/build/native/win32/x64/hermes.dll
     ${RAPIER_NATIVE}/rapier_native.dll
     ${TP}/fonts/Roboto-Medium.ttf
     $<TARGET_FILE_DIR:cortex_host>

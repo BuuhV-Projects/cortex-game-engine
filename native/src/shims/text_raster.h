@@ -4,7 +4,7 @@
 // lado do exe (ou do jogo).
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 #include <string>
 

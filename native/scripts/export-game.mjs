@@ -21,13 +21,17 @@ const args = process.argv.slice(2);
 // steam_api64.dll. O app id fica BAKED no host (-DCORTEX_STEAM_APPID no build);
 // o steam_appid.txt (dev/480) NÃO vai pro release.
 const steam = args.includes('--steam');
+// --debug: export em MODO DEBUG — o jogo mostra o HUD de métricas na tela
+// (FPS/frame ms, CPU, memória, GPU — src/ui/DebugHud.ts). Vira o define
+// __CORTEX_DEBUG_HUD no bundle; o runtime é o mesmo do release.
+const debugHud = args.includes('--debug');
 // --xbox: host GDK (native/build-gdk, CORTEX_GDK) + gera MicrosoftGame.config +
 // logos (app model GDK / Gaming.Desktop.x64). O alvo de console (Scarlett) exige
 // GXDK+ID@Xbox — ver architecture.md; hoje produz o pacote do app model no PC.
 const gdk = args.includes('--xbox');
 const gameDir = args.find((a) => !a.startsWith('--')) ? path.resolve(args.find((a) => !a.startsWith('--'))) : null;
 if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
-  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--steam|--xbox]');
+  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--steam|--xbox] [--debug]');
   process.exit(1);
 }
 
@@ -48,9 +52,9 @@ if (!fs.existsSync(path.join(hostBuild, 'cortex_host.exe'))) {
   );
   process.exit(1);
 }
-const hermesc = path.join(
-  engineRoot, 'native', 'third_party', 'hermes', 'tools', 'native', 'release', 'x86', 'hermes.exe',
-);
+// hermesc do MESMO build do runtime embutido (ADR-0122 — o bytecode é acoplado
+// à versão do VM; upstream buildado como subprojeto do host).
+const hermesc = path.join(hostBuild, 'bin', 'hermesc.exe');
 
 // Erros de arquivo TRAVADO no Windows (o jogo exportado aberto, ou o Explorer
 // na pasta, segurando o exe/dll/asset). A causa nº 1 de export falho: dá uma
@@ -93,8 +97,13 @@ const bundlePath = path.join(dist, 'boot.bundle.js');
 execFileSync(
   process.execPath,
   [path.join(engineRoot, 'native', 'scripts', 'bundle.mjs'), bundlePath, path.join(gameDir, 'main.ts')],
-  { stdio: 'inherit', cwd: engineRoot },
+  {
+    stdio: 'inherit',
+    cwd: engineRoot,
+    env: { ...process.env, ...(debugHud ? { CORTEX_DEBUG_HUD: '1' } : {}) },
+  },
 );
+if (debugHud) console.log('[export] modo DEBUG: HUD de métricas ligado no bundle');
 
 // 2. bytecode Hermes
 step('bytecode');
@@ -111,7 +120,7 @@ const runtimeFiles = [
   ['cortex_host.exe', `${gameName}.exe`],
   ['SDL3.dll', 'SDL3.dll'],
   ['wgpu_native.dll', 'wgpu_native.dll'],
-  ['hermes.dll', 'hermes.dll'],
+  // (sem hermes.dll — o runtime upstream é estático no exe, ADR-0122)
   ['rapier_native.dll', 'rapier_native.dll'],
   ['Roboto-Medium.ttf', 'Roboto-Medium.ttf'],
 ];

@@ -84,14 +84,22 @@ todos os runtimes):
    bytecode continua igual (hermesc do mesmo commit).
 4. JIT segue descartado (console proíbe) e V8 segue descartado (jitless no
    Xbox); o interpretador novo roda em qualquer console (zero codegen).
+5. **Plano B (manter fork MS só no console) REJEITADO pelo dev (2026-07-17)**:
+   host único com o runtime novo nos DOIS alvos; o porte do upstream pra
+   GDKX/console fica anotado como parte do M4.
 
-**Próximos passos (nova sequência do item 3):**
-1. Buildar facebook/hermes main no Windows (Release, clang-cl ou MSVC) —
-   hermes.dll/lib + hermesc.exe novos.
-2. Portar `native/src/core/js_runtime.cpp` pra HermesRuntime + hermes_napi.
-3. Rodar o bench no host portado (meta: ~22 ms de proxy → ganho ~4×) e o
-   teste4 fase 1 (meta: 60 fps).
-4. ADR + atualizar hermesc no export + fetch-deps.
+**EXECUTADO (2026-07-17, ADR-0122):** porte concluído — Hermes upstream como
+subprojeto CMake (estático no exe, MSVC), hermesc do mesmo commit no export,
+fix crítico do handle-scope NAPI (segfault de GC) + crash handler simbolizado
+permanente. Medido: proxy no host 93,5→32-52 ms (2-3×; MSVC codegen < clang);
+fase 1 41→~50 fps, frame = lógica 4 ms + render 15,6 ms — o render agora é
+dominado por CHAMADAS wgpu/NAPI+driver.
+
+**Próximos levers pra 60 fps (novo item 4):**
+1. PostFX off/reduzido no export (~4 ms → ~60 fps) — flag simples.
+2. Reduzir chamadas WebGPU por frame (bind groups/uniforms — three-side).
+3. Rebuildar o Hermes com clang-cl (codegen: Linux/clang fez 21,8 ms no mesmo
+   bench — ~1,5× sobre o MSVC de graça, se o build fechar).
 
 ---
 

@@ -3,7 +3,7 @@
 // O fetch() do JS (js/src/shims/net.js) é construído em cima disto.
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 #include <string>
 

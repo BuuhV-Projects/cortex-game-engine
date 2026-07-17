@@ -3,7 +3,7 @@
 // O createImageBitmap do JS (js/src/shims/image.js) usa isto.
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 namespace shims {
 

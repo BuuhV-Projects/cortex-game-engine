@@ -12,7 +12,7 @@
 // Fora do módulo, use apenas bindings.h.
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 #include "../core/host_gpu.h"
 

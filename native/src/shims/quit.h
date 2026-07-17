@@ -4,7 +4,7 @@
 // window.close() pra cá, mantendo a API do browser no código do jogo.
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 namespace shims {
 

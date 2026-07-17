@@ -3,7 +3,7 @@
 // o que o Three.js WebGPURenderer usa. Ver docs/cortex-native/architecture.md.
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 #include "../core/host_gpu.h"
 

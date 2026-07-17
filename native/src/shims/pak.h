@@ -3,7 +3,7 @@
 // Barreira contra extração casual (não é criptografia — ver o .mjs).
 #pragma once
 
-#include <hermes/hermes_api.h>
+#include <node_api.h>
 
 #include <string>
 
