@@ -6,7 +6,7 @@
 
 # Class: UiTemplate
 
-Defined in: [src/ui/runtime/UiTemplate.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L54)
+Defined in: [src/ui/runtime/UiTemplate.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L58)
 
 Template compilado (parse 1x; `build` quantas vezes quiser).
 
@@ -16,7 +16,7 @@ Template compilado (parse 1x; `build` quantas vezes quiser).
 
 > **new UiTemplate**(`roots`, `sheet`): `UiTemplate`
 
-Defined in: [src/ui/runtime/UiTemplate.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L55)
+Defined in: [src/ui/runtime/UiTemplate.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L59)
 
 #### Parameters
 
@@ -38,7 +38,7 @@ Defined in: [src/ui/runtime/UiTemplate.ts:55](https://github.com/BuuhV-Projects/
 
 > **build**(`ui`, `options?`): [`UiTemplateInstance`](../interfaces/UiTemplateInstance.md)
 
-Defined in: [src/ui/runtime/UiTemplate.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L61)
+Defined in: [src/ui/runtime/UiTemplate.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L65)
 
 Instancia os widgets na camada.
 

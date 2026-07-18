@@ -6,11 +6,12 @@
 
 # Class: UiPanel
 
-Defined in: [src/ui/runtime/widgets.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L55)
+Defined in: [src/ui/runtime/widgets.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L56)
 
 Caixa (fundo de HUD, card de menu, faixa de banner). O estilo é um SUBSET
-que os DOIS backends desenham igual (ADR-0102): cor/gradiente vertical,
-canto arredondado e borda — nada de CSS arbitrário.
+do CSS **com os MESMOS nomes do HTML5** (filosofia DOM-lite: não reinventar
+— `background`, `borderRadius`, `boxShadow`...), que os DOIS backends
+desenham igual (ADR-0102). Toda cor aceita alpha (`#rrggbbaa`/`rgba(...)`).
 
 ## Extends
 
@@ -22,13 +23,13 @@ canto arredondado e borda — nada de CSS arbitrário.
 
 > **new UiPanel**(`props?`): `UiPanel`
 
-Defined in: [src/ui/runtime/widgets.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L81)
+Defined in: [src/ui/runtime/widgets.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L99)
 
 #### Parameters
 
 ##### props?
 
-[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiPanel`, `"background"` \| `"backgroundTo"` \| `"cornerRadius"` \| `"borderWidth"` \| `"borderColor"` \| `"backgroundImage"`\>\> = `{}`
+[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiPanel`, `"background"` \| `"backgroundTo"` \| `"cornerRadius"` \| `"borderRadius"` \| `"borderWidth"` \| `"borderColor"` \| `"backgroundImage"` \| `"boxShadow"`\>\> = `{}`
 
 #### Returns
 
@@ -56,9 +57,11 @@ Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cor
 
 > **background**: `string` = `'#000000'`
 
-Defined in: [src/ui/runtime/widgets.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L57)
+Defined in: [src/ui/runtime/widgets.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L62)
 
-Cor CSS (`#rrggbb`).
+`background` do CSS: cor (`#rrggbb`, `#rrggbbaa`, `rgba(...)`) OU
+gradiente `linear-gradient(180deg|90deg, c1, c2)` (180deg = topo→base,
+90deg = esquerda→direita — únicos ângulos do subset).
 
 ***
 
@@ -66,7 +69,7 @@ Cor CSS (`#rrggbb`).
 
 > **backgroundImage**: `string` \| `null` = `null`
 
-Defined in: [src/ui/runtime/widgets.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L73)
+Defined in: [src/ui/runtime/widgets.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L91)
 
 URL de uma **imagem de fundo** (ex.: arte do menu). Cobre o painel
 ("cover" — preenche sem distorcer, corta o excedente) por cima da
@@ -76,13 +79,15 @@ quad texturizado). Atributo `image` no template.
 
 ***
 
-### backgroundTo
+### ~~backgroundTo~~
 
 > **backgroundTo**: `string` \| `null` = `null`
 
-Defined in: [src/ui/runtime/widgets.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L59)
+Defined in: [src/ui/runtime/widgets.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L64)
 
-Se definida, gradiente vertical `background` (topo) → `backgroundTo` (base).
+#### Deprecated
+
+Use `background: 'linear-gradient(180deg, c1, c2)'` (CSS).
 
 ***
 
@@ -90,9 +95,9 @@ Se definida, gradiente vertical `background` (topo) → `backgroundTo` (base).
 
 > **borderColor**: `string` = `'#ffffff'`
 
-Defined in: [src/ui/runtime/widgets.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L65)
+Defined in: [src/ui/runtime/widgets.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L77)
 
-Cor da borda.
+`border-color` do CSS.
 
 ***
 
@@ -100,9 +105,21 @@ Cor da borda.
 
 > **borderWidth**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L63)
+Defined in: [src/ui/runtime/widgets.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L75)
 
-Largura da borda em px (0 = sem borda).
+`border-width` do CSS (px; 0 = sem borda).
+
+***
+
+### boxShadow
+
+> **boxShadow**: `string` = `'none'`
+
+Defined in: [src/ui/runtime/widgets.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L83)
+
+`box-shadow` do CSS, no subset SOMBRA DURA: `"0 Npx 0 <cor>"` (a sombra
+chapada dos botões cartoon) ou `"none"`. Sem blur/spread — os dois
+backends desenham uma cópia da caixa deslocada N px pra baixo.
 
 ***
 
@@ -110,9 +127,9 @@ Largura da borda em px (0 = sem borda).
 
 > **cornerRadius**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L61)
+Defined in: [src/ui/runtime/widgets.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L66)
 
-Raio dos cantos em px (0 = reto).
+Raio dos cantos em px (0 = reto). Nome legado de [borderRadius](#borderradius).
 
 ***
 
@@ -134,7 +151,7 @@ Sujo = backend precisa re-sincronizar este widget.
 
 > **fill**: `boolean` = `false`
 
-Defined in: [src/ui/runtime/widgets.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L80)
+Defined in: [src/ui/runtime/widgets.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L98)
 
 Painel de fundo do tamanho do viewport (atributo `fill` do template). Quando
 `true`, o UiLayer redimensiona width/height pro viewport ATUAL a cada frame —
@@ -252,6 +269,38 @@ Defined in: [src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cor
 #### Inherited from
 
 [`UiWidget`](UiWidget.md).[`y`](UiWidget.md#y)
+
+## Accessors
+
+### borderRadius
+
+#### Get Signature
+
+> **get** **borderRadius**(): `number`
+
+Defined in: [src/ui/runtime/widgets.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L68)
+
+`border-radius` do CSS (px). Alias primário de [cornerRadius](#cornerradius).
+
+##### Returns
+
+`number`
+
+#### Set Signature
+
+> **set** **borderRadius**(`value`): `void`
+
+Defined in: [src/ui/runtime/widgets.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L71)
+
+##### Parameters
+
+###### value
+
+`number`
+
+##### Returns
+
+`void`
 
 ## Methods
 

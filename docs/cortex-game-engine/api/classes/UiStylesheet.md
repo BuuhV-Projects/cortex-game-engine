@@ -6,7 +6,7 @@
 
 # Class: UiStylesheet
 
-Defined in: [src/ui/runtime/UiStylesheet.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L26)
+Defined in: [src/ui/runtime/UiStylesheet.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L30)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/ui/runtime/UiStylesheet.ts:26](https://github.com/BuuhV-Project
 
 > **new UiStylesheet**(`rules`): `UiStylesheet`
 
-Defined in: [src/ui/runtime/UiStylesheet.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L27)
+Defined in: [src/ui/runtime/UiStylesheet.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L31)
 
 #### Parameters
 
@@ -32,7 +32,7 @@ Defined in: [src/ui/runtime/UiStylesheet.ts:27](https://github.com/BuuhV-Project
 
 > **apply**\<`T`\>(`widget`, `className`): `T`
 
-Defined in: [src/ui/runtime/UiStylesheet.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L30)
+Defined in: [src/ui/runtime/UiStylesheet.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L34)
 
 Aplica a classe (e `:focus`, se houver) ao widget. Erro se não existir.
 

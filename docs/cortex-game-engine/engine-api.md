@@ -292,6 +292,53 @@ async function enterFase(level) {
 for (;;) { await enterFase(await showMainMenu(game, LEVELS)) }
 ```
 
+## UI de runtime "DOM-lite" (menus/HUD, funciona no console) — ADR-0102/0123
+
+HUD, menus e telas do jogo sobre `game.ui` (**UiLayer**): DOM no Studio, cena
+WebGPU no export nativo (PC/Xbox) — mesma aparência nos dois. Navegação por
+d-pad/setas + A/Enter embutida (REGRA: 100% jogável no controle). **Nada de DOM
+cru** em UI de jogo.
+
+Widgets: `UiPanel` (caixa), `UiLabel` (texto), `UiButton` (focável). As props
+de estilo usam os **nomes do CSS/HTML5** (ADR-0123 — não reinvente):
+
+```ts
+import { UiPanel, UiLabel, UiButton, loadUiTemplate } from 'cortex-game-engine'
+
+// Botão "cartoon" (menu v4): gradiente + moldura + sombra dura + ícone à esquerda
+const play = game.ui.add(new UiButton({
+  anchor: 'center-left', x: 60, y: -20, width: 340, height: 72,
+  text: 'Novo Jogo', fontSize: 26, color: '#2e465c', textAlign: 'left',
+  background: 'linear-gradient(180deg, #ffe976, #ffbd30)',
+  focusBackground: 'linear-gradient(180deg, #fff3a6, #ffd24a)',
+  borderWidth: 4, borderColor: '#ffffffef', borderRadius: 28,
+  boxShadow: '0 11px 0 #bd7800',
+  onPress: () => start(),
+}))
+
+// Scrim translúcido (cor com ALPHA — sem empilhar faixas de opacity)
+game.ui.add(new UiPanel({ anchor: 'top-left', width: 480, height: 16384,
+  background: 'linear-gradient(90deg, #061226a3, #06122619)' }))
+
+// Hero com imagem CLIPADA pelo raio (mundo/nível)
+game.ui.add(new UiPanel({ anchor: 'center', width: 900, height: 460,
+  borderRadius: 44, borderWidth: 6, borderColor: '#ffffff',
+  backgroundImage: 'assets/ui/worlds/ilhas.png' }))
+```
+
+- `background`: cor (`#rrggbb`, `#rrggbbaa`, `rgba(...)`) **ou**
+  `linear-gradient(180deg|90deg, c1, c2)`. Toda cor aceita alpha.
+- `boxShadow`: sombra DURA `"0 Npx 0 <cor>"` ou `"none"` (sem blur — subset).
+- `borderRadius` (alias CSS de `cornerRadius`), `borderWidth`/`borderColor`
+  (em botão = moldura constante; foco usa `focusBorderWidth/Color`).
+- `textAlign` no botão: `left|center|right` (respeita `paddingX`).
+- Telas estáticas podem ser **templates HTML** (`loadUiTemplate(ui, url)`):
+  tags `<div>/<span>/<img src>/<button onpress>` + `<style>` com o mesmo
+  subset CSS (`box-shadow`, `text-align`, gradientes...). Valor fora do
+  subset = erro na compilação.
+- Fora do subset (use composição de widgets): radial-gradient, blur,
+  transições, SVG. Glifos no console: só o que a Roboto tem (evite emoji).
+
 ## Diálogo + UI in-game (narrativa) — ADR-0070
 
 Primeira **UI de runtime** do engine (DOM overlay, vai pro build). Diálogo é **DADO**:

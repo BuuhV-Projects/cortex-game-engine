@@ -75,7 +75,7 @@ Ver ADR-0109.
 | `native/src/shims/rapier.*` | Ponte C ABI do crate rapier-native → `__rapierNative` (funções achatadas, f64). |
 | `native/src/shims/audio.*` | `__cortexAudio`: decode (miniaudio) + playback (streams SDL3; loop/gain/pitch); `updateAudio()` por frame. |
 | `native/src/shims/text_raster.*` | `__cortexRasterText` (stb_truetype + Roboto pinada) → bitmap RGBA branco pro RendererUiBackend (ADR-0102). |
-| `src/ui/runtime/` (ENGINE) | UI de runtime ADR-0102: UiLayer/widgets/layout + DomUiBackend e RendererUiBackend. `uiFont.ts` embute a Roboto Medium (woff2, @font-face) pro DOM = mesma fonte do raster nativo (ADR-0103). Painel `fill` acompanha o viewport a cada frame (UiLayer). |
+| `src/ui/runtime/` (ENGINE) | UI de runtime ADR-0102: UiLayer/widgets/layout + DomUiBackend e RendererUiBackend. `uiFont.ts` embute a Roboto Medium (woff2, @font-face) pro DOM = mesma fonte do raster nativo (ADR-0103). Painel `fill` acompanha o viewport a cada frame (UiLayer). **DOM-lite com nomes do HTML5 (ADR-0123)**: `background` aceita `linear-gradient(180deg\|90deg,…)` e cores com alpha (`uiColor.ts` decompõe pro shader — THREE.Color não tem alpha), `boxShadow` duro (`"0 Npx 0 cor"`, segunda malha), `borderRadius`/`textAlign`, borda constante em botão, imagem clipada pelo raio (SDF) e tags `<div>/<span>/<img>` no template. Ordem de pintura por widget = `order*4` (sombra<caixa<imagem<texto). |
 | `native/rapier-native/` | Crate Rust (cdylib): Rapier de verdade com C ABI mínima espelhando o que o engine usa. |
 | `native/src/webgpu/bindings.h` | API pública do módulo: `registerBindings`, `presentIfAcquired`. Fora do módulo, só inclua este. |
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |

@@ -8,7 +8,7 @@
 
 > **parseUiCss**(`css`): [`UiStylesheet`](../classes/UiStylesheet.md)
 
-Defined in: [src/ui/runtime/UiStylesheet.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L42)
+Defined in: [src/ui/runtime/UiStylesheet.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiStylesheet.ts#L46)
 
 Compila o CSS (subset) — lança erro descritivo pra qualquer coisa fora dele.
 
