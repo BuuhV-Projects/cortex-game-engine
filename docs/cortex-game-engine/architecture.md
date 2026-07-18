@@ -353,6 +353,14 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   `GameLoop` **limita o deltaTime a 100 ms** — sem o clamp, um frame lento faz a
   gravidade integrar um passo maior que o `stepHeight` e o personagem atravessa o
   chão (era o "respawn infinito" do export a <9 fps).
+- **O 1º tick do world roda ANTES do 1º render — e o three só computa
+  `matrixWorld` no render.** Qualquer raycast nesse tick enxergava TODO mesh na
+  **identidade** (origem = tipicamente o spawn do player): o spring arm da câmera
+  de 3ª pessoa "colidia" com um objeto a 50u dali e abria o jogo com a câmera
+  **colada** no player por 1 frame. O `buildScene` fecha com
+  `updateMatrixWorld(true)` na cena (e o `addSceneNode` no objeto adicionado) —
+  raycast funciona no frame 0 sem depender de render prévio. Ao criar outro
+  caminho que **monta objetos e raycasta no mesmo tick**, garanta a mesma passada.
 - **Raycast de gameplay tem que ignorar o chrome do editor.** O gizmo
   (`TransformControls`) e helpers ficam **na mesma cena** (bundle de dev). O
   `editorInternal` fica na **raiz** do helper, mas o raycast acerta as **peças

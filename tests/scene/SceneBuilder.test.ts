@@ -4,10 +4,12 @@
  * adicionados pela overlay; e os helpers overlayDeleted/overlayAdded. Ver ADR.
  */
 import { describe, it, expect } from 'vitest';
+import * as THREE from 'three';
 import { Scene } from '../../src/core/Scene.js';
 import { World } from '../../src/ecs/World.js';
 import {
   buildScene,
+  addSceneNode,
   overlayDeleted,
   overlayAdded,
   overlayMatte,
@@ -113,6 +115,43 @@ describe('buildScene (plataformer: entidades ECS)', () => {
     // …E o TransformComponent também — senão o Object3DSyncSystem zera a rotação Y.
     const ent = world.query(Collider2DComponent).find((e) => e.getComponent(Object3DComponent)?.object.name === 'chao')!;
     expect(ent.getComponent(TransformComponent)!.rotationY).toBeCloseTo(Math.PI / 4);
+  });
+});
+
+describe('buildScene — matrixWorld pronto no 1º tick (sem render prévio)', () => {
+  // O 1º tick do world roda ANTES do 1º render; sem a passada de updateMatrixWorld
+  // no buildScene, todo mesh raycasta como se estivesse na ORIGEM (identidade) e a
+  // câmera de 3ª pessoa "colidia" com objeto distante no frame 0.
+  const longe: SceneDefinition = {
+    version: 1,
+    nodes: [{ type: 'primitive', id: 'longe', shape: 'box', size: 1, place: { x: 50, y: 0 } }],
+  };
+
+  it('raycast no frame 0 vê o mesh na posição REAL, não na identidade', async () => {
+    const scene = new Scene();
+    const handle = await buildScene(scene, longe);
+    const obj = handle.byId.get('longe')!;
+    // matrixWorld já computado (sem render nem updateMatrixWorld manual)
+    expect(obj.matrixWorld.elements[12]).toBeCloseTo(50);
+    // Raio que atravessaria o box SE ele estivesse na identidade (origem): o hit
+    // tem que vir da posição real (x=50 → face em x=49.5), nunca de perto da origem.
+    const ray = new THREE.Raycaster(new THREE.Vector3(-5, 0.5, 0), new THREE.Vector3(1, 0, 0));
+    const hits = ray.intersectObject(scene.getThreeScene(), true);
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits[0]!.distance).toBeCloseTo(54.5, 1);
+  });
+
+  it('addSceneNode também entrega matrixWorld computado no mesmo tick', async () => {
+    const scene = new Scene();
+    const obj = await addSceneNode(scene, {
+      type: 'primitive',
+      id: 'vivo',
+      shape: 'box',
+      size: 1,
+      place: { x: 50, y: 0 },
+    });
+    expect(obj).not.toBeNull();
+    expect(obj!.matrixWorld.elements[12]).toBeCloseTo(50);
   });
 });
 

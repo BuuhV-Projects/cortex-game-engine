@@ -7,6 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
 import { CharacterBodyComponent } from '../../src/components/CharacterBodyComponent.js';
@@ -127,6 +128,35 @@ describe('ThirdPersonControlSystem — colisão de câmera (spring arm)', () => 
     const { world, camera } = setupCam(new THREE.Scene());
     world.tick(16);
     expect(camera.position.distanceTo(target)).toBeCloseTo(5.5, 1);
+  });
+
+  it('ignora o gizmo do editor (TransformControls detached na origem = spawn)', () => {
+    // Cenário real: fora do F2 o helper do TransformControls segue na cena,
+    // DETACHED na origem (o spawn do player) e com ~120 meshes raycastáveis
+    // (o raycast do three não pula invisível). A exclusão é a marca
+    // `editorInternal` na raiz do helper (como o ObjectEditSystem marca).
+    const mkScene = (marked: boolean) => {
+      const scene = new THREE.Scene();
+      const gizmoCam = new THREE.PerspectiveCamera();
+      gizmoCam.position.set(4, 3, 4); // pose plausível de câmera de editor
+      const controls = new TransformControls(gizmoCam);
+      const helper = (controls as unknown as { getHelper(): THREE.Object3D }).getHelper();
+      if (marked) helper.userData['editorInternal'] = true;
+      helper.visible = false;
+      scene.add(helper);
+      return scene;
+    };
+
+    // Caso-controle: SEM a marca, o gizmo intersecta o raio e puxa a câmera —
+    // prova que o cenário exercita a exclusão de verdade (não passa vazio).
+    const un = setupCam(mkScene(false));
+    un.world.tick(16);
+    expect(un.camera.position.distanceTo(target)).toBeLessThan(5.4);
+
+    // Com a marca (como o editor cria), o spring arm devolve a distância cheia.
+    const ok = setupCam(mkScene(true));
+    ok.world.tick(16);
+    expect(ok.camera.position.distanceTo(target)).toBeCloseTo(5.5, 1);
   });
 });
 

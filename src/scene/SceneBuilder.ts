@@ -792,6 +792,12 @@ export async function buildScene(
     mergeStaticScene(three, options.world, animated);
   }
 
+  // O 1º tick do world roda ANTES do 1º render, e o three só computa matrixWorld
+  // no render — sem esta passada, qualquer raycast nesse tick (spring arm da
+  // câmera, chão do CharacterPhysicsSystem) vê TODO mesh na identidade (origem =
+  // spawn do player) e "colide" com objeto distante (câmera colada no player).
+  three.updateMatrixWorld(true);
+
   return {
     byId,
     update(dt: number): void {
@@ -813,7 +819,12 @@ export async function buildScene(
  * @returns O `Object3D` criado, ou `null` se o tipo for desconhecido.
  */
 export async function addSceneNode(scene: Scene, node: SceneNode): Promise<Object3D | null> {
-  return instantiate(node, scene, scene.getThreeScene());
+  const obj = await instantiate(node, scene, scene.getThreeScene());
+  // Mesma garantia do buildScene: o objeto pode ser raycastado no mesmo tick em
+  // que foi adicionado (antes do próximo render), então o matrixWorld da subtree
+  // precisa estar computado já.
+  obj?.updateMatrixWorld(true);
+  return obj;
 }
 
 /**
