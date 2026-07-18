@@ -400,6 +400,32 @@ não escreve transform).
   liga runner+UI+teclado e devolve um handle com `active` (use em `pauseWhen`). ⚠️ O
   gameplay (WASD/mouse-look) deve **pausar/ignorar** input enquanto `active`.
 
+## 8c. i18n + config do jogo (`src/i18n/`) — ADR-0124
+
+Multi-idioma e configurações do jogador, **desacoplados** de ECS/Three (tudo é
+dado, como o diálogo do §8b):
+
+- **`I18n`** (+ instância global `i18n` e atalho `t(key, params)`) — traduções em
+  `languages/<código>.txt`, uma entrada `CHAVE="VALOR"` por linha (placeholders
+  `{nome}`, `\n`, comentários `#`). Carrega via `fetch` — mesmo caminho no
+  browser e no host nativo (`__cortexReadFile`). Resolução: idioma atual →
+  fallback → a própria chave (nunca quebra por falta de tradução).
+  `loadAuto({ default })` detecta o idioma do SO na primeira abertura
+  (`navigator.language` / `__cortexLocale` no nativo) e tenta `pt-BR` → `pt` →
+  default, sondando por fetch (sem manifesto). `setLanguage` + `onChange` pra
+  troca ao vivo — a UI re-aplica os textos no callback (widgets guardam `text`
+  como propriedade, não re-renderizam sozinhos).
+- **`GameConfig`** — `config.ini` (INI com seções `[video]`/`[game]`, chaves
+  achatadas: `get('game.language')`, `getBool`, `getNumber`). No export nativo o
+  arquivo mora em `dist-native/config.ini` (ao lado do exe, editável pelo
+  usuário); `save()` grava via shim `__cortexWriteBaseFile`. Em dev não há
+  arquivo gravável — `save()` vira overlay no `localStorage`
+  (`cortex:config.ini`) que o `load()` aplica por cima. ⚠️ O host nativo ainda
+  **não lê** `[video]` na criação da janela (env/desktop mandam) — passo futuro.
+- **Export** (`export-game.mjs`): `languages/*.txt` e `config.ini` vão **soltos**
+  pro `dist-native/` (fora do `assets.pak`) de propósito — tradução/ajuste sem
+  rebuild.
+
 ## 9. Logging de debug (`src/core/debug.ts`)
 
 **Sempre use `debug(escopo, ...)` no lugar de `console.log` cru.** Fica desligado por

@@ -39,7 +39,10 @@ devolve a textura **offscreen** (nativo × `renderScale`) e o `presentIfAcquired
 adquire a swapchain real, faz o blit downscale (webgpu/supersample) e apresenta.
 
 No boot: `main` cria janela+surface (D3D12), cria `JsRuntime`, registra shims
-e bindings, executa `boot.hbc` (bytecode) e drena microtasks — o `async main()`
+e bindings, injeta globais pré-boot (`__cortexSearch`,
+`__cortexWidth/Height/PixelRatio` e `__cortexLocale` — idioma do SO via
+`SDL_GetPreferredLocales`, que o shim espelha em `navigator.language` pro i18n,
+ADR-0124), executa `boot.hbc` (bytecode) e drena microtasks — o `async main()`
 do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 
 **A splash não pode rodar antes disso**: o `WGPUDevice` só nasce quando o JS
@@ -66,7 +69,7 @@ Ver ADR-0109.
 | `native/src/shims/timers.*` | `setTimeout`/`clearTimeout`/`setImmediate`. O Hermes agenda async/await via `setImmediate` — obrigatório. |
 | `native/src/shims/animation_frame.*` | `requestAnimationFrame` (uma geração de callbacks por frame; JS re-registra). |
 | `native/src/shims/input.*` | Eventos SDL→JS (keydown/keyup/pointer via `__cortexDispatchInput`) + Gamepad API (`__cortexInput.getGamepads`, layout standard W3C sobre SDL_Gamepad). |
-| `native/src/shims/files.*` | `__cortexReadFile` (fetch lê daqui). Tenta o `assets.pak` (via pak.*) e cai pro arquivo solto no disco (dev). SÓ leitura (assets). |
+| `native/src/shims/files.*` | `__cortexReadFile` (fetch lê daqui). Tenta o `assets.pak` (via pak.*) e cai pro arquivo solto no disco (dev). Leitura de assets + `__cortexWriteBaseFile` (ADR-0124): escrita de TEXTO na raiz da pasta do jogo, nome sanitizado (sem `/ \ : ..`) — caso de uso: `config.ini` do GameConfig. Pode falhar em pasta read-only (retorna false; o JS trata). |
 | `native/src/shims/user_storage.*` | `__cortexReadUserFile`/`__cortexWriteUserFile` — persistência GRAVÁVEL do usuário; serve o shim de `localStorage` (ADR-0106). Resolve a pasta de save: com `-DCORTEX_GDK` tenta **XGameSave** (`XUser` + `XGameSaveFilesGetFolderWithUi`, por-usuário + sync na nuvem) quando há usuário assinado + SCID (`CORTEX_SCID`); senão cai pro arquivo `SDL_GetPrefPath(<jogo>, "saves")`. É file I/O comum na pasta resolvida. |
 | `native/src/shims/pak.*` | Leitor do container `assets.pak` (ADR-0104): parse header+índice, lê slice + desembaralha (XOR). Formato em sync com `native/scripts/pak.mjs`. |
 | `native/src/shims/image_decode.*` | `__cortexDecodeImage` (stb_image → RGBA8) pro createImageBitmap. |
@@ -101,7 +104,7 @@ Ver ADR-0109.
 | `native/js/examples/triangle.js` | Referência: triângulo WebGPU puro (Marcos C–D), sem Three. |
 | `native/scripts/bundle.mjs` | esbuild (bundle es2018) + Babel (classes loose + arrows) → IIFE único pro hermesc. |
 | `native/scripts/fetch-deps.ps1` | Baixa deps prebuilt **pinadas** (SDL3, wgpu-native, Hermes NuGet). |
-| `native/scripts/export-game.mjs` | Export distribuível (ADR-0101): bundle+hermesc -O+exe+dlls+assets.pak → `<jogo>/dist-native/`. |
+| `native/scripts/export-game.mjs` | Export distribuível (ADR-0101): bundle+hermesc -O+exe+dlls+assets.pak → `<jogo>/dist-native/`. Também copia soltos (fora do pak): `cortex.json`, `config.ini` e `languages/*.txt` (i18n editável sem rebuild, ADR-0124). |
 | `native/export-toolchain/` | Toolchain de export AUTO-CONTIDO (TDR-0003): `package.json`+`yarn.lock` pinados (esbuild/babel/three/three-mesh-bvh/zod) que o `bundle.mjs` usa em runtime. O CI instala e o electron-builder copia o `node_modules` pra `resources/node_modules` (só Windows), pro Studio empacotado exportar sem dev. |
 | `native/scripts/pak.mjs` | Empacota uma pasta num container `.pak` (ADR-0104): índice binário + XOR leve. Formato em sync com `native/src/shims/pak.cpp`. |
 

@@ -378,6 +378,59 @@ const dlg = startDialogue(graph, {
 - O grafo pode vir de `.json` importado (`import g from './dialogues/x.json'` →
   `parseDialogueGraph(g)`).
 
+## Multi-idioma (i18n) + config.ini — ADR-0124
+
+Traduções são **DADO**: arquivos `languages/<código>.txt` na raiz do projeto
+(ex.: `languages/pt-BR.txt`, `languages/en.txt`), uma entrada `CHAVE="VALOR"` por
+linha. No export nativo vão soltos pra `dist-native/languages/` — qualquer um
+traduz o `.txt` sem rebuild. Configurações do jogador (idioma, janela, vsync…)
+ficam no `config.ini` (raiz do projeto; no export, ao lado do exe).
+
+```
+# languages/pt-BR.txt — comentários com # ou ;
+menu.play="Jogar"
+hud.coins="Moedas: {count}"
+dialog.intro="Primeira linha\nSegunda linha"
+```
+
+```ini
+# config.ini
+[video]
+fullscreen=true
+vsync=true
+
+[game]
+language=pt-BR
+```
+
+```ts
+import { GameConfig, i18n, t } from 'cortex-game-engine'
+
+const config = await GameConfig.load()
+const saved = config.get('game.language')
+if (saved) await i18n.load(saved, { fallback: 'en' })
+// 1ª abertura: detecta o idioma do SO (pt-BR → pt → default)
+else await i18n.loadAuto({ default: 'en' })
+
+playButton.text = t('menu.play')
+hud.text = t('hud.coins', { count: 12 })          // {count} interpolado
+
+// menu de opções: trocar idioma ao vivo + persistir
+i18n.onChange(() => refreshMenuTexts())            // re-aplica os textos da UI
+await i18n.setLanguage('en')
+config.set('game.language', 'en')
+await config.save()   // nativo: grava dist-native/config.ini; dev: localStorage
+```
+
+- **`t(key, params?)`**: idioma atual → fallback → devolve a própria chave (nunca
+  quebra). `i18n.has(key)` testa; `parseLanguageFile`/`detectSystemLanguage`
+  exportados pra usos avançados.
+- **`GameConfig`**: chaves achatadas `secao.chave` — `get`, `getBool`
+  (`true/1/on/yes`), `getNumber`, `has`, `set`, `delete`, `save`. Arquivo ausente
+  = config vazia (getters respondem os fallbacks do jogo).
+- ⚠️ Troca de idioma NÃO re-renderiza a UI sozinha — widgets guardam `text` como
+  propriedade; re-aplique no `onChange`.
+
 ## Modo editor embutido (automático em dev)
 
 **Você NÃO liga o editor — o `Game` faz isso sozinho em desenvolvimento.** Ao usar
