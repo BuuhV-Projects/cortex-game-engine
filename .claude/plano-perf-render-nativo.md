@@ -95,11 +95,16 @@ permanente. Medido: proxy no host 93,5→32-52 ms (2-3×; MSVC codegen < clang);
 fase 1 41→~50 fps, frame = lógica 4 ms + render 15,6 ms — o render agora é
 dominado por CHAMADAS wgpu/NAPI+driver.
 
-**Próximos levers pra 60 fps (novo item 4):**
-1. PostFX off/reduzido no export (~4 ms → ~60 fps) — flag simples.
-2. Reduzir chamadas WebGPU por frame (bind groups/uniforms — three-side).
-3. Rebuildar o Hermes com clang-cl (codegen: Linux/clang fez 21,8 ms no mesmo
-   bench — ~1,5× sobre o MSVC de graça, se o build fechar).
+**Item 4 — clang-cl EXECUTADO (2026-07-18): 60 fps cravado, ~72 fps de teto.**
+Host inteiro (Hermes + engine glue + shims) compilado com clang-cl (LLVM 22,
+winget) no lugar do MSVC. Medido na fase 1: bench proxy 36,1→29,3 ms;
+**fps 58-62 → 70-73 (worst 19-21 ms)** — o frame caiu pra ~14 ms, folga real
+sobre o vsync. Build oficial (native/build) agora configura com
+`-DCMAKE_C(XX)_COMPILER=clang-cl`; patches do hermes consolidados em
+`native/patches/hermes-upstream.patch` (fetch-deps aplica com git apply):
+testes NAPI, -Werror=undef e EH/RTTI via /EHsc//GR no clang-cl (que ignora
+-f(no-)exceptions). PostFX off (teste4 nem usa) e menos chamadas WebGPU ficam
+como levers futuros se alguma fase pesada precisar.
 
 ---
 

@@ -55,6 +55,13 @@ if(NOT EXISTS ${HERMES_UPSTREAM}/CMakeLists.txt)
   message(FATAL_ERROR "Hermes upstream não encontrado em ${HERMES_UPSTREAM} — rode native/scripts/fetch-deps.ps1")
 endif()
 set(HERMES_ENABLE_TEST_SUITE OFF CACHE BOOL "" FORCE)
+# clang-cl: sem o default /EHsc do cl, alvos fora dos helpers do hermes (jsi)
+# compilam SEM exceções e o jsi.cpp (usa throw) quebra. Diretiva de diretório
+# sobrevive à reconstrução de CMAKE_CXX_FLAGS do hermes; alvos que pedem
+# /EHs-c- explicitamente vencem (flag posterior).
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
+  add_compile_options(/EHsc)
+endif()
 add_subdirectory(${HERMES_UPSTREAM} hermes-upstream EXCLUDE_FROM_ALL)
 
 # Glue de embedding: alvo próprio que herda includes/defines EXATOS do build do

@@ -1,0 +1,73 @@
+diff --git a/cmake/modules/Hermes.cmake b/cmake/modules/Hermes.cmake
+index 466b01d..28bba68 100644
+--- a/cmake/modules/Hermes.cmake
++++ b/cmake/modules/Hermes.cmake
+@@ -68,30 +68,32 @@ endif (WIN32)
+ function(hermes_update_cxx_flags name)
+   set(flags "")
+ 
++  # [cortex] clang-cl (modo MSVC) IGNORA -f(no-)exceptions/-f(no-)rtti — sem
++  # /EHsc o jsi.cpp (que usa throw) nao compila. clang-cl usa o ramo MSVC.
+   if (HERMES_ENABLE_EH)
+-    if (GCC_COMPATIBLE)
++    if (GCC_COMPATIBLE AND NOT CLANG_CL)
+       list(APPEND flags -fexceptions)
+-    elseif (MSVC)
++    elseif (MSVC OR CLANG_CL)
+       list(APPEND flags /EHsc)
+     endif ()
+   else ()
+-    if (GCC_COMPATIBLE)
++    if (GCC_COMPATIBLE AND NOT CLANG_CL)
+       list(APPEND flags -fno-exceptions)
+-    elseif (MSVC)
++    elseif (MSVC OR CLANG_CL)
+       list(APPEND flags /EHs-c-)
+     endif ()
+   endif ()
+ 
+   if (HERMES_ENABLE_RTTI)
+-    if (GCC_COMPATIBLE)
++    if (GCC_COMPATIBLE AND NOT CLANG_CL)
+       list(APPEND flags -frtti)
+-    elseif (MSVC)
++    elseif (MSVC OR CLANG_CL)
+       list(APPEND flags /GR)
+     endif ()
+   else ()
+-    if (GCC_COMPATIBLE)
++    if (GCC_COMPATIBLE AND NOT CLANG_CL)
+       list(APPEND flags -fno-rtti)
+-    elseif (MSVC)
++    elseif (MSVC OR CLANG_CL)
+       list(APPEND flags /GR-)
+     endif ()
+   endif ()
+@@ -375,7 +377,9 @@ endif (MSVC)
+ # -Werror=undef (compiler bug fixed in GCC 13), so we only enable it for C++
+ # when the compiler is not affected.
+ macro(hermes_enable_werror_undef)
+-  if (GCC_COMPATIBLE)
++  # [cortex] clang-cl (MSVC mode) nao define __GNUC__ e os headers do llvh
++  # checam '#if __GNUC__' — -Werror=undef quebra o build. Pula no clang-cl.
++  if (GCC_COMPATIBLE AND NOT CLANG_CL)
+     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=undef")
+     if (NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
+              CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13))
+diff --git a/external/CMakeLists.txt b/external/CMakeLists.txt
+index e358126..bc66ff1 100644
+--- a/external/CMakeLists.txt
++++ b/external/CMakeLists.txt
+@@ -1,9 +1,9 @@
+ add_subdirectory(dtoa)
+-if(HERMES_ENABLE_NAPI)
++# [cortex] testes NAPI desligados: geram regras duplicadas de .lib no
++# Windows/Ninja (test_exception.lib) e nao fazem parte do runtime embarcado.
++if(HERMES_ENABLE_NAPI AND HERMES_NAPI_TESTS)
+   add_subdirectory(node-api-cts/implementors/hermes)
+   add_subdirectory(node-api-tests/hermes)
+-
+-  # Combined target to run all NAPI tests (CTS + Node.js).
+   add_custom_target(check-napi
+     DEPENDS check-napi-cts check-napi-node-tests
+     COMMENT "Running all Node-API tests under Hermes"

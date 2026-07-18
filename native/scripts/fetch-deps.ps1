@@ -145,18 +145,17 @@ if (-not (Test-Path (Join-Path $hermesUp 'CMakeLists.txt'))) {
     git -C $hermesUp checkout -q FETCH_HEAD
     Set-Content (Join-Path $tp 'hermes-upstream/PINNED_COMMIT') $HERMES_COMMIT
 }
-# Patch: os testes NAPI geram regras duplicadas de .lib no Windows/Ninja
-# (test_exception.lib) — gate atrás de HERMES_NAPI_TESTS (off por default).
-$extCmake = Join-Path $hermesUp 'external/CMakeLists.txt'
-$extSrc = Get-Content $extCmake -Raw
-if ($extSrc -notmatch 'HERMES_NAPI_TESTS') {
-    $extSrc = $extSrc -replace 'if\(HERMES_ENABLE_NAPI\)', @'
-# [cortex] testes NAPI desligados: geram regras duplicadas de .lib no
-# Windows/Ninja (test_exception.lib) e nao fazem parte do runtime embarcado.
-if(HERMES_ENABLE_NAPI AND HERMES_NAPI_TESTS)
-'@
-    Set-Content $extCmake $extSrc -Encoding utf8
-    Write-Host 'hermes: patch dos testes NAPI aplicado' -ForegroundColor Cyan
+# Patches locais consolidados (native/patches/hermes-upstream.patch):
+# 1) testes NAPI atrás de HERMES_NAPI_TESTS (regras de .lib duplicadas no Ninja)
+# 2) -Werror=undef pulado no clang-cl (__GNUC__ indefinido nos headers llvh)
+# 3) EH/RTTI via /EHsc//GR no clang-cl (ele IGNORA -f(no-)exceptions/rtti)
+$patchFile = Join-Path $root 'patches/hermes-upstream.patch'
+git -C $hermesUp apply --check $patchFile 2>$null
+if ($LASTEXITCODE -eq 0) {
+    git -C $hermesUp apply $patchFile
+    Write-Host 'hermes: patches locais aplicados' -ForegroundColor Cyan
+} else {
+    Write-Host 'hermes: patches já aplicados (ou conflito — verifique manualmente)' -ForegroundColor Yellow
 }
 
 Write-Host "deps prontas em native/third_party/" -ForegroundColor Green

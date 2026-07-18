@@ -323,7 +323,14 @@ basisu, NSIS) → `fetch-deps.ps1` (baixadas, pinadas, gitignoradas). **Toolchai
 grandes/licenciados** → **pré-requisito**, o dev instala uma vez (não dá pra
 vendorizar por tamanho/licença/integração com o VS):
 
-- **Visual Studio / MSVC (x64)** — compilador C++ (build num prompt `vcvars64`).
+- **Visual Studio / MSVC (x64)** — headers/libs do Windows (build num prompt `vcvars64`).
+- **LLVM/clang-cl** (`winget install LLVM.LLVM`) — **compilador OFICIAL do host**
+  desde 2026-07-18: o interpretador do Hermes fica ~20% mais rápido que no MSVC
+  (fase 1 do teste4: 58-62 → 70-73 fps). Configure com
+  `-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl` (ainda dentro do
+  `vcvars64` — o clang-cl usa headers/libs do MSVC). Os patches de compat do
+  hermes moram em `native/patches/hermes-upstream.patch` (fetch-deps aplica).
+  Build só-MSVC continua funcionando (fallback), só mais lento.
 - **Rust (cargo)** — compila o `rapier-native` (`cargo build --release` lá).
 - **Steamworks SDK** (só pro release **PC/Steam**) — baixe em
   partner.steamgames.com (atrás de login de parceiro, como o GDK; **não** vem no

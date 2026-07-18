@@ -61,10 +61,13 @@ no Windows/Ninja).
 
 ## Consequências (números medidos, fase 1 do teste4 windowed)
 
-- Bench proxy DENTRO do host: 93,5 ms (fork MS) → **32–52 ms** (2–3×; o clang
-  no Linux chega a 21,8 — o codegen do MSVC fica atrás; clang-cl é um follow-up
-  possível).
-- Jogo: 41 → **~60 fps** (58–62 medidos com a máquina ociosa; ~50 sob carga);
+- Bench proxy DENTRO do host: 93,5 ms (fork MS) → 32–52 ms no MSVC → **29,3 ms
+  com clang-cl** (follow-up 2026-07-18: o build oficial agora usa clang-cl —
+  LLVM via winget; patches de compat em `native/patches/hermes-upstream.patch`,
+  aplicados pelo fetch-deps: -Werror=undef pulado e EH/RTTI via `/EHsc`/`/GR`,
+  já que o clang-cl ignora `-f(no-)exceptions`).
+- Jogo: 41 → ~60 fps (MSVC) → **70–73 fps com clang-cl** (worst 19–21 ms;
+  frame ~14 ms — 60 cravado com folga);
   frame = lógica ~4 ms + render ~15,6 ms — o render passou a ser dominado
   pelas CHAMADAS wgpu/NAPI + driver (não aceleram com interpretador). Levers
   seguintes: PostFX off no export (~4 ms) e menos chamadas WebGPU por frame.
