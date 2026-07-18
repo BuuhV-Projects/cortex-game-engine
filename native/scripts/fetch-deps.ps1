@@ -149,13 +149,24 @@ if (-not (Test-Path (Join-Path $hermesUp 'CMakeLists.txt'))) {
 # 1) testes NAPI atrás de HERMES_NAPI_TESTS (regras de .lib duplicadas no Ninja)
 # 2) -Werror=undef pulado no clang-cl (__GNUC__ indefinido nos headers llvh)
 # 3) EH/RTTI via /EHsc//GR no clang-cl (ele IGNORA -f(no-)exceptions/rtti)
+# CUIDADO (PS 5.1): redirecionar stderr de exe nativo com $ErrorActionPreference
+# 'Stop' vira erro TERMINANTE (NativeCommandError) — os --check abaixo escrevem
+# em stderr quando falham (fluxo normal), então baixamos o EAP no trecho.
 $patchFile = Join-Path $root 'patches/hermes-upstream.patch'
-git -C $hermesUp apply --check $patchFile 2>$null
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+git -C $hermesUp apply --reverse --check $patchFile 2>$null
 if ($LASTEXITCODE -eq 0) {
+    Write-Host 'hermes: patches locais já aplicados' -ForegroundColor DarkGray
+} else {
+    git -C $hermesUp apply --check $patchFile 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        $ErrorActionPreference = $prevEap
+        throw "hermes: patch $patchFile NAO aplica no clone (conflito?). Rode 'git -C $hermesUp apply --check $patchFile' pra ver o erro"
+    }
     git -C $hermesUp apply $patchFile
     Write-Host 'hermes: patches locais aplicados' -ForegroundColor Cyan
-} else {
-    Write-Host 'hermes: patches já aplicados (ou conflito — verifique manualmente)' -ForegroundColor Yellow
 }
+$ErrorActionPreference = $prevEap
 
 Write-Host "deps prontas em native/third_party/" -ForegroundColor Green

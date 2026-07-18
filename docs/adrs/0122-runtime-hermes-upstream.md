@@ -73,7 +73,17 @@ no Windows/Ninja).
   seguintes: PostFX off no export (~4 ms) e menos chamadas WebGPU por frame.
 - Boot/carregamento (JS pesado: parse GLB, zod, scripts) ganha os 2–3× cheios.
 - Console (M4): o mesmo runtime precisa compilar na toolchain GDKX — anotado no
-  plano; sem bifurcação de runtime PC/console.
+  plano; sem bifurcação de runtime PC/console. O clang-cl NÃO bifurca esse
+  caminho: os patches são gateados por `CLANG_CL` (variável que o próprio
+  Hermes.cmake define) e o ramo MSVC puro fica com o comportamento original —
+  configurar SEM `-DCMAKE_C(XX)_COMPILER` continua buildando com cl.exe, que é
+  o caminho GDKX.
+- **CI (GitHub Actions)**: a action `build-native-host` (usada por release.yml
+  e build-ide.yml) compila o host com o clang-cl PRÉ-INSTALADO nos runners
+  windows-latest (`C:/Program Files/LLVM`), com fallback automático pro MSVC
+  se o LLVM sumir da imagem — assim o instalador do Studio embarca o host
+  rápido. O build do Hermes (~450 alvos) e o clone pinado são cacheados
+  (`actions/cache`, key = hash de CMakeLists + fetch-deps + patch).
 - O primeiro build do host recompila o Hermes (~450 alvos, minutos; o ninja
   cacheia depois). `fetch-deps` + build ficam reproduzíveis pelo commit pinado.
 - Steam/GDK builds (`build-steam`, `build-gdk`) precisam reconfigurar (o CMake

@@ -9,8 +9,8 @@ runs:
   using: composite
   steps:
     # Toolchain de compilação do host: Rust (crate rapier-native), Ninja+CMake
-    # (host C++) e o ambiente MSVC (vcvars) pra o cl.exe entrar no PATH dos
-    # steps seguintes deste job.
+    # (host C++) e o ambiente MSVC (vcvars) — headers/libs do Windows SDK e o
+    # linker, usados TAMBÉM pelo clang-cl (que é só o frontend).
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
 
@@ -20,8 +20,18 @@ runs:
     - name: Setup MSVC (vcvars)
       uses: ilammy/msvc-dev-cmd@v1
 
-    # Deps prebuilt PINADAS do host (SDL3, wgpu-native, Hermes, stb, miniaudio,
-    # fonte). Baixa em native/third_party/.
+    # Deps prebuilt PINADAS do host (SDL3, wgpu-native, stb, miniaudio, fonte)
+    # + clone pinado do facebook/hermes com os patches locais (ADR-0122).
+    # Cacheado: o clone do Hermes é o item pesado; fetch-deps é idempotente e
+    # o `git apply --check` pula os patches se o cache já veio patchado.
+    - name: Cache deps nativas
+      uses: actions/cache@v4
+      with:
+        path: |
+          native/third_party
+          native/tools
+        key: native-deps-${{ runner.os }}-${{ hashFiles('native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch') }}
+
     - name: Fetch deps nativas (pinadas)
       shell: pwsh
       run: powershell -ExecutionPolicy Bypass -File native/scripts/fetch-deps.ps1
@@ -32,12 +42,38 @@ runs:
       shell: pwsh
       run: cargo build --release --manifest-path native/rapier-native/Cargo.toml
 
+    # Cache do build C++ (Ninja incremental): o Hermes upstream são ~450 alvos
+    # e recompilar do zero leva dezenas de minutos no runner. Key muda quando
+    # muda o CMake, os patches ou o commit pinado (via fetch-deps.ps1).
+    - name: Cache build do host (Ninja)
+      uses: actions/cache@v4
+      with:
+        path: native/build
+        key: native-build-${{ runner.os }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch') }}
+        restore-keys: |
+          native-build-${{ runner.os }}-clang-
+
     # 2) host C++ (Ninja) → native/build com cortex_host.exe + dlls + fontes.
-    - name: Build host (CMake + Ninja)
+    # Compilador OFICIAL do host PC é o clang-cl (ADR-0122: interpretador do
+    # Hermes ~20% mais rápido que com MSVC — é o host que o instalador embarca
+    # nos exports dos usuários). Os runners windows-latest têm LLVM
+    # pré-instalado; se um dia sumir, cai pro cl.exe (fallback suportado,
+    # mesmo caminho da toolchain GDKX/console — só mais lento).
+    - name: Build host (CMake + Ninja, clang-cl)
       shell: pwsh
       run: |
-        cmake -G Ninja -S native -B native/build -DCMAKE_BUILD_TYPE=Release
+        $clang = 'C:/Program Files/LLVM/bin/clang-cl.exe'
+        $compilerArgs = @()
+        if (Test-Path $clang) {
+          Write-Host "usando clang-cl: $clang"
+          $compilerArgs = @("-DCMAKE_C_COMPILER=$clang", "-DCMAKE_CXX_COMPILER=$clang")
+        } else {
+          Write-Warning 'clang-cl nao encontrado no runner — fallback MSVC (host ~20% mais lento)'
+        }
+        cmake -G Ninja -S native -B native/build -DCMAKE_BUILD_TYPE=Release @compilerArgs
+        if ($LASTEXITCODE -ne 0) { exit 1 }
         cmake --build native/build
+        if ($LASTEXITCODE -ne 0) { exit 1 }
 
     # 3) toolchain de export auto-contido (esbuild/babel/three/zod) — copiado
     # pra resources/node_modules pelo electron-builder (win.extraResources).
