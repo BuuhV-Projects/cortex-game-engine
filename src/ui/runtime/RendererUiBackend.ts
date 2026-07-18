@@ -7,10 +7,11 @@
  */
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { abs, float, length, max, min, mix, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
+import { abs, float, length, max, min, mix, smoothstep, texture, uniform, uv, vec2, vec4 } from 'three/tsl';
 import type { UiBackend } from './UiBackend.js';
 import type { UiViewport } from './layout.js';
 import { resolveRect } from './layout.js';
+import { parseUiBackground, parseUiBoxShadow, parseUiColor } from './uiColor.js';
 import { UiButton, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 
 /** Assinatura do raster nativo (host). */
@@ -77,19 +78,38 @@ interface PanelUniforms {
   colorTop: any;
   colorBottom: any;
   borderColor: any;
+  /** Alpha embutido nas cores (`#rrggbbaa`): topo, base e borda. */
+  alphaTop: any;
+  alphaBottom: any;
+  alphaBorder: any;
+  /** Eixo do gradiente: 0 = vertical (topo→base), 1 = horizontal (esq→dir). */
+  gradientAxis: any;
   fillOpacity: any;
+}
+
+/** Uniforms do quad de imagem (cover + clip arredondado). */
+interface ImageUniforms {
+  size: any;
+  radius: any;
+  repeat: any;
+  offset: any;
+  opacity: any;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 interface WidgetVisual {
   background?: THREE.Mesh;
   panelUniforms?: PanelUniforms;
+  /** Sombra dura (cópia da caixa deslocada pra baixo, `shadowHeight`). */
+  shadow?: THREE.Mesh;
+  shadowUniforms?: PanelUniforms;
   text?: THREE.Mesh;
   texture?: THREE.DataTexture;
   lastText?: string;
   lastFontSize?: number;
-  /** Imagem de fundo do Panel (quad texturizado, "cover"). */
+  /** Imagem de fundo do Panel (quad texturizado, "cover", clipada no raio). */
   image?: THREE.Mesh;
+  imageUniforms?: ImageUniforms;
   imageTexture?: THREE.Texture;
   lastImage?: string | null;
 }
@@ -201,6 +221,9 @@ export class RendererUiBackend implements UiBackend {
     const height = widget.height || widget.measuredHeight;
     const rect = resolveRect(widget.anchor, widget.x, widget.y, width, height, viewport);
 
+    // Ordem de pintura por widget: sombra < fundo < imagem < texto.
+    const layer = order * 4;
+
     // ── fundo (Panel/Button): rounded-rect SDF (gradiente/borda/canto) ──
     if (widget instanceof UiPanel || widget instanceof UiButton) {
       if (!visual.background) {
@@ -211,24 +234,58 @@ export class RendererUiBackend implements UiBackend {
       }
       this._updateBoxStyle(widget, visual.panelUniforms!, rect.width, rect.height);
       visual.background.visible = widget.visible;
-      visual.background.renderOrder = order * 2;
+      visual.background.renderOrder = layer + 1;
       visual.background.scale.set(rect.width, rect.height, 1);
       visual.background.position.set(rect.x + rect.width / 2, -(rect.y + rect.height / 2), 0);
+
+      // ── sombra dura (`box-shadow: 0 Npx 0 cor` — cópia da caixa, sem borda) ──
+      const boxShadow = parseUiBoxShadow(widget.boxShadow);
+      if (boxShadow) {
+        if (!visual.shadow) {
+          const { material, uniforms } = this._makeBoxMaterial();
+          visual.shadowUniforms = uniforms;
+          visual.shadow = new THREE.Mesh(this._quad, material);
+          this._scene.add(visual.shadow);
+        }
+        const u = visual.shadowUniforms!;
+        const shadow = parseUiColor(boxShadow.color);
+        (u.size.value as THREE.Vector2).set(rect.width, rect.height);
+        u.radius.value = Math.min(widget.cornerRadius, Math.min(rect.width, rect.height) / 2);
+        u.borderWidth.value = 0;
+        (u.colorTop.value as THREE.Color).set(shadow.rgb);
+        (u.colorBottom.value as THREE.Color).set(shadow.rgb);
+        u.alphaTop.value = shadow.alpha;
+        u.alphaBottom.value = shadow.alpha;
+        u.fillOpacity.value = widget.opacity;
+        visual.shadow.visible = widget.visible;
+        visual.shadow.renderOrder = layer;
+        visual.shadow.scale.set(rect.width, rect.height, 1);
+        visual.shadow.position.set(
+          rect.x + rect.width / 2,
+          -(rect.y + boxShadow.offsetY + rect.height / 2),
+          0,
+        );
+      } else if (visual.shadow) {
+        visual.shadow.visible = false;
+      }
     }
 
-    // ── imagem de fundo do Panel (quad texturizado, "cover") ──
+    // ── imagem de fundo do Panel (quad texturizado, "cover", clip no raio) ──
     if (widget instanceof UiPanel && widget.backgroundImage) {
       if (visual.lastImage !== widget.backgroundImage) {
         visual.lastImage = widget.backgroundImage;
         this._loadImage(visual, widget, widget.backgroundImage);
       }
-      if (visual.image) {
+      if (visual.image && visual.imageUniforms) {
+        const u = visual.imageUniforms;
         visual.image.visible = widget.visible;
-        visual.image.renderOrder = order * 2 + 1; // acima do fundo, abaixo do texto
-        (visual.image.material as THREE.MeshBasicMaterial).opacity = widget.opacity;
+        visual.image.renderOrder = layer + 2; // acima do fundo, abaixo do texto
+        u.opacity.value = widget.opacity;
+        (u.size.value as THREE.Vector2).set(rect.width, rect.height);
+        u.radius.value = Math.min(widget.cornerRadius, Math.min(rect.width, rect.height) / 2);
         visual.image.scale.set(rect.width, rect.height, 1);
         visual.image.position.set(rect.x + rect.width / 2, -(rect.y + rect.height / 2), 0);
-        this._coverTexture(visual.imageTexture, rect.width, rect.height);
+        this._coverTexture(visual, rect.width, rect.height);
       }
     } else if (visual.image) {
       visual.image.visible = false;
@@ -238,15 +295,25 @@ export class RendererUiBackend implements UiBackend {
     // ── malha do texto ──
     if (visual.text && widget instanceof UiLabel) {
       const material = visual.text.material as THREE.MeshBasicMaterial;
-      material.color.set(widget.color);
-      material.opacity = widget.opacity;
+      const text = parseUiColor(widget.color);
+      material.color.set(text.rgb);
+      material.opacity = widget.opacity * text.alpha;
       visual.text.visible = widget.visible && widget.text.length > 0;
-      visual.text.renderOrder = order * 2 + 1;
+      visual.text.renderOrder = layer + 3;
       const tw = visual.texture?.image.width ?? 0;
       const th = visual.texture?.image.height ?? 0;
       visual.text.scale.set(tw, th, 1);
-      // texto centralizado dentro do rect (Button) ou colado na âncora (Label)
-      visual.text.position.set(rect.x + rect.width / 2, -(rect.y + rect.height / 2), 0);
+      // `text-align`: centro (default) ou encostado no padding (Button com
+      // ícone usa 'left'; contadores usam 'right').
+      const align = widget instanceof UiButton ? widget.textAlign : 'center';
+      const pad = widget instanceof UiButton ? widget.paddingX : 0;
+      const cx =
+        align === 'left'
+          ? rect.x + pad + tw / 2
+          : align === 'right'
+            ? rect.x + rect.width - pad - tw / 2
+            : rect.x + rect.width / 2;
+      visual.text.position.set(cx, -(rect.y + rect.height / 2), 0);
     }
     widget.dirty = false;
   }
@@ -264,6 +331,10 @@ export class RendererUiBackend implements UiBackend {
       colorTop: uniform(new THREE.Color('#000000')),
       colorBottom: uniform(new THREE.Color('#000000')),
       borderColor: uniform(new THREE.Color('#ffffff')),
+      alphaTop: uniform(1),
+      alphaBottom: uniform(1),
+      alphaBorder: uniform(1),
+      gradientAxis: uniform(0),
       fillOpacity: uniform(1),
     };
 
@@ -276,14 +347,19 @@ export class RendererUiBackend implements UiBackend {
       .add(min(max(q.x, q.y), float(0)))
       .sub(uniforms.radius);
 
-    const fill = mix(uniforms.colorTop, uniforms.colorBottom, uv().y.oneMinus());
+    // Fator do gradiente: vertical (uv.y invertido) ou horizontal (uv.x).
+    const factor = mix(uv().y.oneMinus(), uv().x, uniforms.gradientAxis);
+    const fill = mix(uniforms.colorTop, uniforms.colorBottom, factor);
+    const fillAlpha = mix(uniforms.alphaTop, uniforms.alphaBottom, factor);
     const borderMask = smoothstep(
       uniforms.borderWidth.negate().sub(0.75),
       uniforms.borderWidth.negate().add(0.75),
       dist,
     ).mul(min(uniforms.borderWidth, float(1))); // borderWidth 0 → sem borda
     const color = mix(fill, uniforms.borderColor, borderMask);
-    const alpha = smoothstep(float(0.75), float(-0.75), dist).mul(uniforms.fillOpacity);
+    const alpha = smoothstep(float(0.75), float(-0.75), dist)
+      .mul(mix(fillAlpha, uniforms.alphaBorder, borderMask))
+      .mul(uniforms.fillOpacity);
 
     const material = new MeshBasicNodeMaterial({
       transparent: true,
@@ -306,28 +382,42 @@ export class RendererUiBackend implements UiBackend {
     height: number,
   ): void {
     const isButton = widget instanceof UiButton;
-    const background = isButton
-      ? widget.focused
-        ? widget.focusBackground
-        : widget.background
-      : widget.background;
-    const backgroundTo = !isButton && (widget as UiPanel).backgroundTo
-      ? ((widget as UiPanel).backgroundTo as string)
-      : background;
-    const radius = isButton ? widget.cornerRadius : (widget as UiPanel).cornerRadius;
+    // `background` é CSS: cor ou `linear-gradient(...)` — decompõe aqui.
+    const bg = parseUiBackground(
+      isButton
+        ? widget.focused
+          ? widget.focusBackground
+          : widget.background
+        : widget.background,
+      isButton ? null : (widget as UiPanel).backgroundTo,
+    );
+    const radius = widget.cornerRadius;
+    // Borda de foco vence a constante (Button); Panel usa a sua direto.
     const borderWidth = isButton
-      ? widget.focused
+      ? widget.focused && widget.focusBorderWidth > 0
         ? widget.focusBorderWidth
-        : 0
+        : widget.borderWidth
       : (widget as UiPanel).borderWidth;
-    const borderColor = isButton ? widget.focusBorderColor : (widget as UiPanel).borderColor;
+    const borderColor = isButton
+      ? widget.focused && widget.focusBorderWidth > 0
+        ? widget.focusBorderColor
+        : widget.borderColor
+      : (widget as UiPanel).borderColor;
+
+    const top = parseUiColor(bg.from);
+    const bottom = parseUiColor(bg.to ?? bg.from);
+    const border = parseUiColor(borderColor);
 
     (uniforms.size.value as THREE.Vector2).set(width, height);
     uniforms.radius.value = Math.min(radius, Math.min(width, height) / 2);
     uniforms.borderWidth.value = borderWidth;
-    (uniforms.colorTop.value as THREE.Color).set(background);
-    (uniforms.colorBottom.value as THREE.Color).set(backgroundTo);
-    (uniforms.borderColor.value as THREE.Color).set(borderColor);
+    (uniforms.colorTop.value as THREE.Color).set(top.rgb);
+    (uniforms.colorBottom.value as THREE.Color).set(bottom.rgb);
+    (uniforms.borderColor.value as THREE.Color).set(border.rgb);
+    uniforms.alphaTop.value = top.alpha;
+    uniforms.alphaBottom.value = bottom.alpha;
+    uniforms.alphaBorder.value = border.alpha;
+    uniforms.gradientAxis.value = bg.axis;
     // Opacidade = a do widget (igual ao DOM). Sem o antigo `*0.96` nos botões:
     // deixava 4% do fundo (claro) vazar e LAVAVA a cor sobre backdrops claros.
     uniforms.fillOpacity.value = widget.opacity;
@@ -402,32 +492,81 @@ export class RendererUiBackend implements UiBackend {
   }
 
   /**
+   * Material do quad de imagem: sample com "cover" (repeat/offset por uniform)
+   * e **clip arredondado** pelo mesmo SDF da caixa — a imagem respeita o
+   * `cornerRadius` do Panel (no DOM o `border-radius` já clipa; aqui é o
+   * shader que corta).
+   */
+  private _makeImageMaterial(tex: THREE.Texture): {
+    material: MeshBasicNodeMaterial;
+    uniforms: ImageUniforms;
+  } {
+    const uniforms: ImageUniforms = {
+      size: uniform(new THREE.Vector2(100, 100)),
+      radius: uniform(0),
+      repeat: uniform(new THREE.Vector2(1, 1)),
+      offset: uniform(new THREE.Vector2(0, 0)),
+      opacity: uniform(1),
+    };
+    const p = uv().sub(vec2(0.5, 0.5)).mul(uniforms.size);
+    const half = uniforms.size.mul(0.5);
+    const b = half.sub(vec2(uniforms.radius, uniforms.radius));
+    const q = abs(p).sub(b);
+    const dist = length(max(q, vec2(0, 0)))
+      .add(min(max(q.x, q.y), float(0)))
+      .sub(uniforms.radius);
+    const mask = smoothstep(float(0.75), float(-0.75), dist);
+    // `any` como nos uniforms: o d.ts do TSL ainda não tipa swizzle de texture().
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sample = texture(tex, uv().mul(uniforms.repeat).add(uniforms.offset)) as any;
+    const material = new MeshBasicNodeMaterial({
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    material.toneMapped = false; // cor de UI (sRGB), fora do tone mapping do jogo
+    material.colorNode = vec4(sample.r, sample.g, sample.b, sample.a.mul(mask).mul(uniforms.opacity));
+    if (this._composite) setUiCompositeBlend(material); // alpha correto na RT (ADR-0105)
+    return { material, uniforms };
+  }
+
+  /**
    * Carrega a imagem de fundo do Panel numa textura e cria/atualiza o quad.
    * `TextureLoader` funciona no host CortexNative: o `ImageLoader` do three usa
    * `<img>.src`, que o shim `FakeImage` (native/js) implementa via fetch + stb.
    */
   private _loadImage(visual: WidgetVisual, widget: UiWidget, url: string): void {
-    new THREE.TextureLoader().load(url, (texture) => {
+    new THREE.TextureLoader().load(url, (tex) => {
       if (visual.lastImage !== url) {
         // A URL mudou enquanto carregava (widget reusado) — descarta.
-        texture.dispose();
+        tex.dispose();
         return;
       }
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.wrapS = THREE.ClampToEdgeWrapping;
-      texture.wrapT = THREE.ClampToEdgeWrapping;
-      const old = visual.imageTexture;
-      visual.imageTexture = texture;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      const oldTexture = visual.imageTexture;
+      const oldMaterial = visual.image?.material as THREE.Material | undefined;
+      visual.imageTexture = tex;
+      // Material NOVO a cada textura (mesma razão do texto: trocar só o node
+      // não força o rebind no WebGPURenderer).
+      const { material, uniforms } = this._makeImageMaterial(tex);
+      visual.imageUniforms = uniforms;
       if (!visual.image) {
-        const material = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, map: texture, toneMapped: false });
-        if (this._composite) setUiCompositeBlend(material); // alpha correto na RT (ADR-0105)
         visual.image = new THREE.Mesh(this._quad, material);
         this._scene.add(visual.image);
       } else {
-        (visual.image.material as THREE.MeshBasicMaterial).map = texture;
-        (visual.image.material as THREE.MeshBasicMaterial).needsUpdate = true;
+        visual.image.material = material;
       }
-      if (old) this._graveyard.push({ frames: 2, dispose: () => old.dispose() });
+      if (oldTexture || oldMaterial) {
+        this._graveyard.push({
+          frames: 2,
+          dispose: () => {
+            oldTexture?.dispose();
+            oldMaterial?.dispose();
+          },
+        });
+      }
       // A carga é ASSÍNCRONA: o _apply que disparou o load já limpou o `dirty`,
       // então o posicionamento/escala do mesh (no _apply) não rodaria de novo e
       // a imagem ficaria 1×1 na origem (invisível). Marcar dirty faz o próximo
@@ -436,10 +575,12 @@ export class RendererUiBackend implements UiBackend {
     });
   }
 
-  /** "cover": ajusta repeat/offset da textura pra preencher o rect sem distorcer. */
-  private _coverTexture(texture: THREE.Texture | undefined, rectW: number, rectH: number): void {
-    if (!texture || !texture.image || rectW <= 0 || rectH <= 0) return;
-    const img = texture.image as { width?: number; height?: number };
+  /** "cover": ajusta repeat/offset (uniforms) pra preencher o rect sem distorcer. */
+  private _coverTexture(visual: WidgetVisual, rectW: number, rectH: number): void {
+    const tex = visual.imageTexture;
+    const u = visual.imageUniforms;
+    if (!tex || !tex.image || !u || rectW <= 0 || rectH <= 0) return;
+    const img = tex.image as { width?: number; height?: number };
     const imgW = img.width ?? 0;
     const imgH = img.height ?? 0;
     if (!imgW || !imgH) return;
@@ -448,12 +589,12 @@ export class RendererUiBackend implements UiBackend {
     if (imgAspect > rectAspect) {
       // Imagem mais larga: encaixa na altura, corta as laterais.
       const r = rectAspect / imgAspect;
-      texture.repeat.set(r, 1);
-      texture.offset.set((1 - r) / 2, 0);
+      (u.repeat.value as THREE.Vector2).set(r, 1);
+      (u.offset.value as THREE.Vector2).set((1 - r) / 2, 0);
     } else {
       const r = imgAspect / rectAspect;
-      texture.repeat.set(1, r);
-      texture.offset.set(0, (1 - r) / 2);
+      (u.repeat.value as THREE.Vector2).set(1, r);
+      (u.offset.value as THREE.Vector2).set(0, (1 - r) / 2);
     }
   }
 
@@ -461,6 +602,10 @@ export class RendererUiBackend implements UiBackend {
     if (visual.background) {
       this._scene.remove(visual.background);
       (visual.background.material as THREE.Material).dispose();
+    }
+    if (visual.shadow) {
+      this._scene.remove(visual.shadow);
+      (visual.shadow.material as THREE.Material).dispose();
     }
     if (visual.text) {
       this._scene.remove(visual.text);

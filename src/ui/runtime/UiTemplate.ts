@@ -5,16 +5,18 @@
  * Studio (DOM) e no console (renderer). Tag/atributo fora do vocabulário =
  * **erro claro na compilação** (nunca surpresa no console).
  *
- * Vocabulário:
- * - `<panel>`/`<label>`/`<button>` — viram {@link UiPanel}/{@link UiLabel}/
- *   {@link UiButton}. Texto interno vira `text` (com `{{chave}}` substituído
- *   pelos `data` do load).
+ * Vocabulário (nomes do HTML5 — filosofia DOM-lite: não reinventar):
+ * - `<div>`/`<span>`/`<button>`/`<img>` — viram {@link UiPanel}/{@link UiLabel}/
+ *   {@link UiButton}/{@link UiPanel} com imagem. Texto interno vira `text`
+ *   (com `{{chave}}` substituído pelos `data` do load). `<panel>`/`<label>`
+ *   são aliases legados de `<div>`/`<span>`.
  * - `<stack direction="column|row" gap="N">` — empilha os filhos (layout
  *   estático calculado na compilação; alturas de label ≈ fontSize).
  * - `<style>` — CSS do subset ({@link parseUiCss}) embutido no template.
  * - Atributos: `class`, `id`, `anchor`, `x`, `y`, `width`, `height`,
  *   `onpress="acao"` (button), `fill` (panel do tamanho do viewport),
- *   `image="url"` (imagem de fundo do panel — aceita `{{chave}}`).
+ *   `src="url"` (imagem do `<img>`) / `image="url"` (imagem de fundo do
+ *   panel) — ambos aceitam `{{chave}}`.
  *
  * @example  assets/ui/menu.html
  * <style>
@@ -41,7 +43,9 @@ import { parseUiCss, UiStylesheet } from './UiStylesheet.js';
 import { UiButton, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 import type { UiLayer } from './UiLayer.js';
 
-const TAGS = new Set(['panel', 'label', 'button', 'stack']);
+// Tags HTML5 + aliases legados (panel/label) — mesmo widget nos dois nomes.
+const TAGS = new Set(['div', 'span', 'img', 'button', 'stack', 'panel', 'label']);
+const PANEL_TAGS = new Set(['div', 'panel', 'img']);
 
 interface TemplateNode {
   tag: string;
@@ -146,8 +150,11 @@ export class UiTemplate {
     data: Record<string, string | number>,
     options: UiTemplateBuildOptions,
   ): UiWidget {
-    const widget =
-      node.tag === 'panel' ? new UiPanel() : node.tag === 'button' ? new UiButton() : new UiLabel();
+    const widget = PANEL_TAGS.has(node.tag)
+      ? new UiPanel()
+      : node.tag === 'button'
+        ? new UiButton()
+        : new UiLabel();
 
     const className = node.attrs['class'];
     if (className) {
@@ -160,9 +167,10 @@ export class UiTemplate {
         String(data[key] ?? ''),
       );
     }
-    if (node.attrs['image'] && widget instanceof UiPanel) {
-      // Imagem de fundo (URL). Suporta `{{chave}}` (mesma interpolação do texto).
-      widget.backgroundImage = node.attrs['image'].replace(/\{\{(\w+)\}\}/g, (_m, key: string) =>
+    // Imagem: `src` (tag <img>) ou `image` (fundo de panel). Suporta `{{chave}}`.
+    const imageUrl = node.attrs['src'] ?? node.attrs['image'];
+    if (imageUrl && widget instanceof UiPanel) {
+      widget.backgroundImage = imageUrl.replace(/\{\{(\w+)\}\}/g, (_m, key: string) =>
         String(data[key] ?? ''),
       );
     }

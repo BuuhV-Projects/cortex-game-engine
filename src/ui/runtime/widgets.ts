@@ -49,20 +49,38 @@ export abstract class UiWidget {
 
 /**
  * Caixa (fundo de HUD, card de menu, faixa de banner). O estilo é um SUBSET
- * que os DOIS backends desenham igual (ADR-0102): cor/gradiente vertical,
- * canto arredondado e borda — nada de CSS arbitrário.
+ * do CSS **com os MESMOS nomes do HTML5** (filosofia DOM-lite: não reinventar
+ * — `background`, `borderRadius`, `boxShadow`...), que os DOIS backends
+ * desenham igual (ADR-0102). Toda cor aceita alpha (`#rrggbbaa`/`rgba(...)`).
  */
 export class UiPanel extends UiWidget {
-  /** Cor CSS (`#rrggbb`). */
+  /**
+   * `background` do CSS: cor (`#rrggbb`, `#rrggbbaa`, `rgba(...)`) OU
+   * gradiente `linear-gradient(180deg|90deg, c1, c2)` (180deg = topo→base,
+   * 90deg = esquerda→direita — únicos ângulos do subset).
+   */
   background = '#000000';
-  /** Se definida, gradiente vertical `background` (topo) → `backgroundTo` (base). */
+  /** @deprecated Use `background: 'linear-gradient(180deg, c1, c2)'` (CSS). */
   backgroundTo: string | null = null;
-  /** Raio dos cantos em px (0 = reto). */
+  /** Raio dos cantos em px (0 = reto). Nome legado de {@link borderRadius}. */
   cornerRadius = 0;
-  /** Largura da borda em px (0 = sem borda). */
+  /** `border-radius` do CSS (px). Alias primário de {@link cornerRadius}. */
+  get borderRadius(): number {
+    return this.cornerRadius;
+  }
+  set borderRadius(value: number) {
+    this.cornerRadius = value;
+  }
+  /** `border-width` do CSS (px; 0 = sem borda). */
   borderWidth = 0;
-  /** Cor da borda. */
+  /** `border-color` do CSS. */
   borderColor = '#ffffff';
+  /**
+   * `box-shadow` do CSS, no subset SOMBRA DURA: `"0 Npx 0 <cor>"` (a sombra
+   * chapada dos botões cartoon) ou `"none"`. Sem blur/spread — os dois
+   * backends desenham uma cópia da caixa deslocada N px pra baixo.
+   */
+  boxShadow = 'none';
   /**
    * URL de uma **imagem de fundo** (ex.: arte do menu). Cobre o painel
    * ("cover" — preenche sem distorcer, corta o excedente) por cima da
@@ -81,7 +99,17 @@ export class UiPanel extends UiWidget {
   constructor(
     props: UiWidgetProps &
       Partial<
-        Pick<UiPanel, 'background' | 'backgroundTo' | 'cornerRadius' | 'borderWidth' | 'borderColor' | 'backgroundImage'>
+        Pick<
+          UiPanel,
+          | 'background'
+          | 'backgroundTo'
+          | 'cornerRadius'
+          | 'borderRadius'
+          | 'borderWidth'
+          | 'borderColor'
+          | 'backgroundImage'
+          | 'boxShadow'
+        >
       > = {},
   ) {
     super();
@@ -104,15 +132,31 @@ export class UiLabel extends UiWidget {
 
 /** Botão focável: Label + fundo + `onPress` (Enter/A com foco). */
 export class UiButton extends UiLabel {
+  /** `background` do CSS: cor OU `linear-gradient(180deg, c1, c2)`. */
   background = '#222233';
-  /** Cor do fundo quando focado (navegação por d-pad/setas). */
+  /** Fundo quando focado (o `:focus` do CSS): cor ou gradiente. */
   focusBackground = '#5546a8';
-  /** Raio dos cantos em px. */
+  /** Raio dos cantos em px. Nome legado de {@link borderRadius}. */
   cornerRadius = 10;
-  /** Borda quando FOCADO (destaque de seleção). 0 = sem. */
+  /** `border-radius` do CSS (px). Alias primário de {@link cornerRadius}. */
+  get borderRadius(): number {
+    return this.cornerRadius;
+  }
+  set borderRadius(value: number) {
+    this.cornerRadius = value;
+  }
+  /** `border-width` do CSS — borda CONSTANTE (moldura dos botões cartoon). 0 = sem. */
+  borderWidth = 0;
+  /** `border-color` do CSS (borda constante). */
+  borderColor = '#ffffff';
+  /** Borda quando FOCADO (destaque de seleção; vence a constante). 0 = sem. */
   focusBorderWidth = 0;
   /** Cor da borda de foco. */
   focusBorderColor = '#ffd94d';
+  /** `box-shadow` do CSS (subset `"0 Npx 0 <cor>"` — sombra dura) ou `"none"`. */
+  boxShadow = 'none';
+  /** `text-align` do CSS dentro do botão (`left`/`right` respeitam `paddingX`). */
+  textAlign: 'center' | 'left' | 'right' = 'center';
   paddingX = 14;
   paddingY = 8;
   focused = false;
@@ -134,8 +178,13 @@ export class UiButton extends UiLabel {
           | 'background'
           | 'focusBackground'
           | 'cornerRadius'
+          | 'borderRadius'
+          | 'borderWidth'
+          | 'borderColor'
           | 'focusBorderWidth'
           | 'focusBorderColor'
+          | 'boxShadow'
+          | 'textAlign'
           | 'paddingX'
           | 'paddingY'
           | 'onPress'

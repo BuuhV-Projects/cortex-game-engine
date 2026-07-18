@@ -76,19 +76,30 @@ export class DomUiBackend implements UiBackend {
       node.textContent = widget.text;
       node.style.font = uiFont(widget.fontSize);
       node.style.color = widget.color;
-      // Texto centralizado (H+V) IGUAL ao backend renderer do export — senão o
-      // Studio alinha à esquerda e o export centraliza (WYSIWYG quebrado).
+      // Alinhamento IGUAL ao backend renderer do export (WYSIWYG): centro por
+      // default; `left` encosta no paddingX (botões com ícone à esquerda).
       node.style.alignItems = 'center';
-      node.style.justifyContent = 'center';
-      node.style.textAlign = 'center';
+      node.style.justifyContent =
+        widget.textAlign === 'left'
+          ? 'flex-start'
+          : widget.textAlign === 'right'
+            ? 'flex-end'
+            : 'center';
+      node.style.textAlign = widget.textAlign;
       node.style.whiteSpace = 'nowrap';
+      // Cor ou `linear-gradient(...)` — o CSS entende os dois direto.
       node.style.background = widget.focused ? widget.focusBackground : widget.background;
       node.style.padding = `${widget.paddingY}px ${widget.paddingX}px`;
       node.style.borderRadius = `${widget.cornerRadius}px`;
+      // Borda de foco vence a constante; sem nenhuma, reserva a folga da borda
+      // de foco (senão o botão "pula" ao focar).
       node.style.border =
         widget.focused && widget.focusBorderWidth > 0
           ? `${widget.focusBorderWidth}px solid ${widget.focusBorderColor}`
-          : `${widget.focusBorderWidth > 0 ? widget.focusBorderWidth : 0}px solid transparent`;
+          : widget.borderWidth > 0
+            ? `${widget.borderWidth}px solid ${widget.borderColor}`
+            : `${widget.focusBorderWidth > 0 ? widget.focusBorderWidth : 0}px solid transparent`;
+      node.style.boxShadow = widget.boxShadow;
       node.style.boxSizing = 'border-box';
       node.style.pointerEvents = 'auto';
       node.style.cursor = 'pointer';
@@ -102,9 +113,12 @@ export class DomUiBackend implements UiBackend {
       node.style.whiteSpace = 'nowrap';
     } else if (widget instanceof UiPanel) {
       node.style.display = widget.visible ? 'block' : 'none';
-      const fill = widget.backgroundTo
-        ? `linear-gradient(180deg, ${widget.background}, ${widget.backgroundTo})`
-        : widget.background;
+      // `background` já é CSS (cor ou linear-gradient); `backgroundTo` legado
+      // vira gradiente vertical aqui.
+      const fill =
+        !widget.background.startsWith('linear-gradient(') && widget.backgroundTo
+          ? `linear-gradient(180deg, ${widget.background}, ${widget.backgroundTo})`
+          : widget.background;
       // Imagem "cover" por cima da cor/gradiente (fallback enquanto carrega).
       node.style.background = widget.backgroundImage
         ? `url("${widget.backgroundImage}") center / cover no-repeat, ${fill}`
@@ -112,7 +126,10 @@ export class DomUiBackend implements UiBackend {
       node.style.borderRadius = `${widget.cornerRadius}px`;
       node.style.border =
         widget.borderWidth > 0 ? `${widget.borderWidth}px solid ${widget.borderColor}` : 'none';
+      node.style.boxShadow = widget.boxShadow;
       node.style.boxSizing = 'border-box';
+      // Imagem clipada pelo raio (mesmo comportamento do backend renderer).
+      node.style.overflow = 'hidden';
     }
 
     // Mede (DOM sabe o tamanho do texto) e posiciona com a MESMA matemática

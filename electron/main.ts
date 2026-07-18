@@ -537,6 +537,7 @@ const VENDOR_TYPE_MODULES = {
   'ui/runtime': [
     'layout',
     'widgets',
+    'uiColor',
     'UiBackend',
     'UiLayer',
     'DomUiBackend',

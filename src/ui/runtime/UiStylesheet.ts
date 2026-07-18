@@ -6,9 +6,12 @@
  * console).
  *
  * Suportado por seletor `.classe` (e `.classe:focus` em botões):
- * - `background`: cor `#rrggbb` ou `linear-gradient(180deg, c1, c2)`
+ * - `background`: cor (`#rrggbb`, `#rrggbbaa`, `rgba(...)`) ou
+ *   `linear-gradient(180deg|90deg, c1, c2)` (`to bottom`/`to right` também)
  * - `color`, `font-size: Npx`, `opacity`
- * - `border-radius: Npx`, `border: Npx solid <cor>`
+ * - `border-radius: Npx`, `border: Npx solid <cor>` (em botão = borda constante)
+ * - `box-shadow: 0 Npx 0 <cor>` (sombra DURA, sem blur) ou `none`
+ * - `text-align: left|center|right` (botão)
  * - `padding: Ypx Xpx`, `width: Npx`, `height: Npx`
  *
  * @example
@@ -19,6 +22,7 @@
  * `);
  * sheet.apply(botao, 'card');
  */
+import { parseUiBackground, parseUiBoxShadow } from './uiColor.js';
 import { UiButton, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 
 type StyleProps = Record<string, string>;
@@ -62,13 +66,34 @@ export function parseUiCss(css: string): UiStylesheet {
     }
     rules.set(key, props);
   }
-  // valida TODAS as propriedades já na compilação
+  // valida TODAS as propriedades (e valores fora do subset) já na compilação
   for (const [selector, props] of rules) {
-    for (const prop of Object.keys(props)) {
+    for (const [prop, value] of Object.entries(props)) {
       if (!SUPPORTED.has(prop)) {
         throw new Error(
           `UiStylesheet: propriedade "${prop}" (em ".${selector}") não é suportada no ` +
             `runtime nativo. Suportadas: ${[...SUPPORTED].join(', ')}`,
+        );
+      }
+      if (
+        prop === 'background' &&
+        value.startsWith('linear-gradient(') &&
+        parseUiBackground(value).to === null
+      ) {
+        throw new Error(
+          `UiStylesheet: "background: ${value}" (em ".${selector}") — gradiente só com ` +
+            '"linear-gradient(180deg|90deg, c1, c2)"',
+        );
+      }
+      if (prop === 'box-shadow' && value !== 'none' && !parseUiBoxShadow(value)) {
+        throw new Error(
+          `UiStylesheet: "box-shadow: ${value}" (em ".${selector}") — o subset é ` +
+            '"0 Npx 0 <cor>" (sombra dura, sem blur/spread) ou "none"',
+        );
+      }
+      if (prop === 'text-align' && !['left', 'center', 'right'].includes(value)) {
+        throw new Error(
+          `UiStylesheet: "text-align: ${value}" (em ".${selector}") — use left, center ou right`,
         );
       }
     }
@@ -83,6 +108,8 @@ const SUPPORTED = new Set([
   'opacity',
   'border-radius',
   'border',
+  'box-shadow',
+  'text-align',
   'padding',
   'width',
   'height',
@@ -98,20 +125,10 @@ function applyProps(widget: UiWidget, props: StyleProps, isFocusState: boolean):
   for (const [prop, value] of Object.entries(props)) {
     switch (prop) {
       case 'background': {
-        const gradient = value.match(/^linear-gradient\(\s*180deg\s*,\s*([^,]+)\s*,\s*([^)]+)\)$/);
         if (isFocusState) {
           if (!(widget instanceof UiButton))
             throw new Error('UiStylesheet: ":focus" só se aplica a UiButton');
-          widget.focusBackground = gradient ? gradient[1]!.trim() : value;
-        } else if (gradient) {
-          if (widget instanceof UiPanel) {
-            widget.background = gradient[1]!.trim();
-            widget.backgroundTo = gradient[2]!.trim();
-          } else if (widget instanceof UiButton) {
-            widget.background = gradient[1]!.trim();
-          } else {
-            throw new Error('UiStylesheet: background em Label não é suportado');
-          }
+          widget.focusBackground = value; // cor ou gradiente — o backend decompõe
         } else if (widget instanceof UiPanel || widget instanceof UiButton) {
           widget.background = value;
           if (widget instanceof UiPanel) widget.backgroundTo = null;
@@ -141,12 +158,30 @@ function applyProps(widget: UiWidget, props: StyleProps, isFocusState: boolean):
         if (isFocusState && widget instanceof UiButton) {
           widget.focusBorderWidth = width;
           widget.focusBorderColor = color;
-        } else if (widget instanceof UiPanel) {
+        } else if (widget instanceof UiPanel || widget instanceof UiButton) {
+          // Em botão (fora do :focus) é a borda CONSTANTE (moldura cartoon).
           widget.borderWidth = width;
           widget.borderColor = color;
         } else {
-          throw new Error('UiStylesheet: border fora de Panel/Button:focus não é suportado');
+          throw new Error('UiStylesheet: border em Label não é suportado');
         }
+        break;
+      }
+      case 'box-shadow': {
+        if (value !== 'none' && !parseUiBoxShadow(value)) {
+          throw new Error(
+            `UiStylesheet: "box-shadow: ${value}" — subset é "0 Npx 0 <cor>" (sombra dura) ou "none"`,
+          );
+        }
+        if (widget instanceof UiPanel || widget instanceof UiButton) widget.boxShadow = value;
+        else throw new Error('UiStylesheet: box-shadow em Label não é suportado');
+        break;
+      }
+      case 'text-align': {
+        if (value !== 'left' && value !== 'center' && value !== 'right') {
+          throw new Error(`UiStylesheet: "text-align: ${value}" — use left, center ou right`);
+        }
+        if (widget instanceof UiButton) widget.textAlign = value;
         break;
       }
       case 'padding': {
