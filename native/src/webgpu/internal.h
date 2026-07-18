@@ -21,6 +21,16 @@ namespace webgpu {
 // Estado compartilhado do módulo (definido em navigator.cpp).
 HostGpu* gpuState();
 
+// destroy() de buffers/texturas = RELEASE-ONLY (definido em buffers.cpp). Na
+// troca de cena o three ainda grava passes com recursos "destruídos" vários
+// frames depois do dispose, e validação de submit no wgpu-native é PANIC
+// fatal ("has been destroyed" derrubava o jogo em fullscreen). Sem o estado
+// "destroyed" não há o que falhar; a memória vai quando o último ref cai
+// (GC do objeto JS → finalizer → Release). Os hooks ficam pra reativar uma
+// destruição agressiva no futuro (ex.: telemetria de VRAM no console).
+void deferDestroyBuffer(WGPUBuffer buffer);
+void deferDestroyTexture(WGPUTexture texture);
+
 // navigator.cpp
 napi_value gpuRequestAdapter(napi_env env, napi_callback_info info);
 napi_value gpuGetPreferredCanvasFormat(napi_env env, napi_callback_info info);

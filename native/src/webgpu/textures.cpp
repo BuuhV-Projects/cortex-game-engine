@@ -103,7 +103,8 @@ napi_value textureDestroy(napi_env env, napi_callback_info info) {
   size_t argc = 0;
   auto* texture =
       static_cast<WGPUTexture>(njs::unwrapThis(env, info, &argc, nullptr));
-  if (texture) wgpuTextureDestroy(texture);
+  // RELEASE-ONLY (mesma razão do bufferDestroy — ver internal.h).
+  deferDestroyTexture(texture);
   return njs::undefined(env);
 }
 

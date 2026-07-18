@@ -15,4 +15,9 @@ void registerBindings(napi_env env, HostGpu* gpu);
 // Apresenta o frame se o JS adquiriu textura da surface neste frame.
 void presentIfAcquired(HostGpu* gpu);
 
+// Hook de fim de frame das destruições de buffers/texturas (hoje NO-OP —
+// destroy() é release-only, ver internal.h). Chamado 1× por frame após o
+// present; fica pra reativar destruição agressiva no futuro.
+void flushDeferredDestroys();
+
 }  // namespace webgpu

@@ -21,6 +21,19 @@ void finalizeBindGroup(napi_env, void* data, void*) {
 
 }  // namespace
 
+// destroy() do JS = RELEASE-ONLY (ver internal.h): marcar o recurso como
+// "destroyed" no wgpu derrubava o jogo — na troca de cena (loading→fase) o
+// three ainda gravava passes com buffers de geometria já "destruída" VÁRIOS
+// frames depois do dispose (intermitente, pior em fullscreen), e validação de
+// submit no wgpu-native é PANIC fatal. Sem o estado "destroyed" a validação
+// não tem o que falhar; a memória é liberada quando o ÚLTIMO ref cai (objeto
+// JS coletado pelo GC → finalizer → Release; command buffers em voo seguram
+// as próprias referências). Custo: VRAM liberada no ritmo do GC, não na hora.
+void deferDestroyBuffer(WGPUBuffer) {}
+void deferDestroyTexture(WGPUTexture) {}
+
+void flushDeferredDestroys() {}
+
 // Extrai (ponteiro, bytes totais, bytes/elemento) de um TypedArray ou
 // ArrayBuffer JS. elementSize=1 pra ArrayBuffer (offsets em bytes).
 // Compartilhado com textures.cpp (declarado no internal.h).
@@ -70,7 +83,8 @@ napi_value bufferDestroy(napi_env env, napi_callback_info info) {
   size_t argc = 0;
   auto* buffer =
       static_cast<WGPUBuffer>(njs::unwrapThis(env, info, &argc, nullptr));
-  if (buffer) wgpuBufferDestroy(buffer);
+  // RELEASE-ONLY (ver internal.h): o finalizer libera quando o GC coletar.
+  deferDestroyBuffer(buffer);
   return njs::undefined(env);
 }
 

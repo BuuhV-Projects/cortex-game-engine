@@ -93,6 +93,9 @@ void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
   } else {
     webgpu::presentIfAcquired(gpu);
   }
+  // Destruições adiadas de buffers/texturas: SÓ depois do present — um pass
+  // gravado neste frame com o recurso ainda vivo passa na validação do submit.
+  webgpu::flushDeferredDestroys();
 }
 
 void shutdownGpu(HostGpu* gpu) {
