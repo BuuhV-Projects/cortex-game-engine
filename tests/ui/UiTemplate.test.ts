@@ -71,7 +71,8 @@ describe('UiTemplate — HTML que compila pra UI nativa (ADR-0102)', () => {
   });
 
   it('tag fora do vocabulário = erro claro', () => {
-    expect(() => parseUiTemplate('<div>oi</div>')).toThrow(/<div>/);
+    // <div>/<span>/<img> agora são o vocabulário HTML5 (aliases de panel/label).
+    expect(() => parseUiTemplate('<video>oi</video>')).toThrow(/<video>/);
     expect(() => parseUiTemplate('<panel>')).toThrow(/não fechada/);
     expect(() => parseUiTemplate('<label class="x">a</label>')).not.toThrow();
     const ui = new UiLayer(backend(), () => VIEWPORT);
