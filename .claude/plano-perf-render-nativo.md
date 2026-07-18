@@ -150,5 +150,16 @@ outra engine).
 
 ---
 
+## Próximos passos (2026-07-18)
+
+Este plano desagua no **PRD-0005** (`docs/prds/0005-capacidade-open-world.md`):
+roadmap M-perf-0..5 pra capacidade open-world — instrumentação (profiler +
+contadores NAPI), benchmark cidade, corte do custo NAPI (cache de estado +
+render bundles), IO assíncrono com thread pool, células/streaming/LOD. A Rota
+A/shermes acima vira o M-perf-5, com gate por medição (JS >8 ms pós-corte NAPI).
+
+---
+
 *Relacionado: ADR-0108 (BVH/KTX2), ADR-0118 (skinned raycast + clamp dt),
-ADR-0119 (UASTC+Zstd), memória native-fps-cpu-bound-render.*
+ADR-0119 (UASTC+Zstd), memória native-fps-cpu-bound-render, PRD-0005
+(roadmap open-world).*
