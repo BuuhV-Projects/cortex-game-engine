@@ -180,6 +180,26 @@ int main(int argc, char** argv) {
       }
     }
 
+    // Idioma preferido do SO (ex.: "pt-BR") → __cortexLocale, pré-boot. O shim
+    // JS espelha em navigator.language (fiel ao browser) e o i18n do engine usa
+    // pra escolher o arquivo de idioma na primeira abertura (ADR-0124).
+    {
+      int count = 0;
+      SDL_Locale** locales = SDL_GetPreferredLocales(&count);
+      if (locales && count > 0 && locales[0] && locales[0]->language) {
+        std::string locale = locales[0]->language;
+        if (locales[0]->country && locales[0]->country[0]) {
+          locale += '-';
+          locale += locales[0]->country;
+        }
+        napi_value global = nullptr, s = nullptr;
+        napi_get_global(js.env(), &global);
+        napi_create_string_utf8(js.env(), locale.c_str(), NAPI_AUTO_LENGTH, &s);
+        napi_set_named_property(js.env(), global, "__cortexLocale", s);
+      }
+      if (locales) SDL_free(locales);
+    }
+
     // Tamanho LÓGICO da canvas (nativo) + devicePixelRatio = renderScale, pro
     // JS ANTES do boot. Modelo fiel ao browser: o engine faz layout em px
     // lógicos (innerWidth = nativo) e o three multiplica por dpr pro backing

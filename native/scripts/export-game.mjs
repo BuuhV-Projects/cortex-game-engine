@@ -196,9 +196,20 @@ guardLocks('assets', () => {
       fs.copyFileSync(path.join(scenesDir, rel), target);
     }
   }
-  for (const extra of ['cortex.json']) {
+  for (const extra of ['cortex.json', 'config.ini']) {
     const src = path.join(gameDir, extra);
     if (fs.existsSync(src)) fs.copyFileSync(src, path.join(dist, extra));
+  }
+  // Idiomas (ADR-0124): .txt soltos em dist-native/languages/ — de propósito
+  // fora do assets.pak, pra qualquer um traduzir/editar sem rebuild.
+  const languagesDir = path.join(gameDir, 'languages');
+  if (fs.existsSync(languagesDir)) {
+    const target = path.join(dist, 'languages');
+    fs.mkdirSync(target, { recursive: true });
+    for (const entry of fs.readdirSync(languagesDir)) {
+      if (!entry.endsWith('.txt')) continue;
+      fs.copyFileSync(path.join(languagesDir, entry), path.join(target, entry));
+    }
   }
 });
 

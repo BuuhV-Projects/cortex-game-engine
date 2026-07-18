@@ -64,6 +64,44 @@ napi_value jsReadFile(napi_env env, napi_callback_info info) {
   return arrayBuffer;
 }
 
+// Nome vindo do JS pra ESCRITA na pasta do jogo — barra fuga da pasta: tira
+// separadores, ':' e colapsa "..". Só arquivo na raiz do dist-native (caso de
+// uso: config.ini editável pelo usuário — ADR-0124).
+std::string safeBaseName(const std::string& name) {
+  std::string out;
+  for (char c : name) {
+    if (c == '/' || c == '\\' || c == ':') continue;
+    if (c == '.' && !out.empty() && out.back() == '.') continue;
+    out += c;
+  }
+  return out;
+}
+
+// __cortexWriteBaseFile(name, text) → bool. Escrita de texto na pasta do jogo
+// (ao lado do exe). Diferente do __cortexWriteUserFile (saves em pasta
+// per-usuário), aqui é config compartilhada da instalação. Pode falhar se a
+// pasta for read-only (ex.: Program Files) — o JS trata o false.
+napi_value jsWriteBaseFile(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value args[2];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  napi_value falseValue = nullptr;
+  napi_get_boolean(env, false, &falseValue);
+  if (argc < 2 || g_baseDir.empty()) return falseValue;
+
+  const std::string name = safeBaseName(njs::toString(env, args[0]));
+  if (name.empty()) return falseValue;
+  const std::string data = njs::toString(env, args[1]);
+  FILE* file = std::fopen((g_baseDir + name).c_str(), "wb");
+  if (!file) return falseValue;
+  if (!data.empty()) std::fwrite(data.data(), 1, data.size(), file);
+  std::fclose(file);
+
+  napi_value trueValue = nullptr;
+  napi_get_boolean(env, true, &trueValue);
+  return trueValue;
+}
+
 }  // namespace
 
 void registerFiles(napi_env env, const std::string& baseDir) {
@@ -74,6 +112,7 @@ void registerFiles(napi_env env, const std::string& baseDir) {
   napi_value global = nullptr;
   napi_get_global(env, &global);
   njs::setMethod(env, global, "__cortexReadFile", jsReadFile);
+  njs::setMethod(env, global, "__cortexWriteBaseFile", jsWriteBaseFile);
 }
 
 }  // namespace shims

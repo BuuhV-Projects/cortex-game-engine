@@ -65,6 +65,9 @@ export function installWebGpuExtras() {
     return adapter;
   };
   globalThis.navigator.userAgent = 'CortexNative';
+  // Idioma do SO (host injeta __cortexLocale pré-boot — ADR-0124). Fiel ao
+  // browser: o i18n do engine lê navigator.language na primeira abertura.
+  globalThis.navigator.language = globalThis.__cortexLocale || 'en';
   if (!globalThis.navigator.getGamepads) {
     // Preenchido de verdade pela frente 2 do M1 (SDL3 → Gamepad API).
     globalThis.navigator.getGamepads = function () { return []; };
