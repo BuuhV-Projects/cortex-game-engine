@@ -531,6 +531,7 @@ const VENDOR_TYPE_MODULES = {
     'StaticMerge',
   ],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter', 'signedSave'],
+  i18n: ['I18n', 'GameConfig'],
   physics: ['RapierPhysics'],
   scripts: ['ScriptBehavior', 'ScriptRegistry'],
   ui: ['Speedometer', 'DebugHud'],

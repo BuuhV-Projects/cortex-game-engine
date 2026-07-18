@@ -145,6 +145,12 @@ export * from './io/TauriSceneFileWriter.js';
 export * from './io/autoDetectSceneFileWriter.js';
 export * from './io/signedSave.js';
 
+// ─── i18n + config do jogo (ADR-0124) ─────────────────────────────────────────
+// Traduções em languages/<código>.txt (uma chave=texto por linha) e config.ini
+// na raiz do jogo (dist-native no export nativo): idioma, janela, vsync etc.
+export * from './i18n/I18n.js';
+export * from './i18n/GameConfig.js';
+
 // ─── Narrativa: estado de história + diálogo (ADR-0070) ───────────────────────
 // StoryState (flags / base do save narrativo) + diálogo data-driven: grafo (Zod),
 // runner puro (testável) e a 1ª UI de runtime do engine (DOM overlay).
