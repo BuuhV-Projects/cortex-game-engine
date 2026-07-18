@@ -41,6 +41,8 @@ if (-not (Test-Path $wgpuDir)) {
 }
 
 # ── stb_image (decode de PNG/JPG das texturas GLB; header único, pinado) ──
+# Por COMMIT: o repo nothings/stb NÃO tem nenhuma tag/release — commit imutável
+# é a única forma de pinar.
 $STB_COMMIT = '5c205738c191bcb0abc65c4febfa9bd25ff35234'
 $stbDir = Join-Path $tp 'stb'
 New-Item -ItemType Directory -Force $stbDir | Out-Null
@@ -53,30 +55,37 @@ if (-not (Test-Path (Join-Path $stbDir 'stb_truetype.h'))) {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nothings/stb/$STB_COMMIT/stb_truetype.h" -OutFile (Join-Path $stbDir 'stb_truetype.h')
 }
 
-# ── fonte oficial da UI de runtime (ADR-0102/0103) — Roboto MEDIUM, tag pinada.
+# ── fonte oficial da UI de runtime (ADR-0102/0103) — Roboto MEDIUM.
 # É a MESMA que o Studio embute via @font-face (src/ui/runtime/uiFont.ts), pro
-# preview bater com o export. ──
+# preview bater com o export. Versão = tag v2.138; URL usa o SHA da tag. ──
+$ROBOTO_TAG = 'v2.138'                                        # documentação
+$ROBOTO_COMMIT = 'ab4876f650a4aeb9b661c83fee47f908c739bb70'   # SHA da tag
 $fontDir = Join-Path $tp 'fonts'
 if (-not (Test-Path (Join-Path $fontDir 'Roboto-Medium.ttf'))) {
     New-Item -ItemType Directory -Force $fontDir | Out-Null
     Write-Host 'baixando Roboto Medium ...' -ForegroundColor Cyan
-    Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/googlefonts/roboto-2/v2.138/src/hinted/Roboto-Medium.ttf' -OutFile (Join-Path $fontDir 'Roboto-Medium.ttf')
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/googlefonts/roboto-2/$ROBOTO_COMMIT/src/hinted/Roboto-Medium.ttf" -OutFile (Join-Path $fontDir 'Roboto-Medium.ttf')
 }
 
-# ── miniaudio (DECODE de wav/mp3/flac; header único, pinado por tag) ──
-$MINIAUDIO_TAG = '0.11.21'
+# ── miniaudio (DECODE de wav/mp3/flac; header único) ──
+# Versão = tag 0.11.21; URL usa o SHA da tag.
+$MINIAUDIO_TAG = '0.11.21'                                      # documentação
+$MINIAUDIO_COMMIT = '4a5b74bef029b3592c54b6048650ee5f972c1a48'  # SHA da tag
 $maDir = Join-Path $tp 'miniaudio'
 if (-not (Test-Path (Join-Path $maDir 'miniaudio.h'))) {
     New-Item -ItemType Directory -Force $maDir | Out-Null
     Write-Host 'baixando miniaudio ...' -ForegroundColor Cyan
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mackron/miniaudio/$MINIAUDIO_TAG/miniaudio.h" -OutFile (Join-Path $maDir 'miniaudio.h')
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mackron/miniaudio/$MINIAUDIO_COMMIT/miniaudio.h" -OutFile (Join-Path $maDir 'miniaudio.h')
 }
 
 # ── basis_universal transcoder (decode KTX2/Basis → RGBA no host; ADR-0108) ──
-# Só a pasta transcoder/ (headers + 1 .cpp + tabelas .inc/.inl), pinado por commit.
-# Baixa arquivo-a-arquivo (o archive do repo tem ~120 MB de assets de teste; a
+# Só a pasta transcoder/ (headers + 1 .cpp + tabelas .inc/.inl). Baixa
+# arquivo-a-arquivo (o archive do repo tem ~120 MB de assets de teste; a
 # transcoder/ tem ~3 MB). A lista vem da API do GitHub no commit pinado.
-$BASISU_COMMIT = '1b33fd5098c6e7b58324146b8f5518cbb4cdfb72'
+# Versão escolhida pela TAG de release; URLs usam o SHA daquela tag (tag pode
+# ser movida pelo mantenedor; SHA não).
+$BASISU_TAG = 'v2_1_0r'                                       # documentação
+$BASISU_COMMIT = 'e4f439fc9545b6a9e1fd26fc7ffd0c682c4b96d4'   # SHA da tag
 $basisuDir = Join-Path $tp 'basisu'
 if (-not (Test-Path (Join-Path $basisuDir 'basisu_transcoder.cpp'))) {
     Write-Host 'baixando basis_universal (transcoder/) ...' -ForegroundColor Cyan
@@ -103,7 +112,7 @@ if (-not (Test-Path (Join-Path $zstdDir 'zstddeclib.c'))) {
 }
 
 # ── basis_universal ENCODER (WASM) — ferramenta de BUILD (converter PNG→KTX2,
-# scripts/encode-ktx2.mjs). NÃO vai pro runtime; roda no Node. Mesmo commit do
+# scripts/encode-ktx2.mjs). NÃO vai pro runtime; roda no Node. Mesma TAG do
 # transcoder. Fica em tools/ (não third_party/, que é dep de compilação). ──
 $encDir = Join-Path $root 'tools/basis-encoder'
 if (-not (Test-Path (Join-Path $encDir 'basis_encoder.wasm'))) {
@@ -134,6 +143,8 @@ if (-not (Test-Path (Join-Path $nsisDir 'Bin/makensis.exe'))) {
 # Clonado no commit pinado; o native/CMakeLists builda como SUBPROJETO (flags/
 # ABI idênticos entre VM e glue). Substituiu o fork MS do NuGet (0.1.27, ~4×
 # mais lento no mesmo bytecode; o pacote está parado).
+# Por COMMIT: as tags do repo param no v0.x (2022) — a camada NAPI (API/napi)
+# que o host usa só existe no main, sem tag/release que a contenha.
 $HERMES_COMMIT = 'efcf68e285865fd9d952070b08e751bcad63f25e'
 $hermesUp = Join-Path $tp 'hermes-upstream/src'
 if (-not (Test-Path (Join-Path $hermesUp 'CMakeLists.txt'))) {

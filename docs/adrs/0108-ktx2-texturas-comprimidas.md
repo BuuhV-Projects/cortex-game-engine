@@ -55,4 +55,6 @@ URL de textura; o ambiente decide o caminho.
 - Basis compila como third-party (warnings suprimidos; defines
   `BASISD_SUPPORT_KTX2=1`, `BASISD_SUPPORT_KTX2_ZSTD=0` — o encoder do projeto
   não usa Zstd, evitando a dependência).
-- Pinado por commit (`1b33fd5…`), atualizar deliberadamente.
+- Pinado por commit (`1b33fd5…`), atualizar deliberadamente. *(Follow-up
+  2026-07-18: re-pinado na TAG de release `v2_1_0r` — política do fetch-deps é
+  tag/release sempre que o repo tiver; revalidado com PSNR + export.)*

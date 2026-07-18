@@ -16,9 +16,10 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
 /**
  * Versão da política de cook — entra no hash do cache. BUMP ao mudar formato/
- * qualidade do encode (v2 = UASTC+RDO+Zstd pra cor, ADR-0119).
+ * qualidade do encode OU a versão do encoder WASM (v2 = UASTC+RDO+Zstd pra
+ * cor, ADR-0119; v3 = encoder pinado na tag v2_1_0r do basis_universal).
  */
-const COOK_VERSION = 'cook-v2';
+const COOK_VERSION = 'cook-v3';
 
 function walk(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {
