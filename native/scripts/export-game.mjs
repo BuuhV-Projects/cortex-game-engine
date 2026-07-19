@@ -14,6 +14,7 @@ import { packDir } from './pak.mjs';
 import { cookAssets } from './cook-assets.mjs';
 import { prepareDist } from './fs-clean.mjs';
 import { whoLocks } from './who-locks.mjs';
+import { readGameConfig } from './game-config.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
@@ -43,6 +44,12 @@ if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
 const step = (key) => console.log(`[export:step] ${key}`);
 
 const gameName = path.basename(gameDir);
+// Identidade do jogo (ADR-0126): `id` estável (saves) + `name` de exibição, do
+// cortex.json com fallback pro slug. O EXE é FIXO `launcher.exe` — o "nome do
+// jogo" não vira mais o nome do arquivo; ele aparece no título da janela, no
+// Meus Programas (via recurso do exe, fase do ícone) e no DisplayName do console.
+const game = readGameConfig(gameDir);
+const EXE_NAME = 'launcher.exe';
 const dist = path.join(gameDir, 'dist-native');
 // Host por alvo: build-steam (CORTEX_STEAM) / build-gdk (CORTEX_GDK) / build (desktop).
 const hostBuild = path.join(engineRoot, 'native', steam ? 'build-steam' : gdk ? 'build-gdk' : 'build');
@@ -83,7 +90,7 @@ function guardLocks(label, fn) {
       } else {
         console.error(
           `[export] Não identifiquei o processo (pode ser antivírus ou o indexador do Windows). ` +
-            `Confira se o jogo exportado (${gameName}.exe) está aberto, feche o Explorer/terminal na ` +
+            `Confira se o jogo exportado (${EXE_NAME}) está aberto, feche o Explorer/terminal na ` +
             `pasta dist-native, aguarde alguns segundos e exporte de novo.`,
         );
       }
@@ -124,9 +131,12 @@ fs.rmSync(bundlePath);
 
 // 3. runtime: exe (renomeado pro jogo) + dlls + fonte
 step('runtime');
-console.log(`[export] runtime...${steam ? ' (modo Steam)' : ''}`);
+console.log(
+  `[export] runtime...${steam ? ' (modo Steam)' : ''} — ${EXE_NAME} · ` +
+    `"${game.name}" (id: ${game.id})`,
+);
 const runtimeFiles = [
-  ['cortex_host.exe', `${gameName}.exe`],
+  ['cortex_host.exe', EXE_NAME],
   ['SDL3.dll', 'SDL3.dll'],
   ['wgpu_native.dll', 'wgpu_native.dll'],
   // (sem hermes.dll — o runtime upstream é estático no exe, ADR-0122)
@@ -147,7 +157,7 @@ guardLocks('runtime', () => {
 // console (Scarlett) exige GXDK+ID@Xbox (recompilar) — ver architecture.md.
 if (gdk) {
   const { writeGdkPackageFiles } = await import('./gdk-package.mjs');
-  writeGdkPackageFiles(dist, gameName, `${gameName}.exe`);
+  writeGdkPackageFiles(dist, game.name, EXE_NAME);
   console.log('[export] MicrosoftGame.config + logos (GDK) gerados');
 }
 
@@ -205,10 +215,17 @@ guardLocks('assets', () => {
       fs.copyFileSync(path.join(scenesDir, rel), target);
     }
   }
-  for (const extra of ['cortex.json', 'config.ini']) {
-    const src = path.join(gameDir, extra);
-    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(dist, extra));
+  // cortex.json RESOLVIDO (id/name garantidos) — o host lê `id` pros saves e
+  // `name` pro título. Copiar o cru deixaria projetos antigos (só `{engine}`)
+  // sem `id`, e o host cairia no basename do exe (`launcher`) → saves colidindo
+  // entre jogos. O `icon` fica fora do runtime (é usado só no export).
+  {
+    const { icon, ...rest } = game;
+    void icon;
+    fs.writeFileSync(path.join(dist, 'cortex.json'), JSON.stringify(rest, null, 2) + '\n');
   }
+  const iniSrc = path.join(gameDir, 'config.ini');
+  if (fs.existsSync(iniSrc)) fs.copyFileSync(iniSrc, path.join(dist, 'config.ini'));
   // Idiomas (ADR-0124): .txt soltos em dist-native/languages/ — de propósito
   // fora do assets.pak, pra qualquer um traduzir/editar sem rebuild.
   const languagesDir = path.join(gameDir, 'languages');
@@ -225,4 +242,4 @@ guardLocks('assets', () => {
 step('done');
 const files = fs.readdirSync(dist);
 console.log(`[export] OK → ${dist} (${files.length} itens na raiz)`);
-console.log(`[export] rode: ${path.join(dist, `${gameName}.exe`)}`);
+console.log(`[export] rode: ${path.join(dist, EXE_NAME)}`);

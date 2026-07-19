@@ -4,31 +4,46 @@
 // desinstalador. Ferramenta de BUILD; o NSIS portátil vem do fetch-deps.
 //
 // Uso: node native/scripts/make-installer.mjs <gameDir>
-//   (requer o export feito antes: <gameDir>/dist-native/<jogo>.exe)
+//   (requer o export feito antes: <gameDir>/dist-native/launcher.exe)
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readGameConfig } from './game-config.mjs';
 
 const engineRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const makensis = path.join(engineRoot, 'native', 'tools', 'nsis', 'Bin', 'makensis.exe');
 const nsiTemplate = path.join(engineRoot, 'native', 'scripts', 'installer.nsi');
 
+// O export produz um exe FIXO (ADR-0126) — o nome do jogo é dado de exibição,
+// não do arquivo. O instalador usa `name` pros rótulos (atalho/Meus Programas) e
+// `id` (estável) pra pasta de instalação e chave de desinstalação.
+const EXE_NAME = 'launcher.exe';
+
 /** Gera `<gameDir>/<jogo>-setup.exe` a partir de `<gameDir>/dist-native`. */
 export function makeInstaller(gameDir) {
-  const gameName = path.basename(gameDir);
   const dist = path.join(gameDir, 'dist-native');
-  if (!fs.existsSync(path.join(dist, `${gameName}.exe`))) {
-    throw new Error(`make-installer: rode o export antes — não achei "${gameName}.exe" em ${dist}`);
+  const game = readGameConfig(gameDir);
+  if (!fs.existsSync(path.join(dist, EXE_NAME))) {
+    throw new Error(`make-installer: rode o export antes — não achei "${EXE_NAME}" em ${dist}`);
   }
   if (!fs.existsSync(makensis)) {
     throw new Error('make-installer: NSIS ausente — rode native/scripts/fetch-deps.ps1');
   }
-  const outFile = path.join(gameDir, `${gameName}-setup.exe`);
+  const outFile = path.join(gameDir, `${game.id}-setup.exe`);
   // Valores por /D (o .nsi é estático) — sem shell (execFileSync), espaços ok.
+  // APPNAME = exibição; APPID = slug estável; EXENAME = alvo do atalho.
   execFileSync(
     makensis,
-    ['-V2', `-DAPPNAME=${gameName}`, `-DDISTDIR=${dist}`, `-DOUTFILE=${outFile}`, nsiTemplate],
+    [
+      '-V2',
+      `-DAPPNAME=${game.name}`,
+      `-DAPPID=${game.id}`,
+      `-DEXENAME=${EXE_NAME}`,
+      `-DDISTDIR=${dist}`,
+      `-DOUTFILE=${outFile}`,
+      nsiTemplate,
+    ],
     { stdio: 'inherit' },
   );
   return outFile;

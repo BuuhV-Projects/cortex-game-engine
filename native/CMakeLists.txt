@@ -13,6 +13,7 @@ add_executable(cortex_host
   src/main.cpp
   src/core/app_window.cpp
   src/core/crash_handler.cpp
+  src/core/game_config.cpp
   src/core/gdk.cpp
   src/core/steam.cpp
   src/core/js_runtime.cpp

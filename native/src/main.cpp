@@ -11,6 +11,7 @@
 
 #include "core/app_window.h"
 #include "core/crash_handler.h"
+#include "core/game_config.h"
 #include "core/gdk.h"
 #include "core/host_gpu.h"
 #include "core/js_runtime.h"
@@ -141,11 +142,17 @@ int main(int argc, char** argv) {
     // Com o dir do jogo resolvido, o crash handler passa a gravar
     // <jogo>/error_log.txt além do stderr.
     core::installCrashHandler(baseDir.c_str());
+    // Identidade do jogo (ADR-0126): cortex.json ao lado do exe. `id` chaveia os
+    // saves (estável, não é o nome do exe — que no export é fixo `launcher.exe`);
+    // `name` é o título da janela. Fallback: basename do dir/exe (deriveGameName).
+    const core::GameConfig game =
+        core::loadGameConfig(baseDir, deriveGameName(argc, argv, baseDir));
+    SDL_SetWindowTitle(window, game.name.c_str());
     shims::registerTimers(js.env());
     shims::registerAnimationFrame(js.env());
     shims::registerInput(js.env());
     shims::registerFiles(js.env(), baseDir);
-    shims::registerUserStorage(js.env(), deriveGameName(argc, argv, baseDir));
+    shims::registerUserStorage(js.env(), game.id);
     shims::registerImageDecode(js.env());
     shims::registerKtx2(js.env());
     shims::registerPerfStats(js.env());

@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, shell, type MenuItemConstructorOptions } from 'electron'
-import { join, resolve, delimiter } from 'path'
+import { join, resolve, delimiter, basename } from 'path'
 import { readdir, readFile, writeFile, cp, mkdir, rename, rm, unlink } from 'fs/promises'
 import { existsSync, readFileSync, watch, type FSWatcher } from 'fs'
 import { spawn, spawnSync, ChildProcess } from 'child_process'
@@ -705,12 +705,18 @@ ipcMain.handle('fs:createProject', async (_event, targetDir: unknown, name: unkn
   const projectPath = resolve(safeTarget, projectName)
   const templateDir = join(resourceBase(), 'templates', 'new-project')
   await cp(templateDir, projectPath, { recursive: true })
-  // Marca de projeto do engine — ponto de extensão pra metadados futuros (versão,
-  // flags do Studio). Não há "tipo" de projeto: o engine é 3D por padrão e 2D/2.5D
-  // são questão de câmera/render, decididas no código do jogo (ADR-0062).
+  // Marca de projeto do engine + IDENTIDADE do jogo (ADR-0126):
+  //  - `id`: slug ESTÁVEL (= nome da pasta na criação). Chaveia os SAVES no host
+  //    nativo — nunca muda, mesmo que o usuário renomeie o `name`. Renomear o
+  //    display não pode órfãos os saves nem colidir entre jogos (o exe exportado
+  //    é fixo `launcher.exe`, então o nome do exe não serve mais de chave).
+  //  - `name`: nome de EXIBIÇÃO (título da janela, Meus Programas, console).
+  //    Editável nas Configurações do jogo (Studio). Default = nome do projeto.
+  // Não há "tipo" de projeto: o engine é 3D por padrão e 2D/2.5D são questão de
+  // câmera/render, decididas no código do jogo (ADR-0062).
   await writeFile(
     join(projectPath, 'cortex.json'),
-    JSON.stringify({ engine: 'cortex-game-engine' }, null, 2) + '\n',
+    JSON.stringify({ engine: 'cortex-game-engine', id: projectName, name: projectName }, null, 2) + '\n',
     'utf-8',
   )
   // Substitui o placeholder {{PROJECT_NAME}} em cada arquivo do template copiado
@@ -951,6 +957,64 @@ ipcMain.handle('export:native', async (_event, projectDir: unknown, mode: unknow
 ipcMain.handle('shell:openPath', async (_event, target: unknown) => {
   const safe = validatePath(target)
   await shell.openPath(safe)
+})
+
+// ---------------------------------------------------------------------------
+// Handlers IPC — identidade do jogo no cortex.json (ADR-0126)
+// ---------------------------------------------------------------------------
+
+const asTrimmed = (v: unknown): string | undefined =>
+  typeof v === 'string' && v.trim() ? v.trim() : undefined
+
+/**
+ * Lê e RESOLVE a identidade do jogo (Configurações do jogo no Studio). Espelha
+ * `native/scripts/game-config.mjs`: `id` (slug estável, chave de saves) e `name`
+ * (exibição) caem no nome da pasta quando ausentes — compat com projetos antigos
+ * que só têm `{ engine }`.
+ */
+ipcMain.handle('project:readConfig', async (_event, projectDir: unknown) => {
+  const dir = validatePath(projectDir)
+  let cfg: Record<string, unknown> = {}
+  try {
+    const raw = JSON.parse(await readFile(join(dir, 'cortex.json'), 'utf-8'))
+    if (raw && typeof raw === 'object') cfg = raw as Record<string, unknown>
+  } catch {
+    // sem cortex.json / inválido — resolve pelo slug
+  }
+  const slug = basename(dir)
+  const id = asTrimmed(cfg.id) ?? slug
+  const name = asTrimmed(cfg.name) ?? id
+  return { engine: 'cortex-game-engine', ...cfg, id, name, icon: asTrimmed(cfg.icon) ?? null }
+})
+
+/**
+ * Grava a identidade editável (name/icon) preservando o resto do cortex.json.
+ * `id` e `engine` NÃO são editáveis por aqui — `id` é estável (saves) e mexer
+ * nele órfãos os saves. `name` vazio volta pro `id`.
+ */
+ipcMain.handle('project:writeConfig', async (_event, projectDir: unknown, patch: unknown) => {
+  const dir = validatePath(projectDir)
+  const p = (patch ?? {}) as { name?: unknown; icon?: unknown }
+  let cfg: Record<string, unknown> = {}
+  try {
+    const raw = JSON.parse(await readFile(join(dir, 'cortex.json'), 'utf-8'))
+    if (raw && typeof raw === 'object') cfg = raw as Record<string, unknown>
+  } catch {
+    // recria do zero se o arquivo sumiu/corrompeu
+  }
+  const slug = basename(dir)
+  const id = asTrimmed(cfg.id) ?? slug
+  const next: Record<string, unknown> = {
+    engine: 'cortex-game-engine',
+    ...cfg,
+    id,
+    name: asTrimmed(p.name) ?? id,
+  }
+  const icon = asTrimmed(p.icon)
+  if (icon) next.icon = icon
+  else delete next.icon
+  await writeFile(join(dir, 'cortex.json'), JSON.stringify(next, null, 2) + '\n', 'utf-8')
+  return { ok: true, id, name: next.name, icon: icon ?? null }
 })
 
 // ---------------------------------------------------------------------------

@@ -45,6 +45,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Abre uma pasta no explorador do SO (ex.: dist-native após o export). */
   openPath: (target: string) => ipcRenderer.invoke('shell:openPath', target),
 
+  /** Identidade do jogo (ADR-0126): lê `cortex.json` resolvido (id/name/icon). */
+  readProjectConfig: (projectDir: string) =>
+    ipcRenderer.invoke('project:readConfig', projectDir) as Promise<{
+      engine: string
+      id: string
+      name: string
+      icon: string | null
+    }>,
+
+  /** Grava nome/ícone do jogo no `cortex.json` (preserva `id`/`engine`). */
+  writeProjectConfig: (projectDir: string, patch: { name?: string; icon?: string }) =>
+    ipcRenderer.invoke('project:writeConfig', projectDir, patch) as Promise<{
+      ok: boolean
+      id: string
+      name: string
+      icon: string | null
+    }>,
+
   /** `true` em dev (electron:dev); `false` no build empacotado. */
   isDev: ipcRenderer.sendSync('app:is-dev') as boolean,
   toggleDevTools: () => ipcRenderer.invoke('devtools:toggle'),
