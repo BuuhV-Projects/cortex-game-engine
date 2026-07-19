@@ -8,7 +8,7 @@
 
 > **detectSystemLanguage**(): `string`
 
-Defined in: src/i18n/I18n.ts:73
+Defined in: [src/i18n/I18n.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/I18n.ts#L73)
 
 Idioma do SO do usuário: `__cortexLocale` (host nativo, via
 `SDL_GetPreferredLocales`) ou `navigator.language` (browser/Studio).

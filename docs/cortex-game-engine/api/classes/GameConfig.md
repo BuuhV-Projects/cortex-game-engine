@@ -6,7 +6,7 @@
 
 # Class: GameConfig
 
-Defined in: src/i18n/GameConfig.ts:102
+Defined in: [src/i18n/GameConfig.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L102)
 
 Config do jogo carregada do `config.ini` (+ overlay do `localStorage` em
 dev). Ver o cabeçalho do módulo pro formato e a estratégia de persistência.
@@ -17,7 +17,7 @@ dev). Ver o cabeçalho do módulo pro formato e a estratégia de persistência.
 
 > `readonly` **file**: `string`
 
-Defined in: src/i18n/GameConfig.ts:105
+Defined in: [src/i18n/GameConfig.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L105)
 
 Nome/URL do arquivo (relativo à raiz do jogo).
 
@@ -27,7 +27,7 @@ Nome/URL do arquivo (relativo à raiz do jogo).
 
 > **delete**(`key`): `void`
 
-Defined in: src/i18n/GameConfig.ts:170
+Defined in: [src/i18n/GameConfig.ts:170](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L170)
 
 Remove uma chave.
 
@@ -47,7 +47,7 @@ Remove uma chave.
 
 > **get**(`key`, `fallback?`): `string`
 
-Defined in: src/i18n/GameConfig.ts:138
+Defined in: [src/i18n/GameConfig.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L138)
 
 Valor cru da chave (`secao.chave`), ou `fallback` se ausente.
 
@@ -71,7 +71,7 @@ Valor cru da chave (`secao.chave`), ou `fallback` se ausente.
 
 > **getBool**(`key`, `fallback?`): `boolean`
 
-Defined in: src/i18n/GameConfig.ts:143
+Defined in: [src/i18n/GameConfig.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L143)
 
 Valor booleano: aceita `true/false`, `1/0`, `on/off`, `yes/no`.
 
@@ -95,7 +95,7 @@ Valor booleano: aceita `true/false`, `1/0`, `on/off`, `yes/no`.
 
 > **getNumber**(`key`, `fallback?`): `number`
 
-Defined in: src/i18n/GameConfig.ts:152
+Defined in: [src/i18n/GameConfig.ts:152](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L152)
 
 Valor numérico; `fallback` se ausente ou não numérico.
 
@@ -119,7 +119,7 @@ Valor numérico; `fallback` se ausente ou não numérico.
 
 > **has**(`key`): `boolean`
 
-Defined in: src/i18n/GameConfig.ts:160
+Defined in: [src/i18n/GameConfig.ts:160](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L160)
 
 `true` se a chave existe no arquivo/overlay.
 
@@ -139,7 +139,7 @@ Defined in: src/i18n/GameConfig.ts:160
 
 > **save**(): `Promise`\<`boolean`\>
 
-Defined in: src/i18n/GameConfig.ts:178
+Defined in: [src/i18n/GameConfig.ts:178](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L178)
 
 Persiste: arquivo real no host nativo, `localStorage` em dev. Retorna
 `false` se nenhum destino de escrita estiver disponível.
@@ -154,7 +154,7 @@ Persiste: arquivo real no host nativo, `localStorage` em dev. Retorna
 
 > **set**(`key`, `value`): `void`
 
-Defined in: src/i18n/GameConfig.ts:165
+Defined in: [src/i18n/GameConfig.ts:165](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L165)
 
 Define uma chave (persiste só depois do [save](#save)).
 
@@ -178,7 +178,7 @@ Define uma chave (persiste só depois do [save](#save)).
 
 > `static` **load**(`file?`): `Promise`\<`GameConfig`\>
 
-Defined in: src/i18n/GameConfig.ts:113
+Defined in: [src/i18n/GameConfig.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/i18n/GameConfig.ts#L113)
 
 Carrega o `config.ini` da raiz do jogo. Arquivo ausente não é erro — volta
 uma config vazia (os `get*` respondem com os fallbacks do jogo).
