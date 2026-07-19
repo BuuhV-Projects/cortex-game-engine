@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packDir } from './pak.mjs';
 import { cookAssets } from './cook-assets.mjs';
+import { prepareDist } from './fs-clean.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
@@ -77,18 +78,11 @@ function guardLocks(label, fn) {
   }
 }
 
-// rmSync recursivo no Windows falha com ENOTEMPTY/EBUSY enquanto o SO ainda
-// solta handles (ou o Explorer/um exe anterior segura a pasta) — maxRetries
-// espera e tenta de novo. Se ainda assim falhar, não apaga a pasta inteira:
-// limpa só os arquivos que vamos regravar (o exe travado por um jogo aberto
-// não impede o resto).
+// Esvazia dist-native sem apagar a própria pasta (evita o delete-pending do
+// Windows) — ver fs-clean.mjs. Um arquivo TRAVADO (o jogo exportado aberto)
+// propaga o lock, e o guardLocks o traduz na mensagem acionável.
 step('prepare');
-try {
-  fs.rmSync(dist, { recursive: true, force: true, maxRetries: 10, retryDelay: 150 });
-} catch (err) {
-  console.warn(`[export] não deu pra limpar dist-native (${err.code}) — sobrescrevendo`);
-}
-fs.mkdirSync(dist, { recursive: true });
+guardLocks('limpar dist-native', () => prepareDist(dist));
 
 // 1. bundle do jogo (esbuild + babel — mesmo pipeline do dev)
 step('bundle');
