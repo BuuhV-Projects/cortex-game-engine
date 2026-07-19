@@ -22,16 +22,25 @@ export class DomUiBackend implements UiBackend {
   private readonly _root: HTMLElement;
   private readonly _nodes = new Map<number, HTMLElement>();
   private _lastViewport: UiViewport = { width: 0, height: 0 };
+  private _lastScale = 1;
 
   constructor(container?: HTMLElement) {
     installUiFont();
     this._root = document.createElement('div');
     this._root.style.cssText =
-      'position:fixed;inset:0;pointer-events:none;z-index:40;font:' + uiFont(16);
+      'position:fixed;inset:0;pointer-events:none;z-index:40;transform-origin:0 0;font:' +
+      uiFont(16);
     (container ?? document.body).appendChild(this._root);
   }
 
-  sync(widgets: ReadonlyArray<UiWidget>, viewport: UiViewport): void {
+  sync(widgets: ReadonlyArray<UiWidget>, viewport: UiViewport, scale = 1): void {
+    // A UI é posicionada no espaço de DESIGN (`viewport`) e a raiz inteira é
+    // esticada pro real por uma `transform: scale` — posições, tamanhos, fontes,
+    // bordas e sombras crescem juntos (vetorial, nítido em 4K). ADR-0129.
+    if (scale !== this._lastScale) {
+      this._lastScale = scale;
+      this._root.style.transform = scale === 1 ? '' : `scale(${scale})`;
+    }
     const viewportChanged =
       viewport.width !== this._lastViewport.width ||
       viewport.height !== this._lastViewport.height;

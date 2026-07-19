@@ -408,6 +408,28 @@ não escreve transform).
   liga runner+UI+teclado e devolve um handle com `active` (use em `pauseWhen`). ⚠️ O
   gameplay (WASD/mouse-look) deve **pausar/ignorar** input enquanto `active`.
 
+## 8b2. UI de runtime: escala responsiva por resolução (`src/ui/runtime/`) — ADR-0129
+
+A UI de runtime (ADR-0102: `UiLayer` + `DomUiBackend`/`RendererUiBackend`) posiciona
+cada widget em **px lógicos ancorados** — telas autoradas contra a resolução default
+(**1920×1080**). Como o `viewport` cresce com a tela, sem escala a UI ficava
+**minúscula em 4K** (menus, resultados, créditos, HUD). O fix (ADR-0129):
+
+- **`uiScale(viewport) = clamp(viewport.height / 1080, 0.5, 4)`** — 1080p → 1 (sem
+  regressão), 4K → 2, 720p → ~0.67. Escala pela ALTURA.
+- **Espaço de design**: `UiLayer` posiciona TUDO em `designViewport = real / scale`
+  (altura sempre ~1080), então o layout é o mesmo em qualquer resolução; o backend
+  **estica** esse espaço pro real pela escala.
+  - `DomUiBackend`: `transform: scale(s)` na raiz — posições/fontes/bordas crescem
+    juntas e vetoriais (nítido). `s === 1` ⇒ transform vazio.
+  - `RendererUiBackend`: câmera no espaço de design, região de render/RT = `design ×
+    scale` (nativo/console). Texto é upscalado (bitmap) — leve suavização em 4K.
+- `UiBackend.sync(widgets, viewport, scale?)` — 3º param default 1. `UiLayer.viewport()`
+  devolve o espaço de DESIGN (templates posicionam nele).
+
+⚠️ **Autore SEMPRE pensando em 1920×1080** — o engine cuida da escala. Não crave
+tamanhos "pra 4K" no HTML/HUD; some a portabilidade entre resoluções.
+
 ## 8c. i18n + config do jogo (`src/i18n/`) — ADR-0124
 
 Multi-idioma e configurações do jogador, **desacoplados** de ECS/Three (tudo é

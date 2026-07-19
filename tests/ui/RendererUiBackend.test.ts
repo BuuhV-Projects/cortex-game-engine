@@ -78,6 +78,21 @@ describe('RendererUiBackend — composição em gama via host (ADR-0105)', () =>
     expect(blendOf(backend, panel.id)).toBe(NormalBlending);
   });
 
+  it('escala (ADR-0129): câmera no design, região de render = design × escala (tela real)', () => {
+    let region: { width: number; height: number } | null = null;
+    const target: UiRenderTarget = {
+      renderViewport: (_s, _c, vp) => {
+        region = { width: vp.width, height: vp.height };
+      },
+    };
+    const backend = new RendererUiBackend(target);
+    const panel = new UiPanel({ background: '#0d3a52', width: 100, height: 40 });
+    // Viewport de design 1920×1080 apresentado com escala 2 (4K).
+    backend.sync([panel], { width: 1920, height: 1080 }, 2);
+    backend.render();
+    expect(region).toEqual({ width: 3840, height: 2160 }); // estica pro real
+  });
+
   it('COM __cortexUiLayer: render() desenha na RT e passa a textura pro host; blend premult (CustomBlending)', () => {
     const fakeTexture = { id: 'ui-rt' };
     let handed: unknown = 'nao-chamado';

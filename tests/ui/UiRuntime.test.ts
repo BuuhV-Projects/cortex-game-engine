@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { anchorFraction, resolveRect } from '../../src/ui/runtime/layout.js';
-import { UiButton, UiLabel, UiPanel } from '../../src/ui/runtime/widgets.js';
+import {
+  anchorFraction,
+  designViewport,
+  resolveRect,
+  uiScale,
+  type UiViewport,
+} from '../../src/ui/runtime/layout.js';
+import { UiButton, UiLabel, UiPanel, type UiWidget } from '../../src/ui/runtime/widgets.js';
 import { UiLayer } from '../../src/ui/runtime/UiLayer.js';
 import type { UiBackend } from '../../src/ui/runtime/UiBackend.js';
 
@@ -39,21 +45,69 @@ describe('layout — âncoras (mesma matemática nos 2 backends, ADR-0102)', () 
   });
 });
 
+describe('UiLayer — escala responsiva por resolução (ADR-0129)', () => {
+  it('uiScale: 1080p → 1, 4K → 2, 720p → ~0.667 (com limites)', () => {
+    expect(uiScale({ width: 1920, height: 1080 })).toBe(1);
+    expect(uiScale({ width: 3840, height: 2160 })).toBe(2);
+    expect(uiScale({ width: 1280, height: 720 })).toBeCloseTo(0.6667, 3);
+    // Limites: não passa de 4 nem cai abaixo de 0.5 em telas extremas.
+    expect(uiScale({ width: 15360, height: 8640 })).toBe(4);
+    expect(uiScale({ width: 640, height: 360 })).toBe(0.5);
+  });
+
+  it('designViewport: layout SEMPRE em ~1080 de altura (real ÷ escala)', () => {
+    // 1080p: escala 1, design == real.
+    expect(designViewport({ width: 1920, height: 1080 }, 1)).toEqual({ width: 1920, height: 1080 });
+    // 4K: escala 2, design volta pro espaço de 1080 (o backend estica ×2).
+    expect(designViewport({ width: 3840, height: 2160 }, 2)).toEqual({ width: 1920, height: 1080 });
+  });
+
+  it('sync recebe o viewport de DESIGN + a escala (não o viewport real)', () => {
+    let viewport: UiViewport = { width: 3840, height: 2160 }; // 4K
+    let seen: { widgets: readonly UiWidget[]; viewport: UiViewport; scale: number } | null = null;
+    const backend: UiBackend = {
+      sync: (widgets, vp, scale = 1) => {
+        seen = { widgets, viewport: vp, scale };
+      },
+      render: () => {},
+      dispose: () => {},
+    };
+    const layer = new UiLayer(backend, () => viewport);
+    layer.add(new UiButton({ anchor: 'center', width: 200, height: 40, text: 'A' }));
+    layer.update(0);
+    expect(seen!.scale).toBe(2);
+    expect(seen!.viewport).toEqual({ width: 1920, height: 1080 }); // espaço de design, não 3840×2160
+
+    // Muda pra 720p: escala < 1, design continua ~1080 de altura.
+    viewport = { width: 1280, height: 720 };
+    layer.update(0);
+    expect(seen!.scale).toBeCloseTo(0.6667, 3);
+    expect(seen!.viewport.height).toBeCloseTo(1080, 3);
+  });
+
+  it('viewport() público devolve o espaço de design (templates posicionam nele)', () => {
+    const layer = new UiLayer(stubBackend(), () => ({ width: 3840, height: 2160 }));
+    expect(layer.viewport()).toEqual({ width: 1920, height: 1080 });
+  });
+});
+
 describe('UiLayer — painel `fill` acompanha o viewport (resize/fullscreen)', () => {
-  it('redimensiona o painel fill pro viewport ATUAL a cada update', () => {
-    let viewport = { width: 1280, height: 720 };
+  it('redimensiona o painel fill pro viewport de DESIGN (ADR-0129)', () => {
+    // 1080p → escala 1, o design é igual ao real.
+    let viewport = { width: 1920, height: 1080 };
     const layer = new UiLayer(stubBackend(), () => viewport);
     const bg = layer.add(new UiPanel({ anchor: 'top-left' }));
     bg.fill = true;
 
     layer.update(0);
-    expect(bg.width).toBe(1280);
-    expect(bg.height).toBe(720);
-
-    // Entra em fullscreen: viewport cresce → o painel deve acompanhar.
-    viewport = { width: 1920, height: 1080 };
-    layer.update(0);
     expect(bg.width).toBe(1920);
+    expect(bg.height).toBe(1080);
+
+    // Janela mais larga (mesma altura): o design acompanha a largura; o painel
+    // fill cobre o espaço de design todo (o backend estica pro real).
+    viewport = { width: 2560, height: 1080 };
+    layer.update(0);
+    expect(bg.width).toBe(2560);
     expect(bg.height).toBe(1080);
   });
 

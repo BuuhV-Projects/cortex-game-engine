@@ -120,7 +120,10 @@ export class RendererUiBackend implements UiBackend {
   private readonly _camera = new THREE.OrthographicCamera(0, 1, 0, -1, -10, 10);
   private readonly _visuals = new Map<number, WidgetVisual>();
   private readonly _quad = new THREE.PlaneGeometry(1, 1);
+  /** Viewport de DESIGN (frustum da câmera ortográfica). Ver ADR-0129. */
   private _viewport: UiViewport = { width: 0, height: 0 };
+  /** Escala do espaço de design pra tela real (região/RT = design × escala). */
+  private _scale = 1;
   /**
    * Compor em gama via host (ADR-0105)? Decidido uma vez: define o blend dos
    * materiais (premult) E o caminho do `render()` (RT + `__cortexUiLayer`).
@@ -137,7 +140,8 @@ export class RendererUiBackend implements UiBackend {
     this._target = target;
   }
 
-  sync(widgets: ReadonlyArray<UiWidget>, viewport: UiViewport): void {
+  sync(widgets: ReadonlyArray<UiWidget>, viewport: UiViewport, scale = 1): void {
+    this._scale = scale;
     const viewportChanged =
       viewport.width !== this._viewport.width || viewport.height !== this._viewport.height;
     if (viewportChanged) {
@@ -162,6 +166,10 @@ export class RendererUiBackend implements UiBackend {
 
   render(): void {
     if (this._viewport.width === 0) return;
+    // Câmera no espaço de DESIGN; região/RT no espaço REAL (design × escala) — o
+    // design estica pra tela toda, então a UI cresce junto (4K/TV). ADR-0129.
+    const realW = this._viewport.width * this._scale;
+    const realH = this._viewport.height * this._scale;
     // Cor de UI (sRGB autorada) fica FORA do tone mapping do jogo pelos materiais
     // (`toneMapped=false` no box/texto/imagem) — sem esfriar/lavar no export.
     if (this._composite) {
@@ -171,12 +179,7 @@ export class RendererUiBackend implements UiBackend {
       if (this._visuals.size === 0) {
         layer(null); // sem widgets → host pula a composição (desenha só o jogo)
       } else {
-        const tex = this._target.renderUiLayer?.(
-          this._scene,
-          this._camera,
-          this._viewport.width,
-          this._viewport.height,
-        );
+        const tex = this._target.renderUiLayer?.(this._scene, this._camera, realW, realH);
         layer(tex ?? null);
       }
     } else {
@@ -184,8 +187,8 @@ export class RendererUiBackend implements UiBackend {
       this._target.renderViewport(this._scene, this._camera, {
         x: 0,
         y: 0,
-        width: this._viewport.width,
-        height: this._viewport.height,
+        width: realW,
+        height: realH,
       });
     }
     this._graveyard = this._graveyard.filter((entry) => {

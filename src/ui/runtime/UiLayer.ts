@@ -12,7 +12,7 @@
  */
 import type { UiBackend } from './UiBackend.js';
 import type { UiViewport } from './layout.js';
-import { resolveRect } from './layout.js';
+import { designViewport, resolveRect, uiScale } from './layout.js';
 import { UiButton, UiPanel, UiWidget } from './widgets.js';
 
 /** Botões do mapeamento standard usados na navegação. */
@@ -62,9 +62,22 @@ export class UiLayer {
     this._syncBackend();
   }
 
-  /** Viewport atual da UI (px do canvas) — usado por layouts de template. */
+  /**
+   * Viewport de DESIGN da UI (px lógicos, espaço onde os widgets são posicionados)
+   * — usado por layouts de template. É o viewport real dividido pela {@link uiScale},
+   * então o layout é o MESMO em qualquer resolução; o backend estica pro real
+   * (ADR-0129).
+   */
   viewport(): UiViewport {
-    return this._viewportOf();
+    const real = this._viewportOf();
+    return designViewport(real, uiScale(real));
+  }
+
+  /** Viewport de design + fator de escala pra tela real (ADR-0129). */
+  private _layout(): { view: UiViewport; scale: number } {
+    const real = this._viewportOf();
+    const scale = uiScale(real);
+    return { view: designViewport(real, scale), scale };
   }
 
   /** Widget focado no momento (ou null). */
@@ -95,17 +108,19 @@ export class UiLayer {
    * painel fica no tamanho de quando o template foi criado).
    */
   private _syncBackend(): void {
-    const viewport = this._viewportOf();
+    // Layout no espaço de DESIGN (px lógicos): o backend estica pro real pelo
+    // `scale`, então a UI cresce com a tela (não fica minúscula num 4K). ADR-0129.
+    const { view, scale } = this._layout();
     for (const widget of this._widgets) {
       if (widget instanceof UiPanel && widget.fill) {
-        if (widget.width !== viewport.width || widget.height !== viewport.height) {
-          widget.width = viewport.width;
-          widget.height = viewport.height;
+        if (widget.width !== view.width || widget.height !== view.height) {
+          widget.width = view.width;
+          widget.height = view.height;
           widget.dirty = true;
         }
       }
     }
-    this._backend.sync(this._widgets, viewport);
+    this._backend.sync(this._widgets, view, scale);
   }
 
   /** Desenha (backend renderer; no DOM é no-op). Chamado pelo `Game`. */
@@ -122,7 +137,7 @@ export class UiLayer {
       this._syncFocus(current);
       return;
     }
-    const viewport = this._viewportOf();
+    const viewport = this._layout().view;
     const from = this._centerOf(current, viewport);
     let best: UiButton | null = null;
     let bestScore = Infinity;

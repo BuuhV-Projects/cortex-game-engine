@@ -41,6 +41,40 @@ export interface UiRect {
   height: number;
 }
 
+/**
+ * **Altura de referência do design da UI** (px lógicos). Todas as telas (menus,
+ * HUD, diálogos) são autoradas contra esta altura — a config default do engine é
+ * 1920×1080 (ver {@link uiScale}). O layout roda SEMPRE neste espaço "de design"
+ * e o backend estica pro viewport real, então a UI cresce junto com a tela (não
+ * fica minúscula num 4K nem gigante num 720p). Ver ADR-0129.
+ */
+export const UI_REFERENCE_HEIGHT = 1080;
+
+/** Limites do fator de escala (evita UI absurda em telas extremas). */
+const UI_SCALE_MIN = 0.5;
+const UI_SCALE_MAX = 4;
+
+/**
+ * Fator de escala da UI pro viewport real: `altura / {@link UI_REFERENCE_HEIGHT}`,
+ * limitado. Em 1080p → 1 (idêntico ao design, sem regressão); em 4K (2160) → 2;
+ * em 720p → ~0.67. Escala pela ALTURA (menus são compostos na vertical) — em
+ * telas mais largas o conteúdo ancorado no centro fica centrado e o ancorado nas
+ * bordas alcança as bordas (o {@link designViewport} acompanha a proporção).
+ */
+export function uiScale(viewport: UiViewport): number {
+  const s = viewport.height / UI_REFERENCE_HEIGHT;
+  return Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, s));
+}
+
+/**
+ * Viewport de DESIGN (espaço lógico onde o layout é resolvido): o viewport real
+ * dividido pela {@link uiScale}. O backend depois estica esse espaço até o
+ * viewport real, escalando posições, tamanhos e fontes de uma vez só.
+ */
+export function designViewport(viewport: UiViewport, scale: number): UiViewport {
+  return { width: viewport.width / scale, height: viewport.height / scale };
+}
+
 /** Fração da âncora em cada eixo (`top-left` → 0,0 · `center` → .5,.5 ...). */
 export function anchorFraction(anchor: UiAnchor): UiFraction {
   const [v, h = 'center'] = anchor.split('-') as [string, string?];
