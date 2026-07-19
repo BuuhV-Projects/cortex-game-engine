@@ -8,6 +8,7 @@ interface TurnStats {
   inputTokens: number
   outputTokens: number
   cacheReadTokens: number
+  cacheCreationTokens: number
   sessionId: string | null
 }
 

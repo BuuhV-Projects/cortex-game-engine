@@ -436,8 +436,10 @@ export interface TurnStats {
   inputTokens: number
   /** Tokens de output gerados. */
   outputTokens: number
-  /** Tokens lidos do cache (mais baratos). */
+  /** Tokens lidos do cache (mais baratos que input normal). */
   cacheReadTokens: number
+  /** Tokens gravados no cache (cache write; cobrados com sobretaxa sobre o input). */
+  cacheCreationTokens: number
   /**
    * Session ID retornado pelo SDK no `result`. Persistido por projeto e
    * passado como `resume: <id>` nas chamadas seguintes — preserva o
@@ -671,7 +673,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
   }
 }
 
-function handleSdkMessage(message: unknown, events: AgentEvents): void {
+export function handleSdkMessage(message: unknown, events: AgentEvents): void {
   const msg = message as { type?: string }
   if (!msg || typeof msg.type !== 'string') return
 
@@ -710,6 +712,7 @@ function handleSdkMessage(message: unknown, events: AgentEvents): void {
           input_tokens?: number
           output_tokens?: number
           cache_read_input_tokens?: number
+          cache_creation_input_tokens?: number
         }
       }
       const stats: TurnStats | null =
@@ -720,6 +723,7 @@ function handleSdkMessage(message: unknown, events: AgentEvents): void {
               inputTokens: m.usage?.input_tokens ?? 0,
               outputTokens: m.usage?.output_tokens ?? 0,
               cacheReadTokens: m.usage?.cache_read_input_tokens ?? 0,
+              cacheCreationTokens: m.usage?.cache_creation_input_tokens ?? 0,
               sessionId: typeof m.session_id === 'string' ? m.session_id : null,
             }
           : null

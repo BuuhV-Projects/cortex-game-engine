@@ -26,7 +26,8 @@ function formatCost(usd: number): string {
 
 function formatTokens(n: number): string {
   if (n < 1000) return String(n)
-  return `${(n / 1000).toFixed(1)}k`
+  if (n < 1_000_000) return `${(n / 1000).toFixed(1)}k`
+  return `${(n / 1_000_000).toFixed(1)}M`
 }
 
 /**
@@ -680,10 +681,20 @@ export class Chat {
     el.title =
       `input: ${stats.inputTokens} tokens\n` +
       `output: ${stats.outputTokens} tokens\n` +
-      `cache hit: ${stats.cacheReadTokens} tokens`
+      `cache read: ${stats.cacheReadTokens} tokens\n` +
+      `cache write: ${stats.cacheCreationTokens} tokens`
+    // Cache read/write na linha visível: é o que domina o custo em turnos
+    // agenticos — sem eles o "in/out" não fecha com o preço.
+    const cacheRead = stats.cacheReadTokens
+    const cacheWrite = stats.cacheCreationTokens
+    const cachePart =
+      cacheRead > 0 || cacheWrite > 0
+        ? ` · cache ${formatTokens(cacheRead)} read / ${formatTokens(cacheWrite)} write`
+        : ''
     el.textContent =
       `${formatDuration(stats.durationMs)} · ${formatCost(stats.costUsd)} · ` +
-      `${formatTokens(stats.inputTokens)} in / ${formatTokens(stats.outputTokens)} out`
+      `${formatTokens(stats.inputTokens)} in / ${formatTokens(stats.outputTokens)} out` +
+      cachePart
     this.messagesEl.appendChild(el)
     this.scrollToBottom()
   }
