@@ -15,6 +15,7 @@ import { cookAssets } from './cook-assets.mjs';
 import { prepareDist } from './fs-clean.mjs';
 import { whoLocks } from './who-locks.mjs';
 import { readGameConfig } from './game-config.mjs';
+import { embedIcon } from './embed-icon.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
@@ -151,6 +152,17 @@ guardLocks('runtime', () => {
     fs.copyFileSync(path.join(hostBuild, from), path.join(dist, to));
   }
 });
+
+// Ícone + nome de exibição no launcher.exe (ADR-0127): se o jogo declara um
+// `icon` no cortex.json, deriva o .ico e embute (com ProductName/FileDescription
+// = nome). Best-effort — falha aqui não derruba o export (o exe só fica com o
+// ícone/identidade padrão do host).
+if (game.icon) {
+  const pngPath = path.join(gameDir, game.icon);
+  const r = await embedIcon(path.join(dist, EXE_NAME), pngPath, { productName: game.name });
+  if (r.ok) console.log(`[export] ícone + identidade embutidos (${path.basename(game.icon)})`);
+  else console.warn(`[export] ícone não aplicado — ${r.reason}`);
+}
 
 // Modo Xbox/GDK: gera o MicrosoftGame.config + logos (app model GDK). Registrar
 // p/ rodar: `wdapp register <dist>\MicrosoftGame.config` (Modo Dev). Alvo de

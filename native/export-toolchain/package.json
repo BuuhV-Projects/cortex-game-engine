@@ -9,6 +9,8 @@
     "@babel/plugin-transform-arrow-functions": "7.29.7",
     "@babel/plugin-transform-classes": "7.28.4",
     "esbuild": "0.25.12",
+    "png-to-ico": "2.1.8",
+    "rcedit": "4.0.1",
     "three": "0.184.0",
     "three-mesh-bvh": "0.9.10",
     "zod": "4.4.3"
