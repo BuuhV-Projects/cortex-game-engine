@@ -1,5 +1,6 @@
 import { t } from './i18n'
 import { ExportProgressModal } from './ExportProgressModal'
+import { ProjectSettingsModal } from './ProjectSettingsModal'
 
 type TabId = 'console' | 'terminal'
 
@@ -106,6 +107,23 @@ export class BottomPanel {
       const detail = (e as CustomEvent<{ debug?: boolean }>).detail
       void this.handleBuildInstaller({ debug: detail?.debug === true })
     })
+
+    // Menu "Projeto > Configurações do jogo" (ADR-0128): abre o modal de
+    // identidade (nome + ícone do launcher).
+    document.addEventListener('project-settings-requested', () => void this.openGameSettings())
+  }
+
+  /**
+   * Modal "Configurações do jogo" (ADR-0128): lê a identidade resolvida do
+   * cortex.json e abre o editor de nome + ícone.
+   */
+  private async openGameSettings(): Promise<void> {
+    if (!this.projectDir) {
+      void window.electronAPI.infoDialog(t('bottomPanel.export_no_project'))
+      return
+    }
+    const config = await window.electronAPI.readProjectConfig(this.projectDir)
+    new ProjectSettingsModal(this.projectDir, { name: config.name, icon: config.icon })
   }
 
   /**

@@ -146,6 +146,8 @@ export class Shell {
         })),
       ]),
       this.menuItem('Projeto', [
+        { label: tr('menu.game_settings', 'Configurações do jogo…'), run: () => document.dispatchEvent(new CustomEvent('project-settings-requested')) },
+        { sep: true },
         {
           label: tr('menu.export_native', 'Exportar ›'),
           // Cada alvo em release e em modo DEBUG (--debug: HUD de métricas na

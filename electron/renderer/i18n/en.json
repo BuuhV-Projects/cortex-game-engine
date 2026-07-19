@@ -7,7 +7,22 @@
   "menu": {
     "project": "Project",
     "generate_installer": "Generate installer...",
+    "game_settings": "Game settings…",
     "language": "Language"
+  },
+  "gameSettings": {
+    "title": "Game settings",
+    "subtitle": "Name and icon used on PC (window title, installed programs) and console.",
+    "name_label": "Game name",
+    "name_placeholder": "e.g. Cute Obstacle Rush",
+    "icon_label": "Icon",
+    "icon_none": "no icon",
+    "icon_choose": "Choose PNG…",
+    "icon_remove": "Remove",
+    "icon_hint": "Square PNG (512×512 or larger recommended). Becomes the launcher icon.",
+    "shortcut_note": "The desktop shortcut will come with the installer, using this same icon.",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "fileTree": {
     "no_project": "No project open",

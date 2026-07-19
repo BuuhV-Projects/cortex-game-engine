@@ -7,7 +7,22 @@
   "menu": {
     "project": "Projeto",
     "generate_installer": "Gerar instalador...",
+    "game_settings": "Configurações do jogo…",
     "language": "Idioma"
+  },
+  "gameSettings": {
+    "title": "Configurações do jogo",
+    "subtitle": "Nome e ícone usados no PC (título, Meus Programas) e no console.",
+    "name_label": "Nome do jogo",
+    "name_placeholder": "Ex.: Cute Obstacle Rush",
+    "icon_label": "Ícone",
+    "icon_none": "sem ícone",
+    "icon_choose": "Escolher PNG…",
+    "icon_remove": "Remover",
+    "icon_hint": "PNG quadrado (recomendado 512×512 ou mais). Vira o ícone do launcher.",
+    "shortcut_note": "O atalho na área de trabalho virá com o instalador, usando este mesmo ícone.",
+    "save": "Salvar",
+    "cancel": "Cancelar"
   },
   "fileTree": {
     "no_project": "Nenhum projeto aberto",

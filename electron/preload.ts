@@ -63,6 +63,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       icon: string | null
     }>,
 
+  /** Diálogo pra escolher um PNG (ícone do jogo). Retorna o caminho ou null. */
+  openImageDialog: () => ipcRenderer.invoke('dialog:openImage') as Promise<string | null>,
+
+  /** Copia o PNG escolhido pra `branding/icon.png` do projeto; devolve o relativo. */
+  importProjectIcon: (projectDir: string, sourcePath: string) =>
+    ipcRenderer.invoke('project:importIcon', projectDir, sourcePath) as Promise<{ icon: string }>,
+
   /** `true` em dev (electron:dev); `false` no build empacotado. */
   isDev: ipcRenderer.sendSync('app:is-dev') as boolean,
   toggleDevTools: () => ipcRenderer.invoke('devtools:toggle'),

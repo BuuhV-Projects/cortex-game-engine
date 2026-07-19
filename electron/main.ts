@@ -1017,6 +1017,32 @@ ipcMain.handle('project:writeConfig', async (_event, projectDir: unknown, patch:
   return { ok: true, id, name: next.name, icon: icon ?? null }
 })
 
+/** Diálogo pra escolher um PNG (ícone do jogo). Retorna o caminho ou null. */
+ipcMain.handle('dialog:openImage', async () => {
+  const opts = {
+    properties: ['openFile' as const],
+    filters: [{ name: 'PNG', extensions: ['png'] }],
+  }
+  const result = await (mainWindow ? dialog.showOpenDialog(mainWindow, opts) : dialog.showOpenDialog(opts))
+  if (result.canceled || result.filePaths.length === 0) return null
+  return result.filePaths[0]
+})
+
+/**
+ * Importa o PNG escolhido pra DENTRO do projeto (`branding/icon.png`) e devolve
+ * o caminho relativo — o `icon` do cortex.json fica relativo ao projeto (não um
+ * caminho absoluto que quebra se o projeto mudar de lugar). O export lê daí.
+ */
+ipcMain.handle('project:importIcon', async (_event, projectDir: unknown, sourcePath: unknown) => {
+  const dir = validatePath(projectDir)
+  const src = validatePath(sourcePath)
+  const rel = join('branding', 'icon.png')
+  const dest = join(dir, rel)
+  await mkdir(join(dir, 'branding'), { recursive: true })
+  await cp(src, dest)
+  return { icon: rel.replace(/\\/g, '/') }
+})
+
 // ---------------------------------------------------------------------------
 // Handlers IPC — setup de Tauri (ADR-0024)
 // ---------------------------------------------------------------------------
