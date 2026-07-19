@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { packDir } from './pak.mjs';
 import { cookAssets } from './cook-assets.mjs';
 import { prepareDist } from './fs-clean.mjs';
+import { whoLocks } from './who-locks.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
@@ -59,7 +60,8 @@ const hermesc = path.join(hostBuild, 'bin', 'hermesc.exe');
 
 // Erros de arquivo TRAVADO no Windows (o jogo exportado aberto, ou o Explorer
 // na pasta, segurando o exe/dll/asset). A causa nº 1 de export falho: dá uma
-// mensagem CLARA e acionável em vez de um stack cru.
+// mensagem CLARA e acionável em vez de um stack cru — e, quando dá, pergunta ao
+// Windows QUEM segura a pasta (nome + PID) em vez de só chutar o jogo.
 const LOCK_CODES = new Set(['EPERM', 'EBUSY', 'EACCES', 'ENOTEMPTY']);
 function guardLocks(label, fn) {
   try {
@@ -67,11 +69,24 @@ function guardLocks(label, fn) {
   } catch (err) {
     if (LOCK_CODES.has(err.code)) {
       console.error(
-        `\n[export] FALHOU no passo "${label}": um arquivo em dist-native está ` +
-          `TRAVADO (${err.code}).\n[export] O jogo exportado (${gameName}.exe) ` +
-          `provavelmente está ABERTO — FECHE-O (e feche o Explorer na pasta ` +
-          `dist-native) e exporte de novo.`,
+        `\n[export] FALHOU no passo "${label}": um arquivo em dist-native está TRAVADO (${err.code}).`,
       );
+      // Quem, de fato, segura a pasta/arquivo (Restart Manager — best-effort).
+      const targets = [...new Set([dist, err.path].filter(Boolean))];
+      const holders = whoLocks(targets);
+      if (holders.length) {
+        console.error('[export] Processos segurando dist-native:');
+        for (const h of holders) console.error(`  • ${h.name} (PID ${h.pid}) — ${h.kind}`);
+        console.error(
+          '[export] Feche esses processos (ou encerre o PID no Gerenciador de Tarefas) e exporte de novo.',
+        );
+      } else {
+        console.error(
+          `[export] Não identifiquei o processo (pode ser antivírus ou o indexador do Windows). ` +
+            `Confira se o jogo exportado (${gameName}.exe) está aberto, feche o Explorer/terminal na ` +
+            `pasta dist-native, aguarde alguns segundos e exporte de novo.`,
+        );
+      }
       process.exit(1);
     }
     throw err;
