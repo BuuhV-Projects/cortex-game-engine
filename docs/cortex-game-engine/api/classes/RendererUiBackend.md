@@ -18,7 +18,7 @@ Defined in: [src/ui/runtime/RendererUiBackend.ts:117](https://github.com/BuuhV-P
 
 > **new RendererUiBackend**(`target`): `RendererUiBackend`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L136)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:139](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L139)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [src/ui/runtime/RendererUiBackend.ts:136](https://github.com/BuuhV-P
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:198](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L198)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:201](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L201)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -54,7 +54,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:163](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L163)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:167](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L167)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
@@ -70,11 +70,15 @@ Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
 ### sync()
 
-> **sync**(`widgets`, `viewport`): `void`
+> **sync**(`widgets`, `viewport`, `scale?`): `void`
 
-Defined in: [src/ui/runtime/RendererUiBackend.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L140)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L143)
 
-Sincroniza visuais com a lista de widgets (cria/atualiza/remove).
+Sincroniza visuais com a lista de widgets (cria/atualiza/remove). O
+`viewport` é o de DESIGN (espaço lógico do layout, ver `layout.ts`); o
+backend PRESENTA esse espaço esticado pra tela real pelo `scale` (DOM: uma
+`transform: scale` na raiz; renderer: câmera no espaço de design + região de
+render no viewport real). `scale` default 1 = sem escala (ADR-0129).
 
 #### Parameters
 
@@ -85,6 +89,10 @@ readonly [`UiWidget`](UiWidget.md)[]
 ##### viewport
 
 [`UiViewport`](../interfaces/UiViewport.md)
+
+##### scale?
+
+`number` = `1`
 
 #### Returns
 

@@ -8,7 +8,7 @@
 
 > **resolveRect**(`anchor`, `offsetX`, `offsetY`, `width`, `height`, `viewport`): [`UiRect`](../interfaces/UiRect.md)
 
-Defined in: [src/ui/runtime/layout.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L56)
+Defined in: [src/ui/runtime/layout.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L90)
 
 Resolve a posição final (canto superior-esquerdo, px) de um widget:
 ponto da âncora no viewport − pivô (mesma fração) no tamanho + offset.

@@ -18,7 +18,7 @@ Defined in: [src/ui/runtime/DomUiBackend.ts:21](https://github.com/BuuhV-Project
 
 > **new DomUiBackend**(`container?`): `DomUiBackend`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L26)
+Defined in: [src/ui/runtime/DomUiBackend.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L27)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [src/ui/runtime/DomUiBackend.ts:26](https://github.com/BuuhV-Project
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L66)
+Defined in: [src/ui/runtime/DomUiBackend.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L75)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -54,7 +54,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L62)
+Defined in: [src/ui/runtime/DomUiBackend.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L71)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
@@ -70,11 +70,15 @@ Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
 ### sync()
 
-> **sync**(`widgets`, `viewport`): `void`
+> **sync**(`widgets`, `viewport`, `scale?`): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L34)
+Defined in: [src/ui/runtime/DomUiBackend.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L36)
 
-Sincroniza visuais com a lista de widgets (cria/atualiza/remove).
+Sincroniza visuais com a lista de widgets (cria/atualiza/remove). O
+`viewport` é o de DESIGN (espaço lógico do layout, ver `layout.ts`); o
+backend PRESENTA esse espaço esticado pra tela real pelo `scale` (DOM: uma
+`transform: scale` na raiz; renderer: câmera no espaço de design + região de
+render no viewport real). `scale` default 1 = sem escala (ADR-0129).
 
 #### Parameters
 
@@ -85,6 +89,10 @@ readonly [`UiWidget`](UiWidget.md)[]
 ##### viewport
 
 [`UiViewport`](../interfaces/UiViewport.md)
+
+##### scale?
+
+`number` = `1`
 
 #### Returns
 

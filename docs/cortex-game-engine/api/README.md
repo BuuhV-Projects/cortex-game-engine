@@ -246,6 +246,7 @@
 - [ISOMETRIC\_YAW](variables/ISOMETRIC_YAW.md)
 - [SHAPES](variables/SHAPES.md)
 - [TERRAIN\_MAX\_LAYERS](variables/TERRAIN_MAX_LAYERS.md)
+- [UI\_REFERENCE\_HEIGHT](variables/UI_REFERENCE_HEIGHT.md)
 
 ## Functions
 
@@ -276,6 +277,7 @@
 - [decodeSignedSave](functions/decodeSignedSave.md)
 - [defaultShapeParams](functions/defaultShapeParams.md)
 - [deriveLocomotion](functions/deriveLocomotion.md)
+- [designViewport](functions/designViewport.md)
 - [detectSystemLanguage](functions/detectSystemLanguage.md)
 - [emptySceneFile](functions/emptySceneFile.md)
 - [encodeSignedSave](functions/encodeSignedSave.md)
@@ -355,4 +357,5 @@
 - [startDialogue](functions/startDialogue.md)
 - [t](functions/t.md)
 - [toBufferGeometry](functions/toBufferGeometry.md)
+- [uiScale](functions/uiScale.md)
 - [validateScene](functions/validateScene.md)

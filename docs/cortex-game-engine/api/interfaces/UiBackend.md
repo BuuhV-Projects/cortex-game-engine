@@ -14,7 +14,7 @@ Defined in: [src/ui/runtime/UiBackend.ts:11](https://github.com/BuuhV-Projects/c
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/UiBackend.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L17)
+Defined in: [src/ui/runtime/UiBackend.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L23)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -28,7 +28,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/UiBackend.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L15)
+Defined in: [src/ui/runtime/UiBackend.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L21)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
@@ -40,11 +40,15 @@ Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
 ### sync()
 
-> **sync**(`widgets`, `viewport`): `void`
+> **sync**(`widgets`, `viewport`, `scale?`): `void`
 
-Defined in: [src/ui/runtime/UiBackend.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L13)
+Defined in: [src/ui/runtime/UiBackend.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L19)
 
-Sincroniza visuais com a lista de widgets (cria/atualiza/remove).
+Sincroniza visuais com a lista de widgets (cria/atualiza/remove). O
+`viewport` é o de DESIGN (espaço lógico do layout, ver `layout.ts`); o
+backend PRESENTA esse espaço esticado pra tela real pelo `scale` (DOM: uma
+`transform: scale` na raiz; renderer: câmera no espaço de design + região de
+render no viewport real). `scale` default 1 = sem escala (ADR-0129).
 
 #### Parameters
 
@@ -55,6 +59,10 @@ readonly [`UiWidget`](../classes/UiWidget.md)[]
 ##### viewport
 
 [`UiViewport`](UiViewport.md)
+
+##### scale?
+
+`number`
 
 #### Returns
 
