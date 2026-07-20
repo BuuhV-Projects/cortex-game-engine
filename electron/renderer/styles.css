@@ -1503,6 +1503,36 @@ body.app-preview-fullscreen #preview-container {
   background-color: #7d66dd;
 }
 
+/* Toggle de modelo do agente — reusa .chat-mode-btn como base. Vem antes do
+   toggle de modo; leva o margin-left:auto pra empurrar os dois pra direita
+   como um grupo (e zera o auto do irmão de modo que o segue). */
+.chat-model-btn {
+  margin-left: auto;
+  margin-right: 6px;
+}
+
+.chat-model-btn + .chat-mode-btn {
+  margin-left: 0;
+}
+
+.chat-model-btn--sonnet {
+  background-color: #2f8f6b;
+  border-color: #2f8f6b;
+  color: var(--od-fg-bright, #ffffff);
+}
+
+.chat-model-btn--opus {
+  background-color: #b06a2c;
+  border-color: #b06a2c;
+  color: var(--od-fg-bright, #ffffff);
+}
+
+.chat-model-btn--haiku {
+  background-color: #3b6fd1;
+  border-color: #3b6fd1;
+  color: var(--od-fg-bright, #ffffff);
+}
+
 .chat-clear-btn {
   background: transparent;
   border: none;

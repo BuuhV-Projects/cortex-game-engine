@@ -118,6 +118,15 @@ export class Chat {
     (localStorage.getItem('chat_mode') as 'ask' | 'auto' | 'plan') ?? 'ask'
   private modeToggleEl: HTMLButtonElement | null = null
 
+  /**
+   * Modelo do backend usado pelo agente. Persistido POR PROJETO em
+   * localStorage (`chat_model:<projectDir>`) — diferente do `mode`, que é
+   * global. Default 'sonnet': teto de uso muito maior que Opus no plano de
+   * assinatura, evita estourar o limite do Chat (ADR-0130).
+   */
+  private model: 'opus' | 'sonnet' | 'haiku' = 'sonnet'
+  private modelToggleEl: HTMLButtonElement | null = null
+
   /** true quando o turno atual foi enviado em modo plan — dispara a barra de aprovação no fim. */
   private lastTurnWasPlan = false
 
@@ -150,6 +159,7 @@ export class Chat {
       const { path } = (e as CustomEvent<{ path: string }>).detail
       if (path !== this.projectDir) {
         this.projectDir = path
+        this.loadModelPref() // preferência de modelo é por projeto
         this.messagesSent = []
         this.items = []
         this.currentTurnAssistantText = ''
@@ -316,6 +326,48 @@ export class Chat {
     this.modeToggleEl.title = tip
   }
 
+  // ── Modelo do backend: sonnet (default) → opus → haiku — salvo por projeto ──
+
+  /** Chave de persistência do modelo pro projeto ativo (ou global se nenhum). */
+  private modelStorageKey(): string {
+    return `chat_model:${this.projectDir ?? '<none>'}`
+  }
+
+  /** Carrega o modelo salvo pro projeto ativo (default 'sonnet') e re-renderiza. */
+  private loadModelPref(): void {
+    const saved = localStorage.getItem(this.modelStorageKey())
+    this.model = saved === 'opus' || saved === 'haiku' ? saved : 'sonnet'
+    this.renderModelToggle()
+  }
+
+  private toggleModel(): void {
+    this.model =
+      this.model === 'sonnet' ? 'opus' : this.model === 'opus' ? 'haiku' : 'sonnet'
+    localStorage.setItem(this.modelStorageKey(), this.model)
+    this.renderModelToggle()
+  }
+
+  private renderModelToggle(): void {
+    if (!this.modelToggleEl) return
+    this.modelToggleEl.classList.toggle('chat-model-btn--sonnet', this.model === 'sonnet')
+    this.modelToggleEl.classList.toggle('chat-model-btn--opus', this.model === 'opus')
+    this.modelToggleEl.classList.toggle('chat-model-btn--haiku', this.model === 'haiku')
+    const label =
+      this.model === 'opus'
+        ? t('chat.model_opus')
+        : this.model === 'haiku'
+          ? t('chat.model_haiku')
+          : t('chat.model_sonnet')
+    const tip =
+      this.model === 'opus'
+        ? t('chat.tooltip_model_opus')
+        : this.model === 'haiku'
+          ? t('chat.tooltip_model_haiku')
+          : t('chat.tooltip_model_sonnet')
+    this.modelToggleEl.textContent = label
+    this.modelToggleEl.title = tip
+  }
+
   /** Apaga o histórico do projeto ativo e limpa a UI. */
   private async clearHistory(): Promise<void> {
     if (!this.projectDir) return
@@ -356,6 +408,15 @@ export class Chat {
     const title = document.createElement('span')
     title.className = 'chat-header-title'
     title.textContent = t('chat.title')
+    // Toggle de MODELO (sonnet/opus/haiku) — vem antes do toggle de modo.
+    // Clique cicla e persiste por projeto; o valor viaja no chat() até o SDK.
+    const modelToggle = document.createElement('button')
+    modelToggle.className = 'chat-mode-btn chat-model-btn'
+    modelToggle.type = 'button'
+    modelToggle.addEventListener('click', () => this.toggleModel())
+    this.modelToggleEl = modelToggle
+    this.loadModelPref()
+
     // Toggle ask/auto — vem antes do clear/minimize. Texto e classe
     // refletem o mode atual; clique alterna e persiste em localStorage.
     const modeToggle = document.createElement('button')
@@ -393,6 +454,7 @@ export class Chat {
     toggleBtn.addEventListener('click', () => this.toggleCollapsed())
     this.toggleBtn = toggleBtn
     header.appendChild(title)
+    header.appendChild(modelToggle)
     header.appendChild(modeToggle)
     header.appendChild(learnBtn)
     header.appendChild(clearBtn)
@@ -517,7 +579,7 @@ export class Chat {
     this.showThinking()
 
     try {
-      await window.electronAPI.chat(this.messagesSent, this.mode)
+      await window.electronAPI.chat(this.messagesSent, this.mode, this.model)
     } catch (err) {
       this.handleError(String(err))
     }
@@ -538,7 +600,7 @@ export class Chat {
     this.updateInputState()
     this.showThinking()
     try {
-      await window.electronAPI.chat(this.messagesSent, mode)
+      await window.electronAPI.chat(this.messagesSent, mode, this.model)
     } catch (err) {
       this.handleError(String(err))
     }

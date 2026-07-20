@@ -463,6 +463,25 @@ export interface AgentApproval {
 
 export type AgentMode = 'ask' | 'auto' | 'plan'
 
+/**
+ * Modelo do backend usado no turno. São os aliases curtos que o Claude Code
+ * resolve pro id concreto da família (não fixamos versão aqui). O Chat do
+ * Studio manda 'sonnet' por default: no plano de assinatura o teto de uso de
+ * Opus é bem menor que o de Sonnet, então usar Opus no Chat (prompt pesado +
+ * histórico via resume) estoura o limite semanal rápido (ADR-0130). Opus fica
+ * opcional pra tarefas mais difíceis; Haiku pra respostas rápidas/baratas.
+ */
+export type AgentModel = 'opus' | 'sonnet' | 'haiku'
+
+/**
+ * Normaliza um valor cru (vindo do IPC) num {@link AgentModel} válido.
+ * Default 'sonnet' — qualquer coisa que não seja 'opus'/'haiku' cai nele
+ * (teto de uso maior no plano; evita estourar o limite do Chat — ADR-0130).
+ */
+export function resolveAgentModel(raw: unknown): AgentModel {
+  return raw === 'opus' ? 'opus' : raw === 'haiku' ? 'haiku' : 'sonnet'
+}
+
 export interface RunAgentOptions {
   prompt: string
   projectRoot: string | null
@@ -485,6 +504,12 @@ export interface RunAgentOptions {
    * (ADR-0036).
    */
   mode: AgentMode
+  /**
+   * Modelo do backend pra este turno (ver {@link AgentModel}). Quando omitido,
+   * o SDK usa o default do Claude Code (settings global). O Chat do Studio
+   * sempre envia um valor (default 'sonnet').
+   */
+  model?: AgentModel
   /**
    * Conteúdo de `docs/cortex-game-engine/engine-api.md` (catálogo + receitas),
    * empacotado no Studio. Com `engineApiPath` presente, vira um ÍNDICE compacto
@@ -599,6 +624,9 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
 
   const queryOptions: Options = {
     cwd: opts.projectRoot ?? undefined,
+    // Alias curto ('sonnet'/'opus'/'haiku') que o Claude Code resolve. Omitido
+    // = default do SDK. O Studio escolhe por projeto (ADR-0130).
+    model: opts.model,
     systemPrompt: { type: 'preset', preset: 'claude_code', append: systemAppend },
     // resume tem precedência sobre continue. Se temos um sessionId persistido
     // do passado (mesmo projeto, outra sessão do IDE), restauramos a conversa

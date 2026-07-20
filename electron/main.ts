@@ -5,7 +5,7 @@ import { existsSync, readFileSync, watch, type FSWatcher } from 'fs'
 import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { createHash } from 'crypto'
 import { homedir } from 'os'
-import { runAgent } from './agent/agentLoop.js'
+import { runAgent, resolveAgentModel } from './agent/agentLoop.js'
 import { detectPendingCorrections } from './agent/learning.js'
 import { writePlaceholderIcons } from './installer-icons.js'
 
@@ -1565,12 +1565,15 @@ ipcMain.handle('ai:cancel', async () => {
 
 // Turno do agente: extrai a última mensagem do usuário, delega ao SDK
 // (que gerencia stream, tools e sessão), traduz eventos pro renderer.
-ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
+ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown, model: unknown) => {
   if (!Array.isArray(messages)) {
     mainWindow?.webContents.send('ai:error', { message: 'messages deve ser array' })
     return
   }
   const agentMode = mode === 'auto' ? 'auto' : mode === 'plan' ? 'plan' : 'ask'
+  // Modelo do backend: Sonnet por default (teto de uso muito maior que Opus no
+  // plano de assinatura — evita estourar o limite do Chat; ADR-0130).
+  const agentModel = resolveAgentModel(model)
   if (agentRunning) {
     mainWindow?.webContents.send('ai:error', {
       message: 'Outro turno do agente já está em andamento.',
@@ -1623,6 +1626,7 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown) => {
       continueSession,
       resumeSessionId,
       mode: agentMode,
+      model: agentModel,
       engineApiDoc,
       // Com o path, o agentLoop injeta só o ÍNDICE do doc e o agente lê as
       // seções sob demanda via Read (ADR-0114). Sem doc lido, sem path.

@@ -69,6 +69,7 @@ export interface ElectronAPI {
   chat(
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     mode: 'ask' | 'auto' | 'plan',
+    model: 'opus' | 'sonnet' | 'haiku',
   ): Promise<void>
   setActiveProject(projectDir: string | null): Promise<void>
   decideToolCall(id: string, approved: boolean): Promise<void>
