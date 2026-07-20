@@ -561,7 +561,7 @@ export async function buildScene(
       byId.set(node.id, bg.mesh);
       continue;
     }
-    const obj = await instantiate(node, scene, three, waters, editorGeometry[node.id]);
+    const obj = await instantiate(node, scene, three, waters, editorGeometry[node.id], options.camera);
     if (!obj) continue;
     // Veículo (ADR-0081): config do nó + overlay → userData.cortexVehicle (o jogo lê pra
     // criar o veículo; o Inspector edita). Marca o nó como veículo pro Inspector mostrar a seção.
@@ -920,6 +920,7 @@ async function instantiate(
   three: import('three').Scene,
   waters?: Water[],
   meshGeometry?: EditableMesh,
+  camera?: import('three').PerspectiveCamera | import('three').OrthographicCamera,
 ): Promise<Object3D | null> {
   let obj: Object3D;
   switch (node.type) {
@@ -960,6 +961,11 @@ async function instantiate(
         repeat: node.repeat,
         causticsIntensity: node.causticsIntensity,
         flowSpeed: node.flowSpeed,
+        size: node.size,
+        // Mar "infinito": segue a câmera (a borda quadrada some no fog). Requer a
+        // câmera; sem ela, plano fixo. Data-driven: `follow: false` no nó = fixo.
+        camera,
+        follow: node.follow,
       });
       waters?.push(water);
       obj = water.mesh;

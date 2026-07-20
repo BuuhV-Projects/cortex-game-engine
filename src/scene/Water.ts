@@ -5,6 +5,8 @@ import {
   Color,
   RepeatWrapping,
   type ColorRepresentation,
+  type OrthographicCamera,
+  type PerspectiveCamera,
   type Texture,
 } from 'three';
 import { Scene } from '../core/Scene.js';
@@ -42,6 +44,19 @@ export interface WaterOptions {
    * {@link Water.update} no loop. Default `[0.012, 0.007]`.
    */
   flowSpeed?: [number, number];
+  /**
+   * **Câmera pra seguir** (mar "infinito"): quando presente e {@link WaterOptions.follow}
+   * está ligado, o plano re-centra no XZ da câmera a cada {@link Water.update}, então
+   * a **borda quadrada** do plano fica sempre à mesma distância (`size / 2`) e some
+   * atrás do fog — a água parece infinita mesmo sendo finita. As cáusticas ficam
+   * ancoradas ao mundo (não escorregam com o plano). Omita pra uma água fixa.
+   */
+  camera?: PerspectiveCamera | OrthographicCamera;
+  /**
+   * Se o plano deve seguir a câmera (requer {@link WaterOptions.camera}). Default
+   * `true` quando há câmera. Desligue pra um lago/poça fixo num ponto do mundo.
+   */
+  follow?: boolean;
 }
 
 /**
@@ -63,6 +78,11 @@ export interface WaterOptions {
  * const water = new Water(scene, { y: -1.5, causticsUrl: 'assets/textures/caustics.png' })
  * // no GameLoop.onUpdate:
  * water.update(deltaTime / 1000)
+ *
+ * @example
+ * // Mar "infinito": passe a câmera e o plano segue o XZ dela, então a borda
+ * // quadrada fica sempre a `size / 2` e some atrás do fog.
+ * const sea = new Water(scene, { y: -6, camera: game.camera, causticsUrl: '…' })
  */
 export class Water {
   /** O `Mesh` do plano de água, já adicionado à cena. */
@@ -74,6 +94,9 @@ export class Water {
   private readonly flowY: number;
   private offsetX = 0;
   private offsetY = 0;
+  private readonly camera: PerspectiveCamera | OrthographicCamera | null;
+  /** Unidades de mundo cobertas por um tile das cáusticas (`size / repeat`). */
+  private readonly tileWorld: number;
 
   constructor(scene: Scene, options: WaterOptions = {}) {
     const {
@@ -86,10 +109,14 @@ export class Water {
       metalness = 0.05,
       causticsIntensity = 0.35,
       flowSpeed = [0.012, 0.007],
+      camera,
+      follow = true,
     } = options;
 
     this.flowX = flowSpeed[0];
     this.flowY = flowSpeed[1];
+    this.camera = camera && follow ? camera : null;
+    this.tileWorld = size / repeat;
     // color = parte escura da água; emissive + emissiveMap = ADICIONA branco
     // onde a textura de cáusticas é clara (áreas brilhantes "acendem" a água).
     this.material = new MeshStandardMaterial({
@@ -135,9 +162,26 @@ export class Water {
    * @param deltaSeconds - Tempo decorrido desde o último frame, em segundos.
    */
   update(deltaSeconds: number): void {
+    // Mar "infinito": re-centra o plano no XZ da câmera a cada frame, então a borda
+    // quadrada fica sempre a `size / 2` da câmera e some atrás do fog. O Y não muda.
+    if (this.camera) {
+      this.mesh.position.x = this.camera.position.x;
+      this.mesh.position.z = this.camera.position.z;
+    }
     if (!this.map) return;
+    // Fluxo animado das cáusticas.
     this.offsetX = (this.offsetX + deltaSeconds * this.flowX) % 1;
     this.offsetY = (this.offsetY + deltaSeconds * this.flowY) % 1;
-    this.map.offset.set(this.offsetX, this.offsetY);
+    // Ancora as cáusticas ao mundo: sem isso, seguir a câmera arrastaria a textura
+    // junto com o plano (as cáusticas "grudariam" na tela). A compensação — posição
+    // do plano medida em tiles — cancela o deslize na UV. Sinais deduzidos da rotação
+    // -PI/2 em X do mesh: world_x ← +local_u, world_z ← -local_v.
+    let u = this.offsetX;
+    let v = this.offsetY;
+    if (this.camera) {
+      u += this.mesh.position.x / this.tileWorld;
+      v -= this.mesh.position.z / this.tileWorld;
+    }
+    this.map.offset.set(u, v);
   }
 }

@@ -344,6 +344,13 @@ const waterNode = z.object({
   repeat: z.number().optional(),
   causticsIntensity: z.number().optional(),
   flowSpeed: z.tuple([z.number(), z.number()]).optional(),
+  /** Lado do plano (quadrado), em unidades. Default `400`. */
+  size: z.number().optional(),
+  /**
+   * Seguir a câmera (mar "infinito"): o plano re-centra no XZ da câmera e a borda
+   * some no fog. Default `true`. Desligue (`false`) pra um lago/poça fixo.
+   */
+  follow: z.boolean().optional(),
   id: z.string().min(1),
 });
 

@@ -6,7 +6,7 @@
 
 # Class: Water
 
-Defined in: [src/scene/Water.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L67)
+Defined in: [src/scene/Water.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L87)
 
 Água simples (experimental) pra cenários de ilhas/plataforma: um plano
 horizontal grande com material PBR cartoon e, opcionalmente, uma textura de
@@ -31,13 +31,19 @@ const water = new Water(scene, { y: -1.5, causticsUrl: 'assets/textures/caustics
 water.update(deltaTime / 1000)
 ```
 
+```ts
+// Mar "infinito": passe a câmera e o plano segue o XZ dela, então a borda
+// quadrada fica sempre a `size / 2` e some atrás do fog.
+const sea = new Water(scene, { y: -6, camera: game.camera, causticsUrl: '…' })
+```
+
 ## Constructors
 
 ### Constructor
 
 > **new Water**(`scene`, `options?`): `Water`
 
-Defined in: [src/scene/Water.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L78)
+Defined in: [src/scene/Water.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L101)
 
 #### Parameters
 
@@ -59,7 +65,7 @@ Defined in: [src/scene/Water.ts:78](https://github.com/BuuhV-Projects/cortex-gam
 
 > `readonly` **mesh**: `Mesh`
 
-Defined in: [src/scene/Water.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L69)
+Defined in: [src/scene/Water.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L89)
 
 O `Mesh` do plano de água, já adicionado à cena.
 
@@ -69,7 +75,7 @@ O `Mesh` do plano de água, já adicionado à cena.
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: [src/scene/Water.ts:137](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L137)
+Defined in: [src/scene/Water.ts:164](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L164)
 
 Anima as cáusticas deslizando o offset da textura nos dois eixos. Chame uma
 vez por frame passando o delta em **segundos** (`deltaTime / 1000`). No-op
