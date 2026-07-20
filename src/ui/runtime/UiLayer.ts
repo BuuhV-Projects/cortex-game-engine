@@ -12,8 +12,15 @@
  */
 import type { UiBackend } from './UiBackend.js';
 import type { UiViewport } from './layout.js';
-import { designViewport, resolveRect, uiScale } from './layout.js';
+import { designViewport, resolveRect, uiScale, type UiRect } from './layout.js';
 import { UiButton, UiPanel, UiWidget } from './widgets.js';
+
+/** Evento de ponteiro que nos interessa (browser `PointerEvent` ou o sintético
+ *  do host nativo, que só traz `clientX`/`clientY`/`type`). */
+interface UiPointerEvent {
+  clientX?: number;
+  clientY?: number;
+}
 
 /** Botões do mapeamento standard usados na navegação. */
 const GP_A = 0;
@@ -29,8 +36,33 @@ export class UiLayer {
   private _focusIndex = -1;
   private _gamepadHeld = new Set<number>();
   private _pendingKeys: string[] = [];
+  /** Botão pressionado no `pointerdown` (só ativa se soltar SOBRE ele). */
+  private _pointerDown: UiButton | null = null;
   private readonly _onKeyDown = (e: { key?: string }): void => {
     if (e.key) this._pendingKeys.push(e.key);
+  };
+
+  // ── Mouse/toque (ADR-0133): funciona nos DOIS backends. No browser o
+  // `PointerEvent` chega direto; no host nativo (RendererUiBackend) o SDL
+  // dispara `pointerdown`/`pointerup` via `__cortexDispatchInput`. Como o
+  // layout é o MESMO em ambos (design ÷ escala), o hit-test é um só aqui.
+  private readonly _onPointerDown = (e: UiPointerEvent): void => {
+    const btn = this._buttonAtEvent(e, false);
+    this._pointerDown = btn;
+    // Foco acompanha o clique (feedback visual) — só em botões navegáveis.
+    if (btn && btn.focusable) this._syncFocus(btn);
+  };
+  private readonly _onPointerUp = (e: UiPointerEvent): void => {
+    const btn = this._buttonAtEvent(e, false);
+    // Clique = press + release SOBRE o mesmo botão (igual ao browser).
+    if (btn && btn === this._pointerDown) btn.onPress?.();
+    this._pointerDown = null;
+  };
+  private readonly _onPointerMove = (e: UiPointerEvent): void => {
+    // Hover move o foco (só botões navegáveis). O host nativo não manda
+    // `pointermove` hoje, então isto é efetivo só no browser — sem regressão.
+    const btn = this._buttonAtEvent(e, true);
+    if (btn) this._syncFocus(btn);
   };
 
   constructor(backend: UiBackend, viewportOf: () => UiViewport) {
@@ -38,6 +70,13 @@ export class UiLayer {
     this._viewportOf = viewportOf;
     if (typeof document !== 'undefined') {
       document.addEventListener('keydown', this._onKeyDown as EventListener);
+    }
+    // O host nativo redistribui os eventos de ponteiro pra `window` (input-bridge);
+    // no browser eles borbulham até lá. Um único ponto de escuta cobre os dois.
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pointerdown', this._onPointerDown as EventListener);
+      window.addEventListener('pointerup', this._onPointerUp as EventListener);
+      window.addEventListener('pointermove', this._onPointerMove as EventListener);
     }
   }
 
@@ -168,7 +207,41 @@ export class UiLayer {
     if (typeof document !== 'undefined') {
       document.removeEventListener('keydown', this._onKeyDown as EventListener);
     }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('pointerdown', this._onPointerDown as EventListener);
+      window.removeEventListener('pointerup', this._onPointerUp as EventListener);
+      window.removeEventListener('pointermove', this._onPointerMove as EventListener);
+    }
     this._backend.dispose();
+  }
+
+  /**
+   * Botão (visível) sob o ponto de um evento de ponteiro, ou `null`. Converte
+   * as coordenadas de tela pro espaço de DESIGN (÷ escala — o mesmo em que os
+   * dois backends posicionam a UI, ADR-0129) e testa de cima pra baixo
+   * (último adicionado = mais na frente). `focusableOnly` restringe ao conceito
+   * de foco (hover); o clique aceita qualquer botão (inclusive `focusable:false`,
+   * o padrão "só-clique").
+   */
+  private _buttonAtEvent(e: UiPointerEvent, focusableOnly: boolean): UiButton | null {
+    const { view, scale } = this._layout();
+    const x = (e.clientX ?? 0) / scale;
+    const y = (e.clientY ?? 0) / scale;
+    for (let i = this._widgets.length - 1; i >= 0; i--) {
+      const widget = this._widgets[i]!;
+      if (!(widget instanceof UiButton) || !widget.visible) continue;
+      if (focusableOnly && !widget.focusable) continue;
+      if (this._pointInWidget(x, y, widget, view)) return widget;
+    }
+    return null;
+  }
+
+  /** O ponto (espaço de design) cai dentro do rect resolvido do botão? */
+  private _pointInWidget(x: number, y: number, button: UiButton, view: UiViewport): boolean {
+    const w = button.width || button.measuredWidth;
+    const h = button.height || button.measuredHeight;
+    const r: UiRect = resolveRect(button.anchor, button.x, button.y, w, h, view);
+    return x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
   }
 
   private _buttons(): UiButton[] {

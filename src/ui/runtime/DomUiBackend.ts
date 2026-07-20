@@ -110,9 +110,11 @@ export class DomUiBackend implements UiBackend {
             : `${widget.focusBorderWidth > 0 ? widget.focusBorderWidth : 0}px solid transparent`;
       node.style.boxShadow = widget.boxShadow;
       node.style.boxSizing = 'border-box';
+      // `pointer-events:auto` só pro cursor de mãozinha; o CLIQUE é tratado no
+      // UiLayer (hit-test único, vale pros dois backends — ADR-0133). Ligar um
+      // `onclick` aqui também dispararia onPress em DOBRO.
       node.style.pointerEvents = 'auto';
       node.style.cursor = 'pointer';
-      node.onclick = () => widget.onPress?.();
     } else if (widget instanceof UiLabel) {
       node.style.display = widget.visible ? 'block' : 'none';
       node.textContent = widget.text;

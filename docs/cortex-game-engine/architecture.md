@@ -447,6 +447,25 @@ cada widget em **px lógicos ancorados** — telas autoradas contra a resoluçã
 ⚠️ **Autore SEMPRE pensando em 1920×1080** — o engine cuida da escala. Não crave
 tamanhos "pra 4K" no HTML/HUD; some a portabilidade entre resoluções.
 
+## 8b3. UI de runtime: mouse/toque (`UiLayer`) — ADR-0133
+
+Além de gamepad/teclado, o `UiLayer` faz **hit-test de ponteiro** — um só código pros
+DOIS backends. Eventos `pointerdown`/`pointerup`/`pointermove` chegam em `window`
+(browser borbulha; o host nativo despacha via `input-bridge.js`). Conversão
+`design = client ÷ scale` (mesma escala do ADR-0129) e teste de cima pra baixo
+(último widget = mais na frente):
+
+- **Clique** = down + up sobre o MESMO botão visível — aceita qualquer botão, inclusive
+  `focusable:false` (o padrão "só-clique", ex.: "Fases" no gameplay).
+- **Hover** (`pointermove`) move o foco, só em botões `focusable`. Efetivo no browser;
+  o host nativo ainda não manda `pointermove` (falta `SDL_EVENT_MOUSE_MOTION` → `pointermove`).
+- O `DomUiBackend` **não liga `onclick`** — o clique é do `UiLayer` (senão dispararia
+  em dobro). Mantém só `cursor:pointer` pro cursor de mãozinha.
+
+⚠️ **Armadilha:** o hit-test só considera botões **visíveis**. Um botão "desabilitado"
+que só muda de cor mas mantém `onPress` **continua clicável pelo mouse** — pra desabilitar
+de fato, remova o `onPress` (ou torne-o não-visível), não só o `focusable`.
+
 ## 8c. i18n + config do jogo (`src/i18n/`) — ADR-0124
 
 Multi-idioma e configurações do jogador, **desacoplados** de ECS/Three (tudo é
