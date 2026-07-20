@@ -6,8 +6,9 @@
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { DebugHud, debugHudRequested } from '../../src/ui/DebugHud.js';
-import type { UiLayer } from '../../src/ui/runtime/UiLayer.js';
-import type { UiLabel } from '../../src/ui/runtime/widgets.js';
+import { UiLayer } from '../../src/ui/runtime/UiLayer.js';
+import type { UiBackend } from '../../src/ui/runtime/UiBackend.js';
+import type { UiLabel, UiWidget } from '../../src/ui/runtime/widgets.js';
 
 // UiLayer mínimo: os widgets são só dados; o backend não é necessário no teste.
 function fakeUi(): { ui: UiLayer; labels: UiLabel[] } {
@@ -66,5 +67,41 @@ describe('DebugHud', () => {
     for (let i = 0; i < 40; i++) hud.frame(16.7);
     expect(labels[1]!.text).toBe('CPU —');
     expect(labels[3]!.text).toContain('GPU —');
+  });
+});
+
+describe('DebugHud sobrevive à troca de fase (Game.reset → ui.clear)', () => {
+  // Backend que só grava a última lista sincronizada (nº de widgets na tela).
+  function recordingLayer(): { ui: UiLayer; onScreen: () => number } {
+    let last: ReadonlyArray<UiWidget> = [];
+    const backend: UiBackend = {
+      sync: (widgets) => {
+        last = widgets;
+      },
+      render: () => {},
+      dispose: () => {},
+    };
+    const ui = new UiLayer(backend, () => ({ width: 1280, height: 720 }));
+    return { ui, onScreen: () => last.length };
+  }
+
+  it('ui.clear() ORFANA os widgets do HUD; recriar o HUD os restaura', () => {
+    const { ui, onScreen } = recordingLayer();
+
+    // Fase 1: HUD montado → painel + 4 labels na UI.
+    new DebugHud(ui);
+    ui.update(0);
+    expect(onScreen()).toBe(5);
+
+    // game.reset() limpa a UI (widgets do HUD junto): a tela fica vazia. Sem
+    // recriar, o objeto DebugHud sobrevive segurando widgets órfãos e o HUD
+    // some da 2ª fase em diante — foi o bug relatado no export com métricas.
+    ui.clear();
+    expect(onScreen()).toBe(0);
+
+    // Correção do reset: recriar o HUD reancorra os widgets na mesma camada.
+    new DebugHud(ui);
+    ui.update(0);
+    expect(onScreen()).toBe(5);
   });
 });

@@ -414,7 +414,15 @@ export class Game {
     this.stop();
     this.world.clear();
     this.scene.disposeAll();
+    // O HUD de métricas ancora seus widgets na UI; `ui.clear()` os remove. Sem
+    // recriá-lo, o objeto sobrevive ao reset segurando widgets órfãos e o HUD
+    // some da 2ª fase em diante (só a 1ª, onde foi montado, mostrava métricas).
+    const hudWasVisible = this._debugHud instanceof DebugHud && this._debugHud.visible;
     this._ui?.clear();
     this._onUpdate = null;
+    if (this._debugHud instanceof DebugHud) {
+      this._debugHud = this.createDebugHud();
+      this._debugHud.setVisible(hudWasVisible);
+    }
   }
 }
