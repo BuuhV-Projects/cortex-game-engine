@@ -37,6 +37,23 @@ export type InputAction =
   | { type: 'wait'; ms: number }
   | { type: 'screenshot' }
 
+/**
+ * Câmera de inspeção (ADR-0131): posiciona a câmera livre pra "ver" a cena de
+ * qualquer ângulo, independente da câmera de gameplay (que segue o player). Se
+ * `pos` for dado, usa pose explícita; senão orbita (`orbit`); sem nenhum, enquadra
+ * a cena inteira. Aplicada após o boot, antes das `actions`.
+ */
+export interface InspectCameraOption {
+  /** Órbita ao redor de um alvo (ângulos em GRAUS). Ignorado se `pos` vier. */
+  orbit?: { yaw?: number; pitch?: number; dist?: number; target?: [number, number, number] }
+  /** Pose explícita: posição de mundo `[x,y,z]`. */
+  pos?: [number, number, number]
+  /** Ponto observado da pose explícita (default origem). */
+  lookAt?: [number, number, number]
+  /** Field of view (graus). */
+  fov?: number
+}
+
 export interface PlaytestOptions {
   /** Largura da janela/captura. Default 1280. */
   width?: number
@@ -64,6 +81,11 @@ export interface PlaytestOptions {
    * da foto. O valor retornado vai pras mensagens de console (`[eval] …`).
    */
   evalJs?: string
+  /**
+   * Câmera de inspeção (ADR-0131): posiciona a câmera livre pra ver a cena de
+   * qualquer ângulo. Aplicada após o boot/`evalJs`, antes das `actions`.
+   */
+  camera?: InspectCameraOption
   /**
    * Sequência de input pra "jogar" o jogo. Executada após o `waitMs` inicial.
    * Se nenhuma ação `screenshot` for incluída, um screenshot é tirado no fim.
@@ -207,6 +229,31 @@ async function runActions(
   }
 }
 
+/**
+ * Aplica a câmera de inspeção na página via `window.__cortexInspect` (exposto pelo
+ * bundle de dev). Monta a expressão a partir das opções e devolve a nota que a
+ * página retornar (`ok`, `sem-inspect`, …) pras mensagens de console. Os valores
+ * vão serializados como JSON — sem interpolação de string arbitrária.
+ */
+async function applyInspectCamera(wc: WebContents, cam: InspectCameraOption): Promise<string> {
+  const calls: string[] = []
+  if (typeof cam.fov === 'number') calls.push(`api.setFov(${JSON.stringify(cam.fov)})`)
+  if (cam.pos) {
+    const lookAt = cam.lookAt ? JSON.stringify(cam.lookAt) : 'undefined'
+    calls.push(`api.pose(${JSON.stringify(cam.pos)}, ${lookAt})`)
+  } else if (cam.orbit) {
+    calls.push(`api.orbit(${JSON.stringify(cam.orbit)})`)
+  } else {
+    calls.push('api.frame()')
+  }
+  const js =
+    `(() => { const api = window.__cortexInspect;` +
+    ` if (!api) return 'sem-inspect (bundle de dev não carregado?)';` +
+    ` ${calls.join('; ')}; return 'ok'; })()`
+  const value = await wc.executeJavaScript(js, true)
+  return String(value)
+}
+
 export async function runAndCaptureGame(
   projectRoot: string,
   opts: PlaytestOptions = {},
@@ -330,6 +377,18 @@ export async function runAndCaptureGame(
       } catch (err) {
         pushMsg(`[eval-error] ${err instanceof Error ? err.message : String(err)}`)
       }
+    }
+
+    // 3d) Câmera de inspeção (opcional): posiciona a câmera livre pra ver a cena
+    //     de qualquer ângulo (via `window.__cortexInspect`, exposto pelo bundle de
+    //     dev). Fica ATIVA pelo resto do playtest — todas as fotos saem por ela, com
+    //     a gameplay seguindo. `?play` do playtest carrega o bundle de dev, então a
+    //     API existe mesmo em modo jogo.
+    if (opts.camera) {
+      const note = await applyInspectCamera(wc, opts.camera).catch(
+        (e: unknown) => `erro: ${e instanceof Error ? e.message : String(e)}`,
+      )
+      pushMsg(`[camera] ${note}`)
     }
 
     // 4) Executa o input (se houver). Os keydown/keyup chegam ao InputManager.

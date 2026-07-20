@@ -121,6 +121,22 @@ export function attachEditor(game: Game): GameEditor {
   const editorState = createEditorState();
   const selection = createEditorSelection();
 
+  // Câmera de inspeção (ADR-0131) exposta pra a tool de playtest do Chat IA: a IA
+  // orbita/posiciona livremente por `window.__cortexInspect` e o Game renderiza
+  // por essa câmera (independe de play/edit; sem HUD/gizmos). Fica no bundle de
+  // dev (que o playtest sempre carrega); as chamadas de órbita usam a cena ATIVA.
+  if (typeof window !== 'undefined') {
+    (window as unknown as { __cortexInspect: unknown }).__cortexInspect = {
+      orbit: (params?: import('../core/InspectCamera.js').InspectOrbit) =>
+        game.inspect.orbit(game.scene.getThreeScene(), params ?? {}),
+      pose: (pos: [number, number, number], lookAt?: [number, number, number]) =>
+        game.inspect.pose(pos, lookAt),
+      frame: () => game.inspect.frame(game.scene.getThreeScene()),
+      setFov: (fov: number) => game.inspect.setFov(fov),
+      clear: () => game.inspect.clear(),
+    };
+  }
+
   // Sistemas do editor SOBREVIVEM ao `game.reset()`/`World.clear` (troca de fase):
   // sem isto, voltar ao menu e entrar noutra fase apagaria a câmera livre, a
   // seleção e os gizmos (os listeners globais ficam, mas os sistemas que agem

@@ -20,6 +20,7 @@ lado).
 | `GameLoop` | Loop principal (baixo nível; o `Game` já usa). `new GameLoop({ onUpdate(dt), onFixedUpdate? })`, `.start()`/`.stop()`. |
 | `Renderer` | Wrapper do `WebGPURenderer`. `.render(threeScene, camera)`, `.renderViewport(...)` (split-screen), `.resize(w,h)`, `.threeRenderer` (instância crua, p/ pós-processamento), `.isReady`, `.dispose()`. |
 | `Camera`, `PerspectiveCamera`, `OrthographicCamera` | Câmeras (re-exportadas via Renderer). Perspectiva p/ 3D; ortográfica p/ 2.5D/2D. |
+| `InspectCamera` | Câmera de inspeção livre (ADR-0131). `game.inspect.orbit({yaw,pitch,dist,target})` orbita um alvo, `.pose(pos,lookAt)` pose explícita, `.frame()` enquadra a cena, `.clear()` volta. Quando ativa o `Game` renderiza por ela (cru, sem PostFX) com a gameplay seguindo — pra cutscene/foto/replay de ângulo livre. É o motor do parâmetro `camera` do playtest do Chat IA. |
 | `Scene` | Wrapper de `THREE.Scene`. `.add(...objs)`, `.remove(...)`, `.clear()`, `.getThreeScene()`. |
 | `AssetLoader` | Carrega e cacheia assets. `.loadGLTF(url)→GLTF`, `.loadFBX(url)→Group`, `.loadTexture(url)`, `.loadAudio(url)`. |
 | `GLTF` (tipo) | Retorno de `loadGLTF` (`.scene`, `.animations`). |

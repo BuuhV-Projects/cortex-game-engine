@@ -2,7 +2,7 @@ import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
 import { join, relative } from 'path'
 import { mkdir, writeFile } from 'fs/promises'
-import { runAndCaptureGame, type InputAction } from '../playtest/runAndCapture.js'
+import { runAndCaptureGame, type InputAction, type InspectCameraOption } from '../playtest/runAndCapture.js'
 import { toCompactImage } from '../imageCompress.js'
 
 /**
@@ -26,7 +26,9 @@ export function createPlaytestToolServer(projectRoot: string) {
           'de console (logs/warns/erros de runtime) pra VER se a implementação ' +
           'funcionou. Passe `actions` pra simular input: ex. segurar ArrowRight ' +
           'andando, dar tap em Space pra pular, e screenshot em pontos-chave. Sem ' +
-          '`actions`, só renderiza alguns frames e tira uma foto. Teclas: use o ' +
+          '`actions`, só renderiza alguns frames e tira uma foto. Passe `camera` pra ' +
+          'VER a cena de qualquer ângulo com uma câmera livre (orbitar/enquadrar), ' +
+          'sem depender da câmera de gameplay que segue o player. Teclas: use o ' +
           'valor de KeyboardEvent.key ("ArrowLeft/Right/Up/Down", " " ou "Space", ' +
           '"Enter") ou letras ("a", "d"). Requer WebGPU (engine WebGPU-only).',
         {
@@ -55,6 +57,38 @@ export function createPlaytestToolServer(projectRoot: string) {
             ),
           width: z.number().int().min(160).max(3840).optional().describe('Largura da captura. Default 1280.'),
           height: z.number().int().min(120).max(2160).optional().describe('Altura da captura. Default 720.'),
+          camera: z
+            .object({
+              orbit: z
+                .object({
+                  yaw: z.number().optional().describe('Azimute horizontal (graus). 0 = de frente; cresce girando ao redor.'),
+                  pitch: z.number().optional().describe('Elevação (graus). Negativo = olhando DE CIMA. Default -25.'),
+                  dist: z.number().positive().optional().describe('Distância ao alvo (unidades). Omitido = auto (enquadra).'),
+                  target: z
+                    .tuple([z.number(), z.number(), z.number()])
+                    .optional()
+                    .describe('Ponto observado [x,y,z]. Omitido = centro da cena.'),
+                })
+                .optional()
+                .describe('Orbita ao redor de um alvo. Ignorado se `pos` vier.'),
+              pos: z
+                .tuple([z.number(), z.number(), z.number()])
+                .optional()
+                .describe('Pose explícita: posição da câmera no mundo [x,y,z].'),
+              lookAt: z
+                .tuple([z.number(), z.number(), z.number()])
+                .optional()
+                .describe('Ponto observado da pose explícita (default origem).'),
+              fov: z.number().min(10).max(120).optional().describe('Field of view (graus).'),
+            })
+            .optional()
+            .describe(
+              'CÂMERA DE INSPEÇÃO: vê a cena de QUALQUER ângulo, livre da câmera de gameplay (que segue o ' +
+                'player). Use pra inspecionar o cenário montado. `orbit:{yaw,pitch,dist,target}` orbita um ' +
+                'alvo (sem dist = auto-enquadra); `pos`+`lookAt` é pose explícita; objeto vazio {} enquadra a ' +
+                'cena inteira. Fica ativa por todo o playtest (todas as fotos saem por ela, com a gameplay ' +
+                'rodando). Render cru (sem pós-processamento).',
+            ),
           actions: z
             .array(
               z.discriminatedUnion('type', [
@@ -87,13 +121,14 @@ export function createPlaytestToolServer(projectRoot: string) {
                 '{type:"screenshot"},{type:"release",key:"ArrowRight"}].',
             ),
         },
-        async ({ waitMs, width, height, actions, wait_for, eval_js }) => {
+        async ({ waitMs, width, height, actions, wait_for, eval_js, camera }) => {
           const result = await runAndCaptureGame(projectRoot, {
             waitMs,
             width,
             height,
             waitFor: wait_for,
             evalJs: eval_js,
+            camera: camera as InspectCameraOption | undefined,
             actions: actions as InputAction[] | undefined,
           })
 

@@ -9,6 +9,7 @@
 // ─── Core ──────────────────────────────────────────────────────────────────────
 export * from './core/GameLoop.js';
 export * from './core/Game.js';
+export * from './core/InspectCamera.js';
 export * from './core/Renderer.js';
 export * from './core/Scene.js';
 export * from './core/AssetLoader.js';

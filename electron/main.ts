@@ -451,6 +451,7 @@ const VENDOR_TYPE_MODULES = {
   core: [
     'GameLoop',
     'Game',
+    'InspectCamera',
     'Renderer',
     'Scene',
     'AssetLoader',

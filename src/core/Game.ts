@@ -8,6 +8,7 @@ import { World } from '../ecs/World.js';
 import { UiLayer } from '../ui/runtime/UiLayer.js';
 import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
+import { InspectCamera } from './InspectCamera.js';
 
 /**
  * Handle do editor injetado no {@link Game} (só existe no bundle de
@@ -121,6 +122,7 @@ export class Game {
   private _debugHud: DebugHud | null | undefined = undefined;
   private _postfx: { render(): void } | null = null;
   private _ui: UiLayer | null = null;
+  private _inspect: InspectCamera | null = null;
   /** Cena/câmera renderizadas a cada frame. Por padrão são as do jogo; troque com
    * {@link setActiveScene} pra multi-cena (criador de personagem, menus, regiões). */
   private _activeScene: Scene;
@@ -335,6 +337,23 @@ export class Game {
     return this._ui;
   }
 
+  /**
+   * **Câmera de inspeção** (ADR-0131): câmera de perspectiva livre pra "ver" a
+   * cena de qualquer ângulo por código, independente da câmera do jogo (que segue
+   * o player) e do modo editor. Quando ativada (`orbit`/`pose`/`frame`), o render
+   * do frame passa a usá-la (cru, sem pós); `clear()` volta ao normal. Criada sob
+   * demanda. Usada pela tool de playtest do Chat IA e exposta em
+   * `window.__cortexInspect` no bundle de dev.
+   *
+   * @example
+   * game.inspect.orbit({ yaw: 45, pitch: -30, dist: 20 }) // de lado, meia-altura
+   * game.inspect.clear()                                   // volta pra câmera do jogo
+   */
+  get inspect(): InspectCamera {
+    if (!this._inspect) this._inspect = new InspectCamera();
+    return this._inspect;
+  }
+
   private _tick(deltaMs: number): void {
     const dt = deltaMs / 1000;
     this.gamepad.poll(); // estado fresco do gamepad antes dos sistemas/onUpdate (Xbox-first)
@@ -342,8 +361,15 @@ export class Game {
     this.world.tick(deltaMs);
     this._ui?.update(dt); // navegação/sync da UI de runtime (ADR-0102)
     this._editor?.update(dt);
+    // Câmera de inspeção (ADR-0131): quando ativa VENCE tudo — render cru por ela,
+    // de qualquer ângulo, com a gameplay seguindo (só o render muda). Usada pelo
+    // playtest do Chat IA pra inspecionar a cena livremente.
+    const inspectCamera = this._inspect?.active ? this._inspect : null;
     const editorCamera = this._editor?.activeCamera() ?? null;
-    if (editorCamera) {
+    if (inspectCamera) {
+      inspectCamera.setAspect(this.renderer.width, this.renderer.height);
+      this.renderer.render(this._activeScene.getThreeScene(), inspectCamera.camera);
+    } else if (editorCamera) {
       // No editor: render direto pela câmera livre (cena crua, sem pós).
       this.renderer.render(this._activeScene.getThreeScene(), editorCamera);
     } else if (this._postfx && this._activeScene === this.scene) {

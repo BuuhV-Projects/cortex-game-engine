@@ -87,6 +87,13 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   ao final, funde a geometria ESTÁTICA por material (`mergeStaticScene`,
   ADR-0121; opt-out `opts.mergeStatic`) — menos draw calls, física/visual
   intactos; nunca roda no Studio (o F2 precisa dos objetos individuais).
+- **Água (`Water.ts`, ADR-0131)** — nó `water`: plano PBR finito (`size`, default
+  400) com cáusticas tiled animadas. **Segue a câmera** no XZ por padrão (o
+  `buildScene` passa `options.camera`), então a borda quadrada fica sempre a
+  `size/2` e some no fog — mar "infinito". As cáusticas ficam ancoradas ao mundo
+  (compensação de UV em tiles) pra não escorregarem com o plano. `follow: false` no
+  nó = água fixa (lago/poça). O `update()` (chamado pelo `SceneHandle.update`) faz
+  o recentro + o fluxo.
 - **Kit / sockets (`Kit.ts`, ADR-0053)** — `parseKit` valida o `kit.json`
   (role/tags/gameplayRole/size/collider/anchors por asset); com `opts.kit`, nós
   `model` podem declarar `attach { socket, to, toSocket }` e o `buildScene`
@@ -291,6 +298,16 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   `playtest_game` aceita `wait_for` (expressão JS até truthy, com diagnóstico
   de recursos pendentes no timeout — em vez de inflar `waitMs` no chute) e
   `eval_js` (setup pós-boot: teleporte/câmera overview antes da foto).
+- **Câmera de inspeção no playtest** (ADR-0131): `playtest_game` aceita `camera`
+  (`{orbit:{yaw,pitch,dist,target}} | {pos,lookAt} | {fov}`) pra ver a cena de
+  **qualquer ângulo**, livre da câmera de gameplay (que segue o player). Motor:
+  `Game.inspect` (`src/core/InspectCamera.ts`) — câmera livre que, quando ativa,
+  VENCE a do jogo/editor no render (`Game._tick`), cru (sem PostFX), com a
+  gameplay seguindo. Exposta em `window.__cortexInspect` pelo `attachEditor`
+  (bundle de dev, carregado mesmo em `?play=1`). Antes, com `?play=1` o editor
+  fica inativo → `activeCamera()` devolve `null` → só a câmera do jogo renderizava,
+  e o `eval_js` não tinha alça pra câmera nenhuma. Auto-enquadramento ignora
+  helpers do editor (outra layer) e skybox (>1000u).
 
 ## 7. Fluxo de ponta a ponta (um nó vira jogo)
 
