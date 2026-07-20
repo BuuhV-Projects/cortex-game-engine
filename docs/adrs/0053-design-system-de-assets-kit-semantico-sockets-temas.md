@@ -9,17 +9,17 @@ engine e no Chat IA; pendente: §3 tokens de tema, patterns/setpieces)
 O norte do projeto é "a IA é a level designer — levels bonitos E jogáveis"
 ([[chat-ia-scene-building]]). Já temos três das quatro camadas que isso exige:
 
-- **Percepção** — `inspect_assets` (ADR-0037) dá olhos à IA: thumbnail + bbox por
+- **Percepção** — `inspect_assets` (SPEC-0037) dá olhos à IA: thumbnail + bbox por
   `.glb`.
 - **Teoria** — a Game Design Bible (`docs/game-design-bible/`) dá as regras de
   design (pacing, jumpability, gênero), injetada no system prompt.
-- **Construção** — cena data-driven JSON (ADR-0044) + `place`/grounding (ADR-0039)
+- **Construção** — cena data-driven JSON (ADR-0044) + `place`/grounding (SPEC-0039)
   + collider autorável (ADR-0047/0049).
 
 Falta a **quarta camada: vocabulário**. Hoje a IA vê que `bridge_001.glb` mede
 12×2×3, mas não *sabe* que é um conector cujo deck precisa alinhar ao topo de duas
 ilhas — ela **infere** isso de um thumbnail, a cada sessão, sob pressão de
-contexto. O próprio ADR-0037 já registra esse risco nas consequências ("instruções
+contexto. O próprio SPEC-0037 já registra esse risco nas consequências ("instruções
 de prompt orientam, mas não garantem adesão").
 
 A analogia que motivou esta decisão (discutida com o usuário) é o **Lovable**: ele
@@ -119,7 +119,7 @@ nomes de tema por bioma/gênero.
 
 ### 4. Produção do manifesto — ~70% automático, resto tag única
 
-Estender o pipeline Blender do `inspect_assets` (ADR-0037) para **derivar e
+Estender o pipeline Blender do `inspect_assets` (SPEC-0037) para **derivar e
 cachear** no `kit.json` o que dá pra inferir geometricamente: `size` (bbox),
 size-class (`S/M/L`), âncora `top` (centro da face superior), candidato a
 `connector` (forma plana, estreita e comprida). O **`role` semântico** e o
@@ -186,7 +186,7 @@ não embarca.
 - **Conexão vira estrutural, não raciocínio.** Sockets matam "ponte boiando" do
   mesmo jeito que `place` matou "peça flutuando". O resolver de `attach` é
   matemática de transform **pura → unit-testável** (ao contrário da derivação via
-  Blender, que herda o caveat do ADR-0037 de não ser testável sem o binário real).
+  Blender, que herda o caveat do SPEC-0037 de não ser testável sem o binário real).
 - **Curadoria importa tanto quanto o metadado.** Metade da beleza do Lovable é o
   shadcn já ser bonito; asset incoerente → cena feia, com ou sem manifesto. O
   design system pede, em paralelo, **kits temáticos de primeira-parte** (ou packs
@@ -211,7 +211,7 @@ não embarca.
 - **Vendoring/build:** schema e resolver vão pro bundle vendorizado e seus `.d.ts`
   (re-vendorizar nos projetos que consomem o engine, ex. [[dream-island-wonder]]).
   Atualizar `engine-api.md` e `docs:engine`.
-- Relaciona-se com ADR-0037 (inspect_assets = percepção; aqui vira persistência
+- Relaciona-se com SPEC-0037 (inspect_assets = percepção; aqui vira persistência
   semântica), 0044 (SceneDefinition = construção; ganha `attach`), 0039 (grounding,
   do qual sockets são o análogo X/Z) e a Game Design Bible (teoria; passa a
   referenciar `role`/`theme`).

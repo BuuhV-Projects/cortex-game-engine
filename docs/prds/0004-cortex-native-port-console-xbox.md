@@ -87,7 +87,7 @@ escrever GameInput/XAudio2 na mão. Ref: https://wiki.libsdl.org/SDL3/README-gdk
 | API web usada pelo runtime | Implementação nativa |
 |---|---|
 | `requestAnimationFrame`, timers, `performance.now` | loop de jogo (SDL3) |
-| Gamepad API (`GamepadManager`) | SDL3 gamepad (→ GameInput no console; engine já é gamepad-first, ADR-0078) |
+| Gamepad API (`GamepadManager`) | SDL3 gamepad (→ GameInput no console; engine já é gamepad-first, SPEC-0078) |
 | WebAudio (`AudioManager`) | SDL3 audio / miniaudio |
 | `fetch` / carga de assets | filesystem no PC; XPackage no console |
 | decode de imagem (texturas GLB) | WIC/stb — ou migrar texturas pra **KTX2** (preferido: sem decoder e menos memória de GPU) |

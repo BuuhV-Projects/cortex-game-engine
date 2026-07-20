@@ -35,14 +35,14 @@ const VERT_NDC = 0.025; // tolerância de clique (NDC) pra vértice/aresta
 
 /**
  * **Edição de elementos de malha** (vertex/edge/face — blockout/ProBuilder,
- * ADR-0071). Quando `editorState.meshEditMode !== 'object'` e há um nó `mesh`
+ * SPEC-0071). Quando `editorState.meshEditMode !== 'object'` e há um nó `mesh`
  * selecionado, mostra um overlay de elementos (pontos + arestas), deixa **clicar**
  * pra selecionar um vértice/aresta/face, **mover** pelo gizmo (um proxy no
  * centróide) e **extrudar** a face (tecla E). O {@link ObjectEditSystem} cede o
  * clique/gizmo nesse modo.
  *
  * Persistência: a malha editada vira override em `overlay.data.geometry[id]` (via
- * {@link MeshEditApi.applyGeometry}) — overlay vence a receita (ADR-0071).
+ * {@link MeshEditApi.applyGeometry}) — overlay vence a receita (SPEC-0071).
  *
  * Teclas (em modo de malha): `1/2/3` = vértice/aresta/face; `E` = extrudar face;
  * `Tab` = sair pro modo objeto; `Esc` = limpar a seleção de elemento.

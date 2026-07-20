@@ -40,7 +40,7 @@ const _corners = Array.from({ length: 8 }, () => new Vector3());
  * Desenha o **contorno (caixa de linhas) das instâncias de vegetação** selecionadas —
  * UMA árvore (seleção individual por clique) ou TODAS (grupo selecionado). Como a
  * vegetação é `InstancedMesh` (instâncias não são objetos da cena), este gizmo dá o
- * feedback visual da seleção por instância (ADR-0077, fase 3). Visível só no editor
+ * feedback visual da seleção por instância (SPEC-0077, fase 3). Visível só no editor
  * (F2); puramente visual (`raycast` off, `editorInternal`). Bundle de dev.
  */
 export class VegetationGizmoSystem extends System {

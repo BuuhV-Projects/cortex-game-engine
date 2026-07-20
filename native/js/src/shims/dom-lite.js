@@ -94,7 +94,7 @@ export function installDomLite() {
   globalThis.addEventListener = windowBus.addEventListener;
   globalThis.removeEventListener = windowBus.removeEventListener;
   globalThis.dispatchEvent = windowBus.dispatchEvent;
-  // window.close() encerra o app (ADR-0120): o host injeta __cortexQuit, que
+  // window.close() encerra o app (SPEC-0120): o host injeta __cortexQuit, que
   // empurra SDL_EVENT_QUIT — mesmo teardown do fechar-janela. Sem a bridge
   // (bundle rodando fora do host), vira no-op, como numa aba de browser.
   globalThis.close = function () {

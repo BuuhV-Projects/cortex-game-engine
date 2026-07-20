@@ -125,7 +125,7 @@ export interface BuildSceneOptions {
   kit?: KitManifest | KitManifest[];
   /**
    * Funde a geometria ESTÁTICA da cena em poucas malhas por material ao final do
-   * build (ADR-0120, {@link mergeStaticScene}) — derruba draw calls onde o render
+   * build (SPEC-0120, {@link mergeStaticScene}) — derruba draw calls onde o render
    * é CPU-bound (host nativo/Hermes). Default: **liga sozinho no host nativo**
    * (`isNativeHost()`), desligado no browser/Studio (o editor F2 precisa dos
    * objetos individuais). `true`/`false` força.
@@ -211,7 +211,7 @@ export function overlayColliders(
  * nome de objeto (`{ [nome]: { type: 'none'|'static'|'character', ... } }`). É a
  * fonte **autoritativa** (sobrescreve o que o código/`level.json` declara): permite
  * REMOVER um collider cravado no código (`type: 'none'`), trocar pra `character`,
- * etc. — pra a física ficar sempre visível/editável no Inspector (ADR-0058).
+ * etc. — pra a física ficar sempre visível/editável no Inspector (SPEC-0058).
  */
 export function overlayPhysics(
   overlay: SceneFileV1 | null | undefined,
@@ -322,7 +322,7 @@ export function overlayUnderlay(
 
 /**
  * Lê `data.material` da overlay — o material/shader **autorado no editor** por id
- * (`{ [id]: MaterialConfig }`, ADR-0058). Sobrescreve o `material` do nó (JSON).
+ * (`{ [id]: MaterialConfig }`, SPEC-0058). Sobrescreve o `material` do nó (JSON).
  * Ausência = sem opinião (cai pro nó). Ver {@link applyMaterial}.
  */
 export function overlayMaterial(overlay: SceneFileV1 | null | undefined): Record<string, MaterialConfig> {
@@ -373,7 +373,7 @@ export function overlayTerrainPaint(overlay: SceneFileV1 | null | undefined): Re
 /**
  * Lê `data.geometry` da overlay — a **geometria editada** (vértice/face) de nós
  * `mesh` autorada no editor, por id (`{ [id]: { positions, faces } }`). **Vence** a
- * receita `shape`/geometria do nó (ADR-0071). "Resetar forma" remove a entrada.
+ * receita `shape`/geometria do nó (SPEC-0071). "Resetar forma" remove a entrada.
  */
 export function overlayGeometry(overlay: SceneFileV1 | null | undefined): Record<string, EditableMesh> {
   const raw = overlay?.data?.['geometry'];
@@ -602,7 +602,7 @@ export async function buildScene(
     // > global (`options.matte`). Overlay `false` sobrescreve um matte do código.
     if (node.type === 'model' || node.type === 'primitive' || node.type === 'mesh') {
       if (editorMatte[node.id] ?? node.matte ?? options.matte) setMatte(obj);
-      // Material/shader por objeto (ADR-0058) — aplicado DEPOIS do matte, então
+      // Material/shader por objeto (SPEC-0058) — aplicado DEPOIS do matte, então
       // um `material` (unlit/toon) que troca a malha vence o tweak de matte.
       // Precedência: overlay do editor (autorado) > nó (JSON).
       const matCfg = editorMaterial[node.id] ?? node.material;
@@ -703,7 +703,7 @@ export async function buildScene(
       if (node.type !== 'model' && node.type !== 'primitive' && node.type !== 'mesh') continue;
       // Collider efetivo: overlay do editor (autorado) > nó (`collider`) > preset
       // do `role` no kit (ADR-0053). A overlay VENCE o código — pra a edição/
-      // remoção no Inspector ter efeito (ver ADR-0058).
+      // remoção no Inspector ter efeito (ver SPEC-0058).
       const kitPreset =
         node.type === 'model' ? kitAssetFor(options.kit, node.url)?.collider : undefined;
       const colliderCfg = editorColliders[node.id] ?? node.collider ?? kitPreset;
@@ -781,7 +781,7 @@ export async function buildScene(
     }
   }
 
-  // ── Merge estático (ADR-0120) — POR ÚLTIMO: colliders/entidades já derivaram
+  // ── Merge estático (SPEC-0120) — POR ÚLTIMO: colliders/entidades já derivaram
   // dos nós individuais; daqui pra frente só o render enxerga a fusão. Default:
   // liga no host nativo (CPU-bound por draw call), fica fora no browser/Studio
   // (o editor F2 seleciona/move objetos individuais).
@@ -1000,7 +1000,7 @@ async function instantiate(
   // têm essa marca → o Inspector bloqueia, pra não enganar com edição que se perde.
   (obj.userData as Record<string, unknown>)['cortexSceneNode'] = true;
   // Guarda o DEF do nó (referência, custo zero): o editor usa pra duplicar o
-  // objeto com tudo (url, scripts, collider…) — CTRL+C/CTRL+V (ADR-0095).
+  // objeto com tudo (url, scripts, collider…) — CTRL+C/CTRL+V (SPEC-0095).
   (obj.userData as Record<string, unknown>)['cortexNodeDef'] = node;
   return obj;
 }
@@ -1233,7 +1233,7 @@ function makePrimitive(node: Extract<SceneNode, { type: 'primitive' }>): Mesh {
 }
 
 /**
- * Cria o mesh de um nó `mesh` (blockout editável — ADR-0071). Precedência da
+ * Cria o mesh de um nó `mesh` (blockout editável — SPEC-0071). Precedência da
  * geometria: `geomOverride` (overlay do editor) > geometria explícita do nó
  * (`positions`/`faces`) > receita `shape` > cubo default. Flat-shaded + DoubleSide
  * (look facetado, sem fragilidade de winding). Os **mapas de picking** e a malha
@@ -1264,7 +1264,7 @@ function makeEditableMesh(node: Extract<SceneNode, { type: 'mesh' }>, geomOverri
 }
 
 /**
- * **Vegetação instanciada** (ADR-0077): carrega o `.glb` do `model` (ou um placeholder
+ * **Vegetação instanciada** (SPEC-0077): carrega o `.glb` do `model` (ou um placeholder
  * procedural se omitido), cria a {@link Vegetation} (uma {@link InstancedMesh} por
  * sub-malha) e espalha as `instances` do nó. O controlador fica em
  * `group.userData.cortexVegetation` — o pincel do editor espalha/apaga por ali.

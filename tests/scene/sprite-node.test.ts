@@ -1,7 +1,7 @@
 /**
  * Testes do nó `sprite` data-driven no SceneBuilder: instancia sprite estático
  * e animado (spritesheet), e — com `world` — acopla o SpriteAnimationComponent
- * a uma entidade ECS e liga o SpriteAnimationSystem sob demanda. Ver ADR-0057.
+ * a uma entidade ECS e liga o SpriteAnimationSystem sob demanda. Ver SPEC-0057.
  *
  * `loadTexture` é mockado (sem fs/rede): devolve uma Texture com `image` de
  * dimensões fixas, o suficiente pra grade de frames e tamanho do quad.

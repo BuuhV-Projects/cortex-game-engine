@@ -1,5 +1,5 @@
 /**
- * Mouse/toque no UiLayer (ADR-0133) — hit-test único que vale pros DOIS
+ * Mouse/toque no UiLayer (SPEC-0133) — hit-test único que vale pros DOIS
  * backends (DOM no browser, RendererUiBackend no host nativo). Os testes rodam
  * em Node sem jsdom: instalamos um `window` fake (EventTarget) e disparamos
  * eventos de ponteiro com `clientX/clientY` — exatamente o formato que o host
@@ -31,7 +31,7 @@ function click(x: number, y: number): void {
   firePointer('pointerup', x, y);
 }
 
-describe('UiLayer — mouse/toque (ADR-0133)', () => {
+describe('UiLayer — mouse/toque (SPEC-0133)', () => {
   beforeEach(() => {
     // `window` fake: o UiLayer anexa os listeners de ponteiro nele.
     (globalThis as unknown as { window: EventTarget }).window = new EventTarget();
@@ -129,7 +129,7 @@ describe('UiLayer — mouse/toque (ADR-0133)', () => {
     expect(pressed).toBe(0);
   });
 
-  it('converte coordenadas de tela → design pela escala (ADR-0129)', () => {
+  it('converte coordenadas de tela → design pela escala (SPEC-0129)', () => {
     // 4K (escala 2): design = client ÷ 2. Botão central 200×40 no design 1920×1080
     // → rect [860..1060]×[520..560]; em coordenadas de TELA isso é ×2.
     const layer = new UiLayer(stubBackend(), () => ({ width: 3840, height: 2160 }));

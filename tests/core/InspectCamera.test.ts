@@ -1,5 +1,5 @@
 /**
- * Testes da câmera de inspeção (src/core/InspectCamera.ts — ADR-0131): pose/órbita
+ * Testes da câmera de inspeção (src/core/InspectCamera.ts — SPEC-0131): pose/órbita
  * corretas, auto-enquadramento pelo bbox da cena, e o filtro que ignora helpers do
  * editor (outra layer) e backdrops gigantes (skybox) no enquadramento automático.
  */

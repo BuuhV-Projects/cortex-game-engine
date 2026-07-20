@@ -45,7 +45,7 @@ describe('layout — âncoras (mesma matemática nos 2 backends, ADR-0102)', () 
   });
 });
 
-describe('UiLayer — escala responsiva por resolução (ADR-0129)', () => {
+describe('UiLayer — escala responsiva por resolução (SPEC-0129)', () => {
   it('uiScale: 1080p → 1, 4K → 2, 720p → ~0.667 (com limites)', () => {
     expect(uiScale({ width: 1920, height: 1080 })).toBe(1);
     expect(uiScale({ width: 3840, height: 2160 })).toBe(2);
@@ -92,7 +92,7 @@ describe('UiLayer — escala responsiva por resolução (ADR-0129)', () => {
 });
 
 describe('UiLayer — painel `fill` acompanha o viewport (resize/fullscreen)', () => {
-  it('redimensiona o painel fill pro viewport de DESIGN (ADR-0129)', () => {
+  it('redimensiona o painel fill pro viewport de DESIGN (SPEC-0129)', () => {
     // 1080p → escala 1, o design é igual ao real.
     let viewport = { width: 1920, height: 1080 };
     const layer = new UiLayer(stubBackend(), () => viewport);

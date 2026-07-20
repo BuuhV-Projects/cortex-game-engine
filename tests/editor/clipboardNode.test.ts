@@ -1,5 +1,5 @@
 /**
- * Testes do clipboard de nós (CTRL+C/CTRL+V, ADR-0095) — `buildPastedNode`:
+ * Testes do clipboard de nós (CTRL+C/CTRL+V, SPEC-0095) — `buildPastedNode`:
  * id novo, transform explícito (offset X/Z + rotação/escala do original),
  * sem `place`, sem singletons de gameplay (`player`/`character`), extras
  * (scripts/collider) preservados, e sem mutação do def de origem.

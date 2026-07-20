@@ -153,7 +153,7 @@ guardLocks('runtime', () => {
   }
 });
 
-// Ícone + nome de exibição no launcher.exe (ADR-0127): se o jogo declara um
+// Ícone + nome de exibição no launcher.exe (SPEC-0127): se o jogo declara um
 // `icon` no cortex.json, deriva o .ico e embute (com ProductName/FileDescription
 // = nome). Best-effort — falha aqui não derruba o export (o exe só fica com o
 // ícone/identidade padrão do host).
@@ -238,7 +238,7 @@ guardLocks('assets', () => {
   }
   const iniSrc = path.join(gameDir, 'config.ini');
   if (fs.existsSync(iniSrc)) fs.copyFileSync(iniSrc, path.join(dist, 'config.ini'));
-  // Idiomas (ADR-0124): .txt soltos em dist-native/languages/ — de propósito
+  // Idiomas (SPEC-0124): .txt soltos em dist-native/languages/ — de propósito
   // fora do assets.pak, pra qualquer um traduzir/editar sem rebuild.
   const languagesDir = path.join(gameDir, 'languages');
   if (fs.existsSync(languagesDir)) {

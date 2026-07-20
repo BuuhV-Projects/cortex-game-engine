@@ -1,10 +1,10 @@
 import { t } from './i18n'
 
 /**
- * Modal "Configurações do jogo" (ADR-0128): registra a IDENTIDADE do jogo no
+ * Modal "Configurações do jogo" (SPEC-0128): registra a IDENTIDADE do jogo no
  * `cortex.json` — nome de exibição + ícone (PNG). O nome serve PC (título da
  * janela, Meus Programas) e console (DefaultDisplayName); o ícone é embutido no
- * `launcher.exe` no export (ADR-0127) e alimenta o atalho quando o instalador
+ * `launcher.exe` no export (SPEC-0127) e alimenta o atalho quando o instalador
  * chegar. O `id` (chave de saves) NÃO é editável — é estável por design.
  *
  * Segue o molde do ExportProgressModal: `<dialog>.showModal()` com backdrop

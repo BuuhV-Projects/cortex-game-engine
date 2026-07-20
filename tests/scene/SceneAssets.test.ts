@@ -1,7 +1,7 @@
 /**
  * Testes dos helpers de posicionamento (src/scene/SceneAssets.ts).
  * Cobre: getWorldBounds (medição), placeOnGround (assenta base em y, centra em
- * x/z, aplica rotY/scale) e setShadows. Ver ADR-0039/0040.
+ * x/z, aplica rotY/scale) e setShadows. Ver SPEC-0039/0040.
  */
 import { describe, it, expect } from 'vitest';
 import { Mesh, BoxGeometry, MeshStandardMaterial, Group, Object3D } from 'three';

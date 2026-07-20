@@ -3,6 +3,22 @@
 Instruções específicas deste projeto. Decisões de arquitetura/tooling ficam em
 `docs/adrs/` (ADR) e `docs/tdrs/` (TDR) — leia os relevantes antes de mudar uma área.
 
+## ADR vs Spec (`docs/adrs/` vs `docs/specs/`)
+
+- **ADR** (`docs/adrs/`, prefixo `ADR-NNNN`) — registra uma **decisão** onde havia
+  alternativas reais pesadas: o núcleo é a **escolha** e o racional/trade-offs
+  (tecnologia, padrão estrutural, design de API, princípio de camada). Formato
+  mental: "escolhemos X em vez de Y por causa de Z".
+- **Spec** (`docs/specs/`, prefixo `SPEC-NNNN`) — **especifica** como uma
+  feature/subsistema funciona ou foi construído (comportamento, formato de dado,
+  fluxo de UI, detalhes de implementação), **sem** uma bifurcação arquitetural
+  real. É documentação do que foi construído, não do porquê-esta-abordagem.
+
+Ambos usam o mesmo template (Contexto/Decisão/Consequências) e o **mesmo espaço de
+numeração** (o número é preservado ao reclassificar; o prefixo `ADR-`/`SPEC-`
+desambigua). Ao criar um registro novo, escolha a pasta pelo critério acima; na
+dúvida (contém uma escolha arquitetural real dentro de uma spec), fica como ADR.
+
 ## Logging: use `debug(escopo, …)`, não `console.log`
 
 Sempre instrumente com o logger `debug()` de `src/core/debug.ts` (desligado por

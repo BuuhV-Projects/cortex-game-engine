@@ -1,5 +1,5 @@
 /**
- * **Clipboard de nós do editor** (CTRL+C/CTRL+V, ADR-0095) — a parte PURA:
+ * **Clipboard de nós do editor** (CTRL+C/CTRL+V, SPEC-0095) — a parte PURA:
  * dado o def copiado + o transform ATUAL do objeto (pode ter sido movido no
  * gizmo), monta o `SceneNode` da cópia, pronto pro `addSceneNode` + `data.added`.
  */

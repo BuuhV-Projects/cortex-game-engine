@@ -1,4 +1,4 @@
-// Repro mínima da pintura de textura do terreno (ADR-0063), fora do editor:
+// Repro mínima da pintura de textura do terreno (SPEC-0063), fora do editor:
 // cria o Terrain real, esculpe, pinta uma camada com textura xadrez (data URL)
 // e renderiza — pra validar o blend de splat por screenshot (Chrome headless).
 // USA O MESMO RENDERER DO ENGINE (WebGPURenderer, node-based) — onBeforeCompile

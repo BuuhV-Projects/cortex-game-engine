@@ -1,5 +1,5 @@
 /**
- * Testes unitários do GameConfig (src/i18n/GameConfig.ts) — ADR-0124.
+ * Testes unitários do GameConfig (src/i18n/GameConfig.ts) — SPEC-0124.
  * Cobre: parse/serialize INI, load do config.ini (com overlay de dev no
  * localStorage), getters tipados e save (shim nativo vs localStorage).
  */

@@ -22,7 +22,7 @@ EventTarget + classe CustomEvent no prelude. Zero C++.
 - `window.addEventListener('keydown'/'pointerdown')` (RushSystem, RushAudio,
   MainMenu) e `InputManager.attach(document.body)` do engine.
 - `navigator.getGamepads()` (MainMenu + GamepadManager do engine —
-  gamepad-first, ADR-0078).
+  gamepad-first, SPEC-0078).
 - Shim: eventos SDL3 → despachar keydown/keyup/pointerdown no event bus do
   item 1; Gamepad API sobre SDL_Gamepad (mapeamento de botões já padronizado
   pelo SDL).

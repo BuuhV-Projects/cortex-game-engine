@@ -120,7 +120,7 @@ export class RendererUiBackend implements UiBackend {
   private readonly _camera = new THREE.OrthographicCamera(0, 1, 0, -1, -10, 10);
   private readonly _visuals = new Map<number, WidgetVisual>();
   private readonly _quad = new THREE.PlaneGeometry(1, 1);
-  /** Viewport de DESIGN (frustum da câmera ortográfica). Ver ADR-0129. */
+  /** Viewport de DESIGN (frustum da câmera ortográfica). Ver SPEC-0129. */
   private _viewport: UiViewport = { width: 0, height: 0 };
   /** Escala do espaço de design pra tela real (região/RT = design × escala). */
   private _scale = 1;
@@ -167,7 +167,7 @@ export class RendererUiBackend implements UiBackend {
   render(): void {
     if (this._viewport.width === 0) return;
     // Câmera no espaço de DESIGN; região/RT no espaço REAL (design × escala) — o
-    // design estica pra tela toda, então a UI cresce junto (4K/TV). ADR-0129.
+    // design estica pra tela toda, então a UI cresce junto (4K/TV). SPEC-0129.
     const realW = this._viewport.width * this._scale;
     const realH = this._viewport.height * this._scale;
     // Cor de UI (sRGB autorada) fica FORA do tone mapping do jogo pelos materiais

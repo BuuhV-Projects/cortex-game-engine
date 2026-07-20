@@ -404,7 +404,7 @@ export class FileTree {
     // Drag para mover (arquivos e pastas). Modelos 3D também carregam o MIME de
     // asset com a URL relativa ao projeto — soltar no viewport do Preview adiciona
     // o modelo à cena onde o mouse aponta (o editor no iframe trata o drop; DnD
-    // nativo cruza a fronteira do iframe). ADR-0090.
+    // nativo cruza a fronteira do iframe). SPEC-0090.
     label.draggable = true
     label.addEventListener('dragstart', (e) => {
       e.dataTransfer?.setData('text/plain', entry.path)

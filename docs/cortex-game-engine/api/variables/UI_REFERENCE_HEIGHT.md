@@ -14,4 +14,4 @@ Defined in: [src/ui/runtime/layout.ts:51](https://github.com/BuuhV-Projects/cort
 HUD, diálogos) são autoradas contra esta altura — a config default do engine é
 1920×1080 (ver [uiScale](../functions/uiScale.md)). O layout roda SEMPRE neste espaço "de design"
 e o backend estica pro viewport real, então a UI cresce junto com a tela (não
-fica minúscula num 4K nem gigante num 720p). Ver ADR-0129.
+fica minúscula num 4K nem gigante num 720p). Ver SPEC-0129.

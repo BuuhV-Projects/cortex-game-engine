@@ -12,7 +12,7 @@ confusa (inclui normal maps, faixas com alpha, etc.). Na prática o usuário esc
 texturas erradas (ex.: uma faixa de interseção como superfície de pista) e o resultado
 ficava feio.
 
-Já criamos um **modal com grade de miniaturas** (`EditorTexturePicker`, ADR-0072) pra a
+Já criamos um **modal com grade de miniaturas** (`EditorTexturePicker`, SPEC-0072) pra a
 superfície da estrada e funcionou bem. Faz sentido **padronizar**: toda seleção de textura
 no editor usa o mesmo modal com preview.
 
@@ -44,7 +44,7 @@ não dropdown de nomes. Regras:
 - **Padrão pra novas features:** ao adicionar qualquer seleção de textura, exponha
   `pickX?(obj)` na Api + botão no `EditorModel` + curadoria da lista no `attachEditor`.
   **Não** adicionar novos `select` de nomes de textura.
-- Migrados nesta decisão: **estrada** (`RoadApi.pickSurface`, ADR-0072) e **terreno**
+- Migrados nesta decisão: **estrada** (`RoadApi.pickSurface`, SPEC-0072) e **terreno**
   (`TerrainApi.pickTexture`). O dropdown fica só como **fallback** se o picker não for
   injetado (ex.: testes/uso headless da Api).
 - O modal carrega miniaturas sob demanda (`loading=lazy`); se algum pack tiver imagens

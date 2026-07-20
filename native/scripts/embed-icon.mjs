@@ -1,4 +1,4 @@
-// Ícone + identidade no launcher.exe (ADR-0127). Recebe o PNG-fonte do jogo
+// Ícone + identidade no launcher.exe (SPEC-0127). Recebe o PNG-fonte do jogo
 // (cortex.json `icon`), deriva um .ico multi-tamanho (png-to-ico redimensiona
 // pros tamanhos padrão do Windows) e embute no exe junto do ProductName/
 // FileDescription (= nome de exibição) via rcedit — o que aparece no Explorer

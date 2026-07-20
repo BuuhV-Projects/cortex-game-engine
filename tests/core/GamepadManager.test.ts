@@ -320,7 +320,7 @@ describe('GamepadManager', () => {
 
   // ── Reconexão via eventos do window (Chromium/Electron) ────────────────────
   // O Chromium só re-expõe o pad em getGamepads() após `gamepadconnected`; o
-  // manager ouve esse evento e re-sincroniza na hora (ADR-0067).
+  // manager ouve esse evento e re-sincroniza na hora (SPEC-0067).
 
   it('redetecta o pad ao receber `gamepadconnected` do window', () => {
     const win = new EventTarget();

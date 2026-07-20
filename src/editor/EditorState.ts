@@ -24,7 +24,7 @@ export interface EditorState {
    */
   sculptingTerrain: boolean;
   /**
-   * **Modo de edição de malha** (blockout/ProBuilder — ADR-0071). `object` (default)
+   * **Modo de edição de malha** (blockout/ProBuilder — SPEC-0071). `object` (default)
    * = seleção/gizmo normal de objeto; `vertex`/`edge`/`face` = edição de elementos
    * da malha selecionada (o {@link MeshEditSystem} assume o clique/gizmo e o
    * {@link ObjectEditSystem} cede). Só faz sentido com `active === true`.

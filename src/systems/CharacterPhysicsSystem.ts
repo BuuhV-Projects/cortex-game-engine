@@ -246,7 +246,7 @@ export class CharacterPhysicsSystem extends System {
       // O chão é o raycast pra baixo (acima); aqui o personagem é EMPURRADO pra fora
       // de geometria marcada SÓLIDA (`cortexSolid` — estático/collider, posto pelo
       // buildScene). Faz o blockout virar parede de verdade no FPS/top-down. Amostra
-      // 3 alturas da cápsula em ±X/±Z e depenetra por eixo. Ver ADR-0071 / TDR-0002.
+      // 3 alturas da cápsula em ±X/±Z e depenetra por eixo. Ver SPEC-0071 / TDR-0002.
       if (this.solidMeshes.length > 0) {
         const r = c.radius;
         const feetY = t.y - c.footOffset;

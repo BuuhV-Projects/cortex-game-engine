@@ -10,7 +10,7 @@ Defined in: [src/core/Physics.ts:96](https://github.com/BuuhV-Projects/cortex-ga
 
 Componente que define o volume de colisão da entidade.
 
-Suporta múltiplas formas via `shape` (ADR-0027): box, sphere, cylinder,
+Suporta múltiplas formas via `shape` (SPEC-0027): box, sphere, cylinder,
 capsule. O centro do collider é `RigidBodyComponent.position + shape.offset`.
 Padrão: cubo 1×1×1 sem offset.
 
@@ -120,7 +120,7 @@ Defined in: [src/core/Physics.ts:108](https://github.com/BuuhV-Projects/cortex-g
 Dimensões totais do bounding box (largura × altura × profundidade).
 
 Getter deriva do `shape` atual; setter substitui `shape` por um box.
-Mantido pra compatibilidade com código pré-ADR-0027.
+Mantido pra compatibilidade com código pré-SPEC-0027.
 
 ##### Returns
 

@@ -121,7 +121,7 @@ export function attachEditor(game: Game): GameEditor {
   const editorState = createEditorState();
   const selection = createEditorSelection();
 
-  // Câmera de inspeção (ADR-0131) exposta pra a tool de playtest do Chat IA: a IA
+  // Câmera de inspeção (SPEC-0131) exposta pra a tool de playtest do Chat IA: a IA
   // orbita/posiciona livremente por `window.__cortexInspect` e o Game renderiza
   // por essa câmera (independe de play/edit; sem HUD/gizmos). Fica no bundle de
   // dev (que o playtest sempre carrega); as chamadas de órbita usam a cena ATIVA.
@@ -334,7 +334,7 @@ export function attachEditor(game: Game): GameEditor {
     debug('editor', 'writeBack', obj.name || '(sem nome)', 'entidade?', matched, 'rotY', obj.rotation.y.toFixed(3));
   };
 
-  // Seleção por INSTÂNCIA de vegetação (ADR-0077 fase 3): clicar numa árvore mostra a
+  // Seleção por INSTÂNCIA de vegetação (SPEC-0077 fase 3): clicar numa árvore mostra a
   // caixa só nela; selecionar o grupo mostra em todas; Delete remove a árvore clicada.
   // `deleteVegInstance` é late-bound (a autoria de vegetação nasce mais abaixo).
   const vegGizmo = new VegetationGizmoSystem(editorState, three);
@@ -374,7 +374,7 @@ export function attachEditor(game: Game): GameEditor {
     },
   };
 
-  const history = new CommandStack(); // CTRL+Z (ADR-0084) — fase 1: transform/add/delete
+  const history = new CommandStack(); // CTRL+Z (SPEC-0084) — fase 1: transform/add/delete
   const objectEditSystem = new ObjectEditSystem(
       editorState,
       editorCamera,
@@ -422,7 +422,7 @@ export function attachEditor(game: Game): GameEditor {
   };
 
   // CTRL+Z desfaz / CTRL+SHIFT+Z (ou CTRL+Y) refaz; CTRL+C copia / CTRL+V cola
-  // (ADR-0095) — só no editor, fora de campos de texto.
+  // (SPEC-0095) — só no editor, fora de campos de texto.
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', (e) => {
       if (!editorState.active || !(e.ctrlKey || e.metaKey)) return;
@@ -745,7 +745,7 @@ export function attachEditor(game: Game): GameEditor {
   const matteApi = createMatteApi(authoring);
   const materialApi = createMaterialApi(authoring);
 
-  // ── Blockout (ProBuilder — ADR-0071): autoria de forma + edição de elementos ──
+  // ── Blockout (ProBuilder — SPEC-0071): autoria de forma + edição de elementos ──
   const meshAuthoring = createMeshApi(authoring);
   let terrainTextures: TextureItem<string>[] = [];
   let vegModels: TextureItem<string>[] = []; // modelos de vegetação (.glb) com thumbnail
@@ -860,7 +860,7 @@ export function attachEditor(game: Game): GameEditor {
   game.canvas.addEventListener('pointerup', endTerrainPaint);
   game.canvas.addEventListener('pointerleave', endTerrainPaint);
 
-  // ── Vegetação: pincel de espalhar (ADR-0077) ─────────────────────────────────
+  // ── Vegetação: pincel de espalhar (SPEC-0077) ─────────────────────────────────
   // Raycast genérico contra os terrenos da cena (o terrainHit acima só vale na sessão
   // de esculpir). Reusa o anel do pincel (verde = espalhar, vermelho = apagar).
   const terrainMeshes = (): import('three').Object3D[] => {
@@ -965,7 +965,7 @@ export function attachEditor(game: Game): GameEditor {
     return arr;
   };
 
-  // ── Renomear objeto (ADR-0091): só nós adicionados no editor; migra as chaves
+  // ── Renomear objeto (SPEC-0091): só nós adicionados no editor; migra as chaves
   // do overlay, com undo (CTRL+Z) e toast de feedback.
   const renameApi: RenameApi = createRenameApi(authoring, {
     isAdded: (name) => addedList().some((n) => (n as { id?: string }).id === name),
@@ -1028,7 +1028,7 @@ export function attachEditor(game: Game): GameEditor {
       addModelNode(url, p);
     },
   });
-  // ── Arrastar-e-soltar asset no viewport (ADR-0090): o drag pode nascer no
+  // ── Arrastar-e-soltar asset no viewport (SPEC-0090): o drag pode nascer no
   // painel Add (standalone) ou na árvore de arquivos da IDE — DnD nativo cruza a
   // fronteira do iframe, então o drop é tratado AQUI (uma implementação só). O
   // modelo nasce onde o mouse aponta: raycast na geometria da cena (pousa na
@@ -1087,7 +1087,7 @@ export function attachEditor(game: Game): GameEditor {
       .catch(() => addPanel.setAssets([]));
   }
 
-  // ── Picker "Adicionar modelo (.glb)" (ADR-0093): modal com busca listando TODOS
+  // ── Picker "Adicionar modelo (.glb)" (SPEC-0093): modal com busca listando TODOS
   // os .glb do projeto — escolher adiciona à frente da câmera (mesmo fluxo do
   // painel Add: persiste na overlay, seleciona, CTRL+Z). Vive no frame do jogo,
   // então funciona igual no standalone e no Studio (bridge).
@@ -1116,7 +1116,7 @@ export function attachEditor(game: Game): GameEditor {
     });
   };
 
-  // ── Blockout (ADR-0071): cria um nó `mesh`, persiste no overlay, seleciona e o
+  // ── Blockout (SPEC-0071): cria um nó `mesh`, persiste no overlay, seleciona e o
   // deixa ESTÁTICO já (via physicsApi — autoritativo: o Inspector mostra "Estático",
   // aplica o collider ao vivo e marca `cortexSolid` pra colidir com o player).
   const createMeshNode = (node: SceneNode): void => {
@@ -1257,7 +1257,7 @@ export function attachEditor(game: Game): GameEditor {
       },
     });
   };
-  // ── CTRL+C / CTRL+V (ADR-0095): duplica o modelo selecionado ─────────────────
+  // ── CTRL+C / CTRL+V (SPEC-0095): duplica o modelo selecionado ─────────────────
   // Copia o DEF do nó (userData.cortexNodeDef — vale pra nó do código/JSON E pra
   // adicionado no editor) + o transform ATUAL do Object3D. Colar cria um nó
   // `added` (mesmo caminho do drag-and-drop): persiste no overlay, seleciona e
@@ -1326,7 +1326,7 @@ export function attachEditor(game: Game): GameEditor {
   addEditorSystem(shapeDrawSystem);
 
 
-  // Vegetação (ADR-0077): cria o nó `vegetation` (placeholder) e JÁ liga o pincel de
+  // Vegetação (SPEC-0077): cria o nó `vegetation` (placeholder) e JÁ liga o pincel de
   // espalhar — o usuário clica/arrasta no terreno pra povoar.
   const createVegetationNode = (): void => {
     // Default: um .glb real de árvore (cai no placeholder se o asset faltar). O modelo
@@ -1342,7 +1342,7 @@ export function attachEditor(game: Game): GameEditor {
     });
   };
 
-  // ── "Desenhar blockout" (ADR-0093): escolhe O QUE o desenho cria — a caixa
+  // ── "Desenhar blockout" (SPEC-0093): escolhe O QUE o desenho cria — a caixa
   // paramétrica (padrão) ou um .glb que SE MOLDA à caixa desenhada (o preview do
   // próprio modelo escala ao vivo durante o arrasto; ver ShapeDrawSystem.setModel).
   const openDrawBlockoutPicker = (): void => {

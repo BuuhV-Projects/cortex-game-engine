@@ -23,7 +23,7 @@ export interface InteractionSystemOptions {
 }
 
 /**
- * **Sistema de interação** (ADR-0080): a cada frame acha o {@link InteractionComponent}
+ * **Sistema de interação** (SPEC-0080): a cada frame acha o {@link InteractionComponent}
  * **mais próximo** do interator ativo dentro do seu `range`, avisa a HUD via `onPrompt`
  * e dispara `onInteract` na borda do botão/tecla. Genérico e reusável (carro, NPC,
  * porta, item) — a posição do interator e o render do prompt são injetados pelo jogo,

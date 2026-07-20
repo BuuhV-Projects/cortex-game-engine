@@ -372,7 +372,7 @@ ipcMain.handle('fs:readFileBase64', async (_event, filePath: unknown) => {
 })
 
 // Move (renomeia) um arquivo/pasta. Usado pelo drag & drop do FileTree para
-// reorganizar itens entre pastas do projeto (ADR-0016).
+// reorganizar itens entre pastas do projeto (SPEC-0016).
 ipcMain.handle('fs:move', async (_event, src: unknown, dest: unknown) => {
   const safeSrc = validatePath(src)
   const safeDest = validatePath(dest)
@@ -380,14 +380,14 @@ ipcMain.handle('fs:move', async (_event, src: unknown, dest: unknown) => {
 })
 
 // Apaga um arquivo ou pasta recursivamente. Usado pelo menu de contexto
-// do FileTree (ADR-0016). A confirmação fica no renderer.
+// do FileTree (SPEC-0016). A confirmação fica no renderer.
 ipcMain.handle('fs:delete', async (_event, targetPath: unknown) => {
   const safePath = validatePath(targetPath)
   await rm(safePath, { recursive: true, force: false })
 })
 
 // Cria uma pasta em <dirPath>/<name>. Mesmo padrão de validação do
-// fs:createFile. Rejeita se já existir (mkdir sem recursive). ADR-0015.
+// fs:createFile. Rejeita se já existir (mkdir sem recursive). SPEC-0015.
 ipcMain.handle('fs:createDir', async (_event, dirPath: unknown, name: unknown) => {
   const safeDir = validatePath(dirPath)
   if (typeof name !== 'string' || name.trim() === '') {
@@ -1404,7 +1404,7 @@ ipcMain.handle('terminal:run', async (_event, projectDir: unknown, command: unkn
 })
 
 // Chat IA — usa @anthropic-ai/claude-agent-sdk como backend. Auth (OAuth do
-// Claude Code OU ANTHROPIC_API_KEY) é gerenciada pelo próprio SDK. ADR-0014
+// Claude Code OU ANTHROPIC_API_KEY) é gerenciada pelo próprio SDK. SPEC-0014
 // + ADR-0017 V2.
 
 // Rastreia se já houve uma chamada de query() pra cada projeto. A 2ª em

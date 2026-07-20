@@ -11,7 +11,7 @@ marca `type` no `cortex.json` e um branch no system prompt do Chat IA
 (`projectType`). Na prática a distinção era artificial: o engine é um só —
 a diferença entre um jogo 3D, 2.5D ou 2D pixel art é **qual câmera e qual
 camada de render** o código do jogo usa (perspectiva+malhas × ortográfica+
-sprites/tilemap, ADR-0051), não uma propriedade fixa do projeto. O rótulo
+sprites/tilemap, SPEC-0051), não uma propriedade fixa do projeto. O rótulo
 gravado na criação engessava: um projeto "2d" não podia evoluir pra 2.5D sem
 mexer em metadado, e o Chat IA era orientado por uma flag em vez de olhar o
 jogo real.
@@ -44,7 +44,7 @@ no código do jogo). A diferenciação por tipo de projeto foi removida:
 - Um projeto pode transitar livremente entre 3D, 2.5D e 2D — basta mudar a
   configuração de câmera (`projection`, `pixelsPerUnit`) e os assets; nada no
   metadado ou na IDE o rotula.
-- A camada 2D do engine (ADR-0051: ortográfica, sprites, tilemap) permanece
+- A camada 2D do engine (SPEC-0051: ortográfica, sprites, tilemap) permanece
   intacta — ela é capacidade, não tipo.
 - Quem quer começar 2D não ganha mais um `main.ts` ortográfico pronto na
   criação; pede pro Chat IA (que conhece a receita 2D do `engine-api.md`) ou

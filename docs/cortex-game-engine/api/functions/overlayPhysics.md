@@ -14,7 +14,7 @@ Lê `data.physics` da overlay — o **tipo de corpo autorado no Inspector** por
 nome de objeto (`{ [nome]: { type: 'none'|'static'|'character', ... } }`). É a
 fonte **autoritativa** (sobrescreve o que o código/`level.json` declara): permite
 REMOVER um collider cravado no código (`type: 'none'`), trocar pra `character`,
-etc. — pra a física ficar sempre visível/editável no Inspector (ADR-0058).
+etc. — pra a física ficar sempre visível/editável no Inspector (SPEC-0058).
 
 ## Parameters
 

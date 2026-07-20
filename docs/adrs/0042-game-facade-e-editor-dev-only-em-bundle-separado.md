@@ -5,7 +5,7 @@
 
 ## Contexto
 
-Ligar o editor (ADR-0038/0041) exigia ~50 linhas de boilerplate no `main.ts` de
+Ligar o editor (SPEC-0038/0041) exigia ~50 linhas de boilerplate no `main.ts` de
 cada projeto: criar `World`, `InputManager`, `EditorState`, `EditorSelection`,
 HUD, câmera de editor, registrar `EditorCameraSystem`/`ObjectEditSystem`,
 instanciar hierarquia/inspector e sincronizar a troca de câmera no loop. O
@@ -57,7 +57,7 @@ usa, e o editor precisa ser código do próprio jogo (não injetado).
    regra do prompt do Chat IA atualizadas (editor é automático; não montar à mão).
 
 6. **Correção de bug latente:** `VENDOR_TYPE_MODULES` não incluía
-   `SceneAssets`/`OutdoorLighting`/`Water` (ADR-0039/0040) nem `Game` — projetos
+   `SceneAssets`/`OutdoorLighting`/`Water` (SPEC-0039/0040) nem `Game` — projetos
    criados teriam tipos quebrados. Lista sincronizada com os exports do runtime;
    editor saiu dela (não é mais exportado pelo runtime).
 

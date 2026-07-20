@@ -1,5 +1,5 @@
 /**
- * Cobre o renomear-objeto do Inspector (ADR-0091): validação do nome
+ * Cobre o renomear-objeto do Inspector (SPEC-0091): validação do nome
  * (alfanumérico + hífen), a migração de TODAS as chaves do overlay e as regras
  * da api (só nós adicionados no editor; unicidade; undo hook).
  */

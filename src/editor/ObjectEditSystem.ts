@@ -137,7 +137,7 @@ export class ObjectEditSystem extends System {
      */
     private readonly editOptions?: { lock2D?: boolean; snap?: number },
     /**
-     * Seleção por INSTÂNCIA de vegetação (ADR-0077 fase 3): clicar numa árvore
+     * Seleção por INSTÂNCIA de vegetação (SPEC-0077 fase 3): clicar numa árvore
      * roteia pra cá (a vegetação é InstancedMesh, não objetos da cena). `onDelete`
      * deve devolver `true` quando consumir o Delete (apagar a instância selecionada).
      */

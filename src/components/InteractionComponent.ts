@@ -11,7 +11,7 @@ export interface InteractionOptions {
 }
 
 /**
- * **Ação de interação** padronizada (ADR-0080): marca um objeto como interagível —
+ * **Ação de interação** padronizada (SPEC-0080): marca um objeto como interagível —
  * o {@link InteractionSystem} mostra um prompt quando o player ativo chega a `range`
  * e dispara `onInteract` no botão. Genérico: serve pra entrar no carro, falar com
  * NPC, abrir porta, pegar item. A lógica concreta fica no `onInteract` (do jogo); o

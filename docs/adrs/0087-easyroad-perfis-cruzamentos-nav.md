@@ -9,7 +9,7 @@ continuam disponíveis/úteis (navegação, blockout), mas **não** são o camin
 
 DDD-61 (GTA-like policial) precisa de cidades dirigíveis. A primeira é a **Ceilândia**, dentro
 de uma **região do DF de 5000×5000m** cujo **terreno + underlay** (planta do mapa) já existem.
-O road system atual (ADR-0072/0075/0076) gera **uma fita por spline** (`sampleSpline` →
+O road system atual (SPEC-0072/0075/0076) gera **uma fita por spline** (`sampleSpline` →
 `roadRibbon` + `surfaces` + `RoadGrade`) — **sem perfil** (faixas/calçada/meio-fio), **sem
 cruzamentos**, **sem dados de navegação**. A decisão de produto (validada): **não modelar ruas
 no Blender** — estender o EasyRoad pra gerar ruas/calçadas/cruzamentos/colliders/nav, usar o

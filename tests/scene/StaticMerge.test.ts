@@ -1,5 +1,5 @@
 /**
- * Merge da geometria estática (ADR-0121): funde malhas paradas por material com
+ * Merge da geometria estática (SPEC-0121): funde malhas paradas por material com
  * transform baked; preserva `cortexSolid`; NÃO toca subárvore dinâmica (script/
  * player/animada), skinned, vegetação, terreno, água nem invisível.
  */

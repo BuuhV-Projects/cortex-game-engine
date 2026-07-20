@@ -8,7 +8,7 @@
 
 Defined in: [src/components/InteractionComponent.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L23)
 
-**Ação de interação** padronizada (ADR-0080): marca um objeto como interagível —
+**Ação de interação** padronizada (SPEC-0080): marca um objeto como interagível —
 o [InteractionSystem](InteractionSystem.md) mostra um prompt quando o player ativo chega a `range`
 e dispara `onInteract` no botão. Genérico: serve pra entrar no carro, falar com
 NPC, abrir porta, pegar item. A lógica concreta fica no `onInteract` (do jogo); o

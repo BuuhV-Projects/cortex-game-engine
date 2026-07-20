@@ -139,7 +139,7 @@ export interface MatteApi {
 }
 
 /**
- * Ponte de autoria do **material/shader** do objeto (ADR-0058): o inspector
+ * Ponte de autoria do **material/shader** do objeto (SPEC-0058): o inspector
  * escolhe o preset (standard/unlit/toon) e os parâmetros por aqui. Implementada
  * pelo `attachEditor` contra `applyMaterial` + a overlay (`data.material[nome]`),
  * pra o material ficar autorado (sobrevive ao reload). `get` devolve a config
@@ -150,7 +150,7 @@ export interface MaterialApi {
   set(obj: Object3D, config: MaterialConfig): void;
 }
 
-/** Um parâmetro editável da forma de blockout (ADR-0071), já com o valor atual. */
+/** Um parâmetro editável da forma de blockout (SPEC-0071), já com o valor atual. */
 export interface MeshShapeParam {
   key: string;
   label: string;
@@ -172,7 +172,7 @@ export interface MeshShapeState {
 }
 
 /**
- * Ponte de autoria das **malhas de blockout** (ProBuilder — ADR-0071): o inspector
+ * Ponte de autoria das **malhas de blockout** (ProBuilder — SPEC-0071): o inspector
  * lê os parâmetros da forma e os ajusta (regenera ao vivo), ou reseta a edição de
  * elementos. Implementada pelo `attachEditor` contra o nó em `overlay.data.added`
  * (receita) + `overlay.data.geometry[nome]` (override de geometria). `get` devolve
@@ -246,7 +246,7 @@ export interface TerrainApi {
   pickTexture?(obj: Object3D): void;
 }
 
-/** Estado da vegetação selecionada (pincel de espalhar — ADR-0077). `null` se não é. */
+/** Estado da vegetação selecionada (pincel de espalhar — SPEC-0077). `null` se não é. */
 export interface VegetationEditState {
   /** Pincel ativo nesta vegetação? */
   painting: boolean;
@@ -268,7 +268,7 @@ export interface VegetationEditState {
 }
 
 /**
- * Ponte de autoria da **vegetação** (ADR-0077): o inspector liga/desliga o pincel de
+ * Ponte de autoria da **vegetação** (SPEC-0077): o inspector liga/desliga o pincel de
  * espalhar e ajusta raio/densidade/escala. Implementada pelo `attachEditor` contra a
  * {@link Vegetation} (em `userData.cortexVegetation`); as instâncias persistem no nó
  * (`data.added`). `get` devolve `null` se o objeto não é vegetação.
@@ -499,7 +499,7 @@ export interface EditorInspectorOptions {
   animationApi?: AnimationApi;
   /** Opcional: mapa ação→clipe do player (idle/run/jump/…). Ver {@link PlayerAnimationsApi}. */
   playerAnimationsApi?: PlayerAnimationsApi;
-  /** Opcional: renomear objetos adicionados no editor (ADR-0091). Ver {@link RenameApi}. */
+  /** Opcional: renomear objetos adicionados no editor (SPEC-0091). Ver {@link RenameApi}. */
   renameApi?: RenameApi;
   /** Opcional: persistência dos toggles de sombra (data.shadow). Ver {@link ShadowApi}. */
   shadowApi?: ShadowApi;

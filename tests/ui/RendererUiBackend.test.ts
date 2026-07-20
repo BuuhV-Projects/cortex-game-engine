@@ -78,7 +78,7 @@ describe('RendererUiBackend — composição em gama via host (ADR-0105)', () =>
     expect(blendOf(backend, panel.id)).toBe(NormalBlending);
   });
 
-  it('escala (ADR-0129): câmera no design, região de render = design × escala (tela real)', () => {
+  it('escala (SPEC-0129): câmera no design, região de render = design × escala (tela real)', () => {
     let region: { width: number; height: number } | null = null;
     const target: UiRenderTarget = {
       renderViewport: (_s, _c, vp) => {

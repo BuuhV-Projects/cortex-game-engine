@@ -32,7 +32,7 @@ Modelo **MonoBehaviour-lite**:
 - **Inspector**: seção **"Scripts"** — "+ Adicionar Script" (dropdown dos registrados),
   campos renderizados pelo schema (number/checkbox/select/vec3) e botão remover. **Tudo ao
   vivo** (muta a instância em execução) + persiste em `data.scripts[id]` (`ScriptApi`/
-  `ScriptAuthoring`). Undo do add/delete de nó (ADR-0084) já cobre `scripts` (em CONCERN_KEYS).
+  `ScriptAuthoring`). Undo do add/delete de nó (SPEC-0084) já cobre `scripts` (em CONCERN_KEYS).
 
 ## Consequências
 

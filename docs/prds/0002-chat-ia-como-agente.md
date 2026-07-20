@@ -107,4 +107,4 @@ rejeitado antes de qualquer operação ser executada.
 
 - ADR-0017 — Tool use com sandbox de projeto.
 - ADR-0018 — Confirmação de ações destrutivas no chat.
-- ADR-0019 — Integração das ferramentas de geração (Script/Blender).
+- SPEC-0019 — Integração das ferramentas de geração (Script/Blender).

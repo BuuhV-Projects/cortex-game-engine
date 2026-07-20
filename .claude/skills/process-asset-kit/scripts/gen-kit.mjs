@@ -24,7 +24,7 @@ function classify(name) {
   const n = name.toLowerCase();
   const R = (role, tags, gameplayRole = [], extra = {}) => ({ role, tags, gameplayRole, ...extra });
 
-  // ── Personagem modular (ADR-0068): rig compartilhado + peças skinnadas ─────
+  // ── Personagem modular (SPEC-0068): rig compartilhado + peças skinnadas ─────
   // role `rig` = esqueleto (+clips futuros); `character-part` = peça vestível,
   // tags = [slot, ...]; compostas em runtime via composeModularCharacter.
   if (/^rig$/.test(n)) return R('rig', ['skeleton'], []);

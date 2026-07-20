@@ -48,7 +48,7 @@ necessariamente bom em level design nem quer escrever física do zero. Quer:
 
 ### V1 (este pivô — implementado)
 
-- **Primitivas de gameplay 2.5D** (ADR-0045): `Collider2DComponent` (AABB),
+- **Primitivas de gameplay 2.5D** (SPEC-0045): `Collider2DComponent` (AABB),
   `PlatformerBodyComponent`, `PlatformerPhysicsSystem` (gravidade + resolução
   AABB por eixo + plataformas one-way), `PlatformerInputSystem`,
   `FollowCamera2DSystem` (follow XY + roll Z opcional), `setupPlatformer`.
@@ -56,7 +56,7 @@ necessariamente bom em level design nem quer escrever física do zero. Quer:
   entidades ECS via `buildScene(..., { world })`.
 - **Template plataforma:** `main.ts` com `Game` + `setupPlatformer` + `buildScene`;
   `scenes/level.json` com chão, plataformas, one-way e player.
-- **Editor pausa a gameplay e grava no Transform** (ADR-0046): editar objetos de
+- **Editor pausa a gameplay e grava no Transform** (SPEC-0046): editar objetos de
   gameplay no editor "gruda" ao dar play.
 - **IA orientada a plataforma:** prompt reorientado pra "montagem de level
   (plataforma 2.5D)" + carregamento da `docs/game-design-bible` por padrão.

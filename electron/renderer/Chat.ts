@@ -61,7 +61,7 @@ type DisplayItem =
   | { kind: 'tool'; request: AiToolRequest; result: { content: string; isError: boolean } | null; el: HTMLElement | null }
 
 /**
- * Sidebar de chat IA (ADR-0014 + PRD-0002 V2).
+ * Sidebar de chat IA (SPEC-0014 + PRD-0002 V2).
  *
  * V2 — o chat agora é agente: além de respostas em texto streaming,
  * recebe tool calls do main process (ADR-0017) e renderiza cards de

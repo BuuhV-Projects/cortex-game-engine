@@ -46,7 +46,7 @@ export interface UiRect {
  * HUD, diálogos) são autoradas contra esta altura — a config default do engine é
  * 1920×1080 (ver {@link uiScale}). O layout roda SEMPRE neste espaço "de design"
  * e o backend estica pro viewport real, então a UI cresce junto com a tela (não
- * fica minúscula num 4K nem gigante num 720p). Ver ADR-0129.
+ * fica minúscula num 4K nem gigante num 720p). Ver SPEC-0129.
  */
 export const UI_REFERENCE_HEIGHT = 1080;
 

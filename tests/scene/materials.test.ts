@@ -1,5 +1,5 @@
 /**
- * Testes do sistema de materiais por objeto (src/scene/Materials.ts, ADR-0058):
+ * Testes do sistema de materiais por objeto (src/scene/Materials.ts, SPEC-0058):
  * swap não-destrutivo (unlit/toon) preservando o `map`, restauração via
  * `standard`/clearMaterial, contorno toon, e aplicação pelo buildScene.
  */

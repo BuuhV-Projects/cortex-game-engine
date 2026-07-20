@@ -13,7 +13,7 @@ estado da história. Sem isso, a maior fatia do jogo não existe.
 **Lição do ADR-0055 (Logic Bricks, revertido):** o engine só adota "comportamento como
 dado" se isso **resolver algo que código puro não resolve** e **sem conflito de
 autoridade** sobre o transform. Diálogo **passa nesse teste por outro motivo:** uma
-árvore de diálogo é **conteúdo autoral** (como um clipe de animação, ADR-0054), não um
+árvore de diálogo é **conteúdo autoral** (como um clipe de animação, SPEC-0054), não um
 grafo de lógica competindo com os Systems. O `DialogueSystem` é código (um System); o
 **dado** é só o texto/escolhas — exatamente o tipo de coisa que se quer editável fora do
 código e que a IA (Chat) sabe gerar.
@@ -58,7 +58,7 @@ Validado por Zod, igual ao `SceneDefinition`. Pode morar em asset `.json` ou ser
 - **`startDialogue(graph, opts?)`** — API pública. Qualquer disparo chama (interação do
   interação do jogo, script de gameplay, cutscene futura). **Diálogo é independente.**
 - Enquanto um diálogo está ativo, o gameplay **pausa** (padrão `pauseWhen`/flag, como o
-  editor e o multi-cena do ADR-0069 já fazem). Input vai pra UI.
+  editor e o multi-cena do SPEC-0069 já fazem). Input vai pra UI.
 
 ### 4. Estado de história (`StoryState`)
 Um store simples de **flags** (`get/set`, serializável) que `set`/`requires` leem e

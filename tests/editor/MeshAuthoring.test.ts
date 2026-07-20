@@ -1,5 +1,5 @@
 /**
- * TDD da autoria de malhas de blockout (ProBuilder — ADR-0071): editar params da
+ * TDD da autoria de malhas de blockout (ProBuilder — SPEC-0071): editar params da
  * forma regenera a malha ao vivo + persiste a receita; a edição de elementos grava
  * override em `data.geometry` (vence a receita); reset volta à forma. Sem DOM:
  * opera sobre o Object3D (Mesh) + overlay.

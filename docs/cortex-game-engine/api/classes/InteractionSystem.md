@@ -8,7 +8,7 @@
 
 Defined in: [src/systems/InteractionSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L33)
 
-**Sistema de interação** (ADR-0080): a cada frame acha o [InteractionComponent](InteractionComponent.md)
+**Sistema de interação** (SPEC-0080): a cada frame acha o [InteractionComponent](InteractionComponent.md)
 **mais próximo** do interator ativo dentro do seu `range`, avisa a HUD via `onPrompt`
 e dispara `onInteract` na borda do botão/tecla. Genérico e reusável (carro, NPC,
 porta, item) — a posição do interator e o render do prompt são injetados pelo jogo,

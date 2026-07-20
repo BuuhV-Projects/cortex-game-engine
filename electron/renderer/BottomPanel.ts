@@ -11,7 +11,7 @@ const STORAGE_KEY = 'bottomPanel_projectDir'
 const ANSI_ESCAPE_RE = /\x1b\[[0-9;]*m/g
 
 /**
- * Painel inferior com abas Console e Terminal (ADR-0010 + ADR-0012).
+ * Painel inferior com abas Console e Terminal (SPEC-0010 + ADR-0012).
  * - Console: recebe logs do `run:start` via electronAPI.onLog.
  * - Terminal: input + botão Executar; envia comandos arbitrários ao
  *   projeto via electronAPI.runTerminalCommand e exibe o output streaming.
@@ -72,7 +72,7 @@ export class BottomPanel {
       this.updateTerminalButtons()
     })
 
-    // Projeto recém-criado: roda yarn install automaticamente (ADR-0013).
+    // Projeto recém-criado: roda yarn install automaticamente (SPEC-0013).
     // Garante que projectDir está setado antes de chamar runCommand.
     document.addEventListener('project-created', (e) => {
       const { path } = (e as CustomEvent<{ path: string }>).detail
@@ -108,13 +108,13 @@ export class BottomPanel {
       void this.handleBuildInstaller({ debug: detail?.debug === true })
     })
 
-    // Menu "Projeto > Configurações do jogo" (ADR-0128): abre o modal de
+    // Menu "Projeto > Configurações do jogo" (SPEC-0128): abre o modal de
     // identidade (nome + ícone do launcher).
     document.addEventListener('project-settings-requested', () => void this.openGameSettings())
   }
 
   /**
-   * Modal "Configurações do jogo" (ADR-0128): lê a identidade resolvida do
+   * Modal "Configurações do jogo" (SPEC-0128): lê a identidade resolvida do
    * cortex.json e abre o editor de nome + ícone.
    */
   private async openGameSettings(): Promise<void> {

@@ -15,7 +15,7 @@ Diagnóstico (medido com instrumentação por-sistema no host Hermes):
    ~34 ms/frame** — juntos ~190 ms dos ~215 ms do frame (o render eram só
    ~19 ms). A causa: raycast contra **malha skinada**. O `three` computa o
    skinning **por vértice na CPU a cada raio** (`boneTransform`), e o BVH
-   (ADR-0108) pula skinned de propósito (a árvore seria da bind pose). A troca
+   (SPEC-0108) pula skinned de propósito (a árvore seria da bind pose). A troca
    do player pro `cute_player` (rig denso, 16/jul) colocou a casca cute **e o
    mannequin oculto** (raycast do three NÃO pula objeto invisível) no caminho:
    - do raycast de chão do `CharacterPhysicsSystem` (13 raios/frame, e o

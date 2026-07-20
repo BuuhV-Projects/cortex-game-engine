@@ -45,7 +45,7 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
 Camada de **comportamento por objeto** em cima do ECS: `ScriptBehavior`
 (`onStart/onUpdate(dt em s)/onDestroy` + `static fields` editáveis no Inspector) →
 `ScriptComponent` (N slots por nó) → **`ScriptHostSystem`** instancia/roda (pausa no editor).
-O jogo **auto-registra** a pasta `scripts/` no boot (ADR-0096):
+O jogo **auto-registra** a pasta `scripts/` no boot (SPEC-0096):
 `registerScripts(import.meta.glob('./scripts/*.ts', { eager: true }))` — o nome no
 Inspector/cena é o **nome do arquivo** (estilo Unity; `static scriptName` sobrepõe,
 `class.name` só em arquivo multi-script — minifica em prod!). `registerScript(nome,
@@ -75,7 +75,7 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
 - **`SceneDefinition`** (Zod) — o schema do `level.json`: nós `model`/`primitive`/
   `mesh`/`light`/`water`/`background`/`sprite`/`terrain`, cada um com campos
   (`transform`, `collider`, `player`, `character`, `rapierBody`, `material`,
-  `matte`, …). O nó **`mesh`** é a malha de blockout editável (ProBuilder, ADR-0071):
+  `matte`, …). O nó **`mesh`** é a malha de blockout editável (ProBuilder, SPEC-0071):
   carrega uma **receita de forma** (`shape`) OU geometria explícita
   (`positions`/`faces`); ver §11.
 - **`buildScene(scene, defs, opts)`** — **único ponto de instanciação**. Instancia
@@ -85,9 +85,9 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `obj.userData.cortexSceneNode = true` (o editor usa pra saber o que é
   autorável). Lê o **overlay** e aplica suas precedências. **No host nativo**,
   ao final, funde a geometria ESTÁTICA por material (`mergeStaticScene`,
-  ADR-0121; opt-out `opts.mergeStatic`) — menos draw calls, física/visual
+  SPEC-0121; opt-out `opts.mergeStatic`) — menos draw calls, física/visual
   intactos; nunca roda no Studio (o F2 precisa dos objetos individuais).
-- **Água (`Water.ts`, ADR-0131)** — nó `water`: plano PBR finito (`size`, default
+- **Água (`Water.ts`, SPEC-0131)** — nó `water`: plano PBR finito (`size`, default
   400) com cáusticas tiled animadas. **Segue a câmera** no XZ por padrão (o
   `buildScene` passa `options.camera`), então a borda quadrada fica sempre a
   `size/2` e some no fog — mar "infinito". As cáusticas ficam ancoradas ao mundo
@@ -107,11 +107,11 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `assets/scene-data.json` — **um arquivo POR FASE** em jogos multi-fase, senão
   `added`/`deleted` vazam entre fases e o auto-save de uma sobrescreve a outra;
   o jogo define o caminho após escolher a fase e ANTES do `buildScene`,
-  ADR-0094) — as edições do editor:
+  SPEC-0094) — as edições do editor:
   `objects[id]` (transform exato) + `data.*` por concern:
   `deleted`, `added`, `colliders`, `physics`, `matte`, `material`, `terrain`
-  (heightmap), `terrainPaint` (pintura de textura/splat, ADR-0063), `animation`,
-  `playerAnimations`. **Precedência: overlay > nó/código** (ADR-0058) —
+  (heightmap), `terrainPaint` (pintura de textura/splat, SPEC-0063), `animation`,
+  `playerAnimations`. **Precedência: overlay > nó/código** (SPEC-0058) —
   o `buildScene` lê `editorX[id] ?? node.X`. Ex.: `data.physics[id].type` é
   autoritativo (dá pra desligar/trocar física cravada no JSON).
 
@@ -120,15 +120,15 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
 - **`attachEditor(game)`** — o **compositor**: cria câmera livre, gizmo, outliner,
   HUD, o **overlay** (semeado de `game.sceneDataUrl` — ⚠️ **substitui
   `overlay.data`**, ver §8; re-semeia e retroca o writer quando o jogo muda o
-  `sceneDataUrl`, ADR-0094), o `persist` (salva o overlay) e instancia as
+  `sceneDataUrl`, SPEC-0094), o `persist` (salva o overlay) e instancia as
   **autorias**.
 - **Autorias** (`src/editor/authoring/`, ADR-0060) — cada concern numa factory
   `createXApi(ctx)` que mexe **só no seu pedaço** do overlay e aplica ao vivo:
   `MatteAuthoring`, `MaterialAuthoring`, `PhysicsAuthoring`, `ColliderAuthoring`
   (+ heightfield injetado), `TerrainAuthoring` (pincel com **modo**: esculpir altura
-  ou **texturizar/pintar** — escolhe/importa textura, ADR-0063), `AnimationAuthoring`,
+  ou **texturizar/pintar** — escolhe/importa textura, SPEC-0063), `AnimationAuthoring`,
   `MeshAuthoring` (forma de blockout: params da receita + override de geometria; §11).
-- **Blockout / ProBuilder** (ADR-0071) — paleta de formas (`EditorShapePanel`) cria
+- **Blockout / ProBuilder** (SPEC-0071) — paleta de formas (`EditorShapePanel`) cria
   nós `mesh`; o `MeshEditSystem` faz a **edição de elementos** (vértice/aresta/face +
   extrudar) com gizmo próprio. Ver §11.
   - **`EditorAuthoringContext`** (`AuthoringContext.ts`) — o **OverlayStore**
@@ -138,7 +138,7 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   declarativo** (seções + campos + handlers), sem DOM. Fonte ÚNICA pros dois
   renderizadores: o painel in-canvas (`EditorInspector`/`EditorModelDom`) e os
   painéis nativos da IDE.
-- **Multi-seleção (ADR-0117)** — Ctrl/Cmd+click **alterna** o objeto no conjunto
+- **Multi-seleção (SPEC-0117)** — Ctrl/Cmd+click **alterna** o objeto no conjunto
   (viewport, outliner e hierarquia da IDE — a mensagem `select` da ponte leva
   `additive`). `EditorSelection.items` guarda o conjunto (último = **primário**,
   que continua em `current` — consumidores antigos seguem corretos). Gizmo no
@@ -159,25 +159,25 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   - Selects com **opções dinâmicas** (ex.: lista de texturas) entram na chave de
     estrutura dos renderizadores — senão a opção nova não aparece (o updater só
     troca o valor).
-- **Renomear objeto (ADR-0091, `RenameAuthoring`)** — seção "Objeto" do
+- **Renomear objeto (SPEC-0091, `RenameAuthoring`)** — seção "Objeto" do
   Inspector com campo de texto (kind `text`, novo nos dois renderizadores;
   commit no Enter/blur). **Só nós adicionados no editor** (id vive em
   `data.added` → sobrevive ao reload); nome validado (`[A-Za-z0-9_-]`, único) e
   o rename **migra todas as chaves do overlay** (`objects` + `NAME_KEYED_DATA`
   + `added`/`deleted`), com undo. Nó de código: nome vira nota. ⚠️ Nova chave
   de `data.*` por nome → atualizar `NAME_KEYED_DATA`.
-- **Picker "Adicionar modelo (.glb)" (ADR-0093)** — modal com busca (reusa o
+- **Picker "Adicionar modelo (.glb)" (SPEC-0093)** — modal com busca (reusa o
   `EditorTexturePicker`, que vive no frame do jogo → funciona no standalone e no
   Studio) listando todos os `.glb` do projeto; escolher adiciona pelo fluxo do
   painel Add (persiste/seleciona/CTRL+Z). Gatilhos: botão na paleta de Formas e
   menu Cena → "Adicionar modelo (.glb)…" (ponte `openModelPicker`).
-- **Copiar/colar (ADR-0095, `clipboardNode.ts`)** — CTRL+C no modelo selecionado
+- **Copiar/colar (SPEC-0095, `clipboardNode.ts`)** — CTRL+C no modelo selecionado
   captura o def do nó (`userData.cortexNodeDef`, guardado pelo `makeNode`) + o
   transform ATUAL; CTRL+V cola pelo fluxo do drag-and-drop (`addSceneNode` +
   `data.added` + CTRL+Z), com offset 1m em X/Z e sem `player`/`character`
   (singletons). Autorias por nome do original são clonadas pro nome novo.
   Só `model` (.glb) na v1; scripts/física da cópia valem no próximo Play/reload.
-- **Arrastar asset pra cena (ADR-0090, `assetDrop.ts`)** — o **posicionamento é
+- **Arrastar asset pra cena (SPEC-0090, `assetDrop.ts`)** — o **posicionamento é
   sempre do engine**: raycast da câmera do editor pelo cursor → o modelo nasce
   **na geometria sob o mouse** (ignora chrome `editorInternal`; fallback plano
   y=0), persiste em `overlay.data.added`, seleciona, CTRL+Z. Duas rotas de
@@ -215,13 +215,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   fallback, e **colisão de parede** (horizontal): depenetra a cápsula de geometria
   marcada `userData.cortexSolid` (posta pelo `buildScene` em nós **static**) por
   raycasts em ±X/±Z (`resolveWallPush`, puro/testável). É o que faz o **blockout
-  estático virar parede de verdade** no FPS (ADR-0071). ⚠️ o `FirstPersonCameraSystem`
+  estático virar parede de verdade** no FPS (SPEC-0071). ⚠️ o `FirstPersonCameraSystem`
   posiciona a câmera a partir da posição **já depenetrada** (antes de aplicar o
   movimento do frame) — senão a câmera aparecia "dentro" da parede por 1 frame.
   ⚠️ Marcar **static** (Inspector → Física) cria um Collider2D (mundo 2.5D, que o
   Character ignora) **e** a flag `cortexSolid` (que o Character usa) — é a flag que
   bloqueia o player. Pro player/NPC simples até a migração pro CharacterController do Rapier.
-  - ⚡ **Raycast acelerado por BVH** (`src/physics/raycastAccel.ts`, ADR-0108): os
+  - ⚡ **Raycast acelerado por BVH** (`src/physics/raycastAccel.ts`, SPEC-0108): os
     ~13 raycasts/frame testam a **geometria real** — O(triângulos). Num prop denso
     (ponte de corda ~2000 tris) isso derrubava o FPS **no export nativo (Hermes)**.
     `three-mesh-bvh` constrói uma árvore por geometria (>512 tris) no `collectScene` →
@@ -238,13 +238,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     Character roda no F2** — o player cai/treme editando e o autosave do editor
     persiste em **loop**. O `setupFirstPerson`/template já passam isso.
   - **Câmera/controle FPS** (`FirstPersonCameraSystem` + helper `setupFirstPerson`,
-    ADR-0064) — mouse-look (pointer lock) + WASD + pulo sobre o CharacterBody. É o
+    SPEC-0064) — mouse-look (pointer lock) + WASD + pulo sobre o CharacterBody. É o
     **demo padrão de projeto novo** (`templates/new-project/`): terreno vazio + player
     cápsula em 1ª pessoa (alinha com o "engine 3D por padrão" do ADR-0062). O
     movimento/look é **wiring de gameplay no `main.ts`** (não dado da cena); só a
     física do player (nó `character`) e o terreno (nó `terrain`) são dado.
   - **Câmera/controle 3ª pessoa** (`ThirdPersonControlSystem` + `setupThirdPerson`,
-    ADR-0074) — porta o Unity StarterAssets ThirdPerson: câmera orbital por mouse + WASD
+    SPEC-0074) — porta o Unity StarterAssets ThirdPerson: câmera orbital por mouse + WASD
     relativo à câmera + Shift corre + Espaço pula; o personagem vira pra direção do
     movimento e **anima** (idle/walk/run/jump/fall via `deriveLocomotion`/`SceneAnimator`).
     Player = nó `model` `.glb` rigado marcado `character`. ⚠️ a **arte** do StarterAssets é
@@ -298,7 +298,7 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   `playtest_game` aceita `wait_for` (expressão JS até truthy, com diagnóstico
   de recursos pendentes no timeout — em vez de inflar `waitMs` no chute) e
   `eval_js` (setup pós-boot: teleporte/câmera overview antes da foto).
-- **Câmera de inspeção no playtest** (ADR-0131): `playtest_game` aceita `camera`
+- **Câmera de inspeção no playtest** (SPEC-0131): `playtest_game` aceita `camera`
   (`{orbit:{yaw,pitch,dist,target}} | {pos,lookAt} | {fov}`) pra ver a cena de
   **qualquer ângulo**, livre da câmera de gameplay (que segue o player). Motor:
   `Game.inspect` (`src/core/InspectCamera.ts`) — câmera livre que, quando ativa,
@@ -335,7 +335,7 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   arrastar da IDE pro viewport mostra 🚫 e o `drop` nunca dispara no documento do
   jogo (em browser puro funciona). Qualquer feature de DnD IDE→viewport precisa
   capturar o drop **no documento da IDE** (overlay sobre o palco) e repassar pela
-  ponte postMessage (ver ADR-0090).
+  ponte postMessage (ver SPEC-0090).
 - **`overlay.data` é SUBSTITUÍDO no seed** do `attachEditor` (`overlay.data = f.data`,
   async). Por isso o `OverlayStore` lê `overlay.data` **dinamicamente** — capturar
   por referência fazia a autoria escrever num objeto órfão e o save perder tudo.
@@ -360,7 +360,7 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   Character é dirigido pela física, então o gizmo "briga" com ele no editor).
 - **Raycast por-frame NUNCA pode incluir `SkinnedMesh`** (ADR-0118). O `three`
   computa o skinning **por vértice na CPU a cada raio** (`boneTransform`) e o BVH
-  (ADR-0108) pula skinned de propósito — um personagem denso na cena derrubou o
+  (SPEC-0108) pula skinned de propósito — um personagem denso na cena derrubou o
   export nativo (Hermes) de ~40 pra **4,7 fps** (~190 ms/frame só de raycast), e
   o raycast do three **não pula objeto invisível** (o mannequin oculto sob a casca
   cute custava igual). Filtrar **ANTES** do `intersectObjects` (montando a lista
@@ -401,14 +401,14 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
 - **`onBeforeCompile` NÃO roda no `WebGPURenderer`** (o renderer do engine é
   node-based, mesmo no fallback `forceWebGL`) — falha **silenciosa**: sem erro, o
   efeito só não aparece. Efeito custom de shader tem que ser **TSL/NodeMaterial**
-  (`colorNode` etc.; ex.: splat do terreno, ADR-0063). Valide rendering no harness
+  (`colorNode` etc.; ex.: splat do terreno, SPEC-0063). Valide rendering no harness
   (`.design-proto/`) com `WebGPURenderer`, não com `WebGLRenderer` clássico.
 
 ## 8b. Narrativa: diálogo + UI de runtime (`src/dialogue/`, `src/narrative/`) — ADR-0070
 
 Primeiro pedaço de **UI de runtime** do engine e a base de jogos narrativos. Tudo
 **desacoplado** do resto (sem ECS, sem Three): diálogo é **dado** (como animação,
-ADR-0054), não comportamento — passa no teste do ADR-0055 (não há conflito de dono;
+SPEC-0054), não comportamento — passa no teste do ADR-0055 (não há conflito de dono;
 não escreve transform).
 
 - **`DialogueGraph`** (Zod) — grafo de conversa: nós (`text`/`speaker`/`choices`/`next`)
@@ -425,12 +425,12 @@ não escreve transform).
   liga runner+UI+teclado e devolve um handle com `active` (use em `pauseWhen`). ⚠️ O
   gameplay (WASD/mouse-look) deve **pausar/ignorar** input enquanto `active`.
 
-## 8b2. UI de runtime: escala responsiva por resolução (`src/ui/runtime/`) — ADR-0129
+## 8b2. UI de runtime: escala responsiva por resolução (`src/ui/runtime/`) — SPEC-0129
 
 A UI de runtime (ADR-0102: `UiLayer` + `DomUiBackend`/`RendererUiBackend`) posiciona
 cada widget em **px lógicos ancorados** — telas autoradas contra a resolução default
 (**1920×1080**). Como o `viewport` cresce com a tela, sem escala a UI ficava
-**minúscula em 4K** (menus, resultados, créditos, HUD). O fix (ADR-0129):
+**minúscula em 4K** (menus, resultados, créditos, HUD). O fix (SPEC-0129):
 
 - **`uiScale(viewport) = clamp(viewport.height / 1080, 0.5, 4)`** — 1080p → 1 (sem
   regressão), 4K → 2, 720p → ~0.67. Escala pela ALTURA.
@@ -447,12 +447,12 @@ cada widget em **px lógicos ancorados** — telas autoradas contra a resoluçã
 ⚠️ **Autore SEMPRE pensando em 1920×1080** — o engine cuida da escala. Não crave
 tamanhos "pra 4K" no HTML/HUD; some a portabilidade entre resoluções.
 
-## 8b3. UI de runtime: mouse/toque (`UiLayer`) — ADR-0133
+## 8b3. UI de runtime: mouse/toque (`UiLayer`) — SPEC-0133
 
 Além de gamepad/teclado, o `UiLayer` faz **hit-test de ponteiro** — um só código pros
 DOIS backends. Eventos `pointerdown`/`pointerup`/`pointermove` chegam em `window`
 (browser borbulha; o host nativo despacha via `input-bridge.js`). Conversão
-`design = client ÷ scale` (mesma escala do ADR-0129) e teste de cima pra baixo
+`design = client ÷ scale` (mesma escala do SPEC-0129) e teste de cima pra baixo
 (último widget = mais na frente):
 
 - **Clique** = down + up sobre o MESMO botão visível — aceita qualquer botão, inclusive
@@ -466,7 +466,7 @@ DOIS backends. Eventos `pointerdown`/`pointerup`/`pointermove` chegam em `window
 que só muda de cor mas mantém `onPress` **continua clicável pelo mouse** — pra desabilitar
 de fato, remova o `onPress` (ou torne-o não-visível), não só o `focusable`.
 
-## 8c. i18n + config do jogo (`src/i18n/`) — ADR-0124
+## 8c. i18n + config do jogo (`src/i18n/`) — SPEC-0124
 
 Multi-idioma e configurações do jogador, **desacoplados** de ECS/Three (tudo é
 dado, como o diálogo do §8b):
@@ -513,19 +513,19 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | Componentes / Sistemas | `src/components/` · `src/systems/` |
 | Cena data-driven | `src/scene/` (`SceneDefinition`, `SceneBuilder`) |
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
-| Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (ADR-0071) |
-| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (ADR-0077) |
+| Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (SPEC-0071) |
+| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
 
-## 11. Blockout / ProBuilder — malha de nó editável (`src/probuilder/`, ADR-0071)
+## 11. Blockout / ProBuilder — malha de nó editável (`src/probuilder/`, SPEC-0071)
 
 Ferramenta de **blockout** estilo ProBuilder da Unity: criar formas paramétricas e
 editar a malha por vértice/aresta/face no editor F2. Encaixa no princípio central
-(**cena = DADO**): a malha é conteúdo autoral, igual ao heightmap (ADR-0059).
+(**cena = DADO**): a malha é conteúdo autoral, igual ao heightmap (SPEC-0059).
 
 - **Dado puro** (`src/probuilder/`, sem editor/ECS): `EditableMesh` =
   `{ positions: Vec3[], faces: number[][] }` (faces poligonais, quads). `shapes.ts`

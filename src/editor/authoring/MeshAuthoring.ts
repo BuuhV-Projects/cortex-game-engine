@@ -15,12 +15,12 @@ interface AddedMeshNode {
 }
 
 /**
- * Autoria das **malhas de blockout** (ProBuilder — ADR-0071): edita a receita de
+ * Autoria das **malhas de blockout** (ProBuilder — SPEC-0071): edita a receita de
  * forma de um nó `mesh` (params → regenera ao vivo) e reseta a edição de elementos.
  *
  * - **Receita** vive no nó em `overlay.data.added` (criado pela paleta de Formas).
  * - **Override de geometria** (edição por vértice/face) vive em
- *   `overlay.data.geometry[nome]` e **vence** a receita (precedência do ADR-0071).
+ *   `overlay.data.geometry[nome]` e **vence** a receita (precedência do SPEC-0071).
  *
  * Também expõe `applyGeometry`/`rebuild` usados pela edição de elementos (Fase 2)
  * pra trocar a `BufferGeometry` ao vivo e manter `userData.cortexMesh` coerente.

@@ -6,7 +6,7 @@
 ## Contexto
 
 O engine agora suporta tanto **2.5D** (malhas GLB, perspectiva, PBR) quanto **2D
-pixel art** (ortográfica, sprites, tilemap — ADR-0051). Ao criar um projeto, o
+pixel art** (ortográfica, sprites, tilemap — SPEC-0051). Ao criar um projeto, o
 usuário deveria escolher o tipo e já receber o **template** e a **orientação do
 Chat IA** voltados pra isso — em vez de um template fixo 2.5D que confunde quem
 quer pixel.

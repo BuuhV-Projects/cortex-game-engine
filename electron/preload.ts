@@ -133,7 +133,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopTerminalCommand: () =>
     ipcRenderer.invoke('terminal:stop'),
 
-  // Chat IA (ADR-0014, ADR-0017)
+  // Chat IA (SPEC-0014, ADR-0017)
   chat: (
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     mode: 'ask' | 'auto' | 'plan',

@@ -9,7 +9,7 @@ Transforma um pack de **personagens 2D** (cada um com strips de animação em PN
 `<char>_idle.png`, `<char>_run.png`, `<char>_walk.png`, …) num **kit do engine**:
 uma **folha por personagem** (frames em fila) + um **`kit.json`** com a framedata
 `sprite` (frameWidth/height + animations + initial). O engine instancia via o **nó
-`sprite`** (ADR-0057): o nó referencia a `url` e herda a grade/animações do kit.
+`sprite`** (SPEC-0057): o nó referencia a `url` e herda a grade/animações do kit.
 
 **Sem Blender** — é tudo raster. Os scripts usam só `zlib` do Node (codec PNG mínimo
 em `scripts/png.mjs`, RGBA8 sem interlace). Não há bbox/escala/conversão como no 3D.

@@ -3,7 +3,7 @@ import type { SceneFileV1 } from '../../scene/SceneFile.js';
 import type { EditorAuthoringContext } from './AuthoringContext.js';
 
 /**
- * **Renomear objeto no Inspector** (ADR-0091). O nome do `Object3D` é o
+ * **Renomear objeto no Inspector** (SPEC-0091). O nome do `Object3D` é o
  * identificador estável de um nó da cena (o `buildScene` nomeia pelo `id`), e o
  * overlay do editor é TODO chaveado por ele (`objects`, `data.physics`,
  * `data.scripts`, …) — então renomear é: validar → migrar TODAS as chaves do

@@ -1,5 +1,5 @@
 /**
- * Testes da MULTI-SELEÇÃO no modelo declarativo do editor (ADR-0117):
+ * Testes da MULTI-SELEÇÃO no modelo declarativo do editor (SPEC-0117):
  * - describeOutliner marca TODOS os itens do conjunto (não só o primário);
  * - describeInspector com 2+ selecionados aplica Sombra/Matte/Shader/Física (tipo)
  *   a todos, mostrando os valores do primário — cada alvo preserva os PRÓPRIOS

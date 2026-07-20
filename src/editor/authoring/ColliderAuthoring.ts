@@ -20,7 +20,7 @@ export interface HeightfieldHooks {
 }
 
 /**
- * Autoria do **collider 2D** como propriedade do objeto (ADR-0058/0060). O collider
+ * Autoria do **collider 2D** como propriedade do objeto (SPEC-0058/0060). O collider
  * é uma entidade ECS **acoplada à mesh** (`Object3DComponent.object === obj`), então
  * movem juntos. CRUD (get/add/update/remove) persiste em `overlay.data.colliders[nome]`;
  * o `buildScene` recria no boot (overlay vence). Heightfield é injetado via

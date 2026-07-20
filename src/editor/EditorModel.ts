@@ -340,7 +340,7 @@ export function describeInspector(
     });
   }
 
-  // ── Objeto: nome (ADR-0091) ─────────────────────────────────────────────────
+  // ── Objeto: nome (SPEC-0091) ─────────────────────────────────────────────────
   // Renomeável só quando é nó ADICIONADO no editor (o id vive no overlay e o
   // rename migra todas as chaves). Nó declarado no código: nome como nota.
   if (ctx.renameApi?.isRenamable(obj)) {
@@ -465,7 +465,7 @@ export function describeInspector(
     }
   });
 
-  // ── Shader / material por objeto (ADR-0058) ──────────────────────────────────
+  // ── Shader / material por objeto (SPEC-0058) ──────────────────────────────────
   // Só pra objetos com malha (luzes/grupos vazios não têm material). Preset +
   // parâmetros; o materialApi aplica ao vivo e persiste no overlay.
   if (ctx.materialApi && mesh) {
@@ -566,7 +566,7 @@ export function describeInspector(
     sections.push({ title: 'Shader', fields });
   }
 
-  // ── Forma (blockout — ProBuilder, ADR-0071) ──────────────────────────────────
+  // ── Forma (blockout — ProBuilder, SPEC-0071) ──────────────────────────────────
   // Nó `mesh`: edita os parâmetros da receita (regenera ao vivo) ou reseta a
   // edição de elementos. Some quando o objeto não é um mesh editável.
   const meshState = ctx.meshApi?.get(obj) ?? null;
@@ -856,7 +856,7 @@ export function describeInspector(
     sections.push({ title: 'Terreno', fields });
   }
 
-  // ── Vegetação (pincel de espalhar árvores/grama — ADR-0077) ───────────────────
+  // ── Vegetação (pincel de espalhar árvores/grama — SPEC-0077) ───────────────────
   const vegState = ctx.vegetationApi?.get(obj) ?? null;
   if (ctx.vegetationApi && vegState) {
     const api = ctx.vegetationApi;
@@ -984,7 +984,7 @@ export function describeInspector(
 
   // ── Física: tipo de corpo (Nenhum/Estático/Character), estilo UPBGE ───────────
   // O "Tipo" é a fonte autoritativa e fica SEMPRE editável — inclusive pra
-  // remover/trocar física cravada no código/level.json (ADR-0058). Estático reusa
+  // remover/trocar física cravada no código/level.json (SPEC-0058). Estático reusa
   // a autoria de Collider2D; Character mostra os params da cápsula.
   if (ctx.physicsApi) {
     const papi = ctx.physicsApi;

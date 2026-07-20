@@ -87,7 +87,7 @@ export class GamepadManager extends EventTarget {
     // esse evento, o polling sozinho pode nunca redetectar o pad reconectado — daí
     // a queixa de "liguei o controle de novo e não reconecta". Os listeners forçam
     // um `poll()` imediato na (re)conexão/desconexão; o poll por frame continua
-    // sendo a fonte de verdade do estado. Ver ADR-0067. No-op fora do browser.
+    // sendo a fonte de verdade do estado. Ver SPEC-0067. No-op fora do browser.
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       window.addEventListener('gamepadconnected', this._handleConnectionChange);
       window.addEventListener('gamepaddisconnected', this._handleConnectionChange);

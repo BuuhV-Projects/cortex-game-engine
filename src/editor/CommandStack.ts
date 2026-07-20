@@ -2,7 +2,7 @@
  * Pilha de comandos (undo/redo) do editor. Cada {@link EditorCommand} sabe se desfazer
  * (`undo`) e refazer (`redo`). Ações já EXECUTADAS são empilhadas via {@link CommandStack.push};
  * `undo()` reverte a última, `redo()` refaz. Registrar uma nova ação limpa o redo (estilo
- * editor padrão). Base do CTRL+Z abrangente (ADR-0084) — começa por transform/add/delete.
+ * editor padrão). Base do CTRL+Z abrangente (SPEC-0084) — começa por transform/add/delete.
  */
 export interface EditorCommand {
   /** Rótulo curto (debug/telemetria). */

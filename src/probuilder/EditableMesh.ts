@@ -1,5 +1,5 @@
 /**
- * **Malha poligonal editável** (ProBuilder / blockout — ADR-0071).
+ * **Malha poligonal editável** (ProBuilder / blockout — SPEC-0071).
  *
  * O dado de uma malha de blockout: **vértices lógicos** (`positions`) + **faces**
  * poligonais (`faces`, índices em `positions`, geralmente quads). É a topologia
@@ -144,7 +144,7 @@ export function toBufferGeometry(mesh: EditableMesh): RenderMesh {
   return { geometry, maps: { triToFace, renderVertToVert, edges: meshEdges(mesh) } };
 }
 
-/** Elemento selecionado na edição de malha (vértice/aresta/face — ADR-0071). */
+/** Elemento selecionado na edição de malha (vértice/aresta/face — SPEC-0071). */
 export type MeshElement =
   | { mode: 'vertex'; index: number }
   | { mode: 'edge'; a: number; b: number }

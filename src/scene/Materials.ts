@@ -18,7 +18,7 @@ import {
 } from 'three';
 
 /**
- * **Sistema de materiais por objeto** (ADR-0058). Troca o material dos meshes de
+ * **Sistema de materiais por objeto** (SPEC-0058). Troca o material dos meshes de
  * um objeto por um preset selecionável (como atribuir um shader a um objeto na
  * Unity), preservando a textura de cor (`map`). O material original é cacheado em
  * `userData` no primeiro swap, então `'standard'`/{@link clearMaterial} restaura.

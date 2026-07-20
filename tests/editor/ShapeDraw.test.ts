@@ -1,5 +1,5 @@
 /**
- * Testes da parte pura do "desenhar caixa no chão" (ProBuilder New Shape — ADR-0071):
+ * Testes da parte pura do "desenhar caixa no chão" (ProBuilder New Shape — SPEC-0071):
  * `boxFromDrag` deriva centro + dimensões de dois pontos no chão + altura.
  */
 import { describe, it, expect } from 'vitest';
@@ -28,7 +28,7 @@ describe('boxFromDrag', () => {
   });
 });
 
-describe('fitModelToBox (desenhar blockout com .glb — ADR-0093)', () => {
+describe('fitModelToBox (desenhar blockout com .glb — SPEC-0093)', () => {
   // Modelo nativo 2×1×2 com pivô na base-centro (min y=0), como as peças de kit.
   const native = { min: [-1, 0, -1] as [number, number, number], max: [1, 1, 1] as [number, number, number] };
 

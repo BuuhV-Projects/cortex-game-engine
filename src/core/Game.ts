@@ -289,7 +289,7 @@ export class Game {
    * O `world` (ECS) e o input continuam os mesmos — pause os sistemas de gameplay
    * (`pauseWhen`) enquanto mostra outra cena. A cena alternativa renderiza **direto**
    * (sem o PostFX da cena do jogo). Tipicamente combinado com uma tela de loading
-   * ({@link createDomLoadingScreen}) na transição. Ver ADR-0069.
+   * ({@link createDomLoadingScreen}) na transição. Ver SPEC-0069.
    *
    * @example
    * game.setActiveScene(creatorScene, creatorCamera) // mostra o criador
@@ -338,7 +338,7 @@ export class Game {
   }
 
   /**
-   * **Câmera de inspeção** (ADR-0131): câmera de perspectiva livre pra "ver" a
+   * **Câmera de inspeção** (SPEC-0131): câmera de perspectiva livre pra "ver" a
    * cena de qualquer ângulo por código, independente da câmera do jogo (que segue
    * o player) e do modo editor. Quando ativada (`orbit`/`pose`/`frame`), o render
    * do frame passa a usá-la (cru, sem pós); `clear()` volta ao normal. Criada sob
@@ -361,7 +361,7 @@ export class Game {
     this.world.tick(deltaMs);
     this._ui?.update(dt); // navegação/sync da UI de runtime (ADR-0102)
     this._editor?.update(dt);
-    // Câmera de inspeção (ADR-0131): quando ativa VENCE tudo — render cru por ela,
+    // Câmera de inspeção (SPEC-0131): quando ativa VENCE tudo — render cru por ela,
     // de qualquer ângulo, com a gameplay seguindo (só o render muda). Usada pelo
     // playtest do Chat IA pra inspecionar a cena livremente.
     const inspectCamera = this._inspect?.active ? this._inspect : null;

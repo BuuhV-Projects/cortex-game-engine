@@ -104,7 +104,7 @@ Por ora o kit curado vive na **biblioteca de assets do usuário** (ex.:
 projeto + `kit.json`. Ao consumir num projeto, re-vendorizar conforme ADR-0009.
 **Atualize esta seção quando a Fase 1 definir o destino oficial.**
 
-## Pack de personagem modular (esqueleto compartilhado, ADR-0068)
+## Pack de personagem modular (esqueleto compartilhado, SPEC-0068)
 
 Packs tipo "character creator" (1 showroom `.glb` com TODAS as peças skinnadas num
 esqueleto único + cópias estáticas soltas) NÃO passam pela triagem/convert comum.

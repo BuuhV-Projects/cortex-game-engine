@@ -37,7 +37,7 @@ export class Preview {
   private viewportEl: HTMLElement | null = null
   /** Onde o iframe/placeholder do jogo é trocado. */
   private stageEl: HTMLElement | null = null
-  /** Overlay que captura o drop de asset sobre o palco (ADR-0090). */
+  /** Overlay que captura o drop de asset sobre o palco (SPEC-0090). */
   private dropZoneEl: HTMLElement | null = null
   /** Botão flutuante "sair da tela cheia" (o chrome some no fullscreen). */
   private exitFsBtn: HTMLElement | null = null
@@ -106,7 +106,7 @@ export class Preview {
     document.addEventListener('editor-viewport', (e) => {
       this.updateOverlay((e as CustomEvent).detail)
     })
-    // Arrastar asset da árvore → viewport (ADR-0090): o Electron NÃO entrega DnD
+    // Arrastar asset da árvore → viewport (SPEC-0090): o Electron NÃO entrega DnD
     // nativo pra dentro do iframe, então durante o drag um overlay transparente
     // cobre o palco, captura o drop e repassa (url + posição normalizada) pra
     // ponte do editor via evento (EditorPanels → postMessage `dropAsset`).

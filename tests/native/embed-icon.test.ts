@@ -1,5 +1,5 @@
 /**
- * Ícone + identidade no launcher.exe (ADR-0127, embed-icon.mjs).
+ * Ícone + identidade no launcher.exe (SPEC-0127, embed-icon.mjs).
  *
  * Cobre: (1) fallback gracioso quando o PNG não existe; (2) — no Windows, com o
  * host buildado e o toolchain instalado — o pipeline REAL: PNG → .ico

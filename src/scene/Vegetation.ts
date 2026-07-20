@@ -35,7 +35,7 @@ export interface VegetationInstance {
 export const FLOATS_PER_INSTANCE = 5;
 
 /**
- * **Vegetação instanciada** (ADR-0077): espalha muitas cópias de um modelo (árvore,
+ * **Vegetação instanciada** (SPEC-0077): espalha muitas cópias de um modelo (árvore,
  * grama, arbusto…) numa única malha por geometria via {@link InstancedMesh} — aguenta
  * milhares de instâncias com um draw call por sub-malha. As instâncias são **dado**
  * (`[x,y,z,rotY,scale]`), espalhadas pelo pincel do editor e persistidas no overlay.

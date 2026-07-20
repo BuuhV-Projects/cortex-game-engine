@@ -65,7 +65,7 @@ export function installWebGpuExtras() {
     return adapter;
   };
   globalThis.navigator.userAgent = 'CortexNative';
-  // Idioma do SO (host injeta __cortexLocale pré-boot — ADR-0124). Fiel ao
+  // Idioma do SO (host injeta __cortexLocale pré-boot — SPEC-0124). Fiel ao
   // browser: o i18n do engine lê navigator.language na primeira abertura.
   globalThis.navigator.language = globalThis.__cortexLocale || 'en';
   if (!globalThis.navigator.getGamepads) {

@@ -1,6 +1,6 @@
 # Extrai de um showroom .glb (todas as peças skinnadas num esqueleto único):
 # rig.glb (esqueleto puro) + um .glb por peça (esqueleto em bind pose + 1 mesh,
-# sem clips) — formato do composeModularCharacter (ADR-0068).
+# sem clips) — formato do composeModularCharacter (SPEC-0068).
 #
 # GOTCHA (aprendido no characters-cute): showrooms exibem as peças numa GRADE —
 # os vértices da mesh skinnada carregam o offset da vitrine, não a posição de

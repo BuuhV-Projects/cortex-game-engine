@@ -26,7 +26,7 @@ kits/<nome>/
 | `characters-base` | KayKit Adventurers: 6 heróis + armas/escudos |
 | `enemies-base` | KayKit Skeletons: inimigos + armas |
 | `backgrounds-base` | 45 backdrops 2D por tema (role `background`, parallax) |
-| `characters-cute` | Personagem modular (ADR-0068): `rig.glb` (44 bones, sem clips) + 378 peças skinnadas (16 corpos, 59 chapéus, 56 casacos, 51 costumes, cabelos, rostos/emoções…) compostas via `loadModularCharacter`; atlas externo compartilhado `Textures_4.png` |
+| `characters-cute` | Personagem modular (SPEC-0068): `rig.glb` (44 bones, sem clips) + 378 peças skinnadas (16 corpos, 59 chapéus, 56 casacos, 51 costumes, cabelos, rostos/emoções…) compostas via `loadModularCharacter`; atlas externo compartilhado `Textures_4.png` |
 | `kit-smallburg-village` | Sprites 2D top-down (village): 3 bodies + 9 premades animados (idle/walk/run × 4 direções, anims `<anim>_<dir>`) + 42 estáticos de cenário (commerce/housing/tileset) |
 
 ## Como adicionar/atualizar um kit

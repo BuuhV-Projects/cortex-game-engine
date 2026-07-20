@@ -1,5 +1,5 @@
 /**
- * window.close() no shim de DOM do host nativo (ADR-0120): tem que chamar a
+ * window.close() no shim de DOM do host nativo (SPEC-0120): tem que chamar a
  * bridge __cortexQuit do host (que empurra SDL_EVENT_QUIT e encerra o app) e
  * virar no-op silencioso quando a bridge não existe — mesmo comportamento de
  * uma aba normal de browser. Regressão do bug "Sair do menu não fecha o exe"

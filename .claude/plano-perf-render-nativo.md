@@ -10,7 +10,7 @@ render ~19 ms/frame, física+ECS ~2 ms, UI ~2 ms. Menu (sem cena) faz 250+ fps.
 
 ## Item 2 — Merge estático no export — ✅ FEITO, resultado abaixo do previsto
 
-> **Resultado medido (2026-07-17, ADR-0121):** implementado e ligado por default
+> **Resultado medido (2026-07-17, SPEC-0121):** implementado e ligado por default
 > no host nativo (`mergeStaticScene`, auto no `buildScene`). Fase 1: 57 malhas
 > → 15 grupos, física/visual intactos — mas fps foi só de 41 → ~43. Draw call
 > NÃO era o gargalo restante: com/sem merge e com SSAA 1×/2× o frame fica
@@ -160,6 +160,6 @@ A/shermes acima vira o M-perf-5, com gate por medição (JS >8 ms pós-corte NAP
 
 ---
 
-*Relacionado: ADR-0108 (BVH/KTX2), ADR-0118 (skinned raycast + clamp dt),
+*Relacionado: SPEC-0108 (BVH), ADR-0108 (KTX2), ADR-0118 (skinned raycast + clamp dt),
 ADR-0119 (UASTC+Zstd), memória native-fps-cpu-bound-render, PRD-0005
 (roadmap open-world).*

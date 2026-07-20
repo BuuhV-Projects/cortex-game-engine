@@ -1,5 +1,5 @@
 /**
- * Testes da autoria de **vegetação** (ADR-0077, fase 2): o pincel espalha/apaga
+ * Testes da autoria de **vegetação** (SPEC-0077, fase 2): o pincel espalha/apaga
  * instâncias e grava no nó (`data.added`). O wiring de ponteiro/raycast fica de fora.
  */
 import { describe, it, expect, vi } from 'vitest';

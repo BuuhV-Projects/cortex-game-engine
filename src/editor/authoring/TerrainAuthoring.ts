@@ -43,7 +43,7 @@ export interface TerrainAuthoring {
 
 /**
  * Cria a autoria de **terreno** (pincel raise/lower + pintura de textura;
- * ADR-0059/0060). Esculpe/pinta o {@link Terrain} (em `userData.cortexTerrain`) e
+ * SPEC-0059/0060). Esculpe/pinta o {@link Terrain} (em `userData.cortexTerrain`) e
  * persiste o heightmap em `overlay.data.terrain[nome]` e a pintura em
  * `overlay.data.terrainPaint[nome]` (o `buildScene` reaplica via
  * `overlayTerrain`/`overlayTerrainPaint`). A conversão world→local respeita

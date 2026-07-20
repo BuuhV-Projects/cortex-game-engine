@@ -1,5 +1,5 @@
 /**
- * Testes unitários do i18n (src/i18n/I18n.ts) — ADR-0124.
+ * Testes unitários do i18n (src/i18n/I18n.ts) — SPEC-0124.
  * Cobre: parse do arquivo de idioma (CHAVE="VALOR"), t() com params e
  * fallback, load/setLanguage/onChange e loadAuto (detecção do idioma do SO).
  */

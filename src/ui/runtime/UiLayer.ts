@@ -42,7 +42,7 @@ export class UiLayer {
     if (e.key) this._pendingKeys.push(e.key);
   };
 
-  // ── Mouse/toque (ADR-0133): funciona nos DOIS backends. No browser o
+  // ── Mouse/toque (SPEC-0133): funciona nos DOIS backends. No browser o
   // `PointerEvent` chega direto; no host nativo (RendererUiBackend) o SDL
   // dispara `pointerdown`/`pointerup` via `__cortexDispatchInput`. Como o
   // layout é o MESMO em ambos (design ÷ escala), o hit-test é um só aqui.
@@ -105,14 +105,14 @@ export class UiLayer {
    * Viewport de DESIGN da UI (px lógicos, espaço onde os widgets são posicionados)
    * — usado por layouts de template. É o viewport real dividido pela {@link uiScale},
    * então o layout é o MESMO em qualquer resolução; o backend estica pro real
-   * (ADR-0129).
+   * (SPEC-0129).
    */
   viewport(): UiViewport {
     const real = this._viewportOf();
     return designViewport(real, uiScale(real));
   }
 
-  /** Viewport de design + fator de escala pra tela real (ADR-0129). */
+  /** Viewport de design + fator de escala pra tela real (SPEC-0129). */
   private _layout(): { view: UiViewport; scale: number } {
     const real = this._viewportOf();
     const scale = uiScale(real);
@@ -148,7 +148,7 @@ export class UiLayer {
    */
   private _syncBackend(): void {
     // Layout no espaço de DESIGN (px lógicos): o backend estica pro real pelo
-    // `scale`, então a UI cresce com a tela (não fica minúscula num 4K). ADR-0129.
+    // `scale`, então a UI cresce com a tela (não fica minúscula num 4K). SPEC-0129.
     const { view, scale } = this._layout();
     for (const widget of this._widgets) {
       if (widget instanceof UiPanel && widget.fill) {
@@ -218,7 +218,7 @@ export class UiLayer {
   /**
    * Botão (visível) sob o ponto de um evento de ponteiro, ou `null`. Converte
    * as coordenadas de tela pro espaço de DESIGN (÷ escala — o mesmo em que os
-   * dois backends posicionam a UI, ADR-0129) e testa de cima pra baixo
+   * dois backends posicionam a UI, SPEC-0129) e testa de cima pra baixo
    * (último adicionado = mais na frente). `focusableOnly` restringe ao conceito
    * de foco (hover); o clique aceita qualquer botão (inclusive `focusable:false`,
    * o padrão "só-clique").

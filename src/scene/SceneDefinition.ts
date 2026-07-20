@@ -141,7 +141,7 @@ const playerSchema = z
   .optional();
 
 /**
- * **Material/shader por objeto** (ADR-0058) — como atribuir um shader a um objeto
+ * **Material/shader por objeto** (SPEC-0058) — como atribuir um shader a um objeto
  * na Unity. `standard` = PBR original do `.glb`; `unlit` = textura×cor sem luz
  * (porta o `Supyrb/Unlit/Texture`, com cull/zwrite/ztest); `toon` = cel-shading
  * em bandas + contorno. Aplicado pelo {@link buildScene} (ver `applyMaterial`).
@@ -300,7 +300,7 @@ const primitiveNode = z.object({
 });
 
 /**
- * **Malha de blockout editável** (ProBuilder — ADR-0071). Carrega uma **receita de
+ * **Malha de blockout editável** (ProBuilder — SPEC-0071). Carrega uma **receita de
  * forma** paramétrica (`shape`, regenerável: cubo/escada/rampa/arco/parede…) OU
  * **geometria explícita** (`positions`/`faces`, malha "freeform" após edição de
  * elementos). Precedência no {@link buildScene}: override do editor
@@ -426,7 +426,7 @@ const terrainNode = z.object({
 });
 
 /**
- * **Vegetação instanciada** (ADR-0077): espalha muitas cópias de um modelo (árvore/
+ * **Vegetação instanciada** (SPEC-0077): espalha muitas cópias de um modelo (árvore/
  * grama/arbusto) numa malha instanciada. As `instances` (plano `[x,y,z,rotY,scale]`)
  * são autoradas pelo pincel do editor; `model` é o `.glb` (omitido = placeholder).
  */
@@ -544,10 +544,10 @@ export type CharacterConfig = NonNullable<z.infer<typeof characterSchema>>;
 export type RapierBodyConfig = NonNullable<z.infer<typeof rapierBodySchema>>;
 export type ModelNode = z.infer<typeof modelNode>;
 export type PrimitiveNode = z.infer<typeof primitiveNode>;
-/** Nó de malha de blockout editável (ver {@link meshNode}; ADR-0071). */
+/** Nó de malha de blockout editável (ver {@link meshNode}; SPEC-0071). */
 export type MeshNode = z.infer<typeof meshNode>;
 
-/** Nó de vegetação instanciada (ver {@link vegetationNode}; ADR-0077). */
+/** Nó de vegetação instanciada (ver {@link vegetationNode}; SPEC-0077). */
 export type VegetationNode = z.infer<typeof vegetationNode>;
 export type LightNode = z.infer<typeof lightNode>;
 export type WaterNode = z.infer<typeof waterNode>;

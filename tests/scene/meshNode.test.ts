@@ -1,5 +1,5 @@
 /**
- * Testes do nó `mesh` (blockout editável — ADR-0071) no buildScene: instanciação
+ * Testes do nó `mesh` (blockout editável — SPEC-0071) no buildScene: instanciação
  * a partir de receita `shape`, geometria explícita, e a precedência do override
  * do editor (`overlay.data.geometry[id]` vence). Cobre também `overlayGeometry`.
  */

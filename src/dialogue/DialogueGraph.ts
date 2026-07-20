@@ -5,7 +5,7 @@ import type { FlagValue } from '../narrative/StoryState.js';
 /**
  * **Diálogo como DADO** (ADR-0070). Um grafo de conversa: nós com fala +
  * escolhas, que o {@link DialogueRunner} percorre. É **conteúdo autoral** (como
- * um clipe de animação, ADR-0054), não comportamento — por isso vive em JSON,
+ * um clipe de animação, SPEC-0054), não comportamento — por isso vive em JSON,
  * editável fora do código e gerável pelo Chat IA.
  *
  * Schema validado por Zod, no mesmo espírito do `SceneDefinition`.

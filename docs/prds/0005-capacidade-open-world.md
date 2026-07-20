@@ -20,7 +20,7 @@ browser — por quatro limites estruturais, todos já diagnosticados por mediç�
    dominante são as N travessias JS→C++ (marshalling NAPI) por objeto por
    frame no shim WebGPU (`native/src/webgpu/commands.cpp`). Já descartados por
    spike: fill-rate (renderScale 1.0 vs 2.0 igual), vsync (Mailbox vs Fifo
-   igual), draw calls (merge estático só +2 fps, ADR-0121), física (~3 ms).
+   igual), draw calls (merge estático só +2 fps, SPEC-0121), física (~3 ms).
    Uma cidade multiplica objetos/materiais — esse custo fixo explode.
 2. **Host single-thread total.** Física, render, decode de imagem e leitura de
    arquivo rodam todos na thread principal. Sem overlap, streaming de mundo
@@ -34,14 +34,14 @@ browser — por quatro limites estruturais, todos já diagnosticados por mediç�
    frustum culling em mundo grande); não há LOD, spatial partitioning nem
    culling por distância. O culling é o por-objeto padrão do three.
 
-Relacionados: ADR-0118 (raycast skinned + clamp dt), ADR-0120/0121 (merge
+Relacionados: ADR-0118 (raycast skinned + clamp dt), SPEC-0120/0121 (merge
 estático), ADR-0122 (runtime Hermes upstream + clang-cl).
 
 ## O que já existe e será reaproveitado
 
-- **`mergeStaticScene`** (ADR-0120/0121) — merge por material, liga automático
+- **`mergeStaticScene`** (SPEC-0120/0121) — merge por material, liga automático
   no host; vira merge **por célula** no M-perf-4.
-- **Vegetação instanciada** (`src/scene/Vegetation.ts`, ADR-0077) —
+- **Vegetação instanciada** (`src/scene/Vegetation.ts`, SPEC-0077) —
   `InstancedMesh` por sub-malha, instâncias serializadas na cena.
 - **CSM + HDRI** (`OutdoorLighting`) — sombra que segue a câmera até 250 m,
   já pensada pra exterior grande.
@@ -63,7 +63,7 @@ por medição). Cada marco é útil sozinho, tem critério de aceite mensurável
 ganha ADR próprio na implementação. Tudo é validável no Windows dev; cada ADR
 anota o que muda no Xbox/GDK (orçamentos de memória, limites de thread).
 
-### M-perf-0 — Instrumentação permanente (ADR-0125)
+### M-perf-0 — Instrumentação permanente (SPEC-0125)
 
 Sem juiz, nenhuma fase seguinte tem critério. Duas frentes:
 
@@ -100,7 +100,7 @@ Cena de estresse procedural e determinística, bem acima da fase-1:
 renderScale fixados no bench). **Testes:** gerador determinístico (mesma seed
 ⇒ mesma definição; contagens batem com params).
 
-### M-perf-2 — Corte do custo NAPI do render (ADR-0127)
+### M-perf-2 — Corte do custo NAPI do render (SPEC-0127)
 
 - **2a (quick win)**: cache de estado por pass no shim — guardar último
   pipeline/bindgroup/vertex buffer por slot no objeto do pass e retornar cedo
@@ -125,7 +125,7 @@ real): ficar com 2a + comando agregado — JS acumula comandos num TypedArray
 (handles por tabela de ids) e 1 chamada NAPI drena tudo; patch no objeto pass
 do shim, sem tocar no three.
 
-### M-perf-3 — IO assíncrono + thread pool (ADR-0128)
+### M-perf-3 — IO assíncrono + thread pool (SPEC-0128)
 
 - `native/src/core/io_pool.{h,cpp}`: pool de 2-4 workers + fila de conclusões
   drenada em `runFrame` (`main.cpp`). **Regra de ouro: nenhuma chamada NAPI
@@ -141,7 +141,7 @@ main thread; checksum async == sync. **Riscos:** leitura concorrente do
 assets.pak XOR (handle por worker ou mutex em `pak.cpp`); ordem de shutdown
 (worker resolvendo depois do env morto — drenar/descartar no destructor).
 
-### M-perf-4 — Células, streaming e LOD (ADR-0129 + ADR-0130)
+### M-perf-4 — Células, streaming e LOD (SPEC-0129 + ADR-0130)
 
 Data-driven e editável no Studio, funcionando também no browser:
 

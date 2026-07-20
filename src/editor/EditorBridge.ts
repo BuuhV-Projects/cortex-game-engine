@@ -51,16 +51,16 @@ export interface EditorBridgeOptions {
   onTool?: (mode: 'translate' | 'rotate' | 'scale') => void;
   /** Adiciona um terreno à cena (menu "Adicionar terreno" da IDE). */
   onAddTerrain?: () => void;
-  /** Adiciona uma forma de blockout à cena (paleta de Formas da IDE — ADR-0071). */
+  /** Adiciona uma forma de blockout à cena (paleta de Formas da IDE — SPEC-0071). */
   onAddShape?: (kind: string) => void;
-  /** Arma o "desenhar caixa no chão" (ProBuilder New Shape — ADR-0071). */
+  /** Arma o "desenhar caixa no chão" (ProBuilder New Shape — SPEC-0071). */
   onDrawShape?: () => void;
-  /** Cria um nó de vegetação e liga o pincel de espalhar (ADR-0077). */
+  /** Cria um nó de vegetação e liga o pincel de espalhar (SPEC-0077). */
   onAddVegetation?: () => void;
-  /** Abre o picker "Adicionar modelo (.glb)" no frame do jogo (ADR-0093). */
+  /** Abre o picker "Adicionar modelo (.glb)" no frame do jogo (SPEC-0093). */
   onOpenModelPicker?: () => void;
   /**
-   * Solta um asset arrastado da IDE no viewport (ADR-0090): `nx`/`ny` são a
+   * Solta um asset arrastado da IDE no viewport (SPEC-0090): `nx`/`ny` são a
    * posição do drop normalizada (0..1) dentro do viewport — o Electron NÃO
    * entrega DnD nativo através da fronteira do iframe, então a IDE captura o
    * drop num overlay e repassa por aqui.

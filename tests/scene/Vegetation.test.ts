@@ -1,5 +1,5 @@
 /**
- * Testes da vegetação instanciada (ADR-0077): espalhar/apagar instâncias, capacidade,
+ * Testes da vegetação instanciada (SPEC-0077): espalhar/apagar instâncias, capacidade,
  * round-trip serializável e o modelo placeholder. O pincel do editor fica de fora.
  */
 import { describe, it, expect } from 'vitest';

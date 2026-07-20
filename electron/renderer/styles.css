@@ -1296,7 +1296,7 @@ body.app-preview-fullscreen #preview-container {
 }
 
 /* ------------------------------------------------------------------ */
-/* Modal "Configurações do jogo" (ADR-0128) — reusa .export-modal      */
+/* Modal "Configurações do jogo" (SPEC-0128) — reusa .export-modal      */
 /* ------------------------------------------------------------------ */
 
 .settings-modal {

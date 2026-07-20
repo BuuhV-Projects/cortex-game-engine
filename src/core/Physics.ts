@@ -51,7 +51,7 @@ export class RigidBodyComponent extends Component {
 // ─── ColliderShape ─────────────────────────────────────────────────────────────
 
 /**
- * Forma geométrica do collider (ADR-0027).
+ * Forma geométrica do collider (SPEC-0027).
  *
  * Discriminated union por `kind`. Sphere é o caso mais simples; cylinder e
  * capsule são sempre **vertical-aligned** (eixo Y) — cobre 95% dos casos
@@ -71,7 +71,7 @@ export type ColliderShape =
 /**
  * Componente que define o volume de colisão da entidade.
  *
- * Suporta múltiplas formas via `shape` (ADR-0027): box, sphere, cylinder,
+ * Suporta múltiplas formas via `shape` (SPEC-0027): box, sphere, cylinder,
  * capsule. O centro do collider é `RigidBodyComponent.position + shape.offset`.
  * Padrão: cubo 1×1×1 sem offset.
  *
@@ -103,7 +103,7 @@ export class ColliderComponent extends Component {
    * Dimensões totais do bounding box (largura × altura × profundidade).
    *
    * Getter deriva do `shape` atual; setter substitui `shape` por um box.
-   * Mantido pra compatibilidade com código pré-ADR-0027.
+   * Mantido pra compatibilidade com código pré-SPEC-0027.
    */
   get size(): Vec3 {
     const s = this.shape;
@@ -554,7 +554,7 @@ function collideCapsuleAny(
  * espelhada via `dispatchPair`.
  *
  * Pares ainda não implementados retornam `null` (placeholder até as
- * próximas fases da ADR-0027). Como col.size é derivada do shape via
+ * próximas fases da SPEC-0027). Como col.size é derivada do shape via
  * getter, todos os shapes funcionam como AABB até a colisão real
  * por shape ser plugada.
  */

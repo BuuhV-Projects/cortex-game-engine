@@ -129,7 +129,7 @@ export class Shell {
         { label: tr('menu.draw_road', '🛣 Desenhar estrada'), run: () => document.dispatchEvent(new CustomEvent('request-draw-road')) },
         { label: tr('menu.veg', '🌿 Vegetação (espalhar)'), run: () => document.dispatchEvent(new CustomEvent('request-add-vegetation')) },
         { sep: true },
-        // Blockout (ProBuilder — ADR-0071): cria um nó `mesh` paramétrico via a ponte.
+        // Blockout (ProBuilder — SPEC-0071): cria um nó `mesh` paramétrico via a ponte.
         ...([
           ['cube', 'Cubo'],
           ['plane', 'Plano'],

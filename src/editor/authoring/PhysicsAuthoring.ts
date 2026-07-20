@@ -20,7 +20,7 @@ const RAPIER_DEFAULTS: RapierEditState = { bodyType: 'dynamic' };
 
 /**
  * Autoria do **tipo de corpo físico** (Nenhum/Estático/Character — seletor "Tipo"
- * estilo UPBGE; ADR-0058/0060). É a fonte AUTORITATIVA: aplica ao vivo (Collider2D
+ * estilo UPBGE; SPEC-0058/0060). É a fonte AUTORITATIVA: aplica ao vivo (Collider2D
  * via {@link ColliderApi}, ou CharacterBody + registra o {@link CharacterPhysicsSystem})
  * e persiste em `overlay.data.physics[nome]`. O `buildScene` respeita o override no
  * boot — então dá pra REMOVER/trocar física cravada no código/level.json.

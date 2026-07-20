@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O editor (F2, ADR-0038/0041/0042) editava uma cena **construída em código**
+O editor (F2, SPEC-0038/0041/0042) editava uma cena **construída em código**
 (`main.ts` imperativo). Isso tornava as edições descartáveis (recriadas a cada
 play) e — pior — **delete/add não tinham como ser corretos**: persistir um delete
 sobre código vira "código cria, editor remove" (create-then-remove), desperdício
@@ -28,7 +28,7 @@ Sistema de cena data-driven em fases:
    `transform`; `buildScene` é o **único ponto de instanciação**. Cores aceitam
    hex string. `addSceneNode` instancia um nó ao vivo (add do editor).
 
-2. **Overlay do editor = reuso do `SceneFileV1` (ADR-0031).** O editor grava em
+2. **Overlay do editor = reuso do `SceneFileV1` (SPEC-0031).** O editor grava em
    `assets/scene-data.json`: `objects` = overrides de transform por id,
    `data.deleted` = ids removidos, `data.added` = nós adicionados. `buildScene`
    aplica: **pula deletados (nunca instancia → sem create-then-remove)**,
@@ -73,7 +73,7 @@ Sistema de cena data-driven em fases:
   JSON no `.exe`, write-back via plugin em dev, fs no Tauri) exige criar projeto +
   rodar `vite build`/`tauri build` na IDE. Engine typecheck, 2 bundles, testes
   (incl. SceneBuilder) e `docs:engine` passam; o resto é verificação manual.
-- Coexiste com o `SceneFile`/`SceneLoader.applyToRoot` (ADR-0031, override por
+- Coexiste com o `SceneFile`/`SceneLoader.applyToRoot` (SPEC-0031, override por
   nome em cena de código) — agora o mesmo formato serve de overlay data-driven.
-- Relaciona-se com ADR-0031 (SceneFile/IO), 0037 (inspect_assets), 0041/0042
+- Relaciona-se com SPEC-0031 (SceneFile/IO), 0037 (inspect_assets), 0041/0042
   (editor) e 0039/0040 (helpers de cena que o loader reusa).

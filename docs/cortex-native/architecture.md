@@ -42,7 +42,7 @@ No boot: `main` cria janela+surface (D3D12), cria `JsRuntime`, registra shims
 e bindings, injeta globais pré-boot (`__cortexSearch`,
 `__cortexWidth/Height/PixelRatio` e `__cortexLocale` — idioma do SO via
 `SDL_GetPreferredLocales`, que o shim espelha em `navigator.language` pro i18n,
-ADR-0124), executa `boot.hbc` (bytecode) e drena microtasks — o `async main()`
+SPEC-0124), executa `boot.hbc` (bytecode) e drena microtasks — o `async main()`
 do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
 
 **A splash não pode rodar antes disso**: o `WGPUDevice` só nasce quando o JS
@@ -70,12 +70,12 @@ Ver ADR-0109.
 | `native/src/shims/timers.*` | `setTimeout`/`clearTimeout`/`setImmediate`. O Hermes agenda async/await via `setImmediate` — obrigatório. |
 | `native/src/shims/animation_frame.*` | `requestAnimationFrame` (uma geração de callbacks por frame; JS re-registra). |
 | `native/src/shims/input.*` | Eventos SDL→JS (keydown/keyup/pointer via `__cortexDispatchInput`) + Gamepad API (`__cortexInput.getGamepads`, layout standard W3C sobre SDL_Gamepad). |
-| `native/src/shims/files.*` | `__cortexReadFile` (fetch lê daqui). Tenta o `assets.pak` (via pak.*) e cai pro arquivo solto no disco (dev). Leitura de assets + `__cortexWriteBaseFile` (ADR-0124): escrita de TEXTO na raiz da pasta do jogo, nome sanitizado (sem `/ \ : ..`) — caso de uso: `config.ini` do GameConfig. Pode falhar em pasta read-only (retorna false; o JS trata). |
-| `native/src/shims/user_storage.*` | `__cortexReadUserFile`/`__cortexWriteUserFile` — persistência GRAVÁVEL do usuário; serve o shim de `localStorage` (ADR-0106). Resolve a pasta de save: com `-DCORTEX_GDK` tenta **XGameSave** (`XUser` + `XGameSaveFilesGetFolderWithUi`, por-usuário + sync na nuvem) quando há usuário assinado + SCID (`CORTEX_SCID`); senão cai pro arquivo `SDL_GetPrefPath(<id>, "saves")` — onde `<id>` vem do `cortex.json` (game_config, ADR-0126), **não** do nome do exe (fixo `launcher.exe`). É file I/O comum na pasta resolvida. |
+| `native/src/shims/files.*` | `__cortexReadFile` (fetch lê daqui). Tenta o `assets.pak` (via pak.*) e cai pro arquivo solto no disco (dev). Leitura de assets + `__cortexWriteBaseFile` (SPEC-0124): escrita de TEXTO na raiz da pasta do jogo, nome sanitizado (sem `/ \ : ..`) — caso de uso: `config.ini` do GameConfig. Pode falhar em pasta read-only (retorna false; o JS trata). |
+| `native/src/shims/user_storage.*` | `__cortexReadUserFile`/`__cortexWriteUserFile` — persistência GRAVÁVEL do usuário; serve o shim de `localStorage` (SPEC-0106). Resolve a pasta de save: com `-DCORTEX_GDK` tenta **XGameSave** (`XUser` + `XGameSaveFilesGetFolderWithUi`, por-usuário + sync na nuvem) quando há usuário assinado + SCID (`CORTEX_SCID`); senão cai pro arquivo `SDL_GetPrefPath(<id>, "saves")` — onde `<id>` vem do `cortex.json` (game_config, ADR-0126), **não** do nome do exe (fixo `launcher.exe`). É file I/O comum na pasta resolvida. |
 | `native/src/shims/pak.*` | Leitor do container `assets.pak` (ADR-0104): parse header+índice, lê slice + desembaralha (XOR). Formato em sync com `native/scripts/pak.mjs`. |
 | `native/src/shims/image_decode.*` | `__cortexDecodeImage` (stb_image → RGBA8) pro createImageBitmap. |
 | `native/src/shims/ktx2.*` | `__cortexTranscodeKtx2` (basis_universal transcoder → RGBA8) pra texturas KTX2/Basis (ADR-0108, Fase 1). Espelha o image_decode; reusa o upload RGBA. Lib em `third_party/basisu/` (só `transcoder/`, pinada) + `third_party/zstd/` (zstddeclib single-file do próprio basis) — o build liga `BASISD_SUPPORT_KTX2_ZSTD=1` porque o cook gera **UASTC+RDO+Zstd** pra cor (ADR-0119; ETC1S bandava os atlas de gradiente dos kits). |
-| `native/src/shims/quit.*` | `__cortexQuit()` (ADR-0120): encerramento pedido pelo JOGO — empurra `SDL_EVENT_QUIT` na fila, o loop encerra pelo MESMO teardown do fechar-janela. O dom-lite mapeia `window.close()` pra cá. |
+| `native/src/shims/quit.*` | `__cortexQuit()` (SPEC-0120): encerramento pedido pelo JOGO — empurra `SDL_EVENT_QUIT` na fila, o loop encerra pelo MESMO teardown do fechar-janela. O dom-lite mapeia `window.close()` pra cá. |
 | `native/src/shims/rapier.*` | Ponte C ABI do crate rapier-native → `__rapierNative` (funções achatadas, f64). |
 | `native/src/shims/audio.*` | `__cortexAudio`: decode (miniaudio) + playback (streams SDL3; loop/gain/pitch); `updateAudio()` por frame. |
 | `native/src/shims/text_raster.*` | `__cortexRasterText` (stb_truetype + Roboto pinada) → bitmap RGBA branco pro RendererUiBackend (ADR-0102). |
@@ -99,15 +99,15 @@ Ver ADR-0109.
 | `native/js/src/prelude.js` | Orquestrador dos shims JS (importa js/src/shims/ na ordem certa). Regra: o que dá pra shimar em JS fica em shims/. |
 | `native/js/src/shims/globals.js` | self, console→print, performance. |
 | `native/js/src/shims/event-target.js` | EventTarget-lite + Event/CustomEvent — o "event bus via document" que os jogos usam (rush:*). |
-| `native/js/src/shims/dom-lite.js` | DOM inerte (createElement/appendChild/innerHTML rodam, nada renderiza) + window/document com bus próprio. Etapa 6a do M1. `window.close()` → `__cortexQuit` (ADR-0120; sem host = no-op, como aba de browser). |
+| `native/js/src/shims/dom-lite.js` | DOM inerte (createElement/appendChild/innerHTML rodam, nada renderiza) + window/document com bus próprio. Etapa 6a do M1. `window.close()` → `__cortexQuit` (SPEC-0120; sem host = no-op, como aba de browser). |
 | `native/js/src/shims/webgpu-extras.js` | Constantes GPU*, features/limits no adapter/device, canvas fake. |
 | `native/js/src/shims/input-bridge.js` | Redistribui eventos do host pra window/document/body (como o browser) e liga navigator.getGamepads ao nativo. |
 | `native/js/examples/triangle.js` | Referência: triângulo WebGPU puro (Marcos C–D), sem Three. |
 | `native/scripts/bundle.mjs` | esbuild (bundle es2018) + Babel (classes loose + arrows) → IIFE único pro hermesc. |
 | `native/scripts/fetch-deps.ps1` | Baixa deps prebuilt **pinadas** (SDL3, wgpu-native, Hermes NuGet). |
-| `native/scripts/export-game.mjs` | Export distribuível (ADR-0101): bundle+hermesc -O+exe+dlls+assets.pak → `<jogo>/dist-native/`. O exe é **fixo `launcher.exe`** e o nome/id do jogo vêm do `cortex.json` (ADR-0126, `game-config.mjs`) — grava um `cortex.json` **resolvido** (id/name garantidos) no dist. Também copia soltos (fora do pak): `config.ini` e `languages/*.txt` (i18n editável sem rebuild, ADR-0124). |
+| `native/scripts/export-game.mjs` | Export distribuível (ADR-0101): bundle+hermesc -O+exe+dlls+assets.pak → `<jogo>/dist-native/`. O exe é **fixo `launcher.exe`** e o nome/id do jogo vêm do `cortex.json` (ADR-0126, `game-config.mjs`) — grava um `cortex.json` **resolvido** (id/name garantidos) no dist. Também copia soltos (fora do pak): `config.ini` e `languages/*.txt` (i18n editável sem rebuild, SPEC-0124). |
 | `native/scripts/game-config.mjs` | `readGameConfig(gameDir)` — resolve `{ id, name, icon }` do `cortex.json` com fallback pro slug da pasta. Fonte da identidade no lado JS (export + instalador); espelha `core/game_config.cpp` (runtime). |
-| `native/scripts/embed-icon.mjs` | `embedIcon(exe, png, {productName})` — do `icon` do jogo (PNG) deriva `.ico` multi-tamanho (png-to-ico) e embute no `launcher.exe` ícone + ProductName/FileDescription + file-version (rcedit), ADR-0127. Best-effort (falha não derruba o export). Libs no toolchain de export (`png-to-ico`/`rcedit`), resolvidas nos layouts dev/empacotado. **Windows-only.** |
+| `native/scripts/embed-icon.mjs` | `embedIcon(exe, png, {productName})` — do `icon` do jogo (PNG) deriva `.ico` multi-tamanho (png-to-ico) e embute no `launcher.exe` ícone + ProductName/FileDescription + file-version (rcedit), SPEC-0127. Best-effort (falha não derruba o export). Libs no toolchain de export (`png-to-ico`/`rcedit`), resolvidas nos layouts dev/empacotado. **Windows-only.** |
 | `native/export-toolchain/` | Toolchain de export AUTO-CONTIDO (TDR-0003): `package.json`+`yarn.lock` pinados (esbuild/babel/three/three-mesh-bvh/zod) que o `bundle.mjs` usa em runtime. O CI instala e o electron-builder copia o `node_modules` pra `resources/node_modules` (só Windows), pro Studio empacotado exportar sem dev. |
 | `native/scripts/pak.mjs` | Empacota uma pasta num container `.pak` (ADR-0104): índice binário + XOR leve. Formato em sync com `native/src/shims/pak.cpp`. |
 
@@ -491,7 +491,7 @@ validado: teste4.exe roda STANDALONE da pasta dist. Re-vendor de projeto:
 build:engine completo + tsc → copiar dist-engine/* e .d.ts conforme
 VENDOR_TYPE_MODULES (o teste4 já recebeu os tipos da UI).
 Pós-M1 (feito): **save persistente no host** — `localStorage` sobre
-`user_storage.*` (`SDL_GetPrefPath`), ADR-0106. O `SaveGame` do teste4
+`user_storage.*` (`SDL_GetPrefPath`), SPEC-0106. O `SaveGame` do teste4
 (progressão da spec 0003) agora persiste entre sessões no `.exe`.
 Pós-M1 (feito): **export nativo embarcado no Studio Windows** (TDR-0003) — o
 `.exe` instalado exporta nativo sem dev. O host compilado + o toolchain de
@@ -505,7 +505,7 @@ o `dist-native/` num `<jogo>-setup.exe` (NSIS portátil do fetch-deps; template
 estático `installer.nsi` com valores por `/D`). Instala POR USUÁRIO
 (`%LOCALAPPDATA%\Programs\<app>`, sem admin): atalhos + Adicionar/Remover +
 desinstalador. Também: **KTX2** cozido no export (ADR-0108) e save persistente
-(ADR-0106/0107).
+(SPEC-0106/0107).
 Pós-M1 (aberto): Speedometer+vehicle controller; espacialização do Panner;
 mapAsync/copyTextureToTexture/MSAA; formatos BC no host (VRAM); persistência no
 CONSOLE (trocar o backend de user_storage por XGameSave).

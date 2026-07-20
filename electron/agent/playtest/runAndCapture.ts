@@ -38,7 +38,7 @@ export type InputAction =
   | { type: 'screenshot' }
 
 /**
- * Câmera de inspeção (ADR-0131): posiciona a câmera livre pra "ver" a cena de
+ * Câmera de inspeção (SPEC-0131): posiciona a câmera livre pra "ver" a cena de
  * qualquer ângulo, independente da câmera de gameplay (que segue o player). Se
  * `pos` for dado, usa pose explícita; senão orbita (`orbit`); sem nenhum, enquadra
  * a cena inteira. Aplicada após o boot, antes das `actions`.
@@ -82,7 +82,7 @@ export interface PlaytestOptions {
    */
   evalJs?: string
   /**
-   * Câmera de inspeção (ADR-0131): posiciona a câmera livre pra ver a cena de
+   * Câmera de inspeção (SPEC-0131): posiciona a câmera livre pra ver a cena de
    * qualquer ângulo. Aplicada após o boot/`evalJs`, antes das `actions`.
    */
   camera?: InspectCameraOption

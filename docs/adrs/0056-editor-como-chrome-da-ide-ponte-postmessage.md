@@ -5,7 +5,7 @@
 
 ## Contexto
 
-No fluxo atual o editor embutido (ADR-0030/0041/0042/0046/0050) desenha **toda**
+No fluxo atual o editor embutido (SPEC-0030/0041/0042/0046/0050) desenha **toda**
 a sua UI — hierarquia (outliner), inspector, HUD, botão Play — como DOM **dentro
 do runtime do jogo**, no `index.dev.js`. O Preview da IDE roda o jogo num
 **iframe** (`Preview.ts` injeta `<iframe src=viteUrl>`) e **não conhece a cena**.
@@ -79,8 +79,8 @@ pra caber jogo + painéis; o resizer existente segue valendo.
 - **Limites conhecidos:** o modelo cobre o que o inspector mostra hoje
   (transform, sombra, matte, animação, ações do player, collider, luz). Campos
   novos no inspector precisam entrar no `describeInspector` (um lugar só). Reparent/
-  drag-and-drop na hierarquia segue fora de escopo (ADR-0041).
+  drag-and-drop na hierarquia segue fora de escopo (SPEC-0041).
 - **Não verificável aqui:** o render nativo na IDE e o atach num projeto real
   dependem de rodar IDE+WebGPU. Cobertos: typecheck (engine+electron),
   `build:engine` (2 bundles), testes do `EditorModel` e os existentes, `docs:engine`.
-- Relaciona-se com ADR-0030/0041/0042/0046/0050 (editor) e 0044 (overlay/persistência).
+- Relaciona-se com SPEC-0030/0041/0042/0046/0050 (editor) e 0044 (overlay/persistência).

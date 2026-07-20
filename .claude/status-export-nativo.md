@@ -13,7 +13,7 @@ Fontes de verdade (reler antes de retomar):
 ## PC standalone — ✅ fechado e provado (teste4 jogável)
 
 - `export-game.mjs <gameDir>` → `dist-native/` standalone (exe + dlls + boot.hbc + assets); validado.
-- Instalador NSIS por usuário (`make-installer.mjs`), save persistente (ADR-0106/0107), KTX2 (ADR-0108), export embarcado no Studio instalado (TDR-0003).
+- Instalador NSIS por usuário (`make-installer.mjs`), save persistente (SPEC-0106/0107), KTX2 (ADR-0108), export embarcado no Studio instalado (TDR-0003).
 - **Pendências abertas:** vehicle controller do Rapier (carro) + Speedometer; PannerNode sem espacialização 3D; mapAsync/copyTextureToTexture/MSAA; formatos BC (VRAM); texto maior que o botão não recorta.
 - **Limitação de perf:** gameplay nativo ~35fps vs 60-75 no Studio — render CPU-bound (three WebGPU no Hermes); alavancas = menos objetos/materiais/PostFX.
 - Só Windows (host é D3D12); macOS/Linux sem export nativo.

@@ -12,7 +12,7 @@ Defined in: [src/scene/SceneBuilder.ts:378](https://github.com/BuuhV-Projects/co
 
 Lê `data.geometry` da overlay — a **geometria editada** (vértice/face) de nós
 `mesh` autorada no editor, por id (`{ [id]: { positions, faces } }`). **Vence** a
-receita `shape`/geometria do nó (ADR-0071). "Resetar forma" remove a entrada.
+receita `shape`/geometria do nó (SPEC-0071). "Resetar forma" remove a entrada.
 
 ## Parameters
 

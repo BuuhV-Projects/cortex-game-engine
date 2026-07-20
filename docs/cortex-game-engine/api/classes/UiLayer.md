@@ -224,7 +224,7 @@ Defined in: [src/ui/runtime/UiLayer.ts:110](https://github.com/BuuhV-Projects/co
 Viewport de DESIGN da UI (px lógicos, espaço onde os widgets são posicionados)
 — usado por layouts de template. É o viewport real dividido pela [uiScale](../functions/uiScale.md),
 então o layout é o MESMO em qualquer resolução; o backend estica pro real
-(ADR-0129).
+(SPEC-0129).
 
 #### Returns
 

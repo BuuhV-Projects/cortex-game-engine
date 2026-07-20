@@ -269,7 +269,7 @@ describe('PhysicsSystem — resolução de colisão AABB', () => {
   });
 });
 
-// ─── Colisão sphere ↔ sphere (ADR-0027 Fase 3) ───────────────────────────────
+// ─── Colisão sphere ↔ sphere (SPEC-0027 Fase 3) ───────────────────────────────
 
 /** Cria uma Entity com RigidBody + Collider em shape sphere. */
 function makeSphere(opts: {
@@ -348,7 +348,7 @@ describe('PhysicsSystem — colisão sphere ↔ sphere', () => {
   });
 });
 
-// ─── Colisão box ↔ sphere (ADR-0027 Fase 3) ──────────────────────────────────
+// ─── Colisão box ↔ sphere (SPEC-0027 Fase 3) ──────────────────────────────────
 
 describe('PhysicsSystem — colisão box ↔ sphere', () => {
   let system: PhysicsSystem;
@@ -399,7 +399,7 @@ describe('PhysicsSystem — colisão box ↔ sphere', () => {
   });
 });
 
-// ─── Colisão cylinder (ADR-0027 Fase 4) ──────────────────────────────────────
+// ─── Colisão cylinder (SPEC-0027 Fase 4) ──────────────────────────────────────
 
 /** Cria uma Entity com shape cylinder vertical (eixo Y). */
 function makeCylinder(opts: {
@@ -512,7 +512,7 @@ describe('PhysicsSystem — colisão sphere ↔ cylinder', () => {
   });
 });
 
-// ─── Colisão capsule (ADR-0027 Fase 5) ────────────────────────────────────────
+// ─── Colisão capsule (SPEC-0027 Fase 5) ────────────────────────────────────────
 
 /** Cria uma Entity com shape capsule vertical (eixo Y). */
 function makeCapsule(opts: {

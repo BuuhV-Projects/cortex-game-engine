@@ -131,18 +131,18 @@ export class EditorPanels {
     document.addEventListener('request-add-terrain', () => this.send({ type: 'addTerrain' }))
     // View › HUD de métricas: alterna o DebugHud do jogo (sem value = toggle).
     document.addEventListener('request-debug-hud', () => this.send({ type: 'debugHud' }))
-    // "Forma: …" (menu Cena, blockout/ProBuilder — ADR-0071) → cria um nó `mesh`.
+    // "Forma: …" (menu Cena, blockout/ProBuilder — SPEC-0071) → cria um nó `mesh`.
     document.addEventListener('request-add-shape', (e) =>
       this.send({ type: 'addShape', kind: (e as CustomEvent<{ kind: string }>).detail.kind }))
     // "Desenhar caixa no chão" (menu Cena, ProBuilder New Shape) → arma o desenho.
     document.addEventListener('request-draw-shape', () => this.send({ type: 'drawShape' }))
-    // "Desenhar estrada" (menu Cena, Road Architect — ADR-0072) → arma o desenho.
+    // "Desenhar estrada" (menu Cena, Road Architect — SPEC-0072) → arma o desenho.
     document.addEventListener('request-draw-road', () => this.send({ type: 'drawRoad' }))
-    // "Vegetação" (menu Cena — ADR-0077) → cria o nó e liga o pincel (modelo no Inspector).
+    // "Vegetação" (menu Cena — SPEC-0077) → cria o nó e liga o pincel (modelo no Inspector).
     document.addEventListener('request-add-vegetation', () => this.send({ type: 'addVegetation' }))
-    // Picker "Adicionar modelo (.glb)" (ADR-0093): o modal abre NO frame do jogo.
+    // Picker "Adicionar modelo (.glb)" (SPEC-0093): o modal abre NO frame do jogo.
     document.addEventListener('request-add-model', () => this.send({ type: 'openModelPicker' }))
-    // Drop de asset no viewport (ADR-0090): o Preview captura o drop no overlay e
+    // Drop de asset no viewport (SPEC-0090): o Preview captura o drop no overlay e
     // repassa url + posição normalizada; o engine raycasta e adiciona o modelo lá.
     document.addEventListener('request-drop-asset', (e) => {
       const { url, nx, ny } = (e as CustomEvent<{ url: string; nx: number; ny: number }>).detail

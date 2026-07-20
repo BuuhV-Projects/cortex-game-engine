@@ -47,7 +47,7 @@ export interface VegetationAuthoring {
 }
 
 /**
- * Cria a autoria de **vegetação** (ADR-0077, fase 2): pincel que **espalha** instâncias
+ * Cria a autoria de **vegetação** (SPEC-0077, fase 2): pincel que **espalha** instâncias
  * de árvore/grama no terreno. Mexe na {@link Vegetation} viva (`userData.cortexVegetation`)
  * e grava as `instances` direto no nó (`data.added`) — o `buildScene` (`makeVegetation`)
  * restaura de lá. O espalhamento assenta cada instância na altura do terreno

@@ -2,7 +2,7 @@
  * Testes da ponte de seleção observável do editor (src/editor/EditorSelection.ts).
  * Cobre: requestSelect→onSelectRequest (com a flag additive da multi-seleção),
  * setCurrent→onChange (dedupe, conjunto `items`), emitTransform→onTransform (só
- * com seleção), e unsubscribe. Ver ADR-0041/0042.
+ * com seleção), e unsubscribe. Ver SPEC-0041/0042.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { Object3D } from 'three';

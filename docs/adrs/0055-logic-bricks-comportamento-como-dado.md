@@ -49,7 +49,7 @@ técnico (funcionava) — é de **propósito e arquitetura**:
   - **Bricks compõem por cima** (prioridade por ordem; `motion` escreve no
     `TransformComponent`, system roda depois da física): determinístico, mas continua
     code + bricks no mesmo objeto.
-- ADR-0054 (animação data-driven) é **independente** e **permanece** — não dependia
+- SPEC-0054 (animação data-driven) é **independente** e **permanece** — não dependia
   de Logic Bricks.
 - Se revisitar, abrir um ADR novo (que substitui este) com o propósito respondido e
   o modelo de autoridade decidido **antes** de escrever código.

@@ -7,7 +7,7 @@
 
 Toda a garantia de qualidade geométrica das cenas geradas pela IA era **visual**:
 screenshots de playtest (ADR-0033) + crítica (ADR-0043), com disciplina de prompt
-(ADR-0039). Objeto torto, peça dentro da outra e vão impulável eram caçados no
+(SPEC-0039). Objeto torto, peça dentro da outra e vão impulável eram caçados no
 sensor mais caro e menos confiável (visão de LLM sobre screenshot), gastando
 iterações — sendo que bounding box detecta isso com 100% de precisão e custo ~zero.
 O precedente já existia fora do engine: o lint de fases R1–R5 da game-design-bible
@@ -52,6 +52,6 @@ O precedente já existia fora do engine: o lint de fases R1–R5 da game-design-
   nova aqui (princípio do lint da bible), alimentado pelo ciclo do ADR-0113.
 - `checklist` da bible (`ai-rules/validation-checklist.md`) preenchido com o
   fluxo em duas etapas.
-- Relaciona-se com: ADR-0039 (grounding/protocolo visual — o protocolo visual
+- Relaciona-se com: SPEC-0039 (grounding/protocolo visual — o protocolo visual
   continua, depois do geométrico), ADR-0043 (crítica de beleza), ADR-0053
   (kit/sockets — fonte dos bbox/roles), ADR-0033 (playtest).

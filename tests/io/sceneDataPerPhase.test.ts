@@ -1,5 +1,5 @@
 /**
- * Testes do overlay de cena POR FASE (ADR-0094):
+ * Testes do overlay de cena POR FASE (SPEC-0094):
  * - `sanitizeScenePath` (plugin de save): aceita caminho relativo .json e
  *   rejeita traversal/absoluto/extensão errada (segurança do endpoint).
  * - `HttpSceneFileWriter` com `path`: POST vai pro endpoint com `?path=`.

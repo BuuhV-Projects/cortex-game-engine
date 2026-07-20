@@ -87,7 +87,7 @@ Um nó pode sobrescrever com `matte: false`. Atalho global do [setMatte](../func
 Defined in: [src/scene/SceneBuilder.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L133)
 
 Funde a geometria ESTÁTICA da cena em poucas malhas por material ao final do
-build (ADR-0120, [mergeStaticScene](../functions/mergeStaticScene.md)) — derruba draw calls onde o render
+build (SPEC-0120, [mergeStaticScene](../functions/mergeStaticScene.md)) — derruba draw calls onde o render
 é CPU-bound (host nativo/Hermes). Default: **liga sozinho no host nativo**
 (`isNativeHost()`), desligado no browser/Studio (o editor F2 precisa dos
 objetos individuais). `true`/`false` força.

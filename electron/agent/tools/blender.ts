@@ -6,7 +6,7 @@ import { BlenderModelGenerator } from '../../../src/ai/BlenderModelGenerator.js'
 
 /**
  * MCP server in-process que expõe a tool `generate_blender_model` ao agente
- * do Chat IA (ADR-0019 reativada). Encapsula o {@link BlenderModelGenerator}
+ * do Chat IA (SPEC-0019 reativada). Encapsula o {@link BlenderModelGenerator}
  * existente (ADR-0004): Claude gera um script Python `bpy`, executamos
  * Blender headless, devolvemos o `.glb`.
  *

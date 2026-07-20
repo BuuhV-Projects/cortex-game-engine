@@ -41,7 +41,7 @@ export function boxFromDrag(
 }
 
 /**
- * **Encaixa um modelo na caixa desenhada** (modo GLB do desenhar — ADR-0093):
+ * **Encaixa um modelo na caixa desenhada** (modo GLB do desenhar — SPEC-0093):
  * dado o bounding box NATIVO do modelo (escala 1) e a caixa desenhada
  * (centro + dimensões, base no chão), devolve `scale` por eixo e a `position`
  * do pivô que fazem o bbox do modelo preencher a caixa — base alinhada ao chão,
@@ -69,13 +69,13 @@ export function fitModelToBox(
 }
 
 /**
- * **Desenhar blockout** (ProBuilder "New Shape" — ADR-0071). Fluxo igual ao do
+ * **Desenhar blockout** (ProBuilder "New Shape" — SPEC-0071). Fluxo igual ao do
  * Unity: arme o modo, **arraste no terreno** pra definir a base (retângulo no XZ),
  * **solte** e **mova o mouse pra cima/baixo** pra definir a altura, **clique** pra
  * confirmar. Cria um nó `mesh` (cubo) com a pose/tamanho desenhados — OU, com um
  * **modelo escolhido** ({@link ShapeDrawSystem.setModel}), um nó `model` com o
  * `.glb` **moldado à caixa** (escala por eixo; o preview do próprio modelo escala
- * AO VIVO durante o desenho — ADR-0093).
+ * AO VIVO durante o desenho — SPEC-0093).
  *
  * Enquanto desenha, `editorState.drawingShape = true` — o ObjectEditSystem e o
  * MeshEditSystem cedem o clique. `Esc` cancela. Mostra um preview translúcido.
@@ -98,7 +98,7 @@ export class ShapeDrawSystem extends System {
   private preview: THREE.Mesh | null = null;
   private hover: THREE.Mesh | null = null;
   private readonly prev = new Map<string, boolean>();
-  /** Modo modelo (ADR-0093): url do `.glb` que o desenho molda (null = caixa). */
+  /** Modo modelo (SPEC-0093): url do `.glb` que o desenho molda (null = caixa). */
   private modelUrl: string | null = null;
   /** Preview vivo do modelo (escala junto do arrasto). */
   private modelPreview: THREE.Object3D | null = null;
@@ -169,7 +169,7 @@ export class ShapeDrawSystem extends System {
   }
 
   /**
-   * Define O QUE o desenho cria (ADR-0093): `null` = caixa paramétrica (mesh);
+   * Define O QUE o desenho cria (SPEC-0093): `null` = caixa paramétrica (mesh);
    * uma URL `.glb` = nó `model` moldado à caixa desenhada (escala por eixo).
    */
   setModel(url: string | null): void {

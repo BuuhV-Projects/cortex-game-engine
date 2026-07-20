@@ -1,6 +1,6 @@
 /**
  * **Seletor de textura em modal** (grade de miniaturas) — usado pra escolher a
- * superfície da estrada (ADR-0072), mas genérico. Mostra um grid de previews; clicar
+ * superfície da estrada (SPEC-0072), mas genérico. Mostra um grid de previews; clicar
  * num item dispara `onPick(value)` e fecha. Esc ou clique no fundo fecham.
  *
  * É chrome de viewport (DOM overlay): aparece sobre o canvas (inclusive no modo bridge

@@ -66,7 +66,7 @@ napi_value jsReadFile(napi_env env, napi_callback_info info) {
 
 // Nome vindo do JS pra ESCRITA na pasta do jogo — barra fuga da pasta: tira
 // separadores, ':' e colapsa "..". Só arquivo na raiz do dist-native (caso de
-// uso: config.ini editável pelo usuário — ADR-0124).
+// uso: config.ini editável pelo usuário — SPEC-0124).
 std::string safeBaseName(const std::string& name) {
   std::string out;
   for (char c : name) {

@@ -16,7 +16,7 @@ export interface InspectOrbit {
 }
 
 /**
- * **Câmera de inspeção** (ADR-0131): uma câmera de perspectiva livre, separada da
+ * **Câmera de inspeção** (SPEC-0131): uma câmera de perspectiva livre, separada da
  * do jogo e da do editor, que pode ser posicionada/orbitada por código pra "ver"
  * a cena de QUALQUER ângulo sem depender da câmera de gameplay (que segue o
  * player) nem do modo editor (que traz HUD/gizmos/helpers).

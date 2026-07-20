@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O Chat IA do Studio (agente embutido, ADR-0014/0017) roda sobre o
+O Chat IA do Studio (agente embutido, SPEC-0014/0017) roda sobre o
 `@anthropic-ai/claude-agent-sdk` com o preset `claude_code`. A autenticação é a
 mesma do Claude Code CLI do usuário: OAuth da assinatura (`~/.claude/.credentials.json`),
 sem `ANTHROPIC_API_KEY` no ambiente. Confirmado em diagnóstico: não há credencial

@@ -1,5 +1,5 @@
 /**
- * **Biblioteca de formas de blockout** (ProBuilder — ADR-0071).
+ * **Biblioteca de formas de blockout** (ProBuilder — SPEC-0071).
  *
  * Funções **puras** `params → {@link EditableMesh}` (vértices + faces poligonais,
  * em quads quando dá pra editar/extrudar limpo). Sem three, sem editor — só dado,

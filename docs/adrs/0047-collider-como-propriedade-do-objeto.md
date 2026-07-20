@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O `Collider2DComponent` (ADR-0045) era sempre centrado na posição do
+O `Collider2DComponent` (SPEC-0045) era sempre centrado na posição do
 `TransformComponent`. Na prática, pra cobrir uma sub-região do mesh (só o "deck"
 de uma ponte, não os pilares) ou compensar um pivô descentralizado do GLB, os
 projetos criavam o collider como **entidade ECS desacoplada** do mesh (Transform +
@@ -58,7 +58,7 @@ frame seguinte vê Y-overlap e teleporta o player pra borda. O workaround era ma
   wall-trap de UM collider sólido, não a parede entre dois.
 - O padrão **desacoplado** (Transform-only, sem Object3D) ainda funciona (é código
   de usuário), mas deixa de ser necessário/recomendado.
-- Persistência reusa o overlay (`SceneFileV1.data`, ADR-0031/0044) — sem novo
+- Persistência reusa o overlay (`SceneFileV1.data`, SPEC-0031/0044) — sem novo
   formato; `data.colliders` é opaco pro resto do engine.
-- Relaciona-se com ADR-0045 (primitivas plataformer), 0046 (ponte editor↔ECS,
+- Relaciona-se com SPEC-0045 (primitivas plataformer), 0046 (ponte editor↔ECS,
   write-back) e 0044 (overlay data-driven).

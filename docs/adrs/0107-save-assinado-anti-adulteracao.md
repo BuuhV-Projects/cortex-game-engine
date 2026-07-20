@@ -5,7 +5,7 @@
 
 ## Contexto
 
-Com o save persistindo em disco (ADR-0106), o valor era **JSON puro** em
+Com o save persistindo em disco (SPEC-0106), o valor era **JSON puro** em
 `%APPDATA%/<jogo>/saves/localStorage.json`:
 
 ```json
@@ -59,4 +59,4 @@ embrulha o JSON por esse helper antes do `localStorage.setItem` e verifica no
 - API pública nova (`index-runtime` + `VENDOR_TYPE_MODULES` + engine-api.md);
   `hmacSha256` fica interno. Testes: `tests/io/hmacSha256.test.ts` (vetores) e
   `tests/io/signedSave.test.ts` (round-trip, adulteração de dados/assinatura,
-  chave errada, formato legado, unicode). Estende ADR-0106 (persistência).
+  chave errada, formato legado, unicode). Estende SPEC-0106 (persistência).

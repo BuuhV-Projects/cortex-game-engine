@@ -1,7 +1,7 @@
 import { SHAPES, type ShapeKind } from '../probuilder/shapes.js';
 
 /**
- * Painel "Formas" do editor (blockout — ADR-0071): grade de botões com as formas
+ * Painel "Formas" do editor (blockout — SPEC-0071): grade de botões com as formas
  * paramétricas (cubo/escada/rampa/arco/parede/…); clicar cria um nó `mesh` na cena
  * (o chamador instancia e persiste na overlay, como o {@link EditorAddPanel}). É a
  * paleta de blockout estilo ProBuilder. Opcional/conveniência (DOM), opt-in via
@@ -15,11 +15,11 @@ export interface EditorShapePanel {
 export interface EditorShapePanelOptions {
   /** Chamado ao clicar numa forma — recebe o tipo (`cube`/`stairs`/…). */
   onAddShape: (kind: ShapeKind) => void;
-  /** Chamado ao clicar em "Desenhar blockout" — arma o desenho de caixa (ADR-0071). */
+  /** Chamado ao clicar em "Desenhar blockout" — arma o desenho de caixa (SPEC-0071). */
   onDrawBox?: () => void;
-  /** Chamado ao clicar em "Vegetação" — cria um nó `vegetation` e liga o pincel (ADR-0077). */
+  /** Chamado ao clicar em "Vegetação" — cria um nó `vegetation` e liga o pincel (SPEC-0077). */
   onAddVegetation?: () => void;
-  /** Abre o picker "Adicionar modelo (.glb)" (modal com busca — ADR-0093). */
+  /** Abre o picker "Adicionar modelo (.glb)" (modal com busca — SPEC-0093). */
   onPickModel?: () => void;
   parent?: HTMLElement;
 }
@@ -98,7 +98,7 @@ export function createEditorShapePanel(options: EditorShapePanelOptions): Editor
   }
 
 
-  // "Modelo (.glb)": abre o picker com busca (ADR-0093) — level design com as
+  // "Modelo (.glb)": abre o picker com busca (SPEC-0093) — level design com as
   // peças reais dos kits, não só primitivas.
   if (onPickModel) {
     const m = document.createElement('button');
@@ -110,7 +110,7 @@ export function createEditorShapePanel(options: EditorShapePanelOptions): Editor
   }
 
   // "Vegetação": cria o nó + liga o pincel; o MODELO (árvore/arbusto/…) se escolhe no
-  // Inspector (modal com preview). Um único botão — sem grama/árvore redundante (ADR-0077).
+  // Inspector (modal com preview). Um único botão — sem grama/árvore redundante (SPEC-0077).
   if (onAddVegetation) {
     const b = document.createElement('button');
     b.textContent = '🌿 Vegetação';

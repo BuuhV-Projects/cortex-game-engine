@@ -91,7 +91,7 @@ describe('export nativo — toolchain auto-contido (TDR-0003)', () => {
     expect(deps).toHaveProperty(dep);
   });
 
-  // Ícone do launcher (ADR-0127): o embed-icon.mjs resolve estas do toolchain.
+  // Ícone do launcher (SPEC-0127): o embed-icon.mjs resolve estas do toolchain.
   it.each(['png-to-ico', 'rcedit'])('toolchain pina a dep do embed de ícone: %s', (dep) => {
     expect(deps).toHaveProperty(dep);
   });

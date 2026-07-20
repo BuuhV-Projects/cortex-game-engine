@@ -20,7 +20,7 @@ lado).
 | `GameLoop` | Loop principal (baixo nível; o `Game` já usa). `new GameLoop({ onUpdate(dt), onFixedUpdate? })`, `.start()`/`.stop()`. |
 | `Renderer` | Wrapper do `WebGPURenderer`. `.render(threeScene, camera)`, `.renderViewport(...)` (split-screen), `.resize(w,h)`, `.threeRenderer` (instância crua, p/ pós-processamento), `.isReady`, `.dispose()`. |
 | `Camera`, `PerspectiveCamera`, `OrthographicCamera` | Câmeras (re-exportadas via Renderer). Perspectiva p/ 3D; ortográfica p/ 2.5D/2D. |
-| `InspectCamera` | Câmera de inspeção livre (ADR-0131). `game.inspect.orbit({yaw,pitch,dist,target})` orbita um alvo, `.pose(pos,lookAt)` pose explícita, `.frame()` enquadra a cena, `.clear()` volta. Quando ativa o `Game` renderiza por ela (cru, sem PostFX) com a gameplay seguindo — pra cutscene/foto/replay de ângulo livre. É o motor do parâmetro `camera` do playtest do Chat IA. |
+| `InspectCamera` | Câmera de inspeção livre (SPEC-0131). `game.inspect.orbit({yaw,pitch,dist,target})` orbita um alvo, `.pose(pos,lookAt)` pose explícita, `.frame()` enquadra a cena, `.clear()` volta. Quando ativa o `Game` renderiza por ela (cru, sem PostFX) com a gameplay seguindo — pra cutscene/foto/replay de ângulo livre. É o motor do parâmetro `camera` do playtest do Chat IA. |
 | `Scene` | Wrapper de `THREE.Scene`. `.add(...objs)`, `.remove(...)`, `.clear()`, `.getThreeScene()`. |
 | `AssetLoader` | Carrega e cacheia assets. `.loadGLTF(url)→GLTF`, `.loadFBX(url)→Group`, `.loadTexture(url)`, `.loadAudio(url)`. |
 | `GLTF` (tipo) | Retorno de `loadGLTF` (`.scene`, `.animations`). |
@@ -78,7 +78,7 @@ anexe a um objeto pelo **Inspector** ("Adicionar Componente → Script") ou pelo
 (`node.scripts`). Roda **só no Play** (pausa no editor). Não cole lógica no `main.ts` — vire script.
 
 ```ts
-// scripts/Girar.ts — nome no Inspector = nome do ARQUIVO (auto-registro, ADR-0096)
+// scripts/Girar.ts — nome no Inspector = nome do ARQUIVO (auto-registro, SPEC-0096)
 import { ScriptBehavior } from 'cortex-game-engine'
 
 export class Girar extends ScriptBehavior {
@@ -149,14 +149,14 @@ O sistema mira o **único** player (entity com `TransformComponent` +
 `CharacterBodyComponent`). Pausa no editor (F2) e no pause do play — não rouba o
 mouse nem move o player enquanto você edita.
 
-### Câmera/controle de 3ª pessoa (StarterAssets-like) — ADR-0074
+### Câmera/controle de 3ª pessoa (StarterAssets-like) — SPEC-0074
 
 `setupThirdPerson(game)` liga a câmera **orbital por mouse** (clique trava o cursor)
 + controle: **WASD** anda relativo à câmera, **Shift** corre, **Espaço** pula; o
 personagem **vira** pra direção do movimento e **anima** (idle/walk/run/jump/fall) os
 clipes do `.glb`. O **player é um nó `model` `.glb` rigado** marcado `character` (o
 `buildScene` cria a física vertical + o `SceneAnimator`). Porta o comportamento do
-Unity StarterAssets ThirdPerson (a arte é placeholder — ver ADR-0074).
+Unity StarterAssets ThirdPerson (a arte é placeholder — ver SPEC-0074).
 
 ```ts
 import { Game, buildScene, setupThirdPerson } from 'cortex-game-engine'
@@ -187,7 +187,7 @@ movimento** ao `setupTopDown` via `readMove: () => ({ x, y })` (−1..1; analóg
 
 > O `GamepadManager` já ouve `gamepadconnected`/`gamepaddisconnected` no `window`
 > pra **reconexão confiável** — religar o controle volta a funcionar sem reiniciar
-> (ADR-0067). Continue só chamando `poll()` por frame; use `dispose()` no teardown.
+> (SPEC-0067). Continue só chamando `poll()` por frame; use `dispose()` no teardown.
 
 ```ts
 import { Game, buildScene, setupTopDown, GamepadManager } from 'cortex-game-engine'
@@ -216,7 +216,7 @@ game.onUpdate(() => { if (interact()) usarFerramenta() })
 > dispositivo, constantes de layout Xbox) é código **do jogo** — o engine não crava
 > nada disso. Ver `utils/controls.ts` do hearthvale-game como exemplo.
 
-### Personagem modular (criador de personagem) — ADR-0068
+### Personagem modular (criador de personagem) — SPEC-0068
 
 `composeModularCharacter(rig, parts)` / `loadModularCharacter(rigUrl, partUrls[])`
 montam um personagem de **peças que compartilham o mesmo esqueleto** (corpo/pele,
@@ -237,7 +237,7 @@ animator.play('Idle_Relaxed')
 game.onUpdate((dt) => animator.update(dt))
 ```
 
-### Multi-cena (telas alternativas) — ADR-0069
+### Multi-cena (telas alternativas) — SPEC-0069
 
 `game.setActiveScene(scene, camera)` troca a cena/câmera renderizadas por frame — pra
 **criador de personagem, menus, troca de região** sem a cena do jogo atrás. Volte com
@@ -379,7 +379,7 @@ const dlg = startDialogue(graph, {
 - O grafo pode vir de `.json` importado (`import g from './dialogues/x.json'` →
   `parseDialogueGraph(g)`).
 
-## Multi-idioma (i18n) + config.ini — ADR-0124
+## Multi-idioma (i18n) + config.ini — SPEC-0124
 
 Traduções são **DADO**: arquivos `languages/<código>.txt` na raiz do projeto
 (ex.: `languages/pt-BR.txt`, `languages/en.txt`), uma entrada `CHAVE="VALOR"` por
@@ -573,7 +573,7 @@ game.onUpdate((dt) => scene.update(dt)) // anima água
   overrides + `data.deleted` + `data.added`. O `buildScene` aplica por cima. Pra
   "achatar" as edições na base depois, leia a overlay e mova as entradas pros
   arquivos `scenes/*.json` (e limpe a overlay).
-- **Jogo com VÁRIAS fases** (ADR-0094): dê um overlay POR FASE — defina
+- **Jogo com VÁRIAS fases** (SPEC-0094): dê um overlay POR FASE — defina
   `game.sceneDataUrl = 'assets/scene-data-<fase>.json'` logo depois de escolher
   a fase (antes do `buildScene`) e carregue o MESMO caminho no
   `loadSceneFile(...)`. Compartilhar um arquivo vaza `added`/`deleted` entre
@@ -634,7 +634,7 @@ aprendidas do projeto** (`.cortex/validation-rules.json`, gravadas pelo ciclo de
 aprendizado via `save_rule` — ADR-0115) como default dessas opções.
 
 **Merge estático** (`mergeStaticScene(root, world?, extraDynamicRoots?)`,
-`isNativeHost()`, ADR-0121): funde a geometria PARADA do cenário em poucas
+`isNativeHost()`, SPEC-0121): funde a geometria PARADA do cenário em poucas
 malhas por material (transform baked) pra reduzir draw calls. O `buildScene`
 chama sozinho no host nativo (opt-out `mergeStatic: false` nas opções); nunca
 roda no Studio (o editor precisa dos objetos individuais). Ficam de fora:
@@ -642,7 +642,7 @@ entidades dinâmicas (scripts/player/Rapier), animados, skinned, vegetação,
 terreno, água. Física preservada (`cortexSolid` sobrevive; colliders derivam
 antes).
 
-## Blockout / ProBuilder — nó `mesh` editável (ADR-0071)
+## Blockout / ProBuilder — nó `mesh` editável (SPEC-0071)
 
 `MeshNode`, `buildShape`, `SHAPES`, `ShapeKind`, `EditableMesh`, `toBufferGeometry`,
 `extrudeFace`. Pra **rascunhar volumes/layout** de um nível (escada, rampa, arco,
@@ -677,7 +677,7 @@ A geometria editada é salva no overlay (`data.geometry[id]`, **vence** a receit
 > Ao **gerar cena** (Chat IA), prefira `primitive`/`model`; use `mesh` quando o usuário
 > pedir blockout/escada/rampa/arco/parede-com-vão. Declare física nos campos do nó.
 
-## Vegetação instanciada (nó `vegetation` — ADR-0077)
+## Vegetação instanciada (nó `vegetation` — SPEC-0077)
 
 `Vegetation`, `makePlaceholderVegetation`. Povoa o terreno com **árvores/grama/arbustos**
 via instancing (um draw call por sub-malha — aguenta milhares). É **dado**: o modelo + a
@@ -897,7 +897,7 @@ game.onUpdate((dt) => scene.update(dt)) // tica o parallax do background (e a á
 
 ## Sprite 2D / spritesheet (sprite)
 
-Nó `sprite` na cena (data-driven, ADR-0057) — sprite estático ou **animado** por
+Nó `sprite` na cena (data-driven, SPEC-0057) — sprite estático ou **animado** por
 spritesheet. Estático = só `url`. Animado = `url` + grade de frames (`frameWidth/
 frameHeight` **ou** `columns/rows`) + `animations` (`{ nome: { frames, fps?, loop? } }`).
 A grade indexa frames `0 = topo-esquerda`, esquerda→direita. `pixelsPerUnit` (default
@@ -922,14 +922,14 @@ e o nó só referencia a `url` — o `buildScene` herda a grade/animações do k
 do nó vencem), igual ao preset de `collider` por `role`.
 Imperativo: `loadTexture(url)` → `new Spritesheet(tex, { frameWidth, frameHeight })` →
 `createAnimatedSprite(sheet, anims, { initial })`. (Limites: `collider`/`player` no
-sprite e packing de PNGs separados em uma folha ficam fora desta fase — ver ADR-0057.)
+sprite e packing de PNGs separados em uma folha ficam fora desta fase — ver SPEC-0057.)
 
 ## Terreno heightmap (terrain) — top-down/3D
 
-Nó `terrain` (ADR-0059): um plano horizontal (XZ) subdividido que você **esculpe**
+Nó `terrain` (SPEC-0059): um plano horizontal (XZ) subdividido que você **esculpe**
 — `Terrain.sculpt(x, z, raio, delta)` levanta/abaixa a altura (Y) com falloff suave
 (`delta>0` sobe, `<0` abaixa). No editor o pincel tem dois **modos** (seção Terreno
-do Inspector, ADR-0063): **Esculpir** (altura) e **Texturizar** (pinta textura —
+do Inspector, SPEC-0063): **Esculpir** (altura) e **Texturizar** (pinta textura —
 escolha uma imagem do projeto ou importe com "Importar textura…"; SHIFT apaga). O
 heightmap persiste em `overlay.data.terrain[id]` e a pintura em
 `overlay.data.terrainPaint[id]`. Combine com a câmera top-down pra jogos de
@@ -956,7 +956,7 @@ const paint = terrain.getPaint()  // serializável; terrain.setPaint(...) restau
 `world` no `buildScene`, o terreno vira colidível — `TerrainCollisionSystem` mantém
 os corpos (`PlatformerBodyComponent`/`KinematicBodyComponent`) EM CIMA da superfície
 (`Terrain.heightAt(x,z)`), vale pra 3D/2.5D/top-down. Limites: sculpt só raise/lower
-(smooth/flatten vêm depois); máx. 4 texturas por terreno; trocar o Shader (ADR-0058)
+(smooth/flatten vêm depois); máx. 4 texturas por terreno; trocar o Shader (SPEC-0058)
 do objeto-terreno desfaz o blend de splat.
 
 ## Character controller (player/NPC com cápsula — estilo UPBGE)
@@ -1091,7 +1091,7 @@ o Rapier é montado em código (`main.ts`).
 ## Material / shader por objeto (material)
 
 Atribui um "shader" (material do Three) a um objeto pela propriedade `material` do nó
-(ADR-0058) — como na Unity. Presets: `standard` (PBR original do `.glb`), `unlit`
+(SPEC-0058) — como na Unity. Presets: `standard` (PBR original do `.glb`), `unlit`
 (textura × cor **sem luz**, look fullbright/vívido — porta o `Supyrb/Unlit/Texture`;
 knobs: `cull`/`depthWrite`/`depthTest`/`opacity`/`alphaTest`, `textured` (default
 `true`; `false` = cor **CHAPADA** ignorando o `map` do GLB — some com a textura e

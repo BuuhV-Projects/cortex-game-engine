@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
 
     // Idioma preferido do SO (ex.: "pt-BR") → __cortexLocale, pré-boot. O shim
     // JS espelha em navigator.language (fiel ao browser) e o i18n do engine usa
-    // pra escolher o arquivo de idioma na primeira abertura (ADR-0124).
+    // pra escolher o arquivo de idioma na primeira abertura (SPEC-0124).
     {
       int count = 0;
       SDL_Locale** locales = SDL_GetPreferredLocales(&count);

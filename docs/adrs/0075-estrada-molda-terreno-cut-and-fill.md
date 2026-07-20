@@ -1,11 +1,11 @@
 # 0075 - Estrada molda o terreno (cut & fill + talude)
 
 **Data:** 2026-06-27
-**Status:** aceito — implementa a **Fase 2** do [ADR-0072](0072-sistema-de-estradas-spline-road-architect.md)
+**Status:** aceito — implementa a **Fase 2** do [SPEC-0072](../specs/0072-sistema-de-estradas-spline-road-architect.md)
 
 ## Contexto
 
-Na Fase 1 do ADR-0072 a relação pista↔terreno era **a pista obedece**: `conformTerrain`
+Na Fase 1 do SPEC-0072 a relação pista↔terreno era **a pista obedece**: `conformTerrain`
 faz raycast por vértice e crava a malha da pista em `terrenoY + yOffset`. A pista vira uma
 **toalha jogada por cima do relevo** — herda toda a rugosidade do terreno. Numa encosta
 íngreme ou num relevo acidentado, a estrada fica ondulada/torta, seguindo cada bossa
@@ -15,7 +15,7 @@ A relação correta de uma estrada de verdade é **o inverso**: a estrada tem um
 (perfil de elevação suave) e o **terreno se adapta a ela** — *cut & fill* (engenharia
 rodoviária): **corta** o terreno onde ele está acima da pista, **aterra** onde está abaixo,
 com um **talude** (rampa de transição) nas laterais pra não virar um paredão vertical. O
-próprio ADR-0072 já previa isso ("Achatar o terreno embaixo da pista fica pra Fase 2 — mexe
+próprio SPEC-0072 já previa isso ("Achatar o terreno embaixo da pista fica pra Fase 2 — mexe
 no heightmap/TerrainAuthoring").
 
 ## Decisão
@@ -79,6 +79,6 @@ post-pass ao vivo ao trocar modo/talude/largura.
   sempre satisfaz). Sem terreno no momento, a estrada não molda.
 - **Pista plana na largura** nesta fase (sem *banking*/superelevação nas curvas) — abrir
   registro próprio se for fazer.
-- **Fora de escopo**: interseções/pontes (continuam Fase 3+ do ADR-0072), superelevação.
+- **Fora de escopo**: interseções/pontes (continuam Fase 3+ do SPEC-0072), superelevação.
 - **API pública nova** → `yarn docs:engine`, `engine-api.md`/`architecture.md` atualizados,
   re-vendorizar os projetos-jogo de teste.

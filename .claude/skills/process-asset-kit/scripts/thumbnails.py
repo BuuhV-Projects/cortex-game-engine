@@ -1,5 +1,5 @@
 # Renderiza 1 thumbnail por asset (vista 3/4, fundo transparente) — referência pro
-# dev e pra IA, e cache do futuro inspect_assets (ADR-0037/0053). Salva em
+# dev e pra IA, e cache do futuro inspect_assets (SPEC-0037/0053). Salva em
 # <kitDir>/thumbnails/<name>.png.
 #
 # Uso (Blender headless):

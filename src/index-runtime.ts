@@ -123,7 +123,7 @@ export * from './scene/Vegetation.js';
 export * from './scene/Sprite.js';
 export * from './scene/Spritesheet.js';
 export * from './scene/Tilemap.js';
-// ─── ProBuilder: malhas de blockout editáveis (ADR-0071) ──────────────────────
+// ─── ProBuilder: malhas de blockout editáveis (SPEC-0071) ──────────────────────
 // Formas paramétricas (cubo/escada/rampa/arco/parede…) + malha poligonal editável
 // (toBufferGeometry flat-shaded + extrusão). Dado puro; a edição vive no editor.
 // `Vec3` NÃO é re-exportado aqui (já vem de SceneDefinition — evita ambiguidade).
@@ -146,7 +146,7 @@ export * from './io/TauriSceneFileWriter.js';
 export * from './io/autoDetectSceneFileWriter.js';
 export * from './io/signedSave.js';
 
-// ─── i18n + config do jogo (ADR-0124) ─────────────────────────────────────────
+// ─── i18n + config do jogo (SPEC-0124) ─────────────────────────────────────────
 // Traduções em languages/<código>.txt (uma chave=texto por linha) e config.ini
 // na raiz do jogo (dist-native no export nativo): idioma, janela, vsync etc.
 export * from './i18n/I18n.js';

@@ -14,7 +14,7 @@ import { Object3DComponent } from '../components/Object3DComponent.js';
 import { ScriptComponent } from '../components/ScriptComponent.js';
 
 /**
- * **Merge da geometria estática da cena** (ADR-0120) — reduz draw calls fundindo
+ * **Merge da geometria estática da cena** (SPEC-0120) — reduz draw calls fundindo
  * as malhas paradas do cenário (ilhas, árvores, pedras, decoração) em poucas
  * malhas agrupadas por material, com o transform de mundo "assado" (baked).
  *
@@ -41,7 +41,7 @@ import { ScriptComponent } from '../components/ScriptComponent.js';
  *
  * A física NÃO muda: colliders derivam dos nós ANTES do merge; o raycast de
  * chão/parede do Character enxerga a malha fundida (que preserva
- * `cortexSolid`), e o BVH (ADR-0108) é construído uma vez sobre ela.
+ * `cortexSolid`), e o BVH (SPEC-0108) é construído uma vez sobre ela.
  */
 export interface StaticMergeStats {
   /** Malhas originais fundidas (removidas da cena). */

@@ -18,7 +18,7 @@ yarn electron:dev
 
 - **Novo projeto**: **+ Novo Projeto** na sidebar — pede pasta e nome, copia o
   template, vendoriza o engine e roda `yarn install` automaticamente
-  ([ADR-0013](docs/adrs/0013-yarn-install-automatico-apos-criar-projeto.md)).
+  ([SPEC-0013](docs/specs/0013-yarn-install-automatico-apos-criar-projeto.md)).
 - **Abrir projeto existente**: **Abrir Projeto** — diálogo nativo do SO.
   Persiste no `localStorage` e reabre da próxima vez.
 
@@ -28,9 +28,9 @@ yarn electron:dev
   overlay de edição do editor que vence o código/JSON
   ([ADR-0044](docs/adrs/0044-cena-data-driven-json-com-overlay-do-editor.md)).
 - **Editor visual (F2)**: mover/rotacionar/escalar, hierarquia, Inspector,
-  `Ctrl+Z` ([ADR-0084](docs/adrs/0084-undo-editor.md)), blockout
+  `Ctrl+Z` ([SPEC-0084](docs/specs/0084-undo-editor.md)), blockout
   paramétrico estilo ProBuilder
-  ([ADR-0071](docs/adrs/0071-probuilder-blockout-mesh-editavel.md)).
+  ([SPEC-0071](docs/specs/0071-probuilder-blockout-mesh-editavel.md)).
 - **Física editável no Inspector** (Rapier): colisão é **propriedade do
   objeto** (Nenhum / Estático / Character), declarada nos campos do nó — não
   cravada no código ([TDR-0002](docs/tdrs/0002-fisica-dinamica-com-rapier.md)).

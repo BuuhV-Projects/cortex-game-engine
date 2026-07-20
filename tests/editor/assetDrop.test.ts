@@ -1,5 +1,5 @@
 /**
- * Cobre a lógica pura do arrastar-asset-pra-cena (ADR-0090): extração da URL do
+ * Cobre a lógica pura do arrastar-asset-pra-cena (SPEC-0090): extração da URL do
  * DataTransfer (MIME próprio vs text/plain do move-arquivo da IDE), NDC do clique
  * e o ponto-mundo do drop (raycast na geometria → plano do chão → frente da câmera).
  */

@@ -1,5 +1,5 @@
 /**
- * Barra flutuante de **edição de malha** (blockout/ProBuilder — ADR-0071), estilo
+ * Barra flutuante de **edição de malha** (blockout/ProBuilder — SPEC-0071), estilo
  * a toolbar do ProBuilder da Unity. Aparece no topo do viewport quando uma malha
  * (`mesh`) está selecionada e deixa alternar Objeto/Vértice/Aresta/Face + Extrudar
  * com um clique — sem depender de atalho de teclado nem de achar a seção no

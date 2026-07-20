@@ -1,6 +1,6 @@
 /**
  * Testes da biblioteca de formas de blockout (src/probuilder/shapes.ts) e da
- * conversão pra geometria de render (src/probuilder/EditableMesh.ts). Ver ADR-0071.
+ * conversão pra geometria de render (src/probuilder/EditableMesh.ts). Ver SPEC-0071.
  *
  * Foco: topologia válida (índices em faixa, faces fechadas), determinismo das
  * formas paramétricas e os invariantes de render (mapas de picking) + extrusão.

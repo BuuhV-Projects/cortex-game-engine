@@ -18,7 +18,7 @@ no mesmo escopo:
 Isso dificulta achar/testar cada parte, e a autoria de física vai crescer muito
 (Rapier — ver TDR-0002). Também queremos um **ponto único de autoria** que o
 Inspector, o Chat IA e scripts compartilhem (física = dado da cena, visível e
-sobrescrevível pela overlay — ver a regra em CLAUDE.md e ADR-0058).
+sobrescrevível pela overlay — ver a regra em CLAUDE.md e SPEC-0058).
 
 ## Decisão
 
@@ -43,7 +43,7 @@ interface EditorAuthoringContext {
 
 Cada autoria é uma factory `createXAuthoring(ctx): XApi` que:
 1. lê/escreve **somente** seu `ctx.record('<chave>')` no overlay (precedência:
-   overlay > código/JSON; ver ADR-0058);
+   overlay > código/JSON; ver SPEC-0058);
 2. aplica a edição **ao vivo** no `World`/cena;
 3. expõe a `XApi` que o `EditorModel`/Inspector já consome.
 

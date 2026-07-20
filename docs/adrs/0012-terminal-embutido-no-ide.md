@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O ADR-0010 cobriu o painel de console que mostra a saída do `run:start`
+O SPEC-0010 cobriu o painel de console que mostra a saída do `run:start`
 (vite no projeto). Mas pra instalar dependências (`yarn add three`),
 rodar scripts (`yarn build`) ou qualquer outro comando contra o projeto,
 o usuário precisa abrir um terminal externo, navegar até o projeto e
@@ -37,7 +37,7 @@ revisitamos quando virar atrito real.
 - `terminal:stop` mata o processo do terminal sem afetar o play.
 
 **UI**: painel inferior ganha **abas** ("Console" / "Terminal"):
-- **Console**: comportamento atual (ADR-0010) — logs do `run:start`.
+- **Console**: comportamento atual (SPEC-0010) — logs do `run:start`.
 - **Terminal**: input de comando + botão "Executar" (ou Enter) + área
   de output streaming. Botão "Parar" aparece enquanto há comando em
   execução.

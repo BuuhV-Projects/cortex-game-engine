@@ -8,7 +8,7 @@
 
 Defined in: [src/scene/Vegetation.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Vegetation.ts#L54)
 
-**Vegetação instanciada** (ADR-0077): espalha muitas cópias de um modelo (árvore,
+**Vegetação instanciada** (SPEC-0077): espalha muitas cópias de um modelo (árvore,
 grama, arbusto…) numa única malha por geometria via InstancedMesh — aguenta
 milhares de instâncias com um draw call por sub-malha. As instâncias são **dado**
 (`[x,y,z,rotY,scale]`), espalhadas pelo pincel do editor e persistidas no overlay.

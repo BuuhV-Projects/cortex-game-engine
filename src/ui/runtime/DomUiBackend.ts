@@ -36,7 +36,7 @@ export class DomUiBackend implements UiBackend {
   sync(widgets: ReadonlyArray<UiWidget>, viewport: UiViewport, scale = 1): void {
     // A UI é posicionada no espaço de DESIGN (`viewport`) e a raiz inteira é
     // esticada pro real por uma `transform: scale` — posições, tamanhos, fontes,
-    // bordas e sombras crescem juntos (vetorial, nítido em 4K). ADR-0129.
+    // bordas e sombras crescem juntos (vetorial, nítido em 4K). SPEC-0129.
     if (scale !== this._lastScale) {
       this._lastScale = scale;
       this._root.style.transform = scale === 1 ? '' : `scale(${scale})`;
@@ -111,7 +111,7 @@ export class DomUiBackend implements UiBackend {
       node.style.boxShadow = widget.boxShadow;
       node.style.boxSizing = 'border-box';
       // `pointer-events:auto` só pro cursor de mãozinha; o CLIQUE é tratado no
-      // UiLayer (hit-test único, vale pros dois backends — ADR-0133). Ligar um
+      // UiLayer (hit-test único, vale pros dois backends — SPEC-0133). Ligar um
       // `onclick` aqui também dispararia onPress em DOBRO.
       node.style.pointerEvents = 'auto';
       node.style.cursor = 'pointer';

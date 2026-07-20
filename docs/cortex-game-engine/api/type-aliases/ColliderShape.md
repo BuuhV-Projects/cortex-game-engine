@@ -10,7 +10,7 @@
 
 Defined in: [src/core/Physics.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L63)
 
-Forma geométrica do collider (ADR-0027).
+Forma geométrica do collider (SPEC-0027).
 
 Discriminated union por `kind`. Sphere é o caso mais simples; cylinder e
 capsule são sempre **vertical-aligned** (eixo Y) — cobre 95% dos casos

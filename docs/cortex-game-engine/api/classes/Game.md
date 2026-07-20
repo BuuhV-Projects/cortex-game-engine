@@ -190,7 +190,7 @@ Defined in: [src/core/Game.ts:246](https://github.com/BuuhV-Projects/cortex-game
 
 Defined in: [src/core/Game.ts:352](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L352)
 
-**Câmera de inspeção** (ADR-0131): câmera de perspectiva livre pra "ver" a
+**Câmera de inspeção** (SPEC-0131): câmera de perspectiva livre pra "ver" a
 cena de qualquer ângulo por código, independente da câmera do jogo (que segue
 o player) e do modo editor. Quando ativada (`orbit`/`pose`/`frame`), o render
 do frame passa a usá-la (cru, sem pós); `clear()` volta ao normal. Criada sob
@@ -370,7 +370,7 @@ Sem argumentos (ou passando `game.scene`/`game.camera`), volta pra cena do jogo.
 O `world` (ECS) e o input continuam os mesmos — pause os sistemas de gameplay
 (`pauseWhen`) enquanto mostra outra cena. A cena alternativa renderiza **direto**
 (sem o PostFX da cena do jogo). Tipicamente combinado com uma tela de loading
-([createDomLoadingScreen](../functions/createDomLoadingScreen.md)) na transição. Ver ADR-0069.
+([createDomLoadingScreen](../functions/createDomLoadingScreen.md)) na transição. Ver SPEC-0069.
 
 #### Parameters
 

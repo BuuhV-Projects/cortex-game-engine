@@ -10,7 +10,7 @@ import { WebGPURenderer } from 'three/webgpu';
 import { loadGLB, instance } from '../scene/SceneAssets.js';
 
 /**
- * **Thumbnails 3D de modelos** (ADR-0093): renderiza um `.glb` numa miniatura
+ * **Thumbnails 3D de modelos** (SPEC-0093): renderiza um `.glb` numa miniatura
  * (renderer WebGL compartilhado, offscreen) e devolve um data-URL, com cache por
  * URL e fila serial (1 render por vez — sem estourar GPU ao abrir um modal com
  * dezenas de modelos). Usado pelo picker "Adicionar modelo"/"Desenhar blockout"

@@ -3,7 +3,7 @@ import type { MaterialApi } from '../EditorInspector.js';
 import type { EditorAuthoringContext } from './AuthoringContext.js';
 
 /**
- * Autoria do **material/shader por objeto** (ADR-0058/0060): aplica o preset
+ * Autoria do **material/shader por objeto** (SPEC-0058/0060): aplica o preset
  * (standard/unlit/toon) ao vivo e persiste a `MaterialConfig` em
  * `overlay.data.material[nome]`.
  *

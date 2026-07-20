@@ -14,7 +14,7 @@ export interface UiBackend {
    * `viewport` é o de DESIGN (espaço lógico do layout, ver `layout.ts`); o
    * backend PRESENTA esse espaço esticado pra tela real pelo `scale` (DOM: uma
    * `transform: scale` na raiz; renderer: câmera no espaço de design + região de
-   * render no viewport real). `scale` default 1 = sem escala (ADR-0129).
+   * render no viewport real). `scale` default 1 = sem escala (SPEC-0129).
    */
   sync(widgets: ReadonlyArray<UiWidget>, viewport: UiViewport, scale?: number): void;
   /** Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho). */
