@@ -1,11 +1,19 @@
 # PRD 0005 - Capacidade open-world (host nativo + engine)
 
-**Data:** 2026-07-18
-**Status:** planejado — nenhum marco iniciado. Este PRD registra o roadmap
-completo (M-perf-0..5) para que a engine e o CortexNative suportem, quando o
-jogo existir, um mundo-aberto escala GTA 3 (cidade ~4 km², streaming de
-células, tráfego/pedestres, 60fps no host nativo). Continuação natural do
-plano de perf executado em `.claude/plano-perf-render-nativo.md` (ADR-0122).
+**Data:** 2026-07-18 (marcos concluídos em 2026-07-21)
+**Status:** **M-perf-0..4 CONCLUÍDOS** — o host aguenta um mundo-aberto escala
+GTA 3 (streaming de células, boot < 1 s, ~60fps no chão). **M-perf-5 (shermes
+tipado/AOT) fica com GATE** — só se acionado quando o JS puro passar de 8 ms
+pós M-perf-2, o que NÃO ocorre hoje (o gargalo é render/NAPI, já cortado pelos
+render bundles; `world.tick`/update ~1-5 ms). Este PRD registra o roadmap
+completo (M-perf-0..5) para a engine e o CortexNative suportarem, quando o jogo
+existir, um mundo-aberto escala GTA 3 (cidade ~4 km², streaming de células,
+tráfego/pedestres, 60fps no host nativo). Continuação natural do plano de perf
+executado em `.claude/plano-perf-render-nativo.md` (ADR-0122).
+
+> **Follow-ups conhecidos (não-bloqueantes):** suavizar o worst-1% do voo
+> (orbit) no streaming, impostor/billboard pro LOD bem distante, decode de
+> textura assíncrono (follow-up do M-perf-3). Ver SPEC-0140.
 
 ## Problema
 
