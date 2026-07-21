@@ -7,6 +7,7 @@
 #include "../napi/napi_util.h"
 #include "enums.h"
 #include "internal.h"
+#include "napi_stats.h"
 
 namespace webgpu {
 namespace {
@@ -125,7 +126,10 @@ napi_value passSetPipeline(napi_env env, napi_callback_info info) {
   if (pass && argc >= 1) {
     auto* pipeline =
         static_cast<WGPURenderPipeline>(njs::unwrapValue(env, args[0]));
-    if (pipeline) wgpuRenderPassEncoderSetPipeline(pass, pipeline);
+    if (pipeline) {
+      bumpSetPipeline();
+      wgpuRenderPassEncoderSetPipeline(pass, pipeline);
+    }
   }
   return njs::undefined(env);
 }
@@ -143,6 +147,7 @@ napi_value passDraw(napi_env env, napi_callback_info info) {
     if (napi_get_value_double(env, args[i], &value) == napi_ok)
       counts[i] = static_cast<uint32_t>(value);
   }
+  bumpDraw();
   wgpuRenderPassEncoderDraw(pass, counts[0], counts[1], counts[2], counts[3]);
   return njs::undefined(env);
 }
@@ -157,6 +162,7 @@ napi_value passSetBindGroup(napi_env env, napi_callback_info info) {
     napi_get_value_double(env, args[0], &index);
     auto* group = static_cast<WGPUBindGroup>(njs::unwrapValue(env, args[1]));
     if (group) {
+      bumpSetBindGroup();
       wgpuRenderPassEncoderSetBindGroup(
           pass, static_cast<uint32_t>(index), group, 0, nullptr);
     }
@@ -176,6 +182,7 @@ napi_value passSetVertexBuffer(napi_env env, napi_callback_info info) {
     double offset = 0;
     if (argc >= 3) napi_get_value_double(env, args[2], &offset);
     if (buffer) {
+      bumpSetVertexBuffer();
       wgpuRenderPassEncoderSetVertexBuffer(
           pass, static_cast<uint32_t>(slot), buffer,
           static_cast<uint64_t>(offset), WGPU_WHOLE_SIZE);
@@ -196,6 +203,7 @@ napi_value passSetIndexBuffer(napi_env env, napi_callback_info info) {
   double offset = 0;
   if (argc >= 3) napi_get_value_double(env, args[2], &offset);
   if (buffer) {
+    bumpSetIndexBuffer();
     wgpuRenderPassEncoderSetIndexBuffer(pass, buffer, format,
                                         static_cast<uint64_t>(offset),
                                         WGPU_WHOLE_SIZE);
@@ -213,6 +221,7 @@ napi_value passDrawIndexed(napi_env env, napi_callback_info info) {
   double values[5] = {0, 1, 0, 0, 0};
   for (size_t i = 0; i < argc && i < 5; ++i)
     napi_get_value_double(env, args[i], &values[i]);
+  bumpDrawIndexed();
   wgpuRenderPassEncoderDrawIndexed(
       pass, static_cast<uint32_t>(values[0]),
       static_cast<uint32_t>(values[1]), static_cast<uint32_t>(values[2]),
@@ -560,8 +569,10 @@ napi_value queueSubmit(napi_env env, napi_callback_info info) {
   if (argc < 1 || !gpu || !gpu->queue) return njs::undefined(env);
 
   std::vector<WGPUCommandBuffer> buffers = collectCommandBuffers(env, args[0]);
-  if (!buffers.empty())
+  if (!buffers.empty()) {
+    bumpSubmit();
     wgpuQueueSubmit(gpu->queue, buffers.size(), buffers.data());
+  }
   return njs::undefined(env);
 }
 

@@ -8,6 +8,7 @@ import { World } from '../ecs/World.js';
 import { UiLayer } from '../ui/runtime/UiLayer.js';
 import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
+import { FrameProfiler } from './FrameProfiler.js';
 import { InspectCamera } from './InspectCamera.js';
 
 /**
@@ -112,6 +113,14 @@ export class Game {
   /** Canvas de render. */
   readonly canvas: HTMLCanvasElement;
 
+  /**
+   * **Profiler por-subsistema do frame** (SPEC-0134) — mede `input`/`update`/
+   * `world`/`ui`/`render` a cada tick. Fica ligado só com o HUD de debug ativo
+   * (custo ≈ zero quando desligado). Exposto pra ferramentas/benchmark lerem o
+   * breakdown (`game.profiler.summary()`).
+   */
+  readonly profiler: FrameProfiler;
+
   private _sceneDataUrl = 'assets/scene-data.json';
   private readonly _sceneDataUrlListeners: Array<(url: string) => void> = [];
 
@@ -165,6 +174,9 @@ export class Game {
     this.input = new InputManager();
     if (typeof document !== 'undefined') this.input.attach(document.body);
     this.gamepad = new GamepadManager();
+    // Já liga junto se o modo debug foi pedido (export --debug / ?cortexHud=1),
+    // pra medir desde o 1º frame; o toggle do Studio liga/desliga em runtime.
+    this.profiler = new FrameProfiler({ enabled: debugHudRequested() });
 
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', () => {
@@ -356,16 +368,28 @@ export class Game {
 
   private _tick(deltaMs: number): void {
     const dt = deltaMs / 1000;
+    const p = this.profiler; // no-op quando o HUD de debug está desligado
+    p.begin('input');
     this.gamepad.poll(); // estado fresco do gamepad antes dos sistemas/onUpdate (Xbox-first)
+    p.end('input');
+    p.begin('update');
     this._onUpdate?.(dt);
+    p.end('update');
+    p.begin('world');
     this.world.tick(deltaMs);
+    p.end('world');
+    p.begin('ui');
     this._ui?.update(dt); // navegação/sync da UI de runtime (ADR-0102)
+    p.end('ui');
+    p.begin('editor');
     this._editor?.update(dt);
+    p.end('editor');
     // Câmera de inspeção (SPEC-0131): quando ativa VENCE tudo — render cru por ela,
     // de qualquer ângulo, com a gameplay seguindo (só o render muda). Usada pelo
     // playtest do Chat IA pra inspecionar a cena livremente.
     const inspectCamera = this._inspect?.active ? this._inspect : null;
     const editorCamera = this._editor?.activeCamera() ?? null;
+    p.begin('render');
     if (inspectCamera) {
       inspectCamera.setAspect(this.renderer.width, this.renderer.height);
       this.renderer.render(this._activeScene.getThreeScene(), inspectCamera.camera);
@@ -379,7 +403,11 @@ export class Game {
     } else {
       this.renderer.render(this._activeScene.getThreeScene(), this._activeCamera);
     }
+    p.end('render');
+    p.begin('ui');
     this._ui?.render(); // UI por cima do frame (backend renderer; DOM é no-op)
+    p.end('ui');
+    p.commitFrame(); // fecha o frame do profiler (joga os acumuladores nos rings)
 
     // HUD de métricas do modo debug (export --debug, ?cortexHud=1 ou o toggle
     // do menu do Studio): criado preguiçosamente e alimentado com o delta CRU.
@@ -403,11 +431,14 @@ export class Game {
     } else {
       this._debugHud?.setVisible(false);
       if (this._debugHud === undefined) this._debugHud = null; // decisão tomada
+      this.profiler.setEnabled(false); // sem HUD, para de medir (custo ≈ zero)
+      this.profiler.reset();
     }
   }
 
   private createDebugHud(): DebugHud {
-    return new DebugHud(this.ui, () => (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info ?? null);
+    this.profiler.setEnabled(true); // o HUD é o consumidor do breakdown
+    return new DebugHud(this.ui, () => (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info ?? null, this.profiler);
   }
 
   /** Inicia o loop. */

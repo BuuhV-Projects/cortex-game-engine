@@ -7,6 +7,7 @@
 
 #include "../napi/napi_util.h"
 #include "internal.h"
+#include "napi_stats.h"
 
 namespace webgpu {
 namespace {
@@ -297,6 +298,7 @@ napi_value queueWriteBuffer(napi_env env, napi_callback_info info) {
   }
 
   if (writeBytes > 0 && dataOffsetBytes + writeBytes <= totalBytes) {
+    bumpWriteBuffer();
     wgpuQueueWriteBuffer(gpu->queue, buffer,
                          static_cast<uint64_t>(bufferOffset),
                          static_cast<uint8_t*>(data) + dataOffsetBytes,

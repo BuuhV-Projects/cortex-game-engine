@@ -8,6 +8,7 @@
 #include "../napi/napi_util.h"
 #include "enums.h"
 #include "internal.h"
+#include "napi_stats.h"
 
 namespace webgpu {
 namespace {
@@ -147,6 +148,7 @@ void registerBindings(napi_env env, HostGpu* gpu) {
   napi_set_named_property(env, global, "gpuContext", context);
 
   registerBufferUsageGlobals(env);
+  registerNapiStats(env);  // __cortexNapiStats() — contadores do draw-path (SPEC-0134)
 }
 
 }  // namespace webgpu

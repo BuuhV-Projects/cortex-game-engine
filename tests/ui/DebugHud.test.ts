@@ -6,6 +6,7 @@
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { DebugHud, debugHudRequested } from '../../src/ui/DebugHud.js';
+import { FrameProfiler } from '../../src/core/FrameProfiler.js';
 import { UiLayer } from '../../src/ui/runtime/UiLayer.js';
 import type { UiBackend } from '../../src/ui/runtime/UiBackend.js';
 import type { UiLabel, UiWidget } from '../../src/ui/runtime/widgets.js';
@@ -41,7 +42,7 @@ describe('DebugHud', () => {
   it('acumula uma janela de ~500ms e publica FPS + pior frame', () => {
     const { ui, labels } = fakeUi();
     const hud = new DebugHud(ui);
-    expect(labels).toHaveLength(4); // fps, cpu, mem, gpu
+    expect(labels).toHaveLength(6); // fps, cpu, mem, gpu, prof, napi
     for (let i = 0; i < 29; i++) hud.frame(16.7);
     expect(labels[0]!.text).toBe('…'); // janela ainda aberta (484 ms)
     hud.frame(33.4); // fecha a janela com um frame pior
@@ -67,6 +68,45 @@ describe('DebugHud', () => {
     for (let i = 0; i < 40; i++) hud.frame(16.7);
     expect(labels[1]!.text).toBe('CPU —');
     expect(labels[3]!.text).toContain('GPU —');
+    // prof/napi (SPEC-0134): sem profiler nem shim NAPI, mostram '—' sem quebrar.
+    expect(labels[4]!.text).toBe('prof —');
+    expect(labels[5]!.text).toBe('NAPI —');
+  });
+
+  it('mostra o breakdown do profiler (render/world/ui) quando injetado', () => {
+    const { ui, labels } = fakeUi();
+    let t = 0;
+    const profiler = new FrameProfiler({ enabled: true, now: () => t });
+    profiler.begin('world'); t += 3; profiler.end('world');
+    profiler.begin('render'); t += 16; profiler.end('render');
+    profiler.begin('ui'); t += 1; profiler.end('ui');
+    profiler.commitFrame();
+
+    const hud = new DebugHud(ui, undefined, profiler);
+    for (let i = 0; i < 40; i++) hud.frame(16.7);
+    const prof = labels[4]!.text;
+    expect(prof).toContain('rnd 16.0');
+    expect(prof).toContain('wld 3.0');
+    expect(prof).toContain('ui 1.0');
+  });
+
+  it('mostra a linha NAPI a partir do shim __cortexNapiStats', () => {
+    (globalThis as { __cortexNapiStats?: unknown }).__cortexNapiStats = () => ({
+      setPipeline: 12, setBindGroup: 90, setVertexBuffer: 45, setIndexBuffer: 40,
+      draw: 5, drawIndexed: 300, writeBuffer: 20, submit: 2,
+    });
+    try {
+      const { ui, labels } = fakeUi();
+      const hud = new DebugHud(ui);
+      for (let i = 0; i < 40; i++) hud.frame(16.7);
+      const napi = labels[5]!.text;
+      expect(napi).toContain('draw 305'); // draw + drawIndexed
+      expect(napi).toContain('bind 90');
+      expect(napi).toContain('pipe 12');
+      expect(napi).toContain('wb 20');
+    } finally {
+      delete (globalThis as { __cortexNapiStats?: unknown }).__cortexNapiStats;
+    }
   });
 });
 
@@ -88,10 +128,10 @@ describe('DebugHud sobrevive à troca de fase (Game.reset → ui.clear)', () => 
   it('ui.clear() ORFANA os widgets do HUD; recriar o HUD os restaura', () => {
     const { ui, onScreen } = recordingLayer();
 
-    // Fase 1: HUD montado → painel + 4 labels na UI.
+    // Fase 1: HUD montado → painel + 6 labels na UI.
     new DebugHud(ui);
     ui.update(0);
-    expect(onScreen()).toBe(5);
+    expect(onScreen()).toBe(7);
 
     // game.reset() limpa a UI (widgets do HUD junto): a tela fica vazia. Sem
     // recriar, o objeto DebugHud sobrevive segurando widgets órfãos e o HUD
@@ -102,6 +142,6 @@ describe('DebugHud sobrevive à troca de fase (Game.reset → ui.clear)', () => 
     // Correção do reset: recriar o HUD reancorra os widgets na mesma camada.
     new DebugHud(ui);
     ui.update(0);
-    expect(onScreen()).toBe(5);
+    expect(onScreen()).toBe(7);
   });
 });

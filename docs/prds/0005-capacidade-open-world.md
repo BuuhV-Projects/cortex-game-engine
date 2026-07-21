@@ -63,7 +63,7 @@ por medição). Cada marco é útil sozinho, tem critério de aceite mensurável
 ganha ADR próprio na implementação. Tudo é validável no Windows dev; cada ADR
 anota o que muda no Xbox/GDK (orçamentos de memória, limites de thread).
 
-### M-perf-0 — Instrumentação permanente (SPEC-0125)
+### M-perf-0 — Instrumentação permanente (SPEC-0134)
 
 Sem juiz, nenhuma fase seguinte tem critério. Duas frentes:
 
@@ -83,7 +83,7 @@ baseline da fase-1 do teste4 registrado por categoria.
 timer nativo). **Testes:** `tests/core/FrameProfiler.test.ts` (clock fake,
 seções aninhadas, p99).
 
-### M-perf-1 — Benchmark cidade sintética + harness (ADR-0126)
+### M-perf-1 — Benchmark cidade sintética + harness (ADR-0135)
 
 Cena de estresse procedural e determinística, bem acima da fase-1:
 
@@ -100,7 +100,7 @@ Cena de estresse procedural e determinística, bem acima da fase-1:
 renderScale fixados no bench). **Testes:** gerador determinístico (mesma seed
 ⇒ mesma definição; contagens batem com params).
 
-### M-perf-2 — Corte do custo NAPI do render (SPEC-0127)
+### M-perf-2 — Corte do custo NAPI do render (SPEC-0136)
 
 - **2a (quick win)**: cache de estado por pass no shim — guardar último
   pipeline/bindgroup/vertex buffer por slot no objeto do pass e retornar cedo
@@ -125,7 +125,7 @@ real): ficar com 2a + comando agregado — JS acumula comandos num TypedArray
 (handles por tabela de ids) e 1 chamada NAPI drena tudo; patch no objeto pass
 do shim, sem tocar no three.
 
-### M-perf-3 — IO assíncrono + thread pool (SPEC-0128)
+### M-perf-3 — IO assíncrono + thread pool (SPEC-0137)
 
 - `native/src/core/io_pool.{h,cpp}`: pool de 2-4 workers + fila de conclusões
   drenada em `runFrame` (`main.cpp`). **Regra de ouro: nenhuma chamada NAPI
@@ -141,7 +141,7 @@ main thread; checksum async == sync. **Riscos:** leitura concorrente do
 assets.pak XOR (handle por worker ou mutex em `pak.cpp`); ordem de shutdown
 (worker resolvendo depois do env morto — drenar/descartar no destructor).
 
-### M-perf-4 — Células, streaming e LOD (SPEC-0129 + ADR-0130)
+### M-perf-4 — Células, streaming e LOD (SPEC-0138 + ADR-0139)
 
 Data-driven e editável no Studio, funcionando também no browser:
 
@@ -180,11 +180,11 @@ cortado. Detalhes na seção "Rota A" de `.claude/plano-perf-render-nativo.md`.
 
 | Marco | Entrega | Critério de aceite | ADR |
 |---|---|---|---|
-| M-perf-0 | FrameProfiler + contadores NAPI no HUD | overhead <0,2 ms; baseline fase-1 registrado | 0125 |
-| M-perf-1 | `examples/bench-city/` + `bench.mjs` | variação ≤5% entre execuções | 0126 |
-| M-perf-2 | cache de estado no shim + render bundles | NAPI draw-path −80%; render fase-1 ≤8 ms; bench ≥60 fps | 0127 |
-| M-perf-3 | io_pool + fetch assíncrono real | hitch <2 ms com fetch mid-gameplay | 0128 |
-| M-perf-4 | células + `CellStreamingSystem` + LOD | 4 km²; hitch p99 <4 ms; 60 fps host | 0129/0130 |
+| M-perf-0 | FrameProfiler + contadores NAPI no HUD | overhead <0,2 ms; baseline fase-1 registrado | 0134 |
+| M-perf-1 | `examples/bench-city/` + `bench.mjs` | variação ≤5% entre execuções | 0135 |
+| M-perf-2 | cache de estado no shim + render bundles | NAPI draw-path −80%; render fase-1 ≤8 ms; bench ≥60 fps | 0136 |
+| M-perf-3 | io_pool + fetch assíncrono real | hitch <2 ms com fetch mid-gameplay | 0137 |
+| M-perf-4 | células + `CellStreamingSystem` + LOD | 4 km²; hitch p99 <4 ms; 60 fps host | 0138/0139 |
 | M-perf-5 | (gate) shermes tipado | só se JS >8 ms pós M-perf-2 | futuro |
 
 ## Fora de escopo deste PRD

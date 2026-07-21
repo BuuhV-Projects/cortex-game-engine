@@ -38,6 +38,7 @@ add_executable(cortex_host
   src/webgpu/device.cpp
   src/webgpu/enums.cpp
   src/webgpu/layouts.cpp
+  src/webgpu/napi_stats.cpp
   src/webgpu/navigator.cpp
   src/webgpu/pipeline.cpp
   src/webgpu/supersample.cpp

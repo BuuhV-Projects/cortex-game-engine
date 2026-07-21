@@ -30,6 +30,7 @@
 #include "shims/timers.h"
 #include "shims/user_storage.h"
 #include "webgpu/bindings.h"
+#include "webgpu/napi_stats.h"
 #include "webgpu/splash.h"
 
 namespace {
@@ -97,6 +98,9 @@ void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
   // Destruições adiadas de buffers/texturas: SÓ depois do present — um pass
   // gravado neste frame com o recurso ainda vivo passa na validação do submit.
   webgpu::flushDeferredDestroys();
+  // Fecha o frame dos contadores NAPI (snapshot → último, zera o corrente) pro
+  // __cortexNapiStats() do HUD de debug ler um frame completo (SPEC-0134).
+  webgpu::resetNapiStatsFrame();
 }
 
 void shutdownGpu(HostGpu* gpu) {
