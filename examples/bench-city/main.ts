@@ -9,7 +9,7 @@
  * - `globalThis.__cortexBenchParams` — {@link BenchCityParams} parcial.
  * - `globalThis.__cortexBenchMergeStatic` — liga/desliga o merge (default true).
  */
-import { Game, buildScene, CellStreamingSystem } from '../../src/index-runtime.js';
+import { Game, buildScene, CellStreamingSystem, runWithLoadingScreen, UiPanel, UiLabel } from '../../src/index-runtime.js';
 import { Mesh, BoxGeometry, MeshStandardMaterial, LOD } from 'three';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
 import { generateCityScene, DEFAULT_BENCH_CITY, type BenchCityParams } from './generate.js';
@@ -33,10 +33,10 @@ const CELL_SIZE = 90; // lado da célula (m)
 // Câmera BAIXA (traverse) → a distância 3D é ~a horizontal, então o LOD fica
 // intuitivo: perto = full (textura), longe = proxy. Raio de full pequeno
 // (qualidade perto), raio de stream maior (o entorno carregado), unload além.
-const STREAM_RADIUS = 190; // carrega (full OU proxy) dentro deste raio
-const STREAM_HYSTERESIS = 40; // descarrega só além de raio+histerese (anti-thrash)
+const STREAM_RADIUS = 230; // carrega (full OU proxy) dentro deste raio
+const STREAM_HYSTERESIS = 50; // descarrega só além de raio+histerese (anti-thrash)
 const STREAM_BUDGET = 3; // células adicionadas por frame (add de pré-montada é barato)
-const LOD_DISTANCE = 120; // até aqui: célula full (textura); além: proxy de caixas
+const LOD_DISTANCE = 175; // full (textura) até mais longe; só o horizonte vira proxy
 const TRAVERSE_HEIGHT = 14; // altura da câmera andando (m)
 const TRAVERSE_SPEED = 45; // m/s
 const TRAVERSE_LOOK_HEIGHT = 12;
@@ -66,6 +66,38 @@ function emit(line: string): void {
   const p = (globalThis as { print?: (s: string) => void }).print;
   if (typeof p === 'function') p(line);
   else console.log(line);
+}
+
+/** Frames que o menu fica no ar antes de auto-iniciar (o bench não tem humano). */
+const MENU_AUTO_FRAMES = 90;
+
+/**
+ * MENU (aparece DEPOIS da splash nativa da engine): mostra um título e espera
+ * "Jogar" (gamepad A ou timeout no bench). Dirige o próprio loop de render
+ * (`requestAnimationFrame`) — a cidade só começa a ser montada quando o jogador
+ * inicia. Retorna quando o jogador "clica em jogar".
+ */
+async function showMenu(game: Game): Promise<void> {
+  const ui = game.ui;
+  const bg = ui.add(new UiPanel({ anchor: 'top-left', width: 16384, height: 16384, background: '#0b0e14' }));
+  const title = ui.add(new UiLabel({ anchor: 'center', y: -28, text: 'BENCH CITY', fontSize: 30, color: '#4ec9b0' }));
+  const hint = ui.add(new UiLabel({ anchor: 'center', y: 22, text: 'A / clique pra jogar', fontSize: 15, color: '#e8e8e8' }));
+  await new Promise<void>((resolve) => {
+    let frames = 0;
+    const frame = (): void => {
+      frames++;
+      game.gamepad.poll();
+      ui.update(0);
+      ui.render();
+      if (game.gamepad.isButtonDown(0, 0) || frames >= MENU_AUTO_FRAMES) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+  for (const w of [bg, title, hint]) ui.remove(w);
 }
 
 const params = readParams();
@@ -103,26 +135,30 @@ const cellOpts = {
   renderBundles: renderBundlesEnabled(),
   renderer: game.renderer,
 };
-// PRÉ-MONTA as células no boot (a splash da engine cobre esse tempo). Montar
-// sob demanda durante o jogo trava (o de-interleave+merge+bundle de uma célula é
-// pesado na thread JS) — então pré-monta e o streaming só ADICIONA/REMOVE
-// (barato). O `[loading]` é o feedback que o dev usa pra a tela de carregamento.
+// A cidade é montada DENTRO da tela de loading (chamado após o menu — a splash
+// nativa já passou). Pré-monta e o streaming só ADICIONA/REMOVE (barato); montar
+// sob demanda durante o jogo trava (merge/bundle de célula é pesado no Hermes).
 const lodCache = new Map<string, LOD>();
-let builtCount = 0;
-for (const c of cells) {
-  lodCache.set(c.key, await buildCellLod(byKey.get(c.key)!, cellOpts));
-  emit(`[loading] montando cidade ${++builtCount}/${cells.length}`);
-}
-
-// Pré-aquece os pipelines (compileAsync) — mata o hitch de compile no 1º add.
 const threeRenderer = game.renderer.threeRenderer as {
   compileAsync?: (scene: unknown, camera: unknown) => Promise<unknown>;
 };
-for (const lod of lodCache.values()) three.add(lod);
-if (typeof threeRenderer.compileAsync === 'function') {
-  await threeRenderer.compileAsync(three, game.camera);
+
+async function loadCity(progress: (label: string, fraction: number) => void): Promise<void> {
+  let i = 0;
+  for (const c of cells) {
+    lodCache.set(c.key, await buildCellLod(byKey.get(c.key)!, cellOpts));
+    i++;
+    progress(`Montando cidade ${i}/${cells.length}`, i / cells.length);
+    emit(`[loading] montando cidade ${i}/${cells.length}`); // feedback também no log
+  }
+  // Pré-aquece os pipelines (compileAsync) — mata o hitch de compile no 1º add.
+  for (const lod of lodCache.values()) three.add(lod);
+  if (typeof threeRenderer.compileAsync === 'function') {
+    progress('Compilando shaders…', 1);
+    await threeRenderer.compileAsync(three, game.camera);
+  }
+  for (const lod of lodCache.values()) three.remove(lod); // o streaming re-adiciona por distância
 }
-for (const lod of lodCache.values()) three.remove(lod); // o streaming re-adiciona por distância
 
 const streaming = new CellStreamingSystem(cells, {
   radius: STREAM_RADIUS,
@@ -132,12 +168,6 @@ const streaming = new CellStreamingSystem(cells, {
   onLoad: (key) => { three.add(lodCache.get(key)!); }, // pré-montada → add barato
   onUnload: (key) => { three.remove(lodCache.get(key)!); },
 });
-
-if (streamingEnabled()) {
-  game.world.addSystem(streaming); // roda no world.tick (após o rail mover a câmera)
-} else {
-  for (const lod of lodCache.values()) three.add(lod); // baseline: tudo residente
-}
 
 // ── Tráfego dinâmico: caixas girando (fora do bundle — representam veículos) ──
 const traffic: Array<{ mesh: Mesh; radius: number; speed: number; phase: number }> = [];
@@ -244,4 +274,11 @@ game.onUpdate((dt) => {
   active.tick(dt); // orbit primeiro, depois traverse (encadeados)
 });
 
+// Sequência de boot (o que o usuário pediu): splash nativa (host, cobre o boot)
+// → MENU → tela de LOADING montando a cidade → JOGO. A cidade só é gerada quando
+// o jogador inicia pelo menu; o game.onUpdate (bench) só roda após o game.start().
+await showMenu(game);
+await runWithLoadingScreen(game.ui, loadCity, { message: 'Carregando cidade…' });
+if (streamingEnabled()) game.world.addSystem(streaming);
+else for (const lod of lodCache.values()) three.add(lod);
 game.start();
