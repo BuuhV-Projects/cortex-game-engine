@@ -151,7 +151,15 @@ real): ficar com 2a + comando agregado — JS acumula comandos num TypedArray
 (handles por tabela de ids) e 1 chamada NAPI drena tudo; patch no objeto pass
 do shim, sem tocar no three.
 
-### M-perf-3 — IO assíncrono + thread pool (SPEC-0137)
+### M-perf-3 — IO assíncrono + thread pool (SPEC-0137) ✅ FEITO (2026-07-21)
+
+> **Concluído (primitivo + medição).** `native/src/shims/io_pool.{h,cpp}`: pool de
+> 2-4 workers, `__cortexReadFileAsync` (Promise), drain no `runFrame`, join no
+> shutdown. Regra de ouro respeitada (workers só produzem bytes; NAPI só na thread
+> JS). `readPakBytes`/`readAssetBytes` = leitura só-bytes thread-safe. **Medido:
+> ler um asset de 36 MB bloqueava ~49 ms na thread; async bloqueia ~2 ms** e
+> resolve ~52 ms depois sem travar o frame. `fetch` fica síncrono (boot-safe); o
+> primitivo é pra o streaming do M-perf-4. Decode async = follow-up. Ver SPEC-0137.
 
 - `native/src/core/io_pool.{h,cpp}`: pool de 2-4 workers + fila de conclusões
   drenada em `runFrame` (`main.cpp`). **Regra de ouro: nenhuma chamada NAPI

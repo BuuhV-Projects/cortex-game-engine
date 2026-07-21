@@ -23,6 +23,7 @@ add_executable(cortex_host
   src/shims/files.cpp
   src/shims/image_decode.cpp
   src/shims/input.cpp
+  src/shims/io_pool.cpp
   src/shims/pak.cpp
   src/shims/perf_stats.cpp
   src/shims/quit.cpp

@@ -22,6 +22,7 @@
 #include "shims/files.h"
 #include "shims/image_decode.h"
 #include "shims/input.h"
+#include "shims/io_pool.h"
 #include "shims/ktx2.h"
 #include "shims/perf_stats.h"
 #include "shims/quit.h"
@@ -84,6 +85,7 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
 // no mesmo vsync fazia a splash piscar, deixando o jogo vazar entre os frames.
 void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
               bool splashEnabled) {
+  shims::drainIoCompletions(js.env());  // resolve leituras async prontas (M-perf-3)
   shims::runTimers(js.env(), elapsedMs);
   js.drainMicrotasks();
   shims::runAnimationFrames(js.env(), elapsedMs);
@@ -156,6 +158,7 @@ int main(int argc, char** argv) {
     shims::registerAnimationFrame(js.env());
     shims::registerInput(js.env());
     shims::registerFiles(js.env(), baseDir);
+    shims::registerFilesAsync(js.env());  // __cortexReadFileAsync + workers (M-perf-3)
     shims::registerUserStorage(js.env(), game.id);
     shims::registerImageDecode(js.env());
     shims::registerKtx2(js.env());
@@ -251,6 +254,7 @@ int main(int argc, char** argv) {
       runFrame(js, &gpu, elapsedMs, splashEnabled);
     }
     webgpu::shutdownSplash();  // idempotente (a splash já se libera ao terminar)
+    shims::shutdownIoPool();   // join dos workers ANTES do teardown do Hermes (M-perf-3)
     shims::closeGamepads();
     shims::shutdownAudio();
   }  // ~JsRuntime antes de liberar a GPU (JS pode segurar handles)

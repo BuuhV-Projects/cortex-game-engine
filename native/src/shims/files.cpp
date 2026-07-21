@@ -104,6 +104,20 @@ napi_value jsWriteBaseFile(napi_env env, napi_callback_info info) {
 
 }  // namespace
 
+bool readAssetBytes(const std::string& url, std::vector<uint8_t>& out) {
+  const std::string rel = normalizeRel(url);
+  if (readPakBytes(rel, out)) return true;  // 1) pak (export)
+  FILE* file = std::fopen(diskPath(rel).c_str(), "rb");  // 2) arquivo solto (dev)
+  if (!file) return false;
+  std::fseek(file, 0, SEEK_END);
+  const long size = std::ftell(file);
+  std::fseek(file, 0, SEEK_SET);
+  out.resize(size > 0 ? static_cast<size_t>(size) : 0);
+  if (size > 0) std::fread(out.data(), 1, static_cast<size_t>(size), file);
+  std::fclose(file);
+  return true;
+}
+
 void registerFiles(napi_env env, const std::string& baseDir) {
   g_baseDir = baseDir;
   // Se houver assets.pak ao lado do exe, os assets vêm dele (export); senão o

@@ -108,9 +108,40 @@ const runner = new BenchRunner(game.camera, game.profiler, {
   },
 });
 
+// Sonda de IO (M-perf-3): mede o BLOQUEIO da thread pra ler um asset de ~40 MB
+// síncrono (__cortexReadFile) vs assíncrono (__cortexReadFileAsync — leitura no
+// worker, a chamada não bloqueia). Roda 1× no warmup (fora da janela medida).
+const IO_PROBE_FRAME = 5;
+const IO_PROBE_ASSET = 'assets/models/Building_Large_2.glb';
+function ioProbe(): void {
+  const g = globalThis as {
+    __cortexReadFile?: (u: string) => ArrayBuffer | null;
+    __cortexReadFileAsync?: (u: string) => Promise<ArrayBuffer | null>;
+  };
+  const now = (): number => performance.now();
+  let t = now();
+  const sync = g.__cortexReadFile?.(IO_PROBE_ASSET) ?? null;
+  const syncBlock = now() - t;
+  if (typeof g.__cortexReadFileAsync !== 'function') {
+    emit(`[io] sync-block=${syncBlock.toFixed(1)}ms async=indisponível`);
+    return;
+  }
+  t = now();
+  const p = g.__cortexReadFileAsync(IO_PROBE_ASSET);
+  const asyncCall = now() - t;
+  const tStart = now();
+  void p.then((buf) => {
+    emit(
+      `[io] sync-block=${syncBlock.toFixed(1)}ms · async-call=${asyncCall.toFixed(2)}ms · async-latency=${(now() - tStart).toFixed(1)}ms · bytes sync=${sync?.byteLength ?? 0} async=${buf?.byteLength ?? 0}`,
+    );
+  });
+}
+
+let frameCount = 0;
 game.onUpdate((dt) => {
   scene.update(dt);
   moveTraffic(dt);
+  if (++frameCount === IO_PROBE_FRAME) ioProbe();
   runner.tick(dt);
 });
 

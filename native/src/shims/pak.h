@@ -5,7 +5,9 @@
 
 #include <node_api.h>
 
+#include <cstdint>
 #include <string>
+#include <vector>
 
 namespace shims {
 
@@ -17,5 +19,10 @@ bool loadPak(const std::string& pakPath);
 // desembaralhado. Devolve o ArrayBuffer, ou `nullptr` se a chave não está no
 // pak (o chamador cai pro disco).
 napi_value readPakFile(napi_env env, const std::string& relPath);
+
+// Lê os bytes de um arquivo do pak (desembaralhados), SEM NAPI — chamável de
+// qualquer thread (fopen próprio por chamada; o índice é read-only após o boot).
+// `false` se a chave não está no pak. Base da leitura assíncrona (M-perf-3).
+bool readPakBytes(const std::string& relPath, std::vector<uint8_t>& out);
 
 }  // namespace shims

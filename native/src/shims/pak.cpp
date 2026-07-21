@@ -85,25 +85,33 @@ bool loadPak(const std::string& pakPath) {
   return true;
 }
 
-napi_value readPakFile(napi_env env, const std::string& relPath) {
+bool readPakBytes(const std::string& relPath, std::vector<uint8_t>& out) {
+  // find() num std::map só-leitura é seguro concorrente (o índice é escrito só
+  // no loadPak, no boot, antes de qualquer worker). fopen próprio por chamada.
   auto it = g_index.find(relPath);
-  if (it == g_index.end()) return nullptr;  // não está no pak → cai pro disco
+  if (it == g_index.end()) return false;  // não está no pak → o chamador cai pro disco
 
   FILE* f = std::fopen(g_pakPath.c_str(), "rb");
-  if (!f) return nullptr;
+  if (!f) return false;
   const uint32_t filePos = HEADER + it->second.offset;
   const uint32_t size = it->second.size;
   std::fseek(f, static_cast<long>(filePos), SEEK_SET);
-
-  void* data = nullptr;
-  napi_value arrayBuffer = nullptr;
-  napi_create_arraybuffer(env, size, &data, &arrayBuffer);
-  if (data && size > 0) {
-    std::fread(data, 1, size, f);
-    if (g_scrambled)
-      unscramble(static_cast<unsigned char*>(data), size, filePos);
+  out.resize(size);
+  if (size > 0) {
+    std::fread(out.data(), 1, size, f);
+    if (g_scrambled) unscramble(out.data(), size, filePos);
   }
   std::fclose(f);
+  return true;
+}
+
+napi_value readPakFile(napi_env env, const std::string& relPath) {
+  std::vector<uint8_t> bytes;
+  if (!readPakBytes(relPath, bytes)) return nullptr;  // não está no pak
+  void* data = nullptr;
+  napi_value arrayBuffer = nullptr;
+  napi_create_arraybuffer(env, bytes.size(), &data, &arrayBuffer);
+  if (data && !bytes.empty()) std::memcpy(data, bytes.data(), bytes.size());
   return arrayBuffer;
 }
 
