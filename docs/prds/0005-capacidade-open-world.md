@@ -113,9 +113,16 @@ renderScale fixados no bench). **Testes:** gerador determinístico (mesma seed
 
 ### M-perf-2 — Corte do custo NAPI do render (SPEC-0136)
 
-- **2a (quick win)**: cache de estado por pass no shim — guardar último
-  pipeline/bindgroup/vertex buffer por slot no objeto do pass e retornar cedo
-  em chamada redundante. Zero mudança no three.
+> **2a REJEITADO por medição (2026-07-21):** implementei o cache de estado por
+> pass no shim (pula setPipeline/setBindGroup/setVertexBuffer/setIndexBuffer
+> redundantes) e medi no bench realista → **zero ganho** (18.6 vs 19 fps, dentro
+> do ruído). Motivo: o backend WebGPU do three **já deduplicata** as mudanças de
+> estado no lado JS, então o shim quase não acha redundância. Revertido (não vale
+> a complexidade). O ganho tem que vir do **2b** — render bundles cortam as
+> travessias NAPI em si (as milhares de chamadas/frame), não o custo de driver.
+
+- **2a (quick win — descartado, ver acima)**: cache de estado por pass no shim.
+  Zero mudança no three, mas zero ganho (three já dedupa).
 - **2b (corte estrutural)**: render bundles. Shim: adicionar
   `bundleSetIndexBuffer` + `bundleDrawIndexed` espelhando as versões do pass e
   registrá-los no encoder; stubs com warning pra qualquer método ausente
