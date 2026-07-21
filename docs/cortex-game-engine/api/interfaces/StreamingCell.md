@@ -6,7 +6,7 @@
 
 # Interface: StreamingCell
 
-Defined in: src/scene/Streaming.ts:19
+Defined in: [src/scene/Streaming.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L19)
 
 Uma célula do mundo: chave estável + centro no plano XZ.
 
@@ -16,7 +16,7 @@ Uma célula do mundo: chave estável + centro no plano XZ.
 
 > **key**: `string`
 
-Defined in: src/scene/Streaming.ts:21
+Defined in: [src/scene/Streaming.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L21)
 
 Identificador estável (ex.: `"3,7"`).
 
@@ -26,7 +26,7 @@ Identificador estável (ex.: `"3,7"`).
 
 > **x**: `number`
 
-Defined in: src/scene/Streaming.ts:23
+Defined in: [src/scene/Streaming.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L23)
 
 Centro da célula no eixo X.
 
@@ -36,6 +36,6 @@ Centro da célula no eixo X.
 
 > **z**: `number`
 
-Defined in: src/scene/Streaming.ts:25
+Defined in: [src/scene/Streaming.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L25)
 
 Centro da célula no eixo Z.

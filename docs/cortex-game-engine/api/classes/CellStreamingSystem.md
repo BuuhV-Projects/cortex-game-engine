@@ -6,7 +6,7 @@
 
 # Class: CellStreamingSystem
 
-Defined in: src/scene/Streaming.ts:63
+Defined in: [src/scene/Streaming.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L72)
 
 Classe base para todos os sistemas do ECS.
 
@@ -46,7 +46,7 @@ class MovementSystem extends System {
 
 > **new CellStreamingSystem**(`cells`, `opts`): `CellStreamingSystem`
 
-Defined in: src/scene/Streaming.ts:72
+Defined in: [src/scene/Streaming.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L84)
 
 #### Parameters
 
@@ -110,7 +110,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `-1000`
 
-Defined in: src/scene/Streaming.ts:65
+Defined in: [src/scene/Streaming.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L74)
 
 Roda ANTES de tudo — o render vê a residência já atualizada neste frame.
 
@@ -146,15 +146,31 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 ## Accessors
 
+### loadingCount
+
+#### Get Signature
+
+> **get** **loadingCount**(): `number`
+
+Defined in: [src/scene/Streaming.ts:167](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L167)
+
+Nº de células ainda CARREGANDO (onLoad async não terminou) — pra tela de loading.
+
+##### Returns
+
+`number`
+
+***
+
 ### resident
 
 #### Get Signature
 
 > **get** **resident**(): `ReadonlySet`\<`string`\>
 
-Defined in: src/scene/Streaming.ts:119
+Defined in: [src/scene/Streaming.ts:152](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L152)
 
-Chaves residentes agora.
+Chaves residentes agora (desejadas — inclui as ainda carregando).
 
 ##### Returns
 
@@ -168,9 +184,9 @@ Chaves residentes agora.
 
 > **get** **residentCount**(): `number`
 
-Defined in: src/scene/Streaming.ts:124
+Defined in: [src/scene/Streaming.ts:162](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L162)
 
-Nº de células residentes agora.
+Nº de células residentes (desejadas) agora.
 
 ##### Returns
 
@@ -199,11 +215,31 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 ***
 
+### isResident()
+
+> **isResident**(`key`): `boolean`
+
+Defined in: [src/scene/Streaming.ts:157](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L157)
+
+A célula `key` é desejada agora? (o app confere antes de adicionar à cena.)
+
+#### Parameters
+
+##### key
+
+`string`
+
+#### Returns
+
+`boolean`
+
+***
+
 ### step()
 
 > **step**(`cam`): `void`
 
-Defined in: src/scene/Streaming.ts:91
+Defined in: [src/scene/Streaming.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L103)
 
 Passo puro do streaming (testável): descarrega o que saiu de `raio+histerese`
 e carrega, por distância e até o orçamento, o que entrou no raio.
@@ -224,7 +260,7 @@ e carrega, por distância e até o orçamento, o que entrou no raio.
 
 > **update**(): `void`
 
-Defined in: src/scene/Streaming.ts:83
+Defined in: [src/scene/Streaming.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L95)
 
 Executa a lógica do sistema para o frame/passo atual.
 

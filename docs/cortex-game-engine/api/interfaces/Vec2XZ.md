@@ -6,7 +6,7 @@
 
 # Interface: Vec2XZ
 
-Defined in: src/scene/Streaming.ts:29
+Defined in: [src/scene/Streaming.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L29)
 
 Ponto no plano XZ (posição da câmera/jogador).
 
@@ -16,7 +16,7 @@ Ponto no plano XZ (posição da câmera/jogador).
 
 > **x**: `number`
 
-Defined in: src/scene/Streaming.ts:30
+Defined in: [src/scene/Streaming.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L30)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: src/scene/Streaming.ts:30
 
 > **z**: `number`
 
-Defined in: src/scene/Streaming.ts:31
+Defined in: [src/scene/Streaming.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L31)
