@@ -147,6 +147,24 @@ function hasInterleaved(g: BufferGeometry): boolean {
 }
 
 /**
+ * Cache: geometria-FONTE → versão de-interleavada. De-interleavar é caro, e a
+ * MESMA fonte reaparece em CENTENAS de instâncias (um prédio repetido pela
+ * cidade — o `clone` do GLB compartilha a geometria). Fazer 1× por fonte, não 1×
+ * por instância, corta o grosso do custo de build (streaming de células, ADR-0138).
+ */
+const _flatSourceCache = new WeakMap<BufferGeometry, BufferGeometry>();
+function flatSource(geo: BufferGeometry): BufferGeometry {
+  if (!hasInterleaved(geo)) return geo; // já plana; o clone no chamador copia
+  let flat = _flatSourceCache.get(geo);
+  if (!flat) {
+    flat = geo.clone();
+    deinterleaveGeometry(flat);
+    _flatSourceCache.set(geo, flat);
+  }
+  return flat;
+}
+
+/**
  * Assinatura dos atributos da geometria (mergeGeometries exige iguais). Interleaved
  * é aceito (de-interleavado antes do merge) — a chave usa só nomes+itemSize, que são
  * iguais interleaved ou não. Morph continua fora (não funde).
@@ -254,10 +272,9 @@ export function mergeStaticScene(
     }
     const parts: BufferGeometry[] = [];
     for (const c of list) {
-      const g = c.mesh.geometry.clone();
       // .glb reais usam buffers interleaved; o mergeGeometries exige atributos
-      // planos, então de-interleava antes (muta in-place; custo one-time no build).
-      if (hasInterleaved(g)) deinterleaveGeometry(g);
+      // planos. De-interleava a FONTE 1× (cache), depois clona e assa por instância.
+      const g = flatSource(c.mesh.geometry).clone();
       g.applyMatrix4(c.matrix); // baked em world space (posição/rotação/escala + normais)
       parts.push(g);
     }

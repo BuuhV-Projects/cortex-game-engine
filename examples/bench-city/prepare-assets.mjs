@@ -8,6 +8,8 @@
 
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { simplify, weld } from '@gltf-transform/functions';
+import { MeshoptSimplifier } from 'meshoptimizer';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +27,12 @@ if (!fs.existsSync(src)) {
 }
 fs.mkdirSync(outDir, { recursive: true });
 
+// Decimação: os modelos-fonte têm ~18-45k tris (alto pra streaming — fundir
+// centenas deles na VM JS é o gargalo de load). `simplify` (meshopt) reduz pra
+// ~`SIMPLIFY_RATIO` dos tris, mantendo a silhueta. Ajuste/desligue via env.
+const SIMPLIFY_RATIO = Number(process.env.SIMPLIFY_RATIO ?? 0.25);
+await MeshoptSimplifier.ready;
+
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 for (const b of BUILDINGS) {
   const gltf = path.join(src, b + '.gltf');
@@ -33,7 +41,13 @@ for (const b of BUILDINGS) {
     process.exit(1);
   }
   const doc = await io.read(gltf);
+  if (SIMPLIFY_RATIO < 1) {
+    await doc.transform(
+      weld(),
+      simplify({ simplifier: MeshoptSimplifier, ratio: SIMPLIFY_RATIO, error: 0.01 }),
+    );
+  }
   await io.write(path.join(outDir, b + '.glb'), doc);
-  console.log(`[prepare] ${b}.glb ok`);
+  console.log(`[prepare] ${b}.glb ok (ratio ${SIMPLIFY_RATIO})`);
 }
 console.log(`[prepare] pronto → ${path.relative(here, outDir)}`);

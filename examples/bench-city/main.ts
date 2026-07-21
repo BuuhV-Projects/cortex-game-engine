@@ -160,12 +160,12 @@ const threeRenderer = game.renderer.threeRenderer as {
 };
 
 async function loadCity(progress: (label: string, fraction: number) => void): Promise<void> {
+  const t0 = performance.now();
   let i = 0;
   for (const c of cells) {
     lodCache.set(c.key, await buildCellLod(byKey.get(c.key)!, cellOpts));
     i++;
     progress(`Montando cidade ${i}/${cells.length}`, i / cells.length);
-    emit(`[loading] montando cidade ${i}/${cells.length}`); // feedback também no log
     // Cede um frame ao host pra a barra DESENHAR e APRESENTAR a cada passo —
     // senão o buildScene (fetch síncrono) roda as 36 células num único drain de
     // microtasks e a barra só apareceria no fim.
@@ -178,6 +178,7 @@ async function loadCity(progress: (label: string, fraction: number) => void): Pr
     await threeRenderer.compileAsync(three, game.camera);
   }
   for (const lod of lodCache.values()) three.remove(lod); // o streaming re-adiciona por distância
+  emit(`[loading] cidade montada (${cells.length} células) em ${(performance.now() - t0).toFixed(0)}ms`);
 }
 
 const streaming = new CellStreamingSystem(cells, {
