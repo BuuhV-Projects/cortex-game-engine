@@ -44,12 +44,14 @@ Exporta o `bench-city` pelo pipeline normal (`export-game.mjs`), roda o
 (com git sha) e imprime um resumo comparando com a execução anterior. É o passo
 a rodar **antes e depois** de cada marco pra medir o ganho real.
 
-### Baseline medido (2026-07-21, host de 2026-07-19, sem contadores NAPI)
+### Baseline medido (2026-07-21, host clang-cl com contadores NAPI)
 
 Config default (2016 prédios, 40 materiais, 200 tráfego, **0 vegetação**):
-**~52 fps médio, ~42 fps no pior 1%, render p99 ~22 ms** — a cena é claramente
-**render-bound** (lógica/UI < 2 ms). É exatamente o custo que o M-perf-2 (cache
-de estado + render bundles) precisa derrubar.
+**~48-52 fps médio, ~36-42 fps no pior 1%, render p99 ~22-25 ms** — a cena é
+claramente **render-bound** (lógica/UI < 2 ms). Contadores NAPI por frame (o
+teto que o M-perf-2 vai derrubar): ~**211 `drawIndexed`, 234 `setBindGroup`, 383
+`setVertexBuffer`, 211 `setIndexBuffer`, 263 `writeBuffer`, 5 `submit`**. Cada um
+é uma travessia JS→C++ com marshalling fixo.
 
 ## Consequências
 

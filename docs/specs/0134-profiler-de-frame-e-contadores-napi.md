@@ -69,7 +69,10 @@ frame inteiro, mesmo lido no meio de outro.
 - O `DebugHud` cresceu de 4 pra 6 linhas (painel maior); testes atualizados.
 - Ainda **não há** um contador de tempo por-chamada NAPI (só contagem); medir o
   custo em ms de cada travessia fica pro M-perf-2, quando for o alvo do corte.
-- O lado C++ (`napi_stats`, incrementos, reset, registro no CMake) foi escrito e
-  revisado mas **não compilado nesta sessão** (o build nativo exige a toolchain
-  CMake/clang-cl + deps buscadas); validar no próximo build do host. O lado
-  engine está coberto por testes (Vitest) e typecheck.
+- O lado C++ (`napi_stats`, incrementos, reset, registro no CMake) foi
+  **compilado e validado no host real** (2026-07-21, build incremental clang-cl):
+  o `__cortexNapiStats()` reporta os contadores por frame no DebugHud e no
+  benchmark (ADR-0135). O lado engine está coberto por Vitest + typecheck.
+  Exemplo medido (bench-city, 2016 prédios): por frame ~211 `drawIndexed`, 234
+  `setBindGroup`, 383 `setVertexBuffer`, 211 `setIndexBuffer`, 263 `writeBuffer`
+  — o custo NAPI que o M-perf-2 vai cortar.
