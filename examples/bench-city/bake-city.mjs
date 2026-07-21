@@ -7,7 +7,7 @@
 //
 // Uso: node examples/bench-city/bake-city.mjs   (precisa dos .glb em assets/models
 // — rode prepare-assets.mjs antes).
-import { NodeIO, VertexLayout, Document } from '@gltf-transform/core';
+import { NodeIO, VertexLayout, Document, PropertyType } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { mergeDocuments, dedup, prune } from '@gltf-transform/functions';
 import { Matrix4, Matrix3, Vector3, Quaternion, Euler } from 'three';
@@ -168,7 +168,11 @@ async function main() {
     matsScene.addChild(out.createNode('').setMesh(out.createMesh().addPrimitive(prim)));
   }
   out.getRoot().setDefaultScene(matsScene);
-  await out.transform(dedup(), prune());
+  // dedup SEM MATERIAL: dedupa texturas (9, não 27) + acessores/meshes stub, mas
+  // NÃO mescla materiais — senão dois materiais que viram idênticos após o matte
+  // (ex.: MI_Trim/MI_Trim_Dark) colapsam num só NOME, e as células (que referenciam
+  // o material por nome) perdem o match → parede cinza. Ver SPEC-0140.
+  await out.transform(dedup({ propertyTypes: [PropertyType.ACCESSOR, PropertyType.MESH, PropertyType.TEXTURE] }), prune());
   for (const acc of out.getRoot().listAccessors()) acc.setBuffer(buffer);
   for (const b of out.getRoot().listBuffers()) if (b !== buffer) b.dispose();
   await io.write(OUT_MATS, out);
