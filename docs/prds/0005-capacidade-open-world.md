@@ -113,13 +113,13 @@ renderScale fixados no bench). **Testes:** gerador determinístico (mesma seed
 
 ### M-perf-2 — Corte do custo NAPI do render (SPEC-0136) ✅ FEITO (2026-07-21)
 
-> **2b (render bundles) FEITO — grande ganho.** Shim: `bundleSetIndexBuffer` +
-> `bundleDrawIndexed` no encoder de bundle. Engine: `wrapStaticInBundle` (envolve
-> as subárvores estáticas num `BundleGroup`, independente do merge — funciona com
-> `.glb` interleaved) atrás de `BuildSceneOptions.renderBundles`. **Medido
-> (bench-city, 64 prédios): render p99 61→35 ms, FPS 19→37 (~2×); NAPI/frame
-> drawIndexed 1188→133 (−89%), setBindGroup 1742→139 (−92%), setPipeline 737→4.**
-> Sobra o pass de sombra (câmera própria) + dinâmicos. Ver SPEC-0136.
+> **2b (render bundles + merge interleaved) FEITO — 19→~59 fps (3×), bate 60.**
+> Shim: `bundleSetIndexBuffer` + `bundleDrawIndexed`. Engine: `wrapStaticInBundle`
+> (BundleGroup das subárvores estáticas) atrás de `BuildSceneOptions.renderBundles`
+> — corta os DRAWS (NAPI −89%). E o merge passou a **de-interleavar** os `.glb`
+> reais (785 sub-malhas → ~36 grupos) — corta a TRAVESSIA por-objeto do three no
+> Hermes (main+shadow), que era o teto após os draws. Juntos: render p99 61→~22
+> ms, FPS **19→59**. Worst-1% ~48 (writeBuffer do tráfego + GC → M-perf-3). SPEC-0136.
 
 > **2a REJEITADO por medição (2026-07-21):** implementei o cache de estado por
 > pass no shim (pula setPipeline/setBindGroup/setVertexBuffer/setIndexBuffer

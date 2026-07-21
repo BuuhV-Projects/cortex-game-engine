@@ -48,13 +48,25 @@ merge: `dynamicRoots`, `isExcludedByUserData`, `isSkinned`).
 Exposta em `BuildSceneOptions.renderBundles` (default `false`; o host liga junto
 do merge). Roda DEPOIS do merge, pra bundlar também as malhas fundidas.
 
+### Peça 2 do corte: merge lida com interleaved (de-interleave)
+
+Os render bundles cortaram os DRAWS, mas o `WebGPURenderer` ainda **projeta/culla
+cada objeto todo frame** (main + shadow), no Hermes sem JIT — com 785 sub-malhas
+de prédio isso ainda dava ~35 ms. O merge estático (SPEC-0121) resolveria (785 →
+~36 grupos), mas rejeitava os `.glb` reais por serem **interleaved**. Agora o
+`mergeStaticScene` **de-interleava** a geometria antes de fundir
+(`deinterleaveGeometry`, muta in-place; `applyMatrix4` já transforma
+posição/normal/**tangente**, então normal map fica correto no bake). Merge +
+bundle juntos derrubam a contagem de objetos E o custo de draw.
+
 ## Consequências
 
-- **Medido (bench-city, 64 prédios `.glb`, host clang-cl):** render p99 **61 → 35
-  ms**, FPS médio **19 → 37 (~2×)**; NAPI/frame **drawIndexed 1188 → 133 (−89%)**,
-  **setBindGroup 1742 → 139 (−92%)**, **setPipeline 737 → 4**. O `writeBuffer`
-  (uniforms/matrizes por frame) e o **pass de sombra** (câmera diferente → bundle
-  próprio) seguem por-frame — é o resto de draws (dinâmicos + sombra).
+- **Medido (bench-city, 64 prédios `.glb`, host clang-cl):** só bundle: FPS
+  19→37, render 61→35 ms. **Bundle + merge (de-interleave): FPS 19 → ~59 (3×),
+  render p99 → ~22 ms** — o avg cola no cap de vsync (60). NAPI/frame **drawIndexed
+  1188 → 126 (−89%)**, **setBindGroup 1742 → 132 (−92%)**, **setPipeline 737 → 4**.
+  O resto (worst-1% ~48 fps) é `writeBuffer` do tráfego (200 dinâmicos) + hitches
+  de GC — alvos do M-perf-3 (IO async) e de contagens realistas de veículos.
 - **Estático assumido:** o `BundleGroup` grava a estrutura uma vez. Mudar a
   geometria estática exige reconstruir a cena (novo `buildScene`) — igual ao
   merge, já é o modelo do host. Editor F2 (browser) não liga bundles.

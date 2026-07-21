@@ -6,7 +6,7 @@ import {
   type Material,
   type Texture,
 } from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeGeometries, deinterleaveGeometry } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { BundleGroup } from 'three/webgpu';
 import { isSkinned } from '../physics/raycastAccel.js';
 import { debug } from '../core/debug.js';
@@ -138,16 +138,27 @@ function materialKey(m: Material): string {
   ].join('|');
 }
 
-/** Assinatura dos atributos da geometria (mergeGeometries exige iguais). */
+/** Alguma geometria tem atributo interleaved (buffer compartilhado)? */
+function hasInterleaved(g: BufferGeometry): boolean {
+  for (const n of Object.keys(g.attributes)) {
+    if ((g.attributes[n] as { isInterleavedBufferAttribute?: boolean }).isInterleavedBufferAttribute) return true;
+  }
+  return false;
+}
+
+/**
+ * Assinatura dos atributos da geometria (mergeGeometries exige iguais). Interleaved
+ * é aceito (de-interleavado antes do merge) — a chave usa só nomes+itemSize, que são
+ * iguais interleaved ou não. Morph continua fora (não funde).
+ */
 function attributeKey(g: BufferGeometry): string | null {
+  if (g.morphAttributes && Object.keys(g.morphAttributes).length > 0) return null; // morph: fora
   const names = Object.keys(g.attributes).sort();
   const parts: string[] = [g.index ? 'idx' : 'noidx'];
   for (const n of names) {
-    const a = g.attributes[n] as { itemSize: number; isInterleavedBufferAttribute?: boolean };
-    if (a.isInterleavedBufferAttribute) return null; // interleaved: fora (merge não suporta)
+    const a = g.attributes[n] as { itemSize: number };
     parts.push(`${n}:${a.itemSize}`);
   }
-  if (g.morphAttributes && Object.keys(g.morphAttributes).length > 0) return null; // morph: fora
   return parts.join(',');
 }
 
@@ -244,6 +255,9 @@ export function mergeStaticScene(
     const parts: BufferGeometry[] = [];
     for (const c of list) {
       const g = c.mesh.geometry.clone();
+      // .glb reais usam buffers interleaved; o mergeGeometries exige atributos
+      // planos, então de-interleava antes (muta in-place; custo one-time no build).
+      if (hasInterleaved(g)) deinterleaveGeometry(g);
       g.applyMatrix4(c.matrix); // baked em world space (posição/rotação/escala + normais)
       parts.push(g);
     }
