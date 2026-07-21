@@ -7,6 +7,8 @@
 // e só começa a contar quando o device existe.
 #pragma once
 
+#include <node_api.h>
+
 #include "../core/host_gpu.h"
 
 namespace webgpu {
@@ -34,5 +36,15 @@ bool splashFrame(HostGpu* gpu, double elapsedMs);
 
 /** Libera textura/pipeline da splash. Idempotente. */
 void shutdownSplash();
+
+/** Marca a splash como TERMINADA (ex.: CORTEX_NO_SPLASH) — `splashPending` vira false. */
+void endSplash();
+
+/**
+ * Expõe `__cortexSplashActive()` ao JS: `true` enquanto a splash cobre a tela.
+ * O jogo espera isto virar `false` pra mostrar SUA tela de loading — senão o
+ * carregamento roda "atrás" da splash e a barra só aparece no fim (ADR-0138).
+ */
+void registerSplash(napi_env env);
 
 }  // namespace webgpu

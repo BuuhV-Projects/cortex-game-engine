@@ -71,6 +71,22 @@ function emit(line: string): void {
 /** Frames que o menu fica no ar antes de auto-iniciar (o bench não tem humano). */
 const MENU_AUTO_FRAMES = 90;
 
+/** Próximo frame (rAF) como Promise. */
+function nextFrame(): Promise<void> {
+  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+/**
+ * Espera a SPLASH nativa da engine terminar. Enquanto ela cobre a tela, os game
+ * frames são descartados — se o jogo carregasse agora, a tela de loading só
+ * apareceria no fim. Aqui o jogo só monta a cidade DEPOIS da splash (ADR-0138).
+ */
+async function waitForSplash(): Promise<void> {
+  const active = (globalThis as { __cortexSplashActive?: () => boolean }).__cortexSplashActive;
+  if (typeof active !== 'function') return;
+  while (active()) await nextFrame();
+}
+
 /**
  * MENU (aparece DEPOIS da splash nativa da engine): mostra um título e espera
  * "Jogar" (gamepad A ou timeout no bench). Dirige o próprio loop de render
@@ -150,6 +166,10 @@ async function loadCity(progress: (label: string, fraction: number) => void): Pr
     i++;
     progress(`Montando cidade ${i}/${cells.length}`, i / cells.length);
     emit(`[loading] montando cidade ${i}/${cells.length}`); // feedback também no log
+    // Cede um frame ao host pra a barra DESENHAR e APRESENTAR a cada passo —
+    // senão o buildScene (fetch síncrono) roda as 36 células num único drain de
+    // microtasks e a barra só apareceria no fim.
+    await nextFrame();
   }
   // Pré-aquece os pipelines (compileAsync) — mata o hitch de compile no 1º add.
   for (const lod of lodCache.values()) three.add(lod);
@@ -275,8 +295,10 @@ game.onUpdate((dt) => {
 });
 
 // Sequência de boot (o que o usuário pediu): splash nativa (host, cobre o boot)
-// → MENU → tela de LOADING montando a cidade → JOGO. A cidade só é gerada quando
-// o jogador inicia pelo menu; o game.onUpdate (bench) só roda após o game.start().
+// → ESPERA a splash terminar → MENU → tela de LOADING montando a cidade → JOGO.
+// A cidade só é gerada quando o jogador inicia pelo menu; assim a tela de loading
+// aparece VISÍVEL primeiro e a barra enche durante a montagem (não "atrás" da splash).
+await waitForSplash();
 await showMenu(game);
 await runWithLoadingScreen(game.ui, loadCity, { message: 'Carregando cidade…' });
 if (streamingEnabled()) game.world.addSystem(streaming);

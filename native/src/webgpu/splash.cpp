@@ -3,6 +3,7 @@
 #include <stb_image.h>
 
 #include "../brand/splash_png.h"
+#include "../napi/napi_util.h"
 #include "internal.h"
 
 namespace webgpu {
@@ -319,6 +320,25 @@ void shutdownSplash() {
   g_view = nullptr;
   g_tex = nullptr;
   g_pipelineFormat = WGPUTextureFormat_Undefined;
+}
+
+void endSplash() {
+  g_finished = true;
+  shutdownSplash();
+}
+
+namespace {
+napi_value jsSplashActive(napi_env env, napi_callback_info) {
+  napi_value v = nullptr;
+  napi_get_boolean(env, splashPending(), &v);
+  return v;
+}
+}  // namespace
+
+void registerSplash(napi_env env) {
+  napi_value global = nullptr;
+  napi_get_global(env, &global);
+  njs::setMethod(env, global, "__cortexSplashActive", jsSplashActive);
 }
 
 }  // namespace webgpu

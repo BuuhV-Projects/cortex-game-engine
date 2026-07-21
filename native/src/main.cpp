@@ -168,6 +168,7 @@ int main(int argc, char** argv) {
     shims::registerAudio(js.env());
     shims::registerTextRaster(js.env(), baseDir, basePath ? basePath : "");
     webgpu::registerBindings(js.env(), &gpu);
+    webgpu::registerSplash(js.env());  // __cortexSplashActive() (ADR-0138)
 
     // SSAA (supersampling): o engine renderiza numa canvas MAIOR (nativo ×
     // renderScale) num alvo offscreen; o host faz downscale bilinear no
@@ -239,6 +240,7 @@ int main(int argc, char** argv) {
     // jogo (`cortex_host.exe D:\jogos\teste4`) — o export nunca passa argv[1].
     const bool devRun = argc > 1 && argv[1] && argv[1][0];
     const bool splashEnabled = !(devRun && SDL_getenv("CORTEX_NO_SPLASH"));
+    if (!splashEnabled) webgpu::endSplash();  // sem splash → __cortexSplashActive() = false já
 
     const uint64_t t0 = SDL_GetTicksNS();
     bool running = true;
