@@ -38,6 +38,11 @@ function mergeStaticEnabled(): boolean {
   return flag ?? true;
 }
 
+function renderBundlesEnabled(): boolean {
+  const flag = (globalThis as { __cortexBenchBundles?: boolean }).__cortexBenchBundles;
+  return flag ?? true;
+}
+
 /** Imprime a linha `[bench]` (native: `print`; browser: `console.log`). */
 function emit(line: string): void {
   const p = (globalThis as { print?: (s: string) => void }).print;
@@ -60,9 +65,10 @@ const scene = await buildScene(game.scene, [sceneDef] as unknown as SceneDefinit
   world: game.world,
   camera: game.camera,
   mergeStatic: mergeStaticEnabled(),
+  renderBundles: renderBundlesEnabled(),
 });
 
-// ── Tráfego dinâmico: caixas girando (fora do merge — representam veículos) ───
+// ── Tráfego dinâmico: caixas girando (fora do bundle — representam veículos) ──
 const three = game.scene.getThreeScene();
 const traffic: Array<{ mesh: Mesh; radius: number; speed: number; phase: number }> = [];
 for (let i = 0; i < params.traffic; i++) {

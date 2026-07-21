@@ -7,6 +7,7 @@ import {
   type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { BundleGroup } from 'three/webgpu';
 import { isSkinned } from '../physics/raycastAccel.js';
 import { debug } from '../core/debug.js';
 import type { World } from '../ecs/World.js';
@@ -274,6 +275,62 @@ export function mergeStaticScene(
 
   debug('scene', `mergeStatic: ${stats.merged} malhas → ${stats.groups} grupos (${stats.kept} mantidas)`);
   return stats;
+}
+
+/** Uma subárvore top-level é "bundável"? Estática, renderável e sem dinâmica. */
+function isBundleable(obj: Object3D, dynRoots: Set<Object3D>): boolean {
+  if ((obj as { isLight?: boolean }).isLight || (obj as { isCamera?: boolean }).isCamera) return false;
+  if (isUnderAny(obj, dynRoots) || dynRoots.has(obj)) return false;
+  if (isExcludedByUserData(obj)) return false; // água/vegetação/veículo/editor/invisível
+  let hasMesh = false;
+  let ok = true;
+  obj.traverse((d) => {
+    if (!ok) return;
+    if ((d as { isLight?: boolean }).isLight || (d as { isCamera?: boolean }).isCamera) { ok = false; return; }
+    const m = d as Mesh;
+    if (m.isMesh) {
+      if (isSkinned(m) || m.layers.mask !== 1 || isExcludedByUserData(m)) { ok = false; return; }
+      hasMesh = true;
+    }
+  });
+  return ok && hasMesh;
+}
+
+/**
+ * **Render bundles** (M-perf-2b / SPEC-0136) — envolve as subárvores ESTÁTICAS de
+ * `root` num {@link BundleGroup}. O `WebGPURenderer` grava os comandos de draw
+ * dessas malhas **uma vez** e no replay vira **1 `executeBundles`** por pass,
+ * cortando as milhares de travessias JS→C++ (setPipeline/BindGroup/VertexBuffer/
+ * draw) por frame no host nativo — o gargalo de render do PRD-0005.
+ *
+ * Diferente do {@link mergeStaticScene}, NÃO exige geometria fundível: bundla
+ * qualquer estático (inclusive `.glb` com buffers interleaved, que o merge
+ * rejeita). Ficam FORA: entidades dinâmicas (ECS/script), animados, skinned,
+ * água/vegetação/veículo, luzes/câmeras. Reparenta com `attach` (preserva o
+ * world transform). O `BundleGroup` assume estrutura estática — reconstrua a cena
+ * (novo `buildScene`) pra mudar. Roda DEPOIS do merge (bundla também as malhas
+ * fundidas). Chame UMA vez, no fim do build.
+ *
+ * @returns Nº de subárvores top-level colocadas no bundle.
+ */
+export function wrapStaticInBundle(
+  root: Object3D,
+  world?: World,
+  extraDynamicRoots: Iterable<Object3D> = [],
+): number {
+  root.updateMatrixWorld(true);
+  const dynRoots = dynamicRoots(world);
+  for (const r of extraDynamicRoots) dynRoots.add(r);
+
+  const bundle = new BundleGroup();
+  const toWrap = root.children.filter((c) => c !== bundle && isBundleable(c, dynRoots));
+  for (const c of toWrap) bundle.attach(c); // attach preserva o world transform
+  if (bundle.children.length > 0) {
+    bundle.name = 'static-bundle';
+    root.add(bundle);
+  }
+  debug('scene', `renderBundles: ${bundle.children.length} subárvores estáticas no bundle`);
+  return bundle.children.length;
 }
 
 /**

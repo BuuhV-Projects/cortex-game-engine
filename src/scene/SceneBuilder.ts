@@ -51,7 +51,7 @@ import { RapierBodyComponent } from '../components/RapierBodyComponent.js';
 import { RapierPhysicsSystem } from '../systems/RapierPhysicsSystem.js';
 import { RapierPhysics } from '../physics/RapierPhysics.js';
 import { Water } from './Water.js';
-import { mergeStaticScene, isNativeHost } from './StaticMerge.js';
+import { mergeStaticScene, wrapStaticInBundle, isNativeHost } from './StaticMerge.js';
 import { Background } from './Background.js';
 import { toBufferGeometry, type EditableMesh } from '../probuilder/EditableMesh.js';
 import { buildShape } from '../probuilder/shapes.js';
@@ -131,6 +131,15 @@ export interface BuildSceneOptions {
    * objetos individuais). `true`/`false` força.
    */
   mergeStatic?: boolean;
+  /**
+   * Envolve a geometria estática FUNDIDA num `BundleGroup` (render bundles do
+   * WebGPU — M-perf-2b/SPEC-0136): o renderer grava os draws uma vez e no replay
+   * vira 1 `executeBundles` por pass, cortando as milhares de travessias NAPI por
+   * frame no host nativo. Só faz efeito com `mergeStatic` (é o estático fundido
+   * que entra). Default `false`; o host liga junto do merge. `BundleGroup` assume
+   * estrutura estática — reconstrua a cena (novo `buildScene`) pra mudar.
+   */
+  renderBundles?: boolean;
 }
 
 /**
@@ -790,6 +799,14 @@ export async function buildScene(
     // ESSAS malhas; fundidas, congelariam.
     const animated = animators.map((a) => a.mixer.getRoot() as Object3D);
     mergeStaticScene(three, options.world, animated);
+  }
+
+  // Render bundles (M-perf-2b): grava os draws do estático UMA vez → 1
+  // executeBundles/pass. Independe do merge (bundla até .glb interleaved). Depois
+  // do merge, pra bundlar também as malhas fundidas. Liga junto do merge no host.
+  if (options.renderBundles ?? false) {
+    const animated = animators.map((a) => a.mixer.getRoot() as Object3D);
+    wrapStaticInBundle(three, options.world, animated);
   }
 
   // O 1º tick do world roda ANTES do 1º render, e o three só computa matrixWorld

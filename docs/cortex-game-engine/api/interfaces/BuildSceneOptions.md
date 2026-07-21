@@ -121,6 +121,21 @@ não cair enquanto você edita a cena no F2. Sem isso, a física roda sempre.
 
 ***
 
+### renderBundles?
+
+> `optional` **renderBundles?**: `boolean`
+
+Defined in: [src/scene/SceneBuilder.ts:142](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L142)
+
+Envolve a geometria estática FUNDIDA num `BundleGroup` (render bundles do
+WebGPU — M-perf-2b/SPEC-0136): o renderer grava os draws uma vez e no replay
+vira 1 `executeBundles` por pass, cortando as milhares de travessias NAPI por
+frame no host nativo. Só faz efeito com `mergeStatic` (é o estático fundido
+que entra). Default `false`; o host liga junto do merge. `BundleGroup` assume
+estrutura estática — reconstrua a cena (novo `buildScene`) pra mudar.
+
+***
+
 ### renderer?
 
 > `optional` **renderer?**: [`Renderer`](../classes/Renderer.md)

@@ -380,6 +380,44 @@ napi_value bundleDraw(napi_env env, napi_callback_info info) {
   return njs::undefined(env);
 }
 
+// setIndexBuffer(buffer, format, offset) — geometria INDEXADA dentro do bundle
+// (a maioria das malhas do three). Espelha passSetIndexBuffer. Sem isto, um
+// BundleGroup com malha indexada quebra a gravação (M-perf-2b, PRD-0005).
+napi_value bundleSetIndexBuffer(napi_env env, napi_callback_info info) {
+  size_t argc = 4;
+  napi_value args[4];
+  auto* enc = static_cast<WGPURenderBundleEncoder>(
+      njs::unwrapThis(env, info, &argc, args));
+  if (!enc || argc < 2) return njs::undefined(env);
+  auto* buffer = static_cast<WGPUBuffer>(njs::unwrapValue(env, args[0]));
+  WGPUIndexFormat format = indexFormatFromString(njs::toString(env, args[1]));
+  double offset = 0;
+  if (argc >= 3) napi_get_value_double(env, args[2], &offset);
+  if (buffer)
+    wgpuRenderBundleEncoderSetIndexBuffer(enc, buffer, format,
+                                          static_cast<uint64_t>(offset),
+                                          WGPU_WHOLE_SIZE);
+  return njs::undefined(env);
+}
+
+// drawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance)
+// dentro do bundle. Espelha passDrawIndexed.
+napi_value bundleDrawIndexed(napi_env env, napi_callback_info info) {
+  size_t argc = 5;
+  napi_value args[5];
+  auto* enc = static_cast<WGPURenderBundleEncoder>(
+      njs::unwrapThis(env, info, &argc, args));
+  if (!enc || argc < 1) return njs::undefined(env);
+  double v[5] = {0, 1, 0, 0, 0};
+  for (size_t i = 0; i < argc && i < 5; ++i)
+    napi_get_value_double(env, args[i], &v[i]);
+  wgpuRenderBundleEncoderDrawIndexed(
+      enc, static_cast<uint32_t>(v[0]), static_cast<uint32_t>(v[1]),
+      static_cast<uint32_t>(v[2]), static_cast<int32_t>(v[3]),
+      static_cast<uint32_t>(v[4]));
+  return njs::undefined(env);
+}
+
 // ── encoder: métodos ────────────────────────────────────────────────────────
 
 napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
@@ -629,7 +667,9 @@ napi_value deviceCreateRenderBundleEncoder(napi_env env,
   njs::setMethod(env, obj, "setPipeline", bundleSetPipeline);
   njs::setMethod(env, obj, "setBindGroup", bundleSetBindGroup);
   njs::setMethod(env, obj, "setVertexBuffer", bundleSetVertexBuffer);
+  njs::setMethod(env, obj, "setIndexBuffer", bundleSetIndexBuffer);
   njs::setMethod(env, obj, "draw", bundleDraw);
+  njs::setMethod(env, obj, "drawIndexed", bundleDrawIndexed);
   njs::setMethod(env, obj, "finish", bundleFinish);
   return obj;
 }

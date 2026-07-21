@@ -6,15 +6,15 @@
 
 # Class: DebugHud
 
-Defined in: [src/ui/DebugHud.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L51)
+Defined in: [src/ui/DebugHud.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L102)
 
 ## Constructors
 
 ### Constructor
 
-> **new DebugHud**(`ui`, `rendererInfo?`): `DebugHud`
+> **new DebugHud**(`ui`, `rendererInfo?`, `profiler?`): `DebugHud`
 
-Defined in: [src/ui/DebugHud.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L65)
+Defined in: [src/ui/DebugHud.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L119)
 
 #### Parameters
 
@@ -30,6 +30,12 @@ Camada de UI de runtime (`game.ui`).
 
 Acessor opcional do `renderer.info` do three.
 
+##### profiler?
+
+`FrameProfiler`
+
+Profiler por-subsistema opcional (breakdown por seção).
+
 #### Returns
 
 `DebugHud`
@@ -42,7 +48,7 @@ Acessor opcional do `renderer.info` do three.
 
 > **get** **visible**(): `boolean`
 
-Defined in: [src/ui/DebugHud.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L80)
+Defined in: [src/ui/DebugHud.ts:144](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L144)
 
 Visível? O toggle do Studio (menu View) liga/desliga em runtime.
 
@@ -56,7 +62,7 @@ Visível? O toggle do Studio (menu View) liga/desliga em runtime.
 
 > **frame**(`deltaMs`): `void`
 
-Defined in: [src/ui/DebugHud.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L95)
+Defined in: [src/ui/DebugHud.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L159)
 
 Alimente 1×/frame com o delta em ms (o [Game](Game.md) faz isso).
 
@@ -76,7 +82,7 @@ Alimente 1×/frame com o delta em ms (o [Game](Game.md) faz isso).
 
 > **setVisible**(`visible`): `void`
 
-Defined in: [src/ui/DebugHud.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L85)
+Defined in: [src/ui/DebugHud.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L149)
 
 Mostra/esconde o HUD (some da tela e para de medir/rasterizar).
 

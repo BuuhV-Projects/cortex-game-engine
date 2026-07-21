@@ -11,9 +11,10 @@ import {
   BoxGeometry,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  DirectionalLight,
   Vector3,
 } from 'three';
-import { mergeStaticScene } from '../../src/scene/StaticMerge.js';
+import { mergeStaticScene, wrapStaticInBundle } from '../../src/scene/StaticMerge.js';
 import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
 import { Object3DComponent } from '../../src/components/Object3DComponent.js';
@@ -174,5 +175,81 @@ describe('mergeStaticScene', () => {
     merged.geometry.computeBoundingBox();
     expect(merged.geometry.boundingBox!.max.y).toBeCloseTo(2);
     expect(merged.getWorldPosition(new Vector3()).y).toBe(0); // baked: mesh na origem
+  });
+});
+
+describe('wrapStaticInBundle (render bundles — M-perf-2b)', () => {
+  function bundleOf(root: Object3D): Object3D | undefined {
+    return root.children.find((c) => c.name === 'static-bundle');
+  }
+
+  it('põe as subárvores estáticas num static-bundle, preservando o world transform', () => {
+    const root = new Object3D();
+    const mat = new MeshStandardMaterial();
+    const a = box(mat, 3);
+    const b = box(mat, -5);
+    root.add(a, b);
+    const n = wrapStaticInBundle(root);
+    expect(n).toBe(2);
+    const bundle = bundleOf(root);
+    expect(bundle).toBeDefined();
+    expect(bundle!.children).toContain(a);
+    expect(bundle!.children).toContain(b);
+    // attach preserva a posição de mundo
+    expect(a.getWorldPosition(new Vector3()).x).toBeCloseTo(3);
+    expect(b.getWorldPosition(new Vector3()).x).toBeCloseTo(-5);
+  });
+
+  it('bundla geometria interleaved/qualquer estático (não exige fundível)', () => {
+    const root = new Object3D();
+    // dois materiais distintos (não fundiriam) — mas ambos bundláveis
+    root.add(box(new MeshStandardMaterial({ color: 1 }), 0), box(new MeshStandardMaterial({ color: 2 }), 4));
+    expect(wrapStaticInBundle(root)).toBe(2);
+    expect(countMeshes(bundleOf(root)!)).toBe(2);
+  });
+
+  it('deixa FORA: luz, skinned, água/vegetação, invisível', () => {
+    const root = new Object3D();
+    const mat = new MeshStandardMaterial();
+    const light = new DirectionalLight();
+    const skinned = new SkinnedMesh(new BoxGeometry(1, 1, 1), mat);
+    const water = box(mat, 1);
+    water.userData['cortexWater'] = true;
+    const invisible = box(mat, 2);
+    invisible.visible = false;
+    const ok = box(mat, 3);
+    root.add(light, skinned, water, invisible, ok);
+    const n = wrapStaticInBundle(root);
+    expect(n).toBe(1); // só `ok`
+    expect(bundleOf(root)!.children).toContain(ok);
+    expect(root.children).toContain(light); // luz fica na cena
+    expect(root.children).toContain(water);
+  });
+
+  it('deixa FORA subárvores de entidades dinâmicas (script/character)', () => {
+    const root = new Object3D();
+    const world = new World();
+    const mat = new MeshStandardMaterial();
+    const coin = box(mat, 0);
+    world.createEntity().addComponent(new ScriptComponent(coin, [{ type: 'CoinScript' }]));
+    const player = box(mat, 2);
+    const pE = world.createEntity();
+    pE.addComponent(new TransformComponent(2, 0, 0));
+    pE.addComponent(new Object3DComponent(player));
+    pE.addComponent(new CharacterBodyComponent());
+    const wall = box(mat, 4); // estático
+    root.add(coin, player, wall);
+    const n = wrapStaticInBundle(root, world);
+    expect(n).toBe(1); // só a parede
+    expect(bundleOf(root)!.children).toContain(wall);
+    expect(root.children).toContain(coin);
+    expect(root.children).toContain(player);
+  });
+
+  it('sem nada estático, não cria bundle', () => {
+    const root = new Object3D();
+    root.add(new DirectionalLight());
+    expect(wrapStaticInBundle(root)).toBe(0);
+    expect(bundleOf(root)).toBeUndefined();
   });
 });

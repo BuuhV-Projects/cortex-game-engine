@@ -362,3 +362,4 @@
 - [toBufferGeometry](functions/toBufferGeometry.md)
 - [uiScale](functions/uiScale.md)
 - [validateScene](functions/validateScene.md)
+- [wrapStaticInBundle](functions/wrapStaticInBundle.md)
