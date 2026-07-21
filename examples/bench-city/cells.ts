@@ -49,9 +49,16 @@ export interface BuildCellsOptions {
   renderer: Renderer;
 }
 
-export interface BuildCellsResult {
+/** Dados de uma célula: os nós dos prédios + o centro XZ. */
+export interface CellData {
+  nodes: BuildingNode[];
+  x: number;
+  z: number;
+}
+
+export interface PartitionResult {
   cells: StreamingCell[];
-  lods: Map<string, LOD>;
+  byKey: Map<string, CellData>;
 }
 
 /** Proxy low-poly de uma célula: caixas do bounding de cada prédio, fundidas. */
@@ -81,58 +88,57 @@ function cellKey(x: number, z: number, cellSize: number): string {
   return `${Math.floor(x / cellSize)},${Math.floor(z / cellSize)}`;
 }
 
-/**
- * Particiona os prédios em células e monta um `LOD` por célula (full + proxy).
- * Os LODs saem DESTACADOS (não na cena) — o streaming os adiciona por distância.
- */
-export async function buildCells(nodes: BuildingNode[], opts: BuildCellsOptions): Promise<BuildCellsResult> {
-  const groups = new Map<string, BuildingNode[]>();
+/** Particiona os prédios em células (SÍNCRONO, barato) — sem montar nada ainda. */
+export function partitionCells(nodes: BuildingNode[], cellSize: number): PartitionResult {
+  const byKey = new Map<string, CellData>();
   for (const n of nodes) {
-    const key = cellKey(n.transform.position[0], n.transform.position[2], opts.cellSize);
-    let list = groups.get(key);
-    if (!list) {
-      list = [];
-      groups.set(key, list);
+    const key = cellKey(n.transform.position[0], n.transform.position[2], cellSize);
+    let data = byKey.get(key);
+    if (!data) {
+      data = { nodes: [], x: 0, z: 0 };
+      byKey.set(key, data);
     }
-    list.push(n);
+    data.nodes.push(n);
   }
-
   const cells: StreamingCell[] = [];
-  const lods = new Map<string, LOD>();
-  for (const [key, cellNodes] of groups) {
-    // Full: monta os prédios da célula numa Scene temporária (merge + bundle).
-    const cellScene = new Scene();
-    await buildScene(cellScene, [{ version: 1, nodes: cellNodes } as unknown as SceneDefinition], {
-      renderer: opts.renderer,
-      mergeStatic: opts.mergeStatic,
-      renderBundles: opts.renderBundles,
-    });
-    const full = new Group();
-    for (const child of [...cellScene.getThreeScene().children] as Object3D[]) full.attach(child);
-
-    const proxy = makeProxy(cellNodes);
-
-    // Centro da célula (média das posições) — o LOD mede a distância daqui.
+  for (const [key, data] of byKey) {
     let sx = 0;
     let sz = 0;
-    for (const n of cellNodes) {
+    for (const n of data.nodes) {
       sx += n.transform.position[0];
       sz += n.transform.position[2];
     }
-    const cx = sx / cellNodes.length;
-    const cz = sz / cellNodes.length;
-
-    // LOD no centro; os filhos ficam em coord de MUNDO (compensa o offset do LOD),
-    // pra a geometria (baked em world pelo merge) renderizar no lugar certo.
-    const lod = new LOD();
-    lod.position.set(cx, 0, cz);
-    full.position.set(-cx, 0, -cz);
-    proxy.position.set(-cx, 0, -cz);
-    lod.addLevel(full, 0);
-    lod.addLevel(proxy, opts.lodDistance);
-
-    lods.set(key, lod);
-    cells.push({ key, x: cx, z: cz });
+    data.x = sx / data.nodes.length;
+    data.z = sz / data.nodes.length;
+    cells.push({ key, x: data.x, z: data.z });
   }
-  return { cells, lods };
+  return { cells, byKey };
+}
+
+/**
+ * Monta o `LOD` de UMA célula (SOB DEMANDA): full (buildScene com merge+bundle
+ * numa Scene temporária) + proxy de caixas. Assíncrono — o streaming chama isto
+ * quando a célula entra no raio, e o custo é espalhado pelo orçamento/frame.
+ */
+export async function buildCellLod(data: CellData, opts: BuildCellsOptions): Promise<LOD> {
+  const cellScene = new Scene();
+  await buildScene(cellScene, [{ version: 1, nodes: data.nodes } as unknown as SceneDefinition], {
+    renderer: opts.renderer,
+    mergeStatic: opts.mergeStatic,
+    renderBundles: opts.renderBundles,
+  });
+  const full = new Group();
+  for (const child of [...cellScene.getThreeScene().children] as Object3D[]) full.attach(child);
+
+  const proxy = makeProxy(data.nodes);
+
+  // LOD no centro; os filhos ficam em coord de MUNDO (compensa o offset do LOD),
+  // pra a geometria (baked em world pelo merge) renderizar no lugar certo.
+  const lod = new LOD();
+  lod.position.set(data.x, 0, data.z);
+  full.position.set(-data.x, 0, -data.z);
+  proxy.position.set(-data.x, 0, -data.z);
+  lod.addLevel(full, 0);
+  lod.addLevel(proxy, opts.lodDistance);
+  return lod;
 }

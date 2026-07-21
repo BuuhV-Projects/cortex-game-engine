@@ -54,11 +54,22 @@ adiciona/remove sem hitch.
 - **Câmera baixa (traverse) é o que EXERCITA o streaming:** um sobrevoo alto vê a
   cidade toda (pouco a descartar); andar a pé vê um entorno local. Ambos rodam em
   sequência no bench (`[bench:orbit]` / `[bench:traverse]`).
-- **Limitação conhecida (boot lento — a corrigir):** o bench PRÉ-MONTA todas as
-  células no boot (pra o pré-aquecimento de pipeline) → abrir demora. O certo é
-  **carga sob demanda**: boot só o básico + splash, células montadas ao aproximar
-  (async, via o io_pool do M-perf-3), com um **callback de progresso** pra o dev
-  fazer a tela de loading. Fica como a próxima iteração do M-perf-4.
+- **Carga sob demanda: tentada, cara demais (2026-07-21) → PRÉ-BUILD + splash +
+  progresso.** Montar a célula SOB DEMANDA (no `onLoad`, quando entra no raio)
+  dava boot rápido, mas **travava o jogo** (~260 ms/frame): o
+  de-interleave+merge+bundle de uma célula é trabalho pesado na thread JS (Hermes,
+  sem worker pra three) — o orbit, expondo células novas o tempo todo, ficava a
+  ~1 fps. O `traverse` (revisita células em cache) ficava suave. Como o custo de
+  build é alto, a decisão foi **pré-montar no boot** (o jogo só gera dados DEPOIS
+  da splash da engine, que cobre o tempo) e o streaming só ADICIONA/REMOVE (barato)
+  — 70 fps suave. Um **feedback de progresso** (`[loading] montando cidade N/36`,
+  via `onProgress`/`loadingCount` do `CellStreamingSystem`) alimenta a tela de
+  carregamento do dev.
+- **API assíncrona pronta pro futuro:** o `onLoad` já aceita Promise e o sistema
+  expõe `loadingCount`/`onProgress`/`isResident` — quando o build de célula ficar
+  barato (build incremental espalhado por frames, ou decode/merge off-thread — o
+  follow-up do M-perf-3), dá pra voltar pra carga sob demanda sem tocar na lógica
+  de residência.
 - Sem o pré-aquecimento, o load de célula dava ~250 ms de hitch (worst-1% 3.6
   fps). Com ele: worst-1% > 60.
 - **Editor F2/browser:** o streaming (como o merge) é do host — no Studio a cena

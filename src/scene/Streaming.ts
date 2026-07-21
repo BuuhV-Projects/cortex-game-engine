@@ -44,10 +44,19 @@ export interface CellStreamingOptions {
   budgetPerFrame?: number;
   /** Posição XZ da câmera/jogador a cada tick. */
   getCameraXZ: () => Vec2XZ;
-  /** Monta a célula (o app faz buildScene dos nós dela). */
-  onLoad: (key: string) => void;
+  /**
+   * Monta a célula (o app faz buildScene dos nós dela). Pode ser **assíncrono**
+   * (carga sob demanda): enquanto a Promise não resolve, a célula conta como
+   * "carregando" ({@link CellStreamingSystem.loadingCount}) — o dev usa isso pra
+   * uma tela de loading. O app deve conferir se a célula ainda é desejada
+   * ({@link CellStreamingSystem.isResident}) antes de adicioná-la (pode ter saído
+   * do raio durante a carga).
+   */
+  onLoad: (key: string) => void | Promise<unknown>;
   /** Descarta a célula (o app remove/libera a GPU). */
   onUnload: (key: string) => void;
+  /** Chamado quando o nº de células carregando muda (pra atualizar a tela de loading). */
+  onProgress?: (loading: number, resident: number) => void;
 }
 
 const DEFAULT_BUDGET = 1;
@@ -67,7 +76,10 @@ export class CellStreamingSystem extends System {
   private readonly loadR2: number;
   private readonly unloadR2: number;
   private readonly budget: number;
+  /** Células com `onLoad` já chamado (residentes/desejadas — evita re-pedir). */
   private readonly loaded = new Set<string>();
+  /** Subconjunto de `loaded` cujo `onLoad` async ainda não terminou. */
+  private readonly building = new Set<string>();
 
   constructor(
     private readonly cells: StreamingCell[],
@@ -89,12 +101,15 @@ export class CellStreamingSystem extends System {
    * e carrega, por distância e até o orçamento, o que entrou no raio.
    */
   step(cam: Vec2XZ): void {
+    const before = this.building.size;
+
     // 1) Descarga: residentes além de raio+histerese.
     for (const key of [...this.loaded]) {
       const cell = this.cellByKey(key);
       if (!cell) continue;
       if (dist2(cam.x, cam.z, cell.x, cell.z) > this.unloadR2) {
         this.loaded.delete(key);
+        this.building.delete(key);
         this.opts.onUnload(key);
       }
     }
@@ -111,18 +126,46 @@ export class CellStreamingSystem extends System {
     for (let i = 0; i < candidates.length && i < this.budget; i++) {
       const key = candidates[i]!.key;
       this.loaded.add(key);
-      this.opts.onLoad(key);
+      this.building.add(key);
+      const result = this.opts.onLoad(key);
+      if (result && typeof (result as Promise<unknown>).then === 'function') {
+        // Carga assíncrona: sai de "building" quando terminar (só se ainda desejada).
+        void (result as Promise<unknown>).finally(() => this.markBuilt(key));
+      } else {
+        this.building.delete(key); // onLoad síncrono → pronta na hora
+      }
     }
+
+    if (this.building.size !== before) this.reportProgress();
   }
 
-  /** Chaves residentes agora. */
+  private markBuilt(key: string): void {
+    if (!this.building.delete(key)) return;
+    this.reportProgress();
+  }
+
+  private reportProgress(): void {
+    this.opts.onProgress?.(this.building.size, this.loaded.size);
+  }
+
+  /** Chaves residentes agora (desejadas — inclui as ainda carregando). */
   get resident(): ReadonlySet<string> {
     return this.loaded;
   }
 
-  /** Nº de células residentes agora. */
+  /** A célula `key` é desejada agora? (o app confere antes de adicionar à cena.) */
+  isResident(key: string): boolean {
+    return this.loaded.has(key);
+  }
+
+  /** Nº de células residentes (desejadas) agora. */
   get residentCount(): number {
     return this.loaded.size;
+  }
+
+  /** Nº de células ainda CARREGANDO (onLoad async não terminou) — pra tela de loading. */
+  get loadingCount(): number {
+    return this.building.size;
   }
 
   private cellByKey(key: string): StreamingCell | undefined {

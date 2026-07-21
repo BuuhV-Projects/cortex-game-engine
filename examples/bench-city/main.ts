@@ -10,10 +10,10 @@
  * - `globalThis.__cortexBenchMergeStatic` — liga/desliga o merge (default true).
  */
 import { Game, buildScene, CellStreamingSystem } from '../../src/index-runtime.js';
-import { Mesh, BoxGeometry, MeshStandardMaterial } from 'three';
+import { Mesh, BoxGeometry, MeshStandardMaterial, LOD } from 'three';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
 import { generateCityScene, DEFAULT_BENCH_CITY, type BenchCityParams } from './generate.js';
-import { buildCells, type BuildingNode } from './cells.js';
+import { partitionCells, buildCellLod, type BuildingNode } from './cells.js';
 import { BenchRunner, type BenchReport, type BenchRail } from './BenchRunner.js';
 
 // ── Constantes do bench (sem números mágicos) ────────────────────────────────
@@ -35,7 +35,7 @@ const CELL_SIZE = 90; // lado da célula (m)
 // (qualidade perto), raio de stream maior (o entorno carregado), unload além.
 const STREAM_RADIUS = 190; // carrega (full OU proxy) dentro deste raio
 const STREAM_HYSTERESIS = 40; // descarrega só além de raio+histerese (anti-thrash)
-const STREAM_BUDGET = 3; // células carregadas por frame (espalha o custo)
+const STREAM_BUDGET = 3; // células adicionadas por frame (add de pré-montada é barato)
 const LOD_DISTANCE = 120; // até aqui: célula full (textura); além: proxy de caixas
 const TRAVERSE_HEIGHT = 14; // altura da câmera andando (m)
 const TRAVERSE_SPEED = 45; // m/s
@@ -92,44 +92,51 @@ const scene = await buildScene(game.scene, [{ ...sceneDef, nodes: baseNodes }] a
   renderBundles: renderBundlesEnabled(),
 });
 
-// ── Células + LOD (M-perf-4): monta cada célula (full + proxy) DESTACADA; o
-// CellStreamingSystem adiciona/remove por distância (carrega por raio); o three
-// troca o nível do LOD por distância (longe = proxy); o frustum culling não
-// desenha o que está fora da tela. Streaming OFF = todas as células residentes.
-const { cells, lods } = await buildCells(buildingNodes, {
+// ── Células + LOD (M-perf-4): carga SOB DEMANDA. Particiona (barato), monta cada
+// célula só quando entra no raio (onLoad async, via buildCellLod). O boot NÃO
+// monta a cidade toda — só pré-aquece os pipelines com poucas células.
+const { cells, byKey } = partitionCells(buildingNodes, CELL_SIZE);
+const cellOpts = {
   cellSize: CELL_SIZE,
   lodDistance: LOD_DISTANCE,
   mergeStatic: mergeStaticEnabled(),
   renderBundles: renderBundlesEnabled(),
   renderer: game.renderer,
-});
+};
+// PRÉ-MONTA as células no boot (a splash da engine cobre esse tempo). Montar
+// sob demanda durante o jogo trava (o de-interleave+merge+bundle de uma célula é
+// pesado na thread JS) — então pré-monta e o streaming só ADICIONA/REMOVE
+// (barato). O `[loading]` é o feedback que o dev usa pra a tela de carregamento.
+const lodCache = new Map<string, LOD>();
+let builtCount = 0;
+for (const c of cells) {
+  lodCache.set(c.key, await buildCellLod(byKey.get(c.key)!, cellOpts));
+  emit(`[loading] montando cidade ${++builtCount}/${cells.length}`);
+}
 
-// Pré-aquece os PIPELINES de todas as células (full + proxy) no boot: sem isso,
-// a 1ª vez que uma célula aparece o wgpu COMPILA o shader e trava o frame
-// (~250 ms). Com tudo na cena + compileAsync, a compilação acontece uma vez no
-// boot; depois o streaming adiciona/remove sem hitch.
-for (const lod of lods.values()) three.add(lod);
+// Pré-aquece os pipelines (compileAsync) — mata o hitch de compile no 1º add.
 const threeRenderer = game.renderer.threeRenderer as {
   compileAsync?: (scene: unknown, camera: unknown) => Promise<unknown>;
 };
+for (const lod of lodCache.values()) three.add(lod);
 if (typeof threeRenderer.compileAsync === 'function') {
   await threeRenderer.compileAsync(three, game.camera);
 }
-for (const lod of lods.values()) three.remove(lod);
+for (const lod of lodCache.values()) three.remove(lod); // o streaming re-adiciona por distância
 
 const streaming = new CellStreamingSystem(cells, {
   radius: STREAM_RADIUS,
   hysteresis: STREAM_HYSTERESIS,
   budgetPerFrame: STREAM_BUDGET,
   getCameraXZ: () => ({ x: game.camera.position.x, z: game.camera.position.z }),
-  onLoad: (key) => three.add(lods.get(key)!),
-  onUnload: (key) => three.remove(lods.get(key)!),
+  onLoad: (key) => { three.add(lodCache.get(key)!); }, // pré-montada → add barato
+  onUnload: (key) => { three.remove(lodCache.get(key)!); },
 });
 
 if (streamingEnabled()) {
   game.world.addSystem(streaming); // roda no world.tick (após o rail mover a câmera)
 } else {
-  for (const lod of lods.values()) three.add(lod); // tudo residente (baseline)
+  for (const lod of lodCache.values()) three.add(lod); // baseline: tudo residente
 }
 
 // ── Tráfego dinâmico: caixas girando (fora do bundle — representam veículos) ──

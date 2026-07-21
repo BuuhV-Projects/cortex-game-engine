@@ -28,8 +28,8 @@ function makeSystem(cells: StreamingCell[], opts: Partial<Parameters<typeof Cell
     hysteresis: opts.hysteresis,
     budgetPerFrame: opts.budgetPerFrame,
     getCameraXZ: () => ({ x: 0, z: 0 }),
-    onLoad: (k) => loads.push(k),
-    onUnload: (k) => unloads.push(k),
+    onLoad: (k) => { loads.push(k); },
+    onUnload: (k) => { unloads.push(k); },
   });
   return { sys, loads, unloads };
 }
@@ -78,8 +78,8 @@ describe('CellStreamingSystem', () => {
       hysteresis: 80,
       budgetPerFrame: 999,
       getCameraXZ: () => cam,
-      onLoad: (k) => loads.push(k),
-      onUnload: (k) => unloads.push(k),
+      onLoad: (k) => { loads.push(k); },
+      onUnload: (k) => { unloads.push(k); },
     });
 
     sys.update(); // câmera em (0,0): célula a 100m ≤ 120 → carrega
@@ -94,6 +94,28 @@ describe('CellStreamingSystem', () => {
     sys.update();
     expect(unloads).toEqual(['c']);
     expect(sys.residentCount).toBe(0);
+  });
+
+  it('carga assíncrona: conta loadingCount até a Promise resolver + onProgress', async () => {
+    const cells: StreamingCell[] = [{ key: 'c', x: 0, z: 0 }];
+    let resolveLoad!: () => void;
+    const progress: Array<[number, number]> = [];
+    const sys = new CellStreamingSystem(cells, {
+      radius: 100,
+      budgetPerFrame: 999,
+      getCameraXZ: () => ({ x: 0, z: 0 }),
+      onLoad: () => new Promise<void>((r) => { resolveLoad = r; }),
+      onUnload: () => {},
+      onProgress: (loading, resident) => progress.push([loading, resident]),
+    });
+    sys.step({ x: 0, z: 0 });
+    expect(sys.loadingCount).toBe(1); // carregando
+    expect(sys.residentCount).toBe(1); // já desejada
+    expect(sys.isResident('c')).toBe(true);
+    resolveLoad();
+    await Promise.resolve(); // deixa o .finally rodar
+    expect(sys.loadingCount).toBe(0); // terminou de carregar
+    expect(progress.at(-1)).toEqual([0, 1]);
   });
 
   it('idempotente: repetir o step no mesmo lugar não recarrega', () => {
