@@ -530,6 +530,7 @@ const VENDOR_TYPE_MODULES = {
     'Kit',
     'validateScene',
     'StaticMerge',
+    'Streaming',
   ],
   io: ['SceneFileWriter', 'HttpSceneFileWriter', 'TauriSceneFileWriter', 'autoDetectSceneFileWriter', 'signedSave'],
   i18n: ['I18n', 'GameConfig'],
