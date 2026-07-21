@@ -10,7 +10,7 @@
  * - `globalThis.__cortexBenchMergeStatic` — liga/desliga o merge (default true).
  */
 import { Game, buildScene, CellStreamingSystem, runWithLoadingScreen, UiPanel, UiLabel, loadGLB, instance } from '../../src/index-runtime.js';
-import { Mesh, BoxGeometry, MeshStandardMaterial, type Object3D } from 'three';
+import { Mesh, BoxGeometry, MeshStandardMaterial, type Material, type Object3D } from 'three';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
 import { generateCityScene, DEFAULT_BENCH_CITY, type BenchCityParams } from './generate.js';
 import { wrapBakedCell } from './cells.js';
@@ -139,10 +139,11 @@ const scene = await buildScene(game.scene, [{ ...sceneDef, nodes: baseNodes }] a
   renderBundles: renderBundlesEnabled(),
 });
 
-// ── Cidade PRÉ-FUNDIDA (M-perf-4 bake): carrega o `city.glb` UMA vez (geometria
-// já fundida por célula, offline) e ENVOLVE cada nó `cell-<key>` num BundleGroup.
-// Sem buildScene/merge por prédio em runtime → load de segundos vira ms. O
-// manifesto (`city-cells.json`) traz as chaves + centros das células. ──
+// ── Streaming de BYTES por célula (M-perf-4 bake): o boot carrega só os materiais
+// (`city-mats.glb`, 1×) + 1 célula pra pré-aquecer o pipeline; cada `cells/
+// cell-<key>.glb` (geometria PURA) é carregado SOB DEMANDA quando entra no raio
+// (onLoad async). O material é reatribuído por NOME do cache compartilhado (as
+// texturas sobem 1× só). Boot de ~9s vira ~2s. Manifesto = chaves + centros. ──
 interface CityManifest {
   cellSize: number;
   cells: StreamingCell[];
@@ -150,47 +151,68 @@ interface CityManifest {
 const manifest = (await (await fetch('assets/city-cells.json')).json()) as CityManifest;
 const cells: StreamingCell[] = manifest.cells;
 
-const cellCache = new Map<string, Object3D>();
+const matMap = new Map<string, Material>(); // nome do material → material real (com textura)
+const cellCache = new Map<string, Object3D>(); // célula já carregada+envolvida (revisita = grátis)
 const threeRenderer = game.renderer.threeRenderer as {
   compileAsync?: (scene: unknown, camera: unknown) => Promise<unknown>;
 };
 
-async function loadCity(progress: (label: string, fraction: number) => void): Promise<void> {
-  const t0 = performance.now();
-  progress('Carregando cidade…', 0.05);
-  const gltf = await loadGLB('assets/city.glb');
-  const cityObj = instance(gltf, { castShadow: true, receiveShadow: true });
-  emit(`[loading] city.glb carregado em ${(performance.now() - t0).toFixed(0)}ms`);
-  await nextFrame();
-
-  // Envolve cada célula pré-fundida num BundleGroup (barato — sem merge). O
-  // streaming adiciona/remove por distância.
-  let i = 0;
-  for (const c of cells) {
-    const full = cityObj.getObjectByName(`cell-${c.key}`) as Object3D | undefined;
-    if (full) cellCache.set(c.key, wrapBakedCell(full, renderBundlesEnabled()));
-    i++;
-    progress(`Preparando cidade ${i}/${cells.length}`, 0.1 + 0.6 * (i / cells.length));
-    await nextFrame();
-  }
-
-  // Pré-aquece os pipelines (compileAsync) — mata o hitch de compile no 1º add.
-  for (const cell of cellCache.values()) three.add(cell);
-  if (typeof threeRenderer.compileAsync === 'function') {
-    progress('Compilando shaders…', 0.85);
-    await threeRenderer.compileAsync(three, game.camera);
-  }
-  for (const cell of cellCache.values()) three.remove(cell); // o streaming re-adiciona por distância
-  emit(`[loading] cidade pronta (${cellCache.size} células) em ${(performance.now() - t0).toFixed(0)}ms`);
+/** Carrega o `.glb` de UMA célula (geometria pura), reatribui os materiais
+ *  compartilhados por nome, e envolve num BundleGroup. Cacheado. */
+async function loadAndWrapCell(key: string): Promise<Object3D> {
+  const cached = cellCache.get(key);
+  if (cached) return cached;
+  const gltf = await loadGLB(`assets/cells/cell-${key}.glb`);
+  const obj = instance(gltf, { castShadow: true, receiveShadow: true });
+  obj.traverse((o) => {
+    const mesh = o as Mesh;
+    if (!mesh.isMesh) return;
+    const shared = matMap.get((mesh.material as Material).name);
+    if (shared) mesh.material = shared; // textura compartilhada (subiu 1× no city-mats)
+  });
+  const node = (obj.getObjectByName(`cell-${key}`) ?? obj) as Object3D;
+  const wrapped = wrapBakedCell(node, renderBundlesEnabled());
+  cellCache.set(key, wrapped);
+  return wrapped;
 }
 
-const streaming = new CellStreamingSystem(cells, {
+async function loadCity(progress: (label: string, fraction: number) => void): Promise<void> {
+  const t0 = performance.now();
+  progress('Carregando materiais…', 0.15);
+  const matsGltf = await loadGLB('assets/city-mats.glb');
+  matsGltf.scene.traverse((o) => {
+    const mesh = o as Mesh;
+    if (mesh.isMesh) {
+      const mat = mesh.material as Material;
+      if (mat?.name) matMap.set(mat.name, mat);
+    }
+  });
+  emit(`[loading] materiais: ${matMap.size} em ${(performance.now() - t0).toFixed(0)}ms`);
+
+  // Pré-aquece o pipeline: 1 célula (materiais compartilhados → compila pra todas).
+  progress('Compilando shaders…', 0.5);
+  const warm = await loadAndWrapCell(cells[0].key);
+  three.add(warm);
+  if (typeof threeRenderer.compileAsync === 'function') {
+    await threeRenderer.compileAsync(three, game.camera);
+  }
+  three.remove(warm); // o streaming re-adiciona por distância
+  emit(`[loading] pronto (mats + 1 célula) em ${(performance.now() - t0).toFixed(0)}ms`);
+}
+
+const streaming: CellStreamingSystem = new CellStreamingSystem(cells, {
   radius: STREAM_RADIUS,
   hysteresis: STREAM_HYSTERESIS,
   budgetPerFrame: STREAM_BUDGET,
   getCameraXZ: () => ({ x: game.camera.position.x, z: game.camera.position.z }),
-  onLoad: (key) => { three.add(cellCache.get(key)!); }, // pré-montada → add barato
-  onUnload: (key) => { three.remove(cellCache.get(key)!); },
+  onLoad: async (key) => {
+    const w = await loadAndWrapCell(key); // carrega o .glb da célula sob demanda
+    if (streaming.isResident(key)) three.add(w); // pode ter saído do raio no meio-tempo
+  },
+  onUnload: (key) => {
+    const w = cellCache.get(key);
+    if (w) three.remove(w); // cacheada — revisita não recarrega
+  },
 });
 
 // ── Tráfego dinâmico: caixas girando (fora do bundle — representam veículos) ──
@@ -306,5 +328,5 @@ await waitForSplash();
 await showMenu(game);
 await runWithLoadingScreen(game.ui, loadCity, { message: 'Carregando cidade…' });
 if (streamingEnabled()) game.world.addSystem(streaming);
-else for (const cell of cellCache.values()) three.add(cell);
+else for (const c of cells) three.add(await loadAndWrapCell(c.key)); // sem streaming: carrega tudo
 game.start();

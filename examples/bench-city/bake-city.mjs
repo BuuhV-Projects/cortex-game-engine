@@ -7,7 +7,7 @@
 //
 // Uso: node examples/bench-city/bake-city.mjs   (precisa dos .glb em assets/models
 // — rode prepare-assets.mjs antes).
-import { NodeIO, VertexLayout } from '@gltf-transform/core';
+import { NodeIO, VertexLayout, Document } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { mergeDocuments, dedup, prune } from '@gltf-transform/functions';
 import { Matrix4, Matrix3, Vector3, Quaternion, Euler } from 'three';
@@ -19,7 +19,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MODELS_DIR = path.join(here, 'assets', 'models');
-const OUT_GLB = path.join(here, 'assets', 'city.glb');
+const OUT_MATS = path.join(here, 'assets', 'city-mats.glb'); // materiais+texturas, 1×
+const CELLS_DIR = path.join(here, 'assets', 'cells'); // 1 .glb (geometria) por célula
 const OUT_MANIFEST = path.join(here, 'assets', 'city-cells.json');
 const CELL_SIZE = 90; // DEVE bater com main.ts
 // NOTA: sem LOD de geometria. Os modelos-fonte JÁ são low-poly (pré-decimados a
@@ -62,9 +63,9 @@ async function main() {
   // mesh — SPEC-0140); gravar separado evita o de-interleave em runtime (~5s).
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).setVertexLayout(VertexLayout.SEPARATE);
 
-  // Doc de saída; traz cada modelo pra dentro (materiais/texturas compartilhados).
-  const out = new (await import('@gltf-transform/core')).Document();
-  const outScene = out.createScene('city');
+  // Doc dos MATERIAIS (city-mats.glb); traz cada modelo pra dentro (materiais/
+  // texturas compartilhados). A geometria das células vai em docs separados.
+  const out = new Document();
   const buffer = out.createBuffer();
 
   // url → { prims: [{semantics:{name:{array,itemSize}}, index, material}] }
@@ -146,34 +147,7 @@ async function main() {
     }
   }
 
-  // Constrói um nó `cell-<key>` por célula com a geometria fundida (por material).
-  const manifest = [];
-  let triFull = 0;
-  for (const [key, byMat] of cells) {
-    const cellNode = out.createNode(`cell-${key}`);
-    for (const [material, groups] of byMat) {
-      for (const g of groups) {
-        // g.vbase ≤ 65535 sempre (capado na acumulação) → índice Uint16.
-        const prim = out.createPrimitive().setMaterial(material);
-        for (const [sem, arr] of Object.entries(g.attrs)) {
-          prim.setAttribute(sem, out.createAccessor().setType(gltfType(g.semSizes[sem])).setArray(new Float32Array(arr)).setBuffer(buffer));
-        }
-        prim.setIndices(out.createAccessor().setType('SCALAR').setArray(new Uint16Array(g.index)).setBuffer(buffer));
-        cellNode.addChild(out.createNode('').setMesh(out.createMesh().addPrimitive(prim)));
-        triFull += g.index.length / 3;
-      }
-    }
-    outScene.addChild(cellNode);
-    const c = centers.get(key);
-    manifest.push({ key, x: c.sx / c.n, z: c.sz / c.n });
-  }
-  console.log(`[bake] triângulos: ${triFull | 0}`);
-
-  // Simplifica os materiais: mantém só o BASE COLOR (fosco), tira normal/ORM.
-  // NÃO é obrigatório pra render (o branco era o COLOR_0 — ver acima); é ESCOLHA
-  // de perf/tamanho: pra cidade vista de longe, base color fosco basta, corta
-  // ~10 texturas e sobe o fps (metal sem envMap ainda reflete o céu claro).
-  // Defina CITY_KEEP_PBR=1 pra manter os normal/ORM maps. Ver [[native-fps-cpu-bound-render]].
+  // ── Materiais foscos (só base color) — perf/tamanho; CITY_KEEP_PBR=1 mantém PBR ──
   if (process.env.CITY_KEEP_PBR !== '1') {
     let n = 0;
     for (const m of out.getRoot().listMaterials()) {
@@ -181,18 +155,56 @@ async function main() {
       m.setMetallicFactor(0).setRoughnessFactor(1);
       n++;
     }
-    console.log(`[bake] materiais simplificados p/ base color fosco: ${n}`);
+    console.log(`[bake] materiais foscos: ${n}`);
   }
 
+  // ── city-mats.glb: SÓ os materiais + texturas (1 triângulo-stub por material pra
+  //    o prune manter). Carregado 1× no runtime; as células referenciam por NOME. ──
+  const matsScene = out.createScene('mats');
+  for (const mat of out.getRoot().listMaterials()) {
+    const pos = out.createAccessor().setType('VEC3').setArray(new Float32Array(9)).setBuffer(buffer);
+    const uv = out.createAccessor().setType('VEC2').setArray(new Float32Array(6)).setBuffer(buffer);
+    const prim = out.createPrimitive().setMaterial(mat).setAttribute('POSITION', pos).setAttribute('TEXCOORD_0', uv);
+    matsScene.addChild(out.createNode('').setMesh(out.createMesh().addPrimitive(prim)));
+  }
+  out.getRoot().setDefaultScene(matsScene);
   await out.transform(dedup(), prune());
-  // GLB exige 1 buffer: junta todos os acessores no `buffer` e descarta os outros
-  // (os dos modelos-fonte, já sem acessores após o prune).
   for (const acc of out.getRoot().listAccessors()) acc.setBuffer(buffer);
   for (const b of out.getRoot().listBuffers()) if (b !== buffer) b.dispose();
-  await io.write(OUT_GLB, out);
+  await io.write(OUT_MATS, out);
+  const matNames = out.getRoot().listMaterials().map((mm) => mm.getName());
+  console.log(`[bake] city-mats.glb: ${matNames.length} materiais (${(fs.statSync(OUT_MATS).size / 1e6).toFixed(1)} MB)`);
+
+  // ── cells/cell-<key>.glb: geometria PURA por célula, material STUB por nome
+  //    (sem textura → o cook só copia; runtime reatribui do city-mats por nome). ──
+  fs.rmSync(CELLS_DIR, { recursive: true, force: true });
+  fs.mkdirSync(CELLS_DIR, { recursive: true });
+  const manifest = [];
+  let triFull = 0;
+  for (const [key, byMat] of cells) {
+    const cd = new Document();
+    const cbuf = cd.createBuffer();
+    const cnode = cd.createNode(`cell-${key}`);
+    for (const [material, groups] of byMat) {
+      const stub = cd.createMaterial().setName(material.getName()); // runtime mapeia por nome
+      for (const g of groups) {
+        const prim = cd.createPrimitive().setMaterial(stub);
+        for (const [sem, arr] of Object.entries(g.attrs)) {
+          prim.setAttribute(sem, cd.createAccessor().setType(gltfType(g.semSizes[sem])).setArray(new Float32Array(arr)).setBuffer(cbuf));
+        }
+        prim.setIndices(cd.createAccessor().setType('SCALAR').setArray(new Uint16Array(g.index)).setBuffer(cbuf));
+        cnode.addChild(cd.createNode('').setMesh(cd.createMesh().addPrimitive(prim)));
+        triFull += g.index.length / 3;
+      }
+    }
+    cd.createScene(key).addChild(cnode);
+    await io.write(path.join(CELLS_DIR, `cell-${key}.glb`), cd);
+    const c = centers.get(key);
+    manifest.push({ key, x: c.sx / c.n, z: c.sz / c.n });
+  }
   fs.writeFileSync(OUT_MANIFEST, JSON.stringify({ cellSize: CELL_SIZE, cells: manifest }, null, 0));
-  const mb = (fs.statSync(OUT_GLB).size / (1024 * 1024)).toFixed(1);
-  console.log(`[bake] ${cells.size} células → ${path.relative(here, OUT_GLB)} (${mb} MB) + manifesto`);
+  const cellsMb = fs.readdirSync(CELLS_DIR).reduce((s, f) => s + fs.statSync(path.join(CELLS_DIR, f)).size, 0) / 1e6;
+  console.log(`[bake] ${cells.size} células → cells/*.glb (${cellsMb.toFixed(1)} MB, ${triFull | 0} tris) + manifesto`);
 }
 
 function gltfType(itemSize) {

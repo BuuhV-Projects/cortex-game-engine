@@ -27,14 +27,18 @@ Grava UM `city.glb` com um nó `cell-<key>` por célula + texturas COMPARTILHADA
 (`{cellSize, cells:[{key,x,z}]}`). É feito no nível de ACESSOR (typed arrays) — o
 `join`/`flatten` de alto nível do gltf-transform não mantém células separadas.
 
-### Runtime — `examples/bench-city/main.ts` + `cells.ts`
+### Runtime — streaming de BYTES por célula (`main.ts` + `cells.ts`)
 
-Carrega o `city.glb` UMA vez (`loadGLB`+`instance`), lê o manifesto e envolve cada
-nó `cell-<key>` num `BundleGroup` (`wrapBakedCell`). O `CellStreamingSystem`
-adiciona/remove por distância; o frustum culling do three corta o fora-de-tela;
-os render bundles (SPEC-0136) cortam as travessias NAPI. **Sem buildScene/merge
-por prédio em runtime** → load de dezenas de segundos vira ~9 s (o que resta é o
-parse do glb monolítico — o overhead por-prédio SUMIU).
+O bake grava **1 arquivo por célula** (`cells/cell-<key>.glb`, geometria PURA,
+material stub por NOME) + **`city-mats.glb`** (só materiais+texturas, 1 triângulo-
+stub por material pro prune manter). No boot o runtime carrega SÓ o `city-mats.glb`
+(texturas 1×, ~0,3 s) + 1 célula pra pré-aquecer o pipeline (`compileAsync`) →
+**boot < 1 s**. Cada célula é carregada SOB DEMANDA quando entra no raio (`onLoad`
+async do `CellStreamingSystem`): `loadGLB` da célula → reatribui o material
+compartilhado por nome (`matMap`) → `wrapBakedCell` (de-interleave + `BundleGroup`)
+→ cacheia (revisita = grátis). O frustum culling + render bundles (SPEC-0136)
+cortam draw/NAPI. **Sem buildScene/merge por prédio, e sem carregar a cidade toda
+no boot** — só os bytes das células no raio.
 
 ### Três armadilhas do host nativo resolvidas no caminho
 
@@ -63,11 +67,16 @@ empacota os assets CRUS (PNG) — debug de textura KTX2.
 ## Consequências
 
 - **Medido (bench-city, 36 células, host clang-cl, bundles ON + fosco +
-  não-interleaved):** load 22–31 s → ~9 s; **orbit 71 fps** (render 20 ms),
-  traverse ~60 fps. Cidade texturizada, sem espeto, sem buraco.
-- **Próximo passo (load < 1 s):** streaming de BYTES por célula — 1 `.glb` por
-  célula, o runtime carrega só as no raio (o que resta hoje é o parse do glb
-  monolítico + compileAsync).
+  não-interleaved + streaming de bytes):** **boot 808 ms** (`city-mats.glb` 337 ms
+  + 1 célula) — era ~22–31 s. Traverse (gameplay no chão) ~53 fps / p1 33.
+  Cidade texturizada, sem espeto, sem buraco.
+- **Trade-off do streaming agressivo:** o orbit (voo revelando a cidade INTEIRA
+  rápido) tem p1 baixo (~7 fps) — cada célula sobe geometria à GPU no meio do frame
+  (hitch de load). Alavancas: `budgetPerFrame` menor, pré-carregar o anel visível
+  na tela de loading, ou parse/upload em worker (fora do escopo). No chão
+  (revelação gradual) o p1 fica bom.
+- **`city-mats.glb` + `cells/*.glb` são gerados** (gitignored). Cada célula ~6 MB
+  → boot carrega só as no raio; revisita é cacheada (sem recarregar).
 - **Os `city.glb`/`city-cells.json` são gerados** (não vão pro git — `.gitignore`).
   Rode `bake-city.mjs` após `prepare-assets.mjs`.
 - **Vale pro teste4 e jogos reais:** asset com **vertex color** OU glb
