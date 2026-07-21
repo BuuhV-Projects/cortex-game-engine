@@ -24,12 +24,13 @@ export interface BenchCityParams {
   traffic: number;
 }
 
-/** Configuração-alvo default (8×8 = 64 prédios reais ≈ 2M tris, ~1000 draws). */
+/** Configuração-alvo default (14×14 = 196 prédios reais — grande o bastante pra
+ *  o streaming de células importar: só um raio ao redor da câmera fica residente). */
 export const DEFAULT_BENCH_CITY: BenchCityParams = {
   seed: 1,
-  rows: 8,
+  rows: 14,
   spacing: 30,
-  traffic: 200,
+  traffic: 40, // realista (GTA tem ~dezenas de carros visíveis, não centenas)
 };
 
 /** Modelos `.glb` do kit (relativos ao `assets/` do jogo exportado). */

@@ -60,7 +60,7 @@ describe('generateCityScene', () => {
     expect(scene.outdoorLighting?.sunIntensity).toBeGreaterThan(0);
   });
 
-  it('config default: 64 prédios (8×8)', () => {
-    expect(buildingCount(DEFAULT_BENCH_CITY)).toBe(64);
+  it('config default: 196 prédios (14×14 — cidade grande pra streaming)', () => {
+    expect(buildingCount(DEFAULT_BENCH_CITY)).toBe(196);
   });
 });

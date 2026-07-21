@@ -175,7 +175,17 @@ main thread; checksum async == sync. **Riscos:** leitura concorrente do
 assets.pak XOR (handle por worker ou mutex em `pak.cpp`); ordem de shutdown
 (worker resolvendo depois do env morto — drenar/descartar no destructor).
 
-### M-perf-4 — Células, streaming e LOD (SPEC-0138 + ADR-0139)
+### M-perf-4 — Células, streaming e LOD (ADR-0138 + ADR-0139) ✅ FEITO (2026-07-21)
+
+> **Concluído — o mundo-aberto de verdade.** `src/scene/Streaming.ts`
+> (`CellStreamingSystem`: residência por raio + histerese + orçamento/frame,
+> lógica pura testável). Bench particiona a cidade em células, cada uma um
+> `THREE.LOD` (perto=full com merge+bundle; longe=proxy de caixas). Pré-aquecimento
+> de pipeline (`compileAsync` no boot) mata o hitch de compile no load (~250 ms →
+> some). **Medido (cidade de 196 prédios / 36 células): streaming OFF ~36 fps →
+> ON ~65 fps (worst-1% ~71, render p99 10 ms); custo INDEPENDENTE do tamanho do
+> mundo.** Trio: streaming (carrega por raio) × frustum (three, não desenha fora
+> da tela) × LOD (longe=low-poly). Ver ADR-0138/0139.
 
 Data-driven e editável no Studio, funcionando também no browser:
 

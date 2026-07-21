@@ -2,11 +2,11 @@
 
 ***
 
-[cortex-game-engine](../README.md) / System
+[cortex-game-engine](../README.md) / CellStreamingSystem
 
-# Abstract Class: System
+# Class: CellStreamingSystem
 
-Defined in: [src/ecs/System.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L36)
+Defined in: src/scene/Streaming.ts:63
 
 Classe base para todos os sistemas do ECS.
 
@@ -36,38 +36,35 @@ class MovementSystem extends System {
 }
 ```
 
-## Extended by
+## Extends
 
-- [`PhysicsSystem`](PhysicsSystem.md)
-- [`ScriptHostSystem`](ScriptHostSystem.md)
-- [`Object3DSyncSystem`](Object3DSyncSystem.md)
-- [`ThirdPersonCameraSystem`](ThirdPersonCameraSystem.md)
-- [`FirstPersonCameraSystem`](FirstPersonCameraSystem.md)
-- [`PlatformerPhysicsSystem`](PlatformerPhysicsSystem.md)
-- [`PlatformerInputSystem`](PlatformerInputSystem.md)
-- [`FollowCamera2DSystem`](FollowCamera2DSystem.md)
-- [`TopDownCameraSystem`](TopDownCameraSystem.md)
-- [`TopDownMovementSystem`](TopDownMovementSystem.md)
-- [`TerrainCollisionSystem`](TerrainCollisionSystem.md)
-- [`CharacterPhysicsSystem`](CharacterPhysicsSystem.md)
-- [`InteractionSystem`](InteractionSystem.md)
-- [`VehicleControlSystem`](VehicleControlSystem.md)
-- [`SkidMarkSystem`](SkidMarkSystem.md)
-- [`ThirdPersonControlSystem`](ThirdPersonControlSystem.md)
-- [`RapierPhysicsSystem`](RapierPhysicsSystem.md)
-- [`PlatformerAnimationSystem`](PlatformerAnimationSystem.md)
-- [`SpriteAnimationSystem`](SpriteAnimationSystem.md)
-- [`CellStreamingSystem`](CellStreamingSystem.md)
+- [`System`](System.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new System**(): `System`
+> **new CellStreamingSystem**(`cells`, `opts`): `CellStreamingSystem`
+
+Defined in: src/scene/Streaming.ts:72
+
+#### Parameters
+
+##### cells
+
+[`StreamingCell`](../interfaces/StreamingCell.md)[]
+
+##### opts
+
+[`CellStreamingOptions`](../interfaces/CellStreamingOptions.md)
 
 #### Returns
 
-`System`
+`CellStreamingSystem`
+
+#### Overrides
+
+[`System`](System.md).[`constructor`](System.md#constructor)
 
 ## Properties
 
@@ -81,6 +78,10 @@ Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 — ex.: os sistemas do editor F2 (câmera livre, seleção, gizmos). Por padrão
 `false` (sistema da cena/jogo, é removido no clear).
+
+#### Inherited from
+
+[`System`](System.md).[`keepOnClear`](System.md#keeponclear)
 
 ***
 
@@ -99,18 +100,23 @@ a gameplay (física/input) enquanto o editor está ativo
 
 `boolean`
 
+#### Inherited from
+
+[`System`](System.md).[`pauseWhen`](System.md#pausewhen)
+
 ***
 
 ### priority
 
-> **priority**: `number` = `0`
+> **priority**: `number` = `-1000`
 
-Defined in: [src/ecs/System.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L43)
+Defined in: src/scene/Streaming.ts:65
 
-Prioridade de execução deste sistema.
+Roda ANTES de tudo — o render vê a residência já atualizada neste frame.
 
-O `World` ordena os sistemas por valor crescente antes de iterar no tick.
-Sistemas com valores menores executam antes. Padrão: `0`.
+#### Overrides
+
+[`System`](System.md).[`priority`](System.md#priority)
 
 ***
 
@@ -134,6 +140,42 @@ Subclasses devem sobrescrever este campo estático.
 static requiredComponents = [TransformComponent, VelocityComponent];
 ```
 
+#### Inherited from
+
+[`System`](System.md).[`requiredComponents`](System.md#requiredcomponents)
+
+## Accessors
+
+### resident
+
+#### Get Signature
+
+> **get** **resident**(): `ReadonlySet`\<`string`\>
+
+Defined in: src/scene/Streaming.ts:119
+
+Chaves residentes agora.
+
+##### Returns
+
+`ReadonlySet`\<`string`\>
+
+***
+
+### residentCount
+
+#### Get Signature
+
+> **get** **residentCount**(): `number`
+
+Defined in: src/scene/Streaming.ts:124
+
+Nº de células residentes agora.
+
+##### Returns
+
+`number`
+
 ## Methods
 
 ### dispose()
@@ -151,31 +193,45 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 `void`
 
+#### Inherited from
+
+[`System`](System.md).[`dispose`](System.md#dispose)
+
 ***
 
-### update()
+### step()
 
-> `abstract` **update**(`entities`, `deltaTime`): `void`
+> **step**(`cam`): `void`
 
-Defined in: [src/ecs/System.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L82)
+Defined in: src/scene/Streaming.ts:91
 
-Executa a lógica do sistema para o frame/passo atual.
+Passo puro do streaming (testável): descarrega o que saiu de `raio+histerese`
+e carrega, por distância e até o orçamento, o que entrou no raio.
 
 #### Parameters
 
-##### entities
+##### cam
 
-[`Entity`](Entity.md)[]
-
-Entidades filtradas pelo `World` que possuem todos os
-                   componentes declarados em `requiredComponents`.
-
-##### deltaTime
-
-`number`
-
-Tempo decorrido desde o último tick, em segundos.
+[`Vec2XZ`](../interfaces/Vec2XZ.md)
 
 #### Returns
 
 `void`
+
+***
+
+### update()
+
+> **update**(): `void`
+
+Defined in: src/scene/Streaming.ts:83
+
+Executa a lógica do sistema para o frame/passo atual.
+
+#### Returns
+
+`void`
+
+#### Overrides
+
+[`System`](System.md).[`update`](System.md#update)

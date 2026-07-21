@@ -42,17 +42,24 @@ export interface BenchReport {
   napi: NapiCounts | null;
 }
 
-/** Trilho de câmera circular sobre a cidade. */
+/** Trilho de câmera. `orbit` = sobrevoo circular; `traverse` = anda pela cidade. */
 export interface BenchRail {
-  /** Raio do círculo (m). */
+  /** `orbit` (sobrevoo, default) ou `traverse` (atravessa a cidade — exercita o streaming). */
+  mode?: 'orbit' | 'traverse';
+  /** Raio do círculo (orbit) OU meia-extensão do percurso (traverse), em m. */
   radius: number;
   /** Altura da câmera (m). */
   height: number;
-  /** Velocidade angular (rad/s). */
+  /** Velocidade angular (rad/s) no orbit. */
   angularSpeed: number;
+  /** Velocidade linear (m/s) no traverse. Default `40`. */
+  speed?: number;
   /** Altura do ponto pra onde a câmera olha (m). */
   lookAtHeight: number;
 }
+
+const DEFAULT_TRAVERSE_SPEED = 40;
+const TRAVERSE_LOOK_AHEAD = 60;
 
 /** Opções do {@link BenchRunner}. */
 export interface BenchOptions {
@@ -124,7 +131,19 @@ export class BenchRunner {
 
   private advanceCamera(dtSeconds: number): void {
     this.elapsed += dtSeconds;
-    const { radius, height, angularSpeed, lookAtHeight } = this.opts.rail;
+    const { mode, radius, height, angularSpeed, lookAtHeight } = this.opts.rail;
+    if (mode === 'traverse') {
+      // Anda em vaivém pelo eixo X através da cidade (câmera baixa, olhando à
+      // frente) — as células entram/saem do raio: o streaming trabalha de verdade.
+      const speed = this.opts.rail.speed ?? DEFAULT_TRAVERSE_SPEED;
+      const period = (radius * 2) / speed; // tempo pra cruzar de -radius a +radius
+      const phase = (this.elapsed % (period * 2)) / period; // 0..2 (ida e volta)
+      const x = phase < 1 ? -radius + phase * 2 * radius : radius - (phase - 1) * 2 * radius;
+      const dir = phase < 1 ? 1 : -1;
+      this.camera.position.set(x, height, 0);
+      this.camera.lookAt(x + dir * TRAVERSE_LOOK_AHEAD, lookAtHeight, 0);
+      return;
+    }
     const angle = this.elapsed * angularSpeed;
     this.camera.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
     this.camera.lookAt(0, lookAtHeight, 0);

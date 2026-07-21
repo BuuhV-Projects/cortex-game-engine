@@ -9,11 +9,12 @@
  * - `globalThis.__cortexBenchParams` — {@link BenchCityParams} parcial.
  * - `globalThis.__cortexBenchMergeStatic` — liga/desliga o merge (default true).
  */
-import { Game, buildScene } from '../../src/index-runtime.js';
+import { Game, buildScene, CellStreamingSystem } from '../../src/index-runtime.js';
 import { Mesh, BoxGeometry, MeshStandardMaterial } from 'three';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
 import { generateCityScene, DEFAULT_BENCH_CITY, type BenchCityParams } from './generate.js';
-import { BenchRunner, type BenchReport } from './BenchRunner.js';
+import { buildCells, type BuildingNode } from './cells.js';
+import { BenchRunner, type BenchReport, type BenchRail } from './BenchRunner.js';
 
 // ── Constantes do bench (sem números mágicos) ────────────────────────────────
 const WARMUP_FRAMES = 60;
@@ -27,6 +28,18 @@ const TRAFFIC_HEIGHT = 1;
 const TRAFFIC_RADIUS_JITTER = 0.4;
 const TRAFFIC_SPEED_MIN = 0.3;
 const TRAFFIC_SPEED_MAX = 1.1;
+// ── Streaming de células + LOD (M-perf-4) ────────────────────────────────────
+const CELL_SIZE = 90; // lado da célula (m)
+// Câmera BAIXA (traverse) → a distância 3D é ~a horizontal, então o LOD fica
+// intuitivo: perto = full (textura), longe = proxy. Raio de full pequeno
+// (qualidade perto), raio de stream maior (o entorno carregado), unload além.
+const STREAM_RADIUS = 190; // carrega (full OU proxy) dentro deste raio
+const STREAM_HYSTERESIS = 40; // descarrega só além de raio+histerese (anti-thrash)
+const STREAM_BUDGET = 3; // células carregadas por frame (espalha o custo)
+const LOD_DISTANCE = 120; // até aqui: célula full (textura); além: proxy de caixas
+const TRAVERSE_HEIGHT = 14; // altura da câmera andando (m)
+const TRAVERSE_SPEED = 45; // m/s
+const TRAVERSE_LOOK_HEIGHT = 12;
 
 function readParams(): BenchCityParams {
   const override = (globalThis as { __cortexBenchParams?: Partial<BenchCityParams> }).__cortexBenchParams;
@@ -40,6 +53,11 @@ function mergeStaticEnabled(): boolean {
 
 function renderBundlesEnabled(): boolean {
   const flag = (globalThis as { __cortexBenchBundles?: boolean }).__cortexBenchBundles;
+  return flag ?? true;
+}
+
+function streamingEnabled(): boolean {
+  const flag = (globalThis as { __cortexBenchStreaming?: boolean }).__cortexBenchStreaming;
   return flag ?? true;
 }
 
@@ -60,7 +78,13 @@ const canvas =
 const game = new Game({ canvas });
 
 const sceneDef = generateCityScene(params);
-const scene = await buildScene(game.scene, [sceneDef] as unknown as SceneDefinition[], {
+const three = game.scene.getThreeScene();
+
+// Split: prédios (streamados em células) vs base (chão + luz/fog/céu, sempre residente).
+const buildingNodes = sceneDef.nodes.filter((n) => n.type === 'model') as unknown as BuildingNode[];
+const baseNodes = sceneDef.nodes.filter((n) => n.type !== 'model');
+
+const scene = await buildScene(game.scene, [{ ...sceneDef, nodes: baseNodes }] as unknown as SceneDefinition[], {
   renderer: game.renderer,
   world: game.world,
   camera: game.camera,
@@ -68,8 +92,47 @@ const scene = await buildScene(game.scene, [sceneDef] as unknown as SceneDefinit
   renderBundles: renderBundlesEnabled(),
 });
 
+// ── Células + LOD (M-perf-4): monta cada célula (full + proxy) DESTACADA; o
+// CellStreamingSystem adiciona/remove por distância (carrega por raio); o three
+// troca o nível do LOD por distância (longe = proxy); o frustum culling não
+// desenha o que está fora da tela. Streaming OFF = todas as células residentes.
+const { cells, lods } = await buildCells(buildingNodes, {
+  cellSize: CELL_SIZE,
+  lodDistance: LOD_DISTANCE,
+  mergeStatic: mergeStaticEnabled(),
+  renderBundles: renderBundlesEnabled(),
+  renderer: game.renderer,
+});
+
+// Pré-aquece os PIPELINES de todas as células (full + proxy) no boot: sem isso,
+// a 1ª vez que uma célula aparece o wgpu COMPILA o shader e trava o frame
+// (~250 ms). Com tudo na cena + compileAsync, a compilação acontece uma vez no
+// boot; depois o streaming adiciona/remove sem hitch.
+for (const lod of lods.values()) three.add(lod);
+const threeRenderer = game.renderer.threeRenderer as {
+  compileAsync?: (scene: unknown, camera: unknown) => Promise<unknown>;
+};
+if (typeof threeRenderer.compileAsync === 'function') {
+  await threeRenderer.compileAsync(three, game.camera);
+}
+for (const lod of lods.values()) three.remove(lod);
+
+const streaming = new CellStreamingSystem(cells, {
+  radius: STREAM_RADIUS,
+  hysteresis: STREAM_HYSTERESIS,
+  budgetPerFrame: STREAM_BUDGET,
+  getCameraXZ: () => ({ x: game.camera.position.x, z: game.camera.position.z }),
+  onLoad: (key) => three.add(lods.get(key)!),
+  onUnload: (key) => three.remove(lods.get(key)!),
+});
+
+if (streamingEnabled()) {
+  game.world.addSystem(streaming); // roda no world.tick (após o rail mover a câmera)
+} else {
+  for (const lod of lods.values()) three.add(lod); // tudo residente (baseline)
+}
+
 // ── Tráfego dinâmico: caixas girando (fora do bundle — representam veículos) ──
-const three = game.scene.getThreeScene();
 const traffic: Array<{ mesh: Mesh; radius: number; speed: number; phase: number }> = [];
 for (let i = 0; i < params.traffic; i++) {
   const mat = new MeshStandardMaterial({ color: 0xdd4422 });
@@ -92,21 +155,50 @@ function moveTraffic(dt: number): void {
   }
 }
 
-const runner = new BenchRunner(game.camera, game.profiler, {
-  params,
-  warmupFrames: WARMUP_FRAMES,
-  measureFrames: MEASURE_FRAMES,
-  rail: {
-    radius: cityExtent * RAIL_RADIUS_FACTOR,
-    height: cityExtent * RAIL_HEIGHT_FACTOR,
-    angularSpeed: RAIL_ANGULAR_SPEED,
-    lookAtHeight: RAIL_LOOK_AT_HEIGHT,
-  },
-  onReport: (report: BenchReport) => {
-    emit('[bench]' + JSON.stringify(report));
-    (globalThis as { __cortexQuit?: () => void }).__cortexQuit?.();
-  },
+// Dois testes (ambos válidos num GTA): ORBIT = sobrevoo (avião, vê a cidade toda,
+// o LOD faz os distantes virarem proxy) e TRAVERSE = anda pela rua (exercita o
+// streaming: células entram/saem do raio). Rodam em sequência num run só.
+const ORBIT_RAIL = {
+  mode: 'orbit' as const,
+  radius: cityExtent * RAIL_RADIUS_FACTOR,
+  height: cityExtent * RAIL_HEIGHT_FACTOR,
+  angularSpeed: RAIL_ANGULAR_SPEED,
+  lookAtHeight: RAIL_LOOK_AT_HEIGHT,
+};
+const TRAVERSE_RAIL = {
+  mode: 'traverse' as const,
+  radius: cityExtent * 0.48,
+  height: TRAVERSE_HEIGHT,
+  angularSpeed: 0,
+  speed: TRAVERSE_SPEED,
+  lookAtHeight: TRAVERSE_LOOK_HEIGHT,
+};
+
+const quit = (): void => (globalThis as { __cortexQuit?: () => void }).__cortexQuit?.();
+
+function phaseRunner(label: string, rail: BenchRail, onDone: () => void, alsoPlain = false): BenchRunner {
+  return new BenchRunner(game.camera, game.profiler, {
+    params,
+    warmupFrames: WARMUP_FRAMES,
+    measureFrames: MEASURE_FRAMES,
+    rail,
+    onReport: (report: BenchReport) => {
+      emit(`[stream:${label}] residentes=${streaming.residentCount}/${cells.length}`);
+      emit(`[bench:${label}]` + JSON.stringify(report));
+      if (alsoPlain) emit('[bench]' + JSON.stringify(report)); // compat bench.mjs
+      onDone();
+    },
+  });
+}
+
+// Roda os dois em sequência: orbit (avião) → traverse (andando).
+let active: BenchRunner;
+const traverseRunner = phaseRunner('traverse', TRAVERSE_RAIL, quit, /*alsoPlain*/ true);
+const orbitRunner = phaseRunner('orbit', ORBIT_RAIL, () => {
+  game.profiler.reset();
+  active = traverseRunner;
 });
+active = orbitRunner;
 
 // Sonda de IO (M-perf-3): mede o BLOQUEIO da thread pra ler um asset de ~40 MB
 // síncrono (__cortexReadFile) vs assíncrono (__cortexReadFileAsync — leitura no
@@ -142,7 +234,7 @@ game.onUpdate((dt) => {
   scene.update(dt);
   moveTraffic(dt);
   if (++frameCount === IO_PROBE_FRAME) ioProbe();
-  runner.tick(dt);
+  active.tick(dt); // orbit primeiro, depois traverse (encadeados)
 });
 
 game.start();

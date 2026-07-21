@@ -117,6 +117,7 @@ export * from './scene/Materials.js';
 export * from './scene/OutdoorLighting.js';
 export * from './scene/Water.js';
 export * from './scene/StaticMerge.js';
+export * from './scene/Streaming.js';
 export * from './ui/DebugHud.js';
 export * from './scene/Terrain.js';
 export * from './scene/Vegetation.js';
