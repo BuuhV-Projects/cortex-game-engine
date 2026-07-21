@@ -324,6 +324,17 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
 
 ## 8. Armadilhas conhecidas (já mordemos)
 
+- **Host nativo: glb INTERLEAVED renderiza esticado (espeto de mesh).** O
+  `WebGPURenderer` no host (wgpu-native) renderiza ERRADO geometria com atributos
+  interleaved (POSITION/NORMAL/UV num bufferView com byteStride) — triângulos
+  gigantes atravessando a cena. É a mesma razão do `mergeStaticScene` de-interleavar
+  (SPEC-0136). Ao carregar um `.glb` DIRETO no host (sem passar pelo merge — ex.:
+  cidade assada, SPEC-0140), aplique `deinterleaveGeometry()` em cada mesh antes de
+  renderizar. O dado pode estar 100% correto; o bug é só o layout.
+- **Host nativo: `COLOR_0` (vertex color) num MeshStandardMaterial → prédio BRANCO.**
+  O naga (WGSL do wgpu-native) miscompila o caminho vertex-color+map (o Dawn/browser
+  tolera), e o material renderiza branco (textura ignorada). Evite `COLOR_0` nos
+  assets do export nativo, ou dropar no carregamento (SPEC-0140).
 - **`window.confirm`/`alert` quebram o foco do renderer no Electron** — os diálogos
   síncronos do Chromium fazem os inputs da página pararem de aceitar teclado até a
   janela perder e recuperar o foco (foi o "input do chat travado até CTRL+R" após

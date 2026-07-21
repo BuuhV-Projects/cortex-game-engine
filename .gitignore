@@ -44,3 +44,4 @@ examples/*/.cortex-cache/
 native/bench-history.jsonl
 # Assets .glb do bench (pesados, ~40 MB cada) — gerados por prepare-assets.mjs.
 examples/bench-city/assets/
+dist-native/*

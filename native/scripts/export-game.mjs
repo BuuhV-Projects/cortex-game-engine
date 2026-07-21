@@ -196,15 +196,24 @@ if (fs.existsSync(assetsDir)) {
   const cacheDir = path.join(gameDir, '.cortex-cache', 'ktx2');
   // Progresso por arquivo pro modal do Studio (marcador parseado no main.ts).
   // Throttle: 1 a cada 3 (+ o último) pra não floodar o stdout com centenas.
-  const cs = await cookAssets(assetsDir, cookedDir, cacheDir, (done, total) => {
-    if (done === total || done % 3 === 0) console.log(`[export:cook] ${done}/${total}`);
-  });
-  console.log(
-    `[export] cook: ${cs.glbConverted} GLB convertidos (+${cs.glbCached} do cache, ${cs.glbNoTex} sem textura) · ` +
-      `assets ${(cs.before / 1e6).toFixed(1)} → ${(cs.after / 1e6).toFixed(1)} MB`,
-  );
+  // CORTEX_NO_COOK: pula a conversão KTX2 e empacota os assets CRUS (PNG/JPG). Só
+  // pra debug (isolar problemas de textura KTX2 no host). Prod SEMPRE cozinha.
+  const skipCook = process.env.CORTEX_NO_COOK === '1';
+  let packSrc = cookedDir;
+  if (skipCook) {
+    console.log('[export] CORTEX_NO_COOK=1 — pulando cook, empacotando assets CRUS (PNG)');
+    packSrc = assetsDir;
+  } else {
+    const cs = await cookAssets(assetsDir, cookedDir, cacheDir, (done, total) => {
+      if (done === total || done % 3 === 0) console.log(`[export:cook] ${done}/${total}`);
+    });
+    console.log(
+      `[export] cook: ${cs.glbConverted} GLB convertidos (+${cs.glbCached} do cache, ${cs.glbNoTex} sem textura) · ` +
+        `assets ${(cs.before / 1e6).toFixed(1)} → ${(cs.after / 1e6).toFixed(1)} MB`,
+    );
+  }
   guardLocks('assets', () => {
-    const r = packDir(cookedDir, path.join(dist, 'assets.pak'), 'assets/');
+    const r = packDir(packSrc, path.join(dist, 'assets.pak'), 'assets/');
     console.log(`[export] assets.pak: ${r.files} arquivos, ${(r.bytes / 1e6).toFixed(1)} MB`);
   });
   // Limpeza do temp é BEST-EFFORT: no Windows um antivírus/handle pode segurar um

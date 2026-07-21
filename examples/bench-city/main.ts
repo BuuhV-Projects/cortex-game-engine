@@ -9,11 +9,12 @@
  * - `globalThis.__cortexBenchParams` — {@link BenchCityParams} parcial.
  * - `globalThis.__cortexBenchMergeStatic` — liga/desliga o merge (default true).
  */
-import { Game, buildScene, CellStreamingSystem, runWithLoadingScreen, UiPanel, UiLabel } from '../../src/index-runtime.js';
-import { Mesh, BoxGeometry, MeshStandardMaterial, LOD } from 'three';
+import { Game, buildScene, CellStreamingSystem, runWithLoadingScreen, UiPanel, UiLabel, loadGLB, instance } from '../../src/index-runtime.js';
+import { Mesh, BoxGeometry, MeshStandardMaterial, type Object3D } from 'three';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
 import { generateCityScene, DEFAULT_BENCH_CITY, type BenchCityParams } from './generate.js';
-import { partitionCells, buildCellLod, type BuildingNode } from './cells.js';
+import { wrapBakedCell } from './cells.js';
+import type { StreamingCell } from '../../src/scene/Streaming.js';
 import { BenchRunner, type BenchReport, type BenchRail } from './BenchRunner.js';
 
 // ── Constantes do bench (sem números mágicos) ────────────────────────────────
@@ -28,15 +29,13 @@ const TRAFFIC_HEIGHT = 1;
 const TRAFFIC_RADIUS_JITTER = 0.4;
 const TRAFFIC_SPEED_MIN = 0.3;
 const TRAFFIC_SPEED_MAX = 1.1;
-// ── Streaming de células + LOD (M-perf-4) ────────────────────────────────────
-const CELL_SIZE = 90; // lado da célula (m)
-// Câmera BAIXA (traverse) → a distância 3D é ~a horizontal, então o LOD fica
-// intuitivo: perto = full (textura), longe = proxy. Raio de full pequeno
-// (qualidade perto), raio de stream maior (o entorno carregado), unload além.
-const STREAM_RADIUS = 230; // carrega (full OU proxy) dentro deste raio
+// ── Streaming de células (M-perf-4) ──────────────────────────────────────────
+// (o lado da célula é definido no bake — `bake-city.mjs` CELL_SIZE — e chega em
+// runtime pelo manifesto `city-cells.json`.) Sem LOD de geometria: os modelos já
+// são low-poly; perf de longe = culling + streaming + bundles.
+const STREAM_RADIUS = 230; // carrega células dentro deste raio
 const STREAM_HYSTERESIS = 50; // descarrega só além de raio+histerese (anti-thrash)
 const STREAM_BUDGET = 3; // células adicionadas por frame (add de pré-montada é barato)
-const LOD_DISTANCE = 175; // full (textura) até mais longe; só o horizonte vira proxy
 const TRAVERSE_HEIGHT = 14; // altura da câmera andando (m)
 const TRAVERSE_SPEED = 45; // m/s
 const TRAVERSE_LOOK_HEIGHT = 12;
@@ -128,8 +127,8 @@ const game = new Game({ canvas });
 const sceneDef = generateCityScene(params);
 const three = game.scene.getThreeScene();
 
-// Split: prédios (streamados em células) vs base (chão + luz/fog/céu, sempre residente).
-const buildingNodes = sceneDef.nodes.filter((n) => n.type === 'model') as unknown as BuildingNode[];
+// Base (chão + luz/fog/céu, sempre residente). Os PRÉDIOS não vêm mais do
+// gerador em runtime — vêm PRÉ-FUNDIDOS do `city.glb` (bake offline, M-perf-4).
 const baseNodes = sceneDef.nodes.filter((n) => n.type !== 'model');
 
 const scene = await buildScene(game.scene, [{ ...sceneDef, nodes: baseNodes }] as unknown as SceneDefinition[], {
@@ -140,45 +139,49 @@ const scene = await buildScene(game.scene, [{ ...sceneDef, nodes: baseNodes }] a
   renderBundles: renderBundlesEnabled(),
 });
 
-// ── Células + LOD (M-perf-4): carga SOB DEMANDA. Particiona (barato), monta cada
-// célula só quando entra no raio (onLoad async, via buildCellLod). O boot NÃO
-// monta a cidade toda — só pré-aquece os pipelines com poucas células.
-const { cells, byKey } = partitionCells(buildingNodes, CELL_SIZE);
-const cellOpts = {
-  cellSize: CELL_SIZE,
-  lodDistance: LOD_DISTANCE,
-  mergeStatic: mergeStaticEnabled(),
-  renderBundles: renderBundlesEnabled(),
-  renderer: game.renderer,
-};
-// A cidade é montada DENTRO da tela de loading (chamado após o menu — a splash
-// nativa já passou). Pré-monta e o streaming só ADICIONA/REMOVE (barato); montar
-// sob demanda durante o jogo trava (merge/bundle de célula é pesado no Hermes).
-const lodCache = new Map<string, LOD>();
+// ── Cidade PRÉ-FUNDIDA (M-perf-4 bake): carrega o `city.glb` UMA vez (geometria
+// já fundida por célula, offline) e ENVOLVE cada nó `cell-<key>` num BundleGroup.
+// Sem buildScene/merge por prédio em runtime → load de segundos vira ms. O
+// manifesto (`city-cells.json`) traz as chaves + centros das células. ──
+interface CityManifest {
+  cellSize: number;
+  cells: StreamingCell[];
+}
+const manifest = (await (await fetch('assets/city-cells.json')).json()) as CityManifest;
+const cells: StreamingCell[] = manifest.cells;
+
+const cellCache = new Map<string, Object3D>();
 const threeRenderer = game.renderer.threeRenderer as {
   compileAsync?: (scene: unknown, camera: unknown) => Promise<unknown>;
 };
 
 async function loadCity(progress: (label: string, fraction: number) => void): Promise<void> {
   const t0 = performance.now();
+  progress('Carregando cidade…', 0.05);
+  const gltf = await loadGLB('assets/city.glb');
+  const cityObj = instance(gltf, { castShadow: true, receiveShadow: true });
+  emit(`[loading] city.glb carregado em ${(performance.now() - t0).toFixed(0)}ms`);
+  await nextFrame();
+
+  // Envolve cada célula pré-fundida num BundleGroup (barato — sem merge). O
+  // streaming adiciona/remove por distância.
   let i = 0;
   for (const c of cells) {
-    lodCache.set(c.key, await buildCellLod(byKey.get(c.key)!, cellOpts));
+    const full = cityObj.getObjectByName(`cell-${c.key}`) as Object3D | undefined;
+    if (full) cellCache.set(c.key, wrapBakedCell(full, renderBundlesEnabled()));
     i++;
-    progress(`Montando cidade ${i}/${cells.length}`, i / cells.length);
-    // Cede um frame ao host pra a barra DESENHAR e APRESENTAR a cada passo —
-    // senão o buildScene (fetch síncrono) roda as 36 células num único drain de
-    // microtasks e a barra só apareceria no fim.
+    progress(`Preparando cidade ${i}/${cells.length}`, 0.1 + 0.6 * (i / cells.length));
     await nextFrame();
   }
+
   // Pré-aquece os pipelines (compileAsync) — mata o hitch de compile no 1º add.
-  for (const lod of lodCache.values()) three.add(lod);
+  for (const cell of cellCache.values()) three.add(cell);
   if (typeof threeRenderer.compileAsync === 'function') {
-    progress('Compilando shaders…', 1);
+    progress('Compilando shaders…', 0.85);
     await threeRenderer.compileAsync(three, game.camera);
   }
-  for (const lod of lodCache.values()) three.remove(lod); // o streaming re-adiciona por distância
-  emit(`[loading] cidade montada (${cells.length} células) em ${(performance.now() - t0).toFixed(0)}ms`);
+  for (const cell of cellCache.values()) three.remove(cell); // o streaming re-adiciona por distância
+  emit(`[loading] cidade pronta (${cellCache.size} células) em ${(performance.now() - t0).toFixed(0)}ms`);
 }
 
 const streaming = new CellStreamingSystem(cells, {
@@ -186,8 +189,8 @@ const streaming = new CellStreamingSystem(cells, {
   hysteresis: STREAM_HYSTERESIS,
   budgetPerFrame: STREAM_BUDGET,
   getCameraXZ: () => ({ x: game.camera.position.x, z: game.camera.position.z }),
-  onLoad: (key) => { three.add(lodCache.get(key)!); }, // pré-montada → add barato
-  onUnload: (key) => { three.remove(lodCache.get(key)!); },
+  onLoad: (key) => { three.add(cellCache.get(key)!); }, // pré-montada → add barato
+  onUnload: (key) => { three.remove(cellCache.get(key)!); },
 });
 
 // ── Tráfego dinâmico: caixas girando (fora do bundle — representam veículos) ──
@@ -303,5 +306,5 @@ await waitForSplash();
 await showMenu(game);
 await runWithLoadingScreen(game.ui, loadCity, { message: 'Carregando cidade…' });
 if (streamingEnabled()) game.world.addSystem(streaming);
-else for (const lod of lodCache.values()) three.add(lod);
+else for (const cell of cellCache.values()) three.add(cell);
 game.start();
