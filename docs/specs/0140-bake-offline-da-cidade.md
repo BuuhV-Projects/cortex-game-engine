@@ -42,13 +42,15 @@ parse do glb monolítico — o overhead por-prédio SUMIU).
    `MeshStandardNodeMaterial` renderiza branca no host: o **naga** (WGSL do
    wgpu-native) miscompila o caminho vertex-color+map (o Dawn/browser tolera). O
    bake copia só `POSITION`/`NORMAL`/`TEXCOORD_0` (dropa `COLOR_0`/`TEXCOORD_1`).
-2. **Mesh atravessando / espeto no céu** — o gltf-transform grava o glb
-   **INTERLEAVED** (POSITION/NORMAL/UV num bufferView com byteStride), e o
-   **renderer nativo renderiza errado buffer interleaved** (triângulos esticados).
-   É a MESMA razão do `mergeStaticScene` de-interleavar (SPEC-0136). O runtime
-   aplica `deinterleaveGeometry()` em cada mesh da célula no `wrapBakedCell` antes
-   de renderizar. (Diagnóstico: o dado assado é 100% limpo — sem NaN, índice em
-   faixa, aresta < 150 m, transform identidade; o bug é só o layout no host.)
+2. **Mesh atravessando / espeto no céu** — o **renderer nativo renderiza errado
+   buffer INTERLEAVED** (POSITION/NORMAL/UV num bufferView com byteStride →
+   triângulos esticados gigantes). É a MESMA razão do `mergeStaticScene`
+   de-interleavar (SPEC-0136). **Fix:** o bake grava o glb NÃO-interleaved
+   (`io.setVertexLayout(VertexLayout.SEPARATE)` — o default do gltf-transform é
+   INTERLEAVED). O runtime ainda chama `deinterleaveGeometry()` no `wrapBakedCell`
+   como rede de segurança (no-op quando já separado). (Diagnóstico: o dado assado é
+   100% limpo — sem NaN, índice em faixa, aresta < 150 m, transform identidade; o
+   bug era só o layout no host.)
 3. **Prédio distante transparente/buraco** — decimar (meshopt) os modelos, que já
    são low-poly (pré-decimados no `prepare-assets`), abre buracos nas paredes e
    estica triângulos. **Decisão: sem LOD de geometria** — perf de longe = culling
@@ -60,13 +62,12 @@ empacota os assets CRUS (PNG) — debug de textura KTX2.
 
 ## Consequências
 
-- **Medido (bench-city, 36 células, host clang-cl, bundles ON + fosco):** load
-  22–31 s → ~9 s; **orbit 64 fps** (render 33 ms), traverse ~60 fps. Cidade
-  texturizada, sem espeto, sem buraco.
-- **Dívida técnica:** o `deinterleaveGeometry` em runtime custa ~5 s no load —
-  eliminável assando o glb já NÃO-interleaved. E o load < 1 s continua sendo o
-  próximo passo (streaming de BYTES por célula: 1 `.glb` por célula, carrega só as
-  no raio).
+- **Medido (bench-city, 36 células, host clang-cl, bundles ON + fosco +
+  não-interleaved):** load 22–31 s → ~9 s; **orbit 71 fps** (render 20 ms),
+  traverse ~60 fps. Cidade texturizada, sem espeto, sem buraco.
+- **Próximo passo (load < 1 s):** streaming de BYTES por célula — 1 `.glb` por
+  célula, o runtime carrega só as no raio (o que resta hoje é o parse do glb
+  monolítico + compileAsync).
 - **Os `city.glb`/`city-cells.json` são gerados** (não vão pro git — `.gitignore`).
   Rode `bake-city.mjs` após `prepare-assets.mjs`.
 - **Vale pro teste4 e jogos reais:** asset com **vertex color** OU glb

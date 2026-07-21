@@ -18,12 +18,11 @@ import { deinterleaveGeometry } from 'three/examples/jsm/utils/BufferGeometryUti
 import { BundleGroup } from 'three/webgpu';
 
 /**
- * **De-interleave** as geometrias de um nó: o `city.glb` sai INTERLEAVED do
- * gltf-transform (POSITION/NORMAL/UV num bufferView com byteStride), e o renderer
- * nativo (WebGPU) renderiza ERRADO buffer interleaved — triângulos esticados/espeto
- * atravessando os prédios. Separa cada atributo num buffer próprio (mesma correção
- * que o {@link mergeStaticScene} aplica no caminho antigo). Ver architecture.md §
- * armadilhas e [[native-vertex-color-naga-branco]].
+ * **De-interleave** as geometrias de um nó (REDE DE SEGURANÇA). O host nativo
+ * (WebGPU) renderiza ERRADO buffer interleaved — triângulos esticados/espeto
+ * atravessando os prédios (SPEC-0140). O `bake-city.mjs` já grava o `city.glb`
+ * NÃO-interleaved (`VertexLayout.SEPARATE`), então aqui é quase no-op; fica como
+ * defesa caso o glb venha interleaved. Ver architecture.md § armadilhas.
  */
 function deinterleaveCell(root: Object3D): void {
   root.traverse((o) => {

@@ -7,7 +7,7 @@
 //
 // Uso: node examples/bench-city/bake-city.mjs   (precisa dos .glb em assets/models
 // — rode prepare-assets.mjs antes).
-import { NodeIO } from '@gltf-transform/core';
+import { NodeIO, VertexLayout } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { mergeDocuments, dedup, prune } from '@gltf-transform/functions';
 import { Matrix4, Matrix3, Vector3, Quaternion, Euler } from 'three';
@@ -57,7 +57,10 @@ async function main() {
   const buildings = scene.nodes.filter((n) => n.type === 'model');
   console.log(`[bake] ${buildings.length} prédios; célula ${CELL_SIZE}m`);
 
-  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+  // SEPARATE: grava atributos NÃO-interleaved (default do gltf-transform é
+  // INTERLEAVED). O host nativo renderiza errado buffer interleaved (espeto de
+  // mesh — SPEC-0140); gravar separado evita o de-interleave em runtime (~5s).
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).setVertexLayout(VertexLayout.SEPARATE);
 
   // Doc de saída; traz cada modelo pra dentro (materiais/texturas compartilhados).
   const out = new (await import('@gltf-transform/core')).Document();
