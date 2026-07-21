@@ -36,3 +36,9 @@ tmp/
 *.tmp.py
 out/
 dist-app/
+
+# Benchmark (M-perf-1 / ADR-0135): saída de export e histórico local (fps é
+# específico da máquina) — não versionar.
+examples/*/dist-native/
+examples/*/.cortex-cache/
+native/bench-history.jsonl

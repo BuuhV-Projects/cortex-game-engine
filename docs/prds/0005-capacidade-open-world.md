@@ -83,7 +83,16 @@ baseline da fase-1 do teste4 registrado por categoria.
 timer nativo). **Testes:** `tests/core/FrameProfiler.test.ts` (clock fake,
 seções aninhadas, p99).
 
-### M-perf-1 — Benchmark cidade sintética + harness (ADR-0135)
+### M-perf-1 — Benchmark cidade sintética + harness (ADR-0135) ✅ FEITO (2026-07-21)
+
+> **Concluído:** `examples/bench-city/` (gerador determinístico + BenchRunner) +
+> `native/scripts/bench.mjs`. **Baseline:** 2016 prédios / 40 materiais / 200
+> dinâmicos → ~52 fps, pior 1% ~42, **render p99 ~22 ms** (render-bound). O bench
+> **descobriu um bug**: vegetação instanciada (`InstancedMesh` +
+> `MeshStandardNodeMaterial`) gera WGSL que o naga (wgpu-native = host de export)
+> rejeita → panic no `queueSubmit`; o Dawn (Studio) tolera. Default nasce com
+> `vegetation: 0`; ver ADR-0135 §achados (dois fixes: codegen upstream + host não
+> dar panic em pipeline inválido).
 
 Cena de estresse procedural e determinística, bem acima da fase-1:
 
