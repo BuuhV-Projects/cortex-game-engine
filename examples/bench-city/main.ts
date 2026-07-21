@@ -46,7 +46,7 @@ function emit(line: string): void {
 }
 
 const params = readParams();
-const cityExtent = params.blocks * params.blockSize;
+const cityExtent = params.rows * params.spacing;
 
 const canvas =
   (document.getElementById('canvas') as HTMLCanvasElement | null) ??

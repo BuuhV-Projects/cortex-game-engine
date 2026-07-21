@@ -114,7 +114,7 @@ async function main() {
   const p = report.params;
   console.log('\n──────── [bench] cidade sintética ────────');
   console.log(
-    `cena: ${p.blocks}×${p.blocks} blocos · ${p.materials} materiais · ${p.vegetation} veg · ${p.traffic} tráfego`,
+    `cena: ${p.rows}×${p.rows} = ${p.rows * p.rows} prédios .glb · espaço ${p.spacing}m · ${p.traffic} tráfego`,
   );
   console.log(`frames medidos: ${report.frames}`);
   console.log(`FPS médio: ${report.fpsAvg}${fmtDelta(report.fpsAvg, prev?.report?.fpsAvg)}`);

@@ -21,12 +21,14 @@ roda no host de export e emite um relatório de máquina.
 ### Gerador — `examples/bench-city/generate.ts`
 
 `generateCityScene(params)` produz uma `SceneDefinition` **determinística por
-`seed`** (RNG mulberry32 puro) e **sem assets** (só primitivas + vegetação
-placeholder): chão + N prédios (caixas coloridas por uma paleta de `materials`
-cores → N grupos no merge estático) + 1 nó de vegetação instanciada. `params`
-controla `blocks`, `blockSize`, `buildingsPerBlock`, `materials`, `vegetation`,
-`traffic`. Config default: 12×12 blocos → **2016 prédios**, 40 materiais, 200
-dinâmicos. Mesma seed → cena idêntica (testado em `tests/examples/`).
+`seed`** (RNG mulberry32 puro) usando **modelos `.glb` reais** (kit "City Bench
+Test": prédios Large/Medium/Small com ~18-45k tris e 12-13 materiais PBR cada —
+geometria/materiais/texturas próximos de um GTA, muito mais representativo que
+primitivas). Nós: chão + `rows²` prédios `.glb` (ciclando os 3 por RNG, rotação
+de 90° variada). `params`: `rows`, `spacing`, `traffic`. Default: 8×8 → **64
+prédios** (~2M tris). Mesma seed → cena idêntica (testado em `tests/examples/`).
+Os `.glb` são pesados (~40 MB, não versionados) — `prepare-assets.mjs` os gera do
+pack-fonte antes do 1º run (ver `README.md`).
 
 ### Harness — `examples/bench-city/{main.ts,BenchRunner.ts}`
 
@@ -46,12 +48,18 @@ a rodar **antes e depois** de cada marco pra medir o ganho real.
 
 ### Baseline medido (2026-07-21, host clang-cl com contadores NAPI)
 
-Config default (2016 prédios, 40 materiais, 200 tráfego, **0 vegetação**):
-**~48-52 fps médio, ~36-42 fps no pior 1%, render p99 ~22-25 ms** — a cena é
-claramente **render-bound** (lógica/UI < 2 ms). Contadores NAPI por frame (o
-teto que o M-perf-2 vai derrubar): ~**211 `drawIndexed`, 234 `setBindGroup`, 383
-`setVertexBuffer`, 211 `setIndexBuffer`, 263 `writeBuffer`, 5 `submit`**. Cada um
-é uma travessia JS→C++ com marshalling fixo.
+Config default (64 prédios `.glb` reais, 200 tráfego): **~19 fps médio, ~16 fps
+no pior 1%, render p99 ~61 ms** — pesada e claramente **render-bound** (lógica/UI
+< 2 ms), como um GTA de verdade. Contadores NAPI por frame (o teto que o M-perf-2
+vai derrubar): ~**1178 `drawIndexed`, 1747 `setBindGroup`, 1794 `setVertexBuffer`,
+1041 `setIndexBuffer`, 752 `setPipeline`, 277 `writeBuffer`, 5 `submit`** — vários
+milhares de travessias JS→C++ por frame, cada uma com marshalling fixo. É
+exatamente esse volume que os render bundles (M-perf-2) colapsam num punhado de
+chamadas.
+
+> Nota: uma variante anterior usava primitivas (2016 caixas) e dava ~50 fps /
+> render ~22 ms — leve demais e pouco representativa. Trocada por modelos reais
+> a pedido (bench "de verdade").
 
 ## Consequências
 
