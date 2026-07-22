@@ -19,6 +19,9 @@ vi.mock('electron', () => ({
     whenReady: vi.fn(() => ({ then: vi.fn() })),
     on: vi.fn(),
     quit: vi.fn(),
+    // Instância única: o main.ts pede o lock no import. Concedemos, senão
+    // ele chamaria app.quit() e pularia o registro dos handlers IPC.
+    requestSingleInstanceLock: vi.fn(() => true),
   },
   dialog: {
     showMessageBox: vi.fn(),

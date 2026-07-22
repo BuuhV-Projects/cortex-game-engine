@@ -347,6 +347,21 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   jogo (em browser puro funciona). Qualquer feature de DnD IDE→viewport precisa
   capturar o drop **no documento da IDE** (overlay sobre o palco) e repassar pela
   ponte postMessage (ver SPEC-0090).
+- **Studio morto à força corrompe o disk cache do Chromium** — `Ctrl+C` no
+  `electron-vite dev`, fechar o terminal ou um crash de renderer deixam o índice
+  **blockfile** (cache HTTP + code cache) inconsistente, e o boot seguinte cospe
+  `Critical error found -8` (= `ERR_INVALID_LINKS`, enum interna do disk cache,
+  não `net::Error`) + `No file for <hash>`. É ruído inócuo — o Chromium recria o
+  cache sozinho — mas mascara erro de verdade. O `electron/cacheHygiene.ts`
+  detecta o shutdown sujo por sentinela (`<userData>/cortex-session.lock`) e
+  purga `Cache`/`Code Cache` no boot, **antes da primeira `BrowserWindow`**
+  (depois disso o índice já está aberto e mexer vira corrida). A purga **esvazia
+  o conteúdo e mantém a raiz** — apagar a raiz cai no delete-pending do Windows
+  (mesma armadilha do ADR-0101). Ver ADR-0141.
+- **Studio agora é instância única** (`requestSingleInstanceLock`, ADR-0141) —
+  abrir de novo foca a janela existente. Duas instâncias dividiriam o mesmo
+  `userData` (disk cache, `preferences.json`, `chats/`, `sessions/`) com a última
+  escrita vencendo em silêncio.
 - **`overlay.data` é SUBSTITUÍDO no seed** do `attachEditor` (`overlay.data = f.data`,
   async). Por isso o `OverlayStore` lê `overlay.data` **dinamicamente** — capturar
   por referência fazia a autoria escrever num objeto órfão e o save perder tudo.
@@ -528,7 +543,7 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
-| IDE (Electron) | `electron/` (`main.ts`, `renderer/`) |
+| IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
 

@@ -8,6 +8,38 @@ import { homedir } from 'os'
 import { runAgent, resolveAgentModel } from './agent/agentLoop.js'
 import { detectPendingCorrections } from './agent/learning.js'
 import { writePlaceholderIcons } from './installer-icons.js'
+import { recoverCacheIfUnclean, markSessionEnd } from './cacheHygiene.js'
+
+// ---------------------------------------------------------------------------
+// Instância única + higiene de cache (roda ANTES de qualquer janela)
+// ---------------------------------------------------------------------------
+
+/**
+ * Só uma instância do Studio por vez. Duas instâncias compartilhariam o mesmo
+ * `userData` — mesmo disk cache, `preferences.json`, `chats/` e `sessions/` —
+ * e a última a escrever venceria silenciosamente. A segunda invocação sai na
+ * hora e apenas foca a janela que já existe.
+ *
+ * Também é pré-requisito da purga de cache abaixo: sem o lock, uma segunda
+ * instância limparia o cache que a primeira está usando.
+ */
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+if (!gotSingleInstanceLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (!mainWindow) return
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+  })
+  // Shutdown sujo da sessão anterior (Ctrl+C no dev, crash) deixa o índice
+  // blockfile do disk cache inconsistente — purga antes do Chromium abri-lo.
+  try {
+    recoverCacheIfUnclean(app.getPath('userData'))
+  } catch {
+    /* userData indisponível (ex.: sob teste) — segue o boot normalmente */
+  }
+}
 
 /**
  * Retorna o ambiente do processo com diretórios de ferramentas de dev
@@ -1864,6 +1896,17 @@ app.on('before-quit', () => {
   if (lastVitePort) killPort(lastVitePort)
   runningProcess = null
   terminalProcess = null
+
+  // Sentinela removida = este shutdown foi limpo; o próximo boot não precisa
+  // purgar o disk cache. Se o processo morrer à força, a sentinela sobrevive
+  // e o boot seguinte limpa o blockfile corrompido.
+  if (gotSingleInstanceLock) {
+    try {
+      markSessionEnd(app.getPath('userData'))
+    } catch {
+      /* best-effort no shutdown */
+    }
+  }
 })
 
 app.on('window-all-closed', () => {
