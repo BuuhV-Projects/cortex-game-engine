@@ -1,0 +1,75 @@
+{
+  "kit": "platformer-space",
+  "title": "Exemplo de Fase — Estação Órbita",
+  "subtitleKick": "FASE 01 · TOP-DOWN",
+  "subtitle": "Blueprint jogável de referência pra dev. Vista de cima: explore as zonas na ordem 1→5. A linha tracejada é o caminho do jogador; cada peça está no ponto onde entra no jogo. Nomes = arquivo exato do kit.",
+  "orientation": "top-down",
+  "canvas": { "w": 1840, "h": 1000 },
+  "grid": 44,
+  "pxPerUnit": 7,
+  "steps": [
+    { "n": 1, "title": "Pouso", "desc": "Aprenda o movimento; colete as 1ªs moedas até o checkpoint." },
+    { "n": 2, "title": "Cinturão", "desc": "Cruze o campo de asteroides pulando entre as rochas." },
+    { "n": 3, "title": "Corredor de perigo", "desc": "Espinhos, rolo e pêndulo num vão estreito." },
+    { "n": 4, "title": "Câmara das chaves", "desc": "Trampolim e discos até as 2 chaves." },
+    { "n": 5, "title": "Santuário", "desc": "As chaves liberam o troféu — objetivo da fase." }
+  ],
+  "zones": [
+    { "label": "1 · ZONA DE POUSO", "kind": "terrain", "x": 40, "y": 630, "w": 360, "h": 330 },
+    { "label": "2 · CINTURÃO DE ASTEROIDES", "kind": "terrain", "x": 430, "y": 470, "w": 430, "h": 400 },
+    { "label": "3 · CORREDOR DE PERIGO", "kind": "hazard", "x": 470, "y": 130, "w": 380, "h": 270 },
+    { "label": "4 · CÂMARA DAS CHAVES", "kind": "mechanism", "x": 910, "y": 360, "w": 430, "h": 430 },
+    { "label": "5 · SANTUÁRIO DO TESOURO", "kind": "objective", "x": 1390, "y": 120, "w": 410, "h": 380 }
+  ],
+  "pathD": "M 150 880 Q 240 760 330 720 Q 470 650 560 690 Q 660 730 640 560 Q 620 400 660 300 Q 720 210 800 250 Q 900 300 1000 430 Q 1080 520 1120 560 Q 1180 640 1260 600 Q 1360 550 1440 420 Q 1520 320 1590 300",
+
+  "pieces": [
+    { "asset": "planet_001", "x": 220, "y": 210, "scale": 0.9 },
+    { "asset": "planet_008", "x": 410, "y": 105 },
+    { "asset": "planet_003", "x": 1150, "y": 150, "scale": 0.85 },
+    { "asset": "meteors_001", "x": 1500, "y": 720, "px": 260 },
+    { "asset": "satallite_001", "x": 980, "y": 220, "scale": 0.9 },
+    { "asset": "ufo_002", "x": 300, "y": 430, "scale": 0.8 },
+
+    { "asset": "land_005", "x": 240, "y": 870, "note": "plataforma de pouso" },
+    { "asset": "coin_001", "x": 250, "y": 760, "note": "moeda" },
+    { "asset": "coin_001", "x": 320, "y": 700, "note": "moeda" },
+    { "asset": "checkpoint_001", "x": 340, "y": 830, "note": "checkpoint" },
+    { "asset": "plant_002", "x": 300, "y": 920, "note": "decor" },
+    { "asset": "rocket_001", "x": 150, "y": 800, "note": "nave / spawn", "flag": "START", "flagColor": "#7ee081" },
+
+    { "asset": "land_003", "x": 560, "y": 700, "note": "ilha" },
+    { "asset": "stone_004", "x": 480, "y": 620, "note": "pedra" },
+    { "asset": "stone_001", "x": 660, "y": 760, "note": "pedra" },
+    { "asset": "rock_002", "x": 780, "y": 640, "note": "rocha" },
+    { "asset": "crystal_001", "x": 470, "y": 780, "note": "cristal" },
+    { "asset": "apple_001", "x": 600, "y": 600, "note": "fruta +" },
+    { "asset": "star_001", "x": 700, "y": 540, "note": "estrela" },
+    { "asset": "berries_001", "x": 810, "y": 780, "note": "fruta +" },
+
+    { "asset": "obstacle_10_001", "x": 560, "y": 320, "note": "espinhos" },
+    { "asset": "obstacle_6_001", "x": 680, "y": 250, "note": "rolo rotativo" },
+    { "asset": "obstacle_3_001", "x": 780, "y": 330, "note": "pêndulo" },
+    { "asset": "bomb_001", "x": 620, "y": 200, "note": "bomba" },
+    { "asset": "dynamite_001", "x": 730, "y": 180, "note": "dinamite" },
+    { "asset": "obstacle_14_001", "x": 520, "y": 230, "note": "trave estreita" },
+
+    { "asset": "trampoline_1_001", "x": 980, "y": 690, "note": "trampolim" },
+    { "asset": "obstacle_5_001", "x": 1090, "y": 560, "note": "disco" },
+    { "asset": "obstacle_16_001", "x": 1230, "y": 620, "note": "disco" },
+    { "asset": "obstacle_18_001", "x": 1000, "y": 460, "note": "plataforma" },
+    { "asset": "tube_001", "x": 1140, "y": 700, "note": "túnel" },
+    { "asset": "key_001", "x": 1180, "y": 470, "note": "chave" },
+    { "asset": "key_002", "x": 1290, "y": 520, "note": "chave" },
+    { "asset": "ring_001", "x": 1060, "y": 630, "note": "anel +" },
+    { "asset": "heart_001", "x": 950, "y": 590, "note": "vida +" },
+    { "asset": "diamond_001", "x": 1250, "y": 430, "note": "diamante" },
+
+    { "asset": "land_004", "x": 1500, "y": 400, "note": "pedestal" },
+    { "asset": "cup_001", "x": 1590, "y": 300, "note": "troféu", "flag": "FIM", "flagColor": "#f5c451" },
+    { "asset": "crown_001", "x": 1470, "y": 230, "note": "objetivo", "flag": "OBJETIVO", "flagColor": "#5ed0e0" },
+    { "asset": "ufo_001", "x": 1690, "y": 220, "note": "chefe / decor" },
+    { "asset": "star_002", "x": 1420, "y": 350, "note": "estrela" },
+    { "asset": "coin_001", "x": 1560, "y": 440, "note": "moeda" }
+  ]
+}
