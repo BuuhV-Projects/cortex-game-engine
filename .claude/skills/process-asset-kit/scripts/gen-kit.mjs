@@ -2,9 +2,12 @@
 // capturados na conversão. Classifica cada asset em 3 eixos ortogonais:
 //   role (natureza física) / tags (tema) / gameplayRole (função de design).
 //
-// Uso:  node gen-kit.mjs <sizes.json> <kitDir1> [kitDir2 ...]
-//   - sizes.json: saída do convert.py ({ sizes: { name: [x,y,z] } })
+// Uso:  node gen-kit.mjs <sizes.json> <kitDir1> [kitDir2 ...] [--overrides <f.json>]
+//   - sizes.json: saída do convert.py/measure.py ({ sizes, bounds? })
 //   - kitDir: pasta do kit (espera kitDir/assets/*.glb); name = basename(kitDir)
+//   - --overrides: mapa { nome: { role, tags, gameplayRole?, solid?, shape? } } pra
+//     packs de naming NÃO-descritivo (ex.: obstacle_7_001), classificados a olho
+//     pelas thumbnails. Vence classify(); mantém classify() kit-independente.
 //
 // As regras de classify() SÃO o vocabulário canônico (ADR-0053 §6): mantenha-as
 // kit-independentes. Ajuste/expanda conforme novos tipos de asset aparecem.
@@ -12,13 +15,16 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { basename } from 'node:path';
 
 const argv = process.argv.slice(2);
-const sizesPath = argv[0];
-const kitDirs = argv.slice(1);
+const ovIdx = argv.indexOf('--overrides');
+const overrides = ovIdx >= 0 ? JSON.parse(readFileSync(argv[ovIdx + 1], 'utf8')) : {};
+const rest = ovIdx >= 0 ? [...argv.slice(0, ovIdx), ...argv.slice(ovIdx + 2)] : argv;
+const sizesPath = rest[0];
+const kitDirs = rest.slice(1);
 if (!sizesPath || kitDirs.length === 0) {
-  console.error('uso: node gen-kit.mjs <sizes.json> <kitDir1> [kitDir2 ...]');
+  console.error('uso: node gen-kit.mjs <sizes.json> <kitDir1> [...] [--overrides <f.json>]');
   process.exit(1);
 }
-const { sizes } = JSON.parse(readFileSync(sizesPath, 'utf8'));
+const { sizes, bounds = {} } = JSON.parse(readFileSync(sizesPath, 'utf8'));
 
 function classify(name) {
   const n = name.toLowerCase();
@@ -52,6 +58,30 @@ function classify(name) {
   if (/^(skeleton_)?(sword|axe|dagger|bow|crossbow|staff|wand|spellbook|quiver|mace|spear|blade)/.test(n)) return R('prop', ['weapon', 'item'], ['reward']);
   if (/^shield/.test(n)) return R('prop', ['shield', 'item'], ['reward']);
   if (/^(mug|smokebomb)/.test(n)) return R('prop', ['item'], []);
+
+  // ── Platformer espacial (Platformer_11_Space) ──────────────────────────────
+  // `land_*` = ilha flutuante com propulsores (a base do percurso; origem no
+  // TOPO do modelo — as âncoras saem de `bounds`, não de size/2).
+  if (/^land_/.test(n)) return R('ground', ['space', 'island', 'rock'], ['safe-zone'], { solid: true });
+  if (/^ground_/.test(n)) return R('ground', ['space', 'floor'], [], { solid: true });
+  if (/^planet_/.test(n)) return R('decoration', ['space', 'planet', 'sky'], ['landmark']);
+  if (/^meteors?_/.test(n)) return R('decoration', ['space', 'sky', 'debris'], ['landmark']);
+  if (/^(rocket|satallite|satellite|ufo)_/.test(n))
+    return R('prop', ['space', 'vehicle', n.replace(/_\d+$/, '')], ['landmark'], { solid: true });
+  if (/^checkpoint/.test(n)) return R('prop', ['checkpoint', 'gate'], ['guidance', 'landmark']);
+  if (/^cup_/.test(n)) return R('prop', ['goal', 'trophy'], ['landmark', 'reward']);
+  if (/^trampoline/.test(n)) return R('platform', ['platform', 'bounce'], ['challenge'], { solid: true });
+  if (/^tube_/.test(n)) return R('connector', ['pipe', 'traversal', 'metal'], ['guidance'], { solid: true });
+  if (/^ring_/.test(n)) return R('collectible', ['treasure', 'ring'], ['reward']);
+  if (/^crystal_/.test(n)) return R('decoration', ['crystal', 'space'], ['landmark', 'cover'], { solid: true });
+  if (/^stone_/.test(n)) return R('prop', ['rock', 'stone', 'space'], ['cover'], { solid: true });
+  if (/^plant_/.test(n)) return R('decoration', ['foliage', 'alien'], []);
+  if (/^(apple|berries)_/.test(n)) return R('collectible', ['food'], ['reward']);
+  if (/^dynamite_/.test(n)) return R('hazard', ['hazard', 'explosive'], ['challenge', 'hazard']);
+  if (/^barrier_/.test(n)) return R('prop', ['barrier', 'boundary'], ['guidance'], { solid: true });
+  // Sufixo numérico `_001` é comum nesses packs e mata os `\b` das regras abaixo.
+  if (/^(key|crown)_/.test(n)) return R('collectible', ['treasure', n.split('_')[0]], ['reward']);
+  if (/^box_/.test(n)) return R('prop', ['container', 'box'], ['resource', 'reward'], { solid: true });
 
   // ── Quaternius Ultimate Platformer ─────────────────────────────────────────
   if (/^rockplatform/.test(n)) return R('platform', ['platform', 'rock'], [], { solid: true });
@@ -137,7 +167,7 @@ for (const dir of kitDirs) {
   for (const name of glbs.sort()) {
     const size = sizes[name];
     if (!size) { console.warn('sem size:', name); continue; }
-    const c = classify(name);
+    const c = { ...classify(name), ...overrides[name] };
     const [w, h] = size;
     if (/^hex_grass$/i.test(name)) hexGrassW = w;
     const a = { role: c.role, tags: [...c.tags, sizeClass(size)], size };
@@ -145,10 +175,18 @@ for (const dir of kitDirs) {
     if (c.solid || c.shape) a.collider = { shape: c.shape ?? 'box', solid: c.solid ?? true };
     // Peça de personagem modular / rig não é posicionada na cena — sem âncoras.
     if (c.role !== 'character-part' && c.role !== 'rig') {
-      const anchors = { top: { at: [0, +h.toFixed(3), 0], kind: 'surface', dir: [0, 1, 0] } };
+      // `bounds` (measure.py) dá o topo REAL: muitos modelos não têm a origem na
+      // base (ilhas do pack space têm no topo) — `[0, h, 0]` ancoraria no ar.
+      const b = bounds[name];
+      const [cx, topY, cz] = b
+        ? [(b[0] + b[3]) / 2, b[4], (b[2] + b[5]) / 2]
+        : [0, h, 0];
+      const r3 = (v) => +v.toFixed(3);
+      const anchors = { top: { at: [r3(cx), r3(topY), r3(cz)], kind: 'surface', dir: [0, 1, 0] } };
       if (c.connectX) {
-        anchors.edge_left = { at: [+(-w / 2).toFixed(3), 0, 0], kind: 'connect', dir: [-1, 0, 0] };
-        anchors.edge_right = { at: [+(w / 2).toFixed(3), 0, 0], kind: 'connect', dir: [1, 0, 0] };
+        const [x0, x1] = b ? [b[0], b[3]] : [-w / 2, w / 2];
+        anchors.edge_left = { at: [r3(x0), 0, 0], kind: 'connect', dir: [-1, 0, 0] };
+        anchors.edge_right = { at: [r3(x1), 0, 0], kind: 'connect', dir: [1, 0, 0] };
       }
       a.anchors = anchors;
     }

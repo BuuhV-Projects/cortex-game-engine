@@ -55,6 +55,14 @@ buildings tipicamente corta ~90MB → poucos MB.
 Saída: os `.glb` nas pastas destino + `sizes.json` (`{ sizes, errors }`). Confira
 `err=0` e o peso (`du -sh`).
 
+**Pack que já vem em `.glb`** (Synty/Platformer_*): pule a conversão e rode
+`measure.py` — só mede (preserva o glb original) e emite `sizes.json` com `sizes` +
+`bounds` (`[minX,minY,minZ,maxX,maxY,maxZ]` Y-up). Se as texturas vierem embutidas,
+rode `externalize-texture.mjs` ANTES de medir: packs costumam repetir o mesmo atlas
+em cada peça (no Platformer_11_Space, `Textures1.png` estava embutido 83× → 27MB
+viraram 6,8MB). O script deriva o nome da textura do `image.name` do glTF — se o
+nome já tiver extensão, sai `x.png.png`; renomeie e conserte as `uri`.
+
 ### Fase 3 — Escala: verificar + normalizar (`lineup.py` + `normalize.py`)
 **Gotcha nº1.** Packs de origens diferentes vêm em unidades diferentes (ex.: Quaternius
 natureza ~4u/árvore vs Kenney medieval ~0.2u/barril). Resolva ANTES do kit.json — a
@@ -85,6 +93,10 @@ Com a escala já normalizada, classifica cada asset nos **3 eixos ortogonais**
 (ADR-0053 §6) e escreve `kit.json` (com `size`, `thumb`, collider e âncoras).
 ```bash
 node scripts/gen-kit.mjs "$STAGE/sizes_scaled.json" "$BASE" "$HEX"
+# naming não-descritivo (obstacle_7_001…): classifique a olho nas thumbnails e
+# passe um mapa { nome: { role, tags, gameplayRole?, solid?, shape? } } que vence
+# o classify() — assim o classify() continua kit-independente.
+node scripts/gen-kit.mjs "$STAGE/sizes.json" "$KIT" --overrides "$STAGE/overrides.json"
 ```
 A função `classify()` **é** o vocabulário canônico — mantenha-a kit-independente e
 expanda conforme novos tipos surgem. Eixos:
@@ -149,6 +161,19 @@ node scripts/gen-backgrounds.mjs "D:/jogos/assets/backgrounds" backgrounds-base
 - **Só gltf/glb** — o engine não usa fbx/obj; sempre dropar (é o grosso do peso).
 - **Hex/top-down em kit separado** — não misturar gramática hex com scatter.
 - **bbox em Y-up** — `convert.py` já converte Blender Z-up→three Y-up (`[x, z, y]`).
+- **Origem do modelo ≠ base** — não presuma pé na origem: no Platformer_11_Space, 62
+  de 87 assets tinham origem fora da base, e as ilhas `land_*` têm origem no **topo**
+  (superfície de andar em y=0). Por isso `gen-kit.mjs` tira a âncora `top` dos
+  `bounds` do `measure.py`, não de `size`. Com `convert.py` (sem `bounds`) ele cai no
+  fallback `[0, h, 0]` — confira as âncoras antes de confiar em `attach`.
+- **Validar contra o engine** — o `kit.json` tem schema zod real
+  (`parseKit` em `src/scene/Kit.ts`); rode `npx tsx` com um `parseKit(...)` no
+  arquivo gerado antes de dar o kit por pronto. `shape` só aceita
+  `box|circle|capsule|heightfield`.
+- **`lineup.py` quebra com assets de escala-cenário** — 1 asset de 150u (skybox,
+  planeta, campo de meteoros) achata todo o resto em pixels ilegíveis. Rode o lineup
+  só com os assets de gameplay, ou valide a escala por número: meça um asset que
+  exista também num kit já em produção e compare (mais forte que o render).
 - **Escala por-pack** — verificar no lineup antes de declarar o kit pronto.
 - **Manter todas as variantes** (A–Z) — dão variedade real pro scatter; o custo é só
   nº de linhas no kit.json (auto-gerado). (Decisão do usuário; reconfirme se mudar.)
@@ -158,6 +183,11 @@ node scripts/gen-backgrounds.mjs "D:/jogos/assets/backgrounds" backgrounds-base
 - O `_stage/` (working dir) e os scripts ficam pra **reuso** — não apague.
 
 ## Exemplo (corrida real, jun/2026)
+
+Kit `platformer-space` (jul/2026): pack Platformer_11_Space, 87 glb já prontos → só
+externalizar atlas (27MB→6,8MB), `measure.py`, thumbnails e `gen-kit.mjs` com
+`--overrides` pros 19 `obstacle_N`. Sem triagem (pack coeso) e sem normalizar escala
+(já batia com o kit Deathrun). Em `D:/jogos/assets/3d-models/kits/platformer-space`.
 
 Kit `stylized-fantasy` (forest + general-bits + medieval, 402 gltf, 90MB) →
 `stylized-fantasy-base` (238 glb, 14MB) + `terrain-hex` (60 glb, 1.6MB), ambos com
