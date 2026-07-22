@@ -255,6 +255,8 @@ const baseFields = {
   attach: attachSchema,
   castShadow: z.boolean().optional(),
   receiveShadow: z.boolean().optional(),
+  /** `false` = mesh não renderizado (invisível), mas ainda presente na física/raycast. */
+  visible: z.boolean().optional(),
   /** Materiais foscos (mata o brilho PBR → look cartoon). Ver {@link setMatte}. */
   matte: z.boolean().optional(),
   /** Material/shader por objeto (standard/unlit/toon). Ver {@link applyMaterial}. */

@@ -1012,6 +1012,7 @@ async function instantiate(
       throw new Error('Nó background não é instanciável isoladamente (use buildScene com options.camera).');
   }
   obj.name = node.id;
+  if ((node as { visible?: boolean }).visible === false) obj.visible = false;
   // Marca como NÓ da cena: o editor só deixa autorar física (collider/character/
   // Rapier) em nós (o overlay reconcilia no boot). Objetos criados em código não
   // têm essa marca → o Inspector bloqueia, pra não enganar com edição que se perde.
