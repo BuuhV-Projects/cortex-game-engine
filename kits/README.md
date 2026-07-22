@@ -10,7 +10,7 @@ gameplayRole / size / collider / anchors / thumb) + os assets + thumbnails.
 ```
 kits/<nome>/
 ├── kit.json            # vocabulário (chaves = assets/<arquivo>)
-├── assets/             # .glb (ou .jpg de backdrop) [+ Textures/ compartilhada]
+├── assets/             # .glb (ou .jpg de backdrop) [+ .png de textura compartilhada externa]
 └── thumbnails/         # 1 PNG por asset (referência visual; backdrops usam a própria imagem)
 ```
 
@@ -20,6 +20,7 @@ kits/<nome>/
 |---|---|
 | `platformer-base` | Kenney platformer: blocos modulares (grass/snow), plataformas, hazards, coletáveis, ladders |
 | `platformer-quaternius` | Quaternius Ultimate Platformer: completo, com player+enemies animados |
+| `platformer-space` | Platformer_11_Space: tema espacial — 6 ilhas flutuantes, plataformas (discos/esteira/painel solar/trampolins), hazards (espinhos/rolos/pêndulo/bomba), coletáveis, foguetes/satélites/UFOs, planetas e meteoros de fundo. Atlas externo compartilhado `Textures1.png` |
 | `survival-base` | Kenney survival: natureza, recursos, caixas, fogueira, tenda, ferramentas |
 | `stylized-fantasy-base` | Quaternius natureza + Kenney recursos: floresta, pedras, metais, madeiras, barris |
 | `terrain-hex` | Tiles hexagonais (terreno/rio/água/estrada) |
