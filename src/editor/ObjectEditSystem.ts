@@ -79,8 +79,15 @@ export class ObjectEditSystem extends System {
 
   private readonly controls: TransformControls;
   private _mode: 'translate' | 'rotate' | 'scale' = 'translate';
-  /** Eixos do gizmo: mundo (default, como sempre foi) ou do objeto. Tecla `X`. */
-  private _space: 'world' | 'local' = 'world';
+  /**
+   * Eixos do gizmo: do OBJETO (default) ou do mundo. Tecla `X`.
+   *
+   * O default é local porque cena autorada com peças rotacionadas (percurso
+   * diagonal) é o caso comum aqui — com eixos de mundo, empurrar a peça "pra
+   * frente dela mesma" exigia girar, mover e desgirar. Em objeto sem rotação os
+   * dois espaços coincidem, então o default não atrapalha quem não usa `rotY`.
+   */
+  private _space: 'world' | 'local' = 'local';
   private readonly helper: THREE.Object3D;
   private readonly raycaster = new THREE.Raycaster();
   private readonly ndc = new THREE.Vector2();
@@ -155,6 +162,8 @@ export class ObjectEditSystem extends System {
 
     this.controls = new TransformControls(camera, canvas);
     this.controls.setMode('translate');
+    // Eixos do OBJETO por padrão (o three começa em 'world') — ver `_space`.
+    this.controls.setSpace(this._space);
     this.controls.setSize(1.4);
     this.controls.enabled = false;
     // three r170+ separou o controlador (lógica) do helper (mesh visível). Só o

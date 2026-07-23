@@ -7,6 +7,7 @@ const SHORTCUTS: Array<[string, string]> = [
   ['btn-direito', 'girar câmera'],
   ['Shift', 'correr'],
   ['1/2/3', 'mover/girar/escalar'],
+  ['X', 'eixos locais ↔ globais'],
   ['F', 'focar seleção'],
   ['0', 'ver pela câmera'],
   ['T', 'teleporta alvo'],

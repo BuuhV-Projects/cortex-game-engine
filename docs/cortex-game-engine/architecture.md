@@ -138,11 +138,11 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   ou **texturizar/pintar** — escolhe/importa textura, SPEC-0063), `AnimationAuthoring`,
   `MeshAuthoring` (forma de blockout: params da receita + override de geometria; §11).
 - **Gizmo de transform** (`ObjectEditSystem`) — `1`/`2`/`3` trocam mover/girar/escalar
-  e **`X` alterna os eixos entre globais (mundo) e locais (do objeto)**, como o
-  Global/Local da Unity (SPEC-0144). O default é global; sem esse toggle, cena com
-  peças **rotacionadas** (fase autorada em percurso diagonal, com `rotY` em cada
-  plataforma) fica intransitável — os eixos não seguem o objeto. `scale` é sempre
-  local, limitação do `TransformControls`.
+  e **`X` alterna os eixos entre locais (do objeto, DEFAULT) e globais (mundo)**, como
+  o Global/Local da Unity (SPEC-0144). O default é local porque cena com peças
+  **rotacionadas** (fase autorada em percurso diagonal, com `rotY` em cada plataforma)
+  fica intransitável com eixos de mundo — eles não seguem o objeto; sem rotação os dois
+  coincidem. `scale` é sempre local, limitação do `TransformControls`.
 - **Blockout / ProBuilder** (SPEC-0071) — paleta de formas (`EditorShapePanel`) cria
   nós `mesh`; o `MeshEditSystem` faz a **edição de elementos** (vértice/aresta/face +
   extrudar) com gizmo próprio. Ver §11.

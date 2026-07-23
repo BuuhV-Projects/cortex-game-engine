@@ -25,10 +25,13 @@ Não é um bug de quem girou a cena: qualquer editor 3D oferece os dois espaços
 `ObjectEditSystem` ganhou `gizmoSpace` (getter) e **`setGizmoSpace('world' | 'local')`**,
 com a tecla **`X`** alternando entre os dois — vizinha das teclas de modo já
 existentes (`1` mover, `2` girar, `3` escalar) e o mesmo atalho da Unity. Um toast
-confirma o estado ("Eixos: globais (mundo)" / "locais (do objeto)").
+confirma o estado ("Eixos: globais (mundo)" / "locais (do objeto)"). O atalho está
+listado no popover "Atalhos" do viewport (`electron/renderer/Preview.ts`).
 
-O default segue **global**, como sempre foi — nenhuma cena muda de comportamento
-sem o usuário apertar `X`.
+O default é **local** (o three.js começa em `world`, então o sistema chama
+`setSpace` na criação do gizmo). A escolha reflete o uso real: as cenas daqui são
+autoradas com peças rotacionadas, e é nelas que o espaço importa — em objeto sem
+rotação os dois espaços coincidem, então o default não atrapalha ninguém.
 
 A ponte com a IDE (`EditorBridge`) aceita a mensagem `{ type: 'gizmoSpace', space }`
 e o `attachEditor` liga o callback `onGizmoSpace`, então a IDE pode expor o toggle
