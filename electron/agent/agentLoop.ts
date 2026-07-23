@@ -3,6 +3,7 @@ import { createBlenderToolServer } from './tools/blender.js'
 import { createPlaytestToolServer } from './tools/playtest.js'
 import { createAssetToolServer } from './tools/assets.js'
 import { createKitsToolServer } from './tools/kits.js'
+import { createBlueprintToolServer } from './tools/blueprint.js'
 import { createCriticToolServer } from './tools/critic.js'
 import { createValidateToolServer } from './tools/validate.js'
 import { createLearnToolServer } from './tools/learn.js'
@@ -220,6 +221,23 @@ Siga o fluxo:
    Pra medir UM ou POUCOS .glb específicos (conferir proporção em metros, ajustar \
    escala/espaçamento), use \`measure_glb\` (instantâneo, sem Blender) em vez de \
    re-rodar \`inspect_assets\` no diretório inteiro.
+
+1b. **Blueprint de fase (planta orientada a GAMEPLAY) — quando o usuário pedir uma \
+   planta / mapa-exemplo / layout de referência / "level design em imagem", OU pra \
+   você alinhar o design ANTES de montar a cena.** Rode \`generate_blueprint { source, \
+   blueprint }\`: VOCÊ compõe o \`blueprint\` (peças posicionadas, cada uma com seu \
+   COMPORTAMENTO) e a tool devolve a IMAGEM com thumbnails reais, caminho do jogador e \
+   legenda pelo nome de arquivo exato. **REGRA CENTRAL — cada objeto tem um PROPÓSITO, \
+   não é decoração:** declare \`behavior\` em toda peça de gameplay (spawn, goal, \
+   checkpoint, collectible, hazard, hazard-spinner, hazard-chaser, launcher, platform, \
+   platform-moving, blocker, ground, decoration) e ESCOLHA o asset cujo \
+   \`role\`/\`gameplayRole\`/\`tags\` CASA com esse comportamento — nunca por estética \
+   (um "pad de espinhos" é um asset \`role:hazard\`+tag \`spikes\`, não um \`role:platform\` \
+   que "parece"). A tool AVISA quando não casa; corrija e regenere. \`behavior\` deriva a \
+   cor e o \`script\` sugerido (Perigo/Trampolim/Checkpoint/Moeda/Chegada/...); ponha os \
+   \`params\` de gameplay que importam (\`{ raio }\`, \`{ impulso }\`, \`{ giro, alcance }\`). \
+   É camada de COMUNICAÇÃO do design — não substitui montar a cena de verdade (JSON + \
+   validate_scene + playtest).
 
 2. **Procure a cena-referência do pacote.** Pacotes de assets quase sempre \
    vêm com uma imagem de preview/demo (\`preview.png\`, \`screenshot\`, \`cover\`, \
@@ -567,6 +585,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
         'cortex-playtest': createPlaytestToolServer(opts.projectRoot),
         'cortex-assets': createAssetToolServer(opts.projectRoot),
         'cortex-kits': createKitsToolServer(opts.projectRoot, opts.kitsDir),
+        'cortex-blueprint': createBlueprintToolServer(opts.projectRoot, opts.kitsDir),
         'cortex-critic': createCriticToolServer(opts.projectRoot),
         'cortex-validate': createValidateToolServer(opts.projectRoot),
         'cortex-learn': createLearnToolServer(opts.projectRoot),
@@ -796,6 +815,14 @@ function buildSummary(toolName: string, input: Record<string, unknown>): string 
     const desc = typeof input['description'] === 'string' ? input['description'] : ''
     const short = desc.length > 60 ? `${desc.slice(0, 60)}…` : desc
     return `Gerar modelo 3D em ${target}: "${short}"`
+  }
+  if (toolName.endsWith('generate_blueprint')) {
+    const src = typeof input['source'] === 'string' ? input['source'] : ''
+    const bp = input['blueprint']
+    const nPieces = bp && typeof bp === 'object' && Array.isArray((bp as { pieces?: unknown[] }).pieces)
+      ? (bp as { pieces: unknown[] }).pieces.length
+      : 0
+    return `Gerar blueprint de fase (${src}, ${nPieces} peças)`
   }
   return toolName
 }
