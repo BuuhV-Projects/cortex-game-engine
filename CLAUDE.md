@@ -3,6 +3,18 @@
 Instruções específicas deste projeto. Decisões de arquitetura/tooling ficam em
 `docs/adrs/` (ADR) e `docs/tdrs/` (TDR) — leia os relevantes antes de mudar uma área.
 
+## REGRA ABSOLUTA: gerenciador de pacotes é o YARN
+
+**Sempre `yarn`, nunca `npm`.** Vale para tudo: instalar (`yarn add`, `yarn add -D`),
+remover (`yarn remove`), rodar script (`yarn <script>`) e instalar do zero
+(`yarn install`). O lockfile do repo é o `yarn.lock` — rodar `npm install` cria um
+`package-lock.json` concorrente e reescreve a árvore de `node_modules` com outra
+resolução, o que quebra o build de formas difíceis de rastrear.
+
+Se um `yarn add` falhar com `EBUSY ... electron\dist\resources\default_app.asar`, é
+o **Studio aberto** segurando o arquivo: feche o Studio e repita o comando — não
+troque pro npm pra contornar. Versões sempre **pinadas** (`-E`), nunca `latest`.
+
 ## ADR vs Spec (`docs/adrs/` vs `docs/specs/`)
 
 - **ADR** (`docs/adrs/`, prefixo `ADR-NNNN`) — registra uma **decisão** onde havia
