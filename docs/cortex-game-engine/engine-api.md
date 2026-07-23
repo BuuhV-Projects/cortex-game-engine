@@ -1134,7 +1134,8 @@ Combine, e calibre pra casar com a referência:
   (sol+sombras+tone mapping). Mood quente (golden hour) = `sunColor` alaranjado +
   exposição menor; meio-dia = sol branco forte.
 - **Névoa** — `game.scene.getThreeScene().fog = new Fog(cor, near, far)` (a cor da
-  névoa = cor do céu dá profundidade; afasta o horizonte).
+  névoa = cor do céu dá profundidade; afasta o horizonte). Para **isentar** um
+  objeto dela, `fog: false` no nó (ou `setFog(obj, false)`) — ver abaixo.
 - **Céu/ambiente realista** — `Skybox.fromHDRI(game.scene, 'assets/sky.hdr', { environmentIntensity })`
   (ilumina a cena com o HDRI — muda tudo numa cena realista).
 - **Pós-processamento** — `PostFX` ligado via `game.setPostFX(...)` (bloom dá o
@@ -1248,6 +1249,53 @@ import { Skybox } from 'cortex-game-engine'
 await Skybox.fromHDRI(scene, 'assets/sky.hdr', { backgroundBlurriness: 0.3, environmentIntensity: 1 })
 ```
 Avançado: `RGBELoader`, `EquirectangularReflectionMapping`.
+
+### Isentar um objeto da névoa (`fog: false`, SPEC-0145)
+
+A `fog` é global e tinge tudo pela distância — inclusive o que está longe **de
+propósito**: um planeta, uma montanha, um marco de horizonte. Sob névoa forte
+esses marcos convergem todos pro mesmo tom e o fundo vira uma mancha só.
+`fog: false` no nó devolve a cor própria da peça sem abrir mão da profundidade
+no resto da cena.
+
+```jsonc
+// nó da cena — o percurso recebe névoa, o planeta de fundo não
+{ "type": "model", "id": "planeta", "url": "planet_01.glb", "fog": false }
+```
+
+```ts
+import { setFog } from 'cortex-game-engine'
+setFog(planet, false) // mesma coisa, à mão
+```
+
+> Mudar `fog` de um material é uma *define* de shader, não um uniform: exige
+> recompilar. É ajuste de montagem de cena, não de runtime por frame.
+
+### Espaço de cor de textura (`SRGBColorSpace`)
+
+Uma textura carregada pelo `TextureLoader` nasce **sem** espaço de cor definido,
+e o three então a trata como já-linear: as cores médias sobem e a imagem sai
+**lavada**. Toda textura de COR (skybox, albedo, sprite) precisa de
+`SRGBColorSpace`; mapas de DADO (normal, roughness, AO) ficam em
+`LinearSRGBColorSpace`.
+
+```ts
+import { TextureLoader, EquirectangularReflectionMapping, SRGBColorSpace } from 'cortex-game-engine'
+
+const tex = await new TextureLoader().loadAsync('assets/sky.png')
+tex.mapping = EquirectangularReflectionMapping
+tex.colorSpace = SRGBColorSpace // sem isto o céu sai lavado
+scene.getThreeScene().background = tex
+scene.getThreeScene().environment = tex // o céu também ILUMINA (IBL)
+```
+
+Constantes: `SRGBColorSpace`, `LinearSRGBColorSpace`, `NoColorSpace`; tipo
+`ColorSpace`.
+
+> Aplicar o skybox só em `background` o deixa de papel de parede: sem
+> `environment`, nenhum material recebe a cor do céu. E note que o `matte`
+> (global ou por nó) crava `envMapIntensity = 0` — com ele ligado, o
+> environment não chega aos materiais.
 
 ---
 
