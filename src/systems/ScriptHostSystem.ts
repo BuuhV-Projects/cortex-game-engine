@@ -26,10 +26,25 @@ export function applyScriptFields(instance: ScriptBehavior, type: string, fields
  *
  * **Pausa no editor** (passe `isEditing`): scripts só rodam no Play, como na Unity. O jogo
  * adiciona este sistema no boot com o contexto (input/gamepad/scene/camera).
+ *
+ * **Play → Stop DESTRÓI as instâncias** (`restoreRaycasts` + `onDestroy`), e o Play
+ * seguinte cria de novo — ciclo estilo Unity. Sem isso os efeitos colaterais do
+ * `onStart` vazavam pro modo edição: quem desliga o `raycast` (lâmina, moeda, poça)
+ * deixava o objeto **inselecionável no editor**, porque o picking também é raycast,
+ * e só um reload da IDE devolvia o clique. Ver ADR-0143.
+ *
+ * Por isso este sistema **não usa `pauseWhen`**: ele precisa rodar no modo edição pra
+ * enxergar a transição. Não sete `pauseWhen` nele por fora — o gate é o `isEditing`
+ * do construtor.
  */
 export class ScriptHostSystem extends System {
   static override requiredComponents = [ScriptComponent];
   override priority = 50;
+
+  /** Gate do Play (o sistema roda sempre; quem pausa os scripts é isto). */
+  private readonly isEditing?: () => boolean;
+  /** Havia scripts rodando no frame anterior? Marca a borda Play→Stop. */
+  private wasPlaying = false;
 
   constructor(
     private readonly ctx: ScriptContext,
@@ -37,10 +52,17 @@ export class ScriptHostSystem extends System {
     isEditing?: () => boolean,
   ) {
     super();
-    if (isEditing) this.pauseWhen = isEditing;
+    this.isEditing = isEditing;
   }
 
   override update(entities: Entity[], deltaTime: number): void {
+    if (this.isEditing?.()) {
+      // Borda Play→Stop: derruba as instâncias uma vez e devolve a cena ao editor.
+      if (this.wasPlaying) this.teardown(entities);
+      this.wasPlaying = false;
+      return;
+    }
+    this.wasPlaying = true;
     const dt = deltaTime / 1000; // ms → s (scripts pensam em segundos, estilo Unity)
     for (const e of entities) {
       const comp = e.getComponent(ScriptComponent);
@@ -69,6 +91,30 @@ export class ScriptHostSystem extends System {
         } catch (err) {
           debug('script', 'onUpdate falhou em', slot.type, err);
         }
+      }
+    }
+  }
+
+  /**
+   * Descarta as instâncias ao parar o Play: restaura os raycasts que os scripts
+   * desligaram (senão o objeto fica inselecionável no editor) e chama `onDestroy`
+   * pra cada uma desfazer o resto. Zera os slots — o próximo Play instancia de
+   * novo e roda `onStart` com estado limpo.
+   */
+  private teardown(entities: Entity[]): void {
+    for (const e of entities) {
+      const comp = e.getComponent(ScriptComponent);
+      if (!comp) continue;
+      for (const slot of comp.scripts) {
+        if (!slot.instance) continue;
+        try {
+          slot.instance.restoreRaycasts();
+          slot.instance.onDestroy?.();
+        } catch (err) {
+          debug('script', 'onDestroy falhou em', slot.type, err);
+        }
+        slot.instance = null;
+        slot.started = false;
       }
     }
   }

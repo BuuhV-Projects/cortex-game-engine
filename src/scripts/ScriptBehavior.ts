@@ -5,6 +5,12 @@ import type { InputManager } from '../core/InputManager.js';
 import type { GamepadManager } from '../core/GamepadManager.js';
 import type { Scene } from '../core/Scene.js';
 
+/** Assinatura do `raycast` de um `Object3D` (o que {@link ScriptBehavior.disableRaycast} troca). */
+type RaycastFn = Object3D['raycast'];
+
+/** Raycast neutro compartilhado — não acha nada e não aloca por objeto silenciado. */
+const NO_RAYCAST: RaycastFn = () => {};
+
 /** Tipo de um campo editável de script (o que o Inspector renderiza/persiste). */
 export type ScriptFieldType = 'number' | 'string' | 'boolean' | 'vector3' | 'asset' | 'select';
 
@@ -71,8 +77,58 @@ export abstract class ScriptBehavior {
   onStart?(): void;
   /** Chamado todo frame de Play. `dt` em **segundos**. */
   onUpdate?(dt: number): void;
-  /** Chamado ao remover o script (Inspector) ou destruir a entidade. */
+  /**
+   * Chamado ao **parar o Play** (voltar ao editor), ao remover o script pelo
+   * Inspector ou ao destruir a entidade. Desfaça aqui o que o `onStart` mexeu
+   * fora do próprio script — o {@link ScriptHostSystem} descarta a instância e
+   * cria uma nova no próximo Play (ciclo estilo Unity).
+   */
   onDestroy?(): void;
+
+  /** Raycasts desligados por {@link disableRaycast}, pra poder restaurar. */
+  private disabledRaycasts: { obj: Object3D; own: boolean; original?: RaycastFn }[] = [];
+
+  /**
+   * **Desliga o raycast de forma REVERSÍVEL** — o jeito certo de dizer "este mesh
+   * não é chão/parede" (lâmina, moeda, poça, decoração), sem que o character
+   * pouse nele nem que ele bloqueie o spring arm da câmera.
+   *
+   * Por que existe: escrever `obj.raycast = () => {}` na mão vaza pro **modo
+   * edição** — o picking do editor também é raycast, então o objeto fica
+   * IMPOSSÍVEL de clicar depois do primeiro Play, e só um reload resolve. Aqui o
+   * host restaura tudo ao parar o Play.
+   *
+   * @param target Nó a silenciar com seus filhos. Default: o `object3d` do script.
+   */
+  protected disableRaycast(target?: Object3D | null): void {
+    const root = target ?? this.object3d;
+    if (!root) return;
+    root.traverse((child) => {
+      const holder = child as Object3D & { raycast?: RaycastFn };
+      const own = Object.prototype.hasOwnProperty.call(child, 'raycast');
+      this.disabledRaycasts.push({ obj: child, own, original: own ? holder.raycast : undefined });
+      holder.raycast = NO_RAYCAST;
+    });
+  }
+
+  /**
+   * Restaura os raycasts desligados por {@link disableRaycast}.
+   *
+   * @internal Chamado pelo {@link ScriptHostSystem} ao parar o Play — não chame
+   * à mão, e não sobrescreva numa subclasse.
+   */
+  restoreRaycasts(): void {
+    for (const entry of this.disabledRaycasts) {
+      // `raycast` é obrigatório no Object3D, mas aqui ele PODE sumir da instância
+      // (voltando pro protótipo) — daí o cast pra forma opcional.
+      const holder = entry.obj as unknown as { raycast?: RaycastFn };
+      if (entry.own && entry.original) holder.raycast = entry.original;
+      // Sem `own` o método vinha do PROTÓTIPO (Mesh.prototype.raycast): apagar a
+      // cópia da instância devolve o original — atribuir undefined o quebraria.
+      else delete holder.raycast;
+    }
+    this.disabledRaycasts = [];
+  }
 
   /** Schema dos campos editáveis no Inspector — declare como `static fields` na subclasse. */
   static fields?: ScriptFieldSchema;

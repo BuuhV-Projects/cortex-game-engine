@@ -61,6 +61,9 @@ export function createScriptApi(ctx: EditorAuthoringContext): ScriptApi {
       const comp = findComp(obj);
       const slot = comp?.scripts[index];
       if (!comp || !slot) return;
+      // Restaura antes de soltar a instância: um script removido no meio do Play
+      // não pode deixar o objeto sem raycast (ficaria inselecionável no editor).
+      slot.instance?.restoreRaycasts();
       slot.instance?.onDestroy?.();
       comp.scripts.splice(index, 1);
       save(obj, comp);

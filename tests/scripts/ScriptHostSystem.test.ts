@@ -101,6 +101,32 @@ describe('ScriptRegistry + ScriptHostSystem', () => {
     expect(spinner.updates).toBe(1);
   });
 
+  it('Play → Stop destrói as instâncias e o Play seguinte recria (ciclo Unity)', () => {
+    registerScript('Spinner', Spinner);
+    const world = new World();
+    let editing = false;
+    world.addSystem(new ScriptHostSystem({ world }, () => editing));
+    const e = world.createEntity();
+    e.addComponent(new ScriptComponent(null, [{ type: 'Spinner' }]));
+
+    world.tick(16);
+    const first = slot0(e).instance!;
+    expect(first.starts).toBe(1);
+
+    editing = true; // Stop
+    world.tick(16);
+    expect(first.destroyed).toBe(1); // onDestroy FINALMENTE acontece
+    expect(slot0(e).instance).toBeNull();
+    world.tick(16);
+    expect(first.destroyed).toBe(1); // e só uma vez, não a cada frame de edição
+
+    editing = false; // Play de novo
+    world.tick(16);
+    const second = slot0(e).instance!;
+    expect(second).not.toBe(first); // instância NOVA, estado limpo
+    expect(second.starts).toBe(1);
+  });
+
   it('script não registrado é ignorado (some quando registrar)', () => {
     const world = new World();
     world.addSystem(new ScriptHostSystem({ world }));

@@ -6,7 +6,7 @@
 
 # Class: ScriptHostSystem
 
-Defined in: [src/systems/ScriptHostSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L30)
+Defined in: [src/systems/ScriptHostSystem.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L40)
 
 **Roda os scripts** ([ScriptBehavior](ScriptBehavior.md)) anexados via [ScriptComponent](ScriptComponent.md) — ADR-0085.
 Instancia cada slot pelo nome (registro), injeta `entity`/`object3d`/`ctx`, aplica os campos,
@@ -15,6 +15,16 @@ lança exceção é logado via `debug('script', …)` e não derruba os demais.
 
 **Pausa no editor** (passe `isEditing`): scripts só rodam no Play, como na Unity. O jogo
 adiciona este sistema no boot com o contexto (input/gamepad/scene/camera).
+
+**Play → Stop DESTRÓI as instâncias** (`restoreRaycasts` + `onDestroy`), e o Play
+seguinte cria de novo — ciclo estilo Unity. Sem isso os efeitos colaterais do
+`onStart` vazavam pro modo edição: quem desliga o `raycast` (lâmina, moeda, poça)
+deixava o objeto **inselecionável no editor**, porque o picking também é raycast,
+e só um reload da IDE devolvia o clique. Ver ADR-0143.
+
+Por isso este sistema **não usa `pauseWhen`**: ele precisa rodar no modo edição pra
+enxergar a transição. Não sete `pauseWhen` nele por fora — o gate é o `isEditing`
+do construtor.
 
 ## Extends
 
@@ -26,7 +36,7 @@ adiciona este sistema no boot com o contexto (input/gamepad/scene/camera).
 
 > **new ScriptHostSystem**(`ctx`, `isEditing?`): `ScriptHostSystem`
 
-Defined in: [src/systems/ScriptHostSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L34)
+Defined in: [src/systems/ScriptHostSystem.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L49)
 
 #### Parameters
 
@@ -92,7 +102,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `50`
 
-Defined in: [src/systems/ScriptHostSystem.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L32)
+Defined in: [src/systems/ScriptHostSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L42)
 
 Prioridade de execução deste sistema.
 
@@ -109,7 +119,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: *typeof* [`ScriptComponent`](ScriptComponent.md)[]
 
-Defined in: [src/systems/ScriptHostSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L31)
+Defined in: [src/systems/ScriptHostSystem.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L41)
 
 Construtores dos componentes que este sistema requer.
 
@@ -156,7 +166,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/ScriptHostSystem.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L43)
+Defined in: [src/systems/ScriptHostSystem.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L58)
 
 Executa a lógica do sistema para o frame/passo atual.
 

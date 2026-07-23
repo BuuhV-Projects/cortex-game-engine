@@ -6,7 +6,7 @@
 
 # Interface: ScriptContext
 
-Defined in: [src/scripts/ScriptBehavior.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L29)
+Defined in: [src/scripts/ScriptBehavior.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L35)
 
 Handles do engine injetados em cada script pelo [ScriptHostSystem](../classes/ScriptHostSystem.md) (via `this.ctx`).
 É o "ambiente" que o comportamento enxerga — sem precisar de glue no `main.ts`.
@@ -17,7 +17,7 @@ Handles do engine injetados em cada script pelo [ScriptHostSystem](../classes/Sc
 
 > `optional` **camera?**: `Camera`
 
-Defined in: [src/scripts/ScriptBehavior.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L34)
+Defined in: [src/scripts/ScriptBehavior.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L40)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [src/scripts/ScriptBehavior.ts:34](https://github.com/BuuhV-Projects
 
 > `optional` **gamepad?**: [`GamepadManager`](../classes/GamepadManager.md)
 
-Defined in: [src/scripts/ScriptBehavior.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L32)
+Defined in: [src/scripts/ScriptBehavior.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L38)
 
 ***
 
@@ -33,7 +33,7 @@ Defined in: [src/scripts/ScriptBehavior.ts:32](https://github.com/BuuhV-Projects
 
 > `optional` **input?**: [`InputManager`](../classes/InputManager.md)
 
-Defined in: [src/scripts/ScriptBehavior.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L31)
+Defined in: [src/scripts/ScriptBehavior.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L37)
 
 ***
 
@@ -41,7 +41,7 @@ Defined in: [src/scripts/ScriptBehavior.ts:31](https://github.com/BuuhV-Projects
 
 > `optional` **scene?**: [`Scene`](../classes/Scene.md)
 
-Defined in: [src/scripts/ScriptBehavior.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L33)
+Defined in: [src/scripts/ScriptBehavior.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L39)
 
 ***
 
@@ -49,4 +49,4 @@ Defined in: [src/scripts/ScriptBehavior.ts:33](https://github.com/BuuhV-Projects
 
 > **world**: [`World`](../classes/World.md)
 
-Defined in: [src/scripts/ScriptBehavior.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L30)
+Defined in: [src/scripts/ScriptBehavior.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L36)
