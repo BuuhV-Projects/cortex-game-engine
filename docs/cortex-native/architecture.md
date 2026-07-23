@@ -149,6 +149,23 @@ Native (que roda milhares de libs sobre Hermes em produção):
 
 ## Armadilhas conhecidas
 
+- **O Hermes NÃO implementa o binding por iteração do `let`** — closure criada em
+  `for (let i…)` enxerga o valor FINAL de `i`. Sonda no host:
+  `for (let k=0;k<3;k++) probes.push(() => k)` → `3,3,3` (browser: `0,1,2`). É
+  **silencioso**: build, typecheck e testes (que rodam em Node) passam; só o binário
+  exportado adoece. Foi o que apagou a iluminação do Mundo 3 no export — o CSM do
+  three indexa `this._shadowNodes[i]` dentro de closure e recebia `[4]` →
+  `undefined` → exceção no build do shader → material preto. **Corrigido de vez**
+  com `@babel/plugin-transform-block-scoping` no `bundle.mjs` (ADR-0146); a lista de
+  transforms de lá precisa cobrir tudo que o Hermes não implementa direito — se
+  aparecer outra divergência Studio ↔ export, suspeite dela primeiro.
+- **Diagnóstico barato de divergência Studio ↔ export:** rode
+  `dist-native/launcher.exe` com `CORTEX_LAUNCH_QUERY='?level=<id>'` (entra direto
+  na fase) e leia o stdout — exceção de JS aparece lá com stack. Pra ler a linha
+  culpada, gere o bundle à parte com `node native/scripts/bundle.mjs <out.js>
+  <game>/main.ts`: o `export-game.mjs` apaga o `boot.bundle.js` após o `hermesc`.
+  Um ciclo completo (build + export `CORTEX_NO_COOK=1` + rodar) leva ~40s, então
+  bisectar hipóteses ligando/desligando features é prático.
 - **FPS do gameplay é CPU-bound no RENDER (three.js WebGPU no Hermes), não na
   física nem no SSAA.** Medido no teste4 (fase-1, ~86 objetos): frame ~28ms →
   `world.tick` (física Rapier + scripts + ECS) ~3ms, **render ~20ms**, PostFX

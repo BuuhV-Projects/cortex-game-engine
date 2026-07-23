@@ -30,6 +30,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@babel/plugin-transform-block-scoping": "7.29.7",
     "@babel/plugin-transform-classes": "7.28.4",
     "@gltf-transform/core": "^4.4.1",
     "@gltf-transform/extensions": "^4.4.1",

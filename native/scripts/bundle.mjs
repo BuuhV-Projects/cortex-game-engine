@@ -138,6 +138,16 @@ const result = await transformAsync(bundled, {
   plugins: [
     ['@babel/plugin-transform-classes', { loose: true }],
     '@babel/plugin-transform-arrow-functions',
+    // ⚠️ OBRIGATÓRIO: o Hermes NÃO implementa o binding POR ITERAÇÃO do `let` em
+    // loop. Uma closure criada dentro de `for (let i…)` enxerga o valor FINAL de
+    // `i`, não o da sua iteração (provado no host: `for (let k=0;k<3;k++)
+    // probes.push(() => k)` devolve `3,3,3` em vez de `0,1,2`). Isso corrompe
+    // silenciosamente QUALQUER código com closure em loop — nosso, do jogo ou de
+    // dependência. Foi o que apagou a iluminação no export: o CSM do three indexa
+    // `this._shadowNodes[i]` dentro de um callback e recebia `[4]` → `undefined`.
+    // O Babel gera a captura correta, então o transform CONSERTA o Hermes aqui.
+    // Ver ADR-0146.
+    '@babel/plugin-transform-block-scoping',
   ],
   cwd: ENGINE_ROOT, // resolução dos plugins independe do cwd do chamador
   compact: true,
