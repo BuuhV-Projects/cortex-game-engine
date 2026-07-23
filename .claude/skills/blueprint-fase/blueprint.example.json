@@ -1,75 +1,385 @@
 {
   "kit": "platformer-space",
-  "title": "Exemplo de Fase — Estação Órbita",
-  "subtitleKick": "FASE 01 · TOP-DOWN",
-  "subtitle": "Blueprint jogável de referência pra dev. Vista de cima: explore as zonas na ordem 1→5. A linha tracejada é o caminho do jogador; cada peça está no ponto onde entra no jogo. Nomes = arquivo exato do kit.",
-  "orientation": "top-down",
-  "canvas": { "w": 1840, "h": 1000 },
+  "title": "Fase 1 · Mundo Espacial — Trilha pelos Escombros",
+  "subtitleKick": "MUNDO 3 · FASE 01 · SIDE-SCROLLER · FÍSICA LUNAR",
+  "subtitle": "Tutorial dos asteroides: ARCO DE SUBIDA da largada até o PICO na estação (via trampolim), depois descida à chegada. Cada peça traz seu COMPORTAMENTO (script + params) — o dev implementa 1:1. Altura na imagem = altura real da fase.",
+  "orientation": "side-scroller",
+  "canvas": {
+    "w": 1840,
+    "h": 1000
+  },
   "grid": 44,
   "pxPerUnit": 7,
   "steps": [
-    { "n": 1, "title": "Pouso", "desc": "Aprenda o movimento; colete as 1ªs moedas até o checkpoint." },
-    { "n": 2, "title": "Cinturão", "desc": "Cruze o campo de asteroides pulando entre as rochas." },
-    { "n": 3, "title": "Corredor de perigo", "desc": "Espinhos, rolo e pêndulo num vão estreito." },
-    { "n": 4, "title": "Câmara das chaves", "desc": "Trampolim e discos até as 2 chaves." },
-    { "n": 5, "title": "Santuário", "desc": "As chaves liberam o troféu — objetivo da fase." }
+    {
+      "n": 1,
+      "title": "Largada",
+      "desc": "Base abandonada no topo 0: aprenda a pular; colete os 1ºs cristais."
+    },
+    {
+      "n": 2,
+      "title": "Subida",
+      "desc": "Salte entre ilhas SUBINDO (topo 1.5 → 4.5); cristal no arco do pulo."
+    },
+    {
+      "n": 3,
+      "title": "Perigo + pedras",
+      "desc": "Spike pad avisado por barreira; escada de pedras subindo."
+    },
+    {
+      "n": 4,
+      "title": "Trampolim → PICO",
+      "desc": "Pêndulo guarda o trampolim que lança ao ponto mais alto: a estação."
+    },
+    {
+      "n": 5,
+      "title": "Descida & chegada",
+      "desc": "Braço giratório, UFO perseguidor e o foguete da chegada."
+    }
   ],
-  "zones": [
-    { "label": "1 · ZONA DE POUSO", "kind": "terrain", "x": 40, "y": 630, "w": 360, "h": 330 },
-    { "label": "2 · CINTURÃO DE ASTEROIDES", "kind": "terrain", "x": 430, "y": 470, "w": 430, "h": 400 },
-    { "label": "3 · CORREDOR DE PERIGO", "kind": "hazard", "x": 470, "y": 130, "w": 380, "h": 270 },
-    { "label": "4 · CÂMARA DAS CHAVES", "kind": "mechanism", "x": 910, "y": 360, "w": 430, "h": 430 },
-    { "label": "5 · SANTUÁRIO DO TESOURO", "kind": "objective", "x": 1390, "y": 120, "w": 410, "h": 380 }
-  ],
-  "pathD": "M 150 880 Q 240 760 330 720 Q 470 650 560 690 Q 660 730 640 560 Q 620 400 660 300 Q 720 210 800 250 Q 900 300 1000 430 Q 1080 520 1120 560 Q 1180 640 1260 600 Q 1360 550 1440 420 Q 1520 320 1590 300",
-
+  "pathD": "M 120 846 L 232 844 Q 282 806 326 792 Q 420 700 500 739 L 542 739 Q 620 662 700 687 L 742 687 Q 800 640 846 652 L 896 617 L 945 582 Q 1002 560 1058 566 L 1096 564 Q 1190 384 1308 459 L 1352 459 Q 1422 488 1506 512 L 1548 512 Q 1626 558 1720 599",
   "pieces": [
-    { "asset": "planet_001", "x": 220, "y": 210, "scale": 0.9 },
-    { "asset": "planet_008", "x": 410, "y": 105 },
-    { "asset": "planet_003", "x": 1150, "y": 150, "scale": 0.85 },
-    { "asset": "meteors_001", "x": 1500, "y": 720, "px": 260 },
-    { "asset": "satallite_001", "x": 980, "y": 220, "scale": 0.9 },
-    { "asset": "ufo_002", "x": 300, "y": 430, "scale": 0.8 },
-
-    { "asset": "land_005", "x": 240, "y": 870, "note": "plataforma de pouso" },
-    { "asset": "coin_001", "x": 250, "y": 760, "note": "moeda" },
-    { "asset": "coin_001", "x": 320, "y": 700, "note": "moeda" },
-    { "asset": "checkpoint_001", "x": 340, "y": 830, "note": "checkpoint" },
-    { "asset": "plant_002", "x": 300, "y": 920, "note": "decor" },
-    { "asset": "rocket_001", "x": 150, "y": 800, "note": "nave / spawn", "flag": "START", "flagColor": "#7ee081" },
-
-    { "asset": "land_003", "x": 560, "y": 700, "note": "ilha" },
-    { "asset": "stone_004", "x": 480, "y": 620, "note": "pedra" },
-    { "asset": "stone_001", "x": 660, "y": 760, "note": "pedra" },
-    { "asset": "rock_002", "x": 780, "y": 640, "note": "rocha" },
-    { "asset": "crystal_001", "x": 470, "y": 780, "note": "cristal" },
-    { "asset": "apple_001", "x": 600, "y": 600, "note": "fruta +" },
-    { "asset": "star_001", "x": 700, "y": 540, "note": "estrela" },
-    { "asset": "berries_001", "x": 810, "y": 780, "note": "fruta +" },
-
-    { "asset": "obstacle_10_001", "x": 560, "y": 320, "note": "espinhos" },
-    { "asset": "obstacle_6_001", "x": 680, "y": 250, "note": "rolo rotativo" },
-    { "asset": "obstacle_3_001", "x": 780, "y": 330, "note": "pêndulo" },
-    { "asset": "bomb_001", "x": 620, "y": 200, "note": "bomba" },
-    { "asset": "dynamite_001", "x": 730, "y": 180, "note": "dinamite" },
-    { "asset": "obstacle_14_001", "x": 520, "y": 230, "note": "trave estreita" },
-
-    { "asset": "trampoline_1_001", "x": 980, "y": 690, "note": "trampolim" },
-    { "asset": "obstacle_5_001", "x": 1090, "y": 560, "note": "disco" },
-    { "asset": "obstacle_16_001", "x": 1230, "y": 620, "note": "disco" },
-    { "asset": "obstacle_18_001", "x": 1000, "y": 460, "note": "plataforma" },
-    { "asset": "tube_001", "x": 1140, "y": 700, "note": "túnel" },
-    { "asset": "key_001", "x": 1180, "y": 470, "note": "chave" },
-    { "asset": "key_002", "x": 1290, "y": 520, "note": "chave" },
-    { "asset": "ring_001", "x": 1060, "y": 630, "note": "anel +" },
-    { "asset": "heart_001", "x": 950, "y": 590, "note": "vida +" },
-    { "asset": "diamond_001", "x": 1250, "y": 430, "note": "diamante" },
-
-    { "asset": "land_004", "x": 1500, "y": 400, "note": "pedestal" },
-    { "asset": "cup_001", "x": 1590, "y": 300, "note": "troféu", "flag": "FIM", "flagColor": "#f5c451" },
-    { "asset": "crown_001", "x": 1470, "y": 230, "note": "objetivo", "flag": "OBJETIVO", "flagColor": "#5ed0e0" },
-    { "asset": "ufo_001", "x": 1690, "y": 220, "note": "chefe / decor" },
-    { "asset": "star_002", "x": 1420, "y": 350, "note": "estrela" },
-    { "asset": "coin_001", "x": 1560, "y": 440, "note": "moeda" }
+    {
+      "asset": "planet_003",
+      "x": 340,
+      "y": 180,
+      "behavior": "decoration"
+    },
+    {
+      "asset": "planet_007",
+      "x": 1050,
+      "y": 160,
+      "scale": 0.9,
+      "behavior": "decoration"
+    },
+    {
+      "asset": "satallite_001",
+      "x": 760,
+      "y": 195,
+      "scale": 0.85,
+      "behavior": "decoration"
+    },
+    {
+      "asset": "meteors_001",
+      "x": 1560,
+      "y": 235,
+      "px": 230,
+      "behavior": "decoration"
+    },
+    {
+      "asset": "rock_002",
+      "x": 500,
+      "y": 300,
+      "scale": 0.7,
+      "behavior": "decoration",
+      "note": "debris"
+    },
+    {
+      "asset": "land_001",
+      "x": 145,
+      "y": 884,
+      "behavior": "ground",
+      "note": "base — largada (topo 0)"
+    },
+    {
+      "asset": "rocket_001",
+      "x": 92,
+      "y": 792,
+      "behavior": "spawn",
+      "script": "PontoInicio",
+      "note": "nasce o player",
+      "flag": "START",
+      "flagColor": "#7ee081"
+    },
+    {
+      "asset": "bomb_001",
+      "x": 182,
+      "y": 846,
+      "behavior": "decoration",
+      "note": "narrativa (não mata)"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 150,
+      "y": 800,
+      "behavior": "collectible",
+      "script": "Moeda",
+      "note": "cristal"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 210,
+      "y": 812,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "land_003",
+      "x": 326,
+      "y": 822,
+      "behavior": "ground",
+      "note": "asteroide (topo 1.5)"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 308,
+      "y": 760,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 352,
+      "y": 766,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 432,
+      "y": 690,
+      "behavior": "collectible",
+      "script": "Moeda",
+      "note": "no arco do pulo"
+    },
+    {
+      "asset": "land_003",
+      "x": 516,
+      "y": 770,
+      "behavior": "ground",
+      "note": "asteroide (topo 3)"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 500,
+      "y": 712,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 542,
+      "y": 716,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "land_003",
+      "x": 714,
+      "y": 718,
+      "behavior": "ground",
+      "note": "asteroide (topo 4.5)"
+    },
+    {
+      "asset": "barrier_001",
+      "x": 648,
+      "y": 676,
+      "behavior": "decoration",
+      "note": "aviso do perigo"
+    },
+    {
+      "asset": "obstacle_10_001",
+      "x": 726,
+      "y": 664,
+      "behavior": "hazard",
+      "script": "Perigo",
+      "params": {
+        "raio": 1.8
+      },
+      "note": "pad de espinhos — mata ao tocar"
+    },
+    {
+      "asset": "checkpoint_001",
+      "x": 662,
+      "y": 616,
+      "behavior": "checkpoint",
+      "script": "Checkpoint",
+      "params": {
+        "raio": 1
+      },
+      "note": "salva progresso"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 792,
+      "y": 626,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "stone_001",
+      "x": 846,
+      "y": 668,
+      "behavior": "ground",
+      "note": "pedra (topo 5.5)"
+    },
+    {
+      "asset": "stone_002",
+      "x": 900,
+      "y": 632,
+      "behavior": "ground",
+      "note": "pedra (topo 6.5)"
+    },
+    {
+      "asset": "stone_003",
+      "x": 950,
+      "y": 596,
+      "behavior": "ground",
+      "note": "pedra (topo 7.5)"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 900,
+      "y": 578,
+      "behavior": "collectible",
+      "script": "Moeda",
+      "note": "precisão"
+    },
+    {
+      "asset": "land_003",
+      "x": 1075,
+      "y": 580,
+      "behavior": "ground",
+      "note": "asteroide (topo 8)"
+    },
+    {
+      "asset": "obstacle_3_001",
+      "x": 1028,
+      "y": 470,
+      "behavior": "hazard-spinner",
+      "script": "MarteloGiratorio",
+      "params": {
+        "giro": 2.2
+      },
+      "note": "pêndulo guardião"
+    },
+    {
+      "asset": "trampoline_1_001",
+      "x": 1108,
+      "y": 558,
+      "behavior": "launcher",
+      "script": "Trampolim",
+      "params": {
+        "impulso": 22
+      },
+      "note": "lança ao PICO (+3 topo)"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 1162,
+      "y": 498,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "land_003",
+      "x": 1308,
+      "y": 478,
+      "behavior": "ground",
+      "note": "ESTAÇÃO — PICO (topo 11)"
+    },
+    {
+      "asset": "satallite_002",
+      "x": 1246,
+      "y": 316,
+      "behavior": "decoration",
+      "note": "satélite"
+    },
+    {
+      "asset": "obstacle_7_001",
+      "x": 1308,
+      "y": 392,
+      "behavior": "hazard-spinner",
+      "script": "MarteloGiratorio",
+      "params": {
+        "giro": 1.8
+      },
+      "note": "braço giratório"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 1230,
+      "y": 452,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 1390,
+      "y": 452,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "land_003",
+      "x": 1506,
+      "y": 524,
+      "behavior": "ground",
+      "note": "asteroide (topo 9.5)"
+    },
+    {
+      "asset": "checkpoint_001",
+      "x": 1436,
+      "y": 472,
+      "behavior": "checkpoint",
+      "script": "Checkpoint",
+      "params": {
+        "raio": 1
+      }
+    },
+    {
+      "asset": "ufo_001",
+      "x": 1526,
+      "y": 396,
+      "behavior": "hazard-chaser",
+      "script": "Drone",
+      "params": {
+        "velocidade": 2.8
+      },
+      "note": "UFO perseguidor"
+    },
+    {
+      "asset": "crystal_003",
+      "x": 1544,
+      "y": 486,
+      "behavior": "collectible",
+      "script": "Moeda"
+    },
+    {
+      "asset": "land_001",
+      "x": 1722,
+      "y": 628,
+      "behavior": "ground",
+      "note": "base de chegada (topo 7)"
+    },
+    {
+      "asset": "obstacle_16_001",
+      "x": 1722,
+      "y": 566,
+      "behavior": "platform",
+      "note": "pista de pouso"
+    },
+    {
+      "asset": "crown_001",
+      "x": 1656,
+      "y": 506,
+      "category": "objective",
+      "note": "troféu — objetivo visual",
+      "flag": "OBJETIVO",
+      "flagColor": "#5ed0e0"
+    },
+    {
+      "asset": "rocket_001",
+      "x": 1736,
+      "y": 458,
+      "behavior": "goal",
+      "script": "Chegada",
+      "params": {
+        "raio": 1
+      },
+      "note": "fim da fase",
+      "flag": "FIM",
+      "flagColor": "#f5c451"
+    }
   ]
 }

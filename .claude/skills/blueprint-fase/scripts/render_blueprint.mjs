@@ -1,6 +1,11 @@
 // Renderiza um BLUEPRINT de fase (HTML self-contained) a partir de um layout
 // projetado pela IA (`blueprint.json`) + um kit curado (`kit.json` + thumbnails).
 //
+// SINCRONIA: este script (skill do Claude Code) tem um GÊMEO em TS usado pela tool
+// `generate_blueprint` do Chat IA do Studio —
+// `electron/agent/blueprint/renderBlueprint.ts` (ADR-0142). A lógica de render é a
+// mesma (paridade HTML byte-a-byte); mude os DOIS juntos (BEHAVIORS/CATS/layout).
+//
 // Divisão de trabalho (igual ao gen-kit): a IA faz o DESIGN (posiciona as peças,
 // define zonas e passos); ESTE script faz a RENDERIZAÇÃO determinística — embute
 // as thumbnails em base64 (self-contained, sem host externo → serve de Artifact),
@@ -30,7 +35,32 @@ const CATS = {
 };
 const CAT_ORDER = ['collectible', 'hazard', 'mechanism', 'objective', 'terrain', 'decoration'];
 
-// role/tags → categoria. Tags específicas (key/goal/checkpoint) vencem o role.
+// ── VOCABULÁRIO DE COMPORTAMENTO (o que a peça FAZ no jogo) ────────────────────
+// Cada `behavior` amarra a peça a um PROPÓSITO de gameplay: a categoria (cor), o
+// script/componente sugerido do engine e o `role`/`gameplayRole` do kit que DEVE
+// casar (senão o render avisa). É o coração do blueprint orientado a gameplay:
+// cada objeto na cena existe por uma função, não por estética. Ver SKILL.md.
+const BEHAVIORS = {
+  spawn:           { cat: 'objective',   script: 'PontoInicio',      roles: ['prop', 'decoration', 'ground'] },
+  goal:            { cat: 'objective',   script: 'Chegada',          roles: ['prop', 'ground'],  tags: ['goal', 'trophy'] },
+  checkpoint:      { cat: 'objective',   script: 'Checkpoint',       roles: ['prop'],            tags: ['checkpoint', 'gate'] },
+  collectible:     { cat: 'collectible', script: 'Moeda',            roles: ['collectible'] },
+  hazard:          { cat: 'hazard',      script: 'Perigo',           roles: ['hazard'] },
+  'hazard-spinner':{ cat: 'hazard',      script: 'MarteloGiratorio', roles: ['hazard', 'platform'], tags: ['rotating', 'sweeper', 'pendulum'] },
+  'hazard-chaser': { cat: 'hazard',      script: 'Drone',            roles: ['prop', 'hazard'],  tags: ['vehicle', 'ufo'] },
+  launcher:        { cat: 'mechanism',   script: 'Trampolim',        roles: ['platform'],        tags: ['bounce'] },
+  platform:        { cat: 'mechanism',   script: null,               roles: ['platform', 'connector'] },
+  'platform-moving':{ cat: 'mechanism',  script: 'Patrulha',         roles: ['platform', 'ground', 'connector'] },
+  conveyor:        { cat: 'mechanism',   script: 'Esteira',          roles: ['platform'],        tags: ['conveyor'] },
+  'rotating-platform':{ cat: 'mechanism',script: 'PlataformaGiratoria',roles: ['platform'],      tags: ['rotating', 'disc'] },
+  saw:             { cat: 'hazard',      script: 'Serra',            roles: ['hazard'],          tags: ['spikes', 'rotating'] },
+  crusher:         { cat: 'hazard',      script: 'Prensa',           roles: ['prop', 'hazard'],  tags: ['barrier', 'bar'] },
+  blocker:         { cat: 'mechanism',   script: null,               roles: ['prop', 'decoration'], tags: ['barrier', 'boundary', 'fence'] },
+  ground:          { cat: 'terrain',     script: null,               roles: ['ground'] },
+  decoration:      { cat: 'decoration',  script: null,               roles: ['decoration', 'prop'] },
+};
+
+// role/tags → categoria (FALLBACK quando a peça não declara `behavior`).
 function categoryOf(asset) {
   const role = asset?.role ?? 'prop';
   const tags = asset?.tags ?? [];
@@ -41,6 +71,12 @@ function categoryOf(asset) {
   if (role === 'platform' || role === 'connector') return 'mechanism';
   if (role === 'ground') return 'terrain';
   return 'decoration'; // decoration + prop genérico
+}
+
+// Formata params de gameplay compactos: {raio:1.8} → "raio 1.8"
+function fmtParams(params) {
+  if (!params || typeof params !== 'object') return '';
+  return Object.entries(params).map(([k, v]) => `${k} ${v}`).join(' · ');
 }
 
 // ── Thumbnails → data-URI (self-contained). Cache por asset. ────────────────────
@@ -79,13 +115,39 @@ const piecesHTML = (bp.pieces ?? [])
     if (!asset) warnings.push(`asset fora do kit.json: ${name}`);
     const uri = thumbURI(name);
     if (!uri) warnings.push(`sem thumbnail: ${name}`);
-    const cat = p.category ?? categoryOf(asset);
+
+    // Comportamento → categoria (cor) + script sugerido. `behavior` VENCE tudo;
+    // `category` explícita é fallback legado; senão deriva do kit (role/tags).
+    const beh = p.behavior ? BEHAVIORS[p.behavior] : null;
+    if (p.behavior && !beh) warnings.push(`behavior desconhecido: "${p.behavior}" (${name})`);
+    const cat = beh?.cat ?? p.category ?? categoryOf(asset);
     usedCats.add(cat);
+    // AVISO de propósito: o asset escolhido casa com o comportamento pedido?
+    // (role/gameplayRole/tags do kit — evita escolher peça por estética.) Só
+    // avisa em comportamentos de GAMEPLAY ATIVO — usar um asset como decor/parede
+    // é rebaixamento seguro e não merece ruído.
+    const PASSIVE = new Set(['decoration', 'blocker', 'ground']);
+    if (beh && asset && !PASSIVE.has(p.behavior)) {
+      const role = asset.role ?? 'prop';
+      const tags = asset.tags ?? [];
+      const roleOk = beh.roles.includes(role);
+      const tagOk = !beh.tags || beh.tags.some((t) => tags.includes(t));
+      if (!roleOk && !tagOk) {
+        warnings.push(`propósito duvidoso: ${name} (role "${role}") como "${p.behavior}" — esperado role ${beh.roles.join('/')}${beh.tags ? ' ou tag ' + beh.tags.join('/') : ''}`);
+      }
+    }
     const color = CATS[cat]?.color ?? '#6b6f8a';
     const w = pieceWidth(p, asset);
     const isHazard = cat === 'hazard';
     const mark = isHazard ? ' <span class="x">✕</span>' : '';
     const note = p.note ? `<span class="note">${esc(p.note)}</span>` : '';
+    // Linha de COMPORTAMENTO: script + params (o que o dev/Chat IA crava). Só
+    // aparece quando há script real (peça de gameplay), não em decor/ground puro.
+    const scriptName = p.script ?? beh?.script ?? null;
+    const params = fmtParams(p.params);
+    const behLine = scriptName
+      ? `<span class="beh">${esc(scriptName)}${params ? ` <em>${esc(params)}</em>` : ''}</span>`
+      : '';
     const flag = p.flag
       ? `<span class="flag" style="--fc:${p.flagColor ?? '#7ee081'}">${esc(p.flag)}</span>`
       : '';
@@ -95,7 +157,7 @@ const piecesHTML = (bp.pieces ?? [])
     // label = NOME EXATO DO ARQUIVO (regra do blueprint), nunca traduzido.
     return `<div class="piece" style="left:${p.x}px;top:${p.y}px;--w:${w.toFixed(0)}px;--c:${color}">
       ${flag}${img}
-      <div class="lbl"><b>${esc(name)}</b>${mark}${note}</div>
+      <div class="lbl"><b>${esc(name)}</b>${mark}${behLine}${note}</div>
     </div>`;
   })
   .join('\n');
@@ -185,10 +247,14 @@ const html = `<!--BP_W:${canvas.w} BP_H:${totalH}-->
     display:flex; flex-direction:column; align-items:center; }
   .piece img, .piece .ph { display:block; filter:drop-shadow(0 6px 10px #0008); }
   .piece .ph { border:1.5px dashed var(--c); border-radius:8px; }
-  .lbl { margin-top:2px; font-size:10.5px; line-height:1.15; text-align:center; white-space:nowrap; }
-  .lbl b { color:var(--c); font-weight:700; }
+  .lbl { margin-top:2px; font-size:10.5px; line-height:1.15; text-align:center; }
+  .lbl b { color:var(--c); font-weight:700; white-space:nowrap; }
   .lbl .x { color:#f0587e; font-weight:700; }
-  .lbl .note { display:block; color:var(--dim); font-size:9.5px; }
+  .lbl .beh { display:block; max-width:150px; margin:1px auto 0; font-size:9.5px;
+    font-weight:700; color:var(--c); letter-spacing:.02em; opacity:.92; line-height:1.12; }
+  .lbl .beh em { font-style:normal; font-weight:500; color:var(--dim); }
+  .lbl .note { display:block; max-width:150px; margin:0 auto; color:var(--dim);
+    font-size:9.5px; line-height:1.12; }
   .flag { position:absolute; top:-20px; left:50%; transform:translateX(-50%);
     background:var(--fc); color:#0c0a1c; font-size:10px; font-weight:800;
     padding:2px 9px; border-radius:20px; white-space:nowrap; letter-spacing:.04em;
@@ -223,7 +289,7 @@ const counts = {};
 for (const c of usedCats) counts[c] = 0;
 for (const p of bp.pieces ?? []) {
   const asset = kit.assets?.[`assets/${p.asset}.glb`];
-  const cat = p.category ?? categoryOf(asset);
+  const cat = BEHAVIORS[p.behavior]?.cat ?? p.category ?? categoryOf(asset);
   counts[cat] = (counts[cat] ?? 0) + 1;
 }
 console.log(`blueprint: ${pieceCount} peças  cats=${JSON.stringify(counts)}  → ${outPath}`);
