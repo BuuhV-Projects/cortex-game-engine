@@ -36,7 +36,7 @@ import { PlatformerBodyComponent } from '../components/PlatformerBodyComponent.j
 import { FollowCameraTargetComponent } from '../components/FollowCameraTargetComponent.js';
 import { PlayerAnimatorComponent } from '../components/PlayerAnimatorComponent.js';
 import type { Entity } from '../ecs/Entity.js';
-import { loadGLB, loadTexture, instance, placeOnGround, getWorldBounds, setMatte, setShadows } from './SceneAssets.js';
+import { loadGLB, loadTexture, instance, placeOnGround, getWorldBounds, setMatte, setShadows, setFog } from './SceneAssets.js';
 import { kitAssetFor, resolveAttachTransform, type KitManifest } from './Kit.js';
 import { applyMaterial, type MaterialConfig } from './Materials.js';
 import { createSprite } from './Sprite.js';
@@ -629,6 +629,12 @@ export async function buildScene(
     if (shadowOv) {
       setShadows(obj, { castShadow: shadowOv.cast, receiveShadow: shadowOv.recv });
     }
+
+    // Névoa por objeto: `fog: false` isenta o nó da névoa global (planetas e
+    // marcos de horizonte mantêm a cor própria). Vem DEPOIS do material porque
+    // `applyMaterial` pode ter trocado as malhas — o ajuste tem de cair na
+    // versão final delas.
+    if ('fog' in node && node.fog !== undefined) setFog(obj, node.fog);
 
     // Animação: modelos `.glb` com clipes ganham um SceneAnimator (em
     // `userData.cortexAnim` — o editor controla por ali). Toca o clipe se o nó/

@@ -119,6 +119,29 @@ export function setShadows(object: Object3D, options: ShadowOptions): void {
   });
 }
 
+/**
+ * Liga/desliga a **névoa da cena** nos materiais de um objeto.
+ *
+ * A `fog` é global e tinge tudo em função da distância — inclusive o que está
+ * longe **de propósito**: um planeta, uma montanha, um marco de horizonte cuja
+ * função é justamente ser lido de longe. Com névoa forte esses marcos perdem a
+ * cor própria e viram todos do mesmo tom. Isentá-los devolve a cor sem abrir
+ * mão da profundidade que a névoa dá ao resto da cena.
+ *
+ * @param object - O objeto (ou grupo) a configurar.
+ * @param enabled - `false` exclui o objeto da névoa.
+ *
+ * @example
+ * setFog(planet, false) // o planeta de fundo mantém a cor própria
+ */
+export function setFog(object: Object3D, enabled: boolean): void {
+  eachMat(object, (mat) => {
+    if (mat.fog === undefined) return; // materiais sem suporte a fog
+    mat.fog = enabled;
+    mat.needsUpdate = true; // a névoa entra no shader: precisa recompilar
+  });
+}
+
 /** Opções de {@link setMatte}. */
 export interface MatteOptions {
   /** Aspereza (0 = espelho/brilhoso, 1 = fosco total). Default `1`. */
@@ -146,6 +169,7 @@ interface PbrMat {
   roughness?: number;
   metalness?: number;
   envMapIntensity?: number;
+  fog?: boolean;
   needsUpdate?: boolean;
   userData?: Record<string, unknown>;
 }

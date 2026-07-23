@@ -257,6 +257,17 @@ const baseFields = {
   receiveShadow: z.boolean().optional(),
   /** `false` = mesh não renderizado (invisível), mas ainda presente na física/raycast. */
   visible: z.boolean().optional(),
+  /**
+   * `false` = a névoa da cena (`fog`) NÃO tinge este objeto.
+   *
+   * A névoa é global e some com tudo que está longe — inclusive com o que está
+   * longe **de propósito**: um planeta, uma montanha ou um marco de horizonte
+   * cuja função é justamente ser lido à distância. Isentá-los devolve a cor
+   * própria da peça sem abrir mão da profundidade no resto da cena.
+   *
+   * Omitido = o objeto recebe a névoa (o comportamento normal).
+   */
+  fog: z.boolean().optional(),
   /** Materiais foscos (mata o brilho PBR → look cartoon). Ver {@link setMatte}. */
   matte: z.boolean().optional(),
   /** Material/shader por objeto (standard/unlit/toon). Ver {@link applyMaterial}. */

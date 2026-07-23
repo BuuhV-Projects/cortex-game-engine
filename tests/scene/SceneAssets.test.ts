@@ -13,6 +13,7 @@ import {
   clearMatte,
   isMatte,
   instance,
+  setFog,
 } from '../../src/scene/SceneAssets.js';
 
 function box(size = 2): Mesh {
@@ -137,5 +138,46 @@ describe('setMatte', () => {
     expect(mat.roughness).toBeCloseTo(0.2);
     expect(mat.metalness).toBeCloseTo(0.6);
     expect(mat.envMapIntensity).toBeCloseTo(0.9);
+  });
+});
+
+describe('setFog — isentar objeto da névoa da cena (SPEC-0145)', () => {
+  it('desliga a névoa em todos os meshes do grupo', () => {
+    const group = new Group();
+    const a = box();
+    const b = box();
+    group.add(a, b);
+    setFog(group, false);
+    expect((a.material as MeshStandardMaterial).fog).toBe(false);
+    expect((b.material as MeshStandardMaterial).fog).toBe(false);
+  });
+
+  it('religa a névoa (é um toggle, não um caminho só de ida)', () => {
+    const mesh = box();
+    setFog(mesh, false);
+    setFog(mesh, true);
+    expect((mesh.material as MeshStandardMaterial).fog).toBe(true);
+  });
+
+  it('pede recompilação do shader — a névoa é uma define, não um uniform', () => {
+    const mesh = box();
+    const mat = mesh.material as MeshStandardMaterial;
+    // `needsUpdate` é um setter puro no three (incrementa `version`; lê-lo
+    // devolve undefined), então a versão é o que prova o efeito.
+    const before = mat.version;
+    setFog(mesh, false);
+    expect(mat.version).toBeGreaterThan(before);
+  });
+
+  it('cobre material multi-slot', () => {
+    const a = new MeshStandardMaterial();
+    const b = new MeshStandardMaterial();
+    setFog(new Mesh(new BoxGeometry(), [a, b]), false);
+    expect(a.fog).toBe(false);
+    expect(b.fog).toBe(false);
+  });
+
+  it('não quebra em objeto sem mesh', () => {
+    expect(() => setFog(new Group(), false)).not.toThrow();
   });
 });
