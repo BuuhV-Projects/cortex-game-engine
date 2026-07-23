@@ -53,6 +53,15 @@ classe)` manual continua valendo. Nó declara `scripts: [{ type, fields }]` no
 `level.json`; overlay `data.scripts[id]` vence. ⚠️ O nome do script é DADO persistido —
 renomear arquivo/scriptName exige atualizar as cenas que o usam.
 
+**Ciclo de vida (ADR-0143):** Play instancia → `onStart` → `onUpdate`; **Stop DESTRÓI**
+(`onDestroy` + descarte da instância) e o Play seguinte recria com estado limpo, como na
+Unity. Por isso o `ScriptHostSystem` **não usa `pauseWhen`** (o `World` pularia o sistema e
+ele não veria a transição) — o gate é o `isEditing` do construtor; não sete `pauseWhen`
+nele. Efeito colateral que sai do script (material, textura, listener no `document`) tem
+que ser desfeito no `onDestroy` — senão vaza pro modo edição. Para o caso mais comum,
+"este mesh não é chão/parede", use **`this.disableRaycast()`**, que a base restaura
+sozinha no Stop.
+
 **Quando usar System (ECS) vs Script** (regra de ouro — detalhe no ADR-0086):
 - **System** = simulação/infra pra **muitas** entidades, reutilizável, sensível à ordem do
   frame/física, ou que roda no editor (física, câmera, render, character, **veículo**). É o
@@ -128,6 +137,12 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   (+ heightfield injetado), `TerrainAuthoring` (pincel com **modo**: esculpir altura
   ou **texturizar/pintar** — escolhe/importa textura, SPEC-0063), `AnimationAuthoring`,
   `MeshAuthoring` (forma de blockout: params da receita + override de geometria; §11).
+- **Gizmo de transform** (`ObjectEditSystem`) — `1`/`2`/`3` trocam mover/girar/escalar
+  e **`X` alterna os eixos entre globais (mundo) e locais (do objeto)**, como o
+  Global/Local da Unity (SPEC-0144). O default é global; sem esse toggle, cena com
+  peças **rotacionadas** (fase autorada em percurso diagonal, com `rotY` em cada
+  plataforma) fica intransitável — os eixos não seguem o objeto. `scale` é sempre
+  local, limitação do `TransformControls`.
 - **Blockout / ProBuilder** (SPEC-0071) — paleta de formas (`EditorShapePanel`) cria
   nós `mesh`; o `MeshEditSystem` faz a **edição de elementos** (vértice/aresta/face +
   extrudar) com gizmo próprio. Ver §11.

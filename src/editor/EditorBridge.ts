@@ -49,6 +49,8 @@ export interface EditorBridgeOptions {
   viewportInfo?: () => Record<string, unknown>;
   /** Troca o modo do gizmo (botões de ferramenta da IDE). */
   onTool?: (mode: 'translate' | 'rotate' | 'scale') => void;
+  /** Alterna os eixos do gizmo entre mundo e objeto (tecla `X` / botão da IDE). */
+  onGizmoSpace?: (space: 'world' | 'local') => void;
   /** Adiciona um terreno à cena (menu "Adicionar terreno" da IDE). */
   onAddTerrain?: () => void;
   /** Adiciona uma forma de blockout à cena (paleta de Formas da IDE — SPEC-0071). */
@@ -72,7 +74,7 @@ export interface EditorBridgeOptions {
 
 /** Cria a ponte. Inerte (no-op) fora de um iframe. */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onOpenModelPicker, onDropAsset, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onGizmoSpace, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onOpenModelPicker, onDropAsset, onBridged } = options;
 
   const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
   if (!inIframe) {
@@ -124,7 +126,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
   };
 
   const onMessage = (ev: MessageEvent): void => {
-    const data = ev.data as { source?: string; type?: string; id?: string; additive?: boolean; value?: unknown; active?: boolean; mode?: string; kind?: string; url?: string; nx?: number; ny?: number } | null;
+    const data = ev.data as { source?: string; type?: string; id?: string; additive?: boolean; value?: unknown; active?: boolean; mode?: string; space?: string; kind?: string; url?: string; nx?: number; ny?: number } | null;
     if (!data || data.source !== IDE) return;
     switch (data.type) {
       case 'ack':
@@ -171,6 +173,13 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
       case 'tool':
         if (data.mode === 'translate' || data.mode === 'rotate' || data.mode === 'scale') {
           onTool?.(data.mode);
+          lastJson = '';
+          publish();
+        }
+        break;
+      case 'gizmoSpace':
+        if (data.space === 'world' || data.space === 'local') {
+          onGizmoSpace?.(data.space);
           lastJson = '';
           publish();
         }

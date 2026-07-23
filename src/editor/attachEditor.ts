@@ -1443,6 +1443,7 @@ export function attachEditor(game: Game): GameEditor {
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),
+    onGizmoSpace: (space) => objectEditSystem.setGizmoSpace(space),
     onAddTerrain: addTerrain,
     onAddShape: addShape,
     onDrawShape: openDrawBlockoutPicker,

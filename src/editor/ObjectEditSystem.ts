@@ -79,6 +79,8 @@ export class ObjectEditSystem extends System {
 
   private readonly controls: TransformControls;
   private _mode: 'translate' | 'rotate' | 'scale' = 'translate';
+  /** Eixos do gizmo: mundo (default, como sempre foi) ou do objeto. Tecla `X`. */
+  private _space: 'world' | 'local' = 'world';
   private readonly helper: THREE.Object3D;
   private readonly raycaster = new THREE.Raycaster();
   private readonly ndc = new THREE.Vector2();
@@ -279,6 +281,9 @@ export class ObjectEditSystem extends System {
     if (this.edge('1')) this.setGizmoMode('translate');
     if (this.edge('2')) this.setGizmoMode('rotate');
     if (this.edge('3')) this.setGizmoMode('scale');
+    // `X` alterna eixos globais ↔ locais (igual à Unity) — indispensável em cena
+    // com peças rotacionadas, onde os eixos do mundo não seguem o objeto.
+    if (this.edge('x')) this.setGizmoSpace(this._space === 'world' ? 'local' : 'world');
     if (this.edge('Escape')) {
       this.deselect();
     }
@@ -418,6 +423,30 @@ export class ObjectEditSystem extends System {
     this.apply2DConstraints(mode);
     const label = mode === 'translate' ? 'mover (setas)' : mode === 'rotate' ? 'rotacionar (anéis)' : 'escalar (cubos)';
     this.hud.showToast(`Modo: ${label}`);
+  }
+
+  /** Espaço atual do gizmo: eixos do MUNDO ou eixos DO OBJETO. */
+  get gizmoSpace(): 'world' | 'local' {
+    return this._space;
+  }
+
+  /**
+   * Alterna os eixos do gizmo entre **global** (eixos do mundo) e **local**
+   * (eixos do objeto, seguindo a rotação dele) — o mesmo par Global/Local da
+   * Unity, na tecla `X`.
+   *
+   * Existe porque cena com objetos ROTACIONADOS (ex.: plataformas giradas pra
+   * acompanhar um percurso diagonal) fica intransitável só com eixos de mundo:
+   * pra empurrar a peça "pra frente dela mesma" era preciso girar o objeto,
+   * mover e desgirar. Com objetos sem rotação os dois espaços coincidem — é por
+   * isso que a falta disso só aparece depois que a cena passa a usar `rotY`.
+   *
+   * `scale` é sempre local (limitação do `TransformControls`).
+   */
+  setGizmoSpace(space: 'world' | 'local'): void {
+    this._space = space;
+    this.controls.setSpace(space);
+    this.hud.showToast(`Eixos: ${space === 'world' ? 'globais (mundo)' : 'locais (do objeto)'}`);
   }
 
   select(target: THREE.Object3D | null, additive = false): void {
