@@ -1319,7 +1319,14 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_10_001.png"
+      "thumb": "thumbnails/obstacle_10_001.png",
+      "mechanic": {
+        "behavior": "hazard",
+        "script": "Perigo",
+        "params": {
+          "raio": 1.8
+        }
+      }
     },
     "assets/obstacle_11_001.glb": {
       "role": "prop",
@@ -1355,7 +1362,14 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_11_001.png"
+      "thumb": "thumbnails/obstacle_11_001.png",
+      "mechanic": {
+        "behavior": "crusher",
+        "script": "Prensa",
+        "params": {
+          "curso": 3
+        }
+      }
     },
     "assets/obstacle_12_001.glb": {
       "role": "hazard",
@@ -1389,7 +1403,15 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_12_001.png"
+      "thumb": "thumbnails/obstacle_12_001.png",
+      "mechanic": {
+        "behavior": "saw",
+        "script": "Serra",
+        "params": {
+          "giro": 9,
+          "raio": 1.6
+        }
+      }
     },
     "assets/obstacle_13_001.glb": {
       "role": "hazard",
@@ -1424,7 +1446,15 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_13_001.png"
+      "thumb": "thumbnails/obstacle_13_001.png",
+      "mechanic": {
+        "behavior": "saw",
+        "script": "Serra",
+        "params": {
+          "giro": 9,
+          "raio": 1.8
+        }
+      }
     },
     "assets/obstacle_14_001.glb": {
       "role": "connector",
@@ -1498,7 +1528,15 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_15_001.png"
+      "thumb": "thumbnails/obstacle_15_001.png",
+      "mechanic": {
+        "behavior": "conveyor",
+        "script": "Esteira",
+        "params": {
+          "direcao": 0,
+          "velocidade": 2.4
+        }
+      }
     },
     "assets/obstacle_16_001.glb": {
       "role": "platform",
@@ -1738,7 +1776,15 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_3_001.png"
+      "thumb": "thumbnails/obstacle_3_001.png",
+      "mechanic": {
+        "behavior": "hazard-spinner",
+        "script": "MarteloGiratorio",
+        "params": {
+          "giro": 2.2,
+          "alcance": 1.4
+        }
+      }
     },
     "assets/obstacle_4_001.glb": {
       "role": "prop",
@@ -1842,7 +1888,16 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_6_001.png"
+      "thumb": "thumbnails/obstacle_6_001.png",
+      "mechanic": {
+        "behavior": "hazard-spinner",
+        "script": "MarteloGiratorio",
+        "params": {
+          "giro": 2,
+          "alcance": 2.8,
+          "bracos": 4
+        }
+      }
     },
     "assets/obstacle_7_001.glb": {
       "role": "hazard",
@@ -1876,7 +1931,15 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_7_001.png"
+      "thumb": "thumbnails/obstacle_7_001.png",
+      "mechanic": {
+        "behavior": "hazard-spinner",
+        "script": "MarteloGiratorio",
+        "params": {
+          "giro": 1.8,
+          "alcance": 3.9
+        }
+      }
     },
     "assets/obstacle_8_001.glb": {
       "role": "platform",
@@ -1911,7 +1974,14 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_8_001.png"
+      "thumb": "thumbnails/obstacle_8_001.png",
+      "mechanic": {
+        "behavior": "rotating-platform",
+        "script": "PlataformaGiratoria",
+        "params": {
+          "giro": 0.6
+        }
+      }
     },
     "assets/obstacle_9_001.glb": {
       "role": "platform",
@@ -2973,7 +3043,14 @@
           ]
         }
       },
-      "thumb": "thumbnails/trampoline_1_001.png"
+      "thumb": "thumbnails/trampoline_1_001.png",
+      "mechanic": {
+        "behavior": "launcher",
+        "script": "Trampolim",
+        "params": {
+          "impulso": 16
+        }
+      }
     },
     "assets/trampoline_2_001.glb": {
       "role": "platform",
@@ -3009,7 +3086,14 @@
           ]
         }
       },
-      "thumb": "thumbnails/trampoline_2_001.png"
+      "thumb": "thumbnails/trampoline_2_001.png",
+      "mechanic": {
+        "behavior": "launcher",
+        "script": "Trampolim",
+        "params": {
+          "impulso": 16
+        }
+      }
     },
     "assets/tube_001.glb": {
       "role": "connector",
@@ -3122,5 +3206,15 @@
       },
       "thumb": "thumbnails/ufo_002.png"
     }
+  },
+  "scripts": {
+    "dir": "scripts",
+    "provides": [
+      "Esteira",
+      "Serra",
+      "Prensa",
+      "PlataformaGiratoria"
+    ],
+    "note": "Scripts de mecânica do kit (ADR-0085). Copie scripts/ pro projeto e registre; os asset.mechanic apontam qual usar."
   }
 }
