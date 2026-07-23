@@ -54,6 +54,10 @@ const BEHAVIORS = {
   conveyor:        { cat: 'mechanism',   script: 'Esteira',          roles: ['platform'],        tags: ['conveyor'] },
   'rotating-platform':{ cat: 'mechanism',script: 'PlataformaGiratoria',roles: ['platform'],      tags: ['rotating', 'disc'] },
   saw:             { cat: 'hazard',      script: 'Serra',            roles: ['hazard'],          tags: ['spikes', 'rotating'] },
+  // Pórtico que BALANÇA com um rolo cravejado girando na ponta (obstacle_12/13 do
+  // kit espacial). Não confundir com `saw`: o asset já vem em pai+filho e a peça
+  // varre um arco — quem gira solto no lugar é a serra.
+  'pendulum-roller':{ cat: 'hazard',     script: 'PenduloEspetos',   roles: ['hazard'],          tags: ['spikes', 'rotating', 'pendulum', 'gate'] },
   crusher:         { cat: 'hazard',      script: 'Prensa',           roles: ['prop', 'hazard'],  tags: ['barrier', 'bar'] },
   blocker:         { cat: 'mechanism',   script: null,               roles: ['prop', 'decoration'], tags: ['barrier', 'boundary', 'fence'] },
   ground:          { cat: 'terrain',     script: null,               roles: ['ground'] },

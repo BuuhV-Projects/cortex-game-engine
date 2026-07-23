@@ -75,9 +75,7 @@ export class CrusherScript extends ScriptBehavior {
   private cd = 0
 
   override onStart(): void {
-    this.object3d?.traverse((c) => {
-      ;(c as unknown as { raycast: () => void }).raycast = () => {}
-    })
+    this.disableRaycast()
   }
 
   override onUpdate(dt: number): void {

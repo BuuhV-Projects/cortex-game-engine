@@ -13,6 +13,18 @@ import { ScriptBehavior, CharacterBodyComponent, TransformComponent, Box3 } from
 
 const _box = new Box3()
 
+/**
+ * Gira o vetor `(rx, rz)` (posição do rider RELATIVA ao centro do disco) por
+ * `dAng`, na MESMA convenção da rotação em Y do three.js — que é o que o disco
+ * usa em `obj.rotation.y`. Pura de propósito: é a regra que faz o player girar
+ * JUNTO com a plataforma, e trocar o sinal aqui manda os dois pra lados opostos.
+ */
+export function rotateRider(rx: number, rz: number, dAng: number): [number, number] {
+  const c = Math.cos(dAng)
+  const s = Math.sin(dAng)
+  return [rx * c + rz * s, -rx * s + rz * c]
+}
+
 export class RotatingPlatformScript extends ScriptBehavior {
   /** Nome persistido nas cenas (as fases declaram por este nome). */
   static override scriptName = 'PlataformaGiratoria'
@@ -56,10 +68,9 @@ export class RotatingPlatformScript extends ScriptBehavior {
     const onTop = withinDisc && t.y > top - 0.3 && t.y < top + 1.0
     if (!onTop) return
 
-    // Rotação 2D de (rx,rz) por dAng em torno do centro (mesmo sentido do disco).
-    const c = Math.cos(dAng)
-    const s = Math.sin(dAng)
-    t.x = obj.position.x + rx * c - rz * s
-    t.z = obj.position.z + rx * s + rz * c
+    // Leva o player junto, no MESMO sentido do disco (ver `rotateRider`).
+    const [ox, oz] = rotateRider(rx, rz, dAng)
+    t.x = obj.position.x + ox
+    t.z = obj.position.z + oz
   }
 }

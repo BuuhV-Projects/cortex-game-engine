@@ -1405,12 +1405,17 @@
       },
       "thumb": "thumbnails/obstacle_12_001.png",
       "mechanic": {
-        "behavior": "saw",
-        "script": "Serra",
+        "behavior": "pendulum-roller",
+        "script": "PenduloEspetos",
         "params": {
-          "giro": 9,
+          "angulo": 45,
+          "balanco": 1.4,
+          "eixoBalanco": "x",
+          "giroRolo": 7,
+          "eixoRolo": "x",
           "raio": 1.6
-        }
+        },
+        "note": "Pórtico em U que BALANÇA (rotação X do nó raiz, cuja origem já é o eixo das juntas) com um rolo de espetos girando no próprio eixo X (nó filho obstacle_12_002, a −3.82u). Pendure em top+4.5 pro rolo passar rente ao caminho; a zona letal segue o ROLO, não o pivô."
       }
     },
     "assets/obstacle_13_001.glb": {
@@ -1448,12 +1453,15 @@
       },
       "thumb": "thumbnails/obstacle_13_001.png",
       "mechanic": {
-        "behavior": "saw",
-        "script": "Serra",
+        "behavior": "pendulum-roller",
+        "script": "PenduloEspetos",
         "params": {
-          "giro": 9,
-          "raio": 1.8
-        }
+          "angulo": 0,
+          "giroRolo": 5,
+          "eixoRolo": "y",
+          "raio": 1.4
+        },
+        "note": "Portal fixo com um rolo de espetos VERTICAL girando no vão (nó filho obstacle_13_002, eixo Y, centro a +3.32u). Por isso `angulo: 0` — aqui o pórtico não balança, é torniquete: passe rente à ombreira."
       }
     },
     "assets/obstacle_14_001.glb": {
@@ -3211,10 +3219,11 @@
     "dir": "scripts",
     "provides": [
       "Esteira",
-      "Serra",
+      "PenduloEspetos",
       "Prensa",
       "PlataformaGiratoria"
     ],
-    "note": "Scripts de mecânica do kit (ADR-0085). Copie scripts/ pro projeto e registre; os asset.mechanic apontam qual usar."
+    "note": "Scripts de mecânica do kit (ADR-0085). Copie scripts/ pro projeto e registre; os asset.mechanic apontam qual usar.",
+    "animationRule": "Escolha o TIPO de animação inspecionando o .glb antes (nós, filhos, skins, animations): transform de nó = peça rígida que gira/balança/vaivém (prensa, disco); hierarquia pai+filho = o asset já vem em partes com ritmos diferentes (obstacle_12/13: pórtico + rolo); UV scroll = superfície que corre sem a peça sair do lugar (esteira — material `Road` separado); ossos/skin = só deformação orgânica; nada = decoração pura. Peça com papel de gameplay visualmente parada está ERRADA."
   }
 }
