@@ -303,3 +303,12 @@ export {
 // HDRI: loader e o mapping usados pelo Skybox; expostos pra uso avançado direto.
 export { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 export { EquirectangularReflectionMapping } from 'three';
+
+// Espaços de cor — pra `texture.colorSpace`. Uma textura carregada pelo
+// `TextureLoader` nasce SEM espaço de cor definido, e o three então a trata como
+// já-linear: as cores médias sobem e a imagem sai LAVADA. Toda textura de cor
+// (skybox, albedo, sprite) precisa de `SRGBColorSpace`; mapas de dado (normal,
+// roughness, AO) devem ficar em `LinearSRGBColorSpace`. Sem estes exports o
+// projeto não tinha como corrigir isso (não importa `three` direto).
+export { SRGBColorSpace, LinearSRGBColorSpace, NoColorSpace } from 'three';
+export type { ColorSpace } from 'three';
