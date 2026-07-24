@@ -6,7 +6,7 @@
 
 # Class: PostFX
 
-Defined in: [src/core/PostFX.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L69)
+Defined in: [src/core/PostFX.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L70)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/core/PostFX.ts:69](https://github.com/BuuhV-Projects/cortex-gam
 
 > **new PostFX**(`renderer`, `scene`, `camera`, `options?`): `PostFX`
 
-Defined in: [src/core/PostFX.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L91)
+Defined in: [src/core/PostFX.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L97)
 
 #### Parameters
 
@@ -68,7 +68,7 @@ postfx.render();
 
 > **get** **bloom**(): `BloomNode` \| `null`
 
-Defined in: [src/core/PostFX.ts:154](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L154)
+Defined in: [src/core/PostFX.ts:203](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L203)
 
 Nó de bloom (ou `null` se desligado), pra ajuste em runtime:
 `postfx.bloom?.strength.value = 1.2`.
@@ -83,7 +83,7 @@ Nó de bloom (ou `null` se desligado), pra ajuste em runtime:
 
 > **dispose**(): `void`
 
-Defined in: [src/core/PostFX.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L159)
+Defined in: [src/core/PostFX.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L208)
 
 Libera os recursos GPU do pipeline.
 
@@ -97,7 +97,7 @@ Libera os recursos GPU do pipeline.
 
 > **render**(): `void`
 
-Defined in: [src/core/PostFX.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L145)
+Defined in: [src/core/PostFX.ts:184](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L184)
 
 Renderiza a cena com os efeitos. Chame uma vez por frame no lugar de
 `renderer.render(...)`. No-op enquanto o backend WebGPU ainda inicializa
