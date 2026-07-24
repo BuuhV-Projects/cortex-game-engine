@@ -178,6 +178,14 @@ Native (que roda milhares de libs sobre Hermes em produção):
   reduzem o custo POR-FRAME de CPU do renderer, não a GPU): menos objetos
   (merge/instancing da geometria da fase), materiais mais simples, e desligar/
   reduzir o PostFX no native (~4ms/~6fps). Sombras quase não pesaram aqui (~1ms).
+- **O caro do PostFX é o BLOOM, e o custo é de PASSADA (encoding), não de pixel.**
+  Medido no teste4 (space-1, 2 cascatas): com bloom 57-58fps, sem PostFX **75fps**
+  — ~17fps. O bloom do three (`BloomNode`) faz uma pirâmide de **5 mips × 2 blurs
+  ≈ 12 passadas**. Duas provas de que não é fill: `CORTEX_RENDER_SCALE=1.0` (contra
+  o padrão 2.0, ou seja ¼ dos pixels) deu **o mesmo FPS**, e o **FXAA é de graça**
+  (uma passada só). Então, num host CPU-bound em encoding, ligar bloom custa caro
+  em qualquer resolução — e desligar SSAA não compra nada de volta. Alavanca real
+  seria reduzir os mips do bloom (hoje fixo em `_nMips = 5` dentro do three).
 - **CSM: cada cascata é uma PASSADA de render a mais** — no host, que é CPU-bound
   no render, o custo é por passada, não por texel. Medido no teste4 (space-1, na
   largada): sem CSM 15,2ms · 2 cascatas 18,3ms · 4 cascatas 25,5ms — ≈**2,5ms por
