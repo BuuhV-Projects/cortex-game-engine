@@ -190,9 +190,21 @@ export class BottomPanel {
       void window.electronAPI.infoDialog(t('bottomPanel.export_no_project'))
       return
     }
+    // Por PADRÃO o dev escolhe ONDE salvar o export (SPEC-0150). Só pula o seletor
+    // quando já veio um `outDir` — o retry automático no lock (abaixo). Cancelar o
+    // seletor cancela o export.
+    if (outDir === undefined) {
+      const parent = await window.electronAPI.selectDirectory()
+      if (!parent) return // cancelou o seletor → não exporta
+      // ⚠️ O export ESVAZIA a pasta de saída (prepareDist) — então NUNCA usar a
+      // pasta escolhida direto (apagaria o que houver nela). O jogo vai num subdir
+      // dedicado `<escolhida>/<nome do projeto>`, seguro pra reexportar por cima.
+      const projName = this.projectDir.split(/[/\\]/).filter(Boolean).pop() ?? 'export'
+      outDir = `${parent}/${projName}`
+    }
     // Sem guard de Play: o export roda um processo Node à parte que só LÊ o
-    // código-fonte do projeto e escreve dist-native/ — não usa o dev server do
-    // Play (ao contrário do instalador Tauri, que rebuilda o mesmo projeto).
+    // código-fonte do projeto e escreve na pasta de saída — não usa o dev server
+    // do Play (ao contrário do instalador Tauri, que rebuilda o mesmo projeto).
     const alvo = (mode === 'steam' ? 'PC (Steam)' : mode === 'xbox' ? 'Xbox' : 'PC') + (debug ? ' · com métricas' : '')
     this.activateTab('terminal')
     this.appendTerminal(`Exportando (${alvo}) — bundle + bytecode + runtime…\n`, 'system')
@@ -215,14 +227,16 @@ export class BottomPanel {
       modal.finish(result.ok, result.distDir, locked ? t('bottomPanel.export_locked') : undefined)
       // Pasta travada: em vez de só reclamar, oferece EXPORTAR PRA OUTRA PASTA —
       // o dev escolhe um destino livre e o export refaz na hora (sem fechar o que
-      // segura o handle). Só quando NÃO foi um `outDir` já escolhido (evita loop).
-      if (locked && !outDir) {
+      // segura o handle). Sem loop infinito: cada tentativa espera a interação do
+      // dev (confirmar + escolher); cancelar em qualquer ponto encerra.
+      if (locked) {
         const pick = await window.electronAPI.confirmDialog(t('bottomPanel.export_pick_other_dir'))
         if (pick) {
-          const dir = await window.electronAPI.selectDirectory()
-          if (dir) {
+          const parent = await window.electronAPI.selectDirectory()
+          if (parent) {
+            const projName = this.projectDir.split(/[/\\]/).filter(Boolean).pop() ?? 'export'
             unsubscribe()
-            await this.exportNative(mode, debug, dir)
+            await this.exportNative(mode, debug, `${parent}/${projName}`)
             return
           }
         }
