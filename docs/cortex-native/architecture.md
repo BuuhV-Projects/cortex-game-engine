@@ -198,9 +198,21 @@ Native (que roda milhares de libs sobre Hermes em produção):
   cascata** (39 fps contra 54). Baixar o shadow map de 4096 pra 2048 **não mudou
   nada**, o que confirma o diagnóstico. Como cada cascata redesenha os casters,
   `shadowCascades` é uma das alavancas mais fortes de FPS numa cena com sol.
-  ⚠️ **Não caia pra 1 cascata**: fica o dobro mais rápido (75 fps) porque a
-  cascata única esticada em `shadowDistance` fica grosseira e **as sombras somem
-  da tela** — o ganho é a sombra não existir. 2 é o equilíbrio.
+  ⚠️ **Correção de um engano que ficou documentado aqui:** antes se lia que 1
+  cascata "apaga as sombras". Era o **far plane curto** (armadilha abaixo), não a
+  cascata. Com o far correto: **1 cascata 70 fps · 2 cascatas 58 fps, com a MESMA
+  sombra na tela**. Toda medição de sombra anterior àquele fix está contaminada —
+  o far curto descartava casters, dando FPS alto com sombra errada. Ao mexer em
+  sombra, confirme por SCREENSHOT, nunca só pelo FPS.
+- **CSM: o `far` da sombra tem de cobrir `lightMargin + shadowDistance`.** As
+  cascatas clonam `light.shadow`, e o three planta a luz de cada uma recuada de
+  `lightMargin`. Com o `far` do caminho sem CSM (`shadowArea*4` = 240) contra a
+  margem padrão (200), sobravam ~40u úteis: a sombra saía **cortada por uma
+  reta**, e o corte **aparecia e sumia conforme a câmera se movia** (a caixa da
+  cascata desliza no espaço da luz e cruza o limite) — reproduzido no Studio
+  movendo só a câmera do editor. Corrigido no `OutdoorLighting`, travado por
+  `tests/scene/OutdoorLighting.test.ts`. ⚠️ Corrigir CUSTA fps: os casters que o
+  far descartava voltam a desenhar.
 - **`wgpuInstanceWaitAny` → panic "not implemented"** (wgpu-native v29).
   Aquisição assíncrona SEMPRE com `AllowProcessEvents` + loop de
   `wgpuInstanceProcessEvents` (ver `acquireAdapter`/`acquireDevice`).
