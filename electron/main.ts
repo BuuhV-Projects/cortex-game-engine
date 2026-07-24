@@ -980,11 +980,15 @@ ipcMain.handle('export:native', async (_event, projectDir: unknown, mode: unknow
     }
     child.stdout?.on('data', (d: Buffer) => { const s = d.toString(); output += s; emitSteps(s) })
     child.stderr?.on('data', (d: Buffer) => { output += d.toString() })
+    // Destino REAL do export: a pasta escolhida (`--out`) ou o `dist-native`
+    // default. Sem isto o "abrir pasta" do modal ia sempre pro dist-native,
+    // mesmo com outra pasta escolhida (bug relatado).
+    const distDir = typeof outDir === 'string' && outDir ? validatePath(outDir) : join(safeDir, 'dist-native')
     child.on('close', (code) => {
       resolvePromise({
         ok: code === 0,
         output,
-        distDir: code === 0 ? join(safeDir, 'dist-native') : undefined,
+        distDir: code === 0 ? distDir : undefined,
       })
     })
     child.on('error', (err) => resolvePromise({ ok: false, output: String(err) }))

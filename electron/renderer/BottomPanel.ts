@@ -185,6 +185,21 @@ export class BottomPanel {
    * Export CortexNative (ADR-0101): valida guardas, roda o script no main
    * (ELECTRON_RUN_AS_NODE) e imprime a saída no terminal do painel.
    */
+  /**
+   * Nome da subpasta do export: `builded-<id do jogo>` (o `id` do cortex.json,
+   * ADR-0126 — estável, não o nome da pasta). Cai pro slug se o config falhar.
+   */
+  private async buildedSubdir(): Promise<string> {
+    let id = this.projectDir?.split(/[/\\]/).filter(Boolean).pop() ?? 'jogo'
+    try {
+      const cfg = await window.electronAPI.readProjectConfig(this.projectDir ?? '')
+      if (cfg?.id) id = cfg.id
+    } catch {
+      /* sem cortex.json — usa o slug */
+    }
+    return `builded-${id}`
+  }
+
   private async exportNative(mode = 'pc', debug = false, outDir?: string): Promise<void> {
     if (!this.projectDir) {
       void window.electronAPI.infoDialog(t('bottomPanel.export_no_project'))
@@ -196,11 +211,7 @@ export class BottomPanel {
     if (outDir === undefined) {
       const parent = await window.electronAPI.selectDirectory()
       if (!parent) return // cancelou o seletor → não exporta
-      // ⚠️ O export ESVAZIA a pasta de saída (prepareDist) — então NUNCA usar a
-      // pasta escolhida direto (apagaria o que houver nela). O jogo vai num subdir
-      // dedicado `<escolhida>/<nome do projeto>`, seguro pra reexportar por cima.
-      const projName = this.projectDir.split(/[/\\]/).filter(Boolean).pop() ?? 'export'
-      outDir = `${parent}/${projName}`
+      outDir = `${parent}/${await this.buildedSubdir()}`
     }
     // Sem guard de Play: o export roda um processo Node à parte que só LÊ o
     // código-fonte do projeto e escreve na pasta de saída — não usa o dev server
@@ -234,9 +245,8 @@ export class BottomPanel {
         if (pick) {
           const parent = await window.electronAPI.selectDirectory()
           if (parent) {
-            const projName = this.projectDir.split(/[/\\]/).filter(Boolean).pop() ?? 'export'
             unsubscribe()
-            await this.exportNative(mode, debug, `${parent}/${projName}`)
+            await this.exportNative(mode, debug, `${parent}/${await this.buildedSubdir()}`)
             return
           }
         }
