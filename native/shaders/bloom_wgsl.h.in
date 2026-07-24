@@ -1,0 +1,13 @@
+// ⚠️ GERADO pelo CMake a partir de `native/shaders/bloom.wgsl` — NÃO EDITE.
+// Edite o `.wgsl`, que é a fonte única da aparência do bloom (ADR-0147); o
+// `configure_file` do CMakeLists regenera este header (e reconfigura sozinho,
+// via CMAKE_CONFIGURE_DEPENDS).
+#pragma once
+
+namespace webgpu {
+
+inline const char* kBloomWGSL = R"CORTEXBLOOMWGSL(
+@CORTEX_BLOOM_WGSL@
+)CORTEXBLOOMWGSL";
+
+}  // namespace webgpu

@@ -178,6 +178,12 @@ Native (que roda milhares de libs sobre Hermes em produção):
   reduzem o custo POR-FRAME de CPU do renderer, não a GPU): menos objetos
   (merge/instancing da geometria da fase), materiais mais simples, e desligar/
   reduzir o PostFX no native (~4ms/~6fps). Sombras quase não pesaram aqui (~1ms).
+- **PostFX pesado saiu pro C++ (ADR-0147/SPEC-0148).** O bloom e a vinheta rodam
+  no host (`webgpu/bloom.cpp` + o composite do `supersample.cpp`), com o WGSL em
+  `native/shaders/bloom.wgsl` como fonte única. space-1 foi de 58 → **75 fps** com
+  o bloom ligado. ⚠️ O bloom nativo é **LDR**: o formato do offscreen é do three
+  (ele monta os pipelines com o formato da canvas), e trocá-lo pra `RGBA16Float`
+  faz o wgpu PANICAR com "pipeline targets are incompatible with render pass".
 - **O caro do PostFX é o BLOOM, e o custo é de PASSADA (encoding), não de pixel.**
   Medido no teste4 (space-1, 2 cascatas): com bloom 57-58fps, sem PostFX **75fps**
   — ~17fps. O bloom do three (`BloomNode`) faz uma pirâmide de **5 mips × 2 blurs

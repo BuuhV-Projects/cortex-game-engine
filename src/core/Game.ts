@@ -1,6 +1,7 @@
 import { PerspectiveCamera, OrthographicCamera } from 'three';
 import { Renderer } from './Renderer.js';
 import { Scene } from './Scene.js';
+import { resetNativePostFX } from './nativePostFX.js';
 import { InputManager } from './InputManager.js';
 import { GamepadManager } from './GamepadManager.js';
 import { GameLoop } from './GameLoop.js';
@@ -290,6 +291,10 @@ export class Game {
    * game.setPostFX(fx)
    */
   setPostFX(postfx: { render(): void } | null): void {
+    // No host nativo o pós-FX vive em C++ (ADR-0147) e sobreviveria à troca de
+    // fase: `null` precisa desligá-lo explicitamente, senão a fase seguinte
+    // herda bloom/HDR que ela não pediu.
+    if (!postfx) resetNativePostFX();
     this._postfx = postfx;
   }
 

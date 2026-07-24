@@ -9,6 +9,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(TP ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
+# WGSL do bloom (ADR-0147): o `.wgsl` é a FONTE ÚNICA da aparência, lida também
+# pelo backend de browser do engine. Aqui ela vira um header com o texto embutido,
+# pra o host não depender de arquivo em disco em runtime. `CMAKE_CONFIGURE_DEPENDS`
+# faz o CMake reconfigurar sozinho quando o shader muda.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/shaders/bloom.wgsl" CORTEX_BLOOM_WGSL)
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/shaders/bloom_wgsl.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/bloom_wgsl.h"
+  @ONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/shaders/bloom.wgsl")
+
 add_executable(cortex_host
   src/main.cpp
   src/core/app_window.cpp
@@ -42,6 +54,7 @@ add_executable(cortex_host
   src/webgpu/napi_stats.cpp
   src/webgpu/navigator.cpp
   src/webgpu/pipeline.cpp
+  src/webgpu/bloom.cpp
   src/webgpu/supersample.cpp
   src/webgpu/splash.cpp
   src/webgpu/surface.cpp
@@ -123,6 +136,7 @@ add_custom_target(boot_hbc ALL DEPENDS ${CMAKE_BINARY_DIR}/boot.hbc)
 add_dependencies(cortex_host boot_hbc)
 
 target_include_directories(cortex_host PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}/generated  # bloom_wgsl.h (gerado do .wgsl)
   ${TP}/SDL3/include
   ${TP}/miniaudio
   ${TP}/stb

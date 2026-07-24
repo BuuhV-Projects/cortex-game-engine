@@ -137,6 +137,14 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   (+ heightfield injetado), `TerrainAuthoring` (pincel com **modo**: esculpir altura
   ou **texturizar/pintar** — escolhe/importa textura, SPEC-0063), `AnimationAuthoring`,
   `MeshAuthoring` (forma de blockout: params da receita + override de geometria; §11).
+- **PostFX com dois backends** (`src/core/PostFX.ts`, ADR-0147) — a API é a MESMA
+  nos dois ambientes (`new PostFX(renderer, scene, camera, {bloom, vignette, …})`),
+  mas o **contrato é o do host nativo**: se `__cortexBloom` existe (ponte em
+  `src/core/nativePostFX.ts`, que NÃO importa three de propósito), o pós-FX é
+  delegado ao C++; senão monta a cadeia TSL. A matemática do bloom mora num WGSL
+  único (`native/shaders/bloom.wgsl`). ⚠️ No caminho nativo, renderize pelo
+  `Renderer` do engine — o `threeRenderer` cru pula o `clear()` e a cena sai pela
+  metade.
 - **Gizmo de transform** (`ObjectEditSystem`) — `1`/`2`/`3` trocam mover/girar/escalar
   e **`X` alterna os eixos entre locais (do objeto, DEFAULT) e globais (mundo)**, como
   o Global/Local da Unity (SPEC-0144). O default é local porque cena com peças

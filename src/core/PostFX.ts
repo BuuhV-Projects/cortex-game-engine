@@ -26,6 +26,7 @@ import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 import type { Renderer } from './Renderer.js';
 import type { Scene } from './Scene.js';
+import { nativePostFXHost, type NativePostFXConfig } from './nativePostFX.js';
 
 /** Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`. */
 export interface BloomConfig {
@@ -68,8 +69,13 @@ type BloomPass = ReturnType<typeof bloom>;
 
 export class PostFX {
   private readonly _renderer: Renderer;
-  private readonly _pipeline: RenderPipeline;
+  /** `null` no host nativo: lá o pós-FX roda em C++, não há grafo TSL. */
+  private readonly _pipeline: RenderPipeline | null;
   private readonly _bloom: BloomPass | null;
+  /** Delegado ao host (C++)? Guardado pra `render`/`dispose` saberem o caminho. */
+  private readonly _native: ((c: NativePostFXConfig | null) => void) | null;
+  private readonly _scene: THREE.Scene;
+  private readonly _camera: THREE.Camera;
 
   /**
    * @param renderer Renderer do engine (usa o `WebGPURenderer` interno).
@@ -90,6 +96,39 @@ export class PostFX {
    */
   constructor(renderer: Renderer, scene: Scene, camera: THREE.Camera, options: PostFXOptions = {}) {
     this._renderer = renderer;
+    this._scene = scene.getThreeScene();
+    this._camera = camera;
+    this._native = nativePostFXHost();
+
+    // ── Caminho do HOST NATIVO (ADR-0147) ────────────────────────────────────
+    // Lá o bloom e a vinheta rodam em C++, sobre o mesmo offscreen do SSAA. Não
+    // é otimização prematura: no host o custo do bloom NÃO era de pixel (render
+    // scale 1.0, com ¼ dos pixels, dava o mesmo FPS) e sim da travessia JS→NAPI
+    // das ~12 passadas da pirâmide — ~4 ms/frame só de marshalling.
+    if (this._native) {
+      const cfg = options.bloom === true ? {} : (options.bloom || {});
+      const vig = options.vignette === true ? {} : (options.vignette || null);
+      this._native({
+        strength: cfg.strength ?? 0.8,
+        threshold: cfg.threshold ?? 0,
+        radius: cfg.radius ?? 0,
+        exposure: options.exposure ?? renderer.threeRenderer.toneMappingExposure,
+        vignette: vig !== null,
+        vignetteIntensity: vig?.intensity ?? 1,
+        vignetteInner: vig?.inner ?? 0.4,
+        vignetteOuter: vig?.outer ?? 0.75,
+      });
+      // ⚠️ O tone mapping FICA no JS. O host trabalha sobre a imagem já
+      // tonemapeada porque o formato da canvas é do three (ele monta os
+      // pipelines com ele); entregar HDR exigiria mover a configuração da canvas
+      // pro host — ver a armadilha registrada no ADR-0147.
+      if (options.toneMapping !== undefined) renderer.threeRenderer.toneMapping = options.toneMapping;
+      if (options.exposure !== undefined) renderer.threeRenderer.toneMappingExposure = options.exposure;
+      this._pipeline = null;
+      this._bloom = null;
+      return;
+    }
+
     this._pipeline = new RenderPipeline(renderer.threeRenderer);
     // Aplicamos o tone mapping/colorspace manualmente via renderOutput() pra
     // controlar a ordem (vinheta/fxaa rodam DEPOIS, em LDR).
@@ -144,6 +183,16 @@ export class PostFX {
    */
   render(): void {
     if (!this._renderer.isReady) return;
+    // No host, o pós-FX é do C++: aqui só se desenha a cena (em HDR linear) no
+    // offscreen, e o composite nativo faz o resto no present.
+    if (!this._pipeline) {
+      // ⚠️ Pelo `Renderer` do engine, NÃO pelo `threeRenderer` cru: é ele que dá
+      // o `clear()` do frame. Sem isso o depth buffer do frame anterior fica de
+      // pé e rejeita a geometria nova — a cena renderiza pela METADE, com peças
+      // sumindo (foi o que aconteceu na 1ª versão deste caminho).
+      this._renderer.render(this._scene, this._camera);
+      return;
+    }
     this._pipeline.render();
   }
 
@@ -157,6 +206,12 @@ export class PostFX {
 
   /** Libera os recursos GPU do pipeline. */
   dispose(): void {
-    this._pipeline.dispose();
+    if (this._native) {
+      // Desliga o bloom do host: sem isto a próxima fase herdaria o brilho.
+      // O tone mapping não precisa de reset — ele nunca saiu do JS.
+      this._native(null);
+      return;
+    }
+    this._pipeline?.dispose();
   }
 }

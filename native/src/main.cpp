@@ -32,6 +32,7 @@
 #include "shims/user_storage.h"
 #include "webgpu/bindings.h"
 #include "webgpu/napi_stats.h"
+#include "webgpu/bloom.h"
 #include "webgpu/splash.h"
 
 namespace {
@@ -169,6 +170,7 @@ int main(int argc, char** argv) {
     shims::registerTextRaster(js.env(), baseDir, basePath ? basePath : "");
     webgpu::registerBindings(js.env(), &gpu);
     webgpu::registerSplash(js.env());  // __cortexSplashActive() (ADR-0138)
+    webgpu::registerBloom(js.env());   // __cortexBloom() — pós-FX nativo (ADR-0147)
 
     // SSAA (supersampling): o engine renderiza numa canvas MAIOR (nativo ×
     // renderScale) num alvo offscreen; o host faz downscale bilinear no

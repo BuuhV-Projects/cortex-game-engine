@@ -69,4 +69,28 @@ struct HostGpu {
   // canvas). Resetado após o present — sem isso, o present rodaria todo frame do
   // host e o vsync serializaria trabalho async pesado (ver ssaaPending).
   bool uiPending = false;
+
+  // ── Bloom + tone mapping NATIVOS (ADR-0147) ───────────────────────────────
+  // Quando o jogo liga o bloom (`__cortexBloom`), o pós-processamento sai do JS
+  // e roda aqui: as ~12 passadas da pirâmide custavam caro NÃO por pixel (render
+  // scale 1.0 dava o mesmo FPS) e sim pela travessia JS→NAPI de cada passada.
+  //
+  // Ligado, o contrato do frame MUDA: o JS renderiza a cena em HDR LINEAR
+  // (offscreen vira RGBA16Float, `toneMapping = NoToneMapping`) e o host faz
+  // bloom → vinheta → ACES+exposição → gama → composição da UI, tudo no blit que
+  // já existia. Desligado (padrão), NADA muda — o caminho antigo continua
+  // idêntico, então os outros mundos/jogos não correm risco de regressão de cor.
+  struct Bloom {
+    bool enabled = false;
+    float strength = 0.85f;
+    float threshold = 0.45f;
+    float radius = 0.6f;
+    // Vinheta e tone mapping viajam junto porque passam a ser aplicados no
+    // MESMO passe de composição (custo zero: é matemática num passe que já roda).
+    float exposure = 1.0f;
+    bool vignette = false;
+    float vignetteIntensity = 0.55f;
+    float vignetteInner = 0.32f;
+    float vignetteOuter = 0.75f;
+  } bloom;
 };
