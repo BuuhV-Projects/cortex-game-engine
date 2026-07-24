@@ -353,6 +353,7 @@
 - [scatter](functions/scatter.md)
 - [serializeIni](functions/serializeIni.md)
 - [setDebug](functions/setDebug.md)
+- [setFog](functions/setFog.md)
 - [setMatte](functions/setMatte.md)
 - [setShadows](functions/setShadows.md)
 - [setupFirstPerson](functions/setupFirstPerson.md)
