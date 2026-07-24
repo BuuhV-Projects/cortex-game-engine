@@ -178,6 +178,15 @@ Native (que roda milhares de libs sobre Hermes em produção):
   reduzem o custo POR-FRAME de CPU do renderer, não a GPU): menos objetos
   (merge/instancing da geometria da fase), materiais mais simples, e desligar/
   reduzir o PostFX no native (~4ms/~6fps). Sombras quase não pesaram aqui (~1ms).
+- **CSM: cada cascata é uma PASSADA de render a mais** — no host, que é CPU-bound
+  no render, o custo é por passada, não por texel. Medido no teste4 (space-1, na
+  largada): sem CSM 15,2ms · 2 cascatas 18,3ms · 4 cascatas 25,5ms — ≈**2,5ms por
+  cascata** (39 fps contra 54). Baixar o shadow map de 4096 pra 2048 **não mudou
+  nada**, o que confirma o diagnóstico. Como cada cascata redesenha os casters,
+  `shadowCascades` é uma das alavancas mais fortes de FPS numa cena com sol.
+  ⚠️ **Não caia pra 1 cascata**: fica o dobro mais rápido (75 fps) porque a
+  cascata única esticada em `shadowDistance` fica grosseira e **as sombras somem
+  da tela** — o ganho é a sombra não existir. 2 é o equilíbrio.
 - **`wgpuInstanceWaitAny` → panic "not implemented"** (wgpu-native v29).
   Aquisição assíncrona SEMPRE com `AllowProcessEvents` + loop de
   `wgpuInstanceProcessEvents` (ver `acquireAdapter`/`acquireDevice`).
