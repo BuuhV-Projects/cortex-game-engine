@@ -183,7 +183,13 @@ Native (que roda milhares de libs sobre Hermes em produção):
   `native/shaders/bloom.wgsl` como fonte única. space-1 foi de 58 → **75 fps** com
   o bloom ligado. ⚠️ O bloom nativo é **LDR**: o formato do offscreen é do three
   (ele monta os pipelines com o formato da canvas), e trocá-lo pra `RGBA16Float`
-  faz o wgpu PANICAR com "pipeline targets are incompatible with render pass".
+  fazia o wgpu PANICAR com "pipeline targets are incompatible with render pass".
+  **Resolvido (ADR-0149):** o JS renderiza a cena numa RenderTarget HDR própria
+  (`renderSceneHDR`) e entrega a textura ao host por `__cortexSceneHdr` — mesmo
+  mecanismo da UI (ADR-0105). O host faz bloom + ACES em HDR, e o export passa a
+  brilhar IGUAL ao Studio. A RT tem formato próprio (HalfFloat), independente da
+  canvas, então não há conflito de formato. Sem bloom, o caminho LDR do offscreen
+  segue igual.
 - **O caro do PostFX é o BLOOM, e o custo é de PASSADA (encoding), não de pixel.**
   Medido no teste4 (space-1, 2 cascatas): com bloom 57-58fps, sem PostFX **75fps**
   — ~17fps. O bloom do three (`BloomNode`) faz uma pirâmide de **5 mips × 2 blurs

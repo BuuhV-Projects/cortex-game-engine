@@ -56,14 +56,15 @@ Unity URP): uma passada por nível em vez de duas, halo mais macio.
 
 - **space-1 no export: 58 → 75 fps com o bloom ligado** — o mesmo FPS de não ter
   bloom, e igual ao Mundo 1. O custo praticamente desapareceu.
-- **O bloom nativo é LDR** (opera sobre a imagem já tonemapeada pelo JS), enquanto
-  o do browser é HDR (antes do ACES). ⚠️ **Armadilha que causou isso:** o formato
-  do offscreen é **do three**, não do host — ele monta os render pipelines com o
-  formato que configurou na canvas. Trocar o offscreen pra `RGBA16Float` dá
-  `pipeline targets are incompatible with render pass` e o wgpu **panica**. Fazer
-  bloom em HDR no host exige mover a configuração da canvas junto (o JS renderar
-  numa RT própria e entregar a textura, como a UI faz na ADR-0105) — fica como
-  evolução, não como pré-requisito.
+- **O bloom nativo nasceu LDR** (operava sobre a imagem já tonemapeada pelo JS),
+  enquanto o do browser é HDR (antes do ACES) — o que deixava o brilho do export
+  **mais fraco** que o do Studio. ⚠️ **Armadilha:** o formato do offscreen é **do
+  three**, não do host — ele monta os pipelines com o formato da canvas, e trocar
+  o offscreen pra `RGBA16Float` dá `pipeline targets are incompatible with render
+  pass` (o wgpu panica). **Resolvido no ADR-0149**, pela rota que este ADR já
+  antecipava: o JS renderiza a cena numa RenderTarget HDR própria e entrega a
+  textura ao host (como a UI faz na ADR-0105), que faz bloom + ACES em HDR. Agora
+  o export bate com o Studio.
 - **Duas implementações de orquestração** pra manter (C++ e TSL). Mitigado pela
   fonte única do shader; ainda assim, mexer no visual exige conferir os dois.
 - O tone mapping **continua no JS**, então nenhuma cor mudou nos mundos que não

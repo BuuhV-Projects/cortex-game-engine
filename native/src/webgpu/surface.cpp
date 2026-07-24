@@ -132,16 +132,22 @@ void presentIfAcquired(HostGpu* gpu) {
   // na RT da UI e NUNCA na canvas, então `context.configure` do JS pode não ter
   // rodado. `acquireSurfaceTexture` auto-configura a surface na 1ª aquisição.
   if (gpu->uiCompositor && gpu->device) {
-    const bool gameRendered = gpu->ssaaPending;
+    // Bloom HDR (ADR-0149): o jogo entrega a cena por `sceneHdrPending` (RT
+    // própria), não pelo offscreen (ssaaPending). Qualquer um dispara o present.
+    const bool gameRendered = gpu->ssaaPending || gpu->sceneHdrPending;
     if (!gameRendered && !gpu->uiPending) return;  // nada novo
-    WGPUTextureView off = ensureOffscreen(gpu);    // garante a base da composição
-    if (!off) {
-      gpu->ssaaPending = false;
-      gpu->uiPending = false;
-      return;
+    // O offscreen só é a base quando NÃO há cena HDR (a HDR já é a fonte do blit).
+    if (!gpu->sceneHdrPending) {
+      WGPUTextureView off = ensureOffscreen(gpu);
+      if (!off) {
+        gpu->ssaaPending = false;
+        gpu->uiPending = false;
+        return;
+      }
+      if (!gameRendered) clearOffscreen(gpu);  // menu: base limpa (jogo não desenhou)
     }
-    if (!gameRendered) clearOffscreen(gpu);  // menu: base limpa (jogo não desenhou)
     gpu->ssaaPending = false;
+    gpu->sceneHdrPending = false;
     gpu->uiPending = false;
     // Transição do render DIRETO (renderScale=1 antes do compositor de UI
     // nascer): o JS pode ter adquirido a swapchain neste mesmo frame

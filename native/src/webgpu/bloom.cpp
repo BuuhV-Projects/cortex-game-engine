@@ -178,23 +178,34 @@ Pass makePass(HostGpu* gpu, WGPUTextureView srcView, int source, int target,
   return pass;
 }
 
-}  // namespace
+// Fonte da pirâmide neste frame (a cena HDR), pra o uniform da passada 0.
+int g_srcW = 0;
+int g_srcH = 0;
 
-bool ensureBloom(HostGpu* gpu) {
-  if (!gpu->bloom.enabled || !gpu->device || !gpu->offscreenView) return false;
-  if (gpu->offscreenWidth <= 0 || gpu->offscreenHeight <= 0) return false;
-  if (!g_levels.empty() && g_builtWidth == gpu->offscreenWidth &&
-      g_builtHeight == gpu->offscreenHeight) {
+/** (re)cria a pirâmide + as passadas pra uma fonte `srcW`×`srcH`. */
+bool ensureBloom(HostGpu* gpu, WGPUTextureView srcView, int srcW, int srcH) {
+  if (!gpu->device || !srcView || srcW <= 0 || srcH <= 0) return false;
+  g_srcW = srcW;
+  g_srcH = srcH;
+  if (!g_levels.empty() && g_builtWidth == srcW && g_builtHeight == srcH) {
+    // Mesma dimensão, mas a textura-fonte pode mudar de frame a frame (RT do
+    // three): o bind group da passada 0 aponta pra fonte → reconstrói só ele.
+    if (!g_passes.empty()) {
+      Pass& first = g_passes[0];
+      if (first.bindGroup) wgpuBindGroupRelease(first.bindGroup);
+      if (first.uniform) wgpuBufferRelease(first.uniform);
+      first = makePass(gpu, srcView, -1, 0, false);
+    }
     return true;
   }
 
   ensureStatics(gpu);
   releaseLevelsAndPasses();
 
-  // Pirâmide a partir da METADE do offscreen (o bloom é de baixa frequência —
+  // Pirâmide a partir da METADE da fonte (o bloom é de baixa frequência —
   // resolução cheia só gastaria banda sem mudar o halo).
-  uint32_t w = static_cast<uint32_t>(gpu->offscreenWidth) / 2;
-  uint32_t h = static_cast<uint32_t>(gpu->offscreenHeight) / 2;
+  uint32_t w = static_cast<uint32_t>(srcW) / 2;
+  uint32_t h = static_cast<uint32_t>(srcH) / 2;
   for (int i = 0; i < kMaxLevels; i++) {
     if (w < kMinLevelSize || h < kMinLevelSize) break;
     Level level;
@@ -215,8 +226,8 @@ bool ensureBloom(HostGpu* gpu) {
   if (g_levels.empty()) return false;
 
   const int n = static_cast<int>(g_levels.size());
-  // 1) bright pass: offscreen do jogo → nível 0.
-  g_passes.push_back(makePass(gpu, gpu->offscreenView, -1, 0, false));
+  // 1) bright pass: cena HDR → nível 0.
+  g_passes.push_back(makePass(gpu, srcView, -1, 0, false));
   // 2) descida: nível i → i+1.
   for (int i = 0; i + 1 < n; i++) {
     g_passes.push_back(makePass(gpu, g_levels[i].view, i, i + 1, false));
@@ -226,26 +237,28 @@ bool ensureBloom(HostGpu* gpu) {
     g_passes.push_back(makePass(gpu, g_levels[i].view, i, i - 1, true));
   }
 
-  g_builtWidth = gpu->offscreenWidth;
-  g_builtHeight = gpu->offscreenHeight;
+  g_builtWidth = srcW;
+  g_builtHeight = srcH;
   return true;
 }
 
-void renderBloom(HostGpu* gpu) {
-  if (!ensureBloom(gpu)) return;
+}  // namespace
+
+void renderBloom(HostGpu* gpu, WGPUTextureView srcView, int srcW, int srcH) {
+  if (!ensureBloom(gpu, srcView, srcW, srcH)) return;
 
   // Uniforms: o texel é o da TEXTURA DE ORIGEM (o raio dos taps acompanha o
   // nível). Reescritos por frame — 16 B por passada é ruído perto de uma
   // travessia NAPI, e assim mexer em threshold/raio no Inspector vale na hora.
   for (const auto& pass : g_passes) {
-    const bool fromOffscreen = pass.source < 0;
-    const float srcW = fromOffscreen ? static_cast<float>(gpu->offscreenWidth)
-                                     : static_cast<float>(g_levels[pass.source].width);
-    const float srcH = fromOffscreen ? static_cast<float>(gpu->offscreenHeight)
-                                     : static_cast<float>(g_levels[pass.source].height);
+    const bool fromSource = pass.source < 0;
+    const float srcWf = fromSource ? static_cast<float>(g_srcW)
+                                   : static_cast<float>(g_levels[pass.source].width);
+    const float srcHf = fromSource ? static_cast<float>(g_srcH)
+                                   : static_cast<float>(g_levels[pass.source].height);
     Params p{};
-    p.texelX = 1.0f / srcW;
-    p.texelY = 1.0f / srcH;
+    p.texelX = 1.0f / srcWf;
+    p.texelY = 1.0f / srcHf;
     p.threshold = gpu->bloom.threshold;
     // No upsample o `param` é o raio do tent; nas outras passadas não é lido.
     p.param = pass.additive ? gpu->bloom.radius : 0.0f;
@@ -304,8 +317,8 @@ napi_value jsBloom(napi_env env, napi_callback_info info) {
   napi_valuetype type = napi_undefined;
   if (argc >= 1 && argv[0]) napi_typeof(env, argv[0], &type);
   if (type != napi_object) {
-    // Desligar: o offscreen volta pro formato da swapchain no próximo frame
-    // (`ensureOffscreen` recria e derruba a pirâmide junto).
+    // Desligar: o JS volta a renderizar no offscreen normal; a pirâmide fica
+    // ociosa (o present para de chamar renderBloom quando !bloom.enabled).
     gpu->bloom.enabled = false;
     return njs::undefined(env);
   }
@@ -326,12 +339,33 @@ napi_value jsBloom(napi_env env, napi_callback_info info) {
   return njs::undefined(env);
 }
 
+/** `__cortexSceneHdr(texture | null)` — a cena em linear HDR do frame (ADR-0149). */
+napi_value jsSceneHdr(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value argv[1] = {nullptr};
+  napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+  HostGpu* gpu = gpuState();
+  if (!gpu) return njs::undefined(env);
+  // O JS usa o caminho de composição (força offscreen pro blit/composite rodar).
+  gpu->uiCompositor = true;
+  WGPUTexture tex = nullptr;
+  if (argc >= 1 && argv[0]) {
+    napi_valuetype type = napi_undefined;
+    napi_typeof(env, argv[0], &type);
+    if (type == napi_object) tex = static_cast<WGPUTexture>(njs::unwrapValue(env, argv[0]));
+  }
+  gpu->sceneHdrTexture = tex;
+  gpu->sceneHdrPending = tex != nullptr;  // apresenta este frame (a cena chegou)
+  return njs::undefined(env);
+}
+
 }  // namespace
 
 void registerBloom(napi_env env) {
   napi_value global = nullptr;
   napi_get_global(env, &global);
   njs::setMethod(env, global, "__cortexBloom", jsBloom);
+  njs::setMethod(env, global, "__cortexSceneHdr", jsSceneHdr);
 }
 
 }  // namespace webgpu

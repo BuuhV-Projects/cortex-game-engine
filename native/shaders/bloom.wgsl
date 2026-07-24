@@ -53,18 +53,6 @@ fn luma(c : vec3f) -> f32 {
 }
 
 /**
- * sRGB → linear (EOTF). O offscreen guarda a cena JÁ TONEMAPEADA em bytes sRGB
- * (o formato da canvas é do JS — ver a nota no `ensureOffscreen`), então o corte
- * e o blur precisam acontecer em LINEAR: somar em gama escurece o halo e suja a
- * cor das bordas.
- */
-fn eotf(c : vec3f) -> vec3f {
-  let lo = c / 12.92;
-  let hi = pow((c + 0.055) / 1.055, vec3f(2.4));
-  return select(hi, lo, c <= vec3f(0.04045));
-}
-
-/**
  * Corte de brilho com JOELHO SUAVE. O corte duro (`step`) faz a borda do bloom
  * "piscar" quando um pixel cruza o limiar com a câmera em movimento; a rampa
  * quadrática no joelho (meia oitava abaixo do threshold) elimina isso.
@@ -79,9 +67,11 @@ fn brightPass(c : vec3f, threshold : f32) -> vec3f {
 
 @fragment
 fn fsBright(in : VOut) -> @location(0) vec4f {
-  // Decodifica pra linear ANTES de cortar: a fonte é sRGB tonemapeado.
-  let c = eotf(textureSample(src, samp, in.uv).rgb);
-  return vec4f(brightPass(c, params.threshold), 1.0);
+  // A fonte é a cena em LINEAR HDR (RenderTarget do JS, ADR-0149) — corta direto,
+  // sem decodificar. HDR sem teto estoura o blur (um pixel de 10^4 vira quadrado);
+  // o clamp segura o brilho num valor alto mas finito.
+  let c = textureSample(src, samp, in.uv).rgb;
+  return vec4f(min(brightPass(c, params.threshold), vec3f(64.0)), 1.0);
 }
 
 /**

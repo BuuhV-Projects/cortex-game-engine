@@ -32,13 +32,10 @@ namespace webgpu {
  */
 void registerBloom(napi_env env);
 
-// Garante pirâmide + pipelines no tamanho atual do offscreen. `false` se o bloom
-// está desligado ou não há o que fazer.
-bool ensureBloom(HostGpu* gpu);
-
-// Encoda bright pass + downsamples + upsamples aditivos. Chame ANTES do blit,
-// com o offscreen do frame já desenhado.
-void renderBloom(HostGpu* gpu);
+// Encoda bright pass + downsamples + upsamples aditivos sobre `srcView` (a cena
+// em LINEAR HDR, `srcW`×`srcH`). Chame ANTES do composite. (re)cria a pirâmide se
+// o tamanho da fonte mudou.
+void renderBloom(HostGpu* gpu, WGPUTextureView srcView, int srcW, int srcH);
 
 // View do resultado (nível 0 da pirâmide), ou `nullptr` se indisponível.
 WGPUTextureView bloomResultView();

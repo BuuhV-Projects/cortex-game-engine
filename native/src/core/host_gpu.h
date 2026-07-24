@@ -93,4 +93,12 @@ struct HostGpu {
     float vignetteInner = 0.32f;
     float vignetteOuter = 0.75f;
   } bloom;
+
+  // Cena em LINEAR HDR entregue pelo JS a cada frame (`__cortexSceneHdr`,
+  // ADR-0149) — o host faz bloom + ACES sobre ela em vez de renderizar o jogo no
+  // offscreen. NÃO-own (a RenderTarget vive no three/JS); vale só no frame.
+  // Só existe quando `bloom.enabled`: é o que dá paridade com o Studio (bloom em
+  // HDR, antes do tone mapping).
+  WGPUTexture sceneHdrTexture = nullptr;
+  bool sceneHdrPending = false;  // o JS entregou a cena HDR neste frame → apresenta
 };

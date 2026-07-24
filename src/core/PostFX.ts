@@ -26,7 +26,7 @@ import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 import type { Renderer } from './Renderer.js';
 import type { Scene } from './Scene.js';
-import { nativePostFXHost, type NativePostFXConfig } from './nativePostFX.js';
+import { nativePostFXHost, nativeSceneHdrSink, type NativePostFXConfig } from './nativePostFX.js';
 
 /** Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`. */
 export interface BloomConfig {
@@ -74,6 +74,8 @@ export class PostFX {
   private readonly _bloom: BloomPass | null;
   /** Delegado ao host (C++)? Guardado pra `render`/`dispose` saberem o caminho. */
   private readonly _native: ((c: NativePostFXConfig | null) => void) | null;
+  /** Canal da textura HDR da cena pro host (ADR-0149); `null` no browser. */
+  private readonly _sceneHdr: ((tex: unknown) => void) | null;
   private readonly _scene: THREE.Scene;
   private readonly _camera: THREE.Camera;
 
@@ -99,12 +101,17 @@ export class PostFX {
     this._scene = scene.getThreeScene();
     this._camera = camera;
     this._native = nativePostFXHost();
+    this._sceneHdr = nativeSceneHdrSink();
 
-    // ── Caminho do HOST NATIVO (ADR-0147) ────────────────────────────────────
-    // Lá o bloom e a vinheta rodam em C++, sobre o mesmo offscreen do SSAA. Não
-    // é otimização prematura: no host o custo do bloom NÃO era de pixel (render
-    // scale 1.0, com ¼ dos pixels, dava o mesmo FPS) e sim da travessia JS→NAPI
-    // das ~12 passadas da pirâmide — ~4 ms/frame só de marshalling.
+    // ── Caminho do HOST NATIVO (ADR-0147/0149) ───────────────────────────────
+    // Lá o bloom e a vinheta rodam em C++. Não é otimização prematura: no host o
+    // custo do bloom NÃO era de pixel (render scale 1.0, com ¼ dos pixels, dava o
+    // mesmo FPS) e sim da travessia JS→NAPI das ~12 passadas da pirâmide.
+    //
+    // A cena vai pro host em **linear HDR** (`renderSceneHDR` numa RT própria):
+    // o bloom precisa dos valores ACIMA de 1.0, e é ACENDER em HDR que dá a
+    // PARIDADE com o Studio (o bloom LDR, sobre a imagem já tonemapeada, saía
+    // fraco — ADR-0149). Quem aplica ACES é o composite do host, depois do bloom.
     if (this._native) {
       const cfg = options.bloom === true ? {} : (options.bloom || {});
       const vig = options.vignette === true ? {} : (options.vignette || null);
@@ -118,12 +125,6 @@ export class PostFX {
         vignetteInner: vig?.inner ?? 0.4,
         vignetteOuter: vig?.outer ?? 0.75,
       });
-      // ⚠️ O tone mapping FICA no JS. O host trabalha sobre a imagem já
-      // tonemapeada porque o formato da canvas é do three (ele monta os
-      // pipelines com ele); entregar HDR exigiria mover a configuração da canvas
-      // pro host — ver a armadilha registrada no ADR-0147.
-      if (options.toneMapping !== undefined) renderer.threeRenderer.toneMapping = options.toneMapping;
-      if (options.exposure !== undefined) renderer.threeRenderer.toneMappingExposure = options.exposure;
       this._pipeline = null;
       this._bloom = null;
       return;
@@ -183,14 +184,14 @@ export class PostFX {
    */
   render(): void {
     if (!this._renderer.isReady) return;
-    // No host, o pós-FX é do C++: aqui só se desenha a cena (em HDR linear) no
-    // offscreen, e o composite nativo faz o resto no present.
+    // No host, o pós-FX é do C++: a cena vai pra uma RT HDR própria e a textura é
+    // entregue ao host (`__cortexSceneHdr`), que faz bloom + ACES no seu passe.
+    // Se o host não devolver a textura (backend não pronto), cai no render normal
+    // pra não piscar preto.
     if (!this._pipeline) {
-      // ⚠️ Pelo `Renderer` do engine, NÃO pelo `threeRenderer` cru: é ele que dá
-      // o `clear()` do frame. Sem isso o depth buffer do frame anterior fica de
-      // pé e rejeita a geometria nova — a cena renderiza pela METADE, com peças
-      // sumindo (foi o que aconteceu na 1ª versão deste caminho).
-      this._renderer.render(this._scene, this._camera);
+      const tex = this._renderer.renderSceneHDR(this._scene, this._camera);
+      if (tex && this._sceneHdr) this._sceneHdr(tex);
+      else this._renderer.render(this._scene, this._camera);
       return;
     }
     this._pipeline.render();

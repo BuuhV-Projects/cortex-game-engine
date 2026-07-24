@@ -34,6 +34,18 @@ export function nativePostFXHost(): NativePostFXHost | null {
   return typeof fn === 'function' ? fn : null;
 }
 
+/** Recebe o handle da textura HDR da cena (RenderTarget do three). */
+type NativeSceneHdrSink = (texture: unknown) => void;
+
+/**
+ * Canal pelo qual o JS entrega ao host a textura HDR da cena a cada frame
+ * (ADR-0149) — o host faz bloom + ACES sobre ela. `null` no browser.
+ */
+export function nativeSceneHdrSink(): NativeSceneHdrSink | null {
+  const fn = (globalThis as { __cortexSceneHdr?: NativeSceneHdrSink }).__cortexSceneHdr;
+  return typeof fn === 'function' ? fn : null;
+}
+
 /**
  * Desliga o pós-FX do host. No browser é no-op.
  *

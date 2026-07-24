@@ -94,6 +94,14 @@ export class Renderer {
    */
   private _uiTarget: THREE.RenderTarget | null = null;
 
+  /**
+   * RenderTarget HDR da CENA pro bloom nativo (ADR-0147/0149). O jogo é desenhado
+   * aqui em **linear HDR** (`HalfFloatType`, sem tone mapping) e a textura vai pro
+   * host, que faz bloom + ACES no seu próprio passe. Precisa de **depth buffer**
+   * (é cena 3D, ao contrário da RT da UI). Criada sob demanda em `renderSceneHDR`.
+   */
+  private _sceneHdrTarget: THREE.RenderTarget | null = null;
+
   /** `true` quando o backend (WebGPU ou fallback WebGL2) terminou o init. */
   private _initialized = false;
   /** Promessa do init do backend — resolvida quando `render()` pode ser chamado. */
@@ -277,6 +285,60 @@ export class Renderer {
   }
 
   /**
+   * Renderiza a `scene` numa **RenderTarget HDR própria** (linear, sem tone
+   * mapping) e devolve o handle da GPUTexture do backend, pro host nativo fazer
+   * bloom + tone mapping em HDR (ADR-0149). É o que dá **paridade com o Studio**:
+   * o bloom do três roda em HDR (valores emissivos acima de 1.0 brilham forte),
+   * enquanto o bloom nativo LDR (sobre a imagem já tonemapeada) saía mais fraco.
+   *
+   * A RT tem **depth buffer** (cena 3D) e formato HalfFloat. O tone mapping fica
+   * DESLIGADO aqui de propósito — quem aplica ACES é o composite do host, depois
+   * do bloom precisar dos valores HDR. `width`/`height` são o tamanho SS (o host
+   * faz o downscale no composite).
+   *
+   * Devolve `null` se o backend não iniciou (o chamador cai no caminho antigo).
+   */
+  renderSceneHDR(scene: THREE.Scene, camera: THREE.Camera): unknown {
+    if (!this._initialized || this._width <= 0 || this._height <= 0) return null;
+    // Tamanho do BACKING STORE (nativo × renderScale/dpr): a RT tem de casar com o
+    // supersample, senão o host amostra numa resolução torta. `getDrawingBufferSize`
+    // já multiplica pelo pixelRatio que o host setou (= renderScale).
+    const size = this._renderer.getDrawingBufferSize(new THREE.Vector2());
+    const width = Math.max(1, Math.round(size.x));
+    const height = Math.max(1, Math.round(size.y));
+    if (
+      !this._sceneHdrTarget ||
+      this._sceneHdrTarget.width !== width ||
+      this._sceneHdrTarget.height !== height
+    ) {
+      this._sceneHdrTarget?.dispose();
+      this._sceneHdrTarget = new THREE.RenderTarget(width, height, {
+        type: THREE.HalfFloatType, // HDR: guarda valores acima de 1.0 pro bloom morder
+        format: THREE.RGBAFormat,
+        depthBuffer: true, // cena 3D precisa de depth test (a UI não precisava)
+        stencilBuffer: false,
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+      });
+    }
+    // Tone mapping OFF: o host aplica ACES no composite, depois do bloom. Salva e
+    // restaura pra não vazar pro resto do frame (UI, telas alternativas).
+    const prevToneMapping = this._renderer.toneMapping;
+    this._renderer.toneMapping = THREE.NoToneMapping;
+    this._renderer.setRenderTarget(this._sceneHdrTarget);
+    this._renderer.clear();
+    this._renderer.render(scene, camera);
+    this._renderer.setRenderTarget(null);
+    this._renderer.toneMapping = prevToneMapping;
+    const backend = (
+      this._renderer as unknown as {
+        backend?: { get(t: unknown): { texture?: unknown } | undefined };
+      }
+    ).backend;
+    return backend?.get(this._sceneHdrTarget.texture)?.texture ?? null;
+  }
+
+  /**
    * Redimensiona o canvas e o viewport do renderer.
    * Chamado automaticamente pelo listener de `window.resize`; também pode ser
    * chamado manualmente quando o canvas não ocupa a janela inteira.
@@ -301,6 +363,8 @@ export class Renderer {
     }
     this._uiTarget?.dispose();
     this._uiTarget = null;
+    this._sceneHdrTarget?.dispose();
+    this._sceneHdrTarget = null;
     this._renderer.dispose();
   }
 

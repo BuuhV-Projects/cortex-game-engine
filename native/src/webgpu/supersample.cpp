@@ -133,29 +133,48 @@ fn oetf(c : vec3f) -> vec3f {
   return select(hi, lo, cl < vec3f(0.0031308));
 }
 
-fn eotf(c : vec3f) -> vec3f {
-  let lo = c / 12.92;
-  let hi = pow((c + 0.055) / 1.055, vec3f(2.4));
-  return select(hi, lo, c <= vec3f(0.04045));
+// ACES filmic — a MESMA aproximação do three (`ACESFilmicToneMapping`): matrizes
+// de entrada/saída + RRTAndODTFit, com o `/0.6` na exposição. Copiar a fórmula é
+// o que mantém a cor idêntica entre o Studio e o export.
+fn rrtAndOdtFit(v : vec3f) -> vec3f {
+  let a = v * (v + 0.0245786) - 0.000090537;
+  let b = v * (0.983729 * v + 0.4329510) + 0.238081;
+  return a / b;
+}
+fn acesFilmic(colorIn : vec3f, exposure : f32) -> vec3f {
+  let inMat = mat3x3f(
+    vec3f(0.59719, 0.07600, 0.02840),
+    vec3f(0.35458, 0.90834, 0.13383),
+    vec3f(0.04823, 0.01566, 0.83777));
+  let outMat = mat3x3f(
+    vec3f( 1.60475, -0.10208, -0.00327),
+    vec3f(-0.53108,  1.10813, -0.07276),
+    vec3f(-0.07367, -0.00605,  1.07602));
+  var c = colorIn * (exposure / 0.6);
+  c = inMat * c;
+  c = rrtAndOdtFit(c);
+  c = outMat * c;
+  return clamp(c, vec3f(0.0), vec3f(1.0));
 }
 
 @fragment
 fn fs(in : VOut) -> @location(0) vec4f {
-  // A cena vem TONEMAPEADA em bytes sRGB (o JS já aplicou ACES+exposição): aqui
-  // só se soma o bloom e se aplica a vinheta. A soma acontece em LINEAR — somar
-  // em gama escurece o halo e vira a cor das bordas pro magenta.
-  let scene = eotf(textureSample(src, samp, in.uv).rgb);
-  let bloomC = textureSample(bloomTex, samp, in.uv).rgb;  // já linear
-  var lin = scene + bloomC * params.strength;
+  // A cena vem em LINEAR HDR (RenderTarget do JS, ADR-0149): soma o bloom AINDA em
+  // HDR (é por isso que o brilho bate com o Studio), aplica vinheta, depois ACES +
+  // exposição e OETF. Tudo num passe só — o bloom LDR anterior saía fraco porque o
+  // ACES já tinha comprimido a cena antes de ele morder.
+  let scene = textureSample(src, samp, in.uv).rgb;
+  let bloomC = textureSample(bloomTex, samp, in.uv).rgb;
+  var hdr = scene + bloomC * params.strength;
 
   if (params.vigIntensity > 0.0) {
     let d = length(in.uv - vec2f(0.5, 0.5));
     let t = clamp((d - params.vigInner) / max(params.vigOuter - params.vigInner, 1e-4), 0.0, 1.0);
     let falloff = 1.0 - t * t * (3.0 - 2.0 * t);  // smoothstep invertido
-    lin = lin * mix(1.0, falloff, params.vigIntensity);
+    hdr = hdr * mix(1.0, falloff, params.vigIntensity);
   }
 
-  let game = oetf(lin);                                   // volta pra bytes sRGB
+  let game = oetf(acesFilmic(hdr, params.exposure));      // HDR → sRGB (bytes)
   let ui = textureSample(uiTex, samp, in.uv);
   var outc = game;
   if (ui.a > 0.0) {
@@ -397,18 +416,32 @@ void clearOffscreen(HostGpu* gpu) {
 }
 
 void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
-  if (!gpu->offscreenView) return;
+  // Fonte da CENA: com bloom HDR (ADR-0149) é a RenderTarget que o JS entregou
+  // (linear HDR); senão é o offscreen do jogo (LDR, já tonemapeado). No caminho
+  // HDR o offscreen do host nem é usado.
+  WGPUTextureView sceneView = nullptr;
+  bool ownSceneView = false;
+  int sceneW = gpu->offscreenWidth;
+  int sceneH = gpu->offscreenHeight;
+  const bool hdr = gpu->bloom.enabled && gpu->sceneHdrTexture != nullptr;
+  if (hdr) {
+    sceneView = wgpuTextureCreateView(gpu->sceneHdrTexture, nullptr);
+    ownSceneView = true;
+    // A RT do JS tem o tamanho do drawing buffer (nativo × dpr) = o do offscreen.
+  } else {
+    if (!gpu->offscreenView) return;
+    sceneView = gpu->offscreenView;
+  }
 
-  // Bloom nativo (ADR-0147): a pirâmide roda ANTES do composite, sobre a cena
-  // HDR que o JS acabou de desenhar no offscreen. `hdr` só liga se a pirâmide
-  // existir de fato — se falhar, cai no caminho antigo em vez de piscar preto.
+  // Bloom em HDR ANTES do composite: a pirâmide roda sobre a cena linear e o
+  // composite soma + ACES. É acender em HDR que dá a paridade com o Studio.
   WGPUTextureView bloomView = nullptr;
-  if (gpu->bloom.enabled) {
-    renderBloom(gpu);
+  if (hdr) {
+    renderBloom(gpu, sceneView, sceneW, sceneH);
     bloomView = bloomResultView();
   }
-  const bool hdr = bloomView != nullptr;
-  if (hdr) {
+  const bool composite = hdr && bloomView != nullptr;
+  if (composite) {
     ensureHdrPipeline(gpu, gpu->requestedFormat);
     HdrParams p{};
     p.strength = gpu->bloom.strength;
@@ -418,6 +451,11 @@ void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
     p.vignetteOuter = gpu->bloom.vignetteOuter;
     wgpuQueueWriteBuffer(gpu->queue, g_hdrUniform, 0, &p, sizeof(p));
   } else {
+    // Sem bloom: blit LDR normal (downscale do offscreen + UI em gama).
+    if (ownSceneView) wgpuTextureViewRelease(sceneView);
+    if (!gpu->offscreenView) return;
+    sceneView = gpu->offscreenView;
+    ownSceneView = false;
     ensurePipeline(gpu, gpu->requestedFormat);
   }
 
@@ -437,17 +475,17 @@ void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
     bg[i] = WGPU_BIND_GROUP_ENTRY_INIT;
     bg[i].binding = static_cast<uint32_t>(i);
   }
-  bg[0].textureView = gpu->offscreenView;
+  bg[0].textureView = sceneView;
   bg[1].sampler = g_sampler;
   bg[2].textureView = uiView;
-  if (hdr) {
+  if (composite) {
     bg[3].textureView = bloomView;
     bg[4].buffer = g_hdrUniform;
     bg[4].size = sizeof(HdrParams);
   }
   WGPUBindGroupDescriptor bgd = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
-  bgd.layout = hdr ? g_hdrBindLayout : g_bindLayout;
-  bgd.entryCount = hdr ? 5 : 3;
+  bgd.layout = composite ? g_hdrBindLayout : g_bindLayout;
+  bgd.entryCount = composite ? 5 : 3;
   bgd.entries = bg;
   WGPUBindGroup bindGroup = wgpuDeviceCreateBindGroup(gpu->device, &bgd);
 
@@ -463,7 +501,7 @@ void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
   WGPUCommandEncoder encoder =
       wgpuDeviceCreateCommandEncoder(gpu->device, nullptr);
   WGPURenderPassEncoder rp = wgpuCommandEncoderBeginRenderPass(encoder, &pass);
-  wgpuRenderPassEncoderSetPipeline(rp, hdr ? g_hdrPipeline : g_pipeline);
+  wgpuRenderPassEncoderSetPipeline(rp, composite ? g_hdrPipeline : g_pipeline);
   wgpuRenderPassEncoderSetBindGroup(rp, 0, bindGroup, 0, nullptr);
   wgpuRenderPassEncoderDraw(rp, 3, 1, 0, 0);
   wgpuRenderPassEncoderEnd(rp);
@@ -474,6 +512,7 @@ void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
   wgpuCommandBufferRelease(cmd);
   wgpuBindGroupRelease(bindGroup);
   if (ownUiView) wgpuTextureViewRelease(uiView);
+  if (ownSceneView) wgpuTextureViewRelease(sceneView);
 }
 
 }  // namespace webgpu
