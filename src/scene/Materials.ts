@@ -75,6 +75,14 @@ export type MaterialConfig =
       outline?: number;
       /** Cor do contorno. Default preto. */
       outlineColor?: ColorRepresentation;
+      /**
+       * **Intensidade de emissão (HDR)** — multiplica a cor. `1` (default) = cor
+       * normal, no máximo branco (1.0). **Acima de 1** leva a cor pra faixa HDR
+       * (ex.: `3` = 3×), que é o que faz o objeto **brilhar no bloom** com o
+       * threshold no padrão de mercado (~1.0): só o que passa de 1.0 vira glow.
+       * É o "quanto este objeto emite luz" do Unity/Unreal, por objeto.
+       */
+      intensity?: number;
     }
   | {
       type: 'toon';
@@ -124,11 +132,17 @@ interface SrcMat {
 function buildUnlit(orig: Material, config: Extract<MaterialConfig, { type: 'unlit' }>): MeshBasicMaterial {
   const o = orig as unknown as SrcMat;
   const transparent = config.transparent ?? (config.opacity !== undefined ? config.opacity < 1 : (o.transparent ?? false));
+  // Cor base × intensidade: `intensity > 1` leva a cor pra HDR (o material é
+  // `toneMapped: false`, então o valor passa direto). É o que faz o objeto
+  // brilhar no bloom com threshold alto (padrão de mercado). Só objetos com
+  // intensidade > 1 brilham; o resto fica ≤ 1 e não vira glow.
+  const baseColor = config.color !== undefined ? new Color(config.color) : (o.color?.clone() ?? new Color(0xffffff));
+  if (config.intensity !== undefined && config.intensity !== 1) baseColor.multiplyScalar(config.intensity);
   return new MeshBasicMaterial({
     // `textured: false` → cor chapada: descarta o map do modelo (atlas de paleta).
     map: config.textured === false ? null : (o.map ?? null),
     vertexColors: o.vertexColors ?? false,
-    color: config.color !== undefined ? new Color(config.color) : (o.color?.clone() ?? new Color(0xffffff)),
+    color: baseColor,
     transparent,
     opacity: config.opacity ?? o.opacity ?? 1,
     side: sideOf(config.cull),

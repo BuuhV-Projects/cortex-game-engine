@@ -6,7 +6,7 @@
 
 # Type Alias: MaterialConfig
 
-> **MaterialConfig** = \{ `type`: `"standard"`; \} \| \{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `textured?`: `boolean`; `transparent?`: `boolean`; `type`: `"unlit"`; \} \| \{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `type`: `"toon"`; \}
+> **MaterialConfig** = \{ `type`: `"standard"`; \} \| \{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `intensity?`: `number`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `textured?`: `boolean`; `transparent?`: `boolean`; `type`: `"unlit"`; \} \| \{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `type`: `"toon"`; \}
 
 Defined in: [src/scene/Materials.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L43)
 
@@ -22,7 +22,7 @@ Configuração de material por objeto (data-driven; vai no nó da cena/overlay).
 
 ### Type Literal
 
-\{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `textured?`: `boolean`; `transparent?`: `boolean`; `type`: `"unlit"`; \}
+\{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `intensity?`: `number`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `textured?`: `boolean`; `transparent?`: `boolean`; `type`: `"unlit"`; \}
 
 #### alphaTest?
 
@@ -53,6 +53,16 @@ Testa o depth buffer (ZTest on/off). Default `true`.
 > `optional` **depthWrite?**: `boolean`
 
 Escreve no depth buffer (ZWrite). Default `true`.
+
+#### intensity?
+
+> `optional` **intensity?**: `number`
+
+**Intensidade de emissão (HDR)** — multiplica a cor. `1` (default) = cor
+normal, no máximo branco (1.0). **Acima de 1** leva a cor pra faixa HDR
+(ex.: `3` = 3×), que é o que faz o objeto **brilhar no bloom** com o
+threshold no padrão de mercado (~1.0): só o que passa de 1.0 vira glow.
+É o "quanto este objeto emite luz" do Unity/Unreal, por objeto.
 
 #### opacity?
 
