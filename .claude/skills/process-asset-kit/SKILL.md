@@ -96,8 +96,10 @@ node scripts/gen-kit.mjs "$STAGE/sizes_scaled.json" "$BASE" "$HEX"
 # naming não-descritivo (obstacle_7_001…): classifique a olho nas thumbnails e
 # passe um mapa { nome: { role, tags, gameplayRole?, solid?, shape? } } que vence
 # o classify() — assim o classify() continua kit-independente.
-node scripts/gen-kit.mjs "$STAGE/sizes.json" "$KIT" --overrides "$STAGE/overrides.json"
+node scripts/gen-kit.mjs "$STAGE/sizes.json" "$KIT" --overrides "$STAGE/overrides.json" --theme deathrun
 ```
+`--theme` grava o tema no `kit.json` (default `TBD`) — os design tokens (paleta/
+atmosfera, ADR-0053 §3) continuam pra depois, mas o nome do tema já vale a pena.
 A função `classify()` **é** o vocabulário canônico — mantenha-a kit-independente e
 expanda conforme novos tipos surgem. Eixos:
 - **`role`** (natureza física, enum): `ground | platform | connector | prop | hazard | collectible | decoration | cap | tile | player-start`.
@@ -109,12 +111,18 @@ sólido) e âncora `top` (e `edge_left/right` em peças que encaixam lado a lado
 
 ## Destino na engine
 
-Hoje **não há** pasta de kits canônica no repo (é trabalho da Fase 1 da implementação
-do ADR-0053 — schema zod de `kit.json` em `src/scene/`, e a IDE oferecendo kits).
-Por ora o kit curado vive na **biblioteca de assets do usuário** (ex.:
-`D:/jogos/assets/3d-models/kits/<kit>/`), pronto pra ser copiado pro `assets/` de um
-projeto + `kit.json`. Ao consumir num projeto, re-vendorizar conforme ADR-0009.
-**Atualize esta seção quando a Fase 1 definir o destino oficial.**
+O destino oficial é **`kits/<nome>/`** no repo do engine (`assets/`, `thumbnails/`,
+`kit.json` — e `scripts/` quando o kit traz mecânicas). Nada a registrar em lista
+nenhuma: o `electron-builder.json` empacota `kits/` inteira (`{ from: "kits" }`) e o
+Chat IA descobre por varredura de diretório (`list_kits`/`import_kit` em
+`electron/agent/tools/kits.ts`). Ao consumir num projeto, `import_kit` copia pro
+`assets/` do projeto; re-vendorizar conforme ADR-0009.
+
+**Teste de integridade:** `tests/scene/kitsRepo.test.ts` roda sobre TODOS os kits de
+`kits/` — schema (`parseKit`), `name` = nome da pasta, `.glb`/thumb existindo em disco,
+`role`/`gameplayRole` dentro do vocabulário canônico e bbox positivo. Rode
+`yarn vitest run tests/scene/kitsRepo.test.ts` antes de dar um kit por pronto; se
+adicionar um `role` novo ao vocabulário, atualize as constantes do teste junto.
 
 ## Pack de personagem modular (esqueleto compartilhado, SPEC-0068)
 
@@ -188,6 +196,16 @@ Kit `platformer-space` (jul/2026): pack Platformer_11_Space, 87 glb já prontos 
 externalizar atlas (27MB→6,8MB), `measure.py`, thumbnails e `gen-kit.mjs` com
 `--overrides` pros 19 `obstacle_N`. Sem triagem (pack coeso) e sem normalizar escala
 (já batia com o kit Deathrun). Em `D:/jogos/assets/3d-models/kits/platformer-space`.
+
+Kit `platformer-deathrun` (jul/2026): pack Platformer_Deathrun, 103 glb prontos →
+externalizar atlas (**58MB→8,6MB**; `rope_1.png` de 4,2MB estava embutido em 6 peças),
+`measure.py`, thumbnails e `gen-kit.mjs --overrides --theme deathrun`. Sem triagem nem
+normalização (escala já batia: `box_001` = 1u³, `ladder_001` = 2u). Em
+`kits/platformer-deathrun`. **Método pra classificar naming opaco**: contact sheet
+rotulado das thumbnails (`_stage/sheet.py`, 7×5 por página) + as **imagens de divulgação
+do pack** (`images/*.webp`) — a overview do mapa mostra as peças EM USO e desfaz o que a
+thumbnail isolada não resolve (ali as "chevron platforms" com barra amarela se revelaram
+plataformas móveis sobre a água, não rampas).
 
 Kit `stylized-fantasy` (forest + general-bits + medieval, 402 gltf, 90MB) →
 `stylized-fantasy-base` (238 glb, 14MB) + `terrain-hex` (60 glb, 1.6MB), ambos com

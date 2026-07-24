@@ -2,9 +2,10 @@
 // capturados na conversão. Classifica cada asset em 3 eixos ortogonais:
 //   role (natureza física) / tags (tema) / gameplayRole (função de design).
 //
-// Uso:  node gen-kit.mjs <sizes.json> <kitDir1> [kitDir2 ...] [--overrides <f.json>]
+// Uso:  node gen-kit.mjs <sizes.json> <kitDir1> [kitDir2 ...] [--overrides <f.json>] [--theme <nome>]
 //   - sizes.json: saída do convert.py/measure.py ({ sizes, bounds? })
 //   - kitDir: pasta do kit (espera kitDir/assets/*.glb); name = basename(kitDir)
+//   - --theme: nome do tema do kit (default 'TBD'; design tokens vêm depois)
 //   - --overrides: mapa { nome: { role, tags, gameplayRole?, solid?, shape? } } pra
 //     packs de naming NÃO-descritivo (ex.: obstacle_7_001), classificados a olho
 //     pelas thumbnails. Vence classify(); mantém classify() kit-independente.
@@ -15,9 +16,13 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { basename } from 'node:path';
 
 const argv = process.argv.slice(2);
-const ovIdx = argv.indexOf('--overrides');
-const overrides = ovIdx >= 0 ? JSON.parse(readFileSync(argv[ovIdx + 1], 'utf8')) : {};
-const rest = ovIdx >= 0 ? [...argv.slice(0, ovIdx), ...argv.slice(ovIdx + 2)] : argv;
+const takeFlag = (args, flag) => {
+  const i = args.indexOf(flag);
+  return i >= 0 ? [args[i + 1], [...args.slice(0, i), ...args.slice(i + 2)]] : [undefined, args];
+};
+const [themeArg, afterTheme] = takeFlag(argv, '--theme');
+const [ovPath, rest] = takeFlag(afterTheme, '--overrides');
+const overrides = ovPath ? JSON.parse(readFileSync(ovPath, 'utf8')) : {};
 const sizesPath = rest[0];
 const kitDirs = rest.slice(1);
 if (!sizesPath || kitDirs.length === 0) {
@@ -155,6 +160,27 @@ function classify(name) {
   if (/^hex_coast/.test(n)) return R('ground', ['hex', 'coast', 'water'], []);
   if (/^hex_road/.test(n)) return R('ground', ['hex', 'road'], ['guidance', 'path']);
   if (/^hex_/.test(n)) return R('ground', ['hex', 'terrain', 'grass'], [], { solid: true });
+
+  // ── Obstacle course / deathrun (Platformer_Deathrun) ───────────────────────
+  // Nomes comuns a vários packs; as peças específicas (obstacle_N, land_N) vão
+  // por --overrides. Sufixo `_001` mata os `\b` das regras Kenney acima.
+  if (/^(water|waves)_/.test(n)) return R('hazard', ['water', 'surface'], ['hazard']);
+  if (/^shadow/.test(n)) return R('decoration', ['decal', 'shadow'], []);
+  if (/^(finish|goal)_/.test(n)) return R('decoration', ['goal', 'finish'], ['guidance', 'landmark']);
+  if (/^flag/.test(n)) return R('decoration', ['flag', 'guidance'], ['guidance', 'landmark']);
+  if (/^(indicator|signboard|signpost)/.test(n)) return R('decoration', ['sign', 'guidance'], ['guidance']);
+  if (/^leaderboard/.test(n)) return R('prop', ['ui', 'scoreboard', 'sign'], ['landmark'], { solid: true });
+  if (/^flower/.test(n)) return R('decoration', ['foliage', 'flower'], []);
+  if (/^(bone|skull)_/.test(n)) return R('decoration', ['bone', 'skull'], []);
+  if (/^pumpkin/.test(n)) return R('decoration', ['pumpkin', 'halloween'], ['cover']);
+  if (/^hive/.test(n)) return R('prop', ['hive', 'nature'], [], { solid: true });
+  if (/^scroll/.test(n)) return R('collectible', ['scroll', 'paper', 'item'], ['reward']);
+  if (/^anvil/.test(n)) return R('prop', ['tool', 'metal', 'anvil'], [], { solid: true });
+  if (/^cauldron/.test(n)) return R('prop', ['container', 'cauldron', 'metal'], [], { solid: true });
+  if (/^(big_log|log)_/.test(n)) return R('prop', ['wood', 'log'], ['cover'], { solid: true });
+  if (/^stake/.test(n)) return R('prop', ['stake', 'wood'], ['cover'], { solid: true });
+  if (/^rope/.test(n)) return R('decoration', ['rope'], []);
+
   return R('prop', [], []);
 }
 
@@ -193,7 +219,7 @@ for (const dir of kitDirs) {
     a.thumb = `thumbnails/${name}.png`;
     assets[`assets/${name}.glb`] = a;
   }
-  const kit = { version: 1, name: basename(dir), module: hexGrassW ? +hexGrassW.toFixed(3) : 1, theme: 'TBD', assets };
+  const kit = { version: 1, name: basename(dir), module: hexGrassW ? +hexGrassW.toFixed(3) : 1, theme: themeArg ?? 'TBD', assets };
   writeFileSync(`${dir}/kit.json`, JSON.stringify(kit, null, 2));
   const byRole = {};
   for (const v of Object.values(assets)) byRole[v.role] = (byRole[v.role] ?? 0) + 1;
