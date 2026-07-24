@@ -164,7 +164,11 @@ fn fs(in : VOut) -> @location(0) vec4f {
   // exposição e OETF. Tudo num passe só — o bloom LDR anterior saía fraco porque o
   // ACES já tinha comprimido a cena antes de ele morder.
   let scene = textureSample(src, samp, in.uv).rgb;
-  let bloomC = textureSample(bloomTex, samp, in.uv).rgb;
+  // Ganho ~2.5: o composite do three SOMA 5 mips com fatores que totalizam ~3
+  // (bloomFactors [1,0.8,0.6,0.4,0.2] modulados pelo radius) antes do strength;
+  // a pirâmide dual-filter tem ganho ~1. Sem isto o bloom do export sai bem mais
+  // fraco que o do Studio, mesmo com o bright pass já corrigido (ADR-0149).
+  let bloomC = textureSample(bloomTex, samp, in.uv).rgb * 2.5;
   var hdr = scene + bloomC * params.strength;
 
   if (params.vigIntensity > 0.0) {

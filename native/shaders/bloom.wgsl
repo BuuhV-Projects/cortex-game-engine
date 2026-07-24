@@ -52,26 +52,20 @@ fn luma(c : vec3f) -> f32 {
   return dot(c, vec3f(0.2126, 0.7152, 0.0722));
 }
 
-/**
- * Corte de brilho com JOELHO SUAVE. O corte duro (`step`) faz a borda do bloom
- * "piscar" quando um pixel cruza o limiar com a câmera em movimento; a rampa
- * quadrática no joelho (meia oitava abaixo do threshold) elimina isso.
- */
-fn brightPass(c : vec3f, threshold : f32) -> vec3f {
-  let knee = max(threshold * 0.5, 1e-4);
-  let l = luma(c);
-  let soft = clamp(l - threshold + knee, 0.0, 2.0 * knee);
-  let contrib = max(l - threshold, soft * soft / (4.0 * knee + 1e-6));
-  return c * (contrib / max(l, 1e-4));
-}
+/** Largura do joelho do corte (o `smoothWidth` do three). */
+const BRIGHT_SMOOTH_WIDTH : f32 = 0.01;
 
 @fragment
 fn fsBright(in : VOut) -> @location(0) vec4f {
-  // A fonte é a cena em LINEAR HDR (RenderTarget do JS, ADR-0149) — corta direto,
-  // sem decodificar. HDR sem teto estoura o blur (um pixel de 10^4 vira quadrado);
-  // o clamp segura o brilho num valor alto mas finito.
+  // MESMO bright pass do three (`luminosityHighPass`): passa o pixel CHEIO acima
+  // do limiar, atenuando só na borda via smoothstep — NÃO subtrai o threshold.
+  // (Subtrair, como uma versão anterior fazia, tirava ~45% do brilho e deixava o
+  // bloom do export mais fraco que o do Studio — ADR-0149.) A fonte é a cena em
+  // LINEAR HDR. O clamp segura o HDR sem teto (um pixel de 10^4 vira quadrado).
   let c = textureSample(src, samp, in.uv).rgb;
-  return vec4f(min(brightPass(c, params.threshold), vec3f(64.0)), 1.0);
+  let l = luma(c);
+  let alpha = smoothstep(params.threshold, params.threshold + BRIGHT_SMOOTH_WIDTH, l);
+  return vec4f(min(c * alpha, vec3f(64.0)), 1.0);
 }
 
 /**
