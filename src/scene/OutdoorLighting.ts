@@ -160,7 +160,20 @@ export function setupOutdoorLighting(
     cam.top = shadowArea;
     cam.bottom = -shadowArea;
     cam.near = 1;
-    cam.far = shadowArea * 4;
+    // ⚠️ Com CSM, o `far` precisa cobrir `lightMargin + shadowDistance`.
+    //
+    // As cascatas CLONAM este `shadow` (`light.shadow.clone()` no `_init` do
+    // CSMShadowNode), e a cada frame o three planta a luz de cada cascata
+    // RECUADA de `lightMargin` (`_center.z = bbox.max.z + lightMargin`). Com o
+    // `shadowArea * 4` do caminho sem CSM (240) e a margem padrão (200), sobravam
+    // ~40u de profundidade útil: tudo mais fundo caía fora do far plane e a
+    // sombra era **cortada por uma reta** no meio da cena — some um pedaço do
+    // vulto, o resto fica. Era o "sombra cortando" do Mundo 3, cujos asteroides
+    // têm 25u de profundidade num percurso de 170u.
+    //
+    // Não custa performance: far plane é volume de projeção, não passada nem
+    // texel. Sem CSM, mantém o valor de sempre.
+    cam.far = csm ? lightMargin + shadowDistance + shadowArea : shadowArea * 4;
     cam.updateProjectionMatrix();
 
     // CSM (Cascaded Shadow Maps, WebGPU): cascatas que seguem a câmera ativa — cobre o
