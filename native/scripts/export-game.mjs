@@ -33,9 +33,17 @@ const debugHud = args.includes('--debug');
 // logos (app model GDK / Gaming.Desktop.x64). O alvo de console (Scarlett) exige
 // GXDK+ID@Xbox — ver architecture.md; hoje produz o pacote do app model no PC.
 const gdk = args.includes('--xbox');
-const gameDir = args.find((a) => !a.startsWith('--')) ? path.resolve(args.find((a) => !a.startsWith('--'))) : null;
+// --out <dir>: pasta de saída do export. Omitido = `<gameDir>/dist-native`
+// (default histórico). O dev escolhe onde salvar o build — útil pra manter várias
+// versões, exportar pra uma pasta de distribuição, ou contornar uma dist-native
+// travada (Explorer/antivírus segurando um handle).
+const outFlagIdx = args.indexOf('--out');
+const outArg = outFlagIdx >= 0 ? args[outFlagIdx + 1] : null;
+// Posicional = o 1º arg sem `--` que NÃO seja o valor de `--out`.
+const positional = args.filter((a, i) => !a.startsWith('--') && i !== outFlagIdx + 1);
+const gameDir = positional[0] ? path.resolve(positional[0]) : null;
 if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
-  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--steam|--xbox] [--debug]');
+  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--out <dir>] [--steam|--xbox] [--debug]');
   process.exit(1);
 }
 
@@ -51,7 +59,8 @@ const gameName = path.basename(gameDir);
 // Meus Programas (via recurso do exe, fase do ícone) e no DisplayName do console.
 const game = readGameConfig(gameDir);
 const EXE_NAME = 'launcher.exe';
-const dist = path.join(gameDir, 'dist-native');
+// Saída: `--out <dir>` (resolvido) ou o `dist-native` do projeto.
+const dist = outArg ? path.resolve(outArg) : path.join(gameDir, 'dist-native');
 // Host por alvo: build-steam (CORTEX_STEAM) / build-gdk (CORTEX_GDK) / build (desktop).
 const hostBuild = path.join(engineRoot, 'native', steam ? 'build-steam' : gdk ? 'build-gdk' : 'build');
 if (!fs.existsSync(path.join(hostBuild, 'cortex_host.exe'))) {

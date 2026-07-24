@@ -79,6 +79,7 @@
     "export_done_ok": "Export concluído",
     "export_done_fail": "O export falhou — veja o terminal.",
     "export_locked": "Feche o jogo exportado e tente de novo — um arquivo está travado.",
+    "export_pick_other_dir": "A pasta de saída está travada (jogo aberto, Explorer ou antivírus). Quer exportar para OUTRA pasta agora?",
     "export_open_folder": "Abrir pasta",
     "export_close": "Fechar"
   },

@@ -937,7 +937,7 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
  * próprio repo. macOS/Linux não embarcam o host (D3D12/Windows-only) — lá o
  * `script` não existe e o handler informa que é só no Studio Windows.
  */
-ipcMain.handle('export:native', async (_event, projectDir: unknown, mode: unknown, debug?: unknown) => {
+ipcMain.handle('export:native', async (_event, projectDir: unknown, mode: unknown, debug?: unknown, outDir?: unknown) => {
   const safeDir = validatePath(projectDir)
   const script = join(resourceBase(), 'native', 'scripts', 'export-game.mjs')
   if (!existsSync(script)) {
@@ -952,6 +952,10 @@ ipcMain.handle('export:native', async (_event, projectDir: unknown, mode: unknow
   // `debug` acrescenta --debug (HUD de métricas na tela — FPS/CPU/memória/GPU).
   const flags = mode === 'steam' ? ['--steam'] : mode === 'xbox' ? ['--xbox'] : []
   if (debug === true) flags.push('--debug')
+  // Pasta de saída escolhida pelo dev (`--out`). Omitida = `dist-native` do
+  // projeto. Serve pra manter várias versões e pra contornar uma dist-native
+  // travada (Explorer/antivírus com handle aberto).
+  if (typeof outDir === 'string' && outDir) flags.push('--out', validatePath(outDir))
   return await new Promise((resolvePromise) => {
     const child = spawn(process.execPath, [script, safeDir, ...flags], {
       env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },

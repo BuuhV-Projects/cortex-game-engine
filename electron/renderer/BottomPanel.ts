@@ -185,7 +185,7 @@ export class BottomPanel {
    * Export CortexNative (ADR-0101): valida guardas, roda o script no main
    * (ELECTRON_RUN_AS_NODE) e imprime a saída no terminal do painel.
    */
-  private async exportNative(mode = 'pc', debug = false): Promise<void> {
+  private async exportNative(mode = 'pc', debug = false, outDir?: string): Promise<void> {
     if (!this.projectDir) {
       void window.electronAPI.infoDialog(t('bottomPanel.export_no_project'))
       return
@@ -202,7 +202,7 @@ export class BottomPanel {
     const modal = new ExportProgressModal()
     const unsubscribe = window.electronAPI.onExportProgress((step) => modal.step(step))
     try {
-      const result = await window.electronAPI.exportNative(this.projectDir, mode, debug)
+      const result = await window.electronAPI.exportNative(this.projectDir, mode, debug, outDir)
       this.appendTerminal(result.output, result.ok ? 'log' : 'error')
       if (result.ok && result.distDir) {
         this.appendTerminal(`Export pronto: ${result.distDir}\n`, 'system')
@@ -213,6 +213,20 @@ export class BottomPanel {
       // clara no próprio modal em vez do genérico "veja o terminal".
       const locked = !result.ok && /TRAVADO|EPERM|EBUSY|EACCES/.test(result.output)
       modal.finish(result.ok, result.distDir, locked ? t('bottomPanel.export_locked') : undefined)
+      // Pasta travada: em vez de só reclamar, oferece EXPORTAR PRA OUTRA PASTA —
+      // o dev escolhe um destino livre e o export refaz na hora (sem fechar o que
+      // segura o handle). Só quando NÃO foi um `outDir` já escolhido (evita loop).
+      if (locked && !outDir) {
+        const pick = await window.electronAPI.confirmDialog(t('bottomPanel.export_pick_other_dir'))
+        if (pick) {
+          const dir = await window.electronAPI.selectDirectory()
+          if (dir) {
+            unsubscribe()
+            await this.exportNative(mode, debug, dir)
+            return
+          }
+        }
+      }
     } catch (err) {
       this.appendTerminal(`Export falhou: ${String(err)}\n`, 'error')
       modal.finish(false)
