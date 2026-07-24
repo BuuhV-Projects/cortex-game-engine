@@ -3,6 +3,17 @@
   "name": "platformer-space",
   "module": 1,
   "theme": "space",
+  "scripts": {
+    "dir": "scripts",
+    "provides": [
+      "Esteira",
+      "PenduloEspetos",
+      "Prensa",
+      "PlataformaGiratoria"
+    ],
+    "note": "Scripts de mecânica do kit (ADR-0085). Copie scripts/ pro projeto e registre; os asset.mechanic apontam qual usar.",
+    "animationRule": "Escolha o TIPO de animação inspecionando o .glb antes (nós, filhos, skins, animations): transform de nó = peça rígida que gira/balança/vaivém (prensa, disco); hierarquia pai+filho = o asset já vem em partes com ritmos diferentes (obstacle_12/13: pórtico + rolo); UV scroll = superfície que corre sem a peça sair do lugar (esteira — material `Road` separado); ossos/skin = só deformação orgânica; nada = decoração pura. Peça com papel de gameplay visualmente parada está ERRADA."
+  },
   "assets": {
     "assets/apple_001.glb": {
       "role": "collectible",
@@ -777,7 +788,20 @@
           ]
         }
       },
-      "thumb": "thumbnails/fence_002.png"
+      "thumb": "thumbnails/fence_002.png",
+      "mechanic": {
+        "behavior": "laser-gate",
+        "script": "Perigo",
+        "params": {
+          "raio": 0.6,
+          "periodo": 2
+        },
+        "animation": {
+          "clip": "toggle"
+        },
+        "note": "PENDENTE: precisa de clipe liga/desliga do raio no .glb (autoria de asset). Ligado = letal; desligado = passa."
+      },
+      "note": "Painel estreito (1.5u) reaproveitado como BARREIRA DE LASER intermitente: emite um raio que LIGA e DESLIGA em ciclo. Par com fence_003 (3.8u) e fence_004 (5.5u) — tres larguras de raio."
     },
     "assets/fence_003.glb": {
       "role": "decoration",
@@ -840,7 +864,20 @@
           ]
         }
       },
-      "thumb": "thumbnails/fence_003.png"
+      "thumb": "thumbnails/fence_003.png",
+      "mechanic": {
+        "behavior": "laser-gate",
+        "script": "Perigo",
+        "params": {
+          "raio": 0.6,
+          "periodo": 2
+        },
+        "animation": {
+          "clip": "toggle"
+        },
+        "note": "PENDENTE: precisa de clipe liga/desliga do raio no .glb (autoria de asset). Ligado = letal; desligado = passa."
+      },
+      "note": "Painel medio (3.8u) reaproveitado como BARREIRA DE LASER intermitente: raio que liga/desliga em ciclo. Ver fence_002/fence_004."
     },
     "assets/fence_004.glb": {
       "role": "decoration",
@@ -903,7 +940,20 @@
           ]
         }
       },
-      "thumb": "thumbnails/fence_004.png"
+      "thumb": "thumbnails/fence_004.png",
+      "mechanic": {
+        "behavior": "laser-gate",
+        "script": "Perigo",
+        "params": {
+          "raio": 0.6,
+          "periodo": 2
+        },
+        "animation": {
+          "clip": "toggle"
+        },
+        "note": "PENDENTE: precisa de clipe liga/desliga do raio no .glb (autoria de asset). Ligado = letal; desligado = passa."
+      },
+      "note": "Painel largo (5.5u) reaproveitado como BARREIRA DE LASER intermitente: raio que liga/desliga em ciclo. Ver fence_002/fence_003."
     },
     "assets/ground_001.glb": {
       "role": "ground",
@@ -1326,7 +1376,14 @@
         "params": {
           "raio": 1.8
         }
-      }
+      },
+      "note": "Placa listrada fina (4x0.25x8). Funciona MAIS como ESTEIRA (correia empurrando quem sobe) ou, girada em pe (rotX/rotZ), como PLACA SINALIZADORA. Tambem serve de faixa de espinhos pulsante (uso atual no teste4). Pode existir SOZINHA (sem land) e combinar com outras obstacle_10/obstacle_15 do mesmo nome.",
+      "altUse": [
+        "conveyor",
+        "sign",
+        "spike-strip"
+      ],
+      "standalone": true
     },
     "assets/obstacle_11_001.glb": {
       "role": "prop",
@@ -1415,7 +1472,7 @@
           "eixoRolo": "x",
           "raio": 1.6
         },
-        "note": "Pórtico em U que BALANÇA (rotação X do nó raiz, cuja origem já é o eixo das juntas) com um rolo de espetos girando no próprio eixo X (nó filho obstacle_12_002, a −3.82u). Pendure em top+4.5 pro rolo passar rente ao caminho; a zona letal segue o ROLO, não o pivô."
+        "note": "Portico em U que BALANCA (rotacao X do no raiz, cuja origem ja e o eixo das juntas) com um rolo de espetos girando no proprio eixo X (no filho obstacle_12_002, a -3.82u). Pendure em top+4.5 pro rolo passar rente ao caminho; a zona letal segue o ROLO, nao o pivo."
       }
     },
     "assets/obstacle_13_001.glb": {
@@ -1461,7 +1518,7 @@
           "eixoRolo": "y",
           "raio": 1.4
         },
-        "note": "Portal fixo com um rolo de espetos VERTICAL girando no vão (nó filho obstacle_13_002, eixo Y, centro a +3.32u). Por isso `angulo: 0` — aqui o pórtico não balança, é torniquete: passe rente à ombreira."
+        "note": "Portal (9x6.7) com rolo de espetos VERTICAL girando no vao (no filho obstacle_13_002, eixo Y, centro +3.32u) e que ainda VAI-E-VOLTA de um lado a outro (transladar em X/Patrulha). O player passa POR DENTRO do portico, entre as passagens do cilindro. angulo:0 = nao balanca; e torniquete + trilho."
       }
     },
     "assets/obstacle_14_001.glb": {
@@ -1544,7 +1601,9 @@
           "direcao": 0,
           "velocidade": 2.4
         }
-      }
+      },
+      "note": "Esteira metalica (4.15x1.0x6.58). Empurra quem esta em cima; a correia corre no eixo Z do asset. Pode existir SOZINHA (nao precisa de land) e combinar com outras obstacle_15/obstacle_10 do mesmo nome.",
+      "standalone": true
     },
     "assets/obstacle_16_001.glb": {
       "role": "platform",
@@ -1627,6 +1686,9 @@
         0.585,
         8.095
       ],
+      "gameplayRole": [
+        "safe-zone"
+      ],
       "collider": {
         "shape": "box",
         "solid": true
@@ -1646,7 +1708,8 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_18_001.png"
+      "thumb": "thumbnails/obstacle_18_001.png",
+      "note": "Plataforma retangular lisa (4.09x0.58x8.10) — use como LAND/base andavel (chao), igual as ilhas land_*. E a versao CHEIA; o par vazado (com furo) e a obstacle_19."
     },
     "assets/obstacle_19_001.glb": {
       "role": "platform",
@@ -1680,7 +1743,8 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_19_001.png"
+      "thumb": "thumbnails/obstacle_19_001.png",
+      "note": "Plataforma retangular com FURO no meio (4.09x0.58x8.10). Usos: (1) PASSAGEM/alcapao — o buraco deixa cair pra baixo; (2) moldura de LASER — hospeda um raio (fence_002..004) no vao que liga/desliga. E a versao VAZADA; o par cheio e a obstacle_18."
     },
     "assets/obstacle_1_001.glb": {
       "role": "platform",
@@ -1714,7 +1778,15 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_1_001.png"
+      "thumb": "thumbnails/obstacle_1_001.png",
+      "mechanic": {
+        "behavior": "rotating-platform",
+        "script": "PlataformaGiratoria",
+        "params": {
+          "giro": 0.5
+        }
+      },
+      "note": "Painel solar retangular (5.7x0.8x10) que e uma plataforma-BASE GIRATORIA: carrega o player enquanto roda no proprio eixo Y. E a versao em PLACA do disco giratorio obstacle_8."
     },
     "assets/obstacle_2_001.glb": {
       "role": "decoration",
@@ -1750,7 +1822,18 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_2_001.png"
+      "thumb": "thumbnails/obstacle_2_001.png",
+      "mechanic": {
+        "behavior": "hazard-hammer",
+        "script": "MarteloGiratorio",
+        "params": {
+          "giro": 1.6,
+          "alcance": 2.8,
+          "raioAcerto": 1
+        },
+        "note": "Precisa de KNOCKBACK: ao encostar, ARREMESSA o player (empurrao), nao so tira vida. Se o MarteloGiratorio ainda nao empurra, adicionar campo de forca/arremesso."
+      },
+      "note": "Braco/painel (5.5x1.6x0.7) que GIRA como um martelo: ao encostar, ARREMESSA o player. Use como pa varrendo a plataforma — quem chega perto e jogado longe."
     },
     "assets/obstacle_3_001.glb": {
       "role": "hazard",
@@ -2023,7 +2106,18 @@
           ]
         }
       },
-      "thumb": "thumbnails/obstacle_9_001.png"
+      "thumb": "thumbnails/obstacle_9_001.png",
+      "mechanic": {
+        "behavior": "tilt-timeout",
+        "script": null,
+        "params": {
+          "atrasoTombar": 1.5,
+          "anguloTombar": 70,
+          "tempoReset": 2
+        },
+        "note": "Mecanica A IMPLEMENTAR (script tipo PlataformaBascula): base que tomba por tempo-em-cima e volta."
+      },
+      "note": "Base andavel tipo land (4.82x0.82x4.35). MAS: se o player fica MUITO TEMPO em cima, ela TOMBA (gira) e o derruba; depois volta a posicao correta. Plataforma-armadilha por tempo. (no teste4 esta repurposada como spikePad/Perigo — a semantica REAL do asset e essa bascula.)"
     },
     "assets/planet_001.glb": {
       "role": "decoration",
@@ -3214,16 +3308,5 @@
       },
       "thumb": "thumbnails/ufo_002.png"
     }
-  },
-  "scripts": {
-    "dir": "scripts",
-    "provides": [
-      "Esteira",
-      "PenduloEspetos",
-      "Prensa",
-      "PlataformaGiratoria"
-    ],
-    "note": "Scripts de mecânica do kit (ADR-0085). Copie scripts/ pro projeto e registre; os asset.mechanic apontam qual usar.",
-    "animationRule": "Escolha o TIPO de animação inspecionando o .glb antes (nós, filhos, skins, animations): transform de nó = peça rígida que gira/balança/vaivém (prensa, disco); hierarquia pai+filho = o asset já vem em partes com ritmos diferentes (obstacle_12/13: pórtico + rolo); UV scroll = superfície que corre sem a peça sair do lugar (esteira — material `Road` separado); ossos/skin = só deformação orgânica; nada = decoração pura. Peça com papel de gameplay visualmente parada está ERRADA."
   }
 }

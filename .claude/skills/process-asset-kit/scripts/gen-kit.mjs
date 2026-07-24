@@ -6,9 +6,16 @@
 //   - sizes.json: saída do convert.py/measure.py ({ sizes, bounds? })
 //   - kitDir: pasta do kit (espera kitDir/assets/*.glb); name = basename(kitDir)
 //   - --theme: nome do tema do kit (default 'TBD'; design tokens vêm depois)
-//   - --overrides: mapa { nome: { role, tags, gameplayRole?, solid?, shape? } } pra
-//     packs de naming NÃO-descritivo (ex.: obstacle_7_001), classificados a olho
-//     pelas thumbnails. Vence classify(); mantém classify() kit-independente.
+//   - --overrides: mapa { nome: { role, tags, gameplayRole?, solid?, shape?,
+//     mechanic?, note?, altUse?, standalone? } } pra packs de naming NÃO-descritivo
+//     (ex.: obstacle_7_001), classificados a olho pelas thumbnails. Vence
+//     classify(); mantém classify() kit-independente. Os 4 últimos campos são
+//     ANOTAÇÃO SEMÂNTICA (comportamento/uso do asset) e passam direto pro kit.json —
+//     é onde mora, de forma DURÁVEL (sobrevive ao reprocesso), o que uma peça faz:
+//       mechanic  = { behavior, script, params?, animation?, note? } (mecânica default)
+//       note      = descrição livre do que a peça é / como usar
+//       altUse    = usos alternativos (["conveyor","sign",...])
+//       standalone= true se a peça funciona sozinha (não precisa de outra pra fazer sentido)
 //
 // As regras de classify() SÃO o vocabulário canônico (ADR-0053 §6): mantenha-as
 // kit-independentes. Ajuste/expanda conforme novos tipos de asset aparecem.
@@ -217,9 +224,21 @@ for (const dir of kitDirs) {
       a.anchors = anchors;
     }
     a.thumb = `thumbnails/${name}.png`;
+    // Anotação semântica (durável): passa direto do override pro kit.json. Ver o
+    // cabeçalho de --overrides. classify() nunca produz esses campos, então só
+    // aparecem quando o override os declara.
+    if (c.mechanic) a.mechanic = c.mechanic;
+    if (c.note) a.note = c.note;
+    if (c.altUse) a.altUse = c.altUse;
+    if (c.standalone) a.standalone = c.standalone;
     assets[`assets/${name}.glb`] = a;
   }
-  const kit = { version: 1, name: basename(dir), module: hexGrassW ? +hexGrassW.toFixed(3) : 1, theme: themeArg ?? 'TBD', assets };
+  // `_kit` no overrides = metadados KIT-LEVEL (não por-asset), ex.: o bloco
+  // `scripts` (ADR-0085) que lista os scripts de mecânica que o kit envia. Fica
+  // fora de `assets` e é espalhado direto no manifesto — assim o reprocesso não o
+  // apaga (o `_doc`/`_kit` nunca casam com nome de glb, então não viram asset).
+  const kitMeta = overrides._kit ?? {};
+  const kit = { version: 1, name: basename(dir), module: hexGrassW ? +hexGrassW.toFixed(3) : 1, theme: themeArg ?? 'TBD', ...kitMeta, assets };
   writeFileSync(`${dir}/kit.json`, JSON.stringify(kit, null, 2));
   const byRole = {};
   for (const v of Object.values(assets)) byRole[v.role] = (byRole[v.role] ?? 0) + 1;
