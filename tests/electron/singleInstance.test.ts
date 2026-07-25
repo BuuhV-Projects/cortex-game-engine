@@ -15,6 +15,11 @@ import os from 'os'
 
 const MOCK_USERDATA = path.join(os.tmpdir(), 'test-userdata-single-instance')
 
+// Cada teste re-importa o electron/main.js FRIO (resetModules) — transform +
+// execução do grafo inteiro do main process. Sob a suíte paralela isso passa
+// dos 5s default e flakeava o gate; folga generosa como no encode-ktx2.
+const COLD_MAIN_IMPORT_TIMEOUT_MS = 30_000
+
 vi.mock('electron', () => ({
   ipcMain: { handle: vi.fn() },
   app: {
@@ -88,4 +93,4 @@ describe('segunda instância do Studio', () => {
     const channels = vi.mocked(app.on).mock.calls.map(([ch]) => ch)
     expect(channels).not.toContain('second-instance')
   })
-})
+}, COLD_MAIN_IMPORT_TIMEOUT_MS)
