@@ -69,6 +69,51 @@ describe('LoadingScreen', () => {
     }
   });
 
+  it('runWithLoadingScreen: pré-pinta 2 quadros ANTES da task (SPEC-0154)', async () => {
+    const ui = fakeUi();
+    const orig = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback): number => {
+      queueMicrotask(() => cb(0));
+      return 1;
+    }) as typeof globalThis.requestAnimationFrame;
+    try {
+      let rendersAoEntrar = -1;
+      let fillXAoEntrar = 0;
+      await runWithLoadingScreen(ui, async () => {
+        // No host nativo a carga roda numa única virada de JS: o que estiver
+        // na tela ao ENTRAR aqui é o que o jogador vê a carga inteira.
+        rendersAoEntrar = (ui as unknown as { renders: number }).renders;
+        fillXAoEntrar = (ui._widgets[3] as unknown as { x: number }).x; // fill
+        return 1;
+      });
+      expect(rendersAoEntrar).toBeGreaterThanOrEqual(2);
+      // Barra inicializada em 0% (fill encostado à esquerda), não no template cru.
+      expect(fillXAoEntrar).toBeLessThan(0);
+    } finally {
+      globalThis.requestAnimationFrame = orig;
+    }
+  });
+
+  it('runWithLoadingScreen: `await progress` pinta e apresenta a etapa (SPEC-0154)', async () => {
+    const ui = fakeUi();
+    const orig = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback): number => {
+      queueMicrotask(() => cb(0));
+      return 1;
+    }) as typeof globalThis.requestAnimationFrame;
+    try {
+      await runWithLoadingScreen(ui, async (progress) => {
+        const antes = (ui as unknown as { renders: number }).renders;
+        await progress('Meio…', 0.5); // resolve no rAF seguinte (present do quadro)
+        const depois = (ui as unknown as { renders: number }).renders;
+        expect(depois).toBeGreaterThan(antes); // pintou a etapa na hora
+        return 1;
+      });
+    } finally {
+      globalThis.requestAnimationFrame = orig;
+    }
+  });
+
   it('runWithLoadingScreen: enabled=false roda a task SEM criar a tela (editor)', async () => {
     const ui = fakeUi();
     const orig = globalThis.requestAnimationFrame;

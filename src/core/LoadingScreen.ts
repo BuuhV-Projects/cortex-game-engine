@@ -120,11 +120,21 @@ export function createLoadingScreen(
  * `requestAnimationFrame` desenha a UI (fundo + barra) a cada quadro durante o
  * carregamento — funciona no Studio e no export nativo (mesma UiLayer).
  *
+ * A tela é **pré-pintada e apresentada (2 quadros) ANTES da task** (SPEC-0154):
+ * no host nativo a carga roda numa única virada de JS (fetch síncrono) e o rAF
+ * não dispara no meio — o que fica na tela durante a carga é o último frame
+ * apresentado antes dela, então ele TEM de ser o loading (e imagem de fundo,
+ * se houver, precisa do 2º quadro pra estar aplicada).
+ *
+ * **`await`e cada `progress(...)`** pra barra avançar por etapa também no
+ * export (a promise resolve no rAF seguinte = present do quadro). Ignorar o
+ * retorno funciona, mas no host a barra fica no estado da última apresentação.
+ *
  * @example
  * const scene = await runWithLoadingScreen(game.ui, async (progress) => {
- *   progress('Carregando cena…', 0.3);
+ *   await progress('Carregando cena…', 0.3);
  *   const s = await buildScene(...);
- *   progress('Áudio…', 0.8);
+ *   await progress('Áudio…', 0.8);
  *   await setupAudio(game);
  *   return s;
  * });
@@ -132,18 +142,37 @@ export function createLoadingScreen(
  */
 export async function runWithLoadingScreen<T>(
   ui: UiLayer,
-  task: (progress: (label: string, fraction: number) => void) => Promise<T>,
+  task: (progress: (label: string, fraction: number) => Promise<void>) => Promise<T>,
   options: Omit<LoadingScreenOptions, 'parent'> = {},
 ): Promise<T> {
   // Desligada (editor): roda a task SEM overlay nem loop de render — igual ao
   // boot pré-tela-de-loading. `progress` vira no-op. Evita o overlay piscar a
   // cada reload de HMR (editar script) durante a edição no Studio.
   if (options.enabled === false) {
-    return task(() => {});
+    return task(() => Promise.resolve());
   }
 
   const loading = createLoadingScreen(ui, options);
   loading.show();
+  // Barra em 0% ANTES da pré-pintura — sem isto o quadro apresentado mostra os
+  // widgets como criados (fill de 1px no centro), não o estado "carga no início".
+  loading.setProgress(options.message ?? 'Carregando...', 0);
+
+  // Pré-pintura (SPEC-0154): pinta e APRESENTA a tela antes da task. No host a
+  // carga inteira roda numa única virada de JS — nada pinta no meio — então o
+  // quadro congelado durante a carga é o último apresentado AQUI. São 2 quadros
+  // porque imagem de fundo carrega assíncrono: a pintura 1 dispara o load, só a
+  // 2 desenha com ela aplicada.
+  const paint = (): void => {
+    ui.update(0);
+    ui.render();
+  };
+  const nextFrame = (): Promise<void> =>
+    new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  paint();
+  await nextFrame();
+  paint();
+  await nextFrame();
 
   // Renderiza SÓ quando o progresso muda (a tela é estática entre etapas). No
   // host nativo o loop principal só bloqueia no vsync (present) QUANDO algo
@@ -152,7 +181,7 @@ export async function runWithLoadingScreen<T>(
   // trocas de etapa, o host gira livre e o carregamento roda na velocidade
   // máxima; o último quadro apresentado (a barra) fica na tela no intervalo.
   let active = true;
-  let dirty = true; // desenha uma vez ao aparecer
+  let dirty = false; // a pré-pintura acima já desenhou a abertura
   const frame = (): void => {
     if (!active) return;
     if (dirty) {
@@ -165,9 +194,15 @@ export async function runWithLoadingScreen<T>(
   requestAnimationFrame(frame);
 
   try {
+    // `progress` pinta NA HORA e devolve a promise do próximo rAF (= present do
+    // quadro no host). Task que `await`a cada progress faz a barra andar POR
+    // ETAPA também no export (SPEC-0154); quem ignora o retorno fica com o
+    // comportamento antigo (dirty → o loop acima pinta; no host, estática).
     return await task((label, fraction) => {
       loading.setProgress(label, fraction);
-      dirty = true;
+      paint();
+      dirty = false; // já pintado — o loop não precisa repetir este quadro
+      return nextFrame();
     });
   } finally {
     active = false;
