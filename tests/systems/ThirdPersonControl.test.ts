@@ -82,6 +82,23 @@ describe('ThirdPersonControlSystem (gamepad-first)', () => {
     expect(body.jumpQueued).toBe(true);
   });
 
+  it('despausar com A ainda segurado NÃO pula (SPEC-0156 — pulo fantasma do menu)', () => {
+    // A segurado navegando o menu de pausa; ao despausar, a borda não pode contar.
+    const buttons = [1];
+    let paused = true;
+    const { world, e } = setup(fakePad([0, 0], buttons), { pauseWhen: () => paused });
+    const body = e.getComponent(CharacterBodyComponent)!;
+    world.tick(16); // pausado (A segurado no menu)
+    paused = false;
+    world.tick(16); // 1º frame livre — A ainda segurado
+    expect(body.jumpQueued).toBe(false);
+    buttons[0] = 0;
+    world.tick(16); // soltou
+    buttons[0] = 1;
+    world.tick(16); // apertou de novo → borda real
+    expect(body.jumpQueued).toBe(true);
+  });
+
   it('sem gamepad nem teclado: player não se move', () => {
     const { world, e } = setup(undefined);
     world.tick(16);
