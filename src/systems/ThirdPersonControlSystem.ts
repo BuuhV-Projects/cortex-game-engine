@@ -116,7 +116,12 @@ export class ThirdPersonControlSystem extends System {
 
   private yaw = 0;
   private pitch = 0.35; // levemente de cima
-  private prevJump = false;
+  /**
+   * Nasce `true` (SPEC-0156): o A que CONFIRMOU a fase no menu ainda está
+   * segurado quando o sistema novo dá os primeiros ticks (a carga com cache
+   * residente é rápida) — só um aperto NOVO depois de criado enfileira pulo.
+   */
+  private prevJump = true;
   private clipMap: Record<string, string> | null = null;
   private clipSet: Set<string> | null = null; // nomes de clipe disponíveis (run_stop/run_jump?)
   private currentClip: string | null = null;

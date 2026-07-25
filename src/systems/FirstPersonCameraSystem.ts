@@ -71,7 +71,8 @@ export class FirstPersonCameraSystem extends System {
   private yaw = 0;
   /** Ângulo vertical (rad). `0` = horizonte; positivo = pra cima. */
   private pitch = 0;
-  private prevJump = false;
+  /** Nasce `true` (SPEC-0156): botão segurado do menu não pula no 1º tick. */
+  private prevJump = true;
 
   constructor(
     private readonly camera: THREE.PerspectiveCamera,

@@ -16,6 +16,12 @@ Nos dois controles (`ThirdPersonControlSystem` e `FirstPersonCameraSystem`),
 enquanto `pauseWhen` está ativo o botão de pulo conta como **já pressionado**
 (`prevJump = true`): ao despausar, só soltar-e-apertar de novo gera borda.
 
+**Extensão (2ª rodada, playtest):** o mesmo vazamento aparecia na ENTRADA da
+fase — o A que confirma no menu de seleção ainda está segurado quando o sistema
+recém-criado dá os primeiros ticks (a carga ficou rápida com o cache residente,
+SPEC-0152). Os controles agora **nascem** com `prevJump = true`: só um aperto
+novo após a criação enfileira pulo.
+
 ## Consequências
 
 - Confirmar item de menu com A/Espaço não dispara mais ação de gameplay no

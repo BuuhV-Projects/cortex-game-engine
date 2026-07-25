@@ -76,10 +76,23 @@ describe('ThirdPersonControlSystem (gamepad-first)', () => {
   });
 
   it('A (botão 0) enfileira o pulo (borda de pressão, uma vez)', () => {
+    // O sistema NASCE com o botão contando como pressionado (SPEC-0156) — o
+    // aperto real precisa de um frame solto antes.
+    const buttons = [0];
+    const { world, e } = setup(fakePad([0, 0], buttons));
+    const body = e.getComponent(CharacterBodyComponent)!;
+    world.tick(16); // solto → arma a borda
+    buttons[0] = 1;
+    world.tick(16); // aperto novo → pula
+    expect(body.jumpQueued).toBe(true);
+  });
+
+  it('A já segurado na CRIAÇÃO do sistema (confirmou fase no menu) NÃO pula (SPEC-0156)', () => {
     const { world, e } = setup(fakePad([0, 0], [1]));
     const body = e.getComponent(CharacterBodyComponent)!;
     world.tick(16);
-    expect(body.jumpQueued).toBe(true);
+    world.tick(16);
+    expect(body.jumpQueued).toBe(false);
   });
 
   it('despausar com A ainda segurado NÃO pula (SPEC-0156 — pulo fantasma do menu)', () => {
