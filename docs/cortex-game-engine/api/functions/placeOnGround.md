@@ -8,7 +8,7 @@
 
 > **placeOnGround**(`object`, `options?`): [`Bounds`](../interfaces/Bounds.md)
 
-Defined in: [src/scene/SceneAssets.ts:317](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L317)
+Defined in: [src/scene/SceneAssets.ts:345](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L345)
 
 Assenta um objeto: aplica `rotY`/`scale`, posiciona o **centro horizontal** em
 `(x, z)` e a **base** da geometria (ponto mais baixo do bbox) em `y` —

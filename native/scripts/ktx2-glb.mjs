@@ -32,6 +32,8 @@ export async function convertGlbTextures(doc) {
     .filter((t) => t.getMimeType() !== 'image/ktx2' && t.getImage());
   let n = 0;
   let created = false;
+  // Abaixo disto (PNG fonte) a conversão não compensa o overhead do KTX2.
+  const MIN_CONVERT_SOURCE_BYTES = 16 * 1024;
   for (const texture of pending) {
     const src = texture.getImage();
     const isLinear = linear.has(texture);
@@ -42,9 +44,13 @@ export async function convertGlbTextures(doc) {
     } catch {
       continue; // encode falhou (ex.: JPG/formato incomum) → mantém o original
     }
-    // Só troca se REALMENTE encolheu — KTX2 tem overhead (header+mipmaps), então
-    // textura minúscula (ex.: atlas 8 KB do kit) ficaria MAIOR. Mantém a menor.
-    if (!ktx2 || ktx2.length >= src.length) continue;
+    // SEMPRE converte acima do piso — o que importa é VRAM, não disco
+    // (SPEC-0155): PNG decodifica pra RGBA cheio na GPU (4 MB + mips num
+    // 1024²) enquanto KTX2→BC7 fica comprimido (1 MB), mesmo quando o .ktx2
+    // sai MAIOR em disco. A regra antiga (manter o menor em disco) deixava as
+    // texturas do kit fora do BC7. O piso poupa só as minúsculas, onde o
+    // overhead de header/mips não paga o ganho.
+    if (!ktx2 || src.length < MIN_CONVERT_SOURCE_BYTES) continue;
     if (!created) {
       doc.createExtension(KHRTextureBasisu).setRequired(true);
       created = true;

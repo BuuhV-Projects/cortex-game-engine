@@ -214,6 +214,11 @@ export class ThirdPersonControlSystem extends System {
     if (this.shouldPause?.()) {
       // No editor o corpo fica visível e parado; ainda assim posiciona a câmera.
       this.placeCamera(t, obj);
+      // O A/Espaço usado pra NAVEGAR o menu de pausa ainda está segurado quando
+      // a pausa fecha — sem isto, o 1º frame livre via a "borda" e enfileirava
+      // um pulo fantasma (com som). Pausado, o botão conta como já-pressionado:
+      // só solta-e-aperta de novo pula (SPEC-0156).
+      this.prevJump = true;
       return;
     }
     const dt = deltaTime / 1000;

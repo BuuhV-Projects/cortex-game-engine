@@ -13,6 +13,16 @@ WGPUTextureFormat formatFromString(const std::string& s) {
   if (s == "r16float") return WGPUTextureFormat_R16Float;
   if (s == "r32float") return WGPUTextureFormat_R32Float;
   if (s == "rg16float") return WGPUTextureFormat_RG16Float;
+  // Formatos comprimidos BC (SPEC-0155) — o transcode KTX2 do host entrega BC7
+  // e o device pede TextureCompressionBC. BC1–BC5 entram junto por completude.
+  if (s == "bc7-rgba-unorm") return WGPUTextureFormat_BC7RGBAUnorm;
+  if (s == "bc7-rgba-unorm-srgb") return WGPUTextureFormat_BC7RGBAUnormSrgb;
+  if (s == "bc1-rgba-unorm") return WGPUTextureFormat_BC1RGBAUnorm;
+  if (s == "bc1-rgba-unorm-srgb") return WGPUTextureFormat_BC1RGBAUnormSrgb;
+  if (s == "bc3-rgba-unorm") return WGPUTextureFormat_BC3RGBAUnorm;
+  if (s == "bc3-rgba-unorm-srgb") return WGPUTextureFormat_BC3RGBAUnormSrgb;
+  if (s == "bc4-r-unorm") return WGPUTextureFormat_BC4RUnorm;
+  if (s == "bc5-rg-unorm") return WGPUTextureFormat_BC5RGUnorm;
   if (s == "depth16unorm") return WGPUTextureFormat_Depth16Unorm;
   if (s == "depth24plus") return WGPUTextureFormat_Depth24Plus;
   if (s == "depth24plus-stencil8")

@@ -44,8 +44,16 @@ void logThrown(void* handle, const char* label) {
 extern "C" {
 
 void* cortexHermesCreateRuntime() {
+  // Teto de heap (ADR-0153): sem limite o Hades cresce o heap em vez de
+  // coletar (working set subia ~1 MB/s de lixo durante o gameplay). 512 MB é
+  // ~8× o live-set medido do jogo (~65 MB) — coleta vira regular e a RAM fica
+  // limitada, alinhado ao alvo de específicação mínima (2 GB de RAM).
+  constexpr unsigned kMaxHeapBytes = 512u << 20;
   auto config = hermes::vm::RuntimeConfig::Builder()
                     .withMicrotaskQueue(true)
+                    .withGCConfig(hermes::vm::GCConfig::Builder()
+                                      .withMaxHeapSize(kMaxHeapBytes)
+                                      .build())
                     .build();
   return new RuntimeHolder{Runtime::create(config)};
 }

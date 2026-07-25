@@ -539,6 +539,14 @@ const sceneDefinitionSchema = z.object({
       skyBottom: colorSchema.optional(),
       /** Intensidade da luz do céu gradiente (IBL). Default 1. */
       skyGradientIntensity: z.number().optional(),
+      /**
+       * `false` PULA a criação do environment/céu default do builder — pra
+       * jogos que instalam o próprio skybox+IBL logo após o `buildScene` (ex.:
+       * skybox por mundo do teste4). Evita gerar um PMREM (par 3072×4096,
+       * ~144 MB transitório) que seria substituído em seguida (SPEC-0155).
+       * Default `true`.
+       */
+      environment: z.boolean().optional(),
     })
     .optional(),
 });

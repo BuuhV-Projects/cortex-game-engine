@@ -121,7 +121,12 @@ export class FirstPersonCameraSystem extends System {
     // System.pauseWhen) pra conseguir RESTAURAR a visibilidade ao voltar pro editor.
     const paused = this.shouldPause?.() ?? false;
     if (obj) obj.visible = paused;
-    if (paused) return;
+    if (paused) {
+      // Botão de pulo usado pra navegar o menu não pode virar borda no 1º
+      // frame livre (pulo fantasma ao despausar) — SPEC-0156.
+      this.prevJump = true;
+      return;
+    }
 
     const dt = deltaTime / 1000;
 

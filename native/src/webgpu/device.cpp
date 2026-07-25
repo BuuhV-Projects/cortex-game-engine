@@ -43,6 +43,13 @@ WGPUDevice acquireDevice(HostGpu* gpu, WGPUAdapter adapter) {
   // Erros não capturados (shader inválido, uso errado da API) viram log —
   // essencial pra depurar o que o JS pediu.
   desc.uncapturedErrorCallbackInfo.callback = logUncapturedError;
+  // Texturas comprimidas BC (SPEC-0155): o transcode KTX2 do host entrega BC7
+  // (4× menos VRAM que RGBA). Todo hardware D3D12 suporta BC1–7 por spec.
+  static const WGPUFeatureName kRequiredFeatures[] = {
+      WGPUFeatureName_TextureCompressionBC,
+  };
+  desc.requiredFeatureCount = 1;
+  desc.requiredFeatures = kRequiredFeatures;
   WGPURequestDeviceCallbackInfo cb = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
   cb.mode = WGPUCallbackMode_AllowProcessEvents;
   cb.userdata1 = &result;

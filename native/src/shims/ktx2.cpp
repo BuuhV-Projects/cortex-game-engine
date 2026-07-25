@@ -57,24 +57,59 @@ napi_value jsTranscodeKtx2(napi_env env, napi_callback_info info) {
   const uint32_t h = trans.get_height();
   if (w == 0 || h == 0) return nullValue;
 
-  const size_t rgbaSize = static_cast<size_t>(w) * h * 4;
-  void* out = nullptr;
-  napi_value rgba = nullptr;
-  napi_create_arraybuffer(env, rgbaSize, &out, &rgba);
-  if (!out) return nullValue;
-
-  // Nível 0, layer 0, face 0 → RGBA32 raster (buf em PIXELS = w*h).
-  if (!trans.transcode_image_level(0, 0, 0, out, w * h,
-                                   basist::transcoder_texture_format::cTFRGBA32)) {
-    return nullValue;
-  }
-
   napi_value result = njs::makeObject(env);
   napi_value nw = nullptr, nh = nullptr;
   napi_create_int32(env, static_cast<int32_t>(w), &nw);
   napi_create_int32(env, static_cast<int32_t>(h), &nh);
   napi_set_named_property(env, result, "width", nw);
   napi_set_named_property(env, result, "height", nh);
+
+  // ── BC7, todos os mips (SPEC-0155) ─────────────────────────────────────────
+  // RGBA32 cru ocupava 4× mais VRAM que o Studio (KTX2Loader → BC7) e só
+  // entregava o mip 0 (o three re-gerava mips na GPU). Todo hardware D3D12
+  // suporta BC1–7 por spec; o device pede TextureCompressionBC (device.cpp).
+  const uint32_t levelCount = trans.get_levels();
+  bool bc7Ok = levelCount > 0;
+  napi_value levels = nullptr;
+  napi_create_array_with_length(env, levelCount, &levels);
+  for (uint32_t level = 0; bc7Ok && level < levelCount; ++level) {
+    const uint32_t lw = w >> level ? w >> level : 1;
+    const uint32_t lh = h >> level ? h >> level : 1;
+    const uint32_t blocksX = (lw + 3) / 4;
+    const uint32_t blocksY = (lh + 3) / 4;
+    const size_t byteSize = static_cast<size_t>(blocksX) * blocksY * 16;  // BC7: 16 B/bloco 4×4
+    void* out = nullptr;
+    napi_value buf = nullptr;
+    napi_create_arraybuffer(env, byteSize, &out, &buf);
+    if (!out ||
+        !trans.transcode_image_level(level, 0, 0, out, blocksX * blocksY,
+                                     basist::transcoder_texture_format::cTFBC7_RGBA)) {
+      bc7Ok = false;
+      break;
+    }
+    napi_set_element(env, levels, level, buf);
+  }
+  if (bc7Ok) {
+    napi_value fmt = nullptr;
+    napi_create_string_utf8(env, "bc7", NAPI_AUTO_LENGTH, &fmt);
+    napi_set_named_property(env, result, "format", fmt);
+    napi_set_named_property(env, result, "levels", levels);
+    return result;
+  }
+
+  // ── Fallback RGBA32 (mip 0) — arquivos que o BC7 não cobrir ────────────────
+  const size_t rgbaSize = static_cast<size_t>(w) * h * 4;
+  void* out = nullptr;
+  napi_value rgba = nullptr;
+  napi_create_arraybuffer(env, rgbaSize, &out, &rgba);
+  if (!out) return nullValue;
+  if (!trans.transcode_image_level(0, 0, 0, out, w * h,
+                                   basist::transcoder_texture_format::cTFRGBA32)) {
+    return nullValue;
+  }
+  napi_value fmt = nullptr;
+  napi_create_string_utf8(env, "rgba", NAPI_AUTO_LENGTH, &fmt);
+  napi_set_named_property(env, result, "format", fmt);
   napi_set_named_property(env, result, "rgba", rgba);
   return result;
 }

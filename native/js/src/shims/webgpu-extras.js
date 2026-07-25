@@ -51,12 +51,14 @@ export function installWebGpuExtras() {
   const nativeRequestAdapter = gpu.requestAdapter.bind(gpu);
   gpu.requestAdapter = async function (options) {
     const adapter = await nativeRequestAdapter(options);
-    adapter.features = new Set();
+    // BC (SPEC-0155): o host pede TextureCompressionBC no requestDevice
+    // (garantido em D3D12) — refletido aqui pro three aceitar formatos bc*.
+    adapter.features = new Set(['texture-compression-bc']);
     adapter.limits = DEFAULT_LIMITS;
     const nativeRequestDevice = adapter.requestDevice.bind(adapter);
     adapter.requestDevice = async function (descriptor) {
       const device = await nativeRequestDevice(descriptor);
-      device.features = new Set();
+      device.features = new Set(['texture-compression-bc']);
       device.limits = DEFAULT_LIMITS;
       device.lost = new Promise(function () {}); // nunca resolve no host
       if (!device.destroy) device.destroy = function () {};

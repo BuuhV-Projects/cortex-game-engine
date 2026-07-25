@@ -14,7 +14,7 @@ Defined in: [src/core/Scene.ts:17](https://github.com/BuuhV-Projects/cortex-game
 
 > **new Scene**(): `Scene`
 
-Defined in: [src/core/Scene.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L22)
+Defined in: [src/core/Scene.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L24)
 
 #### Returns
 
@@ -26,7 +26,7 @@ Defined in: [src/core/Scene.ts:22](https://github.com/BuuhV-Projects/cortex-game
 
 > **add**(...`objects`): `this`
 
-Defined in: [src/core/Scene.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L62)
+Defined in: [src/core/Scene.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L77)
 
 Adiciona um ou mais objetos Three.js à cena.
 Equivale a `THREE.Scene.add()`; o objeto passado deve ser uma instância
@@ -48,7 +48,7 @@ de `THREE.Object3D` (Mesh, Light, Group, etc.).
 
 > **clear**(): `this`
 
-Defined in: [src/core/Scene.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L80)
+Defined in: [src/core/Scene.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L95)
 
 Remove todos os objetos filhos da cena de uma vez.
 Equivale a `THREE.Scene.clear()`.
@@ -63,7 +63,7 @@ Equivale a `THREE.Scene.clear()`.
 
 > **disposeAll**(): `this`
 
-Defined in: [src/core/Scene.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L99)
+Defined in: [src/core/Scene.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L114)
 
 Remove TODOS os filhos E libera os recursos de GPU deles (geometrias,
 materiais e texturas). Diferente de [clear](#clear) (que só desanexa e deixa
@@ -88,7 +88,7 @@ editor (esses objetos não existem), então dispõe tudo normalmente.
 
 > **getThreeScene**(): `Scene`
 
-Defined in: [src/core/Scene.ts:175](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L175)
+Defined in: [src/core/Scene.ts:203](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L203)
 
 Retorna a instância interna do `THREE.Scene`.
 Necessário para passar ao `Renderer.render(scene, camera)`.
@@ -104,7 +104,7 @@ Prefira sempre os métodos desta classe para manipular a cena.
 
 > **remove**(...`objects`): `this`
 
-Defined in: [src/core/Scene.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L71)
+Defined in: [src/core/Scene.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L86)
 
 Remove um ou mais objetos Three.js da cena.
 Equivale a `THREE.Scene.remove()`.
@@ -125,7 +125,7 @@ Equivale a `THREE.Scene.remove()`.
 
 > **setEnvironment**(`renderer`, `texture`): `void`
 
-Defined in: [src/core/Scene.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L41)
+Defined in: [src/core/Scene.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L43)
 
 Define o **environment** (IBL) a partir de uma textura equiretangular,
 com o PMREM gerado e **possuído pelo engine** (SPEC-0152).

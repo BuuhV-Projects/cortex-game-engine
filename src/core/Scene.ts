@@ -18,6 +18,8 @@ export class Scene {
   private readonly _scene: THREE.Scene;
   /** RenderTarget do PMREM do environment — NOSSO, disposto no {@link disposeAll}. */
   private _envRT: { texture: THREE.Texture; dispose(): void } | null = null;
+  /** Textura-FONTE do PMREM atual — pra reusar a RT quando a mesma fonte volta. */
+  private _envSource: THREE.Texture | null = null;
 
   constructor() {
     this._scene = new THREE.Scene();
@@ -39,8 +41,15 @@ export class Scene {
    * `background`).
    */
   setEnvironment(renderer: { threeRenderer: unknown }, texture: THREE.Texture | null): void {
+    // MESMA fonte (ex.: skybox cacheado do mundo, re-entrada de fase): reusa a
+    // RT já gerada — zero regen, zero churn no alocador (SPEC-0152/0155).
+    if (texture && texture === this._envSource && this._envRT) {
+      this._scene.environment = this._envRT.texture;
+      return;
+    }
     this._envRT?.dispose();
     this._envRT = null;
+    this._envSource = null;
     if (!texture) {
       this._scene.environment = null;
       return;
@@ -48,7 +57,13 @@ export class Scene {
     const generator = new PMREMGenerator(renderer.threeRenderer as never);
     const rt = generator.fromEquirectangular(texture) as unknown as { texture: THREE.Texture; dispose(): void };
     generator.dispose();
+    // A geração roda FORA do ciclo de frame (durante o load) e deixa o render
+    // target corrente apontando pra RT do PMREM — sem restaurar, o PRIMEIRO
+    // frame da fase renderiza pro alvo errado e a tela fica presa na splash
+    // (a 2ª entrada funcionava porque reusa a RT sem regen). SPEC-0155.
+    (renderer.threeRenderer as { setRenderTarget?: (t: unknown) => void }).setRenderTarget?.(null);
     this._envRT = rt;
+    this._envSource = texture;
     this._scene.environment = rt.texture;
   }
 
@@ -165,14 +180,18 @@ export class Scene {
     // listener do three que devolve o CUBO de conversão — 2048³×6 por fase) ou
     // cor (sem dispose). Antes, environment===background e um dispose cobria os
     // dois; com o PMREM próprio (setEnvironment) eles divergem (SPEC-0152).
-    if ((asAny.background as THREE.Texture | undefined)?.isTexture) {
-      (asAny.background as THREE.Texture).dispose();
-    }
+    // Background CACHEADO (skybox do mundo via SceneAssets) fica residente.
+    const bg = asAny.background as THREE.Texture | undefined;
+    if (bg?.isTexture && !cached(bg)) bg.dispose();
     asAny.background = null;
     asAny.environment = null;
-    // PMREM possuído pelo engine (setEnvironment): a RT volta pra GPU aqui.
-    this._envRT?.dispose();
-    this._envRT = null;
+    // PMREM possuído pelo engine (setEnvironment): fonte CACHEADA (skybox do
+    // mundo) mantém a RT viva pra reuso na re-entrada; senão, devolve à GPU.
+    if (!(this._envSource && cached(this._envSource))) {
+      this._envRT?.dispose();
+      this._envRT = null;
+      this._envSource = null;
+    }
     return this;
   }
 

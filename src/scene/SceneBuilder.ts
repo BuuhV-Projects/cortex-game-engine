@@ -519,7 +519,10 @@ export async function buildScene(
     if (outdoor) {
       setupOutdoorLighting(options.renderer, scene, outdoor);
       // HDRI (céu visível + luz por imagem). Sobrepõe o `background` de cor.
-      if (outdoor.hdri) {
+      if (outdoor.environment === false) {
+        // O jogo instala o próprio skybox/IBL após o buildScene — não gerar o
+        // env default aqui poupa um PMREM inteiro por carga (SPEC-0155).
+      } else if (outdoor.hdri) {
         await Skybox.fromHDRI(scene, outdoor.hdri, {
           backgroundBlurriness: outdoor.hdriBlur ?? 0,
           environmentIntensity: outdoor.hdriIntensity ?? 1,

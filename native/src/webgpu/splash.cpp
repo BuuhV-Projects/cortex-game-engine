@@ -1,5 +1,7 @@
 #include "splash.h"
 
+#include <cstdio>
+
 #include <stb_image.h>
 
 #include "../brand/splash_png.h"

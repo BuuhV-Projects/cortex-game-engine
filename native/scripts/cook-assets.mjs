@@ -19,7 +19,9 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
  * qualidade do encode OU a versão do encoder WASM (v2 = UASTC+RDO+Zstd pra
  * cor, ADR-0119; v3 = encoder pinado na tag v2_1_0r do basis_universal).
  */
-const COOK_VERSION = 'cook-v3';
+// v4: converte por VRAM (BC7, SPEC-0155) — a regra "só se encolher em disco"
+// deixava as texturas do kit fora do KTX2/BC7.
+const COOK_VERSION = 'cook-v4';
 
 function walk(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {

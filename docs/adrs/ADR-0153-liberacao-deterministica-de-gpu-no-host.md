@@ -73,6 +73,10 @@ recursos, e ~770 MB vazavam POR troca de fase. Então:
   WeakRefs (o caminho JSI `hermes.cpp::drainMicrotasks` limpa) — sem isso,
   TODO alvo de `WeakRef` criado/`deref()`ado ficava retido pra sempre.
   `cortexHermesDrainJobs` agora chama `clearKeptObjects()` após o drain.
+- **Teto de heap do Hermes** *(extensão, alvo de spec mínima 2 GB RAM)*: sem
+  limite, o Hades prefere crescer o heap a coletar — o working set subia
+  ~1 MB/s de lixo durante o gameplay. `GCConfig.maxHeapSize = 512 MB` (~8× o
+  live-set medido) torna a coleta regular e limita a RAM do JS.
 - **Gotcha do Hermes documentado**: closures capturam o *environment* inteiro
   da função (agravado pelo `transform-block-scoping` do bundle, ADR-0146 —
   `let`/`const` viram `var` num escopo só). Uma closure sobrevivente qualquer

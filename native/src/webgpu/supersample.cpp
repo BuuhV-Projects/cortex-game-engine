@@ -435,7 +435,13 @@ void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
   if (hdr) {
     sceneView = wgpuTextureCreateView(gpu->sceneHdrTexture, nullptr);
     ownSceneView = true;
-    // A RT do JS tem o tamanho do drawing buffer (nativo × dpr) = o do offscreen.
+    // Dimensões da PRÓPRIA RT HDR — não do offscreen: no fluxo direto-pra-fase
+    // (sem frames ui-only antes, ex.: soak/dev ?level=) o offscreen ainda não
+    // nasceu e `offscreenWidth/Height` = 0 — a pirâmide do bloom falhava e o
+    // blit não desenhava NADA (tela presa nos buffers antigos da swapchain,
+    // "splash piscando"). SPEC-0155.
+    sceneW = static_cast<int>(wgpuTextureGetWidth(gpu->sceneHdrTexture));
+    sceneH = static_cast<int>(wgpuTextureGetHeight(gpu->sceneHdrTexture));
   } else {
     if (!gpu->offscreenView) return;
     sceneView = gpu->offscreenView;
