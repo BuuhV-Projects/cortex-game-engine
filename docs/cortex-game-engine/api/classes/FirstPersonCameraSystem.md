@@ -48,7 +48,7 @@ game.world.addSystem(fps)
 
 > **new FirstPersonCameraSystem**(`camera`, `input`, `canvas`, `options?`): `FirstPersonCameraSystem`
 
-Defined in: [src/systems/FirstPersonCameraSystem.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L73)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L76)
 
 #### Parameters
 
@@ -163,18 +163,17 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L104)
 
-Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
-pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
-handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
-[RapierPhysicsSystem](RapierPhysicsSystem.md)). Essencial pra trocar de cena/fase sem vazar.
+Remove o listener de `mousedown` do canvas — chamado pelo [World.clear](World.md#clear)
+na troca de fase. Sem isto, a closure retém este system (e a câmera) da fase
+anterior a cada troca (SPEC-0152).
 
 #### Returns
 
 `void`
 
-#### Inherited from
+#### Overrides
 
 [`System`](System.md).[`dispose`](System.md#dispose)
 
@@ -184,7 +183,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/FirstPersonCameraSystem.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L95)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L109)
 
 Executa a lógica do sistema para o frame/passo atual.
 

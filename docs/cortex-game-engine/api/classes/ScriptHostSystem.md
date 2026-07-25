@@ -36,7 +36,7 @@ do construtor.
 
 > **new ScriptHostSystem**(`ctx`, `isEditing?`): `ScriptHostSystem`
 
-Defined in: [src/systems/ScriptHostSystem.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L49)
+Defined in: [src/systems/ScriptHostSystem.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L51)
 
 #### Parameters
 
@@ -145,18 +145,19 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/systems/ScriptHostSystem.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L108)
 
-Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
-pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
-handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
-[RapierPhysicsSystem](RapierPhysicsSystem.md)). Essencial pra trocar de cena/fase sem vazar.
+Teardown na TROCA DE FASE (`World.clear` chama) — o buraco que vazava a
+fase inteira (SPEC-0152): sem isto, o `onDestroy` dos scripts NUNCA rodava
+fora do editor, e cada listener de `document` registrado por um script
+(moeda/checkpoint/chegada escutam `rush:restart`) ficava vivo retendo
+entity → object3d → a CENA COMPLETA da fase anterior, uma por troca.
 
 #### Returns
 
 `void`
 
-#### Inherited from
+#### Overrides
 
 [`System`](System.md).[`dispose`](System.md#dispose)
 
@@ -166,7 +167,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/ScriptHostSystem.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L58)
+Defined in: [src/systems/ScriptHostSystem.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L60)
 
 Executa a lógica do sistema para o frame/passo atual.
 

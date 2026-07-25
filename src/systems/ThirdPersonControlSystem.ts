@@ -124,6 +124,8 @@ export class ThirdPersonControlSystem extends System {
   private oneShotLock = 0; // s restantes segurando um one-shot (run_stop)
   private actionClip: string | null = null; // ação one-shot pedida pelo jogo (soco, etc.)
   private actionLock = 0; // s restantes segurando a ação
+  /** Handler do `mousedown` no canvas — guardado pra remover no {@link dispose}. */
+  private onCanvasMouseDown?: () => void;
   private readonly lookTarget = new THREE.Vector3();
   private readonly camRay = new THREE.Raycaster();
   private readonly camBack = new THREE.Vector3();
@@ -158,12 +160,24 @@ export class ThirdPersonControlSystem extends System {
     this.pitch = options.initialPitch ?? 0.35;
 
     if (typeof document !== 'undefined') {
-      this.canvas.addEventListener('mousedown', () => {
+      this.onCanvasMouseDown = (): void => {
         if (this.shouldPause?.()) return;
         if (this.orbitMode === 'locked') return; // câmera fixa: sem pointer lock
         if (document.pointerLockElement !== this.canvas) this.canvas.requestPointerLock?.();
-      });
+      };
+      this.canvas.addEventListener('mousedown', this.onCanvasMouseDown);
     }
+  }
+
+  /**
+   * Remove o listener de `mousedown` do canvas — chamado pelo {@link World.clear}
+   * na troca de fase. Sem isto, a closure do listener retém este system (e, por
+   * ele, a câmera + a raiz de colisão da CENA ANTERIOR inteira) a cada fase
+   * jogada — era um dos vazamentos de memória por fase (SPEC-0152).
+   */
+  override dispose(): void {
+    if (this.onCanvasMouseDown) this.canvas.removeEventListener('mousedown', this.onCanvasMouseDown);
+    this.onCanvasMouseDown = undefined;
   }
 
   /**

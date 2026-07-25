@@ -6,6 +6,7 @@ import { InputManager } from './InputManager.js';
 import { GamepadManager } from './GamepadManager.js';
 import { GameLoop } from './GameLoop.js';
 import { World } from '../ecs/World.js';
+import { clearSceneAssetCaches } from '../scene/SceneAssets.js';
 import { UiLayer } from '../ui/runtime/UiLayer.js';
 import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
@@ -291,6 +292,12 @@ export class Game {
    * game.setPostFX(fx)
    */
   setPostFX(postfx: { render(): void } | null): void {
+    // O pipeline ANTERIOR morre com a troca (SPEC-0152): no browser ele segura
+    // RenderTargets (pirâmide do bloom, composer) que vazavam a cada fase — o
+    // jogo típico faz `new PostFX(...)` por fase e larga o antigo sem referência.
+    if (this._postfx && this._postfx !== postfx) {
+      (this._postfx as { dispose?: () => void }).dispose?.();
+    }
     // No host nativo o pós-FX vive em C++ (ADR-0147) e sobreviveria à troca de
     // fase: `null` precisa desligá-lo explicitamente, senão a fase seguinte
     // herda bloom/HDR que ela não pediu.
@@ -466,16 +473,25 @@ export class Game {
    * responsabilidade do chamador. Depois do reset, re-registre os sistemas e
    * monte a próxima cena (ex.: `setupThirdPerson` + `buildScene`).
    *
+   * @param options.releaseAssets - `true` também **despeja os caches de asset**
+   *   ({@link clearSceneAssetCaches}: GLTF/texturas/áudio/BVH ficam fora da RAM,
+   *   e a próxima cena recarrega do zero). Default `false`: o cache por URL é
+   *   proposital — trocar de fase reusa peças já carregadas. Use `true` nos
+   *   pontos de troca "larga" (voltar ao menu, trocar de mundo). SPEC-0152.
+   *
    * @example
    * // "Voltar ao menu" sem recarregar a página (funciona no export nativo):
-   * game.reset();
+   * game.reset({ releaseAssets: true });
    * const level = await showMainMenu(game, LEVELS);
    * // ...re-setup + buildScene + game.start()...
    */
-  reset(): void {
+  reset(options: { releaseAssets?: boolean } = {}): void {
     this.stop();
     this.world.clear();
     this.scene.disposeAll();
+    // PostFX da fase morre junto (dispõe pipeline/render targets e desliga o
+    // pós-FX nativo) — antes ele sobrevivia ao reset segurando GPU (SPEC-0152).
+    this.setPostFX(null);
     // O HUD de métricas ancora seus widgets na UI; `ui.clear()` os remove. Sem
     // recriá-lo, o objeto sobrevive ao reset segurando widgets órfãos e o HUD
     // some da 2ª fase em diante (só a 1ª, onde foi montado, mostrava métricas).
@@ -486,5 +502,27 @@ export class Game {
       this._debugHud = this.createDebugHud();
       this._debugHud.setVisible(hudWasVisible);
     }
+    if (options.releaseAssets) clearSceneAssetCaches();
+    // Caches INTERNOS do renderer (three, SPEC-0152): PMREMNode/ShadowNode e
+    // seus RenderTargets (PMREM do environment = 2× 3072×4096 half-float,
+    // ~190 MB!) ficam pinados numa teia de caches (nós, render lists/contexts,
+    // bindings com bind groups → views → texturas) que NÃO é alcançada pelo
+    // teardown da cena — cada fase somava um PMREM + shadow map novos (medido
+    // no soak do export). Descarta os mesmos gerenciadores que o
+    // `renderer.dispose()` descarta, MENOS backend/info (o device continua
+    // vivo) — o próximo frame reconstrói tudo lazy, como no design do three.
+    // (API interna — o optional chaining protege contra upgrades.)
+    {
+      const three = this.renderer.threeRenderer as unknown as Record<string, { dispose?: () => void } | undefined>;
+      for (const cache of ['_objects', '_nodes', '_bindings', '_renderLists', '_renderContexts']) {
+        three[cache]?.dispose?.();
+      }
+    }
+    // Host nativo (ADR-0153): o GC do Hermes não sente a pressão dos wrappers de
+    // GPU (objetos JS minúsculos segurando MBs nativos) e podia nunca coletar —
+    // a fase anterior ficava inteira na VRAM. O nudge roda a coleta AGORA, atrás
+    // da tela de loading da troca: finalizers → `wgpu*Release` → memória de
+    // volta. No browser o global não existe e o optional chaining é no-op.
+    (globalThis as { __cortexGC?: () => void }).__cortexGC?.();
   }
 }

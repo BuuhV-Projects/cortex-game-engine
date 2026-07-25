@@ -30,6 +30,58 @@ export type { GLTF };
 
 type Asset = THREE.Texture | GLTF | AudioBuffer | THREE.Group;
 
+// ─── Dispose de árvore de objetos ─────────────────────────────────────────────
+
+/**
+ * Dispõe os recursos de uma árvore de objetos: geometrias (incluindo a árvore
+ * BVH do three-mesh-bvh, se houver), materiais e texturas referenciadas. Usado
+ * pelo despejo de caches (SPEC-0152) — o `Scene.disposeAll` cobre o que está NA
+ * cena; isto cobre o que ficou só em cache (GLTF/FBX carregados).
+ *
+ * Seguro chamar sobre objetos já dispostos (dispose do three é idempotente).
+ */
+export function disposeObjectResources(root: THREE.Object3D): void {
+  const seenTex = new Set<THREE.Texture>();
+  const disposeMaterial = (m: THREE.Material): void => {
+    for (const value of Object.values(m as unknown as Record<string, unknown>)) {
+      if (value instanceof THREE.Texture && !seenTex.has(value)) {
+        seenTex.add(value);
+        value.dispose();
+      }
+    }
+    m.dispose();
+  };
+  root.traverse((obj) => {
+    const mesh = obj as Partial<THREE.Mesh>;
+    const g = mesh.geometry as
+      | (THREE.BufferGeometry & { boundsTree?: unknown; disposeBoundsTree?: () => void })
+      | undefined;
+    if (g) {
+      // BVH do raycast (physics/raycastAccel): pendurada na geometria, não sai
+      // no `geometry.dispose()` (que só libera GPU) — solta explicitamente.
+      if (g.boundsTree) {
+        if (g.disposeBoundsTree) g.disposeBoundsTree();
+        else g.boundsTree = undefined;
+      }
+      g.dispose();
+    }
+    const mat = mesh.material;
+    if (Array.isArray(mat)) mat.forEach(disposeMaterial);
+    else if (mat) disposeMaterial(mat);
+    if ((obj as Partial<THREE.InstancedMesh>).isInstancedMesh) {
+      (obj as THREE.InstancedMesh).dispose();
+    }
+    // Luz (GLB pode embutir) e skeleton: shadow map e boneTexture só saem no
+    // dispose dos PRÓPRIOS objetos, fora do caminho geometria/material.
+    if ((obj as Partial<THREE.Light>).isLight) {
+      (obj as THREE.Light).dispose();
+    }
+    if ((obj as Partial<THREE.SkinnedMesh>).isSkinnedMesh) {
+      (obj as THREE.SkinnedMesh).skeleton?.dispose();
+    }
+  });
+}
+
 // ─── Classe AssetLoader ───────────────────────────────────────────────────────
 
 export class AssetLoader {
@@ -182,9 +234,32 @@ export class AssetLoader {
   /**
    * Remove todas as entradas do cache interno.
    * Não descarta texturas da GPU — chamar `texture.dispose()` manualmente
-   * se necessário antes de limpar.
+   * se necessário antes de limpar (ou usar {@link disposeCache}).
    */
   clearCache(): void {
+    this._cache.clear();
+  }
+
+  /**
+   * **Despeja** o cache liberando os recursos de cada asset (SPEC-0152):
+   * texturas → `dispose()`; GLTF/FBX → {@link disposeObjectResources}
+   * (geometria + BVH + materiais/texturas); áudio → `free?.()` (existe no
+   * wrapper de `AudioBuffer` do host nativo, que solta o PCM decodificado do
+   * lado C++ — ADR-0153; no browser é no-op). Depois disto, cada URL volta a
+   * custar uma carga completa na próxima requisição.
+   */
+  disposeCache(): void {
+    for (const asset of this._cache.values()) {
+      if (asset instanceof THREE.Texture) {
+        asset.dispose();
+      } else if (asset instanceof THREE.Group) {
+        disposeObjectResources(asset);
+      } else if ((asset as GLTF).scene) {
+        disposeObjectResources((asset as GLTF).scene);
+      } else {
+        (asset as { free?: () => void }).free?.();
+      }
+    }
     this._cache.clear();
   }
 

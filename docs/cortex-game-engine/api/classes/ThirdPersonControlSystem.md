@@ -29,7 +29,7 @@ Roda em `priority = 20` (depois da física). Pausa no editor via `pauseWhen`.
 
 > **new ThirdPersonControlSystem**(`camera`, `input`, `canvas`, `options?`, `gamepad?`, `collisionRoot?`): `ThirdPersonControlSystem`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L132)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L134)
 
 #### Parameters
 
@@ -155,18 +155,18 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:178](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L178)
 
-Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
-pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
-handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
-[RapierPhysicsSystem](RapierPhysicsSystem.md)). Essencial pra trocar de cena/fase sem vazar.
+Remove o listener de `mousedown` do canvas — chamado pelo [World.clear](World.md#clear)
+na troca de fase. Sem isto, a closure do listener retém este system (e, por
+ele, a câmera + a raiz de colisão da CENA ANTERIOR inteira) a cada fase
+jogada — era um dos vazamentos de memória por fase (SPEC-0152).
 
 #### Returns
 
 `void`
 
-#### Inherited from
+#### Overrides
 
 [`System`](System.md).[`dispose`](System.md#dispose)
 
@@ -176,7 +176,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **playAction**(`clip`, `duration`): `void`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:189](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L189)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:203](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L203)
 
 Toca uma **ação one-shot** (soco, aceno, etc.) por `duration` segundos, sobrepondo
 a locomoção — o jogo chama isso num botão (combate/interação). O clipe precisa
@@ -202,7 +202,7 @@ existir no `.glb`; senão é ignorado.
 
 > **setOrbit**(`mode`, `angles?`): `void`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:174](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L174)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:188](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L188)
 
 Troca o modo de câmera em runtime (ótimo pra A/B testar): `locked` fixa
 yaw/pitch/distância nos valores passados (ou mantém os atuais); `free` volta
@@ -238,7 +238,7 @@ a órbita por mouse/stick. Sai do pointer lock ao travar.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:194](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L194)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L208)
 
 Executa a lógica do sistema para o frame/passo atual.
 

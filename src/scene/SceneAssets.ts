@@ -1,7 +1,7 @@
 import { Box3, Vector3, SkinnedMesh } from 'three';
 import type { Object3D, Mesh, Texture } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { AssetLoader, type GLTF } from '../core/AssetLoader.js';
+import { AssetLoader, disposeObjectResources, type GLTF } from '../core/AssetLoader.js';
 import { loadKtx2 } from '../core/loadKtx2.js';
 import { Scene } from '../core/Scene.js';
 
@@ -66,6 +66,27 @@ const _cache = new Map<string, GLTF>();
 const _texCache = new Map<string, Texture>();
 
 /**
+ * **Despeja todos os caches de asset** do módulo (SPEC-0152): dispõe geometrias
+ * (incluindo a árvore BVH do raycast), materiais, texturas e libera o PCM de
+ * áudio no host nativo (`free`), então esvazia os Maps. Também aciona o hook do
+ * host `__cortexClearObjectUrls` (ADR-0153) — os `blob:` URLs criados no parse
+ * de GLB deixam de reter os bytes.
+ *
+ * Os caches são por URL e **propositalmente** não expiram sozinhos (trocar de
+ * fase reusa peças de kit sem recarregar). Chame isto nos pontos de troca
+ * "larga" — tipicamente via `game.reset({ releaseAssets: true })` ao voltar pro
+ * menu/trocar de mundo. Depois disto, cada asset volta a custar carga completa.
+ */
+export function clearSceneAssetCaches(): void {
+  for (const gltf of _cache.values()) disposeObjectResources(gltf.scene);
+  _cache.clear();
+  for (const tex of _texCache.values()) tex.dispose();
+  _texCache.clear();
+  _loader.disposeCache();
+  (globalThis as { __cortexClearObjectUrls?: () => void }).__cortexClearObjectUrls?.();
+}
+
+/**
  * Carrega um `.glb`/`.gltf` (com cache por URL — chamadas repetidas reusam o
  * mesmo GLTF; clone com {@link instance} antes de adicionar à cena).
  *
@@ -75,9 +96,36 @@ export async function loadGLB(url: string): Promise<GLTF> {
   let gltf = _cache.get(url);
   if (!gltf) {
     gltf = await _loader.loadGLTF(url);
+    markCachedResources(gltf.scene);
     _cache.set(url, gltf);
   }
   return gltf;
+}
+
+/**
+ * Marca geometrias/materiais/texturas de um GLTF cacheado como **residentes**
+ * (`userData.cortexCached`): o `Scene.disposeAll` PULA o dispose deles na troca
+ * de fase (SPEC-0152). Sem isso, cada troca destruía e re-subia ~1 GB de
+ * texturas do kit — além do custo de load, o alocador do wgpu cresce em blocos
+ * (~256 MB) que nunca devolve (churn = VRAM/RAM subindo em degraus no export).
+ * O despejo EXPLÍCITO ({@link clearSceneAssetCaches}) continua liberando tudo.
+ */
+function markCachedResources(root: { traverse(cb: (o: unknown) => void): void }): void {
+  root.traverse((o) => {
+    const mesh = o as {
+      geometry?: { userData: Record<string, unknown> };
+      material?: { userData: Record<string, unknown> } | Array<{ userData: Record<string, unknown> }>;
+    };
+    if (mesh.geometry) mesh.geometry.userData['cortexCached'] = true;
+    const mats = Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : [];
+    for (const m of mats) {
+      m.userData['cortexCached'] = true;
+      for (const value of Object.values(m as unknown as Record<string, unknown>)) {
+        const tex = value as { isTexture?: boolean; userData?: Record<string, unknown> } | null;
+        if (tex?.isTexture && tex.userData) tex.userData['cortexCached'] = true;
+      }
+    }
+  });
 }
 
 /**
@@ -97,6 +145,7 @@ export async function loadTexture(url: string, pixelated = true): Promise<Textur
   let tex = _texCache.get(url);
   if (!tex) {
     tex = /\.ktx2$/i.test(url) ? await loadKtx2(url) : await _loader.loadTexture(url, { pixelated });
+    tex.userData['cortexCached'] = true; // residente entre fases (ver markCachedResources)
     _texCache.set(url, tex);
   }
   return tex;

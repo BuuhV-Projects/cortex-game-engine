@@ -67,11 +67,26 @@ export interface PostFXOptions {
 /** Nó de bloom — expõe `strength`/`radius`/`threshold` (UniformNode com `.value`). */
 type BloomPass = ReturnType<typeof bloom>;
 
+/**
+ * Dono ATUAL do pós-FX nativo (o estado no C++ é global, um só por processo).
+ * Num swap direto `setPostFX(new PostFX(...))`, o construtor do novo configura o
+ * host ANTES de o `dispose()` do antigo rodar — sem este marcador, o dispose do
+ * antigo apagaria a config recém-aplicada (SPEC-0152).
+ */
+let _activeNativeOwner: PostFX | null = null;
+
 export class PostFX {
   private readonly _renderer: Renderer;
   /** `null` no host nativo: lá o pós-FX roda em C++, não há grafo TSL. */
   private readonly _pipeline: RenderPipeline | null;
   private readonly _bloom: BloomPass | null;
+  /**
+   * Nó do `pass(scene, camera)` (browser). Guardado pro {@link dispose}: o
+   * `RenderPipeline.dispose()` do three NÃO desce até ele, e é ele que segura a
+   * RenderTarget HDR da cena (cor + depth, resolução cheia) — sem dispor
+   * explicitamente, cada troca de fase vazava essa RT (SPEC-0152).
+   */
+  private readonly _scenePass: { dispose(): void } | null;
   /** Delegado ao host (C++)? Guardado pra `render`/`dispose` saberem o caminho. */
   private readonly _native: ((c: NativePostFXConfig | null) => void) | null;
   /** Canal da textura HDR da cena pro host (ADR-0149); `null` no browser. */
@@ -127,6 +142,8 @@ export class PostFX {
       });
       this._pipeline = null;
       this._bloom = null;
+      this._scenePass = null;
+      _activeNativeOwner = this;
       return;
     }
 
@@ -140,6 +157,7 @@ export class PostFX {
     if (options.exposure !== undefined) renderer.threeRenderer.toneMappingExposure = options.exposure;
 
     const scenePass = pass(scene.getThreeScene(), camera);
+    this._scenePass = scenePass;
     // Acumulador do grafo de nós TSL: dinâmico por natureza (o "tipo" do nó muda
     // a cada efeito). A tipagem estrita do TSL não cobre uma cadeia mutável, então
     // usamos `any` localmente — a API pública do PostFX continua tipada.
@@ -208,11 +226,23 @@ export class PostFX {
   /** Libera os recursos GPU do pipeline. */
   dispose(): void {
     if (this._native) {
-      // Desliga o bloom do host: sem isto a próxima fase herdaria o brilho.
-      // O tone mapping não precisa de reset — ele nunca saiu do JS.
-      this._native(null);
+      // Desliga o bloom do host — mas SÓ se este ainda é o dono do estado
+      // global: num swap direto o PostFX novo já configurou o host, e apagar
+      // aqui derrubaria o bloom da fase nova (SPEC-0152). O tone mapping não
+      // precisa de reset — ele nunca saiu do JS.
+      if (_activeNativeOwner === this) {
+        this._native(null);
+        _activeNativeOwner = null;
+      }
       return;
     }
+    // O dispose do RenderPipeline só solta o material do quad — as RTs de
+    // verdade vivem nos NÓS e têm dispose próprio que ninguém chama por nós:
+    // o `pass()` segura a RT HDR da cena (cor+depth, resolução cheia) e o
+    // BloomNode segura a pirâmide inteira (bright + 5 níveis H/V). Era o grosso
+    // do "GPU sobe a cada reabertura de fase" no Studio (SPEC-0152).
+    this._scenePass?.dispose();
+    (this._bloom as unknown as { dispose?: () => void } | null)?.dispose?.();
     this._pipeline?.dispose();
   }
 }

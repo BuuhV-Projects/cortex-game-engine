@@ -10,14 +10,46 @@
  */
 
 import * as THREE from 'three';
+import { PMREMGenerator } from 'three/webgpu';
 
 // ─── Classe Scene ──────────────────────────────────────────────────────────────
 
 export class Scene {
   private readonly _scene: THREE.Scene;
+  /** RenderTarget do PMREM do environment — NOSSO, disposto no {@link disposeAll}. */
+  private _envRT: { texture: THREE.Texture; dispose(): void } | null = null;
 
   constructor() {
     this._scene = new THREE.Scene();
+  }
+
+  /**
+   * Define o **environment** (IBL) a partir de uma textura equiretangular,
+   * com o PMREM gerado e **possuído pelo engine** (SPEC-0152).
+   *
+   * Atribuir a textura crua a `scene.environment` deixa o three gerar o PMREM
+   * por dentro (PMREMNode) — e os RenderTargets dele (2× 3072×4096 half-float,
+   * ~190 MB) ficam presos em caches internos SEM caminho de dispose: cada troca
+   * de fase somava um PMREM novo na VRAM (medido no soak do export). Gerando
+   * aqui, o three recebe a textura JÁ em CubeUV (pula o caminho interno) e o
+   * {@link disposeAll} devolve a RT na troca.
+   *
+   * Passe `null` pra limpar (dispõe a RT atual). A textura-fonte continua sua:
+   * dispose dela é com o chamador (ou com o `disposeAll`, se ela também for o
+   * `background`).
+   */
+  setEnvironment(renderer: { threeRenderer: unknown }, texture: THREE.Texture | null): void {
+    this._envRT?.dispose();
+    this._envRT = null;
+    if (!texture) {
+      this._scene.environment = null;
+      return;
+    }
+    const generator = new PMREMGenerator(renderer.threeRenderer as never);
+    const rt = generator.fromEquirectangular(texture) as unknown as { texture: THREE.Texture; dispose(): void };
+    generator.dispose();
+    this._envRT = rt;
+    this._scene.environment = rt.texture;
   }
 
   // ─── Public API ─────────────────────────────────────────────────────────────
@@ -65,32 +97,82 @@ export class Scene {
    * editor (esses objetos não existem), então dispõe tudo normalmente.
    */
   disposeAll(): this {
+    // Recursos CACHEADOS (`userData.cortexCached`, ver SceneAssets) ficam
+    // RESIDENTES na GPU entre fases: destruir e re-subir o kit inteiro a cada
+    // troca fazia o alocador do wgpu crescer em blocos (~256 MB) que não
+    // devolve (VRAM/RAM subindo em degraus no export), além de pagar o
+    // re-upload no load. O despejo explícito (`clearSceneAssetCaches`)
+    // continua liberando tudo (SPEC-0152).
+    const cached = (o: { userData?: Record<string, unknown> } | null | undefined): boolean =>
+      o?.userData?.['cortexCached'] === true;
     const seenTex = new Set<THREE.Texture>();
     const disposeMaterial = (m: THREE.Material): void => {
       for (const value of Object.values(m as unknown as Record<string, unknown>)) {
         if (value instanceof THREE.Texture && !seenTex.has(value)) {
           seenTex.add(value);
-          value.dispose();
+          if (!cached(value)) value.dispose();
         }
       }
-      m.dispose();
+      if (!cached(m)) m.dispose();
     };
     for (const child of [...this._scene.children]) {
       const ud = child.userData as Record<string, unknown>;
       if (ud['editorInternal'] === true || ud['cortexKeep'] === true) continue; // overlay do editor: sobrevive
       child.traverse((obj) => {
         const mesh = obj as Partial<THREE.Mesh>;
-        mesh.geometry?.dispose();
+        if (!cached(mesh.geometry)) mesh.geometry?.dispose();
         const mat = mesh.material;
         if (Array.isArray(mat)) mat.forEach(disposeMaterial);
         else if (mat) disposeMaterial(mat);
+        // InstancedMesh (vegetação etc.): o `instanceMatrix` só sai com o
+        // dispose do PRÓPRIO mesh, não o da geometria (SPEC-0152).
+        if ((obj as Partial<THREE.InstancedMesh>).isInstancedMesh) {
+          (obj as THREE.InstancedMesh).dispose();
+        }
+        // Luz com sombra: a RenderTarget do shadow map só sai no dispose da
+        // PRÓPRIA luz — cada fase criava as suas e as RTs acumulavam (SPEC-0152).
+        if ((obj as Partial<THREE.Light>).isLight) {
+          const light = obj as THREE.Light & {
+            shadow?: {
+              shadowNode?: {
+                dispose?: () => void;
+                /** ShadowNodes das CASCATAS do CSM — cada um com RT própria. */
+                _shadowNodes?: Array<{ dispose?: () => void }>;
+              } | null;
+            } | null;
+          };
+          // shadowNode CUSTOMIZADO (ex.: CSM do OutdoorLighting, 4096² por
+          // fase): o listener interno do three só dispõe o node padrão — e o
+          // `CSMShadowNode.dispose()` do three NÃO dispõe os `_shadowNodes`
+          // das cascatas (bug upstream): sem isto, cada fase somava um shadow
+          // map 4096² (cor+depth, ~130 MB) que nunca voltava.
+          const node = light.shadow?.shadowNode;
+          node?._shadowNodes?.forEach((cascade) => cascade.dispose?.());
+          node?.dispose?.();
+          if (light.shadow) light.shadow.shadowNode = null;
+          light.dispose();
+        }
+        // SkinnedMesh: a boneTexture vive no skeleton, fora de geometria/material.
+        if ((obj as Partial<THREE.SkinnedMesh>).isSkinnedMesh) {
+          (obj as THREE.SkinnedMesh).skeleton?.dispose();
+        }
       });
       this._scene.remove(child);
     }
     const asAny = this._scene as unknown as { background?: unknown; environment?: THREE.Texture | null };
     if (asAny.environment) asAny.environment.dispose();
+    // O background também é GPU: skybox equiretangular (o dispose dispara o
+    // listener do three que devolve o CUBO de conversão — 2048³×6 por fase) ou
+    // cor (sem dispose). Antes, environment===background e um dispose cobria os
+    // dois; com o PMREM próprio (setEnvironment) eles divergem (SPEC-0152).
+    if ((asAny.background as THREE.Texture | undefined)?.isTexture) {
+      (asAny.background as THREE.Texture).dispose();
+    }
     asAny.background = null;
     asAny.environment = null;
+    // PMREM possuído pelo engine (setEnvironment): a RT volta pra GPU aqui.
+    this._envRT?.dispose();
+    this._envRT = null;
     return this;
   }
 

@@ -6,7 +6,7 @@
 
 # Class: Scene
 
-Defined in: [src/core/Scene.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L16)
+Defined in: [src/core/Scene.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L17)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/core/Scene.ts:16](https://github.com/BuuhV-Projects/cortex-game
 
 > **new Scene**(): `Scene`
 
-Defined in: [src/core/Scene.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L19)
+Defined in: [src/core/Scene.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L22)
 
 #### Returns
 
@@ -26,7 +26,7 @@ Defined in: [src/core/Scene.ts:19](https://github.com/BuuhV-Projects/cortex-game
 
 > **add**(...`objects`): `this`
 
-Defined in: [src/core/Scene.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L30)
+Defined in: [src/core/Scene.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L62)
 
 Adiciona um ou mais objetos Three.js à cena.
 Equivale a `THREE.Scene.add()`; o objeto passado deve ser uma instância
@@ -48,7 +48,7 @@ de `THREE.Object3D` (Mesh, Light, Group, etc.).
 
 > **clear**(): `this`
 
-Defined in: [src/core/Scene.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L48)
+Defined in: [src/core/Scene.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L80)
 
 Remove todos os objetos filhos da cena de uma vez.
 Equivale a `THREE.Scene.clear()`.
@@ -63,7 +63,7 @@ Equivale a `THREE.Scene.clear()`.
 
 > **disposeAll**(): `this`
 
-Defined in: [src/core/Scene.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L67)
+Defined in: [src/core/Scene.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L99)
 
 Remove TODOS os filhos E libera os recursos de GPU deles (geometrias,
 materiais e texturas). Diferente de [clear](#clear) (que só desanexa e deixa
@@ -88,7 +88,7 @@ editor (esses objetos não existem), então dispõe tudo normalmente.
 
 > **getThreeScene**(): `Scene`
 
-Defined in: [src/core/Scene.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L102)
+Defined in: [src/core/Scene.ts:175](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L175)
 
 Retorna a instância interna do `THREE.Scene`.
 Necessário para passar ao `Renderer.render(scene, camera)`.
@@ -104,7 +104,7 @@ Prefira sempre os métodos desta classe para manipular a cena.
 
 > **remove**(...`objects`): `this`
 
-Defined in: [src/core/Scene.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L39)
+Defined in: [src/core/Scene.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L71)
 
 Remove um ou mais objetos Three.js da cena.
 Equivale a `THREE.Scene.remove()`.
@@ -118,3 +118,41 @@ Equivale a `THREE.Scene.remove()`.
 #### Returns
 
 `this`
+
+***
+
+### setEnvironment()
+
+> **setEnvironment**(`renderer`, `texture`): `void`
+
+Defined in: [src/core/Scene.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Scene.ts#L41)
+
+Define o **environment** (IBL) a partir de uma textura equiretangular,
+com o PMREM gerado e **possuído pelo engine** (SPEC-0152).
+
+Atribuir a textura crua a `scene.environment` deixa o three gerar o PMREM
+por dentro (PMREMNode) — e os RenderTargets dele (2× 3072×4096 half-float,
+~190 MB) ficam presos em caches internos SEM caminho de dispose: cada troca
+de fase somava um PMREM novo na VRAM (medido no soak do export). Gerando
+aqui, o three recebe a textura JÁ em CubeUV (pula o caminho interno) e o
+[disposeAll](#disposeall) devolve a RT na troca.
+
+Passe `null` pra limpar (dispõe a RT atual). A textura-fonte continua sua:
+dispose dela é com o chamador (ou com o `disposeAll`, se ela também for o
+`background`).
+
+#### Parameters
+
+##### renderer
+
+###### threeRenderer
+
+`unknown`
+
+##### texture
+
+`Texture`\<`unknown`, `TextureEventMap`\> \| `null`
+
+#### Returns
+
+`void`

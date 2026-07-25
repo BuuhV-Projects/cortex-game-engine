@@ -15,6 +15,18 @@
 import * as THREE from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import type { Scene } from './Scene.js';
+import type { Renderer } from './Renderer.js';
+
+/**
+ * Aplica a textura como environment: com `renderer` PRONTO, via
+ * {@link Scene.setEnvironment} (PMREM possuído pelo engine, disposto na troca
+ * de fase — SPEC-0152); sem renderer (ou backend ainda iniciando), atribuição
+ * crua (o three gera o PMREM interno — caminho legado, que vazava a RT).
+ */
+function applyEnvironment(scene: Scene, tex: THREE.Texture, renderer?: Renderer): void {
+  if (renderer?.isReady) scene.setEnvironment(renderer, tex);
+  else scene.getThreeScene().environment = tex;
+}
 
 export interface HDRISkyboxOptions {
   /**
@@ -65,6 +77,7 @@ export class Skybox {
     scene: Scene,
     url: string,
     options: HDRISkyboxOptions = {},
+    renderer?: Renderer,
   ): Promise<THREE.DataTexture> {
     const {
       asBackground = true,
@@ -76,7 +89,7 @@ export class Skybox {
     texture.mapping = THREE.EquirectangularReflectionMapping;
 
     const three = scene.getThreeScene();
-    three.environment = texture;
+    applyEnvironment(scene, texture, renderer);
     three.environmentIntensity = environmentIntensity;
 
     if (asBackground) {
@@ -96,7 +109,7 @@ export class Skybox {
    * @example
    * Skybox.fromGradient(scene, { top: '#1f72d8', middle: '#d6ecfb' }); // céu azul limpo
    */
-  static fromGradient(scene: Scene, options: GradientSkyOptions = {}): THREE.DataTexture {
+  static fromGradient(scene: Scene, options: GradientSkyOptions = {}, renderer?: Renderer): THREE.DataTexture {
     const zenith = new THREE.Color(options.top ?? '#1f72d8');
     const horizon = new THREE.Color(options.middle ?? '#d6ecfb');
     const ground = new THREE.Color(options.bottom ?? '#8f8268');
@@ -129,7 +142,7 @@ export class Skybox {
     const three = scene.getThreeScene();
     three.background = tex;
     three.backgroundBlurriness = 0;
-    three.environment = tex;
+    applyEnvironment(scene, tex, renderer);
     three.environmentIntensity = options.environmentIntensity ?? 1;
     return tex;
   }

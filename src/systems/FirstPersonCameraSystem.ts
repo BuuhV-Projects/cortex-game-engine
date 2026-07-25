@@ -64,6 +64,9 @@ export class FirstPersonCameraSystem extends System {
   /** Pausa interna (NÃO é o `System.pauseWhen` — ver {@link FirstPersonCameraOptions.pauseWhen}). */
   private readonly shouldPause?: () => boolean;
 
+  /** Handler do `mousedown` no canvas — guardado pra remover no {@link dispose}. */
+  private onCanvasMouseDown?: () => void;
+
   /** Ângulo horizontal (rad). `0` = olhando pra −Z. */
   private yaw = 0;
   /** Ângulo vertical (rad). `0` = horizonte; positivo = pra cima. */
@@ -85,11 +88,22 @@ export class FirstPersonCameraSystem extends System {
     // Trava o cursor ao clicar no canvas (só no jogo — não enquanto o editor/pause
     // está ativo, pra não roubar o mouse de quem está editando no F2).
     if (typeof document !== 'undefined') {
-      this.canvas.addEventListener('mousedown', () => {
+      this.onCanvasMouseDown = (): void => {
         if (this.shouldPause?.()) return;
         if (document.pointerLockElement !== this.canvas) this.canvas.requestPointerLock?.();
-      });
+      };
+      this.canvas.addEventListener('mousedown', this.onCanvasMouseDown);
     }
+  }
+
+  /**
+   * Remove o listener de `mousedown` do canvas — chamado pelo {@link World.clear}
+   * na troca de fase. Sem isto, a closure retém este system (e a câmera) da fase
+   * anterior a cada troca (SPEC-0152).
+   */
+  override dispose(): void {
+    if (this.onCanvasMouseDown) this.canvas.removeEventListener('mousedown', this.onCanvasMouseDown);
+    this.onCanvasMouseDown = undefined;
   }
 
   override update(entities: Entity[], deltaTime: number): void {

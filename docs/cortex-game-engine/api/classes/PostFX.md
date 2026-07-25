@@ -6,7 +6,7 @@
 
 # Class: PostFX
 
-Defined in: [src/core/PostFX.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L70)
+Defined in: [src/core/PostFX.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L78)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/core/PostFX.ts:70](https://github.com/BuuhV-Projects/cortex-gam
 
 > **new PostFX**(`renderer`, `scene`, `camera`, `options?`): `PostFX`
 
-Defined in: [src/core/PostFX.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L99)
+Defined in: [src/core/PostFX.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L114)
 
 #### Parameters
 
@@ -68,7 +68,7 @@ postfx.render();
 
 > **get** **bloom**(): `BloomNode` \| `null`
 
-Defined in: [src/core/PostFX.ts:204](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L204)
+Defined in: [src/core/PostFX.ts:222](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L222)
 
 Nó de bloom (ou `null` se desligado), pra ajuste em runtime:
 `postfx.bloom?.strength.value = 1.2`.
@@ -83,7 +83,7 @@ Nó de bloom (ou `null` se desligado), pra ajuste em runtime:
 
 > **dispose**(): `void`
 
-Defined in: [src/core/PostFX.ts:209](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L209)
+Defined in: [src/core/PostFX.ts:227](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L227)
 
 Libera os recursos GPU do pipeline.
 
@@ -97,7 +97,7 @@ Libera os recursos GPU do pipeline.
 
 > **render**(): `void`
 
-Defined in: [src/core/PostFX.ts:185](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L185)
+Defined in: [src/core/PostFX.ts:203](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L203)
 
 Renderiza a cena com os efeitos. Chame uma vez por frame no lugar de
 `renderer.render(...)`. No-op enquanto o backend WebGPU ainda inicializa

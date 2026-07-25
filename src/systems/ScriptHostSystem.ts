@@ -45,6 +45,8 @@ export class ScriptHostSystem extends System {
   private readonly isEditing?: () => boolean;
   /** Havia scripts rodando no frame anterior? Marca a borda Play→Stop. */
   private wasPlaying = false;
+  /** Últimas entidades hospedadas — pro {@link dispose} derrubar as instâncias. */
+  private hosted: Entity[] = [];
 
   constructor(
     private readonly ctx: ScriptContext,
@@ -56,6 +58,7 @@ export class ScriptHostSystem extends System {
   }
 
   override update(entities: Entity[], deltaTime: number): void {
+    this.hosted = entities;
     if (this.isEditing?.()) {
       // Borda Play→Stop: derruba as instâncias uma vez e devolve a cena ao editor.
       if (this.wasPlaying) this.teardown(entities);
@@ -93,6 +96,18 @@ export class ScriptHostSystem extends System {
         }
       }
     }
+  }
+
+  /**
+   * Teardown na TROCA DE FASE (`World.clear` chama) — o buraco que vazava a
+   * fase inteira (SPEC-0152): sem isto, o `onDestroy` dos scripts NUNCA rodava
+   * fora do editor, e cada listener de `document` registrado por um script
+   * (moeda/checkpoint/chegada escutam `rush:restart`) ficava vivo retendo
+   * entity → object3d → a CENA COMPLETA da fase anterior, uma por troca.
+   */
+  override dispose(): void {
+    this.teardown(this.hosted);
+    this.hosted = [];
   }
 
   /**

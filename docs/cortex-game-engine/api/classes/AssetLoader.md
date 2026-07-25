@@ -6,7 +6,7 @@
 
 # Class: AssetLoader
 
-Defined in: [src/core/AssetLoader.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L35)
+Defined in: [src/core/AssetLoader.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L87)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/core/AssetLoader.ts:35](https://github.com/BuuhV-Projects/corte
 
 > **new AssetLoader**(): `AssetLoader`
 
-Defined in: [src/core/AssetLoader.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L45)
+Defined in: [src/core/AssetLoader.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L97)
 
 #### Returns
 
@@ -28,7 +28,7 @@ Defined in: [src/core/AssetLoader.ts:45](https://github.com/BuuhV-Projects/corte
 
 > **get** **cacheSize**(): `number`
 
-Defined in: [src/core/AssetLoader.ts:178](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L178)
+Defined in: [src/core/AssetLoader.ts:230](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L230)
 
 Número de entradas atualmente no cache.
 Útil para diagnóstico e testes.
@@ -43,11 +43,30 @@ Número de entradas atualmente no cache.
 
 > **clearCache**(): `void`
 
-Defined in: [src/core/AssetLoader.ts:187](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L187)
+Defined in: [src/core/AssetLoader.ts:239](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L239)
 
 Remove todas as entradas do cache interno.
 Não descarta texturas da GPU — chamar `texture.dispose()` manualmente
-se necessário antes de limpar.
+se necessário antes de limpar (ou usar [disposeCache](#disposecache)).
+
+#### Returns
+
+`void`
+
+***
+
+### disposeCache()
+
+> **disposeCache**(): `void`
+
+Defined in: [src/core/AssetLoader.ts:251](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L251)
+
+**Despeja** o cache liberando os recursos de cada asset (SPEC-0152):
+texturas → `dispose()`; GLTF/FBX → [disposeObjectResources](../functions/disposeObjectResources.md)
+(geometria + BVH + materiais/texturas); áudio → `free?.()` (existe no
+wrapper de `AudioBuffer` do host nativo, que solta o PCM decodificado do
+lado C++ — ADR-0153; no browser é no-op). Depois disto, cada URL volta a
+custar uma carga completa na próxima requisição.
 
 #### Returns
 
@@ -59,7 +78,7 @@ se necessário antes de limpar.
 
 > **loadAudio**(`url`): `Promise`\<`AudioBuffer`\>
 
-Defined in: [src/core/AssetLoader.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L130)
+Defined in: [src/core/AssetLoader.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L182)
 
 Carrega um arquivo de áudio a partir da `url` e o armazena em cache.
 Chamadas subsequentes com a mesma URL retornam o buffer em cache.
@@ -84,7 +103,7 @@ Promessa resolvida com `AudioBuffer`.
 
 > **loadFBX**(`url`): `Promise`\<`Group`\<`Object3DEventMap`\>\>
 
-Defined in: [src/core/AssetLoader.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L112)
+Defined in: [src/core/AssetLoader.ts:164](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L164)
 
 Carrega um modelo FBX a partir da `url` e o armazena em cache.
 Chamadas subsequentes com a mesma URL retornam o grupo em cache.
@@ -118,7 +137,7 @@ Promessa resolvida com `THREE.Group` (com `animations`).
 
 > **loadGLTF**(`url`): `Promise`\<`GLTF`\>
 
-Defined in: [src/core/AssetLoader.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L85)
+Defined in: [src/core/AssetLoader.ts:137](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L137)
 
 Carrega um modelo GLTF/GLB a partir da `url` e o armazena em cache.
 Chamadas subsequentes com a mesma URL retornam o objeto em cache.
@@ -143,7 +162,7 @@ Promessa resolvida com o objeto `GLTF`.
 
 > **loadTexture**(`url`, `options?`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: [src/core/AssetLoader.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L62)
+Defined in: [src/core/AssetLoader.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L114)
 
 Carrega uma textura a partir da `url` e a armazena em cache.
 Chamadas subsequentes com a mesma URL retornam a instância em cache sem
@@ -175,7 +194,7 @@ Promessa resolvida com `THREE.Texture`.
 
 > **preload**(`urlArray`, `onProgress?`): `Promise`\<`Asset`[]\>
 
-Defined in: [src/core/AssetLoader.ts:156](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L156)
+Defined in: [src/core/AssetLoader.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L208)
 
 Pré-carrega um conjunto de URLs em paralelo.
 

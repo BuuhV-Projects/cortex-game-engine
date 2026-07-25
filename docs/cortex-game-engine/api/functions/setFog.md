@@ -8,7 +8,7 @@
 
 > **setFog**(`object`, `enabled`): `void`
 
-Defined in: [src/scene/SceneAssets.ts:137](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L137)
+Defined in: [src/scene/SceneAssets.ts:158](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L158)
 
 Liga/desliga a **névoa da cena** nos materiais de um objeto.
 

@@ -8,7 +8,7 @@
 
 > **createDomLoadingScreen**(`options?`): [`LoadingScreen`](../interfaces/LoadingScreen.md)
 
-Defined in: [src/core/LoadingScreen.ts:180](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L180)
+Defined in: [src/core/LoadingScreen.ts:215](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L215)
 
 ## Parameters
 

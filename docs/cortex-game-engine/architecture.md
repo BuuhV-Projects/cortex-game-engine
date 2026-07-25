@@ -447,6 +447,19 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   (helpers de luz/câmera e a câmera do jogo — que ficam na **hierarquia**, então NÃO são
   `editorInternal`). Ao adicionar um overlay visual novo do editor à cena, marque um dos
   dois — senão ele some na 2ª fase. Em produção não há editor (nada marcado) → dispõe tudo.
+- **Troca de fase NÃO pode vazar: todo listener de system sai no `dispose()`**
+  (SPEC-0152). Um system que faz `addEventListener` no construtor (canvas/document)
+  **tem** que sobrescrever `dispose()` com o `removeEventListener` — o `World.clear()`
+  chama. Sem isso a closure retém o system → câmera → **raiz da cena da fase
+  anterior inteira**, uma por fase (foi o caso do `mousedown` do
+  `ThirdPersonControlSystem`/`FirstPersonCameraSystem`: memória e GPU cresciam a cada
+  fase — e no host nativo ainda impedia o GC de liberar os wrappers de GPU). No mesmo
+  pacote: `setPostFX(novo)` **dispõe o anterior** (pipeline/bloom vazavam por fase) e
+  `reset()` zera o PostFX, chama o nudge de GC do host (`__cortexGC?.()`, ADR-0153) e,
+  com `reset({ releaseAssets: true })`, despeja os caches de asset
+  (`clearSceneAssetCaches`: GLTF/textura/áudio/BVH). Os caches por URL **não expiram
+  sozinhos por design** (trocar de fase reusa peças de kit) — o platô é o conjunto de
+  assets únicos; despeje nos pontos de troca larga (menu/mundo).
 - **`onBeforeCompile` NÃO roda no `WebGPURenderer`** (o renderer do engine é
   node-based, mesmo no fallback `forceWebGL`) — falha **silenciosa**: sem erro, o
   efeito só não aparece. Efeito custom de shader tem que ser **TSL/NodeMaterial**

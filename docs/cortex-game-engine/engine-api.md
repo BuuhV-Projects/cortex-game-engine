@@ -281,6 +281,15 @@ re-registre os sistemas e monte a próxima fase. O que ADICIONA listener global
 (no `document`/`window`) precisa de `dispose()` pra removê-lo (senão empilha ao
 trocar de fase) — em System, sobrescreva `dispose()`; o `World.clear` o chama.
 
+O reset também **dispõe o PostFX** da fase (e `setPostFX(novo)` dispõe o
+anterior — pode criar um `PostFX` por fase sem vazar) e, no host nativo, dá o
+nudge de GC que devolve a VRAM da fase anterior (SPEC-0152/ADR-0153). Nos pontos
+de troca "larga" (voltar ao menu, trocar de mundo), use
+`game.reset({ releaseAssets: true })`: despeja os caches de asset por URL
+(`clearSceneAssetCaches` — GLTF/texturas/áudio/BVH) e a próxima fase recarrega
+do zero. Entre fases do mesmo mundo, `game.reset()` puro mantém o cache (peças
+de kit reusadas não recarregam).
+
 ```ts
 async function enterFase(level) {
   game.world.addSystem(new MeuSistema())   // sistemas/controle da fase
@@ -802,6 +811,10 @@ Tunables do pulo/alcance ficam no `player`/`PlatformerBodyComponent`
   `matte: true` num nó ou `buildScene(..., { matte: true })` pra **todos** os modelos.
 - `scatter(scene, url, count, area, opts)` — espalha N cópias num retângulo, cada
   uma assentada com rotação/escala variadas (vegetação em cluster, não em grid).
+- `clearSceneAssetCaches()` — **despeja** os caches por URL (GLTF/texturas/
+  áudio/BVH), dispondo os recursos (SPEC-0152). Normalmente via
+  `game.reset({ releaseAssets: true })` ao voltar pro menu/trocar de mundo —
+  não a cada fase (o cache reusa peças de kit sem recarregar).
 
 Conecte peças pelas **bordas medidas**, não por coordenada chutada:
 

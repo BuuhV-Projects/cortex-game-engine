@@ -6,7 +6,7 @@
 
 # Class: Skybox
 
-Defined in: [src/core/Skybox.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L52)
+Defined in: [src/core/Skybox.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L64)
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: [src/core/Skybox.ts:52](https://github.com/BuuhV-Projects/cortex-gam
 
 > `static` **clear**(`scene`): `void`
 
-Defined in: [src/core/Skybox.ts:141](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L141)
+Defined in: [src/core/Skybox.ts:154](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L154)
 
 Remove o environment/background da cena (volta ao fundo padrão).
 Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.
@@ -43,9 +43,9 @@ Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.
 
 ### fromGradient()
 
-> `static` **fromGradient**(`scene`, `options?`): `DataTexture`
+> `static` **fromGradient**(`scene`, `options?`, `renderer?`): `DataTexture`
 
-Defined in: [src/core/Skybox.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L99)
+Defined in: [src/core/Skybox.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L112)
 
 Céu **gradiente procedural** (sem arquivo) — zênite → horizonte → chão, aplicado
 como `background` visível E `environment` (luz/reflexo suave). Ideal pra um céu
@@ -62,6 +62,10 @@ limpo e ensolarado (ex.: Brasília: azul forte). Funciona em WebGPU usando uma
 
 [`GradientSkyOptions`](../interfaces/GradientSkyOptions.md) = `{}`
 
+##### renderer?
+
+[`Renderer`](Renderer.md)
+
 #### Returns
 
 `DataTexture`
@@ -76,9 +80,9 @@ Skybox.fromGradient(scene, { top: '#1f72d8', middle: '#d6ecfb' }); // céu azul 
 
 ### fromHDRI()
 
-> `static` **fromHDRI**(`scene`, `url`, `options?`): `Promise`\<`DataTexture`\>
+> `static` **fromHDRI**(`scene`, `url`, `options?`, `renderer?`): `Promise`\<`DataTexture`\>
 
-Defined in: [src/core/Skybox.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L64)
+Defined in: [src/core/Skybox.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L76)
 
 Carrega um HDRI equiretangular e o aplica como iluminação (e fundo) da cena.
 
@@ -101,6 +105,10 @@ Caminho/URL do arquivo `.hdr` (equiretangular).
 [`HDRISkyboxOptions`](../interfaces/HDRISkyboxOptions.md) = `{}`
 
 Ajustes de fundo e intensidade.
+
+##### renderer?
+
+[`Renderer`](Renderer.md)
 
 #### Returns
 

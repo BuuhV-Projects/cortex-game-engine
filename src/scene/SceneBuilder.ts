@@ -523,7 +523,7 @@ export async function buildScene(
         await Skybox.fromHDRI(scene, outdoor.hdri, {
           backgroundBlurriness: outdoor.hdriBlur ?? 0,
           environmentIntensity: outdoor.hdriIntensity ?? 1,
-        });
+        }, options.renderer);
       } else if (outdoor.skyTop || outdoor.skyMiddle || outdoor.skyBottom) {
         // Céu gradiente procedural (sem arquivo) — céu limpo/ensolarado.
         Skybox.fromGradient(scene, {
@@ -531,7 +531,7 @@ export async function buildScene(
           middle: outdoor.skyMiddle,
           bottom: outdoor.skyBottom,
           environmentIntensity: outdoor.skyGradientIntensity ?? 1,
-        });
+        }, options.renderer);
       } else {
         // Environment DEFAULT derivado do céu (IBL suave): sem environment,
         // materiais metálicos/reflexivos ficam PRETOS (fisicamente correto,
@@ -543,7 +543,7 @@ export async function buildScene(
           middle: outdoor.sky,
           bottom: outdoor.sky, // uniforme: mesmo tom do background de cor
           environmentIntensity: outdoor.skyGradientIntensity ?? 0.5,
-        });
+        }, options.renderer);
       }
     }
   }
