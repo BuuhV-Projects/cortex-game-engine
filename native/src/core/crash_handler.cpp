@@ -139,6 +139,25 @@ void appendErrorLog(const char* fmt, ...) {
   va_end(args);
 }
 
+void appendPerfLog(const char* fmt, ...) {
+  if (!g_logDir[0]) return;
+  char line[2048];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(line, sizeof(line), fmt, args);
+  va_end(args);
+
+  char path[MAX_PATH];
+  snprintf(path, sizeof(path), "%sperf-log.txt", g_logDir);
+  if (FILE* f = std::fopen(path, "ab")) {
+    std::time_t now = std::time(nullptr);
+    std::tm tm{};
+    localtime_s(&tm, &now);
+    std::fprintf(f, "[%02d:%02d:%02d] %s\n", tm.tm_hour, tm.tm_min, tm.tm_sec, line);
+    std::fclose(f);
+  }
+}
+
 void installCrashHandler(const char* logDir) {
   if (logDir && logDir[0]) {
     strncpy_s(g_logDir, logDir, _TRUNCATE);

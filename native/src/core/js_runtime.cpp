@@ -9,6 +9,32 @@
 namespace core {
 namespace {
 
+// Handle do runtime pro __cortexGC (um runtime por processo — o callback NAPI
+// não carrega estado, então o handle vive aqui). ADR-0153.
+void* g_runtimeForGc = nullptr;
+
+// __cortexGC() — coleta de lixo completa sob demanda. O engine chama no
+// Game.reset(): finalizers dos wrappers de GPU rodam → wgpu*Release → a VRAM
+// da fase anterior volta na troca (e não "quando o GC quiser"). ADR-0153.
+napi_value jsCollectGarbage(napi_env env, napi_callback_info) {
+  if (g_runtimeForGc) cortexHermesCollectGarbage(g_runtimeForGc);
+  return njs::undefined(env);
+}
+
+// __cortexHeapSnapshot(path) — telemetria temporária (SPEC-0152).
+napi_value jsHeapSnapshot(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value args[1];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  if (argc >= 1 && g_runtimeForGc) {
+    const std::string path = njs::toString(env, args[0]);
+    std::printf("[gc] heap snapshot -> %s\n", path.c_str());
+    std::fflush(stdout);
+    cortexHermesHeapSnapshot(g_runtimeForGc, path.c_str());
+  }
+  return njs::undefined(env);
+}
+
 // print(...args) — instrumentação básica do runtime JS.
 napi_value jsPrint(napi_env env, napi_callback_info info) {
   size_t argc = 8;
@@ -55,6 +81,9 @@ JsRuntime::JsRuntime() {
   napi_value global = nullptr;
   napi_get_global(env_, &global);
   njs::setMethod(env_, global, "print", jsPrint);
+  g_runtimeForGc = runtime_;
+  njs::setMethod(env_, global, "__cortexGC", jsCollectGarbage);
+  njs::setMethod(env_, global, "__cortexHeapSnapshot", jsHeapSnapshot);
 }
 
 JsRuntime::~JsRuntime() {

@@ -13,4 +13,9 @@ namespace shims {
 // Registra __cortexPerfStats no global.
 void registerPerfStats(napi_env env);
 
+// Leitura direta (C++) dos mesmos números do __cortexPerfStats — pro
+// perf-log.txt de telemetria (SPEC-0152) sem passar pelo JS.
+double perfWorkingSetMB();
+double perfGpuMemMB();
+
 }  // namespace shims

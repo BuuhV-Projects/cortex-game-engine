@@ -16,7 +16,10 @@ namespace webgpu {
 namespace {
 
 void finalizeTexture(napi_env, void* data, void*) {
-  if (data) wgpuTextureRelease(static_cast<WGPUTexture>(data));
+  if (data) {
+    wgpuTextureRelease(static_cast<WGPUTexture>(data));
+    countFinalizedTexture();
+  }
 }
 
 void finalizeTextureView(napi_env, void* data, void*) {
@@ -175,8 +178,9 @@ napi_value deviceCreateTexture(napi_env env, napi_callback_info info) {
   napi_value size = nullptr;
   if (njs::getNamed(env, args[0], "size", &size))
     desc.size = parseExtent(env, size);
-  desc.format =
-      formatFromString(njs::getNamedString(env, args[0], "format", ""));
+  const std::string formatName =
+      njs::getNamedString(env, args[0], "format", "");
+  desc.format = formatFromString(formatName);
   desc.usage = static_cast<WGPUTextureUsage>(
       njs::getNamedNumber(env, args[0], "usage", 0));
   desc.sampleCount = static_cast<uint32_t>(
@@ -190,6 +194,10 @@ napi_value deviceCreateTexture(napi_env env, napi_callback_info info) {
   else desc.dimension = WGPUTextureDimension_2D;
 
   WGPUTexture texture = wgpuDeviceCreateTexture(device, &desc);
+  countCreatedTexture();
+  trackTextureCreated(texture, desc.size.width, desc.size.height,
+                      desc.size.depthOrArrayLayers, desc.mipLevelCount,
+                      desc.sampleCount, formatName.c_str());
   napi_value obj = njs::wrapHandle(env, texture, finalizeTexture);
   // GPUTexture.width/height/depthOrArrayLayers/format/mipLevelCount/
   // sampleCount/dimension (o three lê no upload de mips e em render targets).

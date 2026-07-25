@@ -137,6 +137,13 @@ AudioContextLite.prototype.decodeAudioData = function (data, onLoad, onError) {
     sampleRate: decoded.sampleRate,
     numberOfChannels: decoded.channels,
     length: Math.floor(decoded.duration * decoded.sampleRate),
+    // Libera o PCM decodificado no lado nativo (ADR-0153) — o AudioBuffer do
+    // browser não tem isto; o engine chama via duck-typing (`free?.()`) no
+    // despejo de caches. Idempotente (id zerado após o 1º free).
+    free() {
+      if (this.__id) __cortexAudio.free(this.__id);
+      this.__id = 0;
+    },
   };
   if (onLoad) onLoad(buffer);
   return Promise.resolve(buffer);

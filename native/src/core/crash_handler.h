@@ -17,4 +17,9 @@ void installCrashHandler(const char* logDir = nullptr);
 // em seguida.
 void appendErrorLog(const char* fmt, ...);
 
+// Telemetria de performance/VRAM (SPEC-0152/ADR-0153): acrescenta uma linha
+// (timestampada) ao `perf-log.txt` na pasta do jogo. Silencioso se a pasta
+// ainda não foi registrada. Barato o bastante pra logs periódicos do loop.
+void appendPerfLog(const char* fmt, ...);
+
 }  // namespace core

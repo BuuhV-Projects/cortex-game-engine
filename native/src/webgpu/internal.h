@@ -21,15 +21,27 @@ namespace webgpu {
 // Estado compartilhado do módulo (definido em navigator.cpp).
 HostGpu* gpuState();
 
-// destroy() de buffers/texturas = RELEASE-ONLY (definido em buffers.cpp). Na
-// troca de cena o three ainda grava passes com recursos "destruídos" vários
-// frames depois do dispose, e validação de submit no wgpu-native é PANIC
-// fatal ("has been destroyed" derrubava o jogo em fullscreen). Sem o estado
-// "destroyed" não há o que falhar; a memória vai quando o último ref cai
-// (GC do objeto JS → finalizer → Release). Os hooks ficam pra reativar uma
-// destruição agressiva no futuro (ex.: telemetria de VRAM no console).
+// destroy() de buffers/texturas = DESTRUIÇÃO ADIADA (buffers.cpp, ADR-0153):
+// enfileira com AddRef e o flush do loop executa Destroy+Release N frames
+// depois — fora da janela de passes em voo que fazia o destroy imediato dar
+// PANIC ("has been destroyed"). O release-only anterior deixava a VRAM presa
+// (refs internas do wgpu) — ~770 MB por troca de fase, medido no soak.
 void deferDestroyBuffer(WGPUBuffer buffer);
 void deferDestroyTexture(WGPUTexture texture);
+// Telemetria de VRAM (ADR-0153): criação × destroy × finalizer de
+// buffers/texturas — o delta aponta a classe de recurso que vaza. Quieta por
+// padrão; `CORTEX_VRAM_LOG=1` liga a impressão periódica no loop.
+void countFinalizedBuffer();
+void countFinalizedTexture();
+void countCreatedBuffer(uint64_t bytes);
+void countCreatedTexture();
+// Registro de texturas VIVAS (criada − destruída) com dimensões, pra apontar
+// exatamente QUAIS texturas vazam por ciclo. Dump das maiores no telemetry.
+void trackTextureCreated(WGPUTexture texture, uint32_t width, uint32_t height,
+                         uint32_t depth, uint32_t mips, uint32_t sampleCount,
+                         const char* format);
+void trackTextureDestroyed(WGPUTexture texture);
+void dumpAliveTextures();
 
 // navigator.cpp
 napi_value gpuRequestAdapter(napi_env env, napi_callback_info info);

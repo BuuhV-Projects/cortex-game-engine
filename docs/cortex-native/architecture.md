@@ -60,7 +60,7 @@ Ver ADR-0109.
 | `native/src/core/host_gpu.h` | Estado gráfico compartilhado (instance, surface, device, config, textura do frame). Structs, sem comportamento. |
 | `native/src/core/app_window.*` | SDL3: janela, instância WebGPU (D3D12 forçado), surface, eventos (quit/resize). |
 | `native/src/core/game_config.*` | Identidade do jogo lida do `cortex.json` ao lado do exe (ADR-0126): `loadGameConfig(baseDir, fallbackSlug)` → `{ id, name }`. `id` = slug estável → **pasta de saves** (não é o nome do exe, que no export é fixo `launcher.exe`); `name` = exibição → **título da janela** (`SDL_SetWindowTitle`). Extrator mínimo de campo string do JSON plano (sem lib JSON). Fallback pro basename quando o campo falta. |
-| `native/src/core/js_runtime.*` | Ciclo de vida do Hermes **UPSTREAM** (facebook/hermes via `hermes_embed`, ADR-0122 — o fork MS/`jsr_*` foi aposentado: ~4× mais lento), `print()`, boot `.hbc`→fallback `.js`, drain de microtasks. ⚠️ `JsRuntime::HandleScope`: TODO acesso NAPI vindo do NATIVO exige scope aberto (o loop abre 1/frame; boot tem o seu) — sem isso o GC corrompe na marcação. |
+| `native/src/core/js_runtime.*` | Ciclo de vida do Hermes **UPSTREAM** (facebook/hermes via `hermes_embed`, ADR-0122 — o fork MS/`jsr_*` foi aposentado: ~4× mais lento), `print()`, boot `.hbc`→fallback `.js`, drain de microtasks, global `__cortexGC()` (coleta sob demanda no teardown de fase — ADR-0153). ⚠️ `JsRuntime::HandleScope`: TODO acesso NAPI vindo do NATIVO exige scope aberto (o loop abre 1/frame; boot tem o seu) — sem isso o GC corrompe na marcação. |
 | `native/src/core/crash_handler.*` | `SetUnhandledExceptionFilter` + DbgHelp: segfault imprime **backtrace simbolizado** no stderr (com PDB dá arquivo:linha) em vez de exit mudo. Foi o que caçou o bug do handle-scope. |
 | `native/src/core/hermes_embed.*` | ÚNICO tradutor que inclui headers do VM do Hermes: API C mínima (create runtime/env, run bytecode/script, drain jobs). Compilado num alvo que herda as flags EXATAS do build do Hermes (`hermesNapi_obj`) — headers do VM com defines diferentes quebram ABI em silêncio. O Hermes builda como SUBPROJETO (`third_party/hermes-upstream/src`, commit pinado pelo fetch-deps) e é ESTÁTICO no exe (sem hermes.dll). |
 | `native/src/shims/perf_stats.*` | `__cortexPerfStats()` → CPU % do processo, working set MB e VRAM MB (DXGI) — alimenta o `DebugHud` do engine no export `--debug`. |
@@ -87,7 +87,7 @@ Ver ADR-0109.
 | `native/src/webgpu/device.cpp` | Aquisição do device, composição do objeto JS `device`, error scopes (push/popErrorScope). |
 | `native/src/webgpu/pipeline.cpp` | Shader modules (WGSL) e render pipelines — sub-parsers por sub-estado (vertex/fragment/primitive/depth/multisample/layout). |
 | `native/src/webgpu/layouts.cpp` | Bind group layouts e pipeline layouts explícitos (o Three não usa 'auto'). |
-| `native/src/webgpu/buffers.cpp` | Recursos de DADOS: createBuffer (+mappedAtCreation/getMappedRange/unmap), writeBuffer (assinatura completa da spec, offsets em ELEMENTOS), createBindGroup, global `GPUBufferUsage`. ⚠️ `destroy()` de buffer/textura é **RELEASE-ONLY**: na troca de cena o three ainda grava passes com recursos "destruídos" frames depois do dispose, e validação de submit no wgpu-native é PANIC fatal ("has been destroyed" — derrubava o jogo em fullscreen, intermitente). Sem o estado destroyed não há o que falhar; a VRAM vai quando o GC coleta o objeto JS (finalizer → Release). |
+| `native/src/webgpu/buffers.cpp` | Recursos de DADOS: createBuffer (+mappedAtCreation/getMappedRange/unmap), writeBuffer (assinatura completa da spec, offsets em ELEMENTOS), createBindGroup, global `GPUBufferUsage`. ⚠️ `destroy()` de buffer/textura é **DESTRUIÇÃO ADIADA** (ADR-0153, 2ª rodada): enfileira com `wgpu*AddRef` (segura a fila contra o finalizer do GC — sem isso o destroy adiado virava use-after-free) e o `flushDeferredDestroys` do loop executa `Destroy`+`Release` 10 frames depois — fora da janela de passes em voo que fazia o destroy imediato dar PANIC ("has been destroyed", intermitente em fullscreen). O release-only anterior deixava a VRAM presa (refs internas do wgpu seguravam mesmo com finalizers rodando; ~770 MB POR troca de fase no soak). Telemetria de VRAM: `CORTEX_VRAM_LOG=1` imprime criação×destroy×release + texturas vivas com dimensões. **A coleta é determinística na troca de fase** (ADR-0153): os wrappers são objetos JS minúsculos segurando MBs nativos, o GC não sente pressão e podia nunca rodar — o `Game.reset()` do engine chama o global `__cortexGC()` (registrado em `js_runtime.cpp` → `Runtime::collect`), que roda os finalizers e devolve VRAM/RAM atrás da tela de loading. |
 | `native/src/webgpu/textures.cpp` | Recursos de IMAGEM: createTexture, views com descriptor (depth do Three), samplers. Marca `__kind` nos objetos p/ o parseBindGroupEntry. |
 | `native/src/webgpu/commands.cpp` | Encoder, render pass (color+depth attachments), setBindGroup/setVertexBuffer/setIndexBuffer/viewport/scissor, draw/drawIndexed, queue.submit. |
 | `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. Com SSAA, `getCurrentTexture` devolve a offscreen (SS) e o present faz o blit downscale. Com compositor de UI (ADR-0105), o present dispara por `ssaaPending` OU `uiPending` (menus rodam loop só-UI, sem render do jogo) e é gate por `gpu->device` (não `configured` — o menu não chama `context.configure`). |
@@ -159,6 +159,17 @@ Native (que roda milhares de libs sobre Hermes em produção):
   com `@babel/plugin-transform-block-scoping` no `bundle.mjs` (ADR-0146); a lista de
   transforms de lá precisa cobrir tudo que o Hermes não implementa direito — se
   aparecer outra divergência Studio ↔ export, suspeite dela primeiro.
+- **Carga de fase roda numa ÚNICA virada de JS — rAF NÃO dispara no meio**
+  (SPEC-0154). `fetch`/decodes são síncronos no host, então a cadeia de `await`
+  de um load inteiro resolve em microtasks sem devolver o controle ao
+  `runFrame` — um loop de render agendado via `requestAnimationFrame` (a tela
+  de loading do engine/teste4) **nunca pinta durante a carga**, e o present do
+  frame acontece DEPOIS do drain de microtasks (o que a carga deixar por último
+  na RT é o que aparece). Modelo mental: **a tela durante uma operação pesada é
+  o último frame APRESENTADO antes dela** — UI que precise estar visível tem de
+  ser pintada e apresentada ANTES (pinta → `await` rAF → pinta → `await` rAF;
+  dois quadros porque `backgroundImage` carrega assíncrono e só entra na 2ª
+  pintura). Foi a arte do loading do teste4 sumindo no export.
 - **Diagnóstico barato de divergência Studio ↔ export:** rode
   `dist-native/launcher.exe` com `CORTEX_LAUNCH_QUERY='?level=<id>'` (entra direto
   na fase) e leia o stdout — exceção de JS aparece lá com stack. Pra ler a linha

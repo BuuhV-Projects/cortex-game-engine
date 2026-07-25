@@ -30,4 +30,14 @@ bool cortexHermesRunScript(void* runtime, napi_env env, const char* data, size_t
 // Esvazia a fila de microtasks (continuações de Promise/async).
 void cortexHermesDrainJobs(void* runtime);
 
+// Coleta de lixo COMPLETA, sob demanda (ADR-0153). Os wrappers de recurso GPU
+// são objetos JS minúsculos segurando MBs nativos — sem pressão de heap, o GC
+// podia nunca rodar e os finalizers (wgpu*Release) nunca liberavam a VRAM da
+// fase anterior. O engine chama isto (via __cortexGC) no teardown de fase.
+void cortexHermesCollectGarbage(void* runtime);
+
+// Telemetria temporária (SPEC-0152): grava heap snapshot (formato V8) em
+// `path` — pra investigar retenção de memória por troca de fase.
+void cortexHermesHeapSnapshot(void* runtime, const char* path);
+
 }  // extern "C"

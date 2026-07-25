@@ -85,6 +85,8 @@ export function installDomLite() {
     addEventListener: documentBus.addEventListener,
     removeEventListener: documentBus.removeEventListener,
     dispatchEvent: documentBus.dispatchEvent,
+    // Diagnóstico de vazamento (SPEC-0152): mapa de listeners por tipo.
+    __listeners: documentBus.__listeners,
   };
 
   // window === globalThis (como no browser), com event bus próprio —
@@ -94,6 +96,8 @@ export function installDomLite() {
   globalThis.addEventListener = windowBus.addEventListener;
   globalThis.removeEventListener = windowBus.removeEventListener;
   globalThis.dispatchEvent = windowBus.dispatchEvent;
+  // Diagnóstico de vazamento (SPEC-0152): mapa de listeners por tipo.
+  globalThis.__listeners = windowBus.__listeners;
   // window.close() encerra o app (SPEC-0120): o host injeta __cortexQuit, que
   // empurra SDL_EVENT_QUIT — mesmo teardown do fechar-janela. Sem a bridge
   // (bundle rodando fora do host), vira no-op, como numa aba de browser.

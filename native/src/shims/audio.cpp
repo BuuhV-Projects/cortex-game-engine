@@ -185,6 +185,30 @@ napi_value jsStop(napi_env env, napi_callback_info info) {
   return njs::undefined(env);
 }
 
+// __cortexAudio.free(bufferId) — libera o PCM decodificado (ADR-0153). Sem
+// isto o g_buffers só crescia: cada fase que decodificava áudio somava RAM até
+// o fim do processo. Derruba antes as vozes que ainda tocam o buffer (senão o
+// updateAudio ressuscitaria uma entrada VAZIA via operator[] no loop).
+napi_value jsFree(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value args[1];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  double bufferId = 0;
+  if (argc >= 1 && napi_get_value_double(env, args[0], &bufferId) == napi_ok) {
+    const int id = static_cast<int>(bufferId);
+    for (auto it = g_voices.begin(); it != g_voices.end();) {
+      if (it->second.bufferId == id) {
+        SDL_DestroyAudioStream(it->second.stream);
+        it = g_voices.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    g_buffers.erase(id);
+  }
+  return njs::undefined(env);
+}
+
 }  // namespace
 
 void registerAudio(napi_env env) {
@@ -195,6 +219,7 @@ void registerAudio(napi_env env) {
   njs::setMethod(env, audio, "play", jsPlay);
   njs::setMethod(env, audio, "setGain", jsSetGain);
   njs::setMethod(env, audio, "stop", jsStop);
+  njs::setMethod(env, audio, "free", jsFree);
   napi_set_named_property(env, global, "__cortexAudio", audio);
 }
 

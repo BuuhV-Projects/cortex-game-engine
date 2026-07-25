@@ -101,4 +101,7 @@ void registerPerfStats(napi_env env) {
   njs::setMethod(env, global, "__cortexPerfStats", jsPerfStats);
 }
 
+double perfWorkingSetMB() { return workingSetMB(); }
+double perfGpuMemMB() { return gpuMemMB(); }
+
 }  // namespace shims

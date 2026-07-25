@@ -2,10 +2,18 @@
 // e bind groups (createBindGroup). Também registra o global GPUBufferUsage
 // (constantes numéricas idênticas às da spec WebGPU/webgpu.h).
 
+#include <atomic>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
+#include "../core/crash_handler.h"
 #include "../napi/napi_util.h"
+#include "../shims/perf_stats.h"
 #include "internal.h"
 #include "napi_stats.h"
 
@@ -13,7 +21,10 @@ namespace webgpu {
 namespace {
 
 void finalizeBuffer(napi_env, void* data, void*) {
-  if (data) wgpuBufferRelease(static_cast<WGPUBuffer>(data));
+  if (data) {
+    wgpuBufferRelease(static_cast<WGPUBuffer>(data));
+    countFinalizedBuffer();
+  }
 }
 
 void finalizeBindGroup(napi_env, void* data, void*) {
@@ -22,18 +33,160 @@ void finalizeBindGroup(napi_env, void* data, void*) {
 
 }  // namespace
 
-// destroy() do JS = RELEASE-ONLY (ver internal.h): marcar o recurso como
-// "destroyed" no wgpu derrubava o jogo — na troca de cena (loading→fase) o
-// three ainda gravava passes com buffers de geometria já "destruída" VÁRIOS
-// frames depois do dispose (intermitente, pior em fullscreen), e validação de
-// submit no wgpu-native é PANIC fatal. Sem o estado "destroyed" a validação
-// não tem o que falhar; a memória é liberada quando o ÚLTIMO ref cai (objeto
-// JS coletado pelo GC → finalizer → Release; command buffers em voo seguram
-// as próprias referências). Custo: VRAM liberada no ritmo do GC, não na hora.
-void deferDestroyBuffer(WGPUBuffer) {}
-void deferDestroyTexture(WGPUTexture) {}
+// destroy() do JS = DESTRUIÇÃO ADIADA (ADR-0153, 2ª rodada). Histórico:
+// destruir NA HORA derrubava o jogo (o three ainda gravava passes com buffers
+// "destruídos" frames depois do dispose; validação de submit no wgpu-native é
+// PANIC fatal), então virou release-only — mas aí a VRAM NUNCA voltava: mesmo
+// com o GC rodando os finalizers (Release), refs internas do wgpu (views/bind
+// groups vivos etc.) seguravam o recurso, e medimos ~770 MB de VRAM vazando
+// POR TROCA de fase no soak. A solução é o meio-termo que estes hooks sempre
+// previram: enfileirar o destroy e executá-lo N frames depois — fora da janela
+// de qualquer pass já gravado/em voo, mas determinístico (não depende do GC).
+namespace {
 
-void flushDeferredDestroys() {}
+// Nº de frames entre o destroy() do JS e o wgpu*Destroy real. Cobre a janela
+// de passes gravados no frame corrente + frames-in-flight do driver, com
+// margem (o panic histórico era "vários frames depois", intermitente).
+constexpr int kDeferredDestroyFrames = 10;
+
+int g_frameCounter = 0;
+
+struct DeferredBuffer {
+  int frame;
+  WGPUBuffer buffer;
+};
+struct DeferredTexture {
+  int frame;
+  WGPUTexture texture;
+};
+std::vector<DeferredBuffer> g_deferredBuffers;
+std::vector<DeferredTexture> g_deferredTextures;
+
+// Telemetria temporária (ver internal.h): criação × destroy × finalizer.
+std::atomic<int> g_finalizedBuffers{0};
+std::atomic<int> g_finalizedTextures{0};
+std::atomic<int> g_createdBuffers{0};
+std::atomic<int> g_createdTextures{0};
+std::atomic<int> g_destroyedBuffers{0};
+std::atomic<int> g_destroyedTextures{0};
+std::atomic<uint64_t> g_createdBufferBytes{0};
+
+}  // namespace
+
+// A fila segura uma REF PRÓPRIA (AddRef) até o destroy rodar: entre o
+// destroy() do JS e o flush, o GC pode coletar o wrapper e o finalizer dá
+// Release — sem a ref extra, o refcount zera e o Destroy adiado vira
+// use-after-free (AV dentro do wgpu, visto no soak).
+void deferDestroyBuffer(WGPUBuffer buffer) {
+  if (!buffer) return;
+  wgpuBufferAddRef(buffer);
+  g_deferredBuffers.push_back({g_frameCounter, buffer});
+  ++g_destroyedBuffers;
+}
+
+void deferDestroyTexture(WGPUTexture texture) {
+  if (!texture) return;
+  wgpuTextureAddRef(texture);
+  g_deferredTextures.push_back({g_frameCounter, texture});
+  ++g_destroyedTextures;
+  trackTextureDestroyed(texture);
+}
+
+void countFinalizedBuffer() { ++g_finalizedBuffers; }
+void countFinalizedTexture() { ++g_finalizedTextures; }
+void countCreatedBuffer(uint64_t bytes) {
+  ++g_createdBuffers;
+  g_createdBufferBytes += bytes;
+}
+void countCreatedTexture() { ++g_createdTextures; }
+
+// Registro de texturas vivas (telemetria temporária, ver internal.h).
+namespace {
+struct AliveTexInfo {
+  uint32_t width, height, depth, mips, samples;
+  std::string format;
+};
+std::unordered_map<WGPUTexture, AliveTexInfo> g_aliveTextures;
+}  // namespace
+
+void trackTextureCreated(WGPUTexture texture, uint32_t width, uint32_t height,
+                         uint32_t depth, uint32_t mips, uint32_t sampleCount,
+                         const char* format) {
+  if (texture) g_aliveTextures[texture] = {width, height, depth, mips, sampleCount, format ? format : "?"};
+}
+
+void trackTextureDestroyed(WGPUTexture texture) { g_aliveTextures.erase(texture); }
+
+void dumpAliveTextures() {
+  // Agrupa por (dims/formato) pra leitura compacta; vai pro perf-log.txt da
+  // pasta do jogo (e pro console com CORTEX_VRAM_LOG=1).
+  static const bool console = std::getenv("CORTEX_VRAM_LOG") != nullptr;
+  std::map<std::string, int> grouped;
+  for (const auto& [tex, info] : g_aliveTextures) {
+    char key[128];
+    std::snprintf(key, sizeof(key), "%ux%ux%u mips=%u s=%u %s", info.width,
+                  info.height, info.depth, info.mips, info.samples,
+                  info.format.c_str());
+    grouped[key]++;
+  }
+  core::appendPerfLog("texturas VIVAS (%zu):", g_aliveTextures.size());
+  if (console) std::printf("[gc] texturas VIVAS (%zu):\n", g_aliveTextures.size());
+  for (const auto& [key, count] : grouped) {
+    core::appendPerfLog("  %3dx  %s", count, key.c_str());
+    if (console) std::printf("[gc]   %3dx  %s\n", count, key.c_str());
+  }
+  if (console) std::fflush(stdout);
+}
+
+void flushDeferredDestroys() {
+  ++g_frameCounter;
+  const int cutoff = g_frameCounter - kDeferredDestroyFrames;
+  size_t db = 0;
+  while (db < g_deferredBuffers.size() && g_deferredBuffers[db].frame <= cutoff) {
+    wgpuBufferDestroy(g_deferredBuffers[db].buffer);
+    wgpuBufferRelease(g_deferredBuffers[db].buffer);  // solta a ref da fila
+    ++db;
+  }
+  if (db) g_deferredBuffers.erase(g_deferredBuffers.begin(), g_deferredBuffers.begin() + db);
+  size_t dt = 0;
+  while (dt < g_deferredTextures.size() && g_deferredTextures[dt].frame <= cutoff) {
+    wgpuTextureDestroy(g_deferredTextures[dt].texture);
+    wgpuTextureRelease(g_deferredTextures[dt].texture);  // solta a ref da fila
+    ++dt;
+  }
+  if (dt) g_deferredTextures.erase(g_deferredTextures.begin(), g_deferredTextures.begin() + dt);
+
+  // Telemetria de VRAM (ADR-0153): quando os totais mudam (~2s), grava um
+  // resumo no `perf-log.txt` da pasta do jogo — RAM/VRAM do processo (DXGI) +
+  // criação×destroy×release + texturas vivas com dimensões. É o arquivo que
+  // aponta ONDE está o vazamento sem precisar de console; `CORTEX_VRAM_LOG=1`
+  // espelha no stdout.
+  static const bool console = std::getenv("CORTEX_VRAM_LOG") != nullptr;
+  static int lastB = 0;
+  static int lastT = 0;
+  if (g_frameCounter % 120 != 0) return;
+  const int b = g_finalizedBuffers.load();
+  const int t = g_finalizedTextures.load();
+  if (b != lastB || t != lastT) {
+    core::appendPerfLog(
+        "vram=%.0fMB ws=%.0fMB | buffers criados=%d (%.0f MB) destroy=%d release=%d | texturas criadas=%d destroy=%d release=%d",
+        shims::perfGpuMemMB(), shims::perfWorkingSetMB(),
+        g_createdBuffers.load(), g_createdBufferBytes.load() / 1048576.0,
+        g_destroyedBuffers.load(), b, g_createdTextures.load(),
+        g_destroyedTextures.load(), t);
+    if (console) {
+      std::printf(
+          "[gc] buffers criados=%d (%.0f MB) destroy=%d release=%d | texturas criadas=%d destroy=%d release=%d\n",
+          g_createdBuffers.load(), g_createdBufferBytes.load() / 1048576.0,
+          g_destroyedBuffers.load(), b, g_createdTextures.load(),
+          g_destroyedTextures.load(), t);
+      std::fflush(stdout);
+    }
+    dumpAliveTextures();
+    lastB = b;
+    lastT = t;
+  }
+}
 
 // Extrai (ponteiro, bytes totais, bytes/elemento) de um TypedArray ou
 // ArrayBuffer JS. elementSize=1 pra ArrayBuffer (offsets em bytes).
@@ -212,6 +365,7 @@ napi_value deviceCreateBuffer(napi_env env, napi_callback_info info) {
       njs::getNamedBool(env, args[0], "mappedAtCreation", false);
 
   WGPUBuffer buffer = wgpuDeviceCreateBuffer(device, &desc);
+  countCreatedBuffer(desc.size);
   napi_value obj = njs::wrapHandle(env, buffer, finalizeBuffer);
   njs::setMethod(env, obj, "destroy", bufferDestroy);
   njs::setMethod(env, obj, "getMappedRange", bufferGetMappedRange);

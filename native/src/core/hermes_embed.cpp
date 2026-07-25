@@ -91,6 +91,21 @@ void cortexHermesDrainJobs(void* runtime) {
   if (r.drainJobs() == hermes::vm::ExecutionStatus::EXCEPTION) {
     logThrown(runtime, "microtask");
   }
+  // Fim do "job" ECMAScript: limpa o [[KeptAlive]] dos WeakRefs (spec exige por
+  // job). O caminho JSI (hermes.cpp::drainMicrotasks) faz isso; o drainJobs cru
+  // NÃO — sem esta linha, todo alvo de WeakRef criado/deref'd fica retido PRA
+  // SEMPRE (ADR-0153/SPEC-0152).
+  r.clearKeptObjects();
+}
+
+void cortexHermesHeapSnapshot(void* runtime, const char* path) {
+  // Snapshot exige Hermes com HERMES_MEMORY_INSTRUMENTATION (off neste build).
+  (void)runtime;
+  (void)path;
+}
+
+void cortexHermesCollectGarbage(void* runtime) {
+  rt(runtime)->collect("cortex-reset");
 }
 
 }  // extern "C"

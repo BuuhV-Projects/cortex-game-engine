@@ -147,6 +147,11 @@ export function installNetShims() {
   globalThis.AbortController = AbortControllerLite;
   globalThis.AbortSignal = AbortSignalLite;
   globalThis.URL = URLLite;
+  // Despejo dos object URLs (ADR-0153): o GLTFLoader cria `blob:` pra texturas
+  // embutidas e nem sempre revoga — os bytes ficavam retidos no Map. O engine
+  // chama isto junto do despejo de caches de asset (clearSceneAssetCaches),
+  // quando nenhum blob: antigo é mais alcançável.
+  globalThis.__cortexClearObjectUrls = function () { objectUrls.clear(); };
   globalThis.Blob = BlobLite;
   globalThis.Headers = HeadersLite;
   globalThis.Request = RequestLite;

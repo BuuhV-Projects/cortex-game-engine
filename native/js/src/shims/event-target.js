@@ -5,6 +5,9 @@
 export function createEventBus() {
   const listeners = new Map();
   return {
+    // Exposto pra DIAGNÓSTICO de vazamento (SPEC-0152): permite contar
+    // listeners por tipo entre trocas de fase (listener acumulando = retentor).
+    __listeners: listeners,
     addEventListener(type, callback) {
       if (typeof callback !== 'function') return;
       if (!listeners.has(type)) listeners.set(type, []);
