@@ -15,6 +15,25 @@ Se um `yarn add` falhar com `EBUSY ... electron\dist\resources\default_app.asar`
 o **Studio aberto** segurando o arquivo: feche o Studio e repita o comando — não
 troque pro npm pra contornar. Versões sempre **pinadas** (`-E`), nunca `latest`.
 
+## REGRA ABSOLUTA: registro ANTES do código (spec/ADR primeiro)
+
+**Nenhuma modificação na engine (ou num jogo que a consome) começa pelo código.**
+Antes de escrever/alterar qualquer código, crie o registro correspondente e só
+então implemente:
+
+1. **Sempre** crie uma **SPEC** (`docs/specs/SPEC-NNNN-*.md`) descrevendo o
+   comportamento/fluxo/formato do que vai ser construído ou alterado.
+2. Se a mudança envolver uma **decisão com alternativas reais** (tecnologia,
+   padrão, design de API), crie **também** um **ADR** (`docs/adrs/ADR-NNNN-*.md`)
+   com a escolha e os trade-offs — a spec referencia o ADR.
+3. A implementação vem **depois** do registro, na mesma mudança/commit-série.
+   Se durante a implementação o desenho mudar, **atualize o registro** antes de
+   seguir.
+
+Exceção única: correções triviais sem mudança de comportamento (typo, formatação,
+comentário). Fix de bug com mudança de comportamento observável **tem** registro.
+Nos jogos (ex.: teste4), o registro fica no `docs/specs/` do próprio jogo.
+
 ## ADR vs Spec (`docs/adrs/` vs `docs/specs/`)
 
 - **ADR** (`docs/adrs/`, prefixo `ADR-NNNN`) — registra uma **decisão** onde havia
