@@ -1,3 +1,10 @@
+## [0.36.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.36.0...v0.36.1) (2026-07-25)
+
+
+### Bug Fixes
+
+* **native:** download do fetch-deps com retry + validacao de zip ([434da85](https://github.com/BuuhV-Projects/cortex-game-engine/commit/434da856fb6085e32428a9ba9cfeb38ec11fd128))
+
 # [0.36.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.35.0...v0.36.0) (2026-07-25)
 
 
