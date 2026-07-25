@@ -14,15 +14,33 @@ $tp = Join-Path $root 'third_party'
 $dl = Join-Path $tp '_downloads'
 New-Item -ItemType Directory -Force $dl | Out-Null
 
+# Download de zip com retry + validação de conteúdo: o SourceForge (NSIS) às
+# vezes responde a página HTML de escolha de mirror em vez do arquivo — quebrou
+# o build do CI ("End of Central Directory record could not be found" no
+# Expand-Archive). UA de CLI recebe o download direto (browser ganha a página);
+# o magic 'PK' prova que veio zip de verdade antes de extrair.
+$FETCH_RETRIES = 3
+$FETCH_USER_AGENT = 'curl/8.0'
+$ZIP_MAGIC = [byte[]](0x50, 0x4B)  # 'PK'
+function Test-ZipMagic($file) {
+    $fs = [System.IO.File]::OpenRead($file)
+    try { return ($fs.ReadByte() -eq $ZIP_MAGIC[0] -and $fs.ReadByte() -eq $ZIP_MAGIC[1]) }
+    finally { $fs.Close() }
+}
 function Fetch($name, $url, $zip) {
     $dest = Join-Path $dl $zip
-    if (-not (Test-Path $dest)) {
-        Write-Host "baixando $name ..." -ForegroundColor Cyan
-        Invoke-WebRequest -Uri $url -OutFile $dest
-    } else {
+    if (Test-Path $dest) {
         Write-Host "$name já baixado" -ForegroundColor DarkGray
+        return $dest
     }
-    return $dest
+    for ($attempt = 1; $attempt -le $FETCH_RETRIES; $attempt++) {
+        Write-Host "baixando $name ..." -ForegroundColor Cyan
+        Invoke-WebRequest -Uri $url -OutFile $dest -UserAgent $FETCH_USER_AGENT
+        if (Test-ZipMagic $dest) { return $dest }
+        Remove-Item $dest -Force
+        Write-Host "${name}: resposta não é zip (mirror devolveu HTML?), tentando de novo ..." -ForegroundColor Yellow
+    }
+    throw "${name}: download inválido após $FETCH_RETRIES tentativas: $url"
 }
 
 # ── SDL3 (janela/input/áudio; tem suporte oficial GDK pro futuro console) ──
