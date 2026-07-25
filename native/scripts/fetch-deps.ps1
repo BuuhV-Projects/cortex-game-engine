@@ -112,17 +112,12 @@ if (-not (Test-Path (Join-Path $zstdDir 'zstddeclib.c'))) {
 }
 
 # ── basis_universal ENCODER (WASM) — ferramenta de BUILD (converter PNG→KTX2,
-# scripts/encode-ktx2.mjs). NÃO vai pro runtime; roda no Node. Mesma TAG do
-# transcoder. Fica em tools/ (não third_party/, que é dep de compilação). ──
-$encDir = Join-Path $root 'tools/basis-encoder'
-if (-not (Test-Path (Join-Path $encDir 'basis_encoder.wasm'))) {
-    Write-Host 'baixando basis_encoder (WASM, build tool) ...' -ForegroundColor Cyan
-    New-Item -ItemType Directory -Force $encDir | Out-Null
-    foreach ($f in @('basis_encoder.js', 'basis_encoder.wasm')) {
-        $raw = "https://raw.githubusercontent.com/BinomialLLC/basis_universal/$BASISU_COMMIT/webgl/encoder/build/$f"
-        Invoke-WebRequest -Uri $raw -OutFile (Join-Path $encDir $f)
-    }
-}
+# scripts/encode-ktx2.mjs). NÃO vai pro runtime; roda no Node. Fica em tools/
+# (não third_party/, que é dep de compilação). Delegado pro script Node
+# multiplataforma — o job de testes do CI (ubuntu) usa o MESMO script, então o
+# pin (mesma tag do transcoder acima) vive só lá. ──
+node (Join-Path $root 'scripts/fetch-basis-encoder.mjs')
+if ($LASTEXITCODE -ne 0) { throw 'fetch-basis-encoder.mjs falhou' }
 
 # ── NSIS (portable) — gera o instalador do export PC (make-installer.mjs).
 # Build tool; fica em tools/ (gitignorado). ──

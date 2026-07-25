@@ -37,6 +37,18 @@ AI-first — pra testar unidades PURAS, um framework completo não paga o custo.
   do engine, roda no `yarn test`). Ampliado com event-target (add/remove/
   dispatch + `__listeners`), webaudio-lite (`free()` idempotente do
   AudioBuffer) e net (`__cortexClearObjectUrls`, revoke).
+- **Dependências de ambiente dos testes JS** (regra pós-quebra do gate no CI):
+  teste que depende de artefato fora do `yarn install` **pula** (`runIf`) quando
+  a dependência não está presente — clone limpo nunca quebra o `yarn test` — e
+  o CI **provisiona** a dependência quando for barato, pra cobertura não virar
+  skip permanente. Concretamente:
+  - `encode-ktx2.test.ts` precisa do encoder WASM (gitignorado em
+    `native/tools/`): pula sem ele; o job de testes baixa via
+    `native/scripts/fetch-basis-encoder.mjs` (script Node multiplataforma,
+    fonte única do pin — o `fetch-deps.ps1` delega pra ele).
+  - `embed-icon.test.ts`: o caminho real (toolchain + host) já era `runIf`
+    Windows-only; o caso "PNG inexistente" ficou determinístico em qualquer
+    ambiente (o `embedIcon` valida o input antes do toolchain).
 - **Fora de escopo consciente**: integração wgpu/NAPI/Hermes (device, present,
   GC) — coberta pelo soak de troca de fase (spec 0015 do teste4) e pelo smoke
   do export; unit-testar exigiria mockar o mundo e testaria o mock.

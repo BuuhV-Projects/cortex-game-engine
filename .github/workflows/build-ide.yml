@@ -31,6 +31,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      # Encoder WASM (pinado) usado pelos testes de política de encode KTX2
+      # (tests/native/encode-ktx2.test.ts, ADR-0119) — não vive no git
+      # (native/tools/ é gitignorado). Sem ele a suíte pularia (runIf).
+      - name: Fetch basis encoder
+        run: node native/scripts/fetch-basis-encoder.mjs
+
       - name: Run unit tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

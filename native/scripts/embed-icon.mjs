@@ -41,9 +41,11 @@ function toolchainRequire() {
  * @returns {Promise<{ok:true} | {ok:false, reason:string}>}
  */
 export async function embedIcon(exePath, pngPath, { productName }) {
+  // Input antes de ambiente: PNG ausente responde o mesmo motivo em qualquer
+  // máquina (inclusive sem o toolchain instalado — caso do CI).
+  if (!fs.existsSync(pngPath)) return { ok: false, reason: `ícone não encontrado: ${pngPath}` };
   const req = toolchainRequire();
   if (!req) return { ok: false, reason: 'toolchain sem png-to-ico/rcedit' };
-  if (!fs.existsSync(pngPath)) return { ok: false, reason: `ícone não encontrado: ${pngPath}` };
 
   let icoPath;
   try {
