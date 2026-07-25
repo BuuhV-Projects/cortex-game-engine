@@ -46,6 +46,17 @@ Pré-requisito de build: Steamworks SDK em `native/third_party/steamworks` (ou e
 4. **Risco técnico nº 1:** backend gráfico é wgpu → D3D12 desktop, que **não serve no Game Core** — port pro D3D12X (swapchain/present/memória) é M3, não iniciado. Idem pipeline cache de shaders.
 5. XGameSave real (SCID via `CORTEX_SCID` + usuário assinado), suspend/resume, certificação XR (M4).
 
+**Ajustes de memória/perf já preparados pro console (SPEC-0152/0155, 2026-07-25):**
+- O host injeta **`__cortexPlatform`** (`"xbox"` com `-DCORTEX_GDK`, senão `"pc"`)
+  pré-boot — os jogos dimensionam custo por alvo.
+- teste4 já usa: **shadow map do CSM 4096²→2048² no Xbox** (Series S tem memória
+  unificada ~8 GB; o par cor+depth de 4096² custa ~128 MB). Padrão a repetir em
+  jogos novos: `__cortexPlatform === 'xbox'` → mapas/efeitos mais baratos.
+- O resto do trabalho de memória vale integralmente no console: BC7 (obrigatório
+  em D3D12), destroy adiado, teto de heap do Hermes (512 MB), caches residentes
+  com despejo na troca de mundo. Platô medido no PC: ~1,5 GB VRAM + ~1,4 GB RAM
+  — dentro do budget do Series S.
+
 ## Próximos passos mais baratos (sem depender da Microsoft)
 
 1. Binary scan do GDK: migrar o build GDK pro build platform completo `Gaming.Desktop.x64`.

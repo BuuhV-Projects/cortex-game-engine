@@ -232,6 +232,16 @@ int main(int argc, char** argv) {
       napi_set_named_property(js.env(), global, "__cortexWidth", w);
       napi_set_named_property(js.env(), global, "__cortexHeight", h);
       napi_set_named_property(js.env(), global, "__cortexPixelRatio", dpr);
+      // Plataforma do host, pré-boot: os jogos ajustam custo por alvo (ex.:
+      // shadow map do CSM 4096²→2048² no Xbox/Series S — memória unificada).
+#if defined(CORTEX_GDK)
+      const char* platformName = "xbox";
+#else
+      const char* platformName = "pc";
+#endif
+      napi_value platform = nullptr;
+      napi_create_string_utf8(js.env(), platformName, NAPI_AUTO_LENGTH, &platform);
+      napi_set_named_property(js.env(), global, "__cortexPlatform", platform);
     }
 
     if (!js.runBoot(baseDir)) return 1;
