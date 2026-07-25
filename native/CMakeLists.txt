@@ -248,3 +248,20 @@ add_custom_command(TARGET cortex_host POST_BUILD
     ${TP}/fonts/Roboto-Medium.ttf
     $<TARGET_FILE_DIR:cortex_host>
 )
+
+# ── Testes unitários do host (TDR-0004) ──────────────────────────────────────
+# Só unidades PURAS (enums, matemática BC7, logging em arquivo) — sem device
+# wgpu, sem NAPI env, sem Hermes: compila em segundos e roda sem o jogo.
+# Rodar: cmake --build build --target cortex_host_tests && build/cortex_host_tests
+# (ou native/scripts/run-native-tests.ps1, que resolve o dev shell do VS).
+add_executable(cortex_host_tests
+  tests/runner.cpp
+  tests/enums_test.cpp
+  tests/ktx2_math_test.cpp
+  tests/crash_handler_test.cpp
+  src/webgpu/enums.cpp
+  src/core/crash_handler.cpp
+)
+target_include_directories(cortex_host_tests PRIVATE
+  ${TP}/wgpu/include
+)

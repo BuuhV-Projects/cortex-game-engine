@@ -110,6 +110,7 @@ Ver ADR-0109.
 | `native/scripts/embed-icon.mjs` | `embedIcon(exe, png, {productName})` — do `icon` do jogo (PNG) deriva `.ico` multi-tamanho (png-to-ico) e embute no `launcher.exe` ícone + ProductName/FileDescription + file-version (rcedit), SPEC-0127. Best-effort (falha não derruba o export). Libs no toolchain de export (`png-to-ico`/`rcedit`), resolvidas nos layouts dev/empacotado. **Windows-only.** |
 | `native/export-toolchain/` | Toolchain de export AUTO-CONTIDO (TDR-0003): `package.json`+`yarn.lock` pinados (esbuild/babel/three/three-mesh-bvh/zod) que o `bundle.mjs` usa em runtime. O CI instala e o electron-builder copia o `node_modules` pra `resources/node_modules` (só Windows), pro Studio empacotado exportar sem dev. |
 | `native/scripts/pak.mjs` | Empacota uma pasta num container `.pak` (ADR-0104): índice binário + XOR leve. Formato em sync com `native/src/shims/pak.cpp`. |
+| `native/tests/` | **Testes unitários do C++** (TDR-0004): harness próprio zero-dependência (`harness.h`, macro `CHECK`) + alvo `cortex_host_tests` (CMake) cobrindo unidades PURAS — enums formato↔string (regressão do crash BC7), matemática de blocos BC7 (`src/shims/ktx2_math.h`), perf-log. Rodar: `yarn test:native` (ou o alvo direto no dev shell). Shims/scripts JS são testados no Vitest em `tests/native/` (suíte do engine). Integração wgpu/NAPI/Hermes fica com o soak (spec 0015 do teste4) + smoke do export. |
 
 ## Regras do projeto (não quebrar)
 
