@@ -30,6 +30,13 @@ void testAppendPerfLog() {
   // O runner roda no diretório de build — usa a pasta corrente como logDir.
   std::remove("perf-log.txt");
   core::installCrashHandler(".");
+
+  // DESLIGADO por default (release não ganha arquivo de telemetria).
+  core::appendPerfLog("nao deve aparecer");
+  CHECK(readAll("perf-log.txt").empty());
+
+  // Ligado (export --debug / dev-run / CORTEX_VRAM_LOG): grava timestampado.
+  core::setPerfLogEnabled(true);
   core::appendPerfLog("vram=%dMB ws=%dMB", 1507, 1364);
   core::appendPerfLog("texturas VIVAS (%d):", 45);
 
@@ -38,6 +45,7 @@ void testAppendPerfLog() {
   CHECK(content.find("texturas VIVAS (45):") != std::string::npos);
   // Toda linha nasce timestampada ([HH:MM:SS] ...).
   CHECK(content.find('[') == 0);
+  core::setPerfLogEnabled(false);
   std::remove("perf-log.txt");
 }
 

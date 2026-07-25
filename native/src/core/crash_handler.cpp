@@ -139,8 +139,16 @@ void appendErrorLog(const char* fmt, ...) {
   va_end(args);
 }
 
+namespace {
+// Desligado por default: só o export com métricas/dev-run/CORTEX_VRAM_LOG
+// ligam (ver appendPerfLog no header) — release não ganha arquivo de log.
+bool g_perfLogEnabled = false;
+}  // namespace
+
+void setPerfLogEnabled(bool enabled) { g_perfLogEnabled = enabled; }
+
 void appendPerfLog(const char* fmt, ...) {
-  if (!g_logDir[0]) return;
+  if (!g_perfLogEnabled || !g_logDir[0]) return;
   char line[2048];
   va_list args;
   va_start(args, fmt);

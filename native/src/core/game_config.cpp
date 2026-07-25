@@ -62,6 +62,20 @@ std::string extractJsonString(const std::string& json, const std::string& key) {
   return value;
 }
 
+// Extrai um bool TOP-LEVEL (`"key": true`) do mesmo JSON plano. Ausente ou
+// qualquer coisa que não seja o literal `true` conta como false.
+bool extractJsonBool(const std::string& json, const std::string& key) {
+  const std::string needle = "\"" + key + "\"";
+  size_t k = json.find(needle);
+  if (k == std::string::npos) return false;
+  size_t i = k + needle.size();
+  while (i < json.size() && (json[i] == ' ' || json[i] == '\t' || json[i] == '\n' ||
+                             json[i] == '\r' || json[i] == ':')) {
+    i++;
+  }
+  return json.compare(i, 4, "true") == 0;
+}
+
 }  // namespace
 
 GameConfig loadGameConfig(const std::string& baseDir, const std::string& fallbackSlug) {
@@ -70,7 +84,7 @@ GameConfig loadGameConfig(const std::string& baseDir, const std::string& fallbac
   std::string name = extractJsonString(json, "name");
   if (id.empty()) id = fallbackSlug;
   if (name.empty()) name = id;
-  return GameConfig{id, name};
+  return GameConfig{id, name, extractJsonBool(json, "debug")};
 }
 
 }  // namespace core

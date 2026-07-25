@@ -155,6 +155,11 @@ int main(int argc, char** argv) {
     const core::GameConfig game =
         core::loadGameConfig(baseDir, deriveGameName(argc, argv, baseDir));
     SDL_SetWindowTitle(window, game.name.c_str());
+    // perf-log.txt SÓ com telemetria autorizada (TDR-0004): export com
+    // métricas (`--debug` → cortex.json debug:true), dev-run (host apontando
+    // pra pasta do jogo) ou CORTEX_VRAM_LOG=1. Release não ganha arquivo.
+    const bool isDevRun = argc > 1 && argv[1] && argv[1][0];
+    core::setPerfLogEnabled(game.debug || isDevRun || SDL_getenv("CORTEX_VRAM_LOG") != nullptr);
     shims::registerTimers(js.env());
     shims::registerAnimationFrame(js.env());
     shims::registerInput(js.env());

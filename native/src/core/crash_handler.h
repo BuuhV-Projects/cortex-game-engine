@@ -19,7 +19,13 @@ void appendErrorLog(const char* fmt, ...);
 
 // Telemetria de performance/VRAM (SPEC-0152/ADR-0153): acrescenta uma linha
 // (timestampada) ao `perf-log.txt` na pasta do jogo. Silencioso se a pasta
-// ainda não foi registrada. Barato o bastante pra logs periódicos do loop.
+// ainda não foi registrada OU se a telemetria está desligada (default) — o
+// jogador final não ganha arquivo de log na pasta; liga no export com
+// métricas (`--debug` → cortex.json `debug:true`), no dev-run e via
+// CORTEX_VRAM_LOG=1. Barato o bastante pra logs periódicos do loop.
 void appendPerfLog(const char* fmt, ...);
+
+// Liga/desliga a gravação do perf-log.txt (ver appendPerfLog).
+void setPerfLogEnabled(bool enabled);
 
 }  // namespace core

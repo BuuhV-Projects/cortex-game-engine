@@ -252,6 +252,10 @@ guardLocks('assets', () => {
   {
     const { icon, ...rest } = game;
     void icon;
+    // `debug: true` só no export COM métricas (--debug): é o que autoriza o
+    // host a gravar o perf-log.txt na pasta (TDR-0004/SPEC-0152) — o jogador
+    // final não ganha arquivo de telemetria na pasta do jogo.
+    if (debugHud) rest.debug = true;
     fs.writeFileSync(path.join(dist, 'cortex.json'), JSON.stringify(rest, null, 2) + '\n');
   }
   const iniSrc = path.join(gameDir, 'config.ini');

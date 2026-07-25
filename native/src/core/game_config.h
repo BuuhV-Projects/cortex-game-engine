@@ -11,6 +11,8 @@ namespace core {
 struct GameConfig {
   std::string id;    // slug estável → pasta de saves (SDL_GetPrefPath)
   std::string name;  // exibição → título da janela / Meus Programas
+  /** Export com métricas (`--debug`): autoriza telemetria em arquivo (perf-log). */
+  bool debug = false;
 };
 
 // Lê `<baseDir>/cortex.json` e extrai `id`/`name`. Ausência ou parse falho cai

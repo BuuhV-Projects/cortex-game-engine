@@ -259,8 +259,10 @@ add_executable(cortex_host_tests
   tests/enums_test.cpp
   tests/ktx2_math_test.cpp
   tests/crash_handler_test.cpp
+  tests/game_config_test.cpp
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
+  src/core/game_config.cpp
 )
 target_include_directories(cortex_host_tests PRIVATE
   ${TP}/wgpu/include
