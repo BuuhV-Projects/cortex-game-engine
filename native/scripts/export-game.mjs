@@ -40,7 +40,7 @@ const gdk = args.includes('--xbox');
 const outFlagIdx = args.indexOf('--out');
 const outArg = outFlagIdx >= 0 ? args[outFlagIdx + 1] : null;
 // Posicional = o 1º arg sem `--` que NÃO seja o valor de `--out`.
-const positional = args.filter((a, i) => !a.startsWith('--') && i !== outFlagIdx + 1);
+const positional = args.filter((a, i) => !a.startsWith('--') && (outFlagIdx === -1 || i !== outFlagIdx + 1));
 const gameDir = positional[0] ? path.resolve(positional[0]) : null;
 if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
   console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--out <dir>] [--steam|--xbox] [--debug]');
