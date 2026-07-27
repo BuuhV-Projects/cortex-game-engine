@@ -10,9 +10,10 @@
       "PenduloEspetos",
       "Prensa",
       "PlataformaGiratoria",
-      "Ventilador"
+      "Ventilador",
+      "Borracha"
     ],
-    "note": "Scripts de mecânica anexáveis (ADR-0085). Esteira/PenduloEspetos/Prensa/PlataformaGiratoria vêm do kit platformer-space; Ventilador é DESTE kit (FanUpdraftScript — vento pulsante do propeller_trampoline, SPEC-0157). Copie scripts/ pro projeto e registre; os asset.mechanic apontam qual usar. MarteloGiratorio/Pendulo/Trampolim/Drone são scripts de JOGO (teste4) referenciados por nome — o jogo fornece.",
+    "note": "Scripts de mecânica anexáveis (ADR-0085). Esteira/PenduloEspetos/Prensa/PlataformaGiratoria vêm do kit platformer-space; Ventilador (FanUpdraftScript — vento pulsante do propeller_trampoline, SPEC-0157) e Borracha (BouncyScript — recuo + squash + poim das peças emborrachadas, SPEC-0158) são DESTE kit. Copie scripts/ pro projeto e registre; os asset.mechanic apontam qual usar. MarteloGiratorio/Pendulo/Trampolim/Drone são scripts de JOGO (teste4) referenciados por nome — o jogo fornece.",
     "animationRule": "Escolha o TIPO de animação inspecionando o .glb antes (nós, filhos, skins, animations): transform de nó = peça rígida que gira/balança/vaivém (disco, varredor, gangorra); hierarquia pai+filho = partes com ritmos próprios (pêndulos com moldura); UV scroll = superfície que corre sem sair do lugar (esteira chevron); nada = decoração pura. Peça com papel de gameplay visualmente parada está ERRADA."
   },
   "assets": {
@@ -2249,6 +2250,7 @@
         "block",
         "button",
         "soft",
+        "rubber",
         "M"
       ],
       "size": [
@@ -2279,11 +2281,16 @@
         }
       },
       "thumb": "thumbnails/obstacle_18_001.png",
-      "note": "Bloco verde macio (2.6u) com botão laranja no topo.",
+      "note": "Bloco verde EMBORRACHADO (2.6u) com botão laranja no topo — poim ao toque.",
       "altUse": [
         "bouncer",
         "button"
-      ]
+      ],
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/obstacle_19_001.glb": {
       "role": "prop",
@@ -2291,6 +2298,7 @@
         "bumper",
         "wedge",
         "soft",
+        "rubber",
         "M"
       ],
       "size": [
@@ -2321,7 +2329,12 @@
         }
       },
       "thumb": "thumbnails/obstacle_19_001.png",
-      "note": "Cunha macia triangular (3.6u) com pinos no topo — bumper de canto."
+      "note": "Cunha macia EMBORRACHADA triangular (3.6u) com pinos no topo — bumper de canto que poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/obstacle_1_001.glb": {
       "role": "hazard",
@@ -2376,6 +2389,7 @@
       "tags": [
         "ramp",
         "steps",
+        "rubber",
         "M"
       ],
       "size": [
@@ -2406,12 +2420,18 @@
         }
       },
       "thumb": "thumbnails/obstacle_20_001.png",
-      "note": "Rampa azul (3.2u) com dois degraus amarelos."
+      "note": "Rampa azul EMBORRACHADA (3.2u) com dois degraus amarelos — poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/obstacle_21_001.glb": {
       "role": "platform",
       "tags": [
         "ramp",
+        "rubber",
         "M"
       ],
       "size": [
@@ -2442,7 +2462,12 @@
         }
       },
       "thumb": "thumbnails/obstacle_21_001.png",
-      "note": "Rampa azul lisa (3.2u)."
+      "note": "Rampa azul lisa EMBORRACHADA (3.2u) — poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/obstacle_22_001.glb": {
       "role": "hazard",
@@ -4114,6 +4139,7 @@
         "course",
         "float",
         "stack",
+        "rubber",
         "L"
       ],
       "size": [
@@ -4144,8 +4170,13 @@
         }
       },
       "thumb": "thumbnails/platform_028.png",
-      "note": "Empilhado inflável grande (15×6×19, 3 camadas) — bloco-ilha SOLTO, fora do sistema modular das platform_001..027; serve de base/plataforma alta.",
-      "standalone": true
+      "note": "Empilhado inflável EMBORRACHADO grande (15×6×19, 3 camadas) — bloco-ilha SOLTO, fora do sistema modular das platform_001..027; serve de base/plataforma alta e poim ao toque.",
+      "standalone": true,
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/platform_029.glb": {
       "role": "ground",
@@ -4153,6 +4184,7 @@
         "course",
         "float",
         "stack",
+        "rubber",
         "L"
       ],
       "size": [
@@ -4183,8 +4215,13 @@
         }
       },
       "thumb": "thumbnails/platform_029.png",
-      "note": "Empilhado inflável grande (15×6×19, 3 camadas) — bloco-ilha SOLTO, fora do sistema modular das platform_001..027; serve de base/plataforma alta.",
-      "standalone": true
+      "note": "Empilhado inflável EMBORRACHADO grande (15×6×19, 3 camadas) — bloco-ilha SOLTO, fora do sistema modular das platform_001..027; serve de base/plataforma alta e poim ao toque.",
+      "standalone": true,
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/platform_030.glb": {
       "role": "ground",
@@ -4192,6 +4229,7 @@
         "course",
         "float",
         "stack",
+        "rubber",
         "L"
       ],
       "size": [
@@ -4222,8 +4260,13 @@
         }
       },
       "thumb": "thumbnails/platform_030.png",
-      "note": "Empilhado inflável grande (15×6×19, 3 camadas) — bloco-ilha SOLTO, fora do sistema modular das platform_001..027; serve de base/plataforma alta.",
-      "standalone": true
+      "note": "Empilhado inflável EMBORRACHADO grande (15×6×19, 3 camadas) — bloco-ilha SOLTO, fora do sistema modular das platform_001..027; serve de base/plataforma alta e poim ao toque.",
+      "standalone": true,
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/propeller_trampoline_1_001.glb": {
       "role": "platform",
@@ -6045,6 +6088,8 @@
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6075,13 +6120,20 @@
         }
       },
       "thumb": "thumbnails/wall_003.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_004.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6112,13 +6164,20 @@
         }
       },
       "thumb": "thumbnails/wall_004.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_005.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "M"
       ],
       "size": [
@@ -6149,13 +6208,20 @@
         }
       },
       "thumb": "thumbnails/wall_005.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_006.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6186,13 +6252,20 @@
         }
       },
       "thumb": "thumbnails/wall_006.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_007.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6223,13 +6296,20 @@
         }
       },
       "thumb": "thumbnails/wall_007.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_008.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6260,13 +6340,20 @@
         }
       },
       "thumb": "thumbnails/wall_008.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_009.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6297,13 +6384,20 @@
         }
       },
       "thumb": "thumbnails/wall_009.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_010.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6334,13 +6428,20 @@
         }
       },
       "thumb": "thumbnails/wall_010.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_011.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6371,13 +6472,20 @@
         }
       },
       "thumb": "thumbnails/wall_011.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_012.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6408,13 +6516,20 @@
         }
       },
       "thumb": "thumbnails/wall_012.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_013.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6445,13 +6560,20 @@
         }
       },
       "thumb": "thumbnails/wall_013.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_014.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6482,13 +6604,20 @@
         }
       },
       "thumb": "thumbnails/wall_014.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/wall_015.glb": {
       "role": "prop",
       "tags": [
         "wall",
         "boundary",
+        "rubber",
+        "inflatable",
         "L"
       ],
       "size": [
@@ -6519,7 +6648,12 @@
         }
       },
       "thumb": "thumbnails/wall_015.png",
-      "note": "Mureta/grade de borda da pista."
+      "note": "Guarda-corpo INFLÁVEL de borda da pista — emborrachado, poim ao toque.",
+      "mechanic": {
+        "behavior": "bouncy",
+        "script": "Borracha",
+        "note": "emborrachado: leve recuo ao toque + squash de borracha + som poim (rush:bounce)"
+      }
     },
     "assets/water_001.glb": {
       "role": "hazard",
@@ -6589,7 +6723,10 @@
         }
       },
       "thumb": "thumbnails/water_platform_001.png",
-      "note": "Balsa flutuante 8×8 — ilha segura sobre a água."
+      "note": "Balsa flutuante 8×8 — a ÚNICA família que fica em contato com a água: base de RESGATE pro player caído voltar ao percurso (o jogo põe a rota de volta, ex.: trampolim em cima). O PERCURSO em si nunca flutua rente à água.",
+      "altUse": [
+        "rescue"
+      ]
     },
     "assets/water_platform_002.glb": {
       "role": "platform",
@@ -6627,7 +6764,10 @@
         }
       },
       "thumb": "thumbnails/water_platform_002.png",
-      "note": "Balsa flutuante 8×8 — ilha segura sobre a água."
+      "note": "Balsa flutuante 8×8 — a ÚNICA família que fica em contato com a água: base de RESGATE pro player caído voltar ao percurso (o jogo põe a rota de volta, ex.: trampolim em cima). O PERCURSO em si nunca flutua rente à água.",
+      "altUse": [
+        "rescue"
+      ]
     },
     "assets/water_platform_003.glb": {
       "role": "platform",
@@ -6665,7 +6805,10 @@
         }
       },
       "thumb": "thumbnails/water_platform_003.png",
-      "note": "Balsa flutuante 8×8 — ilha segura sobre a água."
+      "note": "Balsa flutuante 8×8 — a ÚNICA família que fica em contato com a água: base de RESGATE pro player caído voltar ao percurso (o jogo põe a rota de volta, ex.: trampolim em cima). O PERCURSO em si nunca flutua rente à água.",
+      "altUse": [
+        "rescue"
+      ]
     },
     "assets/water_platform_partition_001.glb": {
       "role": "decoration",
