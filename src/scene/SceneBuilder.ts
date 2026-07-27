@@ -888,13 +888,17 @@ function createPlatformerEntity(
   e.addComponent(new TransformComponent(obj.position.x, obj.position.y, obj.position.z, obj.rotation.y));
   e.addComponent(new Object3DComponent(obj));
 
-  const offX = col?.offsetX ?? 0;
-  const offY = col?.offsetY ?? 0;
   const shape = col?.shape ?? 'box';
   const points = shape === 'heightfield' ? col?.points : undefined;
 
   let halfW: number;
   let halfH: number;
+  // Offset do CORPO real em relação ao pivô (SPEC-0161): modelos de kit com
+  // origem na ARESTA de encaixe têm o bbox todo de um lado só — sem isto, o
+  // collider/gizmo ficava centrado no pivô, deslocado meia-peça do corpo
+  // (parecia "uma plataforma dentro da outra" no editor do Mundo 4).
+  let boundsOffX = 0;
+  let boundsOffY = 0;
   if (points && points.length > 0) {
     // Heightfield: bbox derivado dos pontos (broadphase/gizmo).
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -913,7 +917,11 @@ function createPlatformerEntity(
     const b = getWorldBounds(obj);
     halfW = b.size.x / 2;
     halfH = b.size.y / 2;
+    boundsOffX = b.center.x - obj.position.x;
+    boundsOffY = b.center.y - obj.position.y;
   }
+  const offX = (col?.offsetX ?? 0) + boundsOffX;
+  const offY = (col?.offsetY ?? 0) + boundsOffY;
 
   if (node.player) {
     // Player: collider não-sólido (não é parede) + corpo + alvo da câmera.
