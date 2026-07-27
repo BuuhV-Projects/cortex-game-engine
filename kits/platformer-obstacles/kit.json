@@ -3054,7 +3054,7 @@
           "at": [
             0,
             0.405,
-            -3.65
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3065,7 +3065,7 @@
         }
       },
       "thumb": "thumbnails/platform_001.png",
-      "note": "Ponta de pista estreita (6.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe — fecha o início/fim de um trecho. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Ponta de pista estreita (6.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe — fecha o início/fim de um trecho. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_002.glb": {
       "role": "ground",
@@ -3095,7 +3095,7 @@
           "at": [
             0,
             0.405,
-            -3
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3106,7 +3106,7 @@
         }
       },
       "thumb": "thumbnails/platform_002.png",
-      "note": "Segmento reto estreito (6.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Segmento reto estreito (6.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_003.glb": {
       "role": "ground",
@@ -3136,7 +3136,7 @@
           "at": [
             0,
             5.405,
-            -6
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3147,7 +3147,7 @@
         }
       },
       "thumb": "thumbnails/platform_003.png",
-      "note": "Rampa estreita (6.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Rampa estreita (6.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_004.glb": {
       "role": "ground",
@@ -3177,7 +3177,7 @@
           "at": [
             0,
             0.405,
-            -6
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3188,7 +3188,7 @@
         }
       },
       "thumb": "thumbnails/platform_004.png",
-      "note": "Transição/funil (12.5×12): encaixa pista LARGA (12.5) de um lado e ESTREITA (6.5) do outro. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Transição/funil (12.5×12): encaixa pista LARGA (12.5) de um lado e ESTREITA (6.5) do outro. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_005.glb": {
       "role": "ground",
@@ -3218,7 +3218,7 @@
           "at": [
             0,
             5.405,
-            -6
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3229,7 +3229,7 @@
         }
       },
       "thumb": "thumbnails/platform_005.png",
-      "note": "Rampa larga (12.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Rampa larga (12.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_006.glb": {
       "role": "ground",
@@ -3259,7 +3259,7 @@
           "at": [
             0,
             0.405,
-            -3
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3270,7 +3270,7 @@
         }
       },
       "thumb": "thumbnails/platform_006.png",
-      "note": "Segmento reto largo (12.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Segmento reto largo (12.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_007.glb": {
       "role": "ground",
@@ -3300,7 +3300,7 @@
           "at": [
             0,
             0.405,
-            -3.65
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3311,7 +3311,7 @@
         }
       },
       "thumb": "thumbnails/platform_007.png",
-      "note": "Ponta de pista larga (12.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Ponta de pista larga (12.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_008.glb": {
       "role": "ground",
@@ -3341,7 +3341,7 @@
           "at": [
             0,
             0.405,
-            -12
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3352,7 +3352,7 @@
         }
       },
       "thumb": "thumbnails/platform_008.png",
-      "note": "Seção grande em L (32.5×24): curva de 90° do percurso — encaixes nas extremidades dos braços. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Seção grande em L (32.5×24): curva de 90° do percurso — encaixes nas extremidades dos braços. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_009.glb": {
       "role": "ground",
@@ -3382,7 +3382,7 @@
           "at": [
             0,
             0.405,
-            -12
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3393,7 +3393,7 @@
         }
       },
       "thumb": "thumbnails/platform_009.png",
-      "note": "Seção grande em seta (37.5×24): muda a direção da pista em diagonal — encaixes nas extremidades. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Seção grande em seta (37.5×24): muda a direção da pista em diagonal — encaixes nas extremidades. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_010.glb": {
       "role": "ground",
@@ -3423,7 +3423,7 @@
           "at": [
             0,
             0.405,
-            -3.65
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3434,7 +3434,7 @@
         }
       },
       "thumb": "thumbnails/platform_010.png",
-      "note": "Ponta de pista larga (12.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Ponta de pista larga (12.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_011.glb": {
       "role": "ground",
@@ -3464,7 +3464,7 @@
           "at": [
             0,
             0.405,
-            -3
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3475,7 +3475,7 @@
         }
       },
       "thumb": "thumbnails/platform_011.png",
-      "note": "Segmento reto largo (12.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Segmento reto largo (12.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_012.glb": {
       "role": "ground",
@@ -3505,7 +3505,7 @@
           "at": [
             0,
             5.405,
-            -6
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3516,7 +3516,7 @@
         }
       },
       "thumb": "thumbnails/platform_012.png",
-      "note": "Rampa larga (12.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Rampa larga (12.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_013.glb": {
       "role": "ground",
@@ -3546,7 +3546,7 @@
           "at": [
             0,
             0.405,
-            -3
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3557,7 +3557,7 @@
         }
       },
       "thumb": "thumbnails/platform_013.png",
-      "note": "Segmento reto estreito (6.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Segmento reto estreito (6.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_014.glb": {
       "role": "ground",
@@ -3587,7 +3587,7 @@
           "at": [
             0,
             5.405,
-            -6
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3598,7 +3598,7 @@
         }
       },
       "thumb": "thumbnails/platform_014.png",
-      "note": "Rampa estreita (6.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Rampa estreita (6.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_015.glb": {
       "role": "ground",
@@ -3628,7 +3628,7 @@
           "at": [
             0,
             0.405,
-            -3.65
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3639,7 +3639,7 @@
         }
       },
       "thumb": "thumbnails/platform_015.png",
-      "note": "Ponta de pista estreita (6.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe — fecha o início/fim de um trecho. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Ponta de pista estreita (6.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe — fecha o início/fim de um trecho. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_016.glb": {
       "role": "ground",
@@ -3669,7 +3669,7 @@
           "at": [
             0,
             0.405,
-            -6
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3680,7 +3680,7 @@
         }
       },
       "thumb": "thumbnails/platform_016.png",
-      "note": "Transição/funil (12.5×12): encaixa pista LARGA (12.5) de um lado e ESTREITA (6.5) do outro. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Transição/funil (12.5×12): encaixa pista LARGA (12.5) de um lado e ESTREITA (6.5) do outro. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_017.glb": {
       "role": "ground",
@@ -3710,7 +3710,7 @@
           "at": [
             0,
             0.405,
-            -12
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3721,7 +3721,7 @@
         }
       },
       "thumb": "thumbnails/platform_017.png",
-      "note": "Seção grande em L (32.5×24): curva de 90° do percurso — encaixes nas extremidades dos braços. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Seção grande em L (32.5×24): curva de 90° do percurso — encaixes nas extremidades dos braços. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_018.glb": {
       "role": "ground",
@@ -3751,7 +3751,7 @@
           "at": [
             0,
             0.405,
-            -12
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3762,7 +3762,7 @@
         }
       },
       "thumb": "thumbnails/platform_018.png",
-      "note": "Seção grande em seta (37.5×24): muda a direção da pista em diagonal — encaixes nas extremidades. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Seção grande em seta (37.5×24): muda a direção da pista em diagonal — encaixes nas extremidades. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_019.glb": {
       "role": "ground",
@@ -3792,7 +3792,7 @@
           "at": [
             0,
             5.405,
-            -6
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3803,7 +3803,7 @@
         }
       },
       "thumb": "thumbnails/platform_019.png",
-      "note": "Rampa larga (12.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Rampa larga (12.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_020.glb": {
       "role": "ground",
@@ -3833,7 +3833,7 @@
           "at": [
             0,
             0.405,
-            -3.65
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3844,7 +3844,7 @@
         }
       },
       "thumb": "thumbnails/platform_020.png",
-      "note": "Ponta de pista larga (12.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Ponta de pista larga (12.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_021.glb": {
       "role": "ground",
@@ -3874,7 +3874,7 @@
           "at": [
             0,
             0.405,
-            -3
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3885,7 +3885,7 @@
         }
       },
       "thumb": "thumbnails/platform_021.png",
-      "note": "Segmento reto largo (12.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Segmento reto largo (12.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_022.glb": {
       "role": "ground",
@@ -3915,7 +3915,7 @@
           "at": [
             0,
             0.405,
-            -3
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3926,7 +3926,7 @@
         }
       },
       "thumb": "thumbnails/platform_022.png",
-      "note": "Segmento reto estreito (6.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Segmento reto estreito (6.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_023.glb": {
       "role": "ground",
@@ -3956,7 +3956,7 @@
           "at": [
             0,
             5.405,
-            -6
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -3967,7 +3967,7 @@
         }
       },
       "thumb": "thumbnails/platform_023.png",
-      "note": "Rampa estreita (6.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Rampa estreita (6.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_024.glb": {
       "role": "ground",
@@ -3997,7 +3997,7 @@
           "at": [
             0,
             0.405,
-            -3.65
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -4008,7 +4008,7 @@
         }
       },
       "thumb": "thumbnails/platform_024.png",
-      "note": "Ponta de pista estreita (6.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe — fecha o início/fim de um trecho. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Ponta de pista estreita (6.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe — fecha o início/fim de um trecho. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_025.glb": {
       "role": "ground",
@@ -4038,7 +4038,7 @@
           "at": [
             0,
             0.405,
-            -6
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -4049,7 +4049,7 @@
         }
       },
       "thumb": "thumbnails/platform_025.png",
-      "note": "Transição/funil (12.5×12): encaixa pista LARGA (12.5) de um lado e ESTREITA (6.5) do outro. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Transição/funil (12.5×12): encaixa pista LARGA (12.5) de um lado e ESTREITA (6.5) do outro. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_026.glb": {
       "role": "ground",
@@ -4079,7 +4079,7 @@
           "at": [
             0,
             0.405,
-            -12
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -4090,7 +4090,7 @@
         }
       },
       "thumb": "thumbnails/platform_026.png",
-      "note": "Seção grande em L (32.5×24): curva de 90° do percurso — encaixes nas extremidades dos braços. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Seção grande em L (32.5×24): curva de 90° do percurso — encaixes nas extremidades dos braços. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_027.glb": {
       "role": "ground",
@@ -4120,7 +4120,7 @@
           "at": [
             0,
             0.405,
-            -12
+            0
           ],
           "kind": "surface",
           "dir": [
@@ -4131,7 +4131,7 @@
         }
       },
       "thumb": "thumbnails/platform_027.png",
-      "note": "Seção grande em seta (37.5×24): muda a direção da pista em diagonal — encaixes nas extremidades. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
+      "note": "Seção grande em seta (37.5×24): muda a direção da pista em diagonal — encaixes nas extremidades. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável. Pivô CENTRAL (recentrado, SPEC-0162)."
     },
     "assets/platform_028.glb": {
       "role": "ground",
