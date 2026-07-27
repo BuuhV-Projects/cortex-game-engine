@@ -34,18 +34,20 @@ NearestFilter) ficam FORA: têm caminhos próprios de filtragem.
   em conjunto).
 - Validação final é na GPU real do usuário (headless não reproduz o defeito).
 
-## Adendo (mesmo dia): a causa dominante era BANDING — dither no atlas
+## Adendo (mesmo dia): investigação encerrada — dither REVERTIDO
 
-O A/B na GPU real (export nativo em janela + `?rdbg=unlit` do teste4) provou
-que o padrão persiste SEM luz e SEM sombra → é textura, mas não minificação:
-as peças modulares usam janelas MINÚSCULAS do atlas que são GRADIENTES puros
-(deck = 113×72 px esticados em 12,5 m — magnificação). Gradiente esticado +
-re-quantização de 8 bits = **banding**, comprimido em "pente" pela perspectiva
-rasante (SwiftShader mascara por precisão de caminho diferente).
+O A/B na GPU real (export nativo + `?rdbg=unlit` do teste4) descartou sombra e
+normais; a hipótese seguinte (banding do gradiente do atlas — janelas de
+113×72 px esticadas em 12,5 m) motivou um dither de 1 LSB no `Textures1.png`.
+**Não se confirmou**: o usuário reportou "mudou nada", e a análise geométrica
+das juntas (rasterização dos decks em cena) provou o encaixe exato — o que ele
+via como "dois glbs sobrepostos" eram as ORIGENS coincidentes das peças na
+junta (design do cursor de trecho; corpos em direções opostas, 0,01 m² de
+interseção = a linha da junta). O relato final do próprio usuário: "nem sei se
+existiu problema".
 
-`material.dithering` não existe no three WebGPU (e TSL custom arriscaria os
-gotchas do naga no host nativo). Fix na FONTE: **dither de ~1 LSB (ruído
-triangular acromático) aplicado ao `Textures1.png` do kit** — invisível de
-perto, quebra as faixas. Script durável no stage
-(`_stage/obstacles/dither-atlas.py`): rodar após qualquer reprocesso que
-regenere o atlas. A anisotropia 8 fica (fix legítimo pra minificação).
+O dither do atlas foi REVERTIDO (asset intacto). A **anisotropia 8 FICA**: é
+melhoria genérica de filtragem (padrão da indústria, custo marginal), útil
+para texturas com detalhe real em ângulo rasante — apenas não era a causa do
+relato. Lição de método: artefato "visto" em screenshot precisa de A/B com a
+MESMA câmera/posição — duas capturas parecidas não são prova.
