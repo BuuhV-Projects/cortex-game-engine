@@ -1,3 +1,15 @@
+# [0.37.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.36.1...v0.37.0) (2026-07-27)
+
+
+### Bug Fixes
+
+* **kits:** semântica do platformer-obstacles revisada pelo usuário ([6220339](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6220339b08825bbd28dfcf884525ac556d898809))
+
+
+### Features
+
+* **kits:** adicionar o kit curado platformer-obstacles ([d83d204](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d83d20442d4d4b88bb601e157faac201d8566804))
+
 ## [0.36.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.36.0...v0.36.1) (2026-07-25)
 
 
