@@ -48,7 +48,7 @@ game.world.addSystem(fps)
 
 > **new FirstPersonCameraSystem**(`camera`, `input`, `canvas`, `options?`): `FirstPersonCameraSystem`
 
-Defined in: [src/systems/FirstPersonCameraSystem.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L76)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L77)
 
 #### Parameters
 
@@ -163,7 +163,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/systems/FirstPersonCameraSystem.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L104)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L105)
 
 Remove o listener de `mousedown` do canvas — chamado pelo [World.clear](World.md#clear)
 na troca de fase. Sem isto, a closure retém este system (e a câmera) da fase
@@ -183,7 +183,7 @@ anterior a cada troca (SPEC-0152).
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/FirstPersonCameraSystem.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L109)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L110)
 
 Executa a lógica do sistema para o frame/passo atual.
 
