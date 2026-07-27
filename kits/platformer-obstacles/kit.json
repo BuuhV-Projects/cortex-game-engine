@@ -9,9 +9,10 @@
       "Esteira",
       "PenduloEspetos",
       "Prensa",
-      "PlataformaGiratoria"
+      "PlataformaGiratoria",
+      "Ventilador"
     ],
-    "note": "Scripts de mecânica anexáveis (ADR-0085), mesmos do kit platformer-space. Copie scripts/ pro projeto e registre; os asset.mechanic apontam qual usar. MarteloGiratorio/Pendulo/Trampolim/Drone são scripts de JOGO (teste4) referenciados por nome — o jogo fornece.",
+    "note": "Scripts de mecânica anexáveis (ADR-0085). Esteira/PenduloEspetos/Prensa/PlataformaGiratoria vêm do kit platformer-space; Ventilador é DESTE kit (FanUpdraftScript — vento pulsante do propeller_trampoline, SPEC-0157). Copie scripts/ pro projeto e registre; os asset.mechanic apontam qual usar. MarteloGiratorio/Pendulo/Trampolim/Drone são scripts de JOGO (teste4) referenciados por nome — o jogo fornece.",
     "animationRule": "Escolha o TIPO de animação inspecionando o .glb antes (nós, filhos, skins, animations): transform de nó = peça rígida que gira/balança/vaivém (disco, varredor, gangorra); hierarquia pai+filho = partes com ritmos próprios (pêndulos com moldura); UV scroll = superfície que corre sem sair do lugar (esteira chevron); nada = decoração pura. Peça com papel de gameplay visualmente parada está ERRADA."
   },
   "assets": {
@@ -3005,6 +3006,10 @@
       "tags": [
         "course",
         "float",
+        "modular",
+        "pink",
+        "end-cap",
+        "narrow",
         "L"
       ],
       "size": [
@@ -3013,7 +3018,7 @@
         7.3
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3035,13 +3040,17 @@
         }
       },
       "thumb": "thumbnails/platform_001.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Ponta de pista estreita (6.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe — fecha o início/fim de um trecho. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_002.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "pink",
+        "straight",
+        "narrow",
         "L"
       ],
       "size": [
@@ -3050,7 +3059,7 @@
         6
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3072,13 +3081,17 @@
         }
       },
       "thumb": "thumbnails/platform_002.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Segmento reto estreito (6.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_003.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "pink",
+        "ramp",
+        "narrow",
         "L"
       ],
       "size": [
@@ -3087,7 +3100,7 @@
         12
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3109,13 +3122,17 @@
         }
       },
       "thumb": "thumbnails/platform_003.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Rampa estreita (6.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_004.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "pink",
+        "funnel",
+        "transition",
         "L"
       ],
       "size": [
@@ -3124,7 +3141,7 @@
         12
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3146,13 +3163,17 @@
         }
       },
       "thumb": "thumbnails/platform_004.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Transição/funil (12.5×12): encaixa pista LARGA (12.5) de um lado e ESTREITA (6.5) do outro. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_005.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "pink",
+        "ramp",
+        "wide",
         "L"
       ],
       "size": [
@@ -3161,7 +3182,7 @@
         12
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3183,13 +3204,17 @@
         }
       },
       "thumb": "thumbnails/platform_005.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Rampa larga (12.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_006.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "pink",
+        "straight",
+        "wide",
         "L"
       ],
       "size": [
@@ -3198,7 +3223,7 @@
         6
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3220,13 +3245,17 @@
         }
       },
       "thumb": "thumbnails/platform_006.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Segmento reto largo (12.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_007.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "pink",
+        "end-cap",
+        "wide",
         "L"
       ],
       "size": [
@@ -3235,7 +3264,7 @@
         7.3
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3257,13 +3286,17 @@
         }
       },
       "thumb": "thumbnails/platform_007.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Ponta de pista larga (12.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_008.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "pink",
+        "corner",
+        "wide",
         "L"
       ],
       "size": [
@@ -3272,7 +3305,7 @@
         24
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3294,13 +3327,17 @@
         }
       },
       "thumb": "thumbnails/platform_008.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Seção grande em L (32.5×24): curva de 90° do percurso — encaixes nas extremidades dos braços. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_009.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "pink",
+        "corner",
+        "wide",
         "L"
       ],
       "size": [
@@ -3309,7 +3346,7 @@
         24
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3331,13 +3368,17 @@
         }
       },
       "thumb": "thumbnails/platform_009.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Seção grande em seta (37.5×24): muda a direção da pista em diagonal — encaixes nas extremidades. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_010.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "orange",
+        "end-cap",
+        "wide",
         "L"
       ],
       "size": [
@@ -3346,7 +3387,7 @@
         7.3
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3368,13 +3409,17 @@
         }
       },
       "thumb": "thumbnails/platform_010.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Ponta de pista larga (12.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_011.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "orange",
+        "straight",
+        "wide",
         "L"
       ],
       "size": [
@@ -3383,7 +3428,7 @@
         6
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3405,13 +3450,17 @@
         }
       },
       "thumb": "thumbnails/platform_011.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Segmento reto largo (12.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_012.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "orange",
+        "ramp",
+        "wide",
         "L"
       ],
       "size": [
@@ -3420,7 +3469,7 @@
         12
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3442,13 +3491,17 @@
         }
       },
       "thumb": "thumbnails/platform_012.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Rampa larga (12.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_013.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "orange",
+        "straight",
+        "narrow",
         "L"
       ],
       "size": [
@@ -3457,7 +3510,7 @@
         6
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3479,13 +3532,17 @@
         }
       },
       "thumb": "thumbnails/platform_013.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Segmento reto estreito (6.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_014.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "orange",
+        "ramp",
+        "narrow",
         "L"
       ],
       "size": [
@@ -3494,7 +3551,7 @@
         12
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3516,13 +3573,17 @@
         }
       },
       "thumb": "thumbnails/platform_014.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Rampa estreita (6.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_015.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "orange",
+        "end-cap",
+        "narrow",
         "L"
       ],
       "size": [
@@ -3531,7 +3592,7 @@
         7.3
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3553,13 +3614,17 @@
         }
       },
       "thumb": "thumbnails/platform_015.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Ponta de pista estreita (6.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe — fecha o início/fim de um trecho. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_016.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "orange",
+        "funnel",
+        "transition",
         "L"
       ],
       "size": [
@@ -3568,7 +3633,7 @@
         12
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3590,13 +3655,17 @@
         }
       },
       "thumb": "thumbnails/platform_016.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Transição/funil (12.5×12): encaixa pista LARGA (12.5) de um lado e ESTREITA (6.5) do outro. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_017.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "orange",
+        "corner",
+        "wide",
         "L"
       ],
       "size": [
@@ -3605,7 +3674,7 @@
         24
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3627,13 +3696,17 @@
         }
       },
       "thumb": "thumbnails/platform_017.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Seção grande em L (32.5×24): curva de 90° do percurso — encaixes nas extremidades dos braços. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_018.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "orange",
+        "corner",
+        "wide",
         "L"
       ],
       "size": [
@@ -3642,7 +3715,7 @@
         24
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3664,13 +3737,17 @@
         }
       },
       "thumb": "thumbnails/platform_018.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Seção grande em seta (37.5×24): muda a direção da pista em diagonal — encaixes nas extremidades. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_019.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "red",
+        "ramp",
+        "wide",
         "L"
       ],
       "size": [
@@ -3679,7 +3756,7 @@
         12
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3701,13 +3778,17 @@
         }
       },
       "thumb": "thumbnails/platform_019.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Rampa larga (12.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_020.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "red",
+        "end-cap",
+        "wide",
         "L"
       ],
       "size": [
@@ -3716,7 +3797,7 @@
         7.3
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3738,13 +3819,17 @@
         }
       },
       "thumb": "thumbnails/platform_020.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Ponta de pista larga (12.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_021.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "red",
+        "straight",
+        "wide",
         "L"
       ],
       "size": [
@@ -3753,7 +3838,7 @@
         6
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3775,13 +3860,17 @@
         }
       },
       "thumb": "thumbnails/platform_021.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Segmento reto largo (12.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_022.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "red",
+        "straight",
+        "narrow",
         "L"
       ],
       "size": [
@@ -3790,7 +3879,7 @@
         6
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3812,13 +3901,17 @@
         }
       },
       "thumb": "thumbnails/platform_022.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Segmento reto estreito (6.5×6): bordas nas laterais, aberto nas DUAS pontas — emenda em série. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_023.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "red",
+        "ramp",
+        "narrow",
         "L"
       ],
       "size": [
@@ -3827,7 +3920,7 @@
         12
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3849,13 +3942,17 @@
         }
       },
       "thumb": "thumbnails/platform_023.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Rampa estreita (6.5×12, sobe ~5u): aberta no pé e no topo — liga pista baixa a pista elevada. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_024.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "red",
+        "end-cap",
+        "narrow",
         "L"
       ],
       "size": [
@@ -3864,7 +3961,7 @@
         7.3
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3886,13 +3983,17 @@
         }
       },
       "thumb": "thumbnails/platform_024.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Ponta de pista estreita (6.5×7.3): borda inflável em 3 lados, o lado ABERTO é o encaixe — fecha o início/fim de um trecho. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_025.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "red",
+        "funnel",
+        "transition",
         "L"
       ],
       "size": [
@@ -3901,7 +4002,7 @@
         12
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3923,13 +4024,17 @@
         }
       },
       "thumb": "thumbnails/platform_025.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Transição/funil (12.5×12): encaixa pista LARGA (12.5) de um lado e ESTREITA (6.5) do outro. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_026.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "red",
+        "corner",
+        "wide",
         "L"
       ],
       "size": [
@@ -3938,7 +4043,7 @@
         24
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3960,13 +4065,17 @@
         }
       },
       "thumb": "thumbnails/platform_026.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Seção grande em L (32.5×24): curva de 90° do percurso — encaixes nas extremidades dos braços. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_027.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "modular",
+        "red",
+        "corner",
+        "wide",
         "L"
       ],
       "size": [
@@ -3975,7 +4084,7 @@
         24
       ],
       "gameplayRole": [
-        "safe-zone"
+        "path"
       ],
       "collider": {
         "shape": "box",
@@ -3997,13 +4106,14 @@
         }
       },
       "thumb": "thumbnails/platform_027.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Seção grande em seta (37.5×24): muda a direção da pista em diagonal — encaixes nas extremidades. Peça MODULAR do percurso — NÃO usar solta: encaixa borda-a-borda com as outras platform_N pelo(s) lado(s) sem borda inflável."
     },
     "assets/platform_028.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "stack",
         "L"
       ],
       "size": [
@@ -4034,13 +4144,15 @@
         }
       },
       "thumb": "thumbnails/platform_028.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Empilhado inflável grande (15×6×19, 3 camadas) — bloco-ilha SOLTO, fora do sistema modular das platform_001..027; serve de base/plataforma alta.",
+      "standalone": true
     },
     "assets/platform_029.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "stack",
         "L"
       ],
       "size": [
@@ -4071,13 +4183,15 @@
         }
       },
       "thumb": "thumbnails/platform_029.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Empilhado inflável grande (15×6×19, 3 camadas) — bloco-ilha SOLTO, fora do sistema modular das platform_001..027; serve de base/plataforma alta.",
+      "standalone": true
     },
     "assets/platform_030.glb": {
       "role": "ground",
       "tags": [
         "course",
         "float",
+        "stack",
         "L"
       ],
       "size": [
@@ -4108,14 +4222,15 @@
         }
       },
       "thumb": "thumbnails/platform_030.png",
-      "note": "Piso flutuante do percurso — a base modular das pistas sobre a água."
+      "note": "Empilhado inflável grande (15×6×19, 3 camadas) — bloco-ilha SOLTO, fora do sistema modular das platform_001..027; serve de base/plataforma alta.",
+      "standalone": true
     },
     "assets/propeller_trampoline_1_001.glb": {
       "role": "platform",
       "tags": [
-        "platform",
-        "bounce",
         "fan",
+        "updraft",
+        "wind",
         "L"
       ],
       "size": [
@@ -4147,10 +4262,21 @@
       },
       "thumb": "thumbnails/propeller_trampoline_1_001.png",
       "mechanic": {
-        "behavior": "launcher",
-        "script": "Trampolim"
+        "behavior": "fan-updraft",
+        "script": "Ventilador",
+        "params": {
+          "forca": 40,
+          "subidaMax": 7,
+          "alturaVento": 8,
+          "ligado": 2.5,
+          "desligado": 1.5,
+          "giroHelice": 12
+        },
+        "animation": "transform",
+        "note": "o script gira a hélice (nó propeller_trampoline_2_001) e PULSA o vento em ciclo ligado/desligado: ligado, empurra o player pra cima na coluna de ar (sensação de voo); desligado, ele cai de volta na grade — e o ciclo recomeça (SPEC-0157)"
       },
-      "note": "Trampolim-hélice engaiolado (5u) — lança o player pra cima."
+      "note": "Ventilador engaiolado (5u): grade em cima, hélice dentro do anel — NÃO é trampolim: o vento intermitente de baixo levanta o player.",
+      "standalone": true
     },
     "assets/ring_001.glb": {
       "role": "collectible",
