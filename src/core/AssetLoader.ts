@@ -82,6 +82,36 @@ export function disposeObjectResources(root: THREE.Object3D): void {
   });
 }
 
+/**
+ * Anisotropia aplicada às texturas de MODELOS (SPEC-0160). O default do three
+ * (1) faz linhas finas periódicas — as raias dos decks do kit aquapark —
+ * virarem moiré em pente na minificação rasante (visto em GPU real; o
+ * SwiftShader mascara). 8 é o ponto custo/benefício; no WebGPU o sampler
+ * clampa sozinho ao máximo do device.
+ */
+const MODEL_TEXTURE_ANISOTROPY = 8;
+
+/**
+ * Aplica {@link MODEL_TEXTURE_ANISOTROPY} em todas as texturas dos materiais
+ * de `root` — chamada uma vez por carga de modelo (o cache preserva).
+ */
+function applyModelTextureAnisotropy(root: THREE.Object3D): void {
+  const seen = new Set<THREE.Texture>();
+  root.traverse((obj) => {
+    const mat = (obj as Partial<THREE.Mesh>).material;
+    const materials = Array.isArray(mat) ? mat : mat ? [mat] : [];
+    for (const m of materials) {
+      for (const value of Object.values(m as unknown as Record<string, unknown>)) {
+        if (value instanceof THREE.Texture && !seen.has(value)) {
+          seen.add(value);
+          value.anisotropy = MODEL_TEXTURE_ANISOTROPY;
+          value.needsUpdate = true;
+        }
+      }
+    }
+  });
+}
+
 // ─── Classe AssetLoader ───────────────────────────────────────────────────────
 
 export class AssetLoader {
@@ -141,6 +171,9 @@ export class AssetLoader {
     }
 
     const gltf = await this._gltfLoader.loadAsync(url);
+    // Filtragem anisotrópica nos materiais do modelo (SPEC-0160): sem isto,
+    // linhas finas dos decks viram moiré em pente em ângulo rasante.
+    applyModelTextureAnisotropy(gltf.scene);
     this._cache.set(url, gltf);
     return gltf;
   }
@@ -168,6 +201,7 @@ export class AssetLoader {
     }
 
     const group = await this._fbxLoader.loadAsync(url);
+    applyModelTextureAnisotropy(group);
     this._cache.set(url, group);
     return group;
   }
