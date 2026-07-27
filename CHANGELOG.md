@@ -1,3 +1,10 @@
+# [0.38.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.37.0...v0.38.0) (2026-07-27)
+
+
+### Features
+
+* **kits:** pistas modulares por forma + script Ventilador no platformer-obstacles (SPEC-0157) ([6e291b0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6e291b043a0e25aa3acbf3daeed1d4f0710b1ec1))
+
 # [0.37.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.36.1...v0.37.0) (2026-07-27)
 
 
