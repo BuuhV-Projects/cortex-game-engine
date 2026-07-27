@@ -19,12 +19,12 @@
  * 1. **Material de correia próprio** (kit espacial, `obstacle_15`): a correia é
  *    uma primitiva com material `Road` e textura dedicada — o script clona
  *    material+texturas por instância e rola o `offset`.
- * 2. **OVERLAY de correia** (kit aquapark, `obstacle_9` — spec 0019, ajuste 7):
- *    a peça inteira usa o ATLAS num material só; rolar o offset vazaria a UV
- *    pras regiões vizinhas do atlas. Com o campo `textura` preenchido (ex.:
- *    `line_1.png`, a faixa de listras tileable do kit), o script cria um PLANO
- *    fino sobre a faixa central com essa textura DEDICADA em repeat rolando —
- *    as listras correm por baixo das setas em relevo.
+ * 2. **SETAS reais em nó filho** (kit aquapark, `obstacle_9` — spec 0019,
+ *    ajuste 7): a peça usa o ATLAS num material só (uv-scroll vazaria), mas os
+ *    chevrons do miolo são separados pelo pipeline num nó `*_arrows`
+ *    (`split-belt-arrows.mjs` do stage), uniformemente espaçados. O script
+ *    move o nó com WRAP de um período (`passoSetas`) na velocidade do
+ *    empurrão — as setas circulam como correia de verdade, sem emenda visível.
  */
 import {
   ScriptBehavior,
@@ -32,11 +32,8 @@ import {
   TransformComponent,
   Box3,
   RepeatWrapping,
-  SRGBColorSpace,
-  TextureLoader,
-  PlaneGeometry,
-  MeshBasicMaterial,
-  Mesh,
+  type Object3D,
+  type Mesh,
   type Texture,
   type ScriptFieldSchema,
 } from 'cortex-game-engine'
@@ -47,12 +44,8 @@ const _box = new Box3()
 const BELT_MATERIAL_NAME = 'Road'
 /** Mapas de textura que precisam rolar juntos (senão a luz "descola" do desenho). */
 const SCROLLED_MAPS = ['map', 'emissiveMap', 'normalMap'] as const
-/** Fração da LARGURA da peça coberta pelo overlay (deixa a moldura de fora). */
-const OVERLAY_WIDTH_RATIO = 0.58
-/** Fração do COMPRIMENTO da peça coberta pelo overlay. */
-const OVERLAY_LENGTH_RATIO = 0.9
-/** Folga do overlay acima do tampo (evita z-fight com o deck). */
-const OVERLAY_LIFT = 0.03
+/** Sufixo do nó de SETAS gerado pelo pipeline (`split-belt-arrows.mjs`). */
+const ARROWS_NODE_SUFFIX = '_arrows'
 
 export class ConveyorScript extends ScriptBehavior {
   /** Nome persistido nas cenas (as fases declaram por este nome). */
@@ -64,7 +57,7 @@ export class ConveyorScript extends ScriptBehavior {
     uvPorMetro: { type: 'number', default: 0.5, label: 'Repetições de textura por metro' },
     sentidoUV: { type: 'number', default: -1, label: 'Sentido do desenho (+1/−1)' },
     eixoUV: { type: 'select', default: 'v', label: 'Eixo do UV que corre', options: ['u', 'v'] },
-    textura: { type: 'string', default: '', label: 'Textura do OVERLAY de correia (peça em atlas)' },
+    passoSetas: { type: 'number', default: 0.433, label: 'Período das setas do nó *_arrows (m)' },
   }
 
   direcao = 0
@@ -78,8 +71,8 @@ export class ConveyorScript extends ScriptBehavior {
    */
   sentidoUV = -1
   eixoUV = 'v'
-  /** URL da textura do overlay — vazio = caminho clássico (material `Road`). */
-  textura = ''
+  /** Espaçamento entre os chevrons do nó `*_arrows` (o wrap usa 1 período). */
+  passoSetas = 0.433
 
   private dx = 1
   private dz = 0
@@ -89,12 +82,22 @@ export class ConveyorScript extends ScriptBehavior {
   private measured = false
   /** Texturas (já clonadas) cujo offset este script rola a cada quadro. */
   private beltTextures: Texture[] = []
+  /** Nó das SETAS (`*_arrows`, separado pelo pipeline) — movido com wrap. */
+  private arrowsNode: Object3D | null = null
+  /** Posição Z local original do nó de setas (o wrap oscila em torno dela). */
+  private arrowsZ0 = 0
+  /** Deslocamento acumulado da correia (m) — vira `position.z` via módulo. */
+  private beltScroll = 0
 
   override onStart(): void {
-    if (this.textura) {
-      this.createBeltOverlay()
-      return
-    }
+    // Setas separadas em nó filho (kit aquapark)? Anima por TRANSFORM.
+    this.object3d?.traverse((child) => {
+      if (!this.arrowsNode && child.name.endsWith(ARROWS_NODE_SUFFIX)) {
+        this.arrowsNode = child
+        this.arrowsZ0 = child.position.z
+      }
+    })
+    if (this.arrowsNode) return
     // Isola a correia: material + texturas CLONADOS por instância, em modo
     // Repeat (sem isso o offset "estica" a borda em vez de repetir o desenho).
     this.object3d?.traverse((child) => {
@@ -120,53 +123,20 @@ export class ConveyorScript extends ScriptBehavior {
     })
   }
 
-  /**
-   * OVERLAY de correia pra peça em ATLAS (spec 0019, ajuste 7): plano fino com
-   * textura DEDICADA tileable rolando sobre a faixa central — as setas em
-   * relevo da peça ficam por cima, fixas, e as listras correm por baixo.
-   */
-  private createBeltOverlay(): void {
-    const obj = this.object3d
-    if (!obj) return
-    // Dimensões LOCAIS da peça (bbox da geometria, não do mundo).
-    let mesh: Mesh | null = null
-    obj.traverse((child) => {
-      if (!mesh && (child as Mesh).isMesh) mesh = child as Mesh
-    })
-    if (!mesh) return
-    const geo = (mesh as Mesh).geometry
-    geo.computeBoundingBox()
-    const bb = geo.boundingBox!
-    const width = (bb.max.x - bb.min.x) * OVERLAY_WIDTH_RATIO
-    const length = (bb.max.z - bb.min.z) * OVERLAY_LENGTH_RATIO
-
-    const texture = new TextureLoader().load(this.textura)
-    texture.wrapS = RepeatWrapping
-    texture.wrapT = RepeatWrapping
-    texture.colorSpace = SRGBColorSpace
-    // Listras da textura são colunas (variam em U): giradas 90° ficam
-    // PERPENDICULARES ao comprimento — e o scroll corre no U girado.
-    texture.center.set(0.5, 0.5)
-    texture.rotation = Math.PI / 2
-    texture.repeat.set(1, length * this.uvPorMetro)
-    this.beltTextures.push(texture)
-
-    const overlay = new Mesh(
-      new PlaneGeometry(width, length),
-      new MeshBasicMaterial({ map: texture }),
-    )
-    overlay.rotation.x = -Math.PI / 2
-    overlay.position.set((bb.min.x + bb.max.x) / 2, bb.max.y + OVERLAY_LIFT, (bb.min.z + bb.max.z) / 2)
-    overlay.raycast = () => undefined // decorativo: nunca chão/alvo de clique
-    obj.add(overlay)
-  }
-
   override onUpdate(dt: number): void {
     const obj = this.object3d
     if (!obj) return
 
-    // A superfície CORRE (UV scroll) na mesma proporção do empurrão — é o que
-    // torna a mecânica legível antes mesmo de o player pisar nela.
+    // A superfície CORRE na mesma proporção do empurrão — é o que torna a
+    // mecânica legível antes mesmo de o player pisar nela.
+    if (this.arrowsNode) {
+      // SETAS reais (nó separado pelo pipeline): deslocamento com WRAP de um
+      // período — espaçamento uniforme faz o salto ser invisível e as setas
+      // circulam como correia.
+      this.beltScroll += this.velocidade * this.sentidoUV * dt
+      const passo = Math.max(0.01, this.passoSetas)
+      this.arrowsNode.position.z = this.arrowsZ0 + (((this.beltScroll % passo) + passo) % passo)
+    }
     const scroll = this.velocidade * this.uvPorMetro * this.sentidoUV * dt
     for (const texture of this.beltTextures) {
       if (this.eixoUV === 'u') texture.offset.x += scroll

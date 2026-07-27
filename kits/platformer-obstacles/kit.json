@@ -3021,7 +3021,8 @@
       "mechanic": {
         "behavior": "conveyor",
         "script": "Esteira",
-        "animation": "uv-scroll"
+        "animation": "transform",
+        "note": "as SETAS do miolo vivem no nó filho obstacle_9_001_arrows (separadas pelo pipeline: _stage/obstacles/split-belt-arrows.mjs, rodar pós-reprocesso) — o script Esteira as move com wrap de um período e elas circulam como correia"
       },
       "note": "Plataforma rolante chevron (4×8) — dá pra embutir em cima de uma plataforma OU usar sozinha como plataforma rolante; as setas indicam o sentido.",
       "standalone": true
