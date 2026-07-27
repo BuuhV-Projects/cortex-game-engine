@@ -27,10 +27,15 @@ const _box = new Box3()
 
 /** Folga horizontal além do raio da peça pra área de contato (m). */
 const RADIUS_MARGIN = 0.2
-/** Tolerância abaixo do topo da peça pra considerar o pé "em contato" (m). */
-const FOOT_BELOW = 0.4
-/** Tolerância acima do topo da peça pra considerar o pé "em contato" (m). */
-const FOOT_ABOVE = 1.2
+/**
+ * Banda vertical ESTREITA de contato em torno do topo da peça (m). Estreita de
+ * propósito (playtest 2026-07-27): com a banda larga (0.4/1.2), um player em pé
+ * numa plataforma ~0.8u ACIMA da peça de borracha disparava o bounce sem tocar
+ * nela. A queda real cruza o topo a ~0.13u por frame — a banda apertada ainda
+ * captura a aterrissagem, mas ignora quem está num piso logo acima.
+ */
+const FOOT_BELOW = 0.25
+const FOOT_ABOVE = 0.6
 /** Quanto o squash engorda em XZ em relação ao achatamento em Y (fração). */
 const BULGE_RATIO = 0.6
 

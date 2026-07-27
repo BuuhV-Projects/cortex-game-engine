@@ -26,7 +26,10 @@ Mesmo modelo do `Ventilador` (SPEC-0157) — o script mora NO KIT e o jogo copia
 
 - **Contato**: mede a peça no 1º frame (bbox → raio XZ + topo). Quando o player
   aterrissa/encosta por cima, aplica `recuo` no `velocityY` (leve — pulo de
-  borracha, não trampolim), com gatilho de borda + cooldown até sair.
+  borracha, não trampolim), com gatilho de borda + cooldown até sair. A banda
+  vertical de contato é ESTREITA (−0.25/+0.6 do topo — ajuste do playtest
+  2026-07-27): banda larga disparava o bounce com o player em pé numa
+  plataforma logo ACIMA da peça, sem tocá-la.
 - **Squash de borracha**: anima por transform o PRIMEIRO NÓ FILHO do glb
   (escala: achata em Y e engorda em XZ, ~0.25s com retorno elástico). Anima o
   FILHO de propósito: nó com `collider` estático vira entidade e o sync de
