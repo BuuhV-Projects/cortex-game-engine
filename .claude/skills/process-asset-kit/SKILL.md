@@ -174,6 +174,16 @@ node scripts/gen-backgrounds.mjs "D:/jogos/assets/backgrounds" backgrounds-base
   (superfície de andar em y=0). Por isso `gen-kit.mjs` tira a âncora `top` dos
   `bounds` do `measure.py`, não de `size`. Com `convert.py` (sem `bounds`) ele cai no
   fallback `[0, h, 0]` — confira as âncoras antes de confiar em `attach`.
+- **Peça MODULAR de encaixe exige pivô CENTRAL em X/Z** (SPEC-0162; decisão do
+  usuário na saga do platformer-obstacles): packs entregam peças de pista com o
+  pivô na ARESTA de encaixe, e pivô excêntrico quebra a UX inteira do editor —
+  caixa de seleção/collider deslocados meia-peça ("uma plataforma dentro da
+  outra"), pivôs de peças vizinhas coincidindo nas juntas, Inspector confuso.
+  Detecte no `measure`/bounds (bbox todo de um lado do origin, ex. `z[−prof, 0]`)
+  e RECENTRE a geometria como etapa do pipeline — modelo pronto:
+  `_stage/obstacles/recenter-pivots.mjs` (translada POSITION + min/max direto no
+  BIN do glb, sem Blender) + âncoras do kit.json com `at[2] = 0`. O consumo passa
+  a posicionar pelo CENTRO da peça.
 - **Validar contra o engine** — o `kit.json` tem schema zod real
   (`parseKit` em `src/scene/Kit.ts`); rode `npx tsx` com um `parseKit(...)` no
   arquivo gerado antes de dar o kit por pronto. `shape` só aceita
