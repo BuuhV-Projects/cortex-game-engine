@@ -1,7 +1,15 @@
 # 0066 - Controle é do jogo; engine só fornece os recursos de input
 
 **Data:** 2026-06-14
-**Status:** aceito
+**Status:** parcialmente substituído por [ADR-0164](ADR-0164-acoes-de-input-remapeaveis-na-engine.md)
+
+> **Atualização (2026-07-28):** a parte "o engine não crava vocabulário de
+> gameplay" **continua valendo**. A parte "toda a camada de ações é do jogo"
+> foi substituída: a engine ganhou o módulo **opcional** `src/input/` com um
+> catálogo mínimo (só o que os sistemas dela já consomem) e remapeamento
+> persistido, porque as teclas de mover/pular estavam cravadas DENTRO dos
+> sistemas da engine — o jogo não conseguia remapeá-las sem reimplementar o
+> controle inteiro. É a extração que a última consequência deste ADR previa.
 
 ## Contexto
 
