@@ -68,6 +68,10 @@ function collectScene(
       }
       if (!(o as { isMesh?: boolean }).isMesh || ud['cortexVegetationSub']) return;
       if (ud['editorInternal'] || ud['cortexRoadMarkings']) return; // gizmo/decoração: fora da física
+      // Água é cenário LÍQUIDO, nunca colisão (SPEC-0163): sem ela aqui, o
+      // player pousava na superfície e o corte de morte (fallY logo abaixo)
+      // nunca disparava. O raycast do mesh fica ligado pro picking do editor.
+      if (ud['cortexWater']) return;
       // Personagem/NPC (SkinnedMesh) NUNCA é chão/parede — e raycast em malha
       // skinada computa o skinning por vértice na CPU a cada raio (ver isSkinned).
       if (isSkinned(o)) return;

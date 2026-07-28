@@ -202,6 +202,32 @@ describe('SkinnedMesh nunca é chão (ADR-0118)', () => {
   });
 });
 
+describe('Água nunca é chão (SPEC-0163)', () => {
+  it('personagem AFUNDA no plano de água (cai até o groundY, como no fallY dos jogos)', () => {
+    // O plano da Water é um Mesh comum marcado `cortexWater` — sem a exclusão
+    // no collectScene, o player pousava NA SUPERFÍCIE da água e o corte de
+    // morte (fallY logo abaixo dela) nunca disparava (teste4, Mundo 4).
+    const scene = new Object3D();
+    const water = new Mesh(new BoxGeometry(40, 0.1, 40), new MeshBasicMaterial());
+    water.position.y = 5; // "superfície" entre o spawn e o groundY
+    water.userData['cortexWater'] = true;
+    scene.add(water);
+    scene.updateMatrixWorld(true);
+
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 10, 0);
+    const c = new CharacterBodyComponent({ groundY: 0 });
+    e.addComponent(t);
+    e.addComponent(c);
+
+    for (let i = 0; i < 200; i++) world.tick(16);
+    expect(t.y).toBe(0); // atravessou a água e pousou no piso de segurança
+    expect(c.grounded).toBe(true);
+  });
+});
+
 describe('CharacterBody + terreno', () => {
   it('o personagem cai e PARA em cima do terreno via RAYCAST (grounded, pulos resetam)', () => {
     // O chão do character vem do raycast do CharacterPhysicsSystem (o terreno entra
