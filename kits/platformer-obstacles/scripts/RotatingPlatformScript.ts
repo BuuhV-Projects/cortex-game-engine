@@ -31,13 +31,34 @@ export class RotatingPlatformScript extends ScriptBehavior {
 
   static fields = {
     giro: { type: 'number', default: 0.6, label: 'Giro (rad/s, +horário)' },
+    solido: { type: 'boolean', default: false, label: 'Sólido (parede pro player)' },
   } as const
 
   giro = 0.6
+  /**
+   * `true` = a ESTRUTURA vira parede pro player (`cortexSolid`: o
+   * CharacterPhysicsSystem empurra pela cápsula contra o MESH — que gira
+   * junto). É o jeito certo de dar solidez a peça giratória: marcar Física
+   * "Estático" no Inspector cria entidade e o sync de transform TRAVA o giro
+   * (armadilha da spec 0019). Ex.: o carrossel da aqua-3 — sem isso o player
+   * atravessa a estrutura amarela.
+   */
+  solido = false
 
   private radius = 4
   private topY = 0
   private measured = false
+
+  override onStart(): void {
+    const obj = this.object3d
+    if (obj && this.solido) (obj.userData as Record<string, unknown>)['cortexSolid'] = true
+  }
+
+  override onDestroy(): void {
+    // Stop limpa a marca (ciclo Play→Stop destrói instâncias — ADR-0143).
+    const obj = this.object3d
+    if (obj && this.solido) delete (obj.userData as Record<string, unknown>)['cortexSolid']
+  }
 
   override onUpdate(dt: number): void {
     const obj = this.object3d

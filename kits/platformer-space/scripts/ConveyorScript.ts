@@ -10,21 +10,19 @@
  * seta visual do modelo. Move por delta no TransformComponent (mesmo método do
  * `carryRider` da Patrulha), então mover a esteira no editor não a "reseta".
  *
- * ## A correia TEM que correr na tela (UV scroll)
- * Empurrar o player com a superfície parada lê como bug. Aqui a peça é rígida —
- * quem "anda" é só a superfície —, então o tipo de animação certo é **UV scroll**
- * (ver a tabela de critério de animação na spec 0010), não transform nem osso.
- *
- * Dois caminhos, conforme o asset:
+ * ## A correia TEM que "correr" na tela
+ * Empurrar o player com a superfície parada lê como bug. Dois caminhos, conforme
+ * o asset:
  * 1. **Material de correia próprio** (kit espacial, `obstacle_15`): a correia é
  *    uma primitiva com material `Road` e textura dedicada — o script clona
- *    material+texturas por instância e rola o `offset`.
- * 2. **SETAS reais em nó filho** (kit aquapark, `obstacle_9` — spec 0019,
- *    ajuste 7): a peça usa o ATLAS num material só (uv-scroll vazaria), mas os
- *    chevrons do miolo são separados pelo pipeline num nó `*_arrows`
- *    (`split-belt-arrows.mjs` do stage), uniformemente espaçados. O script
- *    move o nó com WRAP de um período (`passoSetas`) na velocidade do
- *    empurrão — as setas circulam como correia de verdade, sem emenda visível.
+ *    material+texturas por instância e rola o `offset` (UV scroll).
+ * 2. **ONDA DE LUZ nas setas** (kit aquapark, `obstacle_9` — spec 0019,
+ *    ajuste 7 v2): a peça usa o ATLAS num material só (uv-scroll vazaria) e
+ *    DESLIZAR as setas leu mal (rejeitado). O pipeline (`split-belt-arrows.mjs`
+ *    do stage) separa cada chevron num nó `*_arrow_<n>` (ordenados por Z
+ *    local); o script clona o material de cada um e acende o emissivo em
+ *    cascata (letreiro/marquee, 1 a cada 3 acesa) — a luz corre na direção e
+ *    velocidade do empurrão, sem geometria se movendo.
  */
 import {
   ScriptBehavior,
@@ -44,8 +42,23 @@ const _box = new Box3()
 const BELT_MATERIAL_NAME = 'Road'
 /** Mapas de textura que precisam rolar juntos (senão a luz "descola" do desenho). */
 const SCROLLED_MAPS = ['map', 'emissiveMap', 'normalMap'] as const
-/** Sufixo do nó de SETAS gerado pelo pipeline (`split-belt-arrows.mjs`). */
-const ARROWS_NODE_SUFFIX = '_arrows'
+/** Nós por-seta gerados pelo pipeline (`split-belt-arrows.mjs`): `*_arrow_<n>`. */
+const ARROW_NODE_PATTERN = /_arrow_(\d+)$/
+/** Cor do brilho das setas acesas (amarelo do próprio atlas). */
+const ARROW_GLOW_COLOR = 0xffc400
+/** Intensidade emissiva da seta no pico da onda (moderada: bloom estoura acima). */
+const ARROW_GLOW_INTENSITY = 2.2
+/** Período do letreiro em SETAS: a cada N, uma acesa (padrão de esteira real). */
+const MARQUEE_GROUP = 3
+/** Expoente que afina o pulso (maior = acende/apaga mais seco, mais legível). */
+const MARQUEE_SHARPNESS = 3
+
+/** Material com canal emissivo (o do atlas é MeshStandard — sempre tem). */
+interface EmissiveMaterial {
+  emissive: { setHex(hex: number): void }
+  emissiveIntensity: number
+  clone(): EmissiveMaterial
+}
 
 export class ConveyorScript extends ScriptBehavior {
   /** Nome persistido nas cenas (as fases declaram por este nome). */
@@ -57,7 +70,7 @@ export class ConveyorScript extends ScriptBehavior {
     uvPorMetro: { type: 'number', default: 0.5, label: 'Repetições de textura por metro' },
     sentidoUV: { type: 'number', default: -1, label: 'Sentido do desenho (+1/−1)' },
     eixoUV: { type: 'select', default: 'v', label: 'Eixo do UV que corre', options: ['u', 'v'] },
-    passoSetas: { type: 'number', default: 0.433, label: 'Período das setas do nó *_arrows (m)' },
+    passoSetas: { type: 'number', default: 0.433, label: 'Espaço entre setas (m) — ritmo da onda' },
   }
 
   direcao = 0
@@ -71,7 +84,7 @@ export class ConveyorScript extends ScriptBehavior {
    */
   sentidoUV = -1
   eixoUV = 'v'
-  /** Espaçamento entre os chevrons do nó `*_arrows` (o wrap usa 1 período). */
+  /** Espaçamento entre chevrons (m) — converte velocidade em setas/segundo. */
   passoSetas = 0.433
 
   private dx = 1
@@ -82,22 +95,32 @@ export class ConveyorScript extends ScriptBehavior {
   private measured = false
   /** Texturas (já clonadas) cujo offset este script rola a cada quadro. */
   private beltTextures: Texture[] = []
-  /** Nó das SETAS (`*_arrows`, separado pelo pipeline) — movido com wrap. */
-  private arrowsNode: Object3D | null = null
-  /** Posição Z local original do nó de setas (o wrap oscila em torno dela). */
-  private arrowsZ0 = 0
-  /** Deslocamento acumulado da correia (m) — vira `position.z` via módulo. */
+  /** Materiais das setas `*_arrow_<n>` (clonados), em ordem de Z local. */
+  private arrowMaterials: EmissiveMaterial[] = []
+  /** Deslocamento acumulado da correia (m) — fase da onda de luz. */
   private beltScroll = 0
 
   override onStart(): void {
-    // Setas separadas em nó filho (kit aquapark)? Anima por TRANSFORM.
+    // Setas separadas por nó (kit aquapark)? Onda de luz por emissivo.
+    const arrows: { index: number; node: Object3D }[] = []
     this.object3d?.traverse((child) => {
-      if (!this.arrowsNode && child.name.endsWith(ARROWS_NODE_SUFFIX)) {
-        this.arrowsNode = child
-        this.arrowsZ0 = child.position.z
-      }
+      const match = ARROW_NODE_PATTERN.exec(child.name)
+      if (match) arrows.push({ index: Number(match[1]), node: child })
     })
-    if (this.arrowsNode) return
+    if (arrows.length > 0) {
+      arrows.sort((a, b) => a.index - b.index)
+      for (const { node } of arrows) {
+        const mesh = node as Mesh
+        if (!mesh.isMesh) continue
+        const source = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as unknown as EmissiveMaterial
+        const own = source.clone()
+        own.emissive.setHex(ARROW_GLOW_COLOR)
+        own.emissiveIntensity = 0
+        mesh.material = own as unknown as Mesh['material']
+        this.arrowMaterials.push(own)
+      }
+      return
+    }
     // Isola a correia: material + texturas CLONADOS por instância, em modo
     // Repeat (sem isso o offset "estica" a borda em vez de repetir o desenho).
     this.object3d?.traverse((child) => {
@@ -127,15 +150,19 @@ export class ConveyorScript extends ScriptBehavior {
     const obj = this.object3d
     if (!obj) return
 
-    // A superfície CORRE na mesma proporção do empurrão — é o que torna a
+    // A superfície "CORRE" na mesma proporção do empurrão — é o que torna a
     // mecânica legível antes mesmo de o player pisar nela.
-    if (this.arrowsNode) {
-      // SETAS reais (nó separado pelo pipeline): deslocamento com WRAP de um
-      // período — espaçamento uniforme faz o salto ser invisível e as setas
-      // circulam como correia.
+    if (this.arrowMaterials.length > 0) {
+      // Onda de luz (letreiro): fase em UNIDADES DE SETA; a cada MARQUEE_GROUP
+      // setas uma fica no pico, e o padrão anda 1 seta a cada passo/velocidade.
       this.beltScroll += this.velocidade * this.sentidoUV * dt
-      const passo = Math.max(0.01, this.passoSetas)
-      this.arrowsNode.position.z = this.arrowsZ0 + (((this.beltScroll % passo) + passo) % passo)
+      const phase = this.beltScroll / Math.max(0.01, this.passoSetas)
+      const n = this.arrowMaterials.length
+      for (let i = 0; i < n; i++) {
+        const local = (((phase - i) % MARQUEE_GROUP) + MARQUEE_GROUP) % MARQUEE_GROUP
+        const wave = 0.5 * (1 + Math.cos((2 * Math.PI * local) / MARQUEE_GROUP))
+        this.arrowMaterials[i]!.emissiveIntensity = ARROW_GLOW_INTENSITY * Math.pow(wave, MARQUEE_SHARPNESS)
+      }
     }
     const scroll = this.velocidade * this.uvPorMetro * this.sentidoUV * dt
     for (const texture of this.beltTextures) {
