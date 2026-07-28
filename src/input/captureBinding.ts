@@ -139,6 +139,11 @@ export function createBindingCapture(options: BindingCaptureOptions): BindingCap
     if (!settle || options.family !== 'gamepad') return;
     const gp = options.gamepad;
     if (!gp) return;
+    // Estado fresco do controle: no MENU o `Game` está parado, então ninguém
+    // chama `gamepad.poll()` e o snapshot fica vazio — o pad nem aparece como
+    // conectado e a captura ficava presa no "Pressione..." pra sempre. Polar
+    // aqui é seguro mesmo com o Game rodando (o poll é estado, não borda).
+    gp.poll();
     const now = readPad();
     if (!now) return;
     // 1º tick com o pad presente vira o baseline (não captura o que já estava

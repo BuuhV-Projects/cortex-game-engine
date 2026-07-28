@@ -31,13 +31,29 @@ const GP_DPAD_RIGHT = 15;
 
 /**
  * O mínimo de `InputActions` que a navegação usa (tipo estrutural — evita
- * acoplar a UI ao módulo de input). Só LÊ bordas: quem dirige o frame é que
- * chama `actions.poll()` (o `Game` faz isso no `_tick`; telas com loop próprio
- * fazem no loop delas).
+ * acoplar a UI ao módulo de input).
+ *
+ * Usa só `isDown` **de propósito**: nos MENUS o `Game` está parado (quem roda o
+ * loop é a tela, chamando apenas `ui.update`/`ui.render`), então ninguém chama
+ * `actions.poll()` e o `pressed()` ficaria eternamente `false` — o controle
+ * simplesmente parava de navegar o menu. A borda é derivada aqui, como já é
+ * feito no caminho legado do gamepad.
  */
 interface UiActionReader {
-  pressed(id: string): boolean;
+  isDown(id: string): boolean;
+  /**
+   * Relê o estado dos dispositivos. **Essencial nos menus**: o `GamepadManager`
+   * só é polado pelo `Game._tick`, que está parado numa tela de menu — sem esta
+   * chamada, todo binding de controle responderia `false` e o d-pad não
+   * navegaria (o caminho legado lia `navigator.getGamepads()` direto).
+   */
+  pollDevices?(): void;
 }
+
+/** Tempo segurando uma direção até o auto-repeat começar (s). */
+const NAV_REPEAT_DELAY = 0.45;
+/** Intervalo entre repetições enquanto a direção segue pressionada (s). */
+const NAV_REPEAT_INTERVAL = 0.12;
 
 export class UiLayer {
   private readonly _widgets: UiWidget[] = [];
@@ -48,6 +64,8 @@ export class UiLayer {
   private _pendingKeys: string[] = [];
   /** Mapa de ações remapeável (ADR-0164); `null` = índices fixos de sempre. */
   private _actions: UiActionReader | null = null;
+  /** Há quanto tempo (s) cada ação de menu está segurada — bordas e auto-repeat. */
+  private readonly _actionHeld = new Map<string, number>();
   /**
    * Quando `false`, o `update()` só sincroniza o backend: nem teclado nem
    * gamepad navegam. Usado pela tela de Controles enquanto captura um binding
@@ -178,9 +196,10 @@ export class UiLayer {
    * Por frame: consome teclado (setas/Enter) e gamepad (d-pad/A) pra navegar
    * e ativar; depois sincroniza o backend. Chamado pelo `Game`.
    */
-  update(_dt: number): void {
+  update(deltaSeconds: number): void {
     if (!this._inputEnabled) {
       this._pendingKeys.length = 0;
+      this._actionHeld.clear(); // solta tudo: ao voltar, só um aperto NOVO navega
       this._syncBackend();
       return;
     }
@@ -188,7 +207,7 @@ export class UiLayer {
     // a fila de teclas TAMBÉM faria a seta navegar duas vezes no mesmo frame.
     if (!this._actions) for (const key of this._pendingKeys) this._handleKey(key);
     this._pendingKeys.length = 0;
-    if (this._actions) this._pollActions(this._actions);
+    if (this._actions) this._pollActions(this._actions, deltaSeconds);
     else this._pollGamepad();
     this._syncBackend();
   }
@@ -329,13 +348,48 @@ export class UiLayer {
    * Navegação pelo mapa de ações (teclado E gamepad num só caminho): as teclas
    * já estão nos bindings de `uiUp`/`uiDown`/…, então o `_handleKey` fica fora
    * — senão a seta navegaria duas vezes no mesmo frame.
+   *
+   * As direções têm **auto-repeat** (segurar rola a lista); confirmar dispara
+   * só na borda, senão segurar o A re-ativaria o botão a cada frame.
    */
-  private _pollActions(actions: UiActionReader): void {
-    if (actions.pressed('uiUp')) this.navigate(0, -1);
-    if (actions.pressed('uiDown')) this.navigate(0, 1);
-    if (actions.pressed('uiLeft')) this.navigate(-1, 0);
-    if (actions.pressed('uiRight')) this.navigate(1, 0);
-    if (actions.pressed('uiConfirm')) this.activate();
+  private _pollActions(actions: UiActionReader, deltaSeconds: number): void {
+    // Estado fresco do controle mesmo com o Game parado (ver UiActionReader).
+    actions.pollDevices?.();
+    if (this._actionEdge(actions, 'uiUp', deltaSeconds, true)) this.navigate(0, -1);
+    if (this._actionEdge(actions, 'uiDown', deltaSeconds, true)) this.navigate(0, 1);
+    if (this._actionEdge(actions, 'uiLeft', deltaSeconds, true)) this.navigate(-1, 0);
+    if (this._actionEdge(actions, 'uiRight', deltaSeconds, true)) this.navigate(1, 0);
+    if (this._actionEdge(actions, 'uiConfirm', deltaSeconds, false)) this.activate();
+  }
+
+  /**
+   * `true` no frame em que a ação foi pressionada e, se `repeat`, de novo a cada
+   * {@link NAV_REPEAT_INTERVAL} depois de {@link NAV_REPEAT_DELAY} segurando.
+   * A borda é calculada AQUI a partir do `isDown` — ver {@link UiActionReader}.
+   */
+  private _actionEdge(
+    actions: UiActionReader,
+    id: string,
+    deltaSeconds: number,
+    repeat: boolean,
+  ): boolean {
+    if (!actions.isDown(id)) {
+      this._actionHeld.delete(id);
+      return false;
+    }
+    const held = this._actionHeld.get(id);
+    if (held === undefined) {
+      this._actionHeld.set(id, 0);
+      return true; // borda de pressão
+    }
+    if (!repeat) return false;
+    const elapsed = held + (deltaSeconds > 0 ? deltaSeconds : 0);
+    this._actionHeld.set(id, elapsed);
+    // Um disparo por intervalo cruzado — imune a dt irregular (frame longo não
+    // some com o repeat nem dispara vários de uma vez).
+    const before = Math.floor((held - NAV_REPEAT_DELAY) / NAV_REPEAT_INTERVAL);
+    const now = Math.floor((elapsed - NAV_REPEAT_DELAY) / NAV_REPEAT_INTERVAL);
+    return elapsed >= NAV_REPEAT_DELAY && now > before;
   }
 
   private _pollGamepad(): void {
