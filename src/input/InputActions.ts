@@ -156,6 +156,20 @@ export class InputActions {
   }
 
   /**
+   * Relê o estado dos DISPOSITIVOS (hoje, o gamepad) **sem** mexer nas bordas
+   * de {@link pressed}/{@link released}.
+   *
+   * Existe pros MENUS: lá o `Game` está parado, então ninguém chama
+   * `gamepad.poll()` e o `isDown()` de qualquer binding de controle ficaria
+   * eternamente `false` — o controle "parava de funcionar" no menu. Quem dirige
+   * um loop próprio (tela de menu, `UiLayer`) chama isto por frame; é seguro
+   * chamar mesmo com o `Game` rodando, porque não toca no estado das bordas.
+   */
+  pollDevices(): void {
+    this.gamepad?.poll();
+  }
+
+  /**
    * Atualiza as bordas ({@link pressed}/{@link released}). Chame 1×/frame,
    * DEPOIS do `gamepad.poll()` — senão a borda enxerga o estado do frame anterior.
    */

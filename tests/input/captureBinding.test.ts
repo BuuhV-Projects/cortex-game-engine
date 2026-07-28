@@ -31,8 +31,18 @@ function fakeWindow(): { dispatch(type: string, event: Record<string, unknown>):
 class FakePad {
   readonly buttons = new Map<number, boolean>();
   readonly axes = new Map<number, number>();
+  polls = 0;
+  /**
+   * Como o GamepadManager de verdade: o snapshot só existe depois de `poll()`.
+   * No menu o `Game` está parado, então quem tem que polar é a captura.
+   */
+  private live = false;
+  poll(): void {
+    this.polls++;
+    this.live = true;
+  }
   isConnected(index: number): boolean {
-    return index === 0;
+    return this.live && index === 0;
   }
   firstConnectedIndex(): number {
     return 0;
@@ -105,6 +115,21 @@ describe('família gamepad', () => {
     pad.buttons.set(3, true); // agora o jogador aperta Y
     capture.tick();
     expect(await capture.promise).toEqual({ source: 'pad', index: 3 });
+  });
+
+  it('pola o gamepad no tick — no menu ninguém pola por ela (ficava em "Pressione...")', async () => {
+    fakeWindow();
+    const pad = new FakePad();
+    const capture = createBindingCapture({
+      family: 'gamepad',
+      gamepad: pad as unknown as GamepadManager,
+    });
+    capture.tick(); // baseline: só existe se a própria captura polar
+    expect(pad.polls).toBeGreaterThan(0);
+
+    pad.buttons.set(2, true);
+    capture.tick();
+    expect(await capture.promise).toEqual({ source: 'pad', index: 2 });
   });
 
   it('captura deflexão de eixo com o sentido (conserta stick nos eixos errados)', async () => {

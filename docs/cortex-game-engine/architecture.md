@@ -583,6 +583,22 @@ botões em outra ordem — nada funciona".
   `uiUp`/`uiDown`/`uiConfirm`/… (senão o pad genérico não navega nem depois de
   remapeado). `ui.setInputEnabled(false)` suspende a navegação enquanto a tela
   espera a tecla a mapear.
+
+⚠️ **Armadilha (já mordemos): no menu, o `Game` está PARADO.** Quem roda o loop
+numa tela de menu é a própria tela (`ui.update`/`ui.render`), então nem
+`gamepad.poll()` nem `actions.poll()` acontecem. Por isso a navegação por ações
+**não pode** depender de `pressed()` nem do snapshot do `GamepadManager`: o
+`UiLayer` deriva a borda do próprio `isDown()` (com auto-repeat) e chama
+`actions.pollDevices()` a cada frame — que relê o gamepad **sem** tocar nas
+bordas de `pressed()` usadas pelos sistemas. Sem esses dois cuidados, o controle
+simplesmente para de navegar o menu (o caminho legado não sofria disso porque
+lia `navigator.getGamepads()` direto).
+
+⚠️ **Gate de foco herdado**: passando pelo `GamepadManager`, os menus herdam o
+gate de `document.hasFocus()` (SPEC-0067, que evita o mesmo controle físico
+ecoar em Studio + export ao mesmo tempo). No Studio, o preview precisa estar
+**em foco** pra o controle navegar; no host nativo não há `document.hasFocus`,
+então não afeta o jogo publicado.
 - **Gate de plataforma**: `export-game.mjs` grava `platform` no `cortex.json`
   (`steam`/`xbox`/`pc`); `gamePlatform()` lê por fetch e `canRebindInput()`
   decide. Campo ausente = `pc` (Studio/browser mostram a tela pra teste).
