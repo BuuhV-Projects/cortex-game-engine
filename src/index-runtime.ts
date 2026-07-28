@@ -22,6 +22,15 @@ export * from './core/loadKtx2.js';
 export * from './core/Skybox.js';
 export * from './core/PostFX.js';
 export * from './core/debug.js';
+export * from './core/gamePlatform.js';
+
+// ─── Input: ações remapeáveis + tela de Controles (ADR-0164 / SPEC-0165) ───────
+export * from './input/bindings.js';
+export * from './input/padLayout.js';
+export * from './input/defaultActions.js';
+export * from './input/InputActions.js';
+export * from './input/captureBinding.js';
+export * from './input/ControlsScreen.js';
 
 // ─── ECS ───────────────────────────────────────────────────────────────────────
 export * from './ecs/Entity.js';

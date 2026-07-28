@@ -4,6 +4,7 @@ import { Scene } from './Scene.js';
 import { resetNativePostFX } from './nativePostFX.js';
 import { InputManager } from './InputManager.js';
 import { GamepadManager } from './GamepadManager.js';
+import { InputActions } from '../input/InputActions.js';
 import { GameLoop } from './GameLoop.js';
 import { World } from '../ecs/World.js';
 import { clearSceneAssetCaches } from '../scene/SceneAssets.js';
@@ -112,6 +113,22 @@ export class Game {
    * Y=3, LB=4, RB=5, LT=6, RT=7; eixos 0/1=stick esquerdo, 2/3=stick direito.
    */
   readonly gamepad: GamepadManager;
+
+  /**
+   * **Ações de input remapeáveis** (ADR-0164) — a leitura por NOME (`jump`,
+   * `moveForward`, `uiConfirm`) em vez de tecla crua, com bindings que o
+   * jogador troca na tela de Controles (SPEC-0165) e que persistem no
+   * `config.ini`. Polado 1×/frame no `_tick`, logo depois do `gamepad.poll()`,
+   * então `pressed()` tem borda correta em qualquer System.
+   *
+   * O jogo declara as ações DELE com `game.actions.define(...)`; a engine só
+   * traz o mínimo que os sistemas dela consomem.
+   *
+   * @example
+   * game.actions.loadFrom(await GameConfig.load());
+   * if (game.actions.pressed('jump')) body.jump();
+   */
+  readonly actions: InputActions;
   /** Canvas de render. */
   readonly canvas: HTMLCanvasElement;
 
@@ -176,6 +193,7 @@ export class Game {
     this.input = new InputManager();
     if (typeof document !== 'undefined') this.input.attach(document.body);
     this.gamepad = new GamepadManager();
+    this.actions = new InputActions(this.input, this.gamepad);
     // Já liga junto se o modo debug foi pedido (export --debug / ?cortexHud=1),
     // pra medir desde o 1º frame; o toggle do Studio liga/desliga em runtime.
     this.profiler = new FrameProfiler({ enabled: debugHudRequested() });
@@ -383,6 +401,7 @@ export class Game {
     const p = this.profiler; // no-op quando o HUD de debug está desligado
     p.begin('input');
     this.gamepad.poll(); // estado fresco do gamepad antes dos sistemas/onUpdate (Xbox-first)
+    this.actions.poll(); // bordas das ações DEPOIS do gamepad (ADR-0164)
     p.end('input');
     p.begin('update');
     this._onUpdate?.(dt);
