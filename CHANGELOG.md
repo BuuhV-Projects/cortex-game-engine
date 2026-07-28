@@ -1,3 +1,17 @@
+# [0.40.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.39.0...v0.40.0) (2026-07-28)
+
+
+### Bug Fixes
+
+* **input:** controle volta a funcionar nos menus e na captura de binding ([e6663d9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e6663d9ad2adc74cbad310202aeb51dd51a4e268))
+* **studio:** parar de vazar model do Monaco e sair de cima do limite de 200 ([4aa97f7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4aa97f73908d0501bb83e60e429419235757d95f))
+
+
+### Features
+
+* **input:** camada de ações remapeáveis e tela de Controles (ADR-0164) ([4d11436](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4d11436c95e4bc248cf29864090027db183e250e))
+* **systems:** ler input por AÇÃO, mantendo as teclas fixas como fallback ([2b41b77](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2b41b7710b4258b1026338e346a5ed6feae60f19))
+
 # [0.39.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.38.0...v0.39.0) (2026-07-28)
 
 
