@@ -8,7 +8,7 @@
 
 > **isNativeHost**(): `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/StaticMerge.ts:372](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L372)
+Defined in: [src/scene/StaticMerge.ts:372](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L372)
 
 Host nativo (export/console)? O shim de storage registra `__cortexReadUserFile`
 só lá — no browser/Studio não existe. É onde o merge estático liga por default

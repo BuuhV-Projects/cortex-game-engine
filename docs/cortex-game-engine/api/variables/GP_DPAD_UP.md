@@ -8,6 +8,6 @@
 
 > `const` **GP\_DPAD\_UP**: `12` = `12`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/padLayout.ts:36
+Defined in: [src/input/padLayout.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L36)
 
 D-pad para cima.

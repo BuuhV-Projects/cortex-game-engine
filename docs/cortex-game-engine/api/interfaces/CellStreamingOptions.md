@@ -6,7 +6,7 @@
 
 # Interface: CellStreamingOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L35)
+Defined in: [src/scene/Streaming.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L35)
 
 Opções do [CellStreamingSystem](../classes/CellStreamingSystem.md).
 
@@ -16,7 +16,7 @@ Opções do [CellStreamingSystem](../classes/CellStreamingSystem.md).
 
 > `optional` **budgetPerFrame?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L44)
+Defined in: [src/scene/Streaming.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L44)
 
 Máx. de células carregadas POR FRAME (espalha o custo). Default `1`.
 
@@ -26,7 +26,7 @@ Máx. de células carregadas POR FRAME (espalha o custo). Default `1`.
 
 > **getCameraXZ**: () => [`Vec2XZ`](Vec2XZ.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L46)
+Defined in: [src/scene/Streaming.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L46)
 
 Posição XZ da câmera/jogador a cada tick.
 
@@ -40,7 +40,7 @@ Posição XZ da câmera/jogador a cada tick.
 
 > `optional` **hysteresis?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L42)
+Defined in: [src/scene/Streaming.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L42)
 
 Folga de descarga (m): só descarrega além de `radius + hysteresis`. Evita
 carregar/descarregar em loop quando a câmera fica na borda. Default `radius/4`.
@@ -51,7 +51,7 @@ carregar/descarregar em loop quando a câmera fica na borda. Default `radius/4`.
 
 > **onLoad**: (`key`) => `void` \| `Promise`\<`unknown`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L55)
+Defined in: [src/scene/Streaming.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L55)
 
 Monta a célula (o app faz buildScene dos nós dela). Pode ser **assíncrono**
 (carga sob demanda): enquanto a Promise não resolve, a célula conta como
@@ -76,7 +76,7 @@ do raio durante a carga).
 
 > `optional` **onProgress?**: (`loading`, `resident`) => `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L59)
+Defined in: [src/scene/Streaming.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L59)
 
 Chamado quando o nº de células carregando muda (pra atualizar a tela de loading).
 
@@ -100,7 +100,7 @@ Chamado quando o nº de células carregando muda (pra atualizar a tela de loadin
 
 > **onUnload**: (`key`) => `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L57)
+Defined in: [src/scene/Streaming.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L57)
 
 Descarta a célula (o app remove/libera a GPU).
 
@@ -120,6 +120,6 @@ Descarta a célula (o app remove/libera a GPU).
 
 > **radius**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L37)
+Defined in: [src/scene/Streaming.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L37)
 
 Raio de carga (m): células com centro dentro dele viram residentes.

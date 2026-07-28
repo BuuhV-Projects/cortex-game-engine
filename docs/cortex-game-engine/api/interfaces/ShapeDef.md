@@ -6,7 +6,7 @@
 
 # Interface: ShapeDef
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L39)
+Defined in: [src/probuilder/shapes.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L39)
 
 Descreve uma forma: rótulo, parâmetros e o builder.
 
@@ -16,7 +16,7 @@ Descreve uma forma: rótulo, parâmetros e o builder.
 
 > **kind**: [`ShapeKind`](../type-aliases/ShapeKind.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L40)
+Defined in: [src/probuilder/shapes.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L40)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:40](ht
 
 > **label**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L41)
+Defined in: [src/probuilder/shapes.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L41)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:41](ht
 
 > **params**: [`ShapeParamDef`](ShapeParamDef.md)[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L42)
+Defined in: [src/probuilder/shapes.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L42)
 
 ## Methods
 
@@ -40,7 +40,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:42](ht
 
 > **build**(`p`): [`EditableMesh`](EditableMesh.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L43)
+Defined in: [src/probuilder/shapes.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L43)
 
 #### Parameters
 

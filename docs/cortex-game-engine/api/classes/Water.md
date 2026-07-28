@@ -6,7 +6,7 @@
 
 # Class: Water
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Water.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L87)
+Defined in: [src/scene/Water.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L87)
 
 Água simples (experimental) pra cenários de ilhas/plataforma: um plano
 horizontal grande com material PBR cartoon e, opcionalmente, uma textura de
@@ -43,7 +43,7 @@ const sea = new Water(scene, { y: -6, camera: game.camera, causticsUrl: '…' })
 
 > **new Water**(`scene`, `options?`): `Water`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Water.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L101)
+Defined in: [src/scene/Water.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L101)
 
 #### Parameters
 
@@ -65,7 +65,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Water.ts:101](https:/
 
 > `readonly` **mesh**: `Mesh`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Water.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L89)
+Defined in: [src/scene/Water.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L89)
 
 O `Mesh` do plano de água, já adicionado à cena.
 
@@ -75,7 +75,7 @@ O `Mesh` do plano de água, já adicionado à cena.
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Water.ts:164](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L164)
+Defined in: [src/scene/Water.ts:164](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L164)
 
 Anima as cáusticas deslizando o offset da textura nos dois eixos. Chame uma
 vez por frame passando o delta em **segundos** (`deltaTime / 1000`). No-op

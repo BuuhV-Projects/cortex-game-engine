@@ -6,7 +6,7 @@
 
 # Interface: ScriptDecl
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/ScriptComponent.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L6)
+Defined in: [src/components/ScriptComponent.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L6)
 
 Declaração de um script na cena (`level.json` node.scripts / overlay `data.scripts`).
 
@@ -16,7 +16,7 @@ Declaração de um script na cena (`level.json` node.scripts / overlay `data.scr
 
 > `optional` **fields?**: `Record`\<`string`, `unknown`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/ScriptComponent.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L10)
+Defined in: [src/components/ScriptComponent.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L10)
 
 Valores dos campos editáveis (sobrescrevem os defaults do schema).
 
@@ -26,6 +26,6 @@ Valores dos campos editáveis (sobrescrevem os defaults do schema).
 
 > **type**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/ScriptComponent.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L8)
+Defined in: [src/components/ScriptComponent.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ScriptComponent.ts#L8)
 
 Nome registrado da classe (ver [registerScript](../functions/registerScript.md)).

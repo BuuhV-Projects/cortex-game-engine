@@ -8,7 +8,7 @@
 
 > **canRebindInput**(`platform`): `boolean`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/core/gamePlatform.ts:59
+Defined in: [src/core/gamePlatform.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/gamePlatform.ts#L59)
 
 `true` onde a tela de remapeamento de controles deve existir — hoje `pc` e
 `steam`. No `xbox` a entrada some do menu (SPEC-0165).

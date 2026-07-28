@@ -6,7 +6,7 @@
 
 # Interface: DialogueUIOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L31)
+Defined in: [src/dialogue/DialogueUI.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L31)
 
 ## Extended by
 
@@ -18,7 +18,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:31](
 
 > `optional` **accent?**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L33)
+Defined in: [src/dialogue/DialogueUI.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L33)
 
 ***
 
@@ -26,4 +26,4 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:33](
 
 > `optional` **parent?**: `HTMLElement`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L32)
+Defined in: [src/dialogue/DialogueUI.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L32)

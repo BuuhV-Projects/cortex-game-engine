@@ -8,7 +8,7 @@
 
 > **showControlsScreen**(`game`, `actions`, `options?`): `Promise`\<`void`\>
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:121
+Defined in: [src/input/ControlsScreen.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/ControlsScreen.ts#L128)
 
 Abre a tela de Controles e resolve quando o jogador sai. Persiste os
 bindings (se `config` foi passado) antes de resolver.

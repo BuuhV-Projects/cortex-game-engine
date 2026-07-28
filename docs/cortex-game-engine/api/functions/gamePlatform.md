@@ -8,7 +8,7 @@
 
 > **gamePlatform**(`file?`): `Promise`\<[`GamePlatform`](../type-aliases/GamePlatform.md)\>
 
-Defined in: .claude/worktrees/feat-input-rebind/src/core/gamePlatform.ts:34
+Defined in: [src/core/gamePlatform.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/gamePlatform.ts#L34)
 
 Lê a plataforma do `cortex.json` (uma vez por sessão; o resultado é
 memorizado). Arquivo ausente, JSON inválido ou valor desconhecido caem em

@@ -6,7 +6,7 @@
 
 # Interface: EngineLayer
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:7](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L7)
+Defined in: [src/scene/EngineSound.ts:7](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L7)
 
 Uma camada do motor: o pico em `rpm` (0..1) com som **com acelerador** (`on`) e/ou
 **sem** (`off`). Ambos em loop. Camadas faltando são ignoradas.
@@ -17,7 +17,7 @@ Uma camada do motor: o pico em `rpm` (0..1) com som **com acelerador** (`on`) e/
 
 > `optional` **off?**: `Audio`\<`GainNode`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L13)
+Defined in: [src/scene/EngineSound.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L13)
 
 Som desacelerando / sem acelerador (loop).
 
@@ -27,7 +27,7 @@ Som desacelerando / sem acelerador (loop).
 
 > `optional` **on?**: `Audio`\<`GainNode`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L11)
+Defined in: [src/scene/EngineSound.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L11)
 
 Som com acelerador (loop).
 
@@ -37,6 +37,6 @@ Som com acelerador (loop).
 
 > **rpm**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L9)
+Defined in: [src/scene/EngineSound.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L9)
 
 RPM normalizado (0..1) — usado pra ordenar (low→high).

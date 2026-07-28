@@ -6,7 +6,7 @@
 
 # Class: TopDownMovementSystem
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownMovementSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L44)
+Defined in: [src/systems/TopDownMovementSystem.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L44)
 
 Movimento **top-down** (farm sim / RPG estilo Stardew): lê o **eixo** de um
 [MoveAxisProvider](../type-aliases/MoveAxisProvider.md) fornecido pelo jogo e move o player no **plano XZ**
@@ -40,7 +40,7 @@ game.world.addSystem(move)
 
 > **new TopDownMovementSystem**(`readMove`, `options?`): `TopDownMovementSystem`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownMovementSystem.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L51)
+Defined in: [src/systems/TopDownMovementSystem.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L51)
 
 #### Parameters
 
@@ -66,7 +66,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownMovementSyst
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -83,7 +83,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -104,7 +104,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `2`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownMovementSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L46)
+Defined in: [src/systems/TopDownMovementSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L46)
 
 Prioridade de execução deste sistema.
 
@@ -121,7 +121,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownMovementSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L45)
+Defined in: [src/systems/TopDownMovementSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L45)
 
 Construtores dos componentes que este sistema requer.
 
@@ -147,7 +147,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -168,7 +168,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownMovementSystem.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L60)
+Defined in: [src/systems/TopDownMovementSystem.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownMovementSystem.ts#L60)
 
 Executa a lógica do sistema para o frame/passo atual.
 

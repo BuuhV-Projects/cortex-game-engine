@@ -6,7 +6,7 @@
 
 # Class: RapierPhysics
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:237](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L237)
+Defined in: [src/physics/RapierPhysics.ts:237](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L237)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:23
 
 > `readonly` **world**: `World`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:239](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L239)
+Defined in: [src/physics/RapierPhysics.ts:239](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L239)
 
 Mundo do Rapier (uso avançado).
 
@@ -24,7 +24,7 @@ Mundo do Rapier (uso avançado).
 
 > **addBody**(`spec`): [`PhysicsBody`](../interfaces/PhysicsBody.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:252](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L252)
+Defined in: [src/physics/RapierPhysics.ts:252](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L252)
 
 Adiciona um corpo (RigidBody + Collider) e devolve seu handle.
 
@@ -44,7 +44,7 @@ Adiciona um corpo (RigidBody + Collider) e devolve seu handle.
 
 > **addTrimesh**(`vertices`, `indices`, `position?`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:272](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L272)
+Defined in: [src/physics/RapierPhysics.ts:272](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L272)
 
 Adiciona um collider **trimesh estático** (fixo) — pro chão/terreno/road.
 
@@ -72,7 +72,7 @@ Adiciona um collider **trimesh estático** (fixo) — pro chão/terreno/road.
 
 > **addTrimeshFromObject**(`obj`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:285](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L285)
+Defined in: [src/physics/RapierPhysics.ts:285](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L285)
 
 Cria colliders trimesh estáticos a partir das MALHAS de um `Object3D` (geometria
 em espaço-mundo) — ex.: terreno + road viram chão pras rodas do [Vehicle](Vehicle.md)
@@ -94,7 +94,7 @@ raycastarem. Uma malha = um collider.
 
 > **createVehicle**(`spec`): [`Vehicle`](Vehicle.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:314](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L314)
+Defined in: [src/physics/RapierPhysics.ts:314](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L314)
 
 Cria um **veículo raycast** (ADR-0081) — chassi (rigid body dinâmico + box) +
 rodas por raycast com suspensão/esterço/motor/freio, via o
@@ -117,7 +117,7 @@ rodas por raycast com suspensão/esterço/motor/freio, via o
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:359](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L359)
+Defined in: [src/physics/RapierPhysics.ts:359](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L359)
 
 Libera o mundo (memória WASM).
 
@@ -131,7 +131,7 @@ Libera o mundo (memória WASM).
 
 > **step**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:267](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L267)
+Defined in: [src/physics/RapierPhysics.ts:267](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L267)
 
 Avança a simulação um passo (timestep fixo configurado no mundo).
 
@@ -145,7 +145,7 @@ Avança a simulação um passo (timestep fixo configurado no mundo).
 
 > `static` **create**(`gravity?`): `Promise`\<`RapierPhysics`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:246](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L246)
+Defined in: [src/physics/RapierPhysics.ts:246](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L246)
 
 Inicializa o Rapier (async) e cria o mundo com a gravidade dada.
 

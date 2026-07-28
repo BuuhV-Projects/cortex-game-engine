@@ -6,7 +6,7 @@
 
 # Interface: UiRenderTarget
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBackend.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L24)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L24)
 
 Só o que precisamos do Renderer do engine (evita acoplamento).
 
@@ -16,7 +16,7 @@ Só o que precisamos do Renderer do engine (evita acoplamento).
 
 > `optional` **renderUiLayer**(`scene`, `camera`, `width`, `height`): `unknown`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBackend.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L35)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L35)
 
 Caminho de composição em gama (ADR-0105): renderiza a UI numa RenderTarget
 própria (linear) e devolve o GPUTexture do backend pro host compor sobre o
@@ -50,7 +50,7 @@ jogo. Opcional (mock de teste / hosts antigos não têm).
 
 > **renderViewport**(`scene`, `camera`, `viewport`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBackend.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L25)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L25)
 
 #### Parameters
 

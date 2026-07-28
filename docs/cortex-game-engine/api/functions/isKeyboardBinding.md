@@ -8,7 +8,7 @@
 
 > **isKeyboardBinding**(`binding`): `boolean`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/bindings.ts:129
+Defined in: [src/input/bindings.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L129)
 
 `true` se o binding vem do teclado/mouse (coluna "teclado" da tela de Controles).
 

@@ -6,7 +6,7 @@
 
 # Interface: ShapeParamDef
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L27)
+Defined in: [src/probuilder/shapes.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L27)
 
 Metadados de um parâmetro de forma (pro Inspector montar o campo numérico).
 
@@ -16,7 +16,7 @@ Metadados de um parâmetro de forma (pro Inspector montar o campo numérico).
 
 > **default**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L30)
+Defined in: [src/probuilder/shapes.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L30)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:30](ht
 
 > `optional` **int?**: `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L35)
+Defined in: [src/probuilder/shapes.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L35)
 
 Inteiro (ex.: nº de degraus/lados) — o Inspector arredonda.
 
@@ -34,7 +34,7 @@ Inteiro (ex.: nº de degraus/lados) — o Inspector arredonda.
 
 > **key**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L28)
+Defined in: [src/probuilder/shapes.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L28)
 
 ***
 
@@ -42,7 +42,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:28](ht
 
 > **label**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L29)
+Defined in: [src/probuilder/shapes.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L29)
 
 ***
 
@@ -50,7 +50,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:29](ht
 
 > `optional` **max?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L32)
+Defined in: [src/probuilder/shapes.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L32)
 
 ***
 
@@ -58,7 +58,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:32](ht
 
 > `optional` **min?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L31)
+Defined in: [src/probuilder/shapes.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L31)
 
 ***
 
@@ -66,4 +66,4 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:31](ht
 
 > `optional` **step?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/shapes.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L33)
+Defined in: [src/probuilder/shapes.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/shapes.ts#L33)

@@ -8,7 +8,7 @@
 
 > **loadGLB**(`url`): `Promise`\<`GLTF`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAssets.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L95)
+Defined in: [src/scene/SceneAssets.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L95)
 
 Carrega um `.glb`/`.gltf` (com cache por URL — chamadas repetidas reusam o
 mesmo GLTF; clone com [instance](instance.md) antes de adicionar à cena).

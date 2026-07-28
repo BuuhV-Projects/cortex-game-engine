@@ -6,7 +6,7 @@
 
 # Interface: ScriptContext
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L35)
+Defined in: [src/scripts/ScriptBehavior.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L35)
 
 Handles do engine injetados em cada script pelo [ScriptHostSystem](../classes/ScriptHostSystem.md) (via `this.ctx`).
 É o "ambiente" que o comportamento enxerga — sem precisar de glue no `main.ts`.
@@ -17,7 +17,7 @@ Handles do engine injetados em cada script pelo [ScriptHostSystem](../classes/Sc
 
 > `optional` **camera?**: `Camera`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L40)
+Defined in: [src/scripts/ScriptBehavior.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L40)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:4
 
 > `optional` **gamepad?**: [`GamepadManager`](../classes/GamepadManager.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L38)
+Defined in: [src/scripts/ScriptBehavior.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L38)
 
 ***
 
@@ -33,7 +33,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:3
 
 > `optional` **input?**: [`InputManager`](../classes/InputManager.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L37)
+Defined in: [src/scripts/ScriptBehavior.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L37)
 
 ***
 
@@ -41,7 +41,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:3
 
 > `optional` **scene?**: [`Scene`](../classes/Scene.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L39)
+Defined in: [src/scripts/ScriptBehavior.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L39)
 
 ***
 
@@ -49,4 +49,4 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:3
 
 > **world**: [`World`](../classes/World.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L36)
+Defined in: [src/scripts/ScriptBehavior.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L36)

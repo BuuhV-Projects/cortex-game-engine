@@ -6,7 +6,7 @@
 
 # Interface: ThirdPersonHandle
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/ThirdPerson.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ThirdPerson.ts#L15)
+Defined in: [src/scene/ThirdPerson.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ThirdPerson.ts#L15)
 
 Handle de [setupThirdPerson](../functions/setupThirdPerson.md).
 
@@ -16,6 +16,6 @@ Handle de [setupThirdPerson](../functions/setupThirdPerson.md).
 
 > **control**: [`ThirdPersonControlSystem`](../classes/ThirdPersonControlSystem.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/ThirdPerson.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ThirdPerson.ts#L17)
+Defined in: [src/scene/ThirdPerson.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ThirdPerson.ts#L17)
 
 O controle/câmera de 3ª pessoa — ajuste velocidades/distância aqui.

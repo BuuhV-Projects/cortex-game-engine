@@ -8,7 +8,7 @@
 
 > **disposeObjectResources**(`root`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/AssetLoader.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L43)
+Defined in: [src/core/AssetLoader.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L43)
 
 Dispõe os recursos de uma árvore de objetos: geometrias (incluindo a árvore
 BVH do three-mesh-bvh, se houver), materiais e texturas referenciadas. Usado

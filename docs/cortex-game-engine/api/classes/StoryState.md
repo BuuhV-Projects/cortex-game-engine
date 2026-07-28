@@ -6,7 +6,7 @@
 
 # Class: StoryState
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L18)
+Defined in: [src/narrative/StoryState.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L18)
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:18]
 
 > **apply**(`patch`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L43)
+Defined in: [src/narrative/StoryState.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L43)
 
 Aplica um lote de flags (ex.: o `set` de um nó/escolha de diálogo).
 
@@ -44,7 +44,7 @@ Aplica um lote de flags (ex.: o `set` de um nó/escolha de diálogo).
 
 > **get**(`key`): [`FlagValue`](../type-aliases/FlagValue.md) \| `undefined`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L22)
+Defined in: [src/narrative/StoryState.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L22)
 
 Lê o valor cru de uma flag (ou `undefined` se nunca setada).
 
@@ -64,7 +64,7 @@ Lê o valor cru de uma flag (ou `undefined` se nunca setada).
 
 > **has**(`key`): `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L32)
+Defined in: [src/narrative/StoryState.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L32)
 
 `true` se a flag existe e é **truthy** (ligada).
 
@@ -84,7 +84,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:32]
 
 > **hasAll**(`keys`): `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L38)
+Defined in: [src/narrative/StoryState.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L38)
 
 `true` se **todas** as flags estão ligadas (`has`). `[]` → `true`.
 
@@ -104,7 +104,7 @@ readonly `string`[]
 
 > **set**(`key`, `value`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L27)
+Defined in: [src/narrative/StoryState.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L27)
 
 Define uma flag.
 
@@ -128,7 +128,7 @@ Define uma flag.
 
 > **toJSON**(): `Record`\<`string`, [`FlagValue`](../type-aliases/FlagValue.md)\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L49)
+Defined in: [src/narrative/StoryState.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L49)
 
 Serializa pra um objeto simples (save).
 
@@ -142,7 +142,7 @@ Serializa pra um objeto simples (save).
 
 > `static` **fromJSON**(`obj`): `StoryState`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/narrative/StoryState.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L54)
+Defined in: [src/narrative/StoryState.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/narrative/StoryState.ts#L54)
 
 Reconstrói a partir de um objeto serializado.
 

@@ -8,6 +8,6 @@
 
 > **CaptureFamily** = `"keyboard"` \| `"gamepad"`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/captureBinding.ts:26
+Defined in: [src/input/captureBinding.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/captureBinding.ts#L26)
 
 Coluna da tela de Controles que está capturando.

@@ -6,7 +6,7 @@
 
 # Class: UiPanel
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L56)
+Defined in: [src/ui/runtime/widgets.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L56)
 
 Caixa (fundo de HUD, card de menu, faixa de banner). O estilo é um SUBSET
 do CSS **com os MESMOS nomes do HTML5** (filosofia DOM-lite: não reinventar
@@ -23,7 +23,7 @@ desenham igual (ADR-0102). Toda cor aceita alpha (`#rrggbbaa`/`rgba(...)`).
 
 > **new UiPanel**(`props?`): `UiPanel`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L99)
+Defined in: [src/ui/runtime/widgets.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L99)
 
 #### Parameters
 
@@ -45,7 +45,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:99](h
 
 > **anchor**: [`UiAnchor`](../type-aliases/UiAnchor.md) = `'top-left'`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L28)
+Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L28)
 
 #### Inherited from
 
@@ -57,7 +57,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:28](h
 
 > **background**: `string` = `'#000000'`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L62)
+Defined in: [src/ui/runtime/widgets.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L62)
 
 `background` do CSS: cor (`#rrggbb`, `#rrggbbaa`, `rgba(...)`) OU
 gradiente `linear-gradient(180deg|90deg, c1, c2)` (180deg = topo→base,
@@ -69,7 +69,7 @@ gradiente `linear-gradient(180deg|90deg, c1, c2)` (180deg = topo→base,
 
 > **backgroundImage**: `string` \| `null` = `null`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L91)
+Defined in: [src/ui/runtime/widgets.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L91)
 
 URL de uma **imagem de fundo** (ex.: arte do menu). Cobre o painel
 ("cover" — preenche sem distorcer, corta o excedente) por cima da
@@ -83,7 +83,7 @@ quad texturizado). Atributo `image` no template.
 
 > **backgroundTo**: `string` \| `null` = `null`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L64)
+Defined in: [src/ui/runtime/widgets.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L64)
 
 #### Deprecated
 
@@ -95,7 +95,7 @@ Use `background: 'linear-gradient(180deg, c1, c2)'` (CSS).
 
 > **borderColor**: `string` = `'#ffffff'`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L77)
+Defined in: [src/ui/runtime/widgets.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L77)
 
 `border-color` do CSS.
 
@@ -105,7 +105,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:77](h
 
 > **borderWidth**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L75)
+Defined in: [src/ui/runtime/widgets.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L75)
 
 `border-width` do CSS (px; 0 = sem borda).
 
@@ -115,7 +115,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:75](h
 
 > **boxShadow**: `string` = `'none'`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L83)
+Defined in: [src/ui/runtime/widgets.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L83)
 
 `box-shadow` do CSS, no subset SOMBRA DURA: `"0 Npx 0 <cor>"` (a sombra
 chapada dos botões cartoon) ou `"none"`. Sem blur/spread — os dois
@@ -127,7 +127,7 @@ backends desenham uma cópia da caixa deslocada N px pra baixo.
 
 > **cornerRadius**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L66)
+Defined in: [src/ui/runtime/widgets.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L66)
 
 Raio dos cantos em px (0 = reto). Nome legado de [borderRadius](#borderradius).
 
@@ -137,7 +137,7 @@ Raio dos cantos em px (0 = reto). Nome legado de [borderRadius](#borderradius).
 
 > **dirty**: `boolean` = `true`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L40)
+Defined in: [src/ui/runtime/widgets.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L40)
 
 Sujo = backend precisa re-sincronizar este widget.
 
@@ -151,7 +151,7 @@ Sujo = backend precisa re-sincronizar este widget.
 
 > **fill**: `boolean` = `false`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L98)
+Defined in: [src/ui/runtime/widgets.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L98)
 
 Painel de fundo do tamanho do viewport (atributo `fill` do template). Quando
 `true`, o UiLayer redimensiona width/height pro viewport ATUAL a cada frame —
@@ -164,7 +164,7 @@ cobriria a tela após um resize (ex.: entrar em fullscreen).
 
 > **height**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L33)
+Defined in: [src/ui/runtime/widgets.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L33)
 
 #### Inherited from
 
@@ -176,7 +176,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:33](h
 
 > `readonly` **id**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L27)
+Defined in: [src/ui/runtime/widgets.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L27)
 
 #### Inherited from
 
@@ -188,7 +188,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:27](h
 
 > **measuredHeight**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L38)
+Defined in: [src/ui/runtime/widgets.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L38)
 
 #### Inherited from
 
@@ -200,7 +200,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:38](h
 
 > **measuredWidth**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L37)
+Defined in: [src/ui/runtime/widgets.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L37)
 
 Tamanho MEDIDO pelo backend (texto rasterizado) — leitura.
 
@@ -214,7 +214,7 @@ Tamanho MEDIDO pelo backend (texto rasterizado) — leitura.
 
 > **opacity**: `number` = `1`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L35)
+Defined in: [src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L35)
 
 #### Inherited from
 
@@ -226,7 +226,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:35](h
 
 > **visible**: `boolean` = `true`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L34)
+Defined in: [src/ui/runtime/widgets.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L34)
 
 #### Inherited from
 
@@ -238,7 +238,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:34](h
 
 > **width**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L32)
+Defined in: [src/ui/runtime/widgets.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L32)
 
 Tamanho declarado (Panel/Button). Labels medem no backend.
 
@@ -252,7 +252,7 @@ Tamanho declarado (Panel/Button). Labels medem no backend.
 
 > **x**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L29)
+Defined in: [src/ui/runtime/widgets.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L29)
 
 #### Inherited from
 
@@ -264,7 +264,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:29](h
 
 > **y**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L30)
+Defined in: [src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L30)
 
 #### Inherited from
 
@@ -278,7 +278,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:30](h
 
 > **get** **borderRadius**(): `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L68)
+Defined in: [src/ui/runtime/widgets.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L68)
 
 `border-radius` do CSS (px). Alias primário de [cornerRadius](#cornerradius).
 
@@ -290,7 +290,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:68](h
 
 > **set** **borderRadius**(`value`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L71)
+Defined in: [src/ui/runtime/widgets.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L71)
 
 ##### Parameters
 
@@ -308,7 +308,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:71](h
 
 > **set**(`props`): `this`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L43)
+Defined in: [src/ui/runtime/widgets.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L43)
 
 Aplica props e marca o widget pra re-sincronização.
 

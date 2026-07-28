@@ -8,7 +8,7 @@
 
 > `const` **UI\_REFERENCE\_HEIGHT**: `1080` = `1080`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L51)
+Defined in: [src/ui/runtime/layout.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L51)
 
 **Altura de referência do design da UI** (px lógicos). Todas as telas (menus,
 HUD, diálogos) são autoradas contra esta altura — a config default do engine é

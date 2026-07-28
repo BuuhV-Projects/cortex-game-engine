@@ -6,7 +6,7 @@
 
 # Interface: PostFXOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L51)
+Defined in: [src/core/PostFX.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L51)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:51](https://
 
 > `optional` **bloom?**: `boolean` \| [`BloomConfig`](BloomConfig.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L53)
+Defined in: [src/core/PostFX.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L53)
 
 Liga o bloom. `true` usa defaults; objeto ajusta os parâmetros.
 
@@ -30,7 +30,7 @@ false
 
 > `optional` **exposure?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L64)
+Defined in: [src/core/PostFX.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L64)
 
 Exposição do tone mapping. Quando omitido, mantém a do renderer.
 
@@ -40,7 +40,7 @@ Exposição do tone mapping. Quando omitido, mantém a do renderer.
 
 > `optional` **fxaa?**: `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L57)
+Defined in: [src/core/PostFX.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L57)
 
 Liga o FXAA (anti-aliasing de pós-processamento).
 
@@ -56,7 +56,7 @@ false
 
 > `optional` **toneMapping?**: `ToneMapping`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L62)
+Defined in: [src/core/PostFX.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L62)
 
 Tone mapping aplicado na saída (ex.: `THREE.ACESFilmicToneMapping`,
 `THREE.AgXToneMapping`). Quando omitido, mantém o do renderer.
@@ -67,7 +67,7 @@ Tone mapping aplicado na saída (ex.: `THREE.ACESFilmicToneMapping`,
 
 > `optional` **vignette?**: `boolean` \| [`VignetteConfig`](VignetteConfig.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L55)
+Defined in: [src/core/PostFX.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L55)
 
 Liga a vinheta. `true` usa defaults; objeto ajusta os parâmetros.
 

@@ -8,7 +8,7 @@
 
 > **bindingLabel**(`binding`): `string`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/bindings.ts:184
+Defined in: [src/input/bindings.ts:184](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L184)
 
 Rótulo legível pra mostrar na tela de Controles. Usa só glifos que a Roboto
 rasteriza no console (SPEC-0165) — nada de emoji ou ícone de tecla.

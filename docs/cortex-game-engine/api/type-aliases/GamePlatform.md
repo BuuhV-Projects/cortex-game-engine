@@ -8,6 +8,6 @@
 
 > **GamePlatform** = `"pc"` \| `"steam"` \| `"xbox"`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/core/gamePlatform.ts:19
+Defined in: [src/core/gamePlatform.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/gamePlatform.ts#L19)
 
 Alvos de export reconhecidos.

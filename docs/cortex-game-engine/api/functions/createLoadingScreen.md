@@ -8,7 +8,7 @@
 
 > **createLoadingScreen**(`ui`, `options?`): [`LoadingScreen`](../interfaces/LoadingScreen.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L49)
+Defined in: [src/core/LoadingScreen.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L49)
 
 Loading sobre a **UI de runtime** (ADR-0102) — mesma tela nos dois
 backends (Studio/DOM e host/renderer).

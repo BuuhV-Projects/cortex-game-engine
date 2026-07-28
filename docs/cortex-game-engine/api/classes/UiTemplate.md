@@ -6,7 +6,7 @@
 
 # Class: UiTemplate
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiTemplate.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L58)
+Defined in: [src/ui/runtime/UiTemplate.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L58)
 
 Template compilado (parse 1x; `build` quantas vezes quiser).
 
@@ -16,7 +16,7 @@ Template compilado (parse 1x; `build` quantas vezes quiser).
 
 > **new UiTemplate**(`roots`, `sheet`): `UiTemplate`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiTemplate.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L59)
+Defined in: [src/ui/runtime/UiTemplate.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L59)
 
 #### Parameters
 
@@ -38,7 +38,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiTemplate.ts:59
 
 > **build**(`ui`, `options?`): [`UiTemplateInstance`](../interfaces/UiTemplateInstance.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiTemplate.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L65)
+Defined in: [src/ui/runtime/UiTemplate.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L65)
 
 Instancia os widgets na camada.
 

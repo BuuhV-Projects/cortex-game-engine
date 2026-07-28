@@ -8,6 +8,6 @@
 
 > `const` **GP\_AXIS\_RIGHT\_X**: `2` = `2`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/padLayout.ts:49
+Defined in: [src/input/padLayout.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L49)
 
 Eixo X do stick direito.

@@ -8,6 +8,6 @@
 
 > `const` **DEFAULT\_VISIBLE\_GROUPS**: readonly `string`[]
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:98
+Defined in: [src/input/defaultActions.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L98)
 
 Grupos mostrados por default na tela de Controles (câmera e veículo entram sob demanda).

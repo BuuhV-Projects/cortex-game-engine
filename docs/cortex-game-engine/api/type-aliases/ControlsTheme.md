@@ -8,4 +8,4 @@
 
 > **ControlsTheme** = *typeof* `DEFAULT_THEME`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:72
+Defined in: [src/input/ControlsScreen.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/ControlsScreen.ts#L79)

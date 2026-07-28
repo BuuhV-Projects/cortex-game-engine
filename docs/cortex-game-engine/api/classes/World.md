@@ -6,7 +6,7 @@
 
 # Class: World
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/World.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L39)
+Defined in: [src/ecs/World.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L39)
 
 Registro central do sistema ECS — vide ADR-0002.
 
@@ -48,7 +48,7 @@ world.tick(16); // executa um frame de 16 ms
 
 > **addSystem**(`system`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/World.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L83)
+Defined in: [src/ecs/World.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L83)
 
 Adiciona um system ao world.
 
@@ -74,7 +74,7 @@ Instância do system a registrar.
 
 > **clear**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/World.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L112)
+Defined in: [src/ecs/World.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L112)
 
 Esvazia o world pra trocar de fase/cena: remove entities e systems, chamando
 `dispose()` nos systems removidos (libera handles nativos, ex.: mundo do
@@ -95,7 +95,7 @@ O objeto `World` continua o MESMO (só é esvaziado), então referências a
 
 > **createEntity**(): [`Entity`](Entity.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/World.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L56)
+Defined in: [src/ecs/World.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L56)
 
 Cria uma nova entity, registra-a no world e a retorna.
 
@@ -111,7 +111,7 @@ A entity recém-criada com UUID único.
 
 > **destroyEntity**(`entity`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/World.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L68)
+Defined in: [src/ecs/World.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L68)
 
 Remove a entity do world.
 Sem efeito se a entity não pertencer a este world.
@@ -134,7 +134,7 @@ A entity a ser destruída.
 
 > **hasSystem**(`SystemClass`): `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/World.ts:131](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L131)
+Defined in: [src/ecs/World.ts:131](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L131)
 
 `true` se já existe um system registrado da classe `SystemClass`. Útil para
 registrar um system **sob demanda só uma vez** (ex.: o `buildScene` liga o
@@ -158,7 +158,7 @@ Construtor da classe do system a procurar.
 
 > **query**\<`T`\>(...`componentClasses`): [`Entity`](Entity.md)[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/World.ts:148](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L148)
+Defined in: [src/ecs/World.ts:148](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L148)
 
 Retorna todas as entities que possuem **todos** os componentes especificados.
 
@@ -196,7 +196,7 @@ const moving = world.query(TransformComponent, VelocityComponent);
 
 > **removeSystem**(`SystemClass`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/World.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L94)
+Defined in: [src/ecs/World.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L94)
 
 Remove o primeiro system cuja classe corresponda a `SystemClass`.
 Sem efeito se nenhum system do tipo especificado estiver registrado.
@@ -219,7 +219,7 @@ Construtor da classe do system a remover.
 
 > **tick**(`deltaTime`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/World.ts:174](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L174)
+Defined in: [src/ecs/World.ts:174](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L174)
 
 Executa um passo de simulação, iterando todos os systems em ordem de
 prioridade crescente.

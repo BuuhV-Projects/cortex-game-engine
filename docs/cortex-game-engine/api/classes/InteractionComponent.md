@@ -6,7 +6,7 @@
 
 # Class: InteractionComponent
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionComponent.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L23)
+Defined in: [src/components/InteractionComponent.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L23)
 
 **Ação de interação** padronizada (SPEC-0080): marca um objeto como interagível —
 o [InteractionSystem](InteractionSystem.md) mostra um prompt quando o player ativo chega a `range`
@@ -30,7 +30,7 @@ carEntity.addComponent(new InteractionComponent({ prompt: 'Entrar', range: 3.5, 
 
 > **new InteractionComponent**(`options?`): `InteractionComponent`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionComponent.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L28)
+Defined in: [src/components/InteractionComponent.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L28)
 
 #### Parameters
 
@@ -52,7 +52,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionCompo
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -66,7 +66,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **onInteract**: () => `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionComponent.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L26)
+Defined in: [src/components/InteractionComponent.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L26)
 
 #### Returns
 
@@ -78,7 +78,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionCompo
 
 > **prompt**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionComponent.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L24)
+Defined in: [src/components/InteractionComponent.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L24)
 
 ***
 
@@ -86,7 +86,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionCompo
 
 > **range**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionComponent.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L25)
+Defined in: [src/components/InteractionComponent.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L25)
 
 ## Accessors
 
@@ -96,7 +96,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionCompo
 
 > **get** **type**(): `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

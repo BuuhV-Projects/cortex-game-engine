@@ -6,7 +6,7 @@
 
 # Interface: UiTemplateBuildOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiTemplate.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L191)
+Defined in: [src/ui/runtime/UiTemplate.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L191)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiTemplate.ts:19
 
 > `optional` **data?**: `Record`\<`string`, `string` \| `number`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiTemplate.ts:193](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L193)
+Defined in: [src/ui/runtime/UiTemplate.ts:193](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L193)
 
 Valores pra `{{chave}}` nos textos.
 
@@ -24,7 +24,7 @@ Valores pra `{{chave}}` nos textos.
 
 > `optional` **onAction?**: (`action`, `button`) => `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiTemplate.ts:195](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L195)
+Defined in: [src/ui/runtime/UiTemplate.ts:195](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L195)
 
 Recebe `onpress="acao"` dos botões.
 

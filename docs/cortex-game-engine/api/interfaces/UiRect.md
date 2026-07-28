@@ -6,7 +6,7 @@
 
 # Interface: UiRect
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L37)
+Defined in: [src/ui/runtime/layout.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L37)
 
 Retângulo resolvido em pixels (origem = canto superior-esquerdo).
 
@@ -16,7 +16,7 @@ Retângulo resolvido em pixels (origem = canto superior-esquerdo).
 
 > **height**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L41)
+Defined in: [src/ui/runtime/layout.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L41)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:41](ht
 
 > **width**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L40)
+Defined in: [src/ui/runtime/layout.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L40)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:40](ht
 
 > **x**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L38)
+Defined in: [src/ui/runtime/layout.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L38)
 
 ***
 
@@ -40,4 +40,4 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:38](ht
 
 > **y**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L39)
+Defined in: [src/ui/runtime/layout.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L39)

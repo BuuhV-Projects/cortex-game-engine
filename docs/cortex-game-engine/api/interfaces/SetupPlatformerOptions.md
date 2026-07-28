@@ -6,7 +6,7 @@
 
 # Interface: SetupPlatformerOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Platformer.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Platformer.ts#L9)
+Defined in: [src/scene/Platformer.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Platformer.ts#L9)
 
 Opções de [setupPlatformer](../functions/setupPlatformer.md).
 
@@ -16,6 +16,6 @@ Opções de [setupPlatformer](../functions/setupPlatformer.md).
 
 > `optional` **camera?**: [`FollowCamera2DOptions`](FollowCamera2DOptions.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Platformer.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Platformer.ts#L11)
+Defined in: [src/scene/Platformer.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Platformer.ts#L11)
 
 Opções da câmera 2D-follow (offset, distância, roll no Z, bounds…).

@@ -8,7 +8,7 @@
 
 > **sameBinding**(`a`, `b`): `boolean`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/bindings.ts:121
+Defined in: [src/input/bindings.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L121)
 
 Dois bindings apontam pra mesma origem física?
 

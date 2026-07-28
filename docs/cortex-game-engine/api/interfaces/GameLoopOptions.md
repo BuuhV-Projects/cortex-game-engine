@@ -6,7 +6,7 @@
 
 # Interface: GameLoopOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/GameLoop.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L12)
+Defined in: [src/core/GameLoop.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L12)
 
 GameLoop — loop principal do motor de jogo.
 
@@ -23,7 +23,7 @@ a cada passo fixo de física.
 
 > `optional` **fixedStep?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/GameLoop.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L28)
+Defined in: [src/core/GameLoop.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L28)
 
 Intervalo do passo fixo em ms.
 
@@ -39,7 +39,7 @@ Intervalo do passo fixo em ms.
 
 > `optional` **onFixedUpdate?**: (`fixedDeltaTime`) => `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/GameLoop.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L23)
+Defined in: [src/core/GameLoop.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L23)
 
 Chamado em passo fixo com `fixedDeltaTime` constante.
 Ideal para física e lógica determinística (ex: `World.tick` do ECS).
@@ -60,7 +60,7 @@ Ideal para física e lógica determinística (ex: `World.tick` do ECS).
 
 > **onUpdate**: (`deltaTime`) => `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/GameLoop.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L18)
+Defined in: [src/core/GameLoop.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GameLoop.ts#L18)
 
 Chamado a cada frame com o tempo decorrido em ms desde o frame anterior,
 **limitado a 100 ms** (frames mais lentos desaceleram o jogo em vez de

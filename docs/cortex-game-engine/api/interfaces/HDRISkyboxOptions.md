@@ -6,7 +6,7 @@
 
 # Interface: HDRISkyboxOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L31)
+Defined in: [src/core/Skybox.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L31)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:31](https://
 
 > `optional` **asBackground?**: `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L36)
+Defined in: [src/core/Skybox.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L36)
 
 Usar o HDRI também como fundo VISÍVEL da cena, não só pra iluminação/reflexo.
 
@@ -30,7 +30,7 @@ true
 
 > `optional` **backgroundBlurriness?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L42)
+Defined in: [src/core/Skybox.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L42)
 
 Desfoque do fundo, de `0` (nítido) a `1` (totalmente borrado). Útil pra um
 céu suave sem distrair. Só tem efeito quando `asBackground` é `true`.
@@ -47,7 +47,7 @@ céu suave sem distrair. Só tem efeito quando `asBackground` é `true`.
 
 > `optional` **environmentIntensity?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L47)
+Defined in: [src/core/Skybox.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L47)
 
 Intensidade da iluminação que o environment lança na cena.
 

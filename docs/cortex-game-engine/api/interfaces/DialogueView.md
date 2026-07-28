@@ -6,7 +6,7 @@
 
 # Interface: DialogueView
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L12)
+Defined in: [src/dialogue/DialogueRunner.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L12)
 
 O que a UI precisa pra desenhar o estado atual da conversa. Imutável: cada
 transição produz um novo DialogueView.
@@ -17,7 +17,7 @@ transição produz um novo DialogueView.
 
 > **choices**: `object`[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L23)
+Defined in: [src/dialogue/DialogueRunner.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L23)
 
 Escolhas **visíveis** (já filtradas por `requires`), com o índice **original**
 na lista do nó — passe esse índice de volta pra [DialogueRunner.choose](../classes/DialogueRunner.md#choose).
@@ -36,7 +36,7 @@ na lista do nó — passe esse índice de volta pra [DialogueRunner.choose](../c
 
 > **isLine**: `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L25)
+Defined in: [src/dialogue/DialogueRunner.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L25)
 
 `true` quando é uma **linha simples** (sem escolhas) — avança com `advance()`.
 
@@ -46,7 +46,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:
 
 > **nodeId**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L14)
+Defined in: [src/dialogue/DialogueRunner.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L14)
 
 Nó atual (id).
 
@@ -56,7 +56,7 @@ Nó atual (id).
 
 > `optional` **speaker?**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L16)
+Defined in: [src/dialogue/DialogueRunner.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L16)
 
 Quem fala (se houver).
 
@@ -66,6 +66,6 @@ Quem fala (se houver).
 
 > **text**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L18)
+Defined in: [src/dialogue/DialogueRunner.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L18)
 
 Texto da fala.

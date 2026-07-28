@@ -6,7 +6,7 @@
 
 # Interface: SpriteAnim
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/SpriteAnimationComponent.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L6)
+Defined in: [src/components/SpriteAnimationComponent.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L6)
 
 Uma animação: sequência de frames (índices na spritesheet) + cadência.
 
@@ -16,7 +16,7 @@ Uma animação: sequência de frames (índices na spritesheet) + cadência.
 
 > `optional` **fps?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/SpriteAnimationComponent.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L10)
+Defined in: [src/components/SpriteAnimationComponent.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L10)
 
 Frames por segundo. Default `10`.
 
@@ -26,7 +26,7 @@ Frames por segundo. Default `10`.
 
 > **frames**: `number`[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/SpriteAnimationComponent.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L8)
+Defined in: [src/components/SpriteAnimationComponent.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L8)
 
 Frames (índices na spritesheet), na ordem de exibição.
 
@@ -36,6 +36,6 @@ Frames (índices na spritesheet), na ordem de exibição.
 
 > `optional` **loop?**: `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/SpriteAnimationComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L12)
+Defined in: [src/components/SpriteAnimationComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/SpriteAnimationComponent.ts#L12)
 
 Repete em loop? Default `true` (false = trava no último frame).

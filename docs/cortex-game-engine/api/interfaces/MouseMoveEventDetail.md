@@ -6,7 +6,7 @@
 
 # Interface: MouseMoveEventDetail
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/InputManager.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L51)
+Defined in: [src/core/InputManager.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L51)
 
 Detalhe transportado pelo evento `mouse:move`.
 
@@ -16,7 +16,7 @@ Detalhe transportado pelo evento `mouse:move`.
 
 > **delta**: [`MouseDelta`](MouseDelta.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/InputManager.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L58)
+Defined in: [src/core/InputManager.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L58)
 
 Delta de movimento **desta** ocorrência de `mousemove`
 (equivale a `movementX/Y` do evento DOM).
@@ -27,7 +27,7 @@ Delta de movimento **desta** ocorrência de `mousemove`
 
 > **originalEvent**: `MouseEvent`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/InputManager.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L60)
+Defined in: [src/core/InputManager.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L60)
 
 Evento DOM original.
 
@@ -37,6 +37,6 @@ Evento DOM original.
 
 > **position**: [`MousePosition`](MousePosition.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/InputManager.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L53)
+Defined in: [src/core/InputManager.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L53)
 
 Posição atual do mouse relativa ao elemento.

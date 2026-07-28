@@ -6,7 +6,7 @@
 
 # Class: HttpSceneFileWriter
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/io/HttpSceneFileWriter.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L13)
+Defined in: [src/io/HttpSceneFileWriter.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L13)
 
 Escreve o `SceneFileV1` via POST para um endpoint do dev server (Vite), que
 grava o arquivo em disco. Pareia com `createSceneSavePlugin`
@@ -26,7 +26,7 @@ plugin grava no `target` configurado nele (default `assets/scene-data.json`).
 
 > **new HttpSceneFileWriter**(`url?`, `path?`): `HttpSceneFileWriter`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/io/HttpSceneFileWriter.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L14)
+Defined in: [src/io/HttpSceneFileWriter.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L14)
 
 #### Parameters
 
@@ -48,7 +48,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/io/HttpSceneFileWriter.ts:1
 
 > **save**(`file`): `Promise`\<`void`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/io/HttpSceneFileWriter.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L19)
+Defined in: [src/io/HttpSceneFileWriter.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/HttpSceneFileWriter.ts#L19)
 
 #### Parameters
 

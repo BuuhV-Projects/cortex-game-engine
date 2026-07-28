@@ -6,7 +6,7 @@
 
 # Class: RapierPhysicsSystem
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/RapierPhysicsSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L25)
+Defined in: [src/systems/RapierPhysicsSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L25)
 
 Liga o Rapier ao ECS (ADR-0061): cria um corpo por entidade com
 [RapierBodyComponent](RapierBodyComponent.md) + [Object3DComponent](Object3DComponent.md), avança a simulação (passo
@@ -34,7 +34,7 @@ world.addSystem(new RapierPhysicsSystem(physics))
 
 > **new RapierPhysicsSystem**(`physics`): `RapierPhysicsSystem`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/RapierPhysicsSystem.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L36)
+Defined in: [src/systems/RapierPhysicsSystem.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L36)
 
 #### Parameters
 
@@ -56,7 +56,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/systems/RapierPhysicsSystem
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -73,7 +73,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -94,7 +94,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `8`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/RapierPhysicsSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L27)
+Defined in: [src/systems/RapierPhysicsSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L27)
 
 Prioridade de execução deste sistema.
 
@@ -111,7 +111,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`Object3DComponent`](Object3DComponent.md) \| *typeof* [`RapierBodyComponent`](RapierBodyComponent.md))[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/RapierPhysicsSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L26)
+Defined in: [src/systems/RapierPhysicsSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L26)
 
 Construtores dos componentes que este sistema requer.
 
@@ -137,7 +137,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/RapierPhysicsSystem.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L41)
+Defined in: [src/systems/RapierPhysicsSystem.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L41)
 
 Libera o mundo do Rapier (handle nativo/WASM) — chamado no World.clear.
 
@@ -155,7 +155,7 @@ Libera o mundo do Rapier (handle nativo/WASM) — chamado no World.clear.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/RapierPhysicsSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L45)
+Defined in: [src/systems/RapierPhysicsSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/RapierPhysicsSystem.ts#L45)
 
 Executa a lógica do sistema para o frame/passo atual.
 

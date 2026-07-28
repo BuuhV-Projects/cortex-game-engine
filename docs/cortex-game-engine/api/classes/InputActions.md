@@ -6,7 +6,7 @@
 
 # Class: InputActions
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:55
+Defined in: [src/input/InputActions.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L55)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:55
 
 > **new InputActions**(`input`, `gamepad?`, `options?`): `InputActions`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:69
+Defined in: [src/input/InputActions.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L69)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:69
 
 > **get** **actions**(): [`ActionDef`](../interfaces/ActionDef.md)[]
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:96
+Defined in: [src/input/InputActions.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L96)
 
 Todas as ações registradas, na ordem de registro.
 
@@ -56,7 +56,7 @@ Todas as ações registradas, na ordem de registro.
 
 > **actionsOf**(`group`): [`ActionDef`](../interfaces/ActionDef.md)[]
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:101
+Defined in: [src/input/InputActions.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L101)
 
 Ações de um grupo (seção da tela de Controles), sem as escondidas.
 
@@ -76,7 +76,7 @@ Ações de um grupo (seção da tela de Controles), sem as escondidas.
 
 > **axis**(`negativeId`, `positiveId`): `number`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:140
+Defined in: [src/input/InputActions.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L140)
 
 Eixo -1..1 a partir de um par de ações (`axis('moveLeft','moveRight')`).
 Analógico quando a origem é stick; ±1 no teclado.
@@ -101,7 +101,7 @@ Analógico quando a origem é stick; ±1 no teclado.
 
 > **bindingsOf**(`id`): [`InputBinding`](../interfaces/InputBinding.md)[]
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:189
+Defined in: [src/input/InputActions.ts:203](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L203)
 
 Bindings atuais da ação (cópia).
 
@@ -121,7 +121,7 @@ Bindings atuais da ação (cópia).
 
 > **clearBindings**(`id`): `void`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:229
+Defined in: [src/input/InputActions.ts:243](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L243)
 
 Remove todos os bindings da ação (fica sem comando).
 
@@ -141,7 +141,7 @@ Remove todos os bindings da ação (fica sem comando).
 
 > **consume**(`id?`): `void`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:174
+Defined in: [src/input/InputActions.ts:188](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L188)
 
 Marca a ação como já-pressionada sem que o jogador tenha apertado nada —
 evita a "borda fantasma" quando um menu fecha com o botão ainda segurado
@@ -163,7 +163,7 @@ evita a "borda fantasma" quando um menu fecha com o botão ainda segurado
 
 > **define**(`action`): `void`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:88
+Defined in: [src/input/InputActions.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L88)
 
 Registra (ou substitui) uma ação. É assim que o JOGO declara o vocabulário
 dele — a engine só traz o mínimo que os sistemas dela usam.
@@ -191,7 +191,7 @@ actions.define({ id: 'plant', group: 'farm', labelKey: 'input.action.plant',
 
 > **definitionOf**(`id`): [`ActionDef`](../interfaces/ActionDef.md) \| `undefined`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:106
+Defined in: [src/input/InputActions.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L106)
 
 Definição de uma ação, ou `undefined` se não registrada.
 
@@ -211,7 +211,7 @@ Definição de uma ação, ou `undefined` se não registrada.
 
 > **isDefault**(`id`): `boolean`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:244
+Defined in: [src/input/InputActions.ts:258](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L258)
 
 `true` se a ação está exatamente como saiu de fábrica.
 
@@ -231,7 +231,7 @@ Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:244
 
 > **isDown**(`id`): `boolean`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:113
+Defined in: [src/input/InputActions.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L113)
 
 `true` se qualquer binding da ação estiver ativo agora.
 
@@ -251,7 +251,7 @@ Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:113
 
 > **loadFrom**(`config`): `void`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:256
+Defined in: [src/input/InputActions.ts:270](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L270)
 
 Aplica os bindings salvos pelo jogador. Linha malformada é ignorada (a ação
 fica no default) — `config.ini` é editável à mão e não pode derrubar o jogo.
@@ -272,10 +272,31 @@ fica no default) — `config.ini` é editável à mão e não pode derrubar o jo
 
 > **poll**(): `void`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:162
+Defined in: [src/input/InputActions.ts:176](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L176)
 
 Atualiza as bordas ([pressed](#pressed)/[released](#released)). Chame 1×/frame,
 DEPOIS do `gamepad.poll()` — senão a borda enxerga o estado do frame anterior.
+
+#### Returns
+
+`void`
+
+***
+
+### pollDevices()
+
+> **pollDevices**(): `void`
+
+Defined in: [src/input/InputActions.ts:168](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L168)
+
+Relê o estado dos DISPOSITIVOS (hoje, o gamepad) **sem** mexer nas bordas
+de [pressed](#pressed)/[released](#released).
+
+Existe pros MENUS: lá o `Game` está parado, então ninguém chama
+`gamepad.poll()` e o `isDown()` de qualquer binding de controle ficaria
+eternamente `false` — o controle "parava de funcionar" no menu. Quem dirige
+um loop próprio (tela de menu, `UiLayer`) chama isto por frame; é seguro
+chamar mesmo com o `Game` rodando, porque não toca no estado das bordas.
 
 #### Returns
 
@@ -287,7 +308,7 @@ DEPOIS do `gamepad.poll()` — senão a borda enxerga o estado do frame anterior
 
 > **pressed**(`id`): `boolean`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:149
+Defined in: [src/input/InputActions.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L149)
 
 `true` no frame em que a ação foi pressionada (borda). Exige [poll](#poll)
 1×/frame — o `Game` já faz isso pro `game.actions`.
@@ -308,7 +329,7 @@ Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:149
 
 > **rebind**(`id`, `binding`, `family`): `string`[]
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:206
+Defined in: [src/input/InputActions.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L220)
 
 Aplica um binding capturado na tela de Controles: **substitui** os bindings
 da mesma família (teclado/mouse ou gamepad) da ação, preservando a outra
@@ -340,7 +361,7 @@ binding, pra tela avisar.
 
 > **released**(`id`): `boolean`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:154
+Defined in: [src/input/InputActions.ts:154](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L154)
 
 `true` no frame em que a ação foi solta (borda).
 
@@ -360,7 +381,7 @@ Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:154
 
 > **resetToDefaults**(`id?`): `void`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:234
+Defined in: [src/input/InputActions.ts:248](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L248)
 
 Volta a ação (ou todas, sem id) para os bindings de fábrica.
 
@@ -380,7 +401,7 @@ Volta a ação (ou todas, sem id) para os bindings de fábrica.
 
 > **saveTo**(`config`): `void`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:277
+Defined in: [src/input/InputActions.ts:291](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L291)
 
 Grava **só o que difere** do default (o resto some do arquivo) — mantém o
 `config.ini` legível e deixa os defaults evoluírem sem congelar os antigos.
@@ -402,7 +423,7 @@ Persiste de fato só quando o chamador der `config.save()`.
 
 > **setBindings**(`id`, `bindings`): `void`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:194
+Defined in: [src/input/InputActions.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L208)
 
 Substitui todos os bindings da ação.
 
@@ -426,7 +447,7 @@ readonly [`InputBinding`](../interfaces/InputBinding.md)[]
 
 > **value**(`id`): `number`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/InputActions.ts:125
+Defined in: [src/input/InputActions.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L125)
 
 Valor analógico da ação (0..1): 1 pra tecla/botão digital, a magnitude da
 deflexão pra eixo de stick, o valor do gatilho pra LT/RT. Pega o MAIOR

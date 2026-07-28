@@ -6,7 +6,7 @@
 
 # Class: PlayerAnimatorComponent
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/PlayerAnimatorComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L13)
+Defined in: [src/components/PlayerAnimatorComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L13)
 
 **Mapa ação → clipe** do player (o "contrato"/padrão de animação). É a base que a
 IA preenche e o editor edita: pra cada ação de locomoção (`idle`/`walk`/`run`/
@@ -27,7 +27,7 @@ pra lógica custom; dispare one-shots com [trigger](#trigger).
 
 > **new PlayerAnimatorComponent**(`clips?`, `runThreshold?`): `PlayerAnimatorComponent`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/PlayerAnimatorComponent.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L26)
+Defined in: [src/components/PlayerAnimatorComponent.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L26)
 
 #### Parameters
 
@@ -58,7 +58,7 @@ Mapa ação → nome do clipe (ex.: `{ idle: 'Idle', run: 'Run' }`).
 
 > **clips**: `Record`\<`string`, `string`\> = `{}`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/PlayerAnimatorComponent.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L27)
+Defined in: [src/components/PlayerAnimatorComponent.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L27)
 
 Mapa ação → nome do clipe (ex.: `{ idle: 'Idle', run: 'Run' }`).
   Ações sem clipe caem num fallback (run↔walk, fall↔jump, land→idle).
@@ -69,7 +69,7 @@ Mapa ação → nome do clipe (ex.: `{ idle: 'Idle', run: 'Run' }`).
 
 > **current**: `string` \| `null` = `null`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/PlayerAnimatorComponent.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L15)
+Defined in: [src/components/PlayerAnimatorComponent.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L15)
 
 Ação tocando agora (escrito pelo system).
 
@@ -79,7 +79,7 @@ Ação tocando agora (escrito pelo system).
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -93,7 +93,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **oneShot**: `string` \| `null` = `null`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/PlayerAnimatorComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L17)
+Defined in: [src/components/PlayerAnimatorComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L17)
 
 Ação one-shot disparada (override até acabar). Use [trigger](#trigger).
 
@@ -103,7 +103,7 @@ Ação one-shot disparada (override até acabar). Use [trigger](#trigger).
 
 > **oneShotTime**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/PlayerAnimatorComponent.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L19)
+Defined in: [src/components/PlayerAnimatorComponent.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L19)
 
 Tempo restante do one-shot (s) — gerenciado pelo system.
 
@@ -113,7 +113,7 @@ Tempo restante do one-shot (s) — gerenciado pelo system.
 
 > **runThreshold**: `number` = `4`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/PlayerAnimatorComponent.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L28)
+Defined in: [src/components/PlayerAnimatorComponent.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L28)
 
 `|vx|` acima disto = `run`; abaixo = `walk`. Default `4`.
 
@@ -125,7 +125,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/PlayerAnimatorCo
 
 > **get** **type**(): `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").
@@ -145,7 +145,7 @@ Usado por Entity para indexar componentes no Map<string, Component>.
 
 > **trigger**(`action`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/PlayerAnimatorComponent.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L34)
+Defined in: [src/components/PlayerAnimatorComponent.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/PlayerAnimatorComponent.ts#L34)
 
 Dispara uma ação **one-shot** (ataque/hit/…): toca uma vez e volta à locomoção.
 

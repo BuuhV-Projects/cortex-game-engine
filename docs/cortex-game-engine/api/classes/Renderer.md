@@ -6,7 +6,7 @@
 
 # Class: Renderer
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L81)
+Defined in: [src/core/Renderer.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L81)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:81](https:
 
 > **new Renderer**(`__namedParameters`): `Renderer`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L114)
+Defined in: [src/core/Renderer.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L114)
 
 Cria o renderer, dispara o init assíncrono do backend em background e
 registra o listener de redimensionamento automático quando em browser.
@@ -37,7 +37,7 @@ registra o listener de redimensionamento automático quando em browser.
 
 > **get** **domElement**(): `HTMLCanvasElement`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:384](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L384)
+Defined in: [src/core/Renderer.ts:384](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L384)
 
 Elemento `<canvas>` onde o renderer desenha.
 
@@ -53,7 +53,7 @@ Elemento `<canvas>` onde o renderer desenha.
 
 > **get** **height**(): `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:379](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L379)
+Defined in: [src/core/Renderer.ts:379](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L379)
 
 Altura atual do canvas em pixels.
 
@@ -69,7 +69,7 @@ Altura atual do canvas em pixels.
 
 > **get** **isReady**(): `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:180](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L180)
+Defined in: [src/core/Renderer.ts:180](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L180)
 
 `true` quando o backend está pronto e `render()` efetivamente desenha.
 
@@ -85,7 +85,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:180](https
 
 > **get** **threeRenderer**(): `WebGPURenderer`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:394](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L394)
+Defined in: [src/core/Renderer.ts:394](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L394)
 
 Instância interna do `WebGPURenderer`.
 Exposta para casos avançados: pós-processamento (passar pra `PostProcessing`
@@ -104,7 +104,7 @@ públicos da classe sempre que possível.
 
 > **get** **width**(): `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:374](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L374)
+Defined in: [src/core/Renderer.ts:374](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L374)
 
 Largura atual do canvas em pixels.
 
@@ -118,7 +118,7 @@ Largura atual do canvas em pixels.
 
 > **clear**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:204](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L204)
+Defined in: [src/core/Renderer.ts:204](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L204)
 
 Limpa o canvas inteiro (color, depth e stencil buffers). No-op antes do init.
 
@@ -135,7 +135,7 @@ quando se usa split-screen.
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:360](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L360)
+Defined in: [src/core/Renderer.ts:360](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L360)
 
 Remove o listener de resize e libera os recursos GPU do renderer.
 Deve ser chamado ao destruir a cena para evitar vazamentos de memória.
@@ -150,7 +150,7 @@ Deve ser chamado ao destruir a cena para evitar vazamentos de memória.
 
 > **init**(): `Promise`\<`void`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:175](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L175)
+Defined in: [src/core/Renderer.ts:175](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L175)
 
 Promessa resolvida quando o backend terminou de inicializar. Opcional —
 `render()` já pula frames até estar pronto. Útil pra aguardar antes de
@@ -166,7 +166,7 @@ esconder uma tela de loading.
 
 > **render**(`scene`, `camera`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:192](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L192)
+Defined in: [src/core/Renderer.ts:192](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L192)
 
 Renderiza a `scene` usando a `camera` fornecida.
 Deve ser chamado a cada frame pelo `GameLoop`. No-op enquanto o backend
@@ -195,7 +195,7 @@ por frame". Para split-screen, use `clear()` + `renderViewport()`.
 
 > **renderSceneHDR**(`scene`, `camera`): `unknown`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:301](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L301)
+Defined in: [src/core/Renderer.ts:301](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L301)
 
 Renderiza a `scene` numa **RenderTarget HDR própria** (linear, sem tone
 mapping) e devolve o handle da GPUTexture do backend, pro host nativo fazer
@@ -230,7 +230,7 @@ Devolve `null` se o backend não iniciou (o chamador cai no caminho antigo).
 
 > **renderUiLayer**(`scene`, `camera`, `width`, `height`): `unknown`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:246](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L246)
+Defined in: [src/core/Renderer.ts:246](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L246)
 
 Renderiza `scene` (a UI de runtime) numa **RenderTarget própria** e devolve o
 objeto GPUTexture do backend, pro host nativo compor sobre o jogo EM GAMA
@@ -275,7 +275,7 @@ As cores de UI **não** precisam de tratamento especial: saem lineares aqui e o
 
 > **renderViewport**(`scene`, `camera`, `viewport`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L220)
+Defined in: [src/core/Renderer.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L220)
 
 Renderiza `scene` com `camera` em uma região retangular do canvas
 (sem limpar — use `clear()` antes do primeiro chamado do frame). No-op
@@ -314,7 +314,7 @@ renderer.renderViewport(scene, p2Camera, { x: w / 2, y: 0, width: w / 2, height:
 
 > **resize**(`width`, `height`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Renderer.ts:346](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L346)
+Defined in: [src/core/Renderer.ts:346](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L346)
 
 Redimensiona o canvas e o viewport do renderer.
 Chamado automaticamente pelo listener de `window.resize`; também pode ser

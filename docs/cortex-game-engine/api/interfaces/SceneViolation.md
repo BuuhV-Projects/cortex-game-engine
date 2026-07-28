@@ -6,7 +6,7 @@
 
 # Interface: SceneViolation
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L20)
+Defined in: [src/scene/validateScene.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L20)
 
 **Validação geométrica ESTÁTICA da cena** (dados, sem three/GPU): detecta os
 defeitos que custavam iterações de screenshot — interpenetração, peça
@@ -27,7 +27,7 @@ Convenção de pivô: nós `model` têm origem na BASE-centro (padrão dos kits 
 
 > **message**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L26)
+Defined in: [src/scene/validateScene.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L26)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:26](
 
 > **nodeId**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L24)
+Defined in: [src/scene/validateScene.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L24)
 
 ***
 
@@ -43,7 +43,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:24](
 
 > `optional` **otherId?**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L25)
+Defined in: [src/scene/validateScene.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L25)
 
 ***
 
@@ -51,7 +51,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:25](
 
 > **rule**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L22)
+Defined in: [src/scene/validateScene.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L22)
 
 `overlap | floating | tilted | misaligned | gap | rise | attach`
 
@@ -61,4 +61,4 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:22](
 
 > **severity**: `"error"` \| `"warning"`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/validateScene.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L23)
+Defined in: [src/scene/validateScene.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L23)

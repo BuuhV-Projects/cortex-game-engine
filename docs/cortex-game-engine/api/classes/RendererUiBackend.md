@@ -6,7 +6,7 @@
 
 # Class: RendererUiBackend
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBackend.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L117)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L117)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBacken
 
 > **new RendererUiBackend**(`target`): `RendererUiBackend`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBackend.ts:139](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L139)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:139](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L139)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBacken
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBackend.ts:201](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L201)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:201](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L201)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -54,7 +54,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBackend.ts:167](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L167)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:167](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L167)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
@@ -72,7 +72,7 @@ Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
 > **sync**(`widgets`, `viewport`, `scale?`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/RendererUiBackend.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L143)
+Defined in: [src/ui/runtime/RendererUiBackend.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/RendererUiBackend.ts#L143)
 
 Sincroniza visuais com a lista de widgets (cria/atualiza/remove). O
 `viewport` é o de DESIGN (espaço lógico do layout, ver `layout.ts`); o

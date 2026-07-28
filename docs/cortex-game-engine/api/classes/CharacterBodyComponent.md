@@ -6,7 +6,7 @@
 
 # Class: CharacterBodyComponent
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L49)
+Defined in: [src/components/CharacterBodyComponent.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L49)
 
 **Corpo de personagem** (player/NPC) — uma **cápsula** com física vertical de
 character controller (estilo UPBGE "Character"): gravidade, pulo (Jump Force /
@@ -33,7 +33,7 @@ player.getComponent(CharacterBodyComponent)!.jump()
 
 > **new CharacterBodyComponent**(`options?`): `CharacterBodyComponent`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L71)
+Defined in: [src/components/CharacterBodyComponent.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L71)
 
 #### Parameters
 
@@ -55,7 +55,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyCom
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -69,7 +69,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > `readonly` **fallSpeedMax**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L55)
+Defined in: [src/components/CharacterBodyComponent.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L55)
 
 ***
 
@@ -77,7 +77,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyCom
 
 > **footOffset**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L60)
+Defined in: [src/components/CharacterBodyComponent.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L60)
 
 Distância da origem do mesh até os pés (base). `0` = origem nos pés.
 
@@ -87,7 +87,7 @@ Distância da origem do mesh até os pés (base). `0` = origem nos pés.
 
 > `readonly` **gravity**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L52)
+Defined in: [src/components/CharacterBodyComponent.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L52)
 
 ***
 
@@ -95,7 +95,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyCom
 
 > **grounded**: `boolean` = `false`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L65)
+Defined in: [src/components/CharacterBodyComponent.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L65)
 
 `true` quando os pés estão no chão (terreno/colisão). Zera os pulos.
 
@@ -105,7 +105,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyCom
 
 > **groundY**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L58)
+Defined in: [src/components/CharacterBodyComponent.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L58)
 
 Piso plano onde aterra (sem raycast). `-Infinity` = sem piso.
 
@@ -115,7 +115,7 @@ Piso plano onde aterra (sem raycast). `-Infinity` = sem piso.
 
 > `readonly` **height**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L51)
+Defined in: [src/components/CharacterBodyComponent.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L51)
 
 ***
 
@@ -123,7 +123,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyCom
 
 > `readonly` **jumpForce**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L54)
+Defined in: [src/components/CharacterBodyComponent.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L54)
 
 ***
 
@@ -131,7 +131,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyCom
 
 > **jumpQueued**: `boolean` = `false`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L69)
+Defined in: [src/components/CharacterBodyComponent.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L69)
 
 Pedido de pulo pendente (consumido pelo [CharacterPhysicsSystem](CharacterPhysicsSystem.md)).
 
@@ -141,7 +141,7 @@ Pedido de pulo pendente (consumido pelo [CharacterPhysicsSystem](CharacterPhysic
 
 > **jumpsUsed**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L67)
+Defined in: [src/components/CharacterBodyComponent.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L67)
 
 Pulos já usados desde o último contato com o chão.
 
@@ -151,7 +151,7 @@ Pulos já usados desde o último contato com o chão.
 
 > `readonly` **maxJumps**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L56)
+Defined in: [src/components/CharacterBodyComponent.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L56)
 
 ***
 
@@ -159,7 +159,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyCom
 
 > `readonly` **radius**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L50)
+Defined in: [src/components/CharacterBodyComponent.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L50)
 
 ***
 
@@ -167,7 +167,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyCom
 
 > `readonly` **stepHeight**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L53)
+Defined in: [src/components/CharacterBodyComponent.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L53)
 
 ***
 
@@ -175,7 +175,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyCom
 
 > **velocityY**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L63)
+Defined in: [src/components/CharacterBodyComponent.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L63)
 
 Velocidade vertical atual (unidades/s). Integrada pela gravidade/pulo.
 
@@ -187,7 +187,7 @@ Velocidade vertical atual (unidades/s). Integrada pela gravidade/pulo.
 
 > **get** **type**(): `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").
@@ -207,7 +207,7 @@ Usado por Entity para indexar componentes no Map<string, Component>.
 
 > **jump**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/CharacterBodyComponent.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L85)
+Defined in: [src/components/CharacterBodyComponent.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/CharacterBodyComponent.ts#L85)
 
 Pede um pulo — aplicado no próximo tick se ainda houver pulos disponíveis.
 

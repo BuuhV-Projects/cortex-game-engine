@@ -6,7 +6,7 @@
 
 # Interface: VehicleHandle
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L56)
+Defined in: [src/scene/VehicleSetup.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L56)
 
 Handle de [setupVehicle](../functions/setupVehicle.md): o que o jogo usa no loop (velocímetro/som/tune).
 
@@ -16,7 +16,7 @@ Handle de [setupVehicle](../functions/setupVehicle.md): o que o jogo usa no loop
 
 > **engineSound**: [`EngineSound`](../classes/EngineSound.md) \| `null`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L61)
+Defined in: [src/scene/VehicleSetup.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L61)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:61](h
 
 > **options**: [`VehicleControlOptions`](VehicleControlOptions.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L60)
+Defined in: [src/scene/VehicleSetup.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L60)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:60](h
 
 > **rig**: [`VehicleRig`](VehicleRig.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L58)
+Defined in: [src/scene/VehicleSetup.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L58)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:58](h
 
 > **speedo**: [`Speedometer`](../classes/Speedometer.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L59)
+Defined in: [src/scene/VehicleSetup.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L59)
 
 ***
 
@@ -48,4 +48,4 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:59](h
 
 > **vehicle**: [`Vehicle`](../classes/Vehicle.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/VehicleSetup.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L57)
+Defined in: [src/scene/VehicleSetup.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L57)

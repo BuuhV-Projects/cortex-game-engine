@@ -6,7 +6,7 @@
 
 # Interface: InputBinding
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/bindings.ts:27
+Defined in: [src/input/bindings.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L27)
 
 Uma origem física que ativa uma ação.
 
@@ -16,7 +16,7 @@ Uma origem física que ativa uma ação.
 
 > `readonly` `optional` **index?**: `number`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/bindings.ts:30
+Defined in: [src/input/bindings.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L30)
 
 Botão/eixo (`pad`, `axis`, `mouse`) — ignorado quando `source` é `key`.
 
@@ -26,7 +26,7 @@ Botão/eixo (`pad`, `axis`, `mouse`) — ignorado quando `source` é `key`.
 
 > `readonly` `optional` **key?**: `string`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/bindings.ts:32
+Defined in: [src/input/bindings.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L32)
 
 Tecla (`KeyboardEvent.key` normalizado) — só quando `source` é `key`.
 
@@ -36,7 +36,7 @@ Tecla (`KeyboardEvent.key` normalizado) — só quando `source` é `key`.
 
 > `readonly` `optional` **sign?**: `1` \| `-1`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/bindings.ts:34
+Defined in: [src/input/bindings.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L34)
 
 Sentido do eixo: `+1` ou `-1` — só quando `source` é `axis`.
 
@@ -46,4 +46,4 @@ Sentido do eixo: `+1` ou `-1` — só quando `source` é `axis`.
 
 > `readonly` **source**: [`BindingSource`](../type-aliases/BindingSource.md)
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/bindings.ts:28
+Defined in: [src/input/bindings.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L28)

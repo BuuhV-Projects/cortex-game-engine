@@ -6,7 +6,7 @@
 
 # Interface: ScriptFieldDef
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L18)
+Defined in: [src/scripts/ScriptBehavior.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L18)
 
 Descritor de um campo editável (no `static fields` da subclasse de [ScriptBehavior](../classes/ScriptBehavior.md)).
 
@@ -16,7 +16,7 @@ Descritor de um campo editável (no `static fields` da subclasse de [ScriptBehav
 
 > **default**: `unknown`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L21)
+Defined in: [src/scripts/ScriptBehavior.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L21)
 
 Valor inicial se a cena não declarar nada.
 
@@ -26,7 +26,7 @@ Valor inicial se a cena não declarar nada.
 
 > `optional` **label?**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L23)
+Defined in: [src/scripts/ScriptBehavior.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L23)
 
 Rótulo amigável no Inspector (default: o nome do campo).
 
@@ -36,7 +36,7 @@ Rótulo amigável no Inspector (default: o nome do campo).
 
 > `optional` **options?**: `string`[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L25)
+Defined in: [src/scripts/ScriptBehavior.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L25)
 
 Opções do `select`.
 
@@ -46,4 +46,4 @@ Opções do `select`.
 
 > **type**: [`ScriptFieldType`](../type-aliases/ScriptFieldType.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L19)
+Defined in: [src/scripts/ScriptBehavior.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L19)

@@ -8,7 +8,7 @@
 
 > **registerScripts**(`modules`): `string`[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptRegistry.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptRegistry.ts#L38)
+Defined in: [src/scripts/ScriptRegistry.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptRegistry.ts#L38)
 
 Registra em **lote** os scripts de um projeto — o par do
 `import.meta.glob` do vite no `main.ts` do template:

@@ -6,7 +6,7 @@
 
 # Interface: BloomConfig
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L32)
+Defined in: [src/core/PostFX.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L32)
 
 Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`.
 
@@ -16,7 +16,7 @@ Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`.
 
 > `optional` **radius?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L36)
+Defined in: [src/core/PostFX.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L36)
 
 Raio de espalhamento [0..1].
 
@@ -32,7 +32,7 @@ Raio de espalhamento [0..1].
 
 > `optional` **strength?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L34)
+Defined in: [src/core/PostFX.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L34)
 
 Intensidade do brilho.
 
@@ -48,7 +48,7 @@ Intensidade do brilho.
 
 > `optional` **threshold?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L38)
+Defined in: [src/core/PostFX.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L38)
 
 Luminância mínima pra brilhar [0..1].
 

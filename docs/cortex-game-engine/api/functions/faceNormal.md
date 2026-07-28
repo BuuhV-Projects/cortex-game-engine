@@ -8,7 +8,7 @@
 
 > **faceNormal**(`mesh`, `faceIndex`): `Vec3`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/EditableMesh.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/EditableMesh.ts#L73)
+Defined in: [src/probuilder/EditableMesh.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/EditableMesh.ts#L73)
 
 Normal (unitária) de uma face poligonal pelo método de Newell — robusto a
 faces não-planas e independe de triangulação. Frente = ordem CCW dos vértices.

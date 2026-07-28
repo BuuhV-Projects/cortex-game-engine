@@ -6,7 +6,7 @@
 
 # Class: VehicleControlSystem
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/VehicleControlSystem.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L91)
+Defined in: [src/systems/VehicleControlSystem.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L91)
 
 Dirige um [Vehicle](Vehicle.md) do Rapier (ADR-0081), gamepad-first com **fallback
 teclado**: com controle, **RT** acelera, **LT** freia (e dá ré parado), **stick X**
@@ -26,7 +26,7 @@ sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de
 
 > **new VehicleControlSystem**(`physics`, `vehicle`, `car`, `camera`, `gamepad`, `input?`, `options?`): `VehicleControlSystem`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/VehicleControlSystem.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L103)
+Defined in: [src/systems/VehicleControlSystem.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L103)
 
 #### Parameters
 
@@ -74,7 +74,7 @@ Teclado (fallback quando não há controle). Opcional.
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -91,7 +91,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -112,7 +112,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/VehicleControlSystem.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L93)
+Defined in: [src/systems/VehicleControlSystem.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L93)
 
 Prioridade de execução deste sistema.
 
@@ -129,7 +129,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/VehicleControlSystem.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L92)
+Defined in: [src/systems/VehicleControlSystem.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L92)
 
 Construtores dos componentes que este sistema requer.
 
@@ -155,7 +155,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -176,7 +176,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`_entities`, `deltaTime`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/VehicleControlSystem.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L117)
+Defined in: [src/systems/VehicleControlSystem.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L117)
 
 Executa a lógica do sistema para o frame/passo atual.
 

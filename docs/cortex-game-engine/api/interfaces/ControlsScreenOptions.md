@@ -6,7 +6,7 @@
 
 # Interface: ControlsScreenOptions
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:86
+Defined in: [src/input/ControlsScreen.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/ControlsScreen.ts#L93)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:86
 
 > `optional` **config?**: [`ActionConfigStore`](ActionConfigStore.md) & `object`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:90
+Defined in: [src/input/ControlsScreen.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/ControlsScreen.ts#L97)
 
 Onde persistir (tipicamente o `GameConfig`); sem ele, o remapeamento vale só na sessão.
 
@@ -34,7 +34,7 @@ Onde persistir (tipicamente o `GameConfig`); sem ele, o remapeamento vale só na
 
 > `optional` **driveUi?**: `boolean`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:101
+Defined in: [src/input/ControlsScreen.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/ControlsScreen.ts#L108)
 
 A tela roda o próprio loop de `ui.update`/`ui.render`? Deixe `true` quando
 o `Game` está parado (menu de título) e `false` quando ele já está rodando
@@ -52,7 +52,7 @@ true
 
 > `optional` **gamepad?**: [`GamepadManager`](../classes/GamepadManager.md)
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:92
+Defined in: [src/input/ControlsScreen.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/ControlsScreen.ts#L99)
 
 Necessário pra capturar botões/eixos do controle (tipicamente `game.gamepad`).
 
@@ -62,7 +62,7 @@ Necessário pra capturar botões/eixos do controle (tipicamente `game.gamepad`).
 
 > `optional` **groups?**: readonly `string`[]
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:88
+Defined in: [src/input/ControlsScreen.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/ControlsScreen.ts#L95)
 
 Grupos exibidos, na ordem. Default: movimento, ação e interface.
 
@@ -72,7 +72,7 @@ Grupos exibidos, na ordem. Default: movimento, ação e interface.
 
 > `optional` **theme?**: `Partial`\<\{ `capture`: `"#ffd24a"`; `cellBackground`: `"#12263c"`; `cellBorder`: `"#ffffff2e"`; `cellFocus`: `"#2f7fd0"`; `cellText`: `"#eaf4ff"`; `footer`: `"#9fb4c8"`; `header`: `"#8fd0ff"`; `label`: `"#dbe7f2"`; `scrim`: `"#050c17"`; `scrimOpacity`: `0.82`; `title`: `"#ffffff"`; \}\>
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:103
+Defined in: [src/input/ControlsScreen.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/ControlsScreen.ts#L110)
 
 Cores (parcial — o resto vem do tema neutro da engine).
 
@@ -82,7 +82,7 @@ Cores (parcial — o resto vem do tema neutro da engine).
 
 > `optional` **translate?**: (`key`) => `string`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/ControlsScreen.ts:94
+Defined in: [src/input/ControlsScreen.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/ControlsScreen.ts#L101)
 
 Tradutor (ex.: o `t` do i18n). Chave sem tradução cai no texto pt-BR embutido.
 

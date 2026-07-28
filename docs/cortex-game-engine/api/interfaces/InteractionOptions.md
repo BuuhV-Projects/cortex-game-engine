@@ -6,7 +6,7 @@
 
 # Interface: InteractionOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionComponent.ts:4](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L4)
+Defined in: [src/components/InteractionComponent.ts:4](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L4)
 
 Opções do [InteractionComponent](../classes/InteractionComponent.md).
 
@@ -16,7 +16,7 @@ Opções do [InteractionComponent](../classes/InteractionComponent.md).
 
 > `optional` **onInteract?**: () => `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionComponent.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L10)
+Defined in: [src/components/InteractionComponent.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L10)
 
 Callback disparado ao interagir (botão A / tecla E). A lógica é do jogo.
 
@@ -30,7 +30,7 @@ Callback disparado ao interagir (botão A / tecla E). A lógica é do jogo.
 
 > `optional` **prompt?**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionComponent.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L6)
+Defined in: [src/components/InteractionComponent.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L6)
 
 Texto do prompt mostrado ao chegar perto (ex.: "Entrar", "Falar"). Default `Interagir`.
 
@@ -40,6 +40,6 @@ Texto do prompt mostrado ao chegar perto (ex.: "Entrar", "Falar"). Default `Inte
 
 > `optional` **range?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/InteractionComponent.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L8)
+Defined in: [src/components/InteractionComponent.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/InteractionComponent.ts#L8)
 
 Alcance (raio XZ) pra ativar a interação. Default `2.5`.

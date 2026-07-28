@@ -6,7 +6,7 @@
 
 # Interface: VignetteConfig
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L42)
+Defined in: [src/core/PostFX.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L42)
 
 Ajustes da vinheta (escurecimento das bordas).
 
@@ -16,7 +16,7 @@ Ajustes da vinheta (escurecimento das bordas).
 
 > `optional` **inner?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L46)
+Defined in: [src/core/PostFX.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L46)
 
 Raio (em UV de tela, do centro) onde a vinheta começa.
 
@@ -32,7 +32,7 @@ Raio (em UV de tela, do centro) onde a vinheta começa.
 
 > `optional` **intensity?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L44)
+Defined in: [src/core/PostFX.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L44)
 
 Força do escurecimento [0..1].
 
@@ -48,7 +48,7 @@ Força do escurecimento [0..1].
 
 > `optional` **outer?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/PostFX.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L48)
+Defined in: [src/core/PostFX.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L48)
 
 Raio onde a vinheta fica no máximo.
 

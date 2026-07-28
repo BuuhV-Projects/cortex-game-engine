@@ -6,7 +6,7 @@
 
 # Interface: ActionDef
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:17
+Defined in: [src/input/defaultActions.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L17)
 
 Definição de uma ação remapeável.
 
@@ -16,7 +16,7 @@ Definição de uma ação remapeável.
 
 > `readonly` **defaults**: readonly [`InputBinding`](InputBinding.md)[]
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:27
+Defined in: [src/input/defaultActions.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L27)
 
 Bindings de fábrica.
 
@@ -26,7 +26,7 @@ Bindings de fábrica.
 
 > `readonly` **group**: `string`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:21
+Defined in: [src/input/defaultActions.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L21)
 
 Seção na tela de Controles. Jogos podem usar grupos próprios.
 
@@ -36,7 +36,7 @@ Seção na tela de Controles. Jogos podem usar grupos próprios.
 
 > `readonly` `optional` **hidden?**: `boolean`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:32
+Defined in: [src/input/defaultActions.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L32)
 
 `true` esconde a ação da tela de Controles (o jogo ainda a lê normalmente).
 Útil pra ações internas que não devem ser remapeadas.
@@ -47,7 +47,7 @@ Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:32
 
 > `readonly` **id**: `string`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:19
+Defined in: [src/input/defaultActions.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L19)
 
 Id estável (chave no `config.ini`). Em inglês, camelCase.
 
@@ -57,7 +57,7 @@ Id estável (chave no `config.ini`). Em inglês, camelCase.
 
 > `readonly` **label**: `string`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:25
+Defined in: [src/input/defaultActions.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L25)
 
 Rótulo pt-BR usado quando não há tradução carregada pra `labelKey`.
 
@@ -67,6 +67,6 @@ Rótulo pt-BR usado quando não há tradução carregada pra `labelKey`.
 
 > `readonly` **labelKey**: `string`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:23
+Defined in: [src/input/defaultActions.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L23)
 
 Chave i18n do rótulo (`t(labelKey)`).

@@ -6,7 +6,7 @@
 
 # Interface: SpritesheetOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L6)
+Defined in: [src/scene/Spritesheet.ts:6](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L6)
 
 Opções de [Spritesheet](../classes/Spritesheet.md).
 
@@ -16,7 +16,7 @@ Opções de [Spritesheet](../classes/Spritesheet.md).
 
 > `optional` **columns?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L12)
+Defined in: [src/scene/Spritesheet.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L12)
 
 Colunas (frames por linha). Default: `floor(texW / frameWidth)`.
 
@@ -26,7 +26,7 @@ Colunas (frames por linha). Default: `floor(texW / frameWidth)`.
 
 > **frameHeight**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L10)
+Defined in: [src/scene/Spritesheet.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L10)
 
 Altura de um frame, em px.
 
@@ -36,7 +36,7 @@ Altura de um frame, em px.
 
 > **frameWidth**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L8)
+Defined in: [src/scene/Spritesheet.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L8)
 
 Largura de um frame, em **px** da textura.
 
@@ -46,6 +46,6 @@ Largura de um frame, em **px** da textura.
 
 > `optional` **rows?**: `number`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L14)
+Defined in: [src/scene/Spritesheet.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L14)
 
 Linhas. Default: `floor(texH / frameHeight)`.

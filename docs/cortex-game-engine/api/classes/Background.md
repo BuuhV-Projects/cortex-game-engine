@@ -6,7 +6,7 @@
 
 # Class: Background
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L43)
+Defined in: [src/scene/Background.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L43)
 
 **Backdrop 2D com parallax** — um quad unlit, atrás de tudo, que segue a câmera
 pra sempre preencher a vista e faz a imagem rolar em **parallax** conforme a
@@ -29,7 +29,7 @@ const bg = new Background(game.scene, game.camera, { url: 'assets/bg/adventure.j
 
 > **new Background**(`scene`, `camera`, `options`): `Background`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L51)
+Defined in: [src/scene/Background.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L51)
 
 #### Parameters
 
@@ -55,7 +55,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:51](htt
 
 > `readonly` **mesh**: `Mesh`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L45)
+Defined in: [src/scene/Background.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L45)
 
 O mesh do backdrop (já adicionado à cena).
 
@@ -65,7 +65,7 @@ O mesh do backdrop (já adicionado à cena).
 
 > **update**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L74)
+Defined in: [src/scene/Background.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L74)
 
 Reposiciona o backdrop atrás da câmera e rola a UV em parallax. Chame no loop.
 

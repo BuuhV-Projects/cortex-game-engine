@@ -6,7 +6,7 @@
 
 # Class: PhysicsSystem
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:688](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L688)
+Defined in: [src/core/Physics.ts:688](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L688)
 
 Sistema de física AABB sem dependências externas.
 
@@ -74,7 +74,7 @@ world.tick(16.67); // ~60 FPS
 
 > **gravity**: `number` = `9.8`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:693](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L693)
+Defined in: [src/core/Physics.ts:693](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L693)
 
 Aceleração gravitacional em unidades/s² aplicada no eixo -Y.
 Padrão: 9.8 (gravidade terrestre). Ajuste conforme as necessidades do jogo.
@@ -85,7 +85,7 @@ Padrão: 9.8 (gravidade terrestre). Ajuste conforme as necessidades do jogo.
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -102,7 +102,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -123,7 +123,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `0`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L43)
+Defined in: [src/ecs/System.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L43)
 
 Prioridade de execução deste sistema.
 
@@ -140,7 +140,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`RigidBodyComponent`](RigidBodyComponent.md) \| *typeof* [`ColliderComponent`](ColliderComponent.md))[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:696](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L696)
+Defined in: [src/core/Physics.ts:696](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L696)
 
 Construtores dos componentes que este sistema requer.
 
@@ -166,7 +166,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -187,7 +187,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:704](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L704)
+Defined in: [src/core/Physics.ts:704](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L704)
 
 Executa gravidade, integração e resolução de colisões para o passo atual.
 

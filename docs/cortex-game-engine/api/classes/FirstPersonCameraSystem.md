@@ -6,7 +6,7 @@
 
 # Class: FirstPersonCameraSystem
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/FirstPersonCameraSystem.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L64)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L64)
 
 Câmera + controle de **primeira pessoa** (FPS). Mira o único [Entity](Entity.md) com
 [TransformComponent](TransformComponent.md) + [CharacterBodyComponent](CharacterBodyComponent.md) (o player cápsula) e:
@@ -48,7 +48,7 @@ game.world.addSystem(fps)
 
 > **new FirstPersonCameraSystem**(`camera`, `input`, `canvas`, `options?`): `FirstPersonCameraSystem`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/FirstPersonCameraSystem.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L86)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L86)
 
 #### Parameters
 
@@ -82,7 +82,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/systems/FirstPersonCameraSy
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -99,7 +99,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -120,7 +120,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `20`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/FirstPersonCameraSystem.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L66)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L66)
 
 Prioridade de execução deste sistema.
 
@@ -137,7 +137,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`CharacterBodyComponent`](CharacterBodyComponent.md))[]
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/FirstPersonCameraSystem.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L65)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L65)
 
 Construtores dos componentes que este sistema requer.
 
@@ -163,7 +163,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/FirstPersonCameraSystem.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L115)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L115)
 
 Remove o listener de `mousedown` do canvas — chamado pelo [World.clear](World.md#clear)
 na troca de fase. Sem isto, a closure retém este system (e a câmera) da fase
@@ -183,7 +183,7 @@ anterior a cada troca (SPEC-0152).
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/FirstPersonCameraSystem.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L120)
+Defined in: [src/systems/FirstPersonCameraSystem.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/FirstPersonCameraSystem.ts#L120)
 
 Executa a lógica do sistema para o frame/passo atual.
 

@@ -6,7 +6,7 @@
 
 # Class: Skybox
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L64)
+Defined in: [src/core/Skybox.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L64)
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:64](https://
 
 > `static` **clear**(`scene`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:154](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L154)
+Defined in: [src/core/Skybox.ts:154](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L154)
 
 Remove o environment/background da cena (volta ao fundo padrão).
 Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.
@@ -45,7 +45,7 @@ Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.
 
 > `static` **fromGradient**(`scene`, `options?`, `renderer?`): `DataTexture`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L112)
+Defined in: [src/core/Skybox.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L112)
 
 Céu **gradiente procedural** (sem arquivo) — zênite → horizonte → chão, aplicado
 como `background` visível E `environment` (luz/reflexo suave). Ideal pra um céu
@@ -82,7 +82,7 @@ Skybox.fromGradient(scene, { top: '#1f72d8', middle: '#d6ecfb' }); // céu azul 
 
 > `static` **fromHDRI**(`scene`, `url`, `options?`, `renderer?`): `Promise`\<`DataTexture`\>
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L76)
+Defined in: [src/core/Skybox.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L76)
 
 Carrega um HDRI equiretangular e o aplica como iluminação (e fundo) da cena.
 

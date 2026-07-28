@@ -6,7 +6,7 @@
 
 # Class: Object3DComponent
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/Object3DComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L12)
+Defined in: [src/components/Object3DComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L12)
 
 Liga uma entidade ao seu `Object3D` (Mesh/Group) na cena Three.js.
 
@@ -23,7 +23,7 @@ O `Object3DSyncSystem` copia o `TransformComponent` da entidade para
 
 > **new Object3DComponent**(`object`): `Object3DComponent`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/Object3DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L13)
+Defined in: [src/components/Object3DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L13)
 
 #### Parameters
 
@@ -45,7 +45,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/Object3DComponen
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -59,7 +59,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **object**: `Object3D`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/components/Object3DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L13)
+Defined in: [src/components/Object3DComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L13)
 
 ## Accessors
 
@@ -69,7 +69,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/components/Object3DComponen
 
 > **get** **type**(): `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

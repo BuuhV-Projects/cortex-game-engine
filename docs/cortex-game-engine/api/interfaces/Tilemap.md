@@ -6,7 +6,7 @@
 
 # Interface: Tilemap
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Tilemap.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Tilemap.ts#L38)
+Defined in: [src/scene/Tilemap.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Tilemap.ts#L38)
 
 Resultado de [buildTilemap](../functions/buildTilemap.md).
 
@@ -16,7 +16,7 @@ Resultado de [buildTilemap](../functions/buildTilemap.md).
 
 > **mesh**: `Mesh`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Tilemap.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Tilemap.ts#L40)
+Defined in: [src/scene/Tilemap.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Tilemap.ts#L40)
 
 Mesh único da camada — adicione em `game.scene.add(mesh)`.
 
@@ -26,7 +26,7 @@ Mesh único da camada — adicione em `game.scene.add(mesh)`.
 
 > **addColliders**(`world`, `isSolid?`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Tilemap.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Tilemap.ts#L46)
+Defined in: [src/scene/Tilemap.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Tilemap.ts#L46)
 
 Cria colliders (box) pros tiles **sólidos**, mesclando runs horizontais por
 linha (menos entidades). `isSolid` decide quais índices colidem (default:

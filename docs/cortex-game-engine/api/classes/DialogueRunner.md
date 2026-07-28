@@ -6,7 +6,7 @@
 
 # Class: DialogueRunner
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L52)
+Defined in: [src/dialogue/DialogueRunner.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L52)
 
 **Percorre um grafo de diálogo** (ADR-0070). Lógica **pura** — sem DOM, sem
 Three, sem ECS → testável isoladamente (Vitest). A UI (DOM) assina as views; o
@@ -32,7 +32,7 @@ if (runner.done) closeUi();
 
 > **new DialogueRunner**(`graph`, `options?`): `DialogueRunner`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L59)
+Defined in: [src/dialogue/DialogueRunner.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L59)
 
 #### Parameters
 
@@ -72,7 +72,7 @@ Nó inicial (id).
 
 > **get** **done**(): `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L74)
+Defined in: [src/dialogue/DialogueRunner.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L74)
 
 `true` quando o diálogo terminou (não há mais nó atual).
 
@@ -88,7 +88,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:
 
 > **get** **story**(): [`StoryState`](StoryState.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L69)
+Defined in: [src/dialogue/DialogueRunner.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L69)
 
 O `StoryState` em uso (próprio ou o injetado).
 
@@ -102,7 +102,7 @@ O `StoryState` em uso (próprio ou o injetado).
 
 > **advance**(): [`DialogueView`](../interfaces/DialogueView.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L111)
+Defined in: [src/dialogue/DialogueRunner.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L111)
 
 Avança uma **linha simples** (nó sem escolhas) pro `next`. Lança se o nó atual
 tiver escolhas (use `choose`) ou se já terminou.
@@ -117,7 +117,7 @@ tiver escolhas (use `choose`) ou se já terminou.
 
 > **choose**(`index`): [`DialogueView`](../interfaces/DialogueView.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L93)
+Defined in: [src/dialogue/DialogueRunner.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L93)
 
 Escolhe a opção de índice **original** `index` no nó atual. Aplica
 `set`/`give` da escolha e transiciona pro `next` (ou encerra se `next` nulo).
@@ -138,7 +138,7 @@ Escolhe a opção de índice **original** `index` no nó atual. Aplica
 
 > **current**(): [`DialogueView`](../interfaces/DialogueView.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L84)
+Defined in: [src/dialogue/DialogueRunner.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L84)
 
 A view do estado atual. Lança se chamado antes de `start()` ou após `done`.
 
@@ -152,7 +152,7 @@ A view do estado atual. Lança se chamado antes de `start()` ou após `done`.
 
 > **start**(): [`DialogueView`](../interfaces/DialogueView.md)
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueRunner.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L79)
+Defined in: [src/dialogue/DialogueRunner.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueRunner.ts#L79)
 
 Inicia no nó `start`, aplica seus efeitos de entrada e devolve a view.
 

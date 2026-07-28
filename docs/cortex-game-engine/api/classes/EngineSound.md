@@ -6,7 +6,7 @@
 
 # Class: EngineSound
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L44)
+Defined in: [src/scene/EngineSound.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L44)
 
 **Som de motor com MARCHAS** (ADR-0081). Em vez de só cruzar volumes (que soa
 artificial), o tom (playbackRate) **sobe com a rotação dentro da marcha e CAI ao trocar
@@ -29,7 +29,7 @@ eng.start(); // por frame: eng.update(speed/maxSpeed, throttle)
 
 > **new EngineSound**(`layers`, `options?`): `EngineSound`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L48)
+Defined in: [src/scene/EngineSound.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L48)
 
 #### Parameters
 
@@ -51,7 +51,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:48](ht
 
 > **dispose**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L111)
+Defined in: [src/scene/EngineSound.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L111)
 
 Para e libera.
 
@@ -65,7 +65,7 @@ Para e libera.
 
 > **start**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L60)
+Defined in: [src/scene/EngineSound.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L60)
 
 Toca todas as camadas em loop (volume 0; o [update](#update) controla).
 
@@ -79,7 +79,7 @@ Toca todas as camadas em loop (volume 0; o [update](#update) controla).
 
 > **stop**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L68)
+Defined in: [src/scene/EngineSound.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L68)
 
 Pausa todas as camadas.
 
@@ -93,7 +93,7 @@ Pausa todas as camadas.
 
 > **update**(`speedRatio`, `throttle`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/scene/EngineSound.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L75)
+Defined in: [src/scene/EngineSound.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/EngineSound.ts#L75)
 
 Atualiza por frame: `speedRatio` (0..1) define a marcha+rotação; `throttle` (0..1) o on/off.
 

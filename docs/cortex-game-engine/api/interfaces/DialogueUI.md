@@ -6,7 +6,7 @@
 
 # Interface: DialogueUI
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L12)
+Defined in: [src/dialogue/DialogueUI.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L12)
 
 UI de diálogo em **DOM overlay** (ADR-0070) — primeira UI de runtime do engine,
 no mesmo padrão de `createDomLoadingScreen` (DOM sobre o canvas, não quads no
@@ -20,7 +20,7 @@ lógica está no [DialogueRunner](../classes/DialogueRunner.md).
 
 > **advanceLine**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L20)
+Defined in: [src/dialogue/DialogueUI.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L20)
 
 Avança a linha simples atual via teclado (chamado pelo glue).
 
@@ -34,7 +34,7 @@ Avança a linha simples atual via teclado (chamado pelo glue).
 
 > **destroy**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L18)
+Defined in: [src/dialogue/DialogueUI.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L18)
 
 Remove a UI do DOM.
 
@@ -48,7 +48,7 @@ Remove a UI do DOM.
 
 > **hide**(): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L16)
+Defined in: [src/dialogue/DialogueUI.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L16)
 
 Esconde a caixa.
 
@@ -62,7 +62,7 @@ Esconde a caixa.
 
 > **render**(`view`): `void`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/dialogue/DialogueUI.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L14)
+Defined in: [src/dialogue/DialogueUI.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/dialogue/DialogueUI.ts#L14)
 
 Desenha a view (fala + escolhas) e mostra a caixa.
 

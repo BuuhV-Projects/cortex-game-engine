@@ -8,6 +8,6 @@
 
 > **ActionGroup** = `"move"` \| `"look"` \| `"action"` \| `"ui"` \| `"vehicle"`
 
-Defined in: .claude/worktrees/feat-input-rebind/src/input/defaultActions.ts:14
+Defined in: [src/input/defaultActions.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L14)
 
 Grupos que a tela de Controles usa como seções.

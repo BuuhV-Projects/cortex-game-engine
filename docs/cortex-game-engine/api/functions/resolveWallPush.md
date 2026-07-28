@@ -8,7 +8,7 @@
 
 > **resolveWallPush**(`near`, `radius`): `object`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/systems/CharacterPhysicsSystem.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L95)
+Defined in: [src/systems/CharacterPhysicsSystem.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/CharacterPhysicsSystem.ts#L95)
 
 Empurrão horizontal pra **sair de paredes**: dado o hit mais próximo em cada
 direção de eixo (`±X`/`±Z`, distância ou `null` se livre) e o raio da cápsula,

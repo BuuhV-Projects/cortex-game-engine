@@ -6,7 +6,7 @@
 
 # Interface: LoadingScreenOptions
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L21)
+Defined in: [src/core/LoadingScreen.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L21)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:21](h
 
 > `optional` **accent?**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L25)
+Defined in: [src/core/LoadingScreen.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L25)
 
 Cor da barra de progresso.
 
@@ -24,7 +24,7 @@ Cor da barra de progresso.
 
 > `optional` **background?**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L22)
+Defined in: [src/core/LoadingScreen.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L22)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:22](h
 
 > `optional` **enabled?**: `boolean`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L36)
+Defined in: [src/core/LoadingScreen.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L36)
 
 Liga/desliga a tela visível — só afeta [runWithLoadingScreen](../functions/runWithLoadingScreen.md) (default
 `true`). Passe `false` no **editor** (`{ enabled: !game.editorActive }`): lá o
@@ -48,7 +48,7 @@ carregamento pesado e o frame congelado antes do `game.start()`).
 
 > `optional` **message?**: `string`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L23)
+Defined in: [src/core/LoadingScreen.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L23)
 
 ***
 
@@ -56,4 +56,4 @@ Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:23](h
 
 > `optional` **parent?**: `HTMLElement`
 
-Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L26)
+Defined in: [src/core/LoadingScreen.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L26)
