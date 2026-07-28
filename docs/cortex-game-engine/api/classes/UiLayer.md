@@ -6,7 +6,7 @@
 
 # Class: UiLayer
 
-Defined in: [src/ui/runtime/UiLayer.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L32)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L42)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/ui/runtime/UiLayer.ts:32](https://github.com/BuuhV-Projects/cor
 
 > **new UiLayer**(`backend`, `viewportOf`): `UiLayer`
 
-Defined in: [src/ui/runtime/UiLayer.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L68)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L86)
 
 #### Parameters
 
@@ -38,7 +38,7 @@ Defined in: [src/ui/runtime/UiLayer.ts:68](https://github.com/BuuhV-Projects/cor
 
 > **get** **focused**(): [`UiButton`](UiButton.md) \| `null`
 
-Defined in: [src/ui/runtime/UiLayer.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L123)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:141](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L141)
 
 Widget focado no momento (ou null).
 
@@ -46,13 +46,29 @@ Widget focado no momento (ou null).
 
 [`UiButton`](UiButton.md) \| `null`
 
+***
+
+### inputEnabled
+
+#### Get Signature
+
+> **get** **inputEnabled**(): `boolean`
+
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:173](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L173)
+
+A navegação por teclado/gamepad está ativa?
+
+##### Returns
+
+`boolean`
+
 ## Methods
 
 ### activate()
 
 > **activate**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:201](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L201)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:253](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L253)
 
 Ativa o botão focado (Enter/A).
 
@@ -66,7 +82,7 @@ Ativa o botão focado (Enter/A).
 
 > **add**\<`T`\>(`widget`): `T`
 
-Defined in: [src/ui/runtime/UiLayer.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L84)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L102)
 
 Adiciona um widget (devolve ele mesmo, pra guardar a referência).
 
@@ -92,7 +108,7 @@ Adiciona um widget (devolve ele mesmo, pra guardar a referência).
 
 > **clear**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L98)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L116)
 
 Remove todos os widgets (troca de tela).
 
@@ -106,7 +122,7 @@ Remove todos os widgets (troca de tela).
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:206](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L206)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:258](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L258)
 
 Desmonta a camada (listeners + visuais).
 
@@ -120,7 +136,7 @@ Desmonta a camada (listeners + visuais).
 
 > **focus**(`button`): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L129)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:147](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L147)
 
 Foca um botão específico (ex.: primeiro item do menu).
 
@@ -140,7 +156,7 @@ Foca um botão específico (ex.: primeiro item do menu).
 
 > **navigate**(`dx`, `dy`): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:171](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L171)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:223](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L223)
 
 Move o foco na direção dada (navegação espacial).
 
@@ -164,7 +180,7 @@ Move o foco na direção dada (navegação espacial).
 
 > **remove**(`widget`): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L91)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L109)
 
 Remove um widget.
 
@@ -184,9 +200,30 @@ Remove um widget.
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:166](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L166)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L218)
 
 Desenha (backend renderer; no DOM é no-op). Chamado pelo `Game`.
+
+#### Returns
+
+`void`
+
+***
+
+### setInputEnabled()
+
+> **setInputEnabled**(`enabled`): `void`
+
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:167](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L167)
+
+Suspende (ou retoma) a navegação por teclado/gamepad. A tela de Controles
+desliga enquanto espera o jogador pressionar a tecla a mapear.
+
+#### Parameters
+
+##### enabled
+
+`boolean`
 
 #### Returns
 
@@ -198,7 +235,7 @@ Desenha (backend renderer; no DOM é no-op). Chamado pelo `Game`.
 
 > **update**(`_dt`): `void`
 
-Defined in: [src/ui/runtime/UiLayer.ts:137](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L137)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:181](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L181)
 
 Por frame: consome teclado (setas/Enter) e gamepad (d-pad/A) pra navegar
 e ativar; depois sincroniza o backend. Chamado pelo `Game`.
@@ -215,11 +252,36 @@ e ativar; depois sincroniza o backend. Chamado pelo `Game`.
 
 ***
 
+### useActions()
+
+> **useActions**(`actions`): `void`
+
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L159)
+
+Liga a navegação dos menus ao mapa de ações remapeáveis (ADR-0164): d-pad,
+A e B passam a seguir `uiUp`/`uiDown`/`uiLeft`/`uiRight`/`uiConfirm`. Sem
+isso, a navegação usa os índices fixos do layout standard — e um controle
+genérico com outra ordem não navega o menu nem depois de remapeado.
+
+#### Parameters
+
+##### actions
+
+`UiActionReader` \| `null`
+
+Mapa de ações (tipicamente `game.actions`), ou `null` pra voltar ao padrão.
+
+#### Returns
+
+`void`
+
+***
+
 ### viewport()
 
 > **viewport**(): [`UiViewport`](../interfaces/UiViewport.md)
 
-Defined in: [src/ui/runtime/UiLayer.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L110)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiLayer.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiLayer.ts#L128)
 
 Viewport de DESIGN da UI (px lógicos, espaço onde os widgets são posicionados)
 — usado por layouts de template. É o viewport real dividido pela [uiScale](../functions/uiScale.md),

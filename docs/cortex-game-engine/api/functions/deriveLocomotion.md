@@ -8,7 +8,7 @@
 
 > **deriveLocomotion**(`body`, `runThreshold`): `string`
 
-Defined in: [src/systems/PlatformerAnimationSystem.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerAnimationSystem.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/PlatformerAnimationSystem.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerAnimationSystem.ts#L9)
 
 Deriva a ação de locomoção do estado do corpo: `idle`/`walk`/`run`/`jump`/`fall`.
 

@@ -6,7 +6,7 @@
 
 # Class: GamepadManager
 
-Defined in: [src/core/GamepadManager.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L69)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L69)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core/GamepadManager.ts:69](https://github.com/BuuhV-Projects/co
 
 > **new GamepadManager**(`options?`): `GamepadManager`
 
-Defined in: [src/core/GamepadManager.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L80)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L80)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: [src/core/GamepadManager.ts:80](https://github.com/BuuhV-Projects/co
 
 > **get** **deadzone**(): `number`
 
-Defined in: [src/core/GamepadManager.ts:288](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L288)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:288](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L288)
 
 Limiar de deadzone configurado no construtor.
 
@@ -56,7 +56,7 @@ Limiar de deadzone configurado no construtor.
 
 > **dispose**(): `void`
 
-Defined in: [src/core/GamepadManager.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L103)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L103)
 
 Remove os listeners de (re)conexão registrados no `window`. Chame ao descartar
 o manager (hot-reload/teardown) pra não vazar listeners. No-op fora do browser.
@@ -71,7 +71,7 @@ o manager (hot-reload/teardown) pra não vazar listeners. No-op fora do browser.
 
 > **firstConnectedIndex**(): `number`
 
-Defined in: [src/core/GamepadManager.ts:278](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L278)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:278](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L278)
 
 Índice do **primeiro slot com gamepad conectado**, ou `-1` se nenhum. No
 Windows é comum o controle real cair no slot 1+ (dispositivo fantasma ocupa
@@ -87,7 +87,7 @@ o 0) — sistemas single-player devem ler este slot em vez de fixar o 0.
 
 > **getAxis**(`gamepadIndex`, `axis`): `number`
 
-Defined in: [src/core/GamepadManager.ts:258](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L258)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:258](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L258)
 
 Retorna o valor do eixo `axis` do gamepad `gamepadIndex` com deadzone
 aplicada (valores no intervalo (-deadzone, +deadzone) viram 0).
@@ -113,7 +113,7 @@ Retorna 0 se o gamepad não estiver conectado ou o eixo não existir.
 
 > **getButtonValue**(`gamepadIndex`, `button`): `number`
 
-Defined in: [src/core/GamepadManager.ts:247](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L247)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:247](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L247)
 
 Retorna o valor **analógico** do botão `button` (0..1). Útil pros gatilhos
 LT (6) / RT (7), que no Xbox são analógicos. Retorna 0 se desconectado ou
@@ -139,7 +139,7 @@ o botão não existir. (`isButtonDown` continua dando o booleano `pressed`.)
 
 > **getGamepad**(`index`): [`GamepadState`](../interfaces/GamepadState.md) \| `null`
 
-Defined in: [src/core/GamepadManager.ts:219](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L219)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:219](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L219)
 
 Retorna uma cópia do estado do gamepad no slot `index`, ou `null` se
 nenhum gamepad estiver conectado nesse slot.
@@ -162,7 +162,7 @@ Slot do gamepad (0..3).
 
 > **isButtonDown**(`gamepadIndex`, `button`): `boolean`
 
-Defined in: [src/core/GamepadManager.ts:236](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L236)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:236](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L236)
 
 Retorna `true` se o botão `button` do gamepad `gamepadIndex` estiver
 pressionado. Retorna `false` se o gamepad não estiver conectado.
@@ -187,7 +187,7 @@ pressionado. Retorna `false` se o gamepad não estiver conectado.
 
 > **isConnected**(`index?`): `boolean`
 
-Defined in: [src/core/GamepadManager.ts:269](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L269)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:269](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L269)
 
 `true` se há um gamepad conectado no slot `index` (default 0), sem alocar.
 Útil pra fazer **fallback teclado/mouse** quando não há controle: leia o gamepad
@@ -209,7 +209,7 @@ se `isConnected()`, senão leia o teclado.
 
 > **poll**(): `void`
 
-Defined in: [src/core/GamepadManager.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L117)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L117)
 
 Lê o estado atual de todos os gamepads do `navigator`, atualiza o
 estado interno e emite eventos de transição.

@@ -6,7 +6,7 @@
 
 # Class: RapierBodyComponent
 
-Defined in: [src/components/RapierBodyComponent.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L43)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/RapierBodyComponent.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L43)
 
 **Corpo físico do Rapier** como componente (ADR-0061): declara que o objeto é um
 corpo (rígido) — tipo + forma + material. O [RapierPhysicsSystem](RapierPhysicsSystem.md) cria o
@@ -31,7 +31,7 @@ e.addComponent(new RapierBodyComponent({ bodyType: 'dynamic', shape: { kind: 'au
 
 > **new RapierBodyComponent**(`options?`): `RapierBodyComponent`
 
-Defined in: [src/components/RapierBodyComponent.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L53)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/RapierBodyComponent.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L53)
 
 #### Parameters
 
@@ -53,7 +53,7 @@ Defined in: [src/components/RapierBodyComponent.ts:53](https://github.com/BuuhV-
 
 > **body**: [`PhysicsBody`](../interfaces/PhysicsBody.md) \| `null` = `null`
 
-Defined in: [src/components/RapierBodyComponent.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L51)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/RapierBodyComponent.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L51)
 
 Handle do corpo no Rapier — criado pelo [RapierPhysicsSystem](RapierPhysicsSystem.md). `null` até criar.
 
@@ -63,7 +63,7 @@ Handle do corpo no Rapier — criado pelo [RapierPhysicsSystem](RapierPhysicsSys
 
 > **bodyType**: [`RapierBodyType`](../type-aliases/RapierBodyType.md)
 
-Defined in: [src/components/RapierBodyComponent.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L45)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/RapierBodyComponent.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L45)
 
 Tipo do corpo (dynamic/fixed/kinematic). NÃO usar `type` (colide com a base ECS).
 
@@ -73,7 +73,7 @@ Tipo do corpo (dynamic/fixed/kinematic). NÃO usar `type` (colide com a base ECS
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -87,7 +87,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > `optional` **friction?**: `number`
 
-Defined in: [src/components/RapierBodyComponent.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L48)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/RapierBodyComponent.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L48)
 
 ***
 
@@ -95,7 +95,7 @@ Defined in: [src/components/RapierBodyComponent.ts:48](https://github.com/BuuhV-
 
 > **isSensor**: `boolean`
 
-Defined in: [src/components/RapierBodyComponent.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L49)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/RapierBodyComponent.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L49)
 
 ***
 
@@ -103,7 +103,7 @@ Defined in: [src/components/RapierBodyComponent.ts:49](https://github.com/BuuhV-
 
 > `optional` **restitution?**: `number`
 
-Defined in: [src/components/RapierBodyComponent.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L47)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/RapierBodyComponent.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L47)
 
 ***
 
@@ -111,7 +111,7 @@ Defined in: [src/components/RapierBodyComponent.ts:47](https://github.com/BuuhV-
 
 > **shape**: [`RapierBodyShape`](../type-aliases/RapierBodyShape.md)
 
-Defined in: [src/components/RapierBodyComponent.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L46)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/RapierBodyComponent.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/RapierBodyComponent.ts#L46)
 
 ## Accessors
 
@@ -121,7 +121,7 @@ Defined in: [src/components/RapierBodyComponent.ts:46](https://github.com/BuuhV-
 
 > **get** **type**(): `string`
 
-Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

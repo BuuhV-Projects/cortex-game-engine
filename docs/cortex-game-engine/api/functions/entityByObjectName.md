@@ -8,7 +8,7 @@
 
 > **entityByObjectName**(`world`, `name`): [`Entity`](../classes/Entity.md) \| `null`
 
-Defined in: [src/components/Object3DComponent.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L33)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Object3DComponent.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Object3DComponent.ts#L33)
 
 **Entidade pelo NOME do objeto de cena.** O `buildScene` nomeia cada `Object3D`
 com o `id` do nó (declarado no código/JSON, ou gerado — `add-…` — quando o

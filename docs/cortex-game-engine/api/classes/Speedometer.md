@@ -6,7 +6,7 @@
 
 # Class: Speedometer
 
-Defined in: [src/ui/Speedometer.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L37)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/Speedometer.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L37)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/ui/Speedometer.ts:37](https://github.com/BuuhV-Projects/cortex-
 
 > **new Speedometer**(`options?`): `Speedometer`
 
-Defined in: [src/ui/Speedometer.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L47)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/Speedometer.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L47)
 
 #### Parameters
 
@@ -32,7 +32,7 @@ Defined in: [src/ui/Speedometer.ts:47](https://github.com/BuuhV-Projects/cortex-
 
 > `readonly` **el**: `HTMLDivElement`
 
-Defined in: [src/ui/Speedometer.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L39)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/Speedometer.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L39)
 
 O container do widget (pra estilizar/posicionar por fora se quiser).
 
@@ -42,7 +42,7 @@ O container do widget (pra estilizar/posicionar por fora se quiser).
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/Speedometer.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L127)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/Speedometer.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L127)
 
 Remove o widget do DOM.
 
@@ -56,7 +56,7 @@ Remove o widget do DOM.
 
 > **setVisible**(`visible`): `void`
 
-Defined in: [src/ui/Speedometer.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L122)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/Speedometer.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L122)
 
 Mostra/esconde o velocímetro (ex.: só ao dirigir).
 
@@ -76,7 +76,7 @@ Mostra/esconde o velocímetro (ex.: só ao dirigir).
 
 > **update**(`speedMetersPerSecond`): `void`
 
-Defined in: [src/ui/Speedometer.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L110)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/Speedometer.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/Speedometer.ts#L110)
 
 Atualiza a agulha + o texto a partir da velocidade em **m/s**.
 

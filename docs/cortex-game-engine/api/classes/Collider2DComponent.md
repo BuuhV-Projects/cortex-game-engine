@@ -6,7 +6,7 @@
 
 # Class: Collider2DComponent
 
-Defined in: [src/components/Collider2DComponent.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L34)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L34)
 
 Colisor 2D do plataformer (plano **XY**), centrado na posição do
 [TransformComponent](TransformComponent.md) **+ um offset** (`offsetX`/`offsetY`). `shape` define
@@ -32,7 +32,7 @@ Distinto do `ColliderComponent` 3D (box/sphere/capsule) do physics de impulso
 
 > **new Collider2DComponent**(`halfWidth?`, `halfHeight?`, `solid?`, `oneWay?`, `offsetX?`, `offsetY?`, `shape?`, `points?`): `Collider2DComponent`
 
-Defined in: [src/components/Collider2DComponent.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L35)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L35)
 
 #### Parameters
 
@@ -100,7 +100,7 @@ Pontos do perfil (LOCAL, relativos ao centro = Transform + offset),
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -114,7 +114,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **halfHeight**: `number` = `0.5`
 
-Defined in: [src/components/Collider2DComponent.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L39)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L39)
 
 Metade da altura (Y).
 
@@ -124,7 +124,7 @@ Metade da altura (Y).
 
 > **halfWidth**: `number` = `0.5`
 
-Defined in: [src/components/Collider2DComponent.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L37)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L37)
 
 Metade da largura (X) — também o **raio** quando `shape` é circle/capsule.
 
@@ -134,7 +134,7 @@ Metade da largura (X) — também o **raio** quando `shape` é circle/capsule.
 
 > **offsetX**: `number` = `0`
 
-Defined in: [src/components/Collider2DComponent.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L45)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L45)
 
 Offset do centro em X, relativo ao Transform. Default `0`.
 
@@ -144,7 +144,7 @@ Offset do centro em X, relativo ao Transform. Default `0`.
 
 > **offsetY**: `number` = `0`
 
-Defined in: [src/components/Collider2DComponent.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L47)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L47)
 
 Offset do centro em Y, relativo ao Transform. Default `0`.
 
@@ -154,7 +154,7 @@ Offset do centro em Y, relativo ao Transform. Default `0`.
 
 > **oneWay**: `boolean` = `false`
 
-Defined in: [src/components/Collider2DComponent.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L43)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L43)
 
 Plataforma de mão única: só colide vindo de cima (atravessa por baixo).
 
@@ -164,7 +164,7 @@ Plataforma de mão única: só colide vindo de cima (atravessa por baixo).
 
 > `optional` **points?**: readonly readonly \[`number`, `number`\][]
 
-Defined in: [src/components/Collider2DComponent.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L55)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L55)
 
 Pontos do perfil (LOCAL, relativos ao centro = Transform + offset),
 **ordenados por X**. Só usado quando `shape` é `heightfield`. Ex.:
@@ -176,7 +176,7 @@ Pontos do perfil (LOCAL, relativos ao centro = Transform + offset),
 
 > **shape**: [`ColliderShape2D`](../type-aliases/ColliderShape2D.md) = `'box'`
 
-Defined in: [src/components/Collider2DComponent.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L49)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L49)
 
 Forma do collider. Default `box`. Ver [ColliderShape2D](../type-aliases/ColliderShape2D.md).
 
@@ -186,7 +186,7 @@ Forma do collider. Default `box`. Ver [ColliderShape2D](../type-aliases/Collider
 
 > **solid**: `boolean` = `true`
 
-Defined in: [src/components/Collider2DComponent.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L41)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L41)
 
 Participa da colisão como sólido (chão/parede/plataforma).
 
@@ -198,7 +198,7 @@ Participa da colisão como sólido (chão/parede/plataforma).
 
 > **get** **type**(): `string`
 
-Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

@@ -4,6 +4,7 @@ import type { Entity } from '../ecs/Entity.js';
 import type { RapierPhysics, Vehicle } from '../physics/RapierPhysics.js';
 import type { GamepadManager } from '../core/GamepadManager.js';
 import type { InputManager } from '../core/InputManager.js';
+import type { InputActions } from '../input/InputActions.js';
 
 /** Opções do {@link VehicleControlSystem}. */
 export interface VehicleControlOptions {
@@ -63,6 +64,13 @@ export interface VehicleControlOptions {
   active?: () => boolean;
   /** Pausa total (ex.: `() => game.editorActive`). */
   pauseWhen?: () => boolean;
+  /**
+   * **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra dirigir
+   * pelas ações `accelerate`/`brake`/`handbrake` + `moveLeft`/`moveRight`
+   * (grupo `vehicle` da tela de Controles). Sem isso, valem RT/LT/stick e o
+   * fallback WASD fixos.
+   */
+  actions?: InputActions;
 }
 
 const _fwd = new Vector3();
@@ -116,11 +124,13 @@ export class VehicleControlSystem extends System {
       // Gamepad-first; o teclado PREENCHE quando o controle está ocioso — sem controle
       // OU controle-fantasma "conectado" mas parado (Electron às vezes reporta um). Por
       // isso combinamos em vez de travar em `isConnected`: assim o teclado sempre dirige.
-      let accel = this.gamepad.getButtonValue(0, 7); // RT
-      let brakeIn = this.gamepad.getButtonValue(0, 6); // LT
-      let steerIn = this.gamepad.getAxis(0, 0);
-      let handbrake = this.gamepad.isButtonDown(0, 0); // A = freio de mão (controle)
-      if (this.input) {
+      const acts = this.options.actions;
+      let accel = acts ? acts.value('accelerate') : this.gamepad.getButtonValue(0, 7); // RT
+      let brakeIn = acts ? acts.value('brake') : this.gamepad.getButtonValue(0, 6); // LT
+      let steerIn = acts ? acts.axis('moveLeft', 'moveRight') : this.gamepad.getAxis(0, 0);
+      let handbrake = acts ? acts.isDown('handbrake') : this.gamepad.isButtonDown(0, 0); // A
+      // Com mapa de ações, teclado e controle já entram juntos pelos bindings.
+      if (this.input && !acts) {
         const k = this.input;
         if (accel < 0.05 && (k.isKeyDown('w') || k.isKeyDown('ArrowUp'))) accel = 1;
         if (brakeIn < 0.05 && (k.isKeyDown('s') || k.isKeyDown('ArrowDown'))) brakeIn = 1;
@@ -221,8 +231,10 @@ export class VehicleControlSystem extends System {
       dPitch += md.y * (o.lookSensitivity ?? 0.0022); // mesmo sinal do 3ª pessoa (não inverter)
     }
     const padLook = o.padLookSpeed ?? 2.5;
-    dYaw -= this.gamepad.getAxis(0, 2) * padLook * dt;
-    dPitch += (o.invertLookY ? -1 : 1) * this.gamepad.getAxis(0, 3) * padLook * dt;
+    const lookX = o.actions ? o.actions.axis('lookLeft', 'lookRight') : this.gamepad.getAxis(0, 2);
+    const lookY = o.actions ? o.actions.axis('lookUp', 'lookDown') : this.gamepad.getAxis(0, 3);
+    dYaw -= lookX * padLook * dt;
+    dPitch += (o.invertLookY ? -1 : 1) * lookY * padLook * dt;
 
     const looking = Math.abs(dYaw) > 1e-4 || Math.abs(dPitch) > 1e-4;
     this.camYaw += dYaw;

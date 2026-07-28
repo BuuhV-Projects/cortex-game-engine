@@ -6,7 +6,7 @@
 
 # Interface: Vec3Like
 
-Defined in: [src/physics/RapierPhysics.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L29)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L29)
 
 Vetor 3 simples (sem depender de three nem do Rapier).
 
@@ -16,7 +16,7 @@ Vetor 3 simples (sem depender de three nem do Rapier).
 
 > **x**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L30)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L30)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/physics/RapierPhysics.ts:30](https://github.com/BuuhV-Projects/
 
 > **y**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L31)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L31)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [src/physics/RapierPhysics.ts:31](https://github.com/BuuhV-Projects/
 
 > **z**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L32)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L32)

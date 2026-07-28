@@ -6,7 +6,7 @@
 
 # Class: TerrainComponent
 
-Defined in: [src/components/TerrainComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TerrainComponent.ts#L12)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TerrainComponent.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TerrainComponent.ts#L12)
 
 Marca uma entidade como **terreno colidível** — guarda o [Terrain](Terrain.md) (pra
 amostrar a altura) e o `Object3D` (pra converter mundo↔local respeitando
@@ -24,7 +24,7 @@ cada nó `terrain` quando há `world` (terreno é **sólido por padrão**).
 
 > **new TerrainComponent**(`terrain`, `object`): `TerrainComponent`
 
-Defined in: [src/components/TerrainComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TerrainComponent.ts#L13)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TerrainComponent.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TerrainComponent.ts#L13)
 
 #### Parameters
 
@@ -54,7 +54,7 @@ O mesh do terreno na cena — pra conversão de coordenadas mundo↔local.
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -68,7 +68,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > `readonly` **object**: `Object3D`
 
-Defined in: [src/components/TerrainComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TerrainComponent.ts#L17)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TerrainComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TerrainComponent.ts#L17)
 
 O mesh do terreno na cena — pra conversão de coordenadas mundo↔local.
 
@@ -78,7 +78,7 @@ O mesh do terreno na cena — pra conversão de coordenadas mundo↔local.
 
 > `readonly` **terrain**: [`Terrain`](Terrain.md)
 
-Defined in: [src/components/TerrainComponent.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TerrainComponent.ts#L15)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TerrainComponent.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TerrainComponent.ts#L15)
 
 O terreno (heightmap) — fonte da altura por `heightAt`.
 
@@ -90,7 +90,7 @@ O terreno (heightmap) — fonte da altura por `heightAt`.
 
 > **get** **type**(): `string`
 
-Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

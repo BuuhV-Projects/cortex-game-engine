@@ -6,7 +6,7 @@
 
 # Class: TopDownCameraSystem
 
-Defined in: [src/systems/TopDownCameraSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L46)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownCameraSystem.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L46)
 
 **Câmera top-down (vista de cima)** — pra jogos 2D de fazenda/RPG (estilo
 Stardew). Segue o alvo (entidade com [FollowCameraTargetComponent](FollowCameraTargetComponent.md)) no
@@ -36,7 +36,7 @@ game.world.addSystem(cam)
 
 > **new TopDownCameraSystem**(`camera`, `options?`): `TopDownCameraSystem`
 
-Defined in: [src/systems/TopDownCameraSystem.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L59)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownCameraSystem.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L59)
 
 #### Parameters
 
@@ -62,7 +62,7 @@ Defined in: [src/systems/TopDownCameraSystem.ts:59](https://github.com/BuuhV-Pro
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -79,7 +79,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -100,7 +100,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: [src/systems/TopDownCameraSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L48)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownCameraSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L48)
 
 Prioridade de execução deste sistema.
 
@@ -117,7 +117,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`FollowCameraTargetComponent`](FollowCameraTargetComponent.md))[]
 
-Defined in: [src/systems/TopDownCameraSystem.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L47)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownCameraSystem.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L47)
 
 Construtores dos componentes que este sistema requer.
 
@@ -143,7 +143,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -164,7 +164,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **setAngle**(`radians`): `void`
 
-Defined in: [src/systems/TopDownCameraSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L77)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownCameraSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L77)
 
 Muda a inclinação (0 = reto pra baixo) em runtime.
 
@@ -184,7 +184,7 @@ Muda a inclinação (0 = reto pra baixo) em runtime.
 
 > **setHeight**(`height`): `void`
 
-Defined in: [src/systems/TopDownCameraSystem.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L72)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownCameraSystem.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L72)
 
 Muda a distância/altura da câmera em runtime.
 
@@ -204,7 +204,7 @@ Muda a distância/altura da câmera em runtime.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/TopDownCameraSystem.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L81)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/TopDownCameraSystem.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/TopDownCameraSystem.ts#L81)
 
 Executa a lógica do sistema para o frame/passo atual.
 

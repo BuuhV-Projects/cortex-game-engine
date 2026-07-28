@@ -109,6 +109,8 @@ export async function setupVehicle(
     maxSteer: cfg.maxSteer ?? 0.85,
     maxSpeedKmh: cfg.maxSpeedKmh ?? 260,
     wheelObjects,
+    // Dirigir também segue os bindings do jogador (grupo `vehicle`) — ADR-0164.
+    actions: game.actions,
   };
   game.world.addSystem(
     new VehicleControlSystem(physics, vehicle, carObj, game.camera as PerspectiveCamera, game.gamepad, game.input, options),

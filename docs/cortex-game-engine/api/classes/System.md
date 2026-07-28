@@ -6,7 +6,7 @@
 
 # Abstract Class: System
 
-Defined in: [src/ecs/System.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L36)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L36)
 
 Classe base para todos os sistemas do ECS.
 
@@ -75,7 +75,7 @@ class MovementSystem extends System {
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -88,7 +88,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -105,7 +105,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `0`
 
-Defined in: [src/ecs/System.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L43)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L43)
 
 Prioridade de execução deste sistema.
 
@@ -118,7 +118,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `ComponentClass`[] = `[]`
 
-Defined in: [src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
 
 Construtores dos componentes que este sistema requer.
 
@@ -140,7 +140,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -157,7 +157,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > `abstract` **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/ecs/System.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L82)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L82)
 
 Executa a lógica do sistema para o frame/passo atual.
 

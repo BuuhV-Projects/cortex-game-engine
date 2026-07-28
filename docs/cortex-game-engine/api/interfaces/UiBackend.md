@@ -6,7 +6,7 @@
 
 # Interface: UiBackend
 
-Defined in: [src/ui/runtime/UiBackend.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L11)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiBackend.ts:11](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L11)
 
 ## Methods
 
@@ -14,7 +14,7 @@ Defined in: [src/ui/runtime/UiBackend.ts:11](https://github.com/BuuhV-Projects/c
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/UiBackend.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L23)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiBackend.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L23)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -28,7 +28,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/UiBackend.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L21)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiBackend.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L21)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
@@ -42,7 +42,7 @@ Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
 > **sync**(`widgets`, `viewport`, `scale?`): `void`
 
-Defined in: [src/ui/runtime/UiBackend.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L19)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiBackend.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiBackend.ts#L19)
 
 Sincroniza visuais com a lista de widgets (cria/atualiza/remove). O
 `viewport` é o de DESIGN (espaço lógico do layout, ver `layout.ts`); o

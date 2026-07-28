@@ -6,7 +6,7 @@
 
 # Interface: VehicleSpec
 
-Defined in: [src/physics/RapierPhysics.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L79)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L79)
 
 Config de [RapierPhysics.createVehicle](../classes/RapierPhysics.md#createvehicle) (ADR-0081).
 
@@ -16,7 +16,7 @@ Config de [RapierPhysics.createVehicle](../classes/RapierPhysics.md#createvehicl
 
 > `optional` **centerOfMass?**: [`Vec3Like`](Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L96)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L96)
 
 Centro de massa EXPLÍCITO (relativo à origem do corpo). **Baixo = anti-capotamento**
 (carro estável em curva rápida); ex.: `{x:0,y:0,z:0}` (nível das rodas) ou negativo.
@@ -29,7 +29,7 @@ do collider (no centro da caixa — alto, capota fácil).
 
 > `optional` **chassisFriction?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L106)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L106)
 
 Atrito do chassi ao raspar. Default 0.4.
 
@@ -39,7 +39,7 @@ Atrito do chassi ao raspar. Default 0.4.
 
 > **chassisHalfExtents**: [`Vec3Like`](Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L82)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L82)
 
 Meia-extensão do chassi (box collider) — ex.: carro 4.85×1.4×2.27 → {2.42,0.7,1.13}.
 
@@ -49,7 +49,7 @@ Meia-extensão do chassi (box collider) — ex.: carro 4.85×1.4×2.27 → {2.42
 
 > `optional` **chassisOffset?**: [`Vec3Like`](Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L89)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L89)
 
 Desloca a CAIXA do chassi em relação à origem do corpo (= origem do `.glb`).
 **Importante:** se a origem do modelo fica embaixo (nas rodas), suba a caixa
@@ -62,7 +62,7 @@ antes das rodas e o carro **flutua**. Default `{0,0,0}`.
 
 > `optional` **frictionSlip?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L115)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L115)
 
 Grip lateral/longitudinal. Maior = mais aderente (arcade). Default 2.5.
 
@@ -72,7 +72,7 @@ Grip lateral/longitudinal. Maior = mais aderente (arcade). Default 2.5.
 
 > `optional` **mass?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L104)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L104)
 
 Massa do chassi (kg). Default 1200.
 
@@ -82,7 +82,7 @@ Massa do chassi (kg). Default 1200.
 
 > `optional` **maxSuspensionTravel?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L113)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L113)
 
 ***
 
@@ -90,7 +90,7 @@ Defined in: [src/physics/RapierPhysics.ts:113](https://github.com/BuuhV-Projects
 
 > `optional` **position?**: [`Vec3Like`](Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L80)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L80)
 
 ***
 
@@ -98,7 +98,7 @@ Defined in: [src/physics/RapierPhysics.ts:80](https://github.com/BuuhV-Projects/
 
 > `optional` **suspensionCompression?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L111)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L111)
 
 ***
 
@@ -106,7 +106,7 @@ Defined in: [src/physics/RapierPhysics.ts:111](https://github.com/BuuhV-Projects
 
 > `optional` **suspensionRelaxation?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L112)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L112)
 
 ***
 
@@ -114,7 +114,7 @@ Defined in: [src/physics/RapierPhysics.ts:112](https://github.com/BuuhV-Projects
 
 > `optional` **suspensionRestLength?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L109)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L109)
 
 ***
 
@@ -122,7 +122,7 @@ Defined in: [src/physics/RapierPhysics.ts:109](https://github.com/BuuhV-Projects
 
 > `optional` **suspensionStiffness?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L110)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L110)
 
 ***
 
@@ -130,7 +130,7 @@ Defined in: [src/physics/RapierPhysics.ts:110](https://github.com/BuuhV-Projects
 
 > **wheels**: [`VehicleWheelSpec`](VehicleWheelSpec.md)[]
 
-Defined in: [src/physics/RapierPhysics.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L108)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L108)
 
 As rodas (tipicamente 4: FL/FR dianteiras steering, RL/RR traseiras powered).
 
@@ -140,7 +140,7 @@ As rodas (tipicamente 4: FL/FR dianteiras steering, RL/RR traseiras powered).
 
 > `optional` **yawInertiaScale?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L102)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L102)
 
 Escala da inércia de GUINADA (curva). `< 1` = carro mais ágil/leve pra virar (arcade);
 `1` = físico (pode dar entendimento — vira a roda mas o carro custa a rodar). Default 1.

@@ -5,6 +5,7 @@ import { TransformComponent } from '../components/TransformComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import type { InputManager } from '../core/InputManager.js';
+import type { InputActions } from '../input/InputActions.js';
 
 /** Opções do {@link FirstPersonCameraSystem}. */
 export interface FirstPersonCameraOptions {
@@ -21,6 +22,12 @@ export interface FirstPersonCameraOptions {
    * roda** pra poder restaurar a visibilidade do corpo ao voltar pro editor.
    */
   pauseWhen?: () => boolean;
+  /**
+   * **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra que
+   * andar e pular sigam os bindings do jogador. Sem isso, valem WASD/setas e
+   * Espaço fixos. `null` força o modo fixo mesmo indo pelo `setupFirstPerson`.
+   */
+  actions?: InputActions | null;
 }
 
 /** Limite do pitch (olhar p/ cima/baixo) — ~85°, evita virar de cabeça pra baixo. */
@@ -63,6 +70,8 @@ export class FirstPersonCameraSystem extends System {
   private readonly sensitivity: number;
   /** Pausa interna (NÃO é o `System.pauseWhen` — ver {@link FirstPersonCameraOptions.pauseWhen}). */
   private readonly shouldPause?: () => boolean;
+  /** Mapa de ações remapeáveis; `undefined` = teclas fixas de sempre. */
+  private readonly actions?: InputActions;
 
   /** Handler do `mousedown` no canvas — guardado pra remover no {@link dispose}. */
   private onCanvasMouseDown?: () => void;
@@ -85,6 +94,7 @@ export class FirstPersonCameraSystem extends System {
     this.eyeHeight = options.eyeHeight ?? 1.6;
     this.sensitivity = options.sensitivity ?? 0.0022;
     this.shouldPause = options.pauseWhen;
+    this.actions = options.actions ?? undefined;
 
     // Trava o cursor ao clicar no canvas (só no jogo — não enquanto o editor/pause
     // está ativo, pra não roubar o mouse de quem está editando no F2).
@@ -126,6 +136,7 @@ export class FirstPersonCameraSystem extends System {
       // Botão de pulo usado pra navegar o menu não pode virar borda no 1º
       // frame livre (pulo fantasma ao despausar) — SPEC-0156.
       this.prevJump = true;
+      this.actions?.consume('jump');
       return;
     }
 
@@ -158,10 +169,18 @@ export class FirstPersonCameraSystem extends System {
     const rx = cos, rz = -sin;
     let mx = 0, mz = 0;
     const k = this.input;
-    if (k.isKeyDown('w') || k.isKeyDown('ArrowUp')) { mx += fx; mz += fz; }
-    if (k.isKeyDown('s') || k.isKeyDown('ArrowDown')) { mx -= fx; mz -= fz; }
-    if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) { mx += rx; mz += rz; }
-    if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) { mx -= rx; mz -= rz; }
+    if (this.actions) {
+      // Por AÇÃO remapeável (ADR-0164): teclado e stick no mesmo caminho.
+      const strafe = this.actions.axis('moveLeft', 'moveRight');
+      const forward = this.actions.axis('moveBack', 'moveForward');
+      mx = fx * forward + rx * strafe;
+      mz = fz * forward + rz * strafe;
+    } else {
+      if (k.isKeyDown('w') || k.isKeyDown('ArrowUp')) { mx += fx; mz += fz; }
+      if (k.isKeyDown('s') || k.isKeyDown('ArrowDown')) { mx -= fx; mz -= fz; }
+      if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) { mx += rx; mz += rz; }
+      if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) { mx -= rx; mz -= rz; }
+    }
     const len = Math.hypot(mx, mz);
     if (len > 0) {
       const step = (this.moveSpeed * dt) / len;
@@ -171,8 +190,12 @@ export class FirstPersonCameraSystem extends System {
     t.rotationY = this.yaw;
 
     // ── Pulo (borda de pressão) ───────────────────────────────────────────────
-    const jumpDown = k.isKeyDown(' ');
-    if (jumpDown && !this.prevJump) body.jump();
-    this.prevJump = jumpDown;
+    if (this.actions) {
+      if (this.actions.pressed('jump')) body.jump();
+    } else {
+      const jumpDown = k.isKeyDown(' ');
+      if (jumpDown && !this.prevJump) body.jump();
+      this.prevJump = jumpDown;
+    }
   }
 }

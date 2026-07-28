@@ -8,7 +8,7 @@
 
 > **parseUiTemplate**(`source`): [`UiTemplate`](../classes/UiTemplate.md)
 
-Defined in: [src/ui/runtime/UiTemplate.ts:206](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L206)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/UiTemplate.ts:206](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/UiTemplate.ts#L206)
 
 Compila o texto de um template (erros claros de tag/atributo).
 

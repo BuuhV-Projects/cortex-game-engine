@@ -6,7 +6,7 @@
 
 # Interface: UiWidgetProps
 
-Defined in: [src/ui/runtime/widgets.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L15)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L15)
 
 Props comuns a todo widget (posicionamento ancorado + visibilidade).
 
@@ -16,7 +16,7 @@ Props comuns a todo widget (posicionamento ancorado + visibilidade).
 
 > `optional` **anchor?**: [`UiAnchor`](../type-aliases/UiAnchor.md)
 
-Defined in: [src/ui/runtime/widgets.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L16)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/ui/runtime/widgets.ts:16](https://github.com/BuuhV-Projects/cor
 
 > `optional` **height?**: `number`
 
-Defined in: [src/ui/runtime/widgets.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L20)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L20)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [src/ui/runtime/widgets.ts:20](https://github.com/BuuhV-Projects/cor
 
 > `optional` **opacity?**: `number`
 
-Defined in: [src/ui/runtime/widgets.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L22)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L22)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [src/ui/runtime/widgets.ts:22](https://github.com/BuuhV-Projects/cor
 
 > `optional` **visible?**: `boolean`
 
-Defined in: [src/ui/runtime/widgets.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L21)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L21)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [src/ui/runtime/widgets.ts:21](https://github.com/BuuhV-Projects/cor
 
 > `optional` **width?**: `number`
 
-Defined in: [src/ui/runtime/widgets.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L19)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L19)
 
 ***
 
@@ -56,7 +56,7 @@ Defined in: [src/ui/runtime/widgets.ts:19](https://github.com/BuuhV-Projects/cor
 
 > `optional` **x?**: `number`
 
-Defined in: [src/ui/runtime/widgets.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L17)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L17)
 
 ***
 
@@ -64,4 +64,4 @@ Defined in: [src/ui/runtime/widgets.ts:17](https://github.com/BuuhV-Projects/cor
 
 > `optional` **y?**: `number`
 
-Defined in: [src/ui/runtime/widgets.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L18)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L18)

@@ -4,6 +4,7 @@ import { InteractionComponent } from '../components/InteractionComponent.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import type { GamepadManager } from '../core/GamepadManager.js';
 import type { InputManager } from '../core/InputManager.js';
+import type { InputActions } from '../input/InputActions.js';
 
 /** Opções do {@link InteractionSystem}. */
 export interface InteractionSystemOptions {
@@ -20,6 +21,13 @@ export interface InteractionSystemOptions {
   key?: string;
   /** Pausa (ex.: `() => game.editorActive`). */
   pauseWhen?: () => boolean;
+  /**
+   * **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra usar a
+   * ação `interact` (e o que o jogador remapeou) em vez de `button`/`key`.
+   */
+  actions?: InputActions;
+  /** Id da ação usada quando `actions` é passado. Default `interact`. */
+  actionId?: string;
 }
 
 /**
@@ -74,6 +82,15 @@ export class InteractionSystem extends System {
       this.options.onPrompt?.(nearest);
     }
 
+    // Com mapa de ações, a borda vem do `pressed()` (polado pelo Game);
+    // sem ele, botão/tecla fixos com borda calculada aqui.
+    const actions = this.options.actions;
+    if (actions) {
+      if (actions.pressed(this.options.actionId ?? 'interact') && this.current) {
+        this.current.onInteract();
+      }
+      return;
+    }
     const pressed =
       (this.gamepad?.isButtonDown(0, this.options.button ?? 0) ?? false) ||
       (this.input?.isKeyDown(this.options.key ?? 'e') ?? false);

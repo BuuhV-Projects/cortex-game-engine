@@ -6,7 +6,7 @@
 
 # Interface: LoadingScreen
 
-Defined in: [src/core/LoadingScreen.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L13)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L13)
 
 ## Methods
 
@@ -14,7 +14,7 @@ Defined in: [src/core/LoadingScreen.ts:13](https://github.com/BuuhV-Projects/cor
 
 > **destroy**(): `void`
 
-Defined in: [src/core/LoadingScreen.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L18)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L18)
 
 Remove os elementos da tela (widgets do UiLayer / nó do DOM).
 
@@ -28,7 +28,7 @@ Remove os elementos da tela (widgets do UiLayer / nó do DOM).
 
 > **hide**(): `void`
 
-Defined in: [src/core/LoadingScreen.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L16)
 
 #### Returns
 
@@ -40,7 +40,7 @@ Defined in: [src/core/LoadingScreen.ts:16](https://github.com/BuuhV-Projects/cor
 
 > **setProgress**(`label`, `fraction`): `void`
 
-Defined in: [src/core/LoadingScreen.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L15)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L15)
 
 #### Parameters
 
@@ -62,7 +62,7 @@ Defined in: [src/core/LoadingScreen.ts:15](https://github.com/BuuhV-Projects/cor
 
 > **show**(): `void`
 
-Defined in: [src/core/LoadingScreen.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L14)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L14)
 
 #### Returns
 

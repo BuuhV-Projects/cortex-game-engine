@@ -29,6 +29,16 @@ const GP_DPAD_DOWN = 13;
 const GP_DPAD_LEFT = 14;
 const GP_DPAD_RIGHT = 15;
 
+/**
+ * O mínimo de `InputActions` que a navegação usa (tipo estrutural — evita
+ * acoplar a UI ao módulo de input). Só LÊ bordas: quem dirige o frame é que
+ * chama `actions.poll()` (o `Game` faz isso no `_tick`; telas com loop próprio
+ * fazem no loop delas).
+ */
+interface UiActionReader {
+  pressed(id: string): boolean;
+}
+
 export class UiLayer {
   private readonly _widgets: UiWidget[] = [];
   private readonly _backend: UiBackend;
@@ -36,6 +46,14 @@ export class UiLayer {
   private _focusIndex = -1;
   private _gamepadHeld = new Set<number>();
   private _pendingKeys: string[] = [];
+  /** Mapa de ações remapeável (ADR-0164); `null` = índices fixos de sempre. */
+  private _actions: UiActionReader | null = null;
+  /**
+   * Quando `false`, o `update()` só sincroniza o backend: nem teclado nem
+   * gamepad navegam. Usado pela tela de Controles enquanto captura um binding
+   * (senão a tecla capturada também navegaria o menu).
+   */
+  private _inputEnabled = true;
   /** Botão pressionado no `pointerdown` (só ativa se soltar SOBRE ele). */
   private _pointerDown: UiButton | null = null;
   private readonly _onKeyDown = (e: { key?: string }): void => {
@@ -131,13 +149,47 @@ export class UiLayer {
   }
 
   /**
+   * Liga a navegação dos menus ao mapa de ações remapeáveis (ADR-0164): d-pad,
+   * A e B passam a seguir `uiUp`/`uiDown`/`uiLeft`/`uiRight`/`uiConfirm`. Sem
+   * isso, a navegação usa os índices fixos do layout standard — e um controle
+   * genérico com outra ordem não navega o menu nem depois de remapeado.
+   *
+   * @param actions Mapa de ações (tipicamente `game.actions`), ou `null` pra voltar ao padrão.
+   */
+  useActions(actions: UiActionReader | null): void {
+    this._actions = actions;
+  }
+
+  /**
+   * Suspende (ou retoma) a navegação por teclado/gamepad. A tela de Controles
+   * desliga enquanto espera o jogador pressionar a tecla a mapear.
+   */
+  setInputEnabled(enabled: boolean): void {
+    this._inputEnabled = enabled;
+    if (!enabled) this._pendingKeys.length = 0;
+  }
+
+  /** A navegação por teclado/gamepad está ativa? */
+  get inputEnabled(): boolean {
+    return this._inputEnabled;
+  }
+
+  /**
    * Por frame: consome teclado (setas/Enter) e gamepad (d-pad/A) pra navegar
    * e ativar; depois sincroniza o backend. Chamado pelo `Game`.
    */
   update(_dt: number): void {
-    for (const key of this._pendingKeys) this._handleKey(key);
+    if (!this._inputEnabled) {
+      this._pendingKeys.length = 0;
+      this._syncBackend();
+      return;
+    }
+    // Com mapa de ações, o teclado já entra pelos bindings de `uiUp`/… — tratar
+    // a fila de teclas TAMBÉM faria a seta navegar duas vezes no mesmo frame.
+    if (!this._actions) for (const key of this._pendingKeys) this._handleKey(key);
     this._pendingKeys.length = 0;
-    this._pollGamepad();
+    if (this._actions) this._pollActions(this._actions);
+    else this._pollGamepad();
     this._syncBackend();
   }
 
@@ -271,6 +323,19 @@ export class UiLayer {
     else if (key === 'ArrowLeft') this.navigate(-1, 0);
     else if (key === 'ArrowRight') this.navigate(1, 0);
     else if (key === 'Enter' || key === ' ') this.activate();
+  }
+
+  /**
+   * Navegação pelo mapa de ações (teclado E gamepad num só caminho): as teclas
+   * já estão nos bindings de `uiUp`/`uiDown`/…, então o `_handleKey` fica fora
+   * — senão a seta navegaria duas vezes no mesmo frame.
+   */
+  private _pollActions(actions: UiActionReader): void {
+    if (actions.pressed('uiUp')) this.navigate(0, -1);
+    if (actions.pressed('uiDown')) this.navigate(0, 1);
+    if (actions.pressed('uiLeft')) this.navigate(-1, 0);
+    if (actions.pressed('uiRight')) this.navigate(1, 0);
+    if (actions.pressed('uiConfirm')) this.activate();
   }
 
   private _pollGamepad(): void {

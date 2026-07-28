@@ -39,11 +39,18 @@ export function setupThirdPerson(game: Game, options: SetupThirdPersonOptions = 
   // assim o jogo pode congelar o personagem em estados próprios (ex.: dirigindo um
   // carro) sem reimplementar o setup.
   const userPause = options.control?.pauseWhen;
+  // Ações remapeáveis por default (ADR-0164): quem passa `control.actions: null`
+  // fica nas teclas fixas. Os bindings de fábrica são as teclas de sempre.
+  const actions = options.control?.actions === null ? null : (options.control?.actions ?? game.actions);
   const control = new ThirdPersonControlSystem(
     game.camera as import('three').PerspectiveCamera,
     game.input,
     game.canvas,
-    { ...options.control, pauseWhen: () => game.editorActive || game.gameplayPaused || (userPause?.() ?? false) },
+    {
+      ...options.control,
+      actions,
+      pauseWhen: () => game.editorActive || game.gameplayPaused || (userPause?.() ?? false),
+    },
     game.gamepad,
     game.scene.getThreeScene(), // colisão de câmera (spring arm) contra a cena
   );

@@ -8,7 +8,7 @@
 
 > **createSprite**(`texture`, `options?`): `Mesh`
 
-Defined in: [src/scene/Sprite.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Sprite.ts#L56)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Sprite.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Sprite.ts#L56)
 
 Cria um **sprite 2D**: um quad (`PlaneGeometry`) no plano XY com a textura como
 material **unlit** (`MeshBasicMaterial`, sem iluminação/tonemap), transparente e

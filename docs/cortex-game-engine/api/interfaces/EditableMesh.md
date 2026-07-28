@@ -6,7 +6,7 @@
 
 # Interface: EditableMesh
 
-Defined in: [src/probuilder/EditableMesh.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/EditableMesh.ts#L19)
+Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/EditableMesh.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/EditableMesh.ts#L19)
 
 Uma malha poligonal editável: vértices + faces (cada face = lista ordenada de índices).
 
@@ -16,7 +16,7 @@ Uma malha poligonal editável: vértices + faces (cada face = lista ordenada de 
 
 > **faces**: `number`[][]
 
-Defined in: [src/probuilder/EditableMesh.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/EditableMesh.ts#L22)
+Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/EditableMesh.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/EditableMesh.ts#L22)
 
 Cada face é um polígono: índices em `positions`, em ordem (CCW = frente).
 
@@ -26,4 +26,4 @@ Cada face é um polígono: índices em `positions`, em ordem (CCW = frente).
 
 > **positions**: `Vec3`[]
 
-Defined in: [src/probuilder/EditableMesh.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/EditableMesh.ts#L20)
+Defined in: [.claude/worktrees/feat-input-rebind/src/probuilder/EditableMesh.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/probuilder/EditableMesh.ts#L20)

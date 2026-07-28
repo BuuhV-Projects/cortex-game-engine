@@ -34,7 +34,9 @@ export function setupPlatformer(game: Game, options: SetupPlatformerOptions = {}
 
   // Gameplay (física + input) PAUSA enquanto o editor (F2) está ativo — assim o
   // player não cai e os objetos não se mexem enquanto você edita.
-  const input = new PlatformerInputSystem(game.input);
+  // Ações remapeáveis por default (ADR-0164) — os bindings de fábrica são as
+  // mesmas teclas de sempre, então nada muda pra quem já usava.
+  const input = new PlatformerInputSystem(game.input, game.actions);
   input.pauseWhen = () => game.editorActive || game.gameplayPaused;
   game.world.addSystem(input);
 

@@ -6,7 +6,7 @@
 
 # Class: SceneAnimator
 
-Defined in: [src/scene/SceneAnimator.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L18)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L18)
 
 Controla as **animações de um modelo** da cena (clipes embutidos no `.glb`):
 escolher qual clipe toca, play/stop, loop e velocidade. Um `AnimationMixer` por
@@ -20,7 +20,7 @@ do editor. O inspector do editor lê/controla por aqui.
 
 > **new SceneAnimator**(`root`, `clips`): `SceneAnimator`
 
-Defined in: [src/scene/SceneAnimator.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L26)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L26)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: [src/scene/SceneAnimator.ts:26](https://github.com/BuuhV-Projects/co
 
 > `readonly` **clips**: `AnimationClip`[]
 
-Defined in: [src/scene/SceneAnimator.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L21)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L21)
 
 Clipes disponíveis (do glTF).
 
@@ -52,7 +52,7 @@ Clipes disponíveis (do glTF).
 
 > **current**: `string` \| `null` = `null`
 
-Defined in: [src/scene/SceneAnimator.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L24)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L24)
 
 Nome do clipe tocando agora, ou `null`.
 
@@ -62,7 +62,7 @@ Nome do clipe tocando agora, ou `null`.
 
 > `readonly` **mixer**: `AnimationMixer`
 
-Defined in: [src/scene/SceneAnimator.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L19)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L19)
 
 ## Methods
 
@@ -70,7 +70,7 @@ Defined in: [src/scene/SceneAnimator.ts:19](https://github.com/BuuhV-Projects/co
 
 > **clipNames**(): `string`[]
 
-Defined in: [src/scene/SceneAnimator.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L32)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L32)
 
 Nomes dos clipes (pro dropdown do editor).
 
@@ -84,7 +84,7 @@ Nomes dos clipes (pro dropdown do editor).
 
 > **play**(`name`, `options?`): `void`
 
-Defined in: [src/scene/SceneAnimator.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L37)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L37)
 
 Toca um clipe por nome (com crossfade do anterior). `loop`/`speed` opcionais.
 
@@ -108,7 +108,7 @@ Toca um clipe por nome (com crossfade do anterior). `loop`/`speed` opcionais.
 
 > **setSpeed**(`speed`): `void`
 
-Defined in: [src/scene/SceneAnimator.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L64)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L64)
 
 Velocidade do clipe atual em runtime.
 
@@ -128,7 +128,7 @@ Velocidade do clipe atual em runtime.
 
 > **stop**(): `void`
 
-Defined in: [src/scene/SceneAnimator.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L57)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L57)
 
 Para tudo (volta pro frame base).
 
@@ -142,7 +142,7 @@ Para tudo (volta pro frame base).
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: [src/scene/SceneAnimator.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L69)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/SceneAnimator.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAnimator.ts#L69)
 
 Avança o mixer. Chamado pelo loop (via `handle.update` do buildScene).
 

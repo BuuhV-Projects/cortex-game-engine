@@ -8,7 +8,7 @@
 
 > **ColliderShape2D** = `"box"` \| `"circle"` \| `"capsule"` \| `"heightfield"`
 
-Defined in: [src/components/Collider2DComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L17)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/Collider2DComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/Collider2DComponent.ts#L17)
 
 Forma do collider 2D do plataformer:
 - `box` — retângulo AABB (`halfWidth`×`halfHeight`). Padrão.

@@ -8,7 +8,7 @@
 
 > **autoMapPlayerClips**(`available`, `explicit?`): `Record`\<`string`, `string`\>
 
-Defined in: [src/systems/PlatformerAnimationSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerAnimationSystem.ts#L34)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/PlatformerAnimationSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerAnimationSystem.ts#L34)
 
 Completa um mapa ação→clipe **auto-mapeando pelos nomes** dos clipes disponíveis
 (idle→"Idle", run→"Running_A", jump→"Jump"…). O `explicit` (JSON/editor) tem

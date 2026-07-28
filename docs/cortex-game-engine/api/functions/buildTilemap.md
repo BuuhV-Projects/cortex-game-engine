@@ -8,7 +8,7 @@
 
 > **buildTilemap**(`options`): [`Tilemap`](../interfaces/Tilemap.md)
 
-Defined in: [src/scene/Tilemap.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Tilemap.ts#L62)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Tilemap.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Tilemap.ts#L62)
 
 Constrói uma **camada de tilemap**: um único `Mesh` (geometria mesclada) onde
 cada célula não-vazia é um quad com UV recortado no tileset. Unlit + nearest

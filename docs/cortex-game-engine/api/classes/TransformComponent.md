@@ -6,7 +6,7 @@
 
 # Class: TransformComponent
 
-Defined in: [src/components/TransformComponent.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L15)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TransformComponent.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L15)
 
 Transform "lógico" de uma entidade no plano XZ + altura Y.
 
@@ -29,7 +29,7 @@ efeito visual derivado, não estado de gameplay.
 
 > **new TransformComponent**(`x?`, `y?`, `z?`, `rotationY?`): `TransformComponent`
 
-Defined in: [src/components/TransformComponent.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TransformComponent.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L16)
 
 #### Parameters
 
@@ -63,7 +63,7 @@ Defined in: [src/components/TransformComponent.ts:16](https://github.com/BuuhV-P
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -77,7 +77,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **rotationY**: `number` = `0`
 
-Defined in: [src/components/TransformComponent.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L20)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TransformComponent.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L20)
 
 ***
 
@@ -85,7 +85,7 @@ Defined in: [src/components/TransformComponent.ts:20](https://github.com/BuuhV-P
 
 > **x**: `number` = `0`
 
-Defined in: [src/components/TransformComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L17)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TransformComponent.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L17)
 
 ***
 
@@ -93,7 +93,7 @@ Defined in: [src/components/TransformComponent.ts:17](https://github.com/BuuhV-P
 
 > **y**: `number` = `0`
 
-Defined in: [src/components/TransformComponent.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L18)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TransformComponent.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L18)
 
 ***
 
@@ -101,7 +101,7 @@ Defined in: [src/components/TransformComponent.ts:18](https://github.com/BuuhV-P
 
 > **z**: `number` = `0`
 
-Defined in: [src/components/TransformComponent.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L19)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/TransformComponent.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/TransformComponent.ts#L19)
 
 ## Accessors
 
@@ -111,7 +111,7 @@ Defined in: [src/components/TransformComponent.ts:19](https://github.com/BuuhV-P
 
 > **get** **type**(): `string`
 
-Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

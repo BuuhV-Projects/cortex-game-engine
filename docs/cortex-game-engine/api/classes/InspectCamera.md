@@ -6,7 +6,7 @@
 
 # Class: InspectCamera
 
-Defined in: [src/core/InspectCamera.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L37)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L37)
 
 **Câmera de inspeção** (SPEC-0131): uma câmera de perspectiva livre, separada da
 do jogo e da do editor, que pode ser posicionada/orbitada por código pra "ver"
@@ -35,7 +35,7 @@ game.inspect.clear()                                   // volta pra câmera do j
 
 > **new InspectCamera**(`fov?`): `InspectCamera`
 
-Defined in: [src/core/InspectCamera.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L47)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L47)
 
 #### Parameters
 
@@ -53,7 +53,7 @@ Defined in: [src/core/InspectCamera.ts:47](https://github.com/BuuhV-Projects/cor
 
 > **active**: `boolean` = `false`
 
-Defined in: [src/core/InspectCamera.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L41)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L41)
 
 `true` = o [Game](Game.md) deve renderizar por esta câmera. Alternado por `orbit/pose/frame/clear`.
 
@@ -63,7 +63,7 @@ Defined in: [src/core/InspectCamera.ts:41](https://github.com/BuuhV-Projects/cor
 
 > `readonly` **camera**: `PerspectiveCamera`
 
-Defined in: [src/core/InspectCamera.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L39)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L39)
 
 A câmera de perspectiva controlada. Renderiza só a layer 0 (helpers do editor ficam de fora).
 
@@ -73,7 +73,7 @@ A câmera de perspectiva controlada. Renderiza só a layer 0 (helpers do editor 
 
 > **clear**(): `void`
 
-Defined in: [src/core/InspectCamera.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L100)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L100)
 
 Desativa — o [Game](Game.md) volta a renderizar pela câmera do jogo/editor.
 
@@ -87,7 +87,7 @@ Desativa — o [Game](Game.md) volta a renderizar pela câmera do jogo/editor.
 
 > **frame**(`scene`): `void`
 
-Defined in: [src/core/InspectCamera.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L95)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L95)
 
 Enquadra a cena inteira do ângulo padrão (atalho de `orbit` sem parâmetros).
 
@@ -107,7 +107,7 @@ Enquadra a cena inteira do ângulo padrão (atalho de `orbit` sem parâmetros).
 
 > **orbit**(`scene`, `params?`): `void`
 
-Defined in: [src/core/InspectCamera.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L80)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L80)
 
 Orbita ao redor de um alvo pelos ângulos `yaw`/`pitch` a uma `dist` (auto se
 omitida). `scene` é a raiz cujo bbox é usado quando `target === 'scene'` ou
@@ -133,7 +133,7 @@ pra calcular a distância automática. Ativa a câmera.
 
 > **pose**(`pos`, `lookAt?`): `void`
 
-Defined in: [src/core/InspectCamera.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L69)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L69)
 
 Pose explícita: posiciona em `pos` olhando pra `lookAt` (default origem). Ativa a câmera.
 
@@ -157,7 +157,7 @@ readonly \[`number`, `number`, `number`\] = `...`
 
 > **setAspect**(`width`, `height`): `void`
 
-Defined in: [src/core/InspectCamera.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L53)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L53)
 
 Ajusta o aspect ao tamanho lógico do render (chamado pelo Game por frame quando ativa).
 
@@ -181,7 +181,7 @@ Ajusta o aspect ao tamanho lógico do render (chamado pelo Game por frame quando
 
 > **setFov**(`fov`): `void`
 
-Defined in: [src/core/InspectCamera.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L62)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InspectCamera.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InspectCamera.ts#L62)
 
 Troca o field of view (graus) e reativa.
 

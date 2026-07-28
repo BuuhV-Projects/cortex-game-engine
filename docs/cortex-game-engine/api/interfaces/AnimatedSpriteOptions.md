@@ -6,7 +6,7 @@
 
 # Interface: AnimatedSpriteOptions
 
-Defined in: [src/scene/Spritesheet.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L59)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L59)
 
 Opções de [createAnimatedSprite](../functions/createAnimatedSprite.md).
 
@@ -16,7 +16,7 @@ Opções de [createAnimatedSprite](../functions/createAnimatedSprite.md).
 
 > `optional` **alphaTest?**: `number`
 
-Defined in: [src/scene/Spritesheet.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L69)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L69)
 
 Recorte por alpha. Default `0.5`.
 
@@ -26,7 +26,7 @@ Recorte por alpha. Default `0.5`.
 
 > `optional` **height?**: `number`
 
-Defined in: [src/scene/Spritesheet.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L65)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L65)
 
 Altura em unidades.
 
@@ -36,7 +36,7 @@ Altura em unidades.
 
 > `optional` **initial?**: `string`
 
-Defined in: [src/scene/Spritesheet.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L67)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L67)
 
 Animação inicial.
 
@@ -46,7 +46,7 @@ Animação inicial.
 
 > `optional` **pixelsPerUnit?**: `number`
 
-Defined in: [src/scene/Spritesheet.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L61)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L61)
 
 Px por unidade pra dimensionar o sprite a partir do tamanho do frame. Default `100`.
 
@@ -56,6 +56,6 @@ Px por unidade pra dimensionar o sprite a partir do tamanho do frame. Default `1
 
 > `optional` **width?**: `number`
 
-Defined in: [src/scene/Spritesheet.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L63)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L63)
 
 Largura em unidades (sobrescreve o cálculo por `pixelsPerUnit`).

@@ -6,17 +6,38 @@
 
 # Interface: InteractionSystemOptions
 
-Defined in: [src/systems/InteractionSystem.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L10)
 
 Opções do [InteractionSystem](../classes/InteractionSystem.md).
 
 ## Properties
 
+### actionId?
+
+> `optional` **actionId?**: `string`
+
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L30)
+
+Id da ação usada quando `actions` é passado. Default `interact`.
+
+***
+
+### actions?
+
+> `optional` **actions?**: [`InputActions`](../classes/InputActions.md)
+
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L28)
+
+**Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra usar a
+ação `interact` (e o que o jogador remapeou) em vez de `button`/`key`.
+
+***
+
 ### button?
 
 > `optional` **button?**: `number`
 
-Defined in: [src/systems/InteractionSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L18)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L19)
 
 Botão do gamepad pra interagir. Default `0` (A).
 
@@ -26,7 +47,7 @@ Botão do gamepad pra interagir. Default `0` (A).
 
 > **interactor**: () => \{ `x`: `number`; `z`: `number`; \} \| `null`
 
-Defined in: [src/systems/InteractionSystem.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L14)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L15)
 
 Posição (XZ) do **interator ativo** — quem interage: player a pé OU carro, o que
 estiver no controle no momento. O jogo fornece (devolve `null` = ninguém interage).
@@ -41,7 +62,7 @@ estiver no controle no momento. O jogo fornece (devolve `null` = ninguém intera
 
 > `optional` **key?**: `string`
 
-Defined in: [src/systems/InteractionSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L20)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L21)
 
 Tecla pra interagir. Default `e`.
 
@@ -51,7 +72,7 @@ Tecla pra interagir. Default `e`.
 
 > `optional` **onPrompt?**: (`interaction`) => `void`
 
-Defined in: [src/systems/InteractionSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L17)
 
 Mostra/esconde o prompt na HUD; `null` = nada em alcance. O jogo renderiza.
 
@@ -71,7 +92,7 @@ Mostra/esconde o prompt na HUD; `null` = nada em alcance. O jogo renderiza.
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/systems/InteractionSystem.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L22)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L23)
 
 Pausa (ex.: `() => game.editorActive`).
 

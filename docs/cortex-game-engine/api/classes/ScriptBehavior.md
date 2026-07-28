@@ -6,7 +6,7 @@
 
 # Abstract Class: ScriptBehavior
 
-Defined in: [src/scripts/ScriptBehavior.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L59)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L59)
 
 **Base de comportamento anexável a um objeto** (estilo MonoBehaviour da Unity) — ADR-0085.
 
@@ -42,7 +42,7 @@ registerScript('Girar', Girar);
 
 > **ctx**: [`ScriptContext`](../interfaces/ScriptContext.md)
 
-Defined in: [src/scripts/ScriptBehavior.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L74)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L74)
 
 Handles do engine (world, input, gamepad, scene, camera). Injetado.
 
@@ -52,7 +52,7 @@ Handles do engine (world, input, gamepad, scene, camera). Injetado.
 
 > **entity**: [`Entity`](Entity.md)
 
-Defined in: [src/scripts/ScriptBehavior.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L70)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L70)
 
 A entidade ECS que hospeda este script (injetada).
 
@@ -62,7 +62,7 @@ A entidade ECS que hospeda este script (injetada).
 
 > **object3d**: `Object3D`\<`Object3DEventMap`\> \| `null` = `null`
 
-Defined in: [src/scripts/ScriptBehavior.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L72)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L72)
 
 O `Object3D` do nó ao qual o script está anexado (ou `null`). Injetado.
 
@@ -72,7 +72,7 @@ O `Object3D` do nó ao qual o script está anexado (ou `null`). Injetado.
 
 > `static` `optional` **fields?**: [`ScriptFieldSchema`](../type-aliases/ScriptFieldSchema.md)
 
-Defined in: [src/scripts/ScriptBehavior.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L134)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L134)
 
 Schema dos campos editáveis no Inspector — declare como `static fields` na subclasse.
 
@@ -82,7 +82,7 @@ Schema dos campos editáveis no Inspector — declare como `static fields` na su
 
 > `static` `optional` **scriptName?**: `string`
 
-Defined in: [src/scripts/ScriptBehavior.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L67)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L67)
 
 Nome do script no registro/Inspector (opcional). Com o auto-registro
 (`registerScripts` + glob), o default é o **nome do arquivo** (estilo
@@ -96,7 +96,7 @@ depois exige atualizar level.json/scene-data que o referenciam.
 
 > `protected` **disableRaycast**(`target?`): `void`
 
-Defined in: [src/scripts/ScriptBehavior.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L103)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L103)
 
 **Desliga o raycast de forma REVERSÍVEL** — o jeito certo de dizer "este mesh
 não é chão/parede" (lâmina, moeda, poça, decoração), sem que o character
@@ -125,7 +125,7 @@ Nó a silenciar com seus filhos. Default: o `object3d` do script.
 
 > `optional` **onDestroy**(): `void`
 
-Defined in: [src/scripts/ScriptBehavior.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L86)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L86)
 
 Chamado ao **parar o Play** (voltar ao editor), ao remover o script pelo
 Inspector ou ao destruir a entidade. Desfaça aqui o que o `onStart` mexeu
@@ -142,7 +142,7 @@ cria uma nova no próximo Play (ciclo estilo Unity).
 
 > `optional` **onStart**(): `void`
 
-Defined in: [src/scripts/ScriptBehavior.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L77)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L77)
 
 Chamado UMA vez, no primeiro frame de Play após o script existir.
 
@@ -156,7 +156,7 @@ Chamado UMA vez, no primeiro frame de Play após o script existir.
 
 > `optional` **onUpdate**(`dt`): `void`
 
-Defined in: [src/scripts/ScriptBehavior.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L79)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scripts/ScriptBehavior.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scripts/ScriptBehavior.ts#L79)
 
 Chamado todo frame de Play. `dt` em **segundos**.
 

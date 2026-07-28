@@ -6,7 +6,7 @@
 
 # Interface: UiFraction
 
-Defined in: [src/ui/runtime/layout.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L31)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L31)
 
 Fração [0..1] do pivô/âncora em cada eixo.
 
@@ -16,7 +16,7 @@ Fração [0..1] do pivô/âncora em cada eixo.
 
 > **fx**: `number`
 
-Defined in: [src/ui/runtime/layout.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L32)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L32)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: [src/ui/runtime/layout.ts:32](https://github.com/BuuhV-Projects/cort
 
 > **fy**: `number`
 
-Defined in: [src/ui/runtime/layout.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L33)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L33)

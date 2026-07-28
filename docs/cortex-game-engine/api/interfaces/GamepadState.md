@@ -6,7 +6,7 @@
 
 # Interface: GamepadState
 
-Defined in: [src/core/GamepadManager.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L24)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L24)
 
 Snapshot do estado de um gamepad em um determinado momento.
 Retornado por `getGamepad()`. Os arrays são cópias — mutar não afeta o
@@ -18,7 +18,7 @@ estado interno.
 
 > **axes**: `number`[]
 
-Defined in: [src/core/GamepadManager.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L36)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L36)
 
 Valor de cada eixo já com deadzone aplicada (-1.0 .. 1.0).
 
@@ -28,7 +28,7 @@ Valor de cada eixo já com deadzone aplicada (-1.0 .. 1.0).
 
 > **buttons**: `boolean`[]
 
-Defined in: [src/core/GamepadManager.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L32)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L32)
 
 Estado de cada botão (`true` = pressionado).
 
@@ -38,7 +38,7 @@ Estado de cada botão (`true` = pressionado).
 
 > **connected**: `boolean`
 
-Defined in: [src/core/GamepadManager.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L30)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L30)
 
 `true` enquanto o dispositivo estiver conectado.
 
@@ -48,7 +48,7 @@ Defined in: [src/core/GamepadManager.ts:30](https://github.com/BuuhV-Projects/co
 
 > **id**: `string`
 
-Defined in: [src/core/GamepadManager.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L28)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L28)
 
 Identificador do dispositivo (vendor/product).
 
@@ -58,7 +58,7 @@ Identificador do dispositivo (vendor/product).
 
 > **index**: `number`
 
-Defined in: [src/core/GamepadManager.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L26)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L26)
 
 Índice do slot (0..3).
 
@@ -68,6 +68,6 @@ Defined in: [src/core/GamepadManager.ts:26](https://github.com/BuuhV-Projects/co
 
 > **values**: `number`[]
 
-Defined in: [src/core/GamepadManager.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L34)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/GamepadManager.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/GamepadManager.ts#L34)
 
 Valor analógico de cada botão (0..1) — útil pros gatilhos LT/RT.

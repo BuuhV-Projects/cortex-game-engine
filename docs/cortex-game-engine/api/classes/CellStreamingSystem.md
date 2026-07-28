@@ -6,7 +6,7 @@
 
 # Class: CellStreamingSystem
 
-Defined in: [src/scene/Streaming.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L72)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L72)
 
 Classe base para todos os sistemas do ECS.
 
@@ -46,7 +46,7 @@ class MovementSystem extends System {
 
 > **new CellStreamingSystem**(`cells`, `opts`): `CellStreamingSystem`
 
-Defined in: [src/scene/Streaming.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L84)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L84)
 
 #### Parameters
 
@@ -72,7 +72,7 @@ Defined in: [src/scene/Streaming.ts:84](https://github.com/BuuhV-Projects/cortex
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -89,7 +89,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -110,7 +110,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `-1000`
 
-Defined in: [src/scene/Streaming.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L74)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L74)
 
 Roda ANTES de tudo — o render vê a residência já atualizada neste frame.
 
@@ -124,7 +124,7 @@ Roda ANTES de tudo — o render vê a residência já atualizada neste frame.
 
 > `static` **requiredComponents**: `ComponentClass`[] = `[]`
 
-Defined in: [src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L65)
 
 Construtores dos componentes que este sistema requer.
 
@@ -152,7 +152,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **get** **loadingCount**(): `number`
 
-Defined in: [src/scene/Streaming.ts:167](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L167)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:167](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L167)
 
 Nº de células ainda CARREGANDO (onLoad async não terminou) — pra tela de loading.
 
@@ -168,7 +168,7 @@ Nº de células ainda CARREGANDO (onLoad async não terminou) — pra tela de lo
 
 > **get** **resident**(): `ReadonlySet`\<`string`\>
 
-Defined in: [src/scene/Streaming.ts:152](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L152)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:152](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L152)
 
 Chaves residentes agora (desejadas — inclui as ainda carregando).
 
@@ -184,7 +184,7 @@ Chaves residentes agora (desejadas — inclui as ainda carregando).
 
 > **get** **residentCount**(): `number`
 
-Defined in: [src/scene/Streaming.ts:162](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L162)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:162](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L162)
 
 Nº de células residentes (desejadas) agora.
 
@@ -198,7 +198,7 @@ Nº de células residentes (desejadas) agora.
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -219,7 +219,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **isResident**(`key`): `boolean`
 
-Defined in: [src/scene/Streaming.ts:157](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L157)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:157](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L157)
 
 A célula `key` é desejada agora? (o app confere antes de adicionar à cena.)
 
@@ -239,7 +239,7 @@ A célula `key` é desejada agora? (o app confere antes de adicionar à cena.)
 
 > **step**(`cam`): `void`
 
-Defined in: [src/scene/Streaming.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L103)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L103)
 
 Passo puro do streaming (testável): descarrega o que saiu de `raio+histerese`
 e carrega, por distância e até o orçamento, o que entrou no raio.
@@ -260,7 +260,7 @@ e carrega, por distância e até o orçamento, o que entrou no raio.
 
 > **update**(): `void`
 
-Defined in: [src/scene/Streaming.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L95)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Streaming.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Streaming.ts#L95)
 
 Executa a lógica do sistema para o frame/passo atual.
 

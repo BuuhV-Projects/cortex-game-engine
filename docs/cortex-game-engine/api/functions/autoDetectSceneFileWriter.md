@@ -8,7 +8,7 @@
 
 > **autoDetectSceneFileWriter**(`options?`): [`SceneFileWriter`](../interfaces/SceneFileWriter.md) \| `null`
 
-Defined in: [src/io/autoDetectSceneFileWriter.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/autoDetectSceneFileWriter.ts#L14)
+Defined in: [.claude/worktrees/feat-input-rebind/src/io/autoDetectSceneFileWriter.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/io/autoDetectSceneFileWriter.ts#L14)
 
 Escolhe o writer conforme o ambiente em runtime (sem `import.meta.env`, que
 seria avaliado no build do engine, não no do jogo):

@@ -496,6 +496,16 @@ const VENDOR_TYPE_MODULES = {
     'Skybox',
     'PostFX',
     'debug',
+    'gamePlatform',
+  ],
+  // Ações de input remapeáveis + tela de Controles (ADR-0164 / SPEC-0165).
+  input: [
+    'bindings',
+    'padLayout',
+    'defaultActions',
+    'InputActions',
+    'captureBinding',
+    'ControlsScreen',
   ],
   ecs: ['Entity', 'Component', 'System', 'World'],
   components: [

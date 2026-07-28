@@ -1,3 +1,29 @@
+# [0.39.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.38.0...v0.39.0) (2026-07-28)
+
+
+### Bug Fixes
+
+* **core:** anisotropia 8 nas texturas de modelos GLTF/FBX (moiré em pente nos decks — SPEC-0160) ([bc0a6fa](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bc0a6fa03745f6e20dfdf9fa28ba7685f1ce74ef))
+* **kits:** banda de contato estreita no Borracha (bounce fantasma sob plataforma) ([6206236](https://github.com/BuuhV-Projects/cortex-game-engine/commit/620623671e6a64a1de6ddcb9640c28b280b4598a))
+* **kits:** dither de 1 LSB no atlas do platformer-obstacles (banding nos decks) + parser do export-game aceita posicional sem --out (SPEC-0160) ([a1fad44](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a1fad44c83c2bb528d86b364bacab8cd267840d0))
+* **physics:** água fora do raycast de chão do Character (SPEC-0163) ([c93aa7a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c93aa7affade074f913923f0d95a82dab90f4c63))
+* **scene:** collider derivado do bbox segue o centro real (pivô excêntrico — SPEC-0161) ([346bab9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/346bab98d54ab260b4171e265560864574a50475))
+
+
+### Features
+
+* **kits:** esteira anima por onda de luz — setas em nós _arrow_N individuais ([919a2cb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/919a2cbe753ecb1e7ccf4b5fb969ced419db703d))
+* **kits:** modo overlay no Esteira — correia anima em peça de ATLAS (obstacle_9 do aquapark) ([4c3db11](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4c3db111c798532708e529e1632ea404d926a0c0))
+* **kits:** pivô central nas platform_001..027 do platformer-obstacles (SPEC-0162) ([2a3a806](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2a3a8061696ef5c31b52ff408c8a6b5b158ef6a0))
+* **kits:** PlataformaGiratoria ganha campo 'solido' (cortexSolid sem entidade) — sync do teste4 ([2d45567](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2d45567faed92d97aeb53a4cd334f934ee58f403))
+* **kits:** script Borracha + semântica rubber/inflatable/rescue no platformer-obstacles (SPEC-0158) ([f64ec13](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f64ec1351a03b10849b903758f76efa14119364d))
+* **kits:** setas da esteira (obstacle_9) em nó filho animável + Esteira move com wrap (fim do overlay) ([702daf4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/702daf4eec2583b5c97633c0dd9a6b8533767508))
+
+
+### Reverts
+
+* **kits:** atlas do platformer-obstacles de volta ao original (dither não resolvia — SPEC-0160) ([d42c88e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d42c88ec2f0e38db75cb1e4190c5dcafcf23b812))
+
 # [0.38.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.37.0...v0.38.0) (2026-07-27)
 
 
