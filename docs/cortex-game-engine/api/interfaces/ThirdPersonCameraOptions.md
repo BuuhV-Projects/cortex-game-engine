@@ -6,7 +6,7 @@
 
 # Interface: ThirdPersonCameraOptions
 
-Defined in: [src/systems/ThirdPersonCameraSystem.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L10)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/ThirdPersonCameraSystem.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L10)
 
 Opções do [ThirdPersonCameraSystem](../classes/ThirdPersonCameraSystem.md).
 
@@ -16,7 +16,7 @@ Opções do [ThirdPersonCameraSystem](../classes/ThirdPersonCameraSystem.md).
 
 > `optional` **behind?**: `number`
 
-Defined in: [src/systems/ThirdPersonCameraSystem.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L12)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/ThirdPersonCameraSystem.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L12)
 
 Distância atrás do alvo (no eixo do heading). Default 5.5.
 
@@ -26,7 +26,7 @@ Distância atrás do alvo (no eixo do heading). Default 5.5.
 
 > `optional` **height?**: `number`
 
-Defined in: [src/systems/ThirdPersonCameraSystem.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L14)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/ThirdPersonCameraSystem.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L14)
 
 Altura acima do alvo. Default 2.2.
 
@@ -36,7 +36,7 @@ Altura acima do alvo. Default 2.2.
 
 > `optional` **lookAhead?**: `number`
 
-Defined in: [src/systems/ThirdPersonCameraSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/ThirdPersonCameraSystem.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L16)
 
 Distância à frente do alvo pra onde a câmera olha. Default 10.
 
@@ -46,7 +46,7 @@ Distância à frente do alvo pra onde a câmera olha. Default 10.
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/systems/ThirdPersonCameraSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L20)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/ThirdPersonCameraSystem.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L20)
 
 Quando retorna `true`, o sistema é pulado (ex.: modo editor).
 
@@ -60,6 +60,6 @@ Quando retorna `true`, o sistema é pulado (ex.: modo editor).
 
 > `optional` **smoothness?**: `number`
 
-Defined in: [src/systems/ThirdPersonCameraSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L18)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/ThirdPersonCameraSystem.ts:18](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonCameraSystem.ts#L18)
 
 Fator do lerp exponencial — menor = mais "preguiçosa"/suave. Default 9.

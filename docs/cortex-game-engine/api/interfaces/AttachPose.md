@@ -6,7 +6,7 @@
 
 # Interface: AttachPose
 
-Defined in: [src/scene/Kit.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L110)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Kit.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L110)
 
 Pose (subset) de um nó já instanciado, usada na resolução de `attach`.
 
@@ -16,7 +16,7 @@ Pose (subset) de um nó já instanciado, usada na resolução de `attach`.
 
 > **position**: [`Vec3`](../type-aliases/Vec3.md)
 
-Defined in: [src/scene/Kit.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L111)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Kit.ts:111](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L111)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/scene/Kit.ts:111](https://github.com/BuuhV-Projects/cortex-game
 
 > **rotationY**: `number`
 
-Defined in: [src/scene/Kit.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L113)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Kit.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L113)
 
 Rotação Y (rad) — encaixe alinha só o yaw (contexto plataforma/chão).
 
@@ -34,4 +34,4 @@ Rotação Y (rad) — encaixe alinha só o yaw (contexto plataforma/chão).
 
 > **scale**: [`Vec3`](../type-aliases/Vec3.md)
 
-Defined in: [src/scene/Kit.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L114)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Kit.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Kit.ts#L114)

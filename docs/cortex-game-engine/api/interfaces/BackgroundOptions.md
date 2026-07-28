@@ -6,7 +6,7 @@
 
 # Interface: BackgroundOptions
 
-Defined in: [src/scene/Background.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L14)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L14)
 
 Opções de [Background](../classes/Background.md).
 
@@ -16,7 +16,7 @@ Opções de [Background](../classes/Background.md).
 
 > `optional` **distance?**: `number`
 
-Defined in: [src/scene/Background.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L23)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L23)
 
 Distância no Z **atrás** da câmera. Default `40`.
 
@@ -26,7 +26,7 @@ Distância no Z **atrás** da câmera. Default `40`.
 
 > `optional` **height?**: `number`
 
-Defined in: [src/scene/Background.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L25)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L25)
 
 Altura do backdrop em unidades de mundo (cobre a vista vertical). Default `30`.
 
@@ -36,7 +36,7 @@ Altura do backdrop em unidades de mundo (cobre a vista vertical). Default `30`.
 
 > `optional` **parallax?**: `number`
 
-Defined in: [src/scene/Background.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L21)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L21)
 
 Fator de **parallax** (0–1): quão rápido o cenário acompanha a câmera.
 `0` = travado na tela (infinitamente longe); `1` = anda junto com o mundo
@@ -48,7 +48,7 @@ Fator de **parallax** (0–1): quão rápido o cenário acompanha a câmera.
 
 > **url**: `string`
 
-Defined in: [src/scene/Background.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L16)
 
 URL da imagem (jpg/png) — o backdrop. Tileável na horizontal pra scroll sem emenda.
 
@@ -58,6 +58,6 @@ URL da imagem (jpg/png) — o backdrop. Tileável na horizontal pra scroll sem e
 
 > `optional` **widthFactor?**: `number`
 
-Defined in: [src/scene/Background.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L27)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Background.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Background.ts#L27)
 
 Largura em múltiplos da altura (cobre a vista horizontal; tiles quadrados). Default `2.6`.

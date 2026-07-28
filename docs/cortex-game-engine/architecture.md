@@ -554,6 +554,45 @@ dado, como o diálogo do §8b):
   pro `dist-native/` (fora do `assets.pak`) de propósito — tradução/ajuste sem
   rebuild.
 
+## 8d. Input por AÇÃO + remapeamento (`src/input/`) — ADR-0164 / SPEC-0165
+
+Camada **opcional** entre os dispositivos crus (`InputManager`, `GamepadManager`)
+e o gameplay: o jogo lê **ações nomeadas** (`jump`, `moveForward`, `uiConfirm`)
+em vez de teclas, e o jogador remapeia essas ações numa tela de Controles que só
+existe no export **PC/Steam**. Nasceu do caso real "controle genérico com os
+botões em outra ordem — nada funciona".
+
+- **Modelo**: toda ação é um booleano com valor analógico; **eixo é um par**
+  (`actions.axis('moveLeft','moveRight')`). Uma ação bindada a eixo de stick
+  responde `value()` pela magnitude, então o analógico não se perde.
+- **Binding** (`bindings.ts`): `key:<tecla>` · `pad:<n>` · `axis:<n>±` ·
+  `mouse:<n>`. Teclas que colidem com o formato têm token (`Space`, `Comma`).
+- **Catálogo** (`defaultActions.ts`): só o **mínimo** que os sistemas da engine
+  consomem, em grupos (`move`, `look`, `action`, `ui`, `vehicle`). Ação de
+  gameplay específica é do JOGO (`actions.define(...)`) — o ADR-0066 continua
+  valendo nessa parte.
+- **Persistência**: seção `[input]` do `config.ini` (§8c), **só o diff** contra
+  os defaults; linha malformada é ignorada (arquivo é editável à mão).
+- **Sistemas**: `ThirdPersonControlSystem`, `PlatformerInputSystem`,
+  `FirstPersonCameraSystem`, `VehicleControlSystem` e `InteractionSystem` aceitam
+  `actions` nas opções. **Sem** ele, mantêm as teclas fixas de sempre; os
+  `setup*` passam `game.actions` por default (`actions: null` volta ao legado).
+  `game.actions` é polado 1×/frame no `_tick`, logo depois do `gamepad.poll()` —
+  é o que dá borda correta ao `pressed()`.
+- **Menus**: `ui.useActions(game.actions)` faz d-pad/A/B seguirem
+  `uiUp`/`uiDown`/`uiConfirm`/… (senão o pad genérico não navega nem depois de
+  remapeado). `ui.setInputEnabled(false)` suspende a navegação enquanto a tela
+  espera a tecla a mapear.
+- **Gate de plataforma**: `export-game.mjs` grava `platform` no `cortex.json`
+  (`steam`/`xbox`/`pc`); `gamePlatform()` lê por fetch e `canRebindInput()`
+  decide. Campo ausente = `pc` (Studio/browser mostram a tela pra teste).
+
+⚠️ **Armadilha (fase 2)**: controle genérico que o **host nativo não reconhece**
+não aparece como gamepad nenhum — `SDL_OpenGamepad` só abre dispositivo do banco
+de mapeamentos do SDL (`native/src/shims/input.cpp`), então não há o que
+remapear. O fix (joystick cru + `SDL_AddGamepadMappingsFromFile`) é trabalho no
+`native/` e ainda não foi feito.
+
 ## 9. Logging de debug (`src/core/debug.ts`)
 
 **Sempre use `debug(escopo, ...)` no lugar de `console.log` cru.** Fica desligado por
@@ -577,6 +616,7 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (SPEC-0071) |
 | Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) |
+| Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) |

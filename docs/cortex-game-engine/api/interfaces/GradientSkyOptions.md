@@ -6,7 +6,7 @@
 
 # Interface: GradientSkyOptions
 
-Defined in: [src/core/Skybox.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L51)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L51)
 
 Opções do [Skybox.fromGradient](../classes/Skybox.md#fromgradient) (céu gradiente procedural).
 
@@ -16,7 +16,7 @@ Opções do [Skybox.fromGradient](../classes/Skybox.md#fromgradient) (céu gradi
 
 > `optional` **bottom?**: `string` \| `number`
 
-Defined in: [src/core/Skybox.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L57)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L57)
 
 Cor abaixo do horizonte (chão/IBL).
 
@@ -32,7 +32,7 @@ Cor abaixo do horizonte (chão/IBL).
 
 > `optional` **environmentIntensity?**: `number`
 
-Defined in: [src/core/Skybox.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L61)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L61)
 
 Intensidade da luz que o céu lança (environment).
 
@@ -48,7 +48,7 @@ Intensidade da luz que o céu lança (environment).
 
 > `optional` **middle?**: `string` \| `number`
 
-Defined in: [src/core/Skybox.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L55)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L55)
 
 Cor do horizonte (meio).
 
@@ -64,7 +64,7 @@ Cor do horizonte (meio).
 
 > `optional` **resolution?**: `number`
 
-Defined in: [src/core/Skybox.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L59)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L59)
 
 Resolução vertical do gradiente.
 
@@ -80,7 +80,7 @@ Resolução vertical do gradiente.
 
 > `optional` **top?**: `string` \| `number`
 
-Defined in: [src/core/Skybox.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L53)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Skybox.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L53)
 
 Cor do zênite (topo).
 

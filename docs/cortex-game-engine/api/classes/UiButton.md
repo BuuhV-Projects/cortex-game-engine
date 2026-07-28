@@ -6,7 +6,7 @@
 
 # Class: UiButton
 
-Defined in: [src/ui/runtime/widgets.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L134)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L134)
 
 Botão focável: Label + fundo + `onPress` (Enter/A com foco).
 
@@ -20,7 +20,7 @@ Botão focável: Label + fundo + `onPress` (Enter/A com foco).
 
 > **new UiButton**(`props?`): `UiButton`
 
-Defined in: [src/ui/runtime/widgets.ts:170](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L170)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:170](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L170)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: [src/ui/runtime/widgets.ts:170](https://github.com/BuuhV-Projects/co
 
 > **anchor**: [`UiAnchor`](../type-aliases/UiAnchor.md) = `'top-left'`
 
-Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L28)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L28)
 
 #### Inherited from
 
@@ -54,7 +54,7 @@ Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cor
 
 > **background**: `string` = `'#222233'`
 
-Defined in: [src/ui/runtime/widgets.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L136)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L136)
 
 `background` do CSS: cor OU `linear-gradient(180deg, c1, c2)`.
 
@@ -64,7 +64,7 @@ Defined in: [src/ui/runtime/widgets.ts:136](https://github.com/BuuhV-Projects/co
 
 > **borderColor**: `string` = `'#ffffff'`
 
-Defined in: [src/ui/runtime/widgets.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L151)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L151)
 
 `border-color` do CSS (borda constante).
 
@@ -74,7 +74,7 @@ Defined in: [src/ui/runtime/widgets.ts:151](https://github.com/BuuhV-Projects/co
 
 > **borderWidth**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L149)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L149)
 
 `border-width` do CSS — borda CONSTANTE (moldura dos botões cartoon). 0 = sem.
 
@@ -84,7 +84,7 @@ Defined in: [src/ui/runtime/widgets.ts:149](https://github.com/BuuhV-Projects/co
 
 > **boxShadow**: `string` = `'none'`
 
-Defined in: [src/ui/runtime/widgets.ts:157](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L157)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:157](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L157)
 
 `box-shadow` do CSS (subset `"0 Npx 0 <cor>"` — sombra dura) ou `"none"`.
 
@@ -94,7 +94,7 @@ Defined in: [src/ui/runtime/widgets.ts:157](https://github.com/BuuhV-Projects/co
 
 > **color**: `string` = `'#ffffff'`
 
-Defined in: [src/ui/runtime/widgets.ts:126](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L126)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:126](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L126)
 
 Cor CSS do texto.
 
@@ -108,7 +108,7 @@ Cor CSS do texto.
 
 > **cornerRadius**: `number` = `10`
 
-Defined in: [src/ui/runtime/widgets.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L140)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L140)
 
 Raio dos cantos em px. Nome legado de [borderRadius](#borderradius).
 
@@ -118,7 +118,7 @@ Raio dos cantos em px. Nome legado de [borderRadius](#borderradius).
 
 > **dirty**: `boolean` = `true`
 
-Defined in: [src/ui/runtime/widgets.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L40)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L40)
 
 Sujo = backend precisa re-sincronizar este widget.
 
@@ -132,7 +132,7 @@ Sujo = backend precisa re-sincronizar este widget.
 
 > **focusable**: `boolean` = `true`
 
-Defined in: [src/ui/runtime/widgets.ts:168](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L168)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:168](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L168)
 
 Entra na navegação por d-pad/setas? `false` pra botões acionados só por
 clique/atalho (ex.: "Fases" durante o gameplay — senão o A do pulo
@@ -144,7 +144,7 @@ ativaria o botão focado).
 
 > **focusBackground**: `string` = `'#5546a8'`
 
-Defined in: [src/ui/runtime/widgets.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L138)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L138)
 
 Fundo quando focado (o `:focus` do CSS): cor ou gradiente.
 
@@ -154,7 +154,7 @@ Fundo quando focado (o `:focus` do CSS): cor ou gradiente.
 
 > **focusBorderColor**: `string` = `'#ffd94d'`
 
-Defined in: [src/ui/runtime/widgets.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L155)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L155)
 
 Cor da borda de foco.
 
@@ -164,7 +164,7 @@ Cor da borda de foco.
 
 > **focusBorderWidth**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:153](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L153)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:153](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L153)
 
 Borda quando FOCADO (destaque de seleção; vence a constante). 0 = sem.
 
@@ -174,7 +174,7 @@ Borda quando FOCADO (destaque de seleção; vence a constante). 0 = sem.
 
 > **focused**: `boolean` = `false`
 
-Defined in: [src/ui/runtime/widgets.ts:162](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L162)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:162](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L162)
 
 ***
 
@@ -182,7 +182,7 @@ Defined in: [src/ui/runtime/widgets.ts:162](https://github.com/BuuhV-Projects/co
 
 > **fontSize**: `number` = `18`
 
-Defined in: [src/ui/runtime/widgets.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L124)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L124)
 
 Altura da fonte em px.
 
@@ -196,7 +196,7 @@ Altura da fonte em px.
 
 > **height**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L33)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L33)
 
 #### Inherited from
 
@@ -208,7 +208,7 @@ Defined in: [src/ui/runtime/widgets.ts:33](https://github.com/BuuhV-Projects/cor
 
 > `readonly` **id**: `number`
 
-Defined in: [src/ui/runtime/widgets.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L27)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L27)
 
 #### Inherited from
 
@@ -220,7 +220,7 @@ Defined in: [src/ui/runtime/widgets.ts:27](https://github.com/BuuhV-Projects/cor
 
 > **measuredHeight**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L38)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L38)
 
 #### Inherited from
 
@@ -232,7 +232,7 @@ Defined in: [src/ui/runtime/widgets.ts:38](https://github.com/BuuhV-Projects/cor
 
 > **measuredWidth**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L37)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L37)
 
 Tamanho MEDIDO pelo backend (texto rasterizado) — leitura.
 
@@ -246,7 +246,7 @@ Tamanho MEDIDO pelo backend (texto rasterizado) — leitura.
 
 > **onPress**: (() => `void`) \| `null` = `null`
 
-Defined in: [src/ui/runtime/widgets.ts:169](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L169)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:169](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L169)
 
 ***
 
@@ -254,7 +254,7 @@ Defined in: [src/ui/runtime/widgets.ts:169](https://github.com/BuuhV-Projects/co
 
 > **opacity**: `number` = `1`
 
-Defined in: [src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L35)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L35)
 
 #### Inherited from
 
@@ -266,7 +266,7 @@ Defined in: [src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cor
 
 > **paddingX**: `number` = `14`
 
-Defined in: [src/ui/runtime/widgets.ts:160](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L160)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:160](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L160)
 
 ***
 
@@ -274,7 +274,7 @@ Defined in: [src/ui/runtime/widgets.ts:160](https://github.com/BuuhV-Projects/co
 
 > **paddingY**: `number` = `8`
 
-Defined in: [src/ui/runtime/widgets.ts:161](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L161)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:161](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L161)
 
 ***
 
@@ -282,7 +282,7 @@ Defined in: [src/ui/runtime/widgets.ts:161](https://github.com/BuuhV-Projects/co
 
 > **text**: `string` = `''`
 
-Defined in: [src/ui/runtime/widgets.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L122)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L122)
 
 #### Inherited from
 
@@ -294,7 +294,7 @@ Defined in: [src/ui/runtime/widgets.ts:122](https://github.com/BuuhV-Projects/co
 
 > **textAlign**: `"center"` \| `"left"` \| `"right"` = `'center'`
 
-Defined in: [src/ui/runtime/widgets.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L159)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L159)
 
 `text-align` do CSS dentro do botão (`left`/`right` respeitam `paddingX`).
 
@@ -304,7 +304,7 @@ Defined in: [src/ui/runtime/widgets.ts:159](https://github.com/BuuhV-Projects/co
 
 > **visible**: `boolean` = `true`
 
-Defined in: [src/ui/runtime/widgets.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L34)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L34)
 
 #### Inherited from
 
@@ -316,7 +316,7 @@ Defined in: [src/ui/runtime/widgets.ts:34](https://github.com/BuuhV-Projects/cor
 
 > **width**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L32)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L32)
 
 Tamanho declarado (Panel/Button). Labels medem no backend.
 
@@ -330,7 +330,7 @@ Tamanho declarado (Panel/Button). Labels medem no backend.
 
 > **x**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L29)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L29)
 
 #### Inherited from
 
@@ -342,7 +342,7 @@ Defined in: [src/ui/runtime/widgets.ts:29](https://github.com/BuuhV-Projects/cor
 
 > **y**: `number` = `0`
 
-Defined in: [src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L30)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L30)
 
 #### Inherited from
 
@@ -356,7 +356,7 @@ Defined in: [src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cor
 
 > **get** **borderRadius**(): `number`
 
-Defined in: [src/ui/runtime/widgets.ts:142](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L142)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:142](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L142)
 
 `border-radius` do CSS (px). Alias primário de [cornerRadius](#cornerradius).
 
@@ -368,7 +368,7 @@ Defined in: [src/ui/runtime/widgets.ts:142](https://github.com/BuuhV-Projects/co
 
 > **set** **borderRadius**(`value`): `void`
 
-Defined in: [src/ui/runtime/widgets.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L145)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L145)
 
 ##### Parameters
 
@@ -386,7 +386,7 @@ Defined in: [src/ui/runtime/widgets.ts:145](https://github.com/BuuhV-Projects/co
 
 > **set**(`props`): `this`
 
-Defined in: [src/ui/runtime/widgets.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L43)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/widgets.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L43)
 
 Aplica props e marca o widget pra re-sincronização.
 

@@ -8,7 +8,7 @@
 
 > **ColliderShape** = \{ `kind`: `"box"`; `offset?`: `Vec3`; `size`: `Vec3`; \} \| \{ `kind`: `"sphere"`; `offset?`: `Vec3`; `radius`: `number`; \} \| \{ `height`: `number`; `kind`: `"cylinder"`; `offset?`: `Vec3`; `radius`: `number`; \} \| \{ `height`: `number`; `kind`: `"capsule"`; `offset?`: `Vec3`; `radius`: `number`; \}
 
-Defined in: [src/core/Physics.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L63)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L63)
 
 Forma geométrica do collider (SPEC-0027).
 

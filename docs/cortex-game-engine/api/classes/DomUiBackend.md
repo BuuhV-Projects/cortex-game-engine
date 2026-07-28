@@ -6,7 +6,7 @@
 
 # Class: DomUiBackend
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L21)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/DomUiBackend.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L21)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [src/ui/runtime/DomUiBackend.ts:21](https://github.com/BuuhV-Project
 
 > **new DomUiBackend**(`container?`): `DomUiBackend`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L27)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/DomUiBackend.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L27)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [src/ui/runtime/DomUiBackend.ts:27](https://github.com/BuuhV-Project
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L75)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/DomUiBackend.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L75)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -54,7 +54,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L71)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/DomUiBackend.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L71)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
@@ -72,7 +72,7 @@ Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 
 > **sync**(`widgets`, `viewport`, `scale?`): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L36)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/DomUiBackend.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L36)
 
 Sincroniza visuais com a lista de widgets (cria/atualiza/remove). O
 `viewport` é o de DESIGN (espaço lógico do layout, ver `layout.ts`); o

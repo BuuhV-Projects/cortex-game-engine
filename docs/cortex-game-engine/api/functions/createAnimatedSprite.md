@@ -8,7 +8,7 @@
 
 > **createAnimatedSprite**(`sheet`, `anims`, `options?`): `object`
 
-Defined in: [src/scene/Spritesheet.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L88)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/Spritesheet.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Spritesheet.ts#L88)
 
 Cria um **sprite animado**: o mesh (quad do tamanho de UM frame) + o
 [SpriteAnimationComponent](../classes/SpriteAnimationComponent.md) pronto pra entrar numa entidade ECS (com

@@ -6,7 +6,7 @@
 
 # Class: ColliderComponent
 
-Defined in: [src/core/Physics.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L96)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L96)
 
 Componente que define o volume de colisão da entidade.
 
@@ -56,7 +56,7 @@ funcionando como antes:
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -70,7 +70,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **shape**: [`ColliderShape`](../type-aliases/ColliderShape.md)
 
-Defined in: [src/core/Physics.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L98)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L98)
 
 Forma do collider — ver [ColliderShape](../type-aliases/ColliderShape.md). Default: cubo 1×1×1.
 
@@ -82,7 +82,7 @@ Forma do collider — ver [ColliderShape](../type-aliases/ColliderShape.md). Def
 
 > **get** **offset**(): `Vec3`
 
-Defined in: [src/core/Physics.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L129)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L129)
 
 Deslocamento do centro do collider em relação a `RigidBodyComponent.position`.
 Útil quando a geometria visual não está centrada na origem do corpo.
@@ -95,7 +95,7 @@ Deslocamento do centro do collider em relação a `RigidBodyComponent.position`.
 
 > **set** **offset**(`value`): `void`
 
-Defined in: [src/core/Physics.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L132)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L132)
 
 ##### Parameters
 
@@ -115,7 +115,7 @@ Defined in: [src/core/Physics.ts:132](https://github.com/BuuhV-Projects/cortex-g
 
 > **get** **size**(): `Vec3`
 
-Defined in: [src/core/Physics.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L108)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L108)
 
 Dimensões totais do bounding box (largura × altura × profundidade).
 
@@ -130,7 +130,7 @@ Mantido pra compatibilidade com código pré-SPEC-0027.
 
 > **set** **size**(`value`): `void`
 
-Defined in: [src/core/Physics.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L117)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L117)
 
 ##### Parameters
 
@@ -150,7 +150,7 @@ Defined in: [src/core/Physics.ts:117](https://github.com/BuuhV-Projects/cortex-g
 
 > **get** **type**(): `string`
 
-Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

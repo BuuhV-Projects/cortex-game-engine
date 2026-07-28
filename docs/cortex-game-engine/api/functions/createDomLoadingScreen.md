@@ -8,7 +8,7 @@
 
 > **createDomLoadingScreen**(`options?`): [`LoadingScreen`](../interfaces/LoadingScreen.md)
 
-Defined in: [src/core/LoadingScreen.ts:215](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L215)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/LoadingScreen.ts:215](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/LoadingScreen.ts#L215)
 
 ## Parameters
 

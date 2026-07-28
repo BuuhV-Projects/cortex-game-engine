@@ -6,7 +6,7 @@
 
 # Interface: StaticMergeStats
 
-Defined in: [src/scene/StaticMerge.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L47)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/StaticMerge.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L47)
 
 **Merge da geometria estática da cena** (SPEC-0120) — reduz draw calls fundindo
 as malhas paradas do cenário (ilhas, árvores, pedras, decoração) em poucas
@@ -43,7 +43,7 @@ chão/parede do Character enxerga a malha fundida (que preserva
 
 > **groups**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L51)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/StaticMerge.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L51)
 
 Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
@@ -53,7 +53,7 @@ Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
 > **kept**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L53)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/StaticMerge.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L53)
 
 Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
@@ -63,6 +63,6 @@ Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
 > **merged**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L49)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/StaticMerge.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L49)
 
 Malhas originais fundidas (removidas da cena).

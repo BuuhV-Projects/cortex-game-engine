@@ -441,6 +441,66 @@ await config.save()   // nativo: grava dist-native/config.ini; dev: localStorage
 - ⚠️ Troca de idioma NÃO re-renderiza a UI sozinha — widgets guardam `text` como
   propriedade; re-aplique no `onChange`.
 
+## Controles remapeáveis (ações de input + tela de Controles) — ADR-0164/SPEC-0165
+
+O jogo lê **ações nomeadas** em vez de teclas, e o jogador remapeia numa tela
+pronta que só aparece no export **PC/Steam** (resolve "controle genérico com os
+botões trocados"). `game.actions` já existe e é polado 1×/frame.
+
+```ts
+import {
+  GameConfig, showControlsScreen, gamePlatform, canRebindInput, parseBindingList,
+} from 'cortex-game-engine'
+
+// 1. carrega o que o jogador salvou (seção [input] do config.ini)
+const config = await GameConfig.load()
+game.actions.loadFrom(config)
+
+// 2. menus navegam pelas ações (d-pad/A/B remapeados funcionam nos menus)
+game.ui.useActions(game.actions)
+
+// 3. a entrada "Controles" só existe no PC/Steam
+if (canRebindInput(await gamePlatform())) {
+  await showControlsScreen(game, game.actions, {
+    config,                    // persiste ao sair (só o diff vs. o default)
+    translate: t,              // usa o i18n do jogo; sem chave, cai no pt-BR embutido
+    groups: ['move', 'action', 'ui'],
+    driveUi: true,             // false quando o Game já está rodando (menu de pausa)
+  })
+}
+```
+
+Leitura no gameplay (o `setupThirdPerson`/`setupPlatformer` já ligam sozinhos):
+
+```ts
+const x = game.actions.axis('moveLeft', 'moveRight')  // -1..1, analógico no stick
+if (game.actions.pressed('jump')) body.jump()          // borda (1 frame)
+if (game.actions.isDown('sprint')) speed = sprintSpeed
+const gas = game.actions.value('accelerate')           // 0..1 (gatilho analógico)
+game.actions.consume('jump')                           // fechou menu com A segurado
+```
+
+Ações do JOGO (o engine só traz o mínimo dele — mover/olhar/pular/correr/
+interagir/pausar/navegar UI/dirigir):
+
+```ts
+game.actions.define({
+  id: 'plant', group: 'farm', labelKey: 'input.action.plant', label: 'Plantar',
+  defaults: parseBindingList('key:f,pad:2'),
+})
+// aparece na tela de Controles ao incluir 'farm' em `groups`
+```
+
+- **Binding**: `key:<tecla>` · `pad:<n>` · `axis:<n>+`/`axis:<n>-` · `mouse:<n>`
+  (`key:Space`, `key:Comma` pros caracteres que colidem com o formato).
+- **Persistência**: `[input]` do `config.ini`, só o que difere do default.
+  `resetToDefaults()` volta tudo; apagar a seção no arquivo também.
+- **Sem `actions`** os sistemas mantêm as teclas fixas de antes — passe
+  `actions: null` nas opções do setup pra forçar o modo legado.
+- ⚠️ Controle que o **host nativo não reconhece** não aparece como gamepad (o
+  SDL só abre o que está no banco de mapeamentos dele) — remapear não resolve
+  esse caso; é trabalho pendente no `native/`.
+
 ## Modo editor embutido (automático em dev)
 
 **Você NÃO liga o editor — o `Game` faz isso sozinho em desenvolvimento.** Ao usar

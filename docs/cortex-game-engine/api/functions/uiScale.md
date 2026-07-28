@@ -8,7 +8,7 @@
 
 > **uiScale**(`viewport`): `number`
 
-Defined in: [src/ui/runtime/layout.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L64)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ui/runtime/layout.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/layout.ts#L64)
 
 Fator de escala da UI pro viewport real: `altura / {@link UI_REFERENCE_HEIGHT}`,
 limitado. Em 1080p → 1 (idêntico ao design, sem regressão); em 4K (2160) → 2;

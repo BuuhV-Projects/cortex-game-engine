@@ -8,7 +8,7 @@
 
 > **setupFirstPerson**(`game`, `options?`): [`FirstPersonHandle`](../interfaces/FirstPersonHandle.md)
 
-Defined in: [src/scene/FirstPerson.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/FirstPerson.ts#L36)
+Defined in: [.claude/worktrees/feat-input-rebind/src/scene/FirstPerson.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/FirstPerson.ts#L36)
 
 Registra num [Game](../classes/Game.md) os sistemas de **primeira pessoa** (FPS): sincronização
 mesh↔transform e a câmera/controle FPS (mouse-look + WASD + pulo). O **player** é

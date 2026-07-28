@@ -6,7 +6,7 @@
 
 # Interface: BodySpec
 
-Defined in: [src/physics/RapierPhysics.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L49)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L49)
 
 Spec declarativa de um corpo (vira RigidBody + Collider no Rapier).
 
@@ -16,7 +16,7 @@ Spec declarativa de um corpo (vira RigidBody + Collider no Rapier).
 
 > `optional` **friction?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L59)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L59)
 
 Atrito.
 
@@ -26,7 +26,7 @@ Atrito.
 
 > `optional` **isSensor?**: `boolean`
 
-Defined in: [src/physics/RapierPhysics.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L61)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:61](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L61)
 
 `true` = trigger (detecta sobreposição mas NÃO bloqueia).
 
@@ -36,7 +36,7 @@ Defined in: [src/physics/RapierPhysics.ts:61](https://github.com/BuuhV-Projects/
 
 > `optional` **position?**: [`Vec3Like`](Vec3Like.md)
 
-Defined in: [src/physics/RapierPhysics.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L53)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L53)
 
 Posição inicial. Default origem.
 
@@ -46,7 +46,7 @@ Posição inicial. Default origem.
 
 > `optional` **restitution?**: `number`
 
-Defined in: [src/physics/RapierPhysics.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L57)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:57](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L57)
 
 Quão "quicante" (0 = não quica).
 
@@ -56,7 +56,7 @@ Quão "quicante" (0 = não quica).
 
 > **shape**: [`PhysicsShape`](../type-aliases/PhysicsShape.md)
 
-Defined in: [src/physics/RapierPhysics.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L55)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:55](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L55)
 
 Forma do collider.
 
@@ -66,6 +66,6 @@ Forma do collider.
 
 > **type**: `"dynamic"` \| `"fixed"` \| `"kinematic"`
 
-Defined in: [src/physics/RapierPhysics.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L51)
+Defined in: [.claude/worktrees/feat-input-rebind/src/physics/RapierPhysics.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L51)
 
 `dynamic` cai/é empurrado; `fixed` é imóvel (chão/parede); `kinematic` você move.

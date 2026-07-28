@@ -6,7 +6,7 @@
 
 # Class: AudioManager
 
-Defined in: [src/core/AudioManager.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L41)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/AudioManager.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L41)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/core/AudioManager.ts:41](https://github.com/BuuhV-Projects/cort
 
 > **new AudioManager**(): `AudioManager`
 
-Defined in: [src/core/AudioManager.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L50)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/AudioManager.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L50)
 
 #### Returns
 
@@ -28,7 +28,7 @@ Defined in: [src/core/AudioManager.ts:50](https://github.com/BuuhV-Projects/cort
 
 > **get** **listener**(): `AudioListener`
 
-Defined in: [src/core/AudioManager.ts:152](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L152)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/AudioManager.ts:152](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L152)
 
 Instância interna do `THREE.AudioListener`.
 
@@ -50,7 +50,7 @@ camera.add(audioManager.listener);
 
 > **get** **muted**(): `boolean`
 
-Defined in: [src/core/AudioManager.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L159)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/AudioManager.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L159)
 
 Indica se o áudio está atualmente silenciado via `muteAll()`.
 
@@ -64,7 +64,7 @@ Indica se o áudio está atualmente silenciado via `muteAll()`.
 
 > **createPositionalSound**(`audioBuffer`, `entity`): `PositionalAudio`
 
-Defined in: [src/core/AudioManager.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L96)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/AudioManager.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L96)
 
 Cria um som **posicional** e o adiciona como filho do `entity` fornecido.
 
@@ -105,7 +105,7 @@ explosion.play();
 
 > **createSound**(`audioBuffer`, `options?`): `Audio`
 
-Defined in: [src/core/AudioManager.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L73)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/AudioManager.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L73)
 
 Cria um som **não-posicional** (global) — ideal para trilha sonora e
 efeitos de UI que não devem sofrer atenuação espacial.
@@ -148,7 +148,7 @@ music.play();
 
 > **muteAll**(): `void`
 
-Defined in: [src/core/AudioManager.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L123)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/AudioManager.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L123)
 
 Silencia todos os sons definindo o volume mestre para `0`.
 
@@ -166,7 +166,7 @@ ignoradas para não sobrescrever o volume salvo.
 
 > **setMasterVolume**(`v`): `void`
 
-Defined in: [src/core/AudioManager.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L112)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/AudioManager.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L112)
 
 Define o volume mestre aplicado a **todos** os sons gerenciados por este
 `AudioListener`.
@@ -190,7 +190,7 @@ Valor entre `0` (silêncio) e `1` (volume máximo). Valores fora
 
 > **unmuteAll**(): `void`
 
-Defined in: [src/core/AudioManager.ts:135](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L135)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/AudioManager.ts:135](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AudioManager.ts#L135)
 
 Restaura o volume mestre ao valor anterior à última chamada de `muteAll()`.
 

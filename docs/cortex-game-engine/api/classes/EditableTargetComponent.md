@@ -6,7 +6,7 @@
 
 # Class: EditableTargetComponent
 
-Defined in: [src/components/EditableTargetComponent.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/EditableTargetComponent.ts#L8)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/EditableTargetComponent.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/EditableTargetComponent.ts#L8)
 
 Marcador: entidades editáveis no modo editor. O `EditorMode` usa este
 componente para descobrir o que pode ser teleportado/manipulado de forma
@@ -36,7 +36,7 @@ genérica, sem o engine conhecer tipos específicos de jogo (ex.: veículo).
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -52,7 +52,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **get** **type**(): `string`
 
-Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

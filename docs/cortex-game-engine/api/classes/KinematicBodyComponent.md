@@ -6,7 +6,7 @@
 
 # Class: KinematicBodyComponent
 
-Defined in: [src/components/KinematicBodyComponent.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/KinematicBodyComponent.ts#L14)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/KinematicBodyComponent.ts:14](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/KinematicBodyComponent.ts#L14)
 
 Estado cinemático de uma entidade movida por raycast (não por impulso).
 
@@ -42,7 +42,7 @@ por impulso/AABB. Os dois podem coexistir em entidades distintas.
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -56,7 +56,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **grounded**: `boolean` = `false`
 
-Defined in: [src/components/KinematicBodyComponent.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/KinematicBodyComponent.ts#L19)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/KinematicBodyComponent.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/KinematicBodyComponent.ts#L19)
 
 `true` quando o último ground-snap encostou a entidade no chão.
 
@@ -66,7 +66,7 @@ Defined in: [src/components/KinematicBodyComponent.ts:19](https://github.com/Buu
 
 > **horizontalSpeed**: `number` = `0`
 
-Defined in: [src/components/KinematicBodyComponent.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/KinematicBodyComponent.ts#L22)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/KinematicBodyComponent.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/KinematicBodyComponent.ts#L22)
 
 Velocidade horizontal em unidades/s, no eixo do heading (`TransformComponent.rotationY`).
 
@@ -76,7 +76,7 @@ Velocidade horizontal em unidades/s, no eixo do heading (`TransformComponent.rot
 
 > **velocityY**: `number` = `0`
 
-Defined in: [src/components/KinematicBodyComponent.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/KinematicBodyComponent.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/KinematicBodyComponent.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/KinematicBodyComponent.ts#L16)
 
 Velocidade vertical em unidades/s. Positivo = subindo. Integrada pela gravidade.
 
@@ -88,7 +88,7 @@ Velocidade vertical em unidades/s. Positivo = subindo. Integrada pela gravidade.
 
 > **get** **type**(): `string`
 
-Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

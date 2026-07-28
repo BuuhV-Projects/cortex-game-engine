@@ -6,7 +6,7 @@
 
 # Class: RigidBodyComponent
 
-Defined in: [src/core/Physics.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L37)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L37)
 
 Componente que armazena o estado físico de uma entidade.
 
@@ -41,7 +41,7 @@ cabe ao usuário sincronizar `position` com ele após cada tick de física.
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -55,7 +55,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **isStatic**: `boolean` = `false`
 
-Defined in: [src/core/Physics.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L48)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L48)
 
 Quando `true`, o corpo não é movido nem recebe gravidade.
 Ainda participa da detecção de colisão (comporta-se como superfície sólida).
@@ -66,7 +66,7 @@ Ainda participa da detecção de colisão (comporta-se como superfície sólida)
 
 > **mass**: `number` = `1`
 
-Defined in: [src/core/Physics.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L43)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L43)
 
 Massa do corpo em kg. Ignorada se `isStatic` for `true`.
 
@@ -76,7 +76,7 @@ Massa do corpo em kg. Ignorada se `isStatic` for `true`.
 
 > **position**: `Vec3`
 
-Defined in: [src/core/Physics.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L39)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L39)
 
 Centro de massa do corpo no espaço mundial.
 
@@ -86,7 +86,7 @@ Centro de massa do corpo no espaço mundial.
 
 > **velocity**: `Vec3`
 
-Defined in: [src/core/Physics.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L41)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/Physics.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Physics.ts#L41)
 
 Velocidade linear em unidades/s.
 
@@ -98,7 +98,7 @@ Velocidade linear em unidades/s.
 
 > **get** **type**(): `string`
 
-Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").

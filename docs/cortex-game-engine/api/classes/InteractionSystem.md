@@ -6,7 +6,7 @@
 
 # Class: InteractionSystem
 
-Defined in: [src/systems/InteractionSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L33)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L41)
 
 **Sistema de interação** (SPEC-0080): a cada frame acha o [InteractionComponent](InteractionComponent.md)
 **mais próximo** do interator ativo dentro do seu `range`, avisa a HUD via `onPrompt`
@@ -25,7 +25,7 @@ então funciona com o player a pé ou o carro (o "player do momento"). `priority
 
 > **new InteractionSystem**(`options`, `gamepad?`, `input?`): `InteractionSystem`
 
-Defined in: [src/systems/InteractionSystem.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L40)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L48)
 
 #### Parameters
 
@@ -55,7 +55,7 @@ Defined in: [src/systems/InteractionSystem.ts:40](https://github.com/BuuhV-Proje
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -72,7 +72,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -93,7 +93,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `25`
 
-Defined in: [src/systems/InteractionSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L35)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L43)
 
 Prioridade de execução deste sistema.
 
@@ -110,7 +110,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`InteractionComponent`](InteractionComponent.md))[]
 
-Defined in: [src/systems/InteractionSystem.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L34)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L42)
 
 Construtores dos componentes que este sistema requer.
 
@@ -138,7 +138,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **get** **active**(): [`InteractionComponent`](InteractionComponent.md) \| `null`
 
-Defined in: [src/systems/InteractionSystem.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L50)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L58)
 
 Interação atualmente em alcance (ou `null`) — útil pra HUD externa.
 
@@ -152,7 +152,7 @@ Interação atualmente em alcance (ou `null`) — útil pra HUD externa.
 
 > **dispose**(): `void`
 
-Defined in: [src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/System.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L90)
 
 Libera recursos ao remover o sistema — chamado por [World.clear](World.md#clear) (e
 pode ser chamado manualmente). No-op por padrão; sobrescreva pra liberar
@@ -173,7 +173,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`): `void`
 
-Defined in: [src/systems/InteractionSystem.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L54)
+Defined in: [.claude/worktrees/feat-input-rebind/src/systems/InteractionSystem.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/InteractionSystem.ts#L62)
 
 Executa a lógica do sistema para o frame/passo atual.
 

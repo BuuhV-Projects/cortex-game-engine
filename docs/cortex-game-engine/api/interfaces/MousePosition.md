@@ -6,7 +6,7 @@
 
 # Interface: MousePosition
 
-Defined in: [src/core/InputManager.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L21)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InputManager.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L21)
 
 Coordenadas 2D do mouse.
 
@@ -16,7 +16,7 @@ Coordenadas 2D do mouse.
 
 > **x**: `number`
 
-Defined in: [src/core/InputManager.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L22)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InputManager.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L22)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: [src/core/InputManager.ts:22](https://github.com/BuuhV-Projects/cort
 
 > **y**: `number`
 
-Defined in: [src/core/InputManager.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L23)
+Defined in: [.claude/worktrees/feat-input-rebind/src/core/InputManager.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/InputManager.ts#L23)

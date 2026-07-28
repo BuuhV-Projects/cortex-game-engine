@@ -6,7 +6,7 @@
 
 # Class: FollowCameraTargetComponent
 
-Defined in: [src/components/FollowCameraTargetComponent.ts:7](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/FollowCameraTargetComponent.ts#L7)
+Defined in: [.claude/worktrees/feat-input-rebind/src/components/FollowCameraTargetComponent.ts:7](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/FollowCameraTargetComponent.ts#L7)
 
 Marcador: a câmera de perseguição (`ThirdPersonCameraSystem`) segue a
 entidade que tiver este componente. Espera-se no máximo uma por cena.
@@ -35,7 +35,7 @@ entidade que tiver este componente. Espera-se no máximo uma por cena.
 
 > **enabled**: `boolean` = `true`
 
-Defined in: [src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L9)
 
 Indica se o componente está ativo. Systems podem ignorar componentes desativados.
 
@@ -51,7 +51,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **get** **type**(): `string`
 
-Defined in: [src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
+Defined in: [.claude/worktrees/feat-input-rebind/src/ecs/Component.ts:16](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/Component.ts#L16)
 
 Identificador do tipo do componente.
 Retorna o nome da classe construtora (ex: "TransformComponent").
