@@ -4,6 +4,7 @@ import { renderMarkdown } from './markdown'
 import { GlbPreview } from './GlbPreview'
 import { SpritePreview } from './SpritePreview'
 import { icon } from './ui'
+import { MODEL_WARN_THRESHOLD, shouldPreloadProjectFile } from './preloadFilter'
 
 /**
  * O barrel principal do `monaco-editor` exporta `monaco.languages.typescript`
@@ -149,6 +150,14 @@ export class Editor {
   // Ordem das abas (insertion order do Map é estável)
   private tabs: Map<string, Tab> = new Map()
   private activePath: string | null = null
+  /**
+   * Model mostrado quando não há aba aberta — UM só, reusado (SPEC-0166).
+   * Criar um por fechamento vazava models (cada um assina o emitter global de
+   * linguagem do Monaco, que alerta em 200 listeners).
+   */
+  private emptyModel: monaco.editor.ITextModel | null = null
+  /** Já avisamos sobre a quantidade de models? (aviso é uma vez por sessão). */
+  private modelWarned = false
   /** Último estado "vazio" notificado — evita disparar o evento à toa. */
   private lastEmpty: boolean | null = null
 
@@ -638,8 +647,11 @@ export class Editor {
         this.activateTab(next.path)
       } else {
         this.activePath = null
-        const emptyModel = monaco.editor.createModel('', 'plaintext')
-        this.instance?.setModel(emptyModel)
+        // Model vazio ÚNICO (SPEC-0166): criar um a cada fechamento deixava um
+        // model órfão por vez pela sessão inteira — e cada model assina o
+        // emitter global de linguagem do Monaco (limite de 200 listeners).
+        this.emptyModel ??= monaco.editor.createModel('', 'plaintext')
+        this.instance?.setModel(this.emptyModel)
       }
     }
     this.renderTabs()
@@ -663,6 +675,10 @@ export class Editor {
       const files = await window.electronAPI.listProjectFiles(projectDir)
       await Promise.all(
         files.map(async (path) => {
+          // Arquivo de teste fica fora do preload (SPEC-0166): é destino raro de
+          // "ir para a definição" e cada model custa um listener no emitter
+          // global do Monaco. Abrir o arquivo cria o model normalmente.
+          if (!shouldPreloadProjectFile(path)) return
           const uri = pathToVirtualUri(path)
           if (monaco.editor.getModel(uri)) return
           try {
@@ -675,9 +691,33 @@ export class Editor {
           }
         }),
       )
+      this.warnIfManyModels('arquivos do projeto')
     } catch (err) {
       console.error('Erro ao pre-carregar arquivos do projeto:', err)
     }
+  }
+
+  /**
+   * Avisa UMA vez quando a quantidade de models vivos se aproxima do limite do
+   * Monaco (SPEC-0166). Sem isto, o próximo projeto grande volta a disparar o
+   * "potential listener LEAK detected" sem pista da causa — cada model assina o
+   * emitter global de linguagem, e o alerta do editor sai em 200 listeners.
+   */
+  private warnIfManyModels(origin: string): void {
+    if (this.modelWarned) return
+    const total = monaco.editor.getModels().length
+    if (total < MODEL_WARN_THRESHOLD) return
+    this.modelWarned = true
+    // A quebra por origem é o que faltava da última vez: sem ela o alerta do
+    // Monaco não diz se o excesso veio do projeto ou dos types do engine.
+    const engineModels = monaco.editor
+      .getModels()
+      .filter((model) => model.uri.path.includes('node_modules/cortex-game-engine')).length
+    console.warn(
+      `[studio] ${total} models do Monaco vivos após carregar ${origin} ` +
+        `(${engineModels} de types do engine, ${total - engineModels} do projeto) — ` +
+        'o editor alerta "listener LEAK" a partir de 200. Ver SPEC-0166.',
+    )
   }
 
   private async loadEngineTypes(): Promise<void> {
@@ -697,6 +737,7 @@ export class Editor {
           }
         }
       }
+      this.warnIfManyModels('os types do engine')
     } catch (err) {
       console.error('Erro ao carregar types do engine:', err)
     }
