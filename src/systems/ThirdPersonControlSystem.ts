@@ -6,6 +6,7 @@ import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js'
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import type { InputManager } from '../core/InputManager.js';
 import type { GamepadManager } from '../core/GamepadManager.js';
+import type { InputActions } from '../input/InputActions.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { deriveLocomotion, autoMapPlayerClips } from './PlatformerAnimationSystem.js';
 import { isSkinned } from '../physics/raycastAccel.js';
@@ -49,6 +50,14 @@ export interface ThirdPersonControlOptions {
   initialYaw?: number;
   /** Pitch inicial da câmera (rad; positivo = de cima). Default 0.35. */
   initialPitch?: number;
+  /**
+   * **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra que
+   * mover/olhar/correr/pular sigam os bindings que o jogador escolheu na tela
+   * de Controles. Sem isso, valem as teclas fixas de sempre (WASD/setas,
+   * Shift, Espaço, A e sticks), byte a byte. Passe `null` pra forçar o modo
+   * fixo mesmo indo pelo `setupThirdPerson` (que injeta `game.actions`).
+   */
+  actions?: InputActions | null;
 }
 
 const TOP_CLAMP = (70 * Math.PI) / 180; // Unity TopClamp 70°
@@ -113,6 +122,7 @@ export class ThirdPersonControlSystem extends System {
   private readonly padIndex: number;
   private readonly shouldPause?: () => boolean;
   private readonly jumpBlocked?: () => boolean;
+  private readonly acts?: InputActions;
 
   private yaw = 0;
   private pitch = 0.35; // levemente de cima
@@ -160,6 +170,7 @@ export class ThirdPersonControlSystem extends System {
     this.padIndex = options.padIndex ?? 0;
     this.shouldPause = options.pauseWhen;
     this.jumpBlocked = options.jumpBlocked;
+    this.acts = options.actions ?? undefined;
     this.orbitMode = options.orbit ?? 'free';
     this.yaw = options.initialYaw ?? 0;
     this.pitch = options.initialPitch ?? 0.35;
@@ -224,6 +235,7 @@ export class ThirdPersonControlSystem extends System {
       // um pulo fantasma (com som). Pausado, o botão conta como já-pressionado:
       // só solta-e-aperta de novo pula (SPEC-0156).
       this.prevJump = true;
+      this.acts?.consume('jump');
       return;
     }
     const dt = deltaTime / 1000;
@@ -248,9 +260,13 @@ export class ThirdPersonControlSystem extends System {
         this.yaw -= md.x * this.sensitivity;
         this.pitch += md.y * this.sensitivity;
       }
-      if (gp) {
-        this.yaw -= gp.getAxis(pad, 2) * this.padLookSpeed * dt;
-        this.pitch += (this.invertLookY ? -1 : 1) * gp.getAxis(pad, 3) * this.padLookSpeed * dt;
+      // Stick direito: por AÇÃO quando o jogo passou o mapa remapeável, senão
+      // pelos eixos fixos 2/3 do layout standard.
+      const lookX = this.acts ? this.acts.axis('lookLeft', 'lookRight') : gp ? gp.getAxis(pad, 2) : 0;
+      const lookY = this.acts ? this.acts.axis('lookUp', 'lookDown') : gp ? gp.getAxis(pad, 3) : 0;
+      if (lookX !== 0 || lookY !== 0) {
+        this.yaw -= lookX * this.padLookSpeed * dt;
+        this.pitch += (this.invertLookY ? -1 : 1) * lookY * this.padLookSpeed * dt;
       }
       if (this.pitch > TOP_CLAMP) this.pitch = TOP_CLAMP;
       if (this.pitch < BOTTOM_CLAMP) this.pitch = BOTTOM_CLAMP;
@@ -262,25 +278,37 @@ export class ThirdPersonControlSystem extends System {
     const fx = -sin, fz = -cos; // frente da câmera projetada no chão
     const rx = cos, rz = -sin; // direita
 
-    // Stick esquerdo (analógico) tem prioridade; senão WASD (direção unitária).
-    const lx = gp ? gp.getAxis(pad, 0) : 0;
-    const ly = gp ? gp.getAxis(pad, 1) : 0;
-    const stickMag = Math.hypot(lx, ly);
     let mx = 0, mz = 0, inputMag = 0;
-    if (stickMag > 0) {
-      mx = fx * -ly + rx * lx; // stick pra cima (ly<0) = frente
-      mz = fz * -ly + rz * lx;
-      inputMag = Math.min(1, stickMag);
+    if (this.acts) {
+      // Por AÇÃO: `value()` já pega o maior entre tecla e stick, então teclado e
+      // controle convivem e o stick continua analógico.
+      const strafe = this.acts.axis('moveLeft', 'moveRight');
+      const forward = this.acts.axis('moveBack', 'moveForward');
+      mx = fx * forward + rx * strafe;
+      mz = fz * forward + rz * strafe;
+      inputMag = Math.min(1, Math.hypot(strafe, forward));
     } else {
-      if (k.isKeyDown('w') || k.isKeyDown('ArrowUp')) { mx += fx; mz += fz; }
-      if (k.isKeyDown('s') || k.isKeyDown('ArrowDown')) { mx -= fx; mz -= fz; }
-      if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) { mx += rx; mz += rz; }
-      if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) { mx -= rx; mz -= rz; }
-      if (mx !== 0 || mz !== 0) inputMag = 1;
+      // Stick esquerdo (analógico) tem prioridade; senão WASD (direção unitária).
+      const lx = gp ? gp.getAxis(pad, 0) : 0;
+      const ly = gp ? gp.getAxis(pad, 1) : 0;
+      const stickMag = Math.hypot(lx, ly);
+      if (stickMag > 0) {
+        mx = fx * -ly + rx * lx; // stick pra cima (ly<0) = frente
+        mz = fz * -ly + rz * lx;
+        inputMag = Math.min(1, stickMag);
+      } else {
+        if (k.isKeyDown('w') || k.isKeyDown('ArrowUp')) { mx += fx; mz += fz; }
+        if (k.isKeyDown('s') || k.isKeyDown('ArrowDown')) { mx -= fx; mz -= fz; }
+        if (k.isKeyDown('d') || k.isKeyDown('ArrowRight')) { mx += rx; mz += rz; }
+        if (k.isKeyDown('a') || k.isKeyDown('ArrowLeft')) { mx -= rx; mz -= rz; }
+        if (mx !== 0 || mz !== 0) inputMag = 1;
+      }
     }
 
     // Corre: Shift (teclado) ou RT (botão 7) do gamepad.
-    const sprint = k.isKeyDown('Shift') || k.isKeyDown('shift') || (gp?.isButtonDown(pad, 7) ?? false);
+    const sprint = this.acts
+      ? this.acts.isDown('sprint')
+      : k.isKeyDown('Shift') || k.isKeyDown('shift') || (gp?.isButtonDown(pad, 7) ?? false);
     const dirLen = Math.hypot(mx, mz);
     let movingSpeed = 0;
     if (dirLen > 0 && inputMag > 0) {
@@ -297,9 +325,14 @@ export class ThirdPersonControlSystem extends System {
 
     // ── Pulo (borda de pressão): Espaço ou A (botão 0) ────────────────────────
     // Bloqueado quando há interação em alcance (A vira "interagir", não pula).
-    const jumpDown = k.isKeyDown(' ') || (gp?.isButtonDown(pad, 0) ?? false);
-    if (jumpDown && !this.prevJump && !(this.jumpBlocked?.() ?? false)) body.jump();
-    this.prevJump = jumpDown;
+    // Com mapa de ações, a borda vem do próprio `pressed()` (polado pelo Game).
+    if (this.acts) {
+      if (this.acts.pressed('jump') && !(this.jumpBlocked?.() ?? false)) body.jump();
+    } else {
+      const jumpDown = k.isKeyDown(' ') || (gp?.isButtonDown(pad, 0) ?? false);
+      if (jumpDown && !this.prevJump && !(this.jumpBlocked?.() ?? false)) body.jump();
+      this.prevJump = jumpDown;
+    }
 
     // ── Câmera orbital atrás do personagem (com colisão) ──────────────────────
     this.placeCamera(t, obj);

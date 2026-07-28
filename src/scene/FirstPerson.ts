@@ -43,7 +43,12 @@ export function setupFirstPerson(game: Game, options: SetupFirstPersonOptions = 
     game.camera as import('three').PerspectiveCamera,
     game.input,
     game.canvas,
-    { ...options.camera, pauseWhen: () => game.editorActive || game.gameplayPaused },
+    {
+      ...options.camera,
+      // Ações remapeáveis por default (ADR-0164); `camera.actions: null` volta às teclas fixas.
+      actions: options.camera?.actions === null ? null : (options.camera?.actions ?? game.actions),
+      pauseWhen: () => game.editorActive || game.gameplayPaused,
+    },
   );
   game.world.addSystem(camera);
 
