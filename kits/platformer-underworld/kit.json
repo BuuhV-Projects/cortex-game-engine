@@ -1,0 +1,3663 @@
+{
+  "version": 1,
+  "name": "platformer-underworld",
+  "module": 1,
+  "theme": "underworld",
+  "assets": {
+    "assets/arch_001.glb": {
+      "role": "prop",
+      "tags": [
+        "L"
+      ],
+      "size": [
+        4.042,
+        4.594,
+        1.512
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.594,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/arch_001.png"
+    },
+    "assets/barrel_001.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "barrel",
+        "S"
+      ],
+      "size": [
+        1.143,
+        1.142,
+        1.143
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "collider": {
+        "shape": "capsule",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.142,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/barrel_001.png"
+    },
+    "assets/barrel_002.glb": {
+      "role": "prop",
+      "tags": [
+        "container",
+        "barrel",
+        "S"
+      ],
+      "size": [
+        1.104,
+        1.142,
+        1.122
+      ],
+      "gameplayRole": [
+        "resource"
+      ],
+      "collider": {
+        "shape": "capsule",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.142,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/barrel_002.png"
+    },
+    "assets/berries_001.glb": {
+      "role": "collectible",
+      "tags": [
+        "food",
+        "S"
+      ],
+      "size": [
+        0.914,
+        1.026,
+        0.517
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.002,
+            0.635,
+            0.004
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/berries_001.png"
+    },
+    "assets/bomb_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "explosive",
+        "S"
+      ],
+      "size": [
+        0.812,
+        1.122,
+        0.812
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.783,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/bomb_001.png"
+    },
+    "assets/chain_001.glb": {
+      "role": "prop",
+      "tags": [
+        "L"
+      ],
+      "size": [
+        10.349,
+        2.288,
+        0.572
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            -0.068,
+            1.418,
+            -0.003
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/chain_001.png"
+    },
+    "assets/chest_001.glb": {
+      "role": "prop",
+      "tags": [
+        "chest",
+        "wood",
+        "M",
+        "M"
+      ],
+      "size": [
+        1.741,
+        1.294,
+        1.299
+      ],
+      "gameplayRole": [
+        "reward",
+        "landmark"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.294,
+            -0.022
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/chest_001.png",
+      "note": "Baú de madeira e ouro. Marca RECOMPENSA — ponha onde o desvio arriscado compensa (com moeda/diamante ao lado).",
+      "standalone": true
+    },
+    "assets/chest_002.glb": {
+      "role": "prop",
+      "tags": [
+        "chest",
+        "wood",
+        "M",
+        "M"
+      ],
+      "size": [
+        1.741,
+        1.294,
+        1.299
+      ],
+      "gameplayRole": [
+        "reward",
+        "landmark"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.294,
+            -0.022
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/chest_002.png",
+      "note": "Baú escuro, variante do 001.",
+      "standalone": true
+    },
+    "assets/circle_001.glb": {
+      "role": "platform",
+      "tags": [
+        "stone",
+        "round",
+        "marker",
+        "S",
+        "L"
+      ],
+      "size": [
+        9.126,
+        0.681,
+        9.126
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.681,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/circle_001.png",
+      "note": "Disco raso com aro laranja: MARCA de chão (largada, chegada, ponto de checkpoint). Chapado o bastante pra pisar sem degrau.",
+      "standalone": true
+    },
+    "assets/circle_002.glb": {
+      "role": "decoration",
+      "tags": [
+        "stone",
+        "round",
+        "frame",
+        "S",
+        "L"
+      ],
+      "size": [
+        28.773,
+        1.379,
+        28.773
+      ],
+      "gameplayRole": [
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.787,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/circle_002.png",
+      "note": "Aro de pedra vazado (moldura). Emoldura portais e nichos; vazado, dá pra atravessar.",
+      "standalone": true
+    },
+    "assets/coin_001.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.935,
+        0.935,
+        0.257
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.467,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/coin_001.png"
+    },
+    "assets/column_001.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        3.962,
+        15.91,
+        3.962
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            15.91,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/column_001.png"
+    },
+    "assets/column_001_001.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        3.796,
+        6.834,
+        3.796
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            6.834,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/column_001_001.png"
+    },
+    "assets/crown_001.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "crown",
+        "S"
+      ],
+      "size": [
+        1.226,
+        0.869,
+        1.403
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.686,
+            0.005
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/crown_001.png"
+    },
+    "assets/diamond_001.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        0.861,
+        0.777,
+        0.861
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.227,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/diamond_001.png"
+    },
+    "assets/door_001.glb": {
+      "role": "prop",
+      "tags": [
+        "interactive",
+        "L"
+      ],
+      "size": [
+        1.627,
+        4.847,
+        0.544
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            -0.247,
+            4.847,
+            0.002
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/door_001.png"
+    },
+    "assets/dynamite_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "explosive",
+        "S"
+      ],
+      "size": [
+        0.241,
+        1.041,
+        0.241
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.041,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/dynamite_001.png"
+    },
+    "assets/dynamite_002.glb": {
+      "role": "hazard",
+      "tags": [
+        "hazard",
+        "explosive",
+        "S"
+      ],
+      "size": [
+        1.183,
+        0.443,
+        0.479
+      ],
+      "gameplayRole": [
+        "challenge",
+        "hazard"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.167,
+            0.44,
+            -0.013
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/dynamite_002.png"
+    },
+    "assets/fence_001.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "L"
+      ],
+      "size": [
+        4.194,
+        0.87,
+        0.729
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.87,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -2.097,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            2.097,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence_001.png"
+    },
+    "assets/fence_002.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "L"
+      ],
+      "size": [
+        0.995,
+        5.662,
+        8.876
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            5.662,
+            0.032
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.498,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            0.498,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence_002.png"
+    },
+    "assets/fence_003.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "L"
+      ],
+      "size": [
+        4,
+        1.335,
+        0.713
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.335,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -2,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            2,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence_003.png"
+    },
+    "assets/fence_004.glb": {
+      "role": "decoration",
+      "tags": [
+        "fence",
+        "boundary",
+        "wood",
+        "M"
+      ],
+      "size": [
+        2.688,
+        1.339,
+        0.713
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0.656,
+            1.339,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        },
+        "edge_left": {
+          "at": [
+            -0.688,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "edge_right": {
+          "at": [
+            2,
+            0,
+            0
+          ],
+          "kind": "connect",
+          "dir": [
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fence_004.png"
+    },
+    "assets/fire_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "fire",
+        "brazier",
+        "S",
+        "L"
+      ],
+      "size": [
+        2.429,
+        5.269,
+        2.429
+      ],
+      "gameplayRole": [
+        "challenge",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.651,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fire_001.png",
+      "mechanic": {
+        "behavior": "static-hazard",
+        "script": "Perigo",
+        "params": {
+          "raio": 1
+        }
+      },
+      "note": "Braseiro em pedestal de pedra. Serve às duas coisas: perigo pontual e FAROL — a chama num corredor escuro puxa o olhar pro caminho certo.",
+      "standalone": true
+    },
+    "assets/fire_002.glb": {
+      "role": "hazard",
+      "tags": [
+        "fire",
+        "campfire",
+        "S",
+        "M"
+      ],
+      "size": [
+        2.111,
+        2.924,
+        2.111
+      ],
+      "gameplayRole": [
+        "challenge",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.924,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fire_002.png",
+      "mechanic": {
+        "behavior": "static-hazard",
+        "script": "Perigo",
+        "params": {
+          "raio": 1
+        }
+      },
+      "note": "Fogueira no chão (sem pedestal). Mesmo papel do fire_001, mais baixa — passa por baixo de arcos.",
+      "standalone": true
+    },
+    "assets/gate_001.glb": {
+      "role": "prop",
+      "tags": [
+        "L"
+      ],
+      "size": [
+        34.199,
+        27.322,
+        3.498
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            -0.222,
+            10.465,
+            -0.033
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/gate_001.png"
+    },
+    "assets/heart_001.glb": {
+      "role": "collectible",
+      "tags": [
+        "health",
+        "S"
+      ],
+      "size": [
+        1.073,
+        0.927,
+        0.489
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.392,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/heart_001.png"
+    },
+    "assets/hieroglyph_001.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.546,
+        0,
+        0.656
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            0.05
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_001.png"
+    },
+    "assets/hieroglyph_002.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.654,
+        0,
+        0.653
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            0.073
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_002.png"
+    },
+    "assets/hieroglyph_003.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.681,
+        0,
+        0.607
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            -0.069
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_003.png"
+    },
+    "assets/hieroglyph_004.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.486,
+        0,
+        0.641
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.013,
+            0,
+            0.012
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_004.png"
+    },
+    "assets/hieroglyph_005.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.553,
+        0,
+        0.638
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            -0.017,
+            0,
+            0.015
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_005.png"
+    },
+    "assets/hieroglyph_006.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.46,
+        0,
+        0.411
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            -0.036
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_006.png"
+    },
+    "assets/hieroglyph_007.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.46,
+        0,
+        0.635
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_007.png"
+    },
+    "assets/hieroglyph_008.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.551,
+        0,
+        0.551
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_008.png"
+    },
+    "assets/hieroglyph_009.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.546,
+        0,
+        0.68
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            -0.021
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_009.png"
+    },
+    "assets/hieroglyph_010.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.675,
+        0,
+        0.442
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            -0.015,
+            0,
+            -0.039
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_010.png"
+    },
+    "assets/hieroglyph_011.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.675,
+        0,
+        0.476
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            -0.021,
+            0,
+            -0.005
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_011.png"
+    },
+    "assets/hieroglyph_012.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.521,
+        0,
+        0.521
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_012.png"
+    },
+    "assets/hieroglyph_013.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.532,
+        0,
+        0.544
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.01,
+            0,
+            -0.019
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_013.png"
+    },
+    "assets/hieroglyph_014.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.476,
+        0,
+        0.584
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_014.png"
+    },
+    "assets/hieroglyph_015.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.505,
+        0,
+        0.515
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_015.png"
+    },
+    "assets/hieroglyph_016.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.602,
+        0,
+        0.557
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.001,
+            0,
+            0.078
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_016.png"
+    },
+    "assets/hieroglyph_017.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.424,
+        0,
+        0.643
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.029,
+            0,
+            -0.029
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_017.png"
+    },
+    "assets/hieroglyph_018.glb": {
+      "role": "decoration",
+      "tags": [
+        "decal",
+        "glyph",
+        "wall",
+        "S"
+      ],
+      "size": [
+        0.389,
+        0,
+        0.62
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            -0.022,
+            0,
+            -0.045
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hieroglyph_018.png"
+    },
+    "assets/hook_001.glb": {
+      "role": "prop",
+      "tags": [
+        "S"
+      ],
+      "size": [
+        1.014,
+        1.014,
+        0.268
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.507,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/hook_001.png"
+    },
+    "assets/key_001.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "key",
+        "S"
+      ],
+      "size": [
+        1.289,
+        0.644,
+        0.165
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.054,
+            0.341,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/key_001.png"
+    },
+    "assets/key_002.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "key",
+        "M"
+      ],
+      "size": [
+        1.694,
+        0.851,
+        0.161
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.082,
+            0.463,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/key_002.png"
+    },
+    "assets/obstacle_10_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "trap",
+        "boulder",
+        "stone",
+        "M",
+        "L"
+      ],
+      "size": [
+        4.825,
+        4.825,
+        4.825
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "collider": {
+        "shape": "circle",
+        "solid": false
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.413,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_10_001.png",
+      "mechanic": {
+        "behavior": "rolling-boulder",
+        "script": "BolaRolante",
+        "params": {
+          "eixo": "z",
+          "amplitude": 8,
+          "velocidade": 1.1,
+          "raioAcerto": 2.4
+        },
+        "note": "NÃO use 'Patrulha': ela só translada, e uma esfera que desliza sem girar lê como bug. O BolaRolante (teste4, spec 0026) deduz o giro do deslocamento e já mata no contato."
+      },
+      "note": "Esfera de pedra — BOLA ROLANTE. Em corredor descendente vira perseguição; em rampa estreita, obriga a se enfiar num nicho.",
+      "standalone": true
+    },
+    "assets/obstacle_11_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "trap",
+        "fire",
+        "pit",
+        "L",
+        "L"
+      ],
+      "size": [
+        10,
+        4.864,
+        10
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.864,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_11_001.png",
+      "mechanic": {
+        "behavior": "fire-pit",
+        "script": "Perigo",
+        "params": {
+          "raio": 1.8
+        },
+        "note": "Perigo estático: o poço já é a armadilha, não precisa de movimento."
+      },
+      "note": "Fosso de pedra com FOGO dentro, embutido no piso. Marca a zona letal a nível do chão — bom pra quebrar corredores longos sem cortar o caminho.",
+      "standalone": true
+    },
+    "assets/obstacle_1_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "trap",
+        "pendulum",
+        "ice",
+        "M",
+        "L"
+      ],
+      "size": [
+        1.915,
+        4.84,
+        1.528
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.019,
+            0.272,
+            0.012
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_1_001.png",
+      "mechanic": {
+        "behavior": "pendulum",
+        "script": "Pendulo",
+        "params": {
+          "amplitude": 2.2,
+          "velocidade": 1.4
+        },
+        "note": "Soma 'Perigo' pra matar no contato — o Pendulo só move."
+      },
+      "note": "Bloco de gelo/cristal preso a um braço com corrente: MARTELO PENDULAR que varre o corredor. Pendure acima do caminho e alterne a fase entre unidades vizinhas pra criar janela de passagem.",
+      "standalone": true
+    },
+    "assets/obstacle_2_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "trap",
+        "hammer",
+        "ice",
+        "L",
+        "M"
+      ],
+      "size": [
+        2.835,
+        1.682,
+        1.915
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            1.053,
+            1.682,
+            -0.039
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_2_001.png",
+      "mechanic": {
+        "behavior": "rotating-hammer",
+        "script": "MarteloGiratorio",
+        "params": {
+          "velocidade": 1.1
+        },
+        "note": "MEDIDO na malha ao montar a fase (spec 0026 do teste4): NÃO é pêndulo — a origem está na base e a massa fica em +X, então a peça VARRE na horizontal em torno do próprio eixo."
+      },
+      "note": "Bloco de gelo GRANDE cintado em metal na ponta de um braço: MARTELO GIRATÓRIO rente ao piso. Ocupa quase o corredor inteiro — a passagem é cronometrada, não desviada.",
+      "standalone": true
+    },
+    "assets/obstacle_3_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "trap",
+        "spinner",
+        "metal",
+        "M",
+        "L"
+      ],
+      "size": [
+        1.013,
+        1.676,
+        7.858
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.003,
+            1.676,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_3_001.png",
+      "mechanic": {
+        "behavior": "spinner",
+        "script": "MarteloGiratorio",
+        "params": {
+          "velocidade": 1.6
+        },
+        "note": "NÃO use 'Orbita' + 'Perigo': o gatilho do Perigo fica no EIXO, parado, enquanto a pá varre longe dali — o jogador morre no centro e atravessa a ponta. O MarteloGiratorio leva o acerto junto com a peça."
+      },
+      "note": "Barra horizontal num mancal: VASSOURA GIRATÓRIA rente ao chão. Clássico de pular por cima; combine com plataforma larga pra dar espaço de leitura.",
+      "standalone": true
+    },
+    "assets/obstacle_4_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "trap",
+        "spinner",
+        "metal",
+        "M",
+        "L"
+      ],
+      "size": [
+        7.858,
+        1.676,
+        7.858
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.676,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_4_001.png",
+      "mechanic": {
+        "behavior": "spinner",
+        "script": "MarteloGiratorio",
+        "params": {
+          "velocidade": 1.2
+        },
+        "note": "Mesmo motivo do obstacle_3 pra não usar Orbita+Perigo. Quatro pás = quatro janelas por volta, então gira mais devagar."
+      },
+      "note": "Cruz de quatro pás girando na horizontal. Passagem por TIMING entre as pás — bom no meio de uma ponte estreita.",
+      "standalone": true
+    },
+    "assets/obstacle_5_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "trap",
+        "blade",
+        "metal",
+        "L",
+        "L"
+      ],
+      "size": [
+        6.747,
+        1.18,
+        0.513
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.18,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_5_001.png",
+      "mechanic": {
+        "behavior": "sliding-blade",
+        "script": "ParedeDeslizante",
+        "params": {
+          "no": "obstacle_5_002",
+          "amplitude": 3.6,
+          "velocidade": 1.2
+        },
+        "note": "A peça tem DUAS partes: o trilho (raiz, parado) e o painel (nó filho `obstacle_5_002`, o que anima). Sem apontar o nó filho o script não acha o painel e a peça fica parada. Mesma anatomia do obstacle_7 do kit aquapark."
+      },
+      "note": "Painel/lâmina que corre num TRILHO reto. Atravessa o caminho de lado a lado: obriga a esperar a passagem em vez de pular.",
+      "standalone": true
+    },
+    "assets/obstacle_6_001.glb": {
+      "role": "hazard",
+      "tags": [
+        "trap",
+        "spinner",
+        "gate",
+        "L",
+        "L"
+      ],
+      "size": [
+        4.385,
+        1.254,
+        0.642
+      ],
+      "gameplayRole": [
+        "challenge"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.254,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_6_001.png",
+      "mechanic": {
+        "behavior": "revolving-door",
+        "script": "PlataformaGiratoria",
+        "params": {
+          "giro": 0.9,
+          "solido": true
+        },
+        "note": "SÓLIDA (empurra em vez de matar): é porta giratória, não lâmina. Sem 'Perigo'."
+      },
+      "note": "Dois painéis num eixo central — PORTA GIRATÓRIA. Deixa passar em janelas alternadas; ótimo como portão de setor entre trechos.",
+      "standalone": true
+    },
+    "assets/obstacle_7_001.glb": {
+      "role": "platform",
+      "tags": [
+        "stone",
+        "cracked",
+        "round",
+        "M",
+        "L"
+      ],
+      "size": [
+        5.843,
+        0.735,
+        5.877
+      ],
+      "gameplayRole": [
+        "path",
+        "challenge"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.023,
+            0.355,
+            0.018
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_7_001.png",
+      "mechanic": {
+        "behavior": "crumbling-platform",
+        "script": null,
+        "note": "PENDENTE: o teste4 não tem script de plataforma que desmorona. Hoje entra como plataforma normal; a rachadura já comunica 'frágil' se um dia virar mecânica."
+      },
+      "note": "Disco de pedra RACHADO. Leitura visual de piso frágil — use como pedra de travessia sobre o vazio, em cadeia com obstacle_8/9.",
+      "standalone": true
+    },
+    "assets/obstacle_8_001.glb": {
+      "role": "platform",
+      "tags": [
+        "stone",
+        "cracked",
+        "round",
+        "M",
+        "L"
+      ],
+      "size": [
+        9.194,
+        0.772,
+        9.215
+      ],
+      "gameplayRole": [
+        "path",
+        "challenge"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.023,
+            0.38,
+            0.016
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_8_001.png",
+      "note": "Variante do obstacle_7 com outro padrão de rachadura — alterne os dois pra a cadeia de pedras não ficar repetida.",
+      "standalone": true
+    },
+    "assets/obstacle_9_001.glb": {
+      "role": "platform",
+      "tags": [
+        "stone",
+        "round",
+        "M",
+        "M"
+      ],
+      "size": [
+        2.48,
+        0.62,
+        2.601
+      ],
+      "gameplayRole": [
+        "path"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.31,
+            -0.029
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/obstacle_9_001.png",
+      "note": "Disco de pedra LISO (sem rachadura): a pedra de travessia 'segura' do trio. Boa como ponto de descanso entre dois trechos de timing.",
+      "standalone": true
+    },
+    "assets/passage_001.glb": {
+      "role": "decoration",
+      "tags": [
+        "stone",
+        "gate",
+        "portal",
+        "L",
+        "L"
+      ],
+      "size": [
+        12.546,
+        18.904,
+        2.708
+      ],
+      "gameplayRole": [
+        "guidance",
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            11.234,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/passage_001.png",
+      "note": "Portal de pedra com tochas nas laterais: PÓRTICO de entrada de setor. Atravessável — marca 'daqui pra frente é outro trecho'.",
+      "standalone": true
+    },
+    "assets/passage_destroyed_001.glb": {
+      "role": "decoration",
+      "tags": [
+        "stone",
+        "gate",
+        "ruined",
+        "L",
+        "L"
+      ],
+      "size": [
+        2.708,
+        13.294,
+        2.708
+      ],
+      "gameplayRole": [
+        "landmark"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            5.624,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/passage_destroyed_001.png",
+      "note": "O mesmo pórtico em ruína. Use no fim do percurso (ou depois de uma armadilha) pra contar que aquele setor 'caiu'.",
+      "standalone": true
+    },
+    "assets/pillar_001.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        2,
+        7.937,
+        2
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.162,
+            3.396,
+            0.021
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_001.png"
+    },
+    "assets/pillar_002.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        2,
+        16.646,
+        2
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0.086,
+            8.554,
+            0.014
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_002.png"
+    },
+    "assets/pillar_003.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        2,
+        9.777,
+        2
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.084,
+            4.753,
+            0.089
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_003.png"
+    },
+    "assets/pillar_004.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        2,
+        18.688,
+        2
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0.006,
+            8.34,
+            -0.081
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_004.png"
+    },
+    "assets/pillar_005.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        7.078,
+        55.78,
+        7.459
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.059,
+            39.344,
+            -0.652
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_005.png"
+    },
+    "assets/pillar_006.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "M"
+      ],
+      "size": [
+        1,
+        2.564,
+        1
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.564,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_006.png"
+    },
+    "assets/pillar_007.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        5.986,
+        49.176,
+        5.986
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            49.876,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_007.png"
+    },
+    "assets/pillar_008.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        5.986,
+        24.425,
+        5.986
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            12.213,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_008.png"
+    },
+    "assets/pillar_009.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        6.692,
+        62.84,
+        7.716
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0.082,
+            30.281,
+            -0.357
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_009.png"
+    },
+    "assets/pillar_010.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        7.078,
+        55.78,
+        7.459
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.059,
+            39.344,
+            -0.652
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_010.png"
+    },
+    "assets/pillar_011.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        7.078,
+        55.78,
+        7.459
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.059,
+            39.344,
+            -0.652
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_011.png"
+    },
+    "assets/pillar_012.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "M"
+      ],
+      "size": [
+        1.096,
+        1.771,
+        1.096
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.771,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_012.png"
+    },
+    "assets/pillar_013.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        2.794,
+        10,
+        2.794
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            10,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_013.png"
+    },
+    "assets/pillar_014.glb": {
+      "role": "prop",
+      "tags": [
+        "stone",
+        "pillar",
+        "ruins",
+        "L"
+      ],
+      "size": [
+        2.794,
+        10,
+        2.794
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            10,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_014.png"
+    },
+    "assets/pillar_cap_001.glb": {
+      "role": "cap",
+      "tags": [
+        "stone",
+        "round",
+        "S",
+        "L"
+      ],
+      "size": [
+        6.834,
+        1.402,
+        6.834
+      ],
+      "gameplayRole": [
+        "path"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.701,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_cap_001.png",
+      "note": "Tampo redondo de coluna — vira plataforma de topo sobre pillar_007/008."
+    },
+    "assets/pillar_cap_002.glb": {
+      "role": "cap",
+      "tags": [
+        "stone",
+        "square",
+        "S",
+        "M"
+      ],
+      "size": [
+        3.62,
+        2.028,
+        3.62
+      ],
+      "gameplayRole": [
+        "path"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.015,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/pillar_cap_002.png",
+      "note": "Tampo quadrado de coluna, par do 001 pras colunas de seção reta."
+    },
+    "assets/platform_001.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "L"
+      ],
+      "size": [
+        10,
+        4.864,
+        10
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.864,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/platform_001.png"
+    },
+    "assets/platform_002.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "L"
+      ],
+      "size": [
+        10,
+        4.864,
+        10
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.864,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/platform_002.png"
+    },
+    "assets/platform_003.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "L"
+      ],
+      "size": [
+        5,
+        2.476,
+        5
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.476,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/platform_003.png"
+    },
+    "assets/platform_004.glb": {
+      "role": "ground",
+      "tags": [
+        "terrain",
+        "grass",
+        "L"
+      ],
+      "size": [
+        5,
+        2.476,
+        5
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            2.476,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/platform_004.png"
+    },
+    "assets/ring_001.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "ring",
+        "S"
+      ],
+      "size": [
+        0.923,
+        0.923,
+        0.119
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            0.462,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ring_001.png"
+    },
+    "assets/ruins_001.glb": {
+      "role": "decoration",
+      "tags": [
+        "stone",
+        "ruins",
+        "L",
+        "L"
+      ],
+      "size": [
+        32.605,
+        52.75,
+        26.829
+      ],
+      "gameplayRole": [
+        "landmark",
+        "cover"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -1.466,
+            30.306,
+            -0.173
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ruins_001.png",
+      "note": "Bloco de ruína vertical (parede desmoronada). Fecha o horizonte e dá silhueta ao fundo do trecho.",
+      "standalone": true
+    },
+    "assets/ruins_002.glb": {
+      "role": "decoration",
+      "tags": [
+        "stone",
+        "ruins",
+        "debris",
+        "L",
+        "L"
+      ],
+      "size": [
+        33.574,
+        59.987,
+        28.386
+      ],
+      "gameplayRole": [
+        "landmark"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.542,
+            25.993,
+            -0.499
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ruins_002.png",
+      "note": "Ruína desmoronando com detrito solto — variação do ruins_001 pra o fundo não repetir.",
+      "standalone": true
+    },
+    "assets/ruins_003.glb": {
+      "role": "platform",
+      "tags": [
+        "stone",
+        "ruins",
+        "L",
+        "L"
+      ],
+      "size": [
+        27.289,
+        4.893,
+        4.551
+      ],
+      "gameplayRole": [
+        "path",
+        "landmark"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            4.893,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ruins_003.png",
+      "note": "Ruína BAIXA e alongada, com topo plano: dá pra andar em cima. Serve de plataforma-cenário (parece cenário, é caminho).",
+      "standalone": true
+    },
+    "assets/ruins_road_001.glb": {
+      "role": "platform",
+      "tags": [
+        "stone",
+        "road",
+        "ruined",
+        "L",
+        "L"
+      ],
+      "size": [
+        4.286,
+        0.668,
+        23.552
+      ],
+      "gameplayRole": [
+        "path"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.031,
+            0.334,
+            -1.038
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ruins_road_001.png",
+      "note": "Trecho LONGO (≈23u) de estrada de pedra desmoronando. É a espinha do percurso: encadeie com ruins_road_002/003 pra fazer corredor, com falhas onde a estrada 'sumiu'.",
+      "standalone": true
+    },
+    "assets/ruins_road_002.glb": {
+      "role": "platform",
+      "tags": [
+        "stone",
+        "road",
+        "ruined",
+        "L",
+        "L"
+      ],
+      "size": [
+        4.769,
+        3.036,
+        35.265
+      ],
+      "gameplayRole": [
+        "path"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0.027,
+            1.536,
+            -0.796
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ruins_road_002.png",
+      "note": "Estrada arruinada mais estreita/esfarelada que a 001 — use no meio do trecho, onde o caminho deve dar medo.",
+      "standalone": true
+    },
+    "assets/ruins_road_003.glb": {
+      "role": "platform",
+      "tags": [
+        "stone",
+        "road",
+        "ruined",
+        "curve",
+        "L",
+        "L"
+      ],
+      "size": [
+        7.643,
+        0.668,
+        21.895
+      ],
+      "gameplayRole": [
+        "path"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0.7,
+            0.334,
+            -0.389
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/ruins_road_003.png",
+      "note": "Estrada arruinada em CURVA. É o que faz o percurso virar sem emenda seca entre dois trechos retos.",
+      "standalone": true
+    },
+    "assets/stairs_001.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "stairs",
+        "L"
+      ],
+      "size": [
+        5.086,
+        5.001,
+        8.341
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            5.001,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/stairs_001.png"
+    },
+    "assets/stairs_002.glb": {
+      "role": "platform",
+      "tags": [
+        "platform",
+        "stairs",
+        "L"
+      ],
+      "size": [
+        5.086,
+        5.001,
+        25.254
+      ],
+      "gameplayRole": [
+        "guidance"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            5.001,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/stairs_002.png"
+    },
+    "assets/star_001.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        1.285,
+        1.221,
+        0.249
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.001,
+            0.675,
+            0.002
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/star_001.png"
+    },
+    "assets/star_002.glb": {
+      "role": "collectible",
+      "tags": [
+        "treasure",
+        "S"
+      ],
+      "size": [
+        1.188,
+        1.135,
+        0.271
+      ],
+      "gameplayRole": [
+        "reward"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0.001,
+            0.625,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/star_002.png"
+    },
+    "assets/statue_knight_001.glb": {
+      "role": "decoration",
+      "tags": [
+        "statue",
+        "stone",
+        "L",
+        "L"
+      ],
+      "size": [
+        4.657,
+        10,
+        3.331
+      ],
+      "gameplayRole": [
+        "landmark"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.014,
+            9.964,
+            0.232
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/statue_knight_001.png",
+      "note": "Estátua de cavaleiro. Marco forte de orientação — ponha em bifurcação ou no fim de um corredor pra ancorar o olhar.",
+      "standalone": true
+    },
+    "assets/statue_podium_001.glb": {
+      "role": "prop",
+      "tags": [
+        "podium",
+        "stone",
+        "M",
+        "L"
+      ],
+      "size": [
+        5.387,
+        3.466,
+        5.387
+      ],
+      "gameplayRole": [
+        "landmark"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.466,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/statue_podium_001.png",
+      "note": "Pódio/altar de pedra com detalhes laranja. Base pra estátua, baú ou coletável de destaque no fim do percurso.",
+      "standalone": true
+    },
+    "assets/statue_warlock_001.glb": {
+      "role": "decoration",
+      "tags": [
+        "statue",
+        "stone",
+        "L",
+        "L"
+      ],
+      "size": [
+        4.908,
+        11.257,
+        3.738
+      ],
+      "gameplayRole": [
+        "landmark"
+      ],
+      "collider": {
+        "shape": "box",
+        "solid": true
+      },
+      "anchors": {
+        "top": {
+          "at": [
+            -0.037,
+            11.257,
+            -0.311
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/statue_warlock_001.png",
+      "note": "Estátua de feiticeiro com halo de runas. Par temático do cavaleiro; funciona como 'guardião' de sala de tesouro.",
+      "standalone": true
+    },
+    "assets/vase_001.glb": {
+      "role": "prop",
+      "tags": [
+        "S"
+      ],
+      "size": [
+        1.114,
+        1.048,
+        1.114
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.048,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/vase_001.png"
+    },
+    "assets/vase_002.glb": {
+      "role": "prop",
+      "tags": [
+        "S"
+      ],
+      "size": [
+        0.902,
+        1.335,
+        0.902
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.335,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/vase_002.png"
+    },
+    "assets/vase_003.glb": {
+      "role": "prop",
+      "tags": [
+        "S"
+      ],
+      "size": [
+        0.944,
+        1.403,
+        0.944
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            1.403,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/vase_003.png"
+    },
+    "assets/wall_001.glb": {
+      "role": "prop",
+      "tags": [
+        "L"
+      ],
+      "size": [
+        6,
+        10,
+        1.765
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            10,
+            0.008
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/wall_001.png"
+    },
+    "assets/wall_002.glb": {
+      "role": "prop",
+      "tags": [
+        "L"
+      ],
+      "size": [
+        6,
+        10,
+        1
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            10,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/wall_002.png"
+    }
+  }
+}

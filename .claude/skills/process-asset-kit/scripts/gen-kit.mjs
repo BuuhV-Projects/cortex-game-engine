@@ -173,6 +173,11 @@ function classify(name) {
   // por --overrides. Sufixo `_001` mata os `\b` das regras Kenney acima.
   if (/^(water|waves)_/.test(n)) return R('hazard', ['water', 'surface'], ['hazard']);
   if (/^shadow/.test(n)) return R('decoration', ['decal', 'shadow'], []);
+  // Ruínas/templo (Platformer_8_Underworld e afins): glifo é DECALQUE plano de
+  // parede (nunca sólido); pilar/coluna é marco vertical sólido, que também
+  // serve de pedestal quando levar um `cap` em cima.
+  if (/^(hieroglyph|glyph|rune)_/.test(n)) return R('decoration', ['decal', 'glyph', 'wall'], ['guidance']);
+  if (/^(pillar|column)_/.test(n)) return R('prop', ['stone', 'pillar', 'ruins'], ['landmark', 'cover'], { solid: true });
   if (/^(finish|goal)_/.test(n)) return R('decoration', ['goal', 'finish'], ['guidance', 'landmark']);
   if (/^flag/.test(n)) return R('decoration', ['flag', 'guidance'], ['guidance', 'landmark']);
   if (/^(indicator|signboard|signpost)/.test(n)) return R('decoration', ['sign', 'guidance'], ['guidance']);
