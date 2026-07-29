@@ -1,0 +1,301 @@
+{
+  "_leia": "Classificação a olho das thumbnails (contact sheet em _stage/underworld/sheet-*.png) para o pack Platformer_8_Underworld (ithappy). O naming obstacle_N/pillar_N/circle_N é opaco — o que a peça É e o que ela FAZ mora aqui e vai pro kit.json (durável, sobrevive ao reprocesso). Scripts citados são os do teste4 (scripts/*.ts); 'Perigo' é quem torna o contato letal.",
+
+  "obstacle_1_001": {
+    "role": "hazard",
+    "tags": ["trap", "pendulum", "ice", "M"],
+    "gameplayRole": ["challenge"],
+    "solid": false,
+    "standalone": true,
+    "mechanic": {
+      "behavior": "pendulum",
+      "script": "Pendulo",
+      "params": { "amplitude": 2.2, "velocidade": 1.4 },
+      "note": "Soma 'Perigo' pra matar no contato — o Pendulo só move."
+    },
+    "note": "Bloco de gelo/cristal preso a um braço com corrente: MARTELO PENDULAR que varre o corredor. Pendure acima do caminho e alterne a fase entre unidades vizinhas pra criar janela de passagem."
+  },
+  "obstacle_2_001": {
+    "role": "hazard",
+    "tags": ["trap", "pendulum", "ice", "L"],
+    "gameplayRole": ["challenge"],
+    "solid": false,
+    "standalone": true,
+    "mechanic": {
+      "behavior": "pendulum",
+      "script": "Pendulo",
+      "params": { "amplitude": 2.6, "velocidade": 1.1 },
+      "note": "Versão pesada do obstacle_1 — mais lenta e mais larga."
+    },
+    "note": "Bloco de gelo GRANDE cintado em metal, no mesmo braço pendular. Ocupa quase o corredor inteiro: use onde a passagem tem que ser cronometrada, não desviada."
+  },
+  "obstacle_3_001": {
+    "role": "hazard",
+    "tags": ["trap", "spinner", "metal", "M"],
+    "gameplayRole": ["challenge"],
+    "solid": false,
+    "standalone": true,
+    "mechanic": {
+      "behavior": "spinner",
+      "script": "Orbita",
+      "params": { "raio": 0, "velocidade": 0, "giro": 1.6 },
+      "note": "Raio 0 = gira no próprio eixo (o campo `giro` do OrbitScript). Soma 'Perigo' com raio ≈ meia-barra."
+    },
+    "note": "Barra horizontal num mancal: VASSOURA GIRATÓRIA rente ao chão. Clássico de pular por cima; combine com plataforma larga pra dar espaço de leitura."
+  },
+  "obstacle_4_001": {
+    "role": "hazard",
+    "tags": ["trap", "spinner", "metal", "M"],
+    "gameplayRole": ["challenge"],
+    "solid": false,
+    "standalone": true,
+    "mechanic": {
+      "behavior": "spinner",
+      "script": "Orbita",
+      "params": { "raio": 0, "velocidade": 0, "giro": 1.2 },
+      "note": "Quatro pás = quatro janelas por volta; mais lento que o obstacle_3 porque a janela é menor."
+    },
+    "note": "Cruz de quatro pás girando na horizontal. Passagem por TIMING entre as pás — bom no meio de uma ponte estreita."
+  },
+  "obstacle_5_001": {
+    "role": "hazard",
+    "tags": ["trap", "blade", "metal", "L"],
+    "gameplayRole": ["challenge"],
+    "solid": false,
+    "standalone": true,
+    "mechanic": {
+      "behavior": "sliding-blade",
+      "script": "Patrulha",
+      "params": { "eixo": "x", "amplitude": 2.5, "velocidade": 1.5 },
+      "note": "A base (trilho) fica parada; quem se move é o painel. Soma 'Perigo'."
+    },
+    "note": "Painel/lâmina que corre num TRILHO reto. Atravessa o caminho de lado a lado: obriga a esperar a passagem em vez de pular."
+  },
+  "obstacle_6_001": {
+    "role": "hazard",
+    "tags": ["trap", "spinner", "gate", "L"],
+    "gameplayRole": ["challenge"],
+    "solid": true,
+    "standalone": true,
+    "mechanic": {
+      "behavior": "revolving-door",
+      "script": "Orbita",
+      "params": { "raio": 0, "velocidade": 0, "giro": 0.9 },
+      "note": "SÓLIDO (empurra em vez de matar): é porta giratória, não lâmina. Sem 'Perigo'."
+    },
+    "note": "Dois painéis num eixo central — PORTA GIRATÓRIA. Deixa passar em janelas alternadas; ótimo como portão de setor entre trechos."
+  },
+  "obstacle_7_001": {
+    "role": "platform",
+    "tags": ["stone", "cracked", "round", "M"],
+    "gameplayRole": ["path", "challenge"],
+    "solid": true,
+    "shape": "box",
+    "standalone": true,
+    "mechanic": {
+      "behavior": "crumbling-platform",
+      "script": null,
+      "note": "PENDENTE: o teste4 não tem script de plataforma que desmorona. Hoje entra como plataforma normal; a rachadura já comunica 'frágil' se um dia virar mecânica."
+    },
+    "note": "Disco de pedra RACHADO. Leitura visual de piso frágil — use como pedra de travessia sobre o vazio, em cadeia com obstacle_8/9."
+  },
+  "obstacle_8_001": {
+    "role": "platform",
+    "tags": ["stone", "cracked", "round", "M"],
+    "gameplayRole": ["path", "challenge"],
+    "solid": true,
+    "shape": "box",
+    "standalone": true,
+    "note": "Variante do obstacle_7 com outro padrão de rachadura — alterne os dois pra a cadeia de pedras não ficar repetida."
+  },
+  "obstacle_9_001": {
+    "role": "platform",
+    "tags": ["stone", "round", "M"],
+    "gameplayRole": ["path"],
+    "solid": true,
+    "shape": "box",
+    "standalone": true,
+    "note": "Disco de pedra LISO (sem rachadura): a pedra de travessia 'segura' do trio. Boa como ponto de descanso entre dois trechos de timing."
+  },
+  "obstacle_10_001": {
+    "role": "hazard",
+    "tags": ["trap", "boulder", "stone", "M"],
+    "gameplayRole": ["challenge"],
+    "solid": false,
+    "shape": "circle",
+    "standalone": true,
+    "mechanic": {
+      "behavior": "rolling-boulder",
+      "script": "Patrulha",
+      "params": { "eixo": "z", "amplitude": 8, "velocidade": 2.2, "virar": false },
+      "note": "Rola pelo corredor num vaivém longo. Soma 'Perigo' com raio ≈ o da esfera."
+    },
+    "note": "Esfera de pedra — BOLA ROLANTE. Em corredor descendente vira perseguição; em rampa estreita, obriga a se enfiar num nicho."
+  },
+  "obstacle_11_001": {
+    "role": "hazard",
+    "tags": ["trap", "fire", "pit", "L"],
+    "gameplayRole": ["challenge"],
+    "solid": false,
+    "standalone": true,
+    "mechanic": {
+      "behavior": "fire-pit",
+      "script": "Perigo",
+      "params": { "raio": 1.8 },
+      "note": "Perigo estático: o poço já é a armadilha, não precisa de movimento."
+    },
+    "note": "Fosso de pedra com FOGO dentro, embutido no piso. Marca a zona letal a nível do chão — bom pra quebrar corredores longos sem cortar o caminho."
+  },
+
+  "fire_001": {
+    "role": "hazard",
+    "tags": ["fire", "brazier", "S"],
+    "gameplayRole": ["challenge", "landmark"],
+    "solid": false,
+    "standalone": true,
+    "mechanic": { "behavior": "static-hazard", "script": "Perigo", "params": { "raio": 1 } },
+    "note": "Braseiro em pedestal de pedra. Serve às duas coisas: perigo pontual e FAROL — a chama num corredor escuro puxa o olhar pro caminho certo."
+  },
+  "fire_002": {
+    "role": "hazard",
+    "tags": ["fire", "campfire", "S"],
+    "gameplayRole": ["challenge", "landmark"],
+    "solid": false,
+    "standalone": true,
+    "mechanic": { "behavior": "static-hazard", "script": "Perigo", "params": { "raio": 1 } },
+    "note": "Fogueira no chão (sem pedestal). Mesmo papel do fire_001, mais baixa — passa por baixo de arcos."
+  },
+
+  "circle_001": {
+    "role": "platform",
+    "tags": ["stone", "round", "marker", "S"],
+    "gameplayRole": ["guidance"],
+    "solid": true,
+    "shape": "box",
+    "standalone": true,
+    "note": "Disco raso com aro laranja: MARCA de chão (largada, chegada, ponto de checkpoint). Chapado o bastante pra pisar sem degrau."
+  },
+  "circle_002": {
+    "role": "decoration",
+    "tags": ["stone", "round", "frame", "S"],
+    "gameplayRole": ["landmark"],
+    "solid": false,
+    "standalone": true,
+    "note": "Aro de pedra vazado (moldura). Emoldura portais e nichos; vazado, dá pra atravessar."
+  },
+
+  "ruins_road_001": {
+    "role": "platform",
+    "tags": ["stone", "road", "ruined", "L"],
+    "gameplayRole": ["path"],
+    "solid": true,
+    "shape": "box",
+    "standalone": true,
+    "note": "Trecho LONGO (≈23u) de estrada de pedra desmoronando. É a espinha do percurso: encadeie com ruins_road_002/003 pra fazer corredor, com falhas onde a estrada 'sumiu'."
+  },
+  "ruins_road_002": {
+    "role": "platform",
+    "tags": ["stone", "road", "ruined", "L"],
+    "gameplayRole": ["path"],
+    "solid": true,
+    "shape": "box",
+    "standalone": true,
+    "note": "Estrada arruinada mais estreita/esfarelada que a 001 — use no meio do trecho, onde o caminho deve dar medo."
+  },
+  "ruins_road_003": {
+    "role": "platform",
+    "tags": ["stone", "road", "ruined", "curve", "L"],
+    "gameplayRole": ["path"],
+    "solid": true,
+    "shape": "box",
+    "standalone": true,
+    "note": "Estrada arruinada em CURVA. É o que faz o percurso virar sem emenda seca entre dois trechos retos."
+  },
+  "ruins_001": {
+    "role": "decoration",
+    "tags": ["stone", "ruins", "L"],
+    "gameplayRole": ["landmark", "cover"],
+    "solid": true,
+    "standalone": true,
+    "note": "Bloco de ruína vertical (parede desmoronada). Fecha o horizonte e dá silhueta ao fundo do trecho."
+  },
+  "ruins_002": {
+    "role": "decoration",
+    "tags": ["stone", "ruins", "debris", "L"],
+    "gameplayRole": ["landmark"],
+    "solid": true,
+    "standalone": true,
+    "note": "Ruína desmoronando com detrito solto — variação do ruins_001 pra o fundo não repetir."
+  },
+  "ruins_003": {
+    "role": "platform",
+    "tags": ["stone", "ruins", "L"],
+    "gameplayRole": ["path", "landmark"],
+    "solid": true,
+    "shape": "box",
+    "standalone": true,
+    "note": "Ruína BAIXA e alongada, com topo plano: dá pra andar em cima. Serve de plataforma-cenário (parece cenário, é caminho)."
+  },
+
+  "passage_001": {
+    "role": "decoration",
+    "tags": ["stone", "gate", "portal", "L"],
+    "gameplayRole": ["guidance", "landmark"],
+    "solid": false,
+    "standalone": true,
+    "note": "Portal de pedra com tochas nas laterais: PÓRTICO de entrada de setor. Atravessável — marca 'daqui pra frente é outro trecho'."
+  },
+  "passage_destroyed_001": {
+    "role": "decoration",
+    "tags": ["stone", "gate", "ruined", "L"],
+    "gameplayRole": ["landmark"],
+    "solid": false,
+    "standalone": true,
+    "note": "O mesmo pórtico em ruína. Use no fim do percurso (ou depois de uma armadilha) pra contar que aquele setor 'caiu'."
+  },
+
+  "pillar_cap_001": { "role": "cap", "tags": ["stone", "round", "S"], "gameplayRole": ["path"], "solid": true, "note": "Tampo redondo de coluna — vira plataforma de topo sobre pillar_007/008." },
+  "pillar_cap_002": { "role": "cap", "tags": ["stone", "square", "S"], "gameplayRole": ["path"], "solid": true, "note": "Tampo quadrado de coluna, par do 001 pras colunas de seção reta." },
+
+  "statue_knight_001": {
+    "role": "decoration",
+    "tags": ["statue", "stone", "L"],
+    "gameplayRole": ["landmark"],
+    "solid": true,
+    "standalone": true,
+    "note": "Estátua de cavaleiro. Marco forte de orientação — ponha em bifurcação ou no fim de um corredor pra ancorar o olhar."
+  },
+  "statue_warlock_001": {
+    "role": "decoration",
+    "tags": ["statue", "stone", "L"],
+    "gameplayRole": ["landmark"],
+    "solid": true,
+    "standalone": true,
+    "note": "Estátua de feiticeiro com halo de runas. Par temático do cavaleiro; funciona como 'guardião' de sala de tesouro."
+  },
+  "statue_podium_001": {
+    "role": "prop",
+    "tags": ["podium", "stone", "M"],
+    "gameplayRole": ["landmark"],
+    "solid": true,
+    "standalone": true,
+    "note": "Pódio/altar de pedra com detalhes laranja. Base pra estátua, baú ou coletável de destaque no fim do percurso."
+  },
+
+  "chest_001": {
+    "role": "prop",
+    "tags": ["chest", "wood", "M"],
+    "gameplayRole": ["reward", "landmark"],
+    "solid": true,
+    "standalone": true,
+    "note": "Baú de madeira e ouro. Marca RECOMPENSA — ponha onde o desvio arriscado compensa (com moeda/diamante ao lado)."
+  },
+  "chest_002": {
+    "role": "prop",
+    "tags": ["chest", "wood", "M"],
+    "gameplayRole": ["reward", "landmark"],
+    "solid": true,
+    "standalone": true,
+    "note": "Baú escuro, variante do 001."
+  }
+}
