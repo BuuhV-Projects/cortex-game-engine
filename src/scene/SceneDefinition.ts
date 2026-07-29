@@ -349,6 +349,44 @@ const lightNode = z.object({
   castShadow: z.boolean().optional(),
   id: z.string().min(1),
 });
+/**
+ * **Emissor de partículas** (ADR-0168 / SPEC-0169) — fagulha, poeira, fumaça,
+ * respingo. Faixas aceitam `[min, max]` (sorteia por partícula) ou um número.
+ *
+ * A cor é do EMISSOR, não da partícula, e o fim da vida é por ESCALA (a partícula
+ * encolhe): `instanceColor` é vertex color de instância, que o compilador de
+ * shader do host nativo miscompila — ver o ADR.
+ */
+const particleRange = z.union([z.number(), z.tuple([z.number(), z.number()])]);
+const particlesNode = z.object({
+  type: z.literal('particles'),
+  id: z.string().min(1),
+  place: placeSchema.optional(),
+  /** Capacidade do pool (teto de partículas vivas). Default 128. */
+  max: z.number().int().min(1).optional(),
+  /** Emissão contínua (partículas/s). `0` = só `burst`. Default 0. */
+  rate: z.number().min(0).optional(),
+  /** Emissão instantânea ao nascer. Default 0. */
+  burst: z.number().int().min(0).optional(),
+  /** `false` = solta uma leva e para (efeito de evento). Default true. */
+  loop: z.boolean().optional(),
+  life: particleRange.optional(),
+  size: particleRange.optional(),
+  speed: particleRange.optional(),
+  spin: particleRange.optional(),
+  direction: vec3.optional(),
+  /** Abertura do cone em torno de `direction` (rad). Default 0.4. */
+  spread: z.number().min(0).optional(),
+  /** Aceleração em Y (u/s²). Default 0. */
+  gravity: z.number().optional(),
+  /** Fração da velocidade perdida por segundo. Default 0. */
+  drag: z.number().min(0).optional(),
+  color: colorSchema.optional(),
+  opacity: z.number().min(0).max(1).optional(),
+  blending: z.enum(['additive', 'normal']).optional(),
+  /** Textura do sprite. Ausente = disco suave gerado por código. */
+  texture: z.string().optional(),
+});
 const waterNode = z.object({
   type: z.literal('water'),
   y: z.number().optional(),
@@ -488,6 +526,7 @@ const sceneNodeSchema = z.discriminatedUnion('type', [
   meshNode,
   lightNode,
   waterNode,
+  particlesNode,
   backgroundNode,
   spriteNode,
   terrainNode,
@@ -572,6 +611,7 @@ export type MeshNode = z.infer<typeof meshNode>;
 export type VegetationNode = z.infer<typeof vegetationNode>;
 export type LightNode = z.infer<typeof lightNode>;
 export type WaterNode = z.infer<typeof waterNode>;
+export type ParticlesNode = z.infer<typeof particlesNode>;
 export type BackgroundNode = z.infer<typeof backgroundNode>;
 /** Um nó da cena (união discriminada por `type`). */
 export type SceneNode = z.infer<typeof sceneNodeSchema>;

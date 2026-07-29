@@ -125,6 +125,7 @@ export * from './scene/SceneAssets.js';
 export * from './scene/Materials.js';
 export * from './scene/OutdoorLighting.js';
 export * from './scene/Water.js';
+export * from './scene/Particles.js';
 export * from './scene/StaticMerge.js';
 export * from './scene/Streaming.js';
 export * from './ui/DebugHud.js';

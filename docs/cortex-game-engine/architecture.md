@@ -103,6 +103,18 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   (compensação de UV em tiles) pra não escorregarem com o plano. `follow: false` no
   nó = água fixa (lago/poça). O `update()` (chamado pelo `SceneHandle.update`) faz
   o recentro + o fluxo.
+- **Partículas (`Particles.ts`, ADR-0168 / SPEC-0169)** — nó `particles` e a API
+  `ParticleEmitter`/`spawnParticles`: fagulha, poeira, fumaça, respingo, clarão.
+  Pool de tamanho fixo em arrays planos (nada alocado por partícula) desenhado
+  como quads billboard de um `InstancedMesh` — **um draw call por emissor**, o
+  mesmo instancing da vegetação. O `update(dt, camera)` entra no
+  `SceneHandle.update`, junto de água e animator; a câmera orienta os quads.
+  **Duas limitações de propósito**, ambas registradas no ADR: não há cor/alpha por
+  partícula (`instanceColor` é vertex color de instância, que o `naga` do host
+  nativo miscompila — o fade é por ESCALA, e gradiente se faz com dois emissores),
+  e a partícula vive no espaço do emissor (sem rastro de emissor móvel). Sem
+  `texture`, o emissor gera um disco suave por código (`DataTexture`, sem
+  `canvas` — que não existe no host).
 - **Kit / sockets (`Kit.ts`, ADR-0053)** — `parseKit` valida o `kit.json`
   (role/tags/gameplayRole/size/collider/anchors por asset); com `opts.kit`, nós
   `model` podem declarar `attach { socket, to, toSocket }` e o `buildScene`

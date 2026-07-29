@@ -51,6 +51,7 @@ import { RapierBodyComponent } from '../components/RapierBodyComponent.js';
 import { RapierPhysicsSystem } from '../systems/RapierPhysicsSystem.js';
 import { RapierPhysics } from '../physics/RapierPhysics.js';
 import { Water } from './Water.js';
+import { ParticleEmitter } from './Particles.js';
 import { mergeStaticScene, wrapStaticInBundle, isNativeHost } from './StaticMerge.js';
 import { Background } from './Background.js';
 import { toBufferGeometry, type EditableMesh } from '../probuilder/EditableMesh.js';
@@ -479,6 +480,7 @@ export async function buildScene(
   const three = scene.getThreeScene();
   const byId = new Map<string, Object3D>();
   const waters: Water[] = [];
+  const emitters: ParticleEmitter[] = [];
   const backgrounds: Background[] = [];
   const animators: SceneAnimator[] = [];
   const overlay = options.overlay ?? null;
@@ -573,7 +575,7 @@ export async function buildScene(
       byId.set(node.id, bg.mesh);
       continue;
     }
-    const obj = await instantiate(node, scene, three, waters, editorGeometry[node.id], options.camera);
+    const obj = await instantiate(node, scene, three, waters, editorGeometry[node.id], options.camera, emitters);
     if (!obj) continue;
     // Veículo (ADR-0081): config do nó + overlay → userData.cortexVehicle (o jogo lê pra
     // criar o veículo; o Inspector edita). Marca o nó como veículo pro Inspector mostrar a seção.
@@ -830,6 +832,9 @@ export async function buildScene(
       for (const w of waters) w.update(dt);
       for (const b of backgrounds) b.update();
       for (const a of animators) a.update(dt);
+      // A câmera orienta os quads (billboard); sem ela o emissor mantém a última
+      // orientação, o que é o certo pro editor sem câmera de jogo.
+      for (const e of emitters) e.update(dt, options.camera);
     },
   };
 }
@@ -955,6 +960,7 @@ async function instantiate(
   waters?: Water[],
   meshGeometry?: EditableMesh,
   camera?: import('three').PerspectiveCamera | import('three').OrthographicCamera,
+  emitters?: ParticleEmitter[],
 ): Promise<Object3D | null> {
   let obj: Object3D;
   switch (node.type) {
@@ -1003,6 +1009,33 @@ async function instantiate(
       });
       waters?.push(water);
       obj = water.mesh;
+      break;
+    }
+    case 'particles': {
+      // Emissor de efeito (ADR-0168): a textura é opcional — sem ela o emissor
+      // gera o disco suave por código, então efeito não exige asset novo.
+      const emitter = new ParticleEmitter({
+        max: node.max,
+        rate: node.rate,
+        burst: node.burst,
+        loop: node.loop,
+        life: node.life,
+        size: node.size,
+        speed: node.speed,
+        spin: node.spin,
+        direction: node.direction,
+        spread: node.spread,
+        gravity: node.gravity,
+        drag: node.drag,
+        color: node.color,
+        opacity: node.opacity,
+        blending: node.blending,
+        texture: node.texture ? await loadTexture(node.texture, false) : undefined,
+      });
+      emitters?.push(emitter);
+      obj = emitter.object;
+      three.add(obj);
+      applyPlacement(obj, node);
       break;
     }
     case 'sprite': {
