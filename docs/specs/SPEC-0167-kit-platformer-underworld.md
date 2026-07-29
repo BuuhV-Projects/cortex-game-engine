@@ -63,23 +63,47 @@ que sobrevive a reprocessar o kit — mapeada nos scripts que o teste4 já tem:
 
 | Peça | O que é | Mecânica |
 |------|---------|----------|
-| `obstacle_1`, `obstacle_2` | bloco de gelo num braço | `Pendulo` (+ `Perigo`) |
-| `obstacle_3` | barra horizontal | `Orbita` raio 0 = gira no eixo |
-| `obstacle_4` | cruz de 4 pás | `Orbita` raio 0, mais lenta |
-| `obstacle_5` | painel num trilho | `Patrulha` (lâmina deslizante) |
-| `obstacle_6` | porta giratória | `Orbita` **sólida** — empurra, não mata |
+| `obstacle_1` | bloco de gelo pendurado | `Pendulo` (+ `Perigo`) |
+| `obstacle_2` | bloco de gelo na ponta de um braço | `MarteloGiratorio` |
+| `obstacle_3` | barra horizontal | `MarteloGiratorio` |
+| `obstacle_4` | cruz de 4 pás | `MarteloGiratorio`, mais lenta |
+| `obstacle_5` | painel num trilho | `ParedeDeslizante` (nó filho `obstacle_5_002`) |
+| `obstacle_6` | porta giratória | `PlataformaGiratoria` **sólida** — empurra, não mata |
 | `obstacle_7`, `obstacle_8` | disco de pedra rachado | plataforma; `crumbling` PENDENTE |
 | `obstacle_9` | disco de pedra liso | plataforma "segura" do trio |
-| `obstacle_10` | esfera de pedra | `Patrulha` (bola rolante) |
+| `obstacle_10` | esfera de pedra | `BolaRolante` |
 | `obstacle_11` | fosso com fogo | `Perigo` estático |
 | `fire_001/002` | braseiro / fogueira | `Perigo` + farol de orientação |
 
-`Orbita` com `raio: 0` é o jeito de girar no próprio eixo (o campo `giro` do
-`OrbitScript`) — sem isso, "spinner" viraria script novo à toa.
+**O movimento não mata**: `Pendulo`/`Patrulha` só movem; quem torna o contato
+letal é o `Perigo`. As notas do kit dizem isso peça a peça, porque é o erro
+fácil de cometer ao montar a fase.
 
-**O movimento não mata**: `Pendulo`/`Patrulha`/`Orbita` só movem; quem torna o
-contato letal é o `Perigo`. As notas do kit dizem isso peça a peça, porque é o
-erro fácil de cometer ao montar a fase.
+### Três correções que só a montagem revelou
+
+A primeira leitura destas peças (feita pela thumbnail) errou em três, e a fase do
+mundo extra (spec 0026 do teste4) corrigiu **medindo a malha**. O `kit.json` foi
+regerado com a versão certa:
+
+1. **`obstacle_2` não é pêndulo.** A origem está na base e a massa em +X: a peça
+   varre na HORIZONTAL em torno do próprio eixo. Pendurada como pêndulo, ela
+   giraria em torno de um ponto que não existe no modelo.
+2. **`obstacle_3/4` não podem ser `Orbita` + `Perigo`.** O gatilho do `Perigo`
+   fica no EIXO, parado, enquanto a pá varre longe dali — o jogador morreria no
+   centro e atravessaria a ponta. Quem leva o acerto junto com a peça é o
+   `MarteloGiratorio`.
+3. **`obstacle_10` não pode ser `Patrulha`.** Ela só translada, e uma esfera que
+   desliza sem girar lê como bug ("peça com papel de gameplay visualmente parada
+   está errada"). O `BolaRolante` deduz o giro do deslocamento.
+
+E uma anatomia que não se vê na thumbnail: **`obstacle_5` são duas partes** —
+trilho parado (raiz) e painel filho `obstacle_5_002`, que é o que anima. Sem
+apontar o nó filho, o script não acha o painel e a peça fica parada. Mesma
+anatomia do `obstacle_7` do kit aquapark.
+
+**Lição de método:** classificar por thumbnail acerta o QUE a peça é; só animar a
+peça no jogo prova COMO ela se move. A semântica do kit merece uma segunda
+passada depois da primeira fase montada com ele.
 
 ### Extras que vão junto
 

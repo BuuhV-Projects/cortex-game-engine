@@ -1733,14 +1733,14 @@
       "thumb": "thumbnails/obstacle_10_001.png",
       "mechanic": {
         "behavior": "rolling-boulder",
-        "script": "Patrulha",
+        "script": "BolaRolante",
         "params": {
           "eixo": "z",
           "amplitude": 8,
-          "velocidade": 2.2,
-          "virar": false
+          "velocidade": 1.1,
+          "raioAcerto": 2.4
         },
-        "note": "Rola pelo corredor num vaivém longo. Soma 'Perigo' com raio ≈ o da esfera."
+        "note": "NÃO use 'Patrulha': ela só translada, e uma esfera que desliza sem girar lê como bug. O BolaRolante (teste4, spec 0026) deduz o giro do deslocamento e já mata no contato."
       },
       "note": "Esfera de pedra — BOLA ROLANTE. Em corredor descendente vira perseguição; em rampa estreita, obriga a se enfiar num nicho.",
       "standalone": true
@@ -1838,7 +1838,7 @@
       "role": "hazard",
       "tags": [
         "trap",
-        "pendulum",
+        "hammer",
         "ice",
         "L",
         "M"
@@ -1868,15 +1868,14 @@
       },
       "thumb": "thumbnails/obstacle_2_001.png",
       "mechanic": {
-        "behavior": "pendulum",
-        "script": "Pendulo",
+        "behavior": "rotating-hammer",
+        "script": "MarteloGiratorio",
         "params": {
-          "amplitude": 2.6,
           "velocidade": 1.1
         },
-        "note": "Versão pesada do obstacle_1 — mais lenta e mais larga."
+        "note": "MEDIDO na malha ao montar a fase (spec 0026 do teste4): NÃO é pêndulo — a origem está na base e a massa fica em +X, então a peça VARRE na horizontal em torno do próprio eixo."
       },
-      "note": "Bloco de gelo GRANDE cintado em metal, no mesmo braço pendular. Ocupa quase o corredor inteiro: use onde a passagem tem que ser cronometrada, não desviada.",
+      "note": "Bloco de gelo GRANDE cintado em metal na ponta de um braço: MARTELO GIRATÓRIO rente ao piso. Ocupa quase o corredor inteiro — a passagem é cronometrada, não desviada.",
       "standalone": true
     },
     "assets/obstacle_3_001.glb": {
@@ -1914,13 +1913,11 @@
       "thumb": "thumbnails/obstacle_3_001.png",
       "mechanic": {
         "behavior": "spinner",
-        "script": "Orbita",
+        "script": "MarteloGiratorio",
         "params": {
-          "raio": 0,
-          "velocidade": 0,
-          "giro": 1.6
+          "velocidade": 1.6
         },
-        "note": "Raio 0 = gira no próprio eixo (o campo `giro` do OrbitScript). Soma 'Perigo' com raio ≈ meia-barra."
+        "note": "NÃO use 'Orbita' + 'Perigo': o gatilho do Perigo fica no EIXO, parado, enquanto a pá varre longe dali — o jogador morre no centro e atravessa a ponta. O MarteloGiratorio leva o acerto junto com a peça."
       },
       "note": "Barra horizontal num mancal: VASSOURA GIRATÓRIA rente ao chão. Clássico de pular por cima; combine com plataforma larga pra dar espaço de leitura.",
       "standalone": true
@@ -1960,13 +1957,11 @@
       "thumb": "thumbnails/obstacle_4_001.png",
       "mechanic": {
         "behavior": "spinner",
-        "script": "Orbita",
+        "script": "MarteloGiratorio",
         "params": {
-          "raio": 0,
-          "velocidade": 0,
-          "giro": 1.2
+          "velocidade": 1.2
         },
-        "note": "Quatro pás = quatro janelas por volta; mais lento que o obstacle_3 porque a janela é menor."
+        "note": "Mesmo motivo do obstacle_3 pra não usar Orbita+Perigo. Quatro pás = quatro janelas por volta, então gira mais devagar."
       },
       "note": "Cruz de quatro pás girando na horizontal. Passagem por TIMING entre as pás — bom no meio de uma ponte estreita.",
       "standalone": true
@@ -2006,13 +2001,13 @@
       "thumb": "thumbnails/obstacle_5_001.png",
       "mechanic": {
         "behavior": "sliding-blade",
-        "script": "Patrulha",
+        "script": "ParedeDeslizante",
         "params": {
-          "eixo": "x",
-          "amplitude": 2.5,
-          "velocidade": 1.5
+          "no": "obstacle_5_002",
+          "amplitude": 3.6,
+          "velocidade": 1.2
         },
-        "note": "A base (trilho) fica parada; quem se move é o painel. Soma 'Perigo'."
+        "note": "A peça tem DUAS partes: o trilho (raiz, parado) e o painel (nó filho `obstacle_5_002`, o que anima). Sem apontar o nó filho o script não acha o painel e a peça fica parada. Mesma anatomia do obstacle_7 do kit aquapark."
       },
       "note": "Painel/lâmina que corre num TRILHO reto. Atravessa o caminho de lado a lado: obriga a esperar a passagem em vez de pular.",
       "standalone": true
@@ -2056,13 +2051,12 @@
       "thumb": "thumbnails/obstacle_6_001.png",
       "mechanic": {
         "behavior": "revolving-door",
-        "script": "Orbita",
+        "script": "PlataformaGiratoria",
         "params": {
-          "raio": 0,
-          "velocidade": 0,
-          "giro": 0.9
+          "giro": 0.9,
+          "solido": true
         },
-        "note": "SÓLIDO (empurra em vez de matar): é porta giratória, não lâmina. Sem 'Perigo'."
+        "note": "SÓLIDA (empurra em vez de matar): é porta giratória, não lâmina. Sem 'Perigo'."
       },
       "note": "Dois painéis num eixo central — PORTA GIRATÓRIA. Deixa passar em janelas alternadas; ótimo como portão de setor entre trechos.",
       "standalone": true
