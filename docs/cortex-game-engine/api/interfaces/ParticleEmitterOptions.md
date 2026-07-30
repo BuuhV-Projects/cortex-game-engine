@@ -6,7 +6,7 @@
 
 # Interface: ParticleEmitterOptions
 
-Defined in: src/scene/Particles.ts:50
+Defined in: [src/scene/Particles.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L50)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: src/scene/Particles.ts:50
 
 > `optional` **blending?**: `"normal"` \| `"additive"`
 
-Defined in: src/scene/Particles.ts:80
+Defined in: [src/scene/Particles.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L80)
 
 `additive` = fogo/fagulha/brilho; `normal` = fumaça/poeira. Default additive.
 
@@ -24,7 +24,7 @@ Defined in: src/scene/Particles.ts:80
 
 > `optional` **burst?**: `number`
 
-Defined in: src/scene/Particles.ts:56
+Defined in: [src/scene/Particles.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L56)
 
 Emissão instantânea ao criar o emissor. Default 0.
 
@@ -34,7 +34,7 @@ Emissão instantânea ao criar o emissor. Default 0.
 
 > `optional` **color?**: `string` \| `number`
 
-Defined in: src/scene/Particles.ts:76
+Defined in: [src/scene/Particles.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L76)
 
 Cor do emissor (hex ou número). Default `#ffffff`.
 
@@ -44,7 +44,7 @@ Cor do emissor (hex ou número). Default `#ffffff`.
 
 > `optional` **direction?**: \[`number`, `number`, `number`\]
 
-Defined in: src/scene/Particles.ts:66
+Defined in: [src/scene/Particles.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L66)
 
 Direção base da emissão (normalizada internamente). Default `[0, 1, 0]`.
 
@@ -54,7 +54,7 @@ Direção base da emissão (normalizada internamente). Default `[0, 1, 0]`.
 
 > `optional` **drag?**: `number`
 
-Defined in: src/scene/Particles.ts:72
+Defined in: [src/scene/Particles.ts:72](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L72)
 
 Fração da velocidade perdida por segundo (0 = nenhuma). Default 0.
 
@@ -64,7 +64,7 @@ Fração da velocidade perdida por segundo (0 = nenhuma). Default 0.
 
 > `optional` **gravity?**: `number`
 
-Defined in: src/scene/Particles.ts:70
+Defined in: [src/scene/Particles.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L70)
 
 Aceleração em Y (u/s²) — negativa cai, positiva sobe. Default 0.
 
@@ -74,7 +74,7 @@ Aceleração em Y (u/s²) — negativa cai, positiva sobe. Default 0.
 
 > `optional` **life?**: [`ParticleRange`](../type-aliases/ParticleRange.md)
 
-Defined in: src/scene/Particles.ts:60
+Defined in: [src/scene/Particles.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L60)
 
 Vida da partícula em segundos. Default `[0.6, 1.2]`.
 
@@ -84,7 +84,7 @@ Vida da partícula em segundos. Default `[0.6, 1.2]`.
 
 > `optional` **loop?**: `boolean`
 
-Defined in: src/scene/Particles.ts:58
+Defined in: [src/scene/Particles.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L58)
 
 `false` = emite por `life` máximo e para sozinho (efeito de evento). Default true.
 
@@ -94,7 +94,7 @@ Defined in: src/scene/Particles.ts:58
 
 > `optional` **max?**: `number`
 
-Defined in: src/scene/Particles.ts:52
+Defined in: [src/scene/Particles.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L52)
 
 Capacidade do pool — teto de partículas vivas ao mesmo tempo. Default 128.
 
@@ -104,7 +104,7 @@ Capacidade do pool — teto de partículas vivas ao mesmo tempo. Default 128.
 
 > `optional` **opacity?**: `number`
 
-Defined in: src/scene/Particles.ts:78
+Defined in: [src/scene/Particles.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L78)
 
 Opacidade do material. Default 1.
 
@@ -114,7 +114,7 @@ Opacidade do material. Default 1.
 
 > `optional` **rate?**: `number`
 
-Defined in: src/scene/Particles.ts:54
+Defined in: [src/scene/Particles.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L54)
 
 Emissão contínua, partículas por segundo. `0` = só `burst`. Default 0.
 
@@ -124,7 +124,7 @@ Emissão contínua, partículas por segundo. `0` = só `burst`. Default 0.
 
 > `optional` **size?**: [`ParticleRange`](../type-aliases/ParticleRange.md)
 
-Defined in: src/scene/Particles.ts:62
+Defined in: [src/scene/Particles.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L62)
 
 Lado do quad, em unidades de mundo. Default `[0.12, 0.28]`.
 
@@ -134,7 +134,7 @@ Lado do quad, em unidades de mundo. Default `[0.12, 0.28]`.
 
 > `optional` **speed?**: [`ParticleRange`](../type-aliases/ParticleRange.md)
 
-Defined in: src/scene/Particles.ts:64
+Defined in: [src/scene/Particles.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L64)
 
 Velocidade inicial. Default `[1, 2]`.
 
@@ -144,7 +144,7 @@ Velocidade inicial. Default `[1, 2]`.
 
 > `optional` **spin?**: [`ParticleRange`](../type-aliases/ParticleRange.md)
 
-Defined in: src/scene/Particles.ts:74
+Defined in: [src/scene/Particles.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L74)
 
 Rotação da partícula no plano da tela (rad/s). Default 0.
 
@@ -154,7 +154,7 @@ Rotação da partícula no plano da tela (rad/s). Default 0.
 
 > `optional` **spread?**: `number`
 
-Defined in: src/scene/Particles.ts:68
+Defined in: [src/scene/Particles.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L68)
 
 Abertura do cone em torno de `direction`, em radianos. Default 0.4.
 
@@ -164,6 +164,6 @@ Abertura do cone em torno de `direction`, em radianos. Default 0.4.
 
 > `optional` **texture?**: `Texture`\<`unknown`, `TextureEventMap`\>
 
-Defined in: src/scene/Particles.ts:82
+Defined in: [src/scene/Particles.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L82)
 
 Textura do sprite. Ausente = disco suave gerado por código.
