@@ -1,3 +1,17 @@
+# [0.41.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.40.0...v0.41.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **kit:** corrige a semântica de 4 obstáculos do underworld (SPEC-0167) ([7f098b8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7f098b893e5d014d10d78cb2e82fd6c97c3065bd))
+
+
+### Features
+
+* **engine:** reexporta blending/geometria/DataTexture do three (ADR-0168) ([de1c2cf](https://github.com/BuuhV-Projects/cortex-game-engine/commit/de1c2cf08109b7243bdc34b11bb055105ef87c29))
+* **engine:** sistema de partículas instanciadas (ADR-0168 / SPEC-0169) ([ec9913b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ec9913bdf5b9d1e767034c2c1b01209bcce66a4c))
+* **kit:** kit platformer-underworld (ruínas/submundo, 99 peças) — SPEC-0167 ([447f89b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/447f89b429a0f4f42ac9795ba19b15fef2c4eab6))
+
 # [0.40.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.39.0...v0.40.0) (2026-07-28)
 
 
