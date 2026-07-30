@@ -1,3 +1,10 @@
+## [0.41.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.41.0...v0.41.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **ui:** trava o vocabulário de glifos da UI na fonte do export (ADR-0170) ([4a2a3b4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4a2a3b479211459965e4a874a5840248a4aeeab1))
+
 # [0.41.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.40.0...v0.41.0) (2026-07-30)
 
 
