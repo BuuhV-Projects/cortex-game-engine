@@ -366,6 +366,18 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   (SPEC-0136). Ao carregar um `.glb` DIRETO no host (sem passar pelo merge — ex.:
   cidade assada, SPEC-0140), aplique `deinterleaveGeometry()` em cada mesh antes de
   renderizar. O dado pode estar 100% correto; o bug é só o layout.
+- **Export: o cook INTERLEAVA os glb — `attribute.array` cru vira lixo no PC.** O
+  cook (ADR-0108) lê e regrava cada `.glb` com `gltf-transform` pra converter as
+  texturas em KTX2, e na regravação os atributos saem num bufferView ÚNICO com
+  `byteStride`. O `GLTFLoader` então entrega `InterleavedBufferAttribute`, cujo
+  `.array` é o bloco INTEIRO (posição, normal, uv, joints e pesos juntos) — não a
+  fatia do atributo. Código que percorre `attribute.array` direto funciona no
+  Studio (assets fonte, densos) e **quebra só no export**: lê valores de outros
+  atributos e ESCREVE por cima da geometria. Use sempre `count` +
+  `getComponent`/`setXYZW`, que resolvem stride e offset (e o `normalized`) nos
+  dois layouts. Mordido no guarda-roupa do teste4: toda peça de roupa re-skinnada
+  sumia do boneco no PC e só o capacete (peça rígida, que não toca em buffer)
+  aparecia — spec 0029 do jogo.
 - **Host nativo: `COLOR_0` (vertex color) num MeshStandardMaterial → prédio BRANCO.**
   O naga (WGSL do wgpu-native) miscompila o caminho vertex-color+map (o Dawn/browser
   tolera), e o material renderiza branco (textura ignorada). Evite `COLOR_0` nos
