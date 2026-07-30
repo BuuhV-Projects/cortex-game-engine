@@ -294,11 +294,18 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   - `rapier.js` — chunk **separado** do Rapier (WASM inline). O bundle base faz
     `import('./rapier.js')` **sob demanda** (rollup `external` + `output.paths`),
     então projetos **sem física pagam 0** (TDR-0002).
+- **Contrato de glifos da UI** (`ui-font-glyphs.json`, ADR-0170/SPEC-0171): quais
+  codepoints a fonte do export nativo tem. É **versionado** em
+  `src/ui/runtime/ui-font-glyphs.json` (a fonte em `native/third_party/` é
+  gitignored, então gerar no build falharia em clone limpo) — `yarn glyphs:ui`
+  regenera da `Roboto-Medium.ttf` e `yarn glyphs:publish` leva pro `dist-engine/`
+  como **último passo** do `build:engine` (depois dos vite builds, senão o
+  `emptyOutDir` apaga — mesma armadilha do `rapier.js`).
 - **Vendoring** (`electron/main.ts` → `vendorEngine`): copia os 3 bundles + os
-  `.d.ts` (lista `VENDOR_TYPE_MODULES`) + `index.d.ts` + o plugin de Vite pra
-  `<projeto>/vendor/cortex-game-engine/`. Roda ao **criar** e ao **re-vendorizar**.
-  No fluxo de dev deste repo, re-vendorizamos à mão pros projetos de teste
-  (`D:/jogos/*`) após mudar o engine.
+  `.d.ts` (lista `VENDOR_TYPE_MODULES`) + `index.d.ts` + o plugin de Vite + o
+  `ui-font-glyphs.json` pra `<projeto>/vendor/cortex-game-engine/`. Roda ao
+  **criar** e ao **re-vendorizar**. No fluxo de dev deste repo, re-vendorizamos à
+  mão pros projetos de teste (`D:/jogos/*`) após mudar o engine.
 - **Doc da API** é **gerada** (`yarn docs:engine`, TypeDoc → `api/`). `engine-api.md`
   é curado e alimenta o Chat IA como **ÍNDICE no system prompt** (título + faixa de
   linhas + símbolos por seção, gerado em runtime por `electron/agent/engineApiIndex.ts`);
@@ -359,6 +366,18 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
 
 ## 8. Armadilhas conhecidas (já mordemos)
 
+- **Glifo exótico na UI aparece no Studio e VIRA CAIXINHA no export.** O
+  rasterizador nativo (`text_raster.cpp`) tem UMA fonte (`Roboto-Medium.ttf`, 2772
+  codepoints) e **nenhum fallback**: codepoint fora da `cmap` desenha o `.notdef`.
+  O DOM do Studio esconde isso caindo numa fonte de símbolos do sistema, então o
+  preview **não** é prova. Foi o ícone `✦` do Guarda-roupa do teste4 (e antes o
+  `★` das estrelas do placar). Não confie no olho: `↑` e `↓` **estão** na fonte,
+  `←` e `→` **não**. Use só glifos do contrato (`ui-font-glyphs.json`,
+  ADR-0170) — `› ‹ » « × · • ° ◊ † ‡ § ¶ ↑ ↓ ∆ ∞ ≈ ±` valem;
+  `✦ ★ ← → ✓ ✗ ⚙ ● ○ ■ ◆ ♪ ♥` não. Ícone figurativo se faz com
+  `backgroundImage`/painéis, não com glifo. O lint que trava isso está em
+  `tests/native/font-glyphs.test.ts` (engine) e no `tests/uiGlyphs.test.ts` de
+  cada jogo.
 - **Host nativo: glb INTERLEAVED renderiza esticado (espeto de mesh).** O
   `WebGPURenderer` no host (wgpu-native) renderiza ERRADO geometria com atributos
   interleaved (POSITION/NORMAL/UV num bufferView com byteStride) — triângulos
