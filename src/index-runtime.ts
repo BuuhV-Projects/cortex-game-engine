@@ -125,6 +125,7 @@ export * from './scene/SceneAssets.js';
 export * from './scene/Materials.js';
 export * from './scene/OutdoorLighting.js';
 export * from './scene/Water.js';
+export * from './scene/Particles.js';
 export * from './scene/StaticMerge.js';
 export * from './scene/Streaming.js';
 export * from './ui/DebugHud.js';
@@ -266,6 +267,23 @@ export {
   PCFShadowMap,
   PCFSoftShadowMap,
   VSMShadowMap,
+  // Blending: `AdditiveBlending` é o que faz efeito de LUZ (fogo, plasma, faísca)
+  // somar em vez de cobrir. Sem reexportar, o jogo importaria de `three` direto e
+  // acabaria com DUAS instâncias da lib (a do bundle vendorizado e a do projeto).
+  AdditiveBlending,
+  NormalBlending,
+  MultiplyBlending,
+  // Geometrias de efeito: disco/anel são a base de vórtice, onda de choque e alvo.
+  CircleGeometry,
+  RingGeometry,
+  // Textura GERADA por código (`DataTexture`): efeito sem asset, e sem depender de
+  // `canvas` — que não existe no host nativo.
+  DataTexture,
+  RGBAFormat,
+  RGFormat,
+  RedFormat,
+  UnsignedByteType,
+  FloatType,
 } from 'three';
 
 // ─── Addons do three (examples/jsm) ───────────────────────────────────────────

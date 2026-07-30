@@ -1238,6 +1238,46 @@ game.start()
 Cartoon (suas referências de ilhas): saturação alta, bloom suave, sombras macias,
 céu/água saturados. Realista: HDRI + exposição calibrada + bloom discreto.
 
+### Partículas (fagulha, poeira, fumaça, clarão) — ADR-0168 / SPEC-0169
+
+Duas formas, mesmo vocabulário. **Cenário** (braseiro que solta fagulha, névoa de
+uma fenda) é DADO da cena — nó `particles`, editável no Inspector:
+
+```jsonc
+{ "type": "particles", "id": "brasa", "place": { "x": 4, "y": 2, "z": 0 },
+  "rate": 24, "direction": [0, 1, 0], "spread": 0.5, "speed": [1, 2.5],
+  "life": [0.6, 1.2], "size": [0.1, 0.22], "gravity": -1.5,
+  "color": "#ffcf6a", "blending": "additive" }
+```
+
+**Evento** (pouso, coleta, chegada) é código — quem dispara é o script:
+
+```ts
+import { spawnParticles, ParticleEmitter } from 'cortex-game-engine'
+
+// Efeito pontual: solta uma leva e para (loop: false é o default aqui).
+const fx = spawnParticles(game.scene.getThreeScene(), {
+  position: [x, y, z], burst: 40, speed: [2, 5], spread: Math.PI, // esfera
+  life: [0.4, 0.9], size: [0.1, 0.25], gravity: -6, color: '#ffd66a',
+})
+// no loop do jogo:
+fx.update(dt, game.camera)
+if (!fx.active && fx.alive === 0) fx.dispose()
+```
+
+Nó da cena é atualizado pelo `SceneHandle.update` — não precisa fazer nada.
+Emissor criado à mão, você atualiza (uma linha no loop).
+
+Receitas rápidas: **fagulha** = `additive`, `gravity` negativo pequeno, `spin`;
+**fumaça** = `blending: 'normal'`, `size` grande, `speed` baixa, `drag` alto;
+**explosão** = `burst` alto + `spread: Math.PI` (esfera) + `loop: false`;
+**poeira de pouso** = `direction: [0,1,0]`, `spread: 1.4`, vida curta.
+
+Duas limitações (ADR-0168): a cor é do EMISSOR (não por partícula — o fade é por
+escala; gradiente = dois emissores sobrepostos) e a partícula acompanha o
+emissor (sem rastro de emissor móvel). Sem `texture`, sai um disco suave gerado
+por código.
+
 ## 2D / Pixel art (sprite, spritesheet, tilemap)
 
 Pra jogo **pixel 2D**: câmera **ortográfica** + sprites com **nearest filter**. A

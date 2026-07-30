@@ -8,7 +8,7 @@
 
 > **overlayUnderlay**(`overlay`): `Record`\<`string`, \{ `height?`: `number`; `image?`: `string`; `opacity?`: `number`; \}\>
 
-Defined in: [src/scene/SceneBuilder.ts:320](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L320)
+Defined in: [src/scene/SceneBuilder.ts:321](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L321)
 
 Lê `data.underlay` da overlay — imagem/opacidade/altura do underlay autoradas no editor.
 
