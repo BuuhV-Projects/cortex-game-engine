@@ -662,6 +662,15 @@ async function vendorEngine(projectPath: string): Promise<void> {
     join(vendorDir, 'index.d.ts'),
   )
 
+  // Contrato de glifos da UI (ADR-0170/SPEC-0171): quais codepoints a fonte do
+  // export nativo tem. Vai vendoriado porque o teste de UI do JOGO lint(a) os
+  // textos contra ele — sem isso o glifo fora da fonte só apareceria como
+  // caixinha rodando o export (foi o caso do ícone do guarda-roupa do teste4).
+  await cp(
+    join(appPath, 'dist-engine', 'ui-font-glyphs.json'),
+    join(vendorDir, 'ui-font-glyphs.json'),
+  )
+
   // Plugin de Vite (Node-only): copiado como JS compilado (+ .d.ts), pois roda
   // no vite.config do projeto — fora do bundle do runtime. O projeto importa de
   // `./vendor/cortex-game-engine/vite/sceneSavePlugin.js`. Ver src/vite/.

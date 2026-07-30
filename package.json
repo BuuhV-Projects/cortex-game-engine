@@ -7,8 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc",
-    "build:engine": "tsc -p tsconfig.engine.json && vite build --config vite.engine.config.ts && vite build --config vite.engine.dev.config.ts && vite build --config vite.engine.rapier.config.ts",
+    "build:engine": "tsc -p tsconfig.engine.json && vite build --config vite.engine.config.ts && vite build --config vite.engine.dev.config.ts && vite build --config vite.engine.rapier.config.ts && yarn glyphs:publish",
     "docs:engine": "typedoc",
+    "glyphs:ui": "node native/scripts/font-glyphs.mjs emit native/third_party/fonts/Roboto-Medium.ttf src/ui/runtime/ui-font-glyphs.json",
+    "glyphs:publish": "node native/scripts/font-glyphs.mjs publish src/ui/runtime/ui-font-glyphs.json dist-engine/ui-font-glyphs.json",
     "test": "vitest run",
     "test:native": "powershell -ExecutionPolicy Bypass -File native/scripts/run-native-tests.ps1",
     "typecheck": "tsc --noEmit",
