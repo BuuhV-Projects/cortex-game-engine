@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "../core/crash_handler.h"
 #include "../napi/napi_util.h"
 #include "files.h"
 
@@ -47,6 +48,9 @@ std::atomic<uint64_t> g_nextId{1};
 std::unordered_map<uint64_t, napi_deferred> g_pending;
 
 void workerLoop() {
+  // O handler de terminate do MSVC é POR THREAD: o instalado no main não vale
+  // aqui (SPEC-0173). Sem isto, um escape derruba o jogo sem UMA linha de log.
+  core::installThreadCrashHandler();
   for (;;) {
     Task task;
     {
@@ -56,12 +60,30 @@ void workerLoop() {
       task = std::move(g_tasks.front());
       g_tasks.pop();
     }
+    // FRONTEIRA DE THREAD (ADR-0172): exceção que escapa do callable de uma
+    // std::thread é std::terminate IMEDIATO — não passa por handler, não loga,
+    // mata o jogo. E o que roda aqui aloca do tamanho do arquivo
+    // (`vector::resize` em files.cpp/pak.cpp), durante o carregamento de fase.
     Done done;
     done.id = task.id;
-    done.ok = readAssetBytes(task.url, done.bytes);  // SEM NAPI (só bytes)
-    {
+    try {
+      done.ok = readAssetBytes(task.url, done.bytes);  // SEM NAPI (só bytes)
+    } catch (...) {
+      char desc[core::kExceptionDescMax];
+      core::describeCurrentException(desc, sizeof(desc));
+      core::appendErrorLog("[io] excecao C++ lendo %s: %s", task.url.c_str(),
+                           desc);
+      done.ok = false;  // o JS já trata como "arquivo ausente"
+      done.bytes.clear();
+    }
+    try {
       std::lock_guard<std::mutex> lk(g_doneMx);
       g_done.push(std::move(done));
+    } catch (...) {
+      // Promise fica pendente (o JS espera pra sempre por ESTE asset), mas o
+      // processo sobrevive — melhor que derrubar a sessão inteira.
+      core::appendErrorLog("[io] falha ao enfileirar resultado de %s",
+                           task.url.c_str());
     }
   }
 }

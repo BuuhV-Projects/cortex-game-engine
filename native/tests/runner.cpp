@@ -7,6 +7,7 @@ void testFormatFromString();
 void testFormatToStringRoundtrip();
 void testBc7Math();
 void testAppendPerfLog();
+void testDescribeCurrentException();
 void testGameConfig();
 }  // namespace tests
 
@@ -15,6 +16,7 @@ int main() {
   tests::testFormatToStringRoundtrip();
   tests::testBc7Math();
   tests::testAppendPerfLog();
+  tests::testDescribeCurrentException();
   tests::testGameConfig();
   return testing::summary();
 }

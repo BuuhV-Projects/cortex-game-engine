@@ -151,6 +151,39 @@ Native (que roda milhares de libs sobre Hermes em produção):
 
 ## Armadilhas conhecidas
 
+- **Exceção C++ na fronteira nativa mata o jogo — e o `terminate` do MSVC é POR
+  THREAD** (ADR-0172 / SPEC-0173). Um crash real durante carregamento de fase
+  saiu com 40 frames de backtrace e **zero** linha de causa. Mapa dos caminhos,
+  medido:
+  - exceção que **ninguém captura** → SEH `0xE06D7363` → `onCrash`
+    ("CRASH (exceção nativa)"). **Não** passa por `terminate`.
+  - `noexcept` violado / escape do callable de `std::thread` / exceção durante
+    unwind → `terminate` → `abort` → `onAbort`.
+  - `set_terminate` instalado no `main` **não vale pras outras threads**: toda
+    thread criada pelo host precisa chamar `core::installThreadCrashHandler()`
+    ao nascer, senão escape lá vira `abort` mudo.
+  Blindagem em vigor: `njs::setMethod` embrulha **todo** binding num `try`/`catch`
+  (funil único — é a única `napi_create_function` do host) e converte a exceção em
+  erro JS; a worker do `io_pool` tem `try`/`catch` no corpo. Ao criar thread nova
+  ou outro caminho de entrada nativo, repita as duas coisas.
+- **`/EHsc` promete que `extern "C"` não lança** — e `napi_callback` é um typedef
+  dentro de `extern "C"`. Um `try`/`catch` em volta de uma chamada por esse
+  ponteiro pode ser considerado inalcançável pelo compilador. Por isso
+  `src/napi/napi_util.cpp` compila com **`/EHs`** (sem o `c`), via
+  `set_source_files_properties` no `CMakeLists.txt`. Não "limpe" essa flag.
+- **O stderr do Rust não é o `stderr` do CRT.** `wgpu_native.dll` e
+  `rapier_native.dll` escrevem panic por `GetStdHandle(STD_ERROR_HANDLE)`, que o
+  `freopen_s` **não** redireciona — num exe sem console a mensagem
+  ("Caused by: …") sumia, e sobrava só um backtrace sem explicação. O
+  `installCrashHandler` agora faz também `SetStdHandle` pro `error_log.txt` e
+  liga `RUST_BACKTRACE=1`.
+- **Backtrace sem PDB mente.** O DbgHelp resolve para o **export público mais
+  próximo**: nomes como `hermes::vm::JSOutOfMemoryError` ou
+  `hermes_napi_load_module` com offset de `+0xa000`/`+0x67000` são ruído
+  posicional, não a função real. O que é confiável: o **módulo** de cada frame
+  (`launcher.exe` vs `wgpu_native.dll` — foi o que descartou o palpite de panic
+  do wgpu) e símbolos de DLL com offset pequeno (`terminate+0x1e`). Leia a linha
+  de causa, não os nomes.
 - **O Hermes NÃO implementa o binding por iteração do `let`** — closure criada em
   `for (let i…)` enxerga o valor FINAL de `i`. Sonda no host:
   `for (let k=0;k<3;k++) probes.push(() => k)` → `3,3,3` (browser: `0,1,2`). É
