@@ -3,8 +3,46 @@
 #include "../core/crash_handler.h"
 
 #include <cstdio>
+#include <deque>
+#include <string>
 
 namespace njs {
+namespace {
+
+// Binding registrado: o callback REAL + o nome, pro log nomear o culpado. Vive
+// a sessão inteira (o deque dá endereço estável e nunca é esvaziado) — são
+// dezenas de entradas criadas no boot, não há churn.
+struct Binding {
+  napi_callback callback;
+  std::string name;
+};
+
+std::deque<Binding> g_bindings;
+
+// Trampolim de TODO binding do host (ADR-0172). Exceção C++ que atravessasse a
+// fronteira nativa→JS não tinha quem capturasse: virava std::terminate e o jogo
+// fechava sem log. Aqui ela vira erro JS normal — o jogo segue vivo e a causa
+// fica escrita no error_log.txt.
+napi_value guardedCall(napi_env env, napi_callback_info info) {
+  void* data = nullptr;
+  napi_get_cb_info(env, info, nullptr, nullptr, nullptr, &data);
+  const auto* binding = static_cast<const Binding*>(data);
+  if (!binding || !binding->callback) return undefined(env);
+  try {
+    // Repassa o MESMO callback_info: argc, args, `this` e unwrapThis seguem
+    // funcionando sem que nenhum binding precise mudar.
+    return binding->callback(env, info);
+  } catch (...) {
+    char desc[core::kExceptionDescMax];
+    core::describeCurrentException(desc, sizeof(desc));
+    core::appendErrorLog("[napi] excecao C++ em %s: %s", binding->name.c_str(),
+                         desc);
+    napi_throw_error(env, nullptr, desc);
+    return undefined(env);
+  }
+}
+
+}  // namespace
 
 napi_value undefined(napi_env env) {
   napi_value v = nullptr;
@@ -108,10 +146,16 @@ napi_value makeObject(napi_env env) {
   return obj;
 }
 
+// Funil ÚNICO de registro de binding do host — é a única chamada de
+// napi_create_function do projeto. Por isso o try/catch mora aqui (guardedCall)
+// em vez de espalhado por dezenas de callbacks: binding novo nasce blindado,
+// sem depender de ninguém lembrar (ADR-0172).
 void setMethod(napi_env env, napi_value obj, const char* name,
                napi_callback cb) {
+  g_bindings.push_back({cb, name ? name : "?"});
   napi_value fn = nullptr;
-  napi_create_function(env, name, NAPI_AUTO_LENGTH, cb, nullptr, &fn);
+  napi_create_function(env, name, NAPI_AUTO_LENGTH, guardedCall,
+                       &g_bindings.back(), &fn);
   napi_set_named_property(env, obj, name, fn);
 }
 

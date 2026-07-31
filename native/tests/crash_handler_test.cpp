@@ -3,6 +3,8 @@
 // significa investigar às cegas.
 #include <cstdio>
 #include <cstring>
+#include <new>
+#include <stdexcept>
 #include <string>
 
 #include "../src/core/crash_handler.h"
@@ -47,6 +49,56 @@ void testAppendPerfLog() {
   CHECK(content.find('[') == 0);
   core::setPerfLogEnabled(false);
   std::remove("perf-log.txt");
+}
+
+// SPEC-0173: um crash mudo custou uma sessão inteira sem deixar pista. Esta é a
+// função que transforma "40 frames de símbolo errado" em "class std::bad_alloc
+// — bad allocation": se ela regredir, voltamos a depurar às cegas.
+void testDescribeCurrentException() {
+  char desc[core::kExceptionDescMax];
+
+  // std::exception: tipo E mensagem — a mensagem é quem nomeia o culpado.
+  try {
+    throw std::runtime_error("falha ao ler asset");
+  } catch (...) {
+    core::describeCurrentException(desc, sizeof(desc));
+  }
+  CHECK(std::strstr(desc, "falha ao ler asset") != nullptr);
+  CHECK(std::strstr(desc, "runtime_error") != nullptr);
+
+  // bad_alloc é a suspeita nº 1 do crash de 2026-07-31 (resize do tamanho do
+  // arquivo, durante o load): tem que sair legível, mesmo com what() curto.
+  try {
+    throw std::bad_alloc();
+  } catch (...) {
+    core::describeCurrentException(desc, sizeof(desc));
+  }
+  CHECK(std::strstr(desc, "bad_alloc") != nullptr);
+
+  // Exceção que não deriva de std::exception não pode virar string vazia.
+  try {
+    throw 42;
+  } catch (...) {
+    core::describeCurrentException(desc, sizeof(desc));
+  }
+  CHECK(std::strstr(desc, "desconhecido") != nullptr);
+
+  // Sem exceção em voo: terminate() por noexcept violado / thread sem join. O
+  // diagnóstico DESTE caso é informação, não erro — não pode sair vazio.
+  core::describeCurrentException(desc, sizeof(desc));
+  CHECK(std::strstr(desc, "sem excecao corrente") != nullptr);
+
+  // Roda em caminho de crash: não pode estourar buffer nem cair com ponteiro
+  // nulo (seria um crash DENTRO do handler de crash).
+  char tiny[8];
+  try {
+    throw std::runtime_error("mensagem bem maior que o buffer");
+  } catch (...) {
+    core::describeCurrentException(tiny, sizeof(tiny));
+  }
+  CHECK(tiny[sizeof(tiny) - 1] == '\0');
+  core::describeCurrentException(nullptr, sizeof(desc));  // não pode crashar
+  core::describeCurrentException(desc, 0);                // idem
 }
 
 }  // namespace tests

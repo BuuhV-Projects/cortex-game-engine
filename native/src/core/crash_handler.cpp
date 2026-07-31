@@ -8,6 +8,9 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <exception>
+#include <stdexcept>
+#include <typeinfo>
 
 #pragma comment(lib, "dbghelp.lib")
 
@@ -123,14 +126,64 @@ LONG WINAPI onCrash(EXCEPTION_POINTERS* info) {
 
 // abort() (ex.: panic do wgpu em Rust) NÃO passa pelo exception filter — o
 // caminho é o signal handler do CRT. O backtrace daqui inclui o abort/panic.
+//
+// O cabeçalho NÃO chuta a origem: o handler não tem como saber se veio de panic
+// do Rust, de hermes_fatal ou de um abort() nosso — e afirmar atrapalhou a
+// leitura de um crash real (SPEC-0173). Quem sabe é a linha de causa acima.
 void onAbort(int) {
-  logHeader("ABORT (panic — provável wgpu/Rust; ver linhas acima no stderr)");
+  logHeader("ABORT (abort/panic — a causa, quando houver, está nas linhas acima)");
   logBacktrace(nullptr);
   // Segue o abort normal (sem re-entrar no handler).
   std::signal(SIGABRT, SIG_DFL);
 }
 
+// Exceção C++ que ninguém capturou (ou noexcept violado) chama terminate() —
+// que sem isto vira um abort MUDO: o tipo e o what() da exceção, a única pista
+// que aponta o culpado, se perdiam (SPEC-0173, crash de 2026-07-31).
+//
+// No MSVC o terminate roda no PRIMEIRO passe do SEH, antes de desenrolar a
+// pilha: o backtrace daqui ainda é o do ponto onde a exceção nasceu.
+void onTerminate() {
+  static bool inTerminate = false;
+  if (inTerminate) std::abort();  // exceção DENTRO do handler: aborta seco
+  inTerminate = true;
+
+  char desc[kExceptionDescMax];
+  describeCurrentException(desc, sizeof(desc));
+  logHeader("TERMINATE (excecao C++ nao tratada)");
+  logLine("[crash] excecao: %s", desc);
+  logBacktrace(nullptr);
+
+  // O abort abaixo dispararia o onAbort e um SEGUNDO backtrace, idêntico e
+  // ruidoso — o daqui já é o bom.
+  std::signal(SIGABRT, SIG_DFL);
+  std::abort();
+}
+
 }  // namespace
+
+void describeCurrentException(char* out, size_t size) {
+  if (!out || size == 0) return;
+  out[0] = '\0';
+  if (!std::current_exception()) {
+    // terminate() sem exceção em voo: quase sempre `noexcept` violado ou uma
+    // std::thread destruída sem join/detach. Saber isso já elimina metade das
+    // hipóteses.
+    snprintf(out, size,
+             "terminate() chamado sem excecao corrente (noexcept violado, ou "
+             "std::thread destruida sem join)");
+    return;
+  }
+  // Rethrow + catch é o único jeito portátil de tipar a exceção em voo. O
+  // catch(...) fecha o caminho: nada escapa desta função.
+  try {
+    std::rethrow_exception(std::current_exception());
+  } catch (const std::exception& e) {
+    snprintf(out, size, "%s — %s", typeid(e).name(), e.what());
+  } catch (...) {
+    snprintf(out, size, "tipo desconhecido (nao deriva de std::exception)");
+  }
+}
 
 void appendErrorLog(const char* fmt, ...) {
   va_list args;
@@ -175,17 +228,40 @@ void installCrashHandler(const char* logDir) {
     }
     // Sem console (export aberto por 2-clique): o stderr é um buraco negro —
     // redireciona pro error_log.txt, capturando o que NÃO passa pelos nossos
-    // handlers (ex.: o texto do panic do Rust/wgpu "Caused by: …"). Rodando
-    // de um terminal (dev), o stderr fica onde está.
+    // handlers. Rodando de um terminal (dev), o stderr fica onde está.
     if (GetConsoleWindow() == nullptr) {
       char path[MAX_PATH];
       snprintf(path, sizeof(path), "%serror_log.txt", g_logDir);
       FILE* redirected = nullptr;
       freopen_s(&redirected, path, "ab", stderr);
+
+      // O freopen_s acima só reaponta o `FILE* stderr` do CRT — NÃO mexe no
+      // STD_ERROR_HANDLE do Windows. wgpu_native.dll e rapier_native.dll são
+      // Rust e escrevem o panic ("thread '…' panicked at …", "Caused by: …")
+      // direto no handle do sistema: sem esta linha, a mensagem que explicaria
+      // o crash caía no vácuo (SPEC-0173). FILE_APPEND_DATA + compartilhamento
+      // deixam os dois caminhos escreverem no mesmo arquivo, em ordem.
+      const HANDLE logHandle =
+          CreateFileA(path, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                      nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+      if (logHandle != INVALID_HANDLE_VALUE) {
+        SetStdHandle(STD_ERROR_HANDLE, logHandle);
+      }
+
+      // Panic de Rust só imprime a pilha com isto ligado — e é justo a pilha
+      // que localiza o erro dentro do wgpu. Respeita quem já setou por fora.
+      constexpr DWORD kEnvProbeMax = 16;
+      char existing[kEnvProbeMax];
+      if (GetEnvironmentVariableA("RUST_BACKTRACE", existing, kEnvProbeMax) == 0) {
+        SetEnvironmentVariableA("RUST_BACKTRACE", "1");
+      }
     }
   }
   SetUnhandledExceptionFilter(onCrash);
   std::signal(SIGABRT, onAbort);
+  installThreadCrashHandler();  // cobre a thread principal (JS)
 }
+
+void installThreadCrashHandler() { std::set_terminate(onTerminate); }
 
 }  // namespace core

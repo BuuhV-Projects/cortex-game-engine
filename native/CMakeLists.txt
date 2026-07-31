@@ -61,6 +61,19 @@ add_executable(cortex_host
   src/webgpu/textures.cpp
 )
 
+# /EHs (não /EHsc) no funil dos bindings — ADR-0172/SPEC-0173. O `c` de /EHsc
+# diz ao compilador que função `extern "C"` NUNCA lança, e `napi_callback` é um
+# typedef declarado dentro de `extern "C"` (node_api). Sob essa promessa o
+# try/catch do `guardedCall`, que embrulha justamente uma chamada por esse
+# ponteiro, é código que o compilador pode considerar inalcançável. /EHs remove
+# a suposição e mantém a blindagem real. (Propriedade de SOURCE entra depois das
+# flags de alvo na linha do cl — o último /EH vence, mesmo padrão do
+# cortex_hermes_embed abaixo.)
+if(MSVC)
+  set_source_files_properties(src/napi/napi_util.cpp PROPERTIES
+    COMPILE_OPTIONS "/EHs")
+endif()
+
 # ── Hermes UPSTREAM (facebook/hermes) como SUBPROJETO (ADR-0122) ─────────────
 # Substitui o fork Microsoft (jsr_*, NuGet 0.1.27 — ~4× mais lento no mesmo
 # bytecode). Buildar do fonte no MESMO build garante flags/ABI idênticos entre
