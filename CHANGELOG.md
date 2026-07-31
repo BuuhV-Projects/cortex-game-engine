@@ -1,3 +1,10 @@
+## [0.41.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.41.1...v0.41.2) (2026-07-31)
+
+
+### Bug Fixes
+
+* **native:** exceção C++ na fronteira nativa não mata mais o jogo em silêncio ([4775459](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4775459bcb44dd164e4b2a94c449fd1d7cbb35d4))
+
 ## [0.41.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.41.0...v0.41.1) (2026-07-30)
 
 
