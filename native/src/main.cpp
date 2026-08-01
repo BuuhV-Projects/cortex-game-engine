@@ -27,6 +27,7 @@
 #include "shims/perf_stats.h"
 #include "shims/quit.h"
 #include "shims/rapier.h"
+#include "shims/steam_api.h"
 #include "shims/text_raster.h"
 #include "shims/timers.h"
 #include "shims/user_storage.h"
@@ -51,6 +52,26 @@ std::string deriveGameName(int argc, char** argv, const std::string& baseDir) {
   size_t dot = name.rfind('.');  // tira ".exe"
   if (dot != std::string::npos) name = name.substr(0, dot);
   return name;
+}
+
+// Diretório do EXE, com barra final ("" se o SDL não souber dizer). Chamado
+// ANTES do SDL_Init (que só acontece em createAppWindow): SDL_GetBasePath é
+// filesystem puro — no Windows resolve por GetModuleFileName — e não depende de
+// subsistema inicializado.
+std::string exeDir() {
+  const char* base = SDL_GetBasePath();
+  return base != nullptr ? std::string(base) : std::string();
+}
+
+// Diretório do JOGO, com barra final: argv[1] em dev (boot.hbc + assets lidos
+// de lá) ou a pasta do exe no export.
+std::string resolveBaseDir(int argc, char** argv, const std::string& fallbackExeDir) {
+  if (argc > 1 && argv[1] && argv[1][0]) {
+    std::string dir = argv[1];
+    if (dir.back() != '\\' && dir.back() != '/') dir += '\\';
+    return dir;
+  }
+  return fallbackExeDir;
 }
 
 bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
@@ -118,9 +139,22 @@ void shutdownGpu(HostGpu* gpu) {
 
 int main(int argc, char** argv) {
   core::installCrashHandler();  // segfault vira backtrace no stderr, não exit mudo
-  // Steam (release PC): checa relaunch-via-Steam + init ANTES de tudo. Se a Steam
-  // vai relançar (app aberto fora dela), sai já. No-op sem CORTEX_STEAM.
-  if (!core::initSteam()) return 0;
+  // Identidade do jogo resolvida ANTES de tudo (ADR-0126/0174): o app id da
+  // Steam é DADO do cortex.json, e o RestartAppIfNecessary precisa dele antes de
+  // existir janela — relançar depois de abrir a janela daria um flash na tela.
+  const std::string exePath = exeDir();
+  const std::string baseDir = resolveBaseDir(argc, argv, exePath);
+  // Com o dir do jogo resolvido, o crash handler já grava <jogo>/error_log.txt
+  // além do stderr — vale desde o boot, não só depois da janela.
+  core::installCrashHandler(baseDir.c_str());
+  // `id` chaveia os saves (estável, não é o nome do exe — que no export é fixo
+  // `launcher.exe`); `name` é o título da janela. Fallback: basename do dir/exe.
+  const core::GameConfig game =
+      core::loadGameConfig(baseDir, deriveGameName(argc, argv, baseDir));
+
+  // Steam (release PC): checa relaunch-via-Steam + init. Se a Steam vai relançar
+  // (app aberto fora dela), sai já. No-op sem CORTEX_STEAM ou sem app id.
+  if (!core::initSteam(game.steamAppId)) return 0;
 
   // App model do GDK (console/Xbox): inicializa o Game Runtime cedo, antes de
   // qualquer outra API do GDK. No-op no build desktop (sem CORTEX_GDK).
@@ -138,22 +172,8 @@ int main(int argc, char** argv) {
     // (valores criados fora de callback JS precisam de scope — ver
     // JsRuntime::HandleScope). Os frames abrem scopes próprios aninhados.
     core::JsRuntime::HandleScope bootScope{js.env()};
-    // Diretório do jogo: argv[1] (boot.hbc + assets lidos de lá) ou, sem
-    // argumento, a pasta do exe.
-    const char* basePath = SDL_GetBasePath();
-    std::string baseDir = basePath ? basePath : "";
-    if (argc > 1 && argv[1] && argv[1][0]) {
-      baseDir = argv[1];
-      if (baseDir.back() != '\\' && baseDir.back() != '/') baseDir += '\\';
-    }
-    // Com o dir do jogo resolvido, o crash handler passa a gravar
-    // <jogo>/error_log.txt além do stderr.
-    core::installCrashHandler(baseDir.c_str());
-    // Identidade do jogo (ADR-0126): cortex.json ao lado do exe. `id` chaveia os
-    // saves (estável, não é o nome do exe — que no export é fixo `launcher.exe`);
-    // `name` é o título da janela. Fallback: basename do dir/exe (deriveGameName).
-    const core::GameConfig game =
-        core::loadGameConfig(baseDir, deriveGameName(argc, argv, baseDir));
+    // `baseDir` (dir do jogo) e `game` já foram resolvidos no topo do main — a
+    // Steam precisa deles antes da janela existir (ADR-0174).
     SDL_SetWindowTitle(window, game.name.c_str());
     // perf-log.txt SÓ com telemetria autorizada (TDR-0004): export com
     // métricas (`--debug` → cortex.json debug:true), dev-run (host apontando
@@ -172,7 +192,8 @@ int main(int argc, char** argv) {
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());
     shims::registerAudio(js.env());
-    shims::registerTextRaster(js.env(), baseDir, basePath ? basePath : "");
+    shims::registerTextRaster(js.env(), baseDir, exePath);
+    shims::registerSteamApi(js.env());  // __cortexSteam* — no-op sem Steam (SPEC-0175)
     webgpu::registerBindings(js.env(), &gpu);
     webgpu::registerSplash(js.env());  // __cortexSplashActive() (ADR-0138)
     webgpu::registerBloom(js.env());   // __cortexBloom() — pós-FX nativo (ADR-0147)

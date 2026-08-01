@@ -1,6 +1,7 @@
 #include "game_config.h"
 
 #include <cstdio>
+#include <limits>
 #include <string>
 
 namespace core {
@@ -62,6 +63,35 @@ std::string extractJsonString(const std::string& json, const std::string& key) {
   return value;
 }
 
+// Extrai um inteiro sem sinal TOP-LEVEL do mesmo JSON plano, aceitando as DUAS
+// grafias — `"key": 480` e `"key": "480"`. A tolerância é de propósito: o campo
+// é digitado por humano no Studio e um id entre aspas é o erro mais provável;
+// recusar por causa disso só produziria "meu app id sumiu" difícil de explicar.
+// Devolve `fallback` se a chave falta, não é numérica ou estoura o range.
+std::uint32_t extractJsonUint(const std::string& json, const std::string& key,
+                              std::uint32_t fallback) {
+  const std::string needle = "\"" + key + "\"";
+  size_t k = json.find(needle);
+  if (k == std::string::npos) return fallback;
+  size_t i = k + needle.size();
+  // pula espaço/dois-pontos e a aspa de abertura na forma `"480"`
+  while (i < json.size() && (json[i] == ' ' || json[i] == '\t' || json[i] == '\n' ||
+                             json[i] == '\r' || json[i] == ':' || json[i] == '"')) {
+    i++;
+  }
+  // Acumula em 64 bits pra detectar estouro sem depender de wrap-around.
+  std::uint64_t value = 0;
+  size_t digits = 0;
+  while (i < json.size() && json[i] >= '0' && json[i] <= '9') {
+    value = value * 10 + static_cast<std::uint64_t>(json[i] - '0');
+    if (value > std::numeric_limits<std::uint32_t>::max()) return fallback;
+    digits++;
+    i++;
+  }
+  if (digits == 0) return fallback;
+  return static_cast<std::uint32_t>(value);
+}
+
 // Extrai um bool TOP-LEVEL (`"key": true`) do mesmo JSON plano. Ausente ou
 // qualquer coisa que não seja o literal `true` conta como false.
 bool extractJsonBool(const std::string& json, const std::string& key) {
@@ -84,7 +114,8 @@ GameConfig loadGameConfig(const std::string& baseDir, const std::string& fallbac
   std::string name = extractJsonString(json, "name");
   if (id.empty()) id = fallbackSlug;
   if (name.empty()) name = id;
-  return GameConfig{id, name, extractJsonBool(json, "debug")};
+  return GameConfig{id, name, extractJsonBool(json, "debug"),
+                    extractJsonUint(json, "steamAppId", kNoSteamAppId)};
 }
 
 }  // namespace core
