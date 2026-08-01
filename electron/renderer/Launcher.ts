@@ -5,33 +5,20 @@
  * (`project-open`). Volta a ela via menu nativo "Projeto > Fechar projeto"
  * (`project-close`).
  *
- * Recentes ficam em localStorage (`recentProjects`); atualizados a cada
- * `project-open`. "Criar" reusa o dialog do ProjectManager (evento
- * `request-new-project`); "Abrir" usa o seletor nativo de pasta.
+ * A janela do Studio é frameless: como este overlay cobre a menubar do `Shell`
+ * (que desenha os botões de janela e a faixa arrastável), ele desenha a PRÓPRIA
+ * titlebar — arrastar + minimizar/maximizar/fechar (SPEC-0178).
+ *
+ * Recentes ficam em localStorage (`recentProjects`, módulo `recentProjects.ts`);
+ * atualizados a cada `project-open` e removíveis pelo ✕ de cada linha. "Criar"
+ * reusa o dialog do ProjectManager (evento `request-new-project`); "Abrir" usa o
+ * seletor nativo de pasta.
  */
-interface Recent {
-  path: string
-  name: string
-  openedAt: number
-}
+import { icon } from './ui'
+import { addRecent, getRecents, removeRecent } from './recentProjects'
 
-const RECENTS_KEY = 'recentProjects'
-
-function getRecents(): Recent[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]') as Recent[]
-    return Array.isArray(v) ? v : []
-  } catch {
-    return []
-  }
-}
-
-function addRecent(path: string): void {
-  const name = path.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || path
-  const list = getRecents().filter((r) => r.path !== path)
-  list.unshift({ path, name, openedAt: Date.now() })
-  localStorage.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, 10)))
-}
+/** Altura da titlebar — mesma da menubar do Shell (`.ide .menubar`). */
+const TITLEBAR_HEIGHT_PX = 30
 
 function openProject(path: string): void {
   document.dispatchEvent(new CustomEvent<{ path: string }>('project-open', { detail: { path } }))
@@ -49,12 +36,21 @@ export class Launcher {
       'z-index:40',
       'display:flex',
       'flex-direction:column',
-      'align-items:center',
-      'justify-content:center',
-      'gap:8px',
       'background:radial-gradient(120% 90% at 50% 0%, #23252e 0%, #16171c 70%)',
       'color:#e6e6e6',
       'font-family:"Segoe UI",Roboto,Arial,sans-serif',
+    ].join(';')
+
+    // Conteúdo centralizado na área abaixo da titlebar.
+    const body = document.createElement('div')
+    body.style.cssText = [
+      'flex:1',
+      'min-height:0',
+      'display:flex',
+      'flex-direction:column',
+      'align-items:center',
+      'justify-content:center',
+      'gap:8px',
     ].join(';')
 
     const logo = document.createElement('img')
@@ -87,7 +83,8 @@ export class Launcher {
     recentsEl.style.cssText =
       'width:560px;max-width:80vw;max-height:34vh;overflow:auto;display:flex;flex-direction:column;gap:6px'
 
-    overlay.append(logo, title, sub, actions, recentsHead, recentsEl)
+    body.append(logo, title, sub, actions, recentsHead, recentsEl)
+    overlay.append(titleBar(), body)
     document.body.appendChild(overlay)
     this.overlay = overlay
     this.recentsEl = recentsEl
@@ -95,7 +92,7 @@ export class Launcher {
     // Abrir um projeto (recente, criado, ou via sidebar) some com a tela.
     document.addEventListener('project-open', (e) => {
       const { path } = (e as CustomEvent<{ path: string }>).detail
-      if (path) addRecent(path)
+      if (path) addRecent(path, Date.now())
       this.hide()
     })
     // Fechar projeto → volta pra tela inicial.
@@ -130,22 +127,33 @@ export class Launcher {
       return
     }
     for (const r of recents) {
+      // A linha é um <div>: o ✕ é irmão do card, e <button> dentro de <button>
+      // é HTML inválido.
+      const row = document.createElement('div')
+      row.style.cssText = [
+        'display:flex',
+        'align-items:stretch',
+        'border:1px solid #2c2e36',
+        'border-radius:8px',
+        'background:#1b1c22',
+        'overflow:hidden',
+      ].join(';')
+
       const card = document.createElement('button')
       card.style.cssText = [
+        'flex:1',
+        'min-width:0',
         'display:flex',
         'flex-direction:column',
         'align-items:flex-start',
         'gap:2px',
         'text-align:left',
         'padding:9px 12px',
-        'border:1px solid #2c2e36',
-        'border-radius:8px',
-        'background:#1b1c22',
+        'border:none',
+        'background:transparent',
         'color:#e6e6e6',
         'cursor:pointer',
       ].join(';')
-      card.addEventListener('mouseenter', () => (card.style.background = '#22232a'))
-      card.addEventListener('mouseleave', () => (card.style.background = '#1b1c22'))
       const name = document.createElement('div')
       name.textContent = r.name
       name.style.cssText = 'font-weight:600;font-size:14px'
@@ -154,9 +162,130 @@ export class Launcher {
       path.style.cssText = 'font-size:11px;color:#9aa0ad;word-break:break-all'
       card.append(name, path)
       card.addEventListener('click', () => openProject(r.path))
-      this.recentsEl.appendChild(card)
+
+      // ✕ — tira só da lista; o projeto continua no disco. Apagado até o hover.
+      const remove = document.createElement('button')
+      remove.title = 'Remover da lista (não apaga o projeto do disco)'
+      remove.setAttribute('aria-label', `Remover ${r.name} da lista`)
+      remove.style.cssText = [
+        'flex:0 0 auto',
+        'width:34px',
+        'display:grid',
+        'place-items:center',
+        'border:none',
+        'background:transparent',
+        'color:#9aa0ad',
+        'cursor:pointer',
+        'opacity:0',
+        'transition:opacity .12s,color .12s',
+      ].join(';')
+      remove.append(iconEl('close', 13))
+      remove.addEventListener('mouseenter', () => (remove.style.color = '#f0f2f6'))
+      remove.addEventListener('mouseleave', () => (remove.style.color = '#9aa0ad'))
+      remove.addEventListener('click', (e) => {
+        e.stopPropagation()
+        removeRecent(r.path)
+        this.renderRecents()
+      })
+      // Sem mouse (teclado), o ✕ precisa aparecer ao receber foco.
+      remove.addEventListener('focus', () => (remove.style.opacity = '1'))
+      remove.addEventListener('blur', () => (remove.style.opacity = '0'))
+
+      row.addEventListener('mouseenter', () => {
+        row.style.background = '#22232a'
+        remove.style.opacity = '1'
+      })
+      row.addEventListener('mouseleave', () => {
+        row.style.background = '#1b1c22'
+        remove.style.opacity = '0'
+      })
+
+      row.append(card, remove)
+      this.recentsEl.appendChild(row)
     }
   }
+}
+
+/**
+ * Titlebar do launcher: faixa arrastável + minimizar/maximizar/fechar. Existe
+ * porque o overlay cobre a menubar do Shell, que é quem desenha isso quando há
+ * projeto aberto (janela frameless — SPEC-0178).
+ */
+function titleBar(): HTMLElement {
+  const bar = document.createElement('div')
+  bar.style.cssText = [
+    `height:${TITLEBAR_HEIGHT_PX}px`,
+    'flex:0 0 auto',
+    'display:flex',
+    'align-items:center',
+    'padding:0 6px 0 12px',
+    'gap:8px',
+    'user-select:none',
+    '-webkit-app-region:drag',
+  ].join(';')
+
+  const label = document.createElement('span')
+  label.textContent = 'cortex'
+  label.style.cssText = 'font-size:11.5px;font-weight:700;color:#9aa0ad;letter-spacing:.02em'
+
+  const spacer = document.createElement('span')
+  spacer.style.cssText = 'flex:1'
+
+  const btns = document.createElement('div')
+  btns.style.cssText = 'display:flex;gap:2px;-webkit-app-region:no-drag'
+  btns.append(
+    windowButton('min', 13, 'Minimizar', () => void window.electronAPI.windowMinimize?.()),
+    windowButton('max', 11, 'Maximizar', () => void window.electronAPI.windowMaximize?.()),
+    windowButton('close', 12, 'Fechar', () => void window.electronAPI.windowClose?.(), '#e5484d'),
+  )
+
+  bar.append(label, spacer, btns)
+  return bar
+}
+
+/** Botão de janela (mesma métrica do `.winbtn` do Shell); `hoverBg` tinge o fechar. */
+function windowButton(
+  name: string,
+  size: number,
+  title: string,
+  onClick: () => void,
+  hoverBg = '#2c2e36',
+): HTMLButtonElement {
+  const b = document.createElement('button')
+  b.title = title
+  b.setAttribute('aria-label', title)
+  b.style.cssText = [
+    'width:32px',
+    'height:22px',
+    'display:grid',
+    'place-items:center',
+    'border:none',
+    'border-radius:5px',
+    'background:transparent',
+    'color:#9aa0ad',
+    'cursor:pointer',
+  ].join(';')
+  b.append(iconEl(name, size))
+  b.addEventListener('mouseenter', () => {
+    b.style.background = hoverBg
+    b.style.color = '#fff'
+  })
+  b.addEventListener('mouseleave', () => {
+    b.style.background = 'transparent'
+    b.style.color = '#9aa0ad'
+  })
+  b.addEventListener('click', onClick)
+  return b
+}
+
+/**
+ * Ícone do set do redesign. O `.ico` só é estilizado dentro de `.ide` e o
+ * launcher vive fora dele (anexado ao body) — daí o display aplicado na mão.
+ */
+function iconEl(name: string, size: number): HTMLElement {
+  const el = icon(name, { size })
+  el.style.display = 'inline-flex'
+  return el
 }
 
 function bigButton(label: string, bg: string, fg: string): HTMLButtonElement {
