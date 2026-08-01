@@ -408,6 +408,17 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   `window.electronAPI.confirmDialog/infoDialog/errorDialog` (handlers `dialog:confirm`/
   `dialog:info`/`dialog:error` no `electron/main.ts`, via `dialog.showMessageBox`/
   `showErrorBox` nativos, que não têm o bug).
+- **Renomear o Studio move o `userData` e zera o usuário** — o diretório de dados
+  (`preferences.json`, `chats/`, `sessions/`) sai do **nome do app**, que no build
+  empacotado vem do `productName` do `electron-builder.json`. Trocar o nome do
+  produto faz o Studio abrir num diretório novo e vazio, sem erro nenhum. Por isso
+  o `main.ts` fixa o caminho no boot (`app.setPath('userData', …)` com
+  `APP_DATA_NAME`, SPEC-0179). Duas sutilezas: **(a)** fixar com `app.setName()`
+  também funcionaria, mas o nome do app é o **título default** de janelas sem
+  `<title>` (a splash apareceria no Alt+Tab com o nome antigo); **(b)** `setPath`
+  **sobrescreve** o `--user-data-dir` da linha de comando — sem a guarda
+  `commandLine.hasSwitch('user-data-dir')`, rodar o Studio com perfil separado
+  (validar UI sem sujar o perfil real) escreve calado no diretório real.
 - **Electron não entrega drag-and-drop nativo pra DENTRO do iframe do Preview** —
   arrastar da IDE pro viewport mostra 🚫 e o `drop` nunca dispara no documento do
   jogo (em browser puro funciona). Qualquer feature de DnD IDE→viewport precisa
@@ -678,7 +689,7 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
-| IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) |
+| IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
 

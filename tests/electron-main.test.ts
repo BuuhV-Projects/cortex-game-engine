@@ -19,6 +19,10 @@ vi.mock('electron', () => ({
     whenReady: vi.fn(() => ({ then: vi.fn() })),
     on: vi.fn(),
     quit: vi.fn(),
+    // Identidade de dados: o main.ts fixa o diretório do userData no import
+    // (SPEC-0179), antes do lock. Coberto em tests/electron/userDataPath.test.ts.
+    setPath: vi.fn(),
+    commandLine: { hasSwitch: vi.fn(() => false) },
     // Instância única: o main.ts pede o lock no import. Concedemos, senão
     // ele chamaria app.quit() e pularia o registro dos handlers IPC.
     requestSingleInstanceLock: vi.fn(() => true),

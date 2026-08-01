@@ -11,6 +11,7 @@
  */
 
 import { setLocale, markWelcomed, type Locale, t } from './i18n'
+import { APP_DISPLAY_NAME } from '../appIdentity'
 
 export function showWelcomeModal(): Promise<Locale> {
   return new Promise<Locale>((resolve) => {
@@ -53,7 +54,7 @@ export function showWelcomeModal(): Promise<Locale> {
       ptBtn.dataset['selected'] = 'false'
       applyButtonStyle(enBtn, true)
       applyButtonStyle(ptBtn, false)
-      title.textContent = 'Welcome to Cortex Game Engine Studio'
+      title.textContent = `Welcome to ${APP_DISPLAY_NAME}`
       subtitle.textContent = 'Choose your language to get started.'
       continueBtn.textContent = 'Continue'
     })
@@ -63,7 +64,7 @@ export function showWelcomeModal(): Promise<Locale> {
       ptBtn.dataset['selected'] = 'true'
       applyButtonStyle(enBtn, false)
       applyButtonStyle(ptBtn, true)
-      title.textContent = 'Bem-vindo ao Cortex Game Engine Studio'
+      title.textContent = `Bem-vindo ao ${APP_DISPLAY_NAME}`
       subtitle.textContent = 'Escolha o seu idioma para começar.'
       continueBtn.textContent = 'Continuar'
     })

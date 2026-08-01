@@ -1,6 +1,6 @@
 {
   "appId": "com.cortex.studio",
-  "productName": "Cortex Game Engine Studio",
+  "productName": "TS Cortex Studio",
   "directories": {
     "output": "dist-app"
   },

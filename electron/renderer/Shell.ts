@@ -1,5 +1,6 @@
 import { h, icon } from './ui'
 import { t } from './i18n'
+import { APP_WORDMARK } from '../appIdentity'
 
 /** `t` com fallback: usa a tradução se a chave existir, senão o texto dado. */
 function tr(key: string, fallback: string): string {
@@ -97,7 +98,7 @@ export class Shell {
     this.menubarEl.className = 'menubar'
     this.menubarEl.textContent = ''
 
-    const brand = h('div', { class: 'brand' }, h('span', { class: 'logo' }), 'cortex')
+    const brand = h('div', { class: 'brand' }, h('span', { class: 'logo' }), APP_WORDMARK)
 
     const menus = h('div', { class: 'row', style: 'gap:1px;-webkit-app-region:no-drag' })
     menus.append(

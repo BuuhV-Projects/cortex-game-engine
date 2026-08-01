@@ -16,6 +16,7 @@
  */
 import { icon } from './ui'
 import { addRecent, getRecents, removeRecent } from './recentProjects'
+import { APP_DISPLAY_NAME, APP_WORDMARK } from '../appIdentity'
 
 /** Altura da titlebar — mesma da menubar do Shell (`.ide .menubar`). */
 const TITLEBAR_HEIGHT_PX = 30
@@ -61,7 +62,7 @@ export class Launcher {
     }
 
     const title = document.createElement('div')
-    title.textContent = 'Cortex Game Engine Studio'
+    title.textContent = APP_DISPLAY_NAME
     title.style.cssText = 'font-size:22px;font-weight:700;letter-spacing:.01em'
     const sub = document.createElement('div')
     sub.textContent = 'Comece um novo jogo ou continue de onde parou.'
@@ -225,7 +226,7 @@ function titleBar(): HTMLElement {
   ].join(';')
 
   const label = document.createElement('span')
-  label.textContent = 'cortex'
+  label.textContent = APP_WORDMARK
   label.style.cssText = 'font-size:11.5px;font-weight:700;color:#9aa0ad;letter-spacing:.02em'
 
   const spacer = document.createElement('span')
