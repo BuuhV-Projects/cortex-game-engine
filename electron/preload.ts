@@ -45,22 +45,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Abre uma pasta no explorador do SO (ex.: dist-native após o export). */
   openPath: (target: string) => ipcRenderer.invoke('shell:openPath', target),
 
-  /** Identidade do jogo (ADR-0126): lê `cortex.json` resolvido (id/name/icon). */
+  /**
+   * Identidade do jogo (ADR-0126/0174): lê `cortex.json` resolvido
+   * (id/name/icon + `steamAppId`, `null` se o jogo não publica na Steam).
+   */
   readProjectConfig: (projectDir: string) =>
     ipcRenderer.invoke('project:readConfig', projectDir) as Promise<{
       engine: string
       id: string
       name: string
       icon: string | null
+      steamAppId: number | null
     }>,
 
-  /** Grava nome/ícone do jogo no `cortex.json` (preserva `id`/`engine`). */
-  writeProjectConfig: (projectDir: string, patch: { name?: string; icon?: string }) =>
+  /** Grava nome/ícone/app id da Steam no `cortex.json` (preserva `id`/`engine`). */
+  writeProjectConfig: (
+    projectDir: string,
+    patch: { name?: string; icon?: string; steamAppId?: string },
+  ) =>
     ipcRenderer.invoke('project:writeConfig', projectDir, patch) as Promise<{
       ok: boolean
       id: string
       name: string
       icon: string | null
+      steamAppId: number | null
     }>,
 
   /** Diálogo pra escolher um PNG (ícone do jogo). Retorna o caminho ou null. */

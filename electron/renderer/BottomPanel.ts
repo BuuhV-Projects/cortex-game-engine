@@ -123,7 +123,11 @@ export class BottomPanel {
       return
     }
     const config = await window.electronAPI.readProjectConfig(this.projectDir)
-    new ProjectSettingsModal(this.projectDir, { name: config.name, icon: config.icon })
+    new ProjectSettingsModal(this.projectDir, {
+      name: config.name,
+      icon: config.icon,
+      steamAppId: config.steamAppId,
+    })
   }
 
   /**

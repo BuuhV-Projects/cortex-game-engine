@@ -1,11 +1,15 @@
 import { t } from './i18n'
 
+/** App id da Steam cabe em uint32 — 10 dígitos é o teto absoluto. */
+const STEAM_APP_ID_MAX_DIGITS = 10
+
 /**
  * Modal "Configurações do jogo" (SPEC-0128): registra a IDENTIDADE do jogo no
- * `cortex.json` — nome de exibição + ícone (PNG). O nome serve PC (título da
- * janela, Meus Programas) e console (DefaultDisplayName); o ícone é embutido no
- * `launcher.exe` no export (SPEC-0127) e alimenta o atalho quando o instalador
- * chegar. O `id` (chave de saves) NÃO é editável — é estável por design.
+ * `cortex.json` — nome de exibição + ícone (PNG) + **Steam App ID**. O nome
+ * serve PC (título da janela, Meus Programas) e console (DefaultDisplayName); o
+ * ícone é embutido no `launcher.exe` no export (SPEC-0127) e alimenta o atalho
+ * quando o instalador chegar; o app id é o que autoriza o export `--steam`
+ * (ADR-0174). O `id` (chave de saves) NÃO é editável — é estável por design.
  *
  * Segue o molde do ExportProgressModal: `<dialog>.showModal()` com backdrop
  * nativo, DOM montado à mão, i18n via `t()`.
@@ -14,6 +18,7 @@ export class ProjectSettingsModal {
   private dialog: HTMLDialogElement
   private projectDir: string
   private nameInput!: HTMLInputElement
+  private steamInput!: HTMLInputElement
   private previewImg!: HTMLImageElement
   private previewEmpty!: HTMLElement
   private removeBtn!: HTMLButtonElement
@@ -22,7 +27,10 @@ export class ProjectSettingsModal {
   private pendingSource: string | null = null // PNG novo escolhido, ainda não copiado
   private saved = false
 
-  constructor(projectDir: string, config: { name: string; icon: string | null }) {
+  constructor(
+    projectDir: string,
+    config: { name: string; icon: string | null; steamAppId?: number | null },
+  ) {
     this.projectDir = projectDir
     this.iconRel = config.icon
 
@@ -92,6 +100,28 @@ export class ProjectSettingsModal {
     iconRow.append(preview, iconBtns)
     iconField.append(iconLabel, iconRow)
 
+    // Campo: Steam App ID (ADR-0174). Vazio = jogo que não publica na Steam —
+    // estado válido; quem exporta só pra PC nunca precisa preencher.
+    const steamField = document.createElement('label')
+    steamField.className = 'gs-field'
+    const steamLabel = document.createElement('span')
+    steamLabel.className = 'gs-field__label'
+    steamLabel.textContent = t('gameSettings.steam_label')
+    this.steamInput = document.createElement('input')
+    // `inputMode` numérico abre o teclado certo e sinaliza a intenção, mas o
+    // type continua `text`: com `type="number"` o browser aceita `1e5`/`-3` e
+    // devolve string vazia em valor inválido, escondendo o erro do usuário.
+    this.steamInput.type = 'text'
+    this.steamInput.inputMode = 'numeric'
+    this.steamInput.className = 'gs-input'
+    this.steamInput.value = config.steamAppId != null ? String(config.steamAppId) : ''
+    this.steamInput.placeholder = t('gameSettings.steam_placeholder')
+    this.steamInput.maxLength = STEAM_APP_ID_MAX_DIGITS
+    const steamHint = document.createElement('div')
+    steamHint.className = 'gs-icon-hint'
+    steamHint.textContent = t('gameSettings.steam_hint')
+    steamField.append(steamLabel, this.steamInput, steamHint)
+
     // Nota: atalho na área de trabalho depende do instalador (ADR-0126/0127).
     const note = document.createElement('div')
     note.className = 'gs-note'
@@ -112,7 +142,7 @@ export class ProjectSettingsModal {
     this.saveBtn.addEventListener('click', () => void this.save())
     footer.append(cancelBtn, this.saveBtn)
 
-    this.dialog.append(header, nameField, iconField, note, footer)
+    this.dialog.append(header, nameField, iconField, steamField, note, footer)
     document.body.appendChild(this.dialog)
 
     void this.loadPreview()
@@ -158,6 +188,18 @@ export class ProjectSettingsModal {
   }
 
   private async save(): Promise<void> {
+    // Vazio é válido (jogo fora da Steam); qualquer coisa que não seja só
+    // dígitos é erro do usuário e vale avisar AQUI, não no export.
+    const steamAppId = this.steamInput.value.trim()
+    if (steamAppId && !/^\d+$/.test(steamAppId)) {
+      void window.electronAPI.errorDialog(
+        t('gameSettings.title'),
+        t('gameSettings.steam_invalid'),
+      )
+      this.steamInput.focus()
+      this.steamInput.select()
+      return
+    }
     this.saveBtn.disabled = true
     try {
       // Copia o PNG escolhido pra dentro do projeto (branding/icon.png).
@@ -169,6 +211,7 @@ export class ProjectSettingsModal {
       const res = await window.electronAPI.writeProjectConfig(this.projectDir, {
         name: this.nameInput.value.trim(),
         icon: this.iconRel ?? undefined,
+        steamAppId,
       })
       this.saved = true
       // Avisa a Studio (ex.: rótulo do projeto pode refletir o novo nome).
