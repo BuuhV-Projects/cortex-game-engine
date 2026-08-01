@@ -23,6 +23,7 @@ export * from './core/Skybox.js';
 export * from './core/PostFX.js';
 export * from './core/debug.js';
 export * from './core/gamePlatform.js';
+export * from './core/steamworks.js';
 
 // ─── Input: ações remapeáveis + tela de Controles (ADR-0164 / SPEC-0165) ───────
 export * from './input/bindings.js';
