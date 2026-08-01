@@ -488,14 +488,25 @@ se o SDK é linkado. Com o cliente Steam aberto: `[steam] init OK (app N)`.
 gravado como `steamAppId` no `cortex.json` do projeto. Sem ele o export `--steam`
 FALHA (é o portão). Use 480 (Spacewar) pra testar.
 
-⚠️ **O export Steam roda a partir do REPO, não do Studio instalado.** O
-`electron-builder` embarca só `native/build` (host desktop, TDR-0003) — o
-`build-steam` fica de fora porque o Steamworks SDK está atrás de login de
-parceiro e **o CI não tem como baixá-lo**. Então o menu *Exportar › Steam* do
-Studio empacotado erra pedindo o host; quem publica exporta da máquina de dev com
-o repo clonado e o `build-steam` compilado. O app id, por ser dado do
-`cortex.json`, continua sendo configurável pelo Studio normalmente — é só o
-BINÁRIO do host que precisa vir do repo.
+**Onde o SDK mora (ADR-0176).** A licença da Valve proíbe publicar o SDK e este
+repo é público — então ele vive em `BuuhV-Projects/cortex-steamworks-sdk`
+(**privado**) e chega ao CI por uma *deploy key read-only* (secret
+`STEAMWORKS_SDK_KEY`), clonado em `native/steamworks-sdk` e apontado pela env
+`STEAMWORKS_SDK`. A versão é **pinada como toda dep**:
+`native/steam/sdk-version.txt` diz qual (`1.65`) e o checkout usa a tag
+`v<versão>`. Atualizar o SDK = bumpar esse arquivo (commit `fix:`/`feat:` já
+publica release do engine). Localmente nada muda: quem tem o SDK em
+`native/third_party/steamworks` (baixado do site) segue igual.
+
+Com isso o **CI compila o host Steam** e o `electron-builder` o embarca em
+`native/build-steam`, ao lado do desktop — o **Studio instalado passa a exportar
+pra Steam**. Sem a secret (fork/PR de terceiro) o passo é pulado e o instalador
+sai sem esse host: o export erra com mensagem clara, mas o CI não fica vermelho
+(`ensure-host-dirs.mjs` garante a pasta pro electron-builder não abortar).
+
+**Watcher:** `steam-sdk-watch.yml` roda diário, lê o feed **público** de anúncios
+do grupo *Steamworks Development* e abre uma issue quando sai SDK novo. O
+download não é automatizável (login de parceiro com 2FA) — só a detecção.
 
 **Export modo Steam:** `node native/scripts/export-game.mjs <gameDir> --steam`
 usa o host `build-steam`, inclui a `steam_api64.dll` e propaga o `steamAppId` pro
