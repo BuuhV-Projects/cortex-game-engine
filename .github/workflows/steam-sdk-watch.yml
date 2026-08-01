@@ -1,0 +1,91 @@
+name: Steamworks SDK watch
+
+# Avisa quando a Valve lança um SDK novo (ADR-0176).
+#
+# Não dá pra baixar sozinho: o SDK fica atrás de login de parceiro com 2FA em
+# partner.steamgames.com, e automatizar esse login seria frágil e indevido. O que
+# dá pra automatizar é a DETECÇÃO — o grupo "Steamworks Development" publica um
+# feed RSS PÚBLICO com os anúncios ("Steamworks SDK 1.65 has been released").
+#
+# Quando detecta, abre uma issue com o passo a passo. O trabalho humano que resta
+# é baixar o SDK e commitá-lo no repo privado; o resto (tag, pin, build, release)
+# segue o fluxo normal do repo.
+
+on:
+  schedule:
+    # Diário, 09:00 UTC. O SDK sai poucas vezes por ano — checar mais que isso
+    # só gastaria minutos de runner.
+    - cron: '0 9 * * *'
+  workflow_dispatch: # pra testar sem esperar o cron
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Checar versão anunciada
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24.15.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
+      - name: Comparar versão anunciada vs pinada
+        id: check
+        run: |
+          result=$(node native/scripts/steam-sdk-version.mjs)
+          echo "$result"
+          echo "outdated=$(echo "$result" | node -e 'process.stdin.on("data",d=>console.log(JSON.parse(d).outdated))')" >> $GITHUB_OUTPUT
+          echo "announced=$(echo "$result" | node -e 'process.stdin.on("data",d=>console.log(JSON.parse(d).announced))')" >> $GITHUB_OUTPUT
+          echo "expected=$(echo "$result" | node -e 'process.stdin.on("data",d=>console.log(JSON.parse(d).expected))')" >> $GITHUB_OUTPUT
+
+      # Uma issue por versão: o título carrega o número, e a busca evita abrir a
+      # mesma issue todo dia até alguém atualizar o SDK.
+      - name: Abrir issue se saiu SDK novo
+        if: steps.check.outputs.outdated == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ANNOUNCED: ${{ steps.check.outputs.announced }}
+          EXPECTED: ${{ steps.check.outputs.expected }}
+        run: |
+          title="Steamworks SDK v$ANNOUNCED disponível (temos v$EXPECTED)"
+          if gh issue list --state open --search "$title in:title" --json title \
+             | grep -q "$title"; then
+            echo "issue já existe — nada a fazer"
+            exit 0
+          fi
+          gh issue create --title "$title" --label dependencies --body "$(cat <<EOF
+          A Valve anunciou o **Steamworks SDK v$ANNOUNCED**; o engine está pinado em **v$EXPECTED**.
+
+          Detectado pelo feed público de anúncios do grupo Steamworks Development.
+          O download não dá pra automatizar (login de parceiro com 2FA), então o
+          passo a passo é:
+
+          1. Baixe o SDK em <https://partner.steamgames.com/downloads/list>
+          2. No repo privado \`BuuhV-Projects/cortex-steamworks-sdk\`, substitua
+             \`public/\` e \`redistributable_bin/win64/\` (e o \`Readme.txt\`, que é o que
+             identifica a versão), commite e **crie a tag \`v$ANNOUNCED\`**
+          3. Aqui no engine, bumpe \`native/steam/sdk-version.txt\` para \`$ANNOUNCED\`
+             — é o que faz o CI buscar a tag nova
+          4. Rebuilde o host Steam e rode os testes:
+             \`\`\`
+             cmake -G Ninja -S native -B native/build-steam -DCMAKE_BUILD_TYPE=Release -DCORTEX_STEAM=ON
+             cmake --build native/build-steam
+             yarn test
+             \`\`\`
+          5. Commite como \`fix(native): Steamworks SDK v$ANNOUNCED\` — commit \`fix\`/\`feat\`
+             faz o semantic-release publicar uma versão nova do engine (um \`chore\` **não** publica)
+
+          Confira o changelog no \`Readme.txt\` do SDK antes: mudança de API pode
+          exigir ajuste em \`native/src/core/steam*\`. Ver ADR-0176.
+          EOF
+          )"
+
+      - name: Nada a fazer
+        if: steps.check.outputs.outdated != 'true'
+        run: echo "SDK pinado está em dia (ou o feed não respondeu — ver log acima)."
