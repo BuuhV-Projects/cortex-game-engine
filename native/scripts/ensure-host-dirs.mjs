@@ -28,3 +28,16 @@ for (const rel of OPTIONAL_HOST_DIRS) {
   fs.mkdirSync(dir, { recursive: true });
   console.log(`[hosts] ${rel}: ausente — criada vazia (Studio sai sem esse host)`);
 }
+
+// Encoder KTX2 do cook (SPEC-0177): diferente do host Steam, NÃO é opcional —
+// sem ele o export sai sem textura comprimida. Não vive no git (native/tools é
+// ignorado), então aqui a gente baixa (idempotente; no CI já veio do
+// fetch-deps.ps1). Sem rede, cai pra pasta vazia: o build segue e o export
+// avisa em runtime, em vez de o instalador inteiro falhar.
+const ENCODER_DIR = 'native/tools/basis-encoder';
+try {
+  await import('./fetch-basis-encoder.mjs');
+} catch (err) {
+  console.warn(`[hosts] ${ENCODER_DIR}: download falhou (${err.message}) — Studio sai SEM cook KTX2`);
+}
+fs.mkdirSync(path.join(engineRoot, ENCODER_DIR), { recursive: true });
