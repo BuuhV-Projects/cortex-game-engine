@@ -42,7 +42,12 @@
       {
         "from": "native/build",
         "to": "native/build",
-        "filter": ["cortex_host.exe", "*.dll", "Roboto-Medium.ttf"]
+        "filter": ["cortex_host.exe", "*.dll", "Roboto-Medium.ttf", "bin/hermesc.exe"]
+      },
+      {
+        "from": "native/build-steam",
+        "to": "native/build-steam",
+        "filter": ["cortex_host.exe", "*.dll", "Roboto-Medium.ttf", "bin/hermesc.exe"]
       },
       { "from": "native/scripts", "to": "native/scripts" },
       { "from": "native/js", "to": "native/js" },
