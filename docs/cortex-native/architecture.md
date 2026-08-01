@@ -465,23 +465,40 @@ native/build/cortex_host.exe
 
 **Release Steam (PC)** — opt-in, exige o Steamworks SDK (pré-requisito acima):
 ```powershell
-cmake -G Ninja -S native -B native/build-steam -DCMAKE_BUILD_TYPE=Release -DCORTEX_STEAM=ON -DCORTEX_STEAM_APPID=<seuAppId>
+cmake -G Ninja -S native -B native/build-steam -DCMAKE_BUILD_TYPE=Release -DCORTEX_STEAM=ON
 cmake --build native/build-steam   # linka steam_api64; copia dll + steam_appid.txt (480 dev)
 ```
-Sem `-DCORTEX_STEAM_APPID` usa 480 (Spacewar) p/ testar. Rodando com o cliente
-Steam aberto: `[steam] init OK` (conecta à conta). Validado. No release, use o app
-id real e NÃO inclua o `steam_appid.txt`.
+**NÃO existe `-DCORTEX_STEAM_APPID`** (ADR-0174): o app id é DADO do jogo, lido do
+`cortex.json` em runtime — um mesmo host serve qualquer título. Aqui se decide só
+se o SDK é linkado. Com o cliente Steam aberto: `[steam] init OK (app N)`.
+
+**App id do jogo:** *Configurações do jogo* no Studio → campo **Steam App ID**,
+gravado como `steamAppId` no `cortex.json` do projeto. Sem ele o export `--steam`
+FALHA (é o portão). Use 480 (Spacewar) pra testar.
 
 **Export modo Steam:** `node native/scripts/export-game.mjs <gameDir> --steam`
-usa o host `build-steam` + inclui a `steam_api64.dll` (o app id já está baked no
-host; o `steam_appid.txt` dev NÃO vai). O `dist-native` resultante é o que sobe
-pra Steam (via SteamPipe). Sem `--steam`, é o export desktop normal.
+usa o host `build-steam`, inclui a `steam_api64.dll` e propaga o `steamAppId` pro
+`cortex.json` do build. **Recusa exportar** se o projeto não declarar app id. O
+`steam_appid.txt` (dev) NÃO vai no release — ele sobrepõe o id que o cliente Steam
+informa, e a Valve manda tirar. Sem `--steam` é o export desktop normal, e o campo
+some do `cortex.json` do build.
 
-**Upload (SteamPipe):** template em `native/steam/app_build.vdf` (troque
-APPID/DEPOTID, aponte o `ContentRoot` pro `dist-native`). Sobe com:
-`steamcmd +login <usuário> +run_app_build <app_build.vdf> +quit` → vira um build
-no Steamworks, que você publica num branch pelo painel. (Registro do app + o Steam
-Direct de US$100 + a página da loja são no Steamworks; parte sua.)
+**Capacidades no jogo (SPEC-0175):** conquistas, stats, overlay, jogador e idioma
+via a fachada `Steam` do engine (`src/core/steamworks.ts`) sobre as globais
+`__cortexSteam*` (`native/src/shims/steam_api.cpp` → `core/steam_stats.*` e
+`core/steam_user.*`). Fora do export Steam tudo vira no-op — o mesmo bundle roda
+no PC puro. **Save na nuvem:** Steam Auto-Cloud, sem código — os saves já vão em
+`SDL_GetPrefPath(<id>, "saves")`; no painel use Root `WinAppDataRoaming`,
+Subdirectory `<id do jogo>/saves`, Pattern `*`.
+
+**Upload (SteamPipe):** `node native/scripts/steam-upload.mjs <distDir> --depot <id>`
+gera o `app_build.vdf` e chama o `steamcmd`. O app id sai do `cortex.json` do
+PRÓPRIO build — não há como subir um artefato pro app errado. `--dry-run` imprime
+o `.vdf` sem subir; `--branch <nome>` publica no branch (o `default` é recusado de
+propósito — publique pelo painel); `--user <login>` usa a sessão do steamcmd
+(senha nunca vai por argumento). O binário sai de
+`third_party/steamworks/tools/ContentBuilder/builder/` ou do PATH. (Registro do
+app + o Steam Direct de US$100 + a página da loja são no Steamworks; parte sua.)
 
 **App model do GDK (M3)** — opt-in, exige o GDK instalado (pré-requisito acima):
 ```powershell
