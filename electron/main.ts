@@ -497,6 +497,7 @@ const VENDOR_TYPE_MODULES = {
     'PostFX',
     'debug',
     'gamePlatform',
+    'steamworks',
   ],
   // Ações de input remapeáveis + tela de Controles (ADR-0164 / SPEC-0165).
   input: [
@@ -1029,6 +1030,27 @@ const asTrimmed = (v: unknown): string | undefined =>
   typeof v === 'string' && v.trim() ? v.trim() : undefined
 
 /**
+ * Tira o BOM (U+FEFF) do início. Um `cortex.json` salvo por editor do Windows
+ * começa com ele e `JSON.parse` lança — o que aqui viraria "config perdida em
+ * silêncio", já que o catch cai no fallback do slug. Espelha o mesmo tratamento
+ * em `native/scripts/game-config.mjs`.
+ */
+const stripBom = (text: string): string => text.replace(/^\uFEFF/, '')
+
+/**
+ * App id da Steam normalizado (ADR-0174) — número positivo ou `null`. Espelha o
+ * `steamAppIdOf` de `native/scripts/game-config.mjs`: aceita `480` e `"480"`,
+ * porque o campo é digitado por humano e o id entre aspas é o erro provável.
+ */
+const asSteamAppId = (v: unknown): number | null => {
+  const text = typeof v === 'number' ? String(v) : typeof v === 'string' ? v.trim() : ''
+  if (!/^\d+$/.test(text)) return null
+  const value = Number(text)
+  // 0 é o sentinela de "não declarado" no host — nunca é um id válido.
+  return Number.isSafeInteger(value) && value > 0 ? value : null
+}
+
+/**
  * Lê e RESOLVE a identidade do jogo (Configurações do jogo no Studio). Espelha
  * `native/scripts/game-config.mjs`: `id` (slug estável, chave de saves) e `name`
  * (exibição) caem no nome da pasta quando ausentes — compat com projetos antigos
@@ -1038,7 +1060,7 @@ ipcMain.handle('project:readConfig', async (_event, projectDir: unknown) => {
   const dir = validatePath(projectDir)
   let cfg: Record<string, unknown> = {}
   try {
-    const raw = JSON.parse(await readFile(join(dir, 'cortex.json'), 'utf-8'))
+    const raw = JSON.parse(stripBom(await readFile(join(dir, 'cortex.json'), 'utf-8')))
     if (raw && typeof raw === 'object') cfg = raw as Record<string, unknown>
   } catch {
     // sem cortex.json / inválido — resolve pelo slug
@@ -1046,20 +1068,28 @@ ipcMain.handle('project:readConfig', async (_event, projectDir: unknown) => {
   const slug = basename(dir)
   const id = asTrimmed(cfg.id) ?? slug
   const name = asTrimmed(cfg.name) ?? id
-  return { engine: 'cortex-game-engine', ...cfg, id, name, icon: asTrimmed(cfg.icon) ?? null }
+  return {
+    engine: 'cortex-game-engine',
+    ...cfg,
+    id,
+    name,
+    icon: asTrimmed(cfg.icon) ?? null,
+    steamAppId: asSteamAppId(cfg.steamAppId),
+  }
 })
 
 /**
- * Grava a identidade editável (name/icon) preservando o resto do cortex.json.
- * `id` e `engine` NÃO são editáveis por aqui — `id` é estável (saves) e mexer
- * nele órfãos os saves. `name` vazio volta pro `id`.
+ * Grava a identidade editável (name/icon/steamAppId) preservando o resto do
+ * cortex.json. `id` e `engine` NÃO são editáveis por aqui — `id` é estável
+ * (saves) e mexer nele órfãos os saves. `name` vazio volta pro `id`;
+ * `steamAppId` vazio/ inválido REMOVE o campo (jogo que não vai pra Steam).
  */
 ipcMain.handle('project:writeConfig', async (_event, projectDir: unknown, patch: unknown) => {
   const dir = validatePath(projectDir)
-  const p = (patch ?? {}) as { name?: unknown; icon?: unknown }
+  const p = (patch ?? {}) as { name?: unknown; icon?: unknown; steamAppId?: unknown }
   let cfg: Record<string, unknown> = {}
   try {
-    const raw = JSON.parse(await readFile(join(dir, 'cortex.json'), 'utf-8'))
+    const raw = JSON.parse(stripBom(await readFile(join(dir, 'cortex.json'), 'utf-8')))
     if (raw && typeof raw === 'object') cfg = raw as Record<string, unknown>
   } catch {
     // recria do zero se o arquivo sumiu/corrompeu
@@ -1075,8 +1105,13 @@ ipcMain.handle('project:writeConfig', async (_event, projectDir: unknown, patch:
   const icon = asTrimmed(p.icon)
   if (icon) next.icon = icon
   else delete next.icon
+  // Gravado como NÚMERO (não string): é o que o host lê no runtime e o que o
+  // export propaga pro cortex.json do build.
+  const steamAppId = asSteamAppId(p.steamAppId)
+  if (steamAppId !== null) next.steamAppId = steamAppId
+  else delete next.steamAppId
   await writeFile(join(dir, 'cortex.json'), JSON.stringify(next, null, 2) + '\n', 'utf-8')
-  return { ok: true, id, name: next.name, icon: icon ?? null }
+  return { ok: true, id, name: next.name, icon: icon ?? null, steamAppId }
 })
 
 /** Diálogo pra escolher um PNG (ícone do jogo). Retorna o caminho ou null. */
