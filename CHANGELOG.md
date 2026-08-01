@@ -1,3 +1,10 @@
+# [0.43.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.42.2...v0.43.0) (2026-08-01)
+
+
+### Features
+
+* **studio:** renomear o app para TS Cortex Studio ([c228b7c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c228b7cefe4185f1666919360c2e4052e1f4d9af))
+
 ## [0.42.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.42.1...v0.42.2) (2026-08-01)
 
 
