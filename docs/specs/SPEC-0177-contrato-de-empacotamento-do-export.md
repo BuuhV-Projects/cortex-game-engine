@@ -74,14 +74,67 @@ O export continua (um jogo sem KTX2 roda), mas o dev vê o que aconteceu.
 
 É o teste que teria pego este bug no CI em vez de no usuário.
 
+### 5. Revisão (mesmo dia): deps que chegam por NOME, e o smoke isolado
+
+A varredura estática do item 4 passou verde e o export **quebrou de novo** no
+Studio instalado, agora no passo do bundle:
+
+```
+Error: Cannot find package '@babel/plugin-transform-block-scoping'
+  imported from …\resources\babel-virtual-resolve-base.js
+```
+
+O `bundle.mjs` passa os plugins do Babel como **string** (`plugins: ['@babel/
+plugin-transform-block-scoping', …]`) — o Babel resolve esse nome em runtime.
+Nenhum `import` menciona o pacote, então **nenhum walker de imports o enxerga**.
+O plugin entrou com o ADR-0146 (o `let` por iteração que o Hermes executa
+errado) e o toolchain nunca foi atualizado.
+
+As deps do export chegam, então, por **três** caminhos, e só o primeiro é
+visível pra análise estática:
+
+1. `import` nos scripts — ex.: `@gltf-transform/core` no cook;
+2. `import` bare **dentro do `src/` da engine**, resolvido pelo esbuild em
+   runtime — `three`, `three-mesh-bvh`, `zod`;
+3. **nome em string**, resolvido pelo Babel (plugins/presets) ou por
+   `require.resolve` — `@babel/plugin-transform-*`, `png-to-ico`, `rcedit`.
+
+Perseguir cada caminho com um analisador novo é correr atrás do prejuízo. A
+decisão é **rodar o export de verdade contra uma árvore isolada**:
+`tests/native/export-isolated-smoke.test.ts` monta num tmp o mesmo layout que o
+electron-builder produz em `resources/` (`native/scripts` + `native/js` + `src`
+copiados) com **um único `node_modules`: o do toolchain**, e executa o
+`bundle.mjs` real sobre uma fixture de jogo que importa a engine inteira. Dep
+faltando por qualquer um dos três caminhos falha aqui — foi verificado
+reproduzindo os dois bugs (o teste fica vermelho com a árvore de antes).
+
+A fixture carrega uma **sonda** `for (let …)` com closure e o teste exige que
+ela saia como `var` no bundle: se o plugin de block-scoping for removido da
+lista um dia, o export não falha — ele produz um jogo com bug silencioso
+(ADR-0146), e é isso que o assert pega.
+
+Como o toolchain tem `node_modules` próprio, o job de testes do CI passa a
+rodar `yarn install --frozen-lockfile` nele (`release.yml`, `build-ide.yml`).
+Local, sem o toolchain instalado, o smoke **pula**; no CI (`process.env.CI`)
+a ausência é **erro** — um smoke que some sozinho é pior que smoke nenhum.
+
 ## Consequências
 
 - **O Studio instalado volta a exportar** — e o export sai com as texturas em
   KTX2/BC7, como no dev.
 - **Instalador cresce ~1,5 MB** (gltf-transform ~1,3 MB + encoder WASM ~1,2 MB).
-- **Adicionar um `import` bare novo em qualquer script do export exige pinar a
-  dep no toolchain** — agora o CI cobra isso automaticamente (não depende mais
-  de lembrar do "ponto de manutenção" do TDR-0003).
+- **Adicionar dep nova ao export exige pinar no toolchain** — por `import`, por
+  plugin do Babel ou por `require.resolve`, tanto faz: o smoke isolado quebra
+  no CI. Não depende mais de lembrar do "ponto de manutenção" do TDR-0003 nem
+  de prever a forma da dep.
+- **O job de testes fica ~25 s mais lento** (install do toolchain + um bundle
+  real da engine). É o preço de exercitar o caminho que só existe na máquina do
+  usuário; os dois furos anteriores custaram duas releases quebradas.
+- **`devDependency` da engine usada em runtime pelo export é a armadilha
+  recorrente**: resolve em dev pelo `node_modules` do repo e some no `.exe`.
+  Ao usar uma no `native/scripts/` (ou num caminho que o bundle alcance),
+  pinar no toolchain — `@gltf-transform/*` e `@babel/plugin-transform-*` eram
+  exatamente isso.
 - **Recurso novo que o export leia de `engineRoot` continua sendo manual**: o
   teste cobre imports, não caminhos de arquivo montados em runtime. Ao usar um
   `path.join(engineRoot, …)` novo, incluir em `win.extraResources` e, de

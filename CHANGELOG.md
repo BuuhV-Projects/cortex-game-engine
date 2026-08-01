@@ -1,3 +1,10 @@
+## [0.42.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.42.1...v0.42.2) (2026-08-01)
+
+
+### Bug Fixes
+
+* **export:** pinar plugin de block-scoping e rodar o export real em teste ([5da5412](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5da5412be53d0eca7fa795327dbce536e9474697))
+
 ## [0.42.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.42.0...v0.42.1) (2026-08-01)
 
 
