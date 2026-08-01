@@ -458,14 +458,26 @@ vendorizar por tamanho/licença/integração com o VS):
 ```powershell
 powershell -File native/scripts/fetch-deps.ps1   # 1x (baixa deps pinadas)
 # num prompt com vcvars64:
-cmake -G Ninja -S native -B native/build -DCMAKE_BUILD_TYPE=Release
+cmake -G Ninja -S native -B native/build -DCMAKE_BUILD_TYPE=Release `
+  -DCMAKE_C_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe" `
+  -DCMAKE_CXX_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe"
 cmake --build native/build
 native/build/cortex_host.exe
 ```
 
+⚠️ **O compilador oficial do host é o `clang-cl`, e ele precisa vir por caminho
+COMPLETO** — não está no PATH do `vcvars64`, e omitir os dois `-DCMAKE_*_COMPILER`
+faz o CMake escolher o `cl.exe` da Build Tools sem avisar. Aí você valida num
+compilador diferente do que gera o release (as flags `/EH` por arquivo do
+ADR-0172, por exemplo, não significam o mesmo nos dois). Trocar de compilador
+depois exige **apagar a pasta de build**: o CMake recusa mudar
+`CMAKE_CXX_COMPILER` num cache já existente.
+
 **Release Steam (PC)** — opt-in, exige o Steamworks SDK (pré-requisito acima):
 ```powershell
-cmake -G Ninja -S native -B native/build-steam -DCMAKE_BUILD_TYPE=Release -DCORTEX_STEAM=ON
+cmake -G Ninja -S native -B native/build-steam -DCMAKE_BUILD_TYPE=Release -DCORTEX_STEAM=ON `
+  -DCMAKE_C_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe" `
+  -DCMAKE_CXX_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe"
 cmake --build native/build-steam   # linka steam_api64; copia dll + steam_appid.txt (480 dev)
 ```
 **NÃO existe `-DCORTEX_STEAM_APPID`** (ADR-0174): o app id é DADO do jogo, lido do
@@ -475,6 +487,15 @@ se o SDK é linkado. Com o cliente Steam aberto: `[steam] init OK (app N)`.
 **App id do jogo:** *Configurações do jogo* no Studio → campo **Steam App ID**,
 gravado como `steamAppId` no `cortex.json` do projeto. Sem ele o export `--steam`
 FALHA (é o portão). Use 480 (Spacewar) pra testar.
+
+⚠️ **O export Steam roda a partir do REPO, não do Studio instalado.** O
+`electron-builder` embarca só `native/build` (host desktop, TDR-0003) — o
+`build-steam` fica de fora porque o Steamworks SDK está atrás de login de
+parceiro e **o CI não tem como baixá-lo**. Então o menu *Exportar › Steam* do
+Studio empacotado erra pedindo o host; quem publica exporta da máquina de dev com
+o repo clonado e o `build-steam` compilado. O app id, por ser dado do
+`cortex.json`, continua sendo configurável pelo Studio normalmente — é só o
+BINÁRIO do host que precisa vir do repo.
 
 **Export modo Steam:** `node native/scripts/export-game.mjs <gameDir> --steam`
 usa o host `build-steam`, inclui a `steam_api64.dll` e propaga o `steamAppId` pro

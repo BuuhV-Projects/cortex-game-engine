@@ -85,7 +85,13 @@ const hostBuild = path.join(engineRoot, 'native', steam ? 'build-steam' : gdk ? 
 if (!fs.existsSync(path.join(hostBuild, 'cortex_host.exe'))) {
   console.error(
     `[export] host não buildado em ${hostBuild}` +
-      (steam ? ' — build o host com -DCORTEX_STEAM=ON primeiro (ver architecture.md).'
+      (steam
+        ? '\n         O host Steam NÃO vem no Studio instalado: o Steamworks SDK fica\n' +
+          '         atrás de login de parceiro, então o CI não pode compilá-lo.\n' +
+          '         Exporte pra Steam a partir do repo do engine, com o host buildado:\n' +
+          '           cmake -G Ninja -S native -B native/build-steam -DCMAKE_BUILD_TYPE=Release -DCORTEX_STEAM=ON\n' +
+          '           cmake --build native/build-steam\n' +
+          '         (usando clang-cl por caminho completo — ver architecture.md).'
         : gdk ? ' — build o host com -DCORTEX_GDK=ON primeiro (ver architecture.md).' : '.'),
   );
   process.exit(1);
