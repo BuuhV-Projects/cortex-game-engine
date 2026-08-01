@@ -31,6 +31,8 @@ lado).
 | `runWithLoadingScreen` | Roda uma task async sob uma tela de loading **dirigindo o loop de render** (Studio + export nativo). Use no menu→cena (antes do `game.start()`, quando não há loop). |
 | `Skybox` | Iluminação/fundo por HDRI. `Skybox.fromHDRI(scene, url, opts)`, `Skybox.clear(scene)`. |
 | `PostFX` | Pós-processamento consolidado (ver seção própria). |
+| `Steam` | Conquistas/stats/overlay/jogador no export Steam (ver seção própria). `.unlockAchievement(id)`, `.storeStats()`, `.player()`, `.isOverlayActive()`. **No-op** fora do export `--steam`. |
+| `gamePlatform`, `canRebindInput` | Alvo do export (`pc`/`steam`/`xbox`) lido do `cortex.json`, e se a tela de Controles deve existir. |
 
 ### Física (impulso)
 `RigidBodyComponent`, `ColliderComponent` (+ tipo `ColliderShape`: box/sphere/cylinder/capsule), `PhysicsSystem`.
@@ -500,6 +502,48 @@ game.actions.define({
 - ⚠️ Controle que o **host nativo não reconhece** não aparece como gamepad (o
   SDL só abre o que está no banco de mapeamentos dele) — remapear não resolve
   esse caso; é trabalho pendente no `native/`.
+
+## Steam: conquistas, stats, overlay, jogador — ADR-0174/SPEC-0175
+
+Só funciona no export **`--steam`**. Fora dele (Studio, browser, export PC) tudo
+vira **no-op seguro** — você autora normalmente e nada quebra.
+
+**Pré-requisito (uma vez, no projeto):** *Configurações do jogo* no Studio →
+campo **Steam App ID** (vai como `steamAppId` no `cortex.json`). Sem ele o export
+`--steam` **falha**. Use `480` (Spacewar) pra testar.
+
+```ts
+import { Steam } from 'cortex-game-engine'
+
+// Fim de fase: desbloqueia o que precisar e envia UMA vez.
+Steam.unlockAchievement('WORLD_1_CLEAR')   // API Name cadastrado no Steamworks
+Steam.setIntStat('coins_total', save.coins)
+Steam.storeStats()                          // é isto que persiste e mostra o toast
+
+if (Steam.hasAchievement('ALL_SUITS')) hud.showBadge()
+const player = Steam.player()               // { name, id } — id é SteamID64 STRING
+if (Steam.isAvailable()) menu.add(botaoAmigos)
+Steam.openOverlay('achievements')           // friends|community|players|settings|achievements|stats
+```
+
+Pausar quando o jogador abre o overlay (lido por polling, no seu update):
+
+```ts
+if (Steam.isOverlayActive() && !game.paused) game.pause()
+```
+
+- ⚠️ **`unlockAchievement` não persiste sozinha** — sem `storeStats()` a conquista
+  não sobe e o toast não aparece. Chame `storeStats()` uma vez por marco, não a
+  cada unlock.
+- ⚠️ **Ids não são validados em build**: um typo devolve `false` em runtime e não
+  desbloqueia nada. Declare os ids como `const` num módulo só.
+- ⚠️ **SteamID64 é string** (não cabe em `number`) — nunca passe por `Number()`.
+- Stats **int e float são chamadas separadas** (`setIntStat`/`setFloatStat`): o
+  tipo é definido no painel do Steamworks, não dá pra adivinhar pelo valor.
+- `Steam.language()` devolve o idioma que o jogador escolheu pro jogo na Steam
+  (ex.: `brazilian`) — útil pra pré-selecionar o idioma (SPEC-0124).
+- **Save na nuvem não usa API**: é Steam Auto-Cloud, configurado no painel
+  (Root `WinAppDataRoaming`, Subdirectory `<id do jogo>/saves`, Pattern `*`).
 
 ## Modo editor embutido (automático em dev)
 

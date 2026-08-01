@@ -21,6 +21,10 @@
     "icon_remove": "Remover",
     "icon_hint": "PNG quadrado (recomendado 512×512 ou mais). Vira o ícone do launcher.",
     "shortcut_note": "O atalho na área de trabalho virá com o instalador, usando este mesmo ícone.",
+    "steam_label": "Steam App ID",
+    "steam_placeholder": "Ex.: 480",
+    "steam_hint": "Número do app no Steamworks. Obrigatório para exportar para a Steam — sem ele o export falha. Deixe vazio se este jogo não vai pra Steam. (480 = Spacewar, para testar.)",
+    "steam_invalid": "O Steam App ID deve conter apenas números.",
     "save": "Salvar",
     "cancel": "Cancelar"
   },

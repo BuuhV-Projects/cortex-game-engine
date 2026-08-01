@@ -21,6 +21,10 @@
     "icon_remove": "Remove",
     "icon_hint": "Square PNG (512×512 or larger recommended). Becomes the launcher icon.",
     "shortcut_note": "The desktop shortcut will come with the installer, using this same icon.",
+    "steam_label": "Steam App ID",
+    "steam_placeholder": "e.g. 480",
+    "steam_hint": "The app number from Steamworks. Required to export for Steam — without it the export fails. Leave empty if this game isn't going to Steam. (480 = Spacewar, for testing.)",
+    "steam_invalid": "The Steam App ID must contain digits only.",
     "save": "Save",
     "cancel": "Cancel"
   },

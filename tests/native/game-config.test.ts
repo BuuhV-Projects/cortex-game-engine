@@ -87,6 +87,21 @@ describe('readGameConfig', () => {
     expect(readGameConfig(dir)).toMatchObject({ id: 'quebrado', name: 'quebrado' });
   });
 
+  it('cortex.json com BOM é lido normalmente (editor do Windows / PowerShell)', () => {
+    // `Out-File -Encoding utf8` do PowerShell 5.1 e vários editores do Windows
+    // gravam U+FEFF no início. Sem tratar, `JSON.parse` lança, o catch cai no
+    // fallback do slug e a config some EM SILÊNCIO — enquanto o host C++, que
+    // faz busca textual, leria tudo certo. Divergência cara de rastrear.
+    const dir = project('com-bom');
+    const json = JSON.stringify({ id: 'com-bom', name: 'Com BOM', steamAppId: 480 }, null, 2);
+    fs.writeFileSync(path.join(dir, 'cortex.json'), `\uFEFF${json}`, 'utf8');
+    expect(readGameConfig(dir)).toMatchObject({
+      id: 'com-bom',
+      name: 'Com BOM',
+      steamAppId: 480,
+    });
+  });
+
   it('preserva campos desconhecidos do cortex.json', () => {
     const dir = project('extra', { engine: 'cortex-game-engine', id: 'extra', custom: 42 });
     expect(readGameConfig(dir)).toMatchObject({ id: 'extra', custom: 42 });

@@ -14,7 +14,7 @@ import { packDir } from './pak.mjs';
 import { cookAssets } from './cook-assets.mjs';
 import { prepareDist } from './fs-clean.mjs';
 import { whoLocks } from './who-locks.mjs';
-import { readGameConfig } from './game-config.mjs';
+import { readGameConfig, steamAppIdOf } from './game-config.mjs';
 import { embedIcon } from './embed-icon.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
@@ -22,8 +22,9 @@ import { embedIcon } from './embed-icon.mjs';
 const engineRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
 // --steam: usa o host buildado com CORTEX_STEAM (native/build-steam) + inclui a
-// steam_api64.dll. O app id fica BAKED no host (-DCORTEX_STEAM_APPID no build);
-// o steam_appid.txt (dev/480) NÃO vai pro release.
+// steam_api64.dll. O app id vem do `steamAppId` do cortex.json do PROJETO
+// (ADR-0174) — sem ele o export para AQUI. O steam_appid.txt (dev) NÃO vai pro
+// release: ele sobrepõe o id que o cliente Steam informa, e a Valve manda tirar.
 const steam = args.includes('--steam');
 // --debug: export em MODO DEBUG — o jogo mostra o HUD de métricas na tela
 // (FPS/frame ms, CPU, memória, GPU — src/ui/DebugHud.ts). Vira o define
@@ -58,6 +59,24 @@ const gameName = path.basename(gameDir);
 // jogo" não vira mais o nome do arquivo; ele aparece no título da janela, no
 // Meus Programas (via recurso do exe, fase do ícone) e no DisplayName do console.
 const game = readGameConfig(gameDir);
+// PORTÃO do export Steam (ADR-0174): sem app id declarado não há build. É a
+// última fronteira antes do artefato que vai pro SteamPipe — deixar passar
+// produziria um jogo que sobe pro app errado (ou nenhum) e só quebra na mão do
+// jogador. Fora do `--steam` o campo é simplesmente ignorado.
+if (steam) {
+  const appId = steamAppIdOf(game);
+  if (appId === null) {
+    console.error(
+      '[export] --steam exige o App ID da Steam, e este projeto não declara um.\n' +
+        `         Abra o projeto no Studio › Configurações do jogo › Steam App ID,\n` +
+        `         ou edite "steamAppId" em ${path.join(gameDir, 'cortex.json')}.\n` +
+        '         O número aparece no Steamworks ao criar o app (use 480 para testar).',
+    );
+    process.exit(1);
+  }
+  // Normaliza pra número: o cortex.json do dist é o que o host lê em runtime.
+  game.steamAppId = appId;
+}
 const EXE_NAME = 'launcher.exe';
 // Saída: `--out <dir>` (resolvido) ou o `dist-native` do projeto.
 const dist = outArg ? path.resolve(outArg) : path.join(gameDir, 'dist-native');
@@ -252,6 +271,10 @@ guardLocks('assets', () => {
   {
     const { icon, ...rest } = game;
     void icon;
+    // O app id só faz sentido no build Steam: no export PC/Xbox ele viraria
+    // ruído (o host loga "app ignorado" a cada boot) e sugeriria uma integração
+    // que aquele binário não tem.
+    if (!steam) delete rest.steamAppId;
     // `debug: true` só no export COM métricas (--debug): é o que autoriza o
     // host a gravar o perf-log.txt na pasta (TDR-0004/SPEC-0152) — o jogador
     // final não ganha arquivo de telemetria na pasta do jogo.

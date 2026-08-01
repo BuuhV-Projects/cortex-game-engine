@@ -18,17 +18,32 @@ Fontes de verdade (reler antes de retomar):
 - **Limitação de perf:** gameplay nativo ~35fps vs 60-75 no Studio — render CPU-bound (three WebGPU no Hermes); alavancas = menos objetos/materiais/PostFX.
 - Só Windows (host é D3D12); macOS/Linux sem export nativo.
 
-## Steam — 🟡 pipeline pronto de ponta a ponta, integração mínima
+## Steam — 🟢 engine fechada; falta só o que depende da Valve
+
+**Atualizado em 2026-07-31 (ADR-0174 / SPEC-0175), SDK Steamworks v1.65.**
 
 **Validado:**
-- Build `-DCORTEX_STEAM=ON` (+`-DCORTEX_STEAM_APPID`): linka `steam_api64`, init + RestartAppIfNecessary + RunCallbacks por frame; testado com appid 480 → `[steam] init OK`.
-- `export-game.mjs --steam` usa o host `build-steam` e inclui a dll (sem `steam_appid.txt` dev).
-- Template SteamPipe `native/steam/app_build.vdf` + comando `steamcmd +run_app_build` documentado.
+- Build `-DCORTEX_STEAM=ON` (490/490, clang-cl): linka `steam_api64`, init +
+  RestartAppIfNecessary + RunCallbacks por frame.
+- **App id é DADO do projeto, não constante de compilação** — `steamAppId` no
+  `cortex.json`, editável em *Configurações do jogo* no Studio. `-DCORTEX_STEAM_APPID`
+  foi REMOVIDO; um host serve qualquer título. Publicar não exige mais toolchain C++.
+- **`export-game.mjs --steam` RECUSA build sem app id** (provado no teste4 real) e
+  propaga o número pro `cortex.json` do build. `steam_appid.txt` continua só de dev.
+- **Capacidades expostas ao jogo**: conquistas, stats (int/float), overlay
+  (+ estado, pra pausar), nome/SteamID64/idioma do jogador — `core/steam_stats.*`,
+  `core/steam_user.*`, shim `shims/steam_api.cpp`, fachada `Steam` do engine.
+  Tudo no-op fora do export Steam.
+- **Upload**: `native/scripts/steam-upload.mjs` gera o `.vdf` (app id vindo do
+  próprio build) e chama o steamcmd; `--dry-run` validado.
+- **Cloud**: Steam Auto-Cloud cobre os saves sem código (`%APPDATA%\<id>\saves\`).
 
-**Falta pra 100%:**
-1. **Conquistas, cloud save e overlay** — `steam.cpp` é só a fundação; não há API exposta pro JOGO (unlock de achievement, Steam Cloud).
-2. Partes do usuário: app id real, Steam Direct (US$100), página da loja no Steamworks.
-3. Nenhum upload real via SteamPipe foi exercitado ainda.
+**Falta pra 100% (nada disso é código):**
+1. Partes do usuário: app id real, Steam Direct (US$100), página da loja.
+2. Upload real via SteamPipe com credencial de parceiro (o caminho está pronto e
+   testado em dry-run; falta exercitar com app de verdade).
+3. **Overlay não foi verificado com o cliente Steam real** — o hook é em D3D12 e o
+   host renderiza por wgpu→D3D12, então deve funcionar, mas não está provado.
 
 Pré-requisito de build: Steamworks SDK em `native/third_party/steamworks` (ou env `STEAMWORKS_SDK`) — baixado de partner.steamgames.com, não vem no fetch-deps.
 
