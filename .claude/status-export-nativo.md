@@ -1,8 +1,9 @@
 # Status: export nativo (PC / Steam / Xbox)
 
-**Auditoria de:** 2026-07-15
-**Veredito:** NÃO está 100% fechado. PC standalone ✅ fechado; Steam 🟡 ~90%;
-Xbox console 🔴 só a fase PC do caminho GDK validada (M3/M4 não começaram).
+**Auditoria de:** 2026-07-15 · **Steam revisado em:** 2026-07-31
+**Veredito:** PC standalone ✅ fechado; Steam 🟢 fechado do lado da engine (o que
+falta depende da Valve/do usuário); Xbox console 🔴 só a fase PC do caminho GDK
+validada (M3/M4 não começaram).
 
 Fontes de verdade (reler antes de retomar):
 - [PRD-0004](../docs/prds/0004-cortex-native-port-console-xbox.md) — plano completo M0–M4
@@ -52,7 +53,9 @@ embarca: **o Studio instalado exporta pra Steam**. Sem a secret o passo é pulad
 3. **Overlay não foi verificado com o cliente Steam real** — o hook é em D3D12 e o
    host renderiza por wgpu→D3D12, então deve funcionar, mas não está provado.
 
-Pré-requisito de build: Steamworks SDK em `native/third_party/steamworks` (ou env `STEAMWORKS_SDK`) — baixado de partner.steamgames.com, não vem no fetch-deps.
+Pré-requisito de build LOCAL: Steamworks SDK em `native/third_party/steamworks`
+(ou env `STEAMWORKS_SDK`) — baixado de partner.steamgames.com, não vem no
+fetch-deps. No CI isso é resolvido pelo repo privado (ADR-0176).
 
 ## Xbox console — 🔴 NÃO fechado
 
@@ -82,5 +85,7 @@ Pré-requisito de build: Steamworks SDK em `native/third_party/steamworks` (ou e
 ## Próximos passos mais baratos (sem depender da Microsoft)
 
 1. Binary scan do GDK: migrar o build GDK pro build platform completo `Gaming.Desktop.x64`.
-2. API de conquistas/cloud Steam exposta pro jogo (em cima do `steam.cpp` existente).
-3. Exercitar um upload real via SteamPipe (appid 480 ou app real).
+2. Exercitar um upload real via SteamPipe (com credencial de parceiro).
+3. Verificar o overlay da Steam rodando sobre wgpu→D3D12 com o cliente real.
+
+*(A API de conquistas/cloud, que era o item 2 aqui, foi entregue — SPEC-0175.)*
