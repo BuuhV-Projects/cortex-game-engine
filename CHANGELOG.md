@@ -1,3 +1,11 @@
+## [0.42.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.42.0...v0.42.1) (2026-08-01)
+
+
+### Bug Fixes
+
+* **export:** pinar gltf-transform e embarcar o encoder KTX2 no Studio ([42de9d8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/42de9d8bcb46c76c0756056573f7b9db99833874))
+* **studio:** controles de janela e remover recente na tela inicial ([b726fd6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b726fd6413bfc4006f5f504912c250ea5fb09f6d))
+
 # [0.42.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.41.2...v0.42.0) (2026-08-01)
 
 
