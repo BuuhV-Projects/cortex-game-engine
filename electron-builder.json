@@ -52,6 +52,11 @@
       { "from": "native/scripts", "to": "native/scripts" },
       { "from": "native/js", "to": "native/js" },
       {
+        "from": "native/tools/basis-encoder",
+        "to": "native/tools/basis-encoder",
+        "filter": ["basis_encoder.js", "basis_encoder.wasm"]
+      },
+      {
         "from": "native/third_party/hermes/tools/native/release/x86",
         "to": "native/third_party/hermes/tools/native/release/x86",
         "filter": ["hermes.exe"]

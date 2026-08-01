@@ -50,9 +50,15 @@ próprio caminho do script → em produção isso é `resourceBase()` =
 ### 1. Toolchain de export isolado (`native/export-toolchain/`)
 
 Um projeto Node à parte, com `package.json` + `yarn.lock` **pinados** nas mesmas
-versões que a engine usa, contendo só o que o `bundle.mjs` precisa em runtime:
+versões que a engine usa, contendo o que o export precisa em runtime:
 `esbuild`, `@babel/core`, `@babel/plugin-transform-classes`,
-`@babel/plugin-transform-arrow-functions`, `three`, `three-mesh-bvh`, `zod`.
+`@babel/plugin-transform-arrow-functions`, `three`, `three-mesh-bvh`, `zod` (do
+`bundle.mjs`), `@gltf-transform/core` e `@gltf-transform/extensions` (do cook de
+assets) e `png-to-ico`/`rcedit` (embed do ícone).
+
+> O critério é **todo import bare do grafo do export**, não só os do
+> `bundle.mjs` — ver SPEC-0177, escrita depois de o cook quebrar o export no
+> Studio instalado por causa dessa diferença.
 
 O CI roda `yarn install --frozen-lockfile` dentro dessa pasta (no runner
 Windows, o que instala o opcional `@esbuild/win32-x64`) e o
@@ -72,6 +78,9 @@ No `electron-builder.json`, um bloco `win.extraResources` (mesclado com o
 - `native/scripts` e `native/js` — os scripts de export e os shims;
 - `native/third_party/hermes/tools/native/release/x86` (filtro `hermes.exe`) —
   o compilador de bytecode;
+- `native/tools/basis-encoder` (filtro `basis_encoder.js`/`.wasm`) — o encoder
+  WASM do cook KTX2 (SPEC-0177); não vive no git, o `ensure-host-dirs.mjs`
+  garante a pasta antes de empacotar;
 - `src` → `src` — o source da engine que o bundle resolve;
 - `native/export-toolchain/node_modules` → `node_modules` — o toolchain.
 
@@ -108,9 +117,11 @@ de alguns minutos a mais no job Windows.
   Windows falha — mac/Linux seguem independentes (matrix `fail-fast: false`).
 - **macOS/Linux ficam sem export nativo** (por design, host é D3D12/Windows). O
   handler informa isso; quando houver backend Metal/Vulkan, revisar este TDR.
-- **Ponto de manutenção:** ao mudar as deps de runtime que o `bundle.mjs` puxa
-  (novo import bare na engine que caia no bundle), atualizar
+- **Ponto de manutenção:** ao mudar as deps de runtime do export (novo import
+  bare em QUALQUER script do grafo, ou na engine caindo no bundle), atualizar
   `native/export-toolchain/package.json` — senão o export quebra **no
-  usuário**, não no dev. Mesma disciplina do `VENDOR_TYPE_MODULES`.
+  usuário**, não no dev. Mesma disciplina do `VENDOR_TYPE_MODULES`. Desde a
+  SPEC-0177 o `tests/native/export-packaging.test.ts` caminha o grafo inteiro
+  e cobra isso no CI — o esquecimento vira teste vermelho, não bug do usuário.
 - Relaciona-se com ADR-0101 (export nativo), ADR-0034 (recursos via
   `extraResources`) e o mapa `docs/cortex-native/architecture.md`.

@@ -6,7 +6,7 @@
 // Uso: node native/scripts/encode-ktx2.mjs <in.png> <out.ktx2> [--uastc] [--linear] [-q N]
 //   ETC1S (default) = menor; --uastc = maior qualidade/tamanho.
 //   --linear pra normal maps / dados (sem sRGB). -q 1..255 (qualidade ETC1S).
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
@@ -14,9 +14,26 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const encoderDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'tools', 'basis-encoder');
 
+/**
+ * Code do erro de "encoder não está aqui" — distinto de "esta textura falhou"
+ * (SPEC-0177). O chamador (ktx2-glb.mjs) avisa uma vez e desiste, em vez de
+ * engolir por textura e entregar um export silenciosamente sem KTX2.
+ */
+export const ERR_BASIS_ENCODER_MISSING = 'ERR_BASIS_ENCODER_MISSING';
+
+/** O encoder WASM existe neste checkout/instalação? (não vem no git nem no asar) */
+export function hasEncoder() {
+  return existsSync(path.join(encoderDir, 'basis_encoder.js')) && existsSync(path.join(encoderDir, 'basis_encoder.wasm'));
+}
+
 // O glue do emscripten não expõe a factory via require() no Node 24; carregamos
 // com module controlado (mesmo efeito de um require que funciona).
 function loadEncoderFactory() {
+  if (!hasEncoder()) {
+    const err = new Error(`basis_encoder ausente em ${encoderDir} (fetch-basis-encoder.mjs)`);
+    err.code = ERR_BASIS_ENCODER_MISSING;
+    throw err;
+  }
   const src = readFileSync(path.join(encoderDir, 'basis_encoder.js'), 'utf8');
   const m = { exports: {} };
   new Function('module', 'exports', 'require', '__dirname', src)(m, m.exports, require, encoderDir);

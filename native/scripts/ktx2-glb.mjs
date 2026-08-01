@@ -10,7 +10,10 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRTextureBasisu } from '@gltf-transform/extensions';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { encodeKtx2 } from './encode-ktx2.mjs';
+import { encodeKtx2, ERR_BASIS_ENCODER_MISSING } from './encode-ktx2.mjs';
+
+/** Avisa UMA vez por processo que o encoder não está instalado (SPEC-0177). */
+let encoderMissingWarned = false;
 
 /** Marca quais texturas são LINEARES (normal/MR/occlusion) — o resto é cor (sRGB). */
 function classifyLinear(doc) {
@@ -41,7 +44,17 @@ export async function convertGlbTextures(doc) {
     try {
       // Tudo UASTC+Zstd; RDO só na COR (em normal map o RDO distorce vetores).
       ktx2 = await encodeKtx2(src, { uastc: true, srgb: !isLinear, rdoScalar: isLinear ? 0 : 1.0 });
-    } catch {
+    } catch (err) {
+      // Encoder ausente é problema de INSTALAÇÃO, não desta textura: avisa uma
+      // vez e desiste do GLB inteiro — sem isso o export terminava "ok" e sem
+      // nenhum KTX2, e ainda pagava a falha por textura (SPEC-0177).
+      if (err?.code === ERR_BASIS_ENCODER_MISSING) {
+        if (!encoderMissingWarned) {
+          encoderMissingWarned = true;
+          console.warn('[ktx2-glb] encoder basis ausente — texturas seguem PNG (rode native/scripts/fetch-basis-encoder.mjs)');
+        }
+        return n;
+      }
       continue; // encode falhou (ex.: JPG/formato incomum) → mantém o original
     }
     // SEMPRE converte acima do piso — o que importa é VRAM, não disco
