@@ -1,3 +1,22 @@
+# [0.42.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.41.2...v0.42.0) (2026-08-01)
+
+
+### Bug Fixes
+
+* **build:** instalador leva o host Steam e o hermesc que faltava ([58f2310](https://github.com/BuuhV-Projects/cortex-game-engine/commit/58f23103a80f42006a7cd043cb04c2d03de66531))
+* **studio:** cortex.json com BOM nao perde a config; IPC le/grava steamAppId ([2c37aad](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2c37aade1ca66a097fd579769cd67df95b0f9163))
+
+
+### Features
+
+* **ci:** compila o host Steam a partir do SDK no repo privado ([7b66fa9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7b66fa9352fd7f60125df7ffd1a1ed10fc78199f))
+* **ci:** watcher avisa quando a Valve lanca um Steamworks SDK novo ([32b4ddb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/32b4ddb78b9349134ef93874ffd9ba0945bd23b8))
+* **engine:** conquistas, stats, overlay e jogador da Steam expostos ao jogo ([ddd2b24](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ddd2b24706575091211a3fab965ead8e8e004ee7))
+* **native:** app id da Steam vem do cortex.json, nao do CMake ([5c8607f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5c8607f0e11557eda752fc83ac82d4800188073d))
+* **native:** export --steam recusa build sem app id declarado ([ceae43a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ceae43ac0ee7013e7797aeec11e6a1132f3c28b3))
+* **native:** script de upload SteamPipe parametrizado ([c698307](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c698307fa0440f521a7adec5c25483c5b25d96a2))
+* **studio:** campo Steam App ID nas Configuracoes do jogo ([784c5a5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/784c5a5b67747b5aec449f89c6b2e8205f60a087))
+
 ## [0.41.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.41.1...v0.41.2) (2026-07-31)
 
 
