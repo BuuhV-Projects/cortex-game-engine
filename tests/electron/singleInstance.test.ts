@@ -28,6 +28,8 @@ vi.mock('electron', () => ({
     whenReady: vi.fn(() => ({ then: vi.fn() })),
     on: vi.fn(),
     quit: vi.fn(),
+    setPath: vi.fn(), // identidade de dados fixada no import (SPEC-0179)
+    commandLine: { hasSwitch: vi.fn(() => false) },
     requestSingleInstanceLock: vi.fn(() => false), // já existe um Studio aberto
   },
   dialog: { showMessageBox: vi.fn(), showErrorBox: vi.fn(), showOpenDialog: vi.fn() },

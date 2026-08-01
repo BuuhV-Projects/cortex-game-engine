@@ -9,10 +9,37 @@ import { runAgent, resolveAgentModel } from './agent/agentLoop.js'
 import { detectPendingCorrections } from './agent/learning.js'
 import { writePlaceholderIcons } from './installer-icons.js'
 import { recoverCacheIfUnclean, markSessionEnd } from './cacheHygiene.js'
+import { APP_DATA_NAME, APP_DISPLAY_NAME } from './appIdentity.js'
 
 // ---------------------------------------------------------------------------
-// Instância única + higiene de cache (roda ANTES de qualquer janela)
+// Identidade de dados + instância única + higiene de cache
+// (rodam ANTES de qualquer janela)
 // ---------------------------------------------------------------------------
+
+/**
+ * Prende o `userData` a um diretório fixo, independente do nome de exibição do
+ * app (SPEC-0179). Sem isso o caminho sairia do `productName` do
+ * electron-builder e cada rebrand abandonaria `preferences.json`, `chats/` e
+ * `sessions/` do usuário.
+ *
+ * É `setPath` e NÃO `setName`: renomear o app moveria o diretório do mesmo
+ * jeito, mas o nome do app também é o **título default** de toda janela sem
+ * `<title>` próprio — a splash apareceria no Alt+Tab com o nome antigo.
+ *
+ * O `--user-data-dir` explícito vence: sem essa guarda, quem pede um perfil
+ * alternativo (validar UI sem tocar no perfil real, abrir uma segunda instância)
+ * seria redirecionado em silêncio para o diretório fixo.
+ *
+ * Tem que vir ANTES do primeiro `app.getPath('userData')` — que é logo abaixo,
+ * na higiene de cache.
+ */
+if (!app.commandLine.hasSwitch('user-data-dir')) {
+  try {
+    app.setPath('userData', join(app.getPath('appData'), APP_DATA_NAME))
+  } catch {
+    /* appData indisponível (ex.: sob teste) — segue com o default do Electron */
+  }
+}
 
 /**
  * Só uma instância do Studio por vez. Duas instâncias compartilhariam o mesmo
@@ -128,7 +155,7 @@ function createSplash(): void {
     .bar>i{display:block;height:100%;width:38%;background:#3b5bdb;border-radius:3px;animation:s 1.1s ease-in-out infinite}
     @keyframes s{0%{margin-left:-38%}100%{margin-left:100%}}
   </style><div class="card">${logo ? `<img src="${logo}">` : ''}
-    <div class="t">Cortex Game Engine Studio</div><div class="s">carregando…</div>
+    <div class="t">${APP_DISPLAY_NAME}</div><div class="s">carregando…</div>
     <div class="bar"><i></i></div></div>`
   void splashWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
   splashWindow.once('ready-to-show', () => splashWindow?.show())
