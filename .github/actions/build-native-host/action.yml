@@ -4,6 +4,16 @@ description: >-
   toolchain de export auto-contido, pra o Studio empacotado exportar nativo
   sem dev (TDR-0003). Windows-only — quem chama gateia com
   `if: matrix.os == 'windows-latest'`.
+  Com `steamworks-sdk-key` compila TAMBÉM o host Steam (ADR-0176).
+
+inputs:
+  steamworks-sdk-key:
+    description: >-
+      Chave privada da deploy key read-only do repo PRIVADO do Steamworks SDK
+      (secret STEAMWORKS_SDK_KEY). Vazia = pula o host Steam e o instalador sai
+      sem ele — é o que acontece em fork/PR de terceiro, e não deve falhar o CI.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -74,6 +84,76 @@ runs:
         if ($LASTEXITCODE -ne 0) { exit 1 }
         cmake --build native/build
         if ($LASTEXITCODE -ne 0) { exit 1 }
+
+    # ── Host Steam (ADR-0176) ────────────────────────────────────────────────
+    # O Steamworks SDK está atrás de login de parceiro e a licença proíbe
+    # publicá-lo, então ele vive num repo PRIVADO e chega aqui por deploy key
+    # read-only. Fica FORA de native/third_party de propósito: aquele caminho é
+    # cacheado, e o SDK entraria no cache sem necessidade. O CMake já aceita o
+    # local por env (`STEAMWORKS_SDK`).
+    # A versão do SDK é PINADA como toda dep do repo: `native/steam/sdk-version.txt`
+    # diz qual, e o checkout usa a tag `v<versão>` do repo do SDK. Seguir a `main`
+    # faria o host mudar de SDK sem ninguém decidir — atualizar passa a ser um
+    # commit que bumpa este arquivo (e que, por si só, gera release do engine).
+    - name: Ler versão do Steamworks SDK
+      if: inputs.steamworks-sdk-key != ''
+      id: sdk-version
+      shell: pwsh
+      run: |
+        $version = (Get-Content native/steam/sdk-version.txt -Raw).Trim()
+        if ($version -notmatch '^\d+\.\d+$') {
+          Write-Error "native/steam/sdk-version.txt invalido: '$version' (esperado algo como 1.65)"
+          exit 1
+        }
+        Write-Host "Steamworks SDK pinado: v$version"
+        "tag=v$version" >> $env:GITHUB_OUTPUT
+
+    - name: Checkout Steamworks SDK (privado, na tag)
+      if: inputs.steamworks-sdk-key != ''
+      uses: actions/checkout@v4
+      with:
+        repository: BuuhV-Projects/cortex-steamworks-sdk
+        ref: ${{ steps.sdk-version.outputs.tag }}
+        ssh-key: ${{ inputs.steamworks-sdk-key }}
+        path: native/steamworks-sdk
+        persist-credentials: false
+
+    - name: Cache build do host Steam (Ninja)
+      if: inputs.steamworks-sdk-key != ''
+      uses: actions/cache@v4
+      with:
+        path: native/build-steam
+        # sdk-version.txt entra na key: trocar de SDK muda o que é linkado, e um
+        # cache do SDK anterior produziria um host inconsistente com os headers.
+        key: native-build-steam-${{ runner.os }}-clang-${{ hashFiles('native/CMakeLists.txt', 'native/scripts/fetch-deps.ps1', 'native/patches/hermes-upstream.patch', 'native/steam/sdk-version.txt') }}
+        restore-keys: |
+          native-build-steam-${{ runner.os }}-clang-
+
+    # Mesmo host, com CORTEX_STEAM=ON — vira native/build-steam e o
+    # electron-builder o embarca ao lado do desktop, pro Studio instalado
+    # exportar pra Steam. O app id NÃO entra aqui: é dado do jogo (ADR-0174).
+    - name: Build host Steam (CMake + Ninja, clang-cl)
+      if: inputs.steamworks-sdk-key != ''
+      shell: pwsh
+      env:
+        STEAMWORKS_SDK: ${{ github.workspace }}/native/steamworks-sdk
+      run: |
+        $clang = 'C:/Program Files/LLVM/bin/clang-cl.exe'
+        $compilerArgs = @()
+        if (Test-Path $clang) {
+          $compilerArgs = @("-DCMAKE_C_COMPILER=$clang", "-DCMAKE_CXX_COMPILER=$clang")
+        } else {
+          Write-Warning 'clang-cl nao encontrado no runner — fallback MSVC'
+        }
+        cmake -G Ninja -S native -B native/build-steam -DCMAKE_BUILD_TYPE=Release -DCORTEX_STEAM=ON @compilerArgs
+        if ($LASTEXITCODE -ne 0) { exit 1 }
+        cmake --build native/build-steam
+        if ($LASTEXITCODE -ne 0) { exit 1 }
+        # O steam_appid.txt copiado pelo CMake é de DEV (480) e NAO pode ir no
+        # instalador: presente ao lado do exe, ele sobrepoe o app id que o
+        # cliente Steam informa (steam_api.h:114). O export ja nao o copia; aqui
+        # some da origem, pra nao depender so daquele filtro.
+        Remove-Item native/build-steam/steam_appid.txt -ErrorAction SilentlyContinue
 
     # 3) toolchain de export auto-contido (esbuild/babel/three/zod) — copiado
     # pra resources/node_modules pelo electron-builder (win.extraResources).

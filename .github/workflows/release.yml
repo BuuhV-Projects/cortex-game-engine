@@ -130,6 +130,11 @@ jobs:
       - name: Build native host (Windows)
         if: matrix.os == 'windows-latest'
         uses: ./.github/actions/build-native-host
+        with:
+          # Sem a secret (fork/PR de terceiro) o host Steam é pulado e o
+          # instalador sai sem ele — o CI não pode ficar vermelho por isso
+          # (ADR-0176).
+          steamworks-sdk-key: ${{ secrets.STEAMWORKS_SDK_KEY }}
 
       - name: Build IDE
         # electron-builder valida a release no GitHub durante o build e exige

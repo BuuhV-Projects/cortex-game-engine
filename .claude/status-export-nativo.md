@@ -38,11 +38,12 @@ Fontes de verdade (reler antes de retomar):
   próprio build) e chama o steamcmd; `--dry-run` validado.
 - **Cloud**: Steam Auto-Cloud cobre os saves sem código (`%APPDATA%\<id>\saves\`).
 
-**Limitação estrutural (não é bug):** o export Steam roda a partir do REPO, não do
-Studio instalado — o `electron-builder` embarca só `native/build`, porque o
-Steamworks SDK está atrás de login de parceiro e o CI não pode baixá-lo pra
-compilar o `build-steam`. Configurar o app id pelo Studio funciona normalmente
-(é dado do `cortex.json`); é só o binário do host que precisa vir do repo.
+**SDK e distribuição (ADR-0176, 2026-07-31):** o Steamworks SDK vive num repo
+PRIVADO (`BuuhV-Projects/cortex-steamworks-sdk`) — a licença proíbe publicá-lo e
+o engine é público. O CI o obtém por deploy key read-only, na tag pinada em
+`native/steam/sdk-version.txt`, compila o `build-steam` e o `electron-builder` o
+embarca: **o Studio instalado exporta pra Steam**. Sem a secret o passo é pulado
+(fork não fica vermelho). Um watcher diário avisa quando a Valve lança SDK novo.
 
 **Falta pra 100% (nada disso é código):**
 1. Partes do usuário: app id real, Steam Direct (US$100), página da loja.
