@@ -19,11 +19,14 @@ diz *como construir e validar*; esta diz *como fazer bonito e desafiador*.
 > ```bash
 > PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
 > LD="$PLUGIN/skills/level-design-plataforma/scripts"
+> BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1   # obrigatório
 > "$BLENDER" --background <arquivo.blend> --python "$LD/dump_blend.py"
 > ```
 >
-> Exigem **Blender instalado** (caminho em `BLENDER_PATH`). Se não houver Blender
-> na máquina, diga isso ao usuário e siga pelos critérios de design — não trave.
+> **Blender é pré-requisito duro** de toda medição e de todo porte de mapa: se a
+> checagem falhar, PARE e reporte ao usuário — medir "no olho" é exatamente o que
+> esta skill existe para evitar. Os critérios de design abaixo continuam válidos
+> para revisar um mapa, mas nenhum passo que peça Blender pode ser improvisado.
 
 ## A forma do mapa (o esqueleto)
 

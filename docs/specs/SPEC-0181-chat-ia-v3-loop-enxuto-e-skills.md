@@ -119,6 +119,27 @@ capacidade como tool in-process (`generate_blueprint`, `inspect_assets`,
 `critique_scene`), a skill manda usar a tool e trata o script como caminho
 alternativo para fora do Studio.
 
+### 4b. Blender é pré-requisito DURO (a skill trava, não degrada)
+
+Processar kit 3D, medir um mapa autorado, fatiar um demo e renderizar as 4 vistas
+de validação passam todos pelo Blender, e **nenhum tem substituto**. Degradar
+("sigo sem as vistas") entrega kit sem `size` medido ou fase não validada com cara
+de pronta — pior que não entregar.
+
+`.claude/scripts/check-blender.mjs` resolve o executável (`BLENDER_PATH` explícito
+→ `blender` no PATH → varredura das raízes de instalação, versão mais nova
+primeiro), imprime o caminho e **sai com código 1** se não achar, com instrução de
+instalação. As skills que dependem dele o chamam no passo 0:
+
+```bash
+BLENDER=$(node "${CORTEX_PLUGIN_DIR:-.claude}/scripts/check-blender.mjs") || exit 1
+```
+
+Falhou, a skill **PARA e reporta ao usuário** — não improvisa. Vale para
+`process-asset-kit`, `level-design-plataforma`, `fase-por-trechos`, `montar-fase` e
+o subagente `level-builder`. O diretório `scripts/` entra no filtro de
+`extraResources` do plugin.
+
 ### 5. Prompt base
 
 `prompt.ts` mantém apenas o invariante, na ordem: identidade e idioma; sandbox de

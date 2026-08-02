@@ -42,10 +42,11 @@ nome exatamente como aparece na sua lista de skills.
 
 ## Pipeline (siga na ordem; cada passo tem um dono)
 
-### 0. Contexto
-Leia a memória de aprendizados e os ADRs/specs relevantes do projeto. Se o kit for
-bruto (baixado), processe-o primeiro com a skill **process-asset-kit** (3D) ou
-**process-asset-kit-2d** (sprites) → vira kit curado com `kit.json`.
+### 0. Contexto e pré-requisitos
+Rode a checagem de Blender (acima) — sem ele, PARE aqui. Depois leia os ADRs/specs
+relevantes do projeto. Se o kit for bruto (baixado), processe-o primeiro com a skill
+**process-asset-kit** (3D) ou **process-asset-kit-2d** (sprites) → vira kit curado
+com `kit.json`.
 
 ### 1. Inventário REAL
 Leia o `kit.json` do kit (`role`/`gameplayRole`/`tags`/`size`/**`mechanic`**/`anchors`).
@@ -98,9 +99,14 @@ BP="${CORTEX_PLUGIN_DIR:-.claude}/skills/blueprint-fase/scripts"
 - `$BP/render_level_iso.mjs <level3d.json> <kitAssetsDir> <out.png>` → maquete iso 3D
   (coords de mundo; backdrop planet/meteor é omitido).
 - `$BP/render_level_views.mjs <level3d.json> <kitAssetsDir> <out.png>` → contact-sheet
-  das 4 vistas (validação). Requer Blender (`BLENDER_PATH`) — sem ele, valide por
-  `validate_scene` + `playtest_game` e avise o usuário que as 4 vistas ficaram de fora.
-  `level3d.json`: `{ pieces:[{ asset, pos:[x,y,z], rotY?, scale?, behavior? }] }`.
+  das 4 vistas (validação). `level3d.json`: `{ pieces:[{ asset, pos:[x,y,z], rotY?,
+  scale?, behavior? }] }`.
+
+**Blender é pré-requisito duro do pipeline.** Rode
+`node "${CORTEX_PLUGIN_DIR:-.claude}/scripts/check-blender.mjs"` no passo 0; se
+falhar, **PARE e reporte** — não monte a fase "sem as 4 vistas". A validação visual
+é o que separa fase pronta de fase que parece pronta; entregar sem ela é entregar
+trabalho não verificado.
 
 ## Gotchas herdados (não repita)
 - Hazard móvel vira "chão" se o raycast do character pousar nele → desligue o raycast dos

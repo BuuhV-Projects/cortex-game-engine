@@ -22,7 +22,7 @@
     {
       "from": ".claude",
       "to": "agent-plugin",
-      "filter": [".claude-plugin/**", "agents/**", "skills/**"]
+      "filter": [".claude-plugin/**", "agents/**", "skills/**", "scripts/**"]
     },
     {
       "from": "dist/src",

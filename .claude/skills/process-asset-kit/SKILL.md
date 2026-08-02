@@ -11,17 +11,25 @@ leves, + um **`kit.json`** que tagueia cada asset no vocabulário do design syst
 (`role`/`tags`/`gameplayRole` + `size` + collider + âncoras). Esse é o "shadcn" da
 IA level-designer — ver `docs/adrs/0053-design-system-de-assets-kit-semantico-sockets-temas.md`.
 
-**Pré-requisito:** Blender instalado. O caminho costuma estar em `BLENDER_PATH`
-(ex.: `C:\Program Files\Blender Foundation\Blender 5.1\blender.exe`). Use o exe
-nativo com caminhos Windows (`D:/...`), não git-bash (`/d/...`). **Sem Blender na
-máquina, pare e diga isso ao usuário** — quase todo o fluxo depende dele.
+## Passo 0 — OBRIGATÓRIO: Blender (sem ele, não comece)
 
-## Onde ficam os scripts e onde vai o kit
+Blender é **pré-requisito duro** desta skill: conversão, medição, normalização e
+thumbnails passam por ele. Rode a checagem ANTES de qualquer outra coisa:
 
 ```bash
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1
 PK="$PLUGIN/skills/process-asset-kit/scripts"   # triage.sh, convert.py, gen-kit.mjs, lineup.py…
 ```
+
+**Se a checagem falhar, PARE.** Não converta "na mão", não pule a medição, não
+entregue kit parcial: um kit sem `size` medido produz cena com peça flutuando e o
+erro só aparece muito depois. Reporte ao usuário que o Blender precisa ser
+instalado (ou `BLENDER_PATH` apontado) e encerre a tarefa.
+
+Use o exe nativo com caminhos Windows (`D:/...`), não git-bash (`/d/...`).
+
+## Onde ficam os scripts e onde vai o kit
 
 São **template** — ajuste as regras de triagem/classificação ao naming do kit em mãos.
 

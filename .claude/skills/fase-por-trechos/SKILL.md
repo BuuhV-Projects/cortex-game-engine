@@ -24,7 +24,11 @@ engine quanto no Chat IA do Studio, onde o `cwd` é o projeto do jogo):
 ```bash
 PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
 TRECHOS="$PLUGIN/skills/fase-por-trechos/scripts"
+BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1   # fase 0 exige Blender
 ```
+
+**Blender é pré-requisito duro**: a fase 0 (exportar o demo do `.blend`) não tem
+substituto — sem ela não há trechos para fatiar. Checagem falhou, PARE e reporte.
 
 ## Fase 0 — Conhecer o demo ANTES de fatiar (medir, nunca chutar)
 
