@@ -1314,6 +1314,44 @@
         "checkpoint"
       ],
       "standalone": true
+    },
+    "assets/fantasy_gate.glb": {
+      "role": "connector",
+      "tags": [
+        "portal",
+        "arch",
+        "stone",
+        "runes",
+        "fantasy",
+        "L"
+      ],
+      "size": [
+        4.43,
+        4.001,
+        4.453
+      ],
+      "gameplayRole": [
+        "landmark",
+        "guidance"
+      ],
+      "anchors": {
+        "top": {
+          "at": [
+            0,
+            3.866,
+            0
+          ],
+          "kind": "surface",
+          "dir": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "thumb": "thumbnails/fantasy_gate.png",
+      "note": "Arco de pedra circular com runas azuis EMISSIVAS preenchendo o vão, sobre base circular própria (dispensa pedestal) e com uma raiz decorativa. Diferente das outras molduras do kit, o vão JÁ vem preenchido — não precisa do plasma procedural, e por isso o measurePortalGap não acha abertura nele. É o portal de CHEGADA e de SAÍDA das fases do teste4 (spec 0036 do jogo).",
+      "standalone": true
     }
   }
 }

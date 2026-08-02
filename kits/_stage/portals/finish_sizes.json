@@ -1,0 +1,32 @@
+{
+  "sizes": {
+    "fantasy_gate": [
+      2.577,
+      2.327,
+      2.591
+    ]
+  },
+  "bounds": {
+    "fantasy_gate": [
+      -1.275,
+      -0.078,
+      -1.348,
+      1.303,
+      2.249,
+      1.243
+    ]
+  },
+  "errors": [],
+  "warnings": [
+    {
+      "name": "fantasy_gate",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "fantasy_gate",
+      "image": "",
+      "error": "sem arquivo no pack"
+    }
+  ]
+}
