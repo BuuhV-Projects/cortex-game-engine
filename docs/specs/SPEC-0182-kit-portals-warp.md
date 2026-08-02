@@ -40,6 +40,10 @@ O pack é FBX e o `convert.py` da skill só importa glTF; o restante do fluxo
    TUDO em 2048²; externalizar deduplicou as compartilhadas (99 MB → 47 MB) e o
    downscale para 1024 fechou em **7,2 MB**, o patamar dos outros kits do repo.
 3. **`make-factors.mjs` + `normalize-per-asset.py`** — ver escala, abaixo.
+   **Gotcha de ordem:** `export_scene.gltf` do Blender SEMPRE embute a textura,
+   então qualquer passada de Blender **desfaz** a externalização — o kit voltou de
+   7,3 MB para 14 MB ao normalizar a escala. `externalize-texture.mjs` tem que ser
+   a ÚLTIMA etapa antes do `gen-kit`, ou repetido depois de cada passada.
 4. **`sheet.mjs`** — contact sheet agrupado por família com a medida embaixo de
    cada peça. Foi o que desfez a ambiguidade do naming (`pool_*` é vórtice de
    chão, não piscina) e embasou a escolha de moldura por mundo.
