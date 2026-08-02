@@ -426,19 +426,6 @@ export class Chat {
     this.modeToggleEl = modeToggle
     this.renderModeToggle()
 
-    // Aprender com os ajustes do dev (ciclo de baseline — tools cortex-learn):
-    // manda a mensagem canônica; o agente roda diff_corrections e propõe lições.
-    const learnBtn = document.createElement('button')
-    learnBtn.className = 'chat-clear-btn'
-    learnBtn.type = 'button'
-    learnBtn.title = t('chat.tooltip_learn')
-    learnBtn.textContent = '🎓'
-    learnBtn.addEventListener('click', () => {
-      if (this.streaming || !this.inputEl) return
-      this.inputEl.value = t('chat.learn_message')
-      void this.send()
-    })
-
     const clearBtn = document.createElement('button')
     clearBtn.className = 'chat-clear-btn'
     clearBtn.type = 'button'
@@ -456,7 +443,6 @@ export class Chat {
     header.appendChild(title)
     header.appendChild(modelToggle)
     header.appendChild(modeToggle)
-    header.appendChild(learnBtn)
     header.appendChild(clearBtn)
     header.appendChild(toggleBtn)
 

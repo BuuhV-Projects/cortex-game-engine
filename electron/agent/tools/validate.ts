@@ -7,7 +7,6 @@ import { parseSceneDefinition, type SceneDefinition } from '../../../src/scene/S
 import { parseKit, type KitManifest } from '../../../src/scene/Kit.js'
 import { validateScene, type SceneValidationReport } from '../../../src/scene/validateScene.js'
 import type { SceneFileV1 } from '../../../src/scene/SceneFile.js'
-import { loadValidationRules, VALIDATION_RULES_REL, type ValidationRules } from '../validationRules.js'
 
 /**
  * MCP server `cortex-validate`: validação GEOMÉTRICA estática da cena
@@ -21,9 +20,10 @@ import { loadValidationRules, VALIDATION_RULES_REL, type ValidationRules } from 
  * `.cortex/validation/` (leia com Read se precisar); a resposta traz só o
  * resumo (orçamento de contexto).
  *
- * Regras APRENDIDAS do projeto (`.cortex/validation-rules.json`, gravadas pelo
- * ciclo de aprendizado via `save_rule` — ADR-0115) são carregadas AUTOMATICAMENTE
- * como default de thresholds/severidade; parâmetro explícito da chamada vence.
+ * Os thresholds default vivem no próprio `validateScene` (vão pulável, subida,
+ * tolerância de interpenetração); a chamada pode sobrescrevê-los por parâmetro
+ * quando o jogo tiver alcance de pulo atípico. Não há mais regras gravadas por
+ * ciclo de aprendizado — o subsistema foi removido no ADR-0180.
  */
 
 const MAX_SHOWN = 10
@@ -81,14 +81,6 @@ function formatReport(name: string, r: SceneValidationReport, reportPath: string
   return lines.join('\n')
 }
 
-/** Uma linha com o que o arquivo de regras muda ("maxGap=2.5, gap:error"). */
-function describeRules(rules: ValidationRules): string {
-  const parts: string[] = []
-  for (const [k, v] of Object.entries(rules.thresholds ?? {})) parts.push(`${k}=${v}`)
-  for (const [k, v] of Object.entries(rules.severity ?? {})) parts.push(`${k}:${v}`)
-  return parts.join(', ') || 'nenhuma mudança efetiva'
-}
-
 export function createValidateToolServer(projectRoot: string) {
   return createSdkMcpServer({
     name: 'cortex-validate',
@@ -114,8 +106,12 @@ export function createValidateToolServer(projectRoot: string) {
             .describe('Opcional: overlay da fase (ex. assets/scene-data-fase2.json). Default: assets/scene-data.json se existir.'),
           maxGap: z.number().optional().describe('Opcional: maior vão pulável em unidades (default 2.8).'),
           maxRise: z.number().optional().describe('Opcional: maior subida entre plataformas (default 3).'),
+          maxPenetration: z
+            .number()
+            .optional()
+            .describe('Opcional: tolerância de interpenetração entre sólidos, em unidades.'),
         },
-        async ({ scenes, overlay, maxGap, maxRise }) => {
+        async ({ scenes, overlay, maxGap, maxRise, maxPenetration }) => {
           // 1) Cenas: as passadas, ou todo scenes/*.json.
           let scenePaths = scenes ?? []
           if (scenePaths.length === 0) {
@@ -153,17 +149,14 @@ export function createValidateToolServer(projectRoot: string) {
           const overlayPath = join(projectRoot, overlayRel)
           const ov = existsSync(overlayPath) ? await readJson<SceneFileV1>(overlayPath) : null
 
-          // 3) Regras aprendidas do projeto como default; parâmetro explícito vence.
-          const rules = await loadValidationRules(projectRoot)
-
-          // 4) Valida e grava o relatório completo em disco (contexto enxuto).
+          // 3) Valida e grava o relatório completo em disco (contexto enxuto).
+          // Sem parâmetro, cada threshold cai no default do próprio validateScene.
           const report = validateScene(defs, {
             kit: kits,
             overlay: ov,
-            maxGap: maxGap ?? rules?.thresholds?.maxGap,
-            maxRise: maxRise ?? rules?.thresholds?.maxRise,
-            maxPenetration: rules?.thresholds?.maxPenetration,
-            severity: rules?.severity,
+            maxGap,
+            maxRise,
+            maxPenetration,
           })
           const outDir = join(projectRoot, '.cortex', 'validation')
           await mkdir(outDir, { recursive: true })
@@ -175,7 +168,6 @@ export function createValidateToolServer(projectRoot: string) {
           )
 
           let text = formatReport(name, report, reportRel)
-          if (rules) text += `\nRegras aprendidas do projeto aplicadas (${VALIDATION_RULES_REL}): ${describeRules(rules)}.`
           if (invalid.length) text += `\nAviso: parse falhou em ${invalid.join(', ')} (não validadas).`
           if (kits.length === 0) {
             text += '\nAviso: nenhum kit.json em assets/*/ — cobertura reduzida (só primitivas/terreno têm bbox).'
