@@ -1,7 +1,7 @@
 # 0115 - Regras de validação aprendidas por projeto (validation-rules.json + save_rule)
 
 **Data:** 2026-07-16
-**Status:** aceito
+**Status:** substituído por ADR-0180
 
 ## Contexto
 

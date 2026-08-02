@@ -1,7 +1,7 @@
 # 0113 - Aprendizado por correções do dev (baselines + diff semântico)
 
 **Data:** 2026-07-15
-**Status:** aceito
+**Status:** substituído por ADR-0180
 
 ## Contexto
 
