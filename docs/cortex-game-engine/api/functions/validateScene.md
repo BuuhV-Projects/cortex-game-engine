@@ -8,7 +8,7 @@
 
 > **validateScene**(`defs`, `options?`): [`SceneValidationReport`](../interfaces/SceneValidationReport.md)
 
-Defined in: [src/scene/validateScene.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L92)
+Defined in: [src/scene/validateScene.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L91)
 
 Valida a cena estaticamente. Nunca lança por problema DE CENA — problemas
 viram violações no report (inclusive attach quebrado, que no `buildScene`

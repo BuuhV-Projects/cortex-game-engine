@@ -15,8 +15,8 @@ cena + `size`/anchors do `kit.json` + overlay do editor.
 
 Regra de ouro do pipeline: geometria valida-se com CÓDIGO (barato, 100%
 confiável); screenshot/crítica visual é pra composição e beleza, DEPOIS de
-`errors` zerar. Regras destiladas do lint de fases (game-design-bible,
-`ai-rules/fases-por-trechos.md`, R1–R5) generalizadas pro engine.
+`errors` zerar. Regras destiladas do lint de fases da skill `fase-por-trechos`
+(R1–R5) e generalizadas pro engine.
 
 Convenção de pivô: nós `model` têm origem na BASE-centro (padrão dos kits —
 `anchors.top` em `[0,h,0]`); `primitive`/`mesh` no CENTRO (BoxGeometry).

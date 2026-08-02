@@ -96,9 +96,8 @@ Defined in: [src/scene/validateScene.ts:38](https://github.com/BuuhV-Projects/co
 
 > `optional` **severity?**: `Record`\<`string`, `"error"` \| `"off"` \| `"warning"`\>
 
-Defined in: [src/scene/validateScene.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L51)
+Defined in: [src/scene/validateScene.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/validateScene.ts#L50)
 
 Override de severidade POR REGRA (`overlap`, `floating`, `gap`…): força
-`error`/`warning` ou suprime com `off`. É por onde regras APRENDIDAS do
-projeto (`.cortex/validation-rules.json`, ADR-0115) endurecem ou relaxam o
-validador sem mudar o código do engine.
+`error`/`warning` ou suprime com `off`. Permite endurecer ou relaxar o
+validador por chamada, sem mudar o código do engine.

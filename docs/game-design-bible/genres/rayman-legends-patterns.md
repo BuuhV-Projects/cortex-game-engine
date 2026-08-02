@@ -1,1 +1,0 @@
-# Padrões Rayman Legends
