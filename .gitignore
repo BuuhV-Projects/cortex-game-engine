@@ -45,3 +45,6 @@ native/bench-history.jsonl
 # Assets .glb do bench (pesados, ~40 MB cada) — gerados por prepare-assets.mjs.
 examples/bench-city/assets/
 dist-native/*
+# Worktrees de trabalho vivem sob .claude/ (que agora tambem e o plugin cortex-studio,
+# ADR-0180) — nao versionar nem deixar um `git add .claude` arrasta-las.
+.claude/worktrees/
