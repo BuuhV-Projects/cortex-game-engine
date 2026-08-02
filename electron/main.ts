@@ -6,7 +6,7 @@ import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { createHash } from 'crypto'
 import { homedir } from 'os'
 import { runAgent, resolveAgentModel } from './agent/agentLoop.js'
-import { detectPendingCorrections } from './agent/learning.js'
+import { resolvePluginDir } from './agent/plugin.js'
 import { writePlaceholderIcons } from './installer-icons.js'
 import { recoverCacheIfUnclean, markSessionEnd } from './cacheHygiene.js'
 import { APP_DATA_NAME, APP_DISPLAY_NAME } from './appIdentity.js'
@@ -729,45 +729,6 @@ async function loadEngineApiDoc(): Promise<string> {
     cachedEngineApiDoc = ''
   }
   return cachedEngineApiDoc
-}
-
-/**
- * Lê a **Game Design Bible** (`docs/game-design-bible/`, empacotada via
- * extraResources) — base curada de regras de design de jogos 2.5D/platformer/
- * low poly. Concatena todos os `.md` (com cabeçalho do caminho) e injeta no
- * system prompt do agente, pra a IA já vir orientada a level/game design. Cache.
- */
-let cachedGameDesignBible: string | null = null
-async function loadGameDesignBible(): Promise<string> {
-  if (cachedGameDesignBible !== null) return cachedGameDesignBible
-  const root = join(resourceBase(), 'docs', 'game-design-bible')
-  const parts: string[] = []
-  const walk = async (dir: string): Promise<void> => {
-    let entries
-    try {
-      entries = await readdir(dir, { withFileTypes: true })
-    } catch {
-      return
-    }
-    entries.sort((a, b) => a.name.localeCompare(b.name))
-    for (const e of entries) {
-      const full = join(dir, e.name)
-      if (e.isDirectory()) {
-        await walk(full)
-      } else if (e.name.toLowerCase().endsWith('.md')) {
-        try {
-          const content = await readFile(full, 'utf-8')
-          const rel = full.slice(root.length + 1).replace(/\\/g, '/')
-          parts.push(`===== game-design-bible/${rel} =====\n\n${content.trim()}`)
-        } catch {
-          /* ignora arquivo ilegível */
-        }
-      }
-    }
-  }
-  await walk(root)
-  cachedGameDesignBible = parts.join('\n\n')
-  return cachedGameDesignBible
 }
 
 // Copia templates/new-project/ para join(targetDir, name), substitui {{PROJECT_NAME}}
@@ -1731,17 +1692,6 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown, model
   const resumeSessionId = continueSession ? null : await loadSessionId(sessionKey)
 
   const engineApiDoc = await loadEngineApiDoc()
-  const gameDesignBible = await loadGameDesignBible()
-  // Correções do dev pendentes (overlay divergiu do baseline)? Checagem barata
-  // por hash — só no 1º turno da sessão, pro agente oferecer aprendizado uma vez.
-  let pendingCorrections: string[] = []
-  if (!continueSession && currentProjectDir) {
-    try {
-      pendingCorrections = await detectPendingCorrections(currentProjectDir)
-    } catch {
-      /* detecção é best-effort — nunca bloqueia o chat */
-    }
-  }
 
   try {
     await runAgent({
@@ -1755,8 +1705,9 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown, model
       // Com o path, o agentLoop injeta só o ÍNDICE do doc e o agente lê as
       // seções sob demanda via Read (ADR-0114). Sem doc lido, sem path.
       engineApiPath: engineApiDoc ? engineApiDocPath() : undefined,
-      gameDesignBible,
-      pendingCorrections,
+      // Skills + subagente do plugin `cortex-studio` (ADR-0180). Null quando o
+      // plugin não está no lugar: o turno roda sem skills, sem falhar.
+      pluginDir: resolvePluginDir(resourceBase()),
       kitsDir: join(resourceBase(), 'kits'),
       // PATH aumentado: a tool Bash do SDK herda este env, então `yarn`/`node`
       // resolvem mesmo no app empacotado (onde o PATH do Explorer não os tem).
