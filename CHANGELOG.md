@@ -1,3 +1,17 @@
+# [0.44.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.43.0...v0.44.0) (2026-08-02)
+
+
+### Bug Fixes
+
+* **kits:** re-externaliza texturas do portals-warp apos a normalizacao ([50ae3d3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/50ae3d3540209de3747d5f8f8c159590d529ebe6))
+
+
+### Features
+
+* **chat-ia:** entregar skills e subagente como plugin local ([7085094](https://github.com/BuuhV-Projects/cortex-game-engine/commit/70850942d579be0405e7a4e450cd54ee1c13b1db))
+* **kits:** kit portals-warp (portais e warp room) — SPEC-0182 ([f78bb64](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f78bb64c63fad23aabd1f45c8710d8a3200ed3a4))
+* **skills:** travar as skills que dependem de Blender ([2165d08](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2165d084e1c36cbe4d9b164fcf65fe3436c2fb25))
+
 # [0.43.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.42.2...v0.43.0) (2026-08-01)
 
 
