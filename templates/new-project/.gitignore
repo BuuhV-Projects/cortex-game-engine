@@ -4,8 +4,5 @@ src-tauri/
 boot.hbc
 dist-native/
 .cortex-cache/
-# .cortex/ é cache/artefato (baselines, thumbs, relatórios) — EXCETO o conhecimento
-# aprendido do projeto (regras do validador + lições), que é versionado (ADR-0115).
-.cortex/*
-!.cortex/validation-rules.json
-!.cortex/scene-learnings.md
+# .cortex/ é cache/artefato do Chat IA (thumbs, relatórios de validação).
+.cortex/

@@ -8,7 +8,7 @@
 
 > `const` **Steam**: `object`
 
-Defined in: src/core/steamworks.ts:92
+Defined in: [src/core/steamworks.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/steamworks.ts#L92)
 
 Fachada da Steam. Objeto único (não há sessão por instância — a Steam é
 global ao processo).

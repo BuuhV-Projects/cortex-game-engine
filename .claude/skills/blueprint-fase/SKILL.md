@@ -16,6 +16,21 @@ cada peça aparece com o **nome de arquivo exato** (`trampoline_1_001`, não "tr
 > o que vai onde, com que nome, **qual o propósito funcional de cada peça**, em que
 > ordem o jogador percorre.
 
+## Onde ficam os scripts e os kits
+
+Esta skill roda em dois lugares: no repositório da engine (Claude Code) e dentro do
+**Chat IA do TS Cortex Studio**, onde o diretório de trabalho é o projeto do jogo.
+Resolva os caminhos por variável, com fallback pro layout do repositório:
+
+```bash
+PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"   # raiz do plugin (contém skills/)
+KITS="${CORTEX_KITS_DIR:-kits}"          # catálogo de kits empacotados
+```
+
+> **No Studio, prefira a tool `generate_blueprint`** — ela é a mesma renderização,
+> in-process, e já devolve a imagem. Os scripts abaixo são o caminho pra fora do
+> Studio (ou quando você precisa do HTML intermediário).
+
 ## Princípio: cada objeto tem um PROPÓSITO (não é decoração)
 
 O blueprint **não posiciona peças por estética**. Cada objeto na cena existe por uma
@@ -39,8 +54,9 @@ design + comportamento; o visual sai consistente e correto sozinho.
 ## Fluxo (5 passos)
 
 ### 1. Inventariar o kit
-Leia o `kit.json` do kit escolhido (`kits/<nome>/kit.json` na engine, ou o kit curado
-na biblioteca do usuário). Você precisa dos nomes de arquivo exatos, `role`,
+Leia o `kit.json` do kit escolhido (`$KITS/<nome>/kit.json`; no Studio, `list_kits` +
+`list_kit_assets` fazem isso sem sair da conversa, e um kit já importado no projeto
+fica em `assets/<nome>/kit.json`). Você precisa dos nomes de arquivo exatos, `role`,
 `gameplayRole`, `tags` e `size` de cada asset. Opcional: monte um contact-sheet das
 thumbnails (`magick montage`) pra escolher as peças com intenção — sobretudo em kits de
 naming não-descritivo (`obstacle_7_001`).
@@ -67,9 +83,9 @@ clímax) e escreva o `blueprint.json` (schema abaixo). Regras de ouro:
 
 ### 4. Renderizar → HTML → **PNG** (o entregável)
 ```bash
-KIT=d:/@buuhvprojects/js-game-engine/kits/platformer-space
-node scripts/render_blueprint.mjs blueprint.json "$KIT" /tmp/bp.html
-node scripts/shot.mjs /tmp/bp.html <SAÍDA-ABSOLUTA>.png     # rasteriza com Chrome/Edge
+KIT="$KITS/platformer-space"
+node "$PLUGIN/skills/blueprint-fase/scripts/render_blueprint.mjs" blueprint.json "$KIT" bp.html
+node "$PLUGIN/skills/blueprint-fase/scripts/shot.mjs" bp.html <SAÍDA-ABSOLUTA>.png  # rasteriza com Chrome/Edge
 ```
 `render_blueprint.mjs` gera o HTML self-contained (também serve de Artifact, se o
 usuário quiser interativo). `shot.mjs` acha o Chrome/Edge sozinho e rasteriza no

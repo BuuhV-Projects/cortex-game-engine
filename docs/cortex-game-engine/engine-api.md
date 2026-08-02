@@ -742,9 +742,8 @@ vão/subida impulável e attach quebrado — direto dos DADOS (JSON + `size` do 
 sem three/GPU. Devolve `{ errors, warnings, stats }`. Opções de calibração:
 `maxGap`/`maxRise`/`maxPenetration` (thresholds) e `severity` (override por regra:
 `error`/`warning`/`off`). No Chat IA existe como a tool `validate_scene` (0 erros =
-pré-requisito antes de playtest/critique); ela carrega automaticamente as **regras
-aprendidas do projeto** (`.cortex/validation-rules.json`, gravadas pelo ciclo de
-aprendizado via `save_rule` — ADR-0115) como default dessas opções.
+pré-requisito antes de playtest/critique), que aceita os mesmos thresholds por
+parâmetro; sem eles, valem os defaults do próprio `validateScene`.
 
 **Merge estático** (`mergeStaticScene(root, world?, extraDynamicRoots?)`,
 `isNativeHost()`, SPEC-0121): funde a geometria PARADA do cenário em poucas

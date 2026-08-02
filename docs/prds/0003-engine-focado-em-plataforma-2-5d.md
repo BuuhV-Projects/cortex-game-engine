@@ -1,7 +1,15 @@
 # PRD 0003 - Produto focado em jogos de plataforma 2.5D
 
 **Data:** 2026-06-05
-**Status:** aceito
+**Status:** substituído por PRD-0006
+
+> **Superado em 2026-08-02.** O produto deixou de se definir por gênero e passou a
+> se definir pelo pipeline (kit → cena → validação → export nativo) — ver
+> [PRD-0006](0006-produto-focado-no-pipeline-de-jogos-3d.md). As **primitivas 2.5D
+> descritas aqui continuam suportadas e mantidas** (2.5D é resultado da câmera
+> sobre a base 3D, e há jogo ativo em cima delas); o que caiu foi o 2.5D como
+> norte de template, IA e roadmap — incluindo o "V2" abaixo, que não será entregue
+> como primitiva de plataforma.
 
 ## Problema
 

@@ -11,13 +11,36 @@ leves, + um **`kit.json`** que tagueia cada asset no vocabulário do design syst
 (`role`/`tags`/`gameplayRole` + `size` + collider + âncoras). Esse é o "shadcn" da
 IA level-designer — ver `docs/adrs/0053-design-system-de-assets-kit-semantico-sockets-temas.md`.
 
-**Pré-requisito:** Blender instalado. O caminho costuma estar em `BLENDER_PATH`
-(ex.: `C:\Program Files\Blender Foundation\Blender 5.1\blender.exe`). Use o exe
-nativo com caminhos Windows (`D:/...`), não git-bash (`/d/...`).
+## Passo 0 — OBRIGATÓRIO: Blender (sem ele, não comece)
 
-Os scripts ficam em `scripts/` ao lado deste arquivo: `triage.sh`, `convert.py`,
-`gen-kit.mjs`, `lineup.py`. São **template** — ajuste as regras de triagem/classificação
-ao naming do kit em mãos.
+Blender é **pré-requisito duro** desta skill: conversão, medição, normalização e
+thumbnails passam por ele. Rode a checagem ANTES de qualquer outra coisa:
+
+```bash
+PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1
+PK="$PLUGIN/skills/process-asset-kit/scripts"   # triage.sh, convert.py, gen-kit.mjs, lineup.py…
+```
+
+**Se a checagem falhar, PARE.** Não converta "na mão", não pule a medição, não
+entregue kit parcial: um kit sem `size` medido produz cena com peça flutuando e o
+erro só aparece muito depois. Reporte ao usuário que o Blender precisa ser
+instalado (ou `BLENDER_PATH` apontado) e encerre a tarefa.
+
+Use o exe nativo com caminhos Windows (`D:/...`), não git-bash (`/d/...`).
+
+## Onde ficam os scripts e onde vai o kit
+
+São **template** — ajuste as regras de triagem/classificação ao naming do kit em mãos.
+
+**Destino do kit curado** depende de onde você está:
+
+- **Repositório da engine** (Claude Code): `kits/<nome>/` — entra no catálogo
+  empacotado, disponível a todos os projetos.
+- **Chat IA do Studio**: o catálogo empacotado é somente-leitura. O kit curado vai
+  para **`assets/<nome>/` do projeto aberto**, e é só ele que a cena consome. Para
+  trazer um kit que JÁ está no catálogo, não processe nada: use `list_kits` +
+  `import_kit { kit, only: [...] }`.
 
 ## Fluxo (5 fases)
 
@@ -31,7 +54,7 @@ find "$SRC" -type f | sed 's/.*\.//' | tr A-Z a-z | sort | uniq -c | sort -rn
 Verifique se os `.gltf` são self-contained (procuram `.bin` + textura ao lado) —
 o `convert.py` precisa deles juntos.
 
-### Fase 1 — Triagem (`scripts/triage.sh`)
+### Fase 1 — Triagem (`triage.sh`)
 **Filosofia do kit base:** natureza/terreno/recursos — floresta, rios, terreno,
 pedras, baús/caixas, ouros/metais, madeiras, barris, sacos. **FORA:** construções
 (casa, castelo, igreja, torre, muralha, moinho), veículos, militar/facção (flags,
@@ -39,18 +62,18 @@ weaponrack, projéteis), moderno/industrial (jerrycan, peças de máquina).
 **Tiles hexagonais/top-down** (`hex_*`) → **kit próprio** (`terrain-hex`), porque é
 uma gramática modular diferente do scatter (ADR-0053: decidido com o usuário).
 ```bash
-bash scripts/triage.sh "$SRC" "$BASE_DST/assets" "$HEX_DST/assets" "$STAGE"
+bash "$PK/triage.sh" "$SRC" "$BASE_DST/assets" "$HEX_DST/assets" "$STAGE"
 ```
 **Sempre revise a amostra de removidos impressa** e ajuste `is_removed`/`is_hex` no
 script pro naming do kit. Confirme as chamadas-limite (militar, decoração de facção)
 com o usuário se houver dúvida.
 
-### Fase 2 — Conversão slim (`scripts/convert.py`, Blender)
+### Fase 2 — Conversão slim (`convert.py`, Blender)
 Importa cada `.gltf` mantido → exporta `.glb` (embute bin+textura) e **captura o
 bbox** em eixos Y-up do three (Blender Z→altura, Y→profundidade). Dropar fbx/obj +
 buildings tipicamente corta ~90MB → poucos MB.
 ```bash
-"$BLENDER" -b -P scripts/convert.py -- "$STAGE/convert_list.txt" "$STAGE/sizes.json"
+"$BLENDER" -b -P "$PK/convert.py" -- "$STAGE/convert_list.txt" "$STAGE/sizes.json"
 ```
 Saída: os `.glb` nas pastas destino + `sizes.json` (`{ sizes, errors }`). Confira
 `err=0` e o peso (`du -sh`).
@@ -69,34 +92,34 @@ natureza ~4u/árvore vs Kenney medieval ~0.2u/barril). Resolva ANTES do kit.json
 jumpability depende de unidade consistente.
 ```bash
 # contact-sheet (1 rep/família) + cubo-referência de player 1.8u → expõe a escala
-"$BLENDER" -b -P scripts/lineup.py -- "$STAGE/sizes.json" "$STAGE/lineup.png" "$BASE_DST/assets" "$HEX_DST/assets"
+"$BLENDER" -b -P "$PK/lineup.py" -- "$STAGE/sizes.json" "$STAGE/lineup.png" "$BASE_DST/assets" "$HEX_DST/assets"
 ```
 Leia o PNG. Costumam ser **2 grupos** (não N): ache o fator olhando um asset que existe
 nos dois packs (ex.: o barril). Para o grupo subdimensionado, baking do fator no `.glb`:
 ```bash
 # rescale_list.txt = um caminho .glb por linha (só os do grupo a escalar)
-"$BLENDER" -b -P scripts/normalize.py -- 4.8 "$STAGE/rescale_list.txt"
+"$BLENDER" -b -P "$PK/normalize.py" -- 4.8 "$STAGE/rescale_list.txt"
 ```
 Depois **atualize os sizes** (escala uniforme = bbox × fator; multiplique os nomes
 escalados no `sizes.json` → `sizes_scaled.json`) e re-renderize o lineup pra confirmar.
 Confirme o fator com o usuário antes de cravar.
 
-### Fase 4 — Thumbnails por asset (`scripts/thumbnails.py`, Blender)
+### Fase 4 — Thumbnails por asset (`thumbnails.py`, Blender)
 1 PNG (vista 3/4, fundo transparente) por asset em `<kit>/thumbnails/<name>.png` —
 referência pro dev e pra IA, e cache do futuro `inspect_assets`.
 ```bash
-"$BLENDER" -b -P scripts/thumbnails.py -- 256 "$BASE/thumbnails" "$BASE/assets" "$HEX/thumbnails" "$HEX/assets"
+"$BLENDER" -b -P "$PK/thumbnails.py" -- 256 "$BASE/thumbnails" "$BASE/assets" "$HEX/thumbnails" "$HEX/assets"
 ```
 
-### Fase 5 — kit.json / vocabulário (`scripts/gen-kit.mjs`) — POR ÚLTIMO
+### Fase 5 — kit.json / vocabulário (`gen-kit.mjs`) — POR ÚLTIMO
 Com a escala já normalizada, classifica cada asset nos **3 eixos ortogonais**
 (ADR-0053 §6) e escreve `kit.json` (com `size`, `thumb`, collider e âncoras).
 ```bash
-node scripts/gen-kit.mjs "$STAGE/sizes_scaled.json" "$BASE" "$HEX"
+node "$PK/gen-kit.mjs" "$STAGE/sizes_scaled.json" "$BASE" "$HEX"
 # naming não-descritivo (obstacle_7_001…): classifique a olho nas thumbnails e
 # passe um mapa { nome: { role, tags, gameplayRole?, solid?, shape? } } que vence
 # o classify() — assim o classify() continua kit-independente.
-node scripts/gen-kit.mjs "$STAGE/sizes.json" "$KIT" --overrides "$STAGE/overrides.json" --theme deathrun
+node "$PK/gen-kit.mjs" "$STAGE/sizes.json" "$KIT" --overrides "$STAGE/overrides.json" --theme deathrun
 ```
 `--theme` grava o tema no `kit.json` (default `TBD`) — os design tokens (paleta/
 atmosfera, ADR-0053 §3) continuam pra depois, mas o nome do tema já vale a pena.
@@ -138,7 +161,7 @@ Fluxo próprio (validado no `characters-cute`, jul/2026):
    clips — formato exato do `composeModularCharacter`). Exclui `Test_*`. Emite
    `sizes.json` no formato do convert.py.
    ```bash
-   "$BLENDER" -b -P scripts/extract-modular.py -- <showroom.glb> <kit>/assets <stage>/sizes.json
+   "$BLENDER" -b -P "$PK/extract-modular.py" -- <showroom.glb> <kit>/assets <stage>/sizes.json
    ```
 3. **`externalize-texture.mjs`** (node): peças de um mesmo pack compartilham 1 atlas;
    embutido em cada `.glb` o kit explode (ex.: 172MB). O script extrai o atlas UMA
@@ -146,7 +169,7 @@ Fluxo próprio (validado no `characters-cute`, jul/2026):
    BIN sem a imagem (172MB → 23MB no characters-cute). O loader do engine resolve
    uri relativa — mas **copiar a textura junto** ao vendorizar (gotcha da montar-jogo).
    ```bash
-   node scripts/externalize-texture.mjs <kit>/assets
+   node "$PK/externalize-texture.mjs" <kit>/assets
    ```
 4. Thumbnails + gen-kit normais (fases 4–5). Vocabulário: peças viram role
    **`character-part`** com `tags = [slot, ...]` (body/hair/hat/outfit/face/…),
@@ -156,12 +179,12 @@ Fluxo próprio (validado no `characters-cute`, jul/2026):
 ## Backdrops 2D (background)
 
 Imagens de fundo (jpg/png, por tema) NÃO passam pelo pipeline glb (sem bbox/conversão).
-Use **`scripts/gen-backgrounds.mjs <pasta>`** — cataloga num `kit.json` com `role:
+Use **`gen-backgrounds.mjs <pasta>`** — cataloga num `kit.json` com `role:
 background` + tags do tema (de `background_<tema>_<n>`), `thumb` = a própria imagem.
 No engine, viram um nó `background` (backdrop com parallax que segue a câmera; precisa
 de `camera` no `buildScene`).
 ```bash
-node scripts/gen-backgrounds.mjs "D:/jogos/assets/backgrounds" backgrounds-base
+node "$PK/gen-backgrounds.mjs" "D:/jogos/assets/backgrounds" backgrounds-base
 ```
 
 ## Convenções / gotchas

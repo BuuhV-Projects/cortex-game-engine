@@ -10,8 +10,8 @@ import { kitAssetFor, resolveAttachTransform, type KitManifest } from './Kit.js'
  *
  * Regra de ouro do pipeline: geometria valida-se com CÓDIGO (barato, 100%
  * confiável); screenshot/crítica visual é pra composição e beleza, DEPOIS de
- * `errors` zerar. Regras destiladas do lint de fases (game-design-bible,
- * `ai-rules/fases-por-trechos.md`, R1–R5) generalizadas pro engine.
+ * `errors` zerar. Regras destiladas do lint de fases da skill `fase-por-trechos`
+ * (R1–R5) e generalizadas pro engine.
  *
  * Convenção de pivô: nós `model` têm origem na BASE-centro (padrão dos kits —
  * `anchors.top` em `[0,h,0]`); `primitive`/`mesh` no CENTRO (BoxGeometry).
@@ -44,9 +44,8 @@ export interface ValidateSceneOptions {
   maxPenetration?: number;
   /**
    * Override de severidade POR REGRA (`overlap`, `floating`, `gap`…): força
-   * `error`/`warning` ou suprime com `off`. É por onde regras APRENDIDAS do
-   * projeto (`.cortex/validation-rules.json`, ADR-0115) endurecem ou relaxam o
-   * validador sem mudar o código do engine.
+   * `error`/`warning` ou suprime com `off`. Permite endurecer ou relaxar o
+   * validador por chamada, sem mudar o código do engine.
    */
   severity?: Record<string, 'error' | 'warning' | 'off'>;
 }

@@ -85,7 +85,8 @@ node native/scripts/export-game.mjs <pasta-do-projeto>
 | [kits/](kits/) | Kits de assets curados (ADR-0053), empacotados no Studio. |
 | [templates/](templates/) | Esqueleto copiado em cada projeto novo. |
 | [web/](web/) | Website institucional (workspace independente). |
-| [docs/](docs/) | `adrs/` + `tdrs/` (decisões), `cortex-game-engine/` (arquitetura + API), `cortex-native/`, `prds/`, `game-design-bible/`. |
+| [docs/](docs/) | `adrs/` + `tdrs/` (decisões), `specs/`, `cortex-game-engine/` (arquitetura + API), `cortex-native/`, `prds/`. |
+| [.claude/](.claude/) | Plugin `cortex-studio`: skills + subagente do Chat IA (ADR-0180). |
 | [tests/](tests/) | Testes Vitest do engine. |
 
 ## Testes

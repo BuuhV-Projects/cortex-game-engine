@@ -312,27 +312,33 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   o agente lê a seção completa sob demanda via Read (ADR-0114). Mantenha o doc ao
   mudar a API — o índice deriva dele automaticamente, sem passo de build.
 
-## 6b. Chat IA: validação geométrica + aprendizado por correções
+## 6b. Chat IA: prompt enxuto, skills do plugin e validação geométrica
 
+- **Anatomia do loop** (`electron/agent/`, ADR-0017/ADR-0180): `agentLoop.ts` só
+  orquestra (monta as `Options` do SDK, registra os MCP servers, roteia aprovação);
+  `prompt.ts` guarda o system prompt **invariante**; `sdkMessages.ts` traduz o
+  stream do SDK em eventos de UI; `agentTypes.ts` tem o contrato do turno;
+  `plugin.ts` resolve o plugin de skills. O prompt NÃO carrega método — quem monta
+  fase/kit/blueprint são as skills.
+- **Skills e subagente vêm de um plugin local** (ADR-0180): `.claude/` do repo tem
+  `.claude-plugin/plugin.json` e é, ao mesmo tempo, o diretório de projeto do
+  Claude Code e o plugin `cortex-studio` carregado pelo Chat IA
+  (`plugins:[{type:'local'}]` + `skills:'all'`). Fonte única: o método refinado
+  trabalhando no repositório é o que o Studio executa. No app empacotado vai em
+  `extraResources` como `agent-plugin/`; `resolvePluginDir()` acha os dois layouts
+  e devolve `null` (turno sem skills) se faltar. As skills acham seus scripts e os
+  kits por `CORTEX_PLUGIN_DIR`/`CORTEX_KITS_DIR`, injetados no env do turno — o
+  `cwd` do Bash é o projeto do jogo, não este repositório.
+- **`settingSources: ['project']`**: carrega `CLAUDE.md`/`.claude` do jogo aberto
+  (instruções do usuário) sem herdar as configurações globais da máquina, que
+  trariam skills de outros repositórios como ruído.
 - **`validateScene`** (`src/scene/validateScene.ts`, ADR-0112): validação estática
   (dados, sem GPU) — interpenetração, flutuação, tombado, vão impulável, attach.
   Tool `validate_scene` (electron): 0 erros é pré-requisito antes de playtest/critique.
-- **Ciclo de aprendizado** (ADR-0113, `electron/agent/learning.ts` + tools
-  `cortex-learn`): a IA entrega cena → `save_baseline` (snapshot do estado efetivo);
-  dev corrige no editor (overlay por id) → `diff_corrections` mede só a intervenção
-  humana (diff semântico por role × mudança); lição aprovada pelo dev grava no
-  destino certo e o baseline avança SEMPRE (inclusive com veto).
-- **Regras aprendidas viram DADO por projeto** (ADR-0115,
-  `electron/agent/validationRules.ts`): lição geométrica → `save_rule` grava
-  thresholds/severidade em `.cortex/validation-rules.json`, que o `validate_scene`
-  carrega sozinho dali em diante (parâmetro explícito vence). A tool roda uma
-  **checagem de regressão** antes de gravar: reconstrói o estado do baseline como
-  overlay sintético (`baselineOverlay`) e só aceita regra que reprova o "antes" e
-  melhora o "depois" — senão a lição é gosto pontual e vira texto no
-  `.cortex/scene-learnings.md`. Ordem no ciclo: `save_rule` ANTES do
-  `save_baseline` final (a checagem usa o baseline antigo como contraprova).
-  Conhecimento aprendido (`validation-rules.json` + `scene-learnings.md`) é
-  versionado; o resto de `.cortex/` é cache (gitignore do template).
+  Thresholds default vivem no próprio `validateScene`; a chamada sobrescreve por
+  parâmetro. O ciclo de aprendizado por baselines (ADR-0113/0115) foi **removido**
+  no ADR-0180 — não há mais `.cortex/validation-rules.json` nem `scene-learnings.md`;
+  corrigir a IA é editar a skill.
 - **Percepção rápida + playtest determinístico** (ADR-0116): `measure_glb`
   (server `cortex-assets`) mede bounding box de `.glb` específicos em **Node
   puro** (`electron/agent/assets/measureGlb.ts`, sem Blender; marca skinned =

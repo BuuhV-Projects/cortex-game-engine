@@ -14,9 +14,21 @@ re-fatiar até 0 erros; screenshot é a confirmação final.
 
 Implementação canônica (calibrada ao `CourseData` do teste4):
 `D:/jogos/teste4/tools/{slice_trechos,lint_chunks,sweep}.mjs` +
-`D:/jogos/teste4/scenes/trechosCompose.ts`. Os três `.mjs` estão copiados em
-`scripts/` ao lado deste arquivo como TEMPLATE — adapte vocabulário/faixas ao
-pack em mãos. O compositor é código do jogo (usa o courseKit do mundo).
+`D:/jogos/teste4/scenes/trechosCompose.ts`. Os três `.mjs` vêm junto desta skill
+como TEMPLATE — adapte vocabulário/faixas ao pack em mãos. O compositor é código
+do jogo (usa o courseKit do mundo).
+
+Resolva o caminho dos scripts por variável (a skill roda tanto no repositório da
+engine quanto no Chat IA do Studio, onde o `cwd` é o projeto do jogo):
+
+```bash
+PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+TRECHOS="$PLUGIN/skills/fase-por-trechos/scripts"
+BLENDER=$(node "$PLUGIN/scripts/check-blender.mjs") || exit 1   # fase 0 exige Blender
+```
+
+**Blender é pré-requisito duro**: a fase 0 (exportar o demo do `.blend`) não tem
+substituto — sem ela não há trechos para fatiar. Checagem falhou, PARE e reporte.
 
 ## Fase 0 — Conhecer o demo ANTES de fatiar (medir, nunca chutar)
 
@@ -36,7 +48,7 @@ pack em mãos. O compositor é código do jogo (usa o courseKit do mundo).
    do usuário (poças rosa do Chocolate). Chão do player = peças de pista;
    líquido/decoração ganham script que desliga raycast.
 
-## Fase 1 — Fatiar (`scripts/slice_trechos.mjs`)
+## Fase 1 — Fatiar (`$TRECHOS/slice_trechos.mjs`)
 
 Separa faixas, gira a progressão pra +X, corta a ~35 m (cadência de checkpoint
 da skill de level design). Cada trecho sai NORMALIZADO (entrada da pista em
@@ -72,9 +84,10 @@ emenda simples; `difficulty` em crescendo (calmo → médio → clímax).
 
 ## Fase 3 — Verificar em LOOP (nunca só screenshot)
 
-1. `node tools/lint_chunks.mjs` — juiz independente (R1–R5 + sanidade de
-   catálogo), exit 1 com erro. **Repita fatiar→lint até 0 erros.**
-2. `node tools/sweep.mjs "<url da fase>" <dir> [x0] [x1] [quadros]` — varredura
+1. `node "$TRECHOS/lint_chunks.mjs"` — juiz independente (R1–R5 + sanidade de
+   catálogo), exit 1 com erro. **Repita fatiar→lint até 0 erros.** (Num jogo que
+   já adaptou o template, use a cópia dele em `tools/`.)
+2. `node "$TRECHOS/sweep.mjs" "<url da fase>" <dir> [x0] [x1] [quadros]` — varredura
    panorâmica: uma carga só, teleporta o player quadro a quadro e captura N
    PNGs. Revisar EM SEQUÊNCIA procurando: objeto torto, peça flutuando, ilha
    órfã, emenda desnivelada, portal de lado.

@@ -1,1 +1,0 @@
-# Padrões Mario Wonder

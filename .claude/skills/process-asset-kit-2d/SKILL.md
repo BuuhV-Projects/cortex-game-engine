@@ -12,10 +12,22 @@ uma **folha por personagem** (frames em fila) + um **`kit.json`** com a framedat
 `sprite`** (SPEC-0057): o nó referencia a `url` e herda a grade/animações do kit.
 
 **Sem Blender** — é tudo raster. Os scripts usam só `zlib` do Node (codec PNG mínimo
-em `scripts/png.mjs`, RGBA8 sem interlace). Não há bbox/escala/conversão como no 3D.
+no `png.mjs` da skill, RGBA8 sem interlace). Não há bbox/escala/conversão como no 3D.
 
 > Para kits **3D** (`.glb`, Kenney/Quaternius) use a skill **`process-asset-kit`**
 > (pipeline Blender). Esta é só pra **2D/sprites**.
+
+## Onde ficam os scripts e onde vai o kit
+
+```bash
+PLUGIN="${CORTEX_PLUGIN_DIR:-.claude}"
+PK2="$PLUGIN/skills/process-asset-kit-2d/scripts"
+OUT="kits"            # repositório da engine (catálogo)
+# no Chat IA do Studio, o catálogo é somente-leitura:
+OUT="assets"          # o kit curado vai pro projeto aberto
+```
+
+Nos comandos abaixo, `kits/<nome>` significa `$OUT/<nome>`.
 
 ## Fluxo
 
@@ -38,17 +50,17 @@ Dois formatos comuns:
 
 ```bash
 # Detecta faixas com conteúdo (gutters) em X e Y de um strip:
-node scripts/inspect-grid.mjs "<char>/<anim>.png"   # (ou use o snippet do README)
+node "$PK2/inspect-grid.mjs" "<char>/<anim>.png"   # (ou use o snippet do README)
 ```
 
-### Fase 2 — Empacotar + gerar kit.json (`scripts/pack-2d-kit.mjs`)
+### Fase 2 — Empacotar + gerar kit.json (`pack-2d-kit.mjs`)
 Uma folha por personagem (frames em fila), `kit.json` com `sprite` framedata,
 thumbnails (frame 0).
 ```bash
 # TIRA simples (infere frame pelo MDC):
-node scripts/pack-2d-kit.mjs "$SRC" "kits/<nome>" <nome> <tema>
+node "$PK2/pack-2d-kit.mjs" "$SRC" "kits/<nome>" <nome> <tema>
 # GRADE top-down (frame quadrado de Npx, extrai a linha `row`; 0 = frente):
-node scripts/pack-2d-kit.mjs "$SRC" "kits/<nome>" <nome> <tema> 64 0
+node "$PK2/pack-2d-kit.mjs" "$SRC" "kits/<nome>" <nome> <tema> 64 0
 ```
 - `role: character`, `tags: [<tema>, "2d", "character"]`, `initial: idle`.
 - fps default por nome (idle 6, walk 8, run 12, …) — ajuste no `kit.json` depois.
@@ -106,6 +118,6 @@ O `pack-2d-village.mjs` (feito pro pack Smallburg Village) faz:
 - **Estáticos** (commerce/housing/tileset) = cada PNG inteiro vira 1 asset **sem
   `sprite`** (role `prop`/`tile`/`decoration` por categoria) + thumbnail `scaleNearest`.
 
-Comando: `node scripts/pack-2d-village.mjs <srcDir> [outDir=kits/kit-smallburg-village]`.
+Comando: `node "$PK2/pack-2d-village.mjs" <srcDir> [outDir=kits/kit-smallburg-village]`.
 Specs (bodies, premades, roles dos estáticos) são **dados** no topo do script — edite
 lá pra trocar combos/cores. Resultado (jun/2026): 3 bodies + 9 premades + 42 estáticos.
