@@ -1,3 +1,10 @@
+# [0.45.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.44.0...v0.45.0) (2026-08-02)
+
+
+### Features
+
+* **kits:** fantasy_gate no portals-warp (portal de chegada/saida de fase) ([f1eb0c0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f1eb0c0370ab0d82f52ed34ec78cf3ebd1222c9a))
+
 # [0.44.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.43.0...v0.44.0) (2026-08-02)
 
 
