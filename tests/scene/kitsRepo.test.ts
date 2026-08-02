@@ -63,10 +63,13 @@ describe('kits/ versionados', () => {
     });
 
     it('tem bbox positivo em todo asset dimensionável', () => {
-      // Decais/planos (água, sombra) são legitimamente achatados: só o eixo Y pode zerar.
+      // Planos são assets legítimos e aparecem nas DUAS orientações: decal
+      // deitado no chão (água, sombra — zera a ALTURA) e billboard em pé
+      // (vórtice, mandala, brilho, grama do portals-warp — zera a PROFUNDIDADE).
+      // Degenerado é ter menos de duas dimensões: aí não sobra nem superfície.
       const ruins = Object.entries(manifest!.assets)
         .filter(([, a]) => a.size)
-        .filter(([, a]) => a.size![0] <= 0 || a.size![1] < 0 || a.size![2] <= 0)
+        .filter(([, a]) => a.size!.some((n) => n < 0) || a.size!.filter((n) => n > 0).length < 2)
         .map(([path, a]) => `${path}: ${a.size!.join('x')}`);
       expect(ruins).toEqual([]);
     });

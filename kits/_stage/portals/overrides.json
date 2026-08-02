@@ -1,0 +1,599 @@
+{
+  "archway_lightwood": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "arch",
+      "stone",
+      "light",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Arco claro de pedra/madeira, vão em tons pastel. Portal do MUNDO 1 (Ilhas). O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura."
+  },
+  "archway_darkwood": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "arch",
+      "wood",
+      "dark",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Arco de madeira escura. Portal do MUNDO 2 (Chocolate) — a madeira lê como chocolate. O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura."
+  },
+  "futuristic_white": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "futuristic",
+      "metal",
+      "light",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Cápsula futurista clara com faixa emissiva ciano. Portal do MUNDO 3 (Espaço). O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura."
+  },
+  "futuristic_black": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "futuristic",
+      "metal",
+      "dark",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Cápsula futurista preta com faixa emissiva verde. Variante escura do portal espacial. O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura."
+  },
+  "doorway_white": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "door",
+      "stone",
+      "light",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Moldura em U clara e VAZIA — a melhor base pro plasma (nada preenche o vão de fábrica). Portal do MUNDO 4 (Aquapark). O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura."
+  },
+  "doorway_darkbrown": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "door",
+      "wood",
+      "dark",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Porta escura com o vão JÁ preenchido por um plano texturizado (roxo). Se for usar o plasma do jogo, esconda o plano filho. O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura."
+  },
+  "pillar_red": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "ring",
+      "stone",
+      "red",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Par de anéis de pedra rachada, vermelhos. Portal do MUNDO EXTRA (submundo/ruínas). Flutua: não tem base própria. O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura.",
+    "altUse": [
+      "floating-gate",
+      "arena-marker"
+    ]
+  },
+  "pillar_orange": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "ring",
+      "stone",
+      "orange",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Par de anéis de pedra rachada, âmbar. Variante quente do portal de ruínas. O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura.",
+    "altUse": [
+      "floating-gate",
+      "arena-marker"
+    ]
+  },
+  "pillar_circle_red": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "ring",
+      "thin",
+      "red",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Par de anéis FINOS vermelhos (sem pedra). Portal mínimo, bom quando o plasma é o protagonista. O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura."
+  },
+  "pillar_circle_orange": {
+    "role": "connector",
+    "tags": [
+      "portal",
+      "ring",
+      "thin",
+      "orange",
+      "L"
+    ],
+    "gameplayRole": [
+      "landmark",
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Par de anéis FINOS âmbar. Portal mínimo. O vão é preenchido em runtime pelo plasma procedural do jogo (measurePortalGap + createPlasmaPortal): ele mede a abertura por raycast e recorta a energia na forma exata, então serve qualquer moldura."
+  },
+  "stoneplatform_green": {
+    "role": "platform",
+    "tags": [
+      "platform",
+      "stone",
+      "runes",
+      "verde",
+      "L"
+    ],
+    "gameplayRole": [
+      "safe-zone",
+      "landmark"
+    ],
+    "solid": true,
+    "standalone": true,
+    "note": "Plataforma octogonal de pedra com runas emissivas verde no centro (5,5 m de diâmetro, 42 cm de altura). Pedestal do portal do MUNDO 1 (Ilhas); também serve de piso de ilha isolada.",
+    "altUse": [
+      "pedestal",
+      "arena-floor",
+      "checkpoint"
+    ]
+  },
+  "stoneplatform_sunburnt": {
+    "role": "platform",
+    "tags": [
+      "platform",
+      "stone",
+      "runes",
+      "âmbar",
+      "L"
+    ],
+    "gameplayRole": [
+      "safe-zone",
+      "landmark"
+    ],
+    "solid": true,
+    "standalone": true,
+    "note": "Plataforma octogonal de pedra com runas emissivas âmbar/queimado no centro (5,5 m de diâmetro, 42 cm de altura). Pedestal do portal do MUNDO 2 (Chocolate); também serve de piso de ilha isolada.",
+    "altUse": [
+      "pedestal",
+      "arena-floor",
+      "checkpoint"
+    ]
+  },
+  "stoneplatform_celestial": {
+    "role": "platform",
+    "tags": [
+      "platform",
+      "stone",
+      "runes",
+      "violeta",
+      "L"
+    ],
+    "gameplayRole": [
+      "safe-zone",
+      "landmark"
+    ],
+    "solid": true,
+    "standalone": true,
+    "note": "Plataforma octogonal de pedra com runas emissivas violeta/estelar no centro (5,5 m de diâmetro, 42 cm de altura). Pedestal do portal do MUNDO 3 (Espaço); também serve de piso de ilha isolada.",
+    "altUse": [
+      "pedestal",
+      "arena-floor",
+      "checkpoint"
+    ]
+  },
+  "stoneplatform_blue": {
+    "role": "platform",
+    "tags": [
+      "platform",
+      "stone",
+      "runes",
+      "azul",
+      "L"
+    ],
+    "gameplayRole": [
+      "safe-zone",
+      "landmark"
+    ],
+    "solid": true,
+    "standalone": true,
+    "note": "Plataforma octogonal de pedra com runas emissivas azul no centro (5,5 m de diâmetro, 42 cm de altura). Pedestal do portal do MUNDO 4 (Aquapark); também serve de piso de ilha isolada.",
+    "altUse": [
+      "pedestal",
+      "arena-floor",
+      "checkpoint"
+    ]
+  },
+  "pool_blue": {
+    "role": "decoration",
+    "tags": [
+      "vortex",
+      "water",
+      "blue",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Vórtice espiralado azul-água, plano horizontal. Poça de teleporte no piso — leitura de \"água\" combina com o Aquapark."
+  },
+  "pool_celestial": {
+    "role": "decoration",
+    "tags": [
+      "vortex",
+      "magic",
+      "violet",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Vórtice espiralado violeta com pontos de estrela. Poça de teleporte mágica."
+  },
+  "pool_green": {
+    "role": "decoration",
+    "tags": [
+      "vortex",
+      "magic",
+      "green",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Vórtice espiralado verde. REMONTADO da mesh-base: o prefab do pack veio vazio (0 objetos), então este foi reconstruído com a textura T_Pool_Green e a mesma escala dos irmãos."
+  },
+  "circle_space": {
+    "role": "decoration",
+    "tags": [
+      "mandala",
+      "magic",
+      "star",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Mandala de invocação com estrela de 8 pontas e anel de glifos. Círculo de teleporte no piso."
+  },
+  "circle_time": {
+    "role": "decoration",
+    "tags": [
+      "mandala",
+      "magic",
+      "clock",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Mandala com ampulheta e algarismos romanos — tema \"tempo\". Círculo de teleporte no piso."
+  },
+  "futuristic_circle_blue": {
+    "role": "decoration",
+    "tags": [
+      "ring",
+      "futuristic",
+      "blue",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Par de anéis futuristas blue deitados na HORIZONTAL (3,5 m no eixo de profundidade, 0,86 m de altura) — é portal de CHÃO, não de parede. Foi autorado assim no pack; para usar em pé, rotacione 90° em X."
+  },
+  "futuristic_circle_green": {
+    "role": "decoration",
+    "tags": [
+      "ring",
+      "futuristic",
+      "green",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Par de anéis futuristas green deitados na HORIZONTAL (3,5 m no eixo de profundidade, 0,86 m de altura) — é portal de CHÃO, não de parede. Foi autorado assim no pack; para usar em pé, rotacione 90° em X."
+  },
+  "futuristic_circle_purple": {
+    "role": "decoration",
+    "tags": [
+      "ring",
+      "futuristic",
+      "purple",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Par de anéis futuristas purple deitados na HORIZONTAL (3,5 m no eixo de profundidade, 0,86 m de altura) — é portal de CHÃO, não de parede. Foi autorado assim no pack; para usar em pé, rotacione 90° em X."
+  },
+  "futuristic_circle_red": {
+    "role": "decoration",
+    "tags": [
+      "ring",
+      "futuristic",
+      "red",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Par de anéis futuristas red deitados na HORIZONTAL (3,5 m no eixo de profundidade, 0,86 m de altura) — é portal de CHÃO, não de parede. Foi autorado assim no pack; para usar em pé, rotacione 90° em X."
+  },
+  "rune_magic": {
+    "role": "decoration",
+    "tags": [
+      "rune",
+      "magic",
+      "star",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Runa circular com pentagrama, monocromática. Aceita tingimento por cor de material."
+  },
+  "rune_swirl": {
+    "role": "decoration",
+    "tags": [
+      "rune",
+      "magic",
+      "spiral",
+      "ground",
+      "M"
+    ],
+    "gameplayRole": [
+      "guidance"
+    ],
+    "solid": false,
+    "standalone": true,
+    "note": "Runa em espiral simples, monocromática. Aceita tingimento por cor de material."
+  },
+  "glare_white": {
+    "role": "decoration",
+    "tags": [
+      "effect",
+      "glow",
+      "radial",
+      "white",
+      "M"
+    ],
+    "gameplayRole": [],
+    "solid": false,
+    "standalone": false,
+    "note": "Clarão radial branco. Plano — trate como billboard.",
+    "altUse": [
+      "portal-glow",
+      "spawn-fx"
+    ]
+  },
+  "glare_rainbow": {
+    "role": "decoration",
+    "tags": [
+      "effect",
+      "glow",
+      "radial",
+      "rainbow",
+      "M"
+    ],
+    "gameplayRole": [],
+    "solid": false,
+    "standalone": false,
+    "note": "Clarão radial iridescente. Plano — billboard.",
+    "altUse": [
+      "portal-glow",
+      "spawn-fx"
+    ]
+  },
+  "glare_rainbowv2": {
+    "role": "decoration",
+    "tags": [
+      "effect",
+      "glow",
+      "radial",
+      "rainbow",
+      "M"
+    ],
+    "gameplayRole": [],
+    "solid": false,
+    "standalone": false,
+    "note": "Clarão radial iridescente, variante mais densa. Plano — billboard.",
+    "altUse": [
+      "portal-glow",
+      "spawn-fx"
+    ]
+  },
+  "glare_rising_white": {
+    "role": "decoration",
+    "tags": [
+      "effect",
+      "glow",
+      "rising",
+      "white",
+      "M"
+    ],
+    "gameplayRole": [],
+    "solid": false,
+    "standalone": false,
+    "note": "Raios verticais subindo (energia). Plano — billboard.",
+    "altUse": [
+      "portal-glow",
+      "spawn-fx"
+    ]
+  },
+  "glare_rising_blue": {
+    "role": "decoration",
+    "tags": [
+      "effect",
+      "glow",
+      "rising",
+      "blue",
+      "M"
+    ],
+    "gameplayRole": [],
+    "solid": false,
+    "standalone": false,
+    "note": "Raios verticais azuis subindo. Plano — billboard.",
+    "altUse": [
+      "portal-glow",
+      "spawn-fx"
+    ]
+  },
+  "glare_rising_purple": {
+    "role": "decoration",
+    "tags": [
+      "effect",
+      "glow",
+      "rising",
+      "violet",
+      "M"
+    ],
+    "gameplayRole": [],
+    "solid": false,
+    "standalone": false,
+    "note": "Raios verticais violeta subindo. Plano — billboard.",
+    "altUse": [
+      "portal-glow",
+      "spawn-fx"
+    ]
+  },
+  "mist_mesh": {
+    "role": "decoration",
+    "tags": [
+      "mist",
+      "fog",
+      "nature",
+      "M"
+    ],
+    "gameplayRole": [],
+    "solid": false,
+    "standalone": true,
+    "note": "Volume de névoa em malha (5 m de largura). Assenta a base do portal e esconde a emenda com o piso.",
+    "altUse": [
+      "ground-fog",
+      "cloud"
+    ]
+  },
+  "grass_plane": {
+    "role": "decoration",
+    "tags": [
+      "grass",
+      "nature",
+      "S"
+    ],
+    "gameplayRole": [],
+    "solid": false,
+    "standalone": false,
+    "note": "Tufo de grama estilizada em planos cruzados (60 cm). Espalhe para vestir o piso.",
+    "altUse": [
+      "scatter"
+    ]
+  },
+  "bellflower": {
+    "role": "decoration",
+    "tags": [
+      "flower",
+      "nature",
+      "S"
+    ],
+    "gameplayRole": [],
+    "solid": false,
+    "standalone": true,
+    "note": "Campânula (45 cm) — flor de haste. Detalhe de canteiro junto ao portal.",
+    "altUse": [
+      "scatter"
+    ]
+  }
+}
