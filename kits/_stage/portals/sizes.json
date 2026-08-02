@@ -1,0 +1,791 @@
+{
+  "sizes": {
+    "bellflower": [
+      2.104,
+      2.844,
+      1.28
+    ],
+    "glare_rainbow": [
+      12.155,
+      18.56,
+      0
+    ],
+    "glare_rainbowv2": [
+      12.155,
+      18.56,
+      0
+    ],
+    "glare_white": [
+      12.155,
+      18.56,
+      0
+    ],
+    "glare_rising_blue": [
+      11.369,
+      17.361,
+      0
+    ],
+    "glare_rising_purple": [
+      11.369,
+      17.361,
+      0
+    ],
+    "glare_rising_white": [
+      11.369,
+      17.361,
+      0
+    ],
+    "grass_plane": [
+      6.837,
+      10.44,
+      0
+    ],
+    "mist_mesh": [
+      13.91,
+      8.803,
+      6.003
+    ],
+    "archway_darkwood": [
+      6.46,
+      9.393,
+      2.593
+    ],
+    "archway_lightwood": [
+      6.46,
+      9.393,
+      2.593
+    ],
+    "circle_space": [
+      27.75,
+      27.75,
+      0
+    ],
+    "circle_time": [
+      27.75,
+      27.75,
+      0
+    ],
+    "doorway_darkbrown": [
+      4.634,
+      6.872,
+      0.654
+    ],
+    "doorway_white": [
+      4.634,
+      6.872,
+      0.654
+    ],
+    "futuristic_black": [
+      15.475,
+      30,
+      10.896
+    ],
+    "futuristic_circle_blue": [
+      11.569,
+      6.925,
+      28.198
+    ],
+    "futuristic_circle_green": [
+      11.569,
+      6.925,
+      28.198
+    ],
+    "futuristic_circle_purple": [
+      11.569,
+      6.925,
+      28.198
+    ],
+    "futuristic_circle_red": [
+      11.569,
+      6.925,
+      28.198
+    ],
+    "futuristic_white": [
+      15.72,
+      30,
+      11.42
+    ],
+    "pillar_circle_orange": [
+      14.01,
+      14.01,
+      20
+    ],
+    "pillar_circle_red": [
+      14.01,
+      14.01,
+      20
+    ],
+    "pillar_orange": [
+      13.053,
+      13.053,
+      20.091
+    ],
+    "pillar_red": [
+      13.053,
+      13.053,
+      20.091
+    ],
+    "pool_blue": [
+      19.558,
+      18.452,
+      0
+    ],
+    "pool_celestial": [
+      19.558,
+      18.452,
+      0
+    ],
+    "stoneplatform_blue": [
+      37.841,
+      2.893,
+      37.841
+    ],
+    "stoneplatform_celestial": [
+      37.841,
+      2.893,
+      37.841
+    ],
+    "stoneplatform_green": [
+      37.841,
+      2.893,
+      37.841
+    ],
+    "stoneplatform_sunburnt": [
+      37.841,
+      2.893,
+      37.841
+    ],
+    "rune_magic": [
+      17.862,
+      17.862,
+      0
+    ],
+    "rune_swirl": [
+      17.862,
+      17.862,
+      0
+    ],
+    "pool_green": [
+      4.719,
+      7.527,
+      0
+    ]
+  },
+  "bounds": {
+    "bellflower": [
+      -1.499,
+      -0.004,
+      -0.444,
+      0.605,
+      2.84,
+      0.835
+    ],
+    "glare_rainbow": [
+      -6.077,
+      -9.28,
+      0,
+      6.077,
+      9.28,
+      0
+    ],
+    "glare_rainbowv2": [
+      -6.077,
+      -9.28,
+      0,
+      6.077,
+      9.28,
+      0
+    ],
+    "glare_white": [
+      -6.077,
+      -9.28,
+      0,
+      6.077,
+      9.28,
+      0
+    ],
+    "glare_rising_blue": [
+      -5.684,
+      2.361,
+      0,
+      5.684,
+      19.721,
+      0
+    ],
+    "glare_rising_purple": [
+      -5.684,
+      2.361,
+      0,
+      5.684,
+      19.721,
+      0
+    ],
+    "glare_rising_white": [
+      -5.684,
+      2.361,
+      0,
+      5.684,
+      19.721,
+      0
+    ],
+    "grass_plane": [
+      -3.418,
+      0.043,
+      0,
+      3.418,
+      10.482,
+      0
+    ],
+    "mist_mesh": [
+      -8.87,
+      -0.003,
+      -3.002,
+      5.04,
+      8.8,
+      3.002
+    ],
+    "archway_darkwood": [
+      -3.23,
+      -0.014,
+      -0.265,
+      3.23,
+      9.379,
+      2.328
+    ],
+    "archway_lightwood": [
+      -3.23,
+      -0.014,
+      -0.265,
+      3.23,
+      9.379,
+      2.328
+    ],
+    "circle_space": [
+      -13.875,
+      -13.875,
+      0,
+      13.875,
+      13.875,
+      0
+    ],
+    "circle_time": [
+      -13.875,
+      -13.875,
+      0,
+      13.875,
+      13.875,
+      0
+    ],
+    "doorway_darkbrown": [
+      -2.317,
+      0,
+      -0.327,
+      2.317,
+      6.872,
+      0.327
+    ],
+    "doorway_white": [
+      -2.317,
+      0,
+      -0.327,
+      2.317,
+      6.872,
+      0.327
+    ],
+    "futuristic_black": [
+      -7.58,
+      0,
+      -5.555,
+      7.894,
+      30,
+      5.341
+    ],
+    "futuristic_circle_blue": [
+      -5.784,
+      -3.462,
+      -28.541,
+      5.784,
+      3.462,
+      -0.343
+    ],
+    "futuristic_circle_green": [
+      -5.784,
+      -3.462,
+      -28.541,
+      5.784,
+      3.462,
+      -0.343
+    ],
+    "futuristic_circle_purple": [
+      -5.784,
+      -3.462,
+      -28.541,
+      5.784,
+      3.462,
+      -0.343
+    ],
+    "futuristic_circle_red": [
+      -5.784,
+      -3.462,
+      -28.541,
+      5.784,
+      3.462,
+      -0.343
+    ],
+    "futuristic_white": [
+      -7.84,
+      0,
+      -5.785,
+      7.88,
+      30,
+      5.635
+    ],
+    "pillar_circle_orange": [
+      -7.005,
+      -7.005,
+      -20,
+      7.005,
+      7.005,
+      0
+    ],
+    "pillar_circle_red": [
+      -7.005,
+      -7.005,
+      -20,
+      7.005,
+      7.005,
+      0
+    ],
+    "pillar_orange": [
+      -6.527,
+      -6.527,
+      -20.055,
+      6.527,
+      6.527,
+      0.036
+    ],
+    "pillar_red": [
+      -6.527,
+      -6.527,
+      -20.055,
+      6.527,
+      6.527,
+      0.036
+    ],
+    "pool_blue": [
+      -9.779,
+      -9.226,
+      0,
+      9.779,
+      9.226,
+      0
+    ],
+    "pool_celestial": [
+      -9.779,
+      -9.226,
+      0,
+      9.779,
+      9.226,
+      0
+    ],
+    "stoneplatform_blue": [
+      -18.92,
+      0.014,
+      -18.92,
+      18.92,
+      2.907,
+      18.92
+    ],
+    "stoneplatform_celestial": [
+      -18.92,
+      0.014,
+      -18.92,
+      18.92,
+      2.907,
+      18.92
+    ],
+    "stoneplatform_green": [
+      -18.92,
+      0.014,
+      -18.92,
+      18.92,
+      2.907,
+      18.92
+    ],
+    "stoneplatform_sunburnt": [
+      -18.92,
+      0.014,
+      -18.92,
+      18.92,
+      2.907,
+      18.92
+    ],
+    "rune_magic": [
+      -8.931,
+      -8.931,
+      0,
+      8.931,
+      8.931,
+      0
+    ],
+    "rune_swirl": [
+      -8.931,
+      -8.931,
+      0,
+      8.931,
+      8.931,
+      0
+    ],
+    "pool_green": [
+      -2.359,
+      -3.764,
+      0,
+      2.359,
+      3.764,
+      0
+    ]
+  },
+  "errors": [],
+  "warnings": [
+    {
+      "name": "bellflower",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "bellflower",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rainbow",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rainbow",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rainbowv2",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rainbowv2",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_white",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_white",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rising_blue",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rising_blue",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rising_purple",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rising_purple",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rising_white",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "glare_rising_white",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "grass_plane",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "grass_plane",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "mist_mesh",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "mist_mesh",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "archway_darkwood",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "archway_darkwood",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "archway_lightwood",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "archway_lightwood",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "circle_space",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "circle_space",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "circle_time",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "circle_time",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "doorway_darkbrown",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "doorway_darkbrown",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "doorway_white",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "doorway_white",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_black",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_black",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_circle_blue",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_circle_blue",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_circle_green",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_circle_green",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_circle_purple",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_circle_purple",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_circle_red",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_circle_red",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_white",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "futuristic_white",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pillar_circle_orange",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pillar_circle_orange",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pillar_circle_red",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pillar_circle_red",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pillar_orange",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pillar_orange",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pillar_red",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pillar_red",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pool_blue",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pool_blue",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pool_celestial",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pool_celestial",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pool_green",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "pool_green",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "stoneplatform_blue",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "stoneplatform_blue",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "stoneplatform_celestial",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "stoneplatform_celestial",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "stoneplatform_green",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "stoneplatform_green",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "stoneplatform_sunburnt",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "stoneplatform_sunburnt",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "rune_magic",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "rune_magic",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "rune_swirl",
+      "image": "",
+      "error": "sem arquivo no pack"
+    },
+    {
+      "name": "rune_swirl",
+      "image": "",
+      "error": "sem arquivo no pack"
+    }
+  ]
+}
