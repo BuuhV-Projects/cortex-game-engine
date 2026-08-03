@@ -1,3 +1,10 @@
+# [0.46.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.45.0...v0.46.0) (2026-08-03)
+
+
+### Features
+
+* **scripts:** gates nomeados no ScriptHostSystem -- pausar nao e' editar (ADR-0184) ([074260a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/074260aa1e01e4d819db8e6ac5e3df171c604266))
+
 # [0.45.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.44.0...v0.45.0) (2026-08-02)
 
 
