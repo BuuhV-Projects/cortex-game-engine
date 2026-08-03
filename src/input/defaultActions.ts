@@ -76,8 +76,12 @@ export const ENGINE_ACTIONS: readonly ActionDef[] = [
   def('uiRight', 'ui', 'Menu: direita', 'key:ArrowRight,pad:15'),
   def('uiConfirm', 'ui', 'Confirmar', 'key:Enter,key:Space,pad:0'),
   def('uiBack', 'ui', 'Voltar', 'key:Escape,key:Backspace,pad:1'),
-  def('uiPrev', 'ui', 'Anterior', 'pad:4'),
-  def('uiNext', 'ui', 'Próximo', 'pad:5'),
+  // Q/E é o par de teclado equivalente aos ombros LB/RB — o mesmo gesto de
+  // "folhear" abas/itens. Sem eles, uma tela navegável por LB/RB simplesmente
+  // NÃO tinha como ser operada no teclado (foi assim que a warp room de um jogo
+  // ficou só-controle sem ninguém notar).
+  def('uiPrev', 'ui', 'Anterior', 'key:q,pad:4'),
+  def('uiNext', 'ui', 'Próximo', 'key:e,pad:5'),
 
   // ── Veículo (VehicleControlSystem) ──────────────────────────────────────────
   def('accelerate', 'vehicle', 'Acelerar', 'key:w,key:ArrowUp,pad:7'),
