@@ -42,7 +42,7 @@ describe('disableRaycast — reversível ao voltar pro editor', () => {
     registerScript('Blade', Blade);
     const world = new World();
     let editing = false;
-    world.addSystem(new ScriptHostSystem({ world }, () => editing));
+    world.addSystem(new ScriptHostSystem({ world }, { isEditing: () => editing }));
     const mesh = makeMesh();
     const e = world.createEntity();
     e.addComponent(new ScriptComponent(mesh, [{ type: 'Blade' }]));
@@ -61,7 +61,7 @@ describe('disableRaycast — reversível ao voltar pro editor', () => {
     registerScript('Blade', Blade);
     const world = new World();
     let editing = false;
-    world.addSystem(new ScriptHostSystem({ world }, () => editing));
+    world.addSystem(new ScriptHostSystem({ world }, { isEditing: () => editing }));
     const mesh = makeMesh();
     const e = world.createEntity();
     e.addComponent(new ScriptComponent(mesh, [{ type: 'Blade' }]));

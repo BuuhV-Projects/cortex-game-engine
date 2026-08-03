@@ -30,9 +30,12 @@ const game = new Game({ canvas })
 // (estilo Unity; `static scriptName` na classe sobrepõe). Crie o arquivo e pronto.
 registerScripts(import.meta.glob('./scripts/*.ts', { eager: true }))
 game.world.addSystem(
+  // Os dois gates são DIFERENTES (ADR-0184): `isEditing` derruba as instâncias
+  // dos scripts (Play↔Stop do editor); `isPaused` só congela, preservando o
+  // estado. Pausa de jogo — cutscene, menu — vai sempre no segundo.
   new ScriptHostSystem(
     { world: game.world, input: game.input, gamepad: game.gamepad, scene: game.scene, camera: game.camera },
-    () => game.editorActive || game.gameplayPaused,
+    { isEditing: () => game.editorActive, isPaused: () => game.gameplayPaused },
   ),
 )
 

@@ -19,13 +19,37 @@ export function applyScriptFields(instance: ScriptBehavior, type: string, fields
 }
 
 /**
+ * Os dois gates do {@link ScriptHostSystem} — **cuidado, eles não são
+ * intercambiáveis** (ADR-0184).
+ *
+ * Passar o predicado errado é um bug silencioso: nada falha, nada loga, e o
+ * sintoma aparece longe da causa. Foi o que aconteceu num jogo real, onde o
+ * congelamento de gameplay (que inclui a cutscene de abertura) chegou na posição
+ * do `isEditing`: cada cutscene derrubava os scripts da fase e, ao terminar,
+ * `onStart` rodava outra vez — reposicionando o jogador no meio da abertura.
+ */
+export interface ScriptHostGates {
+  /**
+   * **Modo EDIÇÃO** (a borda Play↔Stop do editor). Quando vira `true`, as
+   * instâncias são **DESTRUÍDAS** (`restoreRaycasts` + `onDestroy`) e `started`
+   * é zerado, de forma que o Play seguinte recomece do zero — ADR-0143.
+   *
+   * Só o editor deve acioná-lo. Pausa de jogo **não** entra aqui.
+   */
+  isEditing?: () => boolean;
+  /**
+   * **Congelamento de gameplay** — cutscene, menu de pausa, tela de resultados.
+   * Suspende `onStart`/`onUpdate` **preservando** instância e estado, para que o
+   * jogo continue exatamente de onde parou quando descongelar.
+   */
+  isPaused?: () => boolean;
+}
+
+/**
  * **Roda os scripts** ({@link ScriptBehavior}) anexados via {@link ScriptComponent} — ADR-0085.
  * Instancia cada slot pelo nome (registro), injeta `entity`/`object3d`/`ctx`, aplica os campos,
  * chama `onStart` (uma vez) e `onUpdate(dt)` (todo frame, `dt` em segundos). Um script que
  * lança exceção é logado via `debug('script', …)` e não derruba os demais.
- *
- * **Pausa no editor** (passe `isEditing`): scripts só rodam no Play, como na Unity. O jogo
- * adiciona este sistema no boot com o contexto (input/gamepad/scene/camera).
  *
  * **Play → Stop DESTRÓI as instâncias** (`restoreRaycasts` + `onDestroy`), e o Play
  * seguinte cria de novo — ciclo estilo Unity. Sem isso os efeitos colaterais do
@@ -34,15 +58,17 @@ export function applyScriptFields(instance: ScriptBehavior, type: string, fields
  * e só um reload da IDE devolvia o clique. Ver ADR-0143.
  *
  * Por isso este sistema **não usa `pauseWhen`**: ele precisa rodar no modo edição pra
- * enxergar a transição. Não sete `pauseWhen` nele por fora — o gate é o `isEditing`
- * do construtor.
+ * enxergar a transição. Os dois gates vêm nomeados no construtor — ver
+ * {@link ScriptHostGates} e o ADR-0184.
  */
 export class ScriptHostSystem extends System {
   static override requiredComponents = [ScriptComponent];
   override priority = 50;
 
-  /** Gate do Play (o sistema roda sempre; quem pausa os scripts é isto). */
+  /** Modo edição: DERRUBA as instâncias na borda Play→Stop. */
   private readonly isEditing?: () => boolean;
+  /** Congelamento de gameplay: suspende sem destruir. */
+  private readonly isPaused?: () => boolean;
   /** Havia scripts rodando no frame anterior? Marca a borda Play→Stop. */
   private wasPlaying = false;
   /** Últimas entidades hospedadas — pro {@link dispose} derrubar as instâncias. */
@@ -50,11 +76,11 @@ export class ScriptHostSystem extends System {
 
   constructor(
     private readonly ctx: ScriptContext,
-    /** Quando `true`, os scripts não rodam (modo edição). */
-    isEditing?: () => boolean,
+    gates?: ScriptHostGates,
   ) {
     super();
-    this.isEditing = isEditing;
+    this.isEditing = gates?.isEditing;
+    this.isPaused = gates?.isPaused;
   }
 
   override update(entities: Entity[], deltaTime: number): void {
@@ -66,6 +92,10 @@ export class ScriptHostSystem extends System {
       return;
     }
     this.wasPlaying = true;
+    // Gameplay congelada (cutscene, menu, resultados): nada roda, mas as
+    // instâncias e o `started` de cada slot ficam INTACTOS. É o que separa
+    // "pausar" de "parar o Play" — ver ScriptHostGates.
+    if (this.isPaused?.()) return;
     const dt = deltaTime / 1000; // ms → s (scripts pensam em segundos, estilo Unity)
     for (const e of entities) {
       const comp = e.getComponent(ScriptComponent);
