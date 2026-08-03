@@ -105,6 +105,20 @@ Inspector e o usuário perde o controle do próprio jogo.
 - **Assente por bounding box, nunca por \`y\` chutado.** O pivô de cada \`.glb\` é \
 arbitrário. Use a diretiva \`place\` (\`{ x, y, z, rotY, scale }\`): o loader assenta a \
 BASE em \`y\`. Chutar \`y\` é o erro mais comum e mais caro — peça flutuando ou afundada.
+- **\`id\` de nó NUNCA é sequencial** (ADR-0183). Nada de \`plat0\`, \`m1\`, \`m2\`, \
+contador ou índice de array. O overlay do editor reencontra o objeto **só pelo id**, \
+sem conferir url nem tipo: se os ids vêm de um contador, inserir ou remover um nó no \
+meio desloca todos os seguintes e o editor passa a aplicar a transform de um objeto em \
+outro — silenciosamente, sem erro, com o sintoma aparecendo longe da causa. \
+Use \`<prefixo-semântico>-<sufixo alfanumérico>\`: \`plat-k3f9a2\`, \`coin-8xz1qq\` \
+(sufixo base36 de 6 chars, sorteado por você ao CRIAR o nó e escrito no arquivo). O \
+prefixo importa — o id é o que aparece na hierarquia do editor, e UUID cru é ilegível.
+- **O id é decidido na autoria e nunca recalculado.** Se a cena for gerada por código \
+(\`build()\` que roda a cada carregamento), **não** chame \`randomUUID()\` lá dentro: o \
+id mudaria a cada load e o overlay — que guarda o id de ontem — não casaria com nada. \
+Nesse caso o id é literal no código, ou vem de uma chave semântica estável que o autor \
+passa (\`platform('largada', …)\` → \`plat-largada\`). Ids duplicados têm o mesmo efeito \
+de id reciclado: garanta unicidade.
 
 ## Dimensão do jogo: 3D é o padrão
 

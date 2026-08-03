@@ -647,6 +647,13 @@ Campos comuns: `id` (único; vira `Object3D.name` e chave do editor),
 `y` chutado**) ou `transform` (pose direta), `castShadow`/`receiveShadow`. Cores
 aceitam hex string (`"#9fd6ee"`). Cena: `background`, `fog`, `outdoorLighting`.
 
+> **`id` nunca é sequencial** (ADR-0183). O overlay do editor reencontra o objeto
+> só pelo id, sem conferir url nem tipo — com ids de contador (`m0`, `m1`, …),
+> inserir ou remover um nó no meio desloca todos os seguintes e o editor passa a
+> mover o objeto errado, sem erro nenhum. Use `<prefixo>-<sufixo base36>`
+> (`plat-k3f9a2`), sorteado **na autoria** e gravado; em cena gerada por código,
+> nunca sorteie dentro do `build()` — ele roda a cada load e o id mudaria junto.
+
 ```jsonc
 // scenes/world.json  (importável: o Vite bundla)
 {
