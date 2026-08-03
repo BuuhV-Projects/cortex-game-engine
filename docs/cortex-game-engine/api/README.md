@@ -162,6 +162,7 @@
 - [ScriptContext](interfaces/ScriptContext.md)
 - [ScriptDecl](interfaces/ScriptDecl.md)
 - [ScriptFieldDef](interfaces/ScriptFieldDef.md)
+- [ScriptHostGates](interfaces/ScriptHostGates.md)
 - [ScriptSlot](interfaces/ScriptSlot.md)
 - [SetupFirstPersonOptions](interfaces/SetupFirstPersonOptions.md)
 - [SetupPlatformerOptions](interfaces/SetupPlatformerOptions.md)
