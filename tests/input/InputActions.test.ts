@@ -308,7 +308,10 @@ describe('catálogo', () => {
     expect(byId.get('uiConfirm')).toBe('key:Enter,key:Space,pad:0');
     expect(byId.get('uiBack')).toBe('key:Escape,key:Backspace,pad:1');
     expect(byId.get('pause')).toBe('key:Escape,pad:9');
-    expect(byId.get('uiPrev')).toBe('pad:4');
+    // Q/E além dos ombros: sem teclado nelas, uma tela navegada por LB/RB fica
+    // inoperável fora do controle (SPEC-0185).
+    expect(byId.get('uiPrev')).toBe('key:q,pad:4');
+    expect(byId.get('uiNext')).toBe('key:e,pad:5');
     // VehicleControlSystem (RT/LT)
     expect(byId.get('accelerate')).toBe('key:w,key:ArrowUp,pad:7');
     expect(byId.get('brake')).toBe('key:s,key:ArrowDown,pad:6');
