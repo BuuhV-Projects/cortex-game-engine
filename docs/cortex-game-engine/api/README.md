@@ -112,6 +112,7 @@
 - [DialogueUIOptions](interfaces/DialogueUIOptions.md)
 - [DialogueView](interfaces/DialogueView.md)
 - [EditableMesh](interfaces/EditableMesh.md)
+- [EditorLevel](interfaces/EditorLevel.md)
 - [EngineLayer](interfaces/EngineLayer.md)
 - [EngineSoundOptions](interfaces/EngineSoundOptions.md)
 - [FirstPersonCameraOptions](interfaces/FirstPersonCameraOptions.md)

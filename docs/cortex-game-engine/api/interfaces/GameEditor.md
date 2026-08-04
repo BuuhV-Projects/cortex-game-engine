@@ -6,7 +6,7 @@
 
 # Interface: GameEditor
 
-Defined in: [src/core/Game.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L23)
+Defined in: [src/core/Game.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L36)
 
 Handle do editor injetado no [Game](../classes/Game.md) (só existe no bundle de
 desenvolvimento — ver [registerEditorAttacher](../functions/registerEditorAttacher.md)). O Game pergunta a câmera
@@ -19,7 +19,7 @@ ativa a cada frame (editor de voo livre quando ligado, senão `null`) e dá um
 
 > **activeCamera**(): `PerspectiveCamera` \| `null`
 
-Defined in: [src/core/Game.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L25)
+Defined in: [src/core/Game.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L38)
 
 Câmera a usar no render (a livre do editor quando ativo; `null` = usar a do jogo).
 
@@ -33,7 +33,7 @@ Câmera a usar no render (a livre do editor quando ativo; `null` = usar a do jog
 
 > **isActive**(): `boolean`
 
-Defined in: [src/core/Game.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L29)
+Defined in: [src/core/Game.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L42)
 
 `true` quando o editor (F2) está ativo — pra pausar a gameplay.
 
@@ -47,7 +47,7 @@ Defined in: [src/core/Game.ts:29](https://github.com/BuuhV-Projects/cortex-game-
 
 > **isPaused**(): `boolean`
 
-Defined in: [src/core/Game.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L31)
+Defined in: [src/core/Game.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L44)
 
 `true` quando a gameplay está PAUSADA durante o play (Unity-style pause).
 
@@ -61,7 +61,7 @@ Defined in: [src/core/Game.ts:31](https://github.com/BuuhV-Projects/cortex-game-
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: [src/core/Game.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L27)
+Defined in: [src/core/Game.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L40)
 
 Chamado a cada frame, depois do `world.tick`, pra reatividade dos painéis.
 
