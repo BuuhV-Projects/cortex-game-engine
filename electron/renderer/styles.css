@@ -448,6 +448,18 @@ body.app-preview-fullscreen #preview-container {
   gap: 6px;
   padding: 10px 12px;
   border-radius: 10px;
+  /* O overlay inteiro é `pointer-events: none` pra não roubar o clique do
+     viewport; cada peça INTERATIVA reativa por conta. Sem isto, um popover
+     clicável (o seletor de fase) deixava o clique atravessar e selecionar o
+     objeto do jogo que estivesse atrás. */
+  pointer-events: auto;
+}
+/* Itens do seletor de fase: alvo de clique com realce (ADR-0186). */
+.preview-overlay .vp-legend .vp-level:hover {
+  background: var(--od-bg-hover, rgba(255, 255, 255, 0.08));
+}
+.preview-overlay .vp-legend .vp-level.on {
+  color: var(--accent);
 }
 
 .preview-placeholder {

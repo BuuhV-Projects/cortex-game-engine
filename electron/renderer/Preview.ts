@@ -236,7 +236,40 @@ export class Preview {
   private toggleLevelMenu(): void {
     const m = this.levelMenuEl
     if (!m) return
-    m.style.display = m.style.display === 'none' ? '' : 'none'
+    this.setLevelMenuOpen(m.style.display === 'none')
+  }
+
+  /**
+   * Abre/fecha o seletor. Aberto, ele fica clicável (`pointer-events`) e captura
+   * o clique que antes atravessava para o jogo; então precisa de uma saída óbvia
+   * — Esc, ou clicar em qualquer lugar do chrome da IDE.
+   *
+   * Clique DENTRO do viewport não fecha: ali o alvo é o iframe, e um clique no
+   * iframe não gera evento no documento da IDE (fronteira cross-document).
+   */
+  private setLevelMenuOpen(open: boolean): void {
+    const m = this.levelMenuEl
+    if (!m) return
+    m.style.display = open ? '' : 'none'
+    this.levelPillEl?.classList.toggle('on', open)
+    if (open) {
+      document.addEventListener('keydown', this.onLevelMenuKey)
+      document.addEventListener('mousedown', this.onLevelMenuOutside, true)
+    } else {
+      document.removeEventListener('keydown', this.onLevelMenuKey)
+      document.removeEventListener('mousedown', this.onLevelMenuOutside, true)
+    }
+  }
+
+  private readonly onLevelMenuKey = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape') this.setLevelMenuOpen(false)
+  }
+
+  private readonly onLevelMenuOutside = (e: MouseEvent): void => {
+    const alvo = e.target as Node | null
+    if (!alvo) return
+    if (this.levelMenuEl?.contains(alvo) || this.levelPillEl?.contains(alvo)) return
+    this.setLevelMenuOpen(false)
   }
 
   /**
@@ -249,7 +282,7 @@ export class Preview {
     const menu = this.levelMenuEl
     if (!pill || !menu) return
     pill.style.display = levels.length ? '' : 'none'
-    if (!levels.length) { menu.style.display = 'none'; return }
+    if (!levels.length) { this.setLevelMenuOpen(false); return }
     menu.innerHTML = ''
     let grupoAtual: string | null = null
     for (const lv of levels) {
@@ -259,11 +292,10 @@ export class Preview {
         if (g) menu.append(h('div', { class: 'lab', style: 'opacity:.6;margin:6px 0 2px;font-size:10.5px' }, g))
       }
       const item = h('div', {
-        class: 'hud-row',
-        style: 'cursor:pointer;padding:3px 4px;border-radius:4px',
+        class: `hud-row vp-level${lv.id === this.currentLevel ? ' on' : ''}`,
+        style: 'cursor:pointer;padding:3px 6px;border-radius:4px',
         onClick: () => this.openLevel(lv.id),
       }, h('span', { class: 'lab' }, lv.label ?? lv.id))
-      if (lv.id === this.currentLevel) item.style.color = 'var(--accent)'
       menu.append(item)
     }
     this.updateLevelPill()
@@ -284,7 +316,7 @@ export class Preview {
   private openLevel(id: string): void {
     if (!this.serverUrl) return
     this.currentLevel = id
-    if (this.levelMenuEl) this.levelMenuEl.style.display = 'none'
+    this.setLevelMenuOpen(false)
     this.updateLevelPill()
     const iframe = this.stageEl?.querySelector('iframe')
     const url = this.withLevel(this.withDebug(this.serverUrl), id)
