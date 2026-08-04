@@ -1,5 +1,6 @@
 import { t } from './i18n'
 import { h, icon } from './ui'
+import type { EditorLevelInfo } from './EditorPanels'
 
 /** Atalhos do editor exibidos no popover "Atalhos" (pill inferior-esquerda). */
 const SHORTCUTS: Array<[string, string]> = [
@@ -46,6 +47,12 @@ export class Preview {
   private selectedPillEl: HTMLElement | null = null
   private perfPillEl: HTMLElement | null = null
   private toolBtns: Record<string, HTMLElement> = {}
+  // Seletor de fase (ADR-0186): a lista vem do JOGO pela ponte do editor.
+  private levelPillEl: HTMLElement | null = null
+  private levelMenuEl: HTMLElement | null = null
+  private levels: EditorLevelInfo[] = []
+  /** Fase aberta agora (o `?level=` da URL do iframe). */
+  private currentLevel: string | null = null
 
   private projectDir: string | null = null
   private running = false
@@ -104,6 +111,9 @@ export class Preview {
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
     document.addEventListener('request-fullscreen-toggle', () => this.toggleFullscreen())
     // Pills do viewport (objeto/ferramentas/perf) — info vinda da ponte do editor.
+    document.addEventListener('editor-levels', (e) => {
+      this.renderLevels((e as CustomEvent<EditorLevelInfo[]>).detail ?? [])
+    })
     document.addEventListener('editor-viewport', (e) => {
       this.updateOverlay((e as CustomEvent).detail)
     })
@@ -189,8 +199,17 @@ export class Preview {
     const perf = h('span', { class: 'vp-pill mono', style: { fontSize: '10.5px' } }, '—')
     this.perfPillEl = perf
 
+    // Seletor de fase (ADR-0186): sem editar por Play → título → hub → portal.
+    const levelMenu = h('div', { class: 'vp-legend glass', style: 'max-height:340px;overflow-y:auto;min-width:190px' })
+    levelMenu.style.display = 'none'
+    this.levelMenuEl = levelMenu
+    const levelPill = h('span', { class: 'vp-pill', style: { cursor: 'pointer' }, onClick: () => this.toggleLevelMenu() },
+      icon('grid', { size: 14 }), h('span', {}, 'Fase'))
+    levelPill.style.display = 'none'
+    this.levelPillEl = levelPill
+
     return h('div', { class: 'preview-overlay' },
-      h('div', { class: 'vp-tl' }, selectedPill),
+      h('div', { class: 'vp-tl' }, h('div', { class: 'col gap-6', style: 'align-items:flex-start' }, h('div', { class: 'row gap-4' }, levelPill, selectedPill), levelMenu)),
       h('div', { class: 'vp-tr' }, tools),
       h('div', { class: 'vp-bl' }, h('div', { class: 'col gap-6', style: 'align-items:flex-start' }, legend, atalhos)),
       h('div', { class: 'vp-br' }, perf),
@@ -209,6 +228,78 @@ export class Preview {
     }
     for (const [mode, btn] of Object.entries(this.toolBtns)) {
       btn.classList.toggle('on', mode === info.gizmo)
+    }
+  }
+
+
+  /** Abre/fecha a lista de fases. */
+  private toggleLevelMenu(): void {
+    const m = this.levelMenuEl
+    if (!m) return
+    m.style.display = m.style.display === 'none' ? '' : 'none'
+  }
+
+  /**
+   * Redesenha o seletor com as fases que o JOGO declarou (`game.editorLevels`).
+   * Some quando o projeto não declara nada — a feature é opt-in (ADR-0186).
+   */
+  private renderLevels(levels: EditorLevelInfo[]): void {
+    this.levels = levels
+    const pill = this.levelPillEl
+    const menu = this.levelMenuEl
+    if (!pill || !menu) return
+    pill.style.display = levels.length ? '' : 'none'
+    if (!levels.length) { menu.style.display = 'none'; return }
+    menu.innerHTML = ''
+    let grupoAtual: string | null = null
+    for (const lv of levels) {
+      const g = lv.group ?? null
+      if (g !== grupoAtual) {
+        grupoAtual = g
+        if (g) menu.append(h('div', { class: 'lab', style: 'opacity:.6;margin:6px 0 2px;font-size:10.5px' }, g))
+      }
+      const item = h('div', {
+        class: 'hud-row',
+        style: 'cursor:pointer;padding:3px 4px;border-radius:4px',
+        onClick: () => this.openLevel(lv.id),
+      }, h('span', { class: 'lab' }, lv.label ?? lv.id))
+      if (lv.id === this.currentLevel) item.style.color = 'var(--accent)'
+      menu.append(item)
+    }
+    this.updateLevelPill()
+  }
+
+  /** Rótulo da pill = fase aberta agora (ou "Fase" quando é o fluxo normal). */
+  private updateLevelPill(): void {
+    const pill = this.levelPillEl
+    if (!pill) return
+    const atual = this.levels.find((l) => l.id === this.currentLevel)
+    ;(pill.lastChild as HTMLElement).textContent = atual ? (atual.label ?? atual.id) : 'Fase'
+  }
+
+  /**
+   * Abre a fase no iframe. Recarrega com `?level=<id>`, que é o caminho que o
+   * jogo já suporta pra pular menu e hub — o mesmo do harness de screenshot.
+   */
+  private openLevel(id: string): void {
+    if (!this.serverUrl) return
+    this.currentLevel = id
+    if (this.levelMenuEl) this.levelMenuEl.style.display = 'none'
+    this.updateLevelPill()
+    const iframe = this.stageEl?.querySelector('iframe')
+    const url = this.withLevel(this.withDebug(this.serverUrl), id)
+    if (iframe) iframe.src = url
+    else this.showIframe(this.serverUrl)
+  }
+
+  /** Anexa/troca o `?level=` numa URL. */
+  private withLevel(url: string, id: string): string {
+    try {
+      const u = new URL(url)
+      u.searchParams.set('level', id)
+      return u.toString()
+    } catch {
+      return url
     }
   }
 

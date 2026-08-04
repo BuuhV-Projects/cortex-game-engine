@@ -15,6 +15,19 @@ import { FrameProfiler } from './FrameProfiler.js';
 import { InspectCamera } from './InspectCamera.js';
 
 /**
+ * Uma fase que o Studio pode abrir direto pelo seletor do viewport (ADR-0186).
+ * O jogo declara a lista em {@link Game.editorLevels}.
+ */
+export interface EditorLevel {
+  /** Id da fase — vai em `?level=<id>`, então tem que ser o que o jogo entende. */
+  readonly id: string;
+  /** Nome legível. Sem ele, o seletor mostra o `id`. */
+  readonly label?: string;
+  /** Agrupador opcional (mundo, capítulo) — vira separador na lista. */
+  readonly group?: string;
+}
+
+/**
  * Handle do editor injetado no {@link Game} (só existe no bundle de
  * desenvolvimento — ver {@link registerEditorAttacher}). O Game pergunta a câmera
  * ativa a cada frame (editor de voo livre quando ligado, senão `null`) e dá um
@@ -93,6 +106,23 @@ export interface GameOptions {
  * game.start()
  */
 export class Game {
+  /**
+   * **Fases que o Studio pode abrir direto** (ADR-0186), na ordem em que devem
+   * aparecer. Declare no bootstrap:
+   *
+   * ```ts
+   * game.editorLevels = LEVELS.map((l) => ({ id: l.id, label: nome(l), group: 'Mundo 1' }))
+   * ```
+   *
+   * O Studio mostra um seletor no viewport e recarrega com `?level=<id>` — o
+   * mesmo caminho que o jogo já usa para pular menu e hub. Sem isto o seletor
+   * não aparece; a lista é a única coisa que o Studio não tem como descobrir
+   * sozinho.
+   *
+   * Fora do Studio (jogo standalone, build de produção) fica inerte.
+   */
+  editorLevels?: readonly EditorLevel[];
+
   /** Renderer WebGPU (auto-resize). */
   readonly renderer: Renderer;
   /** Cena do jogo. */

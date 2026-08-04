@@ -72,6 +72,12 @@ interface ViewportInfo {
   selected?: string | null
   gizmo?: 'translate' | 'rotate' | 'scale'
 }
+/** Uma fase declarada pelo jogo em `game.editorLevels` (ADR-0186). */
+export interface EditorLevelInfo {
+  id: string
+  label?: string
+  group?: string
+}
 interface StateMessage {
   source: 'cortex-editor'
   type: 'state'
@@ -80,12 +86,15 @@ interface StateMessage {
   outliner: { items: OutlinerItem[] }
   inspector: InspectorModel
   viewport?: ViewportInfo
+  levels?: EditorLevelInfo[]
 }
 
 const ENGINE = 'cortex-editor'
 const IDE = 'cortex-ide'
 
 export class EditorPanels {
+  /** Última lista de fases publicada — evita re-emitir a cada state. */
+  private lastLevelsJson = ''
   private outlinerListEl!: HTMLElement
   private inspectorEl!: HTMLElement
 
@@ -225,6 +234,14 @@ export class EditorPanels {
     // Info do viewport (câmera/perf/seleção/ferramenta) → pills flutuantes (Preview/Shell).
     if (state.viewport) {
       document.dispatchEvent(new CustomEvent('editor-viewport', { detail: state.viewport }))
+    }
+    // Fases declaradas pelo jogo → seletor do viewport (ADR-0186). A lista é
+    // estática: só re-emite quando muda de verdade, senão o publish de ~12×/s
+    // reconstruiria o menu embaixo do cursor.
+    const levelsJson = JSON.stringify(state.levels ?? null)
+    if (levelsJson !== this.lastLevelsJson) {
+      this.lastLevelsJson = levelsJson
+      document.dispatchEvent(new CustomEvent('editor-levels', { detail: state.levels ?? [] }))
     }
     // Só re-renderiza a hierarquia se os itens mudaram de verdade — senão o
     // publish frequente (câmera/transform) reconstruía a árvore e jogava o scroll
