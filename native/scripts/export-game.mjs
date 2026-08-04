@@ -16,6 +16,7 @@ import { prepareDist } from './fs-clean.mjs';
 import { whoLocks } from './who-locks.mjs';
 import { readGameConfig, steamAppIdOf } from './game-config.mjs';
 import { embedIcon } from './embed-icon.mjs';
+import { copyLanguages } from './copy-languages.mjs';
 
 // Raiz do engine derivada do PRÓPRIO script (roda de qualquer cwd — ex.:
 // spawnado pelo Studio com cwd do projeto).
@@ -292,17 +293,12 @@ guardLocks('assets', () => {
   }
   const iniSrc = path.join(gameDir, 'config.ini');
   if (fs.existsSync(iniSrc)) fs.copyFileSync(iniSrc, path.join(dist, 'config.ini'));
-  // Idiomas (SPEC-0124): .txt soltos em dist-native/languages/ — de propósito
-  // fora do assets.pak, pra qualquer um traduzir/editar sem rebuild.
-  const languagesDir = path.join(gameDir, 'languages');
-  if (fs.existsSync(languagesDir)) {
-    const target = path.join(dist, 'languages');
-    fs.mkdirSync(target, { recursive: true });
-    for (const entry of fs.readdirSync(languagesDir)) {
-      if (!entry.endsWith('.txt')) continue;
-      fs.copyFileSync(path.join(languagesDir, entry), path.join(target, entry));
-    }
-  }
+  // Idiomas (SPEC-0124): a pasta languages/ INTEIRA vai solta pra
+  // dist-native/languages/ — de propósito fora do assets.pak, pra qualquer um
+  // traduzir/editar sem rebuild. Recursivo (ADR-0187) porque conteúdo
+  // localizado também é binário: placas dos portais e dublagem por idioma.
+  const languageFiles = copyLanguages(gameDir, dist);
+  if (languageFiles > 0) console.log(`[export] languages: ${languageFiles} arquivos`);
 });
 
 step('done');

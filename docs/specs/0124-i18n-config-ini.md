@@ -73,6 +73,13 @@ Novo módulo público **`src/i18n/`** com dois arquivos, exportado pelo
   `languages/*.txt` → `dist-native/languages/` — **de propósito fora do
   `assets.pak`**, pra tradução/edição sem rebuild.
 
+  > **Estendido pelo ADR-0187.** A cópia passou a ser **recursiva e sem filtro
+  > de extensão** (`copy-languages.mjs`): a pasta `languages/` inteira vai pro
+  > dist, incluindo os assets localizados das subpastas — placas dos portais
+  > (`signs/<lang>/*.png`) e dublagem por idioma (`voice/<lang>/`). O filtro
+  > `.txt` original ignorava subpasta em silêncio, o que fazia esse conteúdo
+  > funcionar no Studio e sumir no export.
+
 ### Uso pelo jogo
 
 ```ts
