@@ -1,3 +1,16 @@
+# [0.47.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.46.0...v0.47.0) (2026-08-04)
+
+
+### Bug Fixes
+
+* **studio:** o seletor de fase captura o clique (ADR-0186) ([d98152f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d98152fcc4c042955c96978acbfeb315fb91f140))
+
+
+### Features
+
+* **input:** uiPrev/uiNext ganham teclado (Q/E) -- SPEC-0185 ([51d1ff2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/51d1ff2552633560ffa44417be6e4136ed769028))
+* **studio:** seletor de fase no viewport -- o JOGO declara, o Studio navega (ADR-0186) ([b5e1100](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b5e110049c0e975895b2630b03ba35ccaf05478b))
+
 # [0.46.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.45.0...v0.46.0) (2026-08-03)
 
 
