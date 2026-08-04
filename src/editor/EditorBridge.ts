@@ -1,6 +1,7 @@
 import type { Object3D } from 'three';
 import type { EditorSelection } from './EditorSelection.js';
 import type { EditorState } from './EditorState.js';
+import type { EditorLevel } from '../core/Game.js';
 import {
   describeInspector,
   describeOutliner,
@@ -47,6 +48,11 @@ export interface EditorBridgeOptions {
   focusOn: (obj: Object3D) => void;
   /** Info do viewport pra IDE (câmera/perf/seleção/ferramenta) — vira pills flutuantes. */
   viewportInfo?: () => Record<string, unknown>;
+  /**
+   * Fases que o jogo declarou (`game.editorLevels`) — viram o seletor de fase do
+   * viewport (ADR-0186). `undefined` esconde o seletor.
+   */
+  levels?: () => readonly EditorLevel[] | undefined;
   /** Troca o modo do gizmo (botões de ferramenta da IDE). */
   onTool?: (mode: 'translate' | 'rotate' | 'scale') => void;
   /** Alterna os eixos do gizmo entre mundo e objeto (tecla `X` / botão da IDE). */
@@ -74,7 +80,7 @@ export interface EditorBridgeOptions {
 
 /** Cria a ponte. Inerte (no-op) fora de um iframe. */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, onTool, onGizmoSpace, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onOpenModelPicker, onDropAsset, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, levels, onTool, onGizmoSpace, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onOpenModelPicker, onDropAsset, onBridged } = options;
 
   const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
   if (!inIframe) {
@@ -108,6 +114,8 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
       outliner,
       inspector: described.model,
       viewport: viewportInfo?.(),
+      // Lista estática: o diff por JSON abaixo impede repost a cada frame.
+      levels: levels?.(),
     };
     const json = JSON.stringify(msg);
     if (json === lastJson) return; // diff: nada mudou, não posta

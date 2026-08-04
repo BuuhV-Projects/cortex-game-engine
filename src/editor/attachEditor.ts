@@ -1442,6 +1442,9 @@ export function attachEditor(game: Game): GameEditor {
     ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, shadowApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
+    // Lido por chamada (não capturado): o jogo costuma declarar as fases DEPOIS
+    // do `new Game(...)`, no bootstrap — capturar o valor aqui pegaria undefined.
+    levels: () => game.editorLevels,
     onTool: (mode) => objectEditSystem.setGizmoMode(mode),
     onGizmoSpace: (space) => objectEditSystem.setGizmoSpace(space),
     onAddTerrain: addTerrain,
