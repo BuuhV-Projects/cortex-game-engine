@@ -5,6 +5,7 @@
 
 #include "../napi/napi_util.h"
 #include "pak.h"
+#include "perf_arraybuffer.h"
 
 namespace shims {
 namespace {
@@ -59,6 +60,7 @@ napi_value jsReadFile(napi_env env, napi_callback_info info) {
   napi_value arrayBuffer = nullptr;
   napi_create_arraybuffer(env, static_cast<size_t>(size), &data,
                           &arrayBuffer);
+  trackArrayBufferBytes(ArrayBufferSource::kFiles, static_cast<size_t>(size));
   if (data && size > 0) std::fread(data, 1, static_cast<size_t>(size), file);
   std::fclose(file);
   return arrayBuffer;

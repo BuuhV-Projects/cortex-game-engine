@@ -14,6 +14,7 @@
 #include "../core/crash_handler.h"
 #include "../napi/napi_util.h"
 #include "files.h"
+#include "perf_arraybuffer.h"
 
 namespace shims {
 namespace {
@@ -137,6 +138,7 @@ void drainIoCompletions(napi_env env) {
     if (done.ok) {
       void* data = nullptr;
       napi_create_arraybuffer(env, done.bytes.size(), &data, &value);
+      trackArrayBufferBytes(ArrayBufferSource::kIoPool, done.bytes.size());
       if (data && !done.bytes.empty())
         std::memcpy(data, done.bytes.data(), done.bytes.size());
     } else {

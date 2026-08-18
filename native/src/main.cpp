@@ -24,6 +24,7 @@
 #include "shims/input.h"
 #include "shims/io_pool.h"
 #include "shims/ktx2.h"
+#include "shims/perf_arraybuffer.h"
 #include "shims/perf_stats.h"
 #include "shims/quit.h"
 #include "shims/rapier.h"
@@ -125,6 +126,21 @@ void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
   // Fecha o frame dos contadores NAPI (snapshot → último, zera o corrente) pro
   // __cortexNapiStats() do HUD de debug ler um frame completo (SPEC-0134).
   webgpu::resetNapiStatsFrame();
+  // Heap JS no perf-log.txt (SPEC-0188): a cada ~5s (300 frames), pra
+  // diagnosticar crescimento do heap Hermes numa sessão longa — mesmo
+  // gate/arquivo do log de VRAM (appendPerfLog é no-op sem telemetria ligada).
+  // `external` é o campo que aparece no HermesGC OOM quando o teto estoura por
+  // memória nativa presa em objetos finalizáveis (não pelo heap gerenciado) —
+  // `text-raster` correlaciona isso com rasterização de texto (timer/HUD que
+  // muda todo frame gera um ArrayBuffer novo por chamada, ver text_raster.cpp).
+  static int heapLogFrame = 0;
+  if (++heapLogFrame >= 300) {
+    heapLogFrame = 0;
+    char abStats[256];
+    shims::dumpArrayBufferStats(abStats, sizeof(abStats));
+    core::appendPerfLog("heap-js=%.1fMB external=%.1fMB | arraybuffers: %s",
+                         js.heapUsedMB(), js.externalBytesMB(), abStats);
+  }
 }
 
 void shutdownGpu(HostGpu* gpu) {
