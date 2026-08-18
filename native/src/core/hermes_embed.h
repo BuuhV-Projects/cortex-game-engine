@@ -40,4 +40,15 @@ void cortexHermesCollectGarbage(void* runtime);
 // `path` — pra investigar retenção de memória por troca de fase.
 void cortexHermesHeapSnapshot(void* runtime, const char* path);
 
+// Heap JS ALOCADO, em MB (SPEC-0188): leitura leve (sem forçar GC) do
+// GCBase::HeapInfo — pro perf-log.txt acompanhar o heap Hermes ao longo da
+// sessão (diagnóstico de estouro do teto de 512 MB, ver cortexHermesCreateRuntime).
+double cortexHermesHeapUsedMB(void* runtime);
+
+// Bytes retidos como memória EXTERNA (C++ heap) por objetos JS finalizáveis —
+// ArrayBuffers grandes, strings externas — em MB (SPEC-0188). É o campo que
+// aparece no HermesGC OOM (`external = ...`) quando o teto estoura por isso,
+// não pelo heap gerenciado (`allocatedBytes`/cortexHermesHeapUsedMB).
+double cortexHermesExternalBytesMB(void* runtime);
+
 }  // extern "C"

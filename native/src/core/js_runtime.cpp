@@ -123,4 +123,12 @@ void JsRuntime::drainMicrotasks() {
   cortexHermesDrainJobs(runtime_);
 }
 
+double JsRuntime::heapUsedMB() const {
+  return cortexHermesHeapUsedMB(runtime_);
+}
+
+double JsRuntime::externalBytesMB() const {
+  return cortexHermesExternalBytesMB(runtime_);
+}
+
 }  // namespace core

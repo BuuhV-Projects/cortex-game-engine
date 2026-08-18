@@ -4,6 +4,7 @@
 
 #include "../napi/napi_util.h"
 #include "ktx2_math.h"
+#include "perf_arraybuffer.h"
 // Transcoder do basis_universal (third-party). Defines no CMake:
 // BASISD_SUPPORT_KTX2=1, BASISD_SUPPORT_KTX2_ZSTD=0.
 #include "basisu_transcoder.h"
@@ -78,6 +79,7 @@ napi_value jsTranscodeKtx2(napi_env env, napi_callback_info info) {
     void* out = nullptr;
     napi_value buf = nullptr;
     napi_create_arraybuffer(env, byteSize, &out, &buf);
+    trackArrayBufferBytes(ArrayBufferSource::kKtx2, byteSize);
     if (!out ||
         !trans.transcode_image_level(level, 0, 0, out, bc7BlocksPerLevel(w, h, level),
                                      basist::transcoder_texture_format::cTFBC7_RGBA)) {
@@ -99,6 +101,7 @@ napi_value jsTranscodeKtx2(napi_env env, napi_callback_info info) {
   void* out = nullptr;
   napi_value rgba = nullptr;
   napi_create_arraybuffer(env, rgbaSize, &out, &rgba);
+  trackArrayBufferBytes(ArrayBufferSource::kKtx2, rgbaSize);
   if (!out) return nullValue;
   if (!trans.transcode_image_level(0, 0, 0, out, w * h,
                                    basist::transcoder_texture_format::cTFRGBA32)) {

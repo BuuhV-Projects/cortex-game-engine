@@ -28,6 +28,12 @@ class JsRuntime {
   // Esvazia a fila de microtasks (continuações de Promise/async).
   void drainMicrotasks();
 
+  // Heap JS alocado, em MB (SPEC-0188) — leitura leve pro perf-log.txt.
+  double heapUsedMB() const;
+
+  // Memória EXTERNA retida por objetos JS finalizáveis, em MB (SPEC-0188+).
+  double externalBytesMB() const;
+
   // RAII de napi_handle_scope. TODO acesso NAPI a partir do NATIVO (registro
   // de shims, args de timers/rAF, print) precisa de um scope aberto — criar
   // valores sem scope corrompe a pilha de scopes e o GC crasha na marcação

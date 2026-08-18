@@ -14,4 +14,12 @@ namespace shims {
 void registerTextRaster(napi_env env, const std::string& baseDir,
                         const std::string& exeDir);
 
+// Telemetria (diagnóstico do JSOutOfMemoryError, SPEC-0188+): total de
+// rasterizações desde o boot e MB de ArrayBuffer RGBA gerado — cada chamada
+// cria um ArrayBuffer novo no heap Hermes (napi_create_arraybuffer); texto que
+// muda todo frame (timer de HUD) rasteriza continuamente durante o gameplay,
+// fora do nudge de GC que só roda no reset de fase (ADR-0153).
+uint64_t perfTextRasterCount();
+double perfTextRasterBytesMB();
+
 }  // namespace shims

@@ -61,6 +61,16 @@ export function installImageShims() {
   // Este fake busca via fetch, decodifica no stb e HERDA de ImageBitmap —
   // o upload do three cai no copyExternalImageToTexture nativo (width/
   // height/rgba), sem canvas.
+  //
+  // Cache por URL (SPEC-0188+): sem isso, telas revisitadas com frequência
+  // (loading, água com cáusticas) refazem fetch+decode toda entrada de fase —
+  // cada decode gera um ArrayBuffer RGBA novo no heap Hermes (ex.: 2048² =
+  // 16.8 MB) que o GC não coleta com pressão suficiente durante o gameplay
+  // (só há nudge explícito no reset de fase, ADR-0153) — o "external" do
+  // GCBase::HeapInfo cresce sem limite e estoura o teto de heap (512 MB) numa
+  // sessão longa. O decode do pipeline de kit (GLB/KTX2) já cacheia por URL
+  // via SceneAssets — este é o mesmo padrão pro caminho Image/TextureLoader.
+  const decodedImageCache = new Map();
   function FakeImage() {
     this.width = 0;
     this.height = 0;
@@ -91,6 +101,21 @@ export function installImageShims() {
     set(url) {
       this.__src = url;
       const self = this;
+      const cached = decodedImageCache.get(url);
+      if (cached) {
+        // Reentrada na mesma URL (fase/tela revisitada): reusa o RGBA já
+        // decodificado — sem fetch, sem novo ArrayBuffer. Ainda assíncrono
+        // (Promise.resolve) pra manter o contrato de 'load' em microtask,
+        // igual ao caminho de rede.
+        Promise.resolve().then(function () {
+          self.width = cached.width;
+          self.height = cached.height;
+          self.rgba = cached.rgba;
+          self.complete = true;
+          self.__emit('load');
+        });
+        return;
+      }
       fetch(url)
         .then(function (response) {
           if (!response.ok) throw new Error('Image: 404 ' + url);
@@ -99,6 +124,7 @@ export function installImageShims() {
         .then(function (bytes) {
           const decoded = __cortexDecodeImage(bytes);
           if (!decoded) throw new Error('Image: decode falhou ' + url);
+          decodedImageCache.set(url, decoded);
           self.width = decoded.width;
           self.height = decoded.height;
           self.rgba = decoded.rgba;

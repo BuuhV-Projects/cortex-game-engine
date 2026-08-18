@@ -8,6 +8,7 @@
 #include <hermes_napi.h>
 
 #include <hermes/Public/RuntimeConfig.h>
+#include <hermes/VM/GCBase.h>
 #include <hermes/VM/Runtime.h>
 #include <llvh/Support/raw_ostream.h>
 
@@ -114,6 +115,18 @@ void cortexHermesHeapSnapshot(void* runtime, const char* path) {
 
 void cortexHermesCollectGarbage(void* runtime) {
   rt(runtime)->collect("cortex-reset");
+}
+
+double cortexHermesHeapUsedMB(void* runtime) {
+  hermes::vm::GCBase::HeapInfo info;
+  rt(runtime)->getHeap().getHeapInfo(info);
+  return static_cast<double>(info.allocatedBytes) / (1024.0 * 1024.0);
+}
+
+double cortexHermesExternalBytesMB(void* runtime) {
+  hermes::vm::GCBase::HeapInfo info;
+  rt(runtime)->getHeap().getHeapInfo(info);
+  return static_cast<double>(info.externalBytes) / (1024.0 * 1024.0);
 }
 
 }  // extern "C"

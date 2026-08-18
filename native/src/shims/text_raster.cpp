@@ -3,6 +3,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb_truetype.h>
 
+#include <atomic>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -10,6 +11,7 @@
 #include <vector>
 
 #include "../napi/napi_util.h"
+#include "perf_arraybuffer.h"
 
 namespace shims {
 namespace {
@@ -17,6 +19,10 @@ namespace {
 std::vector<unsigned char> g_fontData;
 stbtt_fontinfo g_font;
 bool g_fontReady = false;
+
+// Telemetria (SPEC-0188+): ver text_raster.h.
+std::atomic<uint64_t> g_rasterCount{0};
+std::atomic<uint64_t> g_rasterBytes{0};
 
 bool loadFontFile(const std::string& path) {
   FILE* file = std::fopen(path.c_str(), "rb");
@@ -135,6 +141,9 @@ napi_value jsRasterText(napi_env env, napi_callback_info info) {
   void* rgbaData = nullptr;
   napi_value rgba = nullptr;
   napi_create_arraybuffer(env, coverage.size() * 4, &rgbaData, &rgba);
+  g_rasterCount.fetch_add(1, std::memory_order_relaxed);
+  g_rasterBytes.fetch_add(coverage.size() * 4, std::memory_order_relaxed);
+  trackArrayBufferBytes(ArrayBufferSource::kTextRaster, coverage.size() * 4);
   auto* out = static_cast<unsigned char*>(rgbaData);
   for (size_t p = 0; p < coverage.size(); ++p) {
     out[p * 4] = 255;
@@ -173,6 +182,11 @@ void registerTextRaster(napi_env env, const std::string& baseDir,
   napi_value global = nullptr;
   napi_get_global(env, &global);
   njs::setMethod(env, global, "__cortexRasterText", jsRasterText);
+}
+
+uint64_t perfTextRasterCount() { return g_rasterCount.load(std::memory_order_relaxed); }
+double perfTextRasterBytesMB() {
+  return static_cast<double>(g_rasterBytes.load(std::memory_order_relaxed)) / (1024.0 * 1024.0);
 }
 
 }  // namespace shims

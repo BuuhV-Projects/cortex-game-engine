@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "../napi/napi_util.h"
+#include "perf_arraybuffer.h"
 
 namespace shims {
 namespace {
@@ -111,6 +112,7 @@ napi_value readPakFile(napi_env env, const std::string& relPath) {
   void* data = nullptr;
   napi_value arrayBuffer = nullptr;
   napi_create_arraybuffer(env, bytes.size(), &data, &arrayBuffer);
+  trackArrayBufferBytes(ArrayBufferSource::kPak, bytes.size());
   if (data && !bytes.empty()) std::memcpy(data, bytes.data(), bytes.size());
   return arrayBuffer;
 }

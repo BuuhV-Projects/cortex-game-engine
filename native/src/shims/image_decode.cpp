@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "../napi/napi_util.h"
+#include "perf_arraybuffer.h"
 
 namespace shims {
 namespace {
@@ -55,6 +56,7 @@ napi_value jsDecodeImage(napi_env env, napi_callback_info info) {
   void* out = nullptr;
   napi_value rgba = nullptr;
   napi_create_arraybuffer(env, rgbaSize, &out, &rgba);
+  trackArrayBufferBytes(ArrayBufferSource::kImageDecode, rgbaSize);
   std::memcpy(out, pixels, rgbaSize);
   stbi_image_free(pixels);
 
