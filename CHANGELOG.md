@@ -1,3 +1,10 @@
+## [0.47.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.47.0...v0.47.1) (2026-08-20)
+
+
+### Bug Fixes
+
+* **host:** corrige vazamento de heap JS por decode de imagem sem cache (SPEC-0188) ([7c3aa94](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7c3aa94aa7c042cee80338558d5ed6a8dfe7652f))
+
 # [0.47.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.46.0...v0.47.0) (2026-08-04)
 
 
