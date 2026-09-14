@@ -23,18 +23,22 @@ describe('buildSystemPrompt — invariantes', () => {
     expect(ask()).toMatch(/Escrita só dentro do projeto aberto/)
   })
 
-  it('exige física declarada no nó da cena (editável no Inspector)', () => {
+  it('manda ler o AGENTS.md do projeto antes de mexer em cena/física/imports', () => {
+    // Os contratos (física no nó, place por bbox, id não-sequencial, import da
+    // engine) saíram do prompt e viraram o AGENTS.md do projeto (ADR-0191). O que
+    // o prompt precisa garantir é que o agente vá LER esse arquivo.
     const p = ask()
-    expect(p).toContain('Inspector')
-    expect(p).toMatch(/NUNCA\*\* crave colisão só no código/)
+    expect(p).toContain('AGENTS.md')
+    expect(p).toMatch(/antes de mexer em cena, física ou imports/i)
+    expect(p).toMatch(/SILÊNCIO/)
   })
 
-  it('proíbe os comandos de build/dev que sujam o projeto', () => {
+  it('não carrega mais os comandos proibidos (foram pro AGENTS.md do projeto)', () => {
+    // Regra de projeto, não invariante do IDE — ver ADR-0191 e o teste do
+    // template em templates-agents.test.ts, que cobre o conteúdo.
     const p = ask()
-    for (const cmd of ['yarn build', 'yarn dev', 'vite build', 'tsc -b']) {
-      expect(p).toContain(cmd)
-    }
-    expect(p).toContain('tsc --noEmit')
+    expect(p).not.toContain('yarn build')
+    expect(p).not.toContain('vite build')
   })
 
   it('exige validate_scene antes da validação visual', () => {
@@ -57,8 +61,9 @@ describe('buildSystemPrompt — o que não pode voltar', () => {
     const p = ask()
     expect(p).not.toMatch(/MONTAGEM DE LEVEL/)
     expect(p).not.toMatch(/foco deste engine é/i)
-    // 2.5D só pode aparecer como estilo derivado da câmera, nunca como padrão.
-    expect(p).toMatch(/3D é o padrão/)
+    // A identidade 3D continua no prompt (primeira linha); o detalhamento de
+    // estilos 2D/2.5D saiu no ADR-0191.
+    expect(p).toMatch(/motor de jogos \*\*3D\*\*/)
   })
 
   it('não carrega o método de montagem de fase (isso é skill)', () => {

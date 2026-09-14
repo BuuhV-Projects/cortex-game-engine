@@ -26,8 +26,10 @@ export function createBlenderToolServer(projectRoot: string) {
           '**GPT-6-Astra** (também escrito "gpt-6 astra", "astra" ou "gpt6"), rodado ' +
           'pelo Codex CLI, para escrever um script Python do Blender (bpy); em seguida ' +
           'executa `blender --background --python script.py` e exporta o .glb. ' +
-          'Se o usuário pedir para criar/modelar algo "com o astra", "com o gpt-6" ou ' +
-          '"sem usar kit" (modelos próprios em vez de assets prontos), é esta tool — ' +
+          'Use APENAS quando o usuário pedir explicitamente um MODELO 3D novo ' +
+          '("modele uma espada", "crie um .glb de X"). NÃO a chame por conta própria ao ' +
+          'montar mapa/cena: montar cena é posicionar assets existentes e escrever o ' +
+          'level.json — gerar .glb é outra tarefa, lenta e cara. ' +
           'não é um serviço externo, não precisa de chave de API e não é você mesmo (Claude) ' +
           'escrevendo o script. ' +
           'Requer Blender no PATH (ou BLENDER_PATH) e Codex CLI >= 0.154.0 autenticado.',

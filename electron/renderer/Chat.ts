@@ -124,7 +124,7 @@ export class Chat {
    * global. Default 'sonnet': teto de uso muito maior que Opus no plano de
    * assinatura, evita estourar o limite do Chat (ADR-0130).
    */
-  private model: 'opus' | 'sonnet' | 'haiku' = 'sonnet'
+  private model: 'opus' | 'sonnet' | 'haiku' | 'astra' = 'sonnet'
   private modelToggleEl: HTMLButtonElement | null = null
 
   /** true quando o turno atual foi enviado em modo plan — dispara a barra de aprovação no fim. */
@@ -326,7 +326,9 @@ export class Chat {
     this.modeToggleEl.title = tip
   }
 
-  // ── Modelo do backend: sonnet (default) → opus → haiku — salvo por projeto ──
+  // ── Modelo do backend: sonnet (default) → opus → haiku → astra ──
+  // 'astra' e a cabeca Codex/GPT-6-Astra, boa pra montar cena (ADR-0191).
+  // Salvo por projeto.
 
   /** Chave de persistência do modelo pro projeto ativo (ou global se nenhum). */
   private modelStorageKey(): string {
@@ -336,13 +338,20 @@ export class Chat {
   /** Carrega o modelo salvo pro projeto ativo (default 'sonnet') e re-renderiza. */
   private loadModelPref(): void {
     const saved = localStorage.getItem(this.modelStorageKey())
-    this.model = saved === 'opus' || saved === 'haiku' ? saved : 'sonnet'
+    this.model =
+      saved === 'opus' || saved === 'haiku' || saved === 'astra' ? saved : 'sonnet'
     this.renderModelToggle()
   }
 
   private toggleModel(): void {
     this.model =
-      this.model === 'sonnet' ? 'opus' : this.model === 'opus' ? 'haiku' : 'sonnet'
+      this.model === 'sonnet'
+        ? 'opus'
+        : this.model === 'opus'
+          ? 'haiku'
+          : this.model === 'haiku'
+            ? 'astra'
+            : 'sonnet'
     localStorage.setItem(this.modelStorageKey(), this.model)
     this.renderModelToggle()
   }
@@ -352,18 +361,23 @@ export class Chat {
     this.modelToggleEl.classList.toggle('chat-model-btn--sonnet', this.model === 'sonnet')
     this.modelToggleEl.classList.toggle('chat-model-btn--opus', this.model === 'opus')
     this.modelToggleEl.classList.toggle('chat-model-btn--haiku', this.model === 'haiku')
+    this.modelToggleEl.classList.toggle('chat-model-btn--astra', this.model === 'astra')
     const label =
       this.model === 'opus'
         ? t('chat.model_opus')
         : this.model === 'haiku'
           ? t('chat.model_haiku')
-          : t('chat.model_sonnet')
+          : this.model === 'astra'
+            ? t('chat.model_astra')
+            : t('chat.model_sonnet')
     const tip =
       this.model === 'opus'
         ? t('chat.tooltip_model_opus')
         : this.model === 'haiku'
           ? t('chat.tooltip_model_haiku')
-          : t('chat.tooltip_model_sonnet')
+          : this.model === 'astra'
+            ? t('chat.tooltip_model_astra')
+            : t('chat.tooltip_model_sonnet')
     this.modelToggleEl.textContent = label
     this.modelToggleEl.title = tip
   }

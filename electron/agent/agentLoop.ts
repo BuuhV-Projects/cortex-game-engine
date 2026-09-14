@@ -7,6 +7,7 @@ import { createBlueprintToolServer } from './tools/blueprint.js'
 import { createCriticToolServer } from './tools/critic.js'
 import { createValidateToolServer } from './tools/validate.js'
 import { buildSystemPrompt } from './prompt.js'
+import { runCodexAgent } from './codex/CodexAgentRunner.js'
 import { handleSdkMessage, buildSummary } from './sdkMessages.js'
 import type { RunAgentOptions, ToolExecutionResult, ToolRequest } from './agentTypes.js'
 
@@ -53,6 +54,10 @@ export { handleSdkMessage } from './sdkMessages.js'
  * persiste o histórico por sessão (chave = cwd) via `continue`/`resume`.
  */
 export async function runAgent(opts: RunAgentOptions): Promise<void> {
+  // Duas cabecas (ADR-0191): 'astra' roda o Codex CLI como agente no projeto;
+  // os demais modelos seguem no Agent SDK, sem nenhuma mudanca de comportamento.
+  if (opts.model === 'astra') return runCodexAgent(opts)
+
   const queryOptions: Options = {
     cwd: opts.projectRoot ?? undefined,
     // Alias curto ('sonnet'/'opus'/'haiku') que o Claude Code resolve. Omitido =
