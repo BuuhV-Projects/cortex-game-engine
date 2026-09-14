@@ -73,14 +73,15 @@ export type AgentMode = 'ask' | 'auto' | 'plan'
  * estoura o limite semanal rápido (ADR-0130). Opus fica opcional pra tarefas mais
  * difíceis; Haiku pra respostas rápidas/baratas.
  */
-export type AgentModel = 'opus' | 'sonnet' | 'haiku'
+export type AgentModel = 'opus' | 'sonnet' | 'haiku' | 'astra'
 
 /**
  * Normaliza um valor cru (vindo do IPC) num {@link AgentModel} válido.
- * Default 'sonnet' — qualquer coisa que não seja 'opus'/'haiku' cai nele.
+ * Default 'sonnet' — qualquer coisa que nao seja 'opus'/'haiku'/'astra' cai nele.
  */
 export function resolveAgentModel(raw: unknown): AgentModel {
-  return raw === 'opus' ? 'opus' : raw === 'haiku' ? 'haiku' : 'sonnet'
+  if (raw === 'opus' || raw === 'haiku' || raw === 'astra') return raw
+  return 'sonnet'
 }
 
 export interface RunAgentOptions {

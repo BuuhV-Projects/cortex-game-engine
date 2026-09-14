@@ -312,6 +312,37 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   o agente lê a seção completa sob demanda via Read (ADR-0114). Mantenha o doc ao
   mudar a API — o índice deriva dele automaticamente, sem passo de build.
 
+## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191)
+
+O seletor de modelo do chat tem, alem de opus/sonnet/haiku, a opcao **Astra** —
+e ela NAO e outro modelo do mesmo loop: `runAgent()` roteia `model === 'astra'`
+para o `CodexAgentRunner` (`electron/agent/codex/`), que roda
+`codex exec --json` no projeto em vez do Agent SDK. Traduz os eventos JSONL
+(`agent_message`/`file_change`/`command_execution`/`turn.completed`) para o
+mesmo `AgentEvents`, entao a UI nao sabe qual cabeca respondeu.
+
+Divisao de trabalho: **astra monta cena**, **Claude escreve codigo** (e e quem
+tem as skills do plugin e o subagente `level-builder`). Quem escolhe e o
+usuario — nao ha roteamento por heuristica.
+
+**Armadilhas do runner:**
+- `--ignore-user-config` faz o agente virar read-only de fato ("este ambiente
+  permite apenas leitura") mesmo com `--sandbox workspace-write`. Nao passe
+  essa flag aqui — so na chamada single-shot da modelagem 3D, que e read-only.
+- Sem `--ephemeral`: a sessao precisa persistir pro `exec resume <threadId>` do
+  turno seguinte.
+- **O gate de aprovacao (ADR-0018) nao vale no turno do astra** — `canUseTool` e
+  do Agent SDK. O agente escreve no projeto sem card; o limite e o
+  `workspace-write` no `cwd`. Os cards emitidos sao historico, nao gate.
+
+**Contratos de projeto sairam do prompt** (ADR-0191): cena-e-dado, fisica no no,
+`place` por bounding box, id nao-sequencial, import da engine e comandos
+proibidos agora vivem no `AGENTS.md` de `templates/new-project/` (com um
+`CLAUDE.md` de uma linha apontando pra ele), lido pelas duas cabecas no `cwd`.
+**Divida conhecida:** projetos criados ANTES desta mudanca nao tem esse arquivo —
+e como o prompt tambem nao tem mais as regras, aquele projeto fica sem contrato
+ate receber o `AGENTS.md`.
+
 ## 6b. Chat IA: prompt enxuto, skills do plugin e validação geométrica
 
 - **Anatomia do loop** (`electron/agent/`, ADR-0017/ADR-0180): `agentLoop.ts` só
