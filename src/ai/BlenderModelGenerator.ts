@@ -1,4 +1,4 @@
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { queryCodex, CODEX_MODEL } from './CodexClient.js';
 import { spawn } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
@@ -255,11 +255,14 @@ export interface GenerateModelResult {
 /**
  * Gera modelos 3D (.glb) a partir de descrições em linguagem natural.
  *
- * Usa o `@anthropic-ai/claude-agent-sdk` em modo single-shot (sem tools, sem
- * sessão, sem preset do Claude Code) para pedir um script Python `bpy` ao
- * Claude, e então roda Blender headless para exportar o GLB. A auth fica a
- * cargo do SDK — funciona com `ANTHROPIC_API_KEY` no env ou OAuth do
- * `claude login` (ver ADR-0020).
+ * Pede um script Python `bpy` ao modelo **GPT-6-Astra** via Codex CLI
+ * ({@link queryCodex}, chamada single-shot sem sessão e sem tools de escrita)
+ * e então roda Blender headless para exportar o GLB. A auth fica a cargo do
+ * Codex CLI — usa a subscription do `codex login`, sem chave de API no
+ * projeto (ver ADR-0189).
+ *
+ * Requer, no ambiente: **Codex CLI** autenticado (≥ 0.154.0) e **Blender** no
+ * `PATH` (ou `BLENDER_PATH`).
  *
  * @example
  * const gen = new BlenderModelGenerator();
@@ -268,16 +271,17 @@ export interface GenerateModelResult {
  *   './assets/sword.glb',
  * );
  *
- * @see ADR-0004 (Blender CLI) / ADR-0020 (Claude Agent SDK)
+ * @see ADR-0004 (Blender headless) / ADR-0189 (Codex CLI + GPT-6-Astra) /
+ *      SPEC-0190 (cliente Codex e injeção do OUTPUT_PATH)
  */
 export class BlenderModelGenerator {
   /**
    * Gera um modelo 3D `.glb` a partir de uma descrição em linguagem natural.
    *
    * Fluxo:
-   * 1. Pede o script ao Claude via `claude-agent-sdk` (sem tools, sem cwd).
+   * 1. Pede o script ao GPT-6-Astra via `codex exec` (sem tools, sem sessão).
    * 2. Extrai o bloco ```python da resposta.
-   * 3. Injeta `OUTPUT_PATH` no topo do script.
+   * 3. Neutraliza redefinições de `OUTPUT_PATH` e injeta o caminho real no topo.
    * 4. Salva o script em arquivo temporário.
    * 5. Executa `blender --background --python <script>`.
    * 6. Retorna `{ glbPath, scriptPath }`.
@@ -285,24 +289,25 @@ export class BlenderModelGenerator {
    * @param description - Descrição em linguagem natural do modelo desejado.
    * @param outputPath  - Caminho de destino do arquivo `.glb` a ser gerado.
    * @returns Objeto com `{ glbPath, scriptPath }`.
-   * @throws {Error} Se a API não retornar um bloco ```python válido.
+   * @throws {Error} Se o Codex CLI faltar, estiver desatualizado ou deslogado.
+   * @throws {Error} Se o modelo não retornar um bloco ```python válido.
    * @throws {Error} Se o Blender não estiver instalado ou falhar.
    */
   async generate(description: string, outputPath: string): Promise<GenerateModelResult> {
     // Garante extensão .glb
     const glbPath = outputPath.endsWith('.glb') ? outputPath : `${outputPath}.glb`;
 
-    // ── 1. Gerar script Python via Claude Agent SDK (single-shot) ──────────
-    // systemPrompt como string usa prompt custom puro (sem preset Claude Code).
-    // allowedTools: [] zera as tools nativas (Read/Write/Bash) — só queremos
-    // uma resposta de texto, não interação com filesystem.
-    const fullText = await _querySingleShot(BPY_SYSTEM_PROMPT, description);
+    // ── 1. Gerar script Python via Codex CLI (single-shot, ADR-0189) ──────────
+    // Roda `codex exec` com o modelo GPT-6-Astra usando a subscription do
+    // Codex. Sem sessao e sem tools de escrita — so queremos texto de volta.
+    const fullText = await queryCodex(BPY_SYSTEM_PROMPT, description);
 
     // ── 2. Extrair bloco ```python da resposta ─────────────────────────────
     const codeMatch = /```python\s*([\s\S]*?)```/.exec(fullText);
     if (!codeMatch || !codeMatch[1]) {
       throw new Error(
-        'A IA não retornou um bloco de código Python válido (```python ... ```). ' +
+        `O modelo ${CODEX_MODEL} não retornou um bloco de código Python válido ` +
+        '(```python ... ```). ' +
           'Tente reformular a descrição.',
       );
     }
@@ -310,8 +315,13 @@ export class BlenderModelGenerator {
     const generatedScript = codeMatch[1].trim();
 
     // ── 3. Injetar OUTPUT_PATH no topo do script ──────────────────────────
-    // Claude é instruído a usar OUTPUT_PATH; injetamos o valor real aqui.
-    const scriptContent = `OUTPUT_PATH = ${JSON.stringify(glbPath)}\n\n${generatedScript}`;
+    // O prompt instrui o modelo a usar OUTPUT_PATH sem redefini-la, mas nem
+    // sempre obedece. Uma redefinicao venceria a nossa injecao e o GLB sairia
+    // no caminho errado — por isso neutralizamos antes (SPEC-0190).
+    const safeScript = _neutralizeOutputPathAssignments(generatedScript);
+    const scriptContent = `OUTPUT_PATH = ${JSON.stringify(glbPath)}
+
+${safeScript}`;
 
     // ── 4. Salvar script em arquivo temporário ────────────────────────────
     const scriptPath = join(tmpdir(), `blender_gen_${Date.now()}.py`);
@@ -343,31 +353,30 @@ export class BlenderModelGenerator {
 // ─── Utilitário interno ───────────────────────────────────────────────────────
 
 /**
- * Chamada LLM single-shot via Claude Agent SDK. Coleta os blocos de texto
- * do assistant e retorna o conteúdo concatenado. Sem tools, sem sessão.
+ * Comenta atribuicoes de `OUTPUT_PATH` em nivel superior no script gerado.
+ *
+ * O caminho real do `.glb` e injetado pelo Studio no topo do script; se o
+ * modelo tambem definir a variavel, a definicao dele venceria e o Blender
+ * exportaria para o lugar errado — o `.glb` esperado nunca apareceria e o erro
+ * apontaria para o sintoma errado ("Blender encerrou sem erro, mas o arquivo
+ * nao foi criado"). Comentamos em vez de remover para o script salvo continuar
+ * legivel na hora de depurar.
+ *
+ * Atribuicoes indentadas (dentro de funcao ou `if`) ficam intocadas — nao sao
+ * o padrao observado e remove-las poderia quebrar o script.
+ *
+ * @param script - Script Python devolvido pelo modelo.
+ * @returns O mesmo script com as redefinicoes de `OUTPUT_PATH` neutralizadas.
+ * @see SPEC-0190
  */
-async function _querySingleShot(systemPrompt: string, userPrompt: string): Promise<string> {
-  const q = query({
-    prompt: userPrompt,
-    options: {
-      systemPrompt,
-      allowedTools: [],
-      includePartialMessages: false,
-    },
-  });
+export function _neutralizeOutputPathAssignments(script: string): string {
+  const TOP_LEVEL_ASSIGNMENT = /^OUTPUT_PATH\s*=/;
+  const NOTE = '# [cortex] OUTPUT_PATH definido pelo Studio — redefinicao neutralizada:';
 
-  let fullText = '';
-  for await (const msg of q) {
-    const m = msg as { type?: string; message?: { content?: Array<{ type?: string; text?: string }> } };
-    if (m.type === 'assistant' && Array.isArray(m.message?.content)) {
-      for (const block of m.message.content) {
-        if (block.type === 'text' && typeof block.text === 'string') {
-          fullText += block.text;
-        }
-      }
-    }
-  }
-  return fullText;
+  return script
+    .split('\n')
+    .flatMap((line) => (TOP_LEVEL_ASSIGNMENT.test(line) ? [NOTE, `# ${line}`] : [line]))
+    .join('\n');
 }
 
 /**

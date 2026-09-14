@@ -7,8 +7,8 @@ import { BlenderModelGenerator } from '../../../src/ai/BlenderModelGenerator.js'
 /**
  * MCP server in-process que expõe a tool `generate_blender_model` ao agente
  * do Chat IA (SPEC-0019 reativada). Encapsula o {@link BlenderModelGenerator}
- * existente (ADR-0004): Claude gera um script Python `bpy`, executamos
- * Blender headless, devolvemos o `.glb`.
+ * existente (ADR-0004): o GPT-6-Astra gera um script Python `bpy` via Codex
+ * CLI (ADR-0189), executamos Blender headless, devolvemos o `.glb`.
  *
  * O server precisa do `projectRoot` para resolver `target_path` relativo e
  * garantir que o `.glb` cai dentro do sandbox do projeto (ADR-0017). Por
@@ -22,9 +22,15 @@ export function createBlenderToolServer(projectRoot: string) {
       tool(
         'generate_blender_model',
         'Gera um modelo 3D (.glb) a partir de uma descrição em linguagem natural. ' +
-          'Usa Claude para escrever um script Python do Blender (bpy) e executa ' +
-          '`blender --background --python script.py` para exportar o arquivo. ' +
-          'Requer Blender instalado no PATH (ou BLENDER_PATH apontando para o executável).',
+          'ESTA é a ferramenta de modelagem 3D por IA do Studio: ela usa o modelo ' +
+          '**GPT-6-Astra** (também escrito "gpt-6 astra", "astra" ou "gpt6"), rodado ' +
+          'pelo Codex CLI, para escrever um script Python do Blender (bpy); em seguida ' +
+          'executa `blender --background --python script.py` e exporta o .glb. ' +
+          'Se o usuário pedir para criar/modelar algo "com o astra", "com o gpt-6" ou ' +
+          '"sem usar kit" (modelos próprios em vez de assets prontos), é esta tool — ' +
+          'não é um serviço externo, não precisa de chave de API e não é você mesmo (Claude) ' +
+          'escrevendo o script. ' +
+          'Requer Blender no PATH (ou BLENDER_PATH) e Codex CLI >= 0.154.0 autenticado.',
         {
           description: z
             .string()
