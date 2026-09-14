@@ -329,6 +329,20 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   e devolve `null` (turno sem skills) se faltar. As skills acham seus scripts e os
   kits por `CORTEX_PLUGIN_DIR`/`CORTEX_KITS_DIR`, injetados no env do turno — o
   `cwd` do Bash é o projeto do jogo, não este repositório.
+- **Modelagem 3D roda em OUTRO provider** (ADR-0189/SPEC-0190): a tool
+  `generate_blender_model` (`electron/agent/tools/blender.ts`) encapsula o
+  `BlenderModelGenerator` (`src/ai/BlenderModelGenerator.ts`), que **nao** usa o
+  Claude — pede o script Python `bpy` ao **GPT-6-Astra** via `codex exec`
+  (`src/ai/CodexClient.ts`, subscription do `codex login`) e roda Blender
+  headless pra exportar o `.glb`. E o unico ponto do Studio fora do Claude; o
+  resto do Chat IA e o `ScriptGenerator` continuam no Agent SDK.
+  **Armadilha:** `codex` no `PATH` pode ser um shim antigo (a 0.151.0 recusa o
+  astra com HTTP 400) enquanto o app instalado esta atualizado — por isso o
+  `CodexClient` resolve o binario (`CODEX_PATH` -> app -> `PATH`) e checa a
+  versao antes de gastar a chamada. Outra armadilha: o modelo as vezes redefine
+  `OUTPUT_PATH` dentro do script, o que venceria a injecao do Studio e mandaria
+  o `.glb` pro lugar errado — redefinicoes em nivel superior sao comentadas
+  antes de executar.
 - **`settingSources: ['project']`**: carrega `CLAUDE.md`/`.claude` do jogo aberto
   (instruções do usuário) sem herdar as configurações globais da máquina, que
   trariam skills de outros repositórios como ruído.

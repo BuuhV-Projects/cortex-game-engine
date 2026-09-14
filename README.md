@@ -7,6 +7,27 @@ Inspector, física data-driven e um **Chat IA** que monta cenário a partir dos
 seus assets. O export de PC é **nativo, sem browser** — o CortexNative
 ([ADR-0101](docs/adrs/0101-cortexnative-como-export-pc.md)).
 
+## Pre-requisitos
+
+- **Node + Yarn** — o gerenciador do repo e o `yarn` (nunca `npm`).
+- **Codex CLI >= 0.154.0, autenticado** — usado pela **modelagem 3D** do Studio,
+  que roda o modelo GPT-6-Astra pela sua subscription do Codex
+  ([ADR-0189](docs/adrs/ADR-0189-modelagem-3d-via-codex-cli-gpt-6-astra.md)):
+
+  ```bash
+  npm install -g @openai/codex@latest   # instalacao global do CLI, fora do repo
+  codex login
+  ```
+
+  Se o `codex` do `PATH` for antigo (shim de gerenciador de versao de Node, por
+  exemplo) e voce tiver uma versao nova em outro caminho, aponte-a com
+  `CODEX_PATH`.
+- **Blender >= 4.x no `PATH`** (ou `BLENDER_PATH`) — executa o script gerado e
+  exporta o `.glb` ([ADR-0004](docs/adrs/0004-geracao-modelos-blender.md)).
+
+Os dois ultimos so sao exigidos pela modelagem 3D; o resto do Studio roda sem
+eles.
+
 ## Rodar o Studio em desenvolvimento
 
 ```bash
