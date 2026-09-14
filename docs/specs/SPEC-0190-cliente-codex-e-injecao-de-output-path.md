@@ -98,7 +98,29 @@ a extração do bloco ` ```python `, a execução do Blender e a verificação d
 `.glb`. Quem consome — a tool `generate_blender_model` do Chat IA e a CLI — não
 muda em nada.
 
-### 3. Injeção robusta do `OUTPUT_PATH`
+### 3. A descrição da tool ensina o nome do modelo ao Chat IA
+
+O Chat IA continua sendo o Claude, e ele só sabe das ferramentas o que a
+**descrição da tool** conta. A descrição de `generate_blender_model` dizia
+"Usa Claude para escrever um script Python do Blender" — nada ligava o nome
+"GPT-6-Astra" a uma capacidade do Studio.
+
+Consequência observada em uso real: ao receber *"crie usando o gpt-6 astra um
+mapa sem usar nada do kit"*, o Chat IA respondeu que "gpt-6 astra não existe"
+e pediu esclarecimento. Do ponto de vista dele a resposta estava certa — o
+nome não aparecia em lugar nenhum do contexto do turno.
+
+A descrição passa a dizer, explicitamente: que esta é a ferramenta de modelagem
+3D por IA do Studio; que o modelo é o **GPT-6-Astra** (com as grafias que o
+usuário usa na prática — "gpt-6 astra", "astra", "gpt6"); que pedidos do tipo
+"modele X com o astra" ou "sem usar kit" mapeiam para ela; e que **não** é um
+serviço externo nem o próprio Claude escrevendo o script.
+
+Não há mudança no prompt de sistema do Chat IA: o conhecimento fica na
+descrição da tool, que é onde ele pertence e onde não custa contexto em turnos
+que não modelam nada.
+
+### 4. Injeção robusta do `OUTPUT_PATH`
 
 Antes de prepender a atribuição real, toda atribuição de `OUTPUT_PATH` em
 **nível superior** no script gerado é neutralizada — comentada, não removida,
@@ -128,6 +150,9 @@ qualquer outro uso da variável ficam intocados.
 - **Falha cedo e com endereço.** Codex ausente, desatualizado ou deslogado vira
   erro no primeiro uso da modelagem 3D, dizendo o que fazer — em vez de um 400
   cru vindo do processo filho.
+- **O Chat IA reconhece o pedido pelo nome do modelo.** Sem isso, a feature
+  existia mas era inalcançável por quem a chamasse pelo nome — o modo mais
+  natural de pedir.
 - **Pré-requisito novo do Studio**: Codex CLI ≥ 0.154.0 autenticado. Some do
   ambiente de quem só usa o resto do Studio a exigência de nada — a modelagem
   3D já era opcional (dependia do Blender); agora depende de dois binários.
