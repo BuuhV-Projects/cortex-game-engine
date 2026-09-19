@@ -782,6 +782,21 @@ trecho” sem depender de print de HUD na hora certa.
   por frame; o `frameMs` gravado é o do próprio frame amostrado, então o custo
   aparece no dado em vez de se esconder.
 
+## 8f. Canal com a IDE no host nativo (`src/core/HostChannel.ts`) — SPEC-0200
+
+Quando o jogo roda no **host nativo** com `CORTEX_IDE_CHANNEL=1`, o `Game` ganha
+um canal de mensagens JSON com a IDE por stdin/stdout — o transporte que
+substitui o `postMessage` do iframe (ADR-0056) no caminho do **preview nativo**
+(PRD-0007). O contrato das mensagens é o MESMO da ponte do editor; só o meio
+muda.
+
+- `game.hostChannel.available` é `false` no browser: lá quem fala com a IDE
+  continua sendo a ponte DOM do editor. Nada roda, nada é enviado.
+- O **handshake é automático**: `hello` → `ack` com a versão do protocolo.
+- `requestState` devolve hoje um estado MÍNIMO (cena + ids dos nós autorados).
+  O estado rico do editor chega no M3 do PRD-0007 — não construa UI em cima
+  do formato atual.
+
 ## 9. Logging de debug (`src/core/debug.ts`)
 
 **Sempre use `debug(escopo, ...)` no lugar de `console.log` cru.** Fica desligado por

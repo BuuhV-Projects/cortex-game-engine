@@ -12,6 +12,7 @@ import { UiLayer } from '../ui/runtime/UiLayer.js';
 import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
 import { PerfTrace } from './PerfTrace.js';
+import { HostChannel, type HostMessage } from './HostChannel.js';
 import { FrameProfiler } from './FrameProfiler.js';
 import { InspectCamera } from './InspectCamera.js';
 
@@ -181,6 +182,11 @@ export class Game {
   private _debugHud: DebugHud | null | undefined = undefined;
   /** Amostrador do perf trace (SPEC-0198). Inerte sem a ponte do host nativo. */
   private readonly _perfTrace = new PerfTrace();
+  /**
+   * Canal com a IDE no host nativo (SPEC-0200). Inerte fora do host: no browser
+   * quem fala com a IDE é a ponte `postMessage` do editor (ADR-0056).
+   */
+  readonly hostChannel = new HostChannel();
   private _postfx: { render(): void } | null = null;
   private _ui: UiLayer | null = null;
   private _inspect: InspectCamera | null = null;
@@ -262,6 +268,14 @@ export class Game {
     this._activeScene = this.scene;
     this._activeCamera = this.camera;
     this._loop = new GameLoop({ onUpdate: (dtMs) => this._tick(dtMs) });
+
+    // Canal com a IDE (host nativo, SPEC-0200): responde ao handshake e publica
+    // o estado da cena sob demanda. No browser o `available` é false e nada
+    // disso roda — lá quem conversa com a IDE é a ponte do editor.
+    if (this.hostChannel.available) {
+      this.hostChannel.on('requestState', () => this.hostChannel.send(this._hostState()));
+      this.hostChannel.listen();
+    }
   }
 
   /**
@@ -509,6 +523,21 @@ export class Game {
       this.profiler.setEnabled(false); // sem HUD, para de medir (custo ≈ zero)
       this.profiler.reset();
     }
+  }
+
+  /**
+   * Estado da cena para a IDE (SPEC-0200) — o mínimo que prova o canal de
+   * ponta a ponta: identidade da cena e os nós autorados. O estado RICO do
+   * editor (outliner/inspector) chega no M3, quando a edição 3D rodar no host.
+   */
+  private _hostState(): HostMessage {
+    const nodes: { id: string }[] = [];
+    this._activeScene.getThreeScene().traverse((obj) => {
+      if ((obj.userData as Record<string, unknown>)['cortexSceneNode'] === true) {
+        nodes.push({ id: obj.name });
+      }
+    });
+    return { type: 'state', scene: this._activeScene === this.scene ? 'game' : 'alt', nodes };
   }
 
   private createDebugHud(): DebugHud {

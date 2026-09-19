@@ -26,6 +26,7 @@
 #include "shims/ktx2.h"
 #include "shims/perf_arraybuffer.h"
 #include "shims/perf_stats.h"
+#include "shims/ide_channel.h"
 #include "shims/perf_trace.h"
 #include "shims/quit.h"
 #include "shims/rapier.h"
@@ -110,6 +111,7 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
 void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
               bool splashEnabled) {
   shims::drainIoCompletions(js.env());  // resolve leituras async prontas (M-perf-3)
+  shims::drainIdeMessages(js.env());    // linhas da IDE lidas pela thread de stdin (M1)
   shims::runTimers(js.env(), elapsedMs);
   js.drainMicrotasks();
   shims::runAnimationFrames(js.env(), elapsedMs);
@@ -211,6 +213,7 @@ int main(int argc, char** argv) {
     shims::registerImageDecode(js.env());
     shims::registerKtx2(js.env());
     shims::registerPerfStats(js.env());
+    shims::registerIdeChannel(js.env());  // canal com a IDE (CORTEX_IDE_CHANNEL=1)
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());
     shims::registerAudio(js.env());
@@ -316,6 +319,7 @@ int main(int argc, char** argv) {
       runFrame(js, &gpu, elapsedMs, splashEnabled);
     }
     webgpu::shutdownSplash();  // idempotente (a splash já se libera ao terminar)
+    shims::stopIdeChannel();   // para a leitura do stdin antes do teardown (M1)
     shims::shutdownIoPool();   // join dos workers ANTES do teardown do Hermes (M-perf-3)
     shims::closeGamepads();
     shims::shutdownAudio();
