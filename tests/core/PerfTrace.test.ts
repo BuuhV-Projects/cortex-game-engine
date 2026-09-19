@@ -78,6 +78,23 @@ describe('collectVisible', () => {
     expect(collectVisible(scene, camera())[0]!.meshes).toBe(1);
   });
 
+  it('ignora subárvore de pai invisível (o `visible` do three é herdado)', () => {
+    // Caso real: as variantes de roda da garagem ficam TODAS na cena, com só um
+    // modelo visível. As malhas dentro dos escondidos seguem `visible: true` e
+    // não desenham — contá-las inflava o diagnóstico (SPEC-0213).
+    const scene = new Scene();
+    const node = sceneNode('roda', 1, 0);
+    node.position.set(0, 0, -10);
+    const escondida = new Object3D();
+    escondida.visible = false;
+    escondida.add(new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial()));
+    node.add(escondida);
+    scene.add(node);
+    scene.updateMatrixWorld(true);
+
+    expect(collectVisible(scene, camera())[0]!.meshes).toBe(1);
+  });
+
   it('ordena do mais caro (triângulos) pro menos', () => {
     const scene = new Scene();
     const small = sceneNode('pequeno', 1, -2);

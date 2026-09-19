@@ -778,9 +778,36 @@ trecho” sem depender de print de HUD na hora certa.
 - A ponte é `globalThis.__cortexPerfTrace`, registrada pelo host **só** com
   métricas ligadas (`game.debug`/dev-run/`CORTEX_VRAM_LOG`). Sem ela o
   `PerfTrace` nem percorre a cena — custo zero no browser/Studio e em release.
-- A coleta de visíveis é um traverse com teste de frustum **por amostra**, nunca
-  por frame; o `frameMs` gravado é o do próprio frame amostrado, então o custo
-  aparece no dado em vez de se esconder.
+- A coleta de visíveis é uma travessia com teste de frustum **por amostra**,
+  nunca por frame; o `frameMs` gravado é o do próprio frame amostrado, então o
+  custo aparece no dado em vez de se esconder.
+- A travessia **para em subárvore invisível** (não usa `traverse`): o `visible`
+  do three é herdado, e malha `visible: true` dentro de pai escondido não
+  desenha. Contá-la inflava o diagnóstico — as variantes de roda de garagem do
+  kart-racer, todas na cena com só uma visível, apareciam como se desenhassem.
+
+## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
+
+Duas fusões diferentes, com propósitos opostos, no mesmo módulo
+(`src/scene/StaticMerge.ts`):
+
+| | `mergeStaticScene` (SPEC-0120) | `mergeSubtree` (SPEC-0213) |
+| --- | --- | --- |
+| alvo | o cenário PARADO | um modelo que SE MOVE |
+| espaço do bake | mundo | local da raiz |
+| dinâmicos | exclui | é justamente o caso |
+| onde roda | host nativo (fora do Studio: o editor precisa dos nós) | qualquer pilha |
+
+`mergeSubtree` existe porque modelo de catálogo traz cada peça como malha
+própria — um carro com 124 malhas é 124 draw calls que nunca se movem umas em
+relação às outras. Ele agrupa por material, baka no espaço LOCAL da raiz (errar
+isso faz o objeto herdar a transformação duas vezes e sair voando) e aceita
+`preserve` para o que precisa continuar independente: os pivôs de roda.
+
+**Pode rodar no Studio**, diferente do merge estático: sub-malhas de um `.glb`
+não são nós autorados (`cortexSceneNode`), então o editor nunca as selecionava
+individualmente. Medido no kart-racer (3 carros, host nativo): **19 → 32 fps**,
+render 52 → 30 ms, 626 → 496 draw calls.
 
 ## 8f. Transporte da ponte do editor (`src/editor/bridgeTransport.ts`) — SPEC-0203
 
