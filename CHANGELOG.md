@@ -1,3 +1,15 @@
+# [0.51.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.50.0...v0.51.0) (2026-09-19)
+
+
+### Bug Fixes
+
+* **tests:** tipar o material do helper do mergeSubtree ([3fb224e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3fb224ec0b2a343963d36e8c94a380d90140214a))
+
+
+### Features
+
+* **scene:** fundir malhas dentro de um modelo que se move (SPEC-0213) ([2942688](https://github.com/BuuhV-Projects/cortex-game-engine/commit/294268812dc95fd46ff7e82fa2afcf65620ed91a))
+
 # [0.50.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.49.0...v0.50.0) (2026-09-19)
 
 
