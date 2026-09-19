@@ -1,7 +1,16 @@
 # PRD 0007 - Preview nativo no Studio (o editor roda o renderer do jogo)
 
 **Data:** 2026-09-19
-**Status:** **M0, M1, M2 e M3 CONCLUÍDOS** (SPEC-0199 a 0204) — faltam M4 e M5
+**Status:** **PAUSADO** (ADR-0212) — M0 a M4 implementados (SPEC-0199 a 0211) e
+removidos da main; o trabalho está preservado na branch publicada
+`feature/preview-nativo-no-studio` (até `e43b29c3`).
+
+> **Por que pausou:** no uso real o preview nunca ficou utilizável — três rodadas
+> de correção (janela solta → Studio travado → jogo sem teclado) e ainda 12 fps
+> no palco. A perf de autoria passou a ser atacada no Studio/browser, e o host
+> nativo segue como runtime de loja. Retomar = mergear a branch. O que a sessão
+> ganhou de durável (veículo do Rapier no host, `setInterval`, `PerfTrace`,
+> recriação de surface) **ficou na main** — ver o ADR-0212.
 
 ## Problema
 

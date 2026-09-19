@@ -3,6 +3,10 @@
 **Data:** 2026-09-19
 **Status:** aceito — **parcial**, ver "O que ainda não funciona"
 
+> **Implementação REMOVIDA da main** (ADR-0212): o preview nativo no Studio foi
+> pausado e este código vive na branch `feature/preview-nativo-no-studio`.
+> A spec fica como registro do que foi construído e de por que funcionava assim.
+
 ## Contexto
 
 A ponte do editor (ADR-0056) entrega o estado para os painéis do Studio por

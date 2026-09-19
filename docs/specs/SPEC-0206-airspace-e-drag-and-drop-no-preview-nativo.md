@@ -3,6 +3,10 @@
 **Data:** 2026-09-19
 **Status:** aceito
 
+> **Implementação REMOVIDA da main** (ADR-0212): o preview nativo no Studio foi
+> pausado e este código vive na branch `feature/preview-nativo-no-studio`.
+> A spec fica como registro do que foi construído e de por que funcionava assim.
+
 ## Contexto
 
 Arrastar um asset da árvore para o viewport (SPEC-0090) funciona assim no

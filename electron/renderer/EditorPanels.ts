@@ -216,35 +216,7 @@ export class EditorPanels {
     }
   }
 
-  /**
-   * Mensagem vinda do **preview nativo** (SPEC-0203): mesmo protocolo, outro
-   * transporte — em vez de `postMessage` de um iframe, linha JSON pelo canal do
-   * host. Os painéis não sabem a diferença.
-   */
-  handleNativeMessage(data: { source?: string; type?: string }): void {
-    if (!data || data.source !== ENGINE) return
-    if (data.type === 'hello') {
-      this.nativeTarget = true
-      this.target = null // o host substitui o iframe enquanto durar o preview
-      this.send({ type: 'ack' })
-      return
-    }
-    if (data.type === 'state') this.renderState(data as StateMessage)
-  }
-
-  /** O preview nativo terminou: volta a falar com o iframe. */
-  clearNativeTarget(): void {
-    this.nativeTarget = false
-  }
-
-  /** O outro lado é o host nativo (e não um iframe)? */
-  private nativeTarget = false
-
   private send(msg: Record<string, unknown>): void {
-    if (this.nativeTarget) {
-      void window.electronAPI.sendNativePreviewMessage({ source: IDE, ...msg })
-      return
-    }
     this.target?.postMessage({ source: IDE, ...msg }, '*')
   }
 

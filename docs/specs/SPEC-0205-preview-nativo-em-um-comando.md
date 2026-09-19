@@ -3,6 +3,10 @@
 **Data:** 2026-09-19
 **Status:** aceito — **primeira fatia** do M4
 
+> **Implementação REMOVIDA da main** (ADR-0212): o preview nativo no Studio foi
+> pausado e este código vive na branch `feature/preview-nativo-no-studio`.
+> A spec fica como registro do que foi construído e de por que funcionava assim.
+
 ## Contexto
 
 Depois do M3 o preview nativo funcionava, mas era inutilizável no dia a dia por

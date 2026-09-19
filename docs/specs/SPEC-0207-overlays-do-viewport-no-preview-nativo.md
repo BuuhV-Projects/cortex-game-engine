@@ -3,6 +3,10 @@
 **Data:** 2026-09-19
 **Status:** aceito — **falta validação visual**, ver abaixo
 
+> **Implementação REMOVIDA da main** (ADR-0212): o preview nativo no Studio foi
+> pausado e este código vive na branch `feature/preview-nativo-no-studio`.
+> A spec fica como registro do que foi construído e de por que funcionava assim.
+
 ## Contexto
 
 Última pendência de *airspace* do M4. O viewport do Studio tem pills flutuando

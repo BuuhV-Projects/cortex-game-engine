@@ -23,25 +23,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   revendorEngine: (projectDir: string) =>
     ipcRenderer.invoke('engine:revendor', projectDir),
 
-  // ── Preview nativo (SPEC-0201) — o host do jogo como janela filha ──────────
-  /** Sobe o host de um export como preview embutido. */
-  startNativePreview: (exportDir: string, launchQuery?: string) =>
-    ipcRenderer.invoke('native-preview:start', exportDir, launchQuery),
-  /** Geometria do painel (relativa à janela do Studio) — o host se reposiciona. */
-  setNativePreviewBounds: (rect: { x: number; y: number; width: number; height: number }) =>
-    ipcRenderer.invoke('native-preview:bounds', rect),
-  /** Encerra o host embutido (sem isso, janela órfã no Stop). */
-  stopNativePreview: () => ipcRenderer.invoke('native-preview:stop'),
-  /** Manda uma mensagem da IDE pro host embutido (mesmo protocolo da ponte). */
-  sendNativePreviewMessage: (message: Record<string, unknown>) =>
-    ipcRenderer.invoke('native-preview:send', message),
-  /** Mensagens do canal da IDE vindas do host. */
-  onNativePreviewMessage: (cb: (message: { type: string; [k: string]: unknown }) => void) =>
-    ipcRenderer.on('native-preview:message', (_e, message) => cb(message)),
-  /** O host embutido terminou. */
-  onNativePreviewExit: (cb: (code: number | null) => void) =>
-    ipcRenderer.on('native-preview:exit', (_e, code) => cb(code)),
-
   /** Export CortexNative (ADR-0101): gera dist-native/ do projeto. `debug` = HUD de métricas no bundle. */
   exportNative: (projectDir: string, mode = 'pc', debug = false, outDir?: string, editor = false) =>
     ipcRenderer.invoke('export:native', projectDir, mode, debug, outDir, editor) as Promise<{
