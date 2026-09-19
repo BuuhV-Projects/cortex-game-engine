@@ -116,6 +116,36 @@ describe('NativePreview', () => {
     expect(preview.running).toBe(false);
   });
 
+  it('passa a fase como CORTEX_LAUNCH_QUERY (troca de fase, SPEC-0205)', async () => {
+    const { spawn } = await import('node:child_process');
+    const preview = new NativePreview();
+
+    preview.start({ ...OPTIONS, launchQuery: 'level=space-1' });
+
+    const env = vi.mocked(spawn).mock.calls[0]![2]!.env as Record<string, string>;
+    expect(env['CORTEX_LAUNCH_QUERY']).toBe('level=space-1');
+    expect(env['CORTEX_PARENT_HWND']).toBe('123456');
+  });
+
+  it('restart sobe de novo na fase pedida, mantendo o resto das opcoes', async () => {
+    const { spawn } = await import('node:child_process');
+    const preview = new NativePreview();
+    preview.start({ ...OPTIONS, launchQuery: 'level=space-1' });
+
+    child = new FakeChild(); // o processo novo do restart
+    preview.restart('level=aqua-2');
+
+    const env = vi.mocked(spawn).mock.calls[1]![2]!.env as Record<string, string>;
+    expect(env['CORTEX_LAUNCH_QUERY']).toBe('level=aqua-2');
+    expect(env['CORTEX_PARENT_HWND']).toBe('123456'); // mesma janela pai
+  });
+
+  it('restart sem start anterior é no-op (nada a reiniciar)', async () => {
+    const { spawn } = await import('node:child_process');
+    new NativePreview().restart('level=x');
+    expect(vi.mocked(spawn)).not.toHaveBeenCalled();
+  });
+
   it('start recusa pasta sem launcher.exe', async () => {
     const fs = await import('node:fs');
     vi.mocked(fs.existsSync).mockReturnValueOnce(false);

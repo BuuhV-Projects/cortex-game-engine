@@ -119,13 +119,22 @@ IDE**, lendo o mesmo `state` de hoje.
 com o Inspector da IDE refletindo ao vivo (regra do repo: Inspector é tempo
 real).
 
-### M4 — Paridade de fluxo
+### M4 — Paridade de fluxo ▶ EM ANDAMENTO (M4a: SPEC-0205)
 Drag-and-drop de asset, troca de fase, screenshot/playtest e console do jogo no
 painel da IDE, todos pelo canal nativo.
 **Aceite:** a lista da seção "o que o editor exige" inteira funcionando sem
 iframe.
 
-### M5 — Desligar o iframe
+> **M4a FEITO (SPEC-0205):** preview nativo em um comando (exporta com editor e
+> abre) e troca de fase por reinício com `CORTEX_LAUNCH_QUERY`. **Falta** o que
+> depende de *airspace* — drag-and-drop de asset e os overlays do viewport — e
+> o screenshot/playtest (hoje `capturePage` do Chromium, que não enxerga a
+> janela nativa).
+
+### M5 — Desligar o iframe ⛔ BLOQUEADO pelo M4
+
+> Sem drag-and-drop e sem screenshot no preview nativo, desligar o caminho
+> Chromium **tiraria capacidade** do Studio. Só começa quando o M4 fechar.
 Remover o caminho Chromium do preview e o que existia só para sustentá-lo.
 **Aceite:** Studio sem `preview-iframe`; export e editor compartilham um único
 runtime.

@@ -111,7 +111,7 @@ export class Preview {
     // Preview NATIVO (SPEC-0201): escolhe a pasta do export e embute o host no
     // lugar do iframe. Experimental — o M2 do PRD-0007 assume um export já
     // gerado; o fluxo incremental (editar → ver) é dos marcos seguintes.
-    document.addEventListener('native-preview-requested', () => void this.pickAndStartNative())
+    document.addEventListener('native-preview-requested', () => void this.buildAndStartNative())
     document.addEventListener('play-stopped', () => this.stopNative())
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
     document.addEventListener('request-fullscreen-toggle', () => this.toggleFullscreen())
@@ -319,6 +319,15 @@ export class Preview {
    * jogo já suporta pra pular menu e hub — o mesmo do harness de screenshot.
    */
   private openLevel(id: string): void {
+    // Preview NATIVO: trocar de fase é reiniciar o host com `level=<id>` — o
+    // mesmo boot do `?level=` do iframe (SPEC-0205).
+    if (this.nativeActive && this.nativeExportDir) {
+      this.currentLevel = id
+      this.setLevelMenuOpen(false)
+      this.updateLevelPill()
+      void this.startNative(this.nativeExportDir, id)
+      return
+    }
     if (!this.serverUrl) return
     this.currentLevel = id
     this.setLevelMenuOpen(false)
@@ -444,35 +453,60 @@ export class Preview {
   /** Observa o tamanho do palco pra manter a janela nativa alinhada. */
   private nativeObserver: ResizeObserver | null = null;
 
+  /** O preview nativo está no ar? (muda o destino de Play/troca de fase). */
+  private nativeActive = false;
+
   /**
    * Liga o preview nativo com o export de `exportDir`. O palco é esvaziado e
    * passa a ser apenas o RETÂNGULO onde a janela do host vive.
    */
-  async startNative(exportDir: string): Promise<void> {
+  async startNative(exportDir: string, level?: string | null): Promise<void> {
     if (!this.stageEl) return
     this.stopNative()
     this.stageEl.innerHTML = ''
-    await window.electronAPI.startNativePreview(exportDir)
+    await window.electronAPI.startNativePreview(exportDir, level ? `level=${level}` : undefined)
     this.pushNativeBounds()
     // O palco muda de tamanho com o layout dos docks, não só com a janela.
+    this.nativeActive = true
     this.nativeObserver = new ResizeObserver(() => this.pushNativeBounds())
     this.nativeObserver.observe(this.stageEl)
     window.addEventListener('resize', this.pushNativeBoundsBound)
   }
 
-  /** Pergunta a pasta do export e sobe o preview nativo nela. */
-  private async pickAndStartNative(): Promise<void> {
-    const dir = await window.electronAPI.selectDirectory()
-    if (!dir) return
+  /**
+   * **Preview nativo em um comando** (SPEC-0205): exporta o projeto com o modo
+   * editor e abre o host embutido. Antes era preciso exportar à mão e escolher
+   * a pasta — o que tornava o preview nativo inutilizável no dia a dia.
+   *
+   * O export reusa o cache de cook por hash, então a segunda vez é rápida.
+   */
+  private async buildAndStartNative(): Promise<void> {
+    if (!this.projectDir) {
+      void window.electronAPI.infoDialog('Abra um projeto primeiro.')
+      return
+    }
+    document.dispatchEvent(new CustomEvent('export-progress', { detail: 'prepare' }))
+    const result = await window.electronAPI.exportNative(
+      this.projectDir, 'pc', true, undefined, true, // debug + editor
+    )
+    if (!result.ok || !result.distDir) {
+      void window.electronAPI.errorDialog('Preview nativo', result.output.slice(-2000))
+      return
+    }
+    this.nativeExportDir = result.distDir
     try {
-      await this.startNative(dir)
+      await this.startNative(result.distDir, this.currentLevel)
     } catch (err) {
       void window.electronAPI.errorDialog('Preview nativo', String(err))
     }
   }
 
+  /** Pasta do último export usado pelo preview nativo (base do restart). */
+  private nativeExportDir: string | null = null
+
   /** Encerra o host embutido e para de observar (sem isso: janela órfã). */
   stopNative(): void {
+    this.nativeActive = false
     this.nativeObserver?.disconnect()
     this.nativeObserver = null
     window.removeEventListener('resize', this.pushNativeBoundsBound)

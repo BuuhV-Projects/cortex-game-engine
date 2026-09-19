@@ -953,7 +953,7 @@ ipcMain.handle('engine:readTypes', async (): Promise<EngineTypeFile[]> => {
  * próprio repo. macOS/Linux não embarcam o host (D3D12/Windows-only) — lá o
  * `script` não existe e o handler informa que é só no Studio Windows.
  */
-ipcMain.handle('export:native', async (_event, projectDir: unknown, mode: unknown, debug?: unknown, outDir?: unknown) => {
+ipcMain.handle('export:native', async (_event, projectDir: unknown, mode: unknown, debug?: unknown, outDir?: unknown, editor?: unknown) => {
   const safeDir = validatePath(projectDir)
   const script = join(resourceBase(), 'native', 'scripts', 'export-game.mjs')
   if (!existsSync(script)) {
@@ -968,6 +968,9 @@ ipcMain.handle('export:native', async (_event, projectDir: unknown, mode: unknow
   // `debug` acrescenta --debug (HUD de métricas na tela — FPS/CPU/memória/GPU).
   const flags = mode === 'steam' ? ['--steam'] : mode === 'xbox' ? ['--xbox'] : []
   if (debug === true) flags.push('--debug')
+  // `editor` inclui o modo editor (F2) no bundle — so pro PREVIEW NATIVO
+  // (SPEC-0205). Export de producao jamais passa isto.
+  if (editor === true) flags.push('--editor')
   // Pasta de saída escolhida pelo dev (`--out`). Omitida = `dist-native` do
   // projeto. Serve pra manter várias versões e pra contornar uma dist-native
   // travada (Explorer/antivírus com handle aberto).
@@ -1413,7 +1416,7 @@ function killPort(port: number): void {
 // ── Preview nativo (SPEC-0201 / M2 do PRD-0007) ───────────────────────────────
 // Sobe o host de um EXPORT do jogo como janela filha da janela do Studio. O
 // Electron só spawna e manda a geometria; quem se posiciona é o host.
-ipcMain.handle('native-preview:start', async (_event, exportDir: unknown) => {
+ipcMain.handle('native-preview:start', async (_event, exportDir: unknown, launchQuery?: unknown) => {
   const safeDir = validatePath(exportDir)
   if (!mainWindow) throw new Error('sem janela principal')
   // O HWND vem como buffer little-endian (8 bytes no Windows 64).
@@ -1422,6 +1425,7 @@ ipcMain.handle('native-preview:start', async (_event, exportDir: unknown) => {
   nativePreview.start({
     exportDir: safeDir,
     parentHwnd,
+    ...(typeof launchQuery === 'string' && launchQuery ? { launchQuery } : {}),
     onLog: (line) => mainWindow?.webContents.send('log', `${line}
 `),
     onMessage: (message) => mainWindow?.webContents.send('native-preview:message', message),
