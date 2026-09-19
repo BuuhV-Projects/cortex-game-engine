@@ -8,6 +8,10 @@
 namespace shims {
 namespace {
 
+// Pixels por "linha" da roda do mouse — o DOM entrega delta em pixels
+// (deltaMode 0) e o SDL entrega em cliques. 100 é o passo que o Chromium usa.
+constexpr double kWheelLineHeight = 100.0;
+
 std::vector<SDL_Gamepad*> g_gamepads;
 
 // ── teclado: SDL → nomes da API de browser (key/code) ──────────────────────
@@ -107,6 +111,38 @@ void dispatchPointerEvent(napi_env env, const char* type,
   setNumber(env, event, "clientX", button.x);
   setNumber(env, event, "clientY", button.y);
   setNumber(env, event, "button", button.button - 1);
+  dispatchToJs(env, event);
+  napi_close_handle_scope(env, scope);
+}
+
+// Movimento do mouse. O editor (gizmo do TransformControls, câmera livre) vive
+// disto — sem `pointermove` dá pra clicar mas não pra ARRASTAR (SPEC-0202).
+// `buttons` é a máscara do W3C (1 = esquerdo), que é o que o three consulta.
+void dispatchMotionEvent(napi_env env, const SDL_MouseMotionEvent& motion) {
+  napi_handle_scope scope = nullptr;
+  napi_open_handle_scope(env, &scope);
+  napi_value event = njs::makeObject(env);
+  setString(env, event, "type", "pointermove");
+  setNumber(env, event, "clientX", motion.x);
+  setNumber(env, event, "clientY", motion.y);
+  setNumber(env, event, "movementX", motion.xrel);
+  setNumber(env, event, "movementY", motion.yrel);
+  setNumber(env, event, "buttons", motion.state);
+  dispatchToJs(env, event);
+  napi_close_handle_scope(env, scope);
+}
+
+// Roda do mouse → `wheel` do DOM. O sinal de `deltaY` segue o browser (para
+// BAIXO é positivo); o SDL entrega o contrário.
+void dispatchWheelEvent(napi_env env, const SDL_MouseWheelEvent& wheel) {
+  napi_handle_scope scope = nullptr;
+  napi_open_handle_scope(env, &scope);
+  napi_value event = njs::makeObject(env);
+  setString(env, event, "type", "wheel");
+  setNumber(env, event, "deltaX", wheel.x * kWheelLineHeight);
+  setNumber(env, event, "deltaY", -wheel.y * kWheelLineHeight);
+  setNumber(env, event, "clientX", wheel.mouse_x);
+  setNumber(env, event, "clientY", wheel.mouse_y);
   dispatchToJs(env, event);
   napi_close_handle_scope(env, scope);
 }
@@ -232,6 +268,12 @@ bool handleSdlInputEvent(napi_env env, const SDL_Event& event) {
       return true;
     case SDL_EVENT_MOUSE_BUTTON_UP:
       dispatchPointerEvent(env, "pointerup", event.button);
+      return true;
+    case SDL_EVENT_MOUSE_MOTION:
+      dispatchMotionEvent(env, event.motion);
+      return true;
+    case SDL_EVENT_MOUSE_WHEEL:
+      dispatchWheelEvent(env, event.wheel);
       return true;
     case SDL_EVENT_GAMEPAD_ADDED:
       openGamepad(event.gdevice.which);

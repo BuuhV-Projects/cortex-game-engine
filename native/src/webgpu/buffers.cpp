@@ -18,6 +18,10 @@
 #include "napi_stats.h"
 
 namespace webgpu {
+
+// Declarada aqui porque o finalizer (abaixo) a usa antes da definicao.
+void deferReleaseBindGroup(WGPUBindGroup bindGroup);
+
 namespace {
 
 void finalizeBuffer(napi_env, void* data, void*) {
@@ -28,7 +32,7 @@ void finalizeBuffer(napi_env, void* data, void*) {
 }
 
 void finalizeBindGroup(napi_env, void* data, void*) {
-  if (data) wgpuBindGroupRelease(static_cast<WGPUBindGroup>(data));
+  if (data) deferReleaseBindGroup(static_cast<WGPUBindGroup>(data));
 }
 
 }  // namespace
@@ -59,8 +63,18 @@ struct DeferredTexture {
   int frame;
   WGPUTexture texture;
 };
+struct DeferredBindGroup {
+  int frame;
+  WGPUBindGroup bindGroup;
+};
 std::vector<DeferredBuffer> g_deferredBuffers;
 std::vector<DeferredTexture> g_deferredTextures;
+// Bind groups seguem a MESMA regra dos buffers/texturas (SPEC-0202): o
+// finalizer do GC pode rodar no meio de um frame cujo pass ja referencia o
+// bind group, e o wgpu-native trata isso como PANIC fatal
+// ("BindGroup[...] is no longer alive"). Aparecia com o modo EDITOR dentro do
+// host, que cria/descarta material a cada troca de gizmo.
+std::vector<DeferredBindGroup> g_deferredBindGroups;
 
 // Telemetria temporária (ver internal.h): criação × destroy × finalizer.
 std::atomic<int> g_finalizedBuffers{0};
@@ -138,6 +152,11 @@ void dumpAliveTextures() {
   if (console) std::fflush(stdout);
 }
 
+void deferReleaseBindGroup(WGPUBindGroup bindGroup) {
+  if (!bindGroup) return;
+  g_deferredBindGroups.push_back({g_frameCounter, bindGroup});
+}
+
 void flushDeferredDestroys() {
   ++g_frameCounter;
   const int cutoff = g_frameCounter - kDeferredDestroyFrames;
@@ -155,6 +174,12 @@ void flushDeferredDestroys() {
     ++dt;
   }
   if (dt) g_deferredTextures.erase(g_deferredTextures.begin(), g_deferredTextures.begin() + dt);
+  size_t dg = 0;
+  while (dg < g_deferredBindGroups.size() && g_deferredBindGroups[dg].frame <= cutoff) {
+    wgpuBindGroupRelease(g_deferredBindGroups[dg].bindGroup);
+    ++dg;
+  }
+  if (dg) g_deferredBindGroups.erase(g_deferredBindGroups.begin(), g_deferredBindGroups.begin() + dg);
 
   // Telemetria de VRAM (ADR-0153): quando os totais mudam (~2s), grava um
   // resumo no `perf-log.txt` da pasta do jogo — RAM/VRAM do processo (DXGI) +

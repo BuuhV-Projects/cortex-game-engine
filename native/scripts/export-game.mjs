@@ -31,6 +31,9 @@ const steam = args.includes('--steam');
 // (FPS/frame ms, CPU, memória, GPU — src/ui/DebugHud.ts). Vira o define
 // __CORTEX_DEBUG_HUD no bundle; o runtime é o mesmo do release.
 const debugHud = args.includes('--debug');
+// --editor: bundle COM o modo editor (F2) — para o preview nativo do Studio
+// (SPEC-0202). Jamais no export de produção: o editor pesa e não é jogo.
+const withEditor = args.includes('--editor');
 // --xbox: host GDK (native/build-gdk, CORTEX_GDK) + gera MicrosoftGame.config +
 // logos (app model GDK / Gaming.Desktop.x64). O alvo de console (Scarlett) exige
 // GXDK+ID@Xbox — ver architecture.md; hoje produz o pacote do app model no PC.
@@ -45,7 +48,7 @@ const outArg = outFlagIdx >= 0 ? args[outFlagIdx + 1] : null;
 const positional = args.filter((a, i) => !a.startsWith('--') && (outFlagIdx === -1 || i !== outFlagIdx + 1));
 const gameDir = positional[0] ? path.resolve(positional[0]) : null;
 if (!gameDir || !fs.existsSync(path.join(gameDir, 'main.ts'))) {
-  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--out <dir>] [--steam|--xbox] [--debug]');
+  console.error('uso: node native/scripts/export-game.mjs <gameDir com main.ts> [--out <dir>] [--steam|--xbox] [--debug] [--editor]');
   process.exit(1);
 }
 
@@ -152,10 +155,15 @@ execFileSync(
   {
     stdio: 'inherit',
     cwd: engineRoot,
-    env: { ...process.env, ...(debugHud ? { CORTEX_DEBUG_HUD: '1' } : {}) },
+    env: {
+      ...process.env,
+      ...(debugHud ? { CORTEX_DEBUG_HUD: '1' } : {}),
+      ...(withEditor ? { CORTEX_WITH_EDITOR: '1' } : {}),
+    },
   },
 );
 if (debugHud) console.log('[export] modo DEBUG: HUD de métricas ligado no bundle');
+if (withEditor) console.log('[export] modo EDITOR: F2 incluído no bundle (preview nativo)');
 
 // 2. bytecode Hermes
 step('bytecode');

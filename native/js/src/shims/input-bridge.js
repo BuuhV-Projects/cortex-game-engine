@@ -10,6 +10,10 @@ export function installInputBridge() {
     globalThis.dispatchEvent(event);
     document.dispatchEvent(event);
     document.body.dispatchEvent(event);
+    // O modo EDITOR anexa os listeners no CANVAS (TransformControls recebe o
+    // canvas como domElement, e o ObjectEditSystem escuta pointerdown nele).
+    // Sem esta linha dá pra jogar, mas não dá pra selecionar/arrastar (SPEC-0202).
+    if (globalThis.__cortexCanvas) globalThis.__cortexCanvas.dispatchEvent(event);
   };
 
   if (globalThis.__cortexInput) {

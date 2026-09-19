@@ -46,8 +46,21 @@ export function makeInertElement(tagName) {
     blur() {},
     click() {},
     getBoundingClientRect() {
-      return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
+      // O CANVAS ocupa a janela inteira no host; o resto é inerte. O
+      // TransformControls normaliza o ponteiro por este retângulo — devolver
+      // 0x0 fazia o gizmo ler todo clique como o mesmo ponto (SPEC-0202).
+      if (element === globalThis.__cortexCanvas) {
+        const w = globalThis.innerWidth || 0;
+        const h = globalThis.innerHeight || 0;
+        return { left: 0, top: 0, right: w, bottom: h, width: w, height: h, x: 0, y: 0 };
+      }
+      return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
     },
+    // O TransformControls captura o ponteiro ao começar o arrasto. No host o
+    // mouse já é global (SDL), então capturar é no-op — mas precisa EXISTIR.
+    setPointerCapture() {},
+    releasePointerCapture() {},
+    hasPointerCapture() { return false; },
     addEventListener: bus.addEventListener,
     removeEventListener: bus.removeEventListener,
     dispatchEvent: bus.dispatchEvent,

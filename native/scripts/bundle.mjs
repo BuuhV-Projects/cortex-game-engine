@@ -38,6 +38,9 @@ const threeWebGpuAlias = {
   },
 };
 
+/** Preview nativo: inclui o modo editor no bundle (SPEC-0202). */
+const withEditor = process.env.CORTEX_WITH_EDITOR === '1';
+
 const outfile = process.argv[2];
 const gameMain = process.argv[3] ? resolve(process.argv[3]) : null;
 if (!outfile) {
@@ -55,11 +58,26 @@ const gamePlugin = {
     }));
     // O jogo importa 'cortex-game-engine' (vendor); no host, resolve pro
     // SRC do engine — esbuild compila o TypeScript direto.
+    // CORTEX_WITH_EDITOR=1 (preview nativo do Studio, SPEC-0202): resolve pro
+    // entry COM editor, que registra o attacher e liga o F2. O export de
+    // PRODUCAO nunca passa a flag — o editor continua fora do jogo (ADR-0042).
     pluginBuild.onResolve({ filter: /^cortex-game-engine$/ }, () => ({
-      path: resolve('src/index-runtime.ts'),
+      path: resolve(withEditor ? 'src/index-dev.ts' : 'src/index-runtime.ts'),
     }));
     // zod: o engine importa 'zod/v3' (core v4 quebra no Hermes) — validação
     // REAL roda no host também; nenhum stub necessário.
+
+    // O writer do Tauri usa `await import()` DINÂMICO, que o Hermes não
+    // compila ("Invalid expression encountered" no hermesc). No bundle de
+    // produção ele some por tree-shaking; com o editor dentro (preview nativo)
+    // o `autoDetectSceneFileWriter` o retém. O host NUNCA é Tauri, então
+    // trocamos por um stub que falha se alguém tentar usar (SPEC-0202).
+    pluginBuild.onLoad({ filter: /TauriSceneFileWriter\.ts$/ }, () => ({
+      contents: `export class TauriSceneFileWriter {
+        constructor() { throw new Error('TauriSceneFileWriter nao existe no host nativo'); }
+      }`,
+      loader: 'ts',
+    }));
 
     // Transforma o main.ts do jogo: expande import.meta.glob e embrulha o
     // corpo (após os imports) num async IIFE — iife não aceita TLA.
