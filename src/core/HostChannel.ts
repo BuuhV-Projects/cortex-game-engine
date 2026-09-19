@@ -26,6 +26,8 @@ interface HostBridge {
   __cortexIdeOnMessage?: (cb: (line: string) => void) => void;
   /** Só no modo embutido (`CORTEX_PARENT_HWND`) — ver SPEC-0201. */
   __cortexSetWindowBounds?: (x: number, y: number, w: number, h: number) => void;
+  /** Idem — esconde a janela durante o drag de asset (SPEC-0206). */
+  __cortexSetWindowVisible?: (visible: boolean) => void;
 }
 
 /** Versão do protocolo — sobe quando o formato das mensagens mudar. */
@@ -97,6 +99,13 @@ export class HostChannel {
     }
     // `bounds` é geometria da JANELA, não do jogo: o host se posiciona sozinho
     // (SPEC-0201) e a IDE não precisa de FFI pra chamar SetWindowPos.
+    // `previewVisible` tambem e geometria de JANELA: a IDE esconde o preview
+    // durante o arraste de asset pra o overlay de drop receber o evento
+    // (airspace, SPEC-0206).
+    if (message.type === 'previewVisible') {
+      this.setVisible(message['visible'] !== false);
+      return;
+    }
     if (message.type === 'bounds') {
       this.setBounds(
         Number(message['x'] ?? 0), Number(message['y'] ?? 0),
@@ -122,6 +131,16 @@ export class HostChannel {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     if (!(width > 0) || !(height > 0)) return; // painel colapsado: ignora
     apply(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
+  }
+
+  /**
+   * Esconde/mostra a janela do host. No-op fora do modo embutido.
+   *
+   * Usado durante o drag-and-drop de asset: a janela nativa fica por cima de
+   * todo DOM, então o overlay que captura o drop só funciona com ela escondida.
+   */
+  setVisible(visible: boolean): void {
+    bridge().__cortexSetWindowVisible?.(visible);
   }
 
   /** Só pros testes: deixa o canal escutar sem nenhum handler registrado. */

@@ -136,6 +136,12 @@ export class Preview {
   private setAssetDropTarget(active: boolean, url: string): void {
     this.dropZoneEl?.remove()
     this.dropZoneEl = null
+    // Preview NATIVO: a janela do host fica por cima de TODO o DOM (airspace),
+    // entao o overlay so recebe o drop com ela escondida (SPEC-0206). Some
+    // durante o arraste e volta ao soltar/cancelar.
+    if (this.nativeActive) {
+      void window.electronAPI.sendNativePreviewMessage({ type: 'previewVisible', visible: !active })
+    }
     if (!active || !this.stageEl) return
     const zone = document.createElement('div')
     zone.style.cssText =
@@ -151,7 +157,7 @@ export class Preview {
       const nx = (ev.clientX - rect.left) / rect.width
       const ny = (ev.clientY - rect.top) / rect.height
       document.dispatchEvent(new CustomEvent('request-drop-asset', { detail: { url, nx, ny } }))
-      this.setAssetDropTarget(false, '')
+      this.setAssetDropTarget(false, '') // volta a mostrar o preview nativo
     })
     // Garante posicionamento do palco pro overlay ancorar.
     if (getComputedStyle(this.stageEl).position === 'static') this.stageEl.style.position = 'relative'

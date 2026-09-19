@@ -11,6 +11,7 @@ interface Bridge {
   __cortexIdeSend?: (line: string) => void;
   __cortexIdeOnMessage?: (cb: (line: string) => void) => void;
   __cortexSetWindowBounds?: (x: number, y: number, w: number, h: number) => void;
+  __cortexSetWindowVisible?: (visible: boolean) => void;
 }
 
 const g = globalThis as Bridge;
@@ -30,6 +31,7 @@ afterEach(() => {
   delete g.__cortexIdeSend;
   delete g.__cortexIdeOnMessage;
   delete g.__cortexSetWindowBounds;
+  delete g.__cortexSetWindowVisible;
 });
 
 describe('HostChannel sem host', () => {
@@ -131,12 +133,41 @@ describe('HostChannel com host', () => {
       expect(bounds).toEqual([]);
     });
 
+    it('previewVisible esconde e mostra a janela do host (airspace, SPEC-0206)', () => {
+      const visibility: boolean[] = [];
+      g.__cortexSetWindowVisible = (v) => visibility.push(v);
+      const channel = new HostChannel();
+      channel.listen();
+
+      bridge.push(JSON.stringify({ type: 'previewVisible', visible: false }));
+      bridge.push(JSON.stringify({ type: 'previewVisible', visible: true }));
+
+      expect(visibility).toEqual([false, true]);
+    });
+
+    it('previewVisible sem o campo assume visível (nunca deixa o preview sumido)', () => {
+      const visibility: boolean[] = [];
+      g.__cortexSetWindowVisible = (v) => visibility.push(v);
+      const channel = new HostChannel();
+      channel.listen();
+
+      bridge.push(JSON.stringify({ type: 'previewVisible' }));
+
+      expect(visibility).toEqual([true]);
+    });
+
     it('o ack informa que está embutido', () => {
       const channel = new HostChannel();
       channel.listen();
       bridge.push(JSON.stringify({ type: 'hello' }));
       expect(JSON.parse(bridge.sent[0]!).embedded).toBe(true);
     });
+  });
+
+  it('fora do embed, esconder a janela é no-op (jogo standalone não some)', () => {
+    const channel = new HostChannel();
+    channel.listen();
+    expect(() => channel.setVisible(false)).not.toThrow();
   });
 
   it('fora do embed, bounds é no-op (jogo standalone não se move)', () => {
