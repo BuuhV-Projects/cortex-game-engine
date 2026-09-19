@@ -1,4 +1,5 @@
 import { t } from './i18n'
+import { nativePreviewBounds } from './previewBounds.js'
 import { h, icon } from './ui'
 import type { EditorLevelInfo } from './EditorPanels'
 
@@ -463,6 +464,15 @@ export class Preview {
   private nativeActive = false;
 
   /**
+   * Faixas reservadas pras pills no preview nativo, em px (SPEC-0207). A janela
+   * do host cobre o DOM (airspace), então o retângulo dela ENCOLHE pra deixar
+   * as pills visíveis em cima e embaixo. Precisa bater com `.native-preview`
+   * em `styles.css`.
+   */
+  private static readonly NATIVE_BAR_TOP = 38;
+  private static readonly NATIVE_BAR_BOTTOM = 38;
+
+  /**
    * Liga o preview nativo com o export de `exportDir`. O palco é esvaziado e
    * passa a ser apenas o RETÂNGULO onde a janela do host vive.
    */
@@ -474,6 +484,7 @@ export class Preview {
     this.pushNativeBounds()
     // O palco muda de tamanho com o layout dos docks, não só com a janela.
     this.nativeActive = true
+    this.stageEl.classList.add('native-preview') // liga as faixas das pills
     this.nativeObserver = new ResizeObserver(() => this.pushNativeBounds())
     this.nativeObserver.observe(this.stageEl)
     window.addEventListener('resize', this.pushNativeBoundsBound)
@@ -513,6 +524,7 @@ export class Preview {
   /** Encerra o host embutido e para de observar (sem isso: janela órfã). */
   stopNative(): void {
     this.nativeActive = false
+    this.stageEl?.classList.remove('native-preview')
     this.nativeObserver?.disconnect()
     this.nativeObserver = null
     window.removeEventListener('resize', this.pushNativeBoundsBound)
@@ -530,10 +542,14 @@ export class Preview {
     if (!this.stageEl) return
     const r = this.stageEl.getBoundingClientRect()
     if (r.width <= 0 || r.height <= 0) return // painel colapsado
-    void window.electronAPI.setNativePreviewBounds({
-      x: Math.round(r.left), y: Math.round(r.top),
-      width: Math.round(r.width), height: Math.round(r.height),
-    })
+    // Encolhe pras FAIXAS das pills (SPEC-0207): sem isso a janela do host
+    // cobriria os controles do viewport, que são DOM.
+    const bounds = nativePreviewBounds(
+      { x: r.left, y: r.top, width: r.width, height: r.height },
+      { top: Preview.NATIVE_BAR_TOP, bottom: Preview.NATIVE_BAR_BOTTOM },
+    )
+    if (!bounds) return // painel colapsado ou baixo demais pra caber as faixas
+    void window.electronAPI.setNativePreviewBounds(bounds)
   }
 
   private showIframe(url: string): void {
