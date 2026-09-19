@@ -167,6 +167,7 @@ export class Shell {
         { label: tr('menu.build_installer_debug', 'Gerar instalador (debug)…'), run: () => document.dispatchEvent(new CustomEvent('build-installer-requested', { detail: { debug: true } })) },
         { sep: true },
         { label: tr('menu.revendor_engine', 'Re-vendorizar engine'), run: () => void this.revendorEngine() },
+        { label: tr('menu.native_preview', 'Preview nativo (experimental)…'), run: () => document.dispatchEvent(new CustomEvent('native-preview-requested')) },
         { sep: true },
         { label: tr('menu.close_project', 'Fechar projeto'), run: () => document.dispatchEvent(new CustomEvent('project-close')) },
       ]),

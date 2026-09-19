@@ -42,6 +42,7 @@ add_executable(cortex_host
   src/shims/perf_arraybuffer.cpp
   src/shims/perf_stats.cpp
   src/shims/ide_channel.cpp
+  src/shims/window_control.cpp
   src/shims/perf_trace.cpp
   src/shims/quit.cpp
   src/shims/rapier.cpp

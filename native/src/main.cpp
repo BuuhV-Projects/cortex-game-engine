@@ -27,6 +27,7 @@
 #include "shims/perf_arraybuffer.h"
 #include "shims/perf_stats.h"
 #include "shims/ide_channel.h"
+#include "shims/window_control.h"
 #include "shims/perf_trace.h"
 #include "shims/quit.h"
 #include "shims/rapier.h"
@@ -214,6 +215,7 @@ int main(int argc, char** argv) {
     shims::registerKtx2(js.env());
     shims::registerPerfStats(js.env());
     shims::registerIdeChannel(js.env());  // canal com a IDE (CORTEX_IDE_CHANNEL=1)
+    shims::registerWindowControl(js.env(), window);  // geometria no embed (M2)
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());
     shims::registerAudio(js.env());

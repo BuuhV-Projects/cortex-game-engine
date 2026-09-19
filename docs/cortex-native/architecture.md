@@ -63,6 +63,7 @@ Ver ADR-0109.
 | `native/src/core/js_runtime.*` | Ciclo de vida do Hermes **UPSTREAM** (facebook/hermes via `hermes_embed`, ADR-0122 — o fork MS/`jsr_*` foi aposentado: ~4× mais lento), `print()`, boot `.hbc`→fallback `.js`, drain de microtasks, global `__cortexGC()` (coleta sob demanda no teardown de fase — ADR-0153). ⚠️ `JsRuntime::HandleScope`: TODO acesso NAPI vindo do NATIVO exige scope aberto (o loop abre 1/frame; boot tem o seu) — sem isso o GC corrompe na marcação. |
 | `native/src/core/crash_handler.*` | `SetUnhandledExceptionFilter` + DbgHelp: segfault imprime **backtrace simbolizado** no stderr (com PDB dá arquivo:linha) em vez de exit mudo. Foi o que caçou o bug do handle-scope. |
 | `native/src/core/hermes_embed.*` | ÚNICO tradutor que inclui headers do VM do Hermes: API C mínima (create runtime/env, run bytecode/script, drain jobs). Compilado num alvo que herda as flags EXATAS do build do Hermes (`hermesNapi_obj`) — headers do VM com defines diferentes quebram ABI em silêncio. O Hermes builda como SUBPROJETO (`third_party/hermes-upstream/src`, commit pinado pelo fetch-deps) e é ESTÁTICO no exe (sem hermes.dll). |
+| `native/src/shims/window_control.*` | `__cortexSetWindowBounds(x,y,w,h)` — move/redimensiona a janela do host (SPEC-0201). Registrado SÓ no modo embutido (`CORTEX_PARENT_HWND`): é o que deixa o Studio posicionar o preview pelo canal, sem FFI no Electron. |
 | `native/src/shims/ide_channel.*` | Canal de linhas JSON com a IDE (SPEC-0200 / M1 do PRD-0007): thread lê o **stdin**, `drainIdeMessages` entrega na thread JS, `__cortexIdeSend` responde pelo **stdout** prefixado com `@cortex-ide@`. Gate `CORTEX_IDE_CHANNEL=1` — sem ele o shim nem é registrado. A thread NUNCA chama NAPI (regra de ouro). |
 | `native/src/shims/perf_trace.*` | `__cortexPerfTrace(linha)` → acrescenta uma linha JSONL em `perf-trace.jsonl` (SPEC-0198). O **registro é o gate**: só acontece com métricas ativas (`game.debug`/dev-run/`CORTEX_VRAM_LOG`), e a engine testa a existência da função antes de coletar — sem métricas, custo zero no frame. Quem amostra é o `PerfTrace` do engine (fps, ms por seção, draws/tris, câmera e nós visíveis). |
 | `native/src/shims/perf_stats.*` | `__cortexPerfStats()` → CPU % do processo, working set MB e VRAM MB (DXGI) — alimenta o `DebugHud` do engine no export `--debug`. |
@@ -343,6 +344,12 @@ Native (que roda milhares de libs sobre Hermes em produção):
   sem ele, o engine cria os alvos a 1280×720 (tamanho de criação) enquanto a
   swapchain assume a resolução do display (1920×1080) → mismatch depth×color
   → crash. `CORTEX_WINDOWED=1` abre em janela pra debug.
+- **Embed em HWND externo é Win32 puro** (SPEC-0201): o SDL3 só parenteia
+  janelas dele mesmo (`SDL_PROP_WINDOW_CREATE_PARENT_POINTER` espera um
+  `SDL_Window*`), então com `CORTEX_PARENT_HWND` o host faz
+  `WS_CHILD` + `SetParent` na mão (`core::attachToParent`). Implica janela sem
+  borda e nunca fullscreen; quem posiciona é o HOST, comandado por `bounds` no
+  canal da IDE. Windows-only.
 - **RE-configurar a surface pra outro tamanho = CRASH** ("Invalid surface" no
   `wgpuSurfaceConfigure`, D3D12/wgpu-native). **RESOLVIDO na SPEC-0199**: em vez
   de reconfigurar, o host **RECRIA** a surface a partir do HWND
