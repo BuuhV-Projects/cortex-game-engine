@@ -125,6 +125,13 @@ painel da IDE, todos pelo canal nativo.
 **Aceite:** a lista da seção "o que o editor exige" inteira funcionando sem
 iframe.
 
+> **M4c FEITO (SPEC-0207):** as pills do viewport deixam de sumir sob a janela
+> nativa — duas faixas reservadas em cima e embaixo, e o retângulo do host
+> encolhe pra caber no meio. **Falta validar a aparência** com o Studio aberto.
+> Resta do M4 só o **screenshot** (hoje `capturePage` do Chromium) — que NÃO
+> bloqueia o uso: o playtest do Chat IA roda numa BrowserWindow própria, fora
+> do preview.
+>
 > **M4b FEITO (SPEC-0206):** drag-and-drop de asset funciona no preview nativo
 > — a janela do host some durante o arraste, o overlay de drop volta a ser o
 > topo da pilha, e ela reaparece ao soltar. **Falta** os overlays do viewport

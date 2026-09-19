@@ -431,6 +431,32 @@ body.app-preview-fullscreen #preview-container {
 .preview-overlay .vp-bl { position: absolute; bottom: 10px; left: 10px; }
 .preview-overlay .vp-br { position: absolute; bottom: 10px; right: 10px; }
 .preview-overlay .vp-pill { pointer-events: auto; }
+
+/* Preview NATIVO (SPEC-0207): a janela do host cobre o DOM (airspace), entao as
+   pills nao podem ficar SOBRE o viewport. Viram duas FAIXAS — uma em cima,
+   outra embaixo — e o retangulo mandado ao host encolhe pra caber no meio.
+   As alturas aqui precisam bater com NATIVE_BAR_TOP/BOTTOM em Preview.ts. */
+.preview-stage.native-preview .preview-overlay .vp-tl,
+.preview-stage.native-preview .preview-overlay .vp-tr {
+  top: 6px;
+}
+.preview-stage.native-preview .preview-overlay .vp-bl,
+.preview-stage.native-preview .preview-overlay .vp-br {
+  bottom: 6px;
+}
+.preview-stage.native-preview .preview-overlay::before,
+.preview-stage.native-preview .preview-overlay::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 38px;
+  background: var(--bg-1, #14141c);
+}
+.preview-stage.native-preview .preview-overlay::before { top: 0; }
+.preview-stage.native-preview .preview-overlay::after { bottom: 0; }
+/* As faixas sao fundo: as pills ficam por cima delas. */
+.preview-stage.native-preview .preview-overlay > div { z-index: 1; }
 .preview-overlay .vp-tool {
   width: 30px;
   padding: 0;
