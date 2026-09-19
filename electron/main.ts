@@ -1,6 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, shell, type MenuItemConstructorOptions } from 'electron'
 import { join, resolve, delimiter, basename } from 'path'
-import { NativePreview } from './nativePreview.js'
 import { readdir, readFile, writeFile, cp, mkdir, rename, rm, unlink } from 'fs/promises'
 import { existsSync, readFileSync, watch, type FSWatcher } from 'fs'
 import { spawn, spawnSync, ChildProcess } from 'child_process'
@@ -110,9 +109,6 @@ function envForSpawn(projectDir?: string): NodeJS.ProcessEnv {
   }
   return env
 }
-
-// Preview nativo (SPEC-0201): o host do jogo como janela filha do Studio.
-const nativePreview = new NativePreview()
 
 // Referência à janela principal — usada em run:start para enviar logs ao renderer
 let mainWindow: BrowserWindow | null = null
@@ -522,7 +518,6 @@ const VENDOR_TYPE_MODULES = {
     'InputManager',
     'GamepadManager',
     'Physics',
-    'HostChannel',
     'PerfTrace',
     'LoadingScreen',
     'loadKtx2',
@@ -1413,62 +1408,6 @@ function killPort(port: number): void {
 }
 
 // Spawna o `vite` no diretório do projeto; redireciona stdout/stderr ao renderer via 'log'
-// ── Preview nativo (SPEC-0201 / M2 do PRD-0007) ───────────────────────────────
-// Sobe o host de um EXPORT do jogo como janela filha da janela do Studio. O
-// Electron só spawna e manda a geometria; quem se posiciona é o host.
-ipcMain.handle('native-preview:start', async (_event, exportDir: unknown, launchQuery?: unknown) => {
-  const safeDir = validatePath(exportDir)
-  if (!mainWindow) throw new Error('sem janela principal')
-  // O HWND vem como buffer little-endian (8 bytes no Windows 64).
-  const handle = mainWindow.getNativeWindowHandle()
-  const parentHwnd = handle.length >= 8 ? handle.readBigUInt64LE(0) : BigInt(handle.readUInt32LE(0))
-  // Mover/redimensionar a JANELA do Studio muda as coordenadas de tela do
-  // palco — a janela owned nao acompanha sozinha (uma filha acompanharia).
-  const follow = (): void => { if (lastPreviewRect) pushPreviewBounds(lastPreviewRect) }
-  mainWindow.removeListener('move', follow)
-  mainWindow.on('move', follow)
-  mainWindow.on('resize', follow)
-  nativePreview.start({
-    exportDir: safeDir,
-    parentHwnd,
-    ...(typeof launchQuery === 'string' && launchQuery ? { launchQuery } : {}),
-    onLog: (line) => mainWindow?.webContents.send('log', `${line}
-`),
-    onMessage: (message) => mainWindow?.webContents.send('native-preview:message', message),
-    onExit: (code) => mainWindow?.webContents.send('native-preview:exit', code),
-  })
-})
-
-// O renderer mede o palco em coordenadas da JANELA; a janela do host e OWNED
-// (nao filha, SPEC-0210), entao ela se posiciona em coordenadas de TELA —
-// somamos a origem da area de conteudo do Studio.
-function pushPreviewBounds(rect: { x: number; y: number; width: number; height: number }): void {
-  if (!mainWindow) return
-  const content = mainWindow.getContentBounds()
-  nativePreview.setBounds(content.x + rect.x, content.y + rect.y, rect.width, rect.height)
-}
-
-/** Ultimo retangulo do palco (coords da janela) — reenviado quando ela se move. */
-let lastPreviewRect: { x: number; y: number; width: number; height: number } | null = null
-
-ipcMain.handle('native-preview:bounds', async (_event, rect: unknown) => {
-  const r = rect as { x?: number; y?: number; width?: number; height?: number } | null
-  if (!r || typeof r.width !== 'number' || typeof r.height !== 'number') return
-  lastPreviewRect = { x: r.x ?? 0, y: r.y ?? 0, width: r.width, height: r.height }
-  pushPreviewBounds(lastPreviewRect)
-})
-
-ipcMain.handle('native-preview:stop', async () => {
-  nativePreview.stop()
-})
-
-// Mensagem da IDE pro host embutido — mesmo protocolo da ponte do editor
-// (SPEC-0203); o que muda e so o transporte.
-ipcMain.handle('native-preview:send', async (_event, message: unknown) => {
-  if (!message || typeof message !== 'object') return
-  nativePreview.send(message as { type: string })
-})
-
 ipcMain.handle('run:start', async (_event, projectDir: unknown) => {
   const safeDir = validatePath(projectDir)
 

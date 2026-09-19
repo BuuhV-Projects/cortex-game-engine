@@ -60,11 +60,6 @@ new Launcher()
 fileTree.init()
 editorPanels.init()
 
-// Preview NATIVO (SPEC-0203): as mensagens da ponte chegam pelo canal do host
-// em vez de `postMessage`. Mesmo protocolo — os paineis nao sabem a diferenca.
-window.electronAPI.onNativePreviewMessage((message) => editorPanels.handleNativeMessage(message))
-window.electronAPI.onNativePreviewExit(() => editorPanels.clearNativeTarget())
-assetInspector.init()
 docTabs.init()
 editor.init()
 preview.init()

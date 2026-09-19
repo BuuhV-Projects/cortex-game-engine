@@ -1,6 +1,4 @@
-import { AirspaceGate } from './airspace.js'
 import { t } from './i18n'
-import { nativePreviewBounds } from './previewBounds.js'
 import { h, icon } from './ui'
 import type { EditorLevelInfo } from './EditorPanels'
 
@@ -110,11 +108,6 @@ export class Preview {
       if (iframe && this.serverUrl) iframe.src = this.withDebug(this.serverUrl)
       else if (this.projectDir && !this.running) void this.toggle()
     })
-    // Preview NATIVO (SPEC-0201): escolhe a pasta do export e embute o host no
-    // lugar do iframe. Experimental — o M2 do PRD-0007 assume um export já
-    // gerado; o fluxo incremental (editar → ver) é dos marcos seguintes.
-    document.addEventListener('native-preview-requested', () => void this.buildAndStartNative())
-    document.addEventListener('play-stopped', () => this.stopNative())
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
     document.addEventListener('request-fullscreen-toggle', () => this.toggleFullscreen())
     // Pills do viewport (objeto/ferramentas/perf) — info vinda da ponte do editor.
@@ -132,23 +125,12 @@ export class Preview {
       const { active, url } = (e as CustomEvent<{ active: boolean; url: string }>).detail
       this.setAssetDropTarget(active, url)
     })
-    // Menu da menubar aberto/fechado (SPEC-0211): o menu é DOM e abre SOBRE o
-    // palco, então nasce atrás da janela owned do host se ela não sair da frente.
-    document.addEventListener('studio-overlay', (e) => {
-      const { id, open } = (e as CustomEvent<{ id: string; open: boolean }>).detail
-      this.setAirspaceBlocker(id, open)
-    })
-    this.watchModalDialogs()
   }
 
   /** Liga/desliga o overlay que captura o drop de asset sobre o palco. */
   private setAssetDropTarget(active: boolean, url: string): void {
     this.dropZoneEl?.remove()
     this.dropZoneEl = null
-    // Preview NATIVO: a janela do host fica por cima de TODO o DOM (airspace),
-    // entao o overlay so recebe o drop com ela escondida (SPEC-0206). Some
-    // durante o arraste e volta ao soltar/cancelar.
-    this.setAirspaceBlocker('asset-drag', active)
     if (!active || !this.stageEl) return
     const zone = document.createElement('div')
     zone.style.cssText =
@@ -164,7 +146,7 @@ export class Preview {
       const nx = (ev.clientX - rect.left) / rect.width
       const ny = (ev.clientY - rect.top) / rect.height
       document.dispatchEvent(new CustomEvent('request-drop-asset', { detail: { url, nx, ny } }))
-      this.setAssetDropTarget(false, '') // volta a mostrar o preview nativo
+      this.setAssetDropTarget(false, '')
     })
     // Garante posicionamento do palco pro overlay ancorar.
     if (getComputedStyle(this.stageEl).position === 'static') this.stageEl.style.position = 'relative'
@@ -332,15 +314,6 @@ export class Preview {
    * jogo já suporta pra pular menu e hub — o mesmo do harness de screenshot.
    */
   private openLevel(id: string): void {
-    // Preview NATIVO: trocar de fase é reiniciar o host com `level=<id>` — o
-    // mesmo boot do `?level=` do iframe (SPEC-0205).
-    if (this.nativeActive && this.nativeExportDir) {
-      this.currentLevel = id
-      this.setLevelMenuOpen(false)
-      this.updateLevelPill()
-      void this.startNative(this.nativeExportDir, id)
-      return
-    }
     if (!this.serverUrl) return
     this.currentLevel = id
     this.setLevelMenuOpen(false)
@@ -456,146 +429,6 @@ export class Preview {
     }
     this.updateButtonState()
     document.dispatchEvent(new CustomEvent('play-stopped'))
-  }
-
-  // ── Preview NATIVO (SPEC-0201 / M2 do PRD-0007) ────────────────────────────
-  // Em vez do iframe, o host do jogo roda como janela FILHA do Studio, ocupando
-  // o retângulo do palco. O DOM não desenha nada ali: a janela nativa cobre a
-  // área (airspace), então o palco fica vazio de propósito.
-
-  /** Observa o tamanho do palco pra manter a janela nativa alinhada. */
-  private nativeObserver: ResizeObserver | null = null;
-
-  /** O preview nativo está no ar? (muda o destino de Play/troca de fase). */
-  private nativeActive = false;
-
-  /**
-   * Quem está exigindo o palco livre agora (SPEC-0211). A janela do host é
-   * OWNED: fica acima de todo o DOM, então menu, modal e overlay de drop só
-   * aparecem com ela escondida.
-   */
-  private readonly airspace = new AirspaceGate();
-
-  /**
-   * Registra/solta uma fonte de airspace. Só a TRANSIÇÃO vira mensagem no
-   * canal — com dois overlays sobrepostos o host não pisca, e fechar um deles
-   * não revela o host enquanto o outro precisar do palco.
-   */
-  private setAirspaceBlocker(source: string, blocking: boolean): void {
-    const visible = this.airspace.set(source, blocking);
-    if (visible === null || !this.nativeActive) return
-    void window.electronAPI.sendNativePreviewMessage({ type: 'previewVisible', visible })
-  }
-
-  /**
-   * Some com o host enquanto houver um modal aberto (SPEC-0211). Todo modal do
-   * Studio é `<dialog>.showModal()` — `ProjectSettingsModal`,
-   * `ExportProgressModal`, `customPrompt` —, então observar `dialog[open]` num
-   * lugar só cobre os três e qualquer modal futuro que siga o molde, sem
-   * obrigar cada um a se anunciar.
-   */
-  private watchModalDialogs(): void {
-    const sync = (): void => {
-      this.setAirspaceBlocker('dialog', document.querySelector('dialog[open]') !== null)
-    }
-    new MutationObserver(sync).observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['open'],
-    })
-  }
-
-  /**
-   * Faixas reservadas pras pills no preview nativo, em px (SPEC-0207). A janela
-   * do host cobre o DOM (airspace), então o retângulo dela ENCOLHE pra deixar
-   * as pills visíveis em cima e embaixo. Precisa bater com `.native-preview`
-   * em `styles.css`.
-   */
-  private static readonly NATIVE_BAR_TOP = 38;
-  private static readonly NATIVE_BAR_BOTTOM = 38;
-
-  /**
-   * Liga o preview nativo com o export de `exportDir`. O palco é esvaziado e
-   * passa a ser apenas o RETÂNGULO onde a janela do host vive.
-   */
-  async startNative(exportDir: string, level?: string | null): Promise<void> {
-    if (!this.stageEl) return
-    this.stopNative()
-    this.stageEl.innerHTML = ''
-    await window.electronAPI.startNativePreview(exportDir, level ? `level=${level}` : undefined)
-    this.pushNativeBounds()
-    // O palco muda de tamanho com o layout dos docks, não só com a janela.
-    this.nativeActive = true
-    this.stageEl.classList.add('native-preview') // liga as faixas das pills
-    this.nativeObserver = new ResizeObserver(() => this.pushNativeBounds())
-    this.nativeObserver.observe(this.stageEl)
-    window.addEventListener('resize', this.pushNativeBoundsBound)
-  }
-
-  /**
-   * **Preview nativo em um comando** (SPEC-0205): exporta o projeto com o modo
-   * editor e abre o host embutido. Antes era preciso exportar à mão e escolher
-   * a pasta — o que tornava o preview nativo inutilizável no dia a dia.
-   *
-   * O export reusa o cache de cook por hash, então a segunda vez é rápida.
-   */
-  private async buildAndStartNative(): Promise<void> {
-    if (!this.projectDir) {
-      void window.electronAPI.infoDialog('Abra um projeto primeiro.')
-      return
-    }
-    document.dispatchEvent(new CustomEvent('export-progress', { detail: 'prepare' }))
-    const result = await window.electronAPI.exportNative(
-      this.projectDir, 'pc', true, undefined, true, // debug + editor
-    )
-    if (!result.ok || !result.distDir) {
-      void window.electronAPI.errorDialog('Preview nativo', result.output.slice(-2000))
-      return
-    }
-    this.nativeExportDir = result.distDir
-    try {
-      await this.startNative(result.distDir, this.currentLevel)
-    } catch (err) {
-      void window.electronAPI.errorDialog('Preview nativo', String(err))
-    }
-  }
-
-  /** Pasta do último export usado pelo preview nativo (base do restart). */
-  private nativeExportDir: string | null = null
-
-  /** Encerra o host embutido e para de observar (sem isso: janela órfã). */
-  stopNative(): void {
-    this.nativeActive = false
-    // Portão limpo entre sessões (SPEC-0211): um menu que ficou aberto quando o
-    // preview caiu deixaria o próximo host nascer escondido.
-    this.airspace.clear()
-    this.stageEl?.classList.remove('native-preview')
-    this.nativeObserver?.disconnect()
-    this.nativeObserver = null
-    window.removeEventListener('resize', this.pushNativeBoundsBound)
-    void window.electronAPI.stopNativePreview()
-  }
-
-  private pushNativeBoundsBound = (): void => this.pushNativeBounds()
-
-  /**
-   * Manda o retângulo do palco em coordenadas da JANELA do Studio — é o
-   * referencial da janela filha (WS_CHILD). `getBoundingClientRect` já dá
-   * coordenadas do viewport, que é o que a janela pai enxerga.
-   */
-  private pushNativeBounds(): void {
-    if (!this.stageEl) return
-    const r = this.stageEl.getBoundingClientRect()
-    if (r.width <= 0 || r.height <= 0) return // painel colapsado
-    // Encolhe pras FAIXAS das pills (SPEC-0207): sem isso a janela do host
-    // cobriria os controles do viewport, que são DOM.
-    const bounds = nativePreviewBounds(
-      { x: r.left, y: r.top, width: r.width, height: r.height },
-      { top: Preview.NATIVE_BAR_TOP, bottom: Preview.NATIVE_BAR_BOTTOM },
-    )
-    if (!bounds) return // painel colapsado ou baixo demais pra caber as faixas
-    void window.electronAPI.setNativePreviewBounds(bounds)
   }
 
   private showIframe(url: string): void {

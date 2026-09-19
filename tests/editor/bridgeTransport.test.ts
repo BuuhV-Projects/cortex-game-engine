@@ -1,40 +1,29 @@
 /**
  * Testes do transporte da ponte do editor (src/editor/bridgeTransport.ts,
- * SPEC-0203): a escolha do meio (host > iframe > nenhum) e o formato das
- * mensagens, que precisa ser o MESMO nos dois — é o que deixa os painéis da IDE
- * não saberem se o jogo está num iframe ou no host nativo.
+ * SPEC-0203): a escolha do meio (iframe ou nenhum) e o formato das mensagens.
+ *
+ * O transporte pelo canal do host nativo saiu com o preview nativo (ADR-0212) —
+ * ele vive na branch `feature/preview-nativo-no-studio`.
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { detectBridgeTransport, IDE_MESSAGE_TYPES } from '../../src/editor/bridgeTransport.js';
-import { HostChannel } from '../../src/core/HostChannel.js';
-
-interface Bridge {
-  __cortexIdeChannel?: boolean;
-  __cortexIdeSend?: (line: string) => void;
-  __cortexIdeOnMessage?: (cb: (line: string) => void) => void;
-}
-const g = globalThis as Bridge;
-
-/** Canal do host falso. */
-function installHost(): { sent: string[]; push: (line: string) => void } {
-  const sent: string[] = [];
-  let listener: ((line: string) => void) | null = null;
-  g.__cortexIdeChannel = true;
-  g.__cortexIdeSend = (line) => sent.push(line);
-  g.__cortexIdeOnMessage = (cb) => { listener = cb; };
-  return { sent, push: (line) => listener?.(line) };
-}
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { detectBridgeTransport } from '../../src/editor/bridgeTransport.js';
 
 afterEach(() => {
-  delete g.__cortexIdeChannel;
-  delete g.__cortexIdeSend;
-  delete g.__cortexIdeOnMessage;
   vi.unstubAllGlobals();
 });
 
 describe('detectBridgeTransport', () => {
-  it('sem host e fora de iframe, não há transporte (jogo standalone)', () => {
+  it('fora de iframe, não há transporte (jogo standalone)', () => {
     vi.stubGlobal('window', { parent: undefined });
+    expect(detectBridgeTransport()).toBeNull();
+  });
+
+  it('a janela de topo também não tem IDE do outro lado', () => {
+    // `window.parent === window` é como o browser sinaliza "sou a janela raiz".
+    const topo = { addEventListener: vi.fn() } as unknown as Window;
+    (topo as unknown as { parent: unknown }).parent = topo;
+    vi.stubGlobal('window', topo);
+
     expect(detectBridgeTransport()).toBeNull();
   });
 
@@ -50,52 +39,48 @@ describe('detectBridgeTransport', () => {
     expect(postMessage).toHaveBeenCalledWith({ source: 'cortex-editor', type: 'state' }, '*');
   });
 
-  it('com o canal do host, ele VENCE o iframe (preview nativo)', () => {
-    const host = installHost();
-    vi.stubGlobal('window', { parent: { postMessage: vi.fn() }, addEventListener: vi.fn() });
+  it('entrega ao handler as mensagens da IDE, ignorando ruído sem `type`', () => {
+    let listener: ((event: MessageEvent) => void) | null = null;
+    const fakeWindow = {
+      parent: { postMessage: vi.fn() },
+      addEventListener: (_: string, cb: (event: MessageEvent) => void) => { listener = cb; },
+      removeEventListener: vi.fn(),
+    };
+    vi.stubGlobal('window', fakeWindow);
 
-    const transport = detectBridgeTransport();
-
-    expect(transport?.kind).toBe('host');
-    transport!.send({ type: 'state', nodes: 2 });
-    expect(JSON.parse(host.sent[0]!)).toEqual({ source: 'cortex-editor', type: 'state', nodes: 2 });
-  });
-});
-
-describe('transporte do host', () => {
-  let host: ReturnType<typeof installHost>;
-
-  beforeEach(() => {
-    host = installHost();
-    vi.stubGlobal('window', { parent: undefined });
-  });
-
-  it('entrega as mensagens da IDE ao handler da ponte', () => {
-    const transport = detectBridgeTransport(new HostChannel())!;
+    const transport = detectBridgeTransport()!;
     const received: string[] = [];
     transport.onMessage((msg) => received.push(msg.type));
 
-    host.push(JSON.stringify({ source: 'cortex-ide', type: 'select', id: 'x' }));
-    host.push(JSON.stringify({ source: 'cortex-ide', type: 'field', value: 1 }));
+    listener!({ data: { source: 'cortex-ide', type: 'select', id: 'x' } } as MessageEvent);
+    listener!({ data: null } as MessageEvent);
+    listener!({ data: { semTipo: true } } as MessageEvent);
+    listener!({ data: { source: 'cortex-ide', type: 'field', value: 1 } } as MessageEvent);
 
     expect(received).toEqual(['select', 'field']);
   });
 
-  it('cobre todos os tipos que a IDE manda (o canal roteia POR tipo)', () => {
-    const transport = detectBridgeTransport(new HostChannel())!;
-    const received: string[] = [];
-    transport.onMessage((msg) => received.push(msg.type));
+  it('dispose solta o listener (sem isso, a ponte vaza entre reloads)', () => {
+    const removeEventListener = vi.fn();
+    vi.stubGlobal('window', {
+      parent: { postMessage: vi.fn() },
+      addEventListener: vi.fn(),
+      removeEventListener,
+    });
 
-    for (const type of IDE_MESSAGE_TYPES) {
-      host.push(JSON.stringify({ source: 'cortex-ide', type }));
-    }
+    const transport = detectBridgeTransport()!;
+    transport.onMessage(() => {});
+    transport.dispose();
 
-    expect(received).toEqual([...IDE_MESSAGE_TYPES]);
+    expect(removeEventListener).toHaveBeenCalledWith('message', expect.any(Function));
   });
 
   it('a marca de origem vai em toda mensagem enviada', () => {
-    const transport = detectBridgeTransport(new HostChannel())!;
-    transport.send({ type: 'hello' });
-    expect(JSON.parse(host.sent[0]!).source).toBe('cortex-editor');
+    const postMessage = vi.fn();
+    vi.stubGlobal('window', { parent: { postMessage }, addEventListener: vi.fn(), removeEventListener: vi.fn() });
+
+    detectBridgeTransport()!.send({ type: 'hello' });
+
+    expect(postMessage.mock.calls[0]![0].source).toBe('cortex-editor');
   });
 });

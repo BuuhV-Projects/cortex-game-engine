@@ -63,8 +63,6 @@ Ver ADR-0109.
 | `native/src/core/js_runtime.*` | Ciclo de vida do Hermes **UPSTREAM** (facebook/hermes via `hermes_embed`, ADR-0122 — o fork MS/`jsr_*` foi aposentado: ~4× mais lento), `print()`, boot `.hbc`→fallback `.js`, drain de microtasks, global `__cortexGC()` (coleta sob demanda no teardown de fase — ADR-0153). ⚠️ `JsRuntime::HandleScope`: TODO acesso NAPI vindo do NATIVO exige scope aberto (o loop abre 1/frame; boot tem o seu) — sem isso o GC corrompe na marcação. |
 | `native/src/core/crash_handler.*` | `SetUnhandledExceptionFilter` + DbgHelp: segfault imprime **backtrace simbolizado** no stderr (com PDB dá arquivo:linha) em vez de exit mudo. Foi o que caçou o bug do handle-scope. |
 | `native/src/core/hermes_embed.*` | ÚNICO tradutor que inclui headers do VM do Hermes: API C mínima (create runtime/env, run bytecode/script, drain jobs). Compilado num alvo que herda as flags EXATAS do build do Hermes (`hermesNapi_obj`) — headers do VM com defines diferentes quebram ABI em silêncio. O Hermes builda como SUBPROJETO (`third_party/hermes-upstream/src`, commit pinado pelo fetch-deps) e é ESTÁTICO no exe (sem hermes.dll). |
-| `native/src/shims/window_control.*` | `__cortexSetWindowBounds(x,y,w,h)` move/redimensiona e `__cortexSetWindowVisible(bool)` esconde/mostra a janela do host (SPEC-0201/0206). O hide usa `ShowWindow` do **Win32**: `SDL_HideWindow` não tem efeito numa janela adotada por `SetParent`. Registrado SÓ no modo embutido (`CORTEX_PARENT_HWND`): é o que deixa o Studio posicionar o preview pelo canal, sem FFI no Electron. |
-| `native/src/shims/ide_channel.*` | Canal de linhas JSON com a IDE (SPEC-0200 / M1 do PRD-0007): thread lê o **stdin**, `drainIdeMessages` entrega na thread JS, `__cortexIdeSend` responde pelo **stdout** prefixado com `@cortex-ide@`. Gate `CORTEX_IDE_CHANNEL=1` — sem ele o shim nem é registrado. A thread NUNCA chama NAPI (regra de ouro). |
 | `native/src/shims/perf_trace.*` | `__cortexPerfTrace(linha)` → acrescenta uma linha JSONL em `perf-trace.jsonl` (SPEC-0198). O **registro é o gate**: só acontece com métricas ativas (`game.debug`/dev-run/`CORTEX_VRAM_LOG`), e a engine testa a existência da função antes de coletar — sem métricas, custo zero no frame. Quem amostra é o `PerfTrace` do engine (fps, ms por seção, draws/tris, câmera e nós visíveis). |
 | `native/src/shims/perf_stats.*` | `__cortexPerfStats()` → CPU % do processo, working set MB e VRAM MB (DXGI) — alimenta o `DebugHud` do engine no export `--debug`. |
 | `native/src/core/gdk.*` | App model do Microsoft GDK (M3): `initGameRuntime`/`shutdownGameRuntime` (XGameRuntime). **No-op** sem `-DCORTEX_GDK`; com o flag, linka `xgameruntime.lib` e inicializa o runtime do GDK. Base p/ XUser/XGameSave/suspend-resume e alvos de console. O `main.cpp` injeta **`__cortexPlatform`** (`"xbox"` com o flag, senão `"pc"`) pré-boot — os jogos dimensionam custo por alvo (ex.: teste4 baixa o shadow map do CSM 4096²→2048² no console, Series S). |
@@ -378,22 +376,11 @@ Native (que roda milhares de libs sobre Hermes em produção):
   sobrevive ao tree-shaking quando o editor entra no bundle — o `bundle.mjs`
   o substitui por um stub. Qualquer módulo novo com `import()` dinâmico quebra
   o export do mesmo jeito.
-- **Embed em HWND externo é Win32 puro, e a janela é OWNED** (SPEC-0201/0210):
-  com `CORTEX_PARENT_HWND` o host vira `WS_POPUP` + `GWLP_HWNDPARENT`
-  (`core::attachToParent`). **NÃO use `WS_CHILD` + `SetParent`**: entre
-  PROCESSOS isso acopla as filas de mensagem e um host ocupado TRAVA a IDE —
-  aconteceu ("Application Hang" no log do Windows). Em troca, a janela owned
-  não é clipada pelo dono: a IDE manda coordenadas de TELA, reenvia quando a
-  janela dela move e esconde o preview quando o palco não está visível. O modo
-  embed implica janela (nunca fullscreen). Windows-only.
-- **A janela do embed NÃO pode ter `WS_EX_NOACTIVATE`** (SPEC-0211): janela
-  não-ativa não recebe `WM_KEYDOWN`, então o jogo desenha mas não responde a
-  nada — sintoma idêntico a "o Studio travou", e foi assim que chegou o relato.
-  O iframe que o embed substitui RECEBE foco ao ser clicado; o embed faz o
-  mesmo. Ativar janela de outro processo **não** acopla filas (só `SetParent`
-  e `AttachThreadInput` fazem), então isto não conflita com a regra acima.
-  `SWP_NOACTIVATE` no `SetWindowPos` do attach continua certo: subir o preview
-  não rouba foco; quem dá foco ao jogo é o clique do usuário.
+- **Preview nativo no Studio: PAUSADO.** O host embutido numa janela da
+  IDE (HWND externo, canal de linhas com o Studio e controle de geometria
+  da janela) saiu do host — não havia mais nada na main que o usasse. O
+  trabalho está preservado na branch `feature/preview-nativo-no-studio`,
+  com as specs que o descrevem; retome de lá se o preview voltar.
 - **RE-configurar a surface pra outro tamanho = CRASH** ("Invalid surface" no
   `wgpuSurfaceConfigure`, D3D12/wgpu-native). **RESOLVIDO na SPEC-0199**: em vez
   de reconfigurar, o host **RECRIA** a surface a partir do HWND

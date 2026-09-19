@@ -2,10 +2,7 @@
 
 #include <webgpu/wgpu.h>
 
-#include <windows.h>
-
 #include <cstdio>
-#include <cstdlib>
 
 namespace core {
 namespace {
@@ -40,48 +37,6 @@ WGPUSurface createWindowSurface(WGPUInstance instance, SDL_Window* window,
   return surfaceFromHandles(instance, gpu->hwnd, gpu->hinstance);
 }
 
-// Prende a janela do host a um HWND externo (o painel do Studio) como janela
-// **OWNED** — não como FILHA.
-//
-// A primeira versão usava `WS_CHILD` + `SetParent` (SPEC-0201) e **travava o
-// Studio**: `SetParent` entre PROCESSOS acopla as filas de mensagens dos dois
-// threads, então um host ocupado (carregando assets por ~40 s e depois rodando
-// a ~45 ms por frame) segurava a UI do Electron junto — "Application Hang" no
-// log de eventos do Windows (SPEC-0210).
-//
-// Janela OWNED (`GWLP_HWNDPARENT` num popup) fica sempre acima do dono,
-// minimiza e restaura junto, e **não acopla as filas**. Em troca ela não é
-// clipada pelo dono: quem posiciona (a IDE, pelo canal) manda coordenadas de
-// TELA e esconde a janela quando o palco não está visível.
-//
-// Falha é não-fatal — o host segue como janela solta, melhor que não abrir.
-void attachToParent(SDL_Window* window, const char* parentEnv, HostGpu* gpu) {
-  const unsigned long long raw = std::strtoull(parentEnv, nullptr, 10);
-  HWND parent = reinterpret_cast<HWND>(static_cast<uintptr_t>(raw));
-  if (!parent || !IsWindow(parent)) {
-    std::fprintf(stderr, "embed: CORTEX_PARENT_HWND invalido (%s)\n", parentEnv);
-    return;
-  }
-  HWND self = static_cast<HWND>(gpu->hwnd);
-  if (!self) return;
-  // Popup sem borda (a moldura é a IDE) com DONO = janela do Studio.
-  SetWindowLongPtrW(self, GWL_STYLE, WS_POPUP | WS_VISIBLE);
-  SetWindowLongPtrW(self, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(parent));
-  // TOOLWINDOW: some da barra de tarefas — é parte da IDE, não um app próprio.
-  //
-  // SEM `WS_EX_NOACTIVATE` (SPEC-0211): janela não-ativa não recebe WM_KEYDOWN,
-  // e sem teclado o jogo desenha mas não responde a nada — foi lido, com razão,
-  // como "o Studio travou". O iframe RECEBE foco ao ser clicado; o embed faz o
-  // mesmo. Isto NÃO traz de volta o hang da SPEC-0210: o que acopla as filas de
-  // mensagem entre processos é `SetParent`, não a ativação de janela.
-  SetWindowLongPtrW(self, GWL_EXSTYLE, WS_EX_TOOLWINDOW);
-  // `SWP_NOACTIVATE` fica: SUBIR o preview não rouba o foco de quem está no
-  // meio de uma interação — quem dá foco ao jogo é o clique do usuário.
-  SetWindowPos(self, parent, 0, 0, 0, 0,
-               SWP_NOSIZE | SWP_NOMOVE | SWP_FRAMECHANGED | SWP_SHOWWINDOW |
-                   SWP_NOACTIVATE);
-}
-
 void handleResize(SDL_Window* window, HostGpu* gpu) {
   // SÓ atualiza as dimensões e marca a pendência. Mexer na surface aqui, no
   // meio do frame (com textura possivelmente adquirida), é o que dava "Invalid
@@ -100,19 +55,13 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
   }
   // FULLSCREEN por padrão (como jogo/console): renderiza na resolução NATIVA
   // do desktop — imagem SHARP, sem o upscale borrado do modo janela.
-  // Debug/preview: CORTEX_WINDOWED=1 abre em janela REDIMENSIONÁVEL — o resize
+  // Debug: CORTEX_WINDOWED=1 abre em janela REDIMENSIONÁVEL — o resize
   // deixou de crashar na SPEC-0199 (a surface é RECRIADA no início do frame).
-  // EMBED (SPEC-0201 / M2 do PRD-0007): com CORTEX_PARENT_HWND a janela do host
-  // vira FILHA de um HWND externo — o painel de preview do Studio. Implica
-  // janela (nunca fullscreen) e sem borda: quem dá moldura é a IDE.
-  const char* parentEnv = SDL_getenv("CORTEX_PARENT_HWND");
-  const bool embedded = parentEnv != nullptr && parentEnv[0] != 0;
-  const bool windowed = embedded || SDL_getenv("CORTEX_WINDOWED") != nullptr;
-  // Em janela, RESIZABLE: é o modo de dev/preview, e o host agora aguenta o
-  // resize (SPEC-0199 — a surface é recriada no início do frame). Sem a flag o
-  // SDL rejeita o redimensionamento e a janela volta sozinha ao tamanho antigo.
+  const bool windowed = SDL_getenv("CORTEX_WINDOWED") != nullptr;
+  // Em janela, RESIZABLE: é o modo de dev, e o host agora aguenta o resize
+  // (SPEC-0199 — a surface é recriada no início do frame). Sem a flag o SDL
+  // rejeita o redimensionamento e a janela volta sozinha ao tamanho antigo.
   SDL_WindowFlags flags = windowed ? SDL_WINDOW_RESIZABLE : SDL_WINDOW_FULLSCREEN;
-  if (embedded) flags |= SDL_WINDOW_BORDERLESS;
   SDL_Window* window = SDL_CreateWindow(title, width, height, flags);
   if (!window) {
     std::fprintf(stderr, "SDL_CreateWindow falhou: %s\n", SDL_GetError());
@@ -147,7 +96,6 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
   if (gpu->width <= 0 || gpu->height <= 0) {
     SDL_GetWindowSizeInPixels(window, &gpu->width, &gpu->height);
   }
-  if (embedded) attachToParent(window, parentEnv, gpu);
   return window;
 }
 

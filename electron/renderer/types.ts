@@ -89,13 +89,6 @@ export interface ElectronAPI {
   watchProject(projectDir: string): Promise<void>
   /** Re-vendoriza o engine atual do IDE no `vendor/` do projeto (engine atualizou). */
   revendorEngine(projectDir: string): Promise<void>
-  /** Preview nativo (SPEC-0201): host do jogo como janela filha do Studio. */
-  startNativePreview(exportDir: string, launchQuery?: string): Promise<void>
-  setNativePreviewBounds(rect: { x: number; y: number; width: number; height: number }): Promise<void>
-  stopNativePreview(): Promise<void>
-  sendNativePreviewMessage(message: Record<string, unknown>): Promise<void>
-  onNativePreviewMessage(cb: (message: { type: string; [k: string]: unknown }) => void): void
-  onNativePreviewExit(cb: (code: number | null) => void): void
   /** Export CortexNative (ADR-0101): gera `dist-native/` do projeto. */
   exportNative(projectDir: string, mode?: string, debug?: boolean, outDir?: string, editor?: boolean): Promise<{ ok: boolean; output: string; distDir?: string }>
   /** Progresso do export (etapas). Retorna função de cancelamento do listener. */
