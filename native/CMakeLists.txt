@@ -41,6 +41,7 @@ add_executable(cortex_host
   src/shims/pak.cpp
   src/shims/perf_arraybuffer.cpp
   src/shims/perf_stats.cpp
+  src/shims/perf_trace.cpp
   src/shims/quit.cpp
   src/shims/rapier.cpp
   src/shims/steam_api.cpp

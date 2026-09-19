@@ -766,6 +766,22 @@ de mapeamentos do SDL (`native/src/shims/input.cpp`), então não há o que
 remapear. O fix (joystick cru + `SDL_AddGamepadMappingsFromFile`) é trabalho no
 `native/` e ainda não foi feito.
 
+## 8e. Perf trace de gameplay (`src/core/PerfTrace.ts`) — SPEC-0198
+
+Com as **métricas ativas no host nativo**, o `Game._tick` amostra a cada 500 ms e
+grava uma linha JSONL em `perf-trace.jsonl` (ao lado do `perf-log.txt`): `fps`,
+`frameMs`, ms de CPU por seção do `FrameProfiler`, `draws`/`tris`, posição e
+direção da câmera e **os nós de cena visíveis** (id + sub-malhas + triângulos,
+do mais caro pro menos). É o que responde “por que caiu de 50 pra 32 naquele
+trecho” sem depender de print de HUD na hora certa.
+
+- A ponte é `globalThis.__cortexPerfTrace`, registrada pelo host **só** com
+  métricas ligadas (`game.debug`/dev-run/`CORTEX_VRAM_LOG`). Sem ela o
+  `PerfTrace` nem percorre a cena — custo zero no browser/Studio e em release.
+- A coleta de visíveis é um traverse com teste de frustum **por amostra**, nunca
+  por frame; o `frameMs` gravado é o do próprio frame amostrado, então o custo
+  aparece no dado em vez de se esconder.
+
 ## 9. Logging de debug (`src/core/debug.ts`)
 
 **Sempre use `debug(escopo, ...)` no lugar de `console.log` cru.** Fica desligado por

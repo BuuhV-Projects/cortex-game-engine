@@ -86,6 +86,10 @@ await buildScene(game.scene, definition, {
   world: game.world,
   camera: game.camera,
   matte: true,
+  // `?merge=1&bundles=1` — as armas que hoje só ligam no host nativo. O gargalo
+  // do Studio é CPU por-objeto no encoding, que é exatamente o que elas cortam.
+  mergeStatic: params.get('merge') === '1',
+  renderBundles: params.get('bundles') === '1',
 });
 const buildMs = performance.now() - buildStart;
 
@@ -113,7 +117,21 @@ let measureStart = 0;
 const renderInfo = (): { drawCalls?: number; triangles?: number } =>
   (game.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info?.render ?? {};
 
-game.onUpdate(() => {
+/**
+ * `?move=1` — câmera ANDANDO pela pista, na velocidade de corrida. É a condição
+ * que a câmera parada não reproduz: com a câmera em movimento, objetos cruzam o
+ * limiar do shadow culling o tempo todo, e cada troca de `castShadow` obriga o
+ * renderer a refazer estrutura de shadow. Medir parado esconde exatamente isso.
+ */
+const moving = params.get('move') === '1';
+/** Velocidade da câmera de medição (m/s) — ~70 km/h, a do jogo. */
+const MOVE_SPEED = 20;
+
+game.onUpdate((dt: number) => {
+  if (moving) {
+    game.camera.position.x -= MOVE_SPEED * dt;
+    game.camera.lookAt(game.camera.position.x - 20, 1, DRIVE_TARGET[2]);
+  }
   frames++;
   if (frames === WARMUP_FRAMES) measureStart = performance.now();
   if (frames !== WARMUP_FRAMES + MEASURE_FRAMES) return;
@@ -129,6 +147,8 @@ game.onUpdate(() => {
       triangles: renderInfo().triangles ?? 0,
       buildMs: +buildMs.toFixed(0),
       scenario: location.search || '(padrão)',
+      // Tempo de CPU por seção (o `rnd` é o que domina o frame no Studio).
+      cpu: game.profiler.summary().map((s) => `${s.name} ${s.avgMs.toFixed(1)}`).join(' '),
       ...counts,
     };
     // eslint-disable-next-line no-console -- o harness EXISTE pra imprimir isto
