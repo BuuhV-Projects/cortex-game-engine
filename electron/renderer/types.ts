@@ -93,6 +93,7 @@ export interface ElectronAPI {
   startNativePreview(exportDir: string): Promise<void>
   setNativePreviewBounds(rect: { x: number; y: number; width: number; height: number }): Promise<void>
   stopNativePreview(): Promise<void>
+  sendNativePreviewMessage(message: Record<string, unknown>): Promise<void>
   onNativePreviewMessage(cb: (message: { type: string; [k: string]: unknown }) => void): void
   onNativePreviewExit(cb: (code: number | null) => void): void
   /** Export CortexNative (ADR-0101): gera `dist-native/` do projeto. */

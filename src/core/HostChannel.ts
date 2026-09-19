@@ -129,3 +129,26 @@ export class HostChannel {
     this._listen();
   }
 }
+
+/**
+ * Instância COMPARTILHADA do canal (SPEC-0203).
+ *
+ * O shim do host guarda **um único** callback de recebimento
+ * (`__cortexIdeOnMessage`), então duas instâncias de `HostChannel` significam
+ * que a segunda a registrar rouba as mensagens da primeira — foi exatamente o
+ * que aconteceu quando o `Game` e a ponte do editor criaram cada um a sua: o
+ * `hello` do editor saía, o `ack` chegava no canal errado e o estado nunca era
+ * publicado. Quem precisa do canal usa esta instância.
+ */
+let _shared: HostChannel | null = null;
+
+/** O canal compartilhado do processo (criado na primeira chamada). */
+export function getHostChannel(): HostChannel {
+  if (!_shared) _shared = new HostChannel();
+  return _shared;
+}
+
+/** Só pros testes: esquece a instância compartilhada. */
+export function resetHostChannel(): void {
+  _shared = null;
+}

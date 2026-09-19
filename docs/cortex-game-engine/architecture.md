@@ -797,6 +797,26 @@ muda.
   O estado rico do editor chega no M3 do PRD-0007 — não construa UI em cima
   do formato atual.
 
+## 8g. Transporte da ponte do editor (`src/editor/bridgeTransport.ts`) — SPEC-0203
+
+A ponte do editor (ADR-0056) deixou de falar `postMessage` direto: agora há um
+**transporte** plugável, escolhido por `detectBridgeTransport()`.
+
+- **iframe** — `window.parent.postMessage`, o caminho de sempre no Studio.
+- **host** — o canal de linhas JSON do host nativo (SPEC-0200), usado pelo
+  preview nativo. **Vence o iframe** quando existe.
+- **nenhum** — jogo standalone: a ponte fica inerte, como antes.
+
+O formato das mensagens é o MESMO nos dois (os painéis da IDE não sabem a
+diferença). Duas armadilhas:
+
+- O canal do host roteia **por tipo**; a lista `IDE_MESSAGE_TYPES` precisa
+  acompanhar os `case` do `onMessage` da ponte, senão o comando funciona no
+  iframe e silenciosamente não funciona no host.
+- O shim do host guarda **um único** callback de recebimento — por isso o canal
+  é um singleton (`getHostChannel()`). Duas instâncias e a segunda rouba as
+  mensagens da primeira.
+
 ## 9. Logging de debug (`src/core/debug.ts`)
 
 **Sempre use `debug(escopo, ...)` no lugar de `console.log` cru.** Fica desligado por

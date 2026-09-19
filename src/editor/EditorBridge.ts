@@ -2,6 +2,7 @@ import type { Object3D } from 'three';
 import type { EditorSelection } from './EditorSelection.js';
 import type { EditorState } from './EditorState.js';
 import type { EditorLevel } from '../core/Game.js';
+import { detectBridgeTransport, type BridgeMessage } from './bridgeTransport.js';
 import {
   describeInspector,
   describeOutliner,
@@ -78,12 +79,15 @@ export interface EditorBridgeOptions {
   onBridged: () => void;
 }
 
-/** Cria a ponte. Inerte (no-op) fora de um iframe. */
+/** Cria a ponte. Inerte (no-op) sem IDE do outro lado (iframe ou host). */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
   const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, levels, onTool, onGizmoSpace, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onOpenModelPicker, onDropAsset, onBridged } = options;
 
-  const inIframe = typeof window !== 'undefined' && window.parent && window.parent !== window;
-  if (!inIframe) {
+  // O TRANSPORTE é escolhido fora daqui (SPEC-0203): iframe (postMessage) ou
+  // canal do host nativo. Sem nenhum dos dois, a ponte fica inerte — mesmo
+  // comportamento de sempre pro jogo standalone.
+  const transport = detectBridgeTransport();
+  if (!transport) {
     return { bridged: false, publish: () => {}, dispose: () => {} };
   }
 
@@ -97,7 +101,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
   // borda do iframe. `force` ignora o throttle (handshake/edições do usuário).
   const MIN_INTERVAL_MS = 80;
 
-  const post = (msg: unknown): void => window.parent.postMessage(msg, '*');
+  const post = (msg: unknown): void => transport.send(msg as BridgeMessage);
 
   const doPublish = (force: boolean): void => {
     if (!bridged) return;
@@ -133,8 +137,9 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
     doPublish(true);
   };
 
-  const onMessage = (ev: MessageEvent): void => {
-    const data = ev.data as { source?: string; type?: string; id?: string; additive?: boolean; value?: unknown; active?: boolean; mode?: string; space?: string; kind?: string; url?: string; nx?: number; ny?: number } | null;
+  // Recebe uma mensagem JA parseada pelo transporte (iframe ou host).
+  const onMessage = (message: BridgeMessage): void => {
+    const data = message as { source?: string; type?: string; id?: string; additive?: boolean; value?: unknown; active?: boolean; mode?: string; space?: string; kind?: string; url?: string; nx?: number; ny?: number } | null;
     if (!data || data.source !== IDE) return;
     switch (data.type) {
       case 'ack':
@@ -227,7 +232,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
     }
   };
 
-  window.addEventListener('message', onMessage);
+  transport.onMessage(onMessage);
 
   // Emite hello até receber ack (a IDE pode anexar o listener depois do load).
   post({ source: ENGINE, type: 'hello' });
@@ -247,7 +252,7 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
     },
     publish,
     dispose() {
-      window.removeEventListener('message', onMessage);
+      transport.dispose();
       if (helloTimer) clearInterval(helloTimer);
     },
   };
