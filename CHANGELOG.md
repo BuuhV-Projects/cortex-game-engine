@@ -1,3 +1,16 @@
+# [0.49.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.48.0...v0.49.0) (2026-09-19)
+
+
+### Features
+
+* **perf:** perf trace de gameplay no host nativo (SPEC-0198) ([899fda6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/899fda60e729a6d1ff3dab3d959dd9ee473578a3))
+
+
+### Performance Improvements
+
+* **scene:** cache de preset de material + pre-aquecimento de pipeline (SPEC-0196) ([614b227](https://github.com/BuuhV-Projects/cortex-game-engine/commit/614b227e09b4b0a75f6e077ecc1adc3f29ea736d))
+* **scene:** shadow caster culling por tamanho angular (SPEC-0197) ([d854f1a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d854f1a0ec54fa2e6af7b1bd6b330376fad45c3e))
+
 # [0.48.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.47.1...v0.48.0) (2026-09-19)
 
 
