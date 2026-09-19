@@ -137,9 +137,12 @@ export interface BuildSceneOptions {
    * WebGPU — M-perf-2b/SPEC-0136): o renderer grava os draws uma vez e no replay
    * vira 1 `executeBundles` por pass, cortando as milhares de travessias NAPI por
    * frame no host nativo. Só faz efeito com `mergeStatic` (é o estático fundido
-   * que entra). Default: **liga sozinho no host nativo**, junto do merge.
-   * `BundleGroup` assume estrutura estática — reconstrua a cena (novo
-   * `buildScene`) pra mudar.
+   * que entra). `BundleGroup` assume estrutura estática — reconstrua a cena
+   * (novo `buildScene`) pra mudar.
+   *
+   * **Default: DESLIGADO, inclusive no host** (ADR-0215). No bundle os objetos
+   * são desenhados com a matriz de câmera de quando ele foi gravado e ficam
+   * presos na tela. É opt-in explícito (`true`) até isso ser corrigido no host.
    */
   renderBundles?: boolean;
   /**
@@ -820,9 +823,15 @@ export async function buildScene(
   }
 
   // Render bundles (M-perf-2b): grava os draws do estático UMA vez → 1
-  // executeBundles/pass. Independe do merge (bundla até .glb interleaved). Depois
-  // do merge, pra bundlar também as malhas fundidas. Liga junto do merge no host.
-  if (options.renderBundles ?? isNativeHost()) {
+  // executeBundles/pass. Independe do merge (bundla até .glb interleaved).
+  //
+  // DESLIGADO por padrão, inclusive no host (ADR-0215): no bundle os objetos
+  // são desenhados com a matriz de câmera do momento em que ele foi GRAVADO,
+  // então ficam presos na tela enquanto o resto da cena acompanha a câmera —
+  // no kart-racer, uma faixa inteira do cenário parava e o lago da ponte
+  // aparecia no céu. É opt-in explícito até a câmera dentro do bundle
+  // ser corrigida no host.
+  if (options.renderBundles === true) {
     const animated = animators.map((a) => a.mixer.getRoot() as Object3D);
     wrapStaticInBundle(three, options.world, animated);
   }
