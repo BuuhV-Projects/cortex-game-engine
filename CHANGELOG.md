@@ -1,3 +1,10 @@
+# [0.48.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.47.1...v0.48.0) (2026-09-19)
+
+
+### Features
+
+* Melhorias de shaders ([7f391ea](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7f391ea8c5885522f6aa23118f3f5fa94a3a187c))
+
 ## [0.47.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.47.0...v0.47.1) (2026-08-20)
 
 
