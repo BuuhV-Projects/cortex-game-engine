@@ -1439,6 +1439,13 @@ ipcMain.handle('native-preview:stop', async () => {
   nativePreview.stop()
 })
 
+// Mensagem da IDE pro host embutido — mesmo protocolo da ponte do editor
+// (SPEC-0203); o que muda e so o transporte.
+ipcMain.handle('native-preview:send', async (_event, message: unknown) => {
+  if (!message || typeof message !== 'object') return
+  nativePreview.send(message as { type: string })
+})
+
 ipcMain.handle('run:start', async (_event, projectDir: unknown) => {
   const safeDir = validatePath(projectDir)
 

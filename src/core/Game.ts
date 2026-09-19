@@ -12,7 +12,7 @@ import { UiLayer } from '../ui/runtime/UiLayer.js';
 import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
 import { PerfTrace } from './PerfTrace.js';
-import { HostChannel, type HostMessage } from './HostChannel.js';
+import { getHostChannel, type HostChannel, type HostMessage } from './HostChannel.js';
 import { FrameProfiler } from './FrameProfiler.js';
 import { InspectCamera } from './InspectCamera.js';
 
@@ -186,7 +186,7 @@ export class Game {
    * Canal com a IDE no host nativo (SPEC-0200). Inerte fora do host: no browser
    * quem fala com a IDE é a ponte `postMessage` do editor (ADR-0056).
    */
-  readonly hostChannel = new HostChannel();
+  readonly hostChannel: HostChannel = getHostChannel();
   private _postfx: { render(): void } | null = null;
   private _ui: UiLayer | null = null;
   private _inspect: InspectCamera | null = null;

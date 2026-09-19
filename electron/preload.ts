@@ -32,6 +32,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('native-preview:bounds', rect),
   /** Encerra o host embutido (sem isso, janela órfã no Stop). */
   stopNativePreview: () => ipcRenderer.invoke('native-preview:stop'),
+  /** Manda uma mensagem da IDE pro host embutido (mesmo protocolo da ponte). */
+  sendNativePreviewMessage: (message: Record<string, unknown>) =>
+    ipcRenderer.invoke('native-preview:send', message),
   /** Mensagens do canal da IDE vindas do host. */
   onNativePreviewMessage: (cb: (message: { type: string; [k: string]: unknown }) => void) =>
     ipcRenderer.on('native-preview:message', (_e, message) => cb(message)),
