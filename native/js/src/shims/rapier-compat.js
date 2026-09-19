@@ -101,6 +101,10 @@ RigidBody.prototype.wakeUp = function () {
 function World(gravity) {
   this.__ptr = __rapierNative.worldNew(gravity.x, gravity.y, gravity.z);
   this.__scratch = new Float64Array(__rapierNative.worldScratch(this.__ptr));
+  // Corpos criados por este mundo, na ordem de criacao — e o que sustenta o
+  // `forEachRigidBody` (SPEC-0208). O Rapier do browser itera a arena interna;
+  // aqui a arena vive no Rust, entao guardamos os wrappers que entregamos.
+  this.__bodies = [];
 }
 World.prototype.step = function () {
   __rapierNative.worldStep(this.__ptr);
@@ -113,8 +117,26 @@ World.prototype.createRigidBody = function (desc) {
   const handle = __rapierNative.bodyCreate(
     this.__ptr, desc.kind, desc.x, desc.y, desc.z, desc.canSleep ? 1 : 0,
   );
-  return new RigidBody(this.__ptr, this.__scratch, handle);
+  const body = new RigidBody(this.__ptr, this.__scratch, handle);
+  this.__bodies.push(body);
+  return body;
 };
+
+// Itera os corpos do mundo, como o Rapier do browser. Jogos usam isto pra
+// descobrir o que foi criado por um helper (o kart-racer compara o antes e o
+// depois do createVehicle). Sem isto, `undefined is not a function` no meio do
+// setup — erro que nao diz nada sobre a causa (SPEC-0208).
+World.prototype.forEachRigidBody = function (callback) {
+  if (typeof callback !== 'function') return;
+  // Copia: o callback pode criar corpos (e mexer no array durante a iteracao).
+  const snapshot = this.__bodies.slice();
+  for (let i = 0; i < snapshot.length; i++) callback(snapshot[i]);
+};
+
+/** Quantos corpos este mundo criou. Espelha `world.bodies.len()` do Rapier. */
+Object.defineProperty(World.prototype, 'numRigidBodies', {
+  get: function () { return this.__bodies.length; },
+});
 World.prototype.createCollider = function (desc, body) {
   if (desc.trimeshVerts) {
     return __rapierNative.colliderTrimesh(
@@ -128,8 +150,15 @@ World.prototype.createCollider = function (desc, body) {
   );
 };
 World.prototype.createVehicleController = function () {
+  // Bloqueio conhecido do port (SPEC-0208): o controlador de veiculo do Rapier
+  // (raycast vehicle) vive no lado Rust e nao foi exposto pelo rapier-native.
+  // Enquanto isso, JOGO DE CARRO nao roda no host — nem no export, nem no
+  // preview nativo. A mensagem precisa dizer isso: o erro antigo citava uma
+  // nota interna e nao ajudava quem estava so tentando exportar o jogo.
   throw new Error(
-    'CortexNative: DynamicRayCastVehicleController ainda não portado (pendência M1 — ver m1-inventario-teste4.md)',
+    'CortexNative: controlador de veiculo do Rapier (DynamicRayCastVehicleController) ' +
+    'ainda nao foi portado para o host nativo. Jogos que usam `createVehicle` ' +
+    '(carro/kart) rodam no Studio, mas nao no export nem no preview nativo.',
   );
 };
 
