@@ -357,12 +357,25 @@ Native (que roda milhares de libs sobre Hermes em produção):
   `HTMLElement` & cia no dom-lite. **Falta** o filtro de raycast por callback
   (`updateVehicle(dt, flags, groups, PREDICATE)`): os grupos passam, o
   predicate é ignorado.
+- **Raycast de MUNDO portado** (SPEC-0216): `world.castRayAndGetNormal` e
+  `castRay`, com `QueryFilter` nativo e `Collider.isSensor()`/`parent()` pro
+  `filterPredicate`. **Sem ele o jogo de carro não ANDAVA**: o `followGround`
+  lançava exceção todo frame, ela subia até o rAF e abortava o tick INTEIRO —
+  carro parado, pickups sem girar e UI sem responder a clique, três sintomas de
+  um erro só. Junto vieram `world.gravity`, `getRigidBody`, `removeRigidBody`,
+  `RigidBody.mass()` e `wheels`/`wheelCount` do controlador.
+  - Quando o `filterPredicate` **recusa** um acerto a busca CONTINUA (origem
+    avança além do ponto e relança). Parar na primeira recusa fazia o carro
+    **afundar no asfalto**: os gates de checkpoint são sensores SOBRE a pista, e
+    o predicate do jogo os recusa.
+  - Lição de método: pare de descobrir API faltando um export por vez. Cruze
+    TODAS as chamadas `body.*`/`collider.*`/`world.*` do jogo e do engine contra
+    o shim de uma vez — foi o que fechou esta lista.
 - **O `rapier-compat` cobre um SUBCONJUNTO do Rapier** (SPEC-0208): o que falta
   aparece só em runtime, como `undefined is not a function` no meio do setup do
   jogo — sem dizer qual função. Foi assim que o `forEachRigidBody` apareceu
-  (kart-racer morrendo no `createCar`). **Bloqueio aberto: o controlador de
-  veículo (`createVehicleController`) NÃO foi portado** — jogo de carro/kart não
-  roda no export nem no preview nativo.
+  (kart-racer morrendo no `createCar`) e, depois, todo o raycast de mundo da
+  SPEC-0216. O controlador de veículo JÁ foi portado (SPEC-0209).
 - **Para saber o que o Hermes tem**, compile um `.js` com o `hermesc`, troque o
   `boot.hbc` de um export por ele e rode: o `print` sai no stdout. Foi assim que
   a hipótese "Hermes não tem `TypedArray.from`" caiu (ele tem).

@@ -121,7 +121,17 @@ RigidBody.prototype.numColliders = function () {
 };
 RigidBody.prototype.collider = function (index) {
   const handle = __rapierNative.bodyCollider(this.__world, this.handle, index);
-  return handle < 0 ? null : new Collider(this.__world, handle);
+  return handle < 0 ? null : new Collider(this.__world, handle, this.__scratch);
+};
+
+/**
+ * Massa do corpo. O kart-racer dosa o impulso de frenagem da IA com ela
+ * (`-missingBrake * body.mass()`) — sem isto, `undefined is not a function`
+ * todo frame e o tick do jogo inteiro caía (SPEC-0216).
+ */
+RigidBody.prototype.mass = function () {
+  __rapierNative.bodyGet(this.__world, this.handle, 6);
+  return this.__scratch[0];
 };
 
 RigidBody.prototype.resetForces = function (wake) {
@@ -142,15 +152,26 @@ RigidBody.prototype.setEnabledRotations = function (x, y, z, wake) {
  * Collider vivo do mundo. So o que o engine/jogo usam: identidade e grupos de
  * colisao (o kart-racer liga/desliga colisao entre carros no respawn).
  */
-function Collider(worldPtr, handle) {
+function Collider(worldPtr, handle, scratch) {
   this.__world = worldPtr;
   this.handle = handle;
+  // O `parent()` devolve um RigidBody, que lê posição/rotação pelo scratch.
+  this.__scratch = scratch;
 }
 Collider.prototype.collisionGroups = function () {
   return __rapierNative.colliderGroups(this.__world, this.handle, 0, 0);
 };
 Collider.prototype.setCollisionGroups = function (groups) {
   __rapierNative.colliderGroups(this.__world, this.handle, 1, groups);
+};
+/** É um sensor (atravessa, só reporta)? O que um `filterPredicate` pergunta. */
+Collider.prototype.isSensor = function () {
+  return __rapierNative.colliderGet(this.__world, this.handle, 0) === 1;
+};
+/** Corpo dono, ou `null`. O outro lado do `filterPredicate` (SPEC-0216). */
+Collider.prototype.parent = function () {
+  const handle = __rapierNative.colliderGet(this.__world, this.handle, 1);
+  return handle < 0 ? null : new RigidBody(this.__world, this.__scratch, handle);
 };
 
 RigidBody.prototype.wakeUp = function () {
@@ -159,6 +180,10 @@ RigidBody.prototype.wakeUp = function () {
 
 function World(gravity) {
   this.__ptr = __rapierNative.worldNew(gravity.x, gravity.y, gravity.z);
+  // O Rapier do browser expõe a gravidade como propriedade, e jogos LEEM dela
+  // (o kart-racer cancela a gravidade ao longo da pista todo frame). Sem isto,
+  // `copy(world.gravity)` vira "Cannot read property 'x' of undefined".
+  this.gravity = { x: gravity.x, y: gravity.y, z: gravity.z };
   this.__scratch = new Float64Array(__rapierNative.worldScratch(this.__ptr));
   // Corpos criados por este mundo, na ordem de criacao — e o que sustenta o
   // `forEachRigidBody` (SPEC-0208). O Rapier do browser itera a arena interna;
@@ -192,6 +217,134 @@ World.prototype.forEachRigidBody = function (callback) {
   // Copia: o callback pode criar corpos (e mexer no array durante a iteracao).
   const snapshot = this.__bodies.slice();
   for (let i = 0; i < snapshot.length; i++) callback(snapshot[i]);
+};
+
+/**
+ * Máscara de `filterFlags` — os mesmos bits do `QueryFilterFlags` do Rapier,
+ * que o Rust aplica DENTRO da travessia (SPEC-0216).
+ */
+const QUERY_EXCLUDE_FIXED = 1;
+const QUERY_EXCLUDE_DYNAMIC = 2;
+const QUERY_EXCLUDE_KINEMATIC = 4;
+const QUERY_EXCLUDE_SENSORS = 8;
+/** Todos os bits que sabemos traduzir (o resto é ignorado, como no browser). */
+const QUERY_FLAGS_CONHECIDAS =
+  QUERY_EXCLUDE_FIXED | QUERY_EXCLUDE_DYNAMIC | QUERY_EXCLUDE_KINEMATIC | QUERY_EXCLUDE_SENSORS;
+/** `-1` = não excluir corpo nenhum (o Rust trata negativo como "sem exclusão"). */
+const SEM_CORPO_EXCLUIDO = -1;
+
+/** Quantos acertos recusados pelo predicate tentamos pular antes de desistir. */
+const MAX_ACERTOS_RECUSADOS = 8;
+/** Avanço além do acerto recusado, pra não reacertar o mesmo ponto. */
+const EPSILON_AVANCO = 1e-4;
+
+/**
+ * Lança um raio e devolve o primeiro acerto ACEITO, com a NORMAL da superfície,
+ * ou `null`. Mesma assinatura do `@dimforge/rapier3d-compat`, porque é o que o
+ * engine e os jogos chamam — o `followGround` do carro usa isto por roda, todo
+ * frame, pra colar o chassi no chão (SPEC-0216).
+ *
+ * Quando o `filterPredicate` RECUSA um acerto, a busca CONTINUA: a origem
+ * avança logo além do ponto recusado e o raio é relançado. Sem isso, um sensor
+ * no caminho (os gates de checkpoint ficam sobre a pista) devolvia `null`, o
+ * carro perdia o chão e afundava no asfalto.
+ */
+World.prototype.castRayAndGetNormal = function (
+  ray, maxToi, solid, filterFlags, filterGroups, filterExcludeCollider,
+  filterExcludeRigidBody, filterPredicate,
+) {
+  const origin = ray && ray.origin ? ray.origin : { x: 0, y: 0, z: 0 };
+  const dir = ray && ray.dir ? ray.dir : { x: 0, y: -1, z: 0 };
+  const flags = (typeof filterFlags === 'number' ? filterFlags : 0) & QUERY_FLAGS_CONHECIDAS;
+  const excluir = filterExcludeRigidBody && typeof filterExcludeRigidBody.handle === 'number'
+    ? filterExcludeRigidBody.handle
+    : SEM_CORPO_EXCLUIDO;
+
+  const temPredicate = typeof filterPredicate === 'function';
+  const s = this.__scratch;
+  // Origem que anda a cada recusa; `percorrido` guarda a distância desde a
+  // origem ORIGINAL, que é o que o chamador espera receber.
+  let ox = origin.x, oy = origin.y, oz = origin.z;
+  let percorrido = 0;
+
+  for (let tentativa = 0; tentativa <= MAX_ACERTOS_RECUSADOS; tentativa++) {
+    const restante = maxToi - percorrido;
+    if (restante <= 0) return null;
+    const acertou = __rapierNative.worldCastRay(
+      this.__ptr, ox, oy, oz, dir.x, dir.y, dir.z,
+      restante, solid ? 1 : 0, flags, excluir,
+    );
+    if (acertou !== 1) return null;
+
+    const distancia = percorrido + s[0];
+    const collider = new Collider(this.__ptr, s[4], this.__scratch);
+    if (!temPredicate || filterPredicate(collider)) {
+      return {
+        collider,
+        // O runtime vendorizado lê `timeOfImpact`; tipagens antigas leem `toi`.
+        // O `followGround` do kart-racer aceita os dois — devolvemos ambos.
+        timeOfImpact: distancia,
+        toi: distancia,
+        normal: { x: s[1], y: s[2], z: s[3] },
+        point: {
+          x: origin.x + dir.x * distancia,
+          y: origin.y + dir.y * distancia,
+          z: origin.z + dir.z * distancia,
+        },
+      };
+    }
+    // Recusado: anda além dele e procura o próximo.
+    const avanco = s[0] + EPSILON_AVANCO;
+    percorrido += avanco;
+    ox += dir.x * avanco;
+    oy += dir.y * avanco;
+    oz += dir.z * avanco;
+  }
+  return null;
+};
+
+/**
+ * Corpo pelo handle, ou `null`. O Rapier do browser resolve na arena interna;
+ * aqui a arena vive no Rust, então procuramos entre os wrappers entregues —
+ * é a mesma lista que sustenta o `forEachRigidBody` (SPEC-0208).
+ */
+World.prototype.getRigidBody = function (handle) {
+  for (let i = 0; i < this.__bodies.length; i++) {
+    if (this.__bodies[i].handle === handle) return this.__bodies[i];
+  }
+  return null;
+};
+
+/**
+ * Remove o corpo do mundo. O kart-racer usa no respawn, pra limpar os corpos
+ * que sobraram do carro anterior.
+ */
+World.prototype.removeRigidBody = function (body) {
+  if (!body) return;
+  __rapierNative.bodyRemove(this.__ptr, body.handle);
+  const i = this.__bodies.indexOf(body);
+  if (i >= 0) this.__bodies.splice(i, 1);
+};
+
+/**
+ * Raycast sem normal — mesma busca do {@link World.castRayAndGetNormal}, só que
+ * devolvendo `{ collider, toi, timeOfImpact }`. O kart-racer usa pros mísseis
+ * acharem parede.
+ */
+World.prototype.castRay = function (
+  ray, maxToi, solid, filterFlags, filterGroups, filterExcludeCollider,
+  filterExcludeRigidBody, filterPredicate,
+) {
+  const acerto = this.castRayAndGetNormal(
+    ray, maxToi, solid, filterFlags, filterGroups, filterExcludeCollider,
+    filterExcludeRigidBody, filterPredicate,
+  );
+  if (!acerto) return null;
+  return {
+    collider: acerto.collider,
+    timeOfImpact: acerto.timeOfImpact,
+    toi: acerto.toi,
+  };
 };
 
 /** Quantos corpos este mundo criou. Espelha `world.bodies.len()` do Rapier. */
@@ -235,6 +388,10 @@ function VehicleController(worldPtr, scratch, ptr, chassis) {
   this.__ptr = ptr;
   this.__chassis = chassis;
   this.__wheels = 0;
+  // Descrição de cada roda como o JOGO lê (`vehicle.wheels[i].position`): o
+  // Rapier do browser expõe isso, e o `followGround` do carro usa pra saber de
+  // onde sai o raio de cada roda (SPEC-0216).
+  this.__wheelData = [];
   this.__upAxis = 1;
 }
 
@@ -260,9 +417,27 @@ VehicleController.prototype.addWheel = function (position, direction, axle, rest
     restLength, radius,
   );
   this.__wheels++;
+  // Cópia por valor: o chamador reusa o mesmo vetor entre as rodas.
+  this.__wheelData.push({
+    position: { x: position.x, y: position.y, z: position.z },
+    direction: { x: direction.x, y: direction.y, z: direction.z },
+    axle: { x: axle.x, y: axle.y, z: axle.z },
+    suspensionRestLength: restLength,
+    radius,
+  });
 };
 
 VehicleController.prototype.numWheels = function () { return this.__wheels; };
+
+/** Nº de rodas como PROPRIEDADE (o jogo faz `for (i < vehicle.wheelCount)`). */
+Object.defineProperty(VehicleController.prototype, 'wheelCount', {
+  get: function () { return this.__wheels; },
+});
+
+/** As rodas como o Rapier do browser expõe: `wheels[i].position`/`.radius`. */
+Object.defineProperty(VehicleController.prototype, 'wheels', {
+  get: function () { return this.__wheelData; },
+});
 
 VehicleController.prototype.__set = function (index, param, value) {
   __rapierNative.vehicleSetWheel(this.__ptr, index, param, value);

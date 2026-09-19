@@ -45,6 +45,12 @@ void rn_body_mass_props(RnWorld* world, double body, double mass, double cx,
 double rn_body_collider(RnWorld* world, double body, double index);
 double rn_collider_groups(RnWorld* world, double collider, double set,
                           double value);
+// Raycast de mundo (SPEC-0216) — o `followGround` do carro depende dele.
+double rn_world_cast_ray(RnWorld* world, double ox, double oy, double oz,
+                         double dx, double dy, double dz, double maxToi,
+                         double solid, double filterFlags, double excludeBody);
+double rn_collider_get(RnWorld* world, double collider, double what);
+void rn_body_remove(RnWorld* world, double body);
 }
 
 namespace shims {
@@ -186,6 +192,27 @@ napi_value jsColliderGroups(napi_env env, napi_callback_info info) {
       env, rn_collider_groups(worldFromArg(args[0]), args[1], args[2], args[3]));
 }
 
+// Raycast de mundo (SPEC-0216). Devolve 1/0; o resultado sai pelo scratch.
+napi_value jsWorldCastRay(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 11);
+  return numberResult(
+      env, rn_world_cast_ray(worldFromArg(args[0]), args[1], args[2], args[3],
+                             args[4], args[5], args[6], args[7], args[8],
+                             args[9], args[10]));
+}
+
+napi_value jsBodyRemove(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 2);
+  rn_body_remove(worldFromArg(args[0]), args[1]);
+  return njs::undefined(env);
+}
+
+napi_value jsColliderGet(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 3);
+  return numberResult(
+      env, rn_collider_get(worldFromArg(args[0]), args[1], args[2]));
+}
+
 napi_value jsVehicleNew(napi_env env, napi_callback_info info) {
   readArgs(env, info, 2);
   RnVehicle* vehicle = rn_vehicle_new(worldFromArg(args[0]), args[1]);
@@ -252,6 +279,11 @@ void registerRapier(napi_env env) {
   njs::setMethod(env, native, "bodyMassProps", jsBodyMassProps);
   njs::setMethod(env, native, "bodyCollider", jsBodyCollider);
   njs::setMethod(env, native, "colliderGroups", jsColliderGroups);
+  // Raycast de mundo (SPEC-0216): sem ele o `followGround` do carro lançava
+  // exceção todo frame e derrubava o tick inteiro do jogo.
+  njs::setMethod(env, native, "worldCastRay", jsWorldCastRay);
+  njs::setMethod(env, native, "colliderGet", jsColliderGet);
+  njs::setMethod(env, native, "bodyRemove", jsBodyRemove);
   njs::setMethod(env, native, "vehicleNew", jsVehicleNew);
   njs::setMethod(env, native, "vehicleFree", jsVehicleFree);
   njs::setMethod(env, native, "vehicleSetUpAxis", jsVehicleSetUpAxis);
