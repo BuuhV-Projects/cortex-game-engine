@@ -1,7 +1,7 @@
 # PRD 0007 - Preview nativo no Studio (o editor roda o renderer do jogo)
 
 **Data:** 2026-09-19
-**Status:** proposto — nenhum marco iniciado
+**Status:** **M0, M1, M2 e M3 CONCLUÍDOS** (SPEC-0199 a 0204) — faltam M4 e M5
 
 ## Problema
 
@@ -94,24 +94,24 @@ Cada marco entrega valor sozinho e tem aceite mensurável. **M0 é gate**: se o
 resize não for resolvido, o projeto para aqui e a conclusão é que o preview
 embutido não é viável com o wgpu atual.
 
-### M0 — Resize da surface no host (gate)
+### M0 — Resize da surface no host (gate) ✅ FEITO (SPEC-0199)
 Reconfigurar a swapchain no resize sem crash, em janela redimensionável.
 **Aceite:** arrastar a borda da janela do host por 30 s, em D3D12, sem "Invalid
 surface" e sem vazar memória de vídeo.
 
-### M1 — Canal JSON-lines bidirecional
+### M1 — Canal JSON-lines bidirecional ✅ FEITO (SPEC-0200)
 `stdin` no host + um shim que entrega as linhas ao JS; stdout já serve de volta.
 Contrato = o mesmo da `EditorBridge` (`hello/ack/state/select/field/...`).
 **Aceite:** o host responde `ack` a um `hello` enviado pelo stdin e publica
 `state` de uma cena carregada; um script Node dirige tudo sem Electron.
 
-### M2 — Janela nativa embutida no Studio
+### M2 — Janela nativa embutida no Studio ✅ FEITO (SPEC-0201)
 Host aceita um HWND pai; Electron cria o retângulo e faz `SetParent`; resize do
 painel propaga para o host (depende de M0).
 **Aceite:** o jogo aparece dentro do Studio, redimensiona junto com o painel e o
 Stop encerra o processo sem janela órfã.
 
-### M3 — Editor 3D no runtime nativo
+### M3 — Editor 3D no runtime nativo ✅ FEITO (SPEC-0202/0203/0204)
 Portar seleção por raycast, gizmos de transform e câmera livre para rodar no
 host, publicando pelo canal do M1. Painéis (outliner/inspector) **continuam na
 IDE**, lendo o mesmo `state` de hoje.

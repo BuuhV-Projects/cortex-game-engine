@@ -12,17 +12,23 @@ struct Timer {
   uint32_t id;
   napi_ref callback;
   double dueMs;
+  // > 0 = REPETE a cada `intervalMs` (setInterval); 0 = dispara uma vez.
+  double intervalMs;
 };
+
+// Piso do periodo do setInterval, em ms (o browser clampa em ~4).
+constexpr double kMinIntervalMs = 1.0;
 
 std::vector<Timer> g_timers;
 uint32_t g_nextTimerId = 1;
 double g_nowMs = 0;
 
-uint32_t scheduleCallback(napi_env env, napi_value callback, double delayMs) {
+uint32_t scheduleCallback(napi_env env, napi_value callback, double delayMs,
+                          double intervalMs = 0) {
   napi_ref ref = nullptr;
   if (napi_create_reference(env, callback, 1, &ref) != napi_ok) return 0;
   uint32_t id = g_nextTimerId++;
-  g_timers.push_back({id, ref, g_nowMs + delayMs});
+  g_timers.push_back({id, ref, g_nowMs + delayMs, intervalMs});
   return id;
 }
 
@@ -54,7 +60,9 @@ void fireTimer(napi_env env, const Timer& timer) {
       callback) {
     njs::callJsLogged(env, callback, 0, nullptr, "timer");
   }
-  napi_delete_reference(env, timer.callback);
+  // Timer que REPETE mantem a referencia: quem a solta e o clearInterval (ou
+  // o reagendamento que falha). Soltar aqui invalidaria a proxima disparada.
+  if (timer.intervalMs <= 0) napi_delete_reference(env, timer.callback);
 }
 
 napi_value jsSetTimeout(napi_env env, napi_callback_info info) {
@@ -74,6 +82,25 @@ napi_value jsSetImmediate(napi_env env, napi_callback_info info) {
   napi_value args[1];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   uint32_t id = argc >= 1 ? scheduleCallback(env, args[0], 0) : 0;
+  napi_value out = nullptr;
+  napi_create_uint32(env, id, &out);
+  return out;
+}
+
+// setInterval(fn, ms) — mesmo agendador, com periodo. Faltava no host, e a
+// ponte do editor usa pra repetir o `hello` ate a IDE responder: a excecao
+// ("Property 'setInterval' doesn't exist") subia do construtor do Game e
+// derrubava o boot do jogo INTEIRO (SPEC-0204).
+napi_value jsSetInterval(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value args[2];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  double delay = 0;
+  if (argc >= 2) napi_get_value_double(env, args[1], &delay);
+  // Periodo zero viraria trabalho infinito no mesmo frame: piso de 1 ms, como
+  // o browser (que clampa em ~4 ms).
+  const double period = delay > kMinIntervalMs ? delay : kMinIntervalMs;
+  uint32_t id = argc >= 1 ? scheduleCallback(env, args[0], period, period) : 0;
   napi_value out = nullptr;
   napi_create_uint32(env, id, &out);
   return out;
@@ -100,6 +127,8 @@ void registerTimers(napi_env env) {
   njs::setMethod(env, global, "clearTimeout", jsClearTimeout);
   njs::setMethod(env, global, "setImmediate", jsSetImmediate);
   njs::setMethod(env, global, "clearImmediate", jsClearTimeout);
+  njs::setMethod(env, global, "setInterval", jsSetInterval);
+  njs::setMethod(env, global, "clearInterval", jsClearTimeout);
 }
 
 void runTimers(napi_env env, double nowMs) {
@@ -107,9 +136,29 @@ void runTimers(napi_env env, double nowMs) {
   std::vector<Timer> due = takeDueTimers(nowMs);
   if (due.empty()) return;
 
+  // Reagenda os que REPETEM **antes** de disparar: assim um `clearInterval`
+  // chamado de dentro do proprio callback encontra o timer na lista e o
+  // cancela. Reagendar depois deixaria o intervalo imortal.
+  for (const Timer& timer : due) {
+    if (timer.intervalMs > 0) {
+      g_timers.push_back({timer.id, timer.callback, nowMs + timer.intervalMs, timer.intervalMs});
+    }
+  }
+
   napi_handle_scope scope = nullptr;
   napi_open_handle_scope(env, &scope);
-  for (const Timer& timer : due) fireTimer(env, timer);
+  for (const Timer& timer : due) {
+    // Cancelado pelo callback de um timer anterior nesta mesma rodada? Entao
+    // nao dispara (o cancelTimer ja soltou a referencia).
+    if (timer.intervalMs > 0) {
+      bool alive = false;
+      for (const Timer& t : g_timers) {
+        if (t.id == timer.id) { alive = true; break; }
+      }
+      if (!alive) continue;
+    }
+    fireTimer(env, timer);
+  }
   napi_close_handle_scope(env, scope);
 }
 

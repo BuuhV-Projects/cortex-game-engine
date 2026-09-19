@@ -70,23 +70,30 @@ try {
   await expect((m) => m.type === 'hello', 'hello do editor');
   console.log('hello do editor recebido');
 
-  // 2. A IDE responde `ack` — é o que liga a publicação de estado.
-  // `outliner` é um MODELO (`{ items: [...] }`), não um array solto — presumir
-  // array fez o teste falhar antes com o state já chegando corretamente.
-  const hasItems = (m) => m.type === 'state' && Array.isArray(m.outliner?.items) && m.outliner.items.length > 0;
-  const statePromise = expect(hasItems, 'state com itens no outliner');
+  // 2. A IDE responde `ack` — e o que liga a publicacao de estado.
+  //    ATENCAO: o primeiro `state` sai ANTES da fase montar (so a camera na
+  //    cena). Esperamos o outliner com os nos da FASE, que e o que a IDE
+  //    mostraria de verdade.
+  const isSceneState = (m) =>
+    m.type === 'state' && Array.isArray(m.outliner?.items) &&
+    m.outliner.items.some((i) => i.label && !/^\(?Camera/.test(i.label));
+  const statePromise = expect(isSceneState, 'state com os nos da fase');
   send({ type: 'ack' });
   const state = await statePromise;
-  console.log(`state recebido: ${state.outliner.items.length} itens no outliner, editorActive=${state.editorActive}`);
+  console.log(`state da fase: ${state.outliner.items.length} itens no outliner`);
 
-  // ATENCAO (SPEC-0203): o outliner publicado no host vem com a CAMERA e o
-  // helper dela, nao com os nos da fase — o editor nao esta enxergando a cena
-  // do jogo no runtime nativo. O transporte esta provado; o conteudo, nao.
-  // Por isso este teste NAO exercita `select` ainda: seria verde enganoso.
-  const labels = state.outliner.items.map((i) => i.label).join(', ');
-  console.log(`itens publicados: ${labels}`);
+  // 3. Selecionar pelo canal muda o inspector publicado — e o que faz o painel
+  //    da IDE refletir o que esta selecionado no preview nativo.
+  const target = state.outliner.items.find((i) => i.label && !/^\(?Camera/.test(i.label));
+  const selectedPromise = expect(
+    (m) => m.type === 'state' && m.inspector && m.inspector.empty === false,
+    'state com inspector preenchido',
+  );
+  send({ type: 'select', id: target.id });
+  const selected = await selectedPromise;
+  console.log(`inspector do selecionado: "${selected.inspector.title}" (${selected.inspector.sections?.length ?? 0} secoes)`);
 
-  console.log('OK: handshake e publicacao de estado pelo canal do host, sem Electron');
+  console.log('OK: selecao pelo canal reflete no estado publicado — sem Electron');
   host.kill();
   process.exit(0);
 } catch (err) {
