@@ -24,6 +24,27 @@ double rn_collider_trimesh(RnWorld* world, double body, const float* verts,
 void rn_body_get(RnWorld* world, double body, double what);
 void rn_body_set(RnWorld* world, double body, double what, double x, double y,
                  double z, double qw, double wake);
+// Veiculo raycast (SPEC-0209). O ponteiro do veiculo viaja como f64, igual ao
+// do mundo.
+struct RnVehicle;
+RnVehicle* rn_vehicle_new(RnWorld* world, double chassis);
+void rn_vehicle_free(RnVehicle* vehicle);
+void rn_vehicle_set_up_axis(RnVehicle* vehicle, double axis);
+void rn_vehicle_add_wheel(RnVehicle* vehicle, double px, double py, double pz,
+                          double dx, double dy, double dz, double ax,
+                          double ay, double az, double restLength,
+                          double radius);
+void rn_vehicle_set_wheel(RnVehicle* vehicle, double index, double param,
+                          double value);
+void rn_vehicle_update(RnVehicle* vehicle, RnWorld* world, double dt,
+                       double groups);
+void rn_vehicle_wheel_state(RnVehicle* vehicle, RnWorld* world, double index);
+void rn_body_mass_props(RnWorld* world, double body, double mass, double cx,
+                        double cy, double cz, double ix, double iy, double iz,
+                        double wake);
+double rn_body_collider(RnWorld* world, double body, double index);
+double rn_collider_groups(RnWorld* world, double collider, double set,
+                          double value);
 }
 
 namespace shims {
@@ -143,6 +164,75 @@ napi_value jsBodySet(napi_env env, napi_callback_info info) {
   return njs::undefined(env);
 }
 
+RnVehicle* vehicleFromArg(double value) {
+  return reinterpret_cast<RnVehicle*>(static_cast<uintptr_t>(value));
+}
+
+napi_value jsBodyMassProps(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 10);
+  rn_body_mass_props(worldFromArg(args[0]), args[1], args[2], args[3], args[4],
+                     args[5], args[6], args[7], args[8], args[9]);
+  return njs::undefined(env);
+}
+
+napi_value jsBodyCollider(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 3);
+  return numberResult(env, rn_body_collider(worldFromArg(args[0]), args[1], args[2]));
+}
+
+napi_value jsColliderGroups(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 4);
+  return numberResult(
+      env, rn_collider_groups(worldFromArg(args[0]), args[1], args[2], args[3]));
+}
+
+napi_value jsVehicleNew(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 2);
+  RnVehicle* vehicle = rn_vehicle_new(worldFromArg(args[0]), args[1]);
+  return numberResult(
+      env, static_cast<double>(reinterpret_cast<uintptr_t>(vehicle)));
+}
+
+napi_value jsVehicleFree(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 1);
+  rn_vehicle_free(vehicleFromArg(args[0]));
+  return njs::undefined(env);
+}
+
+napi_value jsVehicleSetUpAxis(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 2);
+  rn_vehicle_set_up_axis(vehicleFromArg(args[0]), args[1]);
+  return njs::undefined(env);
+}
+
+napi_value jsVehicleAddWheel(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 12);
+  rn_vehicle_add_wheel(vehicleFromArg(args[0]), args[1], args[2], args[3],
+                       args[4], args[5], args[6], args[7], args[8], args[9],
+                       args[10], args[11]);
+  return njs::undefined(env);
+}
+
+napi_value jsVehicleSetWheel(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 4);
+  rn_vehicle_set_wheel(vehicleFromArg(args[0]), args[1], args[2], args[3]);
+  return njs::undefined(env);
+}
+
+napi_value jsVehicleUpdate(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 4);
+  rn_vehicle_update(vehicleFromArg(args[0]), worldFromArg(args[1]), args[2],
+                    args[3]);
+  return njs::undefined(env);
+}
+
+napi_value jsVehicleWheelState(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 3);
+  rn_vehicle_wheel_state(vehicleFromArg(args[0]), worldFromArg(args[1]),
+                         args[2]);
+  return njs::undefined(env);
+}
+
 }  // namespace
 
 void registerRapier(napi_env env) {
@@ -158,6 +248,17 @@ void registerRapier(napi_env env) {
   njs::setMethod(env, native, "colliderTrimesh", jsColliderTrimesh);
   njs::setMethod(env, native, "bodyGet", jsBodyGet);
   njs::setMethod(env, native, "bodySet", jsBodySet);
+  // Veiculo raycast (SPEC-0209) — o que faltava pra jogo de carro rodar no host.
+  njs::setMethod(env, native, "bodyMassProps", jsBodyMassProps);
+  njs::setMethod(env, native, "bodyCollider", jsBodyCollider);
+  njs::setMethod(env, native, "colliderGroups", jsColliderGroups);
+  njs::setMethod(env, native, "vehicleNew", jsVehicleNew);
+  njs::setMethod(env, native, "vehicleFree", jsVehicleFree);
+  njs::setMethod(env, native, "vehicleSetUpAxis", jsVehicleSetUpAxis);
+  njs::setMethod(env, native, "vehicleAddWheel", jsVehicleAddWheel);
+  njs::setMethod(env, native, "vehicleSetWheel", jsVehicleSetWheel);
+  njs::setMethod(env, native, "vehicleUpdate", jsVehicleUpdate);
+  njs::setMethod(env, native, "vehicleWheelState", jsVehicleWheelState);
   napi_set_named_property(env, global, "__rapierNative", native);
 }
 

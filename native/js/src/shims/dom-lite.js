@@ -68,7 +68,32 @@ export function makeInertElement(tagName) {
   return element;
 }
 
+/**
+ * Construtores de elemento do DOM. Existem pro `instanceof` dos jogos não
+ * explodir (`document.activeElement instanceof HTMLElement` é padrão pra tirar
+ * o foco de um campo). Nenhum elemento do dom-lite herda deles de verdade —
+ * `instanceof` dá `false`, que é a resposta certa num host sem DOM: não há
+ * campo focado pra desfocar.
+ *
+ * Sem isto, `ReferenceError: Property 'HTMLElement' doesn't exist` derruba o
+ * carregamento inteiro do jogo (SPEC-0209).
+ */
+function installElementConstructors() {
+  const names = [
+    'Element', 'HTMLElement', 'HTMLDivElement', 'HTMLSpanElement',
+    'HTMLButtonElement', 'HTMLInputElement', 'HTMLCanvasElement',
+    'HTMLImageElement', 'HTMLAnchorElement', 'Node',
+  ];
+  for (const name of names) {
+    if (globalThis[name]) continue;
+    globalThis[name] = function () {
+      throw new Error(`CortexNative: ${name} nao pode ser construido no host`);
+    };
+  }
+}
+
 export function installDomLite() {
+  installElementConstructors();
   const documentBus = createEventBus();
   const body = makeInertElement('body');
   const head = makeInertElement('head');

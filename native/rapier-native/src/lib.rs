@@ -221,12 +221,77 @@ pub unsafe extern "C" fn rn_body_get(world: *mut World, body: f64, what: f64) {
             w.scratch[1] = v.y as f64;
             w.scratch[2] = v.z as f64;
         }
+        // 4 = tipo do corpo (0 dinamico, 1 fixo, 2 cinematico) — o jogo usa pra
+        // achar o chassi entre os corpos que o veiculo criou (SPEC-0209).
+        4 => {
+            w.scratch[0] = match rb.body_type() {
+                RigidBodyType::Dynamic => 0.0,
+                RigidBodyType::Fixed => 1.0,
+                _ => 2.0,
+            };
+        }
+        5 => w.scratch[0] = rb.colliders().len() as f64,
         _ => {
             let t = rb.translation();
             w.scratch[0] = t.x as f64;
             w.scratch[1] = t.y as f64;
             w.scratch[2] = t.z as f64;
         }
+    }
+}
+
+fn pack_collider(handle: ColliderHandle) -> f64 {
+    let (index, generation) = handle.into_raw_parts();
+    (index as u64 + ((generation as u64) << 32)) as f64
+}
+
+fn unpack_collider(packed: f64) -> ColliderHandle {
+    let raw = packed as u64;
+    ColliderHandle::from_raw_parts(raw as u32, (raw >> 32) as u32)
+}
+
+/// Handle do collider `index` do corpo (-1 se nao existe).
+/// # Safety: `world` vivo.
+#[no_mangle]
+pub unsafe extern "C" fn rn_body_collider(world: *mut World, body: f64, index: f64) -> f64 {
+    let w = &*world;
+    let Some(rb) = w.bodies.get(unpack_handle(body)) else {
+        return -1.0;
+    };
+    match rb.colliders().get(index as usize) {
+        Some(handle) => pack_collider(*handle),
+        None => -1.0,
+    }
+}
+
+/// Grupos de colisao de um collider, no formato do rapier-compat
+/// (memberships nos 16 bits altos, filtro nos baixos). `set != 0` grava.
+/// # Safety: `world` vivo.
+#[no_mangle]
+pub unsafe extern "C" fn rn_collider_groups(
+    world: *mut World,
+    collider: f64,
+    set: f64,
+    value: f64,
+) -> f64 {
+    let w = &mut *world;
+    let handle = unpack_collider(collider);
+    if set != 0.0 {
+        if let Some(c) = w.colliders.get_mut(handle) {
+            let bits = value as u32;
+            c.set_collision_groups(InteractionGroups::new(
+                Group::from_bits_truncate(bits >> 16),
+                Group::from_bits_truncate(bits & 0xffff),
+            ));
+        }
+        return value;
+    }
+    match w.colliders.get(handle) {
+        Some(c) => {
+            let g = c.collision_groups();
+            ((g.memberships.bits() << 16) | (g.filter.bits() & 0xffff)) as f64
+        }
+        None => 0.0,
     }
 }
 
@@ -263,6 +328,209 @@ pub unsafe extern "C" fn rn_body_set(
         5 => rb.apply_impulse(v, wake_up),
         6 => rb.apply_torque_impulse(v, wake_up),
         7 => rb.wake_up(true),
+        // 8/9 = zerar forcas/torques acumulados; 10 = travar eixos de rotacao
+        // (o carro so gira em Y) — x/y/z vem como 0/1 (SPEC-0209).
+        8 => rb.reset_forces(wake_up),
+        9 => rb.reset_torques(wake_up),
+        10 => rb.set_enabled_rotations(x != 0.0, y != 0.0, z != 0.0, wake_up),
         _ => rb.set_translation(v, wake_up),
     }
+}
+
+// ─── Veículo raycast (SPEC-0209) ────────────────────────────────────────────
+//
+// Ponte do `DynamicRayCastVehicleController`. Mesmo desenho do resto: f64 em
+// tudo, vetores pelo `scratch` do mundo, superfície só do que o engine usa
+// (src/physics/RapierPhysics.ts).
+
+use rapier3d::control::{DynamicRayCastVehicleController, WheelTuning};
+
+pub struct Vehicle {
+    ctrl: DynamicRayCastVehicleController,
+}
+
+/// Códigos de `rn_vehicle_set_wheel`. Espelhados em rapier-compat.js — mudar
+/// aqui exige mudar lá (são um contrato entre as duas pontas).
+const WHEEL_SUSPENSION_STIFFNESS: i32 = 0;
+const WHEEL_DAMPING_COMPRESSION: i32 = 1;
+const WHEEL_DAMPING_RELAXATION: i32 = 2;
+const WHEEL_MAX_SUSPENSION_TRAVEL: i32 = 3;
+const WHEEL_FRICTION_SLIP: i32 = 4;
+const WHEEL_SUSPENSION_REST_LENGTH: i32 = 5;
+const WHEEL_ENGINE_FORCE: i32 = 6;
+const WHEEL_BRAKE: i32 = 7;
+const WHEEL_STEERING: i32 = 8;
+
+/// # Safety: `world` vem de rn_world_new; `chassis` é um handle vivo.
+#[no_mangle]
+pub unsafe extern "C" fn rn_vehicle_new(world: *mut World, chassis: f64) -> *mut Vehicle {
+    let w = &mut *world;
+    let handle = unpack_handle(chassis);
+    if w.bodies.get(handle).is_none() {
+        return std::ptr::null_mut();
+    }
+    Box::into_raw(Box::new(Vehicle {
+        ctrl: DynamicRayCastVehicleController::new(handle),
+    }))
+}
+
+/// # Safety: `vehicle` vem de rn_vehicle_new e não foi liberado.
+#[no_mangle]
+pub unsafe extern "C" fn rn_vehicle_free(vehicle: *mut Vehicle) {
+    if !vehicle.is_null() {
+        drop(Box::from_raw(vehicle));
+    }
+}
+
+/// Eixo "para cima" do chassi (0=X, 1=Y, 2=Z). O engine usa Y.
+/// # Safety: `vehicle` vivo.
+#[no_mangle]
+pub unsafe extern "C" fn rn_vehicle_set_up_axis(vehicle: *mut Vehicle, axis: f64) {
+    (*vehicle).ctrl.index_up_axis = (axis as usize).min(2);
+}
+
+/// # Safety: `vehicle` vivo.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn rn_vehicle_add_wheel(
+    vehicle: *mut Vehicle,
+    px: f64, py: f64, pz: f64,
+    dx: f64, dy: f64, dz: f64,
+    ax: f64, ay: f64, az: f64,
+    rest_length: f64,
+    radius: f64,
+) {
+    let v = &mut *vehicle;
+    // Tuning default do Rapier; o engine ajusta cada parâmetro logo em seguida
+    // por `set_wheel` (é como a API do browser também funciona).
+    let tuning = WheelTuning::default();
+    v.ctrl.add_wheel(
+        point![px as f32, py as f32, pz as f32],
+        vector![dx as f32, dy as f32, dz as f32],
+        vector![ax as f32, ay as f32, az as f32],
+        rest_length as f32,
+        radius as f32,
+        &tuning,
+    );
+}
+
+/// Ajusta UM parâmetro de UMA roda (ver constantes WHEEL_*).
+/// # Safety: `vehicle` vivo.
+#[no_mangle]
+pub unsafe extern "C" fn rn_vehicle_set_wheel(
+    vehicle: *mut Vehicle,
+    index: f64,
+    param: f64,
+    value: f64,
+) {
+    let v = &mut *vehicle;
+    let wheels = v.ctrl.wheels_mut();
+    let Some(wheel) = wheels.get_mut(index as usize) else {
+        return;
+    };
+    let value = value as f32;
+    match param as i32 {
+        WHEEL_SUSPENSION_STIFFNESS => wheel.suspension_stiffness = value,
+        WHEEL_DAMPING_COMPRESSION => wheel.damping_compression = value,
+        WHEEL_DAMPING_RELAXATION => wheel.damping_relaxation = value,
+        WHEEL_MAX_SUSPENSION_TRAVEL => wheel.max_suspension_travel = value,
+        WHEEL_FRICTION_SLIP => wheel.friction_slip = value,
+        WHEEL_SUSPENSION_REST_LENGTH => wheel.suspension_rest_length = value,
+        WHEEL_ENGINE_FORCE => wheel.engine_force = value,
+        WHEEL_BRAKE => wheel.brake = value,
+        WHEEL_STEERING => wheel.steering = value,
+        _ => {}
+    }
+}
+
+/// Integra o veículo. Chame DEPOIS do `rn_world_step` (o raycast das rodas usa
+/// o `query_pipeline`, que o step atualiza).
+/// # Safety: `vehicle` e `world` vivos.
+#[no_mangle]
+pub unsafe extern "C" fn rn_vehicle_update(
+    vehicle: *mut Vehicle,
+    world: *mut World,
+    dt: f64,
+    groups: f64,
+) {
+    let v = &mut *vehicle;
+    let w = &mut *world;
+    // O chassi nunca entra no raycast das proprias rodas. `groups < 0` = sem
+    // filtro de grupo (o default do engine); >= 0 usa o formato do compat
+    // (memberships nos 16 bits altos, filtro nos baixos).
+    let mut filter = QueryFilter::exclude_dynamic().exclude_rigid_body(v.ctrl.chassis);
+    if groups >= 0.0 {
+        let bits = groups as u32;
+        filter = filter.groups(InteractionGroups::new(
+            Group::from_bits_truncate(bits >> 16),
+            Group::from_bits_truncate(bits & 0xffff),
+        ));
+    }
+    v.ctrl.update_vehicle(
+        dt as f32,
+        &mut w.bodies,
+        &w.colliders,
+        &w.query_pipeline,
+        filter,
+    );
+}
+
+/// Estado de uma roda no `scratch` do mundo:
+/// [0] em contato (0/1) · [1..3] ponto de contato (mundo) ·
+/// [4..6] ponto de conexão no chassi · [7] comprimento da suspensão ·
+/// [8] esterço · [9] rotação.
+/// # Safety: `vehicle` e `world` vivos.
+#[no_mangle]
+pub unsafe extern "C" fn rn_vehicle_wheel_state(
+    vehicle: *mut Vehicle,
+    world: *mut World,
+    index: f64,
+) {
+    let v = &*vehicle;
+    let w = &mut *world;
+    let Some(wheel) = v.ctrl.wheels().get(index as usize) else {
+        w.scratch[0] = 0.0;
+        return;
+    };
+    let info = wheel.raycast_info();
+    w.scratch[0] = if info.is_in_contact { 1.0 } else { 0.0 };
+    w.scratch[1] = info.contact_point_ws.x as f64;
+    w.scratch[2] = info.contact_point_ws.y as f64;
+    w.scratch[3] = info.contact_point_ws.z as f64;
+    w.scratch[4] = wheel.chassis_connection_point_cs.x as f64;
+    w.scratch[5] = wheel.chassis_connection_point_cs.y as f64;
+    w.scratch[6] = wheel.chassis_connection_point_cs.z as f64;
+    w.scratch[7] = info.suspension_length as f64;
+    w.scratch[8] = wheel.steering as f64;
+    w.scratch[9] = wheel.rotation as f64;
+}
+
+/// Massa/centro de massa/inércia EXPLÍCITOS de um corpo (SPEC-0209). O veículo
+/// usa isto pra baixar o centro de massa (anti-capotamento) e afrouxar a
+/// inércia de guinada — sem isso o carro roda no eixo errado nas curvas.
+///
+/// O frame da inércia principal é a identidade (o engine sempre passa
+/// quaternion identidade); expor um frame arbitrário custaria 4 f64 a mais por
+/// chamada sem uso hoje.
+/// # Safety: `world` vivo, `body` um handle válido.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn rn_body_mass_props(
+    world: *mut World,
+    body: f64,
+    mass: f64,
+    cx: f64, cy: f64, cz: f64,
+    ix: f64, iy: f64, iz: f64,
+    wake: f64,
+) {
+    let w = &mut *world;
+    let Some(rb) = w.bodies.get_mut(unpack_handle(body)) else {
+        return;
+    };
+    let props = MassProperties::new(
+        point![cx as f32, cy as f32, cz as f32],
+        mass as f32,
+        vector![ix as f32, iy as f32, iz as f32],
+    );
+    rb.set_additional_mass_properties(props, wake != 0.0);
 }
