@@ -786,6 +786,25 @@ trecho” sem depender de print de HUD na hora certa.
   desenha. Contá-la inflava o diagnóstico — as variantes de roda de garagem do
   kart-racer, todas na cena com só uma visível, apareciam como se desenhassem.
 
+## 8e3. Render bundles estão DESLIGADOS — ADR-0215
+
+O `wrapStaticInBundle` (SPEC-0136) existe e funciona, mas **não liga mais
+sozinho no host**: virou opt-in (`renderBundles: true`).
+
+Motivo: no bundle os objetos são desenhados com a matriz de câmera do momento em
+que ele foi **gravado**. Eles ficam presos na tela enquanto o resto da cena
+acompanha a câmera. No kart-racer isso parava uma faixa inteira do cenário
+durante a cutscene e punha o lago da ponte no céu; e a casca preta do contorno
+toon, presa do mesmo jeito, cobria as árvores — o que parecia, à primeira vista,
+um defeito próprio do contorno.
+
+Só aparece no host (no Studio os bundles nunca ligaram). Custo de desligar,
+medido no kart-racer: 29 → 23 fps, 733 → 839 draws. O **merge estático**
+continua ligado no host e segue sendo o corte principal de draw calls — ele funde
+geometria, não grava comandos, e não tem este defeito.
+
+Corrigir a câmera dentro do bundle no host é frente aberta.
+
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
 Duas fusões diferentes, com propósitos opostos, no mesmo módulo
