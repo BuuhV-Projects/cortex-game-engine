@@ -6,7 +6,7 @@
 
 # Class: PerfTrace
 
-Defined in: src/core/PerfTrace.ts:165
+Defined in: [src/core/PerfTrace.ts:165](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L165)
 
 Amostrador do trace. O [Game](Game.md) chama [tick](#tick) a cada frame; ele só
 faz trabalho quando (a) o host registrou a ponte e (b) passou o intervalo.
@@ -29,7 +29,7 @@ faz trabalho quando (a) o host registrou a ponte e (b) passou o intervalo.
 
 > **get** **enabled**(): `boolean`
 
-Defined in: src/core/PerfTrace.ts:171
+Defined in: [src/core/PerfTrace.ts:171](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L171)
 
 `true` quando o host aceita trace (métricas ativas no export nativo).
 
@@ -43,7 +43,7 @@ Defined in: src/core/PerfTrace.ts:171
 
 > **tick**(`deltaMs`, `scene`, `camera`, `profiler`, `info`): `void`
 
-Defined in: src/core/PerfTrace.ts:184
+Defined in: [src/core/PerfTrace.ts:184](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L184)
 
 Avança o relógio e, no intervalo, grava uma amostra.
 

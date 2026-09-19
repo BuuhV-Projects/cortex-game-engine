@@ -6,7 +6,7 @@
 
 # Interface: SampleInput
 
-Defined in: src/core/PerfTrace.ts:126
+Defined in: [src/core/PerfTrace.ts:126](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L126)
 
 Dados do frame que a amostra precisa, já lidos pelo chamador.
 
@@ -16,7 +16,7 @@ Dados do frame que a amostra precisa, já lidos pelo chamador.
 
 > **camera**: `Camera`
 
-Defined in: src/core/PerfTrace.ts:132
+Defined in: [src/core/PerfTrace.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L132)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: src/core/PerfTrace.ts:132
 
 > **cpu**: `Record`\<`string`, `number`\>
 
-Defined in: src/core/PerfTrace.ts:129
+Defined in: [src/core/PerfTrace.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L129)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: src/core/PerfTrace.ts:129
 
 > **draws**: `number`
 
-Defined in: src/core/PerfTrace.ts:130
+Defined in: [src/core/PerfTrace.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L130)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: src/core/PerfTrace.ts:130
 
 > **frameMs**: `number`
 
-Defined in: src/core/PerfTrace.ts:128
+Defined in: [src/core/PerfTrace.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L128)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: src/core/PerfTrace.ts:128
 
 > **timeMs**: `number`
 
-Defined in: src/core/PerfTrace.ts:127
+Defined in: [src/core/PerfTrace.ts:127](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L127)
 
 ***
 
@@ -56,7 +56,7 @@ Defined in: src/core/PerfTrace.ts:127
 
 > **tris**: `number`
 
-Defined in: src/core/PerfTrace.ts:131
+Defined in: [src/core/PerfTrace.ts:131](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L131)
 
 ***
 
@@ -64,4 +64,4 @@ Defined in: src/core/PerfTrace.ts:131
 
 > **visible**: [`VisibleNode`](VisibleNode.md)[]
 
-Defined in: src/core/PerfTrace.ts:133
+Defined in: [src/core/PerfTrace.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L133)
