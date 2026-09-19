@@ -121,18 +121,31 @@ não cair enquanto você edita a cena no F2. Sem isso, a física roda sempre.
 
 ***
 
+### precompile?
+
+> `optional` **precompile?**: `boolean`
+
+Defined in: [src/scene/SceneBuilder.ts:150](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L150)
+
+**Pré-aquece os pipelines** ao final do build ([Renderer.precompile](../classes/Renderer.md#precompile),
+SPEC-0196) — tira o hitch de compilação da primeira aparição de cada
+material. Exige `renderer` e `camera`. Default `true`.
+
+***
+
 ### renderBundles?
 
 > `optional` **renderBundles?**: `boolean`
 
-Defined in: [src/scene/SceneBuilder.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L143)
+Defined in: [src/scene/SceneBuilder.ts:144](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L144)
 
 Envolve a geometria estática FUNDIDA num `BundleGroup` (render bundles do
 WebGPU — M-perf-2b/SPEC-0136): o renderer grava os draws uma vez e no replay
 vira 1 `executeBundles` por pass, cortando as milhares de travessias NAPI por
 frame no host nativo. Só faz efeito com `mergeStatic` (é o estático fundido
-que entra). Default `false`; o host liga junto do merge. `BundleGroup` assume
-estrutura estática — reconstrua a cena (novo `buildScene`) pra mudar.
+que entra). Default: **liga sozinho no host nativo**, junto do merge.
+`BundleGroup` assume estrutura estática — reconstrua a cena (novo
+`buildScene`) pra mudar.
 
 ***
 

@@ -8,7 +8,7 @@
 
 > **clearMatte**(`object`): `void`
 
-Defined in: [src/scene/SceneAssets.ts:263](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L263)
+Defined in: [src/scene/SceneAssets.ts:266](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L266)
 
 Desfaz o [setMatte](setMatte.md): restaura roughness/metalness/envMapIntensity originais
 (cacheados no primeiro `setMatte`). É o "desligar" do toggle de material do editor.

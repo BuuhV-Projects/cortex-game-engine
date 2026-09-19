@@ -4,6 +4,7 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { AssetLoader, disposeObjectResources, type GLTF } from '../core/AssetLoader.js';
 import { loadKtx2 } from '../core/loadKtx2.js';
 import { Scene } from '../core/Scene.js';
+import { clearMaterialPresetCache } from './Materials.js';
 
 /**
  * Helpers pra montar cena com modelos `.glb`: carregar (com cache), instanciar
@@ -78,6 +79,8 @@ const _texCache = new Map<string, Texture>();
  * menu/trocar de mundo. Depois disto, cada asset volta a custar carga completa.
  */
 export function clearSceneAssetCaches(): void {
+  // Presets de material derivam dos materiais destes GLTFs (SPEC-0196) — saem junto.
+  clearMaterialPresetCache();
   for (const gltf of _cache.values()) disposeObjectResources(gltf.scene);
   _cache.clear();
   for (const tex of _texCache.values()) tex.dispose();

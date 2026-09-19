@@ -320,6 +320,7 @@
 - [buildTilemap](functions/buildTilemap.md)
 - [canRebindInput](functions/canRebindInput.md)
 - [clearMaterial](functions/clearMaterial.md)
+- [clearMaterialPresetCache](functions/clearMaterialPresetCache.md)
 - [clearMatte](functions/clearMatte.md)
 - [clearSceneAssetCaches](functions/clearSceneAssetCaches.md)
 - [clearScripts](functions/clearScripts.md)

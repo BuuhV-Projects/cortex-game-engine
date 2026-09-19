@@ -6,6 +6,7 @@
   "description": "Motor de jogo 3D com ECS, Three.js e integração com Claude AI",
   "scripts": {
     "dev": "vite",
+    "dev:perf-kart": "vite --config vite.perf-kart.config.ts",
     "build": "tsc",
     "build:engine": "tsc -p tsconfig.engine.json && vite build --config vite.engine.config.ts && vite build --config vite.engine.dev.config.ts && vite build --config vite.engine.rapier.config.ts && yarn glyphs:publish",
     "docs:engine": "typedoc",

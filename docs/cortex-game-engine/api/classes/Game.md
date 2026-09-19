@@ -386,11 +386,39 @@ Registra um callback chamado a cada frame (delta em **segundos**), antes do
 
 ***
 
+### precompile()
+
+> **precompile**(): `Promise`\<`void`\>
+
+Defined in: [src/core/Game.ts:519](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L519)
+
+**Pré-aquece os pipelines** da cena ativa (SPEC-0196) — compila os shaders
+agora em vez de no primeiro frame em que cada objeto aparece, que é o que
+causa o travadinho ao começar uma corrida/fase.
+
+O `buildScene` já faz isso com o que ele monta; chame aqui pra o que o JOGO
+cria DEPOIS (carros montados por código, efeitos, UI de runtime) —
+idealmente ainda sob a tela de carregamento.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+#### Example
+
+```ts
+const player = await createCar(game, golf, golfRig)
+await game.precompile()
+game.start()
+```
+
+***
+
 ### reset()
 
 > **reset**(`options?`): `void`
 
-Defined in: [src/core/Game.ts:537](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L537)
+Defined in: [src/core/Game.ts:555](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L555)
 
 Reseta o jogo pra **trocar de cena/fase** sem recriar o `Game` (renderer,
 câmera e canvas continuam): para o loop, esvazia o world com `dispose` dos
@@ -528,7 +556,7 @@ game.setPostFX(fx)
 
 > **start**(): `void`
 
-Defined in: [src/core/Game.ts:506](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L506)
+Defined in: [src/core/Game.ts:524](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L524)
 
 Inicia o loop.
 
@@ -542,7 +570,7 @@ Inicia o loop.
 
 > **stop**(): `void`
 
-Defined in: [src/core/Game.ts:511](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L511)
+Defined in: [src/core/Game.ts:529](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L529)
 
 Para o loop.
 
