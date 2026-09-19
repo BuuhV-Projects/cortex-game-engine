@@ -351,6 +351,11 @@ Native (que roda milhares de libs sobre Hermes em produção):
   entram na MESMA fila (`deferReleaseBindGroup`). Apareceu com o editor dentro
   do host (troca de gizmo descarta material), mas vale pra qualquer cena que
   descarte material sob pressão de GC.
+- **O host só tinha `setTimeout`** — `setInterval` faltava e a chamada
+  explodia em runtime (`Property 'setInterval' doesn't exist`), derrubando o
+  boot inteiro se acontecesse cedo. Implementado na SPEC-0204 (reagenda ANTES
+  de disparar, pra `clearInterval` de dentro do callback funcionar). Ao portar
+  código de browser, confira se a API existe no shim antes de assumir.
 - **`await import()` não compila no Hermes** (SPEC-0202): `Invalid expression
   encountered` no `hermesc`. O `TauriSceneFileWriter` usa import dinâmico e
   sobrevive ao tree-shaking quando o editor entra no bundle — o `bundle.mjs`

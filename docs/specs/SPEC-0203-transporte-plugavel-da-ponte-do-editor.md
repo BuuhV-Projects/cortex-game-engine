@@ -61,7 +61,15 @@ Mais 6 unitários em `tests/editor/bridgeTransport.test.ts` (escolha do meio, o
 host vencendo o iframe, cobertura de todos os `IDE_MESSAGE_TYPES`, marca de
 origem).
 
-## O que ainda NÃO funciona
+## O que ainda NÃO funciona — **RESOLVIDO na SPEC-0204**
+
+> A causa não era a ordem de boot, como a hipótese abaixo supunha: o host não
+> tinha `setInterval`, a ponte usa isso para repetir o `hello`, e a exceção
+> derrubava o boot do jogo antes da fase montar. Com o timer implementado, o
+> outliner publica os 67 nós da fase e o `select` pelo canal reflete no
+> inspector. O texto original fica abaixo como registro do diagnóstico.
+
+### Diagnóstico original (apontava para o lugar errado)
 
 **O outliner publicado no host traz `Camera` e `(CameraHelper)` — não os nós da
 fase.** O transporte está provado (handshake e estado trafegam pelo canal), mas
