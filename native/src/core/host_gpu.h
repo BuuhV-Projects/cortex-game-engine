@@ -8,8 +8,10 @@
 struct HostGpu {
   WGPUInstance instance = nullptr;
   WGPUSurface surface = nullptr;
-  // Fonte da surface (HWND/HINSTANCE) — pra RECRIAR a surface no resize
-  // (reconfigurar a mesma dá "Invalid surface" no wgpu-native/D3D12).
+  // Fonte da surface (HWND/HINSTANCE) — usada pra RECRIAR a surface no resize
+  // (SPEC-0199). Reconfigurar a MESMA surface com tamanho novo dá "Invalid
+  // surface" e crasha; recriar a partir do HWND, no início do frame (sem
+  // textura viva), funciona — validado com 100 resizes seguidos.
   void* hwnd = nullptr;
   void* hinstance = nullptr;
 
