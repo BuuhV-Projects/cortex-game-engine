@@ -372,3 +372,134 @@ export function wrapStaticInBundle(
 export function isNativeHost(): boolean {
   return typeof (globalThis as { __cortexReadUserFile?: unknown }).__cortexReadUserFile === 'function';
 }
+
+// ── Fusão DENTRO de um modelo (SPEC-0213) ────────────────────────────────────
+
+/** Resultado de uma {@link mergeSubtree}. */
+export interface SubtreeMergeStats {
+  /** Malhas originais que entraram em alguma fusão (removidas da subárvore). */
+  merged: number;
+  /** Malhas fundidas criadas (uma por grupo de material). */
+  groups: number;
+  /** Malhas mantidas como estavam (grupo de 1, preservadas ou inelegíveis). */
+  kept: number;
+}
+
+/** Opções da {@link mergeSubtree}. */
+export interface SubtreeMergeOptions {
+  /**
+   * Subárvores que NÃO são fundidas — pulas inteiras, com os descendentes.
+   * É o que mantém girando o que gira: os pivôs de roda de um carro, uma torre
+   * que rotaciona, uma porta que abre.
+   */
+  preserve?: Iterable<Object3D>;
+  /** Prefixo do nome das malhas geradas (diagnóstico). Default: `merged`. */
+  name?: string;
+}
+
+/** Nome-base default das malhas que a {@link mergeSubtree} cria. */
+const DEFAULT_SUBTREE_MERGE_NAME = 'merged';
+
+/** Menor tamanho de grupo que vale fundir — 1 só custaria uma cópia de geometria. */
+const MIN_MERGE_GROUP = 2;
+
+/**
+ * **Funde as malhas DENTRO de um modelo** (SPEC-0213), agrupando por material e
+ * bakeando no espaço **local de `root`**. O oposto do {@link mergeStaticScene}:
+ * serve justamente para o que SE MOVE.
+ *
+ * Modelo de catálogo vem com cada peça separada — um carro tem para-choque,
+ * grade, faróis e maçanetas como malhas próprias, e nenhuma se move em relação
+ * ao corpo. Cada uma custa uma draw call. Medido no kart-racer: três carros
+ * somavam 248 das 642 malhas desenhadas da cena.
+ *
+ * `root` continua o mesmo objeto, na mesma posição, com o mesmo pai: quem o move
+ * (física, animação, editor) não percebe diferença.
+ *
+ * Não funde (a malha fica exatamente como estava): descendente de um `preserve`,
+ * malha com esqueleto, multi-material, geometria com morph targets ou assinatura
+ * de atributos incompatível, e grupo de uma malha só.
+ *
+ * @example
+ * // O corpo vira poucas malhas; os pivôs de roda seguem girando.
+ * mergeSubtree(carro, { preserve: rodas, name: 'car-body' });
+ */
+export function mergeSubtree(root: Object3D, options: SubtreeMergeOptions = {}): SubtreeMergeStats {
+  root.updateMatrixWorld(true);
+  const preserved = new Set<Object3D>(options.preserve ?? []);
+  const stats: SubtreeMergeStats = { merged: 0, groups: 0, kept: 0 };
+
+  // O bake é no espaço LOCAL da raiz: `local = inverse(root.world) * mesh.world`.
+  // Sem isso a peça fundida herdaria a transformação da raiz DUAS vezes (uma no
+  // vértice, outra na matriz do pai) e o carro sairia voando ao primeiro passo.
+  const toLocal = new Matrix4().copy(root.matrixWorld).invert();
+  const groups = new Map<string, { mesh: Mesh; local: Matrix4 }[]>();
+
+  const visit = (obj: Object3D): void => {
+    if (obj !== root && preserved.has(obj)) return; // pula a subárvore inteira
+    const mesh = obj as Mesh;
+    if (mesh.isMesh && !isSkinned(mesh) && !Array.isArray(mesh.material)) {
+      const attrKey = attributeKey(mesh.geometry);
+      if (attrKey !== null) {
+        // `cortexOrigMaterial` entra na chave porque é por ele que o jogo
+        // reconhece o material de origem depois de um preset (SPEC-0196) —
+        // ex.: achar qual material é a pintura do carro.
+        const orig = (mesh.userData as Record<string, unknown>)['cortexOrigMaterial'];
+        const origKey = orig instanceof Object ? ((orig as Material).uuid ?? '-') : '-';
+        const key = [
+          materialKey(mesh.material as Material),
+          attrKey,
+          origKey,
+          mesh.castShadow ? 'c' : '-',
+          mesh.receiveShadow ? 'r' : '-',
+          mesh.renderOrder,
+        ].join('§');
+        const local = new Matrix4().multiplyMatrices(toLocal, mesh.matrixWorld);
+        const list = groups.get(key);
+        if (list) list.push({ mesh, local });
+        else groups.set(key, [{ mesh, local }]);
+      } else {
+        stats.kept++;
+      }
+    } else if (mesh.isMesh) {
+      stats.kept++; // skinada ou multi-material: segue desenhada como estava
+    }
+    for (const child of [...obj.children]) visit(child);
+  };
+  visit(root);
+
+  for (const list of groups.values()) {
+    if (list.length < MIN_MERGE_GROUP) {
+      stats.kept += list.length;
+      continue;
+    }
+    const parts: BufferGeometry[] = [];
+    for (const { mesh, local } of list) {
+      const g = flatSource(mesh.geometry).clone(); // .glb real vem interleaved
+      g.applyMatrix4(local);
+      parts.push(g);
+    }
+    const mergedGeo = mergeGeometries(parts, false);
+    for (const p of parts) p.dispose();
+    if (!mergedGeo) {
+      stats.kept += list.length; // mismatch inesperado: mantém os originais
+      continue;
+    }
+    const sample = list[0]!.mesh;
+    const merged = new Mesh(mergedGeo, sample.material);
+    merged.castShadow = sample.castShadow;
+    merged.receiveShadow = sample.receiveShadow;
+    merged.renderOrder = sample.renderOrder;
+    merged.name = `${options.name ?? DEFAULT_SUBTREE_MERGE_NAME}-${stats.groups}`;
+    const ud = merged.userData as Record<string, unknown>;
+    const orig = (sample.userData as Record<string, unknown>)['cortexOrigMaterial'];
+    if (orig !== undefined) ud['cortexOrigMaterial'] = orig;
+    root.add(merged);
+    stats.groups++;
+    stats.merged += list.length;
+    for (const { mesh } of list) mesh.removeFromParent();
+  }
+
+  debug('scene', `mergeSubtree(${root.name || 'sem nome'}): ${stats.merged} malhas → ${stats.groups} (mantidas: ${stats.kept})`);
+  return stats;
+}

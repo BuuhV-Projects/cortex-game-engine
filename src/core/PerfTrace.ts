@@ -107,18 +107,27 @@ export function collectVisible(scene: Object3D, camera: Camera): VisibleNode[] {
   _frustum.setFromProjectionMatrix(_matrix);
 
   const byId = new Map<string, VisibleNode>();
-  scene.traverse((obj) => {
+  // Travessia própria (e não `traverse`) porque ela PARA em subárvore invisível.
+  // O `visible` do three é herdado: uma malha com `visible: true` dentro de um
+  // pai escondido não desenha. Com `traverse` ela entrava na conta e inflava o
+  // diagnóstico — no kart-racer, as variantes de roda da garagem, que ficam
+  // todas na cena com só uma visível, apareciam como se desenhassem.
+  const visitar = (obj: Object3D): void => {
+    if (!obj.visible) return;
     const mesh = obj as Mesh & { isMesh?: boolean };
-    if (!mesh.isMesh || !mesh.visible) return;
-    if (!mesh.geometry) return;
-    if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
-    if (!_frustum.intersectsObject(mesh)) return;
-    const id = sceneNodeIdOf(mesh);
-    const entry = byId.get(id) ?? { id, meshes: 0, tris: 0 };
-    entry.meshes++;
-    entry.tris += triangleCount(mesh);
-    byId.set(id, entry);
-  });
+    if (mesh.isMesh && mesh.geometry) {
+      if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+      if (_frustum.intersectsObject(mesh)) {
+        const id = sceneNodeIdOf(mesh);
+        const entry = byId.get(id) ?? { id, meshes: 0, tris: 0 };
+        entry.meshes++;
+        entry.tris += triangleCount(mesh);
+        byId.set(id, entry);
+      }
+    }
+    for (const child of obj.children) visitar(child);
+  };
+  visitar(scene);
   return [...byId.values()].sort((a, b) => b.tris - a.tris);
 }
 
