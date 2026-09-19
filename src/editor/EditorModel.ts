@@ -516,7 +516,7 @@ export function describeInspector(
         };
         const cfg: MaterialConfig =
           t === 'unlit' ? { type: 'unlit', ...keep, ...(unlitOf(own)?.textured !== undefined ? { textured: unlitOf(own)!.textured } : {}) }
-          : t === 'toon' ? { type: 'toon', gradientSteps: 3, outline: 0, ...keep }
+          : t === 'toon' ? { type: 'toon', gradientSteps: 3, outline: 0, ...keep, ...(own?.type === 'toon' ? own : {}) }
           : { type: 'standard' };
         api.set(target, cfg);
       }
@@ -548,12 +548,25 @@ export function describeInspector(
       });
     } else if (type === 'toon') {
       // Toon re-sombreia em cima do original (sem trocar cor, a pedido) — preserva
-      // as cores reais do modelo. Só bandas + contorno.
+      // as cores reais do modelo. Acabamento em faixas ou cel + contorno.
       const c = cur as Extract<MaterialConfig, { type: 'toon' }>;
       fields.push(
-        { kind: 'number', id: fid('matSteps'), label: 'Bandas', value: c.gradientSteps ?? 3, step: 1 },
+        { kind: 'select', id: fid('matShading'), label: 'Acabamento', value: c.shading ?? 'bands', options: [
+          { value: 'bands', label: 'Faixas' },
+          { value: 'cel', label: 'Cel suave' },
+        ] },
+        { kind: 'checkbox', id: fid('matGloss'), label: 'Preservar brilho', value: c.preserveGloss ?? false },
         { kind: 'number', id: fid('matOutline'), label: 'Contorno', value: c.outline ?? 0, step: 0.01 },
       );
+      if (c.shading !== 'cel') fields.push(
+        { kind: 'number', id: fid('matSteps'), label: 'Bandas', value: c.gradientSteps ?? 3, step: 1 },
+      );
+      handlers.set(fid('matShading'), (v) => {
+        if (v !== 'bands' && v !== 'cel') return;
+        setAll((base) => ({ ...(base as typeof c), shading: v }));
+        return { rebuild: true };
+      });
+      handlers.set(fid('matGloss'), (v) => setAll((base) => ({ ...(base as typeof c), preserveGloss: v === true })));
       handlers.set(fid('matSteps'), (v) => {
         const n = Math.round(Number(v));
         setAll((base) => ({ ...(base as typeof c), gradientSteps: Number.isFinite(n) ? Math.max(2, Math.min(8, n)) : 3 }));

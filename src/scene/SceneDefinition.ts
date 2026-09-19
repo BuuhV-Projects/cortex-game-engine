@@ -168,6 +168,8 @@ const materialSchema = z
     }),
     z.object({
       type: z.literal('toon'),
+      shading: z.enum(['bands', 'cel']).optional(),
+      preserveGloss: z.boolean().optional(),
       color: colorSchema.optional(),
       gradientSteps: z.number().int().min(2).max(8).optional(),
       outline: z.number().min(0).optional(),

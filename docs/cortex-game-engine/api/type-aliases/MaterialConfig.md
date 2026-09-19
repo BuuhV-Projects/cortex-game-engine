@@ -6,9 +6,9 @@
 
 # Type Alias: MaterialConfig
 
-> **MaterialConfig** = \{ `type`: `"standard"`; \} \| \{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `intensity?`: `number`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `textured?`: `boolean`; `transparent?`: `boolean`; `type`: `"unlit"`; \} \| \{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `type`: `"toon"`; \}
+> **MaterialConfig** = \{ `type`: `"standard"`; \} \| \{ `alphaTest?`: `number`; `color?`: `ColorRepresentation`; `cull?`: [`CullMode`](CullMode.md); `depthTest?`: `boolean`; `depthWrite?`: `boolean`; `intensity?`: `number`; `opacity?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `textured?`: `boolean`; `transparent?`: `boolean`; `type`: `"unlit"`; \} \| \{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `preserveGloss?`: `boolean`; `shading?`: `"bands"` \| `"cel"`; `type`: `"toon"`; \}
 
-Defined in: [src/scene/Materials.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L43)
+Defined in: [src/scene/Materials.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L48)
 
 Configuração de material por objeto (data-driven; vai no nó da cena/overlay).
 
@@ -109,7 +109,7 @@ Força transparência (alpha blending).
 
 ### Type Literal
 
-\{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `type`: `"toon"`; \}
+\{ `color?`: `ColorRepresentation`; `gradientSteps?`: `number`; `outline?`: `number`; `outlineColor?`: `ColorRepresentation`; `preserveGloss?`: `boolean`; `shading?`: `"bands"` \| `"cel"`; `type`: `"toon"`; \}
 
 #### color?
 
@@ -121,7 +121,7 @@ Cor base. Default: mantém a do material original (ou branco).
 
 > `optional` **gradientSteps?**: `number`
 
-Nº de bandas de luz (2–8). Mais = degradê mais suave.
+Nº de bandas de luz (2–8), usado apenas em `shading: 'bands'`.
 
 #### outline?
 
@@ -134,6 +134,18 @@ Espessura do contorno (inverted-hull, em unidades de mundo). 0 = sem contorno.
 > `optional` **outlineColor?**: `ColorRepresentation`
 
 Cor do contorno. Default preto.
+
+#### preserveGloss?
+
+> `optional` **preserveGloss?**: `boolean`
+
+Mantém PBR nos materiais originais metálicos (>= 0.2) ou polidos (roughness <= 0.35), com contorno toon. Default false.
+
+#### shading?
+
+> `optional` **shading?**: `"bands"` \| `"cel"`
+
+Acabamento: `bands` (default) quantiza a luz; `cel` usa dois tons com uma transição suave curta.
 
 #### type
 

@@ -162,6 +162,8 @@ export async function loadTexture(url: string, pixelated = true): Promise<Textur
 export function setShadows(object: Object3D, options: ShadowOptions): void {
   object.traverse((child) => {
     const mesh = child as Mesh;
+    // Inverted hulls are ink, not additional surfaces casting enlarged shadows.
+    if (mesh.userData['cortexOutline'] === true) return;
     if (!mesh.isMesh) return;
     if (options.castShadow !== undefined) mesh.castShadow = options.castShadow;
     if (options.receiveShadow !== undefined) mesh.receiveShadow = options.receiveShadow;

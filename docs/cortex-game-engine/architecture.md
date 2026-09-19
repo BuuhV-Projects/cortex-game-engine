@@ -81,6 +81,25 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
 
 ## 3. Cena data-driven (`src/scene/`)
 
+- **Superfícies toon e céu (SPEC-0195):** `preserveGloss` mantém clones PBR em
+  superfícies metálicas/polidas dentro do preset toon (contornos preservados).
+  O skybox gradiente segue equirectUV: V=0 chão, V=1 zênite; não inverter as linhas
+  da DataTexture sem também mudar sua convenção de amostragem.
+  Seu panorama é 2:1, altura mínima 32: PMREM deriva a resolução da largura / 4;
+  uma textura 1×N é inadequada para a geração de reflexos.
+
+- **Acabamento toon (`Materials.ts`, SPEC-0194):** `shading: 'cel'` usa dois
+  patamares e uma transição curta filtrada na rampa de luz. Sem o campo, mantém
+  as bandas antigas. Schema/Inspector/overlay preservam o modo; `gradientSteps`
+  só controla o modo `bands`. Reutiliza `MeshToonMaterial` e suas sombras.
+
+- **Contornos toon/unlit (`Materials.ts`, SPEC-0193):** cascas TSL deslocadas
+  pela normal em unidades de mundo, sem escalar geometria ou alterar bounds.
+  `cortexOutline` exclui cascas de picking, sombras e trimeshes do Rapier.
+  `cortexMaterialConfig` guarda o preset efetivo para partes carregadas depois
+  (ex.: rodas de garagem). O swap preserva emissão/alpha/mapas do asset e libera
+  apenas os recursos que criou; texturas originais continuam compartilhadas.
+
 - **`SceneDefinition`** (Zod) — o schema do `level.json`: nós `model`/`primitive`/
   `mesh`/`light`/`water`/`background`/`sprite`/`terrain`, cada um com campos
   (`transform`, `collider`, `player`, `character`, `rapierBody`, `material`,

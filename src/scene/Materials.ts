@@ -1,4 +1,4 @@
-import {
+﻿import {
   MeshBasicMaterial,
   MeshToonMaterial,
   BackSide,
@@ -6,16 +6,21 @@ import {
   DoubleSide,
   Color,
   Mesh,
+  SkinnedMesh,
   DataTexture,
   RedFormat,
   UnsignedByteType,
   NearestFilter,
+  LinearFilter,
   type Object3D,
   type Material,
   type Texture,
   type ColorRepresentation,
   type Side,
+  MeshStandardMaterial,
 } from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { modelWorldMatrix, normalLocal, positionLocal, vec4 } from 'three/tsl';
 
 /**
  * **Sistema de materiais por objeto** (SPEC-0058). Troca o material dos meshes de
@@ -86,9 +91,13 @@ export type MaterialConfig =
     }
   | {
       type: 'toon';
+      /** Acabamento: `bands` (default) quantiza a luz; `cel` usa dois tons com uma transição suave curta. */
+      shading?: 'bands' | 'cel';
+      /** Mantém PBR nos materiais originais metálicos (>= 0.2) ou polidos (roughness <= 0.35), com contorno toon. Default false. */
+      preserveGloss?: boolean;
       /** Cor base. Default: mantém a do material original (ou branco). */
       color?: ColorRepresentation;
-      /** Nº de bandas de luz (2–8). Mais = degradê mais suave. */
+      /** Nº de bandas de luz (2–8), usado apenas em `shading: 'bands'`. */
       gradientSteps?: number;
       /** Espessura do contorno (inverted-hull, em unidades de mundo). 0 = sem contorno. */
       outline?: number;
@@ -114,7 +123,10 @@ function eachMesh(object: Object3D, fn: (mesh: Mesh) => void): void {
 }
 
 /** Props visuais lidas do material original pra preservar no novo (por-material). */
-interface SrcMat {
+interface SrcMat extends Partial<Pick<MeshStandardMaterial,
+  'name' | 'side' | 'depthWrite' | 'depthTest' | 'alphaMap' | 'emissive' |
+  'emissiveMap' | 'emissiveIntensity' | 'normalMap' | 'normalScale' |
+  'bumpMap' | 'bumpScale' | 'aoMap' | 'aoMapIntensity' | 'fog'>> {
   map?: Texture | null;
   color?: Color;
   vertexColors?: boolean;
@@ -158,16 +170,36 @@ function buildUnlit(orig: Material, config: Extract<MaterialConfig, { type: 'unl
  * preservando `map`, `vertexColors` e a `color` própria — só troca o modelo de
  * sombreamento (gradientMap em bandas). Não força cor (preserva as cores reais).
  */
-function buildToon(orig: Material, config: Extract<MaterialConfig, { type: 'toon' }>): MeshToonMaterial {
+function buildToon(orig: Material, config: Extract<MaterialConfig, { type: 'toon' }>): MeshToonMaterial | MeshStandardMaterial {
+  if (config.preserveGloss && orig instanceof MeshStandardMaterial && (orig.metalness >= 0.2 || orig.roughness <= 0.35)) {
+    const surface = orig.clone();
+    if (config.color !== undefined) surface.color.set(config.color);
+    return surface;
+  }
   const o = orig as unknown as SrcMat;
   return new MeshToonMaterial({
+    name: o.name ?? '',
     map: o.map ?? null,
     vertexColors: o.vertexColors ?? false,
     color: config.color !== undefined ? new Color(config.color) : (o.color?.clone() ?? new Color(0xffffff)),
     transparent: o.transparent ?? false,
     opacity: o.opacity ?? 1,
     alphaTest: o.alphaTest ?? 0,
-    gradientMap: makeGradient(config.gradientSteps ?? 3),
+    side: o.side ?? FrontSide,
+    depthWrite: o.depthWrite ?? true,
+    depthTest: o.depthTest ?? true,
+    alphaMap: o.alphaMap ?? null,
+    emissive: o.emissive?.clone() ?? new Color(0),
+    emissiveMap: o.emissiveMap ?? null,
+    emissiveIntensity: o.emissiveIntensity ?? 1,
+    normalMap: o.normalMap ?? null,
+    ...(o.normalScale ? { normalScale: o.normalScale.clone() } : {}),
+    bumpMap: o.bumpMap ?? null,
+    bumpScale: o.bumpScale ?? 1,
+    aoMap: o.aoMap ?? null,
+    aoMapIntensity: o.aoMapIntensity ?? 1,
+    fog: o.fog ?? true,
+    gradientMap: config.shading === 'cel' ? makeCelGradient() : makeGradient(config.gradientSteps ?? 3),
   });
 }
 
@@ -197,6 +229,7 @@ export function applyMaterial(object: Object3D, config: MaterialConfig): void {
 
   const cfg = config;
   eachMesh(object, (mesh) => {
+    const previous = mesh.userData?.[CACHE] !== undefined ? mesh.material : undefined;
     cacheOriginal(mesh);
     // SEMPRE deriva do material ORIGINAL (cacheado), POR-MATERIAL — preserva
     // textura, vertex colors e a cor de cada submaterial (multi-material/array).
@@ -204,6 +237,7 @@ export function applyMaterial(object: Object3D, config: MaterialConfig): void {
     const build = (orig: Material): Material =>
       cfg.type === 'unlit' ? buildUnlit(orig, cfg) : buildToon(orig, cfg);
     mesh.material = Array.isArray(source) ? source.map(build) : build(source);
+    if (previous) disposePreset(previous);
   });
 
   // Contorno (toon E unlit — o inverted-hull é independente do material base).
@@ -212,6 +246,7 @@ export function applyMaterial(object: Object3D, config: MaterialConfig): void {
   }
 
   object.userData[FLAG] = config.type;
+  object.userData.cortexMaterialConfig = { ...config };
 }
 
 /** Restaura o material original cacheado (desfaz o swap). */
@@ -220,11 +255,12 @@ export function clearMaterial(object: Object3D): void {
   eachMesh(object, (mesh) => {
     const orig = mesh.userData?.[CACHE] as Material | Material[] | undefined;
     if (orig === undefined) return;
-    disposeMat(mesh.material);
+    disposePreset(mesh.material);
     mesh.material = orig;
     delete mesh.userData[CACHE];
   });
   object.userData[FLAG] = 'standard';
+  object.userData.cortexMaterialConfig = { type: 'standard' };
 }
 
 /** Preset de material ativo no objeto (`'standard'` se nenhum). Pro inspector. */
@@ -239,12 +275,36 @@ function addOutline(object: Object3D, thickness: number, color: ColorRepresentat
   const meshes: Mesh[] = [];
   eachMesh(object, (mesh) => meshes.push(mesh));
   for (const mesh of meshes) {
-    const mat = new MeshBasicMaterial({ color, side: BackSide });
-    // Casca: mesmo geometry, sólida na cor do contorno, levemente maior, virada
-    // pro avesso (BackSide) — vira só a borda atrás da silhueta. Filha do mesh,
-    // herda a pose; o `scale` local (1 + fator) cresce a casca.
-    const shell = new Mesh(mesh.geometry, mat);
-    shell.scale.multiplyScalar(1 + thickness);
+    const source = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const materials = source.map((original) => {
+      const o = original as unknown as SrcMat;
+      const mat = new MeshBasicNodeMaterial({
+        color, side: BackSide, toneMapped: false,
+        // A solid hull behind glass would turn the windows into black panels.
+        visible: original.visible && !(o.transparent && (o.opacity ?? 1) < 1),
+        map: (o.alphaTest ?? 0) > 0 ? (o.map ?? null) : null,
+        alphaMap: o.alphaMap ?? null, alphaTest: o.alphaTest ?? 0,
+        fog: o.fog ?? true,
+      });
+      // Extrude in the vertex shader: off-center geometry stays in place and
+      // CPU bounds / placeOnGround still describe the actual model. Compensate
+      // the transformed normal length, including nonuniform ancestor scales.
+      const normalLength = modelWorldMatrix.mul(vec4(normalLocal, 0)).xyz.length().max(0.00001);
+      mat.positionNode = positionLocal.add(normalLocal.mul(thickness).div(normalLength));
+      return mat;
+    });
+    const material = Array.isArray(mesh.material) ? materials : materials[0]!;
+    const shell = mesh instanceof SkinnedMesh
+      ? new SkinnedMesh(mesh.geometry, material)
+      : new Mesh(mesh.geometry, material);
+    if (shell instanceof SkinnedMesh && mesh instanceof SkinnedMesh) {
+      shell.bindMode = mesh.bindMode;
+      shell.bind(mesh.skeleton, mesh.bindMatrix);
+    }
+    shell.morphTargetInfluences = mesh.morphTargetInfluences;
+    shell.morphTargetDictionary = mesh.morphTargetDictionary;
+    shell.layers.mask = mesh.layers.mask;
+    shell.raycast = () => {}; // Decorative shell must never steal editor picks.
     shell.userData[OUTLINE] = true;
     mesh.add(shell);
   }
@@ -277,7 +337,32 @@ function makeGradient(steps: number): Texture {
   return tex;
 }
 
+/** Two broad tones; filtering softens only the terminator, not the whole surface. */
+function makeCelGradient(): Texture {
+  const size = 256;
+  const data = new Uint8Array(size);
+  for (let i = 0; i < size; i++) {
+    const t = Math.max(0, Math.min(1, (i / (size - 1) - 0.50) / 0.06));
+    const blend = t * t * (3 - 2 * t);
+    data[i] = Math.round((0.22 + 0.78 * blend) * 255);
+  }
+  const tex = new DataTexture(data, size, 1, RedFormat, UnsignedByteType);
+  tex.magFilter = LinearFilter;
+  tex.minFilter = LinearFilter;
+  tex.generateMipmaps = false;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 function disposeMat(material: Material | Material[] | undefined): void {
   if (!material) return;
   for (const m of Array.isArray(material) ? material : [material]) m.dispose();
+}
+
+/** Only the ramp belongs to the preset; source asset textures remain shared. */
+function disposePreset(material: Material | Material[]): void {
+  for (const mat of Array.isArray(material) ? material : [material]) {
+    if (mat instanceof MeshToonMaterial) mat.gradientMap?.dispose();
+    mat.dispose();
+  }
 }

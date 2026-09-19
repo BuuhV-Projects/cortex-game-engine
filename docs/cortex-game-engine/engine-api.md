@@ -1235,6 +1235,10 @@ pinta com `color` puro; essencial quando o asset embute um **atlas de paleta**, 
 // look toon/cel (3 bandas de luz + contorno preto fino):
 { "type": "model", "id": "boss", "url": "assets/Boss.glb",
   "material": { "type": "toon", "gradientSteps": 3, "outline": 0.03 } }
+
+// acabamento cel limpo: dois tons amplos e uma transição suave curta (SPEC-0194):
+{ "type": "model", "id": "car-p4j8w2", "url": "assets/car.glb",
+  "material": { "type": "toon", "shading": "cel", "preserveGloss": true, "outline": 0.012 } }
 ```
 ```ts
 // imperativo (troca não-destrutiva; standard/clearMaterial restaura o original):

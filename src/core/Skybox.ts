@@ -104,7 +104,7 @@ export class Skybox {
    * Céu **gradiente procedural** (sem arquivo) — zênite → horizonte → chão, aplicado
    * como `background` visível E `environment` (luz/reflexo suave). Ideal pra um céu
    * limpo e ensolarado (ex.: Brasília: azul forte). Funciona em WebGPU usando uma
-   * `DataTexture` equiretangular 1×N (gradiente vertical), igual ao HDRI.
+   * `DataTexture` equiretangular 2:1 (gradiente vertical), igual ao HDRI.
    *
    * @example
    * Skybox.fromGradient(scene, { top: '#1f72d8', middle: '#d6ecfb' }); // céu azul limpo
@@ -113,26 +113,30 @@ export class Skybox {
     const zenith = new THREE.Color(options.top ?? '#1f72d8');
     const horizon = new THREE.Color(options.middle ?? '#d6ecfb');
     const ground = new THREE.Color(options.bottom ?? '#8f8268');
-    const h = Math.max(8, options.resolution ?? 128);
+    // PMREM derives the cube-face size from panorama width / 4 (minimum 16).
+    const h = Math.max(32, Math.floor(options.resolution ?? 128));
+    const w = h * 2;
 
-    // Equiret 1×h: como no HDRI (flipY=false), a linha 0 renderiza no TOPO (zênite) e a
-    // última no chão (nadir) — por isso `t = 1 - i/(h-1)` (i=0 → zênite). Lerp em espaço
+    // equirectUV: V = asin(direction.y) / PI + 0.5. With DataTexture/flipY=false,
+    // row 0 is V=0 (nadir), and the last row is V=1 (zenith). Lerp em espaço
     // linear, grava em sRGB (a textura é sRGB) pras cores baterem com o hex informado.
-    const data = new Uint8Array(h * 4);
+    const data = new Uint8Array(w * h * 4);
     const c = new THREE.Color();
     const out = { r: 0, g: 0, b: 0 };
     for (let i = 0; i < h; i++) {
-      const t = 1 - i / (h - 1);
+      const t = i / (h - 1);
       if (t < 0.5) c.copy(ground).lerp(horizon, t / 0.5);
       else c.copy(horizon).lerp(zenith, (t - 0.5) / 0.5);
       c.getRGB(out, THREE.SRGBColorSpace);
-      const o = i * 4;
-      data[o] = Math.round(out.r * 255);
-      data[o + 1] = Math.round(out.g * 255);
-      data[o + 2] = Math.round(out.b * 255);
-      data[o + 3] = 255;
+      for (let x = 0; x < w; x++) {
+        const o = (i * w + x) * 4;
+        data[o] = Math.round(out.r * 255);
+        data[o + 1] = Math.round(out.g * 255);
+        data[o + 2] = Math.round(out.b * 255);
+        data[o + 3] = 255;
+      }
     }
-    const tex = new THREE.DataTexture(data, 1, h, THREE.RGBAFormat);
+    const tex = new THREE.DataTexture(data, w, h, THREE.RGBAFormat);
     tex.mapping = THREE.EquirectangularReflectionMapping;
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.magFilter = THREE.LinearFilter;

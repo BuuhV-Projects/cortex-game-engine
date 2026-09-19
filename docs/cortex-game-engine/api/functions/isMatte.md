@@ -8,7 +8,7 @@
 
 > **isMatte**(`object`): `boolean`
 
-Defined in: [src/scene/SceneAssets.ts:277](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L277)
+Defined in: [src/scene/SceneAssets.ts:279](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L279)
 
 `true` se o objeto está fosco (via [setMatte](setMatte.md)). Pro estado do toggle.
 

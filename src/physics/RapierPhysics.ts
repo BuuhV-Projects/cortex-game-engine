@@ -1,4 +1,4 @@
-// Tipos do Rapier (apagados na compilação) — pra anotar sem trazer o valor.
+﻿// Tipos do Rapier (apagados na compilação) — pra anotar sem trazer o valor.
 // É o default export (namespace), que serve como qualificador de tipo (RAPIER.World).
 import type RAPIER from '@dimforge/rapier3d-compat';
 import { Vector3, Quaternion, type Object3D, type Mesh } from 'three';
@@ -287,6 +287,7 @@ export class RapierPhysics {
     const v = new Vector3();
     obj.traverse((o) => {
       const mesh = o as Mesh;
+      if (mesh.userData['cortexOutline'] === true) return;
       if (!(mesh as { isMesh?: boolean }).isMesh || !mesh.geometry) return;
       const pos = mesh.geometry.attributes['position'];
       if (!pos) return;

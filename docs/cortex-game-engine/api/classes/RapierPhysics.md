@@ -94,7 +94,7 @@ raycastarem. Uma malha = um collider.
 
 > **createVehicle**(`spec`): [`Vehicle`](Vehicle.md)
 
-Defined in: [src/physics/RapierPhysics.ts:314](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L314)
+Defined in: [src/physics/RapierPhysics.ts:315](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L315)
 
 Cria um **veículo raycast** (ADR-0081) — chassi (rigid body dinâmico + box) +
 rodas por raycast com suspensão/esterço/motor/freio, via o
@@ -117,7 +117,7 @@ rodas por raycast com suspensão/esterço/motor/freio, via o
 
 > **dispose**(): `void`
 
-Defined in: [src/physics/RapierPhysics.ts:359](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L359)
+Defined in: [src/physics/RapierPhysics.ts:360](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/RapierPhysics.ts#L360)
 
 Libera o mundo (memória WASM).
 

@@ -24,7 +24,7 @@ Defined in: [src/core/Skybox.ts:64](https://github.com/BuuhV-Projects/cortex-gam
 
 > `static` **clear**(`scene`): `void`
 
-Defined in: [src/core/Skybox.ts:154](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L154)
+Defined in: [src/core/Skybox.ts:158](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L158)
 
 Remove o environment/background da cena (volta ao fundo padrão).
 Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.
@@ -50,7 +50,7 @@ Defined in: [src/core/Skybox.ts:112](https://github.com/BuuhV-Projects/cortex-ga
 Céu **gradiente procedural** (sem arquivo) — zênite → horizonte → chão, aplicado
 como `background` visível E `environment` (luz/reflexo suave). Ideal pra um céu
 limpo e ensolarado (ex.: Brasília: azul forte). Funciona em WebGPU usando uma
-`DataTexture` equiretangular 1×N (gradiente vertical), igual ao HDRI.
+`DataTexture` equiretangular 2:1 (gradiente vertical), igual ao HDRI.
 
 #### Parameters
 
