@@ -1,3 +1,11 @@
+## [0.51.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.51.0...v0.51.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* **scene:** merge de malha espelhada virava as faces (SPEC-0214) ([596375b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/596375ba98f0d07dca33e80095d7a2cfc1f6a715))
+* **scene:** render bundles desligados — desenhavam com a camera congelada (ADR-0215) ([983bb7f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/983bb7f6487fc344e4a1252eaebe954e9a116d57))
+
 # [0.51.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.50.0...v0.51.0) (2026-09-19)
 
 
