@@ -24,6 +24,8 @@ public class Embed {
   public static bool Responsive(IntPtr h, uint ms) {
     UIntPtr res; return SendMessageTimeout(h, 0x0000, IntPtr.Zero, IntPtr.Zero, 0x0002, ms, out res) != IntPtr.Zero;
   }
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
@@ -93,6 +95,20 @@ if ($owner -ne $parent) { "FALHOU: dono errado ($owner != $parent)"; $proc.Kill(
 $style = [Embed]::GetWindowLongPtr($child, -16)  # GWL_STYLE
 if (([int64]$style -band 0x40000000) -ne 0) { "FALHOU: a janela tem WS_CHILD (acopla filas, ver SPEC-0210)"; $proc.Kill(); exit 1 }
 "host embutido: janela $child tem o dono $parent (owned, nao filha)"
+
+# A janela precisa PODER receber foco (SPEC-0211). Com WS_EX_NOACTIVATE
+# (0x08000000) ela nunca vira a janela ativa, e janela nao-ativa nao recebe
+# WM_KEYDOWN: o jogo desenha mas nao anda — foi lido como "o Studio travou".
+$exStyle = [Embed]::GetWindowLongPtr($child, -20)  # GWL_EXSTYLE
+if (([int64]$exStyle -band 0x08000000) -ne 0) {
+  "FALHOU: a janela tem WS_EX_NOACTIVATE (sem teclado no jogo, ver SPEC-0211)"; $proc.Kill(); exit 1
+}
+[Embed]::SetForegroundWindow($child) | Out-Null
+for ($i = 0; $i -lt 10; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 200 }
+if ([Embed]::GetForegroundWindow() -ne $child) {
+  "FALHOU: a janela do host nao aceitou ser ativada (o teclado nunca chega no jogo)"; $proc.Kill(); exit 1
+}
+"janela do host aceita foco (o teclado chega no jogo)"
 
 # ESPERA o JS do host subir antes de mandar geometria. A janela filha aparece
 # em ~2s, mas o bundle (ainda mais com o editor dentro) leva bem mais — mandar

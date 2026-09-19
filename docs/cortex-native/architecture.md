@@ -386,6 +386,14 @@ Native (que roda milhares de libs sobre Hermes em produção):
   não é clipada pelo dono: a IDE manda coordenadas de TELA, reenvia quando a
   janela dela move e esconde o preview quando o palco não está visível. O modo
   embed implica janela (nunca fullscreen). Windows-only.
+- **A janela do embed NÃO pode ter `WS_EX_NOACTIVATE`** (SPEC-0211): janela
+  não-ativa não recebe `WM_KEYDOWN`, então o jogo desenha mas não responde a
+  nada — sintoma idêntico a "o Studio travou", e foi assim que chegou o relato.
+  O iframe que o embed substitui RECEBE foco ao ser clicado; o embed faz o
+  mesmo. Ativar janela de outro processo **não** acopla filas (só `SetParent`
+  e `AttachThreadInput` fazem), então isto não conflita com a regra acima.
+  `SWP_NOACTIVATE` no `SetWindowPos` do attach continua certo: subir o preview
+  não rouba foco; quem dá foco ao jogo é o clique do usuário.
 - **RE-configurar a surface pra outro tamanho = CRASH** ("Invalid surface" no
   `wgpuSurfaceConfigure`, D3D12/wgpu-native). **RESOLVIDO na SPEC-0199**: em vez
   de reconfigurar, o host **RECRIA** a surface a partir do HWND
