@@ -136,8 +136,43 @@ quando um menu ou modal abre.
 - `tests/airspace.test.ts` — o portão: transições, fontes simultâneas, soltar
   fora de ordem, limpar tudo.
 - `native/scripts/test-embed.ps1` (estendido) — na janela do host embutida:
-  - `WS_EX_NOACTIVATE` **ausente** e a janela **aceita ser ativada**
-    (`SetForegroundWindow` seguido de `GetForegroundWindow`);
+  - `WS_EX_NOACTIVATE` **ausente**;
+  - a janela **aceita foco por um clique** — ver o método abaixo;
   - a janela dona **continua respondendo** com o host ocupado
     (`SendMessageTimeout(WM_NULL)`) — regressão da SPEC-0210;
+  - `previewVisible` esconde e traz a janela de volta;
   - encerramento sem janela órfã.
+
+Rodado com o export do **kart-racer** (debug + editor), que é o caso real do
+relato:
+
+```
+estilo ok: sem WS_EX_NOACTIVATE
+clique no host deu foco a ele (o teclado chega no jogo)
+previewVisible=false escondeu a janela
+janela dona seguiu respondendo com o host ocupado
+OK: embed, bounds pelo canal e encerramento sem janela orfa
+```
+
+### Como testar ativação de janela (três armadilhas)
+
+A primeira versão deste teste chamava `SetForegroundWindow` e falhava com a
+janela **correta**. Três coisas atrapalham, e nenhuma tem a ver com o estilo:
+
+1. **`SetForegroundWindow` entre processos é barrado** pela política de
+   foreground do Windows quando o chamador não está em foreground. Ele falha
+   mesmo numa janela perfeitamente ativável — testa a política, não a janela.
+   Quem prova o contrato é o **gesto do usuário**: um clique sintético
+   (`SetCursorPos` + `mouse_event`) no centro da janela.
+2. **O clique acerta quem estiver por cima.** `HWND_TOP` não basta: a janela
+   ativa de outro processo (o terminal que roda o teste) continua acima. O teste
+   fixa o host em `HWND_TOPMOST` **só durante o clique** — z-order e ativação são
+   coisas separadas, então isso não mascara o que está sob teste — e confere com
+   `WindowFromPoint` quem realmente está sob o cursor antes de clicar, falhando
+   com o **nome do processo** que estiver na frente em vez de um "não deu foco"
+   cego.
+3. **Espera fixa mente com jogo pesado.** O canal só é drenado na thread JS, um
+   pouco por frame; a ~10 fps do kart-racer, os 3 s do `previewVisible` não
+   bastavam e o teste acusava defeito inexistente. Virou polling com timeout.
+
+O cursor é salvo e restaurado: o teste roda na máquina do desenvolvedor.

@@ -26,6 +26,40 @@ public class Embed {
   }
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern bool GetCursorPos(out POINT p);
+  [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extra);
+  [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(POINT p);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+  // Poe a janela acima de TUDO sem ativar (SWP_NOACTIVATE), so pelo tempo do
+  // clique. HWND_TOP nao basta: a janela ATIVA de outro processo (o terminal que
+  // roda este script) continua por cima, e o clique sintetico acertaria ela.
+  // Isto nao interfere no que esta sob teste — z-order e ativacao sao coisas
+  // separadas, e a ativacao segue decidida pelo estilo da janela.
+  public static void PinOnTop(IntPtr h, bool pin) {
+    IntPtr after = pin ? new IntPtr(-1) : new IntPtr(-2);  // HWND_TOPMOST / HWND_NOTOPMOST
+    SetWindowPos(h, after, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010);  // NOSIZE|NOMOVE|NOACTIVATE
+  }
+  public static string OwnerOf(IntPtr h) {
+    uint pid; GetWindowThreadProcessId(h, out pid);
+    try { return System.Diagnostics.Process.GetProcessById((int)pid).ProcessName; }
+    catch { return "?"; }
+  }
+  public static IntPtr WindowAtCenter(IntPtr h) {
+    RECT r; GetWindowRect(h, out r);
+    POINT p; p.X = r.L + (r.R - r.L) / 2; p.Y = r.T + (r.B - r.T) / 2;
+    return WindowFromPoint(p);
+  }
+  // Clique de verdade no centro da janela: e o unico jeito honesto de provar que
+  // ela ACEITA foco. `SetForegroundWindow` entre processos e barrado pela
+  // politica de foreground do Windows, nao pelo estilo da janela (SPEC-0211).
+  public static void ClickCenter(IntPtr h) {
+    RECT r; GetWindowRect(h, out r);
+    SetCursorPos(r.L + (r.R - r.L) / 2, r.T + (r.B - r.T) / 2);
+    mouse_event(0x0002, 0, 0, 0, UIntPtr.Zero);  // LEFTDOWN
+    mouse_event(0x0004, 0, 0, 0, UIntPtr.Zero);  // LEFTUP
+  }
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
@@ -103,12 +137,11 @@ $exStyle = [Embed]::GetWindowLongPtr($child, -20)  # GWL_EXSTYLE
 if (([int64]$exStyle -band 0x08000000) -ne 0) {
   "FALHOU: a janela tem WS_EX_NOACTIVATE (sem teclado no jogo, ver SPEC-0211)"; $proc.Kill(); exit 1
 }
-[Embed]::SetForegroundWindow($child) | Out-Null
-for ($i = 0; $i -lt 10; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 200 }
-if ([Embed]::GetForegroundWindow() -ne $child) {
-  "FALHOU: a janela do host nao aceitou ser ativada (o teclado nunca chega no jogo)"; $proc.Kill(); exit 1
-}
-"janela do host aceita foco (o teclado chega no jogo)"
+"estilo ok: sem WS_EX_NOACTIVATE"
+# A ATIVACAO efetiva e testada mais abaixo, com um clique sintetico: o Windows
+# barra `SetForegroundWindow` vindo de um processo que nao esta em foreground,
+# entao a API falharia aqui mesmo com a janela perfeitamente ativavel. Quem
+# prova o contrato e o gesto do usuario, e ele so vale depois do JS de pe.
 
 # ESPERA o JS do host subir antes de mandar geometria. A janela filha aparece
 # em ~2s, mas o bundle (ainda mais com o editor dentro) leva bem mais — mandar
@@ -140,18 +173,57 @@ $w = $r.R - $r.L; $h = $r.B - $r.T
 if ($drain.IsCompleted -and $drain.Result -match '"type":"ack"[^}]*"embedded":(\w+)') { "ack.embedded = $($Matches[1])" }
 if ($w -ne 640 -or $h -ne 400) { "FALHOU: bounds nao aplicado (esperado 640x400)"; $proc.Kill(); exit 1 }
 
+# ATIVACAO pelo clique (SPEC-0211): e o gesto do usuario que da foco ao jogo, e
+# sem foco nao chega WM_KEYDOWN — o jogo desenha e nao anda. Com o JS ja de pe a
+# janela responde ao clique; por isso este teste vem depois do handshake.
+# O cursor volta pro lugar: o teste roda na maquina do desenvolvedor.
+$cursor = New-Object Embed+POINT
+[Embed]::GetCursorPos([ref]$cursor) | Out-Null
+# O host precisa estar no topo pra receber o clique — senao o terminal que roda
+# este script recebe no lugar dele. Subir no z-order NAO ativa: quem decide a
+# ativacao e o estilo da janela, que e justamente o que esta sob teste.
+[Embed]::PinOnTop($child, $true)
+for ($i = 0; $i -lt 5; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 200 }
+$sob = [Embed]::WindowAtCenter($child)
+if ($sob -ne $child) {
+  "FALHOU: o ponto do clique pertence a '$([Embed]::OwnerOf($sob))' (janela $sob), nao ao host"
+  [Embed]::PinOnTop($child, $false); [Embed]::SetCursorPos($cursor.X, $cursor.Y) | Out-Null
+  $proc.Kill(); exit 1
+}
+[Embed]::ClickCenter($child)
+for ($i = 0; $i -lt 15; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 200 }
+$focada = [Embed]::GetForegroundWindow()
+[Embed]::PinOnTop($child, $false)
+[Embed]::SetCursorPos($cursor.X, $cursor.Y) | Out-Null
+if ($focada -ne $child) {
+  "FALHOU: clicar no host nao deu foco a ele (foco ficou em '$([Embed]::OwnerOf($focada))'); sem foco nao ha teclado no jogo (SPEC-0211)"
+  $proc.Kill(); exit 1
+}
+"clique no host deu foco a ele (o teclado chega no jogo)"
+
 # `previewVisible` pelo canal esconde/mostra a janela (airspace, SPEC-0206) —
 # e o que faz o overlay de drag-and-drop da IDE voltar a receber o drop.
 $proc.StandardInput.WriteLine('{"type":"previewVisible","visible":false}')
 $proc.StandardInput.Flush()
-for ($i = 0; $i -lt 10; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 300 }
-if ([Embed]::IsWindowVisible($child)) { "FALHOU: janela seguiu visivel apos previewVisible=false"; $proc.Kill(); exit 1 }
+# POLLING, nao espera fixa: o canal so e drenado na thread JS, um pouco por
+# frame. Com um jogo pesado (kart-racer roda a ~10fps) tres segundos nao bastam,
+# e o teste acusava um defeito que nao existe.
+$escondeu = $false
+for ($i = 0; $i -lt 40; $i++) {
+  [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 300
+  if (-not [Embed]::IsWindowVisible($child)) { $escondeu = $true; break }
+}
+if (-not $escondeu) { "FALHOU: janela seguiu visivel apos previewVisible=false"; $proc.Kill(); exit 1 }
 "previewVisible=false escondeu a janela"
 
 $proc.StandardInput.WriteLine('{"type":"previewVisible","visible":true}')
 $proc.StandardInput.Flush()
-for ($i = 0; $i -lt 10; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 300 }
-if (-not [Embed]::IsWindowVisible($child)) { "FALHOU: janela nao voltou apos previewVisible=true"; $proc.Kill(); exit 1 }
+$voltou = $false
+for ($i = 0; $i -lt 40; $i++) {
+  [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 300
+  if ([Embed]::IsWindowVisible($child)) { $voltou = $true; break }
+}
+if (-not $voltou) { "FALHOU: janela nao voltou apos previewVisible=true"; $proc.Kill(); exit 1 }
 "previewVisible=true trouxe a janela de volta"
 
 # A JANELA DONA precisa seguir respondendo enquanto o host trabalha. Com
