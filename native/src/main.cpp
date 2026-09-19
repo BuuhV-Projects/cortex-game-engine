@@ -26,6 +26,7 @@
 #include "shims/ktx2.h"
 #include "shims/perf_arraybuffer.h"
 #include "shims/perf_stats.h"
+#include "shims/perf_trace.h"
 #include "shims/quit.h"
 #include "shims/rapier.h"
 #include "shims/steam_api.h"
@@ -195,7 +196,12 @@ int main(int argc, char** argv) {
     // métricas (`--debug` → cortex.json debug:true), dev-run (host apontando
     // pra pasta do jogo) ou CORTEX_VRAM_LOG=1. Release não ganha arquivo.
     const bool isDevRun = argc > 1 && argv[1] && argv[1][0];
-    core::setPerfLogEnabled(game.debug || isDevRun || SDL_getenv("CORTEX_VRAM_LOG") != nullptr);
+    const bool metricsOn = game.debug || isDevRun || SDL_getenv("CORTEX_VRAM_LOG") != nullptr;
+    core::setPerfLogEnabled(metricsOn);
+    // Perf trace de gameplay (SPEC-0198): o REGISTRO é o gate — sem métricas a
+    // função nem existe no global, e a engine (que testa a existência) não
+    // coleta nada no frame.
+    if (metricsOn) shims::registerPerfTrace(js.env(), baseDir.c_str());
     shims::registerTimers(js.env());
     shims::registerAnimationFrame(js.env());
     shims::registerInput(js.env());

@@ -1,0 +1,23 @@
+[**cortex-game-engine**](../README.md)
+
+***
+
+[cortex-game-engine](../README.md) / buildSample
+
+# Function: buildSample()
+
+> **buildSample**(`input`): [`PerfSample`](../interfaces/PerfSample.md)
+
+Defined in: src/core/PerfTrace.ts:137
+
+Monta a amostra (função pura — é o que os testes exercitam).
+
+## Parameters
+
+### input
+
+[`SampleInput`](../interfaces/SampleInput.md)
+
+## Returns
+
+[`PerfSample`](../interfaces/PerfSample.md)

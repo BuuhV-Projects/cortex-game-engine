@@ -518,6 +518,7 @@ const VENDOR_TYPE_MODULES = {
     'InputManager',
     'GamepadManager',
     'Physics',
+    'PerfTrace',
     'LoadingScreen',
     'loadKtx2',
     'Skybox',

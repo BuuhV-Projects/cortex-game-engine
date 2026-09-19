@@ -11,6 +11,7 @@ import { clearSceneAssetCaches } from '../scene/SceneAssets.js';
 import { UiLayer } from '../ui/runtime/UiLayer.js';
 import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
+import { PerfTrace } from './PerfTrace.js';
 import { FrameProfiler } from './FrameProfiler.js';
 import { InspectCamera } from './InspectCamera.js';
 
@@ -178,6 +179,8 @@ export class Game {
   private _onUpdate: ((deltaSeconds: number) => void) | null = null;
   /** HUD de métricas (modo debug). `undefined` = ainda não decidido; `null` = off. */
   private _debugHud: DebugHud | null | undefined = undefined;
+  /** Amostrador do perf trace (SPEC-0198). Inerte sem a ponte do host nativo. */
+  private readonly _perfTrace = new PerfTrace();
   private _postfx: { render(): void } | null = null;
   private _ui: UiLayer | null = null;
   private _inspect: InspectCamera | null = null;
@@ -476,6 +479,17 @@ export class Game {
       this._debugHud = debugHudRequested() ? this.createDebugHud() : null;
     }
     this._debugHud?.frame(deltaMs);
+
+    // Perf trace (SPEC-0198): com as métricas ativas no host nativo, grava uma
+    // amostra periódica (fps/CPU/draws/câmera/visíveis) em perf-trace.jsonl.
+    // Sem a ponte do host, é no-op — nem coleta.
+    this._perfTrace.tick(
+      deltaMs,
+      this._activeScene.getThreeScene(),
+      this._activeCamera,
+      this.profiler,
+      (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info?.render ?? null,
+    );
   }
 
   /**
