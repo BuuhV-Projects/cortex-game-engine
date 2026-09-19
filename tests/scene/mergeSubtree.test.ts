@@ -15,11 +15,12 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   Vector3,
+  type Material,
 } from 'three';
 import { mergeSubtree } from '../../src/scene/StaticMerge.js';
 
 /** Malha simples com geometria própria (o merge consome a geometria). */
-function peca(material = new MeshBasicMaterial({ color: 0x224466 })): Mesh {
+function peca(material: Material = new MeshBasicMaterial({ color: 0x224466 })): Mesh {
   return new Mesh(new BoxGeometry(1, 1, 1), material);
 }
 
