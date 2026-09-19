@@ -22,6 +22,10 @@ const MEASURE_FRAMES = 240;
 const CAMERA_DISTANCE = 120;
 /** Altura da câmera de medição, em metros. */
 const CAMERA_HEIGHT = 45;
+/** Câmera de gameplay (`?cam=drive`): atrás do Golf na largada, em metros. */
+const DRIVE_CAM: readonly [number, number, number] = [-22, 2.5, 79];
+/** Alvo da câmera de gameplay: o carro, olhando pista abaixo. */
+const DRIVE_TARGET: readonly [number, number, number] = [-45, 1, 80];
 
 interface SceneCounts {
   meshes: number;
@@ -55,7 +59,24 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const out = document.getElementById('out') as HTMLDivElement;
 const game = new Game({ canvas, far: 1000 });
 
+/**
+ * Cenários de medição por query string, pra isolar de quem é o custo:
+ * - `?shadows=off` — ninguém projeta sombra (mede o teto do ganho do shadow pass)
+ * - `?cascades=N` — nº de cascatas do CSM
+ * - `?shadowDistance=M` — alcance da sombra, em metros
+ */
+const params = new URLSearchParams(location.search);
 const level = await (await fetch('/scenes/level.json')).json();
+const lighting = level.outdoorLighting as Record<string, unknown> | undefined;
+if (lighting) {
+  const cascades = params.get('cascades');
+  if (cascades) lighting['shadowCascades'] = Number(cascades);
+  const shadowDistance = params.get('shadowDistance');
+  if (shadowDistance) lighting['shadowDistance'] = Number(shadowDistance);
+  // Limiar do shadow caster culling (SPEC-0197) — o caminho REAL da engine.
+  const casterRatio = params.get('casterRatio');
+  if (casterRatio !== null) lighting['shadowCasterMinRatio'] = Number(casterRatio);
+}
 const definition = parseSceneDefinition(level);
 if (!definition) throw new Error('level.json inválido');
 
@@ -68,10 +89,23 @@ await buildScene(game.scene, definition, {
 });
 const buildMs = performance.now() - buildStart;
 
+if (params.get('shadows') === 'off') {
+  game.scene.getThreeScene().traverse((obj) => {
+    (obj as { castShadow?: boolean }).castShadow = false;
+  });
+}
+
 const counts = countScene(game.scene.getThreeScene());
 
-game.camera.position.set(CAMERA_DISTANCE, CAMERA_HEIGHT, CAMERA_DISTANCE);
-game.camera.lookAt(0, 0, 0);
+if (params.get('cam') === 'drive') {
+  // Câmera de GAMEPLAY: atrás do carro do jogador, rasante. É a que importa —
+  // a panorâmica vê a cidade inteira e exagera o pass principal.
+  game.camera.position.set(DRIVE_CAM[0], DRIVE_CAM[1], DRIVE_CAM[2]);
+  game.camera.lookAt(DRIVE_TARGET[0], DRIVE_TARGET[1], DRIVE_TARGET[2]);
+} else {
+  game.camera.position.set(CAMERA_DISTANCE, CAMERA_HEIGHT, CAMERA_DISTANCE);
+  game.camera.lookAt(0, 0, 0);
+}
 
 let frames = 0;
 let measureStart = 0;
@@ -94,6 +128,7 @@ game.onUpdate(() => {
       drawCalls: renderInfo().drawCalls ?? 0,
       triangles: renderInfo().triangles ?? 0,
       buildMs: +buildMs.toFixed(0),
+      scenario: location.search || '(padrão)',
       ...counts,
     };
     // eslint-disable-next-line no-console -- o harness EXISTE pra imprimir isto

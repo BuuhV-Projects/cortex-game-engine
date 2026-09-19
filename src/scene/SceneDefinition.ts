@@ -560,6 +560,12 @@ const sceneDefinitionSchema = z.object({
       shadowCascades: z.number().optional(),
       /** Distância máx. de sombra (CSM, m). Default 250. */
       shadowDistance: z.number().optional(),
+      /**
+       * Limiar do **shadow caster culling** (SPEC-0197): malha para de projetar
+       * sombra quando `raio / distância_da_câmera` fica abaixo disto. Default
+       * 0.05; `0` desliga (tudo que o autor marcou projeta, a qualquer distância).
+       */
+      shadowCasterMinRatio: z.number().optional(),
       /** Resolução do shadow map (px). Default 2048. */
       shadowMapSize: z.number().optional(),
       /** Meia-extensão do frustum de sombra único (sem CSM). Default 60. */

@@ -100,6 +100,17 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   Ciclo de vida: preset e rampa nascem `userData.cortexCached` (o
   `Scene.disposeAll` preserva) e saem no `clearSceneAssetCaches`.
 
+- **Shadow caster culling (`ShadowCasterCulling.ts`, SPEC-0197):** com CSM a
+  cena é percorrida uma vez por cascata — cada malha custa `1 + N` draws/frame.
+  O filtro tira do shadow pass quem tem tamanho angular (`raio ÷ distância da
+  câmera`) abaixo de `outdoorLighting.shadowCasterMinRatio` (default 0.05; `0`
+  desliga). Roda dentro do `CameraFollowingCSM.updateBefore`, a cada
+  `SHADOW_CULL_INTERVAL` frames — é o único ponto que vê a câmera DO FRAME, o
+  que faz valer também no editor F2. **A autoria vence**: o `castShadow` do nó
+  fica em `userData.cortexShadowAuthored` e o filtro só tira, nunca dá. Skinned
+  e `InstancedMesh` ficam de fora (bounding sphere não descreve o conjunto).
+  Medido no `kart-racer`: 2807 → 1966 draws, sem diferença visível.
+
 - **Pré-aquecimento de pipeline (`Renderer.precompile`, SPEC-0196):** o three
   compila o pipeline na PRIMEIRA aparição de cada material — numa largada de
   corrida, tudo no mesmo frame (o travadinho ao iniciar). O `buildScene` chama ao

@@ -1,4 +1,6 @@
 import {
+  Vector3,
+  type Object3D,
   DirectionalLight,
   HemisphereLight,
   AmbientLight,
@@ -10,6 +12,8 @@ import {
 import { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js';
 import { Renderer } from '../core/Renderer.js';
 import { Scene } from '../core/Scene.js';
+import { cullShadowCasters, DEFAULT_SHADOW_CASTER_MIN_RATIO } from './ShadowCasterCulling.js';
+import { debug } from '../core/debug.js';
 
 /**
  * CSM que SEGUE a câmera que está renderizando (a do frame), não a cacheada no 1º render.
@@ -18,6 +22,15 @@ import { Scene } from '../core/Scene.js';
  * recomputa as cascatas quando ela muda (editor ↔ play).
  */
 class CameraFollowingCSM extends CSMShadowNode {
+  /**
+   * Limiar do shadow caster culling (SPEC-0197). `0` desliga o filtro.
+   * Público: o Inspector/cena pode mudar em runtime.
+   */
+  shadowCasterMinRatio = DEFAULT_SHADOW_CASTER_MIN_RATIO;
+
+  /** Frames desde a última passada do culling. */
+  private _sinceCull = SHADOW_CULL_INTERVAL;
+
   override updateBefore(
     frame: Parameters<CSMShadowNode['updateBefore']>[0],
   ): ReturnType<CSMShadowNode['updateBefore']> {
@@ -30,9 +43,27 @@ class CameraFollowingCSM extends CSMShadowNode {
       self.camera = cam;
       self.updateFrustums();
     }
+    // Shadow caster culling (SPEC-0197): aqui é o ÚNICO ponto que enxerga a
+    // câmera do frame — vale tanto pro jogo quanto pro editor F2, que renderiza
+    // com a câmera dele. Amortizado: uma passada a cada N frames.
+    if (cam?.isPerspectiveCamera) {
+      this._sinceCull++;
+      if (this._sinceCull >= SHADOW_CULL_INTERVAL) {
+        this._sinceCull = 0;
+        const scene = (frame as unknown as { scene?: Object3D } | null)?.scene;
+        const camera = cam as unknown as { position: Vector3 };
+        if (scene) {
+          const stats = cullShadowCasters(scene, camera.position, this.shadowCasterMinRatio);
+          debug('scene', `shadowCull: ${stats.culled}/${stats.evaluated} malhas fora do shadow pass`);
+        }
+      }
+    }
     return super.updateBefore(frame);
   }
 }
+
+/** Frames entre passadas do shadow caster culling (SPEC-0197). */
+const SHADOW_CULL_INTERVAL = 10;
 
 /** Opções de {@link setupOutdoorLighting}. Todas opcionais — defaults "verão". */
 export interface OutdoorLightingOptions {
@@ -79,6 +110,14 @@ export interface OutdoorLightingOptions {
   lightMargin?: number;
   /** Suaviza a transição entre cascatas do CSM (tira a "linha de corte"). Default `true`. */
   shadowFade?: boolean;
+  /**
+   * **Shadow caster culling por tamanho angular** (SPEC-0197, só com `csm`):
+   * uma malha para de projetar sombra quando `raio / distância_da_câmera` fica
+   * abaixo deste valor — a sombra dela ocuparia poucos pixels e não vale o draw
+   * extra por cascata. Default `0.05` (some além de ~20× o próprio raio); `0`
+   * desliga. Medido no `kart-racer`: 2807 → 1966 draws, sem diferença visível.
+   */
+  shadowCasterMinRatio?: number;
 }
 
 /** Luzes criadas por {@link setupOutdoorLighting} — ajuste-as em runtime. */
@@ -132,6 +171,7 @@ export function setupOutdoorLighting(
     shadowDistance = 250,
     lightMargin = 200,
     shadowFade = true,
+    shadowCasterMinRatio = DEFAULT_SHADOW_CASTER_MIN_RATIO,
   } = options;
 
   const three = renderer.threeRenderer;
@@ -186,6 +226,7 @@ export function setupOutdoorLighting(
         lightMargin,
       });
       (csmNode as unknown as { fade: boolean }).fade = shadowFade; // suaviza a emenda das cascatas
+      csmNode.shadowCasterMinRatio = shadowCasterMinRatio; // SPEC-0197
       (sun.shadow as unknown as { shadowNode: unknown }).shadowNode = csmNode;
     }
   }
