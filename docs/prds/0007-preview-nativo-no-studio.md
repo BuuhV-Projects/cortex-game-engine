@@ -125,6 +125,11 @@ painel da IDE, todos pelo canal nativo.
 **Aceite:** a lista da seção "o que o editor exige" inteira funcionando sem
 iframe.
 
+> **M4b FEITO (SPEC-0206):** drag-and-drop de asset funciona no preview nativo
+> — a janela do host some durante o arraste, o overlay de drop volta a ser o
+> topo da pilha, e ela reaparece ao soltar. **Falta** os overlays do viewport
+> (pills, seletor de fase) e o screenshot.
+>
 > **M4a FEITO (SPEC-0205):** preview nativo em um comando (exporta com editor e
 > abre) e troca de fase por reinício com `CORTEX_LAUNCH_QUERY`. **Falta** o que
 > depende de *airspace* — drag-and-drop de asset e os overlays do viewport — e

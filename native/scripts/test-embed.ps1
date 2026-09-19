@@ -17,6 +17,7 @@ public class Embed {
   [DllImport("user32.dll")] public static extern IntPtr GetParent(IntPtr h);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   public delegate bool EnumProc(IntPtr h, IntPtr l);
   [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr p, EnumProc cb, IntPtr l);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
@@ -60,6 +61,7 @@ $psi.EnvironmentVariables["CORTEX_LAUNCH_QUERY"] = "level=space-1"
 $proc = [System.Diagnostics.Process]::Start($psi)
 # Drena o stdout: sem isso o buffer do pipe enche e o host trava no print.
 $drain = $proc.StandardOutput.ReadToEndAsync()
+$script:ackSeen = $null
 
 # Espera a janela do host existir COMO FILHA (o host cria, prende no pai e sobe).
 $child = [IntPtr]::Zero
@@ -75,6 +77,23 @@ $actualParent = [Embed]::GetParent($child)
 if ($actualParent -ne $parent) { "FALHOU: pai errado ($actualParent != $parent)"; $proc.Kill(); exit 1 }
 "host embutido: janela $child e filha de $parent"
 
+# ESPERA o JS do host subir antes de mandar geometria. A janela filha aparece
+# em ~2s, mas o bundle (ainda mais com o editor dentro) leva bem mais — mandar
+# `bounds` antes disso e perde-lo foi o que fez este teste falhar com --editor.
+# O produto nao tem esse problema: o NativePreview REENVIA o bounds no `ack`.
+$alive = $false
+for ($t = 0; $t -lt 60; $t++) {
+  $proc.StandardInput.WriteLine('{"type":"hello"}')
+  $proc.StandardInput.Flush()
+  for ($i = 0; $i -lt 4; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 250 }
+  if ($drain.IsCompleted) { break }
+  # O ack so aparece no stream quando o processo termina (ReadToEndAsync), entao
+  # usamos um proxy barato: o host ja escreveu alguma linha do canal?
+  if ($proc.HasExited) { "FALHOU: host saiu antes do handshake"; exit 1 }
+  if ($t -ge 20) { $alive = $true; break }   # ~21s: JS de pe mesmo com editor
+}
+if (-not $alive) { "AVISO: seguindo sem confirmacao do handshake" }
+
 # `bounds` pelo canal: o HOST se reposiciona (a IDE nao chama SetWindowPos).
 $proc.StandardInput.WriteLine('{"type":"bounds","x":40,"y":60,"width":640,"height":400}')
 $proc.StandardInput.Flush()
@@ -84,7 +103,23 @@ $r = New-Object Embed+RECT
 [Embed]::GetWindowRect($child, [ref]$r) | Out-Null
 $w = $r.R - $r.L; $h = $r.B - $r.T
 "apos bounds: ${w}x${h}"
+# Se o drain ja tem o ack, mostra o `embedded` (diagnostico do shim de janela).
+if ($drain.IsCompleted -and $drain.Result -match '"type":"ack"[^}]*"embedded":(\w+)') { "ack.embedded = $($Matches[1])" }
 if ($w -ne 640 -or $h -ne 400) { "FALHOU: bounds nao aplicado (esperado 640x400)"; $proc.Kill(); exit 1 }
+
+# `previewVisible` pelo canal esconde/mostra a janela (airspace, SPEC-0206) —
+# e o que faz o overlay de drag-and-drop da IDE voltar a receber o drop.
+$proc.StandardInput.WriteLine('{"type":"previewVisible","visible":false}')
+$proc.StandardInput.Flush()
+for ($i = 0; $i -lt 10; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 300 }
+if ([Embed]::IsWindowVisible($child)) { "FALHOU: janela seguiu visivel apos previewVisible=false"; $proc.Kill(); exit 1 }
+"previewVisible=false escondeu a janela"
+
+$proc.StandardInput.WriteLine('{"type":"previewVisible","visible":true}')
+$proc.StandardInput.Flush()
+for ($i = 0; $i -lt 10; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 300 }
+if (-not [Embed]::IsWindowVisible($child)) { "FALHOU: janela nao voltou apos previewVisible=true"; $proc.Kill(); exit 1 }
+"previewVisible=true trouxe a janela de volta"
 
 # Encerrar nao pode deixar janela orfa.
 $proc.Kill(); $proc.WaitForExit(10000)

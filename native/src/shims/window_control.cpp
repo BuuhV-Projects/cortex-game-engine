@@ -1,5 +1,7 @@
 #include "window_control.h"
 
+#include <windows.h>
+
 #include "../napi/napi_util.h"
 
 namespace shims {
@@ -31,6 +33,30 @@ napi_value jsSetBounds(napi_env env, napi_callback_info info) {
   return nullptr;
 }
 
+// __cortexSetWindowVisible(bool) — esconde/mostra a janela do host.
+//
+// Existe por causa do AIRSPACE (SPEC-0206): a janela nativa fica sempre por
+// cima do DOM, entao o overlay que captura o drag-and-drop de asset nunca
+// recebe o drop. Escondendo a janela durante o arraste, o overlay volta a
+// funcionar; ao soltar, a janela reaparece.
+napi_value jsSetVisible(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value argv[1] = {nullptr};
+  napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+  if (!g_window || argc < 1) return nullptr;
+  bool visible = true;
+  napi_get_value_bool(env, argv[0], &visible);
+  // Win32 direto, nao SDL_HideWindow: a janela foi ADOTADA por SetParent
+  // (WS_CHILD) fora do conhecimento do SDL, e o SDL_HideWindow nao tem efeito
+  // nela — medido. O HWND vem das props da propria janela SDL.
+  HWND hwnd = static_cast<HWND>(SDL_GetPointerProperty(
+      SDL_GetWindowProperties(g_window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+  if (hwnd) ShowWindow(hwnd, visible ? SW_SHOWNOACTIVATE : SW_HIDE);
+  else if (visible) SDL_ShowWindow(g_window);
+  else SDL_HideWindow(g_window);
+  return nullptr;
+}
+
 }  // namespace
 
 void registerWindowControl(napi_env env, SDL_Window* window) {
@@ -40,6 +66,7 @@ void registerWindowControl(napi_env env, SDL_Window* window) {
   napi_value global = nullptr;
   napi_get_global(env, &global);
   njs::setMethod(env, global, "__cortexSetWindowBounds", jsSetBounds);
+  njs::setMethod(env, global, "__cortexSetWindowVisible", jsSetVisible);
 }
 
 }  // namespace shims
