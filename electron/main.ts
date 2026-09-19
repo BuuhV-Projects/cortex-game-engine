@@ -518,6 +518,7 @@ const VENDOR_TYPE_MODULES = {
     'InputManager',
     'GamepadManager',
     'Physics',
+    'HostChannel',
     'PerfTrace',
     'LoadingScreen',
     'loadKtx2',
