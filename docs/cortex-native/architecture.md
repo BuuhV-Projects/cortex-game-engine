@@ -351,6 +351,15 @@ Native (que roda milhares de libs sobre Hermes em produção):
   entram na MESMA fila (`deferReleaseBindGroup`). Apareceu com o editor dentro
   do host (troca de gizmo descarta material), mas vale pra qualquer cena que
   descarte material sob pressão de GC.
+- **O `rapier-compat` cobre um SUBCONJUNTO do Rapier** (SPEC-0208): o que falta
+  aparece só em runtime, como `undefined is not a function` no meio do setup do
+  jogo — sem dizer qual função. Foi assim que o `forEachRigidBody` apareceu
+  (kart-racer morrendo no `createCar`). **Bloqueio aberto: o controlador de
+  veículo (`createVehicleController`) NÃO foi portado** — jogo de carro/kart não
+  roda no export nem no preview nativo.
+- **Para saber o que o Hermes tem**, compile um `.js` com o `hermesc`, troque o
+  `boot.hbc` de um export por ele e rode: o `print` sai no stdout. Foi assim que
+  a hipótese "Hermes não tem `TypedArray.from`" caiu (ele tem).
 - **O host só tinha `setTimeout`** — `setInterval` faltava e a chamada
   explodia em runtime (`Property 'setInterval' doesn't exist`), derrubando o
   boot inteiro se acontecesse cedo. Implementado na SPEC-0204 (reagenda ANTES
