@@ -20,4 +20,9 @@ void presentIfAcquired(HostGpu* gpu);
 // present; fica pra reativar destruição agressiva no futuro.
 void flushDeferredDestroys();
 
+// Enfileira o Release de um bind group (SPEC-0202). O finalizer do GC pode
+// rodar com o bind group ainda referenciado por um pass do frame corrente, e
+// liberar ali vira panic fatal no wgpu-native.
+void deferReleaseBindGroup(WGPUBindGroup bindGroup);
+
 }  // namespace webgpu

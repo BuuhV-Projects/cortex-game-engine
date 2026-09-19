@@ -344,6 +344,18 @@ Native (que roda milhares de libs sobre Hermes em produção):
   sem ele, o engine cria os alvos a 1280×720 (tamanho de criação) enquanto a
   swapchain assume a resolução do display (1920×1080) → mismatch depth×color
   → crash. `CORTEX_WINDOWED=1` abre em janela pra debug.
+- **Bind group liberado no finalizer do GC = PANIC** (SPEC-0202): buffers e
+  texturas já tinham destruição adiada (ADR-0153), bind groups não — o
+  finalizer podia rodar no meio de um frame cujo pass ainda referenciava o bind
+  group, e o wgpu-native aborta (`BindGroup[...] is no longer alive`). Agora
+  entram na MESMA fila (`deferReleaseBindGroup`). Apareceu com o editor dentro
+  do host (troca de gizmo descarta material), mas vale pra qualquer cena que
+  descarte material sob pressão de GC.
+- **`await import()` não compila no Hermes** (SPEC-0202): `Invalid expression
+  encountered` no `hermesc`. O `TauriSceneFileWriter` usa import dinâmico e
+  sobrevive ao tree-shaking quando o editor entra no bundle — o `bundle.mjs`
+  o substitui por um stub. Qualquer módulo novo com `import()` dinâmico quebra
+  o export do mesmo jeito.
 - **Embed em HWND externo é Win32 puro** (SPEC-0201): o SDL3 só parenteia
   janelas dele mesmo (`SDL_PROP_WINDOW_CREATE_PARENT_POINTER` espera um
   `SDL_Window*`), então com `CORTEX_PARENT_HWND` o host faz
