@@ -33,6 +33,12 @@ export interface NativePreviewOptions {
   onMessage?: (message: IdeMessage) => void
   /** Processo terminou (código de saída, `null` se morto por sinal). */
   onExit?: (code: number | null) => void
+  /**
+   * Query de boot do jogo (`level=space-1`), como o `?level=` do iframe. Trocar
+   * de fase no preview nativo é reiniciar o host com outra query — é o mesmo
+   * caminho de boot que o jogo já suporta (SPEC-0205).
+   */
+  launchQuery?: string
 }
 
 /**
@@ -68,9 +74,11 @@ export class NativePreview {
         CORTEX_IDE_CHANNEL: '1',
         CORTEX_PARENT_HWND: options.parentHwnd.toString(),
         CORTEX_NO_SPLASH: '1',
+        ...(options.launchQuery ? { CORTEX_LAUNCH_QUERY: options.launchQuery } : {}),
       },
     })
     this._child = child
+    this._lastOptions = options
 
     child.stdout?.on('data', (chunk: Buffer) => this._readStdout(chunk, options))
     child.stderr?.on('data', (chunk: Buffer) => options.onLog?.(chunk.toString()))
@@ -95,6 +103,20 @@ export class NativePreview {
     if (!this._child?.stdin?.writable) return
     this._child.stdin.write(`${JSON.stringify(message)}\n`)
   }
+
+  /**
+   * Reinicia o host numa fase (ou na mesma, sem argumento). É a troca de fase do
+   * preview nativo: o iframe recarregava com `?level=`, aqui o processo sobe de
+   * novo com a query — mesmo caminho de boot, sem inventar um comando novo.
+   */
+  restart(launchQuery?: string): void {
+    const previous = this._lastOptions
+    if (!previous) return
+    this.start({ ...previous, launchQuery: launchQuery ?? previous.launchQuery })
+  }
+
+  /** Opções do último `start` — base do {@link restart}. */
+  private _lastOptions: NativePreviewOptions | null = null
 
   /** Encerra o host. Idempotente — e é o que evita janela órfã no Stop. */
   stop(): void {

@@ -25,8 +25,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ── Preview nativo (SPEC-0201) — o host do jogo como janela filha ──────────
   /** Sobe o host de um export como preview embutido. */
-  startNativePreview: (exportDir: string) =>
-    ipcRenderer.invoke('native-preview:start', exportDir),
+  startNativePreview: (exportDir: string, launchQuery?: string) =>
+    ipcRenderer.invoke('native-preview:start', exportDir, launchQuery),
   /** Geometria do painel (relativa à janela do Studio) — o host se reposiciona. */
   setNativePreviewBounds: (rect: { x: number; y: number; width: number; height: number }) =>
     ipcRenderer.invoke('native-preview:bounds', rect),
@@ -43,8 +43,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('native-preview:exit', (_e, code) => cb(code)),
 
   /** Export CortexNative (ADR-0101): gera dist-native/ do projeto. `debug` = HUD de métricas no bundle. */
-  exportNative: (projectDir: string, mode = 'pc', debug = false, outDir?: string) =>
-    ipcRenderer.invoke('export:native', projectDir, mode, debug, outDir) as Promise<{
+  exportNative: (projectDir: string, mode = 'pc', debug = false, outDir?: string, editor = false) =>
+    ipcRenderer.invoke('export:native', projectDir, mode, debug, outDir, editor) as Promise<{
       ok: boolean
       output: string
       distDir?: string
