@@ -73,6 +73,10 @@ export class NativePreview {
         ...process.env,
         CORTEX_IDE_CHANNEL: '1',
         CORTEX_PARENT_HWND: options.parentHwnd.toString(),
+        // Cinto de seguranca (SPEC-0210): se o embed falhar, o host abre em
+        // JANELA em vez de fullscreen. Fullscreen dentro de uma IDE e o pior
+        // resultado possivel — cobre a tela inteira do usuario.
+        CORTEX_WINDOWED: '1',
         CORTEX_NO_SPLASH: '1',
         ...(options.launchQuery ? { CORTEX_LAUNCH_QUERY: options.launchQuery } : {}),
       },

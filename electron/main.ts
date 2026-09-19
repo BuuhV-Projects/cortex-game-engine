@@ -1422,6 +1422,12 @@ ipcMain.handle('native-preview:start', async (_event, exportDir: unknown, launch
   // O HWND vem como buffer little-endian (8 bytes no Windows 64).
   const handle = mainWindow.getNativeWindowHandle()
   const parentHwnd = handle.length >= 8 ? handle.readBigUInt64LE(0) : BigInt(handle.readUInt32LE(0))
+  // Mover/redimensionar a JANELA do Studio muda as coordenadas de tela do
+  // palco — a janela owned nao acompanha sozinha (uma filha acompanharia).
+  const follow = (): void => { if (lastPreviewRect) pushPreviewBounds(lastPreviewRect) }
+  mainWindow.removeListener('move', follow)
+  mainWindow.on('move', follow)
+  mainWindow.on('resize', follow)
   nativePreview.start({
     exportDir: safeDir,
     parentHwnd,
@@ -1433,10 +1439,23 @@ ipcMain.handle('native-preview:start', async (_event, exportDir: unknown, launch
   })
 })
 
+// O renderer mede o palco em coordenadas da JANELA; a janela do host e OWNED
+// (nao filha, SPEC-0210), entao ela se posiciona em coordenadas de TELA —
+// somamos a origem da area de conteudo do Studio.
+function pushPreviewBounds(rect: { x: number; y: number; width: number; height: number }): void {
+  if (!mainWindow) return
+  const content = mainWindow.getContentBounds()
+  nativePreview.setBounds(content.x + rect.x, content.y + rect.y, rect.width, rect.height)
+}
+
+/** Ultimo retangulo do palco (coords da janela) — reenviado quando ela se move. */
+let lastPreviewRect: { x: number; y: number; width: number; height: number } | null = null
+
 ipcMain.handle('native-preview:bounds', async (_event, rect: unknown) => {
   const r = rect as { x?: number; y?: number; width?: number; height?: number } | null
   if (!r || typeof r.width !== 'number' || typeof r.height !== 'number') return
-  nativePreview.setBounds(r.x ?? 0, r.y ?? 0, r.width, r.height)
+  lastPreviewRect = { x: r.x ?? 0, y: r.y ?? 0, width: r.width, height: r.height }
+  pushPreviewBounds(lastPreviewRect)
 })
 
 ipcMain.handle('native-preview:stop', async () => {

@@ -378,12 +378,14 @@ Native (que roda milhares de libs sobre Hermes em produção):
   sobrevive ao tree-shaking quando o editor entra no bundle — o `bundle.mjs`
   o substitui por um stub. Qualquer módulo novo com `import()` dinâmico quebra
   o export do mesmo jeito.
-- **Embed em HWND externo é Win32 puro** (SPEC-0201): o SDL3 só parenteia
-  janelas dele mesmo (`SDL_PROP_WINDOW_CREATE_PARENT_POINTER` espera um
-  `SDL_Window*`), então com `CORTEX_PARENT_HWND` o host faz
-  `WS_CHILD` + `SetParent` na mão (`core::attachToParent`). Implica janela sem
-  borda e nunca fullscreen; quem posiciona é o HOST, comandado por `bounds` no
-  canal da IDE. Windows-only.
+- **Embed em HWND externo é Win32 puro, e a janela é OWNED** (SPEC-0201/0210):
+  com `CORTEX_PARENT_HWND` o host vira `WS_POPUP` + `GWLP_HWNDPARENT`
+  (`core::attachToParent`). **NÃO use `WS_CHILD` + `SetParent`**: entre
+  PROCESSOS isso acopla as filas de mensagem e um host ocupado TRAVA a IDE —
+  aconteceu ("Application Hang" no log do Windows). Em troca, a janela owned
+  não é clipada pelo dono: a IDE manda coordenadas de TELA, reenvia quando a
+  janela dela move e esconde o preview quando o palco não está visível. O modo
+  embed implica janela (nunca fullscreen). Windows-only.
 - **RE-configurar a surface pra outro tamanho = CRASH** ("Invalid surface" no
   `wgpuSurfaceConfigure`, D3D12/wgpu-native). **RESOLVIDO na SPEC-0199**: em vez
   de reconfigurar, o host **RECRIA** a surface a partir do HWND

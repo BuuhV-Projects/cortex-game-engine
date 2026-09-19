@@ -15,20 +15,31 @@ using System; using System.Runtime.InteropServices;
 public class Embed {
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L,T,R,B; }
   [DllImport("user32.dll")] public static extern IntPtr GetParent(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
+  [DllImport("user32.dll", EntryPoint="GetWindowLongPtrW")] public static extern IntPtr GetWindowLongPtr(IntPtr h, int index);
+  [DllImport("user32.dll")] public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr wp, IntPtr lp, uint flags, uint ms, out UIntPtr res);
+  public const uint GW_OWNER = 4;
+  // WM_NULL com timeout: se a janela NAO responde em `ms`, a fila dela esta
+  // travada — foi o que o SetParent cross-process causava (SPEC-0210).
+  public static bool Responsive(IntPtr h, uint ms) {
+    UIntPtr res; return SendMessageTimeout(h, 0x0000, IntPtr.Zero, IntPtr.Zero, 0x0002, ms, out res) != IntPtr.Zero;
+  }
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   public delegate bool EnumProc(IntPtr h, IntPtr l);
-  [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr p, EnumProc cb, IntPtr l);
+  [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr l);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
-  // Acha a janela filha que pertence ao processo do host. FindWindowEx com
-  // classe/titulo nulos nao serve aqui: o marshalling de $null no PowerShell
-  // vira string vazia e a busca falha (foi o que deu falso negativo).
-  public static IntPtr ChildOfProcess(IntPtr parent, uint wantPid) {
+  // A janela do host e OWNED, nao filha (SPEC-0210) — entao ela e TOP-LEVEL e
+  // EnumChildWindows nao a encontra. Procuramos pelo processo + visibilidade.
+  public static IntPtr WindowOfProcess(uint wantPid) {
     IntPtr hit = IntPtr.Zero;
-    EnumChildWindows(parent, (h, l) => {
+    EnumWindows((h, l) => {
       uint pid; GetWindowThreadProcessId(h, out pid);
-      if (pid == wantPid) { hit = h; return false; }
+      if (pid == wantPid && IsWindowVisible(h)) {
+        RECT r; GetWindowRect(h, out r);
+        if ((r.R - r.L) > 100 && (r.B - r.T) > 100) { hit = h; return false; }
+      }
       return true;
     }, IntPtr.Zero);
     return hit;
@@ -67,15 +78,21 @@ $script:ackSeen = $null
 $child = [IntPtr]::Zero
 for ($i = 0; $i -lt 60; $i++) {
   [System.Windows.Forms.Application]::DoEvents()
-  $child = [Embed]::ChildOfProcess($parent, [uint32]$proc.Id)
+  $child = [Embed]::WindowOfProcess([uint32]$proc.Id)
   if ($child -ne [IntPtr]::Zero) { break }
   Start-Sleep -Milliseconds 500
 }
-if ($child -eq [IntPtr]::Zero) { "FALHOU: nenhuma janela filha apareceu"; $proc.Kill(); exit 1 }
+if ($child -eq [IntPtr]::Zero) { "FALHOU: nenhuma janela do host apareceu"; $proc.Kill(); exit 1 }
 
-$actualParent = [Embed]::GetParent($child)
-if ($actualParent -ne $parent) { "FALHOU: pai errado ($actualParent != $parent)"; $proc.Kill(); exit 1 }
-"host embutido: janela $child e filha de $parent"
+# Janela OWNED (nao filha): o vinculo e pelo OWNER (SPEC-0210).
+$owner = [Embed]::GetWindow($child, [Embed]::GW_OWNER)
+if ($owner -ne $parent) { "FALHOU: dono errado ($owner != $parent)"; $proc.Kill(); exit 1 }
+# `GetParent` devolve o OWNER tambem para popups — nao serve pra distinguir.
+# O que prova que nao e filha e a AUSENCIA do estilo WS_CHILD (0x40000000),
+# que e o que acopla as filas de mensagem (SPEC-0210).
+$style = [Embed]::GetWindowLongPtr($child, -16)  # GWL_STYLE
+if (([int64]$style -band 0x40000000) -ne 0) { "FALHOU: a janela tem WS_CHILD (acopla filas, ver SPEC-0210)"; $proc.Kill(); exit 1 }
+"host embutido: janela $child tem o dono $parent (owned, nao filha)"
 
 # ESPERA o JS do host subir antes de mandar geometria. A janela filha aparece
 # em ~2s, mas o bundle (ainda mais com o editor dentro) leva bem mais — mandar
@@ -120,6 +137,18 @@ $proc.StandardInput.Flush()
 for ($i = 0; $i -lt 10; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 300 }
 if (-not [Embed]::IsWindowVisible($child)) { "FALHOU: janela nao voltou apos previewVisible=true"; $proc.Kill(); exit 1 }
 "previewVisible=true trouxe a janela de volta"
+
+# A JANELA DONA precisa seguir respondendo enquanto o host trabalha. Com
+# WS_CHILD + SetParent (a versao anterior) as filas ficavam acopladas e o
+# Studio travava junto — "Application Hang" (SPEC-0210).
+$travou = $false
+for ($i = 0; $i -lt 25; $i++) {
+  [System.Windows.Forms.Application]::DoEvents()
+  if (-not [Embed]::Responsive($parent, 500)) { $travou = $true; break }
+  Start-Sleep -Milliseconds 200
+}
+if ($travou) { "FALHOU: a janela dona parou de responder (filas acopladas)"; $proc.Kill(); exit 1 }
+"janela dona seguiu respondendo com o host ocupado"
 
 # Encerrar nao pode deixar janela orfa.
 $proc.Kill(); $proc.WaitForExit(10000)
