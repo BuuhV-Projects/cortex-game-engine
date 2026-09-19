@@ -67,9 +67,16 @@ void attachToParent(SDL_Window* window, const char* parentEnv, HostGpu* gpu) {
   // Popup sem borda (a moldura é a IDE) com DONO = janela do Studio.
   SetWindowLongPtrW(self, GWL_STYLE, WS_POPUP | WS_VISIBLE);
   SetWindowLongPtrW(self, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(parent));
-  // NOACTIVATE: clicar no jogo não rouba o foco da IDE (é o que o iframe fazia).
   // TOOLWINDOW: some da barra de tarefas — é parte da IDE, não um app próprio.
-  SetWindowLongPtrW(self, GWL_EXSTYLE, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+  //
+  // SEM `WS_EX_NOACTIVATE` (SPEC-0211): janela não-ativa não recebe WM_KEYDOWN,
+  // e sem teclado o jogo desenha mas não responde a nada — foi lido, com razão,
+  // como "o Studio travou". O iframe RECEBE foco ao ser clicado; o embed faz o
+  // mesmo. Isto NÃO traz de volta o hang da SPEC-0210: o que acopla as filas de
+  // mensagem entre processos é `SetParent`, não a ativação de janela.
+  SetWindowLongPtrW(self, GWL_EXSTYLE, WS_EX_TOOLWINDOW);
+  // `SWP_NOACTIVATE` fica: SUBIR o preview não rouba o foco de quem está no
+  // meio de uma interação — quem dá foco ao jogo é o clique do usuário.
   SetWindowPos(self, parent, 0, 0, 0, 0,
                SWP_NOSIZE | SWP_NOMOVE | SWP_FRAMECHANGED | SWP_SHOWWINDOW |
                    SWP_NOACTIVATE);

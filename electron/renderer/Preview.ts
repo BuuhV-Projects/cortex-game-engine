@@ -1,3 +1,4 @@
+import { AirspaceGate } from './airspace.js'
 import { t } from './i18n'
 import { nativePreviewBounds } from './previewBounds.js'
 import { h, icon } from './ui'
@@ -131,6 +132,13 @@ export class Preview {
       const { active, url } = (e as CustomEvent<{ active: boolean; url: string }>).detail
       this.setAssetDropTarget(active, url)
     })
+    // Menu da menubar aberto/fechado (SPEC-0211): o menu é DOM e abre SOBRE o
+    // palco, então nasce atrás da janela owned do host se ela não sair da frente.
+    document.addEventListener('studio-overlay', (e) => {
+      const { id, open } = (e as CustomEvent<{ id: string; open: boolean }>).detail
+      this.setAirspaceBlocker(id, open)
+    })
+    this.watchModalDialogs()
   }
 
   /** Liga/desliga o overlay que captura o drop de asset sobre o palco. */
@@ -140,9 +148,7 @@ export class Preview {
     // Preview NATIVO: a janela do host fica por cima de TODO o DOM (airspace),
     // entao o overlay so recebe o drop com ela escondida (SPEC-0206). Some
     // durante o arraste e volta ao soltar/cancelar.
-    if (this.nativeActive) {
-      void window.electronAPI.sendNativePreviewMessage({ type: 'previewVisible', visible: !active })
-    }
+    this.setAirspaceBlocker('asset-drag', active)
     if (!active || !this.stageEl) return
     const zone = document.createElement('div')
     zone.style.cssText =
@@ -464,6 +470,43 @@ export class Preview {
   private nativeActive = false;
 
   /**
+   * Quem está exigindo o palco livre agora (SPEC-0211). A janela do host é
+   * OWNED: fica acima de todo o DOM, então menu, modal e overlay de drop só
+   * aparecem com ela escondida.
+   */
+  private readonly airspace = new AirspaceGate();
+
+  /**
+   * Registra/solta uma fonte de airspace. Só a TRANSIÇÃO vira mensagem no
+   * canal — com dois overlays sobrepostos o host não pisca, e fechar um deles
+   * não revela o host enquanto o outro precisar do palco.
+   */
+  private setAirspaceBlocker(source: string, blocking: boolean): void {
+    const visible = this.airspace.set(source, blocking);
+    if (visible === null || !this.nativeActive) return
+    void window.electronAPI.sendNativePreviewMessage({ type: 'previewVisible', visible })
+  }
+
+  /**
+   * Some com o host enquanto houver um modal aberto (SPEC-0211). Todo modal do
+   * Studio é `<dialog>.showModal()` — `ProjectSettingsModal`,
+   * `ExportProgressModal`, `customPrompt` —, então observar `dialog[open]` num
+   * lugar só cobre os três e qualquer modal futuro que siga o molde, sem
+   * obrigar cada um a se anunciar.
+   */
+  private watchModalDialogs(): void {
+    const sync = (): void => {
+      this.setAirspaceBlocker('dialog', document.querySelector('dialog[open]') !== null)
+    }
+    new MutationObserver(sync).observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['open'],
+    })
+  }
+
+  /**
    * Faixas reservadas pras pills no preview nativo, em px (SPEC-0207). A janela
    * do host cobre o DOM (airspace), então o retângulo dela ENCOLHE pra deixar
    * as pills visíveis em cima e embaixo. Precisa bater com `.native-preview`
@@ -524,6 +567,9 @@ export class Preview {
   /** Encerra o host embutido e para de observar (sem isso: janela órfã). */
   stopNative(): void {
     this.nativeActive = false
+    // Portão limpo entre sessões (SPEC-0211): um menu que ficou aberto quando o
+    // preview caiu deixaria o próximo host nascer escondido.
+    this.airspace.clear()
     this.stageEl?.classList.remove('native-preview')
     this.nativeObserver?.disconnect()
     this.nativeObserver = null
