@@ -1,3 +1,26 @@
+# [0.50.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.49.0...v0.50.0) (2026-09-19)
+
+
+### Bug Fixes
+
+* **native:** setInterval no host — fecha o M3 do PRD-0007 (SPEC-0204) ([600788e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/600788ef105abccd410011a8afecad87f8dd41d5))
+* **native:** World.forEachRigidBody no rapier do host (SPEC-0208) ([8e89327](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8e893274de36b17ae125af1eadd2dc9ea7030de9))
+* **studio:** preview nativo nao pode travar o Studio — janela owned (SPEC-0210) ([3b483b2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3b483b27447ad635f85619f3890b754b3a2d016c))
+* **studio:** preview nativo recebe teclado e cede o airspace (SPEC-0211) ([a4ab8db](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a4ab8db799d131d965ce8589ed69035f1e531531))
+
+
+### Features
+
+* **editor:** transporte plugavel da ponte — M3b do PRD-0007 (SPEC-0203) ([655605f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/655605f2ade5a457bd60c8fe3cc91d73d21807a0))
+* **native:** canal de mensagens com a IDE por stdin/stdout — M1 do PRD-0007 (SPEC-0200) ([09e236f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/09e236fb987723abafe3ed6e33fa5fa8ec763bb4))
+* **native:** editor no runtime nativo — M3a do PRD-0007 (SPEC-0202) ([cc68655](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cc68655b270659d9c840b5953d7c615beb67549e))
+* **native:** resize da surface sem crash — M0 do PRD-0007 (SPEC-0199) ([e3337f2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e3337f2a4369a495f8666c72f831fbdbf0a603a6))
+* **native:** veiculo raycast do Rapier no host (SPEC-0209) ([9411e24](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9411e247a2228ca61defd709b6806354d7f5c974))
+* **studio:** drag-and-drop no preview nativo — M4b do PRD-0007 (SPEC-0206) ([c166fc6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c166fc6225fde8656a0e4130de7851e6e1acc2a6))
+* **studio:** overlays do viewport no preview nativo — M4c do PRD-0007 (SPEC-0207) ([b137b6f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b137b6f2368b9aa252842863dbdaef3b88bf3564))
+* **studio:** preview nativo em um comando + troca de fase — M4a (SPEC-0205) ([778cd8f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/778cd8fcd4333a20900ef594e15bf7d534b6219b))
+* **studio:** preview nativo embutido — M2 do PRD-0007 (SPEC-0201) ([ff88eff](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ff88effb5765b0c293268b720144c8bd215f4bed))
+
 # [0.49.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.48.0...v0.49.0) (2026-09-19)
 
 
