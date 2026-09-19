@@ -2,7 +2,10 @@
 
 #include <webgpu/wgpu.h>
 
+#include <windows.h>
+
 #include <cstdio>
+#include <cstdlib>
 
 namespace core {
 namespace {
@@ -37,6 +40,32 @@ WGPUSurface createWindowSurface(WGPUInstance instance, SDL_Window* window,
   return surfaceFromHandles(instance, gpu->hwnd, gpu->hinstance);
 }
 
+// Prende a janela do host num HWND externo (o painel do Studio). O SDL3 só
+// sabe parentear janelas dele mesmo (`SDL_PROP_WINDOW_CREATE_PARENT_POINTER`
+// espera um SDL_Window), então o embed em HWND de fora é Win32 puro:
+// estilo WS_CHILD + SetParent. Falha é não-fatal — o host segue como janela
+// solta, que é melhor que não abrir.
+void attachToParent(SDL_Window* window, const char* parentEnv, HostGpu* gpu) {
+  const unsigned long long raw = std::strtoull(parentEnv, nullptr, 10);
+  HWND parent = reinterpret_cast<HWND>(static_cast<uintptr_t>(raw));
+  if (!parent || !IsWindow(parent)) {
+    std::fprintf(stderr, "embed: CORTEX_PARENT_HWND invalido (%s)\n", parentEnv);
+    return;
+  }
+  HWND self = static_cast<HWND>(gpu->hwnd);
+  if (!self) return;
+  SetWindowLongPtrW(self, GWL_STYLE, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS);
+  if (!SetParent(self, parent)) {
+    std::fprintf(stderr, "embed: SetParent falhou (%lu)\n", GetLastError());
+    return;
+  }
+  // Sem WS_EX_APPWINDOW a janela filha some da barra de tarefas (ela é parte
+  // da IDE agora, não um app próprio).
+  SetWindowLongPtrW(self, GWL_EXSTYLE, 0);
+  SetWindowPos(self, HWND_TOP, 0, 0, 0, 0,
+               SWP_NOSIZE | SWP_NOMOVE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+}
+
 void handleResize(SDL_Window* window, HostGpu* gpu) {
   // SÓ atualiza as dimensões e marca a pendência. Mexer na surface aqui, no
   // meio do frame (com textura possivelmente adquirida), é o que dava "Invalid
@@ -57,13 +86,18 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
   // do desktop — imagem SHARP, sem o upscale borrado do modo janela.
   // Debug/preview: CORTEX_WINDOWED=1 abre em janela REDIMENSIONÁVEL — o resize
   // deixou de crashar na SPEC-0199 (a surface é RECRIADA no início do frame).
-  const bool windowed = SDL_getenv("CORTEX_WINDOWED") != nullptr;
+  // EMBED (SPEC-0201 / M2 do PRD-0007): com CORTEX_PARENT_HWND a janela do host
+  // vira FILHA de um HWND externo — o painel de preview do Studio. Implica
+  // janela (nunca fullscreen) e sem borda: quem dá moldura é a IDE.
+  const char* parentEnv = SDL_getenv("CORTEX_PARENT_HWND");
+  const bool embedded = parentEnv != nullptr && parentEnv[0] != 0;
+  const bool windowed = embedded || SDL_getenv("CORTEX_WINDOWED") != nullptr;
   // Em janela, RESIZABLE: é o modo de dev/preview, e o host agora aguenta o
   // resize (SPEC-0199 — a surface é recriada no início do frame). Sem a flag o
   // SDL rejeita o redimensionamento e a janela volta sozinha ao tamanho antigo.
-  SDL_Window* window = SDL_CreateWindow(
-      title, width, height,
-      windowed ? SDL_WINDOW_RESIZABLE : SDL_WINDOW_FULLSCREEN);
+  SDL_WindowFlags flags = windowed ? SDL_WINDOW_RESIZABLE : SDL_WINDOW_FULLSCREEN;
+  if (embedded) flags |= SDL_WINDOW_BORDERLESS;
+  SDL_Window* window = SDL_CreateWindow(title, width, height, flags);
   if (!window) {
     std::fprintf(stderr, "SDL_CreateWindow falhou: %s\n", SDL_GetError());
     return nullptr;
@@ -97,6 +131,7 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
   if (gpu->width <= 0 || gpu->height <= 0) {
     SDL_GetWindowSizeInPixels(window, &gpu->width, &gpu->height);
   }
+  if (embedded) attachToParent(window, parentEnv, gpu);
   return window;
 }
 

@@ -108,6 +108,11 @@ export class Preview {
       if (iframe && this.serverUrl) iframe.src = this.withDebug(this.serverUrl)
       else if (this.projectDir && !this.running) void this.toggle()
     })
+    // Preview NATIVO (SPEC-0201): escolhe a pasta do export e embute o host no
+    // lugar do iframe. Experimental — o M2 do PRD-0007 assume um export já
+    // gerado; o fluxo incremental (editar → ver) é dos marcos seguintes.
+    document.addEventListener('native-preview-requested', () => void this.pickAndStartNative())
+    document.addEventListener('play-stopped', () => this.stopNative())
     // Fullscreen agora dispara pelo ícone "expandir" da toolbar da casca.
     document.addEventListener('request-fullscreen-toggle', () => this.toggleFullscreen())
     // Pills do viewport (objeto/ferramentas/perf) — info vinda da ponte do editor.
@@ -429,6 +434,66 @@ export class Preview {
     }
     this.updateButtonState()
     document.dispatchEvent(new CustomEvent('play-stopped'))
+  }
+
+  // ── Preview NATIVO (SPEC-0201 / M2 do PRD-0007) ────────────────────────────
+  // Em vez do iframe, o host do jogo roda como janela FILHA do Studio, ocupando
+  // o retângulo do palco. O DOM não desenha nada ali: a janela nativa cobre a
+  // área (airspace), então o palco fica vazio de propósito.
+
+  /** Observa o tamanho do palco pra manter a janela nativa alinhada. */
+  private nativeObserver: ResizeObserver | null = null;
+
+  /**
+   * Liga o preview nativo com o export de `exportDir`. O palco é esvaziado e
+   * passa a ser apenas o RETÂNGULO onde a janela do host vive.
+   */
+  async startNative(exportDir: string): Promise<void> {
+    if (!this.stageEl) return
+    this.stopNative()
+    this.stageEl.innerHTML = ''
+    await window.electronAPI.startNativePreview(exportDir)
+    this.pushNativeBounds()
+    // O palco muda de tamanho com o layout dos docks, não só com a janela.
+    this.nativeObserver = new ResizeObserver(() => this.pushNativeBounds())
+    this.nativeObserver.observe(this.stageEl)
+    window.addEventListener('resize', this.pushNativeBoundsBound)
+  }
+
+  /** Pergunta a pasta do export e sobe o preview nativo nela. */
+  private async pickAndStartNative(): Promise<void> {
+    const dir = await window.electronAPI.selectDirectory()
+    if (!dir) return
+    try {
+      await this.startNative(dir)
+    } catch (err) {
+      void window.electronAPI.errorDialog('Preview nativo', String(err))
+    }
+  }
+
+  /** Encerra o host embutido e para de observar (sem isso: janela órfã). */
+  stopNative(): void {
+    this.nativeObserver?.disconnect()
+    this.nativeObserver = null
+    window.removeEventListener('resize', this.pushNativeBoundsBound)
+    void window.electronAPI.stopNativePreview()
+  }
+
+  private pushNativeBoundsBound = (): void => this.pushNativeBounds()
+
+  /**
+   * Manda o retângulo do palco em coordenadas da JANELA do Studio — é o
+   * referencial da janela filha (WS_CHILD). `getBoundingClientRect` já dá
+   * coordenadas do viewport, que é o que a janela pai enxerga.
+   */
+  private pushNativeBounds(): void {
+    if (!this.stageEl) return
+    const r = this.stageEl.getBoundingClientRect()
+    if (r.width <= 0 || r.height <= 0) return // painel colapsado
+    void window.electronAPI.setNativePreviewBounds({
+      x: Math.round(r.left), y: Math.round(r.top),
+      width: Math.round(r.width), height: Math.round(r.height),
+    })
   }
 
   private showIframe(url: string): void {

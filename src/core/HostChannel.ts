@@ -24,6 +24,8 @@ interface HostBridge {
   __cortexIdeChannel?: boolean;
   __cortexIdeSend?: (line: string) => void;
   __cortexIdeOnMessage?: (cb: (line: string) => void) => void;
+  /** Só no modo embutido (`CORTEX_PARENT_HWND`) — ver SPEC-0201. */
+  __cortexSetWindowBounds?: (x: number, y: number, w: number, h: number) => void;
 }
 
 /** Versão do protocolo — sobe quando o formato das mensagens mudar. */
@@ -90,10 +92,36 @@ export class HostChannel {
     // Handshake: a IDE diz `hello`, o host responde `ack`. É o que prova que o
     // canal está vivo nos dois sentidos antes de qualquer outra mensagem.
     if (message.type === 'hello') {
-      this.send({ type: 'ack', protocol: HOST_CHANNEL_PROTOCOL });
+      this.send({ type: 'ack', protocol: HOST_CHANNEL_PROTOCOL, embedded: this.embedded });
+      return;
+    }
+    // `bounds` é geometria da JANELA, não do jogo: o host se posiciona sozinho
+    // (SPEC-0201) e a IDE não precisa de FFI pra chamar SetWindowPos.
+    if (message.type === 'bounds') {
+      this.setBounds(
+        Number(message['x'] ?? 0), Number(message['y'] ?? 0),
+        Number(message['width'] ?? 0), Number(message['height'] ?? 0),
+      );
       return;
     }
     this._handlers.get(message.type)?.(message);
+  }
+
+  /** O host está EMBUTIDO numa janela da IDE? (`CORTEX_PARENT_HWND`). */
+  get embedded(): boolean {
+    return typeof bridge().__cortexSetWindowBounds === 'function';
+  }
+
+  /**
+   * Move/redimensiona a janela do host — coordenadas relativas à janela PAI.
+   * No-op fora do modo embutido.
+   */
+  setBounds(x: number, y: number, width: number, height: number): void {
+    const apply = bridge().__cortexSetWindowBounds;
+    if (typeof apply !== 'function') return;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    if (!(width > 0) || !(height > 0)) return; // painel colapsado: ignora
+    apply(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
   }
 
   /** Só pros testes: deixa o canal escutar sem nenhum handler registrado. */
