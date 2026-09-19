@@ -231,6 +231,9 @@ pub unsafe extern "C" fn rn_body_get(world: *mut World, body: f64, what: f64) {
             };
         }
         5 => w.scratch[0] = rb.colliders().len() as f64,
+        // 6 = massa. O kart-racer usa pra dosar o impulso de frenagem da IA
+        // (`-missingBrake * body.mass()`), todo frame (SPEC-0216).
+        6 => w.scratch[0] = rb.mass() as f64,
         _ => {
             let t = rb.translation();
             w.scratch[0] = t.x as f64;
@@ -533,4 +536,130 @@ pub unsafe extern "C" fn rn_body_mass_props(
         vector![ix as f32, iy as f32, iz as f32],
     );
     rb.set_additional_mass_properties(props, wake != 0.0);
+}
+
+// ─── Raycast de mundo (SPEC-0216) ───────────────────────────────────────────
+// O `followGround` do carro lança um raio por roda pra colar o chassi no chão.
+// Sem isto o sistema do carro lançava exceção TODO frame, e a exceção subia até
+// o rAF e abortava o tick inteiro do jogo (carro parado, pickups sem girar, UI
+// sem responder).
+
+/// Máscara de `filterFlags`, espelhando o `QueryFilterFlags` do Rapier.
+const FILTER_EXCLUDE_FIXED: u32 = 1;
+const FILTER_EXCLUDE_DYNAMIC: u32 = 2;
+const FILTER_EXCLUDE_KINEMATIC: u32 = 4;
+const FILTER_EXCLUDE_SENSORS: u32 = 8;
+
+/// Lança um raio no mundo. `1` = acertou (resultado no scratch), `0` = não.
+///
+/// Scratch no acerto: [0] distância (time of impact), [1..3] normal,
+/// [4] handle do collider, [5] handle do corpo dono (-1 se não tiver).
+///
+/// O filtro roda DENTRO do Rapier (`QueryFilter`): ele poda durante a
+/// travessia, em vez de devolver um acerto pro JS descartar depois.
+///
+/// # Safety: `world` deve vir de `rn_world_new` e estar vivo.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn rn_world_cast_ray(
+    world: *mut World,
+    ox: f64, oy: f64, oz: f64,
+    dx: f64, dy: f64, dz: f64,
+    max_toi: f64,
+    solid: f64,
+    filter_flags: f64,
+    exclude_body: f64,
+) -> f64 {
+    let w = &mut *world;
+    let ray = Ray::new(
+        point![ox as f32, oy as f32, oz as f32],
+        vector![dx as f32, dy as f32, dz as f32],
+    );
+
+    let bits = filter_flags as u32;
+    let mut flags = QueryFilterFlags::empty();
+    if bits & FILTER_EXCLUDE_FIXED != 0 {
+        flags |= QueryFilterFlags::EXCLUDE_FIXED;
+    }
+    if bits & FILTER_EXCLUDE_DYNAMIC != 0 {
+        flags |= QueryFilterFlags::EXCLUDE_DYNAMIC;
+    }
+    if bits & FILTER_EXCLUDE_KINEMATIC != 0 {
+        flags |= QueryFilterFlags::EXCLUDE_KINEMATIC;
+    }
+    if bits & FILTER_EXCLUDE_SENSORS != 0 {
+        flags |= QueryFilterFlags::EXCLUDE_SENSORS;
+    }
+    let filter = QueryFilter {
+        flags,
+        // `exclude_body < 0` = sem exclusão (o JS manda -1). É como o carro
+        // evita acertar o próprio chassi.
+        exclude_rigid_body: if exclude_body >= 0.0 {
+            Some(unpack_handle(exclude_body))
+        } else {
+            None
+        },
+        ..QueryFilter::default()
+    };
+
+    let Some((collider_handle, intersection)) = w.query_pipeline.cast_ray_and_get_normal(
+        &w.bodies,
+        &w.colliders,
+        &ray,
+        max_toi as f32,
+        solid != 0.0,
+        filter,
+    ) else {
+        return 0.0;
+    };
+
+    w.scratch[0] = intersection.time_of_impact as f64;
+    w.scratch[1] = intersection.normal.x as f64;
+    w.scratch[2] = intersection.normal.y as f64;
+    w.scratch[3] = intersection.normal.z as f64;
+    w.scratch[4] = pack_collider(collider_handle);
+    w.scratch[5] = w
+        .colliders
+        .get(collider_handle)
+        .and_then(|c| c.parent())
+        .map_or(-1.0, pack_handle);
+    1.0
+}
+
+/// Propriedades do collider: 0 = é sensor, 1 = handle do corpo dono (-1 se não
+/// tiver). É o que um `filterPredicate` precisa pra decidir.
+/// # Safety: `world` vivo.
+#[no_mangle]
+pub unsafe extern "C" fn rn_collider_get(world: *mut World, collider: f64, what: f64) -> f64 {
+    let w = &*world;
+    let Some(c) = w.colliders.get(unpack_collider(collider)) else {
+        return -1.0;
+    };
+    match what as i32 {
+        0 => {
+            if c.is_sensor() {
+                1.0
+            } else {
+                0.0
+            }
+        }
+        1 => c.parent().map_or(-1.0, pack_handle),
+        _ => -1.0,
+    }
+}
+
+/// Remove o corpo (e os colliders dele) do mundo. O kart-racer usa no respawn,
+/// pra limpar o que sobrou do carro anterior (SPEC-0216).
+/// # Safety: `world` vivo.
+#[no_mangle]
+pub unsafe extern "C" fn rn_body_remove(world: *mut World, body: f64) {
+    let w = &mut *world;
+    w.bodies.remove(
+        unpack_handle(body),
+        &mut w.islands,
+        &mut w.colliders,
+        &mut w.impulse_joints,
+        &mut w.multibody_joints,
+        true, // remove os colliders junto
+    );
 }
