@@ -40,11 +40,21 @@ WGPUSurface createWindowSurface(WGPUInstance instance, SDL_Window* window,
   return surfaceFromHandles(instance, gpu->hwnd, gpu->hinstance);
 }
 
-// Prende a janela do host num HWND externo (o painel do Studio). O SDL3 só
-// sabe parentear janelas dele mesmo (`SDL_PROP_WINDOW_CREATE_PARENT_POINTER`
-// espera um SDL_Window), então o embed em HWND de fora é Win32 puro:
-// estilo WS_CHILD + SetParent. Falha é não-fatal — o host segue como janela
-// solta, que é melhor que não abrir.
+// Prende a janela do host a um HWND externo (o painel do Studio) como janela
+// **OWNED** — não como FILHA.
+//
+// A primeira versão usava `WS_CHILD` + `SetParent` (SPEC-0201) e **travava o
+// Studio**: `SetParent` entre PROCESSOS acopla as filas de mensagens dos dois
+// threads, então um host ocupado (carregando assets por ~40 s e depois rodando
+// a ~45 ms por frame) segurava a UI do Electron junto — "Application Hang" no
+// log de eventos do Windows (SPEC-0210).
+//
+// Janela OWNED (`GWLP_HWNDPARENT` num popup) fica sempre acima do dono,
+// minimiza e restaura junto, e **não acopla as filas**. Em troca ela não é
+// clipada pelo dono: quem posiciona (a IDE, pelo canal) manda coordenadas de
+// TELA e esconde a janela quando o palco não está visível.
+//
+// Falha é não-fatal — o host segue como janela solta, melhor que não abrir.
 void attachToParent(SDL_Window* window, const char* parentEnv, HostGpu* gpu) {
   const unsigned long long raw = std::strtoull(parentEnv, nullptr, 10);
   HWND parent = reinterpret_cast<HWND>(static_cast<uintptr_t>(raw));
@@ -54,16 +64,15 @@ void attachToParent(SDL_Window* window, const char* parentEnv, HostGpu* gpu) {
   }
   HWND self = static_cast<HWND>(gpu->hwnd);
   if (!self) return;
-  SetWindowLongPtrW(self, GWL_STYLE, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS);
-  if (!SetParent(self, parent)) {
-    std::fprintf(stderr, "embed: SetParent falhou (%lu)\n", GetLastError());
-    return;
-  }
-  // Sem WS_EX_APPWINDOW a janela filha some da barra de tarefas (ela é parte
-  // da IDE agora, não um app próprio).
-  SetWindowLongPtrW(self, GWL_EXSTYLE, 0);
-  SetWindowPos(self, HWND_TOP, 0, 0, 0, 0,
-               SWP_NOSIZE | SWP_NOMOVE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+  // Popup sem borda (a moldura é a IDE) com DONO = janela do Studio.
+  SetWindowLongPtrW(self, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+  SetWindowLongPtrW(self, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(parent));
+  // NOACTIVATE: clicar no jogo não rouba o foco da IDE (é o que o iframe fazia).
+  // TOOLWINDOW: some da barra de tarefas — é parte da IDE, não um app próprio.
+  SetWindowLongPtrW(self, GWL_EXSTYLE, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+  SetWindowPos(self, parent, 0, 0, 0, 0,
+               SWP_NOSIZE | SWP_NOMOVE | SWP_FRAMECHANGED | SWP_SHOWWINDOW |
+                   SWP_NOACTIVATE);
 }
 
 void handleResize(SDL_Window* window, HostGpu* gpu) {
