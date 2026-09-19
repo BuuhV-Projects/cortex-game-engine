@@ -137,10 +137,17 @@ export interface BuildSceneOptions {
    * WebGPU — M-perf-2b/SPEC-0136): o renderer grava os draws uma vez e no replay
    * vira 1 `executeBundles` por pass, cortando as milhares de travessias NAPI por
    * frame no host nativo. Só faz efeito com `mergeStatic` (é o estático fundido
-   * que entra). Default `false`; o host liga junto do merge. `BundleGroup` assume
-   * estrutura estática — reconstrua a cena (novo `buildScene`) pra mudar.
+   * que entra). Default: **liga sozinho no host nativo**, junto do merge.
+   * `BundleGroup` assume estrutura estática — reconstrua a cena (novo
+   * `buildScene`) pra mudar.
    */
   renderBundles?: boolean;
+  /**
+   * **Pré-aquece os pipelines** ao final do build ({@link Renderer.precompile},
+   * SPEC-0196) — tira o hitch de compilação da primeira aparição de cada
+   * material. Exige `renderer` e `camera`. Default `true`.
+   */
+  precompile?: boolean;
 }
 
 /**
@@ -805,7 +812,7 @@ export async function buildScene(
   // dos nós individuais; daqui pra frente só o render enxerga a fusão. Default:
   // liga no host nativo (CPU-bound por draw call), fica fora no browser/Studio
   // (o editor F2 seleciona/move objetos individuais).
-  if (options.mergeStatic ?? false) {
+  if (options.mergeStatic ?? isNativeHost()) {
     // Objetos com animação de cena (SceneAnimator) são dinâmicos — o mixer anima
     // ESSAS malhas; fundidas, congelariam.
     const animated = animators.map((a) => a.mixer.getRoot() as Object3D);
@@ -815,7 +822,7 @@ export async function buildScene(
   // Render bundles (M-perf-2b): grava os draws do estático UMA vez → 1
   // executeBundles/pass. Independe do merge (bundla até .glb interleaved). Depois
   // do merge, pra bundlar também as malhas fundidas. Liga junto do merge no host.
-  if (options.renderBundles ?? false) {
+  if (options.renderBundles ?? isNativeHost()) {
     const animated = animators.map((a) => a.mixer.getRoot() as Object3D);
     wrapStaticInBundle(three, options.world, animated);
   }
@@ -825,6 +832,13 @@ export async function buildScene(
   // câmera, chão do CharacterPhysicsSystem) vê TODO mesh na identidade (origem =
   // spawn do player) e "colide" com objeto distante (câmera colada no player).
   three.updateMatrixWorld(true);
+
+  // Pré-aquecimento (SPEC-0196): compila os pipelines da cena montada aqui, em
+  // vez de no primeiro frame em que cada material aparece. Não bloqueia o build
+  // — quem quiser esperar (tela de loading) aguarda a promessa.
+  if ((options.precompile ?? true) && options.renderer && options.camera) {
+    void options.renderer.precompile(three, options.camera);
+  }
 
   return {
     byId,

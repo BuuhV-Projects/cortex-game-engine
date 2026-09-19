@@ -88,6 +88,35 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   Seu panorama é 2:1, altura mínima 32: PMREM deriva a resolução da largura / 4;
   uma textura 1×N é inadequada para a geração de reflexos.
 
+- **Preset de material é COMPARTILHADO (`Materials.ts`, SPEC-0196):** o
+  `applyMaterial` cacheia o material derivado por (material de ORIGEM × config) e
+  a rampa de tom por config. Malhas que vieram do mesmo `.glb` (o cache do
+  `loadGLB` compartilha material entre os clones) e têm a mesma config apontam
+  pro MESMO material. Isso não é só memória: material único por malha multiplica
+  bind groups por frame e **neutraliza o `mergeStaticScene`**, que agrupa por
+  material. Medido no `kart-racer`: 1816 → 1102 materiais e 989 → 2 texturas de
+  rampa. Consequência: mutar uma propriedade do material FORA do `applyMaterial`
+  afeta todos que compartilham — o caminho suportado é aplicar uma config nova.
+  Ciclo de vida: preset e rampa nascem `userData.cortexCached` (o
+  `Scene.disposeAll` preserva) e saem no `clearSceneAssetCaches`.
+
+- **Shadow caster culling (`ShadowCasterCulling.ts`, SPEC-0197):** com CSM a
+  cena é percorrida uma vez por cascata — cada malha custa `1 + N` draws/frame.
+  O filtro tira do shadow pass quem tem tamanho angular (`raio ÷ distância da
+  câmera`) abaixo de `outdoorLighting.shadowCasterMinRatio` (default 0.05; `0`
+  desliga). Roda dentro do `CameraFollowingCSM.updateBefore`, a cada
+  `SHADOW_CULL_INTERVAL` frames — é o único ponto que vê a câmera DO FRAME, o
+  que faz valer também no editor F2. **A autoria vence**: o `castShadow` do nó
+  fica em `userData.cortexShadowAuthored` e o filtro só tira, nunca dá. Skinned
+  e `InstancedMesh` ficam de fora (bounding sphere não descreve o conjunto).
+  Medido no `kart-racer`: 2807 → 1966 draws, sem diferença visível.
+
+- **Pré-aquecimento de pipeline (`Renderer.precompile`, SPEC-0196):** o three
+  compila o pipeline na PRIMEIRA aparição de cada material — numa largada de
+  corrida, tudo no mesmo frame (o travadinho ao iniciar). O `buildScene` chama ao
+  final (opt-out `opts.precompile`); pro que o jogo cria depois do build (carros
+  montados por código), chame `game.precompile()` ainda sob o loading.
+
 - **Acabamento toon (`Materials.ts`, SPEC-0194):** `shading: 'cel'` usa dois
   patamares e uma transição curta filtrada na rampa de luz. Sem o campo, mantém
   as bandas antigas. Schema/Inspector/overlay preservam o modo; `gradientSteps`
@@ -113,8 +142,12 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `obj.userData.cortexSceneNode = true` (o editor usa pra saber o que é
   autorável). Lê o **overlay** e aplica suas precedências. **No host nativo**,
   ao final, funde a geometria ESTÁTICA por material (`mergeStaticScene`,
-  SPEC-0121; opt-out `opts.mergeStatic`) — menos draw calls, física/visual
-  intactos; nunca roda no Studio (o F2 precisa dos objetos individuais).
+  SPEC-0121; opt-out `opts.mergeStatic`) e envolve o resultado num `BundleGroup`
+  (`wrapStaticInBundle`, SPEC-0136; opt-out `opts.renderBundles`) — menos draw
+  calls e menos travessia NAPI, física/visual intactos. Os dois ligam sozinhos
+  **só no host nativo** (`isNativeHost()`, SPEC-0196 — antes o default era
+  `false` e nenhum jogo passava a flag, então a infra do M-perf-2 estava inerte);
+  nunca rodam no Studio (o F2 precisa dos objetos individuais).
 - **Água (`Water.ts`, SPEC-0131)** — nó `water`: plano PBR finito (`size`, default
   400) com cáusticas tiled animadas. **Segue a câmera** no XZ por padrão (o
   `buildScene` passa `options.camera`), então a borda quadrada fica sempre a

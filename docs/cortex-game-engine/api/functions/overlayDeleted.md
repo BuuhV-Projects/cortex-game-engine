@@ -8,7 +8,7 @@
 
 > **overlayDeleted**(`overlay`): `string`[]
 
-Defined in: [src/scene/SceneBuilder.ts:163](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L163)
+Defined in: [src/scene/SceneBuilder.ts:170](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L170)
 
 Lê `data.deleted` da overlay (ids removidos no editor).
 

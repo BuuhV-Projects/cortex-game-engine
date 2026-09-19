@@ -8,6 +8,6 @@
 
 > **RapierBodyConfig** = `NonNullable`\<`z.infer`\<*typeof* `rapierBodySchema`\>\>
 
-Defined in: [src/scene/SceneDefinition.ts:606](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L606)
+Defined in: [src/scene/SceneDefinition.ts:612](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L612)
 
 Config de corpo Rapier (campo `rapierBody` dos nós; ver rapierBodySchema).

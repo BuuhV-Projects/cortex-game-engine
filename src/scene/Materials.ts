@@ -199,7 +199,7 @@ function buildToon(orig: Material, config: Extract<MaterialConfig, { type: 'toon
     aoMap: o.aoMap ?? null,
     aoMapIntensity: o.aoMapIntensity ?? 1,
     fog: o.fog ?? true,
-    gradientMap: config.shading === 'cel' ? makeCelGradient() : makeGradient(config.gradientSteps ?? 3),
+    gradientMap: sharedGradient(config),
   });
 }
 
@@ -213,6 +213,83 @@ function sideOf(cull: CullMode | undefined): Side {
 function cacheOriginal(mesh: Mesh): void {
   const ud = (mesh.userData ??= {});
   if (ud[CACHE] === undefined) ud[CACHE] = mesh.material;
+}
+
+// ── Cache de presets derivados (SPEC-0196) ────────────────────────────────────
+
+/**
+ * Presets já construídos, por material de ORIGEM × config. O cache de `loadGLB`
+ * compartilha geometria e material entre os clones de um `.glb`, então as 34
+ * árvores iguais de uma cena chegam aqui com o MESMO material de origem — sem
+ * este cache, cada malha ganhava um material próprio (e uma rampa própria).
+ *
+ * Isso não é só memória: material distinto = bind group distinto por frame, e o
+ * {@link mergeStaticScene} agrupa POR MATERIAL — material único por malha
+ * neutraliza o merge estático (SPEC-0120).
+ *
+ * `WeakMap` na origem: quando o `.glb` sai do cache de assets, os presets dele
+ * saem junto.
+ */
+let _presets = new WeakMap<Material, Map<string, Material>>();
+
+/** Presets vivos — o `WeakMap` não itera, e {@link clearMaterialPresetCache} precisa. */
+const _livePresets = new Set<Material>();
+
+/**
+ * Chave estável de uma config pro cache de presets: só o que muda o MATERIAL.
+ * `outline`/`outlineColor` ficam de fora de propósito — o contorno é uma malha
+ * extra (inverted-hull), não uma propriedade do material.
+ */
+function presetKey(config: Extract<MaterialConfig, { type: 'toon' | 'unlit' }>): string {
+  const fields = { ...(config as unknown as Record<string, unknown>) };
+  delete fields['outline'];
+  delete fields['outlineColor'];
+  // A lista de chaves ORDENADA como replacer: a saída sai na ordem do array, então
+  // `{a,b}` e `{b,a}` geram a mesma chave.
+  return JSON.stringify(fields, Object.keys(fields).sort());
+}
+
+/**
+ * Marca um recurso como **residente** (`userData.cortexCached`): o
+ * `Scene.disposeAll` pula o dispose dele na troca de fase — sem isso, trocar de
+ * fase destruiria um preset que outras cenas/objetos ainda compartilham. O
+ * despejo explícito é o {@link clearMaterialPresetCache}.
+ */
+function markShared(resource: { userData: Record<string, unknown> }): void {
+  resource.userData['cortexCached'] = true;
+}
+
+/** Constrói (ou reusa) o preset de `orig` pra `config`. */
+function presetFor(orig: Material, config: Extract<MaterialConfig, { type: 'toon' | 'unlit' }>): Material {
+  let byConfig = _presets.get(orig);
+  if (!byConfig) {
+    byConfig = new Map();
+    _presets.set(orig, byConfig);
+  }
+  const key = presetKey(config);
+  let preset = byConfig.get(key);
+  if (!preset) {
+    preset = config.type === 'unlit' ? buildUnlit(orig, config) : buildToon(orig, config);
+    markShared(preset);
+    byConfig.set(key, preset);
+    _livePresets.add(preset);
+  }
+  return preset;
+}
+
+/**
+ * **Despeja os presets de material e as rampas de tom** (SPEC-0196). Chamado
+ * pelo `clearSceneAssetCaches` — os presets derivam dos materiais dos `.glb`
+ * cacheados e seguem a mesma política de residência (SPEC-0152).
+ */
+export function clearMaterialPresetCache(): void {
+  for (const preset of _livePresets) preset.dispose();
+  _livePresets.clear();
+  // O WeakMap não itera: troca o mapa inteiro, senão a próxima aplicação reusaria
+  // um preset JÁ DISPOSTO (material sem recurso de GPU na cena nova).
+  _presets = new WeakMap();
+  for (const tex of _gradients.values()) tex.dispose();
+  _gradients.clear();
 }
 
 /**
@@ -234,8 +311,8 @@ export function applyMaterial(object: Object3D, config: MaterialConfig): void {
     // SEMPRE deriva do material ORIGINAL (cacheado), POR-MATERIAL — preserva
     // textura, vertex colors e a cor de cada submaterial (multi-material/array).
     const source = (mesh.userData?.[CACHE] ?? mesh.material) as Material | Material[];
-    const build = (orig: Material): Material =>
-      cfg.type === 'unlit' ? buildUnlit(orig, cfg) : buildToon(orig, cfg);
+    // Preset COMPARTILHADO por (material de origem × config) — ver `presetFor`.
+    const build = (orig: Material): Material => presetFor(orig, cfg);
     mesh.material = Array.isArray(source) ? source.map(build) : build(source);
     if (previous) disposePreset(previous);
   });
@@ -324,6 +401,35 @@ function clearOutline(object: Object3D): void {
   }
 }
 
+// ── Cache de rampas de tom (SPEC-0196) ────────────────────────────────────────
+
+/** Nº de bandas do toon quando a config não especifica. */
+const DEFAULT_GRADIENT_STEPS = 3;
+
+/**
+ * Rampas de tom por chave de config. Sem isto, cada material toon ganhava uma
+ * `DataTexture` PRÓPRIA — numa cena inteira autorada em cel, centenas de
+ * texturas idênticas, cada uma ocupando uma entrada de bind group.
+ */
+const _gradients = new Map<string, Texture>();
+
+/** As rampas compartilhadas, pra o {@link disposePreset} não destruí-las. */
+const _sharedGradients = new Set<Texture>();
+
+/** Rampa compartilhada de um preset toon (`cel` ou `bands:N`). */
+function sharedGradient(config: Extract<MaterialConfig, { type: 'toon' }>): Texture {
+  const steps = config.gradientSteps ?? DEFAULT_GRADIENT_STEPS;
+  const key = config.shading === 'cel' ? 'cel' : `bands:${steps}`;
+  let tex = _gradients.get(key);
+  if (!tex) {
+    tex = config.shading === 'cel' ? makeCelGradient() : makeGradient(steps);
+    markShared(tex);
+    _gradients.set(key, tex);
+    _sharedGradients.add(tex);
+  }
+  return tex;
+}
+
 /** Rampa de tom (gradientMap) com `steps` bandas — o que dá o look cel/toon. */
 function makeGradient(steps: number): Texture {
   const n = Math.max(2, Math.min(8, Math.floor(steps)));
@@ -359,10 +465,20 @@ function disposeMat(material: Material | Material[] | undefined): void {
   for (const m of Array.isArray(material) ? material : [material]) m.dispose();
 }
 
-/** Only the ramp belongs to the preset; source asset textures remain shared. */
+/**
+ * Only the ramp belongs to the preset; source asset textures remain shared.
+ *
+ * Presets do cache ({@link presetFor}) são COMPARTILHADOS entre malhas — dispor
+ * aqui mataria o material das outras. Eles saem só no
+ * {@link clearMaterialPresetCache}; o que esta função ainda dispõe são presets
+ * avulsos (já substituídos no cache, ou de versões anteriores da cena).
+ */
 function disposePreset(material: Material | Material[]): void {
   for (const mat of Array.isArray(material) ? material : [material]) {
-    if (mat instanceof MeshToonMaterial) mat.gradientMap?.dispose();
+    if (_livePresets.has(mat)) continue;
+    if (mat instanceof MeshToonMaterial && mat.gradientMap && !_sharedGradients.has(mat.gradientMap)) {
+      mat.gradientMap.dispose();
+    }
     mat.dispose();
   }
 }

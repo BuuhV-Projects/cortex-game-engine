@@ -502,6 +502,24 @@ export class Game {
     return new DebugHud(this.ui, () => (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info ?? null, this.profiler);
   }
 
+  /**
+   * **Pré-aquece os pipelines** da cena ativa (SPEC-0196) — compila os shaders
+   * agora em vez de no primeiro frame em que cada objeto aparece, que é o que
+   * causa o travadinho ao começar uma corrida/fase.
+   *
+   * O `buildScene` já faz isso com o que ele monta; chame aqui pra o que o JOGO
+   * cria DEPOIS (carros montados por código, efeitos, UI de runtime) —
+   * idealmente ainda sob a tela de carregamento.
+   *
+   * @example
+   * const player = await createCar(game, golf, golfRig)
+   * await game.precompile()
+   * game.start()
+   */
+  precompile(): Promise<void> {
+    return this.renderer.precompile(this._activeScene.getThreeScene(), this._activeCamera);
+  }
+
   /** Inicia o loop. */
   start(): void {
     this._loop.start();

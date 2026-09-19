@@ -182,6 +182,32 @@ export class Renderer {
   }
 
   /**
+   * **Pré-aquece os pipelines** da cena (SPEC-0196) — compila shaders e cria os
+   * pipelines ANTES do primeiro frame em que cada objeto aparece.
+   *
+   * Sem isto, o three compila na primeira aparição: quando a corrida começa e os
+   * carros entram em tela de uma vez, as compilações caem todas no mesmo frame e
+   * o jogo trava por alguns quadros. Aqui o custo sai do gameplay e vai pro load
+   * (onde já existe tela de carregamento).
+   *
+   * Aguarda o init do backend; no-op onde o renderer não expõe `compileAsync`
+   * (mocks de teste). Chame de novo ao criar objetos novos — o three só compila
+   * o que ainda não tem pipeline.
+   *
+   * @example
+   * await buildScene(...)
+   * await game.renderer.precompile(game.scene.getThreeScene(), game.camera)
+   */
+  async precompile(scene: THREE.Scene, camera: THREE.Camera): Promise<void> {
+    await this._ready;
+    const compile = (this._renderer as Partial<{
+      compileAsync: (s: THREE.Scene, c: THREE.Camera) => Promise<unknown>;
+    }>).compileAsync;
+    if (typeof compile !== 'function') return;
+    await compile.call(this._renderer, scene, camera);
+  }
+
+  /**
    * Renderiza a `scene` usando a `camera` fornecida.
    * Deve ser chamado a cada frame pelo `GameLoop`. No-op enquanto o backend
    * ainda não inicializou.

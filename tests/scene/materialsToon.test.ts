@@ -55,7 +55,12 @@ describe('toon finish regressions', () => {
     expect(materials[1]!.visible).toBe(false);
   });
 
-  it('releases old ramp/material but retains original textures when swapping', () => {
+  // Desde a SPEC-0196 o preset e a rampa são COMPARTILHADOS entre as malhas que
+  // têm o mesmo material de origem e a mesma config, então trocar a config de UMA
+  // malha não pode dispor o material antigo (outras malhas ainda o usam) — a
+  // liberação passou pro despejo explícito (`clearMaterialPresetCache`). O que
+  // segue valendo: as texturas do modelo original nunca são destruídas no swap.
+  it('keeps shared presets alive on swap and never disposes original textures', () => {
     const map = new Texture();
     const mesh = new Mesh(new BoxGeometry(), new MeshStandardMaterial({ map }));
     const source = mesh.material;
@@ -65,8 +70,9 @@ describe('toon finish regressions', () => {
     const rampDispose = vi.spyOn(toon.gradientMap!, 'dispose');
     const mapDispose = vi.spyOn(map, 'dispose');
     applyMaterial(mesh, { type: 'toon', gradientSteps: 4 });
-    expect(dispose).toHaveBeenCalledOnce();
-    expect(rampDispose).toHaveBeenCalledOnce();
+    expect(mesh.material).not.toBe(toon); // config nova → preset próprio
+    expect(dispose).not.toHaveBeenCalled();
+    expect(rampDispose).not.toHaveBeenCalled();
     expect(mapDispose).not.toHaveBeenCalled();
     clearMaterial(mesh);
     expect(mesh.material).toBe(source);
