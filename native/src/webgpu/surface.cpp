@@ -6,6 +6,7 @@
 #include "bindings.h"
 #include "enums.h"
 #include "internal.h"
+#include "../core/app_window.h"
 #include "supersample.h"
 
 #include <webgpu/wgpu.h>
@@ -24,9 +25,9 @@ bool isSurfaceTextureUsable(const WGPUSurfaceTexture& st) {
 // aquisição (getCurrentTexture), onde NENHUMA textura da surface está viva —
 // é o único ponto seguro (configurar com textura adquirida = "Invalid
 // surface" e crash do wgpu).
-// Configura a surface (usa o tamanho da 1ª config nas recuperações — janela
-// é de tamanho fixo, então nunca reconfigura pra um tamanho diferente, o que
-// evita o crash "Invalid surface" do wgpu-native/D3D12).
+// Configura a surface. Nas RECUPERAÇÕES (Outdated/Lost) usa o tamanho já
+// validado — reconfigurar a mesma surface pra um tamanho DIFERENTE é que dá
+// "Invalid surface"; mudança de tamanho passa por recreateSurface (SPEC-0199).
 void configureSurface(HostGpu* gpu, int w, int h) {
   gpu->config = WGPU_SURFACE_CONFIGURATION_INIT;
   gpu->config.device = gpu->device;
@@ -46,6 +47,17 @@ void configureSurface(HostGpu* gpu, int w, int h) {
 // Linkage externo (declarada em internal.h): a splash também apresenta um frame.
 WGPUTexture acquireSurfaceTexture(HostGpu* gpu) {
   if (gpu->width <= 0 || gpu->height <= 0) return nullptr;  // minimizada
+  // RESIZE (SPEC-0199): a janela mudou de tamanho desde a última configuração.
+  // Aqui é o ponto seguro — nenhuma textura de surface viva. Reconfigurar a
+  // MESMA surface com tamanho novo dá "Invalid surface" e crasha o
+  // wgpu-native/D3D12; recriar a partir do HWND funciona.
+  const bool sizeChanged = gpu->configuredWidth != 0 &&
+                           (gpu->width != gpu->configuredWidth ||
+                            gpu->height != gpu->configuredHeight);
+  if (sizeChanged || gpu->wantConfigure) {
+    gpu->wantConfigure = false;
+    if (sizeChanged) core::recreateSurface(gpu);
+  }
   if (gpu->configuredWidth == 0) configureSurface(gpu, gpu->width, gpu->height);
 
   WGPUSurfaceTexture st = WGPU_SURFACE_TEXTURE_INIT;

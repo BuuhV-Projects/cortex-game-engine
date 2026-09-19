@@ -18,6 +18,15 @@ WGPUInstance createInstanceD3D12() {
   return wgpuCreateInstance(&desc);
 }
 
+WGPUSurface surfaceFromHandles(WGPUInstance instance, void* hwnd, void* hinstance) {
+  WGPUSurfaceSourceWindowsHWND source = WGPU_SURFACE_SOURCE_WINDOWS_HWND_INIT;
+  source.hwnd = hwnd;
+  source.hinstance = hinstance;
+  WGPUSurfaceDescriptor desc = WGPU_SURFACE_DESCRIPTOR_INIT;
+  desc.nextInChain = &source.chain;
+  return wgpuInstanceCreateSurface(instance, &desc);
+}
+
 WGPUSurface createWindowSurface(WGPUInstance instance, SDL_Window* window,
                                 HostGpu* gpu) {
   SDL_PropertiesID props = SDL_GetWindowProperties(window);
@@ -25,19 +34,15 @@ WGPUSurface createWindowSurface(WGPUInstance instance, SDL_Window* window,
       props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
   gpu->hinstance = SDL_GetPointerProperty(
       props, SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER, nullptr);
-  WGPUSurfaceSourceWindowsHWND source = WGPU_SURFACE_SOURCE_WINDOWS_HWND_INIT;
-  source.hwnd = gpu->hwnd;
-  source.hinstance = gpu->hinstance;
-  WGPUSurfaceDescriptor desc = WGPU_SURFACE_DESCRIPTOR_INIT;
-  desc.nextInChain = &source.chain;
-  return wgpuInstanceCreateSurface(instance, &desc);
+  return surfaceFromHandles(instance, gpu->hwnd, gpu->hinstance);
 }
 
 void handleResize(SDL_Window* window, HostGpu* gpu) {
-  // SÓ atualiza as dimensões. A surface se reconfigura sozinha no próximo
-  // getCurrentTexture (ponto sem textura viva) quando detecta a mudança —
-  // reconfigurar aqui, no meio do frame, dava "Invalid surface" e crash.
+  // SÓ atualiza as dimensões e marca a pendência. Mexer na surface aqui, no
+  // meio do frame (com textura possivelmente adquirida), é o que dava "Invalid
+  // surface" e crash — quem age é o início do frame (SPEC-0199).
   SDL_GetWindowSizeInPixels(window, &gpu->width, &gpu->height);
+  gpu->wantConfigure = true;
 }
 
 }  // namespace
@@ -49,14 +54,16 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
     return nullptr;
   }
   // FULLSCREEN por padrão (como jogo/console): renderiza na resolução NATIVA
-  // do desktop — imagem SHARP (sem o upscale borrado do modo janela) — e é de
-  // tamanho FIXO. Reconfigurar a surface do wgpu-native/D3D12 após um resize
-  // dá "Invalid surface" e crasha (bug do backend); em tamanho fixo a surface
-  // configura UMA vez e nunca mais. Trocar de resolução = reiniciar o jogo.
-  // Debug: CORTEX_WINDOWED=1 abre em janela (mais fácil de inspecionar).
+  // do desktop — imagem SHARP, sem o upscale borrado do modo janela.
+  // Debug/preview: CORTEX_WINDOWED=1 abre em janela REDIMENSIONÁVEL — o resize
+  // deixou de crashar na SPEC-0199 (a surface é RECRIADA no início do frame).
   const bool windowed = SDL_getenv("CORTEX_WINDOWED") != nullptr;
+  // Em janela, RESIZABLE: é o modo de dev/preview, e o host agora aguenta o
+  // resize (SPEC-0199 — a surface é recriada no início do frame). Sem a flag o
+  // SDL rejeita o redimensionamento e a janela volta sozinha ao tamanho antigo.
   SDL_Window* window = SDL_CreateWindow(
-      title, width, height, windowed ? 0 : SDL_WINDOW_FULLSCREEN);
+      title, width, height,
+      windowed ? SDL_WINDOW_RESIZABLE : SDL_WINDOW_FULLSCREEN);
   if (!window) {
     std::fprintf(stderr, "SDL_CreateWindow falhou: %s\n", SDL_GetError());
     return nullptr;
@@ -103,6 +110,24 @@ bool handleEvent(const SDL_Event& event, SDL_Window* window, HostGpu* gpu) {
     default:
       return true;
   }
+}
+
+bool recreateSurface(HostGpu* gpu) {
+  if (!gpu || !gpu->instance || !gpu->hwnd) return false;
+  WGPUSurface fresh = surfaceFromHandles(gpu->instance, gpu->hwnd, gpu->hinstance);
+  if (!fresh) {
+    std::fprintf(stderr, "recreateSurface: wgpuInstanceCreateSurface falhou\n");
+    return false;  // segue com a surface antiga (imagem esticada > crash)
+  }
+  if (gpu->surface) {
+    wgpuSurfaceUnconfigure(gpu->surface);
+    wgpuSurfaceRelease(gpu->surface);
+  }
+  gpu->surface = fresh;
+  // Força a reconfiguração: a surface nova nasce sem configuração nenhuma.
+  gpu->configuredWidth = 0;
+  gpu->configuredHeight = 0;
+  return true;
 }
 
 }  // namespace core

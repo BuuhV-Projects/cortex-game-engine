@@ -342,17 +342,20 @@ Native (que roda milhares de libs sobre Hermes em produção):
   sem ele, o engine cria os alvos a 1280×720 (tamanho de criação) enquanto a
   swapchain assume a resolução do display (1920×1080) → mismatch depth×color
   → crash. `CORTEX_WINDOWED=1` abre em janela pra debug.
-- **Reconfigurar a surface = CRASH** ("Invalid surface" no wgpuSurfaceConfigure,
-  D3D12/wgpu-native): a PRIMEIRA config funciona; qualquer RE-config pra um
-  tamanho diferente (resize/maximizar) crasha o processo — nem recriar a
-  surface, `wgpuDevicePoll`, ou `getCapabilities` resolvem. Por isso a janela
-  é de **tamanho FIXO** (`SDL_CreateWindow` sem `SDL_WINDOW_RESIZABLE`): a
-  surface configura UMA vez e nunca mais. `configureSurface` só é chamado na
-  1ª vez e na recuperação de Outdated/Lost (sempre pro MESMO tamanho).
-  Consequência: sem resize/maximizar e **sem high-DPI** (a flag
-  `HIGH_PIXEL_DENSITY` também dependia de re-config). O host injeta o tamanho
-  fixo no JS (`__cortexWidth/Height`) antes do boot. Nitidez em monitor com
-  escala: resolvida de graça pelo **SSAA** (canvas maior; ver abaixo).
+- **RE-configurar a surface pra outro tamanho = CRASH** ("Invalid surface" no
+  `wgpuSurfaceConfigure`, D3D12/wgpu-native). **RESOLVIDO na SPEC-0199**: em vez
+  de reconfigurar, o host **RECRIA** a surface a partir do HWND
+  (`core::recreateSurface`) — e o QUANDO importa tanto quanto o COMO: a troca
+  acontece no início do `acquireSurfaceTexture`, o único ponto **sem textura de
+  surface viva**. Foi por isso que tentativas anteriores de recriar falharam:
+  aconteciam no meio do frame. Validado com 100 resizes seguidos, sem crash e
+  com VRAM estável (975 MB antes e depois). `CORTEX_WINDOWED=1` agora abre a
+  janela **redimensionável**; o fullscreen segue de tamanho fixo.
+  O host injeta o tamanho no JS (`__cortexWidth/Height`) antes do boot e avisa
+  cada mudança por `__cortexResize` (a canvas DOM-lite dispara `resize` e o
+  engine reconfigura o renderer). **High-DPI** (`HIGH_PIXEL_DENSITY`) continua
+  desligado — depende de re-config e não foi exercitado pela SPEC-0199;
+  nitidez em monitor com escala segue resolvida pelo **SSAA** (canvas maior).
 - **SSAA usa o modelo de dpr do browser** (ADR-0103), NÃO um innerWidth
   inflado. O host injeta `innerWidth/Height = nativo` (px lógicos) +
   `devicePixelRatio = renderScale`; o three multiplica logical × dpr pro backing

@@ -16,4 +16,11 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
 // Trata um evento SDL. Retorna false quando o app deve encerrar.
 bool handleEvent(const SDL_Event& event, SDL_Window* window, HostGpu* gpu);
 
+// **Recria** a surface a partir do HWND guardado em `gpu` (SPEC-0199).
+// Reconfigurar a MESMA surface com um tamanho novo dá "Invalid surface" e
+// crasha o wgpu-native/D3D12 — recriar é o caminho que funciona. Só pode ser
+// chamada num ponto SEM textura de surface viva (início do frame).
+// Retorna false se a criação falhar (a surface antiga é preservada).
+bool recreateSurface(HostGpu* gpu);
+
 }  // namespace core
