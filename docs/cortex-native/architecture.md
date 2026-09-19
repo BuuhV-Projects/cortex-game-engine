@@ -351,6 +351,14 @@ Native (que roda milhares de libs sobre Hermes em produção):
   entram na MESMA fila (`deferReleaseBindGroup`). Apareceu com o editor dentro
   do host (troca de gizmo descarta material), mas vale pra qualquer cena que
   descarte material sob pressão de GC.
+- **Veículo raycast PORTADO** (SPEC-0209): `createVehicleController` funciona no
+  host — jogo de carro roda no export e no preview nativo. Junto vieram
+  `setAdditionalMassProperties`, `isDynamic`/`isFixed`, `numColliders`/
+  `collider(i)` + grupos de colisão, `resetForces`/`resetTorques`,
+  `setEnabledRotations`, `world.vehicleControllers` e os construtores
+  `HTMLElement` & cia no dom-lite. **Falta** o filtro de raycast por callback
+  (`updateVehicle(dt, flags, groups, PREDICATE)`): os grupos passam, o
+  predicate é ignorado.
 - **O `rapier-compat` cobre um SUBCONJUNTO do Rapier** (SPEC-0208): o que falta
   aparece só em runtime, como `undefined is not a function` no meio do setup do
   jogo — sem dizer qual função. Foi assim que o `forEachRigidBody` apareceu
