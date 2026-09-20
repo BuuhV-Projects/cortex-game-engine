@@ -113,3 +113,25 @@ describe('buildSystemPrompt — composição por turno', () => {
     )
   })
 })
+
+describe('buildSystemPrompt — modelos 3D (SPEC-0224)', () => {
+  it('ensina que o custo é material, não triângulo', () => {
+    const p = ask()
+    expect(p).toContain('custo é material, não triângulo')
+    expect(p).toContain('por draw call')
+    // O contraponto importa tanto quanto a regra: pedir "low poly" a um gerador
+    // otimizaria a coisa errada, porque quem tem folga é a GPU.
+    expect(p).toContain('low poly')
+  })
+
+  it('dá os tetos de material que o gerador precisa receber no briefing', () => {
+    const p = ask()
+    expect(p).toContain('mesmo acabamento')
+    expect(p).toContain('**4 materiais**')
+    expect(p).toContain('**8**')
+  })
+
+  it('manda contar materiais antes de culpar a geometria', () => {
+    expect(ask()).toContain('materiais por primitiva')
+  })
+})
