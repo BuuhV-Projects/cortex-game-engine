@@ -1,3 +1,16 @@
+# [0.52.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.51.1...v0.52.0) (2026-09-20)
+
+
+### Features
+
+* **native:** raycast de mundo no Rapier do host (SPEC-0216) ([dc70453](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dc70453bf97d4f5d8ad38d3f6a407856c47d311a))
+
+
+### Performance Improvements
+
+* **core:** decodificador de HDR próprio — 1,74s → 0,32s (SPEC-0217) ([7b98dfc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7b98dfc8ad2642e1296169fc0b034fb8ee92aa4f))
+* **scene:** funde malhas numa passada só — boot 18,5s → 11,2s (SPEC-0217) ([68d1c2b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/68d1c2b4c47352481d73ab317cb545a443e677b9))
+
 ## [0.51.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.51.0...v0.51.1) (2026-09-19)
 
 
