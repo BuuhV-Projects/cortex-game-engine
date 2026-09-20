@@ -8,7 +8,7 @@
 
 > **isBootProfiling**(): `boolean`
 
-Defined in: [src/core/bootProfile.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/bootProfile.ts#L34)
+Defined in: [.claude/worktrees/boot-cooperativo/src/core/bootProfile.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/bootProfile.ts#L34)
 
 O profiler está ligado? (todas as funções viram passagem direta quando não.)
 

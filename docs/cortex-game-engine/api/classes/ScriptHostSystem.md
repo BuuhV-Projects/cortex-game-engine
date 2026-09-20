@@ -6,7 +6,7 @@
 
 # Class: ScriptHostSystem
 
-Defined in: [src/systems/ScriptHostSystem.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L64)
+Defined in: [.claude/worktrees/boot-cooperativo/src/systems/ScriptHostSystem.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L64)
 
 **Roda os scripts** ([ScriptBehavior](ScriptBehavior.md)) anexados via [ScriptComponent](ScriptComponent.md) — ADR-0085.
 Instancia cada slot pelo nome (registro), injeta `entity`/`object3d`/`ctx`, aplica os campos,
@@ -33,7 +33,7 @@ enxergar a transição. Os dois gates vêm nomeados no construtor — ver
 
 > **new ScriptHostSystem**(`ctx`, `gates?`): `ScriptHostSystem`
 
-Defined in: [src/systems/ScriptHostSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L77)
+Defined in: [.claude/worktrees/boot-cooperativo/src/systems/ScriptHostSystem.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L77)
 
 #### Parameters
 
@@ -59,7 +59,7 @@ Defined in: [src/systems/ScriptHostSystem.ts:77](https://github.com/BuuhV-Projec
 
 > **keepOnClear**: `boolean` = `false`
 
-Defined in: [src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
+Defined in: [.claude/worktrees/boot-cooperativo/src/ecs/System.ts:51](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L51)
 
 Se `true`, `World.clear()` PRESERVA este sistema (não chama `dispose`
 nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
@@ -76,7 +76,7 @@ nem remove) ao trocar de cena. Para overlays que sobrevivem à troca de fase
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
+Defined in: [.claude/worktrees/boot-cooperativo/src/ecs/System.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/System.ts#L73)
 
 Predicado opcional de PAUSA: se definido e retornar `true` num tick, o
 `World` pula o `update` deste sistema nesse frame. Usado, por ex., pra pausar
@@ -97,7 +97,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `50`
 
-Defined in: [src/systems/ScriptHostSystem.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L66)
+Defined in: [.claude/worktrees/boot-cooperativo/src/systems/ScriptHostSystem.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L66)
 
 Prioridade de execução deste sistema.
 
@@ -114,7 +114,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: *typeof* [`ScriptComponent`](ScriptComponent.md)[]
 
-Defined in: [src/systems/ScriptHostSystem.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L65)
+Defined in: [.claude/worktrees/boot-cooperativo/src/systems/ScriptHostSystem.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L65)
 
 Construtores dos componentes que este sistema requer.
 
@@ -140,7 +140,7 @@ static requiredComponents = [TransformComponent, VelocityComponent];
 
 > **dispose**(): `void`
 
-Defined in: [src/systems/ScriptHostSystem.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L138)
+Defined in: [.claude/worktrees/boot-cooperativo/src/systems/ScriptHostSystem.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L138)
 
 Teardown na TROCA DE FASE (`World.clear` chama) — o buraco que vazava a
 fase inteira (SPEC-0152): sem isto, o `onDestroy` dos scripts NUNCA rodava
@@ -162,7 +162,7 @@ entity → object3d → a CENA COMPLETA da fase anterior, uma por troca.
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/ScriptHostSystem.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L86)
+Defined in: [.claude/worktrees/boot-cooperativo/src/systems/ScriptHostSystem.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L86)
 
 Executa a lógica do sistema para o frame/passo atual.
 

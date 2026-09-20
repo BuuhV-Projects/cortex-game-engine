@@ -1,7 +1,9 @@
-import { PerspectiveCamera, OrthographicCamera } from 'three';
+import { PerspectiveCamera, OrthographicCamera, Scene as ThreeScene } from 'three';
 import { Renderer } from './Renderer.js';
 import { Scene } from './Scene.js';
 import { resetNativePostFX } from './nativePostFX.js';
+import { isSceneBuilding } from '../scene/SceneBuilder.js';
+import { beginLoadingScope, endLoadingScope, isSplashActive } from './frameYield.js';
 import { InputManager } from './InputManager.js';
 import { GamepadManager } from './GamepadManager.js';
 import { InputActions } from '../input/InputActions.js';
@@ -182,6 +184,13 @@ export class Game {
   /** Amostrador do perf trace (SPEC-0198). Inerte sem a ponte do host nativo. */
   private readonly _perfTrace = new PerfTrace();
   private _postfx: { render(): void } | null = null;
+  /**
+   * Cena vazia desenhada enquanto a cena ativa está em montagem (SPEC-0219):
+   * limpa o quadro pra tela de carregamento aparecer, sem tocar no cenário
+   * meio construído.
+   */
+  private readonly _loadingScene = new ThreeScene();
+  private _loading = false;
   private _ui: UiLayer | null = null;
   private _inspect: InspectCamera | null = null;
   /** Cena/câmera renderizadas a cada frame. Por padrão são as do jogo; troque com
@@ -331,6 +340,39 @@ export class Game {
   }
 
   /**
+   * Declara que o jogo está **carregando** (SPEC-0219).
+   *
+   * Enquanto ligado, o `Game` desenha uma cena VAZIA no lugar do cenário — a
+   * tela de carregamento do jogo aparece por cima, e o carregamento pode ceder
+   * o frame barato (renderizar a cena inteira a cada frame cedido custava 626 ms
+   * por frame no kart-racer). O `buildScene` já liga isso sozinho enquanto
+   * monta; use quando a SUA carga continua depois dele (criar personagens,
+   * carros, sistemas).
+   *
+   * @example
+   * ```ts
+   * game.setLoading(true)
+   * try {
+   *   const scene = await buildScene(...)   // cede frames sozinho
+   *   await criaOsCarros(scene)             // suas cargas também cedem
+   * } finally {
+   *   game.setLoading(false)                // volta a desenhar o jogo
+   * }
+   * ```
+   */
+  setLoading(active: boolean): void {
+    if (active === this._loading) return;
+    this._loading = active;
+    if (active) beginLoadingScope();
+    else endLoadingScope();
+  }
+
+  /** O jogo está em carregamento declarado? Ver {@link setLoading}. */
+  get isLoading(): boolean {
+    return this._loading;
+  }
+
+  /**
    * Liga um pipeline de pós-processamento (tipicamente um `PostFX`) usado pra
    * renderizar o JOGO — é o principal lugar pra atmosfera (bloom, vignette, tone
    * mapping, exposição). Construa-o com `game.renderer/scene/camera` e passe aqui:
@@ -454,7 +496,23 @@ export class Game {
     const inspectCamera = this._inspect?.active ? this._inspect : null;
     const editorCamera = this._editor?.activeCamera() ?? null;
     p.begin('render');
-    if (inspectCamera) {
+    if (isSplashActive()) {
+      // Splash da engine no ar (ADR-0109): o host descarta o frame do jogo, só
+      // ela apresenta. Desenhar aqui é puro desperdício — e durante a carga são
+      // dezenas de frames cedidos pra splash animar.
+    } else if (this._loading || isSceneBuilding(this._activeScene)) {
+      // Cena em MONTAGEM (SPEC-0219): desenha uma cena VAZIA no lugar do
+      // cenário pela metade. O build cede frames pra splash/tela de
+      // carregamento andarem, e renderizar a cena a cada frame cedido subiria
+      // buffers e compilaria pipeline do que acabou de nascer — no kart-racer
+      // isso custava 626 ms POR FRAME e quadruplicava a montagem.
+      //
+      // Tem que desenhar ALGO: sem um frame, a UI logo abaixo não tem o que
+      // compor e a tela fica congelada no último quadro (o logo da splash), em
+      // vez de mostrar a tela de carregamento do jogo. A cena vazia custa um
+      // clear.
+      this.renderer.render(this._loadingScene, this._activeCamera);
+    } else if (inspectCamera) {
       inspectCamera.setAspect(this.renderer.width, this.renderer.height);
       this.renderer.render(this._activeScene.getThreeScene(), inspectCamera.camera);
     } else if (editorCamera) {
@@ -469,7 +527,7 @@ export class Game {
     }
     p.end('render');
     p.begin('ui');
-    this._ui?.render(); // UI por cima do frame (backend renderer; DOM é no-op)
+    if (!isSplashActive()) this._ui?.render(); // UI por cima do frame (DOM é no-op)
     p.end('ui');
     p.commitFrame(); // fecha o frame do profiler (joga os acumuladores nos rings)
 

@@ -12,6 +12,7 @@
  * Referência: ADR-0001 (Renderizador baseado em Three.js)
  */
 import { bootAcc } from './bootProfile.js';
+import { yieldOnBudget } from './frameYield.js';
 
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -143,7 +144,9 @@ export class AssetLoader {
    * @returns Promessa resolvida com `THREE.Texture`.
    */
   async loadTexture(url: string, options?: { pixelated?: boolean }): Promise<THREE.Texture> {
-    return bootAcc('AssetLoader.loadTexture', () => this._loadTextureInner(url, options));
+    const texture = await bootAcc('AssetLoader.loadTexture', () => this._loadTextureInner(url, options));
+    await yieldOnBudget(); // ver loadGLTF
+    return texture;
   }
 
   private async _loadTextureInner(url: string, options?: { pixelated?: boolean }): Promise<THREE.Texture> {
@@ -170,7 +173,12 @@ export class AssetLoader {
    * @returns Promessa resolvida com o objeto `GLTF`.
    */
   async loadGLTF(url: string): Promise<GLTF> {
-    return bootAcc('AssetLoader.loadGLTF', () => this._loadGLTFInner(url));
+    const gltf = await bootAcc('AssetLoader.loadGLTF', () => this._loadGLTFInner(url));
+    // Devolve o controle ao host de tempos em tempos (SPEC-0219): no host o
+    // `fetch` é síncrono, então uma sequência de cargas roda numa virada única
+    // de JS e a tela congela. Cede por ORÇAMENTO — não a cada asset.
+    await yieldOnBudget();
+    return gltf;
   }
 
   private async _loadGLTFInner(url: string): Promise<GLTF> {

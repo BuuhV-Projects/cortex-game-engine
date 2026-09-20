@@ -8,7 +8,7 @@
 
 > **overlayTerrain**(`overlay`): `Record`\<`string`, `number`[]\>
 
-Defined in: [src/scene/SceneBuilder.ts:365](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L365)
+Defined in: [.claude/worktrees/boot-cooperativo/src/scene/SceneBuilder.ts:401](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L401)
 
 Lê `data.terrain` da overlay — o **heightmap esculpido no editor** por id
 (`{ [id]: number[] }`). Sobrescreve o `heights` do nó (JSON). Ver [Terrain](../classes/Terrain.md).
