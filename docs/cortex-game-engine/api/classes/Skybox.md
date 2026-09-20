@@ -6,7 +6,7 @@
 
 # Class: Skybox
 
-Defined in: [src/core/Skybox.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L64)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/core/Skybox.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L65)
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: [src/core/Skybox.ts:64](https://github.com/BuuhV-Projects/cortex-gam
 
 > `static` **clear**(`scene`): `void`
 
-Defined in: [src/core/Skybox.ts:158](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L158)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/core/Skybox.ts:159](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L159)
 
 Remove o environment/background da cena (volta ao fundo padrão).
 Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.
@@ -45,7 +45,7 @@ Não dá `dispose()` na textura — guarde o retorno de `fromHDRI` se quiser.
 
 > `static` **fromGradient**(`scene`, `options?`, `renderer?`): `DataTexture`
 
-Defined in: [src/core/Skybox.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L112)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/core/Skybox.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L113)
 
 Céu **gradiente procedural** (sem arquivo) — zênite → horizonte → chão, aplicado
 como `background` visível E `environment` (luz/reflexo suave). Ideal pra um céu
@@ -82,7 +82,7 @@ Skybox.fromGradient(scene, { top: '#1f72d8', middle: '#d6ecfb' }); // céu azul 
 
 > `static` **fromHDRI**(`scene`, `url`, `options?`, `renderer?`): `Promise`\<`DataTexture`\>
 
-Defined in: [src/core/Skybox.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L76)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/core/Skybox.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Skybox.ts#L77)
 
 Carrega um HDRI equiretangular e o aplica como iluminação (e fundo) da cena.
 

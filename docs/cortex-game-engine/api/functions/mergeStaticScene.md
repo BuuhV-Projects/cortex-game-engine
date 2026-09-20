@@ -8,7 +8,7 @@
 
 > **mergeStaticScene**(`root`, `world?`, `extraDynamicRoots?`): [`StaticMergeStats`](../interfaces/StaticMergeStats.md)
 
-Defined in: [src/scene/StaticMerge.ts:257](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L257)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/StaticMerge.ts:213](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L213)
 
 Funde a geometria estática sob `root` (ver doc do módulo). Idempotente na
 prática (malhas fundidas têm `cortexMergedStatic` e não são re-fundidas com

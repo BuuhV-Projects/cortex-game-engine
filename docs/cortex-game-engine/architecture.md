@@ -828,6 +828,20 @@ não são nós autorados (`cortexSceneNode`), então o editor nunca as seleciona
 individualmente. Medido no kart-racer (3 carros, host nativo): **19 → 32 fps**,
 render 52 → 30 ms, 626 → 496 draw calls.
 
+Os dois compartilham o **bake** (`src/scene/bakeMerge.ts`, SPEC-0217): o buffer
+do grupo é alocado uma vez (soma dos counts) e cada instância é escrita já
+transformada direto no destino, com laço plano sobre os `Float32Array`. O
+caminho anterior (`clone` → `applyMatrix4` → `mergeGeometries` do three) pagava
+três varreduras por instância, e o `applyMatrix4` do three cria `Vector3` por
+vértice — no Hermes isso custava **4,8 s de boot** no kart-racer, contra 0,6 s
+agora (as rodas dos carros, 2,2 s → 0,3 s). O bake é conservador: grupo com
+atributos incompatíveis devolve `null` e as malhas ficam separadas, como o
+`mergeGeometries` fazia ao recusar.
+
+**Armadilha:** `flatSource` devolve a geometria-fonte COMPARTILHADA (cache por
+fonte). O bake só lê dela — quem alterar essa geometria no lugar corrompe todas
+as instâncias que ainda vão ser fundidas.
+
 ## 8f. Transporte da ponte do editor (`src/editor/bridgeTransport.ts`) — SPEC-0203
 
 A ponte do editor (ADR-0056) fala com a IDE por um **transporte** plugável,
@@ -851,7 +865,27 @@ padrão (silencioso em prod) e liga por **escopo** via flag de runtime:
   engine lê o param. `.env.example` documenta. Também: `localStorage['cortex:debug']`
   no devtools, ou `setDebug('...')` no código.
 - **Escopos atuais:** `physics` (autoria de física), `persist` (save do overlay),
-  `scene` (buildScene). Crie novos à vontade — o escopo é só a 1ª string.
+  `scene` (buildScene), `boot` (profiler de boot). Crie novos à vontade — o
+  escopo é só a 1ª string.
+
+### 9a. Profiler de boot (`src/core/bootProfile.ts`) — SPEC-0217
+
+Mede onde vão os segundos entre o início do bundle e o primeiro frame:
+`bootMark(label)` carimba um instante, `bootAcc`/`bootSync` acumulam por chave e
+`bootDump(label)` lista do mais caro pro mais barato. Ligue com o escopo `boot`
+— no host nativo, `CORTEX_LAUNCH_QUERY="?cortexDebug=boot"`.
+
+Existe porque no host o boot é uma cadeia única de `await` que **não devolve o
+controle ao host** (o `fetch` do host é síncrono, `native/js/src/shims/net.js`):
+o `rAF` do jogo é agendado no primeiro instante e só é atendido quando tudo já
+está montado, então sem marcos a única informação é "a tela ficou preta por N
+segundos". É também por isso que a splash (ADR-0109), que só desenha dentro do
+loop, aparece atropelada no fim de uma carga longa.
+
+Para medir um jogo JÁ EXPORTADO sem refazer o `.pak`: copie a pasta exportada,
+gere o bundle com `node native/scripts/bundle.mjs <out.js> <jogo>/main.ts`,
+compile com `native/build/bin/hermesc.exe -emit-binary -O -w -out boot.hbc
+<out.js>` e troque só o `boot.hbc` da cópia.
 
 ## 10. Mapa de arquivos
 

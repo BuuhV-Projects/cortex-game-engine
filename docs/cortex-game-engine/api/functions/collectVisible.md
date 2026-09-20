@@ -8,7 +8,7 @@
 
 > **collectVisible**(`scene`, `camera`): [`VisibleNode`](../interfaces/VisibleNode.md)[]
 
-Defined in: [src/core/PerfTrace.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L104)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/core/PerfTrace.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L104)
 
 Percorre a cena e agrega, por nó de cena, o que está DENTRO do frustum da
 câmera. É o traverse mais caro do trace — roda uma vez por amostra, nunca por

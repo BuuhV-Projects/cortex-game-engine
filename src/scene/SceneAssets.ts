@@ -1,3 +1,4 @@
+import { bootAcc } from '../core/bootProfile.js';
 import { Box3, Vector3, SkinnedMesh } from 'three';
 import type { Object3D, Mesh, Texture } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -147,7 +148,7 @@ function markCachedResources(root: { traverse(cb: (o: unknown) => void): void })
 export async function loadTexture(url: string, pixelated = true): Promise<Texture> {
   let tex = _texCache.get(url);
   if (!tex) {
-    tex = /\.ktx2$/i.test(url) ? await loadKtx2(url) : await _loader.loadTexture(url, { pixelated });
+    tex = await bootAcc('loadTexture (ktx2/png)', () => (/\.ktx2$/i.test(url) ? loadKtx2(url) : _loader.loadTexture(url, { pixelated })));
     tex.userData['cortexCached'] = true; // residente entre fases (ver markCachedResources)
     _texCache.set(url, tex);
   }
