@@ -11,10 +11,19 @@
 namespace webgpu {
 namespace {
 
-// Ritmo da splash. Total ≈ 1,9 s — tempo de a marca registrar sem irritar.
+// Ritmo da splash. Total ≈ 1,5 s — tempo de a marca registrar sem irritar.
+//
+// SEM fade-out (SPEC-0219): a marca CORTA. O jogo carrega enquanto a splash
+// está no ar e, como o `fetch` do host é síncrono, uma operação longa (merge
+// estático, trimesh do Rapier) fica segundos sem devolver o controle — a splash
+// só avança quando o loop roda, então ela congela no meio do que estiver
+// fazendo. Congelar durante um FADE é visível e parece travamento; congelar com
+// a marca inteira na tela parece intencional. Depois do corte quem desenha é o
+// jogo (tela de carregamento, ou preto), que é estático — ali o congelamento
+// não aparece.
 constexpr double kFadeInMs = 350.0;
 constexpr double kHoldMs = 1100.0;
-constexpr double kFadeOutMs = 450.0;
+constexpr double kFadeOutMs = 0.0;
 constexpr double kTotalMs = kFadeInMs + kHoldMs + kFadeOutMs;
 
 // A marca ocupa no máximo esta fração da janela (o menor dos dois manda, pra
@@ -191,6 +200,9 @@ bool ensurePipeline(HostGpu* gpu, WGPUTextureFormat targetFormat) {
 float logoAlpha(double t) {
   if (t < kFadeInMs) return static_cast<float>(t / kFadeInMs);
   if (t < kFadeInMs + kHoldMs) return 1.0f;
+  // Sem fade-out configurado, a splash encerra em kTotalMs e este trecho não é
+  // alcançado — a guarda existe pra um kFadeOutMs futuro não dividir por zero.
+  if (kFadeOutMs <= 0.0) return 1.0f;
   return 1.0f - static_cast<float>((t - kFadeInMs - kHoldMs) / kFadeOutMs);
 }
 

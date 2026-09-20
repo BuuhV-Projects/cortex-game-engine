@@ -1,4 +1,4 @@
-import { PerspectiveCamera, OrthographicCamera, Scene as ThreeScene } from 'three';
+import { PerspectiveCamera, OrthographicCamera, Scene as ThreeScene, Color } from 'three';
 import { Renderer } from './Renderer.js';
 import { Scene } from './Scene.js';
 import { resetNativePostFX } from './nativePostFX.js';
@@ -189,7 +189,14 @@ export class Game {
    * limpa o quadro pra tela de carregamento aparecer, sem tocar no cenário
    * meio construído.
    */
-  private readonly _loadingScene = new ThreeScene();
+  private readonly _loadingScene = (() => {
+    const scene = new ThreeScene();
+    // Fundo PRETO explícito: sem background o quadro não é limpo e o resíduo do
+    // buffer anterior (o logo da splash) reaparece como fantasma. Preto sólido
+    // também é a cortina certa entre a marca e a tela de carregamento do jogo.
+    scene.background = new Color(0x000000);
+    return scene;
+  })();
   private _loading = false;
   private _ui: UiLayer | null = null;
   private _inspect: InspectCamera | null = null;

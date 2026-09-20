@@ -52,6 +52,17 @@ Enquanto qualquer um dos dois vale, o `Game` desenha uma **cena vazia** no lugar
 do cenário (a tela de carregamento do jogo aparece por cima) e, sob a splash,
 não desenha nada — o host descarta esse frame de qualquer jeito.
 
+### Splash sem fade-out (`native/src/webgpu/splash.cpp`)
+
+`kFadeOutMs` vai a zero: a marca corta em vez de desvanecer, e o total da splash
+cai de ~1,9 s para ~1,45 s. Motivo no ADR-0218 — congelar durante um fade é o
+que denuncia o travamento; depois do corte quem desenha é a tela do jogo, que é
+estática. A cena vazia do `Game` tem fundo preto explícito pra não deixar
+resíduo do logo no quadro.
+
+Mexer no host tem custo de propagação: o `launcher.exe` do export só muda quando
+o Studio é reempacotado.
+
 ### `AssetLoader`
 
 `loadGLTF`/`loadTexture` cedem por orçamento depois de carregar. É o que faz a

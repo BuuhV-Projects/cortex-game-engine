@@ -75,6 +75,24 @@ a ceder sem essa condição, a criação dos carros do kart-racer foi de 2,6 s p
 8 s. Daí o escopo explícito (`Game.setLoading`, e o `buildScene` que o abre
 sozinho enquanto monta).
 
+### A splash não faz mais fade-out
+
+Ceder não elimina os congelamentos: operações síncronas longas (merge estático,
+`addTrimeshFromObject` do Rapier) ficam ~0,5 s cada sem devolver o controle, e a
+splash — que só avança quando o loop roda — para no meio do que estiver fazendo.
+
+O que decide se isso incomoda não é a duração, é **o que está animando**.
+Congelar no meio de um fade parece travamento; congelar com a marca inteira na
+tela parece intencional. Então o fade-out de 450 ms saiu
+(`native/src/webgpu/splash.cpp`, ADR-0109): a marca **corta**, e quem assume é a
+tela do jogo — estática, onde o congelamento não aparece. Para garantir que essa
+tela seja realmente sólida, a cena vazia que o `Game` desenha durante a carga tem
+fundo PRETO explícito: sem `background` o quadro não é limpo e o resíduo do
+buffer anterior (o logo) reaparece como fantasma.
+
+O fade-IN (350 ms) fica: ele roda no começo do boot, onde o JS ainda está leve.
+A splash passa de ~1,9 s para ~1,45 s.
+
 ## Resultado
 
 Medido no kart-racer exportado, do início do bundle:

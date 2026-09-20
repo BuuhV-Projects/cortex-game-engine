@@ -928,6 +928,11 @@ async function buildSceneInner(
     bootSync('mergeStaticScene', () => mergeStaticScene(three, options.world, animated));
   }
   bootMark('buildScene: merge estático pronto');
+  // O merge é síncrono e longo (0,65 s no kart-racer). Sem ceder DEPOIS dele, o
+  // trecho entre o merge e a carga seguinte do jogo vira um buraco sem frames —
+  // e a splash, que só avança quando o loop roda, fica presa na tela muito além
+  // do tempo dela.
+  await tick('merge', 1);
 
   // Render bundles (M-perf-2b): grava os draws do estático UMA vez → 1
   // executeBundles/pass. Independe do merge (bundla até .glb interleaved).

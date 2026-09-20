@@ -90,7 +90,7 @@ export class FrameBudget {
  *   no kart-racer, ceder de 100 em 100 ms custava 1,1 s de carga. Fatia longa.
  */
 const SPLASH_BUDGET_MS = 30;
-const LOADING_BUDGET_MS = 250;
+const LOADING_BUDGET_MS = 120;
 
 /**
  * A splash da engine (ADR-0109) ainda está na tela? Só é verdade no host
