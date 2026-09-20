@@ -1,3 +1,11 @@
+# [0.53.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.52.0...v0.53.0) (2026-09-20)
+
+
+### Features
+
+* **core:** boot cooperativo — logo em 1,1s no lugar de 10s de tela preta (ADR-0218/SPEC-0219) ([5500f8a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5500f8a099536f9a51386315e1edf7d53f522d86))
+* **native:** splash corta em vez de desvanecer + cortina preta na carga (ADR-0218) ([c037fe8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c037fe83c10960258def1d72d53cc1eda5072a37))
+
 # [0.52.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.51.1...v0.52.0) (2026-09-20)
 
 
