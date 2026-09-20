@@ -33,6 +33,7 @@ add_executable(cortex_host
   src/core/js_runtime.cpp
   src/napi/napi_util.cpp
   src/shims/animation_frame.cpp
+  src/shims/clock.cpp
   src/shims/audio.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp
