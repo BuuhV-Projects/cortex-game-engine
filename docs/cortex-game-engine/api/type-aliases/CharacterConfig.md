@@ -8,6 +8,6 @@
 
 > **CharacterConfig** = `NonNullable`\<`z.infer`\<*typeof* `characterSchema`\>\>
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/SceneDefinition.ts:610](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L610)
+Defined in: [src/scene/SceneDefinition.ts:610](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L610)
 
 Config de Character (campo `character` dos nós; ver characterSchema).

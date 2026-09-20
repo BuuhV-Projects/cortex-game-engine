@@ -8,6 +8,6 @@
 
 > `const` **GP\_A**: `0` = `0`
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/input/padLayout.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L12)
+Defined in: [src/input/padLayout.ts:12](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L12)
 
 Botão A / cruz (sul).

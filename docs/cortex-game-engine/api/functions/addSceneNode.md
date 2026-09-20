@@ -8,7 +8,7 @@
 
 > **addSceneNode**(`scene`, `node`): `Promise`\<`Object3D`\<`Object3DEventMap`\> \| `null`\>
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/SceneBuilder.ts:891](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L891)
+Defined in: [src/scene/SceneBuilder.ts:886](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L886)
 
 Instancia UM nó de cena e o adiciona à `scene` (modelo `.glb`, primitiva, luz
 ou água), já nomeado por `id` e com `place`/`transform` aplicado. Usado pelo

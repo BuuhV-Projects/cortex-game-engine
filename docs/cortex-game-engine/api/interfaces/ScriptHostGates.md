@@ -6,7 +6,7 @@
 
 # Interface: ScriptHostGates
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/systems/ScriptHostSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L31)
+Defined in: [src/systems/ScriptHostSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L31)
 
 Os dois gates do [ScriptHostSystem](../classes/ScriptHostSystem.md) — **cuidado, eles não são
 intercambiáveis** (ADR-0184).
@@ -23,7 +23,7 @@ do `isEditing`: cada cutscene derrubava os scripts da fase e, ao terminar,
 
 > `optional` **isEditing?**: () => `boolean`
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/systems/ScriptHostSystem.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L39)
+Defined in: [src/systems/ScriptHostSystem.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L39)
 
 **Modo EDIÇÃO** (a borda Play↔Stop do editor). Quando vira `true`, as
 instâncias são **DESTRUÍDAS** (`restoreRaycasts` + `onDestroy`) e `started`
@@ -41,7 +41,7 @@ Só o editor deve acioná-lo. Pausa de jogo **não** entra aqui.
 
 > `optional` **isPaused?**: () => `boolean`
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/systems/ScriptHostSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L45)
+Defined in: [src/systems/ScriptHostSystem.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ScriptHostSystem.ts#L45)
 
 **Congelamento de gameplay** — cutscene, menu de pausa, tela de resultados.
 Suspende `onStart`/`onUpdate` **preservando** instância e estado, para que o

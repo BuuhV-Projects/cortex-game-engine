@@ -8,7 +8,7 @@
 
 > **overlayMatte**(`overlay`): `Record`\<`string`, `boolean`\>
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/SceneBuilder.ts:306](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L306)
+Defined in: [src/scene/SceneBuilder.ts:306](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L306)
 
 ## Parameters
 

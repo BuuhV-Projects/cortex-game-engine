@@ -8,7 +8,7 @@
 
 > **formatBindingList**(`bindings`): `string`
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/input/bindings.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L116)
+Defined in: [src/input/bindings.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L116)
 
 Serializa a lista pro `config.ini` (vazia = string vazia).
 

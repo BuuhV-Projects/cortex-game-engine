@@ -6,7 +6,7 @@
 
 # Interface: ShadowCullStats
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/ShadowCasterCulling.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L36)
+Defined in: [src/scene/ShadowCasterCulling.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L36)
 
 Resultado de uma passada de [cullShadowCasters](../functions/cullShadowCasters.md).
 
@@ -16,7 +16,7 @@ Resultado de uma passada de [cullShadowCasters](../functions/cullShadowCasters.m
 
 > **culled**: `number`
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/ShadowCasterCulling.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L40)
+Defined in: [src/scene/ShadowCasterCulling.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L40)
 
 Malhas que tiveram a sombra desligada nesta passada.
 
@@ -26,6 +26,6 @@ Malhas que tiveram a sombra desligada nesta passada.
 
 > **evaluated**: `number`
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/ShadowCasterCulling.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L38)
+Defined in: [src/scene/ShadowCasterCulling.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L38)
 
 Malhas avaliadas (candidatas, já sem skinned/instanced).

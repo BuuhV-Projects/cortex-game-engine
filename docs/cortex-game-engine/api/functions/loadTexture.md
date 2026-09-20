@@ -8,7 +8,7 @@
 
 > **loadTexture**(`url`, `pixelated?`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/SceneAssets.ts:148](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L148)
+Defined in: [src/scene/SceneAssets.ts:148](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L148)
 
 Carrega uma **textura** (png/jpg/webp) com cache por URL — para sprites 2D /
 spritesheets. A textura cacheada é compartilhada; quem precisar animar

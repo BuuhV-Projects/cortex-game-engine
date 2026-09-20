@@ -8,6 +8,6 @@
 
 > **CullMode** = `"back"` \| `"front"` \| `"none"`
 
-Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/Materials.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L45)
+Defined in: [src/scene/Materials.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L45)
 
 Cull mode (Unity) → `side` do three.
