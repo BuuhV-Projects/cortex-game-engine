@@ -45,7 +45,7 @@ troque só o `boot.hbc` da cópia.
 | **merge estático** (`mergeStaticScene`) | **4,76 s** |
 | 6 carros (`createCar`) | 4,83 s |
 | míssil + registro de sistemas | 0,77 s |
-| **primeiro frame** (compila pipelines) | **3,03 s** |
+| **primeiro frame** (upload da cena pra GPU) | **3,03 s** |
 | **até a primeira imagem** | **~19 s** |
 
 Por dentro dos blocos (acumulados):
@@ -114,12 +114,28 @@ O PMREM (0,53 s) continua em runtime.
 > mesmo lugar da correção 1, sem mexer em asset, host ou export, e mantém
 > Studio e browser lendo o mesmo `.hdr`.
 
-### 4. Pipelines do primeiro frame (alvo: −1,5 s)
+### 4. Primeiro frame — investigado, **não é compilação de pipeline**
 
-O `precompile` (SPEC-0196) já existe, mas é disparado sem ser aguardado e só
-termina bem depois do jogo na tela — o primeiro frame paga 3,03 s compilando o
-que aparece. Passa a ser aguardado antes do primeiro render, o que só vale junto
-com a splash animando (registro da percepção) — por isso fica por último.
+O primeiro frame custa ~2,9 s, quase tudo dentro do `render` (medido com o
+profiler dentro do `Game._tick`). A hipótese registrada era compilação de
+pipelines; **a medição desmentiu**:
+
+- a cena monta 561 meshes com **406 materiais distintos**, mas apenas **12
+  combinações de pipeline** (tipo + features + atributos + sombra);
+- deduplicar materiais equivalentes (experimento: 406 → 146 materiais) mudou o
+  primeiro frame de 2,87 s para 2,77 s — **3%**.
+
+Ou seja, o custo não é por material nem por programa: é o **upload da cena pra
+GPU** no primeiro render (o perf-log do host mostra 1584 buffers / 94 MB, mais
+texturas e os três shadow maps do CSM). É trabalho inerente de mover dados, não
+há laço em JS para otimizar.
+
+Portanto o alvo aqui **não é encurtar, é cobrir**: esse é exatamente o tempo que
+a splash animando esconderia. Fica para o registro da percepção, junto com o
+`precompile` (hoje disparado sem `await`, termina depois do jogo na tela).
+
+O experimento de dedup de material não foi mantido: 3% não paga o risco de
+compartilhar material entre objetos (mutar um passaria a afetar todos).
 
 ## Consequências
 
@@ -139,3 +155,20 @@ com a splash animando (registro da percepção) — por isso fica por último.
   para ~1 s, o bake deixa de ser urgente e continua valendo para mundo aberto.
 - `src/core/bootProfile.ts` passa a ser permanente, desligado por padrão
   (escopo `boot` do `debug()`), como instrumento de regressão de boot.
+
+## Resultado
+
+Medido no kart-racer exportado (mesma máquina, janela 1280×720, do início do
+bundle até o primeiro frame desenhado):
+
+| bloco | antes | depois |
+| --- | --- | --- |
+| merge estático | 4,76 s | **0,63 s** |
+| `mergeSubtree` das rodas | 2,18 s | **0,26 s** |
+| decode do HDRI | 1,74 s | **0,32 s** |
+| 6 carros (total) | 4,83 s | **2,74 s** |
+| primeiro frame | 3,03 s | 2,87 s |
+| **até a primeira imagem** | **18,5 s** | **9,8 s** |
+
+O que sobra, em ordem: primeiro frame (2,9 s, upload — só a splash cobre),
+carros (2,7 s), instanciar os 194 nós (1,6 s), PMREM (0,5 s).
