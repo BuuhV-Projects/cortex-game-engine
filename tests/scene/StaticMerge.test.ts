@@ -13,6 +13,7 @@ import {
   MeshStandardMaterial,
   DirectionalLight,
   Vector3,
+  Box3,
 } from 'three';
 import { mergeStaticScene, wrapStaticInBundle } from '../../src/scene/StaticMerge.js';
 import { World } from '../../src/ecs/World.js';
@@ -176,6 +177,50 @@ describe('mergeStaticScene', () => {
     expect(merged.geometry.boundingBox!.max.y).toBeCloseTo(2);
     expect(merged.getWorldPosition(new Vector3()).y).toBe(0); // baked: mesh na origem
   });
+  // ADR-0220/SPEC-0221: gatilho (`collider.solid: false`) é objeto de jogo — o
+  // jogo o mede, esconde e consome. Fundido, sobra um Group vazio: bbox vazio
+  // (coleta nunca acerta) e `visible = false` não esconde nada (a arte foi pra
+  // malha fundida). Foi o bug do poder do kart-racer no export nativo.
+  it('deixa FORA o gatilho (Collider2D não-sólido) e continua fundindo o sólido', () => {
+    const root = new Object3D();
+    const world = new World();
+    const mat = new MeshBasicMaterial();
+
+    // Dois pickups iguais (grupo de 2 — fundiriam, se fossem cenário).
+    const pickups = [0, 3].map((x) => {
+      const group = new Object3D(); // o nó da cena (`item-box-*`)
+      group.position.x = x;
+      const art = box(mat);
+      group.add(art);
+      root.add(group);
+      const e = world.createEntity();
+      e.addComponent(new TransformComponent(x, 0, 0));
+      e.addComponent(new Object3DComponent(group));
+      e.addComponent(new Collider2DComponent(0.5, 0.5, false)); // solid = false
+      return { group, art };
+    });
+
+    // Duas plataformas sólidas — o cenário que o merge existe pra fundir.
+    const plats = [6, 9].map((x) => {
+      const obj = box(mat, x);
+      root.add(obj);
+      const e = world.createEntity();
+      e.addComponent(new TransformComponent(x, 0, 0));
+      e.addComponent(new Object3DComponent(obj));
+      e.addComponent(new Collider2DComponent(0.5, 0.5, true));
+      return obj;
+    });
+
+    const stats = mergeStaticScene(root, world);
+
+    expect(stats.merged).toBe(2); // só as plataformas
+    for (const { group, art } of pickups) {
+      expect(art.parent).toBe(group); // a arte continua sob o nó da cena
+      expect(new Box3().setFromObject(group).isEmpty()).toBe(false); // bbox real
+    }
+    for (const obj of plats) expect(obj.parent).toBeNull(); // fundidas e removidas
+  });
+
 });
 
 describe('wrapStaticInBundle (render bundles — M-perf-2b)', () => {

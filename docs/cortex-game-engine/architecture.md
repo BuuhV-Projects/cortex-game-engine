@@ -148,6 +148,13 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   **só no host nativo** (`isNativeHost()`, SPEC-0196 — antes o default era
   `false` e nenhum jogo passava a flag, então a infra do M-perf-2 estava inerte);
   nunca rodam no Studio (o F2 precisa dos objetos individuais).
+  ⚠️ **Gatilho (`collider.solid: false`) fica FORA do merge** (ADR-0220/SPEC-0221):
+  é objeto de jogo, não cenário — o jogo mede o bbox dele, esconde e consome.
+  Fundido, sobrava um `Group` VAZIO: `Box3.setFromObject` devolvia caixa vazia
+  (centro em 0,0,0 → a coleta nunca acertava) e `visible = false` não escondia
+  nada (a arte tinha ido pra `static-merged-N`). Como a malha fundida herda
+  `cortexSolid`, a geometria do gatilho ainda entrava no trimesh de colisão —
+  o poder do kart-racer PARAVA o carro no export e funcionava no Studio.
 - **Água (`Water.ts`, SPEC-0131)** — nó `water`: plano PBR finito (`size`, default
   400) com cáusticas tiled animadas. **Segue a câmera** no XZ por padrão (o
   `buildScene` passa `options.camera`), então a borda quadrada fica sempre a
@@ -307,7 +314,10 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   movimento do frame) — senão a câmera aparecia "dentro" da parede por 1 frame.
   ⚠️ Marcar **static** (Inspector → Física) cria um Collider2D (mundo 2.5D, que o
   Character ignora) **e** a flag `cortexSolid` (que o Character usa) — é a flag que
-  bloqueia o player. Pro player/NPC simples até a migração pro CharacterController do Rapier.
+  bloqueia o player. ⚠️ `collider.solid: false` (gatilho) **não** recebe
+  `cortexSolid` (ADR-0220): declarar "não sou parede" e ser marcado como parede
+  era contradição — e vazava pra quem monta colisão a partir da flag (o trimesh
+  da pista do kart-racer engolia os poderes). Pro player/NPC simples até a migração pro CharacterController do Rapier.
   - ⚡ **Raycast acelerado por BVH** (`src/physics/raycastAccel.ts`, SPEC-0108): os
     ~13 raycasts/frame testam a **geometria real** — O(triângulos). Num prop denso
     (ponte de corda ~2000 tris) isso derrubava o FPS **no export nativo (Hermes)**.

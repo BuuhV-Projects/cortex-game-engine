@@ -14,6 +14,7 @@ import { debug } from '../core/debug.js';
 import type { World } from '../ecs/World.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { ScriptComponent } from '../components/ScriptComponent.js';
+import { Collider2DComponent } from '../components/Collider2DComponent.js';
 
 /**
  * **Merge da geometria estática da cena** (SPEC-0120) — reduz draw calls fundindo
@@ -35,6 +36,9 @@ import { ScriptComponent } from '../components/ScriptComponent.js';
  *   componentes não seja só {Transform, Object3D, Collider2D} (player, scripts
  *   — moedas/balsas/checkpoints —, corpos Rapier, sprites, terreno…). Regra de
  *   allowlist: componente desconhecido ⇒ dinâmico (seguro por default).
+ * - Subárvores de GATILHO: entidade cujo `Collider2DComponent` é NÃO-sólido
+ *   (`collider.solid: false` no nó). É objeto de jogo, não cenário — o jogo mede
+ *   e esconde aquela malha (ADR-0220/SPEC-0221).
  * - Malha skinada (personagens), vegetação instanciada (`cortexVegetation*`),
  *   terreno (`cortexTerrain`, tem pipeline próprio de colisão/sculpt), água,
  *   chrome do editor (`editorInternal`), invisíveis, layers não-default.
@@ -84,7 +88,12 @@ function dynamicRoots(world: World | undefined): Set<Object3D> {
   const roots = new Set<Object3D>();
   if (!world) return roots;
   for (const e of world.query(Object3DComponent)) {
-    const isDynamic = e.getAllComponents().some((c) => !STATIC_COMPONENTS.has(c.type));
+    // Collider NÃO-sólido = GATILHO (ADR-0220): objeto de jogo, não cenário — o
+    // jogo mede o bbox dele, esconde e consome (poder do kart-racer, gatilho de
+    // fase). Fundido, sobra um Group VAZIO: bbox vazio e `visible = false` sem
+    // efeito (a arte foi pra malha fundida). Fica de fora, como os de script.
+    const trigger = e.getComponent(Collider2DComponent)?.solid === false;
+    const isDynamic = trigger || e.getAllComponents().some((c) => !STATIC_COMPONENTS.has(c.type));
     if (isDynamic) {
       const obj = e.getComponent(Object3DComponent)?.object;
       if (obj) roots.add(obj);

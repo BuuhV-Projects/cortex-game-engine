@@ -909,7 +909,12 @@ async function buildSceneInner(
         // Marca SÓLIDO: o CharacterPhysicsSystem trata como PAREDE (colisão horizontal
         // por cápsula). Sem isso, o player (Character/raycast) atravessa o blockout
         // estático — o Collider2D acima é do mundo 2.5D, que o Character ignora.
-        (obj.userData as Record<string, unknown>)['cortexSolid'] = true;
+        // `solid: false` é GATILHO (ADR-0220): declara "não sou parede", então NÃO
+        // marca — senão o poder do kart-racer entrava no trimesh da pista e o carro
+        // batia nele em vez de coletar.
+        if (colliderCfg?.solid !== false) {
+          (obj.userData as Record<string, unknown>)['cortexSolid'] = true;
+        }
       }
       // type === 'none' → nenhuma física (override pode ter DESLIGADO um collider do código).
     }

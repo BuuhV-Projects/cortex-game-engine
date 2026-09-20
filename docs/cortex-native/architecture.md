@@ -517,6 +517,55 @@ vendorizar por tamanho/licença/integração com o VS):
   (via winget: `winget install Microsoft.Gaming.GDK`). O Studio **detecta** o GDK
   (env `GameDK`/`GRDKLatest`) e orienta — **não** instala.
 
+## Validar uma mudança no export (rodar, logar, capturar)
+
+**⚠️ O export NÃO usa o `vendor/` do jogo.** O `bundle.mjs` resolve
+`cortex-game-engine` para o **`src/` do engine do repo de onde o script roda**
+(`resolve('src/index-runtime.ts')`). Consequências:
+
+- Re-vendorizar o jogo **não** muda o export — serve pro Studio/`vite dev`.
+- Pra testar uma mudança do engine no export, rode o `export-game.mjs` **da
+  worktree que tem a mudança**. Em worktree, o host compilado vem por junction
+  (`native/build`, `native/third_party`, `native/rapier-native` → repo
+  principal); desfaça as junctions antes de apagar a worktree.
+- Sem isso o teste mente: dois exports feitos de repos diferentes parecem
+  "idênticos" porque os dois usaram o mesmo `src/`, não o código sob teste.
+
+```powershell
+node native/scripts/export-game.mjs D:/jogos/<jogo> --out <scratchpad>/dist-<motivo>
+```
+Nunca exporte por cima do diretório onde o usuário joga (export concorrente
+quebra o build dele).
+
+**Ligar o log no export:** `?cortexDebug=` chega pelo `CORTEX_LAUNCH_QUERY` —
+o host monta `location.search` a partir dele e o `debug()` (`src/core/debug.ts`)
+lê de lá. `console.log` do JS sai no stdout do host, então redirecione pra um
+arquivo e leia.
+
+```powershell
+$env:CORTEX_WINDOWED='1'                      # janela 1280x720 em vez de fullscreen
+$env:CORTEX_LAUNCH_QUERY='?cortexDebug=1'     # 1/true/* = TODOS os escopos
+& "<dist>\launcher.exe" 2>&1 | Out-File "<dist>\run.log" -Encoding utf8
+un.log" -Encoding utf8
+```
+⚠️ Prefira `=1` (todos) a uma lista `a,b`: a filtragem por escopo depende do
+`URLSearchParams` do shim e uma lista pode não pegar o escopo esperado — numa
+sessão isso fez um probe parecer "não executado" quando só não estava ligado.
+Instrumentação temporária: use um escopo próprio (`debug('probe', …)`) e
+**remova antes do commit**. No Hermes, `console.log` com muitos argumentos
+imprime lixo — monte a mensagem numa template string única.
+
+**Capturar a janela:** use **`PrintWindow` com a flag 2**
+(`PW_RENDERFULLCONTENT`) sobre o `MainWindowHandle` do processo `launcher`. Ela
+captura **só a janela do jogo, mesmo atrás de outras janelas e sem foco** — que
+é o comportamento certo quando o usuário está usando a máquina. Não use
+`CopyFromScreen` (pega o que estiver por cima: já capturou o navegador do
+usuário) nem `SetForegroundWindow` (o Windows costuma ignorar) nem `SendKeys`
+(cai na janela errada). O launcher iniciado em background é reportado como
+**exit 255 mas segue vivo**; espere em loop pelo `MainWindowHandle` (a janela
+sobe depois da splash + assets) e só então capture. Artefatos de validação vão
+pro `.cortex/` do jogo.
+
 ## Build & run
 
 ```powershell

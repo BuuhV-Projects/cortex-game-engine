@@ -104,6 +104,22 @@ describe('buildScene (plataformer: entidades ECS)', () => {
     expect(world.query(Collider2DComponent).length).toBe(0);
   });
 
+  // ADR-0220/SPEC-0221: `cortexSolid` = PAREDE. Um gatilho (`solid: false`)
+  // declara o contrário, então não pode ser marcado — era o que fazia o poder do
+  // kart-racer entrar no trimesh da pista e parar o carro no export nativo.
+  it('gatilho (collider.solid: false) NÃO vira cortexSolid; sólido vira', async () => {
+    const world = new World();
+    const handle = await buildScene(new Scene(), {
+      version: 1,
+      nodes: [
+        { type: 'primitive', id: 'parede', shape: 'box', size: 1, place: { x: 0 }, collider: { solid: true } },
+        { type: 'primitive', id: 'gatilho', shape: 'box', size: 1, place: { x: 3 }, collider: { solid: false } },
+      ],
+    }, { world });
+    expect(handle.byId.get('parede')!.userData['cortexSolid']).toBe(true);
+    expect(handle.byId.get('gatilho')!.userData['cortexSolid']).toBeUndefined();
+  });
+
   it('restaura a rotationY do overlay NO TransformComponent (regressão: rotação se perdia ao recarregar)', async () => {
     const world = new World();
     const handle = await buildScene(new Scene(), lvl, {
