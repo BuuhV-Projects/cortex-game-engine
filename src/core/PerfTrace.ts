@@ -1,5 +1,6 @@
 import { Frustum, Matrix4, Vector3, type Camera, type Mesh, type Object3D } from 'three';
 import type { FrameProfiler } from './FrameProfiler.js';
+import type { RenderPhaseProbe } from './RenderPhaseProbe.js';
 
 /**
  * **Perf trace de gameplay** (SPEC-0198) — com as métricas ativas, grava uma
@@ -25,6 +26,26 @@ const MS_DECIMALS = 1;
 
 /** Casas decimais das coordenadas de câmera (m). */
 const POS_DECIMALS = 1;
+
+/**
+ * Casas decimais das fases do render (SPEC-0227). Mais fino que `MS_DECIMALS`
+ * de propósito: uma fase pode valer centésimos de ms por frame e ainda assim
+ * dominar o custo POR OBJETO, que é a pergunta em jogo.
+ */
+const PHASE_MS_DECIMALS = 3;
+
+/** Casas decimais do custo do relógio (ns). */
+const CLOCK_NS_DECIMALS = 1;
+
+/**
+ * Chaves que escapam do arredondamento grosso da amostra: as fases do render e
+ * a calibração do relógio precisam de mais casas do que o resto do frame.
+ */
+const FINE_KEY_PREFIXES = ['rp', 'clock'] as const;
+
+function isFineKey(name: string): boolean {
+  return FINE_KEY_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
 
 /** Um nó de cena visível na amostra. */
 export interface VisibleNode {
@@ -168,7 +189,9 @@ export function buildSample(input: SampleInput): PerfSample {
   const position = input.camera.position;
   input.camera.getWorldDirection(_direction);
   const cpu: Record<string, number> = {};
-  for (const [name, ms] of Object.entries(input.cpu)) cpu[name] = round(ms, MS_DECIMALS);
+  for (const [name, ms] of Object.entries(input.cpu)) {
+    cpu[name] = round(ms, isFineKey(name) ? PHASE_MS_DECIMALS : MS_DECIMALS);
+  }
   return {
     t: Math.round(input.timeMs),
     fps: input.frameMs > 0 ? round(1000 / input.frameMs, MS_DECIMALS) : 0,
@@ -210,6 +233,7 @@ export class PerfTrace {
    * @param camera - Câmera que renderizou o frame.
    * @param profiler - Fonte do tempo de CPU por seção.
    * @param info - `renderer.info.render` (draws/triângulos do frame).
+   * @param phases - Sonda de fases do render (SPEC-0227); inerte se desligada.
    */
   tick(
     deltaMs: number,
@@ -217,6 +241,7 @@ export class PerfTrace {
     camera: Camera,
     profiler: FrameProfiler,
     info: { drawCalls?: number; triangles?: number } | null,
+    phases?: RenderPhaseProbe | null,
   ): void {
     if (!this._bridge) return;
     this._elapsedMs += deltaMs;
@@ -239,6 +264,31 @@ export class PerfTrace {
       cpu['napiWb'] = stats['writeBuffer'] ?? 0;
       cpu['napiBind'] = stats['setBindGroup'] ?? 0;
       cpu['napiPipe'] = stats['setPipeline'] ?? 0;
+    }
+    // Fases do render (SPEC-0227): mesma regra do `napi` — são SUBCONJUNTOS de
+    // `render`, não seções novas, e não se somam ao total. `rpCalls*` conta as
+    // chamadas de topo, para separar "fase cara" de "fase chamada muitas vezes".
+    if (phases?.enabled) {
+      const phaseMs = phases.lastFrameMs();
+      const phaseCalls = phases.lastFrameCalls();
+      for (const [name, ms] of Object.entries(phaseMs)) {
+        cpu[`rp${name[0].toUpperCase()}${name.slice(1)}`] = round(ms, PHASE_MS_DECIMALS);
+      }
+      for (const [name, calls] of Object.entries(phaseCalls)) {
+        cpu[`rpCalls${name[0].toUpperCase()}${name.slice(1)}`] = calls;
+      }
+      // Custo e resolução do relógio: sem eles não dá para saber se um balde
+      // pequeno é trabalho ou é o próprio instrumento (e um `clockResNs` de
+      // ~1e6 denuncia que a SPEC-0226 não está de pé neste binário).
+      // Nível 3: 1 = colaboradores internos embrulhados, 0 = não deu (baldes
+      // internos zerados NÃO são "fase barata"); ausente = nível 3 não pedido.
+      const internals = phases.internalsOk;
+      if (internals !== null) cpu['rpInternals'] = internals ? 1 : 0;
+      const clock = phases.clock;
+      if (clock) {
+        cpu['clockNs'] = round(clock.costNs, CLOCK_NS_DECIMALS);
+        cpu['clockResNs'] = round(clock.resolutionNs, CLOCK_NS_DECIMALS);
+      }
     }
     const sample = buildSample({
       timeMs: this._elapsedMs,

@@ -15,6 +15,7 @@ import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
 import { PerfTrace } from './PerfTrace.js';
 import { FrameProfiler } from './FrameProfiler.js';
+import { RenderPhaseProbe, renderPhasesRequested } from './RenderPhaseProbe.js';
 import { InspectCamera } from './InspectCamera.js';
 
 /**
@@ -183,6 +184,11 @@ export class Game {
   private _debugHud: DebugHud | null | undefined = undefined;
   /** Amostrador do perf trace (SPEC-0198). Inerte sem a ponte do host nativo. */
   private readonly _perfTrace = new PerfTrace();
+  /**
+   * Sonda de fases do render (SPEC-0227) — só embrulha o renderer quando pedida
+   * por `?renderPhases=<nivel>`; desligada, é um objeto inerte.
+   */
+  private readonly _renderPhases = new RenderPhaseProbe(renderPhasesRequested());
   private _postfx: { render(): void } | null = null;
   /**
    * Cena vazia desenhada enquanto a cena ativa está em montagem (SPEC-0219):
@@ -220,6 +226,7 @@ export class Game {
     this.canvas = canvas;
     this.scene = new Scene();
     this.renderer = new Renderer({ canvas, width, height });
+    this._renderPhases.install(this.renderer.threeRenderer);
 
     if (projection === 'orthographic') {
       // 2D / pixel art: ortográfica olhando o plano XY de frente. O frustum é
@@ -537,6 +544,7 @@ export class Game {
     if (!isSplashActive()) this._ui?.render(); // UI por cima do frame (DOM é no-op)
     p.end('ui');
     p.commitFrame(); // fecha o frame do profiler (joga os acumuladores nos rings)
+    this._renderPhases.commitFrame(); // idem para as fases do render (SPEC-0227)
 
     // HUD de métricas do modo debug (export --debug, ?cortexHud=1 ou o toggle
     // do menu do Studio): criado preguiçosamente e alimentado com o delta CRU.
@@ -554,6 +562,7 @@ export class Game {
       this._activeCamera,
       this.profiler,
       (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info?.render ?? null,
+      this._renderPhases,
     );
   }
 
