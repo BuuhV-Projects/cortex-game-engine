@@ -1,3 +1,20 @@
+# [0.54.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.53.0...v0.54.0) (2026-09-20)
+
+
+### Bug Fixes
+
+* **scene:** gatilho não-sólido fora do merge e sem cortexSolid (ADR-0220/SPEC-0221) ([c75752a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c75752ad50dc26e38a892cf77b628deff27144db))
+* **vehicle:** camera segue o carro em autopilot (SPEC-0223) ([46dc5f0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/46dc5f0d0cf6362b8ed1ffb06dbc0da84246b3b7))
+
+
+### Features
+
+* **chat-ia:** orienta performance ao encomendar modelo 3D (SPEC-0224) ([01e525e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/01e525edb3fdb2a523287ad868910427847dfec4))
+* **perf:** contadores da ponte no trace; os writeBuffer sao da camera (SPEC-0225) ([98d3d44](https://github.com/BuuhV-Projects/cortex-game-engine/commit/98d3d44f3c27b971535c0a5a1faee4960bc70a5c))
+* **perf:** cronometro da ponte NAPI -- a ponte e 17% do render (SPEC-0225) ([ac525e3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ac525e36f01fa5530fdc084701dbfb75fb861e35))
+* **runtime:** exporta uniform do TSL (SPEC-0222) ([05ecedf](https://github.com/BuuhV-Projects/cortex-game-engine/commit/05ecedfc473cd15103fafecf8150e24d819915fe))
+* **vehicle:** piloto externo no VehicleControlSystem (SPEC-0223) ([43c8d06](https://github.com/BuuhV-Projects/cortex-game-engine/commit/43c8d069c3afdba7263625e8cfb7c57fe7f4f61e))
+
 # [0.53.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.52.0...v0.53.0) (2026-09-20)
 
 
