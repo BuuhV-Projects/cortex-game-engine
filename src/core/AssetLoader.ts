@@ -11,6 +11,7 @@
  *
  * Referência: ADR-0001 (Renderizador baseado em Three.js)
  */
+import { bootAcc } from './bootProfile.js';
 
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -142,6 +143,10 @@ export class AssetLoader {
    * @returns Promessa resolvida com `THREE.Texture`.
    */
   async loadTexture(url: string, options?: { pixelated?: boolean }): Promise<THREE.Texture> {
+    return bootAcc('AssetLoader.loadTexture', () => this._loadTextureInner(url, options));
+  }
+
+  private async _loadTextureInner(url: string, options?: { pixelated?: boolean }): Promise<THREE.Texture> {
     let texture = this._cache.get(url) as THREE.Texture | undefined;
     if (texture === undefined) {
       texture = await this._textureLoader.loadAsync(url);
@@ -165,6 +170,10 @@ export class AssetLoader {
    * @returns Promessa resolvida com o objeto `GLTF`.
    */
   async loadGLTF(url: string): Promise<GLTF> {
+    return bootAcc('AssetLoader.loadGLTF', () => this._loadGLTFInner(url));
+  }
+
+  private async _loadGLTFInner(url: string): Promise<GLTF> {
     const cached = this._cache.get(url);
     if (cached !== undefined) {
       return cached as GLTF;

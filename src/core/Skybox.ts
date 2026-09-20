@@ -11,6 +11,7 @@
  *
  * A integração com Three.js fica confinada a `src/core/` (ADR-0001).
  */
+import { bootAcc, bootSync } from './bootProfile.js';
 
 import * as THREE from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
@@ -85,11 +86,11 @@ export class Skybox {
       environmentIntensity = 1,
     } = options;
 
-    const texture = await new RGBELoader().loadAsync(url);
+    const texture = await bootAcc('HDR: RGBELoader.loadAsync', () => new RGBELoader().loadAsync(url));
     texture.mapping = THREE.EquirectangularReflectionMapping;
 
     const three = scene.getThreeScene();
-    applyEnvironment(scene, texture, renderer);
+    bootSync('HDR: applyEnvironment (PMREM)', () => applyEnvironment(scene, texture, renderer));
     three.environmentIntensity = environmentIntensity;
 
     if (asBackground) {

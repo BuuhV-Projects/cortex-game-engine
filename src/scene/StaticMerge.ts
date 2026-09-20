@@ -6,7 +6,8 @@ import {
   type Material,
   type Texture,
 } from 'three';
-import { mergeGeometries, deinterleaveGeometry } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { deinterleaveGeometry } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { bakeMergedGeometry } from './bakeMerge.js';
 import { BundleGroup } from 'three/webgpu';
 import { isSkinned } from '../physics/raycastAccel.js';
 import { debug } from '../core/debug.js';
@@ -190,51 +191,6 @@ function isSolid(obj: Object3D): boolean {
   return false;
 }
 
-/** Vértices por triângulo — a unidade em que o winding é invertido. */
-const TRIANGLE_VERTICES = 3;
-
-/**
- * **Inverte o winding** (ordem dos vértices de cada triângulo) da geometria.
- *
- * Necessário depois de assar uma matriz de determinante NEGATIVO — malha
- * espelhada (SPEC-0214). O `applyMatrix4` do three corrige as normais, mas não
- * a ordem dos vértices: sem isto a face fica virada, o backface culling a
- * descarta e o objeto aparece PRETO no export.
- */
-function flipWinding(g: BufferGeometry): void {
-  const index = g.index;
-  if (index) {
-    // Indexada (o caso dos .glb): troca só no índice — barato, não realoca.
-    for (let i = 0; i < index.count; i += TRIANGLE_VERTICES) {
-      const b = index.getX(i + 1);
-      index.setX(i + 1, index.getX(i + 2));
-      index.setX(i + 2, b);
-    }
-    index.needsUpdate = true;
-    return;
-  }
-  // Sem índice: troca o vértice 1 com o 2 em TODOS os atributos. Criar um
-  // índice aqui não serve — o `mergeGeometries` exige que todas as partes do
-  // grupo concordem em ter ou não ter índice.
-  for (const name of Object.keys(g.attributes)) {
-    const attr = g.attributes[name] as {
-      count: number; itemSize: number; array: ArrayLike<number> & { [i: number]: number };
-      needsUpdate?: boolean;
-    };
-    const size = attr.itemSize;
-    for (let i = 0; i < attr.count; i += TRIANGLE_VERTICES) {
-      const um = (i + 1) * size;
-      const dois = (i + 2) * size;
-      for (let k = 0; k < size; k++) {
-        const tmp = attr.array[um + k]!;
-        attr.array[um + k] = attr.array[dois + k]!;
-        attr.array[dois + k] = tmp;
-      }
-    }
-    attr.needsUpdate = true;
-  }
-}
-
 interface Candidate {
   mesh: Mesh;
   key: string;
@@ -315,19 +271,12 @@ export function mergeStaticScene(
       stats.kept += list.length;
       continue;
     }
-    const parts: BufferGeometry[] = [];
-    for (const c of list) {
-      // .glb reais usam buffers interleaved; o mergeGeometries exige atributos
-      // planos. De-interleava a FONTE 1× (cache), depois clona e assa por instância.
-      const g = flatSource(c.mesh.geometry).clone();
-      g.applyMatrix4(c.matrix); // baked em world space (posição/rotação/escala + normais)
-      // Malha espelhada (determinante < 0): o applyMatrix4 corrige as normais,
-      // mas não a ordem dos vértices — sem isto a face vira e some (SPEC-0214).
-      if (c.matrix.determinant() < 0) flipWinding(g);
-      parts.push(g);
-    }
-    const mergedGeo = mergeGeometries(parts, false);
-    for (const p of parts) p.dispose(); // os clones intermediários já foram copiados
+    // .glb reais usam buffers interleaved; o bake exige atributos planos —
+    // de-interleava a FONTE 1× (cache) e assa cada instância direto no destino
+    // (SPEC-0217: sem clone e sem cópia intermediária por instância).
+    const mergedGeo = bakeMergedGeometry(
+      list.map((c) => ({ geometry: flatSource(c.mesh.geometry), matrix: c.matrix })),
+    );
     if (!mergedGeo) {
       stats.kept += list.length; // mismatch inesperado: mantém os originais
       continue;
@@ -521,15 +470,9 @@ export function mergeSubtree(root: Object3D, options: SubtreeMergeOptions = {}):
       stats.kept += list.length;
       continue;
     }
-    const parts: BufferGeometry[] = [];
-    for (const { mesh, local } of list) {
-      const g = flatSource(mesh.geometry).clone(); // .glb real vem interleaved
-      g.applyMatrix4(local);
-      if (local.determinant() < 0) flipWinding(g); // espelhada: ver SPEC-0214
-      parts.push(g);
-    }
-    const mergedGeo = mergeGeometries(parts, false);
-    for (const p of parts) p.dispose();
+    const mergedGeo = bakeMergedGeometry(
+      list.map(({ mesh, local }) => ({ geometry: flatSource(mesh.geometry), matrix: local })),
+    );
     if (!mergedGeo) {
       stats.kept += list.length; // mismatch inesperado: mantém os originais
       continue;

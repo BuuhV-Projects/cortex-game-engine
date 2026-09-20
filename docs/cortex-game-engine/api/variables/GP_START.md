@@ -8,6 +8,6 @@
 
 > `const` **GP\_START**: `9` = `9`
 
-Defined in: [src/input/padLayout.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L30)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/input/padLayout.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L30)
 
 Start / Menu.

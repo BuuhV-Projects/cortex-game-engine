@@ -6,7 +6,7 @@
 
 # Interface: ActionConfigStore
 
-Defined in: [src/input/InputActions.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L41)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/input/InputActions.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L41)
 
 O mínimo do [GameConfig](../classes/GameConfig.md) que este módulo usa (facilita teste e evita acoplamento).
 
@@ -16,7 +16,7 @@ O mínimo do [GameConfig](../classes/GameConfig.md) que este módulo usa (facili
 
 > **delete**(`key`): `void`
 
-Defined in: [src/input/InputActions.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L45)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/input/InputActions.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L45)
 
 #### Parameters
 
@@ -34,7 +34,7 @@ Defined in: [src/input/InputActions.ts:45](https://github.com/BuuhV-Projects/cor
 
 > **get**(`key`, `fallback?`): `string`
 
-Defined in: [src/input/InputActions.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L42)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/input/InputActions.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L42)
 
 #### Parameters
 
@@ -56,7 +56,7 @@ Defined in: [src/input/InputActions.ts:42](https://github.com/BuuhV-Projects/cor
 
 > **has**(`key`): `boolean`
 
-Defined in: [src/input/InputActions.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L43)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/input/InputActions.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L43)
 
 #### Parameters
 
@@ -74,7 +74,7 @@ Defined in: [src/input/InputActions.ts:43](https://github.com/BuuhV-Projects/cor
 
 > **set**(`key`, `value`): `void`
 
-Defined in: [src/input/InputActions.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L44)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/input/InputActions.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/InputActions.ts#L44)
 
 #### Parameters
 

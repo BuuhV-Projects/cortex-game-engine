@@ -8,7 +8,7 @@
 
 > **applyMaterial**(`object`, `config`): `void`
 
-Defined in: [src/scene/Materials.ts:299](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L299)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/Materials.ts:299](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Materials.ts#L299)
 
 Aplica um [MaterialConfig](../type-aliases/MaterialConfig.md) a um objeto (e descendentes). Swap não-destrutivo:
 o material original fica cacheado e volta com `{ type: 'standard' }`.

@@ -8,7 +8,7 @@
 
 > **overlayTerrainPaint**(`overlay`): `Record`\<`string`, [`TerrainPaintData`](../interfaces/TerrainPaintData.md)\>
 
-Defined in: [src/scene/SceneBuilder.ts:379](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L379)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/SceneBuilder.ts:380](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L380)
 
 Lê `data.terrainPaint` da overlay — a **pintura de textura do terreno** autorada
 no editor por id (`{ [id]: TerrainPaintData }`: camadas + splatmap base64). Ver

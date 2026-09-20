@@ -1,3 +1,4 @@
+import { bootMark, bootAcc, bootSync, bootDump } from '../core/bootProfile.js';
 import {
   Color,
   Fog,
@@ -486,6 +487,7 @@ export async function buildScene(
   defs: SceneDefinition | SceneDefinition[],
   options: BuildSceneOptions = {},
 ): Promise<SceneHandle> {
+  bootMark('buildScene: início');
   const list = Array.isArray(defs) ? defs : [defs];
   const three = scene.getThreeScene();
   const byId = new Map<string, Object3D>();
@@ -563,8 +565,10 @@ export async function buildScene(
     }
   }
 
+  bootMark('buildScene: iluminação/céu prontos');
   // ── Nós: base (arquivos) + adicionados (overlay) ─────────────────────────────
   const allNodes: SceneNode[] = [...list.flatMap((d) => d.nodes), ...overlayAdded(overlay)];
+  bootMark(`buildScene: ${allNodes.length} nós a instanciar`);
 
   // 1) Instancia todos os nós (sem criar entidades ainda — `attach` pode mover a
   //    pose depois, e a entidade ECS copia a posição final).
@@ -673,6 +677,7 @@ export async function buildScene(
   //      em alvo/socket ausente ou ciclo. Override do editor vence o attach.
   resolveAttachments(placed, byId, options.kit, overrides);
 
+  bootMark('buildScene: nós instanciados');
   // 2) Plataforma 2.5D: nós com collider/player viram entidades ECS acopladas
   //    (posições já finais). Precedência do collider: overlay do editor
   //    (`data.colliders[id]`) > nó (`collider`) > preset do `role` no kit.
@@ -811,6 +816,7 @@ export async function buildScene(
     }
   }
 
+  bootMark('buildScene: física/ECS pronta');
   // ── Merge estático (SPEC-0120) — POR ÚLTIMO: colliders/entidades já derivaram
   // dos nós individuais; daqui pra frente só o render enxerga a fusão. Default:
   // liga no host nativo (CPU-bound por draw call), fica fora no browser/Studio
@@ -819,8 +825,9 @@ export async function buildScene(
     // Objetos com animação de cena (SceneAnimator) são dinâmicos — o mixer anima
     // ESSAS malhas; fundidas, congelariam.
     const animated = animators.map((a) => a.mixer.getRoot() as Object3D);
-    mergeStaticScene(three, options.world, animated);
+    bootSync('mergeStaticScene', () => mergeStaticScene(three, options.world, animated));
   }
+  bootMark('buildScene: merge estático pronto');
 
   // Render bundles (M-perf-2b): grava os draws do estático UMA vez → 1
   // executeBundles/pass. Independe do merge (bundla até .glb interleaved).
@@ -846,8 +853,12 @@ export async function buildScene(
   // vez de no primeiro frame em que cada material aparece. Não bloqueia o build
   // — quem quiser esperar (tela de loading) aguarda a promessa.
   if ((options.precompile ?? true) && options.renderer && options.camera) {
-    void options.renderer.precompile(three, options.camera);
+    const renderer = options.renderer;
+    const camera = options.camera;
+    void bootAcc('renderer.precompile', () => renderer.precompile(three, camera));
   }
+  bootMark('buildScene: fim');
+  bootDump('fim do buildScene');
 
   return {
     byId,

@@ -32,6 +32,7 @@ lado).
 | `Skybox` | Iluminação/fundo por HDRI. `Skybox.fromHDRI(scene, url, opts)`, `Skybox.clear(scene)`. |
 | `PostFX` | Pós-processamento consolidado (ver seção própria). |
 | `Steam` | Conquistas/stats/overlay/jogador no export Steam (ver seção própria). `.unlockAchievement(id)`, `.storeStats()`, `.player()`, `.isOverlayActive()`. **No-op** fora do export `--steam`. |
+| `bootMark`, `bootAcc`, `bootSync`, `bootDump` | **Profiler de boot** (SPEC-0217): mede onde vão os segundos até o primeiro frame. `bootMark('cena montada')` carimba um instante; `bootAcc('loadGLB', () => loader.loadGLTF(url))` acumula por chave; `bootDump('fim')` lista do mais caro pro mais barato. **Silencioso por padrão** — ligue com o escopo `boot` do `debug()` (no host nativo: `CORTEX_LAUNCH_QUERY="?cortexDebug=boot"`). |
 | `gamePlatform`, `canRebindInput` | Alvo do export (`pc`/`steam`/`xbox`) lido do `cortex.json`, e se a tela de Controles deve existir. |
 
 ### Física (impulso)

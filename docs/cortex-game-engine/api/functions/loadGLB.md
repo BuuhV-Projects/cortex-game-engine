@@ -8,7 +8,7 @@
 
 > **loadGLB**(`url`): `Promise`\<`GLTF`\>
 
-Defined in: [src/scene/SceneAssets.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L98)
+Defined in: [.claude/worktrees/perf-boot-nativo/src/scene/SceneAssets.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L99)
 
 Carrega um `.glb`/`.gltf` (com cache por URL — chamadas repetidas reusam o
 mesmo GLTF; clone com [instance](instance.md) antes de adicionar à cena).

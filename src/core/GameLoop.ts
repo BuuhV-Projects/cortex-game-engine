@@ -8,6 +8,7 @@
  * `World.tick(deltaTime)` (onUpdate) e `World.tick(fixedStep)` (onFixedUpdate)
  * a cada passo fixo de física.
  */
+import { bootMark, bootDump } from './bootProfile.js';
 
 export interface GameLoopOptions {
   /**
@@ -127,11 +128,21 @@ export class GameLoop {
   private _startLoop(): void {
     if (typeof requestAnimationFrame !== 'undefined') {
       // ── Browser: rAF auto-reagendado ────────────────────────────────────
+      // O 1º frame é o marco que fecha o boot: no host nativo ele só é atendido
+      // quando o JS devolve o controle, então a distância entre "rAF agendado" e
+      // "1º frame" É o tempo de tela preta (SPEC-0217).
+      let firstFrame = true;
       const frame = (): void => {
         if (!this._running || this._paused) return;
         this._step();
+        if (firstFrame) {
+          firstFrame = false;
+          bootMark('GameLoop: 1º frame desenhado');
+          bootDump('1º frame desenhado');
+        }
         this._rafId = requestAnimationFrame(frame);
       };
+      bootMark('GameLoop: rAF agendado');
       this._rafId = requestAnimationFrame(frame);
     } else {
       // ── Node.js: setInterval com passo fixo ──────────────────────────────
