@@ -84,19 +84,35 @@ vértice). Some o `clone` e o `mergeGeometries`, que deixam de existir.
 
 O mesmo caminho serve o `mergeSubtree` (SPEC-0213), que é o custo das rodas.
 
-### 2. Subárvore fundida reaproveitada (alvo: −1,8 s)
+**Feito** (`src/scene/bakeMerge.ts`). Medido: merge estático 4,76 s → **0,63 s**,
+rodas 2,18 s → **0,26 s**, primeira imagem 18,5 s → **11,2 s**.
 
-`createCar` funde a mesma roda 48 vezes (6 carros × 4 rodas × 2 variantes), ~45
-ms cada. A fusão de uma subárvore idêntica (mesmo modelo + mesmo preset de
-material) passa a ser feita **uma vez** e clonada — cache por chave de origem,
-na mesma linha do `_cache` do `loadGLB`.
+### 2. ~~Subárvore fundida reaproveitada~~ — resolvida pela correção 1
 
-### 3. HDRI cozido no export (alvo: −1,7 s)
+`createCar` funde a mesma roda 48 vezes (6 carros × 4 rodas × 2 variantes). Era
+2,18 s a ~45 ms por roda; com o bake da correção 1 caiu para **0,26 s** (~5 ms
+cada), porque o `mergeSubtree` usa o mesmo caminho. Um cache de subárvore
+fundida economizaria ~0,2 s e adicionaria invalidação por material — não se
+paga. Fica registrado como não-feito, de propósito.
 
-Decodificar 194 KB de `.hdr` com o `RGBELoader` custa 1,74 s em Hermes. O cook
-do export (`native/scripts/cook-assets.mjs`) passa a converter o `.hdr` para
-KTX2, que o host transcodifica em nativo (ADR-0108). O PMREM (0,53 s) continua
-em runtime.
+### 3. Decodificador de HDR próprio (alvo: −1,5 s)
+
+Decodificar o `.hdr` (2048×1024, 194 KB em RLE) com o `HDRLoader` do three
+custa 1,74 s em Hermes — mesma doença do merge: por pixel ele chama
+`Math.pow(2, e-128)` e quatro `DataUtils.toHalfFloat`, ou seja ~10 M operações
+caras para 2 M pixels. O I/O do arquivo é irrelevante.
+
+Passa a usar decodificador próprio (`src/core/hdrDecode.ts`): tabela de 256
+escalas pré-computadas (mata o `pow`), conversão float→half inline por
+manipulação de bits (mata o `toHalfFloat`) e laço plano sobre o `Uint8Array`.
+O PMREM (0,53 s) continua em runtime.
+
+> Registrado antes como "cozinhar o `.hdr` em KTX2 no export". Trocado durante a
+> implementação: cozinhar mudaria o formato do asset e o pipeline de export —
+> que vive no Studio empacotado — para atacar um custo que não é de I/O nem de
+> formato, e sim da conversão por pixel. O decodificador próprio resolve no
+> mesmo lugar da correção 1, sem mexer em asset, host ou export, e mantém
+> Studio e browser lendo o mesmo `.hdr`.
 
 ### 4. Pipelines do primeiro frame (alvo: −1,5 s)
 
@@ -112,10 +128,11 @@ com a splash animando (registro da percepção) — por isso fica por último.
   carga. Os casos de borda que o three cobria (atributos ausentes em parte do
   grupo, morph targets) precisam de teste — grupos assim continuam caindo no
   caminho conservador (mantém as malhas separadas).
-- Fundir uma vez e clonar muda a identidade dos materiais das rodas: quem
-  espera material por instância precisa clonar explicitamente.
-- O `.hdr` cozido some do export; o arquivo-fonte continua no projeto (o Studio
-  e o browser seguem lendo `.hdr`).
+- O engine passa a decodificar `.hdr` por conta própria, em vez de delegar ao
+  `HDRLoader` do three: um formato de arquivo a mais sob nossa
+  responsabilidade. Mitigado por teste que compara a saída com a do three,
+  pixel a pixel, inclusive nos casos de borda do RLE (linha curta, repetição
+  longa, arquivo sem compressão).
 - Bake offline do merge (pré-fundir células no export, M-perf-4 do PRD-0005)
   **não** é feito aqui: a fusão depende da cena montada (overlay do editor,
   matrizes de mundo, o que é dinâmico). Com o custo em runtime caindo de 4,8 s

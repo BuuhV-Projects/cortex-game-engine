@@ -14,7 +14,7 @@
 import { bootAcc, bootSync } from './bootProfile.js';
 
 import * as THREE from 'three';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import { decodeHdr } from './hdrDecode.js';
 import type { Scene } from './Scene.js';
 import type { Renderer } from './Renderer.js';
 
@@ -62,6 +62,30 @@ export interface GradientSkyOptions {
   environmentIntensity?: number;
 }
 
+/**
+ * Carrega um `.hdr` como `DataTexture` half-float.
+ *
+ * Usa o {@link decodeHdr} do engine no lugar do `HDRLoader` do three: a
+ * conversão RGBE→half do three custa ~1,7 s num equirect 2048×1024 sem JIT
+ * (SPEC-0217). A textura sai configurada igual à do three — inclusive o
+ * `flipY = true`, que é o que mantém o céu na orientação certa.
+ */
+async function loadHdrTexture(url: string): Promise<THREE.DataTexture> {
+  const response = await bootAcc('HDR: fetch', () => fetch(url));
+  if (!response.ok) throw new Error(`Skybox: não consegui ler o HDRI "${url}" (${response.status}).`);
+  const buffer = await response.arrayBuffer();
+  const { width, height, data } = bootSync('HDR: decode', () => decodeHdr(buffer));
+
+  const texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat, THREE.HalfFloatType);
+  texture.colorSpace = THREE.LinearSRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  texture.flipY = true;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 export class Skybox {
   /**
    * Carrega um HDRI equiretangular e o aplica como iluminação (e fundo) da cena.
@@ -86,7 +110,7 @@ export class Skybox {
       environmentIntensity = 1,
     } = options;
 
-    const texture = await bootAcc('HDR: RGBELoader.loadAsync', () => new RGBELoader().loadAsync(url));
+    const texture = await loadHdrTexture(url);
     texture.mapping = THREE.EquirectangularReflectionMapping;
 
     const three = scene.getThreeScene();
