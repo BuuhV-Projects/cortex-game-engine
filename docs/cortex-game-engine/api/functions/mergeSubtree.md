@@ -8,7 +8,7 @@
 
 > **mergeSubtree**(`root`, `options?`): [`SubtreeMergeStats`](../interfaces/SubtreeMergeStats.md)
 
-Defined in: [src/scene/StaticMerge.ts:424](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L424)
+Defined in: [src/scene/StaticMerge.ts:433](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L433)
 
 **Funde as malhas DENTRO de um modelo** (SPEC-0213), agrupando por material e
 bakeando no espaço **local de `root`**. O oposto do [mergeStaticScene](mergeStaticScene.md):

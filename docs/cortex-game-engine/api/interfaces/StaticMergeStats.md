@@ -6,7 +6,7 @@
 
 # Interface: StaticMergeStats
 
-Defined in: [src/scene/StaticMerge.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L48)
+Defined in: [src/scene/StaticMerge.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L52)
 
 **Merge da geometria estática da cena** (SPEC-0120) — reduz draw calls fundindo
 as malhas paradas do cenário (ilhas, árvores, pedras, decoração) em poucas
@@ -27,6 +27,9 @@ O que fica de fora (continua desenhado como estava):
   componentes não seja só {Transform, Object3D, Collider2D} (player, scripts
   — moedas/balsas/checkpoints —, corpos Rapier, sprites, terreno…). Regra de
   allowlist: componente desconhecido ⇒ dinâmico (seguro por default).
+- Subárvores de GATILHO: entidade cujo `Collider2DComponent` é NÃO-sólido
+  (`collider.solid: false` no nó). É objeto de jogo, não cenário — o jogo mede
+  e esconde aquela malha (ADR-0220/SPEC-0221).
 - Malha skinada (personagens), vegetação instanciada (`cortexVegetation*`),
   terreno (`cortexTerrain`, tem pipeline próprio de colisão/sculpt), água,
   chrome do editor (`editorInternal`), invisíveis, layers não-default.
@@ -43,7 +46,7 @@ chão/parede do Character enxerga a malha fundida (que preserva
 
 > **groups**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L52)
+Defined in: [src/scene/StaticMerge.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L56)
 
 Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
@@ -53,7 +56,7 @@ Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
 > **kept**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L54)
+Defined in: [src/scene/StaticMerge.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L58)
 
 Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
@@ -63,6 +66,6 @@ Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
 > **merged**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L50)
+Defined in: [src/scene/StaticMerge.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L54)
 
 Malhas originais fundidas (removidas da cena).
