@@ -44,6 +44,8 @@ interface NapiFrameStats {
   drawIndexed: number;
   writeBuffer: number;
   submit: number;
+  /** Tempo somado dentro das chamadas NAPI do frame, em ms (SPEC-0225). */
+  ms?: number;
 }
 
 /** `renderer.info` do three (subset que o HUD mostra). */
@@ -208,7 +210,10 @@ export class DebugHud {
     const stats = this.napiStats();
     if (!stats) return 'NAPI —';
     const drawTotal = stats.draw + stats.drawIndexed;
-    return `NAPI draw ${drawTotal}  bind ${stats.setBindGroup}  pipe ${stats.setPipeline}  wb ${stats.writeBuffer}`;
+    // O tempo é o número que decide se a ponte é o gargalo ou se é o `three`
+    // em JS antes dela — por isso vem primeiro (SPEC-0225).
+    const tempo = stats.ms === undefined ? '' : `${stats.ms.toFixed(1)}ms  `;
+    return `NAPI ${tempo}draw ${drawTotal}  bind ${stats.setBindGroup}  pipe ${stats.setPipeline}  wb ${stats.writeBuffer}`;
   }
 
   private napiStats(): NapiFrameStats | null {

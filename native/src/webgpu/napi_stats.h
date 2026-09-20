@@ -7,6 +7,7 @@
 // o frame corrente é zerado no runFrame via resetNapiStatsFrame().
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 
 #include <node_api.h>
@@ -23,6 +24,10 @@ struct NapiFrameStats {
   uint32_t drawIndexed = 0;
   uint32_t writeBuffer = 0;
   uint32_t submit = 0;
+  // Tempo somado DENTRO das funcoes instrumentadas, em nanossegundos
+  // (SPEC-0225). Responde quanto dos ~68 us por draw e a ponte e quanto e o
+  // `three` em JS antes de chegar aqui.
+  uint64_t nanos = 0;
 };
 
 // Acumulador do frame corrente (definido no .cpp). Incrementado pelos bump*().
@@ -36,6 +41,29 @@ inline void bumpDraw() { ++g_napiFrame.draw; }
 inline void bumpDrawIndexed() { ++g_napiFrame.drawIndexed; }
 inline void bumpWriteBuffer() { ++g_napiFrame.writeBuffer; }
 inline void bumpSubmit() { ++g_napiFrame.submit; }
+
+// Cronometro de escopo: declarado na PRIMEIRA linha de um callback NAPI do
+// caminho de render, soma ao frame o tempo gasto ali dentro — incluindo o
+// marshalling dos argumentos, que e justamente o custo em questao.
+//
+// Nao conta: a contagem segue nos bump*(), alguns deles condicionais (so
+// contam quando a validacao passa). Contagem e tempo medem coisas
+// ligeiramente diferentes, de proposito.
+class NapiTimer {
+ public:
+  NapiTimer() : inicio_(std::chrono::steady_clock::now()) {}
+  ~NapiTimer() {
+    g_napiFrame.nanos += static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now() - inicio_)
+            .count());
+  }
+  NapiTimer(const NapiTimer&) = delete;
+  NapiTimer& operator=(const NapiTimer&) = delete;
+
+ private:
+  std::chrono::steady_clock::time_point inicio_;
+};
 
 // Fecha o frame: snapshot do corrente → último e zera o corrente. Chamado no
 // runFrame (main.cpp), depois do present.
