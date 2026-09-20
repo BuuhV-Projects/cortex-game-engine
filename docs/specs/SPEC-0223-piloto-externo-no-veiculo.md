@@ -50,5 +50,8 @@ controlador para isso.
 - Sem `autopilot`, nada muda: o default é `false` e o caminho é o de hoje.
 - Ligar `autopilot` **sem** ninguém escrevendo as forças deixa o carro em ponto
   morto — sem motor e sem freio, rolando livre. É responsabilidade de quem liga.
-- A câmera continua sob `active()`: um carro em autopilot não recentra a câmera
-  por entrada de olhar, o que é o desejado em demo e replay.
+- **A câmera segue o carro em autopilot.** A perseguição (`placeCamera`) passa
+  a rodar com `driving` **ou** `autopilot` — sem isso a câmera congela onde
+  estava e o carro sai de quadro, que foi o primeiro resultado da medição no
+  `kart-racer`. O que não roda em autopilot é a **leitura de entrada**,
+  inclusive a de olhar: a câmera persegue, mas ninguém a gira.

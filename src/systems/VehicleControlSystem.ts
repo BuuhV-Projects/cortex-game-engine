@@ -214,7 +214,10 @@ export class VehicleControlSystem extends System {
       }
     }
 
-    if (driving) this.placeCamera(t, r, dt);
+    // Em autopilot a câmera SEGUE o carro: um modo atrator ou uma medição
+    // precisam da mesma perseguição do jogo (SPEC-0223). O que não roda é a
+    // leitura de entrada — inclusive a de olhar, lá em cima.
+    if (driving || (o.autopilot?.() ?? false)) this.placeCamera(t, r, dt);
   }
 
   /**

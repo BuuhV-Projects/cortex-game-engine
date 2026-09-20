@@ -52,3 +52,19 @@ describe('autopilot do VehicleControlSystem (SPEC-0223)', () => {
     expect(forces.engine).toEqual([0]);
   });
 });
+
+/** A câmera persegue o carro em autopilot — senão ele sai de quadro. */
+function seguiuCamera(options: { active?: () => boolean; autopilot?: () => boolean }): boolean {
+  const driving = options.active?.() ?? true;
+  return driving || (options.autopilot?.() ?? false);
+}
+
+describe('câmera em autopilot (SPEC-0223)', () => {
+  it('persegue quando o piloto externo dirige', () => {
+    expect(seguiuCamera({ active: () => false, autopilot: () => true })).toBe(true);
+  });
+
+  it('congela quando o carro está apenas estacionado', () => {
+    expect(seguiuCamera({ active: () => false })).toBe(false);
+  });
+});
