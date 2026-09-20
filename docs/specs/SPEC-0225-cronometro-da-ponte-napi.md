@@ -106,3 +106,38 @@ proporcionais aos draws.
 - Os **451 `writeBuffer` por frame** seguem sem explicação e agora são o
   próximo alvo óbvio: se forem uniformes de objeto estático reescritos todo
   frame, o ganho é dos dois lados — menos trabalho em JS **e** menos travessias.
+
+## Os 451 `writeBuffer`: explicados pela câmera, não por objeto estático
+
+Os contadores da ponte entraram no `perf-trace` (`cpu.napiWb`, `napiBind`,
+`napiPipe`) para responder a pergunta em aberto. Medido no mesmo run:
+
+| | draws | `writeBuffer` | por draw | render |
+| --- | --- | --- | --- | --- |
+| cena parada (contagem regressiva) | 383 | **10** | 0,03 | 21 ms |
+| corrida (câmera em movimento) | 360 | **356** | 0,99 | 29 ms |
+
+**A guarda do `three` funciona.** Ele só escreve quando `binding.update()` diz
+que o conteúdo mudou, e com a cena parada não escreve quase nada. A hipótese de
+"uniforme de objeto estático reescrito todo frame" está **errada**.
+
+O que acontece é outra coisa: assim que a **câmera se move**, praticamente todo
+objeto desenhado reescreve seu uniforme — inclusive os estáticos. Ou seja, o
+uniforme por objeto carrega algo **dependente da câmera**. O `three` tem dois
+caminhos para isso: `mediumpModelViewMatrix`, que multiplica no shader a partir
+de `cameraViewMatrix` (global) e `modelWorldMatrix` (por objeto, estático), e
+`highpModelViewMatrix`, que calcula a matriz **em JS por objeto por câmera** e
+a manda num uniforme. Os números dizem que a cena está no segundo.
+
+### Lead, ainda não confirmado
+
+Os mesmos números mostram **render 21 ms com a câmera parada contra 29 ms em
+movimento, com MENOS draws** — ~8 ms que existem só porque a câmera anda. Se
+isso for o caminho highp (uma multiplicação de matriz 4×4 em JS por objeto, no
+Hermes, mais a travessia), seria a primeira alavanca encontrada que ataca os
+73 us de JS por draw sem cortar conteúdo.
+
+**Mas a amostra parada tem n=4** e é de um estado de cena diferente (contagem
+regressiva). Antes de agir, é preciso confirmar com um teste controlado: mesma
+cena, mesma contagem de draws, câmera travada contra câmera andando. Registrado
+como lead, não como achado.

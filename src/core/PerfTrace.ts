@@ -136,11 +136,17 @@ export function collectVisible(scene: Object3D, camera: Camera): VisibleNode[] {
  * (SPEC-0225), ou `null` no browser, onde não há ponte.
  */
 function napiBridgeMs(): number | null {
-  const fn = (globalThis as { __cortexNapiStats?: () => { ms?: number } }).__cortexNapiStats;
+  const stats = napiStats();
+  const ms = stats?.ms;
+  return typeof ms === 'number' && Number.isFinite(ms) ? round(ms, MS_DECIMALS) : null;
+}
+
+/** Contadores do último frame fechado do host, ou `null` no browser. */
+function napiStats(): Record<string, number> | null {
+  const fn = (globalThis as { __cortexNapiStats?: () => Record<string, number> }).__cortexNapiStats;
   if (typeof fn !== 'function') return null;
   try {
-    const ms = fn().ms;
-    return typeof ms === 'number' && Number.isFinite(ms) ? round(ms, MS_DECIMALS) : null;
+    return fn();
   } catch {
     return null;
   }
@@ -225,6 +231,15 @@ export class PerfTrace {
     // sim um SUBCONJUNTO de `render`. Somar tudo contaria duas vezes.
     const napiMs = napiBridgeMs();
     if (napiMs !== null) cpu['napi'] = napiMs;
+    // Contadores da ponte no mesmo mapa: a pergunta em aberto é se os
+    // `writeBuffer` acompanham os draws (uniforme de objeto estático reescrito
+    // todo frame) ou só os objetos que de fato se movem (SPEC-0225).
+    const stats = napiStats();
+    if (stats) {
+      cpu['napiWb'] = stats['writeBuffer'] ?? 0;
+      cpu['napiBind'] = stats['setBindGroup'] ?? 0;
+      cpu['napiPipe'] = stats['setPipeline'] ?? 0;
+    }
     const sample = buildSample({
       timeMs: this._elapsedMs,
       frameMs: deltaMs,
