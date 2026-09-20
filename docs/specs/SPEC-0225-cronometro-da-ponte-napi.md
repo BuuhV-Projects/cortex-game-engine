@@ -141,3 +141,41 @@ Hermes, mais a travessia), seria a primeira alavanca encontrada que ataca os
 regressiva). Antes de agir, é preciso confirmar com um teste controlado: mesma
 cena, mesma contagem de draws, câmera travada contra câmera andando. Registrado
 como lead, não como achado.
+
+### O lead foi testado e está morto
+
+Teste controlado, com as sondas `hold`/`jitter` do jogo (SPEC-0007 do
+`kart-racer`): cena parada na contagem regressiva, **383 draws idênticos nos
+dois lados**, e a única diferença sendo a câmera andar 1e-4 por frame.
+
+| | câmera parada | com jitter |
+| --- | --- | --- |
+| draws | 383 | 383 |
+| `writeBuffer` | 9 | **31** |
+| render | 21 ms | 22 ms |
+
+**22 escritas a mais, não 370.** O uniforme por objeto **não** depende da
+câmera — a cena está no caminho `mediump`, que multiplica no shader a partir de
+`cameraViewMatrix` (global) e `modelWorldMatrix` (por objeto), exatamente como
+deveria. A hipótese do caminho `highp` está descartada.
+
+Os ~356 `writeBuffer` da corrida são, portanto, **legítimos**: pertencem a
+objetos que de fato se moveram. São ~150 malhas em movimento (6 carros ×
+~8 de corpo + 24 de roda, mais os pickups girando), cada uma com sua matriz de
+mundo nova, algumas vistas também pelo passe de sombra.
+
+### O que sobra, e o que isso reforça
+
+A diferença de render entre a contagem regressiva (21 ms, 383 draws) e a
+corrida (29 ms, 360 draws) — ~8 ms — não é da câmera. É do **trabalho por
+objeto que se move**: atualizar matriz de mundo e reescrever o uniforme.
+
+Isso reforça a alavanca de asset já identificada: as **24 malhas de roda por
+carro**, que existem porque cada peça tem material próprio, não custam só
+draws — custam também matriz e uniforme por frame, porque rodam e esterçam.
+Unificar material nas rodas ataca os dois custos de uma vez.
+
+E encerra a busca por desperdício no caminho de render: **não há gordura
+escondida**. Os 73 us de JS por draw são trabalho que o `three` precisa fazer
+por objeto, no Hermes sem JIT. A partir daqui, menos tempo de render significa
+menos objetos — instancing, LOD ou menos conteúdo em tela.
