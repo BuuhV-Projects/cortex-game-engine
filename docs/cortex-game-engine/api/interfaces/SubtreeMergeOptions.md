@@ -6,7 +6,7 @@
 
 # Interface: SubtreeMergeOptions
 
-Defined in: [src/scene/StaticMerge.ts:389](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L389)
+Defined in: [src/scene/StaticMerge.ts:437](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L437)
 
 Opções da [mergeSubtree](../functions/mergeSubtree.md).
 
@@ -16,7 +16,7 @@ Opções da [mergeSubtree](../functions/mergeSubtree.md).
 
 > `optional` **name?**: `string`
 
-Defined in: [src/scene/StaticMerge.ts:397](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L397)
+Defined in: [src/scene/StaticMerge.ts:445](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L445)
 
 Prefixo do nome das malhas geradas (diagnóstico). Default: `merged`.
 
@@ -26,7 +26,7 @@ Prefixo do nome das malhas geradas (diagnóstico). Default: `merged`.
 
 > `optional` **preserve?**: `Iterable`\<`Object3D`\<`Object3DEventMap`\>, `any`, `any`\>
 
-Defined in: [src/scene/StaticMerge.ts:395](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L395)
+Defined in: [src/scene/StaticMerge.ts:443](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L443)
 
 Subárvores que NÃO são fundidas — pulas inteiras, com os descendentes.
 É o que mantém girando o que gira: os pivôs de roda de um carro, uma torre
