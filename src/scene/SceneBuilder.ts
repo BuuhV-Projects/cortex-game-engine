@@ -1,4 +1,5 @@
 import { bootMark, bootAcc, bootSync, bootDump } from '../core/bootProfile.js';
+import { frameBudgetExpired, yieldOnBudget, resetFrameBudget, beginLoadingScope, endLoadingScope } from '../core/frameYield.js';
 import {
   Color,
   Fog,
@@ -152,6 +153,41 @@ export interface BuildSceneOptions {
    * material. Exige `renderer` e `camera`. Default `true`.
    */
   precompile?: boolean;
+  /**
+   * **Progresso da montagem** (SPEC-0219) — chamado a cada fatia de ~100 ms e
+   * em cada troca de etapa, pra alimentar uma tela de carregamento.
+   *
+   * O retorno é AGUARDADO: devolva a promessa do próximo frame (é o que o
+   * `progress` do {@link runWithLoadingScreen} faz) pra barra andar de verdade
+   * no export. Devolver `void` só atualiza estado — o build cede o frame
+   * sozinho de qualquer jeito (ADR-0218).
+   *
+   * Exceção lançada aqui derruba o build: é callback de UI do jogo, o engine
+   * não engole o erro.
+   *
+   * @example
+   * ```ts
+   * await buildScene(scene, defs, {
+   *   onProgress: (p) => ui.setProgress(`Montando… ${Math.round(p.fraction * 100)}%`),
+   * })
+   * ```
+   */
+  onProgress?: (progress: BuildProgress) => void | Promise<void>;
+}
+
+/** Etapa corrente do {@link buildScene} (ver {@link BuildProgress}). */
+export type BuildPhase = 'cena' | 'nós' | 'física' | 'merge';
+
+/** Progresso da montagem da cena (SPEC-0219). */
+export interface BuildProgress {
+  /** Nós já instanciados. */
+  done: number;
+  /** Total de nós a instanciar. */
+  total: number;
+  /** Fração `0..1` da etapa de instanciação (0 fora dela, 1 depois dela). */
+  fraction: number;
+  /** Em que etapa o build está. */
+  phase: BuildPhase;
 }
 
 /**
@@ -478,6 +514,30 @@ export function overlayScripts(overlay: SceneFileV1 | null | undefined): Record<
 }
 
 /**
+ * Cenas em montagem no momento (contador por cena: builds podem se aninhar).
+ * O {@link Game} consulta isto pra NÃO apresentar uma cena pela metade enquanto
+ * o build cede frames (SPEC-0219) — renderizar a cena parcial a cada frame cedido
+ * custa caro (sobe buffers e compila pipeline do que acabou de nascer) e ainda
+ * mostra o cenário nascendo aos pedaços.
+ */
+const _building = new Map<Scene, number>();
+
+/** A cena está sendo montada por um {@link buildScene} agora? */
+export function isSceneBuilding(scene: Scene): boolean {
+  return (_building.get(scene) ?? 0) > 0;
+}
+
+function beginBuilding(scene: Scene): void {
+  _building.set(scene, (_building.get(scene) ?? 0) + 1);
+}
+
+function endBuilding(scene: Scene): void {
+  const n = (_building.get(scene) ?? 0) - 1;
+  if (n > 0) _building.set(scene, n);
+  else _building.delete(scene);
+}
+
+/**
  * Constrói a cena. `defs` pode ser uma definição ou um array (multi-arquivo —
  * os `nodes` são concatenados; configs de cena como `background`/`fog`/
  * `outdoorLighting`: o último definido vence).
@@ -488,6 +548,38 @@ export async function buildScene(
   options: BuildSceneOptions = {},
 ): Promise<SceneHandle> {
   bootMark('buildScene: início');
+  beginBuilding(scene);
+  beginLoadingScope();
+  try {
+    return await buildSceneInner(scene, defs, options);
+  } finally {
+    endBuilding(scene);
+    endLoadingScope();
+  }
+}
+
+async function buildSceneInner(
+  scene: Scene,
+  defs: SceneDefinition | SceneDefinition[],
+  options: BuildSceneOptions,
+): Promise<SceneHandle> {
+  // Cessão de frame + progresso (ADR-0218/SPEC-0219): sem isto a montagem roda
+  // numa virada única de JS e, no host, NADA é apresentado até o fim — nem a
+  // splash da engine.
+  let nodesDone = 0;
+  let nodesTotal = 0;
+  // Reporta o progresso e garante que o frame foi cedido. Se o callback devolve
+  // uma promessa (o `progress` do runWithLoadingScreen devolve a do próximo
+  // frame), ela JÁ é a cessão — reinicia o orçamento em vez de ceder de novo.
+  const tick = async (phase: BuildPhase, fraction: number): Promise<void> => {
+    const pending = options.onProgress?.({ done: nodesDone, total: nodesTotal, fraction, phase });
+    if (pending && typeof (pending as Promise<void>).then === 'function') {
+      await pending;
+      resetFrameBudget();
+      return;
+    }
+    await yieldOnBudget();
+  };
   const list = Array.isArray(defs) ? defs : [defs];
   const three = scene.getThreeScene();
   const byId = new Map<string, Object3D>();
@@ -566,14 +658,20 @@ export async function buildScene(
   }
 
   bootMark('buildScene: iluminação/céu prontos');
+  await tick('cena', 0);
   // ── Nós: base (arquivos) + adicionados (overlay) ─────────────────────────────
   const allNodes: SceneNode[] = [...list.flatMap((d) => d.nodes), ...overlayAdded(overlay)];
+  nodesTotal = allNodes.length;
   bootMark(`buildScene: ${allNodes.length} nós a instanciar`);
 
   // 1) Instancia todos os nós (sem criar entidades ainda — `attach` pode mover a
   //    pose depois, e a entidade ECS copia a posição final).
   const placed: SceneNode[] = [];
   for (const node of allNodes) {
+    nodesDone++;
+    // Fatia de ~100 ms: cede o frame e reporta. No laço inteiro (não só nos nós
+    // instanciados) porque `continue` também consome tempo de decisão.
+    if (frameBudgetExpired()) await tick('nós', nodesDone / Math.max(nodesTotal, 1));
     if (deleted.has(node.id) || byId.has(node.id)) continue;
     // Backdrop 2D com parallax — segue a câmera, então precisa dela.
     if (node.type === 'background') {
@@ -678,6 +776,7 @@ export async function buildScene(
   resolveAttachments(placed, byId, options.kit, overrides);
 
   bootMark('buildScene: nós instanciados');
+  await tick('física', 1);
   // 2) Plataforma 2.5D: nós com collider/player viram entidades ECS acopladas
   //    (posições já finais). Precedência do collider: overlay do editor
   //    (`data.colliders[id]`) > nó (`collider`) > preset do `role` no kit.
@@ -817,6 +916,7 @@ export async function buildScene(
   }
 
   bootMark('buildScene: física/ECS pronta');
+  await tick('merge', 1);
   // ── Merge estático (SPEC-0120) — POR ÚLTIMO: colliders/entidades já derivaram
   // dos nós individuais; daqui pra frente só o render enxerga a fusão. Default:
   // liga no host nativo (CPU-bound por draw call), fica fora no browser/Studio
@@ -828,6 +928,11 @@ export async function buildScene(
     bootSync('mergeStaticScene', () => mergeStaticScene(three, options.world, animated));
   }
   bootMark('buildScene: merge estático pronto');
+  // O merge é síncrono e longo (0,65 s no kart-racer). Sem ceder DEPOIS dele, o
+  // trecho entre o merge e a carga seguinte do jogo vira um buraco sem frames —
+  // e a splash, que só avança quando o loop roda, fica presa na tela muito além
+  // do tempo dela.
+  await tick('merge', 1);
 
   // Render bundles (M-perf-2b): grava os draws do estático UMA vez → 1
   // executeBundles/pass. Independe do merge (bundla até .glb interleaved).

@@ -520,6 +520,7 @@ const VENDOR_TYPE_MODULES = {
     'Physics',
     'PerfTrace',
     'bootProfile',
+    'frameYield',
     'LoadingScreen',
     'loadKtx2',
     'Skybox',

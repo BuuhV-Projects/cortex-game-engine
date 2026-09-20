@@ -8,6 +8,6 @@
 
 > `const` **GP\_RB**: `5` = `5`
 
-Defined in: [src/input/padLayout.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L22)
+Defined in: [.claude/worktrees/boot-cooperativo/src/input/padLayout.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L22)
 
 Ombro direito.

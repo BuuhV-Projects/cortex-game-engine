@@ -26,7 +26,7 @@ main.cpp (loop)
  ├─ runAnimationFrames    shims/animation_frame  callbacks de rAF (o JS grava
  │                                          e submete comandos WebGPU aqui)
  ├─ drainMicrotasks
- └─ splashPending()?      webgpu/splash     nos ~1,9s iniciais a splash da engine
+ └─ splashPending()?      webgpu/splash     nos ~1,45s iniciais a splash da engine
     ├─ sim: splashFrame                     é a ÚNICA a apresentar (ADR-0109) —
     │                                       o frame do jogo é DESCARTADO.
     └─ não: presentIfAcquired  webgpu/surface  present + release da textura, se o
@@ -44,6 +44,12 @@ e bindings, injeta globais pré-boot (`__cortexSearch`,
 `SDL_GetPreferredLocales`, que o shim espelha em `navigator.language` pro i18n,
 SPEC-0124), executa `boot.hbc` (bytecode) e drena microtasks — o `async main()`
 do JS roda aí (pede adapter/device, cria pipeline, registra o 1º rAF).
+
+**Ela CORTA, não desvanece** (ADR-0218): a splash só avança quando o loop roda, e
+durante a carga o JS fica segundos sem devolver o controle (operações síncronas
+longas — merge estático, trimesh do Rapier). Congelar no meio de um fade parece
+travamento; congelar com a marca inteira na tela parece intencional. Por isso
+`kFadeOutMs = 0`. Depois do corte quem desenha é a tela do jogo, que é estática.
 
 **A splash não pode rodar antes disso**: o `WGPUDevice` só nasce quando o JS
 pede (`navigator.gpu`), então `splashFrame` espera o device aparecer e só aí
@@ -93,7 +99,7 @@ Ver ADR-0109.
 | `native/src/webgpu/commands.cpp` | Encoder, render pass (color+depth attachments), setBindGroup/setVertexBuffer/setIndexBuffer/viewport/scissor, draw/drawIndexed, queue.submit. |
 | `native/src/webgpu/surface.cpp` | `gpuContext` (configure/getCurrentTexture) e present. Com SSAA, `getCurrentTexture` devolve a offscreen (SS) e o present faz o blit downscale. Com compositor de UI (ADR-0105), o present dispara por `ssaaPending` OU `uiPending` (menus rodam loop só-UI, sem render do jogo) e é gate por `gpu->device` (não `configured` — o menu não chama `context.configure`). |
 | `native/src/webgpu/supersample.*` | SSAA (ADR-0103): alvo offscreen (nativo × `renderScale`) onde o JS desenha + pipeline de blit (fullscreen-triangle + sampler linear) que reduz pra swapchain no present. Mata o serrilhado do contorno inverted-hull. **Também COMPÕE a UI de runtime EM GAMA** (ADR-0105): amostra a textura da UI (`gpu->uiTexture`) e blenda sobre o jogo com `out = game·(1−a) + OETF(ui/a)·a` (= blend sRGB do DOM); `ensureOffscreen` força o offscreen quando há compositor de UI (pra rodar mesmo em `renderScale=1`). |
-| `native/src/webgpu/splash.*` | Splash OBRIGATÓRIA da engine (ADR-0109): a marca TS Cortex Studio nos ~1,9 s iniciais (fade-in 350 / hold 1100 / fade-out 450), cobrindo a carga do jogo. Só começa quando o `device` — pedido pelo JS — existe. Enquanto `splashPending()`, ela substitui o `presentIfAcquired` e **descarta** o frame do jogo (`discardGameFrame`): dois presents no mesmo vsync faziam o jogo vazar e a splash piscar. Se o decode/pipeline falhar, desliga-se sozinha e o jogo segue. `CORTEX_NO_SPLASH=1` só vale no dev-run (com `argv[1]`). |
+| `native/src/webgpu/splash.*` | Splash OBRIGATÓRIA da engine (ADR-0109): a marca TS Cortex Studio nos ~1,45 s iniciais (fade-in 350 / hold 1100 / **sem fade-out** — ela CORTA, ver ADR-0218), cobrindo a carga do jogo. Só começa quando o `device` — pedido pelo JS — existe. Enquanto `splashPending()`, ela substitui o `presentIfAcquired` e **descarta** o frame do jogo (`discardGameFrame`): dois presents no mesmo vsync faziam o jogo vazar e a splash piscar. Se o decode/pipeline falhar, desliga-se sozinha e o jogo segue. `CORTEX_NO_SPLASH=1` só vale no dev-run (com `argv[1]`). |
 | `native/src/brand/splash_png.h` | PNG da marca EMBUTIDO no binário (nada de arquivo removível ao lado do exe). Gerado de `brand/*.svg` por `native/scripts/gen-brand.mjs` — **não edite à mão**. |
 | `native/src/webgpu/enums.*` | Mapas string↔enum (formatos, compare, cull, vertex formats...). |
 | `native/js/src/main.js` | Boot do jogo (hoje: cubo Three.js girando + smoke tests do M1). Entry do bundle. |

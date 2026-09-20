@@ -887,6 +887,30 @@ gere o bundle com `node native/scripts/bundle.mjs <out.js> <jogo>/main.ts`,
 compile com `native/build/bin/hermesc.exe -emit-binary -O -w -out boot.hbc
 <out.js>` e troque só o `boot.hbc` da cópia.
 
+### 9b. Boot cooperativo (`src/core/frameYield.ts`) — ADR-0218 / SPEC-0219
+
+O outro lado da mesma moeda: como o `fetch` do host é síncrono, uma carga
+escrita com `await` **nunca devolve o controle** e nada é apresentado até o fim.
+Por isso a carga CEDE o frame de tempos em tempos.
+
+Três regras, todas medidas no kart-racer — mexer numa sem as outras piora:
+
+1. **Cede por orçamento, não por item.** Fatia adaptativa: 30 ms com a splash no
+   ar (é animação), 250 ms depois (a tela de carregamento é estática).
+2. **Só dentro de um carregamento declarado** (`beginLoadingScope` /
+   `Game.setLoading`; o `buildScene` abre o seu). Fora do escopo, o frame cedido
+   renderiza a cena inteira — o `AssetLoader` cedendo sem essa condição levou a
+   criação dos carros de 2,6 s pra 8 s.
+3. **Durante a carga o `Game` não desenha o cenário**: cena VAZIA no lugar (a
+   tela de carregamento do jogo aparece por cima) e, sob a splash, nada — o host
+   descarta esse frame. Renderizar a cena pela metade custava 626 ms por frame.
+
+**Armadilha:** o jogo cuja carga continua depois do `buildScene` (criar
+personagens, veículos, sistemas) precisa de `game.setLoading(true)` …
+`setLoading(false)` num `finally`. Sem isso a tela congela na última imagem
+apresentada durante esse trecho — foi o que aconteceu no kart-racer, que ficava
+no logo da splash enquanto montava os seis carros.
+
 ## 10. Mapa de arquivos
 
 | Área | Onde |
