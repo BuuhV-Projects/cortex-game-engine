@@ -6,7 +6,7 @@
 
 # Class: VehicleControlSystem
 
-Defined in: [src/systems/VehicleControlSystem.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L91)
+Defined in: [src/systems/VehicleControlSystem.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L100)
 
 Dirige um [Vehicle](Vehicle.md) do Rapier (ADR-0081), gamepad-first com **fallback
 teclado**: com controle, **RT** acelera, **LT** freia (e dá ré parado), **stick X**
@@ -26,7 +26,7 @@ sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de
 
 > **new VehicleControlSystem**(`physics`, `vehicle`, `car`, `camera`, `gamepad`, `input?`, `options?`): `VehicleControlSystem`
 
-Defined in: [src/systems/VehicleControlSystem.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L103)
+Defined in: [src/systems/VehicleControlSystem.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L112)
 
 #### Parameters
 
@@ -112,7 +112,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: [src/systems/VehicleControlSystem.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L93)
+Defined in: [src/systems/VehicleControlSystem.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L102)
 
 Prioridade de execução deste sistema.
 
@@ -129,7 +129,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [src/systems/VehicleControlSystem.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L92)
+Defined in: [src/systems/VehicleControlSystem.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L101)
 
 Construtores dos componentes que este sistema requer.
 
@@ -176,7 +176,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`_entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/VehicleControlSystem.ts:117](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L117)
+Defined in: [src/systems/VehicleControlSystem.ts:126](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L126)
 
 Executa a lógica do sistema para o frame/passo atual.
 

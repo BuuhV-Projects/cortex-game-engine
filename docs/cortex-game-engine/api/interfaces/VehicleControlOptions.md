@@ -16,7 +16,7 @@ Opções do [VehicleControlSystem](../classes/VehicleControlSystem.md).
 
 > `optional` **actions?**: [`InputActions`](../classes/InputActions.md)
 
-Defined in: [src/systems/VehicleControlSystem.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L73)
+Defined in: [src/systems/VehicleControlSystem.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L82)
 
 **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra dirigir
 pelas ações `accelerate`/`brake`/`handbrake` + `moveLeft`/`moveRight`
@@ -32,6 +32,25 @@ fallback WASD fixos.
 Defined in: [src/systems/VehicleControlSystem.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L64)
 
 Só dirige/posiciona a câmera quando `true` (ex.: `() => car.driving`). Default sempre.
+
+#### Returns
+
+`boolean`
+
+***
+
+### autopilot?
+
+> `optional` **autopilot?**: () => `boolean`
+
+Defined in: [src/systems/VehicleControlSystem.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L75)
+
+**Piloto externo** (SPEC-0223) — quando `active()` é falso, o controlador
+normalmente ESTACIONA o carro (motor 0 + freio de mão). Com `autopilot`
+verdadeiro ele não escreve nada no veículo: motor, freio e esterço
+definidos por outro código (uma IA, um replay) continuam valendo, e o
+mundo avança igual. Ligar sem ninguém dirigindo deixa o carro em ponto
+morto. Default `false`.
 
 #### Returns
 
