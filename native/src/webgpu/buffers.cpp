@@ -445,6 +445,7 @@ napi_value deviceCreateBindGroup(napi_env env, napi_callback_info info) {
 // writeBuffer(buffer, bufferOffset, data[, dataOffset[, size]])
 // dataOffset/size em ELEMENTOS pra TypedArray, bytes pra ArrayBuffer (spec).
 napi_value queueWriteBuffer(napi_env env, napi_callback_info info) {
+  webgpu::NapiTimer _cronometro;  // SPEC-0225
   size_t argc = 5;
   napi_value args[5];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);

@@ -119,6 +119,7 @@ std::vector<WGPURenderPassColorAttachment> parseColorAttachments(
 // ── render pass: métodos ────────────────────────────────────────────────────
 
 napi_value passSetPipeline(napi_env env, napi_callback_info info) {
+  webgpu::NapiTimer _cronometro;  // SPEC-0225
   size_t argc = 1;
   napi_value args[1];
   auto* pass = static_cast<WGPURenderPassEncoder>(
@@ -135,6 +136,7 @@ napi_value passSetPipeline(napi_env env, napi_callback_info info) {
 }
 
 napi_value passDraw(napi_env env, napi_callback_info info) {
+  webgpu::NapiTimer _cronometro;  // SPEC-0225
   size_t argc = 4;
   napi_value args[4];
   auto* pass = static_cast<WGPURenderPassEncoder>(
@@ -153,6 +155,7 @@ napi_value passDraw(napi_env env, napi_callback_info info) {
 }
 
 napi_value passSetBindGroup(napi_env env, napi_callback_info info) {
+  webgpu::NapiTimer _cronometro;  // SPEC-0225
   size_t argc = 2;
   napi_value args[2];
   auto* pass = static_cast<WGPURenderPassEncoder>(
@@ -171,6 +174,7 @@ napi_value passSetBindGroup(napi_env env, napi_callback_info info) {
 }
 
 napi_value passSetVertexBuffer(napi_env env, napi_callback_info info) {
+  webgpu::NapiTimer _cronometro;  // SPEC-0225
   size_t argc = 3;
   napi_value args[3];
   auto* pass = static_cast<WGPURenderPassEncoder>(
@@ -192,6 +196,7 @@ napi_value passSetVertexBuffer(napi_env env, napi_callback_info info) {
 }
 
 napi_value passSetIndexBuffer(napi_env env, napi_callback_info info) {
+  webgpu::NapiTimer _cronometro;  // SPEC-0225
   size_t argc = 4;
   napi_value args[4];
   auto* pass = static_cast<WGPURenderPassEncoder>(
@@ -212,6 +217,7 @@ napi_value passSetIndexBuffer(napi_env env, napi_callback_info info) {
 }
 
 napi_value passDrawIndexed(napi_env env, napi_callback_info info) {
+  webgpu::NapiTimer _cronometro;  // SPEC-0225
   size_t argc = 5;
   napi_value args[5];
   auto* pass = static_cast<WGPURenderPassEncoder>(
@@ -600,6 +606,7 @@ napi_value deviceCreateCommandEncoder(napi_env env, napi_callback_info info) {
 }
 
 napi_value queueSubmit(napi_env env, napi_callback_info info) {
+  webgpu::NapiTimer _cronometro;  // SPEC-0225
   size_t argc = 1;
   napi_value args[1];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);

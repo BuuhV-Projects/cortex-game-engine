@@ -30,6 +30,11 @@ napi_value jsNapiStats(napi_env env, napi_callback_info) {
   put("drawIndexed", g_napiLast.drawIndexed);
   put("writeBuffer", g_napiLast.writeBuffer);
   put("submit", g_napiLast.submit);
+  // Milissegundos: o HUD e o trace leem em ms, e double nao perde precisao
+  // nessa faixa (nanos de um frame cabem folgado na mantissa).
+  napi_value ms = nullptr;
+  napi_create_double(env, static_cast<double>(g_napiLast.nanos) / 1e6, &ms);
+  napi_set_named_property(env, out, "ms", ms);
   return out;
 }
 
