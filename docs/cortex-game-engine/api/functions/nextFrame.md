@@ -8,7 +8,7 @@
 
 > **nextFrame**(): `Promise`\<`void`\>
 
-Defined in: .claude/worktrees/boot-cooperativo/src/core/frameYield.ts:36
+Defined in: [src/core/frameYield.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L36)
 
 Cede o controle até o próximo frame. Sem `requestAnimationFrame` (Node,
 testes) resolve na hora, sem esperar nada.

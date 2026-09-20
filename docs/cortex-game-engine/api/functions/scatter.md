@@ -8,7 +8,7 @@
 
 > **scatter**(`scene`, `url`, `count`, `area`, `options?`): `Promise`\<`Object3D`\<`Object3DEventMap`\>[]\>
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/SceneAssets.ts:382](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L382)
+Defined in: [src/scene/SceneAssets.ts:382](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L382)
 
 Espalha `count` cópias de um `.glb` aleatoriamente dentro de uma área
 retangular, cada uma assentada no chão com rotação/escala variadas — pra

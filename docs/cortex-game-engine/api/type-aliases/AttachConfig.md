@@ -8,6 +8,6 @@
 
 > **AttachConfig** = `NonNullable`\<`z.infer`\<*typeof* `attachSchema`\>\>
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/SceneDefinition.ts:606](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L606)
+Defined in: [src/scene/SceneDefinition.ts:606](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneDefinition.ts#L606)
 
 Config de encaixe por socket (campo `attach` dos nós; ver attachSchema; ADR-0053).

@@ -6,7 +6,7 @@
 
 # Interface: VehicleSetupConfig
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L31)
+Defined in: [src/scene/VehicleSetup.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L31)
 
 Config do [setupVehicle](../functions/setupVehicle.md) — layout do `.glb` (rodas/chassi) + tunáveis.
 
@@ -16,7 +16,7 @@ Config do [setupVehicle](../functions/setupVehicle.md) — layout do `.glb` (rod
 
 > `optional` **centerOfMass?**: `object`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L34)
+Defined in: [src/scene/VehicleSetup.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L34)
 
 #### x
 
@@ -36,7 +36,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:34](ht
 
 > **chassisHalfExtents**: `object`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L32)
+Defined in: [src/scene/VehicleSetup.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L32)
 
 #### x
 
@@ -56,7 +56,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:32](ht
 
 > `optional` **chassisOffset?**: `object`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L33)
+Defined in: [src/scene/VehicleSetup.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L33)
 
 #### x
 
@@ -76,7 +76,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:33](ht
 
 > `optional` **engineForce?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L42)
+Defined in: [src/scene/VehicleSetup.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L42)
 
 ***
 
@@ -84,7 +84,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:42](ht
 
 > `optional` **engineLayers?**: `object`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L50)
+Defined in: [src/scene/VehicleSetup.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L50)
 
 #### offHigh?
 
@@ -120,7 +120,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:50](ht
 
 > `optional` **frictionSlip?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L38)
+Defined in: [src/scene/VehicleSetup.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L38)
 
 ***
 
@@ -128,7 +128,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:38](ht
 
 > `optional` **handbrakeForce?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L44)
+Defined in: [src/scene/VehicleSetup.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L44)
 
 ***
 
@@ -136,7 +136,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:44](ht
 
 > `optional` **mass?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L35)
+Defined in: [src/scene/VehicleSetup.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L35)
 
 ***
 
@@ -144,7 +144,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:35](ht
 
 > `optional` **maxBrake?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L43)
+Defined in: [src/scene/VehicleSetup.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L43)
 
 ***
 
@@ -152,7 +152,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:43](ht
 
 > `optional` **maxReverseSpeed?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L47)
+Defined in: [src/scene/VehicleSetup.ts:47](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L47)
 
 ***
 
@@ -160,7 +160,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:47](ht
 
 > `optional` **maxSpeedKmh?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L49)
+Defined in: [src/scene/VehicleSetup.ts:49](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L49)
 
 ***
 
@@ -168,7 +168,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:49](ht
 
 > `optional` **maxSteer?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L48)
+Defined in: [src/scene/VehicleSetup.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L48)
 
 ***
 
@@ -176,7 +176,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:48](ht
 
 > `optional` **reverseForce?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L46)
+Defined in: [src/scene/VehicleSetup.ts:46](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L46)
 
 ***
 
@@ -184,7 +184,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:46](ht
 
 > `optional` **rollingResistance?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L45)
+Defined in: [src/scene/VehicleSetup.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L45)
 
 ***
 
@@ -192,7 +192,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:45](ht
 
 > `optional` **speedoMax?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L52)
+Defined in: [src/scene/VehicleSetup.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L52)
 
 Máx. do velocímetro (km/h). Default 260.
 
@@ -202,7 +202,7 @@ Máx. do velocímetro (km/h). Default 260.
 
 > `optional` **suspensionRestLength?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L36)
+Defined in: [src/scene/VehicleSetup.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L36)
 
 ***
 
@@ -210,7 +210,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:36](ht
 
 > `optional` **suspensionStiffness?**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L37)
+Defined in: [src/scene/VehicleSetup.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L37)
 
 ***
 
@@ -218,7 +218,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:37](ht
 
 > `optional` **wheelNames?**: `string`[]
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L41)
+Defined in: [src/scene/VehicleSetup.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L41)
 
 Nomes das malhas das rodas no `.glb`, na ordem de `wheels`. Default `['FL','FR','RL','RR']`.
 
@@ -228,4 +228,4 @@ Nomes das malhas das rodas no `.glb`, na ordem de `wheels`. Default `['FL','FR',
 
 > **wheels**: [`VehicleWheelSpec`](VehicleWheelSpec.md)[]
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/VehicleSetup.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L39)
+Defined in: [src/scene/VehicleSetup.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L39)

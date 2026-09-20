@@ -8,7 +8,7 @@
 
 > **endLoadingScope**(): `void`
 
-Defined in: .claude/worktrees/boot-cooperativo/src/core/frameYield.ts:135
+Defined in: [src/core/frameYield.ts:135](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L135)
 
 Fecha um escopo de carregamento.
 

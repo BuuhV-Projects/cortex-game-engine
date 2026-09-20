@@ -6,7 +6,7 @@
 
 # Interface: EditorLevel
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/core/Game.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L24)
+Defined in: [src/core/Game.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L24)
 
 Uma fase que o Studio pode abrir direto pelo seletor do viewport (ADR-0186).
 O jogo declara a lista em [Game.editorLevels](../classes/Game.md#editorlevels).
@@ -17,7 +17,7 @@ O jogo declara a lista em [Game.editorLevels](../classes/Game.md#editorlevels).
 
 > `readonly` `optional` **group?**: `string`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/core/Game.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L30)
+Defined in: [src/core/Game.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L30)
 
 Agrupador opcional (mundo, capítulo) — vira separador na lista.
 
@@ -27,7 +27,7 @@ Agrupador opcional (mundo, capítulo) — vira separador na lista.
 
 > `readonly` **id**: `string`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/core/Game.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L26)
+Defined in: [src/core/Game.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L26)
 
 Id da fase — vai em `?level=<id>`, então tem que ser o que o jogo entende.
 
@@ -37,6 +37,6 @@ Id da fase — vai em `?level=<id>`, então tem que ser o que o jogo entende.
 
 > `readonly` `optional` **label?**: `string`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/core/Game.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L28)
+Defined in: [src/core/Game.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L28)
 
 Nome legível. Sem ele, o seletor mostra o `id`.

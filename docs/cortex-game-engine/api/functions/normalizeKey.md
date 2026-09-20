@@ -8,7 +8,7 @@
 
 > **normalizeKey**(`key`): `string`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/input/bindings.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L60)
+Defined in: [src/input/bindings.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/bindings.ts#L60)
 
 Normaliza uma tecla pro mesmo formato do [InputManager](../classes/InputManager.md): letras (1
 caractere) viram minúsculas; teclas nomeadas (`Shift`, `ArrowLeft`) passam

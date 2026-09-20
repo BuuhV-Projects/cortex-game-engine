@@ -8,7 +8,7 @@
 
 > **overlayMatte**(`overlay`): `Record`\<`string`, `boolean`\>
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/SceneBuilder.ts:342](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L342)
+Defined in: [src/scene/SceneBuilder.ts:342](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L342)
 
 ## Parameters
 

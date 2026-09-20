@@ -8,7 +8,7 @@
 
 > **bootSync**\<`T`\>(`key`, `fn`): `T`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/core/bootProfile.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/bootProfile.ts#L56)
+Defined in: [src/core/bootProfile.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/bootProfile.ts#L56)
 
 Acumula o tempo de uma etapa **síncrona** sob `key`.
 

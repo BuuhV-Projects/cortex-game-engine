@@ -6,7 +6,7 @@
 
 # Interface: VisibleNode
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/core/PerfTrace.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L30)
+Defined in: [src/core/PerfTrace.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L30)
 
 Um nó de cena visível na amostra.
 
@@ -16,7 +16,7 @@ Um nó de cena visível na amostra.
 
 > **id**: `string`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/core/PerfTrace.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L32)
+Defined in: [src/core/PerfTrace.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L32)
 
 `node.id` da cena (o `buildScene` grava em `obj.name`).
 
@@ -26,7 +26,7 @@ Defined in: [.claude/worktrees/boot-cooperativo/src/core/PerfTrace.ts:32](https:
 
 > **meshes**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/core/PerfTrace.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L34)
+Defined in: [src/core/PerfTrace.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L34)
 
 Sub-malhas visíveis desse nó no frame.
 
@@ -36,6 +36,6 @@ Sub-malhas visíveis desse nó no frame.
 
 > **tris**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/core/PerfTrace.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L36)
+Defined in: [src/core/PerfTrace.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L36)
 
 Triângulos que o nó contribuiu.

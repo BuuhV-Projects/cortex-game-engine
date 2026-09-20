@@ -8,6 +8,6 @@
 
 > `const` **GP\_R3**: `11` = `11`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/input/padLayout.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L34)
+Defined in: [src/input/padLayout.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/padLayout.ts#L34)
 
 Clique do stick direito.

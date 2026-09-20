@@ -6,7 +6,7 @@
 
 # Interface: BuildProgress
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/SceneBuilder.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L182)
+Defined in: [src/scene/SceneBuilder.ts:182](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L182)
 
 Progresso da montagem da cena (SPEC-0219).
 
@@ -16,7 +16,7 @@ Progresso da montagem da cena (SPEC-0219).
 
 > **done**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/SceneBuilder.ts:184](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L184)
+Defined in: [src/scene/SceneBuilder.ts:184](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L184)
 
 Nós já instanciados.
 
@@ -26,7 +26,7 @@ Nós já instanciados.
 
 > **fraction**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/SceneBuilder.ts:188](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L188)
+Defined in: [src/scene/SceneBuilder.ts:188](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L188)
 
 Fração `0..1` da etapa de instanciação (0 fora dela, 1 depois dela).
 
@@ -36,7 +36,7 @@ Fração `0..1` da etapa de instanciação (0 fora dela, 1 depois dela).
 
 > **phase**: [`BuildPhase`](../type-aliases/BuildPhase.md)
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/SceneBuilder.ts:190](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L190)
+Defined in: [src/scene/SceneBuilder.ts:190](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L190)
 
 Em que etapa o build está.
 
@@ -46,6 +46,6 @@ Em que etapa o build está.
 
 > **total**: `number`
 
-Defined in: [.claude/worktrees/boot-cooperativo/src/scene/SceneBuilder.ts:186](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L186)
+Defined in: [src/scene/SceneBuilder.ts:186](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneBuilder.ts#L186)
 
 Total de nós a instanciar.
