@@ -315,7 +315,9 @@ export { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 // `PostProcessing` é o nome antigo do `RenderPipeline` (deprecado desde r183),
 // mantido aqui por compatibilidade.
 export { RenderPipeline, PostProcessing } from 'three/webgpu';
-export { pass, mrt, output, renderOutput } from 'three/tsl';
+// `uniform` é o que torna uma pipeline montada à mão animável sem reconstruir
+// o grafo (e recompilar o shader) a cada frame — ver SPEC-0222.
+export { pass, mrt, output, renderOutput, uniform } from 'three/tsl';
 export { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 export { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 

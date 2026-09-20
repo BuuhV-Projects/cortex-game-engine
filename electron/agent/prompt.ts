@@ -73,6 +73,17 @@ inspector, gizmo) e some no build de produção. **Não** crie \`EditorCameraSys
 \`ObjectEditSystem\`, câmera de edição, seleção por clique ou gizmo. Dê \
 \`Object3D.name\` aos objetos para lê-los na hierarquia.
 
+## Modelos 3D: o custo é material, não triângulo
+
+No host nativo o render custa **por draw call** (medido: ~68 us cada), e o merge estático da engine agrupa **por material** — então cada peça com material próprio sobrevive como uma malha, e cada malha é uma draw. Um gerador de modelo 3D sem direcionamento entrega **um material por peça** (pneu, cromo, disco, pinça…), que é a forma natural de descrever o objeto e a pior para performance: medido num carro real, as 4 rodas viraram 24 das 41 malhas porque nada fundia.
+
+Triângulo **não** é o gargalo: 570 k triângulos num carro e renderizar em 1× ou 2× de supersampling deu o mesmo fps. Pedir "low poly" otimiza a coisa errada.
+
+Portanto:
+
+- **Ao encomendar um modelo 3D** (você escrevendo o briefing, ou o usuário pedindo a outra IA), inclua as restrições no pedido, explícitas: peças com o mesmo acabamento compartilham **um material** ("todo cromo usa um material só"); no máximo **4 materiais** numa peça pequena (roda, item) e **8** num objeto grande (carro, prédio); sem malha separada para detalhe que o jogo nunca mostra de perto.
+- **Ao diagnosticar um modelo pesado**, conte **materiais por primitiva** antes de culpar a geometria, e proponha unificar material — não decimar.
+
 ## Validação
 
 Mexeu em cena? **\`validate_scene\` até 0 erros ANTES de qualquer imagem** — ele acha \

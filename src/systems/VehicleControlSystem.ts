@@ -65,6 +65,15 @@ export interface VehicleControlOptions {
   /** Pausa total (ex.: `() => game.editorActive`). */
   pauseWhen?: () => boolean;
   /**
+   * **Piloto externo** (SPEC-0223) — quando `active()` é falso, o controlador
+   * normalmente ESTACIONA o carro (motor 0 + freio de mão). Com `autopilot`
+   * verdadeiro ele não escreve nada no veículo: motor, freio e esterço
+   * definidos por outro código (uma IA, um replay) continuam valendo, e o
+   * mundo avança igual. Ligar sem ninguém dirigindo deixa o carro em ponto
+   * morto. Default `false`.
+   */
+  autopilot?: () => boolean;
+  /**
    * **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra dirigir
    * pelas ações `accelerate`/`brake`/`handbrake` + `moveLeft`/`moveRight`
    * (grupo `vehicle` da tela de Controles). Sem isso, valem RT/LT/stick e o
@@ -173,7 +182,7 @@ export class VehicleControlSystem extends System {
       const target = -steerIn * (o.maxSteer ?? 0.7) * (1 - reduction);
       this.steer += (target - this.steer) * Math.min(1, dt * (o.steerSmooth ?? 8));
       this.vehicle.setSteering(this.steer);
-    } else {
+    } else if (!(o.autopilot?.() ?? false)) {
       this.vehicle.setEngineForce(0);
       this.vehicle.setBrake(o.maxBrake ?? 50); // estacionado: freio segurando
     }
@@ -205,7 +214,10 @@ export class VehicleControlSystem extends System {
       }
     }
 
-    if (driving) this.placeCamera(t, r, dt);
+    // Em autopilot a câmera SEGUE o carro: um modo atrator ou uma medição
+    // precisam da mesma perseguição do jogo (SPEC-0223). O que não roda é a
+    // leitura de entrada — inclusive a de olhar, lá em cima.
+    if (driving || (o.autopilot?.() ?? false)) this.placeCamera(t, r, dt);
   }
 
   /**
