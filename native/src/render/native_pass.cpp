@@ -315,8 +315,13 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   constexpr int kMaxVezesLogadas = 12;
   if (logarOrdem && vezes < kMaxVezesLogadas) {
     ++vezes;
-    std::fprintf(stderr, "[pass-log] NATIVO apos %d passes | viewJS=%p | itens=%u",
-                 webgpu::passesGravadas(), (void*)viewProfundidade, total);
+    std::fprintf(stderr,
+                 "[pass-log] NATIVO apos %d passes | itens=%u | alvoDoHost=%s %ux%u fmt=%d",
+                 webgpu::passesGravadas(), total, temAlvoDaCena ? "sim" : "nao",
+                 temAlvoDaCena ? alvo.largura : (alvoCor ? wgpuTextureGetWidth(alvoCor) : 0),
+                 temAlvoDaCena ? alvo.altura : (alvoCor ? wgpuTextureGetHeight(alvoCor) : 0),
+                 temAlvoDaCena ? (int)alvo.formatoCor
+                               : (alvoCor ? (int)wgpuTextureGetFormat(alvoCor) : -1));
     std::fputc(0x0A, stderr);
     std::fflush(stderr);
   }

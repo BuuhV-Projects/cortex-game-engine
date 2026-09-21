@@ -463,6 +463,45 @@ uniformes por escrita direta.
 > lia zero de qualquer buffer, o contador zerado duas vezes, e o log que
 > pareava passes diferentes. Antes de concluir de uma medição nova aqui,
 > confira o instrumento num caso de resposta conhecida.
+> **DESCARTE DEFINITIVO em 21/09/2026 — não é "a view errada".**
+>
+> Com o alvo da cena identificado e a seleção pelo host funcionando
+> (`CORTEX_ALVO_DA_CENA=1`, confirmado por log: `alvoDoHost=sim 2048x2048
+> fmt=22`), o teste comportamental foi refeito **contra a profundidade da
+> própria pass da cena**:
+>
+> | comparação | pixels do passe |
+> | --- | --- |
+> | `Always` | 45306 |
+> | `Greater` | 45306 |
+> | `LessEqual` | 0 |
+>
+> A profundidade em questão é, pelo log, limpa com `clearValue = 1.000` e
+> armazenada (`profStore = Store`), e a pass que a usa faz os 187 draws da
+> cena. Ainda assim o passe a lê como um buffer de zeros.
+>
+> **Views já testadas, todas com o mesmo resultado:**
+>
+> | view | origem |
+> | --- | --- |
+> | a do `getDepthBuffer` | `backend.textureUtils` |
+> | a do descriptor do alvo da canvas | `backend.get(...).descriptor` |
+> | a última vista pelo host | captura em `beginRenderPass` |
+> | **a da pass da cena** | escolhida por tamanho + volume de draws |
+>
+> Também descartados por medição direta, cada um com o dado na mão:
+> multiamostra (`resolveTarget` nulo em todas as passes), profundidade
+> invertida (`clearValue = 1.000` em todas), e adulteração do `loadOp` pelo
+> host (`profLoadCru` é o que o `three` pediu).
+>
+> **O fio que sobra:** a profundidade que o `three` escreve **não é vista por
+> uma pass separada**, submetida depois, mesmo usando a view exata daquela
+> pass. Isso não é mais uma questão de escolher o recurso certo — é o caminho
+> do host entre command buffers. Investigar ali é o próximo passo, e o ADR-0237
+> já previa a forma final ("duas passes sequenciais com `loadOp: load`
+> compartilhando color+depth"), então é exatamente essa premissa que precisa
+> ser validada no host antes de continuar.
+
 
 
 

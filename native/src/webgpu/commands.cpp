@@ -534,8 +534,9 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
     // uma vez (SPEC-0241).
     TamanhoDaView tAnterior{};
     const bool conhecida = g_corDaPassAtual && tamanhoDaView(g_corDaPassAtual, &tAnterior);
-    std::fprintf(stderr, " profLoadCru=%s | ANTERIOR: %ux%u fmt=%d draws=%d%s",
-                 cruaLoad.c_str(), tAnterior.largura, tAnterior.altura,
+    std::fprintf(stderr, " profLoadCru=%s clearVal=%.3f | ANTERIOR: %ux%u fmt=%d draws=%d%s",
+                 cruaLoad.c_str(), depthAttachment.depthClearValue, tAnterior.largura,
+                 tAnterior.altura,
                  (int)tAnterior.formato, g_drawsNaPass, conhecida ? "" : " (sem tamanho)");
     std::fputc(0x0A, stderr);
     std::fflush(stderr);
