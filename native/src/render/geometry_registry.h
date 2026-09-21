@@ -24,8 +24,22 @@ struct GeometryEntry {
   WGPUBuffer indexBuffer = nullptr;
   /** Quantos índices desenhar; 0 quando não é indexada. */
   uint32_t indexCount = 0;
+  /**
+   * `true` quando os índices são de 32 bits. O `three` escolhe 16 ou 32 bits
+   * conforme o tamanho da malha, e desenhar com o formato errado não dá erro:
+   * lê os bytes tortos e a malha sai deformada. Por isso vem do JS, medido, em
+   * vez de presumido.
+   */
+  bool indexIs32Bit = true;
   /** Quantos vértices desenhar quando não há índice. */
   uint32_t vertexCount = 0;
+  /**
+   * Bytes entre vértices. NÃO é sempre 12: o cook do export regrava os GLB com
+   * os atributos interleaved, e aí o passo é o do bloco inteiro.
+   */
+  uint32_t vertexStride = 12;
+  /** Bytes do início do bloco até a posição, quando interleaved. */
+  uint64_t vertexOffset = 0;
 };
 
 /**

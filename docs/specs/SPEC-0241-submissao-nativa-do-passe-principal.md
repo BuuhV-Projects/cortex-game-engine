@@ -258,6 +258,37 @@ uniformes por escrita direta.
 - **Pronto quando:** `PipelineCache::misses()` estabiliza; `draws` idêntico ao
   baseline; imagem sem diferença (pelo harness do M7, SPEC-0240).
 
+> **EM ABERTO em 21/09/2026 — o passe desenha, mas a oclusão contra o `three`
+> ainda não funciona.**
+>
+> O que já funciona: 40 malhas REAIS da cena (geometria do `three`, matriz de
+> mundo do objeto, projeção da câmera do `three`) desenhadas por uma pass em C++
+> no alvo do `three`, com uniformes por offset dinâmico e um bind group só.
+> Com o teste de profundidade desligado elas aparecem **no lugar certo**
+> (~28 mil pixels da cor do passe), o que confirma geometria, matriz e projeção.
+>
+> O que não funciona: com `LessEqual` contra o depth do `three`, **nenhum pixel
+> passa**; com `Greater`, passam ~45 mil. Ou seja, a profundidade que este passe
+> gera é sistematicamente MAIOR que a que o `three` escreveu no mesmo pixel.
+>
+> Já descartado, com medição:
+>
+> | hipótese | como foi descartada |
+> | --- | --- |
+> | orientação de face (cull) | desligar o cull sozinho não muda nada |
+> | textura de profundidade recriada por frame | o endereço é o MESMO em todos os frames, 2560x1440 |
+> | `three` descartando o depth no fim da pass | o backend usa `Store` em todos os caminhos |
+> | convenção de profundidade WebGL vs WebGPU | a câmera reporta WebGPU, e converter à força não muda o resultado |
+> | depth invertido | nem a engine nem o jogo ligam `reversedDepth`, e o `three` desta versão não tem `reverseDepthBuffer` |
+>
+> **Correção de uma conclusão anterior desta mesma spec:** o resultado do passo 0
+> foi lido como "a oclusão entre os dois motores funciona". Isso **não estava
+> provado**. Lá o marcador era posto no fundo pelo viewport (`minDepth = maxDepth
+> = 1`) e não aparecia; eu li isso como "a cena o ocluiu", mas o mesmo resultado
+> sai de um buffer de profundidade que rejeita qualquer z > 0 — que é
+> exatamente o sintoma medido agora. O passo 0 provou que **o C++ desenha no
+> alvo do `three` e o desenho chega à tela**; não provou oclusão.
+
 ### Passo 4 — pool de uniformes ligado ao que se moveu
 
 - **Pronto quando:** objeto parado gera **zero** escrita no frame seguinte.

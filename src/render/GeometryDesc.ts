@@ -32,7 +32,29 @@ export interface GeometryBuffers {
   indexCount: number;
   /** Vértices a desenhar quando não há índice. */
   vertexCount: number;
+  /**
+   * Bytes entre vértices consecutivos. NÃO é sempre 12: o cook do export
+   * regrava os GLB com os atributos **interleaved** (posição, normal e UV no
+   * mesmo bloco), e aí o passo é o do bloco inteiro. Presumir 12 lê lixo e a
+   * malha não aparece — e isso quebra SÓ no export, porque no Studio os
+   * assets são densos.
+   */
+  vertexStride: number;
+  /** Bytes do início do bloco até a posição, quando interleaved. */
+  vertexOffset: number;
+  /**
+   * `true` quando os índices são de 32 bits. O `three` escolhe 16 ou 32 bits
+   * conforme o tamanho da malha, e desenhar com o formato errado não dá erro —
+   * lê os bytes tortos e a malha sai deformada.
+   */
+  indexIs32Bit: boolean;
 }
+
+/** Bytes por índice de 32 bits, usado para distinguir do formato de 16. */
+const BYTES_INDICE_32 = 4;
+/** Floats de uma posição (x, y, z) e o tamanho de cada um. */
+const FLOATS_DA_POSICAO = 3;
+const BYTES_POR_FLOAT = 4;
 
 interface BackendComAtributos {
   get(alvo: unknown): { buffer?: unknown } | undefined;
@@ -69,12 +91,34 @@ export function geometryBuffers(
   backend: BackendComAtributos,
   geometry: THREE.BufferGeometry,
 ): GeometryBuffers | null {
-  const posicao = geometry.getAttribute?.('position') as { count?: number } | undefined;
+  const posicao = geometry.getAttribute?.('position') as
+    | {
+        count?: number;
+        isInterleavedBufferAttribute?: boolean;
+        offset?: number;
+        data?: { stride?: number };
+      }
+    | undefined;
   if (!posicao) return null;
-  const vertexBuffer = backend.get(posicao)?.buffer;
+  // Em atributo interleaved quem tem o buffer de GPU é o bloco (`data`), não o
+  // atributo — pedir pelo atributo devolve `undefined` e a malha some.
+  const dono = posicao.isInterleavedBufferAttribute === true ? posicao.data : posicao;
+  const vertexBuffer = dono ? backend.get(dono)?.buffer : undefined;
   if (!vertexBuffer) return null;
 
-  const indice = geometry.index as { count?: number } | null | undefined;
+  const vertexStride =
+    posicao.isInterleavedBufferAttribute === true
+      ? (posicao.data?.stride ?? FLOATS_DA_POSICAO) * BYTES_POR_FLOAT
+      : FLOATS_DA_POSICAO * BYTES_POR_FLOAT;
+  const vertexOffset =
+    posicao.isInterleavedBufferAttribute === true
+      ? (posicao.offset ?? 0) * BYTES_POR_FLOAT
+      : 0;
+
+  const indice = geometry.index as
+    | { count?: number; array?: { BYTES_PER_ELEMENT?: number } }
+    | null
+    | undefined;
   const indexBuffer = indice ? (backend.get(indice)?.buffer ?? null) : null;
   // Índice declarado mas ainda sem buffer significa "o three não subiu isto
   // ainda". Desenhar sem o índice mudaria a malha — melhor recusar.
@@ -83,8 +127,18 @@ export function geometryBuffers(
   const indexCount = indexBuffer ? (indice?.count ?? 0) : 0;
   const vertexCount = indexBuffer ? 0 : (posicao.count ?? 0);
   if (indexCount === 0 && vertexCount === 0) return null;
+  // Lido do próprio array de índices, não presumido.
+  const indexIs32Bit = (indice?.array?.BYTES_PER_ELEMENT ?? BYTES_INDICE_32) === BYTES_INDICE_32;
 
-  return { vertexBuffer, indexBuffer, indexCount, vertexCount };
+  return {
+    vertexBuffer,
+    indexBuffer,
+    indexCount,
+    vertexCount,
+    indexIs32Bit,
+    vertexStride,
+    vertexOffset,
+  };
 }
 
 /** Reinicia a numeração. Só para teste — em runtime os ids vivem o processo. */

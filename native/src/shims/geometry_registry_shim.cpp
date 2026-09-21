@@ -11,8 +11,8 @@
 namespace shims {
 namespace {
 
-/** Argumentos de `register`: id, vertice, indice, indices, vertices. */
-constexpr size_t kArgsRegister = 5;
+/** Args: id, vertice, indice, indices, vertices, indice32bits, passo, deslocamento. */
+constexpr size_t kArgsRegister = 8;
 
 WGPUBuffer bufferDoArgumento(napi_env env, napi_value valor) {
   napi_valuetype tipo = napi_undefined;
@@ -28,7 +28,7 @@ uint32_t inteiroDoArgumento(napi_env env, napi_value valor) {
   return bruto > 0.0 ? static_cast<uint32_t>(bruto) : 0u;
 }
 
-/** `register(id, vertexBuffer, indexBuffer, indexCount, vertexCount)` */
+/** `register(id, vertexBuffer, indexBuffer, indexCount, vertexCount, indexIs32Bit)` */
 napi_value jsRegister(napi_env env, napi_callback_info info) {
   size_t argc = kArgsRegister;
   napi_value args[kArgsRegister];
@@ -43,6 +43,11 @@ napi_value jsRegister(napi_env env, napi_callback_info info) {
   entrada.indexBuffer = bufferDoArgumento(env, args[2]);
   entrada.indexCount = inteiroDoArgumento(env, args[3]);
   entrada.vertexCount = inteiroDoArgumento(env, args[4]);
+  bool indice32 = true;
+  napi_get_value_bool(env, args[5], &indice32);
+  entrada.indexIs32Bit = indice32;
+  entrada.vertexStride = inteiroDoArgumento(env, args[6]);
+  entrada.vertexOffset = inteiroDoArgumento(env, args[7]);
 
   const bool ok = geometryRegistry().set(inteiroDoArgumento(env, args[0]), entrada);
   napi_value saida = nullptr;

@@ -37,6 +37,7 @@ add_executable(cortex_host
   src/shims/scene_mirror_shim.cpp
   src/shims/dual_pass_spike_shim.cpp
   src/shims/geometry_registry_shim.cpp
+  src/shims/native_pass_shim.cpp
   src/shims/audio.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp
@@ -69,6 +70,7 @@ add_executable(cortex_host
   src/render/uniform_pool.cpp
   src/render/render_list.cpp
   src/render/geometry_registry.cpp
+  src/render/native_pass.cpp
   src/scene/scene_mirror.cpp
   src/webgpu/bloom.cpp
   src/webgpu/supersample.cpp

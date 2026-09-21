@@ -18,8 +18,8 @@ function backendFake(mapa: Map<unknown, unknown>) {
 
 /** Geometria mínima com a forma que o módulo consulta. */
 function geometriaFake(opcoes: {
-  posicao?: { count: number } | null;
-  indice?: { count: number } | null;
+  posicao?: Record<string, unknown> | null;
+  indice?: { count: number; array?: { BYTES_PER_ELEMENT: number } } | null;
 }) {
   const { posicao = { count: 24 }, indice = null } = opcoes;
   return {
@@ -64,7 +64,7 @@ describe('geometryId', () => {
 describe('geometryBuffers', () => {
   it('lê os buffers que o three já criou, sem criar cópia', () => {
     const posicao = { count: 24 };
-    const indice = { count: 36 };
+    const indice = { count: 36, array: { BYTES_PER_ELEMENT: 4 } };
     const geometria = geometriaFake({ posicao, indice });
     const backend = backendFake(
       new Map<unknown, unknown>([
@@ -79,6 +79,9 @@ describe('geometryBuffers', () => {
       indexBuffer: 'buffer-de-indice',
       indexCount: 36,
       vertexCount: 0,
+      indexIs32Bit: true,
+      vertexStride: 12,
+      vertexOffset: 0,
     });
   });
 
@@ -92,7 +95,59 @@ describe('geometryBuffers', () => {
       indexBuffer: null,
       indexCount: 0,
       vertexCount: 3,
+      indexIs32Bit: true,
+      vertexStride: 12,
+      vertexOffset: 0,
     });
+  });
+
+  it('reconhece índice de 16 bits pelo array, em vez de presumir 32', () => {
+    // Desenhar índice de 16 bits como se fosse de 32 não dá erro: lê os bytes
+    // tortos e a malha sai deformada na tela.
+    const posicao = { count: 24 };
+    const indice = { count: 36, array: { BYTES_PER_ELEMENT: 2 } };
+    const geometria = geometriaFake({ posicao, indice });
+    const backend = backendFake(
+      new Map<unknown, unknown>([
+        [posicao, 'vb'],
+        [indice, 'ib'],
+      ]),
+    );
+    expect(geometryBuffers(backend, geometria)?.indexIs32Bit).toBe(false);
+  });
+
+  it('resolve passo e deslocamento de geometria INTERLEAVED', () => {
+    // O cook do export regrava os GLB com posição, normal e UV no mesmo bloco.
+    // Presumir passo 12 lê lixo e a malha não aparece — e isso quebra SÓ no
+    // export, porque no Studio os assets são densos.
+    const bloco = { stride: 8 };  // 8 floats por vértice
+    const posicao = {
+      count: 24,
+      isInterleavedBufferAttribute: true,
+      offset: 0,
+      data: bloco,
+    };
+    const geometria = geometriaFake({ posicao });
+    // O buffer de GPU pertence ao BLOCO, não ao atributo.
+    const backend = backendFake(new Map<unknown, unknown>([[bloco, 'vb-do-bloco']]));
+
+    const buffers = geometryBuffers(backend, geometria);
+    expect(buffers?.vertexBuffer).toBe('vb-do-bloco');
+    expect(buffers?.vertexStride).toBe(32);
+    expect(buffers?.vertexOffset).toBe(0);
+  });
+
+  it('usa o deslocamento quando a posição não é o primeiro do bloco', () => {
+    const bloco = { stride: 8 };
+    const posicao = {
+      count: 24,
+      isInterleavedBufferAttribute: true,
+      offset: 3,  // posição começa depois de 3 floats
+      data: bloco,
+    };
+    const geometria = geometriaFake({ posicao });
+    const backend = backendFake(new Map<unknown, unknown>([[bloco, 'vb']]));
+    expect(geometryBuffers(backend, geometria)?.vertexOffset).toBe(12);
   });
 
   it('recusa quando o three ainda não subiu a geometria', () => {

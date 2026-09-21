@@ -30,6 +30,7 @@
 #include "shims/scene_mirror_shim.h"
 #include "shims/dual_pass_spike_shim.h"
 #include "shims/geometry_registry_shim.h"
+#include "shims/native_pass_shim.h"
 #include "shims/perf_stats.h"
 #include "shims/perf_trace.h"
 #include "shims/quit.h"
@@ -246,6 +247,7 @@ int main(int argc, char** argv) {
     shims::registerSceneMirror(js.env());  // SPEC-0234
     shims::registerDualPassSpike(js.env(), &gpu);  // SPEC-0241 passo 0 (TEMPORARIO)
     shims::registerGeometryRegistry(js.env());  // SPEC-0241 passo 2
+    shims::registerNativePass(js.env(), &gpu);  // SPEC-0241 passo 3
     shims::registerPerfStats(js.env());
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());

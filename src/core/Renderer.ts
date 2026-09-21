@@ -25,6 +25,7 @@ import * as THREE from 'three';
 // só instância do three (evita o bug de dual-instance). Ver vite.engine.config.ts.
 import { WebGPURenderer } from 'three/webgpu';
 import { DualPassSpike, modoDoSpike, spikeDisponivel } from '../render/DualPassSpike.js';
+import { NativePass, malhasAMigrar, nativePassDisponivel } from '../render/NativePass.js';
 import { debug } from './debug.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
@@ -111,6 +112,13 @@ export class Renderer {
    */
   /** Evita repetir o diagnóstico do spike a cada frame. */
   private _spikeRelatado = false;
+
+  /**
+   * Passe nativo (SPEC-0241, passo 3). Só existe quando o host expõe a ponte e
+   * a query pede (`?nativePass=N`); no Studio/browser fica `null`.
+   */
+  private _nativePass: NativePass | null =
+    nativePassDisponivel() && malhasAMigrar() > 0 ? new NativePass(malhasAMigrar()) : null;
 
   private _dualPassSpike: DualPassSpike | null =
     spikeDisponivel() && modoDoSpike() !== 'desligado'
@@ -245,6 +253,10 @@ export class Renderer {
       : false;
     if (!marcadorDesenhado) this._renderer.clear();
     this._renderer.render(scene, camera);
+    // O passe nativo entra DEPOIS do `three`, no mesmo alvo: é a única ordem
+    // que funciona (passo 0 da SPEC-0241). `null` como alvo de cor significa
+    // "a textura da canvas", que o host já possui.
+    this._nativePass?.desenhar(scene, camera, this._renderer, null);
     this._dualPassSpike?.observarNaCanvas(this._renderer);
   }
 
