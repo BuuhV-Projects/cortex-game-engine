@@ -27,6 +27,7 @@
 #include "shims/ktx2.h"
 #include "shims/perf_arraybuffer.h"
 #include "shims/clock.h"
+#include "shims/scene_mirror_shim.h"
 #include "shims/perf_stats.h"
 #include "shims/perf_trace.h"
 #include "shims/quit.h"
@@ -233,6 +234,7 @@ int main(int argc, char** argv) {
     shims::registerImageDecode(js.env());
     shims::registerKtx2(js.env());
     shims::registerClock(js.env());  // SPEC-0226
+    shims::registerSceneMirror(js.env());  // SPEC-0234
     shims::registerPerfStats(js.env());
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());

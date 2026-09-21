@@ -34,6 +34,7 @@ add_executable(cortex_host
   src/napi/napi_util.cpp
   src/shims/animation_frame.cpp
   src/shims/clock.cpp
+  src/shims/scene_mirror_shim.cpp
   src/shims/audio.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp

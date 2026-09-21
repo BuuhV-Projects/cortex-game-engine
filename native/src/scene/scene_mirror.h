@@ -74,6 +74,19 @@ class SceneMirror {
   /** Matriz de mundo de um nó (16 floats), após {@link updateAndCull}. */
   const float* worldMatrix(NodeIndex index) const { return &world_[static_cast<size_t>(index) * 16]; }
 
+  /**
+   * Memória crua das matrizes de mundo, para ser exposta ao JS **sem cópia**
+   * (`napi_create_external_arraybuffer`). O `three` aponta o
+   * `matrixWorld.elements` de cada objeto para a fatia dele e passa a ler
+   * daqui — é o que elimina o laço de aplicação em JS (SPEC-0234).
+   *
+   * Cuidado: o vetor não pode realocar enquanto o JS segura o buffer, senão o
+   * ponteiro que ele guarda vira lixo. Por isso a cena é montada uma vez em
+   * {@link build} e não cresce depois.
+   */
+  float* worldData() { return world_.data(); }
+  size_t worldFloatCount() const { return world_.size(); }
+
   size_t size() const { return parents_.size(); }
 
  private:
