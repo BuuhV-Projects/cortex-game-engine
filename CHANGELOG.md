@@ -1,3 +1,19 @@
+# [0.56.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.55.0...v0.56.0) (2026-09-21)
+
+
+### Bug Fixes
+
+* **native:** espelho de cena em dupla precisao — sombras em bandas na pista ([0349725](https://github.com/BuuhV-Projects/cortex-game-engine/commit/03497252b9f0ea68f7684a6e793e2e35d8555125))
+
+
+### Features
+
+* **asset:** refino por atlas de paleta + validacao Blender no Chat IA ([27df1ab](https://github.com/BuuhV-Projects/cortex-game-engine/commit/27df1aba81efa4ed50efebbd3b4f64d9ebd92ec2))
+* **ecs:** perfil por sistema — CarSystem e 87% do world (SPEC-0236, ADR-0235) ([eb7b66c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/eb7b66ceced8b3a01bbad27ac1f9246b23f0b2aa))
+* **native:** espelho de cena em C++ — 0,023 ms contra 8,5 (SPEC-0233) ([08f1dd9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/08f1dd9ee1eb58b5d85f1b52faf848425cf9d056))
+* **native:** ponte do espelho de cena — matriz sai do JS (SPEC-0234) ([27c62f6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/27c62f6f18c8dc968116f1de68d2f7f6f558c1ee))
+* **native:** spike do laco de render em C++ — 2,2 us/draw contra 33,5 (ADR-0232) ([4b1bb9c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4b1bb9c73363fdc0efccdbc4da92089cf6a912fd))
+
 # [0.55.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.54.0...v0.55.0) (2026-09-21)
 
 
