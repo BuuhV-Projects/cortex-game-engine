@@ -2,6 +2,7 @@
 #include "depth_peek.h"
 
 #include "../core/host_gpu.h"
+#include "../webgpu/internal.h"
 
 #include <webgpu/wgpu.h>
 
@@ -29,7 +30,11 @@ fn vs(@builtin(vertex_index) i : u32) -> @builtin(position) vec4f {
 @fragment
 fn fs(@builtin(position) p : vec4f) -> @location(0) vec4f {
   let z = textureLoad(profundidade, vec2i(i32(p.x), i32(p.y)), 0);
-  return vec4f(z, z, z, 1.0);
+  // z no vermelho; verde/azul constantes provam que o pipeline rodou.
+  // R/G = dimensoes que o shader enxerga; B = z. Preto no R/G significa que a
+  // textura nem chegou ao binding — e nao que o buffer esteja vazio.
+  let d = textureDimensions(profundidade);
+  return vec4f(f32(d.x) / 4096.0, f32(d.y) / 4096.0, z, 1.0);
 }
 )WGSL";
 
@@ -113,11 +118,39 @@ bool depthPeekEnabled() {
   return ligada;
 }
 
+int depthPeekMode() {
+  static const int modo = [] {
+    const char* v = std::getenv("CORTEX_DEPTH_PEEK");
+    if (!v) return 0;
+    const int n = std::atoi(v);
+    return n > 0 ? n : 1;
+  }();
+  return modo;
+}
+
 void depthPeek(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture profundidade,
                WGPUTextureView viewProfundidade) {
   if (!gpu || !gpu->device || !gpu->queue || !profundidade) return;
   if (!alvoCor) alvoCor = gpu->offscreenTexture;
   if (!alvoCor) return;
+
+  // Diagnostico: o que a textura de profundidade REALMENTE e. Sem isso, a
+  // sonda continua devolvendo preto sem dizer se o motivo e conteudo zerado
+  // ou recurso incompativel (multiamostra, formato, aspecto).
+  std::fprintf(stderr,
+               "[depth-peek] prof: %dx%d fmt=%d amostras=%u mips=%u usage=%u | "
+               "cor: %dx%d fmt=%d amostras=%u | viewJS=%p viewHost=%p\n",
+               (int)wgpuTextureGetWidth(profundidade),
+               (int)wgpuTextureGetHeight(profundidade),
+               (int)wgpuTextureGetFormat(profundidade),
+               wgpuTextureGetSampleCount(profundidade),
+               wgpuTextureGetMipLevelCount(profundidade),
+               (unsigned)wgpuTextureGetUsage(profundidade),
+               (int)wgpuTextureGetWidth(alvoCor), (int)wgpuTextureGetHeight(alvoCor),
+               (int)wgpuTextureGetFormat(alvoCor),
+               wgpuTextureGetSampleCount(alvoCor),
+               (void*)viewProfundidade, (void*)webgpu::cenaDepthView());
+  std::fflush(stderr);
 
   Recursos& r = recursos();
   const WGPUTextureFormat formatoCor = wgpuTextureGetFormat(alvoCor);
@@ -129,11 +162,15 @@ void depthPeek(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture profundidade,
 
   // Prefere a view que o `three` usa, quando ela vem: se o conteudo estiver
   // nela e nao na textura, e sinal de que sao recursos diferentes.
-  const bool viewEmprestada = viewProfundidade != nullptr;
+  // Sempre uma view DepthOnly criada aqui: um binding de textura sobre
+  // Depth24Plus exige esse aspecto, e as views que vem de fora sao de
+  // attachment (aspecto All) — amarrar uma dessas no layout de profundidade
+  // faz a leitura devolver zero sem erro nenhum.
+  const bool viewEmprestada = false;
   WGPUTextureViewDescriptor vd = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
   vd.aspect = WGPUTextureAspect_DepthOnly;
-  WGPUTextureView viewProf =
-      viewEmprestada ? viewProfundidade : wgpuTextureCreateView(profundidade, &vd);
+  WGPUTextureView viewProf = wgpuTextureCreateView(profundidade, &vd);
+  (void)viewProfundidade;
   if (!viewProf) return;
   std::fprintf(stderr, "[depth-peek] usando %s\n",
                viewEmprestada ? "a view do three" : "uma view nova da textura");
@@ -148,6 +185,9 @@ void depthPeek(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture profundidade,
   gd.entries = &entrada;
   WGPUBindGroup grupo = wgpuDeviceCreateBindGroup(gpu->device, &gd);
   if (!grupo) {
+    std::fprintf(stderr, "[depth-peek] a bind group foi RECUSADA: a view nao casa com o layout");
+    std::fputc(0x0A, stderr);
+    std::fflush(stderr);
     if (!viewEmprestada) wgpuTextureViewRelease(viewProf);
     return;
   }

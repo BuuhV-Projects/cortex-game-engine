@@ -298,6 +298,52 @@ uniformes por escrita direta.
 > sai de um buffer de profundidade que rejeita qualquer z > 0 — que é
 > exatamente o sintoma medido agora. O passo 0 provou que **o C++ desenha no
 > alvo do `three` e o desenho chega à tela**; não provou oclusão.
+> **CORREÇÃO em 21/09/2026 — a sonda de profundidade não é um instrumento
+> válido nesta plataforma, e o que ela "confirmou" não vale.**
+>
+> A sonda (`CORTEX_DEPTH_PEEK`) pinta na cor o que está no buffer de
+> profundidade, via `texture_depth_2d` + `textureLoad`. Ela foi usada para
+> "confirmar por leitura" que a profundidade do `three` está zerada. **Esse
+> passo era inválido.**
+>
+> Validação do instrumento, que faltava: apontar a sonda para a profundidade
+> **própria do passe** (modo `CORTEX_DEPTH_PEEK=2`), que é limpa com `1.0` todo
+> frame e portanto **não pode** ler zero. Resultado medido:
+>
+> | teste | esperado | medido |
+> | --- | --- | --- |
+> | sonda devolve cor constante | tela coberta | tela coberta — o pipeline roda e o alvo é o certo |
+> | sonda devolve `textureDimensions` | 2560x1440 | R=159, G=90 → 2554x1446 (quantização de 8 bits) — a textura **chega** ao shader |
+> | sonda devolve `z` do buffer limpo com 1.0 | branco | **preto (z = 0)** |
+>
+> Ou seja: o pipeline roda, o alvo é o certo, o binding está correto e a textura
+> chega ao shader com as dimensões certas — e ainda assim `textureLoad` devolve
+> zero. **A leitura de profundidade por `texture_depth_2d` não funciona neste
+> caminho wgpu/D3D12.** Aspecto `DepthOnly` explícito na view não muda.
+>
+> **O que muda e o que não muda:**
+>
+> - **Não muda:** a conclusão de que a profundidade do `three` *se comporta*
+>   como um buffer de zeros continua de pé — ela vem dos testes
+>   **comportamentais** da tabela acima (`LessEqual` não passa nada, `Greater`
+>   passa, `Clear` na própria pass destrava), que não dependem da sonda.
+> - **Muda:** a frase "a view que o host captura também **lê** zeros" não tem
+>   valor probatório. A sonda leria zero de qualquer buffer.
+> - **Some uma hipótese:** o diagnóstico mostrou `viewJS == viewHost` (mesmo
+>   ponteiro), então a suspeita de que o JS entregava uma view diferente da que
+>   o host captura das passes do `three` está **descartada por medição**.
+> - Também medido do alvo real: profundidade `Depth24Plus`, 2560x1440, **1
+>   amostra**, `usage = 23` (inclui `TextureBinding` e `CopySrc`); cor
+>   `BGRA8Unorm`, 1 amostra. Isso descarta multiamostra e falta de usage como
+>   causa.
+>
+> **Consequência para quem continuar:** não usar a sonda como evidência. O
+> próximo teste da oclusão tem de ser comportamental e sem ambiguidade —
+> desenhar o mesmo lote duas vezes contra a profundidade do `three`, uma com
+> `depthCompare = Always` e outra com `Greater`, e comparar as imagens: num
+> buffer de zeros as duas são idênticas; num buffer com a cena, `Greater` mostra
+> o objeto só onde ele está atrás dela.
+
 
 > **MEDIDO em 21/09/2026 — o caminho nativo é 34 µs/draw mais barato, e isso
 > confirma a hipótese que sustenta o plano inteiro.**

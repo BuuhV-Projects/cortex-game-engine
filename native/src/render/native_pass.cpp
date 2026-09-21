@@ -73,8 +73,10 @@ struct Recursos {
    * Profundidade PRÓPRIA do passe, provisória.
    *
    * O ideal é compartilhar a do `three` — assim a oclusão entre os dois motores
-   * sai de graça. Isso não fechou: a profundidade que o JS entrega está zerada,
-   * e a view que o host captura das passes dele também lê zeros (SPEC-0241).
+   * sai de graça. Isso não fechou: a profundidade que o JS entrega SE COMPORTA
+   * como um buffer de zeros (LessEqual não passa nada, Greater passa). Dizer
+   * que ela "lê" zeros seria errado — a sonda que fazia essa leitura foi medida
+   * e não é um instrumento válido aqui (SPEC-0241, correção de 21/09/2026).
    * Com buffer próprio a oclusão ENTRE os objetos migrados fica correta, que é
    * o suficiente para medir o custo do caminho — que é a pergunta do marco.
    * A oclusão contra o `three` fica em aberto.
@@ -135,7 +137,8 @@ bool garantirProfundidadePropria(HostGpu* gpu, Recursos& r, uint32_t largura,
   WGPUTextureDescriptor td = WGPU_TEXTURE_DESCRIPTOR_INIT;
   td.size = {largura, altura, 1};
   td.format = WGPUTextureFormat_Depth24Plus;
-  td.usage = WGPUTextureUsage_RenderAttachment;
+  // TextureBinding para a sonda poder LER esta textura e validar o instrumento.
+  td.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding;
   td.dimension = WGPUTextureDimension_2D;
   td.sampleCount = amostras == 0 ? 1 : amostras;
   r.profundidadePropria = wgpuDeviceCreateTexture(gpu->device, &td);
@@ -269,9 +272,10 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   if (!alvoCor) alvoCor = gpu->offscreenTexture;
   if (!alvoCor || total == 0) return 0;
 
-  // Sonda: pinta o conteudo do buffer de profundidade e sai. Serve para ver o
-  // que ha nele, em vez de inferir pelo comportamento do teste.
-  if (depthPeekEnabled()) {
+  // Modo 1: sonda a profundidade do `three` e sai, sem desenhar.
+  // Modo 2: desenha e sonda a PRÓPRIA no fim (valida o instrumento).
+  const int modoSonda = depthPeekMode();
+  if (modoSonda == 1) {
     depthPeek(gpu, alvoCor, alvoProfundidade, viewProfundidade);
     return 0;
   }
@@ -383,6 +387,9 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   wgpuCommandBufferRelease(cmd);
   wgpuCommandEncoderRelease(encoder);
   wgpuTextureViewRelease(viewCor);  // a de profundidade e do passe e sobrevive
+  if (modoSonda == 2) {
+    depthPeek(gpu, alvoCor, r.profundidadePropria, r.viewPropria);
+  }
   return desenhados;
 }
 
