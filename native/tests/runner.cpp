@@ -24,6 +24,7 @@ void testUniformPoolNaoDuplicaMarcacao();
 void testUniformPoolFrameParadoNaoEscreveNada();
 void testUniformPoolCenaNovaMarcaTudo();
 void testUniformPoolIgnoraSlotForaDaFaixa();
+void testGeometryRegistry();
 void testRenderListOpacosAntesDeTransparentes();
 void testRenderListAgrupaOpacosPorPipeline();
 void testRenderListTransparentesDeTrasParaFrente();
@@ -53,6 +54,7 @@ int main() {
   tests::testUniformPoolFrameParadoNaoEscreveNada();
   tests::testUniformPoolCenaNovaMarcaTudo();
   tests::testUniformPoolIgnoraSlotForaDaFaixa();
+  tests::testGeometryRegistry();
   tests::testRenderListOpacosAntesDeTransparentes();
   tests::testRenderListAgrupaOpacosPorPipeline();
   tests::testRenderListTransparentesDeTrasParaFrente();

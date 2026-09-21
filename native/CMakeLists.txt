@@ -36,6 +36,7 @@ add_executable(cortex_host
   src/shims/clock.cpp
   src/shims/scene_mirror_shim.cpp
   src/shims/dual_pass_spike_shim.cpp
+  src/shims/geometry_registry_shim.cpp
   src/shims/audio.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp
@@ -67,6 +68,7 @@ add_executable(cortex_host
   src/webgpu/dual_pass_spike.cpp
   src/render/uniform_pool.cpp
   src/render/render_list.cpp
+  src/render/geometry_registry.cpp
   src/scene/scene_mirror.cpp
   src/webgpu/bloom.cpp
   src/webgpu/supersample.cpp
@@ -290,12 +292,14 @@ add_executable(cortex_host_tests
   tests/pipeline_cache_test.cpp
   tests/uniform_pool_test.cpp
   tests/render_list_test.cpp
+  tests/geometry_registry_test.cpp
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
   src/core/game_config.cpp
   src/scene/scene_mirror.cpp
   src/render/uniform_pool.cpp
   src/render/render_list.cpp
+  src/render/geometry_registry.cpp
 )
 target_include_directories(cortex_host_tests PRIVATE
   ${TP}/wgpu/include
