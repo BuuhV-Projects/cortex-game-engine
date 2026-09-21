@@ -1,3 +1,11 @@
+# [0.55.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.54.0...v0.55.0) (2026-09-21)
+
+
+### Features
+
+* **host:** relogio de alta resolucao no performance.now (SPEC-0226) ([9197975](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9197975335a8dd4c4e849bc01ce912a000ee7b23))
+* **perf:** sonda de fases do render; o renderObject e 57% (SPEC-0227) ([dc87830](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dc87830384f5bf12d2c0a6ef90fcc895231e2037))
+
 # [0.54.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.53.0...v0.54.0) (2026-09-20)
 
 
