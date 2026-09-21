@@ -22,6 +22,7 @@ import {
   renderPhasesRequested,
   matrixFreezeRequested,
   matrixComposeFreezeRequested,
+  systemProfileRequested,
 } from './RenderPhaseProbe.js';
 import { InspectCamera } from './InspectCamera.js';
 
@@ -206,6 +207,8 @@ export class Game {
    * Espelho de cena no host (SPEC-0234): a travessia de matriz sai do JS. Só
    * existe no export nativo; no browser e no Studio é inerte.
    */
+  /** Perfil por sistema do ECS (SPEC-0236), ligado por ?systemProfile=1. */
+  private _systemProfile: Map<string, number> | null = null;
   private readonly _sceneMirror = new NativeSceneMirror();
   private _sceneMirrorTried = false;
   private readonly _matrixFreezeAt = matrixFreezeRequested();
@@ -273,6 +276,7 @@ export class Game {
     }
 
     this.world = new World();
+    if (systemProfileRequested()) this._systemProfile = this.world.enableSystemProfile();
     this.input = new InputManager();
     if (typeof document !== 'undefined') this.input.attach(document.body);
     this.gamepad = new GamepadManager();
@@ -620,6 +624,7 @@ export class Game {
       this.profiler,
       (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info?.render ?? null,
       this._renderPhases,
+      this._systemProfile,
     );
   }
 

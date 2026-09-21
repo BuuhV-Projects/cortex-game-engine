@@ -45,6 +45,8 @@ export class World {
    * A ordenação é feita a cada `addSystem`, portanto `tick` itera diretamente.
    */
   private _systems: System[] = [];
+  /** Perfil por sistema (SPEC-0236); null = desligado, que e o default. */
+  private _systemProfile: Map<string, number> | null = null;
 
   // ─── Entity Management ─────────────────────────────────────────────────────
 
@@ -172,11 +174,37 @@ export class World {
    * @param deltaTime - Tempo decorrido desde o último tick, em ms.
    */
   tick(deltaTime: number): void {
+    // Com o perfil por sistema ligado (SPEC-0236), cada `update` é cronometrado
+    // separadamente — é a única forma de saber QUAL sistema come o `world`, que
+    // o trace só reportava como um bloco de 9,3 ms.
+    const profile = this._systemProfile;
     for (const system of this._systems) {
       if (system.pauseWhen?.()) continue; // sistema pausado (ex.: gameplay no editor)
       const required = (system.constructor as typeof System).requiredComponents;
       const entities = this.query(...required);
+      if (profile === null) {
+        system.update(entities, deltaTime);
+        continue;
+      }
+      const started = performance.now();
       system.update(entities, deltaTime);
+      const name = system.constructor.name;
+      profile.set(name, (profile.get(name) ?? 0) + (performance.now() - started));
     }
+  }
+
+  /**
+   * Liga o perfil por sistema e devolve o mapa vivo (nome → ms acumulados).
+   * Desligado por default: cronometrar todo sistema todo frame é instrumento,
+   * não comportamento de produção.
+   */
+  enableSystemProfile(): Map<string, number> {
+    this._systemProfile ??= new Map<string, number>();
+    return this._systemProfile;
+  }
+
+  /** Zera os acumuladores do perfil por sistema, mantendo-o ligado. */
+  resetSystemProfile(): void {
+    this._systemProfile?.clear();
   }
 }

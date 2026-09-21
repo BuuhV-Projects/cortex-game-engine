@@ -66,7 +66,8 @@ repetida.
 
 ## Resultado (20/09/2026)
 
-Corrida do kart-racer, export --debug, janela minimizada, 101 amostras:
+Corrida do kart-racer, export `--debug`, 144 amostras, já com a correção de
+precisão descrita no fim desta spec:
 
 | medida | antes | depois | critério |
 | --- | --- | --- | --- |
@@ -77,7 +78,7 @@ Corrida do kart-racer, export --debug, janela minimizada, 101 amostras:
 | frame | 38 ms | **31,7 ms** | sucesso ≤32 · fracasso >35 |
 | fps | 26,3 | **31,5** | — |
 
-**A travessia de matriz praticamente sumiu do JS** (4,5 → 0,207 ms), e o culling
+**A travessia de matriz praticamente sumiu do JS** (4,5 → 0,205 ms), e o culling
 caiu junto porque o `three` deixou de recompor matriz durante ele. O visual foi
 conferido por captura do jogo: pista, carro, túnel e HUD corretos, com o
 `matrixWorld` vindo do C++.
@@ -93,18 +94,20 @@ fase 4 tirar o `renderObject` do JS.
 
 ## Bug encontrado e corrigido: precisão
 
-A primeira versão expôs as matrizes como . O jogo rodou, o fps
+A primeira versão expôs as matrizes como `Float32Array`. O jogo rodou, o fps
 subiu — e **as sombras da pista saíram em bandas**, reportado pelo usuário a
 partir de uma captura.
 
-Causa: o  do  é **dupla precisão**. Numa cidade, com
+Causa: o `matrixWorld` do `three` é **dupla precisão**. Numa cidade, com
 coordenadas na casa das centenas de metros, o float32 tem dígitos de menos, e o
 erro acumulado na matriz aparece no shadow map como faixas — o clássico shadow
-acne, só que nascido do lado do CPU.
+acne, só que nascido do lado da CPU e não do viés do depth.
 
-O espelho passou a guardar e expor **** (matriz local, matriz de mundo e
-o buffer de sincronização). O custo é 166 KB a mais de memória, e o ficou igual (0,205 ms). As bandas sumiram, conferido por nova captura.
+O espelho passou a guardar e expor **`double`**: matriz local, matriz de mundo e
+o buffer de sincronização. O custo é 166 KB a mais de memória, e o `rpMatrix`
+ficou igual (0,205 ms). As bandas sumiram, conferido por nova captura do jogo.
 
 Fica a regra, que vale para qualquer coisa que atravesse essa fronteira: **o que
-espelha estado do  usa a mesma precisão que ele**, porque a diferença não
-aparece como erro e sim como artefato visual difícil de rastrear.
+espelha estado do `three` usa a mesma precisão que ele**. A diferença não
+aparece como erro nem como exceção — aparece como artefato visual, que é o tipo
+de defeito mais caro de rastrear.
