@@ -31,6 +31,8 @@ HostGpu* gpuState();
  */
 void setCenaDepthView(WGPUTextureView view);
 WGPUTextureView cenaDepthView();
+/** Quantas passes do three ja foram gravadas (diagnostico, SPEC-0241). */
+int passesGravadas();
 
 // destroy() de buffers/texturas = DESTRUIÇÃO ADIADA (buffers.cpp, ADR-0153):
 // enfileira com AddRef e o flush do loop executa Destroy+Release N frames

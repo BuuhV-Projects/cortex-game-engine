@@ -2,6 +2,8 @@
 // render pass e queue.submit.
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <vector>
 
 #include "../napi/napi_util.h"
@@ -11,6 +13,9 @@
 
 namespace webgpu {
 namespace {
+
+/** Quantas passes do three ja foram gravadas; so para diagnostico. */
+int g_passesGravadas = 0;
 
 /** Ultima profundidade vista na pass da cena; nao e dona da view. */
 WGPUTextureView g_cenaDepthView = nullptr;
@@ -464,6 +469,28 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
   // offscreen do host nao funciona: o `three` cria a propria view a partir da
   // mesma textura, entao os handles nunca batem. Como o passe nativo roda logo
   // depois do render da cena e antes da UI, a ultima e a da cena.
+  // Diagnostico temporario (SPEC-0241): lista as passes do frame com suas
+  // views. Serve para achar em qual pass a cena e realmente desenhada, ja que
+  // a profundidade que chega ao passe nativo se comporta como zeros.
+  static const bool logarPasses = std::getenv("CORTEX_PASS_LOG") != nullptr;
+  static int passesLogadas = 0;
+  constexpr int kMaxPassesLogadas = 130;
+  if (logarPasses && passesLogadas < kMaxPassesLogadas) {
+    ++passesLogadas;
+    std::fprintf(stderr,
+                 "[pass-log] #%d cor=%p corLoad=%d prof=%s profView=%p profLoad=%d profStore=%d",
+                 passesLogadas, (void*)attachments[0].view, (int)attachments[0].loadOp,
+                 temProfundidade ? "sim" : "nao",
+                 temProfundidade ? (void*)depthAttachment.view : nullptr,
+                 temProfundidade ? (int)depthAttachment.depthLoadOp : -1,
+                 temProfundidade ? (int)depthAttachment.depthStoreOp : -1);
+    std::fputc(0x0A, stderr);
+    std::fflush(stderr);
+  }
+  ++g_passesGravadas;
+  // NAO filtrar por depthLoadOp == Clear: medido em 21/09/2026, a pass que
+  // limpa e o SHADOW MAP (2048x2048) e usar a profundidade dela faz o wgpu
+  // recusar a pass por tamanhos diferentes. A da cena chega com Load.
   if (temProfundidade) setCenaDepthView(depthAttachment.view);
   WGPURenderPassEncoder pass =
       wgpuCommandEncoderBeginRenderPass(encoder, &desc);
@@ -606,6 +633,7 @@ std::vector<WGPUCommandBuffer> collectCommandBuffers(napi_env env,
 
 void setCenaDepthView(WGPUTextureView view) { g_cenaDepthView = view; }
 WGPUTextureView cenaDepthView() { return g_cenaDepthView; }
+int passesGravadas() { return g_passesGravadas; }
 
 napi_value deviceCreateCommandEncoder(napi_env env, napi_callback_info info) {
   size_t argc = 0;

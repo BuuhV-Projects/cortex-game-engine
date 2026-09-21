@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -86,6 +87,27 @@ struct Recursos {
   uint32_t largura = 0;
   uint32_t altura = 0;
 };
+
+/**
+ * Experimento de oclusão (SPEC-0241), por `CORTEX_DEPTH_EXP`:
+ *   always  — desenha tudo, ignorando a profundidade do `three`
+ *   greater — desenha só onde o objeto está ATRÁS do que o `three` escreveu
+ * Nos dois o passe CARREGA a profundidade do `three` em vez de limpá-la, e não
+ * escreve nela. Se as duas imagens forem idênticas, o buffer que chega aqui é
+ * de zeros; se `greater` mostrar menos, ele tem a cena dentro. É comportamental
+ * de propósito: a leitura por sonda não é confiável nesta plataforma.
+ */
+WGPUCompareFunction comparacaoDoExperimento() {
+  static const WGPUCompareFunction escolha = [] {
+    const char* v = std::getenv("CORTEX_DEPTH_EXP");
+    if (!v) return WGPUCompareFunction_Undefined;
+    if (std::strcmp(v, "always") == 0) return WGPUCompareFunction_Always;
+    if (std::strcmp(v, "greater") == 0) return WGPUCompareFunction_Greater;
+    if (std::strcmp(v, "lessequal") == 0) return WGPUCompareFunction_LessEqual;
+    return WGPUCompareFunction_Undefined;
+  }();
+  return escolha;
+}
 
 Recursos& recursos() {
   static Recursos instancia;
@@ -233,8 +255,10 @@ bool garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat cor,
 
   WGPUDepthStencilState ds = WGPU_DEPTH_STENCIL_STATE_INIT;
   ds.format = profundidade;
-  ds.depthWriteEnabled = WGPUOptionalBool_True;
-  ds.depthCompare = WGPUCompareFunction_LessEqual;
+  const WGPUCompareFunction experimento = comparacaoDoExperimento();
+  const bool noExperimento = experimento != WGPUCompareFunction_Undefined;
+  ds.depthWriteEnabled = noExperimento ? WGPUOptionalBool_False : WGPUOptionalBool_True;
+  ds.depthCompare = noExperimento ? experimento : WGPUCompareFunction_LessEqual;
 
   WGPURenderPipelineDescriptor pd = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
   pd.layout = layout;
@@ -271,6 +295,21 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   if (!gpu || !gpu->device || !gpu->queue || !viewProjection) return 0;
   if (!alvoCor) alvoCor = gpu->offscreenTexture;
   if (!alvoCor || total == 0) return 0;
+  // Diagnostico (SPEC-0241): em que ponto da sequencia de passes do `three`
+  // este passe entra, e com qual view. Se ele entrar antes da pass da cena do
+  // frame, a profundidade que recebe e a do alvo anterior do par alternado.
+  static const bool logarOrdem = std::getenv("CORTEX_PASS_LOG") != nullptr;
+  static int vezes = 0;
+  constexpr int kMaxVezesLogadas = 12;
+  if (logarOrdem && vezes < kMaxVezesLogadas) {
+    ++vezes;
+    std::fprintf(stderr, "[pass-log] NATIVO apos %d passes | viewJS=%p viewHost=%p | itens=%u",
+                 webgpu::passesGravadas(), (void*)viewProfundidade,
+                 (void*)webgpu::cenaDepthView(), total);
+    std::fputc(0x0A, stderr);
+    std::fflush(stderr);
+  }
+
 
   // Modo 1: sonda a profundidade do `three` e sai, sem desenhar.
   // Modo 2: desenha e sonda a PRÓPRIA no fim (valida o instrumento).
@@ -340,7 +379,8 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   prof.view = viewProf;
   // Profundidade propria: limpa por frame. A oclusao ENTRE os migrados sai
   // correta; contra o `three` fica em aberto (ver SPEC-0241).
-  prof.depthLoadOp = WGPULoadOp_Clear;
+  const bool experimentando = comparacaoDoExperimento() != WGPUCompareFunction_Undefined;
+  prof.depthLoadOp = experimentando ? WGPULoadOp_Load : WGPULoadOp_Clear;
   prof.depthClearValue = 1.0f;
   prof.depthStoreOp = WGPUStoreOp_Store;
 
