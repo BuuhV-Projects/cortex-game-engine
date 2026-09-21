@@ -1,8 +1,23 @@
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
-import { resolve, isAbsolute, relative, dirname } from 'path'
+import { app } from 'electron'
+import { resolve, isAbsolute, relative, dirname, join } from 'path'
 import { mkdir } from 'fs/promises'
 import { BlenderModelGenerator } from '../../../src/ai/BlenderModelGenerator.js'
+import { describeValidation } from '../../../src/ai/validateGeneratedModel.js'
+
+/**
+ * Pasta `native/scripts` em dev e no app empacotado.
+ *
+ * Mesma regra do `resourceBase()` do main: no empacotado o `app.getAppPath()`
+ * aponta para dentro do `.asar`, e os `extraResources` ficam em
+ * `process.resourcesPath`, preservando o mesmo subpath (ADR-0034).
+ */
+function nativeScriptsDir(): string {
+  const appPath = app.getAppPath()
+  const base = appPath.endsWith('.asar') ? process.resourcesPath : appPath
+  return join(base, 'native', 'scripts')
+}
 
 /**
  * MCP server in-process que expõe a tool `generate_blender_model` ao agente
@@ -62,8 +77,12 @@ export function createBlenderToolServer(projectRoot: string) {
 
           try {
             await mkdir(dirname(absolute), { recursive: true })
-            const gen = new BlenderModelGenerator()
-            const { glbPath, scriptPath } = await gen.generate(description, absolute)
+            // `native/scripts` vem de `extraResources` no app empacotado; sem
+            // esse caminho o refino e a inspeção não achariam os scripts
+            // (SPEC-0231).
+            const gen = new BlenderModelGenerator({ scriptsDir: nativeScriptsDir() })
+            const { glbPath, scriptPath, validacao } = await gen.generate(description, absolute)
+            const linhas = validacao ? describeValidation(validacao) : []
             return {
               content: [
                 {
@@ -71,7 +90,13 @@ export function createBlenderToolServer(projectRoot: string) {
                   text:
                     `Modelo 3D gerado.\n` +
                     `- Arquivo .glb: ${relative(projectRoot, glbPath)}\n` +
-                    `- Script Python (debug): ${scriptPath}`,
+                    `- Script Python (debug): ${scriptPath}\n` +
+                    (validacao?.previewPath
+                      ? `- Imagem de conferência: ${relative(projectRoot, validacao.previewPath)}\n`
+                      : '') +
+                    (linhas.length > 0
+                      ? `\nValidação (SPEC-0231):\n${linhas.map((l) => `- ${l}`).join('\n')}`
+                      : ''),
                 },
               ],
             }

@@ -1,4 +1,5 @@
 import { queryCodex, CODEX_MODEL } from './CodexClient.js';
+import { validateGeneratedModel, type ValidateResult } from './validateGeneratedModel.js';
 import { spawn } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
@@ -248,6 +249,12 @@ export interface GenerateModelResult {
   glbPath: string;
   /** Caminho do script Python temporário (pode ser inspecionado ou re-executado). */
   scriptPath: string;
+  /**
+   * Refino aplicado e medidas lidas do modelo (SPEC-0231). `null` quando a
+   * validação não pôde rodar — o modelo é entregue assim mesmo, com o motivo
+   * em {@link ValidateResult.problemas}.
+   */
+  validacao: ValidateResult | null;
 }
 
 // ─── BlenderModelGenerator ───────────────────────────────────────────────────
@@ -276,6 +283,20 @@ export interface GenerateModelResult {
  */
 export class BlenderModelGenerator {
   /**
+   * Pasta dos scripts de asset (`refine-asset.mjs`, `inspect-model.py`).
+   *
+   * Quem roda dentro do Studio **empacotado** tem de passar o caminho resolvido
+   * por `resourceBase()`: `native/scripts` vai para `extraResources`, e o
+   * `process.cwd()` ali não é a raiz do repositório.
+   */
+  private readonly scriptsDir: string;
+
+  constructor(options: { scriptsDir?: string } = {}) {
+    this.scriptsDir =
+      options.scriptsDir ?? process.env['CORTEX_NATIVE_SCRIPTS'] ?? join(process.cwd(), 'native', 'scripts');
+  }
+
+  /**
    * Gera um modelo 3D `.glb` a partir de uma descrição em linguagem natural.
    *
    * Fluxo:
@@ -284,7 +305,8 @@ export class BlenderModelGenerator {
    * 3. Neutraliza redefinições de `OUTPUT_PATH` e injeta o caminho real no topo.
    * 4. Salva o script em arquivo temporário.
    * 5. Executa `blender --background --python <script>`.
-   * 6. Retorna `{ glbPath, scriptPath }`.
+   * 6. Refina e inspeciona o resultado (SPEC-0231).
+   * 7. Retorna `{ glbPath, scriptPath, validacao }`.
    *
    * @param description - Descrição em linguagem natural do modelo desejado.
    * @param outputPath  - Caminho de destino do arquivo `.glb` a ser gerado.
@@ -345,8 +367,19 @@ ${safeScript}`;
       );
     }
 
-    // ── 7. Retornar caminhos ───────────────────────────────────────────────
-    return { glbPath, scriptPath };
+    // ── 7. Refinar e inspecionar o que acabou de sair (SPEC-0231) ──────────
+    // Até aqui a única checagem era "o arquivo existe". O preço disso está
+    // medido: os carros do kart-racer vieram com um material por peça, o que
+    // impede o merge da engine e responde por 40% dos nós da cena (ADR-0228).
+    // Não lança — modelo válido não deixa de ser entregue porque a validação
+    // falhou; o que não rodou volta em `validacao.problemas`.
+    const validacao = await validateGeneratedModel(glbPath, {
+      scriptsDir: this.scriptsDir,
+      blenderBin,
+    });
+
+    // ── 8. Retornar caminhos ───────────────────────────────────────────────
+    return { glbPath, scriptPath, validacao };
   }
 }
 
