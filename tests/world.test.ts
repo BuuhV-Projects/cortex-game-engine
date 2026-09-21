@@ -320,3 +320,38 @@ describe('World', () => {
     });
   });
 });
+
+describe('perfil por sistema (SPEC-0236)', () => {
+  class SistemaLento extends System {
+    static override requiredComponents = [];
+    update(): void {
+      // Trabalho suficiente para o relógio enxergar.
+      const ate = performance.now() + 2;
+      while (performance.now() < ate) {
+        /* queima CPU */
+      }
+    }
+  }
+
+  it('fica desligado por default', () => {
+    const world = new World();
+    world.addSystem(new SistemaLento());
+    world.tick(16);
+    // Sem enableSystemProfile, nada é medido — o custo é um if por sistema.
+    expect(world.enableSystemProfile().size).toBe(0);
+  });
+
+  it('acumula por nome de classe e zera quando pedido', () => {
+    const world = new World();
+    world.addSystem(new SistemaLento());
+    const perfil = world.enableSystemProfile();
+
+    world.tick(16);
+    world.tick(16);
+
+    // Acumula ENTRE ticks: o trace zera na amostra, não a cada frame.
+    expect(perfil.get('SistemaLento')).toBeGreaterThan(3);
+    world.resetSystemProfile();
+    expect(perfil.size).toBe(0);
+  });
+});

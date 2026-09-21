@@ -14,6 +14,7 @@ import { UiLayer } from '../ui/runtime/UiLayer.js';
 import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
 import { debug } from './debug.js';
+import { NativeSceneMirror, nativeSceneMirrorAvailable } from './NativeSceneMirror.js';
 import { PerfTrace } from './PerfTrace.js';
 import { FrameProfiler } from './FrameProfiler.js';
 import {
@@ -21,6 +22,7 @@ import {
   renderPhasesRequested,
   matrixFreezeRequested,
   matrixComposeFreezeRequested,
+  systemProfileRequested,
 } from './RenderPhaseProbe.js';
 import { InspectCamera } from './InspectCamera.js';
 
@@ -201,6 +203,14 @@ export class Game {
    * (`?bench&hold`), onde a imagem sai idêntica e a diferença de `cpu.render` é
    * o que a fase de matriz custava. 0 = desligado.
    */
+  /**
+   * Espelho de cena no host (SPEC-0234): a travessia de matriz sai do JS. Só
+   * existe no export nativo; no browser e no Studio é inerte.
+   */
+  /** Perfil por sistema do ECS (SPEC-0236), ligado por ?systemProfile=1. */
+  private _systemProfile: Map<string, number> | null = null;
+  private readonly _sceneMirror = new NativeSceneMirror();
+  private _sceneMirrorTried = false;
   private readonly _matrixFreezeAt = matrixFreezeRequested();
   /**
    * Variante do experimento que congela só a RECOMPOSIÇÃO da matriz local,
@@ -266,6 +276,7 @@ export class Game {
     }
 
     this.world = new World();
+    if (systemProfileRequested()) this._systemProfile = this.world.enableSystemProfile();
     this.input = new InputManager();
     if (typeof document !== 'undefined') this.input.attach(document.body);
     this.gamepad = new GamepadManager();
@@ -529,7 +540,20 @@ export class Game {
     // playtest do Chat IA pra inspecionar a cena livremente.
     const inspectCamera = this._inspect?.active ? this._inspect : null;
     const editorCamera = this._editor?.activeCamera() ?? null;
+    // Espelho de cena no host (SPEC-0234): instalado no primeiro frame em que a
+    // cena já existe — instalar antes pegaria a árvore vazia, e ela não cresce
+    // depois do build (o JS passa a segurar ponteiros para a memória do C++).
+    if (
+      !this._sceneMirrorTried &&
+      !this._loading &&
+      !isSceneBuilding(this._activeScene) &&
+      nativeSceneMirrorAvailable()
+    ) {
+      this._sceneMirrorTried = true;
+      this._sceneMirror.install(this._activeScene.getThreeScene());
+    }
     p.begin('render');
+    if (this._sceneMirror.installed) this._sceneMirror.update(this._activeCamera);
     if (isSplashActive()) {
       // Splash da engine no ar (ADR-0109): o host descarta o frame do jogo, só
       // ela apresenta. Desenhar aqui é puro desperdício — e durante a carga são
@@ -600,6 +624,7 @@ export class Game {
       this.profiler,
       (this.renderer.threeRenderer as { info?: { render?: { drawCalls?: number; triangles?: number } } }).info?.render ?? null,
       this._renderPhases,
+      this._systemProfile,
     );
   }
 

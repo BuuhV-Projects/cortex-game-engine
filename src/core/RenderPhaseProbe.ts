@@ -31,6 +31,7 @@ export const PROBE_INTERNALS = 3;
 const QUERY_KEY = 'renderPhases=';
 const FREEZE_KEY = 'matrixFreeze=';
 const COMPOSE_FREEZE_KEY = 'matrixComposeFreeze=';
+const SYSTEM_PROFILE_KEY = 'systemProfile=';
 
 /**
  * Fases medidas. `each` só existe do nível {@link PROBE_PER_OBJECT} para cima;
@@ -165,6 +166,22 @@ export function matrixComposeFreezeRequested(): number {
     return Number.isFinite(frames) && frames > 0 ? frames : 0;
   } catch {
     return 0;
+  }
+}
+
+/**
+ * `?systemProfile=1` liga o perfil por sistema do ECS (SPEC-0236): o `world`
+ * deixa de ser um bloco só e passa a dizer qual sistema custa o quê.
+ */
+export function systemProfileRequested(): boolean {
+  try {
+    if (typeof location === 'undefined') return false;
+    const search = location.search ?? '';
+    const at = search.indexOf(SYSTEM_PROFILE_KEY);
+    if (at < 0) return false;
+    return search.slice(at + SYSTEM_PROFILE_KEY.length, at + SYSTEM_PROFILE_KEY.length + 1) === '1';
+  } catch {
+    return false;
   }
 }
 

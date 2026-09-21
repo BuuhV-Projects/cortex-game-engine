@@ -7,6 +7,7 @@
 #include <SDL3/SDL.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 
 #include "core/app_window.h"
@@ -26,6 +27,7 @@
 #include "shims/ktx2.h"
 #include "shims/perf_arraybuffer.h"
 #include "shims/clock.h"
+#include "shims/scene_mirror_shim.h"
 #include "shims/perf_stats.h"
 #include "shims/perf_trace.h"
 #include "shims/quit.h"
@@ -36,10 +38,17 @@
 #include "shims/user_storage.h"
 #include "webgpu/bindings.h"
 #include "webgpu/napi_stats.h"
+#include "webgpu/render_bench.h"
 #include "webgpu/bloom.h"
 #include "webgpu/splash.h"
 
 namespace {
+
+// Spike do laço de render nativo (ADR-0232): tamanho da cena e duração quando
+// `CORTEX_RENDER_BENCH` não traz número. 1300 objetos é a árvore medida no
+// kart-racer (SPEC-0227), para o resultado ser comparável.
+constexpr int kBenchDefaultObjects = 1300;
+constexpr int kBenchDefaultFrames = 300;
 
 // Nome do jogo pra pasta de saves do usuário. Em dev vem do dir passado
 // (`cortex_host.exe D:\jogos\teste4` → "teste4"); no export (sem argv[1]) vem do
@@ -157,6 +166,19 @@ void shutdownGpu(HostGpu* gpu) {
 
 int main(int argc, char** argv) {
   core::installCrashHandler();  // segfault vira backtrace no stderr, não exit mudo
+
+  // Spike do laço de render nativo (ADR-0232, fase 1): roda ANTES de tudo, com
+  // device próprio e sem janela, e encerra. Mede o teto do laço em C++ para
+  // comparar com os 33,5 us por draw do caminho em JS (SPEC-0227).
+  if (const char* bench = std::getenv("CORTEX_RENDER_BENCH")) {
+    const int objetos = std::atoi(bench);
+    const char* framesEnv = std::getenv("CORTEX_RENDER_BENCH_FRAMES");
+    const int frames = framesEnv ? std::atoi(framesEnv) : kBenchDefaultFrames;
+    return webgpu::runRenderBench(objetos > 0 ? objetos : kBenchDefaultObjects,
+                                  frames > 0 ? frames : kBenchDefaultFrames)
+               ? 0
+               : 1;
+  }
   // Identidade do jogo resolvida ANTES de tudo (ADR-0126/0174): o app id da
   // Steam é DADO do cortex.json, e o RestartAppIfNecessary precisa dele antes de
   // existir janela — relançar depois de abrir a janela daria um flash na tela.
@@ -212,6 +234,7 @@ int main(int argc, char** argv) {
     shims::registerImageDecode(js.env());
     shims::registerKtx2(js.env());
     shims::registerClock(js.env());  // SPEC-0226
+    shims::registerSceneMirror(js.env());  // SPEC-0234
     shims::registerPerfStats(js.env());
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());

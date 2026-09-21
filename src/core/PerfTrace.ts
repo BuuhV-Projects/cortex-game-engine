@@ -330,6 +330,7 @@ export class PerfTrace {
     profiler: FrameProfiler,
     info: { drawCalls?: number; triangles?: number } | null,
     phases?: RenderPhaseProbe | null,
+    systemProfile?: Map<string, number> | null,
   ): void {
     if (!this._bridge) return;
     this._elapsedMs += deltaMs;
@@ -377,6 +378,14 @@ export class PerfTrace {
         cpu['clockNs'] = round(clock.costNs, CLOCK_NS_DECIMALS);
         cpu['clockResNs'] = round(clock.resolutionNs, CLOCK_NS_DECIMALS);
       }
+    }
+    // Perfil por sistema do ECS (SPEC-0236): o `world` deixa de ser um bloco
+    // só. Prefixo `sys` para não colidir com as seções do profiler de frame.
+    if (systemProfile) {
+      for (const [nome, ms] of systemProfile) {
+        cpu[`sys${nome}`] = round(ms, PHASE_MS_DECIMALS);
+      }
+      systemProfile.clear();
     }
     // Tamanho da árvore: a travessia custa por NÓ, e sem este número os ms da
     // fase não viram custo por nó (SPEC-0227).
