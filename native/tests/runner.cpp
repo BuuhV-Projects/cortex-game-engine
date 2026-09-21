@@ -24,6 +24,11 @@ void testUniformPoolNaoDuplicaMarcacao();
 void testUniformPoolFrameParadoNaoEscreveNada();
 void testUniformPoolCenaNovaMarcaTudo();
 void testUniformPoolIgnoraSlotForaDaFaixa();
+void testRenderListOpacosAntesDeTransparentes();
+void testRenderListAgrupaOpacosPorPipeline();
+void testRenderListTransparentesDeTrasParaFrente();
+void testRenderListEstavelParaEmpate();
+void testRenderListVaziaNaoQuebra();
 }  // namespace tests
 
 int main() {
@@ -48,5 +53,10 @@ int main() {
   tests::testUniformPoolFrameParadoNaoEscreveNada();
   tests::testUniformPoolCenaNovaMarcaTudo();
   tests::testUniformPoolIgnoraSlotForaDaFaixa();
+  tests::testRenderListOpacosAntesDeTransparentes();
+  tests::testRenderListAgrupaOpacosPorPipeline();
+  tests::testRenderListTransparentesDeTrasParaFrente();
+  tests::testRenderListEstavelParaEmpate();
+  tests::testRenderListVaziaNaoQuebra();
   return testing::summary();
 }

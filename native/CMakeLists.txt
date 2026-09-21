@@ -64,6 +64,7 @@ add_executable(cortex_host
   src/webgpu/render_bench.cpp
   src/webgpu/override_probe.cpp
   src/render/uniform_pool.cpp
+  src/render/render_list.cpp
   src/scene/scene_mirror.cpp
   src/webgpu/bloom.cpp
   src/webgpu/supersample.cpp
@@ -286,11 +287,13 @@ add_executable(cortex_host_tests
   tests/scene_mirror_test.cpp
   tests/pipeline_cache_test.cpp
   tests/uniform_pool_test.cpp
+  tests/render_list_test.cpp
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
   src/core/game_config.cpp
   src/scene/scene_mirror.cpp
   src/render/uniform_pool.cpp
+  src/render/render_list.cpp
 )
 target_include_directories(cortex_host_tests PRIVATE
   ${TP}/wgpu/include
