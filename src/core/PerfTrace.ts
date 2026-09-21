@@ -371,6 +371,12 @@ export class PerfTrace {
       // ~1e6 denuncia que a SPEC-0226 não está de pé neste binário).
       // Nível 3: 1 = colaboradores internos embrulhados, 0 = não deu (baldes
       // internos zerados NÃO são "fase barata"); ausente = nível 3 não pedido.
+      // M0 do ADR-0237: refazer x reaproveitar o trabalho por objeto.
+      const refresh = phases.lastFrameRefresh();
+      if (refresh.refresh + refresh.reuse > 0) {
+        cpu['rpRefresh'] = refresh.refresh;
+        cpu['rpReuse'] = refresh.reuse;
+      }
       const internals = phases.internalsOk;
       if (internals !== null) cpu['rpInternals'] = internals ? 1 : 0;
       const clock = phases.clock;

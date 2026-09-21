@@ -71,6 +71,17 @@ tamanho da fase 4 encolhe.
   a valer só para o restante; se não, seguem como planejado.
 - **Custo:** horas, não dias. É o marco mais barato e o que mais pode economizar.
 
+> **Medido em 21/09/2026 — não há ganho de cache.** Contando o retorno de
+> `_nodes.needsRefresh` por frame no `kart-racer` (258 draws, mediana de 93
+> amostras): **180 objetos refazem (69%) contra 80 que reaproveitam (31%)**. O
+> critério era >70% reaproveitável; deu menos da metade disso.
+>
+> A leitura é que o trabalho de bindings e pipelines é, em sua maior parte,
+> considerado **necessário pelo próprio `three`** — não é recomputação de coisa
+> parada. Isso fecha a pergunta que o ADR-0235 deixou em aberto: **não existe
+> atalho dentro do JS**, e o caminho é o trabalho ficar mais barato, não ser
+> pulado. M1-M6 seguem com o escopo integral.
+
 ### M1 — Descrição de material independente de backend
 
 O `three` resolve material por objeto, em JS, via sistema de nodes. O C++ não
