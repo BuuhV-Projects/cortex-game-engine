@@ -51,10 +51,29 @@ Frame 31,6 ms, `world` 9,8 ms, 101 amostras. Por frame:
 mais concentrado encontrado no dia inteiro — mais até que qualquer fase do
 render, onde o custo estava espalhado.
 
-O `CarSystem` do jogo faz, por frame: a IA que pilota os 6 carros, a física de
-veículo com raycast por roda (24 raycasts por passo, via BVH) e o `syncVehicle`
-que escreve a pose das rodas. Qual dos três domina **ainda não foi medido** — e
-essa é a próxima pergunta, não uma conclusão desta spec.
+### Dentro do `CarSystem` (medido com sonda temporária, revertida)
+
+Cronometrando as fases dele por frame, com a mesma corrida:
+
+| fase | ms | do `CarSystem` |
+| --- | --- | --- |
+| **`driveAI`** (a IA que pilota) | **3,4** | 42% |
+| `kart.step` (física, Rapier) | 2,4 | 30% |
+| `syncVehicle` (pose das rodas) | 1,27 | 16% |
+| rivais (`followGround` + `vehicle.update`) | 0,58 | 7% |
+
+Uma ressalva que muda a leitura: no `?bench` a IA pilota **os 6 carros**,
+inclusive o do jogador (SPEC-0007 do jogo). Numa partida de verdade são 5, então
+o `driveAI` real fica por volta de **2,8 ms** — ainda o maior item.
+
+A sonda foi instrumentação de diagnóstico e **não ficou no jogo**: o
+`CarSystem.ts` voltou ao estado original depois da medição.
+
+Ou seja, o próximo alvo concreto de performance é do **jogo, não da engine**: a
+IA e o passo de física do `kart-racer` somam ~5,8 ms por frame, 18% do frame
+inteiro. E o `driveAI` já foi otimizado uma vez (SPEC-0008 do jogo o tirou de
+36 chamadas por frame para 6), o que sugere que a próxima rodada precisa mudar
+o algoritmo, não a frequência.
 
 ## Consequências
 
