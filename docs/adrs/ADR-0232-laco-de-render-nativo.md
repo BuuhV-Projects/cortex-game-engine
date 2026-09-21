@@ -94,8 +94,18 @@ ganho — foi o que matou a hipótese da submissão (SPEC-0225).
 **Fase 3 — culling, RenderList e sort nativos**, alimentando o caminho de
 submissão que já existe.
 
+> **Corrigido em 21/09/2026 (ADR-0237).** Esta linha foi escrita antes do
+> ADR-0235 e está **superada**: "alimentar o caminho de submissão que já existe"
+> é exatamente a hipótese cujo teto foi medido em 17%. O que a fase 3 entregou
+> foi a ponte do espelho de cena (SPEC-0234) — matriz e culling nativos, com o
+> `three` ainda desenhando. A RenderList nativa migrou para o ADR-0237.
+
 **Fase 4 — materiais.** É a parte mais acoplada ao `three` (o sistema de nodes)
 e a que decide se o `three` sai de vez ou vira só autoria.
+
+> **Detalhada no ADR-0237**, com marcos e critérios numéricos, e com a decisão
+> de produto já tomada: o `three` sai do caminho de render no export e continua
+> como ferramenta de autoria no Studio.
 
 ## Resultado da fase 1 (20/09/2026)
 

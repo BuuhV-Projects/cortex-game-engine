@@ -221,6 +221,11 @@ export class RenderPhaseProbe {
   private _renderer: RendererLike | null = null;
   /** `null` = nível 3 ainda não tentou; depois vira o resultado da tentativa. */
   private _internalsOk: boolean | null = null;
+  /** M0 do ADR-0237: refazer x reaproveitar o trabalho por objeto, por frame. */
+  private _refreshCount = 0;
+  private _reuseCount = 0;
+  private _lastRefresh = 0;
+  private _lastReuse = 0;
 
   constructor(level: number) {
     this._level = level;
@@ -292,6 +297,10 @@ export class RenderPhaseProbe {
     // O frame fecha fora do render; se sobrou fase aberta, foi exceção no meio
     // do caminho — descartar evita carregar o tempo para o frame seguinte.
     this._stack.length = 0;
+    this._lastRefresh = this._refreshCount;
+    this._lastReuse = this._reuseCount;
+    this._refreshCount = 0;
+    this._reuseCount = 0;
     for (const phase of PHASES) {
       const live = this._live.get(phase);
       const last = this._last.get(phase);
@@ -308,6 +317,14 @@ export class RenderPhaseProbe {
     const out: Record<string, number> = {};
     for (const phase of PHASES) out[phase] = this._last.get(phase)?.ms ?? 0;
     return out;
+  }
+
+  /**
+   * M0 do ADR-0237: quantos objetos o  decidiu REFAZER e quantos
+   * REAPROVEITOU no último frame.
+   */
+  lastFrameRefresh(): { refresh: number; reuse: number } {
+    return { refresh: this._lastRefresh, reuse: this._lastReuse };
   }
 
   /** Chamadas de topo por fase no último frame fechado. */
@@ -338,6 +355,11 @@ export class RenderPhaseProbe {
       [r['_pipelines'], 'isReady', 'pipe'],
       [r['backend'], 'draw', 'draw'],
     ];
+    // M0 do ADR-0237: conta refazer x reaproveitar. Não é fatal se faltar — o
+    // resto da decomposição continua valendo sem ele.
+    if (!this._wrapRefreshCounter(renderer)) {
+      debug('perf', '[renderPhases] sem needsRefresh para contar (M0)');
+    }
     for (const [holder, method, phase] of targets) {
       if (!holder || !this._wrapPhase(holder, method, phase)) {
         debug('perf', `[renderPhases] alvo interno ausente: ${method}`);
@@ -399,6 +421,37 @@ export class RenderPhaseProbe {
     };
     this._undo.push(() => {
       table[name] = original;
+    });
+    return true;
+  }
+
+  /**
+   * Conta quantas vezes o `three` decide **refazer** o trabalho por objeto e
+   * quantas ele **reaproveita** (M0 do ADR-0237).
+   *
+   * É a pergunta que dimensiona a fase 4: `_bindings` e `_pipelines` somam 23%
+   * do `renderObject`, e se a maior parte disso for recomputação do que não
+   * mudou, há ganho a tirar antes de reescrever qualquer coisa em C++.
+   */
+  private _wrapRefreshCounter(renderer: RendererLike): boolean {
+    const nodes = (renderer as Record<string, object | undefined>)['_nodes'];
+    if (!nodes) return false;
+    const owner = methodOwner(nodes, 'needsRefresh');
+    if (!owner) return false;
+    const table = owner as Record<string, AnyMethod>;
+    const original = table['needsRefresh'];
+    if (!original) return false;
+    const probe = this;
+    table['needsRefresh'] = function wrapped(this: unknown, ...args: never[]): unknown {
+      const refresh = original.apply(this, args);
+      if (probe._inRender) {
+        if (refresh) probe._refreshCount++;
+        else probe._reuseCount++;
+      }
+      return refresh;
+    };
+    this._undo.push(() => {
+      table['needsRefresh'] = original;
     });
     return true;
   }
