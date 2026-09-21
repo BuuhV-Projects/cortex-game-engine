@@ -298,9 +298,14 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   // Medido: o JS entrega `alvoCor` nulo (o `three` nao expoe a textura do alvo
   // da canvas), e nulo aqui virava o offscreen do host — onde a cena nunca foi
   // desenhada. O host ve as passes do frame e sabe em qual a cena esta.
+  // Ligado so por CORTEX_ALVO_DA_CENA: enquanto o passe roda DEPOIS da
+  // composicao, desenhar na RT da cena nao aparece na tela. O padrao segue no
+  // alvo que o JS pede (SPEC-0241).
+  static const bool usarAlvoDoHost = std::getenv("CORTEX_ALVO_DA_CENA") != nullptr;
   webgpu::AlvoDaCena alvo{};
-  const bool temAlvoDaCena = webgpu::cenaAlvo(&alvo);
-  if (!temAlvoDaCena) return 0;
+  const bool temAlvoDaCena = usarAlvoDoHost && webgpu::cenaAlvo(&alvo);
+  if (!alvoCor) alvoCor = gpu->offscreenTexture;
+  if (!temAlvoDaCena && !alvoCor) return 0;
 
   // Diagnostico (SPEC-0241): em que ponto da sequencia de passes do `three`
   // este passe entra, e com qual view. Se ele entrar antes da pass da cena do
@@ -326,11 +331,14 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   }
 
   Recursos& r = recursos();
-  const WGPUTextureFormat formatoCor = alvo.formatoCor;
+  const WGPUTextureFormat formatoCor =
+      temAlvoDaCena ? alvo.formatoCor : wgpuTextureGetFormat(alvoCor);
   // Uma amostra: medido, nenhuma pass do frame usa `resolveTarget`, entao nao
   // ha multiamostra neste caminho (SPEC-0241).
-  const uint32_t amostras = 1;
-  if (!garantirProfundidadePropria(gpu, r, alvo.largura, alvo.altura, amostras)) {
+  const uint32_t amostras = temAlvoDaCena ? 1 : wgpuTextureGetSampleCount(alvoCor);
+  const uint32_t largAlvo = temAlvoDaCena ? alvo.largura : wgpuTextureGetWidth(alvoCor);
+  const uint32_t altAlvo = temAlvoDaCena ? alvo.altura : wgpuTextureGetHeight(alvoCor);
+  if (!garantirProfundidadePropria(gpu, r, largAlvo, altAlvo, amostras)) {
     return 0;
   }
   const WGPUTextureFormat formatoProf = WGPUTextureFormat_Depth24Plus;
@@ -371,10 +379,13 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   // As views vem do host, sao as MESMAS que a pass da cena usou. Nao criar
   // novas a partir da textura: sao do `three`, e ele pode ter recriado a
   // textura sem que a nossa view acompanhasse (SPEC-0241).
-  WGPUTextureView viewCor = alvo.viewCor;
+  WGPUTextureView viewCor =
+      temAlvoDaCena ? alvo.viewCor : wgpuTextureCreateView(alvoCor, nullptr);
   // Preferir a view que o `three` usa: criar uma nova a partir da textura pode
   // apontar para um recurso diferente do que ele escreveu.
-  WGPUTextureView viewProf = alvo.viewProfundidade;
+  WGPUTextureView viewProf = temAlvoDaCena ? alvo.viewProfundidade
+                             : viewProfundidade ? viewProfundidade
+                                                : r.viewPropria;
 
   // `load` nos dois: o passe entra DEPOIS do `three`, preservando a cor e a
   // profundidade que ele escreveu — é a profundidade dele que decide a oclusão.
@@ -435,7 +446,7 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   wgpuCommandBufferRelease(cmd);
   wgpuCommandEncoderRelease(encoder);
   // So libera a view de cor quando foi criada aqui; as do host sao emprestadas.
-  if (!temAlvoDaCena) wgpuTextureViewRelease(viewCor);
+  if (!temAlvoDaCena) wgpuTextureViewRelease(viewCor);  // as do host sao emprestadas
   if (modoSonda == 2) {
     depthPeek(gpu, nullptr, r.profundidadePropria, r.viewPropria);
   }
