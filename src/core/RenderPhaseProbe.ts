@@ -29,6 +29,7 @@ export const PROBE_PER_OBJECT = 2;
 export const PROBE_INTERNALS = 3;
 
 const QUERY_KEY = 'renderPhases=';
+const FREEZE_KEY = 'matrixFreeze=';
 
 /**
  * Fases medidas. `each` só existe do nível {@link PROBE_PER_OBJECT} para cima;
@@ -120,6 +121,28 @@ export function calibrateClock(): ClockCalibration {
     costNs: (totalMs * NS_PER_MS) / CLOCK_CALIBRATION_SAMPLES,
     resolutionNs: Number.isFinite(smallestStepMs) ? smallestStepMs * NS_PER_MS : 0,
   };
+}
+
+/**
+ * Frames após os quais o experimento de teto congela a atualização de matriz
+ * (`?matrixFreeze=<frames>`), ou 0 para não congelar.
+ *
+ * Mede o **teto** da poda de travessia: no cenário `?bench&hold` nada se move,
+ * então com as matrizes já calculadas a imagem sai idêntica e a diferença de
+ * `cpu.render` é exatamente o que a fase de matriz custava. É experimento de
+ * diagnóstico — congelar matriz num jogo de verdade prega objeto no lugar.
+ */
+export function matrixFreezeRequested(): number {
+  try {
+    if (typeof location === 'undefined') return 0;
+    const search = location.search ?? '';
+    const at = search.indexOf(FREEZE_KEY);
+    if (at < 0) return 0;
+    const frames = Number.parseInt(search.slice(at + FREEZE_KEY.length), 10);
+    return Number.isFinite(frames) && frames > 0 ? frames : 0;
+  } catch {
+    return 0;
+  }
 }
 
 /** Nível pedido pela query (`?renderPhases=1`), no padrão do `?cortexHud=1`. */

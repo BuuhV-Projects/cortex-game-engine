@@ -86,8 +86,15 @@ O `resto` (sort, `finish`, setup de passe, pós) não ganha balde próprio: é
 que vale.
 
 **Ligar:** `?renderPhases=1` na query (no host, via `CORTEX_LAUNCH_QUERY`),
-mesmo padrão do `?cortexHud=1`; `?renderPhases=2` liga também o nível 2.
-Desligada, a sonda não embrulha nada — custo zero no jogo em produção.
+mesmo padrão do `?cortexHud=1`; `=2` acrescenta o balde por objeto e `=3` abre
+o `renderObject` por dentro. Desligada, a sonda não embrulha nada — custo zero
+no jogo em produção.
+
+**Experimento de teto:** `?matrixFreeze=<frames>` congela a atualização de
+matriz da cena depois de N frames. Só faz sentido junto de `&hold`, onde nada
+se move: as matrizes já estão calculadas, a imagem sai idêntica e a diferença
+de `cpu.render` é exatamente o que a travessia custava. Num jogo de verdade
+isso prega objeto no lugar — é experimento, não chave de otimização.
 
 ## Consequências
 
@@ -157,6 +164,19 @@ Aberto por dentro (nível 3), em proporção do próprio `renderObject`:
 | `_geometries.updateForRender` | 1,7 | 4% |
 | o resto do próprio `renderObject` | 3,4 | 8% |
 
+### Contagem de nós da árvore (acrescentada depois da 1ª rodada)
+
+A travessia custa **por nó da árvore**, não por draw — e o trace só sabia falar
+de draws e de nós de cena visíveis (71 no kart-racer), que é outra coisa: um
+`.glb` vira dezenas de `Object3D` internos. Sem o total, "4,5 ms de travessia"
+não dá para converter em custo por nó, que é o número que dimensiona qualquer
+tentativa de poda.
+
+O trace passa a gravar `nodesTotal` (todos os `Object3D` da árvore, inclusive os
+invisíveis — o `updateMatrixWorld` desce neles do mesmo jeito) e `nodesVisible`
+(os que o culling de fato visita, que para em subárvore invisível). São duas
+contagens porque as duas fases medidas percorrem conjuntos diferentes.
+
 Uma observação que não era esperada: **a travessia de matriz custa o mesmo com
 a cena parada (4,54 ms) e com a corrida em andamento (4,94 ms)**. O custo é
 percorrer a árvore, não multiplicar matrizes — o que muda o alvo de "otimizar a
@@ -171,5 +191,11 @@ reescrever o renderer. As fases de fato isoláveis são a travessia de matriz
 (20%) e o culling/RenderList (18%): juntas, 38% do render, e ambas exigem
 manter a hierarquia de cena espelhada em C++.
 
-A decisão de seguir (ou não) fica registrada em ADR próprio, com estes números
-na mesa.
+A decisão ficou no **ADR-0228**: o laço por objeto continua em JS. O censo da
+árvore (que o instrumento passou a gravar) mostrou que os 6 carros carregam 509
+dos 1.271 nós, e que o cenário estático já sai da conta pelo merge — ou seja, a
+poda de travessia rende menos do que parecia, e o alvo gordo é de asset.
+
+O experimento de teto (`?matrixFreeze=<frames>`) fecha o número: com a cena
+parada e a imagem idêntica, congelar a travessia levou o render de 21,3 para
+17,8 ms — 3,5 ms, 16,4%, sem C++ nenhum.

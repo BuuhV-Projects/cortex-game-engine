@@ -37,6 +37,12 @@ const PHASE_MS_DECIMALS = 3;
 /** Casas decimais do custo do relógio (ns). */
 const CLOCK_NS_DECIMALS = 1;
 
+/** Quantos nós de cena entram no censo da árvore (os maiores). */
+const CENSUS_LIMIT = 20;
+
+/** Amostras esperadas antes do censo — a cena leva alguns segundos para montar. */
+const CENSUS_AFTER_SAMPLES = 20;
+
 /**
  * Chaves que escapam do arredondamento grosso da amostra: as fases do render e
  * a calibração do relógio precisam de mais casas do que o resto do frame.
@@ -116,6 +122,42 @@ function sceneNodeIdOf(obj: Object3D): string {
 const _frustum = new Frustum();
 const _matrix = new Matrix4();
 const _direction = new Vector3();
+
+/**
+ * Tamanho da árvore de cena (SPEC-0227). Duas contagens porque as duas fases
+ * mais caras do render percorrem conjuntos diferentes: o `updateMatrixWorld`
+ * desce em TODOS os nós, inclusive invisíveis; o culling para em subárvore
+ * invisível.
+ */
+export function countNodes(scene: Object3D): { total: number; visible: number } {
+  let total = 0;
+  let visible = 0;
+  const visitar = (obj: Object3D, paiVisivel: boolean): void => {
+    total++;
+    const visivel = paiVisivel && obj.visible;
+    if (visivel) visible++;
+    for (const child of obj.children) visitar(child, visivel);
+  };
+  visitar(scene, true);
+  return { total, visible };
+}
+
+/**
+ * Censo da árvore por nó de cena: quantos `Object3D` cada nó do `level.json`
+ * carrega. Responde "quem são os 1.271 nós" — a pergunta que decide se vale
+ * podar a travessia (cenário estático) ou reduzir malha (modelo com peças
+ * demais), que são trabalhos completamente diferentes.
+ */
+export function censusBySceneNode(scene: Object3D, limit: number): [string, number][] {
+  const byId = new Map<string, number>();
+  const visitar = (obj: Object3D): void => {
+    const id = sceneNodeIdOf(obj);
+    byId.set(id, (byId.get(id) ?? 0) + 1);
+    for (const child of obj.children) visitar(child);
+  };
+  visitar(scene);
+  return [...byId.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+}
 
 /**
  * Percorre a cena e agrega, por nó de cena, o que está DENTRO do frustum da
@@ -218,6 +260,9 @@ export function buildSample(input: SampleInput): PerfSample {
 export class PerfTrace {
   private _sinceSampleMs = 0;
   private _elapsedMs = 0;
+  /** O censo da árvore vai uma vez só — a composição da cena não muda por frame. */
+  private _censusSent = false;
+  private _samples = 0;
   private readonly _bridge: TraceBridge | undefined = bridge();
 
   /** `true` quando o host aceita trace (métricas ativas no export nativo). */
@@ -289,6 +334,20 @@ export class PerfTrace {
         cpu['clockNs'] = round(clock.costNs, CLOCK_NS_DECIMALS);
         cpu['clockResNs'] = round(clock.resolutionNs, CLOCK_NS_DECIMALS);
       }
+    }
+    // Tamanho da árvore: a travessia custa por NÓ, e sem este número os ms da
+    // fase não viram custo por nó (SPEC-0227).
+    const nodes = countNodes(scene);
+    cpu['nodesTotal'] = nodes.total;
+    cpu['nodesVisible'] = nodes.visible;
+    // Censo: uma vez só, e NÃO na primeira amostra — na primeira a cena ainda
+    // está montando (a rodada inicial pegou 228 nós de 1.271, sem os carros, e
+    // quase mandou a análise para o alvo errado). Espera a cena estabilizar.
+    this._samples++;
+    if (!this._censusSent && this._samples >= CENSUS_AFTER_SAMPLES) {
+      this._censusSent = true;
+      const censo = censusBySceneNode(scene, CENSUS_LIMIT);
+      this._bridge(JSON.stringify({ t: Math.round(this._elapsedMs), census: censo }));
     }
     const sample = buildSample({
       timeMs: this._elapsedMs,
