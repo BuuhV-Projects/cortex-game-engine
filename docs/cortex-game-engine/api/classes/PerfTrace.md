@@ -6,7 +6,7 @@
 
 # Class: PerfTrace
 
-Defined in: [src/core/PerfTrace.ts:301](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L301)
+Defined in: [src/core/PerfTrace.ts:303](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L303)
 
 Amostrador do trace. O [Game](Game.md) chama [tick](#tick) a cada frame; ele só
 faz trabalho quando (a) o host registrou a ponte e (b) passou o intervalo.
@@ -29,7 +29,7 @@ faz trabalho quando (a) o host registrou a ponte e (b) passou o intervalo.
 
 > **get** **enabled**(): `boolean`
 
-Defined in: [src/core/PerfTrace.ts:312](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L312)
+Defined in: [src/core/PerfTrace.ts:314](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L314)
 
 `true` quando o host aceita trace (métricas ativas no export nativo).
 
@@ -41,9 +41,9 @@ Defined in: [src/core/PerfTrace.ts:312](https://github.com/BuuhV-Projects/cortex
 
 ### tick()
 
-> **tick**(`deltaMs`, `scene`, `camera`, `profiler`, `info`, `phases?`): `void`
+> **tick**(`deltaMs`, `scene`, `camera`, `profiler`, `info`, `phases?`, `systemProfile?`): `void`
 
-Defined in: [src/core/PerfTrace.ts:326](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L326)
+Defined in: [src/core/PerfTrace.ts:328](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L328)
 
 Avança o relógio e, no intervalo, grava uma amostra.
 
@@ -84,6 +84,10 @@ Fonte do tempo de CPU por seção.
 `RenderPhaseProbe` \| `null`
 
 Sonda de fases do render (SPEC-0227); inerte se desligada.
+
+##### systemProfile?
+
+`Map`\<`string`, `number`\> \| `null`
 
 #### Returns
 

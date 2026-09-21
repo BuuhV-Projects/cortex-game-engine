@@ -311,6 +311,7 @@
 - [INPUT\_CONFIG\_SECTION](variables/INPUT_CONFIG_SECTION.md)
 - [ISOMETRIC\_PITCH](variables/ISOMETRIC_PITCH.md)
 - [ISOMETRIC\_YAW](variables/ISOMETRIC_YAW.md)
+- [OUTLINE\_THICKNESS\_KEY](variables/OUTLINE_THICKNESS_KEY.md)
 - [SHAPES](variables/SHAPES.md)
 - [Steam](variables/Steam.md)
 - [TERRAIN\_MAX\_LAYERS](variables/TERRAIN_MAX_LAYERS.md)
