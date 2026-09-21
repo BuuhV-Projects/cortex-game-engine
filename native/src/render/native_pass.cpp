@@ -223,8 +223,8 @@ bool garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat cor,
 }  // namespace
 
 uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProfundidade,
-                         const float viewProjection[16], const NativeDrawItem* itens,
-                         uint32_t total) {
+                         WGPUTextureView viewProfundidade, const float viewProjection[16],
+                         const NativeDrawItem* itens, uint32_t total) {
   if (!gpu || !gpu->device || !gpu->queue || !alvoProfundidade || !viewProjection) return 0;
   if (!alvoCor) alvoCor = gpu->offscreenTexture;
   if (!alvoCor || total == 0) return 0;
@@ -268,7 +268,11 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   });
 
   WGPUTextureView viewCor = wgpuTextureCreateView(alvoCor, nullptr);
-  WGPUTextureView viewProf = wgpuTextureCreateView(alvoProfundidade, nullptr);
+  // Preferir a view que o `three` usa: criar uma nova a partir da textura pode
+  // apontar para um recurso diferente do que ele escreveu.
+  const bool viewEmprestada = viewProfundidade != nullptr;
+  WGPUTextureView viewProf =
+      viewEmprestada ? viewProfundidade : wgpuTextureCreateView(alvoProfundidade, nullptr);
 
   // `load` nos dois: o passe entra DEPOIS do `three`, preservando a cor e a
   // profundidade que ele escreveu — é a profundidade dele que decide a oclusão.
@@ -325,7 +329,7 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   wgpuCommandBufferRelease(cmd);
   wgpuCommandEncoderRelease(encoder);
   wgpuTextureViewRelease(viewCor);
-  wgpuTextureViewRelease(viewProf);
+  if (!viewEmprestada) wgpuTextureViewRelease(viewProf);  // a emprestada e do three
   return desenhados;
 }
 

@@ -280,6 +280,16 @@ uniformes por escrita direta.
 > | `three` descartando o depth no fim da pass | o backend usa `Store` em todos os caminhos |
 > | convenção de profundidade WebGL vs WebGPU | a câmera reporta WebGPU, e converter à força não muda o resultado |
 > | depth invertido | nem a engine nem o jogo ligam `reversedDepth`, e o `three` desta versão não tem `reverseDepthBuffer` |
+> | z ou estado de profundidade errados no passe | **limpar** o depth na própria pass (`Clear` 1.0) faz os 45 mil pixels aparecerem: o z passa contra 1.0, então ele é menor que 1 e o estado está correto |
+> | view de profundidade diferente da do `three` | passar a view exata do descriptor dele (`backend.get(canvasTarget).descriptor.depthStencilAttachment.view`) **não muda nada** |
+> | ordem de submissão | o `three` submete dentro do próprio `render()` (`finishRender`), antes de o controle voltar |
+> | o objeto estar escondido e o depth ali ser de outra coisa | desenhar **sem esconder**, por cima do próprio objeto (onde o depth seria idêntico e `LessEqual` passaria por igualdade), também dá zero |
+>
+> **O que isso estabelece:** o passe desenha, o z está correto, e o conteúdo que
+> a pass carrega **não é o depth que o `three` escreveu** — ele se comporta como
+> um buffer de zeros. Falta descobrir onde o `three` de fato escreve essa
+> profundidade, já que nem a textura de `getDepthBuffer` nem a view do
+> descriptor da canvas contêm o resultado dele.
 >
 > **Correção de uma conclusão anterior desta mesma spec:** o resultado do passo 0
 > foi lido como "a oclusão entre os dois motores funciona". Isso **não estava

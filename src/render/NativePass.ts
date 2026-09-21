@@ -50,14 +50,20 @@ interface PonteDoPasse {
   draw(
     alvoCor: unknown,
     alvoProfundidade: unknown,
+    viewProfundidade: unknown,
     viewProjection: Float32Array,
     itens: Float32Array,
   ): number;
 }
 
 interface BackendDoThree {
-  get(alvo: unknown): { buffer?: unknown; texture?: unknown } | undefined;
+  get(alvo: unknown): {
+    buffer?: unknown;
+    texture?: unknown;
+    descriptor?: { depthStencilAttachment?: { view?: unknown } };
+  } | undefined;
   textureUtils?: { getDepthBuffer(depth: boolean, stencil: boolean): unknown };
+  renderer?: { getCanvasTarget(): unknown };
 }
 
 function registro(): PonteDoRegistro | null {
@@ -103,6 +109,7 @@ export class NativePass {
   private readonly _viewProjection = new Float32Array(FLOATS_DA_MATRIZ);
   private _escolhido = false;
   private _relatado = false;
+  private _viewRelatada = false;
 
   constructor(private readonly _limite: number) {}
 
@@ -193,16 +200,25 @@ export class NativePass {
       if (!this._escolhido) return 0;
     }
 
-    // `getDepthBuffer` RECRIA a textura quando os parâmetros não batem com a
-    // que o `three` já tem — e devolve uma zerada. Pedir com `stencil` fixo em
-    // vez de perguntar ao renderer dava um buffer novo a cada frame: o passe
-    // desenhava, mas sem oclusão nenhuma, porque comparava contra zeros.
+    // A VIEW de profundidade tem de ser A MESMA que o `three` usou, não uma
+    // criada a partir da textura: ele guarda a view no descriptor do alvo da
+    // canvas, e se a textura foi recriada depois (a janela vira SSAA), ele
+    // segue escrevendo na antiga. Medido: com a view nova, o passe desenha mas
+    // NADA oclui, porque o buffer lido está zerado.
+    const alvoDaCanvas = backend.renderer?.getCanvasTarget();
+    const viewProfundidade = alvoDaCanvas
+      ? backend.get(alvoDaCanvas)?.descriptor?.depthStencilAttachment?.view
+      : undefined;
     const r2 = renderer as { depth?: boolean; stencil?: boolean };
     const alvoProfundidade = backend.textureUtils?.getDepthBuffer(
       r2.depth !== false,
       r2.stencil === true,
     );
-    if (!alvoProfundidade) return 0;
+    if (!alvoProfundidade && !viewProfundidade) return 0;
+    if (!this._viewRelatada) {
+      this._viewRelatada = true;
+      debug('native-pass', `view de profundidade do three: ${viewProfundidade ? 'obtida' : 'AUSENTE'}`);
+    }
 
     // A projeção vem da câmera do `three`, não recalculada aqui: recalcular
     // introduziria diferença sub-pixel sem motivo nenhum.
@@ -219,7 +235,13 @@ export class NativePass {
     for (let i = 0; i < FLOATS_DA_MATRIZ; i++) this._viewProjection[i] = vp.elements[i]!;
     this._montarLote();
 
-    const desenhados = api.draw(alvoCor, alvoProfundidade, this._viewProjection, this._lote);
+    const desenhados = api.draw(
+      alvoCor,
+      alvoProfundidade,
+      viewProfundidade ?? null,
+      this._viewProjection,
+      this._lote,
+    );
     if (!this._relatado) {
       this._relatado = true;
       debug(

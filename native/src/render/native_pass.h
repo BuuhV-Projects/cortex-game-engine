@@ -31,11 +31,17 @@ struct NativeDrawItem {
  * o que ele desenhou — recalcular a projeção aqui introduziria diferença
  * sub-pixel sem motivo.
  *
+ * `viewProfundidade`, quando vem preenchida, é usada no lugar de uma view nova
+ * criada a partir da textura. Isso importa porque o `three` guarda a view do
+ * alvo da canvas no descriptor dele: se a textura for recriada depois, ele
+ * segue escrevendo na VIEW ANTIGA, e uma view nova da textura atual lê um
+ * buffer zerado — o passe desenha e nada oclui.
+ *
  * Devolve quantos itens foram efetivamente desenhados: item cuja geometria não
  * está registrada é **pulado**, não aproximado.
  */
 uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProfundidade,
-                         const float viewProjection[16], const NativeDrawItem* itens,
-                         uint32_t total);
+                         WGPUTextureView viewProfundidade, const float viewProjection[16],
+                         const NativeDrawItem* itens, uint32_t total);
 
 }  // namespace render

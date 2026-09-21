@@ -20,8 +20,8 @@ constexpr uint32_t kFloatsPorItem = 1 + 16 + 4;
 /** Floats de uma matriz 4x4. */
 constexpr uint32_t kMatrixFloats = 16;
 constexpr uint32_t kCanaisCor = 4;
-/** Argumentos: alvoCor, alvoProfundidade, viewProjection, itens. */
-constexpr size_t kArgsDraw = 4;
+/** Args: alvoCor, alvoProfundidade, viewProfundidade, viewProjection, itens. */
+constexpr size_t kArgsDraw = 5;
 
 HostGpu* g_gpu = nullptr;
 
@@ -46,7 +46,7 @@ WGPUTexture texturaDe(napi_env env, napi_value valor) {
   return static_cast<WGPUTexture>(njs::unwrapValue(env, valor));
 }
 
-/** `draw(alvoCor, alvoProfundidade, viewProjection, itens)` -> desenhados */
+/** `draw(alvoCor, alvoProf, viewProf, viewProjection, itens)` -> desenhados */
 napi_value jsDraw(napi_env env, napi_callback_info info) {
   size_t argc = kArgsDraw;
   napi_value args[kArgsDraw];
@@ -58,9 +58,9 @@ napi_value jsDraw(napi_env env, napi_callback_info info) {
   }
 
   size_t floatsDaCamera = 0;
-  const float* viewProjection = floatsDe(env, args[2], &floatsDaCamera);
+  const float* viewProjection = floatsDe(env, args[3], &floatsDaCamera);
   size_t floatsDosItens = 0;
-  const float* itens = floatsDe(env, args[3], &floatsDosItens);
+  const float* itens = floatsDe(env, args[4], &floatsDosItens);
   if (!viewProjection || floatsDaCamera < kMatrixFloats || !itens) {
     napi_create_double(env, 0, &saida);
     return saida;
@@ -78,9 +78,16 @@ napi_value jsDraw(napi_env env, napi_callback_info info) {
     lista.push_back(item);
   }
 
+  napi_valuetype tipoView = napi_undefined;
+  napi_typeof(env, args[2], &tipoView);
+  WGPUTextureView viewProfundidade =
+      (tipoView == napi_null || tipoView == napi_undefined)
+          ? nullptr
+          : static_cast<WGPUTextureView>(njs::unwrapValue(env, args[2]));
+
   const uint32_t desenhados = render::drawNativeItems(
-      g_gpu, texturaDe(env, args[0]), texturaDe(env, args[1]), viewProjection,
-      lista.data(), static_cast<uint32_t>(lista.size()));
+      g_gpu, texturaDe(env, args[0]), texturaDe(env, args[1]), viewProfundidade,
+      viewProjection, lista.data(), static_cast<uint32_t>(lista.size()));
   napi_create_double(env, desenhados, &saida);
   return saida;
 }
