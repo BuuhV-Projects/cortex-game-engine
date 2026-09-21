@@ -30,7 +30,19 @@ HostGpu* gpuState();
  * a pass de verdade, entao guarda a view certa na fonte.
  */
 void setCenaDepthView(WGPUTextureView view);
-WGPUTextureView cenaDepthView();
+/** Largura e altura de uma view de profundidade (SPEC-0241). */
+struct TamanhoDaView {
+  uint32_t largura;
+  uint32_t altura;
+};
+void registrarTamanhoDaView(WGPUTextureView view, WGPUTexture textura);
+bool tamanhoDaView(WGPUTextureView view, TamanhoDaView* out);
+
+/**
+ * Profundidade da pass DA CENA no frame que acabou, entre as que tem o tamanho
+ * pedido. Consumir reinicia a escolha para o proximo frame.
+ */
+WGPUTextureView cenaDepthView(uint32_t largura, uint32_t altura);
 /** Quantas passes do three ja foram gravadas (diagnostico, SPEC-0241). */
 int passesGravadas();
 

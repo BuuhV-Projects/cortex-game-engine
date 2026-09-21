@@ -303,9 +303,8 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   constexpr int kMaxVezesLogadas = 12;
   if (logarOrdem && vezes < kMaxVezesLogadas) {
     ++vezes;
-    std::fprintf(stderr, "[pass-log] NATIVO apos %d passes | viewJS=%p viewHost=%p | itens=%u",
-                 webgpu::passesGravadas(), (void*)viewProfundidade,
-                 (void*)webgpu::cenaDepthView(), total);
+    std::fprintf(stderr, "[pass-log] NATIVO apos %d passes | viewJS=%p | itens=%u",
+                 webgpu::passesGravadas(), (void*)viewProfundidade, total);
     std::fputc(0x0A, stderr);
     std::fflush(stderr);
   }
@@ -317,6 +316,14 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   if (modoSonda == 1) {
     depthPeek(gpu, alvoCor, alvoProfundidade, viewProfundidade);
     return 0;
+  }
+
+  // A profundidade da cena e escolhida pelo host entre as passes do frame, por
+  // tamanho e volume de draws. A que o JS entrega e a da pass de composicao,
+  // que ninguem escreve (SPEC-0241).
+  if (WGPUTextureView viewCena = webgpu::cenaDepthView(wgpuTextureGetWidth(alvoCor),
+                                                       wgpuTextureGetHeight(alvoCor))) {
+    viewProfundidade = viewCena;
   }
 
   Recursos& r = recursos();

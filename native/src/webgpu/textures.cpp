@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "../napi/napi_util.h"
@@ -97,11 +98,36 @@ napi_value textureCreateViewWithDescriptor(napi_env env,
     view = wgpuTextureCreateView(texture, nullptr);
   }
 
+  registrarTamanhoDaView(view, texture);
   napi_value obj = njs::wrapHandle(env, view, finalizeTextureView);
   setKind(env, obj, "texture-view");
   return obj;
 }
 
+namespace {
+
+/**
+ * Tamanho das views DE PROFUNDIDADE criadas pelo JS (SPEC-0241).
+ *
+ * A API do wgpu não deixa perguntar o tamanho de uma view, e o passe nativo
+ * precisa disso para escolher, entre as passes do frame, a que tem a
+ * profundidade da cena — o shadow map é 2048x2048 e anexá-lo a um alvo de
+ * 2560x1440 faz o wgpu recusar a pass. Só views de profundidade entram, então
+ * o mapa fica com meia dúzia de entradas.
+ */
+std::unordered_map<WGPUTextureView, TamanhoDaView>& mapaDeTamanhos() {
+  static std::unordered_map<WGPUTextureView, TamanhoDaView> mapa;
+  return mapa;
+}
+
+bool ehFormatoDeProfundidade(WGPUTextureFormat f) {
+  return f == WGPUTextureFormat_Depth16Unorm || f == WGPUTextureFormat_Depth24Plus ||
+         f == WGPUTextureFormat_Depth24PlusStencil8 ||
+         f == WGPUTextureFormat_Depth32Float ||
+         f == WGPUTextureFormat_Depth32FloatStencil8;
+}
+
+}  // namespace
 napi_value textureDestroy(napi_env env, napi_callback_info info) {
   size_t argc = 0;
   auto* texture =
@@ -135,6 +161,21 @@ WGPUOrigin3D parseOrigin(napi_env env, napi_value value) {
 }
 
 }  // namespace
+
+void registrarTamanhoDaView(WGPUTextureView view, WGPUTexture textura) {
+  if (!view || !textura) return;
+  if (!ehFormatoDeProfundidade(wgpuTextureGetFormat(textura))) return;
+  mapaDeTamanhos()[view] = TamanhoDaView{wgpuTextureGetWidth(textura),
+                                         wgpuTextureGetHeight(textura)};
+}
+
+bool tamanhoDaView(WGPUTextureView view, TamanhoDaView* out) {
+  auto it = mapaDeTamanhos().find(view);
+  if (it == mapaDeTamanhos().end()) return false;
+  if (out) *out = it->second;
+  return true;
+}
+
 
 /** Origem/destino de cópia: {texture, mipLevel?, origin?, aspect?}. */
 WGPUTexelCopyTextureInfo parseCopyTexture(napi_env env, napi_value dest) {

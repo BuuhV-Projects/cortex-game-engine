@@ -139,7 +139,7 @@ void depthPeek(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture profundidade,
   // ou recurso incompativel (multiamostra, formato, aspecto).
   std::fprintf(stderr,
                "[depth-peek] prof: %dx%d fmt=%d amostras=%u mips=%u usage=%u | "
-               "cor: %dx%d fmt=%d amostras=%u | viewJS=%p viewHost=%p\n",
+               "cor: %dx%d fmt=%d amostras=%u | viewJS=%p\n",
                (int)wgpuTextureGetWidth(profundidade),
                (int)wgpuTextureGetHeight(profundidade),
                (int)wgpuTextureGetFormat(profundidade),
@@ -149,7 +149,7 @@ void depthPeek(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture profundidade,
                (int)wgpuTextureGetWidth(alvoCor), (int)wgpuTextureGetHeight(alvoCor),
                (int)wgpuTextureGetFormat(alvoCor),
                wgpuTextureGetSampleCount(alvoCor),
-               (void*)viewProfundidade, (void*)webgpu::cenaDepthView());
+               (void*)viewProfundidade);
   std::fflush(stderr);
 
   Recursos& r = recursos();

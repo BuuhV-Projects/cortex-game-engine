@@ -344,6 +344,50 @@ uniformes por escrita direta.
 > buffer de zeros as duas são idênticas; num buffer com a cena, `Greater` mostra
 > o objeto só onde ele está atrás dela.
 
+> **CAUSA ENCONTRADA em 21/09/2026 — o passe nativo desenha num alvo onde a
+> cena nunca foi desenhada.**
+>
+> Instrumentando `beginRenderPass` para contar os draws de cada pass do frame
+> (`CORTEX_PASS_LOG`), o quadro fica assim no regime estável:
+>
+> | alvo | draws na pass | o que é |
+> | --- | --- | --- |
+> | 2048x2048 | **187** | a cena (os opacos restantes depois de migrar 40) |
+> | 2560x1440 | 0 e 1 | passes de composição |
+>
+> **Nenhuma pass de 2560x1440 desenha mais de um objeto.** E 2560x1440 é
+> exatamente o alvo que o JS entrega ao passe nativo. Ou seja: o passe nativo
+> desenha num alvo de composição, DEPOIS de a cena já ter sido composta, e a
+> profundidade que recebe é a desse alvo — que ninguém escreve.
+>
+> Isso explica, de uma vez, tudo o que foi medido antes e não fechava:
+>
+> - `Always` e `Greater` passam o mesmo número de pixels e `LessEqual` passa
+>   zero — porque o buffer é mesmo de zeros, só que pelo motivo certo: é o
+>   buffer errado.
+> - Passar "a view exata do descriptor do `three`" não mudava nada — era a view
+>   certa do alvo errado.
+> - A cor funciona e a profundidade não: desenhar no alvo de composição APARECE
+>   na tela (é o último a ser composto), mas não tem contra o que ocluir.
+>
+> **Critérios de seleção que foram tentados e não servem** (ficam registrados
+> para não se repetirem):
+>
+> | critério | por que falha |
+> | --- | --- |
+> | a última pass com profundidade | é a composição, ~1 draw |
+> | a pass que faz `Clear` na profundidade | pega o alvo de 2048x2048 quando ele não é o da cor, e o wgpu recusa a pass por tamanhos diferentes |
+> | a pass que mais desenha | idem — é a de 2048x2048, e não casa com o alvo de cor de 2560x1440 |
+>
+> **Consequência para o marco:** a oclusão contra o `three` não se resolve
+> escolhendo melhor a profundidade. O passe nativo precisa entrar **na pass da
+> cena** — mesmo alvo de cor, mesma profundidade — e portanto ANTES da
+> composição. O gancho atual, em `Renderer.render()` depois de
+> `renderer.render(scene, camera)`, roda tarde demais por construção.
+>
+> Isso não invalida a medição de 34 µs/draw: ela mede o custo de submissão, que
+> não muda de lugar junto com o passe.
+
 
 > **MEDIDO em 21/09/2026 — o caminho nativo é 34 µs/draw mais barato, e isso
 > confirma a hipótese que sustenta o plano inteiro.**
