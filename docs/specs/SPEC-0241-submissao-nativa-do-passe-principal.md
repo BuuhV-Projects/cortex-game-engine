@@ -71,11 +71,15 @@ O id de geometria é estável e vive num `WeakMap`, análogo ao `textureId()` do
 `MaterialDesc`. A destruição reusa o **destroy adiado** já existente em
 `buffers.cpp` — destruir na hora já causou panic fatal do wgpu-native.
 
-### Duas passes sequenciais, não uma compartilhada
+### Duas passes sequenciais, com o `three` PRIMEIRO
 
-Pass nativa (limpa e desenha os opacos migrados) → `renderer.render()` normal do
-`three` com `autoClear = false` e `loadOp: load`, no mesmo color e no mesmo
-depth. **Sem tocar em arquivo vendorizado.**
+`renderer.render()` normal do `three` (limpa, desenha o céu e o que não migrou)
+→ pass nativa por cima, com `loadOp: load` no mesmo color e no mesmo depth, e o
+teste de profundidade decidindo a oclusão. **Sem tocar em arquivo vendorizado.**
+
+A ordem inversa (C++ primeiro) foi testada no passo 0 e **não funciona** — ver o
+resultado registrado adiante. Esta ordem é, na verdade, mais simples: não exige
+desligar o clear do `three` nem mexer no passe dele.
 
 ### A transparência entrelaçada só é construída se a medição pedir
 
@@ -145,6 +149,61 @@ estado entre frames), "duas passes sequenciais" está morto — e a única saíd
 seria manter um fork do backend do `three`. Nesse caso o relatório é que **a
 migração não paga no formato atual**, e o marco é replanejado ou abandonado, em
 vez de seguido.
+
+> **RESPONDIDO em 21/09/2026 — o C++ desenha no alvo do `three`, e a oclusão
+> entre os dois motores funciona.** Medido no kart-racer com `?bench&hold`, com
+> o marcador (triângulo magenta) desenhado numa pass própria em C++, no device,
+> na queue e na textura REAIS do host, e julgado por captura da janela:
+>
+> | caso | o que se esperava | pixel central medido | veredito |
+> | --- | --- | --- | --- |
+> | sem spike | cor da cena | `(52, 102, 121)` | linha de base |
+> | C++ **depois** do `three`, à frente | marcador visível | `(255, 0, 255)` | **desenhou** |
+> | C++ **depois** do `three`, ao fundo | cena tapa o marcador | `(52, 102, 121)` | **ocluiu certo** |
+>
+> Os dois últimos casos juntos são a prova: o marcador não está sendo "pintado
+> por cima", ele participa do teste de profundidade que o `three` escreveu. A
+> cena fica intacta ao redor (`loadOp: load` preserva), e a UI do host compõe
+> por cima normalmente.
+>
+> **Restrição descoberta, e ela muda a ordem do desenho:** desenhar ANTES do
+> `three` NÃO funciona. Duas causas somadas:
+>
+> 1. **`autoClear = false` não basta.** Quem decide o `loadOp` é
+>    `autoClearColor`/`autoClearDepth`, propriedades SEPARADAS que continuam
+>    ligadas (`Background.js`: `renderContext.clearColor = renderer.autoClearColor === true`).
+>    Enquanto estiverem ligadas, o `three` limpa e apaga o que o C++ desenhou.
+> 2. **O background/céu do `three` cobre a tela** no início do passe dele, então
+>    mesmo sem limpar o alvo o conteúdo anterior some.
+>
+> **Consequência para o marco:** a ordem passa a ser **`three` primeiro, C++
+> depois** — o `three` limpa, desenha o céu e o que não migrou; o C++ desenha os
+> objetos migrados por cima, com o depth test cuidando da oclusão. Isso é mais
+> simples do que o planejado (não exige desligar o clear do `three` nem mexer na
+> ordem dele) e **não** exige tocar em arquivo vendorizado.
+
+### Armadilhas que o passo 0 encontrou (custaram medição, ficam registradas)
+
+- **O alvo de cor do `three` depende do antialias.** Com amostras > 0 ele
+  desenha num alvo multiamostra e só resolve para a textura da canvas no fim da
+  pass; sem amostras, desenha direto nela. Escolher errado manda o desenho para
+  uma textura que ninguém lê — e o sintoma é "nada acontece", sem erro. No
+  kart-racer hoje: **amostras = 0**.
+- **A profundidade de um `RenderTarget` não está no mapa do backend.** Quem a
+  aloca é o `Textures`, que tem DataMap próprio: é
+  `renderer._textures.get(alvo).depthTexture`. Procurar em `backend.get(alvo)`
+  devolve `undefined` em silêncio.
+- **Readback síncrono NÃO pode ser chamado de dentro do frame.** A leitura
+  bombeia a fila até o mapeamento completar; no meio do frame do `three` ela
+  trava o laço e o jogo não sai da tela de carregamento. Quem julga imagem é
+  captura por fora (`PrintWindow` com `PW_RENDERFULLCONTENT`).
+- **A tela de carregamento engana o experimento.** Durante a montagem da cena o
+  render é de uma cena VAZIA com a UI por cima; medir ali não diz nada sobre o
+  marcador. O harness precisa esperar o jogo entrar no ramo de jogo.
+- **O jogo pode injetar o próprio pós-processamento.** O kart-racer passa um
+  objeto com `render()` próprio (`setPostFX`), que abaixo do limiar de
+  velocidade cai no render direto da canvas. Não dá para presumir qual caminho
+  de render está ativo — tem de ser medido.
 
 ### Passo 1 — correção do `alphaTest` e medição da cobertura real
 

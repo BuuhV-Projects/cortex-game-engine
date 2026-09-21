@@ -24,6 +24,8 @@ import * as THREE from 'three';
 // mock nos testes. No bundle, um alias `three` → `three/webgpu` unifica tudo numa
 // só instância do three (evita o bug de dual-instance). Ver vite.engine.config.ts.
 import { WebGPURenderer } from 'three/webgpu';
+import { DualPassSpike, modoDoSpike, spikeDisponivel } from '../render/DualPassSpike.js';
+import { debug } from './debug.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -101,6 +103,19 @@ export class Renderer {
    * (é cena 3D, ao contrário da RT da UI). Criada sob demanda em `renderSceneHDR`.
    */
   private _sceneHdrTarget: THREE.RenderTarget | null = null;
+
+  /**
+   * Spike do M5 (SPEC-0241, passo 0) — TEMPORÁRIO. Só existe quando a query de
+   * lançamento pede (`?dualPassSpike=perto|longe`) e o host expõe a ponte;
+   * no Studio/browser fica `null` e nada muda.
+   */
+  /** Evita repetir o diagnóstico do spike a cada frame. */
+  private _spikeRelatado = false;
+
+  private _dualPassSpike: DualPassSpike | null =
+    spikeDisponivel() && modoDoSpike() !== 'desligado'
+      ? new DualPassSpike(modoDoSpike())
+      : null;
 
   /** `true` quando o backend (WebGPU ou fallback WebGL2) terminou o init. */
   private _initialized = false;
@@ -217,8 +232,20 @@ export class Renderer {
    */
   render(scene: THREE.Scene, camera: THREE.Camera): void {
     if (!this._initialized || this._width <= 0 || this._height <= 0) return; // canvas 0×0 → WebGPU recusa
-    this._renderer.clear();
+    if (!this._spikeRelatado) {
+      this._spikeRelatado = true;
+      debug('spike-m5', `render() da canvas ativo; spike=${this._dualPassSpike ? 'sim' : 'nao'}`);
+    }
+    // Spike do M5 (SPEC-0241, passo 0) — TEMPORÁRIO. No caminho da canvas quem
+    // limpa passa a ser o C++, na pass dele; o `three` desenha depois com
+    // `load`. O alvo de cor é o offscreen do host, que o C++ já possui — daqui
+    // só precisa ir a textura de profundidade, que pertence ao `three`.
+    const marcadorDesenhado = this._dualPassSpike
+      ? this._dualPassSpike.desenharNaCanvas(this._renderer)
+      : false;
+    if (!marcadorDesenhado) this._renderer.clear();
     this._renderer.render(scene, camera);
+    this._dualPassSpike?.observarNaCanvas(this._renderer);
   }
 
   /**
@@ -352,15 +379,31 @@ export class Renderer {
     const prevToneMapping = this._renderer.toneMapping;
     this._renderer.toneMapping = THREE.NoToneMapping;
     this._renderer.setRenderTarget(this._sceneHdrTarget);
-    this._renderer.clear();
-    this._renderer.render(scene, camera);
-    this._renderer.setRenderTarget(null);
-    this._renderer.toneMapping = prevToneMapping;
     const backend = (
       this._renderer as unknown as {
-        backend?: { get(t: unknown): { texture?: unknown } | undefined };
+        backend?: {
+          get(t: unknown): { texture?: unknown; depthTexture?: unknown } | undefined;
+        };
       }
     ).backend;
+    // Spike do M5 (SPEC-0241, passo 0) — TEMPORÁRIO. Com ele ligado, quem limpa
+    // o alvo é o C++, na pass dele; o `three` desenha DEPOIS, por cima, com
+    // `load`. É exatamente a convivência que o marco precisa provar.
+    if (!this._spikeRelatado) {
+      this._spikeRelatado = true;
+      debug('spike-m5', `renderSceneHDR ativo; spike=${this._dualPassSpike ? 'sim' : 'nao'}`);
+    }
+    const marcadorDesenhado =
+      this._dualPassSpike && backend
+        ? this._dualPassSpike.desenharAntesDoThree(this._renderer, backend, this._sceneHdrTarget)
+        : false;
+    if (!marcadorDesenhado) this._renderer.clear();
+    this._renderer.render(scene, camera);
+    if (this._dualPassSpike && backend) {
+      this._dualPassSpike.observarDepoisDoThree();
+    }
+    this._renderer.setRenderTarget(null);
+    this._renderer.toneMapping = prevToneMapping;
     return backend?.get(this._sceneHdrTarget.texture)?.texture ?? null;
   }
 

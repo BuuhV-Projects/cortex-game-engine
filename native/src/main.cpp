@@ -28,6 +28,7 @@
 #include "shims/perf_arraybuffer.h"
 #include "shims/clock.h"
 #include "shims/scene_mirror_shim.h"
+#include "shims/dual_pass_spike_shim.h"
 #include "shims/perf_stats.h"
 #include "shims/perf_trace.h"
 #include "shims/quit.h"
@@ -242,6 +243,7 @@ int main(int argc, char** argv) {
     shims::registerKtx2(js.env());
     shims::registerClock(js.env());  // SPEC-0226
     shims::registerSceneMirror(js.env());  // SPEC-0234
+    shims::registerDualPassSpike(js.env(), &gpu);  // SPEC-0241 passo 0 (TEMPORARIO)
     shims::registerPerfStats(js.env());
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());
