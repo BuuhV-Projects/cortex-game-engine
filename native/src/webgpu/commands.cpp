@@ -529,8 +529,14 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
     if (njs::getNamed(env, args[0], "depthStencilAttachment", &attProf)) {
       cruaLoad = njs::getNamedString(env, attProf, "depthLoadOp", "(ausente)");
     }
-    std::fprintf(stderr, " res=%p profLoadCru=%s drawsDaPassAnterior=%d", (void*)attachments[0].resolveTarget,
-                 cruaLoad.c_str(), g_drawsNaPass);
+    // PAREADO: tamanho e draws da MESMA pass (a que acabou de fechar). Misturar
+    // o alvo da pass atual com os draws da anterior ja levou a conclusao errada
+    // uma vez (SPEC-0241).
+    TamanhoDaView tAnterior{};
+    const bool conhecida = g_corDaPassAtual && tamanhoDaView(g_corDaPassAtual, &tAnterior);
+    std::fprintf(stderr, " profLoadCru=%s | ANTERIOR: %ux%u fmt=%d draws=%d%s",
+                 cruaLoad.c_str(), tAnterior.largura, tAnterior.altura,
+                 (int)tAnterior.formato, g_drawsNaPass, conhecida ? "" : " (sem tamanho)");
     std::fputc(0x0A, stderr);
     std::fflush(stderr);
   }

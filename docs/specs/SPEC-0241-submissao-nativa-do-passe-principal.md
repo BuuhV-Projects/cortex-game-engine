@@ -426,6 +426,44 @@ uniformes por escrita direta.
 > cor — mas quem for medir de novo tem de **reexportar o jogo** antes, e não só
 > recompilar o host.
 
+> **FECHAMENTO em 21/09/2026 — a cena é a pass de 2048x2048, e o passe entra
+> depois da composição.**
+>
+> A revisão acima ("a pass de volume é o shadow map") também **estava errada**,
+> e cai aqui. O erro foi de instrumento: a linha de log juntava o alvo da pass
+> ATUAL com os draws da ANTERIOR, que são passes diferentes. Com o log pareado
+> — tamanho e draws da mesma pass — o frame fica assim:
+>
+> | alvo | formato | draws com `nativePass=0` | com `nativePass=40` |
+> | --- | --- | --- | --- |
+> | **2048x2048** | RGBA8Unorm | **234** | **187** |
+> | 1280x720 | RGBA16Float | 24 | 24 |
+> | 2560x1440 | BGRA8Unorm / RGBA16Float | 0 e 1 | 0 e 1 |
+>
+> Duas coisas fecham a identificação, e nenhuma delas sozinha bastaria:
+>
+> 1. **A soma bate:** 187 + 24 + 1 + 1 + 1 = 214, exatamente o total de draws
+>    que o HUD conta no frame. Não sobra lugar para uma segunda pass de cena.
+> 2. **Ela perde draws com a migração:** 234 → 187 ao migrar 40 malhas (algumas
+>    valem mais de um draw, por multi-material).
+>
+> **A ordem do frame é o que falta resolver.** As passes saem nesta sequência:
+> a cena (2048x2048), depois a composição (2560x1440, 1 draw), depois a UI
+> (1280x720), e **só então** o passe nativo. Por isso apontar o passe para a RT
+> da cena (`CORTEX_ALVO_DA_CENA=1`) o faz sumir da tela: ele desenha numa
+> textura que já foi consumida naquele frame.
+>
+> **O que o marco precisa:** um gancho entre "a cena terminou de ser desenhada
+> na RT" e "o pós-processamento começa". O gancho atual, no fim do
+> `Renderer.render()`, está depois dos dois. Isso é desenho, não depuração — e
+> é o próximo passo do passo 3.
+>
+> **Lição de método, pela terceira vez nesta spec:** todas as três conclusões
+> erradas desta investigação vieram de instrumentos não validados — a sonda que
+> lia zero de qualquer buffer, o contador zerado duas vezes, e o log que
+> pareava passes diferentes. Antes de concluir de uma medição nova aqui,
+> confira o instrumento num caso de resposta conhecida.
+
 
 
 > **MEDIDO em 21/09/2026 — o caminho nativo é 34 µs/draw mais barato, e isso
