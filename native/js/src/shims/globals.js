@@ -28,7 +28,13 @@ export function installGlobals() {
     trace: (...a) => print('[trace]', ...a.map(fmt)),
   };
 
-  globalThis.performance = globalThis.performance || { now: () => Date.now() };
+  // `performance.now()` com resolução de verdade (SPEC-0226): o host expõe um
+  // steady_clock em __cortexNow. Sem ele — browser, testes — cai no Date.now(),
+  // que tem granularidade de 1 ms e é cego para custo por objeto.
+  const agora = typeof globalThis.__cortexNow === 'function'
+    ? globalThis.__cortexNow
+    : () => Date.now();
+  globalThis.performance = globalThis.performance || { now: agora };
 
   // crypto (Entity usa randomUUID; sem hardware RNG — jogo, não segurança)
   globalThis.crypto = globalThis.crypto || {
