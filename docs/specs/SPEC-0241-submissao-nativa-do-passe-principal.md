@@ -387,6 +387,45 @@ uniformes por escrita direta.
 >
 > Isso não invalida a medição de 34 µs/draw: ela mede o custo de submissão, que
 > não muda de lugar junto com o passe.
+> **REVISÃO em 21/09/2026 — a pass de volume é o SHADOW MAP, não a cena.**
+>
+> A conclusão acima ("2048x2048 com 187 draws é a cena") **estava errada** e é
+> corrigida aqui. Registrando o formato das views junto do tamanho, a pass de
+> volume é `2048x2048 RGBA8Unorm` — o shadow map do `three`, que no backend
+> WebGPU é um render target com cor. A cena não é essa pass.
+>
+> O que ficou estabelecido, e vale:
+>
+> | fato | como foi medido |
+> | --- | --- |
+> | o JS entrega `alvoCor` **nulo** | log no shim: `alvoCor=0000000000000000 0x0` |
+> | `null` vira o offscreen do host (2560x1440) | é o fallback em `drawNativeItems` |
+> | `backend.get(canvasTarget).texture` chega vazio | o alvo continuou 2560x1440 depois de tentar passá-lo |
+> | o frame tem 5 passes com profundidade | janela de candidatas: 1, 1, 187, 1, 0 draws |
+> | só a de 2048x2048 tem volume, e é o shadow map | formato RGBA8Unorm |
+> | não há multiamostra | `resolveTarget` nulo em todas as passes |
+> | o host recebe o `loadOp` que o `three` pediu | `profLoadCru=load` |
+>
+> **O buraco que resta:** os draws da cena não aparecem em nenhuma pass de
+> 2560x1440 (elas têm 0 ou 1 draw), e mesmo assim o trace conta ~214 draws no
+> frame. Ou a cena é gravada por um caminho que não passa por
+> `beginRenderPass` do binding, ou os draws dela não passam pelo `draw`/
+> `drawIndexed` do binding. Descobrir por onde ela passa é o próximo passo, e é
+> o que falta para saber onde o passe nativo deve entrar.
+>
+> A escolha do alvo pelo host (`cenaAlvo`, ligada por `CORTEX_ALVO_DA_CENA`)
+> fica no repo desligada: ela encontra o shadow map, não a cena. O padrão segue
+> no alvo que o JS pede, que é o que mantém o passe visível e a medição de
+> 34 µs/draw reproduzível.
+>
+> **Armadilha de medição encontrada:** o `dist` de teste estava **defasado** em
+> relação ao `src`. As rodadas de hoje cedo (Always/Greater/LessEqual com 46297
+> pixels) usaram um bundle antigo, em que o passe pintava com uma cor fixa
+> magenta; o código atual pinta com a cor do material. Isso **não invalida**
+> aquelas medições — o que estava em teste era o teste de profundidade, não a
+> cor — mas quem for medir de novo tem de **reexportar o jogo** antes, e não só
+> recompilar o host.
+
 
 
 > **MEDIDO em 21/09/2026 — o caminho nativo é 34 µs/draw mais barato, e isso

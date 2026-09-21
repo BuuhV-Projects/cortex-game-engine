@@ -9,6 +9,8 @@
 #include "../render/native_pass.h"
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
@@ -84,6 +86,18 @@ napi_value jsDraw(napi_env env, napi_callback_info info) {
       (tipoView == napi_null || tipoView == napi_undefined)
           ? nullptr
           : static_cast<WGPUTextureView>(njs::unwrapValue(env, args[2]));
+
+  static const bool logarAlvo = std::getenv("CORTEX_PASS_LOG") != nullptr;
+  static int vezesAlvo = 0;
+  constexpr int kMaxAlvosLogados = 4;
+  if (logarAlvo && vezesAlvo < kMaxAlvosLogados) {
+    ++vezesAlvo;
+    WGPUTexture t = texturaDe(env, args[0]);
+    std::fprintf(stderr, "[shim] alvoCor=%p %ux%u", (void*)t,
+                 t ? wgpuTextureGetWidth(t) : 0u, t ? wgpuTextureGetHeight(t) : 0u);
+    std::fputc(0x0A, stderr);
+    std::fflush(stderr);
+  }
 
   const uint32_t desenhados = render::drawNativeItems(
       g_gpu, texturaDe(env, args[0]), texturaDe(env, args[1]), viewProfundidade,

@@ -253,9 +253,10 @@ export class Renderer {
       : false;
     if (!marcadorDesenhado) this._renderer.clear();
     this._renderer.render(scene, camera);
-    // O passe nativo entra DEPOIS do `three`, no mesmo alvo: é a única ordem
-    // que funciona (passo 0 da SPEC-0241). `null` como alvo de cor significa
-    // "a textura da canvas", que o host já possui.
+    // Caminho SEM pós-FX (o jogo usa `renderSceneHDR`). Aqui a canvas e o alvo
+    // da cena sao o mesmo, entao o passe pode entrar logo depois do `three`.
+    // `null` como alvo de cor significa "a textura da canvas", que o host ja
+    // possui. Só um dos dois ganchos roda por frame.
     this._nativePass?.desenhar(scene, camera, this._renderer, null);
     this._dualPassSpike?.observarNaCanvas(this._renderer);
   }
@@ -411,6 +412,17 @@ export class Renderer {
         : false;
     if (!marcadorDesenhado) this._renderer.clear();
     this._renderer.render(scene, camera);
+    // O passe nativo entra AQUI, na RT da cena — nao no caminho da canvas.
+    //
+    // Medido em 21/09/2026 (SPEC-0241): a cena e desenhada nesta RT (187 draws)
+    // e o alvo da canvas so recebe passes de composicao (0 ou 1 draw). Com o
+    // gancho la, o passe desenhava num alvo onde a cena nunca esteve, e a
+    // profundidade dali estava zerada — por isso a oclusao nunca funcionou.
+    // A ordem do quadro nao muda: o host so faz bloom e blit depois disto.
+    const texturaDaCena = backend?.get(this._sceneHdrTarget.texture)?.texture;
+    if (texturaDaCena) {
+      this._nativePass?.desenhar(scene, camera, this._renderer, texturaDaCena);
+    }
     if (this._dualPassSpike && backend) {
       this._dualPassSpike.observarDepoisDoThree();
     }

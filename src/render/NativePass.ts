@@ -207,16 +207,21 @@ export class NativePass {
     // canvas, e se a textura foi recriada depois (a janela vira SSAA), ele
     // segue escrevendo na antiga. Medido: com a view nova, o passe desenha mas
     // NADA oclui, porque o buffer lido está zerado.
-    const alvoDaCanvas = backend.renderer?.getCanvasTarget();
+    // Com alvo explicito (a RT da cena), a profundidade quem resolve e o host:
+    // ele ve as passes do frame e escolhe a da cena por tamanho e volume de
+    // draws. Buscar aqui, pelo alvo da canvas, so serve ao caminho sem pos-FX —
+    // e era o que fazia este metodo desistir antes de chamar o host
+    // (SPEC-0241).
+    const alvoExplicito = alvoCor !== null && alvoCor !== undefined;
+    const alvoDaCanvas = alvoExplicito ? undefined : backend.renderer?.getCanvasTarget();
     const viewProfundidade = alvoDaCanvas
       ? backend.get(alvoDaCanvas)?.descriptor?.depthStencilAttachment?.view
       : undefined;
     const r2 = renderer as { depth?: boolean; stencil?: boolean };
-    const alvoProfundidade = backend.textureUtils?.getDepthBuffer(
-      r2.depth !== false,
-      r2.stencil === true,
-    );
-    if (!alvoProfundidade && !viewProfundidade) return 0;
+    const alvoProfundidade = alvoExplicito
+      ? undefined
+      : backend.textureUtils?.getDepthBuffer(r2.depth !== false, r2.stencil === true);
+    if (!alvoExplicito && !alvoProfundidade && !viewProfundidade) return 0;
     if (!this._viewRelatada) {
       this._viewRelatada = true;
       const dados = alvoDaCanvas ? backend.get(alvoDaCanvas) : undefined;
@@ -247,8 +252,16 @@ export class NativePass {
     for (let i = 0; i < FLOATS_DA_MATRIZ; i++) this._viewProjection[i] = vp.elements[i]!;
     this._montarLote();
 
+    // `null` como alvo NAO serve: o host traduz isso para o offscreen dele
+    // (2560x1440), e o `three` desenha a cena em OUTRA textura (medido:
+    // 2048x2048, a unica pass do frame com volume de draws). Sem isto o passe
+    // desenha num alvo onde a cena nunca esteve, e nada tem contra o que ocluir
+    // (SPEC-0241).
+    const texturaDaCanvas = alvoDaCanvas ? backend.get(alvoDaCanvas)?.texture : undefined;
+    const alvoFinal = alvoCor ?? texturaDaCanvas ?? null;
+
     const desenhados = api.draw(
-      alvoCor,
+      alvoFinal,
       alvoProfundidade,
       viewProfundidade ?? null,
       this._viewProjection,

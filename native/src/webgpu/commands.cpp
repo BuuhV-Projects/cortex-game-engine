@@ -39,19 +39,23 @@ WGPUTextureView g_cenaDepthView = nullptr;
  * volume: entre as do tamanho do alvo, a cena é a que mais desenha.
  */
 struct Candidata {
-  WGPUTextureView view;
+  WGPUTextureView viewProfundidade;
+  WGPUTextureView viewCor;
   int draws;
 };
 std::vector<Candidata> g_candidatasDoFrame;
 WGPUTextureView g_depthDaPassAtual = nullptr;
+WGPUTextureView g_corDaPassAtual = nullptr;
 
 /** Fecha a pass em gravação e guarda o que ela desenhou. */
 void fecharPassAnterior() {
   if (g_depthDaPassAtual) {
-    g_candidatasDoFrame.push_back(Candidata{g_depthDaPassAtual, g_drawsNaPass});
+    g_candidatasDoFrame.push_back(
+        Candidata{g_depthDaPassAtual, g_corDaPassAtual, g_drawsNaPass});
   }
   g_drawsNaPass = 0;
   g_depthDaPassAtual = nullptr;
+  g_corDaPassAtual = nullptr;
 }
 
 void finalizeEncoder(napi_env, void* data, void*) {
@@ -527,13 +531,13 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
     }
     std::fprintf(stderr, " res=%p profLoadCru=%s drawsDaPassAnterior=%d", (void*)attachments[0].resolveTarget,
                  cruaLoad.c_str(), g_drawsNaPass);
-    g_drawsNaPass = 0;
     std::fputc(0x0A, stderr);
     std::fflush(stderr);
   }
   ++g_passesGravadas;
   fecharPassAnterior();
   g_depthDaPassAtual = temProfundidade ? depthAttachment.view : nullptr;
+  g_corDaPassAtual = attachments.empty() ? nullptr : attachments[0].view;
   WGPURenderPassEncoder pass =
       wgpuCommandEncoderBeginRenderPass(encoder, &desc);
   return makePassObject(env, pass);
@@ -674,40 +678,56 @@ std::vector<WGPUCommandBuffer> collectCommandBuffers(napi_env env,
 }  // namespace
 
 void setCenaDepthView(WGPUTextureView view) { g_cenaDepthView = view; }
-WGPUTextureView cenaDepthView(uint32_t largura, uint32_t altura) {
-  // Fecha a ultima pass gravada antes de responder: o passe nativo vem depois
-  // dela, e sem isto os draws dela nao entrariam na escolha.
+bool cenaAlvo(AlvoDaCena* out) {
+  // Fecha a pass em gravacao antes de decidir: o passe nativo e chamado logo
+  // depois dela e sem isto os draws dela nao entrariam na conta.
   fecharPassAnterior();
-  WGPUTextureView escolhida = nullptr;
-  int melhorDraws = -1;
+  const Candidata* melhor = nullptr;
   for (const Candidata& c : g_candidatasDoFrame) {
-    TamanhoDaView tam{0, 0};
-    if (!tamanhoDaView(c.view, &tam)) continue;
-    if (tam.largura != largura || tam.altura != altura) continue;
-    if (c.draws > melhorDraws) {
-      melhorDraws = c.draws;
-      escolhida = c.view;
-    }
+    if (!c.viewCor || !c.viewProfundidade) continue;
+    TamanhoDaView prof{};
+    TamanhoDaView cor{};
+    if (!tamanhoDaView(c.viewProfundidade, &prof)) continue;
+    if (!tamanhoDaView(c.viewCor, &cor)) continue;
+    // Cor e profundidade tem de casar, senao o wgpu recusa a pass.
+    if (prof.largura != cor.largura || prof.altura != cor.altura) continue;
+    if (!melhor || c.draws > melhor->draws) melhor = &c;
   }
-  static const bool logarEscolha = std::getenv("CORTEX_PASS_LOG") != nullptr;
-  static int vezesEscolha = 0;
-  constexpr int kMaxEscolhasLogadas = 8;
-  if (logarEscolha && vezesEscolha < kMaxEscolhasLogadas) {
-    ++vezesEscolha;
-    std::fprintf(stderr, "[escolha] alvo %ux%u | candidatas:", largura, altura);
-    for (const Candidata& c : g_candidatasDoFrame) {
-      TamanhoDaView t{0, 0};
-      const bool conhecida = tamanhoDaView(c.view, &t);
-      std::fprintf(stderr, " [%p %ux%u draws=%d%s]", (void*)c.view, t.largura, t.altura,
-                   c.draws, conhecida ? "" : " SEM-TAMANHO");
+  static const bool logarAlvo = std::getenv("CORTEX_PASS_LOG") != nullptr;
+  static int vezesAlvo = 0;
+  constexpr int kMaxAlvosLogados = 6;
+  if (logarAlvo && vezesAlvo < kMaxAlvosLogados) {
+    ++vezesAlvo;
+    std::fprintf(stderr, "[alvo] candidatas=%d escolhido=%s", (int)g_candidatasDoFrame.size(),
+                 melhor ? "sim" : "NAO");
+    if (melhor) {
+      TamanhoDaView t{};
+      tamanhoDaView(melhor->viewCor, &t);
+      std::fprintf(stderr, " %ux%u fmt=%d draws=%d", t.largura, t.altura, (int)t.formato,
+                   melhor->draws);
     }
-    std::fprintf(stderr, " -> escolhida %p", (void*)escolhida);
     std::fputc(0x0A, stderr);
     std::fflush(stderr);
   }
-  g_candidatasDoFrame.clear();
-  g_cenaDepthView = escolhida;
-  return escolhida;
+  // Janela curta: o passe nativo entra no meio da sequencia, entao limpar tudo
+  // aqui cortaria o frame ao meio e esconderia passes.
+  constexpr size_t kJanelaDeCandidatas = 24;
+  if (g_candidatasDoFrame.size() > kJanelaDeCandidatas) {
+    g_candidatasDoFrame.erase(g_candidatasDoFrame.begin(),
+                              g_candidatasDoFrame.end() - kJanelaDeCandidatas);
+  }
+  if (!melhor) return false;
+  TamanhoDaView cor{};
+  tamanhoDaView(melhor->viewCor, &cor);
+  if (out) {
+    out->viewCor = melhor->viewCor;
+    out->viewProfundidade = melhor->viewProfundidade;
+    out->formatoCor = cor.formato;
+    out->largura = cor.largura;
+    out->altura = cor.altura;
+    out->draws = melhor->draws;
+  }
+  return true;
 }
 int passesGravadas() { return g_passesGravadas; }
 

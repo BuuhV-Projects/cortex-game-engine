@@ -164,9 +164,17 @@ WGPUOrigin3D parseOrigin(napi_env env, napi_value value) {
 
 void registrarTamanhoDaView(WGPUTextureView view, WGPUTexture textura) {
   if (!view || !textura) return;
-  if (!ehFormatoDeProfundidade(wgpuTextureGetFormat(textura))) return;
-  mapaDeTamanhos()[view] = TamanhoDaView{wgpuTextureGetWidth(textura),
-                                         wgpuTextureGetHeight(textura)};
+  // Views de COR tambem entram: o passe nativo precisa do alvo da cena, e o JS
+  // nao expoe a textura do alvo da canvas do `three` (medido: chega nula, e o
+  // host caia no offscreen, que nao e onde a cena foi desenhada). O mapa e
+  // podado porque views de cor nascem a cada frame.
+  constexpr size_t kMaximoDeViews = 256;
+  auto& mapa = mapaDeTamanhos();
+  if (mapa.size() > kMaximoDeViews) mapa.clear();
+  mapa[view] = TamanhoDaView{wgpuTextureGetWidth(textura),
+                             wgpuTextureGetHeight(textura),
+                             wgpuTextureGetFormat(textura),
+                             ehFormatoDeProfundidade(wgpuTextureGetFormat(textura))};
 }
 
 bool tamanhoDaView(WGPUTextureView view, TamanhoDaView* out) {

@@ -292,9 +292,16 @@ bool garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat cor,
 uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProfundidade,
                          WGPUTextureView viewProfundidade, const float viewProjection[16],
                          const NativeDrawItem* itens, uint32_t total) {
-  if (!gpu || !gpu->device || !gpu->queue || !viewProjection) return 0;
-  if (!alvoCor) alvoCor = gpu->offscreenTexture;
-  if (!alvoCor || total == 0) return 0;
+  if (!gpu || !gpu->device || !gpu->queue || !viewProjection || total == 0) return 0;
+  // O alvo da cena vem do HOST, nao do JS (SPEC-0241).
+  //
+  // Medido: o JS entrega `alvoCor` nulo (o `three` nao expoe a textura do alvo
+  // da canvas), e nulo aqui virava o offscreen do host — onde a cena nunca foi
+  // desenhada. O host ve as passes do frame e sabe em qual a cena esta.
+  webgpu::AlvoDaCena alvo{};
+  const bool temAlvoDaCena = webgpu::cenaAlvo(&alvo);
+  if (!temAlvoDaCena) return 0;
+
   // Diagnostico (SPEC-0241): em que ponto da sequencia de passes do `three`
   // este passe entra, e com qual view. Se ele entrar antes da pass da cena do
   // frame, a profundidade que recebe e a do alvo anterior do par alternado.
@@ -314,23 +321,16 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   // Modo 2: desenha e sonda a PRÓPRIA no fim (valida o instrumento).
   const int modoSonda = depthPeekMode();
   if (modoSonda == 1) {
-    depthPeek(gpu, alvoCor, alvoProfundidade, viewProfundidade);
+    depthPeek(gpu, nullptr, alvoProfundidade, viewProfundidade);
     return 0;
   }
 
-  // A profundidade da cena e escolhida pelo host entre as passes do frame, por
-  // tamanho e volume de draws. A que o JS entrega e a da pass de composicao,
-  // que ninguem escreve (SPEC-0241).
-  if (WGPUTextureView viewCena = webgpu::cenaDepthView(wgpuTextureGetWidth(alvoCor),
-                                                       wgpuTextureGetHeight(alvoCor))) {
-    viewProfundidade = viewCena;
-  }
-
   Recursos& r = recursos();
-  const WGPUTextureFormat formatoCor = wgpuTextureGetFormat(alvoCor);
-  const uint32_t amostras = wgpuTextureGetSampleCount(alvoCor);
-  if (!garantirProfundidadePropria(gpu, r, wgpuTextureGetWidth(alvoCor),
-                                   wgpuTextureGetHeight(alvoCor), amostras)) {
+  const WGPUTextureFormat formatoCor = alvo.formatoCor;
+  // Uma amostra: medido, nenhuma pass do frame usa `resolveTarget`, entao nao
+  // ha multiamostra neste caminho (SPEC-0241).
+  const uint32_t amostras = 1;
+  if (!garantirProfundidadePropria(gpu, r, alvo.largura, alvo.altura, amostras)) {
     return 0;
   }
   const WGPUTextureFormat formatoProf = WGPUTextureFormat_Depth24Plus;
@@ -368,12 +368,13 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
     return a.geometria->vertexStride < b.geometria->vertexStride;
   });
 
-  WGPUTextureView viewCor = wgpuTextureCreateView(alvoCor, nullptr);
+  // As views vem do host, sao as MESMAS que a pass da cena usou. Nao criar
+  // novas a partir da textura: sao do `three`, e ele pode ter recriado a
+  // textura sem que a nossa view acompanhasse (SPEC-0241).
+  WGPUTextureView viewCor = alvo.viewCor;
   // Preferir a view que o `three` usa: criar uma nova a partir da textura pode
   // apontar para um recurso diferente do que ele escreveu.
-  const bool viewEmprestada = viewProfundidade != nullptr;
-  WGPUTextureView viewProf =
-      viewEmprestada ? viewProfundidade : wgpuTextureCreateView(alvoProfundidade, nullptr);
+  WGPUTextureView viewProf = alvo.viewProfundidade;
 
   // `load` nos dois: o passe entra DEPOIS do `three`, preservando a cor e a
   // profundidade que ele escreveu — é a profundidade dele que decide a oclusão.
@@ -433,9 +434,10 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   wgpuQueueSubmit(gpu->queue, 1, &cmd);
   wgpuCommandBufferRelease(cmd);
   wgpuCommandEncoderRelease(encoder);
-  wgpuTextureViewRelease(viewCor);  // a de profundidade e do passe e sobrevive
+  // So libera a view de cor quando foi criada aqui; as do host sao emprestadas.
+  if (!temAlvoDaCena) wgpuTextureViewRelease(viewCor);
   if (modoSonda == 2) {
-    depthPeek(gpu, alvoCor, r.profundidadePropria, r.viewPropria);
+    depthPeek(gpu, nullptr, r.profundidadePropria, r.viewPropria);
   }
   return desenhados;
 }

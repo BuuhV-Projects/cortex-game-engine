@@ -34,15 +34,30 @@ void setCenaDepthView(WGPUTextureView view);
 struct TamanhoDaView {
   uint32_t largura;
   uint32_t altura;
+  WGPUTextureFormat formato;
+  bool ehProfundidade;
 };
 void registrarTamanhoDaView(WGPUTextureView view, WGPUTexture textura);
 bool tamanhoDaView(WGPUTextureView view, TamanhoDaView* out);
 
+/** Alvo da pass da cena: cor e profundidade que casam entre si (SPEC-0241). */
+struct AlvoDaCena {
+  WGPUTextureView viewCor;
+  WGPUTextureView viewProfundidade;
+  WGPUTextureFormat formatoCor;
+  uint32_t largura;
+  uint32_t altura;
+  int draws;
+};
+
 /**
- * Profundidade da pass DA CENA no frame que acabou, entre as que tem o tamanho
- * pedido. Consumir reinicia a escolha para o proximo frame.
+ * O par (cor, profundidade) da pass que mais desenhou entre as passes recentes.
+ *
+ * Existe porque o JS nao entrega o alvo da cena: `null` vira o offscreen do
+ * host e `backend.get(canvasTarget).texture` chega vazio. O host ve as passes
+ * de verdade e sabe em qual a cena foi desenhada.
  */
-WGPUTextureView cenaDepthView(uint32_t largura, uint32_t altura);
+bool cenaAlvo(AlvoDaCena* out);
 /** Quantas passes do three ja foram gravadas (diagnostico, SPEC-0241). */
 int passesGravadas();
 
