@@ -56,6 +56,12 @@ export interface MaterialRejection {
 const OPAQUE_ALPHA = 1;
 
 /**
+ * Limiar de `alphaTest` acima do qual o material faz recorte alfa. Em
+ * `three`, `alphaTest === 0` (ou ausente) significa "sem recorte".
+ */
+const ALPHA_TEST_DISABLED = 0;
+
+/**
  * Tipo do three → modelo de sombreamento, por nome exato.
  *
  * As variantes `*NodeMaterial` estão aqui porque **são o que o renderer WebGPU
@@ -132,6 +138,16 @@ export function describeMaterial(material: Material): MaterialDesc | MaterialRej
     }
   }
 
+  // Recusa ANTES do ramo do contorno: `Materials.ts` monta a casca de contorno
+  // com `alphaTest: o.alphaTest ?? 0` (herdado do material original), e esse
+  // ramo retorna mais abaixo antes da checagem geral — se a checagem ficasse
+  // só lá embaixo, o caso mais comum de recorte alfa (folhagem com contorno)
+  // continuaria passando como sólido (SPEC-0241).
+  const alphaTest = (material as unknown as { alphaTest?: number }).alphaTest ?? ALPHA_TEST_DISABLED;
+  if (alphaTest > ALPHA_TEST_DISABLED) {
+    return { reason: 'usa alphaTest (recorte alfa), que a descrição ainda não representa' };
+  }
+
   // Tipo EXATO, e não `instanceof`: `MeshPhysicalMaterial` estende o standard e
   // passaria no teste de herança, trazendo clearcoat, sheen e transmissão que
   // esta descrição não representa — e o material sairia aproximado, não fiel.
@@ -178,8 +194,10 @@ export function describeMaterial(material: Material): MaterialDesc | MaterialRej
     shading,
     color: toTuple(comCor.color),
     opacity: material.opacity,
-    // `alphaTest` e `blending` custom não entram no subconjunto; o que a engine
-    // usa hoje é opaco ou blend comum.
+    // `blending` custom não entra no subconjunto. `alphaTest > 0` já foi
+    // recusado acima (a engine USA recorte alfa — ver `Materials.ts` — então
+    // não dava pra presumir "opaco ou blend comum" sem verificar, e o
+    // comentário antigo aqui afirmava isso sem prova; SPEC-0241).
     blend: material.transparent || material.opacity < OPAQUE_ALPHA ? 'blend' : 'opaque',
     metalness: comCor.metalness ?? 0,
     roughness: comCor.roughness ?? 1,

@@ -82,6 +82,54 @@ describe('describeMaterial', () => {
     expect(isDescribed(resultado)).toBe(false);
     expect((resultado as { reason: string }).reason).toContain('fora do subconjunto');
   });
+
+  it('RECUSA material standard/toon com alphaTest > 0 (recorte alfa)', () => {
+    // A engine USA recorte alfa (folhagem, grade, cerca) — desenhar sem o
+    // corte pelo caminho nativo é o "modo de falha mais caro" (SPEC-0241).
+    const material = new MeshStandardMaterial();
+    material.alphaTest = 0.5;
+
+    const resultado = describeMaterial(material);
+
+    expect(isDescribed(resultado)).toBe(false);
+    expect((resultado as { reason: string }).reason).toContain('alphaTest');
+  });
+
+  it('continua descrevendo normalmente quando alphaTest é 0 ou ausente', () => {
+    // A recusa não pode pegar o que já funcionava.
+    const semAlphaTest = new MeshStandardMaterial();
+    const comZero = new MeshStandardMaterial();
+    comZero.alphaTest = 0;
+
+    expect(isDescribed(describeMaterial(semAlphaTest))).toBe(true);
+    expect(isDescribed(describeMaterial(comZero))).toBe(true);
+  });
+
+  it('recusa a casca de contorno também quando ela carrega alphaTest > 0', () => {
+    // `Materials.ts` monta a casca com `alphaTest: o.alphaTest ?? 0`, e o
+    // ramo do contorno retorna ANTES da checagem geral — a recusa precisa
+    // valer também aqui, senão o caso mais comum (folhagem com contorno)
+    // continuaria passando como sólido.
+    const outline = new MeshStandardMaterial();
+    outline.alphaTest = 0.3;
+    outline.userData['cortexOutlineThickness'] = 0.02;
+
+    const resultado = describeMaterial(outline);
+
+    expect(isDescribed(resultado)).toBe(false);
+    expect((resultado as { reason: string }).reason).toContain('alphaTest');
+  });
+
+  it('continua descrevendo a casca de contorno sem alphaTest', () => {
+    const outline = new MeshStandardMaterial();
+    outline.userData['cortexOutlineThickness'] = 0.02;
+
+    const desc = describeMaterial(outline) as MaterialDesc;
+
+    expect(isDescribed(desc)).toBe(true);
+    expect(desc.shading).toBe('outline');
+    expect(desc.outlineThickness).toBe(0.02);
+  });
 });
 
 describe('measureCoverage', () => {
@@ -99,6 +147,22 @@ describe('measureCoverage', () => {
     expect(cobertura.total).toBe(4);
     expect(cobertura.described).toBe(2);
     expect(Object.keys(cobertura.rejections)).toHaveLength(2);
+  });
+
+  it('reflete a recusa por alphaTest na contagem de cobertura', () => {
+    const comRecorte = new MeshStandardMaterial();
+    comRecorte.alphaTest = 0.5;
+
+    const cobertura = measureCoverage([
+      new MeshStandardMaterial(),
+      comRecorte,
+    ]);
+
+    expect(cobertura.total).toBe(2);
+    expect(cobertura.described).toBe(1);
+    const motivo = Object.keys(cobertura.rejections).find((r) => r.includes('alphaTest'));
+    expect(motivo).toBeDefined();
+    expect(cobertura.rejections[motivo!]).toBe(1);
   });
 
   it('aceita as variantes NodeMaterial, que sao o que o WebGPU usa', () => {
