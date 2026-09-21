@@ -14,6 +14,10 @@ void testSceneMirrorRecusaArvoreForaDeOrdem();
 void testSceneMirrorCortaPeloFrustum();
 void testSceneMirrorIgnoraIndiceForaDaCena();
 void testSceneMirrorNaoRecalculaQuemNaoMudou();
+void testPipelineCacheCriaUmaVezPorChave();
+void testPipelineCacheSeparaChavesDiferentes();
+void testPipelineCacheNaoCriaNadaEmRegime();
+void testPipelineCacheClearEsqueceTudo();
 }  // namespace tests
 
 int main() {
@@ -28,5 +32,9 @@ int main() {
   tests::testSceneMirrorCortaPeloFrustum();
   tests::testSceneMirrorIgnoraIndiceForaDaCena();
   tests::testSceneMirrorNaoRecalculaQuemNaoMudou();
+  tests::testPipelineCacheCriaUmaVezPorChave();
+  tests::testPipelineCacheSeparaChavesDiferentes();
+  tests::testPipelineCacheNaoCriaNadaEmRegime();
+  tests::testPipelineCacheClearEsqueceTudo();
   return testing::summary();
 }

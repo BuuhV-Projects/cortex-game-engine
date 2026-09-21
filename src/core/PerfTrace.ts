@@ -1,7 +1,8 @@
 import { Frustum, Matrix4, Vector3, type Camera, type Mesh, type Object3D } from 'three';
 import type { FrameProfiler } from './FrameProfiler.js';
 import type { RenderPhaseProbe } from './RenderPhaseProbe.js';
-import { measureCoverage } from '../render/MaterialDesc.js';
+import { describeMaterial, isDescribed, measureCoverage } from '../render/MaterialDesc.js';
+import { countDistinctPipelines } from '../render/PipelineKey.js';
 
 /**
  * **Perf trace de gameplay** (SPEC-0198) — com as métricas ativas, grava uma
@@ -410,7 +411,16 @@ export class PerfTrace {
         for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) materiais.add(m as never);
       });
       const cobertura = measureCoverage(materiais);
-      this._bridge(JSON.stringify({ t: Math.round(this._elapsedMs), materialCoverage: cobertura }));
+      // Passo 2 da SPEC-0238: quantos pipelines DISTINTOS a cena gera. Contexto
+      // fixo porque layout de vertice e formato de alvo ainda nao sao
+      // catalogados — entao este numero e o PISO, nao o total.
+      const descritos = [];
+      for (const m of materiais) {
+        const d = describeMaterial(m as never);
+        if (isDescribed(d)) descritos.push(d);
+      }
+      const pipelines = countDistinctPipelines(descritos, { vertexLayoutId: 0, targetFormatId: 0 });
+      this._bridge(JSON.stringify({ t: Math.round(this._elapsedMs), materialCoverage: cobertura, pipelines }));
     }
     // Censo: uma vez só, e NÃO na primeira amostra — na primeira a cena ainda
     // está montando (a rodada inicial pegou 228 nós de 1.271, sem os carros, e

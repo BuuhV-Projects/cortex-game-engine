@@ -39,6 +39,7 @@
 #include "webgpu/bindings.h"
 #include "webgpu/napi_stats.h"
 #include "webgpu/render_bench.h"
+#include "webgpu/override_probe.h"
 #include "webgpu/bloom.h"
 #include "webgpu/splash.h"
 
@@ -166,6 +167,12 @@ void shutdownGpu(HostGpu* gpu) {
 
 int main(int argc, char** argv) {
   core::installCrashHandler();  // segfault vira backtrace no stderr, não exit mudo
+
+  // Sonda do passo 1 da SPEC-0238: override constants sobrevivem ao naga?
+  // Roda antes de tudo, com device proprio, e encerra.
+  if (std::getenv("CORTEX_OVERRIDE_PROBE")) {
+    return webgpu::runOverrideProbe() ? 0 : 1;
+  }
 
   // Spike do laço de render nativo (ADR-0232, fase 1): roda ANTES de tudo, com
   // device próprio e sem janela, e encerra. Mede o teto do laço em C++ para
