@@ -98,6 +98,7 @@ void SceneMirror::applyTransforms(const double* buffer, size_t valueCount) {
 
 int SceneMirror::updateAndCull(const float* viewProj, const float* planes) {
   visible_.clear();
+  changed_.clear();
   const size_t count = parents_.size();
 
   for (size_t i = 0; i < count; i++) {
@@ -116,6 +117,9 @@ int SceneMirror::updateAndCull(const float* viewProj, const float* planes) {
                  &local_[i * kMatrixFloats]);
       }
       dirty_[i] = 1;  // propaga para os filhos, que vêm depois
+      // Registra ANTES de as flags serem limpas: e esta lista que diz quais
+      // uniformes precisam subir para a GPU (M3 do ADR-0237).
+      changed_.push_back(static_cast<NodeIndex>(i));
     }
   }
 

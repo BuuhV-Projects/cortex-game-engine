@@ -27,7 +27,7 @@ constexpr int kSyncFloatsPerNode = 11;
 /**
  * Transform local de um nó, como o JS o descreve.
  *
- * Em double, e não float: o  guarda matriz em double, e na escala de uma
+ * Em double, e não float: o `three` guarda matriz em double, e na escala de uma
  * cidade (centenas de metros) o float32 perde dígitos suficientes para o shadow
  * map ganhar bandas. Foi o que aconteceu na primeira versão desta fase.
  */
@@ -77,6 +77,16 @@ class SceneMirror {
   /** Índices visíveis do último {@link updateAndCull}. */
   const std::vector<NodeIndex>& visible() const { return visible_; }
 
+  /**
+   * Nós cuja matriz de mundo foi recomposta no último {@link updateAndCull}.
+   *
+   * É o que decide quais uniformes sobem para a GPU (M3 do ADR-0237): quem não
+   * mudou mantém o slot do frame anterior e não gera `writeBuffer`. A lista
+   * precisa ser montada **durante** a passada — as flags de sujo são o canal
+   * que o pai usa para avisar o filho, e são limpas no fim dela.
+   */
+  const std::vector<NodeIndex>& changedThisFrame() const { return changed_; }
+
   /** Matriz de mundo de um nó (16 doubles), após {@link updateAndCull}. */
   const double* worldMatrix(NodeIndex index) const { return &world_[static_cast<size_t>(index) * 16]; }
 
@@ -107,6 +117,8 @@ class SceneMirror {
   /** Nós cuja matriz local mudou desde o último update. */
   std::vector<uint8_t> dirty_;
   std::vector<NodeIndex> visible_;
+  /** Quem teve a matriz de mundo recomposta no frame (M3). */
+  std::vector<NodeIndex> changed_;
 };
 
 }  // namespace scene

@@ -18,6 +18,12 @@ void testPipelineCacheCriaUmaVezPorChave();
 void testPipelineCacheSeparaChavesDiferentes();
 void testPipelineCacheNaoCriaNadaEmRegime();
 void testPipelineCacheClearEsqueceTudo();
+void testUniformPoolAlinhaOsSlots();
+void testUniformPoolEscreveSoQuemMudou();
+void testUniformPoolNaoDuplicaMarcacao();
+void testUniformPoolFrameParadoNaoEscreveNada();
+void testUniformPoolCenaNovaMarcaTudo();
+void testUniformPoolIgnoraSlotForaDaFaixa();
 }  // namespace tests
 
 int main() {
@@ -36,5 +42,11 @@ int main() {
   tests::testPipelineCacheSeparaChavesDiferentes();
   tests::testPipelineCacheNaoCriaNadaEmRegime();
   tests::testPipelineCacheClearEsqueceTudo();
+  tests::testUniformPoolAlinhaOsSlots();
+  tests::testUniformPoolEscreveSoQuemMudou();
+  tests::testUniformPoolNaoDuplicaMarcacao();
+  tests::testUniformPoolFrameParadoNaoEscreveNada();
+  tests::testUniformPoolCenaNovaMarcaTudo();
+  tests::testUniformPoolIgnoraSlotForaDaFaixa();
   return testing::summary();
 }
