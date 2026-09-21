@@ -37,6 +37,9 @@ const PHASE_MS_DECIMALS = 3;
 /** Casas decimais do custo do relógio (ns). */
 const CLOCK_NS_DECIMALS = 1;
 
+/** Elementos de uma Matrix4. */
+const MATRIX_ELEMENTS = 16;
+
 /** Quantos nós de cena entram no censo da árvore (os maiores). */
 const CENSUS_LIMIT = 20;
 
@@ -140,6 +143,44 @@ export function countNodes(scene: Object3D): { total: number; visible: number } 
   };
   visitar(scene, true);
   return { total, visible };
+}
+
+/**
+ * Quantos nós tiveram a **matriz local inalterada** desde a amostra anterior.
+ *
+ * É o número que dimensiona a poda de recomposição de matriz: só quem nunca
+ * muda pode ter o compose desligado com segurança. Medido na corrida de
+ * verdade, não na cena parada — com a cena parada a resposta seria "todos", que
+ * é verdadeira e inútil.
+ *
+ * Compara a matriz composta, e não `position`/`quaternion`, porque é ela que o
+ * `updateMatrix` recalcula; guardar 16 floats por nó duas vezes por segundo é
+ * barato perto de recompor 1.271 matrizes 60 vezes por segundo. Em `Float64Array`
+ * e não `Float32`: arredondar faria mudança pequena passar por "sem mudança" e
+ * inflaria justamente o número que decide se a poda vale.
+ */
+export function countUnchangedMatrices(scene: Object3D, previous: Map<number, Float64Array>): number {
+  let unchanged = 0;
+  scene.traverse((obj) => {
+    const elements = obj.matrix.elements;
+    const before = previous.get(obj.id);
+    if (before) {
+      let igual = true;
+      for (let i = 0; i < MATRIX_ELEMENTS; i++) {
+        if (before[i] !== elements[i]) {
+          igual = false;
+          break;
+        }
+      }
+      if (igual) unchanged++;
+      for (let i = 0; i < MATRIX_ELEMENTS; i++) before[i] = elements[i];
+    } else {
+      const copia = new Float64Array(MATRIX_ELEMENTS);
+      for (let i = 0; i < MATRIX_ELEMENTS; i++) copia[i] = elements[i];
+      previous.set(obj.id, copia);
+    }
+  });
+  return unchanged;
 }
 
 /**
@@ -263,6 +304,8 @@ export class PerfTrace {
   /** O censo da árvore vai uma vez só — a composição da cena não muda por frame. */
   private _censusSent = false;
   private _samples = 0;
+  /** Matriz local da amostra anterior, por id de objeto (SPEC-0227). */
+  private readonly _previousMatrices = new Map<number, Float64Array>();
   private readonly _bridge: TraceBridge | undefined = bridge();
 
   /** `true` quando o host aceita trace (métricas ativas no export nativo). */
@@ -340,6 +383,7 @@ export class PerfTrace {
     const nodes = countNodes(scene);
     cpu['nodesTotal'] = nodes.total;
     cpu['nodesVisible'] = nodes.visible;
+    cpu['nodesUnchanged'] = countUnchangedMatrices(scene, this._previousMatrices);
     // Censo: uma vez só, e NÃO na primeira amostra — na primeira a cena ainda
     // está montando (a rodada inicial pegou 228 nós de 1.271, sem os carros, e
     // quase mandou a análise para o alvo errado). Espera a cena estabilizar.

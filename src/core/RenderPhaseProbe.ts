@@ -30,6 +30,7 @@ export const PROBE_INTERNALS = 3;
 
 const QUERY_KEY = 'renderPhases=';
 const FREEZE_KEY = 'matrixFreeze=';
+const COMPOSE_FREEZE_KEY = 'matrixComposeFreeze=';
 
 /**
  * Fases medidas. `each` só existe do nível {@link PROBE_PER_OBJECT} para cima;
@@ -139,6 +140,28 @@ export function matrixFreezeRequested(): number {
     const at = search.indexOf(FREEZE_KEY);
     if (at < 0) return 0;
     const frames = Number.parseInt(search.slice(at + FREEZE_KEY.length), 10);
+    return Number.isFinite(frames) && frames > 0 ? frames : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Igual ao {@link matrixFreezeRequested}, mas congela só a **recomposição da
+ * matriz local** (`matrixAutoUpdate`), deixando a descida na árvore ligada.
+ *
+ * Separa as duas metades do `updateMatrixWorld`, que têm riscos bem diferentes:
+ * desligar o compose é seguro (o mundo ainda se recalcula quando o pai muda),
+ * desligar a descida rende mais e pode pregar objeto no lugar. Sem este número
+ * a escolha entre as duas seria preferência, não medição.
+ */
+export function matrixComposeFreezeRequested(): number {
+  try {
+    if (typeof location === 'undefined') return 0;
+    const search = location.search ?? '';
+    const at = search.indexOf(COMPOSE_FREEZE_KEY);
+    if (at < 0) return 0;
+    const frames = Number.parseInt(search.slice(at + COMPOSE_FREEZE_KEY.length), 10);
     return Number.isFinite(frames) && frames > 0 ? frames : 0;
   } catch {
     return 0;

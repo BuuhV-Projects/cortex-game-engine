@@ -16,7 +16,12 @@ import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
 import { debug } from './debug.js';
 import { PerfTrace } from './PerfTrace.js';
 import { FrameProfiler } from './FrameProfiler.js';
-import { RenderPhaseProbe, renderPhasesRequested, matrixFreezeRequested } from './RenderPhaseProbe.js';
+import {
+  RenderPhaseProbe,
+  renderPhasesRequested,
+  matrixFreezeRequested,
+  matrixComposeFreezeRequested,
+} from './RenderPhaseProbe.js';
 import { InspectCamera } from './InspectCamera.js';
 
 /**
@@ -197,6 +202,12 @@ export class Game {
    * o que a fase de matriz custava. 0 = desligado.
    */
   private readonly _matrixFreezeAt = matrixFreezeRequested();
+  /**
+   * Variante do experimento que congela só a RECOMPOSIÇÃO da matriz local,
+   * mantendo a descida na árvore (SPEC-0227). Separa as duas metades do
+   * `updateMatrixWorld` para saber qual delas carrega o custo.
+   */
+  private readonly _matrixComposeFreezeAt = matrixComposeFreezeRequested();
   private _framesRendered = 0;
   private _postfx: { render(): void } | null = null;
   /**
@@ -560,6 +571,16 @@ export class Game {
       // o three não percorre mais a árvore para recompô-las.
       this._activeScene.getThreeScene().matrixWorldAutoUpdate = false;
       debug('perf', `[matrixFreeze] travessia de matriz congelada no frame ${this._framesRendered}`);
+    }
+    if (this._matrixComposeFreezeAt > 0 && this._framesRendered === this._matrixComposeFreezeAt) {
+      // Só o compose: a árvore continua sendo percorrida e o `matrixWorld` de
+      // quem tem pai em movimento continua certo.
+      let nos = 0;
+      this._activeScene.getThreeScene().traverse((obj) => {
+        obj.matrixAutoUpdate = false;
+        nos++;
+      });
+      debug('perf', `[matrixComposeFreeze] compose desligado em ${nos} nos`);
     }
 
     // HUD de métricas do modo debug (export --debug, ?cortexHud=1 ou o toggle
