@@ -1,7 +1,7 @@
 # 0241 - Submissão nativa do passe principal (M5 do ADR-0237)
 
 **Data:** 2026-09-21
-**Status:** em execução — o spike que decide o marco vem primeiro
+**Status:** em execução — ganho confirmado (34 us/draw); falta a imagem correta
 
 ## Contexto
 
@@ -298,6 +298,38 @@ uniformes por escrita direta.
 > sai de um buffer de profundidade que rejeita qualquer z > 0 — que é
 > exatamente o sintoma medido agora. O passo 0 provou que **o C++ desenha no
 > alvo do `three` e o desenho chega à tela**; não provou oclusão.
+
+> **MEDIDO em 21/09/2026 — o caminho nativo é 34 µs/draw mais barato, e isso
+> confirma a hipótese que sustenta o plano inteiro.**
+>
+> Com o passe usando profundidade própria (ver ressalva abaixo), `?bench` com a
+> IA pilotando, métricas ligadas, medianas de ~305 amostras:
+>
+> | cenário | `cpu.render` | draws ainda no `three` |
+> | --- | --- | --- |
+> | sem o passe | 17,20 ms | 261 |
+> | 200 objetos migrados | 13,00 ms | 158 |
+> | todos os elegíveis | **11,10 ms** | 82 |
+>
+> **179 draws migrados derrubaram 6,1 ms — 34 µs por draw.** A SPEC-0227 tinha
+> medido 33,5 µs/draw no JS por outro caminho; os dois números baterem é a
+> validação mais forte que este plano recebeu até agora.
+>
+> Extrapolando os 82 draws que sobraram (material fora do subconjunto,
+> transparentes), o alvo de 10 ms do marco está ao alcance e o de 8 ms do
+> ADR-0237 é plausível.
+>
+> **Ressalvas, porque o número não é a imagem:**
+>
+> - O passe desenha com **cor sólida provisória**, sem sombreamento. Um toon com
+>   textura custa mais — parte desse ganho será devolvida quando o shader ficar
+>   completo. O que está medido é o custo de **submissão**, que é o que o marco
+>   ataca.
+> - A **oclusão contra o `three` continua quebrada** (o passe usa profundidade
+>   própria), então a imagem ainda não é a correta.
+> - O contador `draws` do trace só conta o que passa pela ponte; os draws
+>   nativos não entram. Por isso a coluna diz "ainda no `three`" — a queda ali é
+>   a migração, não trabalho a menos.
 
 ### Passo 4 — pool de uniformes ligado ao que se moveu
 

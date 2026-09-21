@@ -21,6 +21,17 @@ namespace webgpu {
 // Estado compartilhado do módulo (definido em navigator.cpp).
 HostGpu* gpuState();
 
+/**
+ * Profundidade da pass DA CENA, capturada de dentro do `beginRenderPass`.
+ *
+ * O passe nativo (SPEC-0241) precisa desenhar contra a mesma profundidade que o
+ * `three` escreveu. Perguntar isso ao lado JS NAO funciona: ele alterna entre
+ * duas views e o que o JS devolve e uma terceira, sempre vazia. Aqui o host ve
+ * a pass de verdade, entao guarda a view certa na fonte.
+ */
+void setCenaDepthView(WGPUTextureView view);
+WGPUTextureView cenaDepthView();
+
 // destroy() de buffers/texturas = DESTRUIÇÃO ADIADA (buffers.cpp, ADR-0153):
 // enfileira com AddRef e o flush do loop executa Destroy+Release N frames
 // depois — fora da janela de passes em voo que fazia o destroy imediato dar

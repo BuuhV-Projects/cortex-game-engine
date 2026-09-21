@@ -12,6 +12,9 @@
 namespace webgpu {
 namespace {
 
+/** Ultima profundidade vista na pass da cena; nao e dona da view. */
+WGPUTextureView g_cenaDepthView = nullptr;
+
 void finalizeEncoder(napi_env, void* data, void*) {
   if (data) wgpuCommandEncoderRelease(static_cast<WGPUCommandEncoder>(data));
 }
@@ -448,8 +451,20 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
   desc.colorAttachments = attachments.data();
   WGPURenderPassDepthStencilAttachment depthAttachment =
       WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
-  if (parseDepthStencilAttachment(env, args[0], &depthAttachment))
-    desc.depthStencilAttachment = &depthAttachment;
+  const bool temProfundidade = parseDepthStencilAttachment(env, args[0], &depthAttachment);
+  if (temProfundidade) desc.depthStencilAttachment = &depthAttachment;
+  // Guarda a profundidade da pass DA CENA para o passe nativo (SPEC-0241).
+  //
+  // Por que aqui e nao do lado JS: medido, o `three` alterna entre DUAS views
+  // de profundidade, e nem `getDepthBuffer` nem a view do descriptor batem com
+  // as que chegam aqui — do JS vinha uma TERCEIRA, sempre zerada, e o passe
+  // nativo comparava contra um buffer vazio. O host ve a pass de verdade.
+  //
+  // Guarda a ULTIMA profundidade vista. Comparar o alvo de cor com a view
+  // offscreen do host nao funciona: o `three` cria a propria view a partir da
+  // mesma textura, entao os handles nunca batem. Como o passe nativo roda logo
+  // depois do render da cena e antes da UI, a ultima e a da cena.
+  if (temProfundidade) setCenaDepthView(depthAttachment.view);
   WGPURenderPassEncoder pass =
       wgpuCommandEncoderBeginRenderPass(encoder, &desc);
   return makePassObject(env, pass);
@@ -588,6 +603,9 @@ std::vector<WGPUCommandBuffer> collectCommandBuffers(napi_env env,
 }
 
 }  // namespace
+
+void setCenaDepthView(WGPUTextureView view) { g_cenaDepthView = view; }
+WGPUTextureView cenaDepthView() { return g_cenaDepthView; }
 
 napi_value deviceCreateCommandEncoder(napi_env env, napi_callback_info info) {
   size_t argc = 0;

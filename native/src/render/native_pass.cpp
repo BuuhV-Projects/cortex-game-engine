@@ -3,6 +3,8 @@
 
 #include "../core/host_gpu.h"
 #include "../shims/geometry_registry_shim.h"
+#include "../webgpu/internal.h"
+#include "depth_peek.h"
 #include "geometry_registry.h"
 
 #include <webgpu/wgpu.h>
@@ -67,6 +69,20 @@ struct Recursos {
   uint32_t amostras = 0;
   /** O passo entra no pipeline, então cada passo distinto pede um pipeline. */
   uint32_t stride = 0;
+  /**
+   * Profundidade PRÓPRIA do passe, provisória.
+   *
+   * O ideal é compartilhar a do `three` — assim a oclusão entre os dois motores
+   * sai de graça. Isso não fechou: a profundidade que o JS entrega está zerada,
+   * e a view que o host captura das passes dele também lê zeros (SPEC-0241).
+   * Com buffer próprio a oclusão ENTRE os objetos migrados fica correta, que é
+   * o suficiente para medir o custo do caminho — que é a pergunta do marco.
+   * A oclusão contra o `three` fica em aberto.
+   */
+  WGPUTexture profundidadePropria = nullptr;
+  WGPUTextureView viewPropria = nullptr;
+  uint32_t largura = 0;
+  uint32_t altura = 0;
 };
 
 Recursos& recursos() {
@@ -105,6 +121,30 @@ bool garantirBindGroupLayout(HostGpu* gpu, Recursos& r) {
   ld.entries = &entradaLayout;
   r.bindGroupLayout = wgpuDeviceCreateBindGroupLayout(gpu->device, &ld);
   return r.bindGroupLayout != nullptr;
+}
+
+/** Cria (ou recria) a profundidade própria do passe no tamanho do alvo. */
+bool garantirProfundidadePropria(HostGpu* gpu, Recursos& r, uint32_t largura,
+                                 uint32_t altura, uint32_t amostras) {
+  if (r.viewPropria && r.largura == largura && r.altura == altura) return true;
+  if (r.viewPropria) wgpuTextureViewRelease(r.viewPropria);
+  if (r.profundidadePropria) wgpuTextureRelease(r.profundidadePropria);
+  r.viewPropria = nullptr;
+  r.profundidadePropria = nullptr;
+
+  WGPUTextureDescriptor td = WGPU_TEXTURE_DESCRIPTOR_INIT;
+  td.size = {largura, altura, 1};
+  td.format = WGPUTextureFormat_Depth24Plus;
+  td.usage = WGPUTextureUsage_RenderAttachment;
+  td.dimension = WGPUTextureDimension_2D;
+  td.sampleCount = amostras == 0 ? 1 : amostras;
+  r.profundidadePropria = wgpuDeviceCreateTexture(gpu->device, &td);
+  if (!r.profundidadePropria) return false;
+  r.viewPropria = wgpuTextureCreateView(r.profundidadePropria, nullptr);
+  if (!r.viewPropria) return false;
+  r.largura = largura;
+  r.altura = altura;
+  return true;
 }
 
 /** Garante buffer de uniformes com espaço para `necessarios` objetos. */
@@ -225,14 +265,25 @@ bool garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat cor,
 uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProfundidade,
                          WGPUTextureView viewProfundidade, const float viewProjection[16],
                          const NativeDrawItem* itens, uint32_t total) {
-  if (!gpu || !gpu->device || !gpu->queue || !alvoProfundidade || !viewProjection) return 0;
+  if (!gpu || !gpu->device || !gpu->queue || !viewProjection) return 0;
   if (!alvoCor) alvoCor = gpu->offscreenTexture;
   if (!alvoCor || total == 0) return 0;
 
+  // Sonda: pinta o conteudo do buffer de profundidade e sai. Serve para ver o
+  // que ha nele, em vez de inferir pelo comportamento do teste.
+  if (depthPeekEnabled()) {
+    depthPeek(gpu, alvoCor, alvoProfundidade, viewProfundidade);
+    return 0;
+  }
+
   Recursos& r = recursos();
   const WGPUTextureFormat formatoCor = wgpuTextureGetFormat(alvoCor);
-  const WGPUTextureFormat formatoProf = wgpuTextureGetFormat(alvoProfundidade);
   const uint32_t amostras = wgpuTextureGetSampleCount(alvoCor);
+  if (!garantirProfundidadePropria(gpu, r, wgpuTextureGetWidth(alvoCor),
+                                   wgpuTextureGetHeight(alvoCor), amostras)) {
+    return 0;
+  }
+  const WGPUTextureFormat formatoProf = WGPUTextureFormat_Depth24Plus;
   if (!garantirBindGroupLayout(gpu, r)) return 0;
   if (!garantirUniformes(gpu, r, total)) return 0;
 
@@ -283,7 +334,10 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
 
   WGPURenderPassDepthStencilAttachment prof = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
   prof.view = viewProf;
-  prof.depthLoadOp = WGPULoadOp_Load;
+  // Profundidade propria: limpa por frame. A oclusao ENTRE os migrados sai
+  // correta; contra o `three` fica em aberto (ver SPEC-0241).
+  prof.depthLoadOp = WGPULoadOp_Clear;
+  prof.depthClearValue = 1.0f;
   prof.depthStoreOp = WGPUStoreOp_Store;
 
   WGPURenderPassDescriptor rp = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
@@ -328,8 +382,7 @@ uint32_t drawNativeItems(HostGpu* gpu, WGPUTexture alvoCor, WGPUTexture alvoProf
   wgpuQueueSubmit(gpu->queue, 1, &cmd);
   wgpuCommandBufferRelease(cmd);
   wgpuCommandEncoderRelease(encoder);
-  wgpuTextureViewRelease(viewCor);
-  if (!viewEmprestada) wgpuTextureViewRelease(viewProf);  // a emprestada e do three
+  wgpuTextureViewRelease(viewCor);  // a de profundidade e do passe e sobrevive
   return desenhados;
 }
 

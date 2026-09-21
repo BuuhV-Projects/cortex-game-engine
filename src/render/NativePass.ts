@@ -21,6 +21,8 @@ import { geometryBuffers, geometryId } from './GeometryDesc.js';
 const FLOATS_POR_ITEM = 1 + 16 + 4;
 /** Floats de uma matriz 4x4. */
 const FLOATS_DA_MATRIZ = 16;
+/** Frames entre relatos, para ver se o passe segue vivo depois da carga. */
+const FRAMES_ENTRE_RELATOS = 120;
 /**
  * Sistema de coordenadas do `three` em que a profundidade vai de -1 a 1 (o do
  * WebGL). O WebGPU espera 0 a 1, e usar a matriz errada NÃO desenha nada torto:
@@ -108,7 +110,7 @@ export class NativePass {
   private _lote: Float32Array = new Float32Array(0);
   private readonly _viewProjection = new Float32Array(FLOATS_DA_MATRIZ);
   private _escolhido = false;
-  private _relatado = false;
+  private _frames = 0;
   private _viewRelatada = false;
 
   constructor(private readonly _limite: number) {}
@@ -217,7 +219,17 @@ export class NativePass {
     if (!alvoProfundidade && !viewProfundidade) return 0;
     if (!this._viewRelatada) {
       this._viewRelatada = true;
-      debug('native-pass', `view de profundidade do three: ${viewProfundidade ? 'obtida' : 'AUSENTE'}`);
+      const dados = alvoDaCanvas ? backend.get(alvoDaCanvas) : undefined;
+      const desc = dados?.descriptor as Record<string, unknown> | undefined;
+      const r3 = renderer as { depth?: unknown; stencil?: unknown; currentSamples?: unknown };
+      debug(
+        'native-pass',
+        `view=${viewProfundidade ? 'obtida' : 'AUSENTE'} ` +
+          `descriptor=${desc ? Object.keys(desc).join('|') : 'ausente'} ` +
+          `temDepthAttachment=${desc && desc['depthStencilAttachment'] ? 'sim' : 'NAO'} ` +
+          `renderer.depth=${String(r3.depth)} renderer.stencil=${String(r3.stencil)} ` +
+          `amostras=${String(r3.currentSamples)}`,
+      );
     }
 
     // A projeção vem da câmera do `three`, não recalculada aqui: recalcular
@@ -242,12 +254,15 @@ export class NativePass {
       this._viewProjection,
       this._lote,
     );
-    if (!this._relatado) {
-      this._relatado = true;
+    // Relata periodicamente, não uma vez só: precisa dar para ver se o passe
+    // continua rodando DEPOIS que o jogo carrega, ou se só rodou na tela de
+    // carregamento (onde a cena está vazia e não há profundidade escrita).
+    this._frames += 1;
+    if (this._frames % FRAMES_ENTRE_RELATOS === 1) {
       debug(
         'native-pass',
-        `migradas=${this._migradas.length} desenhadas=${desenhados} ` +
-          `geometrias=${registro()?.size() ?? 0} sistemaDaCamera=${sistema}`,
+        `frame=${this._frames} migradas=${this._migradas.length} ` +
+          `desenhadas=${desenhados} sistemaDaCamera=${sistema}`,
       );
     }
     return desenhados;

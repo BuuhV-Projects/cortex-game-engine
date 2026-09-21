@@ -71,6 +71,7 @@ add_executable(cortex_host
   src/render/render_list.cpp
   src/render/geometry_registry.cpp
   src/render/native_pass.cpp
+  src/render/depth_peek.cpp
   src/scene/scene_mirror.cpp
   src/webgpu/bloom.cpp
   src/webgpu/supersample.cpp
