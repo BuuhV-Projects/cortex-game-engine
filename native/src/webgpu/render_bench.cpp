@@ -10,6 +10,8 @@
 #include <cstdio>
 #include <vector>
 
+#include "../scene/scene_mirror.h"
+
 namespace webgpu {
 namespace {
 
@@ -93,6 +95,71 @@ bool insideFrustum(const float* planes, float x, float y, float z, float radius)
     if (d < -radius) return false;
   }
   return true;
+}
+
+/**
+ * Nós cuja matriz local muda por frame, medido no kart-racer: 63 de ~1.300 —
+ * as raízes dos carros e os pivôs de roda. É a proporção que dá sentido ao
+ * espelho de cena; sincronizar a árvore inteira seria outro problema.
+ */
+constexpr int kMovingNodes = 63;
+
+/** Travessia + culling pelo espelho de cena (SPEC-0233), cronometrados. */
+void benchSceneMirror(int objetos, int frames) {
+  std::vector<scene::NodeDesc> nos(static_cast<size_t>(objetos));
+  for (int i = 0; i < objetos; i++) {
+    scene::NodeDesc& n = nos[static_cast<size_t>(i)];
+    // Hierarquia rasa e larga, como a de uma cena de jogo: um punhado de raízes
+    // com filhos, e não uma corrente de 1.300 níveis.
+    n.parent = i < 8 ? scene::kNoParent : static_cast<scene::NodeIndex>(i % 8);
+    n.transform.px = static_cast<float>(i) * 0.01f;
+    n.transform.py = static_cast<float>(i) * 0.02f;
+    n.transform.pz = static_cast<float>(i) * 0.03f;
+    n.radius = kBoundingRadius;
+  }
+  scene::SceneMirror espelho;
+  if (!espelho.build(nos)) {
+    printf("[scene-mirror] arvore fora de ordem\n");
+    return;
+  }
+
+  float viewProj[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+  float planes[kFrustumPlanes * 4];
+  for (int i = 0; i < kFrustumPlanes; i++) {
+    planes[i * 4] = 0.5f;
+    planes[i * 4 + 1] = 0.5f;
+    planes[i * 4 + 2] = 0.5f;
+    planes[i * 4 + 3] = 200.0f;
+  }
+
+  // O buffer que o JS escreveria: só os nós que mudaram.
+  std::vector<float> sync(static_cast<size_t>(kMovingNodes) * scene::kSyncFloatsPerNode);
+
+  using Relogio = std::chrono::steady_clock;
+  double nanos = 0;
+  long long visiveisTotal = 0;
+  for (int frame = 0; frame < frames + kWarmupFrames; frame++) {
+    for (int i = 0; i < kMovingNodes; i++) {
+      float* row = &sync[static_cast<size_t>(i) * scene::kSyncFloatsPerNode];
+      row[0] = static_cast<float>(i);
+      row[1] = static_cast<float>(frame) * 0.01f;
+      row[2] = 1.0f;
+      row[3] = 0.0f;
+      row[4] = 0.0f; row[5] = 0.0f; row[6] = 0.0f; row[7] = 1.0f;
+      row[8] = 1.0f; row[9] = 1.0f; row[10] = 1.0f;
+    }
+    const auto inicio = Relogio::now();
+    espelho.applyTransforms(sync.data(), sync.size());
+    const int visiveis = espelho.updateAndCull(viewProj, planes);
+    if (frame >= kWarmupFrames) {
+      nanos += std::chrono::duration<double, std::nano>(Relogio::now() - inicio).count();
+      visiveisTotal += visiveis;
+    }
+  }
+
+  printf("[scene-mirror] nos=%d movendo=%d visiveis=%lld ms_por_frame=%.4f\n",
+         objetos, kMovingNodes, visiveisTotal / frames, nanos / frames / 1e6);
+  printf("[scene-mirror] referencia JS no mesmo host (SPEC-0227): 8.5 ms_por_frame (matriz + culling)\n");
 }
 
 /** Espera um pedido assíncrono do wgpu (o padrão suportado na v29). */
@@ -323,6 +390,11 @@ bool runRenderBench(int objetos, int frames) {
       desenhados += visiveis;
     }
   }
+
+  // ── Fase 2 (SPEC-0233): travessia + culling pelo espelho de cena ──────────
+  // Mede só a parte que em JS custa 8,5 ms por frame (`rpMatrix` + `rpProject`),
+  // com a mesma proporção de nós que mudam por frame medida no jogo.
+  benchSceneMirror(objetos, frames);
 
   const double porDraw = desenhados > 0 ? loopNanos / static_cast<double>(desenhados) / 1000.0 : 0;
   const double porFrame = loopNanos / static_cast<double>(frames) / 1e6;

@@ -61,6 +61,7 @@ add_executable(cortex_host
   src/webgpu/navigator.cpp
   src/webgpu/pipeline.cpp
   src/webgpu/render_bench.cpp
+  src/scene/scene_mirror.cpp
   src/webgpu/bloom.cpp
   src/webgpu/supersample.cpp
   src/webgpu/splash.cpp
@@ -279,9 +280,11 @@ add_executable(cortex_host_tests
   tests/ktx2_math_test.cpp
   tests/crash_handler_test.cpp
   tests/game_config_test.cpp
+  tests/scene_mirror_test.cpp
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
   src/core/game_config.cpp
+  src/scene/scene_mirror.cpp
 )
 target_include_directories(cortex_host_tests PRIVATE
   ${TP}/wgpu/include

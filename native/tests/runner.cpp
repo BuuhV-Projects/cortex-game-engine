@@ -9,6 +9,11 @@ void testBc7Math();
 void testAppendPerfLog();
 void testDescribeCurrentException();
 void testGameConfig();
+void testSceneMirrorPropagaTransformDoPai();
+void testSceneMirrorRecusaArvoreForaDeOrdem();
+void testSceneMirrorCortaPeloFrustum();
+void testSceneMirrorIgnoraIndiceForaDaCena();
+void testSceneMirrorNaoRecalculaQuemNaoMudou();
 }  // namespace tests
 
 int main() {
@@ -18,5 +23,10 @@ int main() {
   tests::testAppendPerfLog();
   tests::testDescribeCurrentException();
   tests::testGameConfig();
+  tests::testSceneMirrorPropagaTransformDoPai();
+  tests::testSceneMirrorRecusaArvoreForaDeOrdem();
+  tests::testSceneMirrorCortaPeloFrustum();
+  tests::testSceneMirrorIgnoraIndiceForaDaCena();
+  tests::testSceneMirrorNaoRecalculaQuemNaoMudou();
   return testing::summary();
 }
