@@ -60,6 +60,7 @@ add_executable(cortex_host
   src/webgpu/napi_stats.cpp
   src/webgpu/navigator.cpp
   src/webgpu/pipeline.cpp
+  src/webgpu/render_bench.cpp
   src/webgpu/bloom.cpp
   src/webgpu/supersample.cpp
   src/webgpu/splash.cpp
