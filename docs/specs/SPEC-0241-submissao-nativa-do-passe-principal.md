@@ -126,6 +126,37 @@ A cobertura real cai. **O número não é estimado: é medido** rodando
 `measureCoverage()` de novo, e os dois valores ficam registrados lado a lado,
 com o antigo marcado como não confiável.
 
+## Linha de base medida em 21/09/2026 (com o `CarSystem` já corrigido)
+
+`?bench&cortexHud=1` (a IA pilota), métricas ligadas, medianas de 289 amostras:
+
+| seção | antes | agora |
+| --- | --- | --- |
+| `cpu.render` | 18,5 ms | **18,40 ms** |
+| `cpu.world` | 9,8 ms | **3,00 ms** |
+| `ui` | — | 2,50 ms |
+| `draws` | ~258 | 262 |
+| `frameMs` | 31,7 ms | 25,1 ms |
+
+O `CarSystem` (trabalho do jogo, SPEC-0013 de lá) tirou 6,8 ms do frame, e com
+isso **o render passou a ser 73% do quadro**.
+
+**Isso muda o valor do M5.** Com `world` em 3,0 e `ui` em 2,5, um `cpu.render`
+de 10 ms — que é exatamente o critério deste marco — dá um quadro de ~16,5 ms,
+ou seja **60 fps**. Antes, com o `world` em 9,8 ms, o M5 sozinho não alcançava
+isso e dependia da outra frente. Agora não depende mais.
+
+## A cobertura NÃO estava inflada nesta cena
+
+A correção do `alphaTest` fechou um furo real, mas a medição depois dela mostrou
+que **ele não estava sendo exercido**: a cobertura continua **242/271 (89,3%)**,
+e as recusas são só `roughnessMap` (24) e `MeshPhysicalMaterial` (5) — nenhuma
+por `alphaTest`.
+
+Ou seja, a afirmação do comentário antigo ("a engine usa hoje opaco ou blend
+comum") era verdadeira para esta cena; o problema era não estar verificada. Agora
+está, e a guarda existe para quando um asset com recorte alfa aparecer.
+
 ## Ordem de execução (o risco vem primeiro)
 
 ### Passo 0 — SPIKE: o C++ desenha no alvo do `three` sem corromper o frame?
