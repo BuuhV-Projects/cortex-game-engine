@@ -1,6 +1,7 @@
 import { Frustum, Matrix4, Vector3, type Camera, type Mesh, type Object3D } from 'three';
 import type { FrameProfiler } from './FrameProfiler.js';
 import type { RenderPhaseProbe } from './RenderPhaseProbe.js';
+import { measureCoverage } from '../render/MaterialDesc.js';
 
 /**
  * **Perf trace de gameplay** (SPEC-0198) — com as métricas ativas, grava uma
@@ -399,6 +400,18 @@ export class PerfTrace {
     cpu['nodesTotal'] = nodes.total;
     cpu['nodesVisible'] = nodes.visible;
     cpu['nodesUnchanged'] = countUnchangedMatrices(scene, this._previousMatrices);
+    // Cobertura da descricao de material (M1 do ADR-0237): uma vez so, junto
+    // do censo. E o criterio de aceitacao do marco, medido na cena REAL.
+    if (!this._censusSent && this._samples + 1 >= CENSUS_AFTER_SAMPLES) {
+      const materiais = new Set<never>();
+      scene.traverse((obj) => {
+        const mesh = obj as { material?: unknown };
+        if (!mesh.material) return;
+        for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) materiais.add(m as never);
+      });
+      const cobertura = measureCoverage(materiais);
+      this._bridge(JSON.stringify({ t: Math.round(this._elapsedMs), materialCoverage: cobertura }));
+    }
     // Censo: uma vez só, e NÃO na primeira amostra — na primeira a cena ainda
     // está montando (a rodada inicial pegou 228 nós de 1.271, sem os carros, e
     // quase mandou a análise para o alvo errado). Espera a cena estabilizar.

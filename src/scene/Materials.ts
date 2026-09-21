@@ -345,6 +345,12 @@ export function getMaterialType(object: Object3D): string {
   return (object.userData?.[FLAG] as string) ?? 'standard';
 }
 
+/**
+ * Chave do userData onde a casca de contorno declara a espessura usada no
+ * vertex shader. É o que permite descrever o efeito como dado (ADR-0237, M1).
+ */
+export const OUTLINE_THICKNESS_KEY = 'cortexOutlineThickness';
+
 // ── Contorno toon (inverted-hull): clone com BackSide empurrado pela normal ───────
 function addOutline(object: Object3D, thickness: number, color: ColorRepresentation): void {
   // Coleta os meshes ANTES de adicionar filhos — mutar durante o traverse faria
@@ -368,6 +374,12 @@ function addOutline(object: Object3D, thickness: number, color: ColorRepresentat
       // the transformed normal length, including nonuniform ancestor scales.
       const normalLength = modelWorldMatrix.mul(vec4(normalLocal, 0)).xyz.length().max(0.00001);
       mat.positionNode = positionLocal.add(normalLocal.mul(thickness).div(normalLength));
+      // Declara o parâmetro do efeito como DADO, além do grafo (M1 do ADR-0237).
+      // Sem isto, quem lê o material só enxerga "tem positionNode" e não tem
+      // como saber que é a casca de contorno nem com que espessura — e o
+      // caminho de render nativo deixaria de fora 45% dos materiais da cena,
+      // que é quanto o contorno representa no kart-racer.
+      mat.userData[OUTLINE_THICKNESS_KEY] = thickness;
       return mat;
     });
     const material = Array.isArray(mesh.material) ? materials : materials[0]!;

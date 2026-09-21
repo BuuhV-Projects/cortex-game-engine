@@ -97,6 +97,30 @@ rugosidade, textura base, emissivo, `alphaMode`, `doubleSided`, e os presets
   caminho antigo (é o escape hatch que impede o plano de travar num material
   exótico).
 
+> **Medido em 21/09/2026 — 89,3% da cena descrita** (242 de 271 materiais do
+> `kart-racer`). `src/render/MaterialDesc.ts`, com 10 testes.
+>
+> Duas descobertas no caminho, as duas invisíveis sem medir na cena **real**:
+>
+> 1. **O renderer WebGPU usa a família `*NodeMaterial`.** Aceitar só
+>    `MeshStandardMaterial`/`MeshBasicMaterial` deixava 122 materiais de fora por
+>    um detalhe de classe, não de aparência.
+> 2. **45% dos materiais da cena são a casca de contorno** (inverted hull). Eles
+>    têm `positionNode`, então pareciam TSL arbitrário — mas são um efeito
+>    **conhecido**: extrusão pela normal, um vertex shader curto. A engine passou
+>    a declarar a espessura em `userData` (`OUTLINE_THICKNESS_KEY`), e o contorno
+>    virou um `ShadingModel` próprio. Só isso levou a cobertura de 44,3% para
+>    89,3%.
+>
+> Os 29 que sobram são recusa honesta: 24 usam `roughnessMap` (textura de
+> rugosidade, que o formato ainda não representa) e 5 são `MeshPhysicalMaterial`
+> (clearcoat/sheen/transmissão). Ficam no caminho do `three` pelo escape hatch,
+> exatamente como o marco previa.
+>
+> **Regra que o marco confirmou:** recusar em vez de aproximar. A tentação de
+> tratar `MeshPhysicalMaterial` como standard existiria — e produziria diferença
+> visual sutil, que é o modo de falha mais caro desta migração.
+
 ### M2 — Cache de pipeline em C++
 
 `MaterialDesc` + layout de vértice → `WGPURenderPipeline`, com cache por chave.
