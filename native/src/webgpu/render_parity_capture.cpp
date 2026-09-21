@@ -1,6 +1,7 @@
 // Ver render_parity_capture.h (SPEC-0240, passo 1).
 #include "render_parity_capture.h"
 
+#include <SDL3/SDL.h>
 #include <webgpu/wgpu.h>
 
 #include <cstdio>
@@ -24,11 +25,23 @@ constexpr uint32_t kBytesPerPixel = 4;
 // CORTEX_RENDER_PARITY_CAPTURE_FRAMES não vier — protege contra encher o
 // disco numa sessão longa (o modo roda com a janela oculta, sem fim natural).
 constexpr int kDefaultMaxFrames = 60;
+// Aquecimento: quadros apresentados que são DESCARTADOS antes de a gravação
+// começar (CORTEX_RENDER_PARITY_CAPTURE_SKIP sobrescreve). Sem ele o harness
+// grava a tela de carregamento do jogo em vez da cena, e duas execuções
+// "batem" com diferença zero sem nunca ter olhado para a pista — medido em
+// 22/09/2026, ver SPEC-0240 §"Aquecimento obrigatório".
+//
+// O valor não precisa acertar o fim do carregamento: com a cena congelada
+// (`?bench&hold`) qualquer N acima dele serve. 600 quadros ≈ 10 s a 60 Hz,
+// folga larga sobre os ~4 s de carregamento medidos no kart-racer.
+constexpr int kDefaultSkipFrames = 600;
 
 struct CaptureState {
   bool enabled = false;
   std::string dir;
   int maxFrames = kDefaultMaxFrames;
+  int skipFrames = kDefaultSkipFrames;
+  int framesSkipped = 0;
   int framesCaptured = 0;
 };
 
@@ -86,6 +99,12 @@ void initRenderParityCapture() {
     const int n = std::atoi(framesEnv);
     if (n > 0) s.maxFrames = n;
   }
+  if (const char* skipEnv = std::getenv("CORTEX_RENDER_PARITY_CAPTURE_SKIP")) {
+    const int n = std::atoi(skipEnv);
+    if (n >= 0) s.skipFrames = n;
+  }
+  std::fprintf(stderr, "[render-parity] captura ligada: dir='%s' frames=%d aquecimento=%d\n",
+               s.dir.c_str(), s.maxFrames, s.skipFrames);
   std::error_code ec;
   std::filesystem::create_directories(s.dir, ec);
   if (ec) {
@@ -100,6 +119,17 @@ void maybeCaptureFrame(HostGpu* gpu, WGPUTexture texture) {
   CaptureState& s = state();
   if (!s.enabled || s.framesCaptured >= s.maxFrames) return;
   if (!gpu || !gpu->device || !gpu->queue || !texture) return;
+
+  // Aquecimento: descarta os primeiros quadros (carregamento do jogo) antes de
+  // gravar qualquer coisa — ver kDefaultSkipFrames.
+  if (s.framesSkipped < s.skipFrames) {
+    ++s.framesSkipped;
+    if (s.framesSkipped == s.skipFrames) {
+      std::fprintf(stderr, "[render-parity] aquecimento concluido (%d quadros) — gravando\n",
+                   s.framesSkipped);
+    }
+    return;
+  }
 
   const uint32_t width = wgpuTextureGetWidth(texture);
   const uint32_t height = wgpuTextureGetHeight(texture);
@@ -159,9 +189,8 @@ void maybeCaptureFrame(HostGpu* gpu, WGPUTexture texture) {
                    height);
       const std::string path = (std::filesystem::path(s.dir) / filename).string();
       if (writeRawRgba(path, pixels, width, height, bytesPerRow)) {
-        std::printf("[render-parity] frame=%d width=%u height=%u path=%s\n", s.framesCaptured,
-                    width, height, path.c_str());
-        std::fflush(stdout);
+        std::fprintf(stderr, "[render-parity] frame=%d width=%u height=%u path=%s\n",
+                     s.framesCaptured, width, height, path.c_str());
         ++s.framesCaptured;
       } else {
         std::fprintf(stderr, "[render-parity] falha ao gravar '%s'\n", path.c_str());
@@ -174,6 +203,17 @@ void maybeCaptureFrame(HostGpu* gpu, WGPUTexture texture) {
   }
 
   wgpuBufferRelease(readback);
+
+  // Terminou a rodada: encerra pelo caminho normal (pollEvents ->
+  // core::handleEvent -> running = false), em vez de depender de alguém matar
+  // o processo por tempo — matar arrisca truncar o último arquivo e torna a
+  // rodada não roteirizável (SPEC-0240 §"Saída automática ao terminar").
+  if (s.framesCaptured >= s.maxFrames) {
+    std::fprintf(stderr, "[render-parity] %d quadro(s) gravados — encerrando\n", s.framesCaptured);
+    SDL_Event quit{};
+    quit.type = SDL_EVENT_QUIT;
+    SDL_PushEvent(&quit);
+  }
 }
 
 }  // namespace webgpu

@@ -23,6 +23,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Faixas do histograma de maxChannelDiff quando --bins não é passado. 0-255
 // dividido em faixas iguais de largura ~32 (8 faixas) — granularidade
@@ -96,7 +97,9 @@ function loadFrame(filePath) {
 }
 
 // Compara dois quadros já carregados. Devolve o relatório de uma comparação.
-function compareFrames(a, b, delta, bins) {
+// Exportada porque é a única lógica PURA daqui (buffer entra, número sai) e
+// portanto a única testável sem GPU — ver tests/native/render-parity.test.ts.
+export function compareFrames(a, b, delta = DEFAULT_DELTA, bins = DEFAULT_HISTOGRAM_BINS) {
   if (a.width !== b.width || a.height !== b.height) {
     throw new Error(
       `dimensões não batem: ${a.path} é ${a.width}x${a.height}, ${b.path} é ${b.width}x${b.height}`,
@@ -216,9 +219,13 @@ function main() {
   }
 }
 
-try {
-  main();
-} catch (err) {
-  console.error('[render-parity] FALHOU:', err.message);
-  process.exit(1);
+// Só roda a CLI quando este arquivo é o ponto de entrada — importado por um
+// teste, expõe `compareFrames` sem executar nada.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    main();
+  } catch (err) {
+    console.error('[render-parity] FALHOU:', err.message);
+    process.exit(1);
+  }
 }

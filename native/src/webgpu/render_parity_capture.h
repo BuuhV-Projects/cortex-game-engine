@@ -24,6 +24,10 @@ bool renderParityCaptureEnabled();
  * RGBA cru no diretório configurado, se ainda não atingiu o limite de
  * quadros. Só faz sentido chamar quando `renderParityCaptureEnabled()`.
  *
+ * Os primeiros `CORTEX_RENDER_PARITY_CAPTURE_SKIP` quadros são descartados
+ * (aquecimento — sem ele grava a tela de carregamento, não a cena), e ao gravar
+ * o último quadro empurra `SDL_EVENT_QUIT` para o processo encerrar sozinho.
+ *
  * Requer que `texture` tenha `TextureUsage_CopySrc` — quem chama garante isso
  * via `initRenderParityCapture` + `configureSurface`.
  */

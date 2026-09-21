@@ -1,7 +1,8 @@
 # 0240 - Paridade visual verificável (M7 do ADR-0237)
 
 **Data:** 2026-09-21
-**Status:** em execução — passo 0 respondido, passos 1+ a seguir
+**Status:** em execução — passos 0 e 1 concluídos e **verificados em execução
+real** (22/09/2026, ver "Medições"); passos 2–5 a seguir
 
 ## Contexto
 
@@ -126,6 +127,37 @@ de responsabilidade única do `native/`.
 
 - **Pronto quando:** duas execuções da mesma cena produzem dois RGBA e o
   comparador imprime `maxChannelDiff` e `pctPixelsAboveNoiseFloor`.
+  **FEITO** em 22/09/2026 — ver "Medições".
+
+#### Aquecimento obrigatório: os primeiros quadros NÃO são a cena
+
+Medido em 22/09/2026, na validação do harness resgatado: capturar a partir do
+quadro 0 grava a **tela de carregamento** do jogo ("Preparando os carros…"), não
+a pista. Doze quadros de um texto branco sobre fundo azul quase preto comparam-se
+entre si com diferença zero — e o harness pareceria calibrado com piso de ruído
+nulo **sem nunca ter olhado para a cena**. É exatamente o modo de falha que este
+marco existe para não repetir, e é a explicação mais provável da afirmação de
+"piso de ruído zero" registrada numa sessão anterior e nunca reproduzida.
+
+Por isso a captura tem um **aquecimento** (`CORTEX_RENDER_PARITY_CAPTURE_SKIP`):
+N quadros apresentados são descartados antes de a gravação começar. O valor não
+precisa acertar o fim do carregamento na mosca — ele varia por I/O de disco entre
+execuções. Com `?bench&hold` a cena fica **estática** depois que assenta, então
+qualquer N acima do carregamento serve, e as duas execuções comparam o mesmo
+quadro lógico ainda que em contagens absolutas diferentes.
+
+A prova de que a cena está de fato estática é feita **dentro de uma execução**:
+comparar quadros consecutivos da mesma rodada. Se um quadro difere do seguinte,
+não existe piso de ruído entre rodadas a medir — e o número medido seria sobre
+outra coisa.
+
+#### Saída automática ao terminar
+
+Atingido o teto de quadros, a captura empurra um `SDL_EVENT_QUIT` e o processo
+encerra pelo caminho normal (`pollEvents` → `core::handleEvent` → `running =
+false`). Sem isso o jogo roda para sempre e a rodada depende de matar o processo
+por tempo — o que deixa o último arquivo sob risco de truncar e torna a rodada
+não roteirizável.
 
 ### Passo 2 — replay do `syncBuffer`
 
@@ -171,15 +203,119 @@ espalhado** (deriva numérica geral), direcionando a hipótese sem abrir a image
 
 Reusa tudo. Sem infra nova.
 
+## Como rodar uma comparação
+
+Exporte o jogo **sem `--debug`** (o HUD de métricas muda a imagem a cada
+quadro) e rode duas vezes com diretórios de saída diferentes:
+
+```
+node native/scripts/export-game.mjs D:\jogos\kart-racer --out D:\jge-m7-dist
+```
+
+Por rodada, com estas variáveis de ambiente:
+
+| variável | para quê |
+| --- | --- |
+| `CORTEX_WINDOW_HIDDEN=1` | janela oculta — não aparece nem rouba foco |
+| `CORTEX_LAUNCH_QUERY=?bench&hold` | cena congelada na contagem regressiva |
+| `CORTEX_RENDER_PARITY_CAPTURE=<dir>` | liga a captura e define a saída |
+| `CORTEX_RENDER_PARITY_CAPTURE_FRAMES` | quadros por rodada (ver Constantes) |
+| `CORTEX_RENDER_PARITY_CAPTURE_SKIP` | aquecimento (ver Constantes) |
+
+O processo **encerra sozinho** ao gravar o último quadro. Depois:
+
+```
+node native/scripts/render-parity.mjs <dirA> <dirB> [--delta N]
+```
+
+Cada rodada leva ~26 s (aquecimento incluído) e ocupa ~8 MB por quadro.
+
+> **Atenção à variável da janela oculta:** é `CORTEX_WINDOW_HIDDEN`, lida em
+> `core/app_window.cpp`. Não existe nenhum `CORTEX_WINDOW_OFFSCREEN` no
+> código — esse nome circula em anotações de sessão e leva a rodar com janela
+> visível na cara do dono da máquina.
+
+## Medições (22/09/2026) — o harness foi validado
+
+Máquina: Windows 11, clang-cl oficial, `native/build` Release da worktree
+`jge-m7-paridade`. Jogo: kart-racer exportado **sem** `--debug` (o HUD de
+métricas imprime FPS na tela e mudaria a imagem a cada quadro, contaminando
+justamente o que se quer medir). Cena: `?bench&hold`, 1920×1080, janela oculta
+(`CORTEX_WINDOW_HIDDEN=1`), aquecimento de 600 quadros.
+
+### A captura funciona
+
+Trinta e dois arquivos por rodada, `1920×1080×4 = 8 294 400` bytes cada,
+conteúdo verificado como a pista (média por canal ≈ 137/145/121, milhares de
+cores distintas) e não a tela de carregamento. O formato da swapchain aqui é
+**BGRA8Unorm** — irrelevante para a comparação (os dois lados são o mesmo
+formato), mas é preciso trocar R e B ao converter para PNG de diagnóstico.
+
+### A cena está de fato congelada
+
+Quadros consecutivos **da mesma execução**, sete pares: `maxChannelDiff = 0` em
+todos. Sem isto, não haveria piso de ruído a medir.
+
+### Piso de ruído entre execuções: zero
+
+Duas execuções da mesma build, mesma cena, 32 pares comparados:
+
+| grandeza | valor |
+| --- | --- |
+| pares comparados | 32 |
+| `maxChannelDiff` (pior par) | **0** |
+| `pctPixelsAboveNoiseFloor` (pior par) | **0,000000%** |
+
+O render é **bit-determinístico** entre execuções nesta máquina. O harness tem,
+portanto, sensibilidade máxima: qualquer diferença de um único valor de canal é
+sinal, não ruído.
+
+### O instrumento enxerga (o teste que faltava)
+
+Piso zero, isolado, é indistinguível de um comparador quebrado que responde
+"igual" a tudo. O caso de resposta conhecida foi a sonda `jitter` do kart-racer
+(`?bench&hold&jitter`), que desloca a câmera em `±1e-4 m` alternando o sinal a
+cada quadro — e nada mais.
+
+| grandeza | valor |
+| --- | --- |
+| pares comparados | 32 |
+| pares acusados | **16** (exatamente os de sinal oposto) |
+| `maxChannelDiff` nos acusados | **109** |
+| `pctPixelsAboveNoiseFloor` nos acusados | **0,443769%** (9 204 px) |
+| `maxChannelDiff` nos demais 16 | 0 |
+
+O resultado é limpo nos dois sentidos: o harness acusa o quadro perturbado e
+**não** acusa o não-perturbado, com valores idênticos em todas as 16 ocorrências.
+
+E confirma o risco que o passo 3 antecipava: um deslocamento de câmera de
+`1e-4 m` — que o próprio comentário do jogo descreve como "pequeno o bastante
+para não mudar um pixel" — acende 0,44% da tela com picos de 109 níveis. Bordas
+de geometria de alto contraste são muito mais sensíveis do que a intuição diz.
+
+A lógica pura do comparador tem teste em `tests/native/render-parity.test.ts`
+(delta conhecido pixel a pixel, efeito do piso, separação entre erro
+concentrado e ruído espalhado).
+
 ## Constantes
 
-| nome | o que é | como o valor sai |
+| nome | valor | de onde saiu |
 | --- | --- | --- |
-| `RENDER_PARITY_CHANNEL_DELTA` | piso de ruído por canal entre execuções idênticas | maior `maxChannelDiff` observado em N execuções do mesmo caminho, com a distribuição registrada — não só o máximo |
-| `RENDER_PARITY_MAX_OUTLIER_PCT` | fração de pixels tolerada acima do delta | cruzamento do self-compare (deve dar ~0) com o experimento de sub-pixel: **acima** do ruído e **abaixo** do que um deslocamento legítimo produz |
-| `RENDER_PARITY_FRAME_COUNT` | quantos quadros por rodada | maior N em que o self-compare não piora — protege contra I/O de disco reintroduzir variação |
+| `RENDER_PARITY_CHANNEL_DELTA` | **0** | maior `maxChannelDiff` em 32 pares de duas execuções da mesma build: zero. Comparar o **mesmo caminho** consigo mesmo exige igualdade bit a bit; não há ruído a tolerar |
+| `RENDER_PARITY_MAX_OUTLIER_PCT` | **0%** (mesmo caminho) | consequência do delta acima: com piso zero, zero pixel pode exceder. A referência do outro lado da faixa é 0,443769%, o que um deslocamento sub-pixel legítimo produz |
+| `RENDER_PARITY_FRAME_COUNT` | **32** | maior N rodado; o self-compare não piorou de 8 para 32 (seguiu em zero), então I/O de disco não reintroduz variação nessa escala |
+| `CORTEX_RENDER_PARITY_CAPTURE_SKIP` | **600** | ≈10 s a 60 Hz, folga larga sobre os ~4 s de carregamento do kart-racer. Não precisa ser exato: a cena congelada torna qualquer N acima do carregamento equivalente |
 
-Nenhum é escolhido agora: todos nascem de execução real nos passos 1–3.
+**O que continua sem valor medido, e por quê.** Os limiares acima valem para
+comparar **um caminho consigo mesmo** — que é tudo o que existe hoje. Um
+`delta = 0` **não** vai servir ao passo 5 (nativo × `three`): dois caminhos de
+render diferentes não produzem bits iguais, e o valor tolerável ali só pode ser
+medido quando o segundo caminho existir. O mesmo vale para a curva de
+sensibilidade de brilho do passo 3, que exige alterar uma luz-chave por deltas
+conhecidos — código novo no jogo, fora do escopo desta validação.
+
+Declarar um número de compromisso agora seria exatamente o número mágico que a
+regra do projeto proíbe. Fica registrado o que foi medido e o que falta.
 
 ## O que este marco NÃO promete
 
