@@ -24,8 +24,8 @@ constexpr int kFrustumFloats = scene::kFrustumPlanes * 4;
  */
 struct MirrorState {
   scene::SceneMirror mirror;
-  /** Transforms que o JS escreve por frame (só os nós dinâmicos). */
-  std::vector<float> syncBuffer;
+  /** Transforms que o JS escreve por frame (só os nós dinâmicos), em dupla. */
+  std::vector<double> syncBuffer;
   bool built = false;
 };
 
@@ -84,7 +84,7 @@ napi_value jsBuild(napi_env env, napi_callback_info info) {
   MirrorState& s = state();
   s.built = s.mirror.build(nodes);
   // Espaço para o pior caso: todos os nós mudando num frame.
-  s.syncBuffer.assign(nodeCount * scene::kSyncFloatsPerNode, 0.0f);
+  s.syncBuffer.assign(nodeCount * scene::kSyncFloatsPerNode, 0.0);
   { napi_value out; napi_get_boolean(env, s.built, &out); return out; }
 }
 
@@ -96,16 +96,16 @@ napi_value jsBuild(napi_env env, napi_callback_info info) {
 napi_value jsWorldMatrices(napi_env env, napi_callback_info) {
   MirrorState& s = state();
   if (!s.built) return njs::undefined(env);
-  const size_t floatCount = s.mirror.worldFloatCount();
+  const size_t elementCount = s.mirror.worldElementCount();
   napi_value buffer;
   // Sem finalizer: a memória é do `SceneMirror`, que vive enquanto o processo
   // viver. Liberar aqui soltaria memória que o C++ ainda usa.
-  if (napi_create_external_arraybuffer(env, s.mirror.worldData(), floatCount * sizeof(float), nullptr,
+  if (napi_create_external_arraybuffer(env, s.mirror.worldData(), elementCount * sizeof(double), nullptr,
                                        nullptr, &buffer) != napi_ok) {
     return njs::undefined(env);
   }
   napi_value typed;
-  if (napi_create_typedarray(env, napi_float32_array, floatCount, buffer, 0, &typed) != napi_ok) {
+  if (napi_create_typedarray(env, napi_float64_array, elementCount, buffer, 0, &typed) != napi_ok) {
     return njs::undefined(env);
   }
   return typed;
@@ -119,12 +119,12 @@ napi_value jsSyncBuffer(napi_env env, napi_callback_info) {
   MirrorState& s = state();
   if (!s.built) return njs::undefined(env);
   napi_value buffer;
-  if (napi_create_external_arraybuffer(env, s.syncBuffer.data(), s.syncBuffer.size() * sizeof(float),
+  if (napi_create_external_arraybuffer(env, s.syncBuffer.data(), s.syncBuffer.size() * sizeof(double),
                                        nullptr, nullptr, &buffer) != napi_ok) {
     return njs::undefined(env);
   }
   napi_value typed;
-  if (napi_create_typedarray(env, napi_float32_array, s.syncBuffer.size(), buffer, 0, &typed) != napi_ok) {
+  if (napi_create_typedarray(env, napi_float64_array, s.syncBuffer.size(), buffer, 0, &typed) != napi_ok) {
     return njs::undefined(env);
   }
   return typed;

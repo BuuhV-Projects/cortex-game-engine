@@ -42,14 +42,14 @@ void testSceneMirrorPropagaTransformDoPai() {
   SceneMirror espelho;
   CHECK(espelho.build(nos));
 
-  const float mover[kSyncFloatsPerNode] = {0, 10, 0, 0, 0, 0, 0, 1, 1, 1, 1};
+  const double mover[kSyncFloatsPerNode] = {0, 10, 0, 0, 0, 0, 0, 1, 1, 1, 1};
   espelho.applyTransforms(mover, kSyncFloatsPerNode);
   const auto planos = planosAmplos();
   espelho.updateAndCull(identidade, planos.data());
 
-  const float* mundoDoFilho = espelho.worldMatrix(1);
-  CHECK(std::fabs(mundoDoFilho[12] - 10.0f) < 1e-5f);
-  CHECK(std::fabs(mundoDoFilho[13] - 1.0f) < 1e-5f);
+  const double* mundoDoFilho = espelho.worldMatrix(1);
+  CHECK(std::fabs(mundoDoFilho[12] - 10.0) < 1e-9);
+  CHECK(std::fabs(mundoDoFilho[13] - 1.0) < 1e-9);
 }
 
 void testSceneMirrorRecusaArvoreForaDeOrdem() {
@@ -94,7 +94,7 @@ void testSceneMirrorIgnoraIndiceForaDaCena() {
   SceneMirror espelho;
   CHECK(espelho.build(nos));
 
-  const float fora[kSyncFloatsPerNode] = {99, 5, 5, 5, 0, 0, 0, 1, 1, 1, 1};
+  const double fora[kSyncFloatsPerNode] = {99, 5, 5, 5, 0, 0, 0, 1, 1, 1, 1};
   espelho.applyTransforms(fora, kSyncFloatsPerNode);
   const auto planos = planosAmplos();
   espelho.updateAndCull(identidade, planos.data());
@@ -116,7 +116,7 @@ void testSceneMirrorNaoRecalculaQuemNaoMudou() {
   espelho.updateAndCull(identidade, planos.data());
   espelho.updateAndCull(identidade, planos.data());
 
-  CHECK(std::fabs(espelho.worldMatrix(1)[12] - 3.0f) < 1e-5f);
+  CHECK(std::fabs(espelho.worldMatrix(1)[12] - 3.0) < 1e-9);
 }
 
 }  // namespace tests

@@ -24,11 +24,17 @@ constexpr int kFrustumPlanes = 6;
 /** Floats por nó no buffer de sincronização: idx + posição + quat + escala. */
 constexpr int kSyncFloatsPerNode = 11;
 
-/** Transform local de um nó, como o JS o descreve. */
+/**
+ * Transform local de um nó, como o JS o descreve.
+ *
+ * Em double, e não float: o  guarda matriz em double, e na escala de uma
+ * cidade (centenas de metros) o float32 perde dígitos suficientes para o shadow
+ * map ganhar bandas. Foi o que aconteceu na primeira versão desta fase.
+ */
 struct Transform {
-  float px = 0, py = 0, pz = 0;
-  float qx = 0, qy = 0, qz = 0, qw = 1;
-  float sx = 1, sy = 1, sz = 1;
+  double px = 0, py = 0, pz = 0;
+  double qx = 0, qy = 0, qz = 0, qw = 1;
+  double sx = 1, sy = 1, sz = 1;
 };
 
 /** Um nó da cena, na descrição inicial. */
@@ -57,7 +63,7 @@ class SceneMirror {
    * escreveu (ver {@link kSyncFloatsPerNode}). Índice fora da cena é ignorado —
    * o JS pode estar um frame à frente numa remoção.
    */
-  void applyTransforms(const float* buffer, size_t floatCount);
+  void applyTransforms(const double* buffer, size_t valueCount);
 
   /**
    * Compõe as matrizes de mundo e corta pelo frustum.
@@ -71,8 +77,8 @@ class SceneMirror {
   /** Índices visíveis do último {@link updateAndCull}. */
   const std::vector<NodeIndex>& visible() const { return visible_; }
 
-  /** Matriz de mundo de um nó (16 floats), após {@link updateAndCull}. */
-  const float* worldMatrix(NodeIndex index) const { return &world_[static_cast<size_t>(index) * 16]; }
+  /** Matriz de mundo de um nó (16 doubles), após {@link updateAndCull}. */
+  const double* worldMatrix(NodeIndex index) const { return &world_[static_cast<size_t>(index) * 16]; }
 
   /**
    * Memória crua das matrizes de mundo, para ser exposta ao JS **sem cópia**
@@ -84,8 +90,8 @@ class SceneMirror {
    * ponteiro que ele guarda vira lixo. Por isso a cena é montada uma vez em
    * {@link build} e não cresce depois.
    */
-  float* worldData() { return world_.data(); }
-  size_t worldFloatCount() const { return world_.size(); }
+  double* worldData() { return world_.data(); }
+  size_t worldElementCount() const { return world_.size(); }
 
   size_t size() const { return parents_.size(); }
 
@@ -95,9 +101,9 @@ class SceneMirror {
   std::vector<float> radii_;
   std::vector<uint8_t> visibleFlags_;
   /** Matriz local de cada nó (16 floats por nó), recomposta quando o transform muda. */
-  std::vector<float> local_;
+  std::vector<double> local_;
   /** Matriz de mundo de cada nó (16 floats por nó). */
-  std::vector<float> world_;
+  std::vector<double> world_;
   /** Nós cuja matriz local mudou desde o último update. */
   std::vector<uint8_t> dirty_;
   std::vector<NodeIndex> visible_;

@@ -133,16 +133,16 @@ void benchSceneMirror(int objetos, int frames) {
   }
 
   // O buffer que o JS escreveria: só os nós que mudaram.
-  std::vector<float> sync(static_cast<size_t>(kMovingNodes) * scene::kSyncFloatsPerNode);
+  std::vector<double> sync(static_cast<size_t>(kMovingNodes) * scene::kSyncFloatsPerNode);
 
   using Relogio = std::chrono::steady_clock;
   double nanos = 0;
   long long visiveisTotal = 0;
   for (int frame = 0; frame < frames + kWarmupFrames; frame++) {
     for (int i = 0; i < kMovingNodes; i++) {
-      float* row = &sync[static_cast<size_t>(i) * scene::kSyncFloatsPerNode];
-      row[0] = static_cast<float>(i);
-      row[1] = static_cast<float>(frame) * 0.01f;
+      double* row = &sync[static_cast<size_t>(i) * scene::kSyncFloatsPerNode];
+      row[0] = static_cast<double>(i);
+      row[1] = static_cast<double>(frame) * 0.01;
       row[2] = 1.0f;
       row[3] = 0.0f;
       row[4] = 0.0f; row[5] = 0.0f; row[6] = 0.0f; row[7] = 1.0f;

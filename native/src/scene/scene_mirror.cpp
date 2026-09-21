@@ -9,11 +9,11 @@ namespace {
 constexpr int kMatrixFloats = 16;
 
 /** compose() do three: quaternion + posição + escala numa matriz 4x4. */
-void compose(float* m, const Transform& t) {
-  const float x2 = t.qx + t.qx, y2 = t.qy + t.qy, z2 = t.qz + t.qz;
-  const float xx = t.qx * x2, xy = t.qx * y2, xz = t.qx * z2;
-  const float yy = t.qy * y2, yz = t.qy * z2, zz = t.qz * z2;
-  const float wx = t.qw * x2, wy = t.qw * y2, wz = t.qw * z2;
+void compose(double* m, const Transform& t) {
+  const double x2 = t.qx + t.qx, y2 = t.qy + t.qy, z2 = t.qz + t.qz;
+  const double xx = t.qx * x2, xy = t.qx * y2, xz = t.qx * z2;
+  const double yy = t.qy * y2, yz = t.qy * z2, zz = t.qz * z2;
+  const double wx = t.qw * x2, wy = t.qw * y2, wz = t.qw * z2;
   m[0] = (1 - (yy + zz)) * t.sx;
   m[1] = (xy + wz) * t.sx;
   m[2] = (xz - wy) * t.sx;
@@ -33,9 +33,9 @@ void compose(float* m, const Transform& t) {
 }
 
 /** multiplyMatrices() do three: out = a × b (coluna-maior). */
-void multiply(float* out, const float* a, const float* b) {
+void multiply(double* out, const double* a, const double* b) {
   for (int i = 0; i < 4; i++) {
-    const float a0 = a[i], a1 = a[i + 4], a2 = a[i + 8], a3 = a[i + 12];
+    const double a0 = a[i], a1 = a[i + 4], a2 = a[i + 8], a3 = a[i + 12];
     out[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
     out[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
     out[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
@@ -44,10 +44,10 @@ void multiply(float* out, const float* a, const float* b) {
 }
 
 /** Esfera (centro + raio) contra os 6 planos. */
-bool insideFrustum(const float* planes, float x, float y, float z, float radius) {
+bool insideFrustum(const float* planes, double x, double y, double z, float radius) {
   for (int i = 0; i < kFrustumPlanes; i++) {
     const int p = i * 4;
-    const float d = planes[p] * x + planes[p + 1] * y + planes[p + 2] * z + planes[p + 3];
+    const double d = planes[p] * x + planes[p + 1] * y + planes[p + 2] * z + planes[p + 3];
     if (d < -radius) return false;
   }
   return true;
@@ -61,8 +61,8 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes) {
   locals_.resize(count);
   radii_.resize(count);
   visibleFlags_.resize(count);
-  local_.assign(count * kMatrixFloats, 0.0f);
-  world_.assign(count * kMatrixFloats, 0.0f);
+  local_.assign(count * kMatrixFloats, 0.0);
+  world_.assign(count * kMatrixFloats, 0.0);
   dirty_.assign(count, 1);
   visible_.clear();
   visible_.reserve(count);
@@ -82,10 +82,10 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes) {
   return true;
 }
 
-void SceneMirror::applyTransforms(const float* buffer, size_t floatCount) {
-  const size_t count = floatCount / kSyncFloatsPerNode;
+void SceneMirror::applyTransforms(const double* buffer, size_t valueCount) {
+  const size_t count = valueCount / kSyncFloatsPerNode;
   for (size_t i = 0; i < count; i++) {
-    const float* row = buffer + i * kSyncFloatsPerNode;
+    const double* row = buffer + i * kSyncFloatsPerNode;
     const auto index = static_cast<size_t>(row[0]);
     if (index >= locals_.size()) continue;  // o JS pode estar à frente numa remoção
     Transform& t = locals_[index];
@@ -110,7 +110,7 @@ int SceneMirror::updateAndCull(const float* viewProj, const float* planes) {
     if (selfDirty || parentDirty) {
       if (parent == kNoParent) {
         std::memcpy(&world_[i * kMatrixFloats], &local_[i * kMatrixFloats],
-                    kMatrixFloats * sizeof(float));
+                    kMatrixFloats * sizeof(double));
       } else {
         multiply(&world_[i * kMatrixFloats], &world_[static_cast<size_t>(parent) * kMatrixFloats],
                  &local_[i * kMatrixFloats]);
@@ -125,7 +125,7 @@ int SceneMirror::updateAndCull(const float* viewProj, const float* planes) {
   (void)viewProj;
   for (size_t i = 0; i < count; i++) {
     if (!visibleFlags_[i] || radii_[i] <= 0.0f) continue;
-    const float* w = &world_[i * kMatrixFloats];
+    const double* w = &world_[i * kMatrixFloats];
     if (insideFrustum(planes, w[12], w[13], w[14], radii_[i])) {
       visible_.push_back(static_cast<NodeIndex>(i));
     }

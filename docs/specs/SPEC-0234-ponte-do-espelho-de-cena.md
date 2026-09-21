@@ -70,23 +70,41 @@ Corrida do kart-racer, export --debug, janela minimizada, 101 amostras:
 
 | medida | antes | depois | critério |
 | --- | --- | --- | --- |
-|  | 4,5 ms | **0,207 ms** | — |
-|  | 4,0 ms | 2,907 ms | — |
+| `rpMatrix` | 4,5 ms | **0,205 ms** | — |
+| `rpProject` | 4,0 ms | 2,92 ms | — |
 | soma das duas | 8,5 ms | **3,11 ms** | sucesso ≤2,5 · fracasso >4 |
-|  | 21 ms | 19,3 ms | sucesso ≤15 · **fracasso >18** |
-| frame | 38 ms | **32,4 ms** | sucesso ≤32 · fracasso >35 |
-| fps | 26,3 | **30,9** | — |
+| `render` | 21 ms | 18,5 ms | sucesso ≤15 · **fracasso >18** |
+| frame | 38 ms | **31,7 ms** | sucesso ≤32 · fracasso >35 |
+| fps | 26,3 | **31,5** | — |
 
 **A travessia de matriz praticamente sumiu do JS** (4,5 → 0,207 ms), e o culling
-caiu junto porque o  deixou de recompor matriz durante ele. O visual foi
+caiu junto porque o `three` deixou de recompor matriz durante ele. O visual foi
 conferido por captura do jogo: pista, carro, túnel e HUD corretos, com o
- vindo do C++.
+`matrixWorld` vindo do C++.
 
-**Mas o critério de  não foi atingido**, e o motivo é claro no próprio
-trace:  custa **16,6 ms dos 19,3** — 86% do render. É o
- do , que esta fase não toca. Enquanto a submissão e os
+**Mas o critério de `render` não foi atingido**, e o motivo é claro no próprio
+trace: `rpObjects` custa **15,7 ms dos 18,5** — 85% do render. É o
+`renderObject` do `three`, que esta fase não toca. Enquanto a submissão e os
 materiais continuarem em JS, o teto do render é esse.
 
 Ou seja: a fase 3 entregou o que prometia na fatia dela (matriz e culling) e
 provou que a ponte sem cópia funciona — mas o frame só chega a 60 fps quando a
-fase 4 tirar o  do JS.
+fase 4 tirar o `renderObject` do JS.
+
+## Bug encontrado e corrigido: precisão
+
+A primeira versão expôs as matrizes como . O jogo rodou, o fps
+subiu — e **as sombras da pista saíram em bandas**, reportado pelo usuário a
+partir de uma captura.
+
+Causa: o  do  é **dupla precisão**. Numa cidade, com
+coordenadas na casa das centenas de metros, o float32 tem dígitos de menos, e o
+erro acumulado na matriz aparece no shadow map como faixas — o clássico shadow
+acne, só que nascido do lado do CPU.
+
+O espelho passou a guardar e expor **** (matriz local, matriz de mundo e
+o buffer de sincronização). O custo é 166 KB a mais de memória, e o ficou igual (0,205 ms). As bandas sumiram, conferido por nova captura.
+
+Fica a regra, que vale para qualquer coisa que atravesse essa fronteira: **o que
+espelha estado do  usa a mesma precisão que ele**, porque a diferença não
+aparece como erro e sim como artefato visual difícil de rastrear.

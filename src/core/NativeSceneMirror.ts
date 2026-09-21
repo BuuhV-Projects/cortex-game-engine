@@ -32,8 +32,8 @@ const DEFAULT_RADIUS = 1e6;
 /** A API que o host publica; ausente no browser, onde tudo isto é no-op. */
 interface SceneMirrorBridge {
   build(description: Float32Array): boolean;
-  worldMatrices(): Float32Array | undefined;
-  syncBuffer(): Float32Array | undefined;
+  worldMatrices(): Float64Array | undefined;
+  syncBuffer(): Float64Array | undefined;
   update(changedNodes: number, planes: Float32Array): number;
 }
 
@@ -50,7 +50,7 @@ export function nativeSceneMirrorAvailable(): boolean {
 export class NativeSceneMirror {
   private readonly _bridge = bridge();
   private _nodes: Object3D[] = [];
-  private _sync: Float32Array | undefined;
+  private _sync: Float64Array | undefined;
   private _installed = false;
   private readonly _planes = new Float32Array(FRUSTUM_FLOATS);
   private readonly _frustum = new Frustum();
@@ -124,8 +124,10 @@ export class NativeSceneMirror {
     for (let i = 0; i < this._nodes.length; i++) {
       const objeto = this._nodes[i]!;
       // O tipo do `three` promete uma tupla de 16 números; o que entra é um
-      // `Float32Array` do mesmo tamanho, que ele indexa igual. O cast é o preço
-      // de trocar o dono da memória sem forkear o `three`.
+      // `Float64Array` do mesmo tamanho, que ele indexa igual. Tem de ser
+      // DUPLA: com `Float32Array`, na escala de uma cidade (centenas de metros),
+      // a matriz perde dígitos suficientes para o shadow map sair em bandas —
+      // foi exatamente o que apareceu na pista na primeira versão desta fase.
       objeto.matrixWorld.elements = matrizes.subarray(
         i * MATRIX_ELEMENTS,
         i * MATRIX_ELEMENTS + MATRIX_ELEMENTS,
