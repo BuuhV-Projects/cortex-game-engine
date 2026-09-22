@@ -786,6 +786,12 @@ instalador via `electron-builder.json#win.extraResources`; o CI (composite
 `.github/actions/build-native-host`) compila o host no runner Windows
 (Rust+MSVC+Ninja/CMake → `fetch-deps` → `cargo` → `cmake`) antes do
 `electron:build`. macOS/Linux ficam sem export nativo (host é D3D12/Windows).
+Desde o **TDR-0005** essa mesma composite roda também **antes do merge**, no
+workflow `.github/workflows/pr.yml` (trigger `pull_request` pra `main`): o job
+`native-host` compila o host no runner Windows e, logo depois, builda e executa
+o alvo puro `cortex_host_tests` (TDR-0004) — os testes do C++ deixaram de
+existir só no `yarn test:native` da máquina do dev. O host Steam não entra no
+PR (é um segundo build completo, e a secret não existe em fork).
 Pós-M1 (feito): **instalador PC** — `native/scripts/make-installer.mjs` empacota
 o `dist-native/` num `<jogo>-setup.exe` (NSIS portátil do fetch-deps; template
 estático `installer.nsi` com valores por `/D`). Instala POR USUÁRIO
