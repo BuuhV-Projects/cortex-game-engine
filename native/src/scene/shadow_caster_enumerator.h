@@ -10,7 +10,9 @@
 //
 //   1. `_projectObject` volta na porta se `object.visible === false` — e volta
 //      com a SUBÁRVORE inteira, então a visibilidade é herdada;
-//   2. só malha desenhável com material visível entra na RenderList;
+//   2. só malha desenhável com material visível entra na RenderList — e o
+//      `material.visible` é lido do FRAME, porque o `three` o reavalia a cada
+//      travessia (SPEC-0245, E1);
 //   3. o culling angular da SPEC-0197 (`ShadowCasterCulling.ts`) já decidiu o
 //      `castShadow` do frame; aqui ele é REAPLICADO sobre a autoria, em vez de
 //      lido do `three`, porque o C++ não vê a mutação que o JS faz;

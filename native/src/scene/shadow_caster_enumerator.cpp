@@ -71,6 +71,10 @@ int ShadowCasterEnumerator::enumerate(const SceneMirror& mirror, const ShadowCas
     // Só malha desenhável entra na RenderList. Group, luz, câmera e osso
     // atravessam a cena inteira sem produzir um draw sequer.
     if (!mirror.hasFlag(index, kNodeDrawable)) continue;
+    // `material.visible` é do FRAME, não do `build`: o `three` o reavalia a
+    // cada travessia, e um material desligado em runtime sairia da imagem mas
+    // continuaria projetando sombra aqui.
+    if (!mirror.materialVisibleFlag(index)) continue;
     // Autoria vence (SPEC-0197): quem o autor desligou nunca volta.
     if (!mirror.hasFlag(index, kNodeCastShadow)) continue;
 

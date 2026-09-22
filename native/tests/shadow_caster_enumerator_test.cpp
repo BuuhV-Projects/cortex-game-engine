@@ -63,6 +63,24 @@ NodeDesc malhaCaster(double x, double y, double z, double raio) {
   return no;
 }
 
+/** Estados do slot de flags do frame (ver `SyncFlag` em scene_mirror.h). */
+constexpr double kVisivel = scene::kSyncVisible | scene::kSyncMaterialVisible;
+constexpr double kEscondido = scene::kSyncMaterialVisible;  // objeto invisivel
+constexpr double kSemMaterial = scene::kSyncVisible;        // material invisivel
+
+/** Linha de sincronizacao de dois nos parados na origem, com as flags pedidas. */
+std::vector<double> syncDeDoisNos(double flags0, double flags1) {
+  std::vector<double> sync(scene::kSyncFloatsPerNode * 2, 0.0);
+  for (int i = 0; i < 2; i++) {
+    double* row = sync.data() + i * scene::kSyncFloatsPerNode;
+    row[0] = i;
+    row[7] = 1;  // qw
+    row[8] = row[9] = row[10] = 1;  // escala
+    row[scene::kSyncFlags] = i == 0 ? flags0 : flags1;
+  }
+  return sync;
+}
+
 /** Monta o espelho e enumera, com a camera do jogo na origem. */
 int enumerar(ShadowCasterEnumerator& enumerador, SceneMirror& espelho,
              const std::vector<NodeDesc>& nos, double minRatio, const std::vector<float>& frustum) {
@@ -245,13 +263,64 @@ void testShadowCasterSegueOVisibleDoFrame() {
   CHECK(enumerador.enumerate(espelho, params, frustum.data()) == 2);
 
   // Esconde o segundo no; o primeiro segue visivel.
-  const double sync[scene::kSyncFloatsPerNode * 2] = {
-      0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-      1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
-  };
-  espelho.applyTransforms(sync, scene::kSyncFloatsPerNode * 2);
+  std::vector<double> sync = syncDeDoisNos(kVisivel, kEscondido);
+  espelho.applyTransforms(sync.data(), sync.size());
   espelho.updateAndCull(identidadeDaCena, amplos.data());
   CHECK(enumerador.enumerate(espelho, params, frustum.data()) == 1);
+  CHECK(enumerador.casters()[0] == 0);
+}
+
+void testShadowCasterSegueOMaterialVisibleDoFrame() {
+  // E1 do passo 2 (SPEC-0245). O `material.visible` era fotografado no `build`
+  // e nunca mais olhado, enquanto o `three` o reavalia em TODA travessia. Era o
+  // mesmo erro do `visible` do objeto, com a mesma consequencia depois que o
+  // passe nativo assume: sombra de um objeto que nao esta na imagem.
+  std::vector<NodeDesc> nos;
+  nos.push_back(malhaCaster(0, 0, 0, 1));
+  nos.push_back(malhaCaster(0, 0, 0, 1));
+
+  SceneMirror espelho;
+  ShadowCasterEnumerator enumerador;
+  const auto frustum = caixaDeMeiaAresta(100);
+  CHECK(espelho.build(nos));
+  const auto amplos = planosAmplos();
+  espelho.updateAndCull(identidadeDaCena, amplos.data());
+  ShadowCasterParams params;
+  CHECK(enumerador.enumerate(espelho, params, frustum.data()) == 2);
+
+  // Desliga o material do segundo no, com o objeto ainda visivel: as duas
+  // coisas sao independentes e o gate nao pode confundir uma com a outra.
+  std::vector<double> sync = syncDeDoisNos(kVisivel, kSemMaterial);
+  espelho.applyTransforms(sync.data(), sync.size());
+  espelho.updateAndCull(identidadeDaCena, amplos.data());
+  CHECK(espelho.visibleFlag(1));                 // o objeto continua visivel
+  CHECK(!espelho.materialVisibleFlag(1));        // so o material saiu
+  CHECK(enumerador.enumerate(espelho, params, frustum.data()) == 1);
+  CHECK(enumerador.casters()[0] == 0);
+
+  // E volta quando o material volta — nao e um caminho so de ida.
+  sync = syncDeDoisNos(kVisivel, kVisivel);
+  espelho.applyTransforms(sync.data(), sync.size());
+  espelho.updateAndCull(identidadeDaCena, amplos.data());
+  CHECK(enumerador.enumerate(espelho, params, frustum.data()) == 2);
+}
+
+void testShadowCasterMaterialInicialVemDoBuild() {
+  // O primeiro frame enumera antes de qualquer `applyTransforms`, entao o
+  // `build` precisa de um estado de partida em vez de um default.
+  std::vector<NodeDesc> nos;
+  nos.push_back(malhaCaster(0, 0, 0, 1));
+  NodeDesc semMaterial = malhaCaster(0, 0, 0, 1);
+  semMaterial.materialVisible = false;
+  nos.push_back(semMaterial);
+
+  SceneMirror espelho;
+  ShadowCasterEnumerator enumerador;
+  CHECK(espelho.build(nos));
+  const auto amplos = planosAmplos();
+  espelho.updateAndCull(identidadeDaCena, amplos.data());
+  const auto frustum = caixaDeMeiaAresta(100);
+  CHECK(enumerador.enumerate(espelho, ShadowCasterParams{}, frustum.data()) == 1);
   CHECK(enumerador.casters()[0] == 0);
 }
 

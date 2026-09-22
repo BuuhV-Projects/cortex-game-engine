@@ -23,7 +23,7 @@ constexpr NodeIndex kNoParent = -1;
 constexpr int kFrustumPlanes = 6;
 /**
  * Floats por nó no buffer de sincronização: idx + posição + quat + escala +
- * visível.
+ * flags do frame.
  *
  * O `visible` entrou no M6 (SPEC-0245). Ele era fixado no `build` e nunca mais
  * atualizado, então um nó escondido em runtime seguia contando como visível no
@@ -32,8 +32,30 @@ constexpr int kFrustumPlanes = 6;
  * com `?casterMinRatio=0`. No passo 2 isso seria sombra de objeto escondido.
  */
 constexpr int kSyncFloatsPerNode = 12;
-/** Posição do `visible` na linha de sincronização. */
-constexpr int kSyncVisible = 11;
+/**
+ * Posição das flags do FRAME na linha de sincronização (ver {@link SyncFlag}).
+ *
+ * É um campo de bits, e não um float por booleano: o que muda por frame cabe
+ * num slot só, então acrescentar um estado novo aqui não alarga a linha nem
+ * renumera o layout — que é o que custaria uma passada a mais por nó na
+ * escrita do JS.
+ */
+constexpr int kSyncFlags = 11;
+
+/** Bits de {@link kSyncFlags} — o estado que o `three` reavalia TODO frame. */
+enum SyncFlag : uint8_t {
+  /** `object.visible` próprio do nó (a herança é resolvida em C++). */
+  kSyncVisible = 1 << 0,
+  /**
+   * `material.visible` do `_projectObject`.
+   *
+   * Vem por frame pelo mesmo motivo do `visible`, e foi o mesmo erro: era
+   * fotografado no `build` e nunca mais olhado, enquanto o `three` o reavalia
+   * a cada travessia. Um material desligado em runtime seguiria projetando
+   * sombra do lado nativo — sombra de objeto que não está na imagem.
+   */
+  kSyncMaterialVisible = 1 << 1,
+};
 /** Valor de `geometryId` para um nó sem geometria registrada. */
 constexpr int32_t kNoGeometry = -1;
 
@@ -43,8 +65,11 @@ constexpr int32_t kNoGeometry = -1;
  *
  * São flags e não `bool` soltos porque atravessam a ponte empacotados num
  * float só: um campo novo aqui não renumera o layout de construção.
+ *
+ * 16 bits: os motivos de recusa do gate (SPEC-0245, E3) levaram a lista a nove
+ * bits. Todos os valores cabem exatos num `float32`, que é como eles viajam.
  */
-enum NodeFlag : uint8_t {
+enum NodeFlag : uint16_t {
   /**
    * `castShadow` como o AUTOR deixou (nó/JSON/Inspector), não como o filtro
    * angular o deixou no frame. A distinção é o contrato da SPEC-0197: o filtro
@@ -61,8 +86,42 @@ enum NodeFlag : uint8_t {
   kNodeSkipAngularCull = 1 << 1,
   /** `frustumCulled` do objeto: quando desligado, nenhum frustum o corta. */
   kNodeFrustumCulled = 1 << 2,
-  /** É malha desenhável (é `isMesh`, tem geometria e material visível). */
+  /**
+   * É malha desenhável: `isMesh` com geometria.
+   *
+   * O `material.visible` NÃO entra aqui — ele mudou de canal no passo 2
+   * (SPEC-0245) e viaja por frame em {@link kSyncMaterialVisible}. O que fica
+   * neste bit é só o que não muda: um `Group` nunca vira malha.
+   */
   kNodeDrawable = 1 << 3,
+  /**
+   * Malha skinada. O bounding sphere mente com o rig, e o passe nativo não
+   * aplica o esqueleto — é motivo de RECUSA do gate (SPEC-0245, E3).
+   */
+  kNodeSkinned = 1 << 4,
+  /**
+   * `InstancedMesh`. O registro de geometria descreve UMA instância; desenhar
+   * por ele deixaria de fora todas as outras. Motivo de recusa.
+   */
+  kNodeInstanced = 1 << 5,
+  /**
+   * Material em ARRAY. A RenderList do `three` gera um item por grupo da
+   * geometria, e o registro desenha a geometria inteira de uma vez — as duas
+   * contagens divergem e o desenho sai errado. Motivo de recusa.
+   */
+  kNodeMaterialArray = 1 << 6,
+  /**
+   * Recorte alfa (`alphaTest > 0` ou `alphaMap`). O `three` COPIA isso para o
+   * material do passe de sombra, então a silhueta da sombra é recortada — o
+   * passe nativo é depth-only e não amostra textura. Motivo de recusa.
+   */
+  kNodeAlphaClip = 1 << 7,
+  /**
+   * Material com `positionNode` (deslocamento de vértice em TSL). O `three`
+   * também o copia para o passe de sombra; a casca de contorno do engine tem
+   * um. Reproduzi-lo exigiria compilar o nó em C++. Motivo de recusa.
+   */
+  kNodePositionNode = 1 << 8,
 };
 
 /**
@@ -97,8 +156,16 @@ struct NodeDesc {
   /** Raio da esfera de recorte, em unidades de mundo. 0 = não participa do culling. */
   float radius = 0;
   bool visible = true;
-  /** Combinação de {@link NodeFlag}. */
-  uint8_t flags = 0;
+  /** `material.visible` inicial; depois disso chega por frame (SPEC-0245). */
+  bool materialVisible = true;
+  /**
+   * Combinação de {@link NodeFlag}.
+   *
+   * 16 bits e não 8: os motivos de recusa do gate (E3) passaram de quatro bits
+   * para nove, e estourar em silêncio faria o gate ACEITAR um caster que devia
+   * recusar — a falha exatamente na direção errada.
+   */
+  uint16_t flags = 0;
   /** Id da geometria no `GeometryRegistry`, ou {@link kNoGeometry}. */
   int32_t geometryId = kNoGeometry;
   /** Esfera da geometria em espaço local (ver {@link Bounds}). */
@@ -176,12 +243,24 @@ class SceneMirror {
    */
   bool visibleFlag(NodeIndex index) const { return visibleFlags_[static_cast<size_t>(index)] != 0; }
 
+  /**
+   * `material.visible` deste FRAME.
+   *
+   * Separado do {@link visibleFlag} porque os dois escondem coisas diferentes:
+   * `object.visible` poda a subárvore inteira, `material.visible` tira só
+   * aquela malha da RenderList — o filho de uma malha sem material continua
+   * desenhando.
+   */
+  bool materialVisibleFlag(NodeIndex index) const {
+    return materialVisibleFlags_[static_cast<size_t>(index)] != 0;
+  }
+
   /** Combinação de {@link NodeFlag} declarada no `build`. */
-  uint8_t flags(NodeIndex index) const { return flags_[static_cast<size_t>(index)]; }
+  uint16_t flags(NodeIndex index) const { return flags_[static_cast<size_t>(index)]; }
 
   /** `true` se o nó tem o bit pedido. */
   bool hasFlag(NodeIndex index, NodeFlag flag) const {
-    return (flags_[static_cast<size_t>(index)] & static_cast<uint8_t>(flag)) != 0;
+    return (flags_[static_cast<size_t>(index)] & static_cast<uint16_t>(flag)) != 0;
   }
 
   /** Id da geometria do nó, ou {@link kNoGeometry}. */
@@ -195,8 +274,10 @@ class SceneMirror {
   std::vector<Transform> locals_;
   std::vector<float> radii_;
   std::vector<uint8_t> visibleFlags_;
+  /** `material.visible` por nó, atualizado por frame junto do transform. */
+  std::vector<uint8_t> materialVisibleFlags_;
   /** Autoria estática por nó: {@link NodeFlag}. */
-  std::vector<uint8_t> flags_;
+  std::vector<uint16_t> flags_;
   /** Geometria de cada nó, para o passe nativo saber o que desenhar. */
   std::vector<int32_t> geometryIds_;
   /** Esfera local de cada nó. */

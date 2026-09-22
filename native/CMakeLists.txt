@@ -76,6 +76,7 @@ add_executable(cortex_host
   src/render/depth_peek.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
+  src/scene/shadow_pass_gate.cpp
   src/webgpu/bloom.cpp
   src/webgpu/supersample.cpp
   src/webgpu/splash.cpp
@@ -296,6 +297,7 @@ add_executable(cortex_host_tests
   tests/game_config_test.cpp
   tests/scene_mirror_test.cpp
   tests/shadow_caster_enumerator_test.cpp
+  tests/shadow_pass_gate_test.cpp
   tests/pipeline_cache_test.cpp
   tests/uniform_pool_test.cpp
   tests/render_list_test.cpp
@@ -305,6 +307,7 @@ add_executable(cortex_host_tests
   src/core/game_config.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
+  src/scene/shadow_pass_gate.cpp
   src/render/uniform_pool.cpp
   src/render/render_list.cpp
   src/render/geometry_registry.cpp

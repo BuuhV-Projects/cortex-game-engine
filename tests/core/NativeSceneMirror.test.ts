@@ -1,11 +1,13 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
   BoxGeometry,
+  InstancedMesh,
   Mesh,
   MeshBasicMaterial,
   Object3D,
   OrthographicCamera,
   PerspectiveCamera,
+  Texture,
   Vector3,
 } from 'three';
 import { NativeSceneMirror, nativeSceneMirrorAvailable } from '../../src/core/NativeSceneMirror.js';
@@ -18,16 +20,30 @@ const CAMPO_FLAGS = 13;
 const CAMPO_GEOMETRIA = 14;
 const CAMPO_CENTRO = 15;
 const CAMPO_RAIO = 18;
+const CAMPO_MATERIAL_VISIVEL = 19;
 
 /** Layout de sincronização — tem de acompanhar `scene_mirror.h`. */
 const SYNC_FLOATS_POR_NO = 12;
-const SYNC_VISIVEL = 11;
+/** Slot das flags do frame; é um campo de bits, não um booleano. */
+const SYNC_FLAGS = 11;
+/** Bits de `SYNC_FLAGS` — espelham `SyncFlag` em `scene_mirror.h`. */
+const SYNC_VISIVEL = 1;
+const SYNC_MATERIAL_VISIVEL = 2;
 
 /** Bits de `flags` — espelham `NodeFlag` em `scene_mirror.h`. */
 const FLAG_CAST_SHADOW = 1;
 const FLAG_SKIP_ANGULAR_CULL = 2;
 const FLAG_FRUSTUM_CULLED = 4;
 const FLAG_DRAWABLE = 8;
+const FLAG_SKINNED = 16;
+const FLAG_INSTANCED = 32;
+const FLAG_MATERIAL_ARRAY = 64;
+const FLAG_ALPHA_CLIP = 128;
+const FLAG_POSITION_NODE = 256;
+
+/** Saída do gate: um slot por motivo, mais recusados e total. */
+const GATE_MOTIVOS = 9;
+const GATE_OUT_FLOATS = GATE_MOTIVOS + 2;
 
 /** Ponte falsa com a forma da do host, para exercitar o lado JS sem o C++. */
 function instalarPonteFalsa(nodeCapacity: number) {
@@ -38,7 +54,10 @@ function instalarPonteFalsa(nodeCapacity: number) {
     update: 0,
     ultimoChanged: 0,
     shadowCasters: 0,
+    shadowPassGate: 0,
     ultimaDescricao: new Float32Array(0),
+    ultimosNosDaCena: 0,
+    ultimoVsm: false,
     ultimoMinRatio: 0,
     ultimaCamera: [0, 0, 0] as [number, number, number],
     ultimosPlanos: new Float32Array(0),
@@ -72,6 +91,27 @@ function instalarPonteFalsa(nodeCapacity: number) {
       chamadas.ultimaCamera = [x, y, z];
       chamadas.ultimosPlanos = planos.slice();
       return 42;
+    },
+    // Responde como o C++ responderia a uma cena com dois casters, um deles
+    // recusado por geometria ausente: motivo 8, um objeto.
+    shadowPassGate: (
+      _minRatio: number,
+      _x: number,
+      _y: number,
+      _z: number,
+      _planos: Float32Array,
+      nosDaCena: number,
+      vsm: boolean,
+      saida: Float64Array,
+    ) => {
+      chamadas.shadowPassGate++;
+      chamadas.ultimosNosDaCena = nosDaCena;
+      chamadas.ultimoVsm = vsm;
+      saida.fill(0);
+      saida[8] = 1; // geometria-ausente
+      saida[GATE_MOTIVOS] = 1; // recusados
+      saida[GATE_MOTIVOS + 1] = 2; // casters
+      return 8;
     },
   };
   return { matrices, sync, chamadas };
@@ -175,20 +215,27 @@ describe('NativeSceneMirror', () => {
     expect(flagsDesligada & FLAG_CAST_SHADOW).toBe(0);
   });
 
-  it('marca como desenhável só a malha com geometria e material visível', () => {
+  it('marca como desenhável a malha com geometria, sem olhar o material', () => {
+    // `material.visible` SAIU deste bit no E1: ele muda por frame e agora viaja
+    // no buffer de sincronização. O que fica aqui é só o que não muda — um
+    // `Group` nunca vira malha. O estado inicial do material vai num campo
+    // próprio do `build`, porque o primeiro frame enumera antes do `update`.
     const { chamadas } = instalarPonteFalsa(8);
     const raiz = new Object3D(); // 0: Group — não desenha
     const visivel = malha(); // 1: desenha
-    const semMaterial = malha(); // 2: material invisível
+    const semMaterial = malha(); // 2: malha, com o material desligado
     (semMaterial.material as { visible: boolean }).visible = false;
     raiz.add(visivel, semMaterial);
 
     new NativeSceneMirror().install(raiz);
 
-    const flag = (i: number) => chamadas.ultimaDescricao[FLOATS_POR_NO * i + CAMPO_FLAGS]! & FLAG_DRAWABLE;
+    const d = chamadas.ultimaDescricao;
+    const flag = (i: number) => d[FLOATS_POR_NO * i + CAMPO_FLAGS]! & FLAG_DRAWABLE;
     expect(flag(0)).toBe(0);
     expect(flag(1)).toBe(FLAG_DRAWABLE);
-    expect(flag(2)).toBe(0);
+    expect(flag(2)).toBe(FLAG_DRAWABLE);
+    expect(d[FLOATS_POR_NO + CAMPO_MATERIAL_VISIVEL]).toBe(1);
+    expect(d[FLOATS_POR_NO * 2 + CAMPO_MATERIAL_VISIVEL]).toBe(0);
   });
 
   it('manda a esfera da geometria em espaço local e um id estável por geometria', () => {
@@ -259,11 +306,37 @@ describe('NativeSceneMirror', () => {
     espelho.install(raiz);
 
     espelho.update(new PerspectiveCamera());
-    expect(sync[SYNC_FLOATS_POR_NO + SYNC_VISIVEL]).toBe(1);
+    expect(sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
 
     filho.visible = false;
     espelho.update(new PerspectiveCamera());
-    expect(sync[SYNC_FLOATS_POR_NO + SYNC_VISIVEL]).toBe(0);
+    expect(sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! & SYNC_VISIVEL).toBe(0);
+  });
+
+  it('manda o material.visible por FRAME, no mesmo slot do visible', () => {
+    // E1 do passo 2 (SPEC-0245). Era o mesmo erro do `visible`: fotografado no
+    // `build` e nunca mais olhado, enquanto o `three` o reavalia em TODA
+    // travessia. Depois que o passe nativo assumir, isso seria sombra de um
+    // objeto que não está na imagem.
+    const { sync } = instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    const filho = malha();
+    raiz.add(filho);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    espelho.update(new PerspectiveCamera());
+    expect(sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! & SYNC_MATERIAL_VISIVEL).toBe(
+      SYNC_MATERIAL_VISIVEL,
+    );
+
+    (filho.material as { visible: boolean }).visible = false;
+    espelho.update(new PerspectiveCamera());
+    // O objeto continua visível: as duas coisas escondem coisas diferentes e
+    // não podem ser confundidas uma com a outra.
+    const flags = sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]!;
+    expect(flags & SYNC_MATERIAL_VISIVEL).toBe(0);
+    expect(flags & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
   });
 
   it('conta os casters no host com a câmera do jogo e a ortho da cascata', () => {
@@ -281,6 +354,98 @@ describe('NativeSceneMirror', () => {
     expect(chamadas.ultimoMinRatio).toBe(0.15);
     expect(chamadas.ultimaCamera).toEqual([1, 2, 3]);
     expect(chamadas.ultimosPlanos).toHaveLength(24);
+  });
+
+  it('marca no build cada motivo de recusa que só o JS enxerga', () => {
+    // O gate roda em C++, mas quem vê o MATERIAL é o JS. Se um destes bits não
+    // subir, o gate aceita um caster que não sabe desenhar — a falha na direção
+    // errada: sombra errada na imagem em vez de milissegundos não ganhos.
+    const { chamadas } = instalarPonteFalsa(16);
+    const raiz = new Object3D();
+
+    const skinada = malha() as Mesh & { isSkinnedMesh: boolean };
+    skinada.isSkinnedMesh = true;
+    const instanciada = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial(), 4);
+    const emArray = new Mesh(new BoxGeometry(1, 1, 1), [
+      new MeshBasicMaterial(),
+      new MeshBasicMaterial(),
+    ]);
+    const comAlphaTest = malha();
+    (comAlphaTest.material as { alphaTest: number }).alphaTest = 0.5;
+    const comAlphaMap = malha();
+    (comAlphaMap.material as { alphaMap: Texture }).alphaMap = new Texture();
+    const comPositionNode = malha();
+    (comPositionNode.material as unknown as { positionNode: unknown }).positionNode = {};
+    const comum = malha();
+    raiz.add(skinada, instanciada, emArray, comAlphaTest, comAlphaMap, comPositionNode, comum);
+
+    new NativeSceneMirror().install(raiz);
+    const flags = (i: number) => chamadas.ultimaDescricao[FLOATS_POR_NO * i + CAMPO_FLAGS]!;
+
+    expect(flags(1) & FLAG_SKINNED).toBe(FLAG_SKINNED);
+    expect(flags(2) & FLAG_INSTANCED).toBe(FLAG_INSTANCED);
+    expect(flags(3) & FLAG_MATERIAL_ARRAY).toBe(FLAG_MATERIAL_ARRAY);
+    expect(flags(4) & FLAG_ALPHA_CLIP).toBe(FLAG_ALPHA_CLIP);
+    expect(flags(5) & FLAG_ALPHA_CLIP).toBe(FLAG_ALPHA_CLIP);
+    expect(flags(6) & FLAG_POSITION_NODE).toBe(FLAG_POSITION_NODE);
+    // E a malha comum não carrega nenhum motivo de recusa.
+    const motivos =
+      FLAG_SKINNED | FLAG_INSTANCED | FLAG_MATERIAL_ARRAY | FLAG_ALPHA_CLIP | FLAG_POSITION_NODE;
+    expect(flags(7) & motivos).toBe(0);
+  });
+
+  it('traduz o veredito do gate com motivo, contagem e casters', () => {
+    const { chamadas } = instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    raiz.add(malha());
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    const veredito = espelho.shadowPassGate(
+      new OrthographicCamera(-50, 50, 50, -50, 1, 200),
+      new Vector3(1, 2, 3),
+      0.15,
+      977,
+      false,
+    );
+
+    expect(chamadas.shadowPassGate).toBe(1);
+    expect(chamadas.ultimosNosDaCena).toBe(977);
+    expect(chamadas.ultimoVsm).toBe(false);
+    expect(veredito?.accepted).toBe(false);
+    expect(veredito?.reason).toBe('geometria-ausente');
+    expect(veredito?.offenders).toBe(1);
+    expect(veredito?.refusedCasters).toBe(1);
+    expect(veredito?.totalCasters).toBe(2);
+    expect(veredito?.counts['geometria-ausente']).toBe(1);
+    expect(veredito?.counts['skinned']).toBe(0);
+  });
+
+  it('repassa o tipo de shadow map e a contagem de nós ao gate', () => {
+    // Os dois fatos que só o JS enxerga: com VSM a RT de cor importa, e a
+    // divergência de nós vira sombra faltando quando o passe nativo assumir.
+    const { chamadas } = instalarPonteFalsa(8);
+    const espelho = new NativeSceneMirror();
+    espelho.install(new Object3D());
+
+    espelho.shadowPassGate(new OrthographicCamera(), new Vector3(), 0.15, -1, true);
+
+    expect(chamadas.ultimoVsm).toBe(true);
+    expect(chamadas.ultimosNosDaCena).toBe(-1);
+  });
+
+  it('não dá veredito quando o host não tem o gate', () => {
+    // Host antigo: o gate ausente NÃO pode virar um "aceito" por omissão.
+    instalarPonteFalsa(8);
+    delete (globalThis as Record<string, Record<string, unknown>>)['__cortexSceneMirror']![
+      'shadowPassGate'
+    ];
+    const espelho = new NativeSceneMirror();
+    espelho.install(new Object3D());
+
+    expect(
+      espelho.shadowPassGate(new OrthographicCamera(), new Vector3(), 0.15, 10, false),
+    ).toBeUndefined();
   });
 
   it('não conta nada quando o host não tem o enumerador', () => {

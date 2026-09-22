@@ -8,6 +8,7 @@ import {
   Color,
   ACESFilmicToneMapping,
   PCFSoftShadowMap,
+  VSMShadowMap,
   type ColorRepresentation,
 } from 'three';
 import { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js';
@@ -16,6 +17,7 @@ import { Scene } from '../core/Scene.js';
 import { cullShadowCasters, DEFAULT_SHADOW_CASTER_MIN_RATIO } from './ShadowCasterCulling.js';
 import { debug } from '../core/debug.js';
 import { activeSceneMirror } from '../core/NativeSceneMirror.js';
+import { CasterGeometryRegistry } from '../render/CasterGeometryRegistry.js';
 
 /**
  * CSM que SEGUE a câmera que está renderizando (a do frame), não a cacheada no 1º render.
@@ -41,6 +43,20 @@ function congelarPasseDeSombra(): boolean {
 function contarCastersPedido(): boolean {
   if (typeof location === 'undefined') return false;
   return new URLSearchParams(location.search ?? '').get('contarCasters') === '1';
+}
+
+/**
+ * `?gateSombra=1` — prepara e avalia o passe de sombra nativo (SPEC-0245,
+ * E2/E3 do passo 2), sem desenhar nada ainda.
+ *
+ * Fica atrás de uma query, e separada de `?contarCasters=1`, por dois motivos:
+ * o caminho padrão do jogo não paga nada por um trabalho que ainda é
+ * preparatório, e a sonda de `renderObject` do `?contarCasters=1` custa caro
+ * demais para ficar ligada junto. Sai quando o E6 decidir ligar o passe.
+ */
+function gateDeSombraPedido(): boolean {
+  if (typeof location === 'undefined') return false;
+  return new URLSearchParams(location.search ?? '').get('gateSombra') === '1';
 }
 
 /**
@@ -96,6 +112,23 @@ class CameraFollowingCSM extends CSMShadowNode {
    * produz uma divergência que é do instrumento, não do enumerador.
    */
   private readonly _cameraDoUltimoCull = new Vector3();
+
+  /** Registro de geometria dos casters (SPEC-0245, E2). Preguiçoso por frame. */
+  private readonly _registroDeCasters = new CasterGeometryRegistry();
+
+  /**
+   * Nós que a cena tinha na última contagem; `-1` = ainda não contado.
+   *
+   * Medido no intervalo do culling, não por frame: percorrer ~1.300 nós é
+   * justamente o custo que este marco existe para eliminar. A consequência é
+   * que um nó criado entre duas contagens só aparece para o gate até 10 frames
+   * depois — aceitável enquanto o `three` ainda desenha a sombra, e o que o E6
+   * precisa resolver antes de desligá-lo.
+   */
+  private _nosDaCena = -1;
+
+  /** Última linha do gate, para não repetir o mesmo veredito todo frame. */
+  private _ultimoVeredito = '';
 
   override updateBefore(
     frame: Parameters<CSMShadowNode['updateBefore']>[0],
@@ -158,19 +191,19 @@ class CameraFollowingCSM extends CSMShadowNode {
           const stats = cullShadowCasters(scene, camera.position, this.shadowCasterMinRatio);
           debug('scene', `shadowCull: ${stats.culled}/${stats.evaluated} malhas fora do shadow pass`);
           this._cameraDoUltimoCull.copy(camera.position);
-          // DIAGNOSTICO TEMPORARIO (SPEC-0245, passo 1) — remover.
           // O espelho é montado UMA vez (SPEC-0234) e não cresce. Se a cena
-          // ganhar nós depois disso, o `three` desenha o que o C++ não vê.
-          if (contarCastersPedido()) {
+          // ganhar nós depois disso, o `three` desenha o que o C++ não vê — e,
+          // quando o passe nativo assumir, isso vira sombra faltando. Por isso
+          // a contagem alimenta o gate (E3), além do diagnóstico.
+          if (contarCastersPedido() || gateDeSombraPedido()) {
+            let naCena = 0;
+            scene.traverse(() => {
+              naCena++;
+            });
+            this._nosDaCena = naCena;
             const espelho = activeSceneMirror();
-            if (espelho?.installed) {
-              let naCena = 0;
-              scene.traverse(() => {
-                naCena++;
-              });
-              if (naCena !== espelho.nodeCount) {
-                debug('perf', `[sceneMirror] cena tem ${naCena} nos, espelho tem ${espelho.nodeCount}`);
-              }
+            if (espelho?.installed && naCena !== espelho.nodeCount && contarCastersPedido()) {
+              debug('perf', `[sceneMirror] cena tem ${naCena} nos, espelho tem ${espelho.nodeCount}`);
             }
           }
         }
@@ -185,6 +218,7 @@ class CameraFollowingCSM extends CSMShadowNode {
     // divergiria em alguns objetos a cada quadro em que a câmera anda.
     const resultado = super.updateBefore(frame);
     if (cam?.isPerspectiveCamera && contarCastersPedido()) this._relatarCastersNativos();
+    if (cam?.isPerspectiveCamera && gateDeSombraPedido()) this._prepararEAvaliarGate(frame);
     return resultado;
   }
 
@@ -234,6 +268,81 @@ class CameraFollowingCSM extends CSMShadowNode {
         `[${porCascata.join(', ')}], three desenhou ${drawsDaSombraNoFrame}, ` +
         `minRatio=${this.shadowCasterMinRatio}`,
     );
+  }
+
+  /**
+   * E2 + E3 da SPEC-0245: registra a geometria que falta e pergunta ao gate se
+   * o passe nativo poderia assumir este frame. **Nada é desenhado.**
+   *
+   * Os dois andam juntos porque o gate depende do registro: enquanto uma
+   * geometria não subiu para a GPU, ela é motivo de recusa — e é exatamente
+   * isso que se quer ver no log dos primeiros frames.
+   *
+   * Roda DEPOIS do `super.updateBefore`, pelo mesmo motivo da conferência de
+   * casters: é ele que reposiciona as cascatas e recompõe a ortho de cada uma.
+   */
+  private _prepararEAvaliarGate(frame: unknown): void {
+    const espelho = activeSceneMirror();
+    if (!espelho?.installed) return;
+    const contexto = frame as {
+      scene?: Object3D;
+      renderer?: { backend?: { get(alvo: unknown): { buffer?: unknown } | undefined } } & {
+        shadowMap?: { type?: number };
+      };
+    } | null;
+    const cena = contexto?.scene;
+    const renderer = contexto?.renderer;
+    const backend = renderer?.backend;
+    if (!cena || !backend) return;
+
+    // E2 — o registro é preguiçoso: quem ainda não subiu para a GPU é tentado
+    // de novo no próximo frame.
+    this._registroDeCasters.atualizar(cena, backend);
+
+    const cascatas = (
+      this as unknown as {
+        lights?: { shadow?: { camera?: Camera; updateMatrices?: (luz: unknown) => void } }[];
+      }
+    ).lights;
+    if (!cascatas || cascatas.length === 0) return;
+
+    const vsm = renderer?.shadowMap?.type === VSMShadowMap;
+    // O veredito do frame é o das cascatas COMBINADAS: uma recusa em qualquer
+    // uma recusa o frame inteiro, porque o `three` só pode manter o passe de
+    // sombra por completo — não há como ele desenhar metade das cascatas.
+    let pior: ReturnType<typeof espelho.shadowPassGate> | undefined;
+    for (const cascata of cascatas) {
+      cascata.shadow?.updateMatrices?.(cascata);
+      const shadowCamera = cascata.shadow?.camera;
+      if (!shadowCamera) continue;
+      const veredito = espelho.shadowPassGate(
+        shadowCamera,
+        this._cameraDoUltimoCull,
+        this.shadowCasterMinRatio,
+        this._nosDaCena,
+        vsm,
+      );
+      if (!veredito) return; // host sem a ponte: nada a relatar
+      if (!pior || (pior.accepted && !veredito.accepted)) pior = veredito;
+    }
+    if (!pior) return;
+
+    // O gate tem de ser OBSERVÁVEL: sem o motivo e a contagem no log, uma
+    // recusa vira "não funciona" sem causa, e a causa só apareceria com
+    // depurador. Relata quando o veredito muda, não a cada frame.
+    const detalhe = Object.entries(pior.counts)
+      .filter(([, n]) => n > 0)
+      .map(([motivo, n]) => `${motivo}=${n}`)
+      .join(' ');
+    const linha =
+      `${pior.accepted ? 'ACEITA' : 'RECUSA'} motivo=${pior.reason} ` +
+      `objetos=${pior.offenders} casters=${pior.totalCasters} ` +
+      `recusados=${pior.refusedCasters} geometrias=${this._registroDeCasters.total} ` +
+      `pendentes=${this._registroDeCasters.pendentes}` +
+      (detalhe ? ` [${detalhe}]` : '');
+    if (linha === this._ultimoVeredito) return;
+    this._ultimoVeredito = linha;
+    debug('perf', `[shadowGate] ${linha}`);
   }
 }
 

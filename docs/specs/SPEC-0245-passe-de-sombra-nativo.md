@@ -352,3 +352,103 @@ diagnósticos.
 5. **Quanto o C++ vai custar.** O teto de 5,60 ms é do `three`. Os 2,2 µs/draw
    vêm de um spike isolado, e os 34 µs/draw do M5 **não se reproduziram**. A
    folga de 2,6 ms é plausível, **não medida**.
+
+## E1, E2 e E3 EXECUTADOS em 2026-09-22 — o gate recusa o kart-racer por 2 nós
+
+### O que foi construído
+
+- **E1 — `material.visible` por frame.** Era o mesmo erro do `visible` do
+  objeto corrigido no passo 1: o valor era fotografado no `build` e nunca mais
+  olhado, enquanto o `three` o reavalia em toda travessia. O slot 11 do buffer
+  de sincronização virou um **campo de bits** (`SyncFlag`: `kSyncVisible`,
+  `kSyncMaterialVisible`), então o estado novo entrou **sem alargar a linha**
+  nem renumerar o layout. `kNodeDrawable` passou a significar só o que não
+  muda — malha com geometria.
+- **E2 — `src/render/CasterGeometryRegistry.ts`.** Registra a geometria de
+  **todas** as malhas da cena, não só as do caminho `?nativePass=N`. Três
+  cuidados: registro **preguiçoso** (os `GPUBuffer` são do `three` e só existem
+  depois do upload, então quem falha é tentado de novo nos frames seguintes);
+  **invalidação** no `dispose` da `BufferGeometry` — seguro com folga, porque o
+  `destroy` de buffer do host é adiado em 10 frames (ADR-0153); e registro **por
+  geometria**, não por malha (as quatro rodas de um carro compartilham uma
+  `BufferGeometry`). A varredura é deliberadamente larga e **não olha
+  `castShadow`**: o filtro angular liga e desliga esse campo a cada 10 frames, e
+  restringir ali deixaria de fora justamente a malha que volta a projetar no
+  frame seguinte.
+- **E3 — `native/src/scene/shadow_pass_gate.{h,cpp}`.** Unidade PURA que
+  responde se o passe nativo pode assumir o frame. A consulta ao
+  `GeometryRegistry` entra por **ponteiro de função**, porque o registro arrasta
+  `webgpu.h` e depender dele tiraria o gate do `cortex_host_tests`. O veredito
+  traz o motivo, a contagem por motivo (todos, não só o primeiro) e os casters
+  recusados; o log por `debug('perf', …)` sai só quando o veredito **muda**.
+  Ligado por `?gateSombra=1`, separado do `?contarCasters=1` — a sonda de
+  `renderObject` daquele é cara demais para ficar ligada junto.
+
+`NodeFlag` passou de 8 para **16 bits**: os motivos de recusa levaram a lista a
+nove bits, e estourar em silêncio faria o gate **aceitar** um caster que devia
+recusar — a falha exatamente na direção errada.
+
+### O veredito no kart-racer: RECUSA, por divergência de nós, em 2 objetos
+
+`?bench&hold&gateSombra=1`, 90 s, host recompilado:
+
+```
+[casterGeometry] registradas=148 pendentes=44
+[shadowGate] RECUSA motivo=divergencia-de-nos objetos=2 casters=66
+             recusados=0 geometrias=148 pendentes=44 [divergencia-de-nos=2]
+```
+
+O número é **informação de projeto, não falha**. O que ele diz:
+
+| fato | valor | leitura |
+| --- | --- | --- |
+| casters enumerados | **66** | o mesmo alvo do passo 1 |
+| casters recusados por condição própria | **0** | nenhum skinado, instanced, material em array, recorte alfa ou `positionNode` entre os casters |
+| geometria ausente entre os casters | **0** | o registro preguiçoso cobriu todos |
+| divergência cena × espelho | **2** | os mesmos 2 nós medidos no passo 1 (977 × 975) |
+
+**A única coisa entre o kart-racer e o passe nativo são os 2 nós que a cena
+ganha depois do `install`.** Todo o resto do gate passa. Isso reordena o que
+falta: identificar quem cria esses 2 nós deixa de ser "rede, não conserto" (o
+que ainda não se sabe, item 2) e passa a ser **o bloqueio único** do E6.
+
+As 44 geometrias que ficam pendentes são malhas que o `three` nunca desenhou, e
+portanto nunca subiu — nenhuma delas pertence a um caster, senão
+`geometria-ausente` não seria 0.
+
+### A enumeração continua batendo com o `three` depois do E1
+
+`?bench&hold&contarCasters=1`, mesma build: **2.994 amostras, 2.939 idênticas**.
+As 55 restantes são todas `66 vs 0` — frames em que a sonda ainda não tinha
+draws do frame anterior para reportar, não divergência do enumerador.
+Descontadas essas, **2.939/2.939 (100%)**, 66 × 66.
+
+### Testes
+
+- Harness C++ (`cortex_host_tests`): **266 checks, 0 falhas** — cada condição do
+  gate isolada (skinned, instanced, material em array, recorte alfa,
+  `positionNode`, geometria ausente, registro inexistente, divergência nas duas
+  direções e sem caster nenhum, VSM), mais prioridade entre motivos, contagem
+  por motivo e `material.visible` chegando pelo frame e pelo `build`.
+- Vitest: **1.541 passando, 7 pulados, 0 falhas**.
+
+> Um erro pego pela própria medição: a primeira rodada relatou `casters=0
+> recusados=66`, aritmeticamente impossível. Causa: `kShadowGateRefusalCount`
+> estava em 8 para um enum de 9 valores, então a contagem do último motivo caía
+> **fora** do array, em cima do campo seguinte — e o `cortex_host.exe` usado
+> naquela rodada fora compilado antes da correção. Vale como caso de resposta
+> conhecida: um relato internamente contraditório é o sinal barato de que o
+> instrumento está errado.
+
+### O que fica para o E4 e o E5
+
+1. **E4** — preparo por frame em JS: `updateBefore` do CSM → `updateMatrices`
+   por cascata → viewProj em `Float64Array`, nunca `Float32`.
+2. **E5** — o passe depth-only em C++, com **`cullMode = Front`** (o `three`
+   inverte o lado da face no passe de sombra).
+3. O `sceneNodeCount` que alimenta o gate é medido no intervalo do culling (10
+   frames), não por frame, porque percorrer ~1.300 nós é o custo que o marco
+   quer eliminar. Um nó criado entre duas contagens só aparece para o gate até
+   10 frames depois — aceitável enquanto o `three` ainda desenha a sombra, e
+   coisa que o **E6** precisa resolver antes de desligá-lo.
+4. `?gateSombra=1` e `?contarCasters=1` continuam TEMPORÁRIOS e saem no E8.

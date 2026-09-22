@@ -61,6 +61,7 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes) {
   locals_.resize(count);
   radii_.resize(count);
   visibleFlags_.resize(count);
+  materialVisibleFlags_.resize(count);
   flags_.resize(count);
   geometryIds_.resize(count);
   bounds_.resize(count);
@@ -81,6 +82,7 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes) {
     locals_[i] = node.transform;
     radii_[i] = node.radius;
     visibleFlags_[i] = node.visible ? 1 : 0;
+    materialVisibleFlags_[i] = node.materialVisible ? 1 : 0;
     flags_[i] = node.flags;
     geometryIds_[i] = node.geometryId;
     bounds_[i] = node.bounds;
@@ -100,8 +102,11 @@ void SceneMirror::applyTransforms(const double* buffer, size_t valueCount) {
     t.sx = row[8]; t.sy = row[9]; t.sz = row[10];
     // O `visible` vem junto do transform, e não só do `build`: esconder um
     // objeto é tão comum quanto movê-lo (LOD, peça trocada, carro de outro
-    // jogador) e um espelho que não vê isso desenha sombra do que sumiu.
-    visibleFlags_[index] = row[kSyncVisible] != 0.0 ? 1 : 0;
+    // jogador) e um espelho que não vê isso desenha sombra do que sumiu. O
+    // `material.visible` viaja no mesmo slot, pelo mesmo motivo (SPEC-0245).
+    const auto frameFlags = static_cast<uint32_t>(row[kSyncFlags]);
+    visibleFlags_[index] = (frameFlags & kSyncVisible) != 0 ? 1 : 0;
+    materialVisibleFlags_[index] = (frameFlags & kSyncMaterialVisible) != 0 ? 1 : 0;
     dirty_[index] = 1;
   }
 }
