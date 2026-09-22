@@ -36,8 +36,14 @@ struct TamanhoDaView {
   uint32_t altura;
   WGPUTextureFormat formato;
   bool ehProfundidade;
+  /** Rotulo que o `three` deu a textura (`texture.name`): "depthBuffer",
+   *  "ShadowDepthTexture", etc. E o unico jeito de distinguir alvos de mesma
+   *  dimensao — cena e shadow map ja foram confundidos por isso (SPEC-0241). */
+  const char* rotulo;
 };
 void registrarTamanhoDaView(WGPUTextureView view, WGPUTexture textura);
+/** Guarda o rotulo de uma textura no momento da criacao (diagnostico). */
+void registrarRotuloDaTextura(WGPUTexture textura, const char* rotulo);
 bool tamanhoDaView(WGPUTextureView view, TamanhoDaView* out);
 
 /** Alvo da pass da cena: cor e profundidade que casam entre si (SPEC-0241). */

@@ -556,6 +556,45 @@ uniformes por escrita direta.
 > com volume. **Se o jogo ligar sombras dinâmicas, esta verificação tem de ser
 > refeita**, porque aí `visible = false` passaria a remover trabalho que o
 > passe nativo não reproduz.
+> **CORREÇÃO GRAVE em 21/09/2026 — a verificação acima está ERRADA, e a
+> medição de 34 µs/draw está sob suspeita.**
+>
+> A verificação concluiu que "só existe uma pass com volume e é a cena". O
+> `three` **rotula** as texturas (`texture.name`), e o host não lia esse campo.
+> Lendo-o, a pass de volume se identifica sozinha:
+>
+> | pass | profundidade (rótulo) | draws com `nativePass=0` |
+> | --- | --- | --- |
+> | UI | (nenhuma) | 24 |
+> | cena | `depthBuffer` (2560x1440) | 1 |
+> | — | (sem rótulo, 2560x1440) | 1 |
+> | **shadow map** | **`ShadowDepthTexture` (2048x2048)** | **234** |
+> | composição | `depthBuffer` | 1 |
+>
+> Soma: 261 — exatamente o total de draws do frame sem o passe.
+>
+> **A pass de volume é o SHADOW MAP, não a cena.** E é ela que cai de 234 para
+> 187 ao migrar 40 malhas, porque `malha.visible = false` tira o objeto das
+> sombras também — e o passe nativo **não redesenha o shadow map**.
+>
+> Logo, a conclusão correta é o oposto da registrada: **a queda de draws
+> observada é trabalho que deixou de ser feito**, e os objetos migrados
+> perderam suas sombras. Quanto dos 6,1 ms vem disso e quanto vem de submissão
+> mais barata **ainda não se sabe** — o número de 34 µs/draw não pode ser usado
+> para decidir nada até isso ser separado.
+>
+> **Como separar, na próxima medição:** comparar `cpu.render` com o passe ligado
+> contra uma linha de base em que as mesmas 40 malhas estejam com
+> `castShadow = false` (mesma perda de sombra, sem o passe nativo). A diferença
+> entre as duas é o ganho real de submissão.
+>
+> **Por que o erro passou:** a identificação da pass foi feita por dimensão e
+> volume, não por identidade. Duas texturas quadradas de 2048 (shadow) e o alvo
+> de 2560x1440 (cena) foram trocados de papel três vezes ao longo do dia. O
+> rótulo estava disponível o tempo todo, dentro do `three`, e resolveu a
+> questão em minutos. **Identifique o recurso pelo nome que o dono dele dá, não
+> pela forma.**
+
 
 
 ### Passo 4 — pool de uniformes ligado ao que se moveu

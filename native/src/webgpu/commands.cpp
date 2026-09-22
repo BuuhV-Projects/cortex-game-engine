@@ -514,9 +514,12 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
   // a profundidade que chega ao passe nativo se comporta como zeros.
   static const bool logarPasses = std::getenv("CORTEX_PASS_LOG") != nullptr;
   static int passesLogadas = 0;
-  constexpr int kMaxPassesLogadas = 130;
-  if (logarPasses && passesLogadas < kMaxPassesLogadas) {
-    ++passesLogadas;
+  // Pula as primeiras: elas sao da splash e do loading, onde a cena ainda nem
+  // existe. Logar so o REGIME ESTAVEL, com o jogo rodando (SPEC-0241).
+  constexpr int kPassesIgnoradas = 3000;
+  constexpr int kMaxPassesLogadas = kPassesIgnoradas + 40;
+  ++passesLogadas;
+  if (logarPasses && passesLogadas > kPassesIgnoradas && passesLogadas < kMaxPassesLogadas) {
     std::fprintf(stderr,
                  "[pass-log] #%d cor=%p corLoad=%d prof=%s profView=%p profLoad=%d profStore=%d",
                  passesLogadas, (void*)attachments[0].view, (int)attachments[0].loadOp,
@@ -534,10 +537,14 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
     // uma vez (SPEC-0241).
     TamanhoDaView tAnterior{};
     const bool conhecida = g_corDaPassAtual && tamanhoDaView(g_corDaPassAtual, &tAnterior);
-    std::fprintf(stderr, " profLoadCru=%s clearVal=%.3f | ANTERIOR: %ux%u fmt=%d draws=%d%s",
-                 cruaLoad.c_str(), depthAttachment.depthClearValue, tAnterior.largura,
-                 tAnterior.altura,
-                 (int)tAnterior.formato, g_drawsNaPass, conhecida ? "" : " (sem tamanho)");
+    TamanhoDaView tProf{};
+    const bool profConhecida = g_depthDaPassAtual && tamanhoDaView(g_depthDaPassAtual, &tProf);
+    std::fprintf(stderr,
+                 " | ANTERIOR: prof %ux%u fmt=%d rotulo=%s | draws=%d%s",
+                 tProf.largura, tProf.altura, (int)tProf.formato,
+                 profConhecida ? (tProf.rotulo && *tProf.rotulo ? tProf.rotulo : "(sem rotulo)")
+                               : "(nenhuma)",
+                 g_drawsNaPass, profConhecida ? "" : " (prof desconhecida)");
     std::fputc(0x0A, stderr);
     std::fflush(stderr);
   }

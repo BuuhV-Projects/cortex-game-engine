@@ -4,6 +4,8 @@
 // distinguir o tipo do resource sem RTTI através do napi_wrap.
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <unordered_map>
@@ -162,19 +164,35 @@ WGPUOrigin3D parseOrigin(napi_env env, napi_value value) {
 
 }  // namespace
 
+/** Rotulo por textura, guardado na criacao (ver internal.h). */
+std::unordered_map<WGPUTexture, std::string>& mapaDeRotulos() {
+  static std::unordered_map<WGPUTexture, std::string> mapa;
+  return mapa;
+}
+
+void registrarRotuloDaTextura(WGPUTexture textura, const char* rotulo) {
+  if (!textura || !rotulo) return;
+  constexpr size_t kMaximoDeRotulos = 512;
+  auto& mapa = mapaDeRotulos();
+  if (mapa.size() > kMaximoDeRotulos) mapa.clear();
+  mapa[textura] = rotulo;
+}
+
 void registrarTamanhoDaView(WGPUTextureView view, WGPUTexture textura) {
   if (!view || !textura) return;
-  // Views de COR tambem entram: o passe nativo precisa do alvo da cena, e o JS
-  // nao expoe a textura do alvo da canvas do `three` (medido: chega nula, e o
-  // host caia no offscreen, que nao e onde a cena foi desenhada). O mapa e
-  // podado porque views de cor nascem a cada frame.
-  constexpr size_t kMaximoDeViews = 256;
+  // SO views de profundidade. Views de cor nascem a cada frame e enchiam o
+  // mapa, que entao era limpo e perdia as de profundidade — o registro parava
+  // de responder justo para o que interessa (SPEC-0241). As de profundidade
+  // sao meia duzia e estaveis, entao o mapa nao precisa de poda.
+  if (!ehFormatoDeProfundidade(wgpuTextureGetFormat(textura))) return;
   auto& mapa = mapaDeTamanhos();
-  if (mapa.size() > kMaximoDeViews) mapa.clear();
+  auto itRotulo = mapaDeRotulos().find(textura);
+  const char* rotulo = itRotulo == mapaDeRotulos().end() ? "" : itRotulo->second.c_str();
   mapa[view] = TamanhoDaView{wgpuTextureGetWidth(textura),
                              wgpuTextureGetHeight(textura),
                              wgpuTextureGetFormat(textura),
-                             ehFormatoDeProfundidade(wgpuTextureGetFormat(textura))};
+                             ehFormatoDeProfundidade(wgpuTextureGetFormat(textura)),
+                             rotulo};
 }
 
 bool tamanhoDaView(WGPUTextureView view, TamanhoDaView* out) {
@@ -242,7 +260,21 @@ napi_value deviceCreateTexture(napi_env env, napi_callback_info info) {
   else if (dimension == "3d") desc.dimension = WGPUTextureDimension_3D;
   else desc.dimension = WGPUTextureDimension_2D;
 
+  // Diagnostico (SPEC-0241): o `three` rotula as texturas com `texture.name`
+  // (WebGPUTextureUtils). O host nao lia esse campo, e sem ele so restava
+  // adivinhar qual alvo e qual pela dimensao — foi assim que a cena e o shadow
+  // map, ambos quadrados, foram confundidos.
+  const std::string rotulo = njs::getNamedString(env, args[0], "label", "");
+  static const bool logarTexturas = std::getenv("CORTEX_PASS_LOG") != nullptr;
+  if (logarTexturas) {
+    std::fprintf(stderr, "[textura] %ux%u %s amostras=%u usage=%u rotulo=%s",
+                 desc.size.width, desc.size.height, formatName.c_str(), desc.sampleCount,
+                 (unsigned)desc.usage, rotulo.empty() ? "(sem rotulo)" : rotulo.c_str());
+    std::fputc(0x0A, stderr);
+    std::fflush(stderr);
+  }
   WGPUTexture texture = wgpuDeviceCreateTexture(device, &desc);
+  registrarRotuloDaTextura(texture, rotulo.c_str());
   countCreatedTexture();
   trackTextureCreated(texture, desc.size.width, desc.size.height,
                       desc.size.depthOrArrayLayers, desc.mipLevelCount,
