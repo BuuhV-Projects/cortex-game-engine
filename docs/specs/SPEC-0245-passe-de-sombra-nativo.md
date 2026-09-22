@@ -1,7 +1,7 @@
 # SPEC-0245 — Passe de sombra nativo (M6)
 
 **Data:** 2026-09-22
-**Status:** EM SUSPENSO em 2026-09-22 — o critério de ganho pode não ser atingível; ver "Risco ao critério" no fim
+**Status:** aceito — a executar (teto de 5,60 ms medido em 2026-09-22; ver o fim)
 
 ## Contexto
 
@@ -110,3 +110,58 @@ enfileirada e descartada pelo filtro de `castShadow` — que o `three` só aplic
 **O marco só atinge 3,0 ms se o passe nativo substituir também a travessia e a
 montagem da lista, não apenas a submissão.** Isso é escopo maior que o descrito
 nos passos 1 a 3 e precisa ser decidido antes de qualquer implementação.
+
+## Teto do M6 MEDIDO em 2026-09-22 — o marco é viável, com folga
+
+A suspensão acima partia de uma conta da **Forma A** (migrar só os draws,
+deixando o `three` resolver objeto) aplicada a um marco escrito na **Forma B**
+(o C++ substitui o passe de sombra inteiro). São coisas diferentes e o número
+de 2,1 ms não vale para o que esta spec descreve.
+
+A conta de 2,1 ms também era **internamente contraditória**: se cada draw
+custasse os 83 µs alegados e o C++ faz por 2,2 µs, migrar 66 draws valeria
+~5,3 ms, não 2,1. As duas metades não podiam estar certas juntas.
+
+### O isolamento correto
+
+`?semPasseDeSombra=1` põe `autoUpdate = false` na `shadow` de **cada cascata**,
+o que faz o gate de `ShadowNode` pular o `renderer.render(scene, shadow.camera)`
+— **sem** tocar em `receiveShadow`, em `shadowMap.enabled` ou nos materiais. É o
+que `?semSombras=1` e `?semCasters=1` não davam: os dois desligam a luz junto e
+derrubam o subsistema inteiro, por isso batiam entre si (5,8 e 5,5 ms) sem
+serem confirmações independentes.
+
+> O interruptor precisou ser corrigido para aplicar **depois** do `_init` do
+> CSM: `this.lights` só é populado no primeiro `setup`, e a versão anterior
+> congelava zero cascatas **falhando em silêncio**. Agora ele loga quantas
+> congelou, e o log diz `1`.
+
+| fase | baseline | passe congelado | delta |
+| --- | --- | --- | --- |
+| `render` | 19,10 ms | 13,50 ms | **−5,60** |
+| `rpProject` | 4,39 ms | 2,33 ms | −2,06 |
+| `rpObjects` | 12,51 ms | 8,89 ms | −3,62 |
+| `rpCallsProject` | 4 | 3 | −1 |
+
+> Absolutos maiores que os 12,80 ms do baseline porque a sonda custa ~2,3 ms; o
+> que vale são os deltas.
+
+### Conclusão
+
+**O teto do M6 é 5,60 ms**, contra um critério de aceite de 3,0 ms — **2,6 ms de
+folga**. Para falhar, o passe nativo precisaria gastar mais de 2,6 ms, ou seja
+~39 µs por draw, contra os 2,2 µs/draw que o spike do ADR-0232 mediu e os
+0,023 ms de travessia + culling de 1.300 nós do espelho de cena (SPEC-0234).
+
+**O marco sai de suspenso e volta a executar**, na Forma B descrita nos passos
+1 a 3 — que é o que já estava escrito. A Forma A fica explicitamente fora: o
+ADR-0235 já fixou que, com o `three` montando a RenderList, a ponte cobre só
+~18% do `renderObject`.
+
+### Trabalho real identificado para o passo 1
+
+`native/src/scene/scene_mirror.h` guarda `parent`, `transform`, `radius` e
+`visible` — **não guarda `castShadow` nem geometria por nó**. Enumerar os
+casters em C++ exige estender o `NodeDesc` e ligá-lo ao `geometry_registry`. É
+incremento sobre infraestrutura que já existe e tem teste, mas é o item que
+dita o prazo.

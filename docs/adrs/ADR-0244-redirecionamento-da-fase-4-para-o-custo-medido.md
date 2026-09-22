@@ -163,3 +163,29 @@ decidido, o marco não deve entrar em implementação.
 decisão 3 (a hipótese do CSM caro é falsa) **permanecem** — a segunda foi
 confirmada de forma independente pela leitura do `CSMShadowNode`, que com uma
 cascata não aloca nada por frame e não recomputa frusta.
+
+### Correções finais de 2026-09-22 (fecham o passo 0 da SPEC-0245)
+
+Três coisas ficam retificadas aqui, todas verificadas no código:
+
+1. **Os "~12 µs por caster" são inválidos.** 449 é censo de autoria, medido no
+   fim do `buildScene`, antes do `cullShadowCasters` (a cada 10 frames,
+   `minRatio 0.15`) e antes do frustum culling da ortho da cascata
+   (`shadowDistance: 160` num mundo com fog a 850). Não é contagem de draws.
+2. **`?semCasters=1` e `?semSombras=1` medem a mesma coisa.** O traverse de
+   `?semCasters=1` não filtra por `isMesh`, então pega a `DirectionalLight`
+   junto (450 objetos contra 449 malhas). Os dois derrubam o subsistema
+   inteiro, e os valores próximos (5,5 e 5,8 ms) **não são** confirmações
+   independentes.
+3. **As três contagens de draws se explicam** — é o que o passo 0 da SPEC-0245
+   pedia:
+
+| contagem | valor | o que é |
+| --- | --- | --- |
+| censo do grafo | 449 | casters **autorados**, antes de qualquer culling |
+| `draws` do trace | 66 | o delta real do passe de sombra (`info.render.drawCalls`, que conta renders aninhados) |
+| `g_drawsNaPass` | 234 | os 66 **mais vazamento**: o host só fecha o contador em `beginRenderPass` e em `cenaAlvo`, **nunca em `passEnd`**, e a sombra renderiza *dentro* do laço de objetos da pass principal |
+
+O conserto de `g_drawsNaPass` é mover o contador para o objeto pass, fechando
+em `passEnd`. Enquanto isso não for feito, **nenhum número dele serve** —
+inclusive o "~187" que ficou num comentário do código.

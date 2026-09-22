@@ -21,6 +21,12 @@ import { debug } from '../core/debug.js';
  * sombra no play, e a sombra não acompanhava o jogador. Troca a câmera por frame +
  * recomputa as cascatas quando ela muda (editor ↔ play).
  */
+/** `?semPasseDeSombra=1` — medição do M6 (SPEC-0245), temporário. */
+function congelarPasseDeSombra(): boolean {
+  if (typeof location === 'undefined') return false;
+  return new URLSearchParams(location.search ?? '').get('semPasseDeSombra') === '1';
+}
+
 class CameraFollowingCSM extends CSMShadowNode {
   /**
    * Limiar do shadow caster culling (SPEC-0197). `0` desliga o filtro.
@@ -31,12 +37,38 @@ class CameraFollowingCSM extends CSMShadowNode {
   /** Frames desde a última passada do culling. */
   private _sinceCull = SHADOW_CULL_INTERVAL;
 
+  /** Já congelou as cascatas para medição? (SPEC-0245, temporário) */
+  private _congelouParaMedicao = false;
+
   override updateBefore(
     frame: Parameters<CSMShadowNode['updateBefore']>[0],
   ): ReturnType<CSMShadowNode['updateBefore']> {
     // Segue SÓ a câmera de visão (perspectiva). O `frame.camera` durante o passe de
     // profundidade das cascatas é a câmera ORTOGRÁFICA da sombra — segui-la travava a
     // sombra numa direção fixa (a "cunha"). Por isso o filtro `isPerspectiveCamera`.
+    // Medição do M6 (SPEC-0245) — TEMPORÁRIO. Congela o RENDER da sombra sem
+    // tocar em material nem em `receiveShadow`, ao contrário de `?semSombras=1`
+    // e `?semCasters=1`, que desligam a luz junto e derrubam o subsistema
+    // inteiro. O delta contra o baseline é o teto do M6.
+    //
+    // Aplicado AQUI, e não na criação do nó: `this.lights` só é populado no
+    // `_init`, que roda no primeiro `setup`. Tentar antes congelava zero
+    // cascatas — e falhava em silêncio.
+    if (!this._congelouParaMedicao && congelarPasseDeSombra()) {
+      const cascatas = (this as unknown as { lights?: { shadow?: { autoUpdate: boolean } }[] })
+        .lights;
+      let congeladas = 0;
+      for (const l of cascatas ?? []) {
+        if (l.shadow) {
+          l.shadow.autoUpdate = false;
+          congeladas += 1;
+        }
+      }
+      if (congeladas > 0) {
+        this._congelouParaMedicao = true;
+        debug('scene', `MEDIÇÃO: passe de sombra congelado em ${congeladas} cascatas`);
+      }
+    }
     const cam = (frame as unknown as { camera?: { isPerspectiveCamera?: boolean } } | null)?.camera;
     const self = this as unknown as { camera: unknown; updateFrustums: () => void };
     if (cam?.isPerspectiveCamera && cam !== self.camera) {
@@ -228,31 +260,6 @@ export function setupOutdoorLighting(
       (csmNode as unknown as { fade: boolean }).fade = shadowFade; // suaviza a emenda das cascatas
       csmNode.shadowCasterMinRatio = shadowCasterMinRatio; // SPEC-0197
       (sun.shadow as unknown as { shadowNode: unknown }).shadowNode = csmNode;
-      // Medição do M6 (SPEC-0243) — TEMPORÁRIO. `?semPasseDeSombra=1` congela
-      // só o RENDER da sombra, mantendo `receiveShadow`, `shadowMap.enabled` e
-      // os materiais intactos. É o isolamento que `?semSombras=1` não dá:
-      // aquele desliga três coisas de uma vez e o delta acaba misturando o
-      // custo do passe de sombra com o barateamento do passe principal.
-      //
-      // A alavanca é a sombra de CADA CASCATA, não `sun.shadow`: o CSM faz
-      // `light.shadow.clone()` por cascata, e `LightShadow.copy` leva o
-      // `autoUpdate` no momento do clone — mexer no original depois não chega
-      // nas cópias.
-      const semPasseDeSombra =
-        typeof location !== 'undefined' &&
-        new URLSearchParams(location.search ?? '').get('semPasseDeSombra') === '1';
-      if (semPasseDeSombra) {
-        const luzes = (csmNode as unknown as { lights?: { shadow?: { autoUpdate: boolean } }[] })
-          .lights;
-        let congeladas = 0;
-        for (const l of luzes ?? []) {
-          if (l.shadow) {
-            l.shadow.autoUpdate = false;
-            congeladas += 1;
-          }
-        }
-        debug('scene', `MEDIÇÃO: passe de sombra congelado em ${congeladas} cascatas`);
-      }
 
     }
   }
