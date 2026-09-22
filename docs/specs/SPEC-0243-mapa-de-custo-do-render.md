@@ -57,6 +57,37 @@ Logo a maior parte dos 4,0 ms é **overhead do sistema de sombra** — o
 `CSMShadowNode` recalculando frusta, matrizes e render list por frame, em JS
 sobre Hermes sem JIT — e não a submissão dos draws.
 
+## Decomposição medida do custo da sombra (2026-09-22)
+
+A conta acima ("~4,0 ms de sombra") foi aberta com a sonda de fases
+(`?renderPhases=1`), mesma build, `?bench&hold`, medianas de ~200 amostras:
+
+| fase | com sombras | sem sombras | delta |
+| --- | --- | --- | --- |
+| `render` | 15,10 ms | 9,30 ms | **−5,80** |
+| `rpProject` (travessia + culling + RenderList) | 3,39 ms | 1,75 ms | **−1,64** |
+| `rpObjects` (laço por objeto) | 9,76 ms | 5,80 ms | **−3,96** |
+| `rpCallsProject` (nº de travessias no frame) | **4** | **3** | −1 |
+
+> Os valores absolutos são maiores que os 12,80 ms do baseline porque a própria
+> sonda custa ~2,3 ms. O que vale aqui são os **deltas**.
+
+**O que isso estabelece:**
+
+1. **O shadow pass faz uma travessia completa da cena a mais** — `rpCallsProject`
+   cai de 4 para 3 ao desligar a sombra. Ela custa **1,64 ms**.
+2. **O laço por objeto do shadow pass custa 3,96 ms** — mais que o dobro da
+   travessia, e é o maior item isolado da sombra.
+3. **Não há custo relevante de setup/teardown de passe:** 5,80 − 1,64 − 3,96
+   deixa ~0,2 ms. Uma estimativa anterior de ~1,1 ms, obtida por subtração, não
+   se confirma.
+
+**Consequência:** o alvo é o par travessia + laço do shadow pass, que juntos são
+**5,6 dos 5,8 ms**. Como `castShadow` só é consultado dentro do laço (e não na
+travessia nem na montagem da RenderList), objetos que não projetam sombra são
+percorridos, culados, enfileirados e **só então** descartados — pagando quase
+todo o custo sem produzir pixel.
+
 ## Consequências
 
 - **O M5 não se justifica nesta cena.** Não deve receber mais trabalho (shader
