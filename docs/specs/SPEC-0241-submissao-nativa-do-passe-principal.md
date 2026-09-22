@@ -594,6 +594,53 @@ uniformes por escrita direta.
 > rótulo estava disponível o tempo todo, dentro do `three`, e resolveu a
 > questão em minutos. **Identifique o recurso pelo nome que o dono dele dá, não
 > pela forma.**
+> **REMEDIÇÃO em 21/09/2026 — o ganho de 34 µs/draw NÃO se reproduz. O passe
+> nativo não entrega ganho mensurável nesta cena.**
+>
+> Quatro cenários, **mesma build**, `?bench&hold` (cena congelada, que é a
+> variante do método feita para comparação fina), medianas de ~160 amostras:
+>
+> | cenário | `cpu.render` | draws |
+> | --- | --- | --- |
+> | baseline | 13,60 ms | 261 |
+> | controle — as 40 malhas com `castShadow = false`, sem passe | 13,10 ms | 261 |
+> | **passe nativo com 40 malhas** | **13,40 ms** | 214 |
+> | **sem sombras** | **8,80 ms** | 195 |
+>
+> Leitura:
+>
+> - **O passe nativo não ganha nada:** 13,40 contra 13,60 do baseline está
+>   dentro do ruído, e é **pior** que o controle (13,10). Os 6,1 ms medidos
+>   antes não se reproduzem em nenhum cenário.
+> - **As sombras custam 4,8 ms** — 35% do `cpu.render`. É o único item com
+>   ganho grande e fora de dúvida.
+>
+> **Por que o passe não ganha, e isso é coerente:** o merge estático
+> (`mergeStaticScene`, ligado por padrão no host) já funde a cena, então o
+> passe principal quase não tem custo por objeto para eliminar. O M5 ataca uma
+> parte que já estava resolvida.
+>
+> **Por que a medição anterior enganou:** ela comparou rodadas de builds
+> diferentes e sem `hold`, com a IA pilotando trechos distintos da pista. A
+> variância da pilotagem domina diferenças dessa ordem — na primeira tentativa
+> desta remedição, sem `hold`, o *controle* apareceu mais lento que o baseline
+> (17,80 contra 15,80), o que é impossível como efeito e só se explica por
+> ruído. **Comparação fina exige `hold` e a mesma build.**
+>
+> **Pendência de instrumento, registrada sem explicação inventada:** o contador
+> de `draws` cai 47 com o passe ligado (`visible = false`) mas **não muda** no
+> controle (`castShadow = false`). Se esses 47 fossem de sombra, o controle
+> também os perderia. Isso ainda não fecha com a contagem por pass, que atribui
+> 234 draws ao shadow map. Não use nenhuma das duas contagens para concluir até
+> a divergência ser resolvida — o tempo medido, sim, é confiável, porque vem da
+> métrica oficial do trace com a cena congelada.
+>
+> **Consequência para o plano:** o ADR-0237 põe o M5 (submissão do passe
+> principal) antes do M6 (passe de sombra nativo). A medição inverte a
+> prioridade: o passe principal não tem ganho a extrair nesta cena e a sombra
+> tem 4,8 ms. Isso contradiz a ordem registrada no ADR e **precisa de decisão
+> do dono do projeto** antes de seguir — não de mais implementação.
+
 
 
 

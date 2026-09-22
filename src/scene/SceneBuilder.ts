@@ -958,6 +958,23 @@ async function buildSceneInner(
   // câmera, chão do CharacterPhysicsSystem) vê TODO mesh na identidade (origem =
   // spawn do player) e "colide" com objeto distante (câmera colada no player).
   three.updateMatrixWorld(true);
+  // Medição do M6 (SPEC-0241) — TEMPORÁRIO. `?semSombras=1` desliga o shadow
+  // map depois de a cena estar montada, para medir quanto da submissão vem
+  // dele. Medido em 21/09/2026: o shadow map faz 234 dos 261 draws do frame,
+  // enquanto a cena, já fundida pelo merge estático, faz 1.
+  const semSombras =
+    typeof location !== 'undefined' &&
+    new URLSearchParams(location.search ?? '').get('semSombras') === '1';
+  if (semSombras && options.renderer) {
+    options.renderer.threeRenderer.shadowMap.enabled = false;
+    three.traverse((o) => {
+      const m = o as { castShadow?: boolean; receiveShadow?: boolean };
+      if (m.castShadow !== undefined) m.castShadow = false;
+      if (m.receiveShadow !== undefined) m.receiveShadow = false;
+    });
+    debug('scene', 'MEDIÇÃO: sombras desligadas por ?semSombras=1');
+  }
+
 
   // Pré-aquecimento (SPEC-0196): compila os pipelines da cena montada aqui, em
   // vez de no primeiro frame em que cada material aparece. Não bloqueia o build

@@ -73,6 +73,19 @@ function registro(): PonteDoRegistro | null {
     .__cortexGeometryRegistry ?? null;
 }
 
+/**
+ * `?nativePassControle=1` — modo de CONTROLE da medição (SPEC-0241).
+ *
+ * Escolhe as MESMAS malhas que seriam migradas, mas em vez de esconder do
+ * `three` só desliga o `castShadow` delas e não desenha nada em C++. Serve de
+ * linha de base: a perda de sombra é idêntica à do passe ligado, então o que
+ * sobrar de diferença entre os dois é o ganho de submissão de verdade.
+ */
+export function soControle(): boolean {
+  if (typeof location === 'undefined') return false;
+  return new URLSearchParams(location.search ?? '').get('nativePassControle') === '1';
+}
+
 function passe(): PonteDoPasse | null {
   return (globalThis as { __cortexNativePass?: PonteDoPasse }).__cortexNativePass ?? null;
 }
@@ -155,7 +168,17 @@ export class NativePass {
       if (!ok) return;
       // Esconde do `three`: sem isto os dois desenhariam a mesma malha e a
       // medição não diria qual apareceu.
-      malha.visible = false;
+      //
+      // ATENÇÃO: `visible = false` tira a malha de TODAS as passes do `three`,
+      // inclusive o shadow map — e o passe nativo não redesenha sombra. Por
+      // isso existe o modo de CONTROLE abaixo: ele só desliga `castShadow`,
+      // deixando a malha na cena. Comparar os dois separa o ganho de submissão
+      // do ganho por sombra que deixou de ser desenhada (SPEC-0241).
+      if (soControle()) {
+        malha.castShadow = false;
+      } else {
+        malha.visible = false;
+      }
       this._migradas.push({ mesh: malha, geometryId: id });
     });
 
@@ -201,6 +224,9 @@ export class NativePass {
       this._escolher(cena, backend);
       if (!this._escolhido) return 0;
     }
+    // No controle o C++ nao desenha: o que se quer medir e so o efeito de
+    // perder a sombra das mesmas malhas (SPEC-0241).
+    if (soControle()) return 0;
 
     // A VIEW de profundidade tem de ser A MESMA que o `three` usou, não uma
     // criada a partir da textura: ele guarda a view no descriptor do alvo da
