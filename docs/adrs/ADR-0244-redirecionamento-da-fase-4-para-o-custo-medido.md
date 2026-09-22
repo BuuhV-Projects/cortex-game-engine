@@ -125,6 +125,40 @@ caminho certo.** O custo é por caster, e é exatamente isso que o C++ barateia:
 o spike do ADR-0232 mediu 2,2 µs/draw em C++ contra 33,5 µs/draw em JS. A
 449 casters, sair de ~12 µs para a ordem de 2 µs vale a maior parte dos 5,5 ms.
 
+### Correção de 2026-09-22, mesma data — o isolamento por `?semCasters=1` NÃO isola os draws
+
+O parágrafo acima divide os 5,5 ms pelos 449 casters e conclui "~12 µs por
+caster". **A divisão está errada, e o número de 12 µs não vale.**
+
+`?semCasters=1` percorre a cena e desliga `castShadow` de **qualquer** objeto
+que o tenha — incluindo o `sun`, que é adicionado à mesma cena
+(`OutdoorLighting.ts`, `scene.add(sun)`). Medido, o log do próprio interruptor
+diz **"castShadow desligado em 450 objetos"**, enquanto o censo do grafo conta
+**449 malhas**: a 450ª é a luz.
+
+Sem `light.castShadow` o `three` nem monta o shadow node, e o passe de sombra
+**desaparece inteiro** — que é exatamente o que o `rpCallsProject` caindo de 4
+para 3 estava dizendo. Logo os 5,5 ms são do **passe inteiro** (travessia +
+laço + draws + setup), não dos draws.
+
+O divisor correto é o número de **draws** do passe de sombra, que a análise dos
+contadores estabelece em **66** — não 449 casters. Isso dá ~83 µs/draw, que é
+**mais que o dobro** dos 33,5 µs/draw medidos no passe principal em JS
+(SPEC-0227). Um custo por draw maior que o do passe principal não é plausível
+como submissão pura: o número é um **teto**, e indica que a maior parte dos
+5,5 ms **não é submissão**.
+
+Isso bate com a decomposição já medida por fase (SPEC-0243): `rpProject` da
+sombra = 1,64 ms e `rpObjects` da sombra = 3,96 ms, sendo que dentro do
+`rpObjects` a maioria dos itens é percorrida, enfileirada e **descartada** pelo
+filtro de `castShadow`, que o `three` só aplica depois da RenderList.
+
+**Consequência para o critério de aceite da SPEC-0245:** trocar 66 draws de
+~33,5 µs por ~2,2 µs em C++ rende **~2,1 ms** — abaixo do mínimo de 3,0 ms que
+a spec exige. O M6 só se justifica se o passe nativo substituir **também** a
+travessia e o laço, e não apenas a submissão. Enquanto isso não estiver
+decidido, o marco não deve entrar em implementação.
+
 **Fica revogada a decisão 2 deste ADR.** A decisão 1 (encerrar o M5) e a
 decisão 3 (a hipótese do CSM caro é falsa) **permanecem** — a segunda foi
 confirmada de forma independente pela leitura do `CSMShadowNode`, que com uma

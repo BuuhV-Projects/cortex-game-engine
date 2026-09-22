@@ -1,7 +1,7 @@
 # SPEC-0245 — Passe de sombra nativo (M6)
 
 **Data:** 2026-09-22
-**Status:** aceito — a executar
+**Status:** EM SUSPENSO em 2026-09-22 — o critério de ganho pode não ser atingível; ver "Risco ao critério" no fim
 
 ## Contexto
 
@@ -85,3 +85,28 @@ Alvo: a `ShadowDepthTexture`. Depth-only, sem cor.
 - Não resolve o bug do `three` em `ShadowNode.js` (`_cameraFrameId` é um
   `WeakMap` acessado com colchete, então todas as câmeras compartilham o mesmo
   slot). Fica registrado porque qualquer amortização por frame esbarra nele.
+
+## Risco ao critério de aceite, levantado em 2026-09-22 (antes de implementar)
+
+A conta que sustentava este marco — 449 casters a ~12 µs — **não vale**. O
+interruptor , usado para isolar, desliga  de
+qualquer objeto que o tenha, **incluindo o **: o log diz "450 objetos"
+contra 449 malhas do censo. Sem  o  nem monta o shadow
+node, e o passe some inteiro. Os 5,5 ms são do **passe inteiro**, não dos
+draws.
+
+O passe de sombra emite **66 draws** por frame, não 449. Isso põe o custo por
+draw em ~83 µs — mais que o dobro do passe principal em JS (33,5 µs/draw,
+SPEC-0227), o que é implausível como submissão pura e indica que **a maior
+parte dos 5,5 ms não é submissão**.
+
+Consequência: migrar só os draws para C++ (2,2 µs) rende **~2,1 ms**, abaixo do
+mínimo de 3,0 ms exigido acima. Pela decomposição já medida (SPEC-0243), o
+restante está em  (1,64 ms) e no laço da RenderList da cascata
+(dentro dos 3,96 ms de ), onde a maioria dos itens é percorrida,
+enfileirada e descartada pelo filtro de  — que o  só aplica
+**depois** da RenderList.
+
+**O marco só atinge 3,0 ms se o passe nativo substituir também a travessia e a
+montagem da lista, não apenas a submissão.** Isso é escopo maior que o descrito
+nos passos 1 a 3 e precisa ser decidido antes de qualquer implementação.
