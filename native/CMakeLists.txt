@@ -63,6 +63,7 @@ add_executable(cortex_host
   src/webgpu/pipeline.cpp
   src/webgpu/render_bench.cpp
   src/webgpu/override_probe.cpp
+  src/webgpu/render_parity_capture.cpp
   src/render/uniform_pool.cpp
   src/render/render_list.cpp
   src/scene/scene_mirror.cpp

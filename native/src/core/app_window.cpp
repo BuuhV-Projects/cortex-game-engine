@@ -67,6 +67,16 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
     std::fprintf(stderr, "SDL_CreateWindow falhou: %s\n", SDL_GetError());
     return nullptr;
   }
+  // Janela oculta (SPEC-0240, passo 0/1): roda o harness de paridade visual
+  // (e outros modos de captura/benchmark headless) sem tirar o foco nem
+  // aparecer na tela do dono da máquina. Medido no passo 0: com
+  // `SDL_HideWindow`, `width`/`height` continuam positivos e o loop de
+  // present segue desenhando normalmente (240 frames, 0 abortados) —
+  // minimizar de verdade NÃO serve (zera o pixel size e aborta a aquisição
+  // em acquireSurfaceTexture).
+  if (SDL_getenv("CORTEX_WINDOW_HIDDEN") != nullptr) {
+    SDL_HideWindow(window);
+  }
   // Deixa o fullscreen assentar ANTES de ler o tamanho (senão o engine cria
   // os alvos no tamanho inicial da janela e não bate com a swapchain).
   SDL_SyncWindow(window);
