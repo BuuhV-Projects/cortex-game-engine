@@ -736,3 +736,65 @@ ms/frame amortizado — **não basta sozinho**.
    **E8** — remover `?contarCasters=1`, `?gateSombra=1` e os diagnósticos.
 4. O `shadowMap.setSize` deixa de rodar com o passe do `three` desligado: mudar
    `shadow.mapSize` em runtime não redimensiona mais nada.
+
+## CORREÇÃO em 2026-09-22 — o teto de 5,60 ms desta spec estava errado
+
+O teto foi medido **com a sonda de fases ligada** (`?renderPhases=1`) e tratado
+como grandeza absoluta. A spec até registrou que "a sonda custa ~2,3 ms; o que
+vale são os deltas" — mas **o delta também está distorcido**, e por um motivo
+que só apareceu agora: a sonda embrulha `_projectObject` e `renderObjects`, que
+o passe de sombra chama **dezenas de vezes por frame**. Ela não adiciona custo
+uniforme; adiciona custo proporcional ao número de chamadas, e portanto
+**amplifica exatamente a fatia que o marco remove**.
+
+Medido sem a sonda, com o mesmo isolamento (`?semPasseDeSombra=1`):
+
+| | com a sonda | **sem a sonda** |
+| --- | --- | --- |
+| teto do M6 | 5,60 ms | **3,65 ms** |
+
+**O marco nunca teve 2,6 ms de folga sobre o critério. Tinha 0,65 ms.**
+
+E o critério de aceite de ≥ 3,0 ms foi derivado do teto errado: contra o teto
+real, ele exigiria **82% de tudo que existe para ganhar** — patamar que nenhuma
+migração para C++ atinge, porque o passe nativo também custa.
+
+### O que o passe nativo entrega, medido
+
+Seis rodadas **intercaladas**, `?bench&hold`, mesma build, ~119 amostras por
+rodada, filtradas por estado de cena (sem o filtro a mediana misturava
+carregamento com pista):
+
+| | base | **nativo** | teto |
+| --- | --- | --- | --- |
+| `cpu.render` | 13,35 ms | **10,50 ms** | 9,70 ms |
+| fps | 63 | **75** | 75 |
+| `rpCallsProject` | 4 | **3** | 3 |
+| `draws` | 261 | **195** | 195 |
+
+**Ganho de 2,85 ms — 78% do teto disponível**, e o passe nativo consome 0,8 ms
+do resto. `draws` cai exatamente 66 e `rpCallsProject` de 4 para 3: duas
+confirmações independentes de que o `three` parou de desenhar a sombra.
+
+### A imagem
+
+Controle (um caminho contra ele mesmo): **0,000000%**, `maxChannelDiff` 0 em 32
+pares — mas só depois de refazer o export **sem `--debug`**: o HUD de métricas
+acendeu 0,058% dos pixels, todos dentro da caixa do HUD. O instrumento foi
+validado antes de julgar.
+
+`three` × nativo: **`maxChannelDiff` = 28** e **0,124662%** dos pixels, com 100%
+deles na faixa `[0,31]`. Para comparação, a referência da SPEC-0240 (câmera
+deslocada de 1e-4 m) dá 109 e 0,443769%. As diferenças estão na auto-sombra da
+folhagem distante; **nenhuma sombra falta e não há bandas**.
+
+**Limiar proposto, derivado do medido:** `delta = 32` com 0% de outliers —
+"nenhum pixel difere mais que 31 níveis".
+
+### Decisão pendente
+
+O marco **não atinge os 3,0 ms** escritos nesta spec, e entrega **2,85 ms de um
+teto de 3,65**. Como o critério veio de um teto errado, a pergunta certa não é
+"o passe nativo falhou?", e sim **se 2,85 ms e +12 fps justificam manter o
+caminho nativo**, dado o que ele custa em manutenção. Isso é decisão do dono do
+projeto, não minha.
