@@ -89,11 +89,11 @@ Alvo: a `ShadowDepthTexture`. Depth-only, sem cor.
 ## Risco ao critério de aceite, levantado em 2026-09-22 (antes de implementar)
 
 A conta que sustentava este marco — 449 casters a ~12 µs — **não vale**. O
-interruptor , usado para isolar, desliga  de
-qualquer objeto que o tenha, **incluindo o **: o log diz "450 objetos"
-contra 449 malhas do censo. Sem  o  nem monta o shadow
-node, e o passe some inteiro. Os 5,5 ms são do **passe inteiro**, não dos
-draws.
+interruptor `?semCasters=1`, usado para isolar, desliga `castShadow` de
+qualquer objeto que o tenha, **incluindo o `sun`**: o log diz "450 objetos"
+contra 449 malhas do censo. Sem `light.castShadow` o `three` nem monta o shadow
+node, e o passe some inteiro — que é o que o `rpCallsProject` caindo de 4 para
+3 estava dizendo. Os 5,5 ms são do **passe inteiro**, não dos draws.
 
 O passe de sombra emite **66 draws** por frame, não 449. Isso põe o custo por
 draw em ~83 µs — mais que o dobro do passe principal em JS (33,5 µs/draw,
@@ -102,9 +102,9 @@ parte dos 5,5 ms não é submissão**.
 
 Consequência: migrar só os draws para C++ (2,2 µs) rende **~2,1 ms**, abaixo do
 mínimo de 3,0 ms exigido acima. Pela decomposição já medida (SPEC-0243), o
-restante está em  (1,64 ms) e no laço da RenderList da cascata
-(dentro dos 3,96 ms de ), onde a maioria dos itens é percorrida,
-enfileirada e descartada pelo filtro de  — que o  só aplica
+restante está em `rpProject` (1,64 ms) e no laço da RenderList da cascata
+(dentro dos 3,96 ms de `rpObjects`), onde a maioria dos itens é percorrida,
+enfileirada e descartada pelo filtro de `castShadow` — que o `three` só aplica
 **depois** da RenderList.
 
 **O marco só atinge 3,0 ms se o passe nativo substituir também a travessia e a
