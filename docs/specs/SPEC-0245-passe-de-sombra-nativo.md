@@ -798,3 +798,20 @@ teto de 3,65**. Como o critério veio de um teto errado, a pergunta certa não �
 "o passe nativo falhou?", e sim **se 2,85 ms e +12 fps justificam manter o
 caminho nativo**, dado o que ele custa em manutenção. Isso é decisão do dono do
 projeto, não minha.
+
+## DECISÃO do dono do projeto (2026-09-22) — o marco fica
+
+O passe de sombra nativo **é mantido**, com o critério de aceite corrigido:
+
+> **Critério revisado:** ganho ≥ **2,5 ms** contra o baseline, medido sem a
+> sonda de fases. Deriva do teto real de 3,65 ms, não do teto de 5,60 ms que a
+> sonda inflava. O medido é **2,85 ms (78% do teto), 63 → 75 fps**.
+
+O critério antigo de 3,0 ms exigiria 82% de tudo que existe para ganhar — um
+patamar que nenhuma migração para C++ alcança, porque o passe nativo também
+custa (0,8 ms aqui).
+
+**Condição que acompanha a decisão:** manter um caminho nativo paralelo ao do
+`three` cria dívida que só aparece quando o `three` muda. Por isso o marco só
+se considera fechado com um **mecanismo de contrato** que falhe ruidosamente
+quando uma premissa do `three` deixar de valer — ver SPEC-0246.
