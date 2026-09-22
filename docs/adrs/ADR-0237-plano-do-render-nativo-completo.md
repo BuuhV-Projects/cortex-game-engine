@@ -1,7 +1,7 @@
 # 0237 - Plano do render nativo completo (fase 4)
 
 **Data:** 2026-09-21
-**Status:** aceito — plano, a executar por marcos
+**Status:** parcialmente substituído por ADR-0244 (a ordem e o alvo de M5 e M6)
 
 ## Contexto
 
