@@ -79,9 +79,9 @@ void liberarBuffer(Recursos& r) {
 /**
  * Layout do bind group, separado do pipeline.
  *
- * Mesma razão do `native_pass.cpp`: juntá-los fazia o bind group nascer antes
- * do layout quando o passo do vértice mudava, e o wgpu aborta o processo com
- * "invalid bind group layout" — sem exceção, sem chance de tratar.
+ * Juntá-los fazia o bind group nascer antes do layout quando o passo do
+ * vértice mudava, e o wgpu aborta o processo com "invalid bind group layout" —
+ * sem exceção, sem chance de tratar (medido no M5, SPEC-0241).
  */
 bool garantirBindGroupLayout(HostGpu* gpu, Recursos& r) {
   if (r.bindGroupLayout) return true;

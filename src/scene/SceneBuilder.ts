@@ -623,35 +623,7 @@ async function buildSceneInner(
     r.shadowMap.enabled = true;
     r.shadowMap.type = PCFSoftShadowMap;
     if (outdoor) {
-      // Medição do M6 (SPEC-0241) — TEMPORÁRIO. `?cascatas=N` sobrescreve o
-      // número de cascatas do CSM (`?cascatas=0` desliga o CSM e cai no
-      // frustum único). Serve para medir se o custo da sombra é proporcional
-      // ao número de cascatas — que é o que decide se a alavanca barata
-      // (mexer num número) resolve, ou se é preciso passe nativo.
-      const cascatasQuery =
-        typeof location !== 'undefined'
-          ? new URLSearchParams(location.search ?? '').get('cascatas')
-          : null;
-      // Medição do M6 (SPEC-0243) — TEMPORÁRIO. `?casterMinRatio=X` sobrescreve
-      // o limiar de culling de casters. A cena tem 449 casters e o custo da
-      // sombra e aproximadamente proporcional a eles (~12 us cada), entao este
-      // e o parametro com melhor relacao ganho/esforco.
-      const ratioQuery =
-        typeof location !== 'undefined'
-          ? new URLSearchParams(location.search ?? '').get('casterMinRatio')
-          : null;
-      const comRatio =
-        ratioQuery === null ? outdoor : { ...outdoor, shadowCasterMinRatio: Number(ratioQuery) };
-      const outdoorMedido =
-        cascatasQuery === null
-          ? comRatio
-          : Number(cascatasQuery) <= 0
-            ? { ...comRatio, csm: false }
-            : { ...comRatio, csm: true, shadowCascades: Number(cascatasQuery) };
-      if (cascatasQuery !== null) {
-        debug('scene', `MEDIÇÃO: cascatas sobrescritas para ${cascatasQuery}`);
-      }
-      setupOutdoorLighting(options.renderer, scene, outdoorMedido);
+      setupOutdoorLighting(options.renderer, scene, outdoor);
       // HDRI (céu visível + luz por imagem). Sobrepõe o `background` de cor.
       if (outdoor.environment === false) {
         // O jogo instala o próprio skybox/IBL após o buildScene — não gerar o
@@ -986,100 +958,6 @@ async function buildSceneInner(
   // câmera, chão do CharacterPhysicsSystem) vê TODO mesh na identidade (origem =
   // spawn do player) e "colide" com objeto distante (câmera colada no player).
   three.updateMatrixWorld(true);
-  // Medição do M6 (SPEC-0243) — TEMPORÁRIO. `?semCasters=1` desliga só o
-  // `castShadow`, mantendo `shadowMap.enabled` e `receiveShadow`. O passe de
-  // sombra CONTINUA rodando (travessia, culling e RenderList), mas sem
-  // desenhar nada. Comparado ao baseline isola o custo dos DRAWS de sombra;
-  // comparado ao `?semSombras=1` isola o custo de chegar até eles.
-  const semCasters =
-    typeof location !== 'undefined' &&
-    new URLSearchParams(location.search ?? '').get('semCasters') === '1';
-  if (semCasters) {
-    let desligados = 0;
-    three.traverse((o) => {
-      const m = o as { castShadow?: boolean };
-      if (m.castShadow === true) {
-        m.castShadow = false;
-        desligados += 1;
-      }
-    });
-    debug('scene', `MEDIÇÃO: castShadow desligado em ${desligados} objetos`);
-  }
-
-  // Diagnóstico do grafo (SPEC-0243) — TEMPORÁRIO. `?dumpGrafo=1` conta o que
-  // a travessia de render percorre: o `mergeStaticScene` remove as MALHAS
-  // fundidas mas deixa os `Group` que eram pais delas na cena, vazios. Eles são
-  // percorridos duas vezes por frame (passe principal + sombra) e não desenham
-  // nada. Este censo decide se compactar o grafo vale a pena.
-  const dumpGrafo =
-    typeof location !== 'undefined' &&
-    new URLSearchParams(location.search ?? '').get('dumpGrafo') === '1';
-  if (dumpGrafo) {
-    let total = 0;
-    let malhas = 0;
-    let casters = 0;
-    let semDescendenteRenderizavel = 0;
-    const temMalhaAbaixo = (o: Object3D): boolean => {
-      let achou = false;
-      o.traverse((f) => {
-        if (f !== o && (f as { isMesh?: boolean }).isMesh === true) achou = true;
-      });
-      return achou;
-    };
-    three.traverse((o) => {
-      total += 1;
-      const ehMalha = (o as { isMesh?: boolean }).isMesh === true;
-      if (ehMalha) {
-        malhas += 1;
-        if ((o as { castShadow?: boolean }).castShadow) casters += 1;
-      } else if (!temMalhaAbaixo(o)) {
-        semDescendenteRenderizavel += 1;
-      }
-    });
-    debug(
-      'scene',
-      `DUMP DO GRAFO: total=${total} malhas=${malhas} casters=${casters} ` +
-        `naoMalhasSemMalhaAbaixo=${semDescendenteRenderizavel}`,
-    );
-  }
-
-  // Medição do M6 (SPEC-0241) — TEMPORÁRIO. `?semSombras=1` desliga o shadow
-  // map depois de a cena estar montada, para medir quanto da submissão vem
-  // dele. Medido em 21/09/2026: o shadow map faz 234 dos 261 draws do frame,
-  // enquanto a cena, já fundida pelo merge estático, faz 1.
-  const semSombras =
-    typeof location !== 'undefined' &&
-    new URLSearchParams(location.search ?? '').get('semSombras') === '1';
-  if (semSombras && options.renderer) {
-    options.renderer.threeRenderer.shadowMap.enabled = false;
-    three.traverse((o) => {
-      const m = o as { castShadow?: boolean; receiveShadow?: boolean };
-      if (m.castShadow !== undefined) m.castShadow = false;
-      if (m.receiveShadow !== undefined) m.receiveShadow = false;
-    });
-    debug('scene', 'MEDIÇÃO: sombras desligadas por ?semSombras=1');
-  }
-  // Medição do M6 (SPEC-0241) — TEMPORÁRIO. `?sombraSoDinamicos=1` desliga o
-  // `castShadow` do cenário ESTÁTICO (as malhas que o merge fundiu, marcadas
-  // com `cortexMergedStatic`), mantendo a sombra dos dinâmicos. É o teto do
-  // ganho de bakear a sombra do cenário, que num kart racer não muda.
-  const sombraSoDinamicos =
-    typeof location !== 'undefined' &&
-    new URLSearchParams(location.search ?? '').get('sombraSoDinamicos') === '1';
-  if (sombraSoDinamicos) {
-    let desligadas = 0;
-    three.traverse((o) => {
-      const ud = o.userData as Record<string, unknown>;
-      if (ud['cortexMergedStatic'] === true) {
-        (o as { castShadow?: boolean }).castShadow = false;
-        desligadas += 1;
-      }
-    });
-    debug('scene', `MEDIÇÃO: castShadow desligado em ${desligadas} malhas estáticas`);
-  }
-
-
-
   // Pré-aquecimento (SPEC-0196): compila os pipelines da cena montada aqui, em
   // vez de no primeiro frame em que cada material aparece. Não bloqueia o build
   // — quem quiser esperar (tela de loading) aguarda a promessa.

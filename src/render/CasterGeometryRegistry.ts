@@ -1,14 +1,12 @@
 /**
  * Registro de geometria dos casters de sombra (SPEC-0245, E2 do passo 2).
  *
- * Até aqui o `__cortexGeometryRegistry` só era povoado pelo caminho
- * experimental `?nativePass=N`, que registra as N primeiras malhas elegíveis.
  * O passe de sombra nativo precisa da geometria de **todos** os casters: uma
  * que falte não é um objeto a menos na tabela, é uma **sombra faltando** na
  * imagem — e é por isso que o gate (E3) recusa o frame enquanto houver
  * geometria ausente.
  *
- * Três cuidados que o caminho do `?nativePass=N` não precisava ter:
+ * Três cuidados, cada um pago por um modo de falha conhecido:
  *
  * 1. **Os `GPUBuffer` são do `three` e só existem depois do upload.** Uma
  *    malha que ainda não foi desenhada não tem buffer nenhum, então o registro

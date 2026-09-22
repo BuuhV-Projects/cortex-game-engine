@@ -37,7 +37,7 @@ constexpr int kBuildMaterialVisible = 19;
 constexpr int kFrustumFloats = scene::kFrustumPlanes * 4;
 
 /**
- * Layout do vetor de saída do gate (ver {@link jsShadowPassGate}).
+ * Layout do vetor de saída do gate (ver {@link jsDrawShadowPass}).
  *
  * O gate roda por frame, então ele ESCREVE num buffer que o JS já tem em vez
  * de devolver um objeto novo: criar um `napi_value` por frame para relatar um
@@ -46,10 +46,8 @@ constexpr int kFrustumFloats = scene::kFrustumPlanes * 4;
 constexpr int kGateOutRefusedCasters = scene::kShadowGateRefusalCount;
 constexpr int kGateOutTotalCasters = scene::kShadowGateRefusalCount + 1;
 constexpr int kGateOutFloats = scene::kShadowGateRefusalCount + 2;
-/** Argumentos de `shadowPassGate` (ver {@link jsShadowPassGate}). */
-constexpr size_t kArgsShadowPassGate = 8;
 /** Argumentos de `drawShadowPass` (ver {@link jsDrawShadowPass}). */
-constexpr size_t kArgsDrawShadowPass = 11;
+constexpr size_t kArgsDrawShadowPass = 10;
 /** Elementos de uma matriz 4x4. */
 constexpr size_t kMatrixElements = 16;
 
@@ -353,116 +351,8 @@ napi_value jsUpdate(napi_env env, napi_callback_info info) {
 }
 
 /**
- * `shadowCasters(minRatio, camX, camY, camZ, planos)` — quantos nós o `three`
- * desenharia no passe de sombra deste frame (SPEC-0245, passo 1).
- *
- * Ainda NÃO desenha nada: por ora é o instrumento que confere a enumeração
- * nativa contra o que o `three` submete, que é a regra de medição 2 da
- * SPEC-0245 (validar o contador antes de concluir dele).
- *
- * Tem de ser chamada DEPOIS de `update` no mesmo frame — ela lê as matrizes de
- * mundo que `update` acabou de compor.
- */
-napi_value jsShadowCasters(napi_env env, napi_callback_info info) {
-  size_t argc = 5;
-  napi_value args[5];
-  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  MirrorState& s = state();
-  if (!s.built || argc < 5) return njs::undefined(env);
-
-  scene::ShadowCasterParams params;
-  napi_get_value_double(env, args[0], &params.minRatio);
-  napi_get_value_double(env, args[1], &params.cameraX);
-  napi_get_value_double(env, args[2], &params.cameraY);
-  napi_get_value_double(env, args[3], &params.cameraZ);
-
-  void* planeData = nullptr;
-  napi_typedarray_type type;
-  size_t planeLength = 0;
-  napi_value planeBuffer;
-  size_t planeOffset = 0;
-  if (napi_get_typedarray_info(env, args[4], &type, &planeLength, &planeData, &planeBuffer,
-                               &planeOffset) != napi_ok ||
-      planeData == nullptr || planeLength < kFrustumFloats) {
-    return njs::undefined(env);
-  }
-
-  const int total = s.shadowCasters.enumerate(s.mirror, params, static_cast<const float*>(planeData));
-  napi_value out;
-  napi_create_double(env, static_cast<double>(total), &out);
-  return out;
-}
-
-/**
- * `shadowPassGate(minRatio, camX, camY, camZ, planos, nosDaCena, vsm, saida)`
- * — o passe nativo pode assumir este frame? (SPEC-0245, E3 do passo 2)
- *
- * Enumera os casters e passa a lista pelo gate. Devolve o código do primeiro
- * motivo de recusa (0 = aceito) e preenche `saida` com a contagem por motivo —
- * sem isso a recusa apareceria como um "não" sem causa, que é exatamente o que
- * o gate existe para evitar.
- *
- * `nosDaCena` negativo quer dizer "não medido neste frame".
- */
-napi_value jsShadowPassGate(napi_env env, napi_callback_info info) {
-  size_t argc = kArgsShadowPassGate;
-  napi_value args[kArgsShadowPassGate];
-  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  MirrorState& s = state();
-  if (!s.built || argc < kArgsShadowPassGate) return njs::undefined(env);
-
-  scene::ShadowCasterParams params;
-  napi_get_value_double(env, args[0], &params.minRatio);
-  napi_get_value_double(env, args[1], &params.cameraX);
-  napi_get_value_double(env, args[2], &params.cameraY);
-  napi_get_value_double(env, args[3], &params.cameraZ);
-
-  void* planeData = nullptr;
-  napi_typedarray_type type;
-  size_t planeLength = 0;
-  napi_value planeBuffer;
-  size_t planeOffset = 0;
-  if (napi_get_typedarray_info(env, args[4], &type, &planeLength, &planeData, &planeBuffer,
-                               &planeOffset) != napi_ok ||
-      planeData == nullptr || planeLength < kFrustumFloats) {
-    return njs::undefined(env);
-  }
-
-  scene::ShadowGateFrame frame;
-  double sceneNodes = -1.0;
-  napi_get_value_double(env, args[5], &sceneNodes);
-  frame.sceneNodeCount = static_cast<int32_t>(sceneNodes);
-  bool vsm = false;
-  napi_get_value_bool(env, args[6], &vsm);
-  frame.vsmShadowMap = vsm;
-
-  void* outData = nullptr;
-  size_t outLength = 0;
-  napi_value outBuffer;
-  size_t outOffset = 0;
-  if (napi_get_typedarray_info(env, args[7], &type, &outLength, &outData, &outBuffer, &outOffset) !=
-          napi_ok ||
-      outData == nullptr || outLength < kGateOutFloats) {
-    return njs::undefined(env);
-  }
-
-  s.shadowCasters.enumerate(s.mirror, params, static_cast<const float*>(planeData));
-  const scene::ShadowGateResult resultado = scene::evaluateShadowPassGate(
-      s.mirror, s.shadowCasters.casters(), frame, geometriaRegistrada, nullptr);
-
-  auto* out = static_cast<double*>(outData);
-  for (int i = 0; i < scene::kShadowGateRefusalCount; i++) out[i] = resultado.counts[i];
-  out[kGateOutRefusedCasters] = resultado.refusedCasters;
-  out[kGateOutTotalCasters] = resultado.totalCasters;
-
-  napi_value saida;
-  napi_create_double(env, static_cast<double>(static_cast<int>(resultado.reason)), &saida);
-  return saida;
-}
-
-/**
  * `drawShadowPass(minRatio, camX, camY, camZ, planos, viewProj, alvo,
- * nosDaCena, vsm, forcar, saida)` — o passe de sombra NATIVO (SPEC-0245, E5).
+ * nosDaCena, vsm, saida)` — o passe de sombra NATIVO (SPEC-0245, E5).
  *
  * Faz numa travessia de ponte só o que o `three` faz em JS por objeto:
  * enumera os casters, passa pelo gate e, se ele aceitar, desenha direto na
@@ -476,9 +366,6 @@ napi_value jsShadowPassGate(napi_env env, napi_callback_info info) {
  * `viewProj` é `Float64Array`, não `Float32Array`: a multiplicação por `model`
  * acontece em `double` no C++ e só o resultado vira `float`. Degradar antes é
  * o caminho conhecido para as bandas da SPEC-0234.
- *
- * `forcar` é o ATALHO DE MEDIÇÃO: ignora a recusa por divergência de nós, e
- * **só** ela (ver `refusalIsOnlyNodeDivergence`).
  *
  * @return `>= 0` — casters desenhados; `< 0` — recusado, com o código do
  *   motivo negado. `saida` traz a contagem por motivo nos dois casos.
@@ -531,14 +418,12 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
   bool vsm = false;
   napi_get_value_bool(env, args[8], &vsm);
   frame.vsmShadowMap = vsm;
-  bool forcar = false;
-  napi_get_value_bool(env, args[9], &forcar);
 
   void* outData = nullptr;
   size_t outLength = 0;
   napi_value outBuffer;
   size_t outOffset = 0;
-  if (napi_get_typedarray_info(env, args[10], &type, &outLength, &outData, &outBuffer,
+  if (napi_get_typedarray_info(env, args[9], &type, &outLength, &outData, &outBuffer,
                                &outOffset) != napi_ok ||
       outData == nullptr || outLength < kGateOutFloats) {
     return njs::undefined(env);
@@ -553,8 +438,7 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
   out[kGateOutRefusedCasters] = veredito.refusedCasters;
   out[kGateOutTotalCasters] = veredito.totalCasters;
 
-  const bool pelaPorta =
-      veredito.accepted || (forcar && scene::refusalIsOnlyNodeDivergence(veredito));
+  const bool pelaPorta = veredito.accepted;
   napi_value saida;
   if (!pelaPorta || alvo == nullptr) {
     // Sem alvo o passe não pode assumir, e recusar é o lado seguro: o JS
@@ -598,8 +482,6 @@ void registerSceneMirror(napi_env env, HostGpu* gpu) {
   njs::setMethod(env, api, "update", jsUpdate);
   njs::setMethod(env, api, "appendNodes", jsAppendNodes);
   njs::setMethod(env, api, "removeNode", jsRemoveNode);
-  njs::setMethod(env, api, "shadowCasters", jsShadowCasters);
-  njs::setMethod(env, api, "shadowPassGate", jsShadowPassGate);
   njs::setMethod(env, api, "drawShadowPass", jsDrawShadowPass);
   napi_set_named_property(env, global, "__cortexSceneMirror", api);
 }

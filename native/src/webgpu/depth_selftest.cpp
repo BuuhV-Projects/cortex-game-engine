@@ -88,7 +88,7 @@ constexpr uint32_t kVerticesDoTriangulo = 3;
 /**
  * Triângulo de tela cheia. A profundidade NÃO vem do vértice: vem do viewport
  * (`minDepth == maxDepth`), o que evita uniforme e bind group só para escolher a
- * distância — mesmo truque do `dual_pass_spike.cpp`. A cor é substituída no
+ * distância. A cor é substituída no
  * texto antes de compilar (placeholder `COR_DO_PASSE`).
  */
 const char* kFonteWgsl = R"WGSL(

@@ -15,49 +15,6 @@
 namespace webgpu {
 namespace {
 
-/** Quantas passes do three ja foram gravadas; so para diagnostico. */
-int g_passesGravadas = 0;
-
-/** Draws desde o inicio da pass atual; so para diagnostico. */
-int g_drawsNaPass = 0;
-
-/** Ultima profundidade vista na pass da cena; nao e dona da view. */
-WGPUTextureView g_cenaDepthView = nullptr;
-
-/**
- * Escolhe a profundidade DA CENA entre as passes do frame (SPEC-0241).
- *
- * Três passes do frame têm profundidade e é preciso separá-las:
- *   - shadow map: 2048x2048, ~187 draws (toda a geometria que faz sombra)
- *   - cena: o tamanho do alvo de cor, muitos draws
- *   - composição: o mesmo tamanho, ~1 draw
- *
- * Nenhum critério isolado resolve. "A última" pega a composição — que ninguém
- * escreve, e por isso se comportava como um buffer de zeros. "A que limpa" e
- * "a que mais desenha" pegam o shadow map, e anexar 2048x2048 a um alvo de
- * 2560x1440 faz o wgpu recusar a pass. O que separa as três é tamanho E
- * volume: entre as do tamanho do alvo, a cena é a que mais desenha.
- */
-struct Candidata {
-  WGPUTextureView viewProfundidade;
-  WGPUTextureView viewCor;
-  int draws;
-};
-std::vector<Candidata> g_candidatasDoFrame;
-WGPUTextureView g_depthDaPassAtual = nullptr;
-WGPUTextureView g_corDaPassAtual = nullptr;
-
-/** Fecha a pass em gravação e guarda o que ela desenhou. */
-void fecharPassAnterior() {
-  if (g_depthDaPassAtual) {
-    g_candidatasDoFrame.push_back(
-        Candidata{g_depthDaPassAtual, g_corDaPassAtual, g_drawsNaPass});
-  }
-  g_drawsNaPass = 0;
-  g_depthDaPassAtual = nullptr;
-  g_corDaPassAtual = nullptr;
-}
-
 void finalizeEncoder(napi_env, void* data, void*) {
   if (data) wgpuCommandEncoderRelease(static_cast<WGPUCommandEncoder>(data));
 }
@@ -195,7 +152,6 @@ napi_value passDraw(napi_env env, napi_callback_info info) {
     if (napi_get_value_double(env, args[i], &value) == napi_ok)
       counts[i] = static_cast<uint32_t>(value);
   }
-  ++g_drawsNaPass;
   bumpDraw();
   wgpuRenderPassEncoderDraw(pass, counts[0], counts[1], counts[2], counts[3]);
   return njs::undefined(env);
@@ -274,7 +230,6 @@ napi_value passDrawIndexed(napi_env env, napi_callback_info info) {
   double values[5] = {0, 1, 0, 0, 0};
   for (size_t i = 0; i < argc && i < 5; ++i)
     napi_get_value_double(env, args[i], &values[i]);
-  ++g_drawsNaPass;
   bumpDrawIndexed();
   wgpuRenderPassEncoderDrawIndexed(
       pass, static_cast<uint32_t>(values[0]),
@@ -498,60 +453,6 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
       WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
   const bool temProfundidade = parseDepthStencilAttachment(env, args[0], &depthAttachment);
   if (temProfundidade) desc.depthStencilAttachment = &depthAttachment;
-  // Guarda a profundidade da pass DA CENA para o passe nativo (SPEC-0241).
-  //
-  // Por que aqui e nao do lado JS: medido, o `three` alterna entre DUAS views
-  // de profundidade, e nem `getDepthBuffer` nem a view do descriptor batem com
-  // as que chegam aqui — do JS vinha uma TERCEIRA, sempre zerada, e o passe
-  // nativo comparava contra um buffer vazio. O host ve a pass de verdade.
-  //
-  // Guarda a ULTIMA profundidade vista. Comparar o alvo de cor com a view
-  // offscreen do host nao funciona: o `three` cria a propria view a partir da
-  // mesma textura, entao os handles nunca batem. Como o passe nativo roda logo
-  // depois do render da cena e antes da UI, a ultima e a da cena.
-  // Diagnostico temporario (SPEC-0241): lista as passes do frame com suas
-  // views. Serve para achar em qual pass a cena e realmente desenhada, ja que
-  // a profundidade que chega ao passe nativo se comporta como zeros.
-  static const bool logarPasses = std::getenv("CORTEX_PASS_LOG") != nullptr;
-  static int passesLogadas = 0;
-  // Pula as primeiras: elas sao da splash e do loading, onde a cena ainda nem
-  // existe. Logar so o REGIME ESTAVEL, com o jogo rodando (SPEC-0241).
-  constexpr int kPassesIgnoradas = 3000;
-  constexpr int kMaxPassesLogadas = kPassesIgnoradas + 40;
-  ++passesLogadas;
-  if (logarPasses && passesLogadas > kPassesIgnoradas && passesLogadas < kMaxPassesLogadas) {
-    std::fprintf(stderr,
-                 "[pass-log] #%d cor=%p corLoad=%d prof=%s profView=%p profLoad=%d profStore=%d",
-                 passesLogadas, (void*)attachments[0].view, (int)attachments[0].loadOp,
-                 temProfundidade ? "sim" : "nao",
-                 temProfundidade ? (void*)depthAttachment.view : nullptr,
-                 temProfundidade ? (int)depthAttachment.depthLoadOp : -1,
-                 temProfundidade ? (int)depthAttachment.depthStoreOp : -1);
-    napi_value attProf = nullptr;
-    std::string cruaLoad = "(sem profundidade)";
-    if (njs::getNamed(env, args[0], "depthStencilAttachment", &attProf)) {
-      cruaLoad = njs::getNamedString(env, attProf, "depthLoadOp", "(ausente)");
-    }
-    // PAREADO: tamanho e draws da MESMA pass (a que acabou de fechar). Misturar
-    // o alvo da pass atual com os draws da anterior ja levou a conclusao errada
-    // uma vez (SPEC-0241).
-    TamanhoDaView tAnterior{};
-    const bool conhecida = g_corDaPassAtual && tamanhoDaView(g_corDaPassAtual, &tAnterior);
-    TamanhoDaView tProf{};
-    const bool profConhecida = g_depthDaPassAtual && tamanhoDaView(g_depthDaPassAtual, &tProf);
-    std::fprintf(stderr,
-                 " | ANTERIOR: prof %ux%u fmt=%d rotulo=%s | draws=%d%s",
-                 tProf.largura, tProf.altura, (int)tProf.formato,
-                 profConhecida ? (tProf.rotulo && *tProf.rotulo ? tProf.rotulo : "(sem rotulo)")
-                               : "(nenhuma)",
-                 g_drawsNaPass, profConhecida ? "" : " (prof desconhecida)");
-    std::fputc(0x0A, stderr);
-    std::fflush(stderr);
-  }
-  ++g_passesGravadas;
-  fecharPassAnterior();
-  g_depthDaPassAtual = temProfundidade ? depthAttachment.view : nullptr;
-  g_corDaPassAtual = attachments.empty() ? nullptr : attachments[0].view;
   WGPURenderPassEncoder pass =
       wgpuCommandEncoderBeginRenderPass(encoder, &desc);
   return makePassObject(env, pass);
@@ -690,60 +591,6 @@ std::vector<WGPUCommandBuffer> collectCommandBuffers(napi_env env,
 }
 
 }  // namespace
-
-void setCenaDepthView(WGPUTextureView view) { g_cenaDepthView = view; }
-bool cenaAlvo(AlvoDaCena* out) {
-  // Fecha a pass em gravacao antes de decidir: o passe nativo e chamado logo
-  // depois dela e sem isto os draws dela nao entrariam na conta.
-  fecharPassAnterior();
-  const Candidata* melhor = nullptr;
-  for (const Candidata& c : g_candidatasDoFrame) {
-    if (!c.viewCor || !c.viewProfundidade) continue;
-    TamanhoDaView prof{};
-    TamanhoDaView cor{};
-    if (!tamanhoDaView(c.viewProfundidade, &prof)) continue;
-    if (!tamanhoDaView(c.viewCor, &cor)) continue;
-    // Cor e profundidade tem de casar, senao o wgpu recusa a pass.
-    if (prof.largura != cor.largura || prof.altura != cor.altura) continue;
-    if (!melhor || c.draws > melhor->draws) melhor = &c;
-  }
-  static const bool logarAlvo = std::getenv("CORTEX_PASS_LOG") != nullptr;
-  static int vezesAlvo = 0;
-  constexpr int kMaxAlvosLogados = 6;
-  if (logarAlvo && vezesAlvo < kMaxAlvosLogados) {
-    ++vezesAlvo;
-    std::fprintf(stderr, "[alvo] candidatas=%d escolhido=%s", (int)g_candidatasDoFrame.size(),
-                 melhor ? "sim" : "NAO");
-    if (melhor) {
-      TamanhoDaView t{};
-      tamanhoDaView(melhor->viewCor, &t);
-      std::fprintf(stderr, " %ux%u fmt=%d draws=%d", t.largura, t.altura, (int)t.formato,
-                   melhor->draws);
-    }
-    std::fputc(0x0A, stderr);
-    std::fflush(stderr);
-  }
-  // Janela curta: o passe nativo entra no meio da sequencia, entao limpar tudo
-  // aqui cortaria o frame ao meio e esconderia passes.
-  constexpr size_t kJanelaDeCandidatas = 24;
-  if (g_candidatasDoFrame.size() > kJanelaDeCandidatas) {
-    g_candidatasDoFrame.erase(g_candidatasDoFrame.begin(),
-                              g_candidatasDoFrame.end() - kJanelaDeCandidatas);
-  }
-  if (!melhor) return false;
-  TamanhoDaView cor{};
-  tamanhoDaView(melhor->viewCor, &cor);
-  if (out) {
-    out->viewCor = melhor->viewCor;
-    out->viewProfundidade = melhor->viewProfundidade;
-    out->formatoCor = cor.formato;
-    out->largura = cor.largura;
-    out->altura = cor.altura;
-    out->draws = melhor->draws;
-  }
-  return true;
-}
-int passesGravadas() { return g_passesGravadas; }
 
 napi_value deviceCreateCommandEncoder(napi_env env, napi_callback_info info) {
   size_t argc = 0;

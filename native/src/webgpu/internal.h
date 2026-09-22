@@ -21,52 +21,6 @@ namespace webgpu {
 // Estado compartilhado do módulo (definido em navigator.cpp).
 HostGpu* gpuState();
 
-/**
- * Profundidade da pass DA CENA, capturada de dentro do `beginRenderPass`.
- *
- * O passe nativo (SPEC-0241) precisa desenhar contra a mesma profundidade que o
- * `three` escreveu. Perguntar isso ao lado JS NAO funciona: ele alterna entre
- * duas views e o que o JS devolve e uma terceira, sempre vazia. Aqui o host ve
- * a pass de verdade, entao guarda a view certa na fonte.
- */
-void setCenaDepthView(WGPUTextureView view);
-/** Largura e altura de uma view de profundidade (SPEC-0241). */
-struct TamanhoDaView {
-  uint32_t largura;
-  uint32_t altura;
-  WGPUTextureFormat formato;
-  bool ehProfundidade;
-  /** Rotulo que o `three` deu a textura (`texture.name`): "depthBuffer",
-   *  "ShadowDepthTexture", etc. E o unico jeito de distinguir alvos de mesma
-   *  dimensao — cena e shadow map ja foram confundidos por isso (SPEC-0241). */
-  const char* rotulo;
-};
-void registrarTamanhoDaView(WGPUTextureView view, WGPUTexture textura);
-/** Guarda o rotulo de uma textura no momento da criacao (diagnostico). */
-void registrarRotuloDaTextura(WGPUTexture textura, const char* rotulo);
-bool tamanhoDaView(WGPUTextureView view, TamanhoDaView* out);
-
-/** Alvo da pass da cena: cor e profundidade que casam entre si (SPEC-0241). */
-struct AlvoDaCena {
-  WGPUTextureView viewCor;
-  WGPUTextureView viewProfundidade;
-  WGPUTextureFormat formatoCor;
-  uint32_t largura;
-  uint32_t altura;
-  int draws;
-};
-
-/**
- * O par (cor, profundidade) da pass que mais desenhou entre as passes recentes.
- *
- * Existe porque o JS nao entrega o alvo da cena: `null` vira o offscreen do
- * host e `backend.get(canvasTarget).texture` chega vazio. O host ve as passes
- * de verdade e sabe em qual a cena foi desenhada.
- */
-bool cenaAlvo(AlvoDaCena* out);
-/** Quantas passes do three ja foram gravadas (diagnostico, SPEC-0241). */
-int passesGravadas();
-
 // destroy() de buffers/texturas = DESTRUIÇÃO ADIADA (buffers.cpp, ADR-0153):
 // enfileira com AddRef e o flush do loop executa Destroy+Release N frames
 // depois — fora da janela de passes em voo que fazia o destroy imediato dar

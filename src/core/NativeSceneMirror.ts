@@ -78,30 +78,6 @@ const FRUSTUM_FLOATS = FRUSTUM_PLANES * 4;
  * como "sempre visível" — cortar por um raio inventado esconderia objeto.
  */
 const DEFAULT_RADIUS = 1e6;
-/** Ciclos `add`+`remove` por rodada da medição do evento (SPEC-0245, E6). */
-const EVENT_BENCH_ROUNDS = 200;
-
-/** Frames entre dois relatos do custo acumulado dos eventos. */
-const EVENT_REPORT_INTERVAL = 300;
-
-/** Relógio de alta precisão quando há um; `Date.now()` no resto. */
-function agora(): number {
-  return typeof performance !== 'undefined' ? performance.now() : Date.now();
-}
-
-/**
- * `?medirEvento=1` — medição TEMPORÁRIA do E6 (SPEC-0245), sai no E8.
- *
- * Liga a comparação "mutação com ouvinte × sem ouvinte" logo depois do
- * `install` e o relato periódico do que os eventos custaram na corrida. Fica
- * atrás de uma query porque o relógio por evento é trabalho que o caminho
- * normal do jogo não tem por que pagar.
- */
-function medirEventoPedido(): boolean {
-  if (typeof location === 'undefined') return false;
-  return new URLSearchParams(location.search ?? '').get('medirEvento') === '1';
-}
-
 /** A API que o host publica; ausente no browser, onde tudo isto é no-op. */
 interface SceneMirrorBridge {
   build(description: Float32Array): boolean;
@@ -115,23 +91,6 @@ interface SceneMirrorBridge {
   appendNodes?(description: Float32Array, out: Int32Array): number;
   /** Tira do espelho o nó e a subárvore dele. Devolve quantos saíram. */
   removeNode?(index: number): number;
-  shadowCasters?(
-    minRatio: number,
-    cameraX: number,
-    cameraY: number,
-    cameraZ: number,
-    planes: Float32Array,
-  ): number | undefined;
-  shadowPassGate?(
-    minRatio: number,
-    cameraX: number,
-    cameraY: number,
-    cameraZ: number,
-    planes: Float32Array,
-    sceneNodeCount: number,
-    vsmShadowMap: boolean,
-    out: Float64Array,
-  ): number | undefined;
   drawShadowPass?(
     minRatio: number,
     cameraX: number,
@@ -142,7 +101,6 @@ interface SceneMirrorBridge {
     target: unknown,
     sceneNodeCount: number,
     vsmShadowMap: boolean,
-    force: boolean,
     out: Float64Array,
   ): number | undefined;
 }
@@ -166,25 +124,8 @@ export const SHADOW_GATE_REASONS = [
 export type ShadowGateReason = (typeof SHADOW_GATE_REASONS)[number];
 
 /** Posições do vetor de saída do gate (ver `kGateOut*` em `scene_mirror_shim.cpp`). */
-const GATE_OUT_REFUSED_CASTERS = SHADOW_GATE_REASONS.length;
 const GATE_OUT_TOTAL_CASTERS = SHADOW_GATE_REASONS.length + 1;
 const GATE_OUT_FLOATS = SHADOW_GATE_REASONS.length + 2;
-
-/** Veredito do gate do passe de sombra nativo (SPEC-0245, E3). */
-export interface ShadowGateVerdict {
-  /** `true` = o passe nativo pode assumir o frame. */
-  accepted: boolean;
-  /** Primeiro motivo por prioridade; `'aceito'` quando passa. */
-  reason: ShadowGateReason;
-  /** Quantos objetos caíram em {@link reason}. */
-  offenders: number;
-  /** Casters distintos recusados (um caster com dois motivos conta uma vez). */
-  refusedCasters: number;
-  /** Casters avaliados no frame. */
-  totalCasters: number;
-  /** Contagem por motivo — todos, não só o primeiro. */
-  counts: Readonly<Record<ShadowGateReason, number>>;
-}
 
 /** Resultado de {@link NativeSceneMirror.drawShadowPass} (SPEC-0245, E5). */
 export interface ShadowPassOutcome {
@@ -379,13 +320,6 @@ export class NativeSceneMirror {
    */
   private _loteDescricao = new Float32Array(0);
   private _loteIndices = new Int32Array(0);
-  /** MEDIÇÃO TEMPORÁRIA (SPEC-0245, E6): eventos atendidos e o que somaram. */
-  private _eventos = 0;
-  private _eventosMs = 0;
-  private _framesDesdeRelato = 0;
-  private _eventosRelatados = 0;
-  private _eventosMsRelatados = 0;
-
   get installed(): boolean {
     return this._installed;
   }
@@ -472,7 +406,6 @@ export class NativeSceneMirror {
     this._installed = true;
     espelhoInstalado = this;
     debug('perf', `[sceneMirror] ${this._nodes.length} nos espelhados no host`);
-    if (medirEventoPedido()) this.medirCustoDoEvento();
     return true;
   }
 
@@ -509,7 +442,6 @@ export class NativeSceneMirror {
     if (!this._installed || !pai || !filho) return;
     const paiIndice = this._indicePorObjeto.get(pai);
     if (paiIndice === undefined) return;
-    const inicio = agora();
     try {
       this.appendSubtree(filho, paiIndice);
     } catch (erro) {
@@ -519,17 +451,12 @@ export class NativeSceneMirror {
       // espelho — que já aconteceu no `appendSubtree` — mais o relato.
       debug('perf', `[sceneMirror] append recusado no evento: ${String(erro)}`);
     }
-    this._eventos++;
-    this._eventosMs += agora() - inicio;
   };
 
   private readonly _aoRemover = (evento: { child?: unknown }): void => {
     const filho = evento.child as Object3D | undefined;
     if (!this._installed || !filho) return;
-    const inicio = agora();
     this.removeSubtree(filho);
-    this._eventos++;
-    this._eventosMs += agora() - inicio;
   };
 
   /**
@@ -716,103 +643,7 @@ export class NativeSceneMirror {
     escreverPlanos(this._frustum, this._planes);
 
     api.update(linhas, this._planes);
-
-    // MEDIÇÃO TEMPORÁRIA (SPEC-0245, E6) — sai no E8.
-    if (medirEventoPedido() && ++this._framesDesdeRelato >= EVENT_REPORT_INTERVAL) {
-      this._framesDesdeRelato = 0;
-      this.relatarCustoAcumuladoDoEvento();
-    }
   }
-
-  /**
-   * Quantos nós o `three` desenharia no passe de sombra deste frame, contados
-   * em C++ (SPEC-0245, passo 1).
-   *
-   * **Ainda não desenha nada.** Serve para conferir a enumeração nativa contra
-   * o que o `three` submete — a regra de medição 2 da SPEC-0245 manda validar
-   * todo contador novo num caso de resposta conhecida antes de concluir dele.
-   *
-   * Tem de rodar DEPOIS de {@link update} no mesmo frame: o C++ lê as matrizes
-   * de mundo que o `update` acabou de compor.
-   *
-   * @param shadowCamera - A ortho da CASCATA, não a câmera do jogo.
-   * @param cameraPosition - Posição da câmera do jogo (a do filtro angular).
-   * @param minRatio - Limiar `raio/distância` da SPEC-0197.
-   * @returns A contagem, ou `undefined` no browser/Studio (sem host).
-   */
-  countShadowCasters(
-    shadowCamera: Camera,
-    cameraPosition: Vector3,
-    minRatio: number,
-  ): number | undefined {
-    const api = this._bridge;
-    if (!api?.shadowCasters || !this._installed) return undefined;
-
-    this._escreverPlanosDaCascata(shadowCamera);
-
-    return api.shadowCasters(
-      minRatio,
-      cameraPosition.x,
-      cameraPosition.y,
-      cameraPosition.z,
-      this._shadowPlanes,
-    );
-  }
-
-  /**
-   * O passe nativo pode assumir a sombra deste frame? (SPEC-0245, E3)
-   *
-   * Recusar devolve o passe ao `three` e tudo segue como hoje — é o princípio
-   * do M1: **recusar em vez de aproximar**. A assimetria é o que justifica o
-   * gate: aceitar por engano é sombra errada na imagem do jogador; recusar por
-   * engano é só não ganhar os milissegundos do marco, e aparece no log.
-   *
-   * Tem de rodar DEPOIS de {@link update} e com a ortho da cascata já fixada
-   * (o `three` só a fixa dentro do `renderShadow`), pelos mesmos motivos de
-   * {@link countShadowCasters}.
-   *
-   * @param sceneNodeCount - Nós que a cena do `three` tem agora; negativo =
-   *   não medido neste frame, e aí a checagem de divergência é pulada.
-   * @param vsmShadowMap - `renderer.shadowMap.type === VSMShadowMap`.
-   */
-  shadowPassGate(
-    shadowCamera: Camera,
-    cameraPosition: Vector3,
-    minRatio: number,
-    sceneNodeCount: number,
-    vsmShadowMap: boolean,
-  ): ShadowGateVerdict | undefined {
-    const api = this._bridge;
-    if (!api?.shadowPassGate || !this._installed) return undefined;
-
-    this._escreverPlanosDaCascata(shadowCamera);
-    const codigo = api.shadowPassGate(
-      minRatio,
-      cameraPosition.x,
-      cameraPosition.y,
-      cameraPosition.z,
-      this._shadowPlanes,
-      sceneNodeCount,
-      vsmShadowMap,
-      this._gateOut,
-    );
-    if (typeof codigo !== 'number') return undefined;
-
-    const counts = {} as Record<ShadowGateReason, number>;
-    for (let i = 0; i < SHADOW_GATE_REASONS.length; i++) {
-      counts[SHADOW_GATE_REASONS[i]!] = this._gateOut[i] ?? 0;
-    }
-    const reason = SHADOW_GATE_REASONS[codigo] ?? 'geometria-ausente';
-    return {
-      accepted: codigo === 0,
-      reason,
-      offenders: counts[reason],
-      refusedCasters: this._gateOut[GATE_OUT_REFUSED_CASTERS] ?? 0,
-      totalCasters: this._gateOut[GATE_OUT_TOTAL_CASTERS] ?? 0,
-      counts,
-    };
-  }
-
 
   /**
    * Desenha o passe de sombra da cascata em C++ (SPEC-0245, E5 do passo 2).
@@ -821,9 +652,11 @@ export class NativeSceneMirror {
    * os casters, passa pelo gate e, se ele deixar, desenha direto na
    * `ShadowDepthTexture`.
    *
-   * Tem de rodar DEPOIS de {@link update} e com a ortho da cascata já fixada
-   * por `shadow.updateMatrices(luz)`, pelos mesmos motivos de
-   * {@link countShadowCasters} — e porque, sem o `updateMatrices`, o uniforme
+   * Tem de rodar DEPOIS de {@link update} — o C++ lê as matrizes de mundo que
+   * ele acabou de compor — e com a ortho da cascata já fixada por
+   * `shadow.updateMatrices(luz)`: o `three` só a fixa dentro do `renderShadow`,
+   * e enumerar antes usaria o frustum do frame passado. E porque, sem o
+   * `updateMatrices`, o uniforme
    * `lightShadowMatrix` que o `three` usa para AMOSTRAR o mapa congela, e a
    * sombra fica presa ao mundo de um frame antigo.
    *
@@ -834,8 +667,6 @@ export class NativeSceneMirror {
    *   cascata, em `Float64Array`. **Nunca `Float32Array`**: a multiplicação
    *   por `model` acontece em `double` no C++, e degradar antes é o caminho
    *   conhecido para as bandas da SPEC-0234.
-   * @param forcarIgnorandoDivergenciaDeNos - ATALHO DE MEDIÇÃO: ignora a
-   *   recusa por divergência de nós, e **só** ela. Não é para virar padrão.
    * @returns `{ drawn }` quando desenhou, `{ refused }` com o motivo quando
    *   não — e `undefined` no browser/Studio, onde não há host.
    */
@@ -847,7 +678,6 @@ export class NativeSceneMirror {
     alvo: unknown,
     sceneNodeCount: number,
     vsmShadowMap: boolean,
-    forcarIgnorandoDivergenciaDeNos: boolean,
   ): ShadowPassOutcome | undefined {
     const api = this._bridge;
     if (!api?.drawShadowPass || !this._installed) return undefined;
@@ -863,7 +693,6 @@ export class NativeSceneMirror {
       alvo ?? null,
       sceneNodeCount,
       vsmShadowMap,
-      forcarIgnorandoDivergenciaDeNos,
       this._gateOut,
     );
     if (typeof resposta !== 'number') return undefined;
@@ -874,128 +703,6 @@ export class NativeSceneMirror {
       return { drawn: 0, refused: true, reason, totalCasters };
     }
     return { drawn: resposta, refused: false, reason: 'aceito', totalCasters };
-  }
-
-  /**
-   * MEDIÇÃO TEMPORÁRIA (SPEC-0245, E6): quanto custa o evento com os listeners
-   * instalados. Sai no E8, junto das outras sondas.
-   *
-   * Compara a MESMA mutação (`add` + `remove`) em dois pais: um espelhado, que
-   * escuta e portanto paga o dispatch mais o append/remove do espelho, e um
-   * solto, que é o `three` cru. A diferença é o custo desta frente — e ele só
-   * existe em frame que muda a cena, porque `dispatchEvent` nem é chamado nos
-   * outros.
-   *
-   * Roda com a cena inteira já espelhada (≈1.000 listeners instalados), que é
-   * a condição que a refutação mandou medir em vez de estimar.
-   */
-  medirCustoDoEvento(): void {
-    if (!this._installed) return;
-    const pai = this._nodes[0];
-    if (!pai) return;
-    const solto = new Object3D(); // fora do espelho: ninguém escuta
-    const cobaia = new Object3D();
-    const relogio = agora;
-    // Só o DISPATCH: um ouvinte que não faz nada isola o custo do
-    // `EventDispatcher` do custo do que o espelho faz depois (a travessia de
-    // ponte). Sem isto os dois viriam somados e não daria para dizer qual é
-    // qual.
-    const soDispatch = new Object3D();
-    const nada = (): void => {};
-    soDispatch.addEventListener('childadded', nada);
-    soDispatch.addEventListener('childremoved', nada);
-
-    // Aquece: o Hermes compila na primeira passada, e medir a compilação seria
-    // medir o instrumento.
-    for (let i = 0; i < EVENT_BENCH_ROUNDS; i++) {
-      solto.add(cobaia);
-      solto.remove(cobaia);
-      soDispatch.add(cobaia);
-      soDispatch.remove(cobaia);
-      pai.add(cobaia);
-      pai.remove(cobaia);
-    }
-
-    const t0 = relogio();
-    for (let i = 0; i < EVENT_BENCH_ROUNDS; i++) {
-      solto.add(cobaia);
-      solto.remove(cobaia);
-    }
-    const semOuvinte = relogio() - t0;
-
-    const tD = relogio();
-    for (let i = 0; i < EVENT_BENCH_ROUNDS; i++) {
-      soDispatch.add(cobaia);
-      soDispatch.remove(cobaia);
-    }
-    const soOuvindo = relogio() - tD;
-
-    const t1 = relogio();
-    for (let i = 0; i < EVENT_BENCH_ROUNDS; i++) {
-      pai.add(cobaia);
-      pai.remove(cobaia);
-    }
-    const comOuvinte = relogio() - t1;
-
-    const porCiclo = (ms: number): string => ((ms * 1000) / EVENT_BENCH_ROUNDS).toFixed(2);
-    debug(
-      'perf',
-      `[sceneMirror] evento em ${this._liveCount} nos espelhados, ${EVENT_BENCH_ROUNDS} ciclos ` +
-        `add+remove: sem ouvinte ${porCiclo(semOuvinte)}, ` +
-        `so dispatch ${porCiclo(soOuvindo)}, ` +
-        `com o espelho ${porCiclo(comOuvinte)} us/ciclo ` +
-        `(dispatch +${porCiclo(soOuvindo - semOuvinte)}, ` +
-        `espelho +${porCiclo(comOuvinte - soOuvindo)})`,
-    );
-    // Zera: os eventos desta medição são do instrumento, não da corrida, e
-    // somá-los ao acumulado faria o relato seguinte dizer que o jogo mexe na
-    // cena centenas de vezes — foi o que a primeira rodada relatou.
-    this._eventos = 0;
-    this._eventosMs = 0;
-    this._eventosRelatados = 0;
-    this._eventosMsRelatados = 0;
-  }
-
-  /**
-   * MEDIÇÃO TEMPORÁRIA (SPEC-0245, E6): o que os eventos custaram até agora na
-   * corrida de verdade — quantos foram e quantos ms somaram.
-   */
-  relatarCustoAcumuladoDoEvento(): void {
-    // Com o DELTA desde o relato anterior: o custo do primeiro append de uma
-    // malha inclui o `computeBoundingSphere` dela, que é uma vez por geometria
-    // e não se repete — só o acumulado faria isso parecer custo de regime.
-    const eventos = this._eventos - this._eventosRelatados;
-    const ms = this._eventosMs - this._eventosMsRelatados;
-    this._eventosRelatados = this._eventos;
-    this._eventosMsRelatados = this._eventosMs;
-    debug(
-      'perf',
-      `[sceneMirror] eventos: ${eventos} em ${ms.toFixed(3)} ms nos ultimos ` +
-        `${EVENT_REPORT_INTERVAL} frames (acumulado ${this._eventos} em ` +
-        `${this._eventosMs.toFixed(3)} ms)`,
-    );
-  }
-
-  /**
-   * DIAGNÓSTICO TEMPORÁRIO (SPEC-0245, passo 2 — "quem cria os 2 nós").
-   *
-   * Percorre a cena e NOMEIA os nós que não estão no espelho. Sai junto com
-   * `?gateSombra=1` e `?contarCasters=1` no E8.
-   */
-  relatarNosForaDoEspelho(scene: Object3D): void {
-    if (!this._installed) return;
-    const conhecidos = this._indicePorObjeto;
-    const fora: string[] = [];
-    scene.traverse((objeto) => {
-      if (conhecidos.has(objeto)) return;
-      const no = objeto as NoDaCena;
-      const nome = objeto.name || '(sem nome)';
-      const pai = objeto.parent ? `${objeto.parent.type}/${objeto.parent.name || '(sem nome)'}` : '-';
-      const desenhavel = no.isMesh && no.geometry ? 'malha' : 'sem-malha';
-      const sombra = objeto.castShadow ? 'castShadow' : 'semSombra';
-      fora.push(`${objeto.type}:${nome} pai=${pai} ${desenhavel} ${sombra} filhos=${objeto.children.length}`);
-    });
-    debug('perf', `[sceneMirror] fora do espelho (${fora.length}): ${fora.join(' | ')}`);
   }
 
   /**

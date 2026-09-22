@@ -1,7 +1,16 @@
 # 0241 - Submissão nativa do passe principal (M5 do ADR-0237)
 
 **Data:** 2026-09-21
-**Status:** em execução — ganho confirmado (34 us/draw); falta a imagem correta
+**Status:** ENCERRADO sem ganho (ADR-0244, decisão 1) e **código removido** em
+2026-09-22, no E8 da SPEC-0245. A oclusão nunca funcionou e os 34 us/draw nunca
+se reproduziram. Saíram do repositório: `src/render/NativePass.ts`,
+`src/render/DualPassSpike.ts`, `native/src/render/native_pass.*`,
+`native/src/render/depth_peek.*`, `native/src/webgpu/dual_pass_spike.*`, os dois
+shims, a heurística `cenaAlvo()` de `commands.cpp` e os órfãos `uniform_pool.*`
+e `render_list.*`. O que este marco deixou de útil e **continua vivo** é o
+`geometry_registry` (C++) e o `GeometryDesc.ts`, usados pelo passe de sombra
+nativo do M6. Esta spec fica como registro do que foi medido e por que não
+pagou — o código está no histórico do git.
 
 ## Contexto
 

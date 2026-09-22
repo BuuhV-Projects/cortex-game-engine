@@ -35,9 +35,7 @@ add_executable(cortex_host
   src/shims/animation_frame.cpp
   src/shims/clock.cpp
   src/shims/scene_mirror_shim.cpp
-  src/shims/dual_pass_spike_shim.cpp
   src/shims/geometry_registry_shim.cpp
-  src/shims/native_pass_shim.cpp
   src/shims/audio.cpp
   src/shims/files.cpp
   src/shims/image_decode.cpp
@@ -66,15 +64,10 @@ add_executable(cortex_host
   src/webgpu/pipeline.cpp
   src/webgpu/render_bench.cpp
   src/webgpu/override_probe.cpp
-  src/webgpu/dual_pass_spike.cpp
   src/webgpu/depth_selftest.cpp
   src/webgpu/render_parity_capture.cpp
-  src/render/uniform_pool.cpp
-  src/render/render_list.cpp
   src/render/geometry_registry.cpp
-  src/render/native_pass.cpp
   src/render/shadow_pass.cpp
-  src/render/depth_peek.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
   src/scene/shadow_pass_gate.cpp
@@ -301,8 +294,6 @@ add_executable(cortex_host_tests
   tests/shadow_pass_gate_test.cpp
   tests/shadow_math_test.cpp
   tests/pipeline_cache_test.cpp
-  tests/uniform_pool_test.cpp
-  tests/render_list_test.cpp
   tests/geometry_registry_test.cpp
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
@@ -310,8 +301,6 @@ add_executable(cortex_host_tests
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
   src/scene/shadow_pass_gate.cpp
-  src/render/uniform_pool.cpp
-  src/render/render_list.cpp
   src/render/geometry_registry.cpp
 )
 target_include_directories(cortex_host_tests PRIVATE

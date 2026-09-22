@@ -109,14 +109,4 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
   return r;
 }
 
-bool refusalIsOnlyNodeDivergence(const ShadowGateResult& result) {
-  if (result.accepted) return false;
-  if (result.reason != ShadowGateRefusal::kNodeCountDivergence) return false;
-  for (int i = 0; i < kShadowGateRefusalCount; i++) {
-    if (i == static_cast<int>(ShadowGateRefusal::kNodeCountDivergence)) continue;
-    if (result.counts[i] > 0) return false;
-  }
-  return true;
-}
-
 }  // namespace scene

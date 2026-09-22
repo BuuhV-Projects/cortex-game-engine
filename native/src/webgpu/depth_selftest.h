@@ -5,8 +5,8 @@
 // a segunda usando `depthLoadOp = Load` — a segunda pass enxerga o que a
 // primeira escreveu na profundidade?
 //
-// Diferente do `dual_pass_spike.*` (que mede a convivência com o `three` dentro
-// do frame real do jogo), aqui NADA do `three` participa: texturas próprias,
+// Diferente de um spike que mede a convivência com o `three` dentro do frame
+// real do jogo, aqui NADA do `three` participa: texturas próprias,
 // triângulos de tela cheia, resposta conhecida de antemão. É o caso isolado que
 // falta para separar "a premissa não vale neste caminho wgpu/D3D12" de "tem
 // alguma coisa do jogo no meio".

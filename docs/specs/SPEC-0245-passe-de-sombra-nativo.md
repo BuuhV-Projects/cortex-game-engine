@@ -1,7 +1,7 @@
 # SPEC-0245 — Passe de sombra nativo (M6)
 
 **Data:** 2026-09-22
-**Status:** aceito — E1 a E5 executados; **medido em 2,8 ms contra o critério de 3,0** (ver o fim). E7/E8 em aberto.
+**Status:** aceito e CONCLUÍDO — E1 a E8 executados. O passe nativo é o caminho padrão do host, e o ganho remedido depois da limpeza é **2,8 ms de `cpu.render`, 58 → 70 fps**, contra o critério revisado de 2,5 ms (ver o fim).
 
 ## Contexto
 
@@ -933,3 +933,189 @@ resposta à pergunta "se custar mais que ruído, diga quanto" é: não custa.
   ela hoje só confirma o que o evento já sabe.
 - O E4 e o E5 continuam como estavam — o E6 tirou o **bloqueio único** que
   impedia o gate de aceitar, não ligou o passe.
+
+## E7 e E8 EXECUTADOS em 2026-09-22 — o marco fecha, com o ganho remedido
+
+### O passe nativo virou o PADRÃO, e é isso que fecha o marco
+
+Enquanto o passe ficasse atrás de `?passeDeSombraNativo=1`, produção pagava o
+custo do `three` para sempre e o marco não entregava nada a ninguém. A query de
+ativação foi trocada pelo seu contrário:
+
+| antes | agora | por quê |
+| --- | --- | --- |
+| `?passeDeSombraNativo=1` liga | **ligado por padrão** no host que tem a ponte | é o caminho que entrega os milissegundos do marco |
+| — | `?semPasseDeSombraNativo=1` devolve ao `three` | **linha de base** de qualquer remedição, e válvula de escape se o caminho nativo se mostrar errado numa cena não medida |
+| `?semPasseDeSombra=1` congelava só o `three` | congela os **dois** | desligar só um mediria outra coisa que não o teto |
+
+Ligar por padrão é seguro por construção e não por confiança: no Studio e no
+browser não há espelho instalado e o método sai na primeira linha; o gate segue
+recusando o que não sabe desenhar; e um frame recusado devolve
+`autoUpdate = true` e o `three` redesenha. **Nenhum caminho perde sombra — o
+pior caso é não ganhar os milissegundos.**
+
+### E7 — o culling em JS não roda mais quando o C++ desenha
+
+`cullShadowCasters` percorre ~1.300 nós a cada 10 frames para mutar um
+`castShadow` que, com o passe nativo desenhando, **ninguém lê**: o enumerador em
+C++ reaplica o mesmo filtro angular por conta, a partir do valor AUTORADO. Ele
+não foi removido — continua indispensável quando o nativo não assume (gate que
+recusa, host sem a ponte, Studio, browser) — e sim **condicionado ao estado real
+do frame anterior** (`_nativoAssumiu`).
+
+Duas consequências que precisaram de decisão, não só de um `if`:
+
+1. **A câmera do filtro tem dois regimes.** Com o `three` desenhando, o
+   enumerador precisa da posição da ÚLTIMA passada do culling, porque é lá que o
+   `castShadow` que o `three` desenha agora foi decidido. Com o nativo
+   desenhando, não há passada nenhuma: a posição passa a ser a do FRAME, o que é
+   mais correto (o filtro reage sem os 10 frames de atraso) e dispensa o estado
+   entre frames. O campo virou `_cameraDoFiltroAngular`, com os dois regimes
+   escritos no comentário.
+2. **A volta ao `three` rearma o contador.** No frame em que o nativo recusa, o
+   contador vai para o intervalo e o culling roda no MESMO frame — esperar os 10
+   frames deixaria o `three` desenhar com `castShadow` de dez frames atrás. Fica
+   o resíduo conhecido: o `ShadowNode` interno desenha ANTES do
+   `CSMShadowNode.updateBefore`, então o frame exato da recusa ainda sai com o
+   `castShadow` da última passada. É **uma sombra a mais ou a menos por um
+   frame**, na transição, e não uma sombra faltando.
+
+Dois testes novos no `OutdoorLighting.test.ts` cobrem exatamente isso: o culling
+roda quando o nativo não assume, e não roda quando assume — voltando a rodar no
+frame da recusa.
+
+### E8 — o que saiu, e o que ficou
+
+**Diagnósticos removidos** (query): `?gateSombra`, `?contarCasters`,
+`?medirEvento`, `?forcarPasseDeSombra`, `?semSombras`, `?semCasters`,
+`?cascatas`, `?casterMinRatio`, `?sombraSoDinamicos`, `?dumpGrafo`,
+`?nativePassControle`, `?nativePass=N`, `?dualPassSpike`.
+
+Com eles saíram as máquinas que os serviam: a sonda que envolvia `renderObject`
+para contar os draws do passe de sombra, a travessia de auditoria de 10 frames
+(`scene.traverse` contando nós), o relatório dos nós fora do espelho, o
+*benchmark* de custo do evento `childadded`/`childremoved` e os dois relógios por
+evento que ele exigia nos handlers. Do lado da ponte saíram `shadowCasters(...)`
+e `shadowPassGate(...)` — o gate REAL sempre rodou dentro do `drawShadowPass`, e
+essas duas só existiam para relatar.
+
+`?cascatas` e `?casterMinRatio` merecem nota à parte: os dois **duplicavam
+autoria que já existe** (`shadowCascades` e `shadowCasterMinRatio` são campos da
+cena). Um interruptor de medição que sobrescreve um campo autorado é uma segunda
+fonte de verdade para o mesmo número.
+
+**Diagnósticos C++ removidos:** `CORTEX_DEPTH_PEEK` (com
+`native/src/render/depth_peek.*`), `CORTEX_DEPTH_EXP`, `CORTEX_ALVO_DA_CENA` e
+`CORTEX_PASS_LOG` — este último em quatro lugares, incluindo `commands.cpp` e
+`textures.cpp`. A sonda `depth_peek` foi **medida e invalidada** (lê zero de
+qualquer buffer): não sobrevive em nenhuma forma, porque um instrumento que
+responde sempre a mesma coisa é pior que instrumento nenhum — é o modo de falha
+que a SPEC-0240 registra.
+
+**O que ficou, e por quê:**
+
+| ferramenta | fica porque |
+| --- | --- |
+| `?semPasseDeSombra=1` | é a única forma de responder "quanto ainda há para ganhar aqui" sem recompilar. Foi ela que mediu o teto real e refutou o teto inflado pela sonda de fases, e é ela que remede o teto depois de qualquer mudança no passe. Documentada no código como ferramenta, não como resto. |
+| `?semPasseDeSombraNativo=1` | linha de base de toda remedição do ganho, e a válvula de escape do caminho nativo. |
+| `native/src/webgpu/depth_selftest.*` (`CORTEX_DEPTH_SELFTEST`) | é o autoteste de PLATAFORMA da SPEC-0242: responde se a profundidade sobrevive entre command buffers neste wgpu/D3D12, com resposta conhecida de antemão e sem nada do `three` no meio. A pergunta não é do M6 — é do backend, e volta em qualquer marco que grave numa pass separada. |
+| `CORTEX_SHADOW_PASS_LOG` | responde "o nativo assumiu, e desenhou o quê?" numa máquina de campo, onde não há depurador. O lado JS relata a decisão (`[shadowPass] ASSUMIU/DEVOLVEU`), este lado relata o desenho: alvo, formato e contagem. Documentado no cabeçalho de `shadow_pass.h`. |
+| sonda de fases (`?renderPhases`, `?matrixFreeze`) | não é do M5/M6: é o instrumento da SPEC-0227, com as armadilhas dela registradas. Continua valendo — inclusive a de que ela **não serve** para medir este marco. |
+
+### O código do M5: REMOVIDO, não desativado
+
+O M5 foi encerrado sem ganho (ADR-0244, decisão 1) e a oclusão dele nunca
+funcionou. O que era exclusivo dele saiu inteiro:
+
+- **TS:** `src/render/NativePass.ts`, `src/render/DualPassSpike.ts` e os ganchos
+  dos dois no `Renderer.ts`.
+- **C++:** `native/src/render/native_pass.*`, `native/src/render/depth_peek.*`,
+  `native/src/webgpu/dual_pass_spike.*` e os dois shims correspondentes.
+- **Órfãos que o levantamento achou:** `native/src/render/uniform_pool.*` e
+  `native/src/render/render_list.*` estavam listados como "infraestrutura que o
+  M6 usa" — e **não são usados por nada** além dos próprios testes (busca por
+  `UniformPool`/`sortRenderList` em `native/src/`: zero ocorrências fora deles).
+  Saíram com os testes.
+- **A heurística do alvo:** `cenaAlvo()`, as candidatas por frame, o mapa
+  view → tamanho e o registro de rótulo de textura em
+  `commands.cpp`/`textures.cpp` existiam só para o M5 adivinhar em qual pass a
+  cena foi desenhada. Isso era **custo em produção**: um mapa que crescia a cada
+  textura criada, para alimentar um passe que não existe mais.
+
+Por que remover em vez de manter desativado: o M5 não entrega ganho, e um
+caminho de render paralelo que compila e não roda é exatamente o convite para
+alguém reativá-lo achando que ganha 34 µs/draw — número que, aliás, **nunca se
+reproduziu**. O histórico guarda o trabalho (SPEC-0241 e os commits da branch);
+o repositório não precisa carregá-lo.
+
+**O que do M5 FICA, porque o M6 usa:** `geometry_registry.*` (C++),
+`GeometryDesc.ts`, `MaterialDesc.ts` e `PipelineKey.ts` — estes dois últimos não
+por causa do M5, mas porque o `PerfTrace` mede cobertura de material e pipelines
+distintos com eles.
+
+### Um conflito de merge não resolvido, commitado
+
+`docs/cortex-native/architecture.md` estava com `<<<<<<< HEAD` /
+`>>>>>>> feat/m6-espelho-dinamico` dentro da tabela de módulos, vindo do merge do
+E6. As duas metades foram fundidas — nenhuma das duas estava completa: uma tinha
+o `shadow_pass.*`, a outra o `appendNodes`/`removeNode`.
+
+### A REMEDIÇÃO: o ganho se mantém — 2,8 ms, 58 → 70 fps
+
+`?bench&hold`, export `--debug` feito **da worktree** (o export usa `src/`, não o
+`vendor/`), host recompilado, janela offscreen, quatro rodadas **intercaladas**
+de 70 s, medianas de ~120 amostras filtradas por estado de cena (`draws >= 100`),
+**sem a sonda de fases**.
+
+| rodada | base | nativo | delta |
+| --- | --- | --- | --- |
+| 1 | 14,5 | 12,1 | 2,4 |
+| 2 | 15,1 | 12,1 | 3,0 |
+| 3 | 15,3 | 11,9 | 3,4 |
+| 4 | 14,4 | 11,8 | 2,6 |
+| **mediana** | **14,8** | **12,0** | **2,8** |
+
+| | base | **nativo** | teto |
+| --- | --- | --- | --- |
+| `cpu.render` | 14,8 ms | **12,0 ms** | 9,7 ms |
+| fps | 58,3 | **70,4** | 74,7 |
+| `draws` | 287 | **195** | 195 |
+
+**Ganho de 2,8 ms contra o critério revisado de 2,5 ms — o marco passa.**
+
+`draws` cai exatamente **92**, e o log do passe (`?bench&hold&cortexDebug=perf`)
+diz `[shadowPass] ASSUMIU desenhados=92 cascatas=1`: o nativo desenha **o mesmo
+número** que o `three` deixou de desenhar. Nenhuma sombra some.
+
+> **Os absolutos não batem com os da rodada do E4/E5 (13,35 / 10,50 / 261
+> draws), e isso é da CENA, não da limpeza.** Naquela rodada o passe de sombra
+> emitia 66 draws; nesta emite 92, porque a câmera do `?hold` para num ponto com
+> mais casters dentro do frustum da cascata. Por isso o teto também subiu (5,1 ms
+> aqui contra 3,65 lá): mais casters custam mais dos dois lados. O que se compara
+> entre rodadas é o **delta medido na mesma build**, e ele se manteve.
+
+### Testes
+
+- Vitest: **1.583 passando, 7 pulados, 0 falhas** (eram 1.550). Os testes dos
+  diagnósticos removidos deram lugar a cobertura do caminho que ficou: quatro
+  testes novos de `drawShadowPass` no lado JS — que **não tinha nenhum**, apesar
+  de ser hoje a única ponte do passe — e dois do E7.
+- Harness C++ (`cortex_host_tests`): **314 checks, 0 falhas** (eram 317; a
+  diferença são os checks do atalho de medição e os do
+  `uniform_pool`/`render_list`, removidos com o código que testavam).
+- Host compila (`cortex_host.exe`, clang-cl/Ninja, Release).
+
+> Achado do levantamento: `tests/shadow_math_test.cpp` roda pelo CMake mas
+> faltava no script de build do harness usado nas sessões — quatro checks que
+> passavam despercebidos em toda rodada manual. Corrigido no script.
+
+### O que continua em aberto
+
+1. **`side` do material não é espelhado**, então caster `DoubleSide` não é nem
+   reproduzido nem recusado — candidato à diferença residual de imagem
+   (`maxChannelDiff` 28).
+2. **`shadowMap.setSize` não roda mais** com o passe do `three` desligado: mudar
+   `shadow.mapSize` em runtime não redimensiona nada.
+3. **`CORTEX_OVERRIDE_PROBE`** (SPEC-0238, fase 4) é uma sonda one-shot que já
+   respondeu a pergunta dela. Está fora do escopo deste marco e foi mantida, mas
+   é candidata à mesma limpeza.

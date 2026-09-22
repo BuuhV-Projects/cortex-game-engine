@@ -53,8 +53,7 @@ function instalarPonteFalsa(nodeCapacity: number) {
     build: 0,
     update: 0,
     ultimoChanged: 0,
-    shadowCasters: 0,
-    shadowPassGate: 0,
+    drawShadowPass: 0,
     appendNodes: 0,
     removeNode: 0,
     ultimoRemovido: -1,
@@ -62,6 +61,10 @@ function instalarPonteFalsa(nodeCapacity: number) {
     ultimaDescricao: new Float32Array(0),
     ultimosNosDaCena: 0,
     ultimoVsm: false,
+    ultimoAlvo: null as unknown,
+    ultimoViewProj: new Float64Array(0),
+    /** O que o C++ devolve na próxima chamada: negativo recusa, positivo desenha. */
+    proximaResposta: -8,
     ultimoMinRatio: 0,
     ultimaCamera: [0, 0, 0] as [number, number, number],
     ultimosPlanos: new Float32Array(0),
@@ -102,41 +105,36 @@ function instalarPonteFalsa(nodeCapacity: number) {
       chamadas.ultimoChanged = changed;
       return changed;
     },
-    shadowCasters: (
+    // Responde como o C++ responderia a uma cena com dois casters, um deles
+    // recusado por geometria ausente: motivo 8, um objeto. O sinal do retorno
+    // é o contrato: negativo = código de recusa, positivo = casters desenhados.
+    drawShadowPass: (
       minRatio: number,
       x: number,
       y: number,
       z: number,
       planos: Float32Array,
-    ) => {
-      chamadas.shadowCasters++;
-      chamadas.ultimoMinRatio = minRatio;
-      chamadas.ultimaCamera = [x, y, z];
-      chamadas.ultimosPlanos = planos.slice();
-      return 42;
-    },
-    // Responde como o C++ responderia a uma cena com dois casters, um deles
-    // recusado por geometria ausente: motivo 8, um objeto.
-    shadowPassGate: (
-      _minRatio: number,
-      _x: number,
-      _y: number,
-      _z: number,
-      _planos: Float32Array,
+      viewProjection: Float64Array,
+      alvo: unknown,
       nosDaCena: number,
       vsm: boolean,
       saida: Float64Array,
     ) => {
-      chamadas.shadowPassGate++;
+      chamadas.drawShadowPass++;
+      chamadas.ultimoMinRatio = minRatio;
+      chamadas.ultimaCamera = [x, y, z];
+      chamadas.ultimosPlanos = planos.slice();
+      chamadas.ultimoViewProj = viewProjection.slice();
+      chamadas.ultimoAlvo = alvo;
       chamadas.ultimosNosDaCena = nosDaCena;
       chamadas.ultimoVsm = vsm;
       saida.fill(0);
       saida[8] = 1; // geometria-ausente
       saida[GATE_MOTIVOS] = 1; // recusados
       saida[GATE_MOTIVOS + 1] = 2; // casters
-      return 8;
+      return chamadas.proximaResposta;
     },
-  };
+      };
   return { matrices, sync, chamadas };
 }
 
@@ -362,23 +360,6 @@ describe('NativeSceneMirror', () => {
     expect(flags & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
   });
 
-  it('conta os casters no host com a câmera do jogo e a ortho da cascata', () => {
-    const { chamadas } = instalarPonteFalsa(8);
-    const raiz = new Object3D();
-    raiz.add(malha());
-    const espelho = new NativeSceneMirror();
-    espelho.install(raiz);
-
-    const cascata = new OrthographicCamera(-50, 50, 50, -50, 1, 200);
-    const total = espelho.countShadowCasters(cascata, new Vector3(1, 2, 3), 0.15);
-
-    expect(total).toBe(42);
-    expect(chamadas.shadowCasters).toBe(1);
-    expect(chamadas.ultimoMinRatio).toBe(0.15);
-    expect(chamadas.ultimaCamera).toEqual([1, 2, 3]);
-    expect(chamadas.ultimosPlanos).toHaveLength(24);
-  });
-
   it('marca no build cada motivo de recusa que só o JS enxerga', () => {
     // O gate roda em C++, mas quem vê o MATERIAL é o JS. Se um destes bits não
     // subir, o gate aceita um caster que não sabe desenhar — a falha na direção
@@ -417,73 +398,108 @@ describe('NativeSceneMirror', () => {
     expect(flags(7) & motivos).toBe(0);
   });
 
-  it('traduz o veredito do gate com motivo, contagem e casters', () => {
+  it('leva à ponte a cascata, a câmera do filtro e o alvo do passe de sombra', () => {
+    // Tudo que o C++ precisa para desenhar o shadow map vai numa chamada só, e
+    // cada item aqui já quebrou a imagem uma vez: os planos são os da ORTHO da
+    // cascata (não os da câmera do jogo), a posição é a do filtro angular, e a
+    // `viewProj` atravessa em `Float64Array` — degradar para `float32` é o
+    // caminho conhecido para as bandas da SPEC-0234.
     const { chamadas } = instalarPonteFalsa(8);
     const raiz = new Object3D();
     raiz.add(malha());
     const espelho = new NativeSceneMirror();
     espelho.install(raiz);
 
-    const veredito = espelho.shadowPassGate(
+    const viewProj = new Float64Array(16).fill(0.5);
+    const alvo = { textura: 'ShadowDepthTexture' };
+    chamadas.proximaResposta = 66;
+    const saida = espelho.drawShadowPass(
       new OrthographicCamera(-50, 50, 50, -50, 1, 200),
       new Vector3(1, 2, 3),
       0.15,
+      viewProj,
+      alvo,
+      -1,
+      false,
+    );
+
+    expect(chamadas.drawShadowPass).toBe(1);
+    expect(chamadas.ultimoMinRatio).toBe(0.15);
+    expect(chamadas.ultimaCamera).toEqual([1, 2, 3]);
+    expect(chamadas.ultimosPlanos).toHaveLength(24);
+    expect(chamadas.ultimoViewProj).toBeInstanceOf(Float64Array);
+    expect(Array.from(chamadas.ultimoViewProj)).toEqual(Array.from(viewProj));
+    expect(chamadas.ultimoAlvo).toBe(alvo);
+    expect(saida).toEqual({ drawn: 66, refused: false, reason: 'aceito', totalCasters: 2 });
+  });
+
+  it('traduz a recusa do gate em motivo, sem desenhar nada', () => {
+    // Retorno negativo é recusa, e o motivo tem de chegar legível: uma recusa
+    // sem causa vira "não funciona" e só aparece com depurador.
+    const { chamadas } = instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    raiz.add(malha());
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    chamadas.proximaResposta = -8;
+    const saida = espelho.drawShadowPass(
+      new OrthographicCamera(-50, 50, 50, -50, 1, 200),
+      new Vector3(),
+      0.15,
+      new Float64Array(16),
+      {},
       977,
       false,
     );
 
-    expect(chamadas.shadowPassGate).toBe(1);
+    expect(saida?.refused).toBe(true);
+    expect(saida?.reason).toBe('geometria-ausente');
+    expect(saida?.drawn).toBe(0);
+    expect(saida?.totalCasters).toBe(2);
     expect(chamadas.ultimosNosDaCena).toBe(977);
-    expect(chamadas.ultimoVsm).toBe(false);
-    expect(veredito?.accepted).toBe(false);
-    expect(veredito?.reason).toBe('geometria-ausente');
-    expect(veredito?.offenders).toBe(1);
-    expect(veredito?.refusedCasters).toBe(1);
-    expect(veredito?.totalCasters).toBe(2);
-    expect(veredito?.counts['geometria-ausente']).toBe(1);
-    expect(veredito?.counts['skinned']).toBe(0);
   });
 
-  it('repassa o tipo de shadow map e a contagem de nós ao gate', () => {
-    // Os dois fatos que só o JS enxerga: com VSM a RT de cor importa, e a
-    // divergência de nós vira sombra faltando quando o passe nativo assumir.
+  it('repassa o tipo de shadow map, que só o JS enxerga', () => {
+    // Com VSM o `three` não inverte o lado da face e passa a desenhar também os
+    // `receiveShadow`: o passe nativo é depth-only e tem de RECUSAR o caso.
     const { chamadas } = instalarPonteFalsa(8);
     const espelho = new NativeSceneMirror();
     espelho.install(new Object3D());
 
-    espelho.shadowPassGate(new OrthographicCamera(), new Vector3(), 0.15, -1, true);
+    espelho.drawShadowPass(
+      new OrthographicCamera(),
+      new Vector3(),
+      0.15,
+      new Float64Array(16),
+      {},
+      -1,
+      true,
+    );
 
     expect(chamadas.ultimoVsm).toBe(true);
-    expect(chamadas.ultimosNosDaCena).toBe(-1);
   });
 
-  it('não dá veredito quando o host não tem o gate', () => {
-    // Host antigo: o gate ausente NÃO pode virar um "aceito" por omissão.
+  it('não desenha quando o host não tem o passe de sombra', () => {
+    // Host antigo: o passe ausente NÃO pode virar um "desenhou" por omissão —
+    // quem responde `undefined` deixa o `three` continuar desenhando a sombra.
     instalarPonteFalsa(8);
     delete (globalThis as Record<string, Record<string, unknown>>)['__cortexSceneMirror']![
-      'shadowPassGate'
+      'drawShadowPass'
     ];
     const espelho = new NativeSceneMirror();
     espelho.install(new Object3D());
 
     expect(
-      espelho.shadowPassGate(new OrthographicCamera(), new Vector3(), 0.15, 10, false),
-    ).toBeUndefined();
-  });
-
-  it('não conta nada quando o host não tem o enumerador', () => {
-    // Host antigo, sem o método: a contagem é diagnóstico e nunca pode quebrar
-    // o frame por falta dele.
-    instalarPonteFalsa(8);
-    delete (globalThis as Record<string, Record<string, unknown>>)['__cortexSceneMirror']![
-      'shadowCasters'
-    ];
-    const raiz = new Object3D();
-    const espelho = new NativeSceneMirror();
-    espelho.install(raiz);
-
-    expect(
-      espelho.countShadowCasters(new OrthographicCamera(), new Vector3(), 0.15),
+      espelho.drawShadowPass(
+        new OrthographicCamera(),
+        new Vector3(),
+        0.15,
+        new Float64Array(16),
+        {},
+        -1,
+        false,
+      ),
     ).toBeUndefined();
   });
 
