@@ -259,3 +259,96 @@ visual.
 Quando o C++ assumir o passe (passo 2), esse custo desaparece por construção —
 não há por que ordenar. Fica registrado como micro-ajuste disponível
 (estimativa de 0,05 a 0,15 ms) caso o marco precise de margem para o critério.
+
+## Investigação do passo 2 (2026-09-22) — achados que mudam o plano
+
+### O critério de aceite apontava para código que não estava versionado
+
+A frase "conferido pelo harness do M7 (SPEC-0240)" pressupunha um harness
+pronto. Uma busca em **todas** as branches não achou nenhum
+`render_parity_capture`: a branch `feat/m7-paridade-visual` tinha só o `.md`.
+
+O código **existia**, não commitado, na árvore da worktree do M7 — a um
+`git worktree remove` de ser perdido. Foi preservado em `b2443dcf` naquela
+branch, com a ressalva de que **não foi reverificado**: não compilei nem rodei
+o harness, e a afirmação de outra sessão de que ele mediu "piso de ruído zero"
+não foi reproduzida.
+
+**Consequência:** construir o passo 1 do M7 (captura + comparador calibrado) é
+**pré-requisito** do passo 2 deste marco. Sem `pctPixelsAboveNoiseFloor`
+calibrado, "imagem indistinguível" não é critério de aceite — é uma frase.
+
+### O `three` desenha a sombra com o lado da face INVERTIDO
+
+`Renderer.js`, no caminho de `isShadowPassMaterial`:
+`overrideMaterial.side = material.shadowSide ?? _shadowSide[material.side]`,
+ou seja `FrontSide → BackSide`. Um passe nativo com `cullMode = Back` — o
+natural, e o que o `native_pass.cpp` do M5 usa — escreveria a profundidade da
+**face errada**, produzindo acne e peter-panning. O passe nativo tem de usar
+**`cullMode = Front`**.
+
+O mesmo bloco copia `alphaTest`/`alphaMap` e o `positionNode` do material para
+o passe de sombra. Caster com recorte alfa ou deslocamento de vértice **não é
+reproduzível** hoje em C++ e tem de ser **recusado**, não aproximado.
+
+### A defasagem de um frame é estrutural
+
+Os `ShadowNode` internos (que desenham) rodam **antes** do `CSMShadowNode` (que
+posiciona as cascatas), porque a ordem de `updateBefore` é a de registro, e os
+filhos são registrados primeiro. O shadow map do frame N sai com as cascatas
+colocadas no frame N−1. Não é acidente a corrigir: é a ordem do `three`.
+
+### Desligar o passe do `three` quebra três coisas que temos de repor
+
+Com `autoUpdate = false` e `needsUpdate = false` por cascata:
+
+1. **`shadow.updateMatrices` deixa de ser chamado** → o uniforme
+   `lightShadowMatrix` **congela**, e a sombra fica presa ao mundo de um frame
+   antigo. Falha silenciosa e visual. Quem passa a chamar é o nosso preparo por
+   frame — e é bom que seja o mesmo `updateMatrices`, porque garante que o mapa
+   e o amostrador usam a mesma ortho.
+2. **`shadowMap.setSize` deixa de rodar** → mudar `shadow.mapSize` em runtime
+   não redimensiona mais nada.
+3. **A RT de cor deixa de ser limpa** → irrelevante com PCF/PCFSoft, mas passa
+   a importar com VSM. Vira guarda: recusar assumir se o tipo for `VSMShadowMap`.
+
+### As pendências do passo 1, reclassificadas
+
+| pendência | bloqueia? |
+| --- | --- |
+| nó criado depois do `install` não existe no espelho | **sim** — antes era erro de contagem, agora vira **sombra faltando**, porque ninguém mais desenha o que o C++ não vê |
+| `material.visible` fotografado no `build` | **sim** — é o mesmo erro do `visible` corrigido no passo 1, e o `three` o reavalia todo frame |
+| `drawCount` por nó | não nesta cena (zero materiais em array, medido), mas tem de virar **recusa** |
+
+### Plano do passo 2
+
+**E0** construir o comparador de imagem (M7 passo 1) — sem oráculo não há
+aceite. **E1** `material.visible` por frame no sync. **E2** registrar a
+geometria de todos os casters (hoje só o caminho `?nativePass=N` povoa o
+registro). **E3** o **gate de recusa** antes de desenhar: skinned, instanced,
+material em array, `alphaTest`/`alphaMap`, `positionNode`, geometria ausente,
+VSM, ou divergência de nós entre cena e espelho — recusar devolve o passe ao
+`three`. **E4** preparo por frame em JS (`updateBefore` do CSM →
+`updateMatrices` por cascata → viewProj em `Float64Array`, nunca `Float32`).
+**E5** o passe depth-only em C++, com `cullMode = Front`. **E6** desligar o
+passe do `three`, só com E3–E5 verdes. **E7** remover o trabalho órfão
+(`cullShadowCasters` em JS, sort do shadow pass). **E8** medir e limpar os
+diagnósticos.
+
+### O que ainda não se sabe, e precisa de caso de resposta conhecida
+
+1. **Se o submit do passe nativo precede, na fila, a leitura pelo passe
+   principal.** A SPEC-0242 provou *depth attachment* entre command buffers —
+   **não** amostragem de textura. Extrapolar entre os dois é exatamente o que
+   custou dois dias no M5. Exige teste próprio: escrever um valor conhecido no
+   mapa e conferir a sombra correspondente.
+2. **Quem cria os 2 nós que aparecem depois do `install`.** Medido, não
+   identificado. Sem isso o gate é rede, não conserto.
+3. **Se chamar `CSMShadowNode.updateBefore` por nós é idempotente.** A leitura
+   diz que sim; `updateFrustums`/`_initCascades` têm estado e isso não foi
+   provado.
+4. **Se o `GPUTexture` da `ShadowDepthTexture` chega a existir** quando o
+   `three` nunca renderiza nela.
+5. **Quanto o C++ vai custar.** O teto de 5,60 ms é do `three`. Os 2,2 µs/draw
+   vêm de um spike isolado, e os 34 µs/draw do M5 **não se reproduziram**. A
+   folga de 2,6 ms é plausível, **não medida**.
