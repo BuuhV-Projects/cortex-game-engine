@@ -247,3 +247,15 @@ junto do transform, por frame.
 3. `material.visible` é fotografado no `build`, não sincronizado.
 4. Os diagnósticos `?contarCasters=1` (sonda de `renderObject` e deriva de nós)
    são TEMPORÁRIOS e saem quando o passo 3 fechar a medição.
+
+### Nota para o passo 2 — o passe de sombra ordena à toa
+
+O engine nunca toca em `sortObjects` (zero ocorrências em `src/`), então o
+shadow pass roda com o default `true` do `three`. Ele paga duas multiplicações
+de `Matrix4` por malha (`Renderer.js`, no `_projectObject`) mais o `Array.sort`
+da RenderList **para ordenar um passe depth-only**, onde a ordem não tem efeito
+visual.
+
+Quando o C++ assumir o passe (passo 2), esse custo desaparece por construção —
+não há por que ordenar. Fica registrado como micro-ajuste disponível
+(estimativa de 0,05 a 0,15 ms) caso o marco precise de margem para o critério.
