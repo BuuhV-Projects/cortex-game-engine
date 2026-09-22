@@ -73,6 +73,7 @@ add_executable(cortex_host
   src/render/render_list.cpp
   src/render/geometry_registry.cpp
   src/render/native_pass.cpp
+  src/render/shadow_pass.cpp
   src/render/depth_peek.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
@@ -298,6 +299,7 @@ add_executable(cortex_host_tests
   tests/scene_mirror_test.cpp
   tests/shadow_caster_enumerator_test.cpp
   tests/shadow_pass_gate_test.cpp
+  tests/shadow_math_test.cpp
   tests/pipeline_cache_test.cpp
   tests/uniform_pool_test.cpp
   tests/render_list_test.cpp

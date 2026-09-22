@@ -136,4 +136,21 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
 /** Nome do motivo, para o relato por log sair legível sem depurador. */
 const char* shadowGateRefusalName(ShadowGateRefusal reason);
 
+/**
+ * A recusa é EXCLUSIVAMENTE {@link ShadowGateRefusal::kNodeCountDivergence}?
+ *
+ * ATALHO DE MEDIÇÃO da SPEC-0245, e **não** um caminho para virar padrão. O
+ * kart-racer recusa hoje por 2 nós — os placeholders de cascata que o próprio
+ * `three` cria (o `lwLight` e o `target` dele, sem geometria). O conserto
+ * definitivo é outro (detecção por evento, seção E6 da spec); enquanto ele não
+ * existe, medir o ganho do passe nativo exige ignorar essa recusa específica,
+ * e só ela.
+ *
+ * Por isso a resposta é `false` se QUALQUER outro motivo tiver contagem: um
+ * caster skinado, com recorte alfa ou sem geometria continua recusando o frame
+ * inteiro, que é o princípio do gate. E o chamador ainda precisa optar
+ * explicitamente pelo atalho — esta função só diz se ele é aplicável.
+ */
+bool refusalIsOnlyNodeDivergence(const ShadowGateResult& result);
+
 }  // namespace scene

@@ -253,4 +253,40 @@ void testShadowGateMotivoTemNome() {
                     "divergencia-de-nos") == 0);
 }
 
+void testShadowGateAtalhoSoValeParaDivergenciaDeNos() {
+  // ATALHO DE MEDICAO (SPEC-0245): so a divergencia de nos pode ser ignorada,
+  // e so quando ela e a UNICA recusa. Qualquer outro motivo junto tem de
+  // fechar a porta — aceitar por engano e sombra errada na imagem do jogador.
+  std::vector<NodeDesc> nos;
+  nos.push_back(casterAceito());
+
+  // 1. Divergencia sozinha: o atalho se aplica.
+  ShadowGateFrame comDeriva = frameLimpo(nos.size() + 2);
+  const ShadowGateResult soDeriva = avaliar(nos, comDeriva);
+  CHECK(!soDeriva.accepted);
+  CHECK(soDeriva.reason == ShadowGateRefusal::kNodeCountDivergence);
+  CHECK(scene::refusalIsOnlyNodeDivergence(soDeriva));
+
+  // 2. Divergencia + caster skinado: NAO se aplica.
+  std::vector<NodeDesc> comSkinado;
+  comSkinado.push_back(casterAceito());
+  NodeDesc skinado = casterAceito();
+  skinado.flags = static_cast<uint16_t>(skinado.flags | scene::kNodeSkinned);
+  comSkinado.push_back(skinado);
+  const ShadowGateResult duplo =
+      avaliar(comSkinado, frameLimpo(comSkinado.size() + 2));
+  CHECK(duplo.reason == ShadowGateRefusal::kNodeCountDivergence);  // prioridade
+  CHECK(!scene::refusalIsOnlyNodeDivergence(duplo));
+
+  // 3. Frame aceito: nao ha atalho a aplicar.
+  CHECK(!scene::refusalIsOnlyNodeDivergence(avaliar(nos, frameLimpo(nos.size()))));
+
+  // 4. Outra recusa sozinha: o atalho nao a cobre.
+  std::vector<NodeDesc> soSkinado;
+  soSkinado.push_back(skinado);
+  const ShadowGateResult semDeriva = avaliar(soSkinado, frameLimpo(soSkinado.size()));
+  CHECK(semDeriva.reason == ShadowGateRefusal::kSkinnedCaster);
+  CHECK(!scene::refusalIsOnlyNodeDivergence(semDeriva));
+}
+
 }  // namespace tests

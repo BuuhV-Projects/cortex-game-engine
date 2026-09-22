@@ -1,4 +1,5 @@
 import {
+  Matrix4,
   Vector3,
   type Camera,
   type Object3D,
@@ -57,6 +58,54 @@ function contarCastersPedido(): boolean {
 function gateDeSombraPedido(): boolean {
   if (typeof location === 'undefined') return false;
   return new URLSearchParams(location.search ?? '').get('gateSombra') === '1';
+}
+
+/**
+ * `?passeDeSombraNativo=1` — liga o passe de sombra em C++ (SPEC-0245, E5).
+ *
+ * Fica atrás de uma query enquanto o marco está em medição: o caminho padrão
+ * do jogo continua no `three`, e um frame em que o nativo recusa devolve o
+ * passe para ele sem nada sumir da imagem.
+ */
+function passeDeSombraNativoPedido(): boolean {
+  if (typeof location === 'undefined') return false;
+  return new URLSearchParams(location.search ?? '').get('passeDeSombraNativo') === '1';
+}
+
+/**
+ * `?forcarPasseDeSombra=1` — ATALHO DE MEDIÇÃO, **temporário** (SPEC-0245).
+ *
+ * Ignora a recusa por `divergencia-de-nos`, e **só** ela: as outras continuam
+ * fechando a porta. Existe porque o kart-racer recusa hoje por 2 nós — os
+ * placeholders de cascata que o próprio `three` cria (`lwLight` e o `target`
+ * dele, sem geometria) — e o conserto definitivo (detecção por evento) é outra
+ * frente. **Não pode virar padrão:** sem ele, o gate segue recusando, que é o
+ * comportamento correto enquanto a divergência não for resolvida de verdade.
+ */
+function forcarPasseDeSombraPedido(): boolean {
+  if (typeof location === 'undefined') return false;
+  return new URLSearchParams(location.search ?? '').get('forcarPasseDeSombra') === '1';
+}
+
+/**
+ * Rótulo que o `three` dá à textura de profundidade do shadow map
+ * (`ShadowNode.setupRenderTarget`). Usado só como ASSERÇÃO: o alvo é obtido
+ * por identidade do objeto, nunca por rótulo e nunca por dimensão.
+ */
+const ROTULO_DA_TEXTURA_DE_SOMBRA = 'ShadowDepthTexture';
+
+/** Elementos de uma `Matrix4`. */
+const ELEMENTOS_DA_MATRIZ = 16;
+
+/** A cascata como o CSM a guarda em `lights[]` (uma `LwLight` com `shadow`). */
+interface CascataDoCsm {
+  shadow?: {
+    camera?: Camera;
+    autoUpdate: boolean;
+    needsUpdate: boolean;
+    map?: { depthTexture?: { name?: string } };
+    updateMatrices?: (luz: unknown) => void;
+  };
 }
 
 /**
@@ -130,6 +179,19 @@ class CameraFollowingCSM extends CSMShadowNode {
   /** Última linha do gate, para não repetir o mesmo veredito todo frame. */
   private _ultimoVeredito = '';
 
+  /** Última linha do passe nativo, pelo mesmo motivo do gate. */
+  private _ultimoRelatoDoPasse = '';
+
+  /**
+   * `viewProj` da cascata em DOUBLE (SPEC-0245, E4).
+   *
+   * `Float64Array` e não `Float32Array`: a multiplicação por `model` acontece
+   * em `double` do lado do C++, e converter aqui jogaria fora a precisão que
+   * separa a sombra correta das bandas da SPEC-0234.
+   */
+  private readonly _viewProj64 = new Float64Array(ELEMENTOS_DA_MATRIZ);
+  private readonly _viewProjDaCascata = new Matrix4();
+
   /** DIAGNÓSTICO TEMPORÁRIO (SPEC-0245): última contagem de cena já relatada. */
   private _ultimaDeriva = -1;
 
@@ -198,7 +260,7 @@ class CameraFollowingCSM extends CSMShadowNode {
           // ganhar nós depois disso, o `three` desenha o que o C++ não vê — e,
           // quando o passe nativo assumir, isso vira sombra faltando. Por isso
           // a contagem alimenta o gate (E3), além do diagnóstico.
-          if (contarCastersPedido() || gateDeSombraPedido()) {
+          if (contarCastersPedido() || gateDeSombraPedido() || passeDeSombraNativoPedido()) {
             let naCena = 0;
             scene.traverse(() => {
               naCena++;
@@ -229,6 +291,9 @@ class CameraFollowingCSM extends CSMShadowNode {
     const resultado = super.updateBefore(frame);
     if (cam?.isPerspectiveCamera && contarCastersPedido()) this._relatarCastersNativos();
     if (cam?.isPerspectiveCamera && gateDeSombraPedido()) this._prepararEAvaliarGate(frame);
+    if (cam?.isPerspectiveCamera && passeDeSombraNativoPedido()) {
+      this._desenharPasseDeSombraNativo(frame);
+    }
     return resultado;
   }
 
@@ -278,6 +343,126 @@ class CameraFollowingCSM extends CSMShadowNode {
         `[${porCascata.join(', ')}], three desenhou ${drawsDaSombraNoFrame}, ` +
         `minRatio=${this.shadowCasterMinRatio}`,
     );
+  }
+
+
+  /**
+   * E4 + E5 + E6 da SPEC-0245: prepara o frame, desenha o passe de sombra em
+   * C++ e, quando ele assume, **desliga o passe do `three`**.
+   *
+   * Roda DEPOIS do `super.updateBefore`, que é quem reposiciona as cascatas —
+   * enumerar ou desenhar antes usaria a ortho do frame passado.
+   *
+   * A ordem interna não é livre:
+   *
+   * 1. `shadow.updateMatrices(luz)` por cascata. Com o passe do `three`
+   *    desligado ninguém mais chama isso, e o uniforme `lightShadowMatrix` —
+   *    o que AMOSTRA o mapa — congela, prendendo a sombra ao mundo de um frame
+   *    antigo. Falha silenciosa e visual.
+   * 2. `viewProj` em `Float64Array`. A multiplicação por `model` acontece em
+   *    `double` no C++; degradar aqui é o caminho conhecido para as bandas da
+   *    SPEC-0234.
+   * 3. o alvo vem por IDENTIDADE do objeto (`backend.get(depthTexture)`),
+   *    reaquirido por frame. O rótulo `'ShadowDepthTexture'` entra só como
+   *    ASSERÇÃO — identificar recurso por dimensão é o que custou dois dias no
+   *    M5, e é a regra de medição 4 da spec.
+   */
+  private _desenharPasseDeSombraNativo(frame: unknown): void {
+    const espelho = activeSceneMirror();
+    if (!espelho?.installed) return;
+    const contexto = frame as {
+      scene?: Object3D;
+      renderer?: {
+        backend?: { get(alvo: unknown): { buffer?: unknown; texture?: unknown } | undefined };
+        shadowMap?: { type?: number };
+      };
+    } | null;
+    const cena = contexto?.scene;
+    const renderer = contexto?.renderer;
+    const backend = renderer?.backend;
+    if (!cena || !backend) return;
+
+    // E2 — registro preguiçoso: quem ainda não subiu é tentado no próximo frame.
+    this._registroDeCasters.atualizar(cena, backend);
+
+    const cascatas = (this as unknown as { lights?: CascataDoCsm[] }).lights;
+    if (!cascatas || cascatas.length === 0) return;
+
+    const vsm = renderer?.shadowMap?.type === VSMShadowMap;
+    const forcado = forcarPasseDeSombraPedido();
+    let assumiu = true;
+    let desenhados = 0;
+    let motivo = 'aceito';
+
+    for (const cascata of cascatas) {
+      cascata.shadow?.updateMatrices?.(cascata);
+      const shadowCamera = cascata.shadow?.camera;
+      const texturaDeProfundidade = cascata.shadow?.map?.depthTexture;
+      if (!shadowCamera || !texturaDeProfundidade) {
+        assumiu = false;
+        motivo = 'sem-alvo';
+        break;
+      }
+      // Asserção, não identificação: o alvo já veio pelo objeto certo. Se o
+      // rótulo mudar, é sinal de que a premissa quebrou — recusar é o lado
+      // seguro, porque desenhar na textura errada corrompe outra coisa.
+      if (texturaDeProfundidade.name !== ROTULO_DA_TEXTURA_DE_SOMBRA) {
+        assumiu = false;
+        motivo = `rotulo-inesperado:${texturaDeProfundidade.name}`;
+        break;
+      }
+      const alvo = backend.get(texturaDeProfundidade)?.texture;
+      if (!alvo) {
+        // O `three` ainda não criou o `GPUTexture` — ele nasce no primeiro
+        // render para o shadow map. Recusar aqui é o que deixa o `three`
+        // desenhar o primeiro frame e criar a textura que este passe usa.
+        assumiu = false;
+        motivo = 'alvo-sem-gpu';
+        break;
+      }
+
+      shadowCamera.updateMatrixWorld();
+      this._viewProjDaCascata.multiplyMatrices(
+        shadowCamera.projectionMatrix,
+        shadowCamera.matrixWorldInverse,
+      );
+      const elementos = this._viewProjDaCascata.elements;
+      for (let i = 0; i < ELEMENTOS_DA_MATRIZ; i++) this._viewProj64[i] = elementos[i]!;
+
+      const resultado = espelho.drawShadowPass(
+        shadowCamera,
+        this._cameraDoUltimoCull,
+        this.shadowCasterMinRatio,
+        this._viewProj64,
+        alvo,
+        this._nosDaCena,
+        vsm,
+        forcado,
+      );
+      if (!resultado || resultado.refused || resultado.drawn === 0) {
+        assumiu = false;
+        motivo = resultado ? resultado.reason : 'sem-ponte';
+        break;
+      }
+      desenhados += resultado.drawn;
+    }
+
+    // E6 (parcial) — o passe do `three` só é desligado com o nativo desenhando
+    // de fato, e volta a ligar no frame em que o nativo recusa. `autoUpdate`
+    // vai na `shadow` de CADA cascata, não na do sol: o CSM clona a luz, e
+    // mexer no original não chega nas cópias.
+    for (const cascata of cascatas) {
+      if (!cascata.shadow) continue;
+      cascata.shadow.autoUpdate = !assumiu;
+      if (assumiu) cascata.shadow.needsUpdate = false;
+    }
+
+    const linha = assumiu
+      ? `ASSUMIU desenhados=${desenhados} cascatas=${cascatas.length}`
+      : `DEVOLVEU ao three motivo=${motivo}`;
+    if (linha === this._ultimoRelatoDoPasse) return;
+    this._ultimoRelatoDoPasse = linha;
+    debug('perf', `[shadowPass] ${linha}`);
   }
 
   /**

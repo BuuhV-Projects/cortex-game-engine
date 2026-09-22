@@ -92,6 +92,19 @@ interface SceneMirrorBridge {
     vsmShadowMap: boolean,
     out: Float64Array,
   ): number | undefined;
+  drawShadowPass?(
+    minRatio: number,
+    cameraX: number,
+    cameraY: number,
+    cameraZ: number,
+    planes: Float32Array,
+    viewProjection: Float64Array,
+    target: unknown,
+    sceneNodeCount: number,
+    vsmShadowMap: boolean,
+    force: boolean,
+    out: Float64Array,
+  ): number | undefined;
 }
 
 /**
@@ -131,6 +144,18 @@ export interface ShadowGateVerdict {
   totalCasters: number;
   /** Contagem por motivo — todos, não só o primeiro. */
   counts: Readonly<Record<ShadowGateReason, number>>;
+}
+
+/** Resultado de {@link NativeSceneMirror.drawShadowPass} (SPEC-0245, E5). */
+export interface ShadowPassOutcome {
+  /** Casters desenhados em C++; `0` quando recusado. */
+  drawn: number;
+  /** O gate recusou o frame — o `three` mantém o passe dele. */
+  refused: boolean;
+  /** Motivo da recusa, ou `'aceito'`. */
+  reason: ShadowGateReason;
+  /** Casters enumerados no frame. */
+  totalCasters: number;
 }
 
 /** Um `Object3D` com o que o espelho precisa saber para classificar o nó. */
@@ -489,6 +514,69 @@ export class NativeSceneMirror {
       totalCasters: this._gateOut[GATE_OUT_TOTAL_CASTERS] ?? 0,
       counts,
     };
+  }
+
+
+  /**
+   * Desenha o passe de sombra da cascata em C++ (SPEC-0245, E5 do passo 2).
+   *
+   * Uma travessia de ponte faz o que o `three` faz em JS por objeto: enumera
+   * os casters, passa pelo gate e, se ele deixar, desenha direto na
+   * `ShadowDepthTexture`.
+   *
+   * Tem de rodar DEPOIS de {@link update} e com a ortho da cascata já fixada
+   * por `shadow.updateMatrices(luz)`, pelos mesmos motivos de
+   * {@link countShadowCasters} — e porque, sem o `updateMatrices`, o uniforme
+   * `lightShadowMatrix` que o `three` usa para AMOSTRAR o mapa congela, e a
+   * sombra fica presa ao mundo de um frame antigo.
+   *
+   * @param alvo - O `GPUTexture` de `shadow.map.depthTexture`, obtido por
+   *   IDENTIDADE do objeto (`backend.get(...)`) e reaquirido por frame: o
+   *   `three` recria a textura quando o `mapSize` muda.
+   * @param viewProjection - `projectionMatrix × matrixWorldInverse` da ortho da
+   *   cascata, em `Float64Array`. **Nunca `Float32Array`**: a multiplicação
+   *   por `model` acontece em `double` no C++, e degradar antes é o caminho
+   *   conhecido para as bandas da SPEC-0234.
+   * @param forcarIgnorandoDivergenciaDeNos - ATALHO DE MEDIÇÃO: ignora a
+   *   recusa por divergência de nós, e **só** ela. Não é para virar padrão.
+   * @returns `{ drawn }` quando desenhou, `{ refused }` com o motivo quando
+   *   não — e `undefined` no browser/Studio, onde não há host.
+   */
+  drawShadowPass(
+    shadowCamera: Camera,
+    cameraPosition: Vector3,
+    minRatio: number,
+    viewProjection: Float64Array,
+    alvo: unknown,
+    sceneNodeCount: number,
+    vsmShadowMap: boolean,
+    forcarIgnorandoDivergenciaDeNos: boolean,
+  ): ShadowPassOutcome | undefined {
+    const api = this._bridge;
+    if (!api?.drawShadowPass || !this._installed) return undefined;
+
+    this._escreverPlanosDaCascata(shadowCamera);
+    const resposta = api.drawShadowPass(
+      minRatio,
+      cameraPosition.x,
+      cameraPosition.y,
+      cameraPosition.z,
+      this._shadowPlanes,
+      viewProjection,
+      alvo ?? null,
+      sceneNodeCount,
+      vsmShadowMap,
+      forcarIgnorandoDivergenciaDeNos,
+      this._gateOut,
+    );
+    if (typeof resposta !== 'number') return undefined;
+
+    const totalCasters = this._gateOut[GATE_OUT_TOTAL_CASTERS] ?? 0;
+    if (resposta < 0) {
+      const reason = SHADOW_GATE_REASONS[-resposta] ?? 'geometria-ausente';
+      return { drawn: 0, refused: true, reason, totalCasters };
+    }
+    return { drawn: resposta, refused: false, reason: 'aceito', totalCasters };
   }
 
   /**

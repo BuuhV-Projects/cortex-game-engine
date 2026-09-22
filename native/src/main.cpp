@@ -255,7 +255,7 @@ int main(int argc, char** argv) {
     shims::registerImageDecode(js.env());
     shims::registerKtx2(js.env());
     shims::registerClock(js.env());  // SPEC-0226
-    shims::registerSceneMirror(js.env());  // SPEC-0234
+    shims::registerSceneMirror(js.env(), &gpu);  // SPEC-0234 (+ passe de sombra, SPEC-0245)
     shims::registerDualPassSpike(js.env(), &gpu);  // SPEC-0241 passo 0 (TEMPORARIO)
     shims::registerGeometryRegistry(js.env());  // SPEC-0241 passo 2
     shims::registerNativePass(js.env(), &gpu);  // SPEC-0241 passo 3
