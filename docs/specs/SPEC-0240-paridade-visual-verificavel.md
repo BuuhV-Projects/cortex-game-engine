@@ -230,10 +230,14 @@ node native/scripts/render-parity.mjs <dirA> <dirB> [--delta N]
 
 Cada rodada leva ~26 s (aquecimento incluído) e ocupa ~8 MB por quadro.
 
-> **Atenção à variável da janela oculta:** é `CORTEX_WINDOW_HIDDEN`, lida em
-> `core/app_window.cpp`. Não existe nenhum `CORTEX_WINDOW_OFFSCREEN` no
-> código — esse nome circula em anotações de sessão e leva a rodar com janela
-> visível na cara do dono da máquina.
+> **Atenção ao nome da variável da janela.** Nesta branch é
+> `CORTEX_WINDOW_HIDDEN` (`SDL_HideWindow`). A branch do M6
+> (`feat/m5-submissao-nativa`) criou, em paralelo e para o mesmo fim, um
+> `CORTEX_WINDOW_OFFSCREEN` que posiciona a janela em −32000 — as duas
+> alternativas foram medidas no passo 0 e **ambas servem**. Usar o nome da
+> outra branch é um no-op silencioso: a janela abre visível na cara de quem
+> está usando a máquina. Ao juntar as duas branches os dois blocos coexistem
+> sem se excluir; se um dia convergirem para um nome só, é uma decisão à parte.
 
 ## Medições (22/09/2026) — o harness foi validado
 
