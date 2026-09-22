@@ -74,6 +74,17 @@ SDL_Window* createAppWindow(HostGpu* gpu, const char* title, int width,
   if (SDL_getenv("CORTEX_WINDOW_OFFSCREEN") != nullptr) {
     SDL_SetWindowPosition(window, -32000, -32000);
   }
+  // Janela oculta (SPEC-0240): mesmo fim por outro meio, e o que o harness de
+  // paridade visual usa. Medido no passo 0: com `SDL_HideWindow`,
+  // `width`/`height` continuam positivos e o present segue desenhando (240
+  // frames, 0 abortados) — minimizar de verdade NAO serve.
+  //
+  // As duas convivem de proposito: nasceram em marcos paralelos (M6 e M7) e
+  // cada um ja tem medicao e scripts com o SEU nome. Usar o nome errado seria
+  // um no-op SILENCIOSO — a janela abriria na frente do dono da maquina.
+  if (SDL_getenv("CORTEX_WINDOW_HIDDEN") != nullptr) {
+    SDL_HideWindow(window);
+  }
   // Deixa o fullscreen assentar ANTES de ler o tamanho (senão o engine cria
   // os alvos no tamanho inicial da janela e não bate com a swapchain).
   SDL_SyncWindow(window);

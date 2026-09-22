@@ -44,6 +44,7 @@
 #include "webgpu/render_bench.h"
 #include "webgpu/override_probe.h"
 #include "webgpu/depth_selftest.h"
+#include "webgpu/render_parity_capture.h"
 #include "webgpu/bloom.h"
 #include "webgpu/splash.h"
 
@@ -214,6 +215,11 @@ int main(int argc, char** argv) {
   // App model do GDK (console/Xbox): inicializa o Game Runtime cedo, antes de
   // qualquer outra API do GDK. No-op no build desktop (sem CORTEX_GDK).
   core::initGameRuntime();
+
+  // Paridade visual (SPEC-0240, passo 1): lê CORTEX_RENDER_PARITY_CAPTURE
+  // ANTES de a surface ser configurada — configureSurface() consulta
+  // renderParityCaptureEnabled() para decidir se pede CopySrc no usage.
+  webgpu::initRenderParityCapture();
 
   HostGpu gpu;
   // Tamanho só do modo janela (CORTEX_WINDOWED); em fullscreen usa a
