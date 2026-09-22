@@ -815,3 +815,121 @@ custa (0,8 ms aqui).
 `three` cria dívida que só aparece quando o `three` muda. Por isso o marco só
 se considera fechado com um **mecanismo de contrato** que falhe ruidosamente
 quando uma premissa do `three` deixar de valer — ver SPEC-0246.
+## E6 EXECUTADO em 2026-09-22 — o gate passou a ACEITAR o kart-racer
+
+### O que foi construído
+
+- **Detecção por evento** (`src/core/NativeSceneMirror.ts`). O `install`
+  instala `childadded`/`childremoved` em cada nó espelhado, e a mutação chega
+  no frame em que acontece, O(1) por evento. Conferido no fonte do
+  `Object3D.js`: `add`, `attach`, `remove`, `removeFromParent`, `clear` e
+  `copy` desembocam todos em `add`/`remove`, que é onde os dois eventos são
+  disparados — e ninguém mexe em `children` por fora (varredura em
+  `node_modules/three/src` por `children.push|splice|length = 0` e por
+  `.parent =`: **zero** ocorrências fora do próprio `Object3D`). Não há
+  caminho que escape.
+- **Capacidade reservada** (`native/src/scene/scene_mirror.{h,cpp}`). O `build`
+  faz `reserve(nos + kMirrorSpareNodes)` em todos os vetores **antes** do
+  `resize`, e o `ArrayBuffer` externo passa a cobrir a CAPACIDADE. `appendBatch`
+  põe uma subárvore inteira sem realocar, **ou tudo ou nada** (capacidade e pais
+  são validados antes de qualquer escrita — um lote pela metade deixaria filho
+  sem pai). O contrato pai-antes-de-filho vale inclusive no reaproveitamento de
+  slot: um slot livre só serve se vier DEPOIS do pai.
+- **Remoção por lápide.** `removeSubtree` tira o nó e os descendentes numa
+  passada para frente (filho vem depois do pai), marcando o slot no lugar:
+  invisível, sem sombra, sem geometria. **Índice de ninguém muda** — mudar
+  obrigaria a reapontar o `matrixWorld` de todos, que é o laço em JS de ≥1,4 ms
+  que a SPEC-0234 eliminou. O slot volta para uma lista livre, e sem isso cada
+  troca de pai do `three` (o `add` remove do pai antigo antes de pôr no novo)
+  gastaria capacidade para sempre — um *hazard* que nasce e morre o tempo todo
+  esvaziaria a folga numa corrida.
+- **Estouro recusa, nunca realoca.** `AppendResult::kOutOfCapacity` não
+  escreve nada; o lado JS invalida todo `matrixWorld.elements` (devolvendo a
+  cada objeto um vetor próprio com a última matriz, mais o
+  `matrixWorldAutoUpdate`), desliga o espelho e devolve o passe ao `three`. É
+  a assimetria do M1 de novo: recusar custa os milissegundos do marco, aceitar
+  errado custa a imagem.
+- **A travessia de 10 frames virou AUDITORIA.** Ela deixou de ser a fonte da
+  contagem que alimenta o gate e passou a responder só "escapou algum caminho
+  do `three`?". Motivo medido: o número dela envelhece, e alimentar o gate com
+  ele fazia o veredito **alternar aceita/recusa** conforme um *hazard* nascesse
+  entre a contagem e o gate — recusa por defasagem do instrumento, não por
+  divergência real.
+
+### O veredito mudou: de RECUSA por 2 nós para ACEITA
+
+`?bench&cortexDebug=perf&medirEvento=1&gateSombra=1`, export `--debug` feito
+**da worktree** (o export usa `src/`, não o `vendor/`), janela offscreen:
+
+```
+[shadowGate] ACEITA motivo=aceito objetos=0 casters=66 recusados=0 ...
+```
+
+Numa corrida de 150 s: **184 vereditos ACEITA e 1 RECUSA**. A única recusa é
+`geometria-ausente` em 1 caster — uma malha que virou caster antes de o `three`
+ter subido o buffer dela para a GPU, que é o registro preguiçoso do E2 fazendo
+o que deve. Ela é, incidentalmente, a **prova de que a detecção funciona**: o
+nó que nasceu no meio da corrida está no espelho e foi enumerado (73 casters
+naquele frame, contra 66 do regime), e só foi recusado pela geometria.
+
+### O custo do dispatch: medido, não estimado
+
+Mesma rodada, `?medirEvento=1`: 200 ciclos `add`+`remove`, com os **975 nós da
+cena já com listener instalado**, em três condições.
+
+| condição | us/ciclo |
+| --- | --- |
+| pai solto, sem ouvinte nenhum (`three` cru) | 0,86 |
+| pai com ouvinte que **não faz nada** (só o `dispatchEvent`) | 1,59 |
+| pai espelhado (dispatch + append/remove do espelho) | 11,53 |
+
+- **O dispatch custa +0,73 us por ciclo, ou ~0,37 us por evento.** Foi o que a
+  refutação mandou medir, e ele **não escala com o número de listeners
+  instalados**: o `dispatchEvent` percorre a lista de UM objeto, e quem não tem
+  ouvinte sai na primeira linha (`_listeners === undefined`). Mil listeners na
+  cena custam memória, não tempo.
+- O resto (+9,9 us/ciclo, ~5 us por evento) é a travessia de ponte do
+  `appendNodes`/`removeNode` — da ordem dos 15 us por travessia da SPEC-0225,
+  e paga **uma vez por evento**, não por nó, porque a subárvore inteira vai
+  numa chamada só.
+
+E no jogo de verdade, com a corrida andando:
+
+```
+[sceneMirror] eventos: 2 em 0,031 ms nos ultimos 300 frames
+[sceneMirror] eventos: 2 em 0,104 ms nos ultimos 300 frames
+```
+
+**2 eventos a cada 300 frames, somando 0,03–0,10 ms** — ou seja, entre 0,0001 e
+0,0003 ms por frame amortizado, contra um frame de ~30 ms. **É ruído**, e a
+resposta à pergunta "se custar mais que ruído, diga quanto" é: não custa.
+
+> Um erro pego pela própria medição: a primeira rodada relatou **809 eventos**
+> em 6,7 ms, o que faria parecer que o jogo mexe na cena mais de uma vez por
+> frame. Eram os 800 eventos do próprio *benchmark* (200 ciclos de aquecimento
+> + 200 de medição, `add` e `remove` contando um cada) somados ao contador. O
+> instrumento agora zera o acumulado quando termina. Vale a regra de sempre:
+> número que não fecha com o modelo é suspeita contra o instrumento primeiro.
+
+### Testes
+
+- Harness C++ (`cortex_host_tests`): **317 checks, 0 falhas** — os 51 novos
+  cobrem append sem realocar (comparando `worldData()` antes e depois),
+  `subarray` entregue antes seguindo válido e apontando para o mesmo nó,
+  pai-antes-de-filho (inclusive pai que viria depois no próprio lote),
+  estouro sem realocar e sem entrar pela metade, remoção que não mexe no índice
+  dos outros, remoção da subárvore inteira, lápide que não ressuscita por linha
+  de sincronização e reaproveitamento de slot com a regra do pai.
+- Vitest: **1.550 passando, 7 pulados, 0 falhas** — 11 novos no
+  `NativeSceneMirror.test.ts`, incluindo `attach`, subárvore inteira numa
+  chamada só, linha de sincronização que pula o slot vazio, estouro que desliga
+  o espelho e host antigo sem `appendNodes`.
+
+### O que fica
+
+- `?medirEvento=1` é TEMPORÁRIO e sai no E8, junto de `?gateSombra=1` e
+  `?contarCasters=1`.
+- A auditoria de 10 frames (`scene.traverse` contando nós) também sai no E8:
+  ela hoje só confirma o que o evento já sabe.
+- O E4 e o E5 continuam como estavam — o E6 tirou o **bloqueio único** que
+  impedia o gate de aceitar, não ligou o passe.

@@ -27,6 +27,24 @@ std::vector<float> planosAmplos() {
 
 float identidade[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
+/** Cena mínima já construída (raiz + filhos diretos), com a folga pedida. */
+SceneMirror comFolga(size_t nos, size_t folga) {
+  std::vector<NodeDesc> desc(nos);
+  desc[0].parent = kNoParent;
+  for (size_t i = 1; i < nos; i++) desc[i].parent = 0;
+  SceneMirror espelho;
+  espelho.build(desc, folga);
+  return espelho;
+}
+
+/** Um nó filho de `pai`, deslocado em X para dar o que conferir. */
+NodeDesc filhoEm(scene::NodeIndex pai, double x) {
+  NodeDesc no;
+  no.parent = pai;
+  no.transform.px = x;
+  return no;
+}
+
 }  // namespace
 
 namespace tests {
@@ -118,6 +136,160 @@ void testSceneMirrorNaoRecalculaQuemNaoMudou() {
   espelho.updateAndCull(identidade, planos.data());
 
   CHECK(std::fabs(espelho.worldMatrix(1)[12] - 3.0) < 1e-9);
+}
+
+// ── E6 da SPEC-0245: a cena cresce depois do `install` ──────────────────────
+
+void testSceneMirrorAppendNaoRealocaOBufferDoJs() {
+  // O CORAÇÃO do E6: o `ArrayBuffer` externo é criado SEM finalizer e o JS
+  // guarda o ponteiro. Se o append realocar, todo `matrixWorld.elements` já
+  // entregue passa a apontar para memória liberada — e erro nessa fronteira
+  // aparece como artefato visual, não como exceção (SPEC-0234).
+  SceneMirror espelho = comFolga(3, 8);
+  const double* antes = espelho.worldData();
+
+  std::vector<NodeDesc> lote{filhoEm(1, 5.0)};
+  std::vector<scene::NodeIndex> indices;
+  CHECK(espelho.appendBatch(lote, indices) == scene::AppendResult::kAppended);
+
+  CHECK(espelho.worldData() == antes);
+  CHECK(indices.size() == 1);
+  CHECK(indices[0] == 3);
+  CHECK(espelho.size() == 4);
+  CHECK(espelho.liveCount() == 4);
+}
+
+void testSceneMirrorSubarrayEntregueAntesSegueValido() {
+  // A promessa de que o JS depende: a fatia que ele recebeu no `install`
+  // continua apontando para a matriz do MESMO nó depois de a cena crescer.
+  SceneMirror espelho = comFolga(2, 8);
+  const auto planos = planosAmplos();
+  const double mover[kSyncFloatsPerNode] = {1, 7, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
+  espelho.applyTransforms(mover, kSyncFloatsPerNode);
+  espelho.updateAndCull(identidade, planos.data());
+  // É isto que o JS segura: o ponteiro para a fatia do nó 1.
+  const double* fatiaDoNo1 = espelho.worldMatrix(1);
+  CHECK(std::fabs(fatiaDoNo1[12] - 7.0) < 1e-9);
+
+  std::vector<NodeDesc> lote{filhoEm(0, 1.0), filhoEm(scene::encodeBatchParent(0), 2.0)};
+  std::vector<scene::NodeIndex> indices;
+  CHECK(espelho.appendBatch(lote, indices) == scene::AppendResult::kAppended);
+  espelho.updateAndCull(identidade, planos.data());
+
+  CHECK(espelho.worldMatrix(1) == fatiaDoNo1);
+  CHECK(std::fabs(fatiaDoNo1[12] - 7.0) < 1e-9);
+  // E o neto veio pela cadeia certa: 1 (pai, no lote) + 2 (ele).
+  CHECK(std::fabs(espelho.worldMatrix(indices[1])[12] - 3.0) < 1e-9);
+}
+
+void testSceneMirrorAppendMantemPaiAntesDeFilho() {
+  // Sem esta ordem a propagação linear leria a matriz de mundo do pai ainda
+  // não calculada — matriz errada em silêncio.
+  SceneMirror espelho = comFolga(2, 8);
+  std::vector<NodeDesc> lote{filhoEm(0, 0.0), filhoEm(scene::encodeBatchParent(0), 0.0)};
+  std::vector<scene::NodeIndex> indices;
+  CHECK(espelho.appendBatch(lote, indices) == scene::AppendResult::kAppended);
+  CHECK(indices[0] < indices[1]);
+  CHECK(espelho.parent(indices[1]) == indices[0]);
+
+  // Pai que não existe, e pai que vem DEPOIS no próprio lote: as duas recusam,
+  // e nada entra.
+  const size_t tamanho = espelho.size();
+  std::vector<NodeDesc> foraDaCena{filhoEm(999, 0.0)};
+  CHECK(espelho.appendBatch(foraDaCena, indices) == scene::AppendResult::kBadParent);
+  std::vector<NodeDesc> invertido{filhoEm(scene::encodeBatchParent(1), 0.0), filhoEm(0, 0.0)};
+  CHECK(espelho.appendBatch(invertido, indices) == scene::AppendResult::kBadParent);
+  CHECK(espelho.size() == tamanho);
+}
+
+void testSceneMirrorEstouroDeCapacidadeRecusaSemRealocar() {
+  // Estourar NÃO pode virar realocação silenciosa: prefere-se recusar (e o JS
+  // devolve o passe ao `three`) a desenhar sobre memória liberada.
+  SceneMirror espelho = comFolga(2, 1);
+  const double* antes = espelho.worldData();
+  std::vector<scene::NodeIndex> indices;
+
+  std::vector<NodeDesc> um{filhoEm(0, 0.0)};
+  CHECK(espelho.appendBatch(um, indices) == scene::AppendResult::kAppended);
+  CHECK(espelho.appendBatch(um, indices) == scene::AppendResult::kOutOfCapacity);
+  CHECK(espelho.worldData() == antes);
+  CHECK(espelho.size() == 3);
+  CHECK(espelho.capacity() == 3);
+
+  // E um lote que não cabe INTEIRO não entra pela metade.
+  SceneMirror outro = comFolga(1, 2);
+  std::vector<NodeDesc> tres{filhoEm(0, 0.0), filhoEm(0, 0.0), filhoEm(0, 0.0)};
+  CHECK(outro.appendBatch(tres, indices) == scene::AppendResult::kOutOfCapacity);
+  CHECK(outro.size() == 1);
+}
+
+void testSceneMirrorRemocaoNaoMexeNoIndiceDosOutros() {
+  // O nó que sai vira lápide NO LUGAR. Mudar índice obrigaria a reapontar o
+  // `matrixWorld` de todo mundo — o laço em JS que a SPEC-0234 eliminou.
+  SceneMirror espelho = comFolga(4, 8);
+  const double* fatiaDoNo3 = espelho.worldMatrix(3);
+
+  CHECK(espelho.removeSubtree(2) == 1);
+
+  CHECK(espelho.size() == 4);
+  CHECK(espelho.liveCount() == 3);
+  CHECK(espelho.removed(2));
+  CHECK(!espelho.removed(3));
+  CHECK(espelho.worldMatrix(3) == fatiaDoNo3);
+  // A lápide some da imagem: sem visível, sem sombra, sem geometria.
+  CHECK(!espelho.visibleFlag(2));
+  CHECK(espelho.flags(2) == 0);
+  CHECK(espelho.geometryId(2) == scene::kNoGeometry);
+  // E não ressuscita por linha de sincronização.
+  const double ressuscitar[kSyncFloatsPerNode] = {2, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
+  espelho.applyTransforms(ressuscitar, kSyncFloatsPerNode);
+  CHECK(!espelho.visibleFlag(2));
+}
+
+void testSceneMirrorRemocaoLevaASubarvoreInteira() {
+  // Só a raiz da subárvore recebe `childremoved` no `three`; se os filhos
+  // ficassem, seguiriam projetando sombra de um objeto fora da cena.
+  std::vector<NodeDesc> desc(4);
+  desc[0].parent = kNoParent;
+  desc[1].parent = 0;
+  desc[2].parent = 1;
+  desc[3].parent = 2;
+  SceneMirror espelho;
+  CHECK(espelho.build(desc, 8));
+
+  CHECK(espelho.removeSubtree(1) == 3);
+  CHECK(espelho.liveCount() == 1);
+  CHECK(espelho.removed(3));
+  // Remover de novo não conta nada nem devolve o slot duas vezes.
+  CHECK(espelho.removeSubtree(1) == 0);
+  CHECK(espelho.liveCount() == 1);
+}
+
+void testSceneMirrorReaproveitaSlotDeLapide() {
+  // Sem reaproveitar, cada troca de pai (o `add` do `three` remove do pai
+  // antigo antes de pôr no novo) gastaria capacidade para sempre, e um hazard
+  // que nasce e morre o tempo todo esvaziaria a folga numa corrida.
+  SceneMirror espelho = comFolga(3, 1);
+  const auto planos = planosAmplos();
+  espelho.updateAndCull(identidade, planos.data());
+  CHECK(espelho.removeSubtree(2) == 1);
+  CHECK(espelho.liveCount() == 2);
+
+  std::vector<NodeDesc> lote{filhoEm(0, 4.0)};
+  std::vector<scene::NodeIndex> indices;
+  CHECK(espelho.appendBatch(lote, indices) == scene::AppendResult::kAppended);
+  CHECK(indices[0] == 2);  // o slot de volta, não um novo
+  CHECK(espelho.size() == 3);
+  CHECK(espelho.liveCount() == 3);
+  CHECK(!espelho.removed(2));
+  // O slot reaproveitado traz a matriz do nó NOVO, não a do que saiu.
+  CHECK(std::fabs(espelho.worldMatrix(2)[12] - 4.0) < 1e-9);
+
+  // E um slot que viria ANTES do pai não serve: pai-antes-de-filho primeiro.
+  CHECK(espelho.removeSubtree(1) == 1);
+  std::vector<NodeDesc> filhoDoDois{filhoEm(2, 0.0)};
+  CHECK(espelho.appendBatch(filhoDoDois, indices) == scene::AppendResult::kAppended);
+  CHECK(indices[0] > 2);
 }
 
 }  // namespace tests
