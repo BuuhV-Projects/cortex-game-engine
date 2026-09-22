@@ -452,3 +452,92 @@ Descontadas essas, **2.939/2.939 (100%)**, 66 × 66.
    10 frames depois — aceitável enquanto o `three` ainda desenha a sombra, e
    coisa que o **E6** precisa resolver antes de desligá-lo.
 4. `?gateSombra=1` e `?contarCasters=1` continuam TEMPORÁRIOS e saem no E8.
+
+## E6 — o espelho e os nós que nascem depois (2026-09-22)
+
+### Os 2 nós estáveis são do `three`, não do jogo
+
+São os placeholders de cascata do CSM: `CSMShadowNode.updateBefore` faz
+`parent.add(lwLight.target); parent.add(lwLight)` quando `lwLight.parent` é
+nulo — 2 por cascata, e o kart-racer usa 1. `LwLight extends Object3D`, sem
+geometria; um deles tem `castShadow = true`, que é marcação do `three`, não
+intenção de desenhar.
+
+### A janela de aceite existe, mas não pela causa que se supôs
+
+Não há frame com a divergência "não conferida": o bloco do culling dispara no
+primeiro frame de câmera perspectiva e grava a contagem **antes** do gate. O
+problema é outro e é pior: os `lwLight` são adicionados **dentro** de
+`super.updateBefore`, que roda **depois** da contagem. A primeira contagem vê
+975 = 975 e o gate **aceita**; a divergência só aparece 10 frames depois.
+**A conferência é feita antes da mutação que ela deveria pegar.**
+
+### O crescimento da cena tem teto — e o míssil é caster por transitório
+
+Os visuais de kart (escudo, faíscas, chama) são criados por
+`shieldTime > 0 || drifting || boostTime > 0` e **nunca removidos** (a única
+remoção está no `dispose`; o `reset` só faz `visible = false`). Mas o total é
+**limitado**: `4 + escapamentos × (4|5)` por carro, uma vez só. O que nasce e
+morre sem parar são os *hazards* (óleo, projétil), que cabem num pool.
+
+O projétil tem `castShadow` autorado, e o `missile.glb` tem **4 primitives** —
+4 malhas casters, não uma. Medidos os raios do glb, só a primitive 1
+(raio 1,1665, razão 0,159 a 7,34 m) passa o `shadowCasterMinRatio: 0.15`, com
+6% de margem, e sai da faixa em 7,78 m — cerca de um frame a 42 m/s.
+
+**Mas o motivo de ele projetar sombra é outro:** entre o nascimento e a
+primeira passada do `cullShadowCasters` (a cada 10 frames), `castShadow` fica
+no valor **autorado**. O míssil projeta sombra por **até 10 frames, com filtro
+ou sem ele**. O estado estável é desligado; o transitório é ligado — o inverso
+do que se havia registrado.
+
+Os demais efeitos nascem com `castShadow` default `false` e nunca projetam.
+
+### Por que "espelho que cresce por rebuild" foi descartado
+
+1. **A detecção proposta tinha o mesmo defeito da rival.** Marcar no `install`
+   e contar não-marcados roda **na mesma travessia amortizada de 10 frames**.
+   Nos ≤10 frames em que o míssil é caster novo, as duas aceitam igualmente. E
+   promover essa travessia a por-frame é percorrer ~1.300 nós — exatamente o
+   custo que o marco existe para eliminar.
+2. **O rebuild não é só caro: é `use-after-free` silencioso.** `install()` não
+   tem caminho de rebuild, `SceneMirror::build` faz `resize`/`assign` em onze
+   vetores (o `worldData()` muda de endereço), e o external ArrayBuffer é
+   criado **sem finalizer**, de propósito. O próprio header avisa: *"o vetor
+   não pode realocar enquanto o JS segura o buffer"*. Qualquer `Object3D` não
+   reapontado fica com `matrixWorld.elements` sobre memória liberada — e a
+   SPEC-0234 registra que erro nessa fronteira aparece como artefato visual,
+   não como exceção.
+3. **Não há medição de rebuild no repo.** Os 0,023 ms da SPEC-0233/0234 são
+   travessia+culling em C++, não rebuild.
+
+### A saída
+
+1. **Detecção por evento.** O `three` dispara `childadded`/`childremoved` no
+   pai, e o dispatch é early-return quando não há listener — custo zero para
+   quem não escuta. Instalando o listener nos nós espelhados durante o
+   `install`, o gate sabe da mutação **no frame em que ela acontece**, O(1) por
+   evento. É a **única** forma que fecha a janela dos 10 frames: nem contagem
+   de nós nem contagem de casters fecham.
+2. **Capacidade reservada, não rebuild.** `reserve()` com folga nos vetores do
+   `SceneMirror` antes do `build` faz o append não realocar: os `subarray` já
+   entregues seguem válidos e só o nó novo precisa ser apontado. Rebuild vira
+   exceção (estouro de capacidade), com invalidação explícita.
+3. **Duas passes no mesmo mapa (`loadOp: load`): sim, mas só na forma estreita.**
+   Serve para uma lista explícita de poucos nós efêmeros. **Não** serve na
+   forma "o `three` desenha a sombra do resto": se ele volta a percorrer a cena
+   e montar a RenderList, os 2,06 ms de `rpProject` ficam de pé, o teto cai de
+   5,60 para ~3,5 ms e provavelmente fura o aceite de 3,0 ms. É a Forma A que o
+   ADR-0235 já descartou.
+
+### O que exige medição antes de virar código
+
+- Custo do dispatch de `childadded` com ~1.000 listeners, e se algum caminho do
+  `three` escapa do evento (`attach`, `clear`, `copy`, remoção em massa).
+- Custo real de append com capacidade reservada.
+- Se o míssil chega mesmo ao shadow map: a razão 0,159 está 6% acima do limiar
+  e foi calculada do glb, não do `boundingSphere` que o `three` computa em
+  runtime com a escala do nó.
+- Se o depth sobrevive entre a pass nativa e a pass dos efêmeros **na
+  `ShadowDepthTexture` real** — a SPEC-0242 provou num alvo sintético, e
+  extrapolar entre os dois é o erro que custou dois dias no M5.
