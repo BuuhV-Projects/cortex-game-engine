@@ -194,17 +194,28 @@ class CameraFollowingCSM extends CSMShadowNode {
           const stats = cullShadowCasters(scene, camera.position, this.shadowCasterMinRatio);
           debug('scene', `shadowCull: ${stats.culled}/${stats.evaluated} malhas fora do shadow pass`);
           this._cameraDoUltimoCull.copy(camera.position);
-          // O espelho é montado UMA vez (SPEC-0234) e não cresce. Se a cena
-          // ganhar nós depois disso, o `three` desenha o que o C++ não vê — e,
-          // quando o passe nativo assumir, isso vira sombra faltando. Por isso
-          // a contagem alimenta o gate (E3), além do diagnóstico.
+          // AUDITORIA do espelho, não mais a fonte da verdade (SPEC-0245, E6).
+          //
+          // Desde que o espelho passou a acompanhar a cena por evento
+          // (`childadded`/`childremoved`), ele sabe da mutação no frame em que
+          // ela acontece. Esta travessia sobrou para UMA pergunta: escapou
+          // algum caminho do `three` do evento? Ela roda a cada 10 frames e
+          // por isso o número dela ENVELHECE — alimentar o gate com ele fazia
+          // o veredito alternar aceita/recusa conforme um *hazard* nascesse
+          // entre a contagem e o gate, recusando por defasagem do instrumento
+          // e não por divergência real.
+          //
+          // Então: bateu, o gate recebe "não medido" e a checagem de
+          // divergência é pulada (o espelho é a fonte, e ele está em dia); não
+          // bateu, recebe a contagem da cena e o gate recusa — que é o caso em
+          // que a auditoria pegou algo de verdade.
           if (contarCastersPedido() || gateDeSombraPedido()) {
             let naCena = 0;
             scene.traverse(() => {
               naCena++;
             });
-            this._nosDaCena = naCena;
             const espelho = activeSceneMirror();
+            this._nosDaCena = espelho?.installed && naCena === espelho.nodeCount ? -1 : naCena;
             if (espelho?.installed && naCena !== espelho.nodeCount) {
               debug('perf', `[sceneMirror] cena tem ${naCena} nos, espelho tem ${espelho.nodeCount}`);
               // DIAGNÓSTICO TEMPORÁRIO (SPEC-0245, passo 2): nomeia os nós que
