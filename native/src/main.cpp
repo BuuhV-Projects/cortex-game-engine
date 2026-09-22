@@ -43,6 +43,7 @@
 #include "webgpu/napi_stats.h"
 #include "webgpu/render_bench.h"
 #include "webgpu/override_probe.h"
+#include "webgpu/depth_selftest.h"
 #include "webgpu/bloom.h"
 #include "webgpu/splash.h"
 
@@ -123,6 +124,10 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
 // no mesmo vsync fazia a splash piscar, deixando o jogo vazar entre os frames.
 void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
               bool splashEnabled) {
+  // Autoteste da premissa de profundidade do ADR-0237 (CORTEX_DEPTH_SELFTEST):
+  // roda UMA vez, no primeiro frame em que já existe device, e imprime em
+  // stderr. Sem a variável de ambiente é no-op.
+  webgpu::runDepthSelftestOnce(gpu);
   shims::drainIoCompletions(js.env());  // resolve leituras async prontas (M-perf-3)
   shims::runTimers(js.env(), elapsedMs);
   js.drainMicrotasks();

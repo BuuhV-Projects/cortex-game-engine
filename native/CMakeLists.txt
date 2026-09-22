@@ -67,6 +67,7 @@ add_executable(cortex_host
   src/webgpu/render_bench.cpp
   src/webgpu/override_probe.cpp
   src/webgpu/dual_pass_spike.cpp
+  src/webgpu/depth_selftest.cpp
   src/render/uniform_pool.cpp
   src/render/render_list.cpp
   src/render/geometry_registry.cpp
