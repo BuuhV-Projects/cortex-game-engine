@@ -623,7 +623,25 @@ async function buildSceneInner(
     r.shadowMap.enabled = true;
     r.shadowMap.type = PCFSoftShadowMap;
     if (outdoor) {
-      setupOutdoorLighting(options.renderer, scene, outdoor);
+      // Medição do M6 (SPEC-0241) — TEMPORÁRIO. `?cascatas=N` sobrescreve o
+      // número de cascatas do CSM (`?cascatas=0` desliga o CSM e cai no
+      // frustum único). Serve para medir se o custo da sombra é proporcional
+      // ao número de cascatas — que é o que decide se a alavanca barata
+      // (mexer num número) resolve, ou se é preciso passe nativo.
+      const cascatasQuery =
+        typeof location !== 'undefined'
+          ? new URLSearchParams(location.search ?? '').get('cascatas')
+          : null;
+      const outdoorMedido =
+        cascatasQuery === null
+          ? outdoor
+          : Number(cascatasQuery) <= 0
+            ? { ...outdoor, csm: false }
+            : { ...outdoor, csm: true, shadowCascades: Number(cascatasQuery) };
+      if (cascatasQuery !== null) {
+        debug('scene', `MEDIÇÃO: cascatas sobrescritas para ${cascatasQuery}`);
+      }
+      setupOutdoorLighting(options.renderer, scene, outdoorMedido);
       // HDRI (céu visível + luz por imagem). Sobrepõe o `background` de cor.
       if (outdoor.environment === false) {
         // O jogo instala o próprio skybox/IBL após o buildScene — não gerar o
@@ -974,6 +992,25 @@ async function buildSceneInner(
     });
     debug('scene', 'MEDIÇÃO: sombras desligadas por ?semSombras=1');
   }
+  // Medição do M6 (SPEC-0241) — TEMPORÁRIO. `?sombraSoDinamicos=1` desliga o
+  // `castShadow` do cenário ESTÁTICO (as malhas que o merge fundiu, marcadas
+  // com `cortexMergedStatic`), mantendo a sombra dos dinâmicos. É o teto do
+  // ganho de bakear a sombra do cenário, que num kart racer não muda.
+  const sombraSoDinamicos =
+    typeof location !== 'undefined' &&
+    new URLSearchParams(location.search ?? '').get('sombraSoDinamicos') === '1';
+  if (sombraSoDinamicos) {
+    let desligadas = 0;
+    three.traverse((o) => {
+      const ud = o.userData as Record<string, unknown>;
+      if (ud['cortexMergedStatic'] === true) {
+        (o as { castShadow?: boolean }).castShadow = false;
+        desligadas += 1;
+      }
+    });
+    debug('scene', `MEDIÇÃO: castShadow desligado em ${desligadas} malhas estáticas`);
+  }
+
 
 
   // Pré-aquecimento (SPEC-0196): compila os pipelines da cena montada aqui, em
