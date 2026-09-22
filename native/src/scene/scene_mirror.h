@@ -21,8 +21,61 @@ constexpr NodeIndex kNoParent = -1;
 
 /** Quantos planos tem um frustum. */
 constexpr int kFrustumPlanes = 6;
-/** Floats por nó no buffer de sincronização: idx + posição + quat + escala. */
-constexpr int kSyncFloatsPerNode = 11;
+/**
+ * Floats por nó no buffer de sincronização: idx + posição + quat + escala +
+ * visível.
+ *
+ * O `visible` entrou no M6 (SPEC-0245). Ele era fixado no `build` e nunca mais
+ * atualizado, então um nó escondido em runtime seguia contando como visível no
+ * C++ para sempre — invisível na medição enquanto o filtro angular estava
+ * ligado (ele já cortava esses objetos), e uma divergência de até 42 casters
+ * com `?casterMinRatio=0`. No passo 2 isso seria sombra de objeto escondido.
+ */
+constexpr int kSyncFloatsPerNode = 12;
+/** Posição do `visible` na linha de sincronização. */
+constexpr int kSyncVisible = 11;
+/** Valor de `geometryId` para um nó sem geometria registrada. */
+constexpr int32_t kNoGeometry = -1;
+
+/**
+ * Bits de {@link NodeDesc::flags} — a autoria estática de um nó, espelhada uma
+ * vez no `build`.
+ *
+ * São flags e não `bool` soltos porque atravessam a ponte empacotados num
+ * float só: um campo novo aqui não renumera o layout de construção.
+ */
+enum NodeFlag : uint8_t {
+  /**
+   * `castShadow` como o AUTOR deixou (nó/JSON/Inspector), não como o filtro
+   * angular o deixou no frame. A distinção é o contrato da SPEC-0197: o filtro
+   * só pode TIRAR sombra de quem tinha, nunca dar a quem o autor desligou — e
+   * quem reaplica o filtro aqui é o enumerador, então o que ele precisa
+   * receber é o teto, não o resultado.
+   */
+  kNodeCastShadow = 1 << 0,
+  /**
+   * Fica FORA do filtro angular: malha skinada (o bounding sphere da geometria
+   * mente com o rig) e `InstancedMesh` (o bounding sphere descreve uma
+   * instância, não o conjunto). Espelha a exceção de `ShadowCasterCulling.ts`.
+   */
+  kNodeSkipAngularCull = 1 << 1,
+  /** `frustumCulled` do objeto: quando desligado, nenhum frustum o corta. */
+  kNodeFrustumCulled = 1 << 2,
+  /** É malha desenhável (é `isMesh`, tem geometria e material visível). */
+  kNodeDrawable = 1 << 3,
+};
+
+/**
+ * Esfera de recorte da geometria, em espaço LOCAL do nó.
+ *
+ * Local, e não de mundo, porque é o que o `three` guarda
+ * (`geometry.boundingSphere`) e é o que não muda quando o objeto se move — a
+ * conversão para mundo é uma multiplicação por nó, feita no frame.
+ */
+struct Bounds {
+  double cx = 0, cy = 0, cz = 0;
+  double radius = 0;
+};
 
 /**
  * Transform local de um nó, como o JS o descreve.
@@ -44,6 +97,12 @@ struct NodeDesc {
   /** Raio da esfera de recorte, em unidades de mundo. 0 = não participa do culling. */
   float radius = 0;
   bool visible = true;
+  /** Combinação de {@link NodeFlag}. */
+  uint8_t flags = 0;
+  /** Id da geometria no `GeometryRegistry`, ou {@link kNoGeometry}. */
+  int32_t geometryId = kNoGeometry;
+  /** Esfera da geometria em espaço local (ver {@link Bounds}). */
+  Bounds bounds;
 };
 
 /**
@@ -105,11 +164,43 @@ class SceneMirror {
 
   size_t size() const { return parents_.size(); }
 
+  /** Pai de um nó, ou {@link kNoParent}. */
+  NodeIndex parent(NodeIndex index) const { return parents_[static_cast<size_t>(index)]; }
+
+  /**
+   * `visible` PRÓPRIO do nó — não leva o pai em conta.
+   *
+   * O `three` poda a subárvore inteira num pai invisível; quem precisa dessa
+   * regra é quem percorre (ver `ShadowCasterEnumerator`), e reproduzi-la aqui
+   * custaria uma passada extra a quem não precisa dela.
+   */
+  bool visibleFlag(NodeIndex index) const { return visibleFlags_[static_cast<size_t>(index)] != 0; }
+
+  /** Combinação de {@link NodeFlag} declarada no `build`. */
+  uint8_t flags(NodeIndex index) const { return flags_[static_cast<size_t>(index)]; }
+
+  /** `true` se o nó tem o bit pedido. */
+  bool hasFlag(NodeIndex index, NodeFlag flag) const {
+    return (flags_[static_cast<size_t>(index)] & static_cast<uint8_t>(flag)) != 0;
+  }
+
+  /** Id da geometria do nó, ou {@link kNoGeometry}. */
+  int32_t geometryId(NodeIndex index) const { return geometryIds_[static_cast<size_t>(index)]; }
+
+  /** Esfera da geometria, em espaço local. */
+  const Bounds& bounds(NodeIndex index) const { return bounds_[static_cast<size_t>(index)]; }
+
  private:
   std::vector<NodeIndex> parents_;
   std::vector<Transform> locals_;
   std::vector<float> radii_;
   std::vector<uint8_t> visibleFlags_;
+  /** Autoria estática por nó: {@link NodeFlag}. */
+  std::vector<uint8_t> flags_;
+  /** Geometria de cada nó, para o passe nativo saber o que desenhar. */
+  std::vector<int32_t> geometryIds_;
+  /** Esfera local de cada nó. */
+  std::vector<Bounds> bounds_;
   /** Matriz local de cada nó (16 floats por nó), recomposta quando o transform muda. */
   std::vector<double> local_;
   /** Matriz de mundo de cada nó (16 floats por nó). */

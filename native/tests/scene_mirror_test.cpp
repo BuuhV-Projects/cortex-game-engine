@@ -42,7 +42,8 @@ void testSceneMirrorPropagaTransformDoPai() {
   SceneMirror espelho;
   CHECK(espelho.build(nos));
 
-  const double mover[kSyncFloatsPerNode] = {0, 10, 0, 0, 0, 0, 0, 1, 1, 1, 1};
+  // O ultimo campo e o `visible`, que passou a viajar junto (SPEC-0245).
+  const double mover[kSyncFloatsPerNode] = {0, 10, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
   espelho.applyTransforms(mover, kSyncFloatsPerNode);
   const auto planos = planosAmplos();
   espelho.updateAndCull(identidade, planos.data());
@@ -94,7 +95,7 @@ void testSceneMirrorIgnoraIndiceForaDaCena() {
   SceneMirror espelho;
   CHECK(espelho.build(nos));
 
-  const double fora[kSyncFloatsPerNode] = {99, 5, 5, 5, 0, 0, 0, 1, 1, 1, 1};
+  const double fora[kSyncFloatsPerNode] = {99, 5, 5, 5, 0, 0, 0, 1, 1, 1, 1, 1};
   espelho.applyTransforms(fora, kSyncFloatsPerNode);
   const auto planos = planosAmplos();
   espelho.updateAndCull(identidade, planos.data());

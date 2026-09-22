@@ -6,12 +6,24 @@
 
 #include "../napi/napi_util.h"
 #include "../scene/scene_mirror.h"
+#include "../scene/shadow_caster_enumerator.h"
 
 namespace shims {
 namespace {
 
-/** Floats que descrevem um nó no buffer de construção: pai + transform + raio + visível. */
-constexpr int kBuildFloatsPerNode = 14;
+/**
+ * Floats que descrevem um nó no buffer de construção.
+ *
+ * Cresceu de 14 para 20 no M6 (SPEC-0245): enumerar casters em C++ exige
+ * `flags`, `geometryId` e a esfera local, que o espelho não guardava. O slot
+ * reservado do fim continua reservado, pelo mesmo motivo de antes.
+ */
+constexpr int kBuildFloatsPerNode = 20;
+/** Posições do layout de construção (ver {@link jsBuild}). */
+constexpr int kBuildFlags = 13;
+constexpr int kBuildGeometryId = 14;
+constexpr int kBuildBoundsCenter = 15;
+constexpr int kBuildBoundsRadius = 18;
 /** Floats do frustum: 6 planos de 4. */
 constexpr int kFrustumFloats = scene::kFrustumPlanes * 4;
 
@@ -24,6 +36,8 @@ constexpr int kFrustumFloats = scene::kFrustumPlanes * 4;
  */
 struct MirrorState {
   scene::SceneMirror mirror;
+  /** Enumerador do passe de sombra (SPEC-0245); guarda os buffers entre frames. */
+  scene::ShadowCasterEnumerator shadowCasters;
   /** Transforms que o JS escreve por frame (só os nós dinâmicos), em dupla. */
   std::vector<double> syncBuffer;
   bool built = false;
@@ -37,9 +51,10 @@ MirrorState& state() {
 /**
  * `build(descricao: Float32Array)` — recebe a cena inteira uma vez.
  *
- * Layout por nó (14 floats): pai, px, py, pz, qx, qy, qz, qw, sx, sy, sz,
- * raio, visível, reservado. O reservado existe para o layout ficar par e não
- * precisar de renumeração quando entrar mais um campo.
+ * Layout por nó (20 floats): pai, px, py, pz, qx, qy, qz, qw, sx, sy, sz,
+ * raio, visível, flags, geometryId, bcx, bcy, bcz, braio, reservado. O
+ * reservado existe para o layout ficar par e não precisar de renumeração
+ * quando entrar mais um campo.
  */
 napi_value jsBuild(napi_env env, napi_callback_info info) {
   size_t argc = 2;
@@ -79,6 +94,12 @@ napi_value jsBuild(napi_env env, napi_callback_info info) {
     node.transform.sz = row[10];
     node.radius = row[11];
     node.visible = row[12] != 0.0f;
+    node.flags = static_cast<uint8_t>(row[kBuildFlags]);
+    node.geometryId = static_cast<int32_t>(row[kBuildGeometryId]);
+    node.bounds.cx = row[kBuildBoundsCenter];
+    node.bounds.cy = row[kBuildBoundsCenter + 1];
+    node.bounds.cz = row[kBuildBoundsCenter + 2];
+    node.bounds.radius = row[kBuildBoundsRadius];
   }
 
   MirrorState& s = state();
@@ -167,6 +188,47 @@ napi_value jsUpdate(napi_env env, napi_callback_info info) {
   { napi_value out; napi_create_double(env, static_cast<double>(visible), &out); return out; }
 }
 
+/**
+ * `shadowCasters(minRatio, camX, camY, camZ, planos)` — quantos nós o `three`
+ * desenharia no passe de sombra deste frame (SPEC-0245, passo 1).
+ *
+ * Ainda NÃO desenha nada: por ora é o instrumento que confere a enumeração
+ * nativa contra o que o `three` submete, que é a regra de medição 2 da
+ * SPEC-0245 (validar o contador antes de concluir dele).
+ *
+ * Tem de ser chamada DEPOIS de `update` no mesmo frame — ela lê as matrizes de
+ * mundo que `update` acabou de compor.
+ */
+napi_value jsShadowCasters(napi_env env, napi_callback_info info) {
+  size_t argc = 5;
+  napi_value args[5];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  MirrorState& s = state();
+  if (!s.built || argc < 5) return njs::undefined(env);
+
+  scene::ShadowCasterParams params;
+  napi_get_value_double(env, args[0], &params.minRatio);
+  napi_get_value_double(env, args[1], &params.cameraX);
+  napi_get_value_double(env, args[2], &params.cameraY);
+  napi_get_value_double(env, args[3], &params.cameraZ);
+
+  void* planeData = nullptr;
+  napi_typedarray_type type;
+  size_t planeLength = 0;
+  napi_value planeBuffer;
+  size_t planeOffset = 0;
+  if (napi_get_typedarray_info(env, args[4], &type, &planeLength, &planeData, &planeBuffer,
+                               &planeOffset) != napi_ok ||
+      planeData == nullptr || planeLength < kFrustumFloats) {
+    return njs::undefined(env);
+  }
+
+  const int total = s.shadowCasters.enumerate(s.mirror, params, static_cast<const float*>(planeData));
+  napi_value out;
+  napi_create_double(env, static_cast<double>(total), &out);
+  return out;
+}
+
 }  // namespace
 
 void registerSceneMirror(napi_env env) {
@@ -178,6 +240,7 @@ void registerSceneMirror(napi_env env) {
   njs::setMethod(env, api, "worldMatrices", jsWorldMatrices);
   njs::setMethod(env, api, "syncBuffer", jsSyncBuffer);
   njs::setMethod(env, api, "update", jsUpdate);
+  njs::setMethod(env, api, "shadowCasters", jsShadowCasters);
   napi_set_named_property(env, global, "__cortexSceneMirror", api);
 }
 

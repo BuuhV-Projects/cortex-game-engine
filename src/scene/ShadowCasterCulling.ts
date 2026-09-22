@@ -29,8 +29,24 @@ export const DEFAULT_SHADOW_CASTER_MIN_RATIO = 0.05;
 /** Distância mínima usada na razão — evita divisão por ~0 em cima da câmera. */
 const MIN_DISTANCE = 1;
 
-/** `userData` onde fica o `castShadow` como o autor deixou. */
-const AUTHORED = 'cortexShadowAuthored';
+/**
+ * `userData` onde fica o `castShadow` como o autor deixou.
+ *
+ * Exportado porque o espelho de cena nativo (SPEC-0245) precisa mandar ao C++
+ * o valor AUTORADO, não o que este filtro deixou no frame: quem reaplica a
+ * regra lá é o enumerador, então o que ele recebe tem de ser o teto.
+ */
+export const SHADOW_AUTHORED_KEY = 'cortexShadowAuthored';
+const AUTHORED = SHADOW_AUTHORED_KEY;
+
+/**
+ * O `castShadow` como o AUTOR deixou — a memória do filtro quando ela existe,
+ * o valor atual antes da primeira passada.
+ */
+export function authoredCastShadow(object: Object3D): boolean {
+  const memorizado = (object.userData as Record<string, unknown> | undefined)?.[AUTHORED];
+  return memorizado === undefined ? object.castShadow === true : memorizado === true;
+}
 
 /** Resultado de uma passada de {@link cullShadowCasters}. */
 export interface ShadowCullStats {

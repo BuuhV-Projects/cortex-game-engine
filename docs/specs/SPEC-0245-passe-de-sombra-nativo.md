@@ -165,3 +165,85 @@ ADR-0235 já fixou que, com o `three` montando a RenderList, a ponte cobre só
 casters em C++ exige estender o `NodeDesc` e ligá-lo ao `geometry_registry`. É
 incremento sobre infraestrutura que já existe e tem teste, mas é o item que
 dita o prazo.
+
+## Passo 1 EXECUTADO em 2026-09-22 — a enumeração nativa bate com o `three`
+
+### O que foi construído
+
+- `native/src/scene/shadow_caster_enumerator.{h,cpp}` — unidade PURA (sem wgpu,
+  sem NAPI) que, dado o espelho, a posição da câmera e os planos da ortho da
+  cascata, devolve a lista de nós que projetariam sombra. Reproduz os filtros do
+  `three` na ordem dele: visibilidade herdada → malha desenhável → `castShadow`
+  autorado → culling angular (SPEC-0197) → frustum da cascata.
+- `NodeDesc` ganhou `flags` (castShadow autorado, isento do culling angular,
+  `frustumCulled`, desenhável), `geometryId` e a esfera LOCAL da geometria. O
+  layout de construção foi de 14 para 20 floats por nó.
+- `shadowCasters(...)` no `__cortexSceneMirror` e `countShadowCasters(...)` no
+  `NativeSceneMirror`, com o relato por `debug('perf', …)` atrás de
+  `?contarCasters=1`.
+- **`visible` passou a viajar por frame** no buffer de sincronização (11 → 12
+  floats por nó). Ver abaixo: era um erro real, não um detalhe.
+
+### O instrumento foi validado antes de concluir dele (regra de medição 2)
+
+O número de referência não foi lido desta spec: `?contarCasters=1` envolve o
+`renderObject` e conta os draws que o `three` emite **enquanto `scene.name`
+começa com `Shadow Map [`** — o único sinal que distingue o passe de sombra de
+fora, sem identificar recurso por dimensão (regra 4).
+
+| rodada | amostras | idênticas |
+| --- | --- | --- |
+| `?bench&hold`, `minRatio` 0,15 (padrão) | 478 | **478 (100%)** — 66 × 66 |
+| `?bench&hold`, `?casterMinRatio=0` | 2.632 | **2.632 (100%)** |
+| `?bench` (IA pilotando), `?casterMinRatio=0` | 3.281 | 2.829 (86%) |
+
+**Com a cena parada a igualdade é exata**, inclusive com o filtro angular
+desligado — que é o caso mais duro, porque sem ele nada mascara um erro de
+visibilidade ou de frustum. O alvo de **66 draws** foi atingido: 66 enumerados
+contra 66 desenhados, em todas as amostras.
+
+### A divergência com a cena em movimento, explicada
+
+Os 14% de diferença enquanto a IA pilota são **do instrumento e do espelho, não
+do enumerador**, e têm duas causas medidas:
+
+1. **A cena ganha nós depois do `install`** — medido: 977 na cena contra 975 no
+   espelho. O espelho é montado uma vez e não cresce (SPEC-0234), então o
+   `three` desenha até dois casters que o C++ não pode ver. Responde por 382 das
+   449 amostras negativas (`delta −1` e `−2`).
+2. **Defasagem de um frame na ortho da cascata** — o `three` só fixa a matriz da
+   cascata dentro do `renderShadow`, e a conferência roda no `updateBefore`.
+   Some quando a câmera está parada, que é exatamente o que as duas primeiras
+   rodadas mostram.
+
+Nenhuma das duas é do enumerador, e a primeira é trabalho identificado para o
+passo 2.
+
+### O erro que a medição pegou
+
+`?casterMinRatio=0` acusou o C++ contando **até 42 casters a mais** que o
+`three`. Causa: o espelho fixava `visible` no `build` e nunca mais o atualizava,
+então tudo que o jogo escondia em runtime seguia projetando sombra do lado
+nativo. O filtro angular ligado mascarava isso (já cortava os mesmos objetos) —
+teria virado sombra de objeto escondido no passo 2. Corrigido mandando `visible`
+junto do transform, por frame.
+
+### Testes
+
+- Harness C++ (`cortex_host_tests`): **169 checks, 0 falhas** — nó invisível
+  (próprio e por herança do pai), sem `castShadow` autorado, não desenhável, o
+  limiar angular nas bordas (`>=`, não `>`), escala do nó no raio, isenção de
+  skinned/instanced, frustum da cascata (dentro, fora, encostando, e
+  `frustumCulled = false`), centro da esfera ≠ origem do nó, `visible` chegando
+  pelo frame e o vínculo com a geometria.
+- Vitest: **1.522 passando, 7 pulados, 0 falhas**.
+
+### O que fica para o passo 2
+
+1. Nó criado depois do `install` não existe no espelho (os 2 nós medidos).
+2. O enumerador conta NÓS; o `three` conta itens de RenderList. No kart-racer
+   dá no mesmo (0 malhas com material em array), mas uma cena com material
+   multi-grupo divergiria — o passo 2 precisa do `drawCount` por nó.
+3. `material.visible` é fotografado no `build`, não sincronizado.
+4. Os diagnósticos `?contarCasters=1` (sonda de `renderObject` e deriva de nós)
+   são TEMPORÁRIOS e saem quando o passo 3 fechar a medição.

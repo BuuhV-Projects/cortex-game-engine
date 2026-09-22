@@ -1,5 +1,6 @@
 import {
   Vector3,
+  type Camera,
   type Object3D,
   DirectionalLight,
   HemisphereLight,
@@ -14,6 +15,7 @@ import { Renderer } from '../core/Renderer.js';
 import { Scene } from '../core/Scene.js';
 import { cullShadowCasters, DEFAULT_SHADOW_CASTER_MIN_RATIO } from './ShadowCasterCulling.js';
 import { debug } from '../core/debug.js';
+import { activeSceneMirror } from '../core/NativeSceneMirror.js';
 
 /**
  * CSM que SEGUE a câmera que está renderizando (a do frame), não a cacheada no 1º render.
@@ -25,6 +27,48 @@ import { debug } from '../core/debug.js';
 function congelarPasseDeSombra(): boolean {
   if (typeof location === 'undefined') return false;
   return new URLSearchParams(location.search ?? '').get('semPasseDeSombra') === '1';
+}
+
+
+/**
+ * `?contarCasters=1` — medição do M6 (SPEC-0245, passo 1), TEMPORÁRIO.
+ *
+ * Liga a sonda que conta os draws REAIS do passe de sombra. Sem ela, comparar
+ * a enumeração nativa com o `three` seria comparar com um número lido de uma
+ * spec — e a regra de medição 2 da SPEC-0245 manda validar todo contador novo
+ * num caso de resposta conhecida.
+ */
+function contarCastersPedido(): boolean {
+  if (typeof location === 'undefined') return false;
+  return new URLSearchParams(location.search ?? '').get('contarCasters') === '1';
+}
+
+/**
+ * Prefixo que o `ShadowNode` escreve em `scene.name` enquanto renderiza o
+ * shadow map. É o único sinal que distingue, de fora, um `renderObject` do
+ * passe de sombra de um do passe principal — identificar por dimensão de
+ * textura é justamente o que a regra de medição 4 proíbe.
+ */
+const NOME_DA_CENA_DA_SOMBRA = 'Shadow Map [';
+
+/** Draws do passe de sombra no frame ANTERIOR, e o acumulador do atual. */
+let drawsDaSombraNoFrame = 0;
+let drawsDaSombraAcumulando = 0;
+
+/** Envolve `renderObject` uma única vez; sem a query, nada é instalado. */
+function instalarSondaDeDrawsDaSombra(three: object): void {
+  const alvo = three as {
+    renderObject?: (...args: unknown[]) => unknown;
+    __cortexSondaDeSombra?: boolean;
+  };
+  if (typeof alvo.renderObject !== 'function' || alvo.__cortexSondaDeSombra) return;
+  const original = alvo.renderObject.bind(alvo);
+  alvo.renderObject = (...args: unknown[]) => {
+    const cena = args[1] as { name?: string } | undefined;
+    if (cena?.name?.startsWith(NOME_DA_CENA_DA_SOMBRA)) drawsDaSombraAcumulando++;
+    return original(...args);
+  };
+  alvo.__cortexSondaDeSombra = true;
 }
 
 class CameraFollowingCSM extends CSMShadowNode {
@@ -39,6 +83,19 @@ class CameraFollowingCSM extends CSMShadowNode {
 
   /** Já congelou as cascatas para medição? (SPEC-0245, temporário) */
   private _congelouParaMedicao = false;
+
+  /** Já envolveu o `renderObject` com a sonda de draws? (SPEC-0245, temporário) */
+  private _instalouSonda = false;
+
+  /**
+   * Posição da câmera na última passada do filtro angular (SPEC-0245).
+   *
+   * É ELA que a conferência tem de usar, não a do frame: o `castShadow` que o
+   * `three` desenha agora foi decidido na última passada, até 9 frames atrás.
+   * Enumerar com a câmera atual compara o C++ de hoje com o `three` de ontem e
+   * produz uma divergência que é do instrumento, não do enumerador.
+   */
+  private readonly _cameraDoUltimoCull = new Vector3();
 
   override updateBefore(
     frame: Parameters<CSMShadowNode['updateBefore']>[0],
@@ -78,6 +135,19 @@ class CameraFollowingCSM extends CSMShadowNode {
     // Shadow caster culling (SPEC-0197): aqui é o ÚNICO ponto que enxerga a
     // câmera do frame — vale tanto pro jogo quanto pro editor F2, que renderiza
     // com a câmera dele. Amortizado: uma passada a cada N frames.
+    if (cam?.isPerspectiveCamera && contarCastersPedido()) {
+      // Vira o frame da sonda: o que foi acumulado desde o último render de
+      // visão são os draws de sombra de UM frame inteiro, cascatas incluídas.
+      drawsDaSombraNoFrame = drawsDaSombraAcumulando;
+      drawsDaSombraAcumulando = 0;
+      if (!this._instalouSonda) {
+        const alvo = (frame as unknown as { renderer?: object } | null)?.renderer;
+        if (alvo) {
+          instalarSondaDeDrawsDaSombra(alvo);
+          this._instalouSonda = true;
+        }
+      }
+    }
     if (cam?.isPerspectiveCamera) {
       this._sinceCull++;
       if (this._sinceCull >= SHADOW_CULL_INTERVAL) {
@@ -87,10 +157,83 @@ class CameraFollowingCSM extends CSMShadowNode {
         if (scene) {
           const stats = cullShadowCasters(scene, camera.position, this.shadowCasterMinRatio);
           debug('scene', `shadowCull: ${stats.culled}/${stats.evaluated} malhas fora do shadow pass`);
+          this._cameraDoUltimoCull.copy(camera.position);
+          // DIAGNOSTICO TEMPORARIO (SPEC-0245, passo 1) — remover.
+          // O espelho é montado UMA vez (SPEC-0234) e não cresce. Se a cena
+          // ganhar nós depois disso, o `three` desenha o que o C++ não vê.
+          if (contarCastersPedido()) {
+            const espelho = activeSceneMirror();
+            if (espelho?.installed) {
+              let naCena = 0;
+              scene.traverse(() => {
+                naCena++;
+              });
+              if (naCena !== espelho.nodeCount) {
+                debug('perf', `[sceneMirror] cena tem ${naCena} nos, espelho tem ${espelho.nodeCount}`);
+              }
+            }
+          }
         }
       }
     }
-    return super.updateBefore(frame);
+    // A conferência roda TODO frame (SPEC-0245): amostra por amostra, cada
+    // enumeração do C++ tem de bater com os draws que o `three` emite logo
+    // depois dela. Amortizar isto esconderia a única divergência que importa.
+    //
+    // E roda DEPOIS do `super`: é ele que reposiciona as cascatas e recompõe a
+    // ortho de cada uma. Enumerar antes usaria o frustum do frame passado e
+    // divergiria em alguns objetos a cada quadro em que a câmera anda.
+    const resultado = super.updateBefore(frame);
+    if (cam?.isPerspectiveCamera && contarCastersPedido()) this._relatarCastersNativos();
+    return resultado;
+  }
+
+  /**
+   * Contagem de casters do lado C++ contra a do `three` (SPEC-0245, passo 1).
+   *
+   * Aqui é o único lugar que tem as DUAS coisas ao mesmo tempo: a câmera do
+   * filtro angular e a ortho de cada cascata (de onde sai o frustum do passe).
+   * Por enquanto só reporta — nada é desenhado em C++.
+   *
+   * O número que ele imprime como "three desenhou" é o do frame ANTERIOR: os
+   * draws do frame atual só existem depois deste `updateBefore`. Ou seja, a
+   * amostra a conferir contra esta enumeração é a da PRÓXIMA linha.
+   */
+  private _relatarCastersNativos(): void {
+    const espelho = activeSceneMirror();
+    if (!espelho?.installed) return;
+    const cascatas = (
+      this as unknown as {
+        lights?: { shadow?: { camera?: Camera; updateMatrices?: (luz: unknown) => void } }[];
+      }
+    ).lights;
+    if (!cascatas || cascatas.length === 0) return;
+
+    const porCascata: number[] = [];
+    let total = 0;
+    for (const cascata of cascatas) {
+      // O `three` só fixa a ortho da cascata DENTRO do `renderShadow`, uma
+      // linha antes de desenhar. Enumerar com a matriz que está aqui no
+      // `updateBefore` compara com um frustum de um frame atrás — a origem da
+      // divergência de alguns objetos por quadro enquanto a câmera anda.
+      cascata.shadow?.updateMatrices?.(cascata);
+      const shadowCamera = cascata.shadow?.camera;
+      if (!shadowCamera) continue;
+      const casters = espelho.countShadowCasters(
+        shadowCamera,
+        this._cameraDoUltimoCull,
+        this.shadowCasterMinRatio,
+      );
+      if (casters === undefined) return; // host sem a ponte: nada a relatar
+      porCascata.push(casters);
+      total += casters;
+    }
+    debug(
+      'perf',
+      `[shadowCasters] C++ enumerou ${total} em ${porCascata.length} cascata(s) ` +
+        `[${porCascata.join(', ')}], three desenhou ${drawsDaSombraNoFrame}, ` +
+        `minRatio=${this.shadowCasterMinRatio}`,
+    );
   }
 }
 

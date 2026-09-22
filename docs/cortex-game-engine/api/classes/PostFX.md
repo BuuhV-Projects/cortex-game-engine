@@ -6,7 +6,7 @@
 
 # Class: PostFX
 
-Defined in: [src/core/PostFX.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L78)
+Defined in: [src/core/PostFX.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L79)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/core/PostFX.ts:78](https://github.com/BuuhV-Projects/cortex-gam
 
 > **new PostFX**(`renderer`, `scene`, `camera`, `options?`): `PostFX`
 
-Defined in: [src/core/PostFX.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L114)
+Defined in: [src/core/PostFX.ts:115](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L115)
 
 #### Parameters
 
@@ -68,7 +68,7 @@ postfx.render();
 
 > **get** **bloom**(): `BloomNode` \| `null`
 
-Defined in: [src/core/PostFX.ts:222](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L222)
+Defined in: [src/core/PostFX.ts:240](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L240)
 
 Nó de bloom (ou `null` se desligado), pra ajuste em runtime:
 `postfx.bloom?.strength.value = 1.2`.
@@ -83,7 +83,7 @@ Nó de bloom (ou `null` se desligado), pra ajuste em runtime:
 
 > **dispose**(): `void`
 
-Defined in: [src/core/PostFX.ts:227](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L227)
+Defined in: [src/core/PostFX.ts:245](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L245)
 
 Libera os recursos GPU do pipeline.
 
@@ -97,11 +97,7 @@ Libera os recursos GPU do pipeline.
 
 > **render**(): `void`
 
-Defined in: [src/core/PostFX.ts:203](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L203)
-
-Renderiza a cena com os efeitos. Chame uma vez por frame no lugar de
-`renderer.render(...)`. No-op enquanto o backend WebGPU ainda inicializa
-(mesma guarda do `Renderer.render`).
+Defined in: [src/core/PostFX.ts:207](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PostFX.ts#L207)
 
 #### Returns
 
