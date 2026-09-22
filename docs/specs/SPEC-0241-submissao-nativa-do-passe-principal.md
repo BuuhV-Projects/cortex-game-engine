@@ -536,6 +536,27 @@ uniformes por escrita direta.
 > - O contador `draws` do trace só conta o que passa pela ponte; os draws
 >   nativos não entram. Por isso a coluna diz "ainda no `three`" — a queda ali é
 >   a migração, não trabalho a menos.
+> **VERIFICAÇÃO da medição em 21/09/2026 — o ganho de 34 µs/draw não está
+> inflado por perda de trabalho.**
+>
+> A migração esconde a malha do `three` com `malha.visible = false`
+> (`NativePass._escolher`). Isso a remove de **todas** as passes dele, não só
+> da principal. Se um objeto migrado aparecesse em duas passes — a cena e uma
+> de sombra — e o passe nativo só refizesse uma, parte dos 6,1 ms medidos seria
+> **trabalho que deixou de ser feito**, ou seja, perda de qualidade disfarçada
+> de otimização.
+>
+> O mapa de passes responde: no frame só existe **uma** pass com volume de
+> draws, e é exatamente ela que cai de 234 para 187 ao migrar 40 malhas. Não há
+> segunda pass onde os objetos migrados também apareçam. Logo o `three`
+> desenhava cada um **uma vez**, e o passe nativo desenha uma vez — a
+> comparação é justa.
+>
+> Isso continua valendo enquanto a cena não tiver uma pass de sombra dinâmica
+> com volume. **Se o jogo ligar sombras dinâmicas, esta verificação tem de ser
+> refeita**, porque aí `visible = false` passaria a remover trabalho que o
+> passe nativo não reproduz.
+
 
 ### Passo 4 — pool de uniformes ligado ao que se moveu
 
