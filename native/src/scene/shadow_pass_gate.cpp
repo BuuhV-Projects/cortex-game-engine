@@ -51,7 +51,10 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
   // A divergência vale mesmo sem caster nenhum: o nó que falta no espelho pode
   // ser exatamente o que projetaria a sombra que sumiria.
   if (frame.sceneNodeCount >= 0) {
-    const auto mirrorCount = static_cast<int32_t>(mirror.size());
+    // VIVOS, e não slots: um nó removido vira lápide no lugar (mudar o índice
+    // dos outros custaria reapontar o `matrixWorld` de todo mundo), mas para o
+    // `three` ele não existe mais.
+    const auto mirrorCount = static_cast<int32_t>(mirror.liveCount());
     if (frame.sceneNodeCount != mirrorCount) {
       const int32_t diff = frame.sceneNodeCount - mirrorCount;
       r.counts[static_cast<size_t>(ShadowGateRefusal::kNodeCountDivergence)] =

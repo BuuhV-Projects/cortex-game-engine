@@ -55,6 +55,10 @@ function instalarPonteFalsa(nodeCapacity: number) {
     ultimoChanged: 0,
     shadowCasters: 0,
     shadowPassGate: 0,
+    appendNodes: 0,
+    removeNode: 0,
+    ultimoRemovido: -1,
+    ultimaDescricaoAppend: new Float32Array(0),
     ultimaDescricao: new Float32Array(0),
     ultimosNosDaCena: 0,
     ultimoVsm: false,
@@ -62,10 +66,13 @@ function instalarPonteFalsa(nodeCapacity: number) {
     ultimaCamera: [0, 0, 0] as [number, number, number],
     ultimosPlanos: new Float32Array(0),
   };
+  /** Próximo slot livre, como no C++: o append vai para o fim. */
+  const estado = { proximo: 0 };
   (globalThis as Record<string, unknown>)['__cortexSceneMirror'] = {
     build: (descricao: Float32Array) => {
       chamadas.build++;
       chamadas.ultimaDescricao = descricao;
+      estado.proximo = descricao.length / FLOATS_POR_NO;
       // Espelha o contrato do C++: recusa pai depois do filho.
       for (let i = 0; i < descricao.length / FLOATS_POR_NO; i++) {
         if (descricao[i * FLOATS_POR_NO]! >= i) return false;
@@ -74,6 +81,22 @@ function instalarPonteFalsa(nodeCapacity: number) {
     },
     worldMatrices: () => matrices,
     syncBuffer: () => sync,
+    // Espelha o contrato do C++: o lote entra inteiro, no fim, e cada nó volta
+    // com o índice dele. Estouro de capacidade devolve o código negativo em vez
+    // de realocar (que é o `use-after-free` que a reserva existe para evitar).
+    appendNodes: (descricao: Float32Array, saida: Int32Array) => {
+      chamadas.appendNodes++;
+      chamadas.ultimaDescricaoAppend = descricao.slice();
+      const quantos = descricao.length / FLOATS_POR_NO;
+      if (estado.proximo + quantos > nodeCapacity) return -1;
+      for (let i = 0; i < quantos; i++) saida[i] = estado.proximo++;
+      return quantos;
+    },
+    removeNode: (indice: number) => {
+      chamadas.removeNode++;
+      chamadas.ultimoRemovido = indice;
+      return 1;
+    },
     update: (changed: number) => {
       chamadas.update++;
       chamadas.ultimoChanged = changed;
@@ -462,5 +485,180 @@ describe('NativeSceneMirror', () => {
     expect(
       espelho.countShadowCasters(new OrthographicCamera(), new Vector3(), 0.15),
     ).toBeUndefined();
+  });
+
+  // ── E6 da SPEC-0245: a cena que muda depois do install ────────────────────
+
+  it('acrescenta ao espelho, no mesmo frame, o nó que a cena ganha depois', () => {
+    // O motivo do evento: contar nós roda na travessia amortizada de 10
+    // frames, e nesses 10 frames um nó novo com `castShadow` autorado (o
+    // projétil do kart) seria aceito sem estar no espelho.
+    const { chamadas } = instalarPonteFalsa(32);
+    const raiz = new Object3D();
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    expect(espelho.nodeCount).toBe(1);
+
+    const novo = malha();
+    raiz.add(novo);
+
+    expect(chamadas.appendNodes).toBe(1);
+    expect(espelho.nodeCount).toBe(2);
+    expect(novo.matrixWorldAutoUpdate).toBe(false);
+  });
+
+  it('manda a subárvore nova inteira numa chamada só, pai antes de filho', () => {
+    // Uma travessia de ponte por evento, não uma por nó: o projétil do kart
+    // tem 4 primitives, e 15 us por travessia (SPEC-0225) por nó pagaria caro
+    // por tiro.
+    const { chamadas } = instalarPonteFalsa(32);
+    const raiz = new Object3D();
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    const grupo = new Object3D();
+    grupo.add(malha(), malha());
+    raiz.add(grupo);
+
+    expect(chamadas.appendNodes).toBe(1);
+    expect(espelho.nodeCount).toBe(4);
+    const d = chamadas.ultimaDescricaoAppend;
+    expect(d.length / FLOATS_POR_NO).toBe(3);
+    // O pai da raiz do lote é índice absoluto; o dos de dentro é posição no
+    // lote, codificada como -2 - posicao.
+    expect(d[0]).toBe(0);
+    expect(d[FLOATS_POR_NO]).toBe(-2);
+    expect(d[FLOATS_POR_NO * 2]).toBe(-2);
+  });
+
+  it('a fatia entregue no install continua apontando para o mesmo nó depois do append', () => {
+    // É a promessa inteira da capacidade reservada: o append não realoca, e
+    // quem já tinha `matrixWorld.elements` não precisa ser reapontado.
+    const { matrices } = instalarPonteFalsa(32);
+    const raiz = new Object3D();
+    const antigo = new Object3D();
+    raiz.add(antigo);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    const fatiaDoAntigo = antigo.matrixWorld.elements;
+
+    raiz.add(new Object3D());
+
+    expect(antigo.matrixWorld.elements).toBe(fatiaDoAntigo);
+    matrices[16 + 12] = 9; // nó 1 = `antigo`
+    expect(antigo.matrixWorld.elements[12]).toBe(9);
+  });
+
+  it('pega também o nó que chega por attach, e não só por add', () => {
+    // `attach`, `clear`, `removeFromParent` e `copy` do `three` passam todos
+    // por `add`/`remove`, e são eles que disparam o evento — conferido no
+    // fonte do `Object3D`.
+    const { chamadas } = instalarPonteFalsa(32);
+    const raiz = new Object3D();
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    raiz.attach(new Object3D());
+
+    expect(chamadas.appendNodes).toBe(1);
+    expect(espelho.nodeCount).toBe(2);
+  });
+
+  it('tira do espelho a subárvore removida e devolve o matrixWorld ao three', () => {
+    // O slot pode ser reaproveitado por outro nó (pool de hazards), então o
+    // objeto que sai não pode continuar lendo a memória dele.
+    const { chamadas, matrices } = instalarPonteFalsa(32);
+    const raiz = new Object3D();
+    const grupo = new Object3D();
+    grupo.add(new Object3D());
+    raiz.add(grupo);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    expect(espelho.nodeCount).toBe(3);
+    const neto = grupo.children[0]!;
+
+    raiz.remove(grupo);
+
+    expect(chamadas.removeNode).toBe(1);
+    expect(chamadas.ultimoRemovido).toBe(1);
+    expect(espelho.nodeCount).toBe(1);
+    expect(grupo.matrixWorldAutoUpdate).toBe(true);
+    expect(neto.matrixWorldAutoUpdate).toBe(true);
+    // O `elements` é agora dele, não uma janela para a memória nativa.
+    matrices[16 + 12] = 77;
+    expect(grupo.matrixWorld.elements[12]).not.toBe(77);
+    // E ele parou de escutar: mexer nele depois não fala mais com o host.
+    grupo.add(new Object3D());
+    expect(chamadas.appendNodes).toBe(0);
+  });
+
+  it('não manda linha de sincronização do slot que saiu da cena', () => {
+    // Mandar a linha de uma lápide ressuscitaria, do lado C++, um nó que o
+    // `three` já não tem — e o slot pode ter dono novo.
+    const { chamadas } = instalarPonteFalsa(32);
+    const raiz = new Object3D();
+    const some = new Object3D();
+    const fica = new Object3D();
+    raiz.add(some, fica);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    raiz.remove(some);
+    espelho.update(new PerspectiveCamera());
+
+    expect(chamadas.ultimoChanged).toBe(2);
+  });
+
+  it('estouro de capacidade desliga o espelho em vez de realocar', () => {
+    // Realocar do lado C++ deixaria todo `matrixWorld.elements` já entregue
+    // sobre memória liberada — e erro nessa fronteira aparece como artefato
+    // visual, não como exceção (SPEC-0234). Recusar custa só os milissegundos
+    // do marco.
+    const { matrices } = instalarPonteFalsa(2);
+    const raiz = new Object3D();
+    const filho = new Object3D();
+    raiz.add(filho);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    expect(espelho.installed).toBe(true);
+
+    raiz.add(new Object3D()); // não cabe: a ponte falsa recusa
+
+    expect(espelho.installed).toBe(false);
+    expect(espelho.overflowed).toBe(true);
+    // Ninguém ficou lendo a memória nativa.
+    matrices[16 + 12] = 55;
+    expect(filho.matrixWorld.elements[12]).not.toBe(55);
+    expect(filho.matrixWorldAutoUpdate).toBe(true);
+  });
+
+  it('lança quando o append é recusado, para quem chama por fora do evento', () => {
+    // Dentro do evento a exceção é engolida (ela subiria pelo `add()` de
+    // código alheio); na API direta ela é o relato.
+    instalarPonteFalsa(2);
+    const raiz = new Object3D();
+    raiz.add(new Object3D());
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    expect(() => espelho.appendSubtree(new Object3D(), 0)).toThrow(/recusado/);
+  });
+
+  it('é inerte quando o host não sabe acrescentar nó', () => {
+    // Host antigo: sem `appendNodes`, a cena que cresce volta a ser divergência
+    // de contagem — que o gate já recusa —, e nada pode quebrar por isso.
+    const { chamadas } = instalarPonteFalsa(32);
+    delete (globalThis as Record<string, Record<string, unknown>>)['__cortexSceneMirror']![
+      'appendNodes'
+    ];
+    const raiz = new Object3D();
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    raiz.add(new Object3D());
+
+    expect(chamadas.appendNodes).toBe(0);
+    expect(espelho.installed).toBe(true);
+    expect(espelho.nodeCount).toBe(1);
   });
 });

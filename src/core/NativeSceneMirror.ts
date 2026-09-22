@@ -45,6 +45,16 @@ const FLAG_POSITION_NODE = 256;
 
 /** `geometryId` deste valor = nó sem geometria (ver `kNoGeometry`). */
 const NO_GEOMETRY = -1;
+/**
+ * Codificação de "pai dentro do próprio LOTE" no campo `parent` da descrição
+ * (ver `kBatchParentBase` em `scene_mirror.h`).
+ *
+ * A subárvore nova atravessa a ponte numa chamada só; o pai dos nós de dentro
+ * só ganha índice durante o append, então viaja como posição no lote.
+ */
+const BATCH_PARENT_BASE = -2;
+/** Código de `appendNodes` para estouro de capacidade (ver o shim). */
+const APPEND_ERROR_CAPACITY = -1;
 /** Floats por nó no buffer de sincronização (ver `scene_mirror.h`). */
 const SYNC_FLOATS_PER_NODE = 12;
 /**
@@ -75,6 +85,13 @@ interface SceneMirrorBridge {
   worldMatrices(): Float64Array | undefined;
   syncBuffer(): Float64Array | undefined;
   update(changedNodes: number, planes: Float32Array): number;
+  /**
+   * Acrescenta uma subárvore ao espelho sem reconstruí-lo. Devolve quantos nós
+   * entraram (escrevendo o índice de cada um em `out`) ou um código negativo.
+   */
+  appendNodes?(description: Float32Array, out: Int32Array): number;
+  /** Tira do espelho o nó e a subárvore dele. Devolve quantos saíram. */
+  removeNode?(index: number): number;
   shadowCasters?(
     minRatio: number,
     cameraX: number,
@@ -214,6 +231,50 @@ function temPositionNode(material: Material | Material[] | undefined): boolean {
   );
 }
 
+/**
+ * Escreve um nó no layout de construção (ver `kBuildFloatsPerNode`).
+ *
+ * É a MESMA descrição do `install` e do append de um nó que nasce depois: dois
+ * vocabulários diferentes fariam o gate julgar por critérios diferentes
+ * conforme o nó tivesse nascido antes ou depois (SPEC-0245, E6).
+ */
+function descreverNo(
+  objeto: Object3D,
+  paiIndice: number,
+  destino: Float32Array,
+  base: number,
+): void {
+  destino[base] = paiIndice;
+  destino[base + 1] = objeto.position.x;
+  destino[base + 2] = objeto.position.y;
+  destino[base + 3] = objeto.position.z;
+  destino[base + 4] = objeto.quaternion.x;
+  destino[base + 5] = objeto.quaternion.y;
+  destino[base + 6] = objeto.quaternion.z;
+  destino[base + 7] = objeto.quaternion.w;
+  destino[base + 8] = objeto.scale.x;
+  destino[base + 9] = objeto.scale.y;
+  destino[base + 10] = objeto.scale.z;
+  destino[base + 11] = DEFAULT_RADIUS;
+  destino[base + 12] = objeto.visible ? 1 : 0;
+
+  // M6 (SPEC-0245): o que o enumerador de casters precisa — a esfera da
+  // GEOMETRIA (em espaço local) e o id que liga o nó aos buffers já
+  // registrados. Sem eles o C++ tem a hierarquia e nenhuma ideia do que cada
+  // nó desenha.
+  const noDaCena = objeto as NoDaCena;
+  const geometria = noDaCena.isMesh ? noDaCena.geometry : undefined;
+  if (geometria && !geometria.boundingSphere) geometria.computeBoundingSphere();
+  const esfera = geometria?.boundingSphere ?? null;
+  destino[base + BUILD_FLAGS] = flagsDoNo(noDaCena, esfera !== null);
+  destino[base + BUILD_GEOMETRY_ID] = geometria ? geometryId(geometria) : NO_GEOMETRY;
+  destino[base + BUILD_BOUNDS_CENTER] = esfera ? esfera.center.x : 0;
+  destino[base + BUILD_BOUNDS_CENTER + 1] = esfera ? esfera.center.y : 0;
+  destino[base + BUILD_BOUNDS_CENTER + 2] = esfera ? esfera.center.z : 0;
+  destino[base + BUILD_BOUNDS_RADIUS] = esfera ? esfera.radius : 0;
+  destino[base + BUILD_MATERIAL_VISIBLE] = materialVisivel(noDaCena.material) ? 1 : 0;
+}
+
 function bridge(): SceneMirrorBridge | undefined {
   const api = (globalThis as { __cortexSceneMirror?: SceneMirrorBridge }).__cortexSceneMirror;
   return typeof api?.build === 'function' ? api : undefined;
@@ -227,10 +288,10 @@ export function nativeSceneMirrorAvailable(): boolean {
 /**
  * O espelho instalado no frame, quando há um.
  *
- * A cena é única e o espelho é instalado uma vez (o `build` não cresce depois),
- * então um ponteiro de módulo descreve o que é fato. Existe para quem enxerga a
- * sombra — o nó do CSM — poder pedir a contagem de casters sem que o `Game`
- * tenha de atravessar a iluminação para entregá-lo.
+ * A cena é única e o espelho é instalado uma vez, então um ponteiro de módulo
+ * descreve o que é fato. Existe para quem enxerga a sombra — o nó do CSM —
+ * poder pedir a contagem de casters sem que o `Game` tenha de atravessar a
+ * iluminação para entregá-lo.
  */
 export function activeSceneMirror(): NativeSceneMirror | undefined {
   return espelhoInstalado;
@@ -240,7 +301,8 @@ let espelhoInstalado: NativeSceneMirror | undefined;
 
 export class NativeSceneMirror {
   private readonly _bridge = bridge();
-  private _nodes: Object3D[] = [];
+  /** Um por slot do espelho; `undefined` é slot de nó que saiu da cena. */
+  private _nodes: (Object3D | undefined)[] = [];
   private _sync: Float64Array | undefined;
   private _installed = false;
   private readonly _planes = new Float32Array(FRUSTUM_FLOATS);
@@ -255,13 +317,39 @@ export class NativeSceneMirror {
    * um vetor a cada um devolveria em GC o que o marco quer ganhar.
    */
   private readonly _gateOut = new Float64Array(GATE_OUT_FLOATS);
+  /** Índice de cada objeto espelhado — o que o evento precisa resolver em O(1). */
+  private _indicePorObjeto = new Map<Object3D, number>();
+  /** As matrizes de mundo do host, cobrindo a CAPACIDADE (não só o tamanho). */
+  private _matrizes: Float64Array | undefined;
+  /** Nós vivos: `_nodes` guarda slots, e um removido vira buraco. */
+  private _liveCount = 0;
+  /** `true` depois de um estouro de capacidade — o espelho foi desligado. */
+  private _overflowed = false;
+  /**
+   * Buffers do append, reaproveitados entre eventos: um *hazard* que nasce a
+   * cada tiro não pode alocar um par de arrays por vez.
+   */
+  private _loteDescricao = new Float32Array(0);
+  private _loteIndices = new Int32Array(0);
 
   get installed(): boolean {
     return this._installed;
   }
 
+  /** Nós VIVOS no espelho — é o que se compara com a contagem da cena. */
   get nodeCount(): number {
-    return this._nodes.length;
+    return this._liveCount;
+  }
+
+  /**
+   * O espelho desligou-se por estouro de capacidade.
+   *
+   * Não é estado normal: é a saída de emergência que devolve o passe ao
+   * `three` em vez de deixar o C++ desenhar por cima de memória que já não
+   * descreve a cena (ver {@link _invalidarTudo}).
+   */
+  get overflowed(): boolean {
+    return this._overflowed;
   }
 
   /**
@@ -277,7 +365,8 @@ export class NativeSceneMirror {
 
     this._nodes = [];
     const fila: Object3D[] = [scene];
-    const indicePorObjeto = new Map<Object3D, number>();
+    const indicePorObjeto = this._indicePorObjeto;
+    indicePorObjeto.clear();
     while (fila.length > 0) {
       const objeto = fila.shift() as Object3D;
       indicePorObjeto.set(objeto, this._nodes.length);
@@ -290,36 +379,7 @@ export class NativeSceneMirror {
       const objeto = this._nodes[i]!;
       const pai = objeto.parent;
       const paiIndice = pai && indicePorObjeto.has(pai) ? (indicePorObjeto.get(pai) as number) : -1;
-      const base = i * BUILD_FLOATS_PER_NODE;
-      descricao[base] = paiIndice;
-      descricao[base + 1] = objeto.position.x;
-      descricao[base + 2] = objeto.position.y;
-      descricao[base + 3] = objeto.position.z;
-      descricao[base + 4] = objeto.quaternion.x;
-      descricao[base + 5] = objeto.quaternion.y;
-      descricao[base + 6] = objeto.quaternion.z;
-      descricao[base + 7] = objeto.quaternion.w;
-      descricao[base + 8] = objeto.scale.x;
-      descricao[base + 9] = objeto.scale.y;
-      descricao[base + 10] = objeto.scale.z;
-      descricao[base + 11] = DEFAULT_RADIUS;
-      descricao[base + 12] = objeto.visible ? 1 : 0;
-
-      // M6 (SPEC-0245): o que o enumerador de casters precisa — a esfera da
-      // GEOMETRIA (em espaço local) e o id que liga o nó aos buffers já
-      // registrados. Sem eles o C++ tem a hierarquia e nenhuma ideia do que
-      // cada nó desenha.
-      const noDaCena = objeto as NoDaCena;
-      const geometria = noDaCena.isMesh ? noDaCena.geometry : undefined;
-      if (geometria && !geometria.boundingSphere) geometria.computeBoundingSphere();
-      const esfera = geometria?.boundingSphere ?? null;
-      descricao[base + BUILD_FLAGS] = flagsDoNo(noDaCena, esfera !== null);
-      descricao[base + BUILD_GEOMETRY_ID] = geometria ? geometryId(geometria) : NO_GEOMETRY;
-      descricao[base + BUILD_BOUNDS_CENTER] = esfera ? esfera.center.x : 0;
-      descricao[base + BUILD_BOUNDS_CENTER + 1] = esfera ? esfera.center.y : 0;
-      descricao[base + BUILD_BOUNDS_CENTER + 2] = esfera ? esfera.center.z : 0;
-      descricao[base + BUILD_BOUNDS_RADIUS] = esfera ? esfera.radius : 0;
-      descricao[base + BUILD_MATERIAL_VISIBLE] = materialVisivel(noDaCena.material) ? 1 : 0;
+      descreverNo(objeto, paiIndice, descricao, i * BUILD_FLOATS_PER_NODE);
     }
 
     if (!api.build(descricao)) {
@@ -350,12 +410,201 @@ export class NativeSceneMirror {
       ) as unknown as Matrix4['elements'];
       // Sem isto o `three` recalcularia por cima e o ganho sumiria em silêncio.
       objeto.matrixWorldAutoUpdate = false;
+      this._escutar(objeto);
     }
 
+    this._matrizes = matrizes;
+    this._liveCount = this._nodes.length;
     this._installed = true;
     espelhoInstalado = this;
     debug('perf', `[sceneMirror] ${this._nodes.length} nos espelhados no host`);
     return true;
+  }
+
+  // ── A cena que muda depois do `install` (SPEC-0245, E6) ──────────────────
+  //
+  // Contar nós não resolve: a contagem roda na travessia amortizada de 10
+  // frames (`cullShadowCasters`), e nesses 10 frames um nó novo com
+  // `castShadow` autorado — o projétil do kart — seria aceito sem estar no
+  // espelho. Promover a travessia a por-frame é percorrer ~1.300 nós, que é o
+  // custo que este marco existe para eliminar.
+  //
+  // O `three` dispara `childadded`/`childremoved` no PAI, e o `dispatchEvent`
+  // sai cedo quando não há listener — custo zero para quem não escuta.
+  // Escutando nos nós espelhados, o espelho sabe da mutação NO FRAME em que
+  // ela acontece, O(1) por evento. Todos os caminhos do `three` passam por
+  // `add`/`remove`: `attach`, `clear`, `removeFromParent` e `copy` chamam um
+  // dos dois, e ninguém mexe em `children` por fora (conferido no fonte).
+
+  /** Liga os dois eventos num nó espelhado. */
+  private _escutar(objeto: Object3D): void {
+    objeto.addEventListener('childadded', this._aoAdicionar);
+    objeto.addEventListener('childremoved', this._aoRemover);
+  }
+
+  /** Desliga os dois eventos de um nó que saiu do espelho. */
+  private _pararDeEscutar(objeto: Object3D): void {
+    objeto.removeEventListener('childadded', this._aoAdicionar);
+    objeto.removeEventListener('childremoved', this._aoRemover);
+  }
+
+  private readonly _aoAdicionar = (evento: { target?: unknown; child?: unknown }): void => {
+    const pai = evento.target as Object3D | undefined;
+    const filho = evento.child as Object3D | undefined;
+    if (!this._installed || !pai || !filho) return;
+    const paiIndice = this._indicePorObjeto.get(pai);
+    if (paiIndice === undefined) return;
+    try {
+      this.appendSubtree(filho, paiIndice);
+    } catch (erro) {
+      // O evento roda DENTRO do `add()` de quem quer que tenha mexido na cena
+      // (às vezes o próprio `three`, no CSM). Deixar a exceção subir mataria o
+      // frame no meio de código alheio, então aqui ela vira desligamento do
+      // espelho — que já aconteceu no `appendSubtree` — mais o relato.
+      debug('perf', `[sceneMirror] append recusado no evento: ${String(erro)}`);
+    }
+  };
+
+  private readonly _aoRemover = (evento: { child?: unknown }): void => {
+    const filho = evento.child as Object3D | undefined;
+    if (!this._installed || !filho) return;
+    this.removeSubtree(filho);
+  };
+
+  /**
+   * Põe no espelho uma subárvore que a cena acabou de ganhar.
+   *
+   * A subárvore inteira atravessa a ponte numa chamada só: uma travessia por
+   * evento, não uma por nó (15 us cada, SPEC-0225).
+   *
+   * @throws quando o host recusa o append. Estouro de capacidade **não**
+   *   realoca do lado C++ — realocar deixaria todo `matrixWorld.elements` já
+   *   entregue sobre memória liberada (SPEC-0234). Antes de lançar, este
+   *   método invalida os `elements` e devolve o passe ao `three`.
+   */
+  appendSubtree(raiz: Object3D, paiIndice: number): void {
+    const api = this._bridge;
+    if (!api?.appendNodes || !this._installed) return;
+
+    // Pai antes de filho, como no `install`: é o contrato do lado C++.
+    const novos: Object3D[] = [];
+    const paiDoNovo: number[] = [];
+    const fila: { objeto: Object3D; pai: number }[] = [{ objeto: raiz, pai: paiIndice }];
+    while (fila.length > 0) {
+      const { objeto, pai } = fila.shift() as { objeto: Object3D; pai: number };
+      if (this._indicePorObjeto.has(objeto)) {
+        // Já espelhado: não há caminho normal que leve aqui (uma troca de pai
+        // remove antes de acrescentar), e mapear o mesmo objeto duas vezes
+        // deixaria o espelho mentindo. Desliga em vez de seguir.
+        this._invalidarTudo('no ja espelhado chegou como novo');
+        throw new Error('[sceneMirror] no ja espelhado chegou no childadded');
+      }
+      const posicao = novos.length;
+      novos.push(objeto);
+      paiDoNovo.push(pai);
+      for (const filho of objeto.children) {
+        fila.push({ objeto: filho, pai: BATCH_PARENT_BASE - posicao });
+      }
+    }
+
+    if (this._loteDescricao.length < novos.length * BUILD_FLOATS_PER_NODE) {
+      this._loteDescricao = new Float32Array(novos.length * BUILD_FLOATS_PER_NODE);
+      this._loteIndices = new Int32Array(novos.length);
+    }
+    const descricao = this._loteDescricao.subarray(0, novos.length * BUILD_FLOATS_PER_NODE);
+    for (let i = 0; i < novos.length; i++) {
+      descreverNo(novos[i]!, paiDoNovo[i]!, descricao, i * BUILD_FLOATS_PER_NODE);
+    }
+
+    const entraram = api.appendNodes(descricao, this._loteIndices);
+    if (entraram !== novos.length) {
+      const motivo =
+        entraram === APPEND_ERROR_CAPACITY ? 'capacidade esgotada' : `codigo ${entraram}`;
+      this._invalidarTudo(motivo);
+      throw new Error(`[sceneMirror] append de ${novos.length} nos recusado: ${motivo}`);
+    }
+
+    const matrizes = this._matrizes;
+    for (let i = 0; i < novos.length; i++) {
+      const objeto = novos[i]!;
+      const indice = this._loteIndices[i]!;
+      this._nodes[indice] = objeto;
+      this._indicePorObjeto.set(objeto, indice);
+      if (matrizes) {
+        objeto.matrixWorld.elements = matrizes.subarray(
+          indice * MATRIX_ELEMENTS,
+          indice * MATRIX_ELEMENTS + MATRIX_ELEMENTS,
+        ) as unknown as Matrix4['elements'];
+      }
+      objeto.matrixWorldAutoUpdate = false;
+      this._escutar(objeto);
+    }
+    this._liveCount += novos.length;
+  }
+
+  /**
+   * Tira do espelho uma subárvore que saiu da cena.
+   *
+   * O slot vira lápide NO LUGAR, do lado C++: mudar o índice dos outros
+   * obrigaria a reapontar o `matrixWorld` de todos, que é o laço em JS que a
+   * SPEC-0234 eliminou. O objeto que sai recebe de volta um `elements` próprio
+   * (com a última matriz que tinha) e o `matrixWorldAutoUpdate`, porque o slot
+   * pode ser reaproveitado por outro nó — é o caso do pool de *hazards*.
+   */
+  removeSubtree(raiz: Object3D): void {
+    const api = this._bridge;
+    if (!this._installed) return;
+    const indice = this._indicePorObjeto.get(raiz);
+    if (indice === undefined) return;
+
+    api?.removeNode?.(indice);
+    const matrizes = this._matrizes;
+    raiz.traverse((objeto) => {
+      const slot = this._indicePorObjeto.get(objeto);
+      if (slot === undefined) return;
+      this._indicePorObjeto.delete(objeto);
+      this._nodes[slot] = undefined;
+      this._liveCount--;
+      this._pararDeEscutar(objeto);
+      if (matrizes) {
+        objeto.matrixWorld.elements = matrizes.slice(
+          slot * MATRIX_ELEMENTS,
+          slot * MATRIX_ELEMENTS + MATRIX_ELEMENTS,
+        ) as unknown as Matrix4['elements'];
+      }
+      objeto.matrixWorldAutoUpdate = true;
+    });
+  }
+
+  /**
+   * Desliga o espelho e devolve TODO `matrixWorld` ao `three`.
+   *
+   * É a saída de emergência de quando o espelho deixa de descrever a cena
+   * (estouro de capacidade). Recusar assumir custa os milissegundos do marco;
+   * seguir com um espelho errado custaria a imagem — e o erro apareceria como
+   * artefato visual, não como exceção (SPEC-0234).
+   */
+  private _invalidarTudo(motivo: string): void {
+    const matrizes = this._matrizes;
+    for (let i = 0; i < this._nodes.length; i++) {
+      const objeto = this._nodes[i];
+      if (!objeto) continue;
+      this._pararDeEscutar(objeto);
+      if (matrizes) {
+        objeto.matrixWorld.elements = matrizes.slice(
+          i * MATRIX_ELEMENTS,
+          i * MATRIX_ELEMENTS + MATRIX_ELEMENTS,
+        ) as unknown as Matrix4['elements'];
+      }
+      objeto.matrixWorldAutoUpdate = true;
+    }
+    this._nodes = [];
+    this._indicePorObjeto.clear();
+    this._liveCount = 0;
+    this._installed = false;
+    this._overflowed = true;
+    if (espelhoInstalado === this) espelhoInstalado = undefined;
+    debug('perf', `[sceneMirror] DESLIGADO: ${motivo}`);
   }
 
   /**
@@ -370,9 +619,15 @@ export class NativeSceneMirror {
     // Escreve os transforms locais. Hoje são todos os nós; a SPEC-0234 prevê
     // reduzir isto à lista de dinâmicos (63 de 1.300 no kart-racer) — o número
     // que esta passada gasta é justamente o que a medição vai dizer se paga.
+    // As linhas são COMPACTAS: um slot vazio (nó que saiu da cena) é pulado, e
+    // o host recebe quantas linhas foram escritas. Mandar a linha de uma lápide
+    // ressuscitaria um nó que o `three` já não tem.
+    let linhas = 0;
     for (let i = 0; i < this._nodes.length; i++) {
-      const objeto = this._nodes[i]!;
-      const base = i * SYNC_FLOATS_PER_NODE;
+      const objeto = this._nodes[i];
+      if (!objeto) continue;
+      const base = linhas * SYNC_FLOATS_PER_NODE;
+      linhas++;
       sync[base] = i;
       sync[base + 1] = objeto.position.x;
       sync[base + 2] = objeto.position.y;
@@ -399,7 +654,7 @@ export class NativeSceneMirror {
     this._frustum.setFromProjectionMatrix(this._viewProjection);
     escreverPlanos(this._frustum, this._planes);
 
-    api.update(this._nodes.length, this._planes);
+    api.update(linhas, this._planes);
   }
 
   /**
@@ -499,7 +754,7 @@ export class NativeSceneMirror {
    */
   relatarNosForaDoEspelho(scene: Object3D): void {
     if (!this._installed) return;
-    const conhecidos = new Set<Object3D>(this._nodes);
+    const conhecidos = this._indicePorObjeto;
     const fora: string[] = [];
     scene.traverse((objeto) => {
       if (conhecidos.has(objeto)) return;

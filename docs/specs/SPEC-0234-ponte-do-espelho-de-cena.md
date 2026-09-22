@@ -111,3 +111,32 @@ Fica a regra, que vale para qualquer coisa que atravesse essa fronteira: **o que
 espelha estado do `three` usa a mesma precisão que ele**. A diferença não
 aparece como erro nem como exceção — aparece como artefato visual, que é o tipo
 de defeito mais caro de rastrear.
+
+## A cena passou a crescer, por capacidade reservada (2026-09-22, SPEC-0245 E6)
+
+A primeira versão desta ponte montava o espelho uma vez e pronto: nó criado
+depois do `install` não existia do lado nativo. Enquanto o `three` desenhava a
+sombra isso era erro de contagem; com o passe nativo no lugar dele vira
+**sombra faltando**.
+
+O que mudou, sem mexer no princípio de "zero custo por frame no JS":
+
+- **`reserve` antes do `resize`.** `SceneMirror::build` reserva
+  `nodes + kMirrorSpareNodes` em todos os vetores **antes** de dimensioná-los,
+  e o `ArrayBuffer` externo é criado sobre a CAPACIDADE, não sobre o tamanho de
+  então. Assim um append não realoca, e todo `matrixWorld.elements` já entregue
+  continua apontando para a matriz do mesmo nó.
+- **Rebuild continua proibido.** Estouro de capacidade **recusa** — não
+  realoca. Quem chama invalida os `elements` (devolvendo a cada objeto um
+  vetor próprio e o `matrixWorldAutoUpdate`) e o passe volta para o `three`.
+  Realocar seria `use-after-free` silencioso, e a regra de precisão desta spec
+  vale igual aqui: erro nessa fronteira aparece como artefato visual, não como
+  exceção.
+- **Remoção vira lápide no lugar.** Mudar o índice dos outros obrigaria a
+  reapontar o `matrixWorld` de todos, que é exatamente o laço de aplicação em
+  JS (≥1,4 ms) que esta spec eliminou. O slot morto é reaproveitado por um
+  append futuro, desde que venha DEPOIS do pai — o contrato pai-antes-de-filho
+  não abre exceção.
+- **Quem avisa é o evento, não a contagem.** O lado JS escuta
+  `childadded`/`childremoved` nos nós espelhados, então a mutação chega no
+  frame em que acontece. O detalhe e a medição estão na SPEC-0245, E6.

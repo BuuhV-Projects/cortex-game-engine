@@ -59,6 +59,73 @@ enum SyncFlag : uint8_t {
 /** Valor de `geometryId` para um nó sem geometria registrada. */
 constexpr int32_t kNoGeometry = -1;
 
+/** Elementos de uma matriz 4x4, como o `three` a guarda (coluna-maior). */
+constexpr int kMatrixFloats = 16;
+
+/**
+ * Folga de nós reservada no {@link SceneMirror::build}, ALÉM dos que a cena
+ * tem na hora.
+ *
+ * É o que permite a cena crescer depois do `install` sem reconstruir o
+ * espelho. Reconstruir seria `use-after-free` silencioso: o `ArrayBuffer`
+ * externo que o JS segura aponta para dentro dos vetores daqui e é criado SEM
+ * finalizer, de propósito — se um `resize` realocar, todo
+ * `matrixWorld.elements` já entregue passa a apontar para memória liberada, e
+ * erro nessa fronteira aparece como artefato visual, não como exceção
+ * (SPEC-0234).
+ *
+ * Com `reserve` feito antes do `build`, o append não realoca e os `subarray`
+ * já entregues continuam válidos — só o nó novo precisa ser apontado.
+ *
+ * 512 nós: o kart-racer tem ~1.300, e o que nasce depois do `install` são os
+ * placeholders de cascata do CSM (2) e os *hazards* efêmeros, que são poucos
+ * por vez e devolvem o slot ao serem removidos. Custa ~150 KB.
+ */
+constexpr size_t kMirrorSpareNodes = 512;
+
+/** Resultado de {@link SceneMirror::appendBatch}. */
+enum class AppendResult : uint8_t {
+  /** Todos os nós do lote entraram. */
+  kAppended = 0,
+  /**
+   * Não cabe na capacidade reservada. NADA foi acrescentado.
+   *
+   * Nunca realoca para caber: realocar é justamente o `use-after-free` que a
+   * reserva existe para evitar. Quem chama tem de invalidar os `elements` e
+   * devolver o passe ao `three` — falhar alto em vez de desenhar sobre memória
+   * liberada.
+   */
+  kOutOfCapacity,
+  /** Pai inválido (fora da cena, ou que não viria antes do filho). NADA entrou. */
+  kBadParent,
+};
+
+/**
+ * Codificação de "pai dentro do próprio LOTE" em {@link NodeDesc::parent}.
+ *
+ * Uma subárvore nova chega inteira num append só (uma travessia de ponte, não
+ * uma por nó — 15 us cada, SPEC-0225). O pai da raiz é um índice que já existe
+ * no espelho; o pai dos de dentro só ganha índice durante o próprio append, e
+ * por isso viaja como posição NO LOTE: `parent = kBatchParentBase - posicao`.
+ *
+ * `-1` continua sendo {@link kNoParent} e `>= 0` continua sendo índice
+ * absoluto, então a codificação não colide com o que já existia.
+ */
+constexpr NodeIndex kBatchParentBase = -2;
+
+/** Codifica "meu pai é o nó da posição `batchIndex` deste lote". */
+inline NodeIndex encodeBatchParent(int32_t batchIndex) {
+  return static_cast<NodeIndex>(kBatchParentBase - batchIndex);
+}
+
+/** `true` se o pai é uma posição do lote (ver {@link kBatchParentBase}). */
+inline bool isBatchParent(NodeIndex parent) { return parent <= kBatchParentBase; }
+
+/** Posição no lote codificada em `parent`. */
+inline int32_t decodeBatchParent(NodeIndex parent) {
+  return static_cast<int32_t>(kBatchParentBase - parent);
+}
+
 /**
  * Bits de {@link NodeDesc::flags} — a autoria estática de um nó, espelhada uma
  * vez no `build`.
@@ -181,8 +248,59 @@ struct NodeDesc {
  */
 class SceneMirror {
  public:
-  /** Recebe a árvore. Devolve `false` se algum nó vier antes do pai. */
-  bool build(const std::vector<NodeDesc>& nodes);
+  /**
+   * Recebe a árvore. Devolve `false` se algum nó vier antes do pai.
+   *
+   * @param spareNodes folga de capacidade além de `nodes.size()`, para os nós
+   *   que a cena ganhar depois (ver {@link kMirrorSpareNodes}). A reserva é
+   *   feita ANTES do `resize`, então nenhum append posterior realoca.
+   */
+  bool build(const std::vector<NodeDesc>& nodes, size_t spareNodes = kMirrorSpareNodes);
+
+  /**
+   * Acrescenta uma subárvore inteira, sem realocar.
+   *
+   * Ou entra tudo, ou nada: a capacidade e os pais são validados antes de
+   * qualquer escrita, porque um lote pela metade deixaria o espelho com um
+   * filho sem pai — matriz errada em silêncio, que é o pior modo de falhar.
+   *
+   * O contrato pai-antes-de-filho continua valendo: cada nó recebe um índice
+   * MAIOR que o do pai, inclusive quando reaproveita o slot de um nó removido.
+   *
+   * @param nodes   a subárvore, pai antes de filho, com o pai codificado por
+   *                índice absoluto ou por {@link encodeBatchParent}
+   * @param out     índice atribuído a cada nó do lote, na mesma ordem
+   */
+  AppendResult appendBatch(const std::vector<NodeDesc>& nodes, std::vector<NodeIndex>& out);
+
+  /**
+   * Tira do espelho o nó e toda a subárvore dele, SEM mexer no índice de
+   * ninguém.
+   *
+   * O slot vira lápide: invisível, sem sombra, sem geometria e sem raio, mas
+   * no lugar — mudar índice de nó seria reapontar o `matrixWorld.elements` de
+   * todo mundo, que é o laço de aplicação em JS que a SPEC-0234 eliminou.
+   * O slot volta a ser usado por um append futuro.
+   *
+   * Uma passada para frente basta porque filho vem depois do pai.
+   *
+   * @return quantos nós saíram (0 se `root` já estava fora).
+   */
+  int32_t removeSubtree(NodeIndex root);
+
+  /** Quantos nós cabem sem realocar (ver {@link kMirrorSpareNodes}). */
+  size_t capacity() const { return capacity_; }
+
+  /**
+   * Nós VIVOS — sem as lápides de {@link removeSubtree}.
+   *
+   * É este número que se compara com a contagem da cena do `three`: {@link
+   * size} conta slots, e um slot removido não existe mais para o `three`.
+   */
+  size_t liveCount() const { return liveCount_; }
+
+  /** `true` se o slot é uma lápide (ver {@link removeSubtree}). */
+  bool removed(NodeIndex index) const { return removed_[static_cast<size_t>(index)] != 0; }
 
   /**
    * Aplica os transforms que mudaram no frame, lidos do buffer que o JS
@@ -222,12 +340,24 @@ class SceneMirror {
    * `matrixWorld.elements` de cada objeto para a fatia dele e passa a ler
    * daqui — é o que elimina o laço de aplicação em JS (SPEC-0234).
    *
-   * Cuidado: o vetor não pode realocar enquanto o JS segura o buffer, senão o
-   * ponteiro que ele guarda vira lixo. Por isso a cena é montada uma vez em
-   * {@link build} e não cresce depois.
+   * Cuidado: o vetor NÃO PODE REALOCAR enquanto o JS segura o buffer, senão o
+   * ponteiro que ele guarda vira lixo. É por isso que a cena cresce por
+   * CAPACIDADE RESERVADA ({@link kMirrorSpareNodes}) e nunca por rebuild:
+   * {@link appendBatch} recusa quando não cabe, em vez de realocar.
    */
   double* worldData() { return world_.data(); }
   size_t worldElementCount() const { return world_.size(); }
+
+  /**
+   * Doubles que o `ArrayBuffer` externo deve cobrir: a CAPACIDADE, não o
+   * tamanho de agora.
+   *
+   * O JS recebe o buffer uma vez, no `install`, e precisa poder fatiar o slot
+   * de um nó que só nasce depois. A memória já está alocada pela reserva, e
+   * expor só até `worldElementCount()` obrigaria a criar um buffer novo a cada
+   * append — cada um deles um ponteiro a mais para invalidar.
+   */
+  size_t worldCapacityElements() const { return capacity_ * kMatrixFloats; }
 
   size_t size() const { return parents_.size(); }
 
@@ -291,6 +421,34 @@ class SceneMirror {
   std::vector<NodeIndex> visible_;
   /** Quem teve a matriz de mundo recomposta no frame (M3). */
   std::vector<NodeIndex> changed_;
+  /** Lápides: slot que existiu e saiu da cena (ver {@link removeSubtree}). */
+  std::vector<uint8_t> removed_;
+  /**
+   * Slots de lápide livres para reaproveitar.
+   *
+   * Sem reaproveitar, cada troca de pai do `three` (o `add` remove do pai
+   * antigo antes de pôr no novo) gastaria um slot novo, e um *hazard* que
+   * nasce e morre o tempo todo esvaziaria a folga numa corrida.
+   */
+  std::vector<NodeIndex> freeSlots_;
+  /** Nós que cabem sem realocar. */
+  size_t capacity_ = 0;
+  /** Slots vivos (sem lápide). */
+  size_t liveCount_ = 0;
+
+  /**
+   * Escolhe onde o nó novo vai, mantendo pai-antes-de-filho.
+   *
+   * Um slot livre só serve se o índice dele for MAIOR que o do pai; senão a
+   * propagação linear leria a matriz de mundo do pai ainda não calculada.
+   * Quando nenhum serve, o nó vai para o fim.
+   *
+   * @return o índice, ou {@link kNoParent} se não couber na capacidade.
+   */
+  NodeIndex takeSlot(NodeIndex parent);
+
+  /** Escreve um nó num slot já escolhido (novo ou reaproveitado). */
+  void writeNode(NodeIndex index, const NodeDesc& node, NodeIndex parent);
 };
 
 }  // namespace scene

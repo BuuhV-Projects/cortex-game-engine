@@ -47,6 +47,19 @@ constexpr int kGateOutFloats = scene::kShadowGateRefusalCount + 2;
 constexpr size_t kArgsShadowPassGate = 8;
 
 /**
+ * Códigos de erro de `appendNodes` (ver {@link jsAppendNodes}).
+ *
+ * Negativos porque o caso bom devolve quantos nós entraram. Estouro NÃO
+ * realoca — quem chama tem de invalidar os `matrixWorld` e devolver o passe ao
+ * `three` (SPEC-0245, E6).
+ */
+constexpr int kAppendErrorCapacity = -1;
+constexpr int kAppendErrorParent = -2;
+constexpr int kAppendErrorArgs = -3;
+/** Argumentos de `appendNodes`: a descrição e o vetor de saída dos índices. */
+constexpr size_t kArgsAppendNodes = 2;
+
+/**
  * Consulta ao registro de geometria, na forma que o gate PURO aceita.
  *
  * O `GeometryRegistry` arrasta `webgpu.h`; o gate não pode vê-lo sem sair do
@@ -79,6 +92,38 @@ MirrorState& state() {
 }
 
 /**
+ * Lê uma linha do layout de construção (20 floats) num {@link scene::NodeDesc}.
+ *
+ * Mora aqui porque o `build` e o `appendNodes` falam o MESMO layout: um nó que
+ * nasce depois do `install` tem de ser descrito exatamente como os que nasceram
+ * com ela, senão o gate passaria a julgar dois vocabulários diferentes.
+ */
+scene::NodeDesc lerNo(const float* row) {
+  scene::NodeDesc node;
+  node.parent = static_cast<scene::NodeIndex>(row[0]);
+  node.transform.px = row[1];
+  node.transform.py = row[2];
+  node.transform.pz = row[3];
+  node.transform.qx = row[4];
+  node.transform.qy = row[5];
+  node.transform.qz = row[6];
+  node.transform.qw = row[7];
+  node.transform.sx = row[8];
+  node.transform.sy = row[9];
+  node.transform.sz = row[10];
+  node.radius = row[11];
+  node.visible = row[12] != 0.0f;
+  node.flags = static_cast<uint16_t>(row[kBuildFlags]);
+  node.geometryId = static_cast<int32_t>(row[kBuildGeometryId]);
+  node.bounds.cx = row[kBuildBoundsCenter];
+  node.bounds.cy = row[kBuildBoundsCenter + 1];
+  node.bounds.cz = row[kBuildBoundsCenter + 2];
+  node.bounds.radius = row[kBuildBoundsRadius];
+  node.materialVisible = row[kBuildMaterialVisible] != 0.0f;
+  return node;
+}
+
+/**
  * `build(descricao: Float32Array)` — recebe a cena inteira uma vez.
  *
  * Layout por nó (20 floats): pai, px, py, pz, qx, qy, qz, qw, sx, sy, sz,
@@ -106,35 +151,15 @@ napi_value jsBuild(napi_env env, napi_callback_info info) {
   const auto* floats = static_cast<const float*>(data);
   const size_t nodeCount = length / kBuildFloatsPerNode;
   std::vector<scene::NodeDesc> nodes(nodeCount);
-  for (size_t i = 0; i < nodeCount; i++) {
-    const float* row = floats + i * kBuildFloatsPerNode;
-    scene::NodeDesc& node = nodes[i];
-    node.parent = static_cast<scene::NodeIndex>(row[0]);
-    node.transform.px = row[1];
-    node.transform.py = row[2];
-    node.transform.pz = row[3];
-    node.transform.qx = row[4];
-    node.transform.qy = row[5];
-    node.transform.qz = row[6];
-    node.transform.qw = row[7];
-    node.transform.sx = row[8];
-    node.transform.sy = row[9];
-    node.transform.sz = row[10];
-    node.radius = row[11];
-    node.visible = row[12] != 0.0f;
-    node.flags = static_cast<uint16_t>(row[kBuildFlags]);
-    node.geometryId = static_cast<int32_t>(row[kBuildGeometryId]);
-    node.bounds.cx = row[kBuildBoundsCenter];
-    node.bounds.cy = row[kBuildBoundsCenter + 1];
-    node.bounds.cz = row[kBuildBoundsCenter + 2];
-    node.bounds.radius = row[kBuildBoundsRadius];
-    node.materialVisible = row[kBuildMaterialVisible] != 0.0f;
-  }
+  for (size_t i = 0; i < nodeCount; i++) nodes[i] = lerNo(floats + i * kBuildFloatsPerNode);
 
   MirrorState& s = state();
   s.built = s.mirror.build(nodes);
-  // Espaço para o pior caso: todos os nós mudando num frame.
-  s.syncBuffer.assign(nodeCount * scene::kSyncFloatsPerNode, 0.0);
+  // Espaço para o pior caso: todos os nós mudando num frame — e pela
+  // CAPACIDADE, não pelo tamanho de agora, porque este buffer também é externo
+  // e o JS o segura desde o `install`. Redimensioná-lo depois realocaria a
+  // memória que o `Float64Array` do JS já aponta.
+  s.syncBuffer.assign(s.mirror.capacity() * scene::kSyncFloatsPerNode, 0.0);
   { napi_value out; napi_get_boolean(env, s.built, &out); return out; }
 }
 
@@ -146,7 +171,10 @@ napi_value jsBuild(napi_env env, napi_callback_info info) {
 napi_value jsWorldMatrices(napi_env env, napi_callback_info) {
   MirrorState& s = state();
   if (!s.built) return njs::undefined(env);
-  const size_t elementCount = s.mirror.worldElementCount();
+  // Pela CAPACIDADE: o JS recebe este buffer uma vez, no `install`, e precisa
+  // poder fatiar o slot de um nó que ainda vai nascer. A memória já está
+  // alocada pela reserva do `build`.
+  const size_t elementCount = s.mirror.worldCapacityElements();
   napi_value buffer;
   // Sem finalizer: a memória é do `SceneMirror`, que vive enquanto o processo
   // viver. Liberar aqui soltaria memória que o C++ ainda usa.
@@ -178,6 +206,95 @@ napi_value jsSyncBuffer(napi_env env, napi_callback_info) {
     return njs::undefined(env);
   }
   return typed;
+}
+
+/**
+ * `appendNodes(descricao: Float32Array, saida: Int32Array)` — a cena ganhou
+ * uma subárvore depois do `install` (SPEC-0245, E6).
+ *
+ * Chega a subárvore INTEIRA numa chamada: uma travessia de ponte por evento,
+ * não uma por nó (15 us cada, SPEC-0225). O layout é o mesmo do `build`, com o
+ * pai dos nós de dentro codificado por posição no lote
+ * ({@link scene::encodeBatchParent}).
+ *
+ * Devolve quantos nós entraram, ou um código negativo. Estouro de capacidade
+ * NÃO realoca — é o JS que invalida os `matrixWorld` e devolve o passe ao
+ * `three`, porque realocar aqui deixaria todo `elements` já entregue sobre
+ * memória liberada.
+ */
+napi_value jsAppendNodes(napi_env env, napi_callback_info info) {
+  size_t argc = kArgsAppendNodes;
+  napi_value args[kArgsAppendNodes];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  MirrorState& s = state();
+  napi_value out;
+  if (!s.built || argc < kArgsAppendNodes) {
+    napi_create_double(env, kAppendErrorArgs, &out);
+    return out;
+  }
+
+  void* data = nullptr;
+  napi_typedarray_type type;
+  size_t length = 0;
+  napi_value arrayBuffer;
+  size_t offset = 0;
+  void* outData = nullptr;
+  size_t outLength = 0;
+  if (napi_get_typedarray_info(env, args[0], &type, &length, &data, &arrayBuffer, &offset) != napi_ok ||
+      data == nullptr ||
+      napi_get_typedarray_info(env, args[1], &type, &outLength, &outData, &arrayBuffer, &offset) !=
+          napi_ok ||
+      outData == nullptr) {
+    napi_create_double(env, kAppendErrorArgs, &out);
+    return out;
+  }
+
+  const auto* floats = static_cast<const float*>(data);
+  const size_t nodeCount = length / kBuildFloatsPerNode;
+  if (nodeCount == 0 || outLength < nodeCount) {
+    napi_create_double(env, kAppendErrorArgs, &out);
+    return out;
+  }
+  std::vector<scene::NodeDesc> nodes(nodeCount);
+  for (size_t i = 0; i < nodeCount; i++) nodes[i] = lerNo(floats + i * kBuildFloatsPerNode);
+
+  std::vector<scene::NodeIndex> indices;
+  const scene::AppendResult resultado = s.mirror.appendBatch(nodes, indices);
+  if (resultado != scene::AppendResult::kAppended) {
+    const int codigo = resultado == scene::AppendResult::kOutOfCapacity ? kAppendErrorCapacity
+                                                                       : kAppendErrorParent;
+    napi_create_double(env, codigo, &out);
+    return out;
+  }
+
+  auto* saida = static_cast<int32_t*>(outData);
+  for (size_t i = 0; i < indices.size(); i++) saida[i] = indices[i];
+  napi_create_double(env, static_cast<double>(indices.size()), &out);
+  return out;
+}
+
+/**
+ * `removeNode(indice)` — a subárvore saiu da cena.
+ *
+ * Os slots viram lápide NO LUGAR: mudar índice de nó obrigaria a reapontar o
+ * `matrixWorld.elements` de todo mundo, que é justamente o laço em JS que a
+ * SPEC-0234 eliminou. Devolve quantos nós saíram.
+ */
+napi_value jsRemoveNode(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value args[1];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  MirrorState& s = state();
+  napi_value out;
+  if (!s.built || argc < 1) {
+    napi_create_double(env, 0, &out);
+    return out;
+  }
+  int32_t index = -1;
+  napi_get_value_int32(env, args[0], &index);
+  const int32_t saiu = s.mirror.removeSubtree(static_cast<scene::NodeIndex>(index));
+  napi_create_double(env, static_cast<double>(saiu), &out);
+  return out;
 }
 
 /**
@@ -336,6 +453,8 @@ void registerSceneMirror(napi_env env) {
   njs::setMethod(env, api, "worldMatrices", jsWorldMatrices);
   njs::setMethod(env, api, "syncBuffer", jsSyncBuffer);
   njs::setMethod(env, api, "update", jsUpdate);
+  njs::setMethod(env, api, "appendNodes", jsAppendNodes);
+  njs::setMethod(env, api, "removeNode", jsRemoveNode);
   njs::setMethod(env, api, "shadowCasters", jsShadowCasters);
   njs::setMethod(env, api, "shadowPassGate", jsShadowPassGate);
   napi_set_named_property(env, global, "__cortexSceneMirror", api);
