@@ -1,7 +1,7 @@
 # 0244 - Redirecionamento da fase 4 para o custo medido
 
 **Data:** 2026-09-22
-**Status:** aceito — substitui a ordem e o alvo dos marcos M5 e M6 do ADR-0237
+**Status:** aceito com a decisão 2 REVOGADA em 2026-09-22 (ver o fim do documento)
 
 ## Contexto
 
@@ -84,3 +84,48 @@ custo fosse proporcional aos draws, 41 deles valeriam ~2,5 ms.
 - Fica registrado que **comparação fina exige `hold` e a mesma build**: sem
   isso a variância da pilotagem domina, e foi o que produziu o número errado de
   34 µs/draw.
+
+## Correção de 2026-09-22 — a decisão 2 deste ADR estava errada
+
+A decisão 2 afirmou que um passe de sombra nativo atacaria **~1,5 ms dos
+4,0 ms**. Esse número veio de extrapolar "41 draws valem 0,9 ms" para os
+**66 draws** que o contador do trace mostrava. **A premissa estava errada:** a
+cena tem **449 casters** (censo do grafo), e o contador de draws do trace não
+reflete os draws do passe de sombra — é a mesma divergência de contadores que a
+SPEC-0243 já mandava não usar, e eu usei assim mesmo.
+
+Com o isolamento correto (`?semCasters=1`, que desliga só `castShadow` e mantém
+material e `receiveShadow`):
+
+| cenário | `render` | `rpCallsProject` |
+| --- | --- | --- |
+| baseline | 15,10 ms | 4 |
+| sem casters | 9,60 ms | 3 |
+
+**O passe de sombra custa ~5,5 ms**, não 1,5 — e some por inteiro quando não há
+caster (`rpCallsProject` cai de 4 para 3). Dividido pelos 449 casters, dá
+**~12 µs por caster**, coerente com os 33,5 µs/draw do passe principal em JS
+medidos na SPEC-0227.
+
+**Nenhuma alavanca barata funciona**, todas medidas:
+
+| tentativa | ganho |
+| --- | --- |
+| cascatas de 3 → 1 | já está em 1 (`level.json`) |
+| `castShadow=false` nos 61 grupos estáticos | 0,9 ms |
+| `casterMinRatio` de 0,15 → 0,6 | 0,3 ms |
+| compactar o esqueleto do grafo (335 nós vazios) | não medido; ataca `rpProject`, que é 1,64 ms dos 5,5 |
+
+O custo está **distribuído** pelos 449 casters, sem subconjunto pequeno que
+domine. Reduções parciais dão ganhos proporcionais e pequenos; para ganhar de
+verdade seria preciso cortar casters em massa, o que muda a aparência.
+
+**Portanto o M6 como o ADR-0237 escreveu — passe de sombra nativo — é o
+caminho certo.** O custo é por caster, e é exatamente isso que o C++ barateia:
+o spike do ADR-0232 mediu 2,2 µs/draw em C++ contra 33,5 µs/draw em JS. A
+449 casters, sair de ~12 µs para a ordem de 2 µs vale a maior parte dos 5,5 ms.
+
+**Fica revogada a decisão 2 deste ADR.** A decisão 1 (encerrar o M5) e a
+decisão 3 (a hipótese do CSM caro é falsa) **permanecem** — a segunda foi
+confirmada de forma independente pela leitura do `CSMShadowNode`, que com uma
+cascata não aloca nada por frame e não recomputa frusta.

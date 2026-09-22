@@ -228,6 +228,32 @@ export function setupOutdoorLighting(
       (csmNode as unknown as { fade: boolean }).fade = shadowFade; // suaviza a emenda das cascatas
       csmNode.shadowCasterMinRatio = shadowCasterMinRatio; // SPEC-0197
       (sun.shadow as unknown as { shadowNode: unknown }).shadowNode = csmNode;
+      // Medição do M6 (SPEC-0243) — TEMPORÁRIO. `?semPasseDeSombra=1` congela
+      // só o RENDER da sombra, mantendo `receiveShadow`, `shadowMap.enabled` e
+      // os materiais intactos. É o isolamento que `?semSombras=1` não dá:
+      // aquele desliga três coisas de uma vez e o delta acaba misturando o
+      // custo do passe de sombra com o barateamento do passe principal.
+      //
+      // A alavanca é a sombra de CADA CASCATA, não `sun.shadow`: o CSM faz
+      // `light.shadow.clone()` por cascata, e `LightShadow.copy` leva o
+      // `autoUpdate` no momento do clone — mexer no original depois não chega
+      // nas cópias.
+      const semPasseDeSombra =
+        typeof location !== 'undefined' &&
+        new URLSearchParams(location.search ?? '').get('semPasseDeSombra') === '1';
+      if (semPasseDeSombra) {
+        const luzes = (csmNode as unknown as { lights?: { shadow?: { autoUpdate: boolean } }[] })
+          .lights;
+        let congeladas = 0;
+        for (const l of luzes ?? []) {
+          if (l.shadow) {
+            l.shadow.autoUpdate = false;
+            congeladas += 1;
+          }
+        }
+        debug('scene', `MEDIÇÃO: passe de sombra congelado em ${congeladas} cascatas`);
+      }
+
     }
   }
   scene.add(sun);
