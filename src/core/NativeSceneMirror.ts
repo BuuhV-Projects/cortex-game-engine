@@ -492,6 +492,28 @@ export class NativeSceneMirror {
   }
 
   /**
+   * DIAGNÓSTICO TEMPORÁRIO (SPEC-0245, passo 2 — "quem cria os 2 nós").
+   *
+   * Percorre a cena e NOMEIA os nós que não estão no espelho. Sai junto com
+   * `?gateSombra=1` e `?contarCasters=1` no E8.
+   */
+  relatarNosForaDoEspelho(scene: Object3D): void {
+    if (!this._installed) return;
+    const conhecidos = new Set<Object3D>(this._nodes);
+    const fora: string[] = [];
+    scene.traverse((objeto) => {
+      if (conhecidos.has(objeto)) return;
+      const no = objeto as NoDaCena;
+      const nome = objeto.name || '(sem nome)';
+      const pai = objeto.parent ? `${objeto.parent.type}/${objeto.parent.name || '(sem nome)'}` : '-';
+      const desenhavel = no.isMesh && no.geometry ? 'malha' : 'sem-malha';
+      const sombra = objeto.castShadow ? 'castShadow' : 'semSombra';
+      fora.push(`${objeto.type}:${nome} pai=${pai} ${desenhavel} ${sombra} filhos=${objeto.children.length}`);
+    });
+    debug('perf', `[sceneMirror] fora do espelho (${fora.length}): ${fora.join(' | ')}`);
+  }
+
+  /**
    * Deriva os planos da ortho da CASCATA em `_shadowPlanes`.
    *
    * O sistema de coordenadas VEM DA CÂMERA, como no `_projectObject`: em

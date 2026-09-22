@@ -130,6 +130,9 @@ class CameraFollowingCSM extends CSMShadowNode {
   /** Última linha do gate, para não repetir o mesmo veredito todo frame. */
   private _ultimoVeredito = '';
 
+  /** DIAGNÓSTICO TEMPORÁRIO (SPEC-0245): última contagem de cena já relatada. */
+  private _ultimaDeriva = -1;
+
   override updateBefore(
     frame: Parameters<CSMShadowNode['updateBefore']>[0],
   ): ReturnType<CSMShadowNode['updateBefore']> {
@@ -202,8 +205,15 @@ class CameraFollowingCSM extends CSMShadowNode {
             });
             this._nosDaCena = naCena;
             const espelho = activeSceneMirror();
-            if (espelho?.installed && naCena !== espelho.nodeCount && contarCastersPedido()) {
+            if (espelho?.installed && naCena !== espelho.nodeCount) {
               debug('perf', `[sceneMirror] cena tem ${naCena} nos, espelho tem ${espelho.nodeCount}`);
+              // DIAGNÓSTICO TEMPORÁRIO (SPEC-0245, passo 2): nomeia os nós que
+              // a cena ganhou depois do `install`. Relata quando a contagem
+              // MUDA, para não inundar o log com a mesma lista todo intervalo.
+              if (naCena !== this._ultimaDeriva) {
+                this._ultimaDeriva = naCena;
+                espelho.relatarNosForaDoEspelho(scene);
+              }
             }
           }
         }
