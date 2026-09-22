@@ -169,6 +169,21 @@ Native (que roda milhares de libs sobre Hermes em produção):
 
 ## Armadilhas conhecidas
 
+- **O caminho de render nativo depende do COMPORTAMENTO INTERNO do `three`, e
+  a quebra aparece como artefato, não como erro** (SPEC-0246). O passe de
+  sombra (SPEC-0245) e o espelho de cena (SPEC-0234) substituem partes do
+  `three` por dentro: o rótulo `ShadowDepthTexture`, o gate
+  `needsUpdate || autoUpdate`, o clone da `LightShadow` por cascata, a inversão
+  do lado da face (`_shadowSide`, que justifica `cullMode = Front`), o filtro
+  de `castShadow` DEPOIS da RenderList, o `_init` tardio do `CSMShadowNode`,
+  quem chama `updateMatrices`, os eventos `childadded`/`childremoved`, a poda
+  por `visible` e o ramo VSM. **Nada disso é API pública nem garantido pelo
+  semver do `three`.** As dez premissas viraram teste de comportamento em
+  `tests/native/three-contract.test.ts`, com uma **trava de versão**: subir o
+  `three` quebra a suíte até alguém percorrer a lista. Ao atualizar o `three`,
+  leia a SPEC-0246 — ela lista também o que **nenhum teste cobre** (a imagem, o
+  `backend.get` do `GPUTexture`, caminhos novos de mutação de cena).
+
 - **Exceção C++ na fronteira nativa mata o jogo — e o `terminate` do MSVC é POR
   THREAD** (ADR-0172 / SPEC-0173). Um crash real durante carregamento de fase
   saiu com 40 frames de backtrace e **zero** linha de causa. Mapa dos caminhos,
