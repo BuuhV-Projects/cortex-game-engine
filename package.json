@@ -14,6 +14,8 @@
     "glyphs:publish": "node native/scripts/font-glyphs.mjs publish src/ui/runtime/ui-font-glyphs.json dist-engine/ui-font-glyphs.json",
     "test": "vitest run",
     "test:native": "powershell -ExecutionPolicy Bypass -File native/scripts/run-native-tests.ps1",
+    "bench:ab": "powershell -ExecutionPolicy Bypass -File native/scripts/ab-bench.ps1",
+    "bench:ab:report": "node native/scripts/ab-report.mjs",
     "build:host": "powershell -ExecutionPolicy Bypass -File native/scripts/build-host.ps1",
     "typecheck": "tsc --noEmit",
     "prepare": "husky",
