@@ -1,3 +1,11 @@
+## [0.58.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.58.0...v0.58.1) (2026-09-23)
+
+
+### Performance Improvements
+
+* **scene:** corta a casca de contorno por tamanho na tela (ADR-0251) ([f9324a2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f9324a25ab3a690bd205d79ab8680277baa8bdac))
+* **scene:** mede a varredura do culling numa seção própria ([10d1548](https://github.com/BuuhV-Projects/cortex-game-engine/commit/10d15482fc6d68ab9d4314a18d6acb79a703fa08))
+
 # [0.58.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.57.1...v0.58.0) (2026-09-23)
 
 
