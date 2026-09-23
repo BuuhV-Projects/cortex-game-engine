@@ -76,6 +76,17 @@ export interface PerfSample {
   frameMs: number;
   /** ms de CPU por seção do {@link FrameProfiler} (`{ render: 28.1, … }`). */
   cpu: Record<string, number>;
+  /**
+   * Custo TÍPICO por seção — a média da janela de 240 frames do
+   * {@link FrameProfiler}, não o frame sorteado que vai em {@link cpu}.
+   */
+  cpuAvg: Record<string, number>;
+  /**
+   * PIOR CASO por seção (p99 da mesma janela). A distância até {@link cpuAvg}
+   * é a variância da seção, que é o que o jogador sente como oscilação —
+   * `cpu` sozinho não responde isso (SPEC-0250).
+   */
+  cpuP99: Record<string, number>;
   draws: number;
   tris: number;
   /** Posição da câmera (x, y, z) e direção para onde olha. */
@@ -263,6 +274,10 @@ export interface SampleInput {
   timeMs: number;
   frameMs: number;
   cpu: Record<string, number>;
+  /** Opcionais porque `buildSample` é pública e já tinha chamadores; ausentes
+   * viram `{}`, que é o que um trace sem a janela do profiler tem a dizer. */
+  cpuAvg?: Record<string, number>;
+  cpuP99?: Record<string, number>;
   draws: number;
   tris: number;
   camera: Camera;
@@ -273,15 +288,21 @@ export interface SampleInput {
 export function buildSample(input: SampleInput): PerfSample {
   const position = input.camera.position;
   input.camera.getWorldDirection(_direction);
-  const cpu: Record<string, number> = {};
-  for (const [name, ms] of Object.entries(input.cpu)) {
-    cpu[name] = round(ms, isFineKey(name) ? PHASE_MS_DECIMALS : MS_DECIMALS);
-  }
+  const arredondarSecoes = (origem: Record<string, number>): Record<string, number> => {
+    const saida: Record<string, number> = {};
+    for (const [name, ms] of Object.entries(origem)) {
+      saida[name] = round(ms, isFineKey(name) ? PHASE_MS_DECIMALS : MS_DECIMALS);
+    }
+    return saida;
+  };
+  const cpu = arredondarSecoes(input.cpu);
   return {
     t: Math.round(input.timeMs),
     fps: input.frameMs > 0 ? round(1000 / input.frameMs, MS_DECIMALS) : 0,
     frameMs: round(input.frameMs, MS_DECIMALS),
     cpu,
+    cpuAvg: arredondarSecoes(input.cpuAvg ?? {}),
+    cpuP99: arredondarSecoes(input.cpuP99 ?? {}),
     draws: input.draws,
     tris: input.tris,
     cam: {
@@ -341,7 +362,17 @@ export class PerfTrace {
     this._sinceSampleMs = 0;
 
     const cpu: Record<string, number> = {};
-    for (const section of profiler.summary()) cpu[section.name] = section.lastMs;
+    // `lastMs` é UM frame, sorteado uma vez a cada SAMPLE_MS. Serve para ver o
+    // instante; não serve para variância — foi a causa de duas conclusões
+    // erradas nesta campanha (SPEC-0250). Por isso a média e o p99 da janela
+    // de 240 frames vêm junto: o profiler já os calcula, só eram descartados.
+    const cpuAvg: Record<string, number> = {};
+    const cpuP99: Record<string, number> = {};
+    for (const section of profiler.summary()) {
+      cpu[section.name] = section.lastMs;
+      cpuAvg[section.name] = section.avgMs;
+      cpuP99[section.name] = section.p99Ms;
+    }
     // Ponte NAPI do host (SPEC-0225). Entra no mesmo mapa porque é a mesma
     // pergunta — quanto do frame é isto — mas ATENÇÃO: não é uma seção nova e
     // sim um SUBCONJUNTO de `render`. Somar tudo contaria duas vezes.
@@ -435,6 +466,8 @@ export class PerfTrace {
       timeMs: this._elapsedMs,
       frameMs: deltaMs,
       cpu,
+      cpuAvg,
+      cpuP99,
       draws: info?.drawCalls ?? 0,
       tris: info?.triangles ?? 0,
       camera,
