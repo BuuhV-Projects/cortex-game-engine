@@ -3,7 +3,7 @@
  *
  * O caminho antigo refazia textura E material a cada mudança de texto. Num HUD
  * de corrida isso é uma vez por frame por label — o cronômetro muda todo frame
- * por definição. Material novo é ainda chave de cache nova no `Pipelines` do
+ * por definição. E material novo é chave de cache nova no `Pipelines` do
  * `three`.
  *
  * O reúso vale quando as dimensões batem, que é o caso dominante: dígitos
@@ -21,9 +21,9 @@ import { UiLabel } from '../../src/ui/runtime/widgets.js';
 const mockTarget = (): UiRenderTarget => ({ renderViewport: () => {} });
 const VIEWPORT = { width: 800, height: 600 };
 
-/** Bitmap onde cada linha é preenchida com um byte próprio — a orientação da
- * cópia fica legível na saída, em vez de virar um blob indistinguível. */
-function bitmapDegrade(width: number, height: number, base: number) {
+/** Bitmap onde cada linha leva um byte próprio — assim a orientação da cópia
+ * fica legível na saída, em vez de virar um blob indistinguível. */
+function gradientBitmap(width: number, height: number, base: number) {
   const rgba = new ArrayBuffer(width * height * 4);
   const bytes = new Uint8Array(rgba);
   for (let row = 0; row < height; row++) {
@@ -32,25 +32,25 @@ function bitmapDegrade(width: number, height: number, base: number) {
   return { width, height, rgba };
 }
 
-interface VisualEspiado {
+interface SpiedVisual {
   texture?: { image: { width: number; height: number; data: Uint8Array }; version: number };
   text?: { material: unknown; visible: boolean };
 }
 
-function visualOf(backend: RendererUiBackend, id: number): VisualEspiado | undefined {
-  return (backend as unknown as { _visuals: Map<number, VisualEspiado> })._visuals.get(id);
+function visualOf(backend: RendererUiBackend, id: number): SpiedVisual | undefined {
+  return (backend as unknown as { _visuals: Map<number, SpiedVisual> })._visuals.get(id);
 }
 
-/** Instala o raster nativo mockado e devolve o contador de chamadas. */
-function instalarRaster(planos: { width: number; height: number; base: number }[]) {
-  const chamadas: string[] = [];
-  let i = 0;
-  (globalThis as Record<string, unknown>)['__cortexRasterText'] = (texto: string) => {
-    chamadas.push(texto);
-    const plano = planos[Math.min(i++, planos.length - 1)]!;
-    return bitmapDegrade(plano.width, plano.height, plano.base);
+/** Instala o raster nativo mockado e devolve o registro das chamadas. */
+function installRaster(plans: { width: number; height: number; base: number }[]) {
+  const calls: string[] = [];
+  let index = 0;
+  (globalThis as Record<string, unknown>)['__cortexRasterText'] = (value: string) => {
+    calls.push(value);
+    const plan = plans[Math.min(index++, plans.length - 1)]!;
+    return gradientBitmap(plan.width, plan.height, plan.base);
   };
-  return chamadas;
+  return calls;
 }
 
 afterEach(() => {
@@ -59,51 +59,52 @@ afterEach(() => {
 
 describe('RendererUiBackend — reúso da textura de texto', () => {
   it('mesmas dimensões: mantém a MESMA textura e o MESMO material', () => {
-    instalarRaster([
+    installRaster([
       { width: 8, height: 4, base: 10 },
       { width: 8, height: 4, base: 100 },
     ]);
     const backend = new RendererUiBackend(mockTarget());
     const label = new UiLabel({ text: '1:23.45', fontSize: 18 });
     backend.sync([label], VIEWPORT);
-    const primeira = visualOf(backend, label.id)!;
-    const texturaAntes = primeira.texture;
-    const materialAntes = primeira.text?.material;
+    const before = visualOf(backend, label.id)!;
+    const textureBefore = before.texture;
+    const materialBefore = before.text?.material;
 
+    // `set` e não atribuição direta: o `sync` só reprocessa widget sujo, e um
+    // teste que mexesse no campo cru passaria sem exercitar nada.
     label.set({ text: '1:23.46' });
     backend.sync([label], VIEWPORT);
-    const depois = visualOf(backend, label.id)!;
+    const after = visualOf(backend, label.id)!;
 
-    expect(depois.texture).toBe(texturaAntes);
-    expect(depois.text?.material).toBe(materialAntes);
+    expect(after.texture).toBe(textureBefore);
+    expect(after.text?.material).toBe(materialBefore);
   });
 
   it('reúso REESCREVE os pixels — texto novo, não o anterior', () => {
-    instalarRaster([
+    installRaster([
       { width: 8, height: 4, base: 10 },
       { width: 8, height: 4, base: 100 },
     ]);
     const backend = new RendererUiBackend(mockTarget());
     const label = new UiLabel({ text: '120 km/h', fontSize: 18 });
     backend.sync([label], VIEWPORT);
-    const textura = visualOf(backend, label.id)!.texture!;
-    // Linha 0 do bitmap vai para a ÚLTIMA linha do destino (flip vertical).
-    const ultimaLinhaAntes = textura.image.data[3 * 8 * 4];
-    expect(ultimaLinhaAntes).toBe(10);
-    const versaoAntes = textura.version;
+    const texture = visualOf(backend, label.id)!.texture!;
+    // A primeira linha do bitmap vai para a ÚLTIMA do destino (flip vertical).
+    expect(texture.image.data[3 * 8 * 4]).toBe(10);
+    const versionBefore = texture.version;
 
     label.set({ text: '121 km/h' });
     backend.sync([label], VIEWPORT);
 
-    expect(textura.image.data[3 * 8 * 4]).toBe(100);
+    expect(texture.image.data[3 * 8 * 4]).toBe(100);
     // `needsUpdate` no three é setter SEM getter — lê-lo devolve undefined.
     // Quem prova que o upload vai ser refeito é o `version`, que o setter
     // incrementa. Sem isto o reúso escreveria na RAM e a GPU nunca saberia.
-    expect(textura.version).toBeGreaterThan(versaoAntes);
+    expect(texture.version).toBeGreaterThan(versionBefore);
   });
 
   it('reúso preserva a inversão de linhas (senão o texto sai de cabeça para baixo)', () => {
-    instalarRaster([
+    installRaster([
       { width: 8, height: 4, base: 10 },
       { width: 8, height: 4, base: 200 },
     ]);
@@ -112,39 +113,39 @@ describe('RendererUiBackend — reúso da textura de texto', () => {
     backend.sync([label], VIEWPORT);
     label.set({ text: 'b' });
     backend.sync([label], VIEWPORT);
-    const dados = visualOf(backend, label.id)!.texture!.image.data;
-    const linha = (n: number) => dados[n * 8 * 4];
-    // origem 200,201,202,203 (topo->base) precisa chegar invertida.
-    expect([linha(0), linha(1), linha(2), linha(3)]).toEqual([203, 202, 201, 200]);
+    const pixels = visualOf(backend, label.id)!.texture!.image.data;
+    const rowByte = (row: number) => pixels[row * 8 * 4];
+    // Origem 200,201,202,203 (topo para a base) precisa chegar invertida.
+    expect([rowByte(0), rowByte(1), rowByte(2), rowByte(3)]).toEqual([203, 202, 201, 200]);
   });
 
   it('dimensões diferentes: cai no caminho antigo e troca textura e material', () => {
-    instalarRaster([
+    installRaster([
       { width: 8, height: 4, base: 10 },
       { width: 12, height: 4, base: 100 },
     ]);
     const backend = new RendererUiBackend(mockTarget());
     const label = new UiLabel({ text: '9', fontSize: 18 });
     backend.sync([label], VIEWPORT);
-    const texturaAntes = visualOf(backend, label.id)!.texture;
-    const materialAntes = visualOf(backend, label.id)!.text?.material;
+    const textureBefore = visualOf(backend, label.id)!.texture;
+    const materialBefore = visualOf(backend, label.id)!.text?.material;
 
     label.set({ text: '10' });
     backend.sync([label], VIEWPORT);
-    const depois = visualOf(backend, label.id)!;
+    const after = visualOf(backend, label.id)!;
 
-    expect(depois.texture).not.toBe(texturaAntes);
-    expect(depois.text?.material).not.toBe(materialAntes);
-    expect(depois.texture?.image.width).toBe(12);
+    expect(after.texture).not.toBe(textureBefore);
+    expect(after.text?.material).not.toBe(materialBefore);
+    expect(after.texture?.image.width).toBe(12);
   });
 
   it('texto inalterado não chama o raster de novo', () => {
-    const chamadas = instalarRaster([{ width: 8, height: 4, base: 10 }]);
+    const calls = installRaster([{ width: 8, height: 4, base: 10 }]);
     const backend = new RendererUiBackend(mockTarget());
     const label = new UiLabel({ text: 'LAP 1/3', fontSize: 18 });
     backend.sync([label], VIEWPORT);
     backend.sync([label], VIEWPORT);
     backend.sync([label], VIEWPORT);
-    expect(chamadas).toEqual(['LAP 1/3']);
+    expect(calls).toEqual(['LAP 1/3']);
   });
 });

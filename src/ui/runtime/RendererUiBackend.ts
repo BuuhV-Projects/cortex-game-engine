@@ -118,14 +118,14 @@ interface WidgetVisual {
  * Copia o bitmap invertendo as linhas: o raster vem top-down e a UV do plane
  * espera bottom-up.
  *
- * Escreve num destino JÁ EXISTENTE de propósito. No caminho de reúso o destino
- * é o `image.data` da própria textura — copiar para um buffer novo e atribuir
+ * Escreve num alvo JÁ EXISTENTE de propósito. No caminho de reúso o alvo é o
+ * `image.data` da própria textura — copiar para um buffer novo e atribuir
  * depois não faria o upload enxergar a mudança.
  */
-function flipRowsInto(destino: Uint8Array, origem: Uint8Array, width: number, height: number): void {
+function flipRowsInto(target: Uint8Array, source: Uint8Array, width: number, height: number): void {
   const rowBytes = width * 4;
   for (let row = 0; row < height; row++) {
-    destino.set(origem.subarray(rowBytes * row, rowBytes * (row + 1)), rowBytes * (height - 1 - row));
+    target.set(source.subarray(rowBytes * row, rowBytes * (row + 1)), rowBytes * (height - 1 - row));
   }
 }
 
@@ -453,11 +453,11 @@ export class RendererUiBackend implements UiBackend {
     // intermediária, a DataTexture nova, o MeshBasicMaterial novo (que seria
     // chave de cache nova no `Pipelines` do `three`) e as duas entradas no
     // graveyard — sobra o upload, que é inevitável: os pixels mudaram mesmo.
-    const atual = visual.texture;
-    if (bitmap && atual && visual.text
-        && atual.image.width === bitmap.width && atual.image.height === bitmap.height) {
-      flipRowsInto(atual.image.data as Uint8Array, new Uint8Array(bitmap.rgba), bitmap.width, bitmap.height);
-      atual.needsUpdate = true;
+    const current = visual.texture;
+    if (bitmap && current && visual.text
+        && current.image.width === bitmap.width && current.image.height === bitmap.height) {
+      flipRowsInto(current.image.data as Uint8Array, new Uint8Array(bitmap.rgba), bitmap.width, bitmap.height);
+      current.needsUpdate = true;
       visual.text.visible = true;
       return;
     }
