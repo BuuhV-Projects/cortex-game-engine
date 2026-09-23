@@ -50,3 +50,6 @@ dist-native/*
 .claude/worktrees/
 .cortex/
 .cortex/
+
+# Artefatos gerados pelo husky ao instalar (nao versionados)
+.husky/_/

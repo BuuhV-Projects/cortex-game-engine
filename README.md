@@ -28,6 +28,14 @@ seus assets. O export de PC é **nativo, sem browser** — o CortexNative
 Os dois ultimos so sao exigidos pela modelagem 3D; o resto do Studio roda sem
 eles.
 
+## Buildar as dependencias da engine
+
+```bash
+yarn build:host
+yarn build:host --Limpar                      # obrigatório quando fontes saem do CMakeLists.txt
+yarn build:host --Alvo cortex_host_tests      # só o harness
+```
+
 ## Rodar o Studio em desenvolvimento
 
 ```bash
