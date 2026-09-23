@@ -114,6 +114,21 @@ interface WidgetVisual {
   lastImage?: string | null;
 }
 
+/**
+ * Copia o bitmap invertendo as linhas: o raster vem top-down e a UV do plane
+ * espera bottom-up.
+ *
+ * Escreve num alvo JÁ EXISTENTE de propósito. No caminho de reúso o alvo é o
+ * `image.data` da própria textura — copiar para um buffer novo e atribuir
+ * depois não faria o upload enxergar a mudança.
+ */
+function flipRowsInto(target: Uint8Array, source: Uint8Array, width: number, height: number): void {
+  const rowBytes = width * 4;
+  for (let row = 0; row < height; row++) {
+    target.set(source.subarray(rowBytes * row, rowBytes * (row + 1)), rowBytes * (height - 1 - row));
+  }
+}
+
 export class RendererUiBackend implements UiBackend {
   private readonly _target: UiRenderTarget;
   private readonly _scene = new THREE.Scene();
@@ -432,6 +447,21 @@ export class RendererUiBackend implements UiBackend {
     visual.lastText = label.text;
     visual.lastFontSize = label.fontSize;
 
+    // Mesmas dimensões: reescreve os pixels no lugar (SPEC-0248). É o caso
+    // DOMINANTE num HUD — cronômetro e velocímetro mudam de valor, não de
+    // forma, porque os dígitos da fonte são tabulares. Some daqui a cópia
+    // intermediária, a DataTexture nova, o MeshBasicMaterial novo (que seria
+    // chave de cache nova no `Pipelines` do `three`) e as duas entradas no
+    // graveyard — sobra o upload, que é inevitável: os pixels mudaram mesmo.
+    const current = visual.texture;
+    if (bitmap && current && visual.text
+        && current.image.width === bitmap.width && current.image.height === bitmap.height) {
+      flipRowsInto(current.image.data as Uint8Array, new Uint8Array(bitmap.rgba), bitmap.width, bitmap.height);
+      current.needsUpdate = true;
+      visual.text.visible = true;
+      return;
+    }
+
     // Antigos vão pro descarte adiado (frame em voo ainda os usa).
     const oldTexture = visual.texture;
     const oldMaterial = visual.text?.material as THREE.Material | undefined;
@@ -450,16 +480,9 @@ export class RendererUiBackend implements UiBackend {
       return;
     }
 
-    // raster vem top-down; UV do plane espera bottom-up → inverte as linhas
-    const rowBytes = bitmap.width * 4;
     const source = new Uint8Array(bitmap.rgba);
     const flipped = new Uint8Array(source.length);
-    for (let row = 0; row < bitmap.height; row++) {
-      flipped.set(
-        source.subarray(rowBytes * row, rowBytes * (row + 1)),
-        rowBytes * (bitmap.height - 1 - row),
-      );
-    }
+    flipRowsInto(flipped, source, bitmap.width, bitmap.height);
     const texture = new THREE.DataTexture(flipped, bitmap.width, bitmap.height, THREE.RGBAFormat);
     texture.needsUpdate = true;
     texture.magFilter = THREE.LinearFilter;
