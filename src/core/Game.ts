@@ -14,6 +14,14 @@ import { UiLayer } from '../ui/runtime/UiLayer.js';
 import { createUiLayer } from '../ui/runtime/createUiLayer.js';
 import { DebugHud, debugHudRequested } from '../ui/DebugHud.js';
 import { debug } from './debug.js';
+import { cullOutlines, DEFAULT_OUTLINE_MIN_RATIO } from '../scene/OutlineCulling.js';
+
+/**
+ * Frames entre passadas do corte de contorno. O mesmo ritmo do culling de
+ * sombra: o resultado muda devagar com a câmera, e varrer todo frame custaria
+ * mais que o erro de alguns frames de atraso.
+ */
+const OUTLINE_CULL_INTERVAL = 10;
 import { NativeSceneMirror, nativeSceneMirrorAvailable } from './NativeSceneMirror.js';
 import { PerfTrace } from './PerfTrace.js';
 import { FrameProfiler } from './FrameProfiler.js';
@@ -240,6 +248,15 @@ export class Game {
   private _inspect: InspectCamera | null = null;
   /** Cena/câmera renderizadas a cada frame. Por padrão são as do jogo; troque com
    * {@link setActiveScene} pra multi-cena (criador de personagem, menus, regiões). */
+  /**
+   * Limiar `raio/distância` do corte da casca de contorno (ADR-0251). `0`
+   * desliga o filtro e devolve a autoria. É público porque é uma escolha de
+   * ESTILO do jogo, não da engine: quem autora sabe a que distância o contorno
+   * dele deixa de ler.
+   */
+  outlineMinRatio = DEFAULT_OUTLINE_MIN_RATIO;
+  /** Frames desde a última passada do {@link cullOutlines}. */
+  private _sinceOutlineCull = 0;
   private _activeScene: Scene;
   private _activeCamera: PerspectiveCamera | OrthographicCamera;
 
@@ -540,6 +557,25 @@ export class Game {
     // Câmera de inspeção (SPEC-0131): quando ativa VENCE tudo — render cru por ela,
     // de qualquer ângulo, com a gameplay seguindo (só o render muda). Usada pelo
     // playtest do Chat IA pra inspecionar a cena livremente.
+    // Corte da casca de contorno por tamanho na tela (ADR-0251). Periódico, e
+    // não todo frame, pelo mesmo motivo do culling de sombra: o resultado muda
+    // devagar com a câmera, e a varredura custa mais que o erro de alguns
+    // frames de atraso.
+    if (++this._sinceOutlineCull >= OUTLINE_CULL_INTERVAL) {
+      this._sinceOutlineCull = 0;
+      // Seção própria no profiler: esta varredura roda EM RAJADA a cada N
+      // frames e, sem medi-la, o custo dela cairia no frameMs sem aparecer em
+      // contador nenhum — que é exatamente o tipo de buraco que já custou caro
+      // nesta campanha.
+      p.begin('cull');
+      const stats = cullOutlines(
+        this._activeScene.getThreeScene(),
+        this._activeCamera.position,
+        this.outlineMinRatio,
+      );
+      p.end('cull');
+      debug('scene', `outlineCull: ${stats.culled}/${stats.evaluated} cascas escondidas`);
+    }
     const inspectCamera = this._inspect?.active ? this._inspect : null;
     const editorCamera = this._editor?.activeCamera() ?? null;
     // Espelho de cena no host (SPEC-0234): instalado no primeiro frame em que a

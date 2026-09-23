@@ -132,6 +132,7 @@ export * from './scene/Water.js';
 export * from './scene/Particles.js';
 export * from './scene/StaticMerge.js';
 export * from './scene/ShadowCasterCulling.js';
+export * from './scene/OutlineCulling.js';
 export * from './scene/Streaming.js';
 export * from './ui/DebugHud.js';
 export * from './scene/Terrain.js';
