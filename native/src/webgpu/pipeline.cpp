@@ -293,6 +293,7 @@ napi_value deviceCreateRenderPipeline(napi_env env, napi_callback_info info) {
   parseMultisampleState(env, args[0], &desc);
 
   WGPURenderPipeline pipeline = wgpuDeviceCreateRenderPipeline(device, &desc);
+  countCreatedPipeline();  // SPEC-0252: e a criacao, nao o setPipeline, que denuncia compilacao no frame
   return makePipelineObject(env, pipeline);
 }
 

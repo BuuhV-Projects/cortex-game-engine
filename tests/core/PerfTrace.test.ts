@@ -232,3 +232,45 @@ describe('buildSample — percentis por seção (SPEC-0250)', () => {
     expect(sample.cpuP99).toEqual({});
   });
 });
+
+describe('buildSample — recursos criados (SPEC-0252)', () => {
+  it('grava os acumulados de criação fora do mapa de CPU', () => {
+    const sample = buildSample({
+      timeMs: 1000,
+      frameMs: 16,
+      cpu: { render: 12 },
+      born: { pipelines: 87, buffers: 1707, textures: 211 },
+      draws: 100,
+      tris: 1000,
+      camera: camera(),
+      visible: [],
+    });
+    expect(sample.born).toEqual({ pipelines: 87, buffers: 1707, textures: 211 });
+    // Fora de `cpu`: não são milissegundos, e misturá-los ali faria qualquer
+    // soma de seções dar um número sem sentido.
+    expect(sample.cpu['bornPipelines']).toBeUndefined();
+  });
+
+  it('sem os contadores do host, o campo simplesmente não aparece', () => {
+    const sample = buildSample({
+      timeMs: 0,
+      frameMs: 16,
+      cpu: {},
+      draws: 0,
+      tris: 0,
+      camera: camera(),
+      visible: [],
+    });
+    expect(sample.born).toBeUndefined();
+  });
+
+  it('a diferença entre amostras é o que conta — é assim que se lê', () => {
+    const base = { frameMs: 16, cpu: {}, draws: 0, tris: 0, camera: camera(), visible: [] };
+    const antes = buildSample({ ...base, timeMs: 1000, born: { pipelines: 87, buffers: 1700, textures: 211 } });
+    const depois = buildSample({ ...base, timeMs: 1500, born: { pipelines: 91, buffers: 1712, textures: 213 } });
+    // Quatro pipelines nasceram no intervalo: é o sinal de compilação dentro
+    // do frame, que o `cpu.napiPipe` (setPipeline) nunca revelaria.
+    expect(depois.born!.pipelines - antes.born!.pipelines).toBe(4);
+    expect(depois.born!.buffers - antes.born!.buffers).toBe(12);
+  });
+});

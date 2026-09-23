@@ -87,6 +87,18 @@ export interface PerfSample {
    * `cpu` sozinho não responde isso (SPEC-0250).
    */
   cpuP99: Record<string, number>;
+  /**
+   * Recursos de GPU CRIADOS desde o boot (SPEC-0252) — acumulados.
+   *
+   * A diferença entre duas amostras diz quantos nasceram no intervalo, que é a
+   * pergunta que os contadores de custo não respondem: um frame que engasga
+   * sem draws altos e sem seção cara estava criando alguma coisa.
+   *
+   * `pipelines` é o mais decisivo: diferente de `cpu.napiPipe` (que conta
+   * `setPipeline`, ou seja, quantas vezes um pipeline é LIGADO), este conta
+   * quantos NASCEM — e só isso denuncia compilação dentro do frame.
+   */
+  born?: { pipelines: number; buffers: number; textures: number };
   draws: number;
   tris: number;
   /** Posição da câmera (x, y, z) e direção para onde olha. */
@@ -278,6 +290,7 @@ export interface SampleInput {
    * viram `{}`, que é o que um trace sem a janela do profiler tem a dizer. */
   cpuAvg?: Record<string, number>;
   cpuP99?: Record<string, number>;
+  born?: { pipelines: number; buffers: number; textures: number };
   draws: number;
   tris: number;
   camera: Camera;
@@ -303,6 +316,7 @@ export function buildSample(input: SampleInput): PerfSample {
     cpu,
     cpuAvg: arredondarSecoes(input.cpuAvg ?? {}),
     cpuP99: arredondarSecoes(input.cpuP99 ?? {}),
+    ...(input.born ? { born: input.born } : {}),
     draws: input.draws,
     tris: input.tris,
     cam: {
@@ -387,6 +401,16 @@ export class PerfTrace {
       cpu['napiBind'] = stats['setBindGroup'] ?? 0;
       cpu['napiPipe'] = stats['setPipeline'] ?? 0;
     }
+    // Acumulados de criação (SPEC-0252). Ficam FORA do mapa `cpu` de propósito:
+    // não são milissegundos, e misturá-los ali faria qualquer soma de seções
+    // dar um número sem sentido.
+    const born = stats && stats['bornPipelines'] !== undefined
+      ? {
+          pipelines: stats['bornPipelines'] ?? 0,
+          buffers: stats['bornBuffers'] ?? 0,
+          textures: stats['bornTextures'] ?? 0,
+        }
+      : undefined;
     // Fases do render (SPEC-0227): mesma regra do `napi` — são SUBCONJUNTOS de
     // `render`, não seções novas, e não se somam ao total. `rpCalls*` conta as
     // chamadas de topo, para separar "fase cara" de "fase chamada muitas vezes".
@@ -468,6 +492,7 @@ export class PerfTrace {
       cpu,
       cpuAvg,
       cpuP99,
+      born,
       draws: info?.drawCalls ?? 0,
       tris: info?.triangles ?? 0,
       camera,

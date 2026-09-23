@@ -81,6 +81,11 @@ std::atomic<int> g_finalizedBuffers{0};
 std::atomic<int> g_finalizedTextures{0};
 std::atomic<int> g_createdBuffers{0};
 std::atomic<int> g_createdTextures{0};
+// Pipelines de render CRIADOS desde o boot (SPEC-0252). Diferente do
+// `setPipeline` do napi_stats, que conta quantas vezes um pipeline e LIGADO
+// por frame: so a criacao responde "houve compilacao neste frame?", que e a
+// pergunta em aberto do engasgo que some ao reiniciar.
+std::atomic<int> g_createdPipelines{0};
 std::atomic<int> g_destroyedBuffers{0};
 std::atomic<int> g_destroyedTextures{0};
 std::atomic<uint64_t> g_createdBufferBytes{0};
@@ -113,6 +118,10 @@ void countCreatedBuffer(uint64_t bytes) {
   g_createdBufferBytes += bytes;
 }
 void countCreatedTexture() { ++g_createdTextures; }
+void countCreatedPipeline() { ++g_createdPipelines; }
+int createdPipelinesTotal() { return g_createdPipelines.load(); }
+int createdBuffersTotal() { return g_createdBuffers.load(); }
+int createdTexturesTotal() { return g_createdTextures.load(); }
 
 // Registro de texturas vivas (telemetria temporária, ver internal.h).
 namespace {

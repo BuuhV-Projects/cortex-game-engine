@@ -1,6 +1,8 @@
 // Contadores de chamadas NAPI do caminho de render — ver napi_stats.h (SPEC-0134).
 #include "napi_stats.h"
 
+#include "internal.h"
+
 #include "../napi/napi_util.h"
 
 namespace webgpu {
@@ -30,6 +32,12 @@ napi_value jsNapiStats(napi_env env, napi_callback_info) {
   put("drawIndexed", g_napiLast.drawIndexed);
   put("writeBuffer", g_napiLast.writeBuffer);
   put("submit", g_napiLast.submit);
+  // ACUMULADOS desde o boot (SPEC-0252), nao por frame: a amostra do trace e
+  // uma a cada ~0,5 s, e um contador por frame mediria um frame sorteado. A
+  // diferenca entre duas amostras diz quantos nasceram no intervalo.
+  put("bornPipelines", static_cast<uint32_t>(createdPipelinesTotal()));
+  put("bornBuffers", static_cast<uint32_t>(createdBuffersTotal()));
+  put("bornTextures", static_cast<uint32_t>(createdTexturesTotal()));
   // Milissegundos: o HUD e o trace leem em ms, e double nao perde precisao
   // nessa faixa (nanos de um frame cabem folgado na mantissa).
   napi_value ms = nullptr;

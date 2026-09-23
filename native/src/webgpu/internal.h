@@ -35,6 +35,13 @@ void countFinalizedBuffer();
 void countFinalizedTexture();
 void countCreatedBuffer(uint64_t bytes);
 void countCreatedTexture();
+/** Conta um pipeline de render criado (SPEC-0252). */
+void countCreatedPipeline();
+/** Recursos CRIADOS desde o boot — acumulados, para o trace derivar quantos
+ * nasceram entre duas amostras. */
+int createdPipelinesTotal();
+int createdBuffersTotal();
+int createdTexturesTotal();
 // Registro de texturas VIVAS (criada − destruída) com dimensões, pra apontar
 // exatamente QUAIS texturas vazam por ciclo. Dump das maiores no telemetry.
 void trackTextureCreated(WGPUTexture texture, uint32_t width, uint32_t height,
