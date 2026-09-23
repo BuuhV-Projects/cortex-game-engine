@@ -1,3 +1,10 @@
+## [0.57.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.57.0...v0.57.1) (2026-09-23)
+
+
+### Performance Improvements
+
+* **ui:** reusa a textura do texto quando a forma não muda (SPEC-0248) ([edd58b8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/edd58b87efdbd170c6d454f4d2089bfe6db5e99f))
+
 # [0.57.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.56.0...v0.57.0) (2026-09-23)
 
 
