@@ -70,13 +70,26 @@ jobs:
       tag: ${{ steps.semantic.outputs.new_release_git_tag }}
 
     steps:
+      # Token de instalação do GitHub App da org (TDR-0006). É ele — e não o
+      # GITHUB_TOKEN — que está na bypass list do ruleset da `main`, então é
+      # quem consegue pushar o commit de release na branch protegida. O
+      # GITHUB_TOKEN não pode ganhar esse bypass: o "GitHub Actions" é um app
+      # implícito e o ruleset só aceita apps instalados na organização.
+      - name: Gerar token do GitHub App
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CORTEX_CI_APP_ID }}
+          private-key: ${{ secrets.CORTEX_CI_APP_PRIVATE_KEY }}
+
       - name: Checkout (full history pra analisar commits)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # GITHUB_TOKEN é gravado nos credentials pelo checkout — semantic-release
+          # O token é gravado nos credentials pelo checkout — semantic-release
           # precisa disso pra dar `git push` do commit de release.
           persist-credentials: true
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup Node 24.15.0
         uses: actions/setup-node@v4
@@ -92,12 +105,11 @@ jobs:
             @semantic-release/changelog@6
             @semantic-release/git@10
         env:
-          # REPO_ACCESS_TOKEN (PAT) tem precedência: GITHUB_TOKEN não dispara
-          # workflows downstream (a tag criada por ele não acorda o trigger de
-          # push), então quem quiser encadear pipelines após a release deve
-          # cadastrar um PAT no secret REPO_ACCESS_TOKEN. github.token serve
-          # como fallback funcional pra commits/release locais ao workflow.
-          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN || github.token }}
+          # Token do app (TDR-0006), não o GITHUB_TOKEN: além do bypass na
+          # `main`, a tag criada por ele acorda triggers de push downstream —
+          # o que a tag do GITHUB_TOKEN não faz. O commit de release leva
+          # `[skip ci]` na mensagem pra não reentrar neste mesmo workflow.
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
   build:
     name: Build (${{ matrix.os }})
@@ -148,16 +160,17 @@ jobs:
       - name: Build IDE
         # electron-builder valida a release no GitHub durante o build e exige
         # GH_TOKEN (não GITHUB_TOKEN). Sem ele falha com "GitHub Personal
-        # Access Token is not set". Usa o mesmo fallback PAT → github.token.
+        # Access Token is not set". Aqui o GITHUB_TOKEN basta: ler a release e
+        # anexar asset não passa pela proteção da branch.
         env:
-          GH_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: yarn electron:build
 
       - name: Anexar instaladores à release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.release.outputs.tag }}
-          token: ${{ secrets.REPO_ACCESS_TOKEN || github.token }}
+          token: ${{ github.token }}
           files: |
             dist-app/*.exe
             dist-app/*.dmg
