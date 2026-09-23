@@ -65,6 +65,7 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes, size_t spareNodes) {
   radii_.reserve(capacity_);
   visibleFlags_.reserve(capacity_);
   materialVisibleFlags_.reserve(capacity_);
+  shadowSides_.reserve(capacity_);
   flags_.reserve(capacity_);
   geometryIds_.reserve(capacity_);
   bounds_.reserve(capacity_);
@@ -81,6 +82,7 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes, size_t spareNodes) {
   radii_.resize(count);
   visibleFlags_.resize(count);
   materialVisibleFlags_.resize(count);
+  shadowSides_.resize(count);
   flags_.resize(count);
   geometryIds_.resize(count);
   bounds_.resize(count);
@@ -103,6 +105,7 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes, size_t spareNodes) {
     radii_[i] = node.radius;
     visibleFlags_[i] = node.visible ? 1 : 0;
     materialVisibleFlags_[i] = node.materialVisible ? 1 : 0;
+    shadowSides_[i] = node.shadowSide;
     flags_[i] = node.flags;
     geometryIds_[i] = node.geometryId;
     bounds_[i] = node.bounds;
@@ -134,6 +137,7 @@ NodeIndex SceneMirror::takeSlot(NodeIndex parent) {
   radii_.push_back(0.0f);
   visibleFlags_.push_back(0);
   materialVisibleFlags_.push_back(0);
+  shadowSides_.push_back(kShadowSideBack);
   flags_.push_back(0);
   geometryIds_.push_back(kNoGeometry);
   bounds_.emplace_back();
@@ -157,6 +161,7 @@ void SceneMirror::writeNode(NodeIndex index, const NodeDesc& node, NodeIndex par
   radii_[i] = node.radius;
   visibleFlags_[i] = node.visible ? 1 : 0;
   materialVisibleFlags_[i] = node.materialVisible ? 1 : 0;
+  shadowSides_[i] = node.shadowSide;
   flags_[i] = node.flags;
   geometryIds_[i] = node.geometryId;
   bounds_[i] = node.bounds;
@@ -246,6 +251,7 @@ int32_t SceneMirror::removeSubtree(NodeIndex root) {
     removed_[i] = 1;
     visibleFlags_[i] = 0;
     materialVisibleFlags_[i] = 0;
+    shadowSides_[i] = kShadowSideBack;
     flags_[i] = 0;
     radii_[i] = 0.0f;
     geometryIds_[i] = kNoGeometry;
@@ -290,6 +296,12 @@ void SceneMirror::applyTransforms(const double* buffer, size_t valueCount) {
     const auto frameFlags = static_cast<uint32_t>(row[kSyncFlags]);
     visibleFlags_[index] = (frameFlags & kSyncVisible) != 0 ? 1 : 0;
     materialVisibleFlags_[index] = (frameFlags & kSyncMaterialVisible) != 0 ? 1 : 0;
+    // O lado da face do passe de sombra viaja nos mesmos bits (SPEC-0245):
+    // `material.side` e `material.shadowSide` sao reavaliados pelo `three` a
+    // cada travessia, e fotografa-los no `build` seria o terceiro erro do
+    // mesmo tipo nesta serie.
+    shadowSides_[index] =
+        static_cast<uint8_t>((frameFlags >> kSyncShadowSideShift) & kSyncShadowSideMask);
     dirty_[index] = 1;
   }
 }

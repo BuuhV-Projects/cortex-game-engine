@@ -64,6 +64,18 @@ enum class ShadowGateRefusal : uint8_t {
   kPositionNode,
   /** A geometria do caster não está no `GeometryRegistry` — não há o que desenhar. */
   kGeometryMissing,
+  /**
+   * O lado da face do passe de sombra não é reproduzível
+   * ({@link kShadowSideUnsupported}).
+   *
+   * Acontece quando `material.side` (ou `material.shadowSide`) tem um valor
+   * fora da tabela que o `three` usa no passe de sombra, ou quando os
+   * materiais de um mesmo nó discordam entre si. Desenhar assim seria escrever
+   * a profundidade da face errada — acne, peter-panning ou sombra faltando —,
+   * e isso aparece como artefato visual, nunca como erro. Recusar é o lado
+   * seguro (SPEC-0245, premissa 4 da SPEC-0246).
+   */
+  kUnsupportedSide,
 };
 
 /**
@@ -75,7 +87,7 @@ enum class ShadowGateRefusal : uint8_t {
  * contagem do último motivo cai FORA do array, em cima do campo seguinte, e o
  * gate passa a relatar número inventado.
  */
-constexpr int kShadowGateRefusalCount = 9;
+constexpr int kShadowGateRefusalCount = 10;
 
 /** Fatos do frame inteiro, que só o JS enxerga. */
 struct ShadowGateFrame {

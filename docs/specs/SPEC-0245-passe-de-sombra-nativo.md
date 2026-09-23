@@ -1,7 +1,7 @@
 # SPEC-0245 — Passe de sombra nativo (M6)
 
 **Data:** 2026-09-22
-**Status:** aceito e CONCLUÍDO — E1 a E8 executados. O passe nativo é o caminho padrão do host, e o ganho remedido depois da limpeza é **2,8 ms de `cpu.render`, 58 → 70 fps**, contra o critério revisado de 2,5 ms (ver o fim).
+**Status:** aceito e CONCLUÍDO — E1 a E9 executados (o E9 fechou a pendência do `side` do material). O passe nativo é o caminho padrão do host, e o ganho remedido depois do E9 é **4,75 ms de `cpu.render`, 51 → 66 fps** (eram 2,8 ms e 58 → 70 no E8, noutra carga de máquina), contra o critério revisado de 2,5 ms. A imagem, depois do `side`: `maxChannelDiff` **2** em **0,004%** dos pixels, contra 81 e 12,4% antes — ver o fim.
 
 ## Contexto
 
@@ -1119,3 +1119,160 @@ número** que o `three` deixou de desenhar. Nenhuma sombra some.
 3. **`CORTEX_OVERRIDE_PROBE`** (SPEC-0238, fase 4) é uma sonda one-shot que já
    respondeu a pergunta dela. Está fora do escopo deste marco e foi mantida, mas
    é candidata à mesma limpeza.
+
+## E9 EXECUTADO em 2026-09-22 — o `side` do material, e a folhagem de volta
+
+### A pendência, e a hipótese que ela carregava
+
+O item 1 de "o que continua em aberto" dizia: **`side` do material não é
+espelhado**, então um caster `DoubleSide` não era nem reproduzido nem recusado
+— o passe cortava `Front` em todo mundo. A hipótese registrada era que isso
+explicasse a diferença residual de imagem, que estava **concentrada na
+auto-sombra da folhagem distante**, e folhagem costuma ser `DoubleSide`.
+
+**A hipótese se confirmou, e por uma margem que não deixa dúvida.**
+
+### A tabela, conferida no fonte antes de virar código
+
+`node_modules/three/src/renderers/common/Renderer.js`, no caminho de
+`isShadowPassMaterial`:
+
+    const _shadowSide = { [FrontSide]: BackSide, [BackSide]: FrontSide, [DoubleSide]: DoubleSide };
+    ...
+    overrideMaterial.side = ( material.shadowSide !== null ) ? material.shadowSide : _shadowSide[ material.side ];
+
+Dois detalhes que a descrição curta ("`FrontSide → BackSide`") escondia e que
+mudaram a implementação:
+
+1. **Um `material.shadowSide` autorado vence a tabela** e é usado DIRETO, sem
+   inverter. São duas tabelas, não uma.
+2. **O `three` não implementa `side` com `cullMode`.** No backend WebGPU
+   (`WebGPUPipelineUtils._getPrimitiveState`) o `cullMode` é sempre `Back`
+   (`None` no `DoubleSide`); o que muda é o SENTIDO da face
+   (`flipSided = side === BackSide`), **invertido de novo quando
+   `matrixWorld.determinant() < 0`**. Com `frontFace = CCW` fixo no pipeline
+   nativo, "CW + corta o de trás" é a mesma coisa que "CCW + corta o da
+   frente", então o sentido vira escolha de `cullMode` — mas o espelhamento por
+   determinante tinha de ser reproduzido junto, senão uma peça com escala
+   negativa escreveria a profundidade da face errada.
+
+### O que foi construído
+
+- **O lado viaja POR FRAME**, nos dois bits que sobravam no campo de flags do
+  buffer de sincronização (`kSyncShadowSideBit0/1`). A decisão foi deliberada:
+  `side` muda menos que `visible`, mas o `three` o **reavalia a cada
+  travessia**, e fotografá-lo no `build` seria o **terceiro** erro do mesmo
+  tipo nesta série — os dois anteriores (`visible`, no passo 1, e
+  `material.visible`, no E1) viraram sombra errada em silêncio. O custo é zero:
+  os bits já existiam no campo (a linha não alargou) e o material do nó já
+  estava em mãos no laço, para o `material.visible`. O `build` manda o valor de
+  partida no 21º float, como já faz com o `material.visible`.
+- **Quem resolve a tabela é o JS** (`LADO_DA_SOMBRA` / `LADO_AUTORADO`, em
+  `src/core/NativeSceneMirror.ts`), porque é o único lado que enxerga o
+  material. O C++ recebe o lado EFETIVO (`ShadowSide`: `kBack`, `kFront`,
+  `kDouble`, `kUnsupported`) e só escolhe o `cullMode`.
+- **`shadowCullMode` em `shadow_math.h`** (PURO, sem wgpu, exercitado no
+  harness): `kBack → Front`, `kFront → Back`, `kDouble → None`, com o
+  `flipSided` do determinante aplicado por cima.
+- **O passe agrupa por `(cull, passo de vértice)`** e guarda **um pipeline por
+  par** — antes havia um pipeline só, recriado quando o passo mudava, o que com
+  dois eixos viraria uma recompilação por troca. Formato de profundidade novo
+  descarta o cache inteiro.
+- **O gate ganhou um motivo próprio**, `lado-nao-reproduzivel`: `side` fora da
+  tabela (valor que uma versão futura do `three` pode introduzir) ou materiais
+  do mesmo nó discordando entre si. **Recusa, nunca aproxima** — o princípio do
+  M1. `kShadowGateRefusalCount` foi de 9 para 10 (errar esse número para menos
+  faz a contagem do último motivo cair FORA do array, como já aconteceu no E3).
+- **O contrato do `three` (SPEC-0246) cobre a tabela INTEIRA.** A premissa 4 só
+  verificava `FrontSide → BackSide`; agora verifica os três pares, mais o
+  `shadowSide` autorado nos três valores, e ganhou uma segunda **prova de
+  quebra**: um `three` hipotético que inverte SÓ o `FrontSide` — exatamente o
+  que a versão anterior do contrato deixaria passar.
+
+### A imagem: de 81 para 2 níveis, de 12,38% para 0,004%
+
+Harness da SPEC-0240, `?bench&hold`, 32 pares por comparação, janela oculta,
+export **sem `--debug`** (o HUD de métricas contamina a captura). **Mesma
+máquina, mesma cena, mesmo ponto de `hold` nos dois momentos.**
+
+| comparação | `maxChannelDiff` | `pctPixelsAboveNoiseFloor` (piso 0) |
+| --- | --- | --- |
+| controle `three` × `three` (build antiga) | 0 | 0,000000% |
+| **ANTES** — `three` × nativo | **81** | **12,383681%** |
+| controle nativo × nativo (build nova) | 0 | 0,000000% |
+| **DEPOIS** — `three` × nativo | **2** | **0,004232%** |
+
+> Os números do ANTES não são os 28 / 0,124662% registrados no E4/E5: aquela
+> rodada foi noutra resolução (1920×1080 contra 1280×720 aqui) e noutro ponto
+> da pista. Por isso o antes foi **remedido nesta sessão**, na mesma build e no
+> mesmo enquadramento do depois — comparar com o número de outra rodada é o
+> erro que esta spec já registra em "os absolutos não batem... e isso é da
+> CENA".
+
+O instrumento foi validado antes das duas conclusões, com o controle
+caminho-contra-ele-mesmo dando **0 e 0,000000%** em 32 pares, nas duas builds.
+
+E o pior pixel do ANTES dizia de onde vinha a diferença: `(876, 177)`,
+`rgba(156,168,1)` no `three` contra `rgba(186,198,82)` no nativo — verde de
+folhagem, **mais claro no nativo**, que é auto-sombra faltando. Era a folhagem
+`DoubleSide`, desenhada com `cullMode = Front` quando o `three` a desenha sem
+culling nenhum.
+
+**Os 2 níveis que sobram** (em 0,004% dos pixels) são o outro candidato que o
+E4/E5 tinha listado e que continua válido: a precisão do MVP — o nosso é
+composto em `double`, o do `three` passa por `modelViewMatrix` em `float32`.
+Não foi isolado, e agora está abaixo do que vale investigar.
+
+### O ganho: remedido, e não caiu — 4,75 ms
+
+`?bench&hold`, export `--debug` feito **da worktree**, host recompilado, janela
+offscreen, quatro rodadas **intercaladas** de 70 s, medianas de ~118 amostras
+filtradas por estado de cena (`draws >= 100`), **sem a sonda de fases** (ela
+amplifica justamente a fatia que o marco remove).
+
+| rodada | base | nativo | delta |
+| --- | --- | --- | --- |
+| 1 | 17,3 | 12,2 | 5,1 |
+| 2 | 17,9 | 12,6 | 5,3 |
+| 3 | 16,5 | 12,4 | 4,1 |
+| 4 | 17,1 | 12,5 | 4,6 |
+| **mediana** | **17,2** | **12,45** | **4,75** |
+
+| | base | **nativo** | teto (`?semPasseDeSombra=1`) |
+| --- | --- | --- | --- |
+| `cpu.render` | 17,2 ms | **12,45 ms** | 10,5 ms |
+| fps | 51,5 | **65,6** | 74,9 |
+| `draws` | 287 | **195** | 195 |
+
+**4,75 ms contra o critério revisado de 2,5 ms — a correção não derrubou o
+ganho, e `draws` continua caindo exatamente 92.**
+
+> Os absolutos são maiores que os do E8 (14,8 / 12,0) porque a máquina estava
+> mais carregada nesta sessão — o teto também subiu, de 5,1 para 6,7 ms. O que
+> se compara entre rodadas é o **delta na mesma build**, e ele foi de 2,8 para
+> 4,75 ms. Parte disso é a máquina; a parte que é do código é que um pipeline
+> `None` não custa mais que um `Front`, então o `side` não cobra nada de volta.
+
+### Testes
+
+- Harness C++ (`cortex_host_tests`): **352 checks, 0 falhas** (eram 314) — a
+  tabela do `three` nos três valores, o lado irreproduzível não aproximado, o
+  espelhamento por determinante (e o determinante ignorando a translação), o
+  gate aceitando os três lados válidos e recusando o quarto, o lado chegando
+  pelo FRAME (e voltando), e o espelho levando o lado do `build`, do frame e da
+  lápide.
+- Vitest: **1.593 passando, 7 pulados, 0 falhas** (eram 1.583) — a tabela e o
+  `shadowSide` autorado no `build`, lado desconhecido e materiais que discordam
+  virando recusa, o lado viajando por frame sem contaminar os bits vizinhos, e
+  a premissa 4 do contrato estendida (38 testes no arquivo).
+- Host compila (`cortex_host.exe`, clang-cl/Ninja, Release).
+
+### O que continua em aberto
+
+1. **`shadowMap.setSize` não roda mais** com o passe do `three` desligado:
+   mudar `shadow.mapSize` em runtime não redimensiona nada. (Inalterado.)
+2. **`CORTEX_OVERRIDE_PROBE`** (SPEC-0238, fase 4) segue candidata à mesma
+   limpeza. (Inalterado.)
+3. A diferença residual de **2 níveis em 0,004% dos pixels** não foi isolada; o
+   candidato que sobra é a precisão do MVP, e o nativo pode estar **mais** certo
+   que o `three` aí.

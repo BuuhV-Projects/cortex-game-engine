@@ -83,7 +83,7 @@ Para cada uma: o que ela é, o que quebra se deixar de valer, e quem depende.
 | 1 | `shadow.map.depthTexture` existe e tem `name === 'ShadowDepthTexture'` | A asserção do alvo para de valer. O alvo é obtido por **identidade** (`backend.get(...)`), e o rótulo é a conferência de que é o objeto certo. Sem ela, um dia o passe nativo escreve numa textura que não é o shadow map — corrompe outra coisa, sem erro. | `src/scene/OutdoorLighting.ts` (`ROTULO_DA_TEXTURA_DE_SOMBRA`, recusa `rotulo-inesperado:`) |
 | 2 | o gate `shadow.needsUpdate \|\| shadow.autoUpdate` controla se o `three` renderiza a sombra | É **como o nativo desliga o passe do `three`**. Se o `three` passar a decidir por outro caminho, os dois passes desenham no mesmo alvo no mesmo frame (custo dobrado, e a imagem depende de quem escreveu por último) — ou nenhum desenha e a sombra some. | `OutdoorLighting._desenharPasseDeSombraNativo` (`cascata.shadow.autoUpdate = !assumiu`) |
 | 3 | `LightShadow.copy` copia `autoUpdate` **no momento do clone** | O CSM clona a `shadow` da luz **por cascata** (`light.shadow.clone()` no `_init`). Mexer no original depois **não chega nas cópias**. Se o clone virar referência compartilhada — ou parar de copiar o campo — desligar o passe por cascata deixa de funcionar e volta a premissa 2. | mesmo ponto da premissa 2, e a medição de congelamento em `updateBefore` |
-| 4 | o `three` desenha a sombra com o lado da face **invertido** (`material.shadowSide ?? _shadowSide[material.side]`, `FrontSide → BackSide`) | É o que justifica `cullMode = Front` no passe nativo. Se o `three` parar de inverter, o nativo passa a cortar a face errada: a profundidade sai da face de trás e aparece **acne e peter-panning** — artefato puro, sem erro. | `native/src/render/shadow_pass.cpp` (`pd.primitive.cullMode = WGPUCullMode_Front`) e o cabeçalho de `shadow_pass.h` |
+| 4 | o `three` desenha a sombra com o lado da face **invertido**, pela tabela INTEIRA (`material.shadowSide ?? _shadowSide[material.side]`: `FrontSide → BackSide`, `BackSide → FrontSide`, `DoubleSide → DoubleSide`), e um `shadowSide` autorado é usado DIRETO, sem inverter | É o que decide o `cullMode` de **cada caster** do passe nativo. Se o `three` parar de inverter, o nativo corta a face errada: a profundidade sai da face de trás e aparece **acne e peter-panning**. Se `DoubleSide` passar a ser cortado, a **folhagem perde a auto-sombra** — o que, ao contrário, foi medido: com `cullMode = Front` fixo a imagem divergia em 12,4% dos pixels, e reproduzir a tabela derrubou isso para 0,004% (SPEC-0245, E9). Artefato puro, sem erro. | `native/src/render/shadow_math.h` (`shadowCullMode`), `native/src/render/shadow_pass.cpp` (agrupamento por `cull`) e `src/core/NativeSceneMirror.ts` (`LADO_DA_SOMBRA` / `LADO_AUTORADO`) |
 | 5 | `castShadow` é filtrado **depois** da RenderList, em `getShadowRenderObjectFunction` — não em `_projectObject` | É a base da conta do M6: a maioria dos itens é percorrida, enfileirada e **descartada depois**, e é essa travessia que o passe nativo substitui (SPEC-0243/0245). Se o `three` passar a podar em `_projectObject`, o ganho do marco evapora e o enumerador do C++ passa a divergir da lista do `three`. | `NativeSceneMirror` (enumeração de casters), gate/`drawShadowPass` |
 | 6 | `CSMShadowNode` só popula `this.lights` no `_init`, que roda no primeiro `setup` | Aplicar qualquer coisa nas cascatas antes disso **congela zero cascatas em silêncio** — foi exatamente o que aconteceu ao tentar congelar o passe na criação do nó. Todo acesso a `lights` tem de ser depois do primeiro `setup`, e é por isso que o código vive em `updateBefore`. | `CameraFollowingCSM.updateBefore` (congelamento, gate, passe nativo) |
 | 7 | `lightShadowMatrix` só chama `updateMatrices` sozinho quando `castShadow !== true` **ou** `shadowMap.enabled === false` | Com o passe do `three` desligado, **ninguém mais chama `shadow.updateMatrices(luz)`** — e o uniforme que **amostra** o mapa congela, prendendo a sombra ao mundo de um frame antigo. Por isso o preparo nativo **tem** de chamar `updateMatrices` por cascata. Se o `three` passar a atualizar sozinho, a chamada vira redundante (aceitável); se o caminho mudar de forma, a sombra congela em silêncio. | `_desenharPasseDeSombraNativo` e `_relatarCastersNativos` (`cascata.shadow.updateMatrices(cascata)`) |
@@ -97,9 +97,13 @@ Para cada uma: o que ela é, o que quebra se deixar de valer, e quem depende.
   trava, e a lista acima tem de ser percorrida. É o preço de substituir o
   `three` por dentro.
 - **O contrato falha ruidosamente.** A prova de que ele pega uma quebra está na
-  própria suíte: há um teste que **simula** a premissa 4 deixando de valer
-  (monkey-patch do material) e exige que a verificação acuse — um contrato que
-  nunca falha não protege nada, que é a lição da SPEC-0240.
+  própria suíte: há **dois** testes que simulam a premissa 4 deixando de valer —
+  um `three` que parou de inverter e outro que inverte **só o `FrontSide`** — e
+  exigem que a verificação acuse. O segundo existe porque a primeira versão
+  deste contrato só conferia o par `FrontSide → BackSide`: um caster
+  `DoubleSide` desenhado com o lado errado passava batido, e passou mesmo — foi
+  a diferença de imagem que o E9 da SPEC-0245 fechou. Um contrato que cobre a
+  tabela pela metade protege metade dela.
 - **O que ele NÃO cobre.** O contrato verifica o comportamento do `three`, não a
   imagem. Continuam valendo o harness de paridade (SPEC-0240) e a inspeção da
   volta inteira exigida pela SPEC-0245 — o contrato diz que as premissas valem,
@@ -138,3 +142,4 @@ Estas não têm como ser verificadas por teste automatizado, e por isso viram
 | versão do `three` | data | observação |
 | --- | --- | --- |
 | 0.184.0 | 2026-09-22 | trava inicial; as dez premissas valem, verificadas por teste |
+| 0.184.0 | 2026-09-22 | premissa 4 **ampliada** para a tabela inteira (`Front→Back`, `Back→Front`, `Double→Double`) e para o `shadowSide` autorado, com uma segunda prova de quebra. Não é troca de versão do `three`: é a mesma premissa, que estava travada só num terço (SPEC-0245, E9) |

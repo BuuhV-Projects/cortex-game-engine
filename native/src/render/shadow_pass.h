@@ -9,11 +9,15 @@
 //  - **o alvo vem por IDENTIDADE**, do `shadow.map.depthTexture` que o JS
 //    entrega. Identificar alvo por dimensão custou dois dias no M5 (SPEC-0241)
 //    e acabou desenhando na textura errada — aqui nada é adivinhado.
-//  - **`cullMode = Front`.** O `three` inverte o lado da face no passe de
-//    sombra (`_shadowSide`: `FrontSide → BackSide`). Com `Back`, a
-//    profundidade sairia da face errada — acne e peter-panning. É a premissa 4
-//    do contrato do `three` (SPEC-0246): se ele parar de inverter, o teste
-//    quebra antes da imagem.
+//  - **`cullMode` POR CASTER**, derivado do `side` do material. O `three`
+//    inverte o lado da face no passe de sombra (`_shadowSide`:
+//    `FrontSide → BackSide`, `BackSide → FrontSide`,
+//    `DoubleSide → DoubleSide`). Com `Back` fixo, a profundidade de um caster
+//    `FrontSide` sairia da face errada — acne e peter-panning; com `Front`
+//    fixo, um caster `DoubleSide` (folhagem, na prática) perde a auto-sombra
+//    que o `three` desenha sem culling nenhum. É a premissa 4 do contrato do
+//    `three` (SPEC-0246): se ele mudar a tabela, o teste quebra antes da
+//    imagem.
 //
 // Diagnóstico: `CORTEX_SHADOW_PASS_LOG=1` imprime no stderr as primeiras
 // chamadas com alvo, formato e quantos casters entraram. É a única forma de
@@ -25,6 +29,8 @@
 
 #include <webgpu/webgpu.h>
 
+#include "shadow_math.h"
+
 struct HostGpu;
 
 namespace render {
@@ -32,6 +38,15 @@ namespace render {
 /** Um caster a desenhar: geometria registrada + matriz de mundo. */
 struct ShadowDrawItem {
   uint32_t geometryId = 0;
+  /**
+   * Como cortar a face deste caster (ver {@link shadowCullMode}).
+   *
+   * Vem por item, e não do pipeline, porque o lado é do MATERIAL: numa mesma
+   * cena convivem `FrontSide` (a maioria), `DoubleSide` (folhagem) e
+   * `BackSide`. O passe agrupa os itens por `cullMode` para trocar de pipeline
+   * o mínimo possível.
+   */
+  ShadowCull cullMode = ShadowCull::kFront;
   /**
    * Matriz de mundo, coluna-maior, em DOUBLE.
    *

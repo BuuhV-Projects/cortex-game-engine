@@ -1,6 +1,9 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
+  BackSide,
   BoxGeometry,
+  DoubleSide,
+  FrontSide,
   InstancedMesh,
   Mesh,
   MeshBasicMaterial,
@@ -14,13 +17,14 @@ import { NativeSceneMirror, nativeSceneMirrorAvailable } from '../../src/core/Na
 import { SHADOW_AUTHORED_KEY } from '../../src/scene/ShadowCasterCulling.js';
 
 /** Layout de construção — tem de acompanhar `scene_mirror_shim.cpp`. */
-const FLOATS_POR_NO = 20;
+const FLOATS_POR_NO = 21;
 const CAMPO_VISIVEL = 12;
 const CAMPO_FLAGS = 13;
 const CAMPO_GEOMETRIA = 14;
 const CAMPO_CENTRO = 15;
 const CAMPO_RAIO = 18;
 const CAMPO_MATERIAL_VISIVEL = 19;
+const CAMPO_LADO_DA_SOMBRA = 20;
 
 /** Layout de sincronização — tem de acompanhar `scene_mirror.h`. */
 const SYNC_FLOATS_POR_NO = 12;
@@ -29,6 +33,15 @@ const SYNC_FLAGS = 11;
 /** Bits de `SYNC_FLAGS` — espelham `SyncFlag` em `scene_mirror.h`. */
 const SYNC_VISIVEL = 1;
 const SYNC_MATERIAL_VISIVEL = 2;
+/** Deslocamento dos dois bits de lado da face (ver `kSyncShadowSideShift`). */
+const SYNC_LADO_SHIFT = 2;
+const SYNC_LADO_MASCARA = 0b11;
+
+/** Valores de `ShadowSide` em `scene_mirror.h`. */
+const LADO_BACK = 0;
+const LADO_FRONT = 1;
+const LADO_DOUBLE = 2;
+const LADO_IRREPRODUZIVEL = 3;
 
 /** Bits de `flags` — espelham `NodeFlag` em `scene_mirror.h`. */
 const FLAG_CAST_SHADOW = 1;
@@ -42,7 +55,7 @@ const FLAG_ALPHA_CLIP = 128;
 const FLAG_POSITION_NODE = 256;
 
 /** Saída do gate: um slot por motivo, mais recusados e total. */
-const GATE_MOTIVOS = 9;
+const GATE_MOTIVOS = 10;
 const GATE_OUT_FLOATS = GATE_MOTIVOS + 2;
 
 /** Ponte falsa com a forma da do host, para exercitar o lado JS sem o C++. */
@@ -358,6 +371,92 @@ describe('NativeSceneMirror', () => {
     const flags = sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]!;
     expect(flags & SYNC_MATERIAL_VISIVEL).toBe(0);
     expect(flags & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
+  });
+
+  it('manda o lado da face do passe de sombra pela tabela do three', () => {
+    // A tabela `_shadowSide` (premissa 4 da SPEC-0246): o `three` desenha a
+    // sombra com o lado INVERTIDO. Quem resolve a tabela é o JS — o C++ só
+    // escolhe o `cullMode` — então um erro aqui vira sombra da face errada.
+    const { chamadas } = instalarPonteFalsa(16);
+    const raiz = new Object3D();
+    const daFrente = malha();
+    const deTras = malha();
+    (deTras.material as { side: number }).side = BackSide;
+    const dosDois = malha();
+    (dosDois.material as { side: number }).side = DoubleSide;
+    raiz.add(daFrente, deTras, dosDois);
+
+    new NativeSceneMirror().install(raiz);
+
+    const d = chamadas.ultimaDescricao;
+    const lado = (i: number) => d[FLOATS_POR_NO * i + CAMPO_LADO_DA_SOMBRA];
+    expect(lado(1)).toBe(LADO_BACK); // FrontSide -> BackSide
+    expect(lado(2)).toBe(LADO_FRONT); // BackSide -> FrontSide
+    expect(lado(3)).toBe(LADO_DOUBLE); // DoubleSide -> DoubleSide
+    expect(lado(0)).toBe(LADO_BACK); // o Group não tem material: o valor comum
+  });
+
+  it('um shadowSide autorado vence a inversão', () => {
+    // `overrideMaterial.side = material.shadowSide ?? _shadowSide[side]`: com o
+    // `shadowSide` autorado o three usa o valor DIRETO, sem inverter.
+    const { chamadas } = instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    const comAutoria = malha();
+    (comAutoria.material as { side: number; shadowSide: number | null }).shadowSide = FrontSide;
+    raiz.add(comAutoria);
+
+    new NativeSceneMirror().install(raiz);
+
+    expect(chamadas.ultimaDescricao[FLOATS_POR_NO + CAMPO_LADO_DA_SOMBRA]).toBe(LADO_FRONT);
+  });
+
+  it('lado desconhecido ou materiais que discordam viram RECUSA, não aproximação', () => {
+    // O quarto valor existe para o gate recusar: desenhar com um `cullMode`
+    // chutado daria sombra da face errada, que é artefato sem erro nenhum.
+    const { chamadas } = instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    const foraDaTabela = malha();
+    (foraDaTabela.material as { side: number }).side = 99;
+    const discordando = new Mesh(new BoxGeometry(1, 1, 1), [
+      new MeshBasicMaterial({ side: FrontSide }),
+      new MeshBasicMaterial({ side: DoubleSide }),
+    ]);
+    raiz.add(foraDaTabela, discordando);
+
+    new NativeSceneMirror().install(raiz);
+
+    const d = chamadas.ultimaDescricao;
+    expect(d[FLOATS_POR_NO + CAMPO_LADO_DA_SOMBRA]).toBe(LADO_IRREPRODUZIVEL);
+    expect(d[FLOATS_POR_NO * 2 + CAMPO_LADO_DA_SOMBRA]).toBe(LADO_IRREPRODUZIVEL);
+  });
+
+  it('o lado da face viaja por FRAME, como o visible e o material.visible', () => {
+    // O `three` reavalia `material.side` a cada travessia. Fotografá-lo no
+    // `build` seria o terceiro erro do mesmo tipo nesta série — os dois
+    // anteriores (`visible` e `material.visible`) viraram sombra errada.
+    const { sync } = instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    const filho = malha();
+    raiz.add(filho);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+
+    const ladoNoFrame = () =>
+      (sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! >> SYNC_LADO_SHIFT) & SYNC_LADO_MASCARA;
+
+    espelho.update(new PerspectiveCamera());
+    expect(ladoNoFrame()).toBe(LADO_BACK);
+
+    (filho.material as { side: number }).side = DoubleSide;
+    espelho.update(new PerspectiveCamera());
+    expect(ladoNoFrame()).toBe(LADO_DOUBLE);
+    // E os bits do lado não contaminam os vizinhos do mesmo campo.
+    expect(sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
+
+    // Não é caminho só de ida.
+    (filho.material as { side: number }).side = FrontSide;
+    espelho.update(new PerspectiveCamera());
+    expect(ladoNoFrame()).toBe(LADO_BACK);
   });
 
   it('marca no build cada motivo de recusa que só o JS enxerga', () => {

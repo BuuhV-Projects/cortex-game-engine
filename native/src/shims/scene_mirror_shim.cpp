@@ -24,15 +24,18 @@ namespace {
  * `flags`, `geometryId` e a esfera local, que o espelho não guardava. O slot
  * que sobrava no fim virou o `material.visible` inicial no E3 do passo 2 — o
  * valor por frame chega pelo buffer de sincronização, mas o `build` precisa de
- * um estado de partida, senão o primeiro frame enumera por um default.
+ * um estado de partida, senão o primeiro frame enumera por um default. O 21º
+ * é o lado da face do passe de sombra, pelo mesmo motivo.
  */
-constexpr int kBuildFloatsPerNode = 20;
+constexpr int kBuildFloatsPerNode = 21;
 /** Posições do layout de construção (ver {@link jsBuild}). */
 constexpr int kBuildFlags = 13;
 constexpr int kBuildGeometryId = 14;
 constexpr int kBuildBoundsCenter = 15;
 constexpr int kBuildBoundsRadius = 18;
 constexpr int kBuildMaterialVisible = 19;
+/** Lado da face do passe de sombra INICIAL (ver `scene::ShadowSide`). */
+constexpr int kBuildShadowSide = 20;
 /** Floats do frustum: 6 planos de 4. */
 constexpr int kFrustumFloats = scene::kFrustumPlanes * 4;
 
@@ -136,14 +139,16 @@ scene::NodeDesc lerNo(const float* row) {
   node.bounds.cz = row[kBuildBoundsCenter + 2];
   node.bounds.radius = row[kBuildBoundsRadius];
   node.materialVisible = row[kBuildMaterialVisible] != 0.0f;
+  node.shadowSide = static_cast<uint8_t>(row[kBuildShadowSide]);
   return node;
 }
 
 /**
  * `build(descricao: Float32Array)` — recebe a cena inteira uma vez.
  *
- * Layout por nó (20 floats): pai, px, py, pz, qx, qy, qz, qw, sx, sy, sz,
- * raio, visível, flags, geometryId, bcx, bcy, bcz, braio, materialVisível.
+ * Layout por nó (21 floats): pai, px, py, pz, qx, qy, qz, qw, sx, sy, sz,
+ * raio, visível, flags, geometryId, bcx, bcy, bcz, braio, materialVisível,
+ * ladoDaSombra.
  */
 napi_value jsBuild(napi_env env, napi_callback_info info) {
   size_t argc = 2;
@@ -458,6 +463,10 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
     if (geometria == scene::kNoGeometry) continue;
     item.geometryId = static_cast<uint32_t>(geometria);
     std::memcpy(item.model, s.mirror.worldMatrix(index), sizeof(item.model));
+    // O lado da face é do MATERIAL e chega por frame; o sentido depende ainda
+    // da matriz de mundo (escala espelhada inverte a face, como no `three`).
+    item.cullMode =
+        render::shadowCullMode(static_cast<uint8_t>(s.mirror.shadowSide(index)), item.model);
     s.shadowItems.push_back(item);
   }
 

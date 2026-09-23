@@ -96,6 +96,15 @@ void casterComBitRecusa(scene::NodeFlag bit, ShadowGateRefusal motivo) {
   CHECK(r.refusedCasters == 1);
 }
 
+/** Espelho de um caster so, com o lado da face pedido, ja avaliado pelo gate. */
+ShadowGateResult avaliarComLado(uint8_t lado) {
+  std::vector<NodeDesc> nos;
+  NodeDesc no = casterAceito();
+  no.shadowSide = lado;
+  nos.push_back(no);
+  return avaliar(nos, frameLimpo(nos.size()));
+}
+
 }  // namespace
 
 namespace tests {
@@ -242,6 +251,63 @@ void testShadowGatePrioridadeEContagemPorMotivo() {
   CHECK(avaliar(nos, comVsm).reason == ShadowGateRefusal::kVsmShadowMap);
 }
 
+void testShadowGateAceitaOsTresLadosDaTabela() {
+  // A tabela do `three` inteira (premissa 4 da SPEC-0246). Os tres valores sao
+  // reproduziveis por `cullMode`, entao nenhum deles pode derrubar o gate — um
+  // gate que recusasse `DoubleSide` devolveria a folhagem inteira ao `three` e
+  // o marco perderia o ganho sem ninguem entender por que.
+  CHECK(avaliarComLado(scene::kShadowSideBack).accepted);
+  CHECK(avaliarComLado(scene::kShadowSideFront).accepted);
+  CHECK(avaliarComLado(scene::kShadowSideDouble).accepted);
+}
+
+void testShadowGateRecusaLadoNaoReproduzivel() {
+  // O quarto valor existe so para isto: `side` fora da tabela, ou materiais do
+  // mesmo no discordando entre si. Desenhar com um `cullMode` chutado daria
+  // sombra da face errada — artefato puro, sem erro nenhum no log.
+  const ShadowGateResult r = avaliarComLado(scene::kShadowSideUnsupported);
+  esperarRecusa(r, ShadowGateRefusal::kUnsupportedSide, 1);
+  CHECK(r.refusedCasters == 1);
+}
+
+void testShadowGateVeOLadoQueChegouNoFrame() {
+  // O lado viaja por FRAME, como o `visible` e o `material.visible` (os dois
+  // erros ja pagos nesta serie). Um material que vira `DoubleSide` em runtime
+  // tem de chegar ao gate no frame em que muda, e voltar quando volta.
+  std::vector<NodeDesc> nos;
+  nos.push_back(casterAceito());
+  SceneMirror espelho;
+  CHECK(espelho.build(nos));
+  const auto planos = planosAmplos();
+
+  const auto avaliarFrame = [&](double flags) {
+    std::vector<double> sync(scene::kSyncFloatsPerNode, 0.0);
+    sync[0] = 0;
+    sync[7] = 1;                        // qw
+    sync[8] = sync[9] = sync[10] = 1;   // escala
+    sync[scene::kSyncFlags] = flags;
+    espelho.applyTransforms(sync.data(), sync.size());
+    espelho.updateAndCull(identidade, planos.data());
+    ShadowCasterEnumerator enumerador;
+    ShadowCasterParams params;
+    enumerador.enumerate(espelho, params, planos.data());
+    return scene::evaluateShadowPassGate(espelho, enumerador.casters(), frameLimpo(nos.size()),
+                                         presencaFalsa, nullptr);
+  };
+
+  const double kVisivel = scene::kSyncVisible | scene::kSyncMaterialVisible;
+  const double kIrreproduzivel =
+      kVisivel + (scene::kShadowSideUnsupported << scene::kSyncShadowSideShift);
+  const double kDobrado = kVisivel + (scene::kShadowSideDouble << scene::kSyncShadowSideShift);
+
+  CHECK(avaliarFrame(kVisivel).accepted);  // lado 0 = material FrontSide
+  const ShadowGateResult recusado = avaliarFrame(kIrreproduzivel);
+  CHECK(!recusado.accepted);
+  CHECK(recusado.reason == ShadowGateRefusal::kUnsupportedSide);
+  // E nao e caminho so de ida: volta a aceitar quando o material volta.
+  CHECK(avaliarFrame(kDobrado).accepted);
+}
+
 void testShadowGateMotivoTemNome() {
   // O gate tem de ser observavel sem depurador: o motivo vira texto no log.
   CHECK(std::strcmp(scene::shadowGateRefusalName(ShadowGateRefusal::kNone), "aceito") == 0);
@@ -251,6 +317,8 @@ void testShadowGateMotivoTemNome() {
                     "geometria-ausente") == 0);
   CHECK(std::strcmp(scene::shadowGateRefusalName(ShadowGateRefusal::kNodeCountDivergence),
                     "divergencia-de-nos") == 0);
+  CHECK(std::strcmp(scene::shadowGateRefusalName(ShadowGateRefusal::kUnsupportedSide),
+                    "lado-nao-reproduzivel") == 0);
 }
 
 }  // namespace tests

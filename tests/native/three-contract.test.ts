@@ -96,13 +96,18 @@ const PREMISSAS: Readonly<Record<number, Premissa>> = {
   },
   4: {
     enunciado:
-      'o three desenha a sombra com o lado da face INVERTIDO ' +
-      '(material.shadowSide ?? _shadowSide[material.side], FrontSide -> BackSide)',
+      'o three desenha a sombra com o lado da face INVERTIDO, pela tabela ' +
+      'INTEIRA (material.shadowSide ?? _shadowSide[material.side]: ' +
+      'FrontSide -> BackSide, BackSide -> FrontSide, DoubleSide -> DoubleSide)',
     protege:
-      'É o que justifica cullMode = Front no passe nativo. Se o three parar de ' +
-      'inverter, o nativo corta a face errada: a profundidade sai da face de ' +
-      'trás e aparece ACNE e PETER-PANNING — artefato puro, sem erro.',
-    dependente: 'native/src/render/shadow_pass.cpp (pd.primitive.cullMode = WGPUCullMode_Front)',
+      'É o que decide o cullMode de CADA caster no passe nativo. Se o three ' +
+      'parar de inverter, o nativo corta a face errada: a profundidade sai da ' +
+      'face de trás e aparece ACNE e PETER-PANNING — artefato puro, sem erro. ' +
+      'E se DoubleSide passar a ser cortado, a folhagem perde a auto-sombra ' +
+      'que o three desenha sem culling nenhum.',
+    dependente:
+      'native/src/render/shadow_math.h (shadowCullMode) e ' +
+      'src/core/NativeSceneMirror.ts (LADO_DA_SOMBRA / LADO_AUTORADO)',
   },
   5: {
     enunciado:
@@ -357,19 +362,37 @@ function ladoDaFaceNoPasseDeSombra(
 }
 
 /**
- * Verifica a premissa 4 contra a `renderObject` dada. Lança com a mensagem da
- * premissa quando ela não vale — é a função que o teste de quebra exercita.
+ * A tabela `_shadowSide` do `three`, INTEIRA — a mesma que
+ * `LADO_DA_SOMBRA` reproduz em `src/core/NativeSceneMirror.ts`.
+ *
+ * Cobrir só `FrontSide` deixava dois terços da tabela sem trava: um caster
+ * `DoubleSide` (folhagem) ou `BackSide` estaria desenhado com o lado errado
+ * sem nada acusar, que foi exatamente a pendência que esta rodada fechou.
+ */
+const TABELA_DO_LADO: ReadonlyArray<{ de: number; para: number; nome: string }> = [
+  { de: FrontSide, para: BackSide, nome: 'FrontSide' },
+  { de: BackSide, para: FrontSide, nome: 'BackSide' },
+  { de: DoubleSide, para: DoubleSide, nome: 'DoubleSide' },
+];
+
+/**
+ * Verifica a premissa 4 contra a `renderObject` dada, para a tabela inteira.
+ * Lança com a mensagem da premissa quando ela não vale — é a função que o
+ * teste de quebra exercita.
  */
 function conferirInversaoDoLado(renderObject: (...args: unknown[]) => void): void {
-  const material = { side: FrontSide, shadowSide: null, allowOverride: true };
-  const lado = ladoDaFaceNoPasseDeSombra(renderObject, material, PCFSoftShadowMap);
-  if (lado !== BackSide) {
-    throw new Error(
-      premissa(
-        4,
-        `material.side=FrontSide chegou ao passe de sombra como ${lado}, esperado BackSide (${BackSide})`,
-      ),
-    );
+  for (const linha of TABELA_DO_LADO) {
+    const material = { side: linha.de, shadowSide: null, allowOverride: true };
+    const lado = ladoDaFaceNoPasseDeSombra(renderObject, material, PCFSoftShadowMap);
+    if (lado !== linha.para) {
+      throw new Error(
+        premissa(
+          4,
+          `material.side=${linha.nome} chegou ao passe de sombra como ${lado}, ` +
+            `esperado ${linha.para}`,
+        ),
+      );
+    }
   }
 }
 
@@ -378,17 +401,30 @@ const renderObjectDoThree = (
 ).renderObject;
 
 describe('premissa 4 — lado da face invertido no passe de sombra', () => {
-  it('FrontSide vira BackSide no passe de sombra (justifica cullMode = Front no C++)', () => {
+  it('a tabela INTEIRA vale (Front->Back, Back->Front, Double->Double)', () => {
     expect(() => conferirInversaoDoLado(renderObjectDoThree)).not.toThrow();
   });
 
-  it('DoubleSide continua DoubleSide (não há lado a inverter)', () => {
+  it.each(TABELA_DO_LADO)('$nome vira o lado esperado no passe de sombra', (linha) => {
     const lado = ladoDaFaceNoPasseDeSombra(
       renderObjectDoThree,
-      { side: DoubleSide, shadowSide: null, allowOverride: true },
+      { side: linha.de, shadowSide: null, allowOverride: true },
       PCFSoftShadowMap,
     );
-    expect(lado, premissa(4, `DoubleSide virou ${lado}`)).toBe(DoubleSide);
+    expect(lado, premissa(4, `${linha.nome} virou ${lado}, esperado ${linha.para}`)).toBe(
+      linha.para,
+    );
+  });
+
+  it.each(TABELA_DO_LADO)('shadowSide=$nome autorado vence a inversão', (linha) => {
+    // Com `shadowSide` autorado o three usa o valor DIRETO, sem passar pela
+    // tabela — e é isso que `LADO_AUTORADO` reproduz no espelho.
+    const lado = ladoDaFaceNoPasseDeSombra(
+      renderObjectDoThree,
+      { side: DoubleSide, shadowSide: linha.de, allowOverride: true },
+      PCFSoftShadowMap,
+    );
+    expect(lado, premissa(4, `shadowSide=${linha.nome} virou ${lado}`)).toBe(linha.de);
   });
 
   it('material.shadowSide explícito vence a inversão', () => {
@@ -431,8 +467,30 @@ describe('premissa 4 — PROVA de que o contrato pega a quebra (SPEC-0246)', () 
     );
     expect(() => conferirInversaoDoLado(renderObjectQueNaoInverte)).toThrowError(/ACNE e PETER-PANNING/);
     expect(() => conferirInversaoDoLado(renderObjectQueNaoInverte)).toThrowError(
-      /shadow_pass\.cpp/,
+      /shadow_math\.h/,
     );
+  });
+
+  it('acusa quando o three inverte SÓ o FrontSide (a tabela pela metade)', () => {
+    // O modo de falha que a versão anterior deste contrato NÃO pegava: se só o
+    // primeiro par valesse, um caster BackSide ou DoubleSide seria desenhado
+    // com o lado errado e o contrato diria que estava tudo bem.
+    const renderObjectPelaMetade = function (
+      this: { _handleObjectFunction: (o: unknown, m: unknown) => void },
+      object: unknown,
+      scene: { overrideMaterial: { side: number } },
+      _camera: unknown,
+      _geometry: unknown,
+      material: { side: number },
+    ): void {
+      scene.overrideMaterial.side = material.side === FrontSide ? BackSide : material.side;
+      this._handleObjectFunction(object, scene.overrideMaterial);
+    } as unknown as (...args: unknown[]) => void;
+
+    expect(() => conferirInversaoDoLado(renderObjectPelaMetade)).toThrowError(
+      /PREMISSA 4 DO THREE CAIU/,
+    );
+    expect(() => conferirInversaoDoLado(renderObjectPelaMetade)).toThrowError(/BackSide/);
   });
 });
 

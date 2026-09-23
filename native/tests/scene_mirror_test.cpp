@@ -292,4 +292,43 @@ void testSceneMirrorReaproveitaSlotDeLapide() {
   CHECK(indices[0] > 2);
 }
 
+void testSceneMirrorLadoDaSombraVemDoBuildEDoFrame() {
+  // O lado da face do passe de sombra (SPEC-0245) segue o caminho do
+  // `material.visible`: valor de partida no `build`, valor de verdade por
+  // frame. Ele decide o `cullMode` de cada caster, entao um lado velho e
+  // sombra desenhada da face errada.
+  std::vector<NodeDesc> nos(2);
+  nos[0].parent = kNoParent;
+  nos[1].parent = 0;
+  nos[1].shadowSide = scene::kShadowSideDouble;
+
+  SceneMirror espelho;
+  CHECK(espelho.build(nos));
+  CHECK(espelho.shadowSide(0) == scene::kShadowSideBack);  // default = material FrontSide
+  CHECK(espelho.shadowSide(1) == scene::kShadowSideDouble);
+
+  // O frame manda o lado nos bits altos do campo de flags.
+  std::vector<double> sync(kSyncFloatsPerNode * 2, 0.0);
+  for (int i = 0; i < 2; i++) {
+    double* row = sync.data() + i * kSyncFloatsPerNode;
+    row[0] = i;
+    row[7] = 1;
+    row[8] = row[9] = row[10] = 1;
+    row[scene::kSyncFlags] = scene::kSyncVisible | scene::kSyncMaterialVisible |
+                             ((i == 0 ? scene::kShadowSideFront : scene::kShadowSideUnsupported)
+                              << scene::kSyncShadowSideShift);
+  }
+  espelho.applyTransforms(sync.data(), sync.size());
+  CHECK(espelho.shadowSide(0) == scene::kShadowSideFront);
+  CHECK(espelho.shadowSide(1) == scene::kShadowSideUnsupported);
+  // Os bits do lado nao contaminam os vizinhos no mesmo campo.
+  CHECK(espelho.visibleFlag(0));
+  CHECK(espelho.materialVisibleFlag(0));
+
+  // Lapide volta ao valor de partida: o slot pode ser reaproveitado, e um lado
+  // herdado do no anterior desenharia a face errada no no novo.
+  CHECK(espelho.removeSubtree(1) == 1);
+  CHECK(espelho.shadowSide(1) == scene::kShadowSideBack);
+}
+
 }  // namespace tests

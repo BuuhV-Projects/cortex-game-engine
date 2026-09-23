@@ -55,7 +55,62 @@ enum SyncFlag : uint8_t {
    * sombra do lado nativo — sombra de objeto que não está na imagem.
    */
   kSyncMaterialVisible = 1 << 1,
+  /**
+   * Primeiro bit do LADO DA FACE do passe de sombra (ver {@link ShadowSide}).
+   *
+   * São dois bits, e não uma flag: o lado tem três valores reproduzíveis mais
+   * um quarto que significa "não sei reproduzir" — e esse quarto existe
+   * justamente para o gate poder RECUSAR em vez de desenhar com o lado errado.
+   *
+   * Vem por frame pelo mesmo motivo do `visible` e do `material.visible`, que
+   * já custaram dois erros nesta série: o `three` reavalia `material.side` a
+   * cada travessia, e uma foto do `build` envelheceria em silêncio. Não alarga
+   * a linha (os bits já estavam no campo) nem custa leitura a mais no JS: o
+   * material do nó já é acessado ali, para o `material.visible`.
+   */
+  kSyncShadowSideBit0 = 1 << 2,
+  /** Segundo bit do lado da face (ver {@link kSyncShadowSideBit0}). */
+  kSyncShadowSideBit1 = 1 << 3,
 };
+
+/** Deslocamento dos dois bits de lado dentro de {@link kSyncFlags}. */
+constexpr uint32_t kSyncShadowSideShift = 2;
+/** Máscara dos dois bits de lado, já deslocada para a direita. */
+constexpr uint32_t kSyncShadowSideMask = 0x3;
+
+/**
+ * Lado da face com que o passe de SOMBRA desenha o caster.
+ *
+ * Não é o `material.side` cru: é o lado EFETIVO do passe de sombra, com a
+ * inversão do `three` já aplicada (`Renderer.js`, no caminho de
+ * `isShadowPassMaterial`:
+ * `overrideMaterial.side = material.shadowSide ?? _shadowSide[material.side]`,
+ * com `_shadowSide = { Front → Back, Back → Front, Double → Double }`). Quem
+ * resolve a tabela é o JS, o único lado que enxerga o material; aqui chega o
+ * resultado. É a premissa 4 do contrato do `three` (SPEC-0246).
+ *
+ * `kShadowSideBack` é o valor 0 de propósito: é o lado de um material
+ * `FrontSide`, que é o caso comum, então um campo zerado (nó sem material,
+ * slot recém-nascido) já descreve o que a maioria esmagadora dos casters quer.
+ */
+enum ShadowSide : uint8_t {
+  /** Material `FrontSide` — o `three` inverte, e a profundidade sai do lado de trás. */
+  kShadowSideBack = 0,
+  /** Material `BackSide` — invertido, desenha o lado da frente. */
+  kShadowSideFront = 1,
+  /** Material `DoubleSide` — o `three` NÃO inverte, e desenha os dois lados. */
+  kShadowSideDouble = 2,
+  /**
+   * Lado que o passe nativo não sabe reproduzir: valor de `side` fora da
+   * tabela, ou materiais de um mesmo nó discordando entre si.
+   *
+   * Existe para o gate RECUSAR o frame, nunca para aproximar. É a assimetria
+   * do M1: recusar custa os milissegundos do marco, aceitar errado custa a
+   * imagem.
+   */
+  kShadowSideUnsupported = 3,
+};
+
 /** Valor de `geometryId` para um nó sem geometria registrada. */
 constexpr int32_t kNoGeometry = -1;
 
@@ -226,6 +281,14 @@ struct NodeDesc {
   /** `material.visible` inicial; depois disso chega por frame (SPEC-0245). */
   bool materialVisible = true;
   /**
+   * Lado da face do passe de sombra INICIAL (ver {@link ShadowSide}).
+   *
+   * Como o `materialVisible`, o valor de verdade chega por frame; o `build`
+   * precisa de um estado de partida porque o primeiro frame pode enumerar
+   * antes de qualquer `applyTransforms`.
+   */
+  uint8_t shadowSide = kShadowSideBack;
+  /**
    * Combinação de {@link NodeFlag}.
    *
    * 16 bits e não 8: os motivos de recusa do gate (E3) passaram de quatro bits
@@ -385,6 +448,16 @@ class SceneMirror {
     return materialVisibleFlags_[static_cast<size_t>(index)] != 0;
   }
 
+  /**
+   * Lado da face do passe de sombra deste FRAME (ver {@link ShadowSide}).
+   *
+   * É o que decide o `cullMode` do passe nativo, por caster. Um valor
+   * {@link kShadowSideUnsupported} aqui é recusa do gate, não aproximação.
+   */
+  ShadowSide shadowSide(NodeIndex index) const {
+    return static_cast<ShadowSide>(shadowSides_[static_cast<size_t>(index)]);
+  }
+
   /** Combinação de {@link NodeFlag} declarada no `build`. */
   uint16_t flags(NodeIndex index) const { return flags_[static_cast<size_t>(index)]; }
 
@@ -406,6 +479,8 @@ class SceneMirror {
   std::vector<uint8_t> visibleFlags_;
   /** `material.visible` por nó, atualizado por frame junto do transform. */
   std::vector<uint8_t> materialVisibleFlags_;
+  /** Lado da face do passe de sombra por nó ({@link ShadowSide}), por frame. */
+  std::vector<uint8_t> shadowSides_;
   /** Autoria estática por nó: {@link NodeFlag}. */
   std::vector<uint16_t> flags_;
   /** Geometria de cada nó, para o passe nativo saber o que desenhar. */

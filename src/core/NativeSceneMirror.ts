@@ -11,13 +11,13 @@
  * - **instancing** (revertido na SPEC-0012 do jogo): não é usado.
  */
 import type { Camera, BufferGeometry, Material, Vector3 } from 'three';
-import { Frustum, Matrix4, Object3D } from 'three';
+import { BackSide, DoubleSide, FrontSide, Frustum, Matrix4, Object3D } from 'three';
 import { authoredCastShadow } from '../scene/ShadowCasterCulling.js';
 import { geometryId } from '../render/GeometryDesc.js';
 import { debug } from './debug.js';
 
 /** Floats por nó na descrição inicial (ver `scene_mirror_shim.cpp`). */
-const BUILD_FLOATS_PER_NODE = 20;
+const BUILD_FLOATS_PER_NODE = 21;
 /** Posições do layout de construção que o M6 acrescentou (SPEC-0245). */
 const BUILD_FLAGS = 13;
 const BUILD_GEOMETRY_ID = 14;
@@ -29,6 +29,12 @@ const BUILD_BOUNDS_RADIUS = 18;
  * primeiro frame enumera antes de qualquer `update`.
  */
 const BUILD_MATERIAL_VISIBLE = 19;
+/**
+ * Lado da face do passe de sombra INICIAL (ver {@link ladoDaSombra}). Como o
+ * `material.visible`, o valor de verdade viaja por frame; aqui vai só o estado
+ * de partida.
+ */
+const BUILD_SHADOW_SIDE = 20;
 
 /** Bits de `flags` — espelham `NodeFlag` em `scene_mirror.h`. */
 const FLAG_CAST_SHADOW = 1;
@@ -68,6 +74,45 @@ const SYNC_FLAGS = 11;
 /** Bits de {@link SYNC_FLAGS} — espelham `SyncFlag` em `scene_mirror.h`. */
 const SYNC_VISIBLE = 1;
 const SYNC_MATERIAL_VISIBLE = 2;
+/** Deslocamento dos dois bits de lado da face (ver `kSyncShadowSideShift`). */
+const SYNC_SHADOW_SIDE_SHIFT = 2;
+
+/**
+ * Lado da face com que o passe de sombra desenha o caster — espelha
+ * `ShadowSide` em `scene_mirror.h`.
+ *
+ * Não é o `material.side` cru: é o lado EFETIVO do passe de sombra, com a
+ * tabela do `three` já aplicada (ver {@link LADO_DA_SOMBRA}).
+ */
+const SHADOW_SIDE_BACK = 0;
+const SHADOW_SIDE_FRONT = 1;
+const SHADOW_SIDE_DOUBLE = 2;
+/** Lado que o passe nativo não reproduz — o gate RECUSA o frame (nunca aproxima). */
+const SHADOW_SIDE_UNSUPPORTED = 3;
+
+/**
+ * A tabela `_shadowSide` do `three` (`Renderer.js`), no caminho de
+ * `isShadowPassMaterial`: fora do VSM ele desenha a sombra com o lado da face
+ * INVERTIDO, `overrideMaterial.side = material.shadowSide ?? _shadowSide[material.side]`.
+ *
+ * É a premissa 4 do contrato do `three` (SPEC-0246) e está travada por teste:
+ * se ele parar de inverter, a suíte quebra antes de a imagem estragar.
+ *
+ * O ramo VSM (que NÃO inverte) não precisa estar aqui: o gate recusa o frame
+ * inteiro quando `shadowMap.type === VSMShadowMap`.
+ */
+const LADO_DA_SOMBRA: ReadonlyMap<number, number> = new Map([
+  [FrontSide, SHADOW_SIDE_BACK],
+  [BackSide, SHADOW_SIDE_FRONT],
+  [DoubleSide, SHADOW_SIDE_DOUBLE],
+]);
+
+/** O mesmo mapa para um `shadowSide` AUTORADO, que o `three` usa sem inverter. */
+const LADO_AUTORADO: ReadonlyMap<number, number> = new Map([
+  [FrontSide, SHADOW_SIDE_FRONT],
+  [BackSide, SHADOW_SIDE_BACK],
+  [DoubleSide, SHADOW_SIDE_DOUBLE],
+]);
 /** Elementos de uma Matrix4. */
 const MATRIX_ELEMENTS = 16;
 /** Planos de um frustum, com 4 floats cada. */
@@ -119,6 +164,7 @@ export const SHADOW_GATE_REASONS = [
   'recorte-alfa',
   'position-node',
   'geometria-ausente',
+  'lado-nao-reproduzivel',
 ] as const;
 
 export type ShadowGateReason = (typeof SHADOW_GATE_REASONS)[number];
@@ -180,6 +226,40 @@ function flagsDoNo(objeto: NoDaCena, temEsfera: boolean): number {
   if (temRecorteAlfa(objeto.material)) flags |= FLAG_ALPHA_CLIP;
   if (temPositionNode(objeto.material)) flags |= FLAG_POSITION_NODE;
   return flags;
+}
+
+/**
+ * Lado da face com que o passe de sombra desenharia este nó.
+ *
+ * Resolve aqui a tabela do `three` porque o JS é o único lado que enxerga o
+ * material; o C++ recebe o resultado e só escolhe o `cullMode`. Duas coisas
+ * viram {@link SHADOW_SIDE_UNSUPPORTED} — e recusa do gate, nunca aproximação:
+ *
+ * - um `side` (ou `shadowSide`) fora da tabela, que é valor que o `three`
+ *   pode ganhar numa versão futura;
+ * - materiais do MESMO nó discordando entre si: o passe desenha a geometria
+ *   inteira de uma vez, com um `cullMode` só, então não há como honrar dois
+ *   lados. (Material em array já é recusa por conta própria; isto é a rede.)
+ *
+ * Nó sem material devolve {@link SHADOW_SIDE_BACK}: ele não desenha nada, e o
+ * valor 0 é o do caso comum.
+ */
+function ladoDaSombra(material: Material | Material[] | undefined): number {
+  const lista = materiais(material);
+  if (lista.length === 0) return SHADOW_SIDE_BACK;
+  let resolvido = -1;
+  for (const m of lista) {
+    const comLado = m as Material & { shadowSide?: number | null; side?: number };
+    const autorado = comLado.shadowSide ?? null;
+    const lado =
+      autorado !== null
+        ? (LADO_AUTORADO.get(autorado) ?? SHADOW_SIDE_UNSUPPORTED)
+        : (LADO_DA_SOMBRA.get(comLado.side ?? FrontSide) ?? SHADOW_SIDE_UNSUPPORTED);
+    if (lado === SHADOW_SIDE_UNSUPPORTED) return SHADOW_SIDE_UNSUPPORTED;
+    if (resolvido !== -1 && resolvido !== lado) return SHADOW_SIDE_UNSUPPORTED;
+    resolvido = lado;
+  }
+  return resolvido;
 }
 
 /** `material.visible` do `_projectObject`; um array conta se QUALQUER parte desenha. */
@@ -262,6 +342,7 @@ function descreverNo(
   destino[base + BUILD_BOUNDS_CENTER + 2] = esfera ? esfera.center.z : 0;
   destino[base + BUILD_BOUNDS_RADIUS] = esfera ? esfera.radius : 0;
   destino[base + BUILD_MATERIAL_VISIBLE] = materialVisivel(noDaCena.material) ? 1 : 0;
+  destino[base + BUILD_SHADOW_SIDE] = ladoDaSombra(noDaCena.material);
 }
 
 function bridge(): SceneMirrorBridge | undefined {
@@ -634,6 +715,15 @@ export class NativeSceneMirror {
       const no = objeto as NoDaCena;
       let flagsDoFrame = objeto.visible ? SYNC_VISIBLE : 0;
       if (materialVisivel(no.material)) flagsDoFrame |= SYNC_MATERIAL_VISIBLE;
+      // O lado da face do passe de sombra viaja nos mesmos bits, e pelo mesmo
+      // motivo: o `three` reavalia `material.side` a cada travessia, e trocar
+      // o lado em runtime (um material compartilhado que vira `DoubleSide`,
+      // por exemplo) mudaria a sombra sem o C++ ficar sabendo. Fotografar no
+      // `build` seria o TERCEIRO erro do mesmo tipo nesta série — os dois
+      // anteriores foram o `visible` e o `material.visible`, e os dois viraram
+      // sombra errada em silêncio. O custo aqui é zero: o material do nó já
+      // está em mãos para o `material.visible`, e os bits já existiam no campo.
+      flagsDoFrame |= ladoDaSombra(no.material) << SYNC_SHADOW_SIDE_SHIFT;
       sync[base + SYNC_FLAGS] = flagsDoFrame;
     }
 

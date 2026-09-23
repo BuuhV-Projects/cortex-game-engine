@@ -51,17 +51,46 @@ fn vs(@location(0) position : vec3f) -> @builtin(position) vec4f {
 }
 )WGSL";
 
+/**
+ * Um pipeline já compilado, com a chave que o distingue.
+ *
+ * Duas coisas entram no pipeline e variam dentro de um mesmo frame: o PASSO do
+ * vértice (layout da geometria) e o CULL MODE (lado da face do material). O
+ * formato da profundidade vale para o passe inteiro, e quando ele muda tudo é
+ * descartado — o `three` recria a textura, e um pipeline de outro formato
+ * não serve.
+ */
+struct PipelineEntry {
+  uint32_t stride = 0;
+  ShadowCull cull = ShadowCull::kFront;
+  WGPURenderPipeline pipeline = nullptr;
+};
+
 /** Recursos do passe, criados uma vez e reusados entre frames. */
 struct Recursos {
-  WGPURenderPipeline pipeline = nullptr;
+  /**
+   * Pipelines por (passo, cull). São poucos por construção: três `cullMode`
+   * possíveis vezes os poucos passos de vértice da cena — e criar um por frame
+   * é o que este cache existe para impedir, porque compilar shader no driver
+   * custa muito mais que o marco inteiro ganha.
+   */
+  std::vector<PipelineEntry> pipelines;
   WGPUBindGroupLayout bindGroupLayout = nullptr;
   WGPUBindGroup bindGroup = nullptr;
   WGPUBuffer uniformes = nullptr;
   uint32_t slots = 0;
   WGPUTextureFormat formatoProfundidade = WGPUTextureFormat_Undefined;
-  /** O passo do vértice entra no pipeline, então cada passo pede um pipeline. */
-  uint32_t stride = 0;
 };
+
+/** Tradução do enum puro (testável sem wgpu) para o do WebGPU. */
+WGPUCullMode paraWgpu(ShadowCull cull) {
+  switch (cull) {
+    case ShadowCull::kBack: return WGPUCullMode_Back;
+    case ShadowCull::kFront: return WGPUCullMode_Front;
+    case ShadowCull::kNone: return WGPUCullMode_None;
+  }
+  return WGPUCullMode_None;
+}
 
 Recursos& recursos() {
   static Recursos instancia;
@@ -131,19 +160,32 @@ bool garantirUniformes(HostGpu* gpu, Recursos& r, uint32_t necessarios) {
   return true;
 }
 
-/** Cria (ou recria) o pipeline quando o formato do alvo ou o passo mudam. */
-bool garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat profundidade,
-                      uint32_t stride) {
-  if (r.pipeline && r.formatoProfundidade == profundidade && r.stride == stride) return true;
-  if (r.pipeline) wgpuRenderPipelineRelease(r.pipeline);
-  r.pipeline = nullptr;
-  if (!garantirBindGroupLayout(gpu, r)) return false;
+/**
+ * Devolve o pipeline de (formato, passo, cull), criando-o só na primeira vez.
+ *
+ * Um formato de profundidade novo descarta TODOS os pipelines: eles carregam o
+ * formato no descritor, e usar um pipeline de outro formato é erro de
+ * validação — que no wgpu aborta o processo, sem exceção (medido no M5).
+ */
+WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat profundidade,
+                                    uint32_t stride, ShadowCull cull) {
+  if (r.formatoProfundidade != profundidade) {
+    for (PipelineEntry& entrada : r.pipelines) {
+      if (entrada.pipeline) wgpuRenderPipelineRelease(entrada.pipeline);
+    }
+    r.pipelines.clear();
+    r.formatoProfundidade = profundidade;
+  }
+  for (const PipelineEntry& entrada : r.pipelines) {
+    if (entrada.stride == stride && entrada.cull == cull) return entrada.pipeline;
+  }
+  if (!garantirBindGroupLayout(gpu, r)) return nullptr;
 
   WGPUPipelineLayoutDescriptor pld = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
   pld.bindGroupLayoutCount = 1;
   pld.bindGroupLayouts = &r.bindGroupLayout;
   WGPUPipelineLayout layout = wgpuDeviceCreatePipelineLayout(gpu->device, &pld);
-  if (!layout) return false;
+  if (!layout) return nullptr;
 
   WGPUShaderSourceWGSL wgsl = WGPU_SHADER_SOURCE_WGSL_INIT;
   wgsl.code = WGPUStringView{kShaderSombra, std::strlen(kShaderSombra)};
@@ -152,7 +194,7 @@ bool garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat profundidade,
   WGPUShaderModule modulo = wgpuDeviceCreateShaderModule(gpu->device, &sd);
   if (!modulo) {
     wgpuPipelineLayoutRelease(layout);
-    return false;
+    return nullptr;
   }
 
   WGPUVertexAttribute atributo = WGPU_VERTEX_ATTRIBUTE_INIT;
@@ -179,24 +221,24 @@ bool garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat profundidade,
   pd.vertex.buffers = &vbl;
   pd.primitive.topology = WGPUPrimitiveTopology_TriangleList;
   pd.primitive.frontFace = WGPUFrontFace_CCW;
-  // INVERTIDO de propósito. O `three` desenha a sombra com o lado da face
-  // trocado (`Renderer.js`: `overrideMaterial.side = _shadowSide[side]`,
-  // `FrontSide → BackSide`). Com `Back` aqui, a profundidade viria da face
-  // virada para a luz e o resultado seria acne e peter-panning.
-  pd.primitive.cullMode = WGPUCullMode_Front;
+  // Vem do MATERIAL, já com a inversão do `three` aplicada no JS (ver
+  // `shadowCullMode`): `Front` para um caster `FrontSide` (o caso comum, em
+  // que a profundidade tem de vir da face de trás, senão dá acne e
+  // peter-panning), `Back` para `BackSide` e `None` para `DoubleSide`, que o
+  // `three` desenha sem culling nenhum.
+  pd.primitive.cullMode = paraWgpu(cull);
   // Sem estágio de fragmento: depth-only.
   pd.fragment = nullptr;
   pd.depthStencil = &ds;
   pd.multisample.count = kAmostras;
 
-  r.pipeline = wgpuDeviceCreateRenderPipeline(gpu->device, &pd);
+  WGPURenderPipeline pipeline = wgpuDeviceCreateRenderPipeline(gpu->device, &pd);
   wgpuShaderModuleRelease(modulo);
   wgpuPipelineLayoutRelease(layout);
-  if (!r.pipeline) return false;
+  if (!pipeline) return nullptr;
 
-  r.formatoProfundidade = profundidade;
-  r.stride = stride;
-  return true;
+  r.pipelines.push_back(PipelineEntry{stride, cull, pipeline});
+  return pipeline;
 }
 
 }  // namespace
@@ -217,6 +259,7 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
   struct Pronto {
     const GeometryEntry* geometria;
     uint32_t slot;
+    ShadowCull cull;
   };
   std::vector<Pronto> prontos;
   prontos.reserve(total);
@@ -228,15 +271,20 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
     shadowModelViewProjection(viewProjection, itens[i].model, u.modelViewProjection);
     const uint32_t slot = static_cast<uint32_t>(prontos.size());
     wgpuQueueWriteBuffer(gpu->queue, r.uniformes, slot * kUniformSlotAlign, &u, sizeof(u));
-    prontos.push_back({geometria, slot});
+    prontos.push_back({geometria, slot, itens[i].cullMode});
   }
   if (prontos.empty()) return 0;
 
-  // Agrupa por passo do vértice para trocar de pipeline o mínimo possível.
+  // Agrupa por (cull, passo do vértice) — as duas coisas que entram no
+  // pipeline — para trocar de pipeline o mínimo possível. O cull vem primeiro
+  // porque ele tem três valores e o passo tem mais, então a ordem dá lotes
+  // maiores.
+  //
   // Note que NÃO há ordenação por profundidade: o passe é depth-only e a ordem
   // não tem efeito visual nenhum — é justamente o trabalho que o `three` paga
   // à toa (`sortObjects` default, SPEC-0245).
   std::stable_sort(prontos.begin(), prontos.end(), [](const Pronto& a, const Pronto& b) {
+    if (a.cull != b.cull) return a.cull < b.cull;
     return a.geometria->vertexStride < b.geometria->vertexStride;
   });
 
@@ -265,11 +313,20 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
 
   uint32_t desenhados = 0;
   uint32_t strideAtual = 0;
+  ShadowCull cullAtual = ShadowCull::kNone;
+  // Flag explícita em vez de confiar num par impossível de (passo, cull): o
+  // primeiro item SEMPRE precisa de `setPipeline`, e deduzir isso de valores
+  // iniciais é o tipo de armadilha que dá uma pass sem pipeline — e aí o wgpu
+  // aborta o processo.
+  bool primeiro = true;
   for (const Pronto& item : prontos) {
-    if (item.geometria->vertexStride != strideAtual) {
+    if (primeiro || item.geometria->vertexStride != strideAtual || item.cull != cullAtual) {
+      primeiro = false;
       strideAtual = item.geometria->vertexStride;
-      if (!garantirPipeline(gpu, r, formatoProf, strideAtual)) break;
-      wgpuRenderPassEncoderSetPipeline(pass, r.pipeline);
+      cullAtual = item.cull;
+      WGPURenderPipeline pipeline = garantirPipeline(gpu, r, formatoProf, strideAtual, cullAtual);
+      if (!pipeline) break;
+      wgpuRenderPassEncoderSetPipeline(pass, pipeline);
     }
     const uint32_t offset = item.slot * static_cast<uint32_t>(kUniformSlotAlign);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, r.bindGroup, 1, &offset);

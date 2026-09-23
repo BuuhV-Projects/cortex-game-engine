@@ -21,6 +21,7 @@ const ShadowGateRefusal kPerCasterOrder[] = {
     ShadowGateRefusal::kSkinnedCaster,  ShadowGateRefusal::kInstancedCaster,
     ShadowGateRefusal::kMaterialArray,  ShadowGateRefusal::kAlphaClip,
     ShadowGateRefusal::kPositionNode,   ShadowGateRefusal::kGeometryMissing,
+    ShadowGateRefusal::kUnsupportedSide,
 };
 
 }  // namespace
@@ -36,6 +37,7 @@ const char* shadowGateRefusalName(ShadowGateRefusal reason) {
     case ShadowGateRefusal::kAlphaClip: return "recorte-alfa";
     case ShadowGateRefusal::kPositionNode: return "position-node";
     case ShadowGateRefusal::kGeometryMissing: return "geometria-ausente";
+    case ShadowGateRefusal::kUnsupportedSide: return "lado-nao-reproduzivel";
   }
   return "desconhecido";
 }
@@ -87,6 +89,12 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
     const bool registered =
         presence != nullptr && geometry != kNoGeometry && presence(geometry, userData);
     if (!registered) refused = marcar(r, ShadowGateRefusal::kGeometryMissing);
+    // O lado da face vem resolvido do JS (ver `ShadowSide`). O que o passe
+    // nativo sabe desenhar são os três valores da tabela do `three`; qualquer
+    // outro recusa, em vez de virar um `cullMode` aproximado.
+    if (mirror.shadowSide(index) == kShadowSideUnsupported) {
+      refused = marcar(r, ShadowGateRefusal::kUnsupportedSide);
+    }
 
     if (refused) r.refusedCasters += 1;
   }
