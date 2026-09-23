@@ -197,3 +197,38 @@ describe('PerfTrace', () => {
     });
   });
 });
+
+describe('buildSample — percentis por seção (SPEC-0250)', () => {
+  it('guarda média e p99 junto do frame sorteado', () => {
+    const sample = buildSample({
+      timeMs: 1000,
+      frameMs: 16,
+      cpu: { render: 12.345 },
+      cpuAvg: { render: 11.111 },
+      cpuP99: { render: 28.987 },
+      draws: 100,
+      tris: 1000,
+      camera: camera(),
+      visible: [],
+    });
+    expect(sample.cpu['render']).toBeCloseTo(12.3, 1);
+    expect(sample.cpuAvg['render']).toBeCloseTo(11.1, 1);
+    // O p99 é o campo que responde à oscilação: sem ele, um frame sorteado de
+    // 12,3 ms esconderia que o pior caso típico é mais que o dobro disso.
+    expect(sample.cpuP99['render']).toBeCloseTo(29.0, 1);
+  });
+
+  it('sem as janelas do profiler, os mapas ficam vazios em vez de quebrar', () => {
+    const sample = buildSample({
+      timeMs: 0,
+      frameMs: 16,
+      cpu: { render: 1 },
+      draws: 0,
+      tris: 0,
+      camera: camera(),
+      visible: [],
+    });
+    expect(sample.cpuAvg).toEqual({});
+    expect(sample.cpuP99).toEqual({});
+  });
+});

@@ -25,6 +25,7 @@ add_executable(cortex_host
   src/main.cpp
   src/core/app_window.cpp
   src/core/crash_handler.cpp
+  src/core/frame_timing.cpp
   src/core/game_config.cpp
   src/core/gdk.cpp
   src/core/steam.cpp
@@ -297,6 +298,7 @@ add_executable(cortex_host_tests
   tests/geometry_registry_test.cpp
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
+  src/core/frame_timing.cpp
   src/core/game_config.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp

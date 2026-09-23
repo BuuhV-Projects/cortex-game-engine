@@ -12,6 +12,7 @@
 
 #include "core/app_window.h"
 #include "core/crash_handler.h"
+#include "core/frame_timing.h"
 #include "core/game_config.h"
 #include "core/gdk.h"
 #include "core/host_gpu.h"
@@ -121,7 +122,7 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
 // Enquanto a splash (ADR-0109) está no ar ela é a ÚNICA a apresentar: o frame do
 // jogo é descartado, e o jogo carrega por trás sem aparecer. Apresentar os dois
 // no mesmo vsync fazia a splash piscar, deixando o jogo vazar entre os frames.
-void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
+bool runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
               bool splashEnabled) {
   // Autoteste da premissa de profundidade do ADR-0237 (CORTEX_DEPTH_SELFTEST):
   // roda UMA vez, no primeiro frame em que já existe device, e imprime em
@@ -134,11 +135,16 @@ void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
   js.drainMicrotasks();
   shims::updateAudio();
   core::runSteamCallbacks();  // overlay/conquistas — no-op sem CORTEX_STEAM
+  // Fecha a fase `js` ANTES do present: o que se quer separar é o trabalho do
+  // jogo do tempo esperando a tela (SPEC-0249).
+  core::markFramePhase(core::FramePhase::kJs);
+  bool apresentou = false;
   if (splashEnabled && webgpu::splashPending()) {
     webgpu::splashFrame(gpu, elapsedMs);
   } else {
-    webgpu::presentIfAcquired(gpu);
+    apresentou = webgpu::presentIfAcquired(gpu);
   }
+  core::markFramePhase(core::FramePhase::kPresent);
   // Destruições adiadas de buffers/texturas: SÓ depois do present — um pass
   // gravado neste frame com o recurso ainda vivo passa na validação do submit.
   webgpu::flushDeferredDestroys();
@@ -160,6 +166,10 @@ void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
     core::appendPerfLog("heap-js=%.1fMB external=%.1fMB | arraybuffers: %s",
                          js.heapUsedMB(), js.externalBytesMB(), abStats);
   }
+  // Tudo depois do present entra em `resto`: destruicoes adiadas, contadores,
+  // o log do heap. Fica separado de `js` para nao inflar a fase do jogo.
+  core::markFramePhase(core::FramePhase::kRest);
+  return apresentou;
 }
 
 void shutdownGpu(HostGpu* gpu) {
@@ -218,6 +228,8 @@ int main(int argc, char** argv) {
   // ANTES de a surface ser configurada — configureSurface() consulta
   // renderParityCaptureEnabled() para decidir se pede CopySrc no usage.
   webgpu::initRenderParityCapture();
+  // Cronometro das fases do frame (SPEC-0249): no-op sem CORTEX_FRAME_TIMING.
+  core::initFrameTiming();
 
   HostGpu gpu;
   // Tamanho só do modo janela (CORTEX_WINDOWED); em fullscreen usa a
@@ -355,10 +367,13 @@ int main(int argc, char** argv) {
       // scope aberto o NAPI upstream corrompe a marcação do GC (ver
       // JsRuntime::HandleScope).
       core::JsRuntime::HandleScope frameScope{js.env()};
+      core::beginFrameTiming();
       running = pollEvents(js.env(), window, &gpu);
+      core::markFramePhase(core::FramePhase::kPoll);
       double elapsedMs =
           static_cast<double>(SDL_GetTicksNS() - t0) / 1'000'000.0;
-      runFrame(js, &gpu, elapsedMs, splashEnabled);
+      const bool apresentou = runFrame(js, &gpu, elapsedMs, splashEnabled);
+      core::endFrameTiming(apresentou);
     }
     webgpu::shutdownSplash();  // idempotente (a splash já se libera ao terminar)
     shims::shutdownIoPool();   // join dos workers ANTES do teardown do Hermes (M-perf-3)

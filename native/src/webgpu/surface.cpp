@@ -152,7 +152,7 @@ napi_value contextGetCurrentTexture(napi_env env, napi_callback_info) {
   return makeTextureViewMethods(env, obj);
 }
 
-void presentIfAcquired(HostGpu* gpu) {
+bool presentIfAcquired(HostGpu* gpu) {
   // ── Composição da UI em gama (ADR-0105) ──────────────────────────────────
   // Apresenta quando o jogo renderizou (ssaaPending) OU a UI foi submetida
   // (uiPending) — as telas de MENU rodam um loop só-UI, sem render do jogo.
@@ -166,14 +166,14 @@ void presentIfAcquired(HostGpu* gpu) {
     // Bloom HDR (ADR-0149): o jogo entrega a cena por `sceneHdrPending` (RT
     // própria), não pelo offscreen (ssaaPending). Qualquer um dispara o present.
     const bool gameRendered = gpu->ssaaPending || gpu->sceneHdrPending;
-    if (!gameRendered && !gpu->uiPending) return;  // nada novo
+    if (!gameRendered && !gpu->uiPending) return false;  // nada novo
     // O offscreen só é a base quando NÃO há cena HDR (a HDR já é a fonte do blit).
     if (!gpu->sceneHdrPending) {
       WGPUTextureView off = ensureOffscreen(gpu);
       if (!off) {
         gpu->ssaaPending = false;
         gpu->uiPending = false;
-        return;
+        return false;
       }
       if (!gameRendered) clearOffscreen(gpu);  // menu: base limpa (jogo não desenhou)
     }
@@ -187,34 +187,35 @@ void presentIfAcquired(HostGpu* gpu) {
     // (1 frame de transição; do próximo em diante o offscreen assume).
     WGPUTexture swap = gpu->currentTexture ? gpu->currentTexture : acquireSurfaceTexture(gpu);
     gpu->currentTexture = nullptr;
-    if (!swap) return;  // surface temporariamente indisponível → pula frame
+    if (!swap) return false;  // surface temporariamente indisponível → pula frame
     WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);
     blitToSwapchain(gpu, swapView);  // downscale + compõe a UI em gama
     wgpuTextureViewRelease(swapView);
     captureThenPresent(gpu, swap);
     wgpuTextureRelease(swap);
-    return;
+    return true;
   }
 
   // ── SSAA sem compositor de UI (host antigo / sem UI de runtime) ───────────
   if (gpu->offscreenView && gpu->configured) {
-    if (!gpu->ssaaPending) return;  // sem frame novo → não bloqueia no vsync
+    if (!gpu->ssaaPending) return false;  // sem frame novo → não bloqueia no vsync
     gpu->ssaaPending = false;
     // Mesma proteção da transição do render direto (ver acima).
     WGPUTexture swap = gpu->currentTexture ? gpu->currentTexture : acquireSurfaceTexture(gpu);
     gpu->currentTexture = nullptr;
-    if (!swap) return;
+    if (!swap) return false;
     WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);
     blitToSwapchain(gpu, swapView);
     wgpuTextureViewRelease(swapView);
     captureThenPresent(gpu, swap);
     wgpuTextureRelease(swap);
-    return;
+    return true;
   }
-  if (!gpu->currentTexture) return;
+  if (!gpu->currentTexture) return false;
   captureThenPresent(gpu, gpu->currentTexture);
   wgpuTextureRelease(gpu->currentTexture);
   gpu->currentTexture = nullptr;
+  return true;
 }
 
 }  // namespace webgpu
