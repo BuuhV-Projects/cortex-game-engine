@@ -8,7 +8,7 @@
 
 > **clearSceneAssetCaches**(): `void`
 
-Defined in: [src/scene/SceneAssets.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L82)
+Defined in: [jge-present/src/scene/SceneAssets.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/SceneAssets.ts#L82)
 
 **Despeja todos os caches de asset** do módulo (SPEC-0152): dispõe geometrias
 (incluindo a árvore BVH do raycast), materiais, texturas e libera o PCM de

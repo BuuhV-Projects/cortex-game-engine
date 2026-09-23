@@ -591,6 +591,7 @@ const VENDOR_TYPE_MODULES = {
     'SceneAssets',
     'Materials',
     'OutdoorLighting',
+    'OutlineCulling',
     'ShadowCasterCulling',
     'Water',
     'Particles',

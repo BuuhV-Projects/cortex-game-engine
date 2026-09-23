@@ -8,7 +8,7 @@
 
 > **cullShadowCasters**(`root`, `cameraPosition`, `minRatio`): [`ShadowCullStats`](../interfaces/ShadowCullStats.md)
 
-Defined in: [src/scene/ShadowCasterCulling.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L82)
+Defined in: [jge-present/src/scene/ShadowCasterCulling.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L82)
 
 Percorre `root` e liga/desliga `castShadow` por tamanho angular relativo a
 `cameraPosition`. Chamado periodicamente (não todo frame) pelo CSM do

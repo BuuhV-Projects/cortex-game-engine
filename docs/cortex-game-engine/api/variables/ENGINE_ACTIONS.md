@@ -8,7 +8,7 @@
 
 > `const` **ENGINE\_ACTIONS**: readonly [`ActionDef`](../interfaces/ActionDef.md)[]
 
-Defined in: [src/input/defaultActions.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L53)
+Defined in: [jge-present/src/input/defaultActions.ts:53](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/input/defaultActions.ts#L53)
 
 Ações da engine com os bindings de fábrica. A ordem é a de exibição na tela
 de Controles.

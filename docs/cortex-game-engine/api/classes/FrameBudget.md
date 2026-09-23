@@ -6,7 +6,7 @@
 
 # Class: FrameBudget
 
-Defined in: [src/core/frameYield.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L50)
+Defined in: [jge-present/src/core/frameYield.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L50)
 
 Orçamento de tempo entre cessões: `maybeYield()` só cede o frame quando já
 passou `budgetMs` desde a última cessão.
@@ -20,7 +20,7 @@ fatia uma da outra, e o estado morre junto com a carga.
 
 > **new FrameBudget**(`budgetMs?`): `FrameBudget`
 
-Defined in: [src/core/frameYield.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L56)
+Defined in: [jge-present/src/core/frameYield.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L56)
 
 #### Parameters
 
@@ -48,7 +48,7 @@ Trabalho entre cessões, em ms.
 
 > **get** **expired**(): `boolean`
 
-Defined in: [src/core/frameYield.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L59)
+Defined in: [jge-present/src/core/frameYield.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L59)
 
 Já passou do orçamento? (sem ceder — para decidir se vale reportar progresso)
 
@@ -62,7 +62,7 @@ Já passou do orçamento? (sem ceder — para decidir se vale reportar progresso
 
 > **maybeYield**(): `Promise`\<`void`\>
 
-Defined in: [src/core/frameYield.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L68)
+Defined in: [jge-present/src/core/frameYield.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L68)
 
 Cede o frame **se** o orçamento estourou; senão devolve sem esperar.
 
@@ -78,7 +78,7 @@ Promessa que resolve no próximo frame (ou já resolvida).
 
 > **reset**(): `void`
 
-Defined in: [src/core/frameYield.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L75)
+Defined in: [jge-present/src/core/frameYield.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/frameYield.ts#L75)
 
 Reinicia a contagem (ex.: depois de uma etapa que já cedeu por conta).
 

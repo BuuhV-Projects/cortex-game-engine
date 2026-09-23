@@ -8,7 +8,7 @@
 
 > `const` **SHADOW\_AUTHORED\_KEY**: `"cortexShadowAuthored"` = `'cortexShadowAuthored'`
 
-Defined in: [src/scene/ShadowCasterCulling.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L39)
+Defined in: [jge-present/src/scene/ShadowCasterCulling.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L39)
 
 `userData` onde fica o `castShadow` como o autor deixou.
 

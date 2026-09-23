@@ -8,7 +8,7 @@
 
 > **shouldCastShadow**(`radius`, `distance`, `minRatio`): `boolean`
 
-Defined in: [src/scene/ShadowCasterCulling.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L60)
+Defined in: [jge-present/src/scene/ShadowCasterCulling.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/ShadowCasterCulling.ts#L60)
 
 Uma malha projeta sombra neste limiar? Lógica pura (testável).
 

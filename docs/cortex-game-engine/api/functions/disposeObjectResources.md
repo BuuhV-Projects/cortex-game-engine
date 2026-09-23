@@ -8,7 +8,7 @@
 
 > **disposeObjectResources**(`root`): `void`
 
-Defined in: [src/core/AssetLoader.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L45)
+Defined in: [jge-present/src/core/AssetLoader.ts:45](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/AssetLoader.ts#L45)
 
 Dispõe os recursos de uma árvore de objetos: geometrias (incluindo a árvore
 BVH do three-mesh-bvh, se houver), materiais e texturas referenciadas. Usado

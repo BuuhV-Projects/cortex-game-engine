@@ -6,7 +6,7 @@
 
 # Class: DebugHud
 
-Defined in: [src/ui/DebugHud.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L104)
+Defined in: [jge-present/src/ui/DebugHud.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L104)
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: [src/ui/DebugHud.ts:104](https://github.com/BuuhV-Projects/cortex-ga
 
 > **new DebugHud**(`ui`, `rendererInfo?`, `profiler?`): `DebugHud`
 
-Defined in: [src/ui/DebugHud.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L121)
+Defined in: [jge-present/src/ui/DebugHud.ts:121](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L121)
 
 #### Parameters
 
@@ -48,7 +48,7 @@ Profiler por-subsistema opcional (breakdown por seção).
 
 > **get** **visible**(): `boolean`
 
-Defined in: [src/ui/DebugHud.ts:146](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L146)
+Defined in: [jge-present/src/ui/DebugHud.ts:146](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L146)
 
 Visível? O toggle do Studio (menu View) liga/desliga em runtime.
 
@@ -62,7 +62,7 @@ Visível? O toggle do Studio (menu View) liga/desliga em runtime.
 
 > **frame**(`deltaMs`): `void`
 
-Defined in: [src/ui/DebugHud.ts:161](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L161)
+Defined in: [jge-present/src/ui/DebugHud.ts:161](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L161)
 
 Alimente 1×/frame com o delta em ms (o [Game](Game.md) faz isso).
 
@@ -82,7 +82,7 @@ Alimente 1×/frame com o delta em ms (o [Game](Game.md) faz isso).
 
 > **setVisible**(`visible`): `void`
 
-Defined in: [src/ui/DebugHud.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L151)
+Defined in: [jge-present/src/ui/DebugHud.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/DebugHud.ts#L151)
 
 Mostra/esconde o HUD (some da tela e para de medir/rasterizar).
 

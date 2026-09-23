@@ -6,7 +6,7 @@
 
 # Class: Game
 
-Defined in: [src/core/Game.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L120)
+Defined in: [jge-present/src/core/Game.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L128)
 
 Facade de alto nível: cria e conecta o que todo jogo precisa — `Renderer`,
 `Scene`, câmera, `World` (ECS), `InputManager` e o `GameLoop` — e, **em
@@ -33,7 +33,7 @@ game.start()
 
 > **new Game**(`options`): `Game`
 
-Defined in: [src/core/Game.ts:246](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L246)
+Defined in: [jge-present/src/core/Game.ts:263](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L263)
 
 #### Parameters
 
@@ -51,7 +51,7 @@ Defined in: [src/core/Game.ts:246](https://github.com/BuuhV-Projects/cortex-game
 
 > `readonly` **actions**: [`InputActions`](InputActions.md)
 
-Defined in: [src/core/Game.ts:173](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L173)
+Defined in: [jge-present/src/core/Game.ts:181](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L181)
 
 **Ações de input remapeáveis** (ADR-0164) — a leitura por NOME (`jump`,
 `moveForward`, `uiConfirm`) em vez de tecla crua, com bindings que o
@@ -75,7 +75,7 @@ if (game.actions.pressed('jump')) body.jump();
 
 > `readonly` **camera**: `PerspectiveCamera` \| `OrthographicCamera`
 
-Defined in: [src/core/Game.ts:143](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L143)
+Defined in: [jge-present/src/core/Game.ts:151](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L151)
 
 Câmera principal do jogo (perspectiva em 3D/2.5D, ortográfica em 2D/pixel).
 
@@ -85,7 +85,7 @@ Câmera principal do jogo (perspectiva em 3D/2.5D, ortográfica em 2D/pixel).
 
 > `readonly` **canvas**: `HTMLCanvasElement`
 
-Defined in: [src/core/Game.ts:175](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L175)
+Defined in: [jge-present/src/core/Game.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L183)
 
 Canvas de render.
 
@@ -95,7 +95,7 @@ Canvas de render.
 
 > `optional` **editorLevels?**: readonly [`EditorLevel`](../interfaces/EditorLevel.md)[]
 
-Defined in: [src/core/Game.ts:136](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L136)
+Defined in: [jge-present/src/core/Game.ts:144](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L144)
 
 **Fases que o Studio pode abrir direto** (ADR-0186), na ordem em que devem
 aparecer. Declare no bootstrap:
@@ -117,7 +117,7 @@ Fora do Studio (jogo standalone, build de produção) fica inerte.
 
 > `readonly` **gamepad**: [`GamepadManager`](GamepadManager.md)
 
-Defined in: [src/core/Game.ts:157](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L157)
+Defined in: [jge-present/src/core/Game.ts:165](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L165)
 
 Gamepad (Xbox-first): polado automaticamente 1×/frame no início do `_tick`, antes
 dos sistemas/`onUpdate` — então qualquer System lê o estado fresco via
@@ -130,9 +130,22 @@ Y=3, LB=4, RB=5, LT=6, RT=7; eixos 0/1=stick esquerdo, 2/3=stick direito.
 
 > `readonly` **input**: [`InputManager`](InputManager.md)
 
-Defined in: [src/core/Game.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L149)
+Defined in: [jge-present/src/core/Game.ts:157](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L157)
 
 Gerenciador de input (já anexado ao `document.body`).
+
+***
+
+### outlineMinRatio
+
+> **outlineMinRatio**: `number` = `DEFAULT_OUTLINE_MIN_RATIO`
+
+Defined in: [jge-present/src/core/Game.ts:257](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L257)
+
+Limiar `raio/distância` do corte da casca de contorno (ADR-0251). `0`
+desliga o filtro e devolve a autoria. É público porque é uma escolha de
+ESTILO do jogo, não da engine: quem autora sabe a que distância o contorno
+dele deixa de ler.
 
 ***
 
@@ -140,7 +153,7 @@ Gerenciador de input (já anexado ao `document.body`).
 
 > `readonly` **pixelsPerUnit**: `number`
 
-Defined in: [src/core/Game.ts:145](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L145)
+Defined in: [jge-present/src/core/Game.ts:153](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L153)
 
 Pixels de tela por unidade de mundo (câmera ortográfica). `0` em perspectiva.
 
@@ -150,7 +163,7 @@ Pixels de tela por unidade de mundo (câmera ortográfica). `0` em perspectiva.
 
 > `readonly` **profiler**: `FrameProfiler`
 
-Defined in: [src/core/Game.ts:183](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L183)
+Defined in: [jge-present/src/core/Game.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L191)
 
 **Profiler por-subsistema do frame** (SPEC-0134) — mede `input`/`update`/
 `world`/`ui`/`render` a cada tick. Fica ligado só com o HUD de debug ativo
@@ -163,7 +176,7 @@ breakdown (`game.profiler.summary()`).
 
 > `readonly` **renderer**: [`Renderer`](Renderer.md)
 
-Defined in: [src/core/Game.ts:139](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L139)
+Defined in: [jge-present/src/core/Game.ts:147](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L147)
 
 Renderer WebGPU (auto-resize).
 
@@ -173,7 +186,7 @@ Renderer WebGPU (auto-resize).
 
 > `readonly` **scene**: [`Scene`](Scene.md)
 
-Defined in: [src/core/Game.ts:141](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L141)
+Defined in: [jge-present/src/core/Game.ts:149](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L149)
 
 Cena do jogo.
 
@@ -183,7 +196,7 @@ Cena do jogo.
 
 > `readonly` **world**: [`World`](World.md)
 
-Defined in: [src/core/Game.ts:147](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L147)
+Defined in: [jge-present/src/core/Game.ts:155](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L155)
 
 Mundo ECS — registre sistemas com `world.addSystem(...)`.
 
@@ -195,7 +208,7 @@ Mundo ECS — registre sistemas com `world.addSystem(...)`.
 
 > **get** **editorActive**(): `boolean`
 
-Defined in: [src/core/Game.ts:376](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L376)
+Defined in: [jge-present/src/core/Game.ts:393](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L393)
 
 `true` quando o editor (F2) está ativo. Use pra pausar a gameplay enquanto
 edita: `system.pauseWhen = () => game.editorActive`. `false` se não há editor
@@ -213,7 +226,7 @@ edita: `system.pauseWhen = () => game.editorActive`. `false` se não há editor
 
 > **get** **gameplayPaused**(): `boolean`
 
-Defined in: [src/core/Game.ts:385](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L385)
+Defined in: [jge-present/src/core/Game.ts:402](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L402)
 
 `true` quando a gameplay está **pausada** durante o play (pause Unity-style,
 acionado pelo transport da IDE). Combine com `editorActive` pra pausar
@@ -231,7 +244,7 @@ sistemas: `system.pauseWhen = () => game.editorActive || game.gameplayPaused`.
 
 > **get** **hasEditor**(): `boolean`
 
-Defined in: [src/core/Game.ts:367](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L367)
+Defined in: [jge-present/src/core/Game.ts:384](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L384)
 
 `true` se o editor está ligado (bundle de dev).
 
@@ -247,7 +260,7 @@ Defined in: [src/core/Game.ts:367](https://github.com/BuuhV-Projects/cortex-game
 
 > **get** **inspect**(): [`InspectCamera`](InspectCamera.md)
 
-Defined in: [src/core/Game.ts:516](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L516)
+Defined in: [jge-present/src/core/Game.ts:533](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L533)
 
 **Câmera de inspeção** (SPEC-0131): câmera de perspectiva livre pra "ver" a
 cena de qualquer ângulo por código, independente da câmera do jogo (que segue
@@ -275,7 +288,7 @@ game.inspect.clear()                                   // volta pra câmera do j
 
 > **get** **isLoading**(): `boolean`
 
-Defined in: [src/core/Game.ts:418](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L418)
+Defined in: [jge-present/src/core/Game.ts:435](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L435)
 
 O jogo está em carregamento declarado? Ver [setLoading](#setloading).
 
@@ -291,7 +304,7 @@ O jogo está em carregamento declarado? Ver [setLoading](#setloading).
 
 > **get** **sceneDataUrl**(): `string`
 
-Defined in: [src/core/Game.ts:340](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L340)
+Defined in: [jge-present/src/core/Game.ts:357](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L357)
 
 Caminho do **overlay de cena** (scene-data) da fase/cena ATUAL — é de onde o
 editor carrega e pra onde salva as edições (transform, física, scripts,
@@ -320,7 +333,7 @@ const overlay = await new SceneLoader().loadSceneFile(level.overlayUrl)
 
 > **set** **sceneDataUrl**(`url`): `void`
 
-Defined in: [src/core/Game.ts:344](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L344)
+Defined in: [jge-present/src/core/Game.ts:361](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L361)
 
 ##### Parameters
 
@@ -340,7 +353,7 @@ Defined in: [src/core/Game.ts:344](https://github.com/BuuhV-Projects/cortex-game
 
 > **get** **ui**(): [`UiLayer`](UiLayer.md)
 
-Defined in: [src/core/Game.ts:490](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L490)
+Defined in: [jge-present/src/core/Game.ts:507](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L507)
 
 **UI de runtime** (ADR-0102): HUD/menus/diálogos que funcionam idênticos
 no Studio (DOM) e no CortexNative/console (renderer) com navegação por
@@ -364,7 +377,7 @@ coins.set({ text: 'x7' });
 
 > **onSceneDataUrlChange**(`callback`): `void`
 
-Defined in: [src/core/Game.ts:354](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L354)
+Defined in: [jge-present/src/core/Game.ts:371](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L371)
 
 Registra um callback pra mudança do [sceneDataUrl](#scenedataurl) (o editor usa pra
 recarregar o overlay quando o jogo troca de fase).
@@ -385,7 +398,7 @@ recarregar o overlay quando o jogo troca de fase).
 
 > **onUpdate**(`callback`): `void`
 
-Defined in: [src/core/Game.ts:362](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L362)
+Defined in: [jge-present/src/core/Game.ts:379](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L379)
 
 Registra um callback chamado a cada frame (delta em **segundos**), antes do
 `world.tick`. É o lugar pra lógica de jogo que não está num System.
@@ -406,7 +419,7 @@ Registra um callback chamado a cada frame (delta em **segundos**), antes do
 
 > **precompile**(): `Promise`\<`void`\>
 
-Defined in: [src/core/Game.ts:689](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L689)
+Defined in: [jge-present/src/core/Game.ts:719](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L719)
 
 **Pré-aquece os pipelines** da cena ativa (SPEC-0196) — compila os shaders
 agora em vez de no primeiro frame em que cada objeto aparece, que é o que
@@ -434,7 +447,7 @@ game.start()
 
 > **reset**(`options?`): `void`
 
-Defined in: [src/core/Game.ts:725](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L725)
+Defined in: [jge-present/src/core/Game.ts:755](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L755)
 
 Reseta o jogo pra **trocar de cena/fase** sem recriar o `Game` (renderer,
 câmera e canvas continuam): para o loop, esvazia o world com `dispose` dos
@@ -478,7 +491,7 @@ const level = await showMainMenu(game, LEVELS);
 
 > **setActiveScene**(`scene`, `camera`): `void`
 
-Defined in: [src/core/Game.ts:463](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L463)
+Defined in: [jge-present/src/core/Game.ts:480](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L480)
 
 **Multi-cena:** define a cena + câmera renderizadas a cada frame. Use pra telas
 alternativas (criador de personagem, menus, troca de região) sem recriar o `Game`.
@@ -517,7 +530,7 @@ game.setActiveScene(game.scene, game.camera)      // volta pro jogo
 
 > **setDebugHud**(`enabled?`): `void`
 
-Defined in: [src/core/Game.ts:657](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L657)
+Defined in: [jge-present/src/core/Game.ts:687](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L687)
 
 Liga/desliga o **HUD de métricas** (FPS/frame ms, CPU, memória, GPU) em
 runtime — é o que o menu **View › HUD de métricas** do Studio aciona (via
@@ -540,7 +553,7 @@ alterna o estado atual.
 
 > **setLoading**(`active`): `void`
 
-Defined in: [src/core/Game.ts:410](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L410)
+Defined in: [jge-present/src/core/Game.ts:427](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L427)
 
 Declara que o jogo está **carregando** (SPEC-0219).
 
@@ -579,7 +592,7 @@ try {
 
 > **setPostFX**(`postfx`): `void`
 
-Defined in: [src/core/Game.ts:434](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L434)
+Defined in: [jge-present/src/core/Game.ts:451](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L451)
 
 Liga um pipeline de pós-processamento (tipicamente um `PostFX`) usado pra
 renderizar o JOGO — é o principal lugar pra atmosfera (bloom, vignette, tone
@@ -611,7 +624,7 @@ game.setPostFX(fx)
 
 > **start**(): `void`
 
-Defined in: [src/core/Game.ts:694](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L694)
+Defined in: [jge-present/src/core/Game.ts:724](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L724)
 
 Inicia o loop.
 
@@ -625,7 +638,7 @@ Inicia o loop.
 
 > **stop**(): `void`
 
-Defined in: [src/core/Game.ts:699](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L699)
+Defined in: [jge-present/src/core/Game.ts:729](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L729)
 
 Para o loop.
 
