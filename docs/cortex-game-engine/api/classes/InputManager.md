@@ -18,7 +18,7 @@ Defined in: [src/core/InputManager.ts:76](https://github.com/BuuhV-Projects/cort
 
 > **new InputManager**(): `InputManager`
 
-Defined in: js-game-engine/node\_modules/typescript/lib/lib.dom.d.ts:14397
+Defined in: node\_modules/typescript/lib/lib.dom.d.ts:14397
 
 #### Returns
 
