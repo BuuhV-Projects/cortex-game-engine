@@ -1,3 +1,11 @@
+# [0.58.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.57.1...v0.58.0) (2026-09-23)
+
+
+### Features
+
+* **native:** cronômetro das fases do frame do host (SPEC-0249) ([607e455](https://github.com/BuuhV-Projects/cortex-game-engine/commit/607e4551717bdb045602eceb3ed1451f7b7d1be0))
+* **perf:** grava média e p99 por seção no perf-trace (SPEC-0250) ([0e78692](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0e78692524f2e1bc27671a0a52dd22e151d69557))
+
 ## [0.57.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.57.0...v0.57.1) (2026-09-23)
 
 
