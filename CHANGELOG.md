@@ -1,3 +1,10 @@
+# [0.59.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.58.1...v0.59.0) (2026-09-23)
+
+
+### Features
+
+* **perf:** conta os recursos que NASCEM no frame (SPEC-0252) ([944a55d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/944a55d10e4fa3e4bd9c812762531e11f61b851d))
+
 ## [0.58.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.58.0...v0.58.1) (2026-09-23)
 
 
