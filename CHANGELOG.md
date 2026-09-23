@@ -1,3 +1,40 @@
+# [0.57.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.56.0...v0.57.0) (2026-09-23)
+
+
+### Bug Fixes
+
+* **adr:** revoga a decisao 2 do ADR-0244 -- o M6 nativo e o caminho certo ([1fd90ac](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1fd90ac27987746cb4fc27d927872166c596ba4e))
+* **render:** describeMaterial recusa alphaTest em vez de ignorar (SPEC-0241) ([92ffbd1](https://github.com/BuuhV-Projects/cortex-game-engine/commit/92ffbd1573981c529567ec07bb55f478868091aa))
+* **render:** invalida a sonda de profundidade e corrige a spec (SPEC-0241) ([2591df9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2591df9af550068d88a2938c5214eb5cd207bfe4))
+* **render:** le o rotulo das texturas e corrige a identificacao das passes ([5a0b96c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5a0b96c878ec790e7469593242878caf60d25fb8))
+* **render:** passe volta a desenhar (regressao do commit anterior) ([81eb573](https://github.com/BuuhV-Projects/cortex-game-engine/commit/81eb5735db9d776e3c7c814b74f22c76e6414b2e))
+* **spec:** suspende o M6 -- o criterio de 3,0 ms pode nao ser atingivel ([95e6016](https://github.com/BuuhV-Projects/cortex-game-engine/commit/95e601623d11b21194a148c18c4b25dfc79f6daf))
+
+
+### Features
+
+* **perf:** M0 medido — nao ha ganho de cache em bindings/pipelines (ADR-0237) ([9359e58](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9359e58620343d4f0dbf09bef12bd5bb3d1479a0))
+* **render:** E1-E3 do passo 2 -- material.visible por frame, registro de casters e gate de recusa (SPEC-0245) ([67ab4db](https://github.com/BuuhV-Projects/cortex-game-engine/commit/67ab4db2049e7093b9d649da3a2c72f3dd0bc610))
+* **render:** E4/E5 do M6 -- passe de sombra nativo, medido em 2,8 ms (SPEC-0245) ([4500e45](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4500e45968750b7ca8fc8e633e9b416454b29323))
+* **render:** E6 -- auditoria em vez de contagem, e a medicao do evento ([d7d9522](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d7d95222a925325593eb6d7639c5b38340093785))
+* **render:** E6 -- espelho que cresce por evento e capacidade reservada ([3ac3382](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3ac33820d1ae85f36f765a0c61f99444289ec85b))
+* **render:** E9 — o `side` do material no passe de sombra nativo (SPEC-0245) ([a4acd74](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a4acd74fb0ed91803768d6641d5b6565af4be4e1))
+* **render:** M1 — descricao de material, 89% da cena descrita (ADR-0237) ([0cb2d0a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0cb2d0a753a5a706e13399480645cd844c8cc1d3))
+* **render:** M2 — override validado no naga, chave e cache de pipeline ([867f331](https://github.com/BuuhV-Projects/cortex-game-engine/commit/867f331d8bee824b87a48e06bbb29f03ce462ef8))
+* **render:** M3 — uniformes por objeto com slot fixo (SPEC-0239) ([1b2ad76](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1b2ad768ad799e56ab75e8a3cd3ee8653329793f))
+* **render:** M4 — RenderList nativa com ordem que preserva a imagem ([e975cb4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e975cb4116ff3c31fcf667ab985ae48fdd45d63f))
+* **render:** passe nativo desenha malhas reais da cena (SPEC-0241, passo 3) ([72df165](https://github.com/BuuhV-Projects/cortex-game-engine/commit/72df165714e36c6b58d065046fae6f6813f653d8))
+* **render:** registro de geometria reusando os buffers do three (SPEC-0241, passo 2) ([375a995](https://github.com/BuuhV-Projects/cortex-game-engine/commit/375a99578588e31f9c03000823779ffeeadabe7f))
+* **render:** valida e calibra o harness de paridade visual (SPEC-0240) ([6ea45f7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6ea45f7284bced0d3dca4c4a15629708946a3af3))
+* **sombra:** M6 passo 1 -- enumerar os casters de sombra em C++ (SPEC-0245) ([64f8534](https://github.com/BuuhV-Projects/cortex-game-engine/commit/64f8534a4ddc0f3ad355853cac7c7e64172cdb24))
+* **spec:** reativa o M6 com teto medido de 5,60 ms (SPEC-0245) ([7f5552d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7f5552dec63236ca78e7b6a670ee9ab5abc27313))
+
+
+### Performance Improvements
+
+* **render:** passe nativo economiza 34 us por draw (SPEC-0241, passo 3) ([293fc50](https://github.com/BuuhV-Projects/cortex-game-engine/commit/293fc507bed4dda56cfebddb08e739f7f04c6629))
+* **render:** remede e derruba o ganho de 34 us/draw do passe nativo ([3424bb6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3424bb6aff7926e709130f4b2f3be128a8149ec1))
+
 # [0.56.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.55.0...v0.56.0) (2026-09-21)
 
 
