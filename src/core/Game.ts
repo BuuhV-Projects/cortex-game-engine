@@ -563,11 +563,17 @@ export class Game {
     // frames de atraso.
     if (++this._sinceOutlineCull >= OUTLINE_CULL_INTERVAL) {
       this._sinceOutlineCull = 0;
+      // Seção própria no profiler: esta varredura roda EM RAJADA a cada N
+      // frames e, sem medi-la, o custo dela cairia no frameMs sem aparecer em
+      // contador nenhum — que é exatamente o tipo de buraco que já custou caro
+      // nesta campanha.
+      p.begin('cull');
       const stats = cullOutlines(
         this._activeScene.getThreeScene(),
         this._activeCamera.position,
         this.outlineMinRatio,
       );
+      p.end('cull');
       debug('scene', `outlineCull: ${stats.culled}/${stats.evaluated} cascas escondidas`);
     }
     const inspectCamera = this._inspect?.active ? this._inspect : null;
