@@ -27,6 +27,7 @@ import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 import type { Renderer } from './Renderer.js';
 import type { Scene } from './Scene.js';
 import { nativePostFXHost, nativeSceneHdrSink, type NativePostFXConfig } from './nativePostFX.js';
+import { debug } from './debug.js';
 
 /** Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`. */
 export interface BloomConfig {
@@ -200,8 +201,25 @@ export class PostFX {
    * `renderer.render(...)`. No-op enquanto o backend WebGPU ainda inicializa
    * (mesma guarda do `Renderer.render`).
    */
+  /** DIAGNOSTICO TEMPORARIO (SPEC-0241). */
+  private _ramoRelatado = false;
+
   render(): void {
-    if (!this._renderer.isReady) return;
+    if (!this._renderer.isReady) {
+      if (!this._ramoRelatado) {
+        this._ramoRelatado = true;
+        debug('spike-m5', 'PostFX.render: renderer ainda nao pronto');
+      }
+      return;
+    }
+    if (!this._ramoRelatado) {
+      this._ramoRelatado = true;
+      debug(
+        'spike-m5',
+        `PostFX.render: pipeline=${this._pipeline ? 'sim' : 'nao'} ` +
+          `sceneHdr=${this._sceneHdr ? 'sim' : 'nao'} native=${this._native ? 'sim' : 'nao'}`,
+      );
+    }
     // No host, o pós-FX é do C++: a cena vai pra uma RT HDR própria e a textura é
     // entregue ao host (`__cortexSceneHdr`), que faz bloom + ACES no seu passe.
     // Se o host não devolver a textura (backend não pronto), cai no render normal

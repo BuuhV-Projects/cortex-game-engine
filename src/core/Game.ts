@@ -211,6 +211,8 @@ export class Game {
   private _systemProfile: Map<string, number> | null = null;
   private readonly _sceneMirror = new NativeSceneMirror();
   private _sceneMirrorTried = false;
+  /** DIAGNOSTICO TEMPORARIO (SPEC-0241). */
+  private _ramoRelatado: string | null = null;
   private readonly _matrixFreezeAt = matrixFreezeRequested();
   /**
    * Variante do experimento que congela só a RECOMPOSIÇÃO da matriz local,
@@ -553,6 +555,24 @@ export class Game {
       this._sceneMirror.install(this._activeScene.getThreeScene());
     }
     p.begin('render');
+    // DIAGNOSTICO TEMPORARIO (SPEC-0241, passo 0) — remover.
+    {
+      const ramo = isSplashActive()
+        ? 'splash'
+        : this._loading || isSceneBuilding(this._activeScene)
+          ? 'loading'
+          : this._inspect?.active
+            ? 'inspect'
+            : (this._editor?.activeCamera() ?? null)
+              ? 'editor'
+              : this._postfx && this._activeScene === this.scene
+                ? 'postfx'
+                : 'render-direto';
+      if (ramo !== this._ramoRelatado) {
+        this._ramoRelatado = ramo;
+        debug('spike-m5', `ramo de render do Game = ${ramo}`);
+      }
+    }
     if (this._sceneMirror.installed) this._sceneMirror.update(this._activeCamera);
     if (isSplashActive()) {
       // Splash da engine no ar (ADR-0109): o host descarta o frame do jogo, só

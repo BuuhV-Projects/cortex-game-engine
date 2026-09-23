@@ -2,6 +2,9 @@
 // render pass e queue.submit.
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 #include <vector>
 
 #include "../napi/napi_util.h"
@@ -448,8 +451,8 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
   desc.colorAttachments = attachments.data();
   WGPURenderPassDepthStencilAttachment depthAttachment =
       WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
-  if (parseDepthStencilAttachment(env, args[0], &depthAttachment))
-    desc.depthStencilAttachment = &depthAttachment;
+  const bool temProfundidade = parseDepthStencilAttachment(env, args[0], &depthAttachment);
+  if (temProfundidade) desc.depthStencilAttachment = &depthAttachment;
   WGPURenderPassEncoder pass =
       wgpuCommandEncoderBeginRenderPass(encoder, &desc);
   return makePassObject(env, pass);

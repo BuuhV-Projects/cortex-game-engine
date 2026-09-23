@@ -4,8 +4,11 @@
 // distinguir o tipo do resource sem RTTI através do napi_wrap.
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "../napi/napi_util.h"

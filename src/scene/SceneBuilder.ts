@@ -958,7 +958,6 @@ async function buildSceneInner(
   // câmera, chão do CharacterPhysicsSystem) vê TODO mesh na identidade (origem =
   // spawn do player) e "colide" com objeto distante (câmera colada no player).
   three.updateMatrixWorld(true);
-
   // Pré-aquecimento (SPEC-0196): compila os pipelines da cena montada aqui, em
   // vez de no primeiro frame em que cada material aparece. Não bloqueia o build
   // — quem quiser esperar (tela de loading) aguarda a promessa.

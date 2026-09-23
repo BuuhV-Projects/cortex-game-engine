@@ -11,9 +11,15 @@
 
 #include <node_api.h>
 
+struct HostGpu;
+
 namespace shims {
 
 // Registra __cortexSceneMirror no global.
-void registerSceneMirror(napi_env env);
+//
+// `gpu` entra porque o M6 (SPEC-0245) acrescentou `drawShadowPass`: o passe de
+// sombra nativo desenha a partir DAQUI, onde o espelho e o enumerador de
+// casters já estão, em vez de atravessar a ponte de novo com a lista pronta.
+void registerSceneMirror(napi_env env, HostGpu* gpu);
 
 }  // namespace shims

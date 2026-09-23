@@ -1,0 +1,1278 @@
+# SPEC-0245 — Passe de sombra nativo (M6)
+
+**Data:** 2026-09-22
+**Status:** aceito e CONCLUÍDO — E1 a E9 executados (o E9 fechou a pendência do `side` do material). O passe nativo é o caminho padrão do host, e o ganho remedido depois do E9 é **4,75 ms de `cpu.render`, 51 → 66 fps** (eram 2,8 ms e 58 → 70 no E8, noutra carga de máquina), contra o critério revisado de 2,5 ms. A imagem, depois do `side`: `maxChannelDiff` **2** em **0,004%** dos pixels, contra 81 e 12,4% antes — ver o fim.
+
+## Contexto
+
+O **M6** do ADR-0237 volta a ser o próximo marco. O ADR-0244 chegou a revogá-lo
+por uma conta errada e essa revogação foi desfeita, com o alvo agora **medido e
+isolado** (ADR-0244, correção de 2026-09-22):
+
+| fato | valor | como foi medido |
+| --- | --- | --- |
+| custo do passe de sombra | **~5,5 ms** | `?semCasters=1` contra baseline, com `?renderPhases=1` |
+| casters na cena | **449** | censo do grafo (`?dumpGrafo=1`) |
+| custo por caster | **~12 µs** | 5,5 ms ÷ 449 |
+| referência em C++ | **2,2 µs/draw** | spike do ADR-0232 |
+
+Nenhuma alavanca barata funciona: as cascatas já estão em 1, desligar os 61
+grupos estáticos dá 0,9 ms e quadruplicar o `casterMinRatio` dá 0,3 ms. O custo
+está distribuído pelos 449 casters — é por caster, e é isso que o C++ barateia.
+
+## Por que este marco é mais fácil que o M5
+
+O M5 falhou em três frentes, e **nenhuma das três existe aqui**:
+
+| dificuldade do M5 | no passe de sombra |
+| --- | --- |
+| oclusão contra a profundidade do `three` | **não existe** — o alvo é a `ShadowDepthTexture`, escrita só por este passe |
+| quatro modelos de sombreamento | **não existe** — o passe é depth-only, o `three` já usa um `overrideMaterial` único |
+| transparência e ordem | **não existe** — sem cor, sem blend, sem sort relevante |
+
+E o alvo é exclusivo: nada mais escreve na `ShadowDepthTexture` no frame, então
+não há o problema de convivência que travou o M5.
+
+A infraestrutura do M5 é reaproveitável e já tem teste: `geometry_registry`
+(132 checks), `uniform_pool`, `render_list` e o caminho de pipeline em
+`native/src/render/`.
+
+## Critério de aceite
+
+- **Ganho:** `cpu.render` cai pelo menos **3,0 ms** contra o baseline, medido
+  com `?bench&hold`, mesma build, medianas de ~150 amostras. (O teto é 5,5 ms;
+  3,0 ms é o mínimo que justifica o marco.)
+- **Imagem:** sem bandas na pista e sem sombra faltando, conferido pelo harness
+  do M7 (SPEC-0240) **e** por inspeção da volta inteira — as bandas da
+  SPEC-0234 passaram por uma captura antes de serem notadas.
+- **Sem regressão:** `draws` do passe principal inalterado; suíte verde.
+
+## Regras de medição (não negociáveis, custaram dois dias)
+
+1. **Comparação fina exige `?bench&hold` e a mesma build.** Sem `hold` a IA
+   pilota trechos diferentes e a variância domina.
+2. **Validar o instrumento antes de concluir dele.** Todo contador novo tem de
+   passar por um caso de resposta conhecida.
+3. **Não usar os contadores de `draws` para concluir** enquanto a divergência
+   registrada na SPEC-0243 não for resolvida. Usar tempo.
+4. **Identificar recurso pelo rótulo** (`texture.name`), nunca por dimensão.
+
+## Ordem de execução
+
+### Passo 0 — resolver a divergência dos contadores de draws
+O trace diz 66, a contagem por pass diz 234, o censo diz 449 casters. Sem isso
+não há como afirmar que o passe nativo desenhou o que devia.
+- **Pronto quando:** as três contagens se explicam mutuamente, por escrito.
+
+### Passo 1 — enumerar os casters em C++
+Reusar o espelho de cena (SPEC-0234) e o registro de geometria do M5.
+- **Pronto quando:** o C++ lista os mesmos casters que o `three` desenharia,
+  conferido contra o censo do grafo.
+
+### Passo 2 — desenhar o shadow map em C++
+Alvo: a `ShadowDepthTexture`. Depth-only, sem cor.
+- **Pronto quando:** a imagem com o passe nativo é indistinguível da anterior
+  pelo harness do M7.
+
+### Passo 3 — medir
+- **Pronto quando:** o critério de ganho acima é atingido, ou o marco é
+  encerrado com o número medido registrado, como foi feito com o M5.
+
+## O que este marco NÃO promete
+
+- Não mexe no passe principal: o M5 está encerrado (ADR-0244, decisão 1).
+- Não altera a política de casters nem o `casterMinRatio` — medidos, não valem.
+- Não resolve o bug do `three` em `ShadowNode.js` (`_cameraFrameId` é um
+  `WeakMap` acessado com colchete, então todas as câmeras compartilham o mesmo
+  slot). Fica registrado porque qualquer amortização por frame esbarra nele.
+
+## Risco ao critério de aceite, levantado em 2026-09-22 (antes de implementar)
+
+A conta que sustentava este marco — 449 casters a ~12 µs — **não vale**. O
+interruptor `?semCasters=1`, usado para isolar, desliga `castShadow` de
+qualquer objeto que o tenha, **incluindo o `sun`**: o log diz "450 objetos"
+contra 449 malhas do censo. Sem `light.castShadow` o `three` nem monta o shadow
+node, e o passe some inteiro — que é o que o `rpCallsProject` caindo de 4 para
+3 estava dizendo. Os 5,5 ms são do **passe inteiro**, não dos draws.
+
+O passe de sombra emite **66 draws** por frame, não 449. Isso põe o custo por
+draw em ~83 µs — mais que o dobro do passe principal em JS (33,5 µs/draw,
+SPEC-0227), o que é implausível como submissão pura e indica que **a maior
+parte dos 5,5 ms não é submissão**.
+
+Consequência: migrar só os draws para C++ (2,2 µs) rende **~2,1 ms**, abaixo do
+mínimo de 3,0 ms exigido acima. Pela decomposição já medida (SPEC-0243), o
+restante está em `rpProject` (1,64 ms) e no laço da RenderList da cascata
+(dentro dos 3,96 ms de `rpObjects`), onde a maioria dos itens é percorrida,
+enfileirada e descartada pelo filtro de `castShadow` — que o `three` só aplica
+**depois** da RenderList.
+
+**O marco só atinge 3,0 ms se o passe nativo substituir também a travessia e a
+montagem da lista, não apenas a submissão.** Isso é escopo maior que o descrito
+nos passos 1 a 3 e precisa ser decidido antes de qualquer implementação.
+
+## Teto do M6 MEDIDO em 2026-09-22 — o marco é viável, com folga
+
+A suspensão acima partia de uma conta da **Forma A** (migrar só os draws,
+deixando o `three` resolver objeto) aplicada a um marco escrito na **Forma B**
+(o C++ substitui o passe de sombra inteiro). São coisas diferentes e o número
+de 2,1 ms não vale para o que esta spec descreve.
+
+A conta de 2,1 ms também era **internamente contraditória**: se cada draw
+custasse os 83 µs alegados e o C++ faz por 2,2 µs, migrar 66 draws valeria
+~5,3 ms, não 2,1. As duas metades não podiam estar certas juntas.
+
+### O isolamento correto
+
+`?semPasseDeSombra=1` põe `autoUpdate = false` na `shadow` de **cada cascata**,
+o que faz o gate de `ShadowNode` pular o `renderer.render(scene, shadow.camera)`
+— **sem** tocar em `receiveShadow`, em `shadowMap.enabled` ou nos materiais. É o
+que `?semSombras=1` e `?semCasters=1` não davam: os dois desligam a luz junto e
+derrubam o subsistema inteiro, por isso batiam entre si (5,8 e 5,5 ms) sem
+serem confirmações independentes.
+
+> O interruptor precisou ser corrigido para aplicar **depois** do `_init` do
+> CSM: `this.lights` só é populado no primeiro `setup`, e a versão anterior
+> congelava zero cascatas **falhando em silêncio**. Agora ele loga quantas
+> congelou, e o log diz `1`.
+
+| fase | baseline | passe congelado | delta |
+| --- | --- | --- | --- |
+| `render` | 19,10 ms | 13,50 ms | **−5,60** |
+| `rpProject` | 4,39 ms | 2,33 ms | −2,06 |
+| `rpObjects` | 12,51 ms | 8,89 ms | −3,62 |
+| `rpCallsProject` | 4 | 3 | −1 |
+
+> Absolutos maiores que os 12,80 ms do baseline porque a sonda custa ~2,3 ms; o
+> que vale são os deltas.
+
+### Conclusão
+
+**O teto do M6 é 5,60 ms**, contra um critério de aceite de 3,0 ms — **2,6 ms de
+folga**. Para falhar, o passe nativo precisaria gastar mais de 2,6 ms, ou seja
+~39 µs por draw, contra os 2,2 µs/draw que o spike do ADR-0232 mediu e os
+0,023 ms de travessia + culling de 1.300 nós do espelho de cena (SPEC-0234).
+
+**O marco sai de suspenso e volta a executar**, na Forma B descrita nos passos
+1 a 3 — que é o que já estava escrito. A Forma A fica explicitamente fora: o
+ADR-0235 já fixou que, com o `three` montando a RenderList, a ponte cobre só
+~18% do `renderObject`.
+
+### Trabalho real identificado para o passo 1
+
+`native/src/scene/scene_mirror.h` guarda `parent`, `transform`, `radius` e
+`visible` — **não guarda `castShadow` nem geometria por nó**. Enumerar os
+casters em C++ exige estender o `NodeDesc` e ligá-lo ao `geometry_registry`. É
+incremento sobre infraestrutura que já existe e tem teste, mas é o item que
+dita o prazo.
+
+## Passo 1 EXECUTADO em 2026-09-22 — a enumeração nativa bate com o `three`
+
+### O que foi construído
+
+- `native/src/scene/shadow_caster_enumerator.{h,cpp}` — unidade PURA (sem wgpu,
+  sem NAPI) que, dado o espelho, a posição da câmera e os planos da ortho da
+  cascata, devolve a lista de nós que projetariam sombra. Reproduz os filtros do
+  `three` na ordem dele: visibilidade herdada → malha desenhável → `castShadow`
+  autorado → culling angular (SPEC-0197) → frustum da cascata.
+- `NodeDesc` ganhou `flags` (castShadow autorado, isento do culling angular,
+  `frustumCulled`, desenhável), `geometryId` e a esfera LOCAL da geometria. O
+  layout de construção foi de 14 para 20 floats por nó.
+- `shadowCasters(...)` no `__cortexSceneMirror` e `countShadowCasters(...)` no
+  `NativeSceneMirror`, com o relato por `debug('perf', …)` atrás de
+  `?contarCasters=1`.
+- **`visible` passou a viajar por frame** no buffer de sincronização (11 → 12
+  floats por nó). Ver abaixo: era um erro real, não um detalhe.
+
+### O instrumento foi validado antes de concluir dele (regra de medição 2)
+
+O número de referência não foi lido desta spec: `?contarCasters=1` envolve o
+`renderObject` e conta os draws que o `three` emite **enquanto `scene.name`
+começa com `Shadow Map [`** — o único sinal que distingue o passe de sombra de
+fora, sem identificar recurso por dimensão (regra 4).
+
+| rodada | amostras | idênticas |
+| --- | --- | --- |
+| `?bench&hold`, `minRatio` 0,15 (padrão) | 478 | **478 (100%)** — 66 × 66 |
+| `?bench&hold`, `?casterMinRatio=0` | 2.632 | **2.632 (100%)** |
+| `?bench` (IA pilotando), `?casterMinRatio=0` | 3.281 | 2.829 (86%) |
+
+**Com a cena parada a igualdade é exata**, inclusive com o filtro angular
+desligado — que é o caso mais duro, porque sem ele nada mascara um erro de
+visibilidade ou de frustum. O alvo de **66 draws** foi atingido: 66 enumerados
+contra 66 desenhados, em todas as amostras.
+
+### A divergência com a cena em movimento, explicada
+
+Os 14% de diferença enquanto a IA pilota são **do instrumento e do espelho, não
+do enumerador**, e têm duas causas medidas:
+
+1. **A cena ganha nós depois do `install`** — medido: 977 na cena contra 975 no
+   espelho. O espelho é montado uma vez e não cresce (SPEC-0234), então o
+   `three` desenha até dois casters que o C++ não pode ver. Responde por 382 das
+   449 amostras negativas (`delta −1` e `−2`).
+2. **Defasagem de um frame na ortho da cascata** — o `three` só fixa a matriz da
+   cascata dentro do `renderShadow`, e a conferência roda no `updateBefore`.
+   Some quando a câmera está parada, que é exatamente o que as duas primeiras
+   rodadas mostram.
+
+Nenhuma das duas é do enumerador, e a primeira é trabalho identificado para o
+passo 2.
+
+### O erro que a medição pegou
+
+`?casterMinRatio=0` acusou o C++ contando **até 42 casters a mais** que o
+`three`. Causa: o espelho fixava `visible` no `build` e nunca mais o atualizava,
+então tudo que o jogo escondia em runtime seguia projetando sombra do lado
+nativo. O filtro angular ligado mascarava isso (já cortava os mesmos objetos) —
+teria virado sombra de objeto escondido no passo 2. Corrigido mandando `visible`
+junto do transform, por frame.
+
+### Testes
+
+- Harness C++ (`cortex_host_tests`): **169 checks, 0 falhas** — nó invisível
+  (próprio e por herança do pai), sem `castShadow` autorado, não desenhável, o
+  limiar angular nas bordas (`>=`, não `>`), escala do nó no raio, isenção de
+  skinned/instanced, frustum da cascata (dentro, fora, encostando, e
+  `frustumCulled = false`), centro da esfera ≠ origem do nó, `visible` chegando
+  pelo frame e o vínculo com a geometria.
+- Vitest: **1.522 passando, 7 pulados, 0 falhas**.
+
+### O que fica para o passo 2
+
+1. Nó criado depois do `install` não existe no espelho (os 2 nós medidos).
+2. O enumerador conta NÓS; o `three` conta itens de RenderList. No kart-racer
+   dá no mesmo (0 malhas com material em array), mas uma cena com material
+   multi-grupo divergiria — o passo 2 precisa do `drawCount` por nó.
+3. `material.visible` é fotografado no `build`, não sincronizado.
+4. Os diagnósticos `?contarCasters=1` (sonda de `renderObject` e deriva de nós)
+   são TEMPORÁRIOS e saem quando o passo 3 fechar a medição.
+
+### Nota para o passo 2 — o passe de sombra ordena à toa
+
+O engine nunca toca em `sortObjects` (zero ocorrências em `src/`), então o
+shadow pass roda com o default `true` do `three`. Ele paga duas multiplicações
+de `Matrix4` por malha (`Renderer.js`, no `_projectObject`) mais o `Array.sort`
+da RenderList **para ordenar um passe depth-only**, onde a ordem não tem efeito
+visual.
+
+Quando o C++ assumir o passe (passo 2), esse custo desaparece por construção —
+não há por que ordenar. Fica registrado como micro-ajuste disponível
+(estimativa de 0,05 a 0,15 ms) caso o marco precise de margem para o critério.
+
+## Investigação do passo 2 (2026-09-22) — achados que mudam o plano
+
+### O critério de aceite apontava para código que não estava versionado
+
+A frase "conferido pelo harness do M7 (SPEC-0240)" pressupunha um harness
+pronto. Uma busca em **todas** as branches não achou nenhum
+`render_parity_capture`: a branch `feat/m7-paridade-visual` tinha só o `.md`.
+
+O código **existia**, não commitado, na árvore da worktree do M7 — a um
+`git worktree remove` de ser perdido. Foi preservado em `b2443dcf` naquela
+branch, com a ressalva de que **não foi reverificado**: não compilei nem rodei
+o harness, e a afirmação de outra sessão de que ele mediu "piso de ruído zero"
+não foi reproduzida.
+
+**Consequência:** construir o passo 1 do M7 (captura + comparador calibrado) é
+**pré-requisito** do passo 2 deste marco. Sem `pctPixelsAboveNoiseFloor`
+calibrado, "imagem indistinguível" não é critério de aceite — é uma frase.
+
+### O `three` desenha a sombra com o lado da face INVERTIDO
+
+`Renderer.js`, no caminho de `isShadowPassMaterial`:
+`overrideMaterial.side = material.shadowSide ?? _shadowSide[material.side]`,
+ou seja `FrontSide → BackSide`. Um passe nativo com `cullMode = Back` — o
+natural, e o que o `native_pass.cpp` do M5 usa — escreveria a profundidade da
+**face errada**, produzindo acne e peter-panning. O passe nativo tem de usar
+**`cullMode = Front`**.
+
+O mesmo bloco copia `alphaTest`/`alphaMap` e o `positionNode` do material para
+o passe de sombra. Caster com recorte alfa ou deslocamento de vértice **não é
+reproduzível** hoje em C++ e tem de ser **recusado**, não aproximado.
+
+### A defasagem de um frame é estrutural
+
+Os `ShadowNode` internos (que desenham) rodam **antes** do `CSMShadowNode` (que
+posiciona as cascatas), porque a ordem de `updateBefore` é a de registro, e os
+filhos são registrados primeiro. O shadow map do frame N sai com as cascatas
+colocadas no frame N−1. Não é acidente a corrigir: é a ordem do `three`.
+
+### Desligar o passe do `three` quebra três coisas que temos de repor
+
+Com `autoUpdate = false` e `needsUpdate = false` por cascata:
+
+1. **`shadow.updateMatrices` deixa de ser chamado** → o uniforme
+   `lightShadowMatrix` **congela**, e a sombra fica presa ao mundo de um frame
+   antigo. Falha silenciosa e visual. Quem passa a chamar é o nosso preparo por
+   frame — e é bom que seja o mesmo `updateMatrices`, porque garante que o mapa
+   e o amostrador usam a mesma ortho.
+2. **`shadowMap.setSize` deixa de rodar** → mudar `shadow.mapSize` em runtime
+   não redimensiona mais nada.
+3. **A RT de cor deixa de ser limpa** → irrelevante com PCF/PCFSoft, mas passa
+   a importar com VSM. Vira guarda: recusar assumir se o tipo for `VSMShadowMap`.
+
+### As pendências do passo 1, reclassificadas
+
+| pendência | bloqueia? |
+| --- | --- |
+| nó criado depois do `install` não existe no espelho | **sim** — antes era erro de contagem, agora vira **sombra faltando**, porque ninguém mais desenha o que o C++ não vê |
+| `material.visible` fotografado no `build` | **sim** — é o mesmo erro do `visible` corrigido no passo 1, e o `three` o reavalia todo frame |
+| `drawCount` por nó | não nesta cena (zero materiais em array, medido), mas tem de virar **recusa** |
+
+### Plano do passo 2
+
+**E0** construir o comparador de imagem (M7 passo 1) — sem oráculo não há
+aceite. **E1** `material.visible` por frame no sync. **E2** registrar a
+geometria de todos os casters (hoje só o caminho `?nativePass=N` povoa o
+registro). **E3** o **gate de recusa** antes de desenhar: skinned, instanced,
+material em array, `alphaTest`/`alphaMap`, `positionNode`, geometria ausente,
+VSM, ou divergência de nós entre cena e espelho — recusar devolve o passe ao
+`three`. **E4** preparo por frame em JS (`updateBefore` do CSM →
+`updateMatrices` por cascata → viewProj em `Float64Array`, nunca `Float32`).
+**E5** o passe depth-only em C++, com `cullMode = Front`. **E6** desligar o
+passe do `three`, só com E3–E5 verdes. **E7** remover o trabalho órfão
+(`cullShadowCasters` em JS, sort do shadow pass). **E8** medir e limpar os
+diagnósticos.
+
+### O que ainda não se sabe, e precisa de caso de resposta conhecida
+
+1. **Se o submit do passe nativo precede, na fila, a leitura pelo passe
+   principal.** A SPEC-0242 provou *depth attachment* entre command buffers —
+   **não** amostragem de textura. Extrapolar entre os dois é exatamente o que
+   custou dois dias no M5. Exige teste próprio: escrever um valor conhecido no
+   mapa e conferir a sombra correspondente.
+2. **Quem cria os 2 nós que aparecem depois do `install`.** Medido, não
+   identificado. Sem isso o gate é rede, não conserto.
+3. **Se chamar `CSMShadowNode.updateBefore` por nós é idempotente.** A leitura
+   diz que sim; `updateFrustums`/`_initCascades` têm estado e isso não foi
+   provado.
+4. **Se o `GPUTexture` da `ShadowDepthTexture` chega a existir** quando o
+   `three` nunca renderiza nela.
+5. **Quanto o C++ vai custar.** O teto de 5,60 ms é do `three`. Os 2,2 µs/draw
+   vêm de um spike isolado, e os 34 µs/draw do M5 **não se reproduziram**. A
+   folga de 2,6 ms é plausível, **não medida**.
+
+## E1, E2 e E3 EXECUTADOS em 2026-09-22 — o gate recusa o kart-racer por 2 nós
+
+### O que foi construído
+
+- **E1 — `material.visible` por frame.** Era o mesmo erro do `visible` do
+  objeto corrigido no passo 1: o valor era fotografado no `build` e nunca mais
+  olhado, enquanto o `three` o reavalia em toda travessia. O slot 11 do buffer
+  de sincronização virou um **campo de bits** (`SyncFlag`: `kSyncVisible`,
+  `kSyncMaterialVisible`), então o estado novo entrou **sem alargar a linha**
+  nem renumerar o layout. `kNodeDrawable` passou a significar só o que não
+  muda — malha com geometria.
+- **E2 — `src/render/CasterGeometryRegistry.ts`.** Registra a geometria de
+  **todas** as malhas da cena, não só as do caminho `?nativePass=N`. Três
+  cuidados: registro **preguiçoso** (os `GPUBuffer` são do `three` e só existem
+  depois do upload, então quem falha é tentado de novo nos frames seguintes);
+  **invalidação** no `dispose` da `BufferGeometry` — seguro com folga, porque o
+  `destroy` de buffer do host é adiado em 10 frames (ADR-0153); e registro **por
+  geometria**, não por malha (as quatro rodas de um carro compartilham uma
+  `BufferGeometry`). A varredura é deliberadamente larga e **não olha
+  `castShadow`**: o filtro angular liga e desliga esse campo a cada 10 frames, e
+  restringir ali deixaria de fora justamente a malha que volta a projetar no
+  frame seguinte.
+- **E3 — `native/src/scene/shadow_pass_gate.{h,cpp}`.** Unidade PURA que
+  responde se o passe nativo pode assumir o frame. A consulta ao
+  `GeometryRegistry` entra por **ponteiro de função**, porque o registro arrasta
+  `webgpu.h` e depender dele tiraria o gate do `cortex_host_tests`. O veredito
+  traz o motivo, a contagem por motivo (todos, não só o primeiro) e os casters
+  recusados; o log por `debug('perf', …)` sai só quando o veredito **muda**.
+  Ligado por `?gateSombra=1`, separado do `?contarCasters=1` — a sonda de
+  `renderObject` daquele é cara demais para ficar ligada junto.
+
+`NodeFlag` passou de 8 para **16 bits**: os motivos de recusa levaram a lista a
+nove bits, e estourar em silêncio faria o gate **aceitar** um caster que devia
+recusar — a falha exatamente na direção errada.
+
+### O veredito no kart-racer: RECUSA, por divergência de nós, em 2 objetos
+
+`?bench&hold&gateSombra=1`, 90 s, host recompilado:
+
+```
+[casterGeometry] registradas=148 pendentes=44
+[shadowGate] RECUSA motivo=divergencia-de-nos objetos=2 casters=66
+             recusados=0 geometrias=148 pendentes=44 [divergencia-de-nos=2]
+```
+
+O número é **informação de projeto, não falha**. O que ele diz:
+
+| fato | valor | leitura |
+| --- | --- | --- |
+| casters enumerados | **66** | o mesmo alvo do passo 1 |
+| casters recusados por condição própria | **0** | nenhum skinado, instanced, material em array, recorte alfa ou `positionNode` entre os casters |
+| geometria ausente entre os casters | **0** | o registro preguiçoso cobriu todos |
+| divergência cena × espelho | **2** | os mesmos 2 nós medidos no passo 1 (977 × 975) |
+
+**A única coisa entre o kart-racer e o passe nativo são os 2 nós que a cena
+ganha depois do `install`.** Todo o resto do gate passa. Isso reordena o que
+falta: identificar quem cria esses 2 nós deixa de ser "rede, não conserto" (o
+que ainda não se sabe, item 2) e passa a ser **o bloqueio único** do E6.
+
+As 44 geometrias que ficam pendentes são malhas que o `three` nunca desenhou, e
+portanto nunca subiu — nenhuma delas pertence a um caster, senão
+`geometria-ausente` não seria 0.
+
+### A enumeração continua batendo com o `three` depois do E1
+
+`?bench&hold&contarCasters=1`, mesma build: **2.994 amostras, 2.939 idênticas**.
+As 55 restantes são todas `66 vs 0` — frames em que a sonda ainda não tinha
+draws do frame anterior para reportar, não divergência do enumerador.
+Descontadas essas, **2.939/2.939 (100%)**, 66 × 66.
+
+### Testes
+
+- Harness C++ (`cortex_host_tests`): **266 checks, 0 falhas** — cada condição do
+  gate isolada (skinned, instanced, material em array, recorte alfa,
+  `positionNode`, geometria ausente, registro inexistente, divergência nas duas
+  direções e sem caster nenhum, VSM), mais prioridade entre motivos, contagem
+  por motivo e `material.visible` chegando pelo frame e pelo `build`.
+- Vitest: **1.541 passando, 7 pulados, 0 falhas**.
+
+> Um erro pego pela própria medição: a primeira rodada relatou `casters=0
+> recusados=66`, aritmeticamente impossível. Causa: `kShadowGateRefusalCount`
+> estava em 8 para um enum de 9 valores, então a contagem do último motivo caía
+> **fora** do array, em cima do campo seguinte — e o `cortex_host.exe` usado
+> naquela rodada fora compilado antes da correção. Vale como caso de resposta
+> conhecida: um relato internamente contraditório é o sinal barato de que o
+> instrumento está errado.
+
+### O que fica para o E4 e o E5
+
+1. **E4** — preparo por frame em JS: `updateBefore` do CSM → `updateMatrices`
+   por cascata → viewProj em `Float64Array`, nunca `Float32`.
+2. **E5** — o passe depth-only em C++, com **`cullMode = Front`** (o `three`
+   inverte o lado da face no passe de sombra).
+3. O `sceneNodeCount` que alimenta o gate é medido no intervalo do culling (10
+   frames), não por frame, porque percorrer ~1.300 nós é o custo que o marco
+   quer eliminar. Um nó criado entre duas contagens só aparece para o gate até
+   10 frames depois — aceitável enquanto o `three` ainda desenha a sombra, e
+   coisa que o **E6** precisa resolver antes de desligá-lo.
+4. `?gateSombra=1` e `?contarCasters=1` continuam TEMPORÁRIOS e saem no E8.
+
+## E6 — o espelho e os nós que nascem depois (2026-09-22)
+
+### Os 2 nós estáveis são do `three`, não do jogo
+
+São os placeholders de cascata do CSM: `CSMShadowNode.updateBefore` faz
+`parent.add(lwLight.target); parent.add(lwLight)` quando `lwLight.parent` é
+nulo — 2 por cascata, e o kart-racer usa 1. `LwLight extends Object3D`, sem
+geometria; um deles tem `castShadow = true`, que é marcação do `three`, não
+intenção de desenhar.
+
+### A janela de aceite existe, mas não pela causa que se supôs
+
+Não há frame com a divergência "não conferida": o bloco do culling dispara no
+primeiro frame de câmera perspectiva e grava a contagem **antes** do gate. O
+problema é outro e é pior: os `lwLight` são adicionados **dentro** de
+`super.updateBefore`, que roda **depois** da contagem. A primeira contagem vê
+975 = 975 e o gate **aceita**; a divergência só aparece 10 frames depois.
+**A conferência é feita antes da mutação que ela deveria pegar.**
+
+### O crescimento da cena tem teto — e o míssil é caster por transitório
+
+Os visuais de kart (escudo, faíscas, chama) são criados por
+`shieldTime > 0 || drifting || boostTime > 0` e **nunca removidos** (a única
+remoção está no `dispose`; o `reset` só faz `visible = false`). Mas o total é
+**limitado**: `4 + escapamentos × (4|5)` por carro, uma vez só. O que nasce e
+morre sem parar são os *hazards* (óleo, projétil), que cabem num pool.
+
+O projétil tem `castShadow` autorado, e o `missile.glb` tem **4 primitives** —
+4 malhas casters, não uma. Medidos os raios do glb, só a primitive 1
+(raio 1,1665, razão 0,159 a 7,34 m) passa o `shadowCasterMinRatio: 0.15`, com
+6% de margem, e sai da faixa em 7,78 m — cerca de um frame a 42 m/s.
+
+**Mas o motivo de ele projetar sombra é outro:** entre o nascimento e a
+primeira passada do `cullShadowCasters` (a cada 10 frames), `castShadow` fica
+no valor **autorado**. O míssil projeta sombra por **até 10 frames, com filtro
+ou sem ele**. O estado estável é desligado; o transitório é ligado — o inverso
+do que se havia registrado.
+
+Os demais efeitos nascem com `castShadow` default `false` e nunca projetam.
+
+### Por que "espelho que cresce por rebuild" foi descartado
+
+1. **A detecção proposta tinha o mesmo defeito da rival.** Marcar no `install`
+   e contar não-marcados roda **na mesma travessia amortizada de 10 frames**.
+   Nos ≤10 frames em que o míssil é caster novo, as duas aceitam igualmente. E
+   promover essa travessia a por-frame é percorrer ~1.300 nós — exatamente o
+   custo que o marco existe para eliminar.
+2. **O rebuild não é só caro: é `use-after-free` silencioso.** `install()` não
+   tem caminho de rebuild, `SceneMirror::build` faz `resize`/`assign` em onze
+   vetores (o `worldData()` muda de endereço), e o external ArrayBuffer é
+   criado **sem finalizer**, de propósito. O próprio header avisa: *"o vetor
+   não pode realocar enquanto o JS segura o buffer"*. Qualquer `Object3D` não
+   reapontado fica com `matrixWorld.elements` sobre memória liberada — e a
+   SPEC-0234 registra que erro nessa fronteira aparece como artefato visual,
+   não como exceção.
+3. **Não há medição de rebuild no repo.** Os 0,023 ms da SPEC-0233/0234 são
+   travessia+culling em C++, não rebuild.
+
+### A saída
+
+1. **Detecção por evento.** O `three` dispara `childadded`/`childremoved` no
+   pai, e o dispatch é early-return quando não há listener — custo zero para
+   quem não escuta. Instalando o listener nos nós espelhados durante o
+   `install`, o gate sabe da mutação **no frame em que ela acontece**, O(1) por
+   evento. É a **única** forma que fecha a janela dos 10 frames: nem contagem
+   de nós nem contagem de casters fecham.
+2. **Capacidade reservada, não rebuild.** `reserve()` com folga nos vetores do
+   `SceneMirror` antes do `build` faz o append não realocar: os `subarray` já
+   entregues seguem válidos e só o nó novo precisa ser apontado. Rebuild vira
+   exceção (estouro de capacidade), com invalidação explícita.
+3. **Duas passes no mesmo mapa (`loadOp: load`): sim, mas só na forma estreita.**
+   Serve para uma lista explícita de poucos nós efêmeros. **Não** serve na
+   forma "o `three` desenha a sombra do resto": se ele volta a percorrer a cena
+   e montar a RenderList, os 2,06 ms de `rpProject` ficam de pé, o teto cai de
+   5,60 para ~3,5 ms e provavelmente fura o aceite de 3,0 ms. É a Forma A que o
+   ADR-0235 já descartou.
+
+### O que exige medição antes de virar código
+
+- Custo do dispatch de `childadded` com ~1.000 listeners, e se algum caminho do
+  `three` escapa do evento (`attach`, `clear`, `copy`, remoção em massa).
+- Custo real de append com capacidade reservada.
+- Se o míssil chega mesmo ao shadow map: a razão 0,159 está 6% acima do limiar
+  e foi calculada do glb, não do `boundingSphere` que o `three` computa em
+  runtime com a escala do nó.
+- Se o depth sobrevive entre a pass nativa e a pass dos efêmeros **na
+  `ShadowDepthTexture` real** — a SPEC-0242 provou num alvo sintético, e
+  extrapolar entre os dois é o erro que custou dois dias no M5.
+
+## E4, E5 e E6-parcial EXECUTADOS em 2026-09-22 — o M6 entrega 2,8 ms, abaixo dos 3,0
+
+### O que foi construído
+
+- **E5 — `native/src/render/shadow_pass.{h,cpp}`.** Passe depth-only em C++.
+  Derivado do `native_pass.cpp` do M5, com as três diferenças que a
+  investigação do passo 2 tinha previsto: **sem attachment de cor**
+  (`colorAttachmentCount = 0`, e sem estágio de fragmento no pipeline — um
+  fragmento que não escreve nada custaria uma invocação por pixel coberto);
+  **`cullMode = Front`**, porque o `three` inverte o lado da face no passe de
+  sombra; e `depthClearValue = 1.0`, `depthCompare = Less`, `depthWrite = true`.
+  A view da textura é criada e liberada **por chamada**, nunca cacheada: a
+  textura é recriada quando o `mapSize` muda.
+- **`native/src/render/shadow_math.h`.** `viewProj × model` em `double`, com a
+  conversão para `float` **só no resultado**. Vive num header próprio, sem
+  wgpu, para o harness conseguir exercitá-lo — uma matriz errada aqui não daria
+  erro, daria sombra no lugar errado.
+- **Ponte: `__cortexSceneMirror.drawShadowPass(...)`.** Uma travessia por
+  cascata por frame faz tudo o que o `three` fazia por objeto: enumera os
+  casters (passo 1), passa pelo gate (E3) e desenha. O `viewProj` atravessa em
+  `Float64Array`. O alvo é o `GPUTexture` de `shadow.map.depthTexture`, obtido
+  por **identidade do objeto** (`backend.get(...)`) e **reaquirido por frame**;
+  o rótulo `'ShadowDepthTexture'` entra só como **asserção**. A heurística
+  `cenaAlvo()` de `commands.cpp` não é usada.
+- **E4 — preparo por frame**, em `CameraFollowingCSM.updateBefore`, depois do
+  `super.updateBefore`: `shadow.updateMatrices(cascata)` **por cascata**
+  (obrigatório — com o passe do `three` desligado, ninguém mais chama isso e o
+  uniforme `lightShadowMatrix` congela, prendendo a sombra ao mundo de um frame
+  antigo), `viewProj` em `Float64Array`, e a chamada do passe.
+- **E6 (parcial) — `autoUpdate = false` por cascata**, aplicado **depois** do
+  desenho e só quando ele deu certo. Um frame em que o nativo recusa devolve
+  `autoUpdate = true` e o `three` redesenha: a falha é para o lado seguro.
+- **`?passeDeSombraNativo=1`** liga o passe; **`?forcarPasseDeSombra=1`** é o
+  ATALHO DE MEDIÇÃO que ignora a recusa por `divergencia-de-nos` — e **só**
+  ela, garantido por `refusalIsOnlyNodeDivergence`, que devolve `false` se
+  qualquer outro motivo tiver contagem. Não pode virar padrão.
+
+> **Desvio do plano, deliberado.** O E4 estava escrito para o `Game.ts`, depois
+> do `sceneMirror.update(camera)`. Ficou em `CameraFollowingCSM.updateBefore`,
+> depois do `super`, porque ali as quatro condições já estão satisfeitas — as
+> matrizes de mundo do frame já foram propagadas, as cascatas já foram
+> posicionadas pelo `super`, a cena/renderer/câmera estão em mãos e o desenho
+> acontece antes da pass principal do frame. Fazer no `Game.ts` exigiria
+> **chamar `csm.updateBefore` à mão**, e a idempotência disso é o item 3 da
+> lista "o que ainda não se sabe" desta spec — trocar um desvio conhecido por
+> um risco não medido não valia.
+
+### A imagem: 0,125% dos pixels, nenhum acima de 28 níveis
+
+Harness da SPEC-0240, `?bench&hold`, 32 pares por comparação, janela oculta.
+
+**O instrumento foi validado antes, e a primeira tentativa acusou ruído.** Com
+o export `--debug`, duas rodadas do MESMO caminho divergiram em 0,058% dos
+pixels, com pico de 194. A caixa dos pixels divergentes é `x 52..167`,
+`y 942..1052` — o **HUD de métricas**, que o `--debug` liga e cujo texto de
+FPS/ms muda a cada rodada. O piso de ruído zero da SPEC-0240 **só vale sem o
+HUD**. Refeito com um export sem `--debug`, o controle voltou a **0,000000%,
+`maxChannelDiff = 0`** em 32 pares.
+
+| comparação | `maxChannelDiff` | `pct` acima do piso 0 |
+| --- | --- | --- |
+| `three` × `three` (controle, sem HUD) | **0** | **0,000000%** |
+| `three` × nativo | **28** | **0,124662%** |
+| referência: deslocamento de câmera de 1e-4 m (SPEC-0240) | 109 | 0,443769% |
+
+Todos os 2.073.600 pixels caem na primeira faixa do histograma (`[0, 31]`):
+**nenhum pixel difere mais de 28 níveis em canal nenhum**. A curva por piso:
+0,034% acima de 4, 0,012% acima de 8, 0,0035% acima de 16, 0,00015% acima de 24.
+
+Os pixels divergentes são **localizados**, não espalhados: a caixa é
+`x 0..406`, `y 77..238` — a folhagem dos ipês distantes e o arco da ponte, na
+borda da auto-sombra. Ampliado 8×, o diff da tela inteira é praticamente preto.
+**Nenhuma sombra falta e nenhuma banda aparece** — uma sombra ausente produziria
+diferenças de 100+ em área larga, como a referência do deslocamento de câmera
+mostra.
+
+**Limiar proposto para caminho-contra-caminho** (a SPEC-0240 registra que o
+`delta = 0` não serve aqui, e não arbitra número):
+`RENDER_PARITY_CROSSPATH_CHANNEL_DELTA = 32` com `MAX_OUTLIER_PCT = 0%` — ou
+seja, "nenhum pixel pode diferir mais que 31 níveis". Sai do medido (o pior foi
+28, e 32 é a borda da primeira faixa do histograma), é estrito o bastante para
+pegar sombra faltando ou deslocada numa borda de contraste (a referência
+legítima já bate 109) e **não** é um número de compromisso. Vale para esta cena
+e esta máquina; recalibrar é trabalho manual, como a SPEC-0240 registra.
+
+**A causa da diferença residual não foi isolada.** Dois candidatos, nenhum
+medido: (1) precisão do MVP — o nosso é composto em `double`, o do `three` passa
+por `modelViewMatrix` em `float32`, então parte da diferença pode ser o nativo
+estar **mais** certo; (2) materiais `DoubleSide` entre os casters — o `three`
+mapeia `DoubleSide → DoubleSide` no passe de sombra (sem culling) e o passe
+nativo culla `Front` em todo mundo, o que muda a face que escreve profundidade
+numa malha aberta. O espelho não guarda o `side` do material, então hoje isso
+não é nem reproduzível nem recusável. **Fica como pendência do E7.**
+
+### O ganho: 2,8 ms medidos, contra um critério de 3,0 ms
+
+`?bench&hold`, mesma build, seis rodadas **intercaladas** (base, nativo, base,
+nativo…) de 70 s cada, medianas de ~119 amostras por rodada, só amostras da
+cena da pista.
+
+| rodada | base | nativo | delta |
+| --- | --- | --- | --- |
+| 1 | 14,3 | 10,6 | 3,7 |
+| 2 | 13,1 | 10,4 | 2,7 |
+| 3 | 13,8 | 10,3 | 3,5 |
+| 4 | 13,5 | 10,6 | 2,9 |
+| 5 | 13,2 | 10,8 | 2,4 |
+| 6 | 13,0 | 10,4 | 2,6 |
+| **mediana** | **13,35** | **10,50** | **2,8** |
+
+Teto (`?semPasseDeSombra=1`, duas rodadas): **9,7 ms** nas duas — o passe do
+`three` custa **3,65 ms** nesta metodologia, e o passe nativo custa **0,8 ms**.
+
+`fps` mediano: **63 → 75** (+19%).
+
+Com `?renderPhases=1` ligado, a decomposição:
+
+| fase | base | nativo | teto |
+| --- | --- | --- | --- |
+| `render` | 13,4 | 10,8 | 9,9 |
+| `rpProject` | 2,627 | 1,574 | 1,566 |
+| `rpObjects` | 8,988 | 7,325 | 6,472 |
+| `rpCallsProject` | **4** | **3** | **3** |
+| `draws` | **261** | **195** | **195** |
+
+Duas confirmações independentes de que o `three` realmente parou de desenhar a
+sombra: `rpCallsProject` cai de 4 para 3, e `draws` cai de 261 para 195 — **66
+exatos**, o mesmo número que o passo 1 enumerou. E `rpProject` do nativo é
+igual ao do teto (1,574 × 1,566), enquanto `rpObjects` fica 0,85 ms acima: é ali
+que o custo do passe nativo aparece.
+
+### A mediana precisou de um filtro, e a falta dele deu um relato contraditório
+
+A primeira rodada sem a sonda relatou o passe nativo **mais caro** que o
+baseline (15,1 contra 12,6 ms) enquanto a rodada com a sonda relatava o
+contrário (10,8 contra 13,4). Relato internamente contraditório é o sinal
+barato de instrumento errado — e era.
+
+O `perf-trace.jsonl` amostra desde o boot, então a mediana estava misturando
+**duas cenas**: a de carregamento (`draws = 0`, `nodesTotal = 906`, câmera em
+outro lugar) e a da pista (`draws = 261`, `nodesTotal = 977`). Quanto mais
+tempo uma rodada passa carregando, mais a mediana escorrega para a população
+errada. Descartar um número fixo de amostras iniciais **não** resolve: o tempo
+de carga varia entre rodadas. O filtro que resolve é por **estado de cena**
+(`draws >= 100`), e foi ele que fez as seis rodadas intercaladas concordarem.
+
+### O teto de 5,60 ms desta spec NÃO se reproduz sem a sonda
+
+O teto registrado acima era 5,60 ms, medido **com `?renderPhases=1`**. Sem a
+sonda o mesmo isolamento dá **3,65 ms**. A spec já avisava que os absolutos com
+a sonda não valem; o que não estava previsto é que o **delta** também não vale:
+a sonda embrulha `_projectObject` e `renderObjects`, que o passe de sombra
+chama dezenas de vezes por frame, então ela **amplifica justamente a fatia que
+o isolamento remove**. Um delta medido com a sonda superestima o que a remoção
+vale de verdade.
+
+Consequência direta: **o marco nunca teve 2,6 ms de folga.** O teto real é 3,65
+ms contra um critério de 3,0 — 0,65 ms de folga —, e o passe nativo consome 0,8
+ms dela.
+
+### Veredito do M6: 2,8 ms — não atinge os 3,0 ms
+
+O passe nativo funciona, a imagem é indistinguível pelo limiar proposto, o
+`three` comprovadamente parou de desenhar a sombra e o ganho é real (+19% de
+fps). Mas o número é **2,8 ms**, abaixo do mínimo de 3,0 que este marco fixou, e
+o que ainda dá para ganhar **dentro** do passe de sombra é 0,8 ms.
+
+Para cruzar os 3,0 ms o ganho teria de vir de **fora** do passe: o **E7**
+(trabalho órfão) é o único candidato com custo identificado — com o nativo
+enumerando e filtrando por conta, o `cullShadowCasters` em JS percorre ~1.300
+nós a cada 10 frames para mutar um `castShadow` que ninguém mais lê. Pela
+travessia medida na SPEC-0234 (~1,4 ms para 1.300 nós em JS), isso vale ~0,14
+ms/frame amortizado — **não basta sozinho**.
+
+### Testes
+
+- Harness C++ (`cortex_host_tests`): **301 checks, 0 falhas** (eram 266) — o
+  atalho de medição nas quatro combinações (divergência sozinha, divergência
+  com outro motivo junto, frame aceito, outro motivo sozinho) e a matriz do
+  passe (identidade, não-comutatividade, ponto de resposta conhecida, precisão
+  a 800 m da origem).
+- Vitest: **1.541 passando, 7 pulados, 0 falhas**.
+
+### O que fica em aberto
+
+1. **O atalho `?forcarPasseDeSombra=1` é temporário** e não pode virar padrão.
+   Sem ele o gate segue recusando o kart-racer por 2 nós, que é o comportamento
+   correto enquanto a divergência não for resolvida por evento (E6).
+2. **`side` do material não é espelhado**, então caster `DoubleSide` não é nem
+   reproduzido nem recusado — candidato à diferença residual da imagem.
+3. **E7** — trabalho órfão (`cullShadowCasters`, sort do shadow pass) — e
+   **E8** — remover `?contarCasters=1`, `?gateSombra=1` e os diagnósticos.
+4. O `shadowMap.setSize` deixa de rodar com o passe do `three` desligado: mudar
+   `shadow.mapSize` em runtime não redimensiona mais nada.
+
+## CORREÇÃO em 2026-09-22 — o teto de 5,60 ms desta spec estava errado
+
+O teto foi medido **com a sonda de fases ligada** (`?renderPhases=1`) e tratado
+como grandeza absoluta. A spec até registrou que "a sonda custa ~2,3 ms; o que
+vale são os deltas" — mas **o delta também está distorcido**, e por um motivo
+que só apareceu agora: a sonda embrulha `_projectObject` e `renderObjects`, que
+o passe de sombra chama **dezenas de vezes por frame**. Ela não adiciona custo
+uniforme; adiciona custo proporcional ao número de chamadas, e portanto
+**amplifica exatamente a fatia que o marco remove**.
+
+Medido sem a sonda, com o mesmo isolamento (`?semPasseDeSombra=1`):
+
+| | com a sonda | **sem a sonda** |
+| --- | --- | --- |
+| teto do M6 | 5,60 ms | **3,65 ms** |
+
+**O marco nunca teve 2,6 ms de folga sobre o critério. Tinha 0,65 ms.**
+
+E o critério de aceite de ≥ 3,0 ms foi derivado do teto errado: contra o teto
+real, ele exigiria **82% de tudo que existe para ganhar** — patamar que nenhuma
+migração para C++ atinge, porque o passe nativo também custa.
+
+### O que o passe nativo entrega, medido
+
+Seis rodadas **intercaladas**, `?bench&hold`, mesma build, ~119 amostras por
+rodada, filtradas por estado de cena (sem o filtro a mediana misturava
+carregamento com pista):
+
+| | base | **nativo** | teto |
+| --- | --- | --- | --- |
+| `cpu.render` | 13,35 ms | **10,50 ms** | 9,70 ms |
+| fps | 63 | **75** | 75 |
+| `rpCallsProject` | 4 | **3** | 3 |
+| `draws` | 261 | **195** | 195 |
+
+**Ganho de 2,85 ms — 78% do teto disponível**, e o passe nativo consome 0,8 ms
+do resto. `draws` cai exatamente 66 e `rpCallsProject` de 4 para 3: duas
+confirmações independentes de que o `three` parou de desenhar a sombra.
+
+### A imagem
+
+Controle (um caminho contra ele mesmo): **0,000000%**, `maxChannelDiff` 0 em 32
+pares — mas só depois de refazer o export **sem `--debug`**: o HUD de métricas
+acendeu 0,058% dos pixels, todos dentro da caixa do HUD. O instrumento foi
+validado antes de julgar.
+
+`three` × nativo: **`maxChannelDiff` = 28** e **0,124662%** dos pixels, com 100%
+deles na faixa `[0,31]`. Para comparação, a referência da SPEC-0240 (câmera
+deslocada de 1e-4 m) dá 109 e 0,443769%. As diferenças estão na auto-sombra da
+folhagem distante; **nenhuma sombra falta e não há bandas**.
+
+**Limiar proposto, derivado do medido:** `delta = 32` com 0% de outliers —
+"nenhum pixel difere mais que 31 níveis".
+
+### Decisão pendente
+
+O marco **não atinge os 3,0 ms** escritos nesta spec, e entrega **2,85 ms de um
+teto de 3,65**. Como o critério veio de um teto errado, a pergunta certa não é
+"o passe nativo falhou?", e sim **se 2,85 ms e +12 fps justificam manter o
+caminho nativo**, dado o que ele custa em manutenção. Isso é decisão do dono do
+projeto, não minha.
+
+## DECISÃO do dono do projeto (2026-09-22) — o marco fica
+
+O passe de sombra nativo **é mantido**, com o critério de aceite corrigido:
+
+> **Critério revisado:** ganho ≥ **2,5 ms** contra o baseline, medido sem a
+> sonda de fases. Deriva do teto real de 3,65 ms, não do teto de 5,60 ms que a
+> sonda inflava. O medido é **2,85 ms (78% do teto), 63 → 75 fps**.
+
+O critério antigo de 3,0 ms exigiria 82% de tudo que existe para ganhar — um
+patamar que nenhuma migração para C++ alcança, porque o passe nativo também
+custa (0,8 ms aqui).
+
+**Condição que acompanha a decisão:** manter um caminho nativo paralelo ao do
+`three` cria dívida que só aparece quando o `three` muda. Por isso o marco só
+se considera fechado com um **mecanismo de contrato** que falhe ruidosamente
+quando uma premissa do `three` deixar de valer — ver SPEC-0246.
+## E6 EXECUTADO em 2026-09-22 — o gate passou a ACEITAR o kart-racer
+
+### O que foi construído
+
+- **Detecção por evento** (`src/core/NativeSceneMirror.ts`). O `install`
+  instala `childadded`/`childremoved` em cada nó espelhado, e a mutação chega
+  no frame em que acontece, O(1) por evento. Conferido no fonte do
+  `Object3D.js`: `add`, `attach`, `remove`, `removeFromParent`, `clear` e
+  `copy` desembocam todos em `add`/`remove`, que é onde os dois eventos são
+  disparados — e ninguém mexe em `children` por fora (varredura em
+  `node_modules/three/src` por `children.push|splice|length = 0` e por
+  `.parent =`: **zero** ocorrências fora do próprio `Object3D`). Não há
+  caminho que escape.
+- **Capacidade reservada** (`native/src/scene/scene_mirror.{h,cpp}`). O `build`
+  faz `reserve(nos + kMirrorSpareNodes)` em todos os vetores **antes** do
+  `resize`, e o `ArrayBuffer` externo passa a cobrir a CAPACIDADE. `appendBatch`
+  põe uma subárvore inteira sem realocar, **ou tudo ou nada** (capacidade e pais
+  são validados antes de qualquer escrita — um lote pela metade deixaria filho
+  sem pai). O contrato pai-antes-de-filho vale inclusive no reaproveitamento de
+  slot: um slot livre só serve se vier DEPOIS do pai.
+- **Remoção por lápide.** `removeSubtree` tira o nó e os descendentes numa
+  passada para frente (filho vem depois do pai), marcando o slot no lugar:
+  invisível, sem sombra, sem geometria. **Índice de ninguém muda** — mudar
+  obrigaria a reapontar o `matrixWorld` de todos, que é o laço em JS de ≥1,4 ms
+  que a SPEC-0234 eliminou. O slot volta para uma lista livre, e sem isso cada
+  troca de pai do `three` (o `add` remove do pai antigo antes de pôr no novo)
+  gastaria capacidade para sempre — um *hazard* que nasce e morre o tempo todo
+  esvaziaria a folga numa corrida.
+- **Estouro recusa, nunca realoca.** `AppendResult::kOutOfCapacity` não
+  escreve nada; o lado JS invalida todo `matrixWorld.elements` (devolvendo a
+  cada objeto um vetor próprio com a última matriz, mais o
+  `matrixWorldAutoUpdate`), desliga o espelho e devolve o passe ao `three`. É
+  a assimetria do M1 de novo: recusar custa os milissegundos do marco, aceitar
+  errado custa a imagem.
+- **A travessia de 10 frames virou AUDITORIA.** Ela deixou de ser a fonte da
+  contagem que alimenta o gate e passou a responder só "escapou algum caminho
+  do `three`?". Motivo medido: o número dela envelhece, e alimentar o gate com
+  ele fazia o veredito **alternar aceita/recusa** conforme um *hazard* nascesse
+  entre a contagem e o gate — recusa por defasagem do instrumento, não por
+  divergência real.
+
+### O veredito mudou: de RECUSA por 2 nós para ACEITA
+
+`?bench&cortexDebug=perf&medirEvento=1&gateSombra=1`, export `--debug` feito
+**da worktree** (o export usa `src/`, não o `vendor/`), janela offscreen:
+
+```
+[shadowGate] ACEITA motivo=aceito objetos=0 casters=66 recusados=0 ...
+```
+
+Numa corrida de 150 s: **184 vereditos ACEITA e 1 RECUSA**. A única recusa é
+`geometria-ausente` em 1 caster — uma malha que virou caster antes de o `three`
+ter subido o buffer dela para a GPU, que é o registro preguiçoso do E2 fazendo
+o que deve. Ela é, incidentalmente, a **prova de que a detecção funciona**: o
+nó que nasceu no meio da corrida está no espelho e foi enumerado (73 casters
+naquele frame, contra 66 do regime), e só foi recusado pela geometria.
+
+### O custo do dispatch: medido, não estimado
+
+Mesma rodada, `?medirEvento=1`: 200 ciclos `add`+`remove`, com os **975 nós da
+cena já com listener instalado**, em três condições.
+
+| condição | us/ciclo |
+| --- | --- |
+| pai solto, sem ouvinte nenhum (`three` cru) | 0,86 |
+| pai com ouvinte que **não faz nada** (só o `dispatchEvent`) | 1,59 |
+| pai espelhado (dispatch + append/remove do espelho) | 11,53 |
+
+- **O dispatch custa +0,73 us por ciclo, ou ~0,37 us por evento.** Foi o que a
+  refutação mandou medir, e ele **não escala com o número de listeners
+  instalados**: o `dispatchEvent` percorre a lista de UM objeto, e quem não tem
+  ouvinte sai na primeira linha (`_listeners === undefined`). Mil listeners na
+  cena custam memória, não tempo.
+- O resto (+9,9 us/ciclo, ~5 us por evento) é a travessia de ponte do
+  `appendNodes`/`removeNode` — da ordem dos 15 us por travessia da SPEC-0225,
+  e paga **uma vez por evento**, não por nó, porque a subárvore inteira vai
+  numa chamada só.
+
+E no jogo de verdade, com a corrida andando:
+
+```
+[sceneMirror] eventos: 2 em 0,031 ms nos ultimos 300 frames
+[sceneMirror] eventos: 2 em 0,104 ms nos ultimos 300 frames
+```
+
+**2 eventos a cada 300 frames, somando 0,03–0,10 ms** — ou seja, entre 0,0001 e
+0,0003 ms por frame amortizado, contra um frame de ~30 ms. **É ruído**, e a
+resposta à pergunta "se custar mais que ruído, diga quanto" é: não custa.
+
+> Um erro pego pela própria medição: a primeira rodada relatou **809 eventos**
+> em 6,7 ms, o que faria parecer que o jogo mexe na cena mais de uma vez por
+> frame. Eram os 800 eventos do próprio *benchmark* (200 ciclos de aquecimento
+> + 200 de medição, `add` e `remove` contando um cada) somados ao contador. O
+> instrumento agora zera o acumulado quando termina. Vale a regra de sempre:
+> número que não fecha com o modelo é suspeita contra o instrumento primeiro.
+
+### Testes
+
+- Harness C++ (`cortex_host_tests`): **317 checks, 0 falhas** — os 51 novos
+  cobrem append sem realocar (comparando `worldData()` antes e depois),
+  `subarray` entregue antes seguindo válido e apontando para o mesmo nó,
+  pai-antes-de-filho (inclusive pai que viria depois no próprio lote),
+  estouro sem realocar e sem entrar pela metade, remoção que não mexe no índice
+  dos outros, remoção da subárvore inteira, lápide que não ressuscita por linha
+  de sincronização e reaproveitamento de slot com a regra do pai.
+- Vitest: **1.550 passando, 7 pulados, 0 falhas** — 11 novos no
+  `NativeSceneMirror.test.ts`, incluindo `attach`, subárvore inteira numa
+  chamada só, linha de sincronização que pula o slot vazio, estouro que desliga
+  o espelho e host antigo sem `appendNodes`.
+
+### O que fica
+
+- `?medirEvento=1` é TEMPORÁRIO e sai no E8, junto de `?gateSombra=1` e
+  `?contarCasters=1`.
+- A auditoria de 10 frames (`scene.traverse` contando nós) também sai no E8:
+  ela hoje só confirma o que o evento já sabe.
+- O E4 e o E5 continuam como estavam — o E6 tirou o **bloqueio único** que
+  impedia o gate de aceitar, não ligou o passe.
+
+## E7 e E8 EXECUTADOS em 2026-09-22 — o marco fecha, com o ganho remedido
+
+### O passe nativo virou o PADRÃO, e é isso que fecha o marco
+
+Enquanto o passe ficasse atrás de `?passeDeSombraNativo=1`, produção pagava o
+custo do `three` para sempre e o marco não entregava nada a ninguém. A query de
+ativação foi trocada pelo seu contrário:
+
+| antes | agora | por quê |
+| --- | --- | --- |
+| `?passeDeSombraNativo=1` liga | **ligado por padrão** no host que tem a ponte | é o caminho que entrega os milissegundos do marco |
+| — | `?semPasseDeSombraNativo=1` devolve ao `three` | **linha de base** de qualquer remedição, e válvula de escape se o caminho nativo se mostrar errado numa cena não medida |
+| `?semPasseDeSombra=1` congelava só o `three` | congela os **dois** | desligar só um mediria outra coisa que não o teto |
+
+Ligar por padrão é seguro por construção e não por confiança: no Studio e no
+browser não há espelho instalado e o método sai na primeira linha; o gate segue
+recusando o que não sabe desenhar; e um frame recusado devolve
+`autoUpdate = true` e o `three` redesenha. **Nenhum caminho perde sombra — o
+pior caso é não ganhar os milissegundos.**
+
+### E7 — o culling em JS não roda mais quando o C++ desenha
+
+`cullShadowCasters` percorre ~1.300 nós a cada 10 frames para mutar um
+`castShadow` que, com o passe nativo desenhando, **ninguém lê**: o enumerador em
+C++ reaplica o mesmo filtro angular por conta, a partir do valor AUTORADO. Ele
+não foi removido — continua indispensável quando o nativo não assume (gate que
+recusa, host sem a ponte, Studio, browser) — e sim **condicionado ao estado real
+do frame anterior** (`_nativoAssumiu`).
+
+Duas consequências que precisaram de decisão, não só de um `if`:
+
+1. **A câmera do filtro tem dois regimes.** Com o `three` desenhando, o
+   enumerador precisa da posição da ÚLTIMA passada do culling, porque é lá que o
+   `castShadow` que o `three` desenha agora foi decidido. Com o nativo
+   desenhando, não há passada nenhuma: a posição passa a ser a do FRAME, o que é
+   mais correto (o filtro reage sem os 10 frames de atraso) e dispensa o estado
+   entre frames. O campo virou `_cameraDoFiltroAngular`, com os dois regimes
+   escritos no comentário.
+2. **A volta ao `three` rearma o contador.** No frame em que o nativo recusa, o
+   contador vai para o intervalo e o culling roda no MESMO frame — esperar os 10
+   frames deixaria o `three` desenhar com `castShadow` de dez frames atrás. Fica
+   o resíduo conhecido: o `ShadowNode` interno desenha ANTES do
+   `CSMShadowNode.updateBefore`, então o frame exato da recusa ainda sai com o
+   `castShadow` da última passada. É **uma sombra a mais ou a menos por um
+   frame**, na transição, e não uma sombra faltando.
+
+Dois testes novos no `OutdoorLighting.test.ts` cobrem exatamente isso: o culling
+roda quando o nativo não assume, e não roda quando assume — voltando a rodar no
+frame da recusa.
+
+### E8 — o que saiu, e o que ficou
+
+**Diagnósticos removidos** (query): `?gateSombra`, `?contarCasters`,
+`?medirEvento`, `?forcarPasseDeSombra`, `?semSombras`, `?semCasters`,
+`?cascatas`, `?casterMinRatio`, `?sombraSoDinamicos`, `?dumpGrafo`,
+`?nativePassControle`, `?nativePass=N`, `?dualPassSpike`.
+
+Com eles saíram as máquinas que os serviam: a sonda que envolvia `renderObject`
+para contar os draws do passe de sombra, a travessia de auditoria de 10 frames
+(`scene.traverse` contando nós), o relatório dos nós fora do espelho, o
+*benchmark* de custo do evento `childadded`/`childremoved` e os dois relógios por
+evento que ele exigia nos handlers. Do lado da ponte saíram `shadowCasters(...)`
+e `shadowPassGate(...)` — o gate REAL sempre rodou dentro do `drawShadowPass`, e
+essas duas só existiam para relatar.
+
+`?cascatas` e `?casterMinRatio` merecem nota à parte: os dois **duplicavam
+autoria que já existe** (`shadowCascades` e `shadowCasterMinRatio` são campos da
+cena). Um interruptor de medição que sobrescreve um campo autorado é uma segunda
+fonte de verdade para o mesmo número.
+
+**Diagnósticos C++ removidos:** `CORTEX_DEPTH_PEEK` (com
+`native/src/render/depth_peek.*`), `CORTEX_DEPTH_EXP`, `CORTEX_ALVO_DA_CENA` e
+`CORTEX_PASS_LOG` — este último em quatro lugares, incluindo `commands.cpp` e
+`textures.cpp`. A sonda `depth_peek` foi **medida e invalidada** (lê zero de
+qualquer buffer): não sobrevive em nenhuma forma, porque um instrumento que
+responde sempre a mesma coisa é pior que instrumento nenhum — é o modo de falha
+que a SPEC-0240 registra.
+
+**O que ficou, e por quê:**
+
+| ferramenta | fica porque |
+| --- | --- |
+| `?semPasseDeSombra=1` | é a única forma de responder "quanto ainda há para ganhar aqui" sem recompilar. Foi ela que mediu o teto real e refutou o teto inflado pela sonda de fases, e é ela que remede o teto depois de qualquer mudança no passe. Documentada no código como ferramenta, não como resto. |
+| `?semPasseDeSombraNativo=1` | linha de base de toda remedição do ganho, e a válvula de escape do caminho nativo. |
+| `native/src/webgpu/depth_selftest.*` (`CORTEX_DEPTH_SELFTEST`) | é o autoteste de PLATAFORMA da SPEC-0242: responde se a profundidade sobrevive entre command buffers neste wgpu/D3D12, com resposta conhecida de antemão e sem nada do `three` no meio. A pergunta não é do M6 — é do backend, e volta em qualquer marco que grave numa pass separada. |
+| `CORTEX_SHADOW_PASS_LOG` | responde "o nativo assumiu, e desenhou o quê?" numa máquina de campo, onde não há depurador. O lado JS relata a decisão (`[shadowPass] ASSUMIU/DEVOLVEU`), este lado relata o desenho: alvo, formato e contagem. Documentado no cabeçalho de `shadow_pass.h`. |
+| sonda de fases (`?renderPhases`, `?matrixFreeze`) | não é do M5/M6: é o instrumento da SPEC-0227, com as armadilhas dela registradas. Continua valendo — inclusive a de que ela **não serve** para medir este marco. |
+
+### O código do M5: REMOVIDO, não desativado
+
+O M5 foi encerrado sem ganho (ADR-0244, decisão 1) e a oclusão dele nunca
+funcionou. O que era exclusivo dele saiu inteiro:
+
+- **TS:** `src/render/NativePass.ts`, `src/render/DualPassSpike.ts` e os ganchos
+  dos dois no `Renderer.ts`.
+- **C++:** `native/src/render/native_pass.*`, `native/src/render/depth_peek.*`,
+  `native/src/webgpu/dual_pass_spike.*` e os dois shims correspondentes.
+- **Órfãos que o levantamento achou:** `native/src/render/uniform_pool.*` e
+  `native/src/render/render_list.*` estavam listados como "infraestrutura que o
+  M6 usa" — e **não são usados por nada** além dos próprios testes (busca por
+  `UniformPool`/`sortRenderList` em `native/src/`: zero ocorrências fora deles).
+  Saíram com os testes.
+- **A heurística do alvo:** `cenaAlvo()`, as candidatas por frame, o mapa
+  view → tamanho e o registro de rótulo de textura em
+  `commands.cpp`/`textures.cpp` existiam só para o M5 adivinhar em qual pass a
+  cena foi desenhada. Isso era **custo em produção**: um mapa que crescia a cada
+  textura criada, para alimentar um passe que não existe mais.
+
+Por que remover em vez de manter desativado: o M5 não entrega ganho, e um
+caminho de render paralelo que compila e não roda é exatamente o convite para
+alguém reativá-lo achando que ganha 34 µs/draw — número que, aliás, **nunca se
+reproduziu**. O histórico guarda o trabalho (SPEC-0241 e os commits da branch);
+o repositório não precisa carregá-lo.
+
+**O que do M5 FICA, porque o M6 usa:** `geometry_registry.*` (C++),
+`GeometryDesc.ts`, `MaterialDesc.ts` e `PipelineKey.ts` — estes dois últimos não
+por causa do M5, mas porque o `PerfTrace` mede cobertura de material e pipelines
+distintos com eles.
+
+### Um conflito de merge não resolvido, commitado
+
+`docs/cortex-native/architecture.md` estava com `<<<<<<< HEAD` /
+`>>>>>>> feat/m6-espelho-dinamico` dentro da tabela de módulos, vindo do merge do
+E6. As duas metades foram fundidas — nenhuma das duas estava completa: uma tinha
+o `shadow_pass.*`, a outra o `appendNodes`/`removeNode`.
+
+### A REMEDIÇÃO: o ganho se mantém — 2,8 ms, 58 → 70 fps
+
+`?bench&hold`, export `--debug` feito **da worktree** (o export usa `src/`, não o
+`vendor/`), host recompilado, janela offscreen, quatro rodadas **intercaladas**
+de 70 s, medianas de ~120 amostras filtradas por estado de cena (`draws >= 100`),
+**sem a sonda de fases**.
+
+| rodada | base | nativo | delta |
+| --- | --- | --- | --- |
+| 1 | 14,5 | 12,1 | 2,4 |
+| 2 | 15,1 | 12,1 | 3,0 |
+| 3 | 15,3 | 11,9 | 3,4 |
+| 4 | 14,4 | 11,8 | 2,6 |
+| **mediana** | **14,8** | **12,0** | **2,8** |
+
+| | base | **nativo** | teto |
+| --- | --- | --- | --- |
+| `cpu.render` | 14,8 ms | **12,0 ms** | 9,7 ms |
+| fps | 58,3 | **70,4** | 74,7 |
+| `draws` | 287 | **195** | 195 |
+
+**Ganho de 2,8 ms contra o critério revisado de 2,5 ms — o marco passa.**
+
+`draws` cai exatamente **92**, e o log do passe (`?bench&hold&cortexDebug=perf`)
+diz `[shadowPass] ASSUMIU desenhados=92 cascatas=1`: o nativo desenha **o mesmo
+número** que o `three` deixou de desenhar. Nenhuma sombra some.
+
+> **Os absolutos não batem com os da rodada do E4/E5 (13,35 / 10,50 / 261
+> draws), e isso é da CENA, não da limpeza.** Naquela rodada o passe de sombra
+> emitia 66 draws; nesta emite 92, porque a câmera do `?hold` para num ponto com
+> mais casters dentro do frustum da cascata. Por isso o teto também subiu (5,1 ms
+> aqui contra 3,65 lá): mais casters custam mais dos dois lados. O que se compara
+> entre rodadas é o **delta medido na mesma build**, e ele se manteve.
+
+### Testes
+
+- Vitest: **1.583 passando, 7 pulados, 0 falhas** (eram 1.550). Os testes dos
+  diagnósticos removidos deram lugar a cobertura do caminho que ficou: quatro
+  testes novos de `drawShadowPass` no lado JS — que **não tinha nenhum**, apesar
+  de ser hoje a única ponte do passe — e dois do E7.
+- Harness C++ (`cortex_host_tests`): **314 checks, 0 falhas** (eram 317; a
+  diferença são os checks do atalho de medição e os do
+  `uniform_pool`/`render_list`, removidos com o código que testavam).
+- Host compila (`cortex_host.exe`, clang-cl/Ninja, Release).
+
+> Achado do levantamento: `tests/shadow_math_test.cpp` roda pelo CMake mas
+> faltava no script de build do harness usado nas sessões — quatro checks que
+> passavam despercebidos em toda rodada manual. Corrigido no script.
+
+### O que continua em aberto
+
+1. **`side` do material não é espelhado**, então caster `DoubleSide` não é nem
+   reproduzido nem recusado — candidato à diferença residual de imagem
+   (`maxChannelDiff` 28).
+2. **`shadowMap.setSize` não roda mais** com o passe do `three` desligado: mudar
+   `shadow.mapSize` em runtime não redimensiona nada.
+3. **`CORTEX_OVERRIDE_PROBE`** (SPEC-0238, fase 4) é uma sonda one-shot que já
+   respondeu a pergunta dela. Está fora do escopo deste marco e foi mantida, mas
+   é candidata à mesma limpeza.
+
+## E9 EXECUTADO em 2026-09-22 — o `side` do material, e a folhagem de volta
+
+### A pendência, e a hipótese que ela carregava
+
+O item 1 de "o que continua em aberto" dizia: **`side` do material não é
+espelhado**, então um caster `DoubleSide` não era nem reproduzido nem recusado
+— o passe cortava `Front` em todo mundo. A hipótese registrada era que isso
+explicasse a diferença residual de imagem, que estava **concentrada na
+auto-sombra da folhagem distante**, e folhagem costuma ser `DoubleSide`.
+
+**A hipótese se confirmou, e por uma margem que não deixa dúvida.**
+
+### A tabela, conferida no fonte antes de virar código
+
+`node_modules/three/src/renderers/common/Renderer.js`, no caminho de
+`isShadowPassMaterial`:
+
+    const _shadowSide = { [FrontSide]: BackSide, [BackSide]: FrontSide, [DoubleSide]: DoubleSide };
+    ...
+    overrideMaterial.side = ( material.shadowSide !== null ) ? material.shadowSide : _shadowSide[ material.side ];
+
+Dois detalhes que a descrição curta ("`FrontSide → BackSide`") escondia e que
+mudaram a implementação:
+
+1. **Um `material.shadowSide` autorado vence a tabela** e é usado DIRETO, sem
+   inverter. São duas tabelas, não uma.
+2. **O `three` não implementa `side` com `cullMode`.** No backend WebGPU
+   (`WebGPUPipelineUtils._getPrimitiveState`) o `cullMode` é sempre `Back`
+   (`None` no `DoubleSide`); o que muda é o SENTIDO da face
+   (`flipSided = side === BackSide`), **invertido de novo quando
+   `matrixWorld.determinant() < 0`**. Com `frontFace = CCW` fixo no pipeline
+   nativo, "CW + corta o de trás" é a mesma coisa que "CCW + corta o da
+   frente", então o sentido vira escolha de `cullMode` — mas o espelhamento por
+   determinante tinha de ser reproduzido junto, senão uma peça com escala
+   negativa escreveria a profundidade da face errada.
+
+### O que foi construído
+
+- **O lado viaja POR FRAME**, nos dois bits que sobravam no campo de flags do
+  buffer de sincronização (`kSyncShadowSideBit0/1`). A decisão foi deliberada:
+  `side` muda menos que `visible`, mas o `three` o **reavalia a cada
+  travessia**, e fotografá-lo no `build` seria o **terceiro** erro do mesmo
+  tipo nesta série — os dois anteriores (`visible`, no passo 1, e
+  `material.visible`, no E1) viraram sombra errada em silêncio. O custo é zero:
+  os bits já existiam no campo (a linha não alargou) e o material do nó já
+  estava em mãos no laço, para o `material.visible`. O `build` manda o valor de
+  partida no 21º float, como já faz com o `material.visible`.
+- **Quem resolve a tabela é o JS** (`LADO_DA_SOMBRA` / `LADO_AUTORADO`, em
+  `src/core/NativeSceneMirror.ts`), porque é o único lado que enxerga o
+  material. O C++ recebe o lado EFETIVO (`ShadowSide`: `kBack`, `kFront`,
+  `kDouble`, `kUnsupported`) e só escolhe o `cullMode`.
+- **`shadowCullMode` em `shadow_math.h`** (PURO, sem wgpu, exercitado no
+  harness): `kBack → Front`, `kFront → Back`, `kDouble → None`, com o
+  `flipSided` do determinante aplicado por cima.
+- **O passe agrupa por `(cull, passo de vértice)`** e guarda **um pipeline por
+  par** — antes havia um pipeline só, recriado quando o passo mudava, o que com
+  dois eixos viraria uma recompilação por troca. Formato de profundidade novo
+  descarta o cache inteiro.
+- **O gate ganhou um motivo próprio**, `lado-nao-reproduzivel`: `side` fora da
+  tabela (valor que uma versão futura do `three` pode introduzir) ou materiais
+  do mesmo nó discordando entre si. **Recusa, nunca aproxima** — o princípio do
+  M1. `kShadowGateRefusalCount` foi de 9 para 10 (errar esse número para menos
+  faz a contagem do último motivo cair FORA do array, como já aconteceu no E3).
+- **O contrato do `three` (SPEC-0246) cobre a tabela INTEIRA.** A premissa 4 só
+  verificava `FrontSide → BackSide`; agora verifica os três pares, mais o
+  `shadowSide` autorado nos três valores, e ganhou uma segunda **prova de
+  quebra**: um `three` hipotético que inverte SÓ o `FrontSide` — exatamente o
+  que a versão anterior do contrato deixaria passar.
+
+### A imagem: de 81 para 2 níveis, de 12,38% para 0,004%
+
+Harness da SPEC-0240, `?bench&hold`, 32 pares por comparação, janela oculta,
+export **sem `--debug`** (o HUD de métricas contamina a captura). **Mesma
+máquina, mesma cena, mesmo ponto de `hold` nos dois momentos.**
+
+| comparação | `maxChannelDiff` | `pctPixelsAboveNoiseFloor` (piso 0) |
+| --- | --- | --- |
+| controle `three` × `three` (build antiga) | 0 | 0,000000% |
+| **ANTES** — `three` × nativo | **81** | **12,383681%** |
+| controle nativo × nativo (build nova) | 0 | 0,000000% |
+| **DEPOIS** — `three` × nativo | **2** | **0,004232%** |
+
+> Os números do ANTES não são os 28 / 0,124662% registrados no E4/E5: aquela
+> rodada foi noutra resolução (1920×1080 contra 1280×720 aqui) e noutro ponto
+> da pista. Por isso o antes foi **remedido nesta sessão**, na mesma build e no
+> mesmo enquadramento do depois — comparar com o número de outra rodada é o
+> erro que esta spec já registra em "os absolutos não batem... e isso é da
+> CENA".
+
+O instrumento foi validado antes das duas conclusões, com o controle
+caminho-contra-ele-mesmo dando **0 e 0,000000%** em 32 pares, nas duas builds.
+
+E o pior pixel do ANTES dizia de onde vinha a diferença: `(876, 177)`,
+`rgba(156,168,1)` no `three` contra `rgba(186,198,82)` no nativo — verde de
+folhagem, **mais claro no nativo**, que é auto-sombra faltando. Era a folhagem
+`DoubleSide`, desenhada com `cullMode = Front` quando o `three` a desenha sem
+culling nenhum.
+
+**Os 2 níveis que sobram** (em 0,004% dos pixels) são o outro candidato que o
+E4/E5 tinha listado e que continua válido: a precisão do MVP — o nosso é
+composto em `double`, o do `three` passa por `modelViewMatrix` em `float32`.
+Não foi isolado, e agora está abaixo do que vale investigar.
+
+### O ganho: remedido, e não caiu — 4,75 ms
+
+`?bench&hold`, export `--debug` feito **da worktree**, host recompilado, janela
+offscreen, quatro rodadas **intercaladas** de 70 s, medianas de ~118 amostras
+filtradas por estado de cena (`draws >= 100`), **sem a sonda de fases** (ela
+amplifica justamente a fatia que o marco remove).
+
+| rodada | base | nativo | delta |
+| --- | --- | --- | --- |
+| 1 | 17,3 | 12,2 | 5,1 |
+| 2 | 17,9 | 12,6 | 5,3 |
+| 3 | 16,5 | 12,4 | 4,1 |
+| 4 | 17,1 | 12,5 | 4,6 |
+| **mediana** | **17,2** | **12,45** | **4,75** |
+
+| | base | **nativo** | teto (`?semPasseDeSombra=1`) |
+| --- | --- | --- | --- |
+| `cpu.render` | 17,2 ms | **12,45 ms** | 10,5 ms |
+| fps | 51,5 | **65,6** | 74,9 |
+| `draws` | 287 | **195** | 195 |
+
+**4,75 ms contra o critério revisado de 2,5 ms — a correção não derrubou o
+ganho, e `draws` continua caindo exatamente 92.**
+
+> Os absolutos são maiores que os do E8 (14,8 / 12,0) porque a máquina estava
+> mais carregada nesta sessão — o teto também subiu, de 5,1 para 6,7 ms. O que
+> se compara entre rodadas é o **delta na mesma build**, e ele foi de 2,8 para
+> 4,75 ms. Parte disso é a máquina; a parte que é do código é que um pipeline
+> `None` não custa mais que um `Front`, então o `side` não cobra nada de volta.
+
+### Testes
+
+- Harness C++ (`cortex_host_tests`): **352 checks, 0 falhas** (eram 314) — a
+  tabela do `three` nos três valores, o lado irreproduzível não aproximado, o
+  espelhamento por determinante (e o determinante ignorando a translação), o
+  gate aceitando os três lados válidos e recusando o quarto, o lado chegando
+  pelo FRAME (e voltando), e o espelho levando o lado do `build`, do frame e da
+  lápide.
+- Vitest: **1.593 passando, 7 pulados, 0 falhas** (eram 1.583) — a tabela e o
+  `shadowSide` autorado no `build`, lado desconhecido e materiais que discordam
+  virando recusa, o lado viajando por frame sem contaminar os bits vizinhos, e
+  a premissa 4 do contrato estendida (38 testes no arquivo).
+- Host compila (`cortex_host.exe`, clang-cl/Ninja, Release).
+
+### O que continua em aberto
+
+1. **`shadowMap.setSize` não roda mais** com o passe do `three` desligado:
+   mudar `shadow.mapSize` em runtime não redimensiona nada. (Inalterado.)
+2. **`CORTEX_OVERRIDE_PROBE`** (SPEC-0238, fase 4) segue candidata à mesma
+   limpeza. (Inalterado.)
+3. A diferença residual de **2 níveis em 0,004% dos pixels** não foi isolada; o
+   candidato que sobra é a precisão do MVP, e o nativo pode estar **mais** certo
+   que o `three` aí.

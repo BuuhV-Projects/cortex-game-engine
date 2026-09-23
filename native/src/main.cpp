@@ -28,6 +28,7 @@
 #include "shims/perf_arraybuffer.h"
 #include "shims/clock.h"
 #include "shims/scene_mirror_shim.h"
+#include "shims/geometry_registry_shim.h"
 #include "shims/perf_stats.h"
 #include "shims/perf_trace.h"
 #include "shims/quit.h"
@@ -40,6 +41,8 @@
 #include "webgpu/napi_stats.h"
 #include "webgpu/render_bench.h"
 #include "webgpu/override_probe.h"
+#include "webgpu/depth_selftest.h"
+#include "webgpu/render_parity_capture.h"
 #include "webgpu/bloom.h"
 #include "webgpu/splash.h"
 
@@ -120,6 +123,10 @@ bool pollEvents(napi_env env, SDL_Window* window, HostGpu* gpu) {
 // no mesmo vsync fazia a splash piscar, deixando o jogo vazar entre os frames.
 void runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
               bool splashEnabled) {
+  // Autoteste da premissa de profundidade do ADR-0237 (CORTEX_DEPTH_SELFTEST):
+  // roda UMA vez, no primeiro frame em que já existe device, e imprime em
+  // stderr. Sem a variável de ambiente é no-op.
+  webgpu::runDepthSelftestOnce(gpu);
   shims::drainIoCompletions(js.env());  // resolve leituras async prontas (M-perf-3)
   shims::runTimers(js.env(), elapsedMs);
   js.drainMicrotasks();
@@ -207,6 +214,11 @@ int main(int argc, char** argv) {
   // qualquer outra API do GDK. No-op no build desktop (sem CORTEX_GDK).
   core::initGameRuntime();
 
+  // Paridade visual (SPEC-0240, passo 1): lê CORTEX_RENDER_PARITY_CAPTURE
+  // ANTES de a surface ser configurada — configureSurface() consulta
+  // renderParityCaptureEnabled() para decidir se pede CopySrc no usage.
+  webgpu::initRenderParityCapture();
+
   HostGpu gpu;
   // Tamanho só do modo janela (CORTEX_WINDOWED); em fullscreen usa a
   // resolução do display.
@@ -241,7 +253,8 @@ int main(int argc, char** argv) {
     shims::registerImageDecode(js.env());
     shims::registerKtx2(js.env());
     shims::registerClock(js.env());  // SPEC-0226
-    shims::registerSceneMirror(js.env());  // SPEC-0234
+    shims::registerSceneMirror(js.env(), &gpu);  // SPEC-0234 (+ passe de sombra, SPEC-0245)
+    shims::registerGeometryRegistry(js.env());  // geometria dos casters (SPEC-0245, E2)
     shims::registerPerfStats(js.env());
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());

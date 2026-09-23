@@ -24,6 +24,7 @@ import * as THREE from 'three';
 // mock nos testes. No bundle, um alias `three` → `three/webgpu` unifica tudo numa
 // só instância do three (evita o bug de dual-instance). Ver vite.engine.config.ts.
 import { WebGPURenderer } from 'three/webgpu';
+import { debug } from './debug.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -352,15 +353,17 @@ export class Renderer {
     const prevToneMapping = this._renderer.toneMapping;
     this._renderer.toneMapping = THREE.NoToneMapping;
     this._renderer.setRenderTarget(this._sceneHdrTarget);
+    const backend = (
+      this._renderer as unknown as {
+        backend?: {
+          get(t: unknown): { texture?: unknown; depthTexture?: unknown } | undefined;
+        };
+      }
+    ).backend;
     this._renderer.clear();
     this._renderer.render(scene, camera);
     this._renderer.setRenderTarget(null);
     this._renderer.toneMapping = prevToneMapping;
-    const backend = (
-      this._renderer as unknown as {
-        backend?: { get(t: unknown): { texture?: unknown } | undefined };
-      }
-    ).backend;
     return backend?.get(this._sceneHdrTarget.texture)?.texture ?? null;
   }
 

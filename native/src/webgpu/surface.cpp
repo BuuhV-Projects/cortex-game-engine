@@ -8,6 +8,7 @@
 #include "internal.h"
 #include "../core/app_window.h"
 #include "supersample.h"
+#include "render_parity_capture.h"
 
 #include <webgpu/wgpu.h>
 
@@ -35,9 +36,27 @@ void configureSurface(HostGpu* gpu, int w, int h) {
   gpu->config.width = static_cast<uint32_t>(w);
   gpu->config.height = static_cast<uint32_t>(h);
   gpu->config.presentMode = WGPUPresentMode_Fifo;
+  // Paridade visual (SPEC-0240, passo 1): com CORTEX_RENDER_PARITY_CAPTURE
+  // ligado, o comparador precisa ler a `swap` já composta antes do present, o
+  // que exige CopySrc no usage. Só pede a flag extra quando o modo está
+  // ativo — nenhum outro caminho muda (produção/dev seguem só RenderAttachment).
+  gpu->config.usage = WGPUTextureUsage_RenderAttachment;
+  if (renderParityCaptureEnabled()) {
+    gpu->config.usage |= WGPUTextureUsage_CopySrc;
+  }
   wgpuSurfaceConfigure(gpu->surface, &gpu->config);
   gpu->configuredWidth = w;
   gpu->configuredHeight = h;
+}
+
+// Ponto único de present (SPEC-0240, passo 1): captura a `swap` já composta
+// (se o modo de paridade estiver ligado) e SÓ DEPOIS apresenta — capturar
+// depois do present leria uma textura já reciclada pela surface. Reusado
+// pelos três caminhos de presentIfAcquired (compositor de UI, SSAA sem
+// compositor, caminho antigo sem SSAA) em vez de repetir a chamada em cada um.
+void captureThenPresent(HostGpu* gpu, WGPUTexture swap) {
+  if (renderParityCaptureEnabled()) maybeCaptureFrame(gpu, swap);
+  wgpuSurfacePresent(gpu->surface);
 }
 
 }  // namespace
@@ -172,7 +191,7 @@ void presentIfAcquired(HostGpu* gpu) {
     WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);
     blitToSwapchain(gpu, swapView);  // downscale + compõe a UI em gama
     wgpuTextureViewRelease(swapView);
-    wgpuSurfacePresent(gpu->surface);
+    captureThenPresent(gpu, swap);
     wgpuTextureRelease(swap);
     return;
   }
@@ -188,12 +207,12 @@ void presentIfAcquired(HostGpu* gpu) {
     WGPUTextureView swapView = wgpuTextureCreateView(swap, nullptr);
     blitToSwapchain(gpu, swapView);
     wgpuTextureViewRelease(swapView);
-    wgpuSurfacePresent(gpu->surface);
+    captureThenPresent(gpu, swap);
     wgpuTextureRelease(swap);
     return;
   }
   if (!gpu->currentTexture) return;
-  wgpuSurfacePresent(gpu->surface);
+  captureThenPresent(gpu, gpu->currentTexture);
   wgpuTextureRelease(gpu->currentTexture);
   gpu->currentTexture = nullptr;
 }

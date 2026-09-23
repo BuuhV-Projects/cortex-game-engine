@@ -1,0 +1,705 @@
+# 0241 - Submissão nativa do passe principal (M5 do ADR-0237)
+
+**Data:** 2026-09-21
+**Status:** ENCERRADO sem ganho (ADR-0244, decisão 1) e **código removido** em
+2026-09-22, no E8 da SPEC-0245. A oclusão nunca funcionou e os 34 us/draw nunca
+se reproduziram. Saíram do repositório: `src/render/NativePass.ts`,
+`src/render/DualPassSpike.ts`, `native/src/render/native_pass.*`,
+`native/src/render/depth_peek.*`, `native/src/webgpu/dual_pass_spike.*`, os dois
+shims, a heurística `cenaAlvo()` de `commands.cpp` e os órfãos `uniform_pool.*`
+e `render_list.*`. O que este marco deixou de útil e **continua vivo** é o
+`geometry_registry` (C++) e o `GeometryDesc.ts`, usados pelo passe de sombra
+nativo do M6. Esta spec fica como registro do que foi medido e por que não
+pagou — o código está no histórico do git.
+
+## Contexto
+
+O ADR-0237 fixou o objetivo: o render do export nativo custar ≤ 8 ms com ~250
+draws (hoje 18,5 ms). O M5 é onde o C++ passa a desenhar — critério da etapa:
+**`cpu.render` ≤ 10 ms, ainda com sombras em JS, sem diferença de imagem**.
+
+Os marcos anteriores entregaram a fundação e **nenhum deles mudou o fps**: M1
+descreve o material (cobertura declarada de 89,3% — ver ressalva abaixo), M2
+provou `override` no naga e cacheia pipeline (5 pipelines distintos para 242
+materiais), M3 dá slot fixo de uniforme por objeto, M4 ordena a RenderList.
+
+O levantamento feito para esta spec encontrou três lacunas que o plano original
+não previa, e todas mudaram o desenho.
+
+### Não existe camada C++ para gravar um render pass
+
+Tudo que grava comando hoje vive **dentro de handlers N-API** em
+`webgpu/commands.cpp`. O spike dos 2,2 µs/draw (`render_bench.cpp`) fala com a
+wgpu direto, mas com **device e textura próprios**, isolado do host real.
+
+### Quem abre a pass é o `three`, e ele não expõe isso
+
+`beginRenderPass` só é chamado de dentro do `WebGPUBackend.js` vendorizado;
+`Renderer.render()` é caixa-preta. O desenho inicial — "o C++ desenha primeiro e
+o `three` continua a MESMA pass" — **não é alcançável** sem patchear arquivo de
+terceiro, o que violaria "API fiel ao browser" e quebraria a cada bump do
+`three`.
+
+A saída veio do próprio `three`: ele já usa, em `copyFramebufferToTexture`, o
+padrão **encerra a pass, faz outra coisa, reabre com `loadOp: load`**. Duas
+passes sequenciais no mesmo color+depth preservam profundidade — é o próprio
+`three` que confia nisso. E `autoClear = false` já é usado em produção pelo
+split-screen.
+
+### A casca de contorno é FILHA do mesh
+
+`Materials.ts` faz `mesh.add(shell)`. Isso derruba o primeiro corte que parecia
+óbvio (migrar o maior grupo, os 122 contornos): migrar só o contorno faz o C++
+desenhar **o filho** enquanto o `three` desenha **o pai**, no mesmo alvo e no
+mesmo frame. A convivência entre motores cairia no primeiro passo, não no
+quarto. O contorno é ainda o caso mais especial-casado dos quatro modelos: é a
+única exceção que deixa passar `positionNode` (TSL de verdade), e tem
+`doubleSided: false` mesmo usando `side: BackSide`.
+
+## Decisão
+
+### A ordem de migração inverte: contorno por último
+
+Primeiro corte: **opacos sem casca de contorno** (toon e standard puros). Separa
+"aprender a infraestrutura nova" de "aprender o modelo mais excêntrico". O
+contorno migra no fim, quando a convivência já estiver resolvida e medida.
+
+### A geometria é a do `three`, não uma cópia
+
+O registro passa **o `GPUBuffer` que o `three` já criou**
+(`backend.get(attribute).buffer`), e o C++ faz `unwrapValue` para obter o
+`WGPUBuffer`. Criar buffers novos a partir dos `ArrayBuffer` **duplicaria a VRAM
+da cena inteira** e abriria espaço para dessincronizar se o `three` atualizasse
+o atributo.
+
+O padrão não é novo: `src/core/Renderer.ts` já usa `backend.get(...)` em
+produção para obter handle nativo criado pelo `three`. Criar buffer próprio fica
+como fallback explícito, se aparecer atributo que o `.get()` não resolva.
+
+O id de geometria é estável e vive num `WeakMap`, análogo ao `textureId()` do
+`MaterialDesc`. A destruição reusa o **destroy adiado** já existente em
+`buffers.cpp` — destruir na hora já causou panic fatal do wgpu-native.
+
+### Duas passes sequenciais, com o `three` PRIMEIRO
+
+`renderer.render()` normal do `three` (limpa, desenha o céu e o que não migrou)
+→ pass nativa por cima, com `loadOp: load` no mesmo color e no mesmo depth, e o
+teste de profundidade decidindo a oclusão. **Sem tocar em arquivo vendorizado.**
+
+A ordem inversa (C++ primeiro) foi testada no passo 0 e **não funciona** — ver o
+resultado registrado adiante. Esta ordem é, na verdade, mais simples: não exige
+desligar o clear do `three` nem mexer no passe dele.
+
+### A transparência entrelaçada só é construída se a medição pedir
+
+O `three` expõe `setRenderObjectFunction()`, um gancho por objeto que roda
+dentro da pass já aberta, na ordem que ele define (incluindo a ordenação de trás
+para frente). É o candidato natural para intercalar objetos dos dois motores.
+**Mas não está provado** que dá para obter o `WGPURenderPassEncoder` de dentro
+dele — o callback não recebe a pass, e `currentPass` é estado interno do backend.
+
+Decisão: **não construir especulativamente.** Depois de migrar os opacos,
+mede-se `cpu.render`. Se já estiver perto dos 10 ms, a transparência entrelaçada
+é **cancelada** e registrada como tal. Se não, aí o spike do gancho se paga.
+
+### Quatro shaders WGSL, não um uber-shader
+
+O ADR-0237 supunha um uber-shader com `override` para conter explosão
+combinatória. O M2 mediu que **a explosão não existe: 5 pipelines para 242
+materiais**. Sem esse problema, quatro arquivos (um por modelo de sombreamento)
+são mais legíveis e mais seguros: o precedente do `COLOR_0` — que compilou sem
+erro e renderizou branco — é o tipo de falha que cresce com condicional dentro
+de um arquivo só. `override` continua, mas para variações **dentro** de um
+modelo (dois lados, tem textura, tone mapping), sem cruzar a fronteira entre
+modelos.
+
+## A ressalva do `alphaTest` — a cobertura de 89,3% está inflada
+
+`describeMaterial` **não rejeita** material com `alphaTest > 0`: apenas ignora o
+campo. O comentário no código afirma que "o que a engine usa hoje é opaco ou
+blend comum" — afirmação não verificada. E `Materials.ts` constrói a casca de
+contorno justamente com `alphaTest: o.alphaTest ?? 0`, com `map` condicionado a
+ele.
+
+Consequência: material com recorte alfa (folhagem, grade, cerca) seria desenhado
+**sólido** pelo caminho nativo, sem o corte — o "modo de falha mais caro" que o
+ADR nomeia — e, por não ser uma rejeição, **não aparece na métrica de
+cobertura**.
+
+**Correção adotada: rejeitar, não descrever.** Descrever exigiria campo novo,
+corte nos quatro shaders e prova de paridade pixel a pixel com o `three` — isso
+é feature nova, não conserto. Rejeitar é a correção mínima e honesta, e é o que
+o próprio módulo prega: **recusar em vez de aproximar**.
+
+A cobertura real cai. **O número não é estimado: é medido** rodando
+`measureCoverage()` de novo, e os dois valores ficam registrados lado a lado,
+com o antigo marcado como não confiável.
+
+## Linha de base medida em 21/09/2026 (com o `CarSystem` já corrigido)
+
+`?bench&cortexHud=1` (a IA pilota), métricas ligadas, medianas de 289 amostras:
+
+| seção | antes | agora |
+| --- | --- | --- |
+| `cpu.render` | 18,5 ms | **18,40 ms** |
+| `cpu.world` | 9,8 ms | **3,00 ms** |
+| `ui` | — | 2,50 ms |
+| `draws` | ~258 | 262 |
+| `frameMs` | 31,7 ms | 25,1 ms |
+
+O `CarSystem` (trabalho do jogo, SPEC-0013 de lá) tirou 6,8 ms do frame, e com
+isso **o render passou a ser 73% do quadro**.
+
+**Isso muda o valor do M5.** Com `world` em 3,0 e `ui` em 2,5, um `cpu.render`
+de 10 ms — que é exatamente o critério deste marco — dá um quadro de ~16,5 ms,
+ou seja **60 fps**. Antes, com o `world` em 9,8 ms, o M5 sozinho não alcançava
+isso e dependia da outra frente. Agora não depende mais.
+
+## A cobertura NÃO estava inflada nesta cena
+
+A correção do `alphaTest` fechou um furo real, mas a medição depois dela mostrou
+que **ele não estava sendo exercido**: a cobertura continua **242/271 (89,3%)**,
+e as recusas são só `roughnessMap` (24) e `MeshPhysicalMaterial` (5) — nenhuma
+por `alphaTest`.
+
+Ou seja, a afirmação do comentário antigo ("a engine usa hoje opaco ou blend
+comum") era verdadeira para esta cena; o problema era não estar verificada. Agora
+está, e a guarda existe para quando um asset com recorte alfa aparecer.
+
+## Ordem de execução (o risco vem primeiro)
+
+### Passo 0 — SPIKE: o C++ desenha no alvo do `three` sem corromper o frame?
+
+**Esta é a pergunta que decide se o M5 existe.** Não é a transparência (aquela
+só bloqueia um passo isolado, que pode nem ser construído).
+
+O spike abre uma pass própria em C++ **no device, na queue e na textura reais do
+host** (não isolado como o `render_bench.cpp`), limpa, desenha um triângulo com
+profundidade conhecida, devolve o controle, e deixa o `three` terminar o frame
+na mesma textura com `loadOp: load`.
+
+Mede três pixels: um só do triângulo nativo; um de objeto do `three` **atrás**
+dele (tem de ficar oculto pelo teste de profundidade); e um de objeto do `three`
+sem sobreposição (tem de ficar intacto). Repete por 10 frames e compara o
+primeiro com o último.
+
+**O que mata o desenho:** se o teste de profundidade entre as duas passes não
+for respeitado, ou se o pixel degradar entre o frame 1 e o 10 (vazamento de
+estado entre frames), "duas passes sequenciais" está morto — e a única saída
+seria manter um fork do backend do `three`. Nesse caso o relatório é que **a
+migração não paga no formato atual**, e o marco é replanejado ou abandonado, em
+vez de seguido.
+
+> **RESPONDIDO em 21/09/2026 — o C++ desenha no alvo do `three`, e a oclusão
+> entre os dois motores funciona.** Medido no kart-racer com `?bench&hold`, com
+> o marcador (triângulo magenta) desenhado numa pass própria em C++, no device,
+> na queue e na textura REAIS do host, e julgado por captura da janela:
+>
+> | caso | o que se esperava | pixel central medido | veredito |
+> | --- | --- | --- | --- |
+> | sem spike | cor da cena | `(52, 102, 121)` | linha de base |
+> | C++ **depois** do `three`, à frente | marcador visível | `(255, 0, 255)` | **desenhou** |
+> | C++ **depois** do `three`, ao fundo | cena tapa o marcador | `(52, 102, 121)` | **ocluiu certo** |
+>
+> Os dois últimos casos juntos são a prova: o marcador não está sendo "pintado
+> por cima", ele participa do teste de profundidade que o `three` escreveu. A
+> cena fica intacta ao redor (`loadOp: load` preserva), e a UI do host compõe
+> por cima normalmente.
+>
+> **Restrição descoberta, e ela muda a ordem do desenho:** desenhar ANTES do
+> `three` NÃO funciona. Duas causas somadas:
+>
+> 1. **`autoClear = false` não basta.** Quem decide o `loadOp` é
+>    `autoClearColor`/`autoClearDepth`, propriedades SEPARADAS que continuam
+>    ligadas (`Background.js`: `renderContext.clearColor = renderer.autoClearColor === true`).
+>    Enquanto estiverem ligadas, o `three` limpa e apaga o que o C++ desenhou.
+> 2. **O background/céu do `three` cobre a tela** no início do passe dele, então
+>    mesmo sem limpar o alvo o conteúdo anterior some.
+>
+> **Consequência para o marco:** a ordem passa a ser **`three` primeiro, C++
+> depois** — o `three` limpa, desenha o céu e o que não migrou; o C++ desenha os
+> objetos migrados por cima, com o depth test cuidando da oclusão. Isso é mais
+> simples do que o planejado (não exige desligar o clear do `three` nem mexer na
+> ordem dele) e **não** exige tocar em arquivo vendorizado.
+
+### Armadilhas que o passo 0 encontrou (custaram medição, ficam registradas)
+
+- **O alvo de cor do `three` depende do antialias.** Com amostras > 0 ele
+  desenha num alvo multiamostra e só resolve para a textura da canvas no fim da
+  pass; sem amostras, desenha direto nela. Escolher errado manda o desenho para
+  uma textura que ninguém lê — e o sintoma é "nada acontece", sem erro. No
+  kart-racer hoje: **amostras = 0**.
+- **A profundidade de um `RenderTarget` não está no mapa do backend.** Quem a
+  aloca é o `Textures`, que tem DataMap próprio: é
+  `renderer._textures.get(alvo).depthTexture`. Procurar em `backend.get(alvo)`
+  devolve `undefined` em silêncio.
+- **Readback síncrono NÃO pode ser chamado de dentro do frame.** A leitura
+  bombeia a fila até o mapeamento completar; no meio do frame do `three` ela
+  trava o laço e o jogo não sai da tela de carregamento. Quem julga imagem é
+  captura por fora (`PrintWindow` com `PW_RENDERFULLCONTENT`).
+- **A tela de carregamento engana o experimento.** Durante a montagem da cena o
+  render é de uma cena VAZIA com a UI por cima; medir ali não diz nada sobre o
+  marcador. O harness precisa esperar o jogo entrar no ramo de jogo.
+- **O jogo pode injetar o próprio pós-processamento.** O kart-racer passa um
+  objeto com `render()` próprio (`setPostFX`), que abaixo do limiar de
+  velocidade cai no render direto da canvas. Não dá para presumir qual caminho
+  de render está ativo — tem de ser medido.
+
+### Passo 1 — correção do `alphaTest` e medição da cobertura real
+
+Vem **antes** de migrar qualquer material, porque muda o que pode ser migrado.
+
+- **Pronto quando:** `describeMaterial` recusa `alphaTest > 0` com motivo
+  próprio, há teste cobrindo isso, e a cobertura nova está medida e registrada.
+
+### Passo 2 — registro de geometria
+
+Id estável no JS, registro do `GPUBuffer` do `three`, `unwrapValue` no C++.
+
+- **Pronto quando:** dois `Mesh` com a mesma geometria dão o mesmo id (teste), e
+  a contagem de buffers alocados **não dobra**.
+
+### Passo 3 — opacos sem contorno pelo caminho nativo
+
+RenderList povoada do `SceneMirror`, fábrica real de pipeline no cache,
+uniformes por escrita direta.
+
+- **Pronto quando:** `PipelineCache::misses()` estabiliza; `draws` idêntico ao
+  baseline; imagem sem diferença (pelo harness do M7, SPEC-0240).
+
+> **EM ABERTO em 21/09/2026 — o passe desenha, mas a oclusão contra o `three`
+> ainda não funciona.**
+>
+> O que já funciona: 40 malhas REAIS da cena (geometria do `three`, matriz de
+> mundo do objeto, projeção da câmera do `three`) desenhadas por uma pass em C++
+> no alvo do `three`, com uniformes por offset dinâmico e um bind group só.
+> Com o teste de profundidade desligado elas aparecem **no lugar certo**
+> (~28 mil pixels da cor do passe), o que confirma geometria, matriz e projeção.
+>
+> O que não funciona: com `LessEqual` contra o depth do `three`, **nenhum pixel
+> passa**; com `Greater`, passam ~45 mil. Ou seja, a profundidade que este passe
+> gera é sistematicamente MAIOR que a que o `three` escreveu no mesmo pixel.
+>
+> Já descartado, com medição:
+>
+> | hipótese | como foi descartada |
+> | --- | --- |
+> | orientação de face (cull) | desligar o cull sozinho não muda nada |
+> | textura de profundidade recriada por frame | o endereço é o MESMO em todos os frames, 2560x1440 |
+> | `three` descartando o depth no fim da pass | o backend usa `Store` em todos os caminhos |
+> | convenção de profundidade WebGL vs WebGPU | a câmera reporta WebGPU, e converter à força não muda o resultado |
+> | depth invertido | nem a engine nem o jogo ligam `reversedDepth`, e o `three` desta versão não tem `reverseDepthBuffer` |
+> | z ou estado de profundidade errados no passe | **limpar** o depth na própria pass (`Clear` 1.0) faz os 45 mil pixels aparecerem: o z passa contra 1.0, então ele é menor que 1 e o estado está correto |
+> | view de profundidade diferente da do `three` | passar a view exata do descriptor dele (`backend.get(canvasTarget).descriptor.depthStencilAttachment.view`) **não muda nada** |
+> | ordem de submissão | o `three` submete dentro do próprio `render()` (`finishRender`), antes de o controle voltar |
+> | o objeto estar escondido e o depth ali ser de outra coisa | desenhar **sem esconder**, por cima do próprio objeto (onde o depth seria idêntico e `LessEqual` passaria por igualdade), também dá zero |
+>
+> **O que isso estabelece:** o passe desenha, o z está correto, e o conteúdo que
+> a pass carrega **não é o depth que o `three` escreveu** — ele se comporta como
+> um buffer de zeros. Falta descobrir onde o `three` de fato escreve essa
+> profundidade, já que nem a textura de `getDepthBuffer` nem a view do
+> descriptor da canvas contêm o resultado dele.
+>
+> **Correção de uma conclusão anterior desta mesma spec:** o resultado do passo 0
+> foi lido como "a oclusão entre os dois motores funciona". Isso **não estava
+> provado**. Lá o marcador era posto no fundo pelo viewport (`minDepth = maxDepth
+> = 1`) e não aparecia; eu li isso como "a cena o ocluiu", mas o mesmo resultado
+> sai de um buffer de profundidade que rejeita qualquer z > 0 — que é
+> exatamente o sintoma medido agora. O passo 0 provou que **o C++ desenha no
+> alvo do `three` e o desenho chega à tela**; não provou oclusão.
+> **CORREÇÃO em 21/09/2026 — a sonda de profundidade não é um instrumento
+> válido nesta plataforma, e o que ela "confirmou" não vale.**
+>
+> A sonda (`CORTEX_DEPTH_PEEK`) pinta na cor o que está no buffer de
+> profundidade, via `texture_depth_2d` + `textureLoad`. Ela foi usada para
+> "confirmar por leitura" que a profundidade do `three` está zerada. **Esse
+> passo era inválido.**
+>
+> Validação do instrumento, que faltava: apontar a sonda para a profundidade
+> **própria do passe** (modo `CORTEX_DEPTH_PEEK=2`), que é limpa com `1.0` todo
+> frame e portanto **não pode** ler zero. Resultado medido:
+>
+> | teste | esperado | medido |
+> | --- | --- | --- |
+> | sonda devolve cor constante | tela coberta | tela coberta — o pipeline roda e o alvo é o certo |
+> | sonda devolve `textureDimensions` | 2560x1440 | R=159, G=90 → 2554x1446 (quantização de 8 bits) — a textura **chega** ao shader |
+> | sonda devolve `z` do buffer limpo com 1.0 | branco | **preto (z = 0)** |
+>
+> Ou seja: o pipeline roda, o alvo é o certo, o binding está correto e a textura
+> chega ao shader com as dimensões certas — e ainda assim `textureLoad` devolve
+> zero. **A leitura de profundidade por `texture_depth_2d` não funciona neste
+> caminho wgpu/D3D12.** Aspecto `DepthOnly` explícito na view não muda.
+>
+> **O que muda e o que não muda:**
+>
+> - **Não muda:** a conclusão de que a profundidade do `three` *se comporta*
+>   como um buffer de zeros continua de pé — ela vem dos testes
+>   **comportamentais** da tabela acima (`LessEqual` não passa nada, `Greater`
+>   passa, `Clear` na própria pass destrava), que não dependem da sonda.
+> - **Muda:** a frase "a view que o host captura também **lê** zeros" não tem
+>   valor probatório. A sonda leria zero de qualquer buffer.
+> - **Some uma hipótese:** o diagnóstico mostrou `viewJS == viewHost` (mesmo
+>   ponteiro), então a suspeita de que o JS entregava uma view diferente da que
+>   o host captura das passes do `three` está **descartada por medição**.
+> - Também medido do alvo real: profundidade `Depth24Plus`, 2560x1440, **1
+>   amostra**, `usage = 23` (inclui `TextureBinding` e `CopySrc`); cor
+>   `BGRA8Unorm`, 1 amostra. Isso descarta multiamostra e falta de usage como
+>   causa.
+>
+> **Consequência para quem continuar:** não usar a sonda como evidência. O
+> próximo teste da oclusão tem de ser comportamental e sem ambiguidade —
+> desenhar o mesmo lote duas vezes contra a profundidade do `three`, uma com
+> `depthCompare = Always` e outra com `Greater`, e comparar as imagens: num
+> buffer de zeros as duas são idênticas; num buffer com a cena, `Greater` mostra
+> o objeto só onde ele está atrás dela.
+
+> **CAUSA ENCONTRADA em 21/09/2026 — o passe nativo desenha num alvo onde a
+> cena nunca foi desenhada.**
+>
+> Instrumentando `beginRenderPass` para contar os draws de cada pass do frame
+> (`CORTEX_PASS_LOG`), o quadro fica assim no regime estável:
+>
+> | alvo | draws na pass | o que é |
+> | --- | --- | --- |
+> | 2048x2048 | **187** | a cena (os opacos restantes depois de migrar 40) |
+> | 2560x1440 | 0 e 1 | passes de composição |
+>
+> **Nenhuma pass de 2560x1440 desenha mais de um objeto.** E 2560x1440 é
+> exatamente o alvo que o JS entrega ao passe nativo. Ou seja: o passe nativo
+> desenha num alvo de composição, DEPOIS de a cena já ter sido composta, e a
+> profundidade que recebe é a desse alvo — que ninguém escreve.
+>
+> Isso explica, de uma vez, tudo o que foi medido antes e não fechava:
+>
+> - `Always` e `Greater` passam o mesmo número de pixels e `LessEqual` passa
+>   zero — porque o buffer é mesmo de zeros, só que pelo motivo certo: é o
+>   buffer errado.
+> - Passar "a view exata do descriptor do `three`" não mudava nada — era a view
+>   certa do alvo errado.
+> - A cor funciona e a profundidade não: desenhar no alvo de composição APARECE
+>   na tela (é o último a ser composto), mas não tem contra o que ocluir.
+>
+> **Critérios de seleção que foram tentados e não servem** (ficam registrados
+> para não se repetirem):
+>
+> | critério | por que falha |
+> | --- | --- |
+> | a última pass com profundidade | é a composição, ~1 draw |
+> | a pass que faz `Clear` na profundidade | pega o alvo de 2048x2048 quando ele não é o da cor, e o wgpu recusa a pass por tamanhos diferentes |
+> | a pass que mais desenha | idem — é a de 2048x2048, e não casa com o alvo de cor de 2560x1440 |
+>
+> **Consequência para o marco:** a oclusão contra o `three` não se resolve
+> escolhendo melhor a profundidade. O passe nativo precisa entrar **na pass da
+> cena** — mesmo alvo de cor, mesma profundidade — e portanto ANTES da
+> composição. O gancho atual, em `Renderer.render()` depois de
+> `renderer.render(scene, camera)`, roda tarde demais por construção.
+>
+> Isso não invalida a medição de 34 µs/draw: ela mede o custo de submissão, que
+> não muda de lugar junto com o passe.
+> **REVISÃO em 21/09/2026 — a pass de volume é o SHADOW MAP, não a cena.**
+>
+> A conclusão acima ("2048x2048 com 187 draws é a cena") **estava errada** e é
+> corrigida aqui. Registrando o formato das views junto do tamanho, a pass de
+> volume é `2048x2048 RGBA8Unorm` — o shadow map do `three`, que no backend
+> WebGPU é um render target com cor. A cena não é essa pass.
+>
+> O que ficou estabelecido, e vale:
+>
+> | fato | como foi medido |
+> | --- | --- |
+> | o JS entrega `alvoCor` **nulo** | log no shim: `alvoCor=0000000000000000 0x0` |
+> | `null` vira o offscreen do host (2560x1440) | é o fallback em `drawNativeItems` |
+> | `backend.get(canvasTarget).texture` chega vazio | o alvo continuou 2560x1440 depois de tentar passá-lo |
+> | o frame tem 5 passes com profundidade | janela de candidatas: 1, 1, 187, 1, 0 draws |
+> | só a de 2048x2048 tem volume, e é o shadow map | formato RGBA8Unorm |
+> | não há multiamostra | `resolveTarget` nulo em todas as passes |
+> | o host recebe o `loadOp` que o `three` pediu | `profLoadCru=load` |
+>
+> **O buraco que resta:** os draws da cena não aparecem em nenhuma pass de
+> 2560x1440 (elas têm 0 ou 1 draw), e mesmo assim o trace conta ~214 draws no
+> frame. Ou a cena é gravada por um caminho que não passa por
+> `beginRenderPass` do binding, ou os draws dela não passam pelo `draw`/
+> `drawIndexed` do binding. Descobrir por onde ela passa é o próximo passo, e é
+> o que falta para saber onde o passe nativo deve entrar.
+>
+> A escolha do alvo pelo host (`cenaAlvo`, ligada por `CORTEX_ALVO_DA_CENA`)
+> fica no repo desligada: ela encontra o shadow map, não a cena. O padrão segue
+> no alvo que o JS pede, que é o que mantém o passe visível e a medição de
+> 34 µs/draw reproduzível.
+>
+> **Armadilha de medição encontrada:** o `dist` de teste estava **defasado** em
+> relação ao `src`. As rodadas de hoje cedo (Always/Greater/LessEqual com 46297
+> pixels) usaram um bundle antigo, em que o passe pintava com uma cor fixa
+> magenta; o código atual pinta com a cor do material. Isso **não invalida**
+> aquelas medições — o que estava em teste era o teste de profundidade, não a
+> cor — mas quem for medir de novo tem de **reexportar o jogo** antes, e não só
+> recompilar o host.
+
+> **FECHAMENTO em 21/09/2026 — a cena é a pass de 2048x2048, e o passe entra
+> depois da composição.**
+>
+> A revisão acima ("a pass de volume é o shadow map") também **estava errada**,
+> e cai aqui. O erro foi de instrumento: a linha de log juntava o alvo da pass
+> ATUAL com os draws da ANTERIOR, que são passes diferentes. Com o log pareado
+> — tamanho e draws da mesma pass — o frame fica assim:
+>
+> | alvo | formato | draws com `nativePass=0` | com `nativePass=40` |
+> | --- | --- | --- | --- |
+> | **2048x2048** | RGBA8Unorm | **234** | **187** |
+> | 1280x720 | RGBA16Float | 24 | 24 |
+> | 2560x1440 | BGRA8Unorm / RGBA16Float | 0 e 1 | 0 e 1 |
+>
+> Duas coisas fecham a identificação, e nenhuma delas sozinha bastaria:
+>
+> 1. **A soma bate:** 187 + 24 + 1 + 1 + 1 = 214, exatamente o total de draws
+>    que o HUD conta no frame. Não sobra lugar para uma segunda pass de cena.
+> 2. **Ela perde draws com a migração:** 234 → 187 ao migrar 40 malhas (algumas
+>    valem mais de um draw, por multi-material).
+>
+> **A ordem do frame é o que falta resolver.** As passes saem nesta sequência:
+> a cena (2048x2048), depois a composição (2560x1440, 1 draw), depois a UI
+> (1280x720), e **só então** o passe nativo. Por isso apontar o passe para a RT
+> da cena (`CORTEX_ALVO_DA_CENA=1`) o faz sumir da tela: ele desenha numa
+> textura que já foi consumida naquele frame.
+>
+> **O que o marco precisa:** um gancho entre "a cena terminou de ser desenhada
+> na RT" e "o pós-processamento começa". O gancho atual, no fim do
+> `Renderer.render()`, está depois dos dois. Isso é desenho, não depuração — e
+> é o próximo passo do passo 3.
+>
+> **Lição de método, pela terceira vez nesta spec:** todas as três conclusões
+> erradas desta investigação vieram de instrumentos não validados — a sonda que
+> lia zero de qualquer buffer, o contador zerado duas vezes, e o log que
+> pareava passes diferentes. Antes de concluir de uma medição nova aqui,
+> confira o instrumento num caso de resposta conhecida.
+> **DESCARTE DEFINITIVO em 21/09/2026 — não é "a view errada".**
+>
+> Com o alvo da cena identificado e a seleção pelo host funcionando
+> (`CORTEX_ALVO_DA_CENA=1`, confirmado por log: `alvoDoHost=sim 2048x2048
+> fmt=22`), o teste comportamental foi refeito **contra a profundidade da
+> própria pass da cena**:
+>
+> | comparação | pixels do passe |
+> | --- | --- |
+> | `Always` | 45306 |
+> | `Greater` | 45306 |
+> | `LessEqual` | 0 |
+>
+> A profundidade em questão é, pelo log, limpa com `clearValue = 1.000` e
+> armazenada (`profStore = Store`), e a pass que a usa faz os 187 draws da
+> cena. Ainda assim o passe a lê como um buffer de zeros.
+>
+> **Views já testadas, todas com o mesmo resultado:**
+>
+> | view | origem |
+> | --- | --- |
+> | a do `getDepthBuffer` | `backend.textureUtils` |
+> | a do descriptor do alvo da canvas | `backend.get(...).descriptor` |
+> | a última vista pelo host | captura em `beginRenderPass` |
+> | **a da pass da cena** | escolhida por tamanho + volume de draws |
+>
+> Também descartados por medição direta, cada um com o dado na mão:
+> multiamostra (`resolveTarget` nulo em todas as passes), profundidade
+> invertida (`clearValue = 1.000` em todas), e adulteração do `loadOp` pelo
+> host (`profLoadCru` é o que o `three` pediu).
+>
+> **O fio que sobra:** a profundidade que o `three` escreve **não é vista por
+> uma pass separada**, submetida depois, mesmo usando a view exata daquela
+> pass. Isso não é mais uma questão de escolher o recurso certo — é o caminho
+> do host entre command buffers. Investigar ali é o próximo passo, e o ADR-0237
+> já previa a forma final ("duas passes sequenciais com `loadOp: load`
+> compartilhando color+depth"), então é exatamente essa premissa que precisa
+> ser validada no host antes de continuar.
+
+
+
+
+> **MEDIDO em 21/09/2026 — o caminho nativo é 34 µs/draw mais barato, e isso
+> confirma a hipótese que sustenta o plano inteiro.**
+>
+> Com o passe usando profundidade própria (ver ressalva abaixo), `?bench` com a
+> IA pilotando, métricas ligadas, medianas de ~305 amostras:
+>
+> | cenário | `cpu.render` | draws ainda no `three` |
+> | --- | --- | --- |
+> | sem o passe | 17,20 ms | 261 |
+> | 200 objetos migrados | 13,00 ms | 158 |
+> | todos os elegíveis | **11,10 ms** | 82 |
+>
+> **179 draws migrados derrubaram 6,1 ms — 34 µs por draw.** A SPEC-0227 tinha
+> medido 33,5 µs/draw no JS por outro caminho; os dois números baterem é a
+> validação mais forte que este plano recebeu até agora.
+>
+> Extrapolando os 82 draws que sobraram (material fora do subconjunto,
+> transparentes), o alvo de 10 ms do marco está ao alcance e o de 8 ms do
+> ADR-0237 é plausível.
+>
+> **Ressalvas, porque o número não é a imagem:**
+>
+> - O passe desenha com **cor sólida provisória**, sem sombreamento. Um toon com
+>   textura custa mais — parte desse ganho será devolvida quando o shader ficar
+>   completo. O que está medido é o custo de **submissão**, que é o que o marco
+>   ataca.
+> - A **oclusão contra o `three` continua quebrada** (o passe usa profundidade
+>   própria), então a imagem ainda não é a correta.
+> - O contador `draws` do trace só conta o que passa pela ponte; os draws
+>   nativos não entram. Por isso a coluna diz "ainda no `three`" — a queda ali é
+>   a migração, não trabalho a menos.
+> **VERIFICAÇÃO da medição em 21/09/2026 — o ganho de 34 µs/draw não está
+> inflado por perda de trabalho.**
+>
+> A migração esconde a malha do `three` com `malha.visible = false`
+> (`NativePass._escolher`). Isso a remove de **todas** as passes dele, não só
+> da principal. Se um objeto migrado aparecesse em duas passes — a cena e uma
+> de sombra — e o passe nativo só refizesse uma, parte dos 6,1 ms medidos seria
+> **trabalho que deixou de ser feito**, ou seja, perda de qualidade disfarçada
+> de otimização.
+>
+> O mapa de passes responde: no frame só existe **uma** pass com volume de
+> draws, e é exatamente ela que cai de 234 para 187 ao migrar 40 malhas. Não há
+> segunda pass onde os objetos migrados também apareçam. Logo o `three`
+> desenhava cada um **uma vez**, e o passe nativo desenha uma vez — a
+> comparação é justa.
+>
+> Isso continua valendo enquanto a cena não tiver uma pass de sombra dinâmica
+> com volume. **Se o jogo ligar sombras dinâmicas, esta verificação tem de ser
+> refeita**, porque aí `visible = false` passaria a remover trabalho que o
+> passe nativo não reproduz.
+> **CORREÇÃO GRAVE em 21/09/2026 — a verificação acima está ERRADA, e a
+> medição de 34 µs/draw está sob suspeita.**
+>
+> A verificação concluiu que "só existe uma pass com volume e é a cena". O
+> `three` **rotula** as texturas (`texture.name`), e o host não lia esse campo.
+> Lendo-o, a pass de volume se identifica sozinha:
+>
+> | pass | profundidade (rótulo) | draws com `nativePass=0` |
+> | --- | --- | --- |
+> | UI | (nenhuma) | 24 |
+> | cena | `depthBuffer` (2560x1440) | 1 |
+> | — | (sem rótulo, 2560x1440) | 1 |
+> | **shadow map** | **`ShadowDepthTexture` (2048x2048)** | **234** |
+> | composição | `depthBuffer` | 1 |
+>
+> Soma: 261 — exatamente o total de draws do frame sem o passe.
+>
+> **A pass de volume é o SHADOW MAP, não a cena.** E é ela que cai de 234 para
+> 187 ao migrar 40 malhas, porque `malha.visible = false` tira o objeto das
+> sombras também — e o passe nativo **não redesenha o shadow map**.
+>
+> Logo, a conclusão correta é o oposto da registrada: **a queda de draws
+> observada é trabalho que deixou de ser feito**, e os objetos migrados
+> perderam suas sombras. Quanto dos 6,1 ms vem disso e quanto vem de submissão
+> mais barata **ainda não se sabe** — o número de 34 µs/draw não pode ser usado
+> para decidir nada até isso ser separado.
+>
+> **Como separar, na próxima medição:** comparar `cpu.render` com o passe ligado
+> contra uma linha de base em que as mesmas 40 malhas estejam com
+> `castShadow = false` (mesma perda de sombra, sem o passe nativo). A diferença
+> entre as duas é o ganho real de submissão.
+>
+> **Por que o erro passou:** a identificação da pass foi feita por dimensão e
+> volume, não por identidade. Duas texturas quadradas de 2048 (shadow) e o alvo
+> de 2560x1440 (cena) foram trocados de papel três vezes ao longo do dia. O
+> rótulo estava disponível o tempo todo, dentro do `three`, e resolveu a
+> questão em minutos. **Identifique o recurso pelo nome que o dono dele dá, não
+> pela forma.**
+> **REMEDIÇÃO em 21/09/2026 — o ganho de 34 µs/draw NÃO se reproduz. O passe
+> nativo não entrega ganho mensurável nesta cena.**
+>
+> Quatro cenários, **mesma build**, `?bench&hold` (cena congelada, que é a
+> variante do método feita para comparação fina), medianas de ~160 amostras:
+>
+> | cenário | `cpu.render` | draws |
+> | --- | --- | --- |
+> | baseline | 13,60 ms | 261 |
+> | controle — as 40 malhas com `castShadow = false`, sem passe | 13,10 ms | 261 |
+> | **passe nativo com 40 malhas** | **13,40 ms** | 214 |
+> | **sem sombras** | **8,80 ms** | 195 |
+>
+> Leitura:
+>
+> - **O passe nativo não ganha nada:** 13,40 contra 13,60 do baseline está
+>   dentro do ruído, e é **pior** que o controle (13,10). Os 6,1 ms medidos
+>   antes não se reproduzem em nenhum cenário.
+> - **As sombras custam 4,8 ms** — 35% do `cpu.render`. É o único item com
+>   ganho grande e fora de dúvida.
+>
+> **Por que o passe não ganha, e isso é coerente:** o merge estático
+> (`mergeStaticScene`, ligado por padrão no host) já funde a cena, então o
+> passe principal quase não tem custo por objeto para eliminar. O M5 ataca uma
+> parte que já estava resolvida.
+>
+> **Por que a medição anterior enganou:** ela comparou rodadas de builds
+> diferentes e sem `hold`, com a IA pilotando trechos distintos da pista. A
+> variância da pilotagem domina diferenças dessa ordem — na primeira tentativa
+> desta remedição, sem `hold`, o *controle* apareceu mais lento que o baseline
+> (17,80 contra 15,80), o que é impossível como efeito e só se explica por
+> ruído. **Comparação fina exige `hold` e a mesma build.**
+>
+> **Pendência de instrumento, registrada sem explicação inventada:** o contador
+> de `draws` cai 47 com o passe ligado (`visible = false`) mas **não muda** no
+> controle (`castShadow = false`). Se esses 47 fossem de sombra, o controle
+> também os perderia. Isso ainda não fecha com a contagem por pass, que atribui
+> 234 draws ao shadow map. Não use nenhuma das duas contagens para concluir até
+> a divergência ser resolvida — o tempo medido, sim, é confiável, porque vem da
+> métrica oficial do trace com a cena congelada.
+>
+> **Consequência para o plano:** o ADR-0237 põe o M5 (submissão do passe
+> principal) antes do M6 (passe de sombra nativo). A medição inverte a
+> prioridade: o passe principal não tem ganho a extrair nesta cena e a sombra
+> tem 4,8 ms. Isso contradiz a ordem registrada no ADR e **precisa de decisão
+> do dono do projeto** antes de seguir — não de mais implementação.
+
+
+
+
+### Passo 4 — pool de uniformes ligado ao que se moveu
+
+- **Pronto quando:** objeto parado gera **zero** escrita no frame seguinte.
+
+### Passo 5 — a medição que decide o resto
+
+`cpu.render` mediano com `?bench&hold`. Se já estiver perto de 10 ms, **o passo
+6 é cancelado** e registrado como desnecessário.
+
+### Passo 6 (condicional) — transparência entrelaçada
+
+Só se o passo 5 disser que falta. Ganha ADR próprio.
+
+### Passo 7 — contorno, toon e standard restantes
+
+## Constantes
+
+| nome | o que é | como o valor sai |
+| --- | --- | --- |
+| `kOpaqueOnlyRenderMs` | `cpu.render` após os opacos migrados | mediana de N rodadas com `?bench&hold` — é o número que decide o passo 6 |
+| `kDualPassPixelTolerance` | diferença de pixel aceita entre o dual-pass e o caminho 100% `three` | começa em **0** (exige idêntico) e só relaxa com justificativa registrada |
+| `kPipelineCacheMissBudget` | misses aceitáveis em regime | `PipelineCache::misses()` após aquecimento |
+| `kNativeDrawNanosMeaning` | o que `nanos` significa num draw que não cruza a ponte | decidido e registrado **antes** de comparar os lados (ver abaixo) |
+
+## Armadilhas de medição que este marco cria
+
+- **`nanos` fica incomparável.** O cronômetro do `napi_stats` mede o tempo
+  **dentro do callback N-API**, isto é, o custo de atravessar a ponte. Draw
+  nativo não atravessa ponte nenhuma. Comparar `nanos` entre os dois lados é
+  comparar coisas diferentes, a menos que se defina explicitamente o que ele
+  significa no nativo.
+- **Os contadores são manuais.** Os oito `bump*()` (pipeline, bind group,
+  vertex, index, draw, writeBuffer, submit) precisam ser chamados à mão no laço
+  nativo. Esquecer **um** faz `draws` bater e os outros divergirem em silêncio —
+  e o método do projeto, que confere só `draws`, **não pega esse erro**.
+- **A sonda de fases fica cega para o que migrou.** O `RenderPhaseProbe`
+  (SPEC-0227) instrumenta por wrapper de métodos do `three`; o que sair do
+  `three` some da granularidade fina. O total de `cpu.render` continua válido
+  **desde que** a submissão nativa seja síncrona dentro da mesma chamada de
+  render — o que precisa ser verificado, não presumido.
+
+## O que este marco NÃO promete
+
+- Skinning, animação por osso, partículas, sprites 2D, UI de runtime e materiais
+  TSL customizados continuam no `three` (já decidido no ADR-0237).
+- **Recorte alfa (`alphaTest > 0`) fica de fora** e passa a ser recusado.
+- Transparência entrelaçada entre motores é **condicional à medição**.
+- Patch em arquivo vendorizado do `three` está descartado.
+- Profiling fino dentro do caminho nativo é instrumentação nova, fora deste
+  marco.

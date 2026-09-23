@@ -1,0 +1,156 @@
+name: PR checks
+
+# Gate de merge na `main` (TDR-0005).
+#
+# Até aqui a pipeline só acordava DEPOIS do merge: `release.yml` dispara em
+# `push: main`, então o `yarn test` reprovava um commit que já estava na `main`
+# — e o host nativo C++ nunca era validado como código (ele é compilado no job
+# `build` do release, pós-merge, e só quando o semantic-release publica).
+#
+# Aqui rodam, ANTES do merge:
+#  1. `test`      — mesma suíte Vitest do `release.yml` (inclui o contrato do
+#                   `three`, SPEC-0246, cuja trava de versão protege o passe de
+#                   sombra nativo e o espelho de cena).
+#  2. `native-host` — compila o host CortexNative completo (prova a
+#                   "compatibilidade de build": bundle.mjs real sobre o engine,
+#                   hermesc, link do cortex_host.exe) e roda os testes
+#                   unitários do C++ (`cortex_host_tests`, TDR-0004).
+#
+# `release.yml` e `build-ide.yml` NÃO foram alterados — o caminho que publica
+# os instaladores do Studio segue idêntico.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # pra rodar o gate à mão numa branch sem abrir PR
+
+permissions:
+  contents: read
+
+# Push novo no PR cancela o run anterior — o job nativo é caro (runner Windows
+# conta 2× em minutos faturados) e validar um commit já superado é desperdício.
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Mesma versão dos demais workflows do repo.
+  NODE_VERSION: '24.15.0'
+  # Diretório de build do host — o mesmo que a action composta configura.
+  NATIVE_BUILD_DIR: native/build
+  # Alvo PURO do CMake (sem wgpu/NAPI/Hermes): compila em segundos por cima do
+  # configure que a action já fez.
+  NATIVE_TESTS_TARGET: cortex_host_tests
+  # Timeouts por step (contexto `env` só vale em step, não em job).
+  TIMEOUT_INSTALL_MINUTES: '15'
+  TIMEOUT_VITEST_MINUTES: '25'
+  TIMEOUT_NATIVE_BUILD_MINUTES: '90'
+  TIMEOUT_NATIVE_TESTS_MINUTES: '15'
+
+jobs:
+  test:
+    name: Tests (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Install dependencies
+        timeout-minutes: ${{ fromJSON(env.TIMEOUT_INSTALL_MINUTES) }}
+        run: yarn install --frozen-lockfile
+
+      # Encoder WASM (pinado) usado pelos testes de política de encode KTX2
+      # (tests/native/encode-ktx2.test.ts, ADR-0119) — não vive no git
+      # (native/tools/ é gitignorado). Sem ele a suíte pularia (runIf).
+      - name: Fetch basis encoder
+        run: node native/scripts/fetch-basis-encoder.mjs
+
+      # Toolchain de export (TDR-0003): o smoke isolado
+      # (tests/native/export-isolated-smoke.test.ts) roda o bundle.mjs REAL com
+      # ele como única árvore de módulos. Sem este step ele aborta o job em vez
+      # de passar batido.
+      - name: Install export toolchain
+        timeout-minutes: ${{ fromJSON(env.TIMEOUT_INSTALL_MINUTES) }}
+        working-directory: native/export-toolchain
+        run: yarn install --frozen-lockfile
+
+      - name: Run unit tests
+        timeout-minutes: ${{ fromJSON(env.TIMEOUT_VITEST_MINUTES) }}
+        env:
+          # Ausente em PR de fork — os testes que dependem dela se pulam.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: yarn test
+
+  native-host:
+    name: Host nativo (Windows) + cortex_host_tests
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      # A action composta NÃO cacheia o `cargo build --release` do
+      # rapier-native — era o item pesado que sobrava sem cache. O cache fica
+      # AQUI, e não dentro da action, pra não mudar o comportamento do
+      # `release.yml`, que a compartilha.
+      - name: Cache do cargo (crate rapier-native)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/rapier-native/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('native/rapier-native/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
+
+      # O bundle do host (native/scripts/bundle.mjs, rodado pelo CMake) resolve
+      # o `three` e o engine no node_modules da RAIZ — por isso o install vem
+      # antes do build nativo.
+      - name: Install dependencies
+        timeout-minutes: ${{ fromJSON(env.TIMEOUT_INSTALL_MINUTES) }}
+        run: yarn install --frozen-lockfile
+
+      # Deps pinadas (fetch-deps.ps1) + Rust/Ninja/MSVC + cargo + CMake/Ninja
+      # do host. Sem `steamworks-sdk-key`: o host Steam é um SEGUNDO build
+      # completo, a secret não existe em PR de fork, e a action já pula o passo
+      # quando ela vem vazia. O host Steam segue validado no `release.yml`.
+      - name: Build native host (CortexNative)
+        timeout-minutes: ${{ fromJSON(env.TIMEOUT_NATIVE_BUILD_MINUTES) }}
+        uses: ./.github/actions/build-native-host
+
+      # Alvo PURO (TDR-0004): sem device wgpu, sem NAPI env, sem Hermes. O
+      # ambiente MSVC e o `native/build` configurado vêm da action acima, então
+      # aqui é só compilar o alvo — segundos.
+      - name: Build cortex_host_tests
+        shell: pwsh
+        run: |
+          cmake --build "${{ env.NATIVE_BUILD_DIR }}" --target ${{ env.NATIVE_TESTS_TARGET }}
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # Exit code do harness = nº de falhas (0 = verde).
+      - name: Run cortex_host_tests
+        timeout-minutes: ${{ fromJSON(env.TIMEOUT_NATIVE_TESTS_MINUTES) }}
+        shell: pwsh
+        run: |
+          $exe = "./${{ env.NATIVE_BUILD_DIR }}/${{ env.NATIVE_TESTS_TARGET }}.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "alvo $exe nao foi produzido pelo build"
+            exit 1
+          }
+          & $exe
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "cortex_host_tests: $LASTEXITCODE check(s) falharam"
+            exit $LASTEXITCODE
+          }
