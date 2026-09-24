@@ -1,3 +1,17 @@
+# [0.63.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.62.0...v0.63.0) (2026-09-24)
+
+
+### Bug Fixes
+
+* **native:** world.timestep no Rapier do host ([d06ea3d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d06ea3d646109e9f3f5544761ca17e6dc8ac6836))
+
+
+### Features
+
+* **core:** teto de fps escolhido pelo jogo e passo do veículo independente do fps ([40f85da](https://github.com/BuuhV-Projects/cortex-game-engine/commit/40f85da5c31e7bd80a057aa91b2bef95f269ee36))
+* **physics:** veículo arcade e frota de carros no mesmo mundo ([f257672](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f2576728f23371fb0dbdc648ef2361a2d30ad337))
+* **scene:** progresso em rota fechada (Route) ([0ae82fc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0ae82fcb901b5537eb72b90af64fa243f9a54bd4))
+
 # [0.62.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.61.0...v0.62.0) (2026-09-24)
 
 
