@@ -1655,6 +1655,27 @@ body.app-preview-fullscreen #preview-container {
   30% { opacity: 1; transform: translateY(-3px); }
 }
 
+/* Barra de saúde do turno (ADR-0272): sempre visível enquanto a IA trabalha. */
+.chat-health {
+  font-size: 11px;
+  color: var(--od-fg-dim);
+  padding: 4px 8px;
+  border-top: 1px solid var(--od-border-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-health--quiet {
+  color: #d9a441;
+}
+
+.chat-health--stalled {
+  color: #ffffff;
+  background-color: #a8412f;
+  white-space: normal;
+}
+
 /* Linha discreta com stats do turno (tempo, custo, tokens) */
 .chat-turn-stats {
   font-size: 10.5px;

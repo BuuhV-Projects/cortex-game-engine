@@ -33,6 +33,7 @@ function fakeDeps(rounds: Array<() => void>, validate: (path: string) => Validat
   const prompts: string[] = []
   const resumes: Array<string | null> = []
   const notes: string[] = []
+  const cards: Array<{ summary: string; result?: string; isError?: boolean }> = []
   const deps: ModelingDeps = {
     runRound: async (prompt, resumeId) => {
       prompts.push(prompt)
@@ -42,8 +43,13 @@ function fakeDeps(rounds: Array<() => void>, validate: (path: string) => Validat
     },
     validate: async (path) => validate(path),
     notify: (text) => notes.push(text),
+    card: (summary) => {
+      const card: { summary: string; result?: string; isError?: boolean } = { summary }
+      cards.push(card)
+      return (result, isError) => Object.assign(card, { result, isError })
+    },
   }
-  return { deps, prompts, resumes, notes }
+  return { deps, prompts, resumes, notes, cards }
 }
 
 beforeEach(() => {
@@ -88,6 +94,26 @@ describe('runModelingTurn', () => {
     await runModelingTurn(root, 'modele um carro', 'ask', null, deps)
     expect(prompts).toHaveLength(MAX_MODEL_ATTEMPTS)
     expect(notes.at(-1)).toMatch(/seguem reprovados depois de 3 tentativas[\s\S]*assets\/carro\.glb/)
+  })
+
+  it('cada modelo validado vira um card no chat, fechado com o veredito (SPEC-0271)', async () => {
+    const { deps, cards } = fakeDeps(
+      [() => { put('assets/a.glb', 'a'); put('assets/b.glb', 'b') }, () => put('assets/b.glb', 'b2')],
+      (path) => validation(path.endsWith('b.glb') && cards.length < 3 ? 20 : 2),
+    )
+    await runModelingTurn(root, 'modele duas pedras', 'ask', null, deps)
+    expect(cards.slice(0, 2).map((c) => c.summary)).toEqual([
+      'Validando modelo 1/2: assets/a.glb',
+      'Validando modelo 2/2: assets/b.glb',
+    ])
+    expect(cards[0]).toMatchObject({ result: 'aprovado', isError: false })
+    expect(cards[1]).toMatchObject({ isError: true })
+    expect(cards[1]!.result).toMatch(/material/i)
+    // Depois da correção, o portão revalida tudo que mudou no turno.
+    expect(cards.slice(2)).toMatchObject([
+      { summary: 'Validando modelo 1/2: assets/a.glb', result: 'aprovado' },
+      { summary: 'Validando modelo 2/2: assets/b.glb', result: 'aprovado' },
+    ])
   })
 
   it('não valida nada se nenhum modelo mudou', async () => {
