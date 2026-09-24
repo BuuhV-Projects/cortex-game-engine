@@ -34,6 +34,25 @@ Por nascimento:
 | `camera` | `main` se é a câmera do jogo; senão o `type` da câmera (sombra usa a da luz) |
 | `ms` | duração da chamada — inclui a compilação síncrona do host |
 
+| `key` | a chave de cache do three (`renderObject.pipeline.cacheKey`): ids dos shaders de vértice e fragmento + estado (blend, depth, face, formato/amostras do alvo, geometria) |
+
+### Segunda rodada: por que o mesmo efeito nasce várias vezes, e por que o aquecimento não os pegou
+
+A primeira volta instrumentada mostrou duas coisas que o rótulo sozinho não
+explica: as brasas da chama nasceram **25 vezes** (o óleo, 9), e o
+`game.precompile()` do carregamento **não criou nenhum** pipeline de efeito,
+embora o jogo os pusesse na cena antes. Daí os campos extras:
+
+- `key` em cada nascimento — duas brasas com chaves diferentes dizem se o que
+  difere é o shader (ids) ou o estado (alvo, face, blend).
+- `pipelineLookups` na amostra — consultas ao cache de pipeline, acumuladas,
+  contando os ACERTOS (medido envolvendo `backend.getRenderCacheKey`, chamado
+  uma vez por consulta que precisa de pipeline).
+- um registro `precompile` no trace, gravado pelo `Game.precompile`: duração,
+  consultas e nascimentos DENTRO dele. Separa "não rodou" (0 ms), "não
+  percorreu os efeitos" (poucas consultas) e "só achou chave existente"
+  (consultas sem nascimento).
+
 A amostra seguinte do `perf-trace.jsonl` leva a lista em `pipelinesBorn`
 (ausente quando nada nasceu). Só é instalado quando o trace está ativo (ponte
 do host presente): fora do export com métricas, nada muda.

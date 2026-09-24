@@ -25,6 +25,12 @@ export interface PipelineBirth {
   camera: string;
   /** Duração da criação (ms), com a compilação síncrona do host. */
   ms: number;
+  /**
+   * Chave de cache do three: ids dos shaders de vértice e fragmento + estado
+   * (blend, depth, face, formato/amostras do alvo, geometria). Duas chaves do
+   * mesmo objeto dizem se o que variou foi o shader ou o estado.
+   */
+  key: string;
 }
 
 /** O pedaço do `renderObject` do three que interessa aqui. */
@@ -32,10 +38,13 @@ interface RenderObjectLike {
   object?: Object3D;
   material?: Material | Material[];
   camera?: Camera;
+  /** Atribuído pelo three ANTES de chamar o backend (`Pipelines._getRenderPipeline`). */
+  pipeline?: { cacheKey?: string };
 }
 
 interface BackendLike {
   createRenderPipeline?: (renderObject: RenderObjectLike, promises: unknown) => unknown;
+  getRenderCacheKey?: (renderObject: RenderObjectLike) => string;
 }
 
 /** Casas decimais do custo — sub-milissegundo importa, mais que isso é ruído. */
@@ -61,6 +70,22 @@ function objectLabel(object: Object3D | undefined): string {
 export class PipelineBirthLog {
   private readonly _pending: PipelineBirth[] = [];
   private _installed = false;
+  private _lookups = 0;
+  private _births = 0;
+
+  /**
+   * Consultas ao cache de pipeline desde a instalação, ACERTOS incluídos. O
+   * three chama `backend.getRenderCacheKey` uma vez por consulta que precisa de
+   * pipeline — então consultas sem nascimento = pipeline reaproveitado.
+   */
+  get lookups(): number {
+    return this._lookups;
+  }
+
+  /** Nascimentos desde a instalação (não é zerado pelo {@link PipelineBirthLog.drain}). */
+  get births(): number {
+    return this._births;
+  }
 
   /**
    * Envolve `backend.createRenderPipeline`. Idempotente. Devolve `false` (e
@@ -76,6 +101,14 @@ export class PipelineBirthLog {
       return false;
     }
     const pending = this._pending;
+    const self = this;
+    const originalKey = target!.getRenderCacheKey;
+    if (typeof originalKey === 'function') {
+      target!.getRenderCacheKey = function (renderObject: RenderObjectLike): string {
+        self._lookups++;
+        return originalKey.call(this, renderObject);
+      };
+    }
     target!.createRenderPipeline = function (renderObject: RenderObjectLike, promises: unknown): unknown {
       const start = now();
       const result = original.call(this, renderObject, promises);
@@ -88,7 +121,9 @@ export class PipelineBirthLog {
         transparent: material?.transparent === true,
         camera: renderObject.camera && renderObject.camera === mainCamera() ? 'main' : (renderObject.camera?.type ?? '?'),
         ms: Math.round(elapsed * factor) / factor,
+        key: renderObject.pipeline?.cacheKey ?? '?',
       });
+      self._births++;
       return result;
     };
     this._installed = true;

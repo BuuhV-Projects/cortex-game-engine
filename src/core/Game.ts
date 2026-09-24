@@ -752,8 +752,25 @@ export class Game {
    * await game.precompile()
    * game.start()
    */
-  precompile(): Promise<void> {
-    return this.renderer.precompile(this._activeScene.getThreeScene(), this._activeCamera);
+  async precompile(): Promise<void> {
+    // Com o trace ativo, registra o que o aquecimento FEZ (SPEC-0261): no
+    // kart-racer ele não criou nenhum pipeline de efeito, e só a duração e as
+    // consultas separam "não rodou" de "não percorreu" de "só achou chave".
+    this._perfTrace.watchPipelines(
+      (this.renderer.threeRenderer as { backend?: unknown }).backend,
+      () => this._activeCamera,
+    );
+    const before = this._perfTrace.pipelineCounters();
+    const start = performance.now();
+    await this.renderer.precompile(this._activeScene.getThreeScene(), this._activeCamera);
+    const after = this._perfTrace.pipelineCounters();
+    if (before && after) {
+      this._perfTrace.recordEvent('precompile', {
+        ms: Math.round(performance.now() - start),
+        lookups: after.lookups - before.lookups,
+        born: after.born - before.born,
+      });
+    }
   }
 
   /** Inicia o loop. */

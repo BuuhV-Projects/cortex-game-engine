@@ -17,6 +17,9 @@ function fakeBackend() {
       created.push(renderObject);
       return 'pipeline';
     },
+    getRenderCacheKey(_renderObject: unknown): string {
+      return 'estado';
+    },
   };
 }
 
@@ -33,12 +36,13 @@ describe('PipelineBirthLog', () => {
     kart.name = 'kart-rival-3';
     const flame = new Mesh(undefined, new MeshBasicMaterial({ transparent: true }));
     kart.add(flame);
-    const result = backend.createRenderPipeline({ object: flame, material: flame.material, camera: main }, null);
+    const renderObject = { object: flame, material: flame.material, camera: main, pipeline: { cacheKey: '12,34,estado' } };
+    const result = backend.createRenderPipeline(renderObject, null);
 
     expect(result).toBe('pipeline'); // o original continua sendo chamado
     expect(backend.created).toHaveLength(1);
     expect(log.drain()).toEqual([
-      { object: 'kart-rival-3', material: 'MeshBasicMaterial', transparent: true, camera: 'main', ms: 12.35 },
+      { object: 'kart-rival-3', material: 'MeshBasicMaterial', transparent: true, camera: 'main', ms: 12.35, key: '12,34,estado' },
     ]);
   });
 
@@ -65,6 +69,18 @@ describe('PipelineBirthLog', () => {
     expect(log.drain()).toHaveLength(0);
   });
 
+  it('conta consultas ao cache, acertos incluídos, e nascimentos acumulados', () => {
+    const backend = fakeBackend();
+    const log = new PipelineBirthLog();
+    log.install(backend, () => null);
+    // O three consulta a chave sempre; só cria quando ela não está no cache.
+    for (let i = 0; i < 5; i++) backend.getRenderCacheKey({});
+    backend.createRenderPipeline({ object: new Mesh() }, null);
+    log.drain();
+    expect(log.lookups).toBe(5);
+    expect(log.births).toBe(1); // drenar não zera o acumulado
+  });
+
   it('backend sem o método: não instala e não quebra', () => {
     const log = new PipelineBirthLog();
     expect(log.install({}, () => null)).toBe(false);
@@ -74,8 +90,9 @@ describe('PipelineBirthLog', () => {
   it('o three instalado ainda tem backend.createRenderPipeline', async () => {
     const { default: WebGPUBackend } = await import('three/src/renderers/webgpu/WebGPUBackend.js');
     // A tipagem do three não lista o método (é interno) — daí o cast, e daí o teste.
-    const prototype = WebGPUBackend.prototype as unknown as { createRenderPipeline?: unknown };
+    const prototype = WebGPUBackend.prototype as unknown as { createRenderPipeline?: unknown; getRenderCacheKey?: unknown };
     expect(typeof prototype.createRenderPipeline).toBe('function');
+    expect(typeof prototype.getRenderCacheKey).toBe('function');
   });
 });
 
@@ -83,8 +100,13 @@ describe('amostra do trace', () => {
   const base = { timeMs: 1000, frameMs: 16, cpu: {}, draws: 0, tris: 0, camera: new PerspectiveCamera(), visible: [] };
 
   it('leva a lista quando algo nasceu', () => {
-    const born = [{ object: 'a', material: 'b', transparent: false, camera: 'main', ms: 3 }];
+    const born = [{ object: 'a', material: 'b', transparent: false, camera: 'main', ms: 3, key: 'k' }];
     expect(buildSample({ ...base, pipelinesBorn: born }).pipelinesBorn).toEqual(born);
+  });
+
+  it('leva as consultas acumuladas quando a lista está ligada', () => {
+    expect(buildSample({ ...base, pipelineLookups: 42 }).pipelineLookups).toBe(42);
+    expect('pipelineLookups' in buildSample(base)).toBe(false);
   });
 
   it('omite o campo quando nada nasceu', () => {
