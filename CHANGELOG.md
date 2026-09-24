@@ -1,3 +1,10 @@
+# [0.61.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.60.0...v0.61.0) (2026-09-24)
+
+
+### Features
+
+* **perf:** timestamp de GPU por pass e present mode configurável ([63e805c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/63e805cbce3fda6f14a1637c8645b60529474ce3))
+
 # [0.60.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.59.0...v0.60.0) (2026-09-24)
 
 
