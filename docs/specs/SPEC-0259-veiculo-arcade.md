@@ -101,6 +101,31 @@ por frame: semi-fixed timestep (≤ 1/60, igual ao ADR-0257)
 `false` ele só lê input, sincroniza e posiciona a câmera — o passo fica com o
 `VehicleArcadeSystem`. Sem essa opção os dois avançariam o mesmo mundo.
 
+### 4. Progresso em rota (`src/scene/Route.ts`)
+
+Porta do `raceMath` + `routeIndex` do kart-racer, funções puras sobre uma rota
+fechada (`RoutePoint[]`, sentido de percurso):
+
+| função | pergunta que responde |
+| --- | --- |
+| `routeIndexOf` | perímetro e distância acumulada (calculado 1× por rota, `WeakMap`) |
+| `nearestRoutePoint(pos, rota, semente?)` | ponto mais próximo; com semente, janela de ±12 pontos |
+| `projectOnRoute` | posição contínua `{index, offset}` |
+| `sampleRoute` | ponto a N metros (busca binária, dá a volta) |
+| `routeSeparation` | distância com sinal entre duas posições, atravessando a chegada |
+| `crossesGate` | passou pelo portal, para a frente, dentro da pista? |
+| `sectorProgress` | fração percorrida de um setor |
+| `routeCurvature`, `routeFrame` | curvatura e direção local — o que a IA de corrida usa |
+
+Nada aqui sabe o que é volta ou corrida: o jogo define as regras e mede com
+isto. `RaceGate` virou `RouteGate` (serve a checkpoint, patrulha, trilho).
+
+Paridade com o original verificada com igualdade EXATA em 3.000 consultas
+aleatórias sobre a rota real do kart-racer (384 pontos), antes do commit. Dois
+desvios, ambos sem efeito em rota válida: `sampleRoute` numa rota degenerada
+devolvia o próprio ponto da rota (quem mexesse no retorno corrompia a rota) e
+agora copia; `projectOnRoute` não aloca mais um array por chamada.
+
 ## Consequências
 
 - Não usar `VehicleArcadeSystem` e `RapierPhysicsSystem` no mesmo
@@ -108,4 +133,4 @@ por frame: semi-fixed timestep (≤ 1/60, igual ao ADR-0257)
 - O fantasma de respawn passa a ser possível no export (grupos), mas a regra
   de QUANDO um carro vira fantasma continua sendo do jogo.
 - Testes com Rapier real em `tests/physics/GroundAdhesion.test.ts` e
-  `tests/systems/VehicleArcadeSystem.test.ts`.
+  `tests/systems/VehicleArcadeSystem.test.ts`; rota em `tests/scene/Route.test.ts`.

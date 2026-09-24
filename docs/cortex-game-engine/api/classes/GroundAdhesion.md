@@ -6,7 +6,7 @@
 
 # Class: GroundAdhesion
 
-Defined in: src/physics/GroundAdhesion.ts:76
+Defined in: [src/physics/GroundAdhesion.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/GroundAdhesion.ts#L76)
 
 Mantém um [Vehicle](Vehicle.md) colado no chão, com feel arcade.
 
@@ -27,7 +27,7 @@ if (!adhesion.grounded) playAirborneAnimation();
 
 > **new GroundAdhesion**(`physics`, `vehicle`, `options?`): `GroundAdhesion`
 
-Defined in: src/physics/GroundAdhesion.ts:100
+Defined in: [src/physics/GroundAdhesion.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/GroundAdhesion.ts#L100)
 
 #### Parameters
 
@@ -53,7 +53,7 @@ Defined in: src/physics/GroundAdhesion.ts:100
 
 > **grounded**: `boolean` = `false`
 
-Defined in: src/physics/GroundAdhesion.ts:78
+Defined in: [src/physics/GroundAdhesion.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/GroundAdhesion.ts#L78)
 
 O carro terminou o último passo apoiado no chão?
 
@@ -63,7 +63,7 @@ O carro terminou o último passo apoiado no chão?
 
 > `readonly` **groundNormal**: `Vector3`
 
-Defined in: src/physics/GroundAdhesion.ts:80
+Defined in: [src/physics/GroundAdhesion.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/GroundAdhesion.ts#L80)
 
 Normal do plano de apoio no último passo apoiado.
 
@@ -73,7 +73,7 @@ Normal do plano de apoio no último passo apoiado.
 
 > **apply**(`dt`): `boolean`
 
-Defined in: src/physics/GroundAdhesion.ts:116
+Defined in: [src/physics/GroundAdhesion.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/physics/GroundAdhesion.ts#L116)
 
 Um passo de aderência. Devolve [GroundAdhesion.grounded](#grounded).
 

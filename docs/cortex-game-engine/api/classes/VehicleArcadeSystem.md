@@ -6,7 +6,7 @@
 
 # Class: VehicleArcadeSystem
 
-Defined in: src/systems/VehicleArcadeSystem.ts:25
+Defined in: [src/systems/VehicleArcadeSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L25)
 
 Avança VÁRIOS carros no mesmo mundo Rapier (ADR-0256 / SPEC-0259).
 
@@ -38,7 +38,7 @@ world.addSystem(new VehicleArcadeSystem(physics));
 
 > **new VehicleArcadeSystem**(`physics`): `VehicleArcadeSystem`
 
-Defined in: src/systems/VehicleArcadeSystem.ts:38
+Defined in: [src/systems/VehicleArcadeSystem.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L38)
 
 #### Parameters
 
@@ -98,7 +98,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `8`
 
-Defined in: src/systems/VehicleArcadeSystem.ts:27
+Defined in: [src/systems/VehicleArcadeSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L27)
 
 Prioridade de execução deste sistema.
 
@@ -115,7 +115,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: (*typeof* [`Object3DComponent`](Object3DComponent.md) \| *typeof* [`ArcadeVehicleComponent`](ArcadeVehicleComponent.md))[]
 
-Defined in: src/systems/VehicleArcadeSystem.ts:26
+Defined in: [src/systems/VehicleArcadeSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L26)
 
 Construtores dos componentes que este sistema requer.
 
@@ -162,7 +162,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/VehicleArcadeSystem.ts:42
+Defined in: [src/systems/VehicleArcadeSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L42)
 
 Executa a lógica do sistema para o frame/passo atual.
 

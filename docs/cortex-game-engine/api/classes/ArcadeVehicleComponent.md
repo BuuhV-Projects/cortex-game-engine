@@ -6,7 +6,7 @@
 
 # Class: ArcadeVehicleComponent
 
-Defined in: src/components/ArcadeVehicleComponent.ts:20
+Defined in: [src/components/ArcadeVehicleComponent.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L20)
 
 Um carro da frota do [VehicleArcadeSystem](VehicleArcadeSystem.md) (SPEC-0259).
 
@@ -35,7 +35,7 @@ entity
 
 > **new ArcadeVehicleComponent**(`vehicle`, `adhesion?`): `ArcadeVehicleComponent`
 
-Defined in: src/components/ArcadeVehicleComponent.ts:21
+Defined in: [src/components/ArcadeVehicleComponent.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L21)
 
 #### Parameters
 
@@ -63,7 +63,7 @@ Aderência arcade. `null` = simulação pura, ainda no passo compartilhado.
 
 > `readonly` **adhesion**: [`GroundAdhesion`](GroundAdhesion.md) \| `null` = `null`
 
-Defined in: src/components/ArcadeVehicleComponent.ts:24
+Defined in: [src/components/ArcadeVehicleComponent.ts:24](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L24)
 
 Aderência arcade. `null` = simulação pura, ainda no passo compartilhado.
 
@@ -87,7 +87,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > `readonly` **vehicle**: [`Vehicle`](Vehicle.md)
 
-Defined in: src/components/ArcadeVehicleComponent.ts:22
+Defined in: [src/components/ArcadeVehicleComponent.ts:22](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ArcadeVehicleComponent.ts#L22)
 
 ## Accessors
 

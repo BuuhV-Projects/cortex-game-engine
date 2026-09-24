@@ -1228,6 +1228,7 @@ a frota abaixo. Não misture os dois no mesmo `RapierPhysics`.
 | `ArcadeVehicleComponent(vehicle, adhesion?)` | Um carro da frota (junto de `Object3DComponent` com a malha). |
 | `VehicleArcadeSystem(physics)` | Avança o mundo UMA vez por passo para todos os carros e escreve a pose na malha. Prioridade 8. |
 | `physics.advance(dt, antesDeCadaPasso?)` | Passo semi-fixo (≤ 1/60): a física anda o tempo do relógio a qualquer fps. |
+| `Route` (`sampleRoute`, `nearestRoutePoint`, `projectOnRoute`, `routeSeparation`, `crossesGate`, `sectorProgress`, `routeCurvature`, `routeFrame`) | **Progresso em rota fechada** (pontos no sentido de percurso): quem está na frente e por quantos metros, passou pela chegada, ponto a N metros, curvatura à frente (IA). Puro — volta, posição e regras são do jogo. `nearestRoutePoint(pos, rota, semente)` com a semente do frame anterior é O(1). |
 
 **Pilotos só escrevem forças.** O jogador (input) e a IA (um `ScriptBehavior`)
 chamam `setEngineForce/setBrake/setSteering`; o passo é do sistema. A IA de
