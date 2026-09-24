@@ -846,6 +846,11 @@ trecho” sem depender de print de HUD na hora certa.
   uma vez nos primeiros poderes causavam a travada que sumia depois do R.
   Envolve `backend.createRenderPipeline` do three (interno — o teste confere
   que o método ainda existe no three instalado).
+- **`gc` diz o que o coletor do Hermes fez (SPEC-0264)**: totais `young`/`old`
+  desde o boot, com parede e CPU — ACUMULADOS, compare amostras. Render e
+  física lentos JUNTOS e na mesma proporção, voltando de uma vez, é a assinatura
+  de coleta no meio dos quadros (os dois são JS). O `game.precompile()` coleta
+  no fim porque o quadro de aquecimento infla o heap de uma vez.
 
 ## 8e3. Render bundles estão DESLIGADOS — ADR-0215
 

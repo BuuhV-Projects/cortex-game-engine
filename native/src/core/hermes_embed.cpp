@@ -4,6 +4,7 @@
 #include "hermes_embed.h"
 
 #include "crash_handler.h"
+#include "gc_stats.h"
 
 #include <hermes_napi.h>
 
@@ -54,6 +55,14 @@ void* cortexHermesCreateRuntime() {
                     .withMicrotaskQueue(true)
                     .withGCConfig(hermes::vm::GCConfig::Builder()
                                       .withMaxHeapSize(kMaxHeapBytes)
+                                      // Cada coleta alimenta os totais que o
+                                      // trace lê (SPEC-0264). Roda na thread
+                                      // do coletor: gc_stats é atômico.
+                                      .withAnalyticsCallback([](const hermes::vm::GCAnalyticsEvent& event) {
+                                        core::recordGc(core::generationFromName(event.collectionType),
+                                                       static_cast<uint64_t>(event.duration.count()),
+                                                       static_cast<uint64_t>(event.cpuDuration.count()));
+                                      })
                                       .build())
                     .build();
   return new RuntimeHolder{Runtime::create(config)};

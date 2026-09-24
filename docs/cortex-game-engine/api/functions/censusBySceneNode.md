@@ -8,7 +8,7 @@
 
 > **censusBySceneNode**(`scene`, `limit`): \[`string`, `number`\][]
 
-Defined in: [src/core/PerfTrace.ts:228](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L228)
+Defined in: [src/core/PerfTrace.ts:234](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L234)
 
 Censo da árvore por nó de cena: quantos `Object3D` cada nó do `level.json`
 carrega. Responde "quem são os 1.271 nós" — a pergunta que decide se vale

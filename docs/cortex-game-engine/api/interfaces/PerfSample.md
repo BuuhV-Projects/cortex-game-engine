@@ -46,7 +46,7 @@ quantos NASCEM — e só isso denuncia compilação dentro do frame.
 
 > **cam**: `object`
 
-Defined in: [src/core/PerfTrace.ts:116](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L116)
+Defined in: [src/core/PerfTrace.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L122)
 
 Posição da câmera (x, y, z) e direção para onde olha.
 
@@ -113,7 +113,7 @@ PIOR CASO por seção (p99 da mesma janela). A distância até [cpuAvg](#cpuavg)
 
 > **draws**: `number`
 
-Defined in: [src/core/PerfTrace.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L113)
+Defined in: [src/core/PerfTrace.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L119)
 
 ***
 
@@ -130,6 +130,18 @@ Defined in: [src/core/PerfTrace.ts:76](https://github.com/BuuhV-Projects/cortex-
 > **frameMs**: `number`
 
 Defined in: [src/core/PerfTrace.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L77)
+
+***
+
+### gc?
+
+> `optional` **gc?**: [`GcTotals`](GcTotals.md)
+
+Defined in: [src/core/PerfTrace.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L118)
+
+Coletor de lixo do Hermes desde o boot (SPEC-0264) — acumulado; compare
+amostras. `oldWallMs` é parede: uma coleta velha concorrente que atravesse
+vários quadros aparece inteira. Ausente fora do host.
 
 ***
 
@@ -169,7 +181,7 @@ ms desde o boot.
 
 > **tris**: `number`
 
-Defined in: [src/core/PerfTrace.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L114)
+Defined in: [src/core/PerfTrace.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L120)
 
 ***
 
@@ -177,6 +189,6 @@ Defined in: [src/core/PerfTrace.ts:114](https://github.com/BuuhV-Projects/cortex
 
 > **visible**: [`VisibleNode`](VisibleNode.md)[]
 
-Defined in: [src/core/PerfTrace.ts:118](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L118)
+Defined in: [src/core/PerfTrace.ts:124](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L124)
 
 Nós de cena dentro do frustum, do mais caro (em triângulos) pro menos.

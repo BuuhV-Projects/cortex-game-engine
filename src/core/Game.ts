@@ -786,6 +786,11 @@ export class Game {
     } else {
       this._renderWarmupFrame();
     }
+    // Coleta completa sob a tela de carregamento (SPEC-0264): o quadro de
+    // aquecimento cria de uma vez os objetos de render da cena inteira (heap
+    // de 41 para 120 MB no kart-racer). Sem isto, a coleta grande desse heap
+    // caía na largada. No-op fora do host.
+    (globalThis as { __cortexGC?: () => void }).__cortexGC?.();
     const after = this._perfTrace.pipelineCounters();
     if (before && after) {
       this._perfTrace.recordEvent('precompile', {

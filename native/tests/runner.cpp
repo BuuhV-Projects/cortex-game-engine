@@ -4,6 +4,8 @@
 
 namespace tests {
 void testFormatFromString();
+void testGcGenerationFromName();
+void testGcTotalsSeparateGenerations();
 void testFormatToStringRoundtrip();
 void testBc7Math();
 void testAppendPerfLog();
@@ -118,5 +120,7 @@ int main() {
   tests::testPipelineCacheNaoCriaNadaEmRegime();
   tests::testPipelineCacheClearEsqueceTudo();
   tests::testGeometryRegistry();
+  tests::testGcGenerationFromName();
+  tests::testGcTotalsSeparateGenerations();
   return testing::summary();
 }

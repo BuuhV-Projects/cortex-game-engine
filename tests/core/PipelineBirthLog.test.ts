@@ -114,6 +114,12 @@ describe('amostra do trace', () => {
     expect('pipelineLookups' in buildSample(base)).toBe(false);
   });
 
+  it('leva os totais do coletor quando o host os expõe (SPEC-0264)', () => {
+    const gc = { youngCount: 12, youngMs: 30, oldCount: 1, oldWallMs: 14000, oldCpuMs: 900 };
+    expect(buildSample({ ...base, gc }).gc).toEqual(gc);
+    expect('gc' in buildSample(base)).toBe(false);
+  });
+
   it('omite o campo quando nada nasceu', () => {
     expect('pipelinesBorn' in buildSample({ ...base, pipelinesBorn: [] })).toBe(false);
   });

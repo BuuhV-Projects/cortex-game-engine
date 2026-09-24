@@ -515,7 +515,7 @@ game.start()
 
 > **reset**(`options?`): `void`
 
-Defined in: [src/core/Game.ts:846](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L846)
+Defined in: [src/core/Game.ts:851](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L851)
 
 Reseta o jogo pra **trocar de cena/fase** sem recriar o `Game` (renderer,
 câmera e canvas continuam): para o loop, esvazia o world com `dispose` dos
@@ -692,7 +692,7 @@ game.setPostFX(fx)
 
 > **start**(): `void`
 
-Defined in: [src/core/Game.ts:815](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L815)
+Defined in: [src/core/Game.ts:820](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L820)
 
 Inicia o loop.
 
@@ -706,7 +706,7 @@ Inicia o loop.
 
 > **stop**(): `void`
 
-Defined in: [src/core/Game.ts:820](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L820)
+Defined in: [src/core/Game.ts:825](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L825)
 
 Para o loop.
 

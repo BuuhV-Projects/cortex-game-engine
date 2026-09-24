@@ -133,6 +133,7 @@
 - [GamepadConnectionEventDetail](interfaces/GamepadConnectionEventDetail.md)
 - [GamepadManagerOptions](interfaces/GamepadManagerOptions.md)
 - [GamepadState](interfaces/GamepadState.md)
+- [GcTotals](interfaces/GcTotals.md)
 - [GradientSkyOptions](interfaces/GradientSkyOptions.md)
 - [GroundAdhesionOptions](interfaces/GroundAdhesionOptions.md)
 - [HDRISkyboxOptions](interfaces/HDRISkyboxOptions.md)
