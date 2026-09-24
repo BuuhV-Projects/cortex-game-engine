@@ -116,6 +116,14 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   corrida, tudo no mesmo frame (o travadinho ao iniciar). O `buildScene` chama ao
   final (opt-out `opts.precompile`); pro que o jogo cria depois do build (carros
   montados por código), chame `game.precompile()` ainda sob o loading.
+  **`game.precompile()` desenha UM QUADRO REAL (ADR-0262)**, com tudo visível e
+  sem culling, pelo caminho de render do jogo. O `compileAsync` (que o
+  `Renderer.precompile` e o `buildScene` usam) tem três defeitos medidos no host:
+  leva segundos (um objeto por quadro), compila `side=2` para transparente de
+  duas faces quando o render usa dois passes (`side=1` e `side=0`), e compila
+  para um alvo só. A chave de pipeline inclui formato/amostras/espaço de cor do
+  alvo: um efeito de pós que desenha a cena num `pass()` próprio recompila a
+  cena inteira na primeira vez que liga — force-o e aqueça de novo.
 
 - **Acabamento toon (`Materials.ts`, SPEC-0194):** `shading: 'cel'` usa dois
   patamares e uma transição curta filtrada na rampa de luz. Sem o campo, mantém
@@ -831,6 +839,13 @@ trecho” sem depender de print de HUD na hora certa.
   do three é herdado, e malha `visible: true` dentro de pai escondido não
   desenha. Contá-la inflava o diagnóstico — as variantes de roda de garagem do
   kart-racer, todas na cena com só uma visível, apareciam como se desenhassem.
+- **`pipelinesBorn` diz QUAIS pipelines nasceram (SPEC-0261)**: objeto,
+  material, se é translúcido, câmera (`main` ou a da sombra) e ms da criação.
+  `born.pipelines` só conta (e é ACUMULADO — compare amostras). Criar pipeline
+  é compilar shader, síncrono no host, dentro do frame: no kart-racer, 26 de
+  uma vez nos primeiros poderes causavam a travada que sumia depois do R.
+  Envolve `backend.createRenderPipeline` do three (interno — o teste confere
+  que o método ainda existe no three instalado).
 
 ## 8e3. Render bundles estão DESLIGADOS — ADR-0215
 
