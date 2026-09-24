@@ -1,3 +1,10 @@
+# [0.60.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.59.0...v0.60.0) (2026-09-24)
+
+
+### Features
+
+* **perf:** mede a latência de conclusão da GPU (SPEC-0253) ([89c3647](https://github.com/BuuhV-Projects/cortex-game-engine/commit/89c3647de800d49c3573f5a2ef97fe83df0ab6ca))
+
 # [0.59.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.58.1...v0.59.0) (2026-09-23)
 
 
