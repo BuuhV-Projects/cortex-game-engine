@@ -12,11 +12,41 @@ Uma amostra do trace, como vai serializada em JSONL.
 
 ## Properties
 
+### born?
+
+> `optional` **born?**: `object`
+
+Defined in: [src/core/PerfTrace.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L101)
+
+Recursos de GPU CRIADOS desde o boot (SPEC-0252) — acumulados.
+
+A diferença entre duas amostras diz quantos nasceram no intervalo, que é a
+pergunta que os contadores de custo não respondem: um frame que engasga
+sem draws altos e sem seção cara estava criando alguma coisa.
+
+`pipelines` é o mais decisivo: diferente de `cpu.napiPipe` (que conta
+`setPipeline`, ou seja, quantas vezes um pipeline é LIGADO), este conta
+quantos NASCEM — e só isso denuncia compilação dentro do frame.
+
+#### buffers
+
+> **buffers**: `number`
+
+#### pipelines
+
+> **pipelines**: `number`
+
+#### textures
+
+> **textures**: `number`
+
+***
+
 ### cam
 
 > **cam**: `object`
 
-Defined in: [src/core/PerfTrace.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L93)
+Defined in: [src/core/PerfTrace.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L105)
 
 Posição da câmera (x, y, z) e direção para onde olha.
 
@@ -83,7 +113,7 @@ PIOR CASO por seção (p99 da mesma janela). A distância até [cpuAvg](#cpuavg)
 
 > **draws**: `number`
 
-Defined in: [src/core/PerfTrace.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L90)
+Defined in: [src/core/PerfTrace.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L102)
 
 ***
 
@@ -117,7 +147,7 @@ ms desde o boot.
 
 > **tris**: `number`
 
-Defined in: [src/core/PerfTrace.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L91)
+Defined in: [src/core/PerfTrace.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L103)
 
 ***
 
@@ -125,6 +155,6 @@ Defined in: [src/core/PerfTrace.ts:91](https://github.com/BuuhV-Projects/cortex-
 
 > **visible**: [`VisibleNode`](VisibleNode.md)[]
 
-Defined in: [src/core/PerfTrace.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L95)
+Defined in: [src/core/PerfTrace.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L107)
 
 Nós de cena dentro do frustum, do mais caro (em triângulos) pro menos.
