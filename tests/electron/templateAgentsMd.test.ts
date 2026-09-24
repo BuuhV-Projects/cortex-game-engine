@@ -78,3 +78,48 @@ describe('templates/new-project/CLAUDE.md', () => {
     expect(read(CLAUDE_MD)).toContain('AGENTS.md')
   })
 })
+
+describe('template de projeto novo: performance desde o início (SPEC-0268)', () => {
+  /**
+   * Conceitos que TÊM que estar nas duas fontes — o AGENTS.md do projeto e as
+   * regras do Chat IA. Se uma mudar sem a outra, este teste acusa.
+   */
+  const CONCEITOS = [
+    'mesmo acabamento',
+    'materiais por primitiva',
+    'game.precompile()',
+    'InstancedMesh',
+    'pass()',
+    'game.maxFps',
+    'game.refreshHz',
+  ]
+
+  it('o AGENTS.md traz as regras de performance', async () => {
+    const md = read(AGENTS_MD)
+    const { PERFORMANCE_RULES } = await import('../../electron/agent/performanceRules.js')
+    for (const conceito of CONCEITOS) {
+      expect(md, `AGENTS.md sem "${conceito}"`).toContain(conceito)
+      expect(PERFORMANCE_RULES, `performanceRules.ts sem "${conceito}"`).toContain(conceito)
+    }
+  })
+
+  it('o main.ts monta tudo sob o carregamento e aquece antes de liberar o jogo', () => {
+    const main = read(join(TEMPLATE_DIR, 'main.ts'))
+    const idx = (s: string) => main.indexOf(s)
+    // Ordem: liga o carregamento → monta → aquece → libera, e libera num finally.
+    expect(idx('game.setLoading(true)')).toBeGreaterThan(-1)
+    expect(idx('await buildScene(')).toBeGreaterThan(idx('game.setLoading(true)'))
+    expect(idx('await game.precompile()')).toBeGreaterThan(idx('await buildScene('))
+    expect(main).toMatch(/finally\s*\{[\s\S]*game\.setLoading\(false\)/)
+    // O aquecimento do build seria segundos de trabalho errado (ADR-0262).
+    expect(main).toContain('precompile: false')
+    // A tela de carregamento é da engine: funciona no Studio e no export.
+    expect(main).toContain('createLoadingScreen(game.ui')
+  })
+
+  it('o teto de fps fica como escolha do jogo, não imposto pelo template', () => {
+    const main = read(join(TEMPLATE_DIR, 'main.ts'))
+    expect(main).toMatch(/^\/\/ game\.maxFps = /m)
+    expect(main).not.toMatch(/^game\.maxFps = /m)
+  })
+})
