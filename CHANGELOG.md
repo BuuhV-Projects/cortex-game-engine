@@ -1,3 +1,10 @@
+## [0.63.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.63.1...v0.63.2) (2026-09-24)
+
+
+### Performance Improvements
+
+* coletor de lixo no trace e coleta no fim do aquecimento (SPEC-0264) ([c745b9f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c745b9f17888a933e5f0a393761c147f92efe59e))
+
 ## [0.63.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.63.0...v0.63.1) (2026-09-24)
 
 
