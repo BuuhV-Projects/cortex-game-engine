@@ -1,3 +1,12 @@
+## [0.63.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.63.0...v0.63.1) (2026-09-24)
+
+
+### Performance Improvements
+
+* **core:** game.precompile desenha um quadro real (ADR-0262) ([e759a62](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e759a627f1b864c92521f899f3e6e3edabcf03f4))
+* **trace:** chave de cache, consultas e registro do precompile (SPEC-0261) ([4db1695](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4db169573d5be7bcebbf4b354a452e4108b25dc4))
+* **trace:** registra quais pipelines nascem no meio do jogo ([d1d74e2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d1d74e23d16bdf995a48f743222cb90fd8c0d502))
+
 # [0.63.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.62.0...v0.63.0) (2026-09-24)
 
 
