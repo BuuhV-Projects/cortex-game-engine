@@ -1,10 +1,11 @@
 /**
- * Modos do Chat IA por TAREFA (ADR-0265 / SPEC-0266): o usuário escolhe
- * "Modelagem" ou "Codificar" e nunca vê nome de modelo. Aqui fica a regra de
- * qual modelo cada tarefa usa — pura, para ser testada sem a UI.
+ * Modos do Chat IA por TAREFA (ADR-0265 / SPEC-0266, Orquestrador no
+ * ADR-0269 / SPEC-0270): o usuário escolhe "Orquestrador", "Modelagem" ou
+ * "Codificar" e nunca vê nome de modelo. Aqui fica a regra de qual modelo cada
+ * tarefa usa — pura, para ser testada sem a UI.
  */
 
-export type ChatTask = 'modeling' | 'coding'
+export type ChatTask = 'orchestrator' | 'modeling' | 'coding'
 
 /** O que vai no IPC do chat (o `AgentModel` do main). */
 export type ChatModel = 'astra' | 'sonnet' | 'opus'
@@ -20,24 +21,27 @@ export function strongCodingStorageKey(projectDir: string | null): string {
 }
 
 /**
- * Lê a tarefa salva. Aceita os valores de antes desta spec: `astra` era a
- * cabeça de cena (vira Modelagem); `sonnet`/`opus`/`haiku` eram o Claude
- * (viram Codificar). Sem valor, Codificar.
+ * Lê a tarefa salva. Sem valor, Orquestrador (o padrão, ADR-0269). Aceita os
+ * valores de antes: `astra` era a cabeça de cena (vira Modelagem);
+ * `sonnet`/`opus`/`haiku` eram o Claude (viram Codificar).
  */
 export function taskFromSaved(saved: string | null): ChatTask {
+  if (saved === null || saved === 'orchestrator') return 'orchestrator'
   return saved === 'modeling' || saved === 'astra' ? 'modeling' : 'coding'
 }
 
 /**
- * Modelo de cada tarefa. Codificar usa Sonnet (ADR-0130: a cota do Opus no
- * plano de assinatura é bem menor) e Opus só com o ajuste ligado.
+ * Modelo de cada tarefa. Orquestrador e Codificar rodam o Claude: Sonnet
+ * (ADR-0130: a cota do Opus no plano de assinatura é bem menor) e Opus só com
+ * o ajuste ligado.
  */
 export function modelForTask(task: ChatTask, strongCoding: boolean): ChatModel {
   if (task === 'modeling') return 'astra'
   return strongCoding ? 'opus' : 'sonnet'
 }
 
-/** A outra tarefa — o botão alterna entre as duas. */
+/** O botão cicla Orquestrador → Modelagem → Codificar → Orquestrador. */
 export function nextTask(task: ChatTask): ChatTask {
-  return task === 'modeling' ? 'coding' : 'modeling'
+  if (task === 'orchestrator') return 'modeling'
+  return task === 'modeling' ? 'coding' : 'orchestrator'
 }

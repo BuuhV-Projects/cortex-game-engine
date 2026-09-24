@@ -104,6 +104,11 @@ export interface RunAgentOptions {
    */
   model?: AgentModel
   /**
+   * Modo Orquestrador (ADR-0269): o Claude ganha a tool `delegate_modeling`
+   * e a seção do prompt que diz o que delegar. Ignorado com `astra`.
+   */
+  orchestrate?: boolean
+  /**
    * Conteúdo de `docs/cortex-game-engine/engine-api.md`, empacotado no Studio.
    * Com `engineApiPath` presente vira um ÍNDICE no prompt (ADR-0114).
    */

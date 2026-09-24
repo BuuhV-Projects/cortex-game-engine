@@ -6,6 +6,7 @@ import { createKitsToolServer } from './tools/kits.js'
 import { createBlueprintToolServer } from './tools/blueprint.js'
 import { createCriticToolServer } from './tools/critic.js'
 import { createValidateToolServer } from './tools/validate.js'
+import { createModelingToolServer } from './tools/modeling.js'
 import { buildSystemPrompt } from './prompt.js'
 import { runCodexAgent } from './codex/CodexAgentRunner.js'
 import { handleSdkMessage, buildSummary } from './sdkMessages.js'
@@ -70,6 +71,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
         engineApiDoc: opts.engineApiDoc,
         engineApiPath: opts.engineApiPath,
         mode: opts.mode,
+        orchestrate: opts.orchestrate,
       }),
     },
     // resume tem precedência sobre continue. Com um sessionId persistido (mesmo
@@ -89,7 +91,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
     // o agente faz perguntas de esclarecimento em texto.
     disallowedTools: ['AskUserQuestion'],
     ...pluginOptions(opts.pluginDir),
-    ...mcpOptions(opts.projectRoot, opts.kitsDir),
+    ...mcpOptions(opts),
     canUseTool: (toolName, input) => resolvePermission(opts, toolName, input),
   }
 
@@ -122,12 +124,18 @@ function pluginOptions(pluginDir: string | null | undefined): Partial<Options> {
 /**
  * Tools customizadas ficam em MCP servers in-process — só carregadas com projeto
  * aberto (precisam de projectRoot pra resolver paths relativos).
+ *
+ * No Orquestrador (ADR-0269) modelo 3D novo vai pelo Modelagem, que tem o
+ * portão com correção: `generate_blender_model` sai e `delegate_modeling` entra.
  */
-function mcpOptions(projectRoot: string | null, kitsDir: string | undefined): Partial<Options> {
+function mcpOptions(opts: RunAgentOptions): Partial<Options> {
+  const { projectRoot, kitsDir } = opts
   if (!projectRoot) return {}
   return {
     mcpServers: {
-      'cortex-blender': createBlenderToolServer(projectRoot),
+      ...(opts.orchestrate
+        ? { 'cortex-modelagem': createModelingToolServer(opts) }
+        : { 'cortex-blender': createBlenderToolServer(projectRoot) }),
       'cortex-playtest': createPlaytestToolServer(projectRoot),
       'cortex-assets': createAssetToolServer(projectRoot),
       'cortex-kits': createKitsToolServer(projectRoot, kitsDir),

@@ -27,7 +27,7 @@
     "steam_invalid": "O Steam App ID deve conter apenas números.",
     "save": "Salvar",
     "cancel": "Cancelar",
-    "chat_strong_label": "Chat IA: Codificar com o modelo mais forte",
+    "chat_strong_label": "Chat IA: Orquestrador e Codificar com o modelo mais forte",
     "chat_strong_hint": "Código melhor em tarefas difíceis, mas consome a cota de uso bem mais rápido. Vale só para este projeto, neste computador."
   },
   "fileTree": {
@@ -160,9 +160,11 @@
     "tool_error": "erro",
     "tool_success": "sucesso",
     "tool_truncated": "... ({n} caracteres truncados)",
+    "task_orchestrator": "Orquestrador",
     "task_modeling": "Modelagem",
     "task_coding": "Codificar",
+    "tooltip_task_orchestrator": "Modo Orquestrador: a IA decide pelo pedido o que vai para a Modelagem e o que ela mesma codifica. Clique para Modelagem.",
     "tooltip_task_modeling": "Modo Modelagem: modelos 3D, cenários e efeitos. Não altera código. Clique para Codificar.",
-    "tooltip_task_coding": "Modo Codificar: o código do jogo — sistemas, mecânicas, scripts e UI. Clique para Modelagem."
+    "tooltip_task_coding": "Modo Codificar: o código do jogo — sistemas, mecânicas, scripts e UI. Clique para Orquestrador."
   }
 }

@@ -113,6 +113,10 @@ export function buildSummary(toolName: string, input: Record<string, unknown>): 
       return `Delegar ao agente ${typeof input['subagent_type'] === 'string' ? input['subagent_type'] : ''}`
   }
   // Tools de MCP servers chegam prefixadas como mcp__<server>__<tool>
+  if (toolName.endsWith('delegate_modeling')) {
+    const request = typeof input['request'] === 'string' ? input['request'] : ''
+    return `Modelagem: "${request.length > 80 ? `${request.slice(0, 80)}…` : request}"`
+  }
   if (toolName.endsWith('generate_blender_model')) {
     const target = typeof input['target_path'] === 'string' ? input['target_path'] : ''
     const desc = typeof input['description'] === 'string' ? input['description'] : ''

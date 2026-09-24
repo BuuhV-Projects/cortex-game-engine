@@ -1662,7 +1662,7 @@ ipcMain.handle('ai:cancel', async () => {
 
 // Turno do agente: extrai a última mensagem do usuário, delega ao SDK
 // (que gerencia stream, tools e sessão), traduz eventos pro renderer.
-ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown, model: unknown) => {
+ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown, model: unknown, orchestrate: unknown) => {
   if (!Array.isArray(messages)) {
     mainWindow?.webContents.send('ai:error', { message: 'messages deve ser array' })
     return
@@ -1713,6 +1713,8 @@ ipcMain.handle('ai:chat', async (_event, messages: unknown, mode: unknown, model
       resumeSessionId,
       mode: agentMode,
       model: agentModel,
+      // Modo Orquestrador (ADR-0269): o Claude delega a parte de dado ao Modelagem.
+      orchestrate: orchestrate === true,
       engineApiDoc,
       // Com o path, o agentLoop injeta só o ÍNDICE do doc e o agente lê as
       // seções sob demanda via Read (ADR-0114). Sem doc lido, sem path.

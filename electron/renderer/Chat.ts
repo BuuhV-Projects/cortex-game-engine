@@ -120,11 +120,12 @@ export class Chat {
   private modeToggleEl: HTMLButtonElement | null = null
 
   /**
-   * Tarefa do turno — Modelagem ou Codificar (ADR-0265). Persistida POR
+   * Tarefa do turno — Orquestrador, Modelagem ou Codificar (ADR-0265,
+   * ADR-0269). Persistida POR
    * PROJETO em localStorage — diferente do `mode`, que é global. O modelo sai
    * da tarefa em {@link modelForTask}; o usuário nunca escolhe modelo.
    */
-  private task: ChatTask = 'coding'
+  private task: ChatTask = 'orchestrator'
   private modelToggleEl: HTMLButtonElement | null = null
 
   /** true quando o turno atual foi enviado em modo plan — dispara a barra de aprovação no fim. */
@@ -326,7 +327,7 @@ export class Chat {
     this.modeToggleEl.title = tip
   }
 
-  // ── Tarefa do turno: Codificar (default) ⇄ Modelagem (ADR-0265) ──
+  // ── Tarefa do turno: Orquestrador (default) → Modelagem → Codificar (ADR-0269) ──
   // Salva por projeto. O modelo sai da tarefa — ver chatTask.ts.
 
   /** Carrega a tarefa salva pro projeto ativo (default Codificar) e re-renderiza. */
@@ -349,11 +350,11 @@ export class Chat {
 
   private renderModelToggle(): void {
     if (!this.modelToggleEl) return
-    const modeling = this.task === 'modeling'
-    this.modelToggleEl.classList.toggle('chat-model-btn--modeling', modeling)
-    this.modelToggleEl.classList.toggle('chat-model-btn--coding', !modeling)
-    this.modelToggleEl.textContent = modeling ? t('chat.task_modeling') : t('chat.task_coding')
-    this.modelToggleEl.title = modeling ? t('chat.tooltip_task_modeling') : t('chat.tooltip_task_coding')
+    for (const task of ['orchestrator', 'modeling', 'coding'] as const) {
+      this.modelToggleEl.classList.toggle(`chat-model-btn--${task}`, this.task === task)
+    }
+    this.modelToggleEl.textContent = t(`chat.task_${this.task}`)
+    this.modelToggleEl.title = t(`chat.tooltip_task_${this.task}`)
   }
 
   /** Apaga o histórico do projeto ativo e limpa a UI. */
@@ -396,7 +397,7 @@ export class Chat {
     const title = document.createElement('span')
     title.className = 'chat-header-title'
     title.textContent = t('chat.title')
-    // Toggle de MODELO (sonnet/opus/haiku) — vem antes do toggle de modo.
+    // Toggle de TAREFA (Orquestrador/Modelagem/Codificar) — vem antes do toggle de modo.
     // Clique cicla e persiste por projeto; o valor viaja no chat() até o SDK.
     const modelToggle = document.createElement('button')
     modelToggle.className = 'chat-mode-btn chat-model-btn'
@@ -553,7 +554,7 @@ export class Chat {
     this.showThinking()
 
     try {
-      await window.electronAPI.chat(this.messagesSent, this.mode, this.currentModel())
+      await window.electronAPI.chat(this.messagesSent, this.mode, this.currentModel(), this.task === 'orchestrator')
     } catch (err) {
       this.handleError(String(err))
     }
@@ -574,7 +575,7 @@ export class Chat {
     this.updateInputState()
     this.showThinking()
     try {
-      await window.electronAPI.chat(this.messagesSent, mode, this.currentModel())
+      await window.electronAPI.chat(this.messagesSent, mode, this.currentModel(), this.task === 'orchestrator')
     } catch (err) {
       this.handleError(String(err))
     }

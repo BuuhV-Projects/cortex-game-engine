@@ -157,3 +157,13 @@ describe('buildSystemPrompt — regras de performance em runtime (SPEC-0266)', (
     expect(plan).not.toContain('Antes de encerrar o turno')
   })
 })
+
+describe('buildSystemPrompt — modo Orquestrador (ADR-0269)', () => {
+  it('só o Orquestrador recebe a seção que diz o que delegar', () => {
+    const orchestrator = buildSystemPrompt({ mode: 'ask', orchestrate: true })
+    expect(orchestrator).toContain('## Modo Orquestrador')
+    expect(orchestrator).toContain('delegate_modeling')
+    expect(orchestrator).toMatch(/autocontido/)
+    expect(ask()).not.toContain('delegate_modeling')
+  })
+})

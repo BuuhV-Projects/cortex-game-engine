@@ -27,7 +27,7 @@
     "steam_invalid": "The Steam App ID must contain digits only.",
     "save": "Save",
     "cancel": "Cancel",
-    "chat_strong_label": "AI Chat: Coding with the strongest model",
+    "chat_strong_label": "AI Chat: Orchestrator and Coding with the strongest model",
     "chat_strong_hint": "Better code on hard tasks, but uses up the usage quota much faster. Applies only to this project, on this computer."
   },
   "fileTree": {
@@ -160,9 +160,11 @@
     "tool_error": "error",
     "tool_success": "success",
     "tool_truncated": "... ({n} chars truncated)",
+    "task_orchestrator": "Orchestrator",
     "task_modeling": "Modeling",
     "task_coding": "Coding",
+    "tooltip_task_orchestrator": "Orchestrator mode: the AI decides from the request what goes to Modeling and what it codes itself. Click for Modeling.",
     "tooltip_task_modeling": "Modeling mode: 3D models, scenes and effects. Does not change code. Click for Coding.",
-    "tooltip_task_coding": "Coding mode: the game code — systems, mechanics, scripts and UI. Click for Modeling."
+    "tooltip_task_coding": "Coding mode: the game code — systems, mechanics, scripts and UI. Click for Orchestrator."
   }
 }

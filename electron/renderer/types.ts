@@ -70,6 +70,7 @@ export interface ElectronAPI {
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     mode: 'ask' | 'auto' | 'plan',
     model: 'opus' | 'sonnet' | 'haiku' | 'astra',
+    orchestrate: boolean,
   ): Promise<void>
   setActiveProject(projectDir: string | null): Promise<void>
   decideToolCall(id: string, approved: boolean): Promise<void>
