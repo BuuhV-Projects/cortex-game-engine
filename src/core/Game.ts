@@ -255,6 +255,31 @@ export class Game {
    * dele deixa de ler.
    */
   outlineMinRatio = DEFAULT_OUTLINE_MIN_RATIO;
+
+  /**
+   * Teto de quadros por segundo (ADR-0257). `0` = sem teto (padrão). É escolha
+   * do JOGO: frame time constante lê como mais fluido que uma taxa maior que
+   * oscila.
+   *
+   * Com vsync, só divisores do refresh do monitor dão frames de duração igual —
+   * use {@link refreshHz} para escolher. Com `debug('loop')` ligado, um teto que
+   * não divide o refresh é avisado no log.
+   *
+   * @example
+   * game.maxFps = 60;
+   */
+  get maxFps(): number {
+    return this._loop.maxFps;
+  }
+
+  set maxFps(fps: number) {
+    this._loop.maxFps = fps;
+  }
+
+  /** Refresh do monitor estimado nos primeiros frames (Hz), ou `null` até lá. */
+  get refreshHz(): number | null {
+    return this._loop.refreshHz;
+  }
   /** Frames desde a última passada do {@link cullOutlines}. */
   private _sinceOutlineCull = 0;
   private _activeScene: Scene;

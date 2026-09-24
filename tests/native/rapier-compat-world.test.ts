@@ -17,16 +17,21 @@ const g = globalThis as NativeBridge;
 let scratch: Float64Array;
 let bodyGetValue: number;
 let calls: { fn: string; args: number[] }[];
+/** Timestep guardado pelo "nativo" (o do Rust, no host real). */
+let nativeTimestep: number;
 
 function installNativeRapier(): void {
   let nextHandle = 1;
   scratch = new Float64Array(32);
   bodyGetValue = 0;
   calls = [];
+  nativeTimestep = 1 / 60;
   g.__rapierNative = {
     worldNew: () => 1,
     worldScratch: () => scratch.buffer,
     worldStep: () => {},
+    worldTimestep: () => nativeTimestep,
+    worldSetTimestep: (_world: number, dt: number) => { calls.push({ fn: 'worldSetTimestep', args: [dt] }); nativeTimestep = dt; },
     worldFree: () => {},
     bodyCreate: () => nextHandle++,
     colliderShape: () => 1,
@@ -176,5 +181,22 @@ describe('RigidBody — o que o jogo de carro usa (SPEC-0209)', () => {
     // [mundo, corpo, massa, cx,cy,cz, ix,iy,iz, wake] — o `frame` da API do
     // Rapier não viaja: o engine sempre passa identidade (SPEC-0209).
     expect(argsOf('bodyMassProps')[0]).toEqual([1, 1, 1200, 0, -0.4, 0, 10, 20, 30, 1]);
+  });
+});
+
+describe('World.timestep (ADR-0257)', () => {
+  // Sem o par nativo, `world.timestep = x` criava uma propriedade JS solta e o
+  // passo seguia em 1/60 — o passo semi-fixo do engine virava no-op no export.
+  it('a escrita chega ao lado nativo', () => {
+    const world = new World({ x: 0, y: -9.81, z: 0 });
+    world.timestep = 1 / 75;
+    expect(argsOf('worldSetTimestep')).toEqual([[1 / 75]]);
+  });
+
+  it('a leitura vem do lado nativo, não de uma propriedade JS', () => {
+    const world = new World({ x: 0, y: -9.81, z: 0 });
+    nativeTimestep = 0.02;
+    expect(world.timestep).toBe(0.02);
+    expect(Object.prototype.hasOwnProperty.call(world, 'timestep')).toBe(false);
   });
 });

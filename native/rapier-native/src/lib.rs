@@ -87,6 +87,24 @@ pub unsafe extern "C" fn rn_world_step(world: *mut World) {
     );
 }
 
+/// Timestep do mundo (s) — o `world.timestep` do rapier3d-compat.
+///
+/// Sem este par o passo nativo ficava preso no padrão de 1/60 e o
+/// `RapierPhysics.advance` do engine (passo semi-fixo, ADR-0257) virava
+/// no-op em silêncio: a 75 fps o carro andava 25% rápido demais SÓ no export.
+///
+/// # Safety: `world` deve vir de rn_world_new e não ter sido liberado.
+#[no_mangle]
+pub unsafe extern "C" fn rn_world_timestep(world: *mut World) -> f64 {
+    (*world).integration_parameters.dt as f64
+}
+
+/// # Safety: `world` deve vir de rn_world_new e não ter sido liberado.
+#[no_mangle]
+pub unsafe extern "C" fn rn_world_set_timestep(world: *mut World, dt: f64) {
+    (*world).integration_parameters.dt = dt as Real;
+}
+
 /// kind: 0 = dynamic, 1 = fixed, 2 = kinematicPositionBased
 #[no_mangle]
 pub unsafe extern "C" fn rn_body_create(
@@ -662,4 +680,48 @@ pub unsafe extern "C" fn rn_body_remove(world: *mut World, body: f64) {
         &mut w.multibody_joints,
         true, // remove os colliders junto
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const GRAVITY: f64 = -10.0;
+    const TIMESTEP: f64 = 1.0 / 75.0;
+    /// Folga do f32 do Rapier.
+    const F32_TOLERANCE: f64 = 1e-5;
+
+    #[test]
+    fn timestep_round_trips() {
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            rn_world_set_timestep(w, TIMESTEP);
+            assert!((rn_world_timestep(w) - TIMESTEP).abs() < F32_TOLERANCE);
+            rn_world_free(w);
+        }
+    }
+
+    /// O que importa não é o valor guardado, é o passo usá-lo: um corpo em
+    /// queda livre ganha g·dt por passo — g/75, e não o g/60 do padrão.
+    #[test]
+    fn step_integrates_with_the_timestep() {
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            rn_world_set_timestep(w, TIMESTEP);
+            let handle = unpack_handle(rn_body_create(w, 0.0, 0.0, 0.0, 0.0, 0.0));
+            {
+                let world = &mut *w;
+                world
+                    .colliders
+                    .insert_with_parent(ColliderBuilder::ball(0.5).build(), handle, &mut world.bodies);
+            }
+            rn_world_step(w);
+            let vy = {
+                let world = &*w;
+                world.bodies[handle].linvel().y as f64
+            };
+            assert!((vy - GRAVITY * TIMESTEP).abs() < F32_TOLERANCE, "vy = {vy}");
+            rn_world_free(w);
+        }
+    }
 }

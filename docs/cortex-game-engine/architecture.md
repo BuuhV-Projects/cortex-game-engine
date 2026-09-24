@@ -304,6 +304,20 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     tick). `pauseWhen = () => game.editorActive`.
   - **buildScene** cria o corpo pra nós `rapierBody` (ou override `physics.type=rigid`)
     e registra o sistema sozinho (lazy). `physicsPaused` pausa no editor.
+  - **Veículo** (ADR-0081): `createVehicle` → `Vehicle` (raycast do Rapier), de
+    **simulação**. Um carro só: `VehicleControlSystem` (input + câmera + passo).
+    **Arcade / vários carros (ADR-0256, SPEC-0259):** `VehicleArcadeSystem(physics)`
+    + `ArcadeVehicleComponent(vehicle, adhesion?)` + `Object3DComponent`. O mundo
+    anda UMA vez por passo para a frota inteira (prioridade 8); pilotos (input do
+    jogador a 30, `ScriptBehavior` de IA a 50) só escrevem motor/freio/esterço.
+    `GroundAdhesion` restringe altura/pitch/roll ao chão e cancela a gravidade ao
+    longo da pista — o feel de kart. Com a frota, o `VehicleControlSystem` do
+    jogador vai com `stepPhysics: false` (senão o mundo anda duas vezes).
+    **Progresso em rota** (volta, posição, IA): `src/scene/Route.ts`, funções puras
+    sobre uma rota fechada — as regras da corrida ficam no jogo.
+  - **`physics.advance(dt, antesDeCadaPasso)`** — passo semi-fixo (≤ 1/60, N
+    passos iguais; ADR-0257). Use no lugar de um `step()` por frame, que amarra a
+    velocidade da física ao fps.
 - **CharacterBody** (`CharacterBodyComponent`+`CharacterPhysicsSystem`) — controller
   cápsula (gravidade/pulo/step) com **chão por raycast** + piso `groundY` de
   fallback, e **colisão de parede** (horizontal): depenetra a cápsula de geometria
@@ -586,6 +600,28 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   `GameLoop` **limita o deltaTime a 100 ms** — sem o clamp, um frame lento faz a
   gravidade integrar um passo maior que o `stepHeight` e o personagem atravessa o
   chão (era o "respawn infinito" do export a <9 fps).
+- **Teto de fps num monitor com vsync (ADR-0257 / SPEC-0258).** `game.maxFps`
+  usa **alvo acumulado** (`proximoAlvo += orçamento`); a forma "pula se passou
+  menos de 1/maxFps desde o último frame" entrega **37,5 fps quando se pede 60**
+  a 75 Hz, porque todo vsync de 13,3 ms cai abaixo do orçamento. E só divisores
+  do refresh dão frames iguais — 60 a 75 Hz acerta a média com judder de 1 frame
+  em 5 (avisado por `debug('loop')`; `game.refreshHz` dá o número).
+- **Filtro das rodas por callback não existe no host (SPEC-0209).** O shim
+  nativo ignora o `predicate` do `updateVehicle` (só avisa no console): o
+  fantasma de respawn do kart-racer, feito por monkey-patch com predicate, **só
+  funcionava no Studio**. Filtrar rodas é por **grupos**
+  (`vehicle.wheelFilterGroups`). O shim também não tem
+  `wheelSuspensionRestLength`/`Stiffness` — o `Vehicle` guarda a própria cópia.
+- **`GroundAdhesion` lança o raio central da BASE dos pneus, não da origem.** O
+  `followGround` original lançava da origem do corpo porque o `.glb` do kart
+  tinha a origem embaixo; num modelo com origem no centro do chassi o raio não
+  alcançava o chão e o carro nunca aderia.
+- **Física do veículo amarrada ao fps (corrigido, ADR-0257).** O
+  `VehicleControlSystem` dava um `physics.step()` por frame com o timestep
+  padrão do Rapier (1/60): a 75 fps o carro andava 25% rápido demais, e um teto
+  de fps mudaria a jogabilidade. Agora é **semi-fixed** (N passos iguais ≤ 1/60,
+  `world.timestep` restaurado depois). Passo fixo SEM interpolação não serve: a
+  75 Hz, 1 frame em 5 fica sem passo e o carro parado nele.
 - **O 1º tick do world roda ANTES do 1º render — e o three só computa
   `matrixWorld` no render.** Qualquer raycast nesse tick enxergava TODO mesh na
   **identidade** (origem = tipicamente o spawn do player): o spring arm da câmera

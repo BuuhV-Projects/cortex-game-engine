@@ -18,6 +18,7 @@ lado).
 |---|---|
 | `Game` | **Facade recomendado.** Cria e conecta Renderer+Scene+Câmera+World+Input+loop. `new Game({ canvas })`, `.scene`, `.world`, `.camera`, `.renderer`, `.input`, `.onUpdate(dt=>…)`, `.start()`/`.stop()`. **Em dev liga o modo editor automaticamente** (F2); em build de produção o editor não entra no bundle (ADR-0042). |
 | `GameLoop` | Loop principal (baixo nível; o `Game` já usa). `new GameLoop({ onUpdate(dt), onFixedUpdate? })`, `.start()`/`.stop()`. |
+| `game.maxFps`, `game.refreshHz` | **Teto de fps escolhido pelo jogo** (ADR-0257). `game.maxFps = 60` (`0` = sem teto). Frame time constante lê mais fluido que uma taxa maior que oscila. Com vsync só **divisores do refresh** dão frames iguais (monitor 75 Hz: 75 / 37,5 / 25); `game.refreshHz` dá o refresh medido e `debug('loop')` avisa quando o teto não divide. A física do veículo anda igual a qualquer fps. |
 | `Renderer` | Wrapper do `WebGPURenderer`. `.render(threeScene, camera)`, `.renderViewport(...)` (split-screen), `.resize(w,h)`, `.threeRenderer` (instância crua, p/ pós-processamento), `.isReady`, `.dispose()`. |
 | `Camera`, `PerspectiveCamera`, `OrthographicCamera` | Câmeras (re-exportadas via Renderer). Perspectiva p/ 3D; ortográfica p/ 2.5D/2D. |
 | `InspectCamera` | Câmera de inspeção livre (SPEC-0131). `game.inspect.orbit({yaw,pitch,dist,target})` orbita um alvo, `.pose(pos,lookAt)` pose explícita, `.frame()` enquadra a cena, `.clear()` volta. Quando ativa o `Game` renderiza por ela (cru, sem PostFX) com a gameplay seguindo — pra cutscene/foto/replay de ângulo livre. É o motor do parâmetro `camera` do playtest do Chat IA. |
@@ -1213,6 +1214,45 @@ ragdoll, empilhar/empurrar). Pro **player/NPC** que anda no chão, o
 simples; a migração do player pro CharacterController do Rapier vem depois (TDR-0002).
 Autoria data-driven do Rapier (nó na cena + Inspector) ainda **não** existe — por ora
 o Rapier é montado em código (`main.ts`).
+
+## Veículos: carro de simulação e frota arcade (kart / corrida) — ADR-0256 / SPEC-0259
+
+Dois modos. **Simulação** (um carro, suspensão de verdade, capota): `setupVehicle`
+ou `VehicleControlSystem`. **Arcade** (kart, Mario Kart, Asphalt; vários carros):
+a frota abaixo. Não misture os dois no mesmo `RapierPhysics`.
+
+| Símbolo | O que é |
+|---|---|
+| `physics.createVehicle(spec)` → `Vehicle` | Carro raycast do Rapier. `.setEngineForce/.setBrake/.setSteering`, `.forwardSpeed()`, `.lateralSpeed()`, `.body` (corpo do chassi), `.reset(pos?, rot?)`, `.wheelFilterGroups` (grupos que as rodas enxergam — ex.: carro em respawn fantasma). |
+| `GroundAdhesion(physics, vehicle, opts?)` | **Feel arcade**: cola altura/pitch/roll no chão sob as rodas e cancela a gravidade ao longo da pista (subida e descida respondem igual ao acelerador). Solta na borda, em parede (`minNormalY`) e em salto maior que `snapDistance`. `.grounded`, `.groundNormal`. |
+| `ArcadeVehicleComponent(vehicle, adhesion?)` | Um carro da frota (junto de `Object3DComponent` com a malha). |
+| `VehicleArcadeSystem(physics)` | Avança o mundo UMA vez por passo para todos os carros e escreve a pose na malha. Prioridade 8. |
+| `physics.advance(dt, antesDeCadaPasso?)` | Passo semi-fixo (≤ 1/60): a física anda o tempo do relógio a qualquer fps. |
+| `Route` (`sampleRoute`, `nearestRoutePoint`, `projectOnRoute`, `routeSeparation`, `crossesGate`, `sectorProgress`, `routeCurvature`, `routeFrame`) | **Progresso em rota fechada** (pontos no sentido de percurso): quem está na frente e por quantos metros, passou pela chegada, ponto a N metros, curvatura à frente (IA). Puro — volta, posição e regras são do jogo. `nearestRoutePoint(pos, rota, semente)` com a semente do frame anterior é O(1). |
+
+**Pilotos só escrevem forças.** O jogador (input) e a IA (um `ScriptBehavior`)
+chamam `setEngineForce/setBrake/setSteering`; o passo é do sistema. A IA de
+corrida, itens, volta e respawn são do JOGO.
+
+```ts
+const physics = await RapierPhysics.create();
+game.world.addSystem(new VehicleArcadeSystem(physics));
+
+for (const spawn of grid) {
+  const vehicle = physics.createVehicle({ position: spawn, chassisHalfExtents, wheels });
+  game.world.createEntity()
+    .addComponent(new Object3DComponent(carMesh.clone()))
+    .addComponent(new ArcadeVehicleComponent(vehicle, new GroundAdhesion(physics, vehicle)));
+}
+
+// Carro do jogador: input + câmera, SEM avançar o mundo (a frota avança).
+game.world.addSystem(new VehicleControlSystem(physics, playerVehicle, playerMesh,
+  game.camera, game.gamepad, game.input, { stepPhysics: false }));
+```
+
+⚠️ Ao gerar carro com IA: rodas e chassi com a **origem do .glb** coerente com
+`chassisOffset`; muitos materiais por peça viram draw calls (ver o orçamento de
+perf do kart-racer — cada carro extra custou ~0,4 ms).
 
 ## Material / shader por objeto (material)
 

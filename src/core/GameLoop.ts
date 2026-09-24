@@ -9,6 +9,7 @@
  * a cada passo fixo de física.
  */
 import { bootMark, bootDump } from './bootProfile.js';
+import { debug } from './debug.js';
 
 export interface GameLoopOptions {
   /**
@@ -27,6 +28,11 @@ export interface GameLoopOptions {
    * @default 16.67  (~60 FPS)
    */
   fixedStep?: number;
+  /**
+   * Teto de quadros por segundo (ADR-0257). `0` ou ausente = sem teto.
+   * Pode ser trocado depois com {@link GameLoop.maxFps}.
+   */
+  maxFps?: number;
 }
 
 /**
@@ -41,10 +47,117 @@ export interface GameLoopOptions {
  */
 const MAX_DELTA_MS = 100;
 
+/**
+ * Folga do teto de quadros (ms). O instante do vsync oscila um pouco; sem folga,
+ * um frame que chega 0,1 ms antes do alvo seria pulado e o jogo cairia para a
+ * METADE da taxa pedida (ex.: teto 75 num monitor de 75 Hz daria 37,5).
+ */
+const FRAME_CAP_TOLERANCE_MS = 1;
+/** Intervalos de frame usados para estimar o refresh do monitor. */
+const REFRESH_SAMPLES = 30;
+/** Quão perto de inteiro `refresh / teto` precisa estar para contar como divisor. */
+const DIVISOR_EPSILON = 0.05;
+/** Quantos divisores lisos do refresh o aviso lista (refresh/1, /2, /3). */
+const SMOOTH_DIVISORS = 3;
+const MS_PER_SECOND = 1000;
+
+/**
+ * Teto de quadros com ALVO acumulado (ADR-0257) — separado do laço para ser
+ * testável sem `requestAnimationFrame`.
+ *
+ * O orçamento avança por soma (`proximoAlvo += orcamento`), não por "tempo desde
+ * o último frame". A diferença é o ponto inteiro deste código: com vsync a 75 Hz
+ * e teto 60, a versão por delta pula todo frame de 13,3 ms e entrega 37,5 fps; a
+ * versão por alvo entrega 4 de cada 5 vsyncs = 60 fps exatos.
+ *
+ * Também estima o refresh do monitor pela mediana dos primeiros intervalos, e
+ * avisa (por `debug`) quando o teto não é divisor dele — caso em que haverá
+ * judder periódico, que é informação que o dev não tem como obter sozinho.
+ */
+export class FrameCap {
+  private _budgetMs = 0;
+  private _maxFps = 0;
+  private _nextMs = -1;
+  private _lastSeenMs = -1;
+  private readonly _intervals: number[] = [];
+  private _refreshHz: number | null = null;
+  private _warned = false;
+
+  constructor(maxFps = 0) {
+    this.maxFps = maxFps;
+  }
+
+  /** Teto atual; `0` = sem teto. */
+  get maxFps(): number {
+    return this._maxFps;
+  }
+
+  set maxFps(fps: number) {
+    this._maxFps = fps > 0 ? fps : 0;
+    this._budgetMs = this._maxFps > 0 ? MS_PER_SECOND / this._maxFps : 0;
+    this._nextMs = -1; // ressincroniza no próximo frame
+    this._warned = false;
+    this._warnIfNotDivisor();
+  }
+
+  /** Refresh estimado do monitor (Hz), ou `null` enquanto não há amostras. */
+  get refreshHz(): number | null {
+    return this._refreshHz;
+  }
+
+  /**
+   * Registra o frame candidato e diz se ele deve rodar. Chamado a CADA callback
+   * de frame, inclusive os que serão pulados — a estimativa do refresh precisa
+   * dos intervalos crus.
+   */
+  admit(nowMs: number): boolean {
+    this._observe(nowMs);
+    if (this._budgetMs === 0) return true;
+    if (this._nextMs < 0) {
+      this._nextMs = nowMs + this._budgetMs;
+      return true;
+    }
+    if (nowMs < this._nextMs - FRAME_CAP_TOLERANCE_MS) return false;
+    this._nextMs += this._budgetMs;
+    // Atrasado mais de um orçamento inteiro (travada, aba em background):
+    // ressincroniza em vez de liberar uma rajada de frames para "recuperar".
+    if (this._nextMs <= nowMs) this._nextMs = nowMs + this._budgetMs;
+    return true;
+  }
+
+  private _observe(nowMs: number): void {
+    if (this._refreshHz !== null) return;
+    if (this._lastSeenMs >= 0) this._intervals.push(nowMs - this._lastSeenMs);
+    this._lastSeenMs = nowMs;
+    if (this._intervals.length < REFRESH_SAMPLES) return;
+    const sorted = [...this._intervals].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)]!;
+    this._refreshHz = median > 0 ? MS_PER_SECOND / median : null;
+    this._intervals.length = 0;
+    this._warnIfNotDivisor();
+  }
+
+  private _warnIfNotDivisor(): void {
+    if (this._warned || this._maxFps === 0 || this._refreshHz === null) return;
+    const ratio = this._refreshHz / this._maxFps;
+    if (ratio < 1 || Math.abs(ratio - Math.round(ratio)) <= DIVISOR_EPSILON) return;
+    this._warned = true;
+    const smooth: string[] = [];
+    for (let d = 1; d <= SMOOTH_DIVISORS; d++) smooth.push((this._refreshHz / d).toFixed(1));
+    debug(
+      'loop',
+      `maxFps=${this._maxFps} não divide o refresh (~${this._refreshHz.toFixed(1)} Hz): ` +
+        `a média bate, mas haverá judder periódico. Tetos lisos: ${smooth.join(', ')}`,
+    );
+  }
+}
+
 export class GameLoop {
   private readonly _onUpdate: (dt: number) => void;
   private readonly _onFixedUpdate?: (fdt: number) => void;
   private readonly _fixedStep: number;
+
+  private readonly _cap: FrameCap;
 
   private _running: boolean = false;
   private _paused: boolean = false;
@@ -61,6 +174,7 @@ export class GameLoop {
     this._onUpdate = options.onUpdate;
     this._onFixedUpdate = options.onFixedUpdate;
     this._fixedStep = options.fixedStep ?? (1000 / 60); // ~16.67 ms
+    this._cap = new FrameCap(options.maxFps ?? 0);
   }
 
   // ─── Public API ────────────────────────────────────────────────────────────
@@ -119,6 +233,26 @@ export class GameLoop {
     return this._paused;
   }
 
+  /**
+   * Teto de quadros por segundo escolhido pelo jogo (ADR-0257). `0` = sem teto.
+   *
+   * Com vsync, só divisores do refresh dão frames de duração igual (num monitor
+   * de 75 Hz: 75, 37,5, 25). Outro valor acerta a média mas alterna durações —
+   * ainda melhor que oscilar sem padrão. Veja {@link refreshHz}.
+   */
+  get maxFps(): number {
+    return this._cap.maxFps;
+  }
+
+  set maxFps(fps: number) {
+    this._cap.maxFps = fps;
+  }
+
+  /** Refresh do monitor estimado nos primeiros frames (Hz), ou `null` até lá. */
+  get refreshHz(): number | null {
+    return this._cap.refreshHz;
+  }
+
   // ─── Private helpers ───────────────────────────────────────────────────────
 
   /**
@@ -134,6 +268,12 @@ export class GameLoop {
       let firstFrame = true;
       const frame = (): void => {
         if (!this._running || this._paused) return;
+        // Frame pulado pelo teto só se reagenda: `_lastTime` fica intacto, então
+        // o próximo deltaTime cobre o intervalo inteiro e o jogo não perde tempo.
+        if (!this._cap.admit(this._now())) {
+          this._rafId = requestAnimationFrame(frame);
+          return;
+        }
         this._step();
         if (firstFrame) {
           firstFrame = false;

@@ -2,19 +2,31 @@
 
 ***
 
-[cortex-game-engine](../README.md) / VehicleControlSystem
+[cortex-game-engine](../README.md) / VehicleArcadeSystem
 
-# Class: VehicleControlSystem
+# Class: VehicleArcadeSystem
 
-Defined in: [src/systems/VehicleControlSystem.ts:107](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L107)
+Defined in: [src/systems/VehicleArcadeSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L25)
 
-Dirige um [Vehicle](Vehicle.md) do Rapier (ADR-0081), gamepad-first com **fallback
-teclado**: com controle, **RT** acelera, **LT** freia (e dá ré parado), **stick X**
-esterça; SEM controle (`gamepad.isConnected(0) === false`), **W/↑** acelera, **S/↓**
-freia/ré, **A·D / ←·→** esterça. Roda `vehicle.update(dt)` e o `physics.step()`
-(DEPOIS — convenção do Rapier), sincroniza a malha do carro ao chassi e posiciona a
-**chase cam**. `priority = 30` (DEPOIS da câmera de 3ª pessoa, que é 20 — senão ela
-sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de CPU).
+Avança VÁRIOS carros no mesmo mundo Rapier (ADR-0256 / SPEC-0259).
+
+O `VehicleControlSystem` supõe um carro e avança o mundo sozinho; com seis, os
+da IA davam `vehicle.update` fora do passo do mundo. Aqui o mundo anda UMA vez
+por passo, e cada carro faz aderência + `update` dentro dele.
+
+Prioridade 8 (o slot da física): pilotos — input do jogador (30) e scripts de
+IA (50) — escrevem forças que valem no passo do frame seguinte, com o mesmo
+atraso para todos; a câmera (30) vê a pose recém-calculada.
+
+Não combine com `RapierPhysicsSystem` no mesmo `RapierPhysics` (os dois
+avançam o mundo), e passe `stepPhysics: false` ao `VehicleControlSystem` do
+jogador.
+
+## Example
+
+```ts
+world.addSystem(new VehicleArcadeSystem(physics));
+```
 
 ## Extends
 
@@ -24,9 +36,9 @@ sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de
 
 ### Constructor
 
-> **new VehicleControlSystem**(`physics`, `vehicle`, `car`, `camera`, `gamepad`, `input?`, `options?`): `VehicleControlSystem`
+> **new VehicleArcadeSystem**(`physics`): `VehicleArcadeSystem`
 
-Defined in: [src/systems/VehicleControlSystem.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L119)
+Defined in: [src/systems/VehicleArcadeSystem.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L38)
 
 #### Parameters
 
@@ -34,35 +46,9 @@ Defined in: [src/systems/VehicleControlSystem.ts:119](https://github.com/BuuhV-P
 
 [`RapierPhysics`](RapierPhysics.md)
 
-##### vehicle
-
-[`Vehicle`](Vehicle.md)
-
-##### car
-
-`Object3D`
-
-##### camera
-
-`PerspectiveCamera`
-
-##### gamepad
-
-[`GamepadManager`](GamepadManager.md)
-
-##### input?
-
-[`InputManager`](InputManager.md)
-
-Teclado (fallback quando não há controle). Opcional.
-
-##### options?
-
-[`VehicleControlOptions`](../interfaces/VehicleControlOptions.md) = `{}`
-
 #### Returns
 
-`VehicleControlSystem`
+`VehicleArcadeSystem`
 
 #### Overrides
 
@@ -110,9 +96,9 @@ a gameplay (física/input) enquanto o editor está ativo
 
 ### priority
 
-> **priority**: `number` = `30`
+> **priority**: `number` = `8`
 
-Defined in: [src/systems/VehicleControlSystem.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L109)
+Defined in: [src/systems/VehicleArcadeSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L27)
 
 Prioridade de execução deste sistema.
 
@@ -127,9 +113,9 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ### requiredComponents
 
-> `static` **requiredComponents**: `never`[] = `[]`
+> `static` **requiredComponents**: (*typeof* [`Object3DComponent`](Object3DComponent.md) \| *typeof* [`ArcadeVehicleComponent`](ArcadeVehicleComponent.md))[]
 
-Defined in: [src/systems/VehicleControlSystem.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L108)
+Defined in: [src/systems/VehicleArcadeSystem.ts:26](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L26)
 
 Construtores dos componentes que este sistema requer.
 
@@ -174,17 +160,20 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 ### update()
 
-> **update**(`_entities`, `deltaTime`): `void`
+> **update**(`entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/VehicleControlSystem.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L133)
+Defined in: [src/systems/VehicleArcadeSystem.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleArcadeSystem.ts#L42)
 
 Executa a lógica do sistema para o frame/passo atual.
 
 #### Parameters
 
-##### \_entities
+##### entities
 
 [`Entity`](Entity.md)[]
+
+Entidades filtradas pelo `World` que possuem todos os
+                   componentes declarados em `requiredComponents`.
 
 ##### deltaTime
 

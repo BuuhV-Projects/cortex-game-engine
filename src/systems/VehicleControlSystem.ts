@@ -74,6 +74,13 @@ export interface VehicleControlOptions {
    */
   autopilot?: () => boolean;
   /**
+   * Este sistema avança o mundo? Default `true`. Use `false` quando um
+   * `VehicleArcadeSystem` já avança o mesmo `RapierPhysics` (vários carros na
+   * cena): aqui sobra ler input, sincronizar a malha e posicionar a câmera —
+   * sem isto o mundo avançaria duas vezes por frame (SPEC-0259).
+   */
+  stepPhysics?: boolean;
+  /**
    * **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra dirigir
    * pelas ações `accelerate`/`brake`/`handbrake` + `moveLeft`/`moveRight`
    * (grupo `vehicle` da tela de Controles). Sem isso, valem RT/LT/stick e o
@@ -187,10 +194,17 @@ export class VehicleControlSystem extends System {
       this.vehicle.setBrake(o.maxBrake ?? 50); // estacionado: freio segurando
     }
 
-    this.vehicle.update(dt);
-    const upright = o.uprightStrength ?? 14;
-    if (upright > 0) this.vehicle.keepUpright(upright, o.uprightDamping ?? 7, dt); // anti-capotamento
-    this.physics.step();
+    // Passo semi-fixo (ADR-0257): a física anda o tempo do relógio a qualquer
+    // fps. Com `stepPhysics: false` o passo é de outro sistema (a frota do
+    // VehicleArcadeSystem) e este só lê input, sincroniza e posiciona a câmera.
+    if (o.stepPhysics ?? true) {
+      const upright = o.uprightStrength ?? 14;
+      const uprightDamping = o.uprightDamping ?? 7;
+      this.physics.advance(dt, (step) => {
+        this.vehicle.update(step);
+        if (upright > 0) this.vehicle.keepUpright(upright, uprightDamping, step); // anti-capotamento
+      });
+    }
 
     // Sincroniza a malha do carro ao chassi.
     const t = this.vehicle.chassisTranslation();

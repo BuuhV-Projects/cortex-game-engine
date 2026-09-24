@@ -58,6 +58,7 @@ export * from './components/TerrainComponent.js';
 export * from './components/CharacterBodyComponent.js';
 export * from './components/InteractionComponent.js';
 export * from './components/RapierBodyComponent.js';
+export * from './components/ArcadeVehicleComponent.js';
 export * from './components/ScriptComponent.js';
 
 // ─── Scripts anexáveis (estilo MonoBehaviour — ADR-0085) ──────────────────────
@@ -66,6 +67,7 @@ export * from './scripts/ScriptRegistry.js';
 
 // ─── Física dinâmica (Rapier — WASM; TDR-0002, fase 2/spike) ───────────────────
 export * from './physics/RapierPhysics.js';
+export * from './physics/GroundAdhesion.js';
 
 // ─── Sistemas genéricos ────────────────────────────────────────────────────────
 export * from './systems/ScriptHostSystem.js';
@@ -81,6 +83,7 @@ export * from './systems/TerrainCollisionSystem.js';
 export * from './systems/CharacterPhysicsSystem.js';
 export * from './systems/InteractionSystem.js';
 export * from './systems/VehicleControlSystem.js';
+export * from './systems/VehicleArcadeSystem.js';
 export * from './systems/SkidMarkSystem.js';
 export * from './scene/EngineSound.js';
 export * from './ui/Speedometer.js';
@@ -134,6 +137,7 @@ export * from './scene/StaticMerge.js';
 export * from './scene/ShadowCasterCulling.js';
 export * from './scene/OutlineCulling.js';
 export * from './scene/Streaming.js';
+export * from './scene/Route.js';
 export * from './ui/DebugHud.js';
 export * from './scene/Terrain.js';
 export * from './scene/Vegetation.js';

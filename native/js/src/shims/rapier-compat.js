@@ -195,6 +195,17 @@ function World(gravity) {
 World.prototype.step = function () {
   __rapierNative.worldStep(this.__ptr);
 };
+// `world.timestep` do Rapier do browser (ADR-0257). Sem isto, atribuir criava
+// uma propriedade JS solta: nenhum erro, e o passo nativo seguia em 1/60 — o
+// passo semi-fixo do engine (`RapierPhysics.advance`) virava no-op SO no export.
+Object.defineProperty(World.prototype, 'timestep', {
+  get() {
+    return __rapierNative.worldTimestep(this.__ptr);
+  },
+  set(dt) {
+    __rapierNative.worldSetTimestep(this.__ptr, dt);
+  },
+});
 World.prototype.free = function () {
   __rapierNative.worldFree(this.__ptr);
   this.__ptr = 0;

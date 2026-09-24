@@ -404,6 +404,14 @@ Native (que roda milhares de libs sobre Hermes em produção):
   jogo — sem dizer qual função. Foi assim que o `forEachRigidBody` apareceu
   (kart-racer morrendo no `createCar`) e, depois, todo o raycast de mundo da
   SPEC-0216. O controlador de veículo JÁ foi portado (SPEC-0209).
+- **Propriedade faltando no shim NÃO dá erro — escrita vira propriedade JS
+  solta.** `world.timestep` não existia: `world.timestep = 1/75` passava calado
+  e o passo nativo seguia em 1/60, então o passo semi-fixo do engine
+  (`RapierPhysics.advance`, ADR-0257) só funcionava no Studio. Agora é
+  getter/setter sobre `rn_world_timestep`/`rn_world_set_timestep`. Método que
+  evitaria: para toda propriedade que o engine ESCREVE no Rapier, conferir que o
+  shim a define com `defineProperty` — `undefined is not a function` só pega
+  método faltando, nunca propriedade.
 - **Para saber o que o Hermes tem**, compile um `.js` com o `hermesc`, troque o
   `boot.hbc` de um export por ele e rode: o `print` sai no stdout. Foi assim que
   a hipótese "Hermes não tem `TypedArray.from`" caiu (ele tem).
