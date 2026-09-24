@@ -193,8 +193,9 @@ target_compile_definitions(cortex_host PRIVATE
 # inclui "../zstd/zstd.h").
 set_source_files_properties(${TP}/zstd/zstddeclib.c PROPERTIES LANGUAGE C)
 
-# Rapier nativo (crate Rust em rapier-native/ — `cargo build --release` lá
-# antes do build; o fetch-deps NÃO cobre isso porque é código nosso)
+# Rapier nativo (crate Rust em rapier-native/). O `yarn build:host` roda o
+# `cargo build --release` antes deste configure (SPEC-0260); o fetch-deps NÃO
+# cobre isso porque é código nosso.
 set(RAPIER_NATIVE ${CMAKE_CURRENT_SOURCE_DIR}/rapier-native/target/release)
 
 # Stack de 10 MB como os executáveis do próprio Hermes (Hermes.cmake): o

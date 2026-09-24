@@ -1,4 +1,4 @@
-# build-host.ps1 -- configura e compila o host nativo (SPEC-0247).
+# build-host.ps1 -- compila o Rapier nativo e o host (SPEC-0247, SPEC-0260).
 #
 # Uso:
 #   yarn build:host
@@ -49,6 +49,9 @@ $CAMINHO_DO_VSWHERE = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installe
 if (-not (Test-Path $CAMINHO_DO_CLANG)) {
   throw "clang-cl nao encontrado em $CAMINHO_DO_CLANG. Instale o LLVM (https://releases.llvm.org/) -- e o compilador oficial do host."
 }
+if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+  throw 'cargo nao encontrado no PATH. Instale o Rust (https://rustup.rs/) -- ele compila o rapier_native.dll que o host linka.'
+}
 if (-not (Test-Path $CAMINHO_DO_VSWHERE)) {
   throw "vswhere.exe nao encontrado em $CAMINHO_DO_VSWHERE. Instale o Visual Studio (ou as Build Tools) -- o vcvars64 vem com ele."
 }
@@ -74,6 +77,20 @@ if ($Limpar -and (Test-Path $build)) {
   Write-Output "[build-host] limpando $build"
   Remove-Item $build -Recurse -Force
 }
+
+# Rapier nativo ANTES do CMake (SPEC-0260). O host linka a DLL de
+# rapier-native/target/release, mas o CMake nao a compila: sem este passo o
+# host linka contra a DLL anterior sem erro nenhum, e a funcao nova so falta
+# em runtime ("undefined is not a function" no export). DLL em dia = poucos
+# segundos.
+$crate = Join-Path $fontes 'rapier-native'
+$itemDoTarget = Get-Item (Join-Path $crate 'target') -ErrorAction SilentlyContinue
+if ($itemDoTarget -and $itemDoTarget.LinkType) {
+  Write-Warning "rapier-native/target e $($itemDoTarget.LinkType) para $($itemDoTarget.Target) -- o cargo vai escrever la, e a DLL daquele repo passa a ser a desta worktree."
+}
+Write-Output "[build-host] rapier-native: cargo build --release"
+& cargo build --release --manifest-path (Join-Path $crate 'Cargo.toml')
+if ($LASTEXITCODE -ne 0) { throw "cargo build do rapier-native falhou (exit $LASTEXITCODE)" }
 
 $configure = "cmake -G Ninja -S `"$fontes`" -B `"$build`" -DCMAKE_BUILD_TYPE=$BuildType " +
              "-DCMAKE_C_COMPILER=`"$CAMINHO_DO_CLANG`" -DCMAKE_CXX_COMPILER=`"$CAMINHO_DO_CLANG`""
