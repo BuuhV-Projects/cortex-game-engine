@@ -75,6 +75,29 @@ Por quê: geram `dist/` dentro do projeto e sujam a árvore e o git. Build final
 responsabilidade do Studio. Para checar compilação use `tsc --noEmit`, que não
 escreve nada. `yarn install` e `yarn add` são permitidos.
 
+## 7. Performance: regras medidas, não opinião
+
+Cada regra veio de uma medida real (jogo de corrida, export nativo). Revise o
+que fez contra elas antes de encerrar.
+
+1. **Modelo 3D: o custo é material, não triângulo.** Cada malha com material
+   próprio é uma draw call. Peças com o **mesmo acabamento** dividem UM material;
+   no máximo **4 materiais** numa peça pequena (roda, item) e **8** num objeto
+   grande (carro, prédio). Modelo pesado? Conte materiais por primitiva antes
+   de culpar a geometria — unifique material, não decime.
+2. **Aquecer DEPOIS de criar.** O `main.ts` monta tudo sob a tela de
+   carregamento e chama `game.precompile()` no fim. Crie ANTES dele tudo o que
+   o jogo só cria no uso (efeitos, projéteis, variantes): objeto que aparece
+   pela primeira vez no meio do jogo compila shader na hora e trava.
+3. **Pool, não criação no uso.** Efeitos e projéteis nascem no carregamento e
+   voltam a um pool. `InstancedMesh` gera um shader POR OBJETO: um novo criado
+   durante o jogo é uma compilação nova.
+4. **Um caminho de render a mais é outro aquecimento.** Se o jogo desenha a
+   cena num `pass()` próprio (pós-processamento que liga por estado, como um
+   borrão de velocidade), force esse caminho e chame `game.precompile()` de novo.
+5. **Teto de fps é escolha do jogo:** `game.maxFps`, de preferência um divisor
+   do refresh (`game.refreshHz`).
+
 ## Estrutura de pastas
 
 ```
