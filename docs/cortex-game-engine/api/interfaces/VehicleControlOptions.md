@@ -16,7 +16,7 @@ Opções do [VehicleControlSystem](../classes/VehicleControlSystem.md).
 
 > `optional` **actions?**: [`InputActions`](../classes/InputActions.md)
 
-Defined in: [src/systems/VehicleControlSystem.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L82)
+Defined in: [src/systems/VehicleControlSystem.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L89)
 
 **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra dirigir
 pelas ações `accelerate`/`brake`/`handbrake` + `moveLeft`/`moveRight`
@@ -249,6 +249,19 @@ Ex.: 0.5 = perde metade do esterço a partir de `steerSpeedRef`. Default 0.5.
 Defined in: [src/systems/VehicleControlSystem.ts:40](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L40)
 
 Velocidade (m/s) em que a redução de esterço chega ao máximo. Default 28.
+
+***
+
+### stepPhysics?
+
+> `optional` **stepPhysics?**: `boolean`
+
+Defined in: [src/systems/VehicleControlSystem.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L82)
+
+Este sistema avança o mundo? Default `true`. Use `false` quando um
+`VehicleArcadeSystem` já avança o mesmo `RapierPhysics` (vários carros na
+cena): aqui sobra ler input, sincronizar a malha e posicionar a câmera —
+sem isto o mundo avançaria duas vezes por frame (SPEC-0259).
 
 ***
 

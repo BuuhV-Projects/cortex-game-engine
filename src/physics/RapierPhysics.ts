@@ -179,6 +179,19 @@ export function initRapier(): Promise<void> {
   })());
 }
 /** O namespace do Rapier já inicializado (erro se chamado antes do init). */
+/**
+ * Maior passo de {@link RapierPhysics.advance} (s). Acima disso a suspensão
+ * raycast perde estabilidade; é também o timestep padrão do Rapier, então a
+ * 60 fps nada muda.
+ */
+export const MAX_PHYSICS_STEP_S = 1 / 60;
+/** Folga do arredondamento: dt exatamente 1/60 não pode virar dois passos. */
+const STEP_ROUNDING_EPSILON = 1e-6;
+
+/** Suspensão padrão do {@link RapierPhysics.createVehicle}. */
+const DEFAULT_SUSPENSION_REST_LENGTH = 0.3;
+const DEFAULT_SUSPENSION_STIFFNESS = 24;
+
 function rapier(): RapierApi {
   if (!api) throw new Error('Rapier não inicializado — use RapierPhysics.create() (await).');
   return api;
@@ -268,6 +281,38 @@ export class RapierPhysics {
     this.world.step();
   }
 
+  /**
+   * Avança a simulação `dt` segundos em passos IGUAIS de no máximo
+   * {@link MAX_PHYSICS_STEP_S} (semi-fixed timestep — ADR-0257).
+   *
+   * Use no lugar de um `step()` por frame: aquele anda sempre 1/60 s, então a
+   * velocidade da física passa a depender do fps (a 75 fps, 25% rápida demais).
+   * Passo fixo sem interpolação também não serve: a 75 Hz, 1 frame em 5 fica
+   * sem passo nenhum, e o objeto parado nele.
+   *
+   * @param dt tempo do frame (s). `0` ou negativo não avança.
+   * @param beforeEachStep chamado antes de cada passo com o passo (s) — onde
+   *   veículos fazem `update`/aderência.
+   * @returns quantos passos foram dados.
+   *
+   * @example
+   * physics.advance(dtSeconds, (step) => vehicle.update(step));
+   */
+  advance(dt: number, beforeEachStep?: (step: number) => void): number {
+    if (!(dt > 0)) return 0;
+    const steps = Math.ceil(dt / MAX_PHYSICS_STEP_S - STEP_ROUNDING_EPSILON);
+    const step = dt / steps;
+    // O mundo pode ser compartilhado com quem confia no timestep padrão.
+    const previous = this.world.timestep;
+    this.world.timestep = step;
+    for (let i = 0; i < steps; i++) {
+      beforeEachStep?.(step);
+      this.step();
+    }
+    this.world.timestep = previous;
+    return steps;
+  }
+
   /** Adiciona um collider **trimesh estático** (fixo) — pro chão/terreno/road. */
   addTrimesh(vertices: Float32Array, indices: Uint32Array, position?: Vec3Like): void {
     const R = rapier();
@@ -334,7 +379,8 @@ export class RapierPhysics {
     const ctrl = this.world.createVehicleController(chassis);
     ctrl.indexUpAxis = 1; // Y é "pra cima" (a API é propriedade, não método)
 
-    const restLen = spec.suspensionRestLength ?? 0.3;
+    const restLen = spec.suspensionRestLength ?? DEFAULT_SUSPENSION_REST_LENGTH;
+    const stiffness = spec.suspensionStiffness ?? DEFAULT_SUSPENSION_STIFFNESS;
     spec.wheels.forEach((w) => {
       ctrl.addWheel(
         { x: w.position.x, y: w.position.y, z: w.position.z },
@@ -345,13 +391,13 @@ export class RapierPhysics {
       );
     });
     for (let i = 0; i < spec.wheels.length; i++) {
-      ctrl.setWheelSuspensionStiffness(i, spec.suspensionStiffness ?? 24);
+      ctrl.setWheelSuspensionStiffness(i, stiffness);
       ctrl.setWheelSuspensionCompression(i, spec.suspensionCompression ?? 0.82);
       ctrl.setWheelSuspensionRelaxation(i, spec.suspensionRelaxation ?? 0.88);
       ctrl.setWheelMaxSuspensionTravel(i, spec.maxSuspensionTravel ?? 0.3);
       ctrl.setWheelFrictionSlip(i, (spec.frictionSlip ?? 2.5) * (spec.wheels[i]?.gripScale ?? 1)); // grip (×escala da roda)
     }
-    const vehicle = new Vehicle(ctrl, chassis, spec.wheels, he);
+    const vehicle = new Vehicle(ctrl, chassis, spec.wheels, he, { restLength: restLen, stiffness });
     if (spec.centerOfMass) vehicle.setMassProperties(mass, spec.centerOfMass, spec.yawInertiaScale ?? 1);
     return vehicle;
   }
@@ -389,14 +435,52 @@ const _wax = new Vector3();
  * {@link RapierPhysics.createVehicle}; chame {@link Vehicle.update} APÓS `physics.step()`.
  */
 export class Vehicle {
+  /**
+   * Grupos de interação (`InteractionGroups` do Rapier) do raycast das rodas.
+   * `undefined` = as rodas enxergam tudo.
+   *
+   * Grupos, e não um callback por collider, porque o host nativo ignora o
+   * callback (SPEC-0209) — um filtro que só funciona no Studio é pior que
+   * nenhum. Uso típico: carro em respawn vira fantasma (SPEC-0259).
+   */
+  wheelFilterGroups: number | undefined = undefined;
+
+  private _suspensionRestLength: number;
+  private _suspensionStiffness: number;
+
   constructor(
     private readonly ctrl: RAPIER.DynamicRayCastVehicleController,
-    private readonly body: RAPIER.RigidBody,
+    /**
+     * Corpo rígido do chassi. Público para quem precisa agir sobre ele direto —
+     * impulso, aderência ao chão ({@link GroundAdhesion}).
+     */
+    readonly body: RAPIER.RigidBody,
     /** As rodas, na ordem em que foram adicionadas. */
     readonly wheels: VehicleWheelSpec[],
     /** Meia-extensão do chassi (pra recalcular a inércia ao mudar massa/CM). */
     private readonly halfExtents: Vec3Like = { x: 1, y: 0.5, z: 2 },
-  ) {}
+    suspension: { restLength: number; stiffness: number } = {
+      restLength: DEFAULT_SUSPENSION_REST_LENGTH,
+      stiffness: DEFAULT_SUSPENSION_STIFFNESS,
+    },
+  ) {
+    this._suspensionRestLength = suspension.restLength;
+    this._suspensionStiffness = suspension.stiffness;
+  }
+
+  /**
+   * Comprimento de repouso da suspensão (m), igual em todas as rodas.
+   * Guardado aqui, e não lido do controller, porque o shim do host nativo não
+   * implementa esse getter.
+   */
+  get suspensionRestLength(): number {
+    return this._suspensionRestLength;
+  }
+
+  /** Rigidez da suspensão, igual em todas as rodas. Ver {@link suspensionRestLength}. */
+  get suspensionStiffness(): number {
+    return this._suspensionStiffness;
+  }
 
   /**
    * Define massa + centro de massa AO VIVO (sem recriar o veículo) — ex.: editar no
@@ -437,7 +521,7 @@ export class Vehicle {
   }
   /** Avança a física do veículo. Chame DEPOIS de `physics.step()`. */
   update(dt: number): void {
-    this.ctrl.updateVehicle(dt);
+    this.ctrl.updateVehicle(dt, undefined, this.wheelFilterGroups);
   }
 
   /** Velocidade ao longo do forward (+Z local) do chassi, m/s (sinal = frente/ré). */
@@ -529,6 +613,8 @@ export class Vehicle {
     maxSuspensionTravel?: number;
     frictionSlip?: number;
   }): void {
+    if (t.suspensionStiffness != null) this._suspensionStiffness = t.suspensionStiffness;
+    if (t.suspensionRestLength != null) this._suspensionRestLength = t.suspensionRestLength;
     for (let i = 0; i < this.wheels.length; i++) {
       if (t.suspensionStiffness != null) this.ctrl.setWheelSuspensionStiffness(i, t.suspensionStiffness);
       if (t.suspensionRestLength != null) this.ctrl.setWheelSuspensionRestLength(i, t.suspensionRestLength);

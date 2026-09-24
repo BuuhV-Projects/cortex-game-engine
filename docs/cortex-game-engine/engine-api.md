@@ -1215,6 +1215,44 @@ simples; a migração do player pro CharacterController do Rapier vem depois (TD
 Autoria data-driven do Rapier (nó na cena + Inspector) ainda **não** existe — por ora
 o Rapier é montado em código (`main.ts`).
 
+## Veículos: carro de simulação e frota arcade (kart / corrida) — ADR-0256 / SPEC-0259
+
+Dois modos. **Simulação** (um carro, suspensão de verdade, capota): `setupVehicle`
+ou `VehicleControlSystem`. **Arcade** (kart, Mario Kart, Asphalt; vários carros):
+a frota abaixo. Não misture os dois no mesmo `RapierPhysics`.
+
+| Símbolo | O que é |
+|---|---|
+| `physics.createVehicle(spec)` → `Vehicle` | Carro raycast do Rapier. `.setEngineForce/.setBrake/.setSteering`, `.forwardSpeed()`, `.lateralSpeed()`, `.body` (corpo do chassi), `.reset(pos?, rot?)`, `.wheelFilterGroups` (grupos que as rodas enxergam — ex.: carro em respawn fantasma). |
+| `GroundAdhesion(physics, vehicle, opts?)` | **Feel arcade**: cola altura/pitch/roll no chão sob as rodas e cancela a gravidade ao longo da pista (subida e descida respondem igual ao acelerador). Solta na borda, em parede (`minNormalY`) e em salto maior que `snapDistance`. `.grounded`, `.groundNormal`. |
+| `ArcadeVehicleComponent(vehicle, adhesion?)` | Um carro da frota (junto de `Object3DComponent` com a malha). |
+| `VehicleArcadeSystem(physics)` | Avança o mundo UMA vez por passo para todos os carros e escreve a pose na malha. Prioridade 8. |
+| `physics.advance(dt, antesDeCadaPasso?)` | Passo semi-fixo (≤ 1/60): a física anda o tempo do relógio a qualquer fps. |
+
+**Pilotos só escrevem forças.** O jogador (input) e a IA (um `ScriptBehavior`)
+chamam `setEngineForce/setBrake/setSteering`; o passo é do sistema. A IA de
+corrida, itens, volta e respawn são do JOGO.
+
+```ts
+const physics = await RapierPhysics.create();
+game.world.addSystem(new VehicleArcadeSystem(physics));
+
+for (const spawn of grid) {
+  const vehicle = physics.createVehicle({ position: spawn, chassisHalfExtents, wheels });
+  game.world.createEntity()
+    .addComponent(new Object3DComponent(carMesh.clone()))
+    .addComponent(new ArcadeVehicleComponent(vehicle, new GroundAdhesion(physics, vehicle)));
+}
+
+// Carro do jogador: input + câmera, SEM avançar o mundo (a frota avança).
+game.world.addSystem(new VehicleControlSystem(physics, playerVehicle, playerMesh,
+  game.camera, game.gamepad, game.input, { stepPhysics: false }));
+```
+
+⚠️ Ao gerar carro com IA: rodas e chassi com a **origem do .glb** coerente com
+`chassisOffset`; muitos materiais por peça viram draw calls (ver o orçamento de
+perf do kart-racer — cada carro extra custou ~0,4 ms).
+
 ## Material / shader por objeto (material)
 
 Atribui um "shader" (material do Three) a um objeto pela propriedade `material` do nó

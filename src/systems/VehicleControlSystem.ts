@@ -74,6 +74,13 @@ export interface VehicleControlOptions {
    */
   autopilot?: () => boolean;
   /**
+   * Este sistema avança o mundo? Default `true`. Use `false` quando um
+   * `VehicleArcadeSystem` já avança o mesmo `RapierPhysics` (vários carros na
+   * cena): aqui sobra ler input, sincronizar a malha e posicionar a câmera —
+   * sem isto o mundo avançaria duas vezes por frame (SPEC-0259).
+   */
+  stepPhysics?: boolean;
+  /**
    * **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra dirigir
    * pelas ações `accelerate`/`brake`/`handbrake` + `moveLeft`/`moveRight`
    * (grupo `vehicle` da tela de Controles). Sem isso, valem RT/LT/stick e o
@@ -97,14 +104,6 @@ const _wq = new Quaternion();
  * **chase cam**. `priority = 30` (DEPOIS da câmera de 3ª pessoa, que é 20 — senão ela
  * sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de CPU).
  */
-/**
- * Maior passo de física do veículo (s). Acima disso a suspensão raycast perde
- * estabilidade; é também o timestep padrão do Rapier, então a 60 fps nada muda.
- */
-const MAX_VEHICLE_STEP_S = 1 / 60;
-/** Folga do arredondamento: dt exatamente 1/60 não pode virar dois passos. */
-const STEP_EPSILON = 1e-6;
-
 export class VehicleControlSystem extends System {
   static override requiredComponents = [];
   override priority = 30;
@@ -195,28 +194,16 @@ export class VehicleControlSystem extends System {
       this.vehicle.setBrake(o.maxBrake ?? 50); // estacionado: freio segurando
     }
 
-    // Semi-fixed timestep (ADR-0257): o dt do frame vira N passos IGUAIS de no
-    // máximo MAX_VEHICLE_STEP_S. Antes era um `step()` por frame com o timestep
-    // padrão do Rapier (1/60), o que amarrava a velocidade da física ao fps —
-    // a 75 fps o carro andava 25% rápido demais. Passo fixo sem interpolação
-    // também não serve: a 75 Hz, 1 frame em 5 ficaria sem passo e o carro
-    // parado nele, que é o judder que o teto de fps veio tirar.
-    if (dt > 0) {
+    // Passo semi-fixo (ADR-0257): a física anda o tempo do relógio a qualquer
+    // fps. Com `stepPhysics: false` o passo é de outro sistema (a frota do
+    // VehicleArcadeSystem) e este só lê input, sincroniza e posiciona a câmera.
+    if (o.stepPhysics ?? true) {
       const upright = o.uprightStrength ?? 14;
       const uprightDamping = o.uprightDamping ?? 7;
-      const steps = Math.ceil(dt / MAX_VEHICLE_STEP_S - STEP_EPSILON);
-      const subDt = dt / steps;
-      const world = this.physics.world;
-      // O mundo pode ser compartilhado com outro sistema que confia no timestep
-      // padrão: restaura depois.
-      const previousTimestep = world.timestep;
-      world.timestep = subDt;
-      for (let i = 0; i < steps; i++) {
-        this.vehicle.update(subDt);
-        if (upright > 0) this.vehicle.keepUpright(upright, uprightDamping, subDt); // anti-capotamento
-        this.physics.step();
-      }
-      world.timestep = previousTimestep;
+      this.physics.advance(dt, (step) => {
+        this.vehicle.update(step);
+        if (upright > 0) this.vehicle.keepUpright(upright, uprightDamping, step); // anti-capotamento
+      });
     }
 
     // Sincroniza a malha do carro ao chassi.
