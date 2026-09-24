@@ -14,6 +14,7 @@
 #include "core/crash_handler.h"
 #include "core/frame_timing.h"
 #include "webgpu/gpu_latency.h"
+#include "webgpu/pass_timing.h"
 #include "core/game_config.h"
 #include "core/gdk.h"
 #include "core/host_gpu.h"
@@ -151,6 +152,7 @@ bool runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
   // nunca chegaria, e o relatório diria "latência zero" — a conclusão errada
   // mais cara possível aqui. Não bloqueia: só drena o que já está pronto.
   webgpu::pumpGpuLatency(gpu->instance);
+  webgpu::pumpPassTiming(gpu->instance);
   // Destruições adiadas de buffers/texturas: SÓ depois do present — um pass
   // gravado neste frame com o recurso ainda vivo passa na validação do submit.
   webgpu::flushDeferredDestroys();
@@ -237,6 +239,7 @@ int main(int argc, char** argv) {
   // Cronometro das fases do frame (SPEC-0249): no-op sem CORTEX_FRAME_TIMING.
   core::initFrameTiming();
   webgpu::initGpuLatency();  // mesma variavel de ambiente (SPEC-0253)
+  webgpu::initPassTiming();  // ANTES do device: decide se pede a feature (SPEC-0254)
 
   HostGpu gpu;
   // Tamanho só do modo janela (CORTEX_WINDOWED); em fullscreen usa a

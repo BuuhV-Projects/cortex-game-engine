@@ -57,6 +57,7 @@ add_executable(cortex_host
   ${TP}/zstd/zstddeclib.c
   src/webgpu/buffers.cpp
   src/webgpu/gpu_latency.cpp
+  src/webgpu/pass_timing.cpp
   src/webgpu/commands.cpp
   src/webgpu/device.cpp
   src/webgpu/enums.cpp

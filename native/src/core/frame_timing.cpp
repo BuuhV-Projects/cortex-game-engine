@@ -9,6 +9,7 @@
 
 #include "crash_handler.h"
 #include "../webgpu/gpu_latency.h"
+#include "../webgpu/pass_timing.h"
 
 namespace core {
 namespace {
@@ -59,6 +60,7 @@ void relatar() {
   // A latência da GPU sai na linha seguinte, no mesmo ritmo: as duas juntas é
   // que respondem "o frame demorou onde" (SPEC-0253).
   webgpu::reportGpuLatency();
+  webgpu::reportPassTiming();
   g_frames = 0;
   g_apresentados = 0;
 }

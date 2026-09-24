@@ -5,6 +5,7 @@
 #include "../napi/napi_util.h"
 #include "bindings.h"
 #include "enums.h"
+#include "../core/crash_handler.h"
 #include "internal.h"
 #include "gpu_latency.h"
 #include "../core/app_window.h"
@@ -30,13 +31,52 @@ bool isSurfaceTextureUsable(const WGPUSurfaceTexture& st) {
 // Configura a surface. Nas RECUPERAÇÕES (Outdated/Lost) usa o tamanho já
 // validado — reconfigurar a mesma surface pra um tamanho DIFERENTE é que dá
 // "Invalid surface"; mudança de tamanho passa por recreateSurface (SPEC-0199).
+/**
+ * O modo de apresentacao, com `Fifo` como padrao (SPEC-0255).
+ *
+ * `CORTEX_PRESENT_MODE=mailbox|immediate|fifo` troca em tempo de execucao, para
+ * responder uma pergunta medida: um frame leva ate 321 ms para ficar pronto
+ * enquanto a GPU executa 0,60 ms de trabalho (SPEC-0254). O tempo e ESPERA, e
+ * a swapchain e o suspeito que sobrou.
+ *
+ * Um modo que o dispositivo nao suporta faz o `configure` falhar, entao a
+ * escolha so vale se a surface declarar que o tem — e o que ficou valendo vai
+ * para o log, porque medir com o modo errado sem saber e pior que nao medir.
+ */
+WGPUPresentMode escolherPresentMode(HostGpu* gpu) {
+  const char* pedido = SDL_getenv("CORTEX_PRESENT_MODE");
+  if (pedido == nullptr) return WGPUPresentMode_Fifo;
+  WGPUPresentMode alvo = WGPUPresentMode_Fifo;
+  if (SDL_strcasecmp(pedido, "mailbox") == 0) alvo = WGPUPresentMode_Mailbox;
+  else if (SDL_strcasecmp(pedido, "immediate") == 0) alvo = WGPUPresentMode_Immediate;
+  else if (SDL_strcasecmp(pedido, "fifo") != 0) {
+    core::appendPerfLog("present-mode: valor desconhecido '%s' — usando Fifo", pedido);
+    return WGPUPresentMode_Fifo;
+  }
+  if (alvo == WGPUPresentMode_Fifo) return alvo;
+  WGPUSurfaceCapabilities caps = WGPU_SURFACE_CAPABILITIES_INIT;
+  bool suportado = false;
+  if (wgpuSurfaceGetCapabilities(gpu->surface, gpu->adapter, &caps) == WGPUStatus_Success) {
+    for (size_t i = 0; i < caps.presentModeCount; ++i) {
+      if (caps.presentModes[i] == alvo) { suportado = true; break; }
+    }
+    wgpuSurfaceCapabilitiesFreeMembers(caps);
+  }
+  if (!suportado) {
+    core::appendPerfLog("present-mode: %s NAO suportado pela surface — usando Fifo", pedido);
+    return WGPUPresentMode_Fifo;
+  }
+  core::appendPerfLog("present-mode: %s", pedido);
+  return alvo;
+}
+
 void configureSurface(HostGpu* gpu, int w, int h) {
   gpu->config = WGPU_SURFACE_CONFIGURATION_INIT;
   gpu->config.device = gpu->device;
   gpu->config.format = gpu->requestedFormat;
   gpu->config.width = static_cast<uint32_t>(w);
   gpu->config.height = static_cast<uint32_t>(h);
-  gpu->config.presentMode = WGPUPresentMode_Fifo;
+  gpu->config.presentMode = escolherPresentMode(gpu);
   // Paridade visual (SPEC-0240, passo 1): com CORTEX_RENDER_PARITY_CAPTURE
   // ligado, o comparador precisa ler a `swap` já composta antes do present, o
   // que exige CopySrc no usage. Só pede a flag extra quando o modo está
