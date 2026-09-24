@@ -6,7 +6,7 @@
 
 # Interface: RouteGate
 
-Defined in: src/scene/Route.ts:28
+Defined in: [src/scene/Route.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L28)
 
 Portal de passagem (linha de chegada, checkpoint): um ponto da rota, a normal
 horizontal no sentido de percurso e a meia-largura da pista.
@@ -21,7 +21,7 @@ horizontal no sentido de percurso e a meia-largura da pista.
 
 > **halfWidth**: `number`
 
-Defined in: src/scene/Route.ts:31
+Defined in: [src/scene/Route.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L31)
 
 ***
 
@@ -29,7 +29,7 @@ Defined in: src/scene/Route.ts:31
 
 > **nx**: `number`
 
-Defined in: src/scene/Route.ts:29
+Defined in: [src/scene/Route.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L29)
 
 ***
 
@@ -37,7 +37,7 @@ Defined in: src/scene/Route.ts:29
 
 > **nz**: `number`
 
-Defined in: src/scene/Route.ts:30
+Defined in: [src/scene/Route.ts:30](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L30)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: src/scene/Route.ts:30
 
 > **x**: `number`
 
-Defined in: src/scene/Route.ts:19
+Defined in: [src/scene/Route.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L19)
 
 #### Inherited from
 
@@ -57,7 +57,7 @@ Defined in: src/scene/Route.ts:19
 
 > **y**: `number`
 
-Defined in: src/scene/Route.ts:20
+Defined in: [src/scene/Route.ts:20](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L20)
 
 #### Inherited from
 
@@ -69,7 +69,7 @@ Defined in: src/scene/Route.ts:20
 
 > **z**: `number`
 
-Defined in: src/scene/Route.ts:21
+Defined in: [src/scene/Route.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L21)
 
 #### Inherited from
 

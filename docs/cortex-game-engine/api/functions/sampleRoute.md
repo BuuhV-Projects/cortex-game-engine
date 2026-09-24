@@ -8,7 +8,7 @@
 
 > **sampleRoute**(`route`, `index`, `distance`, `out?`): [`RoutePoint`](../interfaces/RoutePoint.md)
 
-Defined in: src/scene/Route.ts:263
+Defined in: [src/scene/Route.ts:263](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L263)
 
 Ponto a `distance` metros (pode ser negativo) do ponto `index`, ao longo da
 rota, dando a volta no circuito.

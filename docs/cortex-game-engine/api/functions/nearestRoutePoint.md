@@ -8,7 +8,7 @@
 
 > **nearestRoutePoint**(`position`, `route`, `seed?`): `number`
 
-Defined in: src/scene/Route.ts:165
+Defined in: [src/scene/Route.ts:165](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L165)
 
 Índice do ponto de rota mais próximo (3D).
 

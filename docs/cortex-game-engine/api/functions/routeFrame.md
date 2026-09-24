@@ -8,7 +8,7 @@
 
 > **routeFrame**(`route`, `index`, `distance`, `out?`): `object`
 
-Defined in: src/scene/Route.ts:305
+Defined in: [src/scene/Route.ts:305](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Route.ts#L305)
 
 Quadro local da pista a `distance` metros de `index`: o ponto e a direção
 horizontal unitária `(dx, dz)` de percurso. A lateral é `(-dz, dx)`.
