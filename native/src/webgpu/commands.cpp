@@ -10,6 +10,7 @@
 #include "../napi/napi_util.h"
 #include "enums.h"
 #include "internal.h"
+#include "pass_timing.h"
 #include "napi_stats.h"
 
 namespace webgpu {
@@ -453,6 +454,10 @@ napi_value encoderBeginRenderPass(napi_env env, napi_callback_info info) {
       WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
   const bool temProfundidade = parseDepthStencilAttachment(env, args[0], &depthAttachment);
   if (temProfundidade) desc.depthStencilAttachment = &depthAttachment;
+  // Timestamp por pass (SPEC-0254): nullptr quando a medicao esta desligada,
+  // e o descriptor fica exatamente como era. O ponteiro devolvido vive ate o
+  // fim do frame, porque o wgpu le no beginRenderPass.
+  desc.timestampWrites = nextPassTimestampWrites();
   WGPURenderPassEncoder pass =
       wgpuCommandEncoderBeginRenderPass(encoder, &desc);
   return makePassObject(env, pass);

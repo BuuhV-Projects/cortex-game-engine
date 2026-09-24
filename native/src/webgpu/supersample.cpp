@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "bloom.h"
+#include "pass_timing.h"
 
 namespace webgpu {
 namespace {
@@ -520,9 +521,15 @@ void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
   wgpuRenderPassEncoderDraw(rp, 3, 1, 0, 0);
   wgpuRenderPassEncoderEnd(rp);
   wgpuRenderPassEncoderRelease(rp);
+  // Resolve dos timestamps do frame (SPEC-0254), no ULTIMO encoder antes do
+  // present: neste ponto todos os passes do frame ja escreveram. No-op sem
+  // CORTEX_FRAME_TIMING.
+  resolvePassTiming(encoder, gpu->queue);
   WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(encoder, nullptr);
   wgpuCommandEncoderRelease(encoder);
   wgpuQueueSubmit(gpu->queue, 1, &cmd);
+  // Agora sim: a copia ja executou, o buffer pode ser mapeado (SPEC-0254).
+  startPassTimingRead();
   wgpuCommandBufferRelease(cmd);
   wgpuBindGroupRelease(bindGroup);
   if (ownUiView) wgpuTextureViewRelease(uiView);

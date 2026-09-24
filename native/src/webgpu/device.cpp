@@ -8,7 +8,10 @@
 
 #include "../core/crash_handler.h"
 #include "../napi/napi_util.h"
+#include <vector>
+
 #include "internal.h"
+#include "pass_timing.h"
 
 namespace webgpu {
 namespace {
@@ -45,11 +48,13 @@ WGPUDevice acquireDevice(HostGpu* gpu, WGPUAdapter adapter) {
   desc.uncapturedErrorCallbackInfo.callback = logUncapturedError;
   // Texturas comprimidas BC (SPEC-0155): o transcode KTX2 do host entrega BC7
   // (4× menos VRAM que RGBA). Todo hardware D3D12 suporta BC1–7 por spec.
-  static const WGPUFeatureName kRequiredFeatures[] = {
-      WGPUFeatureName_TextureCompressionBC,
-  };
-  desc.requiredFeatureCount = 1;
-  desc.requiredFeatures = kRequiredFeatures;
+  // TimestampQuery entra SO quando a medicao esta ligada E o adapter suporta
+  // (SPEC-0254): pedir feature ausente faz o requestDevice FALHAR e o jogo nao
+  // abre. Em producao a lista fica exatamente como era.
+  std::vector<WGPUFeatureName> features = {WGPUFeatureName_TextureCompressionBC};
+  if (adapterSupportsTimestamp(adapter)) features.push_back(WGPUFeatureName_TimestampQuery);
+  desc.requiredFeatureCount = features.size();
+  desc.requiredFeatures = features.data();
   WGPURequestDeviceCallbackInfo cb = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
   cb.mode = WGPUCallbackMode_AllowProcessEvents;
   cb.userdata1 = &result;
@@ -193,6 +198,7 @@ napi_value adapterRequestDevice(napi_env env, napi_callback_info info) {
       return njs::undefined(env);
     }
     gpu->device = device;
+    setupPassTiming(device);  // SPEC-0254: no-op sem CORTEX_FRAME_TIMING
     gpu->queue = wgpuDeviceGetQueue(device);
   }
   return njs::resolvedPromise(env, makeDeviceObject(env, gpu->device));
