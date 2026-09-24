@@ -1,3 +1,10 @@
+# [0.64.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.63.2...v0.64.0) (2026-09-24)
+
+
+### Features
+
+* **chat-ia:** modos Modelagem e Codificar, portão do modelo 3D e regras de performance ([649f309](https://github.com/BuuhV-Projects/cortex-game-engine/commit/649f309799f6ffe8c272faa8d41c51fa30d0fa14))
+
 ## [0.63.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.63.1...v0.63.2) (2026-09-24)
 
 
