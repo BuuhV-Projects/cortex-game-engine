@@ -1,3 +1,10 @@
+# [0.67.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.66.0...v0.67.0) (2026-09-24)
+
+
+### Features
+
+* **chat-ia:** validação de modelos visível e saúde do turno ([9924f4d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9924f4d2b241f75385a5956cf79f05281ace0926))
+
 # [0.66.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.65.0...v0.66.0) (2026-09-24)
 
 
