@@ -1,3 +1,10 @@
+# [0.62.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.61.0...v0.62.0) (2026-09-24)
+
+
+### Features
+
+* **perf:** protocolo de medição A/B do export nativo (TDR-0007) ([c6e02bf](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c6e02bfa7ced75011a473430d7c9818386fd488a))
+
 # [0.61.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.60.0...v0.61.0) (2026-09-24)
 
 
