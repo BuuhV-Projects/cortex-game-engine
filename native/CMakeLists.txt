@@ -56,6 +56,7 @@ add_executable(cortex_host
   ${TP}/basisu/basisu_transcoder.cpp
   ${TP}/zstd/zstddeclib.c
   src/webgpu/buffers.cpp
+  src/webgpu/gpu_latency.cpp
   src/webgpu/commands.cpp
   src/webgpu/device.cpp
   src/webgpu/enums.cpp
