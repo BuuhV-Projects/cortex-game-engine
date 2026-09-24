@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "crash_handler.h"
+#include "../webgpu/gpu_latency.h"
 
 namespace core {
 namespace {
@@ -55,6 +56,9 @@ void relatar() {
   // "%s" e nao `linha` direto: a linha traz `%` nenhum hoje, mas passar dado
   // como formato e a porta de entrada classica de corrupcao de pilha.
   appendPerfLog("%s", linha);
+  // A latência da GPU sai na linha seguinte, no mesmo ritmo: as duas juntas é
+  // que respondem "o frame demorou onde" (SPEC-0253).
+  webgpu::reportGpuLatency();
   g_frames = 0;
   g_apresentados = 0;
 }

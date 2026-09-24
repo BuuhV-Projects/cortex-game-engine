@@ -6,6 +6,7 @@
 #include "bindings.h"
 #include "enums.h"
 #include "internal.h"
+#include "gpu_latency.h"
 #include "../core/app_window.h"
 #include "supersample.h"
 #include "render_parity_capture.h"
@@ -56,6 +57,10 @@ void configureSurface(HostGpu* gpu, int w, int h) {
 // compositor, caminho antigo sem SSAA) em vez de repetir a chamada em cada um.
 void captureThenPresent(HostGpu* gpu, WGPUTexture swap) {
   if (renderParityCaptureEnabled()) maybeCaptureFrame(gpu, swap);
+  // Marca o frame ANTES do present: daqui até a GPU avisar que terminou é a
+  // latência que a SPEC-0253 mede. Todo o trabalho do frame já foi submetido
+  // neste ponto — o blit para a swapchain é o último.
+  trackSubmittedFrame(gpu->queue);
   wgpuSurfacePresent(gpu->surface);
 }
 
