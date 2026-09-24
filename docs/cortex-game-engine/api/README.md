@@ -26,6 +26,7 @@
 - [FollowCamera2DSystem](classes/FollowCamera2DSystem.md)
 - [FollowCameraTargetComponent](classes/FollowCameraTargetComponent.md)
 - [FrameBudget](classes/FrameBudget.md)
+- [FrameCap](classes/FrameCap.md)
 - [Game](classes/Game.md)
 - [GameConfig](classes/GameConfig.md)
 - [GameLoop](classes/GameLoop.md)

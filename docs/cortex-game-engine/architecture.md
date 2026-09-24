@@ -586,6 +586,18 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
   `GameLoop` **limita o deltaTime a 100 ms** — sem o clamp, um frame lento faz a
   gravidade integrar um passo maior que o `stepHeight` e o personagem atravessa o
   chão (era o "respawn infinito" do export a <9 fps).
+- **Teto de fps num monitor com vsync (ADR-0257 / SPEC-0258).** `game.maxFps`
+  usa **alvo acumulado** (`proximoAlvo += orçamento`); a forma "pula se passou
+  menos de 1/maxFps desde o último frame" entrega **37,5 fps quando se pede 60**
+  a 75 Hz, porque todo vsync de 13,3 ms cai abaixo do orçamento. E só divisores
+  do refresh dão frames iguais — 60 a 75 Hz acerta a média com judder de 1 frame
+  em 5 (avisado por `debug('loop')`; `game.refreshHz` dá o número).
+- **Física do veículo amarrada ao fps (corrigido, ADR-0257).** O
+  `VehicleControlSystem` dava um `physics.step()` por frame com o timestep
+  padrão do Rapier (1/60): a 75 fps o carro andava 25% rápido demais, e um teto
+  de fps mudaria a jogabilidade. Agora é **semi-fixed** (N passos iguais ≤ 1/60,
+  `world.timestep` restaurado depois). Passo fixo SEM interpolação não serve: a
+  75 Hz, 1 frame em 5 fica sem passo e o carro parado nele.
 - **O 1º tick do world roda ANTES do 1º render — e o three só computa
   `matrixWorld` no render.** Qualquer raycast nesse tick enxergava TODO mesh na
   **identidade** (origem = tipicamente o spawn do player): o spring arm da câmera

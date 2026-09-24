@@ -6,15 +6,35 @@
 
 # Class: VehicleControlSystem
 
-Defined in: [src/systems/VehicleControlSystem.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L100)
+Defined in: [src/systems/VehicleControlSystem.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L108)
 
-Dirige um [Vehicle](Vehicle.md) do Rapier (ADR-0081), gamepad-first com **fallback
-teclado**: com controle, **RT** acelera, **LT** freia (e dá ré parado), **stick X**
-esterça; SEM controle (`gamepad.isConnected(0) === false`), **W/↑** acelera, **S/↓**
-freia/ré, **A·D / ←·→** esterça. Roda `vehicle.update(dt)` e o `physics.step()`
-(DEPOIS — convenção do Rapier), sincroniza a malha do carro ao chassi e posiciona a
-**chase cam**. `priority = 30` (DEPOIS da câmera de 3ª pessoa, que é 20 — senão ela
-sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de CPU).
+Classe base para todos os sistemas do ECS.
+
+Cada sistema encapsula **lógica** que opera sobre entidades que possuem
+um conjunto específico de componentes. O `World` filtra as entidades via
+`World.query(requiredComponents)` e as repassa ao `update` de cada sistema
+em ordem crescente de `priority` a cada tick — vide ADR-0002.
+
+Subclasses devem:
+1. Declarar `static requiredComponents` com os construtores dos componentes
+   que serão acessados dentro de `update`.
+2. Implementar `update(entities, deltaTime)` com a lógica do sistema.
+
+## Example
+
+```ts
+class MovementSystem extends System {
+  static requiredComponents = [TransformComponent, VelocityComponent];
+
+  update(entities: Entity[], deltaTime: number): void {
+    for (const entity of entities) {
+      const transform = entity.getComponent(TransformComponent)!;
+      const velocity = entity.getComponent(VelocityComponent)!;
+      transform.position.x += velocity.x * deltaTime;
+    }
+  }
+}
+```
 
 ## Extends
 
@@ -26,7 +46,7 @@ sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de
 
 > **new VehicleControlSystem**(`physics`, `vehicle`, `car`, `camera`, `gamepad`, `input?`, `options?`): `VehicleControlSystem`
 
-Defined in: [src/systems/VehicleControlSystem.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L112)
+Defined in: [src/systems/VehicleControlSystem.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L120)
 
 #### Parameters
 
@@ -112,7 +132,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `30`
 
-Defined in: [src/systems/VehicleControlSystem.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L102)
+Defined in: [src/systems/VehicleControlSystem.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L110)
 
 Prioridade de execução deste sistema.
 
@@ -129,7 +149,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: [src/systems/VehicleControlSystem.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L101)
+Defined in: [src/systems/VehicleControlSystem.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L109)
 
 Construtores dos componentes que este sistema requer.
 
@@ -176,7 +196,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`_entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/VehicleControlSystem.ts:126](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L126)
+Defined in: [src/systems/VehicleControlSystem.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L134)
 
 Executa a lógica do sistema para o frame/passo atual.
 
