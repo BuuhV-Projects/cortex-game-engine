@@ -12,6 +12,8 @@ RnWorld* rn_world_new(double gx, double gy, double gz);
 void rn_world_free(RnWorld* world);
 double* rn_world_scratch(RnWorld* world);
 void rn_world_step(RnWorld* world);
+double rn_world_timestep(RnWorld* world);
+void rn_world_set_timestep(RnWorld* world, double dt);
 double rn_body_create(RnWorld* world, double kind, double x, double y,
                       double z, double canSleep);
 double rn_collider_shape(RnWorld* world, double body, double shapeKind,
@@ -107,6 +109,19 @@ napi_value jsWorldScratch(napi_env env, napi_callback_info info) {
 napi_value jsWorldStep(napi_env env, napi_callback_info info) {
   readArgs(env, info, 1);
   rn_world_step(worldFromArg(args[0]));
+  return njs::undefined(env);
+}
+
+// Timestep do mundo (ADR-0257): sem este par o `world.timestep` do shim nao
+// existia e o passo semi-fixo do engine virava no-op so no export.
+napi_value jsWorldTimestep(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 1);
+  return numberResult(env, rn_world_timestep(worldFromArg(args[0])));
+}
+
+napi_value jsWorldSetTimestep(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 2);
+  rn_world_set_timestep(worldFromArg(args[0]), args[1]);
   return njs::undefined(env);
 }
 
@@ -270,6 +285,8 @@ void registerRapier(napi_env env) {
   njs::setMethod(env, native, "worldFree", jsWorldFree);
   njs::setMethod(env, native, "worldScratch", jsWorldScratch);
   njs::setMethod(env, native, "worldStep", jsWorldStep);
+  njs::setMethod(env, native, "worldTimestep", jsWorldTimestep);
+  njs::setMethod(env, native, "worldSetTimestep", jsWorldSetTimestep);
   njs::setMethod(env, native, "bodyCreate", jsBodyCreate);
   njs::setMethod(env, native, "colliderShape", jsColliderShape);
   njs::setMethod(env, native, "colliderTrimesh", jsColliderTrimesh);

@@ -63,6 +63,23 @@ passo e restaurado ao fim. `dt = 0` não avança.
 | 30 | 2 | 1/60 |
 | 10 (teto de delta) | 6 | 1/60 |
 
+### Host nativo: `world.timestep`
+
+O passo semi-fixo depende de ajustar `world.timestep`, e o shim do Rapier
+nativo **não tinha** essa propriedade. Atribuir não dava erro (vira propriedade
+JS solta) e o `worldStep` do Rust seguia em 1/60: a correção valeria no Studio
+e o export continuaria 25% rápido a 75 fps.
+
+- Rust (`native/rapier-native/src/lib.rs`): `rn_world_timestep` e
+  `rn_world_set_timestep` sobre `integration_parameters.dt`.
+- C++ (`native/src/shims/rapier.cpp`): `worldTimestep` / `worldSetTimestep`.
+- Shim (`rapier-compat.js`): `timestep` como getter/setter do `World`.
+
+Testes: `cargo test` no crate (um corpo em queda livre ganha `g/75` num passo
+de 1/75 — conferido falhando sem o setter, com `g/60`) e
+`tests/native/rapier-compat-world.test.ts` (a escrita chega ao nativo e a
+leitura não é propriedade JS).
+
 ## Consequências
 
 - Testes: `tests/core/FrameCap.test.ts` e
