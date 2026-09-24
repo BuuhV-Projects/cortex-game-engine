@@ -4,6 +4,7 @@
 #include <cstdlib>
 
 #include "../napi/napi_util.h"
+#include "gc_stats.h"
 #include "hermes_embed.h"
 
 namespace core {
@@ -19,6 +20,24 @@ void* g_runtimeForGc = nullptr;
 napi_value jsCollectGarbage(napi_env env, napi_callback_info) {
   if (g_runtimeForGc) cortexHermesCollectGarbage(g_runtimeForGc);
   return njs::undefined(env);
+}
+
+// __cortexGcStats() — totais do coletor desde o boot (SPEC-0264). Acumulados:
+// quem lê compara duas leituras para saber o que coletou no intervalo.
+napi_value jsGcStats(napi_env env, napi_callback_info) {
+  const GcTotals totals = gcTotals();
+  napi_value out = njs::makeObject(env);
+  const auto put = [&](const char* name, uint64_t value) {
+    napi_value number = nullptr;
+    napi_create_double(env, static_cast<double>(value), &number);
+    napi_set_named_property(env, out, name, number);
+  };
+  put("youngCount", totals.youngCount);
+  put("youngMs", totals.youngMs);
+  put("oldCount", totals.oldCount);
+  put("oldWallMs", totals.oldWallMs);
+  put("oldCpuMs", totals.oldCpuMs);
+  return out;
 }
 
 // __cortexHeapSnapshot(path) — telemetria temporária (SPEC-0152).
@@ -84,6 +103,7 @@ JsRuntime::JsRuntime() {
   g_runtimeForGc = runtime_;
   njs::setMethod(env_, global, "__cortexGC", jsCollectGarbage);
   njs::setMethod(env_, global, "__cortexHeapSnapshot", jsHeapSnapshot);
+  njs::setMethod(env_, global, "__cortexGcStats", jsGcStats);
 }
 
 JsRuntime::~JsRuntime() {

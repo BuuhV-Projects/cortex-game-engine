@@ -6,7 +6,7 @@
 
 # Class: PerfTrace
 
-Defined in: [src/core/PerfTrace.ts:353](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L353)
+Defined in: [src/core/PerfTrace.ts:370](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L370)
 
 Amostrador do trace. O [Game](Game.md) chama [tick](#tick) a cada frame; ele só
 faz trabalho quando (a) o host registrou a ponte e (b) passou o intervalo.
@@ -29,7 +29,7 @@ faz trabalho quando (a) o host registrou a ponte e (b) passou o intervalo.
 
 > **get** **enabled**(): `boolean`
 
-Defined in: [src/core/PerfTrace.ts:366](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L366)
+Defined in: [src/core/PerfTrace.ts:383](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L383)
 
 `true` quando o host aceita trace (métricas ativas no export nativo).
 
@@ -43,7 +43,7 @@ Defined in: [src/core/PerfTrace.ts:366](https://github.com/BuuhV-Projects/cortex
 
 > **pipelineCounters**(): \{ `born`: `number`; `lookups`: `number`; \} \| `null`
 
-Defined in: [src/core/PerfTrace.ts:383](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L383)
+Defined in: [src/core/PerfTrace.ts:400](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L400)
 
 Consultas e nascimentos acumulados, ou `null` se a lista não está ligada.
 
@@ -57,7 +57,7 @@ Consultas e nascimentos acumulados, ou `null` se a lista não está ligada.
 
 > **recordEvent**(`name`, `data`): `void`
 
-Defined in: [src/core/PerfTrace.ts:391](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L391)
+Defined in: [src/core/PerfTrace.ts:408](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L408)
 
 Grava um evento avulso no trace, fora do ritmo das amostras — para o que
 acontece uma vez, como o aquecimento (SPEC-0261). No-op sem a ponte.
@@ -82,7 +82,7 @@ acontece uma vez, como o aquecimento (SPEC-0261). No-op sem a ponte.
 
 > **tick**(`deltaMs`, `scene`, `camera`, `profiler`, `info`, `phases?`, `systemProfile?`): `void`
 
-Defined in: [src/core/PerfTrace.ts:406](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L406)
+Defined in: [src/core/PerfTrace.ts:423](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L423)
 
 Avança o relógio e, no intervalo, grava uma amostra.
 
@@ -138,7 +138,7 @@ Sonda de fases do render (SPEC-0227); inerte se desligada.
 
 > **watchPipelines**(`backend`, `mainCamera`): `void`
 
-Defined in: [src/core/PerfTrace.ts:377](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L377)
+Defined in: [src/core/PerfTrace.ts:394](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L394)
 
 Passa a registrar QUAIS pipelines nascem (SPEC-0261). No-op sem a ponte do
 host, e idempotente — pode ser chamado todo frame.

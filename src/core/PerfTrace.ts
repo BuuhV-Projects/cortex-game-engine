@@ -110,6 +110,12 @@ export interface PerfSample {
    * incluídos (SPEC-0261). Consulta sem nascimento = pipeline reaproveitado.
    */
   pipelineLookups?: number;
+  /**
+   * Coletor de lixo do Hermes desde o boot (SPEC-0264) — acumulado; compare
+   * amostras. `oldWallMs` é parede: uma coleta velha concorrente que atravesse
+   * vários quadros aparece inteira. Ausente fora do host.
+   */
+  gc?: GcTotals;
   draws: number;
   tris: number;
   /** Posição da câmera (x, y, z) e direção para onde olha. */
@@ -292,6 +298,15 @@ function napiStats(): Record<string, number> | null {
   }
 }
 
+/** Totais do coletor do host (`__cortexGcStats`, SPEC-0264). */
+export interface GcTotals {
+  youngCount: number;
+  youngMs: number;
+  oldCount: number;
+  oldWallMs: number;
+  oldCpuMs: number;
+}
+
 /** Dados do frame que a amostra precisa, já lidos pelo chamador. */
 export interface SampleInput {
   timeMs: number;
@@ -304,6 +319,7 @@ export interface SampleInput {
   born?: { pipelines: number; buffers: number; textures: number };
   pipelinesBorn?: PipelineBirth[];
   pipelineLookups?: number;
+  gc?: GcTotals;
   draws: number;
   tris: number;
   camera: Camera;
@@ -332,6 +348,7 @@ export function buildSample(input: SampleInput): PerfSample {
     ...(input.born ? { born: input.born } : {}),
     ...(input.pipelinesBorn && input.pipelinesBorn.length > 0 ? { pipelinesBorn: input.pipelinesBorn } : {}),
     ...(input.pipelineLookups !== undefined ? { pipelineLookups: input.pipelineLookups } : {}),
+    ...(input.gc ? { gc: input.gc } : {}),
     draws: input.draws,
     tris: input.tris,
     cam: {
@@ -538,6 +555,7 @@ export class PerfTrace {
       born,
       pipelinesBorn: this._pipelineBirths.drain(),
       pipelineLookups: this._watching ? this._pipelineBirths.lookups : undefined,
+      gc: (globalThis as { __cortexGcStats?: () => GcTotals }).__cortexGcStats?.(),
       draws: info?.drawCalls ?? 0,
       tris: info?.triangles ?? 0,
       camera,
