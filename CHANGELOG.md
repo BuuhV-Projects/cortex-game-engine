@@ -1,3 +1,10 @@
+# [0.65.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.64.0...v0.65.0) (2026-09-24)
+
+
+### Features
+
+* **template:** projeto novo já nasce com carregamento e regras de performance (SPEC-0268) ([6137a31](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6137a3191d47eabb2ebcd3f810986c815a20c4ca))
+
 # [0.64.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.63.2...v0.64.0) (2026-09-24)
 
 
