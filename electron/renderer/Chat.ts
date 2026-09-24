@@ -1,6 +1,7 @@
 import type { AiToolRequest, TurnStats } from './types'
 import { renderMarkdown } from './markdown'
 import { t } from './i18n'
+import { formatElapsed, turnHealthLevel } from './turnHealth'
 import { modelForTask, nextTask, strongCodingStorageKey, taskFromSaved, taskStorageKey, type ChatModel, type ChatTask } from './chatTask'
 
 interface ChatMessage {
@@ -57,9 +58,19 @@ function toolMutatesFs(name: string): boolean {
   return !READONLY_TOOLS.has(bare)
 }
 
+/** A barra de saúde do turno atualiza a cada segundo (ADR-0272). */
+const HEALTH_TICK_MS = 1000
+
 type DisplayItem =
   | { kind: 'message'; role: 'user' | 'assistant'; content: string; el: HTMLElement | null }
-  | { kind: 'tool'; request: AiToolRequest; result: { content: string; isError: boolean } | null; el: HTMLElement | null }
+  | {
+      kind: 'tool'
+      request: AiToolRequest
+      result: { content: string; isError: boolean } | null
+      el: HTMLElement | null
+      /** true depois de Aprovar/Negar — antes disso o turno espera o usuário (ADR-0272). */
+      decided?: boolean
+    }
 
 /**
  * Sidebar de chat IA (SPEC-0014 + PRD-0002 V2).
@@ -135,6 +146,14 @@ export class Chat {
   // chunk de texto ou tool_request. Some assim que qualquer feedback do
   // assistente aparece (resposta ou tool card).
   private thinkingEl: HTMLElement | null = null
+
+  /** Barra de saúde do turno (ADR-0272): tempo, passo em andamento, silêncio. */
+  private healthEl: HTMLElement | null = null
+  private healthTimer: ReturnType<typeof setInterval> | null = null
+  private turnStartedAt = 0
+  private lastActivityAt = 0
+  /** Índice do primeiro item do turno: card sem resultado de turno parado não conta. */
+  private turnFirstItem = 0
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -505,8 +524,15 @@ export class Chat {
 
     this.container.appendChild(header)
     this.container.appendChild(messages)
+    const health = document.createElement('div')
+    health.className = 'chat-health'
+    health.style.display = 'none'
+    this.healthEl = health
+
     this.container.appendChild(attachments)
+    this.container.appendChild(health)
     this.container.appendChild(inputRow)
+    this.renderHealth()
   }
 
   private updateInputState(): void {
@@ -516,6 +542,53 @@ export class Chat {
     this.sendBtn.disabled = !enabled
     this.sendBtn.style.display = this.streaming ? 'none' : ''
     this.stopBtn.style.display = this.streaming ? '' : 'none'
+    this.syncHealthTimer()
+  }
+
+  // ── Saúde do turno (ADR-0272) ──────────────────────────────────────────────
+
+  /** Liga o relógio da barra quando o turno começa e desliga quando acaba. */
+  private syncHealthTimer(): void {
+    if (this.streaming && !this.healthTimer) {
+      this.turnStartedAt = Date.now()
+      this.lastActivityAt = this.turnStartedAt
+      this.turnFirstItem = this.items.length
+      this.healthTimer = setInterval(() => this.renderHealth(), HEALTH_TICK_MS)
+    } else if (!this.streaming && this.healthTimer) {
+      clearInterval(this.healthTimer)
+      this.healthTimer = null
+    }
+    this.renderHealth()
+  }
+
+  /** Qualquer sinal da IA (texto, card aberto/fechado, decisão) zera o silêncio. */
+  private markActivity(): void {
+    this.lastActivityAt = Date.now()
+  }
+
+  private renderHealth(): void {
+    const el = this.healthEl
+    if (!el) return
+    if (!this.streaming) {
+      el.style.display = 'none'
+      return
+    }
+    const now = Date.now()
+    const idle = now - this.lastActivityAt
+    const running = this.items
+      .slice(this.turnFirstItem)
+      .reverse()
+      .find((i): i is Extract<DisplayItem, { kind: 'tool' }> => i.kind === 'tool' && i.result === null)
+    const awaitingUser = running?.request.needsApproval === true && !running.decided
+    // Esperando o usuário não é silêncio da IA: não vira "pode ter travado".
+    const level = awaitingUser ? 'working' : turnHealthLevel(idle)
+    const params = { elapsed: formatElapsed(now - this.turnStartedAt), idle: formatElapsed(idle) }
+    let text = t(`chat.health_${level}`, params)
+    if (awaitingUser) text += t('chat.health_approval')
+    else if (running) text += t('chat.health_step', { step: `${running.request.name} — ${running.request.summary}` })
+    el.textContent = text
+    el.className = `chat-health chat-health--${level}`
+    el.style.display = ''
   }
 
   private async send(): Promise<void> {
@@ -583,6 +656,7 @@ export class Chat {
 
   private handleChunk(text: string): void {
     this.hideThinking()
+    this.markActivity()
     this.currentTurnAssistantText += text
     if (!this.liveAssistantItem) {
       const item: DisplayItem = { kind: 'message', role: 'assistant', content: '', el: null }
@@ -599,6 +673,7 @@ export class Chat {
 
   private handleToolRequest(request: AiToolRequest): void {
     this.hideThinking()
+    this.markActivity()
     // Encerra o item de assistente em streaming (se houver) — próximas
     // chunks após esse tool call vão começar um novo item.
     this.liveAssistantItem = null
@@ -612,6 +687,7 @@ export class Chat {
     )
     if (!item) return
     item.result = result
+    this.markActivity()
     this.renderToolCard(item)
     this.scrollToBottom()
 
@@ -867,6 +943,8 @@ export class Chat {
       approve.textContent = t('chat.approve')
       approve.addEventListener('click', () => {
         void window.electronAPI.decideToolCall(item.request.id, true)
+        item.decided = true
+        this.markActivity()
         approve.disabled = true
         deny.disabled = true
         this.setToolStatus(el, t('chat.tool_running'))
@@ -876,6 +954,8 @@ export class Chat {
       deny.textContent = t('chat.deny')
       deny.addEventListener('click', () => {
         void window.electronAPI.decideToolCall(item.request.id, false)
+        item.decided = true
+        this.markActivity()
         approve.disabled = true
         deny.disabled = true
         this.setToolStatus(el, t('chat.tool_denied'))

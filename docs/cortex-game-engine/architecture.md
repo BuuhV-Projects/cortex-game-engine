@@ -436,6 +436,15 @@ tem as skills do plugin e o subagente `level-builder`). Quem escolhe e o
 usuario (Modelagem/Codificar) ou o proprio Claude no Orquestrador — nunca um
 classificador de texto.
 
+**Saude do turno (ADR-0272 / SPEC-0271):** o "Pensando..." some no primeiro
+texto, entao o sinal de vida do turno e a barra `chat-health` (acima do input,
+regra pura em `electron/renderer/turnHealth.ts`): tempo do turno, card em
+andamento e silencio desde o ultimo evento — quieto em 1 min, "pode ter
+travado" em 5 min (card esperando APROVACAO nao conta como silencio). O portao
+dos `.glb` abre um card `Validação` por modelo (`deps.card` do
+`runModelingTurn`). O `codex exec` tem vigia: 15 min sem linha de saida →
+encerra e o turno termina com erro.
+
 **Armadilhas do runner:**
 - `--ignore-user-config` faz o agente virar read-only de fato ("este ambiente
   permite apenas leitura") mesmo com `--sandbox workspace-write`. Nao passe

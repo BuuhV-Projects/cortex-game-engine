@@ -21,7 +21,16 @@ const STUB_BODY = `
     { name: 'package.json', path: '/proj/package.json', isDir: false },
     { name: 'vite.config.ts', path: '/proj/vite.config.ts', isDir: false },
   ];
+  // Chat IA: o turno nunca termina sozinho e os handlers ficam em window.__ai,
+  // pra simular eventos do main no console (ex.: barra de saúde, ADR-0272).
+  window.__ai = {};
   var mock = {
+    chat: function () { return new Promise(function () {}); },
+    onAiChunk: function (cb) { window.__ai.chunk = cb; },
+    onAiDone: function (cb) { window.__ai.done = cb; },
+    onAiError: function (cb) { window.__ai.error = cb; },
+    onAiToolRequest: function (cb) { window.__ai.toolRequest = cb; },
+    onAiToolExecuted: function (cb) { window.__ai.toolExecuted = cb; },
     prefsGet: function () { return Promise.resolve({ locale: 'pt', welcomed: true }); },
     prefsSet: function () { return Promise.resolve(); },
     menuRebuild: function () { return Promise.resolve(); },

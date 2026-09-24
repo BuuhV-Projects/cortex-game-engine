@@ -75,6 +75,8 @@ export interface ModelingDeps {
   validate(absolutePath: string): Promise<ValidateResult | null>
   /** Texto do Studio no chat, entre as falas do agente. */
   notify(text: string): void
+  /** Abre um card "rodando" no chat; a função devolvida o fecha (SPEC-0271). */
+  card(summary: string): (result: string, isError: boolean) => void
 }
 
 /**
@@ -100,8 +102,10 @@ export async function runModelingTurn(
   for (let attempt = 1; ; attempt++) {
     const changed = await changedModels(root, models)
     const failures: ModelFailure[] = []
-    for (const path of changed) {
+    for (const [index, path] of changed.entries()) {
+      const close = deps.card(`Validando modelo ${index + 1}/${changed.length}: ${path}`)
       const verdict = judgeModel(await deps.validate(join(root, path)))
+      close(verdict.approved ? 'aprovado' : verdict.reasons.join('\n'), !verdict.approved)
       if (!verdict.approved) failures.push({ path, reasons: verdict.reasons })
     }
     if (failures.length === 0) {

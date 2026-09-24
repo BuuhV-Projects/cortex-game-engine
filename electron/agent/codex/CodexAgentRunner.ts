@@ -20,6 +20,14 @@ import { runModelingTurn, type RoundResult } from './modelagemTurn.js'
  * {@link runModelingTurn}.
  */
 
+/**
+ * Vigia do processo (ADR-0272): sem nenhuma linha de saída por este tempo, o
+ * `codex exec` é dado como pendurado e encerrado. Há passos legítimos longos e
+ * mudos (Blender, build), por isso o limite é generoso.
+ */
+const CODEX_SILENCE_LIMIT_MS = 15 * 60_000
+const MS_PER_MINUTE = 60_000
+
 /** Sandbox por modo: em plan o agente não pode escrever. */
 const SANDBOX_BY_MODE = {
   plan: 'read-only',
@@ -68,6 +76,11 @@ export async function runCodexAgent(opts: RunAgentOptions): Promise<void> {
       runRound,
       validate: (path) => validateGeneratedModel(path, { scriptsDir: nativeScriptsDir(), blenderBin }),
       notify: (text) => opts.events.onTextChunk(`\n\n${text}\n\n`),
+      card: (summary) => {
+        const id = `validacao_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+        opts.events.onToolRequest({ id, name: 'Validação', input: {}, summary, needsApproval: false })
+        return (content, isError) => opts.events.onToolExecuted(id, { content, isError })
+      },
     })
     if (stats) stats.durationMs = Date.now() - startedAt
     opts.events.onDone(null, stats)
@@ -131,18 +144,36 @@ function runProcess(
     }
     opts.abortController.signal.addEventListener('abort', onAbort, { once: true })
 
+    // Resolve já ao encerrar: no Windows o kill pode derrubar só o shell do
+    // shim `.cmd`, e o `close` não chegar enquanto o neto segura o pipe.
+    let watchdog: ReturnType<typeof setTimeout> | null = null
+    const feedWatchdog = (): void => {
+      if (watchdog) clearTimeout(watchdog)
+      watchdog = setTimeout(() => {
+        state.errorMessage =
+          `O modo Modelagem ficou ${CODEX_SILENCE_LIMIT_MS / MS_PER_MINUTE} min sem nenhum sinal e foi encerrado ` +
+          '(provável travamento). O que já foi salvo no projeto continua lá; peça de novo para continuar.'
+        child.kill()
+        resolve(null)
+      }, CODEX_SILENCE_LIMIT_MS)
+    }
+    feedWatchdog()
+
     // readline entrega linha completa — o JSONL pode ser partido entre chunks.
     const lines = createInterface({ input: child.stdout })
     lines.on('line', (line: string) => {
+      feedWatchdog()
       consumeCodexLine(line, state, opts.events)
     })
 
     let stderr = ''
     child.stderr?.on('data', (chunk: Buffer) => {
+      feedWatchdog()
       stderr += chunk.toString()
     })
 
     child.on('error', (err: NodeJS.ErrnoException) => {
+      if (watchdog) clearTimeout(watchdog)
       opts.abortController.signal.removeEventListener('abort', onAbort)
       reject(
         err.code === 'ENOENT'
@@ -155,6 +186,7 @@ function runProcess(
     })
 
     child.on('close', (code: number | null) => {
+      if (watchdog) clearTimeout(watchdog)
       opts.abortController.signal.removeEventListener('abort', onAbort)
       lines.close()
       // stderr só vira erro se o processo falhou; em turno OK é log de progresso.
