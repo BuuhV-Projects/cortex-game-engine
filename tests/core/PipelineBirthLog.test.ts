@@ -87,7 +87,12 @@ describe('PipelineBirthLog', () => {
     expect(log.install(undefined, () => null)).toBe(false);
   });
 
-  it('o three instalado ainda tem backend.createRenderPipeline', async () => {
+  // Import frio de um módulo interno do three: com a suíte inteira disputando
+  // CPU, passou dos 5 s padrão 1 vez em 4 rodadas. O que se testa é a
+  // existência do método, não a velocidade do import.
+  const COLD_IMPORT_TIMEOUT_MS = 30_000;
+
+  it('o three instalado ainda tem backend.createRenderPipeline', { timeout: COLD_IMPORT_TIMEOUT_MS }, async () => {
     const { default: WebGPUBackend } = await import('three/src/renderers/webgpu/WebGPUBackend.js');
     // A tipagem do three não lista o método (é interno) — daí o cast, e daí o teste.
     const prototype = WebGPUBackend.prototype as unknown as { createRenderPipeline?: unknown; getRenderCacheKey?: unknown };
