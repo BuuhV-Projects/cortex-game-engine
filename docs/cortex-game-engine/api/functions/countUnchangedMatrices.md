@@ -8,7 +8,7 @@
 
 > **countUnchangedMatrices**(`scene`, `previous`): `number`
 
-Defined in: [src/core/PerfTrace.ts:193](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L193)
+Defined in: [src/core/PerfTrace.ts:198](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L198)
 
 Quantos nós tiveram a **matriz local inalterada** desde a amostra anterior.
 

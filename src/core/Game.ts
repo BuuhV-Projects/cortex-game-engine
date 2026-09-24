@@ -24,6 +24,7 @@ import { cullOutlines, DEFAULT_OUTLINE_MIN_RATIO } from '../scene/OutlineCulling
 const OUTLINE_CULL_INTERVAL = 10;
 import { NativeSceneMirror, nativeSceneMirrorAvailable } from './NativeSceneMirror.js';
 import { PerfTrace } from './PerfTrace.js';
+import { revealForWarmup } from './WarmupFrame.js';
 import { FrameProfiler } from './FrameProfiler.js';
 import {
   RenderPhaseProbe,
@@ -200,6 +201,8 @@ export class Game {
   private _debugHud: DebugHud | null | undefined = undefined;
   /** Amostrador do perf trace (SPEC-0198). Inerte sem a ponte do host nativo. */
   private readonly _perfTrace = new PerfTrace();
+  /** Pedidos de quadro de aquecimento, resolvidos no próximo tick (SPEC-0263). */
+  private readonly _warmupRequests: Array<() => void> = [];
   /**
    * Sonda de fases do render (SPEC-0227) — só embrulha o renderer quando pedida
    * por `?renderPhases=<nivel>`; desligada, é um objeto inerte.
@@ -635,7 +638,13 @@ export class Game {
       }
     }
     if (this._sceneMirror.installed) this._sceneMirror.update(this._activeCamera);
-    if (isSplashActive()) {
+    if (this._warmupRequests.length > 0) {
+      // Quadro de aquecimento (ADR-0262): antes da splash e da cena em
+      // carregamento de propósito — o que importa é compilar, e o quadro sai
+      // por baixo da UI da tela de carregamento.
+      this._renderWarmupFrame();
+      for (const resolve of this._warmupRequests.splice(0)) resolve();
+    } else if (isSplashActive()) {
       // Splash da engine no ar (ADR-0109): o host descarta o frame do jogo, só
       // ela apresenta. Desenhar aqui é puro desperdício — e durante a carga são
       // dezenas de frames cedidos pra splash animar.
@@ -743,9 +752,17 @@ export class Game {
    * agora em vez de no primeiro frame em que cada objeto aparece, que é o que
    * causa o travadinho ao começar uma corrida/fase.
    *
-   * O `buildScene` já faz isso com o que ele monta; chame aqui pra o que o JOGO
-   * cria DEPOIS (carros montados por código, efeitos, UI de runtime) —
-   * idealmente ainda sob a tela de carregamento.
+   * Desenha UM quadro de verdade (ADR-0262) com a cena inteira visível e sem
+   * culling, pelo mesmo caminho do jogo (o `setPostFX` registrado, senão o
+   * render direto), e restaura. Um render real gera as mesmas chaves de
+   * pipeline que o jogo vai pedir — inclusive os dois passes do transparente
+   * de duas faces, que o `compileAsync` errava.
+   *
+   * Chame sob uma tela de carregamento OPACA: o quadro é apresentado. Crie antes
+   * tudo o que o jogo só cria no uso (efeitos, projéteis) — objeto criado depois
+   * compila na hora. Se o `setPostFX` do jogo escolhe caminhos diferentes
+   * conforme o estado (um efeito que só liga em alta velocidade), force cada
+   * caminho e chame de novo.
    *
    * @example
    * const player = await createCar(game, golf, golfRig)
@@ -753,16 +770,22 @@ export class Game {
    * game.start()
    */
   async precompile(): Promise<void> {
-    // Com o trace ativo, registra o que o aquecimento FEZ (SPEC-0261): no
-    // kart-racer ele não criou nenhum pipeline de efeito, e só a duração e as
-    // consultas separam "não rodou" de "não percorreu" de "só achou chave".
+    // Com o trace ativo, registra o que o aquecimento FEZ (SPEC-0261).
     this._perfTrace.watchPipelines(
       (this.renderer.threeRenderer as { backend?: unknown }).backend,
       () => this._activeCamera,
     );
     const before = this._perfTrace.pipelineCounters();
     const start = performance.now();
-    await this.renderer.precompile(this._activeScene.getThreeScene(), this._activeCamera);
+    await this.renderer.init();
+    if (this._loop.isRunning && !this._loop.isPaused) {
+      // Quadro de verdade no próximo tick (ADR-0262): gera as MESMAS chaves de
+      // pipeline que o jogo vai pedir. O `compileAsync` levava segundos no host
+      // e compilava a variante errada dos transparentes de duas faces.
+      await new Promise<void>((resolve) => this._warmupRequests.push(resolve));
+    } else {
+      this._renderWarmupFrame();
+    }
     const after = this._perfTrace.pipelineCounters();
     if (before && after) {
       this._perfTrace.recordEvent('precompile', {
@@ -770,6 +793,21 @@ export class Game {
         lookups: after.lookups - before.lookups,
         born: after.born - before.born,
       });
+    }
+  }
+
+  /**
+   * Desenha a cena ativa com tudo visível e sem culling, pelo mesmo caminho do
+   * jogo (pós-processamento registrado, senão render direto), e restaura.
+   */
+  private _renderWarmupFrame(): void {
+    const root = this._activeScene.getThreeScene();
+    const restore = revealForWarmup(root);
+    try {
+      if (this._postfx && this._activeScene === this.scene) this._postfx.render();
+      else this.renderer.render(root, this._activeCamera);
+    } finally {
+      restore();
     }
   }
 

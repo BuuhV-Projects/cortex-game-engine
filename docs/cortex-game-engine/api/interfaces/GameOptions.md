@@ -6,7 +6,7 @@
 
 # Interface: GameOptions
 
-Defined in: [src/core/Game.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L83)
+Defined in: [src/core/Game.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L84)
 
 Opções do [Game](../classes/Game.md).
 
@@ -16,7 +16,7 @@ Opções do [Game](../classes/Game.md).
 
 > **canvas**: `HTMLCanvasElement`
 
-Defined in: [src/core/Game.ts:85](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L85)
+Defined in: [src/core/Game.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L86)
 
 Canvas onde o jogo renderiza.
 
@@ -26,7 +26,7 @@ Canvas onde o jogo renderiza.
 
 > `optional` **far?**: `number`
 
-Defined in: [src/core/Game.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L95)
+Defined in: [src/core/Game.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L96)
 
 Far plane. Default `1000`.
 
@@ -36,7 +36,7 @@ Far plane. Default `1000`.
 
 > `optional` **fov?**: `number`
 
-Defined in: [src/core/Game.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L91)
+Defined in: [src/core/Game.ts:92](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L92)
 
 Field of view da câmera perspectiva (graus). Default `60`.
 
@@ -46,7 +46,7 @@ Field of view da câmera perspectiva (graus). Default `60`.
 
 > `optional` **height?**: `number`
 
-Defined in: [src/core/Game.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L89)
+Defined in: [src/core/Game.ts:90](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L90)
 
 Altura inicial. Default `window.innerHeight`.
 
@@ -56,7 +56,7 @@ Altura inicial. Default `window.innerHeight`.
 
 > `optional` **near?**: `number`
 
-Defined in: [src/core/Game.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L93)
+Defined in: [src/core/Game.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L94)
 
 Near plane. Default `0.1`.
 
@@ -66,7 +66,7 @@ Near plane. Default `0.1`.
 
 > `optional` **pixelsPerUnit?**: `number`
 
-Defined in: [src/core/Game.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L108)
+Defined in: [src/core/Game.ts:109](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L109)
 
 Só pra `orthographic`: **pixels de tela por unidade de mundo** (zoom). Ex.:
 `100` = 1 unidade ocupa 100px. Um sprite de 16px de altura vira nítido a
@@ -78,7 +78,7 @@ Só pra `orthographic`: **pixels de tela por unidade de mundo** (zoom). Ex.:
 
 > `optional` **projection?**: `"perspective"` \| `"orthographic"`
 
-Defined in: [src/core/Game.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L102)
+Defined in: [src/core/Game.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L103)
 
 Projeção da câmera do jogo:
 - `perspective` (default) — 3D / 2.5D com profundidade.
@@ -91,6 +91,6 @@ Projeção da câmera do jogo:
 
 > `optional` **width?**: `number`
 
-Defined in: [src/core/Game.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L87)
+Defined in: [src/core/Game.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L88)
 
 Largura inicial. Default `window.innerWidth`.

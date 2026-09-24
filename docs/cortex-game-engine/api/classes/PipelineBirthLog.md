@@ -6,7 +6,7 @@
 
 # Class: PipelineBirthLog
 
-Defined in: src/core/PipelineBirthLog.ts:61
+Defined in: [src/core/PipelineBirthLog.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L70)
 
 Registro dos nascimentos, drenado a cada amostra do trace.
 
@@ -29,13 +29,47 @@ const born = log.drain();
 
 `PipelineBirthLog`
 
+## Accessors
+
+### births
+
+#### Get Signature
+
+> **get** **births**(): `number`
+
+Defined in: [src/core/PipelineBirthLog.ts:86](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L86)
+
+Nascimentos desde a instalação (não é zerado pelo [PipelineBirthLog.drain](#drain)).
+
+##### Returns
+
+`number`
+
+***
+
+### lookups
+
+#### Get Signature
+
+> **get** **lookups**(): `number`
+
+Defined in: [src/core/PipelineBirthLog.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L81)
+
+Consultas ao cache de pipeline desde a instalação, ACERTOS incluídos. O
+three chama `backend.getRenderCacheKey` uma vez por consulta que precisa de
+pipeline — então consultas sem nascimento = pipeline reaproveitado.
+
+##### Returns
+
+`number`
+
 ## Methods
 
 ### drain()
 
 > **drain**(): [`PipelineBirth`](../interfaces/PipelineBirth.md)[]
 
-Defined in: src/core/PipelineBirthLog.ts:99
+Defined in: [src/core/PipelineBirthLog.ts:134](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L134)
 
 Os nascimentos desde a última chamada.
 
@@ -49,7 +83,7 @@ Os nascimentos desde a última chamada.
 
 > **install**(`backend`, `mainCamera`, `now?`): `boolean`
 
-Defined in: src/core/PipelineBirthLog.ts:70
+Defined in: [src/core/PipelineBirthLog.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PipelineBirthLog.ts#L95)
 
 Envolve `backend.createRenderPipeline`. Idempotente. Devolve `false` (e
 avisa por `debug('perf')`) se o backend não tiver o método — uma versão do

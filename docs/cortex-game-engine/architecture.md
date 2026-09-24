@@ -116,6 +116,14 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   corrida, tudo no mesmo frame (o travadinho ao iniciar). O `buildScene` chama ao
   final (opt-out `opts.precompile`); pro que o jogo cria depois do build (carros
   montados por código), chame `game.precompile()` ainda sob o loading.
+  **`game.precompile()` desenha UM QUADRO REAL (ADR-0262)**, com tudo visível e
+  sem culling, pelo caminho de render do jogo. O `compileAsync` (que o
+  `Renderer.precompile` e o `buildScene` usam) tem três defeitos medidos no host:
+  leva segundos (um objeto por quadro), compila `side=2` para transparente de
+  duas faces quando o render usa dois passes (`side=1` e `side=0`), e compila
+  para um alvo só. A chave de pipeline inclui formato/amostras/espaço de cor do
+  alvo: um efeito de pós que desenha a cena num `pass()` próprio recompila a
+  cena inteira na primeira vez que liga — force-o e aqueça de novo.
 
 - **Acabamento toon (`Materials.ts`, SPEC-0194):** `shading: 'cel'` usa dois
   patamares e uma transição curta filtrada na rampa de luz. Sem o campo, mantém
