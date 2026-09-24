@@ -479,7 +479,7 @@ Registra um callback chamado a cada frame (delta em **segundos**), antes do
 
 > **precompile**(): `Promise`\<`void`\>
 
-Defined in: [src/core/Game.ts:750](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L750)
+Defined in: [src/core/Game.ts:755](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L755)
 
 **Pré-aquece os pipelines** da cena ativa (SPEC-0196) — compila os shaders
 agora em vez de no primeiro frame em que cada objeto aparece, que é o que
@@ -507,7 +507,7 @@ game.start()
 
 > **reset**(`options?`): `void`
 
-Defined in: [src/core/Game.ts:786](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L786)
+Defined in: [src/core/Game.ts:791](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L791)
 
 Reseta o jogo pra **trocar de cena/fase** sem recriar o `Game` (renderer,
 câmera e canvas continuam): para o loop, esvazia o world com `dispose` dos
@@ -590,7 +590,7 @@ game.setActiveScene(game.scene, game.camera)      // volta pro jogo
 
 > **setDebugHud**(`enabled?`): `void`
 
-Defined in: [src/core/Game.ts:718](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L718)
+Defined in: [src/core/Game.ts:723](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L723)
 
 Liga/desliga o **HUD de métricas** (FPS/frame ms, CPU, memória, GPU) em
 runtime — é o que o menu **View › HUD de métricas** do Studio aciona (via
@@ -684,7 +684,7 @@ game.setPostFX(fx)
 
 > **start**(): `void`
 
-Defined in: [src/core/Game.ts:755](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L755)
+Defined in: [src/core/Game.ts:760](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L760)
 
 Inicia o loop.
 
@@ -698,7 +698,7 @@ Inicia o loop.
 
 > **stop**(): `void`
 
-Defined in: [src/core/Game.ts:760](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L760)
+Defined in: [src/core/Game.ts:765](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L765)
 
 Para o loop.
 

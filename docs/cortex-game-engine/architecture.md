@@ -831,6 +831,13 @@ trecho” sem depender de print de HUD na hora certa.
   do three é herdado, e malha `visible: true` dentro de pai escondido não
   desenha. Contá-la inflava o diagnóstico — as variantes de roda de garagem do
   kart-racer, todas na cena com só uma visível, apareciam como se desenhassem.
+- **`pipelinesBorn` diz QUAIS pipelines nasceram (SPEC-0261)**: objeto,
+  material, se é translúcido, câmera (`main` ou a da sombra) e ms da criação.
+  `born.pipelines` só conta (e é ACUMULADO — compare amostras). Criar pipeline
+  é compilar shader, síncrono no host, dentro do frame: no kart-racer, 26 de
+  uma vez nos primeiros poderes causavam a travada que sumia depois do R.
+  Envolve `backend.createRenderPipeline` do three (interno — o teste confere
+  que o método ainda existe no three instalado).
 
 ## 8e3. Render bundles estão DESLIGADOS — ADR-0215
 

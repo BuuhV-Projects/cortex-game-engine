@@ -6,7 +6,7 @@
 
 # Class: PerfTrace
 
-Defined in: [src/core/PerfTrace.ts:338](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L338)
+Defined in: [src/core/PerfTrace.ts:346](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L346)
 
 Amostrador do trace. O [Game](Game.md) chama [tick](#tick) a cada frame; ele só
 faz trabalho quando (a) o host registrou a ponte e (b) passou o intervalo.
@@ -29,7 +29,7 @@ faz trabalho quando (a) o host registrou a ponte e (b) passou o intervalo.
 
 > **get** **enabled**(): `boolean`
 
-Defined in: [src/core/PerfTrace.ts:349](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L349)
+Defined in: [src/core/PerfTrace.ts:358](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L358)
 
 `true` quando o host aceita trace (métricas ativas no export nativo).
 
@@ -43,7 +43,7 @@ Defined in: [src/core/PerfTrace.ts:349](https://github.com/BuuhV-Projects/cortex
 
 > **tick**(`deltaMs`, `scene`, `camera`, `profiler`, `info`, `phases?`, `systemProfile?`): `void`
 
-Defined in: [src/core/PerfTrace.ts:363](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L363)
+Defined in: [src/core/PerfTrace.ts:384](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L384)
 
 Avança o relógio e, no intervalo, grava uma amostra.
 
@@ -88,6 +88,35 @@ Sonda de fases do render (SPEC-0227); inerte se desligada.
 ##### systemProfile?
 
 `Map`\<`string`, `number`\> \| `null`
+
+#### Returns
+
+`void`
+
+***
+
+### watchPipelines()
+
+> **watchPipelines**(`backend`, `mainCamera`): `void`
+
+Defined in: [src/core/PerfTrace.ts:369](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L369)
+
+Passa a registrar QUAIS pipelines nascem (SPEC-0261). No-op sem a ponte do
+host, e idempotente — pode ser chamado todo frame.
+
+#### Parameters
+
+##### backend
+
+`unknown`
+
+`renderer.threeRenderer.backend`.
+
+##### mainCamera
+
+() => `Camera` \| `null`
+
+câmera do jogo, para separar a passada principal das outras.
 
 #### Returns
 

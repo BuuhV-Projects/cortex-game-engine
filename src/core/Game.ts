@@ -697,7 +697,12 @@ export class Game {
 
     // Perf trace (SPEC-0198): com as métricas ativas no host nativo, grava uma
     // amostra periódica (fps/CPU/draws/câmera/visíveis) em perf-trace.jsonl.
-    // Sem a ponte do host, é no-op — nem coleta.
+    // Sem a ponte do host, é no-op — nem coleta. Quais pipelines nascem
+    // (SPEC-0261) vem junto; instalar é idempotente e barato.
+    this._perfTrace.watchPipelines(
+      (this.renderer.threeRenderer as { backend?: unknown }).backend,
+      () => this._activeCamera,
+    );
     this._perfTrace.tick(
       deltaMs,
       this._activeScene.getThreeScene(),

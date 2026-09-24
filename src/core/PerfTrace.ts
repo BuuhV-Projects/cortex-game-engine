@@ -3,6 +3,7 @@ import type { FrameProfiler } from './FrameProfiler.js';
 import type { RenderPhaseProbe } from './RenderPhaseProbe.js';
 import { describeMaterial, isDescribed, measureCoverage } from '../render/MaterialDesc.js';
 import { countDistinctPipelines } from '../render/PipelineKey.js';
+import { PipelineBirthLog, type PipelineBirth } from './PipelineBirthLog.js';
 
 /**
  * **Perf trace de gameplay** (SPEC-0198) — com as métricas ativas, grava uma
@@ -99,6 +100,11 @@ export interface PerfSample {
    * quantos NASCEM — e só isso denuncia compilação dentro do frame.
    */
   born?: { pipelines: number; buffers: number; textures: number };
+  /**
+   * QUAIS pipelines nasceram desde a amostra anterior (SPEC-0261): objeto,
+   * material, passada e custo. Ausente quando nada nasceu.
+   */
+  pipelinesBorn?: PipelineBirth[];
   draws: number;
   tris: number;
   /** Posição da câmera (x, y, z) e direção para onde olha. */
@@ -291,6 +297,7 @@ export interface SampleInput {
   cpuAvg?: Record<string, number>;
   cpuP99?: Record<string, number>;
   born?: { pipelines: number; buffers: number; textures: number };
+  pipelinesBorn?: PipelineBirth[];
   draws: number;
   tris: number;
   camera: Camera;
@@ -317,6 +324,7 @@ export function buildSample(input: SampleInput): PerfSample {
     cpuAvg: arredondarSecoes(input.cpuAvg ?? {}),
     cpuP99: arredondarSecoes(input.cpuP99 ?? {}),
     ...(input.born ? { born: input.born } : {}),
+    ...(input.pipelinesBorn && input.pipelinesBorn.length > 0 ? { pipelinesBorn: input.pipelinesBorn } : {}),
     draws: input.draws,
     tris: input.tris,
     cam: {
@@ -344,10 +352,23 @@ export class PerfTrace {
   /** Matriz local da amostra anterior, por id de objeto (SPEC-0227). */
   private readonly _previousMatrices = new Map<number, Float64Array>();
   private readonly _bridge: TraceBridge | undefined = bridge();
+  private readonly _pipelineBirths = new PipelineBirthLog();
 
   /** `true` quando o host aceita trace (métricas ativas no export nativo). */
   get enabled(): boolean {
     return this._bridge !== undefined;
+  }
+
+  /**
+   * Passa a registrar QUAIS pipelines nascem (SPEC-0261). No-op sem a ponte do
+   * host, e idempotente — pode ser chamado todo frame.
+   *
+   * @param backend - `renderer.threeRenderer.backend`.
+   * @param mainCamera - câmera do jogo, para separar a passada principal das outras.
+   */
+  watchPipelines(backend: unknown, mainCamera: () => Camera | null): void {
+    if (!this._bridge) return;
+    this._pipelineBirths.install(backend, mainCamera);
   }
 
   /**
@@ -493,6 +514,7 @@ export class PerfTrace {
       cpuAvg,
       cpuP99,
       born,
+      pipelinesBorn: this._pipelineBirths.drain(),
       draws: info?.drawCalls ?? 0,
       tris: info?.triangles ?? 0,
       camera,
