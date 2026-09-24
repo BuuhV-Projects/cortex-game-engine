@@ -2,25 +2,23 @@ import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
 
 import { resolveCodexBin, CODEX_MODEL } from '../../../src/ai/CodexClient.js'
+import { validateGeneratedModel } from '../../../src/ai/validateGeneratedModel.js'
 import type { RunAgentOptions } from '../agentTypes.js'
+import { nativeScriptsDir } from '../tools/blender.js'
 import { consumeCodexLine, createTurnState } from './codexEvents.js'
+import { runModelingTurn, type RoundResult } from './modelagemTurn.js'
 
 /**
- * Cabeça **Codex/GPT-6-Astra** do Chat IA (ADR-0191 / SPEC-0192).
+ * Cabeça do modo **Modelagem** do Chat IA (ADR-0265; roda o GPT-6-Astra pelo
+ * Codex CLI — ADR-0191 / SPEC-0192).
  *
  * Roda o Codex CLI como agente dentro do projeto aberto e traduz a saída JSONL
  * para o mesmo `AgentEvents` da cabeça Claude — a UI não sabe qual respondeu.
  *
- * Diferente da modelagem 3D (ADR-0189, single-shot read-only), aqui o agente
- * **escreve** no projeto: monta `scenes/*.json`, cria assets, edita código.
+ * O agente escreve DADO no projeto (cena, assets, efeitos declarados). Código
+ * é desfeito pelo guarda e modelo reprovado volta para correção — ver
+ * {@link runModelingTurn}.
  */
-
-/** Instrução acrescentada ao pedido quando o turno roda em modo plan (ADR-0036). */
-const PLAN_SUFFIX = `
-
-MODO PLANO: não crie nem edite arquivos. Pesquise o necessário e responda, em texto, \
-com um plano de implementação: objetivo, arquivos a criar/editar, passos numerados e \
-pontos de atenção.`
 
 /** Sandbox por modo: em plan o agente não pode escrever. */
 const SANDBOX_BY_MODE = {
@@ -40,7 +38,7 @@ export async function runCodexAgent(opts: RunAgentOptions): Promise<void> {
   if (!projectRoot) {
     opts.events.onError(
       new Error(
-        'O modo Astra precisa de um projeto aberto — ele trabalha dentro da pasta do jogo. ' +
+        'O modo Modelagem precisa de um projeto aberto — ele trabalha dentro da pasta do jogo. ' +
           'Abra ou crie um projeto e tente de novo.',
       ),
     )
@@ -48,29 +46,29 @@ export async function runCodexAgent(opts: RunAgentOptions): Promise<void> {
   }
 
   const startedAt = Date.now()
-  const state = createTurnState()
   const bin = resolveCodexBin()
-  const args = buildArgs(projectRoot, opts)
-  const prompt = opts.mode === 'plan' ? `${opts.prompt}${PLAN_SUFFIX}` : opts.prompt
+  const blenderBin = process.env['BLENDER_PATH'] ?? 'blender'
+
+  /** Uma rodada do Codex; lança em falha do processo ou do agente. */
+  const runRound = async (prompt: string, resumeId: string | null): Promise<RoundResult> => {
+    const state = createTurnState()
+    const exitCode = await runProcess(bin, buildArgs(projectRoot, opts, resumeId), prompt, projectRoot, state, opts)
+    if (state.errorMessage) throw new Error(state.errorMessage)
+    if (exitCode !== 0) {
+      throw new Error(
+        `O modo Modelagem encerrou com código ${String(exitCode)}. ` +
+          'Verifique se o Codex CLI está autenticado (`codex login`) e atualizado.',
+      )
+    }
+    return { threadId: state.threadId, stats: state.stats }
+  }
 
   try {
-    const exitCode = await runProcess(bin, args, prompt, projectRoot, state, opts)
-
-    if (state.errorMessage) {
-      opts.events.onError(new Error(state.errorMessage))
-      return
-    }
-    if (exitCode !== 0) {
-      opts.events.onError(
-        new Error(
-          `O Codex CLI encerrou com código ${String(exitCode)}. ` +
-            'Verifique se ele está autenticado (`codex login`) e atualizado.',
-        ),
-      )
-      return
-    }
-
-    const stats = state.stats
+    const stats = await runModelingTurn(projectRoot, opts.prompt, opts.mode, opts.resumeSessionId ?? null, {
+      runRound,
+      validate: (path) => validateGeneratedModel(path, { scriptsDir: nativeScriptsDir(), blenderBin }),
+      notify: (text) => opts.events.onTextChunk(`\n\n${text}\n\n`),
+    })
     if (stats) stats.durationMs = Date.now() - startedAt
     opts.events.onDone(null, stats)
   } catch (err) {
@@ -89,8 +87,7 @@ export async function runCodexAgent(opts: RunAgentOptions): Promise<void> {
  * (ADR-0191). Também não passamos `--ephemeral` — a sessão precisa persistir
  * para o `resume` funcionar.
  */
-function buildArgs(projectRoot: string, opts: RunAgentOptions): string[] {
-  const resumeId = opts.resumeSessionId
+function buildArgs(projectRoot: string, opts: RunAgentOptions, resumeId: string | null): string[] {
   return [
     'exec',
     ...(resumeId ? ['resume', resumeId] : []),
@@ -150,7 +147,7 @@ function runProcess(
       reject(
         err.code === 'ENOENT'
           ? new Error(
-              `Codex CLI não encontrado em "${bin}". O modo Astra precisa dele — ` +
+              `Codex CLI não encontrado em "${bin}". O modo Modelagem precisa dele — ` +
                 'instale com "npm install -g @openai/codex@latest" e rode "codex login".',
             )
           : err,

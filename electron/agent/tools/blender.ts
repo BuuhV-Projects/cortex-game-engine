@@ -13,7 +13,7 @@ import { describeValidation } from '../../../src/ai/validateGeneratedModel.js'
  * aponta para dentro do `.asar`, e os `extraResources` ficam em
  * `process.resourcesPath`, preservando o mesmo subpath (ADR-0034).
  */
-function nativeScriptsDir(): string {
+export function nativeScriptsDir(): string {
   const appPath = app.getAppPath()
   const base = appPath.endsWith('.asar') ? process.resourcesPath : appPath
   return join(base, 'native', 'scripts')
@@ -81,8 +81,13 @@ export function createBlenderToolServer(projectRoot: string) {
             // esse caminho o refino e a inspeção não achariam os scripts
             // (SPEC-0231).
             const gen = new BlenderModelGenerator({ scriptsDir: nativeScriptsDir() })
-            const { glbPath, scriptPath, validacao } = await gen.generate(description, absolute)
+            const { glbPath, scriptPath, validacao, verdict, attempts } = await gen.generate(description, absolute)
             const linhas = validacao ? describeValidation(validacao) : []
+            // Portão da SPEC-0267: o que o usuário precisa saber é se passou, e
+            // em quantas tentativas — ou o que ficou reprovado.
+            if (!verdict.judged) linhas.push('portão: não julgado (inspeção não rodou)')
+            else if (verdict.approved) linhas.push(`portão: aprovado na tentativa ${attempts}`)
+            else linhas.push(`portão: REPROVADO após ${attempts} tentativas — ${verdict.reasons.join(' | ')}`)
             return {
               content: [
                 {

@@ -135,3 +135,25 @@ describe('buildSystemPrompt — modelos 3D (SPEC-0224)', () => {
     expect(ask()).toContain('materiais por primitiva')
   })
 })
+
+describe('buildSystemPrompt — regras de performance em runtime (SPEC-0266)', () => {
+  it('traz as regras medidas no kart-racer', () => {
+    const prompt = ask()
+    expect(prompt).toContain('game.precompile()')
+    expect(prompt).toContain('Pool, não criação no uso')
+    expect(prompt).toContain('InstancedMesh')
+    expect(prompt).toContain('pass()')
+    expect(prompt).toContain('game.maxFps')
+  })
+
+  it('fecha o turno revisando o código contra as regras', () => {
+    expect(ask()).toContain('Antes de encerrar o turno')
+    expect(buildSystemPrompt({ mode: 'auto' })).toContain('Antes de encerrar o turno')
+  })
+
+  it('no modo plano não pede revisão de código (não há código escrito)', () => {
+    const plan = buildSystemPrompt({ mode: 'plan' })
+    expect(plan).toContain('Regras de performance')
+    expect(plan).not.toContain('Antes de encerrar o turno')
+  })
+})

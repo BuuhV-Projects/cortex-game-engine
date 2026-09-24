@@ -26,7 +26,9 @@
     "steam_hint": "Número do app no Steamworks. Obrigatório para exportar para a Steam — sem ele o export falha. Deixe vazio se este jogo não vai pra Steam. (480 = Spacewar, para testar.)",
     "steam_invalid": "O Steam App ID deve conter apenas números.",
     "save": "Salvar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "chat_strong_label": "Chat IA: Codificar com o modelo mais forte",
+    "chat_strong_hint": "Código melhor em tarefas difíceis, mas consome a cota de uso bem mais rápido. Vale só para este projeto, neste computador."
   },
   "fileTree": {
     "no_project": "Nenhum projeto aberto",
@@ -134,14 +136,6 @@
     "tooltip_mode_ask": "Ask: cada tool destrutiva pede aprovação. Clique para Auto.",
     "tooltip_mode_auto": "Auto: tools rodam sem pedir aprovação. Clique para Plan.",
     "tooltip_mode_plan": "Plan: a IA pesquisa e propõe um plano; você aprova antes de implementar. Clique para Ask.",
-    "model_sonnet": "Sonnet",
-    "model_opus": "Opus",
-    "model_haiku": "Haiku",
-    "model_astra": "Astra",
-    "tooltip_model_sonnet": "Modelo: Sonnet (recomendado — cota de uso alta). Clique para Opus.",
-    "tooltip_model_opus": "Modelo: Opus (mais capaz, mas cota baixa no plano — pode estourar o limite). Clique para Haiku.",
-    "tooltip_model_haiku": "Modelo: Haiku (rápido e econômico). Clique para Astra.",
-    "tooltip_model_astra": "Modelo: GPT-6-Astra pelo Codex (bom pra montar cena; escreve no projeto sem pedir aprovação). Clique para Sonnet.",
     "plan_ready": "Plano pronto. Aprove para implementar ou recuse para ajustar.",
     "plan_approve": "Aprovar e executar",
     "plan_reject": "Recusar",
@@ -165,6 +159,10 @@
     "tool_denied": "negado",
     "tool_error": "erro",
     "tool_success": "sucesso",
-    "tool_truncated": "... ({n} caracteres truncados)"
+    "tool_truncated": "... ({n} caracteres truncados)",
+    "task_modeling": "Modelagem",
+    "task_coding": "Codificar",
+    "tooltip_task_modeling": "Modo Modelagem: modelos 3D, cenários e efeitos. Não altera código. Clique para Codificar.",
+    "tooltip_task_coding": "Modo Codificar: o código do jogo — sistemas, mecânicas, scripts e UI. Clique para Modelagem."
   }
 }
