@@ -13,7 +13,7 @@ function fakeBackend() {
   const created: unknown[] = [];
   return {
     created,
-    createRenderPipeline(renderObject: unknown) {
+    createRenderPipeline(renderObject: unknown, _promises?: unknown) {
       created.push(renderObject);
       return 'pipeline';
     },
@@ -73,7 +73,9 @@ describe('PipelineBirthLog', () => {
 
   it('o three instalado ainda tem backend.createRenderPipeline', async () => {
     const { default: WebGPUBackend } = await import('three/src/renderers/webgpu/WebGPUBackend.js');
-    expect(typeof WebGPUBackend.prototype.createRenderPipeline).toBe('function');
+    // A tipagem do three não lista o método (é interno) — daí o cast, e daí o teste.
+    const prototype = WebGPUBackend.prototype as unknown as { createRenderPipeline?: unknown };
+    expect(typeof prototype.createRenderPipeline).toBe('function');
   });
 });
 
