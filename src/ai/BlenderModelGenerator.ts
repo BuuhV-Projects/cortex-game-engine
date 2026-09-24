@@ -1,5 +1,6 @@
 import { queryCodex, CODEX_MODEL } from './CodexClient.js';
 import { validateGeneratedModel, type ValidateResult } from './validateGeneratedModel.js';
+import { judgeModel, MAX_MODEL_ATTEMPTS, type ModelVerdict } from './modelGate.js';
 import { spawn } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
@@ -255,7 +256,14 @@ export interface GenerateModelResult {
    * em {@link ValidateResult.problemas}.
    */
   validacao: ValidateResult | null;
+  /** Julgamento do portão da SPEC-0267 sobre a ÚLTIMA tentativa. */
+  verdict: ModelVerdict;
+  /** Quantas gerações foram necessárias (1 = aprovado de primeira). */
+  attempts: number;
 }
+
+/** Executa um script no Blender headless. Injetável para teste. */
+export type BlenderRunner = (blenderBin: string, scriptPath: string) => Promise<void>;
 
 // ─── BlenderModelGenerator ───────────────────────────────────────────────────
 
@@ -291,9 +299,12 @@ export class BlenderModelGenerator {
    */
   private readonly scriptsDir: string;
 
-  constructor(options: { scriptsDir?: string } = {}) {
+  private readonly runBlender: BlenderRunner;
+
+  constructor(options: { scriptsDir?: string; runBlender?: BlenderRunner } = {}) {
     this.scriptsDir =
       options.scriptsDir ?? process.env['CORTEX_NATIVE_SCRIPTS'] ?? join(process.cwd(), 'native', 'scripts');
+    this.runBlender = options.runBlender ?? _runBlender;
   }
 
   /**
@@ -319,6 +330,26 @@ export class BlenderModelGenerator {
     // Garante extensão .glb
     const glbPath = outputPath.endsWith('.glb') ? outputPath : `${outputPath}.glb`;
 
+    // Portão da SPEC-0267: reprovado, volta ao Astra com o script anterior e
+    // os motivos, até MAX_MODEL_ATTEMPTS. Esgotado, entrega com os motivos —
+    // o usuário decide.
+    let request = description;
+    let result: GenerateModelResult | null = null;
+    for (let attempt = 1; attempt <= MAX_MODEL_ATTEMPTS; attempt++) {
+      const { scriptPath, script, validacao } = await this.attempt(request, glbPath);
+      const verdict = judgeModel(validacao);
+      result = { glbPath, scriptPath, validacao, verdict, attempts: attempt };
+      if (verdict.approved) break;
+      request = buildFixRequest(description, script, verdict.reasons);
+    }
+    return result!;
+  }
+
+  /** Uma geração: script do Astra → Blender → refino e inspeção. */
+  private async attempt(
+    description: string,
+    glbPath: string,
+  ): Promise<{ scriptPath: string; script: string; validacao: ValidateResult | null }> {
     // ── 1. Gerar script Python via Codex CLI (single-shot, ADR-0189) ──────────
     // Roda `codex exec` com o modelo GPT-6-Astra usando a subscription do
     // Codex. Sem sessao e sem tools de escrita — so queremos texto de volta.
@@ -352,7 +383,7 @@ ${safeScript}`;
     // ── 5. Executar Blender CLI ────────────────────────────────────────────
     // Respeita BLENDER_PATH; usa 'blender' como padrão (deve estar no PATH)
     const blenderBin = process.env['BLENDER_PATH'] ?? 'blender';
-    await _runBlender(blenderBin, scriptPath);
+    await this.runBlender(blenderBin, scriptPath);
 
     // ── 6. Verificar que o GLB foi escrito ────────────────────────────────
     // Blender pode sair com exit 0 mesmo quando o script Python crasha antes
@@ -378,9 +409,29 @@ ${safeScript}`;
       blenderBin,
     });
 
-    // ── 8. Retornar caminhos ───────────────────────────────────────────────
-    return { glbPath, scriptPath, validacao };
+    return { scriptPath, script: safeScript, validacao };
   }
+}
+
+/**
+ * Pedido de correção para o Astra (SPEC-0267): o pedido original, o script que
+ * reprovou e por quê. O script inteiro vai junto porque a chamada é single-shot
+ * — o Astra não lembra da tentativa anterior.
+ */
+export function buildFixRequest(description: string, previousScript: string, reasons: string[]): string {
+  const lines = [
+    description,
+    '',
+    'O script abaixo gerou um modelo REPROVADO na validação do Studio:',
+    ...reasons.map((r) => `- ${r}`),
+    '',
+    'Reescreva o script INTEIRO corrigindo esses pontos e mantendo o resto do modelo.',
+    '',
+    '```python',
+    previousScript,
+    '```',
+  ];
+  return lines.join('\n');
 }
 
 // ─── Utilitário interno ───────────────────────────────────────────────────────

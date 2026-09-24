@@ -1,7 +1,7 @@
 # 0191 - Chat IA de duas cabeças: GPT-6-Astra monta cena, Claude escreve código
 
 **Data:** 2026-09-13
-**Status:** aceito
+**Status:** aceito — o seletor de modelo foi substituído por modos por tarefa no ADR-0265
 
 ## Contexto
 

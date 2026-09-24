@@ -1,6 +1,7 @@
 import type { AiToolRequest, TurnStats } from './types'
 import { renderMarkdown } from './markdown'
 import { t } from './i18n'
+import { modelForTask, nextTask, strongCodingStorageKey, taskFromSaved, taskStorageKey, type ChatModel, type ChatTask } from './chatTask'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -119,12 +120,11 @@ export class Chat {
   private modeToggleEl: HTMLButtonElement | null = null
 
   /**
-   * Modelo do backend usado pelo agente. Persistido POR PROJETO em
-   * localStorage (`chat_model:<projectDir>`) — diferente do `mode`, que é
-   * global. Default 'sonnet': teto de uso muito maior que Opus no plano de
-   * assinatura, evita estourar o limite do Chat (ADR-0130).
+   * Tarefa do turno — Modelagem ou Codificar (ADR-0265). Persistida POR
+   * PROJETO em localStorage — diferente do `mode`, que é global. O modelo sai
+   * da tarefa em {@link modelForTask}; o usuário nunca escolhe modelo.
    */
-  private model: 'opus' | 'sonnet' | 'haiku' | 'astra' = 'sonnet'
+  private task: ChatTask = 'coding'
   private modelToggleEl: HTMLButtonElement | null = null
 
   /** true quando o turno atual foi enviado em modo plan — dispara a barra de aprovação no fim. */
@@ -326,60 +326,34 @@ export class Chat {
     this.modeToggleEl.title = tip
   }
 
-  // ── Modelo do backend: sonnet (default) → opus → haiku → astra ──
-  // 'astra' e a cabeca Codex/GPT-6-Astra, boa pra montar cena (ADR-0191).
-  // Salvo por projeto.
+  // ── Tarefa do turno: Codificar (default) ⇄ Modelagem (ADR-0265) ──
+  // Salva por projeto. O modelo sai da tarefa — ver chatTask.ts.
 
-  /** Chave de persistência do modelo pro projeto ativo (ou global se nenhum). */
-  private modelStorageKey(): string {
-    return `chat_model:${this.projectDir ?? '<none>'}`
-  }
-
-  /** Carrega o modelo salvo pro projeto ativo (default 'sonnet') e re-renderiza. */
+  /** Carrega a tarefa salva pro projeto ativo (default Codificar) e re-renderiza. */
   private loadModelPref(): void {
-    const saved = localStorage.getItem(this.modelStorageKey())
-    this.model =
-      saved === 'opus' || saved === 'haiku' || saved === 'astra' ? saved : 'sonnet'
+    this.task = taskFromSaved(localStorage.getItem(taskStorageKey(this.projectDir)))
     this.renderModelToggle()
   }
 
   private toggleModel(): void {
-    this.model =
-      this.model === 'sonnet'
-        ? 'opus'
-        : this.model === 'opus'
-          ? 'haiku'
-          : this.model === 'haiku'
-            ? 'astra'
-            : 'sonnet'
-    localStorage.setItem(this.modelStorageKey(), this.model)
+    this.task = nextTask(this.task)
+    localStorage.setItem(taskStorageKey(this.projectDir), this.task)
     this.renderModelToggle()
+  }
+
+  /** Modelo que a tarefa atual usa — o ajuste de Opus fica nas configurações do projeto. */
+  private currentModel(): ChatModel {
+    const strong = localStorage.getItem(strongCodingStorageKey(this.projectDir)) === '1'
+    return modelForTask(this.task, strong)
   }
 
   private renderModelToggle(): void {
     if (!this.modelToggleEl) return
-    this.modelToggleEl.classList.toggle('chat-model-btn--sonnet', this.model === 'sonnet')
-    this.modelToggleEl.classList.toggle('chat-model-btn--opus', this.model === 'opus')
-    this.modelToggleEl.classList.toggle('chat-model-btn--haiku', this.model === 'haiku')
-    this.modelToggleEl.classList.toggle('chat-model-btn--astra', this.model === 'astra')
-    const label =
-      this.model === 'opus'
-        ? t('chat.model_opus')
-        : this.model === 'haiku'
-          ? t('chat.model_haiku')
-          : this.model === 'astra'
-            ? t('chat.model_astra')
-            : t('chat.model_sonnet')
-    const tip =
-      this.model === 'opus'
-        ? t('chat.tooltip_model_opus')
-        : this.model === 'haiku'
-          ? t('chat.tooltip_model_haiku')
-          : this.model === 'astra'
-            ? t('chat.tooltip_model_astra')
-            : t('chat.tooltip_model_sonnet')
-    this.modelToggleEl.textContent = label
-    this.modelToggleEl.title = tip
+    const modeling = this.task === 'modeling'
+    this.modelToggleEl.classList.toggle('chat-model-btn--modeling', modeling)
+    this.modelToggleEl.classList.toggle('chat-model-btn--coding', !modeling)
+    this.modelToggleEl.textContent = modeling ? t('chat.task_modeling') : t('chat.task_coding')
+    this.modelToggleEl.title = modeling ? t('chat.tooltip_task_modeling') : t('chat.tooltip_task_coding')
   }
 
   /** Apaga o histórico do projeto ativo e limpa a UI. */
@@ -579,7 +553,7 @@ export class Chat {
     this.showThinking()
 
     try {
-      await window.electronAPI.chat(this.messagesSent, this.mode, this.model)
+      await window.electronAPI.chat(this.messagesSent, this.mode, this.currentModel())
     } catch (err) {
       this.handleError(String(err))
     }
@@ -600,7 +574,7 @@ export class Chat {
     this.updateInputState()
     this.showThinking()
     try {
-      await window.electronAPI.chat(this.messagesSent, mode, this.model)
+      await window.electronAPI.chat(this.messagesSent, mode, this.currentModel())
     } catch (err) {
       this.handleError(String(err))
     }

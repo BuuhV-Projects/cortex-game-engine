@@ -26,7 +26,9 @@
     "steam_hint": "The app number from Steamworks. Required to export for Steam — without it the export fails. Leave empty if this game isn't going to Steam. (480 = Spacewar, for testing.)",
     "steam_invalid": "The Steam App ID must contain digits only.",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "chat_strong_label": "AI Chat: Coding with the strongest model",
+    "chat_strong_hint": "Better code on hard tasks, but uses up the usage quota much faster. Applies only to this project, on this computer."
   },
   "fileTree": {
     "no_project": "No project open",
@@ -134,14 +136,6 @@
     "tooltip_mode_ask": "Ask: each destructive tool asks for approval. Click for Auto.",
     "tooltip_mode_auto": "Auto: tools run without asking approval. Click for Plan.",
     "tooltip_mode_plan": "Plan: the AI researches and proposes a plan; you approve before it implements. Click for Ask.",
-    "model_sonnet": "Sonnet",
-    "model_opus": "Opus",
-    "model_haiku": "Haiku",
-    "model_astra": "Astra",
-    "tooltip_model_sonnet": "Model: Sonnet (recommended — high usage quota). Click for Opus.",
-    "tooltip_model_opus": "Model: Opus (most capable, but low plan quota — may hit the limit). Click for Haiku.",
-    "tooltip_model_haiku": "Model: Haiku (fast and cheap). Click for Astra.",
-    "tooltip_model_astra": "Model: GPT-6-Astra via Codex (good at building scenes; writes to the project without approval). Click for Sonnet.",
     "plan_ready": "Plan ready. Approve to implement or reject to adjust.",
     "plan_approve": "Approve & run",
     "plan_reject": "Reject",
@@ -165,6 +159,10 @@
     "tool_denied": "denied",
     "tool_error": "error",
     "tool_success": "success",
-    "tool_truncated": "... ({n} chars truncated)"
+    "tool_truncated": "... ({n} chars truncated)",
+    "task_modeling": "Modeling",
+    "task_coding": "Coding",
+    "tooltip_task_modeling": "Modeling mode: 3D models, scenes and effects. Does not change code. Click for Coding.",
+    "tooltip_task_coding": "Coding mode: the game code — systems, mechanics, scripts and UI. Click for Modeling."
   }
 }

@@ -1317,6 +1317,18 @@ body.app-preview-fullscreen #preview-container {
   min-width: 420px;
 }
 
+/* Checkbox com rótulo ao lado e dica embaixo (ajuste do Chat IA, ADR-0265). */
+.gs-field--check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+}
+
+.gs-field--check .gs-icon-hint {
+  grid-column: 2;
+}
+
 .gs-field {
   display: block;
   margin-top: 16px;
@@ -1528,21 +1540,17 @@ body.app-preview-fullscreen #preview-container {
   margin-left: 0;
 }
 
-.chat-model-btn--sonnet {
+/* Tarefa do turno (ADR-0265): Codificar mantém o verde de antes; Modelagem
+   ganha cor própria para o usuário saber de relance em que modo está. */
+.chat-model-btn--coding {
   background-color: #2f8f6b;
   border-color: #2f8f6b;
   color: var(--od-fg-bright, #ffffff);
 }
 
-.chat-model-btn--opus {
-  background-color: #b06a2c;
-  border-color: #b06a2c;
-  color: var(--od-fg-bright, #ffffff);
-}
-
-.chat-model-btn--haiku {
-  background-color: #3b6fd1;
-  border-color: #3b6fd1;
+.chat-model-btn--modeling {
+  background-color: #7a4fd0;
+  border-color: #7a4fd0;
   color: var(--od-fg-bright, #ffffff);
 }
 

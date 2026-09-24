@@ -396,10 +396,26 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   o agente lê a seção completa sob demanda via Read (ADR-0114). Mantenha o doc ao
   mudar a API — o índice deriva dele automaticamente, sem passo de build.
 
-## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191)
+## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191 → modos por tarefa, ADR-0265)
 
-O seletor de modelo do chat tem, alem de opus/sonnet/haiku, a opcao **Astra** —
-e ela NAO e outro modelo do mesmo loop: `runAgent()` roteia `model === 'astra'`
+**Desde o ADR-0265 o usuario escolhe a TAREFA, nao o modelo:** o botao alterna
+**Modelagem** (manda `astra`) e **Codificar** (manda `sonnet`, ou `opus` com o
+ajuste "Codificar com o modelo mais forte" nas configuracoes do projeto —
+guardado no localStorage, nunca no `cortex.json`). A regra tarefa → modelo vive
+em `electron/renderer/chatTask.ts`. Nenhum texto da UI cita modelo.
+
+**Modo Modelagem = dado, nunca codigo (garantido):** `runModelingTurn`
+(`electron/agent/codex/modelagemTurn.ts`) poe um preambulo (fronteira + regras
+de performance + revisao no fim), fotografa o codigo do projeto antes e o
+RESTAURA depois de cada rodada (`codeGuard.ts`), e julga todo `.glb` novo ou
+alterado (`modelWatch.ts` + `judgeModel`, SPEC-0267): reprovado volta para a
+MESMA sessao do Astra (`exec resume`) com os motivos, ate 3 tentativas.
+Detecta pelo DISCO, nao por `file_change`: o Astra tambem gera modelo rodando
+Blender por shell. **Regras de performance** tem fonte unica em
+`electron/agent/performanceRules.ts`, lida pelo prompt do Claude e pelo
+preambulo do Astra; o Codificar fecha o turno revisando o codigo contra elas.
+
+Por baixo, `astra` NAO e outro modelo do mesmo loop: `runAgent()` roteia `model === 'astra'`
 para o `CodexAgentRunner` (`electron/agent/codex/`), que roda
 `codex exec --json` no projeto em vez do Agent SDK. Traduz os eventos JSONL
 (`agent_message`/`file_change`/`command_execution`/`turn.completed`) para o
