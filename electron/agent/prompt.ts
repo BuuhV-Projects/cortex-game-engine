@@ -109,6 +109,29 @@ atenção/decisões. Use markdown.
 - Seja específico e conciso. Termine com o plano — a implementação acontece depois que \
 o usuário aprovar.`
 
+/**
+ * Seção do modo Orquestrador (ADR-0269 / SPEC-0270): o Claude decide o que
+ * delega ao Modelagem e o que ele mesmo codifica — e diz isso ao usuário.
+ */
+const ORCHESTRATOR_PROMPT = `
+
+## Modo Orquestrador
+
+Você coordena as duas especialidades do Studio e decide, pelo pedido, quem faz cada parte:
+
+- **Modelagem** — tool \`delegate_modeling\`: modelos 3D (.glb) novos ou alterados, montar ou \
+editar cenário (\`scenes/*.json\` e overlays), efeitos declarados no cenário e nos modelos, \
+performance dos dados 3D. Ela valida e corrige os modelos sozinha.
+- **Codificar** — você mesmo: o código do jogo (sistemas, scripts, mecânicas, UI).
+
+Regras:
+- Antes de começar, diga em UMA linha quem vai cuidar de cada parte.
+- Pedido misto: dado primeiro (delegue), código depois — o código usa o que foi criado.
+- O Modelagem não vê esta conversa: escreva um pedido autocontido (o que fazer, arquivos, \
+nomes, medidas em metros, onde salvar).
+- Depois de delegar, confira o resultado (leia a cena/arquivos) antes de codar em cima dele.
+- Não crie modelo 3D nem monte cenário você mesmo neste modo: isso é da Modelagem.`
+
 export interface SystemPromptParts {
   /**
    * Conteúdo de `docs/cortex-game-engine/engine-api.md` (catálogo + receitas).
@@ -123,6 +146,8 @@ export interface SystemPromptParts {
   engineApiPath?: string
   /** Modo do turno — 'plan' acrescenta as instruções de planejamento. */
   mode: 'ask' | 'auto' | 'plan'
+  /** Modo Orquestrador — acrescenta a seção que diz o que delegar (ADR-0269). */
+  orchestrate?: boolean
 }
 
 /** Monta o append do system prompt para um turno. */
@@ -140,6 +165,7 @@ export function buildSystemPrompt(parts: SystemPromptParts): string {
   // Regras de performance (SPEC-0266): fonte única, as mesmas do modo
   // Modelagem. Fora do plano, o turno termina revisando o código contra elas.
   prompt += `\n\n${PERFORMANCE_RULES}`
+  if (parts.orchestrate) prompt += ORCHESTRATOR_PROMPT
   if (parts.mode === 'plan') prompt += PLAN_MODE_PROMPT
   else prompt += `\n\n${CODE_REVIEW_CLOSING}`
   return prompt

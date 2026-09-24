@@ -1548,6 +1548,12 @@ body.app-preview-fullscreen #preview-container {
   color: var(--od-fg-bright, #ffffff);
 }
 
+.chat-model-btn--orchestrator {
+  background-color: #b0782c;
+  border-color: #b0782c;
+  color: var(--od-fg-bright, #ffffff);
+}
+
 .chat-model-btn--modeling {
   background-color: #7a4fd0;
   border-color: #7a4fd0;

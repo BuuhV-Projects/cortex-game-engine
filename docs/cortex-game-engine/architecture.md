@@ -396,7 +396,17 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   o agente lê a seção completa sob demanda via Read (ADR-0114). Mantenha o doc ao
   mudar a API — o índice deriva dele automaticamente, sem passo de build.
 
-## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191 → modos por tarefa, ADR-0265)
+## 6a-bis. Chat IA tem DUAS cabecas (ADR-0191 → modos por tarefa, ADR-0265 → Orquestrador, ADR-0269)
+
+**Padrao desde o ADR-0269: modo Orquestrador.** O botao cicla Orquestrador →
+Modelagem → Codificar. O Orquestrador e a cabeca Claude (mesmo modelo do
+Codificar) com `orchestrate: true` (4o argumento do IPC `ai:chat`): ganha a
+tool `delegate_modeling` (`electron/agent/tools/modeling.ts`, server
+`cortex-modelagem`) e a secao "Modo Orquestrador" no prompt; perde o
+`cortex-blender`. A tool roda `runCodexAgent` POR DENTRO do turno do Claude:
+cards do Astra vao direto ao chat, o texto vira resultado da tool, e o `onDone`
+do Astra so guarda a sessao (Map por projeto, memoria do processo) — se
+chegasse ao renderer, encerraria o turno do Claude no meio.
 
 **Desde o ADR-0265 o usuario escolhe a TAREFA, nao o modelo:** o botao alterna
 **Modelagem** (manda `astra`) e **Codificar** (manda `sonnet`, ou `opus` com o
@@ -423,7 +433,8 @@ mesmo `AgentEvents`, entao a UI nao sabe qual cabeca respondeu.
 
 Divisao de trabalho: **astra monta cena**, **Claude escreve codigo** (e e quem
 tem as skills do plugin e o subagente `level-builder`). Quem escolhe e o
-usuario — nao ha roteamento por heuristica.
+usuario (Modelagem/Codificar) ou o proprio Claude no Orquestrador — nunca um
+classificador de texto.
 
 **Armadilhas do runner:**
 - `--ignore-user-config` faz o agente virar read-only de fato ("este ambiente
