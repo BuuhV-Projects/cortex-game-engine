@@ -31,12 +31,13 @@ export function taskFromSaved(saved: string | null): ChatTask {
 }
 
 /**
- * Modelo de cada tarefa. Orquestrador e Codificar rodam o Claude: Sonnet
- * (ADR-0130: a cota do Opus no plano de assinatura é bem menor) e Opus só com
- * o ajuste ligado.
+ * Modelo de cada tarefa. Codificar roda sempre o Opus (ADR-0276: depuração de
+ * várias etapas é onde o modelo forte compensa a cota). O Orquestrador segue
+ * em Sonnet (ADR-0130) e só vai ao Opus com o ajuste ligado.
  */
 export function modelForTask(task: ChatTask, strongCoding: boolean): ChatModel {
   if (task === 'modeling') return 'astra'
+  if (task === 'coding') return 'opus'
   return strongCoding ? 'opus' : 'sonnet'
 }
 

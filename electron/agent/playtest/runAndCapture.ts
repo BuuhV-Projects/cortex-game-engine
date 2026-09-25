@@ -26,6 +26,8 @@ const VITE_LOCAL_URL_RE = /Local:\s+(https?:\/\/[^\s]+)/
  * - `tap`: pressiona e solta rapidamente (keyDown + espera `ms` + keyUp).
  * - `wait`: só espera `ms` (o jogo continua rodando frames).
  * - `screenshot`: captura um PNG nesse ponto da timeline.
+ * - `probe`: avalia `js` na página e guarda o valor como TEXTO (SPEC-0277) —
+ *   física/posição se lê em número, não em foto.
  *
  * `key` usa o valor de `KeyboardEvent.key` (ex.: `"ArrowRight"`, `"a"`, `" "`)
  * ou aliases amigáveis (`"Right"`, `"Space"`); ver KEY_ALIASES.
@@ -36,6 +38,14 @@ export type InputAction =
   | { type: 'tap'; key: string; ms?: number }
   | { type: 'wait'; ms: number }
   | { type: 'screenshot' }
+  | { type: 'probe'; js: string; label?: string }
+
+/**
+ * Como o jogo começa (SPEC-0277). `editor`: boota em edição e aperta ▶ Play —
+ * o caminho do usuário no Studio, onde jogos costumam reconstruir estado ao
+ * sair do editor. `play`: `?play=1`, direto em modo jogo (jogos sem editor).
+ */
+export type PlaytestStart = 'editor' | 'play'
 
 /**
  * Câmera de inspeção (SPEC-0131): posiciona a câmera livre pra "ver" a cena de
@@ -86,9 +96,11 @@ export interface PlaytestOptions {
    * qualquer ângulo. Aplicada após o boot/`evalJs`, antes das `actions`.
    */
   camera?: InspectCameraOption
+  /** Como o jogo começa (ver {@link PlaytestStart}). Default `editor`. */
+  start?: PlaytestStart
   /**
    * Sequência de input pra "jogar" o jogo. Executada após o `waitMs` inicial.
-   * Se nenhuma ação `screenshot` for incluída, um screenshot é tirado no fim.
+   * Sem `screenshot` nem `probe` na timeline, um screenshot é tirado no fim.
    */
   actions?: InputAction[]
 }
@@ -96,6 +108,8 @@ export interface PlaytestOptions {
 export interface PlaytestResult {
   /** PNGs capturados (um por ação `screenshot`, ou um único no fim). */
   screenshots: Buffer[]
+  /** Valores das ações `probe`, já formatados (ver {@link formatProbe}). */
+  probes: string[]
   /** Mensagens de console do jogo (erros/warns/logs), capadas. */
   consoleMessages: string[]
   ok: boolean
@@ -105,6 +119,44 @@ export interface PlaytestResult {
 }
 
 const MAX_MESSAGES = 200
+/** Teto do texto de uma sonda — um objeto enorme não pode encher o contexto. */
+const MAX_PROBE_CHARS = 2000
+/** Frames depois do ▶ Play: o jogo reage à saída do editor no tick seguinte. */
+const PLAY_SETTLE_MS = 500
+/** Quanto esperar o jogo aceitar o ▶ Play (a carga pode passar de 10 s). */
+const PLAY_TIMEOUT_MS = 60000
+
+/** URL que o playtest carrega: `?play=1` só no início direto em jogo. */
+export function buildGameUrl(viteUrl: string, start: PlaytestStart): string {
+  if (start === 'editor') return viteUrl
+  return viteUrl + (viteUrl.includes('?') ? '&' : '?') + 'play=1'
+}
+
+/** Screenshot automático no fim só quando a timeline não pediu foto nem número. */
+export function needsFinalScreenshot(actions: InputAction[]): boolean {
+  return !actions.some((a) => a.type === 'screenshot' || a.type === 'probe')
+}
+
+/** Linha de uma sonda: rótulo, instante na timeline e valor em JSON (capado). */
+export function formatProbe(label: string, elapsedMs: number, value: unknown): string {
+  const json = value === undefined ? 'undefined' : JSON.stringify(value)
+  const text = json.length > MAX_PROBE_CHARS ? `${json.slice(0, MAX_PROBE_CHARS)}… (cortado)` : json
+  return `[probe ${label} @ ${elapsedMs}ms] ${text}`
+}
+
+/** Resposta do {@link PRESS_PLAY_JS} quando o engine do jogo não tem o gancho. */
+const NO_PLAY_HOOK = 'sem-gancho'
+
+/**
+ * Uma tentativa de ▶ Play pelo gancho do engine (SPEC-0277), avaliada em polling
+ * até truthy — o gancho recusa enquanto o jogo carrega. Engine vendorizado antigo
+ * não tem gancho: clicar no botão às cegas cairia no meio da carga e deixaria o
+ * editor dessincronizado (medido no crash), então o runner volta ao `?play=1`.
+ */
+const PRESS_PLAY_JS =
+  `(() => { const p = window.__cortexPlaytest;` +
+  ` if (!p) return '${NO_PLAY_HOOK}';` +
+  ` return p.play() ? 'Play via __cortexPlaytest' : false; })()`
 
 /**
  * Mapeia `KeyboardEvent.key` (e aliases) → keyCode do Electron (estilo
@@ -203,8 +255,10 @@ async function runActions(
   wc: WebContents,
   actions: InputAction[],
   screenshots: Buffer[],
+  probes: string[],
 ): Promise<void> {
-  for (const action of actions) {
+  const t0 = Date.now()
+  for (const [index, action] of actions.entries()) {
     switch (action.type) {
       case 'press':
         sendKey(wc, 'keyDown', action.key)
@@ -223,6 +277,14 @@ async function runActions(
       case 'screenshot': {
         const image = await wc.capturePage()
         screenshots.push(image.toPNG())
+        break
+      }
+      case 'probe': {
+        const label = action.label ?? `#${index + 1}`
+        const value: unknown = await wc
+          .executeJavaScript(action.js, true)
+          .catch((err: unknown) => `(exceção: ${err instanceof Error ? err.message : String(err)})`)
+        probes.push(formatProbe(label, Date.now() - t0, value))
         break
       }
     }
@@ -264,12 +326,14 @@ export async function runAndCaptureGame(
   const port = opts.port ?? 5180
   const urlTimeoutMs = opts.urlTimeoutMs ?? 30000
   const actions = opts.actions ?? []
+  const start = opts.start ?? 'editor'
 
   const messages: string[] = []
   const pushMsg = (m: string): void => {
     if (messages.length < MAX_MESSAGES) messages.push(m)
   }
   const screenshots: Buffer[] = []
+  const probes: string[] = []
 
   let vite: ChildProcess | null = null
   let win: BrowserWindow | null = null
@@ -334,10 +398,10 @@ export async function runAndCaptureGame(
 
     // loadURL rejeita em falha de load; não deixamos isso abortar a captura —
     // ainda assim tentamos screenshotar (pode ter renderizado parcialmente).
-    // `?play`: o jogo boota em modo EDIÇÃO por padrão (estilo Unity); a IA precisa
-    // rodar a GAMEPLAY, então força o modo jogo via query param.
-    const playUrl = viteUrl + (viteUrl.includes('?') ? '&' : '?') + 'play=1'
-    await wc.loadURL(playUrl).catch((e: unknown) => pushMsg(`[loadURL] ${String(e)}`))
+    // O jogo boota em modo EDIÇÃO (estilo Unity). Por padrão o playtest segue o
+    // caminho do usuário e aperta ▶ Play depois do boot (SPEC-0277); `start:
+    // 'play'` força o modo jogo via `?play=1`.
+    await wc.loadURL(buildGameUrl(viteUrl, start)).catch((e: unknown) => pushMsg(`[loadURL] ${String(e)}`))
 
     // Foco pra o sendInputEvent chegar no elemento certo (InputManager escuta
     // document.body). A janela está fora da tela mas recebe input injetado.
@@ -348,25 +412,50 @@ export async function runAndCaptureGame(
     //     truthy. No timeout, coleta diagnóstico (último valor + recursos de
     //     rede pendentes) e SEGUE pra captura — a foto parcial + console ainda
     //     ajudam o modelo a diagnosticar o boot travado.
-    let bootNote = ''
-    if (opts.waitFor) {
-      const timeoutMs = opts.waitForTimeoutMs ?? 60000
-      const probe = (): Promise<unknown> => wc.executeJavaScript(opts.waitFor!, true)
-      const poll = await pollUntilTruthy(probe, timeoutMs)
-      if (poll.ok) {
-        bootNote = ` waitFor OK em ${(poll.elapsedMs / 1000).toFixed(1)}s.`
+    const waitBoot = async (): Promise<string> => {
+      let note = ''
+      if (opts.waitFor) {
+        const timeoutMs = opts.waitForTimeoutMs ?? 60000
+        const probe = (): Promise<unknown> => wc.executeJavaScript(opts.waitFor!, true)
+        const poll = await pollUntilTruthy(probe, timeoutMs)
+        if (poll.ok) {
+          note = ` waitFor OK em ${(poll.elapsedMs / 1000).toFixed(1)}s.`
+        } else {
+          note = ` ⚠️ waitFor NÃO virou truthy em ${timeoutMs}ms (último valor: ${JSON.stringify(poll.lastValue)}).`
+          const pendingExpr =
+            `performance.getEntriesByType('resource').slice(-8)` +
+            `.map(r => r.name.split('/').pop() + (r.responseEnd ? '' : ' [PENDENTE]')).join(', ')`
+          const pending = await wc.executeJavaScript(pendingExpr, true).catch(() => '(indisponível)')
+          pushMsg(`[waitFor-timeout] últimos recursos de rede: ${String(pending)}`)
+        }
+      }
+      // 3b) Espera o init assíncrono (WebGPU) + assets + alguns frames.
+      await delay(waitMs)
+      return note
+    }
+    let bootNote = await waitBoot()
+
+    // 3b') ▶ Play (início `editor`): a transição edição → jogo, onde o jogo pode
+    //      reconstruir estado (ex.: colisão estática) — o que `?play` pulava.
+    if (start === 'editor') {
+      const play = await pollUntilTruthy(() => wc.executeJavaScript(PRESS_PLAY_JS, true), PLAY_TIMEOUT_MS)
+      if (play.lastValue === NO_PLAY_HOOK) {
+        pushMsg(
+          '[play] ⚠️ engine do jogo sem __cortexPlaytest (vendor antigo): recarreguei em ?play=1 — ' +
+            'a transição editor → Play NÃO foi testada. Re-vendorize o engine para testá-la.',
+        )
+        await wc.loadURL(buildGameUrl(viteUrl, 'play')).catch((e: unknown) => pushMsg(`[loadURL] ${String(e)}`))
+        wc.focus()
+        bootNote = await waitBoot()
       } else {
-        bootNote = ` ⚠️ waitFor NÃO virou truthy em ${timeoutMs}ms (último valor: ${JSON.stringify(poll.lastValue)}).`
-        const pendingExpr =
-          `performance.getEntriesByType('resource').slice(-8)` +
-          `.map(r => r.name.split('/').pop() + (r.responseEnd ? '' : ' [PENDENTE]')).join(', ')`
-        const pending = await wc.executeJavaScript(pendingExpr, true).catch(() => '(indisponível)')
-        pushMsg(`[waitFor-timeout] últimos recursos de rede: ${String(pending)}`)
+        pushMsg(
+          play.ok
+            ? `[play] ${String(play.lastValue)} em ${(play.elapsedMs / 1000).toFixed(1)}s`
+            : `[play] ⚠️ ▶ Play NÃO confirmado em ${PLAY_TIMEOUT_MS / 1000}s — o jogo seguiu em EDIÇÃO`,
+        )
+        await delay(PLAY_SETTLE_MS)
       }
     }
-
-    // 3b) Espera o init assíncrono (WebGPU) + assets + alguns frames.
-    await delay(waitMs)
 
     // 3c) Eval pós-boot (opcional): teleporte pra checkpoint, câmera overview,
     //     disparo de evento — qualquer setup antes do input/foto.
@@ -392,11 +481,11 @@ export async function runAndCaptureGame(
     }
 
     // 4) Executa o input (se houver). Os keydown/keyup chegam ao InputManager.
-    await runActions(wc, actions, screenshots)
+    await runActions(wc, actions, screenshots, probes)
 
-    // 5) Se nenhuma ação pediu screenshot, captura uma no fim (comportamento
-    //    padrão: sempre devolver ao menos uma imagem).
-    if (screenshots.length === 0) {
+    // 5) Sem foto nem sonda pedidas, captura uma no fim. Playtest só de números
+    //    (probes) não manda imagem — poupa contexto (SPEC-0277).
+    if (needsFinalScreenshot(actions)) {
       const image = await wc.capturePage()
       screenshots.push(image.toPNG())
     }
@@ -404,6 +493,7 @@ export async function runAndCaptureGame(
     const playedNote = actions.length > 0 ? ` Executadas ${actions.length} ação(ões) de input.` : ''
     return {
       screenshots,
+      probes,
       consoleMessages: messages,
       ok: true,
       note: `Jogo carregado em ${viteUrl} e capturado (${width}x${height}).${bootNote}${playedNote}`,
@@ -412,6 +502,7 @@ export async function runAndCaptureGame(
   } catch (err) {
     return {
       screenshots,
+      probes,
       consoleMessages: messages,
       ok: false,
       note: err instanceof Error ? err.message : String(err),

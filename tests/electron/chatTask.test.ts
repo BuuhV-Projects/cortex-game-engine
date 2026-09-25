@@ -6,10 +6,10 @@ import { describe, it, expect } from 'vitest'
 import { modelForTask, nextTask, taskFromSaved } from '../../electron/renderer/chatTask.js'
 
 describe('chatTask', () => {
-  it('Modelagem roda o Astra; Orquestrador e Codificar rodam Sonnet, e Opus só com o ajuste', () => {
+  it('Modelagem roda o Astra; Codificar sempre Opus (ADR-0276); Orquestrador Sonnet, Opus só com o ajuste', () => {
     expect(modelForTask('modeling', false)).toBe('astra')
     expect(modelForTask('modeling', true)).toBe('astra')
-    expect(modelForTask('coding', false)).toBe('sonnet')
+    expect(modelForTask('coding', false)).toBe('opus')
     expect(modelForTask('coding', true)).toBe('opus')
     expect(modelForTask('orchestrator', false)).toBe('sonnet')
     expect(modelForTask('orchestrator', true)).toBe('opus')

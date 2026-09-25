@@ -10,7 +10,19 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { resolveAgentModel } from '../electron/agent/agentTypes.ts'
+import { resolveAgentModel, sdkModelOptions } from '../electron/agent/agentTypes.js'
+
+describe('sdkModelOptions (ADR-0276)', () => {
+  it('Opus vai no id fixo do Opus 5.5 com esforço médio', () => {
+    expect(sdkModelOptions('opus')).toEqual({ model: 'claude-opus-5-5', effort: 'medium' })
+  })
+
+  it('os outros aliases seguem sem esforço (padrão do SDK)', () => {
+    expect(sdkModelOptions('sonnet')).toEqual({ model: 'sonnet' })
+    expect(sdkModelOptions('haiku')).toEqual({ model: 'haiku' })
+    expect(sdkModelOptions(undefined)).toEqual({ model: undefined })
+  })
+})
 
 describe('resolveAgentModel', () => {
   it('mantém os aliases válidos', () => {

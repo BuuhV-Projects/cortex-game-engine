@@ -1,7 +1,7 @@
 # ADR-0153 - Liberação determinística de GPU/RAM no host nativo
 
 **Data:** 2026-07-25
-**Status:** aceito
+**Status:** aceito (valor do teto do heap substituído pelo ADR-0278: 1 GB)
 
 ## Contexto
 

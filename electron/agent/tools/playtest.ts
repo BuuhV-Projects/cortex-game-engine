@@ -30,8 +30,21 @@ export function createPlaytestToolServer(projectRoot: string) {
           'VER a cena de qualquer ângulo com uma câmera livre (orbitar/enquadrar), ' +
           'sem depender da câmera de gameplay que segue o player. Teclas: use o ' +
           'valor de KeyboardEvent.key ("ArrowLeft/Right/Up/Down", " " ou "Space", ' +
-          '"Enter") ou letras ("a", "d"). Requer WebGPU (engine WebGPU-only).',
+          '"Enter") ou letras ("a", "d"). Requer WebGPU (engine WebGPU-only). ' +
+          'Por padrão o jogo boota no EDITOR e a tool aperta ▶ Play — o mesmo caminho do ' +
+          'usuário no Studio. Para física, colisão e movimento, prefira ações `probe` ' +
+          '(devolvem NÚMEROS: posição, velocidade, estado) a screenshots: a foto não mostra ' +
+          'se o corpo está 1 m abaixo do chão. `window.__cortexPlaytest.game` dá acesso ao ' +
+          'jogo (game.scene.getThreeScene(), game.world).',
         {
+          start: z
+            .enum(['editor', 'play'])
+            .optional()
+            .describe(
+              'Como o jogo começa. "editor" (padrão): boota em edição e aperta ▶ Play, igual ao ' +
+                'usuário — pega bugs da transição edição→jogo. "play": direto em modo jogo (?play=1), ' +
+                'só para jogo sem editor.',
+            ),
           waitMs: z
             .number()
             .int()
@@ -111,6 +124,14 @@ export function createPlaytestToolServer(projectRoot: string) {
                 z
                   .object({ type: z.literal('screenshot') })
                   .describe('Captura um PNG neste ponto da timeline.'),
+                z
+                  .object({ type: z.literal('probe'), js: z.string(), label: z.string().optional() })
+                  .describe(
+                    'Avalia `js` na página AGORA e devolve o valor como texto. Ex.: ' +
+                      '"(() => { const o = __cortexPlaytest.game.scene.getThreeScene().getObjectByName(\'kart\'); ' +
+                      'return o && o.position.toArray() })()". Várias sondas ao longo da timeline mostram a ' +
+                      'evolução (caiu? andou?). Sem screenshot na timeline, nenhuma imagem é enviada.',
+                  ),
               ]),
             )
             .max(80)
@@ -121,8 +142,9 @@ export function createPlaytestToolServer(projectRoot: string) {
                 '{type:"screenshot"},{type:"release",key:"ArrowRight"}].',
             ),
         },
-        async ({ waitMs, width, height, actions, wait_for, eval_js, camera }) => {
+        async ({ start, waitMs, width, height, actions, wait_for, eval_js, camera }) => {
           const result = await runAndCaptureGame(projectRoot, {
+            start,
             waitMs,
             width,
             height,
@@ -132,12 +154,14 @@ export function createPlaytestToolServer(projectRoot: string) {
             actions: actions as InputAction[] | undefined,
           })
 
+          const probesText = result.probes.length > 0 ? `Sondas:\n${result.probes.join('\n')}\n\n` : ''
           const logsText =
-            result.consoleMessages.length > 0
+            probesText +
+            (result.consoleMessages.length > 0
               ? `Mensagens de console do jogo:\n${result.consoleMessages.join('\n')}`
-              : 'Nenhuma mensagem de console capturada.'
+              : 'Nenhuma mensagem de console capturada.')
 
-          if (!result.ok || result.screenshots.length === 0) {
+          if (!result.ok || (result.screenshots.length === 0 && result.probes.length === 0)) {
             return {
               content: [{ type: 'text' as const, text: `Falha ao rodar o jogo: ${result.note}\n\n${logsText}` }],
               isError: true,

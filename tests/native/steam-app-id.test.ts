@@ -37,12 +37,22 @@ function project(slug: string, cortex?: unknown): string {
   return dir;
 }
 
-/** Roda o export e devolve status + stderr (nunca lança). */
-function runExport(gameDir: string, args: string[]): { status: number; stderr: string } {
+/**
+ * Janela pro export passar do portão (topo do script) antes de ser encerrado.
+ * Liberado o portão, com o host buildado na máquina o export segue pro trabalho
+ * pesado e estourava o timeout do teste; sem host, morre na hora.
+ */
+const GATE_WINDOW_MS = 4000;
+/** Timeout do teste que usa a janela: ela + folga pro processo subir. */
+const GATE_TEST_TIMEOUT_MS = 15000;
+
+/** Roda o export e devolve status + stderr (nunca lança). `timeoutMs` encerra o processo. */
+function runExport(gameDir: string, args: string[], timeoutMs?: number): { status: number; stderr: string } {
   try {
     execFileSync(process.execPath, [exportScript, gameDir, ...args], {
       encoding: 'utf8',
       stdio: 'pipe',
+      timeout: timeoutMs,
     });
     return { status: 0, stderr: '' };
   } catch (err) {
@@ -106,11 +116,12 @@ describe('export --steam: portão do app id', () => {
 
   it('sem --steam o campo é ignorado — export PC não exige app id', () => {
     const dir = project('so-pc', { engine: 'cortex-game-engine', id: 'so-pc' });
-    // Passa do portão e morre adiante (host não buildado): o que importa é que a
-    // mensagem NÃO é a do app id.
-    const { stderr } = runExport(dir, []);
+    // Passa do portão e segue: sem host buildado morre adiante; com host, o
+    // export continua e é encerrado pela janela. O que importa é que a mensagem
+    // NÃO é a do app id.
+    const { stderr } = runExport(dir, [], GATE_WINDOW_MS);
     expect(stderr).not.toContain('App ID da Steam');
-  });
+  }, GATE_TEST_TIMEOUT_MS);
 
   // O caminho FELIZ (app id válido → portão libera) não é testado por aqui de
   // propósito: liberado o portão, o export segue e faz o trabalho pesado, então
