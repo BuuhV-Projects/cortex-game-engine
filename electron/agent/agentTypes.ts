@@ -84,6 +84,18 @@ export function resolveAgentModel(raw: unknown): AgentModel {
   return 'sonnet'
 }
 
+/** Id fixo do Opus (ADR-0276): o alias `opus` resolveria para outra versão. */
+export const OPUS_MODEL_ID = 'claude-opus-5-5'
+
+/**
+ * Modelo e esforço que vão pro `query` do SDK. O Opus roda num id fixo com
+ * esforço médio (ADR-0276); os outros aliases seguem com o padrão do SDK.
+ */
+export function sdkModelOptions(model: AgentModel | undefined): { model?: string; effort?: 'medium' } {
+  if (model === 'opus') return { model: OPUS_MODEL_ID, effort: 'medium' }
+  return { model }
+}
+
 export interface RunAgentOptions {
   prompt: string
   projectRoot: string | null

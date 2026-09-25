@@ -27,7 +27,7 @@
     "steam_invalid": "O Steam App ID deve conter apenas números.",
     "save": "Salvar",
     "cancel": "Cancelar",
-    "chat_strong_label": "Chat IA: Orquestrador e Codificar com o modelo mais forte",
+    "chat_strong_label": "Chat IA: Orquestrador com o modelo mais forte (o Codificar já usa sempre)",
     "chat_strong_hint": "Código melhor em tarefas difíceis, mas consome a cota de uso bem mais rápido. Vale só para este projeto, neste computador."
   },
   "fileTree": {

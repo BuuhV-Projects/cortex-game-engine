@@ -10,7 +10,7 @@ import { createModelingToolServer } from './tools/modeling.js'
 import { buildSystemPrompt } from './prompt.js'
 import { runCodexAgent } from './codex/CodexAgentRunner.js'
 import { handleSdkMessage, buildSummary } from './sdkMessages.js'
-import type { RunAgentOptions, ToolExecutionResult, ToolRequest } from './agentTypes.js'
+import { sdkModelOptions, type RunAgentOptions, type ToolExecutionResult, type ToolRequest } from './agentTypes.js'
 
 /**
  * Loop do agente sobre o `@anthropic-ai/claude-agent-sdk` (ADR-0017 V2).
@@ -61,9 +61,8 @@ export async function runAgent(opts: RunAgentOptions): Promise<void> {
 
   const queryOptions: Options = {
     cwd: opts.projectRoot ?? undefined,
-    // Alias curto ('sonnet'/'opus'/'haiku') que o Claude Code resolve. Omitido =
-    // default do SDK. O Studio escolhe por projeto (ADR-0130).
-    model: opts.model,
+    // Sonnet/Haiku por alias; Opus num id fixo com esforço médio (ADR-0276).
+    ...sdkModelOptions(opts.model),
     systemPrompt: {
       type: 'preset',
       preset: 'claude_code',

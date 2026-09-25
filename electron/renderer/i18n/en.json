@@ -27,7 +27,7 @@
     "steam_invalid": "The Steam App ID must contain digits only.",
     "save": "Save",
     "cancel": "Cancel",
-    "chat_strong_label": "AI Chat: Orchestrator and Coding with the strongest model",
+    "chat_strong_label": "AI Chat: Orchestrator with the strongest model (Coding always uses it)",
     "chat_strong_hint": "Better code on hard tasks, but uses up the usage quota much faster. Applies only to this project, on this computer."
   },
   "fileTree": {
