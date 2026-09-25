@@ -3,7 +3,7 @@ import { createInterface } from 'node:readline'
 
 import { resolveCodexBin, CODEX_MODEL } from '../../../src/ai/CodexClient.js'
 import { validateGeneratedModel } from '../../../src/ai/validateGeneratedModel.js'
-import type { RunAgentOptions } from '../agentTypes.js'
+import type { AgentMode, RunAgentOptions } from '../agentTypes.js'
 import { nativeScriptsDir } from '../tools/blender.js'
 import { consumeCodexLine, createTurnState } from './codexEvents.js'
 import { runModelingTurn, type RoundResult } from './modelagemTurn.js'
@@ -60,7 +60,7 @@ export async function runCodexAgent(opts: RunAgentOptions): Promise<void> {
   /** Uma rodada do Codex; lança em falha do processo ou do agente. */
   const runRound = async (prompt: string, resumeId: string | null): Promise<RoundResult> => {
     const state = createTurnState()
-    const exitCode = await runProcess(bin, buildArgs(projectRoot, opts, resumeId), prompt, projectRoot, state, opts)
+    const exitCode = await runProcess(bin, buildArgs(projectRoot, opts.mode, resumeId), prompt, projectRoot, state, opts)
     if (state.errorMessage) throw new Error(state.errorMessage)
     if (exitCode !== 0) {
       throw new Error(
@@ -92,27 +92,36 @@ export async function runCodexAgent(opts: RunAgentOptions): Promise<void> {
 /**
  * Monta os argumentos do `codex exec`.
  *
- * `resume <threadId>` entra logo depois de `exec` a partir do segundo turno,
- * para o agente manter o contexto da conversa.
+ * Com `resumeId`, retoma a sessão (`exec resume`) para o agente manter o
+ * contexto. O subcomando `resume` NÃO aceita `--sandbox` nem `-C` (SPEC-0273):
+ * o sandbox vai como configuração e a pasta vem do `cwd` do processo.
  *
  * **Não** passamos `--ignore-user-config`: medido que, com ela, o agente se
  * comporta como read-only e não escreve nada, mesmo com `workspace-write`
  * (ADR-0191). Também não passamos `--ephemeral` — a sessão precisa persistir
  * para o `resume` funcionar.
  */
-function buildArgs(projectRoot: string, opts: RunAgentOptions, resumeId: string | null): string[] {
+export function buildArgs(projectRoot: string, mode: AgentMode, resumeId: string | null): string[] {
+  const sandbox = SANDBOX_BY_MODE[mode]
+  // "-" = prompt pelo stdin (sem limite de linha de comando, sem escaping).
+  if (resumeId) {
+    return [
+      'exec', 'resume',
+      '--model', CODEX_MODEL,
+      '-c', `sandbox_mode="${sandbox}"`,
+      '--skip-git-repo-check',
+      '--json',
+      resumeId,
+      '-',
+    ]
+  }
   return [
     'exec',
-    ...(resumeId ? ['resume', resumeId] : []),
-    '--model',
-    CODEX_MODEL,
-    '--sandbox',
-    SANDBOX_BY_MODE[opts.mode],
+    '--model', CODEX_MODEL,
+    '--sandbox', sandbox,
     '--skip-git-repo-check',
-    '-C',
-    projectRoot,
+    '-C', projectRoot,
     '--json',
-    // "-" = prompt pelo stdin (sem limite de linha de comando, sem escaping).
     '-',
   ]
 }

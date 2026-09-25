@@ -39,6 +39,22 @@ describe('judgeModel', () => {
     expect(judgeModel(validation(0.004, 2)).reasons[0]).toMatch(/METROS/);
   });
 
+  it('plano fino (oceano, chão) passa do teto de 500 m; objeto com volume não', () => {
+    const sized = (largura: number, altura: number, profundidade: number): ValidateResult => {
+      const v = validation(1, 2);
+      v.inspecao!.size = { largura, altura, profundidade };
+      return v;
+    };
+    // Caso real: oceano.glb de 16 000 m reprovado.
+    expect(judgeModel(sized(16000, 2, 16000)).approved).toBe(true);
+    expect(judgeModel(sized(16000, 1600, 16000)).approved).toBe(true);
+    expect(judgeModel(sized(16000, 1601, 16000)).reasons[0]).toMatch(/escala fora do real/);
+    // Torre de 600 m: a altura é o maior lado, não é plano.
+    expect(judgeModel(sized(20, 600, 20)).reasons[0]).toMatch(/escala fora do real/);
+    // O piso de 0,02 m continua valendo para plano.
+    expect(judgeModel(sized(0.01, 0, 0.01)).reasons[0]).toMatch(/METROS/);
+  });
+
   it('reprova modelo sem geometria', () => {
     expect(judgeModel(validation(1, 2, 0)).reasons[0]).toMatch(/0 triângulos/);
   });

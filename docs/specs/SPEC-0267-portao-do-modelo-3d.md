@@ -22,6 +22,15 @@ Avaliados DEPOIS do refino (o atlas de paleta já reduziu o que dava):
 | maior lado | entre 0,02 m e 500 m | escala em metros: fora disso é unidade errada (cm/mm) |
 | geometria | ≥ 1 triângulo | modelo vazio |
 
+**Plano fino fica fora do teto de 500 m** (revisão de 2026-09-25): oceano,
+chão e terreno têm quilômetros de verdade. Se a altura (Z do Blender) é no
+máximo 10% do maior lado horizontal, o teto não se aplica; o piso de 0,02 m
+continua. Caso real: `oceano.glb` de 16 000 m reprovado, e a correção
+encolheria o oceano para caber. Objeto com volume segue barrado — é onde o
+erro de cm/mm aparece. Limite conhecido: um piso fino modelado em mm passa.
+Alternativas vistas: exceção por nome do arquivo (depende do Astra nomear
+certo) e escala só como aviso (deixaria cm/mm chegar ao jogo).
+
 Sem inspeção (Blender ausente, script do refino ausente) o portão **não
 julga**: é falta de ferramenta, não defeito do modelo, e repetir não resolve.
 O resultado é `{ approved, reasons[], judged }`.
