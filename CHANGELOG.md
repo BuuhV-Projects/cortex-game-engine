@@ -1,3 +1,10 @@
+## [0.67.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.67.0...v0.67.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **chat-ia:** retomada da sessão do Astra e plano fino no portão ([829d1e8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/829d1e8907a6837d7d7cd5990c8abfeec08ac2cc))
+
 # [0.67.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.66.0...v0.67.0) (2026-09-24)
 
 
