@@ -135,6 +135,20 @@ export function attachEditor(game: Game): GameEditor {
       setFov: (fov: number) => game.inspect.setFov(fov),
       clear: () => game.inspect.clear(),
     };
+    // Playtest pelo caminho do usuário (SPEC-0277): a tool boota em edição e aperta
+    // ▶ Play por aqui (o mesmo que o botão/F2), e as sondas numéricas leem o `game`.
+    // `play` recusa (false) enquanto carrega ou antes do editor processar o 1º quadro
+    // (`wasActive` ainda dessincronizado): Play nesse intervalo não vira transição.
+    (window as unknown as { __cortexPlaytest: unknown }).__cortexPlaytest = {
+      game,
+      play: (): boolean => {
+        if (game.isLoading || wasActive !== editorState.active) return false;
+        editorState.active = false;
+        return true;
+      },
+      stop: () => { editorState.active = true; },
+      isEditing: () => editorState.active,
+    };
   }
 
   // Sistemas do editor SOBREVIVEM ao `game.reset()`/`World.clear` (troca de fase):

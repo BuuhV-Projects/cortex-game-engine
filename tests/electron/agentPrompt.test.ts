@@ -48,6 +48,14 @@ describe('buildSystemPrompt — invariantes', () => {
     expect(p).toMatch(/0 erros ANTES de qualquer imagem/)
   })
 
+  it('manda entender o bug antes de rodar e confirmar com sondas (SPEC-0277)', () => {
+    const p = ask()
+    expect(p).toContain('entenda antes de rodar')
+    expect(p).toContain('probe')
+    expect(p).toContain('screenshot confirma, não julga')
+    expect(p).toContain('Só grave memória com fato confirmado')
+  })
+
   it('aponta para as skills e para o subagente, com as variáveis de caminho', () => {
     const p = ask()
     expect(p).toContain('cortex-studio:level-builder')

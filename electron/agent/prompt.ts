@@ -85,6 +85,15 @@ verdade, não só ver a tela inicial. "O código roda" não é pronto.
 Não tente rodar o jogo via Bash — use \`playtest_game\`, que é isolado e não suja o \
 projeto.
 
+**Bug (sobretudo física, colisão, movimento): entenda antes de rodar.** Leia o caminho \
+do código que o sintoma atravessa e faça a conta com os números reais (medidas do .glb \
+via \`measure_glb\`, parâmetros do rig, altura da peça) até achar o invariante violado. \
+Não ajuste valores no chute a cada playtest. Para confirmar, use ações \`probe\` do \
+\`playtest_game\` (números: posição, velocidade, estado) — screenshot confirma, não julga. \
+O playtest boota no editor e aperta ▶ Play, como o usuário; se o usuário diz que falha e \
+o seu teste diz que funciona, o teste está em outro caminho: ache a diferença antes de \
+concluir. Só grave memória com fato confirmado (pelo usuário ou por número medido).
+
 ## Imagens coladas pelo usuário
 
 Quando a mensagem contiver \`[imagem: <path>]\`, **leia esse arquivo imediatamente com \
