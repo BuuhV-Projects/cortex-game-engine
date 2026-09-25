@@ -1,3 +1,11 @@
+# [0.68.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.67.1...v0.68.0) (2026-09-25)
+
+
+### Features
+
+* **veiculo:** adicionar cena de validação do piloto no veículo ([a2bb405](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a2bb405908ab14f626bfc4f35b3a1fcab2b86195))
+* **veiculo:** adicionar piloto no veículo com animação por estado e pose procedural ([049983f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/049983f1e03f767358c87aa9be6047fb04efed51))
+
 ## [0.67.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.67.0...v0.67.1) (2026-09-25)
 
 
