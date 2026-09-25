@@ -323,6 +323,17 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     jogador vai com `stepPhysics: false` (senão o mundo anda duas vezes).
     **Progresso em rota** (volta, posição, IA): `src/scene/Route.ts`, funções puras
     sobre uma rota fechada — as regras da corrida ficam no jogo.
+  - **Piloto no veículo (ADR-0274, SPEC-0275):** `VehicleSeatAttachmentComponent`
+    (parenteia no anchor `assento`), `VehicleAnimatorComponent` (mixer PRÓPRIO,
+    não o `SceneAnimator`; estado derivado de `VehicleDriveParams`) e
+    `ProceduralDriverPoseComponent` (ajuste fino aditivo em Spine/Chest/Head), todos
+    processados por UM `VehicleDriverSystem` (prioridade 55) na ordem fixa
+    assento → mixer → pose. `setupVehicleDriver` valida a convenção de nomes
+    (`src/scene/VehicleDriver.ts`) e lança se o assento faltar. **Sem IK em
+    runtime:** mãos no volante e pés nos pedais vêm baked em cada clipe do Blender.
+    ⚠️ a pose é aditiva no referencial do piloto (+Z frente); o sistema desfaz a
+    própria aditiva em bone sem track, senão ela acumula frame a frame.
+    Validação visual: `yarn dev:vehicle-driver` (`examples/vehicle-driver/`).
   - **`physics.advance(dt, antesDeCadaPasso)`** — passo semi-fixo (≤ 1/60, N
     passos iguais; ADR-0257). Use no lugar de um `step()` por frame, que amarra a
     velocidade da física ao fps.

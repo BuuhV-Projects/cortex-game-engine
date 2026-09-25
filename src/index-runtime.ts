@@ -60,6 +60,10 @@ export * from './components/CharacterBodyComponent.js';
 export * from './components/InteractionComponent.js';
 export * from './components/RapierBodyComponent.js';
 export * from './components/ArcadeVehicleComponent.js';
+// Piloto no veículo: assento + animação por estado + pose procedural (SPEC-0275)
+export * from './components/VehicleSeatAttachmentComponent.js';
+export * from './components/VehicleAnimatorComponent.js';
+export * from './components/ProceduralDriverPoseComponent.js';
 export * from './components/ScriptComponent.js';
 
 // ─── Scripts anexáveis (estilo MonoBehaviour — ADR-0085) ──────────────────────
@@ -85,6 +89,7 @@ export * from './systems/CharacterPhysicsSystem.js';
 export * from './systems/InteractionSystem.js';
 export * from './systems/VehicleControlSystem.js';
 export * from './systems/VehicleArcadeSystem.js';
+export * from './systems/VehicleDriverSystem.js';
 export * from './systems/SkidMarkSystem.js';
 export * from './scene/EngineSound.js';
 export * from './ui/Speedometer.js';
@@ -128,6 +133,7 @@ export * from './scene/Platformer.js';
 export * from './scene/FirstPerson.js';
 export * from './scene/ThirdPerson.js';
 export * from './scene/VehicleSetup.js';
+export * from './scene/VehicleDriver.js';
 export * from './scene/TopDown.js';
 export * from './scene/SceneAssets.js';
 export * from './scene/Materials.js';
