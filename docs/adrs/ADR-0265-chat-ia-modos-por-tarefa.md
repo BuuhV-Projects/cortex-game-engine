@@ -1,7 +1,7 @@
 # ADR-0265 — Chat IA por tarefa: modo Modelagem e modo Codificar
 
 **Data:** 2026-09-24
-**Status:** aceito (roteamento automático revisto no ADR-0269 — modo Orquestrador)
+**Status:** aceito (roteamento automático revisto no ADR-0269 — modo Orquestrador; modelo do Codificar substituído pelo ADR-0276)
 **Substitui em parte:** ADR-0191 (o seletor de modelo)
 
 ## Contexto

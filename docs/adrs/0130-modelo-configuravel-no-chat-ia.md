@@ -1,7 +1,7 @@
 # 0130 - Modelo configurável no Chat IA (default Sonnet)
 
 **Data:** 2026-07-19
-**Status:** aceito
+**Status:** aceito (modelo do Codificar substituído pelo ADR-0276)
 
 ## Contexto
 

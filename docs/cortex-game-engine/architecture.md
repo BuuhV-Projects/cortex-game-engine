@@ -532,6 +532,15 @@ ate receber o `AGENTS.md`.
   fica inativo → `activeCamera()` devolve `null` → só a câmera do jogo renderizava,
   e o `eval_js` não tinha alça pra câmera nenhuma. Auto-enquadramento ignora
   helpers do editor (outra layer) e skybox (>1000u).
+- **Playtest pelo editor + sondas** (SPEC-0277): por padrão (`start: 'editor'`) o
+  `playtest_game` boota SEM `?play`, espera a carga e aperta ▶ Play por
+  `window.__cortexPlaytest.play()` (exposto pelo `attachEditor` junto do `game`) —
+  o caminho do usuário. `play()` recusa enquanto `game.isLoading` ou antes do editor
+  processar o 1º quadro. **Armadilha:** `?play=1` pula a transição edição → jogo,
+  onde jogos reconstroem estado (o `CarSystem` do kart apaga e refaz a colisão
+  estática) — o playtest antigo aprovava um kart que no Studio caía. Ação `probe`
+  devolve números em texto (física se lê em número, não em foto); engine vendorizado
+  sem o gancho cai em `?play=1` com aviso. Codificar roda no Opus 5.5 médio (ADR-0276).
 
 ## 7. Fluxo de ponta a ponta (um nó vira jogo)
 
