@@ -1255,6 +1255,51 @@ game.world.addSystem(new VehicleControlSystem(physics, playerVehicle, playerMesh
 `chassisOffset`; muitos materiais por peça viram draw calls (ver o orçamento de
 perf do kart-racer — cada carro extra custou ~0,4 ms).
 
+## Piloto no veículo: assento, animação por estado e pose — ADR-0274 / SPEC-0275
+
+Personagem GLB sentado no kart, animado pela direção. **Sem IK em runtime**: mãos
+no volante e pés nos pedais vêm **baked em cada clipe** (Blender); a engine só
+carrega, toca e faz crossfade, e a pose procedural é ajuste fino por cima.
+
+| Símbolo | O que é |
+|---|---|
+| `setupVehicleDriver(world, { vehicle, driver, clips, seatName?, seat?, animator?, pose?, pauseWhen? })` | **Uma chamada**: valida a convenção, lança se o assento faltar, cria a entidade com os 3 componentes sobre um `params` compartilhado e registra o sistema. Devolve `{ entity, params, report, seat, animator, pose }`. |
+| `VehicleDriveParams` / `createDriveParams()` | `speed` (m/s), `steer` (−1 esq..+1 dir), `throttle`, `brake` (0..1), `drift` (−1..1). O jogo escreve todo frame. |
+| `VehicleSeatAttachmentComponent(vehicle, seatName, driver, { offset, rotation, scale })` | Parenteia no anchor; offset/rotação/escala reaplicados todo frame (ao vivo). Anchor ausente → `.error` com os nomes existentes. `attachToSeat(...)` lança. |
+| `VehicleAnimatorComponent(root, clips, { clipMap, crossFade, thresholds, params })` | `AnimationMixer` próprio. Estados `VEHICLE_ANIM_STATES`: `idle`, `accelerate`, `brake`, `steer_left/right`, `drift_left/right`, `victory`. `.forcedState` força um; `.state`, `.activeClip`. Crossfade por peso (troca no meio do fade é contínua). |
+| `ProceduralDriverPoseComponent(root, params, { limits, bones, speedRef, smoothing })` | Rotação aditiva pequena em `Spine`/`Chest`/`Head` depois do mixer: corpo inclina na curva/aceleração/freio, cabeça olha a curva. `limits` = ângulo máximo (rad). Bone ausente → `.missingBones`, sem quebrar. |
+| `VehicleDriverSystem(pauseWhen?)` | Por entidade: assento → mixer → pose. Prioridade 55. |
+| `validateVehicleAssets({ vehicle, driver, clips })` / `formatVehicleAssetReport(r)` | Relatório `found`/`missing`/`available` de anchors, bones e clipes. |
+
+**Convenção de nomes (busca exata):** kart — `assento`, `volante`,
+`roda_frente_esquerda`, `roda_frente_direita`, `roda_traseira_esquerda`,
+`roda_traseira_direita`; piloto (Bones) — `Head`, `Spine`, `Chest`, `LeftHand`,
+`RightHand`, `LeftFoot`, `RightFoot`; clipes — os 8 estados. Piloto virado para
+**+Z** (padrão glTF).
+
+```ts
+const kart = await loader.loadGLTF('assets/kart.glb');
+const piloto = await loader.loadGLTF('assets/piloto.glb');
+game.scene.add(kart.scene);
+const driver = setupVehicleDriver(game.world, {
+  vehicle: kart.scene, driver: piloto.scene, clips: piloto.animations,
+  seat: { offset: { x: 0, y: 0.05, z: 0 } },
+  pauseWhen: () => game.editorActive || game.gameplayPaused,
+});
+game.onUpdate(() => {
+  driver.params.speed = vehicle.forwardSpeed();
+  driver.params.steer = steerInput;          // −1..1
+  driver.params.throttle = throttleInput;    // 0..1
+  driver.params.brake = brakeInput;
+  driver.params.drift = drifting ? Math.sign(steerInput) : 0;
+});
+// na chegada: driver.animator.forcedState = 'victory';
+```
+
+Cena de validação: `yarn dev:vehicle-driver` (teclas 1–8 forçam estado, C câmera
+lateral; `?vehicle=/kart.glb&driver=/piloto.glb` com GLBs em
+`examples/vehicle-driver/public/`).
+
 ## Material / shader por objeto (material)
 
 Atribui um "shader" (material do Three) a um objeto pela propriedade `material` do nó

@@ -31,6 +31,9 @@ A lógica pertence aos Systems — vide ADR-0002.
 - [`InteractionComponent`](InteractionComponent.md)
 - [`RapierBodyComponent`](RapierBodyComponent.md)
 - [`ArcadeVehicleComponent`](ArcadeVehicleComponent.md)
+- [`VehicleSeatAttachmentComponent`](VehicleSeatAttachmentComponent.md)
+- [`VehicleAnimatorComponent`](VehicleAnimatorComponent.md)
+- [`ProceduralDriverPoseComponent`](ProceduralDriverPoseComponent.md)
 - [`ScriptComponent`](ScriptComponent.md)
 
 ## Constructors

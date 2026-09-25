@@ -53,6 +53,7 @@ class MovementSystem extends System {
 - [`InteractionSystem`](InteractionSystem.md)
 - [`VehicleControlSystem`](VehicleControlSystem.md)
 - [`VehicleArcadeSystem`](VehicleArcadeSystem.md)
+- [`VehicleDriverSystem`](VehicleDriverSystem.md)
 - [`SkidMarkSystem`](SkidMarkSystem.md)
 - [`ThirdPersonControlSystem`](ThirdPersonControlSystem.md)
 - [`RapierPhysicsSystem`](RapierPhysicsSystem.md)
