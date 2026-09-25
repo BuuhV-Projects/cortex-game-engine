@@ -18,6 +18,11 @@ export const MAX_MATERIALS_LARGE = 8;
 export const MIN_SIDE_M = 0.02;
 /** Maior maior-lado aceito: acima disso a escala veio em cm/mm. */
 export const MAX_SIDE_M = 500;
+/**
+ * Altura máxima, como fração do maior lado horizontal, para o modelo contar
+ * como plano fino (oceano, chão, terreno) — que fica fora do {@link MAX_SIDE_M}.
+ */
+export const FLAT_MAX_HEIGHT_RATIO = 0.1;
 /** Tentativas de geração no total, contando a primeira. */
 export const MAX_MODEL_ATTEMPTS = 3;
 
@@ -52,7 +57,9 @@ export function judgeModel(validation: ValidateResult | null): ModelVerdict {
   if (inspection.triangulos < 1) {
     reasons.push('o modelo não tem geometria (0 triângulos)');
   }
-  if (longestSide < MIN_SIDE_M || longestSide > MAX_SIDE_M) {
+  // Oceano, chão e terreno têm quilômetros de verdade: plano fino não tem teto.
+  const flat = altura <= Math.max(largura, profundidade) * FLAT_MAX_HEIGHT_RATIO;
+  if (longestSide < MIN_SIDE_M || (longestSide > MAX_SIDE_M && !flat)) {
     reasons.push(
       `escala fora do real: o maior lado mede ${longestSide} m. Modele em METROS com a medida ` +
         `real do objeto (entre ${MIN_SIDE_M} m e ${MAX_SIDE_M} m) — provável unidade errada.`,
