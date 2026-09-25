@@ -6,7 +6,7 @@
 
 # Class: ProceduralDriverPoseComponent
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:76
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L76)
 
 **Pose procedural do piloto** (SPEC-0275): rotações aditivas pequenas em
 `Spine`, `Chest` e `Head` por cima da animação — corpo inclina na curva, para
@@ -36,7 +36,7 @@ entity
 
 > **new ProceduralDriverPoseComponent**(`root`, `params?`, `options?`): `ProceduralDriverPoseComponent`
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:93
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L93)
 
 #### Parameters
 
@@ -70,7 +70,7 @@ Parâmetros de direção (o mesmo objeto do animador).
 
 > `readonly` **boneNames**: [`DriverPoseBoneNames`](../interfaces/DriverPoseBoneNames.md)
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:78
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L78)
 
 ***
 
@@ -78,7 +78,7 @@ Defined in: src/components/ProceduralDriverPoseComponent.ts:78
 
 > **bones**: \{ `chest`: [`DriverPoseBoneState`](../interfaces/DriverPoseBoneState.md) \| `null`; `head`: [`DriverPoseBoneState`](../interfaces/DriverPoseBoneState.md) \| `null`; `spine`: [`DriverPoseBoneState`](../interfaces/DriverPoseBoneState.md) \| `null`; \} \| `null` = `null`
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:84
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L84)
 
 Bones resolvidos (escrito pelo sistema na 1ª execução).
 
@@ -88,7 +88,7 @@ Bones resolvidos (escrito pelo sistema na 1ª execução).
 
 > `readonly` **current**: `object`
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:82
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L82)
 
 Ângulos suavizados atuais, em rad (escritos pelo sistema).
 
@@ -128,7 +128,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > `readonly` **limits**: [`DriverPoseLimits`](../interfaces/DriverPoseLimits.md)
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:77
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L77)
 
 ***
 
@@ -136,7 +136,7 @@ Defined in: src/components/ProceduralDriverPoseComponent.ts:77
 
 > **missingBones**: `string`[] = `[]`
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:87
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L87)
 
 Bones da convenção que o piloto não tem.
 
@@ -146,7 +146,7 @@ Bones da convenção que o piloto não tem.
 
 > **params**: [`VehicleDriveParams`](../interfaces/VehicleDriveParams.md)
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:95
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L95)
 
 Parâmetros de direção (o mesmo objeto do animador).
 
@@ -156,7 +156,7 @@ Parâmetros de direção (o mesmo objeto do animador).
 
 > **root**: `Object3D`
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:94
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L94)
 
 Raiz do piloto (define o referencial frente/cima).
 
@@ -166,7 +166,7 @@ Raiz do piloto (define o referencial frente/cima).
 
 > **smoothing**: `number`
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:80
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L80)
 
 ***
 
@@ -174,7 +174,7 @@ Defined in: src/components/ProceduralDriverPoseComponent.ts:80
 
 > **speedRef**: `number`
 
-Defined in: src/components/ProceduralDriverPoseComponent.ts:79
+Defined in: [src/components/ProceduralDriverPoseComponent.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/ProceduralDriverPoseComponent.ts#L79)
 
 ## Accessors
 

@@ -6,7 +6,7 @@
 
 # Interface: AssetCheck
 
-Defined in: src/scene/VehicleDriver.ts:34
+Defined in: [src/scene/VehicleDriver.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L34)
 
 Achados de uma categoria do relatório.
 
@@ -16,7 +16,7 @@ Achados de uma categoria do relatório.
 
 > **available**: `string`[]
 
-Defined in: src/scene/VehicleDriver.ts:38
+Defined in: [src/scene/VehicleDriver.ts:38](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L38)
 
 Tudo o que o asset tem nessa categoria — para o autor renomear.
 
@@ -26,7 +26,7 @@ Tudo o que o asset tem nessa categoria — para o autor renomear.
 
 > **found**: `string`[]
 
-Defined in: src/scene/VehicleDriver.ts:35
+Defined in: [src/scene/VehicleDriver.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L35)
 
 ***
 
@@ -34,4 +34,4 @@ Defined in: src/scene/VehicleDriver.ts:35
 
 > **missing**: `string`[]
 
-Defined in: src/scene/VehicleDriver.ts:36
+Defined in: [src/scene/VehicleDriver.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L36)

@@ -6,7 +6,7 @@
 
 # Class: VehicleAnimatorComponent
 
-Defined in: src/components/VehicleAnimatorComponent.ts:93
+Defined in: [src/components/VehicleAnimatorComponent.ts:93](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L93)
 
 **Animação do piloto por estado de direção** (SPEC-0275). Usa um
 `AnimationMixer` próprio (ADR-0274): o [VehicleDriverSystem](VehicleDriverSystem.md) escolhe o
@@ -36,7 +36,7 @@ anim.params.throttle = input.isKeyDown('w') ? 1 : 0;
 
 > **new VehicleAnimatorComponent**(`root`, `clips`, `options?`): `VehicleAnimatorComponent`
 
-Defined in: src/components/VehicleAnimatorComponent.ts:112
+Defined in: [src/components/VehicleAnimatorComponent.ts:112](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L112)
 
 #### Parameters
 
@@ -70,7 +70,7 @@ Clipes do GLB (`gltf.animations`).
 
 > `readonly` **actions**: `Map`\<`"accelerate"` \| `"brake"` \| `"idle"` \| `"steer_left"` \| `"steer_right"` \| `"drift_left"` \| `"drift_right"` \| `"victory"`, `AnimationAction`\>
 
-Defined in: src/components/VehicleAnimatorComponent.ts:96
+Defined in: [src/components/VehicleAnimatorComponent.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L96)
 
 Actions por estado (só os estados com clipe no asset).
 
@@ -80,7 +80,7 @@ Actions por estado (só os estados com clipe no asset).
 
 > **activeClip**: `string` \| `null` = `null`
 
-Defined in: src/components/VehicleAnimatorComponent.ts:106
+Defined in: [src/components/VehicleAnimatorComponent.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L106)
 
 Nome do clipe tocando agora (escrito pelo sistema).
 
@@ -90,7 +90,7 @@ Nome do clipe tocando agora (escrito pelo sistema).
 
 > **crossFade**: `number`
 
-Defined in: src/components/VehicleAnimatorComponent.ts:100
+Defined in: [src/components/VehicleAnimatorComponent.ts:100](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L100)
 
 Duração do crossfade, em segundos (editável ao vivo).
 
@@ -114,7 +114,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **forcedState**: `"accelerate"` \| `"brake"` \| `"idle"` \| `"steer_left"` \| `"steer_right"` \| `"drift_left"` \| `"drift_right"` \| `"victory"` \| `null` = `null`
 
-Defined in: src/components/VehicleAnimatorComponent.ts:102
+Defined in: [src/components/VehicleAnimatorComponent.ts:102](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L102)
 
 Força um estado (seleção manual, vitória). `null` = automático.
 
@@ -124,7 +124,7 @@ Força um estado (seleção manual, vitória). `null` = automático.
 
 > `readonly` **mixer**: `AnimationMixer`
 
-Defined in: src/components/VehicleAnimatorComponent.ts:94
+Defined in: [src/components/VehicleAnimatorComponent.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L94)
 
 ***
 
@@ -132,7 +132,7 @@ Defined in: src/components/VehicleAnimatorComponent.ts:94
 
 > `readonly` **params**: [`VehicleDriveParams`](../interfaces/VehicleDriveParams.md)
 
-Defined in: src/components/VehicleAnimatorComponent.ts:97
+Defined in: [src/components/VehicleAnimatorComponent.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L97)
 
 ***
 
@@ -140,7 +140,7 @@ Defined in: src/components/VehicleAnimatorComponent.ts:97
 
 > **state**: `"accelerate"` \| `"brake"` \| `"idle"` \| `"steer_left"` \| `"steer_right"` \| `"drift_left"` \| `"drift_right"` \| `"victory"` \| `null` = `null`
 
-Defined in: src/components/VehicleAnimatorComponent.ts:104
+Defined in: [src/components/VehicleAnimatorComponent.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L104)
 
 Estado lógico atual (escrito pelo sistema).
 
@@ -150,7 +150,7 @@ Estado lógico atual (escrito pelo sistema).
 
 > `readonly` **thresholds**: [`VehicleAnimThresholds`](../interfaces/VehicleAnimThresholds.md)
 
-Defined in: src/components/VehicleAnimatorComponent.ts:98
+Defined in: [src/components/VehicleAnimatorComponent.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleAnimatorComponent.ts#L98)
 
 ## Accessors
 

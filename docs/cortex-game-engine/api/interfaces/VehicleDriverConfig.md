@@ -6,7 +6,7 @@
 
 # Interface: VehicleDriverConfig
 
-Defined in: src/scene/VehicleDriver.ts:95
+Defined in: [src/scene/VehicleDriver.ts:95](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L95)
 
 Config do [setupVehicleDriver](../functions/setupVehicleDriver.md).
 
@@ -16,7 +16,7 @@ Config do [setupVehicleDriver](../functions/setupVehicleDriver.md).
 
 > `optional` **animator?**: `Omit`\<[`VehicleAnimatorOptions`](VehicleAnimatorOptions.md), `"params"`\>
 
-Defined in: src/scene/VehicleDriver.ts:105
+Defined in: [src/scene/VehicleDriver.ts:105](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L105)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: src/scene/VehicleDriver.ts:105
 
 > **clips**: readonly `AnimationClip`[]
 
-Defined in: src/scene/VehicleDriver.ts:101
+Defined in: [src/scene/VehicleDriver.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L101)
 
 Clipes do piloto (`gltf.animations`), baked com mãos/pés (sem IK).
 
@@ -34,7 +34,7 @@ Clipes do piloto (`gltf.animations`), baked com mãos/pés (sem IK).
 
 > **driver**: `Object3D`
 
-Defined in: src/scene/VehicleDriver.ts:99
+Defined in: [src/scene/VehicleDriver.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L99)
 
 Raiz do piloto (cena do GLB do piloto).
 
@@ -44,7 +44,7 @@ Raiz do piloto (cena do GLB do piloto).
 
 > `optional` **params?**: [`VehicleDriveParams`](VehicleDriveParams.md)
 
-Defined in: src/scene/VehicleDriver.ts:108
+Defined in: [src/scene/VehicleDriver.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L108)
 
 Parâmetros compartilhados. Default: um objeto novo zerado.
 
@@ -54,7 +54,7 @@ Parâmetros compartilhados. Default: um objeto novo zerado.
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: src/scene/VehicleDriver.ts:110
+Defined in: [src/scene/VehicleDriver.ts:110](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L110)
 
 Pausa do sistema (ex.: `() => game.editorActive || game.gameplayPaused`).
 
@@ -68,7 +68,7 @@ Pausa do sistema (ex.: `() => game.editorActive || game.gameplayPaused`).
 
 > `optional` **pose?**: [`DriverPoseOptions`](DriverPoseOptions.md)
 
-Defined in: src/scene/VehicleDriver.ts:106
+Defined in: [src/scene/VehicleDriver.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L106)
 
 ***
 
@@ -76,7 +76,7 @@ Defined in: src/scene/VehicleDriver.ts:106
 
 > `optional` **seat?**: [`VehicleSeatOptions`](VehicleSeatOptions.md)
 
-Defined in: src/scene/VehicleDriver.ts:104
+Defined in: [src/scene/VehicleDriver.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L104)
 
 ***
 
@@ -84,7 +84,7 @@ Defined in: src/scene/VehicleDriver.ts:104
 
 > `optional` **seatName?**: `string`
 
-Defined in: src/scene/VehicleDriver.ts:103
+Defined in: [src/scene/VehicleDriver.ts:103](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L103)
 
 Anchor do assento. Default `'assento'`.
 
@@ -94,6 +94,6 @@ Anchor do assento. Default `'assento'`.
 
 > **vehicle**: `Object3D`
 
-Defined in: src/scene/VehicleDriver.ts:97
+Defined in: [src/scene/VehicleDriver.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L97)
 
 Raiz do veículo (cena do GLB do kart).

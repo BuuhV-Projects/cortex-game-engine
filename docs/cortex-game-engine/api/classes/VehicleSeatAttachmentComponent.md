@@ -6,7 +6,7 @@
 
 # Class: VehicleSeatAttachmentComponent
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:32
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:32](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L32)
 
 **Senta um personagem no assento de um veículo** (SPEC-0275). O
 [VehicleDriverSystem](VehicleDriverSystem.md) acha o anchor `seatName` dentro de `vehicle`,
@@ -35,7 +35,7 @@ entity.addComponent(new VehicleSeatAttachmentComponent(kart, 'assento', piloto, 
 
 > **new VehicleSeatAttachmentComponent**(`vehicle`, `seatName`, `driver`, `options?`): `VehicleSeatAttachmentComponent`
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:41
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L41)
 
 #### Parameters
 
@@ -69,7 +69,7 @@ Defined in: src/components/VehicleSeatAttachmentComponent.ts:41
 
 > **driver**: `Object3D`
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:44
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:44](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L44)
 
 ***
 
@@ -91,7 +91,7 @@ Indica se o componente está ativo. Systems podem ignorar componentes desativado
 
 > **error**: `string` \| `null` = `null`
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:39
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L39)
 
 Erro de resolução (anchor ausente), ou `null`.
 
@@ -101,7 +101,7 @@ Erro de resolução (anchor ausente), ou `null`.
 
 > `readonly` **offset**: `Vector3`
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:33
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L33)
 
 ***
 
@@ -109,7 +109,7 @@ Defined in: src/components/VehicleSeatAttachmentComponent.ts:33
 
 > `readonly` **rotation**: `Euler`
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:34
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:34](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L34)
 
 ***
 
@@ -117,7 +117,7 @@ Defined in: src/components/VehicleSeatAttachmentComponent.ts:34
 
 > `readonly` **scale**: `Vector3`
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:35
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L35)
 
 ***
 
@@ -125,7 +125,7 @@ Defined in: src/components/VehicleSeatAttachmentComponent.ts:35
 
 > **seat**: `Object3D`\<`Object3DEventMap`\> \| `null` = `null`
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:37
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L37)
 
 Anchor resolvido (escrito pelo sistema).
 
@@ -135,7 +135,7 @@ Anchor resolvido (escrito pelo sistema).
 
 > **seatName**: `string`
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:43
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L43)
 
 ***
 
@@ -143,7 +143,7 @@ Defined in: src/components/VehicleSeatAttachmentComponent.ts:43
 
 > **vehicle**: `Object3D`
 
-Defined in: src/components/VehicleSeatAttachmentComponent.ts:42
+Defined in: [src/components/VehicleSeatAttachmentComponent.ts:42](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/components/VehicleSeatAttachmentComponent.ts#L42)
 
 ## Accessors
 

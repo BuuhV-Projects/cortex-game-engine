@@ -8,7 +8,7 @@
 
 > **setupVehicleDriver**(`world`, `cfg`): [`VehicleDriverHandle`](../interfaces/VehicleDriverHandle.md)
 
-Defined in: src/scene/VehicleDriver.ts:140
+Defined in: [src/scene/VehicleDriver.ts:140](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleDriver.ts#L140)
 
 **Liga um piloto num veículo com uma chamada** (SPEC-0275): valida a
 convenção, senta o piloto (lança se o assento faltar, com o relatório), cria a

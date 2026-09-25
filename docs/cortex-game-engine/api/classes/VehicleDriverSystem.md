@@ -6,7 +6,7 @@
 
 # Class: VehicleDriverSystem
 
-Defined in: src/systems/VehicleDriverSystem.ts:228
+Defined in: [src/systems/VehicleDriverSystem.ts:228](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L228)
 
 **Piloto no veículo** (SPEC-0275): por entidade, na ordem fixa
 assento ([VehicleSeatAttachmentComponent](VehicleSeatAttachmentComponent.md)) → animação
@@ -24,7 +24,7 @@ parâmetros (input 30, scripts de IA 50).
 
 > **new VehicleDriverSystem**(`pauseWhen?`): `VehicleDriverSystem`
 
-Defined in: src/systems/VehicleDriverSystem.ts:233
+Defined in: [src/systems/VehicleDriverSystem.ts:233](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L233)
 
 #### Parameters
 
@@ -84,7 +84,7 @@ a gameplay (física/input) enquanto o editor está ativo
 
 > **priority**: `number` = `55`
 
-Defined in: src/systems/VehicleDriverSystem.ts:231
+Defined in: [src/systems/VehicleDriverSystem.ts:231](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L231)
 
 Prioridade de execução deste sistema.
 
@@ -101,7 +101,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 > `static` **requiredComponents**: `never`[] = `[]`
 
-Defined in: src/systems/VehicleDriverSystem.ts:230
+Defined in: [src/systems/VehicleDriverSystem.ts:230](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L230)
 
 Construtores dos componentes que este sistema requer.
 
@@ -148,7 +148,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`entities`, `deltaTime`): `void`
 
-Defined in: src/systems/VehicleDriverSystem.ts:238
+Defined in: [src/systems/VehicleDriverSystem.ts:238](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleDriverSystem.ts#L238)
 
 Executa a lógica do sistema para o frame/passo atual.
 
