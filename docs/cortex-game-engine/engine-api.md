@@ -763,8 +763,13 @@ malhas por material (transform baked) pra reduzir draw calls. O `buildScene`
 chama sozinho no host nativo (opt-out `mergeStatic: false` nas opções); nunca
 roda no Studio (o editor precisa dos objetos individuais). Ficam de fora:
 entidades dinâmicas (scripts/player/Rapier), animados, skinned, vegetação,
-terreno, água. Física preservada (`cortexSolid` sobrevive; colliders derivam
-antes).
+terreno, água e **gatilhos** (`collider.solid: false`, ADR-0220). Física
+preservada (`cortexSolid` sobrevive; colliders derivam antes).
+
+> ⚠️ **Enfeite que não deve colidir = SEM `collider`** (Física: Nenhum), nunca
+> `solid: false`. `solid: false` é gatilho: o nó sai da fusão e vira draw próprio
+> (+ sombra). No crash-bandicoot-racer, 176 enfeites com `solid: false` levaram o
+> export de 60 para ~37 fps (586 draws); sem `collider`, 287 draws e 60 fps.
 
 ## Blockout / ProBuilder — nó `mesh` editável (SPEC-0071)
 
