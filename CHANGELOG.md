@@ -1,3 +1,16 @@
+# [0.69.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.68.0...v0.69.0) (2026-09-25)
+
+
+### Bug Fixes
+
+* **native:** subir o teto do heap do Hermes para 1 GB ([94702c6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/94702c67984f7cc347bc51b8c39b59cca59fae56))
+
+
+### Features
+
+* **chat-ia:** playtest pelo editor com Play e sondas numéricas ([8db3191](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8db3191eadedd86479d4c5bf74ee03d7e423f4db))
+* **chat-ia:** rodar o Codificar no Opus 5.5 com esforço médio ([31daeed](https://github.com/BuuhV-Projects/cortex-game-engine/commit/31daeed8850cbd9151afdb0a9a06272c51879b17))
+
 # [0.68.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.67.1...v0.68.0) (2026-09-25)
 
 
