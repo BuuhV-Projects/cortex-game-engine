@@ -47,10 +47,11 @@ extern "C" {
 
 void* cortexHermesCreateRuntime() {
   // Teto de heap (ADR-0153): sem limite o Hades cresce o heap em vez de
-  // coletar (working set subia ~1 MB/s de lixo durante o gameplay). 512 MB é
-  // ~8× o live-set medido do jogo (~65 MB) — coleta vira regular e a RAM fica
-  // limitada, alinhado ao alvo de específicação mínima (2 GB de RAM).
-  constexpr unsigned kMaxHeapBytes = 512u << 20;
+  // coletar (working set subia ~1 MB/s de lixo durante o gameplay). Conta a
+  // memória EXTERNA (ArrayBuffers de malha/textura), não só os objetos JS:
+  // 512 MB estourava na fusão estática da carga do crash-bandicoot-racer
+  // (external 553 MB) — 1 GB (ADR-0278), igual em PC/Steam/Xbox (10 GB de RAM).
+  constexpr unsigned kMaxHeapBytes = 1u << 30;
   auto config = hermes::vm::RuntimeConfig::Builder()
                     .withMicrotaskQueue(true)
                     .withGCConfig(hermes::vm::GCConfig::Builder()
