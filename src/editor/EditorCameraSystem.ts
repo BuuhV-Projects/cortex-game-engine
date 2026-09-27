@@ -111,7 +111,7 @@ export class EditorCameraSystem extends System {
     if (this.state.active === this.prevActive) return;
     const isInitial = this.prevActive === null; // primeira sincronização (boot) — sem toast
     this.prevActive = this.state.active;
-    this.hud.setVisible(this.state.active);
+    // attachEditor controla a visibilidade do HUD, inclusive quando a IDE o substitui.
     if (this.state.active) {
       // Entrou em EDIÇÃO: posiciona a câmera livre na pose da câmera do jogo.
       this.camera.position.copy(this.gameCamera.position);
