@@ -69,7 +69,7 @@ import { VegetationGizmoSystem } from './VegetationGizmoSystem.js';
 import type { VegetationPickHook } from './ObjectEditSystem.js';
 import type { Vegetation } from '../scene/Vegetation.js';
 import { SceneLoader } from '../scene/SceneLoader.js';
-import { addSceneNode } from '../scene/SceneBuilder.js';
+import { addSceneNode, isSceneBuilding } from '../scene/SceneBuilder.js';
 import type { Terrain } from '../scene/Terrain.js';
 import type { SceneNode } from '../scene/SceneDefinition.js';
 import { emptySceneFile, type SceneFileV1 } from '../scene/SceneFile.js';
@@ -244,6 +244,8 @@ export function attachEditor(game: Game): GameEditor {
   target.addComponent(new EditableTargetComponent());
 
   const cameraSystem = new EditorCameraSystem(editorState, editorCamera, game.camera, game.input, three, hud);
+  // A pose inicial do jogo só está pronta depois da carga (ex.: kart na largada).
+  cameraSystem.pauseWhen = () => game.isLoading || isSceneBuilding(game.scene);
   addEditorSystem(cameraSystem);
 
   // Contornos só da seleção ou do heightfield em edição (que solta a seleção).

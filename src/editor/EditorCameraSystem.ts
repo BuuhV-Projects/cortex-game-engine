@@ -7,6 +7,7 @@ import { EditableTargetComponent } from '../components/EditableTargetComponent.j
 import { KinematicBodyComponent } from '../components/KinematicBodyComponent.js';
 import type { EditorState } from './EditorState.js';
 import type { EditorHud } from './EditorHud.js';
+import { ensureBoundsTree, isSkinned } from '../physics/raycastAccel.js';
 
 /** Pose salva/teleportada: posição + heading (yaw). */
 export interface EditorPose {
@@ -38,6 +39,7 @@ export class EditorCameraSystem extends System {
   private yaw = 0;
   private pitch = -0.3;
   private readonly raycaster = new THREE.Raycaster();
+  private readonly groundMeshes: THREE.Object3D[] = [];
   private readonly down = new THREE.Vector3(0, -1, 0);
   private readonly forward = new THREE.Vector3();
   private readonly right = new THREE.Vector3();
@@ -62,6 +64,7 @@ export class EditorCameraSystem extends System {
     private readonly mouseSensitivity = 0.0035,
   ) {
     super();
+    this.raycaster.firstHitOnly = true;
   }
 
   override update(entities: Entity[], deltaTime: number): void {
@@ -144,13 +147,27 @@ export class EditorCameraSystem extends System {
     );
     this.right.crossVectors(this.forward, this.worldUp).normalize();
 
+    this.camera.lookAt(
+      this.camera.position.x + this.forward.x,
+      this.camera.position.y + this.forward.y,
+      this.camera.position.z + this.forward.z,
+    );
+
+    const forward = Number(this.input.isKeyDown('w')) - Number(this.input.isKeyDown('s'));
+    const sideways = Number(this.input.isKeyDown('d')) - Number(this.input.isKeyDown('a'));
+    const vertical = Number(this.input.isKeyDown('e')) - Number(this.input.isKeyDown('q'));
+    // Proximidade só regula a translação: parado ou apenas girando não precisa de raios.
+    if (!forward && !sideways && !vertical) return;
+    this.groundMeshes.length = 0;
+    this.collectGroundMeshes(this.ground);
+
     // Desacelera perto de superfícies (estilo Blender): raycast à frente; quanto
     // mais perto a superfície, menor o passo (até ~12% da velocidade). Os helpers
     // de luz/câmera têm raycast no-op, então não contam.
     let proximity = 1;
     this.raycaster.set(this.camera.position, this.forward);
     this.raycaster.far = 40;
-    const ahead = this.raycaster.intersectObject(this.ground, true);
+    const ahead = this.raycaster.intersectObjects(this.groundMeshes, false);
     this.raycaster.far = Infinity;
     if (ahead.length > 0) proximity = Math.min(1, Math.max(0.12, ahead[0]!.distance / 18));
 
@@ -158,24 +175,27 @@ export class EditorCameraSystem extends System {
     // chão abaixo. Perto do chão = 1×; lá em cima cruza o mundo grande rapidinho.
     let distSpeed = 1;
     this.raycaster.set(this.camera.position, this.down);
-    const below = this.raycaster.intersectObject(this.ground, true);
+    const below = this.raycaster.intersectObjects(this.groundMeshes, false);
     if (below.length > 0) distSpeed = Math.min(30, Math.max(1, below[0]!.distance / 12));
 
     const fast = this.input.isKeyDown('Shift');
     const step = this.moveSpeed * (fast ? this.runMultiplier : 1) * dt * proximity * distSpeed;
 
-    if (this.input.isKeyDown('w') || this.input.isKeyDown('W')) this.camera.position.addScaledVector(this.forward, step);
-    if (this.input.isKeyDown('s') || this.input.isKeyDown('S')) this.camera.position.addScaledVector(this.forward, -step);
-    if (this.input.isKeyDown('a') || this.input.isKeyDown('A')) this.camera.position.addScaledVector(this.right, -step);
-    if (this.input.isKeyDown('d') || this.input.isKeyDown('D')) this.camera.position.addScaledVector(this.right, step);
-    if (this.input.isKeyDown('e') || this.input.isKeyDown('E')) this.camera.position.y += step;
-    if (this.input.isKeyDown('q') || this.input.isKeyDown('Q')) this.camera.position.y -= step;
+    this.camera.position.addScaledVector(this.forward, step * forward);
+    this.camera.position.addScaledVector(this.right, step * sideways);
+    this.camera.position.y += step * vertical;
+    this.camera.updateMatrixWorld();
+  }
 
-    this.camera.lookAt(
-      this.camera.position.x + this.forward.x,
-      this.camera.position.y + this.forward.y,
-      this.camera.position.z + this.forward.z,
-    );
+  /** Atualiza a lista durante a navegação, incluindo objetos recém-criados no editor. */
+  private collectGroundMeshes(obj: THREE.Object3D): void {
+    if (!obj.visible || obj.userData['editorInternal'] || obj.userData['cortexOutline'] || isSkinned(obj)) return;
+    if (obj instanceof THREE.Mesh) {
+      // Terreno esculpível/morphs mudam os vértices: não cachear uma árvore da pose antiga.
+      if (!obj.userData['cortexTerrain'] && !obj.morphTargetInfluences?.length) ensureBoundsTree(obj);
+      this.groundMeshes.push(obj);
+    }
+    for (const child of obj.children) this.collectGroundMeshes(child);
   }
 
   private handleTeleport(target: Entity): void {
@@ -262,8 +282,10 @@ export class EditorCameraSystem extends System {
   }
 
   private raycastGroundAt(x: number, z: number): number | null {
+    this.groundMeshes.length = 0;
+    this.collectGroundMeshes(this.ground);
     this.raycaster.set(new THREE.Vector3(x, this.camera.position.y + 500, z), this.down);
-    const hits = this.raycaster.intersectObject(this.ground, true);
+    const hits = this.raycaster.intersectObjects(this.groundMeshes, false);
     if (hits.length === 0) return null;
     return hits[0]!.point.y + 0.5;
   }
