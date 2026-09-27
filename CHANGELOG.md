@@ -1,3 +1,12 @@
+## [0.69.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.69.0...v0.69.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* atalhos duplicados ([801504a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/801504a0c23ccd36bc04d8f8a6bda866bc616cb5))
+* bug de camera fazendo rasterização no modo editor e travando o preview ([93d7086](https://github.com/BuuhV-Projects/cortex-game-engine/commit/93d7086ceb3ac383db75a189499e117b6c997d5f))
+* **editor:** exibir contornos de colisão apenas na seleção ([6f75559](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6f755597f16759f58baf199ff9617522ee03fec6))
+
 # [0.69.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.68.0...v0.69.0) (2026-09-25)
 
 
