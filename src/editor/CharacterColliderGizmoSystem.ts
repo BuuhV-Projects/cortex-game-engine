@@ -10,7 +10,9 @@ import { System } from '../ecs/System.js';
 import { Entity } from '../ecs/Entity.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { TransformComponent } from '../components/TransformComponent.js';
+import { Object3DComponent } from '../components/Object3DComponent.js';
 import type { EditorState } from './EditorState.js';
+import type { EditorSelection } from './EditorSelection.js';
 
 /** Verde estilo Unity Character Controller (cápsula do player/NPC). */
 const COLOR = 0x46d160;
@@ -22,7 +24,7 @@ interface Gizmo {
 }
 
 /**
- * Desenha a **cápsula 3D** de cada {@link CharacterBodyComponent} (player/NPC) como
+ * Desenha a **cápsula 3D** dos {@link CharacterBodyComponent} selecionados como
  * um **contorno de linhas** verde — estilo o gizmo do Character Controller da Unity
  * (2 anéis + 4 verticais + arcos das calotas, limpo, sem triangulação). Mostra a
  * hitbox REAL da física (raio + altura, ancorada nos pés via `footOffset`). É
@@ -40,6 +42,7 @@ export class CharacterColliderGizmoSystem extends System {
   constructor(
     private readonly state: EditorState,
     parent: Object3D,
+    private readonly selection: EditorSelection,
   ) {
     super();
     this.group.name = '__editor_character_gizmos';
@@ -54,6 +57,8 @@ export class CharacterColliderGizmoSystem extends System {
 
     const seen = new Set<Entity>();
     for (const e of entities) {
+      const obj = e.getComponent(Object3DComponent)?.object;
+      if (!obj || !this.selection.isSelected(obj)) continue;
       seen.add(e);
       const body = e.getComponent(CharacterBodyComponent)!;
       let g = this.gizmos.get(e);

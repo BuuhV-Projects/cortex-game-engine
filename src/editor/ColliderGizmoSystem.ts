@@ -11,7 +11,9 @@ import { System } from '../ecs/System.js';
 import { Entity } from '../ecs/Entity.js';
 import { Collider2DComponent, type ColliderShape2D } from '../components/Collider2DComponent.js';
 import { TransformComponent } from '../components/TransformComponent.js';
+import { Object3DComponent } from '../components/Object3DComponent.js';
 import type { EditorState } from './EditorState.js';
+import type { EditorSelection } from './EditorSelection.js';
 
 // Cores do contorno por tipo de collider (RGB hex). **Azul = sólido** (chão/parede
 // — o caso comum, alto contraste contra cenários verdes), âmbar = one-way
@@ -43,7 +45,7 @@ interface Gizmo {
 }
 
 /**
- * Desenha o **contorno (AABB) de cada `Collider2DComponent`** como um **frame
+ * Desenha o **contorno (AABB) dos `Collider2DComponent` selecionados** como um **frame
  * retangular** no plano XY — visível só no **modo editor** (F2). Mostra a hitbox
  * REAL usada pela física (`Transform + offset`, as meias-extensões do componente,
  * **não** a escala do mesh), então dá pra ver o formato do collider e se ele
@@ -66,6 +68,8 @@ export class ColliderGizmoSystem extends System {
   constructor(
     private readonly state: EditorState,
     parent: Object3D,
+    private readonly selection: EditorSelection,
+    private readonly editingEntity: () => Entity | null = () => null,
   ) {
     super();
     this.group.name = '__editor_collider_gizmos';
@@ -82,7 +86,10 @@ export class ColliderGizmoSystem extends System {
     if (!active) return;
 
     const seen = new Set<Entity>();
+    const editing = this.editingEntity();
     for (const e of entities) {
+      const obj = e.getComponent(Object3DComponent)?.object;
+      if (e !== editing && (!obj || !this.selection.isSelected(obj))) continue;
       seen.add(e);
       const col = e.getComponent(Collider2DComponent)!;
       let g = this.gizmos.get(e);
@@ -109,7 +116,7 @@ export class ColliderGizmoSystem extends System {
       (g.mesh.material as MeshBasicMaterial).color.setHex(colorFor(col));
     }
 
-    // Remove gizmos de entidades que sumiram (delete no editor, etc.).
+    // Libera também os desenhos dos objetos desselecionados.
     for (const [e, g] of this.gizmos) {
       if (seen.has(e)) continue;
       this.group.remove(g.mesh);

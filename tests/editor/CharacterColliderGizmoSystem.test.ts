@@ -10,20 +10,33 @@ import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
 import { CharacterBodyComponent } from '../../src/components/CharacterBodyComponent.js';
 import { CharacterColliderGizmoSystem } from '../../src/editor/CharacterColliderGizmoSystem.js';
+import { Object3DComponent } from '../../src/components/Object3DComponent.js';
+import { createEditorSelection } from '../../src/editor/EditorSelection.js';
 
 function setup(active: boolean) {
   const scene = new Scene();
   const state = { active } as { active: boolean };
   const world = new World();
-  world.addSystem(new CharacterColliderGizmoSystem(state as never, scene));
+  const selection = createEditorSelection();
+  const object = new Group();
+  selection.setCurrent(object);
+  world.addSystem(new CharacterColliderGizmoSystem(state as never, scene, selection));
   const e = world.createEntity();
+  e.addComponent(new Object3DComponent(object));
   e.addComponent(new TransformComponent(3, 1, -2, 0));
   e.addComponent(new CharacterBodyComponent({ radius: 0.4, height: 1.8, footOffset: 0 }));
   const group = scene.children.find((c) => c.name === '__editor_character_gizmos') as Group;
-  return { world, e, group, state };
+  return { world, e, group, state, selection };
 }
 
 describe('CharacterColliderGizmoSystem', () => {
+  it('remove a cápsula ao desselecionar', () => {
+    const { world, group, selection } = setup(true);
+    world.tick(16);
+    selection.setCurrent(null);
+    world.tick(16);
+    expect(group.children).toHaveLength(0);
+  });
   it('cria uma cápsula de linhas por CharacterBody no modo editor', () => {
     const { world, group } = setup(true);
     world.tick(16);

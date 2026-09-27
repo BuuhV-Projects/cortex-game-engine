@@ -246,10 +246,10 @@ export function attachEditor(game: Game): GameEditor {
   const cameraSystem = new EditorCameraSystem(editorState, editorCamera, game.camera, game.input, three, hud);
   addEditorSystem(cameraSystem);
 
-  // Contorno dos colliders (AABB) — visível só no modo editor, pra "ver" as hitboxes.
-  addEditorSystem(new ColliderGizmoSystem(editorState, three));
+  // Contornos só da seleção ou do heightfield em edição (que solta a seleção).
+  addEditorSystem(new ColliderGizmoSystem(editorState, three, selection, () => draw?.entity ?? null));
   // Cápsula 3D do player/NPC (CharacterBody), estilo Unity Character Controller.
-  addEditorSystem(new CharacterColliderGizmoSystem(editorState, three));
+  addEditorSystem(new CharacterColliderGizmoSystem(editorState, three, selection));
 
   // ── Overlay de persistência ──────────────────────────────────────────────────
   const overlay: SceneFileV1 = emptySceneFile();
