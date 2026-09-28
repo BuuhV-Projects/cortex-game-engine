@@ -169,7 +169,20 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `size/2` e some no fog — mar "infinito". As cáusticas ficam ancoradas ao mundo
   (compensação de UV em tiles) pra não escorregarem com o plano. `follow: false` no
   nó = água fixa (lago/poça). O `update()` (chamado pelo `SceneHandle.update`) faz
-  o recentro + o fluxo.
+  o recentro + o fluxo. **Modo `cartoon` (ADR-0280 / SPEC-0281):** `Water` delega
+  o material TSL a `CartoonWaterMaterial` e os oito eventos locais a `WaterRipples`.
+  Ondas são deslocamento na GPU, com normais analíticas e espuma de contato;
+  `addRipple` só preenche um slot do pool. Não há passe extra, consulta de profundidade
+  nem simulação volumétrica. Parâmetros ficam no nó `water`; o modo simples é o
+  default compatível. As ondas usam posição mundial e os limites da geometria
+  incluem a amplitude. O exemplo `examples/cartoon-water` compara os modos por
+  `?simpleWater`. `WaterShoreline` extrai o contorno da geometria no nível médio
+  e rasteriza uma máscara limitada a 1024 pixels por lado (ADR-0282/SPEC-0283).
+  O builder gera a máscara antes do merge; o material anima espuma somente nela
+  e nos impactos. Mar aberto e objetos totalmente submersos não geram espuma.
+  Após editar o terreno, chame `Water.refreshShoreline()` ou reconstrua a cena.
+  O detalhe das normais usa ruído suave atenuado pela distância (SPEC-0284):
+  senoides curtas e regulares produziam faixas repetidas de brilho no mar aberto.
 - **Partículas (`Particles.ts`, ADR-0168 / SPEC-0169)** — nó `particles` e a API
   `ParticleEmitter`/`spawnParticles`: fagulha, poeira, fumaça, respingo, clarão.
   Pool de tamanho fixo em arrays planos (nada alocado por partícula) desenhado

@@ -37,6 +37,24 @@ const char* formatToString(WGPUTextureFormat format) {
     case WGPUTextureFormat_BGRA8UnormSrgb: return "bgra8unorm-srgb";
     case WGPUTextureFormat_RGBA8Unorm: return "rgba8unorm";
     case WGPUTextureFormat_RGBA8UnormSrgb: return "rgba8unorm-srgb";
+    case WGPUTextureFormat_RGBA16Float: return "rgba16float";
+    case WGPUTextureFormat_RGBA32Float: return "rgba32float";
+    case WGPUTextureFormat_R8Unorm: return "r8unorm";
+    case WGPUTextureFormat_R16Float: return "r16float";
+    case WGPUTextureFormat_R32Float: return "r32float";
+    case WGPUTextureFormat_RG16Float: return "rg16float";
+    case WGPUTextureFormat_BC7RGBAUnorm: return "bc7-rgba-unorm";
+    case WGPUTextureFormat_BC7RGBAUnormSrgb: return "bc7-rgba-unorm-srgb";
+    case WGPUTextureFormat_BC1RGBAUnorm: return "bc1-rgba-unorm";
+    case WGPUTextureFormat_BC1RGBAUnormSrgb: return "bc1-rgba-unorm-srgb";
+    case WGPUTextureFormat_BC3RGBAUnorm: return "bc3-rgba-unorm";
+    case WGPUTextureFormat_BC3RGBAUnormSrgb: return "bc3-rgba-unorm-srgb";
+    case WGPUTextureFormat_BC4RUnorm: return "bc4-r-unorm";
+    case WGPUTextureFormat_BC5RGUnorm: return "bc5-rg-unorm";
+    case WGPUTextureFormat_Depth16Unorm: return "depth16unorm";
+    case WGPUTextureFormat_Depth24Plus: return "depth24plus";
+    case WGPUTextureFormat_Depth24PlusStencil8: return "depth24plus-stencil8";
+    case WGPUTextureFormat_Depth32Float: return "depth32float";
     default: return "bgra8unorm";
   }
 }

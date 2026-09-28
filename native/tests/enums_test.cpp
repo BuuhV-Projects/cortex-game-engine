@@ -33,9 +33,20 @@ void testFormatFromString() {
 void testFormatToStringRoundtrip() {
   using webgpu::formatFromString;
   using webgpu::formatToString;
-  // Os formatos com toString definido fazem ida-e-volta.
-  CHECK(formatFromString(formatToString(WGPUTextureFormat_BGRA8Unorm)) == WGPUTextureFormat_BGRA8Unorm);
-  CHECK(formatFromString(formatToString(WGPUTextureFormat_RGBA8UnormSrgb)) == WGPUTextureFormat_RGBA8UnormSrgb);
+  // O formato exposto no JS precisa coincidir com a textura real, inclusive HDR.
+  // Caso contrário, os bundles de mipmaps são incompatíveis com o alvo (SPEC-0281).
+  const char* formats[] = {
+    "bgra8unorm", "bgra8unorm-srgb", "rgba8unorm", "rgba8unorm-srgb",
+    "rgba16float", "rgba32float", "r8unorm", "r16float", "r32float", "rg16float",
+    "bc7-rgba-unorm", "bc7-rgba-unorm-srgb", "bc1-rgba-unorm", "bc1-rgba-unorm-srgb",
+    "bc3-rgba-unorm", "bc3-rgba-unorm-srgb", "bc4-r-unorm", "bc5-rg-unorm",
+    "depth16unorm", "depth24plus", "depth24plus-stencil8", "depth32float",
+  };
+  for (const char* name : formats) {
+    const auto format = formatFromString(name);
+    CHECK(std::string(formatToString(format)) == name);
+    CHECK(formatFromString(formatToString(format)) == format);
+  }
 }
 
 }  // namespace tests

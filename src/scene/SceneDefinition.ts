@@ -391,6 +391,13 @@ const particlesNode = z.object({
 });
 const waterNode = z.object({
   type: z.literal('water'),
+  style: z.enum(['simple', 'cartoon']).optional(),
+  waveHeight: z.number().min(0).max(2).optional(),
+  waveLength: z.number().positive().optional(),
+  waveSpeed: z.number().min(0).max(10).optional(),
+  foamStrength: z.number().min(0).max(1).optional(),
+  foamWidth: z.number().positive().max(5).optional(),
+  segments: z.number().int().min(16).max(256).optional(),
   y: z.number().optional(),
   color: colorSchema.optional(),
   causticsUrl: z.string().optional(),

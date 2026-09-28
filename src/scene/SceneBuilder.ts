@@ -921,6 +921,8 @@ async function buildSceneInner(
   }
 
   bootMark('buildScene: física/ECS pronta');
+  // Captura as margens antes da fusão, enquanto os limites de cada objeto são pequenos.
+  for (const water of waters) water.refreshShoreline();
   await tick('merge', 1);
   // ── Merge estático (SPEC-0120) — POR ÚLTIMO: colliders/entidades já derivaram
   // dos nós individuais; daqui pra frente só o render enxerga a fusão. Default:
@@ -1138,6 +1140,13 @@ async function instantiate(
       break;
     case 'water': {
       const water = new Water(scene, {
+        style: node.style,
+        waveHeight: node.waveHeight,
+        waveLength: node.waveLength,
+        waveSpeed: node.waveSpeed,
+        foamStrength: node.foamStrength,
+        foamWidth: node.foamWidth,
+        segments: node.segments,
         y: node.y,
         color: node.color,
         causticsUrl: node.causticsUrl,

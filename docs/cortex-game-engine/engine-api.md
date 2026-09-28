@@ -982,12 +982,29 @@ Pros meshes entrarem nas sombras, marque `castShadow`/`receiveShadow` (o `instan
 acima já faz isso pros `.glb`). Constantes de shadow map também exportadas:
 `PCFSoftShadowMap`, `PCFShadowMap`, `BasicShadowMap`, `VSMShadowMap`.
 
-## Água (experimental)
+## Água
 
 `Water` — plano de água cartoon com cáusticas opcionais. A textura entra como
 **emissiveMap** (áreas claras "acendem" a água puxando-a pro branco) e desliza em
 dois eixos. Recebe sombras. Aproximação visual barata (sem reflexão/refração/foam/
-ondas reais); pra um mar realista seria preciso shader custom WebGPU.
+ondas reais) no modo padrão `simple`.
+
+O modo optativo `style: 'cartoon'` usa ondas na GPU, normais animadas, espuma de
+contato e brilho estilizado do céu. Parâmetros: `waveHeight` (0–2 m),
+`waveLength` (metros, positivo), `waveSpeed` (0–10), `foamStrength` (0–1),
+`foamWidth` (alcance da margem, maior que 0 até 5 m, default 0.8),
+`segments` (16–256 subdivisões por lado). O nó JSON `water` aceita os mesmos
+campos, além de `size`, `y`, `color` e `follow`.
+
+`water.addRipple({ x, z }, strength)` cria uma ondulação local por até três
+segundos. São oito slots reutilizáveis em coordenadas mundiais; impactos novos
+substituem os antigos. Retorna `false` no modo simples. `water.dispose()` remove
+a malha e libera os recursos. `water.refreshShoreline()` calcula a máscara das
+interseções do cenário com o nível médio da água; chame após carregar/mover o
+terreno. O `buildScene` já chama no carregamento, antes da fusão estática.
+O mar aberto não recebe espuma. A máscara é estática, sem passe de profundidade;
+não acompanha obstáculos móveis automaticamente. Não há refração nem reflexão
+planar; o efeito não altera a física.
 
 ```ts
 import { Water } from 'cortex-game-engine'

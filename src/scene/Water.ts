@@ -8,17 +8,34 @@ import {
   type OrthographicCamera,
   type PerspectiveCamera,
   type Texture,
+  type Object3D,
 } from 'three';
 import { Scene } from '../core/Scene.js';
 import { AssetLoader } from '../core/AssetLoader.js';
+import { CartoonWaterMaterial, CARTOON_WATER_DEFAULTS } from './CartoonWaterMaterial.js';
+import { debug } from '../core/debug.js';
 
 /** Opções de {@link Water}. Todas opcionais — os defaults dão uma água cartoon. */
 export interface WaterOptions {
+  /** `simple` preserva o material original; `cartoon` ativa ondas e espuma na GPU. */
+  style?: 'simple' | 'cartoon';
+  /** Amplitude máxima das ondas em metros, de 0 a 2. Default `0.18`. */
+  waveHeight?: number;
+  /** Comprimento da onda principal em metros, maior que zero. Default `16`. */
+  waveLength?: number;
+  /** Multiplicador de velocidade das ondas, de 0 a 10. Default `1`. */
+  waveSpeed?: number;
+  /** Intensidade da espuma nas margens e impactos, de 0 a 1. Default `0.7`. */
+  foamStrength?: number;
+  /** Alcance da espuma a partir do contato, em metros, maior que 0 até 5. Default `0.8`. */
+  foamWidth?: number;
+  /** Subdivisões por lado no modo cartoon, inteiro de 16 a 256. Default `128`. */
+  segments?: number;
   /** Lado do plano (quadrado), em unidades. Default `400`. */
   size?: number;
   /** Altura (Y) da superfície. Default `0`. */
   y?: number;
-  /** Cor base da água. Default azul-céu pastel (`0xa8d8f5`). */
+  /** Cor base: `0xa8d8f5` no modo simples e `0x079dc2` no cartoon. */
   color?: ColorRepresentation;
   /**
    * URL (relativa à raiz do projeto) de uma textura de cáusticas — o brilho
@@ -65,9 +82,9 @@ export interface WaterOptions {
  * **cáusticas** tiled e animada (offset deslizante) pra simular o brilho da luz
  * na superfície.
  *
- * Não é um shader de água físico (sem reflexão/refração/foam/ondas reais) — é
- * uma aproximação visual barata, boa pra protótipos e cenas low-poly. Pra um
- * mar realista, um shader custom WebGPU (TSL) seria necessário.
+ * O modo `style: 'cartoon'` usa ondas analíticas e espuma de contato na GPU,
+ * com perturbações locais via {@link Water.addRipple}. Não simula volume nem
+ * refração; o brilho do céu é uma aproximação estilizada, sem passe de reflexão.
  *
  * @example
  * // Água parada lisa:
@@ -88,7 +105,9 @@ export class Water {
   /** O `Mesh` do plano de água, já adicionado à cena. */
   readonly mesh: Mesh;
 
-  private readonly material: MeshStandardMaterial;
+  private readonly material: MeshStandardMaterial | CartoonWaterMaterial['material'];
+  private readonly cartoon: CartoonWaterMaterial | null;
+  private readonly shorelineRoot: Object3D;
   private map: Texture | null = null;
   private readonly flowX: number;
   private readonly flowY: number;
@@ -99,6 +118,7 @@ export class Water {
   private readonly tileWorld: number;
 
   constructor(scene: Scene, options: WaterOptions = {}) {
+    this.shorelineRoot = scene.getThreeScene();
     const {
       size = 400,
       y = 0,
@@ -119,7 +139,8 @@ export class Water {
     this.tileWorld = size / repeat;
     // color = parte escura da água; emissive + emissiveMap = ADICIONA branco
     // onde a textura de cáusticas é clara (áreas brilhantes "acendem" a água).
-    this.material = new MeshStandardMaterial({
+    this.cartoon = options.style === 'cartoon' ? new CartoonWaterMaterial(options) : null;
+    this.material = this.cartoon?.material ?? new MeshStandardMaterial({
       color: new Color(color),
       emissive: new Color(0xffffff),
       emissiveIntensity: causticsUrl ? causticsIntensity : 0,
@@ -127,8 +148,19 @@ export class Water {
       metalness,
     });
 
-    this.mesh = new Mesh(new PlaneGeometry(size, size), this.material);
-    this.mesh.rotation.x = -Math.PI / 2;
+    const segments = this.cartoon ? options.segments ?? CARTOON_WATER_DEFAULTS.segments : 1;
+    const geometry = new PlaneGeometry(size, size, segments, segments);
+    if (this.cartoon) geometry.rotateX(-Math.PI / 2);
+    this.mesh = new Mesh(geometry, this.material);
+    if (!this.cartoon) this.mesh.rotation.x = -Math.PI / 2;
+    if (this.cartoon) {
+      const height = options.waveHeight ?? CARTOON_WATER_DEFAULTS.waveHeight;
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      geometry.boundingBox!.min.y -= height;
+      geometry.boundingBox!.max.y += height;
+      geometry.boundingSphere!.radius += height;
+    }
     this.mesh.position.y = y;
     this.mesh.name = 'Water';
     this.mesh.receiveShadow = true; // sombras das peças se projetam na água
@@ -137,7 +169,7 @@ export class Water {
     this.mesh.userData['cortexWater'] = true;
     scene.add(this.mesh);
 
-    if (causticsUrl) {
+    if (causticsUrl && !this.cartoon) {
       // Carrega as cáusticas em segundo plano; aplica como emissiveMap quando
       // pronta — não bloqueia o resto do setup da cena.
       new AssetLoader()
@@ -150,14 +182,13 @@ export class Water {
           this.material.needsUpdate = true;
           this.map = tex;
         })
-        .catch((err) => console.warn('[Water] cáusticas não carregaram:', err));
+        .catch((err) => debug('water', 'Cáusticas não carregaram:', err));
     }
   }
 
   /**
-   * Anima as cáusticas deslizando o offset da textura nos dois eixos. Chame uma
-   * vez por frame passando o delta em **segundos** (`deltaTime / 1000`). No-op
-   * se não houver textura de cáusticas.
+   * Atualiza ondas, perturbações ou cáusticas e acompanha a câmera configurada.
+   * Chame uma vez por quadro passando o delta em **segundos** (`deltaTime / 1000`).
    *
    * @param deltaSeconds - Tempo decorrido desde o último frame, em segundos.
    */
@@ -168,6 +199,7 @@ export class Water {
       this.mesh.position.x = this.camera.position.x;
       this.mesh.position.z = this.camera.position.z;
     }
+    this.cartoon?.update(deltaSeconds);
     if (!this.map) return;
     // Fluxo animado das cáusticas.
     this.offsetX = (this.offsetX + deltaSeconds * this.flowX) % 1;
@@ -183,5 +215,34 @@ export class Water {
       v -= this.mesh.position.z / this.tileWorld;
     }
     this.map.offset.set(u, v);
+  }
+
+  /**
+   * Cria uma ondulação local em coordenadas do mundo, sem alocar malhas.
+   * O pool guarda até oito impactos; um novo substitui o mais antigo.
+   * @returns `false` no modo simples, que não oferece perturbações.
+   */
+  addRipple(position: { x: number; z: number }, strength = 1): boolean {
+    if (!this.cartoon) return false;
+    this.cartoon.ripples.add(position.x, position.z, strength);
+    return true;
+  }
+
+  /**
+   * Reconstrói a máscara de espuma onde a geometria visível cruza o nível médio.
+   * Chame após carregar ou mover terreno; `buildScene` chama no carregamento.
+   * Não acompanha objetos móveis automaticamente. No modo simples não faz nada.
+   */
+  refreshShoreline(): void {
+    this.cartoon?.refreshShoreline(this.shorelineRoot, this.mesh.position.y);
+  }
+
+  /** Remove a superfície e libera a geometria, o material e a textura carregada. */
+  dispose(): void {
+    this.mesh.removeFromParent();
+    this.mesh.geometry.dispose();
+    if (this.cartoon) this.cartoon.dispose();
+    else this.material.dispose();
+    this.map?.dispose();
   }
 }

@@ -6,16 +6,16 @@
 
 # Class: Water
 
-Defined in: [src/scene/Water.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L87)
+Defined in: [src/scene/Water.ts:104](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L104)
 
 Água simples (experimental) pra cenários de ilhas/plataforma: um plano
 horizontal grande com material PBR cartoon e, opcionalmente, uma textura de
 **cáusticas** tiled e animada (offset deslizante) pra simular o brilho da luz
 na superfície.
 
-Não é um shader de água físico (sem reflexão/refração/foam/ondas reais) — é
-uma aproximação visual barata, boa pra protótipos e cenas low-poly. Pra um
-mar realista, um shader custom WebGPU (TSL) seria necessário.
+O modo `style: 'cartoon'` usa ondas analíticas e espuma de contato na GPU,
+com perturbações locais via [Water.addRipple](#addripple). Não simula volume nem
+refração; o brilho do céu é uma aproximação estilizada, sem passe de reflexão.
 
 ## Examples
 
@@ -43,7 +43,7 @@ const sea = new Water(scene, { y: -6, camera: game.camera, causticsUrl: '…' })
 
 > **new Water**(`scene`, `options?`): `Water`
 
-Defined in: [src/scene/Water.ts:101](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L101)
+Defined in: [src/scene/Water.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L120)
 
 #### Parameters
 
@@ -65,21 +65,83 @@ Defined in: [src/scene/Water.ts:101](https://github.com/BuuhV-Projects/cortex-ga
 
 > `readonly` **mesh**: `Mesh`
 
-Defined in: [src/scene/Water.ts:89](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L89)
+Defined in: [src/scene/Water.ts:106](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L106)
 
 O `Mesh` do plano de água, já adicionado à cena.
 
 ## Methods
 
+### addRipple()
+
+> **addRipple**(`position`, `strength?`): `boolean`
+
+Defined in: [src/scene/Water.ts:225](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L225)
+
+Cria uma ondulação local em coordenadas do mundo, sem alocar malhas.
+O pool guarda até oito impactos; um novo substitui o mais antigo.
+
+#### Parameters
+
+##### position
+
+###### x
+
+`number`
+
+###### z
+
+`number`
+
+##### strength?
+
+`number` = `1`
+
+#### Returns
+
+`boolean`
+
+`false` no modo simples, que não oferece perturbações.
+
+***
+
+### dispose()
+
+> **dispose**(): `void`
+
+Defined in: [src/scene/Water.ts:241](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L241)
+
+Remove a superfície e libera a geometria, o material e a textura carregada.
+
+#### Returns
+
+`void`
+
+***
+
+### refreshShoreline()
+
+> **refreshShoreline**(): `void`
+
+Defined in: [src/scene/Water.ts:236](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L236)
+
+Reconstrói a máscara de espuma onde a geometria visível cruza o nível médio.
+Chame após carregar ou mover terreno; `buildScene` chama no carregamento.
+Não acompanha objetos móveis automaticamente. No modo simples não faz nada.
+
+#### Returns
+
+`void`
+
+***
+
 ### update()
 
 > **update**(`deltaSeconds`): `void`
 
-Defined in: [src/scene/Water.ts:164](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L164)
+Defined in: [src/scene/Water.ts:195](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Water.ts#L195)
 
-Anima as cáusticas deslizando o offset da textura nos dois eixos. Chame uma
-vez por frame passando o delta em **segundos** (`deltaTime / 1000`). No-op
-se não houver textura de cáusticas.
+Atualiza ondas, perturbações ou cáusticas e acompanha a câmera configurada.
+Chame uma vez por quadro passando o delta em **segundos** (`deltaTime / 1000`).
 
 #### Parameters
 
