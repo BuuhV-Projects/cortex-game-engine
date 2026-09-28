@@ -50,8 +50,8 @@ void* cortexHermesCreateRuntime() {
   // coletar (working set subia ~1 MB/s de lixo durante o gameplay). Conta a
   // memória EXTERNA (ArrayBuffers de malha/textura), não só os objetos JS:
   // 512 MB estourava na fusão estática da carga do crash-bandicoot-racer
-  // (external 553 MB) — 1 GB (ADR-0278), igual em PC/Steam/Xbox (10 GB de RAM).
-  constexpr unsigned kMaxHeapBytes = 1u << 30;
+  // (external 553 MB) — teto ampliado para 2 GB, igual em PC/Steam/Xbox.
+  constexpr unsigned kMaxHeapBytes = 2u << 30;
   auto config = hermes::vm::RuntimeConfig::Builder()
                     .withMicrotaskQueue(true)
                     .withGCConfig(hermes::vm::GCConfig::Builder()
