@@ -1,3 +1,15 @@
+# [0.70.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.69.1...v0.70.0) (2026-09-28)
+
+
+### Bug Fixes
+
+* **native:** subir o teto do heap do Hermes para 2 GB ([b567615](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b567615b987894638a782871115856460d4c4e6c))
+
+
+### Features
+
+* add animated cartoon water with shoreline foam ([0e976df](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0e976dfc54c8cff846dbbdc862ddbf580c344d01))
+
 ## [0.69.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.69.0...v0.69.1) (2026-09-27)
 
 
