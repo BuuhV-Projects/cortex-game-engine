@@ -24,7 +24,7 @@ import * as THREE from 'three';
 // mock nos testes. No bundle, um alias `three` → `three/webgpu` unifica tudo numa
 // só instância do three (evita o bug de dual-instance). Ver vite.engine.config.ts.
 import { WebGPURenderer } from 'three/webgpu';
-import { debug } from './debug.js';
+import { setKtx2Renderer } from './loadKtx2.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ export interface Viewport {
  * receber `PerspectiveCamera` (gameplay) ou `OrthographicCamera`/câmera
  * de editor (ADR-0026, SceneEditor).
  */
-export { Camera, PerspectiveCamera, OrthographicCamera } from 'three';
+export { Camera, OrthographicCamera, PerspectiveCamera } from 'three';
 
 // ─── Classe Renderer ───────────────────────────────────────────────────────────
 
@@ -131,6 +131,7 @@ export class Renderer {
     }
 
     this._renderer = new WebGPURenderer({ canvas, antialias, forceWebGL });
+    setKtx2Renderer(this._renderer);
     this._renderer.setSize(width, height);
 
     // Split-screen exige autoClear=false para que renders sucessivos de

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { readFileSync } from 'node:fs'
 
 /**
  * Build do bundle de **desenvolvimento** do engine (`index.dev.js`): runtime +
@@ -11,6 +12,15 @@ import { resolve } from 'path'
  * (os dois escrevem em dist-engine/, rodados em sequência).
  */
 export default defineConfig({
+  plugins: [{
+    name: 'basis-transcoder-assets',
+    generateBundle() {
+      for (const name of ['basis_transcoder.js', 'basis_transcoder.wasm']) {
+        this.emitFile({ type: 'asset', fileName: `basis/${name}`,
+          source: readFileSync(resolve(__dirname, 'node_modules/three/examples/jsm/libs/basis', name)) })
+      }
+    },
+  }],
   resolve: {
     alias: [{ find: /^three$/, replacement: 'three/webgpu' }],
   },

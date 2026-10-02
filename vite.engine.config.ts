@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { readFileSync } from 'node:fs'
 
 /**
  * Build do engine em library mode, gerando um bundle único ESM com `three`
@@ -10,6 +11,15 @@ import { resolve } from 'path'
  * AI/CLI ficam fora (ver src/index-runtime.ts).
  */
 export default defineConfig({
+  plugins: [{
+    name: 'basis-transcoder-assets',
+    generateBundle() {
+      for (const name of ['basis_transcoder.js', 'basis_transcoder.wasm']) {
+        this.emitFile({ type: 'asset', fileName: `basis/${name}`,
+          source: readFileSync(resolve(__dirname, 'node_modules/three/examples/jsm/libs/basis', name)) })
+      }
+    },
+  }],
   resolve: {
     // Redireciona `three` (bare) para o build `three/webgpu`, que é um superset
     // (todo o Three.Core + WebGPURenderer + node materials). Assim o renderer,
@@ -39,4 +49,3 @@ export default defineConfig({
     },
   },
 })
-

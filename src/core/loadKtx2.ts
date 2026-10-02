@@ -1,5 +1,5 @@
 /**
- * Carregamento de texturas **KTX2 / Basis** (ADR-0108) no host CortexNative.
+ * Carregamento de texturas **KTX2 / Basis** no host nativo e no Studio.
  *
  * O KTX2 é comprimido (~4–8× menor que PNG em disco) e é o formato dos assets
  * **cozidos no export** (a pasta `assets/` fonte fica PNG; o `export-game.mjs`
@@ -7,9 +7,8 @@
  * decodifica pra RGBA — o Hermes não roda WASM, então o `KTX2Loader` do three
  * não serve aqui.
  *
- * **Escopo:** só o caminho NATIVO. No Studio o jogo carrega os assets FONTE
- * (PNG), então não precisa de KTX2 lá. Um export **web** (fora do escopo do
- * PRD-0004) precisaria do `KTX2Loader`/WASM — reintroduzir se/quando for o caso.
+ * No Studio, o KTX2Loader do Three usa WASM e workers locais ao bundle.
+ * A seleção do formato comprimido usa as capacidades do renderer real.
  */
 import {
   CompressedTexture,
@@ -23,6 +22,31 @@ import {
   type LoadingManager,
   type Texture,
 } from 'three';
+import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
+import type { WebGPURenderer } from 'three/webgpu';
+
+let browserRenderer: WebGPURenderer | null = null;
+let browserLoader: KTX2Loader | null = null;
+const TRANSCODER_WORKERS = 2;
+
+/** Registra o renderer antes da carga; o transcoder aguarda seu init. */
+export function setKtx2Renderer(renderer: WebGPURenderer): void {
+  if (!hasNativeKtx2()) browserRenderer = renderer;
+}
+
+/** Cria workers somente quando uma textura KTX2 realmente é solicitada. */
+async function loadKtx2Browser(url: string): Promise<Texture> {
+  const renderer = browserRenderer;
+  if (!renderer) throw new Error('loadKtx2: create a Renderer before loading browser KTX2 textures');
+  await renderer.init();
+  if (!browserLoader) {
+    browserLoader = new KTX2Loader()
+      .setTranscoderPath(new URL('./basis/', import.meta.url).href)
+      .setWorkerLimit(TRANSCODER_WORKERS);
+  }
+  browserLoader.detectSupport(renderer);
+  return browserLoader.loadAsync(url);
+}
 
 interface NativeKtx2Result {
   width: number;
@@ -93,22 +117,17 @@ export async function loadKtx2Native(url: string): Promise<Texture> {
 }
 
 /**
- * Carrega uma textura `.ktx2` (só no host nativo). Lança se não houver
- * transcoder — no Studio use os assets FONTE (PNG), não KTX2.
+ * Carrega uma textura `.ktx2` com o transcoder do ambiente atual.
  */
 export async function loadKtx2(url: string): Promise<Texture> {
-  if (!hasNativeKtx2()) {
-    throw new Error(`loadKtx2: KTX2 só é suportado no host nativo (use PNG no Studio) — "${url}"`);
-  }
-  return loadKtx2Native(url);
+  return hasNativeKtx2() ? loadKtx2Native(url) : loadKtx2Browser(url);
 }
 
 /**
  * Loader de KTX2 no formato que o `GLTFLoader` do three espera (`setKTX2Loader`)
- * — carrega as texturas **embutidas em GLB** (`KHR_texture_basisu`) no host. O
+ * — carrega as texturas **embutidas em GLB** (`KHR_texture_basisu`). O
  * `GLTFLoader` passa uma URL `blob:` (bytes do bufferView), o mesmo mecanismo
- * que já carrega PNG embutido no host (M1). Só caminho nativo — ver escopo no
- * topo do módulo.
+ * que já carrega PNG embutido no host (M1) e no navegador.
  */
 export class CortexKtx2Loader extends Loader {
   constructor(manager?: LoadingManager) {
@@ -122,11 +141,7 @@ export class CortexKtx2Loader extends Loader {
     _onProgress?: (event: ProgressEvent) => void,
     onError?: (err: unknown) => void,
   ): void {
-    if (!hasNativeKtx2()) {
-      onError?.(new Error('CortexKtx2Loader: KTX2 em GLB só no host nativo (use PNG no Studio)'));
-      return;
-    }
-    loadKtx2Native(url)
+    loadKtx2(url)
       .then((tex) => onLoad(tex))
       .catch((e) => onError?.(e));
   }

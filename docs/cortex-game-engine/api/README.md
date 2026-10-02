@@ -514,6 +514,7 @@
 - [serializeIni](functions/serializeIni.md)
 - [setDebug](functions/setDebug.md)
 - [setFog](functions/setFog.md)
+- [setKtx2Renderer](functions/setKtx2Renderer.md)
 - [setMatte](functions/setMatte.md)
 - [setShadows](functions/setShadows.md)
 - [setupFirstPerson](functions/setupFirstPerson.md)

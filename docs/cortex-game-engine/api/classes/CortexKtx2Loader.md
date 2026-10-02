@@ -6,13 +6,12 @@
 
 # Class: CortexKtx2Loader
 
-Defined in: [src/core/loadKtx2.ts:113](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L113)
+Defined in: [src/core/loadKtx2.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L132)
 
 Loader de KTX2 no formato que o `GLTFLoader` do three espera (`setKTX2Loader`)
-— carrega as texturas **embutidas em GLB** (`KHR_texture_basisu`) no host. O
+— carrega as texturas **embutidas em GLB** (`KHR_texture_basisu`). O
 `GLTFLoader` passa uma URL `blob:` (bytes do bufferView), o mesmo mecanismo
-que já carrega PNG embutido no host (M1). Só caminho nativo — ver escopo no
-topo do módulo.
+que já carrega PNG embutido no host (M1) e no navegador.
 
 ## Extends
 
@@ -24,7 +23,7 @@ topo do módulo.
 
 > **new CortexKtx2Loader**(`manager?`): `CortexKtx2Loader`
 
-Defined in: [src/core/loadKtx2.ts:114](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L114)
+Defined in: [src/core/loadKtx2.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L133)
 
 #### Parameters
 
@@ -46,7 +45,7 @@ Defined in: [src/core/loadKtx2.ts:114](https://github.com/BuuhV-Projects/cortex-
 
 > **load**(`url`, `onLoad`, `_onProgress?`, `onError?`): `void`
 
-Defined in: [src/core/loadKtx2.ts:119](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L119)
+Defined in: [src/core/loadKtx2.ts:138](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L138)
 
 Chamado pelo GLTFLoader por textura KTX2. `url` é um `blob:` (bufferView).
 

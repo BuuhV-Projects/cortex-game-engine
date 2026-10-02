@@ -683,6 +683,8 @@ async function vendorEngine(projectPath: string): Promise<void> {
   // então o editor fica fora do build de produção do jogo (ADR-0042).
   await cp(join(appPath, 'dist-engine', 'index.js'), join(vendorDir, 'index.js'))
   await cp(join(appPath, 'dist-engine', 'index.dev.js'), join(vendorDir, 'index.dev.js'))
+  // O Studio precisa do transcoder local para GLBs com KHR_texture_basisu.
+  await cp(join(appPath, 'dist-engine', 'basis'), join(vendorDir, 'basis'), { recursive: true })
   // Chunk separado do Rapier (WASM ~2 MB): o index.js/index.dev.js o carregam via
   // dynamic import `./rapier.js` SÓ quando há física (TDR-0002). Vai ao lado deles.
   await cp(join(appPath, 'dist-engine', 'rapier.js'), join(vendorDir, 'rapier.js'))

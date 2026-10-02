@@ -8,10 +8,9 @@
 
 > **loadKtx2**(`url`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: [src/core/loadKtx2.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L99)
+Defined in: [src/core/loadKtx2.ts:122](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L122)
 
-Carrega uma textura `.ktx2` (só no host nativo). Lança se não houver
-transcoder — no Studio use os assets FONTE (PNG), não KTX2.
+Carrega uma textura `.ktx2` com o transcoder do ambiente atual.
 
 ## Parameters
 
