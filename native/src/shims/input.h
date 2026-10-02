@@ -8,8 +8,9 @@
 
 namespace shims {
 
-// Registra __cortexInput (getGamepads) no global JS.
-void registerInput(napi_env env);
+// Registra __cortexInput (getGamepads, setPointerLock) no global JS. A janela
+// é a que entra/sai do modo relativo do mouse (pointer lock, SPEC-0285).
+void registerInput(napi_env env, SDL_Window* window);
 
 // Processa um evento SDL de input. Retorna true se o evento era de input
 // (teclado/mouse/gamepad) e foi tratado.

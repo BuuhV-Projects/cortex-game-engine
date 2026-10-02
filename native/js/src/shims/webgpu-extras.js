@@ -1,6 +1,7 @@
 // Complementos JS por cima do shim WebGPU NATIVO (src/webgpu/): constantes
 // da spec, features/limits que o Three consulta no adapter/device, e a
 // canvas fake que devolve o gpuContext nativo.
+import { createEventBus } from './event-target.js';
 
 const DEFAULT_LIMITS = {
   maxTextureDimension1D: 8192,
@@ -85,6 +86,7 @@ export function installHostCanvas() {
 }
 
 export function createCanvas(width, height) {
+  const bus = createEventBus();
   return {
     width,
     height,
@@ -94,9 +96,10 @@ export function createCanvas(width, height) {
     getContext(type) {
       return type === 'webgpu' ? globalThis.gpuContext : null;
     },
-    addEventListener() {},
-    removeEventListener() {},
-    dispatchEvent() { return true; },
+    // Bus real (SPEC-0285): click/mousedown no canvas pedem o pointer lock.
+    addEventListener: bus.addEventListener,
+    removeEventListener: bus.removeEventListener,
+    dispatchEvent: bus.dispatchEvent,
     getRootNode() { return null; },
   };
 }

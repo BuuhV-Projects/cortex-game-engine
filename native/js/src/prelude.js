@@ -10,6 +10,7 @@ import {
   createCanvas,
 } from './shims/webgpu-extras.js';
 import { installInputBridge } from './shims/input-bridge.js';
+import { installPointerLock } from './shims/pointer-lock.js';
 import { installTextShims } from './shims/text.js';
 import { installNetShims } from './shims/net.js';
 import { installStorageShims } from './shims/storage.js';
@@ -27,5 +28,6 @@ installStorageShims();
 installImageShims();
 installWebAudioLite();
 installHostCanvas();
+installPointerLock(globalThis.__cortexCanvas);
 
 globalThis.__cortexCreateCanvas = createCanvas;
