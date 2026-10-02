@@ -8,7 +8,7 @@
 
 > **hasNativeKtx2**(): `boolean`
 
-Defined in: [src/core/loadKtx2.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L63)
+Defined in: [src/core/loadKtx2.ts:108](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L108)
 
 `true` no host CortexNative (o transcoder nativo está disponível).
 

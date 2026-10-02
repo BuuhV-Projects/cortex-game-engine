@@ -268,7 +268,7 @@ int main(int argc, char** argv) {
     if (metricsOn) shims::registerPerfTrace(js.env(), baseDir.c_str());
     shims::registerTimers(js.env());
     shims::registerAnimationFrame(js.env());
-    shims::registerInput(js.env());
+    shims::registerInput(js.env(), window);
     shims::registerFiles(js.env(), baseDir);
     shims::registerFilesAsync(js.env());  // __cortexReadFileAsync + workers (M-perf-3)
     shims::registerUserStorage(js.env(), game.id);

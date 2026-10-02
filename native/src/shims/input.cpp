@@ -1,5 +1,6 @@
 #include "input.h"
 
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,7 @@ namespace {
 constexpr double kWheelLineHeight = 100.0;
 
 std::vector<SDL_Gamepad*> g_gamepads;
+SDL_Window* g_window = nullptr;
 
 // ── teclado: SDL → nomes da API de browser (key/code) ──────────────────────
 
@@ -147,6 +149,31 @@ void dispatchWheelEvent(napi_env env, const SDL_MouseWheelEvent& wheel) {
   napi_close_handle_scope(env, scope);
 }
 
+// Janela perdeu o foco → `blur` no window. O shim de pointer lock solta o lock
+// aqui; sem isso o SDL3 religaria o modo relativo sozinho na volta do foco
+// (o browser não religa — SPEC-0285).
+void dispatchBlurEvent(napi_env env) {
+  napi_handle_scope scope = nullptr;
+  napi_open_handle_scope(env, &scope);
+  napi_value event = njs::makeObject(env);
+  setString(env, event, "type", "blur");
+  dispatchToJs(env, event);
+  napi_close_handle_scope(env, scope);
+}
+
+// __cortexInput.setPointerLock(on): modo relativo do SDL3 = cursor escondido e
+// preso, com xrel/yrel seguindo no SDL_EVENT_MOUSE_MOTION (→ movementX/Y).
+napi_value jsSetPointerLock(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value arg = nullptr;
+  napi_get_cb_info(env, info, &argc, &arg, nullptr, nullptr);
+  bool on = false;
+  if (argc > 0) napi_get_value_bool(env, arg, &on);
+  if (g_window && !SDL_SetWindowRelativeMouseMode(g_window, on))
+    std::printf("[input] SDL_SetWindowRelativeMouseMode falhou: %s\n", SDL_GetError());
+  return njs::undefined(env);
+}
+
 // ── gamepads: SDL_Gamepad → snapshot no layout "standard" do W3C ───────────
 
 void openGamepad(SDL_JoystickID id) {
@@ -247,11 +274,13 @@ napi_value jsGetGamepads(napi_env env, napi_callback_info) {
 
 }  // namespace
 
-void registerInput(napi_env env) {
+void registerInput(napi_env env, SDL_Window* window) {
+  g_window = window;
   napi_value global = nullptr;
   napi_get_global(env, &global);
   napi_value input = njs::makeObject(env);
   njs::setMethod(env, input, "getGamepads", jsGetGamepads);
+  njs::setMethod(env, input, "setPointerLock", jsSetPointerLock);
   napi_set_named_property(env, global, "__cortexInput", input);
 }
 
@@ -274,6 +303,9 @@ bool handleSdlInputEvent(napi_env env, const SDL_Event& event) {
       return true;
     case SDL_EVENT_MOUSE_WHEEL:
       dispatchWheelEvent(env, event.wheel);
+      return true;
+    case SDL_EVENT_WINDOW_FOCUS_LOST:
+      dispatchBlurEvent(env);
       return true;
     case SDL_EVENT_GAMEPAD_ADDED:
       openGamepad(event.gdevice.which);

@@ -20,6 +20,8 @@ import {
   LinearMipmapLinearFilter,
   Loader,
   type LoadingManager,
+  type Mesh,
+  type Object3D,
   type Texture,
 } from 'three';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
@@ -59,6 +61,49 @@ interface NativeKtx2Result {
 }
 type NativeKtx2Fn = (bytes: Uint8Array) => NativeKtx2Result | null;
 
+/** Marca, em `userData`, as texturas BC7 montadas por {@link loadKtx2Native}. */
+export const NATIVE_KTX2_FLAG = 'cortexNativeKtx2';
+
+/**
+ * Solta os dados em CPU dos mips KTX2 nativos de `root` depois que a GPU os
+ * recebe (SPEC-0286). O GLTFLoader cria um clone da textura por material e os
+ * clones compartilham os objetos de mip; por isso os dados só somem quando
+ * TODAS as texturas que apontam pro mesmo mip já subiram. Textura nunca
+ * desenhada mantém os dados (ainda pode subir depois).
+ *
+ * Depois de liberada, a textura não pode ser reenviada (`needsUpdate`).
+ */
+export function releaseKtx2DataAfterUpload(root: Object3D): void {
+  const groups = new Map<object, Set<CompressedTexture>>();
+  root.traverse((child) => {
+    const materials = (child as Mesh).material;
+    if (!materials) return;
+    for (const material of Array.isArray(materials) ? materials : [materials]) {
+      for (const value of Object.values(material as unknown as Record<string, unknown>)) {
+        const texture = value as CompressedTexture | null;
+        if (!texture?.isCompressedTexture || texture.userData[NATIVE_KTX2_FLAG] !== true) continue;
+        const firstMip = texture.mipmaps[0] as object | undefined;
+        if (!firstMip) continue;
+        let group = groups.get(firstMip);
+        if (!group) groups.set(firstMip, (group = new Set()));
+        group.add(texture);
+      }
+    }
+  });
+  for (const group of groups.values()) {
+    const pending = new Set(group);
+    for (const texture of group) {
+      const previous = texture.onUpdate;
+      texture.onUpdate = (updated: Texture) => {
+        previous?.(updated);
+        pending.delete(texture);
+        if (pending.size > 0) return;
+        for (const mip of texture.mipmaps as unknown as { data: Uint8Array | null }[]) mip.data = null;
+      };
+    }
+  }
+}
+
 /** `true` no host CortexNative (o transcoder nativo está disponível). */
 export function hasNativeKtx2(): boolean {
   return typeof (globalThis as Record<string, unknown>)['__cortexTranscodeKtx2'] === 'function';
@@ -96,6 +141,7 @@ export async function loadKtx2Native(url: string): Promise<Texture> {
     tex.minFilter = mipmaps.length > 1 ? LinearMipmapLinearFilter : LinearFilter;
     tex.magFilter = LinearFilter;
     tex.generateMipmaps = false; // GPU não gera mips de formato comprimido
+    tex.userData[NATIVE_KTX2_FLAG] = true;
     tex.needsUpdate = true;
     return tex;
   }

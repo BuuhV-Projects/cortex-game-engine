@@ -570,6 +570,17 @@ level.json (nó)  ──buildScene──▶  Object3D (mesh)  + Entidade ECS (co
 
 ## 8. Armadilhas conhecidas (já mordemos)
 
+- **Host nativo: GLB carregado guarda cópia em RAM do que já está na GPU.** O
+  `gltf.parser` retém o GLB inteiro e os mips KTX2 transcodificados ficam em
+  `mipmaps[i].data` depois do upload — tudo memória externa do Hermes (teto 2 GB).
+  Um mapa com streaming de LOD (crash-racer, 14 assets × 3 LODs) chegou a
+  2,19 GB e caiu com `HermesGC: OOM`. `AssetLoader.loadGLTF` agora remove o
+  parser e chama `releaseKtx2DataAfterUpload` (SPEC-0286): 1,76 GB → 349 MB nas
+  42 combinações. Consequência: textura KTX2 de GLB **não** pode ser reenviada
+  (`needsUpdate`) depois do upload. Ao medir memória, use o `external` do
+  `perf-log.txt`; os contadores `arraybuffers:` da mesma linha são ACUMULADOS,
+  não memória viva.
+
 - **Glifo exótico na UI aparece no Studio e VIRA CAIXINHA no export.** O
   rasterizador nativo (`text_raster.cpp`) tem UMA fonte (`Roboto-Medium.ttf`, 2772
   codepoints) e **nenhum fallback**: codepoint fora da `cmap` desenha o `.notdef`.
