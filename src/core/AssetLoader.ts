@@ -17,7 +17,7 @@ import { yieldOnBudget } from './frameYield.js';
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-import { CortexKtx2Loader } from './loadKtx2.js';
+import { CortexKtx2Loader, releaseKtx2DataAfterUpload } from './loadKtx2.js';
 
 // ─── Re-exportação de GLTF ────────────────────────────────────────────────────
 
@@ -191,6 +191,11 @@ export class AssetLoader {
     // Filtragem anisotrópica nos materiais do modelo (SPEC-0160): sem isto,
     // linhas finas dos decks viram moiré em pente em ângulo rasante.
     applyModelTextureAnisotropy(gltf.scene);
+    // Cópias em CPU do que já vai pra GPU (SPEC-0286): o parser retém o GLB
+    // inteiro e os mips KTX2 ficam em RAM depois do upload. No host, isso é
+    // memória externa do Hermes — um mapa com LODs estourava o teto de 2 GB.
+    Reflect.deleteProperty(gltf, 'parser');
+    releaseKtx2DataAfterUpload(gltf.scene);
     this._cache.set(url, gltf);
     return gltf;
   }
