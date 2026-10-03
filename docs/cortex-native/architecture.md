@@ -170,6 +170,17 @@ Native (que roda milhares de libs sobre Hermes em produção):
 
 ## Armadilhas conhecidas
 
+- **Objeto que SÓ SE MOVE pagava o refresh completo do `three`** (ADR-0290 /
+  SPEC-0291). O `NodeMaterialObserver` testa a matriz primeiro e sai na
+  primeira diferença, então cada peça móvel (karts rivais) reavaliava ~55 update
+  nodes e 16 bindings por frame: ~180 µs por peça no Hermes. Hoje
+  `src/render/TransformOnlyRefresh.ts` (lado JS, ligado por padrão no host)
+  atualiza só os nodes que não leem material vigiado e escreve o UBO de objeto
+  num `writeBuffer`. Para medir o caminho antigo no mesmo bundle:
+  `?transformOnlyRefresh=0`. Para diagnosticar POR QUE um objeto refaz, não
+  presuma "porque andou": o material dos rivais NÃO tinha nodes (`hasNode`
+  falso), e com o mundo parado eles custavam zero. Classifique pelo caminho do
+  observer (probe `moving-objects`, `-Diagnostic`).
 - **Cena com streaming: o registro de geometria tem de ACOMPANHAR o espelho**
   (SPEC-0289). O `CasterGeometryRegistry` varria a cena só no primeiro frame;
   todo LOD que o streaming trazia depois ficava fora dele, e o gate recusava o

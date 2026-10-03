@@ -951,6 +951,45 @@ geometria, não grava comandos, e não tem este defeito.
 
 Corrigir a câmera dentro do bundle no host é frente aberta.
 
+## 8e4. Refresh só de transformação (`src/render/TransformOnlyRefresh.ts`) — ADR-0290
+
+No `three`, um objeto cuja matriz de mundo mudou paga o **refresh completo**
+(`_nodes.updateForRender` + `_bindings.updateForRender` + `updateBefore`),
+porque o `NodeMaterialObserver.equals()` testa a matriz primeiro e retorna sem
+olhar o resto. No host (Hermes sem JIT) isso dava ~180 µs por peça móvel. Os 5
+karts rivais do crash-racer (~37 peças contando o jogador) custavam ~2 ms de
+render só nisso.
+
+O `Renderer` instala, depois do `init()`, um wrapper em
+`renderer._nodes.needsRefresh` (padrão: só no host; `?transformOnlyRefresh=0|1`
+sobrepõe):
+
+- sincroniza a matriz no dado do observer e chama o `needsRefresh` original.
+  Se ele ainda disser `true`, mudou outra coisa e o refresh completo segue;
+- senão, atualiza só os update nodes de objeto que **não** são
+  `MaterialReferenceNode` de propriedade vigiada (`monitor.refreshUniforms`),
+  compara só os uniforms dos UBOs não compartilhados que não vêm desses nodes,
+  e faz **um** `writeBuffer` por UBO (faixas fundidas);
+- devolve `false`: pipeline e draw seguem como para um objeto parado.
+
+Delegam ao `three` sem tocar em nada: bundle, `static`, `hasNode`, skinned,
+primeira vez, **primeiro objeto do monitor no `render()`** (é ele quem atualiza os
+grupos compartilhados e os `updateBefore` do passe), MRT de velocidade, e plano
+com `updateBefore`/`updateAfter` por objeto.
+
+**Armadilha (por que a exclusão é obrigatória):** os nodes de material são
+instâncias COMPARTILHADAS e guardam o valor do último material que passou por
+eles. Comparar um uniform sem atualizar a fonte escreveria a cor de outro
+objeto no UBO deste. Por isso quem não é atualizado também não é comparado.
+
+**Contrato:** o objeto recebe o que o `three` faria se ele estivesse parado, mais
+a transformação. Propriedade de material fora de `refreshUniforms`, mudada sem
+`needsUpdate`, não é reavaliada (era só por acaso, quando o objeto andava);
+nodes fora da exclusão (UV de textura, `onObjectUpdate`, referências
+genéricas) continuam reavaliados. Depende de internos do `three` 0.184: um bump
+exige rodar a paridade por pixel do probe (`?transformOnlyRefresh=0` contra o
+padrão, simulação congelada no mesmo frame).
+
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
 Duas fusões diferentes, com propósitos opostos, no mesmo módulo
@@ -1070,6 +1109,7 @@ no logo da splash enquanto montava os seis carros.
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
+| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |

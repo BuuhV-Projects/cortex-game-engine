@@ -25,6 +25,13 @@ import * as THREE from 'three';
 // só instância do three (evita o bug de dual-instance). Ver vite.engine.config.ts.
 import { WebGPURenderer } from 'three/webgpu';
 import { setKtx2Renderer } from './loadKtx2.js';
+import { isNativeHost } from '../scene/StaticMerge.js';
+import {
+  installTransformOnlyRefresh,
+  transformOnlyRefreshRequested,
+  type TransformOnlyRefresh,
+  type TransformOnlyRendererLike,
+} from '../render/TransformOnlyRefresh.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -107,6 +114,11 @@ export class Renderer {
   private _initialized = false;
   /** Promessa do init do backend — resolvida quando `render()` pode ser chamado. */
   private readonly _ready: Promise<void>;
+  /**
+   * Caminho rápido do refresh só de transformação (ADR-0290), instalado depois
+   * do init; `null` quando desligado ou não instalável. O probe lê `stats`.
+   */
+  private _transformOnly: TransformOnlyRefresh | null = null;
 
   /**
    * Cria o renderer, dispara o init assíncrono do backend em background e
@@ -150,6 +162,12 @@ export class Renderer {
       .init()
       .then(() => {
         this._initialized = true;
+        // Objetos que só se movem não pagam o refresh completo do three
+        // (ADR-0290). Ligado por padrão só no host: o Studio segue no caminho
+        // do three (ADR-0237).
+        if (transformOnlyRefreshRequested(isNativeHost())) {
+          this._transformOnly = installTransformOnlyRefresh(this._renderer as unknown as TransformOnlyRendererLike);
+        }
       })
       .catch((err: unknown) => {
         console.error('Renderer: falha ao inicializar o backend WebGPU/WebGL2:', err);
