@@ -58,6 +58,19 @@ export interface ThirdPersonControlOptions {
    * fixo mesmo indo pelo `setupThirdPerson` (que injeta `game.actions`).
    */
   actions?: InputActions | null;
+  /**
+   * **Câmera de ombro** (m, SPEC-0297): desloca alvo e câmera ao longo da direita
+   * da câmera (XZ). Positivo = ombro direito, e o personagem sai do centro da tela
+   * (onde fica a mira de um jogo de tiro). Default 0. Mutável em runtime via
+   * {@link ThirdPersonControlSystem.shoulderOffset}.
+   */
+  shoulderOffset?: number;
+  /**
+   * **Modo mira** (SPEC-0297): `true` faz o personagem encarar a direção da câmera
+   * todo frame (strafe), em vez de virar pra onde anda. Default false. Mutável em
+   * runtime via {@link ThirdPersonControlSystem.faceCamera}.
+   */
+  faceCamera?: boolean;
 }
 
 const TOP_CLAMP = (70 * Math.PI) / 180; // Unity TopClamp 70°
@@ -124,6 +137,11 @@ export class ThirdPersonControlSystem extends System {
   private readonly jumpBlocked?: () => boolean;
   private readonly acts?: InputActions;
 
+  /** Deslocamento lateral da câmera (m) — ver {@link ThirdPersonControlOptions.shoulderOffset}. */
+  shoulderOffset: number;
+  /** Personagem encara a câmera — ver {@link ThirdPersonControlOptions.faceCamera}. */
+  faceCamera: boolean;
+
   private yaw = 0;
   private pitch = 0.35; // levemente de cima
   /**
@@ -174,6 +192,8 @@ export class ThirdPersonControlSystem extends System {
     this.orbitMode = options.orbit ?? 'free';
     this.yaw = options.initialYaw ?? 0;
     this.pitch = options.initialPitch ?? 0.35;
+    this.shoulderOffset = options.shoulderOffset ?? 0;
+    this.faceCamera = options.faceCamera ?? false;
 
     if (typeof document !== 'undefined') {
       this.onCanvasMouseDown = (): void => {
@@ -311,6 +331,11 @@ export class ThirdPersonControlSystem extends System {
       : k.isKeyDown('Shift') || k.isKeyDown('shift') || (gp?.isButtonDown(pad, 7) ?? false);
     const dirLen = Math.hypot(mx, mz);
     let movingSpeed = 0;
+    const smoothT = this.rotSmooth > 0 ? 1 - Math.exp(-dt / this.rotSmooth) : 1;
+    if (this.faceCamera) {
+      // Modo mira: encara a frente da câmera (forward = (-sin,-cos) → yaw da câmera).
+      t.rotationY = approachAngle(t.rotationY, this.yaw + this.facingOffset, smoothT);
+    }
     if (dirLen > 0 && inputMag > 0) {
       const dx = mx / dirLen, dz = mz / dirLen;
       const speed = (sprint ? this.sprintSpeed : this.moveSpeed) * inputMag; // analógico
@@ -318,9 +343,10 @@ export class ThirdPersonControlSystem extends System {
       t.z += dz * speed * dt;
       movingSpeed = speed;
       // Vira o personagem suavemente pra direção do movimento (forward = (-sin,-cos)).
-      const targetYaw = Math.atan2(-dx, -dz) + this.facingOffset;
-      const smoothT = this.rotSmooth > 0 ? 1 - Math.exp(-dt / this.rotSmooth) : 1;
-      t.rotationY = approachAngle(t.rotationY, targetYaw, smoothT);
+      if (!this.faceCamera) {
+        const targetYaw = Math.atan2(-dx, -dz) + this.facingOffset;
+        t.rotationY = approachAngle(t.rotationY, targetYaw, smoothT);
+      }
     }
 
     // ── Pulo (borda de pressão): Espaço ou A (botão 0) ────────────────────────
@@ -345,7 +371,12 @@ export class ThirdPersonControlSystem extends System {
   private placeCamera(t: TransformComponent, self?: THREE.Object3D): void {
     const cp = Math.cos(this.pitch);
     this.camBack.set(Math.sin(this.yaw) * cp, Math.sin(this.pitch), Math.cos(this.yaw) * cp);
-    this.lookTarget.set(t.x, t.y + this.camHeight, t.z);
+    // Ombro: desloca o alvo pela direita da câmera (cos, -sin) no plano XZ.
+    this.lookTarget.set(
+      t.x + Math.cos(this.yaw) * this.shoulderOffset,
+      t.y + this.camHeight,
+      t.z - Math.sin(this.yaw) * this.shoulderOffset,
+    );
 
     // Colisão (spring arm): se algo (chão/árvore/parede) fica entre o alvo e a câmera,
     // puxa a câmera pra dentro — nunca atravessa o chão. Raio do alvo na direção da câmera.

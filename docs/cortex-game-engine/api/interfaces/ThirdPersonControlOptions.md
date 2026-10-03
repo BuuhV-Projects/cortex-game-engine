@@ -46,6 +46,18 @@ Altura do alvo que a câmera mira (m, acima dos pés). Default 1.5.
 
 ***
 
+### faceCamera?
+
+> `optional` **faceCamera?**: `boolean`
+
+Defined in: [src/systems/ThirdPersonControlSystem.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L73)
+
+**Modo mira** (SPEC-0297): `true` faz o personagem encarar a direção da câmera
+todo frame (strafe), em vez de virar pra onde anda. Default false. Mutável em
+runtime via [ThirdPersonControlSystem.faceCamera](../classes/ThirdPersonControlSystem.md#facecamera).
+
+***
+
 ### facingOffset?
 
 > `optional` **facingOffset?**: `number`
@@ -184,6 +196,19 @@ Acima de qual velocidade troca walk→run (u/s). Default 3.5.
 Defined in: [src/systems/ThirdPersonControlSystem.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L21)
 
 Sensibilidade do mouse (rad/px). Default 0.0022.
+
+***
+
+### shoulderOffset?
+
+> `optional` **shoulderOffset?**: `number`
+
+Defined in: [src/systems/ThirdPersonControlSystem.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L67)
+
+**Câmera de ombro** (m, SPEC-0297): desloca alvo e câmera ao longo da direita
+da câmera (XZ). Positivo = ombro direito, e o personagem sai do centro da tela
+(onde fica a mira de um jogo de tiro). Default 0. Mutável em runtime via
+[ThirdPersonControlSystem.shoulderOffset](../classes/ThirdPersonControlSystem.md#shoulderoffset).
 
 ***
 

@@ -263,3 +263,48 @@ describe('ThirdPersonControlSystem — transições run_stop / run_jump', () => 
     expect(anim.played).toContain('run_stop');
   });
 });
+
+describe('ThirdPersonControlSystem — ombro e modo mira (SPEC-0297)', () => {
+  function camSetup(opts = {}) {
+    const world = new World();
+    const camera = new THREE.PerspectiveCamera();
+    const sys = new ThirdPersonControlSystem(camera, noKeys as never, {} as HTMLElement, opts, fakePad() as never);
+    world.addSystem(sys);
+    const e = world.createEntity();
+    e.addComponent(new TransformComponent(0, 0, 0, 0));
+    e.addComponent(new CharacterBodyComponent());
+    return { world, e, camera, sys };
+  }
+
+  it('default: câmera centrada no personagem (x = 0 com yaw 0)', () => {
+    const { world, camera } = camSetup();
+    world.tick(16);
+    expect(camera.position.x).toBeCloseTo(0, 6);
+  });
+
+  it('shoulderOffset positivo leva a câmera pra direita (+X com yaw 0)', () => {
+    const { world, camera } = camSetup({ shoulderOffset: 0.6 });
+    world.tick(16);
+    expect(camera.position.x).toBeCloseTo(0.6, 6);
+  });
+
+  it('shoulderOffset é mutável em runtime', () => {
+    const { world, camera, sys } = camSetup();
+    sys.shoulderOffset = -0.5;
+    world.tick(16);
+    expect(camera.position.x).toBeCloseTo(-0.5, 6);
+  });
+
+  it('faceCamera: parado, o personagem vira pra frente da câmera', () => {
+    const { world, e } = camSetup({ faceCamera: true, initialYaw: 1, rotationSmoothTime: 0 });
+    world.tick(16);
+    expect(e.getComponent(TransformComponent)!.rotationY).toBeCloseTo(1, 6);
+  });
+
+  it('sem faceCamera, parado não gira', () => {
+    const { world, e } = camSetup({ initialYaw: 1, rotationSmoothTime: 0 });
+    world.tick(16);
+    expect(e.getComponent(TransformComponent)!.rotationY).toBeCloseTo(0, 6);
+  });
+});
+

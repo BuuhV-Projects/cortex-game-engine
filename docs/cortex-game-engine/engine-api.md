@@ -179,6 +179,18 @@ O player no JSON: `{ "type":"model", "id":"player", "url":"assets/characters/pla
 são auto-mapeadas pelos nomes dos clipes (idle/walk/run/jump/fall). Opção `facingOffset`
 se o modelo nascer virado ao contrário.
 
+**Tiro em 3ª pessoa (SPEC-0297):** `shoulderOffset` (m, + = ombro direito) tira o
+personagem do centro da tela (onde fica a mira) e `faceCamera: true` faz ele encarar
+a câmera (strafe). Ambos são propriedades mutáveis do sistema. Mirar = trocar em runtime:
+
+```ts
+const { control } = setupThirdPerson(game, { control: { shoulderOffset: 0.6 } })
+// segurando "mirar": aproxima, encara a mira; soltou: volta
+control.faceCamera = aiming
+control.setOrbit('free', { distance: aiming ? 2.4 : 4.5 })
+// 1ª pessoa "de graça": distância mínima esconde o corpo (occlusion fade)
+```
+
 ### Top-down (farm sim / RPG estilo Stardew)
 
 `setupTopDown(game, { readMove })` liga o estilo **vista de cima 3/4**: movimento no
