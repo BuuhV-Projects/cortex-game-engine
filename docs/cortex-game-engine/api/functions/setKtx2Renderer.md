@@ -8,7 +8,7 @@
 
 > **setKtx2Renderer**(`renderer`): `void`
 
-Defined in: [src/core/loadKtx2.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L35)
+Defined in: [src/core/loadKtx2.ts:36](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L36)
 
 Registra o renderer antes da carga; o transcoder aguarda seu init.
 
