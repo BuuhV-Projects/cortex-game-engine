@@ -137,3 +137,70 @@ describe('Vegetation', () => {
     expect(veg.count).toBe(1);
   });
 });
+
+/** Culling por esfera das instâncias reais (SPEC-0299). */
+describe('Vegetation — culling (SPEC-0299)', () => {
+  const FAR_X = 500;
+  const BOX_HALF_DIAGONAL = Math.sqrt(3) / 2; // raio da esfera de um cubo 1×1×1
+  const EPSILON = 1e-6;
+
+  function sub(veg: Vegetation): InstancedMesh {
+    return veg.group.children[0] as InstancedMesh;
+  }
+
+  /** A esfera da malha contém a esfera da geometria em cada instância. */
+  function expectCoversAll(mesh: InstancedMesh, points: Vector3[]): void {
+    const sphere = mesh.boundingSphere!;
+    for (const p of points) {
+      expect(sphere.center.distanceTo(p) + BOX_HALF_DIAGONAL).toBeLessThanOrEqual(sphere.radius + EPSILON);
+    }
+  }
+
+  it('liga frustumCulled em todas as sub-malhas', () => {
+    const veg = new Vegetation(makePlaceholderVegetation('tree'));
+    for (const child of veg.group.children) expect((child as InstancedMesh).frustumCulled).toBe(true);
+  });
+
+  it('a esfera cobre todas as instâncias', () => {
+    const veg = new Vegetation(source());
+    veg.setInstances([0, 0, 0, 0, 1, 10, 0, 5, 0, 1, -7, 2, -3, 0, 1]);
+    expectCoversAll(sub(veg), [new Vector3(0, 0, 0), new Vector3(10, 0, 5), new Vector3(-7, 2, -3)]);
+  });
+
+  it('cresce ao adicionar instância longe e encolhe ao remover', () => {
+    const veg = new Vegetation(source());
+    veg.setInstances([0, 0, 0, 0, 1, 2, 0, 0, 0, 1]);
+    const small = sub(veg).boundingSphere!.radius;
+
+    veg.add(FAR_X, 0, 0, 0, 1);
+    expect(sub(veg).boundingSphere!.radius).toBeGreaterThan(small);
+    expectCoversAll(sub(veg), [new Vector3(0, 0, 0), new Vector3(FAR_X, 0, 0)]);
+
+    veg.removeAt(2);
+    expect(sub(veg).boundingSphere!.radius).toBeCloseTo(small);
+
+    veg.add(FAR_X, 0, 0, 0, 1);
+    veg.removeNear(FAR_X, 0, 1);
+    expect(sub(veg).boundingSphere!.radius).toBeCloseTo(small);
+  });
+
+  it('com 0 instâncias não quebra (esfera vazia)', () => {
+    const veg = new Vegetation(source());
+    const mesh = sub(veg);
+    mesh.computeBoundingSphere(); // o que o three faz sob demanda no teste de frustum
+    expect(mesh.boundingSphere!.isEmpty()).toBe(true);
+    veg.setInstances([1, 0, 1, 0, 1]);
+    veg.removeAt(0);
+    expect(mesh.count).toBe(0);
+    expect(mesh.boundingSphere!.isEmpty()).toBe(true);
+  });
+
+  it('setSource recalcula a esfera no modelo novo', () => {
+    const veg = new Vegetation(source());
+    veg.setInstances([0, 0, 0, 0, 1, FAR_X, 0, 0, 0, 1]);
+    veg.setSource(source());
+    const mesh = sub(veg);
+    expect(mesh.frustumCulled).toBe(true);
+    expectCoversAll(mesh, [new Vector3(0, 0, 0), new Vector3(FAR_X, 0, 0)]);
+  });
+});
