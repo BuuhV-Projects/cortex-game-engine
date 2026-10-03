@@ -584,6 +584,14 @@ const sceneDefinitionSchema = z.object({
       /** Intensidade da luz do HDRI (IBL). Default 1. */
       hdriIntensity: z.number().optional(),
       /**
+       * URL de um panorama equiretangular 2:1 (PNG/JPG/KTX2) — céu desenhado como
+       * fundo visível. Vence o fundo do degradê/HDRI; a luz só muda com
+       * `skyboxLighting` (ADR-0295/SPEC-0296).
+       */
+      skybox: z.string().optional(),
+      /** O panorama também ilumina a cena (environment/IBL). Default `false`. */
+      skyboxLighting: z.boolean().optional(),
+      /**
        * Céu GRADIENTE procedural (sem arquivo) — usado quando NÃO há `hdri`. Defina ao
        * menos `skyTop`/`skyMiddle` pra ligar (ex.: céu limpo de Brasília: top azul forte,
        * middle azul pálido). Vira fundo visível + luz suave (IBL).

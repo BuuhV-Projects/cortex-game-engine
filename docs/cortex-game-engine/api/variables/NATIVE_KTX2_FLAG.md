@@ -8,6 +8,6 @@
 
 > `const` **NATIVE\_KTX2\_FLAG**: `"cortexNativeKtx2"` = `'cortexNativeKtx2'`
 
-Defined in: [src/core/loadKtx2.ts:96](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L96)
+Defined in: [src/core/loadKtx2.ts:97](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L97)
 
 Marca, em `userData`, as texturas BC7 montadas por [loadKtx2Native](../functions/loadKtx2Native.md).

@@ -62,6 +62,18 @@ export interface GradientSkyOptions {
   environmentIntensity?: number;
 }
 
+/** Opções do {@link Skybox.fromPanorama} (céu desenhado PNG/JPG/KTX2). */
+export interface PanoramaSkyOptions {
+  /**
+   * Também iluminar a cena com o panorama (environment/IBL). Sem isto ele é só
+   * o fundo visível e a luz continua vindo do céu já instalado (ADR-0295).
+   * @default false
+   */
+  lighting?: boolean;
+  /** Intensidade da luz do panorama, quando `lighting`. @default 1 */
+  environmentIntensity?: number;
+}
+
 /**
  * Carrega um `.hdr` como `DataTexture` half-float.
  *
@@ -87,6 +99,38 @@ async function loadHdrTexture(url: string): Promise<THREE.DataTexture> {
 }
 
 export class Skybox {
+  /**
+   * Aplica um **panorama equiretangular** já carregado (PNG/JPG/KTX2 2:1, céu
+   * desenhado) como fundo da cena — e, com `lighting`, também como environment.
+   * Declarado na cena por `outdoorLighting.skybox` (SPEC-0296).
+   *
+   * @param scene Cena onde aplicar.
+   * @param texture Textura do panorama (ex.: de `loadTexture(url, false)`).
+   * @param options Luz opcional e intensidade.
+   * @returns A própria textura, já configurada.
+   *
+   * @example
+   * Skybox.fromPanorama(scene, await loadTexture('assets/sky/ceu.png', false));
+   */
+  static fromPanorama(
+    scene: Scene,
+    texture: THREE.Texture,
+    options: PanoramaSkyOptions = {},
+    renderer?: Renderer,
+  ): THREE.Texture {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    // PNG de céu é cor: sem sRGB o three o trata como linear e o céu sai lavado.
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
+    const three = scene.getThreeScene();
+    three.background = texture;
+    if (options.lighting) {
+      applyEnvironment(scene, texture, renderer);
+      three.environmentIntensity = options.environmentIntensity ?? 1;
+    }
+    return texture;
+  }
+
   /**
    * Carrega um HDRI equiretangular e o aplica como iluminação (e fundo) da cena.
    *

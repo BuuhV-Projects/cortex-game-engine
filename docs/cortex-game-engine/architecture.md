@@ -83,6 +83,9 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
 
 - **Superfícies toon e céu (SPEC-0195):** `preserveGloss` mantém clones PBR em
   superfícies metálicas/polidas dentro do preset toon (contornos preservados).
+  Céu da cena: cor → degradê (`skyTop`…) → HDRI (`hdri`, fundo + IBL); por cima,
+  `outdoorLighting.skybox` (panorama PNG/JPG, só fundo; luz com `skyboxLighting`,
+  ADR-0295). O template de projeto novo traz `assets/sky/ceu-tropical.png`.
   O skybox gradiente segue equirectUV: V=0 chão, V=1 zênite; não inverter as linhas
   da DataTexture sem também mudar sua convenção de amostragem.
   Seu panorama é 2:1, altura mínima 32: PMREM deriva a resolução da largura / 4;

@@ -654,6 +654,12 @@ async function buildSceneInner(
           environmentIntensity: outdoor.skyGradientIntensity ?? 0.5,
         }, options.renderer);
       }
+      // Céu desenhado (SPEC-0296): fundo por cima do degradê; luz só se pedida.
+      if (outdoor.skybox) {
+        Skybox.fromPanorama(scene, await loadTexture(outdoor.skybox, false), {
+          lighting: outdoor.skyboxLighting,
+        }, options.renderer);
+      }
     }
   }
 

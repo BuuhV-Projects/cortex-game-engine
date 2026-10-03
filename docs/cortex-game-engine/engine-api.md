@@ -1376,6 +1376,10 @@ Combine, e calibre pra casar com a referência:
   objeto dela, `fog: false` no nó (ou `setFog(obj, false)`) — ver abaixo.
 - **Céu/ambiente realista** — `Skybox.fromHDRI(game.scene, 'assets/sky.hdr', { environmentIntensity })`
   (ilumina a cena com o HDRI — muda tudo numa cena realista).
+- **Céu desenhado (nuvens)** — no JSON: `"outdoorLighting": { ..., "skybox": "assets/sky/ceu-tropical.png" }`
+  (panorama equiretangular 2:1 PNG/JPG/KTX2; só fundo, a luz segue o céu da cena;
+  `"skyboxLighting": true` para ele também iluminar). Projeto novo já vem com
+  `assets/sky/ceu-tropical.png`. Em código: `Skybox.fromPanorama(game.scene, await loadTexture(url, false))`.
 - **Pós-processamento** — `PostFX` ligado via `game.setPostFX(...)` (bloom dá o
   "glow" cartoon, vignette foca o olhar, tone mapping/exposição fecham o look):
 
