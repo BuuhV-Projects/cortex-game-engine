@@ -36,6 +36,7 @@ Para tarefas pequenas (um trecho, um ajuste), siga o pipeline inline sem delegar
 | 3 | Montar a cena data-driven (física no nó, coords de mundo reais) | **montar-jogo** (+ **fase-por-trechos**) |
 | 4 | **Comportamento** aos obstáculos (mecânicas do `asset.mechanic` do kit) | scripts do kit |
 | 5 | **Validar**: `validate_scene` 0 erros → typecheck + gaps 3D → **4 vistas** (topo/frente/lado/iso) → playtest, em LOOP | validate_scene / render_level_views / render_level_iso |
+| 5b | **Performance no host nativo**: volta com IA, orçamento por categoria e checklist (sombra em cascata, assets refinados, instancing, materiais) | **validar-performance** |
 | 6 | Fechar: doc (ADR/spec), memória, commit | — |
 
 ## Princípios que o pacote impõe
@@ -55,3 +56,4 @@ Para tarefas pequenas (um trecho, um ajuste), siga o pipeline inline sem delegar
 - **montar-jogo** — método de construção na engine (inventário→design→validação em camadas).
 - **fase-por-trechos** — compor fases de trechos fatiados com lint verificável.
 - **process-asset-kit / -2d** — kit bruto → kit curado (`kit.json` + thumbnails).
+- **validar-performance** — mede a fase no host nativo sem se enganar e aponta onde cortar.
