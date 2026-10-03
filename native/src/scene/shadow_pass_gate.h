@@ -50,7 +50,11 @@ enum class ShadowGateRefusal : uint8_t {
   kVsmShadowMap,
   /** Caster skinado: o bounding sphere mente com o rig e o passe não aplica o esqueleto. */
   kSkinnedCaster,
-  /** `InstancedMesh`: o registro descreve uma instância, não o conjunto. */
+  /**
+   * `InstancedMesh` cujas matrizes de instância o host NÃO tem
+   * ({@link InstancePresence}). Com elas o passe desenha o lote instanciado
+   * (SPEC-0289); sem elas desenharia uma instância só, na origem do lote.
+   */
   kInstancedCaster,
   /**
    * Material em array: a RenderList do `three` gera um item POR GRUPO da
@@ -110,6 +114,12 @@ struct ShadowGateFrame {
  */
 using GeometryPresence = bool (*)(int32_t geometryId, void* userData);
 
+/**
+ * O host tem as matrizes de instância deste nó (SPEC-0289)? `nullptr` = não há
+ * a quem perguntar, e todo `InstancedMesh` recusa — o comportamento anterior.
+ */
+using InstancePresence = bool (*)(int32_t node, void* userData);
+
 /** Veredito do gate, com o que basta para explicá-lo no log. */
 struct ShadowGateResult {
   bool accepted = false;
@@ -129,6 +139,15 @@ struct ShadowGateResult {
   int32_t refusedCasters = 0;
   /** Casters avaliados. */
   int32_t totalCasters = 0;
+  /**
+   * Primeiro caster (na ordem do enumerador) que caiu em {@link reason}, ou
+   * -1 quando o motivo é do frame inteiro ou o gate aceitou (SPEC-0289).
+   *
+   * Existe para o relato dizer QUAL objeto recusou: uma contagem sozinha não
+   * distingue "LOD recém-carregado" de "colisão invisível permanente", e é essa
+   * diferença que decide a correção.
+   */
+  int32_t firstOffender = -1;
 };
 
 /**
@@ -138,12 +157,13 @@ struct ShadowGateResult {
  * @param casters   saída do {@link ShadowCasterEnumerator}
  * @param frame     fatos do frame que só o JS enxerga
  * @param presence  consulta ao registro de geometria (ver {@link GeometryPresence})
- * @param userData  repassado a `presence` sem ser tocado
+ * @param userData  repassado a `presence` e `instances` sem ser tocado
+ * @param instances consulta às matrizes de instância (ver {@link InstancePresence})
  */
 ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
                                         const std::vector<NodeIndex>& casters,
                                         const ShadowGateFrame& frame, GeometryPresence presence,
-                                        void* userData);
+                                        void* userData, InstancePresence instances = nullptr);
 
 /** Nome do motivo, para o relato por log sair legível sem depurador. */
 const char* shadowGateRefusalName(ShadowGateRefusal reason);
