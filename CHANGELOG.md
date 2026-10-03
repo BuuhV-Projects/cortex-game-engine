@@ -1,3 +1,15 @@
+## [0.71.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.71.0...v0.71.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **ktx2:** barra final no caminho do transcoder no Studio (SPEC-0292) ([682a15e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/682a15e286c3083b0bfb673b4d3919ce31656361))
+
+
+### Performance Improvements
+
+* **engine:** refresh so de transformacao para objetos que so se movem (ADR-0290, SPEC-0291) ([0419e3e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0419e3ef1ae4b038c734dd2d142ab51a9a5ae6e5))
+
 # [0.71.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.70.0...v0.71.0) (2026-10-03)
 
 
