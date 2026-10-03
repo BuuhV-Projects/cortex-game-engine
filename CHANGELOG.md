@@ -1,3 +1,10 @@
+# [0.73.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.72.0...v0.73.0) (2026-10-03)
+
+
+### Features
+
+* **scene:** skybox panoramico declarado na cena e no template de projeto novo (ADR-0295, SPEC-0296) ([43b7f51](https://github.com/BuuhV-Projects/cortex-game-engine/commit/43b7f51e415c688242815837f1661c613746a1f5))
+
 # [0.72.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.71.1...v0.72.0) (2026-10-03)
 
 
