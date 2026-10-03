@@ -18,6 +18,7 @@ import {
   UnsignedByteType,
   LinearFilter,
   LinearMipmapLinearFilter,
+  NoColorSpace,
   Loader,
   type LoadingManager,
   type Mesh,
@@ -218,7 +219,14 @@ export class CortexKtx2Loader extends Loader {
     onError?: (err: unknown) => void,
   ): void {
     loadKtx2(url)
-      .then((tex) => onLoad(tex))
+      .then((tex) => {
+        // O slot decide, não o arquivo: o GLTFLoader marca sRGB só em cor
+        // (base/emissivo). O KTX2Loader do browser herdava a marca do DFD, e
+        // pacotes com normal/metal-rugosidade marcados sRGB saíam com manchas
+        // escuras — o nativo já devolvia sem espaço de cor (SPEC-0294).
+        tex.colorSpace = NoColorSpace;
+        onLoad(tex);
+      })
       .catch((e) => onError?.(e));
   }
 }
