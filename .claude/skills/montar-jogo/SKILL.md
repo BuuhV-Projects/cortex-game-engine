@@ -66,6 +66,9 @@ scratchpad — reusar.
 4. Todos os assets referenciados respondem 200 (um 404 trava o await do buildScene).
 5. Screenshot headless NÃO renderiza WebGPU/Play-gate → **playtest visual é do usuário
    no IDE**. Pedir feedback específico (alcance de pulo, força, feel) e tunar números.
+6. **Performance no host nativo** (o produto de loja): skill **validar-performance** —
+   volta com a simulação ativa, orçamento por categoria e checklist (sombra em cascata,
+   assets refinados, instancing, materiais). O Studio (V8 com JIT) não mede o export.
 
 ## Gotchas conhecidos (custaram iteração)
 
