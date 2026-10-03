@@ -36,6 +36,16 @@ export function setKtx2Renderer(renderer: WebGPURenderer): void {
   if (!hasNativeKtx2()) browserRenderer = renderer;
 }
 
+/**
+ * O Vite dev reescreve `new URL('./basis/', …)` sem a barra final e o three
+ * concatena o nome do arquivo direto — sem a barra o worker recebe o
+ * index.html e a carga fica pendurada (SPEC-0292).
+ * @internal
+ */
+export function transcoderDirectory(href: string): string {
+  return href.endsWith('/') ? href : `${href}/`;
+}
+
 /** Cria workers somente quando uma textura KTX2 realmente é solicitada. */
 async function loadKtx2Browser(url: string): Promise<Texture> {
   const renderer = browserRenderer;
@@ -43,7 +53,7 @@ async function loadKtx2Browser(url: string): Promise<Texture> {
   await renderer.init();
   if (!browserLoader) {
     browserLoader = new KTX2Loader()
-      .setTranscoderPath(new URL('./basis/', import.meta.url).href)
+      .setTranscoderPath(transcoderDirectory(new URL('./basis/', import.meta.url).href))
       .setWorkerLimit(TRANSCODER_WORKERS);
   }
   browserLoader.detectSupport(renderer);

@@ -602,7 +602,7 @@ export class Game {
         this.outlineMinRatio,
       );
       p.end('cull');
-      debug('scene', `outlineCull: ${stats.culled}/${stats.evaluated} cascas escondidas`);
+      if (stats.evaluated > 0) debug('scene', `outlineCull: ${stats.culled}/${stats.evaluated} cascas escondidas`);
     }
     const inspectCamera = this._inspect?.active ? this._inspect : null;
     const editorCamera = this._editor?.activeCamera() ?? null;
