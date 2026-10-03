@@ -1,3 +1,15 @@
+# [0.72.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.71.1...v0.72.0) (2026-10-03)
+
+
+### Bug Fixes
+
+* **ktx2:** slot do glTF decide o espaco de cor das texturas KTX2 no browser (SPEC-0294) ([7c01465](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7c014651ec9a15bbcbf1f557d8a49f7d52301863))
+
+
+### Features
+
+* **vehicle:** camPitch define a inclinacao inicial da chase cam (SPEC-0293) ([2393563](https://github.com/BuuhV-Projects/cortex-game-engine/commit/23935638043545aa7e891022a1458ca26986486e))
+
 ## [0.71.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.71.0...v0.71.1) (2026-10-03)
 
 
