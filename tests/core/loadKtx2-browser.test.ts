@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { Texture } from 'three';
+import { NoColorSpace, SRGBColorSpace, Texture } from 'three';
 import type { WebGPURenderer } from 'three/webgpu';
 
 const calls = vi.hoisted(() => ({
@@ -20,18 +20,22 @@ it('aguarda a GPU e carrega KTX2 externo e blob do GLB pelo mesmo transcoder loc
   const ready = new Promise<void>(resolve => { finishInit = resolve; });
   const renderer = { init: () => ready } as unknown as WebGPURenderer;
   const texture = new Texture();
+  texture.colorSpace = SRGBColorSpace; // como o KTX2Loader marca pelo DFD
   calls.load.mockResolvedValue(texture);
   setKtx2Renderer(renderer);
   const pending = loadKtx2('assets/road.ktx2');
   expect(calls.load).not.toHaveBeenCalled();
   finishInit();
   expect(await pending).toBe(texture);
+  expect(texture.colorSpace).toBe(SRGBColorSpace); // o loadKtx2 direto não muda
   expect(calls.support).toHaveBeenCalledWith(renderer);
   expect(calls.path.mock.calls[0][0]).toMatch(/\/basis\/$/);
   const embedded = new Promise<Texture>((resolve, reject) => {
     new CortexKtx2Loader().load('blob:embedded-road', resolve, undefined, reject);
   });
   expect(await embedded).toBe(texture);
+  // SPEC-0294: o slot do glTF decide o espaço de cor, não a marca do arquivo.
+  expect(texture.colorSpace).toBe(NoColorSpace);
   expect(calls.load).toHaveBeenLastCalledWith('blob:embedded-road');
   expect(calls.path).toHaveBeenCalledTimes(1);
   calls.load.mockRejectedValueOnce(new Error('Transcoder unavailable'));
