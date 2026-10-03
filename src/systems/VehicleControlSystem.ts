@@ -50,6 +50,11 @@ export interface VehicleControlOptions {
   /** Câmera chase: distância e altura. Default 8 / 3.5. */
   camDistance?: number;
   camHeight?: number;
+  /**
+   * Inclinação inicial da chase cam (rad) acima do horizonte. A altura final é
+   * `camHeight + camDistance·sin(camPitch)`. Default 0.32 (SPEC-0293).
+   */
+  camPitch?: number;
   /** Sensibilidade do mouse pra orbitar a câmera (rad/px). Default 0.0022. */
   lookSensitivity?: number;
   /** Velocidade de órbita pelo 2º stick (rad/s). Default 2.5. */
@@ -89,6 +94,8 @@ export interface VehicleControlOptions {
   actions?: InputActions;
 }
 
+/** Inclinação inicial padrão da chase cam (rad). */
+const DEFAULT_CAM_PITCH = 0.32;
 const _fwd = new Vector3();
 const _q = new Quaternion();
 const _camPos = new Vector3();
@@ -112,7 +119,7 @@ export class VehicleControlSystem extends System {
   private throttle = 0;
   private wheelRoll = 0; // ângulo de rolagem acumulado (todas as rodas, pela velocidade)
   private camYaw = 0;
-  private camPitch = 0.32;
+  private camPitch = DEFAULT_CAM_PITCH;
   private lookIdle = 999;
   private camInit = false;
 
@@ -246,7 +253,11 @@ export class VehicleControlSystem extends System {
     // Heading do carro (yaw do forward +Z).
     _fwd.set(0, 0, 1).applyQuaternion(_q.set(r.x, r.y, r.z, r.w));
     const carYaw = Math.atan2(_fwd.x, _fwd.z);
-    if (!this.camInit) { this.camYaw = carYaw; this.camInit = true; }
+    if (!this.camInit) {
+      this.camYaw = carYaw;
+      this.camPitch = o.camPitch ?? DEFAULT_CAM_PITCH;
+      this.camInit = true;
+    }
 
     // Olhar: mouse (pointer lock) + 2º stick (eixos 2/3).
     let dYaw = 0;
