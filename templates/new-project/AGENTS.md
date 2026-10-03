@@ -66,12 +66,16 @@ Assinaturas exatas em `vendor/cortex-game-engine/index.d.ts` e nos `.d.ts` ao
 lado. Se a engine não expõe algo de que você precisa, **diga isso na resposta**
 em vez de reimplementar por fora sem avisar.
 
-## 6. Não rode `build` nem `dev` aqui
+## 6. `dev` pode; `build` é do Studio
 
-Nunca execute neste projeto: `yarn build`, `yarn dev`, `npm run build`,
-`npm run dev`, `npm start`, `vite`, `vite build`, `tsc -b`, `tsc -w`.
+Pode rodar o servidor de desenvolvimento (`yarn dev` / `vite`) pra validar o jogo
+no navegador. Encerre-o ao terminar: o Play do Studio usa a mesma porta (5174).
 
-Por quê: geram `dist/` dentro do projeto e sujam a árvore e o git. Build final é
+Não rode o **build**: `yarn build`, `npm run build`, `vite build`, `tsc -b`,
+`tsc -w`.
+
+Por quê: o servidor de dev só serve os arquivos, não escreve nada; o build gera
+`dist/` dentro do projeto e suja a árvore e o git — e o build final é
 responsabilidade do Studio. Para checar compilação use `tsc --noEmit`, que não
 escreve nada. `yarn install` e `yarn add` são permitidos.
 

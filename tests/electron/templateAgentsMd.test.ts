@@ -55,12 +55,19 @@ describe('templates/new-project/AGENTS.md', () => {
     expect(md).toMatch(/nunca de `'three'`/i)
   })
 
-  it('proíbe build/dev dentro do projeto e aponta tsc --noEmit', () => {
+  it('proíbe o build dentro do projeto e aponta tsc --noEmit', () => {
     const md = read(AGENTS_MD)
-    for (const cmd of ['yarn build', 'yarn dev', 'vite build', 'tsc -b']) {
+    for (const cmd of ['yarn build', 'vite build', 'tsc -b']) {
       expect(md).toContain(cmd)
     }
     expect(md).toContain('tsc --noEmit')
+  })
+
+  it('libera o servidor de dev pra validar no navegador (SPEC-0298)', () => {
+    const md = read(AGENTS_MD)
+    expect(md).toMatch(/`dev` pode/)
+    expect(md).toContain('yarn dev')
+    expect(md).not.toMatch(/Nunca execute[^\n]*yarn dev/)
   })
 
   it('explica o PORQUÊ de cada regra — são falhas silenciosas', () => {
