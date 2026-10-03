@@ -87,7 +87,8 @@ souber:
    base36; id decidido na autoria e nunca recalculado.
 5. **Importar de `'cortex-game-engine'`**, nunca de `'three'`.
 6. **Não rodar `build`/`dev`** dentro do projeto (sujam a árvore); `tsc --noEmit`
-   para checar compilação.
+   para checar compilação. *Substituído pela SPEC-0298: o `dev` foi liberado
+   (não escreve nada); só o `build` segue proibido.*
 
 Acompanha um `CLAUDE.md` de uma linha apontando para o `AGENTS.md`, para que as
 duas cabeças leiam a mesma fonte: o Codex lê `AGENTS.md` nativamente; o Claude
