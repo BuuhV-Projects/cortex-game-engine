@@ -60,6 +60,27 @@ interface NativeKtx2Result {
   rgba?: ArrayBuffer;
 }
 type NativeKtx2Fn = (bytes: Uint8Array) => NativeKtx2Result | null;
+/** Transcode fora da thread JS (worker do host, SPEC-0287); rejeita se falhar. */
+type NativeKtx2AsyncFn = (bytes: Uint8Array) => Promise<NativeKtx2Result>;
+
+/**
+ * Transcoda no host: prefere o binding assíncrono (não trava o frame, SPEC-0287)
+ * e cai no síncrono em host antigo.
+ */
+async function transcodeNative(bytes: Uint8Array, url: string): Promise<NativeKtx2Result> {
+  const g = globalThis as Record<string, unknown>;
+  const transcodeAsync = g['__cortexTranscodeKtx2Async'] as NativeKtx2AsyncFn | undefined;
+  if (typeof transcodeAsync === 'function') {
+    try {
+      return await transcodeAsync(bytes);
+    } catch (e) {
+      throw new Error(`loadKtx2Native: transcode falhou ("${url}"): ${String(e)}`);
+    }
+  }
+  const decoded = (g['__cortexTranscodeKtx2'] as NativeKtx2Fn)(bytes);
+  if (!decoded) throw new Error(`loadKtx2Native: transcode falhou ("${url}")`);
+  return decoded;
+}
 
 /** Marca, em `userData`, as texturas BC7 montadas por {@link loadKtx2Native}. */
 export const NATIVE_KTX2_FLAG = 'cortexNativeKtx2';
@@ -110,17 +131,16 @@ export function hasNativeKtx2(): boolean {
 }
 
 /**
- * Baixa o `.ktx2`, transcoda no host (basis_universal) e monta uma `DataTexture`
- * RGBA. `flipY = false` (raster top-down do KTX2). `colorSpace` fica no default —
- * o chamador define (ex.: `SRGBColorSpace` p/ cor), igual ao `TextureLoader`.
+ * Baixa o `.ktx2`, transcoda no host (basis_universal — num worker quando o host
+ * expõe `__cortexTranscodeKtx2Async`, SPEC-0287) e monta a textura (BC7
+ * `CompressedTexture` ou `DataTexture` RGBA). `flipY = false` (raster top-down
+ * do KTX2). `colorSpace` fica no default — o chamador define (ex.: `SRGBColorSpace` p/ cor), igual ao `TextureLoader`.
  */
 export async function loadKtx2Native(url: string): Promise<Texture> {
-  const transcode = (globalThis as Record<string, unknown>)['__cortexTranscodeKtx2'] as NativeKtx2Fn;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`loadKtx2Native: não achei "${url}" (${res.status})`);
   const bytes = new Uint8Array(await res.arrayBuffer());
-  const decoded = transcode(bytes);
-  if (!decoded) throw new Error(`loadKtx2Native: transcode falhou ("${url}")`);
+  const decoded = await transcodeNative(bytes, url);
 
   // ── BC7 comprimido, com a cadeia de mips do próprio .ktx2 (SPEC-0155) ──────
   // 4× menos VRAM que RGBA cru e paridade com o Studio (KTX2Loader → BC7).

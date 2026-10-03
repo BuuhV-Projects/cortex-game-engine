@@ -54,6 +54,7 @@ add_executable(cortex_host
   src/shims/timers.cpp
   src/shims/user_storage.cpp
   src/shims/ktx2.cpp
+  src/shims/ktx2_transcode.cpp
   ${TP}/basisu/basisu_transcoder.cpp
   ${TP}/zstd/zstddeclib.c
   src/webgpu/buffers.cpp
@@ -184,7 +185,8 @@ target_include_directories(cortex_host PRIVATE
 # (ADR-0119: cor vira UASTC+RDO+zstd — ETC1S bandava os atlas de gradiente dos
 # kits). O decoder é o zstddeclib.c single-file vendorizado do próprio basis
 # (fetch-deps baixa). Vale pro basisu_transcoder.cpp E pro ktx2.cpp (que inclui
-# o header e precisa ver o ktx2_transcoder, gated por BASISD_SUPPORT_KTX2).
+# o header e precisa ver o ktx2_transcoder, gated por BASISD_SUPPORT_KTX2) —
+# hoje o include mora no ktx2_transcode.cpp (SPEC-0287).
 target_compile_definitions(cortex_host PRIVATE
   BASISD_SUPPORT_KTX2=1
   BASISD_SUPPORT_KTX2_ZSTD=1

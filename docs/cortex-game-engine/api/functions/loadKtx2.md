@@ -8,7 +8,7 @@
 
 > **loadKtx2**(`url`): `Promise`\<`Texture`\<`unknown`, `TextureEventMap`\>\>
 
-Defined in: [src/core/loadKtx2.ts:168](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L168)
+Defined in: [src/core/loadKtx2.ts:188](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/loadKtx2.ts#L188)
 
 Carrega uma textura `.ktx2` com o transcoder do ambiente atual.
 
