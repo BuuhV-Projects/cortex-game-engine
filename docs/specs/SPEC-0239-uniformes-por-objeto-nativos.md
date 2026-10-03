@@ -56,3 +56,13 @@ não a chamada:
 
 A contagem real de `writeBuffer` na cena viva depende do M5 e fica declarada
 como pendente — mesma regra do M2.
+
+## Nota de 2026-10-03 — ADR-0290
+
+O critério deste marco (`writeBuffer` proporcional ao que se moveu) passou a
+valer no caminho JS do `three` com o refresh só de transformação (ADR-0290 /
+SPEC-0291): um `writeBuffer` por objeto móvel, zero para o parado. O pool nativo
+com offset dinâmico continua parcial. Medido na fase 2 do crash-racer, o que
+sobrou de ponte nesse caminho é uma fração dos ~2,1 ms de `napiMs` do frame
+inteiro, e o pool exigiria trocar o layout de bind group e o WGSL gerados pelo
+`three`.
