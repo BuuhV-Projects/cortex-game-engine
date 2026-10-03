@@ -96,7 +96,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ### requiredComponents
 
-> `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`Object3DComponent`](Object3DComponent.md))[]
+> `static` **requiredComponents**: (*typeof* [`Object3DComponent`](Object3DComponent.md) \| *typeof* [`TransformComponent`](TransformComponent.md))[]
 
 Defined in: [src/systems/Object3DSyncSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/Object3DSyncSystem.ts#L19)
 

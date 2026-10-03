@@ -12,7 +12,7 @@ Defined in: [src/scene/Particles.ts:50](https://github.com/BuuhV-Projects/cortex
 
 ### blending?
 
-> `optional` **blending?**: `"additive"` \| `"normal"`
+> `optional` **blending?**: `"normal"` \| `"additive"`
 
 Defined in: [src/scene/Particles.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/Particles.ts#L80)
 

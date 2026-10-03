@@ -106,7 +106,7 @@ Sistemas com valores menores executam antes. Padrão: `0`.
 
 ### requiredComponents
 
-> `static` **requiredComponents**: (*typeof* [`TransformComponent`](TransformComponent.md) \| *typeof* [`Collider2DComponent`](Collider2DComponent.md))[]
+> `static` **requiredComponents**: (*typeof* [`Collider2DComponent`](Collider2DComponent.md) \| *typeof* [`TransformComponent`](TransformComponent.md))[]
 
 Defined in: [src/systems/PlatformerPhysicsSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/PlatformerPhysicsSystem.ts#L31)
 
