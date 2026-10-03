@@ -308,3 +308,36 @@ describe('ThirdPersonControlSystem — ombro e modo mira (SPEC-0297)', () => {
   });
 });
 
+
+describe('ThirdPersonControlSystem — sem pointer lock (SPEC-0297)', () => {
+  it('lock recusado: o mouse passa a girar a câmera sem travar', async () => {
+    const MOUSE_DX = 100;
+    const g = globalThis as { document?: unknown };
+    const prevDoc = g.document;
+    g.document = { pointerLockElement: null };
+    try {
+      let onDown: (() => void) | undefined;
+      const canvas = {
+        addEventListener: (_t: string, fn: () => void) => { onDown = fn; },
+        removeEventListener: () => {},
+        requestPointerLock: () => Promise.reject(new Error('WrongDocumentError')),
+      };
+      const input = { isKeyDown: () => false, getMouseDelta: () => ({ x: MOUSE_DX, y: 0 }) };
+      const world = new World();
+      const camera = new THREE.PerspectiveCamera();
+      world.addSystem(new ThirdPersonControlSystem(camera, input as never, canvas as never, {}, fakePad() as never));
+      const e = world.createEntity();
+      e.addComponent(new TransformComponent(0, 0, 0, 0));
+      e.addComponent(new CharacterBodyComponent());
+
+      world.tick(16);
+      expect(camera.position.x).toBeCloseTo(0, 6); // sem lock pedido ainda: não gira
+      onDown!();
+      await Promise.resolve(); await Promise.resolve(); // deixa a rejeição assentar
+      world.tick(16);
+      expect(Math.abs(camera.position.x)).toBeGreaterThan(0.1);
+    } finally {
+      g.document = prevDoc;
+    }
+  });
+});

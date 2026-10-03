@@ -30,6 +30,13 @@ Duas opções novas em `ThirdPersonControlOptions`, também expostas como
   mesmo parado ou andando de lado, com o mesmo `rotationSmoothTime`. Quando
   `false`, o comportamento é o de antes (vira para onde anda).
 
+**Olhar sem pointer lock:** em ambientes que recusam o pointer lock (iframe ou
+webview sem permissão, como o navegador embutido do app Claude), a promessa do
+`requestPointerLock` rejeita (`WrongDocumentError`) e o mouse simplesmente não
+girava a câmera. Agora, se a requisição for recusada, o sistema marca
+`lockUnavailable` e passa a aplicar o `movementX/Y` do mouse sem travar o
+cursor. Onde o lock funciona, nada muda.
+
 A distância da câmera continua sendo trocada com `setOrbit('free', { distance })`.
 Com isso o "zoom de mira" é só mais uma chamada.
 

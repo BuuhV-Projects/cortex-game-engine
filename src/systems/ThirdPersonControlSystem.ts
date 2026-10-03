@@ -157,6 +157,11 @@ export class ThirdPersonControlSystem extends System {
   private oneShotLock = 0; // s restantes segurando um one-shot (run_stop)
   private actionClip: string | null = null; // ação one-shot pedida pelo jogo (soco, etc.)
   private actionLock = 0; // s restantes segurando a ação
+  /**
+   * O ambiente RECUSOU o pointer lock (iframe/webview sem permissão — ex.: o
+   * navegador embutido do app). Aí o mouse olha sem travar (SPEC-0297).
+   */
+  private lockUnavailable = false;
   /** Handler do `mousedown` no canvas — guardado pra remover no {@link dispose}. */
   private onCanvasMouseDown?: () => void;
   private readonly lookTarget = new THREE.Vector3();
@@ -199,7 +204,10 @@ export class ThirdPersonControlSystem extends System {
       this.onCanvasMouseDown = (): void => {
         if (this.shouldPause?.()) return;
         if (this.orbitMode === 'locked') return; // câmera fixa: sem pointer lock
-        if (document.pointerLockElement !== this.canvas) this.canvas.requestPointerLock?.();
+        if (document.pointerLockElement !== this.canvas && !this.lockUnavailable) {
+          const req = this.canvas.requestPointerLock?.() as unknown as Promise<void> | undefined;
+          req?.catch?.(() => { this.lockUnavailable = true; });
+        }
       };
       this.canvas.addEventListener('mousedown', this.onCanvasMouseDown);
     }
@@ -275,7 +283,7 @@ export class ThirdPersonControlSystem extends System {
     // Modo `locked`: yaw/pitch são FIXOS (câmera de perseguição elevada) — o
     // jogador não pilota a câmera; mouse/stick direito são ignorados.
     if (this.orbitMode === 'free') {
-      if (typeof document !== 'undefined' && document.pointerLockElement === this.canvas) {
+      if (typeof document !== 'undefined' && (document.pointerLockElement === this.canvas || this.lockUnavailable)) {
         const md = this.input.getMouseDelta();
         this.yaw -= md.x * this.sensitivity;
         this.pitch += md.y * this.sensitivity;
