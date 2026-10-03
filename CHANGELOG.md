@@ -1,3 +1,15 @@
+# [0.74.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.73.0...v0.74.0) (2026-10-03)
+
+
+### Bug Fixes
+
+* **engine:** câmera de 3ª pessoa olha com o mouse quando o pointer lock é recusado (SPEC-0297) ([e8a5b2b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e8a5b2bafd62ece539943f54e63cc841eae0d6da))
+
+
+### Features
+
+* **engine:** câmera de ombro e modo mira na 3ª pessoa (SPEC-0297) ([684e018](https://github.com/BuuhV-Projects/cortex-game-engine/commit/684e01855fc3d5482b96445442571a30c3216d7a))
+
 # [0.73.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.72.0...v0.73.0) (2026-10-03)
 
 
