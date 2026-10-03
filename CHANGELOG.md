@@ -1,3 +1,23 @@
+# [0.71.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.70.0...v0.71.0) (2026-10-03)
+
+
+### Bug Fixes
+
+* **engine:** liberar copia em CPU do GLB depois do upload (SPEC-0286) ([39745bd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/39745bd9f5ce21f71d812c49e0ad87378880b2bb))
+* support KTX2 textures in Studio and vendored bundles ([f536137](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f53613780887e9b3c671b448a83faa18a074b670))
+
+
+### Features
+
+* **native:** passe de sombra nativo com streaming de LOD e InstancedMesh (SPEC-0289) ([1799691](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1799691884f33e343c31620d553da8efa96da6be))
+* **native:** pointer lock no host nativo (SPEC-0285) ([3b00c18](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3b00c18bf0cdb5dde674f5f9a25c752f3d2fb6ad))
+* **native:** transcode KTX2 assincrono fora da thread JS (SPEC-0287) ([3ee7bc9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3ee7bc9df05223bc3a124f667ade522e0392b53a))
+
+
+### Performance Improvements
+
+* **engine:** esfera de culling uma vez por geometria no instance() (SPEC-0288) ([95ee16e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/95ee16e166d22ff17a90cef7a4ccba60dfeefac3))
+
 # [0.70.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.69.1...v0.70.0) (2026-09-28)
 
 
