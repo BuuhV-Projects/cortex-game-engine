@@ -1,7 +1,7 @@
 {
   "version": 1,
   "background": "#9ec9e8",
-  "outdoorLighting": { "sky": "#9ec9e8", "sunIntensity": 2.6, "exposure": 1.0 },
+  "outdoorLighting": { "sky": "#9ec9e8", "sunIntensity": 2.6, "exposure": 1.0, "skybox": "assets/sky/ceu-tropical.png" },
   "nodes": [
     {
       "type": "terrain",

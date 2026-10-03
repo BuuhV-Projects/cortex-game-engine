@@ -164,6 +164,7 @@
 - [OutdoorLighting](interfaces/OutdoorLighting.md)
 - [OutdoorLightingOptions](interfaces/OutdoorLightingOptions.md)
 - [OutlineCullStats](interfaces/OutlineCullStats.md)
+- [PanoramaSkyOptions](interfaces/PanoramaSkyOptions.md)
 - [ParticleEmitterOptions](interfaces/ParticleEmitterOptions.md)
 - [PerfSample](interfaces/PerfSample.md)
 - [PhysicsBody](interfaces/PhysicsBody.md)
