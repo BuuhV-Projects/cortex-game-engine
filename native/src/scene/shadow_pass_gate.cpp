@@ -24,6 +24,48 @@ const ShadowGateRefusal kPerCasterOrder[] = {
     ShadowGateRefusal::kUnsupportedSide,
 };
 
+/** `true` quando o caster cai em `reason` — o mesmo critério do laço do gate. */
+bool instanciasAusentes(const SceneMirror& mirror, NodeIndex index, InstancePresence instances,
+                       void* userData) {
+  return mirror.hasFlag(index, kNodeInstanced) &&
+         (instances == nullptr || !instances(static_cast<int32_t>(index), userData));
+}
+
+bool caiNoMotivo(const SceneMirror& mirror, NodeIndex index, ShadowGateRefusal reason,
+                 GeometryPresence presence, InstancePresence instances, void* userData) {
+  switch (reason) {
+    case ShadowGateRefusal::kSkinnedCaster: return mirror.hasFlag(index, kNodeSkinned);
+    case ShadowGateRefusal::kInstancedCaster:
+      return instanciasAusentes(mirror, index, instances, userData);
+    case ShadowGateRefusal::kMaterialArray: return mirror.hasFlag(index, kNodeMaterialArray);
+    case ShadowGateRefusal::kAlphaClip: return mirror.hasFlag(index, kNodeAlphaClip);
+    case ShadowGateRefusal::kPositionNode: return mirror.hasFlag(index, kNodePositionNode);
+    case ShadowGateRefusal::kGeometryMissing: {
+      const int32_t geometry = mirror.geometryId(index);
+      return presence == nullptr || geometry == kNoGeometry || !presence(geometry, userData);
+    }
+    case ShadowGateRefusal::kUnsupportedSide:
+      return mirror.shadowSide(index) == kShadowSideUnsupported;
+    default: return false;  // motivo do frame inteiro: não há caster a apontar
+  }
+}
+
+/**
+ * Primeiro caster que caiu em `reason` (SPEC-0289). Só roda quando o gate
+ * recusa por motivo de caster, então o caminho aceito não paga nada.
+ */
+int32_t primeiroOfensor(const SceneMirror& mirror, const std::vector<NodeIndex>& casters,
+                        ShadowGateRefusal reason, GeometryPresence presence,
+                        InstancePresence instances, void* userData) {
+  if (reason == ShadowGateRefusal::kNone) return -1;
+  for (const NodeIndex index : casters) {
+    if (caiNoMotivo(mirror, index, reason, presence, instances, userData)) {
+      return static_cast<int32_t>(index);
+    }
+  }
+  return -1;
+}
+
 }  // namespace
 
 const char* shadowGateRefusalName(ShadowGateRefusal reason) {
@@ -45,7 +87,7 @@ const char* shadowGateRefusalName(ShadowGateRefusal reason) {
 ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
                                         const std::vector<NodeIndex>& casters,
                                         const ShadowGateFrame& frame, GeometryPresence presence,
-                                        void* userData) {
+                                        void* userData, InstancePresence instances) {
   ShadowGateResult r;
   r.totalCasters = static_cast<int32_t>(casters.size());
 
@@ -71,7 +113,7 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
     if (mirror.hasFlag(index, kNodeSkinned)) {
       refused = marcar(r, ShadowGateRefusal::kSkinnedCaster);
     }
-    if (mirror.hasFlag(index, kNodeInstanced)) {
+    if (instanciasAusentes(mirror, index, instances, userData)) {
       refused = marcar(r, ShadowGateRefusal::kInstancedCaster);
     }
     if (mirror.hasFlag(index, kNodeMaterialArray)) {
@@ -114,6 +156,7 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
   }
   r.accepted = r.reason == ShadowGateRefusal::kNone;
   r.offenders = r.counts[static_cast<size_t>(r.reason)];
+  r.firstOffender = primeiroOfensor(mirror, casters, r.reason, presence, instances, userData);
   return r;
 }
 

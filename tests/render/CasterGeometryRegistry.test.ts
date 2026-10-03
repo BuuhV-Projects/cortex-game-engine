@@ -212,3 +212,74 @@ describe('CasterGeometryRegistry', () => {
     expect(registradas.size).toBe(1);
   });
 });
+
+describe('CasterGeometryRegistry com streaming (SPEC-0289)', () => {
+  afterEach(() => {
+    delete (globalThis as Record<string, unknown>)['__cortexGeometryRegistry'];
+    resetGeometryIds();
+  });
+
+  it('registra a geometria que chega DEPOIS da varredura inicial', () => {
+    const { registradas } = instalarRegistroFalso();
+    const backend = backendFalso();
+    const cena = new Object3D();
+    const registro = new CasterGeometryRegistry();
+    registro.atualizar(cena, backend);
+
+    const lod = malha();
+    // Antes de entregar, o registro não a conhece — era o estado do bug.
+    expect(registro.estado(lod.geometry)).toBe('desconhecida');
+    registro.atualizar(cena, backend, [lod.geometry]);
+    expect(registro.estado(lod.geometry)).toBe('pendente');
+
+    backend.subir(lod.geometry as BoxGeometry);
+    expect(registro.atualizar(cena, backend)).toEqual({ registradas: 1, pendentes: 0 });
+    expect(registradas.has(geometryId(lod.geometry))).toBe(true);
+    expect(registro.estado(lod.geometry)).toBe('registrada');
+  });
+
+  it('não repete o registro de geometria já registrada', () => {
+    const { chamadas } = instalarRegistroFalso();
+    const backend = backendFalso();
+    const cena = new Object3D();
+    const original = malha();
+    cena.add(original);
+    backend.subir(original.geometry as BoxGeometry);
+    const registro = new CasterGeometryRegistry();
+    registro.atualizar(cena, backend);
+    expect(chamadas.register).toBe(1);
+
+    registro.atualizar(cena, backend, [original.geometry]); // clone do mesmo LOD
+    expect(chamadas.register).toBe(1);
+  });
+
+  it('volta a registrar a geometria descartada pelo cache e recarregada', () => {
+    const { registradas } = instalarRegistroFalso();
+    const backend = backendFalso();
+    const cena = new Object3D();
+    const lod = malha();
+    cena.add(lod);
+    backend.subir(lod.geometry as BoxGeometry);
+    const registro = new CasterGeometryRegistry();
+    registro.atualizar(cena, backend);
+
+    lod.geometry.dispose(); // TTL do cache do streaming
+    expect(registradas.size).toBe(0);
+    registro.atualizar(cena, backend, [lod.geometry]);
+    expect(registradas.size).toBe(1);
+  });
+
+  it('tira da fila a geometria descartada antes do upload (não prende memória)', () => {
+    instalarRegistroFalso();
+    const backend = backendFalso();
+    const registro = new CasterGeometryRegistry();
+    registro.atualizar(new Object3D(), backend);
+    const lod = malha();
+    registro.atualizar(new Object3D(), backend, [lod.geometry]);
+    expect(registro.pendentes).toBe(1);
+
+    lod.geometry.dispose();
+    expect(registro.pendentes).toBe(0);
+    expect(registro.estado(lod.geometry)).toBe('desconhecida');
+  });
+});

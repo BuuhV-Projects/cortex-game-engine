@@ -45,6 +45,8 @@ void testShadowGateRecusaDivergenciaSemCasterNenhum();
 void testShadowGateRecusaVsm();
 void testShadowGatePrioridadeEContagemPorMotivo();
 void testShadowGateMotivoTemNome();
+void testShadowGateAceitaInstancedComMatrizesNoHost();
+void testShadowGateRelataPrimeiroOfensor();
 void testShadowGateAceitaOsTresLadosDaTabela();
 void testShadowGateRecusaLadoNaoReproduzivel();
 void testShadowGateVeOLadoQueChegouNoFrame();
@@ -104,6 +106,8 @@ int main() {
   tests::testShadowGateRecusaVsm();
   tests::testShadowGatePrioridadeEContagemPorMotivo();
   tests::testShadowGateMotivoTemNome();
+  tests::testShadowGateAceitaInstancedComMatrizesNoHost();
+  tests::testShadowGateRelataPrimeiroOfensor();
   tests::testShadowGateAceitaOsTresLadosDaTabela();
   tests::testShadowGateRecusaLadoNaoReproduzivel();
   tests::testShadowGateVeOLadoQueChegouNoFrame();

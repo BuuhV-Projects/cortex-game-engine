@@ -73,6 +73,7 @@ add_executable(cortex_host
   src/webgpu/render_parity_capture.cpp
   src/render/geometry_registry.cpp
   src/render/shadow_pass.cpp
+  src/render/instance_buffer_store.cpp
   src/scene/scene_mirror.cpp
   src/scene/shadow_caster_enumerator.cpp
   src/scene/shadow_pass_gate.cpp

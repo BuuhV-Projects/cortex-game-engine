@@ -777,3 +777,111 @@ describe('NativeSceneMirror', () => {
     expect(espelho.nodeCount).toBe(1);
   });
 });
+
+// ── SPEC-0289: streaming de LOD e InstancedMesh no passe nativo ─────────────
+
+describe('NativeSceneMirror com streaming e instancing (SPEC-0289)', () => {
+  afterEach(() => {
+    delete (globalThis as Record<string, unknown>)['__cortexSceneMirror'];
+  });
+
+  /** Acrescenta `setInstances` à ponte falsa e devolve o log das chamadas. */
+  function comSetInstances(): { indice: number; quantas: number; primeira: number }[] {
+    const log: { indice: number; quantas: number; primeira: number }[] = [];
+    const ponte = (globalThis as unknown as Record<string, Record<string, unknown>>)[
+      '__cortexSceneMirror'
+    ]!;
+    ponte['setInstances'] = (indice: number, matrizes: Float32Array, quantas: number) => {
+      log.push({ indice, quantas, primeira: matrizes[12] ?? NaN });
+      return true;
+    };
+    return log;
+  }
+
+  function lote(capacidade: number): InstancedMesh {
+    const im = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial(), capacidade);
+    im.castShadow = true;
+    return im;
+  }
+
+  it('entrega ao registro a geometria de malha que entrou DEPOIS do install', () => {
+    // A causa medida do `geometria-ausente`: o registro só varria a cena do
+    // primeiro frame, e todo LOD do streaming ficava desconhecido para sempre.
+    instalarPonteFalsa(32);
+    const raiz = new Object3D();
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    expect(espelho.drainNewGeometries()).toEqual([]);
+
+    const grupo = new Object3D();
+    const lod = malha();
+    grupo.add(lod);
+    raiz.add(grupo);
+
+    expect(espelho.drainNewGeometries()).toEqual([lod.geometry]);
+    // Drenar esvazia: a mesma geometria não é entregue duas vezes.
+    expect(espelho.drainNewGeometries()).toEqual([]);
+  });
+
+  it('não corta InstancedMesh pela esfera (ela não descreve o lote)', () => {
+    const { chamadas } = instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    raiz.add(lote(4));
+    new NativeSceneMirror().install(raiz);
+    const flags = chamadas.ultimaDescricao[FLOATS_POR_NO + CAMPO_FLAGS]!;
+    expect(flags & FLAG_INSTANCED).toBe(FLAG_INSTANCED);
+    expect(flags & FLAG_FRUSTUM_CULLED).toBe(0);
+  });
+
+  it('manda as matrizes de instância só quando version ou count mudam', () => {
+    instalarPonteFalsa(8);
+    const log = comSetInstances();
+    const raiz = new Object3D();
+    const im = lote(4);
+    im.count = 2;
+    im.instanceMatrix.array[12] = 5; // translação x da 1ª instância
+    raiz.add(im);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    const camera = new PerspectiveCamera();
+
+    espelho.update(camera);
+    expect(log).toEqual([{ indice: 1, quantas: 2, primeira: 5 }]);
+
+    espelho.update(camera); // nada mudou: nenhuma travessia de ponte
+    expect(log).toHaveLength(1);
+
+    im.count = 3; // slot novo do streaming
+    im.instanceMatrix.needsUpdate = true;
+    espelho.update(camera);
+    expect(log).toHaveLength(2);
+    expect(log[1]!.quantas).toBe(3);
+  });
+
+  it('para de mandar matrizes do lote que saiu da cena', () => {
+    instalarPonteFalsa(8);
+    const log = comSetInstances();
+    const raiz = new Object3D();
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    const im = lote(2);
+    raiz.add(im); // entra pelo evento, como o lote do streaming
+    const camera = new PerspectiveCamera();
+    espelho.update(camera);
+    expect(log).toHaveLength(1);
+
+    raiz.remove(im);
+    im.instanceMatrix.needsUpdate = true;
+    espelho.update(camera);
+    expect(log).toHaveLength(1);
+  });
+
+  it('host sem setInstances: segue sem erro (o gate recusa `instanced`)', () => {
+    instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    raiz.add(lote(2));
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    expect(() => espelho.update(new PerspectiveCamera())).not.toThrow();
+  });
+});

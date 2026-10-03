@@ -57,6 +57,13 @@ struct ShadowDrawItem {
    * profundidade da sombra ganhar degraus.
    */
   double model[16] = {};
+  /**
+   * Matrizes por instância (`InstancedMesh`, SPEC-0289), do
+   * `InstanceBufferStore`; `nullptr` = malha comum, uma instância.
+   */
+  WGPUBuffer instanceBuffer = nullptr;
+  /** Quantas instâncias desenhar; 1 para malha comum. */
+  uint32_t instanceCount = 1;
 };
 
 /**

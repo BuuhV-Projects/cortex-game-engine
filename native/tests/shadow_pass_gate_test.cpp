@@ -105,9 +105,61 @@ ShadowGateResult avaliarComLado(uint8_t lado) {
   return avaliar(nos, frameLimpo(nos.size()));
 }
 
+/** Nó instanciado (SPEC-0289): o único de quem o host "tem" as matrizes. */
+constexpr int32_t kNoComInstancias = 1;
+bool instanciasFalsas(int32_t node, void*) { return node == kNoComInstancias; }
+
+/** Avalia com consulta de instâncias, que o `avaliar` padrão não passa. */
+ShadowGateResult avaliarComInstancias(const std::vector<NodeDesc>& nos) {
+  SceneMirror espelho;
+  CHECK(espelho.build(nos));
+  const auto planos = planosAmplos();
+  espelho.updateAndCull(identidade, planos.data());
+  ShadowCasterEnumerator enumerador;
+  enumerador.enumerate(espelho, ShadowCasterParams{}, planos.data());
+  return scene::evaluateShadowPassGate(espelho, enumerador.casters(), frameLimpo(nos.size()),
+                                       presencaFalsa, nullptr, instanciasFalsas);
+}
+
 }  // namespace
 
 namespace tests {
+
+void testShadowGateAceitaInstancedComMatrizesNoHost() {
+  // SPEC-0289: com as matrizes no host, o lote instanciado e desenhavel.
+  std::vector<NodeDesc> nos;
+  nos.push_back(casterAceito());
+  NodeDesc lote = casterAceito();
+  lote.parent = 0;
+  lote.flags = static_cast<uint16_t>(lote.flags | scene::kNodeInstanced);
+  nos.push_back(lote);  // indice 1 = kNoComInstancias
+  const ShadowGateResult aceito = avaliarComInstancias(nos);
+  CHECK(aceito.accepted);
+  CHECK(aceito.firstOffender == -1);
+
+  // Um segundo lote SEM matrizes no host recusa — e o ofensor e ele (indice 2).
+  NodeDesc semMatrizes = lote;
+  nos.push_back(semMatrizes);
+  const ShadowGateResult recusado = avaliarComInstancias(nos);
+  esperarRecusa(recusado, ShadowGateRefusal::kInstancedCaster, 1);
+  CHECK(recusado.firstOffender == 2);
+}
+
+void testShadowGateRelataPrimeiroOfensor() {
+  // SPEC-0289: o relato diz QUAL no recusou, nao so quantos.
+  std::vector<NodeDesc> nos;
+  nos.push_back(casterAceito());
+  NodeDesc semRegistro = casterAceito();
+  semRegistro.parent = 0;
+  semRegistro.geometryId = kGeometriaRegistrada + 1;
+  nos.push_back(semRegistro);
+  const ShadowGateResult r = avaliar(nos, frameLimpo(nos.size()));
+  esperarRecusa(r, ShadowGateRefusal::kGeometryMissing, 1);
+  CHECK(r.firstOffender == 1);
+  // Motivo do frame inteiro nao aponta caster.
+  ShadowGateFrame divergente = frameLimpo(nos.size() + 1);
+  CHECK(avaliar(nos, divergente).firstOffender == -1);
+}
 
 void testShadowGateAceitaCenaLimpa() {
   // A linha de base. Sem ela, um gate que recusa SEMPRE passaria em todos os

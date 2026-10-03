@@ -12,6 +12,7 @@
 #include "../scene/shadow_caster_enumerator.h"
 #include "../scene/shadow_pass_gate.h"
 #include "../render/geometry_registry.h"
+#include "../render/instance_buffer_store.h"
 #include "geometry_registry_shim.h"
 
 namespace shims {
@@ -48,7 +49,9 @@ constexpr int kFrustumFloats = scene::kFrustumPlanes * 4;
  */
 constexpr int kGateOutRefusedCasters = scene::kShadowGateRefusalCount;
 constexpr int kGateOutTotalCasters = scene::kShadowGateRefusalCount + 1;
-constexpr int kGateOutFloats = scene::kShadowGateRefusalCount + 2;
+/** Índice do primeiro nó ofensor, ou -1 (SPEC-0289). */
+constexpr int kGateOutFirstOffender = scene::kShadowGateRefusalCount + 2;
+constexpr int kGateOutFloats = scene::kShadowGateRefusalCount + 3;
 /** Argumentos de `drawShadowPass` (ver {@link jsDrawShadowPass}). */
 constexpr size_t kArgsDrawShadowPass = 10;
 /** Elementos de uma matriz 4x4. */
@@ -69,6 +72,8 @@ constexpr int kAppendErrorParent = -2;
 constexpr int kAppendErrorArgs = -3;
 /** Argumentos de `appendNodes`: a descrição e o vetor de saída dos índices. */
 constexpr size_t kArgsAppendNodes = 2;
+/** Argumentos de `setInstances`: índice, matrizes e quantas (SPEC-0289). */
+constexpr size_t kArgsSetInstances = 3;
 
 /**
  * Consulta ao registro de geometria, na forma que o gate PURO aceita.
@@ -102,6 +107,8 @@ struct MirrorState {
    * submissão.
    */
   std::vector<render::ShadowDrawItem> shadowItems;
+  /** Matrizes de instância dos `InstancedMesh` (SPEC-0289). */
+  render::InstanceBufferStore instances;
   bool built = false;
 };
 
@@ -109,6 +116,9 @@ MirrorState& state() {
   static MirrorState instance;
   return instance;
 }
+
+/** O host tem as matrizes deste `InstancedMesh`? (a forma que o gate puro aceita) */
+bool instanciasPresentes(int32_t node, void*) { return state().instances.find(node) != nullptr; }
 
 /**
  * Lê uma linha do layout de construção (20 floats) num {@link scene::NodeDesc}.
@@ -176,6 +186,8 @@ napi_value jsBuild(napi_env env, napi_callback_info info) {
 
   MirrorState& s = state();
   s.built = s.mirror.build(nodes);
+  // Espelho novo = índices novos: instâncias do anterior não descrevem ninguém.
+  s.instances.clear();
   // Espaço para o pior caso: todos os nós mudando num frame — e pela
   // CAPACIDADE, não pelo tamanho de agora, porque este buffer também é externo
   // e o JS o segura desde o `install`. Redimensioná-lo depois realocaria a
@@ -314,6 +326,14 @@ napi_value jsRemoveNode(napi_env env, napi_callback_info info) {
   int32_t index = -1;
   napi_get_value_int32(env, args[0], &index);
   const int32_t saiu = s.mirror.removeSubtree(static_cast<scene::NodeIndex>(index));
+  // O slot vira lápide e pode ser reaproveitado: o próximo dono não herda as
+  // matrizes de instância de quem saiu (SPEC-0289).
+  if (saiu > 0) {
+    s.instances.eraseIf([&s](int32_t node) {
+      return node >= 0 && static_cast<size_t>(node) < s.mirror.size() &&
+             s.mirror.removed(static_cast<scene::NodeIndex>(node));
+    });
+  }
   napi_create_double(env, static_cast<double>(saiu), &out);
   return out;
 }
@@ -435,13 +455,15 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
   }
 
   s.shadowCasters.enumerate(s.mirror, params, static_cast<const float*>(planeData));
-  const scene::ShadowGateResult veredito = scene::evaluateShadowPassGate(
-      s.mirror, s.shadowCasters.casters(), frame, geometriaRegistrada, nullptr);
+  const scene::ShadowGateResult veredito =
+      scene::evaluateShadowPassGate(s.mirror, s.shadowCasters.casters(), frame,
+                                    geometriaRegistrada, nullptr, instanciasPresentes);
 
   auto* out = static_cast<double*>(outData);
   for (int i = 0; i < scene::kShadowGateRefusalCount; i++) out[i] = veredito.counts[i];
   out[kGateOutRefusedCasters] = veredito.refusedCasters;
   out[kGateOutTotalCasters] = veredito.totalCasters;
+  out[kGateOutFirstOffender] = veredito.firstOffender;
 
   const bool pelaPorta = veredito.accepted;
   napi_value saida;
@@ -467,6 +489,13 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
     // da matriz de mundo (escala espelhada inverte a face, como no `three`).
     item.cullMode =
         render::shadowCullMode(static_cast<uint8_t>(s.mirror.shadowSide(index)), item.model);
+    if (s.mirror.hasFlag(index, scene::kNodeInstanced)) {
+      // O gate já garantiu que existem; lote vazio sai como 0 instâncias.
+      const render::InstanceSet* lote = s.instances.find(static_cast<int32_t>(index));
+      if (lote == nullptr || lote->count == 0) continue;
+      item.instanceBuffer = lote->buffer;
+      item.instanceCount = lote->count;
+    }
     s.shadowItems.push_back(item);
   }
 
@@ -475,6 +504,41 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
       static_cast<uint32_t>(s.shadowItems.size()));
   napi_create_double(env, static_cast<double>(desenhados), &saida);
   return saida;
+}
+
+/**
+ * `setInstances(indice, matrizes, quantas)` — as matrizes de instância de um
+ * `InstancedMesh` espelhado (SPEC-0289).
+ *
+ * O JS chama só quando `instanceMatrix.version` ou `count` mudam; `matrizes` é
+ * um `Float32Array` com pelo menos `quantas × 16` floats. Devolve `true` quando
+ * o host guardou — `false` deixa o nó sem instâncias, e o gate recusa.
+ */
+napi_value jsSetInstances(napi_env env, napi_callback_info info) {
+  size_t argc = kArgsSetInstances;
+  napi_value args[kArgsSetInstances];
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  MirrorState& s = state();
+  bool ok = false;
+  int32_t index = -1;
+  uint32_t count = 0;
+  napi_typedarray_type type;
+  void* data = nullptr;
+  size_t length = 0;
+  napi_value buffer;
+  size_t offset = 0;
+  if (s.built && argc >= kArgsSetInstances && napi_get_value_int32(env, args[0], &index) == napi_ok &&
+      napi_get_value_uint32(env, args[2], &count) == napi_ok &&
+      napi_get_typedarray_info(env, args[1], &type, &length, &data, &buffer, &offset) == napi_ok &&
+      type == napi_float32_array && index >= 0 &&
+      static_cast<size_t>(index) < s.mirror.size() &&
+      !s.mirror.removed(static_cast<scene::NodeIndex>(index)) &&
+      length >= static_cast<size_t>(count) * render::kInstanceMatrixFloats) {
+    ok = s.instances.upload(g_gpu, index, static_cast<const float*>(data), count);
+  }
+  napi_value out;
+  napi_get_boolean(env, ok, &out);
+  return out;
 }
 
 }  // namespace
@@ -492,6 +556,7 @@ void registerSceneMirror(napi_env env, HostGpu* gpu) {
   njs::setMethod(env, api, "appendNodes", jsAppendNodes);
   njs::setMethod(env, api, "removeNode", jsRemoveNode);
   njs::setMethod(env, api, "drawShadowPass", jsDrawShadowPass);
+  njs::setMethod(env, api, "setInstances", jsSetInstances);
   napi_set_named_property(env, global, "__cortexSceneMirror", api);
 }
 

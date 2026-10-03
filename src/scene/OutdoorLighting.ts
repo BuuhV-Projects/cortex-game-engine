@@ -3,6 +3,7 @@ import {
   Vector3,
   type Camera,
   type Object3D,
+  type BufferGeometry,
   DirectionalLight,
   HemisphereLight,
   AmbientLight,
@@ -141,6 +142,8 @@ class CameraFollowingCSM extends CSMShadowNode {
 
   /** Última linha do passe nativo, para não repetir o relato todo frame. */
   private _ultimoRelatoDoPasse = '';
+  /** Frames seguidos devolvidos ao `three` desde o último ASSUMIU (SPEC-0289). */
+  private _framesDevolvidos = 0;
 
   /**
    * `viewProj` da cascata em DOUBLE (SPEC-0245, E4).
@@ -276,7 +279,9 @@ class CameraFollowingCSM extends CSMShadowNode {
     }
 
     // E2 — registro preguiçoso: quem ainda não subiu é tentado no próximo frame.
-    this._registroDeCasters.atualizar(cena, backend);
+    // As geometrias que o streaming trouxe desde o frame passado entram na
+    // fila aqui (SPEC-0289) — antes só a cena do primeiro frame era varrida.
+    this._registroDeCasters.atualizar(cena, backend, espelho.drainNewGeometries());
 
     const cascatas = (this as unknown as { lights?: CascataDoCsm[] }).lights;
     if (!cascatas || cascatas.length === 0) {
@@ -336,6 +341,8 @@ class CameraFollowingCSM extends CSMShadowNode {
       if (!resultado || resultado.refused || resultado.drawn === 0) {
         assumiu = false;
         motivo = resultado ? resultado.reason : 'sem-ponte';
+        if (resultado?.offender) motivo += ` ${this._descreverOfensor(resultado.offender)}`;
+        if (resultado?.counts) motivo += ` [${resultado.counts} casters=${resultado.totalCasters}]`;
         break;
       }
       desenhados += resultado.drawn;
@@ -354,12 +361,32 @@ class CameraFollowingCSM extends CSMShadowNode {
       if (assumiu) cascata.shadow.needsUpdate = false;
     }
 
+    // Quantos frames seguidos ficaram com o `three` antes de o nativo
+    // reassumir (SPEC-0289): é o custo real de cada geometria nova do streaming.
+    let devolvidos = '';
+    if (!assumiu) this._framesDevolvidos++;
+    else if (this._framesDevolvidos > 0) {
+      devolvidos = ` apos ${this._framesDevolvidos} frame(s) devolvido(s)`;
+      this._framesDevolvidos = 0;
+    }
     const linha = assumiu
-      ? `ASSUMIU desenhados=${desenhados} cascatas=${cascatas.length}`
+      ? `ASSUMIU desenhados=${desenhados} cascatas=${cascatas.length}${devolvidos}`
       : `DEVOLVEU ao three motivo=${motivo}`;
     if (linha === this._ultimoRelatoDoPasse) return;
     this._ultimoRelatoDoPasse = linha;
     debug('perf', `[shadowPass] ${linha}`);
+  }
+
+  /** QUAL nó recusou e em que estado está a geometria dele (SPEC-0289). */
+  private _descreverOfensor(objeto: Object3D): string {
+    const malha = objeto as Object3D & {
+      geometry?: BufferGeometry;
+      isInstancedMesh?: boolean;
+      type: string;
+    };
+    const geometria = malha.geometry;
+    const estado = geometria ? this._registroDeCasters.estado(geometria) : 'sem-geometria';
+    return `no=${objeto.name || '(sem nome)'} pai=${objeto.parent?.name || '-'} tipo=${malha.isInstancedMesh ? 'InstancedMesh' : malha.type} geometria=${estado}`;
   }
 
 }

@@ -4,6 +4,7 @@
 #include "../core/host_gpu.h"
 #include "../shims/geometry_registry_shim.h"
 #include "geometry_registry.h"
+#include "instance_buffer_store.h"
 #include "shadow_math.h"
 
 #include <webgpu/wgpu.h>
@@ -52,6 +53,38 @@ fn vs(@location(0) position : vec3f) -> @builtin(position) vec4f {
 )WGSL";
 
 /**
+ * Variante para `InstancedMesh` (SPEC-0289): a matriz da instância chega como
+ * atributo POR INSTÂNCIA (4 colunas, coluna-maior como o `instanceMatrix` do
+ * `three`) e entra entre a `model` e a posição — a mesma ordem do `three`
+ * (`instanceMatrix * positionLocal`, depois `modelWorldMatrix`).
+ */
+const char* kShaderSombraInstanciada = R"WGSL(
+struct Uniformes {
+  modelViewProjection : mat4x4f,
+};
+@group(0) @binding(0) var<uniform> u : Uniformes;
+
+@vertex
+fn vs(@location(0) position : vec3f,
+      @location(1) c0 : vec4f, @location(2) c1 : vec4f,
+      @location(3) c2 : vec4f, @location(4) c3 : vec4f) -> @builtin(position) vec4f {
+  return u.modelViewProjection * mat4x4f(c0, c1, c2, c3) * vec4f(position, 1.0);
+}
+)WGSL";
+
+/** Colunas da matriz de instância = atributos `vec4f` por instância. */
+constexpr uint32_t kInstanceColumns = 4;
+/** Bytes de uma coluna (`vec4f`). */
+constexpr uint64_t kInstanceColumnBytes = 4 * sizeof(float);
+/** Primeiro `@location` das colunas (o 0 é a posição). */
+constexpr uint32_t kInstanceFirstLocation = 1;
+/** Buffers de vértice do pipeline: posição; posição + matrizes por instância. */
+constexpr uint32_t kVertexBuffersSimples = 1;
+constexpr uint32_t kVertexBuffersInstanciados = 2;
+/** Slot do buffer de matrizes por instância no `setVertexBuffer`. */
+constexpr uint32_t kInstanceBufferSlot = 1;
+
+/**
  * Um pipeline já compilado, com a chave que o distingue.
  *
  * Duas coisas entram no pipeline e variam dentro de um mesmo frame: o PASSO do
@@ -63,6 +96,8 @@ fn vs(@location(0) position : vec3f) -> @builtin(position) vec4f {
 struct PipelineEntry {
   uint32_t stride = 0;
   ShadowCull cull = ShadowCull::kFront;
+  /** Variante com a matriz por instância (SPEC-0289). */
+  bool instanced = false;
   WGPURenderPipeline pipeline = nullptr;
 };
 
@@ -168,7 +203,7 @@ bool garantirUniformes(HostGpu* gpu, Recursos& r, uint32_t necessarios) {
  * validação — que no wgpu aborta o processo, sem exceção (medido no M5).
  */
 WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat profundidade,
-                                    uint32_t stride, ShadowCull cull) {
+                                    uint32_t stride, ShadowCull cull, bool instanced) {
   if (r.formatoProfundidade != profundidade) {
     for (PipelineEntry& entrada : r.pipelines) {
       if (entrada.pipeline) wgpuRenderPipelineRelease(entrada.pipeline);
@@ -177,7 +212,9 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
     r.formatoProfundidade = profundidade;
   }
   for (const PipelineEntry& entrada : r.pipelines) {
-    if (entrada.stride == stride && entrada.cull == cull) return entrada.pipeline;
+    if (entrada.stride == stride && entrada.cull == cull && entrada.instanced == instanced) {
+      return entrada.pipeline;
+    }
   }
   if (!garantirBindGroupLayout(gpu, r)) return nullptr;
 
@@ -188,7 +225,8 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
   if (!layout) return nullptr;
 
   WGPUShaderSourceWGSL wgsl = WGPU_SHADER_SOURCE_WGSL_INIT;
-  wgsl.code = WGPUStringView{kShaderSombra, std::strlen(kShaderSombra)};
+  const char* fonte = instanced ? kShaderSombraInstanciada : kShaderSombra;
+  wgsl.code = WGPUStringView{fonte, std::strlen(fonte)};
   WGPUShaderModuleDescriptor sd = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
   sd.nextInChain = &wgsl.chain;
   WGPUShaderModule modulo = wgpuDeviceCreateShaderModule(gpu->device, &sd);
@@ -208,6 +246,20 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
   vbl.attributeCount = 1;
   vbl.attributes = &atributo;
 
+  WGPUVertexAttribute colunas[kInstanceColumns];
+  for (uint32_t c = 0; c < kInstanceColumns; ++c) {
+    colunas[c] = WGPU_VERTEX_ATTRIBUTE_INIT;
+    colunas[c].format = WGPUVertexFormat_Float32x4;
+    colunas[c].offset = c * kInstanceColumnBytes;
+    colunas[c].shaderLocation = kInstanceFirstLocation + c;
+  }
+  WGPUVertexBufferLayout layouts[kVertexBuffersInstanciados] = {vbl,
+                                                                 WGPU_VERTEX_BUFFER_LAYOUT_INIT};
+  layouts[kInstanceBufferSlot].arrayStride = kInstanceStrideBytes;
+  layouts[kInstanceBufferSlot].stepMode = WGPUVertexStepMode_Instance;
+  layouts[kInstanceBufferSlot].attributeCount = kInstanceColumns;
+  layouts[kInstanceBufferSlot].attributes = colunas;
+
   WGPUDepthStencilState ds = WGPU_DEPTH_STENCIL_STATE_INIT;
   ds.format = profundidade;
   ds.depthWriteEnabled = WGPUOptionalBool_True;
@@ -217,8 +269,8 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
   pd.layout = layout;
   pd.vertex.module = modulo;
   pd.vertex.entryPoint = WGPUStringView{"vs", 2};
-  pd.vertex.bufferCount = 1;
-  pd.vertex.buffers = &vbl;
+  pd.vertex.bufferCount = instanced ? kVertexBuffersInstanciados : kVertexBuffersSimples;
+  pd.vertex.buffers = layouts;
   pd.primitive.topology = WGPUPrimitiveTopology_TriangleList;
   pd.primitive.frontFace = WGPUFrontFace_CCW;
   // Vem do MATERIAL, já com a inversão do `three` aplicada no JS (ver
@@ -237,7 +289,7 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
   wgpuPipelineLayoutRelease(layout);
   if (!pipeline) return nullptr;
 
-  r.pipelines.push_back(PipelineEntry{stride, cull, pipeline});
+  r.pipelines.push_back(PipelineEntry{stride, cull, instanced, pipeline});
   return pipeline;
 }
 
@@ -260,6 +312,8 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
     const GeometryEntry* geometria;
     uint32_t slot;
     ShadowCull cull;
+    WGPUBuffer instancias;
+    uint32_t quantas;
   };
   std::vector<Pronto> prontos;
   prontos.reserve(total);
@@ -268,10 +322,12 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
   for (uint32_t i = 0; i < total; ++i) {
     const GeometryEntry* geometria = registro.find(itens[i].geometryId);
     if (!geometria) continue;  // pula: nunca aproxima
+    if (itens[i].instanceCount == 0) continue;  // lote vazio: nada a desenhar
     shadowModelViewProjection(viewProjection, itens[i].model, u.modelViewProjection);
     const uint32_t slot = static_cast<uint32_t>(prontos.size());
     wgpuQueueWriteBuffer(gpu->queue, r.uniformes, slot * kUniformSlotAlign, &u, sizeof(u));
-    prontos.push_back({geometria, slot, itens[i].cullMode});
+    prontos.push_back(
+        {geometria, slot, itens[i].cullMode, itens[i].instanceBuffer, itens[i].instanceCount});
   }
   if (prontos.empty()) return 0;
 
@@ -285,6 +341,7 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
   // à toa (`sortObjects` default, SPEC-0245).
   std::stable_sort(prontos.begin(), prontos.end(), [](const Pronto& a, const Pronto& b) {
     if (a.cull != b.cull) return a.cull < b.cull;
+    if ((a.instancias != nullptr) != (b.instancias != nullptr)) return a.instancias == nullptr;
     return a.geometria->vertexStride < b.geometria->vertexStride;
   });
 
@@ -314,17 +371,22 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
   uint32_t desenhados = 0;
   uint32_t strideAtual = 0;
   ShadowCull cullAtual = ShadowCull::kNone;
+  bool instanciadoAtual = false;
   // Flag explícita em vez de confiar num par impossível de (passo, cull): o
   // primeiro item SEMPRE precisa de `setPipeline`, e deduzir isso de valores
   // iniciais é o tipo de armadilha que dá uma pass sem pipeline — e aí o wgpu
   // aborta o processo.
   bool primeiro = true;
   for (const Pronto& item : prontos) {
-    if (primeiro || item.geometria->vertexStride != strideAtual || item.cull != cullAtual) {
+    const bool instanciado = item.instancias != nullptr;
+    if (primeiro || item.geometria->vertexStride != strideAtual || item.cull != cullAtual ||
+        instanciado != instanciadoAtual) {
       primeiro = false;
       strideAtual = item.geometria->vertexStride;
       cullAtual = item.cull;
-      WGPURenderPipeline pipeline = garantirPipeline(gpu, r, formatoProf, strideAtual, cullAtual);
+      instanciadoAtual = instanciado;
+      WGPURenderPipeline pipeline =
+          garantirPipeline(gpu, r, formatoProf, strideAtual, cullAtual, instanciadoAtual);
       if (!pipeline) break;
       wgpuRenderPassEncoderSetPipeline(pass, pipeline);
     }
@@ -332,14 +394,19 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
     wgpuRenderPassEncoderSetBindGroup(pass, 0, r.bindGroup, 1, &offset);
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, item.geometria->vertexBuffer,
                                          item.geometria->vertexOffset, WGPU_WHOLE_SIZE);
+    if (instanciado) {
+      wgpuRenderPassEncoderSetVertexBuffer(pass, kInstanceBufferSlot, item.instancias, 0,
+                                           static_cast<uint64_t>(item.quantas) *
+                                               kInstanceStrideBytes);
+    }
     if (item.geometria->indexBuffer) {
       const WGPUIndexFormat formatoIndice =
           item.geometria->indexIs32Bit ? WGPUIndexFormat_Uint32 : WGPUIndexFormat_Uint16;
       wgpuRenderPassEncoderSetIndexBuffer(pass, item.geometria->indexBuffer, formatoIndice, 0,
                                           WGPU_WHOLE_SIZE);
-      wgpuRenderPassEncoderDrawIndexed(pass, item.geometria->indexCount, 1, 0, 0, 0);
+      wgpuRenderPassEncoderDrawIndexed(pass, item.geometria->indexCount, item.quantas, 0, 0, 0);
     } else {
-      wgpuRenderPassEncoderDraw(pass, item.geometria->vertexCount, 1, 0, 0);
+      wgpuRenderPassEncoderDraw(pass, item.geometria->vertexCount, item.quantas, 0, 0);
     }
     ++desenhados;
   }

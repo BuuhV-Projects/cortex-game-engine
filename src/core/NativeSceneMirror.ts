@@ -136,6 +136,11 @@ interface SceneMirrorBridge {
   appendNodes?(description: Float32Array, out: Int32Array): number;
   /** Tira do espelho o nó e a subárvore dele. Devolve quantos saíram. */
   removeNode?(index: number): number;
+  /**
+   * Matrizes de instância de um `InstancedMesh` espelhado (SPEC-0289). Sem
+   * elas o gate recusa o nó (`instanced`).
+   */
+  setInstances?(index: number, matrices: Float32Array, count: number): boolean;
   drawShadowPass?(
     minRatio: number,
     cameraX: number,
@@ -171,7 +176,9 @@ export type ShadowGateReason = (typeof SHADOW_GATE_REASONS)[number];
 
 /** Posições do vetor de saída do gate (ver `kGateOut*` em `scene_mirror_shim.cpp`). */
 const GATE_OUT_TOTAL_CASTERS = SHADOW_GATE_REASONS.length + 1;
-const GATE_OUT_FLOATS = SHADOW_GATE_REASONS.length + 2;
+/** Índice do primeiro nó ofensor, ou -1 (SPEC-0289). */
+const GATE_OUT_FIRST_OFFENDER = SHADOW_GATE_REASONS.length + 2;
+const GATE_OUT_FLOATS = SHADOW_GATE_REASONS.length + 3;
 
 /** Resultado de {@link NativeSceneMirror.drawShadowPass} (SPEC-0245, E5). */
 export interface ShadowPassOutcome {
@@ -183,11 +190,20 @@ export interface ShadowPassOutcome {
   reason: ShadowGateReason;
   /** Casters enumerados no frame. */
   totalCasters: number;
+  /**
+   * O primeiro objeto que caiu no motivo da recusa (SPEC-0289), para o relato
+   * dizer QUAL nó recusou — `undefined` quando aceito ou motivo do frame inteiro.
+   */
+  offender?: Object3D;
+  /** Motivos com contagem > 0 na recusa, ex. `instanced=4 geometria-ausente=2`. */
+  counts?: string;
 }
 
 /** Um `Object3D` com o que o espelho precisa saber para classificar o nó. */
 type NoDaCena = Object3D & {
   isMesh?: boolean;
+  count?: number;
+  instanceMatrix?: { array: Float32Array; version: number };
   isSkinnedMesh?: boolean;
   isInstancedMesh?: boolean;
   geometry?: BufferGeometry;
@@ -206,7 +222,11 @@ type NoDaCena = Object3D & {
 function flagsDoNo(objeto: NoDaCena, temEsfera: boolean): number {
   let flags = 0;
   if (authoredCastShadow(objeto)) flags |= FLAG_CAST_SHADOW;
-  if (objeto.frustumCulled) flags |= FLAG_FRUSTUM_CULLED;
+  // `InstancedMesh` não é cortado pela esfera: a do nó é a da geometria-BASE
+  // na origem do lote, não a do conjunto, e cortar por ela apagaria a sombra
+  // da vegetação longe da origem (SPEC-0289, medido). Desenhar o lote numa
+  // cascata que não o vê só é recortado — a profundidade sai igual.
+  if (objeto.frustumCulled && !objeto.isInstancedMesh) flags |= FLAG_FRUSTUM_CULLED;
   // Skinada e instanced ficam fora do filtro angular (o bounding sphere mente
   // com o rig / descreve uma instância só) — e quem não tem esfera também, ou
   // seria cortado por um raio inventado.
@@ -345,6 +365,9 @@ function descreverNo(
   destino[base + BUILD_SHADOW_SIDE] = ladoDaSombra(noDaCena.material);
 }
 
+/** Lista vazia compartilhada: o caso comum de {@link NativeSceneMirror.drainNewGeometries}. */
+const SEM_GEOMETRIAS: BufferGeometry[] = [];
+
 function bridge(): SceneMirrorBridge | undefined {
   const api = (globalThis as { __cortexSceneMirror?: SceneMirrorBridge }).__cortexSceneMirror;
   return typeof api?.build === 'function' ? api : undefined;
@@ -399,10 +422,35 @@ export class NativeSceneMirror {
    * Buffers do append, reaproveitados entre eventos: um *hazard* que nasce a
    * cada tiro não pode alocar um par de arrays por vez.
    */
+  /**
+   * Geometrias de malhas que entraram DEPOIS do `install` e ainda não foram
+   * entregues ao registro de geometria (SPEC-0289). Sem isto o registro só
+   * conhecia a cena do primeiro frame, e todo LOD do streaming virava
+   * `geometria-ausente` para sempre. `Set`: limitado às geometrias distintas,
+   * mesmo que ninguém drene (passe nativo desligado).
+   */
+  private readonly _geometriasNovas = new Set<BufferGeometry>();
+  /**
+   * `InstancedMesh` espelhados → o que o host já tem deles (`version` do
+   * `instanceMatrix` e `count`). As matrizes só atravessam a ponte quando um
+   * dos dois muda (SPEC-0289); `-1` = nunca mandado.
+   */
+  private readonly _instanciados = new Map<NoDaCena, { versao: number; quantas: number }>();
   private _loteDescricao = new Float32Array(0);
   private _loteIndices = new Int32Array(0);
   get installed(): boolean {
     return this._installed;
+  }
+
+  /**
+   * Entrega (e esquece) as geometrias das malhas que entraram no espelho desde
+   * a última chamada — quem drena é o registro de geometria (SPEC-0289).
+   */
+  drainNewGeometries(): BufferGeometry[] {
+    if (this._geometriasNovas.size === 0) return SEM_GEOMETRIAS;
+    const lista = [...this._geometriasNovas];
+    this._geometriasNovas.clear();
+    return lista;
   }
 
   /** Nós VIVOS no espelho — é o que se compara com a contagem da cena. */
@@ -480,6 +528,7 @@ export class NativeSceneMirror {
       // Sem isto o `three` recalcularia por cima e o ganho sumiria em silêncio.
       objeto.matrixWorldAutoUpdate = false;
       this._escutar(objeto);
+      this._rastrearInstancias(objeto);
     }
 
     this._matrizes = matrizes;
@@ -607,6 +656,9 @@ export class NativeSceneMirror {
       }
       objeto.matrixWorldAutoUpdate = false;
       this._escutar(objeto);
+      const malha = objeto as NoDaCena;
+      if (malha.isMesh && malha.geometry) this._geometriasNovas.add(malha.geometry);
+      this._rastrearInstancias(objeto);
     }
     this._liveCount += novos.length;
   }
@@ -632,6 +684,7 @@ export class NativeSceneMirror {
       const slot = this._indicePorObjeto.get(objeto);
       if (slot === undefined) return;
       this._indicePorObjeto.delete(objeto);
+      this._instanciados.delete(objeto as NoDaCena);
       this._nodes[slot] = undefined;
       this._liveCount--;
       this._pararDeEscutar(objeto);
@@ -669,6 +722,7 @@ export class NativeSceneMirror {
     }
     this._nodes = [];
     this._indicePorObjeto.clear();
+    this._instanciados.clear();
     this._liveCount = 0;
     this._installed = false;
     this._overflowed = true;
@@ -733,6 +787,42 @@ export class NativeSceneMirror {
     escreverPlanos(this._frustum, this._planes);
 
     api.update(linhas, this._planes);
+    this._sincronizarInstancias(api);
+  }
+
+  /** Passa a acompanhar as matrizes de instância de um `InstancedMesh`. */
+  private _rastrearInstancias(objeto: Object3D): void {
+    const no = objeto as NoDaCena;
+    if (no.isInstancedMesh && no.instanceMatrix) {
+      this._instanciados.set(no, { versao: -1, quantas: -1 });
+    }
+  }
+
+  /**
+   * Manda ao host as matrizes de instância que mudaram desde o último frame
+   * (SPEC-0289). Uma travessia de ponte por LOTE alterado, não por frame: o
+   * streaming mexe em slots poucas vezes por segundo.
+   */
+  private _sincronizarInstancias(api: SceneMirrorBridge): void {
+    if (!api.setInstances || this._instanciados.size === 0) return;
+    for (const [no, enviado] of this._instanciados) {
+      const matrizes = no.instanceMatrix!;
+      const quantas = no.count ?? 0;
+      if (matrizes.version === enviado.versao && quantas === enviado.quantas) continue;
+      const indice = this._indicePorObjeto.get(no);
+      if (indice === undefined) continue;
+      const ok = api.setInstances(
+        indice,
+        matrizes.array.subarray(0, quantas * MATRIX_ELEMENTS),
+        quantas,
+      );
+      // Recusado: fica como "não mandado" e o gate recusa o nó — tenta de novo
+      // no próximo frame em vez de desenhar matriz velha.
+      if (ok) {
+        enviado.versao = matrizes.version;
+        enviado.quantas = quantas;
+      }
+    }
   }
 
   /**
@@ -790,7 +880,15 @@ export class NativeSceneMirror {
     const totalCasters = this._gateOut[GATE_OUT_TOTAL_CASTERS] ?? 0;
     if (resposta < 0) {
       const reason = SHADOW_GATE_REASONS[-resposta] ?? 'geometria-ausente';
-      return { drawn: 0, refused: true, reason, totalCasters };
+      // Host antigo não escreve o slot (fica 0, que é a cena): só confia em >0.
+      const ofensor = this._gateOut[GATE_OUT_FIRST_OFFENDER] ?? -1;
+      const offender = ofensor > 0 ? this._nodes[ofensor] : undefined;
+      const partes: string[] = [];
+      for (let i = 1; i < SHADOW_GATE_REASONS.length; i++) {
+        const n = this._gateOut[i] ?? 0;
+        if (n > 0) partes.push(`${SHADOW_GATE_REASONS[i]}=${n}`);
+      }
+      return { drawn: 0, refused: true, reason, totalCasters, offender, counts: partes.join(' ') };
     }
     return { drawn: resposta, refused: false, reason: 'aceito', totalCasters };
   }
