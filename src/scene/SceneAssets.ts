@@ -1,6 +1,6 @@
 import { bootAcc } from '../core/bootProfile.js';
 import { Box3, Vector3, SkinnedMesh } from 'three';
-import type { Object3D, Mesh, Texture } from 'three';
+import type { BufferGeometry, Object3D, Mesh, Texture } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { AssetLoader, disposeObjectResources, type GLTF } from '../core/AssetLoader.js';
 import { loadKtx2 } from '../core/loadKtx2.js';
@@ -314,11 +314,20 @@ export function instance(gltf: GLTF, shadows: ShadowOptions = {}): Object3D {
  * **animado** (ex.: baú que abre): a animação move os vértices pra fora da esfera
  * de descanso e o three corta a malha cedo demais.
  */
+/** Geometrias cuja esfera o `instance()` já recalculou (SPEC-0288). */
+const spheresFixed = new WeakSet<BufferGeometry>();
+
 function fixCulling(obj: Object3D, animated: boolean): void {
   obj.traverse((child) => {
     const mesh = child as Mesh;
     if (!mesh.isMesh) return;
-    mesh.geometry?.computeBoundingSphere();
+    // Clones compartilham a geometria: recalcular de novo percorreria os mesmos
+    // vértices para chegar na mesma esfera (SPEC-0288 — era o grosso da troca de LOD).
+    const geometry = mesh.geometry;
+    if (geometry && !spheresFixed.has(geometry)) {
+      geometry.computeBoundingSphere();
+      spheresFixed.add(geometry);
+    }
     if (animated || (child as SkinnedMesh).isSkinnedMesh) mesh.frustumCulled = false;
   });
 }
