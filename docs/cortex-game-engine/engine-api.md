@@ -1258,7 +1258,11 @@ o Rapier é montado em código (`main.ts`).
 ## Veículos: carro de simulação e frota arcade (kart / corrida) — ADR-0256 / SPEC-0259
 
 Dois modos. **Simulação** (um carro, suspensão de verdade, capota): `setupVehicle`
-ou `VehicleControlSystem`. **Arcade** (kart, Mario Kart, Asphalt; vários carros):
+ou `VehicleControlSystem`. O `setupVehicle(game, carObj, state, cfg)` devolve
+`{ vehicle, physics, rig, speedo, options, engineSound }`. O `physics` é o mundo do
+carro: corpos postos nele com `physics.addBody(...)` colidem com o carro (ex.: um
+carro cinemático da IA). Não avance esse mundo de novo, porque o sistema já o
+avança (SPEC-0300). **Arcade** (kart, Mario Kart, Asphalt; vários carros):
 a frota abaixo. Não misture os dois no mesmo `RapierPhysics`.
 
 | Símbolo | O que é |

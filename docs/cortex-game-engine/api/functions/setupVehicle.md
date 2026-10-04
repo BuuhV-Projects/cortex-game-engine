@@ -8,13 +8,14 @@
 
 > **setupVehicle**(`game`, `carObj`, `state`, `cfg`): `Promise`\<[`VehicleHandle`](../interfaces/VehicleHandle.md)\>
 
-Defined in: [src/scene/VehicleSetup.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L74)
+Defined in: [src/scene/VehicleSetup.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L83)
 
 **Liga um carro raycast (Rapier — ADR-0081) num [Game](../classes/Game.md) com uma chamada** (estilo
 `setupThirdPerson`). Cria a física + colliders do terreno/road, o veículo, o
 [VehicleControlSystem](../classes/VehicleControlSystem.md), marcas de pneu, som de motor em camadas e o velocímetro;
 esconde o carro (nasce invocado pelo jogo) e expõe o [VehicleRig](../interfaces/VehicleRig.md) em
-`carObj.userData.cortexCarRig`. Devolve o handle pro loop do jogo (velocímetro/som/tune).
+`carObj.userData.cortexCarRig`. Devolve o handle pro loop do jogo (velocímetro/som/tune)
+e o mundo físico (`physics`, SPEC-0300) pra o jogo pôr outros corpos que colidem com o carro.
 
 O `state` é passado de fora (o MESMO objeto que o jogo usa em `pauseWhen`/interação), pra o
 `driving`/`spawned` valerem em todos os lugares. Infra reutilizável — sem cola no `main.ts`.

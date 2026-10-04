@@ -55,6 +55,14 @@ export interface VehicleSetupConfig {
 /** Handle de {@link setupVehicle}: o que o jogo usa no loop (velocímetro/som/tune). */
 export interface VehicleHandle {
   vehicle: Vehicle;
+  /**
+   * O mundo físico em que o carro e os colisores do terreno/estrada foram criados
+   * (SPEC-0300). Use pra pôr outros corpos que colidem com o carro — ex.: um carro
+   * cinemático guiado pelo jogo: `physics.addBody({ type: 'kinematic', … })` e
+   * `setNextKinematicTranslation` a cada quadro. **Não** chame `step()`/`advance()`:
+   * o {@link VehicleControlSystem} já avança este mundo uma vez por quadro.
+   */
+  physics: RapierPhysics;
   rig: VehicleRig;
   speedo: Speedometer;
   options: VehicleControlOptions;
@@ -66,7 +74,8 @@ export interface VehicleHandle {
  * `setupThirdPerson`). Cria a física + colliders do terreno/road, o veículo, o
  * {@link VehicleControlSystem}, marcas de pneu, som de motor em camadas e o velocímetro;
  * esconde o carro (nasce invocado pelo jogo) e expõe o {@link VehicleRig} em
- * `carObj.userData.cortexCarRig`. Devolve o handle pro loop do jogo (velocímetro/som/tune).
+ * `carObj.userData.cortexCarRig`. Devolve o handle pro loop do jogo (velocímetro/som/tune)
+ * e o mundo físico (`physics`, SPEC-0300) pra o jogo pôr outros corpos que colidem com o carro.
  *
  * O `state` é passado de fora (o MESMO objeto que o jogo usa em `pauseWhen`/interação), pra o
  * `driving`/`spawned` valerem em todos os lugares. Infra reutilizável — sem cola no `main.ts`.
@@ -156,5 +165,5 @@ export async function setupVehicle(
   };
   (carObj.userData as Record<string, unknown>)['cortexCarRig'] = rig;
 
-  return { vehicle, rig, speedo, options, engineSound };
+  return { vehicle, physics, rig, speedo, options, engineSound };
 }
