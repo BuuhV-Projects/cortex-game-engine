@@ -835,6 +835,11 @@ placeholder), `instances` (plano `[x,y,z,rotY,scale]` por instância), `capacity
 O controlador vive em `group.userData.cortexVegetation` (o pincel do editor espalha/apaga).
 Sem `model`, usa uma árvore/grama placeholder — troque por `.glb` quando tiver arte.
 
+**Culling por nó (SPEC-0299):** cada nó `vegetation` é cortado pelo frustum pela esfera
+das suas instâncias reais. Em mapa grande, divida a vegetação em **vários nós por célula**
+(ex.: blocos de ~120 m) e limite `camera.far` com névoa — um nó único do mapa inteiro
+quase nunca sai de vista.
+
 ## Animação de modelos (clipes do .glb)
 
 `SceneAnimator` + campo `animation` no nó `model`.

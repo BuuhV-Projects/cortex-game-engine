@@ -88,7 +88,9 @@ export class Vegetation {
       inst.count = 0;
       inst.castShadow = m.castShadow;
       inst.receiveShadow = m.receiveShadow;
-      inst.frustumCulled = false; // o bounding muda com o espalhamento; evita sumir
+      // Culling LIGADO (SPEC-0299): o `sync()` recalcula a esfera das instâncias reais
+      // a cada mudança, então dividir a vegetação em nós por célula corta o que sai de vista.
+      inst.frustumCulled = true;
       // Raycast LIGADO pro editor poder SELECIONAR a vegetação. A física não a testa
       // (usa só terreno/solid/groundMeshes; a colisão é por cilindro/`trunks`), então
       // não há custo de raycast de floresta no chão. `cortexVegetationSub` a mantém
@@ -215,6 +217,7 @@ export class Vegetation {
         mesh.setMatrixAt(i, this._m);
       }
       mesh.instanceMatrix.needsUpdate = true;
+      // Único ponto que escreve instanceMatrix/count: a esfera de culling segue as instâncias.
       mesh.computeBoundingSphere();
     }
   }
