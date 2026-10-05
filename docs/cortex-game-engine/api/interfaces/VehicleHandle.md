@@ -16,7 +16,7 @@ Handle de [setupVehicle](../functions/setupVehicle.md): o que o jogo usa no loop
 
 > **engineSound**: [`EngineSound`](../classes/EngineSound.md) \| `null`
 
-Defined in: [src/scene/VehicleSetup.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L69)
+Defined in: [src/scene/VehicleSetup.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L74)
 
 ***
 
@@ -24,7 +24,11 @@ Defined in: [src/scene/VehicleSetup.ts:69](https://github.com/BuuhV-Projects/cor
 
 > **options**: [`VehicleControlOptions`](VehicleControlOptions.md)
 
-Defined in: [src/scene/VehicleSetup.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L68)
+Defined in: [src/scene/VehicleSetup.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L73)
+
+Opções do [VehicleControlSystem](../classes/VehicleControlSystem.md), lidas a cada quadro. Pode trocar
+`pauseWhen` depois (ex.: somar o menu de pausa do jogo) — vale pro controle,
+o passo da física e as marcas de pneu (SPEC-0306).
 
 ***
 

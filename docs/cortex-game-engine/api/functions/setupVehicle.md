@@ -8,7 +8,7 @@
 
 > **setupVehicle**(`game`, `carObj`, `state`, `cfg`): `Promise`\<[`VehicleHandle`](../interfaces/VehicleHandle.md)\>
 
-Defined in: [src/scene/VehicleSetup.ts:83](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L83)
+Defined in: [src/scene/VehicleSetup.ts:88](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/VehicleSetup.ts#L88)
 
 **Liga um carro raycast (Rapier — ADR-0081) num [Game](../classes/Game.md) com uma chamada** (estilo
 `setupThirdPerson`). Cria a física + colliders do terreno/road, o veículo, o

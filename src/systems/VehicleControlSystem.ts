@@ -67,7 +67,11 @@ export interface VehicleControlOptions {
   recenterDelay?: number;
   /** Só dirige/posiciona a câmera quando `true` (ex.: `() => car.driving`). Default sempre. */
   active?: () => boolean;
-  /** Pausa total (ex.: `() => game.editorActive`). */
+  /**
+   * Pausa total (ex.: `() => game.editorActive`): o sistema não roda — sem input
+   * nem passo de física. Lida a cada quadro, então pode ser trocada depois de
+   * criado o sistema (SPEC-0306).
+   */
   pauseWhen?: () => boolean;
   /**
    * **Piloto externo** (SPEC-0223) — quando `active()` é falso, o controlador
@@ -134,7 +138,9 @@ export class VehicleControlSystem extends System {
     private readonly options: VehicleControlOptions = {},
   ) {
     super();
-    this.pauseWhen = options.pauseWhen;
+    // Lida a cada quadro: quem troca `options.pauseWhen` depois (ex.: o menu de
+    // pausa do jogo) passa a valer — antes era copiada aqui e a troca se perdia (SPEC-0306).
+    this.pauseWhen = () => this.options.pauseWhen?.() ?? false;
   }
 
   override update(_entities: Entity[], deltaTime: number): void {

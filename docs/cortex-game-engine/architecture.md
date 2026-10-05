@@ -37,6 +37,9 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   getter `type` da base (a chave do ECS) e a entidade some das queries.
 - **`System`** — `requiredComponents` (vazio = todas), `priority` (ordem crescente),
   `update(entities, dt)`. `pauseWhen = () => game.editorActive` pausa no editor.
+  ⚠️ O `World` lê só o campo `system.pauseWhen`: sistema que recebe `options.pauseWhen`
+  deve ligá-lo **ao vivo** (`() => this.options.pauseWhen?.()`), não copiar no construtor —
+  senão trocar a pausa depois (menu do jogo) se perde (SPEC-0306, `VehicleControlSystem`).
 - **`World`** — guarda entidades/sistemas; `tick(dt)` roda cada sistema com as
   entidades que casam `requiredComponents`. `query(...classes)`, `hasSystem`.
 
