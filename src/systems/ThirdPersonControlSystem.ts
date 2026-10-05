@@ -10,6 +10,8 @@ import type { InputActions } from '../input/InputActions.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { deriveLocomotion, autoMapPlayerClips } from './PlatformerAnimationSystem.js';
 import { isSkinned } from '../physics/raycastAccel.js';
+import { NearMeshIndex } from '../physics/nearMeshes.js';
+import { COLLECT_INTERVAL_MS } from './CharacterPhysicsSystem.js';
 
 /** Opções do {@link ThirdPersonControlSystem} (porta o ThirdPersonController do Unity StarterAssets). */
 export interface ThirdPersonControlOptions {
@@ -84,6 +86,12 @@ const CAM_SKIN = 0.3;
  * isso a câmera entra DENTRO da cabeça do modelo (near plane corta a malha).
  */
 const CAM_HIDE_DIST = 1.05;
+/**
+ * Altura do 2º raio do spring arm, como fração de `camHeight` (peito, SPEC-0302): o
+ * raio da cabeça sobe com o pitch e passava POR CIMA de parede baixa (box de feira,
+ * mureta), deixando a câmera atrás dela e o personagem escondido.
+ */
+const CAM_LOW_RAY_FRACTION = 0.5;
 /** Duração (s) que o clipe `run_stop` segura antes de cair pro idle. */
 const RUN_STOP_DUR = 0.45;
 
@@ -168,6 +176,13 @@ export class ThirdPersonControlSystem extends System {
   private readonly camRay = new THREE.Raycaster();
   private readonly camBack = new THREE.Vector3();
   private readonly camTargets: THREE.Object3D[] = []; // alvos do spring arm (sem skinned/self)
+  private readonly camNear: THREE.Object3D[] = []; // os alvos ao alcance da câmera neste quadro
+  private readonly camIndex = new NearMeshIndex();
+  private readonly lowOrigin = new THREE.Vector3();
+  /** ms desde a última varredura da cena pros alvos (começa vencido; SPEC-0302). */
+  private sinceCamCollect = Infinity;
+  /** Dono dos alvos coletados (o `self` muda → recoleta). */
+  private camSelf?: THREE.Object3D;
 
   constructor(
     private readonly camera: THREE.PerspectiveCamera,
@@ -250,6 +265,7 @@ export class ThirdPersonControlSystem extends System {
   }
 
   override update(entities: Entity[], deltaTime: number): void {
+    this.sinceCamCollect += deltaTime;
     const player = entities[0];
     if (!player) return;
     const t = player.getComponent(TransformComponent)!;
@@ -394,16 +410,30 @@ export class ThirdPersonControlSystem extends System {
       // cabeça do personagem e raycast em SkinnedMesh computa o skinning por
       // vértice na CPU a cada raio (ver isSkinned em raycastAccel) — filtrar nos
       // HITS (isCamIgnored) já pagava esse custo todo frame.
-      this.camTargets.length = 0;
-      this.collisionRoot.traverse((o) => {
-        if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
-        if (isCamIgnored(o, self)) return;
-        this.camTargets.push(o);
-      });
-      this.camRay.set(this.lookTarget, this.camBack);
+      // Varre a cena só a cada COLLECT_INTERVAL_MS (SPEC-0302).
+      if (this.sinceCamCollect >= COLLECT_INTERVAL_MS || this.camSelf !== self) {
+        this.camTargets.length = 0;
+        this.collisionRoot.traverse((o) => {
+          if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
+          if (isCamIgnored(o, self)) return;
+          this.camTargets.push(o);
+        });
+        this.camIndex.rebuild(this.camTargets);
+        this.sinceCamCollect = 0;
+        this.camSelf = self;
+      }
+      // só o que o braço da câmera alcança (cabeça e peito ficam a < camHeight do alvo)
+      const near = this.camIndex.near(this.lookTarget, this.camDist + this.camHeight, this.camNear);
       this.camRay.far = this.camDist;
-      const h = this.camRay.intersectObjects(this.camTargets, false)[0];
+      this.camRay.set(this.lookTarget, this.camBack);
+      const h = this.camRay.intersectObjects(near, false)[0];
       if (h) dist = Math.max(h.distance - CAM_SKIN, CAM_MIN_DIST); // 1ª superfície bloqueante
+      // 2º raio, paralelo, do peito: pega parede baixa que o da cabeça passa por cima
+      this.lowOrigin.copy(this.lookTarget);
+      this.lowOrigin.y -= this.camHeight * (1 - CAM_LOW_RAY_FRACTION);
+      this.camRay.set(this.lowOrigin, this.camBack);
+      const low = this.camRay.intersectObjects(near, false)[0];
+      if (low) dist = Math.min(dist, Math.max(low.distance - CAM_SKIN, CAM_MIN_DIST));
     }
 
     this.camera.position.set(

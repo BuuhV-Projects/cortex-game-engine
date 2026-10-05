@@ -5,6 +5,7 @@ import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { ensureBoundsTree, isSkinned } from '../physics/raycastAccel.js';
+import { NearMeshIndex } from '../physics/nearMeshes.js';
 
 const DOWN = new Vector3(0, -1, 0);
 /** Tolerância de contato (skin width) — folga p/ considerar "tocando o chão". */
@@ -33,12 +34,19 @@ function isSolid(obj: Object3D): boolean {
 /** Altura (acima dos pés) de onde sai o raycast SÓ-terreno do clamp anti-clip. */
 const TERRAIN_PROBE = 1000;
 
+/**
+ * De quanto em quanto tempo (ms) a cena é varrida de novo pra remontar as listas
+ * (SPEC-0302). Varrer todo quadro custava caro em mapa grande; mover o que já está
+ * nas listas não precisa disso (os raios usam a `matrixWorld` atual).
+ */
+export const COLLECT_INTERVAL_MS = 250;
+
 /** Raio-base do tronco (×escala da instância) pra colisão barata com vegetação. */
 const TRUNK_RADIUS = 0.4;
 
 /**
- * Varre a cena UMA vez por frame e separa o que cada checagem precisa (em vez de cada
- * raycast testar a cena inteira — caro com road/terreno densos):
+ * Varre a cena (a cada `COLLECT_INTERVAL_MS`) e separa o que cada checagem precisa (em
+ * vez de cada raycast testar a cena inteira — caro com road/terreno densos):
  * - `trunks` (`[x,z,raio]`): vegetação sólida → colisão por cilindro (sem raycast).
  * - `solidMeshes`: blockout `cortexSolid` → alvo do empurrão de PAREDE.
  * - `terrainMeshes`: `cortexTerrain` → alvo do clamp ANTI-CLIP.
@@ -154,6 +162,15 @@ export class CharacterPhysicsSystem extends System {
   private readonly solidMeshes: Object3D[] = []; // blockout sólido (alvo do empurrão de parede)
   private readonly terrainMeshes: Object3D[] = []; // terreno (alvo do anti-clip)
   private readonly groundMeshes: Object3D[] = []; // tudo pisável (alvo do raycast de chão), sem vegetação
+  // as mesmas listas filtradas pro personagem da vez (só o que algum raio pode tocar, SPEC-0302)
+  private readonly nearGround: Object3D[] = [];
+  private readonly nearTerrain: Object3D[] = [];
+  private readonly nearSolid: Object3D[] = [];
+  private readonly groundIndex = new NearMeshIndex();
+  private readonly terrainIndex = new NearMeshIndex();
+  private readonly solidIndex = new NearMeshIndex();
+  /** ms desde a última varredura da cena (começa vencido: varre no 1º quadro). */
+  private sinceCollect = Infinity;
 
   /** @param roots Raízes da cena pra colisão de chão (raycast). Vazio = só `groundY`. */
   constructor(roots: Object3D[] = []) {
@@ -161,10 +178,22 @@ export class CharacterPhysicsSystem extends System {
     this.roots = roots;
   }
 
+  /** Força varrer a cena de novo no próximo quadro (muita coisa trocada de uma vez). */
+  refresh(): void {
+    this.sinceCollect = Infinity;
+  }
+
   override update(entities: Entity[], deltaTime: number): void {
     const dt = deltaTime / 1000;
-    // 1x por frame: separa troncos (cilindro) / sólidos (parede) / terreno (anti-clip).
-    collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes, this.groundMeshes);
+    // A cada COLLECT_INTERVAL_MS: separa troncos (cilindro) / sólidos (parede) / terreno (anti-clip).
+    this.sinceCollect += deltaTime;
+    if (this.sinceCollect >= COLLECT_INTERVAL_MS) {
+      collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes, this.groundMeshes);
+      this.groundIndex.rebuild(this.groundMeshes);
+      this.terrainIndex.rebuild(this.terrainMeshes);
+      this.solidIndex.rebuild(this.solidMeshes);
+      this.sinceCollect = 0;
+    }
     for (const e of entities) {
       const t = e.getComponent(TransformComponent)!;
       const c = e.getComponent(CharacterBodyComponent)!;
@@ -197,7 +226,8 @@ export class CharacterPhysicsSystem extends System {
         this.ray.set(this.origin, DOWN);
         this.ray.far = Infinity;
         const self = e.getComponent(Object3DComponent)?.object;
-        const hits = this.ray.intersectObjects(this.groundMeshes, true);
+        // sem recursão: a lista já tem cada malha (filhos inclusive) — recursivo testava os filhos de novo
+        const hits = this.ray.intersectObjects(this.groundIndex.nearXZ(t.x, t.z, SKIN, this.nearGround), false);
         for (const h of hits) {
           if (self && isUnder(h.object, self)) continue; // ignora o próprio mesh
           if (isEditorChrome(h.object)) continue; // ignora gizmo/helpers do editor
@@ -238,7 +268,7 @@ export class CharacterPhysicsSystem extends System {
         this.origin.set(t.x, feetNow + TERRAIN_PROBE, t.z);
         this.ray.set(this.origin, DOWN);
         this.ray.far = Infinity;
-        const h = this.ray.intersectObjects(this.terrainMeshes, true)[0]; // só terreno
+        const h = this.ray.intersectObjects(this.terrainIndex.nearXZ(t.x, t.z, SKIN, this.nearTerrain), false)[0]; // só terreno
         if (h && feetNow < h.point.y - SKIN) {
           t.y = h.point.y + c.footOffset; // sobe pra superfície do terreno
           c.velocityY = 0;
@@ -256,6 +286,7 @@ export class CharacterPhysicsSystem extends System {
         const feetY = t.y - c.footOffset;
         const self = e.getComponent(Object3DComponent)?.object;
         const ys = [feetY + Math.min(r, c.height * 0.5), feetY + c.height * 0.5, feetY + Math.max(c.height - r, c.height * 0.5)];
+        const walls = this.solidIndex.nearXZ(t.x, t.z, r + SKIN, this.nearSolid);
         const cast = (dx: number, dz: number): number | null => {
           this.wallDir.set(dx, 0, dz);
           let nearest: number | null = null;
@@ -263,7 +294,7 @@ export class CharacterPhysicsSystem extends System {
             this.origin.set(t.x, sy, t.z);
             this.ray.set(this.origin, this.wallDir);
             this.ray.far = r + SKIN;
-            for (const h of this.ray.intersectObjects(this.solidMeshes, true)) {
+            for (const h of this.ray.intersectObjects(walls, false)) {
               if (self && isUnder(h.object, self)) continue;
               if (isEditorChrome(h.object)) continue;
               if (nearest === null || h.distance < nearest) nearest = h.distance;
