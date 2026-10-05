@@ -627,6 +627,11 @@ player não cai nem se move enquanto você edita. E mover/rotacionar um objeto q
 tem entidade ECS (Object3D sincronizado) **escreve de volta no `TransformComponent`**,
 então a edição persiste quando você dá play (não é sobrescrita pelo sync).
 
+**Câmera do editor ≠ câmera do jogo.** No F2 a engine desenha com uma câmera livre
+própria (e sem neblina); `game.camera` fica parada no player. Lógica que depende do
+que está **na tela** (corte por distância, LOD) usa `game.renderCamera` — a do editor
+com o F2 aberto, a do jogo no play (SPEC-0303).
+
 ```ts
 import { Game } from 'cortex-game-engine'
 
