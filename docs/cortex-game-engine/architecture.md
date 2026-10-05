@@ -358,7 +358,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   fallback, e **colisão de parede** (horizontal): depenetra a cápsula de geometria
   marcada `userData.cortexSolid` (posta pelo `buildScene` em nós **static**) por
   raycasts em ±X/±Z (`resolveWallPush`, puro/testável). É o que faz o **blockout
-  estático virar parede de verdade** no FPS (SPEC-0071). ⚠️ o `FirstPersonCameraSystem`
+  estático virar parede de verdade** no FPS (SPEC-0071). **Custo em mapa grande
+  (SPEC-0302):** a cena é varrida (listas de chão/parede/terreno) só a cada
+  `COLLECT_INTERVAL_MS` (250 ms), e cada raio só testa as malhas cuja esfera em
+  mundo alcança o personagem (`physics/nearMeshes.ts` → `NearMeshIndex`, com folga
+  `MOVING_MARGIN` pro que se move); o spring arm da 3ª pessoa faz o mesmo e tem um
+  2º raio na altura do peito (parede baixa). ⚠️ objeto novo vira chão/parede em até
+  250 ms — `refresh()` força na hora. ⚠️ o `FirstPersonCameraSystem`
   posiciona a câmera a partir da posição **já depenetrada** (antes de aplicar o
   movimento do frame) — senão a câmera aparecia "dentro" da parede por 1 frame.
   ⚠️ Marcar **static** (Inspector → Física) cria um Collider2D (mundo 2.5D, que o

@@ -6,7 +6,7 @@
 
 # Interface: ThirdPersonControlOptions
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:15](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L15)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L17)
 
 Opções do [ThirdPersonControlSystem](../classes/ThirdPersonControlSystem.md) (porta o ThirdPersonController do Unity StarterAssets).
 
@@ -16,7 +16,7 @@ Opções do [ThirdPersonControlSystem](../classes/ThirdPersonControlSystem.md) (
 
 > `optional` **actions?**: [`InputActions`](../classes/InputActions.md) \| `null`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L60)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L62)
 
 **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra que
 mover/olhar/correr/pular sigam os bindings que o jogador escolheu na tela
@@ -30,7 +30,7 @@ fixo mesmo indo pelo `setupThirdPerson` (que injeta `game.actions`).
 
 > `optional` **cameraDistance?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L25)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L27)
 
 Distância da câmera atrás do personagem (m). Default 5.5.
 
@@ -40,7 +40,7 @@ Distância da câmera atrás do personagem (m). Default 5.5.
 
 > `optional` **cameraHeight?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:27](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L27)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L29)
 
 Altura do alvo que a câmera mira (m, acima dos pés). Default 1.5.
 
@@ -50,7 +50,7 @@ Altura do alvo que a câmera mira (m, acima dos pés). Default 1.5.
 
 > `optional` **faceCamera?**: `boolean`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:73](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L73)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L75)
 
 **Modo mira** (SPEC-0297): `true` faz o personagem encarar a direção da câmera
 todo frame (strafe), em vez de virar pra onde anda. Default false. Mutável em
@@ -62,7 +62,7 @@ runtime via [ThirdPersonControlSystem.faceCamera](../classes/ThirdPersonControlS
 
 > `optional` **facingOffset?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L31)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L33)
 
 Offset de orientação do modelo (rad) se o personagem nascer virado ao contrário. Default 0.
 
@@ -72,7 +72,7 @@ Offset de orientação do modelo (rad) se o personagem nascer virado ao contrár
 
 > `optional` **initialPitch?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L52)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L54)
 
 Pitch inicial da câmera (rad; positivo = de cima). Default 0.35.
 
@@ -82,7 +82,7 @@ Pitch inicial da câmera (rad; positivo = de cima). Default 0.35.
 
 > `optional` **initialYaw?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L50)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L52)
 
 Yaw inicial da câmera (rad). Default 0 (câmera atrás de +Z).
 
@@ -92,7 +92,7 @@ Yaw inicial da câmera (rad). Default 0 (câmera atrás de +Z).
 
 > `optional` **invertLookY?**: `boolean`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L35)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L37)
 
 Inverte o eixo Y do stick direito (olhar). Default false.
 
@@ -102,7 +102,7 @@ Inverte o eixo Y do stick direito (olhar). Default false.
 
 > `optional` **jumpBlocked?**: () => `boolean`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L41)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:43](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L43)
 
 Bloqueia o pulo quando `true` — ex.: há interação em alcance, então A vira "interagir".
 
@@ -116,7 +116,7 @@ Bloqueia o pulo quando `true` — ex.: há interação em alcance, então A vira
 
 > `optional` **moveSpeed?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:17](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L17)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L19)
 
 Velocidade de caminhada (u/s). Default 2.0 (Unity MoveSpeed).
 
@@ -126,7 +126,7 @@ Velocidade de caminhada (u/s). Default 2.0 (Unity MoveSpeed).
 
 > `optional` **orbit?**: `"free"` \| `"locked"`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:48](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L48)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:50](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L50)
 
 Modo da câmera: `free` (default) = orbital por mouse/stick (pointer lock);
 `locked` = ângulo FIXO (yaw/pitch/distância) — câmera de perseguição elevada
@@ -139,7 +139,7 @@ Troque em runtime com [ThirdPersonControlSystem.setOrbit](../classes/ThirdPerson
 
 > `optional` **padIndex?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:37](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L37)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L39)
 
 Slot do gamepad (0..3). Default 0.
 
@@ -149,7 +149,7 @@ Slot do gamepad (0..3). Default 0.
 
 > `optional` **padLookSpeed?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:33](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L33)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:35](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L35)
 
 Velocidade de orbita da câmera pelo stick direito do gamepad (rad/s). Default 2.6.
 
@@ -159,7 +159,7 @@ Velocidade de orbita da câmera pelo stick direito do gamepad (rad/s). Default 2
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:39](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L39)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:41](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L41)
 
 Pausa (ex.: `() => game.editorActive`). Quando true, não move/olha (mostra o corpo).
 
@@ -173,7 +173,7 @@ Pausa (ex.: `() => game.editorActive`). Quando true, não move/olha (mostra o co
 
 > `optional` **rotationSmoothTime?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L23)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:25](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L25)
 
 Suavização da rotação do personagem ao virar (s). Default 0.12 (Unity RotationSmoothTime).
 
@@ -183,7 +183,7 @@ Suavização da rotação do personagem ao virar (s). Default 0.12 (Unity Rotati
 
 > `optional` **runThreshold?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:29](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L29)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:31](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L31)
 
 Acima de qual velocidade troca walk→run (u/s). Default 3.5.
 
@@ -193,7 +193,7 @@ Acima de qual velocidade troca walk→run (u/s). Default 3.5.
 
 > `optional` **sensitivity?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L21)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:23](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L23)
 
 Sensibilidade do mouse (rad/px). Default 0.0022.
 
@@ -203,7 +203,7 @@ Sensibilidade do mouse (rad/px). Default 0.0022.
 
 > `optional` **shoulderOffset?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L67)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L69)
 
 **Câmera de ombro** (m, SPEC-0297): desloca alvo e câmera ao longo da direita
 da câmera (XZ). Positivo = ombro direito, e o personagem sai do centro da tela
@@ -216,6 +216,6 @@ da câmera (XZ). Positivo = ombro direito, e o personagem sai do centro da tela
 
 > `optional` **sprintSpeed?**: `number`
 
-Defined in: [src/systems/ThirdPersonControlSystem.ts:19](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L19)
+Defined in: [src/systems/ThirdPersonControlSystem.ts:21](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/ThirdPersonControlSystem.ts#L21)
 
 Velocidade de corrida com Shift (u/s). Default 5.335 (Unity SprintSpeed).
