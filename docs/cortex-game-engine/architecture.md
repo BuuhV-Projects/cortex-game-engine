@@ -364,7 +364,10 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   mundo alcança o personagem (`physics/nearMeshes.ts` → `NearMeshIndex`, com folga
   `MOVING_MARGIN` pro que se move); o spring arm da 3ª pessoa faz o mesmo e tem um
   2º raio na altura do peito (parede baixa). ⚠️ objeto novo vira chão/parede em até
-  250 ms — `refresh()` força na hora. ⚠️ o `FirstPersonCameraSystem`
+  250 ms — `refresh()` força na hora. ⚠️ a árvore BVH (`ensureBoundsTree`) é montada
+  com `indirect: true` e **nunca altera a geometria**: o modo padrão do three-mesh-bvh
+  reordena/cria o índice, e numa malha já na GPU o WebGPU desenhava com índice que
+  não subiu (tela preta no editor, SPEC-0304). ⚠️ o `FirstPersonCameraSystem`
   posiciona a câmera a partir da posição **já depenetrada** (antes de aplicar o
   movimento do frame) — senão a câmera aparecia "dentro" da parede por 1 frame.
   ⚠️ Marcar **static** (Inspector → Física) cria um Collider2D (mundo 2.5D, que o
