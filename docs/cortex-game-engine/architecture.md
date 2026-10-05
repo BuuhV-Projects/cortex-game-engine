@@ -367,7 +367,11 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   250 ms — `refresh()` força na hora. ⚠️ a árvore BVH (`ensureBoundsTree`) é montada
   com `indirect: true` e **nunca altera a geometria**: o modo padrão do three-mesh-bvh
   reordena/cria o índice, e numa malha já na GPU o WebGPU desenhava com índice que
-  não subiu (tela preta no editor, SPEC-0304). ⚠️ o `FirstPersonCameraSystem`
+  não subiu (tela preta no editor, SPEC-0304). `InstancedMesh.raycast` também é
+  trocado (`physics/instancedRaycast.ts`, SPEC-0305): descarta instância pela esfera
+  em cache (refeita quando muda `instanceMatrix.version`, `count` ou a `matrixWorld`)
+  antes do teste da geometria — o do three transformava a esfera de TODAS as
+  instâncias em cada raio. ⚠️ o `FirstPersonCameraSystem`
   posiciona a câmera a partir da posição **já depenetrada** (antes de aplicar o
   movimento do frame) — senão a câmera aparecia "dentro" da parede por 1 frame.
   ⚠️ Marcar **static** (Inspector → Física) cria um Collider2D (mundo 2.5D, que o

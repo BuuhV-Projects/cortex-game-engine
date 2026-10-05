@@ -19,8 +19,12 @@
  *    (acima de {@link MIN_BVH_TRIS} triângulos) — em geometrias pequenas o custo
  *    de montar a árvore não compensa.
  */
-import { BufferGeometry, Mesh, type Object3D } from 'three';
+import { BufferGeometry, InstancedMesh, Mesh, type Object3D } from 'three';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
+import { instancedRaycast } from './instancedRaycast.js';
+
+/** O `InstancedMesh.raycast` original do three (antes do patch) — referência dos testes (SPEC-0305). */
+export const threeInstancedRaycast = InstancedMesh.prototype.raycast;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Patch global idempotente (o d.ts do three não conhece estes membros do addon).
@@ -29,6 +33,8 @@ if (!geoProto.computeBoundsTree) {
   geoProto.computeBoundsTree = computeBoundsTree;
   geoProto.disposeBoundsTree = disposeBoundsTree;
   (Mesh.prototype as any).raycast = acceleratedRaycast;
+  // instâncias: descarte por esfera em cache antes do teste de geometria (SPEC-0305)
+  (InstancedMesh.prototype as any).raycast = instancedRaycast;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
