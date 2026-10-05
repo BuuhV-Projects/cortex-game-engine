@@ -55,3 +55,25 @@ describe('raycastAccel — BVH de colisão do Character', () => {
     expect((geo.userData as any)['_cortexBvhSkip']).toBe(true);
   });
 });
+
+describe('raycastAccel — a árvore não altera a geometria (SPEC-0304)', () => {
+  it('geometria SEM índice continua sem índice e o raio acerta igual', () => {
+    const geo = new SphereGeometry(1, 64, 64).toNonIndexed();
+    expect(geo.index).toBeNull();
+    const mesh = new Mesh(geo);
+    mesh.updateMatrixWorld(true);
+    const ray = new Raycaster(new Vector3(0.1, 0.2, 5), new Vector3(0, 0, -1));
+    const before = ray.intersectObject(mesh, false)[0]!.point.clone();
+    ensureBoundsTree(mesh);
+    expect((geo as any).boundsTree).toBeDefined();
+    expect(geo.index).toBeNull(); // o modo padrão criava um índice aqui
+    expect(ray.intersectObject(mesh, false)[0]!.point.distanceTo(before)).toBeLessThan(1e-6);
+  });
+
+  it('geometria COM índice: o índice fica idêntico (não é reordenado)', () => {
+    const geo = new SphereGeometry(1, 64, 64);
+    const copy = Array.from(geo.index!.array);
+    ensureBoundsTree(new Mesh(geo));
+    expect(Array.from(geo.index!.array)).toEqual(copy);
+  });
+});

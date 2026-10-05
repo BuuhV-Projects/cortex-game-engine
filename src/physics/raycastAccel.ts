@@ -51,6 +51,9 @@ export function isSkinned(obj: Object3D): boolean {
  */
 export const MIN_BVH_TRIS = 512;
 
+/** Opções da árvore: nunca alterar a geometria (SPEC-0304). */
+const BVH_OPTIONS = { indirect: true } as const;
+
 /**
  * Garante a árvore BVH da geometria de `mesh` **se valer a pena** (alta
  * contagem de triângulos). Idempotente e O(1) depois da 1ª vez (a árvore fica
@@ -63,13 +66,18 @@ export function ensureBoundsTree(mesh: Object3D): void {
   const m = mesh as Mesh & { isSkinnedMesh?: boolean };
   if (m.isSkinnedMesh) return;
   const g = m.geometry as
-    | (BufferGeometry & { boundsTree?: unknown; computeBoundsTree?: () => void })
+    | (BufferGeometry & { boundsTree?: unknown; computeBoundsTree?: (options?: typeof BVH_OPTIONS) => void })
     | undefined;
   if (!g || g.boundsTree || (g.userData as Record<string, unknown>)['_cortexBvhSkip']) return;
   const posCount = (g.attributes as Record<string, { count?: number }>)['position']?.count ?? 0;
   const triCount = g.index ? g.index.count / 3 : posCount / 3;
   if (triCount >= MIN_BVH_TRIS) {
-    g.computeBoundsTree?.();
+    // `indirect`: a árvore guarda a ordem dos triângulos num buffer próprio e NÃO mexe
+    // na geometria. O modo padrão reordena o índice (e CRIA um, se não houver) — numa
+    // malha já enviada pra GPU, o WebGPU passava a desenhar com um índice que nunca
+    // subiu: "setIndexBuffer: parameter 1 is not of type 'GPUBuffer'", tela preta
+    // ao voar no editor (SPEC-0304).
+    g.computeBoundsTree?.(BVH_OPTIONS);
   } else {
     (g.userData as Record<string, unknown>)['_cortexBvhSkip'] = true; // pequena: não vale a árvore
   }
