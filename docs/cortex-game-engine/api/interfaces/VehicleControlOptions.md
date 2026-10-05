@@ -16,7 +16,7 @@ Opções do [VehicleControlSystem](../classes/VehicleControlSystem.md).
 
 > `optional` **actions?**: [`InputActions`](../classes/InputActions.md)
 
-Defined in: [src/systems/VehicleControlSystem.ts:94](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L94)
+Defined in: [src/systems/VehicleControlSystem.ts:98](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L98)
 
 **Ações de input remapeáveis** (ADR-0164) — passe `game.actions` pra dirigir
 pelas ações `accelerate`/`brake`/`handbrake` + `moveLeft`/`moveRight`
@@ -43,7 +43,7 @@ Só dirige/posiciona a câmera quando `true` (ex.: `() => car.driving`). Default
 
 > `optional` **autopilot?**: () => `boolean`
 
-Defined in: [src/systems/VehicleControlSystem.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L80)
+Defined in: [src/systems/VehicleControlSystem.ts:84](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L84)
 
 **Piloto externo** (SPEC-0223) — quando `active()` é falso, o controlador
 normalmente ESTACIONA o carro (motor 0 + freio de mão). Com `autopilot`
@@ -191,9 +191,11 @@ Velocidade de órbita pelo 2º stick (rad/s). Default 2.5.
 
 > `optional` **pauseWhen?**: () => `boolean`
 
-Defined in: [src/systems/VehicleControlSystem.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L71)
+Defined in: [src/systems/VehicleControlSystem.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L75)
 
-Pausa total (ex.: `() => game.editorActive`).
+Pausa total (ex.: `() => game.editorActive`): o sistema não roda — sem input
+nem passo de física. Lida a cada quadro, então pode ser trocada depois de
+criado o sistema (SPEC-0306).
 
 #### Returns
 
@@ -267,7 +269,7 @@ Velocidade (m/s) em que a redução de esterço chega ao máximo. Default 28.
 
 > `optional` **stepPhysics?**: `boolean`
 
-Defined in: [src/systems/VehicleControlSystem.ts:87](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L87)
+Defined in: [src/systems/VehicleControlSystem.ts:91](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L91)
 
 Este sistema avança o mundo? Default `true`. Use `false` quando um
 `VehicleArcadeSystem` já avança o mesmo `RapierPhysics` (vários carros na

@@ -65,6 +65,11 @@ export interface VehicleHandle {
   physics: RapierPhysics;
   rig: VehicleRig;
   speedo: Speedometer;
+  /**
+   * Opções do {@link VehicleControlSystem}, lidas a cada quadro. Pode trocar
+   * `pauseWhen` depois (ex.: somar o menu de pausa do jogo) — vale pro controle,
+   * o passo da física e as marcas de pneu (SPEC-0306).
+   */
   options: VehicleControlOptions;
   engineSound: EngineSound | null;
 }
@@ -127,7 +132,7 @@ export async function setupVehicle(
   game.world.addSystem(
     new SkidMarkSystem(vehicle, game.scene.getThreeScene(), {
       active: () => state.driving,
-      pauseWhen: () => game.editorActive || game.gameplayPaused,
+      pauseWhen: () => options.pauseWhen?.() ?? false, // a mesma pausa do carro, ao vivo (SPEC-0306)
       skidding: () => (game.gamepad.getButtonValue(0, 6) > 0.6 || game.input.isKeyDown('s')) && Math.abs(vehicle.forwardSpeed()) > 5,
     }),
   );
