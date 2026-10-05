@@ -1,3 +1,22 @@
+# [0.75.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.74.0...v0.75.0) (2026-10-05)
+
+
+### Bug Fixes
+
+* **engine:** BVH de raycast em modo indirect — não altera a geometria já na GPU (SPEC-0304) ([a90133f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a90133fc50999f7ba0b080932f6cdeb14f3b450f))
+* **engine:** vegetação instanciada com culling por esfera (SPEC-0299) ([d4a48f7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d4a48f7a7066bf811384d4c6b1ce045017a9e779))
+
+
+### Features
+
+* **engine:** game.renderCamera — a câmera que está desenhando (editor ou jogo) (SPEC-0303) ([edaa87c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/edaa87c6b1aaa960d6e31364829b64645c010593))
+* **engine:** setupVehicle devolve o mundo físico do carro (SPEC-0300) ([99ee0c5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/99ee0c5ae6af174bb199cda006245d10041edcb5))
+
+
+### Performance Improvements
+
+* **engine:** colisão do personagem e da câmera só contra o que está perto (SPEC-0302) ([b7515cf](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b7515cf4db0e6f99eff78379d0d0444b5daf4908))
+
 # [0.74.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.73.0...v0.74.0) (2026-10-03)
 
 
