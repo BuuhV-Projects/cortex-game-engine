@@ -76,6 +76,17 @@ let _editorAttacher: EditorAttacher | null = null;
  * (`index.dev.js`); no bundle de produção (`index.js`) ninguém registra, então o
  * editor simplesmente não existe (zero peso). Ver ADR-0042.
  */
+/**
+ * Câmera que está desenhando a cena (SPEC-0303): a livre do editor quando ele está
+ * ativo (F2), senão a do jogo. Puro — base de {@link Game.renderCamera}.
+ */
+export function pickRenderCamera(
+  editor: Pick<GameEditor, 'activeCamera'> | null,
+  gameCamera: PerspectiveCamera | OrthographicCamera,
+): PerspectiveCamera | OrthographicCamera {
+  return editor?.activeCamera() ?? gameCamera;
+}
+
 export function registerEditorAttacher(attacher: EditorAttacher): void {
   _editorAttacher = attacher;
 }
@@ -406,6 +417,19 @@ export class Game {
    */
   onUpdate(callback: (deltaSeconds: number) => void): void {
     this._onUpdate = callback;
+  }
+
+  /**
+   * Câmera que está **desenhando** agora: a livre do editor com o F2 aberto, senão a
+   * do jogo (SPEC-0303). Use pra lógica que depende do que está na tela — corte por
+   * distância, LOD — em vez de `camera`, que no editor fica parada no player.
+   *
+   * @example
+   * const p = game.renderCamera.position
+   * city.cull(p.x, p.z, game.editorActive ? EDITOR_FAR : fog.far)
+   */
+  get renderCamera(): PerspectiveCamera | OrthographicCamera {
+    return pickRenderCamera(this._editor, this._activeCamera);
   }
 
   /** `true` se o editor está ligado (bundle de dev). */

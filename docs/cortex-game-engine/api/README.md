@@ -490,6 +490,7 @@
 - [parseSceneNode](functions/parseSceneNode.md)
 - [parseUiCss](functions/parseUiCss.md)
 - [parseUiTemplate](functions/parseUiTemplate.md)
+- [pickRenderCamera](functions/pickRenderCamera.md)
 - [pixelate](functions/pixelate.md)
 - [placeOnGround](functions/placeOnGround.md)
 - [projectOnRoute](functions/projectOnRoute.md)
