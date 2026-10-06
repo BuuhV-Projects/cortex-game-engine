@@ -37,6 +37,23 @@ export function worldSphere(o: Object3D, out: Sphere = tmp): Sphere | null {
   return g.boundingSphere ? out.copy(g.boundingSphere).applyMatrix4(m.matrixWorld) : null;
 }
 
+/**
+ * Percorre `o` como `Object3D.traverse`, podando o que nunca colide (SPEC-0307):
+ * - **não desce** em subárvore com `userData.editorInternal` (gizmo/helpers do editor:
+ *   o flag fica na RAIZ do `TransformControls`, as peças filhas não o têm);
+ * - `hidden` = está numa subárvore escondida (`visible = false` nela ou num
+ *   ancestral). Exceção: o objeto escondido que é ele mesmo `cortexSolid` (nó com
+ *   `visible: false` + `collider` = parede/chão invisível declarado) não esconde.
+ * Quem coleta alvo de colisão ignora `hidden`; quem só prepara (BVH) pode usá-lo.
+ */
+export function traverseCollidable(o: Object3D, visit: (o: Object3D, hidden: boolean) => void, hidden = false): void {
+  const ud = o.userData as Record<string, unknown>;
+  if (ud['editorInternal']) return;
+  const h = hidden || (!o.visible && ud['cortexSolid'] !== true);
+  visit(o, h);
+  for (const c of o.children) traverseCollidable(c, visit, h);
+}
+
 /** Floats por malha no índice: centro x, y, z e raio (já com a folga). */
 const STRIDE = 4;
 
@@ -62,12 +79,19 @@ export class NearMeshIndex {
     }
   }
 
-  /** As que alcançam (x, z) no plano até `reach` — raios verticais e paredes curtas. */
-  nearXZ(x: number, z: number, reach: number, out: Object3D[]): Object3D[] {
+  /**
+   * As que alcançam (x, z) no plano até `reach` — raios verticais e paredes curtas.
+   * `minY`/`maxY` (SPEC-0307): descarta a esfera toda abaixo de `minY` ou toda acima
+   * de `maxY` (ex.: o raio de chão, que só desce, passa `maxY` = altura da origem).
+   */
+  nearXZ(x: number, z: number, reach: number, out: Object3D[], minY = -Infinity, maxY = Infinity): Object3D[] {
     out.length = 0;
     for (let i = 0; i < this.meshes.length; i++) {
       const k = i * STRIDE;
-      const r = this.data[k + 3]! + reach;
+      const sr = this.data[k + 3]!;
+      const cy = this.data[k + 1]!;
+      if (cy - sr > maxY || cy + sr < minY) continue;
+      const r = sr + reach;
       const dx = this.data[k]! - x;
       const dz = this.data[k + 2]! - z;
       if (dx * dx + dz * dz <= r * r) out.push(this.meshes[i]!);

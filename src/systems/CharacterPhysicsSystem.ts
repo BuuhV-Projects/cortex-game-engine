@@ -5,7 +5,7 @@ import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { ensureBoundsTree, isSkinned } from '../physics/raycastAccel.js';
-import { NearMeshIndex } from '../physics/nearMeshes.js';
+import { NearMeshIndex, traverseCollidable } from '../physics/nearMeshes.js';
 
 const DOWN = new Vector3(0, -1, 0);
 /** Tolerância de contato (skin width) — folga p/ considerar "tocando o chão". */
@@ -53,7 +53,9 @@ const TRUNK_RADIUS = 0.4;
  * - `groundMeshes`: tudo PISÁVEL (terreno/road/solid/modelos) → alvo do raycast de CHÃO.
  * A **vegetação fica fora de todos os raycasts** (colisão é por cilindro/`trunks`),
  * então o raycast dela pode ficar LIGADO pro editor selecioná-la sem custo na física.
- * Sub-malhas de vegetação, gizmos do editor e a decoração de marcação ficam de fora.
+ * Sub-malhas de vegetação, gizmos do editor (a subárvore inteira), o que está
+ * escondido (`visible = false`, salvo collider invisível declarado) e a decoração de
+ * marcação ficam de fora (SPEC-0307).
  */
 function collectScene(
   roots: Object3D[],
@@ -67,15 +69,21 @@ function collectScene(
   terrainMeshes.length = 0;
   groundMeshes.length = 0;
   for (const root of roots) {
-    root.traverse((o) => {
+    traverseCollidable(root, (o, hidden) => {
       const ud = o.userData as Record<string, unknown>;
+      if (hidden) {
+        // escondido não colide, mas o BVH sai agora (carga), não no quadro em que o
+        // culling o mostrar — senão vira um pico no meio do jogo (SPEC-0307)
+        if ((o as { isMesh?: boolean }).isMesh && !ud['cortexVegetationSub'] && !ud['cortexWater'] && !isSkinned(o)) ensureBoundsTree(o);
+        return;
+      }
       if (ud['cortexVegetation'] && ud['cortexSolid'] === true) {
         const inst = (ud['cortexVegetation'] as { getInstances(): number[] }).getInstances();
         for (let i = 0; i < inst.length; i += 5) trunks.push(inst[i]!, inst[i + 2]!, TRUNK_RADIUS * inst[i + 4]!);
         return;
       }
       if (!(o as { isMesh?: boolean }).isMesh || ud['cortexVegetationSub']) return;
-      if (ud['editorInternal'] || ud['cortexRoadMarkings']) return; // gizmo/decoração: fora da física
+      if (ud['cortexRoadMarkings']) return; // decoração: fora da física
       // Água é cenário LÍQUIDO, nunca colisão (SPEC-0163): sem ela aqui, o
       // player pousava na superfície e o corte de morte (fallY logo abaixo)
       // nunca disparava. O raycast do mesh fica ligado pro picking do editor.
@@ -109,21 +117,6 @@ export function resolveWallPush(
     dx: pen(near.nx) - pen(near.px), // parede em +X empurra pra −X
     dz: pen(near.nz) - pen(near.pz),
   };
-}
-
-/**
- * `obj` é chrome do editor (gizmo/helper)? Checa o objeto **e seus ancestrais** —
- * o `editorInternal` fica na RAIZ do helper (ex.: o `TransformControls`), mas o
- * raycast acerta as peças FILHAS (XYZ/X/Y/Z/AXIS…) que não têm o flag. Sem subir a
- * cadeia, o personagem "aterrava" no gizmo (a alça do gizmo lá em cima) e subia.
- */
-function isEditorChrome(obj: Object3D): boolean {
-  let p: Object3D | null = obj;
-  while (p) {
-    if (p.userData?.['editorInternal'] === true) return true;
-    p = p.parent;
-  }
-  return false;
 }
 
 /**
@@ -227,10 +220,10 @@ export class CharacterPhysicsSystem extends System {
         this.ray.far = Infinity;
         const self = e.getComponent(Object3DComponent)?.object;
         // sem recursão: a lista já tem cada malha (filhos inclusive) — recursivo testava os filhos de novo
-        const hits = this.ray.intersectObjects(this.groundIndex.nearXZ(t.x, t.z, SKIN, this.nearGround), false);
+        // o raio só desce: malha toda acima da origem não entra (SPEC-0307)
+        const hits = this.ray.intersectObjects(this.groundIndex.nearXZ(t.x, t.z, SKIN, this.nearGround, -Infinity, this.origin.y), false);
         for (const h of hits) {
           if (self && isUnder(h.object, self)) continue; // ignora o próprio mesh
-          if (isEditorChrome(h.object)) continue; // ignora gizmo/helpers do editor
           groundHeight = h.point.y; // 1ª superfície válida (a mais próxima abaixo da origem)
           break;
         }
@@ -286,7 +279,7 @@ export class CharacterPhysicsSystem extends System {
         const feetY = t.y - c.footOffset;
         const self = e.getComponent(Object3DComponent)?.object;
         const ys = [feetY + Math.min(r, c.height * 0.5), feetY + c.height * 0.5, feetY + Math.max(c.height - r, c.height * 0.5)];
-        const walls = this.solidIndex.nearXZ(t.x, t.z, r + SKIN, this.nearSolid);
+        const walls = this.solidIndex.nearXZ(t.x, t.z, r + SKIN, this.nearSolid, ys[0], ys[2]);
         const cast = (dx: number, dz: number): number | null => {
           this.wallDir.set(dx, 0, dz);
           let nearest: number | null = null;
@@ -296,7 +289,6 @@ export class CharacterPhysicsSystem extends System {
             this.ray.far = r + SKIN;
             for (const h of this.ray.intersectObjects(walls, false)) {
               if (self && isUnder(h.object, self)) continue;
-              if (isEditorChrome(h.object)) continue;
               if (nearest === null || h.distance < nearest) nearest = h.distance;
               break;
             }

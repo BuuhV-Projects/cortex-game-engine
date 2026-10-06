@@ -2,9 +2,9 @@
  * SPEC-0302: filtro "só o que está perto" dos raycasts de colisão e o cache da
  * varredura da cena no CharacterPhysicsSystem.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { BoxGeometry, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Object3D, Vector3 } from 'three';
-import { MOVING_MARGIN, NearMeshIndex } from '../../src/physics/nearMeshes.js';
+import { MOVING_MARGIN, NearMeshIndex, traverseCollidable } from '../../src/physics/nearMeshes.js';
 import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
 import { CharacterBodyComponent } from '../../src/components/CharacterBodyComponent.js';
@@ -88,5 +88,73 @@ describe('CharacterPhysicsSystem: varredura em cache (SPEC-0302)', () => {
     sys.refresh();
     world.tick(16);
     expect(t.y).toBeCloseTo(0.5);
+  });
+});
+
+describe('SPEC-0307: sem gizmo do editor, sem escondido, faixa vertical', () => {
+  it('traverseCollidable poda o gizmo inteiro e marca a subárvore escondida', () => {
+    const root = new Object3D();
+    const gizmo = new Object3D();
+    gizmo.userData['editorInternal'] = true; // flag só na raiz (como o TransformControls)
+    const handle = box(0, 0, 0);
+    gizmo.add(handle);
+    const hiddenGroup = new Object3D();
+    hiddenGroup.visible = false;
+    const culled = box(0, 0, 0);
+    hiddenGroup.add(culled);
+    const proxy = box(0, 0, 0); // collider invisível declarado
+    proxy.visible = false;
+    proxy.userData['cortexSolid'] = true;
+    root.add(gizmo, hiddenGroup, proxy);
+    const seen = new Map<Object3D, boolean>();
+    traverseCollidable(root, (o, hidden) => seen.set(o, hidden));
+    expect(seen.has(handle)).toBe(false);
+    expect(seen.get(culled)).toBe(true);
+    expect(seen.get(proxy)).toBe(false);
+  });
+
+  it('nearXZ com maxY/minY descarta a esfera toda fora da faixa', () => {
+    const ground = box(0, -1, 0);
+    const roof = box(0, 50, 0);
+    const idx = index([ground, roof]);
+    expect(idx.nearXZ(0, 0, 0, [], -Infinity, 1)).toEqual([ground]);
+    expect(idx.nearXZ(0, 0, 0, [], 40, Infinity)).toEqual([roof]);
+  });
+
+  const stand = (scene: Object3D) => {
+    scene.updateMatrixWorld(true);
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 1, 0);
+    const c = new CharacterBodyComponent({ footOffset: 0, groundY: -10 });
+    e.addComponent(t);
+    e.addComponent(c);
+    for (let i = 0; i < 60; i++) world.tick(16);
+    return t;
+  };
+
+  it('chão escondido não é chão; collider invisível (cortexSolid) é', () => {
+    const scene = new Object3D();
+    const holder = new Object3D();
+    holder.visible = false;
+    holder.add(box(0, -1, 0)); // topo em y = 0
+    scene.add(holder);
+    expect(stand(scene).y).toBeCloseTo(-10); // caiu até o piso de segurança
+    holder.userData['cortexSolid'] = true;
+    expect(stand(scene).y).toBeCloseTo(0);
+  });
+
+  it('peças do gizmo (sem o flag, filhas da raiz marcada) nem entram no raycast', () => {
+    const scene = new Object3D();
+    scene.add(box(0, -1, 0));
+    const gizmo = new Object3D();
+    gizmo.userData['editorInternal'] = true;
+    const handle = box(0, 0.5, 0, 0.5);
+    const spy = vi.spyOn(handle, 'raycast');
+    gizmo.add(handle);
+    scene.add(gizmo);
+    expect(stand(scene).y).toBeCloseTo(0);
+    expect(spy).not.toHaveBeenCalled();
   });
 });

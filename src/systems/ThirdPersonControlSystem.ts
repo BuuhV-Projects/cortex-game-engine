@@ -10,7 +10,7 @@ import type { InputActions } from '../input/InputActions.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { deriveLocomotion, autoMapPlayerClips } from './PlatformerAnimationSystem.js';
 import { isSkinned } from '../physics/raycastAccel.js';
-import { NearMeshIndex } from '../physics/nearMeshes.js';
+import { NearMeshIndex, traverseCollidable } from '../physics/nearMeshes.js';
 import { COLLECT_INTERVAL_MS } from './CharacterPhysicsSystem.js';
 
 /** Opções do {@link ThirdPersonControlSystem} (porta o ThirdPersonController do Unity StarterAssets). */
@@ -95,14 +95,10 @@ const CAM_LOW_RAY_FRACTION = 0.5;
 /** Duração (s) que o clipe `run_stop` segura antes de cair pro idle. */
 const RUN_STOP_DUR = 0.45;
 
-/** A câmera ignora (não colide com) o próprio player e os gizmos/chrome do editor. */
-function isCamIgnored(obj: THREE.Object3D, self?: THREE.Object3D): boolean {
-  let p: THREE.Object3D | null = obj;
-  while (p) {
-    if (self && p === self) return true;
-    if (p.userData['editorInternal']) return true;
-    p = p.parent;
-  }
+/** A câmera ignora (não colide com) o próprio player (gizmo e escondido saem na poda, SPEC-0307). */
+function isUnderSelf(obj: THREE.Object3D, self?: THREE.Object3D): boolean {
+  if (!self) return false;
+  for (let p: THREE.Object3D | null = obj; p; p = p.parent) if (p === self) return true;
   return false;
 }
 
@@ -409,13 +405,13 @@ export class ThirdPersonControlSystem extends System {
       // Alvos coletados ANTES do raycast, pulando malha skinada: o raio nasce na
       // cabeça do personagem e raycast em SkinnedMesh computa o skinning por
       // vértice na CPU a cada raio (ver isSkinned em raycastAccel) — filtrar nos
-      // HITS (isCamIgnored) já pagava esse custo todo frame.
+      // HITS já pagava esse custo todo frame.
       // Varre a cena só a cada COLLECT_INTERVAL_MS (SPEC-0302).
       if (this.sinceCamCollect >= COLLECT_INTERVAL_MS || this.camSelf !== self) {
         this.camTargets.length = 0;
-        this.collisionRoot.traverse((o) => {
-          if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
-          if (isCamIgnored(o, self)) return;
+        traverseCollidable(this.collisionRoot, (o, hidden) => {
+          if (hidden || !(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
+          if (isUnderSelf(o, self)) return;
           this.camTargets.push(o);
         });
         this.camIndex.rebuild(this.camTargets);

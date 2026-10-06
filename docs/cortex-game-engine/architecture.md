@@ -367,7 +367,12 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   mundo alcança o personagem (`physics/nearMeshes.ts` → `NearMeshIndex`, com folga
   `MOVING_MARGIN` pro que se move); o spring arm da 3ª pessoa faz o mesmo e tem um
   2º raio na altura do peito (parede baixa). ⚠️ objeto novo vira chão/parede em até
-  250 ms — `refresh()` força na hora. ⚠️ a árvore BVH (`ensureBoundsTree`) é montada
+  250 ms — `refresh()` força na hora. ⚠️ **escondido não colide** (SPEC-0307): a
+  varredura (`traverseCollidable`) poda a subárvore do gizmo do editor
+  (`editorInternal` na raiz) e a subárvore `visible = false` — exceto o objeto
+  escondido que é ele mesmo `cortexSolid` (nó `visible: false` + `collider` = malha
+  de colisão invisível). O BVH das escondidas ainda é montado na varredura, pra não
+  pesar no quadro em que o culling as mostra. ⚠️ a árvore BVH (`ensureBoundsTree`) é montada
   com `indirect: true` e **nunca altera a geometria**: o modo padrão do three-mesh-bvh
   reordena/cria o índice, e numa malha já na GPU o WebGPU desenhava com índice que
   não subiu (tela preta no editor, SPEC-0304). `InstancedMesh.raycast` também é
