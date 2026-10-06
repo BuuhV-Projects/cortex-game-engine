@@ -172,7 +172,9 @@ describe('ThirdPersonControlSystem — colisão de câmera (spring arm)', () => 
       const controls = new TransformControls(gizmoCam);
       const helper = (controls as unknown as { getHelper(): THREE.Object3D }).getHelper();
       if (marked) helper.userData['editorInternal'] = true;
-      helper.visible = false;
+      // tudo visível (os pickers nascem invisíveis e já saem pela poda de escondidos,
+      // SPEC-0307) — aqui o que se prova é a marca na RAIZ excluir as peças filhas
+      helper.traverse((o) => (o.visible = true));
       scene.add(helper);
       return scene;
     };
@@ -187,6 +189,26 @@ describe('ThirdPersonControlSystem — colisão de câmera (spring arm)', () => 
     const ok = setupCam(mkScene(true));
     ok.world.tick(16);
     expect(ok.camera.position.distanceTo(target)).toBeCloseTo(5.5, 1);
+  });
+
+  it('parede escondida não puxa a câmera; collider invisível declarado (cortexSolid) puxa (SPEC-0307)', () => {
+    const mk = (solid: boolean) => {
+      const scene = new THREE.Scene();
+      const holder = new THREE.Group(); // o nó escondido é o PAI (como o culling por célula)
+      holder.visible = false;
+      if (solid) holder.userData['cortexSolid'] = true;
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 0.5));
+      wall.position.set(0, 0, 2);
+      holder.add(wall);
+      scene.add(holder);
+      return scene;
+    };
+    const hidden = setupCam(mk(false));
+    hidden.world.tick(16);
+    expect(hidden.camera.position.distanceTo(target)).toBeCloseTo(5.5, 1);
+    const solid = setupCam(mk(true));
+    solid.world.tick(16);
+    expect(solid.camera.position.distanceTo(target)).toBeLessThan(5.4);
   });
 });
 
