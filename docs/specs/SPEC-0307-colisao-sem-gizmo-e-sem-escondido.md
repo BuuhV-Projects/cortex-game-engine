@@ -60,3 +60,10 @@ No Detetive Brasília, com o personagem em (0, 0), o perfil de CPU mostrou o
   material transparente.
 - O personagem escondido pela câmera (occlusion fade) já era ignorado (é o
   próprio mesh); nada muda.
+
+## Medição (Detetive Brasília, probe headless, ms por quadro)
+
+| | física na origem | câmera na origem | física no spawn | câmera no spawn | malhas na lista de chão |
+|---|---|---|---|---|---|
+| antes | 4,06–4,33 | 1,20–1,44 | 0,74–0,79 | 0,62–0,68 | 5950 (3486 "perto" da origem) |
+| depois | 0,77 | 0,35 | 0,54–0,55 | 0,45 | ~550 (107 "perto" da origem) |
