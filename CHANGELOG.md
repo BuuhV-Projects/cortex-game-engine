@@ -1,3 +1,10 @@
+## [0.75.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.75.0...v0.75.1) (2026-10-05)
+
+
+### Performance Improvements
+
+* **engine:** raycast de InstancedMesh com esferas em cache por instância (SPEC-0305) ([0012bc5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0012bc55514c66a6b4a29523fd4825ce62b25175))
+
 # [0.75.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.74.0...v0.75.0) (2026-10-05)
 
 
