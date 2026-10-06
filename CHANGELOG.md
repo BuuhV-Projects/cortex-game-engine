@@ -1,3 +1,10 @@
+## [0.75.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.75.1...v0.75.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* **engine:** pausa do veículo lida ao vivo de options.pauseWhen (SPEC-0306) ([677b54d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/677b54d109d4e980d286eb00a7100264b4cd470e))
+
 ## [0.75.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.75.0...v0.75.1) (2026-10-05)
 
 
