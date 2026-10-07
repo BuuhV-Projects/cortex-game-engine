@@ -55,3 +55,29 @@ Sem helper novo exportado: o flag em `userData` basta (é dado, serializa no
 - Testes: `tests/physics/raycastAccel.test.ts` (noRaycast sem árvore; colidível com
   árvore; embrulho `(ray, out)` mantém árvore e acerta), `tests/systems/CharacterPhysics.test.ts` (escondida colidível ganha BVH na
   carga; `cortexNoCollide`/noRaycast não; colidível continua segurando o chão).
+
+## Medição (Detetive Brasília e81d04d, Chrome headless WebGPU, A = vendor da main × B = esta mudança, mesmo commit do jogo, rodadas intercaladas)
+
+| | A | B |
+|---|---|---|
+| geometrias com BVH | 287 | 217 (−70) |
+| memória dos BVH (ArrayBuffer, fora do heap JS) | 9,2 MB | 6,7 MB (−2,5 MB) |
+| malhas `noRaycast` com BVH | 94 | 23 (geometria compartilhada com malha colidível) |
+| heap JS após GC | 107,5 MB | 107,5 MB (igual: o BVH é memória externa) |
+| carregamento até o 1º quadro (3×) | 3,65–3,72 s | 3,69–3,87 s (ruído) |
+| tempo em `ensureBoundsTree` no início (perfil) | ~210 ms | ~185 ms |
+| fps Centro / Águas Claras (mediana de 3, sem vsync) | — | igual a A (±1–3%, nos dois sentidos) |
+
+Colisão: personagem andando contra torres de AC, estação, lojas e na origem (4
+direções cada) termina na MESMA posição em A e B (±3 cm) e a câmera encolhe igual
+contra parede (1,01 m), sem atravessar.
+
+A 1ª versão (pular qualquer `raycast` sobrescrito) dava 201 BVH, mas tirava a árvore
+dos carros do jogo (`hiddenNotSolid`) — CPU do Centro subiu; corrigido pelo critério
+"sem parâmetros" (item 1).
+
+Fora do escopo, achado na mesma medição: o travamento de ~7–10 s logo após o start
+(1 quadro de ~2 s + 1 de ~6–8 s) **não é BVH**. No trace do Chrome a thread do JS
+fica ociosa e o processo de GPU compila **140 render pipelines**
+(`DeviceBase::APICreateRenderPipeline` 8,9 s, `CompileShaderDXC` 5,4 s) — custo de
+variantes de material/pipeline no 1º desenho (aquecimento + primeiros quadros).
