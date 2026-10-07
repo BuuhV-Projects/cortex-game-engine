@@ -73,4 +73,27 @@ cada 250 ms só pra garantir o BVH (SPEC-0307), duas vezes (física e câmera).
 
 ## Medição
 
-(preenchida após o A/B)
+Export release (sem `--debug`) do DDD 61 3e2323d, A = engine main e4e10dca × B = esta
+mudança, `?systemProfile=1`, 100–110 s por rodada, descarta os 30 s iniciais, pares
+intercalados (A,B depois B,A). ms/quadro = acumulado da janela de 500 ms ÷ quadros.
+Máquina não ociosa (outros exports rodando em paralelo): leia as faixas, não o 2º
+decimal.
+
+| ponto | | CharacterPhysics ms/q | ThirdPerson ms/q | frameMs med | fps (1000/med) |
+| --- | --- | --- | --- | --- | --- |
+| spawn Setor O | A | 11,5 / 8,5 | 5,1 / 3,7 | 80,3 / 61,0 | 12,5 / 16,4 |
+| spawn Setor O | B | 3,0 / 3,0 | 1,2 / 1,2 | 57,3 / 58,1 | 17,5 / 17,2 |
+| Taguatinga | A | 11,1 / 9,8 | 6,0 / 5,2 | 71,6 / 62,9 | 14,0 / 15,9 |
+| Taguatinga | B | 3,2 / 3,1 | 1,0 / 1,0 | 55,4 / 52,7 | 18,1 / 19,0 |
+
+Baldes da sonda (spawn, ms por 500 ms, A → B): parede 42,9 → 15,0; chão 11,5 → 7,0;
+varredura 14,0 → 2,3; câmera: varredura 12,3 → 2,3, raios 18,5 → 7,6. As listas têm o
+mesmo tamanho nos dois (99 sólidos, ~283 alvos da câmera).
+
+Colisão igual: no navegador (vite do jogo, bundle dev A × B), 20 quedas numa grade
+em volta do spawn + 4 caminhadas contra parede com `world.tick(16)` determinístico
+deram posição do personagem e da câmera **idênticas** número a número.
+
+O que sobra no sistema (~3 ms/q) é a parede: 12 raios × ~33 malhas "perto" (a folga
+`MOVING_MARGIN` de 5 m põe muita malha estática na lista); `VehicleControlSystem`
+(~2,5 ms/q, passo do Rapier) não mudou.
