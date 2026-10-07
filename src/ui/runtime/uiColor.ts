@@ -74,6 +74,7 @@ export function parseUiBoxShadow(value: string): ParsedUiBoxShadow | null {
  */
 export function parseUiColor(value: string): ParsedUiColor {
   const v = value.trim();
+  if (v.toLowerCase() === 'transparent') return { rgb: '#000000', alpha: 0 };
 
   // #rgb | #rgba | #rrggbb | #rrggbbaa
   if (v.startsWith('#')) {

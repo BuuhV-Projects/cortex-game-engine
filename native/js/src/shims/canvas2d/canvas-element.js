@@ -17,6 +17,7 @@ export function HTMLCanvasElement() {
 }
 
 function resize(element, width, height) {
+  element.__cortexVersion++; // pixels zerados = conteúdo novo (SPEC-0317)
   element.__surface = createSurface(width, height);
   if (element.__context) element.__context._reset();
 }
@@ -26,6 +27,9 @@ export function createCanvasElement(width, height) {
   Object.setPrototypeOf(element, HTMLCanvasElement.prototype);
   element.__surface = createSurface(width === undefined ? DEFAULT_WIDTH : width, height === undefined ? DEFAULT_HEIGHT : height);
   element.__context = null;
+  // Versão do conteúdo: sobe a cada operação de pixel/redimensionamento. A UI de
+  // runtime (UiCanvas, ADR-0316) só re-sobe a textura quando ela muda.
+  element.__cortexVersion = 0;
   Object.defineProperty(element, 'width', {
     get() { return element.__surface.width; },
     set(value) { resize(element, Number(value), element.__surface.height); },

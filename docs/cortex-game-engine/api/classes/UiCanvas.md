@@ -2,46 +2,55 @@
 
 ***
 
-[cortex-game-engine](../README.md) / UiPanel
+[cortex-game-engine](../README.md) / UiCanvas
 
-# Class: UiPanel
+# Class: UiCanvas
 
-Defined in: [src/ui/runtime/widgets.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L56)
+Defined in: [src/ui/runtime/widgets.ts:216](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L216)
 
-Caixa (fundo de HUD, card de menu, faixa de banner). O estilo é um SUBSET
-do CSS **com os MESMOS nomes do HTML5** (filosofia DOM-lite: não reinventar
-— `background`, `borderRadius`, `boxShadow`...), que os DOIS backends
-desenham igual (ADR-0102). Toda cor aceita alpha (`#rrggbbaa`/`rgba(...)`).
+`<canvas>` da UI de runtime (ADR-0316): dono de um `HTMLCanvasElement` real
+onde o jogo desenha com `getContext('2d')` — radar, minimapa, minigame. No
+browser o backend DOM põe o PRÓPRIO elemento na tela; no host nativo o
+backend renderer sobe os pixels pra uma textura sempre que o canvas muda.
+
+`width`/`height` do widget = tamanho EXIBIDO (0 = o do bitmap); o bitmap é o
+`canvas.width/height` (atributos `width`/`height` do template). O bitmap é
+esticado pro tamanho exibido (`object-fit: fill`, como no HTML5) dentro da
+borda. Fundo default `transparent`, como o canvas do HTML5.
+
+## Example
+
+```ts
+const hud = await loadUiTemplate(game.ui, 'assets/ui/hud.html');
+const g = (hud.get('radar') as UiCanvas).canvas.getContext('2d')!;
+g.fillRect(0, 0, 10, 10); // aparece no Studio e no export nativo
+```
 
 ## Extends
 
-- [`UiWidget`](UiWidget.md)
-
-## Extended by
-
-- [`UiCanvas`](UiCanvas.md)
+- [`UiPanel`](UiPanel.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new UiPanel**(`props?`): `UiPanel`
+> **new UiCanvas**(`props?`): `UiCanvas`
 
-Defined in: [src/ui/runtime/widgets.ts:99](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L99)
+Defined in: [src/ui/runtime/widgets.ts:221](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L221)
 
 #### Parameters
 
 ##### props?
 
-[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiPanel`, `"background"` \| `"backgroundTo"` \| `"cornerRadius"` \| `"borderRadius"` \| `"borderWidth"` \| `"borderColor"` \| `"backgroundImage"` \| `"boxShadow"`\>\> = `{}`
+[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiCanvas`, `"background"` \| `"cornerRadius"` \| `"borderWidth"` \| `"borderColor"` \| `"boxShadow"` \| `"pointerEvents"`\>\> & `object` = `{}`
 
 #### Returns
 
-`UiPanel`
+`UiCanvas`
 
 #### Overrides
 
-[`UiWidget`](UiWidget.md).[`constructor`](UiWidget.md#constructor)
+[`UiPanel`](UiPanel.md).[`constructor`](UiPanel.md#constructor)
 
 ## Properties
 
@@ -53,7 +62,7 @@ Defined in: [src/ui/runtime/widgets.ts:28](https://github.com/BuuhV-Projects/cor
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`anchor`](UiWidget.md#anchor)
+[`UiPanel`](UiPanel.md).[`anchor`](UiPanel.md#anchor)
 
 ***
 
@@ -66,6 +75,10 @@ Defined in: [src/ui/runtime/widgets.ts:62](https://github.com/BuuhV-Projects/cor
 `background` do CSS: cor (`#rrggbb`, `#rrggbbaa`, `rgba(...)`) OU
 gradiente `linear-gradient(180deg|90deg, c1, c2)` (180deg = topo→base,
 90deg = esquerda→direita — únicos ângulos do subset).
+
+#### Inherited from
+
+[`UiPanel`](UiPanel.md).[`background`](UiPanel.md#background)
 
 ***
 
@@ -81,6 +94,10 @@ cor/gradiente (que ficam de fallback enquanto a imagem carrega). `null` =
 sem imagem. Funciona nos dois backends (DOM: `background-image`; console:
 quad texturizado). Atributo `image` no template.
 
+#### Inherited from
+
+[`UiPanel`](UiPanel.md).[`backgroundImage`](UiPanel.md#backgroundimage)
+
 ***
 
 ### ~~backgroundTo~~
@@ -93,6 +110,10 @@ Defined in: [src/ui/runtime/widgets.ts:64](https://github.com/BuuhV-Projects/cor
 
 Use `background: 'linear-gradient(180deg, c1, c2)'` (CSS).
 
+#### Inherited from
+
+[`UiPanel`](UiPanel.md).[`backgroundTo`](UiPanel.md#backgroundto)
+
 ***
 
 ### borderColor
@@ -103,6 +124,10 @@ Defined in: [src/ui/runtime/widgets.ts:77](https://github.com/BuuhV-Projects/cor
 
 `border-color` do CSS.
 
+#### Inherited from
+
+[`UiPanel`](UiPanel.md).[`borderColor`](UiPanel.md#bordercolor)
+
 ***
 
 ### borderWidth
@@ -112,6 +137,10 @@ Defined in: [src/ui/runtime/widgets.ts:77](https://github.com/BuuhV-Projects/cor
 Defined in: [src/ui/runtime/widgets.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L75)
 
 `border-width` do CSS (px; 0 = sem borda).
+
+#### Inherited from
+
+[`UiPanel`](UiPanel.md).[`borderWidth`](UiPanel.md#borderwidth)
 
 ***
 
@@ -125,6 +154,20 @@ Defined in: [src/ui/runtime/widgets.ts:83](https://github.com/BuuhV-Projects/cor
 chapada dos botões cartoon) ou `"none"`. Sem blur/spread — os dois
 backends desenham uma cópia da caixa deslocada N px pra baixo.
 
+#### Inherited from
+
+[`UiPanel`](UiPanel.md).[`boxShadow`](UiPanel.md#boxshadow)
+
+***
+
+### canvas
+
+> `readonly` **canvas**: `HTMLCanvasElement`
+
+Defined in: [src/ui/runtime/widgets.ts:218](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L218)
+
+O elemento canvas (desenhe nele como no browser).
+
 ***
 
 ### cornerRadius
@@ -133,7 +176,11 @@ backends desenham uma cópia da caixa deslocada N px pra baixo.
 
 Defined in: [src/ui/runtime/widgets.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L66)
 
-Raio dos cantos em px (0 = reto). Nome legado de [borderRadius](#borderradius).
+Raio dos cantos em px (0 = reto). Nome legado de [borderRadius](UiPanel.md#borderradius).
+
+#### Inherited from
+
+[`UiPanel`](UiPanel.md).[`cornerRadius`](UiPanel.md#cornerradius)
 
 ***
 
@@ -147,7 +194,7 @@ Sujo = backend precisa re-sincronizar este widget.
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`dirty`](UiWidget.md#dirty)
+[`UiPanel`](UiPanel.md).[`dirty`](UiPanel.md#dirty)
 
 ***
 
@@ -162,6 +209,10 @@ Painel de fundo do tamanho do viewport (atributo `fill` do template). Quando
 sem isso o painel ficaria travado no tamanho de quando foi criado e não
 cobriria a tela após um resize (ex.: entrar em fullscreen).
 
+#### Inherited from
+
+[`UiPanel`](UiPanel.md).[`fill`](UiPanel.md#fill)
+
 ***
 
 ### height
@@ -172,7 +223,7 @@ Defined in: [src/ui/runtime/widgets.ts:33](https://github.com/BuuhV-Projects/cor
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`height`](UiWidget.md#height)
+[`UiPanel`](UiPanel.md).[`height`](UiPanel.md#height)
 
 ***
 
@@ -184,7 +235,7 @@ Defined in: [src/ui/runtime/widgets.ts:27](https://github.com/BuuhV-Projects/cor
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`id`](UiWidget.md#id)
+[`UiPanel`](UiPanel.md).[`id`](UiPanel.md#id)
 
 ***
 
@@ -196,7 +247,7 @@ Defined in: [src/ui/runtime/widgets.ts:38](https://github.com/BuuhV-Projects/cor
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`measuredHeight`](UiWidget.md#measuredheight)
+[`UiPanel`](UiPanel.md).[`measuredHeight`](UiPanel.md#measuredheight)
 
 ***
 
@@ -210,7 +261,7 @@ Tamanho MEDIDO pelo backend (texto rasterizado) — leitura.
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`measuredWidth`](UiWidget.md#measuredwidth)
+[`UiPanel`](UiPanel.md).[`measuredWidth`](UiPanel.md#measuredwidth)
 
 ***
 
@@ -222,7 +273,17 @@ Defined in: [src/ui/runtime/widgets.ts:35](https://github.com/BuuhV-Projects/cor
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`opacity`](UiWidget.md#opacity)
+[`UiPanel`](UiPanel.md).[`opacity`](UiPanel.md#opacity)
+
+***
+
+### pointerEvents
+
+> **pointerEvents**: `"none"` \| `"auto"` = `'auto'`
+
+Defined in: [src/ui/runtime/widgets.ts:220](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L220)
+
+`pointer-events` do CSS: `none` deixa o clique passar pro jogo (só no DOM).
 
 ***
 
@@ -234,7 +295,7 @@ Defined in: [src/ui/runtime/widgets.ts:34](https://github.com/BuuhV-Projects/cor
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`visible`](UiWidget.md#visible)
+[`UiPanel`](UiPanel.md).[`visible`](UiPanel.md#visible)
 
 ***
 
@@ -248,7 +309,7 @@ Tamanho declarado (Panel/Button). Labels medem no backend.
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`width`](UiWidget.md#width)
+[`UiPanel`](UiPanel.md).[`width`](UiPanel.md#width)
 
 ***
 
@@ -260,7 +321,7 @@ Defined in: [src/ui/runtime/widgets.ts:29](https://github.com/BuuhV-Projects/cor
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`x`](UiWidget.md#x)
+[`UiPanel`](UiPanel.md).[`x`](UiPanel.md#x)
 
 ***
 
@@ -272,7 +333,7 @@ Defined in: [src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cor
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`y`](UiWidget.md#y)
+[`UiPanel`](UiPanel.md).[`y`](UiPanel.md#y)
 
 ## Accessors
 
@@ -284,7 +345,7 @@ Defined in: [src/ui/runtime/widgets.ts:30](https://github.com/BuuhV-Projects/cor
 
 Defined in: [src/ui/runtime/widgets.ts:68](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L68)
 
-`border-radius` do CSS (px). Alias primário de [cornerRadius](#cornerradius).
+`border-radius` do CSS (px). Alias primário de [cornerRadius](UiPanel.md#cornerradius).
 
 ##### Returns
 
@@ -305,6 +366,10 @@ Defined in: [src/ui/runtime/widgets.ts:71](https://github.com/BuuhV-Projects/cor
 ##### Returns
 
 `void`
+
+#### Inherited from
+
+[`UiPanel`](UiPanel.md).[`borderRadius`](UiPanel.md#borderradius)
 
 ## Methods
 
@@ -328,4 +393,4 @@ Aplica props e marca o widget pra re-sincronização.
 
 #### Inherited from
 
-[`UiWidget`](UiWidget.md).[`set`](UiWidget.md#set)
+[`UiPanel`](UiPanel.md).[`set`](UiPanel.md#set)

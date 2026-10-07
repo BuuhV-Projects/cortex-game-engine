@@ -328,7 +328,8 @@ WebGPU no export nativo (PC/Xbox) — mesma aparência nos dois. Navegação por
 d-pad/setas + A/Enter embutida (REGRA: 100% jogável no controle). **Nada de DOM
 cru** em UI de jogo.
 
-Widgets: `UiPanel` (caixa), `UiLabel` (texto), `UiButton` (focável). As props
+Widgets: `UiPanel` (caixa), `UiLabel` (texto), `UiButton` (focável), `UiCanvas`
+(`<canvas>` 2D — radar/minimapa/minigame, ADR-0316). As props
 de estilo usam os **nomes do CSS/HTML5** (ADR-0123 — não reinvente):
 
 ```ts
@@ -365,6 +366,14 @@ game.ui.add(new UiPanel({ anchor: 'center', width: 900, height: 460,
   tags `<div>/<span>/<img src>/<button onpress>` + `<style>` com o mesmo
   subset CSS (`box-shadow`, `text-align`, gradientes...). Valor fora do
   subset = erro na compilação.
+- **`<canvas>`** (ADR-0316/SPEC-0317): `<canvas id="radar" width="180"
+  height="180" anchor="bottom-left" x="38" y="-32">` — atributos = tamanho do
+  BITMAP (HTML5); CSS `width/height` estica; `border`/`background`
+  (default `transparent`)/`pointer-events: none|auto`. Desenhe em
+  `(tpl.get('radar') as UiCanvas).canvas.getContext('2d')` — no Studio é o
+  canvas DOM; no export nativo os pixels sobem pra uma textura SÓ quando o
+  canvas muda (cada redesenho = rasterizar + subir; controle a frequência).
+  Ponteiro no canvas só funciona no browser.
 - Fora do subset (use composição de widgets): radial-gradient, blur,
   transições, SVG. Glifos no console: só o que a Roboto tem (evite emoji).
 

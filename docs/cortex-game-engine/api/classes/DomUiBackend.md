@@ -36,7 +36,7 @@ Defined in: [src/ui/runtime/DomUiBackend.ts:27](https://github.com/BuuhV-Project
 
 > **dispose**(): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L75)
+Defined in: [src/ui/runtime/DomUiBackend.ts:81](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L81)
 
 Remove tudo (troca de cena/shutdown).
 
@@ -54,7 +54,7 @@ Remove tudo (troca de cena/shutdown).
 
 > **render**(): `void`
 
-Defined in: [src/ui/runtime/DomUiBackend.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L71)
+Defined in: [src/ui/runtime/DomUiBackend.ts:77](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/DomUiBackend.ts#L77)
 
 Desenha o frame de UI (no DOM é no-op — o browser pinta sozinho).
 

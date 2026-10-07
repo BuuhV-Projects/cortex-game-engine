@@ -153,6 +153,9 @@ export class CanvasRenderingContext2D {
   }
 
   _enqueue(op) {
+    // Toda operação de pixel muda o conteúdo: a UI de runtime re-sobe o canvas
+    // quando a versão muda (ADR-0316 / SPEC-0317).
+    this.canvas.__cortexVersion++;
     this._queue.push(op);
     if (this._queue.length >= MAX_PENDING_OPS) this._flush();
   }

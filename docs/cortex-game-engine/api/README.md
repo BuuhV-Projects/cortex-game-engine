@@ -84,6 +84,7 @@
 - [TopDownMovementSystem](classes/TopDownMovementSystem.md)
 - [TransformComponent](classes/TransformComponent.md)
 - [UiButton](classes/UiButton.md)
+- [UiCanvas](classes/UiCanvas.md)
 - [UiLabel](classes/UiLabel.md)
 - [UiLayer](classes/UiLayer.md)
 - [UiPanel](classes/UiPanel.md)
