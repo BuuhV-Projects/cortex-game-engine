@@ -80,7 +80,45 @@ e o dos 4 painéis do metrô (canvas, **92 px**, ~100 KB por máscara).
 
 ### Resultado do soak
 
-(preenchido abaixo)
+Export release do DDD 61, spawn sem save, janela fora da tela, `CORTEX_VRAM_LOG=1`
+(scripts e logs em `.cortex/soak/` da worktree). "Coleta" = queda > 50 MB do heap-js.
+
+| rodada | engine / jogo | duração | coletas | pico heap / ext (MB) | vale heap / ext (MB) | `text-vivo` no vale |
+| --- | --- | --- | --- | --- | --- | --- |
+| antes | main e4e10dca / 3e2323d | 12 min | 1 | 370 / 351 | 168 / 291 | — (sem telemetria) |
+| depois | fix / 3e2323d | 12 min | 1 | 370 / 347 | 163 / 290 | ui 0x, canvas 98x/8,3 MB |
+| depois longo | fix / 3e2323d | 25 min | 3 | 368→430→462 / 347→360→368 | 164→171→176 / 290→298→304 | ui 0–3x, canvas 99–128x/8,4–10,9 MB |
+| mesclado | fix + main c59b9699 / 5980584 | 12 min | 2 | 297→302 / 426→488 | 163→163 / 290→302 | ui 0x, canvas 184x/6,7 MB (fixo) |
+
+- O R0 só viu a rampa até a 1ª coleta (~5 min). Antes e depois têm o mesmo
+  dente de serra: o churn de texto é o mesmo (as strings novas são as mesmas);
+  o que muda é o teto retido pelo cache (8 MB × até ~25 MB) e o fim das
+  rajadas de re-raster.
+- `text-vivo` pré-coleta chega a ~50–70 MB no canvas (máscaras já despejadas do
+  LRU esperando a coleta velha) e volta pra ~8–11 MB em toda coleta — os
+  rasters são todos coletáveis.
+- Nenhum crash/OOM; `error_log.txt` só com a linha do Steam.
+- Fora do texto: os vales sobem ~6–7 MB por ciclo de 7 min no soak longo (não
+  é texto — `text-vivo` fica parado); e na rodada mesclada (jogo novo, SPEC-0118/
+  0119 do DDD 61) o external entre coletas sobe ~0,5 MB/s sem categoria rastreada
+  — provável `Float32Array` por desenho com sombra (`canvas2d/shadow.js`) e
+  máscara por clip (`clip.js`). Ambos coletáveis; pedem soak > 1 h se forem
+  investigados.
+
+### fps (A/B intercalado)
+
+Exports release da main (c59b9699) × branch mesclada, mesmo jogo (5980584),
+spawn, 180 s cada, descartando os primeiros 60 s, ordem main→fix→main→fix:
+
+| rodada | frameMs med | p95 | fps (1000/med) | draws med |
+| --- | --- | --- | --- | --- |
+| main 1 | 35,1 | 42,8 | 28,5 | 150 |
+| fix 1 | 35,4 | 40,2 | 28,2 | 143 |
+| main 2 | 33,7 | 38,8 | 29,7 | 140 |
+| fix 2 | 34,1 | 37,7 | 29,3 | 142 |
+
+Empate dentro do ruído entre rodadas (~1,2 fps); p95 igual ou melhor. A
+telemetria (um finalizador por raster novo) não aparece no quadro.
 
 ## Consequências
 
