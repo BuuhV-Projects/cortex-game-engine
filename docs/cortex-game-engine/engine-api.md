@@ -1162,7 +1162,8 @@ Props (UPBGE): `stepHeight` (degrau que sobe andando), `jumpForce` (vel. do pulo
 **Decoração que nunca colide (SPEC-0308):** marque a raiz com
 `obj.userData.cortexNoCollide = true` — a subárvore sai do chão/parede do Character e
 da câmera de 3ª pessoa e não ganha árvore BVH (memória/carga). Malha com `raycast`
-desligado (`mesh.raycast = () => {}`) também não ganha BVH. Escondida (`visible = false`)
+desligado (`mesh.raycast = () => {}`, função sem parâmetros) também não ganha BVH;
+embrulho `function (ray, out) { … }` que repassa ao padrão mantém. Escondida (`visible = false`)
 sem o marcador ainda ganha BVH na carga (pra não pesar quando reaparece).
 
 **Data-driven (preferido — fica editável no Inspector):** marque o nó com

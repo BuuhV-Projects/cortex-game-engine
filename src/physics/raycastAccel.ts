@@ -66,16 +66,19 @@ const BVH_OPTIONS = { indirect: true } as const;
  * cacheada na geometria). Ignora malhas **skinned** (a árvore seria da pose de
  * bind, errada pra malha animada — e o personagem é ignorado no raycast mesmo).
  *
- * Também ignora malha com `raycast` **sobrescrito** (ex.: o `noRaycast` dos jogos,
- * `mesh.raycast = () => {}`): o raio nunca chega na geometria, a árvore seria só
- * memória e tempo de carga perdidos (SPEC-0308).
+ * Também ignora malha com `raycast` **desligado** — sobrescrito por função SEM
+ * parâmetros (o `noRaycast` dos jogos, `mesh.raycast = () => {}`): sem ler o raio,
+ * ela nunca usa a geometria, e a árvore seria só memória e carga perdidas
+ * (SPEC-0308). Embrulho que repassa `(raycaster, intersects)` ao padrão continua
+ * com árvore.
  *
  * @param mesh Objeto da cena a ser testado por raycast (chão/parede).
  */
 export function ensureBoundsTree(mesh: Object3D): void {
   const m = mesh as Mesh & { isSkinnedMesh?: boolean; isInstancedMesh?: boolean };
   if (m.isSkinnedMesh) return;
-  if (m.raycast !== (m.isInstancedMesh ? InstancedMesh : Mesh).prototype.raycast) return;
+  // ponytail: `length === 0` = no-op; embrulho com rest (`(...a) =>`) também tem 0 e perderia a árvore
+  if (m.raycast.length === 0 && m.raycast !== (m.isInstancedMesh ? InstancedMesh : Mesh).prototype.raycast) return;
   const g = m.geometry as
     | (BufferGeometry & { boundsTree?: unknown; computeBoundsTree?: (options?: typeof BVH_OPTIONS) => void })
     | undefined;

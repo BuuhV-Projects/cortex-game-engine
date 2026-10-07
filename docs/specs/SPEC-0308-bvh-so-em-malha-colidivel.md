@@ -20,11 +20,17 @@ de posições) e tempo de carregamento perdidos.
 
 ## Decisão
 
-1. **`ensureBoundsTree` pula malha com `raycast` sobrescrito** — compara
-   `mesh.raycast` com o do protótipo da three já com o patch (`Mesh.prototype.raycast`,
-   ou `InstancedMesh.prototype.raycast` pra instância). Diferente = alguém trocou o
-   raycast daquela malha (no-op ou próprio); a árvore da geometria não é usada por
-   ele. Vale pra todo chamador (física, câmera do editor).
+1. **`ensureBoundsTree` pula malha com `raycast` desligado** — sobrescrito
+   (diferente de `Mesh.prototype.raycast`/`InstancedMesh.prototype.raycast` já com o
+   patch) **por uma função sem parâmetros** (`raycast.length === 0`, o `() => {}` do
+   `noRaycast`): sem ler o raio ela nunca usa a geometria. Vale pra todo chamador
+   (física, câmera do editor).
+   - **Por que não "qualquer sobrescrito":** a 1ª versão pulava todo `raycast`
+     trocado e a medição no Detetive Brasília pegou o erro — o `hiddenNotSolid` do
+     jogo (trânsito, patrulha, viatura, caminhão de gás) embrulha o raycast em
+     `function (ray, out) { …; proto.raycast.call(this, ray, out) }`: a malha COLIDE
+     e usa a árvore. Sem ela o raycast desses carros voltava a O(nº de triângulos)
+     por raio (CPU do Centro subiu). Embrulho com parâmetros mantém a árvore.
 2. **Marcador explícito `userData.cortexNoCollide = true`** — "isto é decoração,
    nunca colide com personagem/câmera". `traverseCollidable` **não desce** na
    subárvore marcada (como `editorInternal`): fica fora das listas de chão/parede/
@@ -41,11 +47,11 @@ Sem helper novo exportado: o flag em `userData` basta (é dado, serializa no
 
 ## Consequências
 
-- Malha com `raycast` próprio que internamente chamasse o raycast da three
-  (`Mesh.prototype.raycast.call(this, …)`) perde a aceleração. Nenhum caso no
-  engine/jogos; se aparecer, a malha pode restaurar o raycast padrão.
+- Limite conhecido: embrulho com **rest** (`(...a) => proto.raycast.apply(this, a)`)
+  também tem `length === 0` e perderia a árvore — declare os parâmetros
+  (`(ray, out)`). Nenhum caso no engine/jogos.
 - `cortexNoCollide` tira a subárvore da colisão do Character/câmera em até
   `COLLECT_INTERVAL_MS` (250 ms), como esconder (SPEC-0307).
 - Testes: `tests/physics/raycastAccel.test.ts` (noRaycast sem árvore; colidível com
-  árvore), `tests/systems/CharacterPhysics.test.ts` (escondida colidível ganha BVH na
+  árvore; embrulho `(ray, out)` mantém árvore e acerta), `tests/systems/CharacterPhysics.test.ts` (escondida colidível ganha BVH na
   carga; `cortexNoCollide`/noRaycast não; colidível continua segurando o chão).

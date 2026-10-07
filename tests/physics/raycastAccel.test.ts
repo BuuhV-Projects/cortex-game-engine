@@ -92,3 +92,16 @@ describe('raycastAccel — raycast sobrescrito não ganha árvore (SPEC-0308)', 
     expect((mesh.geometry as any).boundsTree).toBeDefined();
   });
 });
+
+describe('raycastAccel — embrulho do raycast continua com árvore (SPEC-0308)', () => {
+  it('raycast sobrescrito que repassa (ray, out) ao padrão mantém a árvore e acerta', () => {
+    const mesh = new Mesh(new SphereGeometry(1, 64, 64));
+    const proto = Mesh.prototype.raycast;
+    mesh.raycast = function (this: Mesh, ray, out): void { proto.call(this, ray, out); };
+    ensureBoundsTree(mesh);
+    expect((mesh.geometry as any).boundsTree).toBeDefined();
+    mesh.updateMatrixWorld(true);
+    const hits = new Raycaster(new Vector3(0, 0, 5), new Vector3(0, 0, -1)).intersectObject(mesh);
+    expect(hits[0]!.point.z).toBeCloseTo(1, 4);
+  });
+});
