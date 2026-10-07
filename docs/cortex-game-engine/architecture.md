@@ -1044,7 +1044,7 @@ sobrepõe):
 
 Delegam ao `three` sem tocar em nada: bundle, `static`, `hasNode`, skinned,
 primeira vez, **primeiro objeto do monitor no `render()`** (é ele quem atualiza os
-grupos compartilhados e os `updateBefore` do passe; com a SPEC-0322 isso é feito
+grupos compartilhados e os `updateBefore` do passe; com a SPEC-0325 isso é feito
 pelo wrapper de fora, §8e5, que chega aqui com o `renderId` em dia), MRT de velocidade, e plano
 com `updateBefore`/`updateAfter` por objeto.
 
@@ -1061,7 +1061,7 @@ genéricas) continuam reavaliados. Depende de internos do `three` 0.184: um bump
 exige rodar a paridade por pixel do probe (`?transformOnlyRefresh=0` contra o
 padrão, simulação congelada no mesmo frame).
 
-## 8e5. Refresh por `renderId` só do que é por render (`src/render/RenderIdRefresh.ts`) — SPEC-0322
+## 8e5. Refresh por `renderId` só do que é por render (`src/render/RenderIdRefresh.ts`) — SPEC-0325
 
 O `NodeMaterialObserver` refaz o **primeiro** render object de cada monitor
 (`NodeBuilderState`) em todo `render()`, antes do `equals()`. Com material
@@ -1084,8 +1084,11 @@ outro wrapper em `_nodes.needsRefresh` (padrão: só no host;
 Deixa de ser refeito só o que o `equals()` vigia (refs de material de
 `refreshUniforms`, texturas/samplers, geometria), ou seja, o primeiro objeto vira
 igual aos objetos 2..N do mesmo material no three. Delegam ao three: bundle,
-`hasNode`, skinned, primeira vez, velocity, `InstancedMesh`/`BatchedMesh`,
-`updateAfter`, `updateBefore` de objeto e buffer não-UBO em grupo de objeto.
+`hasNode`, skinned, primeira vez, velocity, `BatchedMesh`, `updateAfter`,
+`updateBefore` de objeto, buffer não-UBO em grupo de objeto (fora o das
+instâncias) e `InstancedMesh` cuja `instanceMatrix`/`instanceColor` mudou de
+versão. Consequência: o buffer de matrizes de `InstancedMesh` pequeno só sobe com
+`needsUpdate` (antes o three reenviava inteiro a cada refresh).
 
 **Armadilha:** não dá para "pular tudo" (só os passos 1–4). Quase todo mapa tem a
 matriz de UV do `TextureNode` como nó `OBJECT`: o UV scroll de material exclusivo
@@ -1210,7 +1213,7 @@ no logo da splash enquanto montava os seis carros.
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
-| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0322) |
+| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0325) |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |

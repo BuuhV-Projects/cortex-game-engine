@@ -64,7 +64,8 @@ function makeScene() {
   objectUbo.clearUpdateRanges();
   const renderUbo = makeUbo([{ source: { name: 'cameraViewMatrix' }, offset: 0, count: 16, value: 0 }], true);
   const sharedGroup = { bindings: [renderUbo] };
-  const objectGroup = { bindings: [objectUbo, { isSampledTexture: true, groupNode: { shared: false } }] };
+  const objectGroup = { bindings: [objectUbo, { isSampledTexture: true, groupNode: { shared: false } }] as unknown[] };
+  const groups = [sharedGroup, objectGroup];
 
   const matrixWorld = new Matrix4();
   const data = { worldMatrix: matrixWorld.clone() };
@@ -82,11 +83,11 @@ function makeScene() {
     updateAfterNodes: [] as ReturnType<typeof makeNode>[],
   };
   const renderObject = {
-    object: { matrixWorld, static: false } as { matrixWorld: Matrix4; static: boolean; isInstancedMesh?: boolean },
+    object: { matrixWorld, static: false } as { matrixWorld: Matrix4; static: boolean },
     bundle: null as unknown,
     getMonitor: () => monitor,
     getNodeBuilderState: () => state,
-    getBindings: () => [sharedGroup, objectGroup],
+    getBindings: () => groups,
   };
 
   const log: string[] = [];
@@ -140,7 +141,7 @@ function makeScene() {
   return { renderer, nodes, bindings, threeNeedsRefresh, renderObject, monitor, state, frame, log, updated, modelNode, colorNode, uvNode, cameraNode, objectUbo, updateBinding, ranges, materialChanged, matrixWorld, uv, nextRender };
 }
 
-describe('RenderIdRefresh (SPEC-0322)', () => {
+describe('RenderIdRefresh (SPEC-0325)', () => {
   let s: ReturnType<typeof makeScene>;
   beforeEach(() => {
     s = makeScene();
@@ -198,9 +199,24 @@ describe('RenderIdRefresh (SPEC-0322)', () => {
     expect(s.log).toEqual([]);
   });
 
-  it('InstancedMesh e updateAfter delegam ao three', () => {
+  it('InstancedMesh: refaz na primeira vez e quando a matriz de instância muda; parado, não', () => {
+    const handle = installRenderIdRefresh(s.renderer)!;
+    const instanceMatrix = { version: 1 };
+    Object.assign(s.renderObject.object, { isInstancedMesh: true, instanceMatrix, instanceColor: null });
+    // Buffer de uniform das matrizes (poucas instâncias) no grupo do objeto.
+    s.renderObject.getBindings()[1].bindings.push({ isBuffer: true, groupNode: { shared: false } } as never);
+    expect(s.nodes.needsRefresh(s.renderObject)).toBe(true);
+    s.nextRender();
+    expect(s.nodes.needsRefresh(s.renderObject)).toBe(false);
+    instanceMatrix.version++;
+    s.nextRender();
+    expect(s.nodes.needsRefresh(s.renderObject)).toBe(true);
+    expect(handle.stats).toEqual({ skipped: 1, full: 2 });
+  });
+
+  it('buffer não-UBO fora de InstancedMesh e updateAfter delegam ao three', () => {
     installRenderIdRefresh(s.renderer);
-    s.renderObject.object.isInstancedMesh = true;
+    s.renderObject.getBindings()[1].bindings.push({ isBuffer: true, groupNode: { shared: false } } as never);
     expect(s.nodes.needsRefresh(s.renderObject)).toBe(true);
     const t = makeScene();
     t.nextRender();

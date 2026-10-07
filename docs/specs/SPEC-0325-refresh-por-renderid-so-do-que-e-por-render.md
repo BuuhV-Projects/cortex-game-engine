@@ -1,4 +1,4 @@
-# SPEC-0322 — Refresh por `renderId`: só o que é por render
+# SPEC-0325 — Refresh por `renderId`: só o que é por render
 
 **Data:** 2026-10-07
 **Status:** aceito
@@ -83,11 +83,17 @@ os objetos 2..N do mesmo material, **mais** os uniforms de objeto atualizados.
 - `bundle`, `hasNode` (material com nós: `time`, `cameraPosition` em nó, highp
   `modelViewMatrix` etc. continuam refazendo todo quadro), `hasAnimation`
   (skinned), primeira vez do objeto e MRT de velocidade;
-- `InstancedMesh`/`BatchedMesh`: as matrizes de instância sobem por nó `FRAME` +
-  atributo/buffer que o `equals()` não vigia;
+- `BatchedMesh`;
+- `InstancedMesh` **quando `instanceMatrix.version` ou `instanceColor.version`
+  mudou** desde o último refresh (e na primeira vez). O `equals()` não vigia essas
+  versões, e só o refresh sobe o atributo instanciado (muitas instâncias) ou o
+  buffer de uniform das matrizes (poucas). Parado e sem mudança de versão, o
+  `InstancedMesh` entra no caminho novo; é o único caso em que um buffer não-UBO
+  no grupo do objeto é aceito;
 - `updateAfter` de qualquer tipo (rodaria só depois do draw de um refresh);
 - `updateBefore` de `OBJECT` (rejeitado pelo plano do ADR-0290);
-- buffer que não é UBO num grupo não compartilhado (storage/array).
+- buffer que não é UBO num grupo não compartilhado (storage/array), fora o das
+  instâncias.
 
 ## Alternativas consideradas
 
@@ -113,6 +119,14 @@ os objetos 2..N do mesmo material, **mais** os uniforms de objeto atualizados.
 - Limitação residual, a mesma do three para os objetos 2..N de um material: uma
   textura fora de `refreshUniforms` trocada/realocada sem mudar o cache key do
   render object não é rebindada enquanto o objeto estiver parado.
+- `InstancedMesh` com poucas instâncias: o three reenviava o buffer de matrizes
+  INTEIRO a cada refresh (`Buffer.update()` sempre `true`), mesmo sem mudança.
+  Agora ele só sobe quando a versão muda, ou seja, exige `instanceMatrix.needsUpdate`
+  (o caminho de muitas instâncias, por atributo, já exigia). Engine
+  (`Particles`, `Vegetation`) e DDD 61 já marcam `needsUpdate`; `pracaRelogio` e
+  `feira` escrevem só na montagem, antes do primeiro render.
+- Dois `InstancedMesh` com o MESMO monitor: o segundo do render continua só no
+  `equals()`, como já era no three (não vê a versão de instância).
 - `stats` (`skipped`, `full`) do handle ficam disponíveis para a sonda.
 
 ## Validação
@@ -120,8 +134,9 @@ os objetos 2..N do mesmo material, **mais** os uniforms de objeto atualizados.
 - Vitest (`tests/render/RenderIdRefresh.test.ts`): o objeto parado com material
   exclusivo não refaz e não escreve UBO; o trabalho por render (updateBefore de
   sombra, nó de câmera, grupo compartilhado) roda, com o frame re-buscado depois
-  do `updateBefore`; o nó `OBJECT` que mudou (UV) é escrito; `hasNode`/instanced/
-  `updateAfter` delegam e continuam refazendo; mudança de material cai no refresh
+  do `updateBefore`; o nó `OBJECT` que mudou (UV) é escrito; `hasNode`/buffer não-UBO/
+  `updateAfter` delegam; `InstancedMesh` refaz só na primeira vez e quando a versão
+  da matriz de instância muda e continuam refazendo; mudança de material cai no refresh
   completo; o objeto que anda passa pelo `TransformOnlyRefresh` sem o plano
   aplicado duas vezes.
 - A/B no export release do DDD 61 (`.cortex/r2-b2/`): ver "Resultado".

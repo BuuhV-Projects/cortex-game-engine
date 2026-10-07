@@ -125,7 +125,7 @@ export class Renderer {
    * do init; `null` quando desligado ou não instalável. O probe lê `stats`.
    */
   private _transformOnly: TransformOnlyRefresh | null = null;
-  /** Refresh por `renderId` só do que é por render (SPEC-0322); fica por fora do `_transformOnly`. */
+  /** Refresh por `renderId` só do que é por render (SPEC-0325); fica por fora do `_transformOnly`. */
   private _renderIdRefresh: RenderIdRefresh | null = null;
 
   /**
@@ -176,7 +176,7 @@ export class Renderer {
         if (transformOnlyRefreshRequested(isNativeHost())) {
           this._transformOnly = installTransformOnlyRefresh(this._renderer as unknown as TransformOnlyRendererLike);
         }
-        // Primeiro objeto de cada material não refaz tudo todo render (SPEC-0322).
+        // Primeiro objeto de cada material não refaz tudo todo render (SPEC-0325).
         // Instalado DEPOIS: fica por fora e entrega o renderId em dia ao de cima.
         if (renderIdRefreshRequested(isNativeHost())) {
           this._renderIdRefresh = installRenderIdRefresh(this._renderer as unknown as RenderIdRendererLike);

@@ -1,5 +1,5 @@
 /**
- * Refresh por `renderId` só do que é por render (SPEC-0322, estende o ADR-0290).
+ * Refresh por `renderId` só do que é por render (SPEC-0325, estende o ADR-0290).
  *
  * O `NodeMaterialObserver` do three refaz o PRIMEIRO render object de cada
  * monitor em todo `render()`, antes de olhar o `equals()`. Com material
@@ -28,6 +28,8 @@ import {
 
 /** `NodeUpdateType.OBJECT` do three. */
 const UPDATE_OBJECT = 'object';
+/** Versão que nenhum atributo tem: força o refresh do three na primeira vez. */
+const VERSION_UNSEEN = -1;
 const QUERY_KEY = 'renderIdRefresh=';
 
 // ── Forma mínima dos internos do three 0.184 usados aqui ────────────────────
@@ -51,7 +53,12 @@ interface RenderIdMonitorLike extends MonitorLike {
 }
 
 interface RenderIdRenderObjectLike extends RenderObjectLike {
-  object: RenderObjectLike['object'] & { isInstancedMesh?: boolean; isBatchedMesh?: boolean };
+  object: RenderObjectLike['object'] & {
+    isInstancedMesh?: boolean;
+    isBatchedMesh?: boolean;
+    instanceMatrix?: { version: number };
+    instanceColor?: { version: number } | null;
+  };
   getMonitor(): RenderIdMonitorLike;
 }
 
@@ -82,6 +89,12 @@ interface RenderIdPlan {
   groups: BindGroupLike[];
   /** Plano do ADR-0290 para o objeto parado. */
   object: Plan;
+  /**
+   * `InstancedMesh`: versões de `instanceMatrix`/`instanceColor` já enviadas por
+   * um refresh do three. O `equals()` não as vigia, e só o refresh sobe o
+   * atributo (muitas instâncias) ou o buffer de uniform (poucas).
+   */
+  instanceVersions: [number, number] | null;
 }
 
 const isShared = (group: BindGroupLike): boolean => group.bindings[0]?.groupNode?.shared === true;
@@ -89,13 +102,15 @@ const isShared = (group: BindGroupLike): boolean => group.bindings[0]?.groupNode
 /** `null` quando o objeto precisa de algo que só o refresh do three faz. */
 export function buildRenderIdPlan(renderObject: RenderIdRenderObjectLike): RenderIdPlan | null {
   const object = renderObject.object;
-  if (object.isInstancedMesh === true || object.isBatchedMesh === true) return null;
+  if (object.isBatchedMesh === true) return null;
+  const instanced = object.isInstancedMesh === true;
   const state = renderObject.getNodeBuilderState();
   if (state.updateAfterNodes.length > 0) return null;
   const groups = renderObject.getBindings() as unknown as BindGroupLike[];
   for (const group of groups) {
     if (isShared(group)) continue;
-    for (const binding of group.bindings) if (binding.isBuffer === true && binding.isUniformsGroup !== true) return null;
+    // O único buffer não-UBO aceito é o das matrizes de instância (vigiado por versão).
+    for (const binding of group.bindings) if (binding.isBuffer === true && binding.isUniformsGroup !== true && !instanced) return null;
   }
   const objectPlan = buildTransformOnlyPlan(renderObject);
   if (objectPlan === null) return null;
@@ -104,7 +119,18 @@ export function buildRenderIdPlan(renderObject: RenderIdRenderObjectLike): Rende
     shared: groups.filter(isShared),
     groups,
     object: objectPlan,
+    instanceVersions: instanced ? [VERSION_UNSEEN, VERSION_UNSEEN] : null,
   };
+}
+
+/** `true` (e guarda as versões) quando matriz ou cor de instância mudaram desde o último refresh. */
+function instancesChanged(object: RenderIdRenderObjectLike['object'], seen: [number, number]): boolean {
+  const matrix = object.instanceMatrix?.version ?? VERSION_UNSEEN;
+  const color = object.instanceColor?.version ?? VERSION_UNSEEN;
+  if (matrix === seen[0] && color === seen[1] && matrix !== VERSION_UNSEEN) return false;
+  seen[0] = matrix;
+  seen[1] = color;
+  return true;
 }
 
 // ── Instalação ───────────────────────────────────────────────────────────────
@@ -157,6 +183,10 @@ export function installRenderIdRefresh(renderer: RenderIdRendererLike): RenderId
       plans.set(renderObject, plan);
     }
     if (plan === null) {
+      stats.full++;
+      return inner.call(this, renderObject);
+    }
+    if (plan.instanceVersions !== null && instancesChanged(renderObject.object, plan.instanceVersions)) {
       stats.full++;
       return inner.call(this, renderObject);
     }
