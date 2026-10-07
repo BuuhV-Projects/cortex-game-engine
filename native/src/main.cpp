@@ -38,6 +38,7 @@
 #include "shims/rapier.h"
 #include "shims/steam_api.h"
 #include "shims/text_raster.h"
+#include "shims/canvas_blit.h"
 #include "shims/timers.h"
 #include "shims/user_storage.h"
 #include "webgpu/bindings.h"
@@ -284,6 +285,7 @@ int main(int argc, char** argv) {
     shims::registerRapier(js.env());
     shims::registerAudio(js.env());
     shims::registerTextRaster(js.env(), baseDir, exePath);
+    shims::registerCanvasBlit(js.env());  // __cortexBlitImage — drawImage do canvas 2D (ADR-0318)
     shims::registerSteamApi(js.env());  // __cortexSteam* — no-op sem Steam (SPEC-0175)
     webgpu::registerBindings(js.env(), &gpu);
     webgpu::registerSplash(js.env());  // __cortexSplashActive() (ADR-0138)

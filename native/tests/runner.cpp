@@ -3,6 +3,8 @@
 #include "harness.h"
 
 namespace tests {
+void testBlitBateComOGoldenDoJs();
+void testBlitRecusaArgumentosForaDoBuffer();
 void testFormatFromString();
 void testGcGenerationFromName();
 void testGcTotalsSeparateGenerations();
@@ -126,5 +128,7 @@ int main() {
   tests::testGeometryRegistry();
   tests::testGcGenerationFromName();
   tests::testGcTotalsSeparateGenerations();
+  tests::testBlitBateComOGoldenDoJs();
+  tests::testBlitRecusaArgumentosForaDoBuffer();
   return testing::summary();
 }

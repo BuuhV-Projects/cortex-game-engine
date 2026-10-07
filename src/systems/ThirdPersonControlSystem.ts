@@ -423,7 +423,8 @@ export class ThirdPersonControlSystem extends System {
       if (this.sinceCamCollect >= COLLECT_INTERVAL_MS || this.camSelf !== self) {
         this.camTargets.length = 0;
         traverseCollidable(this.collisionRoot, (o, hidden) => {
-          if (hidden || !(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
+          if (hidden) return false; // nada lá dentro é alvo: não desce (SPEC-0320)
+          if (!(o as { isMesh?: boolean }).isMesh || isSkinned(o)) return;
           if (isUnderSelf(o, self)) return;
           this.camTargets.push(o);
         });

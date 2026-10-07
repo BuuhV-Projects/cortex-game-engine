@@ -113,6 +113,20 @@ describe('SPEC-0307: sem gizmo do editor, sem escondido, faixa vertical', () => 
     expect(seen.get(proxy)).toBe(false);
   });
 
+  it('visit devolvendo false não desce nos filhos (SPEC-0320)', () => {
+    const root = new Object3D();
+    const group = new Object3D();
+    const child = box(0, 0, 0);
+    group.add(child);
+    root.add(group);
+    const seen: Object3D[] = [];
+    traverseCollidable(root, (o) => {
+      seen.push(o);
+      return o === group ? false : undefined;
+    });
+    expect(seen).toEqual([root, group]);
+  });
+
   it('nearXZ com maxY/minY descarta a esfera toda fora da faixa', () => {
     const ground = box(0, -1, 0);
     const roof = box(0, 50, 0);

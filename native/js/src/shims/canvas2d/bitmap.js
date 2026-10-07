@@ -115,21 +115,51 @@ function packOpaque(r, g, b) {
 }
 
 /**
+ * Layout do `Float64Array` de parâmetros do blit — o MESMO que o
+ * `__cortexBlitImage` do host lê (native/src/canvas2d/blit.h, ADR-0318):
+ * caixa de destino, inversa (6), retângulo fonte, limites da amostra, alfa.
+ */
+export const BLIT_X0 = 0;
+export const BLIT_Y0 = 1;
+export const BLIT_X1 = 2;
+export const BLIT_Y1 = 3;
+export const BLIT_INV = 4;
+/** Elementos da matriz afim (a, b, c, d, e, f). */
+const AFFINE_ELEMENTS = 6;
+export const BLIT_SX = 10;
+export const BLIT_SY = 11;
+export const BLIT_SW = 12;
+export const BLIT_SH = 13;
+export const BLIT_LX0 = 14;
+export const BLIT_LY0 = 15;
+export const BLIT_LX1 = 16;
+export const BLIT_LY1 = 17;
+export const BLIT_ALPHA = 18;
+export const BLIT_PARAMS = 19;
+const blitParams = new Float64Array(BLIT_PARAMS);
+
+/**
  * Laço quente do drawImage sem tinta (radar/mapa redesenhados todo quadro no
  * host, ADR-0315): amostra e compõe NO MESMO laço, lendo/escrevendo uint32. Pixel
  * fora do clip nem é amostrado; vizinhança 100% opaca com cobertura 1 vira uma
  * escrita de uint32 (sem a divisão do alfa pré-multiplicado nem o blend). O resto
- * cai no amostrador genérico — mesmo resultado, só mais caro.
+ * cai no amostrador genérico — mesmo resultado, só mais caro. No host o mesmo
+ * laço roda em C++ (`__cortexBlitImage`, ADR-0318), pixel idêntico.
  */
-function blitImage(surface, src, b, inv, rect, lim, smooth, alpha, clip) {
+export function blitImage(surface, src, p, clip, smooth) {
   const sd = src.data;
   const s32 = src.u32 || new Uint32Array(sd.buffer, sd.byteOffset, (sd.byteLength / 4) | 0);
   const sw = src.width;
   const d = surface.data;
   const d32 = surface.u32;
   const dw = surface.width;
-  const uMax = rect.sx + rect.sw;
-  const vMax = rect.sy + rect.sh;
+  const b = { x0: p[BLIT_X0], y0: p[BLIT_Y0], x1: p[BLIT_X1], y1: p[BLIT_Y1] };
+  const inv = [p[BLIT_INV], p[BLIT_INV + 1], p[BLIT_INV + 2], p[BLIT_INV + 3], p[BLIT_INV + 4], p[BLIT_INV + 5]];
+  const rect = { sx: p[BLIT_SX], sy: p[BLIT_SY] };
+  const lim = { x0: p[BLIT_LX0], y0: p[BLIT_LY0], x1: p[BLIT_LX1], y1: p[BLIT_LY1] };
+  const alpha = p[BLIT_ALPHA];
+  const uMax = rect.sx + p[BLIT_SW];
+  const vMax = rect.sy + p[BLIT_SH];
   const one = [0, 0, 0, 0];
   for (let y = b.y0; y < b.y1; y++) {
     const py = y + PIXEL_CENTER;
@@ -221,7 +251,24 @@ export function drawBitmap(surface, src, opts) {
     y1: Math.min(src.height, Math.ceil(rect.sy + rect.sh)) - 1,
   };
   if (!tint) {
-    blitImage(surface, src, b, inv, rect, lim, smooth, alpha, clip);
+    const p = blitParams;
+    p[BLIT_X0] = b.x0;
+    p[BLIT_Y0] = b.y0;
+    p[BLIT_X1] = b.x1;
+    p[BLIT_Y1] = b.y1;
+    for (let k = 0; k < AFFINE_ELEMENTS; k++) p[BLIT_INV + k] = inv[k];
+    p[BLIT_SX] = rect.sx;
+    p[BLIT_SY] = rect.sy;
+    p[BLIT_SW] = rect.sw;
+    p[BLIT_SH] = rect.sh;
+    p[BLIT_LX0] = lim.x0;
+    p[BLIT_LY0] = lim.y0;
+    p[BLIT_LX1] = lim.x1;
+    p[BLIT_LY1] = lim.y1;
+    p[BLIT_ALPHA] = alpha;
+    const native = globalThis.__cortexBlitImage;
+    // false = o host recusou os argumentos: o laço JS faz (mesmo resultado)
+    if (typeof native !== 'function' || !native(surface.data, surface.width, src.data, src.width, p, clip || null, !!smooth)) blitImage(surface, src, p, clip, smooth);
     return b;
   }
   const uMax = rect.sx + rect.sw;

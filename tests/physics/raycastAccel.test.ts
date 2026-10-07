@@ -15,7 +15,7 @@ import {
   SphereGeometry,
   Vector3,
 } from 'three';
-import { ensureBoundsTree, MIN_BVH_TRIS } from '../../src/physics/raycastAccel.js';
+import { ensureBoundsTree, MIN_BVH_TRIS, SPREAD_BVH_RADIUS } from '../../src/physics/raycastAccel.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -103,5 +103,40 @@ describe('raycastAccel — embrulho do raycast continua com árvore (SPEC-0308)'
     mesh.updateMatrixWorld(true);
     const hits = new Raycaster(new Vector3(0, 0, 5), new Vector3(0, 0, -1)).intersectObject(mesh);
     expect(hits[0]!.point.z).toBeCloseTo(1, 4);
+  });
+});
+
+describe('raycastAccel — malha pequena ESPALHADA ganha árvore (SPEC-0320)', () => {
+  /** Dois triângulos pequenos, um em cada ponta de um vão largo (fusão estática). */
+  function spread(): Mesh {
+    const d = SPREAD_BVH_RADIUS * 4;
+    const geo = new BufferGeometry();
+    geo.setAttribute(
+      'position',
+      new Float32BufferAttribute([-d, 0, -d, -d, 0, -d + 1, -d + 1, 0, -d, d, 0, d, d, 0, d + 1, d + 1, 0, d], 3),
+    );
+    return new Mesh(geo);
+  }
+
+  it('poucos triângulos espalhados ganham a árvore e o hit bate com o padrão', () => {
+    const mesh = spread();
+    mesh.updateMatrixWorld(true);
+    const d = SPREAD_BVH_RADIUS * 4;
+    const ray = new Raycaster(new Vector3(d + 0.2, 5, d + 0.2), new Vector3(0, -1, 0));
+    const before = ray.intersectObject(mesh, false);
+    expect(before.length).toBe(1);
+    ensureBoundsTree(mesh);
+    expect((mesh.geometry as any).boundsTree).toBeDefined();
+    const after = ray.intersectObject(mesh, false);
+    expect(after.length).toBe(1);
+    expect(after[0]!.point.distanceTo(before[0]!.point)).toBeLessThan(1e-6);
+    // e o raio que passa no vão continua sem acertar nada
+    expect(new Raycaster(new Vector3(0, 5, 0), new Vector3(0, -1, 0)).intersectObject(mesh, false)).toEqual([]);
+  });
+
+  it('pequena e COMPACTA continua sem árvore', () => {
+    const geo = new SphereGeometry(SPREAD_BVH_RADIUS / 4, 8, 6); // < MIN_BVH_TRIS e raio pequeno
+    ensureBoundsTree(new Mesh(geo));
+    expect((geo as any).boundsTree).toBeUndefined();
   });
 });

@@ -51,6 +51,8 @@ add_executable(cortex_host
   src/shims/rapier.cpp
   src/shims/steam_api.cpp
   src/shims/text_raster.cpp
+  src/shims/canvas_blit.cpp
+  src/canvas2d/blit.cpp
   src/shims/timers.cpp
   src/shims/user_storage.cpp
   src/shims/ktx2.cpp
@@ -304,6 +306,7 @@ add_executable(cortex_host_tests
   tests/pipeline_cache_test.cpp
   tests/geometry_registry_test.cpp
   tests/gc_stats_test.cpp
+  tests/blit_test.cpp
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
   src/core/gc_stats.cpp
@@ -312,6 +315,7 @@ add_executable(cortex_host_tests
   src/scene/shadow_caster_enumerator.cpp
   src/scene/shadow_pass_gate.cpp
   src/render/geometry_registry.cpp
+  src/canvas2d/blit.cpp
 )
 target_include_directories(cortex_host_tests PRIVATE
   ${TP}/wgpu/include
