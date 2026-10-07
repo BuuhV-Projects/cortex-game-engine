@@ -350,3 +350,76 @@ describe('CharacterBody + terreno', () => {
     expect(t.y).toBe(-5); // TerrainCollision não subiu o character pra superfície
   });
 });
+
+describe('SPEC-0308: BVH só em malha que pode colidir', () => {
+  /** Chão com > MIN_BVH_TRIS triângulos (16×16 segmentos por face: ~1k tris no topo/base). */
+  function denseFloor(): Mesh {
+    const floor = new Mesh(new BoxGeometry(40, 1, 40, 16, 1, 16), new MeshBasicMaterial());
+    floor.position.y = -0.5; // topo em y=0
+    return floor;
+  }
+  const hasTree = (m: Mesh): boolean => (m.geometry as unknown as { boundsTree?: unknown }).boundsTree !== undefined;
+
+  function run(scene: Object3D): { t: TransformComponent; c: CharacterBodyComponent } {
+    scene.updateMatrixWorld(true);
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 3, 0);
+    const c = new CharacterBodyComponent({ groundY: -10 });
+    e.addComponent(t);
+    e.addComponent(c);
+    for (let i = 0; i < 120; i++) world.tick(16);
+    return { t, c };
+  }
+
+  it('colidível visível ganha BVH e continua segurando o personagem', () => {
+    const scene = new Object3D();
+    const floor = denseFloor();
+    scene.add(floor);
+    const { t, c } = run(scene);
+    expect(hasTree(floor)).toBe(true);
+    expect(t.y).toBeCloseTo(0, 1);
+    expect(c.grounded).toBe(true);
+  });
+
+  it('colidível ESCONDIDA ainda ganha BVH na carga (SPEC-0307)', () => {
+    const scene = new Object3D();
+    const culled = new Object3D();
+    culled.visible = false;
+    const floor = denseFloor();
+    culled.add(floor);
+    scene.add(culled);
+    run(scene);
+    expect(hasTree(floor)).toBe(true);
+  });
+
+  it('malha com raycast no-op (noRaycast) não ganha BVH — visível ou escondida', () => {
+    const scene = new Object3D();
+    const shown = denseFloor();
+    shown.raycast = (): void => {};
+    const culled = new Object3D();
+    culled.visible = false;
+    const hidden = denseFloor();
+    hidden.raycast = (): void => {};
+    culled.add(hidden);
+    scene.add(shown, culled);
+    const { t } = run(scene);
+    expect(hasTree(shown)).toBe(false);
+    expect(hasTree(hidden)).toBe(false);
+    expect(t.y).toBeCloseTo(-10, 1); // no-op não é chão: cai até o groundY
+  });
+
+  it('subárvore com userData.cortexNoCollide: sem BVH e não é chão', () => {
+    const scene = new Object3D();
+    const tower = new Object3D();
+    tower.userData['cortexNoCollide'] = true;
+    const floor = denseFloor();
+    tower.add(floor);
+    scene.add(tower);
+    const { t, c } = run(scene);
+    expect(hasTree(floor)).toBe(false);
+    expect(t.y).toBeCloseTo(-10, 1);
+    expect(c.grounded).toBe(true); // pousou no groundY de segurança
+  });
+});

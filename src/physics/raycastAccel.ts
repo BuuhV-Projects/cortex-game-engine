@@ -66,11 +66,16 @@ const BVH_OPTIONS = { indirect: true } as const;
  * cacheada na geometria). Ignora malhas **skinned** (a árvore seria da pose de
  * bind, errada pra malha animada — e o personagem é ignorado no raycast mesmo).
  *
+ * Também ignora malha com `raycast` **sobrescrito** (ex.: o `noRaycast` dos jogos,
+ * `mesh.raycast = () => {}`): o raio nunca chega na geometria, a árvore seria só
+ * memória e tempo de carga perdidos (SPEC-0308).
+ *
  * @param mesh Objeto da cena a ser testado por raycast (chão/parede).
  */
 export function ensureBoundsTree(mesh: Object3D): void {
-  const m = mesh as Mesh & { isSkinnedMesh?: boolean };
+  const m = mesh as Mesh & { isSkinnedMesh?: boolean; isInstancedMesh?: boolean };
   if (m.isSkinnedMesh) return;
+  if (m.raycast !== (m.isInstancedMesh ? InstancedMesh : Mesh).prototype.raycast) return;
   const g = m.geometry as
     | (BufferGeometry & { boundsTree?: unknown; computeBoundsTree?: (options?: typeof BVH_OPTIONS) => void })
     | undefined;

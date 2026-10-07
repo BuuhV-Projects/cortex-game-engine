@@ -77,3 +77,18 @@ describe('raycastAccel — a árvore não altera a geometria (SPEC-0304)', () =>
     expect(Array.from(geo.index!.array)).toEqual(copy);
   });
 });
+
+describe('raycastAccel — raycast sobrescrito não ganha árvore (SPEC-0308)', () => {
+  it('Mesh com raycast no-op fica sem árvore', () => {
+    const mesh = new Mesh(new SphereGeometry(1, 64, 64));
+    mesh.raycast = (): void => {};
+    ensureBoundsTree(mesh);
+    expect((mesh.geometry as any).boundsTree).toBeUndefined();
+  });
+
+  it('Mesh com o raycast padrão (patch) continua ganhando a árvore', () => {
+    const mesh = new Mesh(new SphereGeometry(1, 64, 64));
+    ensureBoundsTree(mesh);
+    expect((mesh.geometry as any).boundsTree).toBeDefined();
+  });
+});

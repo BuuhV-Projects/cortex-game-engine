@@ -41,6 +41,8 @@ export function worldSphere(o: Object3D, out: Sphere = tmp): Sphere | null {
  * Percorre `o` como `Object3D.traverse`, podando o que nunca colide (SPEC-0307):
  * - **não desce** em subárvore com `userData.editorInternal` (gizmo/helpers do editor:
  *   o flag fica na RAIZ do `TransformControls`, as peças filhas não o têm);
+ * - **não desce** em subárvore com `userData.cortexNoCollide` (decoração declarada:
+ *   nunca colide com personagem/câmera nem ganha BVH — SPEC-0308);
  * - `hidden` = está numa subárvore escondida (`visible = false` nela ou num
  *   ancestral). Exceção: o objeto escondido que é ele mesmo `cortexSolid` (nó com
  *   `visible: false` + `collider` = parede/chão invisível declarado) não esconde.
@@ -48,7 +50,7 @@ export function worldSphere(o: Object3D, out: Sphere = tmp): Sphere | null {
  */
 export function traverseCollidable(o: Object3D, visit: (o: Object3D, hidden: boolean) => void, hidden = false): void {
   const ud = o.userData as Record<string, unknown>;
-  if (ud['editorInternal']) return;
+  if (ud['editorInternal'] || ud['cortexNoCollide']) return;
   const h = hidden || (!o.visible && ud['cortexSolid'] !== true);
   visit(o, h);
   for (const c of o.children) traverseCollidable(c, visit, h);
