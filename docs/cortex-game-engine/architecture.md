@@ -1060,6 +1060,33 @@ genéricas) continuam reavaliados. Depende de internos do `three` 0.184: um bump
 exige rodar a paridade por pixel do probe (`?transformOnlyRefresh=0` contra o
 padrão, simulação congelada no mesmo frame).
 
+## 8e5. Poda de subárvores na projeção (`src/render/ProjectionPruner.ts`) — ADR-0327 / SPEC-0326
+
+O `Renderer._projectObject` do `three` visita todo nó com `visible !== false` e
+testa malha a malha contra o frustum. O `Game` instala (só no host nativo;
+`?projectionPrune=0` desliga) um wrapper no `_projectObject` da INSTÂNCIA que,
+na chamada de topo da câmera do jogo, esconde (`visible=false`) a raiz das
+subárvores candidatas fora do frustum — ou sem nada desenhável nas camadas da
+câmera, como os bonecos em lote do DDD 61 (camada 27) — e devolve o `visible`
+no `finally`, logo depois da projeção.
+
+- **Candidata**: ≥ 3 nós, raio ≤ 40 m, sem luz/LOD/BundleGroup/ClippingGroup e
+  sem desenhável (na camada da câmera) skinned/instanced/sprite/
+  `frustumCulled=false`. Esfera no espaço LOCAL da raiz, com folga.
+- **Fora da janela da poda**: a passada de sombra do `three` (roda em
+  `_renderObjects`), a sombra nativa e o espelho (que confere `visible` por
+  varredura no `update`, SPEC-0322 — o valor já foi devolvido) e o
+  `scene.onBeforeRender`. Caster fora da câmera segue projetando sombra.
+- `camera` é posta por quadro pelo `Game`; `null` no editor, inspeção,
+  carregamento e quadro de aquecimento.
+- Remonta em `childadded`/`childremoved` (qualquer nó) e se a máscara de
+  camadas da câmera mudar; remede 16 candidatas por passe em rodízio.
+
+**Armadilha (medição):** sonda que embrulha `_projectObject` em toda chamada
+recursiva soma tempo inclusivo por nível — a R1b leu 5,0 ms onde o custo real
+era ~1,2 ms. Cronometre só o topo e deixe a recursão ir ao original (ou use
+`?renderPhases`, que tem guarda de reentrância).
+
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
 Duas fusões diferentes, com propósitos opostos, no mesmo módulo
@@ -1179,7 +1206,7 @@ no logo da splash enquanto montava os seis carros.
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
-| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) |
+| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · poda da projeção: `ProjectionPruner.ts` (ADR-0327) |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |

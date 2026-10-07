@@ -160,6 +160,16 @@ describe('ProjectionPruner (SPEC-0326)', () => {
     expect(renderer.pushed.map((o) => o.name)).toContain('figura-b');
   });
 
+  it('subárvore escondida na montagem que reaparece à frente é desenhada', () => {
+    const g = bus('reaparece', 0, -20);
+    g.visible = false;
+    scene.add(g);
+    render(renderer, scene, camera);
+    g.visible = true;
+    render(renderer, scene, camera);
+    expect(renderer.pushed.map((o) => o.name)).toEqual(['reaparece-a', 'reaparece-b', 'reaparece-c']);
+  });
+
   it('câmera nula desliga a poda', () => {
     const behind = bus('atras', 0, 50);
     scene.add(behind);

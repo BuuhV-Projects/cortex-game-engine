@@ -83,7 +83,10 @@ com `object.isScene` e `camera === pruner.camera` (não `ArrayCamera`):
 
 Sombra: a passada do `three` (dentro de `_renderObjects`) e a nativa (que lê o
 `visible` no `update` do espelho, antes do render) acontecem fora da janela da
-poda. O `scene.onBeforeRender` (lote de bonecos) também vem antes.
+poda. Com o espelho da SPEC-0322 (só sincroniza nó sujo; `visible` conferido
+por varredura em rodízio contra o último valor enviado), o `visible`
+temporário não suja slot nenhum: a varredura só roda no `update`, e aí o valor
+já voltou. O `scene.onBeforeRender` (lote de bonecos) também vem antes.
 
 ### Onde liga
 

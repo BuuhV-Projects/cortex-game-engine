@@ -49,7 +49,14 @@ export const SPHERE_MARGIN_METERS = 1;
  * Candidatas cuja esfera local é remedida por passe, em rodízio. Põe um teto
  * no tempo em que uma esfera fica velha se algo se mexer dentro da subárvore.
  */
-export const REFRESH_PER_PASS = 16;
+export const REFRESH_PER_PASS = 4;
+/**
+ * Passes entre duas remontagens completas. Filho novo FORA de uma candidata
+ * (grupo espalhado que ganhou um ônibus, subárvore que reapareceu) não é
+ * risco — sem candidata o `three` faz o trabalho de sempre —, só fica sem
+ * poda até a próxima remontagem; por isso não precisa de evento.
+ */
+export const REBUILD_EVERY_PASSES = 120;
 /** Passes entre duas linhas de estatística no `debug('perf')`. */
 const STATS_EVERY_PASSES = 300;
 
@@ -110,6 +117,15 @@ function geometrySphere(n: TypedNode): Sphere | null {
   return g.boundingSphere;
 }
 
+/** Rascunhos de {@link measureSubtree} (roda no rodízio: sem alocar). */
+const _scratchSphere = new Sphere();
+const _stack: Object3D[] = [];
+/** Sai da medição sem segurar referência a nós da cena. */
+function bail(): number {
+  _stack.length = 0;
+  return -1;
+}
+
 /**
  * Mede uma subárvore para uma câmera de máscara `layerMask`: devolve quantos
  * nós ela tem, ou -1 se algum nó impede a poda. `out` recebe a esfera em
@@ -120,19 +136,21 @@ function geometrySphere(n: TypedNode): Sphere | null {
  */
 export function measureSubtree(root: Object3D, out: Sphere, layerMask: number): number {
   out.makeEmpty();
-  const scratch = new Sphere();
+  const scratch = _scratchSphere;
+  const stack = _stack;
+  stack.length = 0;
+  stack.push(root);
   let count = 0;
-  const stack: Object3D[] = [root];
   while (stack.length > 0) {
     const node = stack.pop() as Object3D;
     const typed = node as unknown as TypedNode;
-    if (structuralBlock(typed)) return -1;
+    if (structuralBlock(typed)) return bail();
     count++;
     const drawable = typed.isMesh || typed.isLine || typed.isPoints || typed.isSprite;
     if (drawable && (node.layers.mask & layerMask) !== 0) {
-      if (drawableBlock(typed)) return -1;
+      if (drawableBlock(typed)) return bail();
       const s = geometrySphere(typed);
-      if (!s) return -1; // malha sem esfera calculável: o `three` falharia igual
+      if (!s) return bail(); // malha sem esfera calculável: o `three` falharia igual
       out.union(scratch.copy(s).applyMatrix4(node.matrixWorld));
     }
     for (let i = 0; i < node.children.length; i++) stack.push(node.children[i]);
@@ -174,6 +192,7 @@ export class ProjectionPruner {
   private _culled = 0;
   private _skipped = 0;
   private _rebuilds = 0;
+  private _sinceRebuild = 0;
   private _ms = 0;
 
   /** Quantas candidatas há (para teste e diagnóstico). */
@@ -227,7 +246,12 @@ export class ProjectionPruner {
 
   private _hide(scene: Object3D, camera: Camera): void {
     const t0 = performance.now();
-    if (scene !== this._scene || this._dirty || camera.layers.mask !== this._layerMask) {
+    if (
+      scene !== this._scene ||
+      this._dirty ||
+      camera.layers.mask !== this._layerMask ||
+      ++this._sinceRebuild >= REBUILD_EVERY_PASSES
+    ) {
       this._layerMask = camera.layers.mask;
       this._rebuild(scene);
     }
@@ -264,13 +288,16 @@ export class ProjectionPruner {
     this._scene = scene;
     this._dirty = false;
     this._rebuilds++;
+    this._sinceRebuild = 0;
     this._candidates = [];
     this._refreshCursor = 0;
-    this._subscribe(scene);
     for (let i = 0; i < scene.children.length; i++) this._collect(scene.children[i]);
   }
 
-  /** Escuta mudança de estrutura em todo nó da cena (o `three` não propaga). */
+  /**
+   * Escuta mudança de estrutura DENTRO de uma candidata (o `three` não
+   * propaga): é aí que um filho novo invalidaria a esfera em cache.
+   */
   private _subscribe(root: Object3D): void {
     root.traverse((node) => {
       if (this._subscribed.has(node)) return;
@@ -281,6 +308,9 @@ export class ProjectionPruner {
   }
 
   private _collect(node: Object3D): void {
+    // Subárvore escondida: o `three` já não entra nela. Se reaparecer, fica sem
+    // poda (seguro) até a próxima remontagem.
+    if (!node.visible) return;
     const local = new Sphere();
     const count = this._measureLocal(node, local);
     // Pequena e podável: nada lá dentro compensa.
@@ -288,6 +318,7 @@ export class ProjectionPruner {
     const always = local.isEmpty();
     if (count >= 0 && (always || local.radius <= MAX_CANDIDATE_RADIUS)) {
       this._candidates.push({ root: node, local, nodes: count, always });
+      this._subscribe(node);
       return;
     }
     // Espalhada demais ou com algo que bloqueia a poda: desce aos filhos.
