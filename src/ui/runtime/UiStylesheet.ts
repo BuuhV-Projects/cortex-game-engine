@@ -13,6 +13,7 @@
  * - `box-shadow: 0 Npx 0 <cor>` (sombra DURA, sem blur) ou `none`
  * - `text-align: left|center|right` (botão)
  * - `padding: Ypx Xpx`, `width: Npx`, `height: Npx`
+ * - `pointer-events: auto|none` (só `<canvas>`, ADR-0315)
  *
  * @example
  * const sheet = parseUiCss(`
@@ -23,7 +24,7 @@
  * sheet.apply(botao, 'card');
  */
 import { parseUiBackground, parseUiBoxShadow } from './uiColor.js';
-import { UiButton, UiLabel, UiPanel, type UiWidget } from './widgets.js';
+import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 
 type StyleProps = Record<string, string>;
 
@@ -91,6 +92,11 @@ export function parseUiCss(css: string): UiStylesheet {
             '"0 Npx 0 <cor>" (sombra dura, sem blur/spread) ou "none"',
         );
       }
+      if (prop === 'pointer-events' && value !== 'auto' && value !== 'none') {
+        throw new Error(
+          `UiStylesheet: "pointer-events: ${value}" (em ".${selector}") — use auto ou none`,
+        );
+      }
       if (prop === 'text-align' && !['left', 'center', 'right'].includes(value)) {
         throw new Error(
           `UiStylesheet: "text-align: ${value}" (em ".${selector}") — use left, center ou right`,
@@ -113,6 +119,7 @@ const SUPPORTED = new Set([
   'padding',
   'width',
   'height',
+  'pointer-events',
 ]);
 
 function px(value: string, prop: string): number {
@@ -197,6 +204,9 @@ function applyProps(widget: UiWidget, props: StyleProps, isFocusState: boolean):
         break;
       case 'height':
         widget.height = px(value, prop);
+        break;
+      case 'pointer-events':
+        if (widget instanceof UiCanvas) widget.pointerEvents = value as UiCanvas['pointerEvents'];
         break;
     }
   }

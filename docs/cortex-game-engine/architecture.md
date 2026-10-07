@@ -848,6 +848,21 @@ cada widget em **px lógicos ancorados** — telas autoradas contra a resoluçã
 ⚠️ **Autore SEMPRE pensando em 1920×1080** — o engine cuida da escala. Não crave
 tamanhos "pra 4K" no HTML/HUD; some a portabilidade entre resoluções.
 
+## 8b2b. UI de runtime: `<canvas>` (`UiCanvas`) — ADR-0315 / SPEC-0317
+
+`UiCanvas` (tag `<canvas>`, estende `UiPanel`) é dono de um `HTMLCanvasElement` real.
+- `DomUiBackend`: o nó do widget **é** o canvas (vai pra raiz da UI) — o browser pinta.
+- `RendererUiBackend` (nativo): quad `MeshBasicMaterial` com `CanvasTexture` (sRGB,
+  `toneMapped=false`, blend do ADR-0105) no rect de conteúdo (rect − borda). A cada
+  `sync`, canvas **visível** com `__cortexVersion` diferente do subido → `needsUpdate`
+  (o upload lê `canvas.rgba` → rasteriza a fila adiada do ADR-0312). Bitmap com outro
+  tamanho → textura/material novos (descarte adiado). Sem `__cortexVersion` (canvas que
+  não é do host) → re-sobe todo quadro visível.
+- Atributos `width/height` = bitmap; widget `width/height` = exibido (0 = o do bitmap).
+
+⚠️ Canvas no nativo agora custa de verdade (rasterizar em JS + subir) a CADA mudança —
+quem redesenha todo quadro paga todo quadro. Ponteiro não chega ao elemento no host.
+
 ## 8b3. UI de runtime: mouse/toque (`UiLayer`) — SPEC-0133
 
 Além de gamepad/teclado, o `UiLayer` faz **hit-test de ponteiro** — um só código pros

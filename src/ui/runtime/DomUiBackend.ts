@@ -8,7 +8,7 @@ import type { UiBackend } from './UiBackend.js';
 import type { UiViewport } from './layout.js';
 import { resolveRect } from './layout.js';
 import { installUiFont, UI_FONT_FAMILY } from './uiFont.js';
-import { UiButton, UiLabel, UiPanel, type UiWidget } from './widgets.js';
+import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 
 /**
  * Fonte da UI = Roboto Medium (`UI_FONT_FAMILY`, embutida via {@link installUiFont}),
@@ -51,14 +51,20 @@ export class DomUiBackend implements UiBackend {
       alive.add(widget.id);
       let node = this._nodes.get(widget.id);
       if (!node) {
-        node = document.createElement('div');
+        // `<canvas>` (ADR-0315): o nó É o canvas do jogo — o browser pinta.
+        node = widget instanceof UiCanvas ? widget.canvas : document.createElement('div');
         node.style.position = 'absolute';
         node.style.whiteSpace = 'nowrap';
         this._root.appendChild(node);
         this._nodes.set(widget.id, node);
         widget.dirty = true;
       }
-      if (widget.dirty || viewportChanged) this._apply(widget, node, viewport);
+      // Canvas sem tamanho exibido acompanha o bitmap (o jogo pode redimensionar).
+      const bitmapResized =
+        widget instanceof UiCanvas &&
+        ((!widget.width && widget.measuredWidth !== widget.canvas.width) ||
+          (!widget.height && widget.measuredHeight !== widget.canvas.height));
+      if (widget.dirty || viewportChanged || bitmapResized) this._apply(widget, node, viewport);
     }
     for (const [id, node] of this._nodes) {
       if (!alive.has(id)) {
@@ -123,6 +129,7 @@ export class DomUiBackend implements UiBackend {
       node.style.background = 'transparent';
       node.style.whiteSpace = 'nowrap';
     } else if (widget instanceof UiPanel) {
+      if (widget instanceof UiCanvas) node.style.pointerEvents = widget.pointerEvents;
       node.style.display = widget.visible ? 'block' : 'none';
       // `background` já é CSS (cor ou linear-gradient); `backgroundTo` legado
       // vira gradiente vertical aqui.
@@ -145,12 +152,13 @@ export class DomUiBackend implements UiBackend {
 
     // Mede (DOM sabe o tamanho do texto) e posiciona com a MESMA matemática
     // do backend renderer.
-    const width = widget.width || node.offsetWidth;
-    const height = widget.height || node.offsetHeight;
+    // Canvas sem tamanho exibido = o do bitmap (HTML5); o resto mede o nó.
+    const width = widget.width || (widget instanceof UiCanvas ? widget.canvas.width : node.offsetWidth);
+    const height = widget.height || (widget instanceof UiCanvas ? widget.canvas.height : node.offsetHeight);
     widget.measuredWidth = width;
     widget.measuredHeight = height;
-    if (widget.width) node.style.width = `${widget.width}px`;
-    if (widget.height) node.style.height = `${widget.height}px`;
+    if (widget.width || widget instanceof UiCanvas) node.style.width = `${width}px`;
+    if (widget.height || widget instanceof UiCanvas) node.style.height = `${height}px`;
     const rect = resolveRect(widget.anchor, widget.x, widget.y, width, height, viewport);
     node.style.left = `${rect.x}px`;
     node.style.top = `${rect.y}px`;

@@ -12,7 +12,7 @@ import type { UiBackend } from './UiBackend.js';
 import type { UiViewport } from './layout.js';
 import { resolveRect } from './layout.js';
 import { parseUiBackground, parseUiBoxShadow, parseUiColor } from './uiColor.js';
-import { UiButton, UiLabel, UiPanel, type UiWidget } from './widgets.js';
+import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 
 /** Assinatura do raster nativo (host). */
 type RasterTextFn = (
@@ -112,6 +112,21 @@ interface WidgetVisual {
   imageUniforms?: ImageUniforms;
   imageTexture?: THREE.Texture;
   lastImage?: string | null;
+  /** `<canvas>` (ADR-0315): quad com a CanvasTexture do elemento. */
+  canvas?: THREE.Mesh;
+  canvasTexture?: THREE.CanvasTexture;
+  /** `__cortexVersion` do canvas que está na GPU (-1 = nunca subiu). */
+  canvasVersion?: number;
+}
+
+/** O bitmap mudou de tamanho desde que a textura foi criada? */
+function bitmapResized(tex: THREE.Texture, canvas: HTMLCanvasElement): boolean {
+  return tex.userData['w'] !== canvas.width || tex.userData['h'] !== canvas.height;
+}
+
+/** Canvas do host conta versões de pixel (SPEC-0317); fora dele, `undefined`. */
+function canvasVersion(canvas: HTMLCanvasElement): number | undefined {
+  return (canvas as HTMLCanvasElement & { __cortexVersion?: number }).__cortexVersion;
 }
 
 /**
@@ -169,7 +184,12 @@ export class RendererUiBackend implements UiBackend {
     const alive = new Set<number>();
     widgets.forEach((widget, order) => {
       alive.add(widget.id);
-      if (widget.dirty || viewportChanged) this._apply(widget, order, viewport);
+      const canvasResized =
+        widget instanceof UiCanvas &&
+        ((!widget.width && widget.measuredWidth !== widget.canvas.width) ||
+          (!widget.height && widget.measuredHeight !== widget.canvas.height));
+      if (widget.dirty || viewportChanged || canvasResized) this._apply(widget, order, viewport);
+      if (widget instanceof UiCanvas && widget.visible) this._refreshCanvas(widget);
     });
     for (const [id, visual] of this._visuals) {
       if (!alive.has(id)) {
@@ -235,6 +255,11 @@ export class RendererUiBackend implements UiBackend {
       widget.measuredHeight = widget.height || this._textHeight(visual, widget);
     }
 
+    if (widget instanceof UiCanvas) {
+      // Sem tamanho exibido = o do bitmap (HTML5).
+      widget.measuredWidth = widget.width || widget.canvas.width;
+      widget.measuredHeight = widget.height || widget.canvas.height;
+    }
     const width = widget.width || widget.measuredWidth;
     const height = widget.height || widget.measuredHeight;
     const rect = resolveRect(widget.anchor, widget.x, widget.y, width, height, viewport);
@@ -308,6 +333,20 @@ export class RendererUiBackend implements UiBackend {
     } else if (visual.image) {
       visual.image.visible = false;
       visual.lastImage = null;
+    }
+
+    // ── `<canvas>`: bitmap esticado no rect de CONTEÚDO (border-box) ──
+    if (widget instanceof UiCanvas) {
+      this._ensureCanvasMesh(visual, widget);
+      const mesh = visual.canvas!;
+      const inset = widget.borderWidth;
+      const w = Math.max(0, rect.width - inset * 2);
+      const h = Math.max(0, rect.height - inset * 2);
+      (mesh.material as THREE.MeshBasicMaterial).opacity = widget.opacity;
+      mesh.visible = widget.visible && w > 0 && h > 0;
+      mesh.renderOrder = layer + 2; // acima do fundo/borda
+      mesh.scale.set(w, h, 1);
+      mesh.position.set(rect.x + rect.width / 2, -(rect.y + rect.height / 2), 0);
     }
 
     // ── malha do texto ──
@@ -624,6 +663,69 @@ export class RendererUiBackend implements UiBackend {
     }
   }
 
+  /**
+   * Quad do `<canvas>`: CanvasTexture do elemento (o upload lê `canvas.rgba` no
+   * host — contrato do ImageBitmap, ADR-0312). Bitmap com outro tamanho →
+   * textura e material NOVOS (a textura da GPU tem tamanho fixo); os antigos
+   * vão pro descarte adiado.
+   */
+  private _ensureCanvasMesh(visual: WidgetVisual, widget: UiCanvas): void {
+    const { canvas } = widget;
+    const current = visual.canvasTexture;
+    if (current && visual.canvas && !bitmapResized(current, canvas)) return;
+    if (current || visual.canvas) {
+      const oldMaterial = visual.canvas?.material as THREE.Material | undefined;
+      this._graveyard.push({
+        frames: 2,
+        dispose: () => {
+          current?.dispose();
+          oldMaterial?.dispose();
+        },
+      });
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.userData['w'] = canvas.width;
+    tex.userData['h'] = canvas.height;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    const material = new THREE.MeshBasicMaterial({
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      map: tex,
+      toneMapped: false, // cor de UI (sRGB), fora do tone mapping do jogo
+    });
+    if (this._composite) setUiCompositeBlend(material); // alpha correto na RT (ADR-0105)
+    if (!visual.canvas) {
+      visual.canvas = new THREE.Mesh(this._quad, material);
+      this._scene.add(visual.canvas);
+    } else {
+      visual.canvas.material = material;
+    }
+    visual.canvasTexture = tex;
+    visual.canvasVersion = canvasVersion(canvas); // a CanvasTexture nova já sobe
+  }
+
+  /**
+   * Re-sobe os pixels se o canvas mudou desde o último upload (SPEC-0317):
+   * compara `__cortexVersion` do host; sem ele, re-sobe todo quadro visível.
+   */
+  private _refreshCanvas(widget: UiCanvas): void {
+    const visual = this._visuals.get(widget.id);
+    const tex = visual?.canvasTexture;
+    if (!visual || !tex) return;
+    if (bitmapResized(tex, widget.canvas)) {
+      this._ensureCanvasMesh(visual, widget); // textura nova já sobe o conteúdo
+      return;
+    }
+    const version = canvasVersion(widget.canvas);
+    if (version !== undefined && version === visual.canvasVersion) return;
+    visual.canvasVersion = version;
+    tex.needsUpdate = true;
+  }
+
   private _destroy(visual: WidgetVisual): void {
     if (visual.background) {
       this._scene.remove(visual.background);
@@ -641,7 +743,12 @@ export class RendererUiBackend implements UiBackend {
       this._scene.remove(visual.image);
       (visual.image.material as THREE.Material).dispose();
     }
+    if (visual.canvas) {
+      this._scene.remove(visual.canvas);
+      (visual.canvas.material as THREE.Material).dispose();
+    }
     visual.texture?.dispose();
     visual.imageTexture?.dispose();
+    visual.canvasTexture?.dispose();
   }
 }

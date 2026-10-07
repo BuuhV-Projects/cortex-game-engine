@@ -6,6 +6,9 @@
  * **erro claro na compilação** (nunca surpresa no console).
  *
  * Vocabulário (nomes do HTML5 — filosofia DOM-lite: não reinventar):
+ * - `<canvas width="N" height="N">` — vira {@link UiCanvas} (ADR-0315): os
+ *   atributos são o tamanho do BITMAP, como no HTML5; o jogo desenha em
+ *   `(tpl.get(id) as UiCanvas).canvas.getContext('2d')`.
  * - `<div>`/`<span>`/`<button>`/`<img>` — viram {@link UiPanel}/{@link UiLabel}/
  *   {@link UiButton}/{@link UiPanel} com imagem. Texto interno vira `text`
  *   (com `{{chave}}` substituído pelos `data` do load). `<panel>`/`<label>`
@@ -40,11 +43,11 @@
  */
 import { anchorFraction, type UiAnchor } from './layout.js';
 import { parseUiCss, UiStylesheet } from './UiStylesheet.js';
-import { UiButton, UiLabel, UiPanel, type UiWidget } from './widgets.js';
+import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.js';
 import type { UiLayer } from './UiLayer.js';
 
 // Tags HTML5 + aliases legados (panel/label) — mesmo widget nos dois nomes.
-const TAGS = new Set(['div', 'span', 'img', 'button', 'stack', 'panel', 'label']);
+const TAGS = new Set(['div', 'span', 'img', 'button', 'canvas', 'stack', 'panel', 'label']);
 const PANEL_TAGS = new Set(['div', 'panel', 'img']);
 
 interface TemplateNode {
@@ -132,6 +135,9 @@ export class UiTemplate {
   /** Tamanho estimado pro layout do stack (labels ≈ fonte; resto declarado). */
   private estimateSize(node: TemplateNode): { width: number; height: number } {
     const probe = this.makeWidget(node, {}, {});
+    if (probe instanceof UiCanvas) {
+      return { width: probe.width || probe.canvas.width, height: probe.height || probe.canvas.height };
+    }
     const height =
       probe.height ||
       (probe instanceof UiButton
@@ -150,7 +156,9 @@ export class UiTemplate {
     data: Record<string, string | number>,
     options: UiTemplateBuildOptions,
   ): UiWidget {
-    const widget = PANEL_TAGS.has(node.tag)
+    const widget = node.tag === 'canvas'
+      ? new UiCanvas()
+      : PANEL_TAGS.has(node.tag)
       ? new UiPanel()
       : node.tag === 'button'
         ? new UiButton()
@@ -177,8 +185,15 @@ export class UiTemplate {
     if (node.attrs['anchor']) widget.anchor = node.attrs['anchor'] as UiAnchor;
     if (node.attrs['x']) widget.x = Number(node.attrs['x']);
     if (node.attrs['y']) widget.y = Number(node.attrs['y']);
-    if (node.attrs['width']) widget.width = Number(node.attrs['width']);
-    if (node.attrs['height']) widget.height = Number(node.attrs['height']);
+    if (widget instanceof UiCanvas) {
+      // HTML5: atributos = tamanho do BITMAP; o exibido é o do CSS (ou o do bitmap).
+      if (node.attrs['width']) widget.canvas.width = Number(node.attrs['width']);
+      if (node.attrs['height']) widget.canvas.height = Number(node.attrs['height']);
+      if (node.attrs['id']) widget.canvas.id = node.attrs['id']; // como no HTML5 (getElementById/devtools)
+    } else {
+      if (node.attrs['width']) widget.width = Number(node.attrs['width']);
+      if (node.attrs['height']) widget.height = Number(node.attrs['height']);
+    }
     if (widget instanceof UiButton) {
       if (node.attrs['focusable'] === 'false') widget.focusable = false;
       const action = node.attrs['onpress'];

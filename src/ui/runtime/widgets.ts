@@ -196,3 +196,38 @@ export class UiButton extends UiLabel {
     Object.assign(this, props);
   }
 }
+
+/**
+ * `<canvas>` da UI de runtime (ADR-0315): dono de um `HTMLCanvasElement` real
+ * onde o jogo desenha com `getContext('2d')` — radar, minimapa, minigame. No
+ * browser o backend DOM põe o PRÓPRIO elemento na tela; no host nativo o
+ * backend renderer sobe os pixels pra uma textura sempre que o canvas muda.
+ *
+ * `width`/`height` do widget = tamanho EXIBIDO (0 = o do bitmap); o bitmap é o
+ * `canvas.width/height` (atributos `width`/`height` do template). O bitmap é
+ * esticado pro tamanho exibido (`object-fit: fill`, como no HTML5) dentro da
+ * borda. Fundo default `transparent`, como o canvas do HTML5.
+ *
+ * @example
+ * const hud = await loadUiTemplate(game.ui, 'assets/ui/hud.html');
+ * const g = (hud.get('radar') as UiCanvas).canvas.getContext('2d')!;
+ * g.fillRect(0, 0, 10, 10); // aparece no Studio e no export nativo
+ */
+export class UiCanvas extends UiPanel {
+  /** O elemento canvas (desenhe nele como no browser). */
+  readonly canvas: HTMLCanvasElement;
+  /** `pointer-events` do CSS: `none` deixa o clique passar pro jogo (só no DOM). */
+  pointerEvents: 'auto' | 'none' = 'auto';
+  constructor(
+    props: UiWidgetProps &
+      Partial<Pick<UiCanvas, 'background' | 'cornerRadius' | 'borderWidth' | 'borderColor' | 'boxShadow' | 'pointerEvents'>> & {
+        canvas?: HTMLCanvasElement;
+      } = {},
+  ) {
+    super();
+    const { canvas, ...rest } = props;
+    this.background = 'transparent';
+    this.canvas = canvas ?? document.createElement('canvas');
+    Object.assign(this, rest);
+  }
+}

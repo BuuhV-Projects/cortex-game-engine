@@ -23,7 +23,7 @@ export function colorRow(width) {
   return rowColors;
 }
 
-function blendPixel(d, i, r, g, b, sa) {
+export function blendPixel(d, i, r, g, b, sa) {
   if (sa >= 1) {
     d[i] = r;
     d[i + 1] = g;
