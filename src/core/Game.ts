@@ -27,6 +27,7 @@ import { PerfTrace } from './PerfTrace.js';
 import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
 import { FrameProfiler } from './FrameProfiler.js';
+import { ProjectionPruner, projectionPruneEnabled, type ProjectingRenderer } from '../render/ProjectionPruner.js';
 import {
   RenderPhaseProbe,
   renderPhasesRequested,
@@ -233,6 +234,14 @@ export class Game {
   /** Perfil por sistema do ECS (SPEC-0236), ligado por ?systemProfile=1. */
   private _systemProfile: Map<string, number> | null = null;
   private readonly _sceneMirror = new NativeSceneMirror();
+  /**
+   * Poda de subárvores fora do frustum na projeção do `three` (SPEC-0322). Só
+   * no host nativo e só no passe da câmera do jogo — `camera` é posta por
+   * quadro no ramo que desenha o jogo e fica `null` nos outros.
+   */
+  private readonly _projectionPruner: ProjectionPruner | null = projectionPruneEnabled(isNativeHost())
+    ? new ProjectionPruner()
+    : null;
   private _sceneMirrorTried = false;
   /** DIAGNOSTICO TEMPORARIO (SPEC-0241). */
   private _ramoRelatado: string | null = null;
@@ -316,6 +325,7 @@ export class Game {
     this.scene = new Scene();
     this.renderer = new Renderer({ canvas, width, height });
     this._renderPhases.install(this.renderer.threeRenderer);
+    this._projectionPruner?.attach(this.renderer.threeRenderer as unknown as ProjectingRenderer);
 
     if (projection === 'orthographic') {
       // 2D / pixel art: ortográfica olhando o plano XY de frente. O frustum é
@@ -663,6 +673,13 @@ export class Game {
       }
     }
     if (this._sceneMirror.installed) this._sceneMirror.update(this._activeCamera);
+    if (this._projectionPruner) {
+      // Poda só no jogo (SPEC-0322): no editor um objeto arrastado deixaria a
+      // esfera em cache velha, e o aquecimento precisa ver tudo pra compilar.
+      const playing =
+        this._warmupRequests.length === 0 && !this._loading && !inspectCamera && !editorCamera;
+      this._projectionPruner.camera = playing ? this._activeCamera : null;
+    }
     if (this._warmupRequests.length > 0) {
       // Quadro de aquecimento (ADR-0262): antes da splash e da cena em
       // carregamento de propósito — o que importa é compilar, e o quadro sai
