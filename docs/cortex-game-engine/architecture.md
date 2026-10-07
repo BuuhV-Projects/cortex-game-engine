@@ -1044,7 +1044,8 @@ sobrepõe):
 
 Delegam ao `three` sem tocar em nada: bundle, `static`, `hasNode`, skinned,
 primeira vez, **primeiro objeto do monitor no `render()`** (é ele quem atualiza os
-grupos compartilhados e os `updateBefore` do passe), MRT de velocidade, e plano
+grupos compartilhados e os `updateBefore` do passe; com a SPEC-0322 isso é feito
+pelo wrapper de fora, §8e5, que chega aqui com o `renderId` em dia), MRT de velocidade, e plano
 com `updateBefore`/`updateAfter` por objeto.
 
 **Armadilha (por que a exclusão é obrigatória):** os nodes de material são
@@ -1059,6 +1060,36 @@ nodes fora da exclusão (UV de textura, `onObjectUpdate`, referências
 genéricas) continuam reavaliados. Depende de internos do `three` 0.184: um bump
 exige rodar a paridade por pixel do probe (`?transformOnlyRefresh=0` contra o
 padrão, simulação congelada no mesmo frame).
+
+## 8e5. Refresh por `renderId` só do que é por render (`src/render/RenderIdRefresh.ts`) — SPEC-0322
+
+O `NodeMaterialObserver` refaz o **primeiro** render object de cada monitor
+(`NodeBuilderState`) em todo `render()`, antes do `equals()`. Com material
+exclusivo todo objeto é o primeiro: no DDD 61 eram ~72 refreshes completos por
+quadro sem nada mudar.
+
+O `Renderer` instala, **depois** do `TransformOnlyRefresh` (fica por fora dele),
+outro wrapper em `_nodes.needsRefresh` (padrão: só no host;
+`?renderIdRefresh=0|1` sobrepõe). No primeiro objeto do monitor:
+
+1. `nodes.updateBefore` (sombra/PMREM, deduplicados por `renderId`);
+2. re-busca o `NodeFrame` (o render aninhado da sombra troca a câmera dele);
+3. nós de update não-`OBJECT` (câmera, luzes, tempo; deduplicados);
+4. `bindings._update` só nos bind groups compartilhados (`render`/`frame`);
+5. marca `monitor.renderId` e chama o de dentro (`equals()`): `true` → refresh
+   completo; andando → caminho só de transformação; parado → plano do ADR-0290
+   (nós de objeto não vigiados + UBO de objeto comparado; normalmente nenhum
+   `writeBuffer`).
+
+Deixa de ser refeito só o que o `equals()` vigia (refs de material de
+`refreshUniforms`, texturas/samplers, geometria), ou seja, o primeiro objeto vira
+igual aos objetos 2..N do mesmo material no three. Delegam ao three: bundle,
+`hasNode`, skinned, primeira vez, velocity, `InstancedMesh`/`BatchedMesh`,
+`updateAfter`, `updateBefore` de objeto e buffer não-UBO em grupo de objeto.
+
+**Armadilha:** não dá para "pular tudo" (só os passos 1–4). Quase todo mapa tem a
+matriz de UV do `TextureNode` como nó `OBJECT`: o UV scroll de material exclusivo
+parado congelaria.
 
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
@@ -1179,7 +1210,7 @@ no logo da splash enquanto montava os seis carros.
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
-| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) |
+| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0322) |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
