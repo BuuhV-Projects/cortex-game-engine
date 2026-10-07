@@ -18,9 +18,9 @@ jogo revelado e liso:
 
 | aquecimento | revela (s) | pipelines |
 |---|---|---|
-| quadro real, criação síncrona (hoje) | 9,4 | 55 |
+| quadro real, criação síncrona (hoje) | 8,3–11,1 | 55 |
 | `compileAsync` do three + quadro real | 8,7 | 64 (variantes erradas) |
-| quadro real, criação **assíncrona em paralelo** | **6,4** | 55 |
+| quadro real, criação **assíncrona em paralelo** | **6,3–7,6** | 55 |
 
 (números finais e repetições na SPEC-0309)
 

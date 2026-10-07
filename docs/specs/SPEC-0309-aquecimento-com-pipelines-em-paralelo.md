@@ -34,4 +34,15 @@ síncrona; no navegador o Chrome os compila em série no processo de GPU depois 
 
 (Detetive Brasília, Chrome headless com GPU, `?play=1&hora=10&clima=sol`)
 
-(preenchida abaixo)
+Mesmo jogo (branch `perf/sem-congelar-no-inicio`, que espera a GPU e só revela com
+quadros lisos), só a engine muda; intercalado, 3 rodadas cada. "Revela" = canvas
+mostrado, jogo liso; "quente" = Chrome relançado com o mesmo perfil.
+
+| engine | revela frio (s) | revela quente (s) | pior quadro após revelar | pipelines |
+|---|---|---|---|---|
+| main (criação síncrona) | 9,5 / 11,1 / 8,3 | 7,3 / 7,7 / 7,3 | 14 ms | 55 síncronos |
+| esta (paralela) | **7,6 / 6,3 / 6,4** | **5,1 / 5,2 / 5,2** | 14 ms | 54 assíncronos + 1 |
+
+Experimento à parte (mesmo jogo): `compileAsync` do three + quadro real revelou em
+8,7 s e criou 64 pipelines (9 variantes que o jogo não usa). Screenshots em 4 lugares
+(Centro, Comercial, Águas Claras, parque): iguais ao main.
