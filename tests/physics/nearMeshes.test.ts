@@ -3,8 +3,9 @@
  * varredura da cena no CharacterPhysicsSystem.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { BoxGeometry, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Object3D, Vector3 } from 'three';
-import { MOVING_MARGIN, NearMeshIndex, traverseCollidable } from '../../src/physics/nearMeshes.js';
+import { Box3, BoxGeometry, DoubleSide, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Object3D, PlaneGeometry, Vector3 } from 'three';
+import { MOVING_MARGIN, NearMeshIndex, STATIC_MARGIN, touchingBox, traverseCollidable } from '../../src/physics/nearMeshes.js';
+import { ensureBoundsTree } from '../../src/physics/raycastAccel.js';
 import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
 import { CharacterBodyComponent } from '../../src/components/CharacterBodyComponent.js';
@@ -170,5 +171,60 @@ describe('SPEC-0307: sem gizmo do editor, sem escondido, faixa vertical', () => 
     scene.add(gizmo);
     expect(stand(scene).y).toBeCloseTo(0);
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe('SPEC-0323: folga só pra quem se mexe; caixa antes dos raios de parede', () => {
+  // malha de parede com BVH (indirect, como no engine): plano XY de 4×4 m em z = 0
+  const wall = (x: number, z: number, yaw = 0): Mesh => {
+    const m = new Mesh(new PlaneGeometry(4, 4, 24, 24), new MeshBasicMaterial({ side: DoubleSide }));
+    m.position.set(x, 2, z);
+    m.rotation.y = yaw;
+    m.updateMatrixWorld(true);
+    ensureBoundsTree(m);
+    return m;
+  };
+
+  it('parada desde a varredura anterior usa STATIC_MARGIN; quem andou, MOVING_MARGIN', () => {
+    const still = box(STATIC_MARGIN + 3, 0, 0); // esfera 1,73: alcança só com a folga grande
+    const mover = box(0, 0, STATIC_MARGIN + 3);
+    const idx = new NearMeshIndex();
+    idx.rebuild([still, mover]); // 1ª vez: tudo é "novo" → folga grande
+    expect(idx.nearXZ(0, 0, 0, [])).toEqual([still, mover]);
+    mover.position.x += 1;
+    mover.updateMatrixWorld(true);
+    idx.rebuild([still, mover]);
+    expect(idx.nearXZ(0, 0, 0, [])).toEqual([mover]); // a parada encolheu; a que andou não
+    expect(idx.nearXZ(STATIC_MARGIN + 3, 0, 0, [])).toContain(still); // perto continua achando
+  });
+
+  it('touchingBox: tira a malha com BVH que não toca a caixa, mantém a que toca e a sem árvore', () => {
+    expect(STATIC_MARGIN).toBeLessThan(MOVING_MARGIN);
+    const far = wall(0, 3);
+    const close = wall(0, 0.3, Math.PI / 2 - 0.2); // girada: testa a inversa da matrixWorld
+    const plain = box(0, 0, 50); // sem árvore (pequena e compacta)
+    expect((far.geometry as { boundsTree?: unknown }).boundsTree).toBeTruthy();
+    const b = new Box3(new Vector3(-0.5, 0, -0.5), new Vector3(0.5, 2, 0.5));
+    expect(touchingBox([far, close, plain], b, [])).toEqual([close, plain]);
+  });
+
+  it('CharacterPhysics: parede com BVH empurra igual; longe dela não mexe', () => {
+    const scene = new Object3D();
+    scene.add(box(0, -20, 0, 40)); // chão com topo em y = 0
+    const w = wall(0, 0.3); // face em z = 0,3
+    w.userData['cortexSolid'] = true;
+    scene.add(w);
+    scene.updateMatrixWorld(true);
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+    const near = world.createEntity();
+    const tn = new TransformComponent(0, 0, 0);
+    near.addComponent(tn);
+    near.addComponent(new CharacterBodyComponent({ radius: 0.4, footOffset: 0 }));
+    world.tick(16);
+    expect(tn.z).toBeCloseTo(0.3 - 0.4, 3); // saiu da parede: raio inteiro de distância
+    tn.z = -3; // longe da parede: nada empurra
+    world.tick(16);
+    expect(tn.z).toBe(-3);
   });
 });

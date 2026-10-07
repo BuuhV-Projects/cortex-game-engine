@@ -1,4 +1,4 @@
-import { Sphere, type Object3D, type Vector3 } from 'three';
+import { Matrix4, Sphere, type Box3, type Object3D, type Vector3 } from 'three';
 
 /**
  * Filtro barato "só o que está perto" pros raycasts de colisão (SPEC-0302): em vez
@@ -21,6 +21,15 @@ interface WithSphere {
  * por até uma varredura.
  */
 export const MOVING_MARGIN = 5;
+
+/**
+ * Folga (m) da malha que NÃO se mexeu desde a varredura anterior (SPEC-0323): cobre
+ * quem começa a andar logo depois dela (parado → 2 m/s² por 250 ms anda 6 cm).
+ */
+export const STATIC_MARGIN = 0.5;
+
+/** Diferença (m) de centro/raio da esfera abaixo da qual a malha conta como parada. */
+export const MOVE_EPSILON = 1e-3;
 
 const tmp = new Sphere();
 
@@ -73,18 +82,42 @@ const STRIDE = 4;
 export class NearMeshIndex {
   private meshes: readonly Object3D[] = [];
   private data = new Float32Array(0);
+  /** Esfera em mundo (x, y, z, raio) de cada malha na varredura anterior (SPEC-0323). */
+  private previous = new WeakMap<Object3D, Float32Array>();
 
-  /** Recalcula as esferas de `meshes` (chamar quando a lista é remontada). */
+  /**
+   * Recalcula as esferas de `meshes` (chamar quando a lista é remontada). A folga é
+   * {@link MOVING_MARGIN} pra quem se mexeu desde o rebuild anterior (ou é nova) e
+   * {@link STATIC_MARGIN} pra quem ficou parada (SPEC-0323).
+   */
   rebuild(meshes: readonly Object3D[]): void {
     this.meshes = meshes;
     if (this.data.length < meshes.length * STRIDE) this.data = new Float32Array(meshes.length * STRIDE);
     for (let i = 0; i < meshes.length; i++) {
-      const s = worldSphere(meshes[i]!);
+      const mesh = meshes[i]!;
+      const s = worldSphere(mesh);
       const k = i * STRIDE;
-      this.data[k] = s?.center.x ?? 0;
-      this.data[k + 1] = s?.center.y ?? 0;
-      this.data[k + 2] = s?.center.z ?? 0;
-      this.data[k + 3] = s ? s.radius + MOVING_MARGIN : Infinity;
+      if (!s) {
+        this.data[k] = this.data[k + 1] = this.data[k + 2] = 0;
+        this.data[k + 3] = Infinity;
+        continue;
+      }
+      let prev = this.previous.get(mesh);
+      const moved =
+        !prev ||
+        Math.abs(prev[0]! - s.center.x) > MOVE_EPSILON ||
+        Math.abs(prev[1]! - s.center.y) > MOVE_EPSILON ||
+        Math.abs(prev[2]! - s.center.z) > MOVE_EPSILON ||
+        Math.abs(prev[3]! - s.radius) > MOVE_EPSILON;
+      if (!prev) this.previous.set(mesh, (prev = new Float32Array(STRIDE)));
+      prev[0] = s.center.x;
+      prev[1] = s.center.y;
+      prev[2] = s.center.z;
+      prev[3] = s.radius;
+      this.data[k] = s.center.x;
+      this.data[k + 1] = s.center.y;
+      this.data[k + 2] = s.center.z;
+      this.data[k + 3] = s.radius + (moved ? MOVING_MARGIN : STATIC_MARGIN);
     }
   }
 
@@ -121,4 +154,29 @@ export class NearMeshIndex {
     }
     return out;
   }
+}
+
+const _boxToMesh = new Matrix4();
+
+interface WithBvh {
+  isInstancedMesh?: boolean;
+  matrixWorld: Matrix4;
+  geometry?: { boundsTree?: { intersectsBox(box: Box3, boxToMesh: Matrix4): boolean } };
+}
+
+/**
+ * Filtra `meshes` pras que podem ter triângulo dentro de `box` (em mundo) — SPEC-0323.
+ * Malha com árvore BVH (não instanciada) faz UM teste exato caixa × triângulos e sai se
+ * não toca; sem árvore ou instanciada fica (o raio decide). Conservador: nunca tira uma
+ * malha que um raio contido na caixa acertaria.
+ */
+export function touchingBox(meshes: readonly Object3D[], box: Box3, out: Object3D[]): Object3D[] {
+  out.length = 0;
+  for (let i = 0; i < meshes.length; i++) {
+    const m = meshes[i]! as unknown as WithBvh;
+    const tree = m.isInstancedMesh ? undefined : m.geometry?.boundsTree;
+    if (tree && !tree.intersectsBox(box, _boxToMesh.copy(m.matrixWorld).invert())) continue;
+    out.push(meshes[i]!);
+  }
+  return out;
 }
