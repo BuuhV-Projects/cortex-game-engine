@@ -358,6 +358,21 @@ World.prototype.castRay = function (
   };
 };
 
+// `world.bodies` — o RigidBodySet do Rapier do browser (SPEC-0313): o DDD 61
+// itera `world.bodies.forEach` pra achar os corpos que um helper acabou de
+// criar. Subset: forEach, len, get, getAll — sobre os wrappers deste mundo.
+Object.defineProperty(World.prototype, 'bodies', {
+  get: function () {
+    const world = this;
+    return {
+      forEach: function (callback) { world.forEachRigidBody(callback); },
+      len: function () { return world.__bodies.length; },
+      get: function (handle) { return world.getRigidBody(handle); },
+      getAll: function () { return world.__bodies.slice(); },
+    };
+  },
+});
+
 /** Quantos corpos este mundo criou. Espelha `world.bodies.len()` do Rapier. */
 Object.defineProperty(World.prototype, 'numRigidBodies', {
   get: function () { return this.__bodies.length; },

@@ -38,6 +38,17 @@ solto é ignorado. `document.getElementById(id)` procura na árvore do `body`/`h
 Os elementos continuam sem layout: o canvas do radar é desenhável mas não aparece
 na tela do nativo.
 
+### Outras lacunas do boot do DDD 61 (achadas no export)
+
+- `<img>` do host (`shims/image.js`) ganha `style` (objeto inerte): o
+  `Speedometer` do engine estiliza a agulha e morria em `Object.assign(undefined)`.
+- `world.bodies` no `rapier-compat` (RigidBodySet: `forEach`, `len`, `get`,
+  `getAll`) — o `ParkTrunks` do jogo itera os corpos criados.
+- **Pendente (fora desta mudança):** `RigidBody.setEnabled(on)` não existe no
+  host — precisa de uma operação nova no crate `rapier-native`
+  (`rb.set_enabled`) e rebuild do host. O DDD 61 chama no boot (`ParkTrunks`) e
+  nos trabalhos de veículo (gás, lixo, ônibus).
+
 ### API do contexto coberta
 
 | grupo | membros |

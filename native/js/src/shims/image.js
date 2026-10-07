@@ -78,6 +78,9 @@ export function installImageShims() {
     this.complete = false;
     this.__listeners = {};
     this.__src = '';
+    // Elemento do DOM: código de HUD (ex.: Speedometer do engine) estiliza o
+    // <img> — inerte no host, mas precisa existir (SPEC-0313).
+    this.style = {};
   }
   FakeImage.prototype = Object.create(globalThis.ImageBitmap.prototype);
   FakeImage.prototype.addEventListener = function (type, cb) {
