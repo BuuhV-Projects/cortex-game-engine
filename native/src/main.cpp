@@ -171,8 +171,10 @@ bool runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
     heapLogFrame = 0;
     char abStats[256];
     shims::dumpArrayBufferStats(abStats, sizeof(abStats));
-    core::appendPerfLog("heap-js=%.1fMB external=%.1fMB | arraybuffers: %s",
-                         js.heapUsedMB(), js.externalBytesMB(), abStats);
+    char textLive[128];
+    shims::dumpTextRasterLive(textLive, sizeof(textLive));
+    core::appendPerfLog("heap-js=%.1fMB external=%.1fMB | arraybuffers: %s | text-vivo: %s",
+                         js.heapUsedMB(), js.externalBytesMB(), abStats, textLive);
   }
   // Tudo depois do present entra em `resto`: destruicoes adiadas, contadores,
   // o log do heap. Fica separado de `js` para nao inflar a fase do jogo.

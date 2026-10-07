@@ -20,9 +20,42 @@ std::vector<unsigned char> g_fontData;
 stbtt_fontinfo g_font;
 bool g_fontReady = false;
 
-// Telemetria (SPEC-0188+): ver text_raster.h.
-std::atomic<uint64_t> g_rasterCount{0};
-std::atomic<uint64_t> g_rasterBytes{0};
+// Telemetria (SPEC-0320): rasters VIVOS por origem. Conta na criação e
+// desconta no finalizador do ArrayBuffer (GC) — o contador `text` do
+// perf_arraybuffer é só o total ALOCADO desde o boot e não separa vazamento
+// de churn coletável.
+enum class RasterOrigin { kUi, kCanvas, kOther, kCount };
+struct LiveCounter {
+  std::atomic<int64_t> count{0};
+  std::atomic<int64_t> bytes{0};
+};
+LiveCounter g_live[static_cast<size_t>(RasterOrigin::kCount)];
+const bool g_textLog = std::getenv("CORTEX_TEXT_LOG") != nullptr;
+
+RasterOrigin parseOrigin(const std::string& origin) {
+  if (origin == "ui") return RasterOrigin::kUi;
+  if (origin == "canvas") return RasterOrigin::kCanvas;
+  return RasterOrigin::kOther;
+}
+
+// Dado do finalizador (finalize_data): bytes << 2 | origem (sem alocar nada por raster).
+constexpr uintptr_t kOriginBits = 2;
+constexpr uintptr_t kOriginMask = (1u << kOriginBits) - 1;
+
+void onRasterCollected(napi_env /*env*/, void* data, void* /*hint*/) {
+  const uintptr_t packed = reinterpret_cast<uintptr_t>(data);
+  auto& c = g_live[packed & kOriginMask];
+  c.count.fetch_sub(1, std::memory_order_relaxed);
+  c.bytes.fetch_sub(static_cast<int64_t>(packed >> kOriginBits), std::memory_order_relaxed);
+}
+
+void trackLiveRaster(napi_env env, napi_value buffer, RasterOrigin origin, size_t bytes) {
+  auto& c = g_live[static_cast<size_t>(origin)];
+  c.count.fetch_add(1, std::memory_order_relaxed);
+  c.bytes.fetch_add(static_cast<int64_t>(bytes), std::memory_order_relaxed);
+  const uintptr_t packed = (static_cast<uintptr_t>(bytes) << kOriginBits) | static_cast<uintptr_t>(origin);
+  napi_add_finalizer(env, buffer, reinterpret_cast<void*>(packed), onRasterCollected, nullptr, nullptr);
+}
 
 bool loadFontFile(const std::string& path) {
   FILE* file = std::fopen(path.c_str(), "rb");
@@ -65,10 +98,11 @@ uint32_t nextCodepoint(const std::string& text, size_t* i) {
   return '?';
 }
 
-// __cortexRasterText(texto, alturaPx) → {width, height, rgba}|null
+// __cortexRasterText(texto, alturaPx, origem?) → {width, height, rgba}|null
+// `origem` ("ui" | "canvas") só alimenta a telemetria (SPEC-0320).
 napi_value jsRasterText(napi_env env, napi_callback_info info) {
-  size_t argc = 2;
-  napi_value args[2];
+  size_t argc = 3;
+  napi_value args[3];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   napi_value nullValue = nullptr;
   napi_get_null(env, &nullValue);
@@ -78,6 +112,9 @@ napi_value jsRasterText(napi_env env, napi_callback_info info) {
   double sizePx = 16;
   napi_get_value_double(env, args[1], &sizePx);
   if (text.empty() || sizePx <= 0) return nullValue;
+  const std::string originName = argc >= 3 ? njs::toString(env, args[2]) : std::string();
+  const RasterOrigin origin = parseOrigin(originName);
+  if (g_textLog) std::printf("[text] %s %.1fpx \"%s\"\n", originName.c_str(), sizePx, text.c_str());
 
   // Escala por EM (não por ascent-descent): CSS `font-size: N px` mapeia o EM
   // da fonte pra N px. `ScaleForPixelHeight` (altura ascent-descent → N) daria
@@ -141,8 +178,7 @@ napi_value jsRasterText(napi_env env, napi_callback_info info) {
   void* rgbaData = nullptr;
   napi_value rgba = nullptr;
   napi_create_arraybuffer(env, coverage.size() * 4, &rgbaData, &rgba);
-  g_rasterCount.fetch_add(1, std::memory_order_relaxed);
-  g_rasterBytes.fetch_add(coverage.size() * 4, std::memory_order_relaxed);
+  trackLiveRaster(env, rgba, origin, coverage.size() * 4);
   trackArrayBufferBytes(ArrayBufferSource::kTextRaster, coverage.size() * 4);
   auto* out = static_cast<unsigned char*>(rgbaData);
   for (size_t p = 0; p < coverage.size(); ++p) {
@@ -184,9 +220,17 @@ void registerTextRaster(napi_env env, const std::string& baseDir,
   njs::setMethod(env, global, "__cortexRasterText", jsRasterText);
 }
 
-uint64_t perfTextRasterCount() { return g_rasterCount.load(std::memory_order_relaxed); }
-double perfTextRasterBytesMB() {
-  return static_cast<double>(g_rasterBytes.load(std::memory_order_relaxed)) / (1024.0 * 1024.0);
+int dumpTextRasterLive(char* buf, size_t bufSize) {
+  static const char* const kLabels[] = {"ui", "canvas", "outro"};
+  int written = 0;
+  for (size_t i = 0; i < static_cast<size_t>(RasterOrigin::kCount); ++i) {
+    const double mb = static_cast<double>(g_live[i].bytes.load(std::memory_order_relaxed)) / (1024.0 * 1024.0);
+    const int n = std::snprintf(buf + written, bufSize > static_cast<size_t>(written) ? bufSize - written : 0,
+                                "%s%s=%lldx/%.1fMB", written ? " " : "", kLabels[i],
+                                static_cast<long long>(g_live[i].count.load(std::memory_order_relaxed)), mb);
+    if (n > 0) written += n;
+  }
+  return written;
 }
 
 }  // namespace shims
