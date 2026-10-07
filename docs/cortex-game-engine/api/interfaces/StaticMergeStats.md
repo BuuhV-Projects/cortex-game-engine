@@ -6,7 +6,7 @@
 
 # Interface: StaticMergeStats
 
-Defined in: [src/scene/StaticMerge.ts:52](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L52)
+Defined in: [src/scene/StaticMerge.ts:60](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L60)
 
 **Merge da geometria estática da cena** (SPEC-0120) — reduz draw calls fundindo
 as malhas paradas do cenário (ilhas, árvores, pedras, decoração) em poucas
@@ -30,6 +30,13 @@ O que fica de fora (continua desenhado como estava):
 - Subárvores de GATILHO: entidade cujo `Collider2DComponent` é NÃO-sólido
   (`collider.solid: false` no nó). É objeto de jogo, não cenário — o jogo mede
   e esconde aquela malha (ADR-0220/SPEC-0221).
+- Subárvores marcadas pelo JOGO com **`userData.cortexDynamic = true`** (no
+  objeto ou em qualquer ancestral) — o marcador público pra objeto criado em
+  código que vai se mexer depois do build (carro do jogador, porta que abre,
+  ponteiro de relógio, letreiro que troca de material…). A engine não tem como
+  saber o que o jogo vai mover; quem cria o objeto marca (SPEC-0316).
+- `InstancedMesh`/`BatchedMesh`: já são 1 draw; o bake fundiria só a geometria
+  base e as instâncias sumiriam (SPEC-0316).
 - Malha skinada (personagens), vegetação instanciada (`cortexVegetation*`),
   terreno (`cortexTerrain`, tem pipeline próprio de colisão/sculpt), água,
   chrome do editor (`editorInternal`), invisíveis, layers não-default.
@@ -38,7 +45,8 @@ O que fica de fora (continua desenhado como estava):
 
 A física NÃO muda: colliders derivam dos nós ANTES do merge; o raycast de
 chão/parede do Character enxerga a malha fundida (que preserva
-`cortexSolid`), e o BVH (SPEC-0108) é construído uma vez sobre ela.
+`cortexSolid`), o `setupVehicle` monta o chão do carro dela (preserva
+`cortexRoad`), e o BVH (SPEC-0108) é construído uma vez sobre ela.
 
 ## Properties
 
@@ -46,7 +54,7 @@ chão/parede do Character enxerga a malha fundida (que preserva
 
 > **groups**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:56](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L56)
+Defined in: [src/scene/StaticMerge.ts:64](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L64)
 
 Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
@@ -56,7 +64,7 @@ Malhas fundidas criadas (≈ nº de materiais distintos do estático).
 
 > **kept**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L58)
+Defined in: [src/scene/StaticMerge.ts:66](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L66)
 
 Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
@@ -66,6 +74,6 @@ Malhas elegíveis puladas (grupo de 1, mismatch de atributos, etc.).
 
 > **merged**: `number`
 
-Defined in: [src/scene/StaticMerge.ts:54](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L54)
+Defined in: [src/scene/StaticMerge.ts:62](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/StaticMerge.ts#L62)
 
 Malhas originais fundidas (removidas da cena).
