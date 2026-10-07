@@ -57,6 +57,15 @@ export function isSkinned(obj: Object3D): boolean {
  */
 export const MIN_BVH_TRIS = 512;
 
+/**
+ * Raio (m, espaço local) a partir do qual a malha é **espalhada** e ganha árvore
+ * mesmo abaixo de {@link MIN_BVH_TRIS} (SPEC-0320). A fusão estática junta peças
+ * pequenas da cidade inteira numa malha de poucos triângulos: a esfera envolvente
+ * contém quase todo raio, o descarte por esfera do three nunca a rejeita e cada raio
+ * testa todos os triângulos (medido: 336 tris = 0,54 ms/raio no Hermes).
+ */
+export const SPREAD_BVH_RADIUS = 10;
+
 /** Opções da árvore: nunca alterar a geometria (SPEC-0304). */
 const BVH_OPTIONS = { indirect: true } as const;
 
@@ -85,7 +94,9 @@ export function ensureBoundsTree(mesh: Object3D): void {
   if (!g || g.boundsTree || (g.userData as Record<string, unknown>)['_cortexBvhSkip']) return;
   const posCount = (g.attributes as Record<string, { count?: number }>)['position']?.count ?? 0;
   const triCount = g.index ? g.index.count / 3 : posCount / 3;
-  if (triCount >= MIN_BVH_TRIS) {
+  if (triCount > 0 && !g.boundingSphere) g.computeBoundingSphere();
+  const spread = (g.boundingSphere?.radius ?? 0) >= SPREAD_BVH_RADIUS;
+  if (triCount >= MIN_BVH_TRIS || (triCount > 0 && spread)) {
     // `indirect`: a árvore guarda a ordem dos triângulos num buffer próprio e NÃO mexe
     // na geometria. O modo padrão reordena o índice (e CRIA um, se não houver) — numa
     // malha já enviada pra GPU, o WebGPU passava a desenhar com um índice que nunca
@@ -93,6 +104,6 @@ export function ensureBoundsTree(mesh: Object3D): void {
     // ao voar no editor (SPEC-0304).
     g.computeBoundsTree?.(BVH_OPTIONS);
   } else {
-    (g.userData as Record<string, unknown>)['_cortexBvhSkip'] = true; // pequena: não vale a árvore
+    (g.userData as Record<string, unknown>)['_cortexBvhSkip'] = true; // pequena e compacta: não vale a árvore
   }
 }

@@ -390,7 +390,11 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   (`editorInternal` na raiz) e a subárvore `visible = false` — exceto o objeto
   escondido que é ele mesmo `cortexSolid` (nó `visible: false` + `collider` = malha
   de colisão invisível). O BVH das escondidas ainda é montado na varredura, pra não
-  pesar no quadro em que o culling as mostra. ⚠️ **BVH só no que pode colidir**
+  pesar no quadro em que o culling as mostra — mas **uma vez por raiz escondida**
+  (SPEC-0320): a varredura seguinte não desce de novo nela (`visit` devolve `false`;
+  ~90% dos nós do DDD 61 estão escondidos), e a câmera da 3ª pessoa nunca desce.
+  Malha que entra depois numa subárvore já escondida só ganha BVH ao aparecer
+  (ou após `refresh()`). ⚠️ **BVH só no que pode colidir**
   (SPEC-0308): `ensureBoundsTree` pula malha com `raycast` sobrescrito por função SEM
   parâmetros (o `noRaycast` dos jogos, `mesh.raycast = () => {}`); embrulho que
   repassa `(ray, out)` ao padrão (ex.: `hiddenNotSolid` do Detetive) COLIDE e mantém
@@ -415,8 +419,11 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   - ⚡ **Raycast acelerado por BVH** (`src/physics/raycastAccel.ts`, SPEC-0108): os
     ~13 raycasts/frame testam a **geometria real** — O(triângulos). Num prop denso
     (ponte de corda ~2000 tris) isso derrubava o FPS **no export nativo (Hermes)**.
-    `three-mesh-bvh` constrói uma árvore por geometria (>512 tris) no `collectScene` →
-    O(log n). Patch global seguro (cai no raycast padrão sem árvore). **Não** use mesh
+    `three-mesh-bvh` constrói uma árvore por geometria (>512 tris **ou espalhada**:
+    esfera local ≥ `SPREAD_BVH_RADIUS` = 10 m, SPEC-0320) no `collectScene` →
+    O(log n). ⚠️ a fusão estática gera malha de POUCOS tris espalhada pela cidade: a
+    esfera contém quase todo raio e o three testava os tris um a um (336 tris =
+    0,54 ms/raio no Hermes, 7 ms/quadro só nela) — por isso o critério de espalhada. Patch global seguro (cai no raycast padrão sem árvore). **Não** use mesh
     detalhado como colisão achando que é de graça — agora é barato, mas frestas na
     malha (vãos entre tábuas) ainda deixam o raycast de chão passar (tunneling).
   - ⚠️ **Autoridade única de chão pro Character = o raycast.** O `TerrainCollisionSystem`

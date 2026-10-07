@@ -423,3 +423,49 @@ describe('SPEC-0308: BVH só em malha que pode colidir', () => {
     expect(c.grounded).toBe(true); // pousou no groundY de segurança
   });
 });
+
+describe('SPEC-0320: varredura não desce de novo em subárvore escondida já preparada', () => {
+  const hasTree = (m: Mesh): boolean => (m.geometry as unknown as { boundsTree?: unknown }).boundsTree !== undefined;
+  const dense = (): Mesh => {
+    const floor = new Mesh(new BoxGeometry(40, 1, 40, 16, 1, 16), new MeshBasicMaterial());
+    floor.position.y = -0.5; // topo em y=0
+    return floor;
+  };
+
+  it('prepara a escondida uma vez; refresh() prepara de novo; mostrada, colide igual', () => {
+    const scene = new Object3D();
+    const culled = new Object3D();
+    culled.visible = false;
+    const first = dense();
+    culled.add(first);
+    scene.add(culled);
+    scene.updateMatrixWorld(true);
+    const world = new World();
+    const sys = new CharacterPhysicsSystem([scene]);
+    world.addSystem(sys);
+    const e = world.createEntity();
+    const t = new TransformComponent(0, 3, 0);
+    const c = new CharacterBodyComponent({ groundY: -10 });
+    e.addComponent(t);
+    e.addComponent(c);
+    world.tick(16);
+    expect(hasTree(first)).toBe(true); // 1ª varredura prepara (SPEC-0307)
+
+    const late = dense(); // entra depois, dentro da subárvore já preparada
+    culled.add(late);
+    scene.updateMatrixWorld(true);
+    for (let i = 0; i < 40; i++) world.tick(16); // várias varreduras de 250 ms
+    expect(hasTree(late)).toBe(false); // não desceu de novo
+
+    sys.refresh();
+    world.tick(16);
+    expect(hasTree(late)).toBe(true);
+
+    // escondida não segura; mostrada, vira chão na próxima varredura
+    t.y = 3; c.velocityY = 0;
+    culled.visible = true;
+    for (let i = 0; i < 120; i++) world.tick(16);
+    expect(t.y).toBeCloseTo(0, 1);
+    expect(c.grounded).toBe(true);
+  });
+});
