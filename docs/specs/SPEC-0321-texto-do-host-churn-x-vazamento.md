@@ -1,4 +1,4 @@
-# SPEC-0320 — Texto do host: churn × vazamento (telemetria viva + LRU por bytes)
+# SPEC-0321 — Texto do host: churn × vazamento (telemetria viva + LRU por bytes)
 
 **Data:** 2026-10-07
 **Status:** aceito

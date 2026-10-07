@@ -401,7 +401,7 @@ describe('canvas 2D do host: texto', () => {
   });
 });
 
-describe('canvas 2D do host: cache de máscaras de texto (SPEC-0320)', () => {
+describe('canvas 2D do host: cache de máscaras de texto (SPEC-0321)', () => {
   const g0 = globalThis as Record<string, unknown>;
   let rasters = 0;
   let rasteredClock = 0;

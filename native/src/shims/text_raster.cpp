@@ -20,7 +20,7 @@ std::vector<unsigned char> g_fontData;
 stbtt_fontinfo g_font;
 bool g_fontReady = false;
 
-// Telemetria (SPEC-0320): rasters VIVOS por origem. Conta na criação e
+// Telemetria (SPEC-0321): rasters VIVOS por origem. Conta na criação e
 // desconta no finalizador do ArrayBuffer (GC) — o contador `text` do
 // perf_arraybuffer é só o total ALOCADO desde o boot e não separa vazamento
 // de churn coletável.
@@ -99,7 +99,7 @@ uint32_t nextCodepoint(const std::string& text, size_t* i) {
 }
 
 // __cortexRasterText(texto, alturaPx, origem?) → {width, height, rgba}|null
-// `origem` ("ui" | "canvas") só alimenta a telemetria (SPEC-0320).
+// `origem` ("ui" | "canvas") só alimenta a telemetria (SPEC-0321).
 napi_value jsRasterText(napi_env env, napi_callback_info info) {
   size_t argc = 3;
   napi_value args[3];

@@ -14,7 +14,7 @@ namespace shims {
 void registerTextRaster(napi_env env, const std::string& baseDir,
                         const std::string& exeDir);
 
-// Telemetria (SPEC-0320): rasters de texto AINDA VIVOS (não coletados pelo GC)
+// Telemetria (SPEC-0321): rasters de texto AINDA VIVOS (não coletados pelo GC)
 // por origem — "ui=Nx/MB canvas=Nx/MB outro=Nx/MB". É o que separa vazamento
 // (vivos crescem) de churn (o total alocado cresce, os vivos não). Devolve o nº
 // de bytes escritos (sem terminador). `CORTEX_TEXT_LOG=1` imprime cada raster

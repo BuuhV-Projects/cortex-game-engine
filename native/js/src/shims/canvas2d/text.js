@@ -19,7 +19,7 @@ const DEFAULT_FONT_PX = 10;
 const MEASURE_CACHE_LIMIT = 512;
 /**
  * Máscaras guardadas (texto × tamanho): HUD/painéis redesenham o mesmo texto.
- * LRU por BYTES (SPEC-0320): um relógio a 92 px gera ~100 KB por string nova
+ * LRU por BYTES (SPEC-0321): um relógio a 92 px gera ~100 KB por string nova
  * — limitar por contagem deixava o teto variar 100× com o tamanho da fonte, e
  * o `clear()` total re-rasterizava tudo no quadro seguinte.
  */

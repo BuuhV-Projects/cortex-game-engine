@@ -18,7 +18,7 @@ import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.j
 type RasterTextFn = (
   text: string,
   fontSizePx: number,
-  /** Só telemetria do host (SPEC-0320): de onde veio o raster. */
+  /** Só telemetria do host (SPEC-0321): de onde veio o raster. */
   origin?: 'ui' | 'canvas',
 ) => { width: number; height: number; rgba: ArrayBuffer } | null;
 
