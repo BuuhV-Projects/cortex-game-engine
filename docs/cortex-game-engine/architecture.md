@@ -372,7 +372,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   (`editorInternal` na raiz) e a subárvore `visible = false` — exceto o objeto
   escondido que é ele mesmo `cortexSolid` (nó `visible: false` + `collider` = malha
   de colisão invisível). O BVH das escondidas ainda é montado na varredura, pra não
-  pesar no quadro em que o culling as mostra. ⚠️ a árvore BVH (`ensureBoundsTree`) é montada
+  pesar no quadro em que o culling as mostra. ⚠️ **BVH só no que pode colidir**
+  (SPEC-0308): `ensureBoundsTree` pula malha com `raycast` sobrescrito por função SEM
+  parâmetros (o `noRaycast` dos jogos, `mesh.raycast = () => {}`); embrulho que
+  repassa `(ray, out)` ao padrão (ex.: `hiddenNotSolid` do Detetive) COLIDE e mantém
+  a árvore — não generalize pra "qualquer sobrescrito"; e
+  `traverseCollidable` não desce em subárvore `userData.cortexNoCollide = true`
+  (decoração declarada: fora do chão/parede/câmera e sem BVH). ⚠️ a árvore BVH (`ensureBoundsTree`) é montada
   com `indirect: true` e **nunca altera a geometria**: o modo padrão do three-mesh-bvh
   reordena/cria o índice, e numa malha já na GPU o WebGPU desenhava com índice que
   não subiu (tela preta no editor, SPEC-0304). `InstancedMesh.raycast` também é
