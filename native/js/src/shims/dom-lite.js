@@ -1,7 +1,17 @@
 // DOM-lite INERTE — deixa código de HUD/menu (createElement, appendChild,
 // innerHTML, style) RODAR sem renderizar nada. Etapa 6a do M1: o jogo joga,
 // a UI HTML fica invisível até a abstração de UI do engine (etapa 6b).
+// `innerHTML` cria elementos filhos (SPEC-0313) e `createElement` consulta as
+// fábricas por tag (`<canvas>` 2D vem do shims/canvas2d).
 import { createEventBus } from './event-target.js';
+import { parseHtmlInto } from './html-lite.js';
+
+/** Fábricas de elemento por tag (minúscula) registradas por outros shims. */
+const elementFactories = new Map();
+
+export function registerElementFactory(tag, factory) {
+  elementFactories.set(String(tag).toLowerCase(), factory);
+}
 
 function makeClassList() {
   const set = new Set();
@@ -21,7 +31,6 @@ export function makeInertElement(tagName) {
     classList: makeClassList(),
     children: [],
     parentNode: null,
-    innerHTML: '',
     textContent: '',
     id: '',
     className: '',
@@ -40,8 +49,8 @@ export function makeInertElement(tagName) {
     remove() {
       if (element.parentNode) element.parentNode.removeChild(element);
     },
-    setAttribute(name, value) { element[name] = value; },
-    getAttribute(name) { return element[name] ?? null; },
+    setAttribute(name, value) { element[name === 'class' ? 'className' : name] = value; },
+    getAttribute(name) { return element[name === 'class' ? 'className' : name] ?? null; },
     focus() {},
     blur() {},
     click() {},
@@ -65,7 +74,29 @@ export function makeInertElement(tagName) {
     removeEventListener: bus.removeEventListener,
     dispatchEvent: bus.dispatchEvent,
   };
+  let html = '';
+  Object.defineProperty(element, 'innerHTML', {
+    get() { return html; },
+    set(value) {
+      html = String(value);
+      for (const child of element.children) child.parentNode = null;
+      element.children.length = 0;
+      if (globalThis.document) parseHtmlInto(element, html, (tag) => globalThis.document.createElement(tag));
+    },
+    enumerable: true,
+  });
+  Object.defineProperty(element, 'childNodes', { get() { return element.children; } });
   return element;
+}
+
+/** Busca por id na subárvore (profundidade). */
+function findById(root, id) {
+  for (const child of root.children || []) {
+    if (child.id === id) return child;
+    const hit = findById(child, id);
+    if (hit) return hit;
+  }
+  return null;
 }
 
 /**
@@ -107,13 +138,17 @@ export function installDomLite() {
       if (String(tag).toLowerCase() === 'img' && globalThis.Image) {
         return new globalThis.Image();
       }
-      return makeInertElement(tag);
+      const factory = elementFactories.get(String(tag).toLowerCase());
+      return factory ? factory() : makeInertElement(tag);
     },
     createElementNS(_ns, tag) { return this.createElement(tag); },
     createTextNode(text) { return { textContent: text }; },
     // A canvas do jogo: getElementById('canvas')/querySelector('canvas')
     // devolvem a canvas do HOST (instalada pelo webgpu-extras).
+    // Elementos montados por innerHTML/appendChild são achados na árvore.
     getElementById(id) {
+      const hit = findById(body, id) || findById(head, id);
+      if (hit) return hit;
       return id === 'canvas' ? (globalThis.__cortexCanvas || null) : null;
     },
     querySelector(selector) {

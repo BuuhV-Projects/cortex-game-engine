@@ -100,6 +100,20 @@ describe('World.forEachRigidBody', () => {
   });
 });
 
+describe('World.bodies (RigidBodySet, SPEC-0313)', () => {
+  it('forEach/len/get/getAll enxergam os corpos do mundo', () => {
+    const world = new World({ x: 0, y: 0, z: 0 });
+    const a = world.createRigidBody(DESC);
+    const b = world.createRigidBody(DESC);
+    const seen: unknown[] = [];
+    world.bodies.forEach((body: unknown) => seen.push(body));
+    expect(seen).toEqual([a, b]);
+    expect(world.bodies.len()).toBe(2);
+    expect(world.bodies.get(b.handle)).toBe(b);
+    expect(world.bodies.getAll()).toEqual([a, b]);
+  });
+});
+
 describe('World.createVehicleController', () => {
   // A SPEC-0208 tinha um teste garantindo a MENSAGEM do bloqueio ("veículo não
   // portado"). A SPEC-0209 portou o controlador, então o bloqueio deixou de
