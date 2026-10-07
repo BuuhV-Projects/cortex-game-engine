@@ -1,4 +1,4 @@
-import { Matrix4, Sphere, type Box3, type Object3D, type Vector3 } from 'three';
+import { Box3, Matrix4, Sphere, type Object3D, type Vector3 } from 'three';
 
 /**
  * Filtro barato "só o que está perto" pros raycasts de colisão (SPEC-0302): em vez
@@ -72,12 +72,41 @@ export function traverseCollidable(
   for (const c of o.children) traverseCollidable(c, visit, h);
 }
 
-/** Floats por malha no índice: centro x, y, z e raio (já com a folga). */
-const STRIDE = 4;
+/** Floats por malha no índice: esfera (x, y, z, raio) e caixa (min x/y/z, máx x/y/z), já com a folga. */
+const STRIDE = 10;
+/** Floats da esfera guardada da varredura anterior (centro + raio). */
+const PREV_STRIDE = 4;
+/** Deslocamento da caixa dentro do registro de cada malha. */
+const BOX = 4;
+
+interface WithBox {
+  isInstancedMesh?: boolean;
+  boundingBox?: Box3 | null;
+  computeBoundingBox?(): void;
+  geometry?: { boundingBox: Box3 | null; computeBoundingBox(): void };
+  matrixWorld: Object3D['matrixWorld'];
+}
+
+const tmpBox = new Box3();
+
+/** Caixa alinhada aos eixos de `o` em mundo, ou `null` se não tiver geometria (SPEC-0323). */
+export function worldBox(o: Object3D, out: Box3 = tmpBox): Box3 | null {
+  const m = o as unknown as WithBox;
+  if (m.isInstancedMesh) {
+    if (!m.boundingBox) m.computeBoundingBox?.();
+    return m.boundingBox ? out.copy(m.boundingBox).applyMatrix4(m.matrixWorld) : null;
+  }
+  const g = m.geometry;
+  if (!g) return null;
+  if (!g.boundingBox) g.computeBoundingBox();
+  return g.boundingBox ? out.copy(g.boundingBox).applyMatrix4(m.matrixWorld) : null;
+}
 
 /**
- * Malhas + esferas em mundo, calculadas em {@link NearMeshIndex.rebuild} (junto da
- * varredura da cena). Malha sem esfera entra sempre (raio infinito: não arrisca).
+ * Malhas + esferas e caixas em mundo, calculadas em {@link NearMeshIndex.rebuild} (junto
+ * da varredura da cena). Uma malha só passa se a esfera E a caixa alcançam — as duas
+ * contêm a geometria, e a caixa é bem mais justa em malha comprida (rua, fileira de
+ * casas, célula fundida — SPEC-0323). Malha sem geometria entra sempre (não arrisca).
  */
 export class NearMeshIndex {
   private meshes: readonly Object3D[] = [];
@@ -86,20 +115,24 @@ export class NearMeshIndex {
   private previous = new WeakMap<Object3D, Float32Array>();
 
   /**
-   * Recalcula as esferas de `meshes` (chamar quando a lista é remontada). A folga é
-   * {@link MOVING_MARGIN} pra quem se mexeu desde o rebuild anterior (ou é nova) e
+   * Recalcula esferas e caixas de `meshes` (chamar quando a lista é remontada). A folga
+   * é {@link MOVING_MARGIN} pra quem se mexeu desde o rebuild anterior (ou é nova) e
    * {@link STATIC_MARGIN} pra quem ficou parada (SPEC-0323).
    */
   rebuild(meshes: readonly Object3D[]): void {
     this.meshes = meshes;
     if (this.data.length < meshes.length * STRIDE) this.data = new Float32Array(meshes.length * STRIDE);
+    const d = this.data;
     for (let i = 0; i < meshes.length; i++) {
       const mesh = meshes[i]!;
       const s = worldSphere(mesh);
+      const b = s ? worldBox(mesh) : null;
       const k = i * STRIDE;
-      if (!s) {
-        this.data[k] = this.data[k + 1] = this.data[k + 2] = 0;
-        this.data[k + 3] = Infinity;
+      if (!s || !b) {
+        d[k] = d[k + 1] = d[k + 2] = 0;
+        d[k + 3] = Infinity;
+        d[k + BOX] = d[k + BOX + 1] = d[k + BOX + 2] = -Infinity;
+        d[k + BOX + 3] = d[k + BOX + 4] = d[k + BOX + 5] = Infinity;
         continue;
       }
       let prev = this.previous.get(mesh);
@@ -109,33 +142,41 @@ export class NearMeshIndex {
         Math.abs(prev[1]! - s.center.y) > MOVE_EPSILON ||
         Math.abs(prev[2]! - s.center.z) > MOVE_EPSILON ||
         Math.abs(prev[3]! - s.radius) > MOVE_EPSILON;
-      if (!prev) this.previous.set(mesh, (prev = new Float32Array(STRIDE)));
+      if (!prev) this.previous.set(mesh, (prev = new Float32Array(PREV_STRIDE)));
       prev[0] = s.center.x;
       prev[1] = s.center.y;
       prev[2] = s.center.z;
       prev[3] = s.radius;
-      this.data[k] = s.center.x;
-      this.data[k + 1] = s.center.y;
-      this.data[k + 2] = s.center.z;
-      this.data[k + 3] = s.radius + (moved ? MOVING_MARGIN : STATIC_MARGIN);
+      const margin = moved ? MOVING_MARGIN : STATIC_MARGIN;
+      d[k] = s.center.x;
+      d[k + 1] = s.center.y;
+      d[k + 2] = s.center.z;
+      d[k + 3] = s.radius + margin;
+      d[k + BOX] = b.min.x - margin;
+      d[k + BOX + 1] = b.min.y - margin;
+      d[k + BOX + 2] = b.min.z - margin;
+      d[k + BOX + 3] = b.max.x + margin;
+      d[k + BOX + 4] = b.max.y + margin;
+      d[k + BOX + 5] = b.max.z + margin;
     }
   }
 
   /**
    * As que alcançam (x, z) no plano até `reach` — raios verticais e paredes curtas.
-   * `minY`/`maxY` (SPEC-0307): descarta a esfera toda abaixo de `minY` ou toda acima
+   * `minY`/`maxY` (SPEC-0307): descarta a malha toda abaixo de `minY` ou toda acima
    * de `maxY` (ex.: o raio de chão, que só desce, passa `maxY` = altura da origem).
    */
   nearXZ(x: number, z: number, reach: number, out: Object3D[], minY = -Infinity, maxY = Infinity): Object3D[] {
     out.length = 0;
+    const d = this.data;
     for (let i = 0; i < this.meshes.length; i++) {
       const k = i * STRIDE;
-      const sr = this.data[k + 3]!;
-      const cy = this.data[k + 1]!;
-      if (cy - sr > maxY || cy + sr < minY) continue;
-      const r = sr + reach;
-      const dx = this.data[k]! - x;
-      const dz = this.data[k + 2]! - z;
+      const b = k + BOX;
+      if (d[b + 1]! > maxY || d[b + 4]! < minY) continue;
+      if (d[b]! > x + reach || d[b + 3]! < x - reach || d[b + 2]! > z + reach || d[b + 5]! < z - reach) continue;
+      const r = d[k + 3]! + reach;
+      const dx = d[k]! - x;
+      const dz = d[k + 2]! - z;
       if (dx * dx + dz * dz <= r * r) out.push(this.meshes[i]!);
     }
     return out;
@@ -144,12 +185,17 @@ export class NearMeshIndex {
   /** As que alcançam o ponto `p` (3D) até `reach` — o braço da câmera. */
   near(p: Vector3, reach: number, out: Object3D[]): Object3D[] {
     out.length = 0;
+    const d = this.data;
     for (let i = 0; i < this.meshes.length; i++) {
       const k = i * STRIDE;
-      const r = this.data[k + 3]! + reach;
-      const dx = this.data[k]! - p.x;
-      const dy = this.data[k + 1]! - p.y;
-      const dz = this.data[k + 2]! - p.z;
+      const b = k + BOX;
+      if (d[b]! > p.x + reach || d[b + 3]! < p.x - reach) continue;
+      if (d[b + 1]! > p.y + reach || d[b + 4]! < p.y - reach) continue;
+      if (d[b + 2]! > p.z + reach || d[b + 5]! < p.z - reach) continue;
+      const r = d[k + 3]! + reach;
+      const dx = d[k]! - p.x;
+      const dy = d[k + 1]! - p.y;
+      const dz = d[k + 2]! - p.z;
       if (dx * dx + dy * dy + dz * dz <= r * r) out.push(this.meshes[i]!);
     }
     return out;

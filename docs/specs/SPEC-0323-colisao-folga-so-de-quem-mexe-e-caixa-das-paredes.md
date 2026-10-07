@@ -51,6 +51,15 @@ Duas causas:
      (`closestPointToPoint`) — mudaria a resposta da colisão (depenetração por eixo
      vira radial) e exigiria re-tunar a gameplay.
 
+3. **Caixa em mundo no índice.** A 1ª rodada A/B (itens 1–2) baixou o
+   `CharacterPhysics` só ~0,5 ms e a câmera quase nada: as candidatas são malhas
+   grandes e compridas (rua, fileira de casas, célula fundida) cuja ESFERA cobre o ponto
+   mesmo longe da geometria, e rejeitá-las no raycast do three custa ~4–8 µs por
+   raio × malha. O índice passa a guardar também a caixa alinhada (AABB) em mundo de
+   cada malha (`worldBox`, mesma folga) e só devolve a malha se a esfera **e** a caixa
+   alcançam — as duas contêm a geometria, então o filtro continua conservador.
+   `nearXZ`/`near` testam a caixa primeiro (4–6 comparações).
+
 ## Consequências
 
 - No meio da rua os raios de parede somem (a caixa não toca nada); encostado numa
