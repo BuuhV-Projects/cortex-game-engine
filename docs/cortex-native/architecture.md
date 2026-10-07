@@ -181,6 +181,9 @@ Native (que roda milhares de libs sobre Hermes em produção):
   Pra APARECER, o canvas vai pra UI de runtime (`<canvas>` → `UiCanvas`, ADR-0315):
   o `RendererUiBackend` sobe os pixels quando `canvas.__cortexVersion` muda (o
   contexto incrementa em todo `_enqueue` e o elemento em todo redimensionamento).
+  Aí o custo vira REAL: radar do DDD 61 = 11,7 ms por desenho, mapa 1174×525 =
+  ~394 ms por repintura (SPEC-0317). `drawImage` é o laço quente (`blitImage`);
+  canvas redesenhado todo quadro precisa repintar só quando muda.
   O caro que sobra: `shadowBlur` (blur de caixa em JS) e muitos canvases
   repintados no mesmo quadro (painéis do metrô do DDD 61: até 8 × 760×170 1×/s).
 

@@ -181,6 +181,7 @@ function blitImage(surface, src, b, inv, rect, lim, smooth, alpha, clip) {
         if (sy < lim.y0) sy = lim.y0; else if (sy > lim.y1) sy = lim.y1;
         const p = s32[sy * sw + sx];
         const a = p >>> ALPHA_SHIFT;
+        if (a === 0) continue; // transparente: nada a compor
         if (a === OPAQUE && c >= 1) {
           d32[base + x] = p;
           continue;

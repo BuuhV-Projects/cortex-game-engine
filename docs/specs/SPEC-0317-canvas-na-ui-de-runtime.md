@@ -65,6 +65,37 @@ o do bitmap.
 - Ponteiro (wheel/drag/clique) entregue ao elemento canvas no nativo.
 - `object-fit`/`image-rendering` (sempre `fill` + filtro linear).
 
-## Medição
+### Laço quente do canvas 2D (achado na medição, mesma série)
 
-Preenchida na validação (export nativo do DDD 61).
+Com o radar finalmente lido todo quadro, o custo da rasterização em JS apareceu.
+Duas mudanças genéricas no shim (`native/js/src/shims/canvas2d/`), sem API nova:
+
+- `drawImage` sem tinta (`bitmap.js`, `blitImage`): amostra e compõe no mesmo
+  laço lendo/escrevendo `uint32`; pixel fora do clip ou transparente nem é
+  amostrado; vizinhança 100% opaca com cobertura 1 vira uma escrita de `uint32`.
+- Máscara de clip (`clip.js`): o último clip sem pai fica em cache; o mesmo
+  caminho no quadro seguinte (o círculo do radar) reaproveita a máscara.
+
+## Medição (export nativo do DDD 61, 1280×720, parado no spawn)
+
+Sonda temporária no jogo cronometrando o `_flush` do contexto (= rasterização,
+que roda no upload) e A/B com o radar desligado.
+
+| cenário | rasterização por desenho | fps |
+|---|---|---|
+| radar, antes das otimizações | 45 ms | 6,9 (*) |
+| radar, `blitImage` | 18,8 ms | 14,5 |
+| radar, `blitImage` + clip em cache + moldura em cache no jogo | **11,7 ms** | 15,7 |
+| sem radar (A/B) | — | 19,3 |
+| mapa aberto, parado (repinta só quando a vista muda — jogo) | 0 | 34,8 |
+| mapa arrastando (repinta todo quadro, 1174×525) | ~394 ms | 2,3 |
+
+(*) antes do merge da fusão estática/bonecos na main; os demais na mesma base.
+
+Perfil por operação do radar (por desenho, após tudo): `drawImage` (4 ladrilhos
+girados + moldura) ~10 ms; `stroke` 0,2 ms; `fillRect`/`fill`/`fillText` <1 ms.
+
+**Teto conhecido:** rasterizar ~25 mil px (radar) ou ~600 mil px (mapa) por
+quadro em JS interpretado (Hermes) não cabe no orçamento. O próximo passo é o
+previsto no ADR-0312: levar o laço do `drawImage` (amostrar + compor uma linha)
+pra C++ portátil, com a mesma API — decisão para um ADR novo com estes números.

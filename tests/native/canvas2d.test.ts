@@ -409,3 +409,26 @@ describe('dom-lite: innerHTML monta elementos (canvases de template)', () => {
     expect(host.childNodes.length).toBe(3);
   });
 });
+
+describe('clip repetido reaproveita a máscara (ADR-0315)', () => {
+  it('mesmo caminho em quadros seguidos → mesma máscara; caminho diferente → máscara nova, resultado certo', () => {
+    const { c, g } = canvas(20, 20);
+    const draw = (r: number): void => {
+      g.clearRect(0, 0, 20, 20);
+      g.save();
+      g.beginPath();
+      g.rect(0, 0, r, 20);
+      g.clip();
+      g.fillStyle = '#ff0000';
+      g.fillRect(0, 0, 20, 20);
+      g.restore();
+    };
+    draw(10);
+    expect(px(c, 5, 5)[3]).toBe(255);
+    expect(px(c, 15, 5)[3]).toBe(0);
+    draw(10);
+    expect(px(c, 15, 5)[3]).toBe(0);
+    draw(18); // caminho mudou: a máscara antiga não serve
+    expect(px(c, 15, 5)[3]).toBe(255);
+  });
+});
