@@ -92,6 +92,14 @@ const CAM_HIDE_DIST = 1.05;
  * mureta), deixando a câmera atrás dela e o personagem escondido.
  */
 const CAM_LOW_RAY_FRACTION = 0.5;
+/**
+ * Estabilidade do braço (SPEC-0311): o raio dá o ALVO da distância; o braço encolhe
+ * rápido (m/s), segura `CAM_RELEASE_HOLD` s depois de encolher e só então volta devagar
+ * (m/s). Sem isso, viga/poste que passa pelo raio vira salto de distância a cada quadro.
+ */
+const CAM_PULL_IN_SPEED = 12;
+const CAM_RELEASE_HOLD = 1;
+const CAM_RELEASE_SPEED = 3;
 /** Duração (s) que o clipe `run_stop` segura antes de cair pro idle. */
 const RUN_STOP_DUR = 0.45;
 
@@ -177,6 +185,10 @@ export class ThirdPersonControlSystem extends System {
   private readonly lowOrigin = new THREE.Vector3();
   /** ms desde a última varredura da cena pros alvos (começa vencido; SPEC-0302). */
   private sinceCamCollect = Infinity;
+  /** Distância atual do braço (SPEC-0311); `Infinity` = encaixa no próximo quadro (corte). */
+  private armDist = Infinity;
+  /** Segundos que o braço ainda segura antes de voltar. */
+  private armHold = 0;
   /** Dono dos alvos coletados (o `self` muda → recoleta). */
   private camSelf?: THREE.Object3D;
 
@@ -245,6 +257,7 @@ export class ThirdPersonControlSystem extends System {
     if (angles?.yaw !== undefined) this.yaw = angles.yaw;
     if (angles?.pitch !== undefined) this.pitch = angles.pitch;
     if (angles?.distance !== undefined) this.camDist = angles.distance;
+    this.armDist = Infinity; // corte de câmera: encaixa, sem transição (SPEC-0311)
     if (mode === 'locked' && typeof document !== 'undefined' && document.pointerLockElement === this.canvas) {
       document.exitPointerLock?.();
     }
@@ -269,7 +282,7 @@ export class ThirdPersonControlSystem extends System {
     const obj = player.getComponent(Object3DComponent)?.object;
     if (this.shouldPause?.()) {
       // No editor o corpo fica visível e parado; ainda assim posiciona a câmera.
-      this.placeCamera(t, obj);
+      this.placeCamera(t, obj, Infinity); // pausado: encaixa direto
       // O A/Espaço usado pra NAVEGAR o menu de pausa ainda está segurado quando
       // a pausa fecha — sem isto, o 1º frame livre via a "borda" e enfileirava
       // um pulo fantasma (com som). Pausado, o botão conta como já-pressionado:
@@ -381,14 +394,14 @@ export class ThirdPersonControlSystem extends System {
     }
 
     // ── Câmera orbital atrás do personagem (com colisão) ──────────────────────
-    this.placeCamera(t, obj);
+    this.placeCamera(t, obj, dt);
 
     // ── Animação (idle/walk/run/jump/fall + run_stop/run_jump) ────────────────
     if (obj) this.drive(obj, movingSpeed, body, dt);
   }
 
   /** Posiciona a câmera atrás/acima conforme yaw/pitch, mirando a cabeça do alvo. */
-  private placeCamera(t: TransformComponent, self?: THREE.Object3D): void {
+  private placeCamera(t: TransformComponent, self: THREE.Object3D | undefined, dt: number): void {
     const cp = Math.cos(this.pitch);
     this.camBack.set(Math.sin(this.yaw) * cp, Math.sin(this.pitch), Math.cos(this.yaw) * cp);
     // Ombro: desloca o alvo pela direita da câmera (cos, -sin) no plano XZ.
@@ -432,6 +445,7 @@ export class ThirdPersonControlSystem extends System {
       if (low) dist = Math.min(dist, Math.max(low.distance - CAM_SKIN, CAM_MIN_DIST));
     }
 
+    dist = this.smoothArm(dist, dt);
     this.camera.position.set(
       this.lookTarget.x + this.camBack.x * dist,
       this.lookTarget.y + this.camBack.y * dist,
@@ -443,6 +457,22 @@ export class ThirdPersonControlSystem extends System {
     // em vez de mostrar o interior da cabeça. Restaura assim que afasta. (O editor
     // também restaura ao abrir — proteção pra pausa com o player oculto.)
     if (self) self.visible = dist > CAM_HIDE_DIST;
+  }
+
+  /** Leva o braço até `target` (SPEC-0311): encolhe rápido, segura, volta devagar. */
+  private smoothArm(target: number, dt: number): number {
+    const arm = this.armDist;
+    if (!Number.isFinite(arm) || !Number.isFinite(dt)) {
+      this.armDist = target;
+    } else if (target < arm) {
+      this.armDist = Math.max(target, arm - CAM_PULL_IN_SPEED * dt);
+      this.armHold = CAM_RELEASE_HOLD;
+    } else if (this.armHold > 0) {
+      this.armHold -= dt;
+    } else {
+      this.armDist = Math.min(target, arm + CAM_RELEASE_SPEED * dt);
+    }
+    return this.armDist;
   }
 
   /**

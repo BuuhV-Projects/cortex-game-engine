@@ -372,7 +372,10 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   `COLLECT_INTERVAL_MS` (250 ms), e cada raio só testa as malhas cuja esfera em
   mundo alcança o personagem (`physics/nearMeshes.ts` → `NearMeshIndex`, com folga
   `MOVING_MARGIN` pro que se move); o spring arm da 3ª pessoa faz o mesmo e tem um
-  2º raio na altura do peito (parede baixa). ⚠️ objeto novo vira chão/parede em até
+  2º raio na altura do peito (parede baixa). O braço tem **memória** (SPEC-0311):
+  o raio dá só o alvo — encolhe a 12 m/s, segura 1 s e volta a 3 m/s; `setOrbit`
+  é corte e encaixa. Sem isso, viga/poste cruzando o raio (trem andando, câmera
+  girando) vira salto de distância a cada quadro. ⚠️ objeto novo vira chão/parede em até
   250 ms — `refresh()` força na hora. ⚠️ **escondido não colide** (SPEC-0307): a
   varredura (`traverseCollidable`) poda a subárvore do gizmo do editor
   (`editorInternal` na raiz) e a subárvore `visible = false` — exceto o objeto

@@ -212,6 +212,86 @@ describe('ThirdPersonControlSystem — colisão de câmera (spring arm)', () => 
   });
 });
 
+describe('ThirdPersonControlSystem — braço estável (SPEC-0311)', () => {
+  const FRAME_MS = 16;
+  const MAX_STEP = 0.5; // m entre quadros: acima disso é "pulo" visível
+  const FULL = 5.5;
+  const target = new THREE.Vector3(0, 1.5, 0);
+  const OFF_LAYER = 1; // o raycaster da câmera só testa a camada 0: muda na hora, sem esperar a varredura
+  const setBeam = (beam: THREE.Object3D, on: boolean) => beam.layers.set(on ? 0 : OFF_LAYER);
+  function setup() {
+    const scene = new THREE.Scene();
+    // viga fina entre o alvo e a câmera, ligada/desligada como a viga que o trem cruza
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 0.2));
+    beam.position.set(0, 0, 2);
+    scene.add(beam);
+    scene.updateMatrixWorld(true);
+    const world = new World();
+    const camera = new THREE.PerspectiveCamera();
+    const sys = new ThirdPersonControlSystem(camera, noKeys as never, {} as HTMLElement, { cameraDistance: FULL, cameraHeight: 1.5 }, undefined, scene);
+    world.addSystem(sys);
+    const e = world.createEntity();
+    e.addComponent(new TransformComponent(0, 0, 0, 0));
+    e.addComponent(new CharacterBodyComponent());
+    const dist = () => camera.position.distanceTo(target);
+    return { world, beam, sys, dist };
+  }
+
+  it('viga que entra e sai do raio não faz a câmera pular entre quadros', () => {
+    const { world, beam, dist } = setup();
+    setBeam(beam, false); // começa livre
+    world.tick(FRAME_MS);
+    expect(dist()).toBeCloseTo(FULL, 1);
+    let prev = dist();
+    let maxStep = 0;
+    let minDist = FULL;
+    const BEAM_PERIOD = 20; // quadros: viga aparece 5 e some 15, várias vezes
+    const BEAM_ON = 5;
+    const FRAMES = 200;
+    for (let f = 0; f < FRAMES; f++) {
+      setBeam(beam, f % BEAM_PERIOD < BEAM_ON);
+      world.tick(FRAME_MS);
+      maxStep = Math.max(maxStep, Math.abs(dist() - prev));
+      minDist = Math.min(minDist, dist());
+      prev = dist();
+    }
+    expect(maxStep).toBeLessThan(MAX_STEP);
+    expect(minDist).toBeLessThan(FULL - 1); // encolheu de verdade (não ignorou a viga)
+  });
+
+  it('caminho livre: segura e volta devagar, sem salto', () => {
+    const { world, beam, dist } = setup();
+    setBeam(beam, false);
+    world.tick(FRAME_MS); // 1º quadro (corte) encaixa na distância cheia
+    setBeam(beam, true);
+    const PULL_FRAMES = 30;
+    for (let f = 0; f < PULL_FRAMES; f++) world.tick(FRAME_MS); // encolhe até a viga
+    const short = dist();
+    expect(short).toBeLessThan(2);
+    setBeam(beam, false);
+    world.tick(FRAME_MS);
+    expect(dist()).toBeCloseTo(short, 3); // segura
+    let prev = dist();
+    const SETTLE_FRAMES = 300;
+    for (let f = 0; f < SETTLE_FRAMES; f++) {
+      world.tick(FRAME_MS);
+      expect(Math.abs(dist() - prev)).toBeLessThan(MAX_STEP);
+      prev = dist();
+    }
+    expect(dist()).toBeCloseTo(FULL, 1); // voltou à distância cheia
+  });
+
+  it('setOrbit é corte: encaixa a distância nova no mesmo quadro', () => {
+    const { world, beam, sys, dist } = setup();
+    setBeam(beam, false);
+    world.tick(FRAME_MS);
+    const FAR = 20;
+    sys.setOrbit('free', { distance: FAR });
+    world.tick(FRAME_MS);
+    expect(dist()).toBeCloseTo(FAR, 1);
+  });
+});
+
 describe('ThirdPersonControlSystem — transições run_stop / run_jump', () => {
   function mockAnimator() {
     const played: string[] = [];
