@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Group, Mesh, Scene } from 'three';
-import { revealForWarmup } from '../../src/core/WarmupFrame.js';
+import { drawWithParallelPipelines, revealForWarmup } from '../../src/core/WarmupFrame.js';
 
 function tree() {
   const scene = new Scene();
@@ -40,5 +40,50 @@ describe('revealForWarmup', () => {
     expect(flame.frustumCulled).toBe(false); // não vira true na volta
     expect(parent.visible).toBe(false);
     expect(child.visible).toBe(true);
+  });
+});
+
+/** `Pipelines` falso do three: `getForRender` com lista empurra uma promessa (criação assíncrona). */
+class FakePipelines {
+  sync = 0;
+  updateForRender(ro: unknown): void {
+    this.getForRender(ro, null);
+  }
+  getForRender(_ro: unknown, promises: Promise<unknown>[] | null): void {
+    if (promises) promises.push(Promise.resolve());
+    else this.sync++;
+  }
+}
+
+describe('drawWithParallelPipelines (ADR-0310)', () => {
+  const OBJECTS = 3;
+
+  it('no quadro, cada pipeline vira promessa (assíncrono, todos juntos)', async () => {
+    const pipelines = new FakePipelines();
+    const promises = drawWithParallelPipelines({ _pipelines: pipelines }, () => {
+      for (let i = 0; i < OBJECTS; i++) pipelines.updateForRender({});
+    });
+    expect(promises).toHaveLength(OBJECTS);
+    expect(pipelines.sync).toBe(0);
+    await Promise.all(promises);
+  });
+
+  it('restaura o caminho síncrono depois — mesmo se o desenho lançar', () => {
+    const pipelines = new FakePipelines();
+    expect(() =>
+      drawWithParallelPipelines({ _pipelines: pipelines }, () => {
+        throw new Error('render falhou');
+      }),
+    ).toThrow('render falhou');
+    expect(Object.prototype.hasOwnProperty.call(pipelines, 'updateForRender')).toBe(false);
+    pipelines.updateForRender({});
+    expect(pipelines.sync).toBe(1);
+  });
+
+  it('three sem o caminho esperado: desenha normal e não há o que esperar', () => {
+    let drawn = 0;
+    expect(drawWithParallelPipelines({}, () => drawn++)).toEqual([]);
+    expect(drawWithParallelPipelines(null, () => drawn++)).toEqual([]);
+    expect(drawn).toBe(2);
   });
 });
