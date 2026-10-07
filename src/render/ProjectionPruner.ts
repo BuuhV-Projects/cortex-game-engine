@@ -1,5 +1,5 @@
 /**
- * Poda de subárvores na projeção do `three` (SPEC-0322).
+ * Poda de subárvores na projeção do `three` (SPEC-0326).
  *
  * O `Renderer._projectObject` do `three` visita TODO nó com `visible !== false`
  * e testa cada malha contra o frustum, uma por uma. Uma subárvore compacta e
@@ -141,7 +141,7 @@ export function measureSubtree(root: Object3D, out: Sphere, layerMask: number): 
 }
 
 /**
- * Poda de subárvores fora do frustum na projeção do `three` (SPEC-0322).
+ * Poda de subárvores fora do frustum na projeção do `three` (SPEC-0326).
  *
  * @example
  * const pruner = new ProjectionPruner();

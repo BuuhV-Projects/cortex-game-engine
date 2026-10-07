@@ -1,8 +1,8 @@
-# SPEC-0322 — Poda de subárvores na projeção do `three` (`ProjectionPruner`)
+# SPEC-0326 — Poda de subárvores na projeção do `three` (`ProjectionPruner`)
 
 **Data:** 2026-10-07
 **Status:** aceito
-**Decisão:** ADR-0323
+**Decisão:** ADR-0327
 
 ## Contexto
 
@@ -44,7 +44,7 @@ pedidos.
 
 ## Decisão
 
-`src/render/ProjectionPruner.ts` (ADR-0323), instalado pelo `Game` no
+`src/render/ProjectionPruner.ts` (ADR-0327), instalado pelo `Game` no
 `threeRenderer` depois da sonda de fases.
 
 ### Candidatas

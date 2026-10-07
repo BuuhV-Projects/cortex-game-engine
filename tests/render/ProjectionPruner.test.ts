@@ -1,4 +1,4 @@
-/** SPEC-0322: poda de subárvores fora do frustum na projeção do `three`. */
+/** SPEC-0326: poda de subárvores fora do frustum na projeção do `three`. */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   BoxGeometry,
@@ -62,7 +62,7 @@ function render(r: FakeRenderer, scene: Scene, camera: Camera): void {
   r._projectObject(scene, camera);
 }
 
-describe('ProjectionPruner (SPEC-0322)', () => {
+describe('ProjectionPruner (SPEC-0326)', () => {
   let scene: Scene;
   let camera: PerspectiveCamera;
   let renderer: FakeRenderer;

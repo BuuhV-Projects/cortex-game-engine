@@ -235,7 +235,7 @@ export class Game {
   private _systemProfile: Map<string, number> | null = null;
   private readonly _sceneMirror = new NativeSceneMirror();
   /**
-   * Poda de subárvores fora do frustum na projeção do `three` (SPEC-0322). Só
+   * Poda de subárvores fora do frustum na projeção do `three` (SPEC-0326). Só
    * no host nativo e só no passe da câmera do jogo — `camera` é posta por
    * quadro no ramo que desenha o jogo e fica `null` nos outros.
    */
@@ -672,9 +672,14 @@ export class Game {
         debug('spike-m5', `ramo de render do Game = ${ramo}`);
       }
     }
-    if (this._sceneMirror.installed) this._sceneMirror.update(this._activeCamera);
+    if (this._sceneMirror.installed) {
+      // Seção própria (SPEC-0322): o custo do espelho some dentro de `render`.
+      p.begin('mirror');
+      this._sceneMirror.update(this._activeCamera);
+      p.end('mirror');
+    }
     if (this._projectionPruner) {
-      // Poda só no jogo (SPEC-0322): no editor um objeto arrastado deixaria a
+      // Poda só no jogo (SPEC-0326): no editor um objeto arrastado deixaria a
       // esfera em cache velha, e o aquecimento precisa ver tudo pra compilar.
       const playing =
         this._warmupRequests.length === 0 && !this._loading && !inspectCamera && !editorCamera;

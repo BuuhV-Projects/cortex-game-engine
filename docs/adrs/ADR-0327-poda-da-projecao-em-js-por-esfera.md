@@ -1,4 +1,4 @@
-# ADR-0323 — Poda da projeção do `three` em JS, por esfera de subárvore e `visible` temporário
+# ADR-0327 — Poda da projeção do `three` em JS, por esfera de subárvore e `visible` temporário
 
 **Data:** 2026-10-07
 **Status:** aceito
@@ -10,7 +10,7 @@ apontou `_projectObject` com ~5,0 ms/quadro e 1.294 chamadas, numa árvore de
 ~10 mil nós em que o `three` visita nó a nó o que o espelho de cena em C++
 (SPEC-0234) já sabe estar fora do frustum.
 
-A remedição desta frente (SPEC-0322) mostrou que **os 5,0 ms eram dupla
+A remedição desta frente (SPEC-0326) mostrou que **os 5,0 ms eram dupla
 contagem**: a sonda da R1b embrulhava `_projectObject` em TODA chamada
 recursiva e somava o tempo inclusivo de cada nível (mais o custo de dois
 `performance.now()` por nó). Medido só no topo — e confirmado pela sonda de
@@ -70,5 +70,5 @@ figuras) também roda antes da projeção.
 - Desligada no editor (objeto arrastado deixaria a esfera velha) e no quadro
   de aquecimento (precisa ver tudo para compilar pipelines). Ligada só no
   host nativo; `?projectionPrune=0` desliga para A/B.
-- O ganho é pequeno frente ao quadro (ver SPEC-0322): a premissa de −2 a −3 ms
+- O ganho é pequeno frente ao quadro (ver SPEC-0326): a premissa de −2 a −3 ms
   não se sustenta com a medição corrigida.
