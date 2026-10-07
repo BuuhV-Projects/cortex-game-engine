@@ -175,6 +175,13 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   nada (a arte tinha ido pra `static-merged-N`). Como a malha fundida herda
   `cortexSolid`, a geometria do gatilho ainda entrava no trimesh de colisão —
   o poder do kart-racer PARAVA o carro no export e funcionava no Studio.
+  ⚠️ **Objeto criado em CÓDIGO que se mexe depois do build = `userData.cortexDynamic
+  = true`** (SPEC-0316). A fusão pega tudo que está na cena no fim do `buildScene`,
+  inclusive o que o `main.ts` adicionou ANTES dele (comum: o jogo põe o cenário
+  procedural antes pra física do Character enxergar). Sem entidade ECS, a engine
+  não sabe que aquilo vai andar: o carro do DDD 61 perdeu a lataria no export (foi
+  pra `static-merged-N`, parada no spawn). Quem cria o objeto marca a raiz.
+  `InstancedMesh`/`BatchedMesh` ficam fora sempre (o bake perderia as instâncias).
 - **Água (`Water.ts`, SPEC-0131)** — nó `water`: plano PBR finito (`size`, default
   400) com cáusticas tiled animadas. **Segue a câmera** no XZ por padrão (o
   `buildScene` passa `options.camera`), então a borda quadrada fica sempre a

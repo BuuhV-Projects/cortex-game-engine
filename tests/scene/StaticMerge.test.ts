@@ -8,6 +8,8 @@ import {
   Object3D,
   Mesh,
   SkinnedMesh,
+  InstancedMesh,
+  Group,
   BoxGeometry,
   MeshBasicMaterial,
   MeshStandardMaterial,
@@ -100,6 +102,29 @@ describe('mergeStaticScene', () => {
     expect(stats.merged).toBe(0);
     expect(stats.groups).toBe(0);
     expect(countMeshes(root)).toBe(5);
+  });
+
+  it('NÃO funde a subárvore marcada pelo jogo com cortexDynamic (carro criado em código, SPEC-0316)', () => {
+    const root = new Object3D();
+    const mat = new MeshBasicMaterial();
+    const car = new Group();
+    car.userData['cortexDynamic'] = true; // marcado na RAIZ: carroceria e rodas ficam de fora
+    car.add(box(mat, 0), box(mat, 1));
+    root.add(car, box(mat, 5), box(mat, 6)); // cenário do mesmo material continua fundindo
+    const stats = mergeStaticScene(root);
+    expect(stats.merged).toBe(2);
+    expect(car.parent).toBe(root);
+    expect(car.children).toHaveLength(2); // nada saiu do carro
+  });
+
+  it('NÃO funde InstancedMesh (as instâncias sumiriam no bake), SPEC-0316', () => {
+    const root = new Object3D();
+    const mat = new MeshBasicMaterial();
+    const inst = new InstancedMesh(new BoxGeometry(1, 1, 1), mat, 3);
+    root.add(inst, box(mat, 5));
+    const stats = mergeStaticScene(root);
+    expect(stats.merged).toBe(0);
+    expect(inst.parent).toBe(root);
   });
 
   it('NÃO funde subárvores de entidades dinâmicas (script/character); estática com collider funde', () => {

@@ -39,6 +39,13 @@ import { Collider2DComponent } from '../components/Collider2DComponent.js';
  * - Subárvores de GATILHO: entidade cujo `Collider2DComponent` é NÃO-sólido
  *   (`collider.solid: false` no nó). É objeto de jogo, não cenário — o jogo mede
  *   e esconde aquela malha (ADR-0220/SPEC-0221).
+ * - Subárvores marcadas pelo JOGO com **`userData.cortexDynamic = true`** (no
+ *   objeto ou em qualquer ancestral) — o marcador público pra objeto criado em
+ *   código que vai se mexer depois do build (carro do jogador, porta que abre,
+ *   ponteiro de relógio, letreiro que troca de material…). A engine não tem como
+ *   saber o que o jogo vai mover; quem cria o objeto marca (SPEC-0316).
+ * - `InstancedMesh`/`BatchedMesh`: já são 1 draw; o bake fundiria só a geometria
+ *   base e as instâncias sumiriam (SPEC-0316).
  * - Malha skinada (personagens), vegetação instanciada (`cortexVegetation*`),
  *   terreno (`cortexTerrain`, tem pipeline próprio de colisão/sculpt), água,
  *   chrome do editor (`editorInternal`), invisíveis, layers não-default.
@@ -61,12 +68,12 @@ export interface StaticMergeStats {
 /** Componentes que NÃO tornam uma entidade dinâmica (por nome de classe). */
 const STATIC_COMPONENTS = new Set(['TransformComponent', 'Object3DComponent', 'Collider2DComponent']);
 
-/** `obj` (ou ancestral) tem flag de exclusão (editor/vegetação/terreno)? */
+/** `obj` (ou ancestral) tem flag de exclusão (editor/vegetação/terreno/dinâmico do jogo)? */
 function isExcludedByUserData(obj: Object3D): boolean {
   let p: Object3D | null = obj;
   while (p) {
     const ud = p.userData as Record<string, unknown>;
-    if (ud['editorInternal'] || ud['cortexVegetation'] || ud['cortexVegetationSub'] || ud['cortexTerrain'] || ud['cortexWater'] || ud['cortexUnderlay'] || ud['cortexVehicle']) return true;
+    if (ud['editorInternal'] || ud['cortexVegetation'] || ud['cortexVegetationSub'] || ud['cortexTerrain'] || ud['cortexWater'] || ud['cortexUnderlay'] || ud['cortexVehicle'] || ud['cortexDynamic']) return true;
     if (!p.visible) return true; // invisível (mannequin oculto, toggles)
     p = p.parent;
   }
@@ -233,6 +240,7 @@ export function mergeStaticScene(
   root.traverse((o) => {
     const mesh = o as Mesh;
     if (!mesh.isMesh || isSkinned(mesh)) return;
+    if ((mesh as { isInstancedMesh?: boolean }).isInstancedMesh || (mesh as { isBatchedMesh?: boolean }).isBatchedMesh) return; // já é 1 draw
     if (Array.isArray(mesh.material)) return; // multi-material: fora (v1)
     if ((mesh.userData as Record<string, unknown>)['cortexMergedStatic']) return;
     // (Cascas de contorno/inverted-hull caem na regra geral: a matriz de mundo
