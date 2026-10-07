@@ -437,6 +437,14 @@ Native (que roda milhares de libs sobre Hermes em produção):
   - Lição de método: pare de descobrir API faltando um export por vez. Cruze
     TODAS as chamadas `body.*`/`collider.*`/`world.*` do jogo e do engine contra
     o shim de uma vez — foi o que fechou esta lista.
+- **Operação nova de corpo = CÓDIGO novo, não função C nova.** `rn_body_set`
+  (`what` 0..11) e `rn_body_get` (`what` 0..7) despacham por código; o shim
+  manda o número e o `rapier.cpp` nem muda. `setEnabled`/`isEnabled` entraram
+  assim (SPEC-0314: `bodySet` 11, `bodyGet` 7 — o boot do DDD 61 morria no
+  `ParkTrunks`). Cuidado: código desconhecido cai no `_ =>` (setTranslation /
+  translation) SEM erro — shim novo com `rapier_native.dll` velha
+  teletransporta o corpo pra origem. Rebuild do crate é obrigatório
+  (`yarn build:host` já faz o cargo antes do CMake).
 - **O `rapier-compat` cobre um SUBCONJUNTO do Rapier** (SPEC-0208): o que falta
   aparece só em runtime, como `undefined is not a function` no meio do setup do
   jogo — sem dizer qual função. Foi assim que o `forEachRigidBody` apareceu
