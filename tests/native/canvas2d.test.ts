@@ -10,7 +10,14 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { createCanvasElement } from '../../native/js/src/shims/canvas2d/canvas-element.js';
 import { installDomLite } from '../../native/js/src/shims/dom-lite.js';
 import { installCanvas2d } from '../../native/js/src/shims/canvas2d/index.js';
-import { FONT_ASCENDER, FONT_DESCENDER, FONT_UNITS_PER_EM } from '../../native/js/src/shims/canvas2d/text.js';
+import {
+  FONT_ASCENDER,
+  FONT_DESCENDER,
+  FONT_UNITS_PER_EM,
+  MASK_CACHE_MAX_BYTES,
+  maskCacheSize,
+  rasterText,
+} from '../../native/js/src/shims/canvas2d/text.js';
 
 type Ctx = CanvasRenderingContext2D;
 type Canvas = HTMLCanvasElement & { rgba: ArrayBuffer };
@@ -391,6 +398,39 @@ describe('canvas 2D do host: texto', () => {
     expect(b.readUInt16BE(tables['head']! + 18)).toBe(FONT_UNITS_PER_EM);
     expect(b.readInt16BE(tables['hhea']! + 4)).toBe(FONT_ASCENDER);
     expect(b.readInt16BE(tables['hhea']! + 6)).toBe(FONT_DESCENDER);
+  });
+});
+
+describe('canvas 2D do host: cache de máscaras de texto (SPEC-0321)', () => {
+  const g0 = globalThis as Record<string, unknown>;
+  let rasters = 0;
+  let rasteredClock = 0;
+
+  // Raster falso do tamanho de um relógio de painel a 92 px (~100 KB por string).
+  beforeAll(() => {
+    g0['__cortexRasterText'] = (text: string) => {
+      rasters++;
+      if (text === 'Próximo trem') rasteredClock++;
+      const width = 200;
+      const height = 125;
+      return { width, height, rgba: new ArrayBuffer(width * height * 4) };
+    };
+  });
+
+  it('10 mil strings distintas: bytes retidos ficam no teto e o texto usado sempre não é re-rasterizado', () => {
+    const PX = 92;
+    const DISTINCT = 10_000;
+    for (let i = 0; i < DISTINCT; i++) {
+      rasterText('Próximo trem', PX); // rótulo fixo redesenhado a cada quadro
+      rasterText(`${Math.floor(i / 60)}:${String(i % 60).padStart(2, '0')}#${i}`, PX);
+    }
+    // Sem o LRU: o `clear()` a cada 256 entradas re-rasterizava o rótulo fixo ~78×.
+    expect(rasteredClock).toBe(1);
+    expect(rasters).toBe(DISTINCT + 1);
+    const { bytes, entries } = maskCacheSize();
+    expect(bytes).toBeGreaterThan(0);
+    expect(bytes).toBeLessThanOrEqual(MASK_CACHE_MAX_BYTES);
+    expect(entries).toBeLessThan(DISTINCT);
   });
 });
 

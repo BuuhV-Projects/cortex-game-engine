@@ -14,12 +14,11 @@ namespace shims {
 void registerTextRaster(napi_env env, const std::string& baseDir,
                         const std::string& exeDir);
 
-// Telemetria (diagnóstico do JSOutOfMemoryError, SPEC-0188+): total de
-// rasterizações desde o boot e MB de ArrayBuffer RGBA gerado — cada chamada
-// cria um ArrayBuffer novo no heap Hermes (napi_create_arraybuffer); texto que
-// muda todo frame (timer de HUD) rasteriza continuamente durante o gameplay,
-// fora do nudge de GC que só roda no reset de fase (ADR-0153).
-uint64_t perfTextRasterCount();
-double perfTextRasterBytesMB();
+// Telemetria (SPEC-0321): rasters de texto AINDA VIVOS (não coletados pelo GC)
+// por origem — "ui=Nx/MB canvas=Nx/MB outro=Nx/MB". É o que separa vazamento
+// (vivos crescem) de churn (o total alocado cresce, os vivos não). Devolve o nº
+// de bytes escritos (sem terminador). `CORTEX_TEXT_LOG=1` imprime cada raster
+// (origem, px, texto) no stdout.
+int dumpTextRasterLive(char* buf, size_t bufSize);
 
 }  // namespace shims

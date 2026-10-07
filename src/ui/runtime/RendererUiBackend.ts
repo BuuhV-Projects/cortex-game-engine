@@ -18,6 +18,8 @@ import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.j
 type RasterTextFn = (
   text: string,
   fontSizePx: number,
+  /** Só telemetria do host (SPEC-0321): de onde veio o raster. */
+  origin?: 'ui' | 'canvas',
 ) => { width: number; height: number; rgba: ArrayBuffer } | null;
 
 /** Só o que precisamos do Renderer do engine (evita acoplamento). */
@@ -482,7 +484,7 @@ export class RendererUiBackend implements UiBackend {
 
   private _rasterInto(visual: WidgetVisual, label: UiLabel): void {
     const raster = (globalThis as Record<string, unknown>)['__cortexRasterText'] as RasterTextFn;
-    const bitmap = label.text.length > 0 ? raster(label.text, label.fontSize) : null;
+    const bitmap = label.text.length > 0 ? raster(label.text, label.fontSize, 'ui') : null;
     visual.lastText = label.text;
     visual.lastFontSize = label.fontSize;
 
