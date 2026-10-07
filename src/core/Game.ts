@@ -24,7 +24,8 @@ import { cullOutlines, DEFAULT_OUTLINE_MIN_RATIO } from '../scene/OutlineCulling
 const OUTLINE_CULL_INTERVAL = 10;
 import { NativeSceneMirror, nativeSceneMirrorAvailable } from './NativeSceneMirror.js';
 import { PerfTrace } from './PerfTrace.js';
-import { revealForWarmup } from './WarmupFrame.js';
+import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
+import { isNativeHost } from '../scene/StaticMerge.js';
 import { FrameProfiler } from './FrameProfiler.js';
 import {
   RenderPhaseProbe,
@@ -213,7 +214,7 @@ export class Game {
   /** Amostrador do perf trace (SPEC-0198). Inerte sem a ponte do host nativo. */
   private readonly _perfTrace = new PerfTrace();
   /** Pedidos de quadro de aquecimento, resolvidos no próximo tick (SPEC-0263). */
-  private readonly _warmupRequests: Array<() => void> = [];
+  private readonly _warmupRequests: Array<(pending: Promise<unknown>[]) => void> = [];
   /**
    * Sonda de fases do render (SPEC-0227) — só embrulha o renderer quando pedida
    * por `?renderPhases=<nivel>`; desligada, é um objeto inerte.
@@ -666,8 +667,8 @@ export class Game {
       // Quadro de aquecimento (ADR-0262): antes da splash e da cena em
       // carregamento de propósito — o que importa é compilar, e o quadro sai
       // por baixo da UI da tela de carregamento.
-      this._renderWarmupFrame();
-      for (const resolve of this._warmupRequests.splice(0)) resolve();
+      const pending = this._renderWarmupFrame();
+      for (const resolve of this._warmupRequests.splice(0)) resolve(pending);
     } else if (isSplashActive()) {
       // Splash da engine no ar (ADR-0109): o host descarta o frame do jogo, só
       // ela apresenta. Desenhar aqui é puro desperdício — e durante a carga são
@@ -782,6 +783,10 @@ export class Game {
    * pipeline que o jogo vai pedir — inclusive os dois passes do transparente
    * de duas faces, que o `compileAsync` errava.
    *
+   * No navegador os pipelines desse quadro são criados em paralelo
+   * (`createRenderPipelineAsync`, ADR-0310) e a promessa só resolve com eles
+   * compilados — revelar o jogo logo depois não congela o 1º quadro.
+   *
    * Chame sob uma tela de carregamento OPACA: o quadro é apresentado. Crie antes
    * tudo o que o jogo só cria no uso (efeitos, projéteis) — objeto criado depois
    * compila na hora. Se o `setPostFX` do jogo escolhe caminhos diferentes
@@ -802,14 +807,19 @@ export class Game {
     const before = this._perfTrace.pipelineCounters();
     const start = performance.now();
     await this.renderer.init();
+    let pending: Promise<unknown>[];
     if (this._loop.isRunning && !this._loop.isPaused) {
       // Quadro de verdade no próximo tick (ADR-0262): gera as MESMAS chaves de
       // pipeline que o jogo vai pedir. O `compileAsync` levava segundos no host
       // e compilava a variante errada dos transparentes de duas faces.
-      await new Promise<void>((resolve) => this._warmupRequests.push(resolve));
+      pending = await new Promise<Promise<unknown>[]>((resolve) => this._warmupRequests.push(resolve));
     } else {
-      this._renderWarmupFrame();
+      pending = this._renderWarmupFrame();
     }
+    // Pipelines criados em paralelo no quadro (ADR-0310): resolve com eles
+    // COMPILADOS — no navegador o Chrome compilava em série depois do retorno e
+    // o 1º quadro do jogo congelava atrás disso.
+    await Promise.all(pending);
     // Coleta completa sob a tela de carregamento (SPEC-0264): o quadro de
     // aquecimento cria de uma vez os objetos de render da cena inteira (heap
     // de 41 para 120 MB no kart-racer). Sem isto, a coleta grande desse heap
@@ -829,12 +839,20 @@ export class Game {
    * Desenha a cena ativa com tudo visível e sem culling, pelo mesmo caminho do
    * jogo (pós-processamento registrado, senão render direto), e restaura.
    */
-  private _renderWarmupFrame(): void {
+  private _renderWarmupFrame(): Promise<unknown>[] {
     const root = this._activeScene.getThreeScene();
     const restore = revealForWarmup(root);
-    try {
+    const draw = (): void => {
       if (this._postfx && this._activeScene === this.scene) this._postfx.render();
       else this.renderer.render(root, this._activeCamera);
+    };
+    try {
+      // Host nativo: criação síncrona, como no ADR-0262 (lá o async não ganha nada).
+      if (isNativeHost()) {
+        draw();
+        return [];
+      }
+      return drawWithParallelPipelines(this.renderer.threeRenderer, draw);
     } finally {
       restore();
     }

@@ -130,6 +130,12 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   para um alvo só. A chave de pipeline inclui formato/amostras/espaço de cor do
   alvo: um efeito de pós que desenha a cena num `pass()` próprio recompila a
   cena inteira na primeira vez que liga — force-o e aqueça de novo.
+  **No navegador o quadro cria os pipelines em PARALELO (ADR-0310 / SPEC-0309):**
+  `drawWithParallelPipelines` troca `_pipelines.updateForRender` do three por
+  `getForRender(ro, promessas)` só durante o quadro — cada pipeline vira
+  `createRenderPipelineAsync`, todos no mesmo quadro — e o `precompile()` espera
+  as promessas. Antes o Chrome compilava em série DEPOIS do retorno e o 1º quadro
+  do jogo congelava atrás (Detetive Brasília: ~6 s). Host nativo: síncrono, como antes.
 
 - **Acabamento toon (`Materials.ts`, SPEC-0194):** `shading: 'cel'` usa dois
   patamares e uma transição curta filtrada na rampa de luz. Sem o campo, mantém

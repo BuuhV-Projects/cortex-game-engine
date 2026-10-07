@@ -27,3 +27,40 @@ export function revealForWarmup(root: Object3D): () => void {
     }
   };
 }
+
+/** O pedaço interno do `Pipelines` do three que o aquecimento usa. */
+interface PipelinesLike {
+  updateForRender(renderObject: unknown): void;
+  getForRender(renderObject: unknown, promises: Promise<unknown>[] | null): unknown;
+}
+
+/**
+ * Roda `draw` (o quadro de aquecimento) com os pipelines criados por
+ * `createRenderPipelineAsync`, todos disparados no mesmo quadro (ADR-0310 /
+ * SPEC-0309). O descritor sai do render real (mesmas chaves do jogo); só a
+ * criação fica assíncrona e o Dawn compila em paralelo.
+ *
+ * @returns as promessas dos pipelines criados — espere todas antes de revelar o
+ *   jogo. Vazio (e `draw` roda normal) se o three não tiver o caminho esperado.
+ */
+export function drawWithParallelPipelines(threeRenderer: unknown, draw: () => void): Promise<unknown>[] {
+  const pipelines = (threeRenderer as { _pipelines?: Partial<PipelinesLike> } | null)?._pipelines;
+  if (!pipelines || typeof pipelines.getForRender !== 'function' || typeof pipelines.updateForRender !== 'function') {
+    draw();
+    return [];
+  }
+  const promises: Promise<unknown>[] = [];
+  const own = Object.prototype.hasOwnProperty.call(pipelines, 'updateForRender');
+  const previous = pipelines.updateForRender;
+  const getForRender = pipelines.getForRender.bind(pipelines);
+  pipelines.updateForRender = (renderObject: unknown) => {
+    getForRender(renderObject, promises);
+  };
+  try {
+    draw();
+  } finally {
+    if (own) pipelines.updateForRender = previous;
+    else delete pipelines.updateForRender;
+  }
+  return promises;
+}
