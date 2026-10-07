@@ -10,10 +10,10 @@ O ADR-0262 trocou o `compileAsync` do three por UM quadro real no
 quadro o three cria cada pipeline com `device.createRenderPipeline` (síncrono).
 No navegador (Studio/vite) a chamada volta na hora e quem compila é o processo de
 GPU do Chrome, **um atrás do outro**: o JS termina o `precompile`, o jogo começa e
-o 1º quadro fica na fila atrás da compilação. No Detetive Brasília eram ~6 s de
+o 1º quadro fica na fila atrás da compilação. No DDD 61 eram ~6 s de
 jogo "pronto e congelado" (140 pipelines; 55 depois da SPEC-0109 do jogo).
 
-Medido no Detetive Brasília (Chrome headless com GPU, perfil novo), do início ao
+Medido no DDD 61 (Chrome headless com GPU, perfil novo), do início ao
 jogo revelado e liso:
 
 | aquecimento | revela (s) | pipelines |

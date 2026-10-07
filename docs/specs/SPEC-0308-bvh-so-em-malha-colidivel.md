@@ -5,7 +5,7 @@
 
 ## Contexto
 
-No Detetive Brasília a varredura de colisão do `CharacterPhysicsSystem`
+No DDD 61 a varredura de colisão do `CharacterPhysicsSystem`
 (`collectScene`) chamava `ensureBoundsTree` em toda malha encontrada — inclusive as
 escondidas (SPEC-0307 manteve o BVH delas no carregamento pra não montar no quadro
 em que o culling as mostra). Mas parte dessas malhas **nunca** é raycastada:
@@ -26,7 +26,7 @@ de posições) e tempo de carregamento perdidos.
    `noRaycast`): sem ler o raio ela nunca usa a geometria. Vale pra todo chamador
    (física, câmera do editor).
    - **Por que não "qualquer sobrescrito":** a 1ª versão pulava todo `raycast`
-     trocado e a medição no Detetive Brasília pegou o erro — o `hiddenNotSolid` do
+     trocado e a medição no DDD 61 pegou o erro — o `hiddenNotSolid` do
      jogo (trânsito, patrulha, viatura, caminhão de gás) embrulha o raycast em
      `function (ray, out) { …; proto.raycast.call(this, ray, out) }`: a malha COLIDE
      e usa a árvore. Sem ela o raycast desses carros voltava a O(nº de triângulos)
@@ -56,7 +56,7 @@ Sem helper novo exportado: o flag em `userData` basta (é dado, serializa no
   árvore; embrulho `(ray, out)` mantém árvore e acerta), `tests/systems/CharacterPhysics.test.ts` (escondida colidível ganha BVH na
   carga; `cortexNoCollide`/noRaycast não; colidível continua segurando o chão).
 
-## Medição (Detetive Brasília e81d04d, Chrome headless WebGPU, A = vendor da main × B = esta mudança, mesmo commit do jogo, rodadas intercaladas)
+## Medição (DDD 61 e81d04d, Chrome headless WebGPU, A = vendor da main × B = esta mudança, mesmo commit do jogo, rodadas intercaladas)
 
 | | A | B |
 |---|---|---|

@@ -5,7 +5,7 @@
 
 ## Contexto
 
-No jogo Detetive Brasília (cidade aberta, ~1,5 km), o perfil de CPU do Chrome
+No jogo DDD 61 (cidade aberta, ~1,5 km), o perfil de CPU do Chrome
 (probe headless, amostra de 0,2 ms) mostrou, depois de corrigidos os gargalos do
 próprio jogo, que ~35% da CPU do quadro ia para o `CharacterPhysicsSystem` e ~8%
 para a colisão de câmera do `ThirdPersonControlSystem`:
@@ -52,4 +52,4 @@ recolhimento: o filtro só remove malhas que nenhum raio poderia tocar.
   `matrixWorld` atual.)
 - `InstancedMesh` cujas instâncias mudam precisa ter `computeBoundingSphere()`
   chamado pelo dono — já era exigência do raycast do three.
-- Medir de novo no jogo e registrar o ganho na SPEC-0044 do Detetive Brasília.
+- Medir de novo no jogo e registrar o ganho na SPEC-0044 do DDD 61.

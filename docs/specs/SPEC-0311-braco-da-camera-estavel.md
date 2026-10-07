@@ -5,7 +5,7 @@
 
 ## Contexto
 
-No Detetive Brasília, andando de metrô, "a partir da Ceilândia Centro a câmera fica
+No DDD 61, andando de metrô, "a partir da Ceilândia Centro a câmera fica
 pulando sem parar". A sonda por quadro (distância câmera↔jogador + qual malha o raio
 do braço acerta) mostrou, com o trem andando devagar perto das estações:
 

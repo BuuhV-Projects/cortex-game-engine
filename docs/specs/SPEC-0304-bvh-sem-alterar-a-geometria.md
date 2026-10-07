@@ -5,7 +5,7 @@
 
 ## Contexto
 
-No Studio (WebGPU), voar com WASD no editor sobre a cidade do Detetive Brasília
+No Studio (WebGPU), voar com WASD no editor sobre a cidade do DDD 61
 deixava a tela preta com `Calling Draw with an index count of 0 is unusual` e
 `Failed to execute 'setIndexBuffer' on 'GPURenderPassEncoder': parameter 1 is not
 of type 'GPUBuffer'`. Causa: `ensureBoundsTree` (raycastAccel) monta a árvore BVH

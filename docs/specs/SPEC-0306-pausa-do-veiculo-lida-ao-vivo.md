@@ -5,7 +5,7 @@
 
 ## Contexto
 
-No Detetive Brasília, com o menu de pausa aberto o carro do detetive seguia
+No DDD 61, com o menu de pausa aberto o carro do detetive seguia
 andando/deslizando. O jogo faz o que o `VehicleHandle` sugere: recebe `options`
 de `setupVehicle` e troca a função depois
 (`options.pauseWhen = () => antiga() || menu.isOpen`).

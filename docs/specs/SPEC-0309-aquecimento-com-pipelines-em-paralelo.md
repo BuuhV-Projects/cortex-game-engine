@@ -32,7 +32,7 @@ síncrona; no navegador o Chrome os compila em série no processo de GPU depois 
 
 ## Medição
 
-(Detetive Brasília, Chrome headless com GPU, `?play=1&hora=10&clima=sol`)
+(DDD 61, Chrome headless com GPU, `?play=1&hora=10&clima=sol`)
 
 Mesmo jogo (branch `perf/sem-congelar-no-inicio`, que espera a GPU e só revela com
 quadros lisos), só a engine muda; intercalado, 3 rodadas cada. "Revela" = canvas

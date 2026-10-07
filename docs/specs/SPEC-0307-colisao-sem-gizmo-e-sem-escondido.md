@@ -5,7 +5,7 @@
 
 ## Contexto
 
-No Detetive Brasília, com o personagem em (0, 0), o perfil de CPU mostrou o
+No DDD 61, com o personagem em (0, 0), o perfil de CPU mostrou o
 `CharacterPhysicsSystem.update` gastando ~3,95 ms por quadro e a colisão da câmera
 (`placeCamera`) ~1,36 ms, mesmo depois do filtro "só o que está perto"
 (SPEC-0302):
@@ -61,7 +61,7 @@ No Detetive Brasília, com o personagem em (0, 0), o perfil de CPU mostrou o
 - O personagem escondido pela câmera (occlusion fade) já era ignorado (é o
   próprio mesh); nada muda.
 
-## Medição (Detetive Brasília, probe headless, ms por quadro)
+## Medição (DDD 61, probe headless, ms por quadro)
 
 | | física na origem | câmera na origem | física no spawn | câmera no spawn | malhas na lista de chão |
 |---|---|---|---|---|---|

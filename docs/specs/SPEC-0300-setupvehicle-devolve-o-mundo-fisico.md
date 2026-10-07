@@ -11,7 +11,7 @@ devolve só `{ vehicle, rig, speedo, options, engineSound }`. O mundo fica
 inacessível.
 
 Isso impede o jogo de pôr qualquer outro corpo **no mesmo mundo do carro**. O
-caso concreto veio do jogo Detetive Brasília: na perseguição, o carro do
+caso concreto veio do jogo DDD 61: na perseguição, o carro do
 suspeito (guiado pelo jogo, cinemático) precisa colidir com o carro do jogador.
 Sem o mundo, a única saída era simular a batida mexendo na velocidade do chassi,
 uma aproximação por círculo.

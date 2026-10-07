@@ -135,7 +135,7 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `getForRender(ro, promessas)` só durante o quadro — cada pipeline vira
   `createRenderPipelineAsync`, todos no mesmo quadro — e o `precompile()` espera
   as promessas. Antes o Chrome compilava em série DEPOIS do retorno e o 1º quadro
-  do jogo congelava atrás (Detetive Brasília: ~6 s). Host nativo: síncrono, como antes.
+  do jogo congelava atrás (DDD 61: ~6 s). Host nativo: síncrono, como antes.
 
 - **Acabamento toon (`Materials.ts`, SPEC-0194):** `shading: 'cel'` usa dois
   patamares e uma transição curta filtrada na rampa de luz. Sem o campo, mantém

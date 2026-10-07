@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O jogo Detetive Brasília (`D:/jogos/detetive-brasilia`) ganhou dois trabalhos
+O jogo Detetive Brasília ganhou dois trabalhos
 que precisam de um **segundo veículo pilotável** além do carro do jogador: a
 moto do delivery (SPEC-0027 do jogo) e o ônibus do motorista (SPEC-0028 do
 jogo). Os dois precisam bater no mesmo mundo do carro: trânsito e ônibus da IA

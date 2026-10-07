@@ -7,7 +7,7 @@
 
 No editor (F2) a engine desenha com uma câmera livre própria (`editorCamera`,
 criada no `attachEditor`) e desliga a neblina; a `game.camera` fica parada onde o
-player está. Jogo com corte por distância (Detetive Brasília, SPEC-0041 do jogo)
+player está. Jogo com corte por distância (DDD 61, SPEC-0041 do jogo)
 cortava pela `game.camera`: no editor, tudo longe do player sumia — o usuário
 navegava até o Centro e via só prédios soltos no chão vermelho. Não havia jeito
 público de saber qual câmera está desenhando (`_editor.activeCamera()` é privado).
