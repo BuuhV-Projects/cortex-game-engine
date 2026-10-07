@@ -4,6 +4,7 @@ import type { RenderPhaseProbe } from './RenderPhaseProbe.js';
 import { describeMaterial, isDescribed, measureCoverage } from '../render/MaterialDesc.js';
 import { countDistinctPipelines } from '../render/PipelineKey.js';
 import { PipelineBirthLog, type PipelineBirth } from './PipelineBirthLog.js';
+import { activeSceneMirror } from './NativeSceneMirror.js';
 
 /**
  * **Perf trace de gameplay** (SPEC-0198) — com as métricas ativas, grava uma
@@ -516,6 +517,9 @@ export class PerfTrace {
     cpu['nodesTotal'] = nodes.total;
     cpu['nodesVisible'] = nodes.visible;
     cpu['nodesUnchanged'] = countUnchangedMatrices(scene, this._previousMatrices);
+    // Nós que o espelho sincronizou por quadro, em média na janela (SPEC-0322).
+    const espelho = activeSceneMirror();
+    if (espelho) cpu['mirrorSynced'] = round(espelho.takeAverageSyncedNodes(), MS_DECIMALS);
     // Cobertura da descricao de material (M1 do ADR-0237): uma vez so, junto
     // do censo. E o criterio de aceitacao do marco, medido na cena REAL.
     if (!this._censusSent && this._samples + 1 >= CENSUS_AFTER_SAMPLES) {

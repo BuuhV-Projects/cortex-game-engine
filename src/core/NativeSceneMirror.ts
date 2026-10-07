@@ -76,6 +76,14 @@ const SYNC_VISIBLE = 1;
 const SYNC_MATERIAL_VISIBLE = 2;
 /** Deslocamento dos dois bits de lado da face (ver `kSyncShadowSideShift`). */
 const SYNC_SHADOW_SIDE_SHIFT = 2;
+/**
+ * Em quantos quadros a varredura das flags do quadro dá a volta na cena
+ * (SPEC-0322). É o atraso máximo de um `visible`/`material.visible`/`side`
+ * mudado em runtime chegar ao passe de sombra nativo.
+ */
+export const SWEEP_PERIOD_FRAMES = 8;
+/** Piso da fatia varrida por quadro: cena pequena é varrida inteira. */
+export const SWEEP_MIN_NODES = 256;
 
 /**
  * Lado da face com que o passe de sombra desenha o caster — espelha
@@ -265,21 +273,171 @@ function flagsDoNo(objeto: NoDaCena, temEsfera: boolean): number {
  * valor 0 é o do caso comum.
  */
 function ladoDaSombra(material: Material | Material[] | undefined): number {
-  const lista = materiais(material);
-  if (lista.length === 0) return SHADOW_SIDE_BACK;
+  // Sem lista intermediária (SPEC-0322): isto roda por nó varrido, e montar um
+  // array por chamada eram 10 mil alocações por quadro no DDD 61.
+  if (material === undefined) return SHADOW_SIDE_BACK;
+  if (!Array.isArray(material)) return ladoDeUmMaterial(material);
+  if (material.length === 0) return SHADOW_SIDE_BACK;
   let resolvido = -1;
-  for (const m of lista) {
-    const comLado = m as Material & { shadowSide?: number | null; side?: number };
-    const autorado = comLado.shadowSide ?? null;
-    const lado =
-      autorado !== null
-        ? (LADO_AUTORADO.get(autorado) ?? SHADOW_SIDE_UNSUPPORTED)
-        : (LADO_DA_SOMBRA.get(comLado.side ?? FrontSide) ?? SHADOW_SIDE_UNSUPPORTED);
+  for (let i = 0; i < material.length; i++) {
+    const lado = ladoDeUmMaterial(material[i]!);
     if (lado === SHADOW_SIDE_UNSUPPORTED) return SHADOW_SIDE_UNSUPPORTED;
     if (resolvido !== -1 && resolvido !== lado) return SHADOW_SIDE_UNSUPPORTED;
     resolvido = lado;
   }
   return resolvido;
+}
+
+/** A tabela de {@link ladoDaSombra} aplicada a um material só. */
+function ladoDeUmMaterial(m: Material): number {
+  const comLado = m as Material & { shadowSide?: number | null; side?: number };
+  const autorado = comLado.shadowSide ?? null;
+  return autorado !== null
+    ? (LADO_AUTORADO.get(autorado) ?? SHADOW_SIDE_UNSUPPORTED)
+    : (LADO_DA_SOMBRA.get(comLado.side ?? FrontSide) ?? SHADOW_SIDE_UNSUPPORTED);
+}
+
+/**
+ * As flags do QUADRO de um nó (ver {@link SYNC_FLAGS}): `visible`,
+ * `material.visible` e o lado da face do passe de sombra.
+ */
+function flagsDoQuadro(objeto: Object3D): number {
+  const no = objeto as NoDaCena;
+  let flags = objeto.visible ? SYNC_VISIBLE : 0;
+  if (materialVisivel(no.material)) flags |= SYNC_MATERIAL_VISIBLE;
+  return flags | (ladoDaSombra(no.material) << SYNC_SHADOW_SIDE_SHIFT);
+}
+
+// ── Ganchos de transform (SPEC-0322) ───────────────────────────────────────
+//
+// O espelho só manda linha do nó SUJO. Quem suja é a escrita no transform, e
+// o `three` não avisa de `position`/`scale` (são `Vector3` de dado cru). Os
+// ganchos põem acessores nos MESMOS vetores — quem guardou a referência segue
+// mexendo no objeto certo — e embrulham o `_onChangeCallback` que o `three` já
+// tem no `quaternion` e na `rotation`.
+
+/** O que o gancho guarda no próprio `Vector3` de um nó espelhado. */
+interface VetorEnganchado {
+  _mx: number;
+  _my: number;
+  _mz: number;
+  _mEspelho: NativeSceneMirror | undefined;
+  _mSlot: number;
+}
+
+/** `Quaternion`/`Euler`: os dois têm o callback interno do `three`. */
+interface ComCallback {
+  _onChangeCallback: () => void;
+  _onChange(callback: () => void): unknown;
+  /** O callback original do `three`, guardado para desfazer o gancho. */
+  _mOriginal?: () => void;
+}
+
+function avisarSujo(v: VetorEnganchado): void {
+  const espelho = v._mEspelho;
+  if (espelho) espelho._marcarSujo(v._mSlot);
+}
+
+/** Acessores COMPARTILHADOS: nenhuma closure por nó para os 10 mil parados. */
+const ACESSOR_X: PropertyDescriptor = {
+  configurable: true,
+  enumerable: true,
+  get(this: VetorEnganchado): number {
+    return this._mx;
+  },
+  set(this: VetorEnganchado, valor: number): void {
+    this._mx = valor;
+    avisarSujo(this);
+  },
+};
+const ACESSOR_Y: PropertyDescriptor = {
+  configurable: true,
+  enumerable: true,
+  get(this: VetorEnganchado): number {
+    return this._my;
+  },
+  set(this: VetorEnganchado, valor: number): void {
+    this._my = valor;
+    avisarSujo(this);
+  },
+};
+const ACESSOR_Z: PropertyDescriptor = {
+  configurable: true,
+  enumerable: true,
+  get(this: VetorEnganchado): number {
+    return this._mz;
+  },
+  set(this: VetorEnganchado, valor: number): void {
+    this._mz = valor;
+    avisarSujo(this);
+  },
+};
+
+function engancharVetor(vetor: Vector3, espelho: NativeSceneMirror, slot: number): void {
+  const g = vetor as unknown as VetorEnganchado;
+  // Lê ANTES de redefinir: depois disso `x` é o acessor.
+  const x = vetor.x;
+  const y = vetor.y;
+  const z = vetor.z;
+  g._mx = x;
+  g._my = y;
+  g._mz = z;
+  g._mEspelho = espelho;
+  g._mSlot = slot;
+  Object.defineProperty(vetor, 'x', ACESSOR_X);
+  Object.defineProperty(vetor, 'y', ACESSOR_Y);
+  Object.defineProperty(vetor, 'z', ACESSOR_Z);
+}
+
+function desengancharVetor(vetor: Vector3): void {
+  const g = vetor as unknown as VetorEnganchado;
+  if (g._mEspelho === undefined) return;
+  const x = g._mx;
+  const y = g._my;
+  const z = g._mz;
+  const comoRegistro = vetor as unknown as Record<string, unknown>;
+  delete comoRegistro['x'];
+  delete comoRegistro['y'];
+  delete comoRegistro['z'];
+  vetor.x = x;
+  vetor.y = y;
+  vetor.z = z;
+  g._mEspelho = undefined;
+}
+
+/**
+ * Embrulha o callback do `three`. A closure nasce AQUI, numa função própria, e
+ * não no corpo de um `for (let …)`: no Hermes a closure criada no laço vê o
+ * valor final da variável (ver a memória "let em closure").
+ */
+function engancharCallback(alvo: ComCallback, espelho: NativeSceneMirror, slot: number): void {
+  const original = alvo._mOriginal ?? alvo._onChangeCallback;
+  alvo._mOriginal = original;
+  alvo._onChange(() => {
+    original();
+    espelho._marcarSujo(slot);
+  });
+}
+
+function desengancharCallback(alvo: ComCallback): void {
+  const original = alvo._mOriginal;
+  if (!original) return;
+  alvo._onChange(original);
+  alvo._mOriginal = undefined;
+}
+
+function engancharNo(objeto: Object3D, espelho: NativeSceneMirror, slot: number): void {
+  engancharVetor(objeto.position, espelho, slot);
+  engancharVetor(objeto.scale, espelho, slot);
+  engancharCallback(objeto.quaternion as unknown as ComCallback, espelho, slot);
+  engancharCallback(objeto.rotation as unknown as ComCallback, espelho, slot);
+}
+
+function desengancharNo(objeto: Object3D): void {
+  desengancharVetor(objeto.position);
+  desengancharVetor(objeto.scale);
+  desengancharCallback(objeto.quaternion as unknown as ComCallback);
+  desengancharCallback(objeto.rotation as unknown as ComCallback);
 }
 
 /** `material.visible` do `_projectObject`; um array conta se QUALQUER parte desenha. */
@@ -438,6 +596,20 @@ export class NativeSceneMirror {
   private readonly _instanciados = new Map<NoDaCena, { versao: number; quantas: number }>();
   private _loteDescricao = new Float32Array(0);
   private _loteIndices = new Int32Array(0);
+  // ── Só o que mudou (SPEC-0322) — tudo dimensionado pela CAPACIDADE ──────
+  /** 1 = slot já está em {@link _listaSujos} neste quadro. */
+  private _sujoMarca = new Uint8Array(0);
+  /** Slots sujos do quadro, na ordem em que sujaram. */
+  private _listaSujos = new Int32Array(0);
+  private _qtdSujos = 0;
+  /** Últimas flags do quadro mandadas ao host, por slot (ver {@link SYNC_FLAGS}). */
+  private _flagsEnviadas = new Uint8Array(0);
+  /** Onde a varredura das flags parou. */
+  private _cursorVarredura = 0;
+  private _sincronizadosNoQuadro = 0;
+  private _somaSincronizados = 0;
+  private _quadrosSomados = 0;
+
   get installed(): boolean {
     return this._installed;
   }
@@ -456,6 +628,48 @@ export class NativeSceneMirror {
   /** Nós VIVOS no espelho — é o que se compara com a contagem da cena. */
   get nodeCount(): number {
     return this._liveCount;
+  }
+
+  /**
+   * Nós sincronizados (linhas mandadas ao host) no último {@link update}
+   * (SPEC-0322). Cena parada tem de ficar perto de zero; carro andando, não.
+   */
+  get syncedNodes(): number {
+    return this._sincronizadosNoQuadro;
+  }
+
+  /** Média de {@link syncedNodes} desde a última chamada, e zera a janela. */
+  takeAverageSyncedNodes(): number {
+    const media = this._quadrosSomados > 0 ? this._somaSincronizados / this._quadrosSomados : 0;
+    this._somaSincronizados = 0;
+    this._quadrosSomados = 0;
+    return media;
+  }
+
+  /**
+   * Marca o slot para mandar linha no próximo {@link update}. Chamado pelos
+   * ganchos de transform (SPEC-0322); interno, público só para eles.
+   * @internal
+   */
+  _marcarSujo(slot: number): void {
+    if (this._sujoMarca[slot] !== 0) return;
+    this._sujoMarca[slot] = 1;
+    this._listaSujos[this._qtdSujos++] = slot;
+  }
+
+  /** Dimensiona os vetores por slot pela capacidade do host. */
+  private _reservarPorSlot(capacidade: number): void {
+    this._sujoMarca = new Uint8Array(capacidade);
+    this._listaSujos = new Int32Array(capacidade);
+    this._flagsEnviadas = new Uint8Array(capacidade);
+    this._qtdSujos = 0;
+    this._cursorVarredura = 0;
+  }
+
+  /** O slot entra no espelho: gancho + flags de partida (as do `build`). */
+  private _adotar(objeto: Object3D, slot: number): void {
+    this._flagsEnviadas[slot] = flagsDoQuadro(objeto);
+    engancharNo(objeto, this, slot);
   }
 
   /**
@@ -511,6 +725,7 @@ export class NativeSceneMirror {
       return false;
     }
 
+    this._reservarPorSlot(matrizes.length / MATRIX_ELEMENTS);
     // O ponto do desenho: o `elements` de cada objeto passa a SER a fatia da
     // memória nativa. O `three` só indexa `elements`, então ele lê a matriz que
     // o C++ escreveu — sem cópia e sem laço por frame.
@@ -529,6 +744,7 @@ export class NativeSceneMirror {
       objeto.matrixWorldAutoUpdate = false;
       this._escutar(objeto);
       this._rastrearInstancias(objeto);
+      this._adotar(objeto, i);
     }
 
     this._matrizes = matrizes;
@@ -659,6 +875,8 @@ export class NativeSceneMirror {
       const malha = objeto as NoDaCena;
       if (malha.isMesh && malha.geometry) this._geometriasNovas.add(malha.geometry);
       this._rastrearInstancias(objeto);
+      // O host já tem o estado do nó pela descrição: nasce limpo.
+      this._adotar(objeto, indice);
     }
     this._liveCount += novos.length;
   }
@@ -688,6 +906,7 @@ export class NativeSceneMirror {
       this._nodes[slot] = undefined;
       this._liveCount--;
       this._pararDeEscutar(objeto);
+      desengancharNo(objeto);
       if (matrizes) {
         objeto.matrixWorld.elements = matrizes.slice(
           slot * MATRIX_ELEMENTS,
@@ -712,6 +931,7 @@ export class NativeSceneMirror {
       const objeto = this._nodes[i];
       if (!objeto) continue;
       this._pararDeEscutar(objeto);
+      desengancharNo(objeto);
       if (matrizes) {
         objeto.matrixWorld.elements = matrizes.slice(
           i * MATRIX_ELEMENTS,
@@ -724,6 +944,7 @@ export class NativeSceneMirror {
     this._indicePorObjeto.clear();
     this._instanciados.clear();
     this._liveCount = 0;
+    this._qtdSujos = 0;
     this._installed = false;
     this._overflowed = true;
     if (espelhoInstalado === this) espelhoInstalado = undefined;
@@ -739,47 +960,52 @@ export class NativeSceneMirror {
     const sync = this._sync;
     if (!api || !sync || !this._installed) return;
 
-    // Escreve os transforms locais. Hoje são todos os nós; a SPEC-0234 prevê
-    // reduzir isto à lista de dinâmicos (63 de 1.300 no kart-racer) — o número
-    // que esta passada gasta é justamente o que a medição vai dizer se paga.
+    // Só os nós SUJOS viram linha (SPEC-0322). Transform suja pelo gancho, no
+    // instante da escrita; as flags do quadro (`visible`, `material.visible`,
+    // lado da sombra — todas reavaliadas pelo `three` a cada travessia, e
+    // fotografá-las no `build` foi o erro que já virou sombra errada 3×,
+    // SPEC-0245) são conferidas por varredura em rodízio, que suja o slot
+    // quando divergem do que o host tem.
+    this._varrerFlags();
+
     // As linhas são COMPACTAS: um slot vazio (nó que saiu da cena) é pulado, e
     // o host recebe quantas linhas foram escritas. Mandar a linha de uma lápide
     // ressuscitaria um nó que o `three` já não tem.
+    const marca = this._sujoMarca;
+    const lista = this._listaSujos;
+    const enviadas = this._flagsEnviadas;
     let linhas = 0;
-    for (let i = 0; i < this._nodes.length; i++) {
+    for (let j = 0; j < this._qtdSujos; j++) {
+      const i = lista[j]!;
+      marca[i] = 0;
       const objeto = this._nodes[i];
       if (!objeto) continue;
       const base = linhas * SYNC_FLOATS_PER_NODE;
       linhas++;
+      // Lê o armazenamento do gancho direto: todo nó vivo está enganchado, e
+      // passar pelo getter aqui seria pagar uma chamada por campo.
+      const posicao = objeto.position as unknown as VetorEnganchado;
+      const escala = objeto.scale as unknown as VetorEnganchado;
+      const q = objeto.quaternion;
       sync[base] = i;
-      sync[base + 1] = objeto.position.x;
-      sync[base + 2] = objeto.position.y;
-      sync[base + 3] = objeto.position.z;
-      sync[base + 4] = objeto.quaternion.x;
-      sync[base + 5] = objeto.quaternion.y;
-      sync[base + 6] = objeto.quaternion.z;
-      sync[base + 7] = objeto.quaternion.w;
-      sync[base + 8] = objeto.scale.x;
-      sync[base + 9] = objeto.scale.y;
-      sync[base + 10] = objeto.scale.z;
-      // Vai por frame, não só no `build` (SPEC-0245): esconder um objeto é tão
-      // comum quanto movê-lo, e o C++ precisa podar a subárvore como o `three`.
-      // O `material.visible` viaja no mesmo slot, pelo mesmo motivo — era a
-      // pendência E1 do passo 2, e o mesmo erro já corrigido no `visible`.
-      const no = objeto as NoDaCena;
-      let flagsDoFrame = objeto.visible ? SYNC_VISIBLE : 0;
-      if (materialVisivel(no.material)) flagsDoFrame |= SYNC_MATERIAL_VISIBLE;
-      // O lado da face do passe de sombra viaja nos mesmos bits, e pelo mesmo
-      // motivo: o `three` reavalia `material.side` a cada travessia, e trocar
-      // o lado em runtime (um material compartilhado que vira `DoubleSide`,
-      // por exemplo) mudaria a sombra sem o C++ ficar sabendo. Fotografar no
-      // `build` seria o TERCEIRO erro do mesmo tipo nesta série — os dois
-      // anteriores foram o `visible` e o `material.visible`, e os dois viraram
-      // sombra errada em silêncio. O custo aqui é zero: o material do nó já
-      // está em mãos para o `material.visible`, e os bits já existiam no campo.
-      flagsDoFrame |= ladoDaSombra(no.material) << SYNC_SHADOW_SIDE_SHIFT;
-      sync[base + SYNC_FLAGS] = flagsDoFrame;
+      sync[base + 1] = posicao._mx;
+      sync[base + 2] = posicao._my;
+      sync[base + 3] = posicao._mz;
+      sync[base + 4] = q.x;
+      sync[base + 5] = q.y;
+      sync[base + 6] = q.z;
+      sync[base + 7] = q.w;
+      sync[base + 8] = escala._mx;
+      sync[base + 9] = escala._my;
+      sync[base + 10] = escala._mz;
+      const flags = flagsDoQuadro(objeto);
+      enviadas[i] = flags;
+      sync[base + SYNC_FLAGS] = flags;
     }
+    this._qtdSujos = 0;
+    this._sincronizadosNoQuadro = linhas;
+    this._somaSincronizados += linhas;
+    this._quadrosSomados++;
 
     camera.updateMatrixWorld();
     this._viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
@@ -788,6 +1014,31 @@ export class NativeSceneMirror {
 
     api.update(linhas, this._planes);
     this._sincronizarInstancias(api);
+  }
+
+  /**
+   * Confere as flags do quadro de uma fatia da cena contra o que o host tem, e
+   * suja o slot que divergiu (SPEC-0322). A volta inteira leva
+   * {@link SWEEP_PERIOD_FRAMES} quadros; cena de até {@link SWEEP_MIN_NODES}
+   * nós é varrida inteira todo quadro.
+   */
+  private _varrerFlags(): void {
+    const nos = this._nodes;
+    const total = nos.length;
+    if (total === 0) return;
+    const fatia = Math.min(total, Math.max(SWEEP_MIN_NODES, Math.ceil(total / SWEEP_PERIOD_FRAMES)));
+    const marca = this._sujoMarca;
+    const enviadas = this._flagsEnviadas;
+    let cursor = this._cursorVarredura;
+    for (let k = 0; k < fatia; k++) {
+      if (cursor >= total) cursor = 0;
+      const objeto = nos[cursor];
+      if (objeto && marca[cursor] === 0 && flagsDoQuadro(objeto) !== enviadas[cursor]) {
+        this._marcarSujo(cursor);
+      }
+      cursor++;
+    }
+    this._cursorVarredura = cursor;
   }
 
   /** Passa a acompanhar as matrizes de instância de um `InstancedMesh`. */
