@@ -780,8 +780,21 @@ malhas por material (transform baked) pra reduzir draw calls. O `buildScene`
 chama sozinho no host nativo (opt-out `mergeStatic: false` nas opções); nunca
 roda no Studio (o editor precisa dos objetos individuais). Ficam de fora:
 entidades dinâmicas (scripts/player/Rapier), animados, skinned, vegetação,
-terreno, água e **gatilhos** (`collider.solid: false`, ADR-0220). Física
-preservada (`cortexSolid` sobrevive; colliders derivam antes).
+terreno, água, `InstancedMesh`/`BatchedMesh`, **gatilhos** (`collider.solid: false`,
+ADR-0220) e subárvores marcadas com **`userData.cortexDynamic = true`**. Física
+preservada (`cortexSolid` e `cortexRoad` sobrevivem; colliders derivam antes).
+
+> ⚠️ **Objeto criado em código que vai se MEXER (posição, `visible`, material,
+> geometria) e entra na cena antes do `buildScene`: marque a raiz com
+> `obj.userData.cortexDynamic = true`** (SPEC-0316). Senão, no export nativo, ele é
+> fundido no cenário e congela no lugar (o carro do jogador perde a lataria).
+>
+> ```ts
+> const car = createCar();
+> car.userData.cortexDynamic = true; // fora da fusão estática
+> scene.add(car);
+> await buildScene(game.scene, [level], { world: game.world });
+> ```
 
 > ⚠️ **Enfeite que não deve colidir = SEM `collider`** (Física: Nenhum), nunca
 > `solid: false`. `solid: false` é gatilho: o nó sai da fusão e vira draw próprio

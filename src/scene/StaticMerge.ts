@@ -39,6 +39,13 @@ import { Collider2DComponent } from '../components/Collider2DComponent.js';
  * - Subárvores de GATILHO: entidade cujo `Collider2DComponent` é NÃO-sólido
  *   (`collider.solid: false` no nó). É objeto de jogo, não cenário — o jogo mede
  *   e esconde aquela malha (ADR-0220/SPEC-0221).
+ * - Subárvores marcadas pelo JOGO com **`userData.cortexDynamic = true`** (no
+ *   objeto ou em qualquer ancestral) — o marcador público pra objeto criado em
+ *   código que vai se mexer depois do build (carro do jogador, porta que abre,
+ *   ponteiro de relógio, letreiro que troca de material…). A engine não tem como
+ *   saber o que o jogo vai mover; quem cria o objeto marca (SPEC-0316).
+ * - `InstancedMesh`/`BatchedMesh`: já são 1 draw; o bake fundiria só a geometria
+ *   base e as instâncias sumiriam (SPEC-0316).
  * - Malha skinada (personagens), vegetação instanciada (`cortexVegetation*`),
  *   terreno (`cortexTerrain`, tem pipeline próprio de colisão/sculpt), água,
  *   chrome do editor (`editorInternal`), invisíveis, layers não-default.
@@ -47,7 +54,8 @@ import { Collider2DComponent } from '../components/Collider2DComponent.js';
  *
  * A física NÃO muda: colliders derivam dos nós ANTES do merge; o raycast de
  * chão/parede do Character enxerga a malha fundida (que preserva
- * `cortexSolid`), e o BVH (SPEC-0108) é construído uma vez sobre ela.
+ * `cortexSolid`), o `setupVehicle` monta o chão do carro dela (preserva
+ * `cortexRoad`), e o BVH (SPEC-0108) é construído uma vez sobre ela.
  */
 export interface StaticMergeStats {
   /** Malhas originais fundidas (removidas da cena). */
@@ -61,12 +69,12 @@ export interface StaticMergeStats {
 /** Componentes que NÃO tornam uma entidade dinâmica (por nome de classe). */
 const STATIC_COMPONENTS = new Set(['TransformComponent', 'Object3DComponent', 'Collider2DComponent']);
 
-/** `obj` (ou ancestral) tem flag de exclusão (editor/vegetação/terreno)? */
+/** `obj` (ou ancestral) tem flag de exclusão (editor/vegetação/terreno/dinâmico do jogo)? */
 function isExcludedByUserData(obj: Object3D): boolean {
   let p: Object3D | null = obj;
   while (p) {
     const ud = p.userData as Record<string, unknown>;
-    if (ud['editorInternal'] || ud['cortexVegetation'] || ud['cortexVegetationSub'] || ud['cortexTerrain'] || ud['cortexWater'] || ud['cortexUnderlay'] || ud['cortexVehicle']) return true;
+    if (ud['editorInternal'] || ud['cortexVegetation'] || ud['cortexVegetationSub'] || ud['cortexTerrain'] || ud['cortexWater'] || ud['cortexUnderlay'] || ud['cortexVehicle'] || ud['cortexDynamic']) return true;
     if (!p.visible) return true; // invisível (mannequin oculto, toggles)
     p = p.parent;
   }
@@ -190,14 +198,27 @@ function attributeKey(g: BufferGeometry): string | null {
   return parts.join(',');
 }
 
-/** `cortexSolid` efetivo (o CharacterPhysics olha os ancestrais). */
-function isSolid(obj: Object3D): boolean {
+/**
+ * Flags de FÍSICA que a malha fundida herda (valem no objeto ou num ancestral):
+ * `cortexSolid` (parede do Character) e `cortexRoad` (chão do veículo — o
+ * `setupVehicle` roda DEPOIS do build e monta o trimesh a partir dela; perdida,
+ * o carro caía pelo chão no export, SPEC-0316).
+ */
+const PHYSICS_FLAGS = ['cortexSolid', 'cortexRoad'] as const;
+
+/** Flag efetiva (o objeto ou algum ancestral tem `userData[flag]` verdadeiro). */
+function hasFlag(obj: Object3D, flag: string): boolean {
   let p: Object3D | null = obj;
   while (p) {
-    if ((p.userData as Record<string, unknown>)['cortexSolid'] === true) return true;
+    if ((p.userData as Record<string, unknown>)[flag]) return true;
     p = p.parent;
   }
   return false;
+}
+
+/** Assinatura das flags de física (malhas com flags diferentes não dividem grupo). */
+function physicsKey(obj: Object3D): string {
+  return PHYSICS_FLAGS.map((f) => (hasFlag(obj, f) ? f : '-')).join(',');
 }
 
 interface Candidate {
@@ -233,6 +254,7 @@ export function mergeStaticScene(
   root.traverse((o) => {
     const mesh = o as Mesh;
     if (!mesh.isMesh || isSkinned(mesh)) return;
+    if ((mesh as { isInstancedMesh?: boolean }).isInstancedMesh || (mesh as { isBatchedMesh?: boolean }).isBatchedMesh) return; // já é 1 draw
     if (Array.isArray(mesh.material)) return; // multi-material: fora (v1)
     if ((mesh.userData as Record<string, unknown>)['cortexMergedStatic']) return;
     // (Cascas de contorno/inverted-hull caem na regra geral: a matriz de mundo
@@ -242,7 +264,7 @@ export function mergeStaticScene(
     if (mesh.layers.mask !== 1) return; // layer não-default: fora
     const attrKey = attributeKey(mesh.geometry);
     if (attrKey === null) return;
-    const key = [materialKey(mesh.material as Material), attrKey, isSolid(mesh) ? 'S' : '-', mesh.castShadow ? 'c' : '-', mesh.receiveShadow ? 'r' : '-', mesh.renderOrder].join('§');
+    const key = [materialKey(mesh.material as Material), attrKey, physicsKey(mesh), mesh.castShadow ? 'c' : '-', mesh.receiveShadow ? 'r' : '-', mesh.renderOrder].join('§');
     eligible.set(mesh, { mesh, key, matrix: mesh.matrixWorld.clone() });
   });
 
@@ -297,7 +319,7 @@ export function mergeStaticScene(
     merged.renderOrder = sample.renderOrder;
     const ud = merged.userData as Record<string, unknown>;
     ud['cortexMergedStatic'] = true;
-    if (isSolid(sample)) ud['cortexSolid'] = true; // parede do Character sobrevive ao merge
+    for (const f of PHYSICS_FLAGS) if (hasFlag(sample, f)) ud[f] = true; // parede do Character e chão do veículo sobrevivem ao merge
     merged.name = `static-merged-${stats.groups}`;
     root.add(merged);
     stats.groups++;
