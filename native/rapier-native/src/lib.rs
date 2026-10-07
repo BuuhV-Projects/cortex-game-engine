@@ -211,7 +211,8 @@ pub unsafe extern "C" fn rn_collider_trimesh(
     (index as u64 + ((generation as u64) << 32)) as f64
 }
 
-/// what: 0 = translation · 1 = rotation (xyzw) · 2 = linvel · 3 = angvel
+/// what: 0 = translation · 1 = rotation (xyzw) · 2 = linvel · 3 = angvel ·
+/// 4 = tipo · 5 = nº colliders · 6 = massa · 7 = ligado (0/1)
 /// Resultado no scratch.
 #[no_mangle]
 pub unsafe extern "C" fn rn_body_get(world: *mut World, body: f64, what: f64) {
@@ -252,6 +253,8 @@ pub unsafe extern "C" fn rn_body_get(world: *mut World, body: f64, what: f64) {
         // 6 = massa. O kart-racer usa pra dosar o impulso de frenagem da IA
         // (`-missingBrake * body.mass()`), todo frame (SPEC-0216).
         6 => w.scratch[0] = rb.mass() as f64,
+        // 7 = ligado? (0/1). Par de leitura do `setEnabled` (SPEC-0314).
+        7 => w.scratch[0] = if rb.is_enabled() { 1.0 } else { 0.0 },
         _ => {
             let t = rb.translation();
             w.scratch[0] = t.x as f64;
@@ -318,7 +321,8 @@ pub unsafe extern "C" fn rn_collider_groups(
 
 /// what: 0 setTranslation(x,y,z) · 1 setRotation(x,y,z,w) · 2 setLinvel ·
 /// 3 setAngvel · 4 setNextKinematicTranslation · 5 applyImpulse ·
-/// 6 applyTorqueImpulse · 7 wakeUp
+/// 6 applyTorqueImpulse · 7 wakeUp · 8 resetForces · 9 resetTorques ·
+/// 10 setEnabledRotations · 11 setEnabled
 #[no_mangle]
 pub unsafe extern "C" fn rn_body_set(
     world: *mut World,
@@ -354,6 +358,9 @@ pub unsafe extern "C" fn rn_body_set(
         8 => rb.reset_forces(wake_up),
         9 => rb.reset_torques(wake_up),
         10 => rb.set_enabled_rotations(x != 0.0, y != 0.0, z != 0.0, wake_up),
+        // 11 = liga/desliga o corpo e seus colliders (x = 0/1). O DDD 61 desliga
+        // troncos por célula no boot e veículos de serviço fora do turno (SPEC-0314).
+        11 => rb.set_enabled(x != 0.0),
         _ => rb.set_translation(v, wake_up),
     }
 }
@@ -721,6 +728,37 @@ mod tests {
                 world.bodies[handle].linvel().y as f64
             };
             assert!((vy - GRAVITY * TIMESTEP).abs() < F32_TOLERANCE, "vy = {vy}");
+            rn_world_free(w);
+        }
+    }
+
+    /// Corpo desligado não cai (sai da simulação) e o `is_enabled` volta pelo
+    /// código 7; religado, volta a integrar (SPEC-0314).
+    #[test]
+    fn set_enabled_freezes_and_resumes_the_body() {
+        const SET_ENABLED: f64 = 11.0;
+        const GET_ENABLED: f64 = 7.0;
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            let body = rn_body_create(w, 0.0, 0.0, 0.0, 0.0, 0.0);
+            let handle = unpack_handle(body);
+            {
+                let world = &mut *w;
+                world
+                    .colliders
+                    .insert_with_parent(ColliderBuilder::ball(0.5).build(), handle, &mut world.bodies);
+            }
+            rn_body_set(w, body, SET_ENABLED, 0.0, 0.0, 0.0, 0.0, 1.0);
+            rn_body_get(w, body, GET_ENABLED);
+            assert_eq!((&*w).scratch[0], 0.0);
+            rn_world_step(w);
+            assert_eq!((&*w).bodies[handle].linvel().y, 0.0, "desligado não pode cair");
+
+            rn_body_set(w, body, SET_ENABLED, 1.0, 0.0, 0.0, 0.0, 1.0);
+            rn_body_get(w, body, GET_ENABLED);
+            assert_eq!((&*w).scratch[0], 1.0);
+            rn_world_step(w);
+            assert!((&*w).bodies[handle].linvel().y < 0.0, "religado volta a cair");
             rn_world_free(w);
         }
     }

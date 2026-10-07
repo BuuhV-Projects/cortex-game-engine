@@ -186,6 +186,23 @@ describe('RigidBody — o que o jogo de carro usa (SPEC-0209)', () => {
     expect(sets[2]!.slice(2, 6)).toEqual([10, 0, 1, 0]); // só Y habilitado
   });
 
+  // O DDD 61 desliga os troncos da mata no boot (ParkTrunks): sem isto o boot
+  // do export morria com "undefined is not a function" (SPEC-0314).
+  it('setEnabled manda o código 11 com 0/1; isEnabled lê o código 7', () => {
+    const rb = body();
+    rb.setEnabled(false);
+    rb.setEnabled(true);
+    const sets = argsOf('bodySet');
+    expect(sets[0]!.slice(2, 4)).toEqual([11, 0]);
+    expect(sets[1]!.slice(2, 4)).toEqual([11, 1]);
+
+    bodyGetValue = 0;
+    expect(rb.isEnabled()).toBe(false);
+    bodyGetValue = 1;
+    expect(rb.isEnabled()).toBe(true);
+    expect(argsOf('bodyGet').every((a) => a[2] === 7)).toBe(true);
+  });
+
   it('setAdditionalMassProperties manda massa, centro e inércia', () => {
     const rb = body();
     rb.setAdditionalMassProperties(
