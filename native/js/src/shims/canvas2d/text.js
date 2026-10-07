@@ -17,9 +17,38 @@ const HANGING_RATIO = 0.8;
 const PT_TO_PX = 4 / 3;
 const DEFAULT_FONT_PX = 10;
 const MEASURE_CACHE_LIMIT = 512;
-/** Máscaras guardadas (texto × tamanho): HUD/painéis redesenham o mesmo texto. */
-const MASK_CACHE_LIMIT = 256;
+/**
+ * Máscaras guardadas (texto × tamanho): HUD/painéis redesenham o mesmo texto.
+ * LRU por BYTES (SPEC-0320): um relógio a 92 px gera ~100 KB por string nova
+ * — limitar por contagem deixava o teto variar 100× com o tamanho da fonte, e
+ * o `clear()` total re-rasterizava tudo no quadro seguinte.
+ */
+export const MASK_CACHE_MAX_BYTES = 8 * 1024 * 1024;
+/** Teto de entradas: máscara `null` (sem fonte) tem 0 byte e não pesaria no LRU. */
+const MASK_CACHE_MAX_ENTRIES = 1024;
 const maskCache = new Map();
+let maskCacheBytes = 0;
+
+/** Bytes de máscara retidos pelo cache (telemetria/teste). */
+export function maskCacheSize() {
+  return { entries: maskCache.size, bytes: maskCacheBytes };
+}
+
+function maskBytes(mask) {
+  return mask ? mask.data.byteLength : 0;
+}
+
+function rememberMask(key, mask) {
+  maskCache.set(key, mask);
+  maskCacheBytes += maskBytes(mask);
+  // Map itera na ordem de inserção: o primeiro é o usado há mais tempo.
+  for (const [oldKey, oldMask] of maskCache) {
+    const fits = maskCacheBytes <= MASK_CACHE_MAX_BYTES && maskCache.size <= MASK_CACHE_MAX_ENTRIES;
+    if (fits || oldKey === key) break;
+    maskCache.delete(oldKey);
+    maskCacheBytes -= maskBytes(oldMask);
+  }
+}
 
 /** "bold 22px Arial, sans-serif" → px (família e peso ignorados: fonte única). null = inválida. */
 export function parseFontSize(font) {
@@ -43,11 +72,14 @@ export function rasterText(text, px) {
   if (!rasterAvailable() || text === '' || !(px > 0)) return null;
   const key = px + '|' + text;
   const hit = maskCache.get(key);
-  if (hit !== undefined) return hit;
-  const r = globalThis.__cortexRasterText(text, px);
+  if (hit !== undefined) {
+    maskCache.delete(key); // volta pro fim: usado agora
+    maskCache.set(key, hit);
+    return hit;
+  }
+  const r = globalThis.__cortexRasterText(text, px, 'canvas');
   const mask = r && r.rgba ? { data: new Uint8Array(r.rgba), width: r.width, height: r.height } : null;
-  if (maskCache.size >= MASK_CACHE_LIMIT) maskCache.clear();
-  maskCache.set(key, mask);
+  rememberMask(key, mask);
   return mask;
 }
 
