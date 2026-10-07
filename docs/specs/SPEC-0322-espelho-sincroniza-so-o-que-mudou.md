@@ -1,7 +1,7 @@
 # SPEC-0322 - Espelho de cena sincroniza só o que mudou
 
 **Data:** 2026-10-07
-**Status:** aceito — em medição (frente R2-A do ciclo 75 fps do DDD 61)
+**Status:** aceito — medido (frente R2-A do ciclo 75 fps do DDD 61)
 
 ## Contexto
 
@@ -97,6 +97,32 @@ mais de um quadro). Transform tem de bater no **mesmo** quadro; flags em até
   por nó, uma vez).
 - O host C++ não muda: o contrato de linha parcial já existia.
 
-## Resultado
+## Resultado (2026-10-07)
 
-(preenchido após o A/B no export release)
+Export **release** do DDD 61 (base = engine `1143723d`; novo = esta branch),
+rodadas de 120 s intercaladas, análise com t ≥ 30 s, mediana das amostras.
+
+Bateria 1 (sem HUD — só tempo de quadro):
+
+| ponto | quadro base → novo (med / p95) | fps base → novo |
+| --- | --- | --- |
+| setorO | 37,3 / 45,2 → **26,2 / 32,2 ms** | 26,8 → **38,2** |
+| comercial | 40,6 / 47,1 → **28,0 / 33,1 ms** | 24,6 → **35,7** |
+
+Bateria 2 (`cortexHud=1` nos dois lados, para ter as seções do profiler):
+
+| ponto | quadro med | `render` med (p99) | `mirror` med (p99) | nós sincronizados/quadro |
+| --- | --- | --- | --- | --- |
+| setorO | 36,7 → **25,8** | 25,1 (29,0) → **14,5** (18,4) | — → 1,1 (2,9) | 10.131 → **258** |
+| comercial | 38,6 → **27,4** | 24,5 (28,7) → **13,8** (17,4) | — → 1,4 (3,7) | 10.125 → **368** |
+| helio + piloto | 32,9 → **22,2** | 21,4 (25,6) → **11,7** (15,2) | — → 1,1 (3,0) | 10.131 → **219** |
+
+O `render` caiu **9,7 a 10,7 ms** (meta: −9 a −10,5). Também caiu a latência
+de GPU (`gpu-latency` ~23 → ~11 ms na bateria 1): com menos linhas o C++
+recompõe e sobe só as matrizes dos nós sujos (`changed_`, M3 do ADR-0237).
+
+Os 220–370 nós por quadro são o que de fato se mexe (ossos dos NPCs animados,
+carros, rodas); ignorar a escrita do mesmo valor não os reduziu. Os quadros de
+~100 ms nas rodadas coincidem com os screenshots (`PrintWindow`) nos dois
+lados. Captura base × novo em setorO, comercial e dirigindo: mesma imagem,
+inclusive sombras (`.cortex/r2-a/runs/*/shot*.png`).
