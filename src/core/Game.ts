@@ -662,7 +662,12 @@ export class Game {
         debug('spike-m5', `ramo de render do Game = ${ramo}`);
       }
     }
-    if (this._sceneMirror.installed) this._sceneMirror.update(this._activeCamera);
+    if (this._sceneMirror.installed) {
+      // Seção própria (SPEC-0322): o custo do espelho some dentro de `render`.
+      p.begin('mirror');
+      this._sceneMirror.update(this._activeCamera);
+      p.end('mirror');
+    }
     if (this._warmupRequests.length > 0) {
       // Quadro de aquecimento (ADR-0262): antes da splash e da cena em
       // carregamento de propósito — o que importa é compilar, e o quadro sai

@@ -5,6 +5,7 @@ import {
   DoubleSide,
   FrontSide,
   InstancedMesh,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   Object3D,
@@ -13,7 +14,12 @@ import {
   Texture,
   Vector3,
 } from 'three';
-import { NativeSceneMirror, nativeSceneMirrorAvailable } from '../../src/core/NativeSceneMirror.js';
+import {
+  NativeSceneMirror,
+  nativeSceneMirrorAvailable,
+  SWEEP_PERIOD_FRAMES,
+  SWEEP_MIN_NODES,
+} from '../../src/core/NativeSceneMirror.js';
 import { SHADOW_AUTHORED_KEY } from '../../src/scene/ShadowCasterCulling.js';
 
 /** Layout de construção — tem de acompanhar `scene_mirror_shim.cpp`. */
@@ -61,7 +67,25 @@ const GATE_OUT_FLOATS = GATE_MOTIVOS + 2;
 /** Ponte falsa com a forma da do host, para exercitar o lado JS sem o C++. */
 function instalarPonteFalsa(nodeCapacity: number) {
   const matrices = new Float32Array(nodeCapacity * 16);
-  const sync = new Float32Array(nodeCapacity * SYNC_FLOATS_POR_NO);
+  // `double`, como o do host: com float32 a paridade compararia arredondamento.
+  const sync = new Float64Array(nodeCapacity * SYNC_FLOATS_POR_NO);
+  /**
+   * O estado que o C++ guarda por índice (SPEC-0322): transform local + flags
+   * do quadro. Nasce da descrição (build/append) e muda SÓ pelas linhas do
+   * `update`, como o `applyTransforms` — é o que torna linha faltando visível.
+   */
+  const host = new Map<number, number[]>();
+  const removidos = new Set<number>();
+  const semear = (descricao: Float32Array, indice: (i: number) => number) => {
+    for (let i = 0; i < descricao.length / FLOATS_POR_NO; i++) {
+      const b = i * FLOATS_POR_NO;
+      const flags =
+        (descricao[b + CAMPO_VISIVEL] ? SYNC_VISIVEL : 0) |
+        (descricao[b + CAMPO_MATERIAL_VISIVEL] ? SYNC_MATERIAL_VISIVEL : 0) |
+        (descricao[b + CAMPO_LADO_DA_SOMBRA]! << SYNC_LADO_SHIFT);
+      host.set(indice(i), [...Array.from(descricao.subarray(b + 1, b + 11)), flags]);
+    }
+  };
   const chamadas = {
     build: 0,
     update: 0,
@@ -93,6 +117,7 @@ function instalarPonteFalsa(nodeCapacity: number) {
       for (let i = 0; i < descricao.length / FLOATS_POR_NO; i++) {
         if (descricao[i * FLOATS_POR_NO]! >= i) return false;
       }
+      semear(descricao, (i) => i);
       return true;
     },
     worldMatrices: () => matrices,
@@ -106,16 +131,24 @@ function instalarPonteFalsa(nodeCapacity: number) {
       const quantos = descricao.length / FLOATS_POR_NO;
       if (estado.proximo + quantos > nodeCapacity) return -1;
       for (let i = 0; i < quantos; i++) saida[i] = estado.proximo++;
+      semear(descricao, (i) => saida[i]!);
       return quantos;
     },
     removeNode: (indice: number) => {
       chamadas.removeNode++;
       chamadas.ultimoRemovido = indice;
+      removidos.add(indice);
       return 1;
     },
     update: (changed: number) => {
       chamadas.update++;
       chamadas.ultimoChanged = changed;
+      for (let i = 0; i < changed; i++) {
+        const b = i * SYNC_FLOATS_POR_NO;
+        const indice = sync[b]!;
+        if (removidos.has(indice)) continue; // lápide não ressuscita
+        host.set(indice, Array.from(sync.subarray(b + 1, b + SYNC_FLOATS_POR_NO)));
+      }
       return changed;
     },
     // Responde como o C++ responderia a uma cena com dois casters, um deles
@@ -148,7 +181,12 @@ function instalarPonteFalsa(nodeCapacity: number) {
       return chamadas.proximaResposta;
     },
       };
-  return { matrices, sync, chamadas };
+  return { matrices, sync, chamadas, host };
+}
+
+/** Flags do quadro que o host tem para o índice. */
+function flagsNoHost(host: Map<number, number[]>, indice: number): number {
+  return host.get(indice)![SYNC_FLAGS - 1]!;
 }
 
 /** Malha simples, com bounding sphere já calculável. */
@@ -194,37 +232,44 @@ describe('NativeSceneMirror', () => {
     expect(raiz.matrixWorldAutoUpdate).toBe(false);
   });
 
-  it('manda uma chamada por frame, não uma por objeto', () => {
+  it('manda uma chamada por frame, e só as linhas de quem mudou', () => {
     // Se isto virar uma chamada por objeto, volta o custo de 15 us por travessia
-    // que derrubou a hipótese da SPEC-0225.
+    // que derrubou a hipótese da SPEC-0225. E se voltar a mandar todo nó, volta
+    // o laço de 11 ms do DDD 61 (SPEC-0322).
     const { chamadas } = instalarPonteFalsa(16);
     const raiz = new Object3D();
-    raiz.add(new Object3D(), new Object3D());
+    const mexe = new Object3D();
+    raiz.add(mexe, new Object3D());
     const espelho = new NativeSceneMirror();
     espelho.install(raiz);
 
     espelho.update(new PerspectiveCamera());
-
     expect(chamadas.update).toBe(1);
-    expect(chamadas.ultimoChanged).toBe(3);
+    expect(chamadas.ultimoChanged).toBe(0);
+    expect(espelho.syncedNodes).toBe(0);
+
+    mexe.position.x = 3;
+    espelho.update(new PerspectiveCamera());
+    expect(chamadas.update).toBe(2);
+    expect(chamadas.ultimoChanged).toBe(1);
+    expect(espelho.syncedNodes).toBe(1);
   });
 
   it('escreve o transform local no buffer de sincronização', () => {
-    const { sync } = instalarPonteFalsa(8);
+    const { sync, host } = instalarPonteFalsa(8);
     const raiz = new Object3D();
     const filho = new Object3D();
-    filho.position.set(7, 8, 9);
     raiz.add(filho);
     const espelho = new NativeSceneMirror();
     espelho.install(raiz);
 
+    filho.position.set(7, 8, 9);
     espelho.update(new PerspectiveCamera());
 
-    // Segundo nó (índice 1): idx, px, py, pz…
-    expect(sync[SYNC_FLOATS_POR_NO]).toBe(1);
-    expect(sync[SYNC_FLOATS_POR_NO + 1]).toBe(7);
-    expect(sync[SYNC_FLOATS_POR_NO + 2]).toBe(8);
-    expect(sync[SYNC_FLOATS_POR_NO + 3]).toBe(9);
+    // Única linha: idx, px, py, pz…
+    expect(sync[0]).toBe(1);
+    expect(sync.slice(1, 4)).toEqual(new Float64Array([7, 8, 9]));
+    expect(host.get(1)!.slice(0, 3)).toEqual([7, 8, 9]);
   });
 
   it('manda ao C++ o castShadow AUTORADO, não o que o filtro deixou no frame', () => {
@@ -332,7 +377,7 @@ describe('NativeSceneMirror', () => {
     // Era o buraco que fazia o C++ contar até 42 casters a mais que o `three`:
     // o `visible` só existia no `build`, então o que sumia em runtime seguia
     // projetando sombra do lado de lá para sempre.
-    const { sync } = instalarPonteFalsa(8);
+    const { host } = instalarPonteFalsa(8);
     const raiz = new Object3D();
     const filho = malha();
     raiz.add(filho);
@@ -340,11 +385,11 @@ describe('NativeSceneMirror', () => {
     espelho.install(raiz);
 
     espelho.update(new PerspectiveCamera());
-    expect(sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
+    expect(flagsNoHost(host, 1) & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
 
     filho.visible = false;
     espelho.update(new PerspectiveCamera());
-    expect(sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! & SYNC_VISIVEL).toBe(0);
+    expect(flagsNoHost(host, 1) & SYNC_VISIVEL).toBe(0);
   });
 
   it('manda o material.visible por FRAME, no mesmo slot do visible', () => {
@@ -352,7 +397,7 @@ describe('NativeSceneMirror', () => {
     // `build` e nunca mais olhado, enquanto o `three` o reavalia em TODA
     // travessia. Depois que o passe nativo assumir, isso seria sombra de um
     // objeto que não está na imagem.
-    const { sync } = instalarPonteFalsa(8);
+    const { host } = instalarPonteFalsa(8);
     const raiz = new Object3D();
     const filho = malha();
     raiz.add(filho);
@@ -360,15 +405,13 @@ describe('NativeSceneMirror', () => {
     espelho.install(raiz);
 
     espelho.update(new PerspectiveCamera());
-    expect(sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! & SYNC_MATERIAL_VISIVEL).toBe(
-      SYNC_MATERIAL_VISIVEL,
-    );
+    expect(flagsNoHost(host, 1) & SYNC_MATERIAL_VISIVEL).toBe(SYNC_MATERIAL_VISIVEL);
 
     (filho.material as { visible: boolean }).visible = false;
     espelho.update(new PerspectiveCamera());
     // O objeto continua visível: as duas coisas escondem coisas diferentes e
     // não podem ser confundidas uma com a outra.
-    const flags = sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]!;
+    const flags = flagsNoHost(host, 1);
     expect(flags & SYNC_MATERIAL_VISIVEL).toBe(0);
     expect(flags & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
   });
@@ -434,15 +477,14 @@ describe('NativeSceneMirror', () => {
     // O `three` reavalia `material.side` a cada travessia. Fotografá-lo no
     // `build` seria o terceiro erro do mesmo tipo nesta série — os dois
     // anteriores (`visible` e `material.visible`) viraram sombra errada.
-    const { sync } = instalarPonteFalsa(8);
+    const { host } = instalarPonteFalsa(8);
     const raiz = new Object3D();
     const filho = malha();
     raiz.add(filho);
     const espelho = new NativeSceneMirror();
     espelho.install(raiz);
 
-    const ladoNoFrame = () =>
-      (sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! >> SYNC_LADO_SHIFT) & SYNC_LADO_MASCARA;
+    const ladoNoFrame = () => (flagsNoHost(host, 1) >> SYNC_LADO_SHIFT) & SYNC_LADO_MASCARA;
 
     espelho.update(new PerspectiveCamera());
     expect(ladoNoFrame()).toBe(LADO_BACK);
@@ -451,7 +493,7 @@ describe('NativeSceneMirror', () => {
     espelho.update(new PerspectiveCamera());
     expect(ladoNoFrame()).toBe(LADO_DOUBLE);
     // E os bits do lado não contaminam os vizinhos do mesmo campo.
-    expect(sync[SYNC_FLOATS_POR_NO + SYNC_FLAGS]! & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
+    expect(flagsNoHost(host, 1) & SYNC_VISIVEL).toBe(SYNC_VISIVEL);
 
     // Não é caminho só de ida.
     (filho.material as { side: number }).side = FrontSide;
@@ -718,10 +760,15 @@ describe('NativeSceneMirror', () => {
     const espelho = new NativeSceneMirror();
     espelho.install(raiz);
 
+    // Os dois sujam ANTES da remoção: o slot de `some` fica na lista de sujos
+    // e tem de ser pulado, não mandado.
+    some.position.x = 1;
+    fica.position.x = 1;
     raiz.remove(some);
+    some.position.x = 2; // e depois de sair, nem suja mais nada
     espelho.update(new PerspectiveCamera());
 
-    expect(chamadas.ultimoChanged).toBe(2);
+    expect(chamadas.ultimoChanged).toBe(1);
   });
 
   it('estouro de capacidade desliga o espelho em vez de realocar', () => {
@@ -883,5 +930,238 @@ describe('NativeSceneMirror com streaming e instancing (SPEC-0289)', () => {
     const espelho = new NativeSceneMirror();
     espelho.install(raiz);
     expect(() => espelho.update(new PerspectiveCamera())).not.toThrow();
+  });
+});
+
+// ── SPEC-0322: só o que mudou — paridade com o espelho completo ─────────────
+//
+// O espelho completo mandava TODO nó TODO quadro, então o host sempre tinha o
+// estado verdadeiro da cena. O novo manda só os sujos. A paridade compara o
+// estado que o host guardou (a ponte falsa aplica as linhas como o
+// `applyTransforms`) com o estado verdadeiro, depois de cada tipo de mutação.
+// Erro aqui é sombra/matriz errada sem exceção — já aconteceu 3× (SPEC-0245).
+
+describe('NativeSceneMirror sincroniza só o que mudou (SPEC-0322)', () => {
+  afterEach(() => {
+    delete (globalThis as Record<string, unknown>)['__cortexSceneMirror'];
+  });
+
+  /** Tabela do `three` (premissa 4 da SPEC-0246), escrita à parte do código. */
+  function ladoEsperado(o: Object3D): number {
+    const m = (o as Mesh).material as (MeshBasicMaterial & { shadowSide: number | null }) | undefined;
+    if (!m || Array.isArray(m)) return LADO_BACK;
+    if (m.shadowSide !== null && m.shadowSide !== undefined) {
+      if (m.shadowSide === FrontSide) return LADO_FRONT;
+      return m.shadowSide === BackSide ? LADO_BACK : LADO_DOUBLE;
+    }
+    if (m.side === FrontSide) return LADO_BACK;
+    return m.side === BackSide ? LADO_FRONT : LADO_DOUBLE;
+  }
+
+  /** O que o espelho COMPLETO teria mandado para o nó. */
+  function verdade(o: Object3D): number[] {
+    const m = (o as Mesh).material as MeshBasicMaterial | undefined;
+    const flags =
+      (o.visible ? SYNC_VISIVEL : 0) |
+      (m && m.visible ? SYNC_MATERIAL_VISIVEL : 0) |
+      (ladoEsperado(o) << SYNC_LADO_SHIFT);
+    const p = o.position;
+    const q = o.quaternion;
+    const s = o.scale;
+    return [p.x, p.y, p.z, q.x, q.y, q.z, q.w, s.x, s.y, s.z, flags];
+  }
+
+  /** Tolerância: a semente vem da descrição em float32; a linha é double. */
+  const TOLERANCIA = 1e-5;
+
+  /** Nós que divergem entre host e cena; vazio = paridade. */
+  function divergencias(
+    raiz: Object3D,
+    espelho: NativeSceneMirror,
+    host: Map<number, number[]>,
+  ): string[] {
+    const indices = (espelho as unknown as { _indicePorObjeto: Map<Object3D, number> })
+      ._indicePorObjeto;
+    const ruins: string[] = [];
+    raiz.traverse((o) => {
+      const i = indices.get(o);
+      if (i === undefined) {
+        ruins.push(`${o.name}: fora do espelho`);
+        return;
+      }
+      const noHost = host.get(i)!;
+      const esperado = verdade(o);
+      for (let k = 0; k < esperado.length; k++) {
+        if (Math.abs(noHost[k]! - esperado[k]!) > TOLERANCIA) {
+          ruins.push(`${o.name}[${k}]: host=${noHost[k]} cena=${esperado[k]}`);
+          return;
+        }
+      }
+    });
+    return ruins;
+  }
+
+  function cena() {
+    const raiz = new Object3D();
+    raiz.name = 'raiz';
+    const carro = new Object3D();
+    carro.name = 'carro';
+    const roda = malha();
+    roda.name = 'roda';
+    const predio = malha();
+    predio.name = 'predio';
+    const compartilhado = new MeshBasicMaterial();
+    const poste1 = new Mesh(new BoxGeometry(1, 1, 1), compartilhado);
+    poste1.name = 'poste1';
+    const poste2 = new Mesh(new BoxGeometry(1, 1, 1), compartilhado);
+    poste2.name = 'poste2';
+    carro.add(roda);
+    raiz.add(carro, predio, poste1, poste2);
+    return { raiz, carro, roda, predio, poste1, poste2, compartilhado };
+  }
+
+  it('cada mutação chega ao host: transform no MESMO quadro, flags dentro da volta', () => {
+    const { host } = instalarPonteFalsa(64);
+    const c = cena();
+    const espelho = new NativeSceneMirror();
+    espelho.install(c.raiz);
+    const camera = new PerspectiveCamera();
+    espelho.update(camera);
+    expect(divergencias(c.raiz, espelho, host)).toEqual([]);
+
+    // Cada passo: muta, UM update, paridade. A cena tem menos que
+    // SWEEP_MIN_NODES nós, então a varredura a cobre inteira por quadro.
+    const passos: [string, () => void][] = [
+      ['position.set', () => c.carro.position.set(10, 0, -3)],
+      ['position.x direto', () => (c.roda.position.x = 0.7)],
+      ['position.copy', () => c.predio.position.copy(new Vector3(1, 2, 3))],
+      ['fromArray (AnimationMixer)', () => c.roda.position.fromArray([4, 5, 6])],
+      ['rotation.y (Euler, sem callback do quaternion)', () => (c.carro.rotation.y = 1.2)],
+      ['rotation.set', () => c.roda.rotation.set(0.1, 0.2, 0.3)],
+      [
+        'quaternion.setFromAxisAngle',
+        () => c.predio.quaternion.setFromAxisAngle(new Vector3(0, 1, 0), 0.5),
+      ],
+      ['quaternion.x direto', () => (c.poste1.quaternion.x = 0.1)],
+      ['scale.setScalar', () => c.poste2.scale.setScalar(2)],
+      ['lookAt', () => c.carro.lookAt(5, 5, 5)],
+      [
+        'applyMatrix4 (decompose)',
+        () => c.predio.applyMatrix4(new Matrix4().makeTranslation(1, 1, 1)),
+      ],
+      ['translateZ', () => c.carro.translateZ(2)],
+      ['esconder', () => (c.predio.visible = false)],
+      ['mostrar', () => (c.predio.visible = true)],
+      ['material.visible', () => ((c.roda.material as MeshBasicMaterial).visible = false)],
+      ['side do material compartilhado', () => (c.compartilhado.side = DoubleSide)],
+      [
+        'shadowSide autorado',
+        () => ((c.compartilhado as unknown as { shadowSide: number }).shadowSide = BackSide),
+      ],
+      [
+        'trocar o material do nó',
+        () => (c.poste1.material = new MeshBasicMaterial({ side: BackSide })),
+      ],
+      // castShadow é autoria do BUILD (o C++ reaplica o filtro), nunca viajou
+      // por quadro — nem no espelho completo. Paridade = continuar sem divergir.
+      ['castShadow', () => (c.predio.castShadow = !c.predio.castShadow)],
+    ];
+    for (const [nome, mutar] of passos) {
+      mutar();
+      espelho.update(camera);
+      expect(divergencias(c.raiz, espelho, host), nome).toEqual([]);
+    }
+  });
+
+  it('grupo que se move manda UMA linha; o filho segue pela hierarquia do host', () => {
+    // A matriz do filho é recomposta pelo C++ (pai sujo propaga); o que o JS
+    // tem de mandar é só o transform local de quem mudou.
+    const { host, chamadas } = instalarPonteFalsa(64);
+    const c = cena();
+    const espelho = new NativeSceneMirror();
+    espelho.install(c.raiz);
+    const camera = new PerspectiveCamera();
+    espelho.update(camera);
+
+    c.carro.position.z += 1;
+    espelho.update(camera);
+    expect(chamadas.ultimoChanged).toBe(1);
+    expect(divergencias(c.raiz, espelho, host)).toEqual([]);
+  });
+
+  it('add/remove/re-add: o nó novo nasce certo e o que saiu solta os ganchos', () => {
+    const { host, chamadas } = instalarPonteFalsa(64);
+    const c = cena();
+    const espelho = new NativeSceneMirror();
+    espelho.install(c.raiz);
+    const camera = new PerspectiveCamera();
+
+    const novo = new Object3D();
+    novo.name = 'novo';
+    novo.add(malha());
+    c.carro.add(novo); // dentro de um grupo que se move
+    novo.position.set(1, 2, 3);
+    c.carro.position.y = 9;
+    espelho.update(camera);
+    expect(divergencias(c.raiz, espelho, host)).toEqual([]);
+
+    c.raiz.remove(c.predio);
+    // Fora do espelho, o vetor volta a ser dado cru e não suja nada.
+    expect(Object.getOwnPropertyDescriptor(c.predio.position, 'x')?.value).toBeDefined();
+    c.predio.position.x = 99;
+    espelho.update(camera);
+    expect(chamadas.ultimoChanged).toBe(0);
+
+    c.raiz.add(c.predio); // volta, num slot novo, com o transform que tem agora
+    expect(divergencias(c.raiz, espelho, host)).toEqual([]);
+    c.predio.position.x = 5;
+    espelho.update(camera);
+    expect(divergencias(c.raiz, espelho, host)).toEqual([]);
+  });
+
+  it('cena grande: transform no mesmo quadro, flags em até SWEEP_PERIOD_FRAMES', () => {
+    const total = SWEEP_MIN_NODES * SWEEP_PERIOD_FRAMES * 2;
+    const { host } = instalarPonteFalsa(total + 8);
+    const raiz = new Object3D();
+    const nos: Mesh[] = [];
+    for (let i = 0; i < total; i++) {
+      const m = malha();
+      m.name = `n${i}`;
+      nos.push(m);
+      raiz.add(m);
+    }
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    const camera = new PerspectiveCamera();
+
+    // Parada: nada sincroniza.
+    espelho.update(camera);
+    expect(espelho.syncedNodes).toBe(0);
+
+    // Transform: o mesmo quadro, mesmo longe do cursor da varredura.
+    nos[total - 1]!.position.y = 4;
+    nos[3]!.rotation.x = 0.4;
+    espelho.update(camera);
+    expect(espelho.syncedNodes).toBe(2);
+    expect(divergencias(raiz, espelho, host)).toEqual([]);
+
+    // Flags: espalhadas pela cena, chegam dentro de uma volta da varredura.
+    const PASSO_ESCONDE = 97;
+    const PASSO_LADO = 131;
+    for (let i = 0; i < total; i += PASSO_ESCONDE) nos[i]!.visible = false;
+    for (let i = 5; i < total; i += PASSO_LADO) {
+      (nos[i]!.material as MeshBasicMaterial).side = DoubleSide;
+    }
+    for (let q = 0; q < SWEEP_PERIOD_FRAMES; q++) espelho.update(camera);
+    expect(divergencias(raiz, espelho, host)).toEqual([]);
+
+    // Reescrever o MESMO valor (o `copy` de um alvo parado) não suja.
+    nos[7]!.position.copy(nos[7]!.position.clone());
+    nos[8]!.scale.set(1, 1, 1);
+    // E a cena volta a ficar parada.
+    espelho.update(camera);
+    expect(espelho.syncedNodes).toBe(0);
+    expect(espelho.takeAverageSyncedNodes()).toBeGreaterThan(0);
+    expect(espelho.takeAverageSyncedNodes()).toBe(0);
   });
 });
