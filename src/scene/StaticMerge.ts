@@ -54,7 +54,8 @@ import { Collider2DComponent } from '../components/Collider2DComponent.js';
  *
  * A física NÃO muda: colliders derivam dos nós ANTES do merge; o raycast de
  * chão/parede do Character enxerga a malha fundida (que preserva
- * `cortexSolid`), e o BVH (SPEC-0108) é construído uma vez sobre ela.
+ * `cortexSolid`), o `setupVehicle` monta o chão do carro dela (preserva
+ * `cortexRoad`), e o BVH (SPEC-0108) é construído uma vez sobre ela.
  */
 export interface StaticMergeStats {
   /** Malhas originais fundidas (removidas da cena). */
@@ -197,14 +198,27 @@ function attributeKey(g: BufferGeometry): string | null {
   return parts.join(',');
 }
 
-/** `cortexSolid` efetivo (o CharacterPhysics olha os ancestrais). */
-function isSolid(obj: Object3D): boolean {
+/**
+ * Flags de FÍSICA que a malha fundida herda (valem no objeto ou num ancestral):
+ * `cortexSolid` (parede do Character) e `cortexRoad` (chão do veículo — o
+ * `setupVehicle` roda DEPOIS do build e monta o trimesh a partir dela; perdida,
+ * o carro caía pelo chão no export, SPEC-0316).
+ */
+const PHYSICS_FLAGS = ['cortexSolid', 'cortexRoad'] as const;
+
+/** Flag efetiva (o objeto ou algum ancestral tem `userData[flag]` verdadeiro). */
+function hasFlag(obj: Object3D, flag: string): boolean {
   let p: Object3D | null = obj;
   while (p) {
-    if ((p.userData as Record<string, unknown>)['cortexSolid'] === true) return true;
+    if ((p.userData as Record<string, unknown>)[flag]) return true;
     p = p.parent;
   }
   return false;
+}
+
+/** Assinatura das flags de física (malhas com flags diferentes não dividem grupo). */
+function physicsKey(obj: Object3D): string {
+  return PHYSICS_FLAGS.map((f) => (hasFlag(obj, f) ? f : '-')).join(',');
 }
 
 interface Candidate {
@@ -250,7 +264,7 @@ export function mergeStaticScene(
     if (mesh.layers.mask !== 1) return; // layer não-default: fora
     const attrKey = attributeKey(mesh.geometry);
     if (attrKey === null) return;
-    const key = [materialKey(mesh.material as Material), attrKey, isSolid(mesh) ? 'S' : '-', mesh.castShadow ? 'c' : '-', mesh.receiveShadow ? 'r' : '-', mesh.renderOrder].join('§');
+    const key = [materialKey(mesh.material as Material), attrKey, physicsKey(mesh), mesh.castShadow ? 'c' : '-', mesh.receiveShadow ? 'r' : '-', mesh.renderOrder].join('§');
     eligible.set(mesh, { mesh, key, matrix: mesh.matrixWorld.clone() });
   });
 
@@ -305,7 +319,7 @@ export function mergeStaticScene(
     merged.renderOrder = sample.renderOrder;
     const ud = merged.userData as Record<string, unknown>;
     ud['cortexMergedStatic'] = true;
-    if (isSolid(sample)) ud['cortexSolid'] = true; // parede do Character sobrevive ao merge
+    for (const f of PHYSICS_FLAGS) if (hasFlag(sample, f)) ud[f] = true; // parede do Character e chão do veículo sobrevivem ao merge
     merged.name = `static-merged-${stats.groups}`;
     root.add(merged);
     stats.groups++;

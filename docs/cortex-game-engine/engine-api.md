@@ -782,7 +782,7 @@ roda no Studio (o editor precisa dos objetos individuais). Ficam de fora:
 entidades dinâmicas (scripts/player/Rapier), animados, skinned, vegetação,
 terreno, água, `InstancedMesh`/`BatchedMesh`, **gatilhos** (`collider.solid: false`,
 ADR-0220) e subárvores marcadas com **`userData.cortexDynamic = true`**. Física
-preservada (`cortexSolid` sobrevive; colliders derivam antes).
+preservada (`cortexSolid` e `cortexRoad` sobrevivem; colliders derivam antes).
 
 > ⚠️ **Objeto criado em código que vai se MEXER (posição, `visible`, material,
 > geometria) e entra na cena antes do `buildScene`: marque a raiz com

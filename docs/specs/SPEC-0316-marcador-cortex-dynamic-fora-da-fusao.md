@@ -24,6 +24,11 @@ Achado junto: `InstancedMesh` e `BatchedMesh` passam no filtro `isMesh`. Quando
 dividem o material com outra malha, o bake fundia só a geometria base (sem as
 matrizes de instância) e todas as instâncias sumiam.
 
+Achado na validação do export: com o carro inteiro, ele **caía pelo chão**. O
+`setupVehicle` roda depois do `buildScene` e monta o chão do carro (trimesh) a
+partir das malhas com `cortexRoad`. A malha fundida herdava só `cortexSolid`; as
+ruas fundidas perdiam `cortexRoad` e o veículo ficava sem chão.
+
 ## Decisão
 
 - **Marcador público `userData.cortexDynamic = true`.** Em qualquer objeto ou
@@ -33,6 +38,9 @@ matrizes de instância) e todas as instâncias sumiam.
 - Marcar a **raiz** do objeto móvel (o `Group` que o jogo move/esconde). Marcar
   só as malhas também funciona, mas raiz é o contrato documentado.
 - **`InstancedMesh`/`BatchedMesh` nunca entram na fusão** (já são 1 draw).
+- **A malha fundida herda `cortexRoad`** (além de `cortexSolid`), efetivos pelo
+  ancestral; as duas flags entram na chave do grupo (rua não divide malha com
+  não-rua).
 - `cortexVehicle` continua excluindo — mas é config de autoria de veículo
   (Inspector/`VehicleAuthoring`); objeto de jogo usa `cortexDynamic`.
 
@@ -48,4 +56,4 @@ muda o momento do merge, de que o aquecimento de pipelines depende.
   no export nativo — o Studio não funde.
 - Objeto marcado vira draw próprio: marque só o que se mexe, não o cenário.
 - Teste: `tests/scene/StaticMerge.test.ts` (subárvore marcada intacta;
-  `InstancedMesh` intacta).
+  `InstancedMesh` intacta; `cortexRoad` preservado no grupo).

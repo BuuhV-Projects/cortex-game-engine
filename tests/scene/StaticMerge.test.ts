@@ -85,6 +85,19 @@ describe('mergeStaticScene', () => {
     expect(plain).toBeDefined(); // o não-sólido ficou de fora do grupo sólido
   });
 
+  it('preserva cortexRoad no grupo (chão do veículo montado DEPOIS do build, SPEC-0316)', () => {
+    const root = new Object3D();
+    const mat = new MeshBasicMaterial();
+    const street = new Object3D();
+    street.userData['cortexRoad'] = true; // herdado pelo ancestral, como a cidade marca
+    street.add(box(mat, 0), box(mat, 2));
+    root.add(street, box(mat, 4), box(mat, 6)); // mesmo material, NÃO é rua
+    mergeStaticScene(root);
+    const merged = root.children.filter((o) => (o as Mesh).isMesh) as Mesh[];
+    expect(merged).toHaveLength(2); // rua e não-rua em grupos separados
+    expect(merged.filter((m) => m.userData['cortexRoad'] === true)).toHaveLength(1);
+  });
+
   it('NÃO funde: skinned, invisível, vegetação, terreno, água', () => {
     const root = new Object3D();
     const mat = new MeshBasicMaterial();

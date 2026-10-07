@@ -182,6 +182,8 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   não sabe que aquilo vai andar: o carro do DDD 61 perdeu a lataria no export (foi
   pra `static-merged-N`, parada no spawn). Quem cria o objeto marca a raiz.
   `InstancedMesh`/`BatchedMesh` ficam fora sempre (o bake perderia as instâncias).
+  A malha fundida herda `cortexSolid` **e `cortexRoad`**: o `setupVehicle` roda
+  depois do build e monta o chão do carro do `cortexRoad` — perdido, o carro caía.
 - **Água (`Water.ts`, SPEC-0131)** — nó `water`: plano PBR finito (`size`, default
   400) com cáusticas tiled animadas. **Segue a câmera** no XZ por padrão (o
   `buildScene` passa `options.camera`), então a borda quadrada fica sempre a
