@@ -1155,6 +1155,9 @@ describe('NativeSceneMirror sincroniza só o que mudou (SPEC-0322)', () => {
     for (let q = 0; q < SWEEP_PERIOD_FRAMES; q++) espelho.update(camera);
     expect(divergencias(raiz, espelho, host)).toEqual([]);
 
+    // Reescrever o MESMO valor (o `copy` de um alvo parado) não suja.
+    nos[7]!.position.copy(nos[7]!.position.clone());
+    nos[8]!.scale.set(1, 1, 1);
     // E a cena volta a ficar parada.
     espelho.update(camera);
     expect(espelho.syncedNodes).toBe(0);

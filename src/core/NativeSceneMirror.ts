@@ -338,7 +338,11 @@ function avisarSujo(v: VetorEnganchado): void {
   if (espelho) espelho._marcarSujo(v._mSlot);
 }
 
-/** Acessores COMPARTILHADOS: nenhuma closure por nó para os 10 mil parados. */
+/**
+ * Acessores COMPARTILHADOS: nenhuma closure por nó para os 10 mil parados.
+ * Escrever o MESMO valor não suja: o jogo reescreve transform parado todo
+ * quadro (`copy` de um alvo que não andou), e isso virava linha à toa.
+ */
 const ACESSOR_X: PropertyDescriptor = {
   configurable: true,
   enumerable: true,
@@ -346,6 +350,7 @@ const ACESSOR_X: PropertyDescriptor = {
     return this._mx;
   },
   set(this: VetorEnganchado, valor: number): void {
+    if (this._mx === valor) return;
     this._mx = valor;
     avisarSujo(this);
   },
@@ -357,6 +362,7 @@ const ACESSOR_Y: PropertyDescriptor = {
     return this._my;
   },
   set(this: VetorEnganchado, valor: number): void {
+    if (this._my === valor) return;
     this._my = valor;
     avisarSujo(this);
   },
@@ -368,6 +374,7 @@ const ACESSOR_Z: PropertyDescriptor = {
     return this._mz;
   },
   set(this: VetorEnganchado, valor: number): void {
+    if (this._mz === valor) return;
     this._mz = valor;
     avisarSujo(this);
   },

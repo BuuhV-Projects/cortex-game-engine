@@ -38,6 +38,8 @@ muda:
      espelho embrulha o original (que mantém os dois sincronizados) e marca.
      Os dois são necessários: a mudança de `rotation` atualiza o quaternion com
      `setFromEuler(…, false)`, que **não** dispara o callback do quaternion.
+   O setter ignora a escrita do MESMO valor: o jogo reescreve transform parado
+   todo quadro (`copy` de alvo que não andou), e isso virava linha à toa.
    Ao sair do espelho (remoção, estouro de capacidade) os ganchos são desfeitos e
    o objeto volta a ter propriedades de dado.
 2. **Flags do quadro (`visible`, `material.visible`, lado da sombra) por
