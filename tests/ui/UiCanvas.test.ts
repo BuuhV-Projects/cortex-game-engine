@@ -1,5 +1,5 @@
 /**
- * `<canvas>` na UI de runtime (ADR-0316 / SPEC-0317): o widget é dono de um
+ * `<canvas>` na UI de runtime (ADR-0315 / SPEC-0317): o widget é dono de um
  * canvas 2D real; no nativo o backend renderer sobe os pixels pra uma textura
  * SÓ quando o canvas muda (`__cortexVersion` do canvas do host). Roda com o
  * canvas 2D do host (shim), que é o caminho do export.

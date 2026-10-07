@@ -1,4 +1,4 @@
-# ADR-0316 — `<canvas>` na UI de runtime: widget que mostra o canvas 2D do host
+# ADR-0315 — `<canvas>` na UI de runtime: widget que mostra o canvas 2D do host
 
 **Data:** 2026-10-07
 **Status:** aceito

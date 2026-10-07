@@ -28,7 +28,7 @@ export function createCanvasElement(width, height) {
   element.__surface = createSurface(width === undefined ? DEFAULT_WIDTH : width, height === undefined ? DEFAULT_HEIGHT : height);
   element.__context = null;
   // Versão do conteúdo: sobe a cada operação de pixel/redimensionamento. A UI de
-  // runtime (UiCanvas, ADR-0316) só re-sobe a textura quando ela muda.
+  // runtime (UiCanvas, ADR-0315) só re-sobe a textura quando ela muda.
   element.__cortexVersion = 0;
   Object.defineProperty(element, 'width', {
     get() { return element.__surface.width; },

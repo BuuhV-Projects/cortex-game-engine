@@ -848,7 +848,7 @@ cada widget em **px lógicos ancorados** — telas autoradas contra a resoluçã
 ⚠️ **Autore SEMPRE pensando em 1920×1080** — o engine cuida da escala. Não crave
 tamanhos "pra 4K" no HTML/HUD; some a portabilidade entre resoluções.
 
-## 8b2b. UI de runtime: `<canvas>` (`UiCanvas`) — ADR-0316 / SPEC-0317
+## 8b2b. UI de runtime: `<canvas>` (`UiCanvas`) — ADR-0315 / SPEC-0317
 
 `UiCanvas` (tag `<canvas>`, estende `UiPanel`) é dono de um `HTMLCanvasElement` real.
 - `DomUiBackend`: o nó do widget **é** o canvas (vai pra raiz da UI) — o browser pinta.

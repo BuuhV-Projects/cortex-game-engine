@@ -8,7 +8,7 @@
 
 Defined in: [src/ui/runtime/widgets.ts:216](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ui/runtime/widgets.ts#L216)
 
-`<canvas>` da UI de runtime (ADR-0316): dono de um `HTMLCanvasElement` real
+`<canvas>` da UI de runtime (ADR-0315): dono de um `HTMLCanvasElement` real
 onde o jogo desenha com `getContext('2d')` — radar, minimapa, minigame. No
 browser o backend DOM põe o PRÓPRIO elemento na tela; no host nativo o
 backend renderer sobe os pixels pra uma textura sempre que o canvas muda.

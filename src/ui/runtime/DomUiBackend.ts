@@ -51,7 +51,7 @@ export class DomUiBackend implements UiBackend {
       alive.add(widget.id);
       let node = this._nodes.get(widget.id);
       if (!node) {
-        // `<canvas>` (ADR-0316): o nó É o canvas do jogo — o browser pinta.
+        // `<canvas>` (ADR-0315): o nó É o canvas do jogo — o browser pinta.
         node = widget instanceof UiCanvas ? widget.canvas : document.createElement('div');
         node.style.position = 'absolute';
         node.style.whiteSpace = 'nowrap';

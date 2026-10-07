@@ -13,7 +13,7 @@
  * - `box-shadow: 0 Npx 0 <cor>` (sombra DURA, sem blur) ou `none`
  * - `text-align: left|center|right` (botão)
  * - `padding: Ypx Xpx`, `width: Npx`, `height: Npx`
- * - `pointer-events: auto|none` (só `<canvas>`, ADR-0316)
+ * - `pointer-events: auto|none` (só `<canvas>`, ADR-0315)
  *
  * @example
  * const sheet = parseUiCss(`

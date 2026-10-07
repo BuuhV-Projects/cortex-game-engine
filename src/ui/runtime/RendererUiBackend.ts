@@ -112,7 +112,7 @@ interface WidgetVisual {
   imageUniforms?: ImageUniforms;
   imageTexture?: THREE.Texture;
   lastImage?: string | null;
-  /** `<canvas>` (ADR-0316): quad com a CanvasTexture do elemento. */
+  /** `<canvas>` (ADR-0315): quad com a CanvasTexture do elemento. */
   canvas?: THREE.Mesh;
   canvasTexture?: THREE.CanvasTexture;
   /** `__cortexVersion` do canvas que está na GPU (-1 = nunca subiu). */

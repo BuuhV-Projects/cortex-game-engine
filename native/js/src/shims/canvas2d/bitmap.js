@@ -116,7 +116,7 @@ function packOpaque(r, g, b) {
 
 /**
  * Laço quente do drawImage sem tinta (radar/mapa redesenhados todo quadro no
- * host, ADR-0316): amostra e compõe NO MESMO laço, lendo/escrevendo uint32. Pixel
+ * host, ADR-0315): amostra e compõe NO MESMO laço, lendo/escrevendo uint32. Pixel
  * fora do clip nem é amostrado; vizinhança 100% opaca com cobertura 1 vira uma
  * escrita de uint32 (sem a divisão do alfa pré-multiplicado nem o blend). O resto
  * cai no amostrador genérico — mesmo resultado, só mais caro.

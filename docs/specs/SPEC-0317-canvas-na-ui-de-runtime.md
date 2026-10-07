@@ -2,7 +2,7 @@
 
 **Data:** 2026-10-07
 **Status:** aceito
-**Decisão:** ADR-0316
+**Decisão:** ADR-0315
 
 ## Contexto
 

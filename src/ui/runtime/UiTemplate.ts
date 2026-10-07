@@ -6,7 +6,7 @@
  * **erro claro na compilação** (nunca surpresa no console).
  *
  * Vocabulário (nomes do HTML5 — filosofia DOM-lite: não reinventar):
- * - `<canvas width="N" height="N">` — vira {@link UiCanvas} (ADR-0316): os
+ * - `<canvas width="N" height="N">` — vira {@link UiCanvas} (ADR-0315): os
  *   atributos são o tamanho do BITMAP, como no HTML5; o jogo desenha em
  *   `(tpl.get(id) as UiCanvas).canvas.getContext('2d')`.
  * - `<div>`/`<span>`/`<button>`/`<img>` — viram {@link UiPanel}/{@link UiLabel}/
