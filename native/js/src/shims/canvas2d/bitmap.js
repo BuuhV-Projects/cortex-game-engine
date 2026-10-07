@@ -9,6 +9,12 @@ import { blendColorRow, colorRow } from './composite.js';
 const MAX_BYTE = 255;
 const INV_BYTE = 1 / MAX_BYTE;
 const PIXEL_CENTER = 0.5;
+const TRANSLATION_EPSILON = 1e-6;
+
+/** Escala 1 sem rotação (até erro de ponto flutuante). */
+function isTranslation(m) {
+  return Math.abs(m[0] - 1) < TRANSLATION_EPSILON && Math.abs(m[3] - 1) < TRANSLATION_EPSILON && m[1] === 0 && m[2] === 0;
+}
 
 /** Caixa de dispositivo (inteira, presa ao alvo) do retângulo fonte transformado. */
 function deviceBounds(m, r, width, height) {
@@ -103,9 +109,16 @@ let tintScratch = new Uint8ClampedArray(0);
  *          smooth, alpha, clip, tint (tinta → modo máscara) }
  */
 export function drawBitmap(surface, src, opts) {
-  const { rect, matrix, smooth, alpha, clip, tint } = opts;
+  const { rect, alpha, clip, tint } = opts;
+  let { matrix, smooth } = opts;
+  // Só translação (texto e cópias 1:1): alinha ao pixel e amostra sem bilinear —
+  // mesmo resultado numa translação inteira, ~4× menos trabalho por pixel.
+  if (isTranslation(matrix)) {
+    matrix = [1, 0, 0, 1, Math.round(matrix[4]), Math.round(matrix[5])];
+    smooth = false;
+  }
   const inv = invert(matrix);
-  if (!inv || !(rect.sw > 0 && rect.sh > 0)) return;
+  if (!inv || !(rect.sw > 0 && rect.sh > 0)) return null;
   const b = deviceBounds(matrix, rect, surface.width, surface.height);
   const lim = {
     x0: Math.max(0, Math.floor(rect.sx)),
@@ -130,4 +143,5 @@ export function drawBitmap(surface, src, opts) {
     if (tint) tintRow(tint, y, b.x0, b.x1, colors, tintScratch);
     blendColorRow(surface, y, b.x0, b.x1, colors, null, alpha, clip);
   }
+  return b; // caixa tocada (a sombra usa pra não varrer o canvas inteiro)
 }

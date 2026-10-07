@@ -259,6 +259,19 @@ describe('canvas 2D do host: imagem, pixels e sombra', () => {
     expect(px(c, 2, 1)).toEqual([0x12, 0x34, 0x56, 255]);
   });
 
+  it('shadowBlur espalha o brilho em volta do desenho e some longe dele', () => {
+    const { c, g } = canvas(60, 20);
+    g.fillStyle = '#000000';
+    g.fillRect(0, 0, 60, 20);
+    g.shadowColor = '#ffb000';
+    g.shadowBlur = 8;
+    g.fillStyle = '#ffb000';
+    g.fillRect(10, 8, 4, 4);
+    expect(px(c, 12, 10)).toEqual([255, 176, 0, 255]);
+    expect(px(c, 16, 10)[0]).toBeGreaterThan(5); // halo ao lado (σ = 4 sobre 4 px: pico ~0,16)
+    expect(px(c, 50, 10)).toEqual([0, 0, 0, 255]); // longe: intocado
+  });
+
   it('shadowOffset desenha a sombra deslocada embaixo do desenho', () => {
     const { c, g } = canvas(10, 10);
     g.shadowColor = '#ff0000';
@@ -269,6 +282,57 @@ describe('canvas 2D do host: imagem, pixels e sombra', () => {
     expect(px(c, 2, 2)).toEqual([0, 0, 255, 255]);
     expect(px(c, 6, 6)).toEqual([255, 0, 0, 255]);
     expect(px(c, 8, 8)[3]).toBe(0);
+  });
+});
+
+describe('canvas 2D do host: rasterização adiada', () => {
+  type Deferred = Ctx & { _queue: unknown[] };
+
+  it('canvas que ninguém lê não rasteriza; limpar o canvas inteiro descarta a fila', () => {
+    const { c, g } = canvas(50, 50);
+    const d = g as Deferred;
+    for (let frame = 0; frame < 100; frame++) {
+      g.clearRect(0, 0, 50, 50);
+      g.beginPath();
+      g.arc(25, 25, 20, 0, Math.PI * 2);
+      g.stroke();
+    }
+    expect(d._queue.length).toBe(2); // só o último quadro: clear + stroke
+    expect(new Uint8Array(c.rgba)[3]).toBe(0); // ler rasteriza
+    expect(d._queue.length).toBe(0);
+    expect(px(c, 25, 5)[3]).toBeGreaterThan(0);
+  });
+
+  it('drawImage usa a fonte como estava na chamada, mesmo pintada depois', () => {
+    const src = canvas(1, 1);
+    src.g.fillStyle = '#ff0000';
+    src.g.fillRect(0, 0, 1, 1);
+    const { c, g } = canvas(1, 1);
+    g.drawImage(src.c, 0, 0);
+    src.g.fillStyle = '#0000ff';
+    src.g.fillRect(0, 0, 1, 1);
+    expect(px(src.c, 0, 0)).toEqual([0, 0, 255, 255]);
+    expect(px(c, 0, 0)).toEqual([255, 0, 0, 255]);
+  });
+
+  it('estado e caminho seguem vivos sem rasterizar (getTransform, fillStyle)', () => {
+    const { g } = canvas(4, 4);
+    g.translate(3, 0);
+    g.fillRect(0, 0, 1, 1);
+    g.fillStyle = 'red';
+    expect(g.getTransform().e).toBe(3);
+    expect(g.fillStyle).toBe('#ff0000');
+    expect((g as Deferred)._queue.length).toBe(1);
+  });
+
+  it('fillRect enfileirado usa o fillStyle da hora da chamada', () => {
+    const { c, g } = canvas(2, 1);
+    g.fillStyle = '#00ff00';
+    g.fillRect(0, 0, 1, 1);
+    g.fillStyle = '#0000ff';
+    g.fillRect(1, 0, 1, 1);
+    expect(px(c, 0, 0)).toEqual([0, 255, 0, 255]);
+    expect(px(c, 1, 0)).toEqual([0, 0, 255, 255]);
   });
 });
 

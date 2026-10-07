@@ -1,7 +1,8 @@
 // Canvas 2D do host nativo (SPEC-0313 / ADR-0312) — instala os globais do
 // browser e registra a fábrica de <canvas> no dom-lite. Mapa dos módulos:
 //   canvas-element.js  <canvas> (width/height/getContext/rgba)
-//   context.js         CanvasRenderingContext2D (orquestra o resto)
+//   context.js         CanvasRenderingContext2D (orquestra; rasterização ADIADA até ler pixels)
+//   clip.js            recorte com máscara calculada sob demanda
 //   state.js           estado do save/restore + propriedades validadas
 //   matrix.js          matriz afim
 //   path.js            caminho em px de dispositivo (curvas achatadas)

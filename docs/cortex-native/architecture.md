@@ -114,7 +114,9 @@ Ver ADR-0109.
 | `native/js/src/prelude.js` | Orquestrador dos shims JS (importa js/src/shims/ na ordem certa). Regra: o que dá pra shimar em JS fica em shims/. |
 | `native/js/src/shims/globals.js` | self, console→print, performance. |
 | `native/js/src/shims/event-target.js` | EventTarget-lite + Event/CustomEvent — o "event bus via document" que os jogos usam (rush:*). |
-| `native/js/src/shims/dom-lite.js` | DOM inerte (createElement/appendChild/innerHTML rodam, nada renderiza) + window/document com bus próprio. Etapa 6a do M1. `window.close()` → `__cortexQuit` (SPEC-0120; sem host = no-op, como aba de browser). |
+| `native/js/src/shims/dom-lite.js` | DOM inerte (createElement/appendChild/innerHTML rodam, nada renderiza) + window/document com bus próprio. Etapa 6a do M1. `window.close()` → `__cortexQuit` (SPEC-0120; sem host = no-op, como aba de browser). `registerElementFactory(tag, fn)`: outros shims fornecem elementos por tag (`<canvas>` 2D). `innerHTML` monta filhos (parser em `html-lite.js`) e `getElementById` procura na árvore do body/head (SPEC-0313). |
+| `native/js/src/shims/html-lite.js` | Parser mínimo do `innerHTML` (SPEC-0313): só estrutura — tags viram elementos pela fábrica do document, atributos viram `setAttribute`; texto/comentários ignorados, `<style>`/`<script>` sem conteúdo. Sem layout/CSS. |
+| `native/js/src/shims/canvas2d/` | **Canvas 2D em software** (ADR-0312 / SPEC-0313): `createElement('canvas')`, `OffscreenCanvas` e `<canvas>` de innerHTML com `getContext('2d')` rasterizado em JS num buffer RGBA (alfa reto). O elemento expõe `width/height/rgba` = contrato do `ImageBitmap` do host → o three sobe pelo `copyExternalImageToTexture` nativo, sem caminho novo. **Rasterização ADIADA**: pixels só são calculados quando alguém lê (`rgba`/upload, `getImageData`, `drawImage` como fonte). Texto = `__cortexRasterText` (Roboto Medium). Mapa dos módulos no `index.js`. |
 | `native/js/src/shims/webgpu-extras.js` | Constantes GPU*, features/limits no adapter/device, canvas fake (com event bus REAL — `click`/`mousedown` no canvas pedem o pointer lock, SPEC-0285). |
 | `native/js/src/shims/input-bridge.js` | Redistribui eventos do host pra window/document/body/canvas (como o browser) e liga navigator.getGamepads ao nativo. Gera os eventos de **compatibilidade de mouse** (SPEC-0285): `pointerdown/up/move` → `mousedown/up/move`, e `click` no `pointerup` do botão 0 — o `InputManager` escuta `mouse*`, sem eles `getMouseDelta()` era sempre 0 no host. `blur` vai só pro window. |
 | `native/js/src/shims/pointer-lock.js` | Pointer Lock API (SPEC-0285): `canvas.requestPointerLock()` (Promise), `document.exitPointerLock()`, `document.pointerLockElement`, evento `pointerlockchange`. Solta no `blur` e no ESC (o `keydown` de Escape continua chegando ao jogo). |
@@ -169,6 +171,15 @@ Native (que roda milhares de libs sobre Hermes em produção):
   console.
 
 ## Armadilhas conhecidas
+
+- **Canvas 2D custa no UPLOAD, não na chamada** (ADR-0312 / SPEC-0313). Com a
+  rasterização adiada, `fillRect`/`fillText` só gravam; o trabalho aparece
+  quando o three sobe a textura (`texture.needsUpdate = true` → `canvas.rgba`)
+  — ou seja, dentro do **render**. Pra medir o custo de um canvas, meça o
+  `_flush` do contexto, não as chamadas. Canvas DOM (radar/mapa de template)
+  nunca é lido no host → custo ~zero, mas também **não aparece** (DOM inerte).
+  O caro que sobra: `shadowBlur` (blur de caixa em JS) e muitos canvases
+  repintados no mesmo quadro (painéis do metrô do DDD 61: até 8 × 760×170 1×/s).
 
 - **Objeto que SÓ SE MOVE pagava o refresh completo do `three`** (ADR-0290 /
   SPEC-0291). O `NodeMaterialObserver` testa a matriz primeiro e sai na

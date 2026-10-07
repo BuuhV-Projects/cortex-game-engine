@@ -37,8 +37,12 @@ export function createCanvasElement(width, height) {
     enumerable: true,
   });
   // ImageBitmap do host: o copyExternalImageToTexture nativo lê width/height/rgba.
+  // Ler os pixels rasteriza o que estiver na fila (rasterização adiada).
   Object.defineProperty(element, 'rgba', {
-    get() { return element.__surface.buffer; },
+    get() {
+      if (element.__context) element.__context._flush();
+      return element.__surface.buffer;
+    },
   });
   element.getContext = function (type) {
     if (type !== '2d') return null;

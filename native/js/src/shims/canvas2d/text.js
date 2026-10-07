@@ -17,6 +17,9 @@ const HANGING_RATIO = 0.8;
 const PT_TO_PX = 4 / 3;
 const DEFAULT_FONT_PX = 10;
 const MEASURE_CACHE_LIMIT = 512;
+/** Máscaras guardadas (texto × tamanho): HUD/painéis redesenham o mesmo texto. */
+const MASK_CACHE_LIMIT = 256;
+const maskCache = new Map();
 
 /** "bold 22px Arial, sans-serif" → px (família e peso ignorados: fonte única). null = inválida. */
 export function parseFontSize(font) {
@@ -38,9 +41,14 @@ export function rasterAvailable() {
 /** Máscara do texto no tamanho de dispositivo `px` ({ data, width, height }) ou null. */
 export function rasterText(text, px) {
   if (!rasterAvailable() || text === '' || !(px > 0)) return null;
+  const key = px + '|' + text;
+  const hit = maskCache.get(key);
+  if (hit !== undefined) return hit;
   const r = globalThis.__cortexRasterText(text, px);
-  if (!r || !r.rgba) return null;
-  return { data: new Uint8Array(r.rgba), width: r.width, height: r.height };
+  const mask = r && r.rgba ? { data: new Uint8Array(r.rgba), width: r.width, height: r.height } : null;
+  if (maskCache.size >= MASK_CACHE_LIMIT) maskCache.clear();
+  maskCache.set(key, mask);
+  return mask;
 }
 
 /** Linha de base dentro da máscara (mesma conta do text_raster.cpp: ceil(ascent·escala)). */

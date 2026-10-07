@@ -69,6 +69,18 @@ Fora (lança erro ou é ignorado, nada usa hoje): `createPattern` (lança),
 `filter`, `globalCompositeOperation` ≠ `source-over`, `arcTo`, `roundRect`,
 `isPointInPath`, `Path2D`, `letterSpacing`, `direction`.
 
+### Rasterização adiada
+
+Estado, transform e caminho rodam na hora; operações de pixel (`fill`,
+`stroke`, `fillRect`, `strokeRect`, `clearRect`, `drawImage`, `fillText`,
+`strokeText`, `putImageData`, `reset`) entram numa fila com a foto do estado e
+só rodam quando os pixels são LIDOS: `canvas.rgba` (upload do three),
+`getImageData`, ou `drawImage` com este canvas como fonte (o buffer da fonte é
+marcado compartilhado; escrever nele depois troca de buffer — cópia na escrita).
+`clearRect`/`fillRect` opaco cobrindo o canvas inteiro, sem clip, descarta a fila
+anterior; teto de 20 000 operações pendentes. `clip()` guarda o caminho e a
+máscara é calculada só quando alguma operação precisa dela.
+
 ### Rasterização
 
 - Coordenadas do caminho são transformadas pelo transform corrente NO MOMENTO
@@ -94,6 +106,41 @@ Fora (lança erro ou é ignorado, nada usa hoje): `createPattern` (lança),
   gradiente, transform, clip, texto com raster falso, sombra, upload).
 - Medição no export do DDD 61: ver "Medição" abaixo.
 
-## Medição
+## Medição (export do DDD 61, PC, janela 1280×720, `--debug`, parado no spawn)
 
-(preenchida na validação do export — ver o fim desta spec)
+Sonda temporária (removida) somando o tempo dentro do contexto 2D e do `_flush`.
+
+| | execução imediata (1ª versão) | rasterização adiada + otimizações |
+|---|---|---|
+| canvas no boot | ~3,0 s (`fillText` 2,1 s) | ~1,25 s (gravação 0,16 s + rasterização no upload 1,1 s) |
+| canvas no gameplay | **2,3–2,8 s a cada 5 s** (~50% do tempo; radar a 30 Hz) | ~6–8 ms/s de gravação + ~50–100 ms/s de upload (painéis do metrô, 1×/s) |
+| fps (HUD/perf-trace) | 14,7 | **24,2** |
+| `update` médio / p99 | 64 / 463 ms | **4,6 / 6,4 ms** |
+| `world` | 23–28 ms | 11,2 ms |
+| `render` | 24–31 ms | 30,5 ms (host — ver `perf-nativo-teto-arquitetural`) |
+| `precompile` | 7,5 s | 6,9 s |
+
+O que resta do canvas no gameplay: os 8 painéis do metrô (760×170, grade de LED
++ texto com `shadowBlur`), repintados no mesmo quadro 1×/s — um pico de dezenas de
+ms nesse quadro. Próximo passo se incomodar: blur/blit em C++ (ADR novo) ou o
+jogo escalonar as repinturas.
+
+## Achados fora do canvas (validação do DDD 61)
+
+- **Lataria/cabine do carro somem no export**: o jogo cria o carro e o põe na
+  cena ANTES do `buildScene`, e só chama `setupVehicle` depois. No host, o
+  `buildScene` funde o estático (`mergeStaticScene`, SPEC-0120 — só no nativo) e
+  leva o carro junto (lataria, cabine, lanternas e rodas viram cenário parado no
+  spawn; o carro de verdade fica sem malha). Provado com sonda: tirando o nó
+  `carro-detetive-*` da fusão, os "fantasmas" somem. Correção (fora desta spec):
+  o jogo marcar o carro como dinâmico antes do `buildScene` (ex.:
+  `userData.cortexVehicle`) ou o engine adiar a fusão / reconhecer o veículo.
+- **Detetive invisível no export**: câmera no mesmo lugar do browser
+  (y = 4,3, pitch −20°), mas o boneco não aparece. Não investigado (fora do canvas).
+- **Radar/mapa não aparecem**: são `<canvas>` DOM (SPEC-0029 do jogo); o host não
+  compõe DOM. Agora existem e são desenháveis; mostrar exige um widget de canvas
+  na UI de runtime (decisão à parte).
+- `RigidBody.setEnabled` faltando no `rapier-compat` (ver acima) — a validação
+  usou um stub temporário NÃO commitado.
+- GLBs de vegetação do jogo são ponteiros Git LFS não baixados (o cook avisa
+  "version ht… is not valid JSON") — pré-existente.

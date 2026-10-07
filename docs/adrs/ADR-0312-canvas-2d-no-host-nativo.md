@@ -56,6 +56,32 @@ Regras que limitam a escolha: tem que rodar em TODAS as plataformas do host
   vão pra C++ portátil, mantendo a mesma API — decisão a registrar num ADR novo
   com os números (medição atual na SPEC-0313).
 
+### Rasterização adiada (acrescentado na validação, mesma série)
+
+A primeira medição no export (DDD 61, parado no spawn) mostrou o canvas
+comendo **~50% do tempo de parede no gameplay** (2,3–2,8 s a cada 5 s): o radar
+é redesenhado a 30 Hz (`clearRect` + `clip` + `drawImage` rotacionado dos
+ladrilhos do mapa + `stroke` + `fillText`) — e o radar é um `<canvas>` DOM que o
+host **nem mostra**. Alternativas: (a) otimizar os primitivos (ou levá-los pra
+C++) — o radar continuaria pagando por pixels que ninguém vê; (b) desligar
+canvas DOM no host — quebra a fidelidade (o jogo pode ler os pixels);
+(c) **adiar a rasterização até alguém LER os pixels**. Escolhido (c):
+
+- estado, transform e caminho rodam na hora (baratos, e o jogo pode lê-los);
+  operações de pixel entram numa fila com uma foto do estado;
+- a fila roda quando os pixels são lidos: upload pro three (`canvas.rgba`),
+  `getImageData`, ou `drawImage` usando o canvas como fonte (com cópia na
+  escrita do buffer da fonte, pra a leitura ver o conteúdo da hora da chamada);
+- limpar/pintar opaco o canvas inteiro descarta a fila anterior (memória
+  limitada num canvas que nunca é lido) + teto de 20 000 operações;
+- `clip()` guarda o caminho; a máscara só é calculada se alguém rasterizar.
+
+Junto: cache da máscara de texto, blit sem bilinear quando o transform é só
+translação, `fillRect` opaco alinhado ao pixel por `Uint32Array.fill`, e sombra
+restrita à caixa desenhada. **C++ não foi necessário**: depois disso o canvas
+custa <1% do quadro no gameplay; o que resta são os painéis do metrô (até 8
+repinturas de 760×170 com brilho, 1×/s). Números na SPEC-0313.
+
 ## Consequências
 
 - O jogo roda o mesmo código de pintura no browser e no host; nenhuma API
