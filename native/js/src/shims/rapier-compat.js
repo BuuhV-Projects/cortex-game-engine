@@ -174,6 +174,19 @@ Collider.prototype.parent = function () {
   return handle < 0 ? null : new RigidBody(this.__world, this.__scratch, handle);
 };
 
+/**
+ * Liga/desliga o corpo e todos os colliders dele (somem da simulação e do
+ * raycast). Mesma assinatura do browser: sem `wakeUp`. O DDD 61 desliga os
+ * troncos da mata por célula já no boot (SPEC-0314).
+ */
+RigidBody.prototype.setEnabled = function (enabled) {
+  __rapierNative.bodySet(this.__world, this.handle, 11, enabled ? 1 : 0, 0, 0, 0, 1);
+};
+RigidBody.prototype.isEnabled = function () {
+  __rapierNative.bodyGet(this.__world, this.handle, 7);
+  return this.__scratch[0] !== 0;
+};
+
 RigidBody.prototype.wakeUp = function () {
   __rapierNative.bodySet(this.__world, this.handle, 7, 0, 0, 0, 0, 1);
 };
