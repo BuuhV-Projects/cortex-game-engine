@@ -55,7 +55,8 @@ const TRUNK_RADIUS = 0.4;
  * então o raycast dela pode ficar LIGADO pro editor selecioná-la sem custo na física.
  * Sub-malhas de vegetação, gizmos do editor (a subárvore inteira), o que está
  * escondido (`visible = false`, salvo collider invisível declarado) e a decoração de
- * marcação ficam de fora (SPEC-0307).
+ * marcação ficam de fora (SPEC-0307). Subárvore escondida só é percorrida na 1ª vez
+ * (pra montar o BVH) — `prepared` guarda as raízes já preparadas (SPEC-0320).
  */
 function collectScene(
   roots: Object3D[],
@@ -63,6 +64,7 @@ function collectScene(
   solidMeshes: Object3D[],
   terrainMeshes: Object3D[],
   groundMeshes: Object3D[],
+  prepared: WeakSet<Object3D>,
 ): void {
   trunks.length = 0;
   solidMeshes.length = 0;
@@ -73,7 +75,10 @@ function collectScene(
       const ud = o.userData as Record<string, unknown>;
       if (hidden) {
         // escondido não colide, mas o BVH sai agora (carga), não no quadro em que o
-        // culling o mostrar — senão vira um pico no meio do jogo (SPEC-0307)
+        // culling o mostrar — senão vira um pico no meio do jogo (SPEC-0307).
+        // Já preparada: não desce de novo (a maior parte do mapa, SPEC-0320).
+        if (prepared.has(o)) return false;
+        prepared.add(o);
         if ((o as { isMesh?: boolean }).isMesh && !ud['cortexVegetationSub'] && !ud['cortexWater'] && !isSkinned(o)) ensureBoundsTree(o);
         return;
       }
@@ -164,6 +169,8 @@ export class CharacterPhysicsSystem extends System {
   private readonly solidIndex = new NearMeshIndex();
   /** ms desde a última varredura da cena (começa vencido: varre no 1º quadro). */
   private sinceCollect = Infinity;
+  /** Nós escondidos já preparados (BVH) — a varredura não desce neles de novo (SPEC-0320). */
+  private prepared = new WeakSet<Object3D>();
 
   /** @param roots Raízes da cena pra colisão de chão (raycast). Vazio = só `groundY`. */
   constructor(roots: Object3D[] = []) {
@@ -174,6 +181,7 @@ export class CharacterPhysicsSystem extends System {
   /** Força varrer a cena de novo no próximo quadro (muita coisa trocada de uma vez). */
   refresh(): void {
     this.sinceCollect = Infinity;
+    this.prepared = new WeakSet<Object3D>();
   }
 
   override update(entities: Entity[], deltaTime: number): void {
@@ -181,7 +189,7 @@ export class CharacterPhysicsSystem extends System {
     // A cada COLLECT_INTERVAL_MS: separa troncos (cilindro) / sólidos (parede) / terreno (anti-clip).
     this.sinceCollect += deltaTime;
     if (this.sinceCollect >= COLLECT_INTERVAL_MS) {
-      collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes, this.groundMeshes);
+      collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes, this.groundMeshes, this.prepared);
       this.groundIndex.rebuild(this.groundMeshes);
       this.terrainIndex.rebuild(this.terrainMeshes);
       this.solidIndex.rebuild(this.solidMeshes);

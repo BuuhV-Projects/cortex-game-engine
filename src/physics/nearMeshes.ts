@@ -47,12 +47,19 @@ export function worldSphere(o: Object3D, out: Sphere = tmp): Sphere | null {
  *   ancestral). Exceção: o objeto escondido que é ele mesmo `cortexSolid` (nó com
  *   `visible: false` + `collider` = parede/chão invisível declarado) não esconde.
  * Quem coleta alvo de colisão ignora `hidden`; quem só prepara (BVH) pode usá-lo.
+ * `visit` devolvendo `false` **não desce** nos filhos (SPEC-0320): dentro de uma
+ * subárvore escondida tudo é escondido, então quem não prepara nada ali corta a
+ * descida — a maior parte de um mapa grande está escondida (células fora do alcance).
  */
-export function traverseCollidable(o: Object3D, visit: (o: Object3D, hidden: boolean) => void, hidden = false): void {
+export function traverseCollidable(
+  o: Object3D,
+  visit: (o: Object3D, hidden: boolean) => boolean | void,
+  hidden = false,
+): void {
   const ud = o.userData as Record<string, unknown>;
   if (ud['editorInternal'] || ud['cortexNoCollide']) return;
   const h = hidden || (!o.visible && ud['cortexSolid'] !== true);
-  visit(o, h);
+  if (visit(o, h) === false) return;
   for (const c of o.children) traverseCollidable(c, visit, h);
 }
 
