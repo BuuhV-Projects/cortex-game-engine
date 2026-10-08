@@ -1,3 +1,32 @@
+# [0.76.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.75.3...v0.76.0) (2026-10-08)
+
+
+### Bug Fixes
+
+* **engine:** malha fundida herda cortexRoad — carro não cai pelo chão no export (SPEC-0316) ([513af5b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/513af5b677c4ffc701412d364a5bd6739850bb43))
+* **engine:** marcador userData.cortexDynamic e InstancedMesh fora da fusão estática (SPEC-0316) ([95c6a11](https://github.com/BuuhV-Projects/cortex-game-engine/commit/95c6a1170e6bb694495d382f19016340b7e99f50))
+* **native:** cache de máscaras de texto do canvas 2D vira LRU por bytes (SPEC-0320) ([0a1621b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0a1621b1b6c908b15a304d16c9abe8b3696ce9c7))
+* **native:** img com style e world.bodies no host — lacunas do boot do DDD 61 (SPEC-0313) ([7559e64](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7559e6412e3bfe1c813710c1552c281f8d0ee821))
+
+
+### Features
+
+* **engine:** widget <canvas> na UI de runtime — mostra o canvas 2D do host no nativo (ADR-0316, SPEC-0317) ([19d4005](https://github.com/BuuhV-Projects/cortex-game-engine/commit/19d400583cdce9a35e4b7aa808c26b4c26127108))
+* **native:** canvas 2D em software no host nativo (SPEC-0313, ADR-0312) ([70297af](https://github.com/BuuhV-Projects/cortex-game-engine/commit/70297af27f448f660df177b8f5d5b05b538a9944))
+* **native:** RigidBody.setEnabled/isEnabled no Rapier do host (SPEC-0314) ([f222e67](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f222e679712d85880997695d873e8b2ce86b20e1))
+* **native:** telemetria de texto vivo por origem no perf-log (SPEC-0320) ([8aec9b9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8aec9b95ff4147127bc7ed967f1c0643da91a2ce))
+
+
+### Performance Improvements
+
+* **engine:** colisão do personagem barata em mapa grande — BVH em malha espalhada e varredura sem as escondidas (SPEC-0320) ([9ef79a2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9ef79a2df0049660a58a51515eb5bb25a3030447))
+* **engine:** espelho de cena sincroniza só os nós que mudaram (SPEC-0322) ([3e43e4d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3e43e4d312d095bbe9c417d5bbcd4996c8886a50))
+* **engine:** gancho do espelho ignora escrita do mesmo valor (SPEC-0322) ([2b2b30b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2b2b30babbc56e3cdcb7a5905e16db556e020088))
+* **native:** laço do drawImage do canvas 2D em C++ portátil via N-API, pixel idêntico ao JS (ADR-0318, SPEC-0319) ([97035e8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/97035e8c86e3fb49fefe770b8a89e5222aa70f7a))
+* **native:** laço quente do drawImage sem tinta lê/escreve uint32 e pula pixel fora do clip (SPEC-0317) ([5e2f274](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5e2f274a4afcfa542433aee4988e0ac435ee8fbb))
+* **native:** máscara de clip repetida reaproveitada e pixel transparente pulado no drawImage; medição do radar/mapa no export (SPEC-0317) ([a56ea63](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a56ea63b8189f51a61746a9bba6e66f06abac3e7))
+* **native:** rasterização adiada do canvas 2D até ler os pixels (ADR-0312, SPEC-0313) ([19ab437](https://github.com/BuuhV-Projects/cortex-game-engine/commit/19ab43707e66f5f5538f8f5cd3efd1f7e10524b8))
+
 ## [0.75.3](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.75.2...v0.75.3) (2026-10-07)
 
 
