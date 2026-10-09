@@ -1,7 +1,7 @@
 # 0235 - O teto de 17% da submissão é estrutural
 
 **Data:** 2026-09-20
-**Status:** aceito
+**Status:** substituído por ADR-0330 (2026-10-09 — o passe principal sai do laço do `three` no host)
 
 ## Contexto
 

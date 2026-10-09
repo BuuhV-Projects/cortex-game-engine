@@ -543,6 +543,11 @@ napi_value jsSetInstances(napi_env env, napi_callback_info info) {
 
 }  // namespace
 
+scene::SceneMirror* builtSceneMirror() {
+  MirrorState& s = state();
+  return s.built ? &s.mirror : nullptr;
+}
+
 void registerSceneMirror(napi_env env, HostGpu* gpu) {
   g_gpu = gpu;
   napi_value global = nullptr;

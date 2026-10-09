@@ -21,6 +21,13 @@ import {
   SWEEP_MIN_NODES,
 } from '../../src/core/NativeSceneMirror.js';
 import { SHADOW_AUTHORED_KEY } from '../../src/scene/ShadowCasterCulling.js';
+import {
+  NODE_MAIN_FRUSTUM_CULLED,
+  NODE_MAIN_UNSUPPORTED,
+  SYNC_FRUSTUM_CULLED,
+  SYNC_MAIN_UNSUPPORTED,
+  mainPassFrameFlags,
+} from '../../src/render/MainPassKind.js';
 
 /** Layout de construção — tem de acompanhar `scene_mirror_shim.cpp`. */
 const FLOATS_POR_NO = 21;
@@ -82,7 +89,10 @@ function instalarPonteFalsa(nodeCapacity: number) {
       const flags =
         (descricao[b + CAMPO_VISIVEL] ? SYNC_VISIVEL : 0) |
         (descricao[b + CAMPO_MATERIAL_VISIVEL] ? SYNC_MATERIAL_VISIVEL : 0) |
-        (descricao[b + CAMPO_LADO_DA_SOMBRA]! << SYNC_LADO_SHIFT);
+        (descricao[b + CAMPO_LADO_DA_SOMBRA]! << SYNC_LADO_SHIFT) |
+        // Estado inicial do passe principal, como o `initialMainFrameFlags` do C++.
+        (descricao[b + CAMPO_FLAGS]! & NODE_MAIN_FRUSTUM_CULLED ? SYNC_FRUSTUM_CULLED : 0) |
+        (descricao[b + CAMPO_FLAGS]! & NODE_MAIN_UNSUPPORTED ? SYNC_MAIN_UNSUPPORTED : 0);
       host.set(indice(i), [...Array.from(descricao.subarray(b + 1, b + 11)), flags]);
     }
   };
@@ -964,7 +974,8 @@ describe('NativeSceneMirror sincroniza só o que mudou (SPEC-0322)', () => {
     const flags =
       (o.visible ? SYNC_VISIVEL : 0) |
       (m && m.visible ? SYNC_MATERIAL_VISIVEL : 0) |
-      (ladoEsperado(o) << SYNC_LADO_SHIFT);
+      (ladoEsperado(o) << SYNC_LADO_SHIFT) |
+      mainPassFrameFlags(o);
     const p = o.position;
     const q = o.quaternion;
     const s = o.scale;
@@ -1163,6 +1174,89 @@ describe('NativeSceneMirror sincroniza só o que mudou (SPEC-0322)', () => {
     expect(espelho.syncedNodes).toBe(0);
     expect(espelho.takeAverageSyncedNodes()).toBeGreaterThan(0);
     expect(espelho.takeAverageSyncedNodes()).toBe(0);
+  });
+});
+
+describe('NativeSceneMirror e o passe principal (SPEC-0332)', () => {
+  afterEach(() => {
+    delete (globalThis as Record<string, unknown>)['__cortexSceneMirror'];
+    delete (globalThis as Record<string, unknown>)['__cortexMainPass'];
+  });
+
+  it('visible chega ao host no MESMO quadro, sem esperar a varredura', () => {
+    const { host } = instalarPonteFalsa(64);
+    const raiz = new Object3D();
+    const nos: Mesh[] = [];
+    for (let i = 0; i < 40; i++) {
+      const m = malha();
+      nos.push(m);
+      raiz.add(m);
+    }
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    const camera = new PerspectiveCamera();
+    espelho.update(camera);
+    expect(espelho.syncedNodes).toBe(0);
+    nos[39]!.visible = false;
+    espelho.update(camera);
+    expect(espelho.syncedNodes).toBe(1);
+    expect(flagsNoHost(host, 40) & SYNC_VISIVEL).toBe(0);
+    // Escrever o mesmo valor não suja.
+    nos[39]!.visible = false;
+    espelho.update(camera);
+    expect(espelho.syncedNodes).toBe(0);
+  });
+
+  it('syncPending manda a escrita feita depois do update', () => {
+    const { chamadas } = instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    const m = malha();
+    raiz.add(m);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    espelho.update(new PerspectiveCamera());
+    const antes = chamadas.update;
+    espelho.syncPending();
+    expect(chamadas.update).toBe(antes); // nada sujo: nenhuma travessia
+    m.position.x = 3;
+    espelho.syncPending();
+    expect(chamadas.update).toBe(antes + 1);
+    expect(chamadas.ultimoChanged).toBe(1);
+  });
+
+  it('troca de geometria manda a esfera nova pela varredura', () => {
+    instalarPonteFalsa(8);
+    const bounds: number[][] = [];
+    (globalThis as Record<string, unknown>)['__cortexMainPass'] = {
+      project: () => 0,
+      setBounds: (i: number, x: number, y: number, z: number, r: number) => bounds.push([i, x, y, z, r]),
+    };
+    const raiz = new Object3D();
+    const m = malha();
+    raiz.add(m);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    const camera = new PerspectiveCamera();
+    espelho.update(camera);
+    expect(bounds).toEqual([]);
+    m.geometry = new BoxGeometry(10, 10, 10);
+    espelho.update(camera);
+    expect(bounds.length).toBe(1);
+    expect(bounds[0]![0]).toBe(1);
+    expect(bounds[0]![4]).toBeCloseTo(Math.sqrt(75));
+  });
+
+  it('removeSubtree devolve o visible como propriedade comum', () => {
+    instalarPonteFalsa(8);
+    const raiz = new Object3D();
+    const m = malha();
+    raiz.add(m);
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    m.visible = false;
+    raiz.remove(m);
+    expect(Object.getOwnPropertyDescriptor(m, 'visible')?.get).toBeUndefined();
+    expect(m.visible).toBe(false);
   });
 });
 

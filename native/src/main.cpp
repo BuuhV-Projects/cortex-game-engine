@@ -30,6 +30,7 @@
 #include "shims/perf_arraybuffer.h"
 #include "shims/clock.h"
 #include "shims/scene_mirror_shim.h"
+#include "shims/main_pass_shim.h"
 #include "shims/geometry_registry_shim.h"
 #include "shims/perf_stats.h"
 #include "shims/perf_trace.h"
@@ -274,6 +275,7 @@ int main(int argc, char** argv) {
     shims::registerKtx2(js.env());
     shims::registerClock(js.env());  // SPEC-0226
     shims::registerSceneMirror(js.env(), &gpu);  // SPEC-0234 (+ passe de sombra, SPEC-0245)
+    shims::registerMainPass(js.env());  // projeção do passe principal (SPEC-0332)
     shims::registerGeometryRegistry(js.env());  // geometria dos casters (SPEC-0245, E2)
     shims::registerPerfStats(js.env());
     shims::registerQuit(js.env());

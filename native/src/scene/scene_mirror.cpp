@@ -42,6 +42,14 @@ void multiply(double* out, const double* a, const double* b) {
   }
 }
 
+/** Estado inicial do passe principal, derivado das flags de autoria (SPEC-0332). */
+uint8_t initialMainFrameFlags(uint16_t flags) {
+  uint8_t out = 0;
+  if ((flags & kNodeMainFrustumCulled) != 0) out |= kMainFrustumCulled;
+  if ((flags & kNodeMainUnsupported) != 0) out |= kMainUnsupported;
+  return out;
+}
+
 /** Esfera (centro + raio) contra os 6 planos. */
 bool insideFrustum(const float* planes, double x, double y, double z, float radius) {
   for (int i = 0; i < kFrustumPlanes; i++) {
@@ -67,6 +75,7 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes, size_t spareNodes) {
   materialVisibleFlags_.reserve(capacity_);
   shadowSides_.reserve(capacity_);
   flags_.reserve(capacity_);
+  mainFrameFlags_.reserve(capacity_);
   geometryIds_.reserve(capacity_);
   bounds_.reserve(capacity_);
   removed_.reserve(capacity_);
@@ -84,6 +93,7 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes, size_t spareNodes) {
   materialVisibleFlags_.resize(count);
   shadowSides_.resize(count);
   flags_.resize(count);
+  mainFrameFlags_.resize(count);
   geometryIds_.resize(count);
   bounds_.resize(count);
   local_.assign(count * kMatrixFloats, 0.0);
@@ -107,6 +117,7 @@ bool SceneMirror::build(const std::vector<NodeDesc>& nodes, size_t spareNodes) {
     materialVisibleFlags_[i] = node.materialVisible ? 1 : 0;
     shadowSides_[i] = node.shadowSide;
     flags_[i] = node.flags;
+    mainFrameFlags_[i] = initialMainFrameFlags(node.flags);
     geometryIds_[i] = node.geometryId;
     bounds_[i] = node.bounds;
   }
@@ -139,6 +150,7 @@ NodeIndex SceneMirror::takeSlot(NodeIndex parent) {
   materialVisibleFlags_.push_back(0);
   shadowSides_.push_back(kShadowSideBack);
   flags_.push_back(0);
+  mainFrameFlags_.push_back(0);
   geometryIds_.push_back(kNoGeometry);
   bounds_.emplace_back();
   removed_.push_back(1);
@@ -163,6 +175,7 @@ void SceneMirror::writeNode(NodeIndex index, const NodeDesc& node, NodeIndex par
   materialVisibleFlags_[i] = node.materialVisible ? 1 : 0;
   shadowSides_[i] = node.shadowSide;
   flags_[i] = node.flags;
+  mainFrameFlags_[i] = initialMainFrameFlags(node.flags);
   geometryIds_[i] = node.geometryId;
   bounds_[i] = node.bounds;
   removed_[i] = 0;
@@ -253,6 +266,7 @@ int32_t SceneMirror::removeSubtree(NodeIndex root) {
     materialVisibleFlags_[i] = 0;
     shadowSides_[i] = kShadowSideBack;
     flags_[i] = 0;
+    mainFrameFlags_[i] = 0;
     radii_[i] = 0.0f;
     geometryIds_[i] = kNoGeometry;
     bounds_[i] = Bounds{};
@@ -302,8 +316,19 @@ void SceneMirror::applyTransforms(const double* buffer, size_t valueCount) {
     // mesmo tipo nesta serie.
     shadowSides_[index] =
         static_cast<uint8_t>((frameFlags >> kSyncShadowSideShift) & kSyncShadowSideMask);
+    // Passe principal (SPEC-0332): `frustumCulled` e a recusa por tipo/ordem.
+    uint8_t main = 0;
+    if ((frameFlags & kSyncFrustumCulled) != 0) main |= kMainFrustumCulled;
+    if ((frameFlags & kSyncMainUnsupported) != 0) main |= kMainUnsupported;
+    mainFrameFlags_[index] = main;
     dirty_[index] = 1;
   }
+}
+
+void SceneMirror::setBounds(NodeIndex index, const Bounds& bounds) {
+  if (index < 0 || static_cast<size_t>(index) >= bounds_.size()) return;
+  if (removed_[static_cast<size_t>(index)] != 0) return;
+  bounds_[static_cast<size_t>(index)] = bounds;
 }
 
 int SceneMirror::updateAndCull(const float* viewProj, const float* planes) {

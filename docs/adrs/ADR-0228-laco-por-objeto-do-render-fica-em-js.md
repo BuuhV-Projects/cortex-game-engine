@@ -1,7 +1,7 @@
 # 0228 - O laço por objeto do render fica em JS
 
 **Data:** 2026-09-20
-**Status:** aceito
+**Status:** substituído por ADR-0330 (2026-10-09 — a cena passou a morar em C++, condição de reabertura deste ADR)
 
 ## Contexto
 

@@ -1,7 +1,7 @@
 # 0237 - Plano do render nativo completo (fase 4)
 
 **Data:** 2026-09-21
-**Status:** parcialmente substituído por ADR-0244 (a ordem e o alvo de M5 e M6)
+**Status:** parcialmente substituído por ADR-0244 (a ordem e o alvo de M5 e M6); **M5–M8 reabertos pelo ADR-0330** (2026-10-09)
 
 ## Contexto
 

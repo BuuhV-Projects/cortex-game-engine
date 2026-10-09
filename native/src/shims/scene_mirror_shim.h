@@ -13,7 +13,17 @@
 
 struct HostGpu;
 
+namespace scene {
+class SceneMirror;
+}
+
 namespace shims {
+
+/**
+ * O espelho do processo, ou `nullptr` antes do `build` (SPEC-0332). É a porta
+ * para outros shims (o passe principal) lerem a cena sem uma ponte nova.
+ */
+scene::SceneMirror* builtSceneMirror();
 
 // Registra __cortexSceneMirror no global.
 //
