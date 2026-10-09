@@ -11,9 +11,11 @@ import { InstancedMesh, Matrix4, Mesh, Sphere, type Intersection, type Raycaster
 const SPHERE_SLACK = 1e-6;
 /** Floats por instância no cache: centro x, y, z e raio. */
 const STRIDE = 4;
+/** Floats por instância em `SphereCache.spheres` (pra quem lê o cache de fora). */
+export const INSTANCE_SPHERE_STRIDE = STRIDE;
 const MATRIX_SIZE = 16;
 
-interface SphereCache {
+export interface SphereCache {
   version: number;
   count: number;
   world: Float64Array;
@@ -47,8 +49,11 @@ export function rayMayHitSphere(
   return dx * dx + dy * dy + dz * dz - t * t <= rr * rr; // distância da reta ao centro
 }
 
-/** Esferas das instâncias no mundo, refeitas só quando algo que as define mudou. */
-function spheresOf(mesh: InstancedMesh): SphereCache {
+/**
+ * Esferas das instâncias no mundo (`spheres` = x, y, z, raio por instância), refeitas só
+ * quando algo que as define mudou. Também usada pelo `touchingBox` (SPEC-0328).
+ */
+export function spheresOf(mesh: InstancedMesh): SphereCache {
   const geo = mesh.geometry;
   if (!geo.boundingSphere) geo.computeBoundingSphere();
   const base = geo.boundingSphere;
