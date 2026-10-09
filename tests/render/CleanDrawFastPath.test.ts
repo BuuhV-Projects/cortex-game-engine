@@ -267,3 +267,79 @@ describe('installCleanDrawFastPath', () => {
     expect(handle.stats.ineligible).toBe(1);
   });
 });
+
+describe('installCleanDrawFastPath com lote em C++ (b.2)', () => {
+  it('a ordem na tela é a da RenderList: o lote despacha antes de cada desenho do three', () => {
+    const eventos: string[] = [];
+    const dados = new Map<unknown, Record<string, unknown>>();
+    const get = (o: unknown) => {
+      let d = dados.get(o);
+      if (!d) dados.set(o, (d = {}));
+      return d;
+    };
+    const contexto = {};
+    get(contexto)['currentPass'] = 'PASS';
+    let id = 0;
+    const ponte = {
+      record: () => id++,
+      release: () => undefined,
+      flush: (_p: unknown, c: Int32Array, n: number) => {
+        eventos.push(`lote(${Array.from({ length: n }, (_, i) => c[i * 4]).join(',')})`);
+        return n;
+      },
+    };
+    const fazer = (nome: string) => {
+      const nodes = [no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['color'], material: null })];
+      const f = roFalso(nodes, materialFalso());
+      const r = f.ro as unknown as Record<string, unknown>;
+      r['context'] = contexto;
+      r['pipeline'] = { nome };
+      get(r['pipeline'])['pipeline'] = `P-${nome}`;
+      r['getBindings'] = () => [];
+      r['getVertexBuffers'] = () => [];
+      r['getIndex'] = () => null;
+      r['getIndirect'] = () => null;
+      r['getDrawParameters'] = () => ({ vertexCount: 3, firstVertex: 0, instanceCount: 1 });
+      return { ...f, nome };
+    };
+    const a = fazer('a');
+    const b = fazer('b');
+    const c = fazer('c');
+    let atual = a;
+    const renderer: CleanDrawRendererLike = {
+      _nodes: {
+        updateBefore: () => undefined,
+        getNodeFrameForRender: () => ({ renderId: 1, updateNode: () => undefined }),
+        getCacheKey: () => 'amb',
+      },
+      _bindings: { _update: () => undefined },
+      _pipelines: { isReady: () => true },
+      backend: {
+        draw: () => void eventos.push(`three(${atual.nome})`),
+        get,
+        pipelineUtils: { _activePipelines: new Map() },
+        beginRender: () => undefined,
+        finishRender: () => void eventos.push('fim'),
+      },
+      _currentRenderContext: contexto,
+      _currentRenderBundle: null,
+      info: { calls: 1, update: () => undefined } as never,
+      contextNode: { version: 0 },
+      _renderObjectDirect(this: CleanDrawRendererLike) {
+        this.backend!.draw!(atual.ro, null);
+      },
+    };
+    installCleanDrawFastPath(renderer, ponte);
+    const desenhar = (x: typeof a) => {
+      atual = x;
+      renderer._renderObjectDirect!(x.object, x.material, 'cena', 'cam', 'luzes', null, null, null);
+    };
+    for (const x of [a, b, c]) desenhar(x); // 1º quadro: three grava os três
+    eventos.length = 0;
+    (b.material['color'] as Color).setRGB(0, 0, 1); // b mudou: three no meio
+    for (const x of [a, b, c]) desenhar(x);
+    renderer.backend!.finishRender!();
+    // a no lote; b muda: o lote sai ANTES do three; c no lote; fim de passe despacha.
+    expect(eventos).toEqual(['lote(0)', 'three(b)', 'lote(2)', 'fim']);
+  });
+});
