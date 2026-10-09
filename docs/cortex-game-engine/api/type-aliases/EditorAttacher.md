@@ -8,7 +8,7 @@
 
 > **EditorAttacher** = (`game`) => [`GameEditor`](../interfaces/GameEditor.md)
 
-Defined in: [src/core/Game.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L70)
+Defined in: [src/core/Game.ts:79](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Game.ts#L79)
 
 Função que liga o editor a um [Game](../classes/Game.md). Registrada pelo bundle de dev.
 

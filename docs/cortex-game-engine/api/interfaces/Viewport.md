@@ -6,7 +6,7 @@
 
 # Interface: Viewport
 
-Defined in: [src/core/Renderer.ts:63](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L63)
+Defined in: [src/core/Renderer.ts:74](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L74)
 
 Retângulo de viewport em pixels (origem no canto inferior-esquerdo do
 canvas, seguindo a convenção do WebGL).
@@ -17,7 +17,7 @@ canvas, seguindo a convenção do WebGL).
 
 > **height**: `number`
 
-Defined in: [src/core/Renderer.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L71)
+Defined in: [src/core/Renderer.ts:82](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L82)
 
 Altura em pixels.
 
@@ -27,7 +27,7 @@ Altura em pixels.
 
 > **width**: `number`
 
-Defined in: [src/core/Renderer.ts:69](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L69)
+Defined in: [src/core/Renderer.ts:80](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L80)
 
 Largura em pixels.
 
@@ -37,7 +37,7 @@ Largura em pixels.
 
 > **x**: `number`
 
-Defined in: [src/core/Renderer.ts:65](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L65)
+Defined in: [src/core/Renderer.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L76)
 
 Coordenada X do canto inferior-esquerdo, em pixels.
 
@@ -47,6 +47,6 @@ Coordenada X do canto inferior-esquerdo, em pixels.
 
 > **y**: `number`
 
-Defined in: [src/core/Renderer.ts:67](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L67)
+Defined in: [src/core/Renderer.ts:78](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/Renderer.ts#L78)
 
 Coordenada Y do canto inferior-esquerdo, em pixels.
