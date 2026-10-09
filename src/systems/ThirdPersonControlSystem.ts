@@ -10,7 +10,7 @@ import type { InputActions } from '../input/InputActions.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { deriveLocomotion, autoMapPlayerClips } from './PlatformerAnimationSystem.js';
 import { isSkinned } from '../physics/raycastAccel.js';
-import { NearMeshIndex, traverseCollidable } from '../physics/nearMeshes.js';
+import { NearMeshIndex, firstHit, traverseCollidable } from '../physics/nearMeshes.js';
 import { COLLECT_INTERVAL_MS } from './CharacterPhysicsSystem.js';
 
 /** Opções do {@link ThirdPersonControlSystem} (porta o ThirdPersonController do Unity StarterAssets). */
@@ -177,10 +177,10 @@ export class ThirdPersonControlSystem extends System {
   /** Handler do `mousedown` no canvas — guardado pra remover no {@link dispose}. */
   private onCanvasMouseDown?: () => void;
   private readonly lookTarget = new THREE.Vector3();
-  private readonly camRay = new THREE.Raycaster();
+  /** Só o acerto mais próximo de cada malha interessa: a árvore BVH para no 1º triângulo (SPEC-0328). */
+  private readonly camRay = Object.assign(new THREE.Raycaster(), { firstHitOnly: true });
   private readonly camBack = new THREE.Vector3();
   private readonly camTargets: THREE.Object3D[] = []; // alvos do spring arm (sem skinned/self)
-  private readonly camNear: THREE.Object3D[] = []; // os alvos ao alcance da câmera neste quadro
   private readonly camIndex = new NearMeshIndex();
   private readonly lowOrigin = new THREE.Vector3();
   /** ms desde a última varredura da cena pros alvos (começa vencido; SPEC-0302). */
@@ -432,17 +432,16 @@ export class ThirdPersonControlSystem extends System {
         this.sinceCamCollect = 0;
         this.camSelf = self;
       }
-      // só o que o braço da câmera alcança (cabeça e peito ficam a < camHeight do alvo)
-      const near = this.camIndex.near(this.lookTarget, this.camDist + this.camHeight, this.camNear);
+      // só o que cada raio cruza, mais perto primeiro (SPEC-0328)
       this.camRay.far = this.camDist;
       this.camRay.set(this.lookTarget, this.camBack);
-      const h = this.camRay.intersectObjects(near, false)[0];
+      const h = firstHit(this.camRay, this.camIndex);
       if (h) dist = Math.max(h.distance - CAM_SKIN, CAM_MIN_DIST); // 1ª superfície bloqueante
       // 2º raio, paralelo, do peito: pega parede baixa que o da cabeça passa por cima
       this.lowOrigin.copy(this.lookTarget);
       this.lowOrigin.y -= this.camHeight * (1 - CAM_LOW_RAY_FRACTION);
       this.camRay.set(this.lowOrigin, this.camBack);
-      const low = this.camRay.intersectObjects(near, false)[0];
+      const low = firstHit(this.camRay, this.camIndex);
       if (low) dist = Math.min(dist, Math.max(low.distance - CAM_SKIN, CAM_MIN_DIST));
     }
 

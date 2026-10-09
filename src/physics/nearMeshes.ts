@@ -1,4 +1,5 @@
-import { Box3, Matrix4, Sphere, type Object3D, type Vector3 } from 'three';
+import { Box3, Matrix4, Sphere, type Intersection, type Object3D, type Ray, type Raycaster } from 'three';
+import { rayMayHitSphere } from './instancedRaycast.js';
 
 /**
  * Filtro barato "só o que está perto" pros raycasts de colisão (SPEC-0302): em vez
@@ -93,6 +94,15 @@ interface WithBox {
 
 const tmpBox = new Box3();
 
+/** Lado (m) da célula da grade XZ do índice (SPEC-0328). */
+export const GRID_CELL = 8;
+/** Malha cuja caixa cobre mais células que isto fica na lista "larga" (testada sempre). */
+const MAX_CELLS_PER_MESH = 16;
+/** Consulta que cobre mais células que isto varre a lista inteira (mais barato que a grade). */
+const MAX_QUERY_CELLS = 64;
+/** Chave da célula: `ix * GRID_KEY_SPAN + iz` (|iz| < metade do vão: ~260 km com células de 8 m). */
+const GRID_KEY_SPAN = 65536;
+
 /** Caixa alinhada aos eixos de `o` em mundo, ou `null` se não tiver geometria (SPEC-0323). */
 export function worldBox(o: Object3D, out: Box3 = tmpBox): Box3 | null {
   const m = o as unknown as WithBox;
@@ -117,6 +127,14 @@ export class NearMeshIndex {
   private data = new Float32Array(0);
   /** Esfera e caixa em mundo de cada malha na varredura anterior (SPEC-0323). */
   private previous = new WeakMap<Object3D, Float32Array>();
+  /** Grade XZ (SPEC-0328): célula → índices das malhas cuja caixa (com folga) a toca. */
+  private readonly cells = new Map<number, number[]>();
+  /** Malhas grandes demais pra grade (rua, célula fundida, sem geometria): entram em toda consulta. */
+  private readonly wide: number[] = [];
+  /** Índices da consulta atual e a marca de "já pego" por malha (sem repetir quem está em 2 células). */
+  private readonly picked: number[] = [];
+  private stamp = new Uint32Array(0);
+  private query = 0;
 
   /**
    * Recalcula esferas e caixas (a caixa só de quem se mexeu: a da parada vem guardada —
@@ -181,6 +199,81 @@ export class NearMeshIndex {
       d[k + BOX + 4] = prev[BOX + 4]! + margin;
       d[k + BOX + 5] = prev[BOX + 5]! + margin;
     }
+    this.buildGrid();
+  }
+
+  /** Distribui as malhas nas células da grade pela caixa (com folga) — SPEC-0328. */
+  private buildGrid(): void {
+    for (const [key, list] of this.cells) {
+      if (list.length === 0) this.cells.delete(key); // vazia desde a anterior: some (o mapa não cresce sem fim)
+      else list.length = 0;
+    }
+    this.wide.length = 0;
+    if (this.stamp.length < this.meshes.length) this.stamp = new Uint32Array(this.meshes.length);
+    const d = this.data;
+    for (let i = 0; i < this.meshes.length; i++) {
+      const b = i * STRIDE + BOX;
+      const ix0 = Math.floor(d[b]! / GRID_CELL);
+      const iz0 = Math.floor(d[b + 2]! / GRID_CELL);
+      const ix1 = Math.floor(d[b + 3]! / GRID_CELL);
+      const iz1 = Math.floor(d[b + 5]! / GRID_CELL);
+      const n = (ix1 - ix0 + 1) * (iz1 - iz0 + 1);
+      if (!(n <= MAX_CELLS_PER_MESH)) {
+        this.wide.push(i); // também pega NaN/Infinity (sem geometria)
+        continue;
+      }
+      for (let ix = ix0; ix <= ix1; ix++) {
+        for (let iz = iz0; iz <= iz1; iz++) {
+          const key = ix * GRID_KEY_SPAN + iz;
+          let list = this.cells.get(key);
+          if (!list) this.cells.set(key, (list = []));
+          list.push(i);
+        }
+      }
+    }
+  }
+
+  /**
+   * Índices (crescentes, sem repetição) das malhas nas células que o retângulo XZ toca,
+   * mais as largas; `null` = retângulo grande/infinito, varra todas (SPEC-0328).
+   */
+  private gather(minX: number, minZ: number, maxX: number, maxZ: number): number[] | null {
+    const ix0 = Math.floor(minX / GRID_CELL);
+    const iz0 = Math.floor(minZ / GRID_CELL);
+    const ix1 = Math.floor(maxX / GRID_CELL);
+    const iz1 = Math.floor(maxZ / GRID_CELL);
+    if (!((ix1 - ix0 + 1) * (iz1 - iz0 + 1) <= MAX_QUERY_CELLS)) return null;
+    const out = this.picked;
+    out.length = 0;
+    const stamp = this.stamp;
+    const q = ++this.query;
+    for (let j = 0; j < this.wide.length; j++) {
+      stamp[this.wide[j]!] = q;
+      out.push(this.wide[j]!);
+    }
+    for (let ix = ix0; ix <= ix1; ix++) {
+      for (let iz = iz0; iz <= iz1; iz++) {
+        const list = this.cells.get(ix * GRID_KEY_SPAN + iz);
+        if (!list) continue;
+        for (let j = 0; j < list.length; j++) {
+          const i = list[j]!;
+          if (stamp[i] === q) continue;
+          stamp[i] = q;
+          out.push(i);
+        }
+      }
+    }
+    // ordem da lista original: desempate igual ao da varredura linear
+    for (let a = 1; a < out.length; a++) {
+      const v = out[a]!;
+      let c = a;
+      while (c > 0 && out[c - 1]! > v) {
+        out[c] = out[c - 1]!;
+        c--;
+      }
+      out[c] = v;
+    }
+    return out;
   }
 
   /**
@@ -191,7 +284,10 @@ export class NearMeshIndex {
   nearXZ(x: number, z: number, reach: number, out: Object3D[], minY = -Infinity, maxY = Infinity): Object3D[] {
     out.length = 0;
     const d = this.data;
-    for (let i = 0; i < this.meshes.length; i++) {
+    const list = this.gather(x - reach, z - reach, x + reach, z + reach);
+    const n = list ? list.length : this.meshes.length;
+    for (let q = 0; q < n; q++) {
+      const i = list ? list[q]! : q;
       const k = i * STRIDE;
       const b = k + BOX;
       if (d[b + 1]! > maxY || d[b + 4]! < minY) continue;
@@ -204,21 +300,70 @@ export class NearMeshIndex {
     return out;
   }
 
-  /** As que alcançam o ponto `p` (3D) até `reach` — o braço da câmera. */
-  near(p: Vector3, reach: number, out: Object3D[]): Object3D[] {
+  /**
+   * As que o SEGMENTO do raio cruza (SPEC-0328): caixa em mundo (com a folga) por slab
+   * e esfera. Grava em `entry[i]` a distância em que o raio entra na caixa de `out[i]`
+   * e devolve as duas listas ORDENADAS por ela (mais perto primeiro). Conservador: todo
+   * acerto possível entre `near` e `far` está nas candidatas, e acontece a uma distância
+   * >= a entrada da caixa dela. `ray.direction` tem que ser unitária (como no Raycaster).
+   */
+  alongRay(ray: Ray, near: number, far: number, out: Object3D[], entry: number[]): Object3D[] {
     out.length = 0;
+    entry.length = 0;
     const d = this.data;
-    for (let i = 0; i < this.meshes.length; i++) {
+    const o = ray.origin;
+    const v = ray.direction;
+    // retângulo XZ do segmento (direção 0 no eixo: fica na origem, mesmo com `far` infinito)
+    const ex = v.x === 0 ? o.x : o.x + v.x * far;
+    const ez = v.z === 0 ? o.z : o.z + v.z * far;
+    const list = this.gather(Math.min(o.x, ex), Math.min(o.z, ez), Math.max(o.x, ex), Math.max(o.z, ez));
+    const n = list ? list.length : this.meshes.length;
+    for (let q = 0; q < n; q++) {
+      const i = list ? list[q]! : q;
       const k = i * STRIDE;
       const b = k + BOX;
-      if (d[b]! > p.x + reach || d[b + 3]! < p.x - reach) continue;
-      if (d[b + 1]! > p.y + reach || d[b + 4]! < p.y - reach) continue;
-      if (d[b + 2]! > p.z + reach || d[b + 5]! < p.z - reach) continue;
-      const r = d[k + 3]! + reach;
-      const dx = d[k]! - p.x;
-      const dy = d[k + 1]! - p.y;
-      const dz = d[k + 2]! - p.z;
-      if (dx * dx + dy * dy + dz * dz <= r * r) out.push(this.meshes[i]!);
+      let t0 = near;
+      let t1 = far;
+      // slab por eixo; direção 0 = só confere se a origem está dentro da faixa
+      if (v.x === 0) {
+        if (o.x < d[b]! || o.x > d[b + 3]!) continue;
+      } else {
+        const ta = (d[b]! - o.x) / v.x;
+        const tb = (d[b + 3]! - o.x) / v.x;
+        t0 = Math.max(t0, Math.min(ta, tb));
+        t1 = Math.min(t1, Math.max(ta, tb));
+        if (t0 > t1) continue;
+      }
+      if (v.y === 0) {
+        if (o.y < d[b + 1]! || o.y > d[b + 4]!) continue;
+      } else {
+        const ta = (d[b + 1]! - o.y) / v.y;
+        const tb = (d[b + 4]! - o.y) / v.y;
+        t0 = Math.max(t0, Math.min(ta, tb));
+        t1 = Math.min(t1, Math.max(ta, tb));
+        if (t0 > t1) continue;
+      }
+      if (v.z === 0) {
+        if (o.z < d[b + 2]! || o.z > d[b + 5]!) continue;
+      } else {
+        const ta = (d[b + 2]! - o.z) / v.z;
+        const tb = (d[b + 5]! - o.z) / v.z;
+        t0 = Math.max(t0, Math.min(ta, tb));
+        t1 = Math.min(t1, Math.max(ta, tb));
+        if (t0 > t1) continue;
+      }
+      if (!rayMayHitSphere(o, v, far, d[k]!, d[k + 1]!, d[k + 2]!, d[k + 3]!)) continue;
+      // inserção ordenada: a lista é curta (o que o raio cruza)
+      let j = out.length;
+      out.push(this.meshes[i]!);
+      entry.push(t0);
+      while (j > 0 && entry[j - 1]! > t0) {
+        out[j] = out[j - 1]!;
+        entry[j] = entry[j - 1]!;
+        j--;
+      }
+      out[j] = this.meshes[i]!;
+      entry[j] = t0;
     }
     return out;
   }
@@ -253,4 +398,38 @@ export function touchingBox(meshes: readonly Object3D[], box: Box3, out: Object3
     out.push(meshes[i]!);
   }
   return out;
+}
+
+const _alongCand: Object3D[] = [];
+const _alongEntry: number[] = [];
+const _meshHits: Intersection[] = [];
+
+/**
+ * O acerto mais próximo do `raycaster` entre as malhas de `index` (SPEC-0328) — mesmo
+ * resultado que `intersectObjects(lista, false)` filtrado por `skip` e lido no 1º, mas
+ * só testa o que o raio cruza, mais perto primeiro, e para quando a próxima malha entra
+ * além do melhor acerto. Respeita `layers` (como o `intersectObjects`). Ligue
+ * `raycaster.firstHitOnly` pra árvore BVH parar no 1º triângulo.
+ * @param skip Descarta o acerto (ex.: o próprio personagem).
+ */
+export function firstHit(
+  raycaster: Raycaster,
+  index: NearMeshIndex,
+  skip?: (o: Object3D) => boolean,
+): Intersection | null {
+  const cand = index.alongRay(raycaster.ray, raycaster.near, raycaster.far, _alongCand, _alongEntry);
+  let best: Intersection | null = null;
+  for (let i = 0; i < cand.length; i++) {
+    if (best && _alongEntry[i]! > best.distance) break; // nada daqui pra frente acerta antes
+    const o = cand[i]!;
+    if (!o.layers.test(raycaster.layers)) continue;
+    _meshHits.length = 0;
+    o.raycast(raycaster, _meshHits);
+    for (let h = 0; h < _meshHits.length; h++) {
+      const hit = _meshHits[h]!;
+      if ((best === null || hit.distance < best.distance) && !(skip && skip(hit.object))) best = hit;
+    }
+  }
+  _meshHits.length = 0;
+  return best;
 }

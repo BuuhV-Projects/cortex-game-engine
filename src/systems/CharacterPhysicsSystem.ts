@@ -5,7 +5,7 @@ import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { ensureBoundsTree, isSkinned } from '../physics/raycastAccel.js';
-import { NearMeshIndex, touchingBox, traverseCollidable } from '../physics/nearMeshes.js';
+import { NearMeshIndex, firstHit, touchingBox, traverseCollidable } from '../physics/nearMeshes.js';
 
 const DOWN = new Vector3(0, -1, 0);
 /** Tolerância de contato (skin width) — folga p/ considerar "tocando o chão". */
@@ -155,16 +155,15 @@ export class CharacterPhysicsSystem extends System {
   override priority = 5;
 
   private readonly roots: Object3D[];
-  private readonly ray = new Raycaster();
+  /** Só o acerto mais próximo de cada malha interessa: a árvore BVH para no 1º triângulo (SPEC-0328). */
+  private readonly ray = Object.assign(new Raycaster(), { firstHitOnly: true });
   private readonly origin = new Vector3();
   private readonly wallDir = new Vector3();
   private readonly trunks: number[] = []; // [x, z, raio] por instância de vegetação sólida
   private readonly solidMeshes: Object3D[] = []; // blockout sólido (alvo do empurrão de parede)
   private readonly terrainMeshes: Object3D[] = []; // terreno (alvo do anti-clip)
   private readonly groundMeshes: Object3D[] = []; // tudo pisável (alvo do raycast de chão), sem vegetação
-  // as mesmas listas filtradas pro personagem da vez (só o que algum raio pode tocar, SPEC-0302)
-  private readonly nearGround: Object3D[] = [];
-  private readonly nearTerrain: Object3D[] = [];
+  // paredes filtradas pro personagem da vez (só o que algum raio pode tocar, SPEC-0302)
   private readonly nearSolid: Object3D[] = [];
   /** As paredes cujos triângulos tocam a caixa dos raios de parede (SPEC-0323). */
   private readonly touchingSolid: Object3D[] = [];
@@ -232,14 +231,9 @@ export class CharacterPhysicsSystem extends System {
         this.ray.set(this.origin, DOWN);
         this.ray.far = Infinity;
         const self = e.getComponent(Object3DComponent)?.object;
-        // sem recursão: a lista já tem cada malha (filhos inclusive) — recursivo testava os filhos de novo
-        // o raio só desce: malha toda acima da origem não entra (SPEC-0307)
-        const hits = this.ray.intersectObjects(this.groundIndex.nearXZ(t.x, t.z, SKIN, this.nearGround, -Infinity, this.origin.y), false);
-        for (const h of hits) {
-          if (self && isUnder(h.object, self)) continue; // ignora o próprio mesh
-          groundHeight = h.point.y; // 1ª superfície válida (a mais próxima abaixo da origem)
-          break;
-        }
+        // só o que o raio cruza, mais perto primeiro; ignora o próprio mesh (SPEC-0328)
+        const h = firstHit(this.ray, this.groundIndex, self ? (o) => isUnder(o, self) : undefined);
+        if (h) groundHeight = h.point.y; // 1ª superfície válida (a mais próxima abaixo da origem)
       }
       if (groundHeight === -Infinity) groundHeight = c.groundY; // sem geometria → piso de segurança
 
@@ -274,7 +268,7 @@ export class CharacterPhysicsSystem extends System {
         this.origin.set(t.x, feetNow + TERRAIN_PROBE, t.z);
         this.ray.set(this.origin, DOWN);
         this.ray.far = Infinity;
-        const h = this.ray.intersectObjects(this.terrainIndex.nearXZ(t.x, t.z, SKIN, this.nearTerrain), false)[0]; // só terreno
+        const h = firstHit(this.ray, this.terrainIndex); // só terreno (SPEC-0328)
         if (h && feetNow < h.point.y - SKIN) {
           t.y = h.point.y + c.footOffset; // sobe pra superfície do terreno
           c.velocityY = 0;
