@@ -94,6 +94,14 @@ acertos; os 12 raios de parede, idem, contra as paredes que tocam a caixa.
    diferente, sistema pausado) varre sozinha como antes. Mesma poda
    (`traverseCollidable`), então a lista é a mesma.
 
+9. **InstancedMesh no `touchingBox` pelas esferas das instâncias.** A 3ª sonda
+   (Comercial) mostrou ~14 paredes "tocando" a caixa do personagem por quadro: as
+   instanciadas (lixeiras, carros estacionados, portas) passavam sempre e levavam os 12
+   raios, cada um varrendo todas as instâncias. Agora ficam só se a esfera em mundo de
+   alguma instância (o cache do `instancedRaycast`, SPEC-0305) toca a caixa — uma
+   passada por quadro em vez de 12 raios. Conservador: a instância está dentro da
+   esfera dela.
+
 Resultado idêntico ao anterior: mesma superfície mais próxima, mesma distância (o
 desempate entre duas malhas exatamente coplanares pode trocar o `object`, nunca o
 ponto). Comportamento do braço (SPEC-0311) e da colisão (degrau, parede, anti-clip)

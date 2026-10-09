@@ -1,5 +1,5 @@
-import { Box3, Matrix4, Sphere, type Intersection, type Object3D, type Ray, type Raycaster } from 'three';
-import { rayMayHitSphere } from './instancedRaycast.js';
+import { Box3, Matrix4, Sphere, type InstancedMesh, type Intersection, type Object3D, type Ray, type Raycaster } from 'three';
+import { INSTANCE_SPHERE_STRIDE, rayMayHitSphere, spheresOf } from './instancedRaycast.js';
 import { CROSSED_MIN_BVH_TRIS, ensureBoundsTree } from './raycastAccel.js';
 
 /**
@@ -475,11 +475,32 @@ export function touchingBox(meshes: readonly Object3D[], box: Box3, out: Object3
     const m = meshes[i]! as unknown as WithBvh;
     // encostada no personagem: os 12 raios vão cruzá-la — árvore já a partir de poucos triângulos (SPEC-0328)
     if (!m.isInstancedMesh && !m.geometry?.boundsTree) ensureBoundsTree(meshes[i]!, CROSSED_MIN_BVH_TRIS);
-    const tree = m.isInstancedMesh ? undefined : m.geometry?.boundsTree;
+    if (m.isInstancedMesh) {
+      // instâncias: fica só se a esfera de alguma toca a caixa (SPEC-0328) — antes passava
+      // sempre e levava os 12 raios, cada um varrendo todas as instâncias
+      if (!anySphereTouches(spheresOf(meshes[i] as InstancedMesh), box)) continue;
+      out.push(meshes[i]!);
+      continue;
+    }
+    const tree = m.geometry?.boundsTree;
     if (tree && !tree.intersectsBox(box, _boxToMesh.copy(m.matrixWorld).invert())) continue;
     out.push(meshes[i]!);
   }
   return out;
+}
+
+/** Alguma esfera (x, y, z, raio por instância) toca a caixa? Distância do centro ao ponto mais próximo da caixa. */
+function anySphereTouches(c: { count: number; spheres: Float32Array }, box: Box3): boolean {
+  const s = c.spheres;
+  for (let i = 0; i < c.count; i++) {
+    const k = i * INSTANCE_SPHERE_STRIDE;
+    const x = s[k]!, y = s[k + 1]!, z = s[k + 2]!, r = s[k + 3]!;
+    const dx = x < box.min.x ? box.min.x - x : x > box.max.x ? x - box.max.x : 0;
+    const dy = y < box.min.y ? box.min.y - y : y > box.max.y ? y - box.max.y : 0;
+    const dz = z < box.min.z ? box.min.z - z : z > box.max.z ? z - box.max.z : 0;
+    if (dx * dx + dy * dy + dz * dz <= r * r) return true;
+  }
+  return false;
 }
 
 const _alongCand: Object3D[] = [];

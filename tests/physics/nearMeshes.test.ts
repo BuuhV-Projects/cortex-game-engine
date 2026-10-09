@@ -421,3 +421,18 @@ describe('SPEC-0328: malha que o raio cruza ganha árvore', () => {
     expect(h!.distance).toBeCloseTo(ref.distance, 9);
   });
 });
+
+describe('SPEC-0328: touchingBox descarta InstancedMesh pelas esferas das instâncias', () => {
+  it('fica só a instanciada com alguma instância tocando a caixa', () => {
+    const make = (...xs: number[]): InstancedMesh => {
+      const inst = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial(), xs.length);
+      xs.forEach((x, i) => inst.setMatrixAt(i, new Matrix4().makeTranslation(x, 1, 0)));
+      inst.updateMatrixWorld(true);
+      return inst;
+    };
+    const far = make(30, -40, 80); // lixeiras espalhadas, nenhuma perto
+    const near = make(50, 0.9); // uma encostada (esfera 0,87 da caixa em x = 0,9)
+    const b = new Box3(new Vector3(-0.5, 0, -0.5), new Vector3(0.5, 2, 0.5));
+    expect(touchingBox([far, near], b, [])).toEqual([near]);
+  });
+});
