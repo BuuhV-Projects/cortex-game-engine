@@ -14,6 +14,12 @@ import type { Camera, BufferGeometry, Material, Vector3 } from 'three';
 import { BackSide, DoubleSide, FrontSide, Frustum, Matrix4, Object3D } from 'three';
 import { authoredCastShadow } from '../scene/ShadowCasterCulling.js';
 import { geometryId } from '../render/GeometryDesc.js';
+import {
+  MainPassKind,
+  mainPassFrameFlags,
+  mainPassKind,
+  mainPassNodeFlags,
+} from '../render/MainPassKind.js';
 import { debug } from './debug.js';
 
 /** Floats por nó na descrição inicial (ver `scene_mirror_shim.cpp`). */
@@ -253,7 +259,9 @@ function flagsDoNo(objeto: NoDaCena, temEsfera: boolean): number {
   if (Array.isArray(objeto.material)) flags |= FLAG_MATERIAL_ARRAY;
   if (temRecorteAlfa(objeto.material)) flags |= FLAG_ALPHA_CLIP;
   if (temPositionNode(objeto.material)) flags |= FLAG_POSITION_NODE;
-  return flags;
+  // Passe principal (SPEC-0332): o ramo do `_projectObject` e o estado inicial
+  // do que depois viaja por quadro.
+  return flags | mainPassNodeFlags(objeto);
 }
 
 /**
@@ -305,7 +313,9 @@ function flagsDoQuadro(objeto: Object3D): number {
   const no = objeto as NoDaCena;
   let flags = objeto.visible ? SYNC_VISIBLE : 0;
   if (materialVisivel(no.material)) flags |= SYNC_MATERIAL_VISIBLE;
-  return flags | (ladoDaSombra(no.material) << SYNC_SHADOW_SIDE_SHIFT);
+  flags |= ladoDaSombra(no.material) << SYNC_SHADOW_SIDE_SHIFT;
+  // `frustumCulled` cru e a recusa por tipo/ordem do passe principal (SPEC-0332).
+  return flags | mainPassFrameFlags(objeto);
 }
 
 // ── Ganchos de transform (SPEC-0322) ───────────────────────────────────────
@@ -380,6 +390,46 @@ const ACESSOR_Z: PropertyDescriptor = {
   },
 };
 
+/** O que o gancho de `visible` guarda no próprio objeto (SPEC-0332). */
+interface ObjetoEnganchado {
+  _mVis: boolean;
+  position: Vector3;
+}
+
+/**
+ * `visible` também suja o slot NO INSTANTE da escrita (SPEC-0332). Pela
+ * varredura em rodízio da SPEC-0322 o atraso chegava a 8 quadros — tolerável
+ * na sombra, visível no passe principal (objeto que some/aparece atrasado). O
+ * espelho e o slot são os do gancho do `position`, sem campo novo por nó.
+ */
+const ACESSOR_VISIBLE: PropertyDescriptor = {
+  configurable: true,
+  enumerable: true,
+  get(this: ObjetoEnganchado): boolean {
+    return this._mVis;
+  },
+  set(this: ObjetoEnganchado, valor: boolean): void {
+    if (this._mVis === valor) return;
+    this._mVis = valor;
+    avisarSujo(this.position as unknown as VetorEnganchado);
+  },
+};
+
+function engancharVisible(objeto: Object3D): void {
+  const g = objeto as unknown as ObjetoEnganchado;
+  // Lê ANTES de redefinir: depois disso `visible` é o acessor.
+  const atual = objeto.visible;
+  g._mVis = atual;
+  Object.defineProperty(objeto, 'visible', ACESSOR_VISIBLE);
+}
+
+function desengancharVisible(objeto: Object3D): void {
+  if (Object.getOwnPropertyDescriptor(objeto, 'visible')?.get === undefined) return;
+  const atual = (objeto as unknown as ObjetoEnganchado)._mVis;
+  delete (objeto as unknown as Record<string, unknown>)['visible'];
+  objeto.visible = atual;
+}
+
 function engancharVetor(vetor: Vector3, espelho: NativeSceneMirror, slot: number): void {
   const g = vetor as unknown as VetorEnganchado;
   // Lê ANTES de redefinir: depois disso `x` é o acessor.
@@ -438,9 +488,11 @@ function engancharNo(objeto: Object3D, espelho: NativeSceneMirror, slot: number)
   engancharVetor(objeto.scale, espelho, slot);
   engancharCallback(objeto.quaternion as unknown as ComCallback, espelho, slot);
   engancharCallback(objeto.rotation as unknown as ComCallback, espelho, slot);
+  engancharVisible(objeto);
 }
 
 function desengancharNo(objeto: Object3D): void {
+  desengancharVisible(objeto);
   desengancharVetor(objeto.position);
   desengancharVetor(objeto.scale);
   desengancharCallback(objeto.quaternion as unknown as ComCallback);
@@ -517,17 +569,38 @@ function descreverNo(
   // registrados. Sem eles o C++ tem a hierarquia e nenhuma ideia do que cada
   // nó desenha.
   const noDaCena = objeto as NoDaCena;
-  const geometria = noDaCena.isMesh ? noDaCena.geometry : undefined;
+  // A esfera serve ao passe principal também para `Line`/`Points` (SPEC-0332);
+  // o id de geometria continua só de malha — é o registro do passe de sombra.
+  const geometria = geometriaDeDesenho(noDaCena);
   if (geometria && !geometria.boundingSphere) geometria.computeBoundingSphere();
   const esfera = geometria?.boundingSphere ?? null;
   destino[base + BUILD_FLAGS] = flagsDoNo(noDaCena, esfera !== null);
-  destino[base + BUILD_GEOMETRY_ID] = geometria ? geometryId(geometria) : NO_GEOMETRY;
+  destino[base + BUILD_GEOMETRY_ID] =
+    geometria && noDaCena.isMesh ? geometryId(geometria) : NO_GEOMETRY;
   destino[base + BUILD_BOUNDS_CENTER] = esfera ? esfera.center.x : 0;
   destino[base + BUILD_BOUNDS_CENTER + 1] = esfera ? esfera.center.y : 0;
   destino[base + BUILD_BOUNDS_CENTER + 2] = esfera ? esfera.center.z : 0;
   destino[base + BUILD_BOUNDS_RADIUS] = esfera ? esfera.radius : 0;
   destino[base + BUILD_MATERIAL_VISIBLE] = materialVisivel(noDaCena.material) ? 1 : 0;
   destino[base + BUILD_SHADOW_SIDE] = ladoDaSombra(noDaCena.material);
+}
+
+/** A geometria que o `_projectObject` corta pela esfera: malha, linha ou pontos. */
+function geometriaDeDesenho(no: NoDaCena): BufferGeometry | undefined {
+  const comTipo = no as NoDaCena & { isLine?: boolean; isPoints?: boolean };
+  return no.isMesh || comTipo.isLine || comTipo.isPoints ? no.geometry : undefined;
+}
+
+/** A ponte do passe principal (SPEC-0332); ausente em host antigo e no browser. */
+export interface MainPassBridge {
+  project(planes: Float64Array, viewProj: Float64Array, indices: Int32Array, depths: Float64Array): number;
+  setBounds(index: number, cx: number, cy: number, cz: number, radius: number): void;
+}
+
+/** `__cortexMainPass`, quando o host o publica. */
+export function mainPassBridge(): MainPassBridge | undefined {
+  const api = (globalThis as { __cortexMainPass?: MainPassBridge }).__cortexMainPass;
+  return typeof api?.project === 'function' ? api : undefined;
 }
 
 /** Lista vazia compartilhada: o caso comum de {@link NativeSceneMirror.drainNewGeometries}. */
@@ -611,6 +684,11 @@ export class NativeSceneMirror {
   private _qtdSujos = 0;
   /** Últimas flags do quadro mandadas ao host, por slot (ver {@link SYNC_FLAGS}). */
   private _flagsEnviadas = new Uint8Array(0);
+  /** Ramo do `_projectObject` de cada slot (SPEC-0332) — o tipo do nó não muda. */
+  private _tipoPorSlot = new Uint8Array(0);
+  /** Geometria cuja esfera o host tem, por slot (SPEC-0332). */
+  private _geometriaPorSlot: (BufferGeometry | undefined)[] = [];
+  private readonly _mainPass = mainPassBridge();
   /** Onde a varredura das flags parou. */
   private _cursorVarredura = 0;
   private _sincronizadosNoQuadro = 0;
@@ -669,6 +747,8 @@ export class NativeSceneMirror {
     this._sujoMarca = new Uint8Array(capacidade);
     this._listaSujos = new Int32Array(capacidade);
     this._flagsEnviadas = new Uint8Array(capacidade);
+    this._tipoPorSlot = new Uint8Array(capacidade);
+    this._geometriaPorSlot = new Array<BufferGeometry | undefined>(capacidade);
     this._qtdSujos = 0;
     this._cursorVarredura = 0;
   }
@@ -676,7 +756,33 @@ export class NativeSceneMirror {
   /** O slot entra no espelho: gancho + flags de partida (as do `build`). */
   private _adotar(objeto: Object3D, slot: number): void {
     this._flagsEnviadas[slot] = flagsDoQuadro(objeto);
+    this._tipoPorSlot[slot] = mainPassKind(objeto);
+    this._geometriaPorSlot[slot] = geometriaDeDesenho(objeto as NoDaCena);
     engancharNo(objeto, this, slot);
+  }
+
+  /** A cena espelhada (o slot 0 do `install`), ou `undefined`. */
+  get root(): Object3D | undefined {
+    return this._installed ? this._nodes[0] : undefined;
+  }
+
+  /**
+   * O que a projeção nativa lê por candidato (SPEC-0332): o objeto e o ramo
+   * do `_projectObject` de cada slot.
+   * @internal
+   */
+  _projectionView(): { nodes: readonly (Object3D | undefined)[]; kinds: Uint8Array } {
+    return { nodes: this._nodes, kinds: this._tipoPorSlot };
+  }
+
+  /**
+   * Manda ao host as linhas sujas desde o {@link update}: uma escrita feita
+   * DURANTE o render, antes da projeção, entra no mesmo quadro (SPEC-0332).
+   */
+  syncPending(): void {
+    const api = this._bridge;
+    if (!api || !this._sync || !this._installed || this._qtdSujos === 0) return;
+    api.update(this._escreverLinhas(), this._planes);
   }
 
   /**
@@ -974,7 +1080,23 @@ export class NativeSceneMirror {
     // SPEC-0245) são conferidas por varredura em rodízio, que suja o slot
     // quando divergem do que o host tem.
     this._varrerFlags();
+    const linhas = this._escreverLinhas();
+    this._sincronizadosNoQuadro = linhas;
+    this._somaSincronizados += linhas;
+    this._quadrosSomados++;
 
+    camera.updateMatrixWorld();
+    this._viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    this._frustum.setFromProjectionMatrix(this._viewProjection);
+    escreverPlanos(this._frustum, this._planes);
+
+    api.update(linhas, this._planes);
+    this._sincronizarInstancias(api);
+  }
+
+  /** Escreve no buffer de sincronização as linhas dos slots sujos e as conta. */
+  private _escreverLinhas(): number {
+    const sync = this._sync!;
     // As linhas são COMPACTAS: um slot vazio (nó que saiu da cena) é pulado, e
     // o host recebe quantas linhas foram escritas. Mandar a linha de uma lápide
     // ressuscitaria um nó que o `three` já não tem.
@@ -1010,17 +1132,7 @@ export class NativeSceneMirror {
       sync[base + SYNC_FLAGS] = flags;
     }
     this._qtdSujos = 0;
-    this._sincronizadosNoQuadro = linhas;
-    this._somaSincronizados += linhas;
-    this._quadrosSomados++;
-
-    camera.updateMatrixWorld();
-    this._viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    this._frustum.setFromProjectionMatrix(this._viewProjection);
-    escreverPlanos(this._frustum, this._planes);
-
-    api.update(linhas, this._planes);
-    this._sincronizarInstancias(api);
+    return linhas;
   }
 
   /**
@@ -1043,9 +1155,27 @@ export class NativeSceneMirror {
       if (objeto && marca[cursor] === 0 && flagsDoQuadro(objeto) !== enviadas[cursor]) {
         this._marcarSujo(cursor);
       }
+      if (objeto) this._conferirGeometria(objeto, cursor);
       cursor++;
     }
     this._cursorVarredura = cursor;
+  }
+
+  /**
+   * A geometria do nó mudou desde que o host recebeu a esfera dela: manda a
+   * esfera nova (SPEC-0332). Vai pela varredura — o atraso é o dela (até
+   * {@link SWEEP_PERIOD_FRAMES} quadros) e o caso é raro (troca de geometria).
+   */
+  private _conferirGeometria(objeto: Object3D, slot: number): void {
+    if (this._tipoPorSlot[slot] !== MainPassKind.NativeCull) return;
+    const geometria = (objeto as NoDaCena).geometry;
+    if (geometria === this._geometriaPorSlot[slot]) return;
+    this._geometriaPorSlot[slot] = geometria;
+    if (!geometria || !this._mainPass) return;
+    if (!geometria.boundingSphere) geometria.computeBoundingSphere();
+    const esfera = geometria.boundingSphere;
+    if (!esfera) return;
+    this._mainPass.setBounds(slot, esfera.center.x, esfera.center.y, esfera.center.z, esfera.radius);
   }
 
   /** Passa a acompanhar as matrizes de instância de um `InstancedMesh`. */

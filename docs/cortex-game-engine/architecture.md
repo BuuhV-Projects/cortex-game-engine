@@ -1121,6 +1121,35 @@ junction gera bundle diferente (o esbuild resolve pelo caminho real e duplica
 módulos — +300 KB no DDD 61). Baseline precisa de `node_modules` próprio
 (`yarn install --ignore-scripts`); confira o tamanho do `boot.hbc` dos dois.
 
+## 8e7. Passe principal do host em C++ — ADR-0330 (etapa (a): projeção, SPEC-0332)
+
+O ADR-0330 substitui o ADR-0228/0235: o passe principal do **export nativo**
+sai do laço do `three` em etapas, cada uma com interruptor e A/B. O Studio
+segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
+
+- **(0) caminho rápido em JS do reaproveitamento — rejeitado** (SPEC-0331): o
+  custo de um render object parado é verificação (`equals`, ~30 campos de
+  pipeline, `updateNode`), não trabalho pulável sem dirty flag de material.
+- **(a) projeção** (`src/render/NativeMainProjection.ts` +
+  `native/src/scene/main_pass_culler.*`, `?nativeProjection=0|1`): o
+  `_projectObject` da **cena espelhada** (chamada de topo, `sortObjects`, sem
+  `ArrayCamera`) vira uma chamada `__cortexMainPass.project`; o C++ faz
+  visibilidade herdada, frustum pela esfera da geometria e o `z`; o JS faz
+  camadas, material (array/grupo/`visible`) e o `renderList.push`. Ordem de
+  inserção diferente não importa: o sort da RenderList é ordem total.
+  `MainPassKind.ts` classifica o nó (ramos do `_projectObject`).
+
+**Armadilha (recusa, não aproximação):** `LOD`, `ClippingGroup`, `BundleGroup`
+e `Group` com `renderOrder` alcançáveis fazem o quadro voltar ao `three` (o
+`groupOrder` não viaja). `Sprite`/`InstancedMesh`/`SkinnedMesh` têm esfera do
+OBJETO — o culling deles fica em JS.
+
+**Armadilha (estado por quadro):** o `visible` passou a ter **gancho** (acessor
+no objeto, como `position`) — pela varredura da SPEC-0322 chegava com até 8
+quadros de atraso, visível no passe principal. `frustumCulled`, `renderOrder`
+de grupo e troca de `geometry` seguem pela varredura (até 8 quadros); uma
+`boundingSphere` recalculada na MESMA geometria não é vista.
+
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
 Duas fusões diferentes, com propósitos opostos, no mesmo módulo
@@ -1240,7 +1269,7 @@ no logo da splash enquanto montava os seis carros.
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
-| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0325) |
+| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0325) · projeção do passe principal no host: `NativeMainProjection.ts` + `MainPassKind.ts` (SPEC-0332) |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |

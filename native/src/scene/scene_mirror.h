@@ -71,6 +71,20 @@ enum SyncFlag : uint8_t {
   kSyncShadowSideBit0 = 1 << 2,
   /** Segundo bit do lado da face (ver {@link kSyncShadowSideBit0}). */
   kSyncShadowSideBit1 = 1 << 3,
+  /**
+   * `object.frustumCulled` CRU deste frame (SPEC-0332) — o do passe principal.
+   *
+   * Não é o {@link kNodeFrustumCulled}: aquele é do passe de sombra e exclui o
+   * `InstancedMesh` de propósito. Este é o valor que o `_projectObject` lê.
+   */
+  kSyncFrustumCulled = 1 << 4,
+  /**
+   * O nó tem algo que a projeção nativa NÃO reproduz (SPEC-0332): `Group` com
+   * `renderOrder` (vira o `groupOrder` dos descendentes), `LOD`, `ClippingGroup`
+   * ou `BundleGroup`. Alcançado na travessia, a projeção do frame é RECUSADA e
+   * o `three` projeta — recusa, nunca aproximação.
+   */
+  kSyncMainUnsupported = 1 << 5,
 };
 
 /** Deslocamento dos dois bits de lado dentro de {@link kSyncFlags}. */
@@ -244,6 +258,30 @@ enum NodeFlag : uint16_t {
    * um. Reproduzi-lo exigiria compilar o nó em C++. Motivo de recusa.
    */
   kNodePositionNode = 1 << 8,
+  /**
+   * Passe principal (SPEC-0332): `Mesh`/`Line`/`Points` com geometria e SEM
+   * esfera própria — o culling e o `z` de ordenação saem da esfera da
+   * geometria, em C++.
+   */
+  kNodeMainCull = 1 << 9,
+  /**
+   * Passe principal: entra na lista quando visível, e o JS decide o culling —
+   * `Sprite`, `InstancedMesh`, `SkinnedMesh`, `BatchedMesh` (a esfera que o
+   * `three` usa é a do OBJETO, não a da geometria que o espelho tem).
+   */
+  kNodeMainJsCull = 1 << 10,
+  /** Luz: o `_projectObject` a empurra para a lista de luzes quando visível. */
+  kNodeLight = 1 << 11,
+  /** Valor INICIAL de {@link kSyncMainUnsupported} (depois chega por frame). */
+  kNodeMainUnsupported = 1 << 12,
+  /** Valor INICIAL de {@link kSyncFrustumCulled} (depois chega por frame). */
+  kNodeMainFrustumCulled = 1 << 13,
+};
+
+/** Bits de {@link SceneMirror::mainFrameFlags} — o estado do passe principal por frame. */
+enum MainFrameFlag : uint8_t {
+  kMainFrustumCulled = 1 << 0,
+  kMainUnsupported = 1 << 1,
 };
 
 /**
@@ -458,6 +496,15 @@ class SceneMirror {
     return static_cast<ShadowSide>(shadowSides_[static_cast<size_t>(index)]);
   }
 
+  /** Bits de {@link MainFrameFlag} deste frame (SPEC-0332). */
+  uint8_t mainFrameFlags(NodeIndex index) const { return mainFrameFlags_[static_cast<size_t>(index)]; }
+
+  /**
+   * Troca a esfera local de um nó (SPEC-0332): a geometria do objeto mudou
+   * depois do `build`. Lápide ou índice fora da cena é ignorado.
+   */
+  void setBounds(NodeIndex index, const Bounds& bounds);
+
   /** Combinação de {@link NodeFlag} declarada no `build`. */
   uint16_t flags(NodeIndex index) const { return flags_[static_cast<size_t>(index)]; }
 
@@ -483,6 +530,8 @@ class SceneMirror {
   std::vector<uint8_t> shadowSides_;
   /** Autoria estática por nó: {@link NodeFlag}. */
   std::vector<uint16_t> flags_;
+  /** Estado do passe principal por frame: {@link MainFrameFlag}. */
+  std::vector<uint8_t> mainFrameFlags_;
   /** Geometria de cada nó, para o passe nativo saber o que desenhar. */
   std::vector<int32_t> geometryIds_;
   /** Esfera local de cada nó. */

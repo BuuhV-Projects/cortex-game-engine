@@ -4,46 +4,9 @@
 #include <algorithm>
 #include <cmath>
 
+#include "sphere_math.h"
+
 namespace scene {
-namespace {
-
-/**
- * `Matrix4.getMaxScaleOnAxis()` do three: o raio da esfera cresce pela MAIOR
- * das três escalas, não pela média. Usar outra coisa aqui daria um raio menor
- * que o do `three` e tiraria da lista objetos que ele desenha.
- */
-double maxScaleOnAxis(const double* m) {
-  const double xSq = m[0] * m[0] + m[1] * m[1] + m[2] * m[2];
-  const double ySq = m[4] * m[4] + m[5] * m[5] + m[6] * m[6];
-  const double zSq = m[8] * m[8] + m[9] * m[9] + m[10] * m[10];
-  return std::sqrt(std::max(xSq, std::max(ySq, zSq)));
-}
-
-/**
- * `Vector3.applyMatrix4()` para matriz AFIM (coluna-maior, como no three).
- *
- * Sem divisão por w: as matrizes de mundo da cena são afins por construção
- * (composição de posição, quatérnion e escala), então a última linha é
- * `0 0 0 1` e a divisão seria por 1.
- */
-void transformPoint(const double* m, const Bounds& b, double* outX, double* outY, double* outZ) {
-  *outX = m[0] * b.cx + m[4] * b.cy + m[8] * b.cz + m[12];
-  *outY = m[1] * b.cx + m[5] * b.cy + m[9] * b.cz + m[13];
-  *outZ = m[2] * b.cx + m[6] * b.cy + m[10] * b.cz + m[14];
-}
-
-/** `Frustum.intersectsSphere()`: centro contra os 6 planos, com folga do raio. */
-bool intersectsSphere(const float* planes, double x, double y, double z, double radius) {
-  for (int i = 0; i < kFrustumPlanes; i++) {
-    const int p = i * 4;
-    const double d = static_cast<double>(planes[p]) * x + static_cast<double>(planes[p + 1]) * y +
-                     static_cast<double>(planes[p + 2]) * z + static_cast<double>(planes[p + 3]);
-    if (d < -radius) return false;
-  }
-  return true;
-}
-
-}  // namespace
 
 bool shouldCastShadow(double radius, double distance, double minRatio) {
   if (minRatio <= 0) return true;

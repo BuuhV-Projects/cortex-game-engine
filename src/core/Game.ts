@@ -22,7 +22,15 @@ import { cullOutlines, DEFAULT_OUTLINE_MIN_RATIO } from '../scene/OutlineCulling
  * mais que o erro de alguns frames de atraso.
  */
 const OUTLINE_CULL_INTERVAL = 10;
+/** Quadros entre relatos da projeção nativa no `debug('perf')` (SPEC-0332). */
+const NATIVE_PROJECTION_REPORT_FRAMES = 600;
 import { NativeSceneMirror, nativeSceneMirrorAvailable } from './NativeSceneMirror.js';
+import {
+  installNativeProjection,
+  nativeProjectionRequested,
+  type NativeProjection,
+  type ProjectingRendererLike,
+} from '../render/NativeMainProjection.js';
 import { PerfTrace } from './PerfTrace.js';
 import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
@@ -234,6 +242,8 @@ export class Game {
   private _systemProfile: Map<string, number> | null = null;
   private readonly _sceneMirror = new NativeSceneMirror();
   private _sceneMirrorTried = false;
+  /** Projeção do passe principal em C++ (SPEC-0332); só no host. */
+  private _nativeProjection: NativeProjection | null = null;
   /** DIAGNOSTICO TEMPORARIO (SPEC-0241). */
   private _ramoRelatado: string | null = null;
   private readonly _matrixFreezeAt = matrixFreezeRequested();
@@ -642,6 +652,13 @@ export class Game {
     ) {
       this._sceneMirrorTried = true;
       this._sceneMirror.install(this._activeScene.getThreeScene());
+      // Etapa (a) do ADR-0330: a projeção da cena espelhada sai do JS.
+      if (this._sceneMirror.installed && nativeProjectionRequested(true)) {
+        this._nativeProjection = installNativeProjection(
+          this.renderer.threeRenderer as unknown as ProjectingRendererLike,
+          this._sceneMirror,
+        );
+      }
     }
     p.begin('render');
     // DIAGNOSTICO TEMPORARIO (SPEC-0241, passo 0) — remover.
@@ -710,6 +727,10 @@ export class Game {
     p.commitFrame(); // fecha o frame do profiler (joga os acumuladores nos rings)
     this._renderPhases.commitFrame(); // idem para as fases do render (SPEC-0227)
     this._framesRendered++;
+    if (this._nativeProjection && this._framesRendered % NATIVE_PROJECTION_REPORT_FRAMES === 0) {
+      const st = this._nativeProjection.stats;
+      debug('perf', `[nativeProjection] nativas=${st.native} recusadas=${st.refused} candidatos=${st.candidates}`);
+    }
     if (this._matrixFreezeAt > 0 && this._framesRendered === this._matrixFreezeAt) {
       // As matrizes já foram calculadas nos frames anteriores; daqui em diante
       // o three não percorre mais a árvore para recompô-las.
