@@ -346,6 +346,10 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
     tick). `pauseWhen = () => game.editorActive`.
   - **buildScene** cria o corpo pra nós `rapierBody` (ou override `physics.type=rigid`)
     e registra o sistema sozinho (lazy). `physicsPaused` pausa no editor.
+  - **Corpo parado no host nativo** (ADR-0336): o Rapier do export é 0.22 com
+    patch — fixo e cinemático parado quase não custam por passo. No Studio (WASM
+    0.19) cinemático parado AINDA custa (o Rapier nunca o tira do conjunto ativo).
+    `Vehicle.keepUpright` não escreve nada com o carro nivelado (SPEC-0337).
   - **Veículo** (ADR-0081): `createVehicle` → `Vehicle` (raycast do Rapier), de
     **simulação**. Um carro só: `VehicleControlSystem` (input + câmera + passo).
     **Arcade / vários carros (ADR-0256, SPEC-0259):** `VehicleArcadeSystem(physics)`

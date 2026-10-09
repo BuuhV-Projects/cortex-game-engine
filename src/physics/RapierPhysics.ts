@@ -191,6 +191,11 @@ const STEP_ROUNDING_EPSILON = 1e-6;
 /** Suspensão padrão do {@link RapierPhysics.createVehicle}. */
 const DEFAULT_SUSPENSION_REST_LENGTH = 0.3;
 const DEFAULT_SUSPENSION_STIFFNESS = 24;
+/**
+ * Correção de rolagem (rad/s por passo) abaixo da qual o {@link Vehicle.keepUpright}
+ * não escreve nada: ~0,0006°/s, invisível, e o caso comum de carro nivelado.
+ */
+const UPRIGHT_MIN_CORRECTION = 1e-5;
 
 function rapier(): RapierApi {
   if (!api) throw new Error('Rapier não inicializado — use RapierPhysics.create() (await).');
@@ -640,6 +645,9 @@ export class Vehicle {
     const av = this.body.angvel();
     const rollRate = av.x * _wax.x + av.y * _wax.y + av.z * _wax.z;
     const delta = (-rightY * strength - rollRate * damping) * dt;
+    // Nivelado e sem rolar: nada a corrigir — sem escrita (e sem acordar o
+    // corpo, o que deixava QUALQUER veículo com estabilizador sempre acordado) (SPEC-0337).
+    if (Math.abs(delta) < UPRIGHT_MIN_CORRECTION) return;
     this.body.setAngvel(
       { x: av.x + _wax.x * delta, y: av.y + _wax.y * delta, z: av.z + _wax.z * delta },
       true,
