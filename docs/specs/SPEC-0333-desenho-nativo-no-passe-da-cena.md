@@ -239,24 +239,53 @@ Main `518c9248` + SPEC-0332; 135 s por rodada (150 s no hélio dirigindo).
 - **Refeitos (~17/quadro):** objetos com nó animado ou que mudaram de
   material no quadro — ficam no `three` por definição.
 
-## b.2 implementado (2026-10-09) — aguardando A/B
+## b.2 implementado e medido (2026-10-09)
 
 - **C++:** `native/src/render/draw_batch.*` — a parte pura (`RecipeStore` e
   `replay`, com eliminação de estado redundante atrás de `DrawEmitter`, 4
   testes). Ponte em `native/src/shims/draw_batch_shim.*` (`__cortexDrawBatch`:
-  `record`/`release`/`flush`, receita com `AddRef` dos handles).
+  `record`/`release`/`flush`, receita com `AddRef` dos handles wgpu).
 - **JS:** `src/render/DrawBatch.ts`, ligado pelo `CleanDrawFastPath`
   (`?drawBatch=0|1`, padrão ligado no host).
-  - A receita é (re)gravada a partir do que o `three` usou — só atravessa a
+  - A receita é (re)gravada a partir do que o `three` usou e só atravessa a
     ponte quando algum handle mudou.
   - O desenho direto acumula `[receita, count, instâncias, first]` e chama
-    `info.update` (os contadores `draws` continuam iguais aos do `three`).
-  - Despacho: antes de todo `backend.draw` do `three`, em `beginRender`,
-    em `finishRender` e em troca de pass. Depois do despacho, o `currentSets`
-    do `three` é zerado.
-  - Grupo compartilhado recriado no quadro devolve o desenho ao `three`.
-  - Indireto, stencil, oclusão, `ArrayCamera` e `BatchedMesh` não entram no lote.
-- **Testes:** 6 do lote, mais a ordem com o `three` intercalado
-  (`lote(a) → three(b) → lote(c) → fim`), mais 4 de C++.
-- **A/B e captura:** pendentes — o `measure.lock` está ocupado desde 14:48
-  pela rodada `soak-setorO` da R3b, sem processo vivo (lock órfão).
+    `info.update` (os `draws` continuam iguais aos do `three`).
+  - Despacho antes de todo `backend.draw` do `three`, em `beginRender`/
+    `finishRender` e em troca de pass.
+  - Fica no `three`: grupo compartilhado recriado no quadro, indireto, stencil,
+    oclusão, `ArrayCamera`, `BatchedMesh`.
+  - `?drawBatchCheck=1` (depuração) relê a receita a cada desenho e relata a
+    divergência.
+
+**Armadilha medida (derrubava o host):** depois do despacho, os DOIS caches de
+estado do `three` ficam inválidos — o `currentSets` do contexto e o pipeline
+ativo por pass (`WebGPUPipelineUtils._activePipelines`). Só zerar o primeiro
+deixava o `three` pular o `setPipeline` e desenhar com o pipeline da última
+receita e os bind groups dele: `wgpuQueueSubmit` com erro de validação ("bind
+group at index 1 is not compatible") e pânico no primeiro quadro. Corrigido
+esquecendo o pass no `_activePipelines`; o lote não liga se esse interno não
+existir.
+
+### A/B (export release, mesma build, intercalado, 2 voltas × 3 pontos)
+
+Main `96d6cb34` + b.2; 135 s por rodada (150 s no hélio dirigindo).
+
+| ponto | quadro on | quadro off | render on | render off | µs/draw on | µs/draw off |
+| --- | --- | --- | --- | --- | --- | --- |
+| setorO | **16,2** | 17,1 | **8,2** | 9,0 | 55,9 | 59,4 |
+| comercial | **19,3** | 20,0 | **9,2** | 9,8 | 76,1 | 79,5 |
+| hélio (dirigindo) | **17,2** | 17,8 | **7,1** | 8,2 | 71,6 | 73,8 |
+
+- **Ganho:** `render` −0,6 a −1,1 ms, quadro −0,6 a −0,9 ms.
+- Em média ~15 desenhos por travessia; as sequências são cortadas pelos
+  desenhos do `three` (objetos refeitos, skinned).
+- `setBindGroup` sobe ~6% porque o estado do encoder é desconhecido na
+  entrada de cada despacho; o custo é desprezível perto da travessia economizada.
+- **Paridade:** 0 pânicos em 12 rodadas; `draws`/`tris` iguais entre os braços;
+  0 receitas velhas com `?drawBatchCheck=1`. Capturas do setorO e do comercial
+  idênticas (transparentes do carro, contorno, sombra, névoa, UI).
+- **O que sobra por draw (~55–75 µs com tudo):** a conferência do b.1 e a
+  montagem do `three` em volta (`renderObject`, `_renderObjects`, projeção em
+  JS). O próximo corte é tirar o laço de `_renderObjects` do JS para os
+  objetos limpos — o C++ já tem a lista (etapa a) e as receitas (b.2).
