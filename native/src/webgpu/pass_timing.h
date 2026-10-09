@@ -13,11 +13,17 @@
 // então não há nome a aproveitar. Ordem + draws basta para reconhecer quem é
 // quem — sombra tem dezenas de draws, blit tem um.
 //
+// SPEC-0334: só os slots que o quadro USOU são resolvidos e lidos, cada pass
+// leva a origem (three, sombra, bloom, SSAA, blit) e sai também o tempo de GPU
+// por quadro (`gpu-work`) — a medida honesta que substituiu o `gpu-latency`.
+//
 // Desligado por padrão; liga com `CORTEX_FRAME_TIMING`, junto das outras
 // medições.
 #pragma once
 
 #include <cstdint>
+
+#include "pass_timing_stats.h"
 
 struct WGPUAdapterImpl;
 struct WGPUDeviceImpl;
@@ -48,12 +54,13 @@ void setupPassTiming(WGPUDeviceImpl* device);
 
 /**
  * Os `timestampWrites` para o próximo render pass, ou `nullptr` quando a
- * medição está desligada ou os slots do frame acabaram.
+ * medição está desligada ou os slots do frame acabaram. `origem` marca quem
+ * gravou o pass, para o relatório separar three de passes do host.
  *
  * O ponteiro devolvido vive até o fim do frame — o descriptor do pass o
  * referencia, e o wgpu lê no `beginRenderPass`.
  */
-const WGPUPassTimestampWrites* nextPassTimestampWrites();
+const WGPUPassTimestampWrites* nextPassTimestampWrites(PassOrigin origem = PassOrigin::Js);
 
 /**
  * Resolve os timestamps do frame e dispara a leitura assíncrona.
@@ -72,7 +79,10 @@ void startPassTimingRead();
 /** Bombeia as leituras prontas. Uma vez por frame, sem bloquear. */
 void pumpPassTiming(WGPUInstanceImpl* instance);
 
-/** Escreve o relatório no `perf-log.txt`. Devolve `false` sem amostras. */
+/**
+ * Escreve no `perf-log.txt` a linha `pass-timing` (ranking por posição) e a
+ * `gpu-work` (tempo de GPU por quadro e por origem). `false` sem amostras.
+ */
 bool reportPassTiming();
 
 }  // namespace webgpu

@@ -82,7 +82,11 @@ export class FrameProfiler {
     this.window = Math.max(MIN_WINDOW_FRAMES, Math.floor(opts?.window ?? DEFAULT_WINDOW_FRAMES));
     this.enabled = opts?.enabled ?? false;
     this.now = opts?.now ?? defaultNow;
+    this.scratch = new Float64Array(this.window);
   }
+
+  /** Cópia ordenável de um ring, reaproveitada pelo `percentile`. */
+  private readonly scratch: Float64Array;
 
   /** Liga/desliga a medição (o {@link Game} amarra isso à visibilidade do HUD). */
   setEnabled(on: boolean): void {
@@ -165,7 +169,10 @@ export class FrameProfiler {
 
   private percentile(ring: Ring, q: number): number {
     if (ring.len === 0) return 0;
-    const sorted = Array.from(ring.buf.subarray(0, ring.len)).sort((a, b) => a - b);
+    // Buffer reaproveitado + sort nativo de Float64Array (numérico, sem
+    // comparador): roda em toda amostra do trace, por seção (SPEC-0334).
+    this.scratch.set(ring.buf.subarray(0, ring.len));
+    const sorted = this.scratch.subarray(0, ring.len).sort();
     const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(q * sorted.length) - 1));
     return sorted[idx]!;
   }

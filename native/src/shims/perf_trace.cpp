@@ -17,17 +17,17 @@ char g_tracePath[MAX_PATH] = {0};
 // Nome do arquivo de saída — JSONL: uma amostra por linha, pra ferramenta ler.
 constexpr const char* kTraceFileName = "perf-trace.jsonl";
 
-// Acrescenta uma linha ao arquivo. Abre/fecha por chamada: a amostragem é rara
-// (2×/s), e manter o handle aberto arriscaria perder o buffer num crash — que é
-// justamente quando o trace importa.
+// Handle aberto na sessão inteira (SPEC-0334). Abrir/fechar por linha custava
+// ~0,3 ms — metade da amostra do trace, dentro do quadro. O `fflush` por linha
+// entrega os bytes ao SO a cada amostra, então um crash do processo não perde
+// nada (o buffer que se perderia é o da CRT, e ele é esvaziado ali).
+FILE* g_traceFile = nullptr;
+
 void appendLine(const std::string& line) {
-  if (!g_tracePath[0]) return;
-  FILE* f = nullptr;
-  if (fopen_s(&f, g_tracePath, "ab") == 0 && f != nullptr) {
-    std::fwrite(line.data(), 1, line.size(), f);
-    std::fputc('\n', f);
-    std::fclose(f);
-  }
+  if (g_traceFile == nullptr) return;
+  std::fwrite(line.data(), 1, line.size(), g_traceFile);
+  std::fputc('\n', g_traceFile);
+  std::fflush(g_traceFile);
 }
 
 napi_value jsPerfTrace(napi_env env, napi_callback_info info) {
@@ -47,8 +47,7 @@ void registerPerfTrace(napi_env env, const char* logDir) {
                   kTraceFileName);
     // Sessão nova começa arquivo novo: misturar corridas no mesmo arquivo
     // confunde a leitura (o `t` reinicia do zero a cada boot).
-    FILE* f = nullptr;
-    if (fopen_s(&f, g_tracePath, "wb") == 0 && f != nullptr) std::fclose(f);
+    if (g_traceFile == nullptr && fopen_s(&g_traceFile, g_tracePath, "wb") != 0) g_traceFile = nullptr;
   }
   napi_value global = nullptr;
   napi_get_global(env, &global);
