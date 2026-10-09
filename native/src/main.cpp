@@ -13,7 +13,6 @@
 #include "core/app_window.h"
 #include "core/crash_handler.h"
 #include "core/frame_timing.h"
-#include "webgpu/gpu_latency.h"
 #include "webgpu/pass_timing.h"
 #include "core/game_config.h"
 #include "core/gdk.h"
@@ -149,11 +148,8 @@ bool runFrame(core::JsRuntime& js, HostGpu* gpu, double elapsedMs,
     apresentou = webgpu::presentIfAcquired(gpu);
   }
   core::markFramePhase(core::FramePhase::kPresent);
-  // O aviso de "GPU terminou" só chega quando alguém bombeia os eventos do
-  // wgpu, e o host só fazia isso em pontos pontuais. Sem esta chamada a medida
-  // nunca chegaria, e o relatório diria "latência zero" — a conclusão errada
-  // mais cara possível aqui. Não bloqueia: só drena o que já está pronto.
-  webgpu::pumpGpuLatency(gpu->instance);
+  // A leitura dos timestamps de GPU (mapAsync) só volta quando alguém bombeia
+  // os eventos do wgpu. Não bloqueia: só drena o que já está pronto.
   webgpu::pumpPassTiming(gpu->instance);
   // Destruições adiadas de buffers/texturas: SÓ depois do present — um pass
   // gravado neste frame com o recurso ainda vivo passa na validação do submit.
@@ -242,7 +238,6 @@ int main(int argc, char** argv) {
   webgpu::initRenderParityCapture();
   // Cronometro das fases do frame (SPEC-0249): no-op sem CORTEX_FRAME_TIMING.
   core::initFrameTiming();
-  webgpu::initGpuLatency();  // mesma variavel de ambiente (SPEC-0253)
   webgpu::initPassTiming();  // ANTES do device: decide se pede a feature (SPEC-0254)
 
   HostGpu gpu;

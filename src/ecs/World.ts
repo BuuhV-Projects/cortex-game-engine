@@ -149,10 +149,14 @@ export class World {
    */
   query<T extends Component>(...componentClasses: ComponentClass<T>[]): Entity[] {
     const result: Entity[] = [];
-    for (const entity of this._entities) {
-      if (componentClasses.every((cls) => entity.hasComponent(cls))) {
-        result.push(entity);
+    // Laço simples, sem `every` + closure: roda por sistema e por quadro sobre
+    // todas as entidades, e no Hermes cada closure (com o escopo do `entity`)
+    // é uma alocação — milhares por quadro numa cena grande (SPEC-0334).
+    outer: for (const entity of this._entities) {
+      for (let i = 0; i < componentClasses.length; i++) {
+        if (!entity.hasComponent(componentClasses[i]!)) continue outer;
       }
+      result.push(entity);
     }
     return result;
   }
