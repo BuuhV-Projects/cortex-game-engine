@@ -1044,7 +1044,8 @@ sobrepõe):
 
 Delegam ao `three` sem tocar em nada: bundle, `static`, `hasNode`, skinned,
 primeira vez, **primeiro objeto do monitor no `render()`** (é ele quem atualiza os
-grupos compartilhados e os `updateBefore` do passe), MRT de velocidade, e plano
+grupos compartilhados e os `updateBefore` do passe; com a SPEC-0325 isso é feito
+pelo wrapper de fora, §8e5, que chega aqui com o `renderId` em dia), MRT de velocidade, e plano
 com `updateBefore`/`updateAfter` por objeto.
 
 **Armadilha (por que a exclusão é obrigatória):** os nodes de material são
@@ -1060,27 +1061,64 @@ genéricas) continuam reavaliados. Depende de internos do `three` 0.184: um bump
 exige rodar a paridade por pixel do probe (`?transformOnlyRefresh=0` contra o
 padrão, simulação congelada no mesmo frame).
 
-## 8e5. Poda de subárvores na projeção (`src/render/ProjectionPruner.ts`) — ADR-0327 / SPEC-0326
+## 8e5. Refresh por `renderId` só do que é por render (`src/render/RenderIdRefresh.ts`) — SPEC-0325
 
-O `Renderer._projectObject` do `three` visita todo nó com `visible !== false` e
-testa malha a malha contra o frustum. O `Game` instala (só no host nativo;
-`?projectionPrune=0` desliga) um wrapper no `_projectObject` da INSTÂNCIA que,
-na chamada de topo da câmera do jogo, esconde (`visible=false`) a raiz das
-subárvores candidatas fora do frustum — ou sem nada desenhável nas camadas da
-câmera, como os bonecos em lote do DDD 61 (camada 27) — e devolve o `visible`
-no `finally`, logo depois da projeção.
+O `NodeMaterialObserver` refaz o **primeiro** render object de cada monitor
+(`NodeBuilderState`) em todo `render()`, antes do `equals()`. Com material
+exclusivo todo objeto é o primeiro: no DDD 61 eram ~72 refreshes completos por
+quadro sem nada mudar.
 
-- **Candidata**: ≥ 3 nós, raio ≤ 40 m, sem luz/LOD/BundleGroup/ClippingGroup e
-  sem desenhável (na camada da câmera) skinned/instanced/sprite/
-  `frustumCulled=false`. Esfera no espaço LOCAL da raiz, com folga.
+O `Renderer` instala, **depois** do `TransformOnlyRefresh` (fica por fora dele),
+outro wrapper em `_nodes.needsRefresh` (padrão: só no host;
+`?renderIdRefresh=0|1` sobrepõe). No primeiro objeto do monitor:
+
+1. `nodes.updateBefore` (sombra/PMREM, deduplicados por `renderId`);
+2. re-busca o `NodeFrame` (o render aninhado da sombra troca a câmera dele);
+3. nós de update não-`OBJECT` (câmera, luzes, tempo; deduplicados);
+4. `bindings._update` só nos bind groups compartilhados (`render`/`frame`);
+5. marca `monitor.renderId` e chama o de dentro (`equals()`): `true` → refresh
+   completo; andando → caminho só de transformação; parado → plano do ADR-0290
+   (nós de objeto não vigiados + UBO de objeto comparado; normalmente nenhum
+   `writeBuffer`).
+
+Deixa de ser refeito só o que o `equals()` vigia (refs de material de
+`refreshUniforms`, texturas/samplers, geometria), ou seja, o primeiro objeto vira
+igual aos objetos 2..N do mesmo material no three. Delegam ao three: bundle,
+`hasNode`, skinned, primeira vez, velocity, `BatchedMesh`, `updateAfter`,
+`updateBefore` de objeto, buffer não-UBO em grupo de objeto (fora o das
+instâncias) e `InstancedMesh` cuja `instanceMatrix`/`instanceColor` mudou de
+versão. Consequência: o buffer de matrizes de `InstancedMesh` pequeno só sobe com
+`needsUpdate` (antes o three reenviava inteiro a cada refresh).
+
+**Armadilha:** não dá para "pular tudo" (só os passos 1–4). Quase todo mapa tem a
+matriz de UV do `TextureNode` como nó `OBJECT`: o UV scroll de material exclusivo
+parado congelaria.
+
+## 8e6. Poda da projeção: subárvores sem desenhável na câmera (`src/render/ProjectionPruner.ts`) — ADR-0327 / SPEC-0326
+
+O `Renderer._projectObject` do `three` visita todo nó com `visible !== false`,
+mesmo onde nada é desenhável pela câmera (no DDD 61, as peças dos bonecos ficam
+na camada 27 e são desenhadas por um lote instanciado: ~600 visitas inúteis
+por quadro). O `Game` instala (só no host nativo; `?projectionPrune=0`
+desliga) um wrapper no `_projectObject` da INSTÂNCIA que, na chamada de topo
+da câmera do jogo, esconde (`visible=false`) a raiz dessas subárvores e
+devolve o `visible` no `finally`, logo depois da projeção. A RenderList sai
+idêntica.
+
+- **Candidata**: ≥ 3 nós, nenhum deles luz/LOD/BundleGroup/ClippingGroup nem
+  malha/linha/pontos/sprite na camada da câmera. Independe do frustum.
 - **Fora da janela da poda**: a passada de sombra do `three` (roda em
   `_renderObjects`), a sombra nativa e o espelho (que confere `visible` por
   varredura no `update`, SPEC-0322 — o valor já foi devolvido) e o
-  `scene.onBeforeRender`. Caster fora da câmera segue projetando sombra.
+  `scene.onBeforeRender` (onde o lote de bonecos lê o `visible`).
 - `camera` é posta por quadro pelo `Game`; `null` no editor, inspeção,
   carregamento e quadro de aquecimento.
-- Remonta em `childadded`/`childremoved` (qualquer nó) e se a máscara de
-  camadas da câmera mudar; remede 16 candidatas por passe em rodízio.
+- Remonta em `childadded`/`childremoved` dentro das candidatas, se a máscara de
+  camadas da câmera mudar e a cada 120 passes; remede 4 candidatas por passe.
+
+**Armadilha (poda por frustum):** esfera em cache por subárvore parece segura e
+não é — filho que se move dentro de um grupo parado (moto, NPC) deixa a esfera
+velha e o objeto SOME. Foi tentado e retirado (SPEC-0326).
 
 **Armadilha (medição):** sonda que embrulha `_projectObject` em toda chamada
 recursiva soma tempo inclusivo por nível — a R1b leu 5,0 ms onde o custo real
@@ -1206,7 +1244,7 @@ no logo da splash enquanto montava os seis carros.
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
-| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · poda da projeção: `ProjectionPruner.ts` (ADR-0327) |
+| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0325) · poda da projeção: `ProjectionPruner.ts` (ADR-0327) |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
