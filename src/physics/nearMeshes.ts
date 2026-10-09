@@ -1,4 +1,6 @@
-import { Box3, Matrix4, Sphere, type Object3D, type Vector3 } from 'three';
+import { Box3, Matrix4, Sphere, type InstancedMesh, type Intersection, type Object3D, type Ray, type Raycaster } from 'three';
+import { INSTANCE_SPHERE_STRIDE, rayMayHitSphere, spheresOf } from './instancedRaycast.js';
+import { CROSSED_MIN_BVH_TRIS, ensureBoundsTree } from './raycastAccel.js';
 
 /**
  * Filtro barato "só o que está perto" pros raycasts de colisão (SPEC-0302): em vez
@@ -72,12 +74,45 @@ export function traverseCollidable(
   for (const c of o.children) traverseCollidable(c, visit, h);
 }
 
+/** Malhas visíveis (não skinadas) de uma varredura da raiz e quando ela aconteceu (ms, `performance.now`). */
+export interface SceneScan {
+  readonly meshes: readonly Object3D[];
+  readonly at: number;
+}
+
+const scans = new WeakMap<Object3D, SceneScan>();
+
+/**
+ * Publica o resultado de uma varredura de `root` (SPEC-0328): as malhas visíveis, não
+ * skinadas, com a mesma poda do {@link traverseCollidable}. Quem varre a mesma raiz
+ * logo depois (a câmera da 3ª pessoa, depois do `CharacterPhysicsSystem`) reaproveita
+ * em vez de descer na cena de novo. A lista é do publicador: copie, não guarde.
+ */
+export function publishScan(root: Object3D, meshes: readonly Object3D[]): void {
+  scans.set(root, { meshes, at: performance.now() });
+}
+
+/** A varredura publicada de `root` com até `maxAgeMs` de idade, ou `undefined`. */
+export function recentScan(root: Object3D, maxAgeMs: number): SceneScan | undefined {
+  const s = scans.get(root);
+  return s && performance.now() - s.at <= maxAgeMs ? s : undefined;
+}
+
 /** Floats por malha no índice: esfera (x, y, z, raio) e caixa (min x/y/z, máx x/y/z), já com a folga. */
 const STRIDE = 10;
-/** Floats guardados da varredura anterior: esfera (centro + raio), caixa em mundo SEM folga e giro/escala (3×3). */
-const PREV_STRIDE = 19;
+/**
+ * Números guardados da varredura anterior: esfera (centro + raio), caixa em mundo SEM folga,
+ * giro/escala (3×3) de quando a caixa foi feita, a `matrixWorld` inteira e a esfera local
+ * da varredura anterior (SPEC-0328: as duas últimas dizem "nada mudou, reaproveite").
+ */
+const PREV_STRIDE = 39;
 /** Onde começa o 3×3 da `matrixWorld` no registro guardado. */
 const PREV_BASIS = 10;
+/** Onde começa a `matrixWorld` (16) da varredura anterior. */
+const PREV_MATRIX = 19;
+/** Onde começa a esfera LOCAL (centro + raio) da varredura anterior. */
+const PREV_LOCAL = 35;
+const MATRIX_SIZE = 16;
 /** Índices do 3×3 (giro/escala) nos `elements` de uma Matrix4. */
 const BASIS = [0, 1, 2, 4, 5, 6, 8, 9, 10] as const;
 /** Deslocamento da caixa dentro do registro de cada malha. */
@@ -92,6 +127,15 @@ interface WithBox {
 }
 
 const tmpBox = new Box3();
+
+/** Lado (m) da célula da grade XZ do índice (SPEC-0328). */
+export const GRID_CELL = 8;
+/** Malha cuja caixa cobre mais células que isto fica na lista "larga" (testada sempre). */
+const MAX_CELLS_PER_MESH = 16;
+/** Consulta que cobre mais células que isto varre a lista inteira (mais barato que a grade). */
+const MAX_QUERY_CELLS = 64;
+/** Chave da célula: `ix * GRID_KEY_SPAN + iz` (|iz| < metade do vão: ~260 km com células de 8 m). */
+const GRID_KEY_SPAN = 65536;
 
 /** Caixa alinhada aos eixos de `o` em mundo, ou `null` se não tiver geometria (SPEC-0323). */
 export function worldBox(o: Object3D, out: Box3 = tmpBox): Box3 | null {
@@ -116,7 +160,15 @@ export class NearMeshIndex {
   private meshes: readonly Object3D[] = [];
   private data = new Float32Array(0);
   /** Esfera e caixa em mundo de cada malha na varredura anterior (SPEC-0323). */
-  private previous = new WeakMap<Object3D, Float32Array>();
+  private previous = new WeakMap<Object3D, Float64Array>();
+  /** Grade XZ (SPEC-0328): célula → índices das malhas cuja caixa (com folga) a toca. */
+  private readonly cells = new Map<number, number[]>();
+  /** Malhas grandes demais pra grade (rua, célula fundida, sem geometria): entram em toda consulta. */
+  private readonly wide: number[] = [];
+  /** Índices da consulta atual e a marca de "já pego" por malha (sem repetir quem está em 2 células). */
+  private readonly picked: number[] = [];
+  private stamp = new Uint32Array(0);
+  private query = 0;
 
   /**
    * Recalcula esferas e caixas (a caixa só de quem se mexeu: a da parada vem guardada —
@@ -130,8 +182,23 @@ export class NearMeshIndex {
     const d = this.data;
     for (let i = 0; i < meshes.length; i++) {
       const mesh = meshes[i]!;
-      const s = worldSphere(mesh);
       const k = i * STRIDE;
+      let prev = this.previous.get(mesh);
+      if (prev && unchanged(prev, mesh)) {
+        // parada desde a anterior (mesma matrixWorld e esfera local): reaproveita tudo (SPEC-0328)
+        d[k] = prev[0]!;
+        d[k + 1] = prev[1]!;
+        d[k + 2] = prev[2]!;
+        d[k + 3] = prev[3]! + STATIC_MARGIN;
+        d[k + BOX] = prev[BOX]! - STATIC_MARGIN;
+        d[k + BOX + 1] = prev[BOX + 1]! - STATIC_MARGIN;
+        d[k + BOX + 2] = prev[BOX + 2]! - STATIC_MARGIN;
+        d[k + BOX + 3] = prev[BOX + 3]! + STATIC_MARGIN;
+        d[k + BOX + 4] = prev[BOX + 4]! + STATIC_MARGIN;
+        d[k + BOX + 5] = prev[BOX + 5]! + STATIC_MARGIN;
+        continue;
+      }
+      const s = worldSphere(mesh);
       if (!s) {
         d[k] = d[k + 1] = d[k + 2] = 0;
         d[k + 3] = Infinity;
@@ -139,7 +206,6 @@ export class NearMeshIndex {
         d[k + BOX + 3] = d[k + BOX + 4] = d[k + BOX + 5] = Infinity;
         continue;
       }
-      let prev = this.previous.get(mesh);
       const moved =
         !prev ||
         Math.abs(prev[0]! - s.center.x) > MOVE_EPSILON ||
@@ -147,7 +213,8 @@ export class NearMeshIndex {
         Math.abs(prev[2]! - s.center.z) > MOVE_EPSILON ||
         Math.abs(prev[3]! - s.radius) > MOVE_EPSILON ||
         turned(prev, mesh.matrixWorld.elements);
-      if (!prev) this.previous.set(mesh, (prev = new Float32Array(PREV_STRIDE)));
+      if (!prev) this.previous.set(mesh, (prev = new Float64Array(PREV_STRIDE)));
+      remember(prev, mesh);
       prev[0] = s.center.x;
       prev[1] = s.center.y;
       prev[2] = s.center.z;
@@ -181,6 +248,81 @@ export class NearMeshIndex {
       d[k + BOX + 4] = prev[BOX + 4]! + margin;
       d[k + BOX + 5] = prev[BOX + 5]! + margin;
     }
+    this.buildGrid();
+  }
+
+  /** Distribui as malhas nas células da grade pela caixa (com folga) — SPEC-0328. */
+  private buildGrid(): void {
+    for (const [key, list] of this.cells) {
+      if (list.length === 0) this.cells.delete(key); // vazia desde a anterior: some (o mapa não cresce sem fim)
+      else list.length = 0;
+    }
+    this.wide.length = 0;
+    if (this.stamp.length < this.meshes.length) this.stamp = new Uint32Array(this.meshes.length);
+    const d = this.data;
+    for (let i = 0; i < this.meshes.length; i++) {
+      const b = i * STRIDE + BOX;
+      const ix0 = Math.floor(d[b]! / GRID_CELL);
+      const iz0 = Math.floor(d[b + 2]! / GRID_CELL);
+      const ix1 = Math.floor(d[b + 3]! / GRID_CELL);
+      const iz1 = Math.floor(d[b + 5]! / GRID_CELL);
+      const n = (ix1 - ix0 + 1) * (iz1 - iz0 + 1);
+      if (!(n <= MAX_CELLS_PER_MESH)) {
+        this.wide.push(i); // também pega NaN/Infinity (sem geometria)
+        continue;
+      }
+      for (let ix = ix0; ix <= ix1; ix++) {
+        for (let iz = iz0; iz <= iz1; iz++) {
+          const key = ix * GRID_KEY_SPAN + iz;
+          let list = this.cells.get(key);
+          if (!list) this.cells.set(key, (list = []));
+          list.push(i);
+        }
+      }
+    }
+  }
+
+  /**
+   * Índices (crescentes, sem repetição) das malhas nas células que o retângulo XZ toca,
+   * mais as largas; `null` = retângulo grande/infinito, varra todas (SPEC-0328).
+   */
+  private gather(minX: number, minZ: number, maxX: number, maxZ: number): number[] | null {
+    const ix0 = Math.floor(minX / GRID_CELL);
+    const iz0 = Math.floor(minZ / GRID_CELL);
+    const ix1 = Math.floor(maxX / GRID_CELL);
+    const iz1 = Math.floor(maxZ / GRID_CELL);
+    if (!((ix1 - ix0 + 1) * (iz1 - iz0 + 1) <= MAX_QUERY_CELLS)) return null;
+    const out = this.picked;
+    out.length = 0;
+    const stamp = this.stamp;
+    const q = ++this.query;
+    for (let j = 0; j < this.wide.length; j++) {
+      stamp[this.wide[j]!] = q;
+      out.push(this.wide[j]!);
+    }
+    for (let ix = ix0; ix <= ix1; ix++) {
+      for (let iz = iz0; iz <= iz1; iz++) {
+        const list = this.cells.get(ix * GRID_KEY_SPAN + iz);
+        if (!list) continue;
+        for (let j = 0; j < list.length; j++) {
+          const i = list[j]!;
+          if (stamp[i] === q) continue;
+          stamp[i] = q;
+          out.push(i);
+        }
+      }
+    }
+    // ordem da lista original: desempate igual ao da varredura linear
+    for (let a = 1; a < out.length; a++) {
+      const v = out[a]!;
+      let c = a;
+      while (c > 0 && out[c - 1]! > v) {
+        out[c] = out[c - 1]!;
+        c--;
+      }
+      out[c] = v;
+    }
+    return out;
   }
 
   /**
@@ -191,7 +333,10 @@ export class NearMeshIndex {
   nearXZ(x: number, z: number, reach: number, out: Object3D[], minY = -Infinity, maxY = Infinity): Object3D[] {
     out.length = 0;
     const d = this.data;
-    for (let i = 0; i < this.meshes.length; i++) {
+    const list = this.gather(x - reach, z - reach, x + reach, z + reach);
+    const n = list ? list.length : this.meshes.length;
+    for (let q = 0; q < n; q++) {
+      const i = list ? list[q]! : q;
       const k = i * STRIDE;
       const b = k + BOX;
       if (d[b + 1]! > maxY || d[b + 4]! < minY) continue;
@@ -204,28 +349,108 @@ export class NearMeshIndex {
     return out;
   }
 
-  /** As que alcançam o ponto `p` (3D) até `reach` — o braço da câmera. */
-  near(p: Vector3, reach: number, out: Object3D[]): Object3D[] {
+  /**
+   * As que o SEGMENTO do raio cruza (SPEC-0328): caixa em mundo (com a folga) por slab
+   * e esfera. Grava em `entry[i]` a distância em que o raio entra na caixa de `out[i]`
+   * e devolve as duas listas ORDENADAS por ela (mais perto primeiro). Conservador: todo
+   * acerto possível entre `near` e `far` está nas candidatas, e acontece a uma distância
+   * >= a entrada da caixa dela. `ray.direction` tem que ser unitária (como no Raycaster).
+   */
+  alongRay(ray: Ray, near: number, far: number, out: Object3D[], entry: number[]): Object3D[] {
     out.length = 0;
+    entry.length = 0;
     const d = this.data;
-    for (let i = 0; i < this.meshes.length; i++) {
+    const o = ray.origin;
+    const v = ray.direction;
+    // retângulo XZ do segmento (direção 0 no eixo: fica na origem, mesmo com `far` infinito)
+    const ex = v.x === 0 ? o.x : o.x + v.x * far;
+    const ez = v.z === 0 ? o.z : o.z + v.z * far;
+    const list = this.gather(Math.min(o.x, ex), Math.min(o.z, ez), Math.max(o.x, ex), Math.max(o.z, ez));
+    const n = list ? list.length : this.meshes.length;
+    for (let q = 0; q < n; q++) {
+      const i = list ? list[q]! : q;
       const k = i * STRIDE;
       const b = k + BOX;
-      if (d[b]! > p.x + reach || d[b + 3]! < p.x - reach) continue;
-      if (d[b + 1]! > p.y + reach || d[b + 4]! < p.y - reach) continue;
-      if (d[b + 2]! > p.z + reach || d[b + 5]! < p.z - reach) continue;
-      const r = d[k + 3]! + reach;
-      const dx = d[k]! - p.x;
-      const dy = d[k + 1]! - p.y;
-      const dz = d[k + 2]! - p.z;
-      if (dx * dx + dy * dy + dz * dz <= r * r) out.push(this.meshes[i]!);
+      let t0 = near;
+      let t1 = far;
+      // slab por eixo; direção 0 = só confere se a origem está dentro da faixa
+      if (v.x === 0) {
+        if (o.x < d[b]! || o.x > d[b + 3]!) continue;
+      } else {
+        const ta = (d[b]! - o.x) / v.x;
+        const tb = (d[b + 3]! - o.x) / v.x;
+        t0 = Math.max(t0, Math.min(ta, tb));
+        t1 = Math.min(t1, Math.max(ta, tb));
+        if (t0 > t1) continue;
+      }
+      if (v.y === 0) {
+        if (o.y < d[b + 1]! || o.y > d[b + 4]!) continue;
+      } else {
+        const ta = (d[b + 1]! - o.y) / v.y;
+        const tb = (d[b + 4]! - o.y) / v.y;
+        t0 = Math.max(t0, Math.min(ta, tb));
+        t1 = Math.min(t1, Math.max(ta, tb));
+        if (t0 > t1) continue;
+      }
+      if (v.z === 0) {
+        if (o.z < d[b + 2]! || o.z > d[b + 5]!) continue;
+      } else {
+        const ta = (d[b + 2]! - o.z) / v.z;
+        const tb = (d[b + 5]! - o.z) / v.z;
+        t0 = Math.max(t0, Math.min(ta, tb));
+        t1 = Math.min(t1, Math.max(ta, tb));
+        if (t0 > t1) continue;
+      }
+      if (!rayMayHitSphere(o, v, far, d[k]!, d[k + 1]!, d[k + 2]!, d[k + 3]!)) continue;
+      // inserção ordenada: a lista é curta (o que o raio cruza)
+      let j = out.length;
+      out.push(this.meshes[i]!);
+      entry.push(t0);
+      while (j > 0 && entry[j - 1]! > t0) {
+        out[j] = out[j - 1]!;
+        entry[j] = entry[j - 1]!;
+        j--;
+      }
+      out[j] = this.meshes[i]!;
+      entry[j] = t0;
     }
     return out;
   }
 }
 
+/** Esfera local de onde sai a esfera em mundo (a mesma que `worldSphere` usa). */
+function localSphere(o: Object3D): Sphere | null | undefined {
+  const m = o as unknown as WithSphere;
+  return m.isInstancedMesh ? m.boundingSphere : m.geometry?.boundingSphere;
+}
+
+/** Nada que define a esfera/caixa em mundo mudou desde a varredura anterior (comparação exata)? */
+function unchanged(prev: Float64Array, o: Object3D): boolean {
+  const e = o.matrixWorld.elements;
+  for (let j = 0; j < MATRIX_SIZE; j++) if (prev[PREV_MATRIX + j] !== e[j]) return false;
+  const ls = localSphere(o);
+  if (!ls) return false;
+  return (
+    prev[PREV_LOCAL] === ls.center.x &&
+    prev[PREV_LOCAL + 1] === ls.center.y &&
+    prev[PREV_LOCAL + 2] === ls.center.z &&
+    prev[PREV_LOCAL + 3] === ls.radius
+  );
+}
+
+/** Guarda a `matrixWorld` e a esfera local desta varredura (depois do `worldSphere`, que a calcula). */
+function remember(prev: Float64Array, o: Object3D): void {
+  const e = o.matrixWorld.elements;
+  for (let j = 0; j < MATRIX_SIZE; j++) prev[PREV_MATRIX + j] = e[j]!;
+  const ls = localSphere(o)!;
+  prev[PREV_LOCAL] = ls.center.x;
+  prev[PREV_LOCAL + 1] = ls.center.y;
+  prev[PREV_LOCAL + 2] = ls.center.z;
+  prev[PREV_LOCAL + 3] = ls.radius;
+}
+
 /** O 3×3 (giro/escala) mudou desde o guardado? */
-function turned(prev: Float32Array, e: ArrayLike<number>): boolean {
+function turned(prev: Float64Array, e: ArrayLike<number>): boolean {
   for (let j = 0; j < BASIS.length; j++) if (Math.abs(prev[PREV_BASIS + j]! - e[BASIS[j]]!) > MOVE_EPSILON) return true;
   return false;
 }
@@ -248,9 +473,68 @@ export function touchingBox(meshes: readonly Object3D[], box: Box3, out: Object3
   out.length = 0;
   for (let i = 0; i < meshes.length; i++) {
     const m = meshes[i]! as unknown as WithBvh;
-    const tree = m.isInstancedMesh ? undefined : m.geometry?.boundsTree;
+    // encostada no personagem: os 12 raios vão cruzá-la — árvore já a partir de poucos triângulos (SPEC-0328)
+    if (!m.isInstancedMesh && !m.geometry?.boundsTree) ensureBoundsTree(meshes[i]!, CROSSED_MIN_BVH_TRIS);
+    if (m.isInstancedMesh) {
+      // instâncias: fica só se a esfera de alguma toca a caixa (SPEC-0328) — antes passava
+      // sempre e levava os 12 raios, cada um varrendo todas as instâncias
+      if (!anySphereTouches(spheresOf(meshes[i] as InstancedMesh), box)) continue;
+      out.push(meshes[i]!);
+      continue;
+    }
+    const tree = m.geometry?.boundsTree;
     if (tree && !tree.intersectsBox(box, _boxToMesh.copy(m.matrixWorld).invert())) continue;
     out.push(meshes[i]!);
   }
   return out;
+}
+
+/** Alguma esfera (x, y, z, raio por instância) toca a caixa? Distância do centro ao ponto mais próximo da caixa. */
+function anySphereTouches(c: { count: number; spheres: Float32Array }, box: Box3): boolean {
+  const s = c.spheres;
+  for (let i = 0; i < c.count; i++) {
+    const k = i * INSTANCE_SPHERE_STRIDE;
+    const x = s[k]!, y = s[k + 1]!, z = s[k + 2]!, r = s[k + 3]!;
+    const dx = x < box.min.x ? box.min.x - x : x > box.max.x ? x - box.max.x : 0;
+    const dy = y < box.min.y ? box.min.y - y : y > box.max.y ? y - box.max.y : 0;
+    const dz = z < box.min.z ? box.min.z - z : z > box.max.z ? z - box.max.z : 0;
+    if (dx * dx + dy * dy + dz * dz <= r * r) return true;
+  }
+  return false;
+}
+
+const _alongCand: Object3D[] = [];
+const _alongEntry: number[] = [];
+const _meshHits: Intersection[] = [];
+
+/**
+ * O acerto mais próximo do `raycaster` entre as malhas de `index` (SPEC-0328) — mesmo
+ * resultado que `intersectObjects(lista, false)` filtrado por `skip` e lido no 1º, mas
+ * só testa o que o raio cruza, mais perto primeiro, e para quando a próxima malha entra
+ * além do melhor acerto. Respeita `layers` (como o `intersectObjects`). Ligue
+ * `raycaster.firstHitOnly` pra árvore BVH parar no 1º triângulo.
+ * @param skip Descarta o acerto (ex.: o próprio personagem).
+ */
+export function firstHit(
+  raycaster: Raycaster,
+  index: NearMeshIndex,
+  skip?: (o: Object3D) => boolean,
+): Intersection | null {
+  const cand = index.alongRay(raycaster.ray, raycaster.near, raycaster.far, _alongCand, _alongEntry);
+  let best: Intersection | null = null;
+  for (let i = 0; i < cand.length; i++) {
+    if (best && _alongEntry[i]! > best.distance) break; // nada daqui pra frente acerta antes
+    const o = cand[i]!;
+    if (!o.layers.test(raycaster.layers)) continue;
+    // o raio cruza a caixa: árvore já a partir de poucos triângulos (SPEC-0328)
+    if (!(o as unknown as WithBvh).geometry?.boundsTree) ensureBoundsTree(o, CROSSED_MIN_BVH_TRIS);
+    _meshHits.length = 0;
+    o.raycast(raycaster, _meshHits);
+    for (let h = 0; h < _meshHits.length; h++) {
+      const hit = _meshHits[h]!;
+      if ((best === null || hit.distance < best.distance) && !(skip && skip(hit.object))) best = hit;
+    }
+  }
+  _meshHits.length = 0;
+  return best;
 }

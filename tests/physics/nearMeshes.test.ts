@@ -3,8 +3,8 @@
  * varredura da cena no CharacterPhysicsSystem.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { Box3, BoxGeometry, DoubleSide, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Object3D, PlaneGeometry, Vector3 } from 'three';
-import { MOVING_MARGIN, NearMeshIndex, STATIC_MARGIN, touchingBox, traverseCollidable } from '../../src/physics/nearMeshes.js';
+import { Box3, BoxGeometry, Ray, Raycaster, type Intersection, DoubleSide, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Object3D, PlaneGeometry, Vector3 } from 'three';
+import { GRID_CELL, MOVING_MARGIN, NearMeshIndex, firstHit, worldBox, worldSphere, STATIC_MARGIN, touchingBox, traverseCollidable } from '../../src/physics/nearMeshes.js';
 import { ensureBoundsTree } from '../../src/physics/raycastAccel.js';
 import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
@@ -32,7 +32,6 @@ describe('NearMeshIndex (SPEC-0302)', () => {
     const edge = box(MOVING_MARGIN + 0.5, 0, 0); // a malha (lado 2) fica a 4,5 m: só a folga alcança
     const idx = index([near, far, tall, edge]);
     expect(idx.nearXZ(0, 0, 0, [])).toEqual([near, tall, edge]);
-    expect(idx.near(new Vector3(0, 0, 0), 1, [])).toEqual([near, edge]);
   });
 
   it('InstancedMesh usa a esfera das instâncias (a mesma do raycast do three)', () => {
@@ -183,7 +182,7 @@ describe('SPEC-0323: folga só pra quem se mexe; caixa antes dos raios de parede
     idx.rebuild([road]); // parada: folga estática
     expect(idx.nearXZ(50, 0, 0, [])).toEqual([road]); // em cima da rua
     expect(idx.nearXZ(0, 30, 0, [])).toEqual([]); // 28 m ao lado: dentro da esfera (raio 100), fora da caixa
-    expect(idx.near(new Vector3(0, 0, 30), 1, [])).toEqual([]);
+    expect(idx.alongRay(new Ray(new Vector3(-100, 0, 30), new Vector3(1, 0, 0)), 0, 200, [], [])).toEqual([]); // paralelo à rua, 28 m ao lado
   });
 
   // malha de parede com BVH (indirect, como no engine): plano XY de 4×4 m em z = 0
@@ -252,5 +251,188 @@ describe('SPEC-0323: caixa guardada só vale pra malha parada', () => {
     bar.updateMatrixWorld(true);
     idx.rebuild([bar]);
     expect(idx.nearXZ(0, 8, 0, [])).toEqual([bar]);
+  });
+});
+
+describe('SPEC-0328: raio só contra o que ele cruza, mais perto primeiro', () => {
+  const ray = (o: Vector3, d: Vector3, far = Infinity): Raycaster => {
+    const r = new Raycaster(o, d.clone().normalize(), 0, far);
+    (r as Raycaster & { firstHitOnly?: boolean }).firstHitOnly = true;
+    return r;
+  };
+
+  it('alongRay: só o que o segmento cruza, ordenado pela entrada na caixa', () => {
+    const a = box(10, 0, 0);
+    const b = box(4, 0, 0);
+    const side = box(5, 0, 6); // ao lado do raio, dentro de uma esfera de 7 m da origem
+    const behind = box(-5, 0, 0);
+    const beyond = box(30, 0, 0);
+    const idx = index([a, b, side, behind, beyond]);
+    idx.rebuild([a, b, side, behind, beyond]); // paradas: folga estática
+    const entry: number[] = [];
+    const out = idx.alongRay(new Ray(new Vector3(0, 0, 0), new Vector3(1, 0, 0)), 0, 15, [], entry);
+    expect(out).toEqual([b, a]);
+    expect(entry[0]).toBeCloseTo(3 - STATIC_MARGIN, 5);
+    expect(entry[1]).toBeCloseTo(9 - STATIC_MARGIN, 5);
+  });
+
+  it('alongRay com direção 0 num eixo (raio vertical) e origem dentro da caixa', () => {
+    const floor = box(0, -1, 0);
+    const roof = box(0, 50, 0);
+    const aside = box(20, -1, 0);
+    const idx = index([floor, roof, aside]);
+    const entry: number[] = [];
+    expect(idx.alongRay(new Ray(new Vector3(0, 1, 0), new Vector3(0, -1, 0)), 0, Infinity, [], entry)).toEqual([floor]);
+    expect(idx.alongRay(new Ray(new Vector3(0, -1, 0), new Vector3(0, -1, 0)), 0, Infinity, [], entry)).toEqual([floor]);
+    expect(entry[0]).toBe(0); // origem dentro: entra já em `near`
+  });
+
+  /** Cena aleatória: firstHit tem que dar o mesmo ponto que intersectObjects + 1º acerto. */
+  it('firstHit = 1º acerto do intersectObjects (cena aleatória, com e sem BVH)', () => {
+    let seed = 7;
+    const rnd = (): number => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const meshes: Mesh[] = [];
+    for (let i = 0; i < 60; i++) {
+      const m = i % 3 === 0
+        ? new Mesh(new PlaneGeometry(3, 3, 24, 24), new MeshBasicMaterial({ side: DoubleSide })) // com árvore
+        : new Mesh(new BoxGeometry(0.5 + rnd() * 2, 0.5 + rnd() * 2, 0.5 + rnd() * 2), new MeshBasicMaterial());
+      m.position.set(rnd() * 20 - 10, rnd() * 6 - 3, rnd() * 20 - 10);
+      m.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
+      m.updateMatrixWorld(true);
+      ensureBoundsTree(m);
+      meshes.push(m);
+    }
+    const idx = index(meshes);
+    const plain = new Raycaster();
+    let hits = 0;
+    for (let k = 0; k < 200; k++) {
+      const o = new Vector3(rnd() * 24 - 12, rnd() * 8 - 4, rnd() * 24 - 12);
+      const d = new Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize();
+      const far = 2 + rnd() * 20;
+      plain.set(o, d);
+      plain.far = far;
+      const ref = plain.intersectObjects(meshes, false)[0];
+      const got = firstHit(ray(o, d, far), idx);
+      expect(got === null).toBe(ref === undefined);
+      if (ref) {
+        hits++;
+        // a árvore em `raycastFirst` chega no mesmo triângulo por outra conta: igual até ~1e-15
+        expect(got!.distance).toBeCloseTo(ref.distance, 9);
+        expect(got!.point.distanceTo(ref.point)).toBeLessThan(1e-9);
+      }
+    }
+    expect(hits).toBeGreaterThan(20); // o teste exercitou acertos de verdade
+  });
+
+  it('firstHit para na 1ª malha: não testa a que entra depois do acerto', () => {
+    const wall = box(3, 0, 0);
+    const later = box(10, 0, 0);
+    const spy = vi.spyOn(later, 'raycast');
+    const h = firstHit(ray(new Vector3(0, 0, 0), new Vector3(1, 0, 0), 20), index([later, wall]));
+    expect(h?.object).toBe(wall);
+    expect(h?.distance).toBeCloseTo(2);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('firstHit respeita layers e o filtro de acerto (o próprio personagem)', () => {
+    const shadowOnly = box(3, 0, 0);
+    shadowOnly.layers.set(29); // malha só de sombra (ADR-0280): fora do raycast
+    const self = box(5, 0, 0);
+    const wall = box(8, 0, 0);
+    const idx = index([shadowOnly, self, wall]);
+    const h = firstHit(ray(new Vector3(0, 0, 0), new Vector3(1, 0, 0), 20), idx, (o) => o === self);
+    expect(h?.object).toBe(wall);
+    const all: Intersection[] = new Raycaster(new Vector3(), new Vector3(1, 0, 0), 0, 20).intersectObjects([shadowOnly, self, wall], false);
+    expect([...new Set(all.map((x) => x.object))]).toEqual([self, wall]); // a referência também pula a layer 29
+  });
+});
+
+describe('SPEC-0328: grade XZ do índice', () => {
+  /** Referência por força bruta: caixa e esfera em mundo com a folga, como o índice descreve. */
+  const brute = (meshes: Mesh[], x: number, z: number, reach: number, margin: number): Mesh[] =>
+    meshes.filter((m) => {
+      const b = worldBox(m)!.clone().expandByScalar(margin);
+      const sp = worldSphere(m)!;
+      if (b.min.x > x + reach || b.max.x < x - reach || b.min.z > z + reach || b.max.z < z - reach) return false;
+      const r = sp.radius + margin + reach;
+      return (sp.center.x - x) ** 2 + (sp.center.z - z) ** 2 <= r * r;
+    });
+
+  it('nearXZ pela grade = varredura linear (malhas pequenas, largas e que mudam de célula)', () => {
+    let seed = 11;
+    const rnd = (): number => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const meshes: Mesh[] = [];
+    for (let i = 0; i < 150; i++) {
+      const wide = i % 25 === 0; // rua/célula fundida: cobre muitas células
+      const m = box(rnd() * 200 - 100, 0, rnd() * 200 - 100, wide ? GRID_CELL * 6 : 0.5 + rnd() * 3);
+      meshes.push(m);
+    }
+    const idx = new NearMeshIndex();
+    idx.rebuild(meshes);
+    idx.rebuild(meshes); // paradas: folga estática
+    for (let k = 0; k < 300; k++) {
+      const x = rnd() * 220 - 110, z = rnd() * 220 - 110, reach = rnd() * 3;
+      expect(idx.nearXZ(x, z, reach, [])).toEqual(brute(meshes, x, z, reach, STATIC_MARGIN));
+    }
+    // uma muda de célula: some da antiga, aparece na nova (com a folga de quem andou)
+    const mover = meshes[1]!;
+    const from = mover.position.clone();
+    mover.position.x += GRID_CELL * 5;
+    mover.updateMatrixWorld(true);
+    idx.rebuild(meshes);
+    expect(idx.nearXZ(from.x, from.z, 0, [])).not.toContain(mover);
+    expect(idx.nearXZ(mover.position.x, mover.position.z, 0, [])).toContain(mover);
+  });
+
+  it('raio longo (muitas células) cai na varredura inteira e acha igual', () => {
+    const far = box(300, 0, 0);
+    const idx = index([box(0, 0, 50), far]);
+    const h = firstHit(new Raycaster(new Vector3(0, 0, 0), new Vector3(1, 0, 0), 0, Infinity), idx);
+    expect(h?.object).toBe(far);
+  });
+});
+
+describe('SPEC-0328: rebuild reaproveita só quem não mudou', () => {
+  it('parada reaproveita; geometria que cresceu no lugar (mesma Sphere) é recalculada', () => {
+    const m = box(0, 0, 0, 1);
+    const idx = new NearMeshIndex();
+    idx.rebuild([m]);
+    idx.rebuild([m]); // parada: folga estática
+    expect(idx.nearXZ(3, 0, 0, [])).toEqual([]);
+    m.geometry.scale(8, 1, 1); // agora vai de x = -4 a 4
+    m.geometry.computeBoundingSphere(); // three reaproveita o MESMO objeto Sphere
+    m.geometry.computeBoundingBox();
+    idx.rebuild([m]);
+    expect(idx.nearXZ(3, 0, 0, [])).toEqual([m]);
+  });
+});
+
+describe('SPEC-0328: malha que o raio cruza ganha árvore', () => {
+  it('firstHit monta a BVH da malha cruzada (ônibus) e acerta igual', () => {
+    const bus = new Mesh(new BoxGeometry(12, 3, 2.5, 6, 3, 3), new MeshBasicMaterial()); // ~200 tris, compacta
+    bus.position.set(10, 0, 0); // de x = 4 a 16
+    bus.updateMatrixWorld(true);
+    ensureBoundsTree(bus); // varredura: recusa (abaixo de MIN_BVH_TRIS)
+    expect((bus.geometry as { boundsTree?: unknown }).boundsTree).toBeUndefined();
+    const r = new Raycaster(new Vector3(0, 0, 0), new Vector3(1, 0, 0), 0, 20);
+    const ref = r.intersectObject(bus, false)[0]!;
+    const h = firstHit(r, index([bus]));
+    expect((bus.geometry as { boundsTree?: unknown }).boundsTree).toBeDefined();
+    expect(h!.distance).toBeCloseTo(ref.distance, 9);
+  });
+});
+
+describe('SPEC-0328: touchingBox descarta InstancedMesh pelas esferas das instâncias', () => {
+  it('fica só a instanciada com alguma instância tocando a caixa', () => {
+    const make = (...xs: number[]): InstancedMesh => {
+      const inst = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial(), xs.length);
+      xs.forEach((x, i) => inst.setMatrixAt(i, new Matrix4().makeTranslation(x, 1, 0)));
+      inst.updateMatrixWorld(true);
+      return inst;
+    };
+    const far = make(30, -40, 80); // lixeiras espalhadas, nenhuma perto
+    const near = make(50, 0.9); // uma encostada (esfera 0,87 da caixa em x = 0,9)
+    const b = new Box3(new Vector3(-0.5, 0, -0.5), new Vector3(0.5, 2, 0.5));
+    expect(touchingBox([far, near], b, [])).toEqual([near]);
   });
 });

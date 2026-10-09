@@ -66,6 +66,16 @@ export const MIN_BVH_TRIS = 512;
  */
 export const SPREAD_BVH_RADIUS = 10;
 
+/**
+ * Corte de triângulos pra malha que um raio de colisão CRUZA (SPEC-0328): a caixa dela
+ * não descartou o raio, então o three testa triângulo por triângulo — no Hermes ~1,5 µs
+ * por triângulo (ônibus de ~400 tris = ~0,7 ms por raio), contra ~20 µs com árvore.
+ */
+export const CROSSED_MIN_BVH_TRIS = 64;
+
+/** Marca na geometria: o menor corte de triângulos com que ela já foi recusada. */
+const BVH_SKIP = '_cortexBvhSkip';
+
 /** Opções da árvore: nunca alterar a geometria (SPEC-0304). */
 const BVH_OPTIONS = { indirect: true } as const;
 
@@ -82,8 +92,11 @@ const BVH_OPTIONS = { indirect: true } as const;
  * com árvore.
  *
  * @param mesh Objeto da cena a ser testado por raycast (chão/parede).
+ * @param minTris Corte de triângulos (default {@link MIN_BVH_TRIS}); quem o raio cruza
+ * passa {@link CROSSED_MIN_BVH_TRIS} (SPEC-0328). Recusada com um corte, só tenta de
+ * novo com um MENOR.
  */
-export function ensureBoundsTree(mesh: Object3D): void {
+export function ensureBoundsTree(mesh: Object3D, minTris = MIN_BVH_TRIS): void {
   const m = mesh as Mesh & { isSkinnedMesh?: boolean; isInstancedMesh?: boolean };
   if (m.isSkinnedMesh) return;
   // ponytail: `length === 0` = no-op; embrulho com rest (`(...a) =>`) também tem 0 e perderia a árvore
@@ -91,12 +104,14 @@ export function ensureBoundsTree(mesh: Object3D): void {
   const g = m.geometry as
     | (BufferGeometry & { boundsTree?: unknown; computeBoundsTree?: (options?: typeof BVH_OPTIONS) => void })
     | undefined;
-  if (!g || g.boundsTree || (g.userData as Record<string, unknown>)['_cortexBvhSkip']) return;
+  if (!g || g.boundsTree) return;
+  const refused = (g.userData as Record<string, unknown>)[BVH_SKIP] as number | undefined;
+  if (refused !== undefined && minTris >= refused) return;
   const posCount = (g.attributes as Record<string, { count?: number }>)['position']?.count ?? 0;
   const triCount = g.index ? g.index.count / 3 : posCount / 3;
   if (triCount > 0 && !g.boundingSphere) g.computeBoundingSphere();
   const spread = (g.boundingSphere?.radius ?? 0) >= SPREAD_BVH_RADIUS;
-  if (triCount >= MIN_BVH_TRIS || (triCount > 0 && spread)) {
+  if (triCount >= minTris || (triCount > 0 && spread)) {
     // `indirect`: a árvore guarda a ordem dos triângulos num buffer próprio e NÃO mexe
     // na geometria. O modo padrão reordena o índice (e CRIA um, se não houver) — numa
     // malha já enviada pra GPU, o WebGPU passava a desenhar com um índice que nunca
@@ -104,6 +119,6 @@ export function ensureBoundsTree(mesh: Object3D): void {
     // ao voar no editor (SPEC-0304).
     g.computeBoundsTree?.(BVH_OPTIONS);
   } else {
-    (g.userData as Record<string, unknown>)['_cortexBvhSkip'] = true; // pequena e compacta: não vale a árvore
+    (g.userData as Record<string, unknown>)[BVH_SKIP] = minTris; // pequena e compacta: não vale a árvore
   }
 }

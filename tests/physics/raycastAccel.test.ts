@@ -15,7 +15,7 @@ import {
   SphereGeometry,
   Vector3,
 } from 'three';
-import { ensureBoundsTree, MIN_BVH_TRIS, SPREAD_BVH_RADIUS } from '../../src/physics/raycastAccel.js';
+import { CROSSED_MIN_BVH_TRIS, ensureBoundsTree, MIN_BVH_TRIS, SPREAD_BVH_RADIUS } from '../../src/physics/raycastAccel.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -52,7 +52,7 @@ describe('raycastAccel — BVH de colisão do Character', () => {
     );
     ensureBoundsTree(new Mesh(geo));
     expect((geo as any).boundsTree).toBeUndefined();
-    expect((geo.userData as any)['_cortexBvhSkip']).toBe(true);
+    expect((geo.userData as any)['_cortexBvhSkip']).toBe(MIN_BVH_TRIS);
   });
 });
 
@@ -138,5 +138,19 @@ describe('raycastAccel — malha pequena ESPALHADA ganha árvore (SPEC-0320)', (
     const geo = new SphereGeometry(SPREAD_BVH_RADIUS / 4, 8, 6); // < MIN_BVH_TRIS e raio pequeno
     ensureBoundsTree(new Mesh(geo));
     expect((geo as any).boundsTree).toBeUndefined();
+  });
+});
+
+describe('raycastAccel — corte menor pra quem o raio cruza (SPEC-0328)', () => {
+  it('recusada no corte padrão, ganha árvore com CROSSED_MIN_BVH_TRIS; menor que ele continua sem', () => {
+    const bus = new Mesh(new SphereGeometry(3, 12, 10)); // ~200 tris, raio 3 m: "pequena e compacta"
+    ensureBoundsTree(bus);
+    expect((bus.geometry as any).boundsTree).toBeUndefined();
+    ensureBoundsTree(bus, CROSSED_MIN_BVH_TRIS);
+    expect((bus.geometry as any).boundsTree).toBeDefined();
+    const tiny = new Mesh(new SphereGeometry(1, 4, 3)); // < 64 tris
+    ensureBoundsTree(tiny, CROSSED_MIN_BVH_TRIS);
+    expect((tiny.geometry as any).boundsTree).toBeUndefined();
+    expect((tiny.geometry.userData as any)['_cortexBvhSkip']).toBe(CROSSED_MIN_BVH_TRIS);
   });
 });
