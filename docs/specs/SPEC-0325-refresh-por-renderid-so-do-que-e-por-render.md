@@ -140,3 +140,45 @@ os objetos 2..N do mesmo material, **mais** os uniforms de objeto atualizados.
   completo; o objeto que anda passa pelo `TransformOnlyRefresh` sem o plano
   aplicado duas vezes.
 - A/B no export release do DDD 61 (`.cortex/r2-b2/`): ver "Resultado".
+
+## Resultado (DDD 61, export release, 2026-10-07)
+
+Baseline = export da main `81a84ddd` (já com o espelho só-sujo, SPEC-0322);
+candidato = esta branch, mesmo jogo (`0e036a1`), mesmo host. Rodadas de 125 s
+intercaladas, análise com t ≥ 30 s. `off` = candidato com `?renderIdRefresh=0`.
+
+| ponto / rodada | fps (1000/med) | quadro med | p95 | `cpu.render` med |
+| --- | --- | --- | --- | --- |
+| setorO main 1 / 2 | 43,1 / 45,7 | 23,2 / 21,9 | 28,7 / 26,5 | 11,0 / 10,8 |
+| setorO off 1 | 44,8 | 22,3 | 28,5 | 10,9 |
+| setorO **cand** 1 / 2 | **48,3 / 46,7** | **20,7 / 21,4** | **25,9 / 26,2** | **10,0 / 10,0** |
+| comercial main 1 / 2 | 39,2 / 39,2 | 25,5 / 25,5 | 30,7 / 32,3 | 11,3 / 11,6 |
+| comercial off 1 | 39,4 | 25,4 | 32,0 | 11,6 |
+| comercial **cand** 1 / 2 | **41,0 / 40,0** | **24,4 / 25,0** | **30,3 / 30,2** | **10,8 / 10,8** |
+
+`cpu.render`: **−0,9 ms** (setorO) e **−0,65 ms** (comercial); quadro med −1,0 a
+−1,2 ms nos dois pontos. O braço `off` cai junto com a main (ou seja, o ganho vem
+da flag, não do export).
+
+Sonda (`needsRefresh` classificado + tempo dos três buckets do refresh, sonda
+descartável da R1b):
+
+| | refresh/quadro | motivo `renderId` | bindings + nodes + geometries |
+| --- | --- | --- | --- |
+| setorO off → on | 53,9 → 17,4 | 45,5 → 9,0 | 2,64 → 0,81 ms |
+| comercial off → on | 56,1 → 18,8 | 49,0 → 11,7 | 2,68 → 0,95 ms |
+
+O ganho líquido no `render` (~0,7–1 ms) é menor que a queda dos buckets
+(~1,8 ms): o caminho novo também custa (nós de objeto + comparação do UBO por
+objeto parado, mais o wrapper), e esse custo fica dentro do `needsRefresh`, fora
+dos buckets. Fica abaixo da meta da frente (−1,5 a −2,5 ms). Próximo passo, se
+valer: pular o plano de objeto quando não há nó `OBJECT` além de matriz/normal (o
+objeto parado não precisa reavaliá-los).
+
+Os ~9–12 `renderId` que sobram por quadro são `InstancedMesh` cuja matriz de
+instância muda todo quadro (trânsito, pedestres, faróis) e `BatchedMesh`, que
+continuam no refresh do three de propósito.
+
+Screenshots aos 90 s (`.cortex/r2-b2/runs/*/shot90.png`): candidato igual à main
+em sombras (árvores, postes), luzes e feixes de farol (moto passando no setorO),
+janelas emissivas, HUD, minimapa e prompts.
