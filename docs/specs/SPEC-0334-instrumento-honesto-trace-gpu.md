@@ -103,6 +103,29 @@ Medida com `__cortexGcStats`/`HermesInternal.getInstrumentedStats` por seção;
 cortes só onde é barato e fora das frentes paralelas (ver Consequências para o
 que foi medido e cortado).
 
+## Medido (export release do DDD 61, jogo `9be7c6f`, intercalado A,B,A,B)
+
+| | antes (main `0e3ea11c`) | depois |
+|---|---|---|
+| custo da amostra (med / p95) | 17–33 ms / 19–46 ms | **0,36 / ~0,5 ms** |
+| travessia em rodízio | — | 0,11 ms/quadro, volta de 159 quadros |
+| js p95 do host, centro (média das janelas) | 30,5 · 27,1 | 25,2 · 24,1 |
+| js p95 do host, setorO | 70,0 · 38,6 | 42,4 · 29,6 |
+| pass-timing | "64 passes/frame" (lixo) | 7,0–7,6 passes, gpu-work 0,31–0,33 ms |
+
+- Validação em resposta conhecida: escala 1,0 (¼ dos pixels) derruba os passes
+  do three de 0,30 para 0,18 ms; o blit final (mesmo tamanho de saída) fica em
+  0,006–0,007 ms. `SceneWalk` tem teste de igualdade contra as três travessias
+  completas; a agregação do pass-timing tem teste com slot velho e par
+  inválido.
+- Alocação (sonda descartável por seção, ~540 KB/quadro): `update` do jogo
+  ~260 KB, `render` ~150 KB (three/`src/render`), `ui` ~60 KB (quase tudo o
+  `renderer.render` do three na camada de UI), sistemas de personagem/veículo
+  ~55 KB, `World.query` ~5 KB. Os cortes baratos da engine (closure por
+  entidade no `query`, `Color` por quadro no `renderUiLayer`) não aparecem
+  acima do ruído da máquina; GC jovem segue 0,2–0,4 ms/quadro. Chegar a ~0,2 ms
+  depende de `update` (jogo) e `render`.
+
 ## Consequências
 
 - Medições a partir daqui não carregam o pico de 25 ms do trace; o p95 de
