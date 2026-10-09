@@ -1,3 +1,18 @@
+## [0.75.3](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.75.2...v0.75.3) (2026-10-07)
+
+
+### Bug Fixes
+
+* **engine:** braço da câmera de 3ª pessoa encolhe rápido, segura e volta devagar — sem pulo com viga/pilar cruzando o raio (SPEC-0311) ([01ec8a6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/01ec8a6683c506ee28b1628adfc94cc2df202a7c))
+* **engine:** BVH só some no raycast sem parâmetros — embrulho (ray, out) colide e mantém a árvore (SPEC-0308) ([5c162ff](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5c162ffd87b532abc2976e9cd698b0ee486258b4))
+
+
+### Performance Improvements
+
+* **engine:** BVH só em malha que pode colidir — pula raycast sobrescrito e userData.cortexNoCollide (SPEC-0308) ([36d93d6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/36d93d6e0697e4e57eeeed1337ce9d760de1d915))
+* **engine:** colisão do personagem e da câmera sem gizmo do editor e sem o que está escondido (SPEC-0307) ([df77d93](https://github.com/BuuhV-Projects/cortex-game-engine/commit/df77d932c401e1d3bb9ee6ea5bfc8cb9a281eebb))
+* **engine:** quadro de aquecimento cria os pipelines em paralelo (SPEC-0309, ADR-0310) ([071f3c2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/071f3c2a7b8b16d6be4c1df75c6f0171775da2ef))
+
 ## [0.75.2](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.75.1...v0.75.2) (2026-10-06)
 
 
