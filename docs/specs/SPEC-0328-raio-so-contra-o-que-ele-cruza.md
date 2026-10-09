@@ -51,6 +51,38 @@ acertos; os 12 raios de parede, idem, contra as paredes que tocam a caixa.
    - paredes: continuam `intersectObjects` na lista curta do `touchingBox`
      (SPEC-0323), agora com `firstHitOnly`.
 
+5. **Grade XZ no índice.** `nearXZ`/`alongRay` não varrem mais a lista toda: o
+   `rebuild` distribui as malhas em células de `GRID_CELL` = 8 m pela caixa com folga
+   (`Map` célula → índices); malha que cobre mais de 16 células (rua, célula fundida,
+   InstancedMesh espalhada) fica numa lista "larga" que entra em toda consulta;
+   consulta que cobre mais de 64 células (raio infinito na horizontal) varre tudo. A
+   ordem de saída é a da lista original (desempate igual ao da varredura linear).
+   - Tentada e descartada: grade em typed arrays (CSR por hash, sem `Map`) — no
+     interpretador (`node --jitless`, proxy do Hermes) montar saiu 1,0 ms contra 0,6 ms
+     do `Map` (chamada de função + `fill` de 4 mil baldes pesam sem JIT).
+6. **`rebuild` reaproveita a malha parada.** Se a `matrixWorld` (16 números) e a
+   esfera local são exatamente as da varredura anterior, esfera e caixa em mundo vêm
+   do registro guardado, sem `applyMatrix4`. No proxy: `rebuild` de 920 malhas paradas
+   3,6 → 1,7 ms (a cada 250 ms, em 4 índices: câmera + chão/terreno/parede). Geometria
+   que muda no lugar (o three reaproveita o objeto `Sphere`) muda a esfera local e
+   recalcula.
+7. **Malha que o raio CRUZA ganha árvore a partir de `CROSSED_MIN_BVH_TRIS` = 64
+   triângulos.** A 2ª sonda (custo por malha dentro do `firstHit`, Comercial) achou
+   **`onibus_laranja` = 1,39 ms/quadro sozinho**: ~400 triângulos e raio < 10 m, então
+   o `ensureBoundsTree` o recusava ("pequena e compacta", corte de `MIN_BVH_TRIS` =
+   512, ADR-0108/SPEC-0320) e cada raio que cruzava a caixa dele testava triângulo
+   por triângulo (~0,7 ms/raio no Hermes; com árvore ~20 µs). O corte de 512 continua
+   valendo pra preparação em massa na varredura; o `firstHit` e o `touchingBox` pedem
+   a árvore com 64 a quem eles vão de fato testar. A marca de recusa guarda o corte
+   usado (`_cortexBvhSkip` = número), e só um corte menor tenta de novo.
+
+   Custo por classe de malha na 2ª sonda (Comercial, ms/quadro, câmera + chão):
+   ônibus 1,39 · malhas com árvore 0,66 · InstancedMesh 0,84 (`portas-lojas`, 214
+   instâncias sem árvore, 0,41) · sem árvore 0,03 · busca no índice (`alongRay`) 0,32.
+   ~50 candidatas por raio: 128 malhas "largas" (fusões estáticas, InstancedMesh da
+   cidade inteira) cuja caixa contém a origem do raio — a ordenação por entrada não
+   as corta.
+
 Resultado idêntico ao anterior: mesma superfície mais próxima, mesma distância (o
 desempate entre duas malhas exatamente coplanares pode trocar o `object`, nunca o
 ponto). Comportamento do braço (SPEC-0311) e da colisão (degrau, parede, anti-clip)
@@ -61,9 +93,11 @@ inalterado.
 - O custo dos raios passa a depender do que o raio cruza, não do que está em volta
   do personagem: no meio da rua o braço da câmera não testa malha nenhuma além do
   chão que ele atravessa.
-- A varredura (`tpCollect`) e o `rebuild` do índice não mudam; a busca no índice
-  continua linear nos alvos (~900 no Comercial). Índice espacial (grade) só entra se
-  a busca linear aparecer no perfil.
+- A varredura (`traverseCollidable`) não muda; o `rebuild` fica mais barato pra
+  malha parada e ganha a montagem da grade.
+- Malhas pequenas que um raio de colisão cruza ganham árvore no 1º quadro em que isso
+  acontece (custo único, ~centenas de triângulos; a geometria compartilhada entre
+  clones — ônibus — monta uma vez só).
 - Testes: `tests/physics/nearMeshes.test.ts` (`alongRay` conservador e ordenado,
   `firstHit` = 1º acerto do `intersectObjects`, layers, filtro),
   testes da câmera (não atravessa parede) e `tests/systems/CharacterPhysics.test.ts`

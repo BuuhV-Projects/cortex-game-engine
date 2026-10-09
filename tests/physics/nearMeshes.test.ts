@@ -391,3 +391,33 @@ describe('SPEC-0328: grade XZ do índice', () => {
     expect(h?.object).toBe(far);
   });
 });
+
+describe('SPEC-0328: rebuild reaproveita só quem não mudou', () => {
+  it('parada reaproveita; geometria que cresceu no lugar (mesma Sphere) é recalculada', () => {
+    const m = box(0, 0, 0, 1);
+    const idx = new NearMeshIndex();
+    idx.rebuild([m]);
+    idx.rebuild([m]); // parada: folga estática
+    expect(idx.nearXZ(3, 0, 0, [])).toEqual([]);
+    m.geometry.scale(8, 1, 1); // agora vai de x = -4 a 4
+    m.geometry.computeBoundingSphere(); // three reaproveita o MESMO objeto Sphere
+    m.geometry.computeBoundingBox();
+    idx.rebuild([m]);
+    expect(idx.nearXZ(3, 0, 0, [])).toEqual([m]);
+  });
+});
+
+describe('SPEC-0328: malha que o raio cruza ganha árvore', () => {
+  it('firstHit monta a BVH da malha cruzada (ônibus) e acerta igual', () => {
+    const bus = new Mesh(new BoxGeometry(12, 3, 2.5, 6, 3, 3), new MeshBasicMaterial()); // ~200 tris, compacta
+    bus.position.set(10, 0, 0); // de x = 4 a 16
+    bus.updateMatrixWorld(true);
+    ensureBoundsTree(bus); // varredura: recusa (abaixo de MIN_BVH_TRIS)
+    expect((bus.geometry as { boundsTree?: unknown }).boundsTree).toBeUndefined();
+    const r = new Raycaster(new Vector3(0, 0, 0), new Vector3(1, 0, 0), 0, 20);
+    const ref = r.intersectObject(bus, false)[0]!;
+    const h = firstHit(r, index([bus]));
+    expect((bus.geometry as { boundsTree?: unknown }).boundsTree).toBeDefined();
+    expect(h!.distance).toBeCloseTo(ref.distance, 9);
+  });
+});

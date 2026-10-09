@@ -385,7 +385,14 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   cujos triângulos tocam a caixa que eles varrem (`touchingBox`: 1 `intersectsBox` da
   BVH por candidata, exato; sem árvore ou instanciada passa direto) — no meio da rua não
   sai raio de parede nenhum (SPEC-0323); o spring arm da 3ª pessoa faz o mesmo e tem um
-  2º raio na altura do peito (parede baixa). O braço tem **memória** (SPEC-0311):
+  2º raio na altura do peito (parede baixa). **Raio × índice (SPEC-0328):** o índice
+  tem uma grade XZ (células de `GRID_CELL` = 8 m; malha que cobre > 16 células fica
+  numa lista "larga" testada sempre), então `nearXZ`/`alongRay` não varrem os ~900
+  alvos. Câmera, chão e anti-clip usam `firstHit(raycaster, índice, skip?)`: só as
+  malhas cuja caixa/esfera o SEGMENTO cruza, ordenadas pela entrada na caixa, e para
+  quando a próxima entra além do melhor acerto; respeita `layers` como o
+  `intersectObjects`. Os raycasters de colisão ligam `firstHitOnly` (BVH para no 1º
+  triângulo). ⚠️ quem precisar de TODOS os acertos não pode usar esses raycasters. O braço tem **memória** (SPEC-0311):
   o raio dá só o alvo — encolhe a 12 m/s, segura 1 s e volta a 3 m/s; `setOrbit`
   é corte e encaixa. Sem isso, viga/poste cruzando o raio (trem andando, câmera
   girando) vira salto de distância a cada quadro. ⚠️ objeto novo vira chão/parede em até

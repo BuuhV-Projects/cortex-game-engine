@@ -1,5 +1,6 @@
 import { Box3, Matrix4, Sphere, type Intersection, type Object3D, type Ray, type Raycaster } from 'three';
 import { rayMayHitSphere } from './instancedRaycast.js';
+import { CROSSED_MIN_BVH_TRIS, ensureBoundsTree } from './raycastAccel.js';
 
 /**
  * Filtro barato "só o que está perto" pros raycasts de colisão (SPEC-0302): em vez
@@ -75,10 +76,19 @@ export function traverseCollidable(
 
 /** Floats por malha no índice: esfera (x, y, z, raio) e caixa (min x/y/z, máx x/y/z), já com a folga. */
 const STRIDE = 10;
-/** Floats guardados da varredura anterior: esfera (centro + raio), caixa em mundo SEM folga e giro/escala (3×3). */
-const PREV_STRIDE = 19;
+/**
+ * Números guardados da varredura anterior: esfera (centro + raio), caixa em mundo SEM folga,
+ * giro/escala (3×3) de quando a caixa foi feita, a `matrixWorld` inteira e a esfera local
+ * da varredura anterior (SPEC-0328: as duas últimas dizem "nada mudou, reaproveite").
+ */
+const PREV_STRIDE = 39;
 /** Onde começa o 3×3 da `matrixWorld` no registro guardado. */
 const PREV_BASIS = 10;
+/** Onde começa a `matrixWorld` (16) da varredura anterior. */
+const PREV_MATRIX = 19;
+/** Onde começa a esfera LOCAL (centro + raio) da varredura anterior. */
+const PREV_LOCAL = 35;
+const MATRIX_SIZE = 16;
 /** Índices do 3×3 (giro/escala) nos `elements` de uma Matrix4. */
 const BASIS = [0, 1, 2, 4, 5, 6, 8, 9, 10] as const;
 /** Deslocamento da caixa dentro do registro de cada malha. */
@@ -126,7 +136,7 @@ export class NearMeshIndex {
   private meshes: readonly Object3D[] = [];
   private data = new Float32Array(0);
   /** Esfera e caixa em mundo de cada malha na varredura anterior (SPEC-0323). */
-  private previous = new WeakMap<Object3D, Float32Array>();
+  private previous = new WeakMap<Object3D, Float64Array>();
   /** Grade XZ (SPEC-0328): célula → índices das malhas cuja caixa (com folga) a toca. */
   private readonly cells = new Map<number, number[]>();
   /** Malhas grandes demais pra grade (rua, célula fundida, sem geometria): entram em toda consulta. */
@@ -148,8 +158,23 @@ export class NearMeshIndex {
     const d = this.data;
     for (let i = 0; i < meshes.length; i++) {
       const mesh = meshes[i]!;
-      const s = worldSphere(mesh);
       const k = i * STRIDE;
+      let prev = this.previous.get(mesh);
+      if (prev && unchanged(prev, mesh)) {
+        // parada desde a anterior (mesma matrixWorld e esfera local): reaproveita tudo (SPEC-0328)
+        d[k] = prev[0]!;
+        d[k + 1] = prev[1]!;
+        d[k + 2] = prev[2]!;
+        d[k + 3] = prev[3]! + STATIC_MARGIN;
+        d[k + BOX] = prev[BOX]! - STATIC_MARGIN;
+        d[k + BOX + 1] = prev[BOX + 1]! - STATIC_MARGIN;
+        d[k + BOX + 2] = prev[BOX + 2]! - STATIC_MARGIN;
+        d[k + BOX + 3] = prev[BOX + 3]! + STATIC_MARGIN;
+        d[k + BOX + 4] = prev[BOX + 4]! + STATIC_MARGIN;
+        d[k + BOX + 5] = prev[BOX + 5]! + STATIC_MARGIN;
+        continue;
+      }
+      const s = worldSphere(mesh);
       if (!s) {
         d[k] = d[k + 1] = d[k + 2] = 0;
         d[k + 3] = Infinity;
@@ -157,7 +182,6 @@ export class NearMeshIndex {
         d[k + BOX + 3] = d[k + BOX + 4] = d[k + BOX + 5] = Infinity;
         continue;
       }
-      let prev = this.previous.get(mesh);
       const moved =
         !prev ||
         Math.abs(prev[0]! - s.center.x) > MOVE_EPSILON ||
@@ -165,7 +189,8 @@ export class NearMeshIndex {
         Math.abs(prev[2]! - s.center.z) > MOVE_EPSILON ||
         Math.abs(prev[3]! - s.radius) > MOVE_EPSILON ||
         turned(prev, mesh.matrixWorld.elements);
-      if (!prev) this.previous.set(mesh, (prev = new Float32Array(PREV_STRIDE)));
+      if (!prev) this.previous.set(mesh, (prev = new Float64Array(PREV_STRIDE)));
+      remember(prev, mesh);
       prev[0] = s.center.x;
       prev[1] = s.center.y;
       prev[2] = s.center.z;
@@ -369,8 +394,39 @@ export class NearMeshIndex {
   }
 }
 
+/** Esfera local de onde sai a esfera em mundo (a mesma que `worldSphere` usa). */
+function localSphere(o: Object3D): Sphere | null | undefined {
+  const m = o as unknown as WithSphere;
+  return m.isInstancedMesh ? m.boundingSphere : m.geometry?.boundingSphere;
+}
+
+/** Nada que define a esfera/caixa em mundo mudou desde a varredura anterior (comparação exata)? */
+function unchanged(prev: Float64Array, o: Object3D): boolean {
+  const e = o.matrixWorld.elements;
+  for (let j = 0; j < MATRIX_SIZE; j++) if (prev[PREV_MATRIX + j] !== e[j]) return false;
+  const ls = localSphere(o);
+  if (!ls) return false;
+  return (
+    prev[PREV_LOCAL] === ls.center.x &&
+    prev[PREV_LOCAL + 1] === ls.center.y &&
+    prev[PREV_LOCAL + 2] === ls.center.z &&
+    prev[PREV_LOCAL + 3] === ls.radius
+  );
+}
+
+/** Guarda a `matrixWorld` e a esfera local desta varredura (depois do `worldSphere`, que a calcula). */
+function remember(prev: Float64Array, o: Object3D): void {
+  const e = o.matrixWorld.elements;
+  for (let j = 0; j < MATRIX_SIZE; j++) prev[PREV_MATRIX + j] = e[j]!;
+  const ls = localSphere(o)!;
+  prev[PREV_LOCAL] = ls.center.x;
+  prev[PREV_LOCAL + 1] = ls.center.y;
+  prev[PREV_LOCAL + 2] = ls.center.z;
+  prev[PREV_LOCAL + 3] = ls.radius;
+}
+
 /** O 3×3 (giro/escala) mudou desde o guardado? */
-function turned(prev: Float32Array, e: ArrayLike<number>): boolean {
+function turned(prev: Float64Array, e: ArrayLike<number>): boolean {
   for (let j = 0; j < BASIS.length; j++) if (Math.abs(prev[PREV_BASIS + j]! - e[BASIS[j]]!) > MOVE_EPSILON) return true;
   return false;
 }
@@ -393,6 +449,8 @@ export function touchingBox(meshes: readonly Object3D[], box: Box3, out: Object3
   out.length = 0;
   for (let i = 0; i < meshes.length; i++) {
     const m = meshes[i]! as unknown as WithBvh;
+    // encostada no personagem: os 12 raios vão cruzá-la — árvore já a partir de poucos triângulos (SPEC-0328)
+    if (!m.isInstancedMesh && !m.geometry?.boundsTree) ensureBoundsTree(meshes[i]!, CROSSED_MIN_BVH_TRIS);
     const tree = m.isInstancedMesh ? undefined : m.geometry?.boundsTree;
     if (tree && !tree.intersectsBox(box, _boxToMesh.copy(m.matrixWorld).invert())) continue;
     out.push(meshes[i]!);
@@ -423,6 +481,8 @@ export function firstHit(
     if (best && _alongEntry[i]! > best.distance) break; // nada daqui pra frente acerta antes
     const o = cand[i]!;
     if (!o.layers.test(raycaster.layers)) continue;
+    // o raio cruza a caixa: árvore já a partir de poucos triângulos (SPEC-0328)
+    if (!(o as unknown as WithBvh).geometry?.boundsTree) ensureBoundsTree(o, CROSSED_MIN_BVH_TRIS);
     _meshHits.length = 0;
     o.raycast(raycaster, _meshHits);
     for (let h = 0; h < _meshHits.length; h++) {
