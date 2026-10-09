@@ -1,15 +1,17 @@
-import { Raycaster, Vector3, type Object3D } from 'three';
+import { Box3, Raycaster, Vector3, type Object3D } from 'three';
 import { System } from '../ecs/System.js';
 import { Entity } from '../ecs/Entity.js';
 import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { ensureBoundsTree, isSkinned } from '../physics/raycastAccel.js';
-import { NearMeshIndex, traverseCollidable } from '../physics/nearMeshes.js';
+import { NearMeshIndex, touchingBox, traverseCollidable } from '../physics/nearMeshes.js';
 
 const DOWN = new Vector3(0, -1, 0);
 /** Tolerância de contato (skin width) — folga p/ considerar "tocando o chão". */
 const SKIN = 0.05;
+/** Folga numérica (m) da caixa varrida pelos raios de parede (SPEC-0323). */
+const WALL_BOX_EPSILON = 1e-3;
 
 /** `obj` está sob `root` (é ele ou descendente)? Pra ignorar o próprio mesh. */
 function isUnder(obj: Object3D, root: Object3D): boolean {
@@ -164,6 +166,9 @@ export class CharacterPhysicsSystem extends System {
   private readonly nearGround: Object3D[] = [];
   private readonly nearTerrain: Object3D[] = [];
   private readonly nearSolid: Object3D[] = [];
+  /** As paredes cujos triângulos tocam a caixa dos raios de parede (SPEC-0323). */
+  private readonly touchingSolid: Object3D[] = [];
+  private readonly wallBox = new Box3();
   private readonly groundIndex = new NearMeshIndex();
   private readonly terrainIndex = new NearMeshIndex();
   private readonly solidIndex = new NearMeshIndex();
@@ -287,8 +292,13 @@ export class CharacterPhysicsSystem extends System {
         const feetY = t.y - c.footOffset;
         const self = e.getComponent(Object3DComponent)?.object;
         const ys = [feetY + Math.min(r, c.height * 0.5), feetY + c.height * 0.5, feetY + Math.max(c.height - r, c.height * 0.5)];
-        const walls = this.solidIndex.nearXZ(t.x, t.z, r + SKIN, this.nearSolid, ys[0], ys[2]);
+        // só a parede com triângulo dentro da caixa que os 12 raios varrem (SPEC-0323)
+        const reach = r + SKIN + WALL_BOX_EPSILON;
+        this.wallBox.min.set(t.x - reach, ys[0]! - WALL_BOX_EPSILON, t.z - reach);
+        this.wallBox.max.set(t.x + reach, ys[2]! + WALL_BOX_EPSILON, t.z + reach);
+        const walls = touchingBox(this.solidIndex.nearXZ(t.x, t.z, r + SKIN, this.nearSolid, ys[0], ys[2]), this.wallBox, this.touchingSolid);
         const cast = (dx: number, dz: number): number | null => {
+          if (walls.length === 0) return null; // nada encostado: sem raio
           this.wallDir.set(dx, 0, dz);
           let nearest: number | null = null;
           for (const sy of ys) {

@@ -380,7 +380,11 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   (SPEC-0302):** a cena é varrida (listas de chão/parede/terreno) só a cada
   `COLLECT_INTERVAL_MS` (250 ms), e cada raio só testa as malhas cuja esfera em
   mundo alcança o personagem (`physics/nearMeshes.ts` → `NearMeshIndex`, com folga
-  `MOVING_MARGIN` pro que se move); o spring arm da 3ª pessoa faz o mesmo e tem um
+  `MOVING_MARGIN` = 5 m só pra malha que se moveu desde a varredura anterior — a parada
+  usa `STATIC_MARGIN` = 0,5 m, SPEC-0323). Os 12 raios de parede só vão contra a malha
+  cujos triângulos tocam a caixa que eles varrem (`touchingBox`: 1 `intersectsBox` da
+  BVH por candidata, exato; sem árvore ou instanciada passa direto) — no meio da rua não
+  sai raio de parede nenhum (SPEC-0323); o spring arm da 3ª pessoa faz o mesmo e tem um
   2º raio na altura do peito (parede baixa). O braço tem **memória** (SPEC-0311):
   o raio dá só o alvo — encolhe a 12 m/s, segura 1 s e volta a 3 m/s; `setOrbit`
   é corte e encaixa. Sem isso, viga/poste cruzando o raio (trem andando, câmera

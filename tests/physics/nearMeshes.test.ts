@@ -3,8 +3,9 @@
  * varredura da cena no CharacterPhysicsSystem.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { BoxGeometry, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Object3D, Vector3 } from 'three';
-import { MOVING_MARGIN, NearMeshIndex, traverseCollidable } from '../../src/physics/nearMeshes.js';
+import { Box3, BoxGeometry, DoubleSide, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Object3D, PlaneGeometry, Vector3 } from 'three';
+import { MOVING_MARGIN, NearMeshIndex, STATIC_MARGIN, touchingBox, traverseCollidable } from '../../src/physics/nearMeshes.js';
+import { ensureBoundsTree } from '../../src/physics/raycastAccel.js';
 import { World } from '../../src/ecs/World.js';
 import { TransformComponent } from '../../src/components/TransformComponent.js';
 import { CharacterBodyComponent } from '../../src/components/CharacterBodyComponent.js';
@@ -28,7 +29,7 @@ describe('NearMeshIndex (SPEC-0302)', () => {
     const near = box(1, 0, 0);
     const far = box(500, 0, 0);
     const tall = box(0, 300, 0); // longe em Y, mas em cima no plano: conta pro raio vertical
-    const edge = box(MOVING_MARGIN + 1.5, 0, 0); // fora da esfera (raio 1,73), dentro da folga
+    const edge = box(MOVING_MARGIN + 0.5, 0, 0); // a malha (lado 2) fica a 4,5 m: só a folga alcança
     const idx = index([near, far, tall, edge]);
     expect(idx.nearXZ(0, 0, 0, [])).toEqual([near, tall, edge]);
     expect(idx.near(new Vector3(0, 0, 0), 1, [])).toEqual([near, edge]);
@@ -170,5 +171,86 @@ describe('SPEC-0307: sem gizmo do editor, sem escondido, faixa vertical', () => 
     scene.add(gizmo);
     expect(stand(scene).y).toBeCloseTo(0);
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe('SPEC-0323: folga só pra quem se mexe; caixa antes dos raios de parede', () => {
+  it('caixa em mundo corta a malha comprida que a esfera deixaria passar', () => {
+    const road = new Mesh(new BoxGeometry(200, 0.2, 4), new MeshBasicMaterial()); // rua: 200 × 4 m
+    road.updateMatrixWorld(true);
+    const idx = new NearMeshIndex();
+    idx.rebuild([road]);
+    idx.rebuild([road]); // parada: folga estática
+    expect(idx.nearXZ(50, 0, 0, [])).toEqual([road]); // em cima da rua
+    expect(idx.nearXZ(0, 30, 0, [])).toEqual([]); // 28 m ao lado: dentro da esfera (raio 100), fora da caixa
+    expect(idx.near(new Vector3(0, 0, 30), 1, [])).toEqual([]);
+  });
+
+  // malha de parede com BVH (indirect, como no engine): plano XY de 4×4 m em z = 0
+  const wall = (x: number, z: number, yaw = 0): Mesh => {
+    const m = new Mesh(new PlaneGeometry(4, 4, 24, 24), new MeshBasicMaterial({ side: DoubleSide }));
+    m.position.set(x, 2, z);
+    m.rotation.y = yaw;
+    m.updateMatrixWorld(true);
+    ensureBoundsTree(m);
+    return m;
+  };
+
+  it('parada desde a varredura anterior usa STATIC_MARGIN; quem andou, MOVING_MARGIN', () => {
+    const still = box(STATIC_MARGIN + 3, 0, 0); // esfera 1,73: alcança só com a folga grande
+    const mover = box(0, 0, STATIC_MARGIN + 3);
+    const idx = new NearMeshIndex();
+    idx.rebuild([still, mover]); // 1ª vez: tudo é "novo" → folga grande
+    expect(idx.nearXZ(0, 0, 0, [])).toEqual([still, mover]);
+    mover.position.x += 1;
+    mover.updateMatrixWorld(true);
+    idx.rebuild([still, mover]);
+    expect(idx.nearXZ(0, 0, 0, [])).toEqual([mover]); // a parada encolheu; a que andou não
+    expect(idx.nearXZ(STATIC_MARGIN + 3, 0, 0, [])).toContain(still); // perto continua achando
+  });
+
+  it('touchingBox: tira a malha com BVH que não toca a caixa, mantém a que toca e a sem árvore', () => {
+    expect(STATIC_MARGIN).toBeLessThan(MOVING_MARGIN);
+    const far = wall(0, 3);
+    const close = wall(0, 0.3, Math.PI / 2 - 0.2); // girada: testa a inversa da matrixWorld
+    const plain = box(0, 0, 50); // sem árvore (pequena e compacta)
+    expect((far.geometry as { boundsTree?: unknown }).boundsTree).toBeTruthy();
+    const b = new Box3(new Vector3(-0.5, 0, -0.5), new Vector3(0.5, 2, 0.5));
+    expect(touchingBox([far, close, plain], b, [])).toEqual([close, plain]);
+  });
+
+  it('CharacterPhysics: parede com BVH empurra igual; longe dela não mexe', () => {
+    const scene = new Object3D();
+    scene.add(box(0, -20, 0, 40)); // chão com topo em y = 0
+    const w = wall(0, 0.3); // face em z = 0,3
+    w.userData['cortexSolid'] = true;
+    scene.add(w);
+    scene.updateMatrixWorld(true);
+    const world = new World();
+    world.addSystem(new CharacterPhysicsSystem([scene]));
+    const near = world.createEntity();
+    const tn = new TransformComponent(0, 0, 0);
+    near.addComponent(tn);
+    near.addComponent(new CharacterBodyComponent({ radius: 0.4, footOffset: 0 }));
+    world.tick(16);
+    expect(tn.z).toBeCloseTo(0.3 - 0.4, 3); // saiu da parede: raio inteiro de distância
+    tn.z = -3; // longe da parede: nada empurra
+    world.tick(16);
+    expect(tn.z).toBe(-3);
+  });
+});
+
+describe('SPEC-0323: caixa guardada só vale pra malha parada', () => {
+  it('giro no lugar (esfera igual) recalcula a caixa', () => {
+    const bar = new Mesh(new BoxGeometry(20, 1, 1), new MeshBasicMaterial()); // barra de 20 m em X
+    bar.updateMatrixWorld(true);
+    const idx = new NearMeshIndex();
+    idx.rebuild([bar]);
+    idx.rebuild([bar]); // parada: caixa guardada
+    expect(idx.nearXZ(0, 8, 0, [])).toEqual([]); // 8 m em Z: fora da caixa da barra em X
+    bar.rotation.y = Math.PI / 2; // gira no lugar: agora a barra corre em Z
+    bar.updateMatrixWorld(true);
+    idx.rebuild([bar]);
+    expect(idx.nearXZ(0, 8, 0, [])).toEqual([bar]);
   });
 });
