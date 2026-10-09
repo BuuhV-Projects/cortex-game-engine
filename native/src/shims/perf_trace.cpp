@@ -3,6 +3,7 @@
 #include <windows.h>
 
 #include <cstdio>
+#include <share.h>
 #include <cstring>
 #include <string>
 
@@ -46,8 +47,10 @@ void registerPerfTrace(napi_env env, const char* logDir) {
                   (logDir[std::strlen(logDir) - 1] == '\\' || logDir[std::strlen(logDir) - 1] == '/') ? "" : "\\",
                   kTraceFileName);
     // Sessão nova começa arquivo novo: misturar corridas no mesmo arquivo
-    // confunde a leitura (o `t` reinicia do zero a cada boot).
-    if (g_traceFile == nullptr && fopen_s(&g_traceFile, g_tracePath, "wb") != 0) g_traceFile = nullptr;
+    // confunde a leitura (o `t` reinicia do zero a cada boot). `_SH_DENYWR`
+    // deixa outros processos LEREM com o jogo aberto (sondas/piloto seguem o
+    // trace ao vivo); `fopen_s` negava a leitura a todos.
+    if (g_traceFile == nullptr) g_traceFile = _fsopen(g_tracePath, "wb", _SH_DENYWR);
   }
   napi_value global = nullptr;
   napi_get_global(env, &global);
