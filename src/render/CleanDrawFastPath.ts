@@ -19,9 +19,12 @@
 import { modelNormalMatrix, modelWorldMatrixInverse } from 'three/tsl';
 import { debug } from '../core/debug.js';
 import { buildRenderIdPlan } from './RenderIdRefresh.js';
+import { DrawBatch, drawBatchBridge, type BatchBackendLike, type BatchRoLike, type DrawBatchStats } from './DrawBatch.js';
 import { applyPlan, queryFlagRequested, type NodeFrameLike, type UniformsGroupLike } from './TransformOnlyRefresh.js';
 
 const QUERY_KEY = 'cleanDraw=';
+/** Lote de desenhos diretos em C++ (b.2). */
+const BATCH_QUERY_KEY = 'drawBatch=';
 const MAIN_PASS_QUERY_KEY = 'nativeMainPass=';
 const UPDATE_OBJECT = 'object';
 /** Chamadas de `render()` entre relatos no `debug('perf')`. */
@@ -471,7 +474,13 @@ export interface CleanDrawRendererLike {
   };
   _bindings?: { _update(group: unknown, groups: unknown): void };
   _pipelines?: { isReady(ro: unknown): boolean };
-  backend?: { draw?: (ro: unknown, info: unknown) => void; updateBinding?: (binding: UniformsGroupLike) => void };
+  backend?: {
+    draw?: (ro: unknown, info: unknown) => void;
+    updateBinding?: (binding: UniformsGroupLike) => void;
+    get?: (object: unknown) => Record<string, unknown>;
+    beginRender?: (...args: unknown[]) => void;
+    finishRender?: (...args: unknown[]) => void;
+  };
   _currentRenderContext?: unknown;
   _currentRenderBundle?: unknown;
   info?: { calls?: number };
@@ -493,6 +502,8 @@ export interface CleanDrawStats {
 
 export interface CleanDrawFastPath {
   readonly stats: CleanDrawStats;
+  /** Estatísticas do lote em C++ (b.2), quando ligado. */
+  readonly batch: DrawBatchStats | null;
   uninstall(): void;
 }
 
@@ -505,7 +516,10 @@ export function cleanDrawRequested(fallback: boolean): boolean {
  * Instala no renderer JÁ inicializado. `null`, sem tocar em nada, se os
  * internos do `three` não tiverem a forma esperada.
  */
-export function installCleanDrawFastPath(renderer: CleanDrawRendererLike): CleanDrawFastPath | null {
+export function installCleanDrawFastPath(
+  renderer: CleanDrawRendererLike,
+  batchBridge = queryFlagRequested(BATCH_QUERY_KEY, true) ? drawBatchBridge() : undefined,
+): CleanDrawFastPath | null {
   const nodes = renderer._nodes;
   const bindings = renderer._bindings;
   const pipelines = renderer._pipelines;
@@ -553,10 +567,30 @@ export function installCleanDrawFastPath(renderer: CleanDrawRendererLike): Clean
   let ultimoDesenhado: CleanRoLike | null = null;
   const relato = { calls: -1 };
 
+  /**
+   * Lote em C++ (b.2). Todo desenho do `three` passa pelo `backend.draw` abaixo,
+   * e ele despacha o lote ANTES: a ordem na tela é a da RenderList.
+   */
+  const lote = batchBridge && typeof backend.get === 'function' ? new DrawBatch(batchBridge, backend as BatchBackendLike) : null;
+
   backend.draw = function draw(this: unknown, ro: unknown, info: unknown): void {
+    lote?.flush();
     ultimoDesenhado = ro as CleanRoLike;
     drawOriginal.call(this, ro, info);
   };
+  // Fim e começo de passe: nada acumulado pode sobrar para o passe seguinte.
+  const beginOriginal = backend.beginRender;
+  const finishOriginal = backend.finishRender;
+  if (lote && beginOriginal && finishOriginal) {
+    backend.beginRender = function beginRender(this: unknown, ...args: unknown[]): void {
+      lote.flush();
+      beginOriginal.apply(this, args);
+    };
+    backend.finishRender = function finishRender(this: unknown, ...args: unknown[]): void {
+      lote.flush();
+      finishOriginal.apply(this, args);
+    };
+  }
 
   /** O que não muda num render object: vigias e plano (ou `null` = inelegível). */
   const preparados = new WeakMap<object, { vigias: Vigia[]; plan: Gravacao['plan'] } | null>();
@@ -581,6 +615,7 @@ export function installCleanDrawFastPath(renderer: CleanDrawRendererLike): Clean
       const aoDescartar = ro.onDispose;
       ro.onDispose = () => {
         descartados.add(ro);
+        lote?.forget(ro);
         aoDescartar();
       };
     }
@@ -626,6 +661,7 @@ export function installCleanDrawFastPath(renderer: CleanDrawRendererLike): Clean
     if (g.instantaneo.length !== n) g.instantaneo = new Float64Array(n);
     g.instantaneo.set(escrita.subarray(0, n));
     stats.recorded++;
+    lote?.capture(ro as unknown as BatchRoLike);
   };
 
   const updateBinding = backend.updateBinding?.bind(backend);
@@ -660,6 +696,7 @@ export function installCleanDrawFastPath(renderer: CleanDrawRendererLike): Clean
       relato.calls = calls;
       if (calls % REPORT_RENDER_CALLS === 0) {
         debug('perf', `[cleanDraw] diretos=${stats.direct} movidos=${stats.moved} three=${stats.three} gravados=${stats.recorded} inelegiveis=${stats.ineligible}`);
+        if (lote) debug('perf', `[drawBatch] lote=${lote.stats.batched} flushes=${lote.stats.flushes} receitas=${lote.stats.recorded} fora=${lote.stats.unbatchable}`);
       }
     }
     const contexto = this._currentRenderContext;
@@ -722,7 +759,7 @@ export function installCleanDrawFastPath(renderer: CleanDrawRendererLike): Clean
         stats.moved++;
       }
       if (pipelines.isReady(ro)) {
-        backend.draw!(ro, this.info);
+        if (lote === null || !lote.add(ro as unknown as BatchRoLike, this.info as never)) backend.draw!(ro, this.info);
         stats.direct++;
       }
       return;
@@ -733,9 +770,13 @@ export function installCleanDrawFastPath(renderer: CleanDrawRendererLike): Clean
   debug('perf', '[cleanDraw] instalado');
   return {
     stats,
+    batch: lote?.stats ?? null,
     uninstall(): void {
+      lote?.flush();
       Reflect.deleteProperty(renderer, '_renderObjectDirect');
       backend.draw = drawOriginal;
+      if (beginOriginal) backend.beginRender = beginOriginal;
+      if (finishOriginal) backend.finishRender = finishOriginal;
     },
   };
 }
