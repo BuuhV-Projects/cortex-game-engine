@@ -212,7 +212,8 @@ pub unsafe extern "C" fn rn_collider_trimesh(
 }
 
 /// what: 0 = translation · 1 = rotation (xyzw) · 2 = linvel · 3 = angvel ·
-/// 4 = tipo · 5 = nº colliders · 6 = massa · 7 = ligado (0/1)
+/// 4 = tipo · 5 = nº colliders · 6 = massa · 7 = ligado (0/1) ·
+/// 8 = dormindo (0/1)
 /// Resultado no scratch.
 #[no_mangle]
 pub unsafe extern "C" fn rn_body_get(world: *mut World, body: f64, what: f64) {
@@ -255,6 +256,9 @@ pub unsafe extern "C" fn rn_body_get(world: *mut World, body: f64, what: f64) {
         6 => w.scratch[0] = rb.mass() as f64,
         // 7 = ligado? (0/1). Par de leitura do `setEnabled` (SPEC-0314).
         7 => w.scratch[0] = if rb.is_enabled() { 1.0 } else { 0.0 },
+        // 8 = dormindo? (0/1) — o `isSleeping()` do browser (SPEC-0337). Sem
+        // ele, sonda que perguntava `isSleeping?.()` contava todo corpo acordado.
+        8 => w.scratch[0] = if rb.is_sleeping() { 1.0 } else { 0.0 },
         _ => {
             let t = rb.translation();
             w.scratch[0] = t.x as f64;
@@ -759,6 +763,172 @@ mod tests {
             assert_eq!((&*w).scratch[0], 1.0);
             rn_world_step(w);
             assert!((&*w).bodies[handle].linvel().y < 0.0, "religado volta a cair");
+            rn_world_free(w);
+        }
+    }
+
+    const SET_NEXT_KINEMATIC: f64 = 4.0;
+    const GET_SLEEPING: f64 = 8.0;
+    const KIND_DYNAMIC: f64 = 0.0;
+    const KIND_FIXED: f64 = 1.0;
+    const KIND_KINEMATIC: f64 = 2.0;
+    const CAN_SLEEP: f64 = 1.0;
+    /// Passos de sobra pra um corpo parado dormir / o mundo assentar.
+    const SETTLE_STEPS: usize = 300;
+    const CAR_HALF: (f32, f32, f32) = (0.9, 0.7, 2.0);
+    const NO_EXCLUDE: f64 = -1.0;
+    const RAY_LEN: f64 = 100.0;
+
+    unsafe fn add_box(w: *mut World, kind: f64, x: f64, y: f64, z: f64, half: (f32, f32, f32)) -> f64 {
+        let body = rn_body_create(w, kind, x, y, z, CAN_SLEEP);
+        let world = &mut *w;
+        world.colliders.insert_with_parent(
+            ColliderBuilder::cuboid(half.0, half.1, half.2).build(),
+            unpack_handle(body),
+            &mut world.bodies,
+        );
+        body
+    }
+
+    /// Raio de cima pra baixo em (x, z): devolve o corpo acertado, ou None.
+    unsafe fn ray_down(w: *mut World, x: f64, z: f64) -> Option<f64> {
+        let hit = rn_world_cast_ray(w, x, 50.0, z, 0.0, -1.0, 0.0, RAY_LEN, 1.0, 0.0, NO_EXCLUDE);
+        if hit != 1.0 {
+            return None;
+        }
+        let collider = (&*w).scratch[4];
+        Some(rn_collider_get(w, collider, 1.0))
+    }
+
+    /// `isSleeping` pelo código 8: dinâmico parado dorme; cinemático não (no
+    /// Rapier ele nunca dorme — igual no browser) (SPEC-0337).
+    #[test]
+    fn is_sleeping_reports_rapier_state() {
+        unsafe {
+            let w = rn_world_new(0.0, 0.0, 0.0);
+            let dynamic = add_box(w, KIND_DYNAMIC, 0.0, 0.0, 0.0, CAR_HALF);
+            let kinematic = add_box(w, KIND_KINEMATIC, 10.0, 0.0, 0.0, CAR_HALF);
+            for _ in 0..SETTLE_STEPS {
+                rn_world_step(w);
+            }
+            rn_body_get(w, dynamic, GET_SLEEPING);
+            assert_eq!((&*w).scratch[0], 1.0, "dinâmico parado dorme");
+            rn_body_get(w, kinematic, GET_SLEEPING);
+            assert_eq!((&*w).scratch[0], 0.0, "cinemático não dorme");
+            rn_world_free(w);
+        }
+    }
+
+    /// Patch do Rapier (SPEC-0337): cinemático que ficou parado não tem o
+    /// collider atualizado — mas quando volta a andar, o collider vai junto
+    /// (o raio acha o carro na posição nova, e não na antiga).
+    #[test]
+    fn idle_kinematic_moves_its_collider_when_commanded_again() {
+        const START_X: f64 = 0.0;
+        const MOVED_X: f64 = 30.0;
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            let car = add_box(w, KIND_KINEMATIC, START_X, 0.0, 0.0, CAR_HALF);
+            for _ in 0..SETTLE_STEPS {
+                rn_world_step(w);
+            }
+            assert_eq!(ray_down(w, START_X, 0.0), Some(car));
+            rn_body_set(w, car, SET_NEXT_KINEMATIC, MOVED_X, 0.0, 0.0, 0.0, 1.0);
+            rn_world_step(w);
+            assert_eq!(ray_down(w, MOVED_X, 0.0), Some(car), "collider foi junto");
+            assert_eq!(ray_down(w, START_X, 0.0), None, "não ficou fantasma na pose antiga");
+            rn_world_free(w);
+        }
+    }
+
+    /// Patch do broad-phase (SPEC-0337): sub-região só é reordenada quando a
+    /// região-mãe teve trabalho. O caso que DEPENDE disso: um corpo grande
+    /// (camada maior do multi-SAP) andando por cima de corpos pequenos (camada
+    /// menor). Se a sub-região não fosse reordenada, o par não apareceria e o
+    /// bloco atravessaria as caixas sem empurrar.
+    #[test]
+    fn big_kinematic_still_pushes_small_bodies() {
+        const GROUND_HALF: f32 = 500.0;
+        const BLOCK_HALF: f32 = 30.0;
+        const BLOCK_START_X: f64 = -80.0;
+        const BLOCK_SPEED: f64 = 0.25;
+        const SWEEP_STEPS: usize = 600;
+        const BOXES: usize = 8;
+        // Caixas no FUNDO da sub-região [0, 25) m da camada delas (região de
+        // 25 m pra uma caixa de 1 m): o bloco entra na sub-região sem tocar
+        // nelas e só as encontra andando lá dentro — o caso que exige reordenar.
+        const BOX_FIRST_X: f64 = 15.0;
+        const BOX_SPACING: f64 = 1.2;
+        const BOX_HALF: f32 = 0.5;
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            add_box(w, KIND_FIXED, 0.0, -0.5, 0.0, (GROUND_HALF, 0.5, GROUND_HALF));
+            let boxes: Vec<f64> = (0..BOXES)
+                .map(|k| add_box(w, KIND_DYNAMIC, BOX_FIRST_X + k as f64 * BOX_SPACING, BOX_HALF as f64, 0.0, (BOX_HALF, BOX_HALF, BOX_HALF)))
+                .collect();
+            let block = add_box(w, KIND_KINEMATIC, BLOCK_START_X, 1.0, 0.0, (BLOCK_HALF, 1.0, BLOCK_HALF));
+            for _ in 0..SETTLE_STEPS {
+                rn_world_step(w); // caixas assentam e dormem; mundo parado
+            }
+            for step in 1..=SWEEP_STEPS {
+                let x = BLOCK_START_X + step as f64 * BLOCK_SPEED;
+                rn_body_set(w, block, SET_NEXT_KINEMATIC, x, 1.0, 0.0, 0.0, 1.0);
+                rn_world_step(w);
+            }
+            let block_back = BLOCK_START_X + SWEEP_STEPS as f64 * BLOCK_SPEED - BLOCK_HALF as f64;
+            for (k, b) in boxes.iter().enumerate() {
+                rn_body_get(w, *b, 0.0);
+                let x = (&*w).scratch[0];
+                let y = (&*w).scratch[1];
+                // empurrada pra frente do bloco, ou jogada por cima dele — nunca dentro
+                let inside = x > block_back && x < block_back + 2.0 * BLOCK_HALF as f64 && y < 2.0;
+                assert!(!inside, "caixa {k} ficou dentro do bloco (x = {x}, y = {y})");
+            }
+            rn_world_free(w);
+        }
+    }
+
+    /// Instrumento (ignorado no `cargo test`): custo do passo numa cidade
+    /// sintética parada — 1.250 fixos, 220 cinemáticos parados, 7 dinâmicos.
+    /// `cargo test --release bench_idle_city -- --ignored --nocapture`.
+    /// Com o Rapier sem patch: ~0,7–1,2 ms/passo; com o patch: ~0,06 (SPEC-0337).
+    #[test]
+    #[ignore]
+    fn bench_idle_city() {
+        const FIXED: usize = 1250;
+        const KINEMATIC: usize = 220;
+        const DYNAMIC: usize = 7;
+        const CITY: f64 = 1800.0;
+        const WARMUP: usize = 120;
+        const STEPS: usize = 3000;
+        const US_PER_S: f64 = 1e6;
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            add_box(w, KIND_FIXED, 0.0, -0.5, 0.0, (1000.0, 0.5, 1000.0));
+            let mut seed: u32 = 12345;
+            let mut rnd = || {
+                seed = seed.wrapping_mul(1103515245).wrapping_add(12345);
+                ((seed >> 8) as f64) / 16777216.0
+            };
+            for _ in 0..FIXED {
+                let (x, z, sx, sz) = (rnd() * CITY - CITY / 2.0, rnd() * CITY - CITY / 2.0, 3.0 + rnd() * 8.0, 3.0 + rnd() * 8.0);
+                add_box(w, KIND_FIXED, x, 5.0, z, (sx as f32, 5.0, sz as f32));
+            }
+            for _ in 0..KINEMATIC {
+                let (x, z) = (rnd() * CITY - CITY / 2.0, rnd() * CITY - CITY / 2.0);
+                add_box(w, KIND_KINEMATIC, x, 0.7, z, CAR_HALF);
+            }
+            for k in 0..DYNAMIC {
+                add_box(w, KIND_DYNAMIC, k as f64 * 10.0, 0.7, 0.0, CAR_HALF);
+            }
+            for _ in 0..WARMUP {
+                rn_world_step(w);
+            }
+            let t = std::time::Instant::now();
+            for _ in 0..STEPS {
+                rn_world_step(w);
+            }
+            println!("bench_idle_city: {:.1} us/passo", t.elapsed().as_secs_f64() * US_PER_S / STEPS as f64);
             rn_world_free(w);
         }
     }

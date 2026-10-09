@@ -16,3 +16,10 @@ rapier3d = "0.22.0"
 [profile.release]
 opt-level = 3
 lto = true
+
+# Rapier 0.22.0 publicado + 2 correções de desempenho (ADR-0336 / SPEC-0337):
+# o broad-phase e os cinemáticos parados custavam por passo mesmo com o mundo
+# parado. Diff contra o crate publicado: `diff -r` com o registry do cargo;
+# as linhas mexidas levam o comentário "CortexNative (SPEC-0337)".
+[patch.crates-io]
+rapier3d = { path = "patched/rapier3d" }
