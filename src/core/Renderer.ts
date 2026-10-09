@@ -92,6 +92,9 @@ export { Camera, OrthographicCamera, PerspectiveCamera } from 'three';
 
 // ─── Classe Renderer ───────────────────────────────────────────────────────────
 
+/** Cor de clear salva/restaurada no `renderUiLayer` — reaproveitada (SPEC-0334). */
+const _prevClearColor = new THREE.Color();
+
 export class Renderer {
   private readonly _renderer: WebGPURenderer;
   /** Handler de resize mantido para remoção no dispose(). */
@@ -322,7 +325,7 @@ export class Renderer {
     }
     // Clear transparente do alvo da UI (autoClear é false globalmente → explícito).
     // Salva/restaura a cor de clear global pra não vazar pro render do jogo.
-    const prevColor = new THREE.Color();
+    const prevColor = _prevClearColor;
     // getClearColor do WebGPURenderer tipa `Color4` (com `.a`); em runtime aceita
     // um `Color` (só preenche r/g/b). O alpha vem do getClearAlpha à parte.
     (this._renderer.getClearColor as unknown as (t: THREE.Color) => void)(prevColor);

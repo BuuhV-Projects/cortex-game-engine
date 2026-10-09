@@ -12,7 +12,7 @@ import {
   MeshBasicMaterial,
   PerspectiveCamera,
 } from 'three';
-import { PerfTrace, buildSample, collectVisible } from '../../src/core/PerfTrace.js';
+import { PerfTrace, SceneWalk, buildSample, collectVisible, countNodes } from '../../src/core/PerfTrace.js';
 import { FrameProfiler } from '../../src/core/FrameProfiler.js';
 
 /** Nó de cena como o `buildScene` monta: nome = id + flag no userData. */
@@ -272,5 +272,82 @@ describe('buildSample — recursos criados (SPEC-0252)', () => {
     // do frame, que o `cpu.napiPipe` (setPipeline) nunca revelaria.
     expect(depois.born!.pipelines - antes.born!.pipelines).toBe(4);
     expect(depois.born!.buffers - antes.born!.buffers).toBe(12);
+  });
+});
+
+describe('SceneWalk — censo em rodízio (SPEC-0334)', () => {
+  /** Cena com nós de cena, malha fora do frustum, subárvore escondida e malha avulsa. */
+  function cena(): Scene {
+    const scene = new Scene();
+    const a = sceneNode('a', 3, 0);
+    a.position.set(0, 0, -10);
+    const b = sceneNode('b', 2, 0);
+    b.position.set(0, 0, 50); // atrás da câmera
+    const c = sceneNode('c', 1, 0);
+    c.position.set(2, 0, -10);
+    const escondida = new Object3D();
+    escondida.visible = false;
+    escondida.add(new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial()));
+    c.add(escondida);
+    const avulsa = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+    avulsa.name = 'solta';
+    avulsa.position.set(-2, 0, -10);
+    scene.add(a, b, c, avulsa);
+    scene.updateMatrixWorld(true);
+    return scene;
+  }
+
+  it('uma volta dá o mesmo que as três travessias completas', () => {
+    const scene = cena();
+    const cam = camera();
+    const walk = new SceneWalk();
+    // Orçamento de 2 nós por quadro: a volta atravessa vários quadros.
+    for (let i = 0; i < 100 && !walk.result; i++) walk.step(scene, cam, 2);
+
+    const nodes = countNodes(scene);
+    expect(walk.result).not.toBeNull();
+    expect(walk.result!.total).toBe(nodes.total);
+    expect(walk.result!.visible).toBe(nodes.visible);
+    expect(walk.result!.frames).toBe(Math.ceil(nodes.total / 2));
+    const porId = (v: { id: string }[]) => [...v].sort((x, y) => x.id.localeCompare(y.id));
+    expect(porId(walk.result!.visibleNodes)).toEqual(porId(collectVisible(scene, cam)));
+    expect(walk.result!.visibleNodes[0]!.id).toBe('a'); // o mais caro primeiro
+    // Primeira volta: nenhum nó tem matriz anterior para comparar.
+    expect(walk.result!.unchanged).toBe(0);
+  });
+
+  it('na volta seguinte conta como inalterado só quem não mexeu', () => {
+    const scene = cena();
+    const cam = camera();
+    const walk = new SceneWalk();
+    walk.step(scene, cam, 1000);
+    const total = walk.result!.total;
+    scene.children[0]!.position.x += 1;
+    scene.children[0]!.updateMatrix();
+    walk.step(scene, cam, 1000);
+    expect(walk.result!.unchanged).toBe(total - 1);
+  });
+});
+
+describe('PerfTrace — autocusto e censo na amostra (SPEC-0334)', () => {
+  const g = globalThis as { __cortexPerfTrace?: unknown };
+  afterEach(() => {
+    delete g.__cortexPerfTrace;
+  });
+
+  it('grava traceWalkMs, traceSampleMs e a idade do censo', () => {
+    const lines: string[] = [];
+    g.__cortexPerfTrace = (line: string) => lines.push(line);
+    const trace = new PerfTrace();
+    const scene = new Scene();
+    scene.add(sceneNode('x', 2, 0));
+    trace.tick(600, scene, camera(), new FrameProfiler(), null);
+    trace.tick(600, scene, camera(), new FrameProfiler(), null);
+    const segunda = JSON.parse(lines[1]!);
+    expect(segunda.cpu.nodesTotal).toBe(4);
+    expect(segunda.cpu.walkFrames).toBe(1);
+    expect(segunda.cpu.traceWalkMs).toBeGreaterThanOrEqual(0);
+    // A 1ª amostra já foi medida: a 2ª carrega o custo dela.
+    expect(segunda.cpu.traceSampleMs).toBeGreaterThan(0);
   });
 });

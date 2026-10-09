@@ -6,7 +6,7 @@
 
 # Interface: GcTotals
 
-Defined in: [src/core/PerfTrace.ts:303](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L303)
+Defined in: [src/core/PerfTrace.ts:425](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L425)
 
 Totais do coletor do host (`__cortexGcStats`, SPEC-0264).
 
@@ -16,7 +16,7 @@ Totais do coletor do host (`__cortexGcStats`, SPEC-0264).
 
 > **oldCount**: `number`
 
-Defined in: [src/core/PerfTrace.ts:306](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L306)
+Defined in: [src/core/PerfTrace.ts:428](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L428)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/core/PerfTrace.ts:306](https://github.com/BuuhV-Projects/cortex
 
 > **oldCpuMs**: `number`
 
-Defined in: [src/core/PerfTrace.ts:308](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L308)
+Defined in: [src/core/PerfTrace.ts:430](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L430)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [src/core/PerfTrace.ts:308](https://github.com/BuuhV-Projects/cortex
 
 > **oldWallMs**: `number`
 
-Defined in: [src/core/PerfTrace.ts:307](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L307)
+Defined in: [src/core/PerfTrace.ts:429](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L429)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [src/core/PerfTrace.ts:307](https://github.com/BuuhV-Projects/cortex
 
 > **youngCount**: `number`
 
-Defined in: [src/core/PerfTrace.ts:304](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L304)
+Defined in: [src/core/PerfTrace.ts:426](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L426)
 
 ***
 
@@ -48,4 +48,4 @@ Defined in: [src/core/PerfTrace.ts:304](https://github.com/BuuhV-Projects/cortex
 
 > **youngMs**: `number`
 
-Defined in: [src/core/PerfTrace.ts:305](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L305)
+Defined in: [src/core/PerfTrace.ts:427](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L427)

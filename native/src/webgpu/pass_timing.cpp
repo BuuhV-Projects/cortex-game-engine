@@ -13,23 +13,19 @@
 namespace webgpu {
 namespace {
 
-/**
- * Passes medidos por frame.
- *
- * O kart-racer roda dezenas por frame (o CSM faz um por cascata). Passes acima
- * deste teto ficam sem medida, e o relatório diz quantos — número silencioso
- * seria pior que número nenhum.
- */
-constexpr uint32_t kMaxPassesPorFrame = 64;
-/** Dois timestamps por pass: início e fim. */
-constexpr uint32_t kSlotsPorPass = 2;
-/** Frames acumulados antes de cada relatório — o ritmo das outras medições. */
-constexpr size_t kFramesPorRelatorio = 300;
 /** Cada timestamp é um uint64 de nanossegundos. */
 constexpr uint64_t kBytesPorTimestamp = sizeof(uint64_t);
+/** Bytes do query set inteiro (teto de passes × 2 timestamps). */
+constexpr uint64_t kBytesDoQuerySet = static_cast<uint64_t>(kMaxPassesPorFrame) * kSlotsPorPass * kBytesPorTimestamp;
 /** Quantos passes aparecem no relatório, do mais caro para o menos. */
 constexpr size_t kPassesNoRelatorio = 6;
 constexpr double kNsPorMs = 1'000'000.0;
+/** Percentis da linha `gpu-work`. */
+constexpr double kMediana = 0.5;
+constexpr double kPercentilAlto = 0.95;
+constexpr double kMaximo = 1.0;
+/** Tamanho das linhas do relatório. */
+constexpr size_t kTamanhoDaLinha = 512;
 
 bool g_enabled = false;
 WGPUQuerySet g_querySet = nullptr;
@@ -46,40 +42,62 @@ uint32_t g_passeDoFrame = 0;
 uint32_t g_passesSemSlot = 0;
 /** `timestampWrites` vivos até o fim do frame (o descriptor os referencia). */
 std::array<WGPUPassTimestampWrites, kMaxPassesPorFrame> g_writes{};
+/** Origem de cada pass do frame corrente. */
+std::array<PassOrigin, kMaxPassesPorFrame> g_origemDoFrame{};
 
-/** Estatística acumulada de um pass, por posição no frame. */
-struct AcumuladoDoPasse {
-  uint64_t somaNs = 0;
-  uint64_t maxNs = 0;
-  uint32_t amostras = 0;
-};
-std::array<AcumuladoDoPasse, kMaxPassesPorFrame> g_acumulado{};
-size_t g_framesLidos = 0;
+/**
+ * O que a leitura em voo carrega: quantos passes o quadro copiado usou e a
+ * origem de cada um. Copiado NO MOMENTO da cópia — o quadro seguinte já
+ * reescreve `g_origemDoFrame` antes do mapeamento voltar.
+ */
+uint32_t g_usadosNaCopia = 0;
+std::array<PassOrigin, kMaxPassesPorFrame> g_origemNaCopia{};
+
+PassTimingStats g_stats;
 size_t g_passesSemSlotTotal = 0;
+
+uint64_t bytesDosSlots(uint32_t passes) {
+  return static_cast<uint64_t>(passes) * kSlotsPorPass * kBytesPorTimestamp;
+}
 
 void aoMapear(WGPUMapAsyncStatus status, WGPUStringView, void*, void*) {
   g_leituraEmVoo = false;
   // Falha de mapeamento sai SEM unmap de proposito: o buffer nao chegou a ser
   // mapeado, e chamar unmap ali e erro de uso.
   if (status != WGPUMapAsyncStatus_Success || g_readBuffer == nullptr) return;
-  const auto* dados = static_cast<const uint64_t*>(
-      wgpuBufferGetConstMappedRange(g_readBuffer, 0, kMaxPassesPorFrame * kSlotsPorPass * kBytesPorTimestamp));
-  if (dados != nullptr) {
-    for (uint32_t p = 0; p < kMaxPassesPorFrame; ++p) {
-      const uint64_t inicio = dados[p * kSlotsPorPass];
-      const uint64_t fim = dados[p * kSlotsPorPass + 1];
-      // Par zerado é slot não usado neste frame; fim < início é timestamp
-      // inválido (o wgpu permite, em recuperação de device).
-      if (inicio == 0 || fim <= inicio) continue;
-      auto& acc = g_acumulado[p];
-      const uint64_t dur = fim - inicio;
-      acc.somaNs += dur;
-      acc.maxNs = std::max(acc.maxNs, dur);
-      acc.amostras++;
-    }
-    g_framesLidos++;
-  }
+  const auto* dados =
+      static_cast<const uint64_t*>(wgpuBufferGetConstMappedRange(g_readBuffer, 0, bytesDosSlots(g_usadosNaCopia)));
+  if (dados != nullptr) g_stats.addFrame(dados, g_usadosNaCopia, g_origemNaCopia.data());
   wgpuBufferUnmap(g_readBuffer);
+}
+
+double percentil(const std::vector<uint64_t>& ordenado, double p) {
+  if (ordenado.empty()) return 0.0;
+  const size_t i = static_cast<size_t>(p * static_cast<double>(ordenado.size() - 1));
+  return static_cast<double>(ordenado[i]) / kNsPorMs;
+}
+
+/**
+ * Linha `gpu-work`: tempo de GPU por quadro (soma dos passes, relógio da GPU)
+ * e ms/quadro por origem. Substitui o `gpu-latency` (SPEC-0334), que media
+ * quando o host NOTAVA a conclusão, não quando a GPU terminava.
+ */
+void relatarGpuWork() {
+  std::vector<uint64_t> totais = g_stats.totalPorQuadro;
+  std::sort(totais.begin(), totais.end());
+  const double quadros = static_cast<double>(g_stats.quadros());
+  char buf[kTamanhoDaLinha];
+  int n = std::snprintf(buf, sizeof(buf), "gpu-work (%zu quadros) med=%.3f p95=%.3f max=%.3f passes/q=%.1f |",
+                        g_stats.quadros(), percentil(totais, kMediana), percentil(totais, kPercentilAlto),
+                        percentil(totais, kMaximo), static_cast<double>(g_stats.passesUsados) / quadros);
+  for (PassOrigin origem : kOrigensDoRelatorio) {
+    if (n < 0 || static_cast<size_t>(n) >= sizeof(buf)) break;
+    const double msPorQuadro = static_cast<double>(g_stats.nsPorOrigem[indiceDaOrigem(origem)]) / kNsPorMs / quadros;
+    const int k = std::snprintf(buf + n, sizeof(buf) - static_cast<size_t>(n), " %c=%.3f",
+                                static_cast<char>(origem), msPorQuadro);
+    if (k > 0) n += k;
+  }
+  core::appendPerfLog("%s", buf);
 }
 
 }  // namespace
@@ -107,24 +125,24 @@ void setupPassTiming(WGPUDeviceImpl* device) {
     g_enabled = false;
     return;
   }
-  const uint64_t bytes = static_cast<uint64_t>(qsd.count) * kBytesPorTimestamp;
   WGPUBufferDescriptor bd = WGPU_BUFFER_DESCRIPTOR_INIT;
-  bd.size = bytes;
+  bd.size = kBytesDoQuerySet;
   bd.usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc;
   g_resolveBuffer = wgpuDeviceCreateBuffer(device, &bd);
   WGPUBufferDescriptor rd = WGPU_BUFFER_DESCRIPTOR_INIT;
-  rd.size = bytes;
+  rd.size = kBytesDoQuerySet;
   rd.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
   g_readBuffer = wgpuDeviceCreateBuffer(device, &rd);
 }
 
-const WGPUPassTimestampWrites* nextPassTimestampWrites() {
+const WGPUPassTimestampWrites* nextPassTimestampWrites(PassOrigin origem) {
   if (!g_enabled || g_querySet == nullptr) return nullptr;
   if (g_passeDoFrame >= kMaxPassesPorFrame) {
     g_passesSemSlot++;
     return nullptr;
   }
   const uint32_t p = g_passeDoFrame++;
+  g_origemDoFrame[p] = origem;
   auto& w = g_writes[p];
   w = WGPU_PASS_TIMESTAMP_WRITES_INIT;
   w.querySet = g_querySet;
@@ -134,21 +152,22 @@ const WGPUPassTimestampWrites* nextPassTimestampWrites() {
 }
 
 void resolvePassTiming(WGPUCommandEncoderImpl* encoder, WGPUQueueImpl* queue) {
+  (void)queue;
   if (!g_enabled || g_querySet == nullptr || encoder == nullptr) return;
   const uint32_t usados = g_passeDoFrame;
   g_passesSemSlotTotal += g_passesSemSlot;
   g_passeDoFrame = 0;
   g_passesSemSlot = 0;
-  if (usados == 0) return;
-  const uint64_t bytes = static_cast<uint64_t>(kMaxPassesPorFrame) * kSlotsPorPass * kBytesPorTimestamp;
-  wgpuCommandEncoderResolveQuerySet(encoder, g_querySet, 0, kMaxPassesPorFrame * kSlotsPorPass,
-                                    g_resolveBuffer, 0);
   // Uma leitura por vez: se a anterior ainda não voltou, este frame não é
   // amostrado. Enfileirar mapeamentos concorrentes no mesmo buffer é erro de
   // uso, e esperar mediria o instrumento em vez do jogo.
-  if (g_leituraEmVoo) return;
-  wgpuCommandEncoderCopyBufferToBuffer(encoder, g_resolveBuffer, 0, g_readBuffer, 0, bytes);
-  (void)queue;
+  if (usados == 0 || g_leituraEmVoo) return;
+  // SÓ os slots que este quadro escreveu (SPEC-0334): os demais guardam
+  // timestamps de quadros antigos e inventavam passes no relatório.
+  wgpuCommandEncoderResolveQuerySet(encoder, g_querySet, 0, usados * kSlotsPorPass, g_resolveBuffer, 0);
+  wgpuCommandEncoderCopyBufferToBuffer(encoder, g_resolveBuffer, 0, g_readBuffer, 0, bytesDosSlots(usados));
+  g_usadosNaCopia = usados;
+  g_origemNaCopia = g_origemDoFrame;
   // O `mapAsync` NÃO vai aqui. A cópia acima só foi GRAVADA no encoder; ela
   // executa no submit, e mapear antes disso faz o wgpu abortar o processo com
   // "Buffer is still mapped" — aconteceu, e derrubou o jogo no boot.
@@ -159,11 +178,10 @@ void startPassTimingRead() {
   if (!g_enabled || !g_copiaGravada || g_leituraEmVoo) return;
   g_copiaGravada = false;
   g_leituraEmVoo = true;
-  const uint64_t bytes = static_cast<uint64_t>(kMaxPassesPorFrame) * kSlotsPorPass * kBytesPorTimestamp;
   WGPUBufferMapCallbackInfo cb = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
   cb.mode = WGPUCallbackMode_AllowProcessEvents;
   cb.callback = aoMapear;
-  wgpuBufferMapAsync(g_readBuffer, WGPUMapMode_Read, 0, bytes, cb);
+  wgpuBufferMapAsync(g_readBuffer, WGPUMapMode_Read, 0, bytesDosSlots(g_usadosNaCopia), cb);
 }
 
 void pumpPassTiming(WGPUInstanceImpl* instance) {
@@ -172,7 +190,7 @@ void pumpPassTiming(WGPUInstanceImpl* instance) {
 }
 
 bool reportPassTiming() {
-  if (!g_enabled || g_framesLidos == 0) return false;
+  if (!g_enabled || g_stats.quadros() == 0) return false;
   struct Linha {
     uint32_t passe;
     double mediaMs;
@@ -180,20 +198,20 @@ bool reportPassTiming() {
   };
   std::vector<Linha> linhas;
   for (uint32_t p = 0; p < kMaxPassesPorFrame; ++p) {
-    const auto& a = g_acumulado[p];
+    const auto& a = g_stats.porPosicao[p];
     if (a.amostras == 0) continue;
     linhas.push_back({p, static_cast<double>(a.somaNs) / a.amostras / kNsPorMs,
                       static_cast<double>(a.maxNs) / kNsPorMs});
   }
-  if (linhas.empty()) return false;
   // Do mais caro para o menos: o relatório serve para achar o alvo.
   std::sort(linhas.begin(), linhas.end(), [](const Linha& a, const Linha& b) { return a.mediaMs > b.mediaMs; });
   double total = 0;
   for (const auto& l : linhas) total += l.mediaMs;
 
-  char buf[512];
-  int n = std::snprintf(buf, sizeof(buf), "pass-timing (%zu frames lidos, %zu passes/frame, soma=%.2fms)",
-                        g_framesLidos, linhas.size(), total);
+  const double quadros = static_cast<double>(g_stats.quadros());
+  char buf[kTamanhoDaLinha];
+  int n = std::snprintf(buf, sizeof(buf), "pass-timing (%zu frames lidos, %.1f passes/frame, soma=%.2fms)",
+                        g_stats.quadros(), static_cast<double>(g_stats.passesUsados) / quadros, total);
   for (size_t i = 0; i < linhas.size() && i < kPassesNoRelatorio; ++i) {
     const auto& l = linhas[i];
     const int k = std::snprintf(buf + n, sizeof(buf) - static_cast<size_t>(n),
@@ -204,8 +222,8 @@ bool reportPassTiming() {
     std::snprintf(buf + n, sizeof(buf) - static_cast<size_t>(n), " | SEM SLOT: %zu", g_passesSemSlotTotal);
   }
   core::appendPerfLog("%s", buf);
-  g_acumulado.fill({});
-  g_framesLidos = 0;
+  relatarGpuWork();
+  g_stats.clear();
   g_passesSemSlotTotal = 0;
   return true;
 }
