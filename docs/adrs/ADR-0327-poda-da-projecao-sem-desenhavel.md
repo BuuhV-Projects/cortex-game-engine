@@ -1,7 +1,7 @@
 # ADR-0327 — Poda da projeção do `three`: só subárvores sem desenhável na câmera, por `visible` temporário
 
 **Data:** 2026-10-09
-**Status:** aceito
+**Status:** rejeitado (medição na SPEC-0326)
 
 ## Contexto
 
@@ -59,5 +59,8 @@ de flags do espelho (SPEC-0322) veem a cena intacta.
   por passe) e a remontagem a cada 120 passes pegam; `invalidate()` força.
 - Desligada no editor, na inspeção, no carregamento e no quadro de
   aquecimento. Ligada só no host nativo; `?projectionPrune=0` desliga para A/B.
-- Ganho pequeno e honesto (ver SPEC-0326): a meta de −2 a −3 ms partia do
+- **Medido e rejeitado** (SPEC-0326): −40% de visitas mas só ~0,08 ms a menos
+  na projeção (o caro é a malha, não o grupo), e o próprio pruner custa
+  0,3–0,8 ms/q; o A/B de fps fica no ruído. O código não entra na main; fica no
+  histórico do branch `perf/r2-poda-projecao`. A meta de −2 a −3 ms partia do
   número inflado da R1b.

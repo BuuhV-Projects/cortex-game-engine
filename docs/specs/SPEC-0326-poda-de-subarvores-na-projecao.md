@@ -1,7 +1,7 @@
 # SPEC-0326 — Poda de subárvores na projeção do `three` (`ProjectionPruner`)
 
 **Data:** 2026-10-09
-**Status:** aceito
+**Status:** rejeitado — medido, não se paga; código fora da main (fica no histórico do branch `perf/r2-poda-projecao`, commit `e48938bf`)
 **Decisão:** ADR-0327
 
 ## Contexto
@@ -89,9 +89,9 @@ já voltou. O `scene.onBeforeRender` (lote de bonecos) também vem antes.
 A 1ª versão também guardava, por subárvore compacta (raio ≤ 40 m), uma esfera
 no espaço local da raiz e escondia a raiz fora do frustum. No A/B (main
 81a84ddd, `.cortex/r2-d/runs-v1`) o quadro caiu 2,3–3,3 ms, mas `tris` caiu
-junto (setorO 1.009k→933k, Hélio 951k→777k) e a moto da Hélio Prates **sumiu**
-da screenshot: grupo parado com filho que anda deixa a esfera velha. O ganho
-vinha de desenhar menos. Como o teto dessa parte era ~110 visitas (~0,08 ms),
+junto (setorO 1.009k→933k, Hélio 951k→777k): grupo parado com filho que anda
+deixa a esfera velha e o objeto some. O ganho vinha de desenhar menos (e esse
+A/B ainda tinha a baseline com `node_modules` por junction — ver Resultados). Como o teto dessa parte era ~110 visitas (~0,08 ms),
 saiu inteira; ver ADR-0327 para a alternativa exata (bit por subárvore do C++).
 
 ### Onde liga
@@ -106,13 +106,50 @@ saiu inteira; ver ADR-0327 para a alternativa exata (bit por subárvore do C++).
 
 ## Resultados
 
-(preenchido abaixo, após o A/B)
+Tudo no export RELEASE do DDD 61, janela 1280×720 com SSAA 2× (alvo interno
+2560×1440), rodadas de 110–150 s serializadas por `.cortex/measure.lock`,
+análise com t ≥ 30 s. Artefatos em `.cortex/r2-d/`.
+
+### Sonda direta (main 13555386, setorO; mesma build, `?projectionPrune=0`)
+
+| | visitas/q | `_projectObject` topo (ms/q) | custo da poda (ms/q) |
+|---|---|---|---|
+| sem poda | 1.264–1.468 | 0,95–1,08 | — |
+| poda exata | 868 | 0,92–1,00 | 0,71–0,82 (0,27–0,67 nas rodadas do A/B) |
+
+−40% de visitas, mas só **~0,08 ms** a menos na projeção: visita a grupo sem
+malha custa ~0,15 µs no Hermes; o caro do `_projectObject` é a malha
+(`intersectsObject` + `renderList.push`), e essas a poda exata não pula. O
+custo do próprio pruner (rodízio de remedição e remontagens percorrendo as
+subárvores dos bonecos, ~4.400 nós) supera o ganho.
+
+### A/B final (engine 9371accd × branch; jogo 9be7c6f)
+
+| ponto | base frameMs med (fps) | poda frameMs med (fps) | tris base / poda |
+|---|---|---|---|
+| setorO | 23,5 (42,6) | 22,0 (45,5) | 932,6k / 931,8k |
+| comercial | 30,1 (33,2)* | 25,6 (39,1) | 1.227,8k / 1.239,7k |
+| Hélio (drive) | 18,8 (53,2) | 21,0 (47,6) | 776,5k / 776,2k |
+
+(*) a base do comercial teve uma janela anômala (23 fps, js 36,7 ms). A
+RenderList sai igual (`tris`/`draws` batem) e as diferenças de fps mudam de
+sinal entre pontos: **ruído**, coerente com o saldo ≈ 0 (ou negativo) da sonda.
+
+### RENDER_SCALE=1 (pedido extra)
+
+setorO, base 9371accd: `CORTEX_RENDER_SCALE=1` (alvo 1280×720) dá frameMs med
+22,2 ms (45,0 fps) e gpu-latency med 9,6–10,4 / p95 15,2–16,2 ms, contra
+23,5 ms e gpu-latency med 9,8–12,0 / p95 14,9–19,6 ms no padrão 2×
+(2560×1440). Na R2 com main 81a84ddd: 10,1–10,3 nas duas escalas. A GPU não
+está limitada por preenchimento nesta resolução e a mediana cabe em 13,3 ms; o
+p95 (~15–16 ms) não. Tela cheia 2560×1440 nativa com 2× (5120×2880 interno)
+não foi medida.
 
 ## Consequências
 
-- Exata por construção; o único atraso possível é malha mudar de camada (ou
-  nascer desenhável) sem evento de estrutura — rodízio/remontagem pegam,
-  `invalidate()` força.
-- Remontagem é uma travessia da cena; cena que adiciona/remove nós dentro de
-  candidatas todo quadro pagaria isso todo quadro (contador `remontagens`).
-- Testes: `tests/render/ProjectionPruner.test.ts`.
+- Nenhum código entra na main. O `_projectObject` do `three` segue como está.
+- Ficam registradas as três armadilhas (architecture.md §8e6): a sonda que
+  dupla-conta recursão, a poda por esfera em cache que some com objeto, e a
+  baseline de A/B com `node_modules` por junction.
+- Se a projeção voltar a importar, o caminho exato é o bit "subárvore fora do
+  frustum" agregado no espelho em C++ (ADR-0327) — e só vale se pular MALHAS.

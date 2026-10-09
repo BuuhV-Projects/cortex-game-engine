@@ -1098,36 +1098,28 @@ versão. Consequência: o buffer de matrizes de `InstancedMesh` pequeno só sobe
 matriz de UV do `TextureNode` como nó `OBJECT`: o UV scroll de material exclusivo
 parado congelaria.
 
-## 8e6. Poda da projeção: subárvores sem desenhável na câmera (`src/render/ProjectionPruner.ts`) — ADR-0327 / SPEC-0326
+## 8e6. Poda da projeção do `three` — REJEITADA (ADR-0327 / SPEC-0326)
 
-O `Renderer._projectObject` do `three` visita todo nó com `visible !== false`,
-mesmo onde nada é desenhável pela câmera (no DDD 61, as peças dos bonecos ficam
-na camada 27 e são desenhadas por um lote instanciado: ~600 visitas inúteis
-por quadro). O `Game` instala (só no host nativo; `?projectionPrune=0`
-desliga) um wrapper no `_projectObject` da INSTÂNCIA que, na chamada de topo
-da câmera do jogo, esconde (`visible=false`) a raiz dessas subárvores e
-devolve o `visible` no `finally`, logo depois da projeção. A RenderList sai
-idêntica.
+Não há poda própria de `_projectObject`: medida no DDD 61, não se paga. A
+travessia custa ~1,0–1,2 ms/quadro; pular as ~600 visitas a subárvores sem
+nada desenhável (bonecos em lote, camada 27) economiza só ~0,08 ms, porque o
+caro do `_projectObject` é a malha (frustum + `renderList.push`), não o grupo.
+O código ficou no histórico do branch `perf/r2-poda-projecao`.
 
-- **Candidata**: ≥ 3 nós, nenhum deles luz/LOD/BundleGroup/ClippingGroup nem
-  malha/linha/pontos/sprite na camada da câmera. Independe do frustum.
-- **Fora da janela da poda**: a passada de sombra do `three` (roda em
-  `_renderObjects`), a sombra nativa e o espelho (que confere `visible` por
-  varredura no `update`, SPEC-0322 — o valor já foi devolvido) e o
-  `scene.onBeforeRender` (onde o lote de bonecos lê o `visible`).
-- `camera` é posta por quadro pelo `Game`; `null` no editor, inspeção,
-  carregamento e quadro de aquecimento.
-- Remonta em `childadded`/`childremoved` dentro das candidatas, se a máscara de
-  camadas da câmera mudar e a cada 120 passes; remede 4 candidatas por passe.
-
-**Armadilha (poda por frustum):** esfera em cache por subárvore parece segura e
-não é — filho que se move dentro de um grupo parado (moto, NPC) deixa a esfera
-velha e o objeto SOME. Foi tentado e retirado (SPEC-0326).
+**Armadilha (poda por frustum com esfera em cache):** parece segura e não é —
+filho que se move dentro de um grupo parado deixa a esfera velha e o objeto
+some; no A/B o "ganho" de 2–3 ms vinha de desenhar menos (`tris` −8–18%).
+Poda por frustum exata só com o bit por subárvore vindo do espelho em C++.
 
 **Armadilha (medição):** sonda que embrulha `_projectObject` em toda chamada
 recursiva soma tempo inclusivo por nível — a R1b leu 5,0 ms onde o custo real
 era ~1,2 ms. Cronometre só o topo e deixe a recursão ir ao original (ou use
 `?renderPhases`, que tem guarda de reentrância).
+
+**Armadilha (A/B de export):** worktree de baseline com `node_modules` por
+junction gera bundle diferente (o esbuild resolve pelo caminho real e duplica
+módulos — +300 KB no DDD 61). Baseline precisa de `node_modules` próprio
+(`yarn install --ignore-scripts`); confira o tamanho do `boot.hbc` dos dois.
 
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
@@ -1248,7 +1240,7 @@ no logo da splash enquanto montava os seis carros.
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
-| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0325) · poda da projeção: `ProjectionPruner.ts` (ADR-0327) |
+| Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0325) |
 | IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
