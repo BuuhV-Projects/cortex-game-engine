@@ -1,7 +1,7 @@
 # SPEC-0254 — Timestamp de GPU por render pass
 
 **Data:** 2026-09-23
-**Status:** aceito
+**Status:** aceito — corrigido pela SPEC-0334 (só os slots usados no quadro, origem por pass, linha `gpu-work`)
 
 ## Contexto
 

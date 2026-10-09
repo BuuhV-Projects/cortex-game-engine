@@ -134,7 +134,7 @@ A entity a ser destruída.
 
 > **enableSystemProfile**(): `Map`\<`string`, `number`\>
 
-Defined in: [src/ecs/World.ts:201](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L201)
+Defined in: [src/ecs/World.ts:205](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L205)
 
 Liga o perfil por sistema e devolve o mapa vivo (nome → ms acumulados).
 Desligado por default: cronometrar todo sistema todo frame é instrumento,
@@ -235,7 +235,7 @@ Construtor da classe do system a remover.
 
 > **resetSystemProfile**(): `void`
 
-Defined in: [src/ecs/World.ts:207](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L207)
+Defined in: [src/ecs/World.ts:211](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L211)
 
 Zera os acumuladores do perfil por sistema, mantendo-o ligado.
 
@@ -249,7 +249,7 @@ Zera os acumuladores do perfil por sistema, mantendo-o ligado.
 
 > **tick**(`deltaTime`): `void`
 
-Defined in: [src/ecs/World.ts:176](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L176)
+Defined in: [src/ecs/World.ts:180](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/ecs/World.ts#L180)
 
 Executa um passo de simulação, iterando todos os systems em ordem de
 prioridade crescente.

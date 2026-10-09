@@ -8,6 +8,8 @@ void testBlitRecusaArgumentosForaDoBuffer();
 void testFormatFromString();
 void testGcGenerationFromName();
 void testGcTotalsSeparateGenerations();
+void testPassTimingIgnoresSlotsBeyondUsed();
+void testPassTimingSkipsInvalidPairs();
 void testFormatToStringRoundtrip();
 void testBc7Math();
 void testAppendPerfLog();
@@ -142,6 +144,8 @@ int main() {
   tests::testGeometryRegistry();
   tests::testGcGenerationFromName();
   tests::testGcTotalsSeparateGenerations();
+  tests::testPassTimingIgnoresSlotsBeyondUsed();
+  tests::testPassTimingSkipsInvalidPairs();
   tests::testBlitBateComOGoldenDoJs();
   tests::testBlitRecusaArgumentosForaDoBuffer();
   return testing::summary();

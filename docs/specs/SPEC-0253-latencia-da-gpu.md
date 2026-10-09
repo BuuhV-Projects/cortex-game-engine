@@ -1,7 +1,7 @@
 # SPEC-0253 — Latência da GPU
 
 **Data:** 2026-09-23
-**Status:** aceito
+**Status:** substituído por SPEC-0334 — o "GPU terminou" era lido no próximo ponto de manutenção do wgpu (submit/bombeio), não quando a GPU terminava; `gpu_latency.*` removido, tempo de GPU sai do `gpu-work`
 
 ## Contexto
 
