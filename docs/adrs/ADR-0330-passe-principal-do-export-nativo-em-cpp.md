@@ -1,7 +1,7 @@
 # ADR-0330 — O passe principal do export nativo vai para C++ (reabre o laço de render)
 
 **Data:** 2026-10-09
-**Status:** aceito — etapas (0) e (a) em execução; (b) e (c) planejadas
+**Status:** aceito — (0) rejeitada por medição (SPEC-0331); (a) em execução; (b) e (c) planejadas
 
 Substitui o **ADR-0228** ("o laço por objeto do render fica em JS") e o
 **ADR-0235** ("o teto de 17% da submissão é estrutural"). Reabre os marcos
@@ -65,7 +65,7 @@ continua 100% no caminho do `three` — premissa de produto do ADR-0237, mantida
 
 | etapa | o quê | ganho esperado | spec |
 | --- | --- | --- | --- |
-| **(0)** | caminho rápido **em JS** para os render objects que reaproveitam o quadro anterior: memoização, por chamada de render, do que só depende do contexto (sem mudar semântica) | 1,5–2,5 ms (estimativa a confirmar) | SPEC-0331 |
+| **(0)** | caminho rápido **em JS** para os render objects que reaproveitam o quadro anterior: memoização, por chamada de render, do que só depende do contexto (sem mudar semântica) | medido: ~0,5 ms no melhor caso — **rejeitada** (o resto é verificação que só (b) substitui) | SPEC-0331 |
 | **(a)** | **projeção em C++**: culling por frustum e `z` de ordenação a partir do `SceneMirror`; a RenderList do passe vem de uma lista de índices do C++ | 1,2–2,2 ms | SPEC-0332 |
 | **(b)** | **desenho nativo dentro do passe da cena** para os materiais que a `MaterialDesc` (M1) já cobre, no alvo do `three` e na ordem certa (padrão SPEC-0245) | (b)+(c): render de 8–11 → ~2–3 ms | SPEC-0333 |
 | **(c)** | o restante dos materiais (ou recusa honesta pelo escape hatch "só three") | | a definir |
