@@ -6,6 +6,7 @@
 #include "../napi/napi_util.h"
 #include "bloom_wgsl.h"  // gerado pelo CMake a partir de shaders/bloom.wgsl
 #include "internal.h"
+#include "pass_timing.h"
 
 namespace webgpu {
 namespace {
@@ -278,6 +279,7 @@ void renderBloom(HostGpu* gpu, WGPUTextureView srcView, int srcW, int srcH) {
     WGPURenderPassDescriptor rpd = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
     rpd.colorAttachmentCount = 1;
     rpd.colorAttachments = &att;
+    rpd.timestampWrites = nextPassTimestampWrites(PassOrigin::Bloom);
 
     WGPURenderPassEncoder rp = wgpuCommandEncoderBeginRenderPass(enc, &rpd);
     WGPURenderPipeline pipeline =

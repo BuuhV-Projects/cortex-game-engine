@@ -990,9 +990,14 @@ trecho” sem depender de print de HUD na hora certa.
 - A ponte é `globalThis.__cortexPerfTrace`, registrada pelo host **só** com
   métricas ligadas (`game.debug`/dev-run/`CORTEX_VRAM_LOG`). Sem ela o
   `PerfTrace` nem percorre a cena — custo zero no browser/Studio e em release.
-- A coleta de visíveis é uma travessia com teste de frustum **por amostra**,
-  nunca por frame; o `frameMs` gravado é o do próprio frame amostrado, então o
-  custo aparece no dado em vez de se esconder.
+- **O censo da cena anda em rodízio (SPEC-0334)**: o `SceneWalk` visita 64 nós
+  por quadro numa travessia única (pilha própria, id do nó de cena herdado pela
+  pilha) e publica `nodesTotal`/`nodesVisible`/`nodesUnchanged`/`visible` ao
+  fechar cada volta (~2 s no DDD 61; `walkFrames` = idade). Antes eram três
+  travessias completas POR AMOSTRA — ~25 ms, 2×/s, inflando o p95 de toda
+  medição. O trace mede a si mesmo: `traceWalkMs` (por quadro) e
+  `traceSampleMs` (custo da amostra anterior). Regressão do instrumento aparece
+  no próprio dado.
 - A travessia **para em subárvore invisível** (não usa `traverse`): o `visible`
   do three é herdado, e malha `visible: true` dentro de pai escondido não
   desenha. Contá-la inflava o diagnóstico — as variantes de roda de garagem do
