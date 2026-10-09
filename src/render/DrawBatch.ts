@@ -15,6 +15,10 @@
  * é zerado, porque o host mexeu no encoder sem ele saber.
  */
 import { debug } from '../core/debug.js';
+import { queryFlagRequested } from './TransformOnlyRefresh.js';
+
+/** Depuração: relê a receita a cada `add` e relata divergência (caro; desligado). */
+const CHECK_QUERY_KEY = 'drawBatchCheck=';
 
 /** Inteiros por comando (ver `kCommandInts` em `draw_batch.h`). */
 const COMMAND_INTS = 4;
@@ -56,6 +60,18 @@ export interface BatchRoLike {
 
 export interface BatchBackendLike {
   get(object: unknown): Record<string, unknown>;
+  /** O cache de pipeline ATIVO por pass do `three` (`WebGPUPipelineUtils`). */
+  pipelineUtils?: { _activePipelines?: { delete(pass: unknown): boolean } };
+}
+
+/**
+ * O backend tem os internos que o despacho precisa invalidar? Sem o cache de
+ * pipeline ativo, o `three` pularia o `setPipeline` depois de um despacho e
+ * desenharia com o pipeline da última receita — erro de validação no
+ * `queue.submit` (medido: derruba o host).
+ */
+export function batchBackendSupported(backend: BatchBackendLike): boolean {
+  return typeof backend.get === 'function' && typeof backend.pipelineUtils?._activePipelines?.delete === 'function';
 }
 
 export interface BatchInfoLike {
@@ -96,6 +112,8 @@ export class DrawBatch {
   private _pass: unknown = null;
   private _contextData: Record<string, unknown> | null = null;
   private readonly _receitas = new WeakMap<object, Receita>();
+  private readonly _conferir = queryFlagRequested(CHECK_QUERY_KEY, false);
+  private readonly _relatados = new WeakSet<object>();
 
   constructor(
     private readonly _bridge: DrawBatchBridge,
@@ -142,6 +160,7 @@ export class DrawBatch {
       const i = receita.compartilhados[k]!;
       if (this._backend.get(bindings[i])['group'] !== receita.grupos[i]) return false;
     }
+    if (this._conferir && !this._conferirReceita(ro, receita)) return false;
     const params = ro.getDrawParameters();
     if (params === null) return true; // o `three` também não desenha nada
     if (pass !== this._pass) this.flush();
@@ -160,14 +179,38 @@ export class DrawBatch {
     this.stats.batched += this._count;
     this.stats.flushes++;
     this._count = 0;
+    // O host mexeu no encoder sem o `three` saber: os DOIS caches de estado
+    // dele ficam inválidos — o `currentSets` do contexto (grupos, buffers,
+    // índice) e o pipeline ativo do pass (`WebGPUPipelineUtils`).
     const dados = this._contextData;
     if (dados) dados['currentSets'] = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
+    this._backend.pipelineUtils?._activePipelines?.delete(this._pass);
   }
 
   /** O render object foi descartado pelo `three`: a receita sai do host. */
   forget(ro: object): void {
     const r = this._receitas.get(ro);
     if (r) this._soltar(ro, r);
+  }
+
+  /** Depuração: a receita gravada ainda é a que o `three` usaria? */
+  private _conferirReceita(ro: BatchRoLike, r: Receita): boolean {
+    const atual = this._lerReceita(ro);
+    if (atual !== null && mesmaReceita(atual, r)) return true;
+    if (!this._relatados.has(ro)) {
+      this._relatados.add(ro);
+      const o = ro.object as { name?: string; type?: string };
+      const m = ro.material as { type?: string; name?: string };
+      const motivo =
+        atual === null ? 'inelegivel agora'
+          : atual.pipeline !== r.pipeline ? 'pipeline'
+            : atual.index !== r.index ? 'indice'
+              : atual.grupos.length !== r.grupos.length ? `grupos ${r.grupos.length}->${atual.grupos.length}`
+                : atual.grupos.some((g, i) => g !== r.grupos[i]) ? `grupo ${atual.grupos.findIndex((g, i) => g !== r.grupos[i])}`
+                  : 'vertex buffers';
+      debug('perf', `[drawBatch] receita velha: ${motivo} | ${o.type ?? '?'} "${o.name ?? ''}" ${m.type ?? '?'} "${m.name ?? ''}"`);
+    }
+    return false;
   }
 
   private _soltar(ro: object, r: Receita): void {

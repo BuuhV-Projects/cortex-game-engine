@@ -19,7 +19,14 @@
 import { modelNormalMatrix, modelWorldMatrixInverse } from 'three/tsl';
 import { debug } from '../core/debug.js';
 import { buildRenderIdPlan } from './RenderIdRefresh.js';
-import { DrawBatch, drawBatchBridge, type BatchBackendLike, type BatchRoLike, type DrawBatchStats } from './DrawBatch.js';
+import {
+  DrawBatch,
+  batchBackendSupported,
+  drawBatchBridge,
+  type BatchBackendLike,
+  type BatchRoLike,
+  type DrawBatchStats,
+} from './DrawBatch.js';
 import { applyPlan, queryFlagRequested, type NodeFrameLike, type UniformsGroupLike } from './TransformOnlyRefresh.js';
 
 const QUERY_KEY = 'cleanDraw=';
@@ -571,7 +578,9 @@ export function installCleanDrawFastPath(
    * Lote em C++ (b.2). Todo desenho do `three` passa pelo `backend.draw` abaixo,
    * e ele despacha o lote ANTES: a ordem na tela é a da RenderList.
    */
-  const lote = batchBridge && typeof backend.get === 'function' ? new DrawBatch(batchBridge, backend as BatchBackendLike) : null;
+  const lote =
+    batchBridge && batchBackendSupported(backend as BatchBackendLike) ? new DrawBatch(batchBridge, backend as BatchBackendLike) : null;
+  if (batchBridge && !lote) debug('perf', '[drawBatch] internos do three ausentes: lote desligado');
 
   backend.draw = function draw(this: unknown, ro: unknown, info: unknown): void {
     lote?.flush();

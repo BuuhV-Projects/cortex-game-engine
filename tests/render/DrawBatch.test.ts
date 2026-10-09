@@ -38,7 +38,8 @@ function backendFalso() {
     }
     return d;
   };
-  return { backend: { get }, get };
+  const ativos = new Map<unknown, unknown>();
+  return { backend: { get, pipelineUtils: { _activePipelines: ativos } }, get, ativos };
 }
 
 function roFalso(get: (o: unknown) => Record<string, unknown>, nome: string, index: Uint16Array | Uint32Array | null = new Uint16Array(3)) {
@@ -102,6 +103,24 @@ describe('DrawBatch', () => {
     expect(i.chamadas).toEqual([[36, 1], [12, 3]]); // info.update igual ao do three
     lote.flush();
     expect(flushes.length).toBe(1); // vazio não atravessa a ponte
+  });
+
+  it('despachar esquece o pipeline ativo do pass (senão o three desenha com o da última receita)', () => {
+    const { bridge } = ponteFalsa();
+    const { backend, get, ativos } = backendFalso();
+    const lote = new DrawBatch(bridge, backend);
+    const a = roFalso(get, 'a');
+    lote.capture(a.ro);
+    ativos.set('PASS', 'pipeline-do-three');
+    lote.add(a.ro, info());
+    lote.flush();
+    expect(ativos.has('PASS')).toBe(false);
+  });
+
+  it('sem o cache de pipeline do three, o lote não é suportado', async () => {
+    const { batchBackendSupported } = await import('../../src/render/DrawBatch.js');
+    expect(batchBackendSupported({ get: () => ({}) })).toBe(false);
+    expect(batchBackendSupported(backendFalso().backend)).toBe(true);
   });
 
   it('só regrava quando um handle muda, e solta a receita velha', () => {

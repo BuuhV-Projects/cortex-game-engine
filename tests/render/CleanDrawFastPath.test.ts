@@ -317,6 +317,7 @@ describe('installCleanDrawFastPath com lote em C++ (b.2)', () => {
       backend: {
         draw: () => void eventos.push(`three(${atual.nome})`),
         get,
+        pipelineUtils: { _activePipelines: new Map() },
         beginRender: () => undefined,
         finishRender: () => void eventos.push('fim'),
       },
