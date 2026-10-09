@@ -77,4 +77,17 @@ Duas causas:
 
 ## Medição
 
-Ver a seção de A/B no fim (preenchida após as rodadas).
+Export release (sem `--debug`) do DDD 61, `?cortexDebug=perf&systemProfile=1&cortexHud=1`, 120 s por rodada, t ≥ 30 s, rodadas serializadas pela `measure.lock`. A = engine main 13555386 + jogo main 761c5df; B = as duas branches `perf/r2-world-update` (engine SPEC-0323 + jogo SPEC-0121). ms por quadro (média).
+
+| ponto | | fps (1000/med) | quadro med/p95 | world | update | CharacterPhysics | VehicleControl | 3ª pessoa | VehicleLights |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Setor O | A | 45,9 | 21,8 / 25,4 | 5,57 | 4,01 | 2,38 | 1,59 | 0,86 | 0,61 |
+| Setor O | B | 48,1 | 20,8 / 27,8 | 4,51 | 3,95 | 1,70 | 1,49 | 0,79 | 0,59 |
+| Comercial (A,B) | A | 38,5 | 26,0 / 34,1 | 7,13 | 5,25 | 2,66 | 1,52 | 2,05 | 0,85 |
+| Comercial (A,B) | B | 41,3 | 24,2 / 34,8 | 6,69 | 4,92 | 1,90 | 1,62 | 2,53 | 0,84 |
+| Comercial (B,A) | B | 40,8 | 24,5 / 32,9 | 6,72 | 4,98 | 1,86 | 1,65 | 2,44 | 0,83 |
+| Comercial (B,A) | A | 38,9 | 25,7 / 31,0 | 6,85 | 5,09 | 2,65 | 1,52 | 2,07 | 0,87 |
+| Hélio dirigindo | A | 54,6 | 18,3 / 25,2 | 4,35 | 3,70 | 1,87 | 1,60 | 0,49 | 0,63 |
+| Hélio dirigindo | B | 55,6 | 18,0 / 26,2 | 4,07 | 3,66 | 1,56 | 1,57 | 0,55 | 0,59 |
+
+Leitura: `CharacterPhysics` −0,3 a −0,8 ms em todo ponto (paredes sem raio no meio da rua, menos candidatas). ⚠️ No Comercial a câmera da 3ª pessoa SUBIU +0,4–0,5 ms nas duas ordens (≈900 alvos; a varredura agora testa giro e refaz a caixa de quem anda) — ganho líquido do `world` ali é só −0,15 a −0,45 ms. Pendência: medir `tpCollect` x `tpRays` com a sonda e, se for a varredura, dar índice só de esfera pra câmera.
