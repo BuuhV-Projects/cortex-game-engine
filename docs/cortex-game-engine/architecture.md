@@ -1098,6 +1098,29 @@ versão. Consequência: o buffer de matrizes de `InstancedMesh` pequeno só sobe
 matriz de UV do `TextureNode` como nó `OBJECT`: o UV scroll de material exclusivo
 parado congelaria.
 
+## 8e6. Poda da projeção do `three` — REJEITADA (ADR-0327 / SPEC-0326)
+
+Não há poda própria de `_projectObject`: medida no DDD 61, não se paga. A
+travessia custa ~1,0–1,2 ms/quadro; pular as ~600 visitas a subárvores sem
+nada desenhável (bonecos em lote, camada 27) economiza só ~0,08 ms, porque o
+caro do `_projectObject` é a malha (frustum + `renderList.push`), não o grupo.
+O código ficou no histórico do branch `perf/r2-poda-projecao`.
+
+**Armadilha (poda por frustum com esfera em cache):** parece segura e não é —
+filho que se move dentro de um grupo parado deixa a esfera velha e o objeto
+some; no A/B o "ganho" de 2–3 ms vinha de desenhar menos (`tris` −8–18%).
+Poda por frustum exata só com o bit por subárvore vindo do espelho em C++.
+
+**Armadilha (medição):** sonda que embrulha `_projectObject` em toda chamada
+recursiva soma tempo inclusivo por nível — a R1b leu 5,0 ms onde o custo real
+era ~1,2 ms. Cronometre só o topo e deixe a recursão ir ao original (ou use
+`?renderPhases`, que tem guarda de reentrância).
+
+**Armadilha (A/B de export):** worktree de baseline com `node_modules` por
+junction gera bundle diferente (o esbuild resolve pelo caminho real e duplica
+módulos — +300 KB no DDD 61). Baseline precisa de `node_modules` próprio
+(`yarn install --ignore-scripts`); confira o tamanho do `boot.hbc` dos dois.
+
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
 Duas fusões diferentes, com propósitos opostos, no mesmo módulo
