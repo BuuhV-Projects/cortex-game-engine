@@ -6,6 +6,7 @@
 #include "geometry_registry.h"
 #include "instance_buffer_store.h"
 #include "shadow_math.h"
+#include "../webgpu/pass_timing.h"
 
 #include <webgpu/wgpu.h>
 
@@ -363,6 +364,7 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
   rp.colorAttachmentCount = 0;
   rp.colorAttachments = nullptr;
   rp.depthStencilAttachment = &prof;
+  rp.timestampWrites = webgpu::nextPassTimestampWrites(webgpu::PassOrigin::Shadow);
 
   WGPUCommandEncoderDescriptor ed = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
   WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(gpu->device, &ed);
