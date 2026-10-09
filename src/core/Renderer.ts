@@ -32,6 +32,12 @@ import {
   type TransformOnlyRefresh,
   type TransformOnlyRendererLike,
 } from '../render/TransformOnlyRefresh.js';
+import {
+  installRenderIdRefresh,
+  renderIdRefreshRequested,
+  type RenderIdRefresh,
+  type RenderIdRendererLike,
+} from '../render/RenderIdRefresh.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -119,6 +125,8 @@ export class Renderer {
    * do init; `null` quando desligado ou não instalável. O probe lê `stats`.
    */
   private _transformOnly: TransformOnlyRefresh | null = null;
+  /** Refresh por `renderId` só do que é por render (SPEC-0325); fica por fora do `_transformOnly`. */
+  private _renderIdRefresh: RenderIdRefresh | null = null;
 
   /**
    * Cria o renderer, dispara o init assíncrono do backend em background e
@@ -167,6 +175,11 @@ export class Renderer {
         // do three (ADR-0237).
         if (transformOnlyRefreshRequested(isNativeHost())) {
           this._transformOnly = installTransformOnlyRefresh(this._renderer as unknown as TransformOnlyRendererLike);
+        }
+        // Primeiro objeto de cada material não refaz tudo todo render (SPEC-0325).
+        // Instalado DEPOIS: fica por fora e entrega o renderId em dia ao de cima.
+        if (renderIdRefreshRequested(isNativeHost())) {
+          this._renderIdRefresh = installRenderIdRefresh(this._renderer as unknown as RenderIdRendererLike);
         }
       })
       .catch((err: unknown) => {

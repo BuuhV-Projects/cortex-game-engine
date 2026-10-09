@@ -47,7 +47,7 @@ interface UniformRange {
   count: number;
 }
 
-interface UniformsGroupLike {
+export interface UniformsGroupLike {
   isUniformsGroup?: boolean;
   groupNode?: { shared?: boolean };
   uniforms: UniformLike[];
@@ -57,7 +57,7 @@ interface UniformsGroupLike {
   clearUpdateRanges(): void;
 }
 
-interface MonitorLike {
+export interface MonitorLike {
   hasNode: boolean;
   hasAnimation: boolean;
   renderId: number;
@@ -66,7 +66,7 @@ interface MonitorLike {
   needsVelocity(renderer: unknown): boolean;
 }
 
-interface RenderObjectLike {
+export interface RenderObjectLike {
   object: { matrixWorld: MatrixLike; static?: boolean };
   bundle: unknown;
   getMonitor(): MonitorLike;
@@ -74,13 +74,13 @@ interface RenderObjectLike {
   getBindings(): { bindings: unknown[] }[];
 }
 
-interface NodeFrameLike {
+export interface NodeFrameLike {
   renderId: number;
   renderer: unknown;
   updateNode(node: NodeLike): void;
 }
 
-interface NodeManagerLike {
+export interface NodeManagerLike {
   needsRefresh(renderObject: RenderObjectLike): boolean;
   getNodeFrameForRender(renderObject: RenderObjectLike): NodeFrameLike;
 }
@@ -98,7 +98,7 @@ interface UboPlan {
   uniforms: UniformLike[];
 }
 
-interface Plan {
+export interface Plan {
   nodes: NodeLike[];
   ubos: UboPlan[];
 }
@@ -138,7 +138,7 @@ export function buildTransformOnlyPlan(renderObject: RenderObjectLike): Plan | n
 }
 
 /** Aplica o plano: atualiza os nodes e escreve cada UBO alterado num `writeBuffer`. */
-function applyPlan(frame: NodeFrameLike, plan: Plan, updateBinding: (binding: UniformsGroupLike) => void): void {
+export function applyPlan(frame: NodeFrameLike, plan: Plan, updateBinding: (binding: UniformsGroupLike) => void): void {
   for (const node of plan.nodes) frame.updateNode(node);
   for (const { ubo, uniforms } of plan.ubos) {
     let updated = false;
@@ -239,12 +239,17 @@ export function installTransformOnlyRefresh(renderer: TransformOnlyRendererLike)
  * `?transformOnlyRefresh=0|1`.
  */
 export function transformOnlyRefreshRequested(fallback: boolean): boolean {
+  return queryFlagRequested(QUERY_KEY, fallback);
+}
+
+/** Lê `?<chave>0|1` da URL; sem a chave (ou sem `location`), devolve `fallback`. */
+export function queryFlagRequested(key: string, fallback: boolean): boolean {
   try {
     if (typeof location === 'undefined') return fallback;
     const search = location.search ?? '';
-    const at = search.indexOf(QUERY_KEY);
+    const at = search.indexOf(key);
     if (at < 0) return fallback;
-    return search.charAt(at + QUERY_KEY.length) !== '0';
+    return search.charAt(at + key.length) !== '0';
   } catch {
     return fallback;
   }
