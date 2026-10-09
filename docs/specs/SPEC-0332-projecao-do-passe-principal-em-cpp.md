@@ -1,7 +1,7 @@
 # SPEC-0332 — Projeção do passe principal em C++ (etapa (a) do ADR-0330)
 
 **Data:** 2026-10-09
-**Status:** aceito — implementado; A/B no fim deste documento
+**Status:** aceito — implementado e medido (A/B no fim)
 
 ## Contexto
 
@@ -120,4 +120,38 @@ Studio não tem a ponte: segue 100% no `three`.
 
 ## A/B
 
-(preenchido após a medição)
+Export **release** do DDD 61 (jogo `9be7c6f`), `node_modules` real nos dois
+lados (`boot.hbc` da main 4.126.763 B; deste ramo 4.134.858 B — +8 KB, só o
+código novo). Três braços intercalados por ponto (main, `?nativeProjection=1`,
+`?nativeProjection=0` na MESMA build), sob o `measure.lock`, 135 s por rodada
+(150 s no hélio dirigindo), amostras com t ≥ 30 s. Medianas de `cpuAvg`.
+
+A máquina derivou muito entre rodadas (o `world`, que nenhum braço muda, foi de
+4,4 a 8,6 ms). Por isso a leitura principal é **on × off da mesma build** e a
+razão `render / (update + world)`, que desconta a deriva comum.
+
+Voltas v3 (main `761e7957`, 2 voltas) e v4 (main `8c8eeb11`, 1 volta):
+
+| ponto | volta | render on | render off | main | µs/draw on | µs/draw off | razão on | razão off |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| setorO | v3 | **11,2** | 13,2 | 12,7 | 72,6 | 86,7 | 1,217 | 1,294 |
+| setorO | v4 | **10,2** | 10,9 | 10,5 | 66,7 | 73,1 | 1,200 | 1,313 |
+| comercial | v3 | 13,0 | 13,0 | 12,5 | 104,9 | 107,0 | 0,942 | 1,057 |
+| comercial | v4 | **11,3** | 12,8 | 13,2 | 89,2 | 105,3 | 0,934 | 1,041 |
+| hélio (dirigindo) | v3 | **7,4** | 8,2 | 8,0 | 71,8 | 79,8 | 0,871 | 0,872 |
+| hélio (dirigindo) | v4 | 8,2 | 8,4 | 7,8 | 76,8 | 81,9 | 0,891 | 0,933 |
+
+- **Ganho:** `render` cai **0,2–2,0 ms** (on × off), ~**7–14 µs por draw**; a
+  razão normalizada é menor no braço on em **6 de 6** pares (setorO −6 a −9%,
+  comercial −10 a −11%, hélio 0 a −5%). Faixa realista: **~0,7–1,5 ms** de
+  render, dentro do previsto pelo ADR-0330 (1,2–2,2) no limite inferior — o
+  `renderList.push` e as camadas continuam em JS.
+- **Sem regressão:** a seção `mirror` (varredura + sincronização) fica igual à
+  da main (setorO 1,2–1,6 ms nos três braços). A primeira versão desta etapa
+  custava +0,6 ms aqui (varredura lendo `visible` pelo acessor e reclassificando
+  o tipo do nó); corrigido lendo o armazenamento do gancho e o tipo calculado
+  na adoção.
+- **Paridade:** `draws`/`tris` iguais entre os braços (ex.: setorO 149 × 148,
+  931 mil tris); **0 recusas** em todas as rodadas (`[nativeProjection]
+  nativas=N recusadas=0`); captura do setorO idêntica à do `three` (só NPC e
+  mensagem da central mudam), com sombra, contorno, céu e UI.
