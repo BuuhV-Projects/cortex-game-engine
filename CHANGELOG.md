@@ -1,3 +1,41 @@
+# [0.77.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.76.0...v0.77.0) (2026-10-09)
+
+
+### Bug Fixes
+
+* **engine:** lote de desenhos esquece o pipeline ativo do pass do three após despachar (SPEC-0333 b.2) ([c2ffd42](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c2ffd428be8918f97c5142232dd24b856204dd2f))
+* **native:** pose de mundo fresca no espelho e volume do THREE.Audio no webaudio-lite (SPEC-0340, SPEC-0341) ([94be6ce](https://github.com/BuuhV-Projects/cortex-game-engine/commit/94be6ceab1bb71ffd72fce10d4509fb437346808))
+* **native:** trace de perf aberto com leitura compartilhada (SPEC-0334 adendo) ([3fbf485](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3fbf485c5fa8cb1d028395a66687a96e566d5ed3))
+
+
+### Features
+
+* **engine:** sonda de elegibilidade do desenho nativo, ?drawRecipeProbe=1 (SPEC-0333 passo 0) ([ee46099](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ee46099f28353f3593c52a93b47fba7fd4c462dc))
+
+
+### Performance Improvements
+
+* **engine:** caixa em mundo só é recalculada pra malha que se mexeu (SPEC-0323) ([f7d6b1d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f7d6b1ddd78a323a17af8d2b3a97ca8e32f0ef00))
+* **engine:** câmera da 3ª pessoa reaproveita a varredura da cena do CharacterPhysics (SPEC-0328) ([24c92e3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/24c92e3e0f62578f7362b4a8e3df97b2fd63d94e))
+* **engine:** colisão do personagem com folga só pra quem se mexe e caixa antes dos raios de parede (SPEC-0323) ([b997b1d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b997b1de07de8c3dabd86bbbb739d57f7c2085e4))
+* **engine:** corta alocação por quadro no World.query e no renderUiLayer; docs do instrumento (SPEC-0334) ([be41ed9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/be41ed9fab7a0180f29f9030f804288b4342362c))
+* **engine:** desenho direto — conferência literal, dedupe por estado de shader e objetos que só se moveram (SPEC-0333 b.1) ([ef7f852](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ef7f852bb25b3fbca0507e098285b07e976651fa))
+* **engine:** desenho direto dos render objects limpos, verificação especializada (SPEC-0333 b.1) ([4358f73](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4358f7391c4906c92df497e4d3f85e6088e772a1))
+* **engine:** índice de colisão testa também a caixa em mundo da malha (SPEC-0323) ([6c6f597](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6c6f5976f64f6ef07aec02f228698a779ac4d312))
+* **engine:** instrumento honesto — trace em rodízio, pass-timing correto e gpu-work (SPEC-0334) ([f355ce4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f355ce409d667f664d76da05222663721a36cad2))
+* **engine:** lote de desenhos diretos em C++ — receita gravada, uma travessia por sequência (SPEC-0333 b.2) ([925e11b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/925e11bbc3085b93d9ab96fe5a3b83ac93e6dd8f))
+* **engine:** poda da projeção mais barata — sem descer em escondido, eventos só nas candidatas, rodízio menor (SPEC-0326) ([ec421f6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ec421f66607464d5eb6d58a483cbef58d2e6fae4))
+* **engine:** poda da projeção só de subárvores sem desenhável na câmera — esfera por frustum retirada (SPEC-0326) ([29057bc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/29057bc94c54b7eafdedb5a2d3401b104edfa42b))
+* **engine:** projeção do passe principal em C++ a partir do SceneMirror (SPEC-0332, ADR-0330 etapa a) ([5a83820](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5a8382059c85b8948c4a8bffe4f149cdea0fab91))
+* **engine:** raio só contra o que ele cruza — grade XZ, mais perto primeiro e firstHitOnly na câmera e no personagem (SPEC-0328) ([6064ba1](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6064ba1a89678ebfd2379fedf3bb49fcfca00176))
+* **engine:** rebuild reaproveita malha parada e malha cruzada por raio ganha BVH a partir de 64 tris (SPEC-0328) ([4d7445c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4d7445c30c1bd524d2a6da6cc193c772bbbdc120))
+* **engine:** refresh por renderId aceita InstancedMesh parado (SPEC-0325) ([4198121](https://github.com/BuuhV-Projects/cortex-game-engine/commit/419812147b21dd1cd5b419b4b52c562cea4e737d))
+* **engine:** refresh por renderId só do que é por render (SPEC-0325) ([33a8fdd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/33a8fdd55112a6b704d4d5dbd1f4d1f85a9547e4))
+* **engine:** touchingBox descarta InstancedMesh pelas esferas das instâncias (SPEC-0328) ([ee20845](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ee2084526ecc410c6af093560a5eedd67ce9da9e))
+* **engine:** varredura do espelho lê visible do gancho e o tipo do nó da adoção (SPEC-0332) ([f88e586](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f88e5860a13cfad0ef9f6f8df20bab269b0bf561))
+* **native:** ponte do perf-trace com arquivo aberto e fflush por linha; trace* com 3 casas (SPEC-0334) ([53a2f1b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/53a2f1b76dfd643b5d1e39c22f23d5a627773b9f))
+* **native:** Rapier do host sem custo de corpo parado + isSleeping no shim (ADR-0336, SPEC-0337) ([7661496](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7661496a53dcbb3bade84801d0cf97ea0245a562))
+
 # [0.76.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.75.3...v0.76.0) (2026-10-08)
 
 
