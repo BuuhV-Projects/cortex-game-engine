@@ -64,7 +64,7 @@ const TRACE_COST_DECIMALS = 3;
  * Chaves que escapam do arredondamento grosso da amostra: as fases do render e
  * a calibração do relógio precisam de mais casas do que o resto do frame.
  */
-const FINE_KEY_PREFIXES = ['rp', 'clock'] as const;
+const FINE_KEY_PREFIXES = ['rp', 'clock', 'trace'] as const;
 
 function isFineKey(name: string): boolean {
   return FINE_KEY_PREFIXES.some((prefix) => name.startsWith(prefix));

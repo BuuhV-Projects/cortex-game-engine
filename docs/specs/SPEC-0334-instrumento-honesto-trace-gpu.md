@@ -54,6 +54,12 @@ resultado fechado.
 - `countNodes`/`collectVisible`/`countUnchangedMatrices`/`censusBySceneNode`
   continuam exportadas (API pública, usadas em testes e ferramentas).
 
+A ponte do host (`shims/perf_trace.cpp`) mantém o `perf-trace.jsonl` aberto na
+sessão, com `fflush` por linha, em vez de abrir/fechar o arquivo a cada
+amostra: medido, o abre/fecha era ~0,3 ms de ~0,6 ms da amostra. O `fflush`
+entrega a linha ao SO, então crash do processo não perde dado. As chaves
+`trace*` saem com 3 casas (com 1 casa, 0,45 ms virava "0,5").
+
 `FrameProfiler.summary()` (chamado em toda amostra) ordena a janela de cada
 seção num buffer reaproveitado com o `sort` nativo de `Float64Array`, em vez de
 `Array.from(...).sort(comparador)` por seção.
