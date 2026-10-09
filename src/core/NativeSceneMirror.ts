@@ -433,11 +433,30 @@ function desengancharCallback(alvo: ComCallback): void {
   alvo._mOriginal = undefined;
 }
 
+/**
+ * `updateWorldMatrix` de nó espelhado (SPEC-0340): o do `three` só escreve com
+ * `matrixWorldAutoUpdate === true`, que o espelho desliga — no meio do quadro
+ * quem pedia a pose de mundo (luzes do carro, `getWorldPosition`) lia a do
+ * render ANTERIOR. Aqui é o mesmo cálculo do `three`, escrito direto na fatia
+ * nativa; o C++ recalcula o mesmo valor no render.
+ */
+function atualizarMundoSobPedido(this: Object3D, updateParents: boolean, updateChildren: boolean): void {
+  const pai = this.parent;
+  if (updateParents === true && pai !== null) pai.updateWorldMatrix(true, false);
+  if (this.matrixAutoUpdate) this.updateMatrix();
+  if (pai === null) this.matrixWorld.copy(this.matrix);
+  else this.matrixWorld.multiplyMatrices(pai.matrixWorld, this.matrix);
+  if (updateChildren === true) {
+    for (const filho of this.children) filho.updateWorldMatrix(false, true);
+  }
+}
+
 function engancharNo(objeto: Object3D, espelho: NativeSceneMirror, slot: number): void {
   engancharVetor(objeto.position, espelho, slot);
   engancharVetor(objeto.scale, espelho, slot);
   engancharCallback(objeto.quaternion as unknown as ComCallback, espelho, slot);
   engancharCallback(objeto.rotation as unknown as ComCallback, espelho, slot);
+  objeto.updateWorldMatrix = atualizarMundoSobPedido;
 }
 
 function desengancharNo(objeto: Object3D): void {
@@ -445,6 +464,10 @@ function desengancharNo(objeto: Object3D): void {
   desengancharVetor(objeto.scale);
   desengancharCallback(objeto.quaternion as unknown as ComCallback);
   desengancharCallback(objeto.rotation as unknown as ComCallback);
+  // volta o do protótipo (o nó sai do espelho com matrixWorldAutoUpdate = true)
+  if (objeto.updateWorldMatrix === atualizarMundoSobPedido) {
+    delete (objeto as unknown as Record<string, unknown>)['updateWorldMatrix'];
+  }
 }
 
 /** `material.visible` do `_projectObject`; um array conta se QUALQUER parte desenha. */
