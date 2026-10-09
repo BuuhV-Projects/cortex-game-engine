@@ -1,6 +1,6 @@
 # SPEC-0326 — Poda de subárvores na projeção do `three` (`ProjectionPruner`)
 
-**Data:** 2026-10-07
+**Data:** 2026-10-09
 **Status:** aceito
 **Decisão:** ADR-0327
 
@@ -49,34 +49,30 @@ pedidos.
 
 ### Candidatas
 
-Montadas por uma busca a partir dos filhos da cena. Para cada nó, mede a
-subárvore (`measureSubtree`) com a máscara de camadas da câmera:
+Montadas por uma busca a partir dos filhos da cena (subárvore escondida é
+pulada: o `three` já não entra nela). Para cada nó, `measureSubtree` conta os
+nós da subárvore com a máscara de camadas da câmera:
 
-- **bloqueia** (a busca desce aos filhos): luz, `LOD`, `BundleGroup`,
-  `ClippingGroup`; e, entre os desenháveis NA CAMADA da câmera, sprite,
-  skinned, instanced, batched ou `frustumCulled = false`;
+- algum nó **faz trabalho na projeção** — luz, `LOD`, `BundleGroup`,
+  `ClippingGroup`, ou malha/linha/pontos/sprite NA CAMADA da câmera —:
+  não é candidata, a busca desce aos filhos;
 - desenhável em OUTRA camada não conta (o `three` o descarta no
-  `layers.test`) — é o caso dos bonecos do DDD 61;
-- subárvore com **< 3 nós** (`MIN_SUBTREE_NODES`): ignorada;
-- **sem nada desenhável** pela câmera: candidata `always` (sai sempre, sem
-  teste de esfera);
-- esfera local com raio ≤ **40 m** (`MAX_CANDIDATE_RADIUS`): candidata com a
-  esfera da geometria no espaço LOCAL da raiz, com folga ×1,25 + 1 m
-  (`SPHERE_MARGIN_*`); maior que isso: desce aos filhos.
+  `layers.test`) — é o caso das peças dos bonecos do DDD 61;
+- subárvore com **< 3 nós** (`MIN_SUBTREE_NODES`): ignorada (não compensa);
+- senão é candidata: independe do frustum e da posição.
 
 ### Por passe
 
 O wrapper fica no `_projectObject` da INSTÂNCIA e só age na chamada de topo
-com `object.isScene` e `camera === pruner.camera` (não `ArrayCamera`):
+com `object.isScene` e `camera === pruner.camera`:
 
-1. remonta as candidatas se a cena mudou de estrutura (`childadded`/
-   `childremoved` em qualquer nó, escutados como faz o espelho de cena) ou se a
-   máscara de camadas da câmera mudou;
-2. remede 16 candidatas em rodízio (`REFRESH_PER_PASS`); contagem ou
-   "tem desenhável" diferente ⇒ remonta no próximo passe;
-3. frustum da câmera (`projectionMatrix × matrixWorldInverse`, mesmo sistema
-   de coordenadas do `three`); cada candidata visível fora dele (ou `always`)
-   recebe `visible = false`;
+1. remonta as candidatas se houve `childadded`/`childremoved` dentro de uma
+   delas, se a máscara de camadas da câmera mudou, ou a cada 120 passes
+   (`REBUILD_EVERY_PASSES` — filho novo fora de candidata só fica sem poda até
+   lá, nunca some);
+2. remede 4 candidatas em rodízio (`REFRESH_PER_PASS`); contagem diferente
+   (ganhou desenhável, malha trocou de camada) ⇒ remonta no próximo passe;
+3. cada candidata visível recebe `visible = false`;
 4. aponta `this._projectObject` direto pro método do protótipo durante a
    travessia (a recursão não passa pelo wrapper), chama, e no `finally` volta o
    wrapper e devolve `visible = true` a quem foi escondido.
@@ -88,14 +84,25 @@ por varredura em rodízio contra o último valor enviado), o `visible`
 temporário não suja slot nenhum: a varredura só roda no `update`, e aí o valor
 já voltou. O `scene.onBeforeRender` (lote de bonecos) também vem antes.
 
+### Poda por frustum: tentada e retirada
+
+A 1ª versão também guardava, por subárvore compacta (raio ≤ 40 m), uma esfera
+no espaço local da raiz e escondia a raiz fora do frustum. No A/B (main
+81a84ddd, `.cortex/r2-d/runs-v1`) o quadro caiu 2,3–3,3 ms, mas `tris` caiu
+junto (setorO 1.009k→933k, Hélio 951k→777k) e a moto da Hélio Prates **sumiu**
+da screenshot: grupo parado com filho que anda deixa a esfera velha. O ganho
+vinha de desenhar menos. Como o teto dessa parte era ~110 visitas (~0,08 ms),
+saiu inteira; ver ADR-0327 para a alternativa exata (bit por subárvore do C++).
+
 ### Onde liga
 
 - Só no host nativo (`isNativeHost()`); `?projectionPrune=0` desliga (A/B).
 - `pruner.camera` é posta por quadro pelo `Game`: a `_activeCamera` quando o
   jogo está desenhando; `null` no editor (F2), na câmera de inspeção, no
   carregamento e no quadro de aquecimento (ADR-0262, precisa ver tudo).
-- Estatística a cada 300 passes em `debug('perf')`: candidatas, podadas/q,
-  nós poupados/q, ms/q da própria poda, remontagens.
+- Estatística a cada 300 passes em `debug('perf')`: candidatas, nós
+  poupados/q (conta também nós já escondidos lá dentro — é teto, não visita
+  real), ms/q da própria poda, remontagens.
 
 ## Resultados
 
@@ -103,9 +110,9 @@ já voltou. O `scene.onBeforeRender` (lote de bonecos) também vem antes.
 
 ## Consequências
 
-- Esfera em cache supõe subárvore rígida; o rodízio e a folga limitam o erro.
-  Mudança de `layers`/`frustumCulled` sem evento de estrutura só é vista no
-  rodízio — `invalidate()` força a remontagem.
-- Remontagem é uma travessia completa da cena; cena que adiciona/remove nós
-  todo quadro pagaria isso todo quadro (contador `remontagens` no log).
+- Exata por construção; o único atraso possível é malha mudar de camada (ou
+  nascer desenhável) sem evento de estrutura — rodízio/remontagem pegam,
+  `invalidate()` força.
+- Remontagem é uma travessia da cena; cena que adiciona/remove nós dentro de
+  candidatas todo quadro pagaria isso todo quadro (contador `remontagens`).
 - Testes: `tests/render/ProjectionPruner.test.ts`.
