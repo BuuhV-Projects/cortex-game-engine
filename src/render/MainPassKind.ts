@@ -73,12 +73,13 @@ export function mainPassKind(objeto: Object3D): MainPassKind {
  */
 export function mainPassUnsupported(objeto: Object3D): boolean {
   const no = objeto as NoClassificavel;
-  return (
-    (no.isGroup === true && objeto.renderOrder !== 0) ||
-    no.isLOD === true ||
-    no.isClippingGroup === true ||
-    no.isBundleGroup === true
-  );
+  return (no.isGroup === true && objeto.renderOrder !== 0) || mainPassUnsupportedType(objeto);
+}
+
+/** A parte de {@link mainPassUnsupported} que é do TIPO do nó (não muda em runtime). */
+export function mainPassUnsupportedType(objeto: Object3D): boolean {
+  const no = objeto as NoClassificavel;
+  return no.isLOD === true || no.isClippingGroup === true || no.isBundleGroup === true;
 }
 
 /** Bits de autoria do passe principal para o layout de construção. */

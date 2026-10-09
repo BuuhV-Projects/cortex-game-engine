@@ -16,9 +16,11 @@ import { authoredCastShadow } from '../scene/ShadowCasterCulling.js';
 import { geometryId } from '../render/GeometryDesc.js';
 import {
   MainPassKind,
-  mainPassFrameFlags,
   mainPassKind,
   mainPassNodeFlags,
+  mainPassUnsupportedType,
+  SYNC_FRUSTUM_CULLED,
+  SYNC_MAIN_UNSUPPORTED,
 } from '../render/MainPassKind.js';
 import { debug } from './debug.js';
 
@@ -305,17 +307,30 @@ function ladoDeUmMaterial(m: Material): number {
     : (LADO_DA_SOMBRA.get(comLado.side ?? FrontSide) ?? SHADOW_SIDE_UNSUPPORTED);
 }
 
+/** Bits de `_estaticoPorSlot`: o que do tipo do nó a varredura precisa (SPEC-0332). */
+const ESTATICO_TIPO_RECUSADO = 1;
+const ESTATICO_GRUPO = 2;
+
 /**
- * As flags do QUADRO de um nó (ver {@link SYNC_FLAGS}): `visible`,
- * `material.visible` e o lado da face do passe de sombra.
+ * As flags do QUADRO de um nó já enganchado (ver {@link SYNC_FLAGS}):
+ * `visible`, `material.visible`, o lado da face do passe de sombra e, do passe
+ * principal (SPEC-0332), `frustumCulled` cru e a recusa por tipo/`renderOrder`.
+ *
+ * Roda por nó varrido (~1.300/quadro no DDD 61), por isso lê o `visible` do
+ * armazenamento do gancho (sem passar pelo acessor) e o tipo do nó de
+ * `estatico` (calculado uma vez na adoção) — só o `renderOrder` de `Group` é
+ * relido, porque muda em runtime.
  */
-function flagsDoQuadro(objeto: Object3D): number {
+function flagsDoQuadro(objeto: Object3D, estatico: number): number {
   const no = objeto as NoDaCena;
-  let flags = objeto.visible ? SYNC_VISIBLE : 0;
+  let flags = (objeto as unknown as ObjetoEnganchado)._mVis ? SYNC_VISIBLE : 0;
   if (materialVisivel(no.material)) flags |= SYNC_MATERIAL_VISIBLE;
   flags |= ladoDaSombra(no.material) << SYNC_SHADOW_SIDE_SHIFT;
-  // `frustumCulled` cru e a recusa por tipo/ordem do passe principal (SPEC-0332).
-  return flags | mainPassFrameFlags(objeto);
+  if (objeto.frustumCulled) flags |= SYNC_FRUSTUM_CULLED;
+  if ((estatico & ESTATICO_TIPO_RECUSADO) !== 0 || ((estatico & ESTATICO_GRUPO) !== 0 && objeto.renderOrder !== 0)) {
+    flags |= SYNC_MAIN_UNSUPPORTED;
+  }
+  return flags;
 }
 
 // ── Ganchos de transform (SPEC-0322) ───────────────────────────────────────
@@ -686,6 +701,8 @@ export class NativeSceneMirror {
   private _flagsEnviadas = new Uint8Array(0);
   /** Ramo do `_projectObject` de cada slot (SPEC-0332) — o tipo do nó não muda. */
   private _tipoPorSlot = new Uint8Array(0);
+  /** `ESTATICO_*` de cada slot: tipo recusado / é `Group` (SPEC-0332). */
+  private _estaticoPorSlot = new Uint8Array(0);
   /** Geometria cuja esfera o host tem, por slot (SPEC-0332). */
   private _geometriaPorSlot: (BufferGeometry | undefined)[] = [];
   private readonly _mainPass = mainPassBridge();
@@ -748,6 +765,7 @@ export class NativeSceneMirror {
     this._listaSujos = new Int32Array(capacidade);
     this._flagsEnviadas = new Uint8Array(capacidade);
     this._tipoPorSlot = new Uint8Array(capacidade);
+    this._estaticoPorSlot = new Uint8Array(capacidade);
     this._geometriaPorSlot = new Array<BufferGeometry | undefined>(capacidade);
     this._qtdSujos = 0;
     this._cursorVarredura = 0;
@@ -755,10 +773,14 @@ export class NativeSceneMirror {
 
   /** O slot entra no espelho: gancho + flags de partida (as do `build`). */
   private _adotar(objeto: Object3D, slot: number): void {
-    this._flagsEnviadas[slot] = flagsDoQuadro(objeto);
     this._tipoPorSlot[slot] = mainPassKind(objeto);
+    this._estaticoPorSlot[slot] =
+      (mainPassUnsupportedType(objeto) ? ESTATICO_TIPO_RECUSADO : 0) |
+      ((objeto as Object3D & { isGroup?: boolean }).isGroup === true ? ESTATICO_GRUPO : 0);
     this._geometriaPorSlot[slot] = geometriaDeDesenho(objeto as NoDaCena);
     engancharNo(objeto, this, slot);
+    // Depois do gancho: as flags leem o `visible` do armazenamento dele.
+    this._flagsEnviadas[slot] = flagsDoQuadro(objeto, this._estaticoPorSlot[slot]!);
   }
 
   /** A cena espelhada (o slot 0 do `install`), ou `undefined`. */
@@ -1127,7 +1149,7 @@ export class NativeSceneMirror {
       sync[base + 8] = escala._mx;
       sync[base + 9] = escala._my;
       sync[base + 10] = escala._mz;
-      const flags = flagsDoQuadro(objeto);
+      const flags = flagsDoQuadro(objeto, this._estaticoPorSlot[i]!);
       enviadas[i] = flags;
       sync[base + SYNC_FLAGS] = flags;
     }
@@ -1148,14 +1170,22 @@ export class NativeSceneMirror {
     const fatia = Math.min(total, Math.max(SWEEP_MIN_NODES, Math.ceil(total / SWEEP_PERIOD_FRAMES)));
     const marca = this._sujoMarca;
     const enviadas = this._flagsEnviadas;
+    const estaticos = this._estaticoPorSlot;
+    const tipos = this._tipoPorSlot;
+    const geometrias = this._geometriaPorSlot;
     let cursor = this._cursorVarredura;
     for (let k = 0; k < fatia; k++) {
       if (cursor >= total) cursor = 0;
       const objeto = nos[cursor];
-      if (objeto && marca[cursor] === 0 && flagsDoQuadro(objeto) !== enviadas[cursor]) {
-        this._marcarSujo(cursor);
+      if (objeto) {
+        if (marca[cursor] === 0 && flagsDoQuadro(objeto, estaticos[cursor]!) !== enviadas[cursor]) {
+          this._marcarSujo(cursor);
+        }
+        // Teste em linha: a chamada só acontece na troca de geometria (raro).
+        if (tipos[cursor] === MainPassKind.NativeCull && (objeto as NoDaCena).geometry !== geometrias[cursor]) {
+          this._conferirGeometria(objeto, cursor);
+        }
       }
-      if (objeto) this._conferirGeometria(objeto, cursor);
       cursor++;
     }
     this._cursorVarredura = cursor;
