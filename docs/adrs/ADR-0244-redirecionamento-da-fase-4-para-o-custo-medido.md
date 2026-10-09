@@ -1,7 +1,7 @@
 # 0244 - Redirecionamento da fase 4 para o custo medido
 
 **Data:** 2026-09-22
-**Status:** aceito com a decisão 2 REVOGADA em 2026-09-22 (ver o fim do documento)
+**Status:** aceito com a decisão 2 REVOGADA em 2026-09-22 (ver o fim do documento); **decisão 1 revista pelo ADR-0330** (2026-10-09 — o DDD 61 é a cena com custo por objeto que ela exigia)
 
 ## Contexto
 
