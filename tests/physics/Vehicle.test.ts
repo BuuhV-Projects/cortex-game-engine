@@ -62,3 +62,32 @@ describe('Vehicle (Rapier raycast)', () => {
     phys.dispose();
   });
 });
+
+describe('Vehicle.keepUpright só age quando há rolagem (SPEC-0337)', () => {
+  const STRENGTH = 14;
+  const DAMPING = 7;
+  const DT = 1 / 60;
+  const TILT_RAD = 0.3;
+
+  it('nivelado e parado: não escreve a velocidade angular', async () => {
+    const phys = await RapierPhysics.create({ x: 0, y: 0, z: 0 });
+    const veh = makeVehicle(phys);
+    let writes = 0;
+    const original = veh.body.setAngvel.bind(veh.body);
+    veh.body.setAngvel = (v, w) => { writes++; original(v, w); };
+    veh.keepUpright(STRENGTH, DAMPING, DT);
+    expect(writes).toBe(0);
+    phys.dispose();
+  });
+
+  it('inclinado: puxa de volta (rolagem no sentido de desvirar)', async () => {
+    const phys = await RapierPhysics.create({ x: 0, y: 0, z: 0 });
+    const veh = makeVehicle(phys);
+    // rola em volta do eixo de avanço (+Z): o +X local sobe → rightY > 0
+    veh.body.setRotation(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), TILT_RAD), true);
+    veh.keepUpright(STRENGTH, DAMPING, DT);
+    const av = veh.body.angvel();
+    expect(av.z).toBeLessThan(0); // corrige no sentido oposto à inclinação
+    phys.dispose();
+  });
+});

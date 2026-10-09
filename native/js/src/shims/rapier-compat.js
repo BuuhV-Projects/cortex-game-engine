@@ -187,6 +187,16 @@ RigidBody.prototype.isEnabled = function () {
   return this.__scratch[0] !== 0;
 };
 
+/**
+ * Dormindo? Mesmo significado do browser: dinâmico parado dorme; cinemático
+ * NUNCA dorme no Rapier. Sem isto, uma sonda que perguntava `isSleeping?.()`
+ * recebia `undefined` e contava todo corpo como acordado (SPEC-0337).
+ */
+RigidBody.prototype.isSleeping = function () {
+  __rapierNative.bodyGet(this.__world, this.handle, 8);
+  return this.__scratch[0] !== 0;
+};
+
 RigidBody.prototype.wakeUp = function () {
   __rapierNative.bodySet(this.__world, this.handle, 7, 0, 0, 0, 0, 1);
 };

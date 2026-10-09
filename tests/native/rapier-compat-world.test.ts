@@ -203,6 +203,17 @@ describe('RigidBody — o que o jogo de carro usa (SPEC-0209)', () => {
     expect(argsOf('bodyGet').every((a) => a[2] === 7)).toBe(true);
   });
 
+  // A sonda do R2b perguntava `isSleeping?.()`: sem o método, todo corpo
+  // contava como acordado e o diagnóstico culpou o sono dos cinemáticos (SPEC-0337).
+  it('isSleeping lê o código 8', () => {
+    const rb = body();
+    bodyGetValue = 1;
+    expect(rb.isSleeping()).toBe(true);
+    bodyGetValue = 0;
+    expect(rb.isSleeping()).toBe(false);
+    expect(argsOf('bodyGet').every((a) => a[2] === 8)).toBe(true);
+  });
+
   it('setAdditionalMassProperties manda massa, centro e inércia', () => {
     const rb = body();
     rb.setAdditionalMassProperties(

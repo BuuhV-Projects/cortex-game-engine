@@ -99,7 +99,7 @@ Ver ADR-0109.
 | `native/src/shims/text_raster.*` | `__cortexRasterText(texto, px, origem?)` (stb_truetype + Roboto pinada) → bitmap RGBA branco pro RendererUiBackend (ADR-0102) e pro canvas 2D. `origem` (`ui`/`canvas`) só alimenta a telemetria `text-vivo` do perf-log: rasters AINDA VIVOS por origem, descontados no finalizador do ArrayBuffer (`napi_add_finalizer`). `CORTEX_TEXT_LOG=1` imprime cada raster (origem, px, texto) no stdout (SPEC-0321). |
 | `src/ui/runtime/` (ENGINE) | UI de runtime ADR-0102: UiLayer/widgets/layout + DomUiBackend e RendererUiBackend. `uiFont.ts` embute a Roboto Medium (woff2, @font-face) pro DOM = mesma fonte do raster nativo (ADR-0103). Painel `fill` acompanha o viewport a cada frame (UiLayer). **DOM-lite com nomes do HTML5 (ADR-0123)**: `background` aceita `linear-gradient(180deg\|90deg,…)` e cores com alpha (`uiColor.ts` decompõe pro shader — THREE.Color não tem alpha), `boxShadow` duro (`"0 Npx 0 cor"`, segunda malha), `borderRadius`/`textAlign`, borda constante em botão, imagem clipada pelo raio (SDF) e tags `<div>/<span>/<img>` no template. Ordem de pintura por widget = `order*4` (sombra<caixa<imagem<texto). |
 | `native/src/core/gc_stats.*` | Totais do coletor do Hermes (SPEC-0264), alimentados pelo callback de analytics do `GCConfig` em `hermes_embed.cpp` e lidos pelo JS em `__cortexGcStats()`. Atômicos: o Hades coleta numa thread própria. |
-| `native/rapier-native/` | Crate Rust (cdylib): Rapier de verdade com C ABI mínima espelhando o que o engine usa. |
+| `native/rapier-native/` | Crate Rust (cdylib): Rapier de verdade com C ABI mínima espelhando o que o engine usa. Compila contra `patched/rapier3d` (0.22.0 + 2 correções de desempenho, `[patch.crates-io]`, ADR-0336): broad-phase não reordena sub-região sem trabalho e cinemático parado não reposiciona collider — o passo deixou de custar O(corpos parados). Atualizar o Rapier = reaplicar ou confirmar no upstream; instrumento `bench_idle_city`. |
 | `native/src/webgpu/bindings.h` | API pública do módulo: `registerBindings`, `presentIfAcquired`. Fora do módulo, só inclua este. |
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |
 | `native/src/webgpu/navigator.cpp` | `navigator.gpu` (requestAdapter, formato preferido) + dono do `gpuState()`. Registra o binding global `__cortexUiLayer(textureOrNull)` (ADR-0105): o JS entrega a textura da RT da UI pro host compor em gama. |
@@ -458,13 +458,17 @@ Native (que roda milhares de libs sobre Hermes em produção):
     TODAS as chamadas `body.*`/`collider.*`/`world.*` do jogo e do engine contra
     o shim de uma vez — foi o que fechou esta lista.
 - **Operação nova de corpo = CÓDIGO novo, não função C nova.** `rn_body_set`
-  (`what` 0..11) e `rn_body_get` (`what` 0..7) despacham por código; o shim
+  (`what` 0..11) e `rn_body_get` (`what` 0..8; 8 = `isSleeping`, SPEC-0337) despacham por código; o shim
   manda o número e o `rapier.cpp` nem muda. `setEnabled`/`isEnabled` entraram
   assim (SPEC-0314: `bodySet` 11, `bodyGet` 7 — o boot do DDD 61 morria no
   `ParkTrunks`). Cuidado: código desconhecido cai no `_ =>` (setTranslation /
   translation) SEM erro — shim novo com `rapier_native.dll` velha
   teletransporta o corpo pra origem. Rebuild do crate é obrigatório
   (`yarn build:host` já faz o cargo antes do CMake).
+- **Sonda com `?.()` mente sobre o shim** (SPEC-0337): `b.isSleeping?.()` sem o
+  método dá `undefined` e conta TODO corpo como acordado — o R2b culpou o sono
+  dos cinemáticos por isso. E cinemático nunca dorme no Rapier mesmo (browser
+  e host): o custo real era o broad-phase, resolvido no patch da ADR-0336.
 - **O `rapier-compat` cobre um SUBCONJUNTO do Rapier** (SPEC-0208): o que falta
   aparece só em runtime, como `undefined is not a function` no meio do setup do
   jogo — sem dizer qual função. Foi assim que o `forEachRigidBody` apareceu
