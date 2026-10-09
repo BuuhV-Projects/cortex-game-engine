@@ -85,3 +85,30 @@ já resolveu uma vez para transform: gancho na escrita.
 | gancho custa leitura em todo acesso de material | acessores compartilhados (medido barato na SPEC-0322); só em materiais de objetos elegíveis |
 | `currentSets` dessincronizado → bind group errado | invalidar o cache do `three` após cada sequência nativa; teste com intercalação |
 | bump do `three` muda a forma da receita | instalação recusa (como `TransformOnlyRefresh`) se os internos não baterem |
+
+## Passo 0 medido (2026-10-09) — a lista branca de nós de objeto barra TUDO
+
+Sonda `?drawRecipeProbe=1` (`src/render/DrawRecipeProbe.ts`), export release
+sobre a main `8c8eeb11` + SPEC-0332, setorO e comercial, média por quadro em
+janelas de 300 quadros (primeiro motivo que bate conta):
+
+| motivo | draws/quadro |
+| --- | --- |
+| **elegível** | **0** |
+| refeito pelo `three` no quadro | 17–18 |
+| moveu | 17–28 |
+| tipo (instanciado/skinned/morph/batched) | 18 |
+| transparente | 21–23 |
+| **nó de update por objeto fora da lista branca** | **62–67** |
+
+Os critérios de transformação, tipo e transparência deixam ~65 draws/quadro
+candidatos — e **todos** caem no último filtro: os materiais do DDD 61 têm
+pelo menos um nó de update `OBJECT` que não é `ModelNode` de matriz nem
+`modelNormalMatrix`/`modelWorldMatrixInverse`. Antes de qualquer C++, o
+próximo passo é **identificar esses nós** (tipo e origem — engine, jogo ou
+`three`) e decidir, nó a nó, se derivam só da matriz (entram na lista) ou se
+são estado de verdade (o objeto fica no `three`). Sem isso o teto da etapa (b)
+é zero; com eles na lista, o teto é ~65 draws/quadro × ~50 µs ≈ 3 ms.
+
+Note também que `moveu` (17–28) é alto para cena parada: são NPCs, carros e o
+próprio jogador; e `transparente` (~21) entra na fila da etapa (c).
