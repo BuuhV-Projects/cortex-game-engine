@@ -1,4 +1,4 @@
-/** SPEC-0326: poda de subárvores fora do frustum na projeção do `three`. */
+/** SPEC-0326: poda das subárvores sem nada desenhável pela câmera do jogo. */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   BoxGeometry,
@@ -13,12 +13,15 @@ import {
   Scene,
 } from 'three';
 import type { Camera, Object3D } from 'three';
-import { ProjectionPruner, MAX_CANDIDATE_RADIUS } from '../../src/render/ProjectionPruner.js';
+import { ProjectionPruner } from '../../src/render/ProjectionPruner.js';
+
+/** Camada que nenhuma câmera desenha (peças de boneco do lote instanciado). */
+const BATCH_LAYER = 27;
 
 /**
  * Imitação do `Renderer._projectObject` do `three` no que importa aqui: poda em
- * `visible === false`, testa cada malha contra o frustum da câmera e recursa
- * pelos filhos via `this._projectObject` (é a recursão que o embrulho troca).
+ * `visible === false`, `layers.test`, frustum por malha e recursão pelos filhos
+ * via `this._projectObject` (é a recursão que o embrulho troca).
  */
 class FakeRendererBase {
   visited: Object3D[] = [];
@@ -45,12 +48,19 @@ function box(name: string, x: number, z: number): Mesh {
   return m;
 }
 
-/** Um "ônibus": grupo compacto de 3 malhas. */
-function bus(name: string, x: number, z: number): Group {
+/** Grupo de 3 malhas. */
+function trio(name: string, x: number, z: number): Group {
   const g = new Group();
   g.name = name;
   g.position.set(x, 0, z);
   g.add(box(`${name}-a`, 0, 0), box(`${name}-b`, 1, 0), box(`${name}-c`, -1, 0));
+  return g;
+}
+
+/** Boneco do lote: hierarquia inteira na camada que a câmera não vê. */
+function figure(name: string, x: number, z: number): Group {
+  const g = trio(name, x, z);
+  g.traverse((o) => o.layers.set(BATCH_LAYER));
   return g;
 }
 
@@ -61,6 +71,8 @@ function render(r: FakeRenderer, scene: Scene, camera: Camera): void {
   r.pushed = [];
   r._projectObject(scene, camera);
 }
+
+const names = (list: Object3D[]): string[] => list.map((o) => o.name);
 
 describe('ProjectionPruner (SPEC-0326)', () => {
   let scene: Scene;
@@ -78,104 +90,100 @@ describe('ProjectionPruner (SPEC-0326)', () => {
     pruner.camera = camera;
   });
 
-  it('grupo inteiro fora do frustum é podado na raiz e volta visível depois', () => {
-    const behind = bus('atras', 0, 50); // atrás da câmera
-    const ahead = bus('frente', 0, -50);
-    scene.add(behind, ahead);
+  it('subárvore sem desenhável na câmera é podada na raiz, mesmo à frente, e volta visível', () => {
+    const fig = figure('boneco', 0, -10);
+    scene.add(fig, trio('carro', 0, -20));
     render(renderer, scene, camera);
-    expect(renderer.visited).not.toContain(behind);
-    expect(renderer.visited.filter((o) => o.name.startsWith('atras'))).toHaveLength(0);
-    expect(renderer.pushed.map((o) => o.name)).toEqual(['frente-a', 'frente-b', 'frente-c']);
-    expect(behind.visible).toBe(true); // a poda só vale durante a projeção
-    expect(pruner.candidateCount).toBe(2);
+    expect(renderer.visited).not.toContain(fig);
+    expect(names(renderer.pushed)).toEqual(['carro-a', 'carro-b', 'carro-c']);
+    expect(fig.visible).toBe(true); // a poda só vale durante a projeção
+    expect(pruner.candidateCount).toBe(1);
   });
 
-  it('filho visível de um grupo grande não é podado', () => {
-    const spread = new Group();
-    spread.name = 'lojas';
-    const near = bus('loja-perto', 0, -20);
-    const far = bus('loja-longe', 0, 4 * MAX_CANDIDATE_RADIUS); // atrás, longe
-    spread.add(near, far);
-    scene.add(spread);
+  it('a RenderList sai idêntica à do three sem poda', () => {
+    const crowd = new Group();
+    for (let i = 0; i < 6; i++) crowd.add(figure(`b${i}`, i * 3 - 9, -15));
+    const held = figure('com-item', 0, -12);
+    held.children[0].layers.set(0); // item na mão, desenhado pela câmera
+    crowd.add(held, trio('fora', 0, 40), trio('dentro', 2, -30));
+    scene.add(crowd);
+    pruner.camera = null;
     render(renderer, scene, camera);
-    expect(renderer.visited).toContain(spread);
-    expect(renderer.pushed.map((o) => o.name)).toEqual(['loja-perto-a', 'loja-perto-b', 'loja-perto-c']);
-    expect(renderer.visited).not.toContain(far);
+    const expected = names(renderer.pushed);
+    const visitsWithout = renderer.visited.length;
+    pruner.camera = camera;
+    render(renderer, scene, camera);
+    expect(names(renderer.pushed)).toEqual(expected);
+    expect(renderer.visited.length).toBeLessThan(visitsWithout);
   });
 
-  it('grupo que cruza a borda do frustum não é podado', () => {
-    const g = bus('borda', 0, 0); // a câmera está dentro dele
-    scene.add(g);
+  it('filho desenhável de um grupo grande não é podado; os irmãos sem desenho são', () => {
+    const big = new Group();
+    const seen = trio('visivel', 0, -20);
+    const fig = figure('boneco', 5, -20);
+    big.add(seen, fig);
+    scene.add(big);
     render(renderer, scene, camera);
-    expect(renderer.pushed.length).toBeGreaterThan(0);
+    expect(renderer.visited).toContain(big);
+    expect(names(renderer.pushed)).toEqual(['visivel-a', 'visivel-b', 'visivel-c']);
+    expect(renderer.visited).not.toContain(fig);
   });
 
   it('caster fora da câmera continua na passada de sombra', () => {
-    const caster = bus('caster', 0, 50); // fora da câmera do jogo
-    scene.add(caster);
+    const caster = trio('caster', 0, 50); // atrás da câmera do jogo
+    scene.add(caster, figure('boneco', 0, 45));
     const shadowCamera = new OrthographicCamera(-100, 100, 100, -100, 0.1, 500);
     shadowCamera.position.set(0, 200, 0);
     shadowCamera.lookAt(0, 0, 0);
     render(renderer, scene, camera);
-    expect(renderer.visited).not.toContain(caster);
+    expect(renderer.pushed).toHaveLength(0);
     // Mesmo quadro: o `three` renderiza a sombra pela câmera da luz.
     render(renderer, scene, shadowCamera);
-    expect(renderer.pushed.map((o) => o.name)).toEqual(['caster-a', 'caster-b', 'caster-c']);
+    expect(names(renderer.pushed)).toEqual(['caster-a', 'caster-b', 'caster-c']);
+    expect(renderer.visited.some((o) => o.name.startsWith('boneco'))).toBe(true);
   });
 
-  it('subárvore com luz ou frustumCulled=false nunca é podada', () => {
-    const lit = bus('com-luz', 0, 50);
+  it('subárvore com luz nunca é podada', () => {
+    const lit = figure('com-luz', 0, -10);
     lit.add(new PointLight());
-    const always = bus('sempre', 0, 60);
-    (always.children[0] as Mesh).frustumCulled = false;
-    scene.add(lit, always);
+    scene.add(lit);
     render(renderer, scene, camera);
     expect(renderer.visited).toContain(lit);
-    expect(renderer.pushed.map((o) => o.name)).toEqual(['sempre-a']);
   });
 
-  it('filho novo dentro de candidata remonta a esfera (sem sumir)', () => {
-    const g = bus('cresce', 0, 50);
-    scene.add(g);
+  it('filho desenhável novo dentro de candidata remonta (não some)', () => {
+    const fig = figure('boneco', 0, -10);
+    scene.add(fig);
     render(renderer, scene, camera);
-    g.add(box('cresce-novo', 0, -100)); // bem na frente da câmera
+    fig.add(box('item-novo', 0, 0));
     render(renderer, scene, camera);
-    expect(renderer.pushed.map((o) => o.name)).toContain('cresce-novo');
+    expect(names(renderer.pushed)).toContain('item-novo');
   });
 
-  it('subárvore sem nada na camada da câmera sai mesmo à frente dela', () => {
-    const LOTE = 27; // peças de boneco desenhadas por um lote instanciado
-    const figura = bus('figura', 0, -10);
-    figura.traverse((o) => o.layers.set(LOTE));
-    const comItem = bus('figura-com-item', 0, -12);
-    comItem.traverse((o) => o.layers.set(LOTE));
-    comItem.children[0].layers.set(0); // item na mão, desenhado pela câmera
-    scene.add(figura, comItem);
+  it('câmera que passa a ver a camada do lote remonta e para de podar', () => {
+    scene.add(figure('boneco', 0, -10));
     render(renderer, scene, camera);
-    expect(renderer.visited).not.toContain(figura);
-    expect(renderer.pushed.map((o) => o.name)).toEqual(['figura-com-item-a']);
-    // A câmera passa a ver a camada do lote: remonta e para de podar.
-    camera.layers.enable(LOTE);
+    camera.layers.enable(BATCH_LAYER);
     render(renderer, scene, camera);
-    expect(renderer.pushed.map((o) => o.name)).toContain('figura-b');
+    expect(names(renderer.pushed)).toEqual(['boneco-a', 'boneco-b', 'boneco-c']);
   });
 
-  it('subárvore escondida na montagem que reaparece à frente é desenhada', () => {
-    const g = bus('reaparece', 0, -20);
+  it('subárvore escondida na montagem que reaparece é desenhada', () => {
+    const g = trio('reaparece', 0, -20);
     g.visible = false;
     scene.add(g);
     render(renderer, scene, camera);
     g.visible = true;
     render(renderer, scene, camera);
-    expect(renderer.pushed.map((o) => o.name)).toEqual(['reaparece-a', 'reaparece-b', 'reaparece-c']);
+    expect(names(renderer.pushed)).toEqual(['reaparece-a', 'reaparece-b', 'reaparece-c']);
   });
 
   it('câmera nula desliga a poda', () => {
-    const behind = bus('atras', 0, 50);
-    scene.add(behind);
+    const fig = figure('boneco', 0, -10);
+    scene.add(fig);
     pruner.camera = null;
     render(renderer, scene, camera);
-    expect(renderer.visited).toContain(behind);
+    expect(renderer.visited).toContain(fig);
   });
 
   it('detach devolve o método do protótipo', () => {
