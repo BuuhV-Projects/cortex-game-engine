@@ -127,4 +127,34 @@ inalterado.
 
 ## Medição
 
-(preenchida após o A/B no export release)
+Export release (sem `--debug`), `?cortexDebug=perf&systemProfile=1&cortexHud=1`, 135 s por
+rodada, t >= 30 s, serializadas pela `measure.lock`, node_modules real na worktree (o
+`boot.hbc` difere só pelo código; host/DLLs idênticos). A = `src/` da main 8c8eeb11,
+B = branch 03078621 (main mesclada), jogo d734251 nos dois. Ordem A,B,A,B por ponto.
+ms por quadro (média).
+
+| ponto | | fps (1000/med) | quadro med | 3ª pessoa | CharacterPhysics | soma |
+| --- | --- | --- | --- | --- | --- | --- |
+| Comercial | A1 / A3 | 39,4 / 41,2 | 25,4 / 24,3 | 2,78 / 2,59 | 2,08 / 1,96 | |
+| Comercial | B2 / B4 | 40,2 / 43,3 | 24,9 / 23,1 | 1,55 / 1,48 | 1,44 / 1,39 | **−1,77** |
+| Setor O | A5 / A7 | 48,8 / 48,3 | 20,5 / 20,7 | 0,80 / 0,78 | 1,74 / 1,68 | |
+| Setor O | B6 / B8 | 43,9 / 46,3 | 22,8 / 21,6 | 0,80 / 0,84 | 1,44 / 1,31 | **−0,31** |
+| Hélio dirigindo | A11 | 52,4 | 19,1 | 1,25 | 1,83 | |
+| Hélio dirigindo | B10 / B12 | 56,5 / 58,5 | 17,7 / 17,1 | 0,70 / 0,68 | 1,27 / 1,25 | **−1,14** |
+
+Leitura: Comercial câmera −1,17 e personagem −0,60 ms; Hélio −0,56 / −0,57; Setor O só o
+personagem (−0,34; a câmera lá já era 0,8 ms). O fps do Setor O caiu nas rodadas B, mas
+sistemas que este registro não toca (`VehicleControl` 1,47–1,56 → 1,62–1,89,
+`VehicleLights` 0,63 → 0,67–0,74) subiram junto — deriva da máquina, não regressão. A
+rodada A9 do Hélio perdeu o trace (o piloto travou); ficou 1 A × 2 B.
+
+Sondas descartáveis (export com a sonda, Comercial): antes da decisão 7 o `tpRays`
+custava 2,69 ms (ônibus 1,39); com 1–7, 1,34; o que sobra no Comercial (sonda P4) é
+~0,67 ms de malhas com árvore (fusões estáticas "largas", ~45 candidatas por raio cuja
+caixa contém a origem), ~0,7 de InstancedMesh (o laço por instância do
+`instancedRaycast`), 0,3 da busca no índice e 0,6 do raio de chão.
+
+Meta da frente (Comercial −2 a −3 ms; outros −0,8 a −1,5): Comercial −1,8, Hélio −1,1,
+Setor O −0,3. O resto é o custo fixo de ~20 µs por raio × malha com árvore no Hermes e
+o laço por instância — candidato a raycast em C++ no host (BVH do three-mesh-bvh
+lido do lado nativo), não feito nesta frente.
