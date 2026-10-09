@@ -52,6 +52,13 @@ já resolveu uma vez para transform: gancho na escrita.
    dependentes da câmera estão nos grupos COMPARTILHADOS (render/frame), que o
    `three` continua atualizando uma vez por render. A gravação confere isso: se
    o bind group de objeto contiver nó dependente de câmera, recusa.
+   Conferido no `three` 0.184 (`ModelNode.js`): o `modelViewMatrix` padrão é
+   `cameraViewMatrix` (grupo de render) × `modelWorldMatrix` (objeto),
+   multiplicado **no shader**; `modelNormalMatrix` e `modelWorldMatrixInverse`
+   derivam só da matriz de mundo. A lista branca de nós de objeto é, portanto,
+   os escopos `WORLD_MATRIX`/`POSITION`/`SCALE`/`DIRECTION`/`RADIUS` do
+   `ModelNode` mais esses dois uniforms; `VIEW_POSITION` e o
+   `highpModelViewMatrix` (calculado em JS com a câmera) são recusa.
 5. **Onde desenha.** Dentro do passe da cena do `three`, na ordem da RenderList:
    o `_renderObjects` envia ao host, numa chamada, a sequência de receitas
    limpas intercalada com os objetos que o `three` desenha — o host emite no
