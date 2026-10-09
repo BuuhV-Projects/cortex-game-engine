@@ -74,8 +74,12 @@ export function traverseCollidable(
 
 /** Floats por malha no índice: esfera (x, y, z, raio) e caixa (min x/y/z, máx x/y/z), já com a folga. */
 const STRIDE = 10;
-/** Floats da esfera guardada da varredura anterior (centro + raio). */
-const PREV_STRIDE = 4;
+/** Floats guardados da varredura anterior: esfera (centro + raio), caixa em mundo SEM folga e giro/escala (3×3). */
+const PREV_STRIDE = 19;
+/** Onde começa o 3×3 da `matrixWorld` no registro guardado. */
+const PREV_BASIS = 10;
+/** Índices do 3×3 (giro/escala) nos `elements` de uma Matrix4. */
+const BASIS = [0, 1, 2, 4, 5, 6, 8, 9, 10] as const;
 /** Deslocamento da caixa dentro do registro de cada malha. */
 const BOX = 4;
 
@@ -111,11 +115,12 @@ export function worldBox(o: Object3D, out: Box3 = tmpBox): Box3 | null {
 export class NearMeshIndex {
   private meshes: readonly Object3D[] = [];
   private data = new Float32Array(0);
-  /** Esfera em mundo (x, y, z, raio) de cada malha na varredura anterior (SPEC-0323). */
+  /** Esfera e caixa em mundo de cada malha na varredura anterior (SPEC-0323). */
   private previous = new WeakMap<Object3D, Float32Array>();
 
   /**
-   * Recalcula esferas e caixas de `meshes` (chamar quando a lista é remontada). A folga
+   * Recalcula esferas e caixas (a caixa só de quem se mexeu: a da parada vem guardada —
+   * transformar os 8 cantos de ~900 malhas a cada varredura custava mais que o ganho) de `meshes` (chamar quando a lista é remontada). A folga
    * é {@link MOVING_MARGIN} pra quem se mexeu desde o rebuild anterior (ou é nova) e
    * {@link STATIC_MARGIN} pra quem ficou parada (SPEC-0323).
    */
@@ -126,9 +131,8 @@ export class NearMeshIndex {
     for (let i = 0; i < meshes.length; i++) {
       const mesh = meshes[i]!;
       const s = worldSphere(mesh);
-      const b = s ? worldBox(mesh) : null;
       const k = i * STRIDE;
-      if (!s || !b) {
+      if (!s) {
         d[k] = d[k + 1] = d[k + 2] = 0;
         d[k + 3] = Infinity;
         d[k + BOX] = d[k + BOX + 1] = d[k + BOX + 2] = -Infinity;
@@ -141,23 +145,41 @@ export class NearMeshIndex {
         Math.abs(prev[0]! - s.center.x) > MOVE_EPSILON ||
         Math.abs(prev[1]! - s.center.y) > MOVE_EPSILON ||
         Math.abs(prev[2]! - s.center.z) > MOVE_EPSILON ||
-        Math.abs(prev[3]! - s.radius) > MOVE_EPSILON;
+        Math.abs(prev[3]! - s.radius) > MOVE_EPSILON ||
+        turned(prev, mesh.matrixWorld.elements);
       if (!prev) this.previous.set(mesh, (prev = new Float32Array(PREV_STRIDE)));
       prev[0] = s.center.x;
       prev[1] = s.center.y;
       prev[2] = s.center.z;
       prev[3] = s.radius;
+      if (moved) {
+        // giro em volta do centro não muda a esfera, mas muda a caixa: o 3×3 entra no teste
+        const e = mesh.matrixWorld.elements;
+        for (let j = 0; j < BASIS.length; j++) prev[PREV_BASIS + j] = e[BASIS[j]]!;
+        const wb = worldBox(mesh);
+        if (wb) {
+          prev[BOX] = wb.min.x;
+          prev[BOX + 1] = wb.min.y;
+          prev[BOX + 2] = wb.min.z;
+          prev[BOX + 3] = wb.max.x;
+          prev[BOX + 4] = wb.max.y;
+          prev[BOX + 5] = wb.max.z;
+        } else {
+          prev[BOX] = prev[BOX + 1] = prev[BOX + 2] = -Infinity;
+          prev[BOX + 3] = prev[BOX + 4] = prev[BOX + 5] = Infinity;
+        }
+      }
       const margin = moved ? MOVING_MARGIN : STATIC_MARGIN;
       d[k] = s.center.x;
       d[k + 1] = s.center.y;
       d[k + 2] = s.center.z;
       d[k + 3] = s.radius + margin;
-      d[k + BOX] = b.min.x - margin;
-      d[k + BOX + 1] = b.min.y - margin;
-      d[k + BOX + 2] = b.min.z - margin;
-      d[k + BOX + 3] = b.max.x + margin;
-      d[k + BOX + 4] = b.max.y + margin;
-      d[k + BOX + 5] = b.max.z + margin;
+      d[k + BOX] = prev[BOX]! - margin;
+      d[k + BOX + 1] = prev[BOX + 1]! - margin;
+      d[k + BOX + 2] = prev[BOX + 2]! - margin;
+      d[k + BOX + 3] = prev[BOX + 3]! + margin;
+      d[k + BOX + 4] = prev[BOX + 4]! + margin;
+      d[k + BOX + 5] = prev[BOX + 5]! + margin;
     }
   }
 
@@ -200,6 +222,12 @@ export class NearMeshIndex {
     }
     return out;
   }
+}
+
+/** O 3×3 (giro/escala) mudou desde o guardado? */
+function turned(prev: Float32Array, e: ArrayLike<number>): boolean {
+  for (let j = 0; j < BASIS.length; j++) if (Math.abs(prev[PREV_BASIS + j]! - e[BASIS[j]]!) > MOVE_EPSILON) return true;
+  return false;
 }
 
 const _boxToMesh = new Matrix4();

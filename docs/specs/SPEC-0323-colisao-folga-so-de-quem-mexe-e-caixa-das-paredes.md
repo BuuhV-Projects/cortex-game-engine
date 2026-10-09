@@ -59,6 +59,11 @@ Duas causas:
    cada malha (`worldBox`, mesma folga) e só devolve a malha se a esfera **e** a caixa
    alcançam — as duas contêm a geometria, então o filtro continua conservador.
    `nearXZ`/`near` testam a caixa primeiro (4–6 comparações).
+   - **A caixa só é recalculada pra quem se mexeu** (esfera OU o 3×3 da `matrixWorld`
+     mudou — giro no lugar não muda a esfera mas muda a caixa). Na 1ª versão a caixa
+     (8 cantos transformados) era refeita pra todas as ~900 malhas a cada varredura, nas
+     duas listas: no Comercial a câmera subiu de 1,97 para 3,53 ms/q no A/B. A parada
+     reaproveita a caixa guardada.
 
 ## Consequências
 

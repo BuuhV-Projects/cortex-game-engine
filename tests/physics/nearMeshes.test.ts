@@ -239,3 +239,18 @@ describe('SPEC-0323: folga só pra quem se mexe; caixa antes dos raios de parede
     expect(tn.z).toBe(-3);
   });
 });
+
+describe('SPEC-0323: caixa guardada só vale pra malha parada', () => {
+  it('giro no lugar (esfera igual) recalcula a caixa', () => {
+    const bar = new Mesh(new BoxGeometry(20, 1, 1), new MeshBasicMaterial()); // barra de 20 m em X
+    bar.updateMatrixWorld(true);
+    const idx = new NearMeshIndex();
+    idx.rebuild([bar]);
+    idx.rebuild([bar]); // parada: caixa guardada
+    expect(idx.nearXZ(0, 8, 0, [])).toEqual([]); // 8 m em Z: fora da caixa da barra em X
+    bar.rotation.y = Math.PI / 2; // gira no lugar: agora a barra corre em Z
+    bar.updateMatrixWorld(true);
+    idx.rebuild([bar]);
+    expect(idx.nearXZ(0, 8, 0, [])).toEqual([bar]);
+  });
+});
