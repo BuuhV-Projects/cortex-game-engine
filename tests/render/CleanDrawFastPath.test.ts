@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { Color, Matrix4, Texture } from 'three';
+import { Color, Matrix4, MeshBasicMaterial, Texture } from 'three';
 import { modelWorldMatrix } from 'three/tsl';
 import {
   installCleanDrawFastPath,
   pushValue,
+  quickMatch,
   snapshot,
   watchersFor,
   type CleanDrawRendererLike,
@@ -43,10 +44,8 @@ function roFalso(updateNodes: unknown[], material: Record<string, unknown>, fog?
 }
 
 function materialFalso(): Record<string, unknown> {
-  return {
-    version: 0, visible: true, transparent: false, side: 0, depthWrite: true,
-    color: new Color(1, 0, 0), opacity: 1, map: new Texture(),
-  };
+  // Material REAL: a conferência rápida lê os campos que todo `Material` tem.
+  return new MeshBasicMaterial({ color: new Color(1, 0, 0), map: new Texture() }) as unknown as Record<string, unknown>;
 }
 
 describe('CleanDrawFastPath — instantâneo', () => {
@@ -121,6 +120,53 @@ describe('CleanDrawFastPath — instantâneo', () => {
   });
 });
 
+describe('CleanDrawFastPath — conferência rápida', () => {
+  it('codifica igual à gravação e detecta cada mudança', () => {
+    const fog = { color: new Color(0.1, 0.2, 0.3), near: 10, far: 500 };
+    const solta = no({ type: 'TextureNode', isTextureNode: true, value: new Texture() });
+    const nodes = [
+      no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['color'], material: null }),
+      no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['opacity'], material: null }),
+      no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['map'], material: null }),
+      no({ type: 'ReferenceNode', properties: ['near'], object: fog }),
+      solta,
+    ];
+    const { ro, object, material } = roFalso(nodes, materialFalso(), fog);
+    const vigias = watchersFor(ro)!;
+    const gravar = () => {
+      const lista: number[] = [];
+      expect(snapshot(ro, vigias, lista)).toBe(true);
+      return Float64Array.from(lista);
+    };
+    let inst = gravar();
+    expect(quickMatch(ro, vigias, inst)).toBe(true);
+    const mudancas: (() => void)[] = [
+      () => object.matrixWorld.makeTranslation(0, 1, 0),
+      () => (object.receiveShadow = false),
+      () => (material['color'] as Color).setRGB(0, 0, 1),
+      () => (material['opacity'] = 0.5),
+      () => ((material['map'] as Texture).offset.x = 0.25),
+      () => ((material['map'] as Texture).version = 3),
+      () => (material['map'] = null),
+      () => (material['map'] = new Texture()),
+      () => (fog.near = 99),
+      () => (((solta as unknown as { value: Texture }).value).repeat.y = 2),
+      () => (material['transparent'] = true),
+      () => (material['side'] = 2),
+      () => (material['blendSrcAlpha'] = 204),
+      () => (material['version'] = 5),
+      () => object.geometry.attributes.position!.version++,
+      () => (object.geometry.drawRange.count = 3),
+    ];
+    for (const mudar of mudancas) {
+      mudar();
+      expect(quickMatch(ro, vigias, inst)).toBe(false);
+      inst = gravar();
+      expect(quickMatch(ro, vigias, inst)).toBe(true);
+    }
+  });
+});
+
 describe('installCleanDrawFastPath', () => {
   function rendererFalso() {
     const chamadas = { original: 0, draw: 0, updateBefore: 0 };
@@ -183,6 +229,30 @@ describe('installCleanDrawFastPath', () => {
     chamar();
     expect(chamadas.original).toBe(5);
     handle.uninstall();
+  });
+
+  it('objeto que só se moveu desenha direto com o plano de transformação', () => {
+    const nodes = [no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['color'], material: null })];
+    const { ro, object, material } = roFalso(nodes, materialFalso());
+    const { renderer, chamadas } = rendererFalso();
+    const escritas: unknown[] = [];
+    renderer.backend!.updateBinding = (b) => void escritas.push(b);
+    renderer.ro = ro;
+    const handle = installCleanDrawFastPath(renderer)!;
+    const chamar = () => renderer._renderObjectDirect!(object, material, 'cena', 'cam', 'luzes', null, null, null);
+    chamar();
+    object.matrixWorld.makeTranslation(5, 0, 0);
+    chamar();
+    expect(chamadas.original).toBe(1);
+    expect(handle.stats.moved).toBe(1);
+    chamar(); // parado de novo na posição nova: direto, sem plano
+    expect(handle.stats.moved).toBe(1);
+    expect(handle.stats.direct).toBe(2);
+    // Mexeu a matriz E a cor: o three refaz.
+    object.matrixWorld.makeTranslation(6, 0, 0);
+    (material['color'] as Color).setRGB(0, 1, 0);
+    chamar();
+    expect(chamadas.original).toBe(2);
   });
 
   it('nó animado nunca é gravado', () => {
