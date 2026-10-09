@@ -76,8 +76,10 @@ continua corrigindo igual.
   mesmo que fixo e quase o mesmo que desligado. Desnecessário.
 - **`VehicleControlSystem`:** o tempo dele é quase todo o passo da física; o
   resto (input, 4 rodas, câmera) é dezenas de µs.
-- **Luzes dos veículos:** são do jogo (`entities/vehicleLights.ts`), registradas
-  na SPEC-0124 do jogo.
+- **Luzes dos veículos:** são do jogo (`entities/vehicleLights.ts`). A mesma
+  otimização (matriz da instância em forma fechada, direto no buffer) entrou pela
+  SPEC-0122 do jogo (frente F4); esta frente só acrescentou o teste de que lente e
+  halo colam no carro no mesmo quadro.
 
 ## Testes
 
