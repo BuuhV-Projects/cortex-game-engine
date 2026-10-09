@@ -31,6 +31,7 @@ import {
   type NativeProjection,
   type ProjectingRendererLike,
 } from '../render/NativeMainProjection.js';
+import { installDrawRecipeProbe } from '../render/DrawRecipeProbe.js';
 import { PerfTrace } from './PerfTrace.js';
 import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
@@ -244,6 +245,8 @@ export class Game {
   private _sceneMirrorTried = false;
   /** Projeção do passe principal em C++ (SPEC-0332); só no host. */
   private _nativeProjection: NativeProjection | null = null;
+  /** Sonda de elegibilidade da etapa (b) (SPEC-0333), `?drawRecipeProbe=1`. */
+  private _drawRecipeProbe: { commitFrame(): void } | null = null;
   /** DIAGNOSTICO TEMPORARIO (SPEC-0241). */
   private _ramoRelatado: string | null = null;
   private readonly _matrixFreezeAt = matrixFreezeRequested();
@@ -659,6 +662,7 @@ export class Game {
           this._sceneMirror,
         );
       }
+      this._drawRecipeProbe = installDrawRecipeProbe(this.renderer.threeRenderer);
     }
     p.begin('render');
     // DIAGNOSTICO TEMPORARIO (SPEC-0241, passo 0) — remover.
@@ -727,6 +731,7 @@ export class Game {
     p.commitFrame(); // fecha o frame do profiler (joga os acumuladores nos rings)
     this._renderPhases.commitFrame(); // idem para as fases do render (SPEC-0227)
     this._framesRendered++;
+    this._drawRecipeProbe?.commitFrame();
     if (this._nativeProjection && this._framesRendered % NATIVE_PROJECTION_REPORT_FRAMES === 0) {
       const st = this._nativeProjection.stats;
       debug('perf', `[nativeProjection] nativas=${st.native} recusadas=${st.refused} candidatos=${st.candidates}`);
