@@ -27,6 +27,11 @@ import { WebGPURenderer } from 'three/webgpu';
 import { setKtx2Renderer } from './loadKtx2.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
 import {
+  cleanDrawRequested,
+  installCleanDrawFastPath,
+  type CleanDrawRendererLike,
+} from '../render/CleanDrawFastPath.js';
+import {
   installTransformOnlyRefresh,
   transformOnlyRefreshRequested,
   type TransformOnlyRefresh,
@@ -183,6 +188,10 @@ export class Renderer {
         // Instalado DEPOIS: fica por fora e entrega o renderId em dia ao de cima.
         if (renderIdRefreshRequested(isNativeHost())) {
           this._renderIdRefresh = installRenderIdRefresh(this._renderer as unknown as RenderIdRendererLike);
+        }
+        // Desenho direto dos render objects limpos (SPEC-0333, b.1 do ADR-0330).
+        if (cleanDrawRequested(isNativeHost())) {
+          installCleanDrawFastPath(this._renderer as unknown as CleanDrawRendererLike);
         }
       })
       .catch((err: unknown) => {

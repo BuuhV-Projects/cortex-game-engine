@@ -1158,6 +1158,20 @@ segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
   inserção diferente não importa: o sort da RenderList é ordem total.
   `MainPassKind.ts` classifica o nó (ramos do `_projectObject`).
 
+- **(b.1) desenho direto em JS** (`src/render/CleanDrawFastPath.ts`,
+  `?cleanDraw=0|1`, SPEC-0333): embrulha o `_renderObjectDirect`; render object
+  elegível é gravado com um instantâneo numérico do que os nós `OBJECT` dele
+  leem (material, névoa, textura com UV, matriz, geometria, campos de
+  pipeline) e, enquanto bate, é desenhado direto (`updateBefore` + grupos
+  compartilhados + `backend.draw`), pulando a verificação genérica do `three`.
+  A sonda `?drawRecipeProbe=1` (`DrawRecipeProbe.ts`) lista o que barra a
+  elegibilidade.
+
+**Armadilha (desenho direto):** os grupos COMPARTILHADOS (câmera, luzes) têm de
+ser atualizados também no desenho direto — sem isso a câmera congela, como nos
+render bundles (ADR-0215). E o descarte do render object (`onDispose`) tem de
+ser visto por render object, não por gravação: a gravação é refeita no lugar.
+
 **Armadilha (recusa, não aproximação):** `LOD`, `ClippingGroup`, `BundleGroup`
 e `Group` com `renderOrder` alcançáveis fazem o quadro voltar ao `three` (o
 `groupOrder` não viaja). `Sprite`/`InstancedMesh`/`SkinnedMesh` têm esfera do

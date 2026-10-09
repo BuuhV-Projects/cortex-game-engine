@@ -20,6 +20,8 @@ const QUERY_KEY = 'drawRecipeProbe=';
 const UPDATE_OBJECT = 'object';
 /** Quadros por relato. */
 const REPORT_FRAMES = 300;
+/** Quantas combinações de ofensores o relato lista. */
+const TOP_OFFENDERS = 12;
 const MATRIX_ELEMENTS = 16;
 /** Escopos do `ModelNode` que dependem só da matriz de mundo (SPEC-0333). */
 const ESCOPOS_DA_MATRIZ = new Set(['worldMatrix', 'position', 'scale', 'direction', 'radius']);
@@ -57,16 +59,34 @@ interface RoLike {
 
 /** `true` quando todo nó de update por objeto deriva só da matriz de mundo. */
 export function objectNodesFromMatrixOnly(ro: RoLike): boolean {
+  return objectNodeOffenders(ro).length === 0;
+}
+
+/** Descrição curta de um nó para o relato: tipo, escopo/propriedade, nome. */
+export function describeNode(n: NoLike): string {
+  const comMais = n as NoLike & { property?: string; name?: string; isMaterialReferenceNode?: boolean };
+  const tipo = n.type ?? n.constructor?.name ?? '?';
+  const detalhe = n.scope ?? comMais.property ?? comMais.name ?? '';
+  return detalhe ? `${tipo}:${detalhe}` : tipo;
+}
+
+/** Os nós de update por OBJETO que não derivam só da matriz (vazio = elegível). */
+export function objectNodeOffenders(ro: RoLike): string[] {
   const estado = ro.getNodeBuilderState();
-  for (const n of estado.updateBeforeNodes) if ((n as { getUpdateBeforeType?: () => string }).getUpdateBeforeType?.() === UPDATE_OBJECT) return false;
-  for (const n of estado.updateAfterNodes) if ((n as { getUpdateAfterType?: () => string }).getUpdateAfterType?.() === UPDATE_OBJECT) return false;
+  const ofensores: string[] = [];
+  for (const n of estado.updateBeforeNodes) {
+    if ((n as { getUpdateBeforeType?: () => string }).getUpdateBeforeType?.() === UPDATE_OBJECT) ofensores.push(`antes:${describeNode(n)}`);
+  }
+  for (const n of estado.updateAfterNodes) {
+    if ((n as { getUpdateAfterType?: () => string }).getUpdateAfterType?.() === UPDATE_OBJECT) ofensores.push(`depois:${describeNode(n)}`);
+  }
   for (const n of estado.updateNodes) {
     if (n.getUpdateType() !== UPDATE_OBJECT) continue;
     if (n === (modelNormalMatrix as unknown) || n === (modelWorldMatrixInverse as unknown)) continue;
     if (n.type === 'ModelNode' && ESCOPOS_DA_MATRIZ.has(n.scope ?? '')) continue;
-    return false;
+    ofensores.push(describeNode(n));
   }
-  return true;
+  return ofensores;
 }
 
 /** Instala a sonda; `null` quando desligada ou o `three` não tem a forma esperada. */
@@ -82,6 +102,8 @@ export function installDrawRecipeProbe(renderer: object): { commitFrame(): void;
   const refeitos = new WeakSet<object>();
   const matrizes = new WeakMap<object, Float64Array>();
   const doObjeto = new WeakMap<object, boolean>();
+  /** Ofensores por render object distinto (cada um contado uma vez). */
+  const ofensoresVistos = new Map<string, number>();
   const contagem = new Map<Motivo, number>(RECIPE_REASONS.map((m) => [m, 0]));
   let quadros = 0;
 
@@ -116,8 +138,11 @@ export function installDrawRecipeProbe(renderer: object): { commitFrame(): void;
     if (ro.material.transparent) return 'transparente';
     let soMatriz = doObjeto.get(ro);
     if (soMatriz === undefined) {
-      soMatriz = objectNodesFromMatrixOnly(ro);
+      const ofensores = objectNodeOffenders(ro);
+      soMatriz = ofensores.length === 0;
       doObjeto.set(ro, soMatriz);
+      const chave = [...new Set(ofensores)].sort().join(' + ') + ` | ${(ro.material as { type?: string }).type ?? '?'}`;
+      if (!soMatriz) ofensoresVistos.set(chave, (ofensoresVistos.get(chave) ?? 0) + 1);
     }
     return soMatriz ? 'elegivel' : 'no-de-objeto';
   };
@@ -134,6 +159,8 @@ export function installDrawRecipeProbe(renderer: object): { commitFrame(): void;
       if (++quadros % REPORT_FRAMES !== 0) return;
       const partes = RECIPE_REASONS.map((m) => `${m}=${((contagem.get(m) ?? 0) / REPORT_FRAMES).toFixed(1)}`);
       debug('perf', `[drawRecipe] por quadro: ${partes.join(' ')}`);
+      const top = [...ofensoresVistos].sort((a, b) => b[1] - a[1]).slice(0, TOP_OFFENDERS);
+      for (const [chave, n] of top) debug('perf', `[drawRecipe] ofensor ${n} ro: ${chave}`);
       for (const m of RECIPE_REASONS) contagem.set(m, 0);
     },
     uninstall(): void {
