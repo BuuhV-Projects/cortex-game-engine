@@ -135,3 +135,11 @@ que foi medido e cortado).
 - Scripts que liam `gpu-latency` precisam ler `gpu-work`.
 - Host precisa ser recompilado (`yarn build:host`) para o `pass-timing`/
   `gpu-work` novos; o trace é só JS (bundle do export).
+
+## Adendo (2026-10-09): leitura compartilhada do trace
+
+O handle aberto na sessão inteira usava `fopen_s(..., "wb")`, que no MSVC abre
+com compartilhamento negado: sondas e o piloto (`drive.ps1`) não conseguiam ler o
+`perf-trace.jsonl` com o jogo aberto, e o carro ficava parado no A/B dirigindo
+(achado da R3-F3). Agora abre com `_fsopen(path, "wb", _SH_DENYWR)`: só a
+escrita fica exclusiva do host; leitura concorrente é permitida.
