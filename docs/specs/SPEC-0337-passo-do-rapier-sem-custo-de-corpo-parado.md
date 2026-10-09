@@ -90,6 +90,34 @@ continua corrigindo igual.
 - Vitest: `rapier-compat-world.test.ts` (`isSleeping` lê o código 8),
   `Vehicle.test.ts` (nivelado não escreve; inclinado corrige).
 
-## Medição no export
+## A/B no export (release)
 
-Ver "A/B no export" abaixo.
+Engine d2571aad + esta branch, jogo 6246ebd; mesmo `launcher.exe` (host
+recompilado na worktree), só muda o `rapier_native.dll`: **A** = Rapier 0.22
+publicado, **B** = patch. (O `keepUpright` e o `isSleeping` estão nos dois
+bundles do B; o A é a main.) Intercalado A,B,A,B, `?spawn=` setorO, comercial,
+helio + `drive=1` (dentro do carro, parado). Médias por quadro, t ≥ 30 s.
+Dados em `.cortex/r3-f3/runs`.
+
+| ponto | `world` A → B (ms) | `VehicleControlSystem` A → B (ms) | quadro mediano A → B (ms) |
+| --- | --- | --- | --- |
+| setorO #1 | 3,55 → 3,01 | 1,38 → 0,63 | 19,1 → 19,0 |
+| setorO #2 | 3,63 → 3,03 | 1,40 → 0,73 | 18,7 → 18,4 |
+| comercial #1 | 4,62 → 3,81 | 1,73 → 0,85 | 21,6 → 21,8 |
+| comercial #2 | 4,43 → 3,60 | 1,62 → 0,73 | 20,8 → 19,9 |
+| helio (carro) #2 | 3,49 → 2,72 | 1,35 → 0,53 | 15,5 → 14,9 (64,5 → 67,1 fps) |
+
+`world` cai **0,55–0,8 ms** e o sistema do veículo (que contém o passo) **0,7–0,9 ms**
+em todo par. O quadro mediano oscila mais (render/GPU dominam e variam entre
+rodadas); o ganho de CPU é o número que se reproduz. O par helio #1 saiu fora da
+curva (o B subiu em TODAS as seções, inclusive render e UI — deriva da máquina)
+e não entra na conta.
+
+**Dirigindo não foi medido nesta rodada:** desde a SPEC-0334 o host abre o
+`perf-trace.jsonl` com `fopen_s(..., "wb")`, que no MSVC nega leitura a outros
+processos; o piloto externo (`drive.ps1`) só consegue ler o trace depois que o
+jogo fecha, e o carro fica parado. Correção sugerida (fora desta frente):
+`_fsopen(caminho, "wb", _SH_DENYWR)` no `perf_trace.cpp`.
+
+Antes dos merges (engine 0e3ea11c), dirigindo na Hélio: `VehicleControlSystem`
+1,90 → 0,66 ms no setorO e o mesmo padrão nos outros pontos (`.cortex/r3-f3/runs-premerge`).
