@@ -392,7 +392,14 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   malhas cuja caixa/esfera o SEGMENTO cruza, ordenadas pela entrada na caixa, e para
   quando a próxima entra além do melhor acerto; respeita `layers` como o
   `intersectObjects`. Os raycasters de colisão ligam `firstHitOnly` (BVH para no 1º
-  triângulo). ⚠️ quem precisar de TODOS os acertos não pode usar esses raycasters. O braço tem **memória** (SPEC-0311):
+  triângulo). ⚠️ quem precisar de TODOS os acertos não pode usar esses raycasters.
+  Malha que um raio de colisão CRUZA ganha árvore a partir de 64 triângulos
+  (`CROSSED_MIN_BVH_TRIS`; a varredura segue com 512) — um ônibus de ~400 tris sem
+  árvore custava 1,4 ms/quadro na câmera. O `rebuild` do índice reaproveita esfera e
+  caixa da malha com `matrixWorld` e esfera local idênticas às da varredura anterior.
+  **Uma varredura só:** o `CharacterPhysicsSystem` publica as malhas visíveis da raiz
+  (`publishScan`) e a câmera da 3ª pessoa reaproveita (`recentScan`, mesma raiz, até
+  250 ms) em vez de descer na cena de novo; sem publicação recente, varre sozinha. O braço tem **memória** (SPEC-0311):
   o raio dá só o alvo — encolhe a 12 m/s, segura 1 s e volta a 3 m/s; `setOrbit`
   é corte e encaixa. Sem isso, viga/poste cruzando o raio (trem andando, câmera
   girando) vira salto de distância a cada quadro. ⚠️ objeto novo vira chão/parede em até

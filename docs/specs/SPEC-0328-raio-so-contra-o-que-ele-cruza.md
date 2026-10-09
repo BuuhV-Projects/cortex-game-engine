@@ -83,6 +83,17 @@ acertos; os 12 raios de parede, idem, contra as paredes que tocam a caixa.
    cidade inteira) cuja caixa contém a origem do raio — a ordenação por entrada não
    as corta.
 
+8. **Uma varredura da cena pros dois sistemas.** Câmera e `CharacterPhysicsSystem`
+   desciam, cada um, a cena inteira a cada 250 ms (na 2ª sonda: `tpCollect` 0,79 +
+   `cpCollect` 1,04 ms/quadro amortizados — na prática um pico a cada 250 ms). O
+   `CharacterPhysicsSystem` (prioridade 5) já visita todo nó visível; ele junta as
+   malhas visíveis não skinadas e publica (`publishScan(raiz, lista)`, com o
+   `performance.now()` do momento). A câmera (prioridade 20) usa a publicação da MESMA
+   raiz se tiver até `COLLECT_INTERVAL_MS` de idade e ainda não foi usada (só tira o
+   próprio personagem); sem publicação recente (sem `CharacterPhysicsSystem`, raiz
+   diferente, sistema pausado) varre sozinha como antes. Mesma poda
+   (`traverseCollidable`), então a lista é a mesma.
+
 Resultado idêntico ao anterior: mesma superfície mais próxima, mesma distância (o
 desempate entre duas malhas exatamente coplanares pode trocar o `object`, nunca o
 ponto). Comportamento do braço (SPEC-0311) e da colisão (degrau, parede, anti-clip)
@@ -93,15 +104,18 @@ inalterado.
 - O custo dos raios passa a depender do que o raio cruza, não do que está em volta
   do personagem: no meio da rua o braço da câmera não testa malha nenhuma além do
   chão que ele atravessa.
-- A varredura (`traverseCollidable`) não muda; o `rebuild` fica mais barato pra
-  malha parada e ganha a montagem da grade.
+- Uma varredura da cena a cada 250 ms em vez de duas (quando há
+  `CharacterPhysicsSystem` na mesma raiz); o `rebuild` fica mais barato pra malha
+  parada e ganha a montagem da grade.
 - Malhas pequenas que um raio de colisão cruza ganham árvore no 1º quadro em que isso
   acontece (custo único, ~centenas de triângulos; a geometria compartilhada entre
   clones — ônibus — monta uma vez só).
 - Testes: `tests/physics/nearMeshes.test.ts` (`alongRay` conservador e ordenado,
   `firstHit` = 1º acerto do `intersectObjects`, layers, filtro),
-  testes da câmera (não atravessa parede) e `tests/systems/CharacterPhysics.test.ts`
-  (para na parede, sobe degrau).
+  `tests/physics/raycastAccel.test.ts` (corte menor pra malha cruzada),
+  `tests/systems/ThirdPersonSharedScan.test.ts` (câmera reaproveita a varredura e não
+  desce na cena; parede nova entra), testes da câmera (não atravessa parede) e
+  `tests/systems/CharacterPhysics.test.ts` (para na parede, sobe degrau).
 
 ## Medição
 

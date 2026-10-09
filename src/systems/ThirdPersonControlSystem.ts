@@ -10,7 +10,7 @@ import type { InputActions } from '../input/InputActions.js';
 import type { SceneAnimator } from '../scene/SceneAnimator.js';
 import { deriveLocomotion, autoMapPlayerClips } from './PlatformerAnimationSystem.js';
 import { isSkinned } from '../physics/raycastAccel.js';
-import { NearMeshIndex, firstHit, traverseCollidable } from '../physics/nearMeshes.js';
+import { NearMeshIndex, firstHit, recentScan, traverseCollidable } from '../physics/nearMeshes.js';
 import { COLLECT_INTERVAL_MS } from './CharacterPhysicsSystem.js';
 
 /** Opções do {@link ThirdPersonControlSystem} (porta o ThirdPersonController do Unity StarterAssets). */
@@ -189,6 +189,8 @@ export class ThirdPersonControlSystem extends System {
   private armDist = Infinity;
   /** Segundos que o braço ainda segura antes de voltar. */
   private armHold = 0;
+  /** `at` da varredura compartilhada já usada (SPEC-0328); `NaN` = nenhuma. */
+  private camScanAt = NaN;
   /** Dono dos alvos coletados (o `self` muda → recoleta). */
   private camSelf?: THREE.Object3D;
 
@@ -419,8 +421,21 @@ export class ThirdPersonControlSystem extends System {
       // cabeça do personagem e raycast em SkinnedMesh computa o skinning por
       // vértice na CPU a cada raio (ver isSkinned em raycastAccel) — filtrar nos
       // HITS já pagava esse custo todo frame.
-      // Varre a cena só a cada COLLECT_INTERVAL_MS (SPEC-0302).
-      if (this.sinceCamCollect >= COLLECT_INTERVAL_MS || this.camSelf !== self) {
+      // Varre a cena só a cada COLLECT_INTERVAL_MS (SPEC-0302) — e reaproveita a varredura
+      // que o CharacterPhysicsSystem acabou de fazer da mesma raiz, se houver (SPEC-0328).
+      const shared = recentScan(this.collisionRoot, COLLECT_INTERVAL_MS);
+      const selfChanged = this.camSelf !== self;
+      if (shared && (shared.at !== this.camScanAt || selfChanged)) {
+        this.camTargets.length = 0;
+        for (let i = 0; i < shared.meshes.length; i++) {
+          const o = shared.meshes[i]!;
+          if (!isUnderSelf(o, self)) this.camTargets.push(o);
+        }
+        this.camIndex.rebuild(this.camTargets);
+        this.camScanAt = shared.at;
+        this.sinceCamCollect = 0;
+        this.camSelf = self;
+      } else if (!shared && (this.sinceCamCollect >= COLLECT_INTERVAL_MS || selfChanged)) {
         this.camTargets.length = 0;
         traverseCollidable(this.collisionRoot, (o, hidden) => {
           if (hidden) return false; // nada lá dentro é alvo: não desce (SPEC-0320)

@@ -5,7 +5,7 @@ import { TransformComponent } from '../components/TransformComponent.js';
 import { Object3DComponent } from '../components/Object3DComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { ensureBoundsTree, isSkinned } from '../physics/raycastAccel.js';
-import { NearMeshIndex, firstHit, touchingBox, traverseCollidable } from '../physics/nearMeshes.js';
+import { NearMeshIndex, firstHit, publishScan, touchingBox, traverseCollidable } from '../physics/nearMeshes.js';
 
 const DOWN = new Vector3(0, -1, 0);
 /** Tolerância de contato (skin width) — folga p/ considerar "tocando o chão". */
@@ -67,8 +67,10 @@ function collectScene(
   terrainMeshes: Object3D[],
   groundMeshes: Object3D[],
   prepared: WeakSet<Object3D>,
+  visibleMeshes: Object3D[],
 ): void {
   trunks.length = 0;
+  visibleMeshes.length = 0;
   solidMeshes.length = 0;
   terrainMeshes.length = 0;
   groundMeshes.length = 0;
@@ -84,6 +86,8 @@ function collectScene(
         if ((o as { isMesh?: boolean }).isMesh && !ud['cortexVegetationSub'] && !ud['cortexWater'] && !isSkinned(o)) ensureBoundsTree(o);
         return;
       }
+      // toda malha visível não skinada: a câmera da 3ª pessoa reaproveita (SPEC-0328)
+      if ((o as { isMesh?: boolean }).isMesh && !isSkinned(o)) visibleMeshes.push(o);
       if (ud['cortexVegetation'] && ud['cortexSolid'] === true) {
         const inst = (ud['cortexVegetation'] as { getInstances(): number[] }).getInstances();
         for (let i = 0; i < inst.length; i += 5) trunks.push(inst[i]!, inst[i + 2]!, TRUNK_RADIUS * inst[i + 4]!);
@@ -163,6 +167,8 @@ export class CharacterPhysicsSystem extends System {
   private readonly solidMeshes: Object3D[] = []; // blockout sólido (alvo do empurrão de parede)
   private readonly terrainMeshes: Object3D[] = []; // terreno (alvo do anti-clip)
   private readonly groundMeshes: Object3D[] = []; // tudo pisável (alvo do raycast de chão), sem vegetação
+  /** Toda malha visível não skinada — publicada pra câmera não varrer a cena de novo (SPEC-0328). */
+  private readonly visibleMeshes: Object3D[] = [];
   // paredes filtradas pro personagem da vez (só o que algum raio pode tocar, SPEC-0302)
   private readonly nearSolid: Object3D[] = [];
   /** As paredes cujos triângulos tocam a caixa dos raios de parede (SPEC-0323). */
@@ -193,7 +199,8 @@ export class CharacterPhysicsSystem extends System {
     // A cada COLLECT_INTERVAL_MS: separa troncos (cilindro) / sólidos (parede) / terreno (anti-clip).
     this.sinceCollect += deltaTime;
     if (this.sinceCollect >= COLLECT_INTERVAL_MS) {
-      collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes, this.groundMeshes, this.prepared);
+      collectScene(this.roots, this.trunks, this.solidMeshes, this.terrainMeshes, this.groundMeshes, this.prepared, this.visibleMeshes);
+      if (this.roots.length === 1) publishScan(this.roots[0]!, this.visibleMeshes);
       this.groundIndex.rebuild(this.groundMeshes);
       this.terrainIndex.rebuild(this.terrainMeshes);
       this.solidIndex.rebuild(this.solidMeshes);

@@ -74,6 +74,30 @@ export function traverseCollidable(
   for (const c of o.children) traverseCollidable(c, visit, h);
 }
 
+/** Malhas visíveis (não skinadas) de uma varredura da raiz e quando ela aconteceu (ms, `performance.now`). */
+export interface SceneScan {
+  readonly meshes: readonly Object3D[];
+  readonly at: number;
+}
+
+const scans = new WeakMap<Object3D, SceneScan>();
+
+/**
+ * Publica o resultado de uma varredura de `root` (SPEC-0328): as malhas visíveis, não
+ * skinadas, com a mesma poda do {@link traverseCollidable}. Quem varre a mesma raiz
+ * logo depois (a câmera da 3ª pessoa, depois do `CharacterPhysicsSystem`) reaproveita
+ * em vez de descer na cena de novo. A lista é do publicador: copie, não guarde.
+ */
+export function publishScan(root: Object3D, meshes: readonly Object3D[]): void {
+  scans.set(root, { meshes, at: performance.now() });
+}
+
+/** A varredura publicada de `root` com até `maxAgeMs` de idade, ou `undefined`. */
+export function recentScan(root: Object3D, maxAgeMs: number): SceneScan | undefined {
+  const s = scans.get(root);
+  return s && performance.now() - s.at <= maxAgeMs ? s : undefined;
+}
+
 /** Floats por malha no índice: esfera (x, y, z, raio) e caixa (min x/y/z, máx x/y/z), já com a folga. */
 const STRIDE = 10;
 /**
