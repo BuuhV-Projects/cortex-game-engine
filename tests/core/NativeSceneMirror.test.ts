@@ -1259,3 +1259,81 @@ describe('NativeSceneMirror e o passe principal (SPEC-0332)', () => {
     expect(m.visible).toBe(false);
   });
 });
+
+describe('NativeSceneMirror: matriz de mundo fresca sob pedido (SPEC-0340)', () => {
+  afterEach(() => {
+    delete (globalThis as Record<string, unknown>)['__cortexSceneMirror'];
+  });
+
+  /** A matriz da ponte falsa é float32: a comparação tolera o arredondamento. */
+  const TOLERANCIA = 1e-4;
+
+  /** O que o `three` puro (sem espelho) daria para o nó. */
+  function mundoDoThree(raiz: Object3D, alvo: Object3D): Matrix4 {
+    const copia = raiz.clone(true);
+    copia.updateMatrixWorld(true);
+    let achado: Object3D | undefined;
+    copia.traverse((o) => {
+      if (o.name === alvo.name) achado = o;
+    });
+    return achado!.matrixWorld.clone();
+  }
+
+  function cenaDoCarro() {
+    const raiz = new Object3D();
+    raiz.name = 'raiz';
+    const carro = new Object3D();
+    carro.name = 'carro';
+    const lente = new Object3D();
+    lente.name = 'lente';
+    lente.position.set(0.55, 0.7, 1.975);
+    carro.add(lente);
+    raiz.add(carro);
+    return { raiz, carro, lente };
+  }
+
+  it('updateWorldMatrix no meio do quadro devolve a pose ATUAL, não a do último render', () => {
+    const { matrices } = instalarPonteFalsa(16);
+    const { raiz, carro, lente } = cenaDoCarro();
+    const espelho = new NativeSceneMirror();
+    expect(espelho.install(raiz)).toBe(true);
+    espelho.update(new PerspectiveCamera()); // "render" do quadro anterior
+
+    // O sistema de veículo anda com o carro; o das luzes pede a pose depois.
+    carro.position.set(12, 0, -40);
+    carro.rotation.y = 0.8;
+    lente.updateWorldMatrix(true, false);
+
+    const esperado = mundoDoThree(raiz, lente).elements;
+    for (let k = 0; k < 16; k++) expect(lente.matrixWorld.elements[k]).toBeCloseTo(esperado[k]!, 4);
+    // Escreveu na memória nativa (sem cópia): o C++ recalcularia o mesmo valor.
+    expect(lente.matrixWorld.elements.buffer).toBe(matrices.buffer);
+    // getWorldPosition passa pelo mesmo caminho.
+    const p = carro.getWorldPosition(new Vector3());
+    expect(p.distanceTo(new Vector3(12, 0, -40))).toBeLessThan(TOLERANCIA);
+  });
+
+  it('updateMatrixWorld em massa segue desligada (custo que o espelho elimina)', () => {
+    instalarPonteFalsa(16);
+    const { raiz, carro } = cenaDoCarro();
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    espelho.update(new PerspectiveCamera());
+    const antes = Array.from(carro.matrixWorld.elements);
+    carro.position.set(5, 0, 5);
+    raiz.updateMatrixWorld(true);
+    expect(Array.from(carro.matrixWorld.elements)).toEqual(antes);
+  });
+
+  it('nó que sai do espelho volta ao updateWorldMatrix do protótipo', () => {
+    instalarPonteFalsa(16);
+    const { raiz, carro } = cenaDoCarro();
+    const espelho = new NativeSceneMirror();
+    espelho.install(raiz);
+    raiz.remove(carro);
+    expect(Object.prototype.hasOwnProperty.call(carro, 'updateWorldMatrix')).toBe(false);
+    carro.position.set(3, 0, 0);
+    carro.updateWorldMatrix(true, false);
+    expect(carro.matrixWorld.elements[12]).toBe(3);
+  });
+});

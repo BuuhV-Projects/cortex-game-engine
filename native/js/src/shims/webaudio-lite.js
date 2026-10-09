@@ -77,15 +77,14 @@ function BufferSourceNode(context) {
   this.onended = null;
   this.__next = null;
   this.__voice = 0;
+  this.__started = false;
 }
-BufferSourceNode.prototype.connect = function (node) {
-  this.__next = node;
-  return node;
-};
-BufferSourceNode.prototype.disconnect = function () { this.__next = null; };
-BufferSourceNode.prototype.start = function () {
-  if (!this.buffer) return;
-  const gain = chainGain(this.__next || {});
+// A voz nativa nasce quando a fonte está iniciada E ligada (SPEC-0341): o
+// THREE.Audio.play() chama start() ANTES de connect(), e fonte sem ligação é
+// muda no WebAudio. Nascer no start() tocava com ganho 1 e fora dos GainNode.
+BufferSourceNode.prototype.__startVoice = function () {
+  if (!this.__started || this.__voice || !this.__next) return;
+  const gain = chainGain(this.__next);
   this.__voice = __cortexAudio.play(
     this.buffer.__id, this.loop ? 1 : 0, gain, this.playbackRate.value,
   );
@@ -96,7 +95,19 @@ BufferSourceNode.prototype.start = function () {
     current = current.__next;
   }
 };
+BufferSourceNode.prototype.connect = function (node) {
+  this.__next = node;
+  this.__startVoice();
+  return node;
+};
+BufferSourceNode.prototype.disconnect = function () { this.__next = null; };
+BufferSourceNode.prototype.start = function () {
+  if (!this.buffer) return;
+  this.__started = true;
+  this.__startVoice();
+};
 BufferSourceNode.prototype.stop = function () {
+  this.__started = false;
   if (this.__voice) __cortexAudio.stop(this.__voice);
   if (this.onended) this.onended();
 };
