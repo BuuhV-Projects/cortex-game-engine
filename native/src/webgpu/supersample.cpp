@@ -414,6 +414,7 @@ void clearOffscreen(HostGpu* gpu) {
   WGPURenderPassDescriptor pass = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
   pass.colorAttachmentCount = 1;
   pass.colorAttachments = &att;
+  pass.timestampWrites = nextPassTimestampWrites(PassOrigin::Clear);
   WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(gpu->device, nullptr);
   WGPURenderPassEncoder rp = wgpuCommandEncoderBeginRenderPass(enc, &pass);
   wgpuRenderPassEncoderEnd(rp);
@@ -512,6 +513,7 @@ void blitToSwapchain(HostGpu* gpu, WGPUTextureView swapchainView) {
   WGPURenderPassDescriptor pass = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
   pass.colorAttachmentCount = 1;
   pass.colorAttachments = &att;
+  pass.timestampWrites = nextPassTimestampWrites(PassOrigin::Blit);
 
   WGPUCommandEncoder encoder =
       wgpuDeviceCreateCommandEncoder(gpu->device, nullptr);

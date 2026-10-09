@@ -51,6 +51,16 @@ const CENSUS_LIMIT = 20;
 const CENSUS_AFTER_SAMPLES = 20;
 
 /**
+ * Nós que o censo em rodízio ({@link SceneWalk}) visita por quadro (SPEC-0334).
+ * No DDD 61 (~10 mil nós) uma volta leva ~150 quadros (~2 s) e custa uma
+ * fração de ms por quadro — em vez dos ~25 ms de três travessias por amostra.
+ */
+const WALK_NODES_PER_FRAME = 64;
+
+/** Casas decimais do autocusto do trace (ms). */
+const TRACE_COST_DECIMALS = 3;
+
+/**
  * Chaves que escapam do arredondamento grosso da amostra: as fases do render e
  * a calibração do relógio precisam de mais casas do que o resto do frame.
  */
@@ -205,25 +215,137 @@ export function countNodes(scene: Object3D): { total: number; visible: number } 
 export function countUnchangedMatrices(scene: Object3D, previous: Map<number, Float64Array>): number {
   let unchanged = 0;
   scene.traverse((obj) => {
-    const elements = obj.matrix.elements;
-    const before = previous.get(obj.id);
-    if (before) {
-      let igual = true;
-      for (let i = 0; i < MATRIX_ELEMENTS; i++) {
-        if (before[i] !== elements[i]) {
-          igual = false;
-          break;
-        }
-      }
-      if (igual) unchanged++;
-      for (let i = 0; i < MATRIX_ELEMENTS; i++) before[i] = elements[i];
-    } else {
-      const copia = new Float64Array(MATRIX_ELEMENTS);
-      for (let i = 0; i < MATRIX_ELEMENTS; i++) copia[i] = elements[i];
-      previous.set(obj.id, copia);
-    }
+    if (matrixUnchanged(obj, previous)) unchanged++;
   });
   return unchanged;
+}
+
+/**
+ * A matriz local de `obj` é igual à guardada em `previous`? Guarda a atual
+ * para a próxima comparação. Primeira vez de um nó = `false`.
+ */
+function matrixUnchanged(obj: Object3D, previous: Map<number, Float64Array>): boolean {
+  const elements = obj.matrix.elements;
+  const before = previous.get(obj.id);
+  if (!before) {
+    const copia = new Float64Array(MATRIX_ELEMENTS);
+    for (let i = 0; i < MATRIX_ELEMENTS; i++) copia[i] = elements[i];
+    previous.set(obj.id, copia);
+    return false;
+  }
+  let igual = true;
+  for (let i = 0; i < MATRIX_ELEMENTS; i++) {
+    if (before[i] !== elements[i]) {
+      igual = false;
+      break;
+    }
+  }
+  if (!igual) for (let i = 0; i < MATRIX_ELEMENTS; i++) before[i] = elements[i];
+  return igual;
+}
+
+/** Resultado de uma volta completa do {@link SceneWalk}. */
+export interface SceneWalkResult {
+  /** Nós da árvore (inclusive os invisíveis — o `updateMatrixWorld` desce neles). */
+  total: number;
+  /** Nós com visibilidade efetiva (o `visible` do three é herdado). */
+  visible: number;
+  /** Nós com a matriz local igual à da volta anterior. */
+  unchanged: number;
+  /** Nós de cena no frustum, do mais caro (triângulos) pro menos. */
+  visibleNodes: VisibleNode[];
+  /** Quadros que a volta levou — a idade máxima do dado. */
+  frames: number;
+}
+
+/**
+ * **Censo da cena em rodízio** (SPEC-0334): UMA travessia iterativa que anda
+ * `budget` nós por chamada e, ao fechar a volta, publica em {@link result}
+ * o que antes custava três travessias completas por amostra (`countNodes`,
+ * `countUnchangedMatrices`, `collectVisible` — ~25 ms em 10 mil nós no
+ * Hermes, 2×/s, o que inflava o p95 de toda medição).
+ *
+ * A pilha é própria (três arrays paralelos, sem alocar por nó) e carrega o id
+ * do nó de cena herdado, então a malha não sobe a hierarquia atrás dele.
+ * A árvore pode mudar no meio da volta: nó removido ainda conta nesta volta,
+ * nó novo entra na próxima. O frustum é o da câmera no quadro da visita.
+ */
+export class SceneWalk {
+  /** Última volta completa, ou `null` antes da primeira. */
+  result: SceneWalkResult | null = null;
+
+  private readonly _objs: Object3D[] = [];
+  private readonly _parentVisible: boolean[] = [];
+  private readonly _sceneIds: (string | null)[] = [];
+  private readonly _previous = new Map<number, Float64Array>();
+  private _byId = new Map<string, VisibleNode>();
+  private _total = 0;
+  private _visible = 0;
+  private _unchanged = 0;
+  private _frames = 0;
+
+  /**
+   * Avança a volta em até `budget` nós. A câmera precisa estar com
+   * `matrixWorldInverse` em dia (o render do quadro já fez).
+   */
+  step(scene: Object3D, camera: Camera, budget: number): void {
+    if (this._objs.length === 0) this.push(scene, true, null);
+    this._frames++;
+    _matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    _frustum.setFromProjectionMatrix(_matrix);
+    for (let n = 0; n < budget && this._objs.length > 0; n++) {
+      const obj = this._objs.pop()!;
+      const parentVisible = this._parentVisible.pop()!;
+      let sceneId = this._sceneIds.pop()!;
+      if ((obj.userData as Record<string, unknown>)['cortexSceneNode'] === true) sceneId = obj.name || '(sem id)';
+      const visible = parentVisible && obj.visible;
+      this._total++;
+      if (matrixUnchanged(obj, this._previous)) this._unchanged++;
+      if (visible) {
+        this._visible++;
+        this.countIfInFrustum(obj, sceneId);
+      }
+      const children = obj.children;
+      for (let i = 0; i < children.length; i++) this.push(children[i]!, visible, sceneId);
+    }
+    if (this._objs.length === 0) this.finishLap();
+  }
+
+  private push(obj: Object3D, parentVisible: boolean, sceneId: string | null): void {
+    this._objs.push(obj);
+    this._parentVisible.push(parentVisible);
+    this._sceneIds.push(sceneId);
+  }
+
+  private countIfInFrustum(obj: Object3D, sceneId: string | null): void {
+    const mesh = obj as Mesh & { isMesh?: boolean };
+    if (!mesh.isMesh || !mesh.geometry) return;
+    if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+    if (!_frustum.intersectsObject(mesh)) return;
+    const id = sceneId ?? (mesh.name || '(avulso)');
+    let entry = this._byId.get(id);
+    if (!entry) {
+      entry = { id, meshes: 0, tris: 0 };
+      this._byId.set(id, entry);
+    }
+    entry.meshes++;
+    entry.tris += triangleCount(mesh);
+  }
+
+  private finishLap(): void {
+    this.result = {
+      total: this._total,
+      visible: this._visible,
+      unchanged: this._unchanged,
+      visibleNodes: [...this._byId.values()].sort((a, b) => b.tris - a.tris),
+      frames: this._frames,
+    };
+    this._byId = new Map();
+    this._total = 0;
+    this._visible = 0;
+    this._unchanged = 0;
+    this._frames = 0;
+  }
 }
 
 /**
@@ -374,8 +496,13 @@ export class PerfTrace {
   /** O censo da árvore vai uma vez só — a composição da cena não muda por frame. */
   private _censusSent = false;
   private _samples = 0;
-  /** Matriz local da amostra anterior, por id de objeto (SPEC-0227). */
-  private readonly _previousMatrices = new Map<number, Float64Array>();
+  /** Censo da cena em rodízio (SPEC-0334) — a amostra só lê o resultado. */
+  private readonly _walk = new SceneWalk();
+  /** ms da travessia somados na janela da amostra, e quadros da janela. */
+  private _walkMs = 0;
+  private _walkSteps = 0;
+  /** Custo da amostra anterior (a atual só se mede depois de gravada). */
+  private _lastSampleMs = 0;
   private readonly _bridge: TraceBridge | undefined = bridge();
   private readonly _pipelineBirths = new PipelineBirthLog();
   private _watching = false;
@@ -433,6 +560,11 @@ export class PerfTrace {
     if (!this._bridge) return;
     this._elapsedMs += deltaMs;
     this._sinceSampleMs += deltaMs;
+    const walkStart = performance.now();
+    this._walk.step(scene, camera, WALK_NODES_PER_FRAME);
+    const sampleStart = performance.now();
+    this._walkMs += sampleStart - walkStart;
+    this._walkSteps++;
     if (this._sinceSampleMs < SAMPLE_MS) return;
     this._sinceSampleMs = 0;
 
@@ -512,11 +644,21 @@ export class PerfTrace {
       systemProfile.clear();
     }
     // Tamanho da árvore: a travessia custa por NÓ, e sem este número os ms da
-    // fase não viram custo por nó (SPEC-0227).
-    const nodes = countNodes(scene);
-    cpu['nodesTotal'] = nodes.total;
-    cpu['nodesVisible'] = nodes.visible;
-    cpu['nodesUnchanged'] = countUnchangedMatrices(scene, this._previousMatrices);
+    // fase não viram custo por nó (SPEC-0227). Vem da última volta completa do
+    // censo em rodízio (SPEC-0334); `walkFrames` é a idade do dado.
+    const lap = this._walk.result;
+    if (lap) {
+      cpu['nodesTotal'] = lap.total;
+      cpu['nodesVisible'] = lap.visible;
+      cpu['nodesUnchanged'] = lap.unchanged;
+      cpu['walkFrames'] = lap.frames;
+    }
+    // Autocusto do trace (SPEC-0334): sem ele, o instrumento volta a inflar o
+    // p95 sem ninguém ver. Média por quadro da travessia e custo da amostra.
+    cpu['traceWalkMs'] = round(this._walkMs / Math.max(1, this._walkSteps), TRACE_COST_DECIMALS);
+    cpu['traceSampleMs'] = round(this._lastSampleMs, TRACE_COST_DECIMALS);
+    this._walkMs = 0;
+    this._walkSteps = 0;
     // Nós que o espelho sincronizou por quadro, em média na janela (SPEC-0322).
     const espelho = activeSceneMirror();
     if (espelho) cpu['mirrorSynced'] = round(espelho.takeAverageSyncedNodes(), MS_DECIMALS);
@@ -563,8 +705,9 @@ export class PerfTrace {
       draws: info?.drawCalls ?? 0,
       tris: info?.triangles ?? 0,
       camera,
-      visible: collectVisible(scene, camera),
+      visible: lap?.visibleNodes ?? [],
     });
     this._bridge(JSON.stringify(sample));
+    this._lastSampleMs = performance.now() - sampleStart;
   }
 }
