@@ -112,3 +112,72 @@ são estado de verdade (o objeto fica no `three`). Sem isso o teto da etapa (b)
 
 Note também que `moveu` (17–28) é alto para cena parada: são NPCs, carros e o
 próprio jogador; e `transparente` (~21) entra na fila da etapa (c).
+
+## Quais são os nós de objeto (sonda v2, 2026-10-09) — e o plano revisto
+
+`?drawRecipeProbe=1` agora lista, por render object distinto, os nós `OBJECT`
+fora da lista branca (setorO, ~58 draws/quadro nesse filtro):
+
+| render objects | material | nós |
+| --- | --- | --- |
+| 42 | `MeshStandardMaterial` | `MaterialReferenceNode` color/emissive/emissiveIntensity/map/metalness/opacity/roughness, `ReferenceNode` color/near/far, `TextureNode`, `UniformGroupNode:object` |
+| 52 | `MeshLambertMaterial` (3 variantes) | idem, sem metalness/roughness, às vezes `emissiveMap` |
+| 11 | `MeshBasicMaterial` (2 variantes) | color/opacity/(map) + névoa |
+
+Nenhum é exótico, e nenhum depende da câmera:
+
+- `MaterialReferenceNode:*` (three) — copia `material[propriedade]` para o
+  uniform em todo refresh. Depende só do **material**.
+- `ReferenceNode:color/near/far` (three, `FogNode`) — a **névoa** da cena
+  (`scene.fog`); o jogo a muda por horário em degraus (SPEC-0120 do jogo).
+- `TextureNode` (three) — o uniform da textura; depende de `id`, `version` e
+  da matriz (`offset`/`repeat`/`rotation`/`center`, é o UV scroll).
+- `UniformGroupNode:object` — o próprio grupo; versionado, nada a vigiar.
+
+**Todos derivam de estado que dá para conferir barato.** O que o `three` gasta
+nos ~55 µs por draw não é o tamanho desse estado, é a verificação GENÉRICA
+(`ChainMap`, chave dinâmica com hash, `equals` sobre a lista inteira, ~30 campos
+de pipeline, `updateNode` em todos os nós, `_bindings._update` por objeto). A
+SPEC-0331 rejeitou *memoizar* essa verificação; o que esta revisão faz é
+**substituí-la** por uma verificação especializada no render object.
+
+### Passo b.1 — desenho direto em JS (sem C++), `?cleanDraw=0|1`
+
+`src/render/CleanDrawFastPath.ts` embrulha o `_renderObjectDirect` (o `three`
+o relê a cada `render()`). Quando o `three` desenha um render object pelo
+caminho normal, ele é **gravado** se for elegível: sem nó animado, plano do
+`RenderIdRefresh` disponível, sem morph/skin/batch, e todo nó `OBJECT` é da
+lista branca de matriz OU uma referência vigiável (material, `ReferenceNode`
+com objeto fixo, `TextureNode`). A gravação guarda um **instantâneo numérico**
+de tudo que esses nós leem, mais:
+
+- matriz de mundo (16), `receiveShadow`, versão de `instanceMatrix`/
+  `instanceColor` e `count` (instanciado elegível);
+- geometria: id, ids e versões dos atributos e do índice, `drawRange`;
+- os campos de estado de pipeline que o `needsRenderUpdate` compara
+  (`transparent`, blend, depth, stencil, `side`, `alphaToCoverage`,
+  `version`…) e `material.visible`;
+- as chaves do contexto: `renderContext`, `lightsNode`, chave de ambiente
+  (`_nodes.getCacheKey`), versão do `contextNode`, `clippingContext`, `passId`.
+
+No quadro seguinte, se tudo bate, o desenho é **direto**: câmera/`drawRange`/
+grupo no render object, `updateBefore`, os nós de render/quadro e os grupos
+COMPARTILHADOS (câmera, luzes) — os mesmos do `RenderIdRefresh`, deduplicados
+pelo próprio `three` —, marca o `renderId` do monitor e `backend.draw`. Se
+qualquer coisa diverge, o caminho do `three` roda (e regrava).
+
+Transparentes entram (o desenho acontece na posição da RenderList, então a
+ordem é a do `three`; `DoubleSide` transparente chega como duas chamadas com
+`passId` diferente e vira duas gravações). `InstancedMesh` entra com a versão
+das matrizes vigiada. Skinned/morph/batched ficam no `three`.
+
+**Teto (setorO):** ~58 elegíveis + ~22 transparentes + instanciados parados,
+contra ~50 µs economizados por draw → **~3–4 ms**, menos o custo da conferência
+(~3–5 µs/draw).
+
+### Passo b.2 — o `backend.draw` em C++
+
+Depois de b.1, o que sobra por draw direto é o `backend.draw` (~9 µs, a ponte
+de setPipeline/setBindGroup/draw). A receita gravada vira handles nativos e
+uma sequência contígua de draws diretos vai ao host numa chamada — o padrão
+desta SPEC acima. Só vale medir depois de b.1.
