@@ -1171,6 +1171,14 @@ segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
   A sonda `?drawRecipeProbe=1` (`DrawRecipeProbe.ts`) lista o que barra a
   elegibilidade.
 
+- **(b.2) lote em C++** (`src/render/DrawBatch.ts` + `native/src/render/draw_batch.*`,
+  `?drawBatch=0|1`): a receita (handles de GPU que o `three` usou) é gravada no
+  host quando o `three` desenha o render object; os desenhos diretos
+  contíguos saem numa travessia (`__cortexDrawBatch.flush`). Todo
+  `backend.draw` do `three`, `beginRender` e `finishRender` despacham o lote
+  ANTES — a ordem na tela é a da RenderList, transparentes inclusive — e o
+  `currentSets` do `three` é zerado depois de cada despacho.
+
 **Armadilha (desenho direto):** os grupos COMPARTILHADOS (câmera, luzes) têm de
 ser atualizados também no desenho direto — sem isso a câmera congela, como nos
 render bundles (ADR-0215). E o descarte do render object (`onDispose`) tem de

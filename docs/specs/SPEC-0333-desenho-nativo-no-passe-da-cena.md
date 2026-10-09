@@ -238,3 +238,25 @@ Main `518c9248` + SPEC-0332; 135 s por rodada (150 s no hélio dirigindo).
   skinning para o C++ (meses — mesmo veredito do ADR-0237, "fora de escopo").
 - **Refeitos (~17/quadro):** objetos com nó animado ou que mudaram de
   material no quadro — ficam no `three` por definição.
+
+## b.2 implementado (2026-10-09) — aguardando A/B
+
+- **C++:** `native/src/render/draw_batch.*` — a parte pura (`RecipeStore` e
+  `replay`, com eliminação de estado redundante atrás de `DrawEmitter`, 4
+  testes). Ponte em `native/src/shims/draw_batch_shim.*` (`__cortexDrawBatch`:
+  `record`/`release`/`flush`, receita com `AddRef` dos handles).
+- **JS:** `src/render/DrawBatch.ts`, ligado pelo `CleanDrawFastPath`
+  (`?drawBatch=0|1`, padrão ligado no host).
+  - A receita é (re)gravada a partir do que o `three` usou — só atravessa a
+    ponte quando algum handle mudou.
+  - O desenho direto acumula `[receita, count, instâncias, first]` e chama
+    `info.update` (os contadores `draws` continuam iguais aos do `three`).
+  - Despacho: antes de todo `backend.draw` do `three`, em `beginRender`,
+    em `finishRender` e em troca de pass. Depois do despacho, o `currentSets`
+    do `three` é zerado.
+  - Grupo compartilhado recriado no quadro devolve o desenho ao `three`.
+  - Indireto, stencil, oclusão, `ArrayCamera` e `BatchedMesh` não entram no lote.
+- **Testes:** 6 do lote, mais a ordem com o `three` intercalado
+  (`lote(a) → three(b) → lote(c) → fim`), mais 4 de C++.
+- **A/B e captura:** pendentes — o `measure.lock` está ocupado desde 14:48
+  pela rodada `soak-setorO` da R3b, sem processo vivo (lock órfão).
