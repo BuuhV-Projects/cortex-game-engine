@@ -1,3 +1,10 @@
+# [0.78.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.77.0...v0.78.0) (2026-10-10)
+
+
+### Features
+
+* **engine:** exporta o namespace TSL e os node materials pro jogo (SPEC-0342) ([76f6747](https://github.com/BuuhV-Projects/cortex-game-engine/commit/76f6747f990e52727315c5525fcfb8878de40f96))
+
 # [0.77.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.76.0...v0.77.0) (2026-10-09)
 
 
