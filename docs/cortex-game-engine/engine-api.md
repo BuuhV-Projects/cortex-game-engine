@@ -1579,6 +1579,26 @@ O engine é WebGPU-only, então **não** existe `EffectComposer` (esse é WebGL)
   `ReinhardToneMapping`, `CineonToneMapping`, `ACESFilmicToneMapping`,
   `AgXToneMapping`, `NeutralToneMapping`.
 
+## Shader próprio com TSL (`TSL`, `MeshLambertNodeMaterial`)
+
+O jogo não importa `three` (uma segunda cópia quebra o estado do TSL). O engine
+re-exporta o namespace inteiro como **`TSL`** e os node materials
+**`MeshLambertNodeMaterial`** / **`MeshBasicNodeMaterial`** (SPEC-0342):
+
+```ts
+import { MeshLambertNodeMaterial, TSL } from 'cortex-game-engine'
+const { attribute, positionLocal, vec3 } = TSL
+const m = new MeshLambertNodeMaterial()
+m.positionNode = positionLocal.add(vec3(0, attribute('lift', 'float'), 0)) // ex.: atributo próprio
+```
+
+`positionNode` substitui a posição local (o three ainda aplica a matriz do objeto);
+`colorNode`/`normalNode` (normal em espaço de vista) e `alphaTest` funcionam como
+no three. Atributo `InstancedBufferAttribute` numa `InstancedBufferGeometry` vira
+atributo por instância. No export nativo o WGSL passa pelo naga: valide o PIXEL
+(captura), não só a compilação — há armadilhas conhecidas (vertex color branco no
+`MeshStandardMaterial`). Exemplo real: lote de personagens do DDD 61 (ADR-0131 do jogo).
+
 ## Skybox / HDRI
 
 ```ts
