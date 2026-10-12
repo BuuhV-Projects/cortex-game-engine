@@ -53,3 +53,6 @@ dist-native/*
 
 # Artefatos gerados pelo husky ao instalar (nao versionados)
 .husky/_/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
