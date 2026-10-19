@@ -346,3 +346,58 @@ O jogo (SPEC-0187, adendo 3) passou a aceitar um quarto campo opcional em `skinn
 
 `characterRigArmSpace.ts` ganha `shoulderBack`, `MODEL_UP`, `chestUp` e `applyArmOffsetsToAll`; `sideRotations`
 passa a receber os dois eixos. Testes em `tests/electron/characterRigArmSpace.test.ts`.
+
+## Adendo 6 (2026-10-19) - vários pacotes de animação na aba Pasta
+
+O jogo (SPEC-0187 §4, "Vários pacotes") passou a guardar os FBX em subpastas (pacotes) de
+`assets/animations/characters/` (`basic-locomotion/`, `pistol-locomotion/`…). Contrato:
+
+- `skinned.fbx` aponta para a **raiz** dos pacotes (`"assets/animations/characters"`) e cada entrada de
+  `skinned.clips` guarda `file` **relativo a essa raiz**, com a subpasta e barra `/`:
+  `"basic-locomotion/walking.fbx"`, `"pistol-locomotion/pistol walk.fbx"`.
+- Config antiga (`skinned.fbx` apontando direto para um pacote, `file` sem barra) continua válida: a raiz é sempre
+  `skinned.fbx` e `file` é sempre relativo a ela; os FBX direto na raiz formam o grupo da própria raiz.
+- O registro `rigs.json` passa a ter `animations` = a raiz e `clips[].file` com a subpasta.
+
+### Comportamento (aba Pasta)
+
+- Lista os `.fbx` a partir de `skinned.fbx` **recursivamente** (subpastas que começam com `.` ficam de fora),
+  cada um pelo caminho relativo à raiz com `/` (barras `\` do Windows normalizadas).
+- Agrupada por **pacote** (a pasta do arquivo, relativa à raiz; os da própria raiz formam o grupo com o nome da
+  pasta raiz), pacotes em ordem alfabética, arquivos em ordem alfabética dentro de cada um. Cabeçalho por pacote
+  com o contador "N de M selecionadas" do pacote e botões **Marcar**/**Desmarcar** que agem nas linhas filtradas
+  daquele pacote; o contador geral da barra continua (total de todos os pacotes). FBX listado na config e ausente
+  do disco vai para o fim do seu pacote como **ausente**.
+- **Busca** vale em todos os pacotes: nome do arquivo, pacote e nome do clipe (sem caixa nem acento). Pacote sem
+  nenhuma linha no filtro some. **Marcar todos**/**Desmarcar todos** agem sobre o filtrado (de todos os pacotes).
+- Estados por linha como antes, comparando `file` (normalizado: `/`, sem `./`, sem caixa) com o caminho relativo.
+  O `file` do registro é rebaseado da pasta `animations` do registro para a raiz da config quando estão uma
+  dentro da outra (registro antigo com `animations` = o pacote e `file` sem subpasta continua batendo).
+- **Nome automático** de clipe novo: camelCase do nome do arquivo, sem a pasta (`pistol walk.fbx` →
+  `pistolWalk`); se já for de outro clipe, prefixa o pacote em camelCase (`pistol-locomotion/idle.fbx` →
+  `pistolLocomotionIdle`); se ainda colidir, sufixo numérico no nome com prefixo (`…Idle2`); arquivo da raiz
+  (sem pacote) vai direto ao sufixo.
+- Gravação igual ao adendo 1: relê do disco, `file` com o caminho relativo à raiz (`/`), nome pela regra acima,
+  resto e ordem preservados, `JSON.stringify(cfg, null, 1) + '\n'`, confirmação ao desmarcar clipe com flags.
+
+### Aba Animações
+
+A lista de clipes do registro (e os pendentes) mostra o pacote ao lado do arquivo: `pistol-locomotion · pistol
+walk.fbx`; arquivo sem subpasta mostra só o arquivo.
+
+### Código
+
+`characterRigSelection.ts` ganha `normalizeRelPath`, `packageOf`, `fileBaseName`, `autoClipName`,
+`rebaseRigFile`, `listFbxRecursive` (com o `readDir` injetado) e `groupRows`; `buildRows` recebe caminhos
+relativos e o rebase do registro; `filterRows` busca também no pacote. Testes em
+`tests/electron/characterRigSelection.test.ts` (as duas formas de config, `idle.fbx` em dois pacotes, barras
+do Windows). `fileLabel` (rótulo da aba Animações) e `camelCase` (em `characterRigRegistry.ts`) completam.
+
+### Verificação (2026-10-19)
+
+Studio em dev com perfil temporário, sem abrir projeto (o Play não sobe), numa cópia do DDD 61 com a config nova
+(`skinned.fbx` = raiz) e o `rigs.json` antigo (`animations` = `basic-locomotion`, `file` sem subpasta): a aba
+Pasta mostra `basic-locomotion` (12 de 12, todos "no rig" pelo rebase) e `pistol-locomotion` (0 de 20); a busca
+"walk" acha linhas dos dois pacotes; marcar `pistol walk.fbx` e salvar acrescenta só
+`"pistolWalk": { "file": "pistol-locomotion/pistol walk.fbx", "loop": false }` no fim de `skinned.clips`; a aba
+Animações lista o pendente como `pistol-locomotion · pistol walk.fbx`. Gerar rig não foi rodado.

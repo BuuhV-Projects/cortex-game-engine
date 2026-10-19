@@ -1,27 +1,32 @@
 import { h } from './ui'
 import { t } from './i18n'
 import { debug } from '../../src/core/debug'
-import { resolveProjectPath, type RigEntry } from './characterRigRegistry'
+import { resolveProjectPath, splitPath, type RigEntry } from './characterRigRegistry'
 import {
   applySelection,
   buildRows,
   fbxDirOf,
   fileKey,
   filterRows,
+  groupRows,
+  listFbxRecursive,
   parseConfigObject,
+  rebaseRigFile,
   removedGameClips,
   selectionCount,
   selectionFromConfig,
   serializeConfig,
+  type FbxGroup,
   type FbxRow,
   type JsonObject,
   type SelectionState,
+  fileBaseName,
 } from './characterRigSelection'
 
 /**
- * Aba **Pasta** do painel auto-rig (SPEC-0349, adendo 1): escolhe quais FBX da
- * pasta de animações entram no rig, editando `skinned.clips` da config do
- * personagem. A lógica (nomes, estados, busca, gravação) é do módulo puro
+ * Aba **Pasta** do painel auto-rig (SPEC-0349, adendos 1 e 6): escolhe quais FBX
+ * dos pacotes de animação (subpastas de `skinned.fbx`) entram no rig, editando
+ * `skinned.clips` da config do personagem. A lógica (nomes, estados, busca, gravação) é do módulo puro
  * `characterRigSelection.ts`; aqui só a lista e o IPC de arquivos.
  */
 
@@ -51,6 +56,8 @@ export class RigFbxSelection {
   private config: JsonObject | null = null
   private selection: SelectionState = new Map()
   private dirFiles: string[] = []
+  /** `skinned.fbx` (ou `animations` do registro): raiz dos pacotes, como está na config. */
+  private root: string | null = null
   private rig: RigEntry | null = null
   private rows: FbxRow[] = []
   private loadToken = 0
@@ -91,6 +98,7 @@ export class RigFbxSelection {
     this.config = null
     this.selection = new Map()
     this.dirFiles = []
+    this.root = null
     this.setStatus('')
     try {
       const cfg = parseConfigObject(await window.electronAPI.readFile(configPath))
@@ -98,6 +106,7 @@ export class RigFbxSelection {
       this.config = cfg
       this.selection = selectionFromConfig(cfg)
       const rel = fbxDirOf(cfg) ?? rig?.animations ?? null
+      this.root = rel
       if (!rel) {
         this.dirEl.textContent = t('characterRig.fbx.no_dir')
       } else {
@@ -105,9 +114,9 @@ export class RigFbxSelection {
         this.dirEl.textContent = rel
         this.dirEl.title = dir
         try {
-          const entries = await window.electronAPI.readDir(dir)
+          const files = await listFbxRecursive((d) => window.electronAPI.readDir(d), dir)
           if (token !== this.loadToken) return
-          this.dirFiles = entries.filter((e) => !e.isDir).map((e) => e.name)
+          this.dirFiles = files
         } catch (err) {
           this.setStatus(t('characterRig.fbx.dir_failed', { dir: rel, error: err instanceof Error ? err.message : String(err) }), true)
         }
@@ -127,15 +136,38 @@ export class RigFbxSelection {
     this.hooks.onChange()
   }
 
+  /** Clipes do registro com `file` relativo à raiz da config (registro antigo: o pacote). */
+  private rigFiles(): Array<{ file: string }> {
+    const rig = this.rig
+    if (!rig) return []
+    const root = this.root ?? rig.animations
+    return rig.clips.map((c) => ({ file: rebaseRigFile(this.projectDir, rig.animations, c.file, root) }))
+  }
+
   private render(): void {
-    this.rows = this.config ? buildRows(this.dirFiles, applySelection(this.config, this.selection), this.rig?.clips ?? []) : []
+    this.rows = this.config ? buildRows(this.dirFiles, applySelection(this.config, this.selection), this.rigFiles()) : []
     const { selected, total } = selectionCount(this.rows)
     this.countEl.textContent = t('characterRig.fbx.count', { n: selected, m: total })
     this.saveBtn.disabled = !this.config
     this.listEl.textContent = ''
-    const shown = filterRows(this.rows, this.searchInput.value)
-    if (!shown.length) this.listEl.append(h('div', { class: 'rig-hint' }, t(this.rows.length ? 'characterRig.fbx.no_match' : 'characterRig.fbx.empty')))
-    for (const r of shown) this.listEl.append(this.renderRow(r))
+    const groups = groupRows(this.rows, this.searchInput.value)
+    if (!groups.length) this.listEl.append(h('div', { class: 'rig-hint' }, t(this.rows.length ? 'characterRig.fbx.no_match' : 'characterRig.fbx.empty')))
+    for (const g of groups) {
+      this.listEl.append(this.renderGroupHeader(g))
+      for (const r of g.rows) this.listEl.append(this.renderRow(r))
+    }
+  }
+
+  /** Cabeçalho do pacote: nome (a raiz leva o nome da pasta), "N de M" e marcar/desmarcar os filtrados dele. */
+  private renderGroupHeader(g: FbxGroup): HTMLElement {
+    const label = g.pkg || splitPath((this.root ?? '').replace(/[\/]+$/, '')).name || '.'
+    return h('div', { class: 'rig-fbx__group' },
+      h('span', { class: 'rig-fbx__group-name', title: g.pkg || this.root || '' }, label),
+      h('span', { class: 'rig-fbx__group-count' }, t('characterRig.fbx.count', { n: g.selected, m: g.total })),
+      h('span', { style: { flex: '1' } }),
+      h('button', { class: 'rig-fbx__group-btn', type: 'button', onClick: () => void this.setRows(g.rows, true) }, t('characterRig.fbx.pkg_select_all')),
+      h('button', { class: 'rig-fbx__group-btn', type: 'button', onClick: () => void this.setRows(g.rows, false) }, t('characterRig.fbx.pkg_select_none')),
+    )
   }
 
   private renderRow(r: FbxRow): HTMLElement {
@@ -159,7 +191,7 @@ export class RigFbxSelection {
     }, r.name)
     return h('div', { class: `rig-fbx__row ${r.state}${r.missing ? ' missing' : ''}` },
       check,
-      h('span', { class: 'rig-fbx__file', title: r.file }, r.file),
+      h('span', { class: 'rig-fbx__file', title: r.file }, fileBaseName(r.file)),
       name,
       r.flags.length ? h('span', { class: 'rig-fbx__flags', title: t('characterRig.fbx.flags_hint') }, r.flags.join(', ')) : h('span', {}),
       h('label', { class: 'rig-check rig-fbx__loop' }, loop, h('span', {}, t('characterRig.fbx.loop'))),
@@ -181,9 +213,13 @@ export class RigFbxSelection {
     this.changed()
   }
 
-  /** Marcar/desmarcar todos os filtrados (uma confirmação só para os do jogo). */
-  private async setAll(on: boolean): Promise<void> {
-    const shown = filterRows(this.rows, this.searchInput.value)
+  /** Marcar/desmarcar todos os filtrados, de todos os pacotes. */
+  private setAll(on: boolean): Promise<void> {
+    return this.setRows(filterRows(this.rows, this.searchInput.value), on)
+  }
+
+  /** Marcar/desmarcar as linhas dadas (uma confirmação só para os clipes do jogo). */
+  private async setRows(shown: readonly FbxRow[], on: boolean): Promise<void> {
     if (on) {
       for (const r of shown) if (!r.selected && !r.missing) this.selection.set(fileKey(r.file), { file: r.file, loop: false })
     } else {
