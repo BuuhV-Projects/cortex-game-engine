@@ -228,3 +228,35 @@ desmarcar `walk` pede confirmação (Cancelar mantém; em massa, uma confirmaç�
 `skinned.clips`, com a mesma ordem e a quebra de linha final; Gerar rig (script falso) grava a seleção antes e,
 com o `rigs.json` reescrito, a prévia passa ao build publicado (mais recente) e mostra o clipe novo como ausente
 do GLB; botão direito → Pré-visualizar animações abre na aba. O pipeline real do jogo não foi rodado daqui.
+
+## Adendo 2 (2026-10-19) - marcador de ombros
+
+O jogo (SPEC-0187, adendo 2) passou a aceitar no `.markers.json` dois marcadores **opcionais**, `shoulderL` e
+`shoulderR` (`[x, y, z]` no espaço `gltf`, como os outros). `version` continua 1; arquivo sem eles continua
+válido (o pipeline estima o ombro). O Studio passa a **sempre** gravá-los.
+
+- Grupo novo `shoulders` (OMBROS / SHOULDERS, violeta `#b48cff`), logo abaixo do queixo na coluna, com `D`/`E`;
+  mesma interação de arrastar e simetria (`shoulderL` ↔ `shoulderR`).
+- Estimativa (pose em A e em T): `y = 0,81·H`, `x = ±0,115·H` (entre o queixo, 0,87·H, e os cotovelos).
+- Linha de ajuda nova: ombro–cotovelo de cada lado (cor dos ombros), além de punho–cotovelo.
+- Validação nova: **ombro acima do cotovelo** em cada lado, com a mesma folga de 2 % da altura (pose em T: ombro e
+  cotovelo quase na mesma altura). Código `shoulderBelowElbow`. Os 10 marcadores têm de estar colocados.
+- Leitura: `shoulderL`/`shoulderR` são opcionais no arquivo (se presentes, têm de ser `[x, y, z]` válidos). Ao
+  abrir um arquivo antigo, os ombros ausentes vêm da estimativa pela caixa (com a profundidade pelo raio).
+- Gravação: ordem `chin, shoulderL, shoulderR, wristL, wristR, elbowL, elbowR, kneeL, kneeR, groin` (a ordem não
+  importa ao leitor).
+
+## Adendo 3 (2026-10-19) - caminhos da config relativos ao projeto
+
+O pipeline do jogo não pode referenciar nada fora do projeto: em `tools/characters/<CODE>.json`, `source`, `work` e
+`skinned.fbx` passam a ser **relativos ao diretório do projeto** (ex.: `"source":
+"assets/personagens/fontes/LUC-01/lucas-rocha-base-fosco.glb"`, `"work": "assets/personagens/fontes/LUC-01/.work"`,
+`"skinned": { "fbx": "assets/animations/characters/basic-locomotion" }`).
+
+- O Studio resolve os três contra o projeto aberto (mesma regra do registro: relativo → `<projeto>/<caminho>`,
+  aceitando `./` e `\`); caminho absoluto continua aceito como está (compatibilidade com configs antigas).
+- GLB lido de `resolve(source)`; folha de revisão em `resolve(work)/skinned/previa/folha.png`; pasta dos FBX em
+  `resolve(skinned.fbx)` (já era assim desde o adendo 1).
+- O `.markers.json` grava `source` com o **mesmo texto** da config (relativo, se ela for relativa).
+- O aviso de `source` divergente compara os caminhos **resolvidos** (ignorando `\` × `/`, `./`, barras repetidas e
+  caixa): `assets/x.glb` no arquivo e `D:/jogo/assets/x.glb` na config são o mesmo.

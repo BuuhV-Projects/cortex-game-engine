@@ -181,6 +181,7 @@
     "markers": "Marcadores",
     "group": {
       "chin": "QUEIXO",
+      "shoulders": "OMBROS",
       "wrists": "PULSOS",
       "elbows": "COTOVELOS",
       "knees": "JOELHOS",
@@ -188,6 +189,8 @@
     },
     "marker": {
       "chin": "Queixo",
+      "shoulderL": "Ombro esquerdo",
+      "shoulderR": "Ombro direito",
       "groin": "Virilha",
       "wristL": "Pulso esquerdo",
       "wristR": "Pulso direito",
@@ -232,6 +235,7 @@
     "err": {
       "missing": "Falta colocar: {names}.",
       "chinBelowGroin": "O queixo tem de ficar acima da virilha.",
+      "shoulderBelowElbow": "Ombro abaixo do cotovelo: {names}.",
       "elbowBelowWrist": "Cotovelo abaixo do punho: {names}.",
       "kneeAboveGroin": "Joelho acima da virilha: {names}."
     },

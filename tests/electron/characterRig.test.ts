@@ -11,8 +11,10 @@ import {
   configRelPath,
   displayToGltf,
   estimateMarkers,
+  fillMissingMarkers,
   gltfToDisplay,
   helperLines,
+  markerSide,
   isCharacterConfigName,
   isCharacterConfigPath,
   markersPathFor,
@@ -24,6 +26,9 @@ import {
   rigOutcome,
   rotateY,
   sameSource,
+  sameSourceIn,
+  sheetPathOf,
+  sourcePathOf,
   serializeMarkersFile,
   stripAnsi,
   symmetrize,
@@ -74,6 +79,20 @@ describe('simetria', () => {
     expect(mirrorId('chin')).toBeNull()
   })
 
+  it('ombros: par, lado e espelho ao mover', () => {
+    expect(mirrorId('shoulderL')).toBe('shoulderR')
+    expect(mirrorId('shoulderR')).toBe('shoulderL')
+    expect(markerSide('shoulderL')).toBe('L')
+    expect(markerSide('shoulderR')).toBe('R')
+    const m = moveMarker({}, 'shoulderR', [-0.2, 1.45, 0.03], true)
+    expect(m.shoulderL).toEqual([0.2, 1.45, 0.03])
+  })
+
+  it('grupo dos ombros logo abaixo do queixo, com R e L', () => {
+    expect(MARKER_GROUPS.map((g) => g.key).slice(0, 2)).toEqual(['chin', 'shoulders'])
+    expect(MARKER_GROUPS[1]!.ids).toEqual(['shoulderR', 'shoulderL'])
+  })
+
   it('mover um lado espelha o outro em x → −x', () => {
     const m = moveMarker({}, 'elbowL', [0.3, 1.2, 0.05], true)
     expect(m.elbowL).toEqual([0.3, 1.2, 0.05])
@@ -113,6 +132,25 @@ describe('estimativa e validação', () => {
     }
   })
 
+  it('estimativa dos ombros: 0,81·H, ±0,115·H, entre o queixo e o cotovelo (A e T)', () => {
+    for (const box of [aPose, tPose]) {
+      const m = estimateMarkers(box)
+      expect(m.shoulderL[1]).toBeCloseTo(0.81 * 1.8)
+      expect(m.shoulderL[0]).toBeCloseTo(0.115 * 1.8)
+      expect(m.shoulderR[0]).toBeCloseTo(-m.shoulderL[0])
+      expect(m.shoulderL[1]).toBeLessThan(m.chin[1])
+      expect(m.shoulderL[0]).toBeLessThan(m.elbowL[0])
+    }
+  })
+
+  it('ombro abaixo do cotovelo é erro; na mesma altura (pose em T) é aceito', () => {
+    const m = estimateMarkers(tPose)
+    const bad = { ...m, shoulderL: [0.2, 1.2, 0] as Vec3, elbowL: [0.4, 1.44, 0] as Vec3, wristL: [0.7, 1.44, 0] as Vec3 }
+    expect(validateMarkers(bad, 1.8)).toEqual([{ code: 'shoulderBelowElbow', ids: ['shoulderL', 'elbowL'] }])
+    const level = { ...m, shoulderL: [0.2, 1.43, 0] as Vec3, elbowL: [0.4, 1.45, 0] as Vec3, wristL: [0.7, 1.45, 0] as Vec3 }
+    expect(validateMarkers(level, 1.8)).toEqual([])
+  })
+
   it('aponta marcador ausente', () => {
     const m = estimateMarkers(aPose) as Partial<Record<MarkerId, Vec3>>
     delete m.kneeL
@@ -137,6 +175,12 @@ describe('estimativa e validação', () => {
     const lines = helperLines({ kneeL: [0.1, 0.5, 0.02], groin: [0, 0.9, 0] })
     expect(lines).toHaveLength(1)
     close(lines[0]!.from, [0.078, 0.9, 0.02])
+  })
+
+  it('linhas de ajuda: ombro–cotovelo além de punho–cotovelo', () => {
+    const lines = helperLines({ shoulderR: [-0.2, 1.45, 0], elbowR: [-0.3, 1.2, 0], wristR: [-0.4, 0.95, 0] })
+    expect(lines).toHaveLength(2)
+    expect(lines).toContainEqual({ from: [-0.2, 1.45, 0], to: [-0.3, 1.2, 0], color: '#b48cff' })
   })
 })
 
@@ -168,6 +212,43 @@ describe('arquivos', () => {
     expect(sameSource('D:\\A\\b.glb', 'd:/a/B.glb')).toBe(true)
   })
 
+  describe('caminhos da config relativos ao projeto (adendo 3)', () => {
+    const rel = {
+      source: 'assets/personagens/fontes/LUC-01/lucas-rocha-base-fosco.glb',
+      work: 'assets/personagens/fontes/LUC-01/.work',
+    }
+
+    it('source relativo resolve contra o projeto (Windows, barras dos dois tipos)', () => {
+      expect(sourcePathOf('D:/jogos/ddd61', rel)).toBe('D:/jogos/ddd61/assets/personagens/fontes/LUC-01/lucas-rocha-base-fosco.glb')
+      expect(sourcePathOf('D:\\jogos\\ddd61\\', { source: '.\\assets\\x.glb' })).toBe('D:\\jogos\\ddd61/assets\\x.glb')
+    })
+
+    it('source absoluto fica como está (compatibilidade)', () => {
+      expect(sourcePathOf('D:/jogos/ddd61', { source: 'D:\\Codex\\x.glb' })).toBe('D:\\Codex\\x.glb')
+      expect(sourcePathOf('D:/jogos/ddd61', { source: 'E:/x.glb' })).toBe('E:/x.glb')
+    })
+
+    it('folha de revisão com work relativo ou absoluto; sem work, null', () => {
+      expect(sheetPathOf('D:/jogos/ddd61', rel)).toBe('D:/jogos/ddd61/assets/personagens/fontes/LUC-01/.work/skinned/previa/folha.png')
+      expect(sheetPathOf('D:/jogos/ddd61', { work: 'D:\\Codex\\integracao\\' })).toBe('D:\\Codex\\integracao/skinned/previa/folha.png')
+      expect(sheetPathOf('D:/jogos/ddd61', { work: null })).toBeNull()
+    })
+
+    it('compara source resolvido: relativo × absoluto, ./ e barras mistas', () => {
+      const abs = 'D:\\jogos\\ddd61\\assets\\personagens\\fontes\\LUC-01\\lucas-rocha-base-fosco.glb'
+      expect(sameSourceIn('D:/jogos/ddd61', rel.source, abs)).toBe(true)
+      expect(sameSourceIn('D:\\jogos\\ddd61\\', `./${rel.source}`, rel.source)).toBe(true)
+      expect(sameSourceIn('d:/JOGOS/ddd61', rel.source, 'D:/jogos/ddd61//assets/personagens/fontes/LUC-01/./lucas-rocha-base-fosco.glb')).toBe(true)
+      expect(sameSourceIn('D:/jogos/ddd61', rel.source, 'D:/Codex/assets/personagens/fontes/LUC-01/lucas-rocha-base-fosco.glb')).toBe(false)
+    })
+
+    it('o .markers.json grava source com o mesmo texto da config', () => {
+      const markers = estimateMarkers({ min: [-0.5, 0, -0.15], max: [0.5, 1.8, 0.15] })
+      const text = serializeMarkersFile({ code: 'LUC-01', source: rel.source, symmetry: true, markers })
+      expect(parseMarkersFile(text).source).toBe(rel.source)
+    })
+  })
+
   it('serializa o contrato (ordem, 4 casas, 2 espaços, −0) e lê de volta', () => {
     const markers = {} as Record<MarkerId, Vec3>
     MARKER_IDS.forEach((id, i) => (markers[id] = [-0.00001, i / 3, 0.123456]))
@@ -177,11 +258,41 @@ describe('arquivos', () => {
     const obj = JSON.parse(text)
     expect(Object.keys(obj)).toEqual(['version', 'code', 'source', 'space', 'symmetry', 'markers'])
     expect(Object.keys(obj.markers)).toEqual([...MARKER_IDS])
-    expect(obj.markers.groin).toEqual([0, 0.3333, 0.1235])
+    expect(obj.markers.shoulderL).toEqual([0, 0.3333, 0.1235])
     expect(Object.is(obj.markers.chin[0], 0)).toBe(true)
     const back = parseMarkersFile(text)
     expect(back.space).toBe('gltf')
     expect(back.markers.kneeR).toEqual(obj.markers.kneeR)
+  })
+
+  it('serializa os ombros (ordem sugerida pela SPEC-0187)', () => {
+    const markers = estimateMarkers({ min: [-0.5, 0, -0.15], max: [0.5, 1.8, 0.15] })
+    const obj = JSON.parse(serializeMarkersFile({ code: 'LUC-01', source: 's.glb', symmetry: true, markers }))
+    expect(Object.keys(obj.markers)).toEqual([
+      'chin', 'shoulderL', 'shoulderR', 'wristL', 'wristR', 'elbowL', 'elbowR', 'kneeL', 'kneeR', 'groin',
+    ])
+    expect(obj.markers.shoulderL).toEqual([0.207, 1.458, 0])
+  })
+
+  it('arquivo antigo, sem ombros, carrega; os ombros vêm da estimativa', () => {
+    const old = {
+      version: 1, code: 'LUC-01', source: 's.glb', space: 'gltf', symmetry: true,
+      markers: { chin: [0, 1.5, 0], groin: [0, 0.9, 0], wristL: [0.4, 0.95, 0], wristR: [-0.4, 0.95, 0],
+        elbowL: [0.3, 1.2, 0], elbowR: [-0.3, 1.2, 0], kneeL: [0.1, 0.5, 0], kneeR: [-0.1, 0.5, 0] },
+    }
+    const file = parseMarkersFile(JSON.stringify(old))
+    expect(file.markers.shoulderL).toBeUndefined()
+    expect(file.markers.chin).toEqual([0, 1.5, 0])
+    const est = estimateMarkers({ min: [-0.5, 0, -0.15], max: [0.5, 1.8, 0.15] })
+    const full = fillMissingMarkers(file.markers, est)
+    expect(full.shoulderR).toEqual(est.shoulderR)
+    expect(full.chin).toEqual([0, 1.5, 0])
+    expect(validateMarkers(full, 1.8)).toEqual([])
+  })
+
+  it('ombro presente mas inválido é recusado', () => {
+    const text = JSON.stringify({ version: 1, space: 'gltf', markers: { ...estimateMarkers({ min: [-0.5, 0, 0], max: [0.5, 1.8, 0] }), shoulderL: [0, 1] } })
+    expect(() => parseMarkersFile(text)).toThrow(/shoulderL/)
   })
 
   it('recusa arquivo de marcadores fora do contrato', () => {
