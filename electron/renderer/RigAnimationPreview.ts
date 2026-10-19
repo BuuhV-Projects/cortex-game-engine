@@ -5,7 +5,7 @@ import { h } from './ui'
 import { getLocale, t } from './i18n'
 import { debug } from '../../src/core/debug'
 import { formatSeconds, resolveProjectPath, splitPath, type RigBuildKind, type RigClip, type RigEntry } from './characterRigRegistry'
-import { parseConfigObject, serializeConfig } from './characterRigSelection'
+import { fileLabel, parseConfigObject, serializeConfig } from './characterRigSelection'
 import {
   ARM_OFFSET_KEYS,
   ARM_OFFSET_LIMITS,
@@ -447,7 +447,7 @@ export class RigAnimationPreview {
       },
       h('span', { class: 'rig-clip__name' }, c.name),
       h('span', { class: 'rig-clip__meta' }, `${formatSeconds(c.duration)}${c.loop ? ' · ⟳' : ''}`),
-      h('span', { class: 'rig-clip__file' }, absent ? t('characterRig.anim.absent') : c.file),
+      h('span', { class: 'rig-clip__file' }, absent ? t('characterRig.anim.absent') : fileLabel(c.file)),
       ...(this.needsRegen(c.name) ? [h('span', { class: 'rig-clip__adj' }, t('characterRig.arm.regen_short'))] : []))
       ;(row as HTMLButtonElement).disabled = absent
       this.listEl.append(row)
@@ -456,7 +456,7 @@ export class RigAnimationPreview {
       this.listEl.append(h('div', { class: 'rig-clip pending', title: t('characterRig.anim.pending_hint') },
         h('span', { class: 'rig-clip__name' }, p.name),
         h('span', { class: 'rig-clip__meta' }, t('characterRig.anim.pending')),
-        h('span', { class: 'rig-clip__file' }, p.file)))
+        h('span', { class: 'rig-clip__file' }, fileLabel(p.file))))
     }
   }
 

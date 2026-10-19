@@ -19,7 +19,7 @@ export interface RigBuild {
 export interface RigClip {
   /** Nome da animação dentro do GLB. */
   name: string
-  /** FBX de origem (nome do arquivo na pasta `animations`). */
+  /** FBX de origem, relativo à pasta `animations` (com a subpasta do pacote, SPEC-0349 adendo 6). */
   file: string
   loop: boolean
   duration: number
@@ -27,7 +27,7 @@ export interface RigClip {
 
 export interface RigEntry {
   config: string
-  /** Pasta dos FBX (relativa ao projeto ou absoluta). */
+  /** Raiz dos pacotes de FBX (relativa ao projeto ou absoluta); registro antigo: o próprio pacote. */
   animations: string
   staging?: RigBuild
   published?: RigBuild
@@ -119,7 +119,12 @@ export function resolveProjectPath(projectDir: string, p: string): string {
  */
 export function clipNameFromFile(file: string): string {
   const base = file.split(/[\\/]/).pop() ?? file
-  const words = base.replace(/\.[^.]+$/, '').split(/[^A-Za-z0-9]+/).filter(Boolean)
+  return camelCase(base.replace(/\.[^.]+$/, ''))
+}
+
+/** `pistol-locomotion` → `pistolLocomotion`: a regra de `clipNameFromFile`, sem tirar extensão. */
+export function camelCase(text: string): string {
+  const words = text.split(/[^A-Za-z0-9]+/).filter(Boolean)
   return words.map((w, i) => (i === 0 ? w.toLowerCase() : w[0]!.toUpperCase() + w.slice(1).toLowerCase())).join('')
 }
 

@@ -2707,6 +2707,37 @@ body.app-preview-fullscreen #preview-container {
   padding: 5px 10px;
   border-bottom: 1px solid var(--od-border-soft);
 }
+.rig-fbx__group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--od-border-soft);
+  background: var(--od-bg-panel);
+}
+.rig-fbx__group-name {
+  color: var(--od-fg-bright);
+  font: 600 12px var(--mono, monospace);
+}
+.rig-fbx__group-count {
+  color: var(--od-fg-muted);
+  font-size: 11px;
+}
+.rig-fbx__group-btn {
+  padding: 1px 8px;
+  border: 1px solid var(--od-border-soft);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.rig-fbx__group-btn:hover {
+  border-color: var(--accent, #22d3ee);
+}
 .rig-fbx__row.unselected {
   color: var(--od-fg-muted);
 }

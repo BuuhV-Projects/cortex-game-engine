@@ -1,6 +1,10 @@
 /**
  * Seleção dos FBX que entram no rig (`skinned.clips` da config do personagem) —
- * lógica pura da aba **Pasta** do painel auto-rig (SPEC-0349, adendo 1).
+ * lógica pura da aba **Pasta** do painel auto-rig (SPEC-0349, adendos 1 e 6).
+ *
+ * `skinned.fbx` é a raiz dos pacotes; `file` de cada clipe é relativo a ela, com
+ * a subpasta do pacote (`pistol-locomotion/pistol walk.fbx`). Config antiga, com
+ * `skinned.fbx` apontando para um pacote e `file` sem barra, segue a mesma regra.
  *
  * A config é do jogo (`tools/characters/<CODE>.json`): só `skinned.clips` muda;
  * o resto do JSON e a ordem das chaves ficam. Formato de gravação do jogo:
@@ -9,7 +13,7 @@
  * Sem DOM e sem three.js — testado em `tests/electron/characterRigSelection.test.ts`.
  */
 
-import { clipNameFromFile, type RigClip } from './characterRigRegistry.js'
+import { camelCase, clipNameFromFile, resolveProjectPath, type RigClip } from './characterRigRegistry.js'
 
 /** Uma entrada de `skinned.clips`. */
 export interface SelectedClip {
@@ -20,16 +24,40 @@ export interface SelectedClip {
   flags: string[]
 }
 
-/** O que o painel quer na config: FBX → laço. Chave = arquivo em minúsculas. */
+/** O que o painel quer na config: FBX → laço. Chave = `fileKey(file)`. */
 export type SelectionState = Map<string, { file: string; loop: boolean }>
 
 export type JsonObject = Record<string, unknown>
 
 const BASE_KEYS = new Set(['file', 'loop'])
 
-/** Chave de comparação de arquivo (Windows: sem caixa). */
+/** Caminho relativo com `/`: troca `\`, junta barras repetidas e tira `./`. */
+export function normalizeRelPath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/(^|\/)(\.\/)+/g, '$1')
+}
+
+/** Chave de comparação de arquivo (barras normalizadas; Windows: sem caixa). */
 export function fileKey(file: string): string {
-  return file.toLowerCase()
+  return normalizeRelPath(file).toLowerCase()
+}
+
+/** Pacote do arquivo: a pasta relativa à raiz (`pistol-locomotion`), ou `''` na própria raiz. */
+export function packageOf(file: string): string {
+  const n = normalizeRelPath(file)
+  const i = n.lastIndexOf('/')
+  return i < 0 ? '' : n.slice(0, i)
+}
+
+/** Nome do arquivo, sem a pasta. */
+export function fileBaseName(file: string): string {
+  const n = normalizeRelPath(file)
+  return n.slice(n.lastIndexOf('/') + 1)
+}
+
+/** Rótulo da lista de clipes: `pistol-locomotion · pistol walk.fbx` (só o arquivo, sem pacote). */
+export function fileLabel(file: string): string {
+  const pkg = packageOf(file)
+  return pkg ? `${pkg} · ${fileBaseName(file)}` : fileBaseName(file)
 }
 
 export function isFbxName(name: string): boolean {
@@ -52,7 +80,7 @@ export function serializeConfig(cfg: JsonObject): string {
   return `${JSON.stringify(cfg, null, 1)}\n`
 }
 
-/** `skinned.fbx` (pasta dos FBX), ou `null`. */
+/** `skinned.fbx` (raiz dos pacotes de FBX), ou `null`. */
 export function fbxDirOf(cfg: JsonObject): string | null {
   const skinned = cfg['skinned']
   const dir = isObject(skinned) ? skinned['fbx'] : undefined
@@ -87,6 +115,20 @@ export function uniqueClipName(base: string, taken: ReadonlySet<string>): string
 }
 
 /**
+ * Nome de um clipe novo: camelCase do arquivo (sem a pasta); se já for de outro
+ * clipe, com o pacote em camelCase na frente (`pistol-locomotion/idle.fbx` →
+ * `pistolLocomotionIdle`); se ainda colidir, sufixo numérico. Arquivo da raiz
+ * (sem pacote) vai direto ao sufixo.
+ */
+export function autoClipName(file: string, taken: ReadonlySet<string>): string {
+  const base = clipNameFromFile(file) || 'clip'
+  if (!taken.has(base)) return base
+  const pkg = camelCase(packageOf(file))
+  if (!pkg) return uniqueClipName(base, taken)
+  return uniqueClipName(`${pkg}${base[0]!.toUpperCase()}${base.slice(1)}`, taken)
+}
+
+/**
  * Aplica a seleção numa cópia da config: remove as entradas desmarcadas, ajusta
  * `loop` das que ficam (mantendo as outras chaves e a posição) e acrescenta as
  * novas no fim (`{ file, loop }`, nome camelCase único). O resto fica igual.
@@ -111,7 +153,7 @@ export function applySelection(cfg: JsonObject, selection: SelectionState): Json
   const taken = new Set(Object.keys(clips))
   for (const [key, want] of selection) {
     if (present.has(key)) continue
-    const name = uniqueClipName(clipNameFromFile(want.file), taken)
+    const name = autoClipName(want.file, taken)
     taken.add(name)
     clips[name] = { file: want.file, loop: want.loop }
   }
@@ -130,7 +172,10 @@ export function removedGameClips(cfg: JsonObject, selection: SelectionState): Se
 export type RowState = 'generated' | 'pending' | 'unselected'
 
 export interface FbxRow {
+  /** Caminho relativo à raiz (`skinned.fbx`), com `/`. */
   file: string
+  /** Pasta do arquivo relativa à raiz (`''` = a própria raiz). */
+  pkg: string
   /** Nome do clipe: o da config se selecionado, senão o que vai ganhar. */
   name: string
   selected: boolean
@@ -144,15 +189,22 @@ export interface FbxRow {
   missing: boolean
 }
 
+/** Ordem da lista: pacote (a raiz primeiro), depois o arquivo. */
+function compareFiles(a: string, b: string): number {
+  return packageOf(a).localeCompare(packageOf(b)) || fileBaseName(a).localeCompare(fileBaseName(b))
+}
+
 /**
- * Linhas da aba Pasta: os `.fbx` da pasta (alfabética) e, no fim, os da
- * seleção que não estão na pasta. `cfg` é a config já com a seleção aplicada.
+ * Linhas da aba Pasta: os `.fbx` da raiz e das subpastas (caminhos relativos à
+ * raiz), por pacote e nome; no fim, os da seleção que não estão no disco.
+ * `cfg` é a config já com a seleção aplicada; `rigClips` com `file` já relativo
+ * à raiz (`rebaseRigFile`).
  */
-export function buildRows(dirFiles: readonly string[], cfg: JsonObject, rigClips: readonly RigClip[]): FbxRow[] {
+export function buildRows(dirFiles: readonly string[], cfg: JsonObject, rigClips: readonly Pick<RigClip, 'file'>[]): FbxRow[] {
   const inRig = new Set(rigClips.map((c) => fileKey(c.file)))
   const byFile = new Map(selectedClips(cfg).map((c) => [fileKey(c.file), c]))
   const taken = new Set(selectedClips(cfg).map((c) => c.name))
-  const files = dirFiles.filter(isFbxName).sort((a, b) => a.localeCompare(b))
+  const files = dirFiles.filter(isFbxName).map(normalizeRelPath).sort(compareFiles)
   const inDir = new Set(files.map(fileKey))
   const row = (file: string, missing: boolean): FbxRow => {
     const key = fileKey(file)
@@ -160,7 +212,8 @@ export function buildRows(dirFiles: readonly string[], cfg: JsonObject, rigClips
     const rig = inRig.has(key)
     return {
       file,
-      name: sel?.name ?? uniqueClipName(clipNameFromFile(file), taken),
+      pkg: packageOf(file),
+      name: sel?.name ?? autoClipName(file, taken),
       selected: !!sel,
       loop: sel?.loop ?? false,
       state: sel ? (rig ? 'generated' : 'pending') : 'unselected',
@@ -179,7 +232,7 @@ export function normalizeSearch(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
-/** Linhas cujo arquivo ou nome de clipe contém a busca (sem caixa/acento). */
+/** Linhas cujo caminho (pacote + arquivo) ou nome de clipe contém a busca (sem caixa/acento). */
 export function filterRows(rows: readonly FbxRow[], query: string): FbxRow[] {
   const q = normalizeSearch(query.trim())
   if (!q) return [...rows]
@@ -190,4 +243,74 @@ export function filterRows(rows: readonly FbxRow[], query: string): FbxRow[] {
 export function selectionCount(rows: readonly FbxRow[]): { selected: number; total: number } {
   const inDir = rows.filter((r) => !r.missing)
   return { selected: inDir.filter((r) => r.selected).length, total: inDir.length }
+}
+
+export interface FbxGroup {
+  /** Pasta relativa à raiz (`''` = a própria raiz). */
+  pkg: string
+  /** Linhas do pacote que passam na busca. */
+  rows: FbxRow[]
+  /** "N de M" do pacote inteiro (sem a busca e sem as ausentes). */
+  selected: number
+  total: number
+}
+
+/**
+ * Agrupa por pacote (a raiz primeiro, depois alfabética), mantendo a ordem das
+ * linhas. Pacote sem nenhuma linha no filtro fica de fora.
+ */
+export function groupRows(rows: readonly FbxRow[], query: string): FbxGroup[] {
+  const shown = new Set(filterRows(rows, query))
+  const groups = new Map<string, FbxGroup>()
+  for (const r of rows) {
+    let g = groups.get(r.pkg)
+    if (!g) groups.set(r.pkg, (g = { pkg: r.pkg, rows: [], selected: 0, total: 0 }))
+    if (shown.has(r)) g.rows.push(r)
+  }
+  for (const g of groups.values()) Object.assign(g, selectionCount(rows.filter((r) => r.pkg === g.pkg)))
+  return [...groups.values()].filter((g) => g.rows.length).sort((a, b) => a.pkg.localeCompare(b.pkg))
+}
+
+// ── Disco e registro ──────────────────────────────────────────────────────────
+
+export interface DirEntry {
+  name: string
+  isDir: boolean
+}
+
+/** Quantos níveis de subpasta a listagem desce abaixo da raiz. */
+const MAX_FBX_DEPTH = 8
+
+/**
+ * `.fbx` de `root` e das subpastas (menos as que começam com `.`), como caminhos
+ * relativos a `root` com `/`, por pacote e nome. Erro de leitura sobe.
+ */
+export async function listFbxRecursive(readDir: (dir: string) => Promise<DirEntry[]>, root: string): Promise<string[]> {
+  const out: string[] = []
+  const walk = async (rel: string, depth: number): Promise<void> => {
+    const entries = await readDir(rel ? `${root.replace(/[\\/]+$/, '')}/${rel}` : root)
+    for (const e of entries) {
+      const path = rel ? `${rel}/${e.name}` : e.name
+      if (e.isDir) {
+        if (!e.name.startsWith('.') && depth < MAX_FBX_DEPTH) await walk(path, depth + 1)
+      } else if (isFbxName(e.name)) {
+        out.push(path)
+      }
+    }
+  }
+  await walk('', 0)
+  return out.sort(compareFiles)
+}
+
+/**
+ * `file` do registro (relativo à pasta `animations` dele) → relativo à raiz da
+ * config, quando a primeira está dentro da segunda: registro antigo com
+ * `animations` = o pacote e `file` = `walking.fbx` vira
+ * `basic-locomotion/walking.fbx`. Fora da raiz, fica como está (normalizado).
+ */
+export function rebaseRigFile(projectDir: string, rigAnimations: string, file: string, root: string): string {
+  const abs = (p: string): string => normalizeRelPath(resolveProjectPath(projectDir, p)).replace(/\/+$/, '')
+  const full = `${abs(rigAnimations)}/${normalizeRelPath(file)}`
+  const base = abs(root)
+  return full.toLowerCase().startsWith(`${base.toLowerCase()}/`) ? full.slice(base.length + 1) : normalizeRelPath(file)
 }
