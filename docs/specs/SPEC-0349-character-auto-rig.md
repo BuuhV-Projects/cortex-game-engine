@@ -162,28 +162,69 @@ as animações depois de gerar o rig. Só personagem que já tem rig gerado pode
 
 ### Comportamento
 
-- O painel ganha duas abas: **Marcadores** (o que já existia) e **Animações**.
+- O painel ganha três abas: **Marcadores** (o que já existia), **Animações** (prévia do rig gerado) e **Pasta**
+  (seleção dos FBX). A saída do `prepare-character` fica numa coluna à direita, visível em qualquer aba.
 - **Animações** fica desabilitada, com o aviso "Gere o rig deste personagem primeiro", quando o código não está
-  no registro ou o GLB do build escolhido não existe.
+  no registro ou o GLB do build escolhido não existe (conferido pela listagem da pasta, sem ler arquivo ausente).
 - Build mostrado: o mais recente entre `staging` e `published` (pelo `at`); quando os dois existem, um seletor
   alterna. A barra mostra qual é (staging/publicado) e a data.
 - Prévia: GLB do registro (`readFileBase64` + `GLTFLoader`), câmera perspectiva com OrbitControls enquadrando o
   personagem, grade no chão, luz hemisférica + direcional, `AnimationMixer`. Lista de clipes do registro (nome,
   duração, laço, arquivo FBX); clicar toca. Play/pausa, velocidade 0,25×–2×, barra de tempo arrastável; laço
   conforme `loop`, com "Forçar laço" opcional. Clipe do registro que não está no GLB aparece como ausente.
-- FBX da pasta `animations` do registro que não estão em `clips[].file` (comparação sem caixa) aparecem
-  acinzentados, com o nome que vão ganhar (camelCase do arquivo, `left turn 90.fbx` → `leftTurn90`) e o aviso
-  "gere o rig de novo para incluir".
-- Depois de **Gerar rig** terminar com 0 ou 3, o painel relê o registro e atualiza a aba.
-- Botão direito num `.json` de `tools/characters/` → **Pré-visualizar animações** (abre direto na aba);
-  desabilitado quando o código não está no registro.
+  A prévia desliga `vertexColors` dos materiais: no GLB do rig o `COLOR_0` é o índice de região do jogo
+  (atributo `slot`, SPEC-0185), não cor; multiplicado na textura, deixaria o boneco vermelho e preto.
+  Os FBX selecionados na config que ainda não estão no rig aparecem acinzentados no fim da lista ("gere o rig de
+  novo"); clicar neles não toca nada (a prévia não tem FBXLoader: só o GLB).
+- Depois de **Gerar rig** terminar com 0 ou 3, o painel relê o registro e atualiza as abas Animações e Pasta.
+- Botão direito num `.json` de `tools/characters/` → **Pré-visualizar animações** abre o painel direto na aba
+  Animações (ou em Marcadores, com a aba desabilitada e o aviso, se o código não está no registro).
 - Fechar o painel (ou trocar de personagem/build) libera mixer, geometrias, materiais, texturas e o renderer da
   prévia. O laço de desenho só roda com a aba visível.
+
+### Seleção dos FBX (aba Pasta)
+
+Correção do usuário (SPEC-0187 §4 do jogo): entram no rig **só** os FBX listados em `skinned.clips` da config,
+`{ "<nome>": { "file": "<arq>.fbx", "loop": bool, ...flags } }`. O painel edita essa seleção na própria config.
+
+- Pasta: `skinned.fbx` da config (relativa ao projeto ou absoluta); sem ela, `animations` do registro. Lista os
+  `.fbx` da pasta (sem diferenciar caixa na extensão), em ordem alfabética, cada um com checkbox. Um FBX listado
+  na config que não está na pasta aparece no fim como **ausente** (o script do jogo sai com 64); desmarcá-lo o
+  remove.
+- **Busca** filtra por nome do arquivo e nome do clipe, sem diferenciar maiúscula nem acento. **Marcar todos** e
+  **Desmarcar todos** agem só sobre as linhas filtradas. Contador "N de M selecionadas" (M = linhas da pasta).
+- Estado de cada linha: **no rig** (selecionada e em `clips` do registro, comparando o arquivo sem caixa);
+  **gere o rig de novo** (selecionada, fora do registro); **não selecionada** (se ainda estiver no rig gerado, o
+  aviso diz que sai na próxima geração).
+- Marcar um FBX que não está em `skinned.clips` cria `{ "file": "<arq>", "loop": false }` no fim do objeto, com o
+  nome camelCase do arquivo (separadores espaço, `_` e `-`, e qualquer não alfanumérico; 1ª palavra minúscula,
+  demais com a inicial maiúscula: `left turn 90.fbx` → `leftTurn90`). Nome já usado por outra entrada → sufixo
+  numérico `2`, `3`… (`walk` → `walk2`).
+- Linha selecionada tem checkbox **laço** (grava `loop`; as outras chaves da entrada ficam).
+- Desmarcar remove a entrada. Se ela tiver chave além de `file`/`loop` (`rootMotion`, `jump`…), o painel pede
+  confirmação ("o jogo usa este clipe"); em massa, uma confirmação só, listando os clipes.
+- Gravação: a config é **relida do disco**, a seleção é aplicada (remove, ajusta `loop`, acrescenta) e o resto do
+  JSON fica igual, na mesma ordem de chaves; formato `JSON.stringify(cfg, null, 1) + '\n'` (o do jogo). Só
+  grava se o texto muda. Grava em **Salvar seleção** e antes de **Gerar rig**.
+- Clicar no nome de uma linha **no rig** abre a aba Animações tocando o clipe; nas outras não toca nada.
 
 ### Código
 
 | arquivo | papel |
 |---|---|
-| `electron/renderer/characterRigRegistry.ts` | puro: ler/validar o registro, escolher o build, caminhos relativos/absolutos, FBX novos, nome camelCase |
+| `electron/renderer/characterRigRegistry.ts` | puro: ler/validar o registro, escolher o build, caminhos relativos/absolutos, nome camelCase |
+| `electron/renderer/characterRigSelection.ts` | puro: ler `skinned.clips`, nome único, aplicar a seleção na config, linhas/estados, busca |
 | `electron/renderer/RigAnimationPreview.ts` | a vista da aba Animações (three + playbar) |
-| `tests/electron/characterRigRegistry.test.ts` | testes do módulo puro |
+| `electron/renderer/RigFbxSelection.ts` | a vista da aba Pasta (lista, busca, gravação) |
+| `tests/electron/characterRigRegistry.test.ts`, `tests/electron/characterRigSelection.test.ts` | testes dos módulos puros |
+
+### Verificação (2026-10-19)
+
+Studio em dev com perfil temporário. Com o registro e o GLB reais do DDD 61 (só leitura): aba Animações com o
+build staging, 12 clipes; walk, run (0,5×), jump (para no fim sem laço), pausa e scrub; a aba Pasta lista os 12
+FBX como "no rig" com as flags do jogo. Numa cópia do projeto: personagem fora do registro com a aba desabilitada
+e o aviso; busca sem acento/caixa, "Marcar todos" no filtrado, `walk.fbx` → `walk2` na colisão, laço por linha;
+desmarcar `walk` pede confirmação (Cancelar mantém; em massa, uma confirmação só); o JSON gravado muda só
+`skinned.clips`, com a mesma ordem e a quebra de linha final; Gerar rig (script falso) grava a seleção antes e,
+com o `rigs.json` reescrito, a prévia passa ao build publicado (mais recente) e mostra o clipe novo como ausente
+do GLB; botão direito → Pré-visualizar animações abre na aba. O pipeline real do jogo não foi rodado daqui.
