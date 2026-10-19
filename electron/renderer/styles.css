@@ -2204,3 +2204,228 @@ body.app-preview-fullscreen #preview-container {
   max-height: 240px;
   overflow-y: auto;
 }
+
+/* ------------------------------------------------------------------ */
+/* Painel character-auto-rig (SPEC-0349) — reusa .export-modal         */
+/* ------------------------------------------------------------------ */
+
+.rig-modal {
+  width: min(1320px, 95vw);
+  height: min(880px, 92vh);
+  max-width: none;
+  padding: 14px 16px;
+}
+.rig-modal[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rig-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rig-select {
+  width: auto;
+  min-width: 260px;
+}
+.rig-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 230px 1fr auto;
+  gap: 12px;
+}
+.rig-side,
+.rig-log {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  font-size: 12px;
+}
+.rig-side__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--od-fg-dim);
+}
+.rig-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rig-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border: 1px solid var(--od-border-soft);
+  border-radius: 6px;
+  background: var(--od-bg-deep);
+}
+.rig-group__label {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--od-fg-bright);
+}
+.rig-dots {
+  display: flex;
+  gap: 6px;
+}
+.rig-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #111;
+  cursor: grab;
+  opacity: 0.55;
+  user-select: none;
+  touch-action: none;
+}
+.rig-dot.placed {
+  opacity: 1;
+}
+.rig-hint {
+  color: var(--od-fg-muted);
+  line-height: 1.4;
+}
+.rig-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--od-fg-bright);
+  cursor: pointer;
+}
+.rig-errors {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--od-red);
+  line-height: 1.4;
+}
+.rig-status {
+  color: var(--od-fg-muted);
+  line-height: 1.4;
+  word-break: break-word;
+}
+.rig-status.warn {
+  color: var(--od-yellow);
+}
+.rig-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rig-view {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--od-border-soft);
+  border-radius: 6px;
+  background: radial-gradient(ellipse at 50% 40%, #2a2d3d 0%, #15161e 75%);
+  cursor: grab;
+  touch-action: none;
+}
+.rig-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.rig-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.rig-centerline {
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-width: 1;
+  stroke-dasharray: 6 5;
+}
+.rig-helper {
+  stroke-width: 2;
+  opacity: 0.85;
+}
+.rig-marker {
+  pointer-events: all;
+  cursor: move;
+}
+.rig-marker circle {
+  stroke: #fff;
+  stroke-width: 2;
+}
+.rig-marker.bad circle {
+  stroke: var(--od-red);
+  stroke-width: 3;
+}
+.rig-marker text {
+  font: 700 11px var(--mono, monospace);
+  fill: #fff;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.7);
+  stroke-width: 3;
+}
+.rig-view__hint {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+.rig-ghost {
+  position: fixed;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  pointer-events: none;
+  z-index: 10;
+}
+.rig-log {
+  display: none;
+  width: 380px;
+}
+.rig-log.on {
+  display: flex;
+}
+.rig-log__pre {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  padding: 8px;
+  font: 11px/1.4 var(--mono, monospace);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--od-bg-deep);
+  border: 1px solid var(--od-border-soft);
+  border-radius: 6px;
+}
+.rig-outcome {
+  font-weight: 600;
+  color: var(--od-fg-bright);
+}
+.rig-outcome.approved { color: var(--od-green); }
+.rig-outcome.review { color: var(--od-yellow); }
+.rig-outcome.rejected,
+.rig-outcome.infra,
+.rig-outcome.unknown { color: var(--od-red); }
+.rig-sheet {
+  max-width: 100%;
+  max-height: 45%;
+  object-fit: contain;
+  border: 1px solid var(--od-border-soft);
+  border-radius: 6px;
+  cursor: zoom-in;
+}

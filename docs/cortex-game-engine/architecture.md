@@ -1315,7 +1315,7 @@ no logo da splash enquanto montava os seis carros.
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0325) · projeção do passe principal no host: `NativeMainProjection.ts` + `MainPassKind.ts` (SPEC-0332) |
-| IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
+| IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) · auto-rig de personagem: `renderer/CharacterRigPanel.ts` + lógica pura `renderer/characterRig.ts` + IPC `characterRig:run`/`stop` (Git Bash → `tools/prepare-character.sh` do jogo; SPEC-0349) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
 

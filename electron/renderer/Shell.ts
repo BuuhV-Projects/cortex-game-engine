@@ -148,6 +148,8 @@ export class Shell {
       ]),
       this.menuItem('Projeto', [
         { label: tr('menu.game_settings', 'Configurações do jogo…'), run: () => document.dispatchEvent(new CustomEvent('project-settings-requested')) },
+        // Marcar o corpo de um personagem GLB e gerar o rig (SPEC-0349).
+        { label: tr('menu.character_rig', 'Auto-rig de personagem…'), run: () => document.dispatchEvent(new CustomEvent('character-rig-requested')) },
         { sep: true },
         {
           label: tr('menu.export_native', 'Exportar ›'),

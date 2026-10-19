@@ -8,7 +8,8 @@
     "project": "Project",
     "generate_installer": "Generate installer...",
     "game_settings": "Game settings…",
-    "language": "Language"
+    "language": "Language",
+    "character_rig": "Character auto-rig…"
   },
   "gameSettings": {
     "title": "Game settings",
@@ -171,5 +172,69 @@
     "tooltip_task_orchestrator": "Orchestrator mode: the AI decides from the request what goes to Modeling and what it codes itself. Click for Modeling.",
     "tooltip_task_modeling": "Modeling mode: 3D models, scenes and effects. Does not change code. Click for Coding.",
     "tooltip_task_coding": "Coding mode: the game code — systems, mechanics, scripts and UI. Click for Orchestrator."
+  },
+  "characterRig": {
+    "title": "Character auto-rig",
+    "subtitle": "Drag the markers onto the body, like Mixamo. Writes tools/characters/<CODE>.markers.json.",
+    "config": "Character",
+    "close": "Close",
+    "markers": "Markers",
+    "group": {
+      "chin": "CHIN",
+      "wrists": "WRISTS",
+      "elbows": "ELBOWS",
+      "knees": "KNEES",
+      "groin": "GROIN"
+    },
+    "marker": {
+      "chin": "Chin",
+      "groin": "Groin",
+      "wristL": "Left wrist",
+      "wristR": "Right wrist",
+      "elbowL": "Left elbow",
+      "elbowR": "Right elbow",
+      "kneeL": "Left knee",
+      "kneeR": "Right knee"
+    },
+    "side_L": "L",
+    "side_R": "R",
+    "hint": "Drag a circle onto the model, or drag on the model to move it. L = the character's left (right side of the screen).",
+    "symmetry": "Use symmetry",
+    "reset": "Re-estimate positions",
+    "save": "Save markers",
+    "generate": "Generate rig",
+    "stop": "Stop",
+    "log": "prepare-character output",
+    "view_hint": "Wheel: zoom · drag background: pan · double-click: reframe",
+    "loading": "Loading {file}…",
+    "load_failed": "Failed to load the GLB: {error}",
+    "no_webgl": "WebGL unavailable: cannot show the model.",
+    "loaded": "Markers read from {file}.",
+    "loaded_mismatch": "Markers read from {file}, but its code/source do not match the config.",
+    "markers_invalid": "Invalid markers file ({error}); positions estimated.",
+    "estimated": "Positions estimated from the model's bounding box. Adjust and save.",
+    "fix_errors": "Fix the markers before saving.",
+    "saved": "Saved to {file}.",
+    "save_failed": "Save failed: {error}",
+    "running": "Running…",
+    "sheet_open": "Click to open the sheet in the system viewer",
+    "sheet_missing": "Review sheet not found: {file}",
+    "outcome": {
+      "approved": "Approved (code {code}).",
+      "rejected": "Rejected (code {code}). See the output below.",
+      "infra": "Infrastructure failure (code {code}).",
+      "review": "Waiting for visual review (code {code}): check the sheet.",
+      "unknown": "Finished with code {code}."
+    },
+    "err": {
+      "missing": "Still to place: {names}.",
+      "chinBelowGroin": "The chin must be above the groin.",
+      "elbowBelowWrist": "Elbow below the wrist: {names}.",
+      "kneeAboveGroin": "Knee above the groin: {names}."
+    },
+    "no_project": "Open a project first.",
+    "no_configs": "No character config with \"skinned\" in tools/characters/.",
+    "not_skinned": "This config has no \"skinned\" section (or is invalid).",
+    "open_from_tree": "Character auto-rig…"
   }
 }

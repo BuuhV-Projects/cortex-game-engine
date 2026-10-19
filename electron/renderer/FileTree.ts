@@ -1,6 +1,7 @@
 import { customPrompt } from './customPrompt'
 import { t } from './i18n'
 import type { FileEntry } from './types'
+import { isCharacterConfigPath } from './characterRig'
 
 const STORAGE_KEY = 'fileTree_projectDir'
 
@@ -538,6 +539,13 @@ export class FileTree {
     if (entry.isDir) {
       items.push({ label: 'Novo arquivo aqui', action: () => void this.createFileIn(entry.path) })
       items.push({ label: 'Nova pasta aqui', action: () => void this.createDirIn(entry.path) })
+    }
+    // Config de personagem do jogo → painel de auto-rig (SPEC-0349).
+    if (!entry.isDir && isCharacterConfigPath(entry.path)) {
+      items.push({
+        label: t('characterRig.open_from_tree'),
+        action: () => document.dispatchEvent(new CustomEvent('character-rig-requested', { detail: { configPath: entry.path } })),
+      })
     }
     items.push({
       label: entry.isDir ? 'Apagar pasta' : 'Apagar arquivo',

@@ -13,6 +13,7 @@ import { DocTabs } from './DocTabs'
 import { applyTheme } from './theme'
 import { initI18n } from './i18n'
 import { showWelcomeModal } from './Welcome'
+import { installCharacterRig } from './CharacterRigPanel'
 
 // Aplica o tema (CSS vars + Monaco) antes de inicializar componentes.
 applyTheme()
@@ -66,6 +67,8 @@ preview.init()
 bottomPanel.init()
 projectManager.init()
 chat.init()
+// Painel de auto-rig de personagem (SPEC-0349): abre por evento (menu Projeto / árvore).
+installCharacterRig()
 
 // ── Resizers (flex) entre os docks ───────────────────────────────────────────
 // `sign`: +1 quando o alvo está à ESQUERDA do handle (arrastar p/ direita alarga);

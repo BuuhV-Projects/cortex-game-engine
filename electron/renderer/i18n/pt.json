@@ -8,7 +8,8 @@
     "project": "Projeto",
     "generate_installer": "Gerar instalador...",
     "game_settings": "Configurações do jogo…",
-    "language": "Idioma"
+    "language": "Idioma",
+    "character_rig": "Auto-rig de personagem…"
   },
   "gameSettings": {
     "title": "Configurações do jogo",
@@ -171,5 +172,69 @@
     "tooltip_task_orchestrator": "Modo Orquestrador: a IA decide pelo pedido o que vai para a Modelagem e o que ela mesma codifica. Clique para Modelagem.",
     "tooltip_task_modeling": "Modo Modelagem: modelos 3D, cenários e efeitos. Não altera código. Clique para Codificar.",
     "tooltip_task_coding": "Modo Codificar: o código do jogo — sistemas, mecânicas, scripts e UI. Clique para Orquestrador."
+  },
+  "characterRig": {
+    "title": "Auto-rig de personagem",
+    "subtitle": "Arraste os marcadores para o corpo, como no Mixamo. Grava tools/characters/<CODE>.markers.json.",
+    "config": "Personagem",
+    "close": "Fechar",
+    "markers": "Marcadores",
+    "group": {
+      "chin": "QUEIXO",
+      "wrists": "PULSOS",
+      "elbows": "COTOVELOS",
+      "knees": "JOELHOS",
+      "groin": "VIRILHA"
+    },
+    "marker": {
+      "chin": "Queixo",
+      "groin": "Virilha",
+      "wristL": "Pulso esquerdo",
+      "wristR": "Pulso direito",
+      "elbowL": "Cotovelo esquerdo",
+      "elbowR": "Cotovelo direito",
+      "kneeL": "Joelho esquerdo",
+      "kneeR": "Joelho direito"
+    },
+    "side_L": "E",
+    "side_R": "D",
+    "hint": "Arraste um círculo para o modelo, ou arraste no modelo para mover. E = lado esquerdo do personagem (à direita da tela).",
+    "symmetry": "Usar simetria",
+    "reset": "Reestimar posições",
+    "save": "Salvar marcadores",
+    "generate": "Gerar rig",
+    "stop": "Parar",
+    "log": "Saída do prepare-character",
+    "view_hint": "Roda: zoom · arrastar o fundo: mover · duplo clique: reenquadrar",
+    "loading": "Carregando {file}…",
+    "load_failed": "Falha ao carregar o GLB: {error}",
+    "no_webgl": "WebGL indisponível: não dá para mostrar o modelo.",
+    "loaded": "Marcadores lidos de {file}.",
+    "loaded_mismatch": "Marcadores lidos de {file}, mas o code/source do arquivo não batem com a config.",
+    "markers_invalid": "Arquivo de marcadores inválido ({error}); posições estimadas.",
+    "estimated": "Posições estimadas pela caixa do modelo. Ajuste e salve.",
+    "fix_errors": "Corrija os marcadores antes de salvar.",
+    "saved": "Salvo em {file}.",
+    "save_failed": "Falha ao salvar: {error}",
+    "running": "Rodando…",
+    "sheet_open": "Clique para abrir a folha no visualizador do sistema",
+    "sheet_missing": "Folha de revisão não encontrada: {file}",
+    "outcome": {
+      "approved": "Aprovado (código {code}).",
+      "rejected": "Reprovado (código {code}). Veja a saída abaixo.",
+      "infra": "Falha de infraestrutura (código {code}).",
+      "review": "Aguardando revisão visual (código {code}): confira a folha.",
+      "unknown": "Terminou com código {code}."
+    },
+    "err": {
+      "missing": "Falta colocar: {names}.",
+      "chinBelowGroin": "O queixo tem de ficar acima da virilha.",
+      "elbowBelowWrist": "Cotovelo abaixo do punho: {names}.",
+      "kneeAboveGroin": "Joelho acima da virilha: {names}."
+    },
+    "no_project": "Abra um projeto primeiro.",
+    "no_configs": "Nenhuma config de personagem com \"skinned\" em tools/characters/.",
+    "not_skinned": "Esta config não tem a seção \"skinned\" (ou não é válida).",
+    "open_from_tree": "Auto-rig de personagem…"
   }
 }
