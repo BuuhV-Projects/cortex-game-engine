@@ -13,10 +13,13 @@ import {
   CHEST_BONE,
   ZERO_OFFSETS,
   applyArmOffsets,
+  applyArmOffsetsToAll,
   armOffsetsFromConfig,
   armOffsetsFromSkin,
   chestAxis,
+  chestUp,
   clampOffset,
+  configClipNames,
   localAfterWorldRotation,
   offsetDelta,
   sameOffsets,
@@ -35,6 +38,7 @@ import {
  * Adendo 4: ajuste dos braços por clipe (`shoulderLift`/`armSpace` da config,
  * o "Character Arm-Space" do Mixamo). A prévia aplica por cima do GLB só a
  * diferença entre o slider e o `armOffsets` gravado no JSON do skin do build.
+ * Adendo 5: `shoulderBack` (ombros pra trás) e "aplicar a todos os clipes".
  */
 
 const SCOPE = 'characterRig'
@@ -57,6 +61,7 @@ const ARM_LABEL: Record<ArmOffsetKey, string> = {
   shoulderLift: 'characterRig.arm.shoulder',
   armSpace: 'characterRig.arm.space',
   elbowSpace: 'characterRig.arm.elbow',
+  shoulderBack: 'characterRig.arm.back',
 }
 
 function toQuat(q: THREE.Quaternion): Quat {
@@ -65,6 +70,11 @@ function toQuat(q: THREE.Quaternion): Quat {
 
 function formatDeg(v: number): string {
   return `${v > 0 ? '+' : ''}${v.toFixed(1)}°`
+}
+
+/** Parâmetros `{lift, space, elbow, back}` das mensagens de estado. */
+function degParams(o: ArmOffsets): Record<string, string> {
+  return { lift: formatDeg(o.shoulderLift), space: formatDeg(o.armSpace), elbow: formatDeg(o.elbowSpace), back: formatDeg(o.shoulderBack) }
 }
 
 /** Tira o BOM do começo do texto. */
@@ -109,6 +119,7 @@ export class RigAnimationPreview {
   private readonly armControls = new Map<ArmOffsetKey, ArmControl>()
   private readonly armStateEl: HTMLElement
   private readonly armSaveBtn: HTMLButtonElement
+  private readonly armAllBtn: HTMLButtonElement
 
   private renderer: THREE.WebGLRenderer | null = null
   private readonly scene = new THREE.Scene()
@@ -196,6 +207,7 @@ export class RigAnimationPreview {
     }
     this.armStateEl = h('div', { class: 'rig-arm__state' })
     this.armSaveBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => void this.saveArm() }, t('characterRig.arm.save')) as HTMLButtonElement
+    this.armAllBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', title: t('characterRig.arm.apply_all_hint'), onClick: () => void this.applyToAll() }, t('characterRig.arm.apply_all')) as HTMLButtonElement
     const armRows = ARM_OFFSET_KEYS.map((key) => {
       const c = this.armControls.get(key)!
       const { min, max } = ARM_OFFSET_LIMITS[key]
@@ -205,7 +217,7 @@ export class RigAnimationPreview {
     const armBar = h('div', { class: 'rig-arm', title: t('characterRig.arm.hint') },
       h('div', { class: 'rig-side__title' }, t('characterRig.arm.title')),
       h('div', { class: 'rig-arm__rows' }, ...armRows),
-      h('div', { class: 'rig-arm__foot' }, this.armStateEl, this.armSaveBtn))
+      h('div', { class: 'rig-arm__foot' }, this.armStateEl, this.armAllBtn, this.armSaveBtn))
 
     this.el = h('div', { class: 'rig-anim' },
       h('aside', { class: 'rig-side' },
@@ -604,6 +616,7 @@ export class RigAnimationPreview {
       c.reset.disabled = !editable || v[key] === 0
     }
     this.armSaveBtn.disabled = ![...this.editedOffsets.keys()].some((n) => this.isUnsaved(n))
+    this.armAllBtn.disabled = !editable || this.savedOffsets.size < 2
     this.armStateEl.classList.remove('warn')
     if (!name) {
       this.armStateEl.textContent = t('characterRig.arm.no_clip')
@@ -615,10 +628,9 @@ export class RigAnimationPreview {
       return
     }
     const gen = this.generatedOf(name)
-    const parts = [t('characterRig.arm.generated', { lift: formatDeg(gen.shoulderLift), space: formatDeg(gen.armSpace), elbow: formatDeg(gen.elbowSpace) })]
+    const parts = [t('characterRig.arm.generated', degParams(gen))]
     if (this.needsRegen(name)) {
-      const d = offsetDelta(v, gen)
-      parts.push(t('characterRig.arm.regen', { lift: formatDeg(d.shoulderLift), space: formatDeg(d.armSpace), elbow: formatDeg(d.elbowSpace) }))
+      parts.push(t('characterRig.arm.regen', degParams(offsetDelta(v, gen))))
       this.armStateEl.classList.add('warn')
     }
     if (this.isUnsaved(name)) parts.push(t('characterRig.arm.unsaved'))
@@ -646,6 +658,40 @@ export class RigAnimationPreview {
       this.renderList()
       this.renderArm()
       this.armStateEl.textContent = `${this.armStateEl.textContent} ${t('characterRig.arm.saved', { file: splitPath(path).name })}`
+      return true
+    } catch (err) {
+      this.armStateEl.textContent = t('characterRig.save_failed', { error: err instanceof Error ? err.message : String(err) })
+      this.armStateEl.classList.add('warn')
+      return false
+    }
+  }
+
+  /**
+   * Copia os 4 valores do clipe atual para todos os clipes de `skinned.clips`
+   * (adendo 5): confirma, relê a config do disco e grava na hora (só se o texto
+   * muda). Edições pendentes de outros clipes são substituídas.
+   */
+  async applyToAll(): Promise<boolean> {
+    const path = this.configPath
+    const name = this.current?.name
+    if (!path || !name || !this.savedOffsets.has(name)) return false
+    const offsets = this.wantedOffsets(name)
+    try {
+      const before = stripBom(await window.electronAPI.readFile(path))
+      const cfg = parseConfigObject(before)
+      const count = configClipNames(cfg).length
+      if (!(await window.electronAPI.confirmDialog(t('characterRig.arm.apply_all_confirm', { name, count, ...degParams(offsets) })))) return false
+      const next = applyArmOffsetsToAll(cfg, offsets)
+      const text = serializeConfig(next)
+      if (text !== before) {
+        await window.electronAPI.writeFile(path, text)
+        debug(SCOPE, 'ajuste dos braços aplicado a todos os clipes', path, { from: name, count, offsets })
+      }
+      this.savedOffsets = armOffsetsFromConfig(next)
+      this.editedOffsets = new Map()
+      this.renderList()
+      this.renderArm()
+      this.armStateEl.textContent = `${this.armStateEl.textContent} ${t('characterRig.arm.applied_all', { count, file: splitPath(path).name })}`
       return true
     } catch (err) {
       this.armStateEl.textContent = t('characterRig.save_failed', { error: err instanceof Error ? err.message : String(err) })
@@ -688,10 +734,12 @@ export class RigAnimationPreview {
     const name = this.current?.name
     if (!b || !name) return
     const d = offsetDelta(this.wantedOffsets(name), this.generatedOf(name))
-    if (!d.shoulderLift && !d.armSpace && !d.elbowSpace) return
-    const axis = chestAxis(this.modelQuat(b.chest, b.model), b.chestRest)
+    if (!d.shoulderLift && !d.armSpace && !d.elbowSpace && !d.shoulderBack) return
+    const chest = this.modelQuat(b.chest, b.model)
+    const axis = chestAxis(chest, b.chestRest)
+    const up = chestUp(chest, b.chestRest)
     for (const side of b.sides) {
-      const r = sideRotations(axis, side.sign, d)
+      const r = sideRotations(axis, up, side.sign, d)
       // clavícula, braço, antebraço: cada um lê o pai já girado (getWorldQuaternion recalcula a cadeia)
       for (const [bone, rot] of [[side.shoulder, r.shoulder], [side.arm, r.arm], [side.foreArm, r.foreArm]] as const) {
         this.armPose.push([bone, bone.quaternion.clone()])
