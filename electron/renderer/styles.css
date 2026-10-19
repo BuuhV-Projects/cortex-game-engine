@@ -2610,24 +2610,30 @@ body.app-preview-fullscreen #preview-container {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
   padding: 8px;
   border: 1px solid var(--od-border-soft);
   border-radius: 6px;
   font-size: 12px;
 }
+/* um controle por linha: rótulo | slider | número | ° | zerar (lado a lado eles transbordavam) */
 .rig-arm__rows {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 6px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .rig-arm__row {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 .rig-arm__lbl {
-  width: 130px;
+  width: 170px;
   flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .rig-arm__range {
   flex: 1;
@@ -2638,6 +2644,8 @@ body.app-preview-fullscreen #preview-container {
 }
 .rig-arm__reset {
   padding: 2px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .rig-arm__foot {
   display: flex;
