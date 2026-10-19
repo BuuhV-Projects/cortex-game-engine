@@ -317,3 +317,32 @@ O JSON do skin de cada build (`staging.clips`/`published.clips` do registro) tra
 | `electron/renderer/characterRigArmSpace.ts` | puro: limites/clamp, leitura da config e do JSON do skin, diferença, gravação na config, quaternions e a rotação dos ossos |
 | `electron/renderer/RigAnimationPreview.ts` | sliders, estado por clipe, aplicação no quadro e gravação |
 | `tests/electron/characterRigArmSpace.test.ts` | testes do módulo puro (abrir ±X, subir a ponta da clavícula, diferença, gravação) |
+
+## Adendo 5 (2026-10-19) - ombros pra trás e "aplicar a todos os clipes"
+
+O jogo (SPEC-0187, adendo 3) passou a aceitar um quarto campo opcional em `skinned.clips[nome]`, também em graus
+(padrão 0): **`shoulderBack`** — leva os ombros pra trás (+) / pra frente (−), abrindo o peito. O JSON do skin grava
+`armOffsets.shoulderBack` com o valor aplicado (ausente = 0, como os outros).
+
+### Matemática (a mesma do `arm_offsets` do `character_skin.py`)
+
+- Eixo = **vertical** do peito no quadro: `u = (W_Spine2 · W_Spine2_repouso⁻¹) · UP` (UP = +Y no GLB/three.js;
+  +Z no Blender). Lado esquerdo (`Left*`, +X) gira +θ em volta de `u`; o direito, −θ. Com o personagem de frente
+  pra +Z, +θ leva a ponta da clavícula esquerda (e a direita) para −Z (trás).
+- Na clavícula a rotação de mundo passa a ser `R_clav = R(a, ±lift) · R(u, ±back)` (nessa ordem); braço e
+  antebraço continuam como no adendo 4 (`R(a, ±space)` e `R(a, ±elbow)`) e herdam a clavícula pela hierarquia.
+
+### Comportamento
+
+- Quarto controle no bloco de ajuste, numa linha própria: **Ombros pra trás**, −20° a +30°, passo 0,5°, com número
+  e **zerar**. Gravado/omitido, estado "não gerado" e diferença na prévia iguais aos outros três.
+- **Aplicar a todos os clipes**: botão no rodapé do bloco. Pede confirmação (`confirmDialog`, dizendo quantos
+  clipes de `skinned.clips` recebem os valores), copia os 4 valores do clipe atual para **todos** os clipes de
+  `skinned.clips` e grava na hora: relê a config do disco, mesmo formato do Salvar (`JSON.stringify(cfg, null, 1) +
+  '\n'`, ordem preservada, 0 omitido, só grava se o texto muda). Edições pendentes de outros clipes são
+  substituídas pelos valores aplicados. Os selos "ajuste não gerado" da lista são refeitos.
+
+### Código
+
+`characterRigArmSpace.ts` ganha `shoulderBack`, `MODEL_UP`, `chestUp` e `applyArmOffsetsToAll`; `sideRotations`
+passa a receber os dois eixos. Testes em `tests/electron/characterRigArmSpace.test.ts`.
