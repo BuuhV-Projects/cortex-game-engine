@@ -64,6 +64,8 @@ interface ConfigEntry {
   fileName: string
   path: string
   config: CharacterConfig
+  /** O `.markers.json` existe (pela listagem): evita ler arquivo ausente (ENOENT no log do main). */
+  hasMarkers: boolean
 }
 
 /** Liga o evento `character-rig-requested` (menu Projeto / botão direito na árvore). */
@@ -103,12 +105,13 @@ async function listCharacterConfigs(projectDir: string): Promise<ConfigEntry[]> 
   } catch {
     return []
   }
+  const names = new Set(files.map((f) => f.name))
   const out: ConfigEntry[] = []
   for (const f of files) {
     if (f.isDir || !isCharacterConfigName(f.name)) continue
     try {
       const config = parseCharacterConfig(await window.electronAPI.readFile(f.path))
-      if (config.skinned) out.push({ fileName: f.name, path: f.path, config })
+      if (config.skinned) out.push({ fileName: f.name, path: f.path, config, hasMarkers: names.has(markersPathFor(f.name)) })
     } catch (err) {
       debug(SCOPE, 'config ignorada', f.name, err)
     }
@@ -392,10 +395,12 @@ class CharacterRigPanel {
     const { config } = this.entry
     const path = markersPathFor(this.entry.path)
     let text: string | null = null
-    try {
-      text = await window.electronAPI.readFile(path)
-    } catch {
-      /* sem arquivo de marcadores ainda: estima */
+    if (this.entry.hasMarkers) {
+      try {
+        text = await window.electronAPI.readFile(path)
+      } catch {
+        /* apagado depois da listagem: estima */
+      }
     }
     if (text !== null) {
       try {
@@ -651,6 +656,7 @@ class CharacterRigPanel {
       this.setStatus(t('characterRig.save_failed', { error: String(err) }), true)
       return false
     }
+    this.entry.hasMarkers = true
     debug(SCOPE, 'marcadores salvos', path, markers)
     this.setStatus(t('characterRig.saved', { file: this.fileName(path) }))
     return true

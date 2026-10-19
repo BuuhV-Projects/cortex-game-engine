@@ -52,7 +52,7 @@ padrão 0), `work` (pasta de trabalho, para achar a folha de revisão), `skinned
 | `kneeL`, `kneeR` | KNEES / JOELHOS | laranja `#fb923c` |
 | `groin` | GROIN / VIRILHA | rosa `#f472b6` |
 
-- Coluna à esquerda com um círculo por marcador (pares mostram `R` e `L`). Arrasta-se do círculo para o
+- Coluna à esquerda com um círculo por marcador (pares mostram `R` e `L`; em pt, `D` e `E`). Arrasta-se do círculo para o
   modelo; arrastar um marcador já colocado o reposiciona.
 - **Ponto gravado** = onde o raio da câmera acerta a malha (o primeiro triângulo visível). Se o raio não
   acerta, o ponto fica no plano z = 0 do espaço exibido (centro do modelo). O ponto é convertido de volta
@@ -62,7 +62,8 @@ padrão 0), `work` (pasta de trabalho, para achar a folha de revisão), `skinned
   o lado que se moveu por último manda.
 - Linhas de ajuda: punho–cotovelo de cada lado, e quadril estimado–joelho (quadril estimado = `(0,78·joelho.x,
   virilha.y)`, a mesma fração da SPEC-0187 do jogo).
-- Posições iniciais: lidas de `tools/characters/<CODE>.markers.json` se existir (aviso se `source` ou `code`
+- Posições iniciais: lidas de `tools/characters/<CODE>.markers.json` se existir (pela listagem da pasta, sem
+  tentar ler arquivo ausente) (aviso se `source` ou `code`
   não baterem com a config). Senão estimadas pela caixa do modelo exibido, em frações da altura `H` e da
   largura `W` (pose em T quando `W > 0,8·H`, senão pose em A):
 
@@ -120,6 +121,15 @@ processo por vez (separado do terminal embutido); **Parar** (`characterRig:stop`
 | `tests/electron/characterRig.test.ts` | testes do módulo puro |
 
 Logs com `debug('characterRig', …)`.
+
+## Verificação (2026-10-19)
+
+Studio em dev com perfil temporário, projeto temporário com cópia do `LUC-01.json` e um
+`prepare-character.sh` falso (sai com 3): o rosto do Lucas aparece de frente com `Ry(−90°)`; arrastar punho e
+cotovelo espelha o outro lado; o queixo vindo da coluna fica em x = 0; zoom no cursor; joelho acima da virilha
+bloqueia o salvar; o arquivo gravado volta às mesmas posições ao reabrir; Gerar rig roda pelo Git Bash
+(`MINGW64`), mostra a saída sem ANSI e a folha no código 3; botão direito no `LUC-01.json` abre o painel. O
+pipeline real (`skin` da SPEC-0187) não foi rodado daqui.
 
 ## Consequências
 
