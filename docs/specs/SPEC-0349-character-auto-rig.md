@@ -391,4 +391,13 @@ walk.fbx`; arquivo sem subpasta mostra só o arquivo.
 `rebaseRigFile`, `listFbxRecursive` (com o `readDir` injetado) e `groupRows`; `buildRows` recebe caminhos
 relativos e o rebase do registro; `filterRows` busca também no pacote. Testes em
 `tests/electron/characterRigSelection.test.ts` (as duas formas de config, `idle.fbx` em dois pacotes, barras
-do Windows).
+do Windows). `fileLabel` (rótulo da aba Animações) e `camelCase` (em `characterRigRegistry.ts`) completam.
+
+### Verificação (2026-10-19)
+
+Studio em dev com perfil temporário, sem abrir projeto (o Play não sobe), numa cópia do DDD 61 com a config nova
+(`skinned.fbx` = raiz) e o `rigs.json` antigo (`animations` = `basic-locomotion`, `file` sem subpasta): a aba
+Pasta mostra `basic-locomotion` (12 de 12, todos "no rig" pelo rebase) e `pistol-locomotion` (0 de 20); a busca
+"walk" acha linhas dos dois pacotes; marcar `pistol walk.fbx` e salvar acrescenta só
+`"pistolWalk": { "file": "pistol-locomotion/pistol walk.fbx", "loop": false }` no fim de `skinned.clips`; a aba
+Animações lista o pendente como `pistol-locomotion · pistol walk.fbx`. Gerar rig não foi rodado.
