@@ -53,7 +53,11 @@ export interface RigPreviewInput {
   pending: Array<{ name: string; file: string }>
 }
 
-const ARM_LABEL: Record<ArmOffsetKey, string> = { shoulderLift: 'characterRig.arm.shoulder', armSpace: 'characterRig.arm.space' }
+const ARM_LABEL: Record<ArmOffsetKey, string> = {
+  shoulderLift: 'characterRig.arm.shoulder',
+  armSpace: 'characterRig.arm.space',
+  elbowSpace: 'characterRig.arm.elbow',
+}
 
 function toQuat(q: THREE.Quaternion): Quat {
   return [q.x, q.y, q.z, q.w]
@@ -79,7 +83,7 @@ interface ArmBones {
   chest: THREE.Object3D
   /** Rotação do peito no repouso, no espaço do modelo. */
   chestRest: Quat
-  sides: Array<{ sign: number; shoulder: THREE.Object3D; arm: THREE.Object3D }>
+  sides: Array<{ sign: number; shoulder: THREE.Object3D; arm: THREE.Object3D; foreArm: THREE.Object3D }>
 }
 
 function base64ToArrayBuffer(b64: string): ArrayBuffer {
@@ -611,10 +615,10 @@ export class RigAnimationPreview {
       return
     }
     const gen = this.generatedOf(name)
-    const parts = [t('characterRig.arm.generated', { lift: formatDeg(gen.shoulderLift), space: formatDeg(gen.armSpace) })]
+    const parts = [t('characterRig.arm.generated', { lift: formatDeg(gen.shoulderLift), space: formatDeg(gen.armSpace), elbow: formatDeg(gen.elbowSpace) })]
     if (this.needsRegen(name)) {
       const d = offsetDelta(v, gen)
-      parts.push(t('characterRig.arm.regen', { lift: formatDeg(d.shoulderLift), space: formatDeg(d.armSpace) }))
+      parts.push(t('characterRig.arm.regen', { lift: formatDeg(d.shoulderLift), space: formatDeg(d.armSpace), elbow: formatDeg(d.elbowSpace) }))
       this.armStateEl.classList.add('warn')
     }
     if (this.isUnsaved(name)) parts.push(t('characterRig.arm.unsaved'))
@@ -658,8 +662,8 @@ export class RigAnimationPreview {
 
   private findArmBones(model: THREE.Object3D): ArmBones | null {
     const chest = model.getObjectByName(CHEST_BONE)
-    const sides = ARM_SIDES.map((s) => ({ sign: s.sign, shoulder: model.getObjectByName(s.shoulder), arm: model.getObjectByName(s.arm) }))
-    if (!chest || sides.some((s) => !s.shoulder?.parent || !s.arm?.parent)) {
+    const sides = ARM_SIDES.map((s) => ({ sign: s.sign, shoulder: model.getObjectByName(s.shoulder), arm: model.getObjectByName(s.arm), foreArm: model.getObjectByName(s.foreArm) }))
+    if (!chest || sides.some((s) => !s.shoulder?.parent || !s.arm?.parent || !s.foreArm?.parent)) {
       debug(SCOPE, 'rig sem os ossos do ajuste dos braços', { chest: !!chest })
       return null
     }
@@ -668,7 +672,7 @@ export class RigAnimationPreview {
       model,
       chest,
       chestRest: this.modelQuat(chest, model),
-      sides: sides.map((s) => ({ sign: s.sign, shoulder: s.shoulder!, arm: s.arm! })),
+      sides: sides.map((s) => ({ sign: s.sign, shoulder: s.shoulder!, arm: s.arm!, foreArm: s.foreArm! })),
     }
   }
 
@@ -684,12 +688,12 @@ export class RigAnimationPreview {
     const name = this.current?.name
     if (!b || !name) return
     const d = offsetDelta(this.wantedOffsets(name), this.generatedOf(name))
-    if (!d.shoulderLift && !d.armSpace) return
+    if (!d.shoulderLift && !d.armSpace && !d.elbowSpace) return
     const axis = chestAxis(this.modelQuat(b.chest, b.model), b.chestRest)
     for (const side of b.sides) {
       const r = sideRotations(axis, side.sign, d)
-      // clavícula primeiro; o braço lê o pai já girado (getWorldQuaternion recalcula a cadeia)
-      for (const [bone, rot] of [[side.shoulder, r.shoulder], [side.arm, r.arm]] as const) {
+      // clavícula, braço, antebraço: cada um lê o pai já girado (getWorldQuaternion recalcula a cadeia)
+      for (const [bone, rot] of [[side.shoulder, r.shoulder], [side.arm, r.arm], [side.foreArm, r.foreArm]] as const) {
         this.armPose.push([bone, bone.quaternion.clone()])
         const local = localAfterWorldRotation(this.modelQuat(bone.parent!, b.model), toQuat(bone.quaternion), rot)
         bone.quaternion.set(local[0], local[1], local[2], local[3])

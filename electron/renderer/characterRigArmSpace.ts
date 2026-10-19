@@ -4,7 +4,7 @@
  *
  * Contrato do jogo (SPEC-0187, adendo 3; `arm_offsets` em
  * `scripts/blender/character_skin.py`): cada entrada de `skinned.clips` da config
- * aceita `shoulderLift` e `armSpace` em graus (padrão 0); o JSON do skin de cada
+ * aceita `shoulderLift`, `armSpace` e `elbowSpace` em graus (padrão 0); o JSON do skin de cada
  * build guarda em `clips[nome].armOffsets` o ajuste aplicado naquela geração.
  * A prévia aplica só a diferença entre o valor do slider e o gerado.
  *
@@ -14,27 +14,29 @@
 
 import type { JsonObject } from './characterRigSelection.js'
 
-export type ArmOffsetKey = 'shoulderLift' | 'armSpace'
+export type ArmOffsetKey = 'shoulderLift' | 'armSpace' | 'elbowSpace'
 
 export interface ArmOffsets {
   shoulderLift: number
   armSpace: number
+  elbowSpace: number
 }
 
-export const ARM_OFFSET_KEYS: readonly ArmOffsetKey[] = ['shoulderLift', 'armSpace']
+export const ARM_OFFSET_KEYS: readonly ArmOffsetKey[] = ['shoulderLift', 'armSpace', 'elbowSpace']
 
 /** Intervalo e passo de cada slider, em graus. */
 export const ARM_OFFSET_LIMITS: Record<ArmOffsetKey, { min: number; max: number; step: number }> = {
   shoulderLift: { min: -20, max: 20, step: 0.5 },
   armSpace: { min: -20, max: 30, step: 0.5 },
+  elbowSpace: { min: -30, max: 30, step: 0.5 },
 }
 
-export const ZERO_OFFSETS: Readonly<ArmOffsets> = Object.freeze({ shoulderLift: 0, armSpace: 0 })
+export const ZERO_OFFSETS: Readonly<ArmOffsets> = Object.freeze({ shoulderLift: 0, armSpace: 0, elbowSpace: 0 })
 
 /** Ossos girados e sinal de cada lado (`Left*` = +X do modelo gira +θ). */
 export const ARM_SIDES = [
-  { sign: 1, shoulder: 'LeftShoulder', arm: 'LeftArm' },
-  { sign: -1, shoulder: 'RightShoulder', arm: 'RightArm' },
+  { sign: 1, shoulder: 'LeftShoulder', arm: 'LeftArm', foreArm: 'LeftForeArm' },
+  { sign: -1, shoulder: 'RightShoulder', arm: 'RightArm', foreArm: 'RightForeArm' },
 ] as const
 
 /** Osso do peito que dá a frente no quadro. */
@@ -58,7 +60,7 @@ export function clampOffset(key: ArmOffsetKey, value: number): number {
 function readOffsets(src: unknown): ArmOffsets {
   const o = isObject(src) ? src : {}
   const num = (k: ArmOffsetKey): number => (typeof o[k] === 'number' && Number.isFinite(o[k]) ? (o[k] as number) : 0)
-  return { shoulderLift: num('shoulderLift'), armSpace: num('armSpace') }
+  return { shoulderLift: num('shoulderLift'), armSpace: num('armSpace'), elbowSpace: num('elbowSpace') }
 }
 
 /** Ajuste de cada clipe de `skinned.clips` da config (ausente = 0). */
@@ -81,12 +83,12 @@ export function armOffsetsFromSkin(skin: unknown): Map<string, ArmOffsets> {
 }
 
 export function sameOffsets(a: ArmOffsets, b: ArmOffsets): boolean {
-  return a.shoulderLift === b.shoulderLift && a.armSpace === b.armSpace
+  return ARM_OFFSET_KEYS.every((k) => a[k] === b[k])
 }
 
 /** O que a prévia aplica por cima do GLB: valor desejado − valor já gerado. */
 export function offsetDelta(wanted: ArmOffsets, generated: ArmOffsets): ArmOffsets {
-  return { shoulderLift: wanted.shoulderLift - generated.shoulderLift, armSpace: wanted.armSpace - generated.armSpace }
+  return { shoulderLift: wanted.shoulderLift - generated.shoulderLift, armSpace: wanted.armSpace - generated.armSpace, elbowSpace: wanted.elbowSpace - generated.elbowSpace }
 }
 
 /**
@@ -164,11 +166,13 @@ export function localAfterWorldRotation(parent: Readonly<Quat>, local: Readonly<
 
 /**
  * Rotações de mundo de um lado (`sign` ±1): `shoulder` = R(a, ±lift) aplicada na
- * clavícula; `arm` = R(a, ±space) aplicada no braço depois (ele já herdou o lift).
+ * clavícula; `arm` = R(a, ±space) aplicada no braço depois (ele já herdou o lift);
+ * `foreArm` = R(a, ±elbow) aplicada no antebraço por último (pivô no cotovelo).
  */
-export function sideRotations(axis: Readonly<Vec3>, sign: number, offsets: ArmOffsets): { shoulder: Quat; arm: Quat } {
+export function sideRotations(axis: Readonly<Vec3>, sign: number, offsets: ArmOffsets): { shoulder: Quat; arm: Quat; foreArm: Quat } {
   return {
     shoulder: quatFromAxisAngle(axis, sign * offsets.shoulderLift),
     arm: quatFromAxisAngle(axis, sign * offsets.armSpace),
+    foreArm: quatFromAxisAngle(axis, sign * offsets.elbowSpace),
   }
 }
