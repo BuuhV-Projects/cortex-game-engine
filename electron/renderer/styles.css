@@ -2605,6 +2605,58 @@ body.app-preview-fullscreen #preview-container {
   background: var(--od-border-soft);
 }
 
+/* Ajuste dos braços por clipe (SPEC-0349, adendo 4) */
+.rig-arm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--od-border-soft);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.rig-arm__rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 6px 16px;
+}
+.rig-arm__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rig-arm__lbl {
+  width: 130px;
+  flex-shrink: 0;
+}
+.rig-arm__range {
+  flex: 1;
+  min-width: 80px;
+}
+.rig-arm__num {
+  width: 64px;
+}
+.rig-arm__reset {
+  padding: 2px 8px;
+}
+.rig-arm__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rig-arm__state {
+  flex: 1;
+  color: var(--od-fg-muted);
+}
+.rig-arm__state.warn {
+  color: var(--od-yellow, #f5c451);
+}
+.rig-clip__adj {
+  grid-column: 1 / -1;
+  color: var(--od-yellow, #f5c451);
+  font-size: 11px;
+}
+
 /* Aba Pasta: seleção dos FBX (SPEC-0349, adendo 1) */
 .rig-fbx {
   display: flex;

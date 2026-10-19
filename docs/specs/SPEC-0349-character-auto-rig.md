@@ -283,8 +283,9 @@ O JSON do skin de cada build (`staging.clips`/`published.clips` do registro) tra
 - Clavícula: `W' = R(a, ±lift) · W`. Braço: `W' = R(a, ±space) · R(a, ±lift) · W`; os filhos seguem.
 - Na prévia, depois do `mixer.update` de cada quadro: rotação de mundo R no osso b → `b.quaternion = P⁻¹ · R · P ·
   b.quaternion` (P = rotação do pai no espaço do modelo); primeiro a clavícula (R(a, ±lift)), depois o braço, que
-  já herdou o lift (R(a, ±space)). Com a prévia pausada o mixer roda `update(0)`, para reamostrar a pose antes de
-  aplicar o ajuste (senão ele somaria a cada quadro).
+  já herdou o lift (R(a, ±space)). A pose do mixer nesses ossos é guardada antes do ajuste e restaurada antes de
+  cada `mixer.update` (e do scrub): o `PropertyMixer` do three só reescreve o osso quando o valor do clipe muda, então
+  sem isso o ajuste somaria a cada quadro com a prévia pausada ou num quadro repetido.
 
 ### Comportamento (aba Animações)
 
