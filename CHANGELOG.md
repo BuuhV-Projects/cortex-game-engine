@@ -1,3 +1,23 @@
+# [0.79.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.78.0...v0.79.0) (2026-10-19)
+
+
+### Bug Fixes
+
+* **studio:** auto-rig não lê .markers.json ausente (SPEC-0349) ([c1f3098](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c1f3098dd4f32ee1a75d6d17e4086ac5cd72ac90))
+* **studio:** um controle por linha no ajuste dos braços do auto-rig (SPEC-0349) ([040890d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/040890d3c7dbfc4b7cec310d395708df5bcc6a53))
+
+
+### Features
+
+* **studio:** abertura dos antebraços (elbowSpace) no ajuste dos braços (SPEC-0349) ([9c1966b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9c1966b4cc3dbc6d3ee0a7ae976ffaaca0ec7bbc))
+* **studio:** ajuste dos braços por animação no auto-rig (SPEC-0349) ([b6f628c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b6f628c75b88064ce8f51bbfefa4f2961d1da04e))
+* **studio:** aprovar, recusar e desfazer a publicação do rig no auto-rig (SPEC-0349) ([0b91c9a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0b91c9ab5ba49b779221e80d882054db0bef130a))
+* **studio:** caminhos da config relativos ao projeto no auto-rig (SPEC-0349) ([04f6910](https://github.com/BuuhV-Projects/cortex-game-engine/commit/04f691043faf065f7988e86f446992c911670114))
+* **studio:** marcador de ombros no auto-rig (SPEC-0349) ([fd86617](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fd8661782d8db151c15058d5ed4701ad58e638a8))
+* **studio:** ombros pra trás e aplicar a todos os clipes no ajuste dos braços (SPEC-0349) ([0cf70ee](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0cf70ee6007780036c2a1225e0cceea04a35769c))
+* **studio:** painel character-auto-rig (SPEC-0349) ([1115f59](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1115f59c1807348c70423c5e989eb04c56b46184))
+* **studio:** prévia das animações do rig e seleção dos FBX no auto-rig (SPEC-0349) ([e9ef48b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e9ef48b102eac1a95dd15ab17d4cd673c18cb800))
+
 # [0.78.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.77.0...v0.78.0) (2026-10-10)
 
 
