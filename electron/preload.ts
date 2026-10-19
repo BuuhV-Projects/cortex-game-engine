@@ -42,6 +42,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('export:progress', handler)
   },
 
+  /**
+   * Auto-rig de personagem (SPEC-0349): roda `bash tools/prepare-character.sh
+   * --config <configRel>` no projeto; resolve com o código de saída do script.
+   */
+  characterRigRun: (projectDir: string, configRel: string, action: 'generate' | 'approve' | 'revert' = 'generate') =>
+    ipcRenderer.invoke('characterRig:run', projectDir, configRel, action) as Promise<{ code: number }>,
+
+  /** Mata o auto-rig em andamento. */
+  characterRigStop: () => ipcRenderer.invoke('characterRig:stop') as Promise<void>,
+
+  /** Saída (stdout+stderr) do auto-rig. Retorna a função que remove o listener. */
+  onCharacterRigOutput: (callback: (text: string) => void): (() => void) => {
+    const handler = (_event: unknown, text: string): void => callback(text)
+    ipcRenderer.on('characterRig:output', handler)
+    return () => ipcRenderer.removeListener('characterRig:output', handler)
+  },
+
   /** Abre uma pasta no explorador do SO (ex.: dist-native após o export). */
   openPath: (target: string) => ipcRenderer.invoke('shell:openPath', target),
 
