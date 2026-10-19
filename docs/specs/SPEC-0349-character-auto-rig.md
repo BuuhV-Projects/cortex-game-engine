@@ -260,3 +260,60 @@ O pipeline do jogo não pode referenciar nada fora do projeto: em `tools/charact
 - O `.markers.json` grava `source` com o **mesmo texto** da config (relativo, se ela for relativa).
 - O aviso de `source` divergente compara os caminhos **resolvidos** (ignorando `\` × `/`, `./`, barras repetidas e
   caixa): `assets/x.glb` no arquivo e `D:/jogo/assets/x.glb` na config são o mesmo.
+
+## Adendo 4 (2026-10-19) - ajuste dos braços por animação (Character Arm-Space)
+
+O jogo (SPEC-0187, adendo 3) aceita em cada entrada de `skinned.clips` da config três campos opcionais, em
+**graus** (padrão 0), aplicados pelo retarget e gravados no GLB (o jogo não faz nada em tempo de execução), como o
+"Character Arm-Space" do Mixamo:
+
+- `shoulderLift`: sobe (+) / desce (−) os ombros — gira a clavícula (`LeftShoulder`/`RightShoulder`) e, pela
+  hierarquia, o braço inteiro.
+- `armSpace`: abre (+) / fecha (−) os braços — gira o braço (`LeftArm`/`RightArm`) e, pela hierarquia, antebraço
+  e mão.
+- `elbowSpace` (acréscimo do mesmo dia, pedido depois do teste com ombro +20°, em que o cotovelo abria e a mão
+  voltava ao quadril): abre (+, mão para fora) / fecha (−) os antebraços — gira antebraço (`LeftForeArm`/
+  `RightForeArm`) e mão em volta do mesmo eixo, com pivô no cotovelo.
+
+O JSON do skin de cada build (`staging.clips`/`published.clips` do registro) traz em `clips[nome].armOffsets =
+{ shoulderLift, armSpace, elbowSpace }` o ajuste que **foi aplicado** naquela geração; ausente = 0 (campo a campo).
+
+### Matemática (a mesma do `arm_offsets` do `character_skin.py`)
+
+- Eixo = frente do peito no quadro: `a = (W_Spine2 · W_Spine2_repouso⁻¹) · F`, W = rotação do osso no espaço do
+  modelo, F = frente do personagem no repouso (+Z no GLB/three.js; −Y no Blender).
+- Lado esquerdo (`Left*`, +X do modelo) gira +θ em volta de `a`; o direito, −θ.
+- Clavícula: `W' = R(a, ±lift) · W`. Braço: `W' = R(a, ±space) · R(a, ±lift) · W`. Antebraço e mão:
+  `W' = R(a, ±elbow) · R(a, ±space) · R(a, ±lift) · W`. Os filhos seguem.
+- Na prévia, depois do `mixer.update` de cada quadro: rotação de mundo R no osso b → `b.quaternion = P⁻¹ · R · P ·
+  b.quaternion` (P = rotação do pai no espaço do modelo); primeiro a clavícula (R(a, ±lift)), depois o braço, que
+  já herdou o lift (R(a, ±space)), e por último o antebraço, que já herdou os dois (R(a, ±elbow)). A pose do mixer nesses ossos é guardada antes do ajuste e restaurada antes de
+  cada `mixer.update` (e do scrub): o `PropertyMixer` do three só reescreve o osso quando o valor do clipe muda, então
+  sem isso o ajuste somaria a cada quadro com a prévia pausada ou num quadro repetido.
+
+### Comportamento (aba Animações)
+
+- Abaixo da barra de reprodução, para o clipe tocando: **Altura dos ombros** (−20° a +20°), **Abertura dos
+  braços** (−20° a +30°) e **Abertura dos antebraços** (−30° a +30°), passo 0,5°, com o valor numérico editável (mesmo intervalo, arredondado ao passo) e um
+  botão **zerar** cada. Sem clipe tocando, ou com um clipe que não está em `skinned.clips` da config, os controles
+  ficam desabilitados com o aviso.
+- Valores iniciais: os da config no disco (`skinned.clips[nome]`), relida ao abrir o personagem e depois de
+  Gerar/Publicar/Desfazer; um ajuste ainda não salvo continua valendo depois da releitura.
+- **Prévia = GLB + diferença.** O GLB do build mostrado já tem o `armOffsets` daquela geração; a prévia aplica
+  só `valor do slider − armOffsets` (do JSON do skin desse build). Assim ela mostra como o clipe vai ficar na
+  próxima geração, sem somar o ajuste duas vezes. JSON do skin ilegível ou sem o campo → 0 (é o que o jogo
+  grava quando não houve ajuste; um JSON anterior ao adendo 3 do jogo também não tem o campo).
+- Estados mostrados por clipe: valor diferente do gerado → "alterado: gere o rig de novo" (na linha do clipe e
+  ao lado dos sliders); diferente da config no disco → "não salvo".
+- **Salvar ajustes** relê a config do disco, grava `shoulderLift`/`armSpace`/`elbowSpace` de cada clipe alterado (campo
+  existente fica na posição; novo vai no fim da entrada; valor 0 remove o campo), mantém o resto e a ordem das
+  chaves, `JSON.stringify(cfg, null, 1) + '\n'`, e só grava se o texto muda. **Gerar rig** salva os ajustes
+  antes (depois dos marcadores e da seleção dos FBX).
+
+### Código
+
+| arquivo | papel |
+|---|---|
+| `electron/renderer/characterRigArmSpace.ts` | puro: limites/clamp, leitura da config e do JSON do skin, diferença, gravação na config, quaternions e a rotação dos ossos |
+| `electron/renderer/RigAnimationPreview.ts` | sliders, estado por clipe, aplicação no quadro e gravação |
+| `tests/electron/characterRigArmSpace.test.ts` | testes do módulo puro (abrir ±X, subir a ponta da clavícula, diferença, gravação) |

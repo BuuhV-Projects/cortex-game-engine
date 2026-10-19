@@ -417,6 +417,7 @@ class CharacterRigPanel {
       this.setTab(this.wantedTab === 'animations' && !enabled ? 'markers' : this.wantedTab)
       this.wantedTab = null
     }
+    await this.preview.reloadConfig(this.entry.path)
     this.selection.setRig(rig)
   }
 
@@ -868,6 +869,10 @@ class CharacterRigPanel {
       return
     }
     if (!(await this.selection.save())) return
+    if (!(await this.preview.saveArm())) {
+      this.setTab('animations') // o erro aparece junto dos sliders
+      return
+    }
     await this.run('generate')
   }
 

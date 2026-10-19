@@ -264,6 +264,23 @@
       "pending": "não gerado",
       "pending_hint": "Selecionado na config, mas fora do rig: gere o rig de novo para incluir."
     },
+    "arm": {
+      "title": "Ajuste dos braços (deste clipe)",
+      "shoulder": "Altura dos ombros",
+      "space": "Abertura dos braços",
+      "elbow": "Abertura dos antebraços",
+      "range": "De {min}° a {max}°, passo 0,5°",
+      "reset": "zerar",
+      "save": "Salvar ajustes",
+      "hint": "Como o Character Arm-Space do Mixamo: gravado em skinned.clips da config (shoulderLift/armSpace/elbowSpace) e aplicado no GLB na próxima geração. A prévia mostra o GLB gerado com a diferença por cima.",
+      "no_clip": "Toque um clipe para ajustar os braços.",
+      "not_in_config": "O clipe {name} não está em skinned.clips da config: não dá para ajustar.",
+      "generated": "No GLB: ombros {lift}, braços {space}, antebraços {elbow}.",
+      "regen": "Alterado: gere o rig de novo (a prévia mostra o GLB + a diferença: ombros {lift}, braços {space}, antebraços {elbow}).",
+      "regen_short": "ajuste não gerado",
+      "unsaved": "Não salvo.",
+      "saved": "Gravado em {file}."
+    },
     "fbx": {
       "search": "Buscar por arquivo ou clipe…",
       "select_all": "Marcar todos",
