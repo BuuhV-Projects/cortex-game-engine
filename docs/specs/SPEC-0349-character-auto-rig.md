@@ -137,3 +137,53 @@ pipeline real (`skin` da SPEC-0187) não foi rodado daqui.
   (SPEC-0187), e o painel não depende de nada específico do DDD 61 além do formato da config.
 - A profundidade gravada é a do raio; o jogo usa só x e altura (SPEC-0187 §1).
 - Gerar rig depende de `bash` + o script existirem no projeto; sem eles o painel mostra o erro do processo.
+
+## Adendo 1 (2026-10-19) - prévia das animações do rig gerado
+
+Pedido do usuário: os FBX ficam em `animations/characters/<pacote>/` do projeto, e o Studio deixa pré-visualizar
+as animações depois de gerar o rig. Só personagem que já tem rig gerado pode pré-visualizar: quem diz isso é o
+**registro de rigs** escrito pelo pipeline do jogo.
+
+### Registro: `tools/characters/rigs.json` (escrito pelo jogo, só leitura aqui)
+
+```json
+{ "version": 1, "rigs": { "LUC-01": {
+  "config": "tools/characters/LUC-01.json",
+  "animations": "animations/characters/basic-locomotion",
+  "staging":   { "glb": "<abs ou rel>", "clips": "<abs ou rel>", "at": "<ISO 8601>" },
+  "published": { "glb": "<abs ou rel>", "clips": "<abs ou rel>", "at": "<ISO 8601>" },
+  "clips": [ { "name": "walk", "file": "walking.fbx", "loop": true, "duration": 1.0333 } ] } } }
+```
+
+- `skin` aprovada grava `staging`; `--approve` grava `published` (pode faltar). Caminho que não começa por letra
+  de unidade, `/` ou `\` é relativo ao projeto.
+- `clips` = clipes da última geração; o `name` é o nome da animação dentro do GLB.
+- O `rigs.json` não é config de personagem: fica fora da lista do painel e do menu de contexto.
+
+### Comportamento
+
+- O painel ganha duas abas: **Marcadores** (o que já existia) e **Animações**.
+- **Animações** fica desabilitada, com o aviso "Gere o rig deste personagem primeiro", quando o código não está
+  no registro ou o GLB do build escolhido não existe.
+- Build mostrado: o mais recente entre `staging` e `published` (pelo `at`); quando os dois existem, um seletor
+  alterna. A barra mostra qual é (staging/publicado) e a data.
+- Prévia: GLB do registro (`readFileBase64` + `GLTFLoader`), câmera perspectiva com OrbitControls enquadrando o
+  personagem, grade no chão, luz hemisférica + direcional, `AnimationMixer`. Lista de clipes do registro (nome,
+  duração, laço, arquivo FBX); clicar toca. Play/pausa, velocidade 0,25×–2×, barra de tempo arrastável; laço
+  conforme `loop`, com "Forçar laço" opcional. Clipe do registro que não está no GLB aparece como ausente.
+- FBX da pasta `animations` do registro que não estão em `clips[].file` (comparação sem caixa) aparecem
+  acinzentados, com o nome que vão ganhar (camelCase do arquivo, `left turn 90.fbx` → `leftTurn90`) e o aviso
+  "gere o rig de novo para incluir".
+- Depois de **Gerar rig** terminar com 0 ou 3, o painel relê o registro e atualiza a aba.
+- Botão direito num `.json` de `tools/characters/` → **Pré-visualizar animações** (abre direto na aba);
+  desabilitado quando o código não está no registro.
+- Fechar o painel (ou trocar de personagem/build) libera mixer, geometrias, materiais, texturas e o renderer da
+  prévia. O laço de desenho só roda com a aba visível.
+
+### Código
+
+| arquivo | papel |
+|---|---|
+| `electron/renderer/characterRigRegistry.ts` | puro: ler/validar o registro, escolher o build, caminhos relativos/absolutos, FBX novos, nome camelCase |
+| `electron/renderer/RigAnimationPreview.ts` | a vista da aba Animações (three + playbar) |
+| `tests/electron/characterRigRegistry.test.ts` | testes do módulo puro |
