@@ -546,6 +546,10 @@ export class FileTree {
         label: t('characterRig.open_from_tree'),
         action: () => document.dispatchEvent(new CustomEvent('character-rig-requested', { detail: { configPath: entry.path } })),
       })
+      items.push({
+        label: t('characterRig.open_anim_from_tree'),
+        action: () => document.dispatchEvent(new CustomEvent('character-rig-requested', { detail: { configPath: entry.path, tab: 'animations' } })),
+      })
     }
     items.push({
       label: entry.isDir ? 'Apagar pasta' : 'Apagar arquivo',

@@ -244,9 +244,12 @@ export function parseCharacterConfig(text: string): CharacterConfig {
   }
 }
 
-/** Nome de arquivo que pode ser config de personagem (`*.json`, menos `defaults.json` e `*.markers.json`). */
+/** JSON de `tools/characters/` que NÃO são config de personagem (defaults e registro de rigs). */
+const NON_CONFIG_JSON = new Set(['defaults.json', 'rigs.json'])
+
+/** Nome de arquivo que pode ser config de personagem (`*.json`, menos `defaults.json`, `rigs.json` e `*.markers.json`). */
 export function isCharacterConfigName(name: string): boolean {
-  return name.endsWith('.json') && name !== 'defaults.json' && !name.endsWith('.markers.json')
+  return name.endsWith('.json') && !NON_CONFIG_JSON.has(name) && !name.endsWith('.markers.json')
 }
 
 /** `true` se o caminho é uma config dentro de `tools/characters/` (aceita `\` e `/`). */

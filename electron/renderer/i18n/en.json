@@ -235,6 +235,51 @@
     "no_project": "Open a project first.",
     "no_configs": "No character config with \"skinned\" in tools/characters/.",
     "not_skinned": "This config has no \"skinned\" section (or is invalid).",
-    "open_from_tree": "Character auto-rig…"
+    "open_from_tree": "Character auto-rig…",
+    "open_anim_from_tree": "Preview animations…",
+    "tab": {
+      "markers": "Markers",
+      "animations": "Animations",
+      "folder": "Folder"
+    },
+    "anim": {
+      "need_rig": "Generate this character's rig first (not in tools/characters/rigs.json, or the GLB is missing).",
+      "build": "Generated rig",
+      "build_info": "{kind} · {at}",
+      "kind_staging": "staging",
+      "kind_published": "published",
+      "clips": "Clips",
+      "speed": "Speed",
+      "force_loop": "Force loop",
+      "play": "Play",
+      "pause": "Pause",
+      "absent": "missing from GLB",
+      "pending": "not generated",
+      "pending_hint": "Selected in the config but not in the rig: generate the rig again to include it."
+    },
+    "fbx": {
+      "search": "Search file or clip…",
+      "select_all": "Select all",
+      "select_none": "Deselect all",
+      "count": "{n} of {m} selected",
+      "no_dir": "The config has no skinned.fbx (FBX folder).",
+      "dir_failed": "Could not list {dir}: {error}",
+      "config_failed": "Unreadable config: {error}",
+      "no_match": "No FBX matches the search.",
+      "empty": "No .fbx in the folder.",
+      "include": "Include in the rig",
+      "loop": "loop",
+      "play_hint": "Click to play in the Animations tab",
+      "flags_hint": "Flags the game uses on this clip",
+      "state_generated": "in rig",
+      "state_pending": "generate the rig again",
+      "state_unselected": "not selected",
+      "state_leaving": "leaves on next generation",
+      "state_missing": "FBX missing from folder",
+      "confirm_remove": "The game uses {names}: there are flags beyond file/loop (rootMotion, jump…). Remove from the selection anyway?",
+      "unsaved": "Selection not saved.",
+      "saved": "Selection written to {file}.",
+      "save": "Save selection"
+    }
   }
 }

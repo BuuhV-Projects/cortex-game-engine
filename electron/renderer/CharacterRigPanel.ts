@@ -36,6 +36,19 @@ import {
   type ValidationError,
   type Vec3,
 } from './characterRig'
+import {
+  availableBuilds,
+  parseRigRegistry,
+  registryPath,
+  resolveProjectPath,
+  splitPath,
+  RIG_REGISTRY_FILE,
+  type RigBuildKind,
+  type RigEntry,
+  type RigRegistry,
+} from './characterRigRegistry'
+import { RigAnimationPreview } from './RigAnimationPreview'
+import { RigFbxSelection } from './RigFbxSelection'
 
 /**
  * Painel **character-auto-rig** (SPEC-0349): marca queixo, pulsos, cotovelos,
@@ -46,6 +59,9 @@ import {
  * `transform.rotateZDeg` em torno de Y e centralizado em x = 0 (o "espaço
  * exibido" do módulo puro `characterRig.ts`). Os marcadores são um overlay SVG
  * projetado pela câmera; a cena só é redesenhada quando algo muda (sem loop).
+ *
+ * Abas (adendo 1): **Marcadores**, **Animações** (prévia do GLB do registro de
+ * rigs, `RigAnimationPreview`) e **Pasta** (seleção dos FBX, `RigFbxSelection`).
  */
 
 const SCOPE = 'characterRig'
@@ -60,6 +76,9 @@ const MARKER_RADIUS = 7
 /** Teto do log em caracteres (o script do jogo é verboso em `--from`). */
 const LOG_MAX_CHARS = 200_000
 
+export type RigTab = 'markers' | 'animations' | 'folder'
+const TABS: RigTab[] = ['markers', 'animations', 'folder']
+
 interface ConfigEntry {
   fileName: string
   path: string
@@ -71,12 +90,12 @@ interface ConfigEntry {
 /** Liga o evento `character-rig-requested` (menu Projeto / botão direito na árvore). */
 export function installCharacterRig(): void {
   document.addEventListener('character-rig-requested', (e) => {
-    const detail = (e as CustomEvent<{ configPath?: string } | undefined>).detail
-    void openCharacterRig(detail?.configPath)
+    const detail = (e as CustomEvent<{ configPath?: string; tab?: RigTab } | undefined>).detail
+    void openCharacterRig(detail?.configPath, detail?.tab)
   })
 }
 
-async function openCharacterRig(configPath?: string): Promise<void> {
+async function openCharacterRig(configPath?: string, tab: RigTab = 'markers'): Promise<void> {
   const projectDir = localStorage.getItem(PROJECT_KEY)
   if (!projectDir) {
     void window.electronAPI.infoDialog(t('characterRig.no_project'))
@@ -93,7 +112,7 @@ async function openCharacterRig(configPath?: string): Promise<void> {
     void window.electronAPI.infoDialog(t('characterRig.not_skinned'))
     return
   }
-  new CharacterRigPanel(projectDir, entries, initial)
+  new CharacterRigPanel(projectDir, entries, initial, tab)
 }
 
 /** Configs `tools/characters/*.json` do projeto com a seção `skinned`. */
@@ -126,6 +145,34 @@ function base64ToArrayBuffer(b64: string): ArrayBuffer {
   return bytes.buffer
 }
 
+/** Lê `tools/characters/rigs.json` (pela listagem: sem ler arquivo ausente). `null` se não há registro. */
+async function loadRigRegistry(projectDir: string): Promise<RigRegistry | null> {
+  const path = registryPath(projectDir)
+  try {
+    const files = await window.electronAPI.readDir(splitPath(path).dir)
+    if (!files.some((f) => f.name === RIG_REGISTRY_FILE)) return null
+    return parseRigRegistry(await window.electronAPI.readFile(path))
+  } catch (err) {
+    debug(SCOPE, 'registro de rigs ilegível', path, err)
+    return null
+  }
+}
+
+/** Builds do registro cujo GLB existe (pela listagem da pasta), o mais recente primeiro. */
+async function existingBuilds(projectDir: string, entry: RigEntry): Promise<RigBuildKind[]> {
+  const out: RigBuildKind[] = []
+  for (const kind of availableBuilds(entry)) {
+    const { dir, name } = splitPath(resolveProjectPath(projectDir, entry[kind]!.glb))
+    try {
+      const files = await window.electronAPI.readDir(dir)
+      if (files.some((f) => !f.isDir && f.name.toLowerCase() === name.toLowerCase())) out.push(kind)
+    } catch {
+      /* pasta ausente: build indisponível */
+    }
+  }
+  return out
+}
+
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
 function svg<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>): SVGElementTagNameMap[K] {
@@ -149,6 +196,17 @@ class CharacterRigPanel {
   private readonly runBtn: HTMLButtonElement
   private readonly stopBtn: HTMLButtonElement
   private readonly dots = new Map<MarkerId, HTMLElement>()
+  private readonly tabBtns = new Map<RigTab, HTMLButtonElement>()
+  private readonly tabBodies = new Map<RigTab, HTMLElement>()
+  private readonly animNotice: HTMLElement
+  private readonly preview: RigAnimationPreview
+  private readonly selection: RigFbxSelection
+  private readonly folderRunBtn: HTMLButtonElement
+  private tab: RigTab = 'markers'
+  /** Aba pedida na abertura (Animações só depois de saber se há rig). */
+  private wantedTab: RigTab | null = null
+  private rig: RigEntry | null = null
+  private builds: RigBuildKind[] = []
 
   private renderer: THREE.WebGLRenderer | null = null
   private readonly scene = new THREE.Scene()
@@ -172,6 +230,7 @@ class CharacterRigPanel {
     private readonly projectDir: string,
     private readonly entries: ConfigEntry[],
     initial: number,
+    initialTab: RigTab,
   ) {
     this.entry = entries[initial]!
 
@@ -187,10 +246,19 @@ class CharacterRigPanel {
       void this.loadEntry()
     })
     const closeBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => this.dialog.close() }, t('characterRig.close'))
+    const tabs = h('div', { class: 'rig-tabs' })
+    tabs.setAttribute('role', 'tablist')
+    for (const tab of TABS) {
+      const btn = h('button', { class: 'rig-tab', type: 'button', 'data-tab': tab, onClick: () => this.setTab(tab) }, t(`characterRig.tab.${tab}`)) as HTMLButtonElement
+      btn.setAttribute('role', 'tab')
+      this.tabBtns.set(tab, btn)
+      tabs.append(btn)
+    }
     const header = h('div', { class: 'rig-header' },
       h('div', { class: 'export-modal__header', style: { marginBottom: '0' } },
         h('h2', { class: 'export-modal__title' }, t('characterRig.title')),
         h('div', { class: 'export-modal__subtitle' }, t('characterRig.subtitle'))),
+      tabs,
       h('span', { class: 'spacer', style: { flex: '1' } }),
       select,
       closeBtn,
@@ -263,14 +331,82 @@ class CharacterRigPanel {
     })
     this.logCol = h('div', { class: 'rig-log' }, h('div', { class: 'rig-side__title' }, t('characterRig.log')), this.outcomeEl, this.sheetImg, this.logEl)
 
-    this.dialog.append(header, h('div', { class: 'rig-body' }, side, this.viewEl, this.logCol))
+    // ── Abas Animações / Pasta ─────────────────────────────────────────────
+    this.preview = new RigAnimationPreview()
+    this.selection = new RigFbxSelection({
+      onChange: () => void this.refreshPreview(),
+      onPlay: (name) => {
+        this.setTab('animations')
+        this.preview.play(name)
+      },
+    })
+    this.animNotice = h('div', { class: 'rig-notice' }, t('characterRig.anim.need_rig'))
+    this.animNotice.hidden = true
+    this.tabBtns.get('animations')!.disabled = true // até ler o registro
+    this.folderRunBtn = h('button', { class: 'export-modal__btn export-modal__btn--primary', type: 'button', onClick: () => void this.generate() }, t('characterRig.generate')) as HTMLButtonElement
+    this.selection.footer.append(this.folderRunBtn)
+
+    this.tabBodies.set('markers', h('div', { class: 'rig-body' }, side, this.viewEl))
+    this.tabBodies.set('animations', this.preview.el)
+    this.tabBodies.set('folder', this.selection.el)
+    const main = h('div', { class: 'rig-main' }, h('div', { class: 'rig-tabbody' }, ...this.tabBodies.values()), this.logCol)
+    this.dialog.append(header, this.animNotice, main)
     document.body.appendChild(this.dialog)
 
     this.initThree()
     this.bindView()
     this.dialog.addEventListener('close', () => this.dispose())
     this.dialog.showModal()
+    this.wantedTab = initialTab
+    this.setTab('markers')
     void this.loadEntry()
+  }
+
+  // ── Abas ──────────────────────────────────────────────────────────────────
+
+  private get animationsEnabled(): boolean {
+    return !!this.rig && this.builds.length > 0
+  }
+
+  private setTab(tab: RigTab): void {
+    if (tab === 'animations' && !this.animationsEnabled) return
+    this.tab = tab
+    for (const [k, btn] of this.tabBtns) {
+      btn.classList.toggle('on', k === tab)
+      btn.setAttribute('aria-selected', String(k === tab))
+    }
+    for (const [k, body] of this.tabBodies) body.hidden = k !== tab
+    this.preview.setActive(tab === 'animations')
+    if (tab === 'markers') this.draw()
+  }
+
+  /** Relê o registro de rigs e atualiza as abas Animações e Pasta. */
+  private async loadRig(): Promise<void> {
+    const code = this.entry.config.code
+    const registry = await loadRigRegistry(this.projectDir)
+    const rig = registry?.rigs[code] ?? null
+    const builds = rig ? await existingBuilds(this.projectDir, rig) : []
+    if (code !== this.entry.config.code) return
+    this.rig = rig
+    this.builds = builds
+    const enabled = this.animationsEnabled
+    const btn = this.tabBtns.get('animations')!
+    btn.disabled = !enabled
+    btn.title = enabled ? '' : t('characterRig.anim.need_rig')
+    this.animNotice.hidden = enabled
+    debug(SCOPE, 'registro de rigs', code, { noRegistro: !!rig, builds })
+    if (!enabled && this.tab === 'animations') this.setTab('markers')
+    if (this.wantedTab) {
+      this.setTab(this.wantedTab === 'animations' && !enabled ? 'markers' : this.wantedTab)
+      this.wantedTab = null
+    }
+    this.selection.setRig(rig)
+  }
+
+  private async refreshPreview(): Promise<void> {
+    await this.preview.show(this.rig && this.animationsEnabled
+      ? { projectDir: this.projectDir, entry: this.rig, builds: this.builds, pending: this.selection.pending() }
+      : null)
   }
 
   // ── three.js ──────────────────────────────────────────────────────────────
@@ -331,6 +467,10 @@ class CharacterRigPanel {
   private async loadEntry(): Promise<void> {
     const token = ++this.loadToken
     const { config } = this.entry
+    this.rig = null
+    this.builds = []
+    this.tabBtns.get('animations')!.disabled = true // até reler o registro
+    void this.selection.load(this.projectDir, this.entry.path, null).then(() => this.loadRig())
     this.clearModel()
     this.markers = {}
     this.errors = []
@@ -671,13 +811,19 @@ class CharacterRigPanel {
   private setRunning(on: boolean): void {
     this.running = on
     this.runBtn.disabled = on
+    this.folderRunBtn.disabled = on
     this.saveBtn.disabled = on
     this.stopBtn.hidden = !on
   }
 
   /** Salva e roda `bash tools/prepare-character.sh --config tools/characters/<arquivo>`. */
   private async generate(): Promise<void> {
-    if (this.running || !(await this.save())) return
+    if (this.running) return
+    if (!(await this.save())) {
+      this.setTab('markers') // os erros dos marcadores aparecem lá
+      return
+    }
+    if (!(await this.selection.save())) return
     const { config, fileName } = this.entry
     this.logCol.classList.add('on')
     this.log = ''
@@ -701,6 +847,7 @@ class CharacterRigPanel {
     debug(SCOPE, 'prepare-character terminou', config.code, code, outcome)
     this.outcomeEl.textContent = t(`characterRig.outcome.${outcome}`, { code })
     this.outcomeEl.classList.add(outcome)
+    if (outcome === 'approved' || outcome === 'review') await this.loadRig()
     if (outcome === 'review' && config.work) {
       try {
         this.sheetImg.src = `data:image/png;base64,${await window.electronAPI.readFileBase64(previewSheetPath(config.work))}`
@@ -715,6 +862,7 @@ class CharacterRigPanel {
     this.loadToken++
     if (this.running) void window.electronAPI.characterRigStop()
     this.unsubscribeOutput?.()
+    this.preview.dispose()
     this.clearModel()
     this.renderer?.dispose()
     this.renderer?.forceContextLoss()

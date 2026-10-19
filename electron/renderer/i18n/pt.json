@@ -235,6 +235,51 @@
     "no_project": "Abra um projeto primeiro.",
     "no_configs": "Nenhuma config de personagem com \"skinned\" em tools/characters/.",
     "not_skinned": "Esta config não tem a seção \"skinned\" (ou não é válida).",
-    "open_from_tree": "Auto-rig de personagem…"
+    "open_from_tree": "Auto-rig de personagem…",
+    "open_anim_from_tree": "Pré-visualizar animações…",
+    "tab": {
+      "markers": "Marcadores",
+      "animations": "Animações",
+      "folder": "Pasta"
+    },
+    "anim": {
+      "need_rig": "Gere o rig deste personagem primeiro (não está em tools/characters/rigs.json, ou o GLB não existe).",
+      "build": "Rig gerado",
+      "build_info": "{kind} · {at}",
+      "kind_staging": "staging",
+      "kind_published": "publicado",
+      "clips": "Clipes",
+      "speed": "Velocidade",
+      "force_loop": "Forçar laço",
+      "play": "Tocar",
+      "pause": "Pausar",
+      "absent": "ausente no GLB",
+      "pending": "não gerado",
+      "pending_hint": "Selecionado na config, mas fora do rig: gere o rig de novo para incluir."
+    },
+    "fbx": {
+      "search": "Buscar por arquivo ou clipe…",
+      "select_all": "Marcar todos",
+      "select_none": "Desmarcar todos",
+      "count": "{n} de {m} selecionadas",
+      "no_dir": "A config não tem skinned.fbx (pasta dos FBX).",
+      "dir_failed": "Não deu para listar {dir}: {error}",
+      "config_failed": "Config ilegível: {error}",
+      "no_match": "Nenhum FBX bate com a busca.",
+      "empty": "Nenhum .fbx na pasta.",
+      "include": "Incluir no rig",
+      "loop": "laço",
+      "play_hint": "Clique para tocar na aba Animações",
+      "flags_hint": "Flags que o jogo usa neste clipe",
+      "state_generated": "no rig",
+      "state_pending": "gere o rig de novo",
+      "state_unselected": "não selecionada",
+      "state_leaving": "sai na próxima geração",
+      "state_missing": "FBX ausente da pasta",
+      "confirm_remove": "O jogo usa {names}: há flags além de file/loop (rootMotion, jump…). Remover da seleção mesmo assim?",
+      "unsaved": "Seleção não salva.",
+      "saved": "Seleção gravada em {file}.",
+      "save": "Salvar seleção"
+    }
   }
 }
