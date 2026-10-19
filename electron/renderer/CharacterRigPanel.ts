@@ -22,10 +22,11 @@ import {
   moveMarker,
   parseCharacterConfig,
   parseMarkersFile,
-  previewSheetPath,
   rigOutcome,
   type RigAction,
-  sameSource,
+  sameSourceIn,
+  sheetPathOf,
+  sourcePathOf,
   serializeMarkersFile,
   stripAnsi,
   symmetrize,
@@ -333,7 +334,7 @@ class CharacterRigPanel {
     this.sheetImg = h('img', { class: 'rig-sheet', title: t('characterRig.sheet_open') }) as HTMLImageElement
     this.sheetImg.hidden = true
     this.sheetImg.addEventListener('click', () => {
-      const path = this.entry.config.work ? previewSheetPath(this.entry.config.work) : null
+      const path = sheetPathOf(this.projectDir, this.entry.config)
       if (path) void window.electronAPI.openPath(path)
     })
     // revisão da folha (código 3): publicar no jogo ou recusar; desfazer a última publicação
@@ -493,7 +494,7 @@ class CharacterRigPanel {
     this.setStatus(t('characterRig.loading', { file: config.source }))
     this.draw()
     try {
-      const b64 = await window.electronAPI.readFileBase64(config.source)
+      const b64 = await window.electronAPI.readFileBase64(sourcePathOf(this.projectDir, config))
       if (token !== this.loadToken) return
       const gltf: GLTF = await new Promise((res, rej) => new GLTFLoader().parse(base64ToArrayBuffer(b64), '', res, rej))
       if (token !== this.loadToken) return
@@ -569,7 +570,7 @@ class CharacterRigPanel {
         // arquivo antigo, sem os opcionais (ombros): vêm da estimativa
         this.markers = this.box ? fillMissingMarkers(markers, this.refineDepth(estimateMarkers(this.box))) : markers
         this.symmetryInput.checked = file.symmetry
-        const mismatch = !sameSource(file.source, config.source) || file.code !== config.code
+        const mismatch = !sameSourceIn(this.projectDir, file.source, config.source) || file.code !== config.code
         this.setStatus(t(mismatch ? 'characterRig.loaded_mismatch' : 'characterRig.loaded', { file: this.fileName(path) }), mismatch)
         this.changed()
         return
@@ -901,12 +902,13 @@ class CharacterRigPanel {
     if (outcome !== 'infra') await this.loadRig()
     this.updateReviewBar()
     if (outcome === 'published' || outcome === 'reverted') this.sheetImg.hidden = true
-    if (outcome === 'review' && config.work) {
+    const sheet = sheetPathOf(this.projectDir, config)
+    if (outcome === 'review' && sheet) {
       try {
-        this.sheetImg.src = `data:image/png;base64,${await window.electronAPI.readFileBase64(previewSheetPath(config.work))}`
+        this.sheetImg.src = `data:image/png;base64,${await window.electronAPI.readFileBase64(sheet)}`
         this.sheetImg.hidden = false
       } catch {
-        this.appendLog(`\n${t('characterRig.sheet_missing', { file: previewSheetPath(config.work) })}\n`)
+        this.appendLog(`\n${t('characterRig.sheet_missing', { file: sheet })}\n`)
       }
     }
   }

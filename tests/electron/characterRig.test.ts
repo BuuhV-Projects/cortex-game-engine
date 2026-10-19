@@ -26,6 +26,9 @@ import {
   rigOutcome,
   rotateY,
   sameSource,
+  sameSourceIn,
+  sheetPathOf,
+  sourcePathOf,
   serializeMarkersFile,
   stripAnsi,
   symmetrize,
@@ -207,6 +210,43 @@ describe('arquivos', () => {
     expect(markersPathFor('D:/j/tools/characters/LUC-01.json')).toBe('D:/j/tools/characters/LUC-01.markers.json')
     expect(configRelPath('LUC-01.json')).toBe('tools/characters/LUC-01.json')
     expect(sameSource('D:\\A\\b.glb', 'd:/a/B.glb')).toBe(true)
+  })
+
+  describe('caminhos da config relativos ao projeto (adendo 3)', () => {
+    const rel = {
+      source: 'assets/personagens/fontes/LUC-01/lucas-rocha-base-fosco.glb',
+      work: 'assets/personagens/fontes/LUC-01/.work',
+    }
+
+    it('source relativo resolve contra o projeto (Windows, barras dos dois tipos)', () => {
+      expect(sourcePathOf('D:/jogos/ddd61', rel)).toBe('D:/jogos/ddd61/assets/personagens/fontes/LUC-01/lucas-rocha-base-fosco.glb')
+      expect(sourcePathOf('D:\\jogos\\ddd61\\', { source: '.\\assets\\x.glb' })).toBe('D:\\jogos\\ddd61/assets\\x.glb')
+    })
+
+    it('source absoluto fica como está (compatibilidade)', () => {
+      expect(sourcePathOf('D:/jogos/ddd61', { source: 'D:\\Codex\\x.glb' })).toBe('D:\\Codex\\x.glb')
+      expect(sourcePathOf('D:/jogos/ddd61', { source: 'E:/x.glb' })).toBe('E:/x.glb')
+    })
+
+    it('folha de revisão com work relativo ou absoluto; sem work, null', () => {
+      expect(sheetPathOf('D:/jogos/ddd61', rel)).toBe('D:/jogos/ddd61/assets/personagens/fontes/LUC-01/.work/skinned/previa/folha.png')
+      expect(sheetPathOf('D:/jogos/ddd61', { work: 'D:\\Codex\\integracao\\' })).toBe('D:\\Codex\\integracao/skinned/previa/folha.png')
+      expect(sheetPathOf('D:/jogos/ddd61', { work: null })).toBeNull()
+    })
+
+    it('compara source resolvido: relativo × absoluto, ./ e barras mistas', () => {
+      const abs = 'D:\\jogos\\ddd61\\assets\\personagens\\fontes\\LUC-01\\lucas-rocha-base-fosco.glb'
+      expect(sameSourceIn('D:/jogos/ddd61', rel.source, abs)).toBe(true)
+      expect(sameSourceIn('D:\\jogos\\ddd61\\', `./${rel.source}`, rel.source)).toBe(true)
+      expect(sameSourceIn('d:/JOGOS/ddd61', rel.source, 'D:/jogos/ddd61//assets/personagens/fontes/LUC-01/./lucas-rocha-base-fosco.glb')).toBe(true)
+      expect(sameSourceIn('D:/jogos/ddd61', rel.source, 'D:/Codex/assets/personagens/fontes/LUC-01/lucas-rocha-base-fosco.glb')).toBe(false)
+    })
+
+    it('o .markers.json grava source com o mesmo texto da config', () => {
+      const markers = estimateMarkers({ min: [-0.5, 0, -0.15], max: [0.5, 1.8, 0.15] })
+      const text = serializeMarkersFile({ code: 'LUC-01', source: rel.source, symmetry: true, markers })
+      expect(parseMarkersFile(text).source).toBe(rel.source)
+    })
   })
 
   it('serializa o contrato (ordem, 4 casas, 2 espaços, −0) e lê de volta', () => {

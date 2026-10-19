@@ -245,3 +245,18 @@ válido (o pipeline estima o ombro). O Studio passa a **sempre** gravá-los.
   abrir um arquivo antigo, os ombros ausentes vêm da estimativa pela caixa (com a profundidade pelo raio).
 - Gravação: ordem `chin, shoulderL, shoulderR, wristL, wristR, elbowL, elbowR, kneeL, kneeR, groin` (a ordem não
   importa ao leitor).
+
+## Adendo 3 (2026-10-19) - caminhos da config relativos ao projeto
+
+O pipeline do jogo não pode referenciar nada fora do projeto: em `tools/characters/<CODE>.json`, `source`, `work` e
+`skinned.fbx` passam a ser **relativos ao diretório do projeto** (ex.: `"source":
+"assets/personagens/fontes/LUC-01/lucas-rocha-base-fosco.glb"`, `"work": "assets/personagens/fontes/LUC-01/.work"`,
+`"skinned": { "fbx": "assets/animations/characters/basic-locomotion" }`).
+
+- O Studio resolve os três contra o projeto aberto (mesma regra do registro: relativo → `<projeto>/<caminho>`,
+  aceitando `./` e `\`); caminho absoluto continua aceito como está (compatibilidade com configs antigas).
+- GLB lido de `resolve(source)`; folha de revisão em `resolve(work)/skinned/previa/folha.png`; pasta dos FBX em
+  `resolve(skinned.fbx)` (já era assim desde o adendo 1).
+- O `.markers.json` grava `source` com o **mesmo texto** da config (relativo, se ela for relativa).
+- O aviso de `source` divergente compara os caminhos **resolvidos** (ignorando `\` × `/`, `./`, barras repetidas e
+  caixa): `assets/x.glb` no arquivo e `D:/jogo/assets/x.glb` na config são o mesmo.

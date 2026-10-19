@@ -13,6 +13,8 @@
  * é `Ry(θ)`. De frente para a câmera (+Z), o lado `L` do personagem fica em x > 0.
  */
 
+import { resolveProjectPath } from './characterRigRegistry.js'
+
 export type Vec3 = [number, number, number]
 
 export type MarkerId =
@@ -292,6 +294,16 @@ export function previewSheetPath(work: string): string {
   return `${work.replace(/[\\/]+$/, '')}/skinned/previa/folha.png`
 }
 
+/** GLB de origem: `source` da config resolvido contra o projeto (relativo; absoluto fica como está). */
+export function sourcePathOf(projectDir: string, config: Pick<CharacterConfig, 'source'>): string {
+  return resolveProjectPath(projectDir, config.source)
+}
+
+/** Folha de revisão com `work` resolvido contra o projeto, ou `null` sem `work`. */
+export function sheetPathOf(projectDir: string, config: Pick<CharacterConfig, 'work'>): string | null {
+  return config.work ? previewSheetPath(resolveProjectPath(projectDir, config.work)) : null
+}
+
 // ── Arquivo de marcadores ─────────────────────────────────────────────────────
 
 export interface MarkersFile {
@@ -355,10 +367,16 @@ export function fillMissingMarkers(markers: MarkerSet, fallback: MarkerSet): Mar
   return out
 }
 
-/** Mesmo arquivo de origem, ignorando `\` × `/` e caixa (Windows). */
+/** Mesmo arquivo de origem, ignorando `\` × `/`, `./`, barras repetidas e caixa (Windows). */
 export function sameSource(a: string, b: string): boolean {
-  const norm = (s: string): string => s.replace(/\\/g, '/').toLowerCase()
+  const norm = (s: string): string =>
+    s.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/(^|\/)(\.\/)+/g, '$1').toLowerCase()
   return norm(a) === norm(b)
+}
+
+/** `sameSource` com os dois caminhos resolvidos contra o projeto (relativo × absoluto). */
+export function sameSourceIn(projectDir: string, a: string, b: string): boolean {
+  return sameSource(resolveProjectPath(projectDir, a), resolveProjectPath(projectDir, b))
 }
 
 // ── Execução do script ────────────────────────────────────────────────────────
