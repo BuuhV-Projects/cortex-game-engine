@@ -181,6 +181,7 @@
     "markers": "Markers",
     "group": {
       "chin": "CHIN",
+      "shoulders": "SHOULDERS",
       "wrists": "WRISTS",
       "elbows": "ELBOWS",
       "knees": "KNEES",
@@ -188,6 +189,8 @@
     },
     "marker": {
       "chin": "Chin",
+      "shoulderL": "Left shoulder",
+      "shoulderR": "Right shoulder",
       "groin": "Groin",
       "wristL": "Left wrist",
       "wristR": "Right wrist",
@@ -232,6 +235,7 @@
     "err": {
       "missing": "Still to place: {names}.",
       "chinBelowGroin": "The chin must be above the groin.",
+      "shoulderBelowElbow": "Shoulder below the elbow: {names}.",
       "elbowBelowWrist": "Elbow below the wrist: {names}.",
       "kneeAboveGroin": "Knee above the groin: {names}."
     },

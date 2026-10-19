@@ -10,6 +10,7 @@ import {
   configRelPath,
   displayToGltf,
   estimateMarkers,
+  fillMissingMarkers,
   gltfToDisplay,
   helperLines,
   isCharacterConfigName,
@@ -561,8 +562,12 @@ class CharacterRigPanel {
       try {
         const file = parseMarkersFile(text)
         const markers: MarkerSet = {}
-        for (const id of MARKER_IDS) markers[id] = gltfToDisplay(file.markers[id], this.frame)
-        this.markers = markers
+        for (const id of MARKER_IDS) {
+          const p = file.markers[id]
+          if (p) markers[id] = gltfToDisplay(p, this.frame)
+        }
+        // arquivo antigo, sem os opcionais (ombros): vêm da estimativa
+        this.markers = this.box ? fillMissingMarkers(markers, this.refineDepth(estimateMarkers(this.box))) : markers
         this.symmetryInput.checked = file.symmetry
         const mismatch = !sameSource(file.source, config.source) || file.code !== config.code
         this.setStatus(t(mismatch ? 'characterRig.loaded_mismatch' : 'characterRig.loaded', { file: this.fileName(path) }), mismatch)

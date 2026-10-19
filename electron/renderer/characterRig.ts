@@ -15,12 +15,18 @@
 
 export type Vec3 = [number, number, number]
 
-export type MarkerId = 'chin' | 'groin' | 'wristL' | 'wristR' | 'elbowL' | 'elbowR' | 'kneeL' | 'kneeR'
+export type MarkerId =
+  | 'chin' | 'shoulderL' | 'shoulderR' | 'wristL' | 'wristR' | 'elbowL' | 'elbowR' | 'kneeL' | 'kneeR' | 'groin'
 
-/** Ordem dos marcadores no arquivo (a mesma do contrato da SPEC-0187). */
-export const MARKER_IDS: readonly MarkerId[] = ['chin', 'groin', 'wristL', 'wristR', 'elbowL', 'elbowR', 'kneeL', 'kneeR']
+/** Ordem dos marcadores no arquivo (o leitor da SPEC-0187 não depende dela). */
+export const MARKER_IDS: readonly MarkerId[] = [
+  'chin', 'shoulderL', 'shoulderR', 'wristL', 'wristR', 'elbowL', 'elbowR', 'kneeL', 'kneeR', 'groin',
+]
 
-export type MarkerGroupKey = 'chin' | 'wrists' | 'elbows' | 'knees' | 'groin'
+/** Opcionais no arquivo (SPEC-0187 adendo 2): ausentes, o pipeline do jogo estima; o painel sempre grava. */
+export const OPTIONAL_MARKER_IDS: readonly MarkerId[] = ['shoulderL', 'shoulderR']
+
+export type MarkerGroupKey = 'chin' | 'shoulders' | 'wrists' | 'elbows' | 'knees' | 'groin'
 
 export interface MarkerGroup {
   key: MarkerGroupKey
@@ -32,6 +38,7 @@ export interface MarkerGroup {
 /** Grupos na ordem da coluna do painel (como o Mixamo). */
 export const MARKER_GROUPS: readonly MarkerGroup[] = [
   { key: 'chin', color: '#22d3ee', ids: ['chin'] },
+  { key: 'shoulders', color: '#b48cff', ids: ['shoulderR', 'shoulderL'] },
   { key: 'wrists', color: '#a3e635', ids: ['wristR', 'wristL'] },
   { key: 'elbows', color: '#facc15', ids: ['elbowR', 'elbowL'] },
   { key: 'knees', color: '#fb923c', ids: ['kneeR', 'kneeL'] },
@@ -137,6 +144,10 @@ export interface Box {
 /** Acima disto (largura / altura) a pose é em T; abaixo, em A. */
 const T_POSE_WIDTH_RATIO = 0.8
 
+/** Ombro estimado (A e T): altura e afastamento do centro, em frações da altura. */
+const SHOULDER_Y = 0.81
+const SHOULDER_X = 0.115
+
 /**
  * Posições iniciais (espaço exibido) pela caixa do modelo exibido, em frações da
  * altura `H` e da largura `W`. z = centro da caixa (o painel refina pelo raio).
@@ -152,6 +163,8 @@ export function estimateMarkers(box: Box): Record<MarkerId, Vec3> {
   const at = (x: number, fy: number): Vec3 => [x, y0 + fy * H, z]
   return {
     chin: at(0, 0.87),
+    shoulderL: at(SHOULDER_X * H, SHOULDER_Y),
+    shoulderR: at(-SHOULDER_X * H, SHOULDER_Y),
     groin: at(0, 0.5),
     wristL: at(wrist.x * W, wrist.y),
     wristR: at(-wrist.x * W, wrist.y),
@@ -165,13 +178,15 @@ export function estimateMarkers(box: Box): Record<MarkerId, Vec3> {
 /** Fração de `joelho.x` onde fica o quadril (a mesma do `UpLeg` da SPEC-0187). */
 const HIP_X_FRACTION = 0.78
 
-/** Linhas de ajuda: punho–cotovelo e quadril estimado–joelho, por lado. */
+/** Linhas de ajuda: ombro–cotovelo, punho–cotovelo e quadril estimado–joelho, por lado. */
 export function helperLines(markers: MarkerSet): Array<{ from: Vec3; to: Vec3; color: string }> {
   const lines: Array<{ from: Vec3; to: Vec3; color: string }> = []
   for (const side of ['L', 'R'] as const) {
     const wrist = markers[`wrist${side}`]
     const elbow = markers[`elbow${side}`]
     if (wrist && elbow) lines.push({ from: elbow, to: wrist, color: markerColor('wristL') })
+    const shoulder = markers[`shoulder${side}`]
+    if (shoulder && elbow) lines.push({ from: shoulder, to: elbow, color: markerColor('shoulderL') })
     const knee = markers[`knee${side}`]
     const groin = markers.groin
     if (knee && groin) lines.push({ from: [HIP_X_FRACTION * knee[0], groin[1], knee[2]], to: knee, color: markerColor('kneeL') })
@@ -181,15 +196,15 @@ export function helperLines(markers: MarkerSet): Array<{ from: Vec3; to: Vec3; c
 
 // ── Validação ─────────────────────────────────────────────────────────────────
 
-export type ValidationCode = 'missing' | 'chinBelowGroin' | 'elbowBelowWrist' | 'kneeAboveGroin'
+export type ValidationCode = 'missing' | 'chinBelowGroin' | 'shoulderBelowElbow' | 'elbowBelowWrist' | 'kneeAboveGroin'
 
 export interface ValidationError {
   code: ValidationCode
   ids: MarkerId[]
 }
 
-/** Folga do "cotovelo acima do punho", em fração da altura (pose em T: mesma altura). */
-const ELBOW_WRIST_SLACK = 0.02
+/** Folga do "ombro acima do cotovelo acima do punho", em fração da altura (pose em T: mesma altura). */
+const ARM_SLACK = 0.02
 
 /** Regras da SPEC-0349. `height` = altura do modelo (para a folga). Vazio = válido. */
 export function validateMarkers(markers: MarkerSet, height: number): ValidationError[] {
@@ -201,7 +216,10 @@ export function validateMarkers(markers: MarkerSet, height: number): ValidationE
   for (const side of ['L', 'R'] as const) {
     const elbow = m[`elbow${side}`]
     const wrist = m[`wrist${side}`]
-    if (elbow[1] < wrist[1] - ELBOW_WRIST_SLACK * height) errors.push({ code: 'elbowBelowWrist', ids: [`elbow${side}`, `wrist${side}`] })
+    if (m[`shoulder${side}`][1] < elbow[1] - ARM_SLACK * height) {
+      errors.push({ code: 'shoulderBelowElbow', ids: [`shoulder${side}`, `elbow${side}`] })
+    }
+    if (elbow[1] < wrist[1] - ARM_SLACK * height) errors.push({ code: 'elbowBelowWrist', ids: [`elbow${side}`, `wrist${side}`] })
     if (m[`knee${side}`][1] >= m.groin[1]) errors.push({ code: 'kneeAboveGroin', ids: [`knee${side}`, 'groin'] })
   }
   return errors
@@ -282,8 +300,8 @@ export interface MarkersFile {
   source: string
   space: 'gltf'
   symmetry: boolean
-  /** Espaço `gltf.scene` (antes de qualquer rotação do painel). */
-  markers: Record<MarkerId, Vec3>
+  /** Espaço `gltf.scene` (antes de qualquer rotação do painel). Ao ler, os de `OPTIONAL_MARKER_IDS` podem faltar. */
+  markers: MarkerSet
 }
 
 /** Arredonda a 0,1 mm e normaliza −0. */
@@ -293,7 +311,7 @@ function round4(v: number): number {
 }
 
 /** JSON do contrato, 2 espaços, quebra de linha final, marcadores na ordem de `MARKER_IDS`. */
-export function serializeMarkersFile(file: Omit<MarkersFile, 'version' | 'space'>): string {
+export function serializeMarkersFile(file: Omit<MarkersFile, 'version' | 'space' | 'markers'> & { markers: Record<MarkerId, Vec3> }): string {
   const markers: Record<string, Vec3> = {}
   for (const id of MARKER_IDS) {
     const p = file.markers[id]
@@ -307,15 +325,16 @@ function isVec3(v: unknown): v is Vec3 {
   return Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === 'number' && Number.isFinite(n))
 }
 
-/** Lê o `.markers.json`. Lança se a versão/espaço não baterem ou faltar marcador. */
+/** Lê o `.markers.json`. Lança se a versão/espaço não baterem, faltar marcador obrigatório ou algum for inválido. */
 export function parseMarkersFile(text: string): MarkersFile {
   const raw = JSON.parse(stripBom(text)) as Record<string, unknown>
   if (raw['version'] !== 1) throw new Error(`versão não suportada: ${String(raw['version'])}`)
   if (raw['space'] !== 'gltf') throw new Error(`espaço não suportado: ${String(raw['space'])}`)
   const src = raw['markers'] as Record<string, unknown> | undefined
-  const markers = {} as Record<MarkerId, Vec3>
+  const markers: MarkerSet = {}
   for (const id of MARKER_IDS) {
     const p = src?.[id]
+    if (p === undefined && OPTIONAL_MARKER_IDS.includes(id)) continue
     if (!isVec3(p)) throw new Error(`marcador inválido: ${id}`)
     markers[id] = [p[0], p[1], p[2]]
   }
@@ -327,6 +346,13 @@ export function parseMarkersFile(text: string): MarkersFile {
     symmetry: raw['symmetry'] !== false,
     markers,
   }
+}
+
+/** Completa os marcadores ausentes com os de `fallback` (ombros de um arquivo antigo ← estimativa). */
+export function fillMissingMarkers(markers: MarkerSet, fallback: MarkerSet): MarkerSet {
+  const out: MarkerSet = { ...markers }
+  for (const id of MARKER_IDS) if (!out[id] && fallback[id]) out[id] = fallback[id]
+  return out
 }
 
 /** Mesmo arquivo de origem, ignorando `\` × `/` e caixa (Windows). */
