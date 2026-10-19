@@ -1548,10 +1548,16 @@ function resolveScriptBash(): string | null {
  * A saída vai por `characterRig:output`; resolve com `{ code }` (código de
  * saída do script; 2 = infraestrutura, inclusive sem bash/script).
  */
-ipcMain.handle('characterRig:run', async (event, projectDir: unknown, configRel: unknown) => {
+// Ação do painel → flag do script (lista fechada: nada do renderer vira argumento livre).
+const CHARACTER_RIG_FLAGS: Record<string, string[]> = { generate: [], approve: ['--approve'], revert: ['--revert'] }
+
+ipcMain.handle('characterRig:run', async (event, projectDir: unknown, configRel: unknown, action: unknown = 'generate') => {
   const safeDir = validatePath(projectDir)
   if (typeof configRel !== 'string' || !CHARACTER_CONFIG_REL.test(configRel)) {
     throw new Error('configRel deve ser tools/characters/<nome>.json')
+  }
+  if (typeof action !== 'string' || !Object.hasOwn(CHARACTER_RIG_FLAGS, action)) {
+    throw new Error('action deve ser generate, approve ou revert')
   }
   const send = (text: string): void => {
     if (!event.sender.isDestroyed()) event.sender.send('characterRig:output', text)
@@ -1570,7 +1576,7 @@ ipcMain.handle('characterRig:run', async (event, projectDir: unknown, configRel:
     characterRigProcess = null
   }
   return await new Promise<{ code: number }>((resolvePromise) => {
-    const child = spawn(bash, ['tools/prepare-character.sh', '--config', configRel], {
+    const child = spawn(bash, ['tools/prepare-character.sh', '--config', configRel, ...CHARACTER_RIG_FLAGS[action]], {
       cwd: safeDir,
       env: envForSpawn(safeDir),
       windowsHide: true,

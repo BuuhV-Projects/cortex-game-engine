@@ -95,7 +95,7 @@ export interface ElectronAPI {
   /** Progresso do export (etapas). Retorna função de cancelamento do listener. */
   onExportProgress(callback: (step: string) => void): () => void
   /** Auto-rig de personagem (SPEC-0349): roda o `prepare-character.sh` do projeto. */
-  characterRigRun(projectDir: string, configRel: string): Promise<{ code: number }>
+  characterRigRun(projectDir: string, configRel: string, action?: 'generate' | 'approve' | 'revert'): Promise<{ code: number }>
   /** Mata o auto-rig em andamento. */
   characterRigStop(): Promise<void>
   /** Saída do auto-rig. Retorna a função que remove o listener. */

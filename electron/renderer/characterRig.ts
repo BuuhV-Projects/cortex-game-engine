@@ -337,14 +337,24 @@ export function sameSource(a: string, b: string): boolean {
 
 // ── Execução do script ────────────────────────────────────────────────────────
 
-export type RigOutcome = 'approved' | 'rejected' | 'infra' | 'review' | 'unknown'
+export type RigOutcome =
+  | 'approved' | 'rejected' | 'infra' | 'review' | 'unknown'
+  | 'published' | 'notPublished' | 'reverted' | 'nothingToRevert'
 
-/** Código de saída de `tools/prepare-character.sh` (ADR-0182 do jogo). */
-export function rigOutcome(code: number): RigOutcome {
+/** O que o painel pede ao script: gerar (etapas pendentes), publicar o staging revisado ou desfazer a
+ *  última publicação. */
+export type RigAction = 'generate' | 'approve' | 'revert'
+
+export const RIG_ACTIONS: readonly RigAction[] = ['generate', 'approve', 'revert']
+
+/** Código de saída de `tools/prepare-character.sh` (ADR-0182 do jogo) para a ação pedida. */
+export function rigOutcome(code: number, action: RigAction = 'generate'): RigOutcome {
+  if (code === 2) return 'infra'
+  if (action === 'approve') return code === 0 ? 'published' : code === 1 ? 'notPublished' : 'unknown'
+  if (action === 'revert') return code === 0 ? 'reverted' : code === 1 ? 'nothingToRevert' : 'unknown'
   switch (code) {
     case 0: return 'approved'
     case 1: return 'rejected'
-    case 2: return 'infra'
     case 3: return 'review'
     default: return 'unknown'
   }

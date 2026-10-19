@@ -192,7 +192,9 @@ describe('arquivos', () => {
 
 describe('execução', () => {
   it('códigos de saída do prepare-character.sh', () => {
-    expect([0, 1, 2, 3, 130].map(rigOutcome)).toEqual(['approved', 'rejected', 'infra', 'review', 'unknown'])
+    expect([0, 1, 2, 3, 130].map((c) => rigOutcome(c))).toEqual(['approved', 'rejected', 'infra', 'review', 'unknown'])
+    expect([0, 1, 2, 3].map((c) => rigOutcome(c, 'approve'))).toEqual(['published', 'notPublished', 'infra', 'unknown'])
+    expect([0, 1, 2].map((c) => rigOutcome(c, 'revert'))).toEqual(['reverted', 'nothingToRevert', 'infra'])
   })
 
   it('tira cores ANSI da saída', () => {

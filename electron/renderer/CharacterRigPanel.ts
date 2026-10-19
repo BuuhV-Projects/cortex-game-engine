@@ -23,6 +23,7 @@ import {
   parseMarkersFile,
   previewSheetPath,
   rigOutcome,
+  type RigAction,
   sameSource,
   serializeMarkersFile,
   stripAnsi,
@@ -191,6 +192,10 @@ class CharacterRigPanel {
   private readonly logEl: HTMLPreElement
   private readonly outcomeEl: HTMLElement
   private readonly sheetImg: HTMLImageElement
+  private readonly reviewBar: HTMLElement
+  private readonly approveBtn: HTMLButtonElement
+  private readonly rejectBtn: HTMLButtonElement
+  private readonly revertBtn: HTMLButtonElement
   private readonly symmetryInput: HTMLInputElement
   private readonly saveBtn: HTMLButtonElement
   private readonly runBtn: HTMLButtonElement
@@ -206,6 +211,7 @@ class CharacterRigPanel {
   /** Aba pedida na abertura (Animações só depois de saber se há rig). */
   private wantedTab: RigTab | null = null
   private rig: RigEntry | null = null
+  private awaitingReview = false
   private builds: RigBuildKind[] = []
 
   private renderer: THREE.WebGLRenderer | null = null
@@ -329,7 +335,15 @@ class CharacterRigPanel {
       const path = this.entry.config.work ? previewSheetPath(this.entry.config.work) : null
       if (path) void window.electronAPI.openPath(path)
     })
-    this.logCol = h('div', { class: 'rig-log' }, h('div', { class: 'rig-side__title' }, t('characterRig.log')), this.outcomeEl, this.sheetImg, this.logEl)
+    // revisão da folha (código 3): publicar no jogo ou recusar; desfazer a última publicação
+    this.approveBtn = h('button', { class: 'export-modal__btn export-modal__btn--primary', type: 'button', onClick: () => void this.run('approve') }, t('characterRig.review.approve')) as HTMLButtonElement
+    this.rejectBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => this.reject() }, t('characterRig.review.reject')) as HTMLButtonElement
+    this.revertBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => void this.revert() }, t('characterRig.review.revert')) as HTMLButtonElement
+    this.approveBtn.hidden = true
+    this.rejectBtn.hidden = true
+    this.revertBtn.hidden = true
+    this.reviewBar = h('div', { class: 'rig-review' }, this.approveBtn, this.rejectBtn, this.revertBtn)
+    this.logCol = h('div', { class: 'rig-log' }, h('div', { class: 'rig-side__title' }, t('characterRig.log')), this.outcomeEl, this.reviewBar, this.sheetImg, this.logEl)
 
     // ── Abas Animações / Pasta ─────────────────────────────────────────────
     this.preview = new RigAnimationPreview()
@@ -389,6 +403,7 @@ class CharacterRigPanel {
     if (code !== this.entry.config.code) return
     this.rig = rig
     this.builds = builds
+    this.updateReviewBar()
     const enabled = this.animationsEnabled
     const btn = this.tabBtns.get('animations')!
     btn.disabled = !enabled
@@ -814,6 +829,29 @@ class CharacterRigPanel {
     this.folderRunBtn.disabled = on
     this.saveBtn.disabled = on
     this.stopBtn.hidden = !on
+    this.updateReviewBar()
+  }
+
+  /** Aprovar/recusar só com uma folha aguardando revisão; desfazer só com rig publicado. */
+  private updateReviewBar(): void {
+    const reviewing = this.awaitingReview && !this.running
+    this.approveBtn.hidden = !reviewing
+    this.rejectBtn.hidden = !reviewing
+    this.revertBtn.hidden = this.running || !this.rig?.published
+  }
+
+  /** Recusar não roda nada: o staging fica, nada é publicado; ajustar os marcadores e gerar de novo. */
+  private reject(): void {
+    this.awaitingReview = false
+    this.outcomeEl.className = 'rig-outcome rejected'
+    this.outcomeEl.textContent = t('characterRig.review.rejected')
+    this.updateReviewBar()
+    this.setTab('markers')
+  }
+
+  private async revert(): Promise<void> {
+    if (!(await window.electronAPI.confirmDialog(t('characterRig.review.revert_confirm')))) return
+    await this.run('revert')
   }
 
   /** Salva e roda `bash tools/prepare-character.sh --config tools/characters/<arquivo>`. */
@@ -824,18 +862,25 @@ class CharacterRigPanel {
       return
     }
     if (!(await this.selection.save())) return
+    await this.run('generate')
+  }
+
+  /** Roda o script com a ação (gerar / `--approve` / `--revert`), mostra o resultado e relê o registro. */
+  private async run(action: RigAction): Promise<void> {
+    if (this.running) return
     const { config, fileName } = this.entry
     this.logCol.classList.add('on')
     this.log = ''
     this.logEl.textContent = ''
-    this.sheetImg.hidden = true
+    this.awaitingReview = false
+    if (action === 'generate') this.sheetImg.hidden = true
     this.outcomeEl.className = 'rig-outcome'
-    this.outcomeEl.textContent = t('characterRig.running')
+    this.outcomeEl.textContent = t(`characterRig.running_${action}`)
     this.setRunning(true)
     this.unsubscribeOutput = window.electronAPI.onCharacterRigOutput((text) => this.appendLog(text))
     let code = 2
     try {
-      code = (await window.electronAPI.characterRigRun(this.projectDir, configRelPath(fileName))).code
+      code = (await window.electronAPI.characterRigRun(this.projectDir, configRelPath(fileName), action)).code
     } catch (err) {
       this.appendLog(`\n${String(err)}\n`)
     } finally {
@@ -843,11 +888,14 @@ class CharacterRigPanel {
       this.unsubscribeOutput = null
       this.setRunning(false)
     }
-    const outcome = rigOutcome(code)
-    debug(SCOPE, 'prepare-character terminou', config.code, code, outcome)
+    const outcome = rigOutcome(code, action)
+    debug(SCOPE, 'prepare-character terminou', config.code, action, code, outcome)
     this.outcomeEl.textContent = t(`characterRig.outcome.${outcome}`, { code })
     this.outcomeEl.classList.add(outcome)
-    if (outcome === 'approved' || outcome === 'review') await this.loadRig()
+    this.awaitingReview = outcome === 'review'
+    if (outcome !== 'infra') await this.loadRig()
+    this.updateReviewBar()
+    if (outcome === 'published' || outcome === 'reverted') this.sheetImg.hidden = true
     if (outcome === 'review' && config.work) {
       try {
         this.sheetImg.src = `data:image/png;base64,${await window.electronAPI.readFileBase64(previewSheetPath(config.work))}`

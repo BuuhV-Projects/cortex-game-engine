@@ -46,8 +46,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * Auto-rig de personagem (SPEC-0349): roda `bash tools/prepare-character.sh
    * --config <configRel>` no projeto; resolve com o código de saída do script.
    */
-  characterRigRun: (projectDir: string, configRel: string) =>
-    ipcRenderer.invoke('characterRig:run', projectDir, configRel) as Promise<{ code: number }>,
+  characterRigRun: (projectDir: string, configRel: string, action: 'generate' | 'approve' | 'revert' = 'generate') =>
+    ipcRenderer.invoke('characterRig:run', projectDir, configRel, action) as Promise<{ code: number }>,
 
   /** Mata o auto-rig em andamento. */
   characterRigStop: () => ipcRenderer.invoke('characterRig:stop') as Promise<void>,

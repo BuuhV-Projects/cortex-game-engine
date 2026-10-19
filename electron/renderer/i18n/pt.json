@@ -216,7 +216,6 @@
     "fix_errors": "Corrija os marcadores antes de salvar.",
     "saved": "Salvo em {file}.",
     "save_failed": "Falha ao salvar: {error}",
-    "running": "Rodando…",
     "sheet_open": "Clique para abrir a folha no visualizador do sistema",
     "sheet_missing": "Folha de revisão não encontrada: {file}",
     "outcome": {
@@ -224,7 +223,11 @@
       "rejected": "Reprovado (código {code}). Veja a saída abaixo.",
       "infra": "Falha de infraestrutura (código {code}).",
       "review": "Aguardando revisão visual (código {code}): confira a folha.",
-      "unknown": "Terminou com código {code}."
+      "unknown": "Terminou com código {code}.",
+      "published": "Publicado no jogo (código {code}). A prévia mostra o rig publicado; rode a validação do jogo.",
+      "notPublished": "Não publicado (código {code}): há etapas pendentes ou reprovadas. Gere o rig de novo.",
+      "reverted": "Publicação desfeita (código {code}).",
+      "nothingToRevert": "Nada para desfazer (código {code})."
     },
     "err": {
       "missing": "Falta colocar: {names}.",
@@ -280,6 +283,16 @@
       "unsaved": "Seleção não salva.",
       "saved": "Seleção gravada em {file}.",
       "save": "Salvar seleção"
+    },
+    "running_generate": "Gerando o rig…",
+    "running_approve": "Publicando no jogo…",
+    "running_revert": "Desfazendo a publicação…",
+    "review": {
+      "approve": "Aprovar e publicar",
+      "reject": "Recusar",
+      "revert": "Desfazer publicação",
+      "rejected": "Recusado: nada foi publicado. Ajuste os marcadores (ou a seleção) e gere de novo.",
+      "revert_confirm": "Desfazer a última publicação? O jogo volta aos arquivos de antes dela."
     }
   }
 }

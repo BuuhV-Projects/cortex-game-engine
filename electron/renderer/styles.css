@@ -2475,7 +2475,19 @@ body.app-preview-fullscreen #preview-container {
   font-weight: 600;
   color: var(--od-fg-bright);
 }
-.rig-outcome.approved { color: var(--od-green); }
+.rig-outcome.approved,
+.rig-outcome.published,
+.rig-outcome.reverted { color: var(--od-green); }
+.rig-outcome.notPublished,
+.rig-outcome.nothingToRevert { color: var(--od-red); }
+.rig-review {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rig-review:not(:has(button:not([hidden]))) {
+  display: none;
+}
 .rig-outcome.review { color: var(--od-yellow); }
 .rig-outcome.rejected,
 .rig-outcome.infra,

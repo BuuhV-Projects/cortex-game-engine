@@ -216,7 +216,6 @@
     "fix_errors": "Fix the markers before saving.",
     "saved": "Saved to {file}.",
     "save_failed": "Save failed: {error}",
-    "running": "Running…",
     "sheet_open": "Click to open the sheet in the system viewer",
     "sheet_missing": "Review sheet not found: {file}",
     "outcome": {
@@ -224,7 +223,11 @@
       "rejected": "Rejected (code {code}). See the output below.",
       "infra": "Infrastructure failure (code {code}).",
       "review": "Waiting for visual review (code {code}): check the sheet.",
-      "unknown": "Finished with code {code}."
+      "unknown": "Finished with code {code}.",
+      "published": "Published to the game (code {code}). The preview shows the published rig; run the game validation.",
+      "notPublished": "Not published (code {code}): stages are pending or failed. Generate the rig again.",
+      "reverted": "Publication undone (code {code}).",
+      "nothingToRevert": "Nothing to undo (code {code})."
     },
     "err": {
       "missing": "Still to place: {names}.",
@@ -280,6 +283,16 @@
       "unsaved": "Selection not saved.",
       "saved": "Selection written to {file}.",
       "save": "Save selection"
+    },
+    "running_generate": "Generating the rig…",
+    "running_approve": "Publishing to the game…",
+    "running_revert": "Undoing the publication…",
+    "review": {
+      "approve": "Approve and publish",
+      "reject": "Reject",
+      "revert": "Undo publication",
+      "rejected": "Rejected: nothing was published. Adjust the markers (or the selection) and generate again.",
+      "revert_confirm": "Undo the last publication? The game goes back to the files from before it."
     }
   }
 }
