@@ -1,3 +1,19 @@
+# [0.81.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.80.0...v0.81.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **studio:** clique na junta já selecionada não tira a seleção (SPEC-0349 adendo 8) ([960fb4a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/960fb4ab484f33438da20b834efe82483a385322))
+* **studio:** prévia do auto-rig não acumula o giro do braço a cada quadro (SPEC-0349 adendo 7) ([91a65ff](https://github.com/BuuhV-Projects/cortex-game-engine/commit/91a65ff9a8993e803f6419d150dd28a15af20e9b))
+
+
+### Features
+
+* **studio:** conta da ligação seguir entre juntas, captura e config (SPEC-0349 adendo 9) ([a2c6f8f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a2c6f8fef6a1a44fa146e638f0bc2dd24c1f4ddd))
+* **studio:** conta da pose por clipe junta a junta, IK e config (SPEC-0349 adendo 8) ([c5b835f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c5b835f96f5db750be18b54b5c28ab9060c22feb))
+* **studio:** ligação seguir entre juntas no painel de pose (SPEC-0349 adendo 9) ([0240d83](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0240d837f5d5ec99c1ae55e8634ea3c3431cf52e))
+* **studio:** pose por clipe junta a junta na aba Animações (SPEC-0349 adendo 8) ([0ebd694](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0ebd6942440b62e9da4511ad26cbfbd53b8d438e))
+
 # [0.80.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.79.0...v0.80.0) (2026-10-20)
 
 
