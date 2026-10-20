@@ -25,6 +25,7 @@ import {
   sameOffsets,
   sideRotations,
   twistRotation,
+  undoInReverse,
   type ArmOffsetKey,
   type ArmOffsets,
   type Quat,
@@ -738,8 +739,7 @@ export class RigAnimationPreview {
 
   /** Devolve aos ossos a pose do mixer (desfaz o ajuste do quadro anterior). */
   private restoreArmPose(): void {
-    for (const [bone, q] of this.armPose) bone.quaternion.copy(q)
-    this.armPose.length = 0
+    undoInReverse(this.armPose, (bone, q) => bone.quaternion.copy(q))
   }
 
   /** Depois do mixer: gira clavícula e braço pela diferença (mesma conta do `arm_offsets` do jogo). */
