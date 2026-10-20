@@ -31,6 +31,8 @@ import {
   type Quat,
   type Vec3,
 } from './characterRigArmSpace'
+import { RigPoseEditor } from './RigPoseEditor'
+import type { JsonObject } from './characterRigSelection'
 
 /**
  * Aba **Animações** do painel auto-rig (SPEC-0349, adendo 1): toca os clipes do
@@ -43,6 +45,8 @@ import {
  * diferença entre o slider e o `armOffsets` gravado no JSON do skin do build.
  * Adendo 5: `shoulderBack` (ombros pra trás) e "aplicar a todos os clipes".
  * Adendo 7: `armTwist`/`foreArmTwist` (giro no eixo do braço e do antebraço).
+ * Adendo 8: pose por clipe, junta a junta (`RigPoseEditor`), aplicada depois dos
+ * braços na mesma pilha de desfazer do quadro.
  */
 
 const SCOPE = 'characterRig'
@@ -168,10 +172,15 @@ export class RigAnimationPreview {
   private readonly tmpQ2 = new THREE.Quaternion()
   private readonly tmpV = new THREE.Vector3()
   private readonly tmpV2 = new THREE.Vector3()
+  // ── Pose por clipe (adendo 8) ──
+  private readonly pose: RigPoseEditor
+  private readonly onKey = (e: KeyboardEvent): void => {
+    if (this.el.isConnected && this.el.offsetParent !== null && this.pose.handleKey(e)) e.preventDefault()
+  }
 
   constructor() {
     this.buildSelect = h('select', { class: 'gs-input rig-anim__build', title: t('characterRig.anim.build') }) as HTMLSelectElement
-    this.buildSelect.addEventListener('change', () => void this.loadBuild(this.buildSelect.value as RigBuildKind))
+    this.buildSelect.addEventListener('change', () => void this.changeBuild(this.buildSelect.value as RigBuildKind))
     this.buildInfo = h('div', { class: 'rig-anim__info' })
     this.listEl = h('div', { class: 'rig-anim__list' })
     this.statusEl = h('div', { class: 'rig-status' })
@@ -227,6 +236,15 @@ export class RigAnimationPreview {
       h('div', { class: 'rig-arm__rows' }, ...armRows),
       h('div', { class: 'rig-arm__foot' }, this.armStateEl, this.armAllBtn, this.armSaveBtn))
 
+    this.initThree()
+    this.pose = new RigPoseEditor({
+      scene: this.scene,
+      camera: this.camera,
+      canvas: this.renderer?.domElement ?? null,
+      orbit: this.controls,
+      onChange: () => this.renderList(),
+    })
+
     this.el = h('div', { class: 'rig-anim' },
       h('aside', { class: 'rig-side' },
         h('div', { class: 'rig-side__title' }, t('characterRig.anim.build')),
@@ -236,9 +254,9 @@ export class RigAnimationPreview {
         this.listEl,
         this.statusEl),
       h('div', { class: 'rig-anim__main' }, this.viewEl, playbar, armBar),
+      this.pose.panel,
     )
 
-    this.initThree()
     this.resizeObserver = new ResizeObserver(() => this.resize())
     this.resizeObserver.observe(this.viewEl)
   }
@@ -282,7 +300,11 @@ export class RigAnimationPreview {
     if (on === this.active) return
     this.active = on
     cancelAnimationFrame(this.raf)
-    if (!on) return
+    if (!on) {
+      window.removeEventListener('keydown', this.onKey)
+      return
+    }
+    window.addEventListener('keydown', this.onKey)
     this.clock.getDelta() // descarta o tempo parado
     const tick = (): void => {
       if (!this.active) return
@@ -291,6 +313,7 @@ export class RigAnimationPreview {
       this.restoreArmPose()
       if (this.mixer && !this.paused && !this.scrubbing) this.mixer.update(dt)
       this.applyArmOffsets()
+      this.pose.apply(this.armPose)
       this.controls?.update()
       this.renderer?.render(this.scene, this.camera)
       this.syncTime()
@@ -356,10 +379,11 @@ export class RigAnimationPreview {
       if (token !== this.loadToken) return
       const gltf: GLTF = await new Promise((res, rej) => new GLTFLoader().parse(base64ToArrayBuffer(b64), '', res, rej))
       if (token !== this.loadToken) return
-      const generated = await this.loadGeneratedOffsets(resolveProjectPath(input.projectDir, build.clips))
+      const skin = await this.loadSkin(resolveProjectPath(input.projectDir, build.clips))
       if (token !== this.loadToken) return
-      this.generatedOffsets = generated
+      this.generatedOffsets = armOffsetsFromSkin(skin)
       this.setModel(gltf)
+      this.pose.setGenerated(skin)
       this.setStatus('')
       debug(SCOPE, 'rig carregado', kind, path, gltf.animations.map((a) => a.name))
       const first = input.entry.clips.find((c) => this.gltfClips.has(c.name))
@@ -390,6 +414,7 @@ export class RigAnimationPreview {
     this.model = model
     this.gltfClips = new Map(gltf.animations.map((a) => [a.name, a]))
     this.bones = this.findArmBones(model)
+    this.pose.setModel(model) // lê o repouso antes do mixer
     this.mixer = new THREE.AnimationMixer(model)
     this.mixer.addEventListener('finished', () => {
       this.paused = true
@@ -416,6 +441,9 @@ export class RigAnimationPreview {
     this.bones = null
     this.armPose.length = 0
     this.generatedOffsets = new Map()
+    this.pose.setModel(null)
+    this.pose.setClip(null)
+    this.pose.setGenerated(null)
     if (this.mixer) {
       this.mixer.stopAllAction()
       if (this.model) this.mixer.uncacheRoot(this.model)
@@ -451,12 +479,12 @@ export class RigAnimationPreview {
         type: 'button',
         class: `rig-clip${this.current?.name === c.name ? ' on' : ''}${absent ? ' absent' : ''}`,
         title: c.file,
-        onClick: () => this.play(c.name),
+        onClick: () => void this.requestPlay(c.name),
       },
       h('span', { class: 'rig-clip__name' }, c.name),
       h('span', { class: 'rig-clip__meta' }, `${formatSeconds(c.duration)}${c.loop ? ' · ⟳' : ''}`),
       h('span', { class: 'rig-clip__file' }, absent ? t('characterRig.anim.absent') : fileLabel(c.file)),
-      ...(this.needsRegen(c.name) ? [h('span', { class: 'rig-clip__adj' }, t('characterRig.arm.regen_short'))] : []))
+      ...(this.needsRegen(c.name) || this.pose.needsRegen(c.name) ? [h('span', { class: 'rig-clip__adj' }, t('characterRig.arm.regen_short'))] : []))
       ;(row as HTMLButtonElement).disabled = absent
       this.listEl.append(row)
     }
@@ -469,6 +497,26 @@ export class RigAnimationPreview {
   }
 
   // ── Reprodução ────────────────────────────────────────────────────────────
+
+  /** Pose não salva do clipe mostrado: confirma antes de trocar (adendo 8). */
+  private async confirmLeavePose(): Promise<boolean> {
+    const name = this.current?.name
+    if (!name || !this.pose.isUnsaved(name)) return true
+    return window.electronAPI.confirmDialog(t('characterRig.pose.switch_confirm', { name }))
+  }
+
+  private async requestPlay(name: string): Promise<void> {
+    if (name !== this.current?.name && !(await this.confirmLeavePose())) return
+    this.play(name)
+  }
+
+  private async changeBuild(kind: RigBuildKind): Promise<void> {
+    if (!(await this.confirmLeavePose())) {
+      if (this.kind) this.buildSelect.value = this.kind
+      return
+    }
+    await this.loadBuild(kind)
+  }
 
   /** Toca o clipe `name` do registro (do início). */
   play(name: string): void {
@@ -486,6 +534,7 @@ export class RigAnimationPreview {
     this.paused = false
     this.applySpeed()
     this.timeInput.max = String(clip.duration)
+    this.pose.setClip(name)
     this.syncPlayBtn()
     this.renderList()
     this.renderArm()
@@ -560,12 +609,14 @@ export class RigAnimationPreview {
    * continua valendo; outra config: começa do disco.
    */
   async reloadConfig(configPath: string): Promise<void> {
-    let saved = new Map<string, ArmOffsets>()
+    let cfg: JsonObject | null = null
     try {
-      saved = armOffsetsFromConfig(parseConfigObject(await window.electronAPI.readFile(configPath)))
+      cfg = parseConfigObject(await window.electronAPI.readFile(configPath))
     } catch (err) {
-      debug(SCOPE, 'config ilegível (ajuste dos braços)', configPath, err)
+      debug(SCOPE, 'config ilegível (ajuste dos braços e pose)', configPath, err)
     }
+    const saved = cfg ? armOffsetsFromConfig(cfg) : new Map<string, ArmOffsets>()
+    this.pose.setConfig(configPath, cfg)
     if (configPath !== this.configPath) {
       this.editedOffsets = new Map()
     } else {
@@ -577,14 +628,19 @@ export class RigAnimationPreview {
     this.renderArm()
   }
 
-  /** `armOffsets` por clipe do JSON do skin do build (ausente/ilegível = 0). */
-  private async loadGeneratedOffsets(path: string): Promise<Map<string, ArmOffsets>> {
+  /** JSON do skin do build (`armOffsets`/`poseOffsets` por clipe); ilegível = `null` (gerado = 0). */
+  private async loadSkin(path: string): Promise<unknown> {
     try {
-      return armOffsetsFromSkin(JSON.parse(stripBom(await window.electronAPI.readFile(path))))
+      return JSON.parse(stripBom(await window.electronAPI.readFile(path))) as unknown
     } catch (err) {
-      debug(SCOPE, 'JSON do skin ilegível: ajuste gerado = 0', path, err)
-      return new Map()
+      debug(SCOPE, 'JSON do skin ilegível: ajuste e pose gerados = 0', path, err)
+      return null
     }
+  }
+
+  /** Grava a pose pendente de todos os clipes (Salvar pose / antes de Gerar rig). */
+  savePose(): Promise<boolean> {
+    return this.pose.save()
   }
 
   private wantedOffsets(name: string): ArmOffsets {
@@ -784,6 +840,7 @@ export class RigAnimationPreview {
     this.setActive(false)
     this.resizeObserver.disconnect()
     this.clearModel()
+    this.pose.dispose()
     this.controls?.dispose()
     this.renderer?.dispose()
     this.renderer?.forceContextLoss()

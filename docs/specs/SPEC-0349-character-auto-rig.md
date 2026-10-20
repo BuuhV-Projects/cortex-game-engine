@@ -435,3 +435,107 @@ restauração do quadro seguinte copiava os valores salvos na ordem direta, e o 
 (já com o primeiro passo). Com a prévia pausada ou na linha do tempo, o mixer não reescreve os ossos, então
 esse resto se somava a cada quadro e o braço girava sem parar ao mexer no slider. Agora a restauração é na
 ordem inversa (`undoInReverse`), e o teste falha na ordem antiga.
+
+## Adendo 8 (2026-10-20) - pose por clipe, junta a junta, na aba Animações
+
+Pedido do usuário: clicar num osso da prévia e posicioná-lo onde quiser, arrastando livre ou pelas setas
+X/Y/Z, por animação. **Cada junta sozinha, sem espelho** (decisão do usuário). Vale para o clipe inteiro,
+como os sliders de braço; editar quadro a quadro fica para depois.
+
+### Contrato do jogo (SPEC-0187, seção 9)
+
+`skinned.clips[nome].pose = { "<osso Mixamo>": [x, y, z, w] }`, com R no espaço do modelo do GLB (o
+`model` carregado na prévia), medida com o pai no repouso. Só os 22 ossos Mixamo (sem `*Helper`). O JSON
+do skin grava o aplicado em `clips[nome].poseOffsets`. Conta (a mesma do `pose_offsets` do pipeline), na
+ordem da hierarquia, com W = rotação de mundo do osso no espaço do modelo:
+
+- P = W_pai · W_pai_repouso⁻¹, com o repouso lido do GLB carregado (antes do mixer), como o `chestRest`;
+- C = W'_pai · W_pai⁻¹;
+- W'_n = C · P · R · P⁻¹ · W_n; sem R, W'_n = C · W_n.
+
+Gabarito: `tests/electron/fixtures/characterRigPose.golden.json` (gerado pelo pipeline no Blender, por
+`scripts/blender/character_pose_golden.py` do jogo). A função pura do Studio tem que reproduzir o
+`expected` a partir de `parents`, `order`, `rest`, `frame` e `pose` (tolerância 1e-6 em `1 − |q·q'|`).
+
+### Prévia
+
+- **Pose do build:** como nos sliders, o GLB já traz a pose gerada (`poseOffsets`). A prévia aplica por cima
+  só a diferença entre a pose desejada (config + edição não salva) e a gerada: por osso, D = R_desejado ·
+  R_gerado⁻¹ (ausente = identidade), com a mesma conta. É exato quando um osso muda e aproximado em cadeia;
+  fica exato depois de Gerar rig, como os sliders.
+- Aplica depois dos ajustes de braço, na mesma pilha de desfazer do quadro (`undoInReverse`).
+
+### Interface (aba Animações, com um clipe tocando ou pausado)
+
+- **Esqueleto por cima do modelo:** linha de cada osso e uma bolinha em cada junta (os 22 ossos Mixamo),
+  desenhados sem teste de profundidade, para aparecer através da malha. Botão "Mostrar esqueleto" (ligado
+  ao entrar no modo de pose). A junta sob o mouse acende; a selecionada tem outra cor.
+- **Selecionar:** clique na bolinha (raycast contra as bolinhas, com raio em pixels de tela para ser fácil
+  de acertar). Clique no vazio ou `Esc` tiram a seleção. O nome do osso aparece no painel.
+- **Modo Mover (`W`):** setas X/Y/Z do `TransformControls` (translate, espaço do mundo) na junta
+  selecionada, mais arrastar a própria bolinha **livre** (no plano da câmera que passa pela junta). Mover
+  uma junta gira os ossos de cima para ela chegar lá, sem mudar comprimento:
+  - mão (`*Hand`) ou pé (`*Foot`): IK de dois ossos (braço e antebraço / coxa e perna), mantendo o plano
+    da dobra (o polo é o cotovelo/joelho atual); fora do alcance, estica até o limite;
+  - outra junta: gira o osso pai para apontar para ela (menor arco), por exemplo arrastar o cotovelo gira
+    o braço;
+  - `Hips`: não move (só gira).
+- **Modo Girar (`E`):** argolas do `TransformControls` (rotate) no osso selecionado. Botão de espaço
+  mundo/local.
+- Cada edição vira a rotação de mundo G aplicada ao osso no quadro mostrado e atualiza R do osso:
+  Rf_novo = C⁻¹ · G · C · P · R_velho · P⁻¹ e R_novo = P⁻¹ · Rf_novo · P (P e C do quadro mostrado). A
+  edição continua valendo com o clipe tocando (a pose é do clipe inteiro).
+- Enquanto arrasta, `OrbitControls` desliga; Ctrl+Z desfaz a última edição de pose do clipe (pilha por
+  clipe, só da sessão).
+- **Painel "Pose (deste clipe)":** lista os ossos com pose (nome, ângulo total em graus), "zerar osso",
+  "zerar pose do clipe", "Salvar pose" (grava `pose` na config, com 6 casas; identidade remove a entrada;
+  sem ossos remove o campo; o resto do JSON fica igual, como o `applyArmOffsets`) e "Aplicar a todos os
+  clipes" (com confirmação). O estado diz se a pose gerada difere da desejada ("gere o rig de novo").
+- Trocar de clipe ou de build com pose não salva pede confirmação, como os sliders.
+- Tudo com i18n pt/en.
+
+### Aceite
+
+1. Função pura da conta reproduz o gabarito; testes também de: R → G → R (ida e volta), IK de dois ossos
+   (a mão chega ao alvo dentro do alcance, comprimentos iguais, plano da dobra mantido; fora do alcance
+   estica na direção do alvo), apontar o osso pai (menor arco), leitura e gravação da config (ordem dos
+   campos preservada, identidade some), diferença desejado × gerado.
+2. Na prévia real com o LUC-01: selecionar o antebraço esquerdo, arrastar a mão pelo eixo X e soltar → a mão
+   fica onde parou com o clipe pausado e tocando, sem girar sozinha nem acumular (o bug do adendo 7);
+   Salvar grava só os ossos mexidos; Gerar rig e reabrir → a prévia sem diferença fica igual à pose editada.
+3. Sem pose, a aba Animações fica igual a antes (mesmos testes verdes).
+
+### Verificação do adendo 8 (2026-10-20)
+
+**Testes (aceite 1 e 3):** `tests/electron/characterRigPose.test.ts` (14 testes): o `poseOffsets` reproduz o
+`expected` do gabarito (`1 − |q·q'|` < 1e-6) e, sem pose, devolve o quadro; as correções osso a osso da prévia
+(filho acompanhando o pai) dão o mesmo resultado; ida e volta R → G → R e G = giro do osso posado no quadro;
+IK de dois ossos (ponta no alvo, comprimentos iguais, cotovelo no plano e do mesmo lado; fora do alcance estica
+na direção do alvo); apontar o pai pelo menor arco; leitura e gravação da config (posição do campo, 6 casas,
+identidade some, sem ossos remove `pose`, resto igual), aplicar a todos, `poseOffsets` do skin e diferença
+desejado × gerado. Suíte inteira verde (`npx vitest run`: 2099 passaram, 9 pulados), incluindo os testes do
+adendo 4–7 sem mudança.
+
+**Prévia real (aceite 2, parcial):** Studio em dev (`electron-vite dev`, perfil temporário, CDP numa porta
+própria, vite na 5175), projeto = worktree de teste do jogo (`npc-fear-sounds-0f816d`), painel aberto na aba
+Animações com o LUC-01 (build publicado, clipe `idle` em 2,49 s, pausado). Entrada com mouse de verdade
+(`Input.dispatchMouseEvent`); o estado lido da instância do editor pelo CDP.
+
+- Mover (`W`), clique na bolinha da mão esquerda → selecionada, gizmo na junta. Seta Y arrastada (dentro do
+  alcance): a mão parou exatamente no alvo (erro 0 a 5 casas), braço 0,30844 m e antebraço 0,23964 m iguais
+  aos de antes. Na seta X o braço do idle já está quase esticado: a mão foi até o limite na direção do alvo.
+- Pausado 1,5–2 s: a mão não mexe (Δ 0). Tocou 3 s, pausou e voltou a 2,49 s: mesma posição (Δ 0) — sem
+  girar sozinha nem acumular.
+- Arrasto livre do cotovelo: o braço gira para o ponteiro (o cotovelo fica na direção dele, comprimento fixo).
+- Girar (`E`) com a cabeça selecionada: a argola Y gira só a cabeça. `Esc` tira a seleção; `Ctrl+Z` desfaz a
+  última edição. Esqueleto aparece através da malha; posados em laranja, selecionado em amarelo; o clipe ganha
+  o selo "ajuste não gerado" e o painel diz "Pose alterada: gere o rig de novo… Não salva."
+- Salvar pose gravou no `LUC-01.json` do worktree só `pose` com os 3 ossos mexidos (`Head`, `LeftArm`,
+  `LeftForeArm`), no fim da entrada do `idle`, resto do arquivo igual. O arquivo foi restaurado depois
+  (`git checkout`). Trocar para `walk` sem pose pendente não pergunta nada.
+- Achado e corrigido na verificação: clicar na junta já selecionada (o centro do gizmo fica em cima dela)
+  tirava a seleção.
+
+**Não verificado:** Gerar rig e reabrir (a prévia sem diferença igual à pose editada) — Gerar rig não foi
+rodado; a confirmação ao trocar de clipe/build com pose não salva (abre um diálogo nativo, não exercitado);
+"Aplicar a todos os clipes" da pose só pelos testes do módulo puro.
