@@ -16,7 +16,7 @@ lado).
 
 | Símbolo | O que é |
 |---|---|
-| `Game` | **Facade recomendado.** Cria e conecta Renderer+Scene+Câmera+World+Input+loop. `new Game({ canvas })`, `.scene`, `.world`, `.camera`, `.renderer`, `.input`, `.onUpdate(dt=>…)`, `.start()`/`.stop()`. **Em dev liga o modo editor automaticamente** (F2); em build de produção o editor não entra no bundle (ADR-0042). |
+| `Game` | **Facade recomendado.** Cria e conecta Renderer+Scene+Câmera+World+Input+loop. `new Game({ canvas })`, `.scene`, `.world`, `.camera`, `.renderer`, `.input`, `.onUpdate(dt=>…)` (antes do `world.tick`), `.onLateUpdate(dt=>…)` (depois do `world.tick`: lê o que os Systems moveram no frame, ex. animar o player pelo passo — SPEC-0351), `.start()`/`.stop()`. **Em dev liga o modo editor automaticamente** (F2); em build de produção o editor não entra no bundle (ADR-0042). |
 | `GameLoop` | Loop principal (baixo nível; o `Game` já usa). `new GameLoop({ onUpdate(dt), onFixedUpdate? })`, `.start()`/`.stop()`. |
 | `game.precompile()` | **Aquece os pipelines** desenhando UM quadro real com a cena inteira visível (ADR-0262). Chame sob a tela de carregamento (opaca), DEPOIS de criar tudo que o jogo só cria no uso (efeitos, projéteis — objeto criado depois compila na hora e trava). Se o seu `setPostFX` desenha por caminhos diferentes conforme o estado, force cada caminho e chame de novo. |
 | `game.maxFps`, `game.refreshHz` | **Teto de fps escolhido pelo jogo** (ADR-0257). `game.maxFps = 60` (`0` = sem teto). Frame time constante lê mais fluido que uma taxa maior que oscila. Com vsync só **divisores do refresh** dão frames iguais (monitor 75 Hz: 75 / 37,5 / 25); `game.refreshHz` dá o refresh medido e `debug('loop')` avisa quando o teto não divide. A física do veículo anda igual a qualquer fps. |
@@ -647,6 +647,7 @@ import { Game } from 'cortex-game-engine'
 const game = new Game({ canvas })
 game.scene.add(mesh)   // nomeie: mesh.name = 'Player'
 game.onUpdate((dt) => { /* lógica */ })
+game.onLateUpdate((dt) => { /* depois dos Systems: reage ao que eles moveram */ })
 game.start()
 // pronto — em dev, F2 abre o editor; em prod ele não existe.
 ```
