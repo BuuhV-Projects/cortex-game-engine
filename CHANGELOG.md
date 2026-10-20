@@ -1,3 +1,15 @@
+# [0.82.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.81.0...v0.82.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **systems:** ThirdPersonControlSystem antes do Object3DSync (SPEC-0352) ([fc53bf8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fc53bf86802306b7bb84c3c743a604398ef090a4))
+
+
+### Features
+
+* **core:** game.onLateUpdate depois do world.tick (SPEC-0351) ([3a52fad](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3a52fad876c06d05929da195cd878ae3d3956779))
+
 # [0.81.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.80.0...v0.81.0) (2026-10-20)
 
 
