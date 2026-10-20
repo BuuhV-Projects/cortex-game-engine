@@ -539,3 +539,63 @@ Animações com o LUC-01 (build publicado, clipe `idle` em 2,49 s, pausado). Ent
 **Não verificado:** Gerar rig e reabrir (a prévia sem diferença igual à pose editada) — Gerar rig não foi
 rodado; a confirmação ao trocar de clipe/build com pose não salva (abre um diálogo nativo, não exercitado);
 "Aplicar a todos os clipes" da pose só pelos testes do módulo puro.
+
+## Adendo 9 (2026-10-20) - ligação "seguir" entre juntas, por quadro
+
+Pedido do usuário: no clipe de tiro, a pose parada fica boa, mas no recuo as mãos se soltam. Ele quer
+escolher duas juntas e obrigar uma a ficar com a outra ("a mão direita segue a esquerda"). Ao contrário da
+pose (adendo 8), isso vale **em cada quadro**.
+
+### Contrato do jogo (SPEC-0187, seção 10)
+
+`skinned.clips[nome].follow`, lista em ordem, de `{ bone, target, offset: [x,y,z], rotation: [x,y,z,w] }`.
+`bone` é uma de `LeftHand`, `RightHand`, `LeftFoot`, `RightFoot`; `target` é qualquer osso Mixamo fora da
+cadeia de `bone` (ela mesma, o antebraço/perna e o braço/coxa). Espaço do modelo do GLB; T = W_alvo ·
+W_alvo_repouso⁻¹.
+
+- Captura (no quadro mostrado, com a pose e os ajustes de braço já aplicados): offset = T⁻¹ · (cabeça_bone −
+  cabeça_alvo); rotation = T⁻¹ · W_bone · W_bone_repouso⁻¹. Criar a ligação não mexe em nada naquele quadro.
+- Conta, por quadro e por ligação, em ordem (`follow_constraints` do pipeline):
+  - as cabeças saem por FK: cabeça_n = cabeça_pai + W_pai · W_pai_repouso⁻¹ · (repouso_n − repouso_pai),
+    com o quadril na posição do quadro;
+  - o alvo da junta é cabeça_alvo + T · offset;
+  - IK de dois ossos com polo no cotovelo/joelho do quadro e o menor arco em cada osso; fora do alcance,
+    a cadeia estica na direção do alvo;
+  - a junta fica com W = T · rotation · W_repouso, e o que está abaixo dela a acompanha;
+  - as cabeças são recalculadas a cada ligação (uma pode seguir outra já movida).
+- Gabarito: `tests/electron/fixtures/characterRigFollow.golden.json` (de
+  `scripts/blender/character_follow_golden.py` do jogo). A função pura reproduz `expected` (rotações,
+  `1 − |q·q'|` < 1e-6) e `expectedHeads` (posições, 1e-6 m) a partir de `parents`, `order`, `hip`,
+  `restHeads`, `rest`, `frame` e `follow`.
+
+### Prévia
+
+- Aplica depois da pose, na mesma pilha de desfazer do quadro (`undoInReverse`). É calculada em todo
+  quadro, tocando ou pausado.
+- Como a ligação é recalculada pelo clipe a cada quadro, a prévia aplica as ligações **desejadas** (config +
+  edição não salva) sobre a pose do mixer. Se o build já tem as ligações (`follow` do JSON do skin igual às
+  desejadas), a conta não muda nada (alvo já cumprido). Se o build tem ligações diferentes, a prévia avisa
+  "gere o rig de novo" (como os sliders) e mostra as desejadas por cima.
+
+### Interface (painel "Pose (deste clipe)")
+
+- Com uma mão ou um pé selecionado, botão **"Seguir…"**: o próximo clique numa junta escolhe o alvo (`Esc`
+  cancela; alvo da própria cadeia é recusado com aviso). A ligação é capturada no quadro mostrado.
+- Na prévia, uma linha tracejada liga as duas juntas de cada ligação.
+- Lista "Ligações": "Mão direita → Mão esquerda", com "remover" em cada uma. "Salvar pose" grava `follow`
+  junto (lista vazia remove o campo; ordem dos outros campos preservada). "Aplicar a todos os clipes" da pose
+  **não** copia as ligações (o offset é do quadro de um clipe).
+- Uma junta segue no máximo um alvo: criar outra ligação para a mesma junta substitui a anterior.
+- Mover/girar a junta que segue (adendo 8) não faz sentido enquanto ela está ligada: as setas e argolas
+  ficam desabilitadas nela, com dica "remova a ligação para mover".
+- i18n pt/en.
+
+### Aceite
+
+1. Função pura reproduz o gabarito; testes de: captura → conta no mesmo quadro devolve a pose sem mudar
+   (no alcance); fora do alcance estica; ligação encadeada; alvo na própria cadeia recusado; gravação/leitura
+   de `follow` na config.
+2. Na prévia real com o LUC-01, clipe `pistolShooting` (ou `idle`, se não houver no build do worktree):
+   selecionar a mão direita, "Seguir…", clicar na mão esquerda; tocando o clipe, a distância entre as duas
+   mãos fica constante em todos os quadros (medir em vários tempos); remover a ligação volta ao clipe.
+3. Sem ligações, a aba fica igual a antes.
