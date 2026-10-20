@@ -91,6 +91,18 @@ function perpendicular(v: Readonly<Vec3>): Vec3 {
   return unit(cross(v, other))
 }
 
+/**
+ * O `Vector.orthogonal()` do Blender, no espaço do Blender ((x, y, z) do GLB →
+ * (x, −z, y)): o polo de reserva do IK do pipeline quando o osso aponta para o alvo.
+ */
+export function blenderOrthogonal(v: Readonly<Vec3>): Vec3 {
+  const b: Vec3 = [v[0], -v[2], v[1]]
+  const [ax, ay, az] = b.map(Math.abs) as Vec3
+  const axis = ax > ay ? (ax > az ? 0 : 2) : ay > az ? 1 : 2
+  const o: Vec3 = axis === 0 ? [-b[1] - b[2], b[0], b[0]] : axis === 1 ? [b[1], -b[0] - b[2], b[1]] : [b[2], b[2], -b[0] - b[1]]
+  return [o[0], o[2], -o[1]]
+}
+
 /** Menor arco que leva a direção `from` à direção `to`. */
 export function quatFromTo(from: Readonly<Vec3>, to: Readonly<Vec3>): Quat {
   const a = unit(from)
@@ -158,16 +170,28 @@ export function poseCorrections(
   frame: ReadonlyMap<string, Quat>,
   pose: Pose,
 ): Map<string, Quat> {
-  const posed = poseOffsets(order, parentOf, rest, frame, pose)
+  return worldCorrections(order, parentOf, frame, poseOffsets(order, parentOf, rest, frame, pose))
+}
+
+/**
+ * Leva um esqueleto de `before` a `after` (rotações de mundo) osso a osso, na
+ * ordem: X_n = W'_n · (C_pai · W_n)⁻¹, com C_pai = W'_pai · W_pai⁻¹ (o filho já
+ * acompanhou o pai na hierarquia). Só os ossos com X diferente da identidade.
+ */
+export function worldCorrections(
+  order: readonly string[],
+  parentOf: (bone: string) => string | null | undefined,
+  before: ReadonlyMap<string, Quat>,
+  after: ReadonlyMap<string, Quat>,
+): Map<string, Quat> {
   const out = new Map<string, Quat>()
   for (const n of order) {
-    if (!pose.has(n)) continue
-    const w = frame.get(n)
-    const wn = posed.get(n)
+    const w = before.get(n)
+    const wn = after.get(n)
     if (!w || !wn) continue
-    const p = parentOf(n) ?? null
-    const c = correctionOf(p, frame, posed)
-    out.set(n, quatMul(wn, quatInv(quatMul(c, w))))
+    const c = correctionOf(parentOf(n) ?? null, before, after)
+    const x = quatNormalize(quatMul(wn, quatInv(quatMul(c, w))))
+    if (1 - Math.abs(x[3]) > 1e-14) out.set(n, x)
   }
   return out
 }
@@ -211,22 +235,28 @@ export function aimParent(parentPos: Readonly<Vec3>, jointPos: Readonly<Vec3>, t
  * (meio) e a ponta `c`. Devolve as rotações de mundo `upper` (no osso de `a`) e
  * `lower` (no osso de `b`, depois de `upper`) para a ponta chegar em `target`,
  * mantendo os comprimentos e o plano da dobra (o polo é o `b` atual). Fora do
- * alcance, estica até o limite na direção do alvo.
+ * alcance, estica até o limite na direção do alvo. `margin` afasta o alcance dos
+ * extremos (o pipeline usa 1e-6) e `lengths` troca os comprimentos medidos pelos
+ * do repouso, como o `follow_constraints`.
  */
-export function twoBoneIk(a: Readonly<Vec3>, b: Readonly<Vec3>, c: Readonly<Vec3>, target: Readonly<Vec3>): { upper: Quat; lower: Quat } {
-  const l1 = length(sub(b, a))
-  const l2 = length(sub(c, b))
+export function twoBoneIk(
+  a: Readonly<Vec3>,
+  b: Readonly<Vec3>,
+  c: Readonly<Vec3>,
+  target: Readonly<Vec3>,
+  opts: { margin?: number; lengths?: readonly [number, number] } = {},
+): { upper: Quat; lower: Quat } {
+  const margin = opts.margin ?? 0
+  const [l1, l2] = opts.lengths ?? [length(sub(b, a)), length(sub(c, b))]
   const toTarget = sub(target, a)
   const dist = length(toTarget)
   const dir = dist > 1e-9 ? scale(toTarget, 1 / dist) : unit(sub(c, a))
-  const d = Math.min(l1 + l2, Math.max(Math.abs(l1 - l2), dist))
-  // polo: o meio atual, sem a componente na direção do alvo (o plano da dobra fica)
+  const d = Math.min(l1 + l2 - margin, Math.max(Math.abs(l1 - l2) + margin, dist))
+  // polo: o meio atual, sem a componente na direção do alvo (o plano da dobra fica);
+  // osso apontando para o alvo: o mesmo polo de reserva do pipeline
   const ab = sub(b, a)
   let pole = sub(ab, scale(dir, dot(ab, dir)))
-  if (length(pole) < 1e-9 * Math.max(1, l1)) {
-    const n = cross(ab, sub(c, a))
-    pole = length(n) > 1e-12 ? cross(n, dir) : perpendicular(dir)
-  }
+  if (length(pole) < 1e-9) pole = blenderOrthogonal(ab)
   pole = unit(pole)
   const cosA = d > 1e-12 ? Math.min(1, Math.max(-1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d))) : 1
   const sinA = Math.sqrt(Math.max(0, 1 - cosA * cosA))
@@ -255,7 +285,7 @@ export function moveKind(bone: string): { kind: 'ik'; upper: string; lower: stri
 
 // ── Config e JSON do skin ───────────────────────────────────────────────────
 
-function readQuat(v: unknown): Quat | null {
+export function readQuat(v: unknown): Quat | null {
   if (!Array.isArray(v) || v.length !== 4 || !v.every((x) => typeof x === 'number' && Number.isFinite(x))) return null
   if (Math.hypot(...(v as number[])) < 1e-9) return null
   return quatNormalize(v as Quat)
