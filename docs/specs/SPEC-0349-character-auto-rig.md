@@ -504,3 +504,38 @@ Gabarito: `tests/electron/fixtures/characterRigPose.golden.json` (gerado pelo pi
    fica onde parou com o clipe pausado e tocando, sem girar sozinha nem acumular (o bug do adendo 7);
    Salvar grava só os ossos mexidos; Gerar rig e reabrir → a prévia sem diferença fica igual à pose editada.
 3. Sem pose, a aba Animações fica igual a antes (mesmos testes verdes).
+
+### Verificação do adendo 8 (2026-10-20)
+
+**Testes (aceite 1 e 3):** `tests/electron/characterRigPose.test.ts` (14 testes): o `poseOffsets` reproduz o
+`expected` do gabarito (`1 − |q·q'|` < 1e-6) e, sem pose, devolve o quadro; as correções osso a osso da prévia
+(filho acompanhando o pai) dão o mesmo resultado; ida e volta R → G → R e G = giro do osso posado no quadro;
+IK de dois ossos (ponta no alvo, comprimentos iguais, cotovelo no plano e do mesmo lado; fora do alcance estica
+na direção do alvo); apontar o pai pelo menor arco; leitura e gravação da config (posição do campo, 6 casas,
+identidade some, sem ossos remove `pose`, resto igual), aplicar a todos, `poseOffsets` do skin e diferença
+desejado × gerado. Suíte inteira verde (`npx vitest run`: 2099 passaram, 9 pulados), incluindo os testes do
+adendo 4–7 sem mudança.
+
+**Prévia real (aceite 2, parcial):** Studio em dev (`electron-vite dev`, perfil temporário, CDP numa porta
+própria, vite na 5175), projeto = worktree de teste do jogo (`npc-fear-sounds-0f816d`), painel aberto na aba
+Animações com o LUC-01 (build publicado, clipe `idle` em 2,49 s, pausado). Entrada com mouse de verdade
+(`Input.dispatchMouseEvent`); o estado lido da instância do editor pelo CDP.
+
+- Mover (`W`), clique na bolinha da mão esquerda → selecionada, gizmo na junta. Seta Y arrastada (dentro do
+  alcance): a mão parou exatamente no alvo (erro 0 a 5 casas), braço 0,30844 m e antebraço 0,23964 m iguais
+  aos de antes. Na seta X o braço do idle já está quase esticado: a mão foi até o limite na direção do alvo.
+- Pausado 1,5–2 s: a mão não mexe (Δ 0). Tocou 3 s, pausou e voltou a 2,49 s: mesma posição (Δ 0) — sem
+  girar sozinha nem acumular.
+- Arrasto livre do cotovelo: o braço gira para o ponteiro (o cotovelo fica na direção dele, comprimento fixo).
+- Girar (`E`) com a cabeça selecionada: a argola Y gira só a cabeça. `Esc` tira a seleção; `Ctrl+Z` desfaz a
+  última edição. Esqueleto aparece através da malha; posados em laranja, selecionado em amarelo; o clipe ganha
+  o selo "ajuste não gerado" e o painel diz "Pose alterada: gere o rig de novo… Não salva."
+- Salvar pose gravou no `LUC-01.json` do worktree só `pose` com os 3 ossos mexidos (`Head`, `LeftArm`,
+  `LeftForeArm`), no fim da entrada do `idle`, resto do arquivo igual. O arquivo foi restaurado depois
+  (`git checkout`). Trocar para `walk` sem pose pendente não pergunta nada.
+- Achado e corrigido na verificação: clicar na junta já selecionada (o centro do gizmo fica em cima dela)
+  tirava a seleção.
+
+**Não verificado:** Gerar rig e reabrir (a prévia sem diferença igual à pose editada) — Gerar rig não foi
+rodado; a confirmação ao trocar de clipe/build com pose não salva (abre um diálogo nativo, não exercitado);
+"Aplicar a todos os clipes" da pose só pelos testes do módulo puro.
