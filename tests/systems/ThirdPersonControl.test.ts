@@ -443,3 +443,18 @@ describe('ThirdPersonControlSystem — sem pointer lock (SPEC-0297)', () => {
     }
   });
 });
+
+describe('ThirdPersonControlSystem antes do Object3DSync (SPEC-0352)', () => {
+  it('o boneco desenhado mostra o passo do mesmo frame que a câmera', async () => {
+    const { Object3DSyncSystem } = await import('../../src/systems/Object3DSyncSystem.js');
+    const { world, e } = setup(fakePad([0, -1]));
+    world.addSystem(new Object3DSyncSystem());
+    const obj = new THREE.Object3D();
+    e.addComponent(new Object3DComponent(obj));
+    world.tick(16);
+    const t = e.getComponent(TransformComponent)!;
+    expect(t.z).toBeLessThan(0);
+    expect(obj.position.z).toBe(t.z);
+    expect(obj.rotation.y).toBe(t.rotationY);
+  });
+});

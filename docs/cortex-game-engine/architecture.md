@@ -42,6 +42,14 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   senão trocar a pausa depois (menu do jogo) se perde (SPEC-0306, `VehicleControlSystem`).
 - **`World`** — guarda entidades/sistemas; `tick(dt)` roda cada sistema com as
   entidades que casam `requiredComponents`. `query(...classes)`, `hasSystem`.
+- **Ordem do frame no `Game`** (SPEC-0351): input → `onUpdate` → `world.tick` →
+  `onLateUpdate` → UI → editor → render. Quem anda o personagem é System (dentro do
+  `world.tick`): lógica do jogo que **lê** esse movimento (animar pelo passo, seguir um
+  corpo) vai no `onLateUpdate` — no `onUpdate` ela vê o frame anterior, e num engasgo o
+  corpo pula antes do que depende dele.
+  Dentro do `world.tick`, **quem move vem antes do `Object3DSyncSystem` (10)**: o
+  `ThirdPersonControlSystem` roda em 6 (SPEC-0352) — em 20, a câmera saía do transform
+  novo e o boneco desenhado do antigo, e num engasgo o personagem tremia na tela.
 
 ### 2.1 Scripts anexáveis (MonoBehaviour — ADR-0085/0086)
 

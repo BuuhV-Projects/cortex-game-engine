@@ -127,11 +127,13 @@ function approachAngle(current: number, target: number, t: number): number {
  * `SceneAnimator` (em `userData.cortexAnim`).
  *
  * Mira a única entidade com {@link TransformComponent} + {@link CharacterBodyComponent}.
- * Roda em `priority = 20` (depois da física). Pausa no editor via `pauseWhen`.
+ * Roda em `priority = 6`: depois da física (`CharacterPhysicsSystem`, 5) e ANTES do
+ * `Object3DSyncSystem` (10), pra câmera e boneco saírem do mesmo transform no frame
+ * (SPEC-0352). Pausa no editor via `pauseWhen`.
  */
 export class ThirdPersonControlSystem extends System {
   static override requiredComponents = [TransformComponent, CharacterBodyComponent];
-  override priority = 20;
+  override priority = 6;
 
   private readonly moveSpeed: number;
   private readonly sprintSpeed: number;
