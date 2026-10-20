@@ -1,3 +1,11 @@
+# [0.80.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.79.0...v0.80.0) (2026-10-20)
+
+
+### Features
+
+* **studio:** aba Pasta do auto-rig lista todos os pacotes de animação (SPEC-0349) ([77af8a2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/77af8a22ce11e8a9e2744f1935426670f2e9da97))
+* **studio:** giro do braço e do antebraço no ajuste por clipe do auto-rig (SPEC-0349 adendo 7) ([2a88471](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2a884711371309ad5b7706ad7a28151784b7ad06))
+
 # [0.79.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.78.0...v0.79.0) (2026-10-19)
 
 
