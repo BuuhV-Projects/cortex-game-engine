@@ -26,8 +26,21 @@ import {
   quatAngleDeg,
   samePose,
   twoBoneIk,
+  worldCorrections,
   type Pose,
 } from './characterRigPose'
+import {
+  FOLLOW_BONES,
+  applyFollows,
+  captureFollow,
+  followConstraints,
+  followProblem,
+  followsFromConfig,
+  followsFromSkin,
+  sameFollows,
+  withFollow,
+  type FollowLink,
+} from './characterRigFollow'
 
 /**
  * Pose por clipe, junta a junta, na aba **Animações** do painel auto-rig
@@ -38,6 +51,9 @@ import {
  * A prévia aplica por cima do GLB só a diferença entre a pose desejada (config +
  * edição) e a gerada (`poseOffsets` do JSON do skin), depois dos ajustes de braço
  * e na mesma pilha de desfazer do quadro (`undoInReverse`).
+ *
+ * Adendo 9: ligação "seguir" (mão/pé segue outra junta, em cada quadro). As
+ * ligações desejadas são recalculadas sobre o quadro depois da pose, na mesma pilha.
  */
 
 const SCOPE = 'characterRig'
@@ -50,6 +66,9 @@ const COLOR_JOINT = new THREE.Color(0x22d3ee)
 const COLOR_POSED = new THREE.Color(0xfb923c)
 const COLOR_HOVER = new THREE.Color(0xffffff)
 const COLOR_SELECTED = new THREE.Color(0xf5c451)
+const COLOR_FOLLOW = new THREE.Color(0xf472b6)
+/** Traço e vão da linha tracejada das ligações (m). */
+const FOLLOW_DASH = 0.025
 /** Desenha por cima da malha. */
 const OVERLAY_ORDER = 999
 
@@ -73,6 +92,12 @@ interface Snapshot {
   posed: Map<string, Quat>
   /** Posição de cada junta mostrada. */
   pos: Map<string, Vec3>
+}
+
+/** O que o Ctrl+Z devolve: a pose e as ligações do clipe antes da edição. */
+interface UndoEntry {
+  pose: Map<string, Quat>
+  follow: FollowLink[]
 }
 
 interface Drag {
@@ -116,19 +141,32 @@ export class RigPoseEditor {
   private readonly stateEl: HTMLElement
   private readonly saveBtn: HTMLButtonElement
   private readonly allBtn: HTMLButtonElement
+  private readonly followBtn: HTMLButtonElement
+  private readonly followHintEl: HTMLElement
+  private readonly followsEl: HTMLElement
 
   private model: THREE.Object3D | null = null
   private readonly bones = new Map<string, THREE.Object3D>()
   /** W de cada osso no repouso do GLB (antes do mixer), no espaço do modelo. */
   private rest = new Map<string, Quat>()
+  /** Cabeça de cada osso no repouso do GLB, no espaço do modelo. */
+  private restHeads = new Map<string, Vec3>()
   private clip: string | null = null
 
   private configPath = ''
   private saved = new Map<string, Map<string, Quat>>()
   private edited = new Map<string, Map<string, Quat>>()
   private generated = new Map<string, Map<string, Quat>>()
-  /** Pilha de desfazer por clipe (só da sessão): a pose antes de cada edição. */
-  private readonly undo = new Map<string, Map<string, Quat>[]>()
+  // ligações "seguir" (adendo 9): config no disco, edição não salva e gerado no build
+  private savedFollow = new Map<string, FollowLink[]>()
+  private editedFollow = new Map<string, FollowLink[]>()
+  private generatedFollow = new Map<string, FollowLink[]>()
+  /** Pilha de desfazer por clipe (só da sessão): pose e ligações antes de cada edição. */
+  private readonly undo = new Map<string, UndoEntry[]>()
+  /** "Seguir…": o próximo clique numa junta escolhe o alvo da junta selecionada. */
+  private pickingFollow = false
+  /** Aviso da escolha do alvo (alvo na própria cadeia). */
+  private followWarn = ''
 
   private mode: PoseMode = 'off'
   private space: 'world' | 'local' = 'world'
@@ -141,6 +179,7 @@ export class RigPoseEditor {
   private readonly overlay = new THREE.Group()
   private readonly lines: THREE.LineSegments
   private readonly points: THREE.Points
+  private readonly followLines: THREE.LineSegments
   private readonly segments: Array<[string, string]> = POSE_BONES.filter((n) => parentOf(n)).map((n) => [parentOf(n)!, n])
   private readonly tc: TransformControls | null = null
   private readonly proxy = new THREE.Object3D()
@@ -163,6 +202,9 @@ export class RigPoseEditor {
     this.stateEl = h('div', { class: 'rig-arm__state rig-pose__state' })
     this.saveBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', onClick: () => void this.save() }, t('characterRig.pose.save')) as HTMLButtonElement
     this.allBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary', type: 'button', title: t('characterRig.pose.apply_all_hint'), onClick: () => void this.applyToAll() }, t('characterRig.pose.apply_all')) as HTMLButtonElement
+    this.followBtn = h('button', { class: 'export-modal__btn export-modal__btn--secondary rig-pose__mode', type: 'button', title: t('characterRig.pose.follow_hint'), onClick: () => this.toggleFollowPick() }, t('characterRig.pose.follow')) as HTMLButtonElement
+    this.followHintEl = h('div', { class: 'rig-pose__hint' })
+    this.followsEl = h('div', { class: 'rig-pose__bones' })
 
     this.panel = h('aside', { class: 'rig-side rig-pose', title: t('characterRig.pose.hint') },
       h('div', { class: 'rig-side__title' }, t('characterRig.pose.title')),
@@ -173,6 +215,10 @@ export class RigPoseEditor {
       this.modeHintEl,
       this.bonesEl,
       h('div', { class: 'rig-pose__row' }, this.resetClipBtn),
+      h('div', { class: 'rig-side__title' }, t('characterRig.pose.follows_title')),
+      h('div', { class: 'rig-pose__row' }, this.followBtn),
+      this.followHintEl,
+      this.followsEl,
       this.stateEl,
       h('div', { class: 'rig-pose__row' }, this.allBtn, this.saveBtn))
 
@@ -184,11 +230,15 @@ export class RigPoseEditor {
     pointGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(POSE_BONES.length * 3), 3))
     pointGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(POSE_BONES.length * 3), 3))
     this.points = new THREE.Points(pointGeo, new THREE.PointsMaterial({ size: POINT_PX, sizeAttenuation: false, vertexColors: true, map: circleTexture(), alphaTest: 0.5, depthTest: false, depthWrite: false, transparent: true }))
-    for (const o of [this.lines, this.points]) {
+    // ligações: uma linha tracejada por ligação (no máximo uma por mão/pé)
+    const followGeo = new THREE.BufferGeometry()
+    followGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(FOLLOW_BONES.length * 6), 3))
+    this.followLines = new THREE.LineSegments(followGeo, new THREE.LineDashedMaterial({ color: COLOR_FOLLOW, dashSize: FOLLOW_DASH, gapSize: FOLLOW_DASH, depthTest: false, depthWrite: false, transparent: true }))
+    for (const o of [this.lines, this.points, this.followLines]) {
       o.renderOrder = OVERLAY_ORDER
       o.frustumCulled = false
     }
-    this.overlay.add(this.lines, this.points)
+    this.overlay.add(this.lines, this.followLines, this.points)
     this.overlay.visible = false
     host.scene.add(this.overlay, this.proxy)
 
@@ -226,8 +276,10 @@ export class RigPoseEditor {
     this.model = model
     this.bones.clear()
     this.rest = new Map()
+    this.restHeads = new Map()
     this.snap = null
     this.selected = this.hovered = null
+    this.pickingFollow = false
     if (model) {
       model.updateMatrixWorld(true)
       for (const n of POSE_BONES) {
@@ -235,26 +287,33 @@ export class RigPoseEditor {
         if (b?.parent) this.bones.set(n, b)
       }
       if (this.bones.size !== POSE_BONES.length) debug(SCOPE, 'rig sem todos os ossos Mixamo (pose)', POSE_BONES.filter((n) => !this.bones.has(n)))
-      for (const [n, b] of this.bones) this.rest.set(n, this.modelQuat(b))
+      for (const [n, b] of this.bones) {
+        this.rest.set(n, this.modelQuat(b))
+        this.restHeads.set(n, this.modelPos(b))
+      }
     }
     this.syncControls()
     this.renderPanel()
   }
 
-  /** `poseOffsets` por clipe do JSON do skin do build (`null` = ilegível = vazio). */
+  /** `poseOffsets` e `follow` por clipe do JSON do skin do build (`null` = ilegível = vazio). */
   setGenerated(skin: unknown): void {
     this.generated = posesFromSkin(skin)
+    this.generatedFollow = followsFromSkin(skin)
     this.renderPanel()
   }
 
   /** Pose da config no disco. Mesma config: edição ainda não salva continua; outra: começa do disco. */
   setConfig(path: string, cfg: JsonObject | null): void {
     this.saved = cfg ? posesFromConfig(cfg) : new Map()
+    this.savedFollow = cfg ? followsFromConfig(cfg) : new Map()
     if (path !== this.configPath) {
       this.edited = new Map()
+      this.editedFollow = new Map()
       this.undo.clear()
     } else {
-      for (const name of [...this.edited.keys()]) if (!this.isUnsaved(name)) this.edited.delete(name)
+      for (const name of [...this.edited.keys()]) if (!this.poseUnsaved(name)) this.edited.delete(name)
+      for (const name of [...this.editedFollow.keys()]) if (!this.followUnsaved(name)) this.editedFollow.delete(name)
     }
     this.configPath = path
     this.renderPanel()
@@ -265,6 +324,8 @@ export class RigPoseEditor {
     if (name === this.clip) return
     this.endDrag()
     this.clip = name
+    this.pickingFollow = false
+    this.followWarn = ''
     this.renderPanel()
   }
 
@@ -276,14 +337,38 @@ export class RigPoseEditor {
     return this.generated.get(name) ?? new Map()
   }
 
-  /** A pose desejada difere da gerada no GLB mostrado. */
-  needsRegen(name: string): boolean {
-    return !!this.model && this.saved.has(name) && !samePose(this.wanted(name), this.generatedOf(name))
+  private wantedFollow(name: string): FollowLink[] {
+    return this.editedFollow.get(name) ?? this.savedFollow.get(name) ?? []
   }
 
+  /** Ligações gravadas no build diferentes das desejadas. */
+  private followNeedsRegen(name: string): boolean {
+    return !!this.model && this.savedFollow.has(name) && !sameFollows(this.wantedFollow(name), this.generatedFollow.get(name) ?? [])
+  }
+
+  /** A pose ou as ligações desejadas diferem das geradas no GLB mostrado. */
+  needsRegen(name: string): boolean {
+    return (!!this.model && this.saved.has(name) && !samePose(this.wanted(name), this.generatedOf(name))) || this.followNeedsRegen(name)
+  }
+
+  private poseUnsaved(name: string): boolean {
+    const v = this.edited.get(name)
+    return !!v && !samePose(v, this.saved.get(name) ?? new Map())
+  }
+
+  private followUnsaved(name: string): boolean {
+    const v = this.editedFollow.get(name)
+    return !!v && !sameFollows(v, this.savedFollow.get(name) ?? [])
+  }
+
+  /** Pose ou ligações do clipe ainda não gravadas. */
   isUnsaved(name: string | null = this.clip): boolean {
-    const v = name ? this.edited.get(name) : undefined
-    return !!v && !samePose(v, this.saved.get(name!) ?? new Map())
+    return !!name && (this.poseUnsaved(name) || this.followUnsaved(name))
+  }
+
+  /** A junta segue outra no clipe mostrado (não se move nem gira à mão). */
+  private isFollower(bone: string | null): boolean {
+    return !!bone && !!this.clip && this.wantedFollow(this.clip).some((c) => c.bone === bone)
   }
 
   private get editable(): boolean {
@@ -322,18 +407,17 @@ export class RigPoseEditor {
     }
     const showing = this.overlay.visible || this.mode !== 'off' || !!this.selected
     const delta = poseDelta(this.wanted(name), this.generatedOf(name))
-    if (!delta.size && !showing) return
+    const follows = this.wantedFollow(name)
+    if (!delta.size && !follows.length && !showing) return
     const frame = this.readFrame()
-    if (delta.size) {
-      const corr = poseCorrections(POSE_BONES, parentOf, this.rest, frame, delta)
-      for (const n of POSE_BONES) {
-        const x = corr.get(n)
-        const b = this.bones.get(n)
-        if (!x || !b?.parent) continue
-        undoStack.push([b, b.quaternion.clone()])
-        const local = localAfterWorldRotation(this.modelQuat(b.parent), toQuat(b.quaternion), x)
-        b.quaternion.set(local[0], local[1], local[2], local[3])
-      }
+    if (delta.size) this.applyCorrections(poseCorrections(POSE_BONES, parentOf, this.rest, frame, delta), undoStack)
+    if (follows.length) {
+      // a ligação vale em cada quadro: recalculada sobre o quadro já com a pose
+      const posedFrame = this.readFrame()
+      const hips = this.bones.get(POSE_BONES[0]!)
+      const hip = hips ? this.modelPos(hips) : ([0, 0, 0] as Vec3)
+      const out = followConstraints(POSE_BONES, parentOf, this.rest, this.restHeads, posedFrame, hip, follows)
+      this.applyCorrections(worldCorrections(POSE_BONES, parentOf, posedFrame, out), undoStack)
     }
     if (!showing) return
     const pos = new Map<string, Vec3>()
@@ -341,6 +425,18 @@ export class RigPoseEditor {
     this.snap = { frame, posed: poseOffsets(POSE_BONES, parentOf, this.rest, frame, delta), pos }
     this.updateOverlay()
     this.followProxy()
+  }
+
+  /** Gira cada osso pela rotação de mundo X (na ordem; o passo vai para a pilha do quadro). */
+  private applyCorrections(corr: ReadonlyMap<string, Quat>, undoStack: Array<[THREE.Object3D, THREE.Quaternion]>): void {
+    for (const n of POSE_BONES) {
+      const x = corr.get(n)
+      const b = this.bones.get(n)
+      if (!x || !b?.parent) continue
+      undoStack.push([b, b.quaternion.clone()])
+      const local = localAfterWorldRotation(this.modelQuat(b.parent), toQuat(b.quaternion), x)
+      b.quaternion.set(local[0], local[1], local[2], local[3])
+    }
   }
 
   private updateOverlay(): void {
@@ -359,11 +455,22 @@ export class RigPoseEditor {
     POSE_BONES.forEach((n, i) => {
       const p = this.bones.get(n)?.getWorldPosition(this.tmpV)
       if (p) pts.setXYZ(i, p.x, p.y, p.z)
-      const c = n === this.selected ? COLOR_SELECTED : n === this.hovered ? COLOR_HOVER : posed.has(n) ? COLOR_POSED : COLOR_JOINT
+      const c = n === this.selected ? COLOR_SELECTED : n === this.hovered ? COLOR_HOVER : this.isFollower(n) ? COLOR_FOLLOW : posed.has(n) ? COLOR_POSED : COLOR_JOINT
       col.setXYZ(i, c.r, c.g, c.b)
     })
     pts.needsUpdate = true
     col.needsUpdate = true
+    const links = this.clip ? this.wantedFollow(this.clip) : []
+    const fl = this.followLines.geometry.getAttribute('position') as THREE.BufferAttribute
+    links.forEach((c, i) => {
+      const a = this.bones.get(c.bone)?.getWorldPosition(this.tmpV)
+      if (a) fl.setXYZ(i * 2, a.x, a.y, a.z)
+      const b = this.bones.get(c.target)?.getWorldPosition(this.tmpV)
+      if (b) fl.setXYZ(i * 2 + 1, b.x, b.y, b.z)
+    })
+    fl.needsUpdate = true
+    this.followLines.geometry.setDrawRange(0, links.length * 2)
+    this.followLines.computeLineDistances()
   }
 
   /** O proxy do gizmo acompanha a junta selecionada (menos durante o arrasto). */
@@ -399,6 +506,8 @@ export class RigPoseEditor {
     if (bone === this.selected) return
     this.endDrag()
     this.selected = bone
+    this.pickingFollow = false
+    this.followWarn = ''
     this.followProxy()
     this.syncControls()
     this.updateOverlay()
@@ -416,11 +525,18 @@ export class RigPoseEditor {
     const bone = this.selected
     this.selectedEl.textContent = bone ? t('characterRig.pose.selected', { bone }) : t('characterRig.pose.none_selected')
     const hipsMove = this.mode === 'move' && !!bone && moveKind(bone).kind === 'none'
-    this.modeHintEl.textContent = hipsMove ? t('characterRig.pose.hips_fixed') : this.mode === 'move' ? t('characterRig.pose.move_hint') : this.mode === 'rotate' ? t('characterRig.pose.rotate_hint') : ''
-    this.modeHintEl.classList.toggle('warn', hipsMove)
+    const locked = this.isFollower(bone)
+    this.modeHintEl.textContent = locked && this.mode !== 'off'
+      ? t('characterRig.pose.follow_locked', { bone: boneLabel(bone!) })
+      : hipsMove ? t('characterRig.pose.hips_fixed') : this.mode === 'move' ? t('characterRig.pose.move_hint') : this.mode === 'rotate' ? t('characterRig.pose.rotate_hint') : ''
+    this.modeHintEl.classList.toggle('warn', hipsMove || (locked && this.mode !== 'off'))
+    this.followBtn.disabled = !enabled || !bone || !FOLLOW_BONES.includes(bone)
+    this.followBtn.classList.toggle('on', this.pickingFollow)
+    this.followHintEl.textContent = this.followWarn || (this.pickingFollow && bone ? t('characterRig.pose.follow_pick', { bone: boneLabel(bone) }) : '')
+    this.followHintEl.classList.toggle('warn', !!this.followWarn)
     const tc = this.tc
     if (!tc) return
-    const attach = enabled && !!bone && this.mode !== 'off' && !hipsMove
+    const attach = enabled && !!bone && this.mode !== 'off' && !hipsMove && !locked && !this.pickingFollow
     if (attach) {
       tc.setMode(this.mode === 'move' ? 'translate' : 'rotate')
       tc.setSpace(this.space)
@@ -461,8 +577,12 @@ export class RigPoseEditor {
     e.stopPropagation() // nem o orbit nem o gizmo veem o clique na bolinha
     e.preventDefault()
     this.downAt = null
+    if (this.pickingFollow) {
+      this.chooseFollowTarget(bone)
+      return
+    }
     this.select(bone)
-    if (this.mode !== 'move' || !this.editable || moveKind(bone).kind === 'none') return
+    if (this.mode !== 'move' || !this.editable || moveKind(bone).kind === 'none' || this.isFollower(bone)) return
     const b = this.bones.get(bone)!
     const normal = this.host.camera.getWorldDirection(new THREE.Vector3())
     this.beginDrag(new THREE.Plane().setFromNormalAndCoplanarPoint(normal, b.getWorldPosition(new THREE.Vector3())))
@@ -500,9 +620,9 @@ export class RigPoseEditor {
   private beginDrag(plane: THREE.Plane | null): void {
     const clip = this.clip
     const bone = this.selected
-    if (!clip || !bone || !this.snap || !this.editable) return
+    if (!clip || !bone || !this.snap || !this.editable || this.isFollower(bone)) return
     const start = new Map(this.wanted(clip))
-    this.pushUndo(clip, start)
+    this.pushUndo(clip)
     this.drag = { clip, bone, snap: this.snap, start, proxyStart: this.proxy.quaternion.clone(), plane }
   }
 
@@ -582,21 +702,63 @@ export class RigPoseEditor {
     this.renderPanel()
   }
 
-  private pushUndo(clip: string, pose: Map<string, Quat>): void {
+  /** Empilha a pose e as ligações atuais do clipe (antes de uma edição). */
+  private pushUndo(clip: string): void {
     const stack = this.undo.get(clip) ?? []
-    stack.push(new Map(pose))
+    stack.push({ pose: new Map(this.wanted(clip)), follow: [...this.wantedFollow(clip)] })
     this.undo.set(clip, stack)
   }
 
-  /** Ctrl+Z: volta a pose do clipe à de antes da última edição. */
+  /** Ctrl+Z: volta a pose e as ligações do clipe às de antes da última edição. */
   undoLast(): boolean {
     const clip = this.clip
     const prev = clip ? this.undo.get(clip)?.pop() : undefined
     if (!clip || !prev || this.drag) return false
-    this.edited.set(clip, prev)
+    this.edited.set(clip, prev.pose)
+    this.editedFollow.set(clip, prev.follow)
     this.host.onChange()
     this.renderPanel()
     return true
+  }
+
+  // ── Ligação "seguir" (adendo 9) ───────────────────────────────────────────
+
+  private toggleFollowPick(): void {
+    this.pickingFollow = !this.pickingFollow && !!this.selected && FOLLOW_BONES.includes(this.selected) && this.editable
+    this.followWarn = ''
+    if (this.pickingFollow && !this.skeletonInput.checked) this.setSkeleton(true)
+    this.syncControls()
+  }
+
+  /** Clique numa junta durante "Seguir…": captura a ligação no quadro mostrado. */
+  private chooseFollowTarget(target: string): void {
+    const clip = this.clip
+    const bone = this.selected
+    if (!clip || !bone || !this.model || !this.editable) return
+    if (followProblem(bone, target)) {
+      this.followWarn = t('characterRig.pose.follow_chain', { bone: boneLabel(bone), target: boneLabel(target) })
+      this.syncControls()
+      return
+    }
+    const heads = new Map<string, Vec3>()
+    for (const [n, b] of this.bones) heads.set(n, this.modelPos(b))
+    const link = captureFollow(bone, target, this.rest, this.readFrame(), heads)
+    this.pushUndo(clip)
+    this.editedFollow.set(clip, withFollow(this.wantedFollow(clip), link))
+    this.pickingFollow = false
+    this.followWarn = ''
+    debug(SCOPE, 'ligação seguir', clip, bone, '→', target)
+    this.host.onChange()
+    this.renderPanel()
+  }
+
+  private removeFollow(bone: string): void {
+    const clip = this.clip
+    if (!clip || !this.editable) return
+    this.pushUndo(clip)
+    this.editedFollow.set(clip, this.wantedFollow(clip).filter((c) => c.bone !== bone))
+    this.host.onChange()
+    this.renderPanel()
   }
 
   private resetBone(bone: string): void {
@@ -604,7 +766,7 @@ export class RigPoseEditor {
     if (!clip || !this.editable) return
     const cur = this.wanted(clip)
     if (!cur.has(bone)) return
-    this.pushUndo(clip, cur)
+    this.pushUndo(clip)
     const next = new Map(cur)
     next.delete(bone)
     this.edited.set(clip, next)
@@ -615,7 +777,7 @@ export class RigPoseEditor {
   private resetClip(): void {
     const clip = this.clip
     if (!clip || !this.editable || !this.wanted(clip).size) return
-    this.pushUndo(clip, this.wanted(clip))
+    this.pushUndo(clip)
     this.edited.set(clip, new Map())
     this.host.onChange()
     this.renderPanel()
@@ -628,6 +790,12 @@ export class RigPoseEditor {
     const key = e.key.toLowerCase()
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && key === 'z') return this.undoLast()
     if (e.ctrlKey || e.metaKey || e.altKey) return false
+    if (key === 'escape' && this.pickingFollow) {
+      this.pickingFollow = false
+      this.followWarn = ''
+      this.syncControls()
+      return true
+    }
     if (key === 'escape' && this.selected) {
       this.select(null)
       return true
@@ -655,8 +823,17 @@ export class RigPoseEditor {
         h('span', { class: 'rig-anim__tcode' }, `${quatAngleDeg(q).toFixed(1)}°`),
         h('button', { class: 'export-modal__btn export-modal__btn--secondary rig-arm__reset', type: 'button', onClick: () => this.resetBone(bone) }, t('characterRig.pose.reset_bone'))))
     }
+    this.followsEl.textContent = ''
+    const links = name && editable ? this.wantedFollow(name) : []
+    if (editable && !links.length) this.followsEl.append(h('div', { class: 'rig-pose__empty' }, t('characterRig.pose.follows_empty')))
+    for (const c of links) {
+      this.followsEl.append(h('div', { class: `rig-pose__bone${c.bone === this.selected ? ' on' : ''}` },
+        h('button', { class: 'rig-pose__bone-name rig-pose__link', type: 'button', title: `${c.bone} → ${c.target}`, onClick: () => this.select(c.bone) },
+          t('characterRig.pose.follow_item', { bone: boneLabel(c.bone), target: boneLabel(c.target) })),
+        h('button', { class: 'export-modal__btn export-modal__btn--secondary rig-arm__reset', type: 'button', onClick: () => this.removeFollow(c.bone) }, t('characterRig.pose.follow_remove'))))
+    }
     this.resetClipBtn.disabled = !editable || !pose.size
-    this.saveBtn.disabled = ![...this.edited.keys()].some((n) => this.isUnsaved(n))
+    this.saveBtn.disabled = ![...new Set([...this.edited.keys(), ...this.editedFollow.keys()])].some((n) => this.isUnsaved(n))
     this.allBtn.disabled = !editable || this.saved.size < 2
     this.stateEl.classList.remove('warn')
     if (!name) this.stateEl.textContent = t('characterRig.pose.no_clip')
@@ -664,9 +841,9 @@ export class RigPoseEditor {
       this.stateEl.textContent = t('characterRig.pose.not_in_config', { name })
       this.stateEl.classList.add('warn')
     } else {
-      const parts = [t('characterRig.pose.generated', { count: this.generatedOf(name).size })]
+      const parts = [t('characterRig.pose.generated', { count: this.generatedOf(name).size, links: (this.generatedFollow.get(name) ?? []).length })]
       if (this.needsRegen(name)) {
-        parts.push(t('characterRig.pose.regen'))
+        parts.push(t(this.followNeedsRegen(name) ? 'characterRig.pose.follow_regen' : 'characterRig.pose.regen'))
         this.stateEl.classList.add('warn')
       }
       if (this.isUnsaved(name)) parts.push(t('characterRig.pose.unsaved'))
@@ -681,18 +858,21 @@ export class RigPoseEditor {
    */
   async save(): Promise<boolean> {
     const path = this.configPath
-    const pending = new Map([...this.edited].filter(([n]) => this.isUnsaved(n)))
-    if (!path || !pending.size) return true
+    const pending = new Map([...this.edited].filter(([n]) => this.poseUnsaved(n)))
+    const pendingFollow = new Map([...this.editedFollow].filter(([n]) => this.followUnsaved(n)))
+    if (!path || (!pending.size && !pendingFollow.size)) return true
     try {
       const before = stripBom(await window.electronAPI.readFile(path))
-      const next = applyPoses(parseConfigObject(before), pending)
+      const next = applyFollows(applyPoses(parseConfigObject(before), pending), pendingFollow)
       const text = serializeConfig(next)
       if (text !== before) {
         await window.electronAPI.writeFile(path, text)
-        debug(SCOPE, 'pose gravada', path, [...pending.keys()])
+        debug(SCOPE, 'pose gravada', path, { pose: [...pending.keys()], follow: [...pendingFollow.keys()] })
       }
       this.saved = posesFromConfig(next)
       this.edited = new Map()
+      this.savedFollow = followsFromConfig(next)
+      this.editedFollow = new Map()
       this.host.onChange()
       this.renderPanel()
       this.stateEl.textContent = `${this.stateEl.textContent} ${t('characterRig.pose.saved', { file: splitPath(path).name })}`
@@ -744,7 +924,16 @@ export class RigPoseEditor {
     const pm = this.points.material as THREE.PointsMaterial
     pm.map?.dispose()
     pm.dispose()
+    this.followLines.geometry.dispose()
+    ;(this.followLines.material as THREE.Material).dispose()
   }
+}
+
+/** Nome do osso para o usuário ("Mão direita"); sem tradução, o nome Mixamo. */
+function boneLabel(bone: string): string {
+  const key = `characterRig.bone.${bone}`
+  const label = t(key)
+  return label === key ? bone : label
 }
 
 /** Tira o BOM do começo do texto. */
