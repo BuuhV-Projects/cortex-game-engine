@@ -24,9 +24,11 @@ import {
   offsetDelta,
   sameOffsets,
   sideRotations,
+  twistRotation,
   type ArmOffsetKey,
   type ArmOffsets,
   type Quat,
+  type Vec3,
 } from './characterRigArmSpace'
 
 /**
@@ -39,6 +41,7 @@ import {
  * o "Character Arm-Space" do Mixamo). A prévia aplica por cima do GLB só a
  * diferença entre o slider e o `armOffsets` gravado no JSON do skin do build.
  * Adendo 5: `shoulderBack` (ombros pra trás) e "aplicar a todos os clipes".
+ * Adendo 7: `armTwist`/`foreArmTwist` (giro no eixo do braço e do antebraço).
  */
 
 const SCOPE = 'characterRig'
@@ -62,6 +65,8 @@ const ARM_LABEL: Record<ArmOffsetKey, string> = {
   armSpace: 'characterRig.arm.space',
   elbowSpace: 'characterRig.arm.elbow',
   shoulderBack: 'characterRig.arm.back',
+  armTwist: 'characterRig.arm.arm_twist',
+  foreArmTwist: 'characterRig.arm.forearm_twist',
 }
 
 function toQuat(q: THREE.Quaternion): Quat {
@@ -72,9 +77,9 @@ function formatDeg(v: number): string {
   return `${v > 0 ? '+' : ''}${v.toFixed(1)}°`
 }
 
-/** Parâmetros `{lift, space, elbow, back}` das mensagens de estado. */
+/** Parâmetros `{lift, space, elbow, back, armTwist, foreTwist}` das mensagens de estado. */
 function degParams(o: ArmOffsets): Record<string, string> {
-  return { lift: formatDeg(o.shoulderLift), space: formatDeg(o.armSpace), elbow: formatDeg(o.elbowSpace), back: formatDeg(o.shoulderBack) }
+  return { lift: formatDeg(o.shoulderLift), space: formatDeg(o.armSpace), elbow: formatDeg(o.elbowSpace), back: formatDeg(o.shoulderBack), armTwist: formatDeg(o.armTwist), foreTwist: formatDeg(o.foreArmTwist) }
 }
 
 /** Tira o BOM do começo do texto. */
@@ -93,7 +98,7 @@ interface ArmBones {
   chest: THREE.Object3D
   /** Rotação do peito no repouso, no espaço do modelo. */
   chestRest: Quat
-  sides: Array<{ sign: number; shoulder: THREE.Object3D; arm: THREE.Object3D; foreArm: THREE.Object3D }>
+  sides: Array<{ sign: number; shoulder: THREE.Object3D; arm: THREE.Object3D; foreArm: THREE.Object3D; hand: THREE.Object3D }>
 }
 
 function base64ToArrayBuffer(b64: string): ArrayBuffer {
@@ -160,6 +165,8 @@ export class RigAnimationPreview {
   private readonly armPose: Array<[THREE.Object3D, THREE.Quaternion]> = []
   private readonly tmpQ = new THREE.Quaternion()
   private readonly tmpQ2 = new THREE.Quaternion()
+  private readonly tmpV = new THREE.Vector3()
+  private readonly tmpV2 = new THREE.Vector3()
 
   constructor() {
     this.buildSelect = h('select', { class: 'gs-input rig-anim__build', title: t('characterRig.anim.build') }) as HTMLSelectElement
@@ -700,6 +707,13 @@ export class RigAnimationPreview {
     }
   }
 
+  /** Direção `from` → `to` no espaço do modelo (getWorldPosition recalcula a cadeia já girada). */
+  private boneDir(from: THREE.Object3D, to: THREE.Object3D, model: THREE.Object3D): Vec3 {
+    const a = model.worldToLocal(from.getWorldPosition(this.tmpV))
+    const c = model.worldToLocal(to.getWorldPosition(this.tmpV2))
+    return [c.x - a.x, c.y - a.y, c.z - a.z]
+  }
+
   /** Rotação de mundo de `o` no espaço do modelo. */
   private modelQuat(o: THREE.Object3D, model: THREE.Object3D): Quat {
     model.getWorldQuaternion(this.tmpQ2).invert()
@@ -708,8 +722,8 @@ export class RigAnimationPreview {
 
   private findArmBones(model: THREE.Object3D): ArmBones | null {
     const chest = model.getObjectByName(CHEST_BONE)
-    const sides = ARM_SIDES.map((s) => ({ sign: s.sign, shoulder: model.getObjectByName(s.shoulder), arm: model.getObjectByName(s.arm), foreArm: model.getObjectByName(s.foreArm) }))
-    if (!chest || sides.some((s) => !s.shoulder?.parent || !s.arm?.parent || !s.foreArm?.parent)) {
+    const sides = ARM_SIDES.map((s) => ({ sign: s.sign, shoulder: model.getObjectByName(s.shoulder), arm: model.getObjectByName(s.arm), foreArm: model.getObjectByName(s.foreArm), hand: model.getObjectByName(s.hand) }))
+    if (!chest || sides.some((s) => !s.shoulder?.parent || !s.arm?.parent || !s.foreArm?.parent || !s.hand)) {
       debug(SCOPE, 'rig sem os ossos do ajuste dos braços', { chest: !!chest })
       return null
     }
@@ -718,7 +732,7 @@ export class RigAnimationPreview {
       model,
       chest,
       chestRest: this.modelQuat(chest, model),
-      sides: sides.map((s) => ({ sign: s.sign, shoulder: s.shoulder!, arm: s.arm!, foreArm: s.foreArm! })),
+      sides: sides.map((s) => ({ sign: s.sign, shoulder: s.shoulder!, arm: s.arm!, foreArm: s.foreArm!, hand: s.hand! })),
     }
   }
 
@@ -734,14 +748,24 @@ export class RigAnimationPreview {
     const name = this.current?.name
     if (!b || !name) return
     const d = offsetDelta(this.wantedOffsets(name), this.generatedOf(name))
-    if (!d.shoulderLift && !d.armSpace && !d.elbowSpace && !d.shoulderBack) return
+    if (ARM_OFFSET_KEYS.every((k) => !d[k])) return
     const chest = this.modelQuat(b.chest, b.model)
     const axis = chestAxis(chest, b.chestRest)
     const up = chestUp(chest, b.chestRest)
     for (const side of b.sides) {
       const r = sideRotations(axis, up, side.sign, d)
       // clavícula, braço, antebraço: cada um lê o pai já girado (getWorldQuaternion recalcula a cadeia)
-      for (const [bone, rot] of [[side.shoulder, r.shoulder], [side.arm, r.arm], [side.foreArm, r.foreArm]] as const) {
+      // a torção usa a direção do osso já girado (pivô dele → pivô do filho), como o `arm_offsets`
+      const steps: Array<[THREE.Object3D, () => Quat | null]> = [
+        [side.shoulder, () => r.shoulder],
+        [side.arm, () => r.arm],
+        [side.arm, () => (d.armTwist ? twistRotation(this.boneDir(side.arm, side.foreArm, b.model), side.sign, d.armTwist) : null)],
+        [side.foreArm, () => r.foreArm],
+        [side.foreArm, () => (d.foreArmTwist ? twistRotation(this.boneDir(side.foreArm, side.hand, b.model), side.sign, d.foreArmTwist) : null)],
+      ]
+      for (const [bone, rotOf] of steps) {
+        const rot = rotOf()
+        if (!rot) continue
         this.armPose.push([bone, bone.quaternion.clone()])
         const local = localAfterWorldRotation(this.modelQuat(bone.parent!, b.model), toQuat(bone.quaternion), rot)
         bone.quaternion.set(local[0], local[1], local[2], local[3])

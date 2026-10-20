@@ -19,6 +19,7 @@ import {
   QUAT_IDENTITY,
   rotateVec,
   sideRotations,
+  twistRotation,
   ZERO_OFFSETS,
   type ArmOffsets,
   type Quat,
@@ -65,9 +66,21 @@ function apply(sk: Record<string, Node>, partial: Partial<ArmOffsets>, spine2Res
   const up = chestUp(chest, spine2Rest)
   for (const [side, sign] of [['Left', 1], ['Right', -1]] as const) {
     const r = sideRotations(axis, up, sign, offsets)
-    for (const [bone, rot] of [['Shoulder', r.shoulder], ['Arm', r.arm], ['ForeArm', r.foreArm]] as const) {
+    const dir = (from: string, to: string): Vec3 => {
+      const a = world(sk, `${side}${from}`).pos
+      const b = world(sk, `${side}${to}`).pos
+      return [b[0] - a[0], b[1] - a[1], b[2] - a[2]]
+    }
+    const steps: Array<[string, () => Quat]> = [
+      ['Shoulder', () => r.shoulder],
+      ['Arm', () => r.arm],
+      ['Arm', () => twistRotation(dir('Arm', 'ForeArm'), sign, offsets.armTwist)],
+      ['ForeArm', () => r.foreArm],
+      ['ForeArm', () => twistRotation(dir('ForeArm', 'Hand'), sign, offsets.foreArmTwist)],
+    ]
+    for (const [bone, rotOf] of steps) {
       const n = sk[`${side}${bone}`]!
-      n.rot = localAfterWorldRotation(world(sk, n.parent!).rot, n.rot, rot)
+      n.rot = localAfterWorldRotation(world(sk, n.parent!).rot, n.rot, rotOf())
     }
   }
 }
@@ -211,6 +224,40 @@ describe('rotação dos braços', () => {
   })
 })
 
+describe('giro no eixo do braço e do antebraço (adendo 7)', () => {
+  const front = (sk: Record<string, Node>, bone: string): Vec3 => rotateVec(world(sk, bone).rot, [0, 0, 1])
+
+  it('armTwist +θ vira a frente da mão esquerda para +X e a direita para −X sem mover cotovelo nem mão', () => {
+    const sk = skeleton()
+    const elbow = world(sk, 'LeftForeArm').pos
+    const hand = world(sk, 'LeftHand').pos
+    apply(sk, { armTwist: 30 })
+    expect(front(sk, 'LeftHand')[0]).toBeCloseTo(Math.sin(Math.PI / 6), 6)
+    expect(front(sk, 'RightHand')[0]).toBeCloseTo(-Math.sin(Math.PI / 6), 6)
+    world(sk, 'LeftForeArm').pos.forEach((v, i) => expect(v).toBeCloseTo(elbow[i]!, 9))
+    world(sk, 'LeftHand').pos.forEach((v, i) => expect(v).toBeCloseTo(hand[i]!, 9))
+    expect(front(sk, 'LeftArm')[0]).toBeCloseTo(Math.sin(Math.PI / 6), 6) // o braço gira junto
+  })
+
+  it('foreArmTwist +θ gira só antebraço e mão (o braço fica)', () => {
+    const sk = skeleton()
+    apply(sk, { foreArmTwist: 30 })
+    expect(front(sk, 'LeftHand')[0]).toBeCloseTo(Math.sin(Math.PI / 6), 6)
+    expect(front(sk, 'RightHand')[0]).toBeCloseTo(-Math.sin(Math.PI / 6), 6)
+    expect(front(sk, 'LeftArm')).toEqual([0, 0, 1])
+  })
+
+  it('o eixo é o do osso já ajustado: com o braço aberto, a mão não sai do lugar ao girar', () => {
+    const sk = skeleton()
+    apply(sk, { armSpace: 25 })
+    const hand = world(sk, 'LeftHand').pos
+    const sk2 = skeleton()
+    apply(sk2, { armSpace: 25, armTwist: 40 })
+    world(sk2, 'LeftHand').pos.forEach((v, i) => expect(v).toBeCloseTo(hand[i]!, 9))
+    expect(front(sk2, 'LeftHand')).not.toEqual(front(sk, 'LeftHand'))
+  })
+})
+
 describe('valores', () => {
   it('clampOffset limita ao intervalo e arredonda ao passo de 0,5', () => {
     expect(clampOffset('shoulderLift', 25)).toBe(20)
@@ -227,18 +274,26 @@ describe('valores', () => {
     expect(clampOffset('armSpace', Number.NaN)).toBe(0)
   })
 
+  it('torções: intervalo próprio e entram na config e no delta', () => {
+    expect(clampOffset('armTwist', 99)).toBe(60)
+    expect(clampOffset('foreArmTwist', -120)).toBe(-90)
+    const cfg = { skinned: { clips: { idle: { file: 'i.fbx', armTwist: 12, foreArmTwist: -20 } } } }
+    expect(armOffsetsFromConfig(cfg).get('idle')).toEqual({ ...ZERO_OFFSETS, armTwist: 12, foreArmTwist: -20 })
+    expect(offsetDelta({ ...ZERO_OFFSETS, armTwist: 12 }, { ...ZERO_OFFSETS, armTwist: 5 })).toEqual({ ...ZERO_OFFSETS, armTwist: 7 })
+  })
+
   it('offsetDelta = desejado − gerado', () => {
-    expect(offsetDelta({ shoulderLift: 5, armSpace: 10, elbowSpace: 0, shoulderBack: 4 }, { shoulderLift: 2, armSpace: 10, elbowSpace: 0, shoulderBack: 6 })).toEqual({ shoulderLift: 3, armSpace: 0, elbowSpace: 0, shoulderBack: -2 })
+    expect(offsetDelta({ ...ZERO_OFFSETS, shoulderLift: 5, armSpace: 10, elbowSpace: 0, shoulderBack: 4 }, { ...ZERO_OFFSETS, shoulderLift: 2, armSpace: 10, elbowSpace: 0, shoulderBack: 6 })).toEqual({ ...ZERO_OFFSETS, shoulderLift: 3, armSpace: 0, elbowSpace: 0, shoulderBack: -2 })
   })
 
   it('lê da config (ausente = 0) e do JSON do skin (armOffsets ausente = 0)', () => {
     const cfg = { skinned: { clips: { idle: { file: 'idle.fbx', loop: true, armSpace: 8, elbowSpace: -6, shoulderBack: 5 }, walk: { file: 'w.fbx' } } } }
-    expect(armOffsetsFromConfig(cfg).get('idle')).toEqual({ shoulderLift: 0, armSpace: 8, elbowSpace: -6, shoulderBack: 5 })
+    expect(armOffsetsFromConfig(cfg).get('idle')).toEqual({ ...ZERO_OFFSETS, shoulderLift: 0, armSpace: 8, elbowSpace: -6, shoulderBack: 5 })
     expect(armOffsetsFromConfig(cfg).get('walk')).toEqual(ZERO_OFFSETS)
     expect(armOffsetsFromConfig({}).size).toBe(0)
     const skin = { clips: { idle: { loop: true, armOffsets: { shoulderLift: -2, armSpace: 8, elbowSpace: 4 } }, run: { armOffsets: { shoulderLift: 0, armSpace: 0, elbowSpace: 0, shoulderBack: 7.5 } }, walk: { loop: true } } }
-    expect(armOffsetsFromSkin(skin).get('idle')).toEqual({ shoulderLift: -2, armSpace: 8, elbowSpace: 4, shoulderBack: 0 }) // JSON sem o campo = 0
-    expect(armOffsetsFromSkin(skin).get('run')).toEqual({ shoulderLift: 0, armSpace: 0, elbowSpace: 0, shoulderBack: 7.5 })
+    expect(armOffsetsFromSkin(skin).get('idle')).toEqual({ ...ZERO_OFFSETS, shoulderLift: -2, armSpace: 8, elbowSpace: 4, shoulderBack: 0 }) // JSON sem o campo = 0
+    expect(armOffsetsFromSkin(skin).get('run')).toEqual({ ...ZERO_OFFSETS, shoulderLift: 0, armSpace: 0, elbowSpace: 0, shoulderBack: 7.5 })
     expect(armOffsetsFromSkin(skin).get('walk')).toEqual(ZERO_OFFSETS)
     expect(armOffsetsFromSkin(null).size).toBe(0)
   })
@@ -261,9 +316,9 @@ describe('gravação na config', () => {
   it('acrescenta no fim da entrada, mantém a posição do campo existente e omite 0', () => {
     const cfg = parseConfigObject(text)
     const next = applyArmOffsets(cfg, new Map([
-      ['idle', { shoulderLift: 2.5, armSpace: 10, elbowSpace: -3, shoulderBack: 6 }],
-      ['walk', { shoulderLift: 0, armSpace: 6, elbowSpace: 0, shoulderBack: 0 }],
-      ['ghost', { shoulderLift: 1, armSpace: 1, elbowSpace: 0, shoulderBack: 0 }], // fora da config: ignorado
+      ['idle', { ...ZERO_OFFSETS, shoulderLift: 2.5, armSpace: 10, elbowSpace: -3, shoulderBack: 6 }],
+      ['walk', { ...ZERO_OFFSETS, shoulderLift: 0, armSpace: 6, elbowSpace: 0, shoulderBack: 0 }],
+      ['ghost', { ...ZERO_OFFSETS, shoulderLift: 1, armSpace: 1, elbowSpace: 0, shoulderBack: 0 }], // fora da config: ignorado
     ]))
     const clips = (next['skinned'] as Record<string, Record<string, unknown>>)['clips'] as Record<string, Record<string, unknown>>
     expect(Object.keys(clips['idle']!)).toEqual(['file', 'loop', 'shoulderLift', 'armSpace', 'elbowSpace', 'shoulderBack'])
@@ -286,14 +341,14 @@ describe('gravação na config', () => {
   })
 
   it('grava o valor já limitado ao intervalo', () => {
-    const next = applyArmOffsets(parseConfigObject(text), new Map([['idle', { shoulderLift: 99, armSpace: -99, elbowSpace: 99, shoulderBack: -99 }]]))
+    const next = applyArmOffsets(parseConfigObject(text), new Map([['idle', { ...ZERO_OFFSETS, shoulderLift: 99, armSpace: -99, elbowSpace: 99, shoulderBack: -99 }]]))
     const idle = ((next['skinned'] as Record<string, unknown>)['clips'] as Record<string, Record<string, unknown>>)['idle']!
     expect(idle).toMatchObject({ shoulderLift: 20, armSpace: -20, elbowSpace: 30, shoulderBack: -20 })
   })
 
-  it('aplicar a todos: os 4 valores em todos os clipes da config, ordem preservada e 0 omitido', () => {
+  it('aplicar a todos: os valores em todos os clipes da config, ordem preservada e 0 omitido', () => {
     const cfg = parseConfigObject(text)
-    const next = applyArmOffsetsToAll(cfg, { shoulderLift: 3, armSpace: 0, elbowSpace: -4.5, shoulderBack: 8 })
+    const next = applyArmOffsetsToAll(cfg, { ...ZERO_OFFSETS, shoulderLift: 3, armSpace: 0, elbowSpace: -4.5, shoulderBack: 8 })
     const clips = (next['skinned'] as Record<string, unknown>)['clips'] as Record<string, Record<string, unknown>>
     expect(Object.keys(clips)).toEqual(['idle', 'walk'])
     expect(clips['idle']).toEqual({ file: 'idle.fbx', loop: true, shoulderLift: 3, elbowSpace: -4.5, shoulderBack: 8 })

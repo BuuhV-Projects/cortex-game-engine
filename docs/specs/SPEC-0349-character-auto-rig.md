@@ -401,3 +401,29 @@ Pasta mostra `basic-locomotion` (12 de 12, todos "no rig" pelo rebase) e `pistol
 "walk" acha linhas dos dois pacotes; marcar `pistol walk.fbx` e salvar acrescenta só
 `"pistolWalk": { "file": "pistol-locomotion/pistol walk.fbx", "loop": false }` no fim de `skinned.clips`; a aba
 Animações lista o pendente como `pistol-locomotion · pistol walk.fbx`. Gerar rig não foi rodado.
+
+## Adendo 7 (2026-10-20) - giro do braço e do antebraço
+
+Pedido do usuário: rotacionar braço e antebraço por clipe, além de abrir/fechar. Contrato do jogo: SPEC-0187,
+seção 8 (`armTwist`, `foreArmTwist`, em graus, + = rotação externa, palma pra frente).
+
+### Matemática (a mesma do `arm_offsets` do `character_skin.py`)
+
+`twistRotation(dir, sign, θ) = R(dir, −sign·θ)`, com `dir` a direção do osso no quadro **já girado** (do
+pivô dele ao do filho). Ordem por lado: clavícula, abertura do braço, **giro do braço** (dir = braço →
+antebraço), cotovelo, **giro do antebraço** (dir = antebraço → mão). A prévia lê `dir` com
+`getWorldPosition` depois de cada passo, então cada eixo já inclui os giros anteriores.
+
+### Comportamento
+
+- Aba Animações: dois sliders novos, "Girar o braço" (±60°) e "Girar o antebraço" (±90°), passo de 0,5°,
+  com o mesmo salvar, zerar e "aplicar a todos" (agora copia os 6 valores). As mensagens de estado e de
+  confirmação listam os giros.
+- Config sem os campos = 0. O JSON do skin antigo, sem os campos, também = 0.
+
+### Código
+
+`characterRigArmSpace.ts` (chaves, limites, `twistRotation`, osso da mão em `ARM_SIDES`),
+`RigAnimationPreview.ts` (passos de torção em `applyArmOffsets`, `boneDir`), i18n pt/en. Testes em
+`tests/electron/characterRigArmSpace.test.ts`: sinal dos dois lados, cotovelo e mão parados no giro do
+braço reto, braço parado no giro do antebraço, eixo do osso já aberto, limites, leitura e delta.
