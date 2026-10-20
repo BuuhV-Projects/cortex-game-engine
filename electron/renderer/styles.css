@@ -2738,6 +2738,11 @@ body.app-preview-fullscreen #preview-container {
   font: 12px var(--mono, monospace);
   cursor: pointer;
 }
+/* rótulo da ligação ("Mão direita → Mão esquerda") quebra linha em vez de cortar */
+.rig-pose__link {
+  white-space: normal;
+  font-family: inherit;
+}
 .rig-pose__empty {
   color: var(--od-fg-muted);
   font-size: 11px;

@@ -599,3 +599,49 @@ W_alvo_repouso⁻¹.
    selecionar a mão direita, "Seguir…", clicar na mão esquerda; tocando o clipe, a distância entre as duas
    mãos fica constante em todos os quadros (medir em vários tempos); remover a ligação volta ao clipe.
 3. Sem ligações, a aba fica igual a antes.
+
+### Verificação do adendo 9 (2026-10-20)
+
+**Testes (aceite 1 e 3):** `tests/electron/characterRigFollow.test.ts` (12 testes):
+- o `followConstraints` reproduz `expected` (`1 − |q·q'|` < 1e-6) e `expectedHeads` (< 1e-6 m) do gabarito;
+- sem ligações nada muda, e as correções osso a osso (como a prévia aplica) dão o mesmo resultado;
+- capturar e aplicar no mesmo quadro não muda nada;
+- em outro quadro a junta mantém a distância e o giro relativos ao alvo, com os comprimentos do repouso;
+- fora do alcance a cadeia estica na reta do alvo;
+- a ligação encadeada (mão esquerda seguindo a direita, já movida pelo peito) mantém a distância;
+- alvo na própria cadeia é recusado e ignorado na conta, e uma junta segue no máximo um alvo;
+- o polo de reserva é igual ao `Vector.orthogonal()` do Blender;
+- leitura/gravação de `follow` (posição do campo, 6 casas, lista vazia remove, resto igual) e `follow` do skin.
+
+O `twoBoneIk` do adendo 8 ganhou a margem e os comprimentos do repouso do pipeline, sem mudar os testes dele.
+Suíte inteira verde (`npx vitest run`: 2111 passaram, 9 pulados).
+
+**Prévia real (aceite 2):** mesma montagem da verificação do adendo 8 (Studio em dev, perfil temporário,
+CDP numa porta própria, vite na 5175, worktree de teste `npc-fear-sounds-0f816d`, LUC-01, build publicado),
+com mouse de verdade (`Input.dispatchMouseEvent`). `pistolShooting` está na config, mas fora do rig gerado
+(linha "não gerado"). As medições usaram `pistolIdle` e `pistolWalk` (mãos juntas na pistola), `walk` e `idle`.
+A distância entre as duas mãos foi medida em 8 tempos do clipe (pausado) e em 10 amostras tocando.
+
+| clipe | ligação | sem ligação (variação) | com ligação | remover |
+|---|---|---|---|---|
+| `pistolIdle` | mão direita → mão esquerda | 0,20381–0,20758 m (3,8 mm) | 0,20633 m em todos os tempos e amostras; erro até o alvo 0 | volta exatamente aos valores sem ligação |
+| `pistolWalk` | mão direita → mão esquerda | 0,20587–0,20975 m (3,9 mm) | 0,20727 m em todos; erro 0 | idem |
+| `walk` | mão direita → peito | 0,529–0,589 m (6,1 cm) | 0,55128 m em todos; erro 0 | idem |
+| `walk` | mão direita → mão esquerda (mãos a 85 cm) | 0,828–0,945 m | 0,85103 m nos quadros alcançáveis (erro ≤ 1e-6 m). Nos outros, o alvo passa 4,4–7,2 cm do alcance do braço: a cadeia estica e o erro é exatamente essa sobra | idem |
+
+- Criar a ligação não mexe no quadro mostrado: `pistolIdle` 0,20633 → 0,20633 m. Em `pistolWalk` a mudança
+  foi de 0,01 mm.
+- "Seguir…" com a mão direita selecionada, depois clique no antebraço direito: aviso "Antebraço direito está
+  na cadeia de Mão direita…". Clique na mão esquerda: ligação criada.
+- Com a mão ligada, Mover (`W`) não prende o gizmo nela e mostra "remova a ligação para mover".
+- `Ctrl+Z` desfaz a ligação e o clipe volta. O painel mostra "Ligações ou pose diferentes do GLB: gere o rig
+  de novo… Não salva."
+- Salvar pose gravou no `LUC-01.json` do worktree só `follow` (uma ligação, 6 casas), no fim da entrada
+  `pistolIdle`, com o resto igual. O arquivo foi restaurado (`git checkout`; antes era igual ao HEAD).
+
+**Não verificado:**
+- o clipe `pistolShooting` (fora do rig deste worktree);
+- Gerar rig e reabrir (o build com `follow` igual ao desejado não deveria mudar nada), porque Gerar rig não
+  foi rodado;
+- a confirmação ao trocar de clipe com ligação não salva (diálogo nativo);
+- a linha tracejada só foi vista nas capturas, onde fica curta com as mãos juntas.
