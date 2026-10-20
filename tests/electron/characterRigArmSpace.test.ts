@@ -20,6 +20,7 @@ import {
   rotateVec,
   sideRotations,
   twistRotation,
+  undoInReverse,
   ZERO_OFFSETS,
   type ArmOffsets,
   type Quat,
@@ -255,6 +256,25 @@ describe('giro no eixo do braço e do antebraço (adendo 7)', () => {
     apply(sk2, { armSpace: 25, armTwist: 40 })
     world(sk2, 'LeftHand').pos.forEach((v, i) => expect(v).toBeCloseTo(hand[i]!, 9))
     expect(front(sk2, 'LeftHand')).not.toEqual(front(sk, 'LeftHand'))
+  })
+})
+
+describe('desfazer o ajuste do quadro anterior', () => {
+  it('osso salvo duas vezes no quadro volta ao valor de antes do primeiro passo (sem acumular)', () => {
+    const bone = { q: 0 }
+    const saved: Array<readonly [typeof bone, number]> = []
+    for (let frame = 0; frame < 5; frame++) {
+      undoInReverse(saved, (b, v) => (b.q = v))
+      expect(bone.q).toBe(0) // pausado: o mixer não reescreve, então tem que voltar ao original
+      for (const step of [10, 25]) { // abertura e depois giro, no mesmo osso
+        saved.push([bone, bone.q])
+        bone.q += step
+      }
+    }
+    expect(saved).toHaveLength(2)
+    undoInReverse(saved, (b, v) => (b.q = v))
+    expect(bone.q).toBe(0)
+    expect(saved).toHaveLength(0)
   })
 })
 

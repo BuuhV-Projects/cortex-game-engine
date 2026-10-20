@@ -427,3 +427,11 @@ antebraço), cotovelo, **giro do antebraço** (dir = antebraço → mão). A pr�
 `RigAnimationPreview.ts` (passos de torção em `applyArmOffsets`, `boneDir`), i18n pt/en. Testes em
 `tests/electron/characterRigArmSpace.test.ts`: sinal dos dois lados, cotovelo e mão parados no giro do
 braço reto, braço parado no giro do antebraço, eixo do osso já aberto, limites, leitura e delta.
+
+### Correção (2026-10-20): braço girando sem parar na prévia
+
+Com os giros, braço e antebraço passaram a ser salvos duas vezes por quadro (abertura e depois giro). A
+restauração do quadro seguinte copiava os valores salvos na ordem direta, e o que ficava era o salvo no meio
+(já com o primeiro passo). Com a prévia pausada ou na linha do tempo, o mixer não reescreve os ossos, então
+esse resto se somava a cada quadro e o braço girava sem parar ao mexer no slider. Agora a restauração é na
+ordem inversa (`undoInReverse`), e o teste falha na ordem antiga.

@@ -229,3 +229,15 @@ export function sideRotations(axis: Readonly<Vec3>, up: Readonly<Vec3>, sign: nu
 export function twistRotation(dir: Readonly<Vec3>, sign: number, deg: number): Quat {
   return quatFromAxisAngle(dir, -sign * deg)
 }
+
+/**
+ * Desfaz uma pilha de "valor antes do passo" do último para o primeiro: o mesmo
+ * osso pode ser salvo mais de uma vez num quadro (abertura e depois giro, adendo 7)
+ * e só a ordem inversa devolve o valor de antes do PRIMEIRO passo. Na ordem direta
+ * sobrava o primeiro passo, que se somava a cada quadro (o braço girava sem parar).
+ * Esvazia a pilha.
+ */
+export function undoInReverse<T, V>(saved: Array<readonly [T, V]>, restore: (target: T, value: V) => void): void {
+  for (let i = saved.length - 1; i >= 0; i--) restore(saved[i]![0], saved[i]![1])
+  saved.length = 0
+}
