@@ -452,8 +452,10 @@ export class RigPoseEditor {
   }
 
   private onPointerDown(e: PointerEvent): void {
-    this.downAt = { x: e.clientX, y: e.clientY }
-    if (e.button !== 0 || this.tc?.axis || this.tc?.dragging) return // o gizmo cuida
+    // clique que começa no gizmo nunca tira a seleção (o pointerup dele zera `axis` antes do nosso)
+    const onGizmo = !!this.tc?.axis || !!this.tc?.dragging
+    this.downAt = onGizmo ? null : { x: e.clientX, y: e.clientY }
+    if (e.button !== 0 || onGizmo) return // o gizmo cuida
     const bone = this.pick(e.clientX, e.clientY)
     if (!bone) return
     e.stopPropagation() // nem o orbit nem o gizmo veem o clique na bolinha
@@ -490,7 +492,7 @@ export class RigPoseEditor {
     const at = this.downAt
     this.downAt = null
     // clique no vazio (sem arrastar o orbit, fora do gizmo) tira a seleção
-    if (at && e.target === this.host.canvas && !this.tc?.axis && Math.hypot(e.clientX - at.x, e.clientY - at.y) < CLICK_SLOP_PX) this.select(null)
+    if (at && e.target === this.host.canvas && Math.hypot(e.clientX - at.x, e.clientY - at.y) < CLICK_SLOP_PX) this.select(null)
   }
 
   // ── Edição ────────────────────────────────────────────────────────────────
