@@ -2504,7 +2504,7 @@ body.app-preview-fullscreen #preview-container {
 /* Aba Animações (SPEC-0349, adendo 1) */
 .rig-anim {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 260px minmax(0, 1fr) 240px;
   gap: 12px;
 }
 .rig-anim__main {
@@ -2664,6 +2664,86 @@ body.app-preview-fullscreen #preview-container {
   grid-column: 1 / -1;
   color: var(--od-yellow, #f5c451);
   font-size: 11px;
+}
+
+/* Pose por clipe, junta a junta (SPEC-0349, adendo 8): coluna à direita, um controle por linha */
+.rig-pose {
+  min-width: 0;
+  overflow: auto;
+  gap: 8px;
+}
+.rig-pose__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.rig-pose__mode {
+  flex: 1;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+.rig-pose__mode.on {
+  border-color: var(--accent, #22d3ee);
+  color: var(--accent, #22d3ee);
+}
+.rig-pose__space {
+  flex: 1;
+  padding: 4px 8px;
+}
+.rig-pose__selected {
+  color: var(--od-fg-bright);
+  font: 12px var(--mono, monospace);
+  overflow-wrap: anywhere;
+}
+.rig-pose__hint {
+  color: var(--od-fg-muted);
+  font-size: 11px;
+}
+.rig-pose__hint:empty {
+  display: none;
+}
+.rig-pose__hint.warn {
+  color: var(--od-yellow, #f5c451);
+}
+.rig-pose__bones {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rig-pose__bone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+.rig-pose__bone.on {
+  border-color: var(--od-yellow, #f5c451);
+}
+.rig-pose__bone-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--od-fg-bright);
+  font: 12px var(--mono, monospace);
+  cursor: pointer;
+}
+.rig-pose__empty {
+  color: var(--od-fg-muted);
+  font-size: 11px;
+}
+.rig-pose__state {
+  flex: none;
 }
 
 /* Aba Pasta: seleção dos FBX (SPEC-0349, adendo 1) */

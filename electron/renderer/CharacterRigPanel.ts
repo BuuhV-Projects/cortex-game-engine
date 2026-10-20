@@ -869,8 +869,8 @@ class CharacterRigPanel {
       return
     }
     if (!(await this.selection.save())) return
-    if (!(await this.preview.saveArm())) {
-      this.setTab('animations') // o erro aparece junto dos sliders
+    if (!(await this.preview.saveArm()) || !(await this.preview.savePose())) {
+      this.setTab('animations') // o erro aparece junto dos sliders / do painel de pose
       return
     }
     await this.run('generate')
