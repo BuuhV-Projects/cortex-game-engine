@@ -218,6 +218,7 @@ export class Game {
   private readonly _loop: GameLoop;
   private readonly _editor: GameEditor | null;
   private _onUpdate: ((deltaSeconds: number) => void) | null = null;
+  private _onLateUpdate: ((deltaSeconds: number) => void) | null = null;
   /** HUD de métricas (modo debug). `undefined` = ainda não decidido; `null` = off. */
   private _debugHud: DebugHud | null | undefined = undefined;
   /** Amostrador do perf trace (SPEC-0198). Inerte sem a ponte do host nativo. */
@@ -434,6 +435,21 @@ export class Game {
   }
 
   /**
+   * Registra um callback chamado a cada frame (delta em **segundos**, o mesmo do
+   * `onUpdate`), **depois** do `world.tick` e antes da UI e do render (SPEC-0351).
+   * É o lugar pra lógica que lê o que os Systems moveram NESTE frame — animar o
+   * personagem pelo passo que o `ThirdPersonControlSystem` deu, seguir um corpo
+   * físico. No `onUpdate` esse movimento chega com um frame de atraso.
+   *
+   * @example
+   * game.onUpdate((dt) => lerInput(dt))          // comanda o movimento
+   * game.onLateUpdate((dt) => animar(player, dt)) // reage ao movimento do frame
+   */
+  onLateUpdate(callback: (deltaSeconds: number) => void): void {
+    this._onLateUpdate = callback;
+  }
+
+  /**
    * Câmera que está **desenhando** agora: a livre do editor com o F2 aberto, senão a
    * do jogo (SPEC-0303). Use pra lógica que depende do que está na tela — corte por
    * distância, LOD — em vez de `camera`, que no editor fica parada no player.
@@ -601,7 +617,11 @@ export class Game {
     return this._inspect;
   }
 
-  private _tick(deltaMs: number): void {
+  /**
+   * Atualização do frame, sem o render: input → `onUpdate` → `world.tick` →
+   * `onLateUpdate` → UI → editor (SPEC-0351).
+   */
+  private _update(deltaMs: number): void {
     const dt = deltaMs / 1000;
     const p = this.profiler; // no-op quando o HUD de debug está desligado
     p.begin('input');
@@ -614,12 +634,22 @@ export class Game {
     p.begin('world');
     this.world.tick(deltaMs);
     p.end('world');
+    if (this._onLateUpdate) {
+      p.begin('late');
+      this._onLateUpdate(dt);
+      p.end('late');
+    }
     p.begin('ui');
     this._ui?.update(dt); // navegação/sync da UI de runtime (ADR-0102)
     p.end('ui');
     p.begin('editor');
     this._editor?.update(dt);
     p.end('editor');
+  }
+
+  private _tick(deltaMs: number): void {
+    this._update(deltaMs);
+    const p = this.profiler;
     // Câmera de inspeção (SPEC-0131): quando ativa VENCE tudo — render cru por ela,
     // de qualquer ângulo, com a gameplay seguindo (só o render muda). Usada pelo
     // playtest do Chat IA pra inspecionar a cena livremente.
@@ -903,7 +933,7 @@ export class Game {
    * Reseta o jogo pra **trocar de cena/fase** sem recriar o `Game` (renderer,
    * câmera e canvas continuam): para o loop, esvazia o world com `dispose` dos
    * sistemas ({@link World.clear} — libera o mundo do Rapier etc.), libera a GPU
-   * da cena ({@link Scene.disposeAll}), limpa a UI e zera o `onUpdate`.
+   * da cena ({@link Scene.disposeAll}), limpa a UI e zera o `onUpdate` e o `onLateUpdate`.
    *
    * O ESTADO DO JOGO fora do engine (áudio, música, timers próprios) é
    * responsabilidade do chamador. Depois do reset, re-registre os sistemas e
@@ -934,6 +964,7 @@ export class Game {
     const hudWasVisible = this._debugHud instanceof DebugHud && this._debugHud.visible;
     this._ui?.clear();
     this._onUpdate = null;
+    this._onLateUpdate = null;
     if (this._debugHud instanceof DebugHud) {
       this._debugHud = this.createDebugHud();
       this._debugHud.setVisible(hudWasVisible);
