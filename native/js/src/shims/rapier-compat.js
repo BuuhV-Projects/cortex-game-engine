@@ -337,6 +337,41 @@ World.prototype.castRayAndGetNormal = function (
   return null;
 };
 
+// Narrow-phase contacts (SPEC-0393). The scratch is shared and the callbacks
+// usually query again (contactPairsWith → contactPair), so every page / manifold
+// is copied out of the scratch before a callback runs.
+const SCRATCH_SIZE = 16;
+
+function ContactManifold(dists) {
+  this.__dists = dists;
+}
+ContactManifold.prototype.numContacts = function () { return this.__dists.length; };
+ContactManifold.prototype.contactDist = function (i) { return this.__dists[i]; };
+
+/** Calls `callback(collider2)` for every narrow-phase pair of `collider1`, like rapier3d-compat. */
+World.prototype.contactPairsWith = function (collider1, callback) {
+  const others = [];
+  let written = SCRATCH_SIZE;
+  while (written === SCRATCH_SIZE) {
+    written = __rapierNative.worldContactPairsWith(this.__ptr, collider1.handle, others.length);
+    for (let i = 0; i < written; i++) others.push(this.__scratch[i]);
+  }
+  for (let i = 0; i < others.length; i++) {
+    callback(new Collider(this.__ptr, others[i], this.__scratch));
+  }
+};
+
+/** Calls `callback(manifold, flipped)` once per contact manifold of the (collider1, collider2) pair. */
+World.prototype.contactPair = function (collider1, collider2, callback) {
+  for (let m = 0; ; m++) {
+    const points = __rapierNative.worldContactPair(this.__ptr, collider1.handle, collider2.handle, m);
+    if (points < 0) return;
+    const flipped = this.__scratch[0] === 1;
+    const dists = Array.from(this.__scratch.subarray(1, 1 + points));
+    callback(new ContactManifold(dists), flipped);
+  }
+};
+
 /**
  * Corpo pelo handle, ou `null`. O Rapier do browser resolve na arena interna;
  * aqui a arena vive no Rust, então procuramos entre os wrappers entregues —
