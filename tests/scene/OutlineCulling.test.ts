@@ -136,4 +136,35 @@ describe('cullOutlines', () => {
     cullOutlines(scene, new Vector3(0, 0, 0), 0);
     expect(casca.visible).toBe(true);
   });
+
+  // SPEC-0372: a hidden subtree is skipped, and processed again once shown.
+  it('skips a shell under a hidden ancestor and processes it again when shown', () => {
+    const group = new Object3D();
+    const casca = shell();
+    casca.position.set(0, 0, -500);
+    group.add(casca);
+    const scene = sceneWith(group);
+    group.visible = false;
+
+    const hidden = cullOutlines(scene, new Vector3(0, 0, 0), 0.025);
+    expect(hidden.evaluated).toBe(0);
+    expect(casca.visible).toBe(true); // untouched: not visited
+    expect(casca.userData[OUTLINE_AUTHORED_KEY]).toBeUndefined();
+
+    group.visible = true;
+    const shown = cullOutlines(scene, new Vector3(0, 0, 0), 0.025);
+    expect(shown.evaluated).toBe(1);
+    expect(casca.visible).toBe(false);
+  });
+
+  it('still re-evaluates a shell the filter itself hid', () => {
+    const casca = shell();
+    casca.position.set(0, 0, -500);
+    const scene = sceneWith(casca);
+    cullOutlines(scene, new Vector3(0, 0, 0), 0.025);
+    expect(casca.visible).toBe(false);
+
+    cullOutlines(scene, new Vector3(0, 0, -499), 0.025);
+    expect(casca.visible).toBe(true);
+  });
 });

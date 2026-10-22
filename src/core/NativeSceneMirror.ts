@@ -409,6 +409,7 @@ const ACESSOR_Z: PropertyDescriptor = {
 interface ObjetoEnganchado {
   _mVis: boolean;
   position: Vector3;
+  children: Object3D[];
 }
 
 /**
@@ -426,7 +427,10 @@ const ACESSOR_VISIBLE: PropertyDescriptor = {
   set(this: ObjetoEnganchado, valor: boolean): void {
     if (this._mVis === valor) return;
     this._mVis = valor;
-    avisarSujo(this.position as unknown as VetorEnganchado);
+    const posicao = this.position as unknown as VetorEnganchado;
+    avisarSujo(posicao);
+    // Hidden-ancestor counters of the subtree (SPEC-0372): paid on the toggle, not per frame.
+    if (this.children.length > 0) posicao._mEspelho?._ancestralMudou(this as unknown as Object3D, valor ? -1 : 1);
   },
 };
 
@@ -728,6 +732,9 @@ export class NativeSceneMirror {
   private _estaticoPorSlot = new Uint8Array(0);
   /** Geometria cuja esfera o host tem, por slot (SPEC-0332). */
   private _geometriaPorSlot: (BufferGeometry | undefined)[] = [];
+  /** How many mirrored ancestors of the slot are hidden; the sweep skips > 0 (SPEC-0372). */
+  private _ocultoAcima = new Uint16Array(0);
+  private readonly _pilhaOculto: Object3D[] = [];
   private readonly _mainPass = mainPassBridge();
   /** Onde a varredura das flags parou. */
   private _cursorVarredura = 0;
@@ -790,6 +797,7 @@ export class NativeSceneMirror {
     this._tipoPorSlot = new Uint8Array(capacidade);
     this._estaticoPorSlot = new Uint8Array(capacidade);
     this._geometriaPorSlot = new Array<BufferGeometry | undefined>(capacidade);
+    this._ocultoAcima = new Uint16Array(capacidade);
     this._qtdSujos = 0;
     this._cursorVarredura = 0;
   }
@@ -801,6 +809,9 @@ export class NativeSceneMirror {
       (mainPassUnsupportedType(objeto) ? ESTATICO_TIPO_RECUSADO : 0) |
       ((objeto as Object3D & { isGroup?: boolean }).isGroup === true ? ESTATICO_GRUPO : 0);
     this._geometriaPorSlot[slot] = geometriaDeDesenho(objeto as NoDaCena);
+    const pai = objeto.parent;
+    const paiSlot = pai ? this._indicePorObjeto.get(pai) : undefined;
+    this._ocultoAcima[slot] = paiSlot === undefined ? 0 : this._ocultoAcima[paiSlot]! + (pai!.visible ? 0 : 1);
     engancharNo(objeto, this, slot);
     // Depois do gancho: as flags leem o `visible` do armazenamento dele.
     this._flagsEnviadas[slot] = flagsDoQuadro(objeto, this._estaticoPorSlot[slot]!);
@@ -1196,11 +1207,12 @@ export class NativeSceneMirror {
     const estaticos = this._estaticoPorSlot;
     const tipos = this._tipoPorSlot;
     const geometrias = this._geometriaPorSlot;
+    const oculto = this._ocultoAcima;
     let cursor = this._cursorVarredura;
     for (let k = 0; k < fatia; k++) {
       if (cursor >= total) cursor = 0;
       const objeto = nos[cursor];
-      if (objeto) {
+      if (objeto && oculto[cursor] === 0) {
         if (marca[cursor] === 0 && flagsDoQuadro(objeto, estaticos[cursor]!) !== enviadas[cursor]) {
           this._marcarSujo(cursor);
         }
@@ -1212,6 +1224,33 @@ export class NativeSceneMirror {
       cursor++;
     }
     this._cursorVarredura = cursor;
+  }
+
+  /**
+   * A mirrored ancestor of `raiz`'s subtree was hidden (`delta = 1`) or shown
+   * (`-1`) — SPEC-0372. A slot whose counter returns to 0 is checked right
+   * away: whatever changed while hidden reaches the host in the frame it
+   * reappears, not up to {@link SWEEP_PERIOD_FRAMES} later.
+   * @internal
+   */
+  _ancestralMudou(raiz: Object3D, delta: number): void {
+    if (!this._installed) return;
+    const pilha = this._pilhaOculto;
+    for (const filho of raiz.children) pilha.push(filho);
+    while (pilha.length > 0) {
+      const objeto = pilha.pop()!;
+      const slot = this._indicePorObjeto.get(objeto);
+      if (slot === undefined) continue;
+      const contador = this._ocultoAcima[slot]! + delta;
+      this._ocultoAcima[slot] = contador;
+      if (contador === 0) {
+        if (this._sujoMarca[slot] === 0 && flagsDoQuadro(objeto, this._estaticoPorSlot[slot]!) !== this._flagsEnviadas[slot]) {
+          this._marcarSujo(slot);
+        }
+        this._conferirGeometria(objeto, slot);
+      }
+      for (const filho of objeto.children) pilha.push(filho);
+    }
   }
 
   /**
