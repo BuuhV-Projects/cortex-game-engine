@@ -1,0 +1,9 @@
+// Fixture for noPerFrameAllocation.test.ts: one allocation per banned pattern, and one allowed.
+const _scratch = new Vector3(); // module scope: allowed
+class AllocatingSystem extends System {
+  private readonly field = new Matrix4(); // instance field: allowed
+  update(): void {
+    const v = new Vector3();
+    [1].forEach(() => new THREE.Matrix4());
+  }
+}
