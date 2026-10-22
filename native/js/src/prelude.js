@@ -16,6 +16,7 @@ import { installNetShims } from './shims/net.js';
 import { installStorageShims } from './shims/storage.js';
 import { installImageShims } from './shims/image.js';
 import { installWebAudioLite } from './shims/webaudio-lite.js';
+import { installHtmlAudio } from './shims/html-audio.js';
 import { installCanvas2d } from './shims/canvas2d/index.js';
 
 installGlobals();
@@ -29,6 +30,7 @@ installNetShims();
 installStorageShims();
 installImageShims();
 installWebAudioLite();
+installHtmlAudio();
 installHostCanvas();
 installPointerLock(globalThis.__cortexCanvas);
 
