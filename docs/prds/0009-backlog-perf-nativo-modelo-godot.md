@@ -1,8 +1,40 @@
 # PRD 0009 - Backlog de performance do host nativo (modelo Godot)
 
 **Data:** 2026-10-10
-**Status:** **BACKLOG** — nada iniciado. Retomar quando o jogo for exportado
-para rodar no nativo. Até lá o desenvolvimento roda no Studio (V8 com JIT, ~75 fps).
+**Status:** **EM ANDAMENTO** (2026-10-22) — B1, B2, B4 e pendências em frentes
+paralelas; ver "Estado em 2026-10-22".
+
+> **Correção:** a primeira versão deste PRD (2026-10-10) descrevia o B2 a partir
+> do texto original do ADR-0237 e ignorava o que o ciclo "75 fps no export do
+> DDD 61" já tinha entregado. O estado real está na tabela abaixo.
+
+## Estado em 2026-10-22
+
+| item | estado | onde |
+| --- | --- | --- |
+| Espelho da cena em C++ (só nós sujos) | **feito** | ADR-0232, SPEC-0234, SPEC-0322 |
+| Projeção/culling/ordenação do passe principal em C++ | **feito** | ADR-0330 (a), SPEC-0332 |
+| Passe de sombra nativo | **feito** | ADR-0244, SPEC-0245 (M6) |
+| Rapier nativo, corpo parado sem custo | **feito** | ADR-0336, SPEC-0337 |
+| Câmera/personagem em C++, SkinnedMesh no export | **feito** | R1 do ciclo, SPEC-0348 |
+| M0 do ADR-0237 (cache de bindings) | **medido: não há ganho** (69% refazem) | ADR-0237 |
+| B1 — zero alocação por quadro (+ medição do B3) | em andamento | sessão `b1-zero-alloc` |
+| B2 — desenho nativo no passe da cena (ADR-0330 (b)/(c)) | em andamento | sessão `b2-desenho-nativo` |
+| B4 — raycast de colisão em C++ (ADR-0346/SPEC-0347) | em andamento (porte da worktree R4-B) | sessão `b4-raycast-cpp` |
+| Cauda da física (R4-A) + `cullOutlines` pulando nós escondidos | em andamento | sessão `cauda-cull-outlines` |
+| B3 — skinning em C++ | **aguarda medição do B1** (NPCs já cozidos em lote instanciado) | — |
+| B5 — threads no C++ | depende do B2 | — |
+| B6 — Static Hermes | acompanhar (imaturo em 2026-10-03) | — |
+
+**Jogo-alvo das medições (decidido pelo usuário em 2026-10-22):** a `main` atual
+do DDD 61, fixada no commit `e2be01c`, cada frente numa worktree destacada do
+jogo. Não é a `dff1386` (fim do ciclo de 75 fps): aquele jogo não existe mais, e
+a `main` é mais pesada e sem as otimizações do ciclo — números absolutos piores
+que o histórico são esperados; vale o A/B na mesma build.
+
+Medições no export do DDD 61 são serializadas pelo lock
+`D:/jogos/detetive-brasilia/.cortex/measure.lock` (diretório criado com `mkdir`
+atômico, `owner.txt` dentro, removido ao fim de cada rodada).
 
 ## Contexto
 
@@ -51,20 +83,15 @@ fundo é inverter a posse dos dados: a cena desenhável vive no C++ e o JS só e
 deltas (criado, removido, transform mudou, material mudou). Isso também resolve
 a questão "gráfico construído pelo nativo, não pelo three.js".
 
-- [ ] **M0** — sonda: bindings e pipelines são cacheáveis? (horas; define o
-      tamanho do resto).
-- [ ] M1 — descrição de material independente de backend.
-- [ ] M2 — cache de pipeline em C++.
-- [ ] M3 — bind groups/uniformes nativos; `writeBuffer` proporcional ao que se
-      moveu.
-- [ ] M4 — RenderList nativa (ordem idêntica à do three).
-- [ ] M5 — submissão nativa do passe principal (`cpu.render` ≤ 10 ms).
-- [ ] M6 — passe de sombra CSM nativo (`cpu.render` ≤ 8 ms).
-- [ ] M7 — paridade visual verificável; M8 — flag de retorno e limpeza.
-- **Decisão em aberto:** o Studio continua no three.js (V8) e só o export usa o
-  servidor nativo, ou o mesmo C++ vai para WASM no Studio para manter uma pilha
-  só? Registrar em ADR antes do M4.
-- **Pronto quando:** critérios do ADR-0237.
+- [x] M0 — medido: não há ganho de cache (69% refazem).
+- [x] M1–M4 — MaterialDesc, cache de pipeline, uniformes por objeto, RenderList.
+- [x] M6 — passe de sombra nativo (63 → 75 fps no kart-racer).
+- [x] ADR-0330 (a) — projeção do passe principal em C++.
+- [ ] ADR-0330 (b)/(c) — desenho nativo no passe da cena e recusa honesta do
+      resto (SPEC-0333; ~65 draws inelegíveis no DDD 61).
+- **Decidido** (premissa do ADR-0237/ADR-0330): o Studio continua no three.js;
+  só o export usa o caminho nativo, e a paridade é verificada por imagem.
+- **Pronto quando:** critérios do ADR-0330.
 
 ### B3 — Skinning e animação de ossos em C++
 
@@ -83,7 +110,7 @@ fora; com NPCs e trânsito (DDD 61) o custo cresce com o número de personagens.
 No Godot o script chama `move_and_slide`/raycast e o laço roda em C++.
 
 - [ ] Passo do `CharacterPhysicsSystem` (raycasts contra a BVH) como **uma**
-      chamada nativa por personagem, ou em lote.
+      chamada nativa por personagem, ou em lote — ADR-0346/SPEC-0347 (R4-B).
 - [ ] Consultas espaciais em lote ("o que está perto de mim", pickups,
       gatilhos) — o maior item do CarSystem era o `Box3` dos pickups.
 - [ ] Manter a mesma API no Studio (implementação JS) e no host (nativa).
