@@ -49,6 +49,32 @@ antes de continuar; remova junctions com `cmd /c rmdir` antes de apagar uma work
 | D — congelamento | `.claude/worktrees/r4-d-congelamento` / `fix/congelamento-host` | reproduzir o congelamento visto 1× aos ~102 s (engine 5c251f18) ou deixar um watchdog no host que grave o estado | correção |
 | F1 — próximo corte | (nova) | levar ao C++ o laço `_renderObjects` dos objetos limpos (o C++ já tem candidatos e receitas) | ~1–3 ms no render |
 
+### R4-A medida e descartada (2026-10-22)
+
+Sonda temporária por quadro (o `TailProbe` da worktree `r4-a-cauda`, portado para a `main` c44d6554
+e removido depois): dt, tempo de JS, nº de passos e tempo do `world.step()`, custo por sistema e GC.
+Export release do jogo `aacfb7e` (merge do Guará), 5 pontos + dirigindo, t ≥ 30 s. Máquina carregada
+(outras sessões compilando): js mediano 14–18 ms.
+
+| ponto | js p50 / p95 | quadros com 2+ passos | 2 passos − 1 passo: render / `VehicleControlSystem` | GC jovem na cauda vs geral |
+|---|---|---|---|---|
+| Setor O | 19,8 / 30,9 | 83 % | +2,39 / +0,22 | 44 % / 16 % |
+| Centro | 16,6 / 25,7 | 57 % | +2,10 / +0,35 | 41 % / 16 % |
+| Comercial | 18,2 / 25,6 | 83 % | +1,02 / +0,18 | 51 % / 20 % |
+| Águas Claras | 17,2 / 27,0 | 61 % | +1,85 / +0,88 | 42 % / 16 % |
+| Guará | 16,4 / 29,4 | 54 % | +2,47 / +0,49 | 46 % / 16 % |
+| dirigindo (Hélio) | 14,0 / 29,4 | 33 % | +2,67 / +0,40 | 30 % / 15 % |
+
+- O `world.step()` custa ~0,15–0,25 ms por passo; o sub-passo extra inteiro (veículo + passo) custa
+  **0,2–0,9 ms**, contra um p95 8–15 ms acima da mediana.
+- Os quadros de 2 passos são mais caros sobretudo no **render** (+1,0…+2,7 ms), que não depende de
+  passo: é autocorrelação (um trecho de render pesado perde o vsync; o quadro seguinte, também pesado,
+  recebe dt de 26,7 ms e faz 2 passos). Não há realimentação pela física.
+- O caso que importa a 75 Hz (perdeu o vsync → 2 passos) só some com passo ≥ 1/37 s, grosso demais para
+  o veículo (ADR-0257).
+- **Descartada:** nenhuma mudança na física. A cauda segue no render e no GC jovem (presente em 30–51 %
+  dos quadros da cauda contra 15–20 % no geral) — frentes B1 (alocação) e de render.
+
 Pendências fora das frentes:
 
 - **Memória:** no soak de 10 min o vale do `external` pós-GC subiu 297 → 318 MB e o working
