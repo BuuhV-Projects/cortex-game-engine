@@ -405,6 +405,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   quando a próxima entra além do melhor acerto; respeita `layers` como o
   `intersectObjects`. Os raycasters de colisão ligam `firstHitOnly` (BVH para no 1º
   triângulo). ⚠️ quem precisar de TODOS os acertos não pode usar esses raycasters.
+  **No export nativo (ADR-0346 / SPEC-0347)** o `firstHit` e os raios de parede do
+  `CharacterPhysicsSystem` passam por `firstHitAmong` (`physics/nativeRaycast.ts`):
+  com `__cortexRaycast` no host, as malhas que o C++ reproduz fielmente vão numa
+  chamada só por raio (BVH própria no host, matriz lida do espelho); as demais seguem
+  o caminho JS na mesma consulta e o menor acerto vence. Malha atendida pelo nativo
+  não ganha árvore do three-mesh-bvh. `?nativeRaycast=0` desliga;
+  `?nativeRaycastCheck=1` roda os dois e conta divergências.
   Malha que um raio de colisão CRUZA ganha árvore a partir de 64 triângulos
   (`CROSSED_MIN_BVH_TRIS`; a varredura segue com 512) — um ônibus de ~400 tris sem
   árvore custava 1,4 ms/quadro na câmera. O `rebuild` do índice reaproveita esfera e
