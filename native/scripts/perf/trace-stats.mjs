@@ -1,0 +1,165 @@
+// Shared analysis for the perf kit (SPEC-0382): one verdict / one line per round.
+// Usage:
+//   node trace-stats.mjs validate <runDir...>   exit 1 if any round is invalid
+//   node trace-stats.mjs summary  <runDir...>
+//   node trace-stats.mjs ab       <runsRoot>    rounds named <point>-<A|B>-r<k>
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Samples before this are loading/warm-up (pipelines, streaming).
+export const WARMUP_MS = 30000;
+// Fewer game samples than this after warm-up = not a measurement (~10 s at 0.5 s/sample).
+export const MIN_ROWS = 20;
+// The host clamps frameMs at 100 ms; above it frameMs/fps measure nothing.
+export const FRAME_MS_CEILING = 100;
+// frame-timing windows in the first quarter of the log are loading.
+const FRAME_TIMING_SKIP_DIVISOR = 4;
+const P50 = 0.5;
+const P95 = 0.95;
+const P99 = 0.99;
+const PERCENT = 100;
+
+const FRAME_TIMING_RE = /frame-timing \((\d+) frames, (\d+) apresentados\).*?js med=([\d.]+) p95=([\d.]+)/;
+
+const quantile = (values, p) => {
+  if (!values.length) return NaN;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
+};
+const mean = (values) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : NaN);
+const fmt = (n, digits = 1) => (Number.isFinite(n) ? n.toFixed(digits) : '-');
+const readIf = (file) => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null);
+
+/** Parses one round folder into the numbers every mode needs. */
+export function analyzeRun(dir) {
+  const name = path.basename(path.resolve(dir));
+  const traceText = readIf(path.join(dir, 'perf-trace.jsonl'));
+  const logText = readIf(path.join(dir, 'perf-log.txt')) ?? '';
+  const meta = readIf(path.join(dir, 'meta.txt')) ?? '';
+  const lines = traceText === null ? [] : traceText.split('\n').filter((l) => l.trim());
+  const rows = [];
+  for (const line of lines) {
+    try {
+      const row = JSON.parse(line);
+      if (row.cpu && row.t >= WARMUP_MS) rows.push(row);
+    } catch {
+      // the host may be killed mid-line: the last line can be truncated
+    }
+  }
+  const windows = [];
+  for (const line of logText.split('\n')) {
+    const m = line.match(FRAME_TIMING_RE);
+    if (m) windows.push({ frames: +m[1], presented: +m[2], jsMed: +m[3], jsP95: +m[4] });
+  }
+  const steady = windows.slice(Math.floor(windows.length / FRAME_TIMING_SKIP_DIVISOR));
+  const section = (key) => ({
+    avg: mean(rows.map((r) => r.cpuAvg?.[key] ?? r.cpu[key] ?? 0)),
+    p99: quantile(rows.map((r) => r.cpuP99?.[key] ?? 0), P50),
+  });
+  const frameMs = rows.map((r) => r.frameMs);
+  const framesSum = steady.reduce((a, w) => a + w.frames, 0);
+  const presentedSum = steady.reduce((a, w) => a + w.presented, 0);
+
+  let reason = null;
+  if (traceText === null) reason = 'sem perf-trace.jsonl (rodada interrompida ou em andamento)';
+  else if (lines.length === 0) reason = 'trace vazio: o jogo morreu na carga (veja error_log.txt / run.log)';
+  else if (lines.length === 1) reason = 'trace de 1 linha: ficou na tela de carregamento';
+  else if (rows.length < MIN_ROWS) reason = `${rows.length} amostras após ${WARMUP_MS / 1000} s (mínimo ${MIN_ROWS})`;
+  else if (!rows.some((r) => r.cpuAvg && 'world' in r.cpuAvg)) reason = 'trace sem seções cpuAvg (rodou sem ?cortexDebug=perf): world não medido';
+  else if (!(section('world').avg > 0)) reason = 'world = 0: simulação parada';
+  else if (!windows.length) reason = 'perf-log sem frame-timing (rodou sem CORTEX_FRAME_TIMING?)';
+  else if (presentedSum === 0) reason = '0 quadros apresentados';
+  else if (/FROZE/.test(meta)) reason = 'congelou (FROZE no meta.txt)';
+
+  return {
+    name,
+    valid: reason === null,
+    reason,
+    rows: rows.length,
+    frameMed: quantile(frameMs, P50),
+    frameP95: quantile(frameMs, P95),
+    frameP99: quantile(frameMs, P99),
+    saturated: frameMs.filter((v) => v >= FRAME_MS_CEILING).length,
+    jsMed: mean(steady.map((w) => w.jsMed)),
+    jsP95: mean(steady.map((w) => w.jsP95)),
+    presentedPct: framesSum ? (PERCENT * presentedSum) / framesSum : NaN,
+    render: section('render'),
+    world: section('world'),
+    draws: quantile(rows.map((r) => r.draws), P50),
+  };
+}
+
+export function verdictLine(r) {
+  return r.valid ? `VÁLIDO   ${r.name}` : `INVÁLIDO ${r.name}: ${r.reason}`;
+}
+
+export function summaryLine(r) {
+  if (!r.valid) return verdictLine(r);
+  const alert = r.saturated
+    ? ` | ALERTA ${r.saturated} amostras no teto de ${FRAME_MS_CEILING} ms: frameMs não mede, compare render/world/draws`
+    : '';
+  return (
+    `VÁLIDO ${r.name} n=${r.rows} | frameMs ${fmt(r.frameMed)}/${fmt(r.frameP95)}/${fmt(r.frameP99)} (med/p95/p99)` +
+    ` | js ${fmt(r.jsMed, 2)}/${fmt(r.jsP95, 2)} | render ${fmt(r.render.avg, 2)} p99 ${fmt(r.render.p99)}` +
+    ` | world ${fmt(r.world.avg, 2)} p99 ${fmt(r.world.p99)} | draws ${r.draws} | apresentados ${fmt(r.presentedPct, 0)}%${alert}`
+  );
+}
+
+const AB_NAME_RE = /^(.+)-(A|B)-r\d+$/;
+const AB_METRICS = [
+  ['frameMs med', (r) => r.frameMed],
+  ['frameMs p95', (r) => r.frameP95],
+  ['js p95', (r) => r.jsP95],
+  ['render', (r) => r.render.avg],
+  ['world', (r) => r.world.avg],
+  ['draws', (r) => r.draws],
+];
+
+/** Table per point: mean over valid rounds of each arm, and B - A. */
+export function abTable(runsRoot) {
+  const groups = new Map();
+  const out = [];
+  for (const entry of fs.readdirSync(runsRoot).sort()) {
+    const m = entry.match(AB_NAME_RE);
+    if (!m) continue;
+    const r = analyzeRun(path.join(runsRoot, entry));
+    if (!r.valid) out.push(verdictLine(r));
+    const point = groups.get(m[1]) ?? { A: [], B: [] };
+    if (r.valid) point[m[2]].push(r);
+    groups.set(m[1], point);
+  }
+  out.push(`ponto | métrica | A (n) | B (n) | B-A`);
+  for (const [point, arms] of groups) {
+    for (const [label, pick] of AB_METRICS) {
+      const a = mean(arms.A.map(pick));
+      const b = mean(arms.B.map(pick));
+      out.push(`${point} | ${label} | ${fmt(a, 2)} (${arms.A.length}) | ${fmt(b, 2)} (${arms.B.length}) | ${fmt(b - a, 2)}`);
+    }
+  }
+  return out;
+}
+
+function main(argv) {
+  const [mode, ...dirs] = argv;
+  if (mode === 'validate' || mode === 'summary') {
+    if (!dirs.length) throw new Error(`uso: trace-stats.mjs ${mode} <pastaDaRodada...>`);
+    const results = dirs.map(analyzeRun);
+    for (const r of results) console.log(mode === 'validate' ? verdictLine(r) : summaryLine(r));
+    return mode === 'validate' && results.some((r) => !r.valid) ? 1 : 0;
+  }
+  if (mode === 'ab' && dirs.length === 1) {
+    for (const line of abTable(dirs[0])) console.log(line);
+    return 0;
+  }
+  throw new Error('uso: trace-stats.mjs validate|summary <pastaDaRodada...> | ab <pastaDasRodadas>');
+}
+
+if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
+  try {
+    process.exitCode = main(process.argv.slice(2));
+  } catch (err) {
+    console.error(err.message);
+    process.exitCode = 2;
+  }
+}

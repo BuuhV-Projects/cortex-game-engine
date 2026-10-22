@@ -677,6 +677,50 @@ pub unsafe extern "C" fn rn_collider_get(world: *mut World, collider: f64, what:
     }
 }
 
+/// Colliders in a narrow-phase pair with `collider` (any pair, active contact or
+/// not, like rapier3d-compat's `contactPairsWith`), paged through the scratch:
+/// writes up to `scratch.len()` handles starting at pair `start`, returns how many
+/// (SPEC-0393). The caller repeats with `start += written` while the page is full.
+/// # Safety: `world` alive.
+#[no_mangle]
+pub unsafe extern "C" fn rn_world_contact_pairs_with(world: *mut World, collider: f64, start: f64) -> f64 {
+    let w = &mut *world;
+    let me = unpack_collider(collider);
+    let mut written = 0;
+    for pair in w.narrow_phase.contact_pairs_with(me).skip(start as usize) {
+        if written == w.scratch.len() {
+            break;
+        }
+        let other = if pair.collider1 == me { pair.collider2 } else { pair.collider1 };
+        w.scratch[written] = pack_collider(other);
+        written += 1;
+    }
+    written as f64
+}
+
+/// Manifold `manifold` of the (c1, c2) pair: returns its point count and writes
+/// `scratch[0]` = 1 when the pair is flipped (Rapier's collider1 is `c2`) and the
+/// point distances in `scratch[1..]` (at most `scratch.len() - 1`). -1 when there
+/// is no such pair or manifold (SPEC-0393).
+/// # Safety: `world` alive.
+#[no_mangle]
+pub unsafe extern "C" fn rn_world_contact_pair(world: *mut World, c1: f64, c2: f64, manifold: f64) -> f64 {
+    let w = &mut *world;
+    let (h1, h2) = (unpack_collider(c1), unpack_collider(c2));
+    let Some(pair) = w.narrow_phase.contact_pair(h1, h2) else {
+        return -1.0;
+    };
+    let Some(m) = pair.manifolds.get(manifold as usize) else {
+        return -1.0;
+    };
+    w.scratch[0] = if pair.collider1 == h1 { 0.0 } else { 1.0 };
+    let count = m.points.len().min(w.scratch.len() - 1);
+    for (i, point) in m.points.iter().take(count).enumerate() {
+        w.scratch[1 + i] = point.dist as f64;
+    }
+    count as f64
+}
+
 /// Remove o corpo (e os colliders dele) do mundo. O kart-racer usa no respawn,
 /// pra limpar o que sobrou do carro anterior (SPEC-0216).
 /// # Safety: `world` vivo.
@@ -929,6 +973,37 @@ mod tests {
                 rn_world_step(w);
             }
             println!("bench_idle_city: {:.1} us/passo", t.elapsed().as_secs_f64() * US_PER_S / STEPS as f64);
+            rn_world_free(w);
+        }
+    }
+    /// A box resting on the floor forms a contact pair whose manifold touches
+    /// (distance <= 0 up to the contact margin), seen from either side (SPEC-0393).
+    #[test]
+    fn contact_pair_reports_a_resting_box() {
+        const FLOOR_HALF: (f32, f32, f32) = (10.0, 0.5, 10.0);
+        const BOX_HALF: (f32, f32, f32) = (0.5, 0.5, 0.5);
+        const TOUCH_DIST: f64 = 0.01;
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            let floor = add_box(w, KIND_FIXED, 0.0, 0.0, 0.0, FLOOR_HALF);
+            let cube = add_box(w, KIND_DYNAMIC, 0.0, 1.0, 0.0, BOX_HALF);
+            for _ in 0..SETTLE_STEPS {
+                rn_world_step(w);
+            }
+            let floor_c = rn_body_collider(w, floor, 0.0);
+            let cube_c = rn_body_collider(w, cube, 0.0);
+
+            assert_eq!(rn_world_contact_pairs_with(w, floor_c, 0.0), 1.0);
+            assert_eq!((&*w).scratch[0], cube_c);
+            assert_eq!(rn_world_contact_pairs_with(w, floor_c, 1.0), 0.0, "page past the end");
+
+            let points = rn_world_contact_pair(w, cube_c, floor_c, 0.0);
+            assert!(points >= 1.0, "points = {points}");
+            let flipped = (&*w).scratch[0];
+            assert!((&*w).scratch[1] <= TOUCH_DIST, "dist = {}", (&*w).scratch[1]);
+            rn_world_contact_pair(w, floor_c, cube_c, 0.0);
+            assert_eq!((&*w).scratch[0], 1.0 - flipped, "the other order flips");
+            assert_eq!(rn_world_contact_pair(w, cube_c, floor_c, 99.0), -1.0, "no such manifold");
             rn_world_free(w);
         }
     }
