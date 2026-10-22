@@ -5,6 +5,12 @@
 namespace tests {
 void testBlitBateComOGoldenDoJs();
 void testBlitRecusaArgumentosForaDoBuffer();
+void testRaycastLadoDaFace();
+void testRaycastMatrizComEscalaNaoUniforme();
+void testRaycastBvhIgualForcaBruta();
+void testRaycastInstanciasEPodaPorEntrada();
+void testRaycastRecusaIndiceForaDoBuffer();
+void testRaycastBateComOGoldenDoJs();
 void testFormatFromString();
 void testGcGenerationFromName();
 void testGcTotalsSeparateGenerations();
@@ -156,5 +162,11 @@ int main() {
   tests::testPassTimingSkipsInvalidPairs();
   tests::testBlitBateComOGoldenDoJs();
   tests::testBlitRecusaArgumentosForaDoBuffer();
+  tests::testRaycastLadoDaFace();
+  tests::testRaycastMatrizComEscalaNaoUniforme();
+  tests::testRaycastBvhIgualForcaBruta();
+  tests::testRaycastInstanciasEPodaPorEntrada();
+  tests::testRaycastRecusaIndiceForaDoBuffer();
+  tests::testRaycastBateComOGoldenDoJs();
   return testing::summary();
 }
