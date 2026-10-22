@@ -97,7 +97,7 @@ Ver ADR-0109.
 | `native/src/shims/ktx2.*` + `ktx2_transcode.*` | `__cortexTranscodeKtx2` (síncrono, thread JS) e `__cortexTranscodeKtx2Async` (worker do `io_pool`, Promise; reject se falhar — SPEC-0287): basis_universal → **BC7 com todos os mips** (SPEC-0155), fallback RGBA8 mip 0. O transcode puro (sem NAPI, `std::call_once` na init do basis, um `ktx2_transcoder` por chamada) mora em `ktx2_transcode.*`; `ktx2.cpp` só copia a entrada e cria os `ArrayBuffer`s na thread JS (fonte `ktx2` no `perf_arraybuffer`). A engine usa o async quando existe (`loadKtx2Native`) — o transcode de 2048² (~60 ms) saiu do frame. Lib em `third_party/basisu/` (só `transcoder/`, pinada) + `third_party/zstd/` (zstddeclib single-file do próprio basis) — o build liga `BASISD_SUPPORT_KTX2_ZSTD=1` porque o cook gera **UASTC+RDO+Zstd** pra cor (ADR-0119; ETC1S bandava os atlas de gradiente dos kits). |
 | `native/src/shims/quit.*` | `__cortexQuit()` (SPEC-0120): encerramento pedido pelo JOGO — empurra `SDL_EVENT_QUIT` na fila, o loop encerra pelo MESMO teardown do fechar-janela. O dom-lite mapeia `window.close()` pra cá. |
 | `native/src/shims/rapier.*` | Ponte C ABI do crate rapier-native → `__rapierNative` (funções achatadas, f64). |
-| `native/src/shims/audio.*` | `__cortexAudio`: decode (miniaudio) + playback (streams SDL3; loop/gain/pitch); `updateAudio()` por frame. O lado JS é `native/js/src/shims/webaudio-lite.js`: ⚠️ o `THREE.Audio.play()` chama `start()` ANTES de `connect()` — a voz nativa só nasce com a fonte iniciada E ligada (SPEC-0341), senão toca com ganho 1 e fora dos `GainNode` (ignora `setVolume`). |
+| `native/src/shims/audio.*` | `__cortexAudio`: decode (miniaudio) + playback (streams SDL3; loop/gain/pitch); `updateAudio()` por frame. O lado JS é `native/js/src/shims/webaudio-lite.js`: ⚠️ o `THREE.Audio.play()` chama `start()` ANTES de `connect()` — a voz nativa só nasce com a fonte iniciada E ligada (SPEC-0341), senão toca com ganho 1 e fora dos `GainNode` (ignora `setVolume`). O `Audio`/`HTMLAudioElement` (rádio do carro do DDD 61) é `native/js/src/shims/html-audio.js` (SPEC-0392): fetch + decode inteiro no `play()`, `ended` por tempo, PCM liberado ao trocar o `src`; ⚠️ `play()` depois de `pause()` recomeça a faixa (voz nativa sem offset). Global faltando no prelude = `ReferenceError` no boot, sem quadro e sem trace. |
 | `native/src/shims/text_raster.*` | `__cortexRasterText(texto, px, origem?)` (stb_truetype + Roboto pinada) → bitmap RGBA branco pro RendererUiBackend (ADR-0102) e pro canvas 2D. `origem` (`ui`/`canvas`) só alimenta a telemetria `text-vivo` do perf-log: rasters AINDA VIVOS por origem, descontados no finalizador do ArrayBuffer (`napi_add_finalizer`). `CORTEX_TEXT_LOG=1` imprime cada raster (origem, px, texto) no stdout (SPEC-0321). |
 | `src/ui/runtime/` (ENGINE) | UI de runtime ADR-0102: UiLayer/widgets/layout + DomUiBackend e RendererUiBackend. `uiFont.ts` embute a Roboto Medium (woff2, @font-face) pro DOM = mesma fonte do raster nativo (ADR-0103). Painel `fill` acompanha o viewport a cada frame (UiLayer). **DOM-lite com nomes do HTML5 (ADR-0123)**: `background` aceita `linear-gradient(180deg\|90deg,…)` e cores com alpha (`uiColor.ts` decompõe pro shader — THREE.Color não tem alpha), `boxShadow` duro (`"0 Npx 0 cor"`, segunda malha), `borderRadius`/`textAlign`, borda constante em botão, imagem clipada pelo raio (SDF) e tags `<div>/<span>/<img>` no template. Ordem de pintura por widget = `order*4` (sombra<caixa<imagem<texto). |
 | `native/src/core/gc_stats.*` | Totais do coletor do Hermes (SPEC-0264), alimentados pelo callback de analytics do `GCConfig` em `hermes_embed.cpp` e lidos pelo JS em `__cortexGcStats()`. Atômicos: o Hades coleta numa thread própria. |
@@ -475,7 +475,12 @@ Native (que roda milhares de libs sobre Hermes em produção):
   aparece só em runtime, como `undefined is not a function` no meio do setup do
   jogo — sem dizer qual função. Foi assim que o `forEachRigidBody` apareceu
   (kart-racer morrendo no `createCar`) e, depois, todo o raycast de mundo da
-  SPEC-0216. O controlador de veículo JÁ foi portado (SPEC-0209).
+  SPEC-0216. O controlador de veículo JÁ foi portado (SPEC-0209). Contatos do
+  narrow-phase (`world.contactPairsWith`/`contactPair`, manifold só com
+  `numContacts`/`contactDist`) vieram na SPEC-0393: a falta deles deixava o DDD 61
+  na tela "Aquecendo os gráficos…" (exceção já no 1º tick, sem nenhum quadro).
+  Antes de exportar um jogo novo, cruze TODAS as chamadas `world.*`/`body.*` do
+  jogo com o shim de uma vez (grep), em vez de descobrir uma por export.
 - **Propriedade faltando no shim NÃO dá erro — escrita vira propriedade JS
   solta.** `world.timestep` não existia: `world.timestep = 1/75` passava calado
   e o passo nativo seguia em 1/60, então o passo semi-fixo do engine
@@ -550,7 +555,10 @@ Native (que roda milhares de libs sobre Hermes em produção):
 - **"Trava depois de N quadros" quase sempre é exceção no tick, não o host**
   (SPEC-0348). Uma exceção em `game.onUpdate`/sistema sobe até o rAF e o tick
   morre sem crash; a mensagem só sai no `error_log.txt` (`[raf] excecao JS`).
-  Leia-o antes de suspeitar de shim/render. Caso real: o spike de `SkinnedMesh`
+  Leia-o antes de suspeitar de shim/render. Se a exceção cai no **1º** tick, o
+  jogo nunca sai da tela de carregamento e parece "aquecimento infinito"
+  (SPEC-0393). Já o `ReferenceError` de global faltando no boot sai no stdout
+  (`[game] ERRO no boot`), não no `error_log.txt`. Caso real: o spike de `SkinnedMesh`
   do DDD 61 buscava ossos por `'Thigh.R'`, mas o `GLTFLoader` sanitiza o nome
   (`PropertyBinding.sanitizeNodeName` tira o `.`) → `ThighR`. Skinning com
   `AnimationMixer` roda no export (120 pessoas, 32 tipos, 20 ossos).
