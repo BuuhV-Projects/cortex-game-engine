@@ -72,7 +72,12 @@ export CORTEX_WINDOWED=1 CORTEX_WINDOW_OFFSCREEN=1 CORTEX_FRAME_TIMING=1 CORTEX_
 export CORTEX_LAUNCH_QUERY="$query"
 echo "query=$query exp=$exp secs=$secs start=$(date -Iseconds)" > "$out/meta.txt"
 # App Control: the launcher only starts through PowerShell (and never from Temp).
-host_pid="$(pwsh "(Start-Process -PassThru -FilePath '$exe_w' -WorkingDirectory '$(cygpath -w "$exp")' -RedirectStandardOutput '$(cygpath -w "$out")\\run.log' -RedirectStandardError '$(cygpath -w "$out")\\run.err').Id")"
+# Start-Process with redirection launches with handle inheritance: a pipe from this call
+# (e.g. $(pwsh ...)) would be held open by the game and block until it exits. So the
+# launching powershell has no pipe at all: stdout/stderr to /dev/null, PID to a file.
+pid_file="$out/host.pid"
+timeout "$PWSH_TIMEOUT_S" powershell.exe -NoProfile -NonInteractive -Command "(Start-Process -PassThru -FilePath '$exe_w' -WorkingDirectory '$(cygpath -w "$exp")' -RedirectStandardOutput '$(cygpath -w "$out")\run.log' -RedirectStandardError '$(cygpath -w "$out")\run.err').Id | Set-Content -Encoding ascii '$(cygpath -w "$pid_file")'" </dev/null >/dev/null 2>&1 || true
+host_pid="$(tr -dc 0-9 < "$pid_file" 2>/dev/null || true)"
 launched=1
 [[ "$host_pid" =~ ^[0-9]+$ ]] || { echo "falha ao lançar $exe (sem PID)" >&2; exit 1; }
 echo "pid=$host_pid" >> "$out/meta.txt"

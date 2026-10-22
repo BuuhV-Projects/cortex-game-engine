@@ -41,6 +41,14 @@ PID. Isso tira um `powershell.exe` por consulta (a cada 5 s) do meio da mediçã
 que era ruído de CPU e ponto de travamento, e nunca mata outro `launcher.exe`
 (ex.: o jogo que o usuário exporta pelo Studio).
 
+**Segunda correção (2026-10-22, rodada da b4 presa desde 19:44):** a causa real era a
+linha que lança o jogo. `Start-Process` com `-RedirectStandardOutput` cria o processo
+**herdando os handles**, inclusive o pipe de `$(...)`/`| tr` por onde o `round.sh` lia o
+PID; o jogo segurava o pipe aberto e o `round.sh` esperava até o jogo fechar, ou seja,
+para sempre (reproduzido com `ping.exe`: devolveu o PID só depois de 25 s). Agora o
+PowerShell que lança não tem pipe nenhum (`stdout`/`stderr` em `/dev/null`) e grava o
+PID em `host.pid` na pasta da rodada.
+
 | script | faz |
 | --- | --- |
 | `lock.sh` | **Fila justa + prazo** (2026-10-22): quem espera deixa um ticket `<epoch-ns>-<winpid>` em `measure.lock.queue/` e só o ticket vivo mais antigo pode pegar o lock (consulta a cada 5 s; ticket de processo morto é descartado). Quem pega declara um prazo (`perf_lock_acquire <dono> [prazo_s]`, padrão 900 s; o `round.sh` usa `--secs` + 120 s), gravado em `lease_until`. Prazo vencido só gera **alerta** na fila e no `status` ("PRAZO VENCIDO há Ns"): nenhum script mata o jogo de outra sessão nem quebra o lock dela. `source`-ável: `perf_lock_acquire <dono>` / `perf_lock_release`. Lock = diretório (`mkdir` atômico) com `owner.txt` (dono, pid, hora). Espera em retry de 60 s mostrando o dono atual. Solta só o lock que é seu (token no `owner.txt`); nunca apaga lock de outro. CLI: `lock.sh status`, `lock.sh run <dono> -- cmd...`. Caminho: `$PERF_LOCK` (padrão `D:/jogos/detetive-brasilia/.cortex/measure.lock`). |
