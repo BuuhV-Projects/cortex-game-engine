@@ -26,6 +26,12 @@ paralelas; ver "Estado em 2026-10-22".
 | B5 — threads no C++ | depende do B2 | — |
 | B6 — Static Hermes | acompanhar (imaturo em 2026-10-03) | — |
 
+**Jogo-alvo das medições (decidido pelo usuário em 2026-10-22):** a `main` atual
+do DDD 61, fixada no commit `e2be01c`, cada frente numa worktree destacada do
+jogo. Não é a `dff1386` (fim do ciclo de 75 fps): aquele jogo não existe mais, e
+a `main` é mais pesada e sem as otimizações do ciclo — números absolutos piores
+que o histórico são esperados; vale o A/B na mesma build.
+
 Medições no export do DDD 61 são serializadas pelo lock
 `D:/jogos/detetive-brasilia/.cortex/measure.lock` (diretório criado com `mkdir`
 atômico, `owner.txt` dentro, removido ao fim de cada rodada).
