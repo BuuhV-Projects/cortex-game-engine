@@ -94,6 +94,12 @@ export interface ElectronAPI {
   exportNative(projectDir: string, mode?: string, debug?: boolean, outDir?: string, editor?: boolean): Promise<{ ok: boolean; output: string; distDir?: string }>
   /** Progresso do export (etapas). Retorna função de cancelamento do listener. */
   onExportProgress(callback: (step: string) => void): () => void
+  /** Auto-rig de personagem (SPEC-0349): roda o `prepare-character.sh` do projeto. */
+  characterRigRun(projectDir: string, configRel: string, action?: 'generate' | 'approve' | 'revert'): Promise<{ code: number }>
+  /** Mata o auto-rig em andamento. */
+  characterRigStop(): Promise<void>
+  /** Saída do auto-rig. Retorna a função que remove o listener. */
+  onCharacterRigOutput(callback: (text: string) => void): () => void
   /** Abre uma pasta no explorador do SO (ex.: dist-native após o export). */
   openPath(target: string): Promise<void>
   /** `true` em dev (electron:dev). Pra mostrar opções de dev (DevTools). */

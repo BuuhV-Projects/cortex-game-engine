@@ -1,3 +1,66 @@
+# [0.82.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.81.0...v0.82.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **systems:** ThirdPersonControlSystem antes do Object3DSync (SPEC-0352) ([fc53bf8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fc53bf86802306b7bb84c3c743a604398ef090a4))
+
+
+### Features
+
+* **core:** game.onLateUpdate depois do world.tick (SPEC-0351) ([3a52fad](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3a52fad876c06d05929da195cd878ae3d3956779))
+
+# [0.81.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.80.0...v0.81.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **studio:** clique na junta já selecionada não tira a seleção (SPEC-0349 adendo 8) ([960fb4a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/960fb4ab484f33438da20b834efe82483a385322))
+* **studio:** prévia do auto-rig não acumula o giro do braço a cada quadro (SPEC-0349 adendo 7) ([91a65ff](https://github.com/BuuhV-Projects/cortex-game-engine/commit/91a65ff9a8993e803f6419d150dd28a15af20e9b))
+
+
+### Features
+
+* **studio:** conta da ligação seguir entre juntas, captura e config (SPEC-0349 adendo 9) ([a2c6f8f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a2c6f8fef6a1a44fa146e638f0bc2dd24c1f4ddd))
+* **studio:** conta da pose por clipe junta a junta, IK e config (SPEC-0349 adendo 8) ([c5b835f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c5b835f96f5db750be18b54b5c28ab9060c22feb))
+* **studio:** ligação seguir entre juntas no painel de pose (SPEC-0349 adendo 9) ([0240d83](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0240d837f5d5ec99c1ae55e8634ea3c3431cf52e))
+* **studio:** pose por clipe junta a junta na aba Animações (SPEC-0349 adendo 8) ([0ebd694](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0ebd6942440b62e9da4511ad26cbfbd53b8d438e))
+
+# [0.80.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.79.0...v0.80.0) (2026-10-20)
+
+
+### Features
+
+* **studio:** aba Pasta do auto-rig lista todos os pacotes de animação (SPEC-0349) ([77af8a2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/77af8a22ce11e8a9e2744f1935426670f2e9da97))
+* **studio:** giro do braço e do antebraço no ajuste por clipe do auto-rig (SPEC-0349 adendo 7) ([2a88471](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2a884711371309ad5b7706ad7a28151784b7ad06))
+
+# [0.79.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.78.0...v0.79.0) (2026-10-19)
+
+
+### Bug Fixes
+
+* **studio:** auto-rig não lê .markers.json ausente (SPEC-0349) ([c1f3098](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c1f3098dd4f32ee1a75d6d17e4086ac5cd72ac90))
+* **studio:** um controle por linha no ajuste dos braços do auto-rig (SPEC-0349) ([040890d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/040890d3c7dbfc4b7cec310d395708df5bcc6a53))
+
+
+### Features
+
+* **studio:** abertura dos antebraços (elbowSpace) no ajuste dos braços (SPEC-0349) ([9c1966b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9c1966b4cc3dbc6d3ee0a7ae976ffaaca0ec7bbc))
+* **studio:** ajuste dos braços por animação no auto-rig (SPEC-0349) ([b6f628c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b6f628c75b88064ce8f51bbfefa4f2961d1da04e))
+* **studio:** aprovar, recusar e desfazer a publicação do rig no auto-rig (SPEC-0349) ([0b91c9a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0b91c9ab5ba49b779221e80d882054db0bef130a))
+* **studio:** caminhos da config relativos ao projeto no auto-rig (SPEC-0349) ([04f6910](https://github.com/BuuhV-Projects/cortex-game-engine/commit/04f691043faf065f7988e86f446992c911670114))
+* **studio:** marcador de ombros no auto-rig (SPEC-0349) ([fd86617](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fd8661782d8db151c15058d5ed4701ad58e638a8))
+* **studio:** ombros pra trás e aplicar a todos os clipes no ajuste dos braços (SPEC-0349) ([0cf70ee](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0cf70ee6007780036c2a1225e0cceea04a35769c))
+* **studio:** painel character-auto-rig (SPEC-0349) ([1115f59](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1115f59c1807348c70423c5e989eb04c56b46184))
+* **studio:** prévia das animações do rig e seleção dos FBX no auto-rig (SPEC-0349) ([e9ef48b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e9ef48b102eac1a95dd15ab17d4cd673c18cb800))
+
+# [0.78.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.77.0...v0.78.0) (2026-10-10)
+
+
+### Features
+
+* **engine:** exporta o namespace TSL e os node materials pro jogo (SPEC-0342) ([76f6747](https://github.com/BuuhV-Projects/cortex-game-engine/commit/76f6747f990e52727315c5525fcfb8878de40f96))
+
 # [0.77.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.76.0...v0.77.0) (2026-10-09)
 
 

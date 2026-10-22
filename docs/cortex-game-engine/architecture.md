@@ -42,6 +42,14 @@ o código/JSON. Lógica de jogo vive em `Systems`/`Components` (ECS).
   senão trocar a pausa depois (menu do jogo) se perde (SPEC-0306, `VehicleControlSystem`).
 - **`World`** — guarda entidades/sistemas; `tick(dt)` roda cada sistema com as
   entidades que casam `requiredComponents`. `query(...classes)`, `hasSystem`.
+- **Ordem do frame no `Game`** (SPEC-0351): input → `onUpdate` → `world.tick` →
+  `onLateUpdate` → UI → editor → render. Quem anda o personagem é System (dentro do
+  `world.tick`): lógica do jogo que **lê** esse movimento (animar pelo passo, seguir um
+  corpo) vai no `onLateUpdate` — no `onUpdate` ela vê o frame anterior, e num engasgo o
+  corpo pula antes do que depende dele.
+  Dentro do `world.tick`, **quem move vem antes do `Object3DSyncSystem` (10)**: o
+  `ThirdPersonControlSystem` roda em 6 (SPEC-0352) — em 20, a câmera saía do transform
+  novo e o boneco desenhado do antigo, e num engasgo o personagem tremia na tela.
 
 ### 2.1 Scripts anexáveis (MonoBehaviour — ADR-0085/0086)
 
@@ -1315,7 +1323,7 @@ no logo da splash enquanto montava os seis carros.
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
 | Render (descrições p/ o host, caminho rápido sobre o `three`) | `src/render/` · refresh só de transformação: `TransformOnlyRefresh.ts` (ADR-0290) · refresh por `renderId` só do que é por render: `RenderIdRefresh.ts` (SPEC-0325) · projeção do passe principal no host: `NativeMainProjection.ts` + `MainPassKind.ts` (SPEC-0332) |
-| IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) |
+| IDE (Electron) | `electron/` (`main.ts`, `renderer/`) · instância única + higiene de cache: `cacheHygiene.ts` (ADR-0141) · nome do app + `userData`: `appIdentity.ts` (SPEC-0179) · auto-rig de personagem: `renderer/CharacterRigPanel.ts` (abas Marcadores/Animações/Pasta; prévia `RigAnimationPreview.ts`, seleção dos FBX `RigFbxSelection.ts`) + lógica pura `renderer/characterRig.ts`, `characterRigRegistry.ts` (registro `tools/characters/rigs.json`) e `characterRigSelection.ts` (`skinned.clips`) + IPC `characterRig:run`/`stop` (Git Bash → `tools/prepare-character.sh` do jogo; SPEC-0349) |
 | Bundles gerados | `dist-engine/` · vendorizados em `<projeto>/vendor/` |
 | Decisões | `docs/adrs/` · `docs/tdrs/` · `engine-api.md` |
 

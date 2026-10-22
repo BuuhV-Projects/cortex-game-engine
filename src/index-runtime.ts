@@ -330,6 +330,11 @@ export { RenderPipeline, PostProcessing } from 'three/webgpu';
 // `uniform` é o que torna uma pipeline montada à mão animável sem reconstruir
 // o grafo (e recompilar o shader) a cada frame — ver SPEC-0222.
 export { pass, mrt, output, renderOutput, uniform } from 'three/tsl';
+// Shader de jogo (SPEC-0342): o namespace TSL inteiro + os node materials que
+// recebem `positionNode`/`colorNode`. Namespace pra não colidir com nomes do
+// engine; o jogo não pode importar `three` (cópia dupla quebra o estado do TSL).
+export * as TSL from 'three/tsl';
+export { MeshLambertNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu';
 export { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 export { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 

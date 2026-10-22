@@ -547,6 +547,13 @@ Native (que roda milhares de libs sobre Hermes em produção):
   loading (`runWithLoadingScreen`) desenha SÓ nas trocas de etapa: renderizar
   todo quadro travaria o host em 60 fps e serializaria o `buildScene` (carga de
   ~1,5 s virava ~25 s). O último quadro apresentado fica na tela no intervalo.
+- **"Trava depois de N quadros" quase sempre é exceção no tick, não o host**
+  (SPEC-0348). Uma exceção em `game.onUpdate`/sistema sobe até o rAF e o tick
+  morre sem crash; a mensagem só sai no `error_log.txt` (`[raf] excecao JS`).
+  Leia-o antes de suspeitar de shim/render. Caso real: o spike de `SkinnedMesh`
+  do DDD 61 buscava ossos por `'Thigh.R'`, mas o `GLTFLoader` sanitiza o nome
+  (`PropertyBinding.sanitizeNodeName` tira o `.`) → `ThighR`. Skinning com
+  `AnimationMixer` roda no export (120 pessoas, 32 tipos, 20 ossos).
 
 ## Superfície WebGPU coberta (2026-07-06)
 

@@ -1,0 +1,392 @@
+/**
+ * Ajuste dos braços por animação (Character Arm-Space) da aba Animações do
+ * painel auto-rig (SPEC-0349, adendo 4).
+ */
+
+import { describe, it, expect } from 'vitest'
+import {
+  applyArmOffsets,
+  applyArmOffsetsToAll,
+  armOffsetsFromConfig,
+  armOffsetsFromSkin,
+  chestAxis,
+  chestUp,
+  clampOffset,
+  localAfterWorldRotation,
+  offsetDelta,
+  quatFromAxisAngle,
+  quatMul,
+  QUAT_IDENTITY,
+  rotateVec,
+  sideRotations,
+  twistRotation,
+  undoInReverse,
+  ZERO_OFFSETS,
+  type ArmOffsets,
+  type Quat,
+  type Vec3,
+} from '../../electron/renderer/characterRigArmSpace.js'
+import { parseConfigObject, serializeConfig } from '../../electron/renderer/characterRigSelection.js'
+
+// ── Mini esqueleto (Spine2 → Shoulder → Arm → Hand), como a prévia aplica ───
+
+interface Node {
+  parent: string | null
+  pos: Vec3 // translação local
+  rot: Quat // rotação local
+}
+
+function skeleton(): Record<string, Node> {
+  const I = [...QUAT_IDENTITY] as Quat
+  return {
+    Spine2: { parent: null, pos: [0, 1.3, 0], rot: I },
+    LeftShoulder: { parent: 'Spine2', pos: [0.05, 0.15, 0], rot: I },
+    LeftArm: { parent: 'LeftShoulder', pos: [0.12, 0, 0], rot: I },
+    LeftForeArm: { parent: 'LeftArm', pos: [0, -0.28, 0], rot: I }, // braço caído (A-pose fechada)
+    LeftHand: { parent: 'LeftForeArm', pos: [0, -0.27, 0], rot: I },
+    RightShoulder: { parent: 'Spine2', pos: [-0.05, 0.15, 0], rot: I },
+    RightArm: { parent: 'RightShoulder', pos: [-0.12, 0, 0], rot: I },
+    RightForeArm: { parent: 'RightArm', pos: [0, -0.28, 0], rot: I },
+    RightHand: { parent: 'RightForeArm', pos: [0, -0.27, 0], rot: I },
+  }
+}
+
+function world(sk: Record<string, Node>, name: string): { pos: Vec3; rot: Quat } {
+  const n = sk[name]!
+  if (!n.parent) return { pos: n.pos, rot: n.rot }
+  const p = world(sk, n.parent)
+  const d = rotateVec(p.rot, n.pos)
+  return { pos: [p.pos[0] + d[0], p.pos[1] + d[1], p.pos[2] + d[2]], rot: quatMul(p.rot, n.rot) }
+}
+
+/** O que a prévia faz depois do `mixer.update`: clavícula, braço e antebraço, cada um com o pai já girado. */
+function apply(sk: Record<string, Node>, partial: Partial<ArmOffsets>, spine2Rest: Quat = [...QUAT_IDENTITY] as Quat): void {
+  const offsets: ArmOffsets = { ...ZERO_OFFSETS, ...partial }
+  const chest = world(sk, 'Spine2').rot
+  const axis = chestAxis(chest, spine2Rest)
+  const up = chestUp(chest, spine2Rest)
+  for (const [side, sign] of [['Left', 1], ['Right', -1]] as const) {
+    const r = sideRotations(axis, up, sign, offsets)
+    const dir = (from: string, to: string): Vec3 => {
+      const a = world(sk, `${side}${from}`).pos
+      const b = world(sk, `${side}${to}`).pos
+      return [b[0] - a[0], b[1] - a[1], b[2] - a[2]]
+    }
+    const steps: Array<[string, () => Quat]> = [
+      ['Shoulder', () => r.shoulder],
+      ['Arm', () => r.arm],
+      ['Arm', () => twistRotation(dir('Arm', 'ForeArm'), sign, offsets.armTwist)],
+      ['ForeArm', () => r.foreArm],
+      ['ForeArm', () => twistRotation(dir('ForeArm', 'Hand'), sign, offsets.foreArmTwist)],
+    ]
+    for (const [bone, rotOf] of steps) {
+      const n = sk[`${side}${bone}`]!
+      n.rot = localAfterWorldRotation(world(sk, n.parent!).rot, n.rot, rotOf())
+    }
+  }
+}
+
+describe('rotação dos braços', () => {
+  it('armSpace +θ abre o braço esquerdo para +X e o direito para −X', () => {
+    const sk = skeleton()
+    const l0 = world(sk, 'LeftHand').pos
+    const r0 = world(sk, 'RightHand').pos
+    apply(sk, { shoulderLift: 0, armSpace: 20 })
+    const l1 = world(sk, 'LeftHand').pos
+    const r1 = world(sk, 'RightHand').pos
+    expect(l1[0]).toBeGreaterThan(l0[0] + 0.1)
+    expect(r1[0]).toBeLessThan(r0[0] - 0.1)
+    expect(l1[1]).toBeGreaterThan(l0[1]) // a mão sobe ao abrir
+    expect(l1[2]).toBeCloseTo(0, 9) // gira no plano frontal
+    // o ombro não mexe com armSpace
+    expect(world(sk, 'LeftArm').pos).toEqual(world(skeleton(), 'LeftArm').pos)
+  })
+
+  it('armSpace −θ fecha (mão do lado esquerdo vai para −X)', () => {
+    const sk = skeleton()
+    const l0 = world(sk, 'LeftHand').pos
+    apply(sk, { shoulderLift: 0, armSpace: -10 })
+    expect(world(sk, 'LeftHand').pos[0]).toBeLessThan(l0[0])
+  })
+
+  it('shoulderLift +θ sobe a ponta da clavícula dos dois lados e leva o braço junto', () => {
+    const sk = skeleton()
+    const l0 = world(sk, 'LeftArm').pos
+    const r0 = world(sk, 'RightArm').pos
+    const h0 = world(sk, 'LeftHand').pos
+    apply(sk, { shoulderLift: 15, armSpace: 0 })
+    expect(world(sk, 'LeftArm').pos[1]).toBeGreaterThan(l0[1] + 0.02)
+    expect(world(sk, 'RightArm').pos[1]).toBeGreaterThan(r0[1] + 0.02)
+    expect(world(sk, 'LeftHand').pos[1]).toBeGreaterThan(h0[1]) // hierarquia
+    apply(sk, { shoulderLift: -30, armSpace: 0 }) // agora −15 no total
+    expect(world(sk, 'LeftArm').pos[1]).toBeLessThan(l0[1])
+  })
+
+  it('braço: W\' = R(a, space) · R(a, lift) · W (igual ao arm_offsets do jogo)', () => {
+    const sk = skeleton()
+    sk['LeftArm']!.rot = quatFromAxisAngle([1, 0, 0], 25) // pose qualquer do clipe
+    const w0 = world(sk, 'LeftArm').rot
+    apply(sk, { shoulderLift: 7, armSpace: 12 })
+    const expected = quatMul(quatFromAxisAngle([0, 0, 1], 12), quatMul(quatFromAxisAngle([0, 0, 1], 7), w0))
+    const got = world(sk, 'LeftArm').rot
+    const dot = Math.abs(got.reduce((s, v, i) => s + v * expected[i]!, 0))
+    expect(dot).toBeCloseTo(1, 9)
+  })
+
+  it('o eixo acompanha o peito: personagem virado 90° abre no seu próprio plano frontal', () => {
+    const sk = skeleton()
+    sk['Spine2']!.rot = quatFromAxisAngle([0, 1, 0], 90) // frente +Z → +X; esquerda +X → −Z
+    const l0 = world(sk, 'LeftHand').pos
+    apply(sk, { shoulderLift: 0, armSpace: 20 })
+    const l1 = world(sk, 'LeftHand').pos
+    expect(l1[2]).toBeLessThan(l0[2] - 0.1) // abre para a esquerda dele (−Z)
+    expect(l1[0]).toBeCloseTo(l0[0], 9)
+  })
+
+  it('elbowSpace +θ leva a mão esquerda para +X e a direita para −X sem mover o cotovelo', () => {
+    const sk = skeleton()
+    const el0 = world(sk, 'LeftForeArm').pos
+    const er0 = world(sk, 'RightForeArm').pos
+    const l0 = world(sk, 'LeftHand').pos
+    const r0 = world(sk, 'RightHand').pos
+    apply(sk, { elbowSpace: 20 })
+    const el1 = world(sk, 'LeftForeArm').pos
+    const er1 = world(sk, 'RightForeArm').pos
+    for (let i = 0; i < 3; i++) {
+      expect(el1[i]).toBeCloseTo(el0[i]!, 12) // pivô no cotovelo
+      expect(er1[i]).toBeCloseTo(er0[i]!, 12)
+    }
+    expect(world(sk, 'LeftHand').pos[0]).toBeGreaterThan(l0[0] + 0.05)
+    expect(world(sk, 'RightHand').pos[0]).toBeLessThan(r0[0] - 0.05)
+  })
+
+  it('antebraço: W\' = R(a, elbow) · R(a, space) · R(a, lift) · W (igual ao arm_offsets do jogo)', () => {
+    const sk = skeleton()
+    sk['LeftForeArm']!.rot = quatFromAxisAngle([1, 0, 0], -40) // cotovelo dobrado no clipe
+    const w0 = world(sk, 'LeftForeArm').rot
+    apply(sk, { shoulderLift: 5, armSpace: -8, elbowSpace: 15 })
+    const z = (deg: number): Quat => quatFromAxisAngle([0, 0, 1], deg)
+    const expected = quatMul(z(15), quatMul(z(-8), quatMul(z(5), w0)))
+    const got = world(sk, 'LeftForeArm').rot
+    expect(Math.abs(got.reduce((s, v, i) => s + v * expected[i]!, 0))).toBeCloseTo(1, 9)
+  })
+
+  it('shoulderBack +θ leva a ponta da clavícula dos dois lados para −Z (trás) sem mudar a altura', () => {
+    const sk = skeleton()
+    const l0 = world(sk, 'LeftArm').pos
+    const r0 = world(sk, 'RightArm').pos
+    const h0 = world(sk, 'LeftHand').pos
+    apply(sk, { shoulderBack: 20 })
+    const l1 = world(sk, 'LeftArm').pos
+    const r1 = world(sk, 'RightArm').pos
+    expect(l1[2]).toBeLessThan(l0[2] - 0.03)
+    expect(r1[2]).toBeLessThan(r0[2] - 0.03)
+    expect(l1[1]).toBeCloseTo(l0[1], 9) // gira em volta da vertical: altura igual
+    expect(r1[1]).toBeCloseTo(r0[1], 9)
+    expect(l1[0]).toBeGreaterThan(0) // continua do seu lado
+    expect(r1[0]).toBeLessThan(0)
+    expect(world(sk, 'LeftHand').pos[2]).toBeLessThan(h0[2]) // hierarquia
+  })
+
+  it('shoulderBack −θ leva os ombros pra frente (+Z)', () => {
+    const sk = skeleton()
+    const l0 = world(sk, 'LeftArm').pos
+    apply(sk, { shoulderBack: -10 })
+    expect(world(sk, 'LeftArm').pos[2]).toBeGreaterThan(l0[2])
+  })
+
+  it('clavícula: W\' = R(a, lift) · R(u, back) · W (ordem do arm_offsets do jogo)', () => {
+    const sk = skeleton()
+    sk['LeftShoulder']!.rot = quatFromAxisAngle([0, 0, 1], -10) // pose qualquer do clipe
+    const w0 = world(sk, 'LeftShoulder').rot
+    apply(sk, { shoulderLift: 12, shoulderBack: 18 })
+    const expected = quatMul(quatFromAxisAngle([0, 0, 1], 12), quatMul(quatFromAxisAngle([0, 1, 0], 18), w0))
+    const wrongOrder = quatMul(quatFromAxisAngle([0, 1, 0], 18), quatMul(quatFromAxisAngle([0, 0, 1], 12), w0))
+    const got = world(sk, 'LeftShoulder').rot
+    const dot = (q: Quat): number => Math.abs(got.reduce((acc, v, i) => acc + v * q[i]!, 0))
+    expect(dot(expected)).toBeCloseTo(1, 9)
+    expect(dot(wrongOrder)).toBeLessThan(0.9999) // a ordem importa
+  })
+
+  it('a vertical acompanha o peito: tronco inclinado 90° gira em volta da própria vertical', () => {
+    const sk = skeleton()
+    sk['Spine2']!.rot = quatFromAxisAngle([1, 0, 0], 90) // vertical +Y → +Z
+    const up = chestUp(world(sk, 'Spine2').rot, [...QUAT_IDENTITY] as Quat)
+    expect(up[2]).toBeCloseTo(1, 9)
+    const l0 = world(sk, 'LeftArm').pos
+    apply(sk, { shoulderBack: 20 })
+    expect(world(sk, 'LeftArm').pos[2]).toBeCloseTo(l0[2], 9) // gira no plano XY dele
+  })
+
+  it('0/0/0 não muda nada', () => {
+    const sk = skeleton()
+    apply(sk, {})
+    expect(world(sk, 'LeftHand').pos).toEqual(world(skeleton(), 'LeftHand').pos)
+  })
+})
+
+describe('giro no eixo do braço e do antebraço (adendo 7)', () => {
+  const front = (sk: Record<string, Node>, bone: string): Vec3 => rotateVec(world(sk, bone).rot, [0, 0, 1])
+
+  it('armTwist +θ vira a frente da mão esquerda para +X e a direita para −X sem mover cotovelo nem mão', () => {
+    const sk = skeleton()
+    const elbow = world(sk, 'LeftForeArm').pos
+    const hand = world(sk, 'LeftHand').pos
+    apply(sk, { armTwist: 30 })
+    expect(front(sk, 'LeftHand')[0]).toBeCloseTo(Math.sin(Math.PI / 6), 6)
+    expect(front(sk, 'RightHand')[0]).toBeCloseTo(-Math.sin(Math.PI / 6), 6)
+    world(sk, 'LeftForeArm').pos.forEach((v, i) => expect(v).toBeCloseTo(elbow[i]!, 9))
+    world(sk, 'LeftHand').pos.forEach((v, i) => expect(v).toBeCloseTo(hand[i]!, 9))
+    expect(front(sk, 'LeftArm')[0]).toBeCloseTo(Math.sin(Math.PI / 6), 6) // o braço gira junto
+  })
+
+  it('foreArmTwist +θ gira só antebraço e mão (o braço fica)', () => {
+    const sk = skeleton()
+    apply(sk, { foreArmTwist: 30 })
+    expect(front(sk, 'LeftHand')[0]).toBeCloseTo(Math.sin(Math.PI / 6), 6)
+    expect(front(sk, 'RightHand')[0]).toBeCloseTo(-Math.sin(Math.PI / 6), 6)
+    expect(front(sk, 'LeftArm')).toEqual([0, 0, 1])
+  })
+
+  it('o eixo é o do osso já ajustado: com o braço aberto, a mão não sai do lugar ao girar', () => {
+    const sk = skeleton()
+    apply(sk, { armSpace: 25 })
+    const hand = world(sk, 'LeftHand').pos
+    const sk2 = skeleton()
+    apply(sk2, { armSpace: 25, armTwist: 40 })
+    world(sk2, 'LeftHand').pos.forEach((v, i) => expect(v).toBeCloseTo(hand[i]!, 9))
+    expect(front(sk2, 'LeftHand')).not.toEqual(front(sk, 'LeftHand'))
+  })
+})
+
+describe('desfazer o ajuste do quadro anterior', () => {
+  it('osso salvo duas vezes no quadro volta ao valor de antes do primeiro passo (sem acumular)', () => {
+    const bone = { q: 0 }
+    const saved: Array<readonly [typeof bone, number]> = []
+    for (let frame = 0; frame < 5; frame++) {
+      undoInReverse(saved, (b, v) => (b.q = v))
+      expect(bone.q).toBe(0) // pausado: o mixer não reescreve, então tem que voltar ao original
+      for (const step of [10, 25]) { // abertura e depois giro, no mesmo osso
+        saved.push([bone, bone.q])
+        bone.q += step
+      }
+    }
+    expect(saved).toHaveLength(2)
+    undoInReverse(saved, (b, v) => (b.q = v))
+    expect(bone.q).toBe(0)
+    expect(saved).toHaveLength(0)
+  })
+})
+
+describe('valores', () => {
+  it('clampOffset limita ao intervalo e arredonda ao passo de 0,5', () => {
+    expect(clampOffset('shoulderLift', 25)).toBe(20)
+    expect(clampOffset('shoulderLift', -25)).toBe(-20)
+    expect(clampOffset('armSpace', 31)).toBe(30)
+    expect(clampOffset('armSpace', -21)).toBe(-20)
+    expect(clampOffset('elbowSpace', 31)).toBe(30)
+    expect(clampOffset('elbowSpace', -31)).toBe(-30)
+    expect(clampOffset('shoulderBack', 31)).toBe(30)
+    expect(clampOffset('shoulderBack', -21)).toBe(-20)
+    expect(clampOffset('armSpace', 3.3)).toBe(3.5)
+    expect(clampOffset('armSpace', 3.2)).toBe(3)
+    expect(Object.is(clampOffset('armSpace', -0.1), 0)).toBe(true)
+    expect(clampOffset('armSpace', Number.NaN)).toBe(0)
+  })
+
+  it('torções: intervalo próprio e entram na config e no delta', () => {
+    expect(clampOffset('armTwist', 99)).toBe(60)
+    expect(clampOffset('foreArmTwist', -120)).toBe(-90)
+    const cfg = { skinned: { clips: { idle: { file: 'i.fbx', armTwist: 12, foreArmTwist: -20 } } } }
+    expect(armOffsetsFromConfig(cfg).get('idle')).toEqual({ ...ZERO_OFFSETS, armTwist: 12, foreArmTwist: -20 })
+    expect(offsetDelta({ ...ZERO_OFFSETS, armTwist: 12 }, { ...ZERO_OFFSETS, armTwist: 5 })).toEqual({ ...ZERO_OFFSETS, armTwist: 7 })
+  })
+
+  it('offsetDelta = desejado − gerado', () => {
+    expect(offsetDelta({ ...ZERO_OFFSETS, shoulderLift: 5, armSpace: 10, elbowSpace: 0, shoulderBack: 4 }, { ...ZERO_OFFSETS, shoulderLift: 2, armSpace: 10, elbowSpace: 0, shoulderBack: 6 })).toEqual({ ...ZERO_OFFSETS, shoulderLift: 3, armSpace: 0, elbowSpace: 0, shoulderBack: -2 })
+  })
+
+  it('lê da config (ausente = 0) e do JSON do skin (armOffsets ausente = 0)', () => {
+    const cfg = { skinned: { clips: { idle: { file: 'idle.fbx', loop: true, armSpace: 8, elbowSpace: -6, shoulderBack: 5 }, walk: { file: 'w.fbx' } } } }
+    expect(armOffsetsFromConfig(cfg).get('idle')).toEqual({ ...ZERO_OFFSETS, shoulderLift: 0, armSpace: 8, elbowSpace: -6, shoulderBack: 5 })
+    expect(armOffsetsFromConfig(cfg).get('walk')).toEqual(ZERO_OFFSETS)
+    expect(armOffsetsFromConfig({}).size).toBe(0)
+    const skin = { clips: { idle: { loop: true, armOffsets: { shoulderLift: -2, armSpace: 8, elbowSpace: 4 } }, run: { armOffsets: { shoulderLift: 0, armSpace: 0, elbowSpace: 0, shoulderBack: 7.5 } }, walk: { loop: true } } }
+    expect(armOffsetsFromSkin(skin).get('idle')).toEqual({ ...ZERO_OFFSETS, shoulderLift: -2, armSpace: 8, elbowSpace: 4, shoulderBack: 0 }) // JSON sem o campo = 0
+    expect(armOffsetsFromSkin(skin).get('run')).toEqual({ ...ZERO_OFFSETS, shoulderLift: 0, armSpace: 0, elbowSpace: 0, shoulderBack: 7.5 })
+    expect(armOffsetsFromSkin(skin).get('walk')).toEqual(ZERO_OFFSETS)
+    expect(armOffsetsFromSkin(null).size).toBe(0)
+  })
+})
+
+describe('gravação na config', () => {
+  const text = `${JSON.stringify({
+    code: 'LUC-01',
+    skinned: {
+      fbx: 'assets/animations',
+      clips: {
+        idle: { file: 'idle.fbx', loop: true },
+        walk: { file: 'walking.fbx', loop: true, armSpace: 4, rootMotion: true },
+      },
+      preview: [],
+    },
+    publish: { glb: 'x.glb' },
+  }, null, 1)}\n`
+
+  it('acrescenta no fim da entrada, mantém a posição do campo existente e omite 0', () => {
+    const cfg = parseConfigObject(text)
+    const next = applyArmOffsets(cfg, new Map([
+      ['idle', { ...ZERO_OFFSETS, shoulderLift: 2.5, armSpace: 10, elbowSpace: -3, shoulderBack: 6 }],
+      ['walk', { ...ZERO_OFFSETS, shoulderLift: 0, armSpace: 6, elbowSpace: 0, shoulderBack: 0 }],
+      ['ghost', { ...ZERO_OFFSETS, shoulderLift: 1, armSpace: 1, elbowSpace: 0, shoulderBack: 0 }], // fora da config: ignorado
+    ]))
+    const clips = (next['skinned'] as Record<string, Record<string, unknown>>)['clips'] as Record<string, Record<string, unknown>>
+    expect(Object.keys(clips['idle']!)).toEqual(['file', 'loop', 'shoulderLift', 'armSpace', 'elbowSpace', 'shoulderBack'])
+    expect(clips['idle']).toMatchObject({ shoulderLift: 2.5, armSpace: 10, elbowSpace: -3, shoulderBack: 6 })
+    expect(Object.keys(clips['walk']!)).toEqual(['file', 'loop', 'armSpace', 'rootMotion'])
+    expect(clips['walk']!['armSpace']).toBe(6)
+    expect(clips['ghost']).toBeUndefined()
+    expect(Object.keys(next)).toEqual(['code', 'skinned', 'publish'])
+    expect(Object.keys(next['skinned'] as object)).toEqual(['fbx', 'clips', 'preview'])
+    expect(cfg).toEqual(parseConfigObject(text)) // não muta a entrada
+  })
+
+  it('valor 0 remove o campo; sem mudança o texto fica igual', () => {
+    const cfg = parseConfigObject(text)
+    const zeroed = applyArmOffsets(cfg, new Map([['walk', ZERO_OFFSETS]]))
+    const walk = ((zeroed['skinned'] as Record<string, unknown>)['clips'] as Record<string, Record<string, unknown>>)['walk']!
+    expect(Object.keys(walk)).toEqual(['file', 'loop', 'rootMotion'])
+    const same = applyArmOffsets(cfg, new Map([['walk', { ...ZERO_OFFSETS, armSpace: 4 }], ['idle', ZERO_OFFSETS]]))
+    expect(serializeConfig(same)).toBe(text)
+  })
+
+  it('grava o valor já limitado ao intervalo', () => {
+    const next = applyArmOffsets(parseConfigObject(text), new Map([['idle', { ...ZERO_OFFSETS, shoulderLift: 99, armSpace: -99, elbowSpace: 99, shoulderBack: -99 }]]))
+    const idle = ((next['skinned'] as Record<string, unknown>)['clips'] as Record<string, Record<string, unknown>>)['idle']!
+    expect(idle).toMatchObject({ shoulderLift: 20, armSpace: -20, elbowSpace: 30, shoulderBack: -20 })
+  })
+
+  it('aplicar a todos: os valores em todos os clipes da config, ordem preservada e 0 omitido', () => {
+    const cfg = parseConfigObject(text)
+    const next = applyArmOffsetsToAll(cfg, { ...ZERO_OFFSETS, shoulderLift: 3, armSpace: 0, elbowSpace: -4.5, shoulderBack: 8 })
+    const clips = (next['skinned'] as Record<string, unknown>)['clips'] as Record<string, Record<string, unknown>>
+    expect(Object.keys(clips)).toEqual(['idle', 'walk'])
+    expect(clips['idle']).toEqual({ file: 'idle.fbx', loop: true, shoulderLift: 3, elbowSpace: -4.5, shoulderBack: 8 })
+    // walk tinha armSpace 4: o 0 aplicado remove; o resto fica na posição
+    expect(Object.keys(clips['walk']!)).toEqual(['file', 'loop', 'rootMotion', 'shoulderLift', 'elbowSpace', 'shoulderBack'])
+    expect(armOffsetsFromConfig(next).get('walk')).toEqual(armOffsetsFromConfig(next).get('idle'))
+    expect(Object.keys(next)).toEqual(['code', 'skinned', 'publish'])
+    expect(cfg).toEqual(parseConfigObject(text)) // não muta a entrada
+  })
+
+  it('aplicar a todos sem skinned.clips não muda nada', () => {
+    const cfg = { code: 'X' }
+    expect(applyArmOffsetsToAll(cfg, { ...ZERO_OFFSETS, armSpace: 5 })).toEqual(cfg)
+  })
+})
+
+it('rotateVec gira pela regra da mão direita', () => {
+  const v = rotateVec(quatFromAxisAngle([0, 0, 1], 90), [1, 0, 0])
+  expect(v[0]).toBeCloseTo(0, 9)
+  expect(v[1]).toBeCloseTo(1, 9)
+})
