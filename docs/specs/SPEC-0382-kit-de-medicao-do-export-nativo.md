@@ -29,8 +29,17 @@ lock, com saída em `%TEMP%` (o App Control impede exe em Temp, ver memória
 
 Um kit único em `native/scripts/perf/`, **só em `.sh`** (Git Bash). Onde o
 Windows exige PowerShell (lançar o `launcher.exe` por causa do App Control e
-matar o processo pelo caminho do exe), o `.sh` chama
-`powershell.exe -NoProfile -Command "..."` embutido, numa linha. Nenhum `.ps1`.
+conferir, antes de lançar, se o exe já está rodando), o `.sh` chama
+`powershell.exe -NoProfile -NonInteractive -Command "..."` embutido, numa linha,
+com `stdin` de `/dev/null` e `timeout` de 30 s por chamada. Nenhum `.ps1`.
+
+**Durante a rodada o PowerShell não roda** (correção de 2026-10-22, depois de
+uma rodada da frente b2 que não encerrou e prendeu o lock por mais de 13 min): o
+`round.sh` guarda o PID devolvido por `Start-Process -PassThru` (também gravado
+em `meta.txt`), consulta com `tasklist` pelo PID e encerra com `taskkill` pelo
+PID. Isso tira um `powershell.exe` por consulta (a cada 5 s) do meio da medição,
+que era ruído de CPU e ponto de travamento, e nunca mata outro `launcher.exe`
+(ex.: o jogo que o usuário exporta pelo Studio).
 
 | script | faz |
 | --- | --- |

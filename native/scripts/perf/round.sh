@@ -14,6 +14,8 @@ readonly FREEZE_GRACE_S=60
 readonly FREEZE_IDLE_S=45
 # Lets the killed host close its files before they are moved.
 readonly CLOSE_WAIT_S=3
+# Ceiling for one powershell.exe call: a hung call must never hold the round (and the lock).
+readonly PWSH_TIMEOUT_S=30
 
 exp=""; out=""; spawn=""; extra=""; query=""; secs=$DEFAULT_SECS; owner="round"
 while [ $# -gt 0 ]; do
@@ -43,9 +45,15 @@ case "$id" in *-bench-*) ;; *) echo "recusado: cortex.json com id '$id' (use exp
 [ ! -f "$out/perf-trace.jsonl" ] || { echo "recusado: $out já tem rodada" >&2; exit 2; }
 
 exe_w="$(cygpath -w "$exe")"
-pwsh() { powershell.exe -NoProfile -Command "$1" | tr -d '\r'; }
-running() { pwsh "@(Get-Process launcher -EA 0 | ? Path -eq '$exe_w').Count"; }
-kill_exe() { pwsh "Get-Process launcher -EA 0 | ? Path -eq '$exe_w' | Stop-Process -Force" >/dev/null; }
+# stdin from /dev/null: from a background bash, powershell.exe can wait on the inherited
+# stdin forever. timeout: last resort; a failed call prints nothing and never aborts (set -e).
+pwsh() { timeout "$PWSH_TIMEOUT_S" powershell.exe -NoProfile -NonInteractive -Command "$1" </dev/null | tr -d '\r' || true; }
+# Pre-launch check only (by exe path). During the round the host is tracked by PID with
+# tasklist/taskkill: no powershell.exe spawned every poll (CPU noise in the measurement).
+running_by_path() { pwsh "@(Get-Process launcher -EA 0 | ? Path -eq '$exe_w').Count"; }
+host_pid=""
+running() { tasklist //FI "PID eq $host_pid" //NH //FO CSV 2>/dev/null | grep -qi '^"launcher.exe"' && echo 1 || echo 0; }
+kill_exe() { [ -z "$host_pid" ] || taskkill //F //PID "$host_pid" >/dev/null 2>&1 || true; }
 
 perf_lock_acquire "$owner $(basename "$out")"
 launched=0
@@ -53,7 +61,7 @@ cleanup() { [ "$launched" = 1 ] && kill_exe; perf_lock_release; }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
-[ "$(running)" = 0 ] || { echo "recusado: $exe já está rodando" >&2; exit 2; }
+[ "$(running_by_path)" = 0 ] || { echo "recusado: $exe já está rodando (ou a checagem falhou)" >&2; exit 2; }
 mkdir -p "$out"
 rm -f "$exp/perf-log.txt" "$exp/perf-trace.jsonl" "$exp/error_log.txt"
 rm -rf "$(cygpath -u "$APPDATA")/$id/saves"
@@ -62,8 +70,10 @@ export CORTEX_WINDOWED=1 CORTEX_WINDOW_OFFSCREEN=1 CORTEX_FRAME_TIMING=1 CORTEX_
 export CORTEX_LAUNCH_QUERY="$query"
 echo "query=$query exp=$exp secs=$secs start=$(date -Iseconds)" > "$out/meta.txt"
 # App Control: the launcher only starts through PowerShell (and never from Temp).
-pwsh "Start-Process -FilePath '$exe_w' -WorkingDirectory '$(cygpath -w "$exp")' -RedirectStandardOutput '$(cygpath -w "$out")\\run.log' -RedirectStandardError '$(cygpath -w "$out")\\run.err'" >/dev/null
+host_pid="$(pwsh "(Start-Process -PassThru -FilePath '$exe_w' -WorkingDirectory '$(cygpath -w "$exp")' -RedirectStandardOutput '$(cygpath -w "$out")\\run.log' -RedirectStandardError '$(cygpath -w "$out")\\run.err').Id")"
 launched=1
+[[ "$host_pid" =~ ^[0-9]+$ ]] || { echo "falha ao lançar $exe (sem PID)" >&2; exit 1; }
+echo "pid=$host_pid" >> "$out/meta.txt"
 echo "[round] $(basename "$out"): $query por ${secs}s"
 
 start=$SECONDS; why="tempo"
