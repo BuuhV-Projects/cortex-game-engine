@@ -1,4 +1,4 @@
-# SPEC-0382 - `Audio` / `HTMLAudioElement` no host nativo
+# SPEC-0392 - `Audio` / `HTMLAudioElement` no host nativo
 
 **Data:** 2026-10-22
 **Status:** aceito

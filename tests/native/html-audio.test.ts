@@ -1,5 +1,5 @@
 /**
- * SPEC-0382 — `Audio`/`HTMLAudioElement` over `__cortexAudio`: the subset the
+ * SPEC-0392 — `Audio`/`HTMLAudioElement` over `__cortexAudio`: the subset the
  * DDD 61 car radio uses (src, play/pause, volume, muted, ended/error).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -37,7 +37,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('html-audio (SPEC-0382)', () => {
+describe('html-audio (SPEC-0392)', () => {
   it('Audio e HTMLAudioElement são a mesma classe', () => {
     const g = globalThis as unknown as { Audio: unknown; HTMLAudioElement: unknown };
     expect(g.HTMLAudioElement).toBe(g.Audio);

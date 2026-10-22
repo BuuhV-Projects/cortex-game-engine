@@ -1,4 +1,4 @@
-// Audio / HTMLAudioElement over the native audio (__cortexAudio) — SPEC-0382.
+// Audio / HTMLAudioElement over the native audio (__cortexAudio) — SPEC-0392.
 // Only the media-element subset games use: src, play/pause, volume, muted,
 // loop, preload and the 'ended'/'error' events. The track is fetched and
 // decoded whole on play() and freed when the src changes (ADR-0153).
