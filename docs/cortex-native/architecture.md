@@ -475,7 +475,12 @@ Native (que roda milhares de libs sobre Hermes em produção):
   aparece só em runtime, como `undefined is not a function` no meio do setup do
   jogo — sem dizer qual função. Foi assim que o `forEachRigidBody` apareceu
   (kart-racer morrendo no `createCar`) e, depois, todo o raycast de mundo da
-  SPEC-0216. O controlador de veículo JÁ foi portado (SPEC-0209).
+  SPEC-0216. O controlador de veículo JÁ foi portado (SPEC-0209). Contatos do
+  narrow-phase (`world.contactPairsWith`/`contactPair`, manifold só com
+  `numContacts`/`contactDist`) vieram na SPEC-0393: a falta deles deixava o DDD 61
+  na tela "Aquecendo os gráficos…" (exceção já no 1º tick, sem nenhum quadro).
+  Antes de exportar um jogo novo, cruze TODAS as chamadas `world.*`/`body.*` do
+  jogo com o shim de uma vez (grep), em vez de descobrir uma por export.
 - **Propriedade faltando no shim NÃO dá erro — escrita vira propriedade JS
   solta.** `world.timestep` não existia: `world.timestep = 1/75` passava calado
   e o passo nativo seguia em 1/60, então o passo semi-fixo do engine
@@ -550,7 +555,10 @@ Native (que roda milhares de libs sobre Hermes em produção):
 - **"Trava depois de N quadros" quase sempre é exceção no tick, não o host**
   (SPEC-0348). Uma exceção em `game.onUpdate`/sistema sobe até o rAF e o tick
   morre sem crash; a mensagem só sai no `error_log.txt` (`[raf] excecao JS`).
-  Leia-o antes de suspeitar de shim/render. Caso real: o spike de `SkinnedMesh`
+  Leia-o antes de suspeitar de shim/render. Se a exceção cai no **1º** tick, o
+  jogo nunca sai da tela de carregamento e parece "aquecimento infinito"
+  (SPEC-0393). Já o `ReferenceError` de global faltando no boot sai no stdout
+  (`[game] ERRO no boot`), não no `error_log.txt`. Caso real: o spike de `SkinnedMesh`
   do DDD 61 buscava ossos por `'Thigh.R'`, mas o `GLTFLoader` sanitiza o nome
   (`PropertyBinding.sanitizeNodeName` tira o `.`) → `ThighR`. Skinning com
   `AnimationMixer` roda no export (120 pessoas, 32 tipos, 20 ossos).
