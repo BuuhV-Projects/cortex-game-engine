@@ -59,7 +59,9 @@ Semântica (igual ao caminho JS):
 - `?nativeRaycast=0` desliga (A/B na mesma build). `?nativeRaycastCheck=1` roda
   também o caminho JS em toda consulta e loga (`debug('perf')`, a cada
   `CHECK_LOG_EVERY` consultas) quantas divergiram (objeto diferente ou distância
-  além de `CHECK_TOLERANCE`).
+  além de `CHECK_TOLERANCE`), quantas tiveram acerto e quantas candidatas foram
+  pro C++ e pro JS — sem esses dois, "0 divergências" sairia também de um raio que
+  nunca acerta ou de uma rota que manda tudo pro JS.
 
 ### Paridade
 

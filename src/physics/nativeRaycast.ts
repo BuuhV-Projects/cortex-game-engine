@@ -95,11 +95,11 @@ export function setNativeRaycastBridge(bridge: RaycastBridge | null | undefined,
   bridgeOverride = bridge;
   resolved = undefined;
   checkMode = bridge ? check : false;
-  checks.queries = checks.mismatches = 0;
+  checks.queries = checks.mismatches = checks.hits = checks.nativeCandidates = checks.jsCandidates = 0;
 }
 
 /** Placar do modo de conferência (`?nativeRaycastCheck=1`). */
-export const checks = { queries: 0, mismatches: 0 };
+export const checks = { queries: 0, mismatches: 0, hits: 0, nativeCandidates: 0, jsCandidates: 0 };
 
 const _hits: Intersection[] = [];
 
@@ -290,6 +290,10 @@ function nativeFirstHit(
     const k = bridge.first(rayBuf, n, slots, matrices, entries, outBuf);
     if (k >= 0) best = toIntersection(objects[k]!);
   }
+  if (checkMode) {
+    checks.nativeCandidates += n;
+    checks.jsCandidates += jsCandidates.length;
+  }
   objects.length = 0;
   // as que o nativo não reproduz: caminho JS, sem ordem (são poucas), o menor vence
   return jsCandidates.length > 0 ? jsFirstHit(raycaster, jsCandidates, null, skip, best) : best;
@@ -340,6 +344,7 @@ export function nativeRaycastActive(): boolean {
 
 function check(native: Intersection | null, js: Intersection | null): void {
   checks.queries++;
+  if (js) checks.hits++;
   // a mesma distância basta: duas malhas coplanares podem trocar o `object` (SPEC-0328)
   const same =
     native === js || (native !== null && js !== null && Math.abs(native.distance - js.distance) <= CHECK_TOLERANCE);
@@ -351,6 +356,6 @@ function check(native: Intersection | null, js: Intersection | null): void {
     );
   }
   if (checks.queries % CHECK_LOG_EVERY === 0) {
-    debug('perf', `[nativeRaycastCheck] consultas=${checks.queries} divergências=${checks.mismatches}`);
+    debug('perf', `[nativeRaycastCheck] consultas=${checks.queries} acertos=${checks.hits} divergências=${checks.mismatches} candidatas nativo/js=${checks.nativeCandidates}/${checks.jsCandidates}`);
   }
 }
