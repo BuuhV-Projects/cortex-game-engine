@@ -1036,6 +1036,14 @@ trecho” sem depender de print de HUD na hora certa.
   física lentos JUNTOS e na mesma proporção, voltando de uma vez, é a assinatura
   de coleta no meio dos quadros (os dois são JS). O `game.precompile()` coleta
   no fim porque o quadro de aquecimento infla o heap de uma vez.
+- **`gc.allocatedMB` diz quanto o JS aloca (SPEC-0357)**: `totalAllocatedBytes`
+  do Hermes, cumulativo — Δ entre amostras ÷ Δt ÷ fps = KB por quadro. No DDD 61
+  eram ~500 KB/quadro (7 coletas young/s); a maior parte vem do jogo e dos
+  internos do three, não dos sistemas do engine. Regra de código por quadro:
+  rascunho de módulo/instância, nada de `new Vector3/Matrix4/Box3…` dentro de
+  `System.update()` (o `tests/systems/noPerFrameAllocation.test.ts` trava), e no
+  Hermes `for…of` em `Map`/`Set` aloca por passo (em `Array` não) — use
+  `Map.forEach` com callback fixo.
 
 ## 8e3. Render bundles estão DESLIGADOS — ADR-0215
 

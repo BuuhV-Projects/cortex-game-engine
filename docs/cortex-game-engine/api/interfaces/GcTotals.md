@@ -12,6 +12,16 @@ Totais do coletor do host (`__cortexGcStats`, SPEC-0264).
 
 ## Properties
 
+### allocatedMB?
+
+> `optional` **allocatedMB?**: `number`
+
+Defined in: [src/core/PerfTrace.ts:432](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L432)
+
+MB alocados pelo JS desde o boot (SPEC-0357); Δ entre amostras = alocação. Host antigo não tem.
+
+***
+
 ### oldCount
 
 > **oldCount**: `number`
