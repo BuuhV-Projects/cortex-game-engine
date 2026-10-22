@@ -16,6 +16,8 @@ readonly FREEZE_IDLE_S=45
 readonly CLOSE_WAIT_S=3
 # Ceiling for one powershell.exe call: a hung call must never hold the round (and the lock).
 readonly PWSH_TIMEOUT_S=30
+# Lock lease = round length + launch/kill/move overhead.
+readonly ROUND_LEASE_MARGIN_S=120
 
 exp=""; out=""; spawn=""; extra=""; query=""; secs=$DEFAULT_SECS; owner="round"
 while [ $# -gt 0 ]; do
@@ -55,7 +57,7 @@ host_pid=""
 running() { tasklist //FI "PID eq $host_pid" //NH //FO CSV 2>/dev/null | grep -qi '^"launcher.exe"' && echo 1 || echo 0; }
 kill_exe() { [ -z "$host_pid" ] || taskkill //F //PID "$host_pid" >/dev/null 2>&1 || true; }
 
-perf_lock_acquire "$owner $(basename "$out")"
+perf_lock_acquire "$owner $(basename "$out")" "$((secs + ROUND_LEASE_MARGIN_S))"
 launched=0
 cleanup() { [ "$launched" = 1 ] && kill_exe; perf_lock_release; }
 trap cleanup EXIT
