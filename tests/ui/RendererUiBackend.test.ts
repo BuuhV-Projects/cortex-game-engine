@@ -55,6 +55,22 @@ describe('RendererUiBackend — regressão de cor (export nativo)', () => {
   });
 });
 
+describe('RendererUiBackend — visual do widget que saiu da lista (SPEC-0357)', () => {
+  it('destrói só o visual do widget removido, e mantém o que continua', () => {
+    const backend = new RendererUiBackend(mockTarget());
+    const kept = new UiPanel({ background: '#ffffff', width: 10, height: 10 });
+    const gone = new UiPanel({ background: '#000000', width: 10, height: 10 });
+    backend.sync([kept, gone], { width: 800, height: 600 });
+    expect(visualOf(backend, gone.id)).toBeDefined();
+
+    backend.sync([kept], { width: 800, height: 600 });
+    backend.sync([kept], { width: 800, height: 600 }); // quadro seguinte: o que ficou continua vivo
+
+    expect(visualOf(backend, gone.id)).toBeUndefined();
+    expect(visualOf(backend, kept.id)?.background).toBeDefined();
+  });
+});
+
 describe('RendererUiBackend — composição em gama via host (ADR-0105)', () => {
   const g = globalThis as Record<string, unknown>;
   afterEach(() => {
