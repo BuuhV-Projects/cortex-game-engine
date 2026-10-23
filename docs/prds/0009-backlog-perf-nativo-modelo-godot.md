@@ -175,12 +175,16 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 - [ ] **Alternar a projeção nativa × `three` a cada quadro trava o host** — causa não isolada.
       Origem: frente B2 (SPEC-0362, etapa (a) do ADR-0330). Não afeta o uso normal (a projeção
       não alterna em jogo), mas impede comparar os dois caminhos na mesma execução.
-- [ ] **`getGamepads()` do host monta um snapshot novo a cada chamada** (~3,6 KB/quadro, e o
-      controle é lido 2×/quadro). Origem: SPEC-0357 (B1). Destrava: cache do snapshot por quadro.
-- [ ] **Internos do `three` no render alocam** (~147 KB/quadro abertos por fase). Origem:
-      SPEC-0357 (B1); parte disso some se o B2 (b.3) tirar objetos do caminho do `three`.
-- [ ] **Soak longo de memória** (external e working set subindo em soak de 10 min no ciclo
-      anterior). Origem: SPEC-0357 / ciclo 75 fps. Destrava: soak de 30–60 min na main do jogo.
+- [ ] **`getGamepads()` do host monta um snapshot novo a cada chamada** (`native/src/shims/input.cpp`,
+      ~3,6 KB/quadro com um controle Xbox), e o controle é lido 2×/quadro (`Game` e
+      `UiLayer.pollDevices`). Destrava: reaproveitar os objetos do snapshot e ler uma vez por quadro —
+      é o caso normal no Xbox, onde sempre há controle. Origem: SPEC-0357 (B1).
+- [ ] **Internos do `three` no render alocam** (~150 KB/quadro: `render()` 52, `RenderObjects.get`
+      28, `renderObject` 17–26). Parte disso sai com o desenho nativo do B2 (b.3); remedir com
+      `gc.allocatedMB` depois dele. Origem: SPEC-0357 (B1).
+- [ ] **Soak longo de memória:** o `external` subiu nos vales nos dois lados do A/B da B1 (+19 a
+      +30 MB em 10 min); o heap JS não vaza. Destrava: soak de 30–60 min na main do jogo para decidir
+      se é vazamento. Origem: SPEC-0357 / ciclo 75 fps.
 - [ ] **Prazo vencido no lock só alerta** (não encerra o jogo nem quebra o lock). Quebrar
       automaticamente foi bloqueado pelo classificador de segurança do app; precisa de permissão
       explícita do usuário. Origem: SPEC-0382.
@@ -191,15 +195,16 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 ### Jogo (DDD 61) — fora do engine
 
 - [ ] **O jogo aloca ~0,8–1,1 MB/quadro** na main (`e2be01c`); o corte do engine foi de 45–65 KB.
-      O critério de pronto do B1 só fecha atacando o código do jogo (ex.: `onUpdate`, ~180 KB/quadro
-      no `dff1386`). Origem: SPEC-0357.
+      O critério de pronto do B1 só fecha atacando o código do jogo — maior fonte isolada: o
+      `onUpdate` (~180 KB/quadro no `dff1386`). Spec no `docs/specs/` do jogo; sonda por seção em
+      `.cortex/b1-alloc/allocProbe.ts.txt` (guardar antes de apagar a pasta). Origem: SPEC-0357.
 - [ ] **R4-C — update do comercial em forma fechada** (crowdBatch/figure/instanceMatrix), trabalho
       não commitado na worktree `D:/jogos/detetive-brasilia-r4-c` (base `dff1386`). Origem: ciclo
       75 fps (pausado em 2026-10-09). Precisa ser reavaliado na main do jogo antes de portar.
 
 ### Limpeza
 
-- [ ] Apagar os artefatos de medição: `D:/jogos/detetive-brasilia/.cortex/b1-alloc` (~700 MB) e a
+- [ ] Apagar os artefatos de medição (salvando antes o `allocProbe.ts.txt`): `D:/jogos/detetive-brasilia/.cortex/b1-alloc` (~700 MB) e a
       worktree do jogo `D:/jogos/detetive-brasilia-cauda-cull`.
 - [ ] Remover as worktrees antigas da R4 na engine (`.claude/worktrees/r4-a-cauda`,
       `r4-b-raycast`, `r4-d-congelamento`): a R4-B foi portada (B4) e a R4-A descartada com número.
