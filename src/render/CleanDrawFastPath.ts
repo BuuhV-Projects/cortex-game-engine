@@ -637,6 +637,11 @@ export function installCleanDrawFastPath(
     backend.finishRender = function finishRender(this: unknown, ...args: unknown[]): void {
       if (args[0] === filaDoQuadro.contexto) {
         // Fila opaca sem item do `three` depois dela (b.3): sai antes de fechar o pass.
+        if (filaDoQuadro.viaThree) {
+          const g0 = filaDoQuadro.gravacoes[0];
+          if (g0) desenharViaThree(renderer, true, 0, 0, 0, g0.ro.camera, filaDoQuadro.cena, filaDoQuadro.luzes);
+          filaDoQuadro.viaThree = false;
+        }
         lote.emitQueued(args[0], true);
         filaDoQuadro.aberta = false;
         filaDoQuadro.contexto = null;
@@ -773,10 +778,23 @@ export function installCleanDrawFastPath(
     empurrados: 0,
     contexto: null as unknown,
     gravacoes: [] as Gravacao[],
+    /** Chave de sort de cada gravação (`renderOrder`, `z`, `id`), para o modo `viaThree`. */
+    chaves: [] as number[],
+    cena: null as unknown,
+    luzes: null as unknown,
     aberta: false,
+    /**
+     * O ambiente mudou neste quadro (a chave verdadeira só existe depois do
+     * `finish()` da RenderList): as receitas não valem, e os da fila são
+     * desenhados pelo `three`, na ordem do sort.
+     */
+    viaThree: false,
   };
   /** Ofertas da projeção em curso (viram `filaDoQuadro.gravacoes` no fim dela). */
   let ofertas: Gravacao[] = [];
+  let chavesDasOfertas: number[] = [];
+  /** Doubles por chave de sort em `filaDoQuadro.chaves`. */
+  const CHAVE = 3;
   const ANTES_PADRAO = Object3D.prototype.onBeforeRender;
   const DEPOIS_PADRAO = Object3D.prototype.onAfterRender;
 
@@ -819,7 +837,12 @@ export function installCleanDrawFastPath(
               descartados.has(g.ro) || g.lights !== lightsNode || g.clipping !== clippingContext ||
               g.ro.geometry !== o.geometry || g.contextNodeVersion !== (renderer.contextNode?.version ?? 0) ||
               !matrixMatch(g.ro, g.instantaneo) || !restMatch(g.ro, g.vigias, g.instantaneo) ||
-              chaveDeAmbiente(renderer, scene, lightsNode) !== g.envKey
+              // NUNCA `chaveDeAmbiente` aqui: o `three` memoiza `getCacheKey` por
+              // chamada, e na projeção as luzes do quadro ainda não estão na
+              // RenderList — a chave errada valeria para a chamada inteira e
+              // refaria todo render object (ADR-0363). A da chamada anterior
+              // basta para ofertar; a verdadeira é conferida ao abrir o pass.
+              ambiente.scene !== scene || ambiente.lights !== lightsNode || ambiente.key !== g.envKey
             ) {
               return false;
             }
@@ -830,6 +853,7 @@ export function installCleanDrawFastPath(
             if (!pipelines.isReady(ro)) return false;
             if (!fila.queueOpaque(ro as unknown as BatchRoLike, renderer.info as never, o.renderOrder, z, o.id)) return false;
             ofertas.push(g);
+            chavesDasOfertas.push(o.renderOrder, z, o.id);
             stats.queued++;
             return true;
           },
@@ -841,6 +865,14 @@ export function installCleanDrawFastPath(
             filaDoQuadro.gravacoes = ofertas;
             ofertas = t;
             ofertas.length = 0;
+            const k = filaDoQuadro.chaves;
+            filaDoQuadro.chaves = chavesDasOfertas;
+            chavesDasOfertas = k;
+            chavesDasOfertas.length = 0;
+            filaDoQuadro.cena = ambiente.scene;
+            filaDoQuadro.luzes = renderList.lightsNode;
+            filaDoQuadro.viaThree = false;
+            proximoViaThree = 0;
             filaDoQuadro.opaque = filaDoQuadro.gravacoes.length > 0 ? renderList.opaque : null;
             filaDoQuadro.empurrados = renderList.opaque.length;
             filaDoQuadro.contexto = renderer._currentRenderContext;
@@ -853,7 +885,46 @@ export function installCleanDrawFastPath(
     filaDoQuadro.aberta = true;
     const calls = renderer.info?.calls ?? 0;
     const gs = filaDoQuadro.gravacoes;
+    // A chave de ambiente verdadeira (o `finish()` já pôs as luzes do quadro).
+    const chave = chaveDeAmbiente(renderer, filaDoQuadro.cena, filaDoQuadro.luzes);
+    for (let i = 0; i < gs.length; i++) {
+      if (gs[i]!.envKey !== chave) {
+        filaDoQuadro.viaThree = true;
+        fila!.dropQueue();
+        return;
+      }
+    }
     for (let i = 0; i < gs.length; i++) atualizarDoQuadro(gs[i]!.ro, gs[i]!, calls);
+  }
+
+  /**
+   * Modo `viaThree`: desenha pelo `three`, na ordem do `painterSortStable`, os
+   * da fila com chave menor que a dada (`todos`: o resto). Raro (quadro em
+   * que o ambiente mudou); a ordem é a mesma do caminho nativo.
+   */
+  let ordemViaThree: number[] = [];
+  let proximoViaThree = 0;
+  function desenharViaThree(
+    r: CleanDrawRendererLike, todos: boolean, ro: number, z: number, id: number,
+    camera: unknown, scene: unknown, lightsNode: unknown,
+  ): void {
+    const gs = filaDoQuadro.gravacoes;
+    const k = filaDoQuadro.chaves;
+    if (proximoViaThree === 0 && ordemViaThree.length !== gs.length) {
+      ordemViaThree = gs.map((_, i) => i);
+      ordemViaThree.sort((a, b) =>
+        k[a * CHAVE]! - k[b * CHAVE]! || k[a * CHAVE + 1]! - k[b * CHAVE + 1]! || k[a * CHAVE + 2]! - k[b * CHAVE + 2]!);
+    }
+    const desenhar = r._currentRenderObjectFunction!;
+    while (proximoViaThree < ordemViaThree.length) {
+      const i = ordemViaThree[proximoViaThree]!;
+      const b = i * CHAVE;
+      if (!todos && !(k[b]! < ro || (k[b] === ro && (k[b + 1]! < z || (k[b + 1] === z && k[b + 2]! < id))))) return;
+      proximoViaThree++;
+      const g = gs[i]!;
+      const o = g.ro.object as ObjetoDaFila;
+      desenhar.call(r, o, scene, camera, o.geometry, g.material, null, lightsNode, g.clipping, null);
+    }
   }
 
   if (fila !== null) {
@@ -870,7 +941,8 @@ export function installCleanDrawFastPath(
     ): void {
       // Só o render DONO: um render aninhado da mesma cena com a mesma câmera
       // reusa a MESMA RenderList (o mesmo array), mas é outro contexto.
-      if (list !== filaDoQuadro.opaque || !fila.queuePending || this._currentRenderContext !== filaDoQuadro.contexto) {
+      const temFila = fila.queuePending || (filaDoQuadro.viaThree && proximoViaThree < filaDoQuadro.gravacoes.length);
+      if (list !== filaDoQuadro.opaque || !temFila || this._currentRenderContext !== filaDoQuadro.contexto) {
         renderObjectsOriginal!.call(this, list, camera, scene, lightsNode, passId);
         return;
       }
@@ -881,15 +953,24 @@ export function installCleanDrawFastPath(
       const total = list.length;
       const fundo = total - filaDoQuadro.empurrados;
       const desenhar = this._currentRenderObjectFunction!;
+      const viaThree = filaDoQuadro.viaThree;
       for (let i = 0; i < total; i++) {
         const item = list[i]!;
-        if (i >= fundo) fila.emitQueued(contexto, false, item.renderOrder, item.z, item.id);
+        if (i >= fundo) {
+          if (viaThree) desenharViaThree(this, false, item.renderOrder, item.z, item.id, camera, scene, lightsNode);
+          else fila.emitQueued(contexto, false, item.renderOrder, item.z, item.id);
+        }
         desenhar.call(this, item.object, scene, camera, item.geometry, item.material, item.group, lightsNode, item.clippingContext, passId);
       }
-      fila.emitQueued(contexto, true);
+      if (viaThree) desenharViaThree(this, true, 0, 0, 0, camera, scene, lightsNode);
+      else fila.emitQueued(contexto, true);
     };
     renderer._renderTransparents = function renderTransparents(this: CleanDrawRendererLike, ...args: unknown[]): void {
-      if (this._currentRenderContext === filaDoQuadro.contexto) fila.emitQueued(this._currentRenderContext, true);
+      if (this._currentRenderContext === filaDoQuadro.contexto) {
+        // `_renderTransparents(lista, duplas, câmera, cena, luzes)`
+        if (filaDoQuadro.viaThree) desenharViaThree(this, true, 0, 0, 0, args[2], args[3], args[4]);
+        else fila.emitQueued(this._currentRenderContext, true);
+      }
       renderTransparentsOriginal!.apply(this, args);
     };
   }

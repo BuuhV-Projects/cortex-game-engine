@@ -241,6 +241,11 @@ export class DrawBatch {
     return true;
   }
 
+  /** A fila do quadro não vale (ambiente mudou): nada dela é emitido. */
+  dropQueue(): void {
+    this._filaPendente = 0;
+  }
+
   /** Fim da projeção: a fila do quadro vai ao host (que ordena). */
   sendQueue(): void {
     const n = this._filaCount;

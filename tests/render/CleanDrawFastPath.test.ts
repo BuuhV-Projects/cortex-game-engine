@@ -521,6 +521,23 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     expect(eventos.filter((e) => e.startsWith('three(')).length).toBe(2 + 3);
   });
 
+  it('ambiente mudou no quadro (chave verdadeira só depois do finish): a fila sai pelo three, na ordem do sort', () => {
+    const { renderer, handle, eventos, contexto, a, item } = montar();
+    const fila = handle.queue!;
+    const lista = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
+    (renderer.info as { calls: number }).calls = 2; // render novo
+    expect(fila.offerOpaque(a.object, 0.5, lista, null, 'cena', 'cam')).toBe(true);
+    lista.opaque.push(item('perto', 0.9, 50));
+    fila.finishProjection(lista);
+    renderer._nodes!.getCacheKey = () => 'luz-nova'; // o `finish()` trouxe outra luz
+    renderer.backend!.beginRender!(contexto);
+    renderer._renderObjects!(lista.opaque, 'cam', 'cena', 'luzes', null);
+    renderer.backend!.finishRender!(contexto);
+    // Nada pela ponte; o objeto da fila foi desenhado pelo three ANTES do de chave maior.
+    expect(eventos.filter((e) => e.startsWith('ate') || e === 'resto')).toEqual([]);
+    expect(eventos.slice(-2)).toEqual(['three(objeto)', 'three(perto)']);
+  });
+
   it('no braço `three` do instrumento de paridade a fila recusa tudo', () => {
     mainPassArm.three = true;
     try {

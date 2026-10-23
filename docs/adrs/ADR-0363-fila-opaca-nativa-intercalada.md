@@ -103,3 +103,12 @@ contexto e pass até isolar. Regras que ficaram:
    embrulho que lia `list.length` ao vivo virava laço quase infinito
    (sonda: `rpNodes` 6,5 s num quadro, 214 objetos refeitos, host parado). E o
    ramo da fila exige o contexto dono — o aninhado reconhece o mesmo array.
+6. **Nunca `nodes.getCacheKey` na projeção**: o `three` a memoiza por chamada
+   de `render()` (`info.calls`) e ela inclui as luzes da RenderList, que só
+   são fixadas no `finish()`, DEPOIS da projeção. Calculada na oferta, a chave
+   com as luzes erradas valia para a chamada inteira, todo render object
+   divergia dela e era refeito (`rpNodes` 6,5 s, `rpObjGet` 216 num quadro).
+   A oferta compara com a chave da chamada anterior; a verdadeira é conferida
+   no `beginRender` do dono e, se o ambiente mudou no quadro, a fila do host é
+   descartada e os oferecidos são desenhados pelo `three`, na ordem do sort
+   (intercalados em JS — caso raro, imagem exata).
