@@ -365,6 +365,12 @@ pub unsafe extern "C" fn rn_body_set(
         // 11 = liga/desliga o corpo e seus colliders (x = 0/1). O DDD 61 desliga
         // troncos por célula no boot e veículos de serviço fora do turno (SPEC-0314).
         11 => rb.set_enabled(x != 0.0),
+        // 12..15: what BreakableProps (DDD 61) does to a pooled prop body (SPEC-0394).
+        // 12 = body type in Rapier's RigidBodyType numbering (x).
+        12 => rb.set_body_type(body_type_from(x), wake_up),
+        13 => rb.enable_ccd(x != 0.0),
+        14 => rb.set_linear_damping(x as f32),
+        15 => rb.set_angular_damping(x as f32),
         _ => rb.set_translation(v, wake_up),
     }
 }
@@ -721,6 +727,56 @@ pub unsafe extern "C" fn rn_world_contact_pair(world: *mut World, c1: f64, c2: f
     count as f64
 }
 
+/// rapier3d-compat's `RigidBodyType` numbering (Dynamic 0, Fixed 1, KinematicPositionBased 2,
+/// KinematicVelocityBased 3) to Rapier's enum; anything else is Dynamic.
+fn body_type_from(code: f64) -> RigidBodyType {
+    match code as i32 {
+        1 => RigidBodyType::Fixed,
+        2 => RigidBodyType::KinematicPositionBased,
+        3 => RigidBodyType::KinematicVelocityBased,
+        _ => RigidBodyType::Dynamic,
+    }
+}
+
+/// Codes of `rn_collider_set` — mirrored in rapier-compat.js (a contract between both ends).
+const COLLIDER_SET_RADIUS: i32 = 0;
+const COLLIDER_SET_HALF_HEIGHT: i32 = 1;
+const COLLIDER_SET_DENSITY: i32 = 2;
+const COLLIDER_SET_FRICTION: i32 = 3;
+const COLLIDER_SET_RESTITUTION: i32 = 4;
+
+/// Collider setters of rapier3d-compat (SPEC-0394): radius (capsule or ball),
+/// half height (Y capsule), density, friction, restitution. A shape or density
+/// change makes Rapier recompute the parent's mass on the next step.
+/// # Safety: `world` alive.
+#[no_mangle]
+pub unsafe extern "C" fn rn_collider_set(world: *mut World, collider: f64, what: f64, value: f64) {
+    let w = &mut *world;
+    let Some(c) = w.colliders.get_mut(unpack_collider(collider)) else {
+        return;
+    };
+    let v = value as Real;
+    match what as i32 {
+        COLLIDER_SET_RADIUS => {
+            let shape = c.shape_mut();
+            if let Some(capsule) = shape.as_capsule_mut() {
+                capsule.radius = v;
+            } else if let Some(ball) = shape.as_ball_mut() {
+                ball.radius = v;
+            }
+        }
+        COLLIDER_SET_HALF_HEIGHT => {
+            if let Some(capsule) = c.shape_mut().as_capsule_mut() {
+                capsule.segment = Segment::new(point![0.0, -v, 0.0], point![0.0, v, 0.0]);
+            }
+        }
+        COLLIDER_SET_DENSITY => c.set_density(v),
+        COLLIDER_SET_FRICTION => c.set_friction(v),
+        COLLIDER_SET_RESTITUTION => c.set_restitution(v),
+        _ => {}
+    }
+}
+
 /// Remove o corpo (e os colliders dele) do mundo. O kart-racer usa no respawn,
 /// pra limpar o que sobrou do carro anterior (SPEC-0216).
 /// # Safety: `world` vivo.
@@ -1004,6 +1060,70 @@ mod tests {
             rn_world_contact_pair(w, floor_c, cube_c, 0.0);
             assert_eq!((&*w).scratch[0], 1.0 - flipped, "the other order flips");
             assert_eq!(rn_world_contact_pair(w, cube_c, floor_c, 99.0), -1.0, "no such manifold");
+            rn_world_free(w);
+        }
+    }
+    /// The BreakableProps pool flow (SPEC-0394): a fixed capsule is reshaped,
+    /// given density/damping/CCD, then turned dynamic and falls.
+    #[test]
+    fn pooled_prop_is_reshaped_and_turned_dynamic() {
+        const SHAPE_CAPSULE: f64 = 2.0;
+        const START_Y: f64 = 5.0;
+        const RADIUS: f64 = 0.3;
+        const HALF_HEIGHT: f64 = 1.0;
+        const DENSITY: f64 = 100.0;
+        const DAMPING: f64 = 0.15;
+        const ANGULAR_DAMPING: f64 = 2.5;
+        const SET_BODY_TYPE: f64 = 12.0;
+        const SET_CCD: f64 = 13.0;
+        const SET_LINEAR_DAMPING: f64 = 14.0;
+        const SET_ANGULAR_DAMPING: f64 = 15.0;
+        const NO_VALUE: f64 = -1.0;
+        const MASS_TOLERANCE: f64 = 1e-2;
+        /// The pool's initial capsule (BreakableProps.initPhysics).
+        const POOL_HALF_HEIGHT: f64 = 1.25;
+        const POOL_RADIUS: f64 = 0.18;
+        const FRICTION: f64 = 0.7;
+        const RESTITUTION: f64 = 0.05;
+        unsafe {
+            let w = rn_world_new(0.0, GRAVITY, 0.0);
+            let body = rn_body_create(w, KIND_FIXED, 0.0, START_Y, 0.0, CAN_SLEEP);
+            let collider = rn_collider_shape(
+                w, body, SHAPE_CAPSULE, POOL_HALF_HEIGHT, POOL_RADIUS, 0.0, NO_VALUE, NO_VALUE, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            );
+            rn_collider_set(w, collider, COLLIDER_SET_RADIUS as f64, RADIUS);
+            rn_collider_set(w, collider, COLLIDER_SET_HALF_HEIGHT as f64, HALF_HEIGHT);
+            rn_collider_set(w, collider, COLLIDER_SET_DENSITY as f64, DENSITY);
+            rn_collider_set(w, collider, COLLIDER_SET_FRICTION as f64, FRICTION);
+            rn_collider_set(w, collider, COLLIDER_SET_RESTITUTION as f64, RESTITUTION);
+            rn_body_set(w, body, SET_CCD, 1.0, 0.0, 0.0, 0.0, 1.0);
+            rn_body_set(w, body, SET_LINEAR_DAMPING, DAMPING, 0.0, 0.0, 0.0, 1.0);
+            rn_body_set(w, body, SET_ANGULAR_DAMPING, ANGULAR_DAMPING, 0.0, 0.0, 0.0, 1.0);
+            rn_world_step(w);
+            {
+                let world = &*w;
+                let c = &world.colliders[unpack_collider(collider)];
+                let capsule = c.shape().as_capsule().expect("capsule");
+                assert!((capsule.radius as f64 - RADIUS).abs() < F32_TOLERANCE);
+                assert!((capsule.half_height() as f64 - HALF_HEIGHT).abs() < F32_TOLERANCE);
+                assert!((c.friction() as f64 - FRICTION).abs() < F32_TOLERANCE);
+                let rb = &world.bodies[unpack_handle(body)];
+                assert!(rb.is_ccd_enabled());
+                assert!((rb.linear_damping() as f64 - DAMPING).abs() < F32_TOLERANCE);
+                assert!((rb.angular_damping() as f64 - ANGULAR_DAMPING).abs() < F32_TOLERANCE);
+                assert_eq!(rb.translation().y as f64, START_Y, "fixed does not fall");
+            }
+
+            rn_body_set(w, body, SET_BODY_TYPE, KIND_DYNAMIC, 0.0, 0.0, 0.0, 1.0);
+            rn_world_step(w);
+            rn_world_step(w);
+            let world = &*w;
+            let rb = &world.bodies[unpack_handle(body)];
+            assert!(rb.is_dynamic());
+            assert!((rb.translation().y as f64) < START_Y, "dynamic falls");
+            let r = RADIUS;
+            let volume = std::f64::consts::PI * r * r * (2.0 * HALF_HEIGHT) + 4.0 / 3.0 * std::f64::consts::PI * r * r * r;
+            assert!((rb.mass() as f64 - DENSITY * volume).abs() / (DENSITY * volume) < MASS_TOLERANCE, "mass = {}", rb.mass());
             rn_world_free(w);
         }
     }
