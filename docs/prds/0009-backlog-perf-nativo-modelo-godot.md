@@ -281,7 +281,7 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       engine (`rendering-server-2b92ff`) há junctions `native/third_party` e
       `native/rapier-native/target` → main: desfazer só o link antes de remover.
 
-- [ ] Artefatos da validação do autopiloto (SPEC-0414): `D:/jogos/detetive-brasilia/.cortex/autopilot`
+- [x] (2026-10-23, removidos com a sessão arquivada) Artefatos da validação do autopiloto (SPEC-0414): `D:/jogos/detetive-brasilia/.cortex/autopilot`
       (2 exports; guardar `runs-ab`, `evidence*` e os scripts `shots.sh`/`val.sh`) e a worktree do jogo
       `D:/jogos/detetive-brasilia-autopilot` (`e2be01c`). Na worktree da engine `autopilot-perf-fdab00`
       o `native/build` é cópia (sem junction).
