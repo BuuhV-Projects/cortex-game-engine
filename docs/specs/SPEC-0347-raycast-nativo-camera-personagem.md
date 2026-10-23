@@ -109,3 +109,6 @@ válidas. ms por quadro, média das 2 réplicas (t ≥ 30 s):
   e NPCs do momento, ±10–13 draws entre braços) bem mais do que o ganho do raycast.
 - Paridade na cena real (`?nativeRaycastCheck=1`, comercial, jogo `dff1386`): 9.000
   consultas, 5.707 com acerto, 0 divergências; 80 % das candidatas no C++.
+- **Pendente:** o ponto dirigindo (`helio&drive=1`) no `e2be01c` não roda no export — o
+  tick quebra no `BreakableProps.activate` do jogo (API do Rapier que o host ainda não
+  tem). Refazer esse A/B quando a correção do Rapier entrar.
