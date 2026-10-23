@@ -112,3 +112,7 @@ contexto e pass até isolar. Regras que ficaram:
    no `beginRender` do dono e, se o ambiente mudou no quadro, a fila do host é
    descartada e os oferecidos são desenhados pelo `three`, na ordem do sort
    (intercalados em JS — caso raro, imagem exata).
+7. **A chave da chamada anterior é guardada por `lightsNode`**: o render
+   aninhado do DDD 61 usa outra câmera (outro `lightsNode`) e sobrescrevia o
+   memo único de ambiente todo quadro — a oferta recusava tudo (33 ofertas
+   numa rodada inteira, 0 emitidos).

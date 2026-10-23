@@ -525,7 +525,7 @@ export interface OpaqueQueueLike {
   /** `true` = o objeto foi para a fila nativa (não vai para o `renderList.push`). */
   offerOpaque(object: unknown, z: number, renderList: QueueRenderListLike, clippingContext: unknown, scene: unknown, camera: unknown): boolean;
   /** Fim da projeção: a fila do quadro vai ao host. */
-  finishProjection(renderList: QueueRenderListLike): void;
+  finishProjection(renderList: QueueRenderListLike, scene: unknown): void;
 }
 
 export interface CleanDrawStats {
@@ -589,6 +589,12 @@ export function installCleanDrawFastPath(
     gravacoes.get(object)?.get(context)?.get(passId);
   /** Chave de ambiente memoizada por chamada de render (`info.calls`). */
   const ambiente = { scene: undefined as unknown, lights: undefined as unknown, calls: -1, key: undefined as unknown };
+  /**
+   * Última chave de ambiente calculada por `lightsNode` (que é por cena e
+   * câmera). A oferta da fila opaca a usa: um render aninhado com outra câmera
+   * sobrescreve o `ambiente` todo quadro (ADR-0363).
+   */
+  const chavePorLuzes = new WeakMap<object, unknown>();
   const chaveDeAmbiente = (r: CleanDrawRendererLike, scene: unknown, lightsNode: unknown): unknown => {
     const calls = r.info?.calls ?? -1;
     if (ambiente.scene !== scene || ambiente.lights !== lightsNode || ambiente.calls !== calls) {
@@ -596,6 +602,7 @@ export function installCleanDrawFastPath(
       ambiente.lights = lightsNode;
       ambiente.calls = calls;
       ambiente.key = nodes.getCacheKey(scene, lightsNode);
+      if (lightsNode !== null && typeof lightsNode === 'object') chavePorLuzes.set(lightsNode, ambiente.key);
     }
     return ambiente.key;
   };
@@ -842,7 +849,7 @@ export function installCleanDrawFastPath(
               // RenderList — a chave errada valeria para a chamada inteira e
               // refaria todo render object (ADR-0363). A da chamada anterior
               // basta para ofertar; a verdadeira é conferida ao abrir o pass.
-              ambiente.scene !== scene || ambiente.lights !== lightsNode || ambiente.key !== g.envKey
+              lightsNode === null || typeof lightsNode !== 'object' || chavePorLuzes.get(lightsNode) !== g.envKey
             ) {
               return false;
             }
@@ -857,7 +864,7 @@ export function installCleanDrawFastPath(
             stats.queued++;
             return true;
           },
-          finishProjection(renderList): void {
+          finishProjection(renderList, scene): void {
             // Aninhada no render dono: nada foi oferecido, a fila dele fica.
             if (filaDoQuadro.aberta) return;
             // Fila anterior que nunca chegou a um render (ex.: `compileAsync`) é descartada.
@@ -869,7 +876,7 @@ export function installCleanDrawFastPath(
             filaDoQuadro.chaves = chavesDasOfertas;
             chavesDasOfertas = k;
             chavesDasOfertas.length = 0;
-            filaDoQuadro.cena = ambiente.scene;
+            filaDoQuadro.cena = scene;
             filaDoQuadro.luzes = renderList.lightsNode;
             filaDoQuadro.viaThree = false;
             proximoViaThree = 0;

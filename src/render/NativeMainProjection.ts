@@ -149,7 +149,7 @@ export class MainProjector {
       }
       empurrar(renderList, objeto, z, clippingContext);
     }
-    this._queue?.finishProjection(renderList as unknown as QueueRenderListLike);
+    this._queue?.finishProjection(renderList as unknown as QueueRenderListLike, this._mirror.root);
     this._stats.native++;
     this._stats.candidates = n;
     return true;

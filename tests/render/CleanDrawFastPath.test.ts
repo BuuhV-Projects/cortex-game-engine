@@ -347,6 +347,8 @@ describe('installCleanDrawFastPath com lote em C++ (b.2)', () => {
 });
 
 describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0363)', () => {
+  /** O `lightsNode` do three é sempre um objeto (a fila guarda a chave de ambiente por ele). */
+  const LUZES = { lightsNode: true };
   /** Três objetos gravados pelo `three`, ponte com fila, renderer com os internos que a fila embrulha. */
   function montar() {
     const eventos: string[] = [];
@@ -427,7 +429,7 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     const handle = installCleanDrawFastPath(renderer, ponte)!;
     for (const x of [a, vidro, proprio]) {
       atual = x;
-      renderer._renderObjectDirect!(x.object, x.material, 'cena', 'cam', 'luzes', null, null, null);
+      renderer._renderObjectDirect!(x.object, x.material, 'cena', 'cam', LUZES, null, null, null);
     }
     const item = (nome: string, z: number, idItem: number): RenderItemLike => ({
       object: { nome }, geometry: null, material: null, group: null, clippingContext: null, renderOrder: 0, z, id: idItem,
@@ -441,16 +443,16 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     // O instantâneo do vidro agora diverge — mas a recusa vem antes, pelo material.
     (proprio.object as unknown as Record<string, unknown>)['onBeforeRender'] = () => undefined;
     const fila = handle.queue!;
-    const lista = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
+    const lista = { lightsNode: LUZES, opaque: [] as RenderItemLike[] };
     expect(fila.offerOpaque(a.object, 0.5, lista, null, 'cena', 'cam')).toBe(true);
     expect(fila.offerOpaque(vidro.object, 0.4, lista, null, 'cena', 'cam')).toBe(false);
     expect(fila.offerOpaque(proprio.object, 0.3, lista, null, 'cena', 'cam')).toBe(false);
     // Outro conjunto de luzes: recusa (a gravação é de outro).
     expect(fila.offerOpaque(a.object, 0.5, { lightsNode: 'outras', opaque: [] }, null, 'cena', 'cam')).toBe(false);
     lista.opaque.push(item('perto', 0.9, 50));
-    fila.finishProjection(lista);
+    fila.finishProjection(lista, 'cena');
     lista.opaque.unshift(item('fundo', 0, 99)); // `_background.update`, depois do sort
-    renderer._renderObjects!(lista.opaque, 'cam', 'cena', 'luzes', null);
+    renderer._renderObjects!(lista.opaque, 'cam', 'cena', LUZES, null);
     renderer._renderTransparents!();
     expect(eventos).toEqual(['fila(0@0.5)', 'three(fundo)', 'ate(0.9)', 'three(perto)', 'transparentes']);
     expect(handle.stats.queued).toBe(1);
@@ -459,32 +461,32 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
   it('reentrância: a fila pertence ao render dono; aninhado não oferece nem emite, e fila sem render é descartada', () => {
     const { renderer, handle, eventos, contexto, a, item } = montar();
     const fila = handle.queue!;
-    const lista = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
+    const lista = { lightsNode: LUZES, opaque: [] as RenderItemLike[] };
     expect(fila.offerOpaque(a.object, 0.5, lista, null, 'cena', 'cam')).toBe(true);
     lista.opaque.push(item('perto', 0.9, 50));
-    fila.finishProjection(lista);
+    fila.finishProjection(lista, 'cena');
     renderer.backend!.beginRender!(contexto); // render dono aberto
     // Um `updateBefore` renderiza a cena noutro alvo: projeção aninhada.
     const outro = {};
     renderer._currentRenderContext = outro;
-    const aninhada = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
+    const aninhada = { lightsNode: LUZES, opaque: [] as RenderItemLike[] };
     expect(fila.offerOpaque(a.object, 0.5, aninhada, null, 'cena', 'cam')).toBe(false);
-    fila.finishProjection(aninhada); // não troca a fila do dono
+    fila.finishProjection(aninhada, 'cena'); // não troca a fila do dono
     renderer._renderTransparents!(); // outro contexto: não emite
     renderer.backend!.finishRender!(outro);
     expect(eventos.filter((e) => e.startsWith('ate') || e === 'resto')).toEqual([]);
     renderer._currentRenderContext = contexto;
-    renderer._renderObjects!(lista.opaque, 'cam', 'cena', 'luzes', null);
+    renderer._renderObjects!(lista.opaque, 'cam', 'cena', LUZES, null);
     expect(eventos.slice(-2)).toEqual(['ate(0.9)', 'three(perto)']);
     renderer.backend!.finishRender!(contexto);
 
     // Projeção sem render (ex.: `compileAsync`): a próxima descarta a fila dela.
     eventos.length = 0;
-    const semRender = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
+    const semRender = { lightsNode: LUZES, opaque: [] as RenderItemLike[] };
     expect(fila.offerOpaque(a.object, 0.5, semRender, null, 'cena', 'cam')).toBe(true);
-    fila.finishProjection(semRender);
-    const proxima = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
-    fila.finishProjection(proxima);
+    fila.finishProjection(semRender, 'cena');
+    const proxima = { lightsNode: LUZES, opaque: [] as RenderItemLike[] };
+    fila.finishProjection(proxima, 'cena');
     expect(eventos).toEqual(['fila(0@0.5)']); // a próxima não tinha ofertas: nada novo vai ao host
     renderer.backend!.beginRender!(contexto);
     renderer.backend!.finishRender!(contexto);
@@ -494,10 +496,10 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
   it('render aninhado da mesma cena e câmera (mesma RenderList) no meio do laço: termina e não emite a fila do dono', () => {
     const { renderer, handle, eventos, contexto, a, item } = montar();
     const fila = handle.queue!;
-    const lista = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
+    const lista = { lightsNode: LUZES, opaque: [] as RenderItemLike[] };
     expect(fila.offerOpaque(a.object, 0.5, lista, null, 'cena', 'cam')).toBe(true);
     lista.opaque.push(item('perto', 0.9, 50), item('longe', 2, 51));
-    fila.finishProjection(lista);
+    fila.finishProjection(lista, 'cena');
     renderer.backend!.beginRender!(contexto);
     const aninhado = {};
     let aninhados = 0;
@@ -510,10 +512,10 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
       this._currentRenderContext = aninhado;
       lista.opaque.length = 0;
       lista.opaque.push(item('x', 0.1, 60), item('y', 0.2, 61), item('z', 0.3, 62));
-      this._renderObjects!(lista.opaque, 'cam', 'cena', 'luzes', null);
+      this._renderObjects!(lista.opaque, 'cam', 'cena', LUZES, null);
       this._currentRenderContext = dono;
     };
-    renderer._renderObjects!(lista.opaque, 'cam', 'cena', 'luzes', null);
+    renderer._renderObjects!(lista.opaque, 'cam', 'cena', LUZES, null);
     renderer.backend!.finishRender!(contexto);
     // A fila saiu UMA vez, no dono (antes do 1º item de chave maior que a dela).
     expect(eventos.filter((e) => e.startsWith('ate') || e === 'resto')).toEqual(['ate(0.9)']);
@@ -524,18 +526,25 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
   it('ambiente mudou no quadro (chave verdadeira só depois do finish): a fila sai pelo three, na ordem do sort', () => {
     const { renderer, handle, eventos, contexto, a, item } = montar();
     const fila = handle.queue!;
-    const lista = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
+    const lista = { lightsNode: LUZES, opaque: [] as RenderItemLike[] };
     (renderer.info as { calls: number }).calls = 2; // render novo
     expect(fila.offerOpaque(a.object, 0.5, lista, null, 'cena', 'cam')).toBe(true);
     lista.opaque.push(item('perto', 0.9, 50));
-    fila.finishProjection(lista);
+    fila.finishProjection(lista, 'cena');
     renderer._nodes!.getCacheKey = () => 'luz-nova'; // o `finish()` trouxe outra luz
     renderer.backend!.beginRender!(contexto);
-    renderer._renderObjects!(lista.opaque, 'cam', 'cena', 'luzes', null);
+    renderer._renderObjects!(lista.opaque, 'cam', 'cena', LUZES, null);
     renderer.backend!.finishRender!(contexto);
     // Nada pela ponte; o objeto da fila foi desenhado pelo three ANTES do de chave maior.
     expect(eventos.filter((e) => e.startsWith('ate') || e === 'resto')).toEqual([]);
     expect(eventos.slice(-2)).toEqual(['three(objeto)', 'three(perto)']);
+  });
+
+  it('render com outra câmera (outras luzes) entre a gravação e a oferta não faz a fila recusar', () => {
+    const { renderer, handle, a, proprio } = montar();
+    // O render aninhado do quadro anterior desenhou com OUTRO lightsNode.
+    renderer._renderObjectDirect!(proprio.object, proprio.material, 'cena', 'outraCam', { outras: true }, null, null, null);
+    expect(handle.queue!.offerOpaque(a.object, 0.5, { lightsNode: LUZES, opaque: [] }, null, 'cena', 'cam')).toBe(true);
   });
 
   it('no braço `three` do instrumento de paridade a fila recusa tudo', () => {
