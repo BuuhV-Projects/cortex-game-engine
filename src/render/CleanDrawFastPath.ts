@@ -213,8 +213,13 @@ interface Gravacao {
   plan: NonNullable<ReturnType<typeof buildRenderIdPlan>>;
   /** Plano de uniformes (SPEC-0362); `null` com o interruptor desligado. */
   uniforms: Plan | null;
-  /** Material com nó: o plano de uniformes roda em todo desenho direto. */
+  /**
+   * Material com nó: em todo desenho direto confere ao menos os UBOs — um
+   * `uniform(v)` mudado pelo jogo não tem gancho.
+   */
   always: boolean;
+  /** Só a comparação dos UBOs (sem refazer nós): material com nó parado e com os vigias batendo. */
+  ubosOnly: Plan | null;
 }
 
 /**
@@ -673,7 +678,7 @@ export function installCleanDrawFastPath(
   }
 
   /** O que não muda num render object: vigias e planos (ou `null` = inelegível). */
-  type Preparado = Pick<Gravacao, 'vigias' | 'plan' | 'uniforms' | 'always'>;
+  type Preparado = Pick<Gravacao, 'vigias' | 'plan' | 'uniforms' | 'always' | 'ubosOnly'>;
   const preparados = new WeakMap<object, Preparado | null>();
   /** Render objects descartados pelo `three` (material/geometria `dispose`). */
   const descartados = new WeakSet<object>();
@@ -691,7 +696,10 @@ export function installCleanDrawFastPath(
     const vigias = elegivel ? watchersFor(ro) : null;
     const plan = vigias ? buildRenderIdPlan(ro as never) : null;
     const uniforms = plan && uniformRefresh ? buildTransformOnlyPlan(ro as never, true) : null;
-    p = vigias && plan && (uniforms !== null || !monitor.hasNode) ? { vigias, plan, uniforms, always: monitor.hasNode } : null;
+    p =
+      vigias && plan && (uniforms !== null || !monitor.hasNode)
+        ? { vigias, plan, uniforms, always: monitor.hasNode, ubosOnly: uniforms && { nodes: [], ubos: uniforms.ubos } }
+        : null;
     preparados.set(ro, p);
     if (p === null) {
       stats.ineligible++;
@@ -731,7 +739,7 @@ export function installCleanDrawFastPath(
       g = {
         ro, material: ro.material, context: r._currentRenderContext, passId, lights: lightsNode, clipping,
         envKey: undefined, contextNodeVersion: 0, vigias: p.vigias, instantaneo: new Float64Array(n), plan: p.plan,
-        uniforms: p.uniforms, always: p.always,
+        uniforms: p.uniforms, always: p.always, ubosOnly: p.ubosOnly,
       };
       porPasse.set(passId, g);
     }
@@ -853,7 +861,10 @@ export function installCleanDrawFastPath(
           tresCaminho(this, object, material, scene, camera, lightsNode, group, clippingContext, passId);
           return;
         }
-        applyPlan(frame as unknown as NodeFrameLike, uniformes ? g.uniforms! : g.plan.object, updateBinding);
+        // Vigia mudou: plano completo. Só se moveu: o de transformação (os
+        // uniformes de um material com nó que o jogo muda não são referência,
+        // e ele os confere). Parado com material com nó: só os UBOs.
+        applyPlan(frame as unknown as NodeFrameLike, valores ? g.uniforms! : moveu ? g.plan.object : g.ubosOnly!, updateBinding);
         if (valores) {
           // O instantâneo passa a ser o dos valores novos, no lugar.
           cursor.begin(false, escrita);

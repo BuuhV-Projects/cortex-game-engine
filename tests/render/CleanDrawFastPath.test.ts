@@ -321,21 +321,39 @@ describe('installCleanDrawFastPath', () => {
     expect(chamadas.original).toBe(2);
   });
 
-  it('material com nó (hasNode) é elegível, com o plano de uniformes em todo desenho direto', () => {
+  it('material com nó (hasNode) é elegível: confere os UBOs em todo desenho direto, sem refazer os nós', () => {
     const ref = no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, property: 'color', properties: ['color'], material: null });
     const { ro, object, material, monitor } = roFalso([ref], materialFalso());
     monitor.hasNode = true;
+    // Um `uniform(v)` que o jogo muda direto: só o UBO percebe.
+    const jsUniform = { nodeUniform: { node: {} } };
+    let conferidos = 0;
+    let mudou = false;
+    const escritas: unknown[] = [];
+    const ubo = {
+      isUniformsGroup: true,
+      groupNode: { shared: false },
+      uniforms: [jsUniform],
+      updateRanges: [],
+      updateByType: () => (conferidos++, mudou),
+      addUpdateRange: () => undefined,
+      clearUpdateRanges: () => undefined,
+    };
+    (ro as unknown as { getBindings: () => unknown[] }).getBindings = () => [{ bindings: [ubo] }];
     const { renderer, chamadas, atualizados } = rendererFalso();
-    renderer.backend!.updateBinding = () => undefined;
+    renderer.backend!.updateBinding = (b) => void escritas.push(b);
     renderer.ro = ro;
     const handle = installCleanDrawFastPath(renderer)!;
     const chamar = () => renderer._renderObjectDirect!(object, material, 'cena', 'cam', 'luzes', null, null, null);
     chamar();
     chamar();
+    mudou = true;
     chamar();
     expect(chamadas.original).toBe(1);
     expect(handle.stats.uniforms).toBe(2);
-    expect(atualizados.filter((n) => n === ref)).toHaveLength(2);
+    expect(conferidos).toBe(2);
+    expect(escritas).toEqual([ubo]); // só o desenho em que o jogo mudou o valor escreve
+    expect(atualizados.filter((n) => n === ref)).toHaveLength(0);
   });
 
   it('nó animado nunca é gravado', () => {

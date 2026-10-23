@@ -43,9 +43,11 @@ grupos, sem a verificação genérica em volta.
    em UBO) — o desenho direto aplica o plano de uniformes, regrava o
    instantâneo no lugar e desenha. Qualquer outra divergência segue no `three`
    (que regrava), como hoje.
-2. **Material com nó (`hasNode`).** Passa a ser elegível, com o plano de
-   uniformes aplicado em **todo** desenho direto (o `three` faz o equivalente
-   todo quadro). Continua recusado se algum nó de objeto não for conferível
+2. **Material com nó (`hasNode`).** Passa a ser elegível. Em todo desenho
+   direto os UBOs não compartilhados do objeto são **conferidos**
+   (`updateByType`, só escreve o que mudou): é o que pega um `uniform(v)`
+   mudado pelo jogo. Os nós só são refeitos quando um vigia mudou (plano
+   completo) ou o objeto se moveu (plano de transformação). Continua recusado se algum nó de objeto não for conferível
    (`watchersFor`), se houver `updateBefore`/`updateAfter` de objeto, buffer
    não-UBO fora o de instâncias (`buildRenderIdPlan`) ou skin
    (`hasAnimation`).
@@ -111,3 +113,26 @@ devolve o quadro ao `three` quando recusa (LOD, `ClippingGroup`…), e uma cena
 que entre e saia dessa recusa troca de projeção repetidamente. No DDD 61 hoje
 são 0 recusas, então não aparece. Fica como pendência da etapa (a)
 (SPEC-0332).
+
+## A/B v1 — plano completo em todo desenho de material com nó: neutro
+
+Export release do DDD 61 `e2be01c`, engine `7fb9421e` + esta spec, mesma build
+com `?uniformRefresh=0` (A) × ligado (B), kit SPEC-0382 intercalado, 2 réplicas
+× 170 s. Render (cpuAvg, ms):
+
+| ponto | A | B | Δ | quadro med Δ | draws A/B |
+| --- | --- | --- | --- | --- | --- |
+| setorO | 14,37 | 13,81 | −0,56 | −1,25 | 156 / 154,5 |
+| centro | 13,88 | 14,10 | +0,22 | −0,10 | 158 / 158,5 |
+| comercial | 14,83 | 15,03 | +0,20 | −0,65 | 154,5 / 154 |
+| Águas Claras | 15,43 | 16,57 | +1,14 | ≈ +1,2 | 177,5 / 187,5 |
+
+O mecanismo funcionou (setorO: caminho do `three` de ~27% para ~7% dos draws,
+inelegíveis 691 → 5) e a paridade por imagem deu **`maxChannelDiff` 0** nos
+pares nativo×`three` e de controle. Mas o ganho não apareceu: os ~30
+render objects de material com nó aplicavam o plano COMPLETO (todos os
+`updateNode`) em todo quadro — quase o mesmo trabalho do refresh do `three` —
+e o `gc young` subiu ~10 ms/s. Lição: o custo por draw do caminho do `three`
+medido pela sonda (~95 µs) estava inflado; tirar um objeto dele vale bem menos.
+Corrigido para conferir só os UBOs quando nada mudou (acima) e com laços
+indexados no `applyPlan` (no Hermes cada `for…of` aloca um iterador).

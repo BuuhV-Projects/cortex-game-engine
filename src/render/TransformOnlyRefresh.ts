@@ -143,10 +143,15 @@ export function buildTransformOnlyPlan(renderObject: RenderObjectLike, allUnifor
 
 /** Aplica o plano: atualiza os nodes e escreve cada UBO alterado num `writeBuffer`. */
 export function applyPlan(frame: NodeFrameLike, plan: Plan, updateBinding: (binding: UniformsGroupLike) => void): void {
-  for (const node of plan.nodes) frame.updateNode(node);
-  for (const { ubo, uniforms } of plan.ubos) {
+  // Laços indexados: no Hermes cada `for…of` aloca um iterador, e isto roda
+  // por objeto por quadro (SPEC-0362).
+  const nodes = plan.nodes;
+  for (let i = 0; i < nodes.length; i++) frame.updateNode(nodes[i]!);
+  const ubos = plan.ubos;
+  for (let i = 0; i < ubos.length; i++) {
+    const { ubo, uniforms } = ubos[i]!;
     let updated = false;
-    for (const uniform of uniforms) if (ubo.updateByType(uniform)) updated = true;
+    for (let j = 0; j < uniforms.length; j++) if (ubo.updateByType(uniforms[j]!)) updated = true;
     if (!updated) continue;
     mergeRanges(ubo);
     updateBinding(ubo);
