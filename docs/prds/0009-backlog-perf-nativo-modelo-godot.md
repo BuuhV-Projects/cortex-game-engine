@@ -76,8 +76,8 @@ Hades.
 - **Pronto quando:** alocação/quadro em regime cai a um patamar estável e as
   pausas de GC somem do p95 do `frameMs`.
 - **Andamento (2026-10-22, SPEC-0357):** medido (instrumento `gc.allocatedMB`)
-  e feito o lado dos sistemas do engine: 460–540 → 410–470 KB/quadro (−10 a
-  −13%) no DDD 61. Critério de pronto **não** atingido — o resto é o
+  e feito o lado dos sistemas do engine: −45 a −65 KB/quadro no DDD 61
+  (`e2be01c`: ~0,9–1,1 MB/quadro, −4 a −7%; `dff1386`: −10 a −13%). Critério de pronto **não** atingido — o resto é o
   `onUpdate` do jogo, os internos do three no render (B2) e o raycast (B4).
 
 ### B2 — "RenderingServer": concluir o ADR-0237 (M0–M8)

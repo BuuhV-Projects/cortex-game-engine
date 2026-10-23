@@ -37,8 +37,7 @@ caminhos independentes.
   fora da tela (`CORTEX_WINDOW_OFFSCREEN=1`), `?systemProfile=1&spawn=<ponto>`, 150 s por rodada,
   descartando os primeiros 40 s; dirigindo = `spawn=helio&drive=1` com o piloto por waypoints.
 - Rodadas sob o lock `.cortex/measure.lock` do jogo; save isolado (id `ddd-61-bench-b1`).
-- **Jogo medido: DDD 61 em `dff1386` (09/10)** — o mesmo das rodadas R3/R4. O jogo da main não roda no
-  export (ver Consequências).
+- Jogo medido: DDD 61 `e2be01c` (principal, seção 4a) e `dff1386` (09/10, referência das R3/R4, seções 3/4b/4c).
 
 ### 3. Antes — Setor O, parado
 
@@ -78,7 +77,29 @@ Atribuição (KB/quadro, regime):
   fizer `new Vector2/3/4, Matrix3/4, Quaternion, Euler, Box3, Sphere, Ray, Plane, Color` (inclusive em
   closures dentro dele). O teste prova que acusa com um fixture de resposta conhecida.
 
-### 4b. Depois — A/B intercalado
+### 4a. Medição principal — DDD 61 `e2be01c` (main do jogo)
+
+Depois que a main do jogo passou a rodar no export (SPEC-0392/0393), o A/B foi refeito nela com o kit
+de medição (SPEC-0382: `ab.sh`, 2 réplicas ABAB/BABA, 150 s, todas as rodadas VÁLIDAS no
+`validate.sh`). A e B usam o **mesmo** `cortex_host` (com o instrumento); A tem o JS da main da engine
+nos três arquivos mudados, B a branch. Uma rodada B do Setor O saiu com tudo dobrado (render, world e js,
+63 amostras contra ~110) — carga externa — e foi trocada por um par extra B/A.
+
+| ponto | KB/quadro | coletas young/s | pausa young ms/s | fps | `frameMs` p50 | p95 | p99 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Setor O | 960 → **895** (−7%) | 10,5 → 10,0 | 44,0 → 41,8 | 38,2 → 39,0 | 26,1 → 25,8 | 35,1 → 34,8 | 46,6 → 38,4 |
+| Centro | 863 → **815** (−6%) | 8,8 → 8,6 | 42,5 → 40,9 | 35,9 → 37,1 | 28,3 → 26,5 | 40,2 → 35,7 | 52,1 → 49,3 |
+| Comercial | 1088 → **1035** (−5%) | 10,1 → 9,9 | 47,0 → 44,7 | 33,3 → 33,7 | 29,7 → 29,6 | 44,0 → 40,8 | 57,3 → 48,0 |
+| Águas Claras | 1120 → **1074** (−4%) | 10,6 → 9,8 | 46,1 → 43,5 | 33,6 → 32,3 | 30,1 → 31,9 | 43,8 → 44,8 | 60,0 → 57,1 |
+
+- Este jogo aloca o dobro do `dff1386` (~0,9–1,1 MB/quadro, coletas young de ~4,3 ms); o corte do engine
+  é o mesmo em valor absoluto (−45 a −65 KB/quadro), então pesa menos em proporção.
+- Tempo de coleta young cai 1,6–2,6 ms por segundo em todos os pontos. fps e cauda ficam dentro da
+  variação entre rodadas; em Águas Claras a diferença acompanha os draws na tela (198 vs 190 no par 1;
+  no par 2, com 161/159, p50 29,9 nos dois lados) — conteúdo diferente, não código. Sem regressão.
+- O ponto "dirigindo" não foi medido aqui: o kit ainda não tem piloto.
+
+### 4b. Referência secundária — DDD 61 `dff1386` (antes do kit)
 
 Rodadas ABBA por ponto (A = base, B = esta SPEC; mesma instrumentação dos dois lados, export release,
 150–160 s, médias de 2 rodadas por lado). Uma rodada B do Comercial foi descartada e repetida: outra
@@ -156,6 +177,5 @@ personagens com rig de 22 ossos e um clipe de 30 chaves por osso; por quadro, o 
 ## Consequências
 
 - Uma leitura de `HeapInfo` por chamada a `__cortexGcStats()` (2×/s, só com métricas ligadas).
-- O DDD 61 da main não roda no export nativo hoje: `audio/carRadio.ts` (14/10) faz `new Audio()` e o
-  host não tem `HTMLAudioElement`; e mesmo antes disso (jogo em `ae5caef`) o boot chega ao
-  `GameLoop: rAF agendado` e nenhum tick roda. Fora do escopo desta SPEC — registrado para decisão.
+- As seções 3, 4b e 4c foram medidas no `dff1386` porque a main do jogo não rodava no export na época
+  (`new Audio()` sem `HTMLAudioElement` no host; resolvido na SPEC-0392/0393).
