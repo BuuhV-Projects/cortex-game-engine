@@ -77,33 +77,47 @@ const _center = new Vector3();
  */
 export function cullOutlines(root: Object3D, cameraPosition: Vector3, minRatio: number): OutlineCullStats {
   const stats: OutlineCullStats = { evaluated: 0, culled: 0 };
-  root.traverse((obj) => {
-    const mesh = obj as Mesh & { isMesh?: boolean; userData: Record<string, unknown> };
-    if (!mesh.isMesh || !isOutlineShell(mesh.material)) return;
-    // Primeira visita: guarda o `visible` AUTORADO, que é o teto do filtro.
-    if (mesh.userData[OUTLINE_AUTHORED_KEY] === undefined) {
-      mesh.userData[OUTLINE_AUTHORED_KEY] = mesh.visible;
-    }
-    const authored = mesh.userData[OUTLINE_AUTHORED_KEY] === true;
-    if (!authored) {
-      mesh.visible = false; // casca de vidro nasce desligada; continua desligada
-      return;
-    }
-    if (minRatio <= 0) {
-      mesh.visible = true; // filtro desligado: devolve a autoria
-      return;
-    }
-    const geometry = mesh.geometry as BufferGeometry | undefined;
-    if (!geometry) return;
-    if (!geometry.boundingSphere) geometry.computeBoundingSphere();
-    const bounds = geometry.boundingSphere;
-    if (!bounds) return;
-    _sphere.copy(bounds).applyMatrix4(mesh.matrixWorld);
-    _center.copy(_sphere.center);
-    stats.evaluated++;
-    const draws = shouldDrawOutline(_sphere.radius, _center.distanceTo(cameraPosition), minRatio);
-    if (!draws) stats.culled++;
-    mesh.visible = draws;
-  });
+  visitOutlines(root, cameraPosition, minRatio, stats);
   return stats;
+}
+
+/**
+ * Walks the tree skipping hidden subtrees (SPEC-0372): a shell under a hidden
+ * ancestor draws nothing either way. Not `traverseVisible`: the shell itself
+ * is hidden by this very filter and must still be re-evaluated.
+ */
+function visitOutlines(obj: Object3D, cameraPosition: Vector3, minRatio: number, stats: OutlineCullStats): void {
+  const isShell = (obj as Mesh).isMesh === true && isOutlineShell((obj as Mesh).material);
+  if (isShell) cullShell(obj as Mesh, cameraPosition, minRatio, stats);
+  else if (!obj.visible) return;
+  const children = obj.children;
+  for (let i = 0; i < children.length; i++) visitOutlines(children[i]!, cameraPosition, minRatio, stats);
+}
+
+function cullShell(shell: Mesh, cameraPosition: Vector3, minRatio: number, stats: OutlineCullStats): void {
+  const mesh = shell as Mesh & { userData: Record<string, unknown> };
+  // Primeira visita: guarda o `visible` AUTORADO, que é o teto do filtro.
+  if (mesh.userData[OUTLINE_AUTHORED_KEY] === undefined) {
+    mesh.userData[OUTLINE_AUTHORED_KEY] = mesh.visible;
+  }
+  const authored = mesh.userData[OUTLINE_AUTHORED_KEY] === true;
+  if (!authored) {
+    mesh.visible = false; // casca de vidro nasce desligada; continua desligada
+    return;
+  }
+  if (minRatio <= 0) {
+    mesh.visible = true; // filtro desligado: devolve a autoria
+    return;
+  }
+  const geometry = mesh.geometry as BufferGeometry | undefined;
+  if (!geometry) return;
+  if (!geometry.boundingSphere) geometry.computeBoundingSphere();
+  const bounds = geometry.boundingSphere;
+  if (!bounds) return;
+  _sphere.copy(bounds).applyMatrix4(mesh.matrixWorld);
+  _center.copy(_sphere.center);
+  stats.evaluated++;
+  const draws = shouldDrawOutline(_sphere.radius, _center.distanceTo(cameraPosition), minRatio);
+  if (!draws) stats.culled++;
+  mesh.visible = draws;
 }
