@@ -289,3 +289,42 @@ Main `96d6cb34` + b.2; 135 s por rodada (150 s no hélio dirigindo).
   montagem do `three` em volta (`renderObject`, `_renderObjects`, projeção em
   JS). O próximo corte é tirar o laço de `_renderObjects` do JS para os
   objetos limpos — o C++ já tem a lista (etapa a) e as receitas (b.2).
+
+## Remedição no jogo atual e a ordem do que falta (2026-10-22)
+
+O jogo mudou muito desde a b.2 (main do DDD 61 `e2be01c`, mais pesado e sem as
+otimizações do ciclo de 75 fps), então a pergunta "onde está o tempo do passe
+principal" foi refeita antes de escolher o próximo corte. Engine `7fb9421e` +
+host recompilado, export release, kit de medição da SPEC-0382, 170 s por
+rodada, setorO e comercial.
+
+| rodada | render | quadro med | draws |
+| --- | --- | --- | --- |
+| setorO, caminho ligado | 14,5 | 26,5 | 165 |
+| setorO, `?nativeMainPass=0` | 16,1 | 27,4 | 157 |
+| comercial, ligado (sonda) | 17,0–19,2 | 32,0–32,7 | 157 |
+
+Sonda de fases nível 3 (setorO; infla o absoluto, serve para o **onde**):
+laço por objeto (`rpEach`, tempo próprio) **5,1 ms**; internos do `three` nos
+desenhos que ainda passam por ele (`objGet`+`nodes`+`geom`+`bind`+`pipe`+`draw`)
+**4,1 ms** para ~43 desenhos/quadro (~95 µs cada); matriz + projeção +
+`_renderObjects` 0,7 ms.
+
+Diagnóstico `?cleanDrawWhy=1` (temporário, não commitado): por quadro, ~73% dos
+draws são diretos e **~43 voltam ao `three`**, por:
+
+| motivo | por quadro | o que é |
+| --- | --- | --- |
+| inelegível por `hasNode` | ~25 | material com QUALQUER propriedade de nó (`colorNode`…): o `three` refaz sempre, por precaução; aqui, carros estacionados, céu/estrelas, pós |
+| `muda: fog.color` | ~17 (média) | o jogo ajusta a névoa pela hora: quando muda, TODO objeto com névoa diverge e é refeito inteiro |
+| `muda: instanceMatrix` | ~7 | instanciados com matrizes andando (rodas das patrulhas…) |
+| céu (`attr.color.version`), `map`, `emissiveIntensity` | ~2 | |
+
+**Ordem decidida pelos números:** os ~43 refeitos custam ~4 ms a ~95 µs cada,
+e em ~42 deles o que mudou é só **valor de uniforme** (névoa, material com nó)
+— exatamente o caso que o "objeto que só se moveu" da b.1 já resolve com um
+plano de nós + escrita de UBO. Isso é JS pequeno, usa as funções do próprio
+`three` e ataca a maior fatia: vem **primeiro** (SPEC-0362, etapa (c) parte 1).
+O laço dos ~117 diretos em C++ (b.3: limpeza por gancho + sequência nativa
+intercalada na RenderList) fica depois, remedido sobre o resultado da 0362 —
+o teto dele é ~117 × ~20 µs ≈ 2,3 ms com risco bem maior.
