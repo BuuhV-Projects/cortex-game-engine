@@ -78,6 +78,13 @@ export interface BatchInfoLike {
   update(object: unknown, count: number, instanceCount: number): void;
 }
 
+/** What the RenderingServer (SPEC-0425) reads of a recipe. */
+export interface ServerRecipe {
+  readonly id: number;
+  readonly grupos: readonly unknown[];
+  readonly compartilhados: readonly number[];
+}
+
 /** A receita de um render object, do lado JS. */
 interface Receita {
   id: number;
@@ -185,6 +192,26 @@ export class DrawBatch {
     const dados = this._contextData;
     if (dados) dados['currentSets'] = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
     this._backend.pipelineUtils?._activePipelines?.delete(this._pass);
+  }
+
+  /** The live recipe of a render object (RenderingServer, SPEC-0425). */
+  recipeOf(ro: object): ServerRecipe | undefined {
+    return this._receitas.get(ro);
+  }
+
+  /**
+   * Draws a command list built outside the batch (RenderingServer) in `pass`:
+   * what the batch holds goes first (screen order), then the list in one
+   * crossing, then the same encoder cache invalidation as {@link flush}.
+   */
+  emitCommands(pass: unknown, contextData: Record<string, unknown>, commands: Int32Array, count: number): void {
+    this.flush();
+    if (!pass || count === 0) return;
+    const drawn = this._bridge.flush(pass, commands, count);
+    if (drawn < 0) debug('perf', `[drawBatch] server list refused (${count} commands)`);
+    this.stats.flushes++;
+    contextData['currentSets'] = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
+    this._backend.pipelineUtils?._activePipelines?.delete(pass);
   }
 
   /** O render object foi descartado pelo `three`: a receita sai do host. */
