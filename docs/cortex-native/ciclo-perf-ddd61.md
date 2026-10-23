@@ -75,6 +75,22 @@ Export release do jogo `aacfb7e` (merge do Guará), 5 pontos + dirigindo, t ≥ 
 - **Descartada:** nenhuma mudança na física. A cauda segue no render e no GC jovem (presente em 30–51 %
   dos quadros da cauda contra 15–20 % no geral) — frentes B1 (alocação) e de render.
 
+**Reconfirmada no jogo `e2be01c`** (main do DDD 61, 2026-10-23; engine `5c970b0c` com host recompilado;
+kit SPEC-0382). O jogo é mais pesado: js mediano 21–28 ms, então 100 % dos quadros têm 2+ passos e a
+comparação passa a ser 3 passos contra 2:
+
+| ponto | js p50 / p95 | 3 passos − 2: render / update / `VehicleControlSystem` | GC jovem na cauda vs geral |
+|---|---|---|---|
+| Setor O | 21,5 / 28,8 | +1,99 / +0,94 / +0,24 | 80 % / 26 % |
+| Centro | 21,8 / 30,0 | +1,27 / +0,75 / +0,40 | 83 % / 24 % |
+| Comercial | 26,0 / 35,8 | +4,78 / +0,63 / +0,22 | 74 % / 31 % |
+| Águas Claras | 27,6 / 39,5 | +2,76 / +1,52 / +0,33 | 75 % / 30 % |
+| Guará | 21,3 / 30,6 | +1,55 / +0,80 / +0,30 | 70 % / 27 % |
+
+`world.step()` ~0,19–0,24 ms por passo. Mesma leitura: o passo extra custa ~0,2–0,4 ms; o excedente está
+no render e no GC jovem. O ponto dirigindo não rodou nessa base (crash ao bater num prop, corrigido
+depois pela SPEC-0394).
+
 Pendências fora das frentes:
 
 - **Memória:** no soak de 10 min o vale do `external` pós-GC subiu 297 → 318 MB e o working
