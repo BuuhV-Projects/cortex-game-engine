@@ -28,12 +28,17 @@ function recording(object: Mesh | InstancedMesh, opts: { instances?: number } = 
 interface Batch {
   recipeOf(ro: object): { id: number; grupos: unknown[]; compartilhados: number[] } | undefined;
   emitCommands(pass: unknown, data: unknown, cmds: Int32Array, n: number): void;
+  recapture(ro: object): { id: number; grupos: unknown[]; compartilhados: number[] } | undefined;
+  /** What a re-record reads as the shared group now. */
+  liveShared: string;
   emitted: number[][];
 }
 
 function batch(withRecipe = true): Batch {
   const b: Batch = {
     emitted: [],
+    liveShared: 'G-shared',
+    recapture: () => ({ id: 10, grupos: [b.liveShared, 'G-own'], compartilhados: [0] }),
     recipeOf: () => (withRecipe ? { id: 9, grupos: ['G-shared', 'G-own'], compartilhados: [0] } : undefined),
     emitCommands: (_p, _d, cmds, n) => void b.emitted.push(Array.from(cmds.subarray(0, n * 4))),
   };
@@ -167,15 +172,24 @@ describe('RenderServer — offer and emission', () => {
     expect(server.stats.fallback).toBe(1);
   });
 
-  it('a stale shared group (recreated by the three) goes back to the three', () => {
-    const { server, renderer, add, log } = setup();
+  it('a recreated shared group re-records the recipe; still stale goes back to the three', () => {
+    const { server, renderer, b, add, log } = setup();
     renderer.backend!.get = (o: unknown) => ((o as { id?: string })?.id === 'shared' ? { group: 'NEW' } : { currentPass: 'P' });
     const a = add('a');
     const list = { opaque: [] as unknown[] };
     server.beginProjection(renderer, list);
     server.offer(a, a.material, a.geometry, null);
     renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
-    expect(log).toEqual(['prepare', 'three:a']);
+    expect(log).toEqual(['prepare', 'three:a']); // the re-record still reads the old group
+    expect(b.emitted).toEqual([]);
+
+    b.liveShared = 'NEW';
+    server.beginProjection(renderer, list);
+    server.offer(a, a.material, a.geometry, null);
+    renderer.info!.calls = 2;
+    renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
+    expect(b.emitted).toEqual([[10, VERTICES, 1, 0]]);
+    expect(server.stats.recaptured).toBe(1);
   });
 
   it('drops a list projected without a render, and another render does not emit it', () => {

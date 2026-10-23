@@ -194,6 +194,12 @@ export class DrawBatch {
     this._backend.pipelineUtils?._activePipelines?.delete(this._pass);
   }
 
+  /** Re-records the recipe from the handles the three has now; the new live recipe. */
+  recapture(ro: BatchRoLike): ServerRecipe | undefined {
+    this.capture(ro);
+    return this._receitas.get(ro);
+  }
+
   /** The live recipe of a render object (RenderingServer, SPEC-0425). */
   recipeOf(ro: object): ServerRecipe | undefined {
     return this._receitas.get(ro);

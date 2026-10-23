@@ -29,8 +29,8 @@ const QUERY_KEY = 'renderServer=';
 const COMMAND_INTS = 4;
 const INITIAL_COMMANDS = 256;
 const TRIANGLE_VERTICES = 3;
-/** `render()` calls between reports on `debug('perf')`. */
-const REPORT_CALLS = 1200;
+/** Projections between reports on `debug('perf')`. */
+const REPORT_PROJECTIONS = 600;
 
 /** On? Off by default until the acceptance A/B (SPEC-0425); `?renderServer=1` turns it on. */
 export function renderServerRequested(fallback = false): boolean {
@@ -119,6 +119,17 @@ export interface RenderServerStats {
   fallback: number;
   /** Lists dropped without a draw (projection without render, e.g. `compileAsync`). */
   dropped: number;
+  /** Candidates offered by the projection / taken into the list. */
+  offered: number;
+  taken: number;
+  /** Lists emitted. */
+  emissions: number;
+  /** Fallback reasons: lights/environment/context node changed, stale shared group, moved needs the three. */
+  fbEnv: number;
+  fbShared: number;
+  fbMoved: number;
+  /** Recipes re-recorded at emission because a shared group was recreated. */
+  recaptured: number;
 }
 
 const Object3DProto = Object3D.prototype;
@@ -157,7 +168,10 @@ export function buildServerInstance(g: ServerRecording, batch: DrawBatch): Serve
  * the pass of the render that built it.
  */
 export class RenderServer {
-  readonly stats: RenderServerStats = { drawn: 0, moved: 0, refused: 0, fallback: 0, dropped: 0 };
+  readonly stats: RenderServerStats = {
+    drawn: 0, moved: 0, refused: 0, fallback: 0, dropped: 0, offered: 0, taken: 0, emissions: 0,
+    fbEnv: 0, fbShared: 0, fbMoved: 0, recaptured: 0,
+  };
   private _items: ServerRecording[] = [];
   private _moved: boolean[] = [];
   private _owner: unknown = null;
@@ -167,7 +181,7 @@ export class RenderServer {
   /** Per shader state: last call prepared, and the shared group handles seen then. */
   private readonly _prepared = new WeakMap<object, { calls: number; shared: unknown[] }>();
   private readonly _fallback: ServerRecording[] = [];
-  private _reportCalls = -1;
+  private _projections = 0;
 
   constructor(private readonly _access: ServerAccess) {}
 
@@ -177,6 +191,7 @@ export class RenderServer {
    */
   beginProjection(r: ServerRendererLike, renderList: unknown): boolean {
     if (this._emitting) return false;
+    this._report();
     if (this._items.length > 0) {
       this.stats.dropped++;
       this._items.length = 0;
@@ -189,6 +204,7 @@ export class RenderServer {
 
   /** `true` = the candidate went to the server list (not to the RenderList). */
   offer(object: Object3D, material: unknown, geometry: unknown, clipping: unknown): boolean {
+    this.stats.offered++;
     const g = this._access.recordingOf(object, this._owner);
     if (
       g === undefined || g.material !== material || g.ro.geometry !== geometry || g.clipping !== clipping ||
@@ -206,6 +222,7 @@ export class RenderServer {
     }
     this._items.push(g);
     this._moved.push(r === CheckResult.Moved);
+    this.stats.taken++;
     return true;
   }
 
@@ -239,6 +256,7 @@ export class RenderServer {
       const g = this._items[i]!;
       const inst = g.server!;
       if (g.lights !== lightsNode || g.envKey !== env || g.contextNodeVersion !== contextNodeVersion) {
+        this.stats.fbEnv++;
         fallback.push(g);
         continue;
       }
@@ -250,11 +268,21 @@ export class RenderServer {
         this._prepared.set(inst.state, p);
       }
       if (!sameShared(inst.recipe, p.shared)) {
-        fallback.push(g);
-        continue;
+        // The three recreated a shared bind group (texture generation, sampler):
+        // re-record the recipe from the current handles (~µs) instead of a full
+        // draw by the three (~100 µs). Still stale = the three draws it.
+        const recipe = a.batch.recapture(g.ro as never);
+        if (recipe === undefined || !sameShared(recipe, p.shared)) {
+          this.stats.fbShared++;
+          fallback.push(g);
+          continue;
+        }
+        inst.recipe = recipe;
+        this.stats.recaptured++;
       }
       if (this._moved[i]) {
         if (!a.applyMoved(r, g)) {
+          this.stats.fbMoved++;
           fallback.push(g);
           continue;
         }
@@ -287,10 +315,17 @@ export class RenderServer {
       this.stats.fallback++;
     }
     fallback.length = 0;
-    if (calls !== this._reportCalls && calls % REPORT_CALLS === 0) {
-      this._reportCalls = calls;
-      const s = this.stats;
-      debug('perf', `[renderServer] drawn=${s.drawn} moved=${s.moved} refused=${s.refused} fallback=${s.fallback} dropped=${s.dropped}`);
+    this.stats.emissions++;
+  }
+
+  private _report(): void {
+    const s = this.stats;
+    if (++this._projections % REPORT_PROJECTIONS === 0) {
+      debug(
+        'perf',
+        `[renderServer] emissions=${s.emissions} offered=${s.offered} taken=${s.taken} drawn=${s.drawn} moved=${s.moved} ` +
+          `refused=${s.refused} fallback=${s.fallback} (env=${s.fbEnv} shared=${s.fbShared} moved=${s.fbMoved}) recaptured=${s.recaptured} dropped=${s.dropped}`,
+      );
     }
   }
 
