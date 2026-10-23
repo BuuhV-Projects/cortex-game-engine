@@ -281,7 +281,8 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       no caminho direto (b.1/`RenderIdRefresh`). Destrava manter a sombra barata; o RS1 (laço por objeto
       fora do JS) pode absorver parte disso — medir a sombra on×off também com o RS1 ligado. Origem: B2.
 - [ ] **~1,2 ms do render com sombra fora das fases da sonda** — mesma origem a investigar. Origem: B2.
-- [ ] **Decisão de produto (usuário): sombra do sol no export do DDD 61** — desligar (ou opção de
+- [ ] **Decisão de produto (usuário): sombra do sol no export do DDD 61** — **decidido em 2026-10-23: esperar
+      o RS1** e decidir com o A/B sombra on×off com o RS1 ligado (se o servidor absorver o custo, a sombra fica) — desligar (ou opção de
       qualidade com padrão desligado no nativo) rende −2,5 a −4 ms de render já; custo visual: perde as
       sombras de fim de tarde no chão perto do jogador. Origem: B2.
 
