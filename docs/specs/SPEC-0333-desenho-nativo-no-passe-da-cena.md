@@ -328,3 +328,42 @@ plano de nós + escrita de UBO. Isso é JS pequeno, usa as funções do próprio
 O laço dos ~117 diretos em C++ (b.3: limpeza por gancho + sequência nativa
 intercalada na RenderList) fica depois, remedido sobre o resultado da 0362 —
 o teto dele é ~117 × ~20 µs ≈ 2,3 ms com risco bem maior.
+
+### Atualização da ordem (2026-10-23)
+
+A SPEC-0362 (plano de uniformes para tirar os ~43 refeitos do `three`) foi
+**rejeitada por medição**: o caminho correto custa quase o mesmo que o refresh
+do `three`. O teto da b.3 medido SEM sonda (deixando de projetar os limpos
+parados) é **−5,2 a −5,6 ms de render** no setorO e no comercial (~85 draws a
+~61–66 µs de JS cada) — a b.3 vem agora.
+
+## Passo b.3 — fila opaca nativa intercalada (ADR-0363)
+
+Desenho da decisão no ADR-0363. Comportamento:
+
+- `CleanDrawFastPath` ganha `offerOpaque(objeto, z, renderList, clipping,
+  cena, câmera)`, chamado pela projeção nativa por candidato de material único:
+  `true` = o objeto foi para a fila nativa e não vai para o `renderList.push`.
+  Requisitos: os da b.1 (gravação do mesmo contexto/passe nulo/material/luzes
+  — `renderList.lightsNode` —/clipping/geometria/ambiente/`contextNode`,
+  `matrixMatch` e `restMatch`), receita viva da b.2 com os grupos
+  compartilhados ainda os gravados, `pipelines.isReady`, material opaco
+  (`transparent` falso, sem transmissão), sem `occlusionTest`, sem
+  `onBeforeRender`/`onAfterRender` próprios.
+- Parâmetros de desenho (`count`, instâncias, `first`) gravados junto com a
+  gravação (dependem só do que o instantâneo vigia).
+- `DrawBatch.queueOpaque` acumula `[receita, count, instâncias, first]` +
+  chave `[renderOrder, z, id]`; no fim da projeção a fila vai ao host
+  (`__cortexDrawBatch.queue`), que ordena estável por chave.
+- `_renderObjects` embrulhado: só para a lista `opaque` da RenderList que
+  montou a fila. Antes de cada item cujo objeto foi projetado neste quadro,
+  `emitUntil(renderOrder, z, id)`; no fim, `emitAll`. `_renderTransparents` e
+  `finishRender` também emitem o que restar antes de seguir.
+- C++: `native/src/render/opaque_queue.*` (pura: ordenação estável pela regra
+  do `painterSortStable` e o corte "até a chave"), reaproveitando o `replay`
+  da b.2; ponte em `draw_batch_shim` (`queue`, `emitUntil`, `emitAll`).
+- Interruptor `?nativeOpaqueQueue=0|1` (padrão ligado no host).
+
+Critério de aceite: render −3 ms ou mais no setorO e no comercial (A/B
+intercalado, kit SPEC-0382), sem regressão nos outros pontos, `?parityFreeze`
+com nativo×`three` no nível do controle, testes verdes.
