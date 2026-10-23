@@ -7,7 +7,6 @@
 
 #include "../napi/napi_util.h"
 #include "../render/draw_batch.h"
-#include "../render/opaque_queue.h"
 #include "../webgpu/napi_stats.h"
 
 namespace shims {
@@ -19,19 +18,9 @@ constexpr size_t kArgsRecord = 5;
 constexpr size_t kArgsFlush = 3;
 /** Devolvido por `flush` quando os argumentos não servem. */
 constexpr double kFlushBadArgs = -1;
-/** Argumentos de `queue`: comandos, chaves, quantos. */
-constexpr size_t kArgsQueue = 3;
-/** Argumentos de `emitNext`: pass encoder, quantos. */
-constexpr size_t kArgsEmitNext = 2;
 
 render::RecipeStore& store() {
   static render::RecipeStore instance;
-  return instance;
-}
-
-/** Fila opaca nativa do quadro (ADR-0363). */
-render::OpaqueQueue& opaqueQueue() {
-  static render::OpaqueQueue instance;
   return instance;
 }
 
@@ -170,66 +159,6 @@ napi_value jsFlush(napi_env env, napi_callback_info info) {
   return number(env, render::replay(store(), comandos, quantos, emissor));
 }
 
-/** Lê um TypedArray do tipo pedido; `nullptr` se não for. */
-void* typedData(napi_env env, napi_value value, napi_typedarray_type expected, size_t* length) {
-  napi_typedarray_type tipo;
-  void* dados = nullptr;
-  napi_value buffer;
-  size_t offset = 0;
-  if (napi_get_typedarray_info(env, value, &tipo, length, &dados, &buffer, &offset) != napi_ok || tipo != expected) {
-    return nullptr;
-  }
-  return dados;
-}
-
-/** Emite um trecho da fila no pass encoder. */
-napi_value emitSpan(napi_env env, napi_value passValue, const render::QueueSpan& span) {
-  auto* pass = static_cast<WGPURenderPassEncoder>(njs::unwrapValue(env, passValue));
-  if (pass == nullptr) return number(env, kFlushBadArgs);
-  if (span.count == 0) return number(env, 0);
-  WgpuEmitter emissor(pass);
-  return number(env, render::replay(store(), span.commands, span.count, emissor));
-}
-
-/** `queue(comandos: Int32Array, chaves: Float64Array, quantos)` → quantos na fila, ou -1. */
-napi_value jsQueue(napi_env env, napi_callback_info info) {
-  size_t argc = kArgsQueue;
-  napi_value args[kArgsQueue];
-  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  if (argc < kArgsQueue) return number(env, kFlushBadArgs);
-  size_t nCmds = 0;
-  size_t nKeys = 0;
-  uint32_t quantos = 0;
-  const auto* cmds = static_cast<const render::DrawCommand*>(typedData(env, args[0], napi_int32_array, &nCmds));
-  const auto* keys = static_cast<const render::SortKey*>(typedData(env, args[1], napi_float64_array, &nKeys));
-  if (cmds == nullptr || keys == nullptr || napi_get_value_uint32(env, args[2], &quantos) != napi_ok ||
-      static_cast<size_t>(quantos) * render::kCommandInts > nCmds ||
-      static_cast<size_t>(quantos) * render::kSortKeyDoubles > nKeys) {
-    return number(env, kFlushBadArgs);
-  }
-  static_assert(sizeof(render::SortKey) == sizeof(double) * render::kSortKeyDoubles,
-                "SortKey tem de ter o layout do Float64Array do JS");
-  opaqueQueue().set(cmds, keys, quantos);
-  // As chaves voltam ORDENADAS no mesmo buffer: o JS intercala sem cruzar a
-  // ponte a cada item do `three` (só por sequência a emitir).
-  auto* saida = const_cast<render::SortKey*>(keys);
-  const render::SortKey* ordenadas = opaqueQueue().sortedKeys();
-  for (uint32_t i = 0; i < quantos; i++) saida[i] = ordenadas[i];
-  return number(env, quantos);
-}
-
-/** `emitNext(passEncoder, quantos)` → desenhos emitidos (os próximos da fila). */
-napi_value jsEmitNext(napi_env env, napi_callback_info info) {
-  webgpu::NapiTimer cronometro;
-  (void)cronometro;
-  size_t argc = kArgsEmitNext;
-  napi_value args[kArgsEmitNext];
-  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  uint32_t quantos = 0;
-  if (argc < kArgsEmitNext || napi_get_value_uint32(env, args[1], &quantos) != napi_ok) return number(env, kFlushBadArgs);
-  return emitSpan(env, args[0], opaqueQueue().takeNext(quantos));
-}
-
 }  // namespace
 
 void registerDrawBatch(napi_env env) {
@@ -239,8 +168,6 @@ void registerDrawBatch(napi_env env) {
   njs::setMethod(env, api, "record", jsRecord);
   njs::setMethod(env, api, "release", jsRelease);
   njs::setMethod(env, api, "flush", jsFlush);
-  njs::setMethod(env, api, "queue", jsQueue);
-  njs::setMethod(env, api, "emitNext", jsEmitNext);
   napi_set_named_property(env, global, "__cortexDrawBatch", api);
 }
 

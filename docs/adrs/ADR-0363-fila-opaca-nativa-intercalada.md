@@ -1,7 +1,7 @@
 # ADR-0363 — Fila opaca nativa intercalada na RenderList (b.3 do ADR-0330)
 
 **Data:** 2026-10-23
-**Status:** implementado na branch `claude/b2-desenho-nativo-d831a3`, **não mergeado** — A/B sem ganho demonstrável (ver "Resultado medido")
+**Status:** **medido, sem ganho; arquivado** — o código foi removido; para retomar, o último estado está no commit `dbf15071` (branch `claude/b2-desenho-nativo-d831a3`). Ver "Resultado medido" e as armadilhas.
 
 ## Contexto
 

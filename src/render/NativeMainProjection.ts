@@ -24,7 +24,6 @@ import { debug } from '../core/debug.js';
 import { mainPassBridge, type MainPassBridge, type NativeSceneMirror } from '../core/NativeSceneMirror.js';
 import { MainPassKind } from './MainPassKind.js';
 import { queryFlagRequested } from './TransformOnlyRefresh.js';
-import type { OpaqueQueueLike, QueueRenderListLike } from './CleanDrawFastPath.js';
 
 const QUERY_KEY = 'nativeProjection=';
 /** Interruptor geral do passe principal nativo (ADR-0330). */
@@ -93,8 +92,6 @@ export class MainProjector {
     private readonly _mirror: NativeSceneMirror,
     private readonly _bridge: MainPassBridge,
     private readonly _stats: NativeProjectionStats,
-    /** Fila opaca nativa (ADR-0363): o limpo e parado não vai para a RenderList. */
-    private readonly _queue: OpaqueQueueLike | null = null,
   ) {}
 
   project(camera: Camera, renderList: RenderListLike, clippingContext: unknown): boolean {
@@ -141,15 +138,8 @@ export class MainProjector {
         if (objeto.frustumCulled && !this._dentro(objeto)) continue;
         z = this._zDoThree(objeto);
       }
-      if (
-        tipo !== MainPassKind.JsCull && this._queue !== null &&
-        this._queue.offerOpaque(objeto, z, renderList as unknown as QueueRenderListLike, clippingContext, this._mirror.root, camera)
-      ) {
-        continue;
-      }
       empurrar(renderList, objeto, z, clippingContext);
     }
-    this._queue?.finishProjection(renderList as unknown as QueueRenderListLike, this._mirror.root);
     this._stats.native++;
     this._stats.candidates = n;
     return true;
@@ -221,7 +211,6 @@ export function installNativeProjection(
   renderer: ProjectingRendererLike,
   mirror: NativeSceneMirror,
   bridge: MainPassBridge | undefined = mainPassBridge(),
-  queue: OpaqueQueueLike | null = null,
 ): NativeProjection | null {
   const original = renderer._projectObject;
   if (!bridge || typeof original !== 'function') {
@@ -229,7 +218,7 @@ export function installNativeProjection(
     return null;
   }
   const stats: NativeProjectionStats = { native: 0, refused: 0, candidates: 0 };
-  const projector = new MainProjector(mirror, bridge, stats, queue);
+  const projector = new MainProjector(mirror, bridge, stats);
   const hadOwn = Object.prototype.hasOwnProperty.call(renderer, '_projectObject');
 
   renderer._projectObject = function projectObject(

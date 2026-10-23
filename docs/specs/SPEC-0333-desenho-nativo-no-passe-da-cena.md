@@ -371,7 +371,7 @@ Critério de aceite: render −3 ms ou mais no setorO e no comercial (A/B
 intercalado, kit SPEC-0382), sem regressão nos outros pontos, `?parityFreeze`
 com nativo×`three` no nível do controle, testes verdes.
 
-### b.3 medido (2026-10-23): sem ganho demonstrável — não mergeado
+### b.3 medido (2026-10-23): sem ganho demonstrável — arquivado (código removido; último estado em `dbf15071`)
 
 Paridade exata (`maxChannelDiff` 0, `?parityFreeze`), mas o A/B intercalado
 nos 4 pontos ficou no ruído (setorO −1,24 com uma réplica A atípica, centro

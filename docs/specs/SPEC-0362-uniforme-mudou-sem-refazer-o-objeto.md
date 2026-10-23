@@ -1,7 +1,7 @@
 # SPEC-0362 — Uniforme mudou sem refazer o objeto (etapa (c) do ADR-0330, parte 1)
 
 **Data:** 2026-10-22
-**Status:** **rejeitada por medição** (A/B v1 e v2 sem ganho; v2 com imagem errada) — o mecanismo foi revertido; fica o instrumento de paridade `?parityFreeze` (`MainPassArm.ts`)
+**Status:** **rejeitada por medição** (A/B v1 e v2 sem ganho; v2 com imagem errada) — o mecanismo foi revertido; fica o instrumento de paridade `?parityFreeze` (`src/render/MainPassArm.ts`, teste em `tests/render/MainPassArm.test.ts`)
 
 ## Contexto
 

@@ -26,19 +26,12 @@ const COMMAND_INTS = 4;
 const INITIAL_COMMANDS = 256;
 /** Receita inválida (`kNoRecipe`). */
 const NO_RECIPE = -1;
-/** Doubles por chave de sort da fila opaca (`kSortKeyDoubles`: renderOrder, z, id). */
-const SORT_KEY_DOUBLES = 3;
 
 /** A ponte do host; ausente no browser e em host antigo. */
 export interface DrawBatchBridge {
   record(pipeline: unknown, groups: unknown[], vertexBuffers: unknown[], index: unknown, index32: boolean): number;
   release(id: number): void;
   flush(pass: unknown, commands: Int32Array, count: number): number;
-  /** Fila opaca nativa (ADR-0363); ausentes em host antigo. */
-  /** Ordena a fila e devolve as chaves ORDENADAS no próprio `keys`. */
-  queue?(commands: Int32Array, keys: Float64Array, count: number): number;
-  /** Emite os próximos `count` da fila. */
-  emitNext?(pass: unknown, count: number): number;
 }
 
 export function drawBatchBridge(): DrawBatchBridge | undefined {
@@ -106,8 +99,6 @@ export interface DrawBatchStats {
   recorded: number;
   /** Desenhos diretos que não puderam ir em lote (indireto, stencil, oclusão...). */
   unbatchable: number;
-  /** Desenhos da fila opaca nativa (ADR-0363). */
-  queued: number;
 }
 
 /**
@@ -115,19 +106,12 @@ export interface DrawBatchStats {
  * o `flush` antes de qualquer desenho do `three`.
  */
 export class DrawBatch {
-  readonly stats: DrawBatchStats = { batched: 0, flushes: 0, recorded: 0, unbatchable: 0, queued: 0 };
+  readonly stats: DrawBatchStats = { batched: 0, flushes: 0, recorded: 0, unbatchable: 0 };
   private _commands = new Int32Array(INITIAL_COMMANDS * COMMAND_INTS);
   private _count = 0;
   private _pass: unknown = null;
   private _contextData: Record<string, unknown> | null = null;
   private readonly _receitas = new WeakMap<object, Receita>();
-  /** Fila opaca do quadro (ADR-0363): comandos, chaves e quantos. */
-  private _filaCmds = new Int32Array(INITIAL_COMMANDS * COMMAND_INTS);
-  private _filaKeys = new Float64Array(INITIAL_COMMANDS * SORT_KEY_DOUBLES);
-  private _filaCount = 0;
-  /** Itens na fila do host e quantos já saíram (o cursor sobre as chaves ordenadas). */
-  private _filaTotal = 0;
-  private _filaCursor = 0;
   private readonly _conferir = queryFlagRequested(CHECK_QUERY_KEY, false);
   private readonly _relatados = new WeakSet<object>();
 
@@ -195,118 +179,12 @@ export class DrawBatch {
     this.stats.batched += this._count;
     this.stats.flushes++;
     this._count = 0;
-    this._invalidar(this._contextData, this._pass);
-  }
-
-  /** O host suporta a fila opaca nativa (ADR-0363)? */
-  get queueSupported(): boolean {
-    return typeof this._bridge.queue === 'function' && typeof this._bridge.emitNext === 'function';
-  }
-
-  /**
-   * Põe o desenho limpo e parado na fila opaca do quadro, com a chave de sort
-   * do `three`. `false` = não dá (sem receita, grupo compartilhado recriado):
-   * quem chama o deixa na RenderList.
-   */
-  queueOpaque(ro: BatchRoLike, info: BatchInfoLike, renderOrder: number, z: number, id: number): boolean {
-    const receita = this._receitas.get(ro);
-    if (receita === undefined) return false;
-    const bindings = ro.getBindings();
-    for (let k = 0; k < receita.compartilhados.length; k++) {
-      const i = receita.compartilhados[k]!;
-      if (this._backend.get(bindings[i])['group'] !== receita.grupos[i]) return false;
-    }
-    const params = ro.getDrawParameters();
-    if (params === null) return true; // o `three` também não desenharia
-    const n = this._filaCount;
-    if ((n + 1) * COMMAND_INTS > this._filaCmds.length) {
-      const cmds = new Int32Array(this._filaCmds.length * 2);
-      cmds.set(this._filaCmds);
-      this._filaCmds = cmds;
-      const keys = new Float64Array(this._filaKeys.length * 2);
-      keys.set(this._filaKeys);
-      this._filaKeys = keys;
-    }
-    const c = this._filaCmds;
-    const base = n * COMMAND_INTS;
-    c[base] = receita.id;
-    c[base + 1] = params.vertexCount;
-    c[base + 2] = params.instanceCount;
-    c[base + 3] = params.firstVertex;
-    const k = this._filaKeys;
-    const kb = n * SORT_KEY_DOUBLES;
-    k[kb] = renderOrder;
-    k[kb + 1] = z;
-    k[kb + 2] = id;
-    this._filaCount = n + 1;
-    info.update(ro.object, params.vertexCount, params.instanceCount);
-    return true;
-  }
-
-  /** A fila do quadro não vale (ambiente mudou): nada dela é emitido. */
-  dropQueue(): void {
-    this._filaTotal = 0;
-    this._filaCursor = 0;
-  }
-
-  /** Fim da projeção: a fila do quadro vai ao host, que ordena e devolve as chaves ordenadas. */
-  sendQueue(): void {
-    const n = this._filaCount;
-    this._filaCount = 0;
-    this._filaCursor = 0;
-    this._filaTotal = n > 0 ? this._bridge.queue!(this._filaCmds, this._filaKeys, n) : 0;
-    if (this._filaTotal < 0) {
-      debug('perf', `[drawBatch] fila opaca recusada (${n})`);
-      this._filaTotal = 0;
-    }
-  }
-
-  /** Há desenhos da fila ainda por emitir neste quadro. */
-  get queuePending(): boolean {
-    return this._filaCursor < this._filaTotal;
-  }
-
-  /**
-   * Emite os da fila com chave menor que a dada (`all`: todos), no pass do
-   * contexto — depois do lote da b.2, que é anterior na ordem da lista. A
-   * comparação é LOCAL (chaves ordenadas que o host devolveu): só cruza a
-   * ponte, e só despacha o lote, quando há o que emitir.
-   */
-  emitQueued(context: unknown, all: boolean, renderOrder = 0, z = 0, id = 0): void {
-    const inicio = this._filaCursor;
-    let fim = inicio;
-    if (all) {
-      fim = this._filaTotal;
-    } else {
-      const k = this._filaKeys;
-      while (fim < this._filaTotal) {
-        const b = fim * SORT_KEY_DOUBLES;
-        // `painterSortStable`: renderOrder, z, id.
-        const menor = k[b]! < renderOrder || (k[b] === renderOrder && (k[b + 1]! < z || (k[b + 1] === z && k[b + 2]! < id)));
-        if (!menor) break;
-        fim++;
-      }
-    }
-    if (fim === inicio) return;
-    this.flush();
-    const dados = this._backend.get(context);
-    const pass = dados['currentPass'];
-    if (!pass) return;
-    this._filaCursor = fim;
-    const n = this._bridge.emitNext!(pass, fim - inicio);
-    if (n <= 0) return;
-    this.stats.queued += n;
-    this._invalidar(dados, pass);
-  }
-
-  /**
-   * O host mexeu no encoder sem o `three` saber: os DOIS caches de estado
-   * dele ficam inválidos — o `currentSets` do contexto (grupos, buffers,
-   * índice) e o pipeline ativo do pass (`WebGPUPipelineUtils`).
-   */
-  private _invalidar(dados: Record<string, unknown> | null, pass: unknown): void {
+    // O host mexeu no encoder sem o `three` saber: os DOIS caches de estado
+    // dele ficam inválidos — o `currentSets` do contexto (grupos, buffers,
+    // índice) e o pipeline ativo do pass (`WebGPUPipelineUtils`).
+    const dados = this._contextData;
     if (dados) dados['currentSets'] = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
-    this._backend.pipelineUtils?._activePipelines?.delete(pass);
+    this._backend.pipelineUtils?._activePipelines?.delete(this._pass);
   }
 
   /** O render object foi descartado pelo `three`: a receita sai do host. */

@@ -1202,18 +1202,9 @@ segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
   ANTES — a ordem na tela é a da RenderList, transparentes inclusive — e o
   `currentSets` do `three` é zerado depois de cada despacho.
 
-- **(b.3) fila opaca nativa intercalada** (ADR-0363, `?nativeOpaqueQueue=0|1`):
-  na projeção nativa, o candidato **opaco, limpo e parado** (gravação da b.1 e
-  receita da b.2 válidas) não vai para o `renderList.push`: vai para uma fila
-  com a chave de sort do `three` (`renderOrder`, `z`, `id`), ordenada em C++
-  (`native/src/render/opaque_queue.*`). O `_renderObjects` da lista opaca
-  intercala: antes de cada item do `three` vindo da projeção, o host emite os
-  da fila de chave menor (`emitNext`, comparando em JS as chaves que o host
-  devolve ordenadas); no fim, o resto. O fundo (`unshift`
-  depois do sort) vai primeiro. `_renderTransparents` e `finishRender`
-  emitem o que sobrar. Recusa por objeto: transparente, material em array,
-  `occlusionTest`, `onBeforeRender`/`onAfterRender` próprios, objeto que se
-  moveu, `_opaqueSort` customizado.
+- **(b.3) fila opaca nativa — arquivada** (ADR-0363): implementada, paridade
+  exata, A/B sem ganho demonstrável; o código foi removido (recuperável do
+  commit `dbf15071`). As 9 armadilhas do ADR valem para quem retomar.
 
 - **Instrumento de paridade na mesma execução** (`src/render/MainPassArm.ts`,
   `?parityFreeze=<s>`, SPEC-0362): congela o `_update` depois de `<s>` s de

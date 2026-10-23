@@ -694,8 +694,6 @@ export class Game {
         this._nativeProjection = installNativeProjection(
           this.renderer.threeRenderer as unknown as ProjectingRendererLike,
           this._sceneMirror,
-          undefined,
-          this.renderer.opaqueQueue,
         );
       }
       this._drawRecipeProbe = installDrawRecipeProbe(this.renderer.threeRenderer);

@@ -240,29 +240,6 @@ describe('installNativeProjection', () => {
     expect(handle.stats.native).toBe(1);
   });
 
-  it('o que a fila opaca nativa aceita não vai para a RenderList; instanciado nem é oferecido (ADR-0363)', () => {
-    const scene = new Scene();
-    const aceito = malha('aceito', -10);
-    const recusado = malha('recusado', -12);
-    const instancias = new InstancedMesh(new BoxGeometry(), new MeshBasicMaterial(), 1);
-    instancias.position.z = -5;
-    scene.add(aceito, recusado, instancias);
-    const cena = montarCena(scene);
-    const renderer: ProjectingRendererLike = { sortObjects: true, _projectObject: () => undefined };
-    const ofertas: string[] = [];
-    let terminou = 0;
-    const fila = {
-      offerOpaque: (o: unknown) => (ofertas.push((o as Mesh).name), o === aceito),
-      finishProjection: () => void terminou++,
-    };
-    installNativeProjection(renderer, espelhoFalso(cena), ponteDeReferencia(cena), fila);
-    const lista = listaFalsa();
-    renderer._projectObject!(scene, camera(), 0, lista, null);
-    expect(ofertas.sort()).toEqual(['aceito', 'recusado']);
-    expect(lista.itens.map((i) => i.object.name || 'inst').sort()).toEqual(['inst', 'recusado']);
-    expect(terminou).toBe(1);
-  });
-
   it('InstancedMesh visível entra com o z do three', () => {
     const scene = new Scene();
     const instancias = new InstancedMesh(new BoxGeometry(), new MeshBasicMaterial(), 1);
