@@ -3,7 +3,9 @@ import { Color, Matrix4, MeshBasicMaterial, Texture } from 'three';
 import { modelWorldMatrix } from 'three/tsl';
 import {
   installCleanDrawFastPath,
+  onlyValuesChanged,
   pushValue,
+  structMatch,
   quickMatch,
   snapshot,
   watchersFor,
@@ -167,12 +169,38 @@ describe('CleanDrawFastPath — conferência rápida', () => {
   });
 });
 
+describe('CleanDrawFastPath — divergência só de valor (SPEC-0362)', () => {
+  it('estrutura igual e só valores mudados: plano de uniformes; textura ou forma mudada: three', () => {
+    const fog = { color: new Color(0.1, 0.2, 0.3), near: 10, far: 500 };
+    const nodes = [
+      no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['color'], material: null }),
+      no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['map'], material: null }),
+      no({ type: 'ReferenceNode', properties: ['near'], object: fog }),
+    ];
+    const { ro, material } = roFalso(nodes, materialFalso(), fog);
+    const vigias = watchersFor(ro)!;
+    const lista: number[] = [];
+    snapshot(ro, vigias, lista);
+    const inst = Float64Array.from(lista);
+    const k = structMatch(ro, inst);
+    expect(k).toBeGreaterThan(0);
+    (material['color'] as Color).setRGB(0, 0, 1);
+    fog.near = 42;
+    expect(onlyValuesChanged(vigias, inst, k)).toBe(true);
+    (material['map'] as Texture).version++;
+    expect(onlyValuesChanged(vigias, inst, k)).toBe(false);
+    material['transparent'] = true;
+    expect(structMatch(ro, inst)).toBe(-1);
+  });
+});
+
 describe('installCleanDrawFastPath', () => {
   function rendererFalso() {
     const chamadas = { original: 0, draw: 0, updateBefore: 0 };
+    const atualizados: unknown[] = [];
     const nodes = {
       updateBefore: () => void chamadas.updateBefore++,
-      getNodeFrameForRender: () => ({ renderId: 7, updateNode: () => undefined }),
+      getNodeFrameForRender: () => ({ renderId: 7, updateNode: (n: unknown) => void atualizados.push(n) }),
       getCacheKey: () => 'amb',
     };
     const renderer: CleanDrawRendererLike & { ro?: CleanRoLike } = {
@@ -189,7 +217,7 @@ describe('installCleanDrawFastPath', () => {
         this.backend!.draw!(renderer.ro, null);
       },
     };
-    return { renderer, chamadas };
+    return { renderer, chamadas, atualizados };
   }
 
   it('grava no caminho do three, desenha direto quando nada mudou e volta ao three na mudança', () => {
@@ -248,11 +276,66 @@ describe('installCleanDrawFastPath', () => {
     chamar(); // parado de novo na posição nova: direto, sem plano
     expect(handle.stats.moved).toBe(1);
     expect(handle.stats.direct).toBe(2);
-    // Mexeu a matriz E a cor: o three refaz.
+    // Mexeu a matriz E a cor: plano de uniformes (cobre a matriz), direto.
     object.matrixWorld.makeTranslation(6, 0, 0);
     (material['color'] as Color).setRGB(0, 1, 0);
     chamar();
+    expect(chamadas.original).toBe(1);
+    expect(handle.stats.uniforms).toBe(1);
+  });
+
+  it('valor vigiado mudou (névoa, cor): plano de uniformes com TODOS os nós de objeto, sem refazer (SPEC-0362)', () => {
+    const fog = { color: new Color(0.1, 0.2, 0.3), near: 10, far: 500 };
+    const refCor = no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, property: 'color', properties: ['color'], material: null });
+    const refNevoa = no({ type: 'ReferenceNode', properties: ['color'], object: fog });
+    const { ro, object, material, monitor } = roFalso([refCor, refNevoa], materialFalso(), fog);
+    monitor.refreshUniforms = ['color']; // o plano de transformação pularia a referência de material
+    const { renderer, chamadas, atualizados } = rendererFalso();
+    renderer.backend!.updateBinding = () => undefined;
+    renderer.ro = ro;
+    const handle = installCleanDrawFastPath(renderer)!;
+    const chamar = () => renderer._renderObjectDirect!(object, material, 'cena', 'cam', 'luzes', null, null, null);
+    chamar();
+    fog.color.setRGB(0.5, 0.5, 0.5);
+    chamar();
+    expect(chamadas.original).toBe(1);
+    expect(handle.stats.uniforms).toBe(1);
+    expect(atualizados).toContain(refCor);
+    expect(atualizados).toContain(refNevoa);
+    chamar(); // o instantâneo foi regravado com o valor novo: direto e sem plano
+    expect(handle.stats.uniforms).toBe(1);
+    expect(handle.stats.direct).toBe(2);
+  });
+
+  it('textura trocada continua no three (mexe no bind group)', () => {
+    const nodes = [no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['map'], material: null })];
+    const { ro, object, material } = roFalso(nodes, materialFalso());
+    const { renderer, chamadas } = rendererFalso();
+    renderer.backend!.updateBinding = () => undefined;
+    renderer.ro = ro;
+    installCleanDrawFastPath(renderer)!;
+    const chamar = () => renderer._renderObjectDirect!(object, material, 'cena', 'cam', 'luzes', null, null, null);
+    chamar();
+    material['map'] = new Texture();
+    chamar();
     expect(chamadas.original).toBe(2);
+  });
+
+  it('material com nó (hasNode) é elegível, com o plano de uniformes em todo desenho direto', () => {
+    const ref = no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, property: 'color', properties: ['color'], material: null });
+    const { ro, object, material, monitor } = roFalso([ref], materialFalso());
+    monitor.hasNode = true;
+    const { renderer, chamadas, atualizados } = rendererFalso();
+    renderer.backend!.updateBinding = () => undefined;
+    renderer.ro = ro;
+    const handle = installCleanDrawFastPath(renderer)!;
+    const chamar = () => renderer._renderObjectDirect!(object, material, 'cena', 'cam', 'luzes', null, null, null);
+    chamar();
+    chamar();
+    chamar();
+    expect(chamadas.original).toBe(1);
+    expect(handle.stats.uniforms).toBe(2);
+    expect(atualizados.filter((n) => n === ref)).toHaveLength(2);
   });
 
   it('nó animado nunca é gravado', () => {

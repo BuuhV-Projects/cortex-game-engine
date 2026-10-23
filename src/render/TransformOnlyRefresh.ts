@@ -106,13 +106,17 @@ export interface Plan {
 /**
  * Monta o plano: os nodes de objeto a atualizar e os uniforms a comparar.
  * `null` quando o objeto precisa de trabalho por objeto que o plano não cobre.
+ *
+ * `allUniforms` (plano de uniformes, SPEC-0362): não pula as referências de
+ * material — para quando o que mudou foi um VALOR (névoa, material com nó),
+ * não a transformação.
  */
-export function buildTransformOnlyPlan(renderObject: RenderObjectLike): Plan | null {
+export function buildTransformOnlyPlan(renderObject: RenderObjectLike, allUniforms = false): Plan | null {
   const state = renderObject.getNodeBuilderState();
   for (const node of state.updateBeforeNodes) if (node.getUpdateBeforeType() === UPDATE_OBJECT) return null;
   for (const node of state.updateAfterNodes) if (node.getUpdateAfterType() === UPDATE_OBJECT) return null;
 
-  const tracked = new Set(renderObject.getMonitor().refreshUniforms);
+  const tracked = new Set(allUniforms ? [] : renderObject.getMonitor().refreshUniforms);
   const nodes: NodeLike[] = [];
   // Saídas dos nodes que NÃO serão atualizados: são instâncias compartilhadas
   // e guardam o valor do último material que passou por elas, então comparar

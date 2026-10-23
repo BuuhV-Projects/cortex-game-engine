@@ -19,6 +19,7 @@
 import { modelNormalMatrix, modelWorldMatrixInverse } from 'three/tsl';
 import { debug } from '../core/debug.js';
 import { buildRenderIdPlan } from './RenderIdRefresh.js';
+import { mainPassArm } from './MainPassArm.js';
 import {
   DrawBatch,
   batchBackendSupported,
@@ -27,11 +28,20 @@ import {
   type BatchRoLike,
   type DrawBatchStats,
 } from './DrawBatch.js';
-import { applyPlan, queryFlagRequested, type NodeFrameLike, type UniformsGroupLike } from './TransformOnlyRefresh.js';
+import {
+  applyPlan,
+  buildTransformOnlyPlan,
+  queryFlagRequested,
+  type NodeFrameLike,
+  type Plan,
+  type UniformsGroupLike,
+} from './TransformOnlyRefresh.js';
 
 const QUERY_KEY = 'cleanDraw=';
 /** Lote de desenhos diretos em C++ (b.2). */
 const BATCH_QUERY_KEY = 'drawBatch=';
+/** Valor de uniforme mudou sem refazer o objeto (SPEC-0362). */
+const UNIFORM_REFRESH_QUERY_KEY = 'uniformRefresh=';
 const MAIN_PASS_QUERY_KEY = 'nativeMainPass=';
 const UPDATE_OBJECT = 'object';
 /** Chamadas de `render()` entre relatos no `debug('perf')`. */
@@ -201,6 +211,10 @@ interface Gravacao {
   vigias: Vigia[];
   instantaneo: Float64Array;
   plan: NonNullable<ReturnType<typeof buildRenderIdPlan>>;
+  /** Plano de uniformes (SPEC-0362); `null` com o interruptor desligado. */
+  uniforms: Plan | null;
+  /** Material com nó: o plano de uniformes roda em todo desenho direto. */
+  always: boolean;
 }
 
 /**
@@ -377,21 +391,43 @@ export function matrixMatch(ro: CleanRoLike, inst: Float64Array): boolean {
 
 /** Tudo menos a matriz: o objeto que só se moveu passa aqui (ver o desenho direto). */
 export function restMatch(ro: CleanRoLike, vigias: Vigia[], inst: Float64Array): boolean {
+  const k = structMatch(ro, inst);
+  return k >= 0 && watchersMatch(vigias, inst, k);
+}
+
+/** Sem divergência no instantâneo. */
+const NO_MISMATCH = -1;
+/** Valores por forma de vigia no instantâneo (a codificação de `pushValue`). */
+const KIND_SIZE: Record<number, number> = {
+  [VigiaKind.Prim]: 1,
+  [VigiaKind.Color]: 3,
+  [VigiaKind.Texture]: 10,
+  [VigiaKind.Vec2]: 2,
+  [VigiaKind.Vec3]: 3,
+  [VigiaKind.Vec4]: 4,
+};
+
+/**
+ * A parte ESTRUTURAL (sombra, instâncias, geometria, campos de pipeline):
+ * devolve o índice onde começam os vigias, ou {@link NO_MISMATCH} se algo
+ * diverge — aí só o `three` serve.
+ */
+export function structMatch(ro: CleanRoLike, inst: Float64Array): number {
   const o = ro.object;
   let k = MATRIX_ELEMENTS;
-  if (inst[k++] !== (o.receiveShadow ? 1 : 0)) return false;
+  if (inst[k++] !== (o.receiveShadow ? 1 : 0)) return NO_MISMATCH;
   if (o.isInstancedMesh) {
-    if (inst[k++] !== (o.count ?? 0)) return false;
-    if (inst[k++] !== prim(o.instanceMatrix?.version)) return false;
-    if (inst[k++] !== prim(o.instanceColor?.version)) return false;
+    if (inst[k++] !== (o.count ?? 0)) return NO_MISMATCH;
+    if (inst[k++] !== prim(o.instanceMatrix?.version)) return NO_MISMATCH;
+    if (inst[k++] !== prim(o.instanceColor?.version)) return NO_MISMATCH;
   }
   const g = o.geometry;
-  if (inst[k++] !== g.id || inst[k++] !== g.drawRange.start || inst[k++] !== g.drawRange.count) return false;
+  if (inst[k++] !== g.id || inst[k++] !== g.drawRange.start || inst[k++] !== g.drawRange.count) return NO_MISMATCH;
   const idx = g.index;
-  if (inst[k++] !== (idx ? idx.id : AUSENTE) || inst[k++] !== (idx ? idx.version : AUSENTE)) return false;
+  if (inst[k++] !== (idx ? idx.id : AUSENTE) || inst[k++] !== (idx ? idx.version : AUSENTE)) return NO_MISMATCH;
   for (const nome in g.attributes) {
     const a = g.attributes[nome]!;
-    if (inst[k++] !== a.id || inst[k++] !== a.version) return false;
+    if (inst[k++] !== a.id || inst[k++] !== a.version) return NO_MISMATCH;
   }
   const t = ro.material as Mat;
   if (
@@ -406,8 +442,13 @@ export function restMatch(ro: CleanRoLike, vigias: Vigia[], inst: Float64Array):
     inst[k++] !== t.side || inst[k++] !== (t.alphaToCoverage ? 1 : 0) || inst[k++] !== t.alphaTest ||
     inst[k++] !== prim(t['wireframe'])
   ) {
-    return false;
+    return NO_MISMATCH;
   }
+  return k;
+}
+
+/** Os vigias, a partir de `k` (o que {@link structMatch} devolveu). */
+export function watchersMatch(vigias: Vigia[], inst: Float64Array, k: number): boolean {
   for (let i = 0; i < vigias.length; i++) {
     const vg = vigias[i]!;
     const v = lerVigia(vg);
@@ -457,6 +498,33 @@ export function restMatch(ro: CleanRoLike, vigias: Vigia[], inst: Float64Array):
   return k === inst.length;
 }
 
+/**
+ * Os vigias divergiram só em VALOR (SPEC-0362)? `true` quando toda textura
+ * vigiada é a mesma (id, versão, transformação de UV) e todo outro vigia ainda
+ * tem a forma gravada — aí o plano de uniformes basta; textura trocada mexe no
+ * bind group e é do `three`.
+ */
+export function onlyValuesChanged(vigias: Vigia[], inst: Float64Array, k: number): boolean {
+  for (let i = 0; i < vigias.length; i++) {
+    const vg = vigias[i]!;
+    const v = lerVigia(vg);
+    if (vg.kind === VigiaKind.Texture) {
+      const x = v as Tex | null;
+      if (
+        !x || x.isTexture !== true || inst[k] !== x.id || inst[k + 1] !== x.version || inst[k + 2] !== x.offset.x ||
+        inst[k + 3] !== x.offset.y || inst[k + 4] !== x.repeat.x || inst[k + 5] !== x.repeat.y || inst[k + 6] !== x.rotation ||
+        inst[k + 7] !== x.center.x || inst[k + 8] !== x.center.y || inst[k + 9] !== (x.matrixAutoUpdate ? 1 : 0)
+      ) {
+        return false;
+      }
+    } else if (kindOf(v) !== vg.kind || vg.kind === VigiaKind.Other) {
+      return false;
+    }
+    k += KIND_SIZE[vg.kind]!;
+  }
+  return k === inst.length;
+}
+
 /** Instantâneo como lista (gravação e testes). `false` = algo não conferível. */
 export function snapshot(ro: CleanRoLike, vigias: Vigia[], out: number[]): boolean {
   const c = new SnapshotCursor();
@@ -499,6 +567,8 @@ export interface CleanDrawStats {
   direct: number;
   /** Dos diretos, os que só se moveram (plano de transformação aplicado). */
   moved: number;
+  /** Dos diretos, os que tiveram o plano de uniformes aplicado (SPEC-0362). */
+  uniforms: number;
   /** Desenhos pelo caminho do three. */
   three: number;
   /** Render objects gravados. */
@@ -540,7 +610,8 @@ export function installCleanDrawFastPath(
     debug('perf', '[cleanDraw] internos do three ausentes: nao instalado');
     return null;
   }
-  const stats: CleanDrawStats = { direct: 0, moved: 0, three: 0, recorded: 0, ineligible: 0 };
+  const stats: CleanDrawStats = { direct: 0, moved: 0, uniforms: 0, three: 0, recorded: 0, ineligible: 0 };
+  const uniformRefresh = queryFlagRequested(UNIFORM_REFRESH_QUERY_KEY, true);
   /**
    * Gravações por objeto, por contexto de render e por `passId`. O contexto
    * entra na chave para o passe de sombra do `three` (quando roda) não
@@ -601,22 +672,26 @@ export function installCleanDrawFastPath(
     };
   }
 
-  /** O que não muda num render object: vigias e plano (ou `null` = inelegível). */
-  const preparados = new WeakMap<object, { vigias: Vigia[]; plan: Gravacao['plan'] } | null>();
+  /** O que não muda num render object: vigias e planos (ou `null` = inelegível). */
+  type Preparado = Pick<Gravacao, 'vigias' | 'plan' | 'uniforms' | 'always'>;
+  const preparados = new WeakMap<object, Preparado | null>();
   /** Render objects descartados pelo `three` (material/geometria `dispose`). */
   const descartados = new WeakSet<object>();
 
-  const preparar = (ro: CleanRoLike): { vigias: Vigia[]; plan: Gravacao['plan'] } | null => {
+  const preparar = (ro: CleanRoLike): Preparado | null => {
     let p = preparados.get(ro);
     if (p !== undefined) return p;
     const o = ro.object;
     const monitor = ro.getMonitor();
+    // Material com nó só entra com o plano de uniformes: um `uniform(v)` mudado
+    // pelo jogo não tem gancho, e o plano o confere em todo desenho (SPEC-0362).
     const elegivel =
-      ro.bundle === null && !monitor.hasNode && !monitor.hasAnimation && !o.isSkinnedMesh && !o.isBatchedMesh &&
-      !o.morphTargetInfluences;
+      ro.bundle === null && (!monitor.hasNode || uniformRefresh) && !monitor.hasAnimation && !o.isSkinnedMesh &&
+      !o.isBatchedMesh && !o.morphTargetInfluences;
     const vigias = elegivel ? watchersFor(ro) : null;
     const plan = vigias ? buildRenderIdPlan(ro as never) : null;
-    p = vigias && plan ? { vigias, plan } : null;
+    const uniforms = plan && uniformRefresh ? buildTransformOnlyPlan(ro as never, true) : null;
+    p = vigias && plan && (uniforms !== null || !monitor.hasNode) ? { vigias, plan, uniforms, always: monitor.hasNode } : null;
     preparados.set(ro, p);
     if (p === null) {
       stats.ineligible++;
@@ -656,6 +731,7 @@ export function installCleanDrawFastPath(
       g = {
         ro, material: ro.material, context: r._currentRenderContext, passId, lights: lightsNode, clipping,
         envKey: undefined, contextNodeVersion: 0, vigias: p.vigias, instantaneo: new Float64Array(n), plan: p.plan,
+        uniforms: p.uniforms, always: p.always,
       };
       porPasse.set(passId, g);
     }
@@ -704,9 +780,14 @@ export function installCleanDrawFastPath(
     if (calls !== relato.calls) {
       relato.calls = calls;
       if (calls % REPORT_RENDER_CALLS === 0) {
-        debug('perf', `[cleanDraw] diretos=${stats.direct} movidos=${stats.moved} three=${stats.three} gravados=${stats.recorded} inelegiveis=${stats.ineligible}`);
+        debug('perf', `[cleanDraw] diretos=${stats.direct} movidos=${stats.moved} uniformes=${stats.uniforms} three=${stats.three} gravados=${stats.recorded} inelegiveis=${stats.ineligible}`);
         if (lote) debug('perf', `[drawBatch] lote=${lote.stats.batched} flushes=${lote.stats.flushes} receitas=${lote.stats.recorded} fora=${lote.stats.unbatchable}`);
       }
+    }
+    if (mainPassArm.three) {
+      // Quadro do `three` no instrumento de paridade (SPEC-0362).
+      tresCaminho(this, object, material, scene, camera, lightsNode, group, clippingContext, passId);
+      return;
     }
     const contexto = this._currentRenderContext;
     let g: Gravacao | undefined;
@@ -714,9 +795,15 @@ export function installCleanDrawFastPath(
       g = (object as ComGravacao)._cxGravacao;
       if (g === undefined || g.context !== contexto || g.passId !== passId) g = gravacaoDe(object as object, contexto, passId);
     }
+    // Vigias divergiram só em valor (névoa, material com nó): plano de
+    // uniformes em vez do caminho do three (SPEC-0362).
+    let valores = false;
+    let k0 = NO_MISMATCH;
     if (
       g !== undefined && !descartados.has(g.ro) && g.material === material && g.context === this._currentRenderContext &&
-      restMatch(g.ro, g.vigias, g.instantaneo) &&
+      (k0 = structMatch(g.ro, g.instantaneo)) !== NO_MISMATCH &&
+      (watchersMatch(g.vigias, g.instantaneo, k0) ||
+        (valores = g.uniforms !== null && onlyValuesChanged(g.vigias, g.instantaneo, k0))) &&
       g.lights === lightsNode && g.clipping === clippingContext && g.ro.geometry === (object as ObjectLike).geometry &&
       g.contextNodeVersion === (this.contextNode?.version ?? 0) &&
       chaveDeAmbiente(this, scene, lightsNode) === g.envKey
@@ -753,19 +840,36 @@ export function installCleanDrawFastPath(
       }
       const monitor = ro.getMonitor();
       monitor.renderId = renderIdDaChamada.renderId;
-      if (!matrixMatch(ro, g.instantaneo)) {
+      const moveu = !matrixMatch(ro, g.instantaneo);
+      const uniformes = valores || g.always;
+      if (moveu || uniformes) {
         // Só a matriz mudou: o que o `TransformOnlyRefresh` (ADR-0290) faz
         // dentro do caminho do three — os nós de objeto e os UBOs do objeto
-        // (um `writeBuffer` cada) —, sem o resto da verificação.
+        // (um `writeBuffer` cada) —, sem o resto da verificação. Valor de
+        // uniforme mudou (ou material com nó): o mesmo, com TODOS os nós e
+        // uniformes do objeto (SPEC-0362), que também cobre a matriz.
         const frame = nodes.getNodeFrameForRender(ro);
         if (updateBinding === undefined || monitor.needsVelocity?.((frame as { renderer?: unknown }).renderer) === true) {
           tresCaminho(this, object, material, scene, camera, lightsNode, group, clippingContext, passId);
           return;
         }
-        applyPlan(frame as unknown as NodeFrameLike, g.plan.object, updateBinding);
-        const m = (object as ObjectLike).matrixWorld.elements;
-        for (let k = 0; k < MATRIX_ELEMENTS; k++) g.instantaneo[k] = m[k]!;
-        stats.moved++;
+        applyPlan(frame as unknown as NodeFrameLike, uniformes ? g.uniforms! : g.plan.object, updateBinding);
+        if (valores) {
+          // O instantâneo passa a ser o dos valores novos, no lugar.
+          cursor.begin(false, escrita);
+          const conferivel = walkSnapshot(ro, g.vigias, cursor);
+          escrita = cursor.buf;
+          if (!conferivel || cursor.i !== g.instantaneo.length) {
+            tresCaminho(this, object, material, scene, camera, lightsNode, group, clippingContext, passId);
+            return;
+          }
+          g.instantaneo.set(escrita.subarray(0, cursor.i));
+        } else if (moveu) {
+          const m = (object as ObjectLike).matrixWorld.elements;
+          for (let k = 0; k < MATRIX_ELEMENTS; k++) g.instantaneo[k] = m[k]!;
+        }
+        if (moveu) stats.moved++;
+        if (uniformes) stats.uniforms++;
       }
       if (pipelines.isReady(ro)) {
         if (lote === null || !lote.add(ro as unknown as BatchRoLike, this.info as never)) backend.draw!(ro, this.info);
