@@ -481,6 +481,13 @@ Native (que roda milhares de libs sobre Hermes em produção):
   narrow-phase (`world.contactPairsWith`/`contactPair`, manifold só com
   `numContacts`/`contactDist`) vieram na SPEC-0393: a falta deles deixava o DDD 61
   na tela "Aquecendo os gráficos…" (exceção já no 1º tick, sem nenhum quadro).
+  Setters de corpo (`setBodyType`, `enableCcd`, `setLinear/AngularDamping`: códigos
+  12–15 do `rn_body_set`) e de collider (`setRadius`, `setHalfHeight`, `setDensity`,
+  `setFriction`, `setRestitution`: `rn_collider_set`) vieram na SPEC-0394. A falta
+  deles matava o tick do DDD 61 ao bater o carro num poste: o caminho só roda
+  dirigindo, então rodada a pé não pega. O cruzamento tem que ser **por classe**
+  (métodos do `.d.ts` do compat × chamadas do jogo × `Classe.prototype.X` do shim):
+  `setFriction` existia só no `ColliderDesc` e um grep por nome não acusava.
   Antes de exportar um jogo novo, cruze TODAS as chamadas `world.*`/`body.*` do
   jogo com o shim de uma vez (grep), em vez de descobrir uma por export.
 - **Propriedade faltando no shim NÃO dá erro — escrita vira propriedade JS

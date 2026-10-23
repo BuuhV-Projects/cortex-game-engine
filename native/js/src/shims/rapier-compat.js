@@ -147,6 +147,24 @@ RigidBody.prototype.setEnabledRotations = function (x, y, z, wake) {
     wake === false ? 0 : 1,
   );
 };
+// rn_body_set codes 12..15 (SPEC-0394) — mirrored in rapier-native/src/lib.rs.
+const BODY_SET_TYPE = 12;
+const BODY_SET_CCD = 13;
+const BODY_SET_LINEAR_DAMPING = 14;
+const BODY_SET_ANGULAR_DAMPING = 15;
+/** `type` uses rapier3d-compat's RigidBodyType numbering (Dynamic 0, Fixed 1, ...). */
+RigidBody.prototype.setBodyType = function (type, wake) {
+  __rapierNative.bodySet(this.__world, this.handle, BODY_SET_TYPE, type, 0, 0, 0, wake === false ? 0 : 1);
+};
+RigidBody.prototype.enableCcd = function (enabled) {
+  __rapierNative.bodySet(this.__world, this.handle, BODY_SET_CCD, enabled ? 1 : 0, 0, 0, 0, 1);
+};
+RigidBody.prototype.setLinearDamping = function (factor) {
+  __rapierNative.bodySet(this.__world, this.handle, BODY_SET_LINEAR_DAMPING, factor, 0, 0, 0, 1);
+};
+RigidBody.prototype.setAngularDamping = function (factor) {
+  __rapierNative.bodySet(this.__world, this.handle, BODY_SET_ANGULAR_DAMPING, factor, 0, 0, 0, 1);
+};
 
 /**
  * Collider vivo do mundo. So o que o engine/jogo usam: identidade e grupos de
@@ -167,6 +185,25 @@ Collider.prototype.setCollisionGroups = function (groups) {
 /** É um sensor (atravessa, só reporta)? O que um `filterPredicate` pergunta. */
 Collider.prototype.isSensor = function () {
   return __rapierNative.colliderGet(this.__world, this.handle, 0) === 1;
+};
+// rn_collider_set codes (SPEC-0394) — mirrored in rapier-native/src/lib.rs.
+const COLLIDER_SET = { radius: 0, halfHeight: 1, density: 2, friction: 3, restitution: 4 };
+/** Capsule or ball radius. */
+Collider.prototype.setRadius = function (radius) {
+  __rapierNative.colliderSet(this.__world, this.handle, COLLIDER_SET.radius, radius);
+};
+/** Half height of a Y capsule. */
+Collider.prototype.setHalfHeight = function (halfHeight) {
+  __rapierNative.colliderSet(this.__world, this.handle, COLLIDER_SET.halfHeight, halfHeight);
+};
+Collider.prototype.setDensity = function (density) {
+  __rapierNative.colliderSet(this.__world, this.handle, COLLIDER_SET.density, density);
+};
+Collider.prototype.setFriction = function (friction) {
+  __rapierNative.colliderSet(this.__world, this.handle, COLLIDER_SET.friction, friction);
+};
+Collider.prototype.setRestitution = function (restitution) {
+  __rapierNative.colliderSet(this.__world, this.handle, COLLIDER_SET.restitution, restitution);
 };
 /** Corpo dono, ou `null`. O outro lado do `filterPredicate` (SPEC-0216). */
 Collider.prototype.parent = function () {

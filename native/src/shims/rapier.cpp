@@ -56,6 +56,8 @@ void rn_body_remove(RnWorld* world, double body);
 // Narrow-phase contact queries (SPEC-0393); results go through the scratch.
 double rn_world_contact_pairs_with(RnWorld* world, double collider, double start);
 double rn_world_contact_pair(RnWorld* world, double c1, double c2, double manifold);
+// Collider setters (SPEC-0394): radius, half height, density, friction, restitution.
+void rn_collider_set(RnWorld* world, double collider, double what, double value);
 }
 
 namespace shims {
@@ -237,6 +239,12 @@ napi_value jsWorldContactPair(napi_env env, napi_callback_info info) {
                                                  args[2], args[3]));
 }
 
+napi_value jsColliderSet(napi_env env, napi_callback_info info) {
+  readArgs(env, info, 4);
+  rn_collider_set(worldFromArg(args[0]), args[1], args[2], args[3]);
+  return njs::undefined(env);
+}
+
 napi_value jsColliderGet(napi_env env, napi_callback_info info) {
   readArgs(env, info, 3);
   return numberResult(
@@ -315,6 +323,7 @@ void registerRapier(napi_env env) {
   // exceção todo frame e derrubava o tick inteiro do jogo.
   njs::setMethod(env, native, "worldCastRay", jsWorldCastRay);
   njs::setMethod(env, native, "colliderGet", jsColliderGet);
+  njs::setMethod(env, native, "colliderSet", jsColliderSet);
   njs::setMethod(env, native, "worldContactPairsWith", jsWorldContactPairsWith);
   njs::setMethod(env, native, "worldContactPair", jsWorldContactPair);
   njs::setMethod(env, native, "bodyRemove", jsBodyRemove);
