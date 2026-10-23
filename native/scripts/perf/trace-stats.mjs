@@ -15,6 +15,11 @@ export const MIN_ROWS = 20;
 export const FRAME_MS_CEILING = 100;
 // frame-timing windows in the first quarter of the log are loading.
 const FRAME_TIMING_SKIP_DIVISOR = 4;
+// GC columns (SPEC-0357) start later than the other stats: the first old collection after the warm-up
+// frame lands in the first ~40 s.
+export const GC_FROM_MS = 40000;
+const KB_PER_MB = 1024;
+const MS_PER_S = 1000;
 const P50 = 0.5;
 const P95 = 0.95;
 const P99 = 0.99;
@@ -74,6 +79,7 @@ export function analyzeRun(dir) {
 
   return {
     name,
+    gc: gcStats(rows),
     valid: reason === null,
     reason,
     rows: rows.length,
@@ -90,6 +96,28 @@ export function analyzeRun(dir) {
   };
 }
 
+/**
+ * Allocation and collector totals over the steady part of the round (SPEC-0357). `null` when the trace
+ * has no `gc.allocatedMB` (host without the counter): the summary then stays as it was.
+ * Frames in the interval = elapsed / mean sampled frameMs.
+ */
+export function gcStats(rows) {
+  const gcRows = rows.filter((r) => r.t >= GC_FROM_MS && typeof r.gc?.allocatedMB === 'number');
+  if (gcRows.length < 2) return null;
+  const a = gcRows[0];
+  const b = gcRows[gcRows.length - 1];
+  const elapsedMs = b.t - a.t;
+  const frames = elapsedMs / mean(gcRows.map((r) => r.frameMs));
+  const seconds = elapsedMs / MS_PER_S;
+  return {
+    kbPerFrame: ((b.gc.allocatedMB - a.gc.allocatedMB) * KB_PER_MB) / frames,
+    youngPerS: (b.gc.youngCount - a.gc.youngCount) / seconds,
+    youngMsPerS: (b.gc.youngMs - a.gc.youngMs) / seconds,
+    oldCount: b.gc.oldCount - a.gc.oldCount,
+    oldWallMs: b.gc.oldWallMs - a.gc.oldWallMs,
+  };
+}
+
 export function verdictLine(r) {
   return r.valid ? `VÁLIDO   ${r.name}` : `INVÁLIDO ${r.name}: ${r.reason}`;
 }
@@ -102,7 +130,11 @@ export function summaryLine(r) {
   return (
     `VÁLIDO ${r.name} n=${r.rows} | frameMs ${fmt(r.frameMed)}/${fmt(r.frameP95)}/${fmt(r.frameP99)} (med/p95/p99)` +
     ` | js ${fmt(r.jsMed, 2)}/${fmt(r.jsP95, 2)} | render ${fmt(r.render.avg, 2)} p99 ${fmt(r.render.p99)}` +
-    ` | world ${fmt(r.world.avg, 2)} p99 ${fmt(r.world.p99)} | draws ${r.draws} | apresentados ${fmt(r.presentedPct, 0)}%${alert}`
+    ` | world ${fmt(r.world.avg, 2)} p99 ${fmt(r.world.p99)} | draws ${r.draws} | apresentados ${fmt(r.presentedPct, 0)}%` +
+    (r.gc
+      ? ` | gc ${fmt(r.gc.kbPerFrame)} KB/q, young ${fmt(r.gc.youngPerS, 2)}/s ${fmt(r.gc.youngMsPerS)} ms/s, old ${r.gc.oldCount}x ${r.gc.oldWallMs} ms`
+      : '') +
+    alert
   );
 }
 
@@ -114,6 +146,8 @@ const AB_METRICS = [
   ['render', (r) => r.render.avg],
   ['world', (r) => r.world.avg],
   ['draws', (r) => r.draws],
+  ['gc KB/quadro', (r) => r.gc?.kbPerFrame ?? NaN],
+  ['gc young ms/s', (r) => r.gc?.youngMsPerS ?? NaN],
 ];
 
 /** Table per point: mean over valid rounds of each arm, and B - A. */
@@ -134,6 +168,7 @@ export function abTable(runsRoot) {
     for (const [label, pick] of AB_METRICS) {
       const a = mean(arms.A.map(pick));
       const b = mean(arms.B.map(pick));
+      if (!Number.isFinite(a) && !Number.isFinite(b)) continue; // metric absent in this trace (e.g. gc on an old host)
       out.push(`${point} | ${label} | ${fmt(a, 2)} (${arms.A.length}) | ${fmt(b, 2)} (${arms.B.length}) | ${fmt(b - a, 2)}`);
     }
   }

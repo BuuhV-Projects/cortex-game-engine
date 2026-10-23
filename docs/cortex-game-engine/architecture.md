@@ -405,6 +405,13 @@ alvo é **Rapier** (WASM) como motor dinâmico único, estilo Unity.
   quando a próxima entra além do melhor acerto; respeita `layers` como o
   `intersectObjects`. Os raycasters de colisão ligam `firstHitOnly` (BVH para no 1º
   triângulo). ⚠️ quem precisar de TODOS os acertos não pode usar esses raycasters.
+  **No export nativo (ADR-0346 / SPEC-0347)** o `firstHit` e os raios de parede do
+  `CharacterPhysicsSystem` passam por `firstHitAmong` (`physics/nativeRaycast.ts`):
+  com `__cortexRaycast` no host, as malhas que o C++ reproduz fielmente vão numa
+  chamada só por raio (BVH própria no host, matriz lida do espelho); as demais seguem
+  o caminho JS na mesma consulta e o menor acerto vence. Malha atendida pelo nativo
+  não ganha árvore do three-mesh-bvh. `?nativeRaycast=0` desliga;
+  `?nativeRaycastCheck=1` roda os dois e conta divergências.
   Malha que um raio de colisão CRUZA ganha árvore a partir de 64 triângulos
   (`CROSSED_MIN_BVH_TRIS`; a varredura segue com 512) — um ônibus de ~400 tris sem
   árvore custava 1,4 ms/quadro na câmera. O `rebuild` do índice reaproveita esfera e
@@ -1036,6 +1043,14 @@ trecho” sem depender de print de HUD na hora certa.
   física lentos JUNTOS e na mesma proporção, voltando de uma vez, é a assinatura
   de coleta no meio dos quadros (os dois são JS). O `game.precompile()` coleta
   no fim porque o quadro de aquecimento infla o heap de uma vez.
+- **`gc.allocatedMB` diz quanto o JS aloca (SPEC-0357)**: `totalAllocatedBytes`
+  do Hermes, cumulativo — Δ entre amostras ÷ Δt ÷ fps = KB por quadro. No DDD 61
+  eram ~500 KB/quadro (7 coletas young/s); a maior parte vem do jogo e dos
+  internos do three, não dos sistemas do engine. Regra de código por quadro:
+  rascunho de módulo/instância, nada de `new Vector3/Matrix4/Box3…` dentro de
+  `System.update()` (o `tests/systems/noPerFrameAllocation.test.ts` trava), e no
+  Hermes `for…of` em `Map`/`Set` aloca por passo (em `Array` não) — use
+  `Map.forEach` com callback fixo.
 
 ## 8e3. Render bundles estão DESLIGADOS — ADR-0215
 

@@ -6,6 +6,7 @@ import { Object3DComponent } from '../components/Object3DComponent.js';
 import { CharacterBodyComponent } from '../components/CharacterBodyComponent.js';
 import { ensureBoundsTree, isSkinned } from '../physics/raycastAccel.js';
 import { NearMeshIndex, firstHit, publishScan, touchingBox, traverseCollidable } from '../physics/nearMeshes.js';
+import { firstHitAmong } from '../physics/nativeRaycast.js';
 
 const DOWN = new Vector3(0, -1, 0);
 /** Tolerância de contato (skin width) — folga p/ considerar "tocando o chão". */
@@ -298,6 +299,7 @@ export class CharacterPhysicsSystem extends System {
         this.wallBox.min.set(t.x - reach, ys[0]! - WALL_BOX_EPSILON, t.z - reach);
         this.wallBox.max.set(t.x + reach, ys[2]! + WALL_BOX_EPSILON, t.z + reach);
         const walls = touchingBox(this.solidIndex.nearXZ(t.x, t.z, r + SKIN, this.nearSolid, ys[0], ys[2]), this.wallBox, this.touchingSolid);
+        const skipSelf = self ? (o: Object3D): boolean => isUnder(o, self) : undefined;
         const cast = (dx: number, dz: number): number | null => {
           if (walls.length === 0) return null; // nada encostado: sem raio
           this.wallDir.set(dx, 0, dz);
@@ -306,11 +308,9 @@ export class CharacterPhysicsSystem extends System {
             this.origin.set(t.x, sy, t.z);
             this.ray.set(this.origin, this.wallDir);
             this.ray.far = r + SKIN;
-            for (const h of this.ray.intersectObjects(walls, false)) {
-              if (self && isUnder(h.object, self)) continue;
-              if (nearest === null || h.distance < nearest) nearest = h.distance;
-              break;
-            }
+            // 1º acerto que não é o próprio personagem (no host, em C++ — SPEC-0347)
+            const h = firstHitAmong(this.ray, walls, null, skipSelf);
+            if (h && (nearest === null || h.distance < nearest)) nearest = h.distance;
           }
           return nearest;
         };

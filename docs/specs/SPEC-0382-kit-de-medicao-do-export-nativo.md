@@ -55,7 +55,7 @@ PID em `host.pid` na pasta da rodada.
 | `export.sh` | `export.sh <engine> <jogo> <saida> <tag>`: roda `export-game.mjs` da worktree da engine **sem `--debug`**, sob o lock (export pesa na CPU e contamina a rodada de outra sessão), e troca o `id` do `cortex.json` por `<id>-bench-<tag>` (save isolado em `%APPDATA%/<id>-bench-<tag>`). Recusa saída em `E:/` (export do usuário) e em Temp (App Control mata o exe). Grava os commits da engine e do jogo em `<saida>/bench-meta.txt`. |
 | `round.sh` | uma rodada: lock, confere save isolado, limpa o save de bench, lança offscreen com `CORTEX_FRAME_TIMING`/`CORTEX_VRAM_LOG`, query `?systemProfile=1&spawn=<ponto><extra>` (ou `--query` cru), espera N s com detector de congelamento (perf-log parado ≥ 45 s após 60 s) e de processo morto, mata pelo caminho do exe, move `perf-trace.jsonl`, `perf-log.txt`, `error_log.txt` para a pasta da rodada, solta o lock e imprime a linha do `summarize`. |
 | `validate.sh` | veredito por rodada; sai com 1 se alguma for inválida. |
-| `summarize.sh` | uma linha por rodada. |
+| `summarize.sh` | uma linha por rodada; com `gc.allocatedMB` no trace (SPEC-0357) acrescenta KB/quadro, coletas young/s e ms/s, e as old (t ≥ 40 s) — também na tabela do `ab.sh`. |
 | `ab.sh` | A/B intercalado: para cada réplica e ponto roda A,B (réplica ímpar) ou B,A (par); rodadas `<ponto>-A-r<k>`. Dois exports, ou o mesmo export com `--extra-a`/`--extra-b` diferentes. Ao fim imprime a tabela por ponto. |
 | `trace-stats.mjs` | a análise compartilhada (validate/summary/ab) — node, coberta por `tests/native/perfKit.test.ts`. |
 
@@ -88,3 +88,10 @@ acima disso `frameMs` não mede nada); `js` do host (frame-timing) med/p95;
   outro jogo usa `PERF_LOCK`.
 - `ab-bench.ps1` + `ab-report.mjs` (TDR-0007) seguem para o roteiro `bench` com
   análise estatística por faixa de draws; o `ab.sh` é o A/B por ponto de spawn.
+
+
+**Terceira correção (2026-10-22, relatada pela frente b4):** no DDD 61 a partir do `ae5caef`
+o profiler do jogo só liga com `perf=1` na query (`main.ts` do jogo); sem ele o trace sai
+sem seções `cpuAvg` e o `validate.sh` reprova a rodada. A query padrão do `round.sh` passou
+a ser `?cortexDebug=perf&perf=1&systemProfile=1&spawn=<ponto><extra>` (parâmetro
+desconhecido é ignorado por quem não o usa).

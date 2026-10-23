@@ -100,6 +100,8 @@ interface ImageUniforms {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 interface WidgetVisual {
+  /** Último `sync` em que o widget dono ainda estava na lista (SPEC-0357). */
+  syncStamp?: number;
   background?: THREE.Mesh;
   panelUniforms?: PanelUniforms;
   /** Sombra dura (cópia da caixa deslocada pra baixo, `shadowHeight`). */
@@ -151,6 +153,17 @@ export class RendererUiBackend implements UiBackend {
   private readonly _scene = new THREE.Scene();
   private readonly _camera = new THREE.OrthographicCamera(0, 1, 0, -1, -10, 10);
   private readonly _visuals = new Map<number, WidgetVisual>();
+  /**
+   * Geração do `sync` atual: visual sem este carimbo perdeu o widget. Carimbo +
+   * `Map.forEach` com callback fixo em vez de um `Set` novo e iteração por
+   * entrada a cada quadro — no Hermes cada um deles é alocação por widget (SPEC-0357).
+   */
+  private _syncStamp = 0;
+  private readonly _sweepDead = (visual: WidgetVisual, id: number): void => {
+    if (visual.syncStamp === this._syncStamp) return;
+    this._destroy(visual);
+    this._visuals.delete(id);
+  };
   private readonly _quad = new THREE.PlaneGeometry(1, 1);
   /** Viewport de DESIGN (frustum da câmera ortográfica). Ver SPEC-0129. */
   private _viewport: UiViewport = { width: 0, height: 0 };
@@ -183,22 +196,19 @@ export class RendererUiBackend implements UiBackend {
       this._camera.updateProjectionMatrix();
     }
 
-    const alive = new Set<number>();
-    widgets.forEach((widget, order) => {
-      alive.add(widget.id);
+    const stamp = ++this._syncStamp;
+    for (let order = 0; order < widgets.length; order++) {
+      const widget = widgets[order]!;
       const canvasResized =
         widget instanceof UiCanvas &&
         ((!widget.width && widget.measuredWidth !== widget.canvas.width) ||
           (!widget.height && widget.measuredHeight !== widget.canvas.height));
       if (widget.dirty || viewportChanged || canvasResized) this._apply(widget, order, viewport);
       if (widget instanceof UiCanvas && widget.visible) this._refreshCanvas(widget);
-    });
-    for (const [id, visual] of this._visuals) {
-      if (!alive.has(id)) {
-        this._destroy(visual);
-        this._visuals.delete(id);
-      }
+      const visual = this._visuals.get(widget.id);
+      if (visual) visual.syncStamp = stamp;
     }
+    this._visuals.forEach(this._sweepDead);
   }
 
   render(): void {
@@ -228,6 +238,7 @@ export class RendererUiBackend implements UiBackend {
         height: realH,
       });
     }
+    if (this._graveyard.length === 0) return; // quadro comum: sem array nem closure novos (SPEC-0357)
     this._graveyard = this._graveyard.filter((entry) => {
       if (--entry.frames > 0) return true;
       entry.dispose();

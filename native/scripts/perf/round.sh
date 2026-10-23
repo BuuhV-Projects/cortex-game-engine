@@ -36,8 +36,9 @@ if [ -z "$exp" ] || [ -z "$out" ] || { [ -z "$spawn" ] && [ -z "$query" ]; }; th
   echo "uso: round.sh --exp <exportDir> --out <runDir> (--spawn <ponto> [--extra '&k=v'] | --query '?cru') [--secs N] [--owner nome]" >&2
   exit 2
 fi
-# Sections (cpuAvg.world/render) only exist with cortexDebug=perf; no --debug export involved.
-[ -n "$query" ] || query="?cortexDebug=perf&systemProfile=1&spawn=$spawn$extra"
+# Sections (cpuAvg.world/render) need cortexDebug=perf (engine); DDD 61 since ae5caef only
+# turns its profiler on with perf=1 (game main.ts). Unknown params are ignored elsewhere.
+[ -n "$query" ] || query="?cortexDebug=perf&perf=1&systemProfile=1&spawn=$spawn$extra"
 
 exe="$exp/launcher.exe"
 [ -f "$exe" ] || { echo "sem launcher.exe em $exp" >&2; exit 2; }

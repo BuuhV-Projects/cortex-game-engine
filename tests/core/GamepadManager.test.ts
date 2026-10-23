@@ -285,6 +285,26 @@ describe('GamepadManager', () => {
     expect(fresh!.axes[0]).toBeCloseTo(0.5);
   });
 
+  it('estado reescrito no lugar (SPEC-0357): cópia antiga não muda e o pad que encolhe solta os botões', () => {
+    const gm = new GamepadManager();
+    currentGamepads[0] = makeBrowserGamepad({ index: 0, buttons: [false, true], axes: [0.5] });
+    gm.poll();
+    const before = gm.getGamepad(0)!;
+    const ups: number[] = [];
+    gm.addEventListener('button:up', (e) => ups.push((e as CustomEvent<{ button: number }>).detail.button));
+
+    currentGamepads[0] = makeBrowserGamepad({ index: 0, buttons: [true], axes: [-0.8] });
+    gm.poll();
+
+    expect(before.buttons).toEqual([false, true]);
+    expect(before.axes[0]).toBeCloseTo(0.5);
+    expect(ups).toEqual([1]);
+    const after = gm.getGamepad(0)!;
+    expect(after.buttons).toEqual([true]);
+    expect(after.values).toEqual([1]);
+    expect(after.axes[0]).toBeCloseTo(-0.8);
+  });
+
   // ── Múltiplos slots independentes ──────────────────────────────────────────
 
   it('rastreia múltiplos gamepads independentemente', () => {

@@ -20,7 +20,7 @@ paralelas; ver "Estado em 2026-10-22".
 | M0 do ADR-0237 (cache de bindings) | **medido: não há ganho** (69% refazem) | ADR-0237 |
 | B1 — zero alocação por quadro (+ medição do B3) | em andamento | sessão `b1-zero-alloc` |
 | B2 — desenho nativo no passe da cena (ADR-0330 (b)/(c)) | em andamento | sessão `b2-desenho-nativo` |
-| B4 — raycast de colisão em C++ (ADR-0346/SPEC-0347) | em andamento (porte da worktree R4-B) | sessão `b4-raycast-cpp` |
+| B4 — raycast de colisão em C++ (ADR-0346/SPEC-0347) | **mergeado** (`bc5ecf6f`, 2026-10-23): A/B a pé na main do jogo, 16 rodadas válidas, `world` −0,15 a −0,54 ms (Comercial −1,2 ms no par limpo), personagem e câmera mais baratos nos 4 pontos; pendente o A/B dirigindo (lacuna do Rapier em `BreakableProps.activate`) | sessão `b4-raycast-cpp` |
 | Cauda da física (R4-A) + `cullOutlines` pulando nós escondidos | em andamento | sessão `cauda-cull-outlines` |
 | B3 — skinning em C++ | **aguarda medição do B1** (NPCs já cozidos em lote instanciado) | — |
 | B5 — threads no C++ | depende do B2 | — |
@@ -31,6 +31,23 @@ do DDD 61, fixada no commit `e2be01c`, cada frente numa worktree destacada do
 jogo. Não é a `dff1386` (fim do ciclo de 75 fps): aquele jogo não existe mais, e
 a `main` é mais pesada e sem as otimizações do ciclo — números absolutos piores
 que o histórico são esperados; vale o A/B na mesma build.
+
+**A main do jogo só passou a rodar no export em 2026-10-22**, com SPEC-0392 (`Audio`
+no host) e SPEC-0393 (`contactPairsWith`/`contactPair` no Rapier do host — sem ela o
+1º tick morria com TypeError, registrado só no `error_log.txt`). Até lá as frentes
+mediram no `dff1386`/`aacfb7e`; esses números ficam como referência secundária.
+
+**Linha de base da main do jogo (`e2be01c`)** — kit SPEC-0382 com `perf=1`, 135 s por
+ponto, engine `7fb9421e`, 4 rodadas válidas, 100% dos quadros apresentados:
+
+| ponto | frameMs med / p95 | render cpuAvg (p99) | world cpuAvg (p99) | draws |
+| --- | --- | --- | --- | --- |
+| Setor O | 26,8 / 35,9 | 15,3 (25,4) | 3,9 (13,0) | 172 |
+| Centro | 26,2 / 38,5 | 14,6 (25,1) | 3,7 (12,4) | 162 |
+| Comercial | 29,3 / 41,1 | 15,0 (23,9) | 4,2 (13,6) | 152 |
+| Águas Claras | 29,9 / 44,0 | 16,0 (25,0) | 3,5 (14,3) | 175 |
+
+Ou seja, ~34–38 fps, e o **render é ~55% do quadro**: é onde o B2 tem mais a ganhar.
 
 Medições no export do DDD 61 são serializadas pelo lock
 `D:/jogos/detetive-brasilia/.cortex/measure.lock` (diretório criado com `mkdir`
@@ -75,6 +92,10 @@ Hades.
       `update()` de sistema.
 - **Pronto quando:** alocação/quadro em regime cai a um patamar estável e as
   pausas de GC somem do p95 do `frameMs`.
+- **Andamento (2026-10-22, SPEC-0357):** medido (instrumento `gc.allocatedMB`)
+  e feito o lado dos sistemas do engine: −45 a −65 KB/quadro no DDD 61
+  (`e2be01c`: ~0,9–1,1 MB/quadro, −4 a −7%; `dff1386`: −10 a −13%). Critério de pronto **não** atingido — o resto é o
+  `onUpdate` do jogo, os internos do three no render (B2) e o raycast (B4).
 
 ### B2 — "RenderingServer": concluir o ADR-0237 (M0–M8)
 
@@ -104,6 +125,10 @@ fora; com NPCs e trânsito (DDD 61) o custo cresce com o número de personagens.
       buffer" (amostragem/interpolação de clipes + hierarquia em C++).
 - [ ] Integrar ao B2 (matrizes de osso direto no buffer de uniformes/storage).
 - **Pronto quando:** custo de animação fica ~constante no JS independente de N.
+- **Veredito (2026-10-22, SPEC-0357): não necessário agora.** Medido no Hermes:
+  ~80–130 µs por personagem skinado (mixer + matrizes + esqueleto); o DDD 61
+  tem N = 1 (multidão no lote instanciado) → ~0,1–0,5 ms. Reabrir com ~10+
+  personagens skinados animando ao mesmo tempo.
 
 ### B4 — Primitivas de gameplay nativas (estilo `move_and_slide`)
 
