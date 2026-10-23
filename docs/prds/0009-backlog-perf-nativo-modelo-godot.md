@@ -253,6 +253,15 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       supersampling; custo de GPU. Medir antes de mexer: no ciclo anterior a GPU não era o teto
       (0,3–0,4 ms/quadro), mas o jogo mudou. Origem: frente B2, investigação do render duplo.
 
+- [ ] **Origem do custo CONTÍNUO da sombra do sol** (−1,6 a −2,4 ms de render com `?sombra=0`, parado):
+      mapa fixo (`sombraFixa`) e sem receptores (`sombraRecebe=0`) NÃO reduziram — hipótese: a existência
+      da luz com sombra (variantes de todo material iluminado + trabalho por quadro do `ShadowNode`).
+      Destrava: escolher entre desligar/simplificar a sombra e o RS4 (que só tira o redesenho). Medir com
+      sonda de fases on×off. Origem: frente B2 (relatório preliminar).
+- [ ] **A/B decisivo da sombra do sol com autopiloto** — o redesenho do mapa (~+16 ms por redesenho,
+      segundo o comentário do `sunShadow.ts`) só aparece com o jogador andando. Destrava a opção do RS4.
+      Origem: frente B2.
+
 ### Limpeza
 
 - [ ] Artefatos do teto do ADR-0404: os 3 exports em `D:/jogos/detetive-brasilia/.cortex/rs-ceiling`
