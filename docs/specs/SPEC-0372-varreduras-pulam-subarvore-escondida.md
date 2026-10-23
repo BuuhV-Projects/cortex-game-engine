@@ -79,4 +79,31 @@ de mundo e transform não mudam: os slots sujos seguem para o host como antes.
 
 ## Medição
 
-(preenchida depois do A/B no export nativo do DDD 61)
+**Export nativo release do DDD 61** na main do jogo (`e2be01c`, tem o Guará), engine `5c970b0c` com o
+host recompilado; kit de medição SPEC-0382 (`ab.sh`): A = arquivos desta SPEC como na `main`, B = esta
+mudança, mesma build; 3 réplicas por ponto, intercaladas AB/BA, 200 s, t ≥ 30 s, todas válidas
+(`validate.sh`). B − A, média das réplicas (ms):
+
+| ponto | quadro med | quadro p95 | js p95 (host) | render | `mirror` média | `cull` média · p99 A → B | `world` A / B |
+|---|---|---|---|---|---|---|---|
+| Setor O | −0,2 | −0,3 | −0,9 | −0,37 | −0,37 | −0,25 · 3,92 → 0,90 | 2,91 / 2,91 |
+| Centro | −0,8 | +0,3 | −0,5 | −0,35 | −0,36 | −0,25 · 3,84 → 1,02 | 3,28 / 3,39 |
+| Comercial | −1,1 | −1,8 | −0,9 | −0,48 | −0,35 | −0,22 · 3,75 → 1,24 | 3,43 / 3,49 |
+| Águas Claras | −0,9 | −2,2 | 0,0 | −0,01 | −0,37 | −0,26 · 4,25 → 1,25 | 3,03 / 3,00 |
+| Guará | −0,6 | −0,6 | −0,6 | −0,32 | −0,36 | −0,22 · 3,74 → 1,04 | 2,53 / 2,54 |
+| dirigindo (Hélio, `drive=1`)¹ | −0,7 | −1,5 | −1,1 | −0,30 | −0,36 | −0,22 · 3,76 → 0,79 | 2,50 / 2,48 |
+
+¹ Na base da engine `f7cea071` (com a SPEC-0394; antes dela o ponto morria ao bater num prop), A e B
+reexportados nessa base e o host recompilado; sem piloto (o detetive começa no carro, com o trânsito).
+
+- A rajada do `cullOutlines` (a cada 10 quadros) cai de ~4 ms para ~1 ms no p99; a varredura do espelho
+  custa 0,35–0,37 ms a menos por quadro, igual nos cinco pontos.
+- Fases que esta SPEC não toca ficam iguais (`world`, `update`, draws, triângulos): a medição está limpa
+  e o desenho é o mesmo.
+- O quadro (mediana e p95, ±1–2 ms de ruído por rodada nesse jogo) não piora em nenhum ponto.
+
+**Bench sintético** (Node, cena com 3.000 nós visíveis + bloco de 1.250 escondido): `cullOutlines`
+0,215 → 0,136 ms por passada com o bloco escondido (pula as 625 cascas dele); com tudo visível, sem
+regressão (0,206 → 0,189).
+
+Referência secundária (jogo `aacfb7e`, 1 par, máquina carregada): `cull` p99 3,49 → 0,68 ms.
