@@ -165,6 +165,47 @@ permitido no Xbox.
 - **Não planejar em cima dele** até passar no build clang-cl e no smoke do
   export.
 
+## Backlog de pendências
+
+Regra do usuário (2026-10-23): o que não for resolvido na frente em que surgiu vem para cá,
+com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
+
+### Engine / host
+
+- [ ] **Alternar a projeção nativa × `three` a cada quadro trava o host** — causa não isolada.
+      Origem: frente B2 (SPEC-0362, etapa (a) do ADR-0330). Não afeta o uso normal (a projeção
+      não alterna em jogo), mas impede comparar os dois caminhos na mesma execução.
+- [ ] **`getGamepads()` do host monta um snapshot novo a cada chamada** (~3,6 KB/quadro, e o
+      controle é lido 2×/quadro). Origem: SPEC-0357 (B1). Destrava: cache do snapshot por quadro.
+- [ ] **Internos do `three` no render alocam** (~147 KB/quadro abertos por fase). Origem:
+      SPEC-0357 (B1); parte disso some se o B2 (b.3) tirar objetos do caminho do `three`.
+- [ ] **Soak longo de memória** (external e working set subindo em soak de 10 min no ciclo
+      anterior). Origem: SPEC-0357 / ciclo 75 fps. Destrava: soak de 30–60 min na main do jogo.
+- [ ] **Prazo vencido no lock só alerta** (não encerra o jogo nem quebra o lock). Quebrar
+      automaticamente foi bloqueado pelo classificador de segurança do app; precisa de permissão
+      explícita do usuário. Origem: SPEC-0382.
+- [ ] **Fila órfã ao parar um comando em segundo plano** (o shell externo morre, o `ab.sh`/fila e o
+      `round.sh` seguem vivos). Hoje só documentado no README do kit; destrava: o `ab.sh` e o lock
+      desistirem quando o processo raiz morrer. Origem: relato da B2.
+
+### Jogo (DDD 61) — fora do engine
+
+- [ ] **O jogo aloca ~0,8–1,1 MB/quadro** na main (`e2be01c`); o corte do engine foi de 45–65 KB.
+      O critério de pronto do B1 só fecha atacando o código do jogo (ex.: `onUpdate`, ~180 KB/quadro
+      no `dff1386`). Origem: SPEC-0357.
+- [ ] **R4-C — update do comercial em forma fechada** (crowdBatch/figure/instanceMatrix), trabalho
+      não commitado na worktree `D:/jogos/detetive-brasilia-r4-c` (base `dff1386`). Origem: ciclo
+      75 fps (pausado em 2026-10-09). Precisa ser reavaliado na main do jogo antes de portar.
+
+### Limpeza
+
+- [ ] Apagar os artefatos de medição: `D:/jogos/detetive-brasilia/.cortex/b1-alloc` (~700 MB) e a
+      worktree do jogo `D:/jogos/detetive-brasilia-cauda-cull`.
+- [ ] Remover as worktrees antigas da R4 na engine (`.claude/worktrees/r4-a-cauda`,
+      `r4-b-raycast`, `r4-d-congelamento`): a R4-B foi portada (B4) e a R4-A descartada com número.
+- [ ] Arquivar as sessões concluídas (B4, B1, main do DDD 61 no export, cauda-cull-outlines) e
+      limpar as worktrees delas — aguarda o "sim" do usuário.
+
 ## Fora do escopo
 
 - JIT no host (proibido no Xbox).
