@@ -1,6 +1,7 @@
 import { Box3, Matrix4, Sphere, type InstancedMesh, type Intersection, type Object3D, type Ray, type Raycaster } from 'three';
 import { INSTANCE_SPHERE_STRIDE, rayMayHitSphere, spheresOf } from './instancedRaycast.js';
 import { CROSSED_MIN_BVH_TRIS, ensureBoundsTree } from './raycastAccel.js';
+import { firstHitAmong, nativeRaycastActive } from './nativeRaycast.js';
 
 /**
  * Filtro barato "só o que está perto" pros raycasts de colisão (SPEC-0302): em vez
@@ -471,10 +472,12 @@ interface WithBvh {
  */
 export function touchingBox(meshes: readonly Object3D[], box: Box3, out: Object3D[]): Object3D[] {
   out.length = 0;
+  // no host os raios vão pro C++ (SPEC-0347): não monta árvore JS só pra eles
+  const buildTrees = !nativeRaycastActive();
   for (let i = 0; i < meshes.length; i++) {
     const m = meshes[i]! as unknown as WithBvh;
     // encostada no personagem: os 12 raios vão cruzá-la — árvore já a partir de poucos triângulos (SPEC-0328)
-    if (!m.isInstancedMesh && !m.geometry?.boundsTree) ensureBoundsTree(meshes[i]!, CROSSED_MIN_BVH_TRIS);
+    if (buildTrees && !m.isInstancedMesh && !m.geometry?.boundsTree) ensureBoundsTree(meshes[i]!, CROSSED_MIN_BVH_TRIS);
     if (m.isInstancedMesh) {
       // instâncias: fica só se a esfera de alguma toca a caixa (SPEC-0328) — antes passava
       // sempre e levava os 12 raios, cada um varrendo todas as instâncias
@@ -505,14 +508,14 @@ function anySphereTouches(c: { count: number; spheres: Float32Array }, box: Box3
 
 const _alongCand: Object3D[] = [];
 const _alongEntry: number[] = [];
-const _meshHits: Intersection[] = [];
 
 /**
  * O acerto mais próximo do `raycaster` entre as malhas de `index` (SPEC-0328) — mesmo
  * resultado que `intersectObjects(lista, false)` filtrado por `skip` e lido no 1º, mas
  * só testa o que o raio cruza, mais perto primeiro, e para quando a próxima malha entra
  * além do melhor acerto. Respeita `layers` (como o `intersectObjects`). Ligue
- * `raycaster.firstHitOnly` pra árvore BVH parar no 1º triângulo.
+ * `raycaster.firstHitOnly` pra árvore BVH parar no 1º triângulo. No export nativo o
+ * teste das malhas roda em C++ (SPEC-0347).
  * @param skip Descarta o acerto (ex.: o próprio personagem).
  */
 export function firstHit(
@@ -521,20 +524,5 @@ export function firstHit(
   skip?: (o: Object3D) => boolean,
 ): Intersection | null {
   const cand = index.alongRay(raycaster.ray, raycaster.near, raycaster.far, _alongCand, _alongEntry);
-  let best: Intersection | null = null;
-  for (let i = 0; i < cand.length; i++) {
-    if (best && _alongEntry[i]! > best.distance) break; // nada daqui pra frente acerta antes
-    const o = cand[i]!;
-    if (!o.layers.test(raycaster.layers)) continue;
-    // o raio cruza a caixa: árvore já a partir de poucos triângulos (SPEC-0328)
-    if (!(o as unknown as WithBvh).geometry?.boundsTree) ensureBoundsTree(o, CROSSED_MIN_BVH_TRIS);
-    _meshHits.length = 0;
-    o.raycast(raycaster, _meshHits);
-    for (let h = 0; h < _meshHits.length; h++) {
-      const hit = _meshHits[h]!;
-      if ((best === null || hit.distance < best.distance) && !(skip && skip(hit.object))) best = hit;
-    }
-  }
-  _meshHits.length = 0;
-  return best;
+  return firstHitAmong(raycaster, cand, _alongEntry, skip);
 }
