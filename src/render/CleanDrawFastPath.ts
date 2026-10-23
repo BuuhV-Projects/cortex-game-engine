@@ -790,7 +790,7 @@ export function installCleanDrawFastPath(
       relato.calls = calls;
       if (calls % REPORT_RENDER_CALLS === 0) {
         debug('perf', `[cleanDraw] diretos=${stats.direct} movidos=${stats.moved} three=${stats.three} gravados=${stats.recorded} inelegiveis=${stats.ineligible}`);
-        if (lote) debug('perf', `[drawBatch] lote=${lote.stats.batched} flushes=${lote.stats.flushes} receitas=${lote.stats.recorded} fora=${lote.stats.unbatchable}`);
+        if (lote) debug('perf', `[drawBatch] lote=${lote.stats.batched} flushes=${lote.stats.flushes} receitas=${lote.stats.recorded} fora=${lote.stats.unbatchable} regravadas=${lote.stats.recaptured}`);
       }
     }
     if (mainPassArm.three) {

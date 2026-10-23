@@ -138,14 +138,34 @@ describe('DrawBatch', () => {
     expect(receitas.get(1)!.groups[1]).toBe('GPU-obj-a2');
   });
 
-  it('grupo compartilhado recriado no quadro devolve o desenho ao three', () => {
-    const { bridge } = ponteFalsa();
+  it('grupo compartilhado recriado no quadro regrava a receita e segue no lote (SPEC-0435 (a))', () => {
+    const { bridge, receitas, soltas } = ponteFalsa();
     const { backend, get } = backendFalso();
     const lote = new DrawBatch(bridge, backend);
     const a = roFalso(get, 'a');
     lote.capture(a.ro);
     get(a.grupoCamera)['group'] = 'GPU-camera-nova';
-    expect(lote.add(a.ro, info())).toBe(false);
+    expect(lote.add(a.ro, info())).toBe(true);
+    expect(lote.stats.recaptured).toBe(1);
+    expect(soltas).toEqual([0]);
+    expect(receitas.get(1)!.groups[0]).toBe('GPU-camera-nova');
+  });
+
+  it('com ?batchRecapture=0 o grupo recriado devolve o desenho ao three', () => {
+    const g = globalThis as { location?: { search: string } };
+    const antes = g.location;
+    g.location = { search: '?batchRecapture=0' };
+    try {
+      const { bridge } = ponteFalsa();
+      const { backend, get } = backendFalso();
+      const lote = new DrawBatch(bridge, backend);
+      const a = roFalso(get, 'a');
+      lote.capture(a.ro);
+      get(a.grupoCamera)['group'] = 'GPU-camera-nova';
+      expect(lote.add(a.ro, info())).toBe(false);
+    } finally {
+      g.location = antes;
+    }
   });
 
   it('sem receita, sem pass, com oclusão, indireto ou stencil: fica no three', () => {
