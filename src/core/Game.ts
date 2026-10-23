@@ -32,6 +32,7 @@ import {
   type ProjectingRendererLike,
 } from '../render/NativeMainProjection.js';
 import { installDrawRecipeProbe } from '../render/DrawRecipeProbe.js';
+import { ParityFreeze, parityFreezeSeconds } from '../render/MainPassArm.js';
 import { PerfTrace } from './PerfTrace.js';
 import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
@@ -244,6 +245,8 @@ export class Game {
   private _systemProfile: Map<string, number> | null = null;
   private readonly _sceneMirror = new NativeSceneMirror();
   private _sceneMirrorTried = false;
+  /** Instrumento de paridade `?parityFreeze=<s>` (SPEC-0362); `null` desligado. */
+  private readonly _parityFreeze = parityFreezeSeconds() > 0 ? new ParityFreeze(parityFreezeSeconds()) : null;
   /** Projeção do passe principal em C++ (SPEC-0332); só no host. */
   private _nativeProjection: NativeProjection | null = null;
   /** Sonda de elegibilidade da etapa (b) (SPEC-0333), `?drawRecipeProbe=1`. */
@@ -648,7 +651,8 @@ export class Game {
   }
 
   private _tick(deltaMs: number): void {
-    this._update(deltaMs);
+    const gameplay = !this._loading && !isSplashActive() && !isSceneBuilding(this._activeScene);
+    if (this._parityFreeze?.shouldUpdate(performance.now(), gameplay) !== false) this._update(deltaMs);
     const p = this.profiler;
     // Câmera de inspeção (SPEC-0131): quando ativa VENCE tudo — render cru por ela,
     // de qualquer ângulo, com a gameplay seguindo (só o render muda). Usada pelo

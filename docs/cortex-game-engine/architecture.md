@@ -1202,6 +1202,17 @@ segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
   ANTES — a ordem na tela é a da RenderList, transparentes inclusive — e o
   `currentSets` do `three` é zerado depois de cada despacho.
 
+- **(b.3) fila opaca nativa — arquivada** (ADR-0363): implementada, paridade
+  exata, A/B sem ganho demonstrável; o código foi removido (recuperável do
+  commit `dbf15071`). As 9 armadilhas do ADR valem para quem retomar.
+
+- **Instrumento de paridade na mesma execução** (`src/render/MainPassArm.ts`,
+  `?parityFreeze=<s>`, SPEC-0362): congela o `_update` depois de `<s>` s de
+  jogo e alterna o DESENHO do passe principal entre nativo e `three` a cada
+  quadro; com `CORTEX_RENDER_PARITY_CAPTURE` os quadros N×N+1 medem a paridade
+  e N×N+2 o ruído. A projeção não alterna: trocá-la a cada quadro trava o host
+  (causa não isolada; pendência da etapa (a)).
+
 **Armadilha (desenho direto):** os grupos COMPARTILHADOS (câmera, luzes) têm de
 ser atualizados também no desenho direto — sem isso a câmera congela, como nos
 render bundles (ADR-0215). E o descarte do render object (`onDispose`) tem de

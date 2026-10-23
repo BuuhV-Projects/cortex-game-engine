@@ -19,6 +19,7 @@
 import { modelNormalMatrix, modelWorldMatrixInverse } from 'three/tsl';
 import { debug } from '../core/debug.js';
 import { buildRenderIdPlan } from './RenderIdRefresh.js';
+import { mainPassArm } from './MainPassArm.js';
 import {
   DrawBatch,
   batchBackendSupported,
@@ -707,6 +708,11 @@ export function installCleanDrawFastPath(
         debug('perf', `[cleanDraw] diretos=${stats.direct} movidos=${stats.moved} three=${stats.three} gravados=${stats.recorded} inelegiveis=${stats.ineligible}`);
         if (lote) debug('perf', `[drawBatch] lote=${lote.stats.batched} flushes=${lote.stats.flushes} receitas=${lote.stats.recorded} fora=${lote.stats.unbatchable}`);
       }
+    }
+    if (mainPassArm.three) {
+      // Quadro do `three` no instrumento de paridade (SPEC-0362).
+      tresCaminho(this, object, material, scene, camera, lightsNode, group, clippingContext, passId);
+      return;
     }
     const contexto = this._currentRenderContext;
     let g: Gravacao | undefined;
