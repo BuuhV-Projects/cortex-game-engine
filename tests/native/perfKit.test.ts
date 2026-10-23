@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS, GC_FROM_MS } from '../../native/scripts/perf/trace-stats.mjs';
+import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS, GC_FROM_MS, MIN_AUTOPILOT_TRAVEL_M, SLOW_FRAME_MS } from '../../native/scripts/perf/trace-stats.mjs';
 
 const SAMPLE_MS = 500;
 const FRAME_WINDOWS = 8;
@@ -21,7 +21,8 @@ afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
 function makeRun(
   name: string,
-  opts: { rows?: number; world?: number; frameMs?: number; presented?: number; sections?: boolean; trace?: string | null; gc?: boolean } = {},
+  opts: { rows?: number; world?: number; frameMs?: number; presented?: number; sections?: boolean; trace?: string | null; gc?: boolean;
+    meta?: string; autopilot?: boolean; camStep?: number; frameMsAt?: (i: number) => number } = {},
 ) {
   const { rows = MIN_ROWS * 2, world = 2, frameMs = 16, presented = 300, sections = true } = opts;
   const dir = path.join(root, name);
@@ -29,8 +30,12 @@ function makeRun(
   let trace = opts.trace;
   if (trace === undefined) {
     const lines = [JSON.stringify({ t: 0, precompile: { ms: 1 } })];
+    if (opts.autopilot) lines.push(JSON.stringify({ t: 0, autopilot: { profile: 'walk', cycleS: 27.8 } }));
     for (let i = 0; i < rows; i++) {
-      const row: Record<string, unknown> = { t: WARMUP_MS + i * SAMPLE_MS, frameMs, cpu: { world: 9, render: 9 }, draws: 150 };
+      const row: Record<string, unknown> = {
+        t: WARMUP_MS + i * SAMPLE_MS, frameMs: opts.frameMsAt?.(i) ?? frameMs, cpu: { world: 9, render: 9 }, draws: 150,
+        cam: { x: i * (opts.camStep ?? 0), y: 1, z: 0, dx: 0, dy: 0, dz: 1 },
+      };
       if (opts.gc) {
         // known answer: 0.5 MB, 1 young collection of 3 ms per sample; one old collection of 200 ms midway
         const old = i >= rows / 2 ? 1 : 0;
@@ -50,6 +55,7 @@ function makeRun(
     () => `[10:00:00] frame-timing (300 frames, ${presented} apresentados) | poll med=0.04 p95=0.05 | js med=15.00 p95=20.00 | present med=0.3 p95=0.4`,
   );
   fs.writeFileSync(path.join(dir, 'perf-log.txt'), log.join('\n'));
+  if (opts.meta) fs.writeFileSync(path.join(dir, 'meta.txt'), opts.meta);
   return dir;
 }
 
@@ -73,6 +79,23 @@ describe('trace-stats validate', () => {
     expect(analyzeRun(makeRun('stopped', { world: 0 })).reason).toMatch(/world = 0/);
     expect(analyzeRun(makeRun('nosec', { sections: false })).reason).toMatch(/cortexDebug=perf/);
     expect(analyzeRun(makeRun('dark', { presented: 0 })).reason).toMatch(/0 quadros/);
+  });
+
+  it('autopiloto (SPEC-0414): reprova sem o evento no trace e parado; aprova andando', () => {
+    const meta = 'query=?cortexDebug=perf&spawn=setorO&autopilot=walk exp=x';
+    expect(analyzeRun(makeRun('ap-old', { meta, camStep: 1 })).reason).toMatch(/sem SPEC-0414/);
+    expect(analyzeRun(makeRun('ap-parked', { meta, autopilot: true })).reason).toMatch(/não andou/);
+    const moving = analyzeRun(makeRun('ap-moving', { meta, autopilot: true, camStep: MIN_AUTOPILOT_TRAVEL_M / MIN_ROWS }));
+    expect(moving.valid).toBe(true);
+    expect(summaryLine(moving)).toMatch(/autopiloto walk andou \d+ m/);
+    // without autopilot in the query a round does not have to move
+    expect(analyzeRun(makeRun('parked', { meta: 'query=?spawn=setorO' })).valid).toBe(true);
+  });
+
+  it('conta a fração de amostras acima de 33 ms', () => {
+    const r = analyzeRun(makeRun('slow', { frameMsAt: (i) => (i % 4 === 0 ? SLOW_FRAME_MS + 1 : 16) }));
+    expect(r.slowPct).toBe(25);
+    expect(summaryLine(r)).toMatch(/>33ms 25%/);
   });
 
   it('alerta quando frameMs está no teto de 100 ms', () => {
