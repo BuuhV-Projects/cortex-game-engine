@@ -34,6 +34,7 @@ import {
 import { installDrawRecipeProbe } from '../render/DrawRecipeProbe.js';
 import { ParityFreeze, parityFreezeSeconds } from '../render/MainPassArm.js';
 import { PerfTrace } from './PerfTrace.js';
+import { autopilotFromQuery, type InputAutopilot } from '../input/InputAutopilot.js';
 import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
 import { FrameProfiler } from './FrameProfiler.js';
@@ -224,6 +225,8 @@ export class Game {
   private _debugHud: DebugHud | null | undefined = undefined;
   /** Amostrador do perf trace (SPEC-0198). Inerte sem a ponte do host nativo. */
   private readonly _perfTrace = new PerfTrace();
+  /** Virtual Xbox controller for measurement, `?autopilot=<profile>` (SPEC-0414); `null` off. */
+  private readonly _autopilot: InputAutopilot | null = autopilotFromQuery(typeof location === 'undefined' ? '' : location.search ?? '');
   /** Pedidos de quadro de aquecimento, resolvidos no próximo tick (SPEC-0263). */
   private readonly _warmupRequests: Array<(pending: Promise<unknown>[]) => void> = [];
   /**
@@ -357,6 +360,10 @@ export class Game {
     if (typeof document !== 'undefined') this.input.attach(document.body);
     this.gamepad = new GamepadManager();
     this.actions = new InputActions(this.input, this.gamepad);
+    if (this._autopilot) {
+      this._autopilot.install();
+      this._perfTrace.recordEvent('autopilot', { profile: this._autopilot.profileName, cycleS: this._autopilot.cycleS });
+    }
     // Já liga junto se o modo debug foi pedido (export --debug / ?cortexHud=1),
     // pra medir desde o 1º frame; o toggle do Studio liga/desliga em runtime.
     this.profiler = new FrameProfiler({ enabled: debugHudRequested() });
@@ -628,6 +635,7 @@ export class Game {
     const dt = deltaMs / 1000;
     const p = this.profiler; // no-op quando o HUD de debug está desligado
     p.begin('input');
+    this._autopilot?.step(dt);
     this.gamepad.poll(); // estado fresco do gamepad antes dos sistemas/onUpdate (Xbox-first)
     this.actions.poll(); // bordas das ações DEPOIS do gamepad (ADR-0164)
     p.end('input');
