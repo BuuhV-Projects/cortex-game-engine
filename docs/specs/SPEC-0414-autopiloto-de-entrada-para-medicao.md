@@ -52,8 +52,8 @@ Perfil inválido (lista vazia, duração fora do limite, botão ou eixo desconhe
 
 Perfis embutidos:
 
-- **`walk`** (a pé, ~28 s por ciclo): anda e volta, gira a câmera, pula 3×, mira e atira uma rajada,
-  corre e volta, ziguezague e volta, gira a câmera de volta. Cada deslocamento tem o seu oposto,
+- **`walk`** (a pé, ~36 s por ciclo): anda e volta, gira a câmera, pula 3×, mira e atira uma rajada,
+  corre e volta, ziguezague e volta, gira a câmera de volta subindo e descendo. Cada deslocamento (e a inclinação da câmera) tem o seu oposto,
   então o jogador fica num laço perto do spawn e o conteúdo da tela não muda de bairro entre os
   braços de um A/B.
 - **`drive`** (use com o carro do jogo, no DDD 61 `&drive=1`): acelera, curvas para os dois lados,
@@ -68,7 +68,7 @@ duração diferente (física, colisão), o mesmo que já acontece numa rodada pa
 ### Registro no trace
 
 No boot (construtor) o `Game` grava no perf trace o evento
-`{"t":…,"autopilot":{"profile":"walk","cycleS":27.8}}` (`PerfTrace.recordEvent` passa a aceitar texto
+`{"t":…,"autopilot":{"profile":"walk","cycleS":35.8}}` (`PerfTrace.recordEvent` passa a aceitar texto
 além de número).
 
 ### Kit (SPEC-0382)
@@ -84,5 +84,9 @@ além de número).
 - Com o autopiloto o controle real fica escondido; é instrumento, não modo de jogo.
 - O perfil é por botão, não por ação: um jogo que mapeia o tiro em outro botão precisa de outro
   perfil (é dado, basta acrescentar ao JSON).
+- Validação (2026-10-23): a 1ª versão do `walk` andava 3 s/2 s por perna (só ~5 m no DDD 61, o
+  kit reprovou) e terminava o giro com a câmera inclinada para cima, olhando o céu pelo resto da
+  rodada (render barato = medição falsa). Corrigido: pernas de 5 s/4 s e inclinação líquida zero,
+  travada por teste.
 - O laço "volta ao spawn" é aproximado: colisões e aceleração fazem o jogador derivar alguns metros
   por ciclo.

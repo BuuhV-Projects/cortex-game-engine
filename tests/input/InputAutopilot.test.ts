@@ -69,16 +69,18 @@ describe('InputAutopilot', () => {
     expect(() => autopilotFromQuery('?autopilot=nope')).toThrow(/perfil desconhecido 'nope'/);
   });
 
-  it('built-in profiles are valid and walk returns to where it started', () => {
+  it('built-in profiles are valid and walk returns to where it started, camera level', () => {
     for (const profile of Object.values(BUILTIN_AUTOPILOT_PROFILES)) validateAutopilotProfile(profile);
     // every left-stick displacement of `walk` has its opposite: net zero over a loop
-    const net = { leftX: 0, leftY: 0 };
+    const net = { leftX: 0, leftY: 0, rightY: 0 };
     for (const step of BUILTIN_AUTOPILOT_PROFILES.walk!.steps) {
       net.leftX += (step.axes?.leftX ?? 0) * step.s;
       net.leftY += (step.axes?.leftY ?? 0) * step.s;
+      net.rightY += (step.axes?.rightY ?? 0) * step.s;
     }
     expect(net.leftX).toBeCloseTo(0);
     expect(net.leftY).toBeCloseTo(0);
+    expect(net.rightY).toBeCloseTo(0); // camera pitch back level: never left staring at the sky
   });
 
   it('is off without the query', () => {

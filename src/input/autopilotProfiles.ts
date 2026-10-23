@@ -1,14 +1,15 @@
 /**
  * Built-in autopilot profiles (SPEC-0414): plain data, one loop of Xbox inputs each.
- * `walk` keeps every move paired with its opposite so the player loops near the spawn.
+ * `walk` keeps every move (and camera pitch) paired with its opposite so the player loops near
+ * the spawn and the camera never ends up staring at the sky.
  */
 import type { AutopilotProfile } from './InputAutopilot.js';
 
 export const AUTOPILOT_PROFILES: Record<string, AutopilotProfile> = {
   "walk": {
     "steps": [
-      { "s": 3, "axes": { "leftY": -1 } },
-      { "s": 3, "axes": { "leftY": 1 } },
+      { "s": 5, "axes": { "leftY": -1 } },
+      { "s": 5, "axes": { "leftY": 1 } },
       { "s": 2.4, "axes": { "rightX": 1 } },
       { "s": 0.2, "buttons": ["A"] },
       { "s": 0.8 },
@@ -19,8 +20,8 @@ export const AUTOPILOT_PROFILES: Record<string, AutopilotProfile> = {
       { "s": 0.6, "buttons": ["LT"] },
       { "s": 1.5, "buttons": ["LT", "RT"] },
       { "s": 0.5 },
-      { "s": 2, "buttons": ["RT"], "axes": { "leftY": -1 } },
-      { "s": 2, "buttons": ["RT"], "axes": { "leftY": 1 } },
+      { "s": 4, "buttons": ["RT"], "axes": { "leftY": -1 } },
+      { "s": 4, "buttons": ["RT"], "axes": { "leftY": 1 } },
       { "s": 0.8, "axes": { "leftY": -1, "leftX": 1 } },
       { "s": 0.8, "axes": { "leftY": -1, "leftX": -1 } },
       { "s": 0.8, "axes": { "leftY": -1, "leftX": 1 } },
@@ -29,7 +30,8 @@ export const AUTOPILOT_PROFILES: Record<string, AutopilotProfile> = {
       { "s": 0.8, "axes": { "leftY": 1, "leftX": -1 } },
       { "s": 0.8, "axes": { "leftY": 1, "leftX": 1 } },
       { "s": 0.8, "axes": { "leftY": 1, "leftX": -1 } },
-      { "s": 2.4, "axes": { "rightX": -1, "rightY": -0.5 } },
+      { "s": 1.2, "axes": { "rightX": -1, "rightY": -0.5 } },
+      { "s": 1.2, "axes": { "rightX": -1, "rightY": 0.5 } },
       { "s": 1 }
     ]
   },
