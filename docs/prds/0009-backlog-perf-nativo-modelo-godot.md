@@ -194,14 +194,14 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 
 - [ ] **b.3 (fila nativa de opacos parados, ADR-0363) sem ganho medido**: paridade 0, mas A/B no ruído
       (setorO −1,24, centro −0,29, comercial +1,01 ms) e uma réplica em Águas Claras regrediu para 33,9 ms
-      de render com 2,4 MB/quadro de GC. Branch `claude/b2-desenho-nativo-d831a3` (`dbf15071`), não
-      mergeada. Destrava: entender a regressão de Águas Claras antes de qualquer novo corte.
+      de render com 2,4 MB/quadro de GC. Código arquivado (retomar a partir de `dbf15071`); registros e
+      instrumento na main (`f8ddbf38`). Destrava: entender a regressão de Águas Claras antes de qualquer novo corte.
 - [ ] **~20 objetos por quadro que se movem (NPCs, carros, jogador) ficam fora da fila nativa** —
       maior ganho restante da b.3, se a b.3 for retomada. Origem: contadores de recusa da b.3.
 - [x] **SPEC-0362 rejeitada por medição** (tirar do `three` os objetos com névoa/material com nó):
       refazê-los custa quase o mesmo que o caminho do `three` e sobe o GC ~10 ms/s. Registro para não
       repetir a tentativa.
-- [ ] **Instrumento `?parityFreeze` (`src/render/MainPassArm.ts`) pronto mas só na branch da B2**:
+- [x] (main `f8ddbf38`) **Instrumento `?parityFreeze` (`src/render/MainPassArm.ts`)**:
       congela o jogo e alterna nativo × `three` quadro a quadro; pegou um erro de cor que a captura entre
       execuções não pegaria. Destrava paridade por imagem no DDD 61 para qualquer desenho nativo futuro.
 
