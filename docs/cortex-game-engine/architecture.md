@@ -1238,6 +1238,13 @@ quadros de atraso, visível no passe principal. `frustumCulled`, `renderOrder`
 de grupo e troca de `geometry` seguem pela varredura (até 8 quadros); uma
 `boundingSphere` recalculada na MESMA geometria não é vista.
 
+**Subárvore escondida (SPEC-0372):** a varredura pula o slot com ancestral
+escondido (contador `_ocultoAcima` por slot, mantido pelo gancho de `visible`
+na troca — O(subárvore) por troca, não por quadro); quando o contador volta a
+0 o slot é re-conferido na hora. O `cullOutlines` também poda subárvore com
+`visible = false` (a casca em si continua avaliada). Ligar/desligar um grupo
+GRANDE todo quadro passaria a custar a subárvore todo quadro.
+
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
 Duas fusões diferentes, com propósitos opostos, no mesmo módulo

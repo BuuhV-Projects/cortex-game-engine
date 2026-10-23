@@ -18,11 +18,11 @@ paralelas; ver "Estado em 2026-10-22".
 | Rapier nativo, corpo parado sem custo | **feito** | ADR-0336, SPEC-0337 |
 | Câmera/personagem em C++, SkinnedMesh no export | **feito** | R1 do ciclo, SPEC-0348 |
 | M0 do ADR-0237 (cache de bindings) | **medido: não há ganho** (69% refazem) | ADR-0237 |
-| B1 — zero alocação por quadro (+ medição do B3) | em andamento | sessão `b1-zero-alloc` |
+| B1 — zero alocação por quadro (+ medição do B3) | **mergeado** (`34210c53`, SPEC-0357): na main do jogo, −45 a −65 KB/quadro (−4 a −7%), coleta young −1,6 a −2,6 ms/s, sem regressão; teste impede `new Vector3/Matrix4/Box3` em `System.update`; colunas de GC no kit. O jogo ainda aloca ~0,8–1,1 MB/quadro (critério de pronto do PRD não atingido — o resto está fora do engine) | sessão `b1-zero-alloc` |
 | B2 — desenho nativo no passe da cena (ADR-0330 (b)/(c)) | em andamento | sessão `b2-desenho-nativo` |
 | B4 — raycast de colisão em C++ (ADR-0346/SPEC-0347) | **mergeado** (`bc5ecf6f`, 2026-10-23): A/B a pé na main do jogo, 16 rodadas válidas, `world` −0,15 a −0,54 ms (Comercial −1,2 ms no par limpo), personagem e câmera mais baratos nos 4 pontos; pendente o A/B dirigindo (lacuna do Rapier em `BreakableProps.activate`) | sessão `b4-raycast-cpp` |
-| Cauda da física (R4-A) + `cullOutlines` pulando nós escondidos | em andamento | sessão `cauda-cull-outlines` |
-| B3 — skinning em C++ | **aguarda medição do B1** (NPCs já cozidos em lote instanciado) | — |
+| Cauda da física (R4-A) + `cullOutlines` pulando nós escondidos | **`cullOutlines`/espelho mergeado** (`6e74af99`, SPEC-0372): `cull` p99 ~3,8 → ~1,0 ms e espelho −0,36 ms/quadro nos 6 pontos, quadro mediano −0,2 a −1,1 ms, p95 até −2,2 ms. **R4-A descartada com número**: o passo extra de física custa 0,2–0,4 ms; a cauda vem do render perdendo o vsync e coincide com o GC jovem | sessão `cauda-cull-outlines` |
+| B3 — skinning em C++ | **dispensado por medição** (SPEC-0357 §5): ~0,1–0,5 ms com 1–4 personagens com mixer; a multidão é o lote instanciado | — |
 | B5 — threads no C++ | depende do B2 | — |
 | B6 — Static Hermes | acompanhar (imaturo em 2026-10-03) | — |
 
@@ -164,6 +164,70 @@ permitido no Xbox.
       gameplay), não o bundle inteiro.
 - **Não planejar em cima dele** até passar no build clang-cl e no smoke do
   export.
+
+## Backlog de pendências
+
+Regra do usuário (2026-10-23): o que não for resolvido na frente em que surgiu vem para cá,
+com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
+
+### Engine / host
+
+- [ ] **Alternar a projeção nativa × `three` a cada quadro trava o host** — causa não isolada.
+      Origem: frente B2 (SPEC-0362, etapa (a) do ADR-0330). Não afeta o uso normal (a projeção
+      não alterna em jogo), mas impede comparar os dois caminhos na mesma execução.
+- [ ] **`getGamepads()` do host monta um snapshot novo a cada chamada** (`native/src/shims/input.cpp`,
+      ~3,6 KB/quadro com um controle Xbox), e o controle é lido 2×/quadro (`Game` e
+      `UiLayer.pollDevices`). Destrava: reaproveitar os objetos do snapshot e ler uma vez por quadro —
+      é o caso normal no Xbox, onde sempre há controle. Origem: SPEC-0357 (B1).
+- [ ] **Internos do `three` no render alocam** (~150 KB/quadro: `render()` 52, `RenderObjects.get`
+      28, `renderObject` 17–26). Parte disso sai com o desenho nativo do B2 (b.3); remedir com
+      `gc.allocatedMB` depois dele. Origem: SPEC-0357 (B1).
+- [ ] **Soak longo de memória:** o `external` subiu nos vales nos dois lados do A/B da B1 (+19 a
+      +30 MB em 10 min); o heap JS não vaza. Destrava: soak de 30–60 min na main do jogo para decidir
+      se é vazamento. Origem: SPEC-0357 / ciclo 75 fps.
+- [ ] **Prazo vencido no lock só alerta** (não encerra o jogo nem quebra o lock). Quebrar
+      automaticamente foi bloqueado pelo classificador de segurança do app; precisa de permissão
+      explícita do usuário. Origem: SPEC-0382.
+- [ ] **Fila órfã ao parar um comando em segundo plano** (o shell externo morre, o `ab.sh`/fila e o
+      `round.sh` seguem vivos). Hoje só documentado no README do kit; destrava: o `ab.sh` e o lock
+      desistirem quando o processo raiz morrer. Origem: relato da B2.
+
+- [ ] **b.3 (fila nativa de opacos parados, ADR-0363) sem ganho medido**: paridade 0, mas A/B no ruído
+      (setorO −1,24, centro −0,29, comercial +1,01 ms) e uma réplica em Águas Claras regrediu para 33,9 ms
+      de render com 2,4 MB/quadro de GC. Branch `claude/b2-desenho-nativo-d831a3` (`dbf15071`), não
+      mergeada. Destrava: entender a regressão de Águas Claras antes de qualquer novo corte.
+- [ ] **~20 objetos por quadro que se movem (NPCs, carros, jogador) ficam fora da fila nativa** —
+      maior ganho restante da b.3, se a b.3 for retomada. Origem: contadores de recusa da b.3.
+- [x] **SPEC-0362 rejeitada por medição** (tirar do `three` os objetos com névoa/material com nó):
+      refazê-los custa quase o mesmo que o caminho do `three` e sobe o GC ~10 ms/s. Registro para não
+      repetir a tentativa.
+- [ ] **Instrumento `?parityFreeze` (`src/render/MainPassArm.ts`) pronto mas só na branch da B2**:
+      congela o jogo e alterna nativo × `three` quadro a quadro; pegou um erro de cor que a captura entre
+      execuções não pegaria. Destrava paridade por imagem no DDD 61 para qualquer desenho nativo futuro.
+
+### Jogo (DDD 61) — fora do engine
+
+- [ ] **O jogo aloca ~0,8–1,1 MB/quadro** na main (`e2be01c`); o corte do engine foi de 45–65 KB.
+      O critério de pronto do B1 só fecha atacando o código do jogo — maior fonte isolada: o
+      `onUpdate` (~180 KB/quadro no `dff1386`). Spec no `docs/specs/` do jogo; sonda por seção em
+      `.cortex/b1-alloc/allocProbe.ts.txt` (guardar antes de apagar a pasta). Origem: SPEC-0357.
+- [ ] **R4-C — update do comercial em forma fechada** (crowdBatch/figure/instanceMatrix), trabalho
+      não commitado na worktree `D:/jogos/detetive-brasilia-r4-c` (base `dff1386`). Origem: ciclo
+      75 fps (pausado em 2026-10-09). Precisa ser reavaliado na main do jogo antes de portar.
+
+- [ ] **O DDD 61 renderiza a cena duas vezes por quadro:** um `render()` da mesma cena aninhado
+      dentro do render principal, com **outra câmera** (logo outras luzes) — achado da B2 ao depurar a
+      b.3 (commits `fd975b5d` e o seguinte; a 1ª leitura dizia "mesma câmera" e foi corrigida). Destrava: descobrir qual sistema do jogo dispara esse render e quanto custa; se for
+      um render completo, pode ser uma fatia grande dos ~15 ms de render. Origem: frente B2.
+
+### Limpeza
+
+- [x] (2026-10-23; sonda salva em `.cortex/allocProbe-b1.ts.txt`) Apagar os artefatos de medição (salvando antes o `allocProbe.ts.txt`): `D:/jogos/detetive-brasilia/.cortex/b1-alloc` (~700 MB) e a
+      worktree do jogo `D:/jogos/detetive-brasilia-cauda-cull`.
+- [ ] Remover as worktrees antigas da R4 na engine (`.claude/worktrees/r4-a-cauda`,
+      `r4-b-raycast`, `r4-d-congelamento`): a R4-B foi portada (B4) e a R4-A descartada com número.
+- [x] (2026-10-23) Arquivar as sessões concluídas (B4, B1, main do DDD 61 no export, cauda-cull-outlines),
+      remover as worktrees delas (engine e jogo) e apagar as branches.
 
 ## Fora do escopo
 

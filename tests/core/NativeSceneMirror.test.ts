@@ -1246,6 +1246,78 @@ describe('NativeSceneMirror e o passe principal (SPEC-0332)', () => {
     expect(bounds[0]![4]).toBeCloseTo(Math.sqrt(75));
   });
 
+  // SPEC-0372: the flag sweep skips slots under a hidden ancestor.
+  describe('sweep skips hidden subtrees (SPEC-0372)', () => {
+    // Big enough that one frame's sweep slice cannot reach the watched slot:
+    // otherwise the sweep would mask a missing re-check on reappear.
+    const FILLERS = SWEEP_MIN_NODES * SWEEP_PERIOD_FRAMES * 2;
+    function hiddenGroupScene() {
+      const { host } = instalarPonteFalsa(FILLERS + 16);
+      const raiz = new Object3D();
+      const outer = new Object3D();
+      const inner = new Object3D();
+      const m = malha();
+      inner.add(m);
+      outer.add(inner);
+      raiz.add(outer);
+      for (let i = 0; i < FILLERS; i++) raiz.add(new Object3D());
+      const espelho = new NativeSceneMirror();
+      espelho.install(raiz);
+      const camera = new PerspectiveCamera();
+      espelho.update(camera);
+      // BFS slots: raiz 0, outer 1, fillers, inner, then m last.
+      return { host, raiz, outer, inner, m, espelho, camera, slot: FILLERS + 3 };
+    }
+    const sweep = (espelho: NativeSceneMirror, camera: PerspectiveCamera) => {
+      for (let q = 0; q < SWEEP_PERIOD_FRAMES; q++) espelho.update(camera);
+    };
+
+    it('does not check a node under a hidden ancestor', () => {
+      const { host, outer, m, espelho, camera, slot } = hiddenGroupScene();
+      outer.visible = false;
+      (m.material as MeshBasicMaterial).visible = false;
+      sweep(espelho, camera);
+      // Stale on purpose: the host inherits the hidden ancestor, so this flag draws nothing.
+      expect(flagsNoHost(host, slot) & SYNC_MATERIAL_VISIVEL).not.toBe(0);
+    });
+
+    it('re-checks the node in the same frame it reappears', () => {
+      const { host, outer, m, espelho, camera, slot } = hiddenGroupScene();
+      outer.visible = false;
+      sweep(espelho, camera);
+      (m.material as MeshBasicMaterial).visible = false;
+      outer.visible = true;
+      espelho.update(camera);
+      expect(flagsNoHost(host, slot) & SYNC_MATERIAL_VISIVEL).toBe(0);
+    });
+
+    it('stays skipped while any ancestor is still hidden', () => {
+      const { host, outer, inner, m, espelho, camera, slot } = hiddenGroupScene();
+      outer.visible = false;
+      inner.visible = false;
+      (m.material as MeshBasicMaterial).visible = false;
+      outer.visible = true;
+      sweep(espelho, camera);
+      expect(flagsNoHost(host, slot) & SYNC_MATERIAL_VISIVEL).not.toBe(0);
+      inner.visible = true;
+      espelho.update(camera);
+      expect(flagsNoHost(host, slot) & SYNC_MATERIAL_VISIVEL).toBe(0);
+    });
+
+    it('a node added under a hidden group starts skipped', () => {
+      const { host, outer, espelho, camera, slot } = hiddenGroupScene();
+      outer.visible = false;
+      const late = malha();
+      outer.add(late); // appended right after m
+      (late.material as MeshBasicMaterial).visible = false;
+      sweep(espelho, camera);
+      expect(flagsNoHost(host, slot + 1) & SYNC_MATERIAL_VISIVEL).not.toBe(0);
+      outer.visible = true;
+      espelho.update(camera);
+      expect(flagsNoHost(host, slot + 1) & SYNC_MATERIAL_VISIVEL).toBe(0);
+    });
+  });
+
   it('removeSubtree devolve o visible como propriedade comum', () => {
     instalarPonteFalsa(8);
     const raiz = new Object3D();
