@@ -8,6 +8,9 @@ import { describe, expect, it } from 'vitest';
 // so the three.js math types it needs live in module/instance scratch fields.
 const BANNED = new Set(['Vector2', 'Vector3', 'Vector4', 'Matrix3', 'Matrix4', 'Quaternion', 'Euler', 'Box3', 'Sphere', 'Ray', 'Plane', 'Color']);
 const SRC = join(__dirname, '..', '..', 'src');
+// Parses every file under src/ with the TS compiler: under a loaded machine (exports and
+// native builds running) it can pass vitest's 5 s default and fail as a timeout, not a finding.
+const SCAN_TIMEOUT_MS = 60_000;
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];
@@ -67,5 +70,5 @@ describe('SPEC-0357 — no three.js math allocation inside System.update()', () 
 
   it('engine systems allocate no Vector3/Matrix4/Box3/… per frame', () => {
     expect(findUpdateAllocations(sourceFiles(SRC), SRC)).toEqual([]);
-  });
+  }, SCAN_TIMEOUT_MS);
 });
