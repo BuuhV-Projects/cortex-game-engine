@@ -18,6 +18,15 @@ const FRAME_TIMING_SKIP_DIVISOR = 4;
 // GC columns (SPEC-0357) start later than the other stats: the first old collection after the warm-up
 // frame lands in the first ~40 s.
 export const GC_FROM_MS = 40000;
+// A sampled frame above this missed 30 fps: the drops the autopilot (SPEC-0414) is there to show.
+export const SLOW_FRAME_MS = 33;
+// An autopilot round whose camera never got this far from its first steady sample did not move: the
+// input never reached the game (a parked round stays at 0.0 m). Low on purpose: a confined spawn
+// (DDD 61 setorO: parked car, tree and wall around the player) walks only 4-8 m and still exercises it.
+export const MIN_AUTOPILOT_TRAVEL_M = 2;
+// cam.dy above this = camera looking above the horizon: almost nothing on screen, the frame gets
+// artificially cheap (the 3rd-person default in DDD 61 is -0.34).
+export const MAX_AUTOPILOT_CAM_DY = 0;
 const KB_PER_MB = 1024;
 const MS_PER_S = 1000;
 const P50 = 0.5;
@@ -44,9 +53,11 @@ export function analyzeRun(dir) {
   const meta = readIf(path.join(dir, 'meta.txt')) ?? '';
   const lines = traceText === null ? [] : traceText.split('\n').filter((l) => l.trim());
   const rows = [];
+  let autopilot = null;
   for (const line of lines) {
     try {
       const row = JSON.parse(line);
+      if (row.autopilot) autopilot = row.autopilot;
       if (row.cpu && row.t >= WARMUP_MS) rows.push(row);
     } catch {
       // the host may be killed mid-line: the last line can be truncated
@@ -65,6 +76,12 @@ export function analyzeRun(dir) {
   const frameMs = rows.map((r) => r.frameMs);
   const framesSum = steady.reduce((a, w) => a + w.frames, 0);
   const presentedSum = steady.reduce((a, w) => a + w.presented, 0);
+  const camRows = rows.filter((r) => r.cam);
+  const travel = camRows.length
+    ? Math.max(...camRows.map((r) => Math.hypot(r.cam.x - camRows[0].cam.x, r.cam.z - camRows[0].cam.z)))
+    : 0;
+  const autopilotWanted = /[?&]autopilot=/.test(meta);
+  const maxCamDy = camRows.length ? Math.max(...camRows.map((r) => r.cam.dy)) : NaN;
 
   let reason = null;
   if (traceText === null) reason = 'sem perf-trace.jsonl (rodada interrompida ou em andamento)';
@@ -76,6 +93,12 @@ export function analyzeRun(dir) {
   else if (!windows.length) reason = 'perf-log sem frame-timing (rodou sem CORTEX_FRAME_TIMING?)';
   else if (presentedSum === 0) reason = '0 quadros apresentados';
   else if (/FROZE/.test(meta)) reason = 'congelou (FROZE no meta.txt)';
+  else if (autopilotWanted && !autopilot) reason = 'query pede autopiloto, mas o trace não tem o evento autopilot (engine sem SPEC-0414?)';
+  else if (autopilotWanted && travel < MIN_AUTOPILOT_TRAVEL_M) {
+    reason = `autopiloto não andou: a câmera se afastou ${fmt(travel)} m (mínimo ${MIN_AUTOPILOT_TRAVEL_M})`;
+  } else if (autopilotWanted && maxCamDy > MAX_AUTOPILOT_CAM_DY) {
+    reason = `câmera acima do horizonte (cam.dy até ${fmt(maxCamDy, 2)}): olhando o céu, o quadro fica barato`;
+  }
 
   return {
     name,
@@ -87,6 +110,9 @@ export function analyzeRun(dir) {
     frameP95: quantile(frameMs, P95),
     frameP99: quantile(frameMs, P99),
     saturated: frameMs.filter((v) => v >= FRAME_MS_CEILING).length,
+    slowPct: frameMs.length ? (PERCENT * frameMs.filter((v) => v > SLOW_FRAME_MS).length) / frameMs.length : NaN,
+    travel,
+    autopilot: autopilot?.profile ?? null,
     jsMed: mean(steady.map((w) => w.jsMed)),
     jsP95: mean(steady.map((w) => w.jsP95)),
     presentedPct: framesSum ? (PERCENT * presentedSum) / framesSum : NaN,
@@ -129,11 +155,13 @@ export function summaryLine(r) {
     : '';
   return (
     `VÁLIDO ${r.name} n=${r.rows} | frameMs ${fmt(r.frameMed)}/${fmt(r.frameP95)}/${fmt(r.frameP99)} (med/p95/p99)` +
+    ` >${SLOW_FRAME_MS}ms ${fmt(r.slowPct, 0)}%` +
     ` | js ${fmt(r.jsMed, 2)}/${fmt(r.jsP95, 2)} | render ${fmt(r.render.avg, 2)} p99 ${fmt(r.render.p99)}` +
     ` | world ${fmt(r.world.avg, 2)} p99 ${fmt(r.world.p99)} | draws ${r.draws} | apresentados ${fmt(r.presentedPct, 0)}%` +
     (r.gc
       ? ` | gc ${fmt(r.gc.kbPerFrame)} KB/q, young ${fmt(r.gc.youngPerS, 2)}/s ${fmt(r.gc.youngMsPerS)} ms/s, old ${r.gc.oldCount}x ${r.gc.oldWallMs} ms`
       : '') +
+    (r.autopilot ? ` | autopiloto ${r.autopilot} andou ${fmt(r.travel, 0)} m` : '') +
     alert
   );
 }
@@ -142,6 +170,8 @@ const AB_NAME_RE = /^(.+)-(A|B)-r\d+$/;
 const AB_METRICS = [
   ['frameMs med', (r) => r.frameMed],
   ['frameMs p95', (r) => r.frameP95],
+  ['frameMs p99', (r) => r.frameP99],
+  [`>${SLOW_FRAME_MS}ms %`, (r) => r.slowPct],
   ['js p95', (r) => r.jsP95],
   ['render', (r) => r.render.avg],
   ['world', (r) => r.world.avg],

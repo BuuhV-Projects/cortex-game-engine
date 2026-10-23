@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # One measurement round of a native export (SPEC-0382), under the shared lock.
 # Usage: round.sh --exp <exportDir> --out <runDir> (--spawn <point> [--extra '&k=v'] | --query '?raw')
-#                 [--secs 135] [--owner <name>]
+#                 [--secs 135] [--owner <name>] [--autopilot <profile>]
+# --autopilot: the engine's virtual Xbox controller plays <profile> (SPEC-0414: walk, drive).
 # Prints the summarize line of the round at the end.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,7 +20,7 @@ readonly PWSH_TIMEOUT_S=30
 # Lock lease = round length + launch/kill/move overhead.
 readonly ROUND_LEASE_MARGIN_S=120
 
-exp=""; out=""; spawn=""; extra=""; query=""; secs=$DEFAULT_SECS; owner="round"
+exp=""; out=""; spawn=""; extra=""; query=""; secs=$DEFAULT_SECS; owner="round"; autopilot=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --exp) exp="$2"; shift 2 ;;
@@ -29,16 +30,18 @@ while [ $# -gt 0 ]; do
     --query) query="$2"; shift 2 ;;
     --secs) secs="$2"; shift 2 ;;
     --owner) owner="$2"; shift 2 ;;
+    --autopilot) autopilot="$2"; shift 2 ;;
     *) echo "argumento desconhecido: $1" >&2; exit 2 ;;
   esac
 done
 if [ -z "$exp" ] || [ -z "$out" ] || { [ -z "$spawn" ] && [ -z "$query" ]; }; then
-  echo "uso: round.sh --exp <exportDir> --out <runDir> (--spawn <ponto> [--extra '&k=v'] | --query '?cru') [--secs N] [--owner nome]" >&2
+  echo "uso: round.sh --exp <exportDir> --out <runDir> (--spawn <ponto> [--extra '&k=v'] | --query '?cru') [--secs N] [--owner nome] [--autopilot perfil]" >&2
   exit 2
 fi
 # Sections (cpuAvg.world/render) need cortexDebug=perf (engine); DDD 61 since ae5caef only
 # turns its profiler on with perf=1 (game main.ts). Unknown params are ignored elsewhere.
 [ -n "$query" ] || query="?cortexDebug=perf&perf=1&systemProfile=1&spawn=$spawn$extra"
+[ -z "$autopilot" ] || query="$query&autopilot=$autopilot"
 
 exe="$exp/launcher.exe"
 [ -f "$exe" ] || { echo "sem launcher.exe em $exp" >&2; exit 2; }

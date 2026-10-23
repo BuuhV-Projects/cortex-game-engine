@@ -3,6 +3,7 @@
 # B,A (even), each round under the lock, then prints one short table per point.
 # Usage: ab.sh --a <exportA> [--b <exportB>] --out <runsRoot> --points "setorO centro"
 #              [--extra-a '&k=0'] [--extra-b '&k=1'] [--reps 2] [--secs 135] [--owner name]
+#              [--autopilot <profile>]   (both arms, SPEC-0414)
 # Same export with different extras = A/B of two queries.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,7 +13,7 @@ readonly DEFAULT_SECS=135
 # Gap between rounds so another session can grab the lock.
 readonly COURTESY_S=10
 
-a=""; b=""; out=""; points=""; extra_a=""; extra_b=""; reps=$DEFAULT_REPS; secs=$DEFAULT_SECS; owner="ab"
+a=""; b=""; out=""; points=""; extra_a=""; extra_b=""; reps=$DEFAULT_REPS; secs=$DEFAULT_SECS; owner="ab"; autopilot=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --a) a="$2"; shift 2 ;;
@@ -24,12 +25,13 @@ while [ $# -gt 0 ]; do
     --reps) reps="$2"; shift 2 ;;
     --secs) secs="$2"; shift 2 ;;
     --owner) owner="$2"; shift 2 ;;
+    --autopilot) autopilot=(--autopilot "$2"); shift 2 ;;
     *) echo "argumento desconhecido: $1" >&2; exit 2 ;;
   esac
 done
 b="${b:-$a}"
 if [ -z "$a" ] || [ -z "$out" ] || [ -z "$points" ]; then
-  echo "uso: ab.sh --a <exportA> [--b <exportB>] --out <pastaDasRodadas> --points \"p1 p2\" [--extra-a ..] [--extra-b ..] [--reps N] [--secs N]" >&2
+  echo "uso: ab.sh --a <exportA> [--b <exportB>] --out <pastaDasRodadas> --points \"p1 p2\" [--extra-a ..] [--extra-b ..] [--reps N] [--secs N] [--autopilot perfil]" >&2
   exit 2
 fi
 if [ "$a" = "$b" ] && [ "$extra_a" = "$extra_b" ]; then
@@ -40,7 +42,7 @@ mkdir -p "$out"
 run_arm() { # <arm> <point> <rep>
   local exp extra
   if [ "$1" = A ]; then exp="$a"; extra="$extra_a"; else exp="$b"; extra="$extra_b"; fi
-  "$here/round.sh" --exp "$exp" --out "$out/$2-$1-r$3" --spawn "$2" --extra "$extra" --secs "$secs" --owner "$owner" || true
+  "$here/round.sh" --exp "$exp" --out "$out/$2-$1-r$3" --spawn "$2" --extra "$extra" --secs "$secs" --owner "$owner" "${autopilot[@]}" || true
   sleep "$COURTESY_S"
 }
 
@@ -50,5 +52,5 @@ for rep in $(seq 1 "$reps"); do
     else run_arm B "$point" "$rep"; run_arm A "$point" "$rep"; fi
   done
 done
-echo "A=$a $extra_a | B=$b $extra_b"
+echo "A=$a $extra_a | B=$b $extra_b ${autopilot[*]}"
 node "$here/trace-stats.mjs" ab "$out"

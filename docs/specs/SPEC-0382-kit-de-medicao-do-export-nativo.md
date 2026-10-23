@@ -68,6 +68,7 @@ PID em `host.pid` na pasta da rodada.
 - soma de "apresentados" das janelas `frame-timing` do `perf-log.txt`, sem o
   primeiro quarto (carga), > 0;
 - `meta.txt` sem `FROZE` (congelamento detectado pelo `round.sh`).
+- rodada com `--autopilot` (jogador em movimento, SPEC-0414): o trace tem o evento `autopilot`, a câmera se afastou ≥ 2 m e nunca passou do horizonte (`cam.dy ≤ 0`).
 
 **Resumo:** `frameMs` med/p95/p99 e quantas amostras no teto de 100 ms (alerta:
 acima disso `frameMs` não mede nada); `js` do host (frame-timing) med/p95;
