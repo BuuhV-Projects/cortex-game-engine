@@ -139,4 +139,10 @@ double cortexHermesExternalBytesMB(void* runtime) {
   return static_cast<double>(info.externalBytes) / (1024.0 * 1024.0);
 }
 
+double cortexHermesTotalAllocatedMB(void* runtime) {
+  hermes::vm::GCBase::HeapInfo info;
+  rt(runtime)->getHeap().getHeapInfo(info);
+  return static_cast<double>(info.totalAllocatedBytes) / (1024.0 * 1024.0);
+}
+
 }  // extern "C"

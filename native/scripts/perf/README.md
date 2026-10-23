@@ -30,3 +30,15 @@ $K/ab.sh --a .../export-a --extra-a '&nativeRaycast=0' --out .../runs-ab2 --poin
 
 Regras de validade e campos do resumo: `trace-stats.mjs` (constantes no topo) e
 SPEC-0382. Fora do kit por enquanto: piloto de direção e screenshot.
+
+## Parar uma fila de rodadas (armadilha)
+
+Parar o comando em segundo plano que disparou a fila (ex.: `TaskStop`) mata só o shell de
+fora: o `.sh` da fila (ou o `ab.sh`) e o `round.sh` continuam vivos, esperando o lock, e
+mais tarde rodam rodadas velhas tomando a vez dos outros. Para parar de verdade:
+
+1. `ps -ef | grep -E 'ab.sh|round.sh|<sua-fila>.sh'` e ache os SEUS processos;
+2. encerre primeiro o `.sh` pai (fila/`ab.sh`), depois o `round.sh` (`kill <pid>`);
+3. confira com `lock.sh status`: o ticket de processo morto some sozinho da fila.
+
+Nunca encerre processo de outra sessão.

@@ -178,12 +178,14 @@ export class GamepadManager extends EventTarget {
       }
 
       // ── Atualização ──────────────────────────────────────────────────────
-      // Detecta transições de botão e emite eventos antes de substituir o estado.
-      const newButtons = browserPad.buttons.map((b) => b.pressed);
-      const length = Math.max(previous.buttons.length, newButtons.length);
+      // Detecta transições de botão e emite eventos antes de atualizar o estado.
+      // O estado é reescrito no lugar (SPEC-0357): roda todo quadro com controle
+      // conectado, e no Hermes cada array/closure novo aqui alimenta o coletor.
+      const pads = browserPad.buttons;
+      const length = Math.max(previous.buttons.length, pads.length);
       for (let b = 0; b < length; b++) {
         const was = previous.buttons[b] ?? false;
-        const now = newButtons[b] ?? false;
+        const now = pads[b]?.pressed ?? false;
         if (was === false && now === true) {
           this.dispatchEvent(
             new CustomEvent<GamepadButtonEventDetail>('button:down', {
@@ -199,14 +201,16 @@ export class GamepadManager extends EventTarget {
         }
       }
 
-      this._states[i] = {
-        index: i,
-        id: browserPad.id,
-        connected: true,
-        buttons: newButtons,
-        values: browserPad.buttons.map((b) => b.value),
-        axes: browserPad.axes.map((a) => this._applyDeadzone(a)),
-      };
+      previous.id = browserPad.id;
+      previous.buttons.length = pads.length;
+      previous.values.length = pads.length;
+      for (let b = 0; b < pads.length; b++) {
+        previous.buttons[b] = pads[b]!.pressed;
+        previous.values[b] = pads[b]!.value;
+      }
+      const axes = browserPad.axes;
+      previous.axes.length = axes.length;
+      for (let a = 0; a < axes.length; a++) previous.axes[a] = this._applyDeadzone(axes[a]!);
     }
   }
 

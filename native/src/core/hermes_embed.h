@@ -51,4 +51,9 @@ double cortexHermesHeapUsedMB(void* runtime);
 // não pelo heap gerenciado (`allocatedBytes`/cortexHermesHeapUsedMB).
 double cortexHermesExternalBytesMB(void* runtime);
 
+// MB alocados no heap JS desde o boot (cumulativo; `totalAllocatedBytes` do
+// Hermes). A diferença entre duas leituras é o que o JS alocou no intervalo
+// (SPEC-0357).
+double cortexHermesTotalAllocatedMB(void* runtime);
+
 }  // extern "C"

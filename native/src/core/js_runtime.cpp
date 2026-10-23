@@ -24,6 +24,7 @@ napi_value jsCollectGarbage(napi_env env, napi_callback_info) {
 
 // __cortexGcStats() — totais do coletor desde o boot (SPEC-0264). Acumulados:
 // quem lê compara duas leituras para saber o que coletou no intervalo.
+// `allocatedMB` é o total alocado pelo JS (SPEC-0357): Δ entre leituras = alocação.
 napi_value jsGcStats(napi_env env, napi_callback_info) {
   const GcTotals totals = gcTotals();
   napi_value out = njs::makeObject(env);
@@ -37,6 +38,11 @@ napi_value jsGcStats(napi_env env, napi_callback_info) {
   put("oldCount", totals.oldCount);
   put("oldWallMs", totals.oldWallMs);
   put("oldCpuMs", totals.oldCpuMs);
+  if (g_runtimeForGc) {
+    napi_value allocated = nullptr;
+    napi_create_double(env, cortexHermesTotalAllocatedMB(g_runtimeForGc), &allocated);
+    napi_set_named_property(env, out, "allocatedMB", allocated);
+  }
   return out;
 }
 

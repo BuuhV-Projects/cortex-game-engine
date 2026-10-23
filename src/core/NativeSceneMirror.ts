@@ -1285,25 +1285,32 @@ export class NativeSceneMirror {
    */
   private _sincronizarInstancias(api: SceneMirrorBridge): void {
     if (!api.setInstances || this._instanciados.size === 0) return;
-    for (const [no, enviado] of this._instanciados) {
-      const matrizes = no.instanceMatrix!;
-      const quantas = no.count ?? 0;
-      if (matrizes.version === enviado.versao && quantas === enviado.quantas) continue;
-      const indice = this._indicePorObjeto.get(no);
-      if (indice === undefined) continue;
-      const ok = api.setInstances(
-        indice,
-        matrizes.array.subarray(0, quantas * MATRIX_ELEMENTS),
-        quantas,
-      );
-      // Recusado: fica como "não mandado" e o gate recusa o nó — tenta de novo
-      // no próximo frame em vez de desenhar matriz velha.
-      if (ok) {
-        enviado.versao = matrizes.version;
-        enviado.quantas = quantas;
-      }
-    }
+    // `forEach` com callback fixo: o `for…of` desestruturado do Map criava
+    // dois objetos por lote por quadro no Hermes (SPEC-0357).
+    this._apiInstancias = api;
+    this._instanciados.forEach(this._sincronizarLote);
+    this._apiInstancias = null;
   }
+
+  private _apiInstancias: SceneMirrorBridge | null = null;
+  private readonly _sincronizarLote = (enviado: { versao: number; quantas: number }, no: NoDaCena): void => {
+    const matrizes = no.instanceMatrix!;
+    const quantas = no.count ?? 0;
+    if (matrizes.version === enviado.versao && quantas === enviado.quantas) return;
+    const indice = this._indicePorObjeto.get(no);
+    if (indice === undefined) return;
+    const ok = this._apiInstancias!.setInstances!(
+      indice,
+      matrizes.array.subarray(0, quantas * MATRIX_ELEMENTS),
+      quantas,
+    );
+    // Recusado: fica como "não mandado" e o gate recusa o nó — tenta de novo
+    // no próximo frame em vez de desenhar matriz velha.
+    if (ok) {
+      enviado.versao = matrizes.version;
+      enviado.quantas = quantas;
+    }
+  };
 
   /**
    * Desenha o passe de sombra da cascata em C++ (SPEC-0245, E5 do passo 2).
