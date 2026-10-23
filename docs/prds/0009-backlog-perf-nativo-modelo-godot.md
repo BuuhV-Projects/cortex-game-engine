@@ -288,6 +288,9 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 
 ### Limpeza
 
+- [x] (2026-10-23) Sessão B2 arquivada; worktree da engine e cópias do jogo `b2-base`/`b2-e2be01c` removidas; branch apagada.
+- [ ] Rodadas e exports da B2 em `D:/jogos/detetive-brasilia/.cortex/b2-desenho` (evidência da b.3/SPEC-0362 e da sombra do sol) — apagar quando o usuário quiser.
+
 - [ ] Artefatos do teto do ADR-0404: os 3 exports em `D:/jogos/detetive-brasilia/.cortex/rs-ceiling`
       (~1,1 GB; guardar `rs-ceiling-arm.patch` e as pastas `runs-*`/`val`) e a worktree do jogo
       `D:/jogos/detetive-brasilia-rs-e2be01c` — podem servir de base ao A/B do RS1. Na worktree da
