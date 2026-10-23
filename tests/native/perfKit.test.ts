@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS } from '../../native/scripts/perf/trace-stats.mjs';
+import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS, GC_FROM_MS } from '../../native/scripts/perf/trace-stats.mjs';
 
 const SAMPLE_MS = 500;
 const FRAME_WINDOWS = 8;
@@ -21,7 +21,7 @@ afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
 function makeRun(
   name: string,
-  opts: { rows?: number; world?: number; frameMs?: number; presented?: number; sections?: boolean; trace?: string | null } = {},
+  opts: { rows?: number; world?: number; frameMs?: number; presented?: number; sections?: boolean; trace?: string | null; gc?: boolean } = {},
 ) {
   const { rows = MIN_ROWS * 2, world = 2, frameMs = 16, presented = 300, sections = true } = opts;
   const dir = path.join(root, name);
@@ -31,6 +31,11 @@ function makeRun(
     const lines = [JSON.stringify({ t: 0, precompile: { ms: 1 } })];
     for (let i = 0; i < rows; i++) {
       const row: Record<string, unknown> = { t: WARMUP_MS + i * SAMPLE_MS, frameMs, cpu: { world: 9, render: 9 }, draws: 150 };
+      if (opts.gc) {
+        // known answer: 0.5 MB, 1 young collection of 3 ms per sample; one old collection of 200 ms midway
+        const old = i >= rows / 2 ? 1 : 0;
+        row.gc = { allocatedMB: i * 0.5, youngCount: i, youngMs: i * 3, oldCount: old, oldWallMs: old * 200, oldCpuMs: 0 };
+      }
       if (sections) {
         row.cpuAvg = { world, render: 8 };
         row.cpuP99 = { world: world * 2, render: 12 };
@@ -72,6 +77,28 @@ describe('trace-stats validate', () => {
 
   it('alerta quando frameMs está no teto de 100 ms', () => {
     expect(summaryLine(analyzeRun(makeRun('sat', { frameMs: 100 })))).toMatch(/ALERTA \d+ amostras no teto/);
+  });
+});
+
+describe('trace-stats gc (SPEC-0357)', () => {
+  it('soma alocação e coletas a partir de GC_FROM_MS, em KB por quadro', () => {
+    const r = analyzeRun(makeRun('gc', { gc: true, rows: MIN_ROWS * 4 }));
+    // 1 MB/s a 16 ms/quadro (62,5 quadros/s) = 16,384 KB/quadro; 2 coletas/s de 3 ms = 6 ms/s
+    expect(r.gc.kbPerFrame).toBeCloseTo(1024 / 62.5, 3);
+    expect(r.gc.youngPerS).toBeCloseTo(2, 6);
+    expect(r.gc.youngMsPerS).toBeCloseTo(6, 6);
+    expect(r.gc.oldCount).toBe(1);
+    expect(r.gc.oldWallMs).toBe(200);
+    expect(summaryLine(r)).toMatch(/gc 16\.4 KB\/q, young 2\.00\/s 6\.0 ms\/s, old 1x 200 ms/);
+    expect(GC_FROM_MS).toBeGreaterThan(WARMUP_MS);
+  });
+
+  it('sem o contador no trace, o resumo e a tabela continuam como antes', () => {
+    const r = analyzeRun(makeRun('setorO-A-r1'));
+    expect(r.gc).toBeNull();
+    expect(summaryLine(r)).not.toMatch(/gc /);
+    makeRun('setorO-B-r1');
+    expect(abTable(root).some((l) => l.includes('gc KB'))).toBe(false);
   });
 });
 

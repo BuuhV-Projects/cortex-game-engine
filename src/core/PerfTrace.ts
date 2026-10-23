@@ -428,6 +428,8 @@ export interface GcTotals {
   oldCount: number;
   oldWallMs: number;
   oldCpuMs: number;
+  /** MB alocados pelo JS desde o boot (SPEC-0357); Δ entre amostras = alocação. Host antigo não tem. */
+  allocatedMB?: number;
 }
 
 /** Dados do frame que a amostra precisa, já lidos pelo chamador. */
