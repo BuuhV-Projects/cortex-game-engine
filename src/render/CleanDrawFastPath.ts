@@ -837,10 +837,14 @@ export function installCleanDrawFastPath(
             }
             // O objeto da fila não passa pelo `renderObject`: callbacks próprios ficam no `three`.
             if (o.occlusionTest === true || o.onBeforeRender !== ANTES_PADRAO || o.onAfterRender !== DEPOIS_PADRAO) return false;
-            const g = o._cxGravacao;
+            // A mais recente pode ser de outro render (o aninhado, outra câmera):
+            // então a do contexto deste, pelo mapa, como no desenho direto.
+            const contexto = renderer._currentRenderContext;
+            let g = o._cxGravacao;
+            if (g === undefined || g.context !== contexto || g.passId !== null) g = gravacaoDe(o, contexto, null);
             const lightsNode = renderList.lightsNode;
             if (
-              g === undefined || g.context !== renderer._currentRenderContext || g.passId !== null || g.material !== m ||
+              g === undefined || g.material !== m ||
               descartados.has(g.ro) || g.lights !== lightsNode || g.clipping !== clippingContext ||
               g.ro.geometry !== o.geometry || g.contextNodeVersion !== (renderer.contextNode?.version ?? 0) ||
               !matrixMatch(g.ro, g.instantaneo) || !restMatch(g.ro, g.vigias, g.instantaneo) ||

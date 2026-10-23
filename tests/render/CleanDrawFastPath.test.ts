@@ -441,7 +441,7 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     const item = (nome: string, z: number, idItem: number): RenderItemLike => ({
       object: { nome }, geometry: null, material: null, group: null, clippingContext: null, renderOrder: 0, z, id: idItem,
     });
-    return { renderer, handle, eventos, contexto, a, vidro, proprio, item };
+    return { renderer, handle, eventos, contexto, a, vidro, proprio, item, usar: (x: typeof a) => void (atual = x) };
   }
 
   it('limpo e parado sai da RenderList e é emitido na ordem do sort, depois do fundo', () => {
@@ -551,6 +551,16 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     const { renderer, handle, a, proprio } = montar();
     // O render aninhado do quadro anterior desenhou com OUTRO lightsNode.
     renderer._renderObjectDirect!(proprio.object, proprio.material, 'cena', 'outraCam', { outras: true }, null, null, null);
+    expect(handle.queue!.offerOpaque(a.object, 0.5, { lightsNode: LUZES, opaque: [] }, null, 'cena', 'cam')).toBe(true);
+  });
+
+  it('objeto também desenhado por outro render (gravação mais recente de outro contexto) ainda vai para a fila', () => {
+    const { renderer, handle, a, contexto, usar } = montar();
+    usar(a);
+    const outro = {};
+    renderer._currentRenderContext = outro; // o render aninhado grava o mesmo objeto noutro contexto
+    renderer._renderObjectDirect!(a.object, a.material, 'cena', 'outraCam', { outras: true }, null, null, null);
+    renderer._currentRenderContext = contexto;
     expect(handle.queue!.offerOpaque(a.object, 0.5, { lightsNode: LUZES, opaque: [] }, null, 'cena', 'cam')).toBe(true);
   });
 

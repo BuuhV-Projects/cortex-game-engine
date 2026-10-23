@@ -124,3 +124,7 @@ contexto e pass até isolar. Regras que ficaram:
    igual ao sem fila (13,57 × ~13,5 ms). O host passou a devolver as chaves
    ordenadas no próprio `Float64Array` (`queue`), o JS mantém o cursor e só
    chama `emitNext(pass, n)` quando há nativos antes do item.
+9. **A gravação da oferta é a do contexto do render**, não a mais recente do
+   objeto: o render aninhado grava os mesmos objetos noutro contexto depois do
+   principal, e a oferta que só olhava `_cxGravacao` recusava ~40 limpos por
+   quadro (a b.1 já buscava pelo mapa `(objeto, contexto, passId)`).
