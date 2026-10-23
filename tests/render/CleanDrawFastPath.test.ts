@@ -86,6 +86,18 @@ describe('CleanDrawFastPath — instantâneo', () => {
     expect(vigias.map((v) => v.properties.join('.'))).toEqual(['color', 'map', 'near', 'value']);
   });
 
+  it('RS1a: referência de grupo compartilhado vai para sharedRefs; material e objeto continuam vigias', () => {
+    const fog = { near: 1 };
+    const compartilhada = no({ type: 'ReferenceNode', properties: ['near'], object: fog, group: { shared: true } });
+    const doObjeto = no({ type: 'ReferenceNode', properties: ['near'], object: fog, group: { shared: false } });
+    const doMaterial = no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['color'], material: null, group: { shared: true } });
+    const { ro } = roFalso([compartilhada, doObjeto, doMaterial], materialFalso());
+    const refs: unknown[] = [];
+    expect(watchersFor(ro, refs as never)!.length).toBe(2);
+    expect(refs).toEqual([compartilhada]);
+    expect(watchersFor(ro)!.length).toBe(3); // sem a lista: comportamento antigo
+  });
+
   it('nó de objeto desconhecido recusa a gravação', () => {
     const { ro } = roFalso([no({ type: 'UniformNode' })], materialFalso());
     expect(watchersFor(ro)).toBeNull();
@@ -253,6 +265,33 @@ describe('installCleanDrawFastPath', () => {
     (material['color'] as Color).setRGB(0, 1, 0);
     chamar();
     expect(chamadas.original).toBe(2);
+  });
+
+  it('RS1a: troca da névoa (grupo compartilhado) não derruba para o three; a referência sobe 1x por render, antes do grupo', () => {
+    const fog = { color: new Color(0.5, 0.5, 0.5), near: 1, far: 100 };
+    const ref = no({ type: 'ReferenceNode', properties: ['color'], object: fog, group: { shared: true } });
+    const nodes = [no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['color'], material: null }), ref];
+    const { ro, object, material } = roFalso(nodes, materialFalso(), fog);
+    const grupo = { bindings: [{ groupNode: { shared: true }, isUniformsGroup: true, uniforms: [] }] };
+    (ro as unknown as { getBindings: () => unknown[] }).getBindings = () => [grupo];
+    // O `three` devolve SEMPRE o mesmo estado (a deduplicação por render depende disso).
+    const estado = ro.getNodeBuilderState();
+    (ro as unknown as { getNodeBuilderState: () => unknown }).getNodeBuilderState = () => estado;
+    const { renderer, chamadas } = rendererFalso();
+    const ordem: string[] = [];
+    renderer._nodes!.getNodeFrameForRender = () => ({ renderId: 7, updateNode: (n: unknown) => void ordem.push(n === ref ? 'ref' : 'outro') });
+    renderer._bindings!._update = (g: unknown) => void ordem.push(g === grupo ? 'grupo' : 'outro');
+    renderer.ro = ro;
+    installCleanDrawFastPath(renderer)!;
+    const chamar = () => renderer._renderObjectDirect!(object, material, 'cena', 'cam', 'luzes', null, null, null);
+    chamar(); // three grava
+    fog.color.setRGB(0.1, 0.2, 0.3);
+    ordem.length = 0;
+    chamar();
+    expect(chamadas.original).toBe(1); // direto, apesar da névoa nova
+    expect(ordem).toEqual(['ref', 'grupo']);
+    chamar(); // mesma chamada de render: nada se repete
+    expect(ordem).toEqual(['ref', 'grupo']);
   });
 
   it('nó animado nunca é gravado', () => {

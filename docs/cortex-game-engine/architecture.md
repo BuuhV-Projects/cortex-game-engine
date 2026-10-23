@@ -1192,7 +1192,10 @@ segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
   pipeline) e, enquanto bate, é desenhado direto (`updateBefore` + grupos
   compartilhados + `backend.draw`), pulando a verificação genérica do `three`.
   A sonda `?drawRecipeProbe=1` (`DrawRecipeProbe.ts`) lista o que barra a
-  elegibilidade.
+  elegibilidade. **RS1a (SPEC-0425, `?sharedRefs=0|1`):** referência de grupo
+  COMPARTILHADO (a névoa do `three`, `setGroup(renderGroup)`) não é vigia por
+  objeto: é atualizada uma vez por estado de shader por chamada, antes dos grupos
+  compartilhados — a troca de cor da névoa não derruba mais todo objeto.
 
 - **(b.2) lote em C++** (`src/render/DrawBatch.ts` + `native/src/render/draw_batch.*`,
   `?drawBatch=0|1`): a receita (handles de GPU que o `three` usou) é gravada no

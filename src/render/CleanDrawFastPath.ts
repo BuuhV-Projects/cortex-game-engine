@@ -34,6 +34,8 @@ const QUERY_KEY = 'cleanDraw=';
 /** Lote de desenhos diretos em C++ (b.2). */
 const BATCH_QUERY_KEY = 'drawBatch=';
 const MAIN_PASS_QUERY_KEY = 'nativeMainPass=';
+/** RS1a (SPEC-0425): referências de grupo compartilhado atualizadas por render, não vigiadas por objeto. */
+const SHARED_REFS_QUERY_KEY = 'sharedRefs=';
 const UPDATE_OBJECT = 'object';
 /** Chamadas de `render()` entre relatos no `debug('perf')`. */
 const REPORT_RENDER_CALLS = 1200;
@@ -111,6 +113,7 @@ interface NoLike {
   isMaterialReferenceNode?: boolean;
   isTextureNode?: boolean;
   node?: unknown;
+  group?: { shared?: boolean } | null;
   value?: unknown;
   getUpdateType(): string;
   getUpdateBeforeType?(): string;
@@ -202,13 +205,21 @@ interface Gravacao {
   vigias: Vigia[];
   instantaneo: Float64Array;
   plan: NonNullable<ReturnType<typeof buildRenderIdPlan>>;
+  /** Referências de grupo compartilhado (névoa): atualizadas uma vez por render (RS1a). */
+  sharedRefs: NoLike[];
 }
 
 /**
  * Os vigias de um render object, ou `null` se algum nó de objeto não é
  * conferível. Exportada para os testes.
+ *
+ * Com `sharedRefs` (RS1a, SPEC-0425), a referência cujo uniforme mora num grupo
+ * COMPARTILHADO (a névoa: `setGroup(renderGroup)` no `three`) vai para essa
+ * lista em vez de virar vigia: o valor é um só para a chamada inteira, então
+ * quem desenha direto o atualiza uma vez por render — e a troca de cor da
+ * névoa deixa de derrubar todo objeto para o caminho do `three`.
  */
-export function watchersFor(ro: CleanRoLike): Vigia[] | null {
+export function watchersFor(ro: CleanRoLike, sharedRefs?: NoLike[]): Vigia[] | null {
   const estado = ro.getNodeBuilderState();
   for (const n of estado.updateBeforeNodes) if (n.getUpdateBeforeType?.() === UPDATE_OBJECT) return null;
   for (const n of estado.updateAfterNodes) if (n.getUpdateAfterType?.() === UPDATE_OBJECT) return null;
@@ -221,6 +232,10 @@ export function watchersFor(ro: CleanRoLike): Vigia[] | null {
     if (n.type === 'ModelNode' && ESCOPOS_DA_MATRIZ.has(n.scope ?? '')) continue;
     if (n.type === 'UniformGroupNode') continue;
     if (Array.isArray(n.properties)) {
+      if (sharedRefs && !n.isMaterialReferenceNode && n.object && n.group?.shared === true) {
+        sharedRefs.push(n);
+        continue;
+      }
       // `ReferenceNode`: material (o do render object, ou um fixo), um objeto
       // fixo (névoa) ou o próprio objeto desenhado.
       const holder = n.isMaterialReferenceNode
@@ -292,6 +307,13 @@ export class SnapshotCursor {
     for (let k = 0; k < tmp.length; k++) this.v(tmp[k]);
     return true;
   }
+}
+
+/** O que não muda num render object: vigias, plano e referências por render. */
+interface Preparado {
+  vigias: Vigia[];
+  plan: Gravacao['plan'];
+  sharedRefs: NoLike[];
 }
 
 /** Capacidade inicial do buffer do instantâneo (cresce dobrando). */
@@ -542,6 +564,7 @@ export function installCleanDrawFastPath(
     return null;
   }
   const stats: CleanDrawStats = { direct: 0, moved: 0, three: 0, recorded: 0, ineligible: 0 };
+  const referenciasPorRender = queryFlagRequested(SHARED_REFS_QUERY_KEY, true);
   /**
    * Gravações por objeto, por contexto de render e por `passId`. O contexto
    * entra na chave para o passe de sombra do `three` (quando roda) não
@@ -603,11 +626,11 @@ export function installCleanDrawFastPath(
   }
 
   /** O que não muda num render object: vigias e plano (ou `null` = inelegível). */
-  const preparados = new WeakMap<object, { vigias: Vigia[]; plan: Gravacao['plan'] } | null>();
+  const preparados = new WeakMap<object, Preparado | null>();
   /** Render objects descartados pelo `three` (material/geometria `dispose`). */
   const descartados = new WeakSet<object>();
 
-  const preparar = (ro: CleanRoLike): { vigias: Vigia[]; plan: Gravacao['plan'] } | null => {
+  const preparar = (ro: CleanRoLike): Preparado | null => {
     let p = preparados.get(ro);
     if (p !== undefined) return p;
     const o = ro.object;
@@ -615,9 +638,10 @@ export function installCleanDrawFastPath(
     const elegivel =
       ro.bundle === null && !monitor.hasNode && !monitor.hasAnimation && !o.isSkinnedMesh && !o.isBatchedMesh &&
       !o.morphTargetInfluences;
-    const vigias = elegivel ? watchersFor(ro) : null;
+    const sharedRefs: NoLike[] = [];
+    const vigias = elegivel ? watchersFor(ro, referenciasPorRender ? sharedRefs : undefined) : null;
     const plan = vigias ? buildRenderIdPlan(ro as never) : null;
-    p = vigias && plan ? { vigias, plan } : null;
+    p = vigias && plan ? { vigias, plan, sharedRefs } : null;
     preparados.set(ro, p);
     if (p === null) {
       stats.ineligible++;
@@ -657,6 +681,7 @@ export function installCleanDrawFastPath(
       g = {
         ro, material: ro.material, context: r._currentRenderContext, passId, lights: lightsNode, clipping,
         envKey: undefined, contextNodeVersion: 0, vigias: p.vigias, instantaneo: new Float64Array(n), plan: p.plan,
+        sharedRefs: p.sharedRefs,
       };
       porPasse.set(passId, g);
     }
@@ -746,6 +771,9 @@ export function installCleanDrawFastPath(
         renderIdDaChamada.renderId = frame.renderId;
         const renderNodes = g.plan.renderNodes;
         for (let k = 0; k < renderNodes.length; k++) frame.updateNode(renderNodes[k]);
+        // Antes dos grupos compartilhados abaixo: o UBO de render sobe com o valor novo.
+        const refs = g.sharedRefs;
+        for (let k = 0; k < refs.length; k++) frame.updateNode(refs[k]);
       } else if (renderIdDaChamada.calls !== calls) {
         renderIdDaChamada.calls = calls;
         renderIdDaChamada.renderId = nodes.getNodeFrameForRender(ro).renderId;
