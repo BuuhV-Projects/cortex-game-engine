@@ -37,6 +37,7 @@
 #include "shims/perf_trace.h"
 #include "shims/quit.h"
 #include "shims/rapier.h"
+#include "shims/raycast_shim.h"
 #include "shims/steam_api.h"
 #include "shims/text_raster.h"
 #include "shims/canvas_blit.h"
@@ -282,6 +283,7 @@ int main(int argc, char** argv) {
     shims::registerPerfStats(js.env());
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());
+    shims::registerRaycast(js.env());  // __cortexRaycast — raycast da câmera/personagem (SPEC-0347)
     shims::registerAudio(js.env());
     shims::registerTextRaster(js.env(), baseDir, exePath);
     shims::registerCanvasBlit(js.env());  // __cortexBlitImage — drawImage do canvas 2D (ADR-0318)

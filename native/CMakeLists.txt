@@ -51,6 +51,10 @@ add_executable(cortex_host
   src/shims/perf_trace.cpp
   src/shims/quit.cpp
   src/shims/rapier.cpp
+  src/shims/raycast_shim.cpp
+  src/physics/raycast/triangle_bvh.cpp
+  src/physics/raycast/instance_set.cpp
+  src/physics/raycast/raycast_world.cpp
   src/shims/steam_api.cpp
   src/shims/text_raster.cpp
   src/shims/canvas_blit.cpp
@@ -313,6 +317,11 @@ add_executable(cortex_host_tests
   tests/gc_stats_test.cpp
   tests/pass_timing_stats_test.cpp
   tests/blit_test.cpp
+  tests/raycast_test.cpp
+  tests/raycast_parity_test.cpp
+  src/physics/raycast/triangle_bvh.cpp
+  src/physics/raycast/instance_set.cpp
+  src/physics/raycast/raycast_world.cpp
   src/webgpu/enums.cpp
   src/core/crash_handler.cpp
   src/core/gc_stats.cpp
