@@ -1,7 +1,7 @@
 # PRD 0009 - Backlog de performance do host nativo (modelo Godot)
 
 **Data:** 2026-10-10
-**Status:** **EM ANDAMENTO** (2026-10-22) — B1, B2, B4 e pendências em frentes
+**Status:** **EM ANDAMENTO** (2026-10-23) — B2 virou RenderingServer (ADR-0404, decidido construir); pendências em frentes
 paralelas; ver "Estado em 2026-10-22".
 
 > **Correção:** a primeira versão deste PRD (2026-10-10) descrevia o B2 a partir
@@ -19,7 +19,8 @@ paralelas; ver "Estado em 2026-10-22".
 | Câmera/personagem em C++, SkinnedMesh no export | **feito** | R1 do ciclo, SPEC-0348 |
 | M0 do ADR-0237 (cache de bindings) | **medido: não há ganho** (69% refazem) | ADR-0237 |
 | B1 — zero alocação por quadro (+ medição do B3) | **mergeado** (`34210c53`, SPEC-0357): na main do jogo, −45 a −65 KB/quadro (−4 a −7%), coleta young −1,6 a −2,6 ms/s, sem regressão; teste impede `new Vector3/Matrix4/Box3` em `System.update`; colunas de GC no kit. O jogo ainda aloca ~0,8–1,1 MB/quadro (critério de pronto do PRD não atingido — o resto está fora do engine) | sessão `b1-zero-alloc` |
-| B2 — desenho nativo no passe da cena (ADR-0330 (b)/(c)) | em andamento | sessão `b2-desenho-nativo` |
+| B2 — desenho nativo no passe da cena (ADR-0330 (b)/(c)) | b.1/b.2 na main; b.3 e SPEC-0362 sem ganho (arquivadas) | sessão `b2-desenho-nativo` |
+| B2 — **RenderingServer** (ADR-0404) | **decidido construir** (2026-10-23): teto medido sem sonda no DDD 61 `e2be01c` = render **−8,4 a −11,4 ms** (de 13–17) tirando o laço por objeto do `three`; realista −7 a −10,8 ms descontada a submissão em C++. Primeiro marco (RS1, opacos simples): teto −5,2 a −8,4 ms. Próximo passo: SPEC do RS1 | sessão `rendering-server` |
 | B4 — raycast de colisão em C++ (ADR-0346/SPEC-0347) | **mergeado** (`bc5ecf6f`, 2026-10-23): A/B a pé na main do jogo, 16 rodadas válidas, `world` −0,15 a −0,54 ms (Comercial −1,2 ms no par limpo), personagem e câmera mais baratos nos 4 pontos; pendente o A/B dirigindo (lacuna do Rapier em `BreakableProps.activate`) | sessão `b4-raycast-cpp` |
 | Cauda da física (R4-A) + `cullOutlines` pulando nós escondidos | **`cullOutlines`/espelho mergeado** (`6e74af99`, SPEC-0372): `cull` p99 ~3,8 → ~1,0 ms e espelho −0,36 ms/quadro nos 6 pontos, quadro mediano −0,2 a −1,1 ms, p95 até −2,2 ms. **R4-A descartada com número**: o passo extra de física custa 0,2–0,4 ms; a cauda vem do render perdendo o vsync e coincide com o GC jovem | sessão `cauda-cull-outlines` |
 | B3 — skinning em C++ | **dispensado por medição** (SPEC-0357 §5): ~0,1–0,5 ms com 1–4 personagens com mixer; a multidão é o lote instanciado | — |
@@ -108,11 +109,24 @@ a questão "gráfico construído pelo nativo, não pelo three.js".
 - [x] M1–M4 — MaterialDesc, cache de pipeline, uniformes por objeto, RenderList.
 - [x] M6 — passe de sombra nativo (63 → 75 fps no kart-racer).
 - [x] ADR-0330 (a) — projeção do passe principal em C++.
-- [ ] ADR-0330 (b)/(c) — desenho nativo no passe da cena e recusa honesta do
-      resto (SPEC-0333; ~65 draws inelegíveis no DDD 61).
+- [x] ADR-0330 (b) — b.1 (desenho direto em JS) e b.2 (lote em C++) na main;
+      b.3 (ADR-0363) e SPEC-0362 medidas sem ganho e arquivadas.
+- [x] **Teto medido e decisão (ADR-0404, 2026-10-23):** braço que tira todas as
+      malhas do laço do `three` no passe principal (culling em C++ mantido, sombra
+      mantida, instrumento validado com A/A e contadores): render −8,4 (Setor O),
+      −9,6 (Centro), −9,7 (Comercial), −11,4 ms (Águas Claras). Decisão:
+      **construir pelo caminho da receita** (o `three` compila, o C++ é dono das
+      instâncias e do laço; instância limpa = zero JS por quadro).
+- [ ] **RS1** — instâncias opacas simples (paradas e em movimento) no servidor:
+      render −4 ms ou mais no Setor O e no Comercial, `?parityFreeze` no nível do
+      controle, `?renderServer=0` (SPEC a escrever antes do código).
+- [ ] RS2 — `InstancedMesh` e materiais com nó conferíveis (−1,5 ms adicional).
+- [ ] RS3 — transparentes ordenados em C++ (paridade exata).
+- [ ] RS4 — sombra direcional simples (`SunShadow` do DDD 61) no passe de sombra
+      nativo (alvo: p99 de render).
 - **Decidido** (premissa do ADR-0237/ADR-0330): o Studio continua no three.js;
   só o export usa o caminho nativo, e a paridade é verificada por imagem.
-- **Pronto quando:** critérios do ADR-0330.
+- **Pronto quando:** critérios dos marcos do ADR-0404.
 
 ### B3 — Skinning e animação de ossos em C++
 
@@ -201,6 +215,17 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 - [x] **SPEC-0362 rejeitada por medição** (tirar do `three` os objetos com névoa/material com nó):
       refazê-los custa quase o mesmo que o caminho do `three` e sobe o GC ~10 ms/s. Registro para não
       repetir a tentativa.
+- [ ] **Teto do primeiro marco (modo 3 do braço) medido com 1 réplica só** (Setor O −7,2, Centro
+      −5,9, Comercial −5,2, Águas Claras −8,4 ms): remedir com 2 réplicas intercaladas antes de fixar o
+      critério do RS1. O braço não está na engine: aplicar
+      `D:/jogos/detetive-brasilia/.cortex/rs-ceiling/rs-ceiling-arm.patch` numa worktree descartável
+      (`?rsCeiling=1|2|3`). Origem: ADR-0404.
+- [ ] **O custo por objeto que escapa do servidor é ~100 µs** (transparentes, skinado, material com
+      nó; ~21/quadro no DDD 61 = ~2–3 ms): é o alvo do RS2/RS3 e o motivo de o escape ser por objeto,
+      nunca por quadro. Origem: ADR-0404.
+- [ ] **Detecção de mudança de material sem JS por quadro** (o `three` não tem dirty flag): decidir
+      no RS1 entre ganchos nas propriedades do `refreshUniforms` + `material.version` e conferência por
+      instantâneo (~3–5 µs/objeto, até ~0,6 ms). Origem: ADR-0404.
 - [x] (main `f8ddbf38`) **Instrumento `?parityFreeze` (`src/render/MainPassArm.ts`)**:
       congela o jogo e alterna nativo × `three` quadro a quadro; pegou um erro de cor que a captura entre
       execuções não pegaria. Destrava paridade por imagem no DDD 61 para qualquer desenho nativo futuro.
@@ -221,12 +246,20 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       dentro do render principal, com **outra câmera** (logo outras luzes) — achado da B2 ao depurar a
       b.3 (commits `fd975b5d` e o seguinte; a 1ª leitura dizia "mesma câmera" e foi corrigida). Destrava: descobrir qual sistema do jogo dispara esse render e quanto custa; se for
       um render completo, pode ser uma fatia grande dos ~15 ms de render. Origem: frente B2.
+      Confirmado pelos contadores do braço do ADR-0404: 1 render da cena por quadro + o de sombra
+      (~0,01/quadro parado no Setor O); no RenderingServer ele vira o RS4.
 
 - [ ] **Passe principal do export desenha em 2560 px de largura (o dobro da janela de 1280)** —
       supersampling; custo de GPU. Medir antes de mexer: no ciclo anterior a GPU não era o teto
       (0,3–0,4 ms/quadro), mas o jogo mudou. Origem: frente B2, investigação do render duplo.
 
 ### Limpeza
+
+- [ ] Artefatos do teto do ADR-0404: os 3 exports em `D:/jogos/detetive-brasilia/.cortex/rs-ceiling`
+      (~1,1 GB; guardar `rs-ceiling-arm.patch` e as pastas `runs-*`/`val`) e a worktree do jogo
+      `D:/jogos/detetive-brasilia-rs-e2be01c` — podem servir de base ao A/B do RS1. Na worktree da
+      engine (`rendering-server-2b92ff`) há junctions `native/third_party` e
+      `native/rapier-native/target` → main: desfazer só o link antes de remover.
 
 - [x] (2026-10-23; sonda salva em `.cortex/allocProbe-b1.ts.txt`) Apagar os artefatos de medição (salvando antes o `allocProbe.ts.txt`): `D:/jogos/detetive-brasilia/.cortex/b1-alloc` (~700 MB) e a
       worktree do jogo `D:/jogos/detetive-brasilia-cauda-cull`.
