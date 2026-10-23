@@ -13,7 +13,7 @@ $K/lock.sh run minha-frente -- <cmd...>        # em script: source $K/lock.sh; p
 # export: engine de uma worktree, jogo de outra, sem --debug, sob o lock; save isolado em <id>-bench-<tag>
 $K/export.sh <engineDir> <gameDir> D:/jogos/detetive-brasilia/.cortex/minha-frente/export-a a
 
-# round: uma rodada (query ?cortexDebug=perf&systemProfile=1&spawn=<ponto><extra>), imprime a linha do resumo
+# round: uma rodada (query ?cortexDebug=perf&perf=1&systemProfile=1&spawn=<ponto><extra>; perf=1 liga o profiler do DDD 61 desde o ae5caef), imprime a linha do resumo
 $K/round.sh --exp .../export-a --out .../runs/setorO-1 --spawn setorO [--extra '&k=0'] [--secs 135] [--owner frente]
 $K/round.sh --exp .../export-a --out .../runs/x --query '?cru'      # query inteira à mão
 
