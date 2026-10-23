@@ -75,3 +75,24 @@ RenderList (`_opaqueSort`), `?nativeOpaqueQueue=0`.
   (`currentSets`, `_activePipelines`) são invalidados, como na b.2.
 - Interruptores: `?nativeMainPass=0` (tudo), `?cleanDraw=0`, `?drawBatch=0`,
   `?nativeOpaqueQueue=0` (só esta etapa).
+
+## Armadilha medida: reentrância (derrubava o host no aquecimento)
+
+A primeira versão chamava a atualização do estado de shader e dos grupos
+compartilhados (`nodes.updateBefore`) DENTRO da oferta, na projeção. Um
+`updateBefore` pode renderizar a mesma cena noutro alvo — no DDD 61, um render
+target RGBA8 no aquecimento —, e a projeção aninhada reaproveitava a fila em
+montagem e a mandava ao host: os itens oferecidos no contexto RGBA16F foram
+emitidos no pass RGBA8 (`set_pipeline`: "Render pipeline targets are
+incompatible with render pass", pânico no `wgpuQueueSubmit`). Sondado por
+contexto e pass até isolar. Regras que ficaram:
+
+1. **A oferta não tem efeito colateral**: a atualização dos oferecidos roda no
+   `beginRender` do contexto dono da fila (como a b.1 faz dentro do pass).
+2. **A fila tem dono**: o contexto do render que a montou. Só ele emite
+   (`_renderObjects` da lista dele, `_renderTransparents` e `finishRender` com
+   o contexto dele).
+3. **Aninhado não mexe**: enquanto o render dono está aberto, projeção
+   aninhada não oferece nem troca a fila.
+4. **Fila sem render é descartada** pela projeção seguinte (`compileAsync`
+   projeta sem abrir pass).

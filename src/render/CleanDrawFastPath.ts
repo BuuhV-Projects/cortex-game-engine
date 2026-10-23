@@ -632,10 +632,16 @@ export function installCleanDrawFastPath(
     backend.beginRender = function beginRender(this: unknown, ...args: unknown[]): void {
       lote.flush();
       beginOriginal.apply(this, args);
+      if (args[0] === filaDoQuadro.contexto && lote.queuePending) abrirFila();
     };
     backend.finishRender = function finishRender(this: unknown, ...args: unknown[]): void {
-      // Fila opaca sem item do `three` depois dela (b.3): sai antes de fechar o pass.
-      lote.emitQueued(args[0], true);
+      if (args[0] === filaDoQuadro.contexto) {
+        // Fila opaca sem item do `three` depois dela (b.3): sai antes de fechar o pass.
+        lote.emitQueued(args[0], true);
+        filaDoQuadro.aberta = false;
+        filaDoQuadro.contexto = null;
+        filaDoQuadro.opaque = null;
+      }
       lote.flush();
       finishOriginal.apply(this, args);
     };
@@ -754,8 +760,23 @@ export function installCleanDrawFastPath(
     typeof renderObjectsOriginal === 'function' && typeof renderTransparentsOriginal === 'function'
       ? lote
       : null;
-  /** A lista opaca que recebeu a fila neste quadro, e quantos itens a projeção empurrou nela. */
-  const filaDoQuadro = { opaque: null as RenderItemLike[] | null, empurrados: 0 };
+  /**
+   * A fila do quadro: a lista opaca que a recebeu, quantos itens a projeção
+   * empurrou nela, o contexto DONO (só ele emite) e as gravações oferecidas
+   * (a atualização delas roda no `beginRender` do dono, não na projeção).
+   * `aberta` = o render do dono está entre `beginRender` e `finishRender`: uma
+   * projeção aninhada nele (um `updateBefore` que renderiza a cena noutro alvo)
+   * não oferece nem troca a fila.
+   */
+  const filaDoQuadro = {
+    opaque: null as RenderItemLike[] | null,
+    empurrados: 0,
+    contexto: null as unknown,
+    gravacoes: [] as Gravacao[],
+    aberta: false,
+  };
+  /** Ofertas da projeção em curso (viram `filaDoQuadro.gravacoes` no fim dela). */
+  let ofertas: Gravacao[] = [];
   const ANTES_PADRAO = Object3D.prototype.onBeforeRender;
   const DEPOIS_PADRAO = Object3D.prototype.onAfterRender;
 
@@ -779,7 +800,7 @@ export function installCleanDrawFastPath(
       ? null
       : {
           offerOpaque(object, z, renderList, clippingContext, scene, camera): boolean {
-            if (mainPassArm.three || renderer._opaqueSort) return false;
+            if (mainPassArm.three || renderer._opaqueSort || filaDoQuadro.aberta) return false;
             const o = object as ObjetoDaFila;
             const m = o.material;
             // Só o que o `renderList.push` mandaria para a lista OPACA.
@@ -807,17 +828,33 @@ export function installCleanDrawFastPath(
             ro.drawRange = o.geometry.drawRange;
             ro.group = null;
             if (!pipelines.isReady(ro)) return false;
-            atualizarDoQuadro(ro, g, renderer.info?.calls ?? 0);
             if (!fila.queueOpaque(ro as unknown as BatchRoLike, renderer.info as never, o.renderOrder, z, o.id)) return false;
+            ofertas.push(g);
             stats.queued++;
             return true;
           },
           finishProjection(renderList): void {
-            filaDoQuadro.opaque = renderList.opaque;
+            // Aninhada no render dono: nada foi oferecido, a fila dele fica.
+            if (filaDoQuadro.aberta) return;
+            // Fila anterior que nunca chegou a um render (ex.: `compileAsync`) é descartada.
+            const t = filaDoQuadro.gravacoes;
+            filaDoQuadro.gravacoes = ofertas;
+            ofertas = t;
+            ofertas.length = 0;
+            filaDoQuadro.opaque = filaDoQuadro.gravacoes.length > 0 ? renderList.opaque : null;
             filaDoQuadro.empurrados = renderList.opaque.length;
+            filaDoQuadro.contexto = renderer._currentRenderContext;
             fila.sendQueue();
           },
         };
+
+  /** Render dono aberto: atualiza o que o refresh do three garantiria para os da fila. */
+  function abrirFila(): void {
+    filaDoQuadro.aberta = true;
+    const calls = renderer.info?.calls ?? 0;
+    const gs = filaDoQuadro.gravacoes;
+    for (let i = 0; i < gs.length; i++) atualizarDoQuadro(gs[i]!.ro, gs[i]!, calls);
+  }
 
   if (fila !== null) {
     // Antes de cada item do `three` vindo da projeção, os da fila de chave
@@ -847,7 +884,7 @@ export function installCleanDrawFastPath(
       fila.emitQueued(contexto, true);
     };
     renderer._renderTransparents = function renderTransparents(this: CleanDrawRendererLike, ...args: unknown[]): void {
-      fila.emitQueued(this._currentRenderContext, true);
+      if (this._currentRenderContext === filaDoQuadro.contexto) fila.emitQueued(this._currentRenderContext, true);
       renderTransparentsOriginal!.apply(this, args);
     };
   }
