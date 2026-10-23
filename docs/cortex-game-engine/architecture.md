@@ -1007,6 +1007,19 @@ de mapeamentos do SDL (`native/src/shims/input.cpp`), então não há o que
 remapear. O fix (joystick cru + `SDL_AddGamepadMappingsFromFile`) é trabalho no
 `native/` e ainda não foi feito.
 
+### Autopiloto de medição (`src/input/InputAutopilot.ts`) — SPEC-0414 / ADR-0415
+
+`?autopilot=<perfil>` liga um **controle virtual do Xbox** que troca
+`navigator.getGamepads` por um pad `standard` no slot 0 (o real fica escondido):
+o jogo lê pelo mesmo caminho do controle real (`GamepadManager` → `InputActions`
+ou o pad cru), no Studio e no host nativo. Perfil = dado (`autopilotProfiles.ts`:
+`walk`, `drive`), passos de botões/eixos tocados em ciclo pelo `dt` do jogo,
+avançados no `Game._update` antes do `gamepad.poll()`. Sem a query nada é
+instalado. Grava o evento `autopilot` no perf trace (§8e); o kit
+`native/scripts/perf` (`--autopilot`) reprova rodada em que o jogador não andou.
+⚠️ Perfil é por **botão**, não por ação: se o jogo não responde, também não
+responde ao controle real (achado da regra do controle Xbox).
+
 ## 8e. Perf trace de gameplay (`src/core/PerfTrace.ts`) — SPEC-0198
 
 Com as **métricas ativas no host nativo**, o `Game._tick` amostra a cada 500 ms e
