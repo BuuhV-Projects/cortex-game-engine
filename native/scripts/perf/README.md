@@ -32,8 +32,8 @@ $K/ab.sh --a .../export-a --b .../export-b --out .../runs-ab3 --points "setorO c
 ```
 
 Regras de validade e campos do resumo: `trace-stats.mjs` (constantes no topo) e
-SPEC-0382. Rodada com `--autopilot` é inválida se o engine não ligou o autopiloto ou se o jogador não
-andou; o resumo mostra `>33ms` (fração das amostras acima de 33 ms) e quanto o autopiloto andou.
+SPEC-0382. Rodada com `--autopilot` é inválida se o engine não ligou o autopiloto, se o jogador não
+andou ou se a câmera passou do horizonte (olhar o céu barateia o quadro); o resumo mostra `>33ms` (fração das amostras acima de 33 ms) e quanto o autopiloto andou.
 Fora do kit por enquanto: screenshot.
 
 ## Parar uma fila de rodadas (armadilha)

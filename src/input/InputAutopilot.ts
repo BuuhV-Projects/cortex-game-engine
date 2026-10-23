@@ -24,6 +24,12 @@ import { AUTOPILOT_PROFILES } from './autopilotProfiles.js';
 /** Shortest step: a step shorter than a frame could be skipped and its press never reach the game. */
 export const MIN_STEP_S = 0.1;
 
+/**
+ * Most right-stick-Y seconds a profile may accumulate either way (pitch drift from the game's
+ * default camera). Built-in profiles stay at 0: yaw-only camera turns (SPEC-0414).
+ */
+export const MAX_PITCH_STICK_S = 0.3;
+
 /** Query key that turns the autopilot on. */
 export const AUTOPILOT_QUERY_KEY = 'autopilot';
 

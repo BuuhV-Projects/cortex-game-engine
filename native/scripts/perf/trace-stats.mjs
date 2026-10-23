@@ -22,6 +22,9 @@ export const GC_FROM_MS = 40000;
 export const SLOW_FRAME_MS = 33;
 // An autopilot round whose camera never got this far from its first steady sample did not move.
 export const MIN_AUTOPILOT_TRAVEL_M = 8;
+// cam.dy above this = camera looking above the horizon: almost nothing on screen, the frame gets
+// artificially cheap (the 3rd-person default in DDD 61 is -0.34).
+export const MAX_AUTOPILOT_CAM_DY = 0;
 const KB_PER_MB = 1024;
 const MS_PER_S = 1000;
 const P50 = 0.5;
@@ -76,6 +79,7 @@ export function analyzeRun(dir) {
     ? Math.max(...camRows.map((r) => Math.hypot(r.cam.x - camRows[0].cam.x, r.cam.z - camRows[0].cam.z)))
     : 0;
   const autopilotWanted = /[?&]autopilot=/.test(meta);
+  const maxCamDy = camRows.length ? Math.max(...camRows.map((r) => r.cam.dy)) : NaN;
 
   let reason = null;
   if (traceText === null) reason = 'sem perf-trace.jsonl (rodada interrompida ou em andamento)';
@@ -90,6 +94,8 @@ export function analyzeRun(dir) {
   else if (autopilotWanted && !autopilot) reason = 'query pede autopiloto, mas o trace não tem o evento autopilot (engine sem SPEC-0414?)';
   else if (autopilotWanted && travel < MIN_AUTOPILOT_TRAVEL_M) {
     reason = `autopiloto não andou: a câmera se afastou ${fmt(travel)} m (mínimo ${MIN_AUTOPILOT_TRAVEL_M})`;
+  } else if (autopilotWanted && maxCamDy > MAX_AUTOPILOT_CAM_DY) {
+    reason = `câmera acima do horizonte (cam.dy até ${fmt(maxCamDy, 2)}): olhando o céu, o quadro fica barato`;
   }
 
   return {

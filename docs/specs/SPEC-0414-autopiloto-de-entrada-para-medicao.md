@@ -44,6 +44,10 @@ ciclo:
 - `buttons`: nomes do layout do Xbox (`A B X Y LB RB LT RT BACK START L3 R3 UP DOWN LEFT RIGHT`),
   segurados durante o passo (valor 1).
 - `axes`: `leftX leftY rightX rightY` em -1..1 (convenção W3C: `leftY` negativo = para frente).
+- **Câmera: giro só horizontal** (`rightX`, yaw). A inclinação fica na padrão da câmera de 3ª pessoa,
+  olhando a rua: olhando para cima quase nada é desenhado, o quadro fica artificialmente barato e
+  esconde as quedas. `rightY` acumulado (s de stick, para qualquer lado) nunca passa de 0,3 em ponto
+  nenhum do roteiro (`MAX_PITCH_STICK_S`, travado por teste); os perfis embutidos usam 0.
 - Passo sem botão nem eixo = pad solto. Dois apertos seguidos do mesmo botão precisam de um passo
   solto entre eles (senão viram um aperto só).
 
@@ -53,7 +57,7 @@ Perfil inválido (lista vazia, duração fora do limite, botão ou eixo desconhe
 Perfis embutidos:
 
 - **`walk`** (a pé, ~36 s por ciclo): anda e volta, gira a câmera, pula 3×, mira e atira uma rajada,
-  corre e volta, ziguezague e volta, gira a câmera de volta subindo e descendo. Cada deslocamento (e a inclinação da câmera) tem o seu oposto,
+  corre e volta, ziguezague e volta, gira a câmera de volta. Cada deslocamento tem o seu oposto,
   então o jogador fica num laço perto do spawn e o conteúdo da tela não muda de bairro entre os
   braços de um A/B.
 - **`drive`** (use com o carro do jogo, no DDD 61 `&drive=1`): acelera, curvas para os dois lados,
@@ -76,7 +80,8 @@ além de número).
 - `round.sh --autopilot <perfil>` e `ab.sh --autopilot <perfil>` acrescentam `&autopilot=<perfil>`.
 - `trace-stats.mjs`: rodada cuja query pede autopiloto é **inválida** se o trace não tiver o evento
   (engine sem esta spec) ou se a câmera não se afastou ao menos 8 m do ponto inicial depois do
-  aquecimento ("autopiloto não andou"). O resumo ganha `>33ms` (porcentagem das amostras com quadro
+  aquecimento ("autopiloto não andou"), ou se alguma amostra tiver `cam.dy > 0` (câmera acima do
+  horizonte; a padrão do DDD 61 é -0,34). O resumo ganha `>33ms` (porcentagem das amostras com quadro
   acima de 33 ms) e `andou` (afastamento máximo da câmera, m); o A/B ganha `frameMs p99` e `>33ms %`.
 
 ## Consequências
@@ -86,7 +91,7 @@ além de número).
   perfil (é dado, basta acrescentar ao JSON).
 - Validação (2026-10-23): a 1ª versão do `walk` andava 3 s/2 s por perna (só ~5 m no DDD 61, o
   kit reprovou) e terminava o giro com a câmera inclinada para cima, olhando o céu pelo resto da
-  rodada (render barato = medição falsa). Corrigido: pernas de 5 s/4 s e inclinação líquida zero,
-  travada por teste.
+  rodada (render barato = medição falsa). Corrigido: pernas de 5 s/4 s e giro só horizontal; as
+  rodadas com a câmera no céu foram descartadas.
 - O laço "volta ao spawn" é aproximado: colisões e aceleração fazem o jogador derivar alguns metros
   por ciclo.

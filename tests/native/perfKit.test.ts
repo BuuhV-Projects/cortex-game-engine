@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS, GC_FROM_MS, MIN_AUTOPILOT_TRAVEL_M, SLOW_FRAME_MS } from '../../native/scripts/perf/trace-stats.mjs';
+import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS, GC_FROM_MS, MIN_AUTOPILOT_TRAVEL_M, SLOW_FRAME_MS, MAX_AUTOPILOT_CAM_DY } from '../../native/scripts/perf/trace-stats.mjs';
 
 const SAMPLE_MS = 500;
 const FRAME_WINDOWS = 8;
@@ -22,7 +22,7 @@ afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 function makeRun(
   name: string,
   opts: { rows?: number; world?: number; frameMs?: number; presented?: number; sections?: boolean; trace?: string | null; gc?: boolean;
-    meta?: string; autopilot?: boolean; camStep?: number; frameMsAt?: (i: number) => number } = {},
+    meta?: string; autopilot?: boolean; camStep?: number; camDy?: number; frameMsAt?: (i: number) => number } = {},
 ) {
   const { rows = MIN_ROWS * 2, world = 2, frameMs = 16, presented = 300, sections = true } = opts;
   const dir = path.join(root, name);
@@ -34,7 +34,7 @@ function makeRun(
     for (let i = 0; i < rows; i++) {
       const row: Record<string, unknown> = {
         t: WARMUP_MS + i * SAMPLE_MS, frameMs: opts.frameMsAt?.(i) ?? frameMs, cpu: { world: 9, render: 9 }, draws: 150,
-        cam: { x: i * (opts.camStep ?? 0), y: 1, z: 0, dx: 0, dy: 0, dz: 1 },
+        cam: { x: i * (opts.camStep ?? 0), y: 1, z: 0, dx: 0, dy: opts.camDy ?? -0.34, dz: 0.94 },
       };
       if (opts.gc) {
         // known answer: 0.5 MB, 1 young collection of 3 ms per sample; one old collection of 200 ms midway
@@ -88,6 +88,8 @@ describe('trace-stats validate', () => {
     const moving = analyzeRun(makeRun('ap-moving', { meta, autopilot: true, camStep: MIN_AUTOPILOT_TRAVEL_M / MIN_ROWS }));
     expect(moving.valid).toBe(true);
     expect(summaryLine(moving)).toMatch(/autopiloto walk andou \d+ m/);
+    const sky = analyzeRun(makeRun('ap-sky', { meta, autopilot: true, camStep: 1, camDy: MAX_AUTOPILOT_CAM_DY + 0.5 }));
+    expect(sky.reason).toMatch(/acima do horizonte/);
     // without autopilot in the query a round does not have to move
     expect(analyzeRun(makeRun('parked', { meta: 'query=?spawn=setorO' })).valid).toBe(true);
   });

@@ -9,6 +9,7 @@ import {
   InputAutopilot,
   autopilotFromQuery,
   validateAutopilotProfile,
+  MAX_PITCH_STICK_S,
   type AutopilotProfile,
 } from '../../src/input/InputAutopilot.js';
 import { GamepadManager } from '../../src/core/GamepadManager.js';
@@ -69,18 +70,26 @@ describe('InputAutopilot', () => {
     expect(() => autopilotFromQuery('?autopilot=nope')).toThrow(/perfil desconhecido 'nope'/);
   });
 
-  it('built-in profiles are valid and walk returns to where it started, camera level', () => {
+  it('built-in profiles are valid and walk returns to where it started', () => {
     for (const profile of Object.values(BUILTIN_AUTOPILOT_PROFILES)) validateAutopilotProfile(profile);
     // every left-stick displacement of `walk` has its opposite: net zero over a loop
-    const net = { leftX: 0, leftY: 0, rightY: 0 };
+    const net = { leftX: 0, leftY: 0 };
     for (const step of BUILTIN_AUTOPILOT_PROFILES.walk!.steps) {
       net.leftX += (step.axes?.leftX ?? 0) * step.s;
       net.leftY += (step.axes?.leftY ?? 0) * step.s;
-      net.rightY += (step.axes?.rightY ?? 0) * step.s;
     }
     expect(net.leftX).toBeCloseTo(0);
     expect(net.leftY).toBeCloseTo(0);
-    expect(net.rightY).toBeCloseTo(0); // camera pitch back level: never left staring at the sky
+  });
+
+  it('keeps the camera pitch near the game default during the whole script (never at the sky)', () => {
+    for (const [name, profile] of Object.entries(BUILTIN_AUTOPILOT_PROFILES)) {
+      let pitch = 0; // accumulated right-stick-Y seconds, sampled after every step
+      for (const step of profile.steps) {
+        pitch += (step.axes?.rightY ?? 0) * step.s;
+        expect(Math.abs(pitch), `${name}: pitch drift`).toBeLessThanOrEqual(MAX_PITCH_STICK_S);
+      }
+    }
   });
 
   it('is off without the query', () => {

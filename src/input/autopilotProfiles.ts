@@ -1,7 +1,8 @@
 /**
  * Built-in autopilot profiles (SPEC-0414): plain data, one loop of Xbox inputs each.
- * `walk` keeps every move (and camera pitch) paired with its opposite so the player loops near
- * the spawn and the camera never ends up staring at the sky.
+ * `walk` keeps every move paired with its opposite so the player loops near the spawn. Camera turns
+ * are yaw only (right stick X): pitch stays at the game's default, looking at the street — a camera
+ * pointed at the sky renders almost nothing and would hide the drops being measured.
  */
 import type { AutopilotProfile } from './InputAutopilot.js';
 
@@ -30,8 +31,7 @@ export const AUTOPILOT_PROFILES: Record<string, AutopilotProfile> = {
       { "s": 0.8, "axes": { "leftY": 1, "leftX": -1 } },
       { "s": 0.8, "axes": { "leftY": 1, "leftX": 1 } },
       { "s": 0.8, "axes": { "leftY": 1, "leftX": -1 } },
-      { "s": 1.2, "axes": { "rightX": -1, "rightY": -0.5 } },
-      { "s": 1.2, "axes": { "rightX": -1, "rightY": 0.5 } },
+      { "s": 2.4, "axes": { "rightX": -1 } },
       { "s": 1 }
     ]
   },
