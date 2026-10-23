@@ -20,7 +20,7 @@ paralelas; ver "Estado em 2026-10-22".
 | M0 do ADR-0237 (cache de bindings) | **medido: não há ganho** (69% refazem) | ADR-0237 |
 | B1 — zero alocação por quadro (+ medição do B3) | em andamento | sessão `b1-zero-alloc` |
 | B2 — desenho nativo no passe da cena (ADR-0330 (b)/(c)) | em andamento | sessão `b2-desenho-nativo` |
-| B4 — raycast de colisão em C++ (ADR-0346/SPEC-0347) | em andamento (porte da worktree R4-B) | sessão `b4-raycast-cpp` |
+| B4 — raycast de colisão em C++ (ADR-0346/SPEC-0347) | **mergeado** (`bc5ecf6f`, 2026-10-23): A/B a pé na main do jogo, 16 rodadas válidas, `world` −0,15 a −0,54 ms (Comercial −1,2 ms no par limpo), personagem e câmera mais baratos nos 4 pontos; pendente o A/B dirigindo (lacuna do Rapier em `BreakableProps.activate`) | sessão `b4-raycast-cpp` |
 | Cauda da física (R4-A) + `cullOutlines` pulando nós escondidos | em andamento | sessão `cauda-cull-outlines` |
 | B3 — skinning em C++ | **aguarda medição do B1** (NPCs já cozidos em lote instanciado) | — |
 | B5 — threads no C++ | depende do B2 | — |
