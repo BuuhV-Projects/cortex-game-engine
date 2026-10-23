@@ -209,12 +209,12 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 
 ### Limpeza
 
-- [ ] Apagar os artefatos de medição (salvando antes o `allocProbe.ts.txt`): `D:/jogos/detetive-brasilia/.cortex/b1-alloc` (~700 MB) e a
+- [x] (2026-10-23; sonda salva em `.cortex/allocProbe-b1.ts.txt`) Apagar os artefatos de medição (salvando antes o `allocProbe.ts.txt`): `D:/jogos/detetive-brasilia/.cortex/b1-alloc` (~700 MB) e a
       worktree do jogo `D:/jogos/detetive-brasilia-cauda-cull`.
 - [ ] Remover as worktrees antigas da R4 na engine (`.claude/worktrees/r4-a-cauda`,
       `r4-b-raycast`, `r4-d-congelamento`): a R4-B foi portada (B4) e a R4-A descartada com número.
-- [ ] Arquivar as sessões concluídas (B4, B1, main do DDD 61 no export, cauda-cull-outlines) e
-      limpar as worktrees delas — aguarda o "sim" do usuário.
+- [x] (2026-10-23) Arquivar as sessões concluídas (B4, B1, main do DDD 61 no export, cauda-cull-outlines),
+      remover as worktrees delas (engine e jogo) e apagar as branches.
 
 ## Fora do escopo
 
