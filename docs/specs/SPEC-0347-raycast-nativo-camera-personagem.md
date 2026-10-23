@@ -109,6 +109,8 @@ válidas. ms por quadro, média das 2 réplicas (t ≥ 30 s):
   e NPCs do momento, ±10–13 draws entre braços) bem mais do que o ganho do raycast.
 - Paridade na cena real (`?nativeRaycastCheck=1`, comercial, jogo `dff1386`): 9.000
   consultas, 5.707 com acerto, 0 divergências; 80 % das candidatas no C++.
-- **Pendente:** o ponto dirigindo (`helio&drive=1`) no `e2be01c` não roda no export — o
-  tick quebra no `BreakableProps.activate` do jogo (API do Rapier que o host ainda não
-  tem). Refazer esse A/B quando a correção do Rapier entrar.
+- **Dirigindo** (`helio&drive=1`, com a correção do Rapier da SPEC-0394; piloto
+  automático pela Hélio Prates, 319–396 m por rodada com t ≥ 30 s; 150 s, 2 réplicas,
+  4 rodadas válidas): world 3,74 / 4,12, personagem 1,79 / 2,01, câmera 0,66 / 0,94
+  (A / B). O `frameMs` bate no teto de 100 ms em 2–6 amostras por rodada nos dois
+  braços (carga da cidade ao dirigir) e não entra na comparação.
