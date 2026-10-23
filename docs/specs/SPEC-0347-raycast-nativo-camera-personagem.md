@@ -90,4 +90,22 @@ a candidata antes da ponte e instâncias re-enviadas quando mudam.
 
 ## Medição
 
-(preenchida após o A/B no export release)
+Export release do DDD 61 na main do jogo (`e2be01c`), engine desta branch (com a main
+`7fb9421e`), kit SPEC-0382: mesma build, braço A = nativo ligado, B = `&nativeRaycast=0`,
+`&perf=1` nos dois, 135 s por rodada, 2 réplicas intercaladas (AB, depois BA), 16 rodadas
+válidas. ms por quadro, média das 2 réplicas (t ≥ 30 s):
+
+| ponto | world A / B | personagem A / B | câmera 3ª pessoa A / B |
+| --- | --- | --- | --- |
+| setorO | 3,02 / 3,56 | 1,39 / 1,65 | 0,43 / 0,76 |
+| centro | 3,39 / 3,91 | 1,43 / 1,55 | 0,53 / 0,81 |
+| comercial | 3,52 / 5,45 | 1,45 / 2,32 | 0,81 / 1,90 |
+| ac | 3,41 / 3,56 | 1,28 / 1,39 | 0,51 / 0,61 |
+
+- O `world` cai 0,15–0,54 ms (comercial 1,2 ms no par limpo; o 1º par do comercial
+  pegou a máquina carregada — o `render`, que o raycast não toca, subiu 5 ms junto).
+  Personagem e câmera ficam mais baratos nos 4 pontos.
+- O quadro (`frameMs`) não serve de juiz aqui: o `render` varia com os `draws` (trânsito
+  e NPCs do momento, ±10–13 draws entre braços) bem mais do que o ganho do raycast.
+- Paridade na cena real (`?nativeRaycastCheck=1`, comercial, jogo `dff1386`): 9.000
+  consultas, 5.707 com acerto, 0 divergências; 80 % das candidatas no C++.
