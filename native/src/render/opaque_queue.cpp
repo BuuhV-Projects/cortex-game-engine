@@ -24,15 +24,9 @@ void OpaqueQueue::set(const DrawCommand* commands, const SortKey* keys, size_t c
   next_ = 0;
 }
 
-QueueSpan OpaqueQueue::takeUntil(const SortKey& limit) {
+QueueSpan OpaqueQueue::takeNext(size_t count) {
   const size_t start = next_;
-  while (next_ < sorted_.size() && keyLess(keys_[next_], limit)) next_++;
-  return {sorted_.data() + start, next_ - start};
-}
-
-QueueSpan OpaqueQueue::takeAll() {
-  const size_t start = next_;
-  next_ = sorted_.size();
+  next_ = start + count < sorted_.size() ? start + count : sorted_.size();
   return {sorted_.data() + start, next_ - start};
 }
 

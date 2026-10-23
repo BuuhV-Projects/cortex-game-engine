@@ -208,10 +208,9 @@ describe('DrawBatch — fila opaca nativa (ADR-0363)', () => {
         ks.push(Array.from(keys.subarray(i * 3, i * 3 + 3)));
       }
       fila.push({ cmds, keys: ks });
-      return count;
+      return count; // uma chave só: já está ordenada
     };
-    p.bridge.emitUntil = (pass, ro, z, id) => (emissoes.push(`ate ${pass} ${ro}/${z}/${id}`), 1);
-    p.bridge.emitAll = (pass) => (emissoes.push(`tudo ${pass}`), 1);
+    p.bridge.emitNext = (pass, n) => (emissoes.push(`proximos ${pass} ${n}`), n);
     return { ...p, fila, emissoes };
   }
 
@@ -229,8 +228,11 @@ describe('DrawBatch — fila opaca nativa (ADR-0363)', () => {
     expect(fila).toEqual([{ cmds: [[0, 36, 1, 0]], keys: [[0, 0.5, 42]] }]);
     expect(lote.queuePending).toBe(true);
     ativos.set('PASS', 'pipeline-do-three');
+    lote.emitQueued(context, false, 0, 0.4, 7); // item do three ANTES do da fila: nada cruza a ponte
+    expect(emissoes).toEqual([]);
+    expect(ativos.has('PASS')).toBe(true);
     lote.emitQueued(context, false, 0, 0.9, 7);
-    expect(emissoes).toEqual(['ate PASS 0/0.9/7']);
+    expect(emissoes).toEqual(['proximos PASS 1']);
     expect(get(context)['currentSets']).toEqual({ attributes: {}, bindingGroups: [], pipeline: null, index: null });
     expect(ativos.has('PASS')).toBe(false);
     expect(lote.queuePending).toBe(false);

@@ -35,9 +35,10 @@ export interface DrawBatchBridge {
   release(id: number): void;
   flush(pass: unknown, commands: Int32Array, count: number): number;
   /** Fila opaca nativa (ADR-0363); ausentes em host antigo. */
+  /** Ordena a fila e devolve as chaves ORDENADAS no próprio `keys`. */
   queue?(commands: Int32Array, keys: Float64Array, count: number): number;
-  emitUntil?(pass: unknown, renderOrder: number, z: number, id: number): number;
-  emitAll?(pass: unknown): number;
+  /** Emite os próximos `count` da fila. */
+  emitNext?(pass: unknown, count: number): number;
 }
 
 export function drawBatchBridge(): DrawBatchBridge | undefined {
@@ -124,8 +125,9 @@ export class DrawBatch {
   private _filaCmds = new Int32Array(INITIAL_COMMANDS * COMMAND_INTS);
   private _filaKeys = new Float64Array(INITIAL_COMMANDS * SORT_KEY_DOUBLES);
   private _filaCount = 0;
-  /** Desenhos da fila ainda no host (não emitidos). */
-  private _filaPendente = 0;
+  /** Itens na fila do host e quantos já saíram (o cursor sobre as chaves ordenadas). */
+  private _filaTotal = 0;
+  private _filaCursor = 0;
   private readonly _conferir = queryFlagRequested(CHECK_QUERY_KEY, false);
   private readonly _relatados = new WeakSet<object>();
 
@@ -198,7 +200,7 @@ export class DrawBatch {
 
   /** O host suporta a fila opaca nativa (ADR-0363)? */
   get queueSupported(): boolean {
-    return typeof this._bridge.queue === 'function';
+    return typeof this._bridge.queue === 'function' && typeof this._bridge.emitNext === 'function';
   }
 
   /**
@@ -243,38 +245,56 @@ export class DrawBatch {
 
   /** A fila do quadro não vale (ambiente mudou): nada dela é emitido. */
   dropQueue(): void {
-    this._filaPendente = 0;
+    this._filaTotal = 0;
+    this._filaCursor = 0;
   }
 
-  /** Fim da projeção: a fila do quadro vai ao host (que ordena). */
+  /** Fim da projeção: a fila do quadro vai ao host, que ordena e devolve as chaves ordenadas. */
   sendQueue(): void {
     const n = this._filaCount;
     this._filaCount = 0;
-    this._filaPendente = n > 0 ? this._bridge.queue!(this._filaCmds, this._filaKeys, n) : 0;
-    if (this._filaPendente < 0) {
+    this._filaCursor = 0;
+    this._filaTotal = n > 0 ? this._bridge.queue!(this._filaCmds, this._filaKeys, n) : 0;
+    if (this._filaTotal < 0) {
       debug('perf', `[drawBatch] fila opaca recusada (${n})`);
-      this._filaPendente = 0;
+      this._filaTotal = 0;
     }
   }
 
   /** Há desenhos da fila ainda por emitir neste quadro. */
   get queuePending(): boolean {
-    return this._filaPendente > 0;
+    return this._filaCursor < this._filaTotal;
   }
 
   /**
    * Emite os da fila com chave menor que a dada (`all`: todos), no pass do
-   * contexto — depois do lote da b.2, que é anterior na ordem da lista.
+   * contexto — depois do lote da b.2, que é anterior na ordem da lista. A
+   * comparação é LOCAL (chaves ordenadas que o host devolveu): só cruza a
+   * ponte, e só despacha o lote, quando há o que emitir.
    */
   emitQueued(context: unknown, all: boolean, renderOrder = 0, z = 0, id = 0): void {
-    if (this._filaPendente === 0) return;
+    const inicio = this._filaCursor;
+    let fim = inicio;
+    if (all) {
+      fim = this._filaTotal;
+    } else {
+      const k = this._filaKeys;
+      while (fim < this._filaTotal) {
+        const b = fim * SORT_KEY_DOUBLES;
+        // `painterSortStable`: renderOrder, z, id.
+        const menor = k[b]! < renderOrder || (k[b] === renderOrder && (k[b + 1]! < z || (k[b + 1] === z && k[b + 2]! < id)));
+        if (!menor) break;
+        fim++;
+      }
+    }
+    if (fim === inicio) return;
     this.flush();
     const dados = this._backend.get(context);
     const pass = dados['currentPass'];
     if (!pass) return;
-    const n = all ? this._bridge.emitAll!(pass) : this._bridge.emitUntil!(pass, renderOrder, z, id);
+    this._filaCursor = fim;
+    const n = this._bridge.emitNext!(pass, fim - inicio);
     if (n <= 0) return;
-    this._filaPendente = all ? 0 : Math.max(0, this._filaPendente - n);
     this.stats.queued += n;
     this._invalidar(dados, pass);
   }

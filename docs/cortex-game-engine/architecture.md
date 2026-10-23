@@ -1208,7 +1208,8 @@ segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
   com a chave de sort do `three` (`renderOrder`, `z`, `id`), ordenada em C++
   (`native/src/render/opaque_queue.*`). O `_renderObjects` da lista opaca
   intercala: antes de cada item do `three` vindo da projeção, o host emite os
-  da fila de chave menor (`emitUntil`); no fim, o resto. O fundo (`unshift`
+  da fila de chave menor (`emitNext`, comparando em JS as chaves que o host
+  devolve ordenadas); no fim, o resto. O fundo (`unshift`
   depois do sort) vai primeiro. `_renderTransparents` e `finishRender`
   emitem o que sobrar. Recusa por objeto: transparente, material em array,
   `occlusionTest`, `onBeforeRender`/`onAfterRender` próprios, objeto que se

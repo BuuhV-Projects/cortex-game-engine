@@ -357,11 +357,14 @@ Desenho da decisão no ADR-0363. Comportamento:
   (`__cortexDrawBatch.queue`), que ordena estável por chave.
 - `_renderObjects` embrulhado: só para a lista `opaque` da RenderList que
   montou a fila. Antes de cada item cujo objeto foi projetado neste quadro,
-  `emitUntil(renderOrder, z, id)`; no fim, `emitAll`. `_renderTransparents` e
+  os nativos de chave menor (comparação em JS sobre as chaves que o host
+  devolve ordenadas; `emitNext(n)` só quando há o que emitir); no fim, o
+  resto. `_renderTransparents` e
   `finishRender` também emitem o que restar antes de seguir.
 - C++: `native/src/render/opaque_queue.*` (pura: ordenação estável pela regra
   do `painterSortStable` e o corte "até a chave"), reaproveitando o `replay`
-  da b.2; ponte em `draw_batch_shim` (`queue`, `emitUntil`, `emitAll`).
+  da b.2; ponte em `draw_batch_shim` (`queue`, que devolve as chaves
+  ordenadas, e `emitNext`).
 - Interruptor `?nativeOpaqueQueue=0|1` (padrão ligado no host).
 
 Critério de aceite: render −3 ms ou mais no setorO e no comercial (A/B

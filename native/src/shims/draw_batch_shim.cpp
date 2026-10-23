@@ -21,8 +21,8 @@ constexpr size_t kArgsFlush = 3;
 constexpr double kFlushBadArgs = -1;
 /** Argumentos de `queue`: comandos, chaves, quantos. */
 constexpr size_t kArgsQueue = 3;
-/** Argumentos de `emitUntil`: pass encoder, renderOrder, z, id. */
-constexpr size_t kArgsEmitUntil = 4;
+/** Argumentos de `emitNext`: pass encoder, quantos. */
+constexpr size_t kArgsEmitNext = 2;
 
 render::RecipeStore& store() {
   static render::RecipeStore instance;
@@ -210,33 +210,24 @@ napi_value jsQueue(napi_env env, napi_callback_info info) {
   static_assert(sizeof(render::SortKey) == sizeof(double) * render::kSortKeyDoubles,
                 "SortKey tem de ter o layout do Float64Array do JS");
   opaqueQueue().set(cmds, keys, quantos);
+  // As chaves voltam ORDENADAS no mesmo buffer: o JS intercala sem cruzar a
+  // ponte a cada item do `three` (só por sequência a emitir).
+  auto* saida = const_cast<render::SortKey*>(keys);
+  const render::SortKey* ordenadas = opaqueQueue().sortedKeys();
+  for (uint32_t i = 0; i < quantos; i++) saida[i] = ordenadas[i];
   return number(env, quantos);
 }
 
-/** `emitUntil(passEncoder, renderOrder, z, id)` → desenhos emitidos (os de chave menor). */
-napi_value jsEmitUntil(napi_env env, napi_callback_info info) {
+/** `emitNext(passEncoder, quantos)` → desenhos emitidos (os próximos da fila). */
+napi_value jsEmitNext(napi_env env, napi_callback_info info) {
   webgpu::NapiTimer cronometro;
   (void)cronometro;
-  size_t argc = kArgsEmitUntil;
-  napi_value args[kArgsEmitUntil];
+  size_t argc = kArgsEmitNext;
+  napi_value args[kArgsEmitNext];
   napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  if (argc < kArgsEmitUntil) return number(env, kFlushBadArgs);
-  render::SortKey limite;
-  napi_get_value_double(env, args[1], &limite.renderOrder);
-  napi_get_value_double(env, args[2], &limite.z);
-  napi_get_value_double(env, args[3], &limite.id);
-  return emitSpan(env, args[0], opaqueQueue().takeUntil(limite));
-}
-
-/** `emitAll(passEncoder)` → desenhos emitidos (o resto da fila). */
-napi_value jsEmitAll(napi_env env, napi_callback_info info) {
-  webgpu::NapiTimer cronometro;
-  (void)cronometro;
-  size_t argc = 1;
-  napi_value args[1];
-  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  if (argc < 1) return number(env, kFlushBadArgs);
-  return emitSpan(env, args[0], opaqueQueue().takeAll());
+  uint32_t quantos = 0;
+  if (argc < kArgsEmitNext || napi_get_value_uint32(env, args[1], &quantos) != napi_ok) return number(env, kFlushBadArgs);
+  return emitSpan(env, args[0], opaqueQueue().takeNext(quantos));
 }
 
 }  // namespace
@@ -249,8 +240,7 @@ void registerDrawBatch(napi_env env) {
   njs::setMethod(env, api, "release", jsRelease);
   njs::setMethod(env, api, "flush", jsFlush);
   njs::setMethod(env, api, "queue", jsQueue);
-  njs::setMethod(env, api, "emitUntil", jsEmitUntil);
-  njs::setMethod(env, api, "emitAll", jsEmitAll);
+  njs::setMethod(env, api, "emitNext", jsEmitNext);
   napi_set_named_property(env, global, "__cortexDrawBatch", api);
 }
 

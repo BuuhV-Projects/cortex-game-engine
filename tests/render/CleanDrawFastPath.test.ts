@@ -15,6 +15,13 @@ import { mainPassArm } from '../../src/render/MainPassArm.js';
 
 const OBJECT = 'object';
 
+/** O host ordena a fila e devolve as chaves ordenadas no próprio buffer (ADR-0363). */
+const ordenarChaves = (k: Float64Array, n: number) => {
+  const ks = Array.from({ length: n }, (_, i) => [k[i * 3]!, k[i * 3 + 1]!, k[i * 3 + 2]!]);
+  ks.sort((a, b) => a[0]! - b[0]! || a[1]! - b[1]! || a[2]! - b[2]!);
+  ks.forEach((c, i) => k.set(c, i * 3));
+};
+
 /** Nó falso com o tipo de update pedido. */
 function no(extra: Record<string, unknown>, tipo = OBJECT) {
   return { getUpdateType: () => tipo, ...extra };
@@ -367,10 +374,10 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
       flush: (_p: unknown, _c: Int32Array, n: number) => n,
       queue: (c: Int32Array, k: Float64Array, n: number) => {
         eventos.push(`fila(${Array.from({ length: n }, (_, i) => `${c[i * 4]}@${k[i * 3 + 1]}`).join(',')})`);
+        ordenarChaves(k, n);
         return n;
       },
-      emitUntil: (_p: unknown, _ro: number, z: number) => (eventos.push(`ate(${z})`), 1),
-      emitAll: () => (eventos.push('resto'), 0),
+      emitNext: (_p: unknown, n: number) => (eventos.push(`emite(${n})`), n),
     };
     const fazer = (nome: string, objId: number) => {
       const nodes = [no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['color'], material: null })];
@@ -454,7 +461,7 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     lista.opaque.unshift(item('fundo', 0, 99)); // `_background.update`, depois do sort
     renderer._renderObjects!(lista.opaque, 'cam', 'cena', LUZES, null);
     renderer._renderTransparents!();
-    expect(eventos).toEqual(['fila(0@0.5)', 'three(fundo)', 'ate(0.9)', 'three(perto)', 'transparentes']);
+    expect(eventos).toEqual(['fila(0@0.5)', 'three(fundo)', 'emite(1)', 'three(perto)', 'transparentes']);
     expect(handle.stats.queued).toBe(1);
   });
 
@@ -474,10 +481,10 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     fila.finishProjection(aninhada, 'cena'); // não troca a fila do dono
     renderer._renderTransparents!(); // outro contexto: não emite
     renderer.backend!.finishRender!(outro);
-    expect(eventos.filter((e) => e.startsWith('ate') || e === 'resto')).toEqual([]);
+    expect(eventos.filter((e) => e.startsWith('emite'))).toEqual([]);
     renderer._currentRenderContext = contexto;
     renderer._renderObjects!(lista.opaque, 'cam', 'cena', LUZES, null);
-    expect(eventos.slice(-2)).toEqual(['ate(0.9)', 'three(perto)']);
+    expect(eventos.slice(-2)).toEqual(['emite(1)', 'three(perto)']);
     renderer.backend!.finishRender!(contexto);
 
     // Projeção sem render (ex.: `compileAsync`): a próxima descarta a fila dela.
@@ -518,7 +525,7 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     renderer._renderObjects!(lista.opaque, 'cam', 'cena', LUZES, null);
     renderer.backend!.finishRender!(contexto);
     // A fila saiu UMA vez, no dono (antes do 1º item de chave maior que a dela).
-    expect(eventos.filter((e) => e.startsWith('ate') || e === 'resto')).toEqual(['ate(0.9)']);
+    expect(eventos.filter((e) => e.startsWith('emite'))).toEqual(['emite(1)']);
     // O laço de fora percorre os 2 itens da ENTRADA (como o `three`), não o array reenchido.
     expect(eventos.filter((e) => e.startsWith('three(')).length).toBe(2 + 3);
   });
@@ -536,7 +543,7 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     renderer._renderObjects!(lista.opaque, 'cam', 'cena', LUZES, null);
     renderer.backend!.finishRender!(contexto);
     // Nada pela ponte; o objeto da fila foi desenhado pelo three ANTES do de chave maior.
-    expect(eventos.filter((e) => e.startsWith('ate') || e === 'resto')).toEqual([]);
+    expect(eventos.filter((e) => e.startsWith('emite'))).toEqual([]);
     expect(eventos.slice(-2)).toEqual(['three(objeto)', 'three(perto)']);
   });
 
@@ -562,7 +569,7 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
         };
         return { renderer: r };
       })();
-      const ponte = { record: () => 0, release: () => undefined, flush: () => 0, queue: () => 0, emitUntil: () => 0, emitAll: () => 0 };
+      const ponte = { record: () => 0, release: () => undefined, flush: () => 0, queue: () => 0, emitNext: () => 0 };
       const handle = installCleanDrawFastPath(renderer, ponte)!;
       expect(handle.queue!.offerOpaque({ material: {} }, 0, { lightsNode: null, opaque: [] }, null, null, null)).toBe(false);
     } finally {

@@ -38,7 +38,8 @@ Os desenhos **opacos, limpos e parados** saem da RenderList do `three`:
    de forma estável em C++ pela mesma regra do `painterSortStable`.
 3. **A emissão é intercalada** no `_renderObjects` da lista opaca dessa
    RenderList: antes de cada item do `three` que veio da projeção, o host
-   emite (`emitUntil`) os nativos de chave menor; no fim da lista (ou antes
+   emite (`emitNext`, comparando localmente as chaves ordenadas que o host
+   devolveu) os nativos de chave menor; no fim da lista (ou antes
    dos transparentes, ou no `finishRender` se não houver opaco em JS), emite o
    resto. O fundo (`unshift` depois do sort, não é nó da cena) nunca dispara
    emissão antes dele — vai primeiro, como no `three`.
@@ -116,3 +117,10 @@ contexto e pass até isolar. Regras que ficaram:
    aninhado do DDD 61 usa outra câmera (outro `lightsNode`) e sobrescrevia o
    memo único de ambiente todo quadro — a oferta recusava tudo (33 ofertas
    numa rodada inteira, 0 emitidos).
+8. **Comparar a chave em JS, cruzar a ponte só por sequência**: a primeira
+   versão funcional chamava `emitUntil` na ponte antes de CADA item do
+   `three` e, antes disso, despachava o lote da b.2 — o lote virou sequências
+   de 1 desenho (`flushes` 38 mil → 213 mil numa rodada) e o render ficou
+   igual ao sem fila (13,57 × ~13,5 ms). O host passou a devolver as chaves
+   ordenadas no próprio `Float64Array` (`queue`), o JS mantém o cursor e só
+   chama `emitNext(pass, n)` quando há nativos antes do item.

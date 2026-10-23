@@ -3,8 +3,8 @@
 // Os desenhos opacos limpos e parados saem da RenderList do `three`: o JS os
 // oferece na projeção, a fila os ordena aqui pela MESMA regra do
 // `painterSortStable` do three (`renderOrder`, `z`, `id` — `groupOrder` é 0 na
-// chamada de topo), e o passe os emite intercalados com os itens do `three`:
-// antes de cada item dele, os desta fila de chave menor.
+// chamada de topo) e devolve as chaves ordenadas ao JS, que intercala com os
+// itens do `three` e pede só as sequências a emitir (`takeNext`).
 //
 // Parte PURA (sem wgpu): o shim emite o trecho devolvido com o `replay` da b.2.
 #pragma once
@@ -40,11 +40,11 @@ class OpaqueQueue {
   /** Troca a fila do quadro, ordenando estável pela chave. */
   void set(const DrawCommand* commands, const SortKey* keys, size_t count);
 
-  /** O que falta emitir com chave menor que `limit`; avança o cursor. */
-  QueueSpan takeUntil(const SortKey& limit);
+  /** As chaves na ordem da fila (o JS as usa para só cruzar a ponte quando há o que emitir). */
+  const SortKey* sortedKeys() const { return keys_.data(); }
 
-  /** Todo o resto; esvazia. */
-  QueueSpan takeAll();
+  /** Os próximos `count` (no máximo o que falta); avança o cursor. */
+  QueueSpan takeNext(size_t count);
 
   size_t pending() const { return sorted_.size() - next_; }
 

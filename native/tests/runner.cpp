@@ -40,7 +40,7 @@ void testDrawBatchSemIndiceUsaDraw();
 void testDrawBatchReceitaRemovidaEPuladaESlotReusado();
 void testDrawBatchEstadoDesconhecidoNaEntrada();
 void testOpaqueQueueOrdemDoPainterSortStable();
-void testOpaqueQueueCorteAteAChaveDoItemDoThree();
+void testOpaqueQueueChavesOrdenadasETakeNext();
 void testMainCullVisibilidadeHerdada();
 void testMainCullFrustumComMaiorEscala();
 void testMainCullZDeOrdenacao();
@@ -114,7 +114,7 @@ int main() {
   tests::testDrawBatchReceitaRemovidaEPuladaESlotReusado();
   tests::testDrawBatchEstadoDesconhecidoNaEntrada();
   tests::testOpaqueQueueOrdemDoPainterSortStable();
-  tests::testOpaqueQueueCorteAteAChaveDoItemDoThree();
+  tests::testOpaqueQueueChavesOrdenadasETakeNext();
   tests::testMainCullVisibilidadeHerdada();
   tests::testMainCullFrustumComMaiorEscala();
   tests::testMainCullZDeOrdenacao();
