@@ -4,6 +4,7 @@ import {
   CheckResult,
   RenderServer,
   buildServerInstance,
+  renderServerRequested,
   type ServerAccess,
   type ServerRecording,
   type ServerRendererLike,
@@ -228,5 +229,20 @@ describe('RenderServer — offer and emission', () => {
     expect(b.emitted).toEqual([]);
     server.beginProjection(renderer, { opaque: [] });
     expect(server.stats.dropped).toBe(1);
+  });
+});
+
+describe('RenderServer — default', () => {
+  it('is on by default (only the native host installs the path); ?renderServer=0 turns it off', () => {
+    const g = globalThis as { location?: { search: string } };
+    const before = g.location;
+    try {
+      g.location = { search: '' };
+      expect(renderServerRequested()).toBe(true);
+      g.location = { search: '?renderServer=0' };
+      expect(renderServerRequested()).toBe(false);
+    } finally {
+      g.location = before;
+    }
   });
 });

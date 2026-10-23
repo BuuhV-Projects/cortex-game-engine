@@ -32,8 +32,13 @@ const TRIANGLE_VERTICES = 3;
 /** Projections between reports on `debug('perf')`. */
 const REPORT_PROJECTIONS = 600;
 
-/** On? Off by default until the acceptance A/B (SPEC-0425); `?renderServer=1` turns it on. */
-export function renderServerRequested(fallback = false): boolean {
+/**
+ * On? On by default in the native host — the only place it is installed (inside
+ * the b.1, which only the host installs; the Studio stays on the three). The
+ * user turned it on on 2026-10-23 below the -4 ms criterion (SPEC-0425).
+ * `?renderServer=0` turns it off.
+ */
+export function renderServerRequested(fallback = true): boolean {
   return queryFlagRequested(QUERY_KEY, fallback);
 }
 

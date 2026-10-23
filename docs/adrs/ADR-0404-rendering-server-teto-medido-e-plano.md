@@ -3,8 +3,10 @@
 **Data:** 2026-10-23
 **Status:** aceito, **com o teto corrigido em 2026-10-23** (ver "Correção do
 teto"): o RS1 (SPEC-0425) foi construído e medido em −1,1 ms de render no
-Comercial andando, abaixo do critério de −4 ms; não virou padrão. RS2/RS3
-suspensos até o custo por estado de shader ser atacado.
+Comercial andando, abaixo do critério de −4 ms. **Ligado por padrão no export por
+decisão do usuário em 2026-10-23**, abaixo do critério (medido −1,1 ms de render,
+−7 pp de quadros > 33 ms, paridade exata); a revisar quando o custo por estado de
+shader cair. RS2/RS3 suspensos até esse custo ser atacado.
 
 Frente B2 do PRD-0009 ("modelo Godot"). Sucede, na pergunta "vale tirar o laço
 por objeto do `three` do passe principal?", a b.3 (ADR-0363, arquivada) e a

@@ -20,7 +20,7 @@ paralelas; ver "Estado em 2026-10-22".
 | M0 do ADR-0237 (cache de bindings) | **medido: não há ganho** (69% refazem) | ADR-0237 |
 | B1 — zero alocação por quadro (+ medição do B3) | **mergeado** (`34210c53`, SPEC-0357): na main do jogo, −45 a −65 KB/quadro (−4 a −7%), coleta young −1,6 a −2,6 ms/s, sem regressão; teste impede `new Vector3/Matrix4/Box3` em `System.update`; colunas de GC no kit. O jogo ainda aloca ~0,8–1,1 MB/quadro (critério de pronto do PRD não atingido — o resto está fora do engine) | sessão `b1-zero-alloc` |
 | B2 — desenho nativo no passe da cena (ADR-0330 (b)/(c)) | b.1/b.2 na main; b.3 e SPEC-0362 sem ganho (arquivadas) | sessão `b2-desenho-nativo` |
-| B2 — **RenderingServer** (ADR-0404) | **RS1 construído e medido** (SPEC-0425, 2026-10-23): paridade exata, render **−1,1 ms** no Comercial andando (p95 −2,8, quadros >33 ms 29% → 22%) — abaixo do critério de −4; fica atrás de `?renderServer=1`, desligado, na branch `claude/rendering-server-2b92ff`. O teto do ADR-0404 (−8 a −11 ms) estava inflado: não descontava o trabalho por estado de shader (~1 ms, luzes/sombra) nem o upload dos que se movem (~0,4 ms). Próximo alvo: o custo por estado de shader | sessão `rendering-server` |
+| B2 — **RenderingServer** (ADR-0404) | **RS1 construído e medido** (SPEC-0425, 2026-10-23): paridade exata, render **−1,1 ms** no Comercial andando (p95 −2,8, quadros >33 ms 29% → 22%) — abaixo do critério de −4; **ligado por padrão no export por decisão do usuário (2026-10-23)**, `?renderServer=0` desliga. O teto do ADR-0404 (−8 a −11 ms) estava inflado: não descontava o trabalho por estado de shader (~1 ms, luzes/sombra) nem o upload dos que se movem (~0,4 ms). Próximo alvo: o custo por estado de shader | sessão `rendering-server` |
 | B4 — raycast de colisão em C++ (ADR-0346/SPEC-0347) | **mergeado** (`bc5ecf6f`, 2026-10-23): A/B a pé na main do jogo, 16 rodadas válidas, `world` −0,15 a −0,54 ms (Comercial −1,2 ms no par limpo), personagem e câmera mais baratos nos 4 pontos; pendente o A/B dirigindo (lacuna do Rapier em `BreakableProps.activate`) | sessão `b4-raycast-cpp` |
 | Cauda da física (R4-A) + `cullOutlines` pulando nós escondidos | **`cullOutlines`/espelho mergeado** (`6e74af99`, SPEC-0372): `cull` p99 ~3,8 → ~1,0 ms e espelho −0,36 ms/quadro nos 6 pontos, quadro mediano −0,2 a −1,1 ms, p95 até −2,2 ms. **R4-A descartada com número**: o passo extra de física custa 0,2–0,4 ms; a cauda vem do render perdendo o vsync e coincide com o GC jovem | sessão `cauda-cull-outlines` |
 | B3 — skinning em C++ | **dispensado por medição** (SPEC-0357 §5): ~0,1–0,5 ms com 1–4 personagens com mixer; a multidão é o lote instanciado | — |
@@ -119,8 +119,8 @@ a questão "gráfico construído pelo nativo, não pelo three.js".
       instâncias e do laço; instância limpa = zero JS por quadro).
 - [x] **RS1** (SPEC-0425) — **medido, abaixo do critério**: paridade exata
       (`maxChannelDiff` 0 no Setor O e no Comercial), render −1,12 ms andando no
-      Comercial (critério: −4). Não virou padrão; código na branch atrás de
-      `?renderServer=1`. RS1a (névoa por render) sem ganho próprio demonstrável.
+      Comercial (critério: −4). **Ligado por padrão por decisão do usuário (2026-10-23)**, a
+      revisar quando o custo por estado cair. RS1a (névoa por render) sem ganho próprio demonstrável.
 - [ ] RS2 — `InstancedMesh` e materiais com nó conferíveis — **suspenso** (o ganho
       por objeto é menor do que o teto dizia; ver a correção do ADR-0404).
 - [ ] RS3 — transparentes ordenados em C++ — **suspenso**, mesmo motivo.
@@ -248,8 +248,7 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       cai no `backend.draw` do `three` em silêncio. O RS1 resolveu regravando a receita (`recapture`);
       levar a mesma regravação ao `DrawBatch.add` da b.1 é barato e vale medir sozinho (main, com
       autopiloto). Origem: SPEC-0425.
-- [ ] **RS1b (código pronto, desligado) — mergear desligado ou arquivar?** Decisão do usuário: rende
-      −1,1 ms andando com paridade exata, mas não passou o critério. Branch `claude/rendering-server-2b92ff`.
+- [x] (2026-10-23) **RS1b — decisão do usuário: ligado por padrão no export**, abaixo do critério.
       Origem: SPEC-0425.
 - [x] (main `f8ddbf38`) **Instrumento `?parityFreeze` (`src/render/MainPassArm.ts`)**:
       congela o jogo e alterna nativo × `three` quadro a quadro; pegou um erro de cor que a captura entre

@@ -843,6 +843,7 @@ export function installCleanDrawFastPath(
   };
 
   // RS1b (SPEC-0425): o servidor reaproveita a gravação, a conferência e o lote.
+  // Ligado por padrão (decisão do usuário, 2026-10-23); este caminho só existe no host.
   let desinstalarServidor: (() => void) | null = null;
   if (lote && renderServerRequested()) {
     const acesso: ServerAccess = {

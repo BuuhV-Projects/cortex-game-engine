@@ -2,9 +2,12 @@
 
 **Data:** 2026-10-23
 **Status:** implementado e medido — **critério de aceite NÃO atingido**
-(render −1,1 ms no Comercial andando, contra −4 exigidos). RS1b fica atrás de
-`?renderServer=1`, **desligado por padrão**; RS1a (névoa por render) ligado,
-sem ganho próprio demonstrável. Ver "Resultado medido".
+(render −1,1 ms no Comercial andando, contra −4 exigidos). **RS1b ligado por
+padrão no host por decisão do usuário em 2026-10-23**, abaixo do critério de −4 ms
+(medido −1,1 ms de render, −7 pp de quadros > 33 ms, paridade exata); a revisar
+quando o custo por estado de shader cair. `?renderServer=0` desliga; o Studio não
+instala o caminho. RS1a (névoa por render) ligado, sem ganho próprio
+demonstrável. Ver "Resultado medido".
 
 Marco RS1 do ADR-0404. Studio intocado (sem ponte, nada instala).
 
@@ -109,7 +112,8 @@ carimbo `renderId` do monitor: quando volta ao `three`, ele é refeito — corre
 
 ### Interruptores
 
-`?renderServer=0|1` (**padrão desligado** até o aceite); `?nativeMainPass=0`,
+`?renderServer=0|1` (**padrão ligado no host** desde 2026-10-23, decisão do
+usuário; era desligado até o aceite); `?nativeMainPass=0`,
 `?cleanDraw=0` e `?drawBatch=0` também desligam (o RS1b depende da b.1/b.2).
 
 ## Critério de aceite (decide o merge do RS1b como padrão)
@@ -210,6 +214,7 @@ textura da sombra no grupo de render de cada estado iluminado).
 
 ### Decisão
 
-O RS1b não vira padrão (critério do ADR-0404 não atingido). O código fica atrás
-de `?renderServer=1` na branch, com paridade exata e testes, como base se o
-custo por estado for atacado — ver a correção do teto no ADR-0404.
+O critério do ADR-0404 não foi atingido. **O usuário decidiu ligar o RS1b por
+padrão no export (2026-10-23)**: −1,1 ms de render, −7 pp de quadros > 33 ms e
+paridade exata valem o caminho, a revisar quando o custo por estado de shader
+cair (correção do teto no ADR-0404). `?renderServer=0` desliga.

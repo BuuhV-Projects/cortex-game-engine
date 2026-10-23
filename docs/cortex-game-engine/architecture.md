@@ -1246,7 +1246,7 @@ de grupo e troca de `geometry` seguem pela varredura (até 8 quadros); uma
 `boundingSphere` recalculada na MESMA geometria não é vista.
 
 **RenderingServer RS1 (ADR-0404 / SPEC-0425, `src/render/RenderServer.ts`,
-`?renderServer=1`, DESLIGADO por padrão):** a projeção nativa oferece cada malha
+LIGADO por padrão no host desde 2026-10-23 por decisão do usuário, `?renderServer=0` desliga; o Studio não instala):** a projeção nativa oferece cada malha
 opaca simples com gravação da b.1; a conferida vai para uma lista de comandos
 (receita da b.2 + 4 inteiros) em vez da RenderList, emitida no passe por trechos
 intercalados com os itens do `three` na chave do `painterSortStable`. Mediu −1,1 ms
