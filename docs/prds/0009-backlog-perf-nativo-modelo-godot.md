@@ -75,6 +75,17 @@ distância (ADR-0139), vegetação e partículas instanciadas (ADR-0077, ADR-016
 merge estático no host (ADR-0121), matriz só recompõe se mudou (SPEC-0229), BVH
 na colisão (ADR-0108), pool de I/O (ADR-0137), aquecimento de pipelines.
 
+## Processo de cada melhoria (regra do usuário, 2026-10-23)
+
+Antes de implementar qualquer otimização deste PRD:
+
+1. **Como o Godot faz:** achar no repo do Godot 4 (github.com/godotengine/godot) a solução
+   equivalente, com arquivo:linha (ex.: `servers/rendering/renderer_rd/forward_clustered/`).
+2. **Como fazemos aqui:** o caminho atual no engine/host, com arquivo:linha.
+3. **Validar a aplicabilidade:** a técnica do Godot cabe em WebGPU/wgpu, no sistema de nós do
+   three e no Hermes sem JIT? Se não couber, dizer por quê e o que se aproveita.
+4. Só então SPEC/ADR (com essas três seções) → código → A/B com autopiloto.
+
 ## Backlog (ordem recomendada)
 
 Cada item vira ADR/SPEC próprio **antes** do código, conforme a regra do repo.
