@@ -106,17 +106,13 @@ export interface Plan {
 /**
  * Monta o plano: os nodes de objeto a atualizar e os uniforms a comparar.
  * `null` quando o objeto precisa de trabalho por objeto que o plano não cobre.
- *
- * `allUniforms` (plano de uniformes, SPEC-0362): não pula as referências de
- * material — para quando o que mudou foi um VALOR (névoa, material com nó),
- * não a transformação.
  */
-export function buildTransformOnlyPlan(renderObject: RenderObjectLike, allUniforms = false): Plan | null {
+export function buildTransformOnlyPlan(renderObject: RenderObjectLike): Plan | null {
   const state = renderObject.getNodeBuilderState();
   for (const node of state.updateBeforeNodes) if (node.getUpdateBeforeType() === UPDATE_OBJECT) return null;
   for (const node of state.updateAfterNodes) if (node.getUpdateAfterType() === UPDATE_OBJECT) return null;
 
-  const tracked = new Set(allUniforms ? [] : renderObject.getMonitor().refreshUniforms);
+  const tracked = new Set(renderObject.getMonitor().refreshUniforms);
   const nodes: NodeLike[] = [];
   // Saídas dos nodes que NÃO serão atualizados: são instâncias compartilhadas
   // e guardam o valor do último material que passou por elas, então comparar
@@ -143,15 +139,10 @@ export function buildTransformOnlyPlan(renderObject: RenderObjectLike, allUnifor
 
 /** Aplica o plano: atualiza os nodes e escreve cada UBO alterado num `writeBuffer`. */
 export function applyPlan(frame: NodeFrameLike, plan: Plan, updateBinding: (binding: UniformsGroupLike) => void): void {
-  // Laços indexados: no Hermes cada `for…of` aloca um iterador, e isto roda
-  // por objeto por quadro (SPEC-0362).
-  const nodes = plan.nodes;
-  for (let i = 0; i < nodes.length; i++) frame.updateNode(nodes[i]!);
-  const ubos = plan.ubos;
-  for (let i = 0; i < ubos.length; i++) {
-    const { ubo, uniforms } = ubos[i]!;
+  for (const node of plan.nodes) frame.updateNode(node);
+  for (const { ubo, uniforms } of plan.ubos) {
     let updated = false;
-    for (let j = 0; j < uniforms.length; j++) if (ubo.updateByType(uniforms[j]!)) updated = true;
+    for (const uniform of uniforms) if (ubo.updateByType(uniform)) updated = true;
     if (!updated) continue;
     mergeRanges(ubo);
     updateBinding(ubo);

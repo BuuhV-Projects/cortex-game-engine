@@ -1,7 +1,7 @@
 # SPEC-0362 — Uniforme mudou sem refazer o objeto (etapa (c) do ADR-0330, parte 1)
 
 **Data:** 2026-10-22
-**Status:** em implementação
+**Status:** **rejeitada por medição** (A/B v1 e v2 sem ganho; v2 com imagem errada) — o mecanismo foi revertido; fica o instrumento de paridade `?parityFreeze` (`MainPassArm.ts`)
 
 ## Contexto
 
@@ -136,3 +136,33 @@ e o `gc young` subiu ~10 ms/s. Lição: o custo por draw do caminho do `three`
 medido pela sonda (~95 µs) estava inflado; tirar um objeto dele vale bem menos.
 Corrigido para conferir só os UBOs quando nada mudou (acima) e com laços
 indexados no `applyPlan` (no Hermes cada `for…of` aloca um iterador).
+
+## A/B v2 — só os UBOs para material com nó parado: imagem errada e sem ganho
+
+Mesmo método, engine `34210c53` + esta spec, 2 réplicas × 170 s:
+
+| ponto | render A | render B | Δ | quadro med Δ | `gc young` Δ |
+| --- | --- | --- | --- | --- | --- |
+| setorO | 14,00 | 14,36 | +0,36 | −0,65 | +10,4 ms/s |
+| centro | 13,75 | 13,80 | +0,04 | +0,60 | +9,3 ms/s |
+| comercial | 14,93 | 14,96 | +0,03 | −0,30 | +12,9 ms/s |
+| Águas Claras | 16,64 | 17,03 | +0,39 | +2,20 | +12,4 ms/s |
+
+**A paridade pegou o defeito:** `maxChannelDiff` **184 em 7,2% dos pixels**
+(nativo×`three`), controles em 0. Os nós de referência do `three` são
+COMPARTILHADOS e guardam o valor do último objeto que passou por eles;
+conferir o UBO sem refazê-los escreve o valor de outro objeto — a mesma
+armadilha registrada no `buildTransformOnlyPlan`. A v1 (plano completo) tinha
+paridade 0, mas também não ganhava.
+
+## Veredito
+
+Rejeitada, como a SPEC-0331: tirar ~35 desenhos/quadro do caminho do `three`
+(de ~27% para ~7% dos draws no setorO) não paga, porque o caminho alternativo
+correto (refazer os nós de objeto + conferir os UBOs) custa quase o mesmo, e o
+`gc young` sobe 9–13 ms/s. O custo por draw do caminho do `three` que a sonda
+de fases mostrava (~95 µs) era inflado — só o A/B sem sonda decide.
+
+O que fica: o instrumento de paridade na mesma execução, que valeu nesta spec
+(pegou imagem errada que a captura entre execuções não pegaria no DDD 61), e o
+achado da troca de projeção (abaixo, em "Achado").
