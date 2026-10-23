@@ -1229,6 +1229,12 @@ quadros de atraso, visível no passe principal. `frustumCulled`, `renderOrder`
 de grupo e troca de `geometry` seguem pela varredura (até 8 quadros); uma
 `boundingSphere` recalculada na MESMA geometria não é vista.
 
+**Próximo desenho (ADR-0404, RenderingServer):** o teto medido de tirar o laço
+por objeto do `three` do passe principal é −8 a −11 ms de render no DDD 61. O plano é
+o caminho da RECEITA (o `three` compila, o C++ é dono das instâncias e do laço) em
+marcos RS1–RS4; regra de desenho: instância limpa = zero JS por quadro (a b.3
+mostrou que JS por objeto residual come o ganho).
+
 **Subárvore escondida (SPEC-0372):** a varredura pula o slot com ancestral
 escondido (contador `_ocultoAcima` por slot, mantido pelo gancho de `visible`
 na troca — O(subárvore) por troca, não por quadro); quando o contador volta a
