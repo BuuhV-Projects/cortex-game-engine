@@ -535,7 +535,7 @@ export class PerfTrace {
    * Grava um evento avulso no trace, fora do ritmo das amostras — para o que
    * acontece uma vez, como o aquecimento (SPEC-0261). No-op sem a ponte.
    */
-  recordEvent(name: string, data: Record<string, number>): void {
+  recordEvent(name: string, data: Record<string, number | string>): void {
     if (!this._bridge) return;
     this._bridge(JSON.stringify({ t: Math.round(this._elapsedMs), [name]: data }));
   }

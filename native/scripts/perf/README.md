@@ -16,6 +16,8 @@ $K/export.sh <engineDir> <gameDir> D:/jogos/detetive-brasilia/.cortex/minha-fren
 # round: uma rodada (query ?cortexDebug=perf&perf=1&systemProfile=1&spawn=<ponto><extra>; perf=1 liga o profiler do DDD 61 desde o ae5caef), imprime a linha do resumo
 $K/round.sh --exp .../export-a --out .../runs/setorO-1 --spawn setorO [--extra '&k=0'] [--secs 135] [--owner frente]
 $K/round.sh --exp .../export-a --out .../runs/x --query '?cru'      # query inteira à mão
+# jogador em movimento (SPEC-0414): controle virtual do Xbox toca um perfil (walk = a pé; drive = carro, com &drive=1 no DDD 61)
+$K/round.sh --exp .../export-a --out .../runs/setorO-ap --spawn setorO --autopilot walk
 
 # validate: VÁLIDO/INVÁLIDO + motivo (1 linha = tela de carregamento); exit 1 se alguma for inválida
 $K/validate.sh .../runs/*/
@@ -26,10 +28,13 @@ $K/summarize.sh .../runs/*/
 # ab: ABAB… intercalado (ordem invertida na réplica par), tabela por ponto no fim
 $K/ab.sh --a .../export-a --b .../export-b --out .../runs-ab1 --points "setorO centro" [--reps 2]
 $K/ab.sh --a .../export-a --extra-a '&nativeRaycast=0' --out .../runs-ab2 --points setorO   # duas queries
+$K/ab.sh --a .../export-a --b .../export-b --out .../runs-ab3 --points "setorO comercial" --autopilot walk   # A/B em movimento
 ```
 
 Regras de validade e campos do resumo: `trace-stats.mjs` (constantes no topo) e
-SPEC-0382. Fora do kit por enquanto: piloto de direção e screenshot.
+SPEC-0382. Rodada com `--autopilot` é inválida se o engine não ligou o autopiloto, se o jogador não
+andou ou se a câmera passou do horizonte (olhar o céu barateia o quadro); o resumo mostra `>33ms` (fração das amostras acima de 33 ms) e quanto o autopiloto andou.
+Fora do kit por enquanto: screenshot.
 
 ## Parar uma fila de rodadas (armadilha)
 
