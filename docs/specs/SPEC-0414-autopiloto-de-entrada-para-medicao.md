@@ -79,7 +79,7 @@ além de número).
 
 - `round.sh --autopilot <perfil>` e `ab.sh --autopilot <perfil>` acrescentam `&autopilot=<perfil>`.
 - `trace-stats.mjs`: rodada cuja query pede autopiloto é **inválida** se o trace não tiver o evento
-  (engine sem esta spec) ou se a câmera não se afastou ao menos 8 m do ponto inicial depois do
+  (engine sem esta spec) ou se a câmera não se afastou ao menos 2 m do ponto inicial depois do
   aquecimento ("autopiloto não andou"), ou se alguma amostra tiver `cam.dy > 0` (câmera acima do
   horizonte; a padrão do DDD 61 é -0,34). O resumo ganha `>33ms` (porcentagem das amostras com quadro
   acima de 33 ms) e `andou` (afastamento máximo da câmera, m); o A/B ganha `frameMs p99` e `>33ms %`.
@@ -92,6 +92,8 @@ além de número).
 - Validação (2026-10-23): a 1ª versão do `walk` andava 3 s/2 s por perna (só ~5 m no DDD 61, o
   kit reprovou) e terminava o giro com a câmera inclinada para cima, olhando o céu pelo resto da
   rodada (render barato = medição falsa). Corrigido: pernas de 5 s/4 s e giro só horizontal; as
-  rodadas com a câmera no céu foram descartadas.
+  rodadas com a câmera no céu foram descartadas. O limite de deslocamento começou em 8 m e caiu
+  para 2 m: no Setor O o spawn é apertado (carro, árvore e muro) e o `walk` anda só 4–8 m, exercitando
+  tudo; rodada parada dá 0,0 m, então 2 m ainda separa "a entrada não chegou" com folga.
 - O laço "volta ao spawn" é aproximado: colisões e aceleração fazem o jogador derivar alguns metros
   por ciclo.

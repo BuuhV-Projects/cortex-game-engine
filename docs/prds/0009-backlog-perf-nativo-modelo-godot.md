@@ -206,6 +206,14 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       `round.sh` seguem vivos). Hoje só documentado no README do kit; destrava: o `ab.sh` e o lock
       desistirem quando o processo raiz morrer. Origem: relato da B2.
 
+- [ ] **Medir em movimento muda o quadro**: com o autopiloto `walk` (SPEC-0414) o DDD 61 (`e2be01c`)
+      piora em relação à rodada parada — Setor O p95 33→55 ms, p99 43→74, quadros >33 ms 5%→34%;
+      Comercial p95 34→42, p99 39→68, >33 ms 7%→31% (2 réplicas, `.cortex/autopilot/runs-ab`). As
+      frentes passam a fechar A/B também com `--autopilot walk`; o alvo de 60 fps tem que valer andando.
+      Origem: SPEC-0414.
+- [ ] **Perfil `drive` sem desvio**: no Setor O (`&drive=1`) o carro nasce de frente para a calçada e
+      passa boa parte do ciclo encostado numa casa (andou só 15 m em 110 s). Destrava: um ponto de
+      spawn de direção com rua livre (no jogo) ou um perfil próprio por ponto. Origem: SPEC-0414.
 - [ ] **b.3 (fila nativa de opacos parados, ADR-0363) sem ganho medido**: paridade 0, mas A/B no ruído
       (setorO −1,24, centro −0,29, comercial +1,01 ms) e uma réplica em Águas Claras regrediu para 33,9 ms
       de render com 2,4 MB/quadro de GC. Código arquivado (retomar a partir de `dbf15071`); registros e
@@ -240,6 +248,9 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       não commitado na worktree `D:/jogos/detetive-brasilia-r4-c` (base `dff1386`). Origem: ciclo
       75 fps (pausado em 2026-10-09). Precisa ser reavaliado na main do jogo antes de portar.
 
+- [ ] **Spawn `setorO` apertado**: carro estacionado, árvore e muro em volta do jogador; o autopiloto
+      `walk` esbarra e anda só 4–8 m (Comercial: 18 m). Mede, mas mostra menos streaming. Destrava:
+      mover o ponto de medição alguns metros para a rua (`parseSpawn` do `main.ts`). Origem: SPEC-0414.
 - [ ] **(identificado: mapa de sombra do sol do jogo, `entities/sunShadow.ts`, 2048², pelo `three`,
       sem o passe de sombra nativo M6; sob demanda — a cada 3 s ou ~18 m de deslocamento; A/B com
       `?sombra=0` em andamento)** O DDD 61 renderiza a cena duas vezes por quadro: um `render()` da mesma cena aninhado
@@ -261,6 +272,10 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       engine (`rendering-server-2b92ff`) há junctions `native/third_party` e
       `native/rapier-native/target` → main: desfazer só o link antes de remover.
 
+- [ ] Artefatos da validação do autopiloto (SPEC-0414): `D:/jogos/detetive-brasilia/.cortex/autopilot`
+      (2 exports; guardar `runs-ab`, `evidence*` e os scripts `shots.sh`/`val.sh`) e a worktree do jogo
+      `D:/jogos/detetive-brasilia-autopilot` (`e2be01c`). Na worktree da engine `autopilot-perf-fdab00`
+      o `native/build` é cópia (sem junction).
 - [x] (2026-10-23; sonda salva em `.cortex/allocProbe-b1.ts.txt`) Apagar os artefatos de medição (salvando antes o `allocProbe.ts.txt`): `D:/jogos/detetive-brasilia/.cortex/b1-alloc` (~700 MB) e a
       worktree do jogo `D:/jogos/detetive-brasilia-cauda-cull`.
 - [ ] Remover as worktrees antigas da R4 na engine (`.claude/worktrees/r4-a-cauda`,

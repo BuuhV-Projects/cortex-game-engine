@@ -20,8 +20,10 @@ const FRAME_TIMING_SKIP_DIVISOR = 4;
 export const GC_FROM_MS = 40000;
 // A sampled frame above this missed 30 fps: the drops the autopilot (SPEC-0414) is there to show.
 export const SLOW_FRAME_MS = 33;
-// An autopilot round whose camera never got this far from its first steady sample did not move.
-export const MIN_AUTOPILOT_TRAVEL_M = 8;
+// An autopilot round whose camera never got this far from its first steady sample did not move: the
+// input never reached the game (a parked round stays at 0.0 m). Low on purpose: a confined spawn
+// (DDD 61 setorO: parked car, tree and wall around the player) walks only 4-8 m and still exercises it.
+export const MIN_AUTOPILOT_TRAVEL_M = 2;
 // cam.dy above this = camera looking above the horizon: almost nothing on screen, the frame gets
 // artificially cheap (the 3rd-person default in DDD 61 is -0.34).
 export const MAX_AUTOPILOT_CAM_DY = 0;
