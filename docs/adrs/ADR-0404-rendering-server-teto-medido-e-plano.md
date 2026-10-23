@@ -1,8 +1,10 @@
 # ADR-0404 — RenderingServer no export: teto medido e plano de construção
 
 **Data:** 2026-10-23
-**Status:** aceito — **construir**, começando pelo marco RS1 (instâncias opacas
-simples). Nenhum código ainda; cada marco tem SPEC própria antes do código.
+**Status:** aceito, **com o teto corrigido em 2026-10-23** (ver "Correção do
+teto"): o RS1 (SPEC-0425) foi construído e medido em −1,1 ms de render no
+Comercial andando, abaixo do critério de −4 ms; não virou padrão. RS2/RS3
+suspensos até o custo por estado de shader ser atacado.
 
 Frente B2 do PRD-0009 ("modelo Godot"). Sucede, na pergunta "vale tirar o laço
 por objeto do `three` do passe principal?", a b.3 (ADR-0363, arquivada) e a
@@ -201,3 +203,40 @@ cada marco seguinte é independente e pode não ser feito.
 - Os interruptores e o caminho antigo (b.1/b.2) continuam até o RS1 ser o padrão.
 - O braço de teto (`?rsCeiling`) não entra na engine; para remedir, aplicar o
   patch numa worktree descartável.
+
+## Correção do teto (2026-10-23, depois do RS1)
+
+O RS1 (SPEC-0425) rendeu **−1,1 ms** de render no Comercial andando, com
+paridade exata — o teto do modo 3 prometia −4,5 a −7. A sonda de relógio do
+servidor mostrou por quê, e o erro é do **instrumento de teto**, não do
+servidor:
+
+- O braço pulava, junto com os objetos, o **trabalho por estado de shader**
+  dos estados sem portador: `updateBefore`, nós de render e a conferência dos
+  grupos compartilhados (o UBO "render", com as luzes e a sombra). No DDD 61
+  isso é ~13 estados × **~77 µs** ≈ **1 ms por quadro**, que qualquer
+  servidor pela receita precisa fazer (o `three` também faz).
+- Pulava também o **upload dos que se movem** (~18/quadro × ~22 µs ≈
+  0,4 ms) — o residual da tabela acima estimava 0,1–0,2.
+- Cobertura: o servidor leva ~63 objetos/quadro (malha comum, opaca, material
+  único com gravação da b.1); o modo 3 pulava ~110 (inclui instanciados e
+  candidatos sem gravação).
+
+Refazendo a conta para os ~63: ~2,6 ms do teto proporcional − oferta (0,5) −
+por estado (1,0) − movimento (0,4) − emissão (0,2) ≈ **0,5–1 ms**, que é o
+medido. **Regra que fica para qualquer teto futuro:** o braço tem de manter o
+trabalho por estado de shader de TODO estado que o servidor desenharia, não só
+o dos portadores de `updateBefore`.
+
+### O que isso muda
+
+- O caminho da receita não chega aos −4 ms enquanto o `three` tiver um UBO de
+  luzes/sombra **por estado de shader**, conferido por estado a cada render. O
+  próximo alvo não é mais tirar objetos do laço: é esse custo por estado
+  (~1 ms aqui, e a sombra do sol, −3 ms com o servidor ligado, mora nele).
+- Alavancas candidatas, todas a medir antes (backlog do PRD-0009): luzes
+  apagadas fora do shader (`visible = false` nas `SpotLight` de intensidade 0);
+  menos estados distintos (material compartilhado); um UBO de luzes único para
+  todos os estados (mexe no sistema de nós do `three` — o maior e o mais caro).
+- RS2/RS3 ficam suspensos: o ganho por objeto que eles miravam é menor do que
+  o teto dizia.

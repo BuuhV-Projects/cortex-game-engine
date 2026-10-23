@@ -1,8 +1,10 @@
 # SPEC-0425 — RS1: instâncias opacas simples no RenderingServer do export
 
 **Data:** 2026-10-23
-**Status:** em implementação — RS1a e RS1b atrás de interruptor, padrão
-desligado até o A/B de aceite (com autopiloto) passar.
+**Status:** implementado e medido — **critério de aceite NÃO atingido**
+(render −1,1 ms no Comercial andando, contra −4 exigidos). RS1b fica atrás de
+`?renderServer=1`, **desligado por padrão**; RS1a (névoa por render) ligado,
+sem ganho próprio demonstrável. Ver "Resultado medido".
 
 Marco RS1 do ADR-0404. Studio intocado (sem ponte, nada instala).
 
@@ -140,3 +142,74 @@ O RS1a pode ser medido antes, sozinho (mesma regra do autopiloto para o aceite).
 | `sharedRefs` não atualizado numa chamada → névoa velha | o bloco roda por estado por chamada, como os nós de render que já funcionam; teste |
 | ordem de opacos sem escrita de profundidade do `three` (`depthWrite` falso, `renderOrder` 0) contra os nativos | contador desses itens por quadro + `?parityFreeze` |
 | bump do `three` muda grupos/`ReferenceNode` | instalação recusa se a forma não bater (como a b.1) |
+
+## Resultado medido (2026-10-23)
+
+DDD 61 `e2be01c`, engine da branch (`a46a1a96`, base main + autopiloto
+`d437d6b2`), export release, kit SPEC-0382 com `--autopilot walk`, intercalado,
+2 réplicas × 135 s, todas VÁLIDAS.
+
+### Paridade (`?parityFreeze`, servidor × `three`)
+
+| ponto | nativo×three | controles |
+| --- | --- | --- |
+| Setor O | **0** | 0 |
+| Comercial | **0** | 0 |
+
+Duas falhas apareceram antes do 0, e as duas viraram teste:
+
+1. **Grupo compartilhado recriado.** O `three` recria o bind group de um grupo
+   compartilhado quando muda a geração de uma textura ou de um sampler; a
+   receita gravada fica apontando para o grupo velho. Recusar devolvia ~75% das
+   instâncias ao `three` (e é por isso que só ~26% dos diretos da b.1 saem pelo
+   lote da b.2 hoje). Correção: regravar a receita na emissão (`recapture`,
+   ~µs); `fallback` caiu para ~0,1/quadro.
+2. **Empate de profundidade.** "Opacos em qualquer ordem" não vale no DDD 61:
+   há geometria coplanar de propósito (8 `interiores-*` DoubleSide na mesma
+   posição das fachadas). Emitir em bloco dava `maxChannelDiff` 86 (0,03% dos
+   pixels, achado por uma sonda de pixel temporária). Correção: ordenar pela
+   chave do `painterSortStable` (`renderOrder`, `z` da projeção nativa, `id`)
+   e emitir por trechos intercalados com os itens do `three`.
+
+### A/B de aceite (walk, Comercial)
+
+| métrica | `renderServer=0` | `=1` | Δ |
+| --- | --- | --- | --- |
+| render | 16,29 | 15,17 | **−1,12 ms** |
+| quadro mediano | 30,50 | 28,75 | −1,75 |
+| p95 / p99 | 43,4 / 56,6 | 40,6 / 53,9 | −2,8 / −2,7 |
+| quadros > 33 ms | 29,3% | 22,3% | −7 pp |
+
+Setor O andando (o walk anda só 4–8 m ali): a primeira bateria teve rodadas
+contaminadas (render 20–29 ms com `world` 4–7,6); o único par limpo deu +0,62
+— sem conclusão. RS1a sozinho (walk, Comercial): no ruído (+0,61, réplica
+contaminada).
+
+### Para onde vai o tempo do servidor (sonda de relógio temporária, walk, Comercial)
+
+~63 instâncias desenhadas por quadro, ~18 delas se movendo:
+
+| fase | µs/quadro |
+| --- | --- |
+| oferta (projeção), dos quais a conferência | ~500 / ~400 (≈5,5 µs por objeto) |
+| bloco por estado de shader (`updateBefore`, nós de render, grupos compartilhados) | **~1.000** (~13 estados × **~77 µs**) |
+| plano dos que se movem (ADR-0290) | ~400 (~22 µs cada) |
+| ordenação + regravação + emissão | ~250 |
+
+O bloco por estado é trabalho que o `three` também faz — não sai do quadro. Os
+~77 µs por estado são a conferência do UBO "render" de cada estado: o DDD 61 tem
+8 `SpotLight` (6 postes + 2 faróis, no shader mesmo apagadas de dia) mais
+hemisfério e sol com sombra, ~70 uniformes de luz por estado.
+
+### Sombra com o servidor ligado (pedido da B2)
+
+`?sombra=0` com `renderServer=1` (walk, Comercial): render **−2,96 ms**,
+quadros > 33 ms 17,5% → 8,8%. Sem o servidor a B2 mediu −2,5 a −4,0: o RS1
+absorve pouco do custo da sombra, que mora no trabalho por estado (uniformes e
+textura da sombra no grupo de render de cada estado iluminado).
+
+### Decisão
+
+O RS1b não vira padrão (critério do ADR-0404 não atingido). O código fica atrás
+de `?renderServer=1` na branch, com paridade exata e testes, como base se o
+custo por estado for atacado — ver a correção do teto no ADR-0404.
