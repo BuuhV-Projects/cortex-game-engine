@@ -138,7 +138,7 @@ export class MainProjector {
       // RS1b (SPEC-0425): clean opaque instances go to the server, not to the RenderList.
       if (
         server !== null && tipo === MainPassKind.NativeCull && !Array.isArray(objeto.material) &&
-        server.offer(objeto, objeto.material, objeto.geometry, clippingContext)
+        server.offer(objeto, objeto.material, objeto.geometry, clippingContext, this._depths[k]!)
       ) {
         continue;
       }

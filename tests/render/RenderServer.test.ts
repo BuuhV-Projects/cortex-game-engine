@@ -108,15 +108,40 @@ describe('RenderServer — eligibility', () => {
   });
 });
 
+/** A three render item with the `painterSortStable` key. */
+function item(object: Object3D, z: number) {
+  return { object, z, id: object.id, renderOrder: object.renderOrder, groupOrder: 0 };
+}
+
 describe('RenderServer — offer and emission', () => {
+  it('interleaves with the three by the sort key, so coplanar depth ties resolve like the three', () => {
+    const { server, renderer, b, add, log } = setup();
+    const list = { opaque: [] as unknown[] };
+    server.beginProjection(renderer, list);
+    const near = add('near');
+    const far = add('far');
+    server.offer(far, far.material, far.geometry, null, 9);
+    server.offer(near, near.material, near.geometry, null, 1);
+    const mid = new Mesh();
+    mid.name = 'mid';
+    new Object3D().add(mid);
+    list.opaque = [item(mid, 5)];
+    renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
+    expect(log).toEqual(['prepare', 'three:mid']);
+    // near (z 1) before mid (z 5), far (z 9) after: two runs, three in between.
+    expect(b.emitted).toEqual([[9, VERTICES, 1, 0], [9, VERTICES, 1, 0]]);
+    expect(server.stats.drawn).toBe(2);
+    expect(server.stats.emissions).toBe(1);
+  });
+
   it('emits after the background and renderOrder < 0, before the other opaque items, in one block', () => {
     const { server, renderer, b, add, log } = setup();
     const renderList = { opaque: [] as unknown[] };
     server.beginProjection(renderer, renderList);
     const a = add('a');
     const c = add('c');
-    expect(server.offer(a, a.material, a.geometry, null)).toBe(true);
-    expect(server.offer(c, c.material, c.geometry, null)).toBe(true);
+    expect(server.offer(a, a.material, a.geometry, null, 1)).toBe(true);
+    expect(server.offer(c, c.material, c.geometry, null, 2)).toBe(true);
     const offScene = new Mesh(); // background: not in the scene graph
     offScene.name = 'bg';
     const sky = new Mesh();
@@ -126,9 +151,10 @@ describe('RenderServer — offer and emission', () => {
     const other = new Mesh();
     other.name = 'other';
     new Object3D().add(other);
-    renderList.opaque = [offScene, sky, other].map((object) => ({ object }));
+    renderList.opaque = [item(offScene, 0), item(sky, 0), item(other, 5)];
     renderer._renderObjects!(renderList.opaque as never, 'cam', 'scene', 'L');
-    expect(log).toEqual(['three:bg', 'three:sky', 'prepare', 'three:other']);
+    // Prepared at the first emission check (once per list), emitted only before `other`.
+    expect(log).toEqual(['three:bg', 'prepare', 'three:sky', 'three:other']);
     expect(b.emitted).toEqual([[9, VERTICES, 1, 0, 9, VERTICES, 1, 0]]);
     expect(renderer.info!.render).toEqual({ drawCalls: 2, triangles: (2 * VERTICES) / 3 });
     expect(server.stats.drawn).toBe(2);
@@ -138,13 +164,13 @@ describe('RenderServer — offer and emission', () => {
     const dirty = setup(CheckResult.Dirty);
     const d = dirty.add('d');
     dirty.server.beginProjection(dirty.renderer, { opaque: [] });
-    expect(dirty.server.offer(d, d.material, d.geometry, null)).toBe(false);
+    expect(dirty.server.offer(d, d.material, d.geometry, null, 1)).toBe(false);
     expect(dirty.server.stats.refused).toBe(1);
 
     const { server, renderer, b, add, log } = setup();
     const a = add('a');
     server.beginProjection(renderer, { opaque: [] });
-    server.offer(a, a.material, a.geometry, null);
+    server.offer(a, a.material, a.geometry, null, 1);
     renderer._renderTransparents!([], [], 'cam', 'scene', 'L');
     expect(log).toEqual(['prepare', 'transparents']);
     expect(b.emitted.length).toBe(1);
@@ -155,7 +181,7 @@ describe('RenderServer — offer and emission', () => {
     const m = moved.add('m');
     const list = { opaque: [] as unknown[] };
     moved.server.beginProjection(moved.renderer, list);
-    moved.server.offer(m, m.material, m.geometry, null);
+    moved.server.offer(m, m.material, m.geometry, null, 1);
     moved.renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
     expect(moved.log).toEqual(['prepare', 'moved']);
     expect(moved.server.stats.moved).toBe(1);
@@ -165,7 +191,7 @@ describe('RenderServer — offer and emission', () => {
     recs.get(x)!.lights = 'other lights';
     const l2 = { opaque: [] as unknown[] };
     server.beginProjection(renderer, l2);
-    server.offer(x, x.material, x.geometry, null);
+    server.offer(x, x.material, x.geometry, null, 1);
     renderer._renderObjects!(l2.opaque as never, 'cam', 'scene', 'L');
     expect(log).toEqual(['three:x']);
     expect(b.emitted).toEqual([]);
@@ -178,14 +204,14 @@ describe('RenderServer — offer and emission', () => {
     const a = add('a');
     const list = { opaque: [] as unknown[] };
     server.beginProjection(renderer, list);
-    server.offer(a, a.material, a.geometry, null);
+    server.offer(a, a.material, a.geometry, null, 1);
     renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
     expect(log).toEqual(['prepare', 'three:a']); // the re-record still reads the old group
     expect(b.emitted).toEqual([]);
 
     b.liveShared = 'NEW';
     server.beginProjection(renderer, list);
-    server.offer(a, a.material, a.geometry, null);
+    server.offer(a, a.material, a.geometry, null, 1);
     renderer.info!.calls = 2;
     renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
     expect(b.emitted).toEqual([[10, VERTICES, 1, 0]]);
@@ -196,7 +222,7 @@ describe('RenderServer — offer and emission', () => {
     const { server, renderer, b, add } = setup();
     const a = add('a');
     server.beginProjection(renderer, { opaque: [] });
-    server.offer(a, a.material, a.geometry, null);
+    server.offer(a, a.material, a.geometry, null, 1);
     renderer._currentRenderContext = {}; // another render: not the owner
     renderer._renderTransparents!([], [], 'cam', 'scene', 'L');
     expect(b.emitted).toEqual([]);

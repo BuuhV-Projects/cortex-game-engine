@@ -91,7 +91,7 @@ export interface ServerRendererLike {
   backend?: { get(o: unknown): Record<string, unknown>; finishRender?: (...args: unknown[]) => void };
 }
 
-interface RenderItemLike {
+interface RenderItemLike extends SortKeyLike {
   object: Object3D;
   geometry: unknown;
   material: unknown;
@@ -122,7 +122,7 @@ export interface RenderServerStats {
   /** Candidates offered by the projection / taken into the list. */
   offered: number;
   taken: number;
-  /** Lists emitted. */
+  /** Lists fully emitted. */
   emissions: number;
   /** Fallback reasons: lights/environment/context node changed, stale shared group, moved needs the three. */
   fbEnv: number;
@@ -174,14 +174,29 @@ export class RenderServer {
   };
   private _items: ServerRecording[] = [];
   private _moved: boolean[] = [];
+  private _z: number[] = [];
   private _owner: unknown = null;
   private _ownerList: unknown = null;
+  /** Inside a nested call made while emitting (shadow updateBefore, fallback draw). */
   private _emitting = false;
+  // The prepared list, in the three's sort order (`painterSortStable`).
+  private _prepared = false;
+  private _order: number[] = [];
+  /** Per sorted entry: command index, or `FALLBACK` = drawn by the three at its place. */
+  private _slot = new Int32Array(INITIAL_COMMANDS);
+  private _cursor = 0;
   private _commands = new Int32Array(INITIAL_COMMANDS * COMMAND_INTS);
+  private _scene: unknown = null;
+  private _camera: unknown = null;
+  private _lights: unknown = null;
   /** Per shader state: last call prepared, and the shared group handles seen then. */
-  private readonly _prepared = new WeakMap<object, { calls: number; shared: unknown[] }>();
-  private readonly _fallback: ServerRecording[] = [];
+  private readonly _states = new WeakMap<object, { calls: number; shared: unknown[] }>();
   private _projections = 0;
+  private readonly _byKey = (i: number, j: number): number => {
+    const zi = this._z[i]!;
+    const zj = this._z[j]!;
+    return zi !== zj ? zi - zj : this._items[i]!.ro.object.id - this._items[j]!.ro.object.id;
+  };
 
   constructor(private readonly _access: ServerAccess) {}
 
@@ -194,16 +209,18 @@ export class RenderServer {
     this._report();
     if (this._items.length > 0) {
       this.stats.dropped++;
-      this._items.length = 0;
-      this._moved.length = 0;
+      this._clear();
     }
     this._owner = r._currentRenderContext;
     this._ownerList = renderList;
     return true;
   }
 
-  /** `true` = the candidate went to the server list (not to the RenderList). */
-  offer(object: Object3D, material: unknown, geometry: unknown, clipping: unknown): boolean {
+  /**
+   * `true` = the candidate went to the server list (not to the RenderList).
+   * `z` is the sort depth the three would use (from the native projection).
+   */
+  offer(object: Object3D, material: unknown, geometry: unknown, clipping: unknown, z: number): boolean {
     this.stats.offered++;
     const g = this._access.recordingOf(object, this._owner);
     if (
@@ -222,59 +239,83 @@ export class RenderServer {
     }
     this._items.push(g);
     this._moved.push(r === CheckResult.Moved);
+    this._z.push(z);
     this.stats.taken++;
     return true;
   }
 
-  /** Emits the pending list now, if `r` is in the render that owns it. */
-  emit(r: ServerRendererLike, scene: unknown, camera: unknown, lightsNode: unknown): void {
-    const n = this._items.length;
-    if (n === 0 || this._emitting || r._currentRenderContext !== this._owner) return;
+  /**
+   * Emits, in the owner's pass, the server entries whose sort key is below
+   * `next` (a render item of the three), or all of them with `next` null.
+   * Identical keys to the three's sort = identical draw order, so coplanar
+   * geometry resolves its depth ties exactly as the three does.
+   */
+  emitBefore(r: ServerRendererLike, scene: unknown, camera: unknown, lightsNode: unknown, next: SortKeyLike | null): void {
+    if (this._items.length === 0 || this._emitting || r._currentRenderContext !== this._owner) return;
     this._emitting = true;
     try {
-      this._emitList(r, scene, camera, lightsNode, n);
+      if (!this._prepared) this._prepare(r, scene, camera, lightsNode);
+      this._emitUntil(r, next);
     } finally {
-      this._items.length = 0;
-      this._moved.length = 0;
       this._emitting = false;
+    }
+    if (this._cursor >= this._order.length) {
+      this.stats.emissions++;
+      this._clear();
     }
   }
 
-  private _emitList(r: ServerRendererLike, scene: unknown, camera: unknown, lightsNode: unknown, n: number): void {
+  private _clear(): void {
+    this._items.length = 0;
+    this._moved.length = 0;
+    this._z.length = 0;
+    this._order.length = 0;
+    this._prepared = false;
+    this._cursor = 0;
+  }
+
+  /** Once per list: shader states, recipes, moved plans, refusals, commands in sort order. */
+  private _prepare(r: ServerRendererLike, scene: unknown, camera: unknown, lightsNode: unknown): void {
     const a = this._access;
+    const n = this._items.length;
     const calls = r.info?.calls ?? 0;
     const env = a.envKey(r, scene, lightsNode);
     const contextNodeVersion = r.contextNode?.version ?? 0;
     const backend = r.backend!;
-    let cmds = this._commands;
-    if (cmds.length < n * COMMAND_INTS) cmds = this._commands = new Int32Array(n * COMMAND_INTS * 2);
+    this._scene = scene;
+    this._camera = camera;
+    this._lights = lightsNode;
+    const order = this._order;
+    order.length = n;
+    for (let i = 0; i < n; i++) order[i] = i;
+    order.sort(this._byKey);
+    if (this._slot.length < n) this._slot = new Int32Array(n * 2);
+    if (this._commands.length < n * COMMAND_INTS) this._commands = new Int32Array(n * COMMAND_INTS * 2);
+    const cmds = this._commands;
     let k = 0;
-    let triangles = 0;
-    const fallback = this._fallback;
-    fallback.length = 0;
-    for (let i = 0; i < n; i++) {
+    for (let s = 0; s < n; s++) {
+      const i = order[s]!;
       const g = this._items[i]!;
+      this._slot[s] = FALLBACK;
       const inst = g.server!;
       if (g.lights !== lightsNode || g.envKey !== env || g.contextNodeVersion !== contextNodeVersion) {
         this.stats.fbEnv++;
-        fallback.push(g);
         continue;
       }
       g.ro.camera = camera;
-      let p = this._prepared.get(inst.state);
-      if (p === undefined || p.calls !== calls) {
+      let st = this._states.get(inst.state);
+      if (st === undefined || st.calls !== calls) {
         a.prepareCall(r, g, calls);
-        p = { calls, shared: sharedHandles(backend, g.ro, inst.recipe) };
-        this._prepared.set(inst.state, p);
+        st = { calls, shared: sharedHandles(backend, g.ro, inst.recipe) };
+        this._states.set(inst.state, st);
       }
-      if (!sameShared(inst.recipe, p.shared)) {
+      if (!sameShared(inst.recipe, st.shared)) {
         // The three recreated a shared bind group (texture generation, sampler):
         // re-record the recipe from the current handles (~µs) instead of a full
         // draw by the three (~100 µs). Still stale = the three draws it.
         const recipe = a.batch.recapture(g.ro as never);
-        if (recipe === undefined || !sameShared(recipe, p.shared)) {
+        if (recipe === undefined || !sameShared(recipe, st.shared)) {
           this.stats.fbShared++;
-          fallback.push(g);
           continue;
         }
         inst.recipe = recipe;
@@ -283,7 +324,6 @@ export class RenderServer {
       if (this._moved[i]) {
         if (!a.applyMoved(r, g)) {
           this.stats.fbMoved++;
-          fallback.push(g);
           continue;
         }
         this.stats.moved++;
@@ -293,29 +333,54 @@ export class RenderServer {
       cmds[base + 1] = inst.count;
       cmds[base + 2] = 1;
       cmds[base + 3] = inst.first;
-      k++;
-      triangles += inst.triangles;
+      this._slot[s] = k++;
     }
-    if (k > 0) {
-      const contextData = backend.get(this._owner);
-      a.batch.emitCommands(contextData['currentPass'], contextData, cmds, k);
-      const info = r.info?.render;
-      if (info) {
-        info.drawCalls += k;
-        info.triangles += triangles;
+    this._prepared = true;
+  }
+
+  private _emitUntil(r: ServerRendererLike, next: SortKeyLike | null): void {
+    const order = this._order;
+    const n = order.length;
+    let s = this._cursor;
+    let runStart = -1;
+    let runCount = 0;
+    let triangles = 0;
+    while (s < n) {
+      const i = order[s]!;
+      const g = this._items[i]!;
+      if (next !== null && !keyBelow(this._z[i]!, g.ro.object.id, next)) break;
+      const k = this._slot[s]!;
+      if (k === FALLBACK) {
+        triangles = this._flushRun(r, runStart, runCount, triangles);
+        runStart = -1;
+        runCount = 0;
+        const o = g.ro.object;
+        r._currentRenderObjectFunction?.call(r, o, this._scene, this._camera, o.geometry, g.material, null, this._lights, g.clipping, null);
+        this.stats.fallback++;
+      } else {
+        if (runStart < 0) runStart = k;
+        runCount++;
+        triangles += g.server!.triangles;
       }
-      this.stats.drawn += k;
+      s++;
     }
-    // Changed under the server: the three draws them here (opaque: order-free).
-    const draw = r._currentRenderObjectFunction;
-    for (let i = 0; i < fallback.length; i++) {
-      const g = fallback[i]!;
-      const o = g.ro.object;
-      draw?.call(r, o, scene, camera, o.geometry, g.material, null, lightsNode, g.clipping, null);
-      this.stats.fallback++;
+    this._flushRun(r, runStart, runCount, triangles);
+    this._cursor = s;
+  }
+
+  /** One bridge crossing for a run of contiguous commands; returns 0 (the reset triangle sum). */
+  private _flushRun(r: ServerRendererLike, start: number, count: number, triangles: number): number {
+    if (count === 0) return 0;
+    const contextData = r.backend!.get(this._owner);
+    const view = start === 0 ? this._commands : this._commands.subarray(start * COMMAND_INTS);
+    this._access.batch.emitCommands(contextData['currentPass'], contextData, view, count);
+    const info = r.info?.render;
+    if (info) {
+      info.drawCalls += count;
+      info.triangles += triangles;
     }
-    fallback.length = 0;
-    this.stats.emissions++;
+    this.stats.drawn += count;
+    return 0;
   }
 
   private _report(): void {
@@ -329,16 +394,11 @@ export class RenderServer {
     }
   }
 
-  /** Is this RenderList the one the pending list was offered from? */
-  ownsList(list: unknown): boolean {
-    return this._items.length > 0 && list === this._ownerList;
-  }
-
   /**
    * Installs the emission points on the renderer. Returns the uninstaller.
-   * `_renderObjects` of the owner's opaque list: after the background and the
-   * `renderOrder` < 0 items, before the rest; `_renderTransparents` and
-   * `finishRender` emit what is left (no opaque item of the three).
+   * `_renderObjects` of the owner's opaque list: before each item of the three,
+   * the server entries with a lower sort key (the background, not a scene node,
+   * never triggers it); `_renderTransparents` and `finishRender` emit the rest.
    */
   install(r: ServerRendererLike): () => void {
     const renderObjects = r._renderObjects;
@@ -366,22 +426,20 @@ export class RenderServer {
       const draw = this._currentRenderObjectFunction!;
       // Fixed length at entry, like the three (ADR-0363, trap 5).
       for (let i = 0, il = list.length; i < il; i++) {
-        const { object, geometry, material, group, clippingContext } = list[i]!;
-        if (server._items.length > 0 && object.renderOrder >= 0 && object.parent !== null) {
-          server.emit(this, scene, camera, lightsNode);
-        }
-        draw.call(this, object, scene, camera, geometry, material, group, lightsNode, clippingContext, passId);
+        const item = list[i]!;
+        if (server._items.length > 0 && item.object.parent !== null) server.emitBefore(this, scene, camera, lightsNode, item);
+        draw.call(this, item.object, scene, camera, item.geometry, item.material, item.group, lightsNode, item.clippingContext, passId);
       }
-      server.emit(this, scene, camera, lightsNode);
+      server.emitBefore(this, scene, camera, lightsNode, null);
     };
     r._renderTransparents = function renderTransparentsWithServer(this: ServerRendererLike, ...args: unknown[]): void {
-      if (this._currentRenderContext === server._owner) server.emit(this, args[3], args[2], args[4]);
+      if (this._currentRenderContext === server._owner) server.emitBefore(this, args[3], args[2], args[4], null);
       renderTransparents.apply(this, args);
     };
     backend.finishRender = function finishRenderWithServer(this: unknown, ...args: unknown[]): void {
       // Only a list whose render had no item of the three at all reaches here.
       if (args[0] === server._owner && server._items.length > 0 && lastScene !== null) {
-        server.emit(r, lastScene, lastCamera, lastLights);
+        server.emitBefore(r, lastScene, lastCamera, lastLights, null);
       }
       finishRender.apply(this, args);
     };
@@ -398,6 +456,25 @@ export class RenderServer {
     return this._items.length > 0 && owner !== null && owner.opaque === list;
   }
 }
+
+/** The fields of a three render item that `painterSortStable` compares. */
+export interface SortKeyLike {
+  groupOrder: number;
+  renderOrder: number;
+  z: number;
+  id: number;
+}
+
+/** A server entry (group order 0, render order 0) sorts before `next`? (`painterSortStable`) */
+export function keyBelow(z: number, id: number, next: SortKeyLike): boolean {
+  if (next.groupOrder !== 0) return next.groupOrder > 0;
+  if (next.renderOrder !== 0) return next.renderOrder > 0;
+  if (z !== next.z) return z < next.z;
+  return id < next.id;
+}
+
+/** Sorted entry drawn by the three at its place (lights/env changed, stale recipe, moved needs the three). */
+const FALLBACK = -1;
 
 /** The current handles of the shared groups (camera, lights) of the recipe. */
 function sharedHandles(backend: { get(o: unknown): Record<string, unknown> }, ro: ServerRoLike, recipe: ServerRecipe): unknown[] {
