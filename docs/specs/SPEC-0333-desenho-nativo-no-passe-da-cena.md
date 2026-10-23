@@ -370,3 +370,14 @@ Desenho da decisão no ADR-0363. Comportamento:
 Critério de aceite: render −3 ms ou mais no setorO e no comercial (A/B
 intercalado, kit SPEC-0382), sem regressão nos outros pontos, `?parityFreeze`
 com nativo×`three` no nível do controle, testes verdes.
+
+### b.3 medido (2026-10-23): sem ganho demonstrável — não mergeado
+
+Paridade exata (`maxChannelDiff` 0, `?parityFreeze`), mas o A/B intercalado
+nos 4 pontos ficou no ruído (setorO −1,24 com uma réplica A atípica, centro
+−0,29, comercial +1,01) e Águas Claras teve uma réplica B com regressão grave
+(render 33,9 ms, GC 2,4 MB/quadro). Detalhes e o porquê do teto inflado no
+ADR-0363 ("Resultado medido"). Próximos cortes possíveis (backlog PRD-0009):
+investigar a réplica atípica; levar à fila os ~20/quadro que só se moveram
+(plano de transformação no `beginRender` do dono); medir o custo que fica fora
+da fila (render aninhado da cena, projeção em JS dos candidatos).

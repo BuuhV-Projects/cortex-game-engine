@@ -1,7 +1,7 @@
 # ADR-0363 — Fila opaca nativa intercalada na RenderList (b.3 do ADR-0330)
 
 **Data:** 2026-10-23
-**Status:** aceito
+**Status:** implementado na branch `claude/b2-desenho-nativo-d831a3`, **não mergeado** — A/B sem ganho demonstrável (ver "Resultado medido")
 
 ## Contexto
 
@@ -128,3 +128,34 @@ contexto e pass até isolar. Regras que ficaram:
    objeto: o render aninhado grava os mesmos objetos noutro contexto depois do
    principal, e a oferta que só olhava `_cxGravacao` recusava ~40 limpos por
    quadro (a b.1 já buscava pelo mapa `(objeto, contexto, passId)`).
+
+## Resultado medido (2026-10-23)
+
+DDD 61 `e2be01c`, engine da branch (base `7fb9421e`), export release, kit
+SPEC-0382, mesma build `?nativeOpaqueQueue=0` (A) × ligada (B), intercalado,
+2 réplicas × 170 s. Paridade `?parityFreeze` no setorO: **`maxChannelDiff` 0**
+em nativo×`three` e nos controles.
+
+| ponto | render A | render B | Δ | quadro med Δ |
+| --- | --- | --- | --- | --- |
+| setorO | 15,02 (uma réplica atípica: 17,1) | 13,77 | −1,24 | −0,05 |
+| centro | 14,06 | 13,77 | −0,29 | −0,65 |
+| comercial | 14,30 | 15,31 | +1,01 | −0,15 |
+| Águas Claras | 15,65 | 24,38 (uma réplica: 33,9, p95 100, GC 2,4 MB/q) | +8,73 | +0,75 |
+
+**Sem ganho demonstrável; uma réplica com regressão grave a investigar.**
+
+Por que o teto (−5,2 ms) não se realizou:
+
+- **O teto estava inflado**: o experimento marcava "limpo e parado" de forma
+  permanente — objeto que depois se movia continuava fora da projeção. Os
+  contadores de recusa mostram, por quadro no setorO, ~36 aceitos, ~20 que se
+  moveram (NPCs, carros, jogador), ~4,5 instantâneo divergente, ~3 material,
+  ~3 receita — ~44 limpos e parados, não ~85.
+- O que sobra por item na fila (conferência + oferta + chave + emissão por
+  sequência) e o custo do `three` que NÃO sai (o render aninhado da mesma
+  cena, o `RenderIdRefresh`, a projeção em JS dos candidatos) comem a maior
+  parte dos ~36 × ~40–60 µs.
+
+O que fica de pé: as 9 armadilhas acima (todas com teste), a paridade exata
+por construção, e a pendência no backlog do PRD-0009.
