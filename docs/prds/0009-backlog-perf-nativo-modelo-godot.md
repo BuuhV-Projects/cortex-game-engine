@@ -122,8 +122,10 @@ a questão "gráfico construído pelo nativo, não pelo three.js".
       controle, `?renderServer=0` (SPEC a escrever antes do código).
 - [ ] RS2 — `InstancedMesh` e materiais com nó conferíveis (−1,5 ms adicional).
 - [ ] RS3 — transparentes ordenados em C++ (paridade exata).
-- [ ] RS4 — sombra direcional simples (`SunShadow` do DDD 61) no passe de sombra
-      nativo (alvo: p99 de render).
+- [x] ~~RS4 — sombra direcional simples (`SunShadow` do DDD 61) no passe de sombra
+      nativo~~ — **cancelado por medição** (2026-10-23, frente B2, com autopiloto): o redesenho do mapa,
+      que é o que o passe nativo substituiria, não custa nada (`?sombraFixa=1`: −0,34 ms andando). O
+      custo da sombra é contínuo e mora no laço por objeto em JS — o mesmo que o RS1 tira do JS.
 - **Decidido** (premissa do ADR-0237/ADR-0330): o Studio continua no three.js;
   só o export usa o caminho nativo, e a paridade é verificada por imagem.
 - **Pronto quando:** critérios dos marcos do ADR-0404.
@@ -264,14 +266,24 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       supersampling; custo de GPU. Medir antes de mexer: no ciclo anterior a GPU não era o teto
       (0,3–0,4 ms/quadro), mas o jogo mudou. Origem: frente B2, investigação do render duplo.
 
-- [ ] **Origem do custo CONTÍNUO da sombra do sol** (−1,6 a −2,4 ms de render com `?sombra=0`, parado):
+- [x] (medido com autopiloto: −2,5 a −4,0 ms de render, quadros >33 ms 19,0%→4,8% andando no Setor O;
+      sonda: `rpEach` 5,49→3,69 ms, +~1,2 ms fora das fases) **Origem do custo CONTÍNUO da sombra do sol** (−1,6 a −2,4 ms de render com `?sombra=0`, parado):
       mapa fixo (`sombraFixa`) e sem receptores (`sombraRecebe=0`) NÃO reduziram — hipótese: a existência
       da luz com sombra (variantes de todo material iluminado + trabalho por quadro do `ShadowNode`).
       Destrava: escolher entre desligar/simplificar a sombra e o RS4 (que só tira o redesenho). Medir com
       sonda de fases on×off. Origem: frente B2 (relatório preliminar).
-- [ ] **A/B decisivo da sombra do sol com autopiloto** — o redesenho do mapa (~+16 ms por redesenho,
+- [x] (feito; ver acima) **A/B decisivo da sombra do sol com autopiloto** — o redesenho do mapa (~+16 ms por redesenho,
       segundo o comentário do `sunShadow.ts`) só aparece com o jogador andando. Destrava a opção do RS4.
       Origem: frente B2.
+
+- [ ] **+1,8 ms/quadro no laço por objeto (`rpEach`) com a sombra do sol ligada**, no host: suspeita do
+      `updateBefore` do `ShadowNode` por estado de shader de todo material iluminado e/ou conferência extra
+      no caminho direto (b.1/`RenderIdRefresh`). Destrava manter a sombra barata; o RS1 (laço por objeto
+      fora do JS) pode absorver parte disso — medir a sombra on×off também com o RS1 ligado. Origem: B2.
+- [ ] **~1,2 ms do render com sombra fora das fases da sonda** — mesma origem a investigar. Origem: B2.
+- [ ] **Decisão de produto (usuário): sombra do sol no export do DDD 61** — desligar (ou opção de
+      qualidade com padrão desligado no nativo) rende −2,5 a −4 ms de render já; custo visual: perde as
+      sombras de fim de tarde no chão perto do jogador. Origem: B2.
 
 ### Limpeza
 
