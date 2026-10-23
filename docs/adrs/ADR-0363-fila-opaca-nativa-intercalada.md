@@ -96,3 +96,10 @@ contexto e pass até isolar. Regras que ficaram:
    aninhada não oferece nem troca a fila.
 4. **Fila sem render é descartada** pela projeção seguinte (`compileAsync`
    projeta sem abrir pass).
+5. **Laço com o tamanho da ENTRADA**: o DDD 61 tem um render aninhado da mesma
+   cena com a mesma câmera em todo quadro — a MESMA RenderList, então o
+   `begin()` aninhado esvazia e reenche o array que o render de fora está
+   percorrendo. O `_renderObjects` do `three` fixa `il` na entrada; o
+   embrulho que lia `list.length` ao vivo virava laço quase infinito
+   (sonda: `rpNodes` 6,5 s num quadro, 214 objetos refeitos, host parado). E o
+   ramo da fila exige o contexto dono — o aninhado reconhece o mesmo array.

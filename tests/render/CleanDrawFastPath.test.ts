@@ -491,6 +491,36 @@ describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0
     expect(eventos).toEqual(['fila(0@0.5)']); // e a fila descartada não sai no render seguinte
   });
 
+  it('render aninhado da mesma cena e câmera (mesma RenderList) no meio do laço: termina e não emite a fila do dono', () => {
+    const { renderer, handle, eventos, contexto, a, item } = montar();
+    const fila = handle.queue!;
+    const lista = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
+    expect(fila.offerOpaque(a.object, 0.5, lista, null, 'cena', 'cam')).toBe(true);
+    lista.opaque.push(item('perto', 0.9, 50), item('longe', 2, 51));
+    fila.finishProjection(lista);
+    renderer.backend!.beginRender!(contexto);
+    const aninhado = {};
+    let aninhados = 0;
+    const desenharDoThree = renderer._currentRenderObjectFunction!;
+    renderer._currentRenderObjectFunction = function (this: CleanDrawRendererLike, o: unknown) {
+      desenharDoThree(o);
+      if (aninhados++ > 0) return;
+      // O `updateBefore` de um item renderiza a cena de novo: `begin()` esvazia e reenche o MESMO array.
+      const dono = this._currentRenderContext;
+      this._currentRenderContext = aninhado;
+      lista.opaque.length = 0;
+      lista.opaque.push(item('x', 0.1, 60), item('y', 0.2, 61), item('z', 0.3, 62));
+      this._renderObjects!(lista.opaque, 'cam', 'cena', 'luzes', null);
+      this._currentRenderContext = dono;
+    };
+    renderer._renderObjects!(lista.opaque, 'cam', 'cena', 'luzes', null);
+    renderer.backend!.finishRender!(contexto);
+    // A fila saiu UMA vez, no dono (antes do 1º item de chave maior que a dela).
+    expect(eventos.filter((e) => e.startsWith('ate') || e === 'resto')).toEqual(['ate(0.9)']);
+    // O laço de fora percorre os 2 itens da ENTRADA (como o `three`), não o array reenchido.
+    expect(eventos.filter((e) => e.startsWith('three(')).length).toBe(2 + 3);
+  });
+
   it('no braço `three` do instrumento de paridade a fila recusa tudo', () => {
     mainPassArm.three = true;
     try {

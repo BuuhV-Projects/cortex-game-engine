@@ -868,15 +868,20 @@ export function installCleanDrawFastPath(
       lightsNode: unknown,
       passId?: unknown,
     ): void {
-      if (list !== filaDoQuadro.opaque || !fila.queuePending) {
+      // Só o render DONO: um render aninhado da mesma cena com a mesma câmera
+      // reusa a MESMA RenderList (o mesmo array), mas é outro contexto.
+      if (list !== filaDoQuadro.opaque || !fila.queuePending || this._currentRenderContext !== filaDoQuadro.contexto) {
         renderObjectsOriginal!.call(this, list, camera, scene, lightsNode, passId);
         return;
       }
       filaDoQuadro.opaque = null;
       const contexto = this._currentRenderContext;
-      const fundo = list.length - filaDoQuadro.empurrados;
+      // Tamanho fixado na entrada, como o `three` faz: o aninhado esvazia e
+      // reenche este array no meio do laço (ADR-0363, armadilha medida).
+      const total = list.length;
+      const fundo = total - filaDoQuadro.empurrados;
       const desenhar = this._currentRenderObjectFunction!;
-      for (let i = 0; i < list.length; i++) {
+      for (let i = 0; i < total; i++) {
         const item = list[i]!;
         if (i >= fundo) fila.emitQueued(contexto, false, item.renderOrder, item.z, item.id);
         desenhar.call(this, item.object, scene, camera, item.geometry, item.material, item.group, lightsNode, item.clippingContext, passId);
