@@ -43,6 +43,10 @@ Hades.
       `update()` de sistema.
 - **Pronto quando:** alocação/quadro em regime cai a um patamar estável e as
   pausas de GC somem do p95 do `frameMs`.
+- **Andamento (2026-10-22, SPEC-0357):** medido (instrumento `gc.allocatedMB`)
+  e feito o lado dos sistemas do engine: 460–540 → 410–470 KB/quadro (−10 a
+  −13%) no DDD 61. Critério de pronto **não** atingido — o resto é o
+  `onUpdate` do jogo, os internos do three no render (B2) e o raycast (B4).
 
 ### B2 — "RenderingServer": concluir o ADR-0237 (M0–M8)
 
@@ -77,6 +81,10 @@ fora; com NPCs e trânsito (DDD 61) o custo cresce com o número de personagens.
       buffer" (amostragem/interpolação de clipes + hierarquia em C++).
 - [ ] Integrar ao B2 (matrizes de osso direto no buffer de uniformes/storage).
 - **Pronto quando:** custo de animação fica ~constante no JS independente de N.
+- **Veredito (2026-10-22, SPEC-0357): não necessário agora.** Medido no Hermes:
+  ~80–130 µs por personagem skinado (mixer + matrizes + esqueleto); o DDD 61
+  tem N = 1 (multidão no lote instanciado) → ~0,1–0,5 ms. Reabrir com ~10+
+  personagens skinados animando ao mesmo tempo.
 
 ### B4 — Primitivas de gameplay nativas (estilo `move_and_slide`)
 

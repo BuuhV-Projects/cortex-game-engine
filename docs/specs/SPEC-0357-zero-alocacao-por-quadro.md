@@ -1,7 +1,7 @@
 # SPEC-0357 - Zero alocação por quadro no JS do engine (B1) e veredito do B3
 
 **Data:** 2026-10-22
-**Status:** em andamento
+**Status:** aceito
 **Relacionados:** PRD-0009 (B1 e B3), SPEC-0264 (`__cortexGcStats`), SPEC-0321 (`text-vivo`), SPEC-0250 (`cpuAvg`/`cpuP99`)
 
 ## Contexto
@@ -64,8 +64,6 @@ Atribuição (KB/quadro, regime):
 | `world.query` dos sistemas | 6,5 | engine |
 | `input` | 3 | engine |
 
-_(render por fase, depois e B3: abaixo)_
-
 ### 4. Mudanças (sem mudar comportamento)
 
 - `GamepadManager.poll`: estado do controle reescrito no lugar, em vez de 1 objeto + 3 arrays + 3
@@ -79,6 +77,46 @@ _(render por fase, depois e B3: abaixo)_
 - **Guarda:** `tests/systems/noPerFrameAllocation.test.ts` falha se algum `System.update()` do engine
   fizer `new Vector2/3/4, Matrix3/4, Quaternion, Euler, Box3, Sphere, Ray, Plane, Color` (inclusive em
   closures dentro dele). O teste prova que acusa com um fixture de resposta conhecida.
+
+### 4b. Depois — A/B intercalado
+
+Rodadas ABBA por ponto (A = base, B = esta SPEC; mesma instrumentação dos dois lados, export release,
+150–160 s, médias de 2 rodadas por lado). Uma rodada B do Comercial foi descartada e repetida: outra
+sessão exportava (bundle + hermesc + pak) durante a janela medida e ela saiu com 36 fps.
+
+| ponto | KB/quadro | coletas young/s | pausa young ms/s | fps | `frameMs` p50 | p95 | p99 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Setor O | 460 → **409** (−11%) | 7,5 → 7,0 | 15,0 → 13,8 | 52,7 → 54,0 | 19,1 → 18,4 | 28,4 → 29,1 | 33,5 → 34,9 |
+| Centro | 464 → **412** (−11%) | 7,9 → 7,6 | 14,6 → 14,1 | 54,4 → 57,7 | 18,4 → 17,5 | 28,3 → 26,0 | 33,4 → 31,4 |
+| Comercial | 505 → **456** (−10%) | 14,1 → 13,4 | 26,4 → 25,3 | 49,7 → 49,7 | 21,4 → 20,6 | 33,3 → 31,9 | 37,7 → 36,3 |
+| Águas Claras | 540 → **470** (−13%) | 8,0 → 7,6 | 15,5 → 15,3 | 49,4 → 52,5 | 20,6 → 19,1 | 30,6 → 29,9 | 40,8 → 36,0 |
+| dirigindo (Hélio) | 488 → **423** (−13%) | 8,8 → 7,5 | 16,9 → 14,8 | 55,2 → 58,0 | 18,8 → 17,3 | 28,8 → 25,6 | 32,6 → 30,0 |
+
+- A alocação cai 50–70 KB/quadro em todos os pontos, de forma estável entre rodadas (Setor O: A 461/459,
+  B 411/407). Por seção (Setor O, mesma sonda): espelho 20,4 → 2,6 KB, UI −27 KB.
+- fps e cauda melhoram na mesma direção em 4 de 5 pontos, mas a diferença é do tamanho da variação entre
+  rodadas do mesmo lado (±1,5–3 fps): **não** é um ganho de fps demonstrado.
+- **O critério de pronto do B1 no PRD não foi atingido:** a alocação continua em ~410–470 KB/quadro e
+  ~7 coletas young/s (13 no Comercial), e 37–50% dos quadros acima do p95 ainda têm coleta. O que resta
+  não é do JS dos sistemas do engine: é o `onUpdate` do jogo (~180 KB), os internos do three no render
+  (~150 KB) e o raycast (~55 KB) — ver Pendências.
+
+### 4c. Soak (vazamento)
+
+Setor O, ~10 min por lado. As coletas old chegam a cada ~6 min (~250 ms de parede, concorrentes); só os
+**vales** depois delas dizem algo sobre vazamento (o `text=` do perf-log é acumulado — SPEC-0321).
+
+| | antes | depois |
+| --- | --- | --- |
+| KB/quadro | 404 | 356 (−12%) |
+| coletas young | 7,45/s (13,3 ms/s) | 6,63/s (11,6 ms/s) |
+| fps / p95 | 63,8 / 22,6 ms | 63,9 / 23,6 ms |
+| vales `heap-js` | 173,0 → 179,6 MB | 172,3 → 172,2 MB |
+| vales `external` | 299 → 329 MB | 298 → 317 MB |
+| `text-vivo` | estável (ui 0,0–0,3 + canvas 6,7 MB) | idem |
+
+O heap JS não vaza. O `external` sobe nos dois lados — pendência antiga (soak longo), sem relação com
+esta SPEC.
 
 ### 5. B3 (skinning/animação em C++): **não é necessário agora**
 
@@ -106,6 +144,14 @@ personagens com rig de 22 ossos e um clipe de 30 chaves por osso; por quadro, o 
 
 - `CharacterPhysicsSystem` (28 KB) e `ThirdPersonControlSystem` (27 KB): a alocação está no raycast de
   `src/physics/nearMeshes.ts` — frente do raycast em C++ (B4), que tira esse caminho do JS.
+- `render` (147 KB): aberto por fase (alocação "self", KB/quadro): corpo do `render()` do three 52,
+  `RenderObjects.get` 28, `renderObject` 17–26, bindings 6, `draw` 4, resto ≈ 0. É interno do three
+  (sem patch no repo) e de `src/render` — frente do desenho nativo (B2), que tira o laço por objeto do JS.
+- `update` (179 KB) é o `onUpdate` do jogo — maior fonte isolada; B1 do lado do jogo fica para uma spec
+  do DDD 61.
+- Controle: o `getGamepads()` do host monta um snapshot novo (~3,6 KB/quadro medido com um controle
+  Xbox lido) e o controle é lido **duas vezes** por quadro (`Game` e `UiLayer.pollDevices`). Proposta,
+  não implementada: reaproveitar os objetos do snapshot em `native/src/shims/input.cpp`.
 
 ## Consequências
 
