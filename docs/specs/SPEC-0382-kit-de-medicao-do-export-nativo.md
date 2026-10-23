@@ -88,3 +88,10 @@ acima disso `frameMs` não mede nada); `js` do host (frame-timing) med/p95;
   outro jogo usa `PERF_LOCK`.
 - `ab-bench.ps1` + `ab-report.mjs` (TDR-0007) seguem para o roteiro `bench` com
   análise estatística por faixa de draws; o `ab.sh` é o A/B por ponto de spawn.
+
+
+**Terceira correção (2026-10-22, relatada pela frente b4):** no DDD 61 a partir do `ae5caef`
+o profiler do jogo só liga com `perf=1` na query (`main.ts` do jogo); sem ele o trace sai
+sem seções `cpuAvg` e o `validate.sh` reprova a rodada. A query padrão do `round.sh` passou
+a ser `?cortexDebug=perf&perf=1&systemProfile=1&spawn=<ponto><extra>` (parâmetro
+desconhecido é ignorado por quem não o usa).

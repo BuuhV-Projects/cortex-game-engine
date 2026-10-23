@@ -32,6 +32,23 @@ jogo. Não é a `dff1386` (fim do ciclo de 75 fps): aquele jogo não existe mais
 a `main` é mais pesada e sem as otimizações do ciclo — números absolutos piores
 que o histórico são esperados; vale o A/B na mesma build.
 
+**A main do jogo só passou a rodar no export em 2026-10-22**, com SPEC-0392 (`Audio`
+no host) e SPEC-0393 (`contactPairsWith`/`contactPair` no Rapier do host — sem ela o
+1º tick morria com TypeError, registrado só no `error_log.txt`). Até lá as frentes
+mediram no `dff1386`/`aacfb7e`; esses números ficam como referência secundária.
+
+**Linha de base da main do jogo (`e2be01c`)** — kit SPEC-0382 com `perf=1`, 135 s por
+ponto, engine `7fb9421e`, 4 rodadas válidas, 100% dos quadros apresentados:
+
+| ponto | frameMs med / p95 | render cpuAvg (p99) | world cpuAvg (p99) | draws |
+| --- | --- | --- | --- | --- |
+| Setor O | 26,8 / 35,9 | 15,3 (25,4) | 3,9 (13,0) | 172 |
+| Centro | 26,2 / 38,5 | 14,6 (25,1) | 3,7 (12,4) | 162 |
+| Comercial | 29,3 / 41,1 | 15,0 (23,9) | 4,2 (13,6) | 152 |
+| Águas Claras | 29,9 / 44,0 | 16,0 (25,0) | 3,5 (14,3) | 175 |
+
+Ou seja, ~34–38 fps, e o **render é ~55% do quadro**: é onde o B2 tem mais a ganhar.
+
 Medições no export do DDD 61 são serializadas pelo lock
 `D:/jogos/detetive-brasilia/.cortex/measure.lock` (diretório criado com `mkdir`
 atômico, `owner.txt` dentro, removido ao fim de cada rodada).
