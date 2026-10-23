@@ -24,6 +24,8 @@ import { debug } from '../core/debug.js';
 import { mainPassBridge, type MainPassBridge, type NativeSceneMirror } from '../core/NativeSceneMirror.js';
 import { MainPassKind } from './MainPassKind.js';
 import { queryFlagRequested } from './TransformOnlyRefresh.js';
+import { activeRenderServer, type RenderServer, type ServerRendererLike } from './RenderServer.js';
+import { mainPassArm } from './MainPassArm.js';
 
 const QUERY_KEY = 'nativeProjection=';
 /** Interruptor geral do passe principal nativo (ADR-0330). */
@@ -94,7 +96,7 @@ export class MainProjector {
     private readonly _stats: NativeProjectionStats,
   ) {}
 
-  project(camera: Camera, renderList: RenderListLike, clippingContext: unknown): boolean {
+  project(camera: Camera, renderList: RenderListLike, clippingContext: unknown, server: RenderServer | null = null): boolean {
     const view = this._mirror._projectionView();
     const capacidade = view.kinds.length;
     if (this._indices.length < capacidade) {
@@ -133,6 +135,13 @@ export class MainProjector {
         continue;
       }
       let z = this._depths[k]!;
+      // RS1b (SPEC-0425): clean opaque instances go to the server, not to the RenderList.
+      if (
+        server !== null && tipo === MainPassKind.NativeCull && !Array.isArray(objeto.material) &&
+        server.offer(objeto, objeto.material, objeto.geometry, clippingContext, this._depths[k]!)
+      ) {
+        continue;
+      }
       if (tipo === MainPassKind.JsCull) {
         // O teste exato do `three`, com a esfera do OBJETO (instâncias, rig).
         if (objeto.frustumCulled && !this._dentro(objeto)) continue;
@@ -231,7 +240,10 @@ export function installNativeProjection(
   ): void {
     const raiz = groupOrder === 0 && mirror.installed && object === mirror.root;
     if (raiz && this.sortObjects !== false && !(camera as Camera & { isArrayCamera?: boolean }).isArrayCamera) {
-      if (projector.project(camera, renderList, clippingContext)) return;
+      const override = (object as Object3D & { overrideMaterial?: unknown }).overrideMaterial;
+      const server = override || mainPassArm.three ? null : activeRenderServer();
+      const offering = server !== null && server.beginProjection(this as unknown as ServerRendererLike, renderList) ? server : null;
+      if (projector.project(camera, renderList, clippingContext, offering)) return;
     } else if (raiz) {
       stats.refused++;
     }

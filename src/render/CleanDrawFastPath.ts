@@ -29,11 +29,22 @@ import {
   type DrawBatchStats,
 } from './DrawBatch.js';
 import { applyPlan, queryFlagRequested, type NodeFrameLike, type UniformsGroupLike } from './TransformOnlyRefresh.js';
+import {
+  CheckResult,
+  RenderServer,
+  renderServerRequested,
+  setActiveRenderServer,
+  type ServerAccess,
+  type ServerInstance,
+  type ServerRendererLike,
+} from './RenderServer.js';
 
 const QUERY_KEY = 'cleanDraw=';
 /** Lote de desenhos diretos em C++ (b.2). */
 const BATCH_QUERY_KEY = 'drawBatch=';
 const MAIN_PASS_QUERY_KEY = 'nativeMainPass=';
+/** RS1a (SPEC-0425): referências de grupo compartilhado atualizadas por render, não vigiadas por objeto. */
+const SHARED_REFS_QUERY_KEY = 'sharedRefs=';
 const UPDATE_OBJECT = 'object';
 /** Chamadas de `render()` entre relatos no `debug('perf')`. */
 const REPORT_RENDER_CALLS = 1200;
@@ -111,6 +122,7 @@ interface NoLike {
   isMaterialReferenceNode?: boolean;
   isTextureNode?: boolean;
   node?: unknown;
+  group?: { shared?: boolean } | null;
   value?: unknown;
   getUpdateType(): string;
   getUpdateBeforeType?(): string;
@@ -202,13 +214,23 @@ interface Gravacao {
   vigias: Vigia[];
   instantaneo: Float64Array;
   plan: NonNullable<ReturnType<typeof buildRenderIdPlan>>;
+  /** Referências de grupo compartilhado (névoa): atualizadas uma vez por render (RS1a). */
+  sharedRefs: NoLike[];
+  /** Instância do RenderServer (RS1b): `undefined` = recalcular; refeita a cada gravação. */
+  server?: ServerInstance | null;
 }
 
 /**
  * Os vigias de um render object, ou `null` se algum nó de objeto não é
  * conferível. Exportada para os testes.
+ *
+ * Com `sharedRefs` (RS1a, SPEC-0425), a referência cujo uniforme mora num grupo
+ * COMPARTILHADO (a névoa: `setGroup(renderGroup)` no `three`) vai para essa
+ * lista em vez de virar vigia: o valor é um só para a chamada inteira, então
+ * quem desenha direto o atualiza uma vez por render — e a troca de cor da
+ * névoa deixa de derrubar todo objeto para o caminho do `three`.
  */
-export function watchersFor(ro: CleanRoLike): Vigia[] | null {
+export function watchersFor(ro: CleanRoLike, sharedRefs?: NoLike[]): Vigia[] | null {
   const estado = ro.getNodeBuilderState();
   for (const n of estado.updateBeforeNodes) if (n.getUpdateBeforeType?.() === UPDATE_OBJECT) return null;
   for (const n of estado.updateAfterNodes) if (n.getUpdateAfterType?.() === UPDATE_OBJECT) return null;
@@ -221,6 +243,10 @@ export function watchersFor(ro: CleanRoLike): Vigia[] | null {
     if (n.type === 'ModelNode' && ESCOPOS_DA_MATRIZ.has(n.scope ?? '')) continue;
     if (n.type === 'UniformGroupNode') continue;
     if (Array.isArray(n.properties)) {
+      if (sharedRefs && !n.isMaterialReferenceNode && n.object && n.group?.shared === true) {
+        sharedRefs.push(n);
+        continue;
+      }
       // `ReferenceNode`: material (o do render object, ou um fixo), um objeto
       // fixo (névoa) ou o próprio objeto desenhado.
       const holder = n.isMaterialReferenceNode
@@ -292,6 +318,13 @@ export class SnapshotCursor {
     for (let k = 0; k < tmp.length; k++) this.v(tmp[k]);
     return true;
   }
+}
+
+/** O que não muda num render object: vigias, plano e referências por render. */
+interface Preparado {
+  vigias: Vigia[];
+  plan: Gravacao['plan'];
+  sharedRefs: NoLike[];
 }
 
 /** Capacidade inicial do buffer do instantâneo (cresce dobrando). */
@@ -542,6 +575,7 @@ export function installCleanDrawFastPath(
     return null;
   }
   const stats: CleanDrawStats = { direct: 0, moved: 0, three: 0, recorded: 0, ineligible: 0 };
+  const referenciasPorRender = queryFlagRequested(SHARED_REFS_QUERY_KEY, true);
   /**
    * Gravações por objeto, por contexto de render e por `passId`. O contexto
    * entra na chave para o passe de sombra do `three` (quando roda) não
@@ -603,11 +637,11 @@ export function installCleanDrawFastPath(
   }
 
   /** O que não muda num render object: vigias e plano (ou `null` = inelegível). */
-  const preparados = new WeakMap<object, { vigias: Vigia[]; plan: Gravacao['plan'] } | null>();
+  const preparados = new WeakMap<object, Preparado | null>();
   /** Render objects descartados pelo `three` (material/geometria `dispose`). */
   const descartados = new WeakSet<object>();
 
-  const preparar = (ro: CleanRoLike): { vigias: Vigia[]; plan: Gravacao['plan'] } | null => {
+  const preparar = (ro: CleanRoLike): Preparado | null => {
     let p = preparados.get(ro);
     if (p !== undefined) return p;
     const o = ro.object;
@@ -615,9 +649,10 @@ export function installCleanDrawFastPath(
     const elegivel =
       ro.bundle === null && !monitor.hasNode && !monitor.hasAnimation && !o.isSkinnedMesh && !o.isBatchedMesh &&
       !o.morphTargetInfluences;
-    const vigias = elegivel ? watchersFor(ro) : null;
+    const sharedRefs: NoLike[] = [];
+    const vigias = elegivel ? watchersFor(ro, referenciasPorRender ? sharedRefs : undefined) : null;
     const plan = vigias ? buildRenderIdPlan(ro as never) : null;
-    p = vigias && plan ? { vigias, plan } : null;
+    p = vigias && plan ? { vigias, plan, sharedRefs } : null;
     preparados.set(ro, p);
     if (p === null) {
       stats.ineligible++;
@@ -657,12 +692,14 @@ export function installCleanDrawFastPath(
       g = {
         ro, material: ro.material, context: r._currentRenderContext, passId, lights: lightsNode, clipping,
         envKey: undefined, contextNodeVersion: 0, vigias: p.vigias, instantaneo: new Float64Array(n), plan: p.plan,
+        sharedRefs: p.sharedRefs,
       };
       porPasse.set(passId, g);
     }
     // Regravação no lugar: objeto que se move passa por aqui todo quadro.
     g.lights = lightsNode;
     g.clipping = clipping;
+    g.server = undefined;
     // A mais recente fica no próprio objeto: o caso comum (um contexto, um
     // passe) resolve com uma leitura de campo, sem as três buscas em mapa.
     (o as ComGravacao)._cxGravacao = g;
@@ -675,6 +712,53 @@ export function installCleanDrawFastPath(
   };
 
   const updateBinding = backend.updateBinding?.bind(backend);
+
+  /**
+   * O que vale para todos os render objects de um estado de shader numa
+   * chamada de `render()`: `updateBefore`, nós de render/quadro, referências
+   * compartilhadas (RS1a) e grupos compartilhados (câmera, luzes) — sem isso a
+   * câmera congela (ADR-0215). Deduplicado por estado e por grupo.
+   */
+  const prepararChamada = (g: Gravacao, calls: number): void => {
+    const ro = g.ro;
+    const estado = ro.getNodeBuilderState() as object;
+    if (feitoNaChamada.get(estado) !== calls) {
+      feitoNaChamada.set(estado, calls);
+      nodes.updateBefore(ro);
+      const frame = nodes.getNodeFrameForRender(ro);
+      renderIdDaChamada.calls = calls;
+      renderIdDaChamada.renderId = frame.renderId;
+      const renderNodes = g.plan.renderNodes;
+      for (let k = 0; k < renderNodes.length; k++) frame.updateNode(renderNodes[k]);
+      // Antes dos grupos compartilhados abaixo: o UBO de render sobe com o valor novo.
+      const refs = g.sharedRefs;
+      for (let k = 0; k < refs.length; k++) frame.updateNode(refs[k]);
+    } else if (renderIdDaChamada.calls !== calls) {
+      renderIdDaChamada.calls = calls;
+      renderIdDaChamada.renderId = nodes.getNodeFrameForRender(ro).renderId;
+    }
+    const shared = g.plan.shared;
+    for (let k = 0; k < shared.length; k++) {
+      const grupo = shared[k] as object;
+      if (feitoNaChamada.get(grupo) === calls) continue;
+      feitoNaChamada.set(grupo, calls);
+      bindings._update(grupo, g.plan.groups);
+    }
+  };
+
+  /** Só a matriz mudou: o plano do ADR-0290 (nós de objeto + UBOs). `false` = precisa do three. */
+  const aplicarMovimento = (g: Gravacao): boolean => {
+    const ro = g.ro;
+    const frame = nodes.getNodeFrameForRender(ro);
+    if (updateBinding === undefined || ro.getMonitor().needsVelocity?.((frame as { renderer?: unknown }).renderer) === true) {
+      return false;
+    }
+    applyPlan(frame as unknown as NodeFrameLike, g.plan.object, updateBinding);
+    const m = ro.object.matrixWorld.elements;
+    for (let k = 0; k < MATRIX_ELEMENTS; k++) g.instantaneo[k] = m[k]!;
+    stats.moved++;
+    return true;
+  };
 
   /** O caminho do three, e a (re)gravação de quem ele desenhou. */
   const tresCaminho = (
@@ -737,41 +821,17 @@ export function installCleanDrawFastPath(
       // `updateBefore` e nós de render são do SHADER: render objects com o
       // mesmo `NodeBuilderState` têm os mesmos nós, então basta o primeiro de
       // cada estado por chamada (são nós RENDER/FRAME — OBJECT é inelegível).
-      const estado = ro.getNodeBuilderState() as object;
-      if (feitoNaChamada.get(estado) !== calls) {
-        feitoNaChamada.set(estado, calls);
-        nodes.updateBefore(ro);
-        const frame = nodes.getNodeFrameForRender(ro);
-        renderIdDaChamada.calls = calls;
-        renderIdDaChamada.renderId = frame.renderId;
-        const renderNodes = g.plan.renderNodes;
-        for (let k = 0; k < renderNodes.length; k++) frame.updateNode(renderNodes[k]);
-      } else if (renderIdDaChamada.calls !== calls) {
-        renderIdDaChamada.calls = calls;
-        renderIdDaChamada.renderId = nodes.getNodeFrameForRender(ro).renderId;
-      }
-      const shared = g.plan.shared;
-      for (let k = 0; k < shared.length; k++) {
-        const grupo = shared[k] as object;
-        if (feitoNaChamada.get(grupo) === calls) continue;
-        feitoNaChamada.set(grupo, calls);
-        bindings._update(grupo, g.plan.groups);
-      }
+      prepararChamada(g, calls);
       const monitor = ro.getMonitor();
       monitor.renderId = renderIdDaChamada.renderId;
       if (!matrixMatch(ro, g.instantaneo)) {
         // Só a matriz mudou: o que o `TransformOnlyRefresh` (ADR-0290) faz
         // dentro do caminho do three — os nós de objeto e os UBOs do objeto
         // (um `writeBuffer` cada) —, sem o resto da verificação.
-        const frame = nodes.getNodeFrameForRender(ro);
-        if (updateBinding === undefined || monitor.needsVelocity?.((frame as { renderer?: unknown }).renderer) === true) {
+        if (!aplicarMovimento(g)) {
           tresCaminho(this, object, material, scene, camera, lightsNode, group, clippingContext, passId);
           return;
         }
-        applyPlan(frame as unknown as NodeFrameLike, g.plan.object, updateBinding);
-        const m = (object as ObjectLike).matrixWorld.elements;
-        for (let k = 0; k < MATRIX_ELEMENTS; k++) g.instantaneo[k] = m[k]!;
-        stats.moved++;
       }
       if (pipelines.isReady(ro)) {
         if (lote === null || !lote.add(ro as unknown as BatchRoLike, this.info as never)) backend.draw!(ro, this.info);
@@ -782,11 +842,38 @@ export function installCleanDrawFastPath(
     tresCaminho(this, object, material, scene, camera, lightsNode, group, clippingContext, passId);
   };
 
+  // RS1b (SPEC-0425): o servidor reaproveita a gravação, a conferência e o lote.
+  // Ligado por padrão (decisão do usuário, 2026-10-23); este caminho só existe no host.
+  let desinstalarServidor: (() => void) | null = null;
+  if (lote && renderServerRequested()) {
+    const acesso: ServerAccess = {
+      recordingOf: (object, context) => {
+        const g = (object as ComGravacao)._cxGravacao;
+        return (g !== undefined && g.context === context && g.passId === null ? g : gravacaoDe(object, context, null)) as never;
+      },
+      disposed: (ro) => descartados.has(ro),
+      check: (gs) => {
+        const g = gs as unknown as Gravacao;
+        if (!restMatch(g.ro, g.vigias, g.instantaneo)) return CheckResult.Dirty;
+        return matrixMatch(g.ro, g.instantaneo) ? CheckResult.Clean : CheckResult.Moved;
+      },
+      prepareCall: (_r, g, calls) => prepararChamada(g as unknown as Gravacao, calls),
+      envKey: (r, scene, lightsNode) => chaveDeAmbiente(r as CleanDrawRendererLike, scene, lightsNode),
+      applyMoved: (_r, g) => aplicarMovimento(g as unknown as Gravacao),
+      batch: lote,
+    };
+    const servidor = new RenderServer(acesso);
+    desinstalarServidor = servidor.install(renderer as unknown as ServerRendererLike);
+    setActiveRenderServer(servidor);
+  }
+
   debug('perf', '[cleanDraw] instalado');
   return {
     stats,
     batch: lote?.stats ?? null,
     uninstall(): void {
+      desinstalarServidor?.();
+      setActiveRenderServer(null);
       lote?.flush();
       Reflect.deleteProperty(renderer, '_renderObjectDirect');
       backend.draw = drawOriginal;

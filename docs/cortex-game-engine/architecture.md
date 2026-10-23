@@ -1205,7 +1205,10 @@ segue 100% no `three`. `?nativeMainPass=0` desliga tudo; cada etapa tem o seu.
   pipeline) e, enquanto bate, é desenhado direto (`updateBefore` + grupos
   compartilhados + `backend.draw`), pulando a verificação genérica do `three`.
   A sonda `?drawRecipeProbe=1` (`DrawRecipeProbe.ts`) lista o que barra a
-  elegibilidade.
+  elegibilidade. **RS1a (SPEC-0425, `?sharedRefs=0|1`):** referência de grupo
+  COMPARTILHADO (a névoa do `three`, `setGroup(renderGroup)`) não é vigia por
+  objeto: é atualizada uma vez por estado de shader por chamada, antes dos grupos
+  compartilhados — a troca de cor da névoa não derruba mais todo objeto.
 
 - **(b.2) lote em C++** (`src/render/DrawBatch.ts` + `native/src/render/draw_batch.*`,
   `?drawBatch=0|1`): a receita (handles de GPU que o `three` usou) é gravada no
@@ -1242,11 +1245,22 @@ quadros de atraso, visível no passe principal. `frustumCulled`, `renderOrder`
 de grupo e troca de `geometry` seguem pela varredura (até 8 quadros); uma
 `boundingSphere` recalculada na MESMA geometria não é vista.
 
-**Próximo desenho (ADR-0404, RenderingServer):** o teto medido de tirar o laço
-por objeto do `three` do passe principal é −8 a −11 ms de render no DDD 61. O plano é
-o caminho da RECEITA (o `three` compila, o C++ é dono das instâncias e do laço) em
-marcos RS1–RS4; regra de desenho: instância limpa = zero JS por quadro (a b.3
-mostrou que JS por objeto residual come o ganho).
+**RenderingServer RS1 (ADR-0404 / SPEC-0425, `src/render/RenderServer.ts`,
+LIGADO por padrão no host desde 2026-10-23 por decisão do usuário, `?renderServer=0` desliga; o Studio não instala):** a projeção nativa oferece cada malha
+opaca simples com gravação da b.1; a conferida vai para uma lista de comandos
+(receita da b.2 + 4 inteiros) em vez da RenderList, emitida no passe por trechos
+intercalados com os itens do `three` na chave do `painterSortStable`. Mediu −1,1 ms
+andando (abaixo do critério), porque o trabalho por estado de shader (UBO de luzes e
+sombra, ~77 µs × estado) continua.
+
+**Armadilha (ordem de opacos):** "opaco com profundidade dá a mesma imagem em qualquer
+ordem" é FALSO com geometria coplanar (LessEqual: o último vence o empate) — o DDD 61
+tem. Desenho nativo intercalado com o `three` tem de seguir a chave do sort dele.
+
+**Armadilha (receita velha):** o `three` recria o bind group de um grupo
+COMPARTILHADO quando muda a geração de uma textura/sampler; a receita gravada fica
+apontando para o grupo velho. Recusar devolve quase tudo ao `three` (hoje só ~26%
+dos diretos da b.1 saem pelo lote por isso); regravar (`DrawBatch.recapture`) resolve.
 
 **Subárvore escondida (SPEC-0372):** a varredura pula o slot com ancestral
 escondido (contador `_ocultoAcima` por slot, mantido pelo gancho de `visible`
