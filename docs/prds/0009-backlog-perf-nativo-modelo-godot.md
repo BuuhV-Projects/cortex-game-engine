@@ -202,9 +202,9 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       não commitado na worktree `D:/jogos/detetive-brasilia-r4-c` (base `dff1386`). Origem: ciclo
       75 fps (pausado em 2026-10-09). Precisa ser reavaliado na main do jogo antes de portar.
 
-- [ ] **O DDD 61 renderiza a cena duas vezes por quadro** com a mesma câmera: um `render()` da
-      mesma cena aninhado dentro do render principal (achado da B2 ao depurar a b.3, commit
-      `fd975b5d`). Destrava: descobrir qual sistema do jogo dispara esse render e quanto custa; se for
+- [ ] **O DDD 61 renderiza a cena duas vezes por quadro:** um `render()` da mesma cena aninhado
+      dentro do render principal, com **outra câmera** (logo outras luzes) — achado da B2 ao depurar a
+      b.3 (commits `fd975b5d` e o seguinte; a 1ª leitura dizia "mesma câmera" e foi corrigida). Destrava: descobrir qual sistema do jogo dispara esse render e quanto custa; se for
       um render completo, pode ser uma fatia grande dos ~15 ms de render. Origem: frente B2.
 
 ### Limpeza
