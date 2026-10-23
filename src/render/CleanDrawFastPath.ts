@@ -16,6 +16,7 @@
  * `ModelNode` (ou `modelNormalMatrix`/`modelWorldMatrixInverse`), grupo,
  * `ReferenceNode` (material, névoa, objeto) ou `TextureNode`.
  */
+import { Object3D } from 'three';
 import { modelNormalMatrix, modelWorldMatrixInverse } from 'three/tsl';
 import { debug } from '../core/debug.js';
 import { buildRenderIdPlan } from './RenderIdRefresh.js';
@@ -34,6 +35,8 @@ const QUERY_KEY = 'cleanDraw=';
 /** Lote de desenhos diretos em C++ (b.2). */
 const BATCH_QUERY_KEY = 'drawBatch=';
 const MAIN_PASS_QUERY_KEY = 'nativeMainPass=';
+/** Fila opaca nativa intercalada (b.3, ADR-0363). */
+const OPAQUE_QUEUE_QUERY_KEY = 'nativeOpaqueQueue=';
 const UPDATE_OBJECT = 'object';
 /** Chamadas de `render()` entre relatos no `debug('perf')`. */
 const REPORT_RENDER_CALLS = 1200;
@@ -493,6 +496,36 @@ export interface CleanDrawRendererLike {
   _currentRenderBundle?: unknown;
   info?: { calls?: number };
   contextNode?: { version: number };
+  _renderObjects?: (list: RenderItemLike[], camera: unknown, scene: unknown, lightsNode: unknown, passId?: unknown) => void;
+  _renderTransparents?: (...args: unknown[]) => void;
+  _currentRenderObjectFunction?: (...args: unknown[]) => void;
+  _opaqueSort?: unknown;
+}
+
+/** Item da RenderList do `three` (o que a intercalação lê). */
+export interface RenderItemLike {
+  object: unknown;
+  geometry: unknown;
+  material: unknown;
+  group: unknown;
+  clippingContext: unknown;
+  renderOrder: number;
+  z: number;
+  id: number;
+}
+
+/** A RenderList vista pela fila opaca. */
+export interface QueueRenderListLike {
+  lightsNode: unknown;
+  opaque: RenderItemLike[];
+}
+
+/** O que a projeção nativa usa da fila opaca (ADR-0363). */
+export interface OpaqueQueueLike {
+  /** `true` = o objeto foi para a fila nativa (não vai para o `renderList.push`). */
+  offerOpaque(object: unknown, z: number, renderList: QueueRenderListLike, clippingContext: unknown, scene: unknown, camera: unknown): boolean;
+  /** Fim da projeção: a fila do quadro vai ao host. */
+  finishProjection(renderList: QueueRenderListLike): void;
 }
 
 export interface CleanDrawStats {
@@ -506,12 +539,16 @@ export interface CleanDrawStats {
   recorded: number;
   /** Recusados na gravação (nó não conferível, tipo etc.). */
   ineligible: number;
+  /** Postos na fila opaca nativa na projeção (b.3, ADR-0363). */
+  queued: number;
 }
 
 export interface CleanDrawFastPath {
   readonly stats: CleanDrawStats;
   /** Estatísticas do lote em C++ (b.2), quando ligado. */
   readonly batch: DrawBatchStats | null;
+  /** Fila opaca nativa (b.3), ou `null` desligada / host sem suporte. */
+  readonly queue: OpaqueQueueLike | null;
   uninstall(): void;
 }
 
@@ -541,7 +578,7 @@ export function installCleanDrawFastPath(
     debug('perf', '[cleanDraw] internos do three ausentes: nao instalado');
     return null;
   }
-  const stats: CleanDrawStats = { direct: 0, moved: 0, three: 0, recorded: 0, ineligible: 0 };
+  const stats: CleanDrawStats = { direct: 0, moved: 0, three: 0, recorded: 0, ineligible: 0, queued: 0 };
   /**
    * Gravações por objeto, por contexto de render e por `passId`. O contexto
    * entra na chave para o passe de sombra do `three` (quando roda) não
@@ -597,6 +634,8 @@ export function installCleanDrawFastPath(
       beginOriginal.apply(this, args);
     };
     backend.finishRender = function finishRender(this: unknown, ...args: unknown[]): void {
+      // Fila opaca sem item do `three` depois dela (b.3): sai antes de fechar o pass.
+      lote.emitQueued(args[0], true);
       lote.flush();
       finishOriginal.apply(this, args);
     };
@@ -676,6 +715,143 @@ export function installCleanDrawFastPath(
 
   const updateBinding = backend.updateBinding?.bind(backend);
 
+  /**
+   * O que o refresh do three garante para o render, deduplicado por ele
+   * mesmo: `updateBefore`, nós de render/quadro e grupos compartilhados
+   * (câmera, luzes). Sem isso a câmera congela (ADR-0215).
+   * `updateBefore` e nós de render são do SHADER: render objects com o
+   * mesmo `NodeBuilderState` têm os mesmos nós, então basta o primeiro de
+   * cada estado por chamada (são nós RENDER/FRAME — OBJECT é inelegível).
+   */
+  const atualizarDoQuadro = (ro: CleanRoLike, g: Gravacao, calls: number): void => {
+    const estado = ro.getNodeBuilderState() as object;
+    if (feitoNaChamada.get(estado) !== calls) {
+      feitoNaChamada.set(estado, calls);
+      nodes.updateBefore(ro);
+      const frame = nodes.getNodeFrameForRender(ro);
+      renderIdDaChamada.calls = calls;
+      renderIdDaChamada.renderId = frame.renderId;
+      const renderNodes = g.plan.renderNodes;
+      for (let k = 0; k < renderNodes.length; k++) frame.updateNode(renderNodes[k]);
+    } else if (renderIdDaChamada.calls !== calls) {
+      renderIdDaChamada.calls = calls;
+      renderIdDaChamada.renderId = nodes.getNodeFrameForRender(ro).renderId;
+    }
+    const shared = g.plan.shared;
+    for (let k = 0; k < shared.length; k++) {
+      const grupo = shared[k] as object;
+      if (feitoNaChamada.get(grupo) === calls) continue;
+      feitoNaChamada.set(grupo, calls);
+      bindings._update(grupo, g.plan.groups);
+    }
+  };
+
+  // ── Fila opaca nativa intercalada (b.3, ADR-0363) ─────────────────────────
+  const renderObjectsOriginal = renderer._renderObjects;
+  const renderTransparentsOriginal = renderer._renderTransparents;
+  const fila =
+    lote !== null && lote.queueSupported && queryFlagRequested(OPAQUE_QUEUE_QUERY_KEY, true) &&
+    typeof renderObjectsOriginal === 'function' && typeof renderTransparentsOriginal === 'function'
+      ? lote
+      : null;
+  /** A lista opaca que recebeu a fila neste quadro, e quantos itens a projeção empurrou nela. */
+  const filaDoQuadro = { opaque: null as RenderItemLike[] | null, empurrados: 0 };
+  const ANTES_PADRAO = Object3D.prototype.onBeforeRender;
+  const DEPOIS_PADRAO = Object3D.prototype.onAfterRender;
+
+  type MaterialDaFila = Mat & {
+    transmission?: number;
+    transmissionNode?: { isNode?: boolean };
+    backdropNode?: { isNode?: boolean };
+  };
+  type ObjetoDaFila = ObjectLike &
+    ComGravacao & {
+      material: MaterialDaFila | unknown[];
+      occlusionTest?: boolean;
+      onBeforeRender: unknown;
+      onAfterRender: unknown;
+      renderOrder: number;
+      id: number;
+    };
+
+  const queue: OpaqueQueueLike | null =
+    fila === null
+      ? null
+      : {
+          offerOpaque(object, z, renderList, clippingContext, scene, camera): boolean {
+            if (mainPassArm.three || renderer._opaqueSort) return false;
+            const o = object as ObjetoDaFila;
+            const m = o.material;
+            // Só o que o `renderList.push` mandaria para a lista OPACA.
+            if (
+              Array.isArray(m) || !m.visible || m.transparent === true || (m.transmission ?? 0) > 0 ||
+              m.transmissionNode?.isNode === true || m.backdropNode?.isNode === true
+            ) {
+              return false;
+            }
+            // O objeto da fila não passa pelo `renderObject`: callbacks próprios ficam no `three`.
+            if (o.occlusionTest === true || o.onBeforeRender !== ANTES_PADRAO || o.onAfterRender !== DEPOIS_PADRAO) return false;
+            const g = o._cxGravacao;
+            const lightsNode = renderList.lightsNode;
+            if (
+              g === undefined || g.context !== renderer._currentRenderContext || g.passId !== null || g.material !== m ||
+              descartados.has(g.ro) || g.lights !== lightsNode || g.clipping !== clippingContext ||
+              g.ro.geometry !== o.geometry || g.contextNodeVersion !== (renderer.contextNode?.version ?? 0) ||
+              !matrixMatch(g.ro, g.instantaneo) || !restMatch(g.ro, g.vigias, g.instantaneo) ||
+              chaveDeAmbiente(renderer, scene, lightsNode) !== g.envKey
+            ) {
+              return false;
+            }
+            const ro = g.ro;
+            ro.camera = camera;
+            ro.drawRange = o.geometry.drawRange;
+            ro.group = null;
+            if (!pipelines.isReady(ro)) return false;
+            atualizarDoQuadro(ro, g, renderer.info?.calls ?? 0);
+            if (!fila.queueOpaque(ro as unknown as BatchRoLike, renderer.info as never, o.renderOrder, z, o.id)) return false;
+            stats.queued++;
+            return true;
+          },
+          finishProjection(renderList): void {
+            filaDoQuadro.opaque = renderList.opaque;
+            filaDoQuadro.empurrados = renderList.opaque.length;
+            fila.sendQueue();
+          },
+        };
+
+  if (fila !== null) {
+    // Antes de cada item do `three` vindo da projeção, os da fila de chave
+    // menor; no fim da lista, o resto. Os itens a mais no começo são o fundo
+    // (`unshift` depois do sort): vão primeiro, como no `three`.
+    renderer._renderObjects = function renderObjects(
+      this: CleanDrawRendererLike,
+      list: RenderItemLike[],
+      camera: unknown,
+      scene: unknown,
+      lightsNode: unknown,
+      passId?: unknown,
+    ): void {
+      if (list !== filaDoQuadro.opaque || !fila.queuePending) {
+        renderObjectsOriginal!.call(this, list, camera, scene, lightsNode, passId);
+        return;
+      }
+      filaDoQuadro.opaque = null;
+      const contexto = this._currentRenderContext;
+      const fundo = list.length - filaDoQuadro.empurrados;
+      const desenhar = this._currentRenderObjectFunction!;
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i]!;
+        if (i >= fundo) fila.emitQueued(contexto, false, item.renderOrder, item.z, item.id);
+        desenhar.call(this, item.object, scene, camera, item.geometry, item.material, item.group, lightsNode, item.clippingContext, passId);
+      }
+      fila.emitQueued(contexto, true);
+    };
+    renderer._renderTransparents = function renderTransparents(this: CleanDrawRendererLike, ...args: unknown[]): void {
+      fila.emitQueued(this._currentRenderContext, true);
+      renderTransparentsOriginal!.apply(this, args);
+    };
+  }
+
   /** O caminho do three, e a (re)gravação de quem ele desenhou. */
   const tresCaminho = (
     r: CleanDrawRendererLike, object: unknown, material: unknown, scene: unknown, camera: unknown, lightsNode: unknown,
@@ -706,7 +882,7 @@ export function installCleanDrawFastPath(
       relato.calls = calls;
       if (calls % REPORT_RENDER_CALLS === 0) {
         debug('perf', `[cleanDraw] diretos=${stats.direct} movidos=${stats.moved} three=${stats.three} gravados=${stats.recorded} inelegiveis=${stats.ineligible}`);
-        if (lote) debug('perf', `[drawBatch] lote=${lote.stats.batched} flushes=${lote.stats.flushes} receitas=${lote.stats.recorded} fora=${lote.stats.unbatchable}`);
+        if (lote) debug('perf', `[drawBatch] lote=${lote.stats.batched} flushes=${lote.stats.flushes} receitas=${lote.stats.recorded} fora=${lote.stats.unbatchable} fila=${lote.stats.queued} oferecidos=${stats.queued}`);
       }
     }
     if (mainPassArm.three) {
@@ -731,32 +907,7 @@ export function installCleanDrawFastPath(
       ro.camera = camera;
       ro.drawRange = (object as ObjectLike).geometry.drawRange;
       ro.group = group;
-      // O que o refresh do three garante para o render, deduplicado por ele
-      // mesmo: `updateBefore`, nós de render/quadro e grupos compartilhados
-      // (câmera, luzes). Sem isso a câmera congela (ADR-0215).
-      // `updateBefore` e nós de render são do SHADER: render objects com o
-      // mesmo `NodeBuilderState` têm os mesmos nós, então basta o primeiro de
-      // cada estado por chamada (são nós RENDER/FRAME — OBJECT é inelegível).
-      const estado = ro.getNodeBuilderState() as object;
-      if (feitoNaChamada.get(estado) !== calls) {
-        feitoNaChamada.set(estado, calls);
-        nodes.updateBefore(ro);
-        const frame = nodes.getNodeFrameForRender(ro);
-        renderIdDaChamada.calls = calls;
-        renderIdDaChamada.renderId = frame.renderId;
-        const renderNodes = g.plan.renderNodes;
-        for (let k = 0; k < renderNodes.length; k++) frame.updateNode(renderNodes[k]);
-      } else if (renderIdDaChamada.calls !== calls) {
-        renderIdDaChamada.calls = calls;
-        renderIdDaChamada.renderId = nodes.getNodeFrameForRender(ro).renderId;
-      }
-      const shared = g.plan.shared;
-      for (let k = 0; k < shared.length; k++) {
-        const grupo = shared[k] as object;
-        if (feitoNaChamada.get(grupo) === calls) continue;
-        feitoNaChamada.set(grupo, calls);
-        bindings._update(grupo, g.plan.groups);
-      }
+      atualizarDoQuadro(ro, g, calls);
       const monitor = ro.getMonitor();
       monitor.renderId = renderIdDaChamada.renderId;
       if (!matrixMatch(ro, g.instantaneo)) {
@@ -786,8 +937,13 @@ export function installCleanDrawFastPath(
   return {
     stats,
     batch: lote?.stats ?? null,
+    queue,
     uninstall(): void {
       lote?.flush();
+      if (fila !== null) {
+        Reflect.deleteProperty(renderer, '_renderObjects');
+        Reflect.deleteProperty(renderer, '_renderTransparents');
+      }
       Reflect.deleteProperty(renderer, '_renderObjectDirect');
       backend.draw = drawOriginal;
       if (beginOriginal) backend.beginRender = beginOriginal;

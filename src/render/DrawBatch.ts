@@ -26,12 +26,18 @@ const COMMAND_INTS = 4;
 const INITIAL_COMMANDS = 256;
 /** Receita inválida (`kNoRecipe`). */
 const NO_RECIPE = -1;
+/** Doubles por chave de sort da fila opaca (`kSortKeyDoubles`: renderOrder, z, id). */
+const SORT_KEY_DOUBLES = 3;
 
 /** A ponte do host; ausente no browser e em host antigo. */
 export interface DrawBatchBridge {
   record(pipeline: unknown, groups: unknown[], vertexBuffers: unknown[], index: unknown, index32: boolean): number;
   release(id: number): void;
   flush(pass: unknown, commands: Int32Array, count: number): number;
+  /** Fila opaca nativa (ADR-0363); ausentes em host antigo. */
+  queue?(commands: Int32Array, keys: Float64Array, count: number): number;
+  emitUntil?(pass: unknown, renderOrder: number, z: number, id: number): number;
+  emitAll?(pass: unknown): number;
 }
 
 export function drawBatchBridge(): DrawBatchBridge | undefined {
@@ -99,6 +105,8 @@ export interface DrawBatchStats {
   recorded: number;
   /** Desenhos diretos que não puderam ir em lote (indireto, stencil, oclusão...). */
   unbatchable: number;
+  /** Desenhos da fila opaca nativa (ADR-0363). */
+  queued: number;
 }
 
 /**
@@ -106,12 +114,18 @@ export interface DrawBatchStats {
  * o `flush` antes de qualquer desenho do `three`.
  */
 export class DrawBatch {
-  readonly stats: DrawBatchStats = { batched: 0, flushes: 0, recorded: 0, unbatchable: 0 };
+  readonly stats: DrawBatchStats = { batched: 0, flushes: 0, recorded: 0, unbatchable: 0, queued: 0 };
   private _commands = new Int32Array(INITIAL_COMMANDS * COMMAND_INTS);
   private _count = 0;
   private _pass: unknown = null;
   private _contextData: Record<string, unknown> | null = null;
   private readonly _receitas = new WeakMap<object, Receita>();
+  /** Fila opaca do quadro (ADR-0363): comandos, chaves e quantos. */
+  private _filaCmds = new Int32Array(INITIAL_COMMANDS * COMMAND_INTS);
+  private _filaKeys = new Float64Array(INITIAL_COMMANDS * SORT_KEY_DOUBLES);
+  private _filaCount = 0;
+  /** Desenhos da fila ainda no host (não emitidos). */
+  private _filaPendente = 0;
   private readonly _conferir = queryFlagRequested(CHECK_QUERY_KEY, false);
   private readonly _relatados = new WeakSet<object>();
 
@@ -179,12 +193,95 @@ export class DrawBatch {
     this.stats.batched += this._count;
     this.stats.flushes++;
     this._count = 0;
-    // O host mexeu no encoder sem o `three` saber: os DOIS caches de estado
-    // dele ficam inválidos — o `currentSets` do contexto (grupos, buffers,
-    // índice) e o pipeline ativo do pass (`WebGPUPipelineUtils`).
-    const dados = this._contextData;
+    this._invalidar(this._contextData, this._pass);
+  }
+
+  /** O host suporta a fila opaca nativa (ADR-0363)? */
+  get queueSupported(): boolean {
+    return typeof this._bridge.queue === 'function';
+  }
+
+  /**
+   * Põe o desenho limpo e parado na fila opaca do quadro, com a chave de sort
+   * do `three`. `false` = não dá (sem receita, grupo compartilhado recriado):
+   * quem chama o deixa na RenderList.
+   */
+  queueOpaque(ro: BatchRoLike, info: BatchInfoLike, renderOrder: number, z: number, id: number): boolean {
+    const receita = this._receitas.get(ro);
+    if (receita === undefined) return false;
+    const bindings = ro.getBindings();
+    for (let k = 0; k < receita.compartilhados.length; k++) {
+      const i = receita.compartilhados[k]!;
+      if (this._backend.get(bindings[i])['group'] !== receita.grupos[i]) return false;
+    }
+    const params = ro.getDrawParameters();
+    if (params === null) return true; // o `three` também não desenharia
+    const n = this._filaCount;
+    if ((n + 1) * COMMAND_INTS > this._filaCmds.length) {
+      const cmds = new Int32Array(this._filaCmds.length * 2);
+      cmds.set(this._filaCmds);
+      this._filaCmds = cmds;
+      const keys = new Float64Array(this._filaKeys.length * 2);
+      keys.set(this._filaKeys);
+      this._filaKeys = keys;
+    }
+    const c = this._filaCmds;
+    const base = n * COMMAND_INTS;
+    c[base] = receita.id;
+    c[base + 1] = params.vertexCount;
+    c[base + 2] = params.instanceCount;
+    c[base + 3] = params.firstVertex;
+    const k = this._filaKeys;
+    const kb = n * SORT_KEY_DOUBLES;
+    k[kb] = renderOrder;
+    k[kb + 1] = z;
+    k[kb + 2] = id;
+    this._filaCount = n + 1;
+    info.update(ro.object, params.vertexCount, params.instanceCount);
+    return true;
+  }
+
+  /** Fim da projeção: a fila do quadro vai ao host (que ordena). */
+  sendQueue(): void {
+    const n = this._filaCount;
+    this._filaCount = 0;
+    this._filaPendente = n > 0 ? this._bridge.queue!(this._filaCmds, this._filaKeys, n) : 0;
+    if (this._filaPendente < 0) {
+      debug('perf', `[drawBatch] fila opaca recusada (${n})`);
+      this._filaPendente = 0;
+    }
+  }
+
+  /** Há desenhos da fila ainda por emitir neste quadro. */
+  get queuePending(): boolean {
+    return this._filaPendente > 0;
+  }
+
+  /**
+   * Emite os da fila com chave menor que a dada (`all`: todos), no pass do
+   * contexto — depois do lote da b.2, que é anterior na ordem da lista.
+   */
+  emitQueued(context: unknown, all: boolean, renderOrder = 0, z = 0, id = 0): void {
+    if (this._filaPendente === 0) return;
+    this.flush();
+    const dados = this._backend.get(context);
+    const pass = dados['currentPass'];
+    if (!pass) return;
+    const n = all ? this._bridge.emitAll!(pass) : this._bridge.emitUntil!(pass, renderOrder, z, id);
+    if (n <= 0) return;
+    this._filaPendente = all ? 0 : Math.max(0, this._filaPendente - n);
+    this.stats.queued += n;
+    this._invalidar(dados, pass);
+  }
+
+  /**
+   * O host mexeu no encoder sem o `three` saber: os DOIS caches de estado
+   * dele ficam inválidos — o `currentSets` do contexto (grupos, buffers,
+   * índice) e o pipeline ativo do pass (`WebGPUPipelineUtils`).
+   */
+  private _invalidar(dados: Record<string, unknown> | null, pass: unknown): void {
     if (dados) dados['currentSets'] = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
-    this._backend.pipelineUtils?._activePipelines?.delete(this._pass);
+    this._backend.pipelineUtils?._activePipelines?.delete(pass);
   }
 
   /** O render object foi descartado pelo `three`: a receita sai do host. */

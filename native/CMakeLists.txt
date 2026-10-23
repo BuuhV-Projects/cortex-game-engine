@@ -85,6 +85,7 @@ add_executable(cortex_host
   src/scene/shadow_caster_enumerator.cpp
   src/scene/main_pass_culler.cpp
   src/render/draw_batch.cpp
+  src/render/opaque_queue.cpp
   src/scene/shadow_pass_gate.cpp
   src/webgpu/bloom.cpp
   src/webgpu/supersample.cpp
@@ -310,6 +311,7 @@ add_executable(cortex_host_tests
   tests/shadow_caster_enumerator_test.cpp
   tests/main_pass_culler_test.cpp
   tests/draw_batch_test.cpp
+  tests/opaque_queue_test.cpp
   tests/shadow_pass_gate_test.cpp
   tests/shadow_math_test.cpp
   tests/pipeline_cache_test.cpp
@@ -330,6 +332,7 @@ add_executable(cortex_host_tests
   src/scene/shadow_caster_enumerator.cpp
   src/scene/main_pass_culler.cpp
   src/render/draw_batch.cpp
+  src/render/opaque_queue.cpp
   src/scene/shadow_pass_gate.cpp
   src/render/geometry_registry.cpp
   src/canvas2d/blit.cpp

@@ -30,6 +30,7 @@ import {
   cleanDrawRequested,
   installCleanDrawFastPath,
   type CleanDrawRendererLike,
+  type OpaqueQueueLike,
 } from '../render/CleanDrawFastPath.js';
 import {
   installTransformOnlyRefresh,
@@ -135,6 +136,7 @@ export class Renderer {
   private _transformOnly: TransformOnlyRefresh | null = null;
   /** Refresh por `renderId` só do que é por render (SPEC-0325); fica por fora do `_transformOnly`. */
   private _renderIdRefresh: RenderIdRefresh | null = null;
+  private _opaqueQueue: OpaqueQueueLike | null = null;
 
   /**
    * Cria o renderer, dispara o init assíncrono do backend em background e
@@ -191,7 +193,7 @@ export class Renderer {
         }
         // Desenho direto dos render objects limpos (SPEC-0333, b.1 do ADR-0330).
         if (cleanDrawRequested(isNativeHost())) {
-          installCleanDrawFastPath(this._renderer as unknown as CleanDrawRendererLike);
+          this._opaqueQueue = installCleanDrawFastPath(this._renderer as unknown as CleanDrawRendererLike)?.queue ?? null;
         }
       })
       .catch((err: unknown) => {
@@ -456,6 +458,15 @@ export class Renderer {
   /** Elemento `<canvas>` onde o renderer desenha. */
   get domElement(): HTMLCanvasElement {
     return this._renderer.domElement;
+  }
+
+  /**
+   * Fila opaca nativa do passe principal (ADR-0363), para a projeção nativa;
+   * `null` fora do host ou desligada.
+   * @internal
+   */
+  get opaqueQueue(): OpaqueQueueLike | null {
+    return this._opaqueQueue;
   }
 
   /**

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Color, Matrix4, MeshBasicMaterial, Texture } from 'three';
+import { Color, Matrix4, MeshBasicMaterial, Object3D, Texture } from 'three';
 import { modelWorldMatrix } from 'three/tsl';
 import {
   installCleanDrawFastPath,
@@ -9,7 +9,9 @@ import {
   watchersFor,
   type CleanDrawRendererLike,
   type CleanRoLike,
+  type RenderItemLike,
 } from '../../src/render/CleanDrawFastPath.js';
+import { mainPassArm } from '../../src/render/MainPassArm.js';
 
 const OBJECT = 'object';
 
@@ -341,5 +343,133 @@ describe('installCleanDrawFastPath com lote em C++ (b.2)', () => {
     renderer.backend!.finishRender!();
     // a no lote; b muda: o lote sai ANTES do three; c no lote; fim de passe despacha.
     expect(eventos).toEqual(['lote(0)', 'three(b)', 'lote(2)', 'fim']);
+  });
+});
+
+describe('installCleanDrawFastPath — fila opaca nativa intercalada (b.3, ADR-0363)', () => {
+  it('limpo e parado sai da RenderList e é emitido na ordem do sort, depois do fundo', () => {
+    const eventos: string[] = [];
+    const dados = new Map<unknown, Record<string, unknown>>();
+    const get = (o: unknown) => {
+      let d = dados.get(o);
+      if (!d) dados.set(o, (d = {}));
+      return d;
+    };
+    const contexto = {};
+    get(contexto)['currentPass'] = 'PASS';
+    let id = 0;
+    const ponte = {
+      record: () => id++,
+      release: () => undefined,
+      flush: (_p: unknown, _c: Int32Array, n: number) => n,
+      queue: (c: Int32Array, k: Float64Array, n: number) => {
+        eventos.push(`fila(${Array.from({ length: n }, (_, i) => `${c[i * 4]}@${k[i * 3 + 1]}`).join(',')})`);
+        return n;
+      },
+      emitUntil: (_p: unknown, _ro: number, z: number) => (eventos.push(`ate(${z})`), 1),
+      emitAll: () => (eventos.push('resto'), 0),
+    };
+    const fazer = (nome: string, objId: number) => {
+      const nodes = [no({ type: 'MaterialReferenceNode', isMaterialReferenceNode: true, properties: ['color'], material: null })];
+      const f = roFalso(nodes, materialFalso());
+      const r = f.ro as unknown as Record<string, unknown>;
+      r['context'] = contexto;
+      r['pipeline'] = { nome };
+      get(r['pipeline'])['pipeline'] = `P-${nome}`;
+      r['getBindings'] = () => [];
+      r['getVertexBuffers'] = () => [];
+      r['getIndex'] = () => null;
+      r['getIndirect'] = () => null;
+      r['getDrawParameters'] = () => ({ vertexCount: 3, firstVertex: 0, instanceCount: 1 });
+      const o = f.object as unknown as Record<string, unknown>;
+      Object.assign(o, {
+        material: f.material,
+        renderOrder: 0,
+        id: objId,
+        onBeforeRender: Object3D.prototype.onBeforeRender,
+        onAfterRender: Object3D.prototype.onAfterRender,
+      });
+      return { ...f, nome };
+    };
+    const a = fazer('a', 1);
+    const vidro = fazer('vidro', 2);
+    const proprio = fazer('proprio', 3);
+    let atual = a;
+    const renderer: CleanDrawRendererLike = {
+      _nodes: {
+        updateBefore: () => undefined,
+        getNodeFrameForRender: () => ({ renderId: 1, updateNode: () => undefined }),
+        getCacheKey: () => 'amb',
+      },
+      _bindings: { _update: () => undefined },
+      _pipelines: { isReady: () => true },
+      backend: {
+        draw: () => undefined,
+        get,
+        pipelineUtils: { _activePipelines: new Map() },
+        beginRender: () => undefined,
+        finishRender: () => undefined,
+      },
+      _currentRenderContext: contexto,
+      _currentRenderBundle: null,
+      info: { calls: 1, update: () => undefined } as never,
+      contextNode: { version: 0 },
+      _renderObjectDirect(this: CleanDrawRendererLike) {
+        this.backend!.draw!(atual.ro, null);
+      },
+      _currentRenderObjectFunction: (o: unknown) => void eventos.push(`three(${(o as { nome?: string }).nome ?? 'objeto'})`),
+      _renderObjects(this: CleanDrawRendererLike, list) {
+        for (const item of list) this._currentRenderObjectFunction!(item.object);
+      },
+      _renderTransparents: () => void eventos.push('transparentes'),
+    };
+    const handle = installCleanDrawFastPath(renderer, ponte)!;
+    for (const x of [a, vidro, proprio]) {
+      atual = x;
+      renderer._renderObjectDirect!(x.object, x.material, 'cena', 'cam', 'luzes', null, null, null);
+    }
+    vidro.material['transparent'] = true;
+    // O instantâneo do vidro agora diverge — mas a recusa vem antes, pelo material.
+    (proprio.object as unknown as Record<string, unknown>)['onBeforeRender'] = () => undefined;
+    const fila = handle.queue!;
+    const lista = { lightsNode: 'luzes', opaque: [] as RenderItemLike[] };
+    expect(fila.offerOpaque(a.object, 0.5, lista, null, 'cena', 'cam')).toBe(true);
+    expect(fila.offerOpaque(vidro.object, 0.4, lista, null, 'cena', 'cam')).toBe(false);
+    expect(fila.offerOpaque(proprio.object, 0.3, lista, null, 'cena', 'cam')).toBe(false);
+    // Outro conjunto de luzes: recusa (a gravação é de outro).
+    expect(fila.offerOpaque(a.object, 0.5, { lightsNode: 'outras', opaque: [] }, null, 'cena', 'cam')).toBe(false);
+    const item = (nome: string, z: number, idItem: number): RenderItemLike => ({
+      object: { nome }, geometry: null, material: null, group: null, clippingContext: null, renderOrder: 0, z, id: idItem,
+    });
+    lista.opaque.push(item('perto', 0.9, 50));
+    fila.finishProjection(lista);
+    lista.opaque.unshift(item('fundo', 0, 99)); // `_background.update`, depois do sort
+    renderer._renderObjects!(lista.opaque, 'cam', 'cena', 'luzes', null);
+    renderer._renderTransparents!();
+    expect(eventos).toEqual(['fila(0@0.5)', 'three(fundo)', 'ate(0.9)', 'three(perto)', 'transparentes']);
+    expect(handle.stats.queued).toBe(1);
+  });
+
+  it('no braço `three` do instrumento de paridade a fila recusa tudo', () => {
+    mainPassArm.three = true;
+    try {
+      const { renderer } = (() => {
+        const r: CleanDrawRendererLike = {
+          _nodes: { updateBefore: () => undefined, getNodeFrameForRender: () => ({ renderId: 1, updateNode: () => undefined }), getCacheKey: () => 'amb' },
+          _bindings: { _update: () => undefined },
+          _pipelines: { isReady: () => true },
+          backend: { draw: () => undefined, get: () => ({}), pipelineUtils: { _activePipelines: new Map() }, beginRender: () => undefined, finishRender: () => undefined },
+          _renderObjectDirect: () => undefined,
+          _renderObjects: () => undefined,
+          _renderTransparents: () => undefined,
+        };
+        return { renderer: r };
+      })();
+      const ponte = { record: () => 0, release: () => undefined, flush: () => 0, queue: () => 0, emitUntil: () => 0, emitAll: () => 0 };
+      const handle = installCleanDrawFastPath(renderer, ponte)!;
+      expect(handle.queue!.offerOpaque({ material: {} }, 0, { lightsNode: null, opaque: [] }, null, null, null)).toBe(false);
+    } finally {
+      mainPassArm.three = false;
+    }
   });
 });
