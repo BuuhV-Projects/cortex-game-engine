@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { SpotLight } from 'three';
 import { DynamicLighting } from 'three/examples/jsm/lighting/DynamicLighting.js';
-import { dynamicLightingRequested, installDynamicLighting } from '../../src/render/DynamicLightingSwitch.js';
+import { applyParityLighting, dynamicLightingRequested, installDynamicLighting } from '../../src/render/DynamicLightingSwitch.js';
+import { ParityFreeze, mainPassArm } from '../../src/render/MainPassArm.js';
 
 describe('DynamicLightingSwitch (SPEC-0435 (d′))', () => {
   it('is off unless asked, and swaps the renderer lighting for a sized DynamicLighting', () => {
@@ -21,5 +22,26 @@ describe('DynamicLightingSwitch (SPEC-0435 (d′))', () => {
     // The getter must work with the instance as `this` and never read the prototype chain's own state.
     const getter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(lighting.createNode([])), 'hasLights')!.get!;
     expect(getter.toString()).not.toContain('super');
+  });
+
+  it('same-run parity: frozen frames alternate the lighting, not the draw path (SPEC-0435)', () => {
+    const renderer: { lighting: unknown } = { lighting: 'base' };
+    installDynamicLighting(renderer);
+    const dynamic = renderer.lighting;
+    const freeze = new ParityFreeze(1, true);
+    mainPassArm.three = false;
+    mainPassArm.lighting = false;
+    expect(freeze.shouldUpdate(0, true)).toBe(true);
+    expect(freeze.shouldUpdate(2000, true)).toBe(false); // freezes
+    applyParityLighting(renderer);
+    expect(renderer.lighting).toBe(dynamic);
+    freeze.shouldUpdate(2016, true);
+    applyParityLighting(renderer);
+    expect(renderer.lighting).toBe('base');
+    expect(mainPassArm.three).toBe(false);
+    freeze.shouldUpdate(2032, true);
+    applyParityLighting(renderer);
+    expect(renderer.lighting).toBe(dynamic);
+    mainPassArm.lighting = false;
   });
 });

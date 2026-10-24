@@ -19,6 +19,7 @@ import { DynamicLighting } from 'three/examples/jsm/lighting/DynamicLighting.js'
 import DynamicLightsNode from 'three/examples/jsm/tsl/lighting/DynamicLightsNode.js';
 import { debug } from '../core/debug.js';
 import { queryFlagRequested } from './TransformOnlyRefresh.js';
+import { mainPassArm } from './MainPassArm.js';
 
 const QUERY_KEY = 'dynamicLighting=';
 
@@ -58,13 +59,29 @@ export function dynamicLightingRequested(fallback: boolean): boolean {
   return queryFlagRequested(QUERY_KEY, fallback);
 }
 
+/** Both lightings, kept for the same-run parity instrument (`?parityTarget=lighting`). */
+const lightings: { base: unknown; dynamic: unknown } = { base: null, dynamic: null };
+
 /** Swaps the renderer's lighting for `DynamicLighting`. Call before the first render. */
 export function installDynamicLighting(renderer: { lighting: unknown }): void {
-  renderer.lighting = new HostDynamicLighting({
+  lightings.base = renderer.lighting;
+  renderer.lighting = lightings.dynamic = new HostDynamicLighting({
     maxDirectionalLights: MAX_DIRECTIONAL_LIGHTS,
     maxPointLights: MAX_POINT_LIGHTS,
     maxSpotLights: MAX_SPOT_LIGHTS,
     maxHemisphereLights: MAX_HEMISPHERE_LIGHTS,
   });
   debug('perf', '[dynamicLighting] installed');
+}
+
+/**
+ * Same-run parity (SPEC-0435): with `?parityFreeze` + `?parityTarget=lighting`
+ * the frozen frames alternate the base and the dynamic lighting, so frame N vs
+ * N+1 compares the two light models on the very same scene. Called every frame;
+ * no-op unless the dynamic lighting was installed.
+ */
+export function applyParityLighting(renderer: { lighting: unknown }): void {
+  if (lightings.dynamic === null) return;
+  const want = mainPassArm.lighting ? lightings.base : lightings.dynamic;
+  if (renderer.lighting !== want) renderer.lighting = want;
 }
