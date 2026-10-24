@@ -310,9 +310,11 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       Confirmado pelos contadores do braço do ADR-0404: 1 render da cena por quadro + o de sombra
       (~0,01/quadro parado no Setor O); no RenderingServer ele vira o RS4.
 
-- [x] (`e93dd9ae`, SPEC-0455) **Supersampling e Full HD medidos**: `CORTEX_WINDOW_SIZE` no host e `--window`
-      no kit. Em 1920×1080 o alvo vira 3840×2160 e a GPU sobe de ~0,6–0,8 para ~0,9–1,3 ms/quadro; o render
-      (CPU) não muda (~12,3 ms). **A GPU não é o gargalo em Full HD** nesta máquina. Origem: frente B2.
+- [x] (`e93dd9ae`, SPEC-0455; prioridade subiu em 2026-10-24) **Resolução das medições × resolução real:
+      medida.** `CORTEX_WINDOW_SIZE` no host e `--window` no kit. Em 1920×1080 o alvo vira 3840×2160 e a GPU
+      sobe de ~0,6–0,8 para ~0,9–1,3 ms/quadro; o render (CPU) não muda (~12,3 ms). **A GPU não é o gargalo em
+      Full HD** nesta máquina, então não há por que reduzir o fator de supersampling por resolução agora.
+      Origem: frente B2.
 
 - [x] (medido com autopiloto: −2,5 a −4,0 ms de render, quadros >33 ms 19,0%→4,8% andando no Setor O;
       sonda: `rpEach` 5,49→3,69 ms, +~1,2 ms fora das fases) **Origem do custo CONTÍNUO da sombra do sol** (−1,6 a −2,4 ms de render com `?sombra=0`, parado):
@@ -330,8 +332,10 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       ligado** (SPEC-0425, walk, Comercial): `?sombra=0` ainda tira −2,96 ms — o RS1 absorve pouco; o custo
       está no trabalho por estado de shader (item acima). Origem: B2.
 - [ ] **~1,2 ms do render com sombra fora das fases da sonda** — mesma origem a investigar. Origem: B2.
-- [ ] **Decisão de produto (usuário): sombra do sol no export do DDD 61** — **decidido em 2026-10-23: esperar
-      o RS1** e decidir com o A/B sombra on×off com o RS1 ligado (se o servidor absorver o custo, a sombra fica) — desligar (ou opção de
+- [x] **Decisão de produto (usuário): sombra do sol no export do DDD 61** — **decidido em 2026-10-24: a sombra
+      FICA** (no futuro vira opção de qualidade). O usuário: o PC dele roda Call of Duty Warzone no alto, então
+      uma sombra direcional simples custar 3,2 ms é defeito da engine, não limite de hardware. Meta: tornar a
+      sombra barata na engine (o custo medido é CPU em JS, não GPU). Antes: esperar o RS1 e decidir com o A/B sombra on×off com o RS1 ligado (se o servidor absorver o custo, a sombra fica) — desligar (ou opção de
       qualidade com padrão desligado no nativo) rende −2,5 a −4 ms de render já; custo visual: perde as
       sombras de fim de tarde no chão perto do jogador. Origem: B2.
 
