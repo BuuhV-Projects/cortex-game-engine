@@ -106,3 +106,46 @@ Cada alavanca entra se o A/B com autopiloto (walk, Comercial e um segundo
 ponto; 2 réplicas intercaladas) mostrar ganho de render e de p95/% > 33 ms sem
 regressão nos outros pontos, com `?parityFreeze` no nível do controle. Mudança
 no código do jogo vai para o usuário via a sessão principal.
+
+## Resultados até 2026-10-23 21:20 (medições pausadas: máquina ocupada)
+
+Kit SPEC-0382, `--autopilot walk`, intercalado, 2 réplicas × 135 s, Comercial e
+Centro, todas VÁLIDAS (a bateria da (d′) corrigida foi interrompida às 21:19:57 e
+está marcada CONTAMINADA em `.cortex/rs-ceiling/runs-ab-d2-walk/`).
+
+### (a) regravar a receita no lote da b.1 — `e370bf66`
+
+| ponto | render Δ | p95 Δ | % > 33 ms |
+| --- | --- | --- | --- |
+| Comercial | −0,74 | −7,3 | 41% → 26% |
+| Centro | +0,20 | −1,25 | 8,9% → 13% |
+
+O mecanismo funciona (desenhos pelo lote 84 mil → 166 mil na rodada; paridade 0
+no Setor O), mas o ganho em tempo não sai do ruído com consistência. **Não
+mergear sozinha**; remedir combinada com a próxima alavanca.
+
+### (b) teto: tirar as 8 `SpotLight` do shader (braço no jogo, `?semSpots=1`)
+
+| ponto | render Δ | quadro med Δ | p99 Δ | % > 33 ms |
+| --- | --- | --- | --- | --- |
+| Comercial | **−3,19** | −3,75 | −25,6 | 25,7% → 9,2% |
+| Centro | **−2,73** | −3,85 | −11,9 | 12,5% → 4,5% |
+
+É o tamanho do custo que as 8 luzes impõem a cada estado de shader — e o limite
+superior do que (d′) pode capturar sem tirar luz nenhuma.
+
+### (d′) `DynamicLighting` — primeiro número FALSO, depois corrigido
+
+A primeira bateria deu render −6,1/−6,9 ms: o dobro do teto (b), implausível. O
+log tinha `THREE.TSL: TypeError ... 'length' of undefined` em `LightsNode.hasLights`:
+o Babel do export compila `super.hasLights` (getter) para
+`LightsNode.prototype.hasLights`, que roda com o protótipo como `this`; o nó de
+luzes falhava, materiais não compilavam e **objetos deixavam de ser desenhados**.
+Corrigido em `76f36c48` (subclasse com `hasLights` sem `super`); 0 erros TSL
+depois. Validação de imagem entre execuções congeladas no Setor O, dia e noite
+(`?hora=21`): cena igual; diferenças só em NPCs, HUD/relógio e um contorno fraco
+no carro à noite (pendente: conferir sob um poste aceso, mesmo horário). O A/B
+corrigido ainda não rodou.
+
+**Regra que fica:** número maior que o teto da mesma alavanca é defeito do
+instrumento até prova em contrário — conferir log (`THREE.TSL`) e imagem.
