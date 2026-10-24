@@ -24,7 +24,6 @@ import {
   SHIFT_TEXELS,
 } from '../../../src/render/native/frame/shadow.js';
 import { NativeSunShadowPass, PASS_SHIFT_TEXELS, shiftClipX, type SunLight } from '../../../src/render/native/shadow/NativeSunShadowPass.js';
-import { mainPassArm } from '../../../src/render/MainPassArm.js';
 import type { NativeRendererHost } from '../../../src/render/native/NativeRenderer.js';
 
 const MAP_SIZE = 2048;
@@ -80,7 +79,6 @@ function withMap(host: ReturnType<typeof fakeHost>['host'], sun: DirectionalLigh
 
 describe('shadow block (R1.3, SPEC-0545)', () => {
   beforeEach(() => {
-    mainPassArm.three = false;
     mirror.drawShadowPass.mockReset();
   });
 
@@ -205,7 +203,6 @@ describe('NativeSunShadowPass (R1.3 part 2, SPEC-0545)', () => {
   const accepted = { drawn: 3, refused: false, reason: 'aceito', totalCasters: 3 };
 
   beforeEach(() => {
-    mainPassArm.three = false;
     mirror.drawShadowPass.mockReset();
     mirror.drawShadowPass.mockReturnValue(accepted);
   });
@@ -219,7 +216,7 @@ describe('NativeSunShadowPass (R1.3 part 2, SPEC-0545)', () => {
 
   it('draws the map in C++ on needsUpdate and keeps the three from redrawing it', () => {
     const { host, scene, sun, target, light } = setup();
-    const pass = new NativeSunShadowPass(host, false);
+    const pass = new NativeSunShadowPass(host, false, false);
     pass.update(light, scene, null);
     expect(mirror.drawShadowPass).not.toHaveBeenCalled();
     sun.shadow.needsUpdate = true;
@@ -230,19 +227,14 @@ describe('NativeSunShadowPass (R1.3 part 2, SPEC-0545)', () => {
     expect(pass.stats.drawn).toBe(1);
   });
 
-  it('hands the frame back to the three on refusal and on the three arm', () => {
+  it('hands the frame back to the three on refusal', () => {
     const { host, scene, sun, light } = setup();
-    const pass = new NativeSunShadowPass(host, false);
+    const pass = new NativeSunShadowPass(host, false, false);
     mirror.drawShadowPass.mockReturnValue({ drawn: 0, refused: true, reason: 'recorte-alfa', totalCasters: 3 });
     sun.shadow.needsUpdate = true;
     pass.update(light, scene, null);
     expect(sun.shadow.needsUpdate).toBe(true);
-    mirror.drawShadowPass.mockReturnValue(accepted);
-    mainPassArm.three = true;
-    pass.update(light, scene, null);
-    expect(sun.shadow.needsUpdate).toBe(true);
-    expect(pass.stats.handedBack).toBe(2);
-    expect(mirror.drawShadowPass).toHaveBeenCalledTimes(1);
+    expect(pass.stats.handedBack).toBe(1);
   });
 
   it('refuses while the three map has no GPU texture yet', () => {
@@ -250,7 +242,7 @@ describe('NativeSunShadowPass (R1.3 part 2, SPEC-0545)', () => {
     const { scene, sun } = sunScene();
     (sun.shadow as unknown as { map: unknown }).map = { depthTexture: {} };
     sun.shadow.needsUpdate = true;
-    new NativeSunShadowPass(host, false).update(sun as unknown as SunLight, scene, null);
+    new NativeSunShadowPass(host, false, false).update(sun as unknown as SunLight, scene, null);
     expect(mirror.drawShadowPass).not.toHaveBeenCalled();
     expect(sun.shadow.needsUpdate).toBe(true);
   });
@@ -258,29 +250,30 @@ describe('NativeSunShadowPass (R1.3 part 2, SPEC-0545)', () => {
   it('takes an autoUpdate shadow over and redraws it every frame', () => {
     const { host, scene, sun, light } = setup();
     sun.shadow.autoUpdate = true;
-    const pass = new NativeSunShadowPass(host, false);
+    const pass = new NativeSunShadowPass(host, false, false);
     pass.update(light, scene, null);
     pass.update(light, scene, null);
     expect(sun.shadow.autoUpdate).toBe(false);
     expect(mirror.drawShadowPass).toHaveBeenCalledTimes(2);
   });
 
-  it('redraws when the parity arm flips (C++ map against the three map)', () => {
-    const { host, scene, light } = setup();
-    const pass = new NativeSunShadowPass(host, false);
-    mainPassArm.three = true;
+  it('parity mode: redraws every native frame and re-arms needsUpdate after each render for the three arm', () => {
+    const { host, scene, sun, light } = setup();
+    const pass = new NativeSunShadowPass(host, false, true);
     pass.update(light, scene, null);
-    mainPassArm.three = false;
     pass.update(light, scene, null);
-    expect(mirror.drawShadowPass).toHaveBeenCalledTimes(1);
+    expect(mirror.drawShadowPass).toHaveBeenCalledTimes(2);
+    expect(sun.shadow.needsUpdate).toBe(false);
+    scene.onAfterRender(null as never, scene, null as never, null as never, null as never, null as never);
+    expect(sun.shadow.needsUpdate).toBe(true);
   });
 
   it('known-answer shift moves the drawn map by PASS_SHIFT_TEXELS', () => {
     const { host, scene, sun, light } = setup();
     sun.shadow.needsUpdate = true;
-    new NativeSunShadowPass(host, false).update(light, scene, null);
+    new NativeSunShadowPass(host, false, false).update(light, scene, null);
     sun.shadow.needsUpdate = true;
-    new NativeSunShadowPass(host, true).update(light, scene, null);
+    new NativeSunShadowPass(host, true, false).update(light, scene, null);
     const plain = mirror.drawShadowPass.mock.calls[0]![3] as Float64Array;
     const shifted = mirror.drawShadowPass.mock.calls[1]![3] as Float64Array;
     expect(shifted[12]! - plain[12]!).toBeCloseTo((2 * PASS_SHIFT_TEXELS) / MAP_SIZE);

@@ -8,10 +8,14 @@
  * Why it exists: once every receiver is native, no three object uses the `ShadowNode` and the
  * three stops redrawing the map. Here the map is redrawn when it has to be:
  * - `needsUpdate` (the DDD 61's `SunShadow`), or every frame for an `autoUpdate` shadow (taken
- *   over: `autoUpdate` goes false and this pass redraws instead), or when the `?parityFreeze` arm
- *   flipped (so the same-run parity compares the C++ map against the three's);
- * - three arm or any refusal (no mirror, no GPU texture yet, gate): `needsUpdate = true` and the
- *   three draws as before — the worst case is not gaining the redraw, never losing the shadow.
+ *   over: `autoUpdate` goes false and this pass redraws instead);
+ * - any refusal (no mirror, no GPU texture yet, gate): `needsUpdate = true` and the three draws as
+ *   before — the worst case is not gaining the redraw, never losing the shadow.
+ *
+ * Same-run parity (`?parityFreeze`): the three arm never reaches the native server (the
+ * projection hands it no server), so this pass cannot see the arm. In that mode it redraws on
+ * every native frame, and a `scene.onAfterRender` hook sets `needsUpdate` back after each render,
+ * so the three redraws the map on its own arm: the frames compare the C++ map against the three's.
  *
  * `?nativeShadowPass=0` turns it off (the three draws the map); `?nativeShadowPassShift=1` shifts
  * the map by SHIFT_TEXELS — the known-answer case: the parity must FAIL.
@@ -20,7 +24,7 @@ import { Matrix4, Vector3, type Camera, type Object3D } from 'three';
 import { debug } from '../../../core/debug.js';
 import { activeSceneMirror } from '../../../core/NativeSceneMirror.js';
 import { CasterGeometryRegistry } from '../../CasterGeometryRegistry.js';
-import { mainPassArm } from '../../MainPassArm.js';
+import { parityFreezeSeconds } from '../../MainPassArm.js';
 import { queryFlagRequested } from '../../TransformOnlyRefresh.js';
 
 const MAT4_FLOATS = 16;
@@ -70,12 +74,13 @@ export class NativeSunShadowPass {
   private readonly _viewProj64 = new Float64Array(MAT4_FLOATS);
   /** This pass took an `autoUpdate` shadow over: it redraws every frame. */
   private _ownsAuto = false;
-  private _arm = mainPassArm.three;
+  private _hooked: unknown = null;
   private _lastReport = '';
 
   constructor(
     private readonly _host: BackendHost,
     private readonly _shift = queryFlagRequested('nativeShadowPassShift=', false),
+    private readonly _parity = parityFreezeSeconds() > 0,
   ) {}
 
   /** Once per frame, before the three's `ShadowNode.updateBefore`. */
@@ -85,10 +90,9 @@ export class NativeSunShadowPass {
       this._ownsAuto = true;
       shadow.autoUpdate = false;
     }
-    const flipped = mainPassArm.three !== this._arm;
-    this._arm = mainPassArm.three;
-    if (!shadow.needsUpdate && !this._ownsAuto && !flipped) return;
-    const why = mainPassArm.three ? 'braco-three' : this._draw(light, scene as Object3D);
+    if (this._parity) this._hookParity(scene as Object3D, shadow);
+    if (!shadow.needsUpdate && !this._ownsAuto && !this._parity) return;
+    const why = this._draw(light, scene as Object3D);
     if (why === null) {
       shadow.needsUpdate = false;
       this.stats.drawn++;
@@ -123,6 +127,17 @@ export class NativeSunShadowPass {
     if (!r) return 'sem-ponte';
     if (r.refused || r.drawn === 0) return `${r.reason}${r.counts ? ` [${r.counts}]` : ''}`;
     return null;
+  }
+
+  /** Parity mode only: after every render the map is due again, so the three arm redraws it. */
+  private _hookParity(scene: Object3D, shadow: SunLight['shadow']): void {
+    if (this._hooked === scene) return;
+    this._hooked = scene;
+    const previous = scene.onAfterRender;
+    scene.onAfterRender = function onAfterRender(this: Object3D, ...args: Parameters<Object3D['onAfterRender']>): void {
+      previous.apply(this, args);
+      shadow.needsUpdate = true;
+    };
   }
 
   private _report(line: string): void {
