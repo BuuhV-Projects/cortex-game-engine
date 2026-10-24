@@ -290,3 +290,22 @@ disto muda os marcos; cada item entra com SPEC antes, quando o jogo precisar.
 ## Pendências levadas ao PRD-0009
 
 Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
+
+## Backlog de pendências do R1
+
+Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá, com a origem.
+
+- [ ] **Forçar o redesenho do mapa de sombra à noite derrubou o host** (textura destruída no `submit`). O
+      jogo não redesenha à noite; causa não isolada. Origem: SPEC-0545 (Frente B).
+- [ ] **Custo da sombra no renderer próprio: +0,55 ms numa rodada curta** (alvo do R1.3: ≤ 0,3 ms). Medir
+      no aceite final com o A/B completo antes de concluir. Origem: SPEC-0545.
+- [ ] **Frente D — `peopleGpu`, tinta por slot e pintura mascarada no repo do jogo**, pela API
+      `registerNativeMaterial` e com `shaderTime` no TSL (não o `time` do TSL). Abre depois do merge na
+      main e do re-vendor do jogo. Origem: SPEC-0565 (Frente C).
+- [ ] **Paridade dos coplanares `interiores-*`** (standard instanciado) só pode ser conferida depois do
+      merge com a Frente A. Origem: SPEC-0555 (Frente C).
+- [ ] **Skinned + instanced** continua recusado; o `ParticleEmitter` da engine está coberto na galeria mas
+      não apareceu nos pontos medidos do DDD 61. Origem: SPEC-0565.
+- [ ] **No `?parityFreeze`, o braço `three` não chama o `beginFrame`** (servidor nulo): um bloco de quadro
+      não vê a troca de braço; a sombra contornou com `scene.onAfterRender` só no modo de paridade.
+      Origem: SPEC-0545.
