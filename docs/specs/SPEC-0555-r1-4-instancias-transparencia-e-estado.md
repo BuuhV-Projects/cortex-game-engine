@@ -1,7 +1,18 @@
 # SPEC-0555 — R1.4: instâncias, transparência e estado de pipeline no núcleo do renderer nativo
 
 **Data:** 2026-10-24
-**Status:** em implementação (desligado por padrão, `?nativeRenderer=1`)
+**Status:** implementado (2026-10-24, `d91fce5e`), desligado por padrão (`?nativeRenderer=1`).
+"Como ficou" (abaixo) vale sobre o desenho onde diverge.
+
+## Como ficou
+
+- Tudo como no desenho, mais uma correção: a projeção não oferece objeto com
+  `material.visible = false` ao servidor (antes o renderer próprio desenharia o que o `three`
+  esconde).
+- `check-stage r1-4-nucleo`: galeria PASS (0/0), Setor O e Comercial **noite PASS**, fumaça PASS
+  (render 12,6 ms); **dia FAIL** só no céu (domo `ceu`: `unlit` opaco, vertex color, `renderOrder −1`,
+  1º objeto com cor de vértice reescrita a cada quadro que o renderer próprio desenha). Diagnóstico
+  na seção "Céu de dia" abaixo.
 
 Etapa R1.4 do PRD-0466 (ADR-0465), Frente C. Base: R1.1 (SPEC-0495, "Como ficou"). Arquivos
 exclusivos da frente: `NativeRenderer.ts`, `models/NativeModel.ts`, `models/unlit.ts`,
@@ -173,3 +184,23 @@ a instância, e o modelo só precisa aceitar a variante.
 - `&nativeTint=1` = FAIL na galeria;
 - os `interiores-*` (standard instanciado) entram na paridade quando a Frente A for mesclada: o
   núcleo já entrega a instância.
+
+## Céu de dia (diagnóstico e correção)
+
+- **Sintoma:** no `check-stage`, Setor O e Comercial de dia davam FAIL só no céu (≈ 6/255, 8–11% dos
+  pixels); à noite, PASS.
+- **Provas:**
+  - tirar só o domo `ceu` do renderer próprio → PASS (0/0);
+  - `?escala=0` (relógio do jogo parado; o céu não muda) → PASS (0/0);
+  - log de versão do atributo `color` do domo: o renderer próprio reescreve a cada quadro, e forçar
+    o reenvio não muda nada;
+  - o braço `three` mostra **a cor da hora do spawn** (17:30, igual à rodada `escala=0`), não a do
+    congelamento (17:37, que o renderer próprio mostra).
+- **Causa:** o `three` não reenviou a cópia dele do atributo que deixou de desenhar enquanto o renderer
+  próprio era o dono. Quando o objeto volta ao `three` (braço de paridade, ou recusa no meio do
+  jogo), ele desenha dado velho. Não é o renderer próprio que erra; o erro afetaria qualquer
+  volta ao `three` de um buffer dinâmico.
+- **Correção:** ao reescrever um buffer de vértice cuja versão mudou, o núcleo também escreve na
+  cópia do `three`, se ela existir (`backend.get(atributo).buffer`). O custo é uma escrita a mais
+  por buffer dinâmico que o `three` já criou, e some quando o `three` sair do caminho (R1.6/R4).
+  O índice fica de fora (quase nunca muda, e `uint16` ímpar não é múltiplo de 4 bytes).

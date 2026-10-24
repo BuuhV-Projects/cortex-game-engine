@@ -712,9 +712,20 @@ export class NativeRenderer implements NativeDrawer {
       if (v !== s.seen) {
         s.seen = v;
         this._device.queue.writeBuffer(set.buffers[i], 0, s.array);
+        this._syncThreeCopy(s.src, s.array);
       }
     }
     return true;
+  }
+
+  /**
+   * Keeps the three's GPU copy of a source we rewrote coherent (SPEC-0555, "Céu de dia"): the three
+   * does not re-upload an attribute it stopped drawing while we owned it, so an object that goes back
+   * to the three (refusal, the parity arm) drew stale data. Only where the three already has a buffer.
+   */
+  private _syncThreeCopy(src: object, array: ArrayBufferView): void {
+    const copy = this._host.backend.get(src)['buffer'];
+    if (copy) this._device.queue.writeBuffer(copy, 0, array);
   }
 
   private _refreshGeometry(geometry: GeometryLike, geo: GeoState): boolean {

@@ -369,6 +369,30 @@ describe('NativeRenderer core (R1.4, SPEC-0555)', () => {
     expect(lastPipeline(t).depthStencil.depthWriteEnabled).toBe(true);
   });
 
+  it("keeps the three's GPU copy of a rewritten attribute coherent (the sky dome stayed stale in the three)", () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const geo = new BoxGeometry();
+    const colors = new BufferAttribute(new Float32Array(geo.getAttribute('position').count * 3), 3);
+    geo.setAttribute('color', colors);
+    const mesh = new Mesh(geo, new MeshBasicMaterial({ vertexColors: true }));
+    const threeCopy = { kind: 'three-buffer' };
+    t.host.backend.get(colors)['buffer'] = threeCopy;
+    frame(nr);
+    nr.take(mesh, mesh.material, geo);
+    colors.needsUpdate = true;
+    frame(nr);
+    nr.take(mesh, mesh.material, geo);
+    expect(t.calls.writes.filter((w) => w.buffer === threeCopy).length).toBe(1);
+    // A source the three never uploaded gets no extra write.
+    const pos = geo.getAttribute('position') as BufferAttribute;
+    pos.needsUpdate = true;
+    const before = t.calls.writes.length;
+    frame(nr);
+    nr.take(mesh, mesh.material, geo);
+    expect(t.calls.writes.length - before).toBe(1 + 1); // view block + our position buffer
+  });
+
   it('unlit: alphaTest discards after opacity, its value is in the params block', () => {
     const code = unlitModel.wgsl(['alpha', 'alphaTest', 'map']);
     expect(code).toContain('diffuse.w = diffuse.w * params.opacity;');
