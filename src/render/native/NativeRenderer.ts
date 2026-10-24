@@ -232,7 +232,7 @@ export class NativeRenderer implements NativeDrawer {
     for (const m of models) if (!allowed || allowed.has(m.name)) this._models.set(m.name, m);
     const d = (this._device = _host.backend.device);
     const uniformEntry = (binding: number) => ({ binding, visibility: STAGE_VERTEX | STAGE_FRAGMENT, buffer: { type: 'uniform' } });
-    this._blocks = frameBlocks.map((create) => create(d));
+    this._blocks = frameBlocks.map((create) => create(d, _host));
     this._frameWgsl = this._blocks.map((b) => b.wgsl).join('\n');
     const view = d.createBindGroupLayout({ label: 'native.view', entries: [uniformEntry(0)] });
     const frame = d.createBindGroupLayout({ label: 'native.frame', entries: this._blocks.flatMap((b) => b.layoutEntries()) });
