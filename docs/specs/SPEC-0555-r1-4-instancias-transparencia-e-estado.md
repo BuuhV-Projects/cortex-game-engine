@@ -232,3 +232,9 @@ a instância, e o modelo só precisa aceitar a variante.
   (alt 3 / 0,0040%). Ainda não isolado: fórmula de posição, normal e instância bate com o WGSL de
   referência (`ac/wgsl-0032.txt`, o mesmo objeto); suspeitas são precisão do sombreamento do `lambert`
   com instância ou do viés de profundidade contra o asfalto. Pendência no backlog do PRD-0466.
+- **Teste da sombra (2026-10-24):** a poça não recebe sombra (`receiveShadow = false` no `blood.ts`).
+  Com o `RECEIVE_SHADOW = false` da Frente A (só essa mudança), o Comercial dia deu alt 6 / 0,0135%,
+  mas **sem poça na rodada** (as poças nascem de evento). Sobram pontos esparsos de ±2–6 ao longe, que já
+  existiam com o lambert instanciado no `three` (0,004%). O viés de profundidade nativo é o do `three`
+  (`depthBias = units`, `slope = factor`, `clamp = 0`), e a ordem é a mesma. Inconclusivo; hipótese:
+  sombra de pedestre (Frente B) aparecendo na borda da poça. Reverificar quando a sombra fechar.
