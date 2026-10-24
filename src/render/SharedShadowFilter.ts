@@ -55,17 +55,24 @@ const t = { reference, texture, vec2, add, interleavedGradientNoise, vogelDiskSa
 const screenXY = (screenCoordinate as unknown as N).xy;
 const sharedRenderGroup: unknown = renderGroup;
 
-/** The two filter references, created once per shadow (the whole point). */
+/**
+ * The two filter references, created once per shadow (the whole point). Keyed by
+ * the shadow's `mapSize` vector: the `shadow` a TSL `Fn` body receives is NOT the
+ * same object on every build (the call converts its arguments), so keying by it
+ * misses every time and recreates the references — measured: same per-state ids
+ * with the first version.
+ */
 const perShadow = new WeakMap<object, { mapSize: N; radius: N }>();
 
-function shadowRefs(shadow: LightShadow): { mapSize: N; radius: N } {
-  let refs = perShadow.get(shadow);
+export function shadowRefs(shadow: LightShadow): { mapSize: N; radius: N } {
+  const key = shadow.mapSize as object;
+  let refs = perShadow.get(key);
   if (refs === undefined) {
     refs = {
       mapSize: t.reference('mapSize', 'vec2', shadow).setGroup(sharedRenderGroup),
       radius: t.reference('radius', 'float', shadow).setGroup(sharedRenderGroup),
     };
-    perShadow.set(shadow, refs);
+    perShadow.set(key, refs);
   }
   return refs;
 }
