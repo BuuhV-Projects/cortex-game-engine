@@ -1,3 +1,69 @@
+# [0.83.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.82.0...v0.83.0) (2026-10-24)
+
+
+### Bug Fixes
+
+* **engine:** DynamicLighting no host sem getter via super (o Babel do export quebra super getters; objetos sumiam) (SPEC-0435 (d′)) ([76f36c4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/76f36c484a3a67dd96becff2e2d58ac36f2160d4))
+* **engine:** fila opaca guarda a chave de ambiente por lightsNode (ADR-0363) ([7895000](https://github.com/BuuhV-Projects/cortex-game-engine/commit/78950009834018a0afca486ad73e2d5dec49f28e))
+* **engine:** fila opaca não calcula a chave de ambiente na projeção; ambiente mudado no quadro desenha a fila pelo three (ADR-0363) ([12824ad](https://github.com/BuuhV-Projects/cortex-game-engine/commit/12824adfc6a11f6c185670ee938f0090e2fbd166))
+* **engine:** fila opaca nativa com dono — oferta sem efeito colateral, emissão só no render que a montou (ADR-0363) ([ace8d7f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ace8d7f2f7cbda37f39997d3b0a878aa968b1c90))
+* **engine:** fila opaca percorre a lista com o tamanho da entrada e só emite no contexto dono (ADR-0363) ([fd975b5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fd975b5d087c8ff00188d37e4c782d109e5cea4d))
+* **engine:** filtro compartilhado cobre também o PCF soft (o tipo que a engine impõe) (SPEC-0445) ([3c11fd8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3c11fd81695bf25573a321f26e9734a535b42949))
+* **engine:** filtro PCF compartilhado indexa o cache pelo mapSize (o Fn do TSL entrega outro objeto a cada build) (SPEC-0445) ([0adcdcb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0adcdcbaad3b75657f21a4c0a04e97a51ce0d147))
+* **engine:** oferta da fila opaca usa a gravação do contexto do render (ADR-0363) ([23aa30a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/23aa30a0c744c9237a0f719d0e195f138edaa631))
+* **engine:** paridade de luz troca também o RenderLists (o three captura o lighting no init) e relata as trocas (SPEC-0435) ([1944efd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1944efd73aca8f73fdd120454cda07869d654904))
+* **engine:** RS1b emite na ordem do sort do three, intercalado por trechos (empate de profundidade de peças coplanares) (SPEC-0425) ([a46a1a9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a46a1a96b0fa74b2e6d9899de178da5f67067721))
+* **engine:** RS1b regrava a receita quando o three recria um grupo compartilhado, em vez de devolver o objeto (SPEC-0425) ([df7679b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/df7679ba59ea633900312ce3d036e5c2790120de))
+* **input:** giro de câmera do autopiloto só horizontal; kit reprova câmera no céu ([9cae42c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9cae42c818d52fcef41ca44c8ef0de2a8d8f40af))
+* **input:** perfil walk anda mais e devolve a câmera ao nível ([de4887b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/de4887b604d5d3af0808a1120fefde69108762f6))
+* **native:** contactPairsWith/contactPair no Rapier do host (SPEC-0393) ([353ac6d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/353ac6d0626070eee7e673f3e51ff321e08ec399))
+* **native:** round.sh acompanha o jogo pelo PID, sem PowerShell durante a rodada (SPEC-0382) ([515ebba](https://github.com/BuuhV-Projects/cortex-game-engine/commit/515ebba54d137049ee3887a943ad455120c4d583))
+* **native:** round.sh lança o jogo sem pipe herdável (SPEC-0382) ([60c869e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/60c869e82dc427e6ddaddd83918f180553171a82))
+* **native:** round.sh liga o profiler do jogo com perf=1 (SPEC-0382) ([5c970b0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5c970b0cd79a9e39d92f4368dce90060c20f7b66))
+* **native:** setters de corpo e collider no Rapier do host (SPEC-0394) ([4990a24](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4990a2497fde06a80558b2826bee1e245c471ceb))
+* **perf:** limite de deslocamento do autopiloto em 2 m; achados no PRD-0009 ([687db9e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/687db9ed3879737a053bcac078e460a35987703e))
+
+
+### Features
+
+* **engine:** paridade de luz na mesma execução (?parityFreeze + ?parityTarget=lighting alterna DynamicLighting × padrão por quadro) (SPEC-0435) ([cea208c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cea208cb27661cf738ee3bb1cbec27879590c5b8))
+* **engine:** RenderServer (RS1) ligado por padrão no host por decisão do usuário, abaixo do critério; ?renderServer=0 desliga (SPEC-0425, ADR-0404) ([d8acb1e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d8acb1eb3a7dc78e71b0f325484940cf172a7eaa))
+* **engine:** RS1b — instâncias opacas limpas fora da RenderList do three (SPEC-0425) ([99dec33](https://github.com/BuuhV-Projects/cortex-game-engine/commit/99dec3366f66a05e57d4ba2691a60c3c178f3dc3))
+* **input:** autopiloto de entrada para medição (controle virtual do Xbox) ([72297d3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/72297d343214c2b9437d231aad15686e7bccc673))
+* **native:** alocação acumulada do JS no __cortexGcStats (SPEC-0357) ([97bcb05](https://github.com/BuuhV-Projects/cortex-game-engine/commit/97bcb0534710a78d64cf9346d0f449d13c936f10))
+* **native:** Audio/HTMLAudioElement no host sobre o __cortexAudio (SPEC-0382) ([7baa6b7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7baa6b71261f57f11e7286ad038c467158a85495))
+* **native:** colunas de GC no resumo do kit de medição (SPEC-0357, SPEC-0382) ([a7665a3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a7665a333367a4e8bd618b597fa4bddc19b001c5))
+* **native:** CORTEX_WINDOW_SIZE e --window no kit para medir em Full HD (SPEC-0455) ([e93dd9a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e93dd9ae1aedd10755cd5991184bcd0e2d95e14c))
+* **native:** fila justa e prazo no lock de medição (SPEC-0382) ([574c913](https://github.com/BuuhV-Projects/cortex-game-engine/commit/574c91306743213f1be25c64d0fee1413ec9a656))
+* **native:** kit de medição do export nativo em native/scripts/perf (SPEC-0382) ([7e4d7fd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7e4d7fd10fb5ddc7bf707b3b2ee3da2ad4412c51))
+* **native:** ponte __cortexRaycast com BVH própria no host (SPEC-0347) ([6e1e4bd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6e1e4bdb7a5f5728370fdb789642471989ce1e5c))
+* **perf:** kit com --autopilot e reprovação de autopiloto parado ([49c542d](https://github.com/BuuhV-Projects/cortex-game-engine/commit/49c542d6681ef28e70e1eaed85a8c010edc6b13c))
+* **physics:** conferência do raycast nativo relata acertos e rotas (SPEC-0347) ([42f701f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/42f701f4c1b560e68dcb160def152066d3bff8c9))
+* **physics:** firstHit e raios de parede pelo raycast nativo (SPEC-0347) ([d384564](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d384564432c7ac0af6e9fbd3b91716bdeffd4b8d))
+
+
+### Performance Improvements
+
+* **core:** sem alocação por quadro no controle, na UI e no espelho de cena (SPEC-0357) ([b4ce3a3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b4ce3a32486576d2d882b57ea99e7a157a2ae15f))
+* **engine:** desenho direto com plano de uniformes para névoa e material com nó; instrumento de paridade ?parityFreeze (SPEC-0362) ([4bd8638](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4bd863883fc08ca2f9120d8ac8b116517c82d5b2))
+* **engine:** DynamicLighting do three no host atrás de ?dynamicLighting=1 — luzes sem sombra num nó de dados por tipo, estilo Godot (SPEC-0435 (d′)) ([cb916c0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cb916c068bd7a29e0f799f2ca298d1920ab6931b))
+* **engine:** DynamicLighting ligado por padrão no host (?dynamicLighting=0 desliga) — render −1,4/−1,7 ms andando (SPEC-0435 (d′)) ([04c7250](https://github.com/BuuhV-Projects/cortex-game-engine/commit/04c7250072fa3cb0c956b67b57da864a36ec1f73))
+* **engine:** fila opaca compara a chave em JS e só cruza a ponte por sequência a emitir (ADR-0363) ([77009fb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/77009fb8254b234d253c32cb15f90d1497bf45b9))
+* **engine:** fila opaca nativa intercalada na RenderList — limpos e parados saem do laço do three (ADR-0363, SPEC-0333 b.3) ([4b60da2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4b60da25d71eee1d2417b8fd4ae6e6607ad29db1))
+* **engine:** filtro de sombra compartilhado ligado por padrão no host — render −1,6/−1,9 ms andando, −3,0 ms dirigindo (SPEC-0445) ([ef530c5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ef530c55d8ad631ab4717d0e38c1567e079ead06))
+* **engine:** filtro PCF com uniformes compartilhados por sombra — receptores voltam a dividir o grupo render (SPEC-0445, ?sharedShadowFilter=1) ([3edb4eb](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3edb4eb6b33a7389771559f348768a3d8736204f))
+* **engine:** lote da b.2 regrava a receita quando o three recria um grupo compartilhado (SPEC-0435 (a), ?batchRecapture=0 desliga) ([e370bf6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e370bf66ec5f9ed7b96ebb7574821ba3bb5a365f))
+* **engine:** material com nó parado só confere os UBOs; applyPlan sem iterador (SPEC-0362) ([f61cc78](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f61cc78b0e1d103ffd8409f5c07371f44cc3e258))
+* **engine:** regravação no lote da b.1 desligada por padrão até ganho medido (?batchRecapture=1 liga) (SPEC-0435 (a)) ([8e0291c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8e0291c55bce9470c212748b26174d11d7cefb4f))
+* **engine:** RS1a — névoa atualizada por render, não vigiada por objeto (SPEC-0425) ([b72b744](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b72b7441b45bde225787d7d99fe73fb82b5078ea))
+* **scene:** cullOutlines e varredura do espelho pulam subárvore escondida (SPEC-0372) ([abbc8b9](https://github.com/BuuhV-Projects/cortex-game-engine/commit/abbc8b9d5c469e6c5a51db936d941ea1909f4667))
+
+
+### Reverts
+
+* **engine:** arquiva a fila opaca nativa (b.3) — código removido, registros e instrumento ?parityFreeze mantidos (ADR-0363, SPEC-0362) ([6169b9f](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6169b9f74b70e0fbf497157af7c2c0bba9e16fd8))
+* **engine:** plano de uniformes no desenho direto rejeitado por medição; fica o instrumento ?parityFreeze (SPEC-0362) ([8965dfc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8965dfc98f3790c9d513ab1140b11975f500bdfb))
+
 # [0.82.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.81.0...v0.82.0) (2026-10-20)
 
 
