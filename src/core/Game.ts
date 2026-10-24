@@ -33,6 +33,7 @@ import {
 } from '../render/NativeMainProjection.js';
 import { installDrawRecipeProbe } from '../render/DrawRecipeProbe.js';
 import { ParityFreeze, parityFreezeSeconds } from '../render/MainPassArm.js';
+import { applyParityLighting } from '../render/DynamicLightingSwitch.js';
 import { PerfTrace } from './PerfTrace.js';
 import { autopilotFromQuery, type InputAutopilot } from '../input/InputAutopilot.js';
 import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
@@ -661,6 +662,7 @@ export class Game {
   private _tick(deltaMs: number): void {
     const gameplay = !this._loading && !isSplashActive() && !isSceneBuilding(this._activeScene);
     if (this._parityFreeze?.shouldUpdate(performance.now(), gameplay) !== false) this._update(deltaMs);
+    if (this._parityFreeze) applyParityLighting(this.renderer.threeRenderer as unknown as { lighting: unknown });
     const p = this.profiler;
     // Câmera de inspeção (SPEC-0131): quando ativa VENCE tudo — render cru por ela,
     // de qualquer ângulo, com a gameplay seguindo (só o render muda). Usada pelo

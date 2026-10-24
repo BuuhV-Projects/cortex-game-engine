@@ -19,6 +19,11 @@ import { queryFlagRequested } from './TransformOnlyRefresh.js';
 
 /** Depuração: relê a receita a cada `add` e relata divergência (caro; desligado). */
 const CHECK_QUERY_KEY = 'drawBatchCheck=';
+/**
+ * (a) da SPEC-0435: grupo compartilhado recriado regrava a receita em vez de devolver ao `three`.
+ * Desligada por padrão até ganho medido (A/B sem ganho; Centro com +4 pp de quadros > 33 ms).
+ */
+const RECAPTURE_QUERY_KEY = 'batchRecapture=';
 
 /** Inteiros por comando (ver `kCommandInts` em `draw_batch.h`). */
 const COMMAND_INTS = 4;
@@ -106,6 +111,8 @@ export interface DrawBatchStats {
   recorded: number;
   /** Desenhos diretos que não puderam ir em lote (indireto, stencil, oclusão...). */
   unbatchable: number;
+  /** Receitas regravadas porque o `three` recriou um grupo compartilhado (SPEC-0435 (a)). */
+  recaptured: number;
 }
 
 /**
@@ -113,13 +120,14 @@ export interface DrawBatchStats {
  * o `flush` antes de qualquer desenho do `three`.
  */
 export class DrawBatch {
-  readonly stats: DrawBatchStats = { batched: 0, flushes: 0, recorded: 0, unbatchable: 0 };
+  readonly stats: DrawBatchStats = { batched: 0, flushes: 0, recorded: 0, unbatchable: 0, recaptured: 0 };
   private _commands = new Int32Array(INITIAL_COMMANDS * COMMAND_INTS);
   private _count = 0;
   private _pass: unknown = null;
   private _contextData: Record<string, unknown> | null = null;
   private readonly _receitas = new WeakMap<object, Receita>();
   private readonly _conferir = queryFlagRequested(CHECK_QUERY_KEY, false);
+  private readonly _regravar = queryFlagRequested(RECAPTURE_QUERY_KEY, false);
   private readonly _relatados = new WeakSet<object>();
 
   constructor(
@@ -152,7 +160,7 @@ export class DrawBatch {
    * despacha o lote e desenha pelo `three`.
    */
   add(ro: BatchRoLike, info: BatchInfoLike): boolean {
-    const receita = this._receitas.get(ro);
+    let receita = this._receitas.get(ro);
     if (receita === undefined) return false;
     const dadosDoContexto = this._backend.get(ro.context);
     const pass = dadosDoContexto['currentPass'];
@@ -163,9 +171,14 @@ export class DrawBatch {
     // Os grupos compartilhados podem ter sido recriados pelo `_update` do
     // quadro (textura de sombra nova, luzes): receita velha = desenho errado.
     const bindings = ro.getBindings();
-    for (let k = 0; k < receita.compartilhados.length; k++) {
-      const i = receita.compartilhados[k]!;
-      if (this._backend.get(bindings[i])['group'] !== receita.grupos[i]) return false;
+    if (!compartilhadosEmDia(this._backend, bindings, receita)) {
+      // O `three` recriou o grupo (geração de textura/sampler): regravar lê os
+      // MESMOS handles que o `backend.draw` dele usaria agora (SPEC-0435 (a)).
+      if (!this._regravar) return false;
+      this.capture(ro);
+      receita = this._receitas.get(ro);
+      if (receita === undefined || !compartilhadosEmDia(this._backend, bindings, receita)) return false;
+      this.stats.recaptured++;
     }
     if (this._conferir && !this._conferirReceita(ro, receita)) return false;
     const params = ro.getDrawParameters();
@@ -299,6 +312,15 @@ export class DrawBatch {
     }
     return { id: NO_RECIPE, pipeline: dadosDoPipeline['pipeline'], grupos, compartilhados, vertexBuffers, index };
   }
+}
+
+/** Os grupos compartilhados (câmera, luzes) da receita ainda são os que o `three` tem? */
+function compartilhadosEmDia(backend: BatchBackendLike, bindings: unknown[], receita: Receita): boolean {
+  for (let k = 0; k < receita.compartilhados.length; k++) {
+    const i = receita.compartilhados[k]!;
+    if (backend.get(bindings[i])['group'] !== receita.grupos[i]) return false;
+  }
+  return true;
 }
 
 function mesmaReceita(a: Receita, b: Receita): boolean {

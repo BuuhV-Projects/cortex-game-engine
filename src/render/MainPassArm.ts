@@ -13,10 +13,21 @@
 import { debug } from '../core/debug.js';
 
 const QUERY_KEY = 'parityFreeze=';
+/** `?parityTarget=lighting`: frozen frames alternate the lighting (SPEC-0435 (d′)) instead of the draw path. */
+const TARGET_QUERY_KEY = 'parityTarget=lighting';
 const MS_PER_SECOND = 1000;
 
 /** Lido pelos caminhos do passe principal: `three` = devolver tudo ao `three`. */
-export const mainPassArm = { three: false };
+export const mainPassArm = { three: false, lighting: false };
+
+/** Which arm the frozen frames alternate: the draw path (default) or the lighting (SPEC-0435). */
+function lightingTarget(): boolean {
+  try {
+    return typeof location !== 'undefined' && (location.search ?? '').includes(TARGET_QUERY_KEY);
+  } catch {
+    return false;
+  }
+}
 
 /** Segundos de jogo antes de congelar; 0 = desligado. */
 export function parityFreezeSeconds(): number {
@@ -37,12 +48,16 @@ export class ParityFreeze {
   private _startMs = -1;
   private _frozen = false;
 
-  constructor(private readonly _seconds: number) {}
+  constructor(
+    private readonly _seconds: number,
+    private readonly _lighting = lightingTarget(),
+  ) {}
 
   /** `false` = congelado (não chamar o `_update`). `gameplay` = cena do jogo no ar. */
   shouldUpdate(nowMs: number, gameplay: boolean): boolean {
     if (this._frozen) {
-      mainPassArm.three = !mainPassArm.three;
+      if (this._lighting) mainPassArm.lighting = !mainPassArm.lighting;
+      else mainPassArm.three = !mainPassArm.three;
       return false;
     }
     if (!gameplay) return true;
