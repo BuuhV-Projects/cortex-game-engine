@@ -1,3 +1,10 @@
+## [0.83.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.83.0...v0.83.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **native:** Babel do export lê super.x com o receptor certo (plugin antes do transform-classes loose); contorno do DynamicLightsNode removido (ADR-0465); SPEC-0475 registra o dado global de luz/cena para o renderer nativo ([4b19014](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4b1901492984e230ca10c3812f0403b27b55b8ac))
+
 # [0.83.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.82.0...v0.83.0) (2026-10-24)
 
 
