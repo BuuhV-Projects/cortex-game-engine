@@ -283,7 +283,7 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       congela o jogo e alterna nativo × `three` quadro a quadro; pegou um erro de cor que a captura entre
       execuções não pegaria. Destrava paridade por imagem no DDD 61 para qualquer desenho nativo futuro.
 
-- [ ] **`tests/native/export-isolated-smoke.test.ts` intermitente sob carga** no checkout principal (só roda
+- [x] (`fb36f9b4`: o `beforeAll` copiava src/ + native/ com o limite padrão de 10 s do Vitest para hooks; na suíte paralela estourava. Limite próprio de 120 s; suíte inteira verde 2× no checkout principal) **`tests/native/export-isolated-smoke.test.ts` intermitente sob carga** no checkout principal (só roda
       onde há toolchain nativo; nas worktrees é pulado): falhou 1× na suíte inteira logo após o merge do RS1
       (`487d4419`) e passou em seguida isolado (37 s) e na suíte inteira (2179). Suspeita: outra sessão
       exportando ao mesmo tempo. Destrava: commits sem falso vermelho no hook. Origem: merge do RS1.
