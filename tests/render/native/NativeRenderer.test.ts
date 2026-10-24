@@ -101,7 +101,7 @@ describe('NativeRenderer (R1.1, SPEC-0495)', () => {
 
   it('refuses what R1.1 does not draw, and the reason is cached until the material changes', () => {
     const t = fakeHost();
-    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const nr = new NativeRenderer(t.host as never, t.bridge, [unlitModel], null);
     const lambert = new Mesh(new BoxGeometry(), new MeshLambertMaterial());
     const transparent = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ transparent: true }));
     frame(nr);

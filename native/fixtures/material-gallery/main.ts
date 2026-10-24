@@ -90,6 +90,16 @@ function sphere(withVertexColors = false): SphereGeometry {
 
 const cutout = new MeshBasicMaterial({ map: holes, alphaTest: 0.5, side: DoubleSide });
 
+/** The material on a sphere that does not receive shadow (the loop below turns it on for all). */
+function unshadowed(material: Material): (mesh: Mesh) => void {
+  return (mesh) => {
+    mesh.material = material;
+    void Promise.resolve().then(() => {
+      mesh.receiveShadow = false;
+    });
+  };
+}
+
 /** [name, material or engine preset, vertexColors] — one sphere each, in gallery order. */
 const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   ['unlit-color', new MeshBasicMaterial({ color: 0xcc3333 }), false],
@@ -109,6 +119,16 @@ const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   ['toon', (mesh) => applyMaterial(mesh, { type: 'toon', color: 0x55aaee, gradientSteps: TOON_STEPS }), false],
   ['toon-outline', (mesh) => applyMaterial(mesh, { type: 'toon', color: 0xee8855, gradientSteps: TOON_STEPS, outline: OUTLINE }), false],
   ['unlit-outline', (mesh) => applyMaterial(mesh, { type: 'unlit', color: 0x88ee55, outline: OUTLINE }), false],
+  // R1.2 (SPEC-0535): lit models without receiveShadow (refused until the shadow block is ready).
+  ['lambert-color-lit', unshadowed(new MeshLambertMaterial({ color: 0x8899aa })), false],
+  ['lambert-map-vcolor-lit', unshadowed(new MeshLambertMaterial({ map: checker, vertexColors: true })), true],
+  ['lambert-emissive-lit', unshadowed(new MeshLambertMaterial({ map: checker, emissive: new Color(1, 0.6, 0.2), emissiveMap: stripes, emissiveIntensity: 1.5 })), false],
+  ['lambert-alphatest-lit', unshadowed(new MeshLambertMaterial({ map: holes, alphaTest: 0.5, side: DoubleSide })), false],
+  ['lambert-double-vcolor-lit', unshadowed(new MeshLambertMaterial({ side: DoubleSide, vertexColors: true })), true],
+  ['standard-metal-lit', unshadowed(new MeshStandardMaterial({ color: 0xbbbbbb, metalness: 0.9, roughness: 0.3 })), false],
+  ['standard-map-lit', unshadowed(new MeshStandardMaterial({ map: checker, roughness: 0.6 })), false],
+  ['standard-emissive-lit', unshadowed(new MeshStandardMaterial({ color: 0x111111, emissive: new Color(0.2, 0.6, 1), emissiveMap: stripes })), false],
+  ['standard-double-map-lit', unshadowed(new MeshStandardMaterial({ map: checker, side: DoubleSide, roughness: 0.5 })), false],
 ];
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;

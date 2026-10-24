@@ -1288,6 +1288,14 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   de material são do modelo; de objeto/pipeline são do núcleo (`CORE_FEATURES`). WGSL = `coreWgsl`
   (blocos de vista/objeto, `VIn`, `nativeModel`/`nativeLocal`/`nativeNormalMatrix`) + o do modelo.
 - **Grupo 1 = blocos de quadro** `src/render/native/frame/` (luzes 0–7, sombra 8–15).
+- **Luz (R1.2, SPEC-0535)**: modelos `lambert` e `standard` (`models/lambert.ts` exporta as partes
+  comuns; o `standard` traz a LUT DFG do `three`, copiada porque é privada do módulo dele). O bloco
+  `frame/lights.ts` é um UBO por quadro com sol + hemisfério + até 8 spots (o que a `DynamicLighting`
+  do `three` dá aos shaders). **Armadilha**: o `beginFrame` roda antes de o `three` coletar as luzes
+  do quadro (`renderList.pushLight` na projeção), então o bloco varre a cena só quando a raiz muda e
+  filtra visibilidade/camadas por quadro; luz que os modelos não reproduzem (pontual, ambiente,
+  spot com sombra, `scene.environment`) faz os modelos recusarem (`lightsRefusal()`).
+  `receiveShadow` fica recusado até o `SHADOW_READY` da Frente B.
 - **Armadilha**: a saída é LINEAR (no DDD 61 a passada `outputColorTransform` do `three` aplica o
   sRGB no quadro); a névoa do `three` é `smoothstep(near, far, -z)`, não rampa linear.
 - **Paridade**: `?parityFreeze` alterna renderer próprio × `three` sem código novo (o braço

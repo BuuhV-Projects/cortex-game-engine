@@ -4,5 +4,7 @@
  */
 import type { NativeModelDef } from './NativeModel.js';
 import { unlitModel } from './unlit.js';
+import { lambertModel } from './lambert.js';
+import { standardModel } from './standard.js';
 
-export const NATIVE_MODELS: readonly NativeModelDef[] = [unlitModel];
+export const NATIVE_MODELS: readonly NativeModelDef[] = [unlitModel, lambertModel, standardModel];
