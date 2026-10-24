@@ -1,7 +1,7 @@
 # PRD 0466 - Renderer nativo próprio no export (o `three` sai do caminho de render)
 
 **Data:** 2026-10-24
-**Status:** **EM ANDAMENTO** — decisão no ADR-0465; **R0 concluído** (2026-10-24, SPEC-0505); próximo: R1.1 (SPEC-0495). Frente B2 do PRD-0009.
+**Status:** **EM ANDAMENTO** — decisão no ADR-0465; **R0 concluído** (2026-10-24, SPEC-0505); **R1.1 concluído** (SPEC-0495, desligado por padrão); próximo: R1.2–R1.5 em frentes paralelas. Frente B2 do PRD-0009.
 
 Decisão do usuário (2026-10-24): cortar o `three` do render do export e ter um renderer
 próprio em C++, "mesmo que seja uma tarefa complexa e demorada". Só no export; o Studio

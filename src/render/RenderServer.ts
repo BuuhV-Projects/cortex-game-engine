@@ -104,6 +104,25 @@ interface RenderItemLike extends SortKeyLike {
   clippingContext: unknown;
 }
 
+/** A draw owned by the native renderer (ADR-0465): what the list needs to emit it. */
+export interface NativeEntry {
+  readonly count: number;
+  readonly first: number;
+  readonly triangles: number;
+}
+
+/**
+ * The native renderer as the list sees it (`src/render/native/NativeRenderer.ts`). It takes an
+ * object (its own geometry, material, pipeline) or returns `null` and the object goes on as before.
+ */
+export interface NativeDrawer {
+  /** Once per top-level projection of the mirrored scene: view block (camera, fog). */
+  beginFrame(camera: unknown, scene: unknown): void;
+  take(object: Object3D, material: unknown, geometry: unknown): NativeEntry | null;
+  /** Recipe id for the render context's target formats; -1 = the three draws it at its place. */
+  recipeFor(entry: NativeEntry, renderContext: unknown): number;
+}
+
 /** What is cached per instance: the command and what the emission checks. */
 export interface ServerInstance {
   recipe: ServerRecipe;
@@ -177,9 +196,16 @@ export class RenderServer {
     drawn: 0, moved: 0, refused: 0, fallback: 0, dropped: 0, offered: 0, taken: 0, emissions: 0,
     fbEnv: 0, fbShared: 0, fbMoved: 0, recaptured: 0,
   };
-  private _items: ServerRecording[] = [];
+  /** b.1 recording of an RS1 entry, or `null` for a native entry (`_nat`). */
+  private _items: (ServerRecording | null)[] = [];
+  private _nat: (NativeEntry | null)[] = [];
+  private _ids: number[] = [];
+  private _objs: Object3D[] = [];
+  private _mats: unknown[] = [];
+  private _clips: unknown[] = [];
   private _moved: boolean[] = [];
   private _z: number[] = [];
+  private _native: NativeDrawer | null = null;
   private _owner: unknown = null;
   private _ownerList: unknown = null;
   /** Inside a nested call made while emitting (shadow updateBefore, fallback draw). */
@@ -200,7 +226,7 @@ export class RenderServer {
   private readonly _byKey = (i: number, j: number): number => {
     const zi = this._z[i]!;
     const zj = this._z[j]!;
-    return zi !== zj ? zi - zj : this._items[i]!.ro.object.id - this._items[j]!.ro.object.id;
+    return zi !== zj ? zi - zj : this._ids[i]! - this._ids[j]!;
   };
 
   constructor(private readonly _access: ServerAccess) {}
@@ -209,7 +235,7 @@ export class RenderServer {
    * Start of a top-level projection of the mirrored scene (not a shadow pass).
    * A list never emitted (projection without a render) is dropped.
    */
-  beginProjection(r: ServerRendererLike, renderList: unknown): boolean {
+  beginProjection(r: ServerRendererLike, renderList: unknown, camera?: unknown, scene?: unknown): boolean {
     if (this._emitting) return false;
     this._report();
     if (this._items.length > 0) {
@@ -218,7 +244,39 @@ export class RenderServer {
     }
     this._owner = r._currentRenderContext;
     this._ownerList = renderList;
+    if (this._native !== null && camera !== undefined) this._native.beginFrame(camera, scene);
     return true;
+  }
+
+  /** Plugs the native renderer (ADR-0465) in front of the RS1: it is asked first. */
+  attachNative(native: NativeDrawer | null): void {
+    this._native = native;
+  }
+
+  /**
+   * Native renderer only (objects the RS1 never takes: instanced, skinned, sprites); `true` = the
+   * native renderer took it into the list. Same sort key as {@link offer}.
+   */
+  offerNative(object: Object3D, material: unknown, geometry: unknown, clipping: unknown, z: number): boolean {
+    if (this._native === null || object.renderOrder !== 0) return false;
+    const entry = this._native.take(object, material, geometry);
+    if (entry === null) return false;
+    this._push(null, entry, object, material, clipping, z, false);
+    return true;
+  }
+
+  private _push(
+    g: ServerRecording | null, nat: NativeEntry | null, object: Object3D, material: unknown, clipping: unknown, z: number, moved: boolean,
+  ): void {
+    this._items.push(g);
+    this._nat.push(nat);
+    this._ids.push(object.id);
+    this._objs.push(object);
+    this._mats.push(material);
+    this._clips.push(clipping);
+    this._moved.push(moved);
+    this._z.push(z);
+    this.stats.taken++;
   }
 
   /**
@@ -227,6 +285,7 @@ export class RenderServer {
    */
   offer(object: Object3D, material: unknown, geometry: unknown, clipping: unknown, z: number): boolean {
     this.stats.offered++;
+    if (this.offerNative(object, material, geometry, clipping, z)) return true;
     const g = this._access.recordingOf(object, this._owner);
     if (
       g === undefined || g.material !== material || g.ro.geometry !== geometry || g.clipping !== clipping ||
@@ -242,10 +301,7 @@ export class RenderServer {
       this.stats.refused++;
       return false;
     }
-    this._items.push(g);
-    this._moved.push(r === CheckResult.Moved);
-    this._z.push(z);
-    this.stats.taken++;
+    this._push(g, null, object, material, clipping, z, r === CheckResult.Moved);
     return true;
   }
 
@@ -272,6 +328,11 @@ export class RenderServer {
 
   private _clear(): void {
     this._items.length = 0;
+    this._nat.length = 0;
+    this._ids.length = 0;
+    this._objs.length = 0;
+    this._mats.length = 0;
+    this._clips.length = 0;
     this._moved.length = 0;
     this._z.length = 0;
     this._order.length = 0;
@@ -300,8 +361,20 @@ export class RenderServer {
     let k = 0;
     for (let s = 0; s < n; s++) {
       const i = order[s]!;
-      const g = this._items[i]!;
       this._slot[s] = FALLBACK;
+      const nat = this._nat[i];
+      if (nat) {
+        const id = this._native!.recipeFor(nat, this._owner);
+        if (id < 0) continue;
+        const base = k * COMMAND_INTS;
+        cmds[base] = id;
+        cmds[base + 1] = nat.count;
+        cmds[base + 2] = 1;
+        cmds[base + 3] = nat.first;
+        this._slot[s] = k++;
+        continue;
+      }
+      const g = this._items[i]!;
       const inst = g.server!;
       if (g.lights !== lightsNode || g.envKey !== env || g.contextNodeVersion !== contextNodeVersion) {
         this.stats.fbEnv++;
@@ -352,20 +425,19 @@ export class RenderServer {
     let triangles = 0;
     while (s < n) {
       const i = order[s]!;
-      const g = this._items[i]!;
-      if (next !== null && !keyBelow(this._z[i]!, g.ro.object.id, next)) break;
+      if (next !== null && !keyBelow(this._z[i]!, this._ids[i]!, next)) break;
       const k = this._slot[s]!;
       if (k === FALLBACK) {
         triangles = this._flushRun(r, runStart, runCount, triangles);
         runStart = -1;
         runCount = 0;
-        const o = g.ro.object;
-        r._currentRenderObjectFunction?.call(r, o, this._scene, this._camera, o.geometry, g.material, null, this._lights, g.clipping, null);
+        const o = this._objs[i]! as Object3D & { geometry: unknown };
+        r._currentRenderObjectFunction?.call(r, o, this._scene, this._camera, o.geometry, this._mats[i], null, this._lights, this._clips[i], null);
         this.stats.fallback++;
       } else {
         if (runStart < 0) runStart = k;
         runCount++;
-        triangles += g.server!.triangles;
+        triangles += (this._nat[i] ?? this._items[i]!.server!).triangles;
       }
       s++;
     }

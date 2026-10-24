@@ -246,3 +246,44 @@ describe('RenderServer — default', () => {
     }
   });
 });
+
+describe('RenderServer — native entries (ADR-0465, R1.1)', () => {
+  it('asks the native renderer first and sorts its entries with the RS1 ones and the three', () => {
+    const { server, renderer, b, add, log } = setup();
+    const taken = new Set<object>();
+    const frames: unknown[] = [];
+    server.attachNative({
+      beginFrame: (camera) => void frames.push(camera),
+      take: (o) => (taken.has(o) ? { count: 6, first: 0, triangles: 2 } : null),
+      recipeFor: (entry) => (entry.count === 6 ? 42 : -1),
+    });
+    const list = { opaque: [] as unknown[] };
+    server.beginProjection(renderer, list, 'cam', 'scene');
+    expect(frames).toEqual(['cam']);
+    const nativeNear = add('nativeNear');
+    taken.add(nativeNear);
+    const rsFar = add('rsFar');
+    expect(server.offer(nativeNear, nativeNear.material, nativeNear.geometry, null, 1)).toBe(true);
+    expect(server.offer(rsFar, rsFar.material, rsFar.geometry, null, 9)).toBe(true);
+    const mid = new Mesh();
+    mid.name = 'mid';
+    new Object3D().add(mid);
+    list.opaque = [item(mid, 5)];
+    renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
+    // native (z 1) → three (z 5) → RS1 (z 9); the native entry did not touch the b.1 state.
+    expect(b.emitted).toEqual([[42, 6, 1, 0], [9, VERTICES, 1, 0]]);
+    expect(log).toEqual(['prepare', 'three:mid']);
+  });
+
+  it('a native entry without a recipe for the target is drawn by the three at its place', () => {
+    const { server, renderer, b, add, log } = setup();
+    server.attachNative({ beginFrame: () => undefined, take: () => ({ count: 3, first: 0, triangles: 1 }), recipeFor: () => -1 });
+    const list = { opaque: [] as unknown[] };
+    server.beginProjection(renderer, list, 'cam', 'scene');
+    const m = add('noRecipe');
+    expect(server.offerNative(m, m.material, m.geometry, null, 2)).toBe(true);
+    renderer._renderTransparents!(null, null, 'cam', 'scene', 'L');
+    expect(b.emitted).toEqual([]);
+    expect(log).toContain('three:noRecipe');
+  });
+});

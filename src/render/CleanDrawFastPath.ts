@@ -20,6 +20,7 @@ import { modelNormalMatrix, modelWorldMatrixInverse } from 'three/tsl';
 import { debug } from '../core/debug.js';
 import { buildRenderIdPlan } from './RenderIdRefresh.js';
 import { mainPassArm } from './MainPassArm.js';
+import { createNativeRenderer, nativeRendererRequested } from './native/NativeRenderer.js';
 import {
   DrawBatch,
   batchBackendSupported,
@@ -865,6 +866,8 @@ export function installCleanDrawFastPath(
     const servidor = new RenderServer(acesso);
     desinstalarServidor = servidor.install(renderer as unknown as ServerRendererLike);
     setActiveRenderServer(servidor);
+    // Native renderer (ADR-0465, R1.1): asked before the RS1; off by default until the R1 acceptance.
+    if (nativeRendererRequested()) servidor.attachNative(createNativeRenderer(renderer, batchBridge));
   }
 
   debug('perf', '[cleanDraw] instalado');

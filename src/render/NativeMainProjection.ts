@@ -146,6 +146,8 @@ export class MainProjector {
         // O teste exato do `three`, com a esfera do OBJETO (instâncias, rig).
         if (objeto.frustumCulled && !this._dentro(objeto)) continue;
         z = this._zDoThree(objeto);
+        // The native renderer (ADR-0465) may own instanced/skinned objects the RS1 never takes.
+        if (server !== null && server.offerNative(objeto, objeto.material, objeto.geometry, clippingContext, z)) continue;
       }
       empurrar(renderList, objeto, z, clippingContext);
     }
@@ -242,7 +244,7 @@ export function installNativeProjection(
     if (raiz && this.sortObjects !== false && !(camera as Camera & { isArrayCamera?: boolean }).isArrayCamera) {
       const override = (object as Object3D & { overrideMaterial?: unknown }).overrideMaterial;
       const server = override || mainPassArm.three ? null : activeRenderServer();
-      const offering = server !== null && server.beginProjection(this as unknown as ServerRendererLike, renderList) ? server : null;
+      const offering = server !== null && server.beginProjection(this as unknown as ServerRendererLike, renderList, camera, object) ? server : null;
       if (projector.project(camera, renderList, clippingContext, offering)) return;
     } else if (raiz) {
       stats.refused++;

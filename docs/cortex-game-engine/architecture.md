@@ -1271,6 +1271,29 @@ na troca — O(subárvore) por troca, não por quadro); quando o contador volta 
 `visible = false` (a casca em si continua avaliada). Ligar/desligar um grupo
 GRANDE todo quadro passaria a custar a subárvore todo quadro.
 
+## 8e8. Renderer nativo próprio no export — ADR-0465 / PRD-0466 (R1.1: SPEC-0495)
+
+Só no host, desligado por padrão (`?nativeRenderer=1`; exige o RS1 e a projeção nativa).
+Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas no DDD 61.
+
+- **Servidor JS** `src/render/native/NativeRenderer.ts`: toma o objeto (geometria, material,
+  pipeline e bind groups PRÓPRIOS, criados pelo shim WebGPU) e grava a receita no lote C++ que
+  já existe (`__cortexDrawBatch`); o handle C++ é o id da receita. Texturas/samplers vêm do
+  upload do `three` (`_textures.updateTexture`).
+- **Emissão**: o `RenderServer` (RS1) pergunta primeiro ao renderer próprio
+  (`attachNative`/`offerNative`) e ordena as entradas nativas com as do RS1 e com os itens do
+  `three` pela chave do `painterSortStable` (coplanares iguais ao `three`). A projeção oferece
+  também os `JsCull` (instanciados/skinados) via `offerNative`.
+- **Modelos** `src/render/native/models/` (contrato `NativeModel.ts`, lista `index.ts`): features
+  de material são do modelo; de objeto/pipeline são do núcleo (`CORE_FEATURES`). WGSL = `coreWgsl`
+  (blocos de vista/objeto, `VIn`, `nativeModel`/`nativeLocal`/`nativeNormalMatrix`) + o do modelo.
+- **Grupo 1 = blocos de quadro** `src/render/native/frame/` (luzes 0–7, sombra 8–15).
+- **Armadilha**: a saída é LINEAR (no DDD 61 a passada `outputColorTransform` do `three` aplica o
+  sRGB no quadro); a névoa do `three` é `smoothstep(near, far, -z)`, não rampa linear.
+- **Paridade**: `?parityFreeze` alterna renderer próprio × `three` sem código novo (o braço
+  `three` desliga a oferta); `?nativeTint=1` planta 8/255 só no caminho nativo (tem de dar FAIL).
+  Checagem de sub-etapa: `native/scripts/check-stage.sh` (SPEC-0525).
+
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
 Duas fusões diferentes, com propósitos opostos, no mesmo módulo
