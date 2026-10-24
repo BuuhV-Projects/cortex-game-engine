@@ -3,7 +3,8 @@
 # Usage: round.sh --exp <exportDir> --out <runDir> (--spawn <point> [--extra '&k=v'] | --query '?raw')
 #                 [--secs 135] [--owner <name>] [--autopilot <profile>] [--window <WxH>]
 # --autopilot: the engine's virtual Xbox controller plays <profile> (SPEC-0414: walk, drive).
-# --window: window size (SPEC-0455, e.g. 1280x720); default 1920x1080 (baseline). Draw target = window × CORTEX_RENDER_SCALE.
+# --window: window size (SPEC-0455); default 1920x1080, the game resolution (SPEC-0515). Only for future
+# larger resolutions; nothing below 1080p is measured. Draw target = window × CORTEX_RENDER_SCALE.
 # Prints the summarize line of the round at the end.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,7 +21,7 @@ readonly CLOSE_WAIT_S=3
 readonly PWSH_TIMEOUT_S=30
 # Lock lease = round length + launch/kill/move overhead.
 readonly ROUND_LEASE_MARGIN_S=120
-# Measurement baseline is Full HD (user decision, 2026-10-24); 720p only via --window.
+# Measurement baseline is Full HD, the game resolution (user decision, SPEC-0515).
 readonly DEFAULT_WINDOW=1920x1080
 
 exp=""; out=""; spawn=""; extra=""; query=""; secs=$DEFAULT_SECS; owner="round"; autopilot=""; window=$DEFAULT_WINDOW

@@ -224,6 +224,11 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 - [ ] **Fila órfã ao parar um comando em segundo plano** (o shell externo morre, o `ab.sh`/fila e o
       `round.sh` seguem vivos). Hoje só documentado no README do kit; destrava: o `ab.sh` e o lock
       desistirem quando o processo raiz morrer. Origem: relato da B2.
+- [ ] **Tela cheia fora de um monitor 1080p não fica em 1920×1080**: a SPEC-0515 fixa 1080p como
+      resolução do jogo, mas a tela cheia usa a resolução do monitor (num 1440p/4K o jogo roda maior,
+      e o supersampling 2× multiplica). Destrava: modo exclusivo 1920×1080 ou alvo fixo com escala,
+      quando o jogo precisar rodar em monitor que não seja 1080p; seletor de resolução é evolução
+      futura (decisão do usuário). Origem: SPEC-0515.
 
 - [ ] **Medir em movimento muda o quadro**: com o autopiloto `walk` (SPEC-0414) o DDD 61 (`e2be01c`)
       piora em relação à rodada parada — Setor O p95 33→55 ms, p99 43→74, quadros >33 ms 5%→34%;

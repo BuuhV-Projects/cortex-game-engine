@@ -669,7 +669,7 @@ lê de lá. `console.log` do JS sai no stdout do host, então redirecione pra um
 arquivo e leia.
 
 ```powershell
-$env:CORTEX_WINDOWED='1'                      # janela 1280x720 em vez de fullscreen
+$env:CORTEX_WINDOWED='1'                      # janela 1920x1080 (SPEC-0515) em vez de fullscreen
 $env:CORTEX_LAUNCH_QUERY='?cortexDebug=1'     # 1/true/* = TODOS os escopos
 & "<dist>\launcher.exe" 2>&1 | Out-File "<dist>\run.log" -Encoding utf8
 un.log" -Encoding utf8
@@ -816,7 +816,7 @@ Saída esperada hoje (M0, Marco C): janela com triângulo violeta, e no console
 
 **Env vars do host** (export/atalho ou debug):
 - `CORTEX_WINDOWED=1` — abre em janela (padrão é fullscreen na resolução do desktop).
-- `CORTEX_WINDOW_SIZE=<L>x<A>` — tamanho da janela do modo `CORTEX_WINDOWED` (SPEC-0455; padrão 1280x720, limites 320x200 a 7680x4320; parser puro em `core/window_size.h`). O alvo de desenho é janela × `CORTEX_RENDER_SCALE` (1920x1080 → 3840x2160).
+- `CORTEX_WINDOW_SIZE=<L>x<A>` — tamanho da janela do modo `CORTEX_WINDOWED` (SPEC-0455; padrão 1920x1080 (SPEC-0515), limites 320x200 a 7680x4320; parser puro em `core/window_size.h`). O alvo de desenho é janela × `CORTEX_RENDER_SCALE` (1920x1080 → 3840x2160).
 - `CORTEX_RENDER_SCALE=<n>` — fator de SSAA (ADR-0103). Padrão `2.0`; `1.0`
   desliga; teto `4.0`. Regula nitidez do contorno × custo de fill-rate.
 - `CORTEX_LAUNCH_QUERY=<query>` — vira `location.search` (deep-link de fase, ex.:

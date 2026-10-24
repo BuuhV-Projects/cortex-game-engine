@@ -53,9 +53,10 @@
 #include "webgpu/bloom.h"
 #include "webgpu/splash.h"
 
-// Janela do modo de desenvolvimento quando CORTEX_WINDOW_SIZE não diz outra coisa.
-constexpr int kDefaultWindowWidth = 1280;
-constexpr int kDefaultWindowHeight = 720;
+// Janela do modo de desenvolvimento quando CORTEX_WINDOW_SIZE não diz outra coisa:
+// 1920×1080, a resolução do jogo (SPEC-0515).
+constexpr int kDefaultWindowWidth = 1920;
+constexpr int kDefaultWindowHeight = 1080;
 
 namespace {
 

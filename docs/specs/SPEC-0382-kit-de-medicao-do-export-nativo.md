@@ -100,4 +100,5 @@ desconhecido é ignorado por quem não o usa).
 **Quarta correção (2026-10-24, decisão do usuário):** a base de medição é **1920x1080**.
 Os 1280x720 eram herança da janela fixa do host de antes da SPEC-0455. O `round.sh`
 (e, por consequência, o `ab.sh`) agora sempre exporta `CORTEX_WINDOW_SIZE`, com o padrão
-`1920x1080`. O 720p só entra com `--window 1280x720` explícito.
+`1920x1080`. Pela SPEC-0515, nada abaixo de 1080p é medido; `--window` fica para
+resoluções maiores no futuro.
