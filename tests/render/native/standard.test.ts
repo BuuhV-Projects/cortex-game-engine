@@ -4,7 +4,7 @@ import { classifyDrawable, type Classification } from '../../../src/render/nativ
 import { dfgTexture, standardModel } from '../../../src/render/native/models/standard.js';
 import { LightsBlock } from '../../../src/render/native/frame/lights.js';
 import { NativeRenderer } from '../../../src/render/native/NativeRenderer.js';
-import { NATIVE_MODELS } from '../../../src/render/native/models/index.js';
+import { lambertModel } from '../../../src/render/native/models/lambert.js';
 import type { DrawBatchBridge } from '../../../src/render/DrawBatch.js';
 
 type Covered = Classification & { kind: 'covered' };
@@ -76,7 +76,7 @@ describe('standard model (R1.2, SPEC-0535)', () => {
       toneMapping: 0,
     };
     const bridge: DrawBatchBridge = { record: () => 0, release: () => undefined, flush: () => 0 };
-    const nr = new NativeRenderer(host as never, bridge, NATIVE_MODELS, null);
+    const nr = new NativeRenderer(host as never, bridge, [lambertModel, standardModel], null);
     const cam = new PerspectiveCamera();
     cam.updateMatrixWorld();
     nr.beginFrame(cam, new Scene());

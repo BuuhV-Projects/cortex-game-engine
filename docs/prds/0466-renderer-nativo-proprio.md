@@ -310,3 +310,13 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   congelamento. Próximo passo: reproduzir na galeria com rampa de `emissiveIntensity`
   **depois** do primeiro quadro (a tentativa feita mudava antes do `precompile`) e capturar o
   WGSL e os uniformes reais do estado do `three` naquele objeto.
+- **`standard` desligado na R1.2** (origem: R1.2, SPEC-0535, 2026-10-24). O modelo existe
+  (`models/standard.ts`, testes), mas saiu de `NATIVE_MODELS`: no Comercial de dia, as fachadas
+  de um prédio dão 1,17% de pixels fora da paridade (Setor O passa). Não foi investigado. **Volta
+  antes do R1.6** (o aceite final exige 0 recusas). Próximo passo: o mesmo método do vidro
+  (isolar o material da fachada, comparar dados e WGSL do estado do `three`).
+- **Fios distantes no Comercial de dia** (origem: R1.2, 2026-10-24): 0,0132% dos pixels, acima
+  do limite de 0,01%. Não é cobertura subpixel: num braço o fio some por inteiro (oclusão ou
+  ordem), evidência em `native/scripts/perf/coverage-diff.mjs`. Hipótese: ordem do domo do céu
+  nativo × malha fundida dos fios (matriz identidade, z na origem). `@invariant` na posição não
+  muda.
