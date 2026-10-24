@@ -259,9 +259,15 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       (objetos sumiam, medido como −6 ms falsos). Contornado só nesse caso (SPEC-0435, `76f36c48`).
       Destrava: varrer o bundle por `_X.prototype.<getter>` vindo de `super` e corrigir a configuração do
       Babel (modo *loose*?) para todos. Origem: SPEC-0435.
-- [ ] **Teto das luzes: as 8 `SpotLight` do DDD 61 custam −2,7 a −3,2 ms de render andando** (braço sem
-      as luzes, SPEC-0435 (b)); `DynamicLighting` do `three` (estilo Godot, contagem em vez de variante)
-      é a alavanca em medição. Origem: SPEC-0435.
+- [x] (`04c72500`) **Luzes estilo Godot: `DynamicLighting` do `three` ligado por padrão no host** —
+      render −1,4 (Comercial) / −1,7 ms (Centro) andando, paridade noturna 6 px de 921.600. Teto de
+      tirar as 8 `SpotLight` era −2,7 a −3,2: sobra ~1,5 ms no UBO de render por estado (o Godot usa
+      um buffer único; aqui exigiria mexer no sistema de nós do `three`). Origem: SPEC-0435.
+- [ ] **Sombra do sol ainda custa −3,2 ms de render andando com a (d′) ligada** (quadros > 33 ms 22% →
+      5% sem ela). Decisão de produto do usuário. Origem: SPEC-0435.
+- [ ] **(a) regravar receita no lote da b.1: sem ganho demonstrável** (Comercial −0,74, Centro +0,20),
+      está ligada (`e370bf66`, `?batchRecapture=0` desliga); remedir sobre a (d′). Origem: SPEC-0435.
+- [ ] **(c) menos estados de shader** e **(d) bloco único de luzes**: não iniciadas. Origem: SPEC-0435.
 - [ ] **Só ~26% dos desenhos diretos da b.1 saem pelo lote da b.2 hoje**: o `three` recria o bind group
       de um grupo compartilhado (geração de textura/sampler) e a receita fica velha; o `lote.add` recusa e
       cai no `backend.draw` do `three` em silêncio. O RS1 resolveu regravando a receita (`recapture`);

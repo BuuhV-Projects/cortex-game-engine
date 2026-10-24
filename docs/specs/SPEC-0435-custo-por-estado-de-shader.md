@@ -1,7 +1,7 @@
 # SPEC-0435 — Custo por estado de shader no export (luzes, sombra, grupos compartilhados)
 
 **Data:** 2026-10-23
-**Status:** medição em andamento — nenhuma alavanca implementada como padrão ainda.
+**Status:** (d′) `DynamicLighting` **ligada por padrão no host** (`04c72500`); (a) sem ganho demonstrável (ligada, a remedir); (b) teto medido; (c)/(d) não iniciadas.
 
 Frente seguinte ao RS1 (SPEC-0425, ligado por padrão por decisão do usuário).
 Correção do teto no ADR-0404: o que sobra do render não está mais no laço por
@@ -149,3 +149,44 @@ corrigido ainda não rodou.
 
 **Regra que fica:** número maior que o teto da mesma alavanca é defeito do
 instrumento até prova em contrário — conferir log (`THREE.TSL`) e imagem.
+
+## (d′) medida e ligada (2026-10-23, noite)
+
+### A/B (walk, Comercial e Centro, 2 réplicas)
+
+A bateria `runs-ab-d4-walk` teve a 1ª réplica B do Comercial atípica (p95 46,5,
+23% > 33 ms contra 4% na outra), possível resto de aquecimento depois do jogo
+pesado na máquina; trocada por um par extra (r3). 8 rodadas válidas usadas.
+
+| ponto | render | quadro med | p95 | p99 | % > 33 ms |
+| --- | --- | --- | --- | --- | --- |
+| Comercial | 15,30 → 13,90 (**−1,39**) | 29,05 → 26,80 | 38,2 → 35,8 | 44,6 → 44,2 | 17,0% → 6,9% |
+| Centro | 13,79 → 12,13 (**−1,66**) | 25,25 → 23,20 | 38,3 → 32,4 | 59,3 → 38,0 | 6,8% → 4,5% |
+
+### Paridade de luz na mesma execução (noite, `?hora=21`)
+
+Instrumento novo: `?parityFreeze` + `?parityTarget=lighting` alterna, quadro a
+quadro, `DynamicLighting` × luz padrão na mesma cena congelada.
+
+**Armadilha (o instrumento mentiu na 1ª versão):** o `three` captura o
+`lighting` no `init`, dentro do `RenderLists` (`three.webgpu.js:58562`), e cada
+`RenderList` guarda o `lightsNode` de quando nasceu (`:32856`); trocar
+`renderer.lighting` não muda nada — deu 0 em tudo. Pego porque o servidor não
+teve nenhum *fallback* por ambiente. Corrigido (`1944efd7`): um `RenderLists`
+por modelo de luz, trocados juntos, e o instrumento relata as trocas.
+
+| ponto | trocas | nativo×three (luz dinâmica × padrão) | controles N×N+2 |
+| --- | --- | --- | --- |
+| Comercial | 1.140 | `maxChannelDiff` 26 em 0,00065% (6 px: 3 num objeto escuro distante, 3 de ±1) | 0 |
+| Setor O | 1.020 | `maxChannelDiff` 1 em 0,0004% | 0 |
+
+Leitura: arredondamento da soma das luzes (laço em array × um nó por luz), não
+luz errada. 0 erros `THREE.TSL`.
+
+### Sanidade e sombra com a (d′) ligada por padrão (`04c72500`, sem query)
+
+- Comercial andando: VÁLIDA, instalado 1×, 0 erros TSL; paridade servidor ×
+  `three` 0 no Setor O.
+- Sombra ligada × `?sombra=0` (walk, Comercial, 2 réplicas): render
+  14,50 → 11,29 (**−3,21 ms**), quadros > 33 ms 21,8% → 5,1%. A (d′) não absorve
+  o custo da sombra: ele continua sendo decisão de produto.
