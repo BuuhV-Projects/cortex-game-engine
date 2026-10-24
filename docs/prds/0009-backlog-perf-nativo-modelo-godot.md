@@ -2,7 +2,8 @@
 
 **Data:** 2026-10-10
 **Status:** **EM ANDAMENTO** (2026-10-23) — RenderingServer: RS1 medido em −1,1 ms andando (abaixo do critério; ADR-0404 com teto corrigido); pendências em frentes
-paralelas; ver "Estado em 2026-10-22".
+paralelas; ver "Estado em 2026-10-22". **2026-10-24:** o B2 passa a ter como destino o renderer
+próprio em C++ no export (decisão do usuário; ADR-0465, plano no PRD-0466).
 
 > **Correção:** a primeira versão deste PRD (2026-10-10) descrevia o B2 a partir
 > do texto original do ADR-0237 e ignorava o que o ciclo "75 fps no export do
@@ -132,9 +133,12 @@ a questão "gráfico construído pelo nativo, não pelo three.js".
       (`maxChannelDiff` 0 no Setor O e no Comercial), render −1,12 ms andando no
       Comercial (critério: −4). **Ligado por padrão por decisão do usuário (2026-10-23)**, a
       revisar quando o custo por estado cair. RS1a (névoa por render) sem ganho próprio demonstrável.
-- [ ] RS2 — `InstancedMesh` e materiais com nó conferíveis — **suspenso** (o ganho
-      por objeto é menor do que o teto dizia; ver a correção do ADR-0404).
-- [ ] RS3 — transparentes ordenados em C++ — **suspenso**, mesmo motivo.
+- [x] ~~RS2 — `InstancedMesh` e materiais com nó conferíveis~~ — **absorvido pelo PRD-0466**
+      (R1.4 instancing; R1.5/R3 materiais com nó viram modelo fixo ou WGSL do jogo).
+- [x] ~~RS3 — transparentes ordenados em C++~~ — **absorvido pelo PRD-0466** (R1.4).
+- [ ] **Renderer próprio em C++ no export** (ADR-0465, decisão do usuário 2026-10-24): o `three` sai do
+      caminho de render do export; Studio no `three`. Marcos R0–R5 no PRD-0466 — o R1 tira o `three`
+      do quadro 3D do DDD 61.
 - [x] ~~RS4 — sombra direcional simples (`SunShadow` do DDD 61) no passe de sombra
       nativo~~ — **cancelado por medição** (2026-10-23, frente B2, com autopiloto): o redesenho do mapa,
       que é o que o passe nativo substituiria, não custa nada (`?sombraFixa=1`: −0,34 ms andando). O
@@ -272,6 +276,15 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       `DynamicLighting`** (A/B: Comercial −0,74, Centro +0,20 com quadros > 33 ms 8,9% → 13%;
       `?batchRecapture=1` liga). Origem: SPEC-0435.
 - [ ] **(c) menos estados de shader** e **(d) bloco único de luzes**: não iniciadas. Origem: SPEC-0435.
+      **2026-10-24: absorvidas pelo PRD-0466** (buffer de luzes por vista no renderer próprio); não
+      iniciar no `three`. O (a) acima fica obsoleto quando o R1 do PRD-0466 assumir.
+- [ ] **O shim WebGPU descarta `constants` vindos do JS** (`native/src/webgpu/pipeline.cpp` não lê
+      `constants` dos estágios; só a sonda de override preenche `constantCount`): um pipeline do JS com
+      `override` sai com o valor padrão, sem aviso. Não afeta o renderer próprio (pipelines criados em
+      C++). Destrava: ler e testar as constantes no shim, ou recusar com erro. Origem: PRD-0466 (inventário).
+- [ ] **Mapa do host desatualizado**: `docs/cortex-native/architecture.md` ("Estado e próximos marcos",
+      M0) diz que `mapAsync`/`copyTextureToTexture` não existem; os dois estão registrados hoje.
+      Origem: PRD-0466 (inventário).
 - [ ] **Só ~26% dos desenhos diretos da b.1 saem pelo lote da b.2 hoje**: o `three` recria o bind group
       de um grupo compartilhado (geração de textura/sampler) e a receita fica velha; o `lote.add` recusa e
       cai no `backend.draw` do `three` em silêncio. O RS1 resolveu regravando a receita (`recapture`);
@@ -287,6 +300,21 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       onde há toolchain nativo; nas worktrees é pulado): falhou 1× na suíte inteira logo após o merge do RS1
       (`487d4419`) e passou em seguida isolado (37 s) e na suíte inteira (2179). Suspeita: outra sessão
       exportando ao mesmo tempo. Destrava: commits sem falso vermelho no hook. Origem: merge do RS1.
+
+### Outros jogos — divergências do export achadas no levantamento do PRD-0466
+
+- [ ] **crash-racer: tone mapping AgX vira ACES no export** (`scenes/loadLevel.ts:30-34` pede
+      `AgXToneMapping`; o composite do host aplica ACES): o export já diverge do Studio. Destrava: AgX
+      no composite (R3c do PRD-0466) ou antes, se o usuário quiser. Origem: PRD-0466 (levantamento).
+- [ ] **crash-racer: 147 GLBs usados têm `COLOR_0`** e saem brancos no export (gotcha do naga com
+      vertex color + `map`). Destrava: R3c do PRD-0466 (standard próprio com vertex color) ou dropar
+      `COLOR_0` no cook. Origem: PRD-0466 (levantamento).
+- [ ] **Decisão de produto: clearcoat (kart-racer, 5 carros; crash, 9) e transmission (crash,
+      `lira-kart.glb`)** — o renderer próprio recusa em vez de aproximar. Opções: recusar (o jogo fica no
+      `three` até decidir), aceitar sem o efeito (decisão explícita, com imagem), ou implementar.
+      Origem: PRD-0466.
+- [ ] **9 GLBs do DDD 61 são ponteiros LFS** e não entraram no levantamento estático; o censo em
+      runtime (R0 do PRD-0466) cobre. Origem: PRD-0466 (levantamento).
 
 ### Jogo (DDD 61) — fora do engine
 
@@ -364,4 +392,6 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 ## Fora do escopo
 
 - JIT no host (proibido no Xbox).
-- Reescrever a engine inteira em C++: só os laços quentes saem do JS.
+- Reescrever a engine inteira em C++: só os laços quentes saem do JS. (2026-10-24: o **render do
+  export** inteiro passa a contar como laço quente — ADR-0465; lógica de jogo, grafo de cena,
+  matemática e loaders continuam em JS.)

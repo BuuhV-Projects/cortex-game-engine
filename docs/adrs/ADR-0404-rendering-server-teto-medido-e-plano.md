@@ -7,6 +7,9 @@ Comercial andando, abaixo do critério de −4 ms. **Ligado por padrão no expor
 decisão do usuário em 2026-10-23**, abaixo do critério (medido −1,1 ms de render,
 −7 pp de quadros > 33 ms, paridade exata); a revisar quando o custo por estado de
 shader cair. RS2/RS3 suspensos até esse custo ser atacado.
+**Destino substituído pelo ADR-0465 (2026-10-24, decisão do usuário):** renderer próprio
+em C++ no export (o `three` sai da compilação e do desenho). O RS1 continua ligado até o
+marco R1 do PRD-0466; RS2/RS3 foram absorvidos por ele (R1.4/R1.5) e o RS4 volta como R1.3.
 
 Frente B2 do PRD-0009 ("modelo Godot"). Sucede, na pergunta "vale tirar o laço
 por objeto do `three` do passe principal?", a b.3 (ADR-0363, arquivada) e a
