@@ -243,6 +243,14 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       (−3 ms com o RS1 ligado) mora aí. Destrava: medir (1) `visible = false` nas `SpotLight` de
       intensidade 0 (jogo), (2) menos estados distintos (material compartilhado), (3) um UBO de luzes
       único para todos os estados (sistema de nós do `three`; o maior). Origem: SPEC-0425 / ADR-0404.
+- [ ] **O Babel do export quebra getters chamados via `super`** (`super.x` em getter vira
+      `Base.prototype.x`, que roda com o protótipo como `this`): derrubou o `DynamicLightsNode` do `three`
+      (objetos sumiam, medido como −6 ms falsos). Contornado só nesse caso (SPEC-0435, `76f36c48`).
+      Destrava: varrer o bundle por `_X.prototype.<getter>` vindo de `super` e corrigir a configuração do
+      Babel (modo *loose*?) para todos. Origem: SPEC-0435.
+- [ ] **Teto das luzes: as 8 `SpotLight` do DDD 61 custam −2,7 a −3,2 ms de render andando** (braço sem
+      as luzes, SPEC-0435 (b)); `DynamicLighting` do `three` (estilo Godot, contagem em vez de variante)
+      é a alavanca em medição. Origem: SPEC-0435.
 - [ ] **Só ~26% dos desenhos diretos da b.1 saem pelo lote da b.2 hoje**: o `three` recria o bind group
       de um grupo compartilhado (geração de textura/sampler) e a receita fica velha; o `lote.add` recusa e
       cai no `backend.draw` do `three` em silêncio. O RS1 resolveu regravando a receita (`recapture`);
