@@ -1271,7 +1271,7 @@ na troca — O(subárvore) por troca, não por quadro); quando o contador volta 
 `visible = false` (a casca em si continua avaliada). Ligar/desligar um grupo
 GRANDE todo quadro passaria a custar a subárvore todo quadro.
 
-## 8e8. Renderer nativo próprio no export — ADR-0465 / PRD-0466 (R1.1: SPEC-0495)
+## 8e8. Renderer nativo próprio no export — ADR-0465 / PRD-0466 (R1.1: SPEC-0495, R1.4: SPEC-0555)
 
 Só no host, desligado por padrão (`?nativeRenderer=1`; exige o RS1 e a projeção nativa).
 Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas no DDD 61.
@@ -1288,6 +1288,15 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   de material são do modelo; de objeto/pipeline são do núcleo (`CORE_FEATURES`). WGSL = `coreWgsl`
   (blocos de vista/objeto, `VIn`, `nativeModel`/`nativeLocal`/`nativeNormalMatrix`) + o do modelo.
 - **Grupo 1 = blocos de quadro** `src/render/native/frame/` (luzes 0–7, sombra 8–15).
+- **Sombra do sol (R1.3, SPEC-0545)** `frame/shadow.ts`: o bloco de sombra liga o mapa do `three`
+  (`light.shadow.map.depthTexture`, pelo `host.backend` que a fábrica do bloco recebe) e o PCFSoft
+  em `nativeShadow(positionWorld, normalWorld)`, com os parâmetros 1× por vista. ⚠️ O `update` dos
+  blocos roda na PROJEÇÃO, antes do `ShadowNode.updateBefore`: no quadro de redesenho o bloco chama
+  `shadow.updateMatrices` para a matriz casar com o mapa. `shadow/NativeSunShadowPass.ts` redesenha
+  o mapa único no passe C++ da SPEC-0245 (`drawShadowPass`, sem C++ novo) no `needsUpdate`; no
+  braço `three` da paridade, ou na recusa do gate, devolve ao `three`. `?nativeShadow=0`,
+  `?nativeShadowPass=0`; plantados `?nativeShadowShift=1` (amostragem) e
+  `?nativeShadowPassShift=1` (mapa).
 - **Luz (R1.2, SPEC-0535)**: modelos `lambert` e `standard` (`models/lambert.ts` exporta as partes
   comuns; o `standard` traz a LUT DFG do `three`, copiada porque é privada do módulo dele). O bloco
   `frame/lights.ts` é um UBO por quadro com sol + hemisfério + até 8 spots (o que a `DynamicLighting`
@@ -1301,6 +1310,29 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
 - **Paridade**: `?parityFreeze` alterna renderer próprio × `three` sem código novo (o braço
   `three` desliga a oferta); `?nativeTint=1` planta 8/255 só no caminho nativo (tem de dar FAIL).
   Checagem de sub-etapa: `native/scripts/check-stage.sh` (SPEC-0525).
+- **Duas listas (R1.4)**: entradas nativas têm fase (opaca / transparente = `material.transparent`,
+  a mesma escolha do `RenderList.push`) e `renderOrder`. Opacas saem no `_renderObjects` da lista
+  opaca do dono (`painterSortStable`); transparentes, dentro do `_renderObjects` da lista
+  transparente do dono (`reversePainterSortStable`: `z` decrescente, desempate por `id`); o que
+  sobrar sai no `finishRender`. Transparente `DoubleSide` = 2 comandos (face de trás, depois da
+  frente), como o `Renderer._renderObject` do `three`.
+- **Instâncias (R1.4)**: `instanceMatrix`/`instanceColor` como VBs `stepMode: 'instance'` do objeto,
+  depois dos da geometria; a instância é aplicada em `nativeLocal`/`nativeLocalNormal` (espaço
+  local, antes de `view * model`, a ordem do WGSL do `three`). `count`/`drawRange` lidos a cada
+  quadro; `attribute.version` reescreve o buffer; array trocado ou `material.version` → reconstrói.
+- **Armadilha (R1.4)**: o núcleo passa a feature `alpha` ao modelo quando o material não é opaco
+  (`transparent || blending != Normal`); aditivo sem `transparent` fica na lista OPACA, mas com blend
+  (é o que o `three` faz). Material com `visible = false` não é oferecido (a projeção testa antes).
+- **Armadilha (R1.4, SPEC-0555 "Céu de dia")**: o `three` não reenvia a cópia dele de um atributo que
+  parou de desenhar enquanto o renderer próprio era o dono; ao voltar ao `three` (braço de
+  paridade, recusa) desenhava dado velho. O núcleo escreve também na cópia do `three` quando a
+  reescreve (`_syncThreeCopy`).
+- **R1.5 (SPEC-0565, ADR-0566)**: skinning no núcleo (`skinIndex`/`skinWeight` no `VIn`, storage
+  `skin` no grupo 3, `skeleton.update()` 1×/quadro/esqueleto); **WGSL do jogo** por
+  `registerNativeMaterial(nome, NativeModelDef)` + `userData.nativeMaterial` (atributos próprios em
+  `attributeTypes`, `DataTexture` float legível no VS); `view.time` = `shaderTime`
+  (`ShaderClock.ts`, avança no `Game._update`, congela no `?parityFreeze`, *rollover* 3600 s).
+  `?nativeRendererModels=wgsl` libera todos os materiais do jogo.
 
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 

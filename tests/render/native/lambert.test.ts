@@ -38,11 +38,12 @@ describe('lambert model (R1.2, SPEC-0535)', () => {
     expect(lambertModel.attributes(variant(plain)!)).toEqual(['position', 'normal']);
   });
 
-  it('refuses receiveShadow (shadow block not ready), BackSide, normalMap and unsupported lights', () => {
+  it('takes receiveShadow (the shadow block is ready), refuses BackSide, normalMap and unsupported lights', () => {
     lights(new Scene());
     const shadowed = new Mesh(new BoxGeometry(), new MeshLambertMaterial());
     shadowed.receiveShadow = true;
-    expect(variant(shadowed)).toBeNull();
+    expect(variant(shadowed)).toEqual(['fog', 'receiveShadow']);
+    expect(lambertModel.wgsl(variant(shadowed)!)).toContain('nativeShadow(in.positionWorld');
     expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ side: BackSide })))).toBeNull();
     expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ normalMap: new Texture() })))).toBeNull();
     lights(new Scene().add(new PointLight()) as Scene);

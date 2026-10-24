@@ -61,6 +61,8 @@ describe('standard model (R1.2, SPEC-0535)', () => {
       createPipelineLayout: () => ({}),
       createShaderModule: (d: { code: string }) => (modules.push(d.code), { id: id++ }),
       createRenderPipeline: () => ({ id: id++ }),
+      createSampler: () => ({ id: id++ }),
+      createTexture: () => ({ id: id++, createView: () => ({}) }),
       queue: { writeBuffer: () => undefined },
     };
     const data = new WeakMap<object, Record<string, unknown>>();
