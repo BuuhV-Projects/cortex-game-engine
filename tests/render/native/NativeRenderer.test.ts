@@ -557,5 +557,7 @@ describe('NativeRenderer R1.5 (SPEC-0565): game WGSL, shader clock, skinning', (
     expect(nr.take(both, both.material, both.geometry)).toBeNull();
     expect(vertexFormat(new Uint16Array(4), 4, false)).toBe('uint16x4');
     expect(vertexFormat(new Uint8Array(4), 4, false)).toBe('uint8x4');
+    // what the three leaves in skinIndex.array after its own upload
+    expect(vertexFormat(new Uint32Array(4), 4, false)).toBe('uint32x4');
   });
 });

@@ -43,6 +43,8 @@ const NO_RECIPE = -1;
 /** Projections between reports on `debug('perf')`, plus one early report for short rounds. */
 const REPORT_FRAMES = 600;
 const EARLY_REPORT_FRAME = 120;
+/** Refusal reasons listed per report (most frequent first). */
+const REPORT_REASONS = 8;
 /**
  * `?nativeTint=1`: adds TINT_DELTA to the red of every material the native renderer draws, and
  * only there — the known-answer case of the same-run parity (SPEC-0495): it must FAIL.
@@ -171,6 +173,8 @@ export function vertexFormat(array: ArrayLike<number>, itemSize: number, normali
   // skinIndex (glTF JOINTS_0): integer, read as vec4<u32>.
   if (array instanceof Uint16Array && !normalized && itemSize === 4) return 'uint16x4';
   if (array instanceof Uint8Array && !normalized && itemSize === 4) return 'uint8x4';
+  // The three widens non-normalized 8/16-bit integers to 32 bits in place when it uploads them.
+  if (array instanceof Uint32Array && !normalized && itemSize >= 1 && itemSize <= 4) return itemSize === 1 ? 'uint32' : `uint32x${itemSize}`;
   if (array instanceof Int8Array && normalized && itemSize === 4) return 'snorm8x4';
   return null;
 }
@@ -874,7 +878,7 @@ export class NativeRenderer implements NativeDrawer {
 
   private _report(): void {
     const s = this.stats;
-    const reasons = [...this._refusals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, n]) => `${r}=${n}`).join(' ');
+    const reasons = [...this._refusals.entries()].sort((a, b) => b[1] - a[1]).slice(0, REPORT_REASONS).map(([r, n]) => `${r}=${n}`).join(' ');
     debug('perf', `[nativeRenderer] taken=${s.taken} refused=${s.refused} moved=${s.moved} params=${s.paramWrites} pipelines=${s.pipelines} recipes=${s.recipes} | ${reasons}`);
   }
 }
