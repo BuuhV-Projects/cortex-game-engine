@@ -70,7 +70,7 @@ acontece uma vez, como o aquecimento (SPEC-0261). No-op sem a ponte.
 
 ##### data
 
-`Record`\<`string`, `number`\>
+`Record`\<`string`, `number` \| `string`\>
 
 #### Returns
 

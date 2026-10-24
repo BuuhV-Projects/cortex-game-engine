@@ -309,7 +309,7 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 - [ ] **crash-racer: 147 GLBs usados têm `COLOR_0`** e saem brancos no export (gotcha do naga com
       vertex color + `map`). Destrava: R3c do PRD-0466 (standard próprio com vertex color) ou dropar
       `COLOR_0` no cook. Origem: PRD-0466 (levantamento).
-- [ ] **Decisão de produto: clearcoat (kart-racer, 5 carros; crash, 9) e transmission (crash,
+- [x] (decidido 2026-10-24: **recusar por enquanto** — o objeto fica no three até um jogo precisar) **Decisão de produto: clearcoat (kart-racer, 5 carros; crash, 9) e transmission (crash,
       `lira-kart.glb`)** — o renderer próprio recusa em vez de aproximar. Opções: recusar (o jogo fica no
       `three` até decidir), aceitar sem o efeito (decisão explícita, com imagem), ou implementar.
       Origem: PRD-0466.
