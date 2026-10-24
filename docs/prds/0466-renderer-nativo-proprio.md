@@ -15,10 +15,11 @@ Anexos: `0466-anexos/godot-renderer-rd.md` (Godot 4.7.2, arquivo:linha),
 ## Objetivo e pronto
 
 **Objetivo:** o render do export custar **≤ 4 ms de CPU** no DDD 61 andando e dirigindo
-(hoje ~11–12 ms), com imagem igual à do `three`, e o mesmo renderer servir teste4,
-kart-racer e crash-racer.
+(hoje ~11–12 ms), com imagem igual à do `three`. **O jogo-alvo é só o DDD 61**: teste4,
+kart-racer e crash-racer ficaram fora do escopo por decisão do usuário (2026-10-24; ver
+"Fora do escopo") e continuam exportando com o `three`, pela recusa por jogo.
 
-**Pronto** quando, para cada jogo-alvo:
+**Pronto** quando, no DDD 61:
 
 1. o censo do renderer dá **0 recusas** nos pontos medidos;
 2. o A/B com autopiloto (walk e drive) atinge o critério do marco **em 1920×1080** (a única resolução de medição, decisão do usuário em 2026-10-24, SPEC-0515);
@@ -138,7 +139,15 @@ teste Vitest + `cortex_host_tests` + sonda de pixel por shader novo; arquivos pe
 SOLID no `native/` (ADR-0100); sem números mágicos; `docs/cortex-native/architecture.md`
 atualizado na mesma mudança.
 
-**A/B de aceite (todos os marcos):** kit SPEC-0382, intercalado, 2 réplicas × 135 s,
+**Quando roda o A/B completo (decisão do usuário, 2026-10-24, para acelerar):** sub-etapa do
+R1 (R1.1–R1.6) **não** tem A/B completo — entra desligada, então o fps dela só importa quando o
+conjunto liga. O critério de sub-etapa é paridade (`?parityFreeze` + galeria), testes verdes e
+uma **rodada de fumaça**: 1 ponto, 1 réplica, `--autopilot walk`, 1080p, `validate.sh` VÁLIDO e
+nenhum erro no `error_log.txt`/log do renderer. O A/B completo roda só em dois momentos: o
+**checkpoint depois do R1.2** (alerta cedo: o render tem de cair na proporção dos draws
+cobertos) e o **aceite final do R1**. Marcos depois do R1 (R2, R4) fazem o A/B completo no aceite.
+
+**A/B completo:** kit SPEC-0382, intercalado, 2 réplicas × 135 s,
 `--autopilot walk` nos 4 pontos do DDD 61 + `--autopilot drive` (Helio), **em 1920×1080** (a única resolução de medição desde 2026-10-24, decisão do usuário, SPEC-0515: o host abre
 a janela em 1080p por padrão e o kit não mede abaixo disso). GPU por `CORTEX_FRAME_TIMING`. Métricas: render `cpuAvg`, quadro
 mediano, **p95, p99, % > 33 ms**, GPU `gpu-work`. Número maior que o teto do marco =
@@ -172,16 +181,16 @@ nenhum objeto 3D do jogo, e a UI de runtime continua nele (R2). Não dá para se
 de sombra do sol só é atualizado de dentro do passe principal do `three` (`ShadowNode`), e a
 multidão (`peopleGpu`) está no passe principal.
 
-Etapas, cada uma mergeável desligada (`?nativeRenderer=1` liga o conjunto; cada etapa tem
-o próprio interruptor para o A/B dela), com cobertura medida pelo censo:
+Etapas, cada uma mergeável desligada (`?nativeRenderer=1` liga o conjunto; `?nativeRendererModels=` isola
+os modelos de cada etapa), com cobertura medida pelo censo. Critério de toda etapa, além da coluna: testes verdes + paridade + rodada de fumaça (regra acima). **Paralelização:** o R1.1 vem sozinho e fecha a interface central (servidor, RIDs, fachada, registro de material e pipeline, ponto de emissão); depois R1.2, R1.3, R1.4 e R1.5 correm em sessões paralelas, cada uma na sua worktree e nos seus arquivos; o R1.6 fecha junto com o aceite.
 
 | etapa | o quê | critério da etapa |
 | --- | --- | --- |
-| R1.1 | servidor + RIDs + fachada `NativeRenderer` + geometria/textura próprias (criadas pelo shim WebGPU no JS, entregues por handle) + `pipeline_cache` + modelo **unlit** opaco (céu, sinais) + emissão no ponto do RS1 — desenho na SPEC-0495 | testes verdes; galeria unlit na paridade; A/B walk sem regressão com a cobertura relatada; JS por instância limpa ≤ a oferta do RS1 (zero só na R1.6) |
-| R1.2 | **lambert** e **standard** (com `specular`/`ior`), névoa, emissivo, tone mapping/espaço de cor; bloco de cena + buffer de luzes (dir + hemi + 8 spots) | galeria lambert/standard na paridade, dia e noite; A/B: render cai ≥ draws cobertos × 40 µs (sanidade) |
-| R1.3 | sombra: mapa único com `needsUpdate` no passe C++ + material de sombra compartilhado + amostragem **PCFSoft** (o filtro do DDD 61) no lambert, parâmetros só no bloco de vista (SPEC-0475) | paridade da sombra no chão (Setor O, fim de tarde); `?sombra=0` × ligada custa ≤ 0,3 ms de render |
+| R1.1 | servidor + RIDs + fachada `NativeRenderer` + geometria/textura próprias (criadas pelo shim WebGPU no JS, entregues por handle) + `pipeline_cache` + modelo **unlit** opaco (céu, sinais) + emissão no ponto do RS1 — desenho na SPEC-0495 | testes verdes; galeria unlit na paridade; fumaça com a cobertura relatada pelo censo; JS por instância limpa ≤ a oferta do RS1 (zero só na R1.6) |
+| R1.2 | **lambert** e **standard** (com `specular`/`ior`), névoa, emissivo, tone mapping/espaço de cor; bloco de cena + buffer de luzes (dir + hemi + 8 spots) | galeria lambert/standard na paridade, dia e noite; **checkpoint: A/B completo** — o render cai ≥ draws cobertos × 40 µs (sanidade) |
+| R1.3 | sombra: mapa único com `needsUpdate` no passe C++ + material de sombra compartilhado + amostragem **PCFSoft** (o filtro do DDD 61) no lambert, parâmetros só no bloco de vista (SPEC-0475) | paridade da sombra no chão (Setor O, fim de tarde); custo da sombra conferido no aceite final (alvo ≤ 0,3 ms de render, `?sombra=0` × ligada) |
 | R1.4 | `InstancedMesh` (+ `instanceColor`/`instancePaint`), transparentes/aditivos ordenados pelo sort do `three`, `alphaTest`, `polygonOffset`, `renderOrder`, layers, partículas e marcas de pneu (buffer dinâmico) | paridade nos 4 pontos com coplanares (`interiores-*`) e transparentes; recusas do censo só em skinned/`peopleGpu`/tintas |
-| R1.5 | skinning no vertex shader (player e dublês) + **API de WGSL do jogo** (`userData.nativeMaterial`, layout de parâmetros, atributos/`DataTexture` por instância) + porte de `peopleGpu`, tinta por slot e pintura mascarada (no repo do jogo, com spec própria) | galeria com os 3 WGSL do jogo; **0 recusas** nos 4 pontos |
+| R1.5 | skinning no vertex shader (player e dublês) + **API de WGSL do jogo** (`userData.nativeMaterial`, layout de parâmetros, atributos/`DataTexture` por instância) + porte de `peopleGpu`, tinta por slot e pintura mascarada (no repo do jogo, com spec própria); a API aceita vertex shader animado (o mar do DDD 61) | galeria com os 3 WGSL do jogo; **0 recusas** nos 4 pontos |
 | R1.6 | o renderer próprio vira **dono da pass** (limpa, fundo, cena; o `three` não é chamado para a cena espelhada); pré-compilação no load + ubershader para variante nova | 0 pipelines criados por quadro em regime; nenhum quadro > 50 ms causado por pipeline na 1ª volta |
 
 **Critério de aceite do R1** (liga `?nativeRenderer=1` por padrão no DDD 61):
@@ -204,24 +213,42 @@ Teto esperado: ~2–4 ms (ADR-0465, Contexto). Abaixo de 5 ms, o critério já p
   (`?parityTarget=ui`); `ui` do perf-trace não piora.
 - Interruptor: `?nativeUi=0|1`.
 
-### R3 — Cobertura dos outros jogos (um sub-marco por jogo; cada um liga o renderer naquele jogo)
+### ~~R3 — Cobertura dos outros jogos~~ — fora do escopo
 
-| sub-marco | entra no renderer | critério |
-| --- | --- | --- |
-| R3a teste4 | toon, outline (com skinning; várias malhas num esqueleto), standard com normalMap/emissiveMap/UV transform, **IBL** (PMREM gerado no C++ com o algoritmo do `three`) + skybox equiretangular, CSM 3 cascatas (amostragem), 2ª cena + câmera | 0 recusas nas fases de cada mundo; paridade na galeria + 1 ponto por mundo; render do export −50% ou mais com autopiloto `walk` |
-| R3b kart-racer | toon/outline/standard+IBL, wireframe, pós do jogo (borrão radial) em WGSL no composite | 0 recusas (clearcoat: decisão do usuário ou recusa); volta de bench com IA: render −50% ou mais, p95/% > 33 ms melhores |
-| R3c crash-racer | standard completo com **vertex color** (corrige o branco de hoje), point lights, **água cartoon** em WGSL, CSM 3 cascatas, **AgX** no composite, KTX2 com LOD | 0 recusas (transmission/clearcoat: decisão do usuário); paridade inclusive da água; render −50% ou mais |
+**Removido por decisão do usuário (2026-10-24)**, depois de uma estimativa de 2–4 semanas só
+para ele. Volta como **plano próprio** quando o usuário retomar teste4, kart-racer e
+crash-racer. O levantamento desses jogos fica no anexo `levantamento-three-jogos.md` como
+referência (toon, outline skinado, IBL/PMREM, skybox, CSM, água cartoon, wireframe, pós
+radial, AgX, point lights, vertex color).
 
-### R4 — Retirar o caminho do `three` do render do export
+### R4 — Retirar o caminho do `three` do render do export **do DDD 61**
 
-- O bundle do export deixa de levar `WebGPURenderer`, o sistema de nós de render e os
-  contornos sobre internos do `three` (TransformOnlyRefresh, RenderIdRefresh, b.1, b.2 com
-  receitas, RS1, `DynamicLighting`, `SharedShadowFilter`, a projeção que alimenta a
-  RenderList). O `three` fica como grafo de cena, matemática e loaders.
-- Pré-requisito: R1–R3 aceitos nos jogos-alvo e um ciclo de uso sem regressão.
-- Critério: bundle e heap menores (medidos), boot mais rápido, todos os jogos-alvo exportam
-  e rodam; `?nativeRenderer=0` deixa de existir (a volta passa a ser o build anterior).
+- No export do DDD 61, o `WebGPURenderer` e o sistema de nós de render do `three` deixam de
+  ser usados e de ser carregados; o `three` fica como grafo de cena, matemática e loaders.
+- Os outros jogos continuam exportando com o `three` (recusa por jogo). Por isso os contornos
+  sobre internos do `three` (TransformOnlyRefresh, RenderIdRefresh, b.1, b.2 com receitas,
+  RS1, `DynamicLighting`, `SharedShadowFilter`, a projeção que alimenta a RenderList)
+  **continuam na engine e no bundle desses jogos** enquanto algum jogo usar o `three` no
+  export.
+- Pré-requisito: R1–R2 aceitos no DDD 61 e um ciclo de uso sem regressão.
+- Critério: no export do DDD 61, bundle e heap menores (medidos) e boot mais rápido;
+  `?nativeRenderer=0` deixa de existir para ele (a volta passa a ser o build anterior).
 - Studio intocado.
+
+### Evolução prevista do DDD 61 (fora dos marcos atuais)
+
+O usuário (2026-10-24): "O DDD61 possivelmente terá o que o R3 quer corrigir, mas isso será
+mais pra frente pois pretendo incluir um mar no jogo, carros com vidro transparentes". Nada
+disto muda os marcos; cada item entra com SPEC antes, quando o jogo precisar.
+
+- **Mar:** WGSL do jogo pela API do R1.5. Referência: a água cartoon do crash-racer
+  (`CartoonWaterMaterial`, anexo `levantamento-three-jogos.md`). Consequência para o R1.5: a API
+  de WGSL do jogo tem de aceitar **vertex shader animado** (ondas no VS, uniforme de tempo),
+  não só o caso do `peopleGpu`.
+- **Vidro dos carros:** transparente com alpha-blend já é coberto pelo R1.4. Refração real
+  (`transmission`) continua recusada até nova decisão do usuário.
+- **O que vinha do R3 e o DDD 61 venha a usar** (IBL/PMREM, CSM, etc.): etapa própria, com
+  SPEC antes, quando o jogo precisar.
 
 ### R5 — Depois (só com medição que peça)
 
@@ -234,8 +261,8 @@ Teto esperado: ~2–4 ms (ADR-0465, Contexto). Abaixo de 5 ms, o critério já p
 
 | item anterior | destino |
 | --- | --- |
-| RS1 (receita, SPEC-0425) | continua ligado por padrão até o R1 ser aceito; sai do export no R4 |
-| **RS2** (`InstancedMesh` e materiais com nó) — suspenso | **absorvido**: `InstancedMesh` no R1.4; materiais com nó viram modelo fixo ou WGSL do jogo (R1.5, R3) |
+| RS1 (receita, SPEC-0425) | continua ligado por padrão até o R1 ser aceito; sai do export do DDD 61 no R4 (fica para os jogos que exportam com o `three`) |
+| **RS2** (`InstancedMesh` e materiais com nó) — suspenso | **absorvido**: `InstancedMesh` no R1.4; materiais com nó do DDD 61 viram modelo fixo ou WGSL do jogo (R1.5) |
 | **RS3** (transparentes ordenados em C++) — suspenso | **absorvido** pelo R1.4 (sort do `three` em C++) |
 | RS4 (sombra do `SunShadow` no passe nativo) — cancelado | volta como R1.3, por outro motivo: sem o `three` no passe, o mapa precisa de dono |
 | SPEC-0435 (a) regravar receita no lote da b.1 | obsoleta quando o R1 assumir (a receita deixa de existir) |
@@ -246,10 +273,13 @@ Teto esperado: ~2–4 ms (ADR-0465, Contexto). Abaixo de 5 ms, o critério já p
 ## Fora do escopo
 
 - Renderer próprio no Studio (decisão do usuário).
+- **teste4, kart-racer e crash-racer (o antigo R3): fora do escopo por decisão do usuário
+  (2026-10-24)**; voltam como plano próprio quando ele retomar esses jogos. Até lá exportam
+  com o `three`.
 - JIT no host (proibido no Xbox).
 - Recursos que nenhum jogo-alvo usa (espelho, CubeCamera, sprites, morph, `BatchedMesh`, decal).
 - Clearcoat, sheen, transmission, iridescence: recusa até um jogo-alvo precisar e o usuário decidir.
-  **Decidido pelo usuário em 2026-10-24: recusar por enquanto** (vale para R3b/R3c: recusa conta como aceita para esses materiais).
+  **Decidido pelo usuário em 2026-10-24: recusar por enquanto** (o objeto fica no `three`).
 - **Início do R0: decidido pelo usuário em 2026-10-24 — só depois de o RenderingServer (ADR-0404) fechar** os itens restantes, para não disputar a máquina de medição.
 
 ## Pendências levadas ao PRD-0009

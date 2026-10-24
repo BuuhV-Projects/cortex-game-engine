@@ -162,9 +162,14 @@ Layout fixo para todos os modelos (alinhado com a SPEC-0475):
 
 - testes verdes;
 - galeria de materiais `unlit` na paridade (`render-parity.mjs`, ruído dos pares de controle);
-- A/B walk (Comercial e Centro, 2 réplicas) com `?nativeRenderer=1&nativeRendererModels=unlit`
-  × controle: render sem regressão, com o censo relatando quantas instâncias foram ao servidor
-  (número esperado: ≈ draws `unlit` opacos do censo do R0);
+- rodada de fumaça (regra do PRD-0466, decisão do usuário em 2026-10-24: sem A/B completo por
+  sub-etapa): Comercial, 1 réplica, `--autopilot walk`, 1080p, com
+  `?nativeRenderer=1&nativeRendererModels=unlit` — `validate.sh` VÁLIDO, nenhum erro no log, e o
+  censo relatando quantas instâncias foram ao servidor (esperado ≈ os `unlit` opacos do censo
+  do R0);
+- a interface central fechada para as frentes paralelas (R1.2–R1.5): servidor, RIDs, fachada,
+  registro de modelo de material e de pipeline, ponto de emissão — cada frente acrescenta um
+  modelo ou recurso sem tocar os arquivos das outras;
 - `?parityFreeze` + `?parityTarget=renderer` no Setor O e no Comercial no nível do controle,
   com o instrumento relatando as trocas;
 - `pipelineCreated` = 0 por quadro em regime; `staleHandle` = 0.
