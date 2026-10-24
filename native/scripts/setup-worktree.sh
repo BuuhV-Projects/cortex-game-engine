@@ -36,7 +36,10 @@ fi
 if [ -e "$wt/native/third_party" ]; then status+=("third_party OK"); elif [ "$wt" = "$main_repo" ]; then
   echo "setup-worktree $wt: FAIL native/third_party ausente no checkout principal (rode native/scripts/fetch-deps.ps1)"; exit 1
 else
-  cmd //c "mklink /J \"$(cygpath -w "$wt/native/third_party")\" \"$(cygpath -w "$main_repo/native/third_party")\"" >/dev/null \
+  # No quotes inside `cmd //c`: escaped quotes there break mklink ("sintaxe ... incorreta", SPEC-0525).
+  link="$(cygpath -w "$wt/native/third_party")"; target="$(cygpath -w "$main_repo/native/third_party")"
+  case "$link$target" in *" "*) echo "setup-worktree $wt: FAIL caminho com espaço (mklink sem aspas): $link"; exit 1 ;; esac
+  cmd //c mklink //J "$link" "$target" >/dev/null \
     && status+=("third_party JUNÇÃO") || { echo "setup-worktree $wt: FAIL junção de native/third_party"; exit 1; }
 fi
 

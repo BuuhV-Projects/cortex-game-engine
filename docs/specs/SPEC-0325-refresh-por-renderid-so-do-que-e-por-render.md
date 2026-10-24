@@ -182,3 +182,9 @@ continuam no refresh do three de propósito.
 Screenshots aos 90 s (`.cortex/r2-b2/runs/*/shot90.png`): candidato igual à main
 em sombras (árvores, postes), luzes e feixes de farol (moto passando no setorO),
 janelas emissivas, HUD, minimapa e prompts.
+
+## Correção (2026-10-24, SPEC-0555 "Instâncias compactadas")
+
+Mudança de instância passa a forçar **2** refreshes do `three`: o 1º só sincroniza a versão do buffer
+intercalado (`InstanceNode.update`, que roda depois do upload de geometria), o 2º sobe o buffer. Com
+1 refresh, um `InstancedMesh` que muda e para ficava com as matrizes da mudança anterior.
