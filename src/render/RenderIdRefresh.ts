@@ -30,6 +30,14 @@ import {
 const UPDATE_OBJECT = 'object';
 /** Versão que nenhum atributo tem: força o refresh do three na primeira vez. */
 const VERSION_UNSEEN = -1;
+/**
+ * Refreshes forced per instance change (SPEC-0555, "Instâncias compactadas"): the three uploads the
+ * geometry BEFORE the InstanceNode syncs the interleaved buffer's version (nodes update after
+ * geometries), so the 1st refresh only syncs and the 2nd uploads. With one, an instanced mesh that
+ * changes and then stays still (wire culling, ?parityFreeze, an object back from the native renderer)
+ * keeps drawing the matrices of the change before.
+ */
+const INSTANCE_REFRESHES = 2;
 const QUERY_KEY = 'renderIdRefresh=';
 
 // ── Forma mínima dos internos do three 0.184 usados aqui ────────────────────
@@ -94,7 +102,7 @@ interface RenderIdPlan {
    * um refresh do three. O `equals()` não as vigia, e só o refresh sobe o
    * atributo (muitas instâncias) ou o buffer de uniform (poucas).
    */
-  instanceVersions: [number, number] | null;
+  instanceVersions: [number, number, number] | null;
 }
 
 const isShared = (group: BindGroupLike): boolean => group.bindings[0]?.groupNode?.shared === true;
@@ -119,17 +127,24 @@ export function buildRenderIdPlan(renderObject: RenderIdRenderObjectLike): Rende
     shared: groups.filter(isShared),
     groups,
     object: objectPlan,
-    instanceVersions: instanced ? [VERSION_UNSEEN, VERSION_UNSEEN] : null,
+    instanceVersions: instanced ? [VERSION_UNSEEN, VERSION_UNSEEN, 0] : null,
   };
 }
 
-/** `true` (e guarda as versões) quando matriz ou cor de instância mudaram desde o último refresh. */
-function instancesChanged(object: RenderIdRenderObjectLike['object'], seen: [number, number]): boolean {
+/**
+ * `true` while the three still has to refresh for an instance matrix/color change: the
+ * {@link INSTANCE_REFRESHES} renders after the change (versions in `seen[0..1]`, renders left in `seen[2]`).
+ */
+function instancesChanged(object: RenderIdRenderObjectLike['object'], seen: [number, number, number]): boolean {
   const matrix = object.instanceMatrix?.version ?? VERSION_UNSEEN;
   const color = object.instanceColor?.version ?? VERSION_UNSEEN;
-  if (matrix === seen[0] && color === seen[1] && matrix !== VERSION_UNSEEN) return false;
-  seen[0] = matrix;
-  seen[1] = color;
+  if (matrix !== seen[0] || color !== seen[1] || matrix === VERSION_UNSEEN) {
+    seen[0] = matrix;
+    seen[1] = color;
+    seen[2] = INSTANCE_REFRESHES;
+  }
+  if (seen[2] === 0) return false;
+  seen[2]--;
   return true;
 }
 
@@ -188,7 +203,9 @@ export function installRenderIdRefresh(renderer: RenderIdRendererLike): RenderId
     }
     if (plan.instanceVersions !== null && instancesChanged(renderObject.object, plan.instanceVersions)) {
       stats.full++;
-      return inner.call(this, renderObject);
+      // Forced: on the 2nd render the three's observer may see nothing changed and skip the upload.
+      inner.call(this, renderObject);
+      return true;
     }
 
     // Trabalho por render que o refresh do three faria (tudo deduplicado).

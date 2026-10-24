@@ -331,22 +331,22 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
   de um prédio dão 1,17% de pixels fora da paridade (Setor O passa). Não foi investigado. **Volta
   antes do R1.6** (o aceite final exige 0 recusas). Próximo passo: o mesmo método do vidro
   (isolar o material da fachada, comparar dados e WGSL do estado do `three`).
+- **Poça de sangue instanciada ±1–2 no Comercial de dia** (origem: SPEC-0555 "Instâncias compactadas",
+  Frente C, 2026-10-24): 0,0273% dos pixels (alt 3), só dentro de `pocas-de-sangue` (lambert
+  instanciado, `polygonOffset`); com o lambert instanciado no `three`, PASS. A causa dos fios (cópia de
+  instâncias velha no `three`) foi corrigida no `RenderIdRefresh`. Hipótese: sombra do pedestre ferido no asfalto
+  (Frente B) aparecendo na borda da poça. Também há pontos esparsos de ±2–6 ao longe, que existem sem
+  instância (0,004%). **Fica com a Frente B**; reverificar com `RECEIVE_SHADOW` ligado depois da correção
+  dela; poça fixa (determinística) só se o resíduo sobreviver.
 - **Fios distantes no Comercial de dia** (origem: R1.2, 2026-10-24): 0,0132% dos pixels, acima
   do limite de 0,01%. Não é cobertura subpixel: num braço o fio some por inteiro (oclusão ou
   ordem), evidência em `native/scripts/perf/coverage-diff.mjs`. Hipótese: ordem do domo do céu
   nativo × malha fundida dos fios (matriz identidade, z na origem). `@invariant` na posição não
   muda.
-- **`lambert` instanciado recusado — aguarda correção de instâncias da Frente C** (origem: R1.2,
-  2026-10-24; dono: Frente C). Os "fios distantes" acima são os cabos quebráveis do DDD 61
-  (`breakableProps.ts`, `InstancedMesh` "fios-quebraveis", lambert), cujo `cull()` compacta as
-  instâncias por distância (`setMatrixAt` nas `n` primeiras, `mesh.count = n`,
-  `addUpdateRange(0, n*16)`). Medido: a chave nativa e o `painterSortStable` do `three` r184
-  batem campo a campo (o z do C++ também entra na `RenderList` do `three`, então é o mesmo nos
-  dois braços); com `nativeTint`, quem desenha o fio é o braço nativo e o `three` o esconde; com o
-  lambert instanciado recusado, o "alt 223" some. Suspeitos: culling do `InstancedMesh`
-  (`boundingSphere` em cache no `three` × bounds do espelho C++) ou os `updateRanges`. Resíduo
-  ±2 (0,0565%) quando o instanciado volta ao `three` no braço nativo (cópia de instâncias do
-  `three` desatualizada?). Volta antes do R1.6.
+- [x] (`9e51d3c8`, Frente C) **`lambert` instanciado recusado** (cabos quebráveis com `cull()` que compacta
+      as instâncias): a causa era o `RenderIdRefresh` (1 refresh por mudança deixava as matrizes velhas no
+      `three`, também no caminho só-`three`); agora 2 refreshes. Reprodução na galeria (`lambert-compacted-*`):
+      FAIL alt 35 → PASS 0/0. Religado no integrado.
 - **`receiveShadow` no `lambert` recusado — aguarda a paridade da sombra (Frente B)** (origem:
   R1.2 após o merge A+B, 2026-10-24; dono: Frente B). Com `SHADOW_READY`, as sombras dos
   pedestres na calçada (Comercial, dia) diferem até 6/255 em 0,0821% dos pixels; com
