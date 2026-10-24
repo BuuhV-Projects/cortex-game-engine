@@ -5,7 +5,7 @@
 //   2. babel plugin-transform-classes: remove a sintaxe `class` inteira
 //      (o runtime Hermes da Microsoft não tem classes — mesmo motivo pelo
 //      qual o React Native transpila classes com Babel). Opções em
-//      babel-hermes.mjs; leitura `super.x` com receptor certo: ADR-0465.
+//      babel-hermes.mjs; leitura `super.x` com receptor certo: ADR-0485.
 // Uso: node native/scripts/bundle.mjs <outfile> [gameMainTs]
 //   sem gameMainTs → bundla o smoke (js/src/main.js)
 //   com gameMainTs → bundla um JOGO REAL (ex.: D:/jogos/teste4/main.ts):

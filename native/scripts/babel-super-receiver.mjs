@@ -1,4 +1,4 @@
-// Babel plugin (ADR-0465): `super.x` READS keep the receiver.
+// Babel plugin (ADR-0485): `super.x` READS keep the receiver.
 //
 // The export runs `@babel/plugin-transform-classes` in loose mode (the Hermes has
 // no `class`, and spec mode's `Reflect.construct` breaks on it). Loose turns
@@ -28,7 +28,7 @@ export default function superReceiver({ types: t }) {
     if ((t.isCallExpression(parent) || t.isOptionalCallExpression(parent)) && parent.callee === node) return;
     if ((t.isAssignmentExpression(parent) && parent.left === node) || t.isUpdateExpression(parent) ||
         (t.isUnaryExpression(parent) && parent.operator === 'delete')) {
-      throw path.buildCodeFrameError('super property write: not supported by the Hermes export (ADR-0465)');
+      throw path.buildCodeFrameError('super property write: not supported by the Hermes export (ADR-0485)');
     }
     const target = home(path);
     if (!target) return; // object-literal `super`: left to the default transform

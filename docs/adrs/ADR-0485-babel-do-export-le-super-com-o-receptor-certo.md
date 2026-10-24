@@ -1,4 +1,4 @@
-# ADR-0465 — O Babel do export lê `super.x` com o receptor certo
+# ADR-0485 — O Babel do export lê `super.x` com o receptor certo
 
 **Data:** 2026-10-24
 **Status:** aceito

@@ -27,7 +27,7 @@ const SNIPPET = `
   return [d.value, Derived.tag, d.m(), a.value];
 `;
 
-describe('Babel of the native export (ADR-0465)', () => {
+describe('Babel of the native export (ADR-0485)', () => {
   it('super getter reads keep the receiver (instance, static, anonymous class); method calls still work', async () => {
     expect(await run(SNIPPET)).toEqual([6, 'd:derived', 51, 14]);
   });

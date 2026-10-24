@@ -10,7 +10,7 @@ export function hermesBabelOptions(cwd) {
     // por protótipo direto, sem Reflect.construct (modo spec quebra no Hermes).
     // Arrows precisam ser rebaixadas porque o Hermes não tem async arrow.
     plugins: [
-      // ANTES do transform-classes: leitura `super.x` com o receptor certo (ADR-0465).
+      // ANTES do transform-classes: leitura `super.x` com o receptor certo (ADR-0485).
       superReceiver,
       ['@babel/plugin-transform-classes', { loose: true }],
       '@babel/plugin-transform-arrow-functions',

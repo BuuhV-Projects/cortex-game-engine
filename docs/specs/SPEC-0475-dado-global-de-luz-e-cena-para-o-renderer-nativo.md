@@ -66,4 +66,4 @@ descreve o formato para o renderer próprio nascer sem eles.
 - Bind group recriado por quem é dono dele deixa receita gravada velha — SPEC-0425.
 - Instrumento de teto tem de manter o trabalho por estado de **todo** estado que
   o renderer desenharia — correção do ADR-0404.
-- Getter via `super` no bundle do Hermes — ADR-0465.
+- Getter via `super` no bundle do Hermes — ADR-0485.
