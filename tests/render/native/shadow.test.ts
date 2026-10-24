@@ -284,6 +284,17 @@ describe('NativeSunShadowPass (R1.3 part 2, SPEC-0545)', () => {
     const plain = mirror.drawShadowPass.mock.calls[0]![3] as Float64Array;
     const shifted = mirror.drawShadowPass.mock.calls[1]![3] as Float64Array;
     expect(shifted[12]! - plain[12]!).toBeCloseTo((2 * PASS_SHIFT_TEXELS) / MAP_SIZE);
+    expect(shifted[16 + 12]! - plain[16 + 12]!).toBeCloseTo((2 * PASS_SHIFT_TEXELS) / MAP_SIZE);
+  });
+
+  it('sends viewProj, projection and view apart (the host draws in the three float order)', () => {
+    const { host, scene, sun, light } = setup();
+    sun.shadow.needsUpdate = true;
+    new NativeSunShadowPass(host, false, false).update(light, scene, null);
+    const m = mirror.drawShadowPass.mock.calls[0]![3] as Float64Array;
+    expect(m.length).toBe(48);
+    expect(Array.from(m.subarray(16, 32))).toEqual(sun.shadow.camera.projectionMatrix.elements);
+    expect(Array.from(m.subarray(32, 48))).toEqual(sun.shadow.camera.matrixWorldInverse.elements);
   });
 
   it('shiftClipX pre-multiplies a clip-space x translation', () => {

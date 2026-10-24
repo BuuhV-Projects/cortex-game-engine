@@ -78,8 +78,12 @@ struct ShadowDrawItem {
  * registro é **pulado**, nunca aproximado — e o gate (E3) já deveria ter
  * recusado o frame antes de chegar aqui.
  */
+// `projection` + `view` (16 doubles each, optional): the sun's single map draws with the
+// three's own float order instead of the double `viewProjection` (SPEC-0545, see
+// `shadowCasterMatrices`); `nullptr` keeps the CSM path.
 uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
                            const double viewProjection[16], const ShadowDrawItem* itens,
-                           uint32_t total);
+                           uint32_t total, const double* projection = nullptr,
+                           const double* view = nullptr);
 
 }  // namespace render

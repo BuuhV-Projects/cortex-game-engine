@@ -331,7 +331,7 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   (`boundingSphere` em cache no `three` × bounds do espelho C++) ou os `updateRanges`. Resíduo
   ±2 (0,0565%) quando o instanciado volta ao `three` no braço nativo (cópia de instâncias do
   `three` desatualizada?). Volta antes do R1.6.
-- **`receiveShadow` no `lambert` recusado — aguarda a paridade da sombra (Frente B)** (origem:
+- ~~**`receiveShadow` no `lambert` recusado — aguarda a paridade da sombra (Frente B)**~~ **resolvido (SPEC-0545):** era o mapa do passe C++ (MVP em double × ordem float do `three`); com a ordem do `three`, 0,0000% nos 4 casos e `RECEIVE_SHADOW = true`. (origem:
   R1.2 após o merge A+B, 2026-10-24; dono: Frente B). Com `SHADOW_READY`, as sombras dos
   pedestres na calçada (Comercial, dia) diferem até 6/255 em 0,0821% dos pixels; com
   `receiveShadow` recusado o Comercial dia dá PASS (0,0030%). O modelo já chama
