@@ -268,6 +268,13 @@ describe('NativeSunShadowPass (R1.3 part 2, SPEC-0545)', () => {
     expect(sun.shadow.needsUpdate).toBe(true);
   });
 
+  it('parity mode forces nothing while the sun is off (the game does not redraw at night)', () => {
+    const { host, scene, sun, light } = setup();
+    sun.intensity = 0;
+    new NativeSunShadowPass(host, false, true).update(light, scene, null);
+    expect(mirror.drawShadowPass).not.toHaveBeenCalled();
+  });
+
   it('known-answer shift moves the drawn map by PASS_SHIFT_TEXELS', () => {
     const { host, scene, sun, light } = setup();
     sun.shadow.needsUpdate = true;

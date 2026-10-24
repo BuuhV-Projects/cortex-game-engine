@@ -16,6 +16,8 @@
  * projection hands it no server), so this pass cannot see the arm. In that mode it redraws on
  * every native frame, and a `scene.onAfterRender` hook sets `needsUpdate` back after each render,
  * so the three redraws the map on its own arm: the frames compare the C++ map against the three's.
+ * Only while the sun is lit (`intensity > 0`), as the game itself (`SunShadow` redraws only when
+ * lit): forcing redraws at night crashed the host on a destroyed texture (SPEC-0545, "Como ficou").
  *
  * `?nativeShadowPass=0` turns it off (the three draws the map); `?nativeShadowPassShift=1` shifts
  * the map by SHIFT_TEXELS — the known-answer case: the parity must FAIL.
@@ -43,6 +45,7 @@ const NO_CAMERA = new Vector3();
 /** The DirectionalLight fields used by the shadow block and this pass. */
 export interface SunLight {
   castShadow: boolean;
+  intensity: number;
   parent: unknown;
   shadow: {
     map: { depthTexture: unknown } | null;
@@ -90,8 +93,9 @@ export class NativeSunShadowPass {
       this._ownsAuto = true;
       shadow.autoUpdate = false;
     }
-    if (this._parity) this._hookParity(scene as Object3D, shadow);
-    if (!shadow.needsUpdate && !this._ownsAuto && !this._parity) return;
+    const forced = this._parity && light.intensity > 0;
+    if (forced) this._hookParity(scene as Object3D, shadow);
+    if (!shadow.needsUpdate && !this._ownsAuto && !forced) return;
     const why = this._draw(light, scene as Object3D);
     if (why === null) {
       shadow.needsUpdate = false;
