@@ -138,24 +138,16 @@ describe('DrawBatch', () => {
     expect(receitas.get(1)!.groups[1]).toBe('GPU-obj-a2');
   });
 
-  it('com ?batchRecapture=1 o grupo recriado regrava a receita e segue no lote (SPEC-0435 (a))', () => {
-    const g = globalThis as { location?: { search: string } };
-    const antes = g.location;
-    g.location = { search: '?batchRecapture=1' };
-    try {
-      const { bridge, receitas, soltas } = ponteFalsa();
-      const { backend, get } = backendFalso();
-      const lote = new DrawBatch(bridge, backend);
-      const a = roFalso(get, 'a');
-      lote.capture(a.ro);
-      get(a.grupoCamera)['group'] = 'GPU-camera-nova';
-      expect(lote.add(a.ro, info())).toBe(true);
-      expect(lote.stats.recaptured).toBe(1);
-      expect(soltas).toEqual([0]);
-      expect(receitas.get(1)!.groups[0]).toBe('GPU-camera-nova');
-    } finally {
-      g.location = antes;
-    }
+  it('grupo compartilhado recriado devolve o desenho ao three, sem regravar (SPEC-0435 (a) removida)', () => {
+    const { bridge, soltas } = ponteFalsa();
+    const { backend, get } = backendFalso();
+    const lote = new DrawBatch(bridge, backend);
+    const a = roFalso(get, 'a');
+    lote.capture(a.ro);
+    get(a.grupoCamera)['group'] = 'GPU-camera-nova';
+    expect(lote.add(a.ro, info())).toBe(false);
+    expect(lote.stats.recorded).toBe(1);
+    expect(soltas).toEqual([]);
   });
 
   it('por padrão (desligada até ganho medido) o grupo recriado devolve o desenho ao three', () => {

@@ -1,7 +1,7 @@
 # SPEC-0435 — Custo por estado de shader no export (luzes, sombra, grupos compartilhados)
 
 **Data:** 2026-10-23
-**Status:** (d′) `DynamicLighting` **ligada por padrão no host** (`04c72500`); (a) **desligada por padrão até ganho medido; remedir sobre a `DynamicLighting`** (`?batchRecapture=1` liga); (b) teto medido; (c)/(d) não iniciadas.
+**Status:** (d′) `DynamicLighting` **ligada por padrão no host** (`04c72500`); (a) **rejeitada por medição e removida** (2026-10-24, remedida sobre `DynamicLighting` + filtro de sombra compartilhado); (b) teto medido; (c)/(d) não iniciadas.
 
 Frente seguinte ao RS1 (SPEC-0425, ligado por padrão por decisão do usuário).
 Correção do teto no ADR-0404: o que sobra do render não está mais no laço por
@@ -87,7 +87,7 @@ existindo; só remove o que a alavanca remove.
 
 | | alavanca | onde | teto medido como |
 | --- | --- | --- | --- |
-| (a) | regravar a receita no lote da b.1 quando o grupo compartilhado foi recriado (hoje só ~26% dos diretos saem pelo lote) | engine (`DrawBatch.add`) | é a própria mudança, `?batchRecapture=0|1` |
+| (a) | regravar a receita no lote da b.1 quando o grupo compartilhado foi recriado (hoje só ~26% dos diretos saem pelo lote) | engine (`DrawBatch.add`) | era `?batchRecapture=0|1` (removido) |
 | (b) | tirar do shader as luzes apagadas (postes e faróis de dia) | jogo | braço temporário no jogo: `SpotLight` fora da cena enquanto intensidade 0 |
 | (c) | menos estados distintos (material compartilhado) | jogo/assets | censo dos estados por quadro e de quem os gera, antes de qualquer braço |
 | (d′) | `DynamicLighting` do `three` (nó de dados por tipo de luz, contagem em vez de variante) | engine (`renderer.lighting`, só no host) | é a própria mudança, `?dynamicLighting=0|1` |
@@ -123,6 +123,27 @@ está marcada CONTAMINADA em `.cortex/rs-ceiling/runs-ab-d2-walk/`).
 O mecanismo funciona (desenhos pelo lote 84 mil → 166 mil na rodada; paridade 0
 no Setor O), mas o ganho em tempo não sai do ruído com consistência. **Não
 mergear sozinha**; remedir combinada com a próxima alavanca.
+
+**Remedida em 2026-10-24** sobre a engine com RS1, `DynamicLighting` e filtro de
+sombra compartilhado (SPEC-0445), mesmo export, `?batchRecapture=0` (A) × `1`
+(B), kit SPEC-0382 intercalado, 2 réplicas, autopiloto
+(`.cortex/rs-ceiling/runs-i6-*`):
+
+| ponto | render Δ | p95 Δ | % > 33 ms | `world` Δ (não depende da alavanca) |
+| --- | --- | --- | --- | --- |
+| Centro (walk) | −1,70 | −15,2 | 22,9% → 3,9% | −0,59 |
+| Comercial (walk) | +1,01 | +12,3 | 28,8% → 31,5% | +0,41 |
+| helio (drive) | +0,74 | +2,05 | 1,2% → 2,2% | +0,40 |
+
+O mecanismo atuou (~2.000 receitas regravadas por rodada, +30–40% de desenhos
+pelo lote), mas o sinal troca de ponto para ponto — e trocou ao contrário da
+1ª bateria (lá o Comercial ganhava e o Centro perdia). O `world`, que a
+alavanca não toca, acompanha o render: é ruído entre réplicas. **Decisão:
+rejeitada; o código (`?batchRecapture`, o ramo no `DrawBatch.add`,
+`stats.recaptured` do lote) foi removido.** O `DrawBatch.recapture()` fica: é o
+que o RS1 usa na emissão. Godot: não há equivalente — receita gravada a partir
+de um desenho do `three` é artefato deste caminho; o renderer próprio
+(ADR-0465/PRD-0466) não tem receita para envelhecer.
 
 ### (b) teto: tirar as 8 `SpotLight` do shader (braço no jogo, `?semSpots=1`)
 

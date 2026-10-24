@@ -1,7 +1,7 @@
 # PRD 0009 - Backlog de performance do host nativo (modelo Godot)
 
 **Data:** 2026-10-10
-**Status:** **EM ANDAMENTO** (2026-10-23) — RenderingServer: RS1 medido em −1,1 ms andando (abaixo do critério; ADR-0404 com teto corrigido); pendências em frentes
+**Status:** **EM ANDAMENTO** (2026-10-24) — RenderingServer **finalizado** (ADR-0404): RS1 ligado (−1,1 ms), `DynamicLighting` (−1,4/−1,7), sombra barata (−1,6/−1,9 andando, −3,0 dirigindo), Babel com receptor certo (ADR-0485); RS2/RS3 e objetos que escapam substituídos pelo renderer nativo (ADR-0465/PRD-0466); pendências em frentes
 paralelas; ver "Estado em 2026-10-22". **2026-10-24:** o B2 passa a ter como destino o renderer
 próprio em C++ no export (decisão do usuário; ADR-0465, plano no PRD-0466).
 
@@ -21,7 +21,7 @@ próprio em C++ no export (decisão do usuário; ADR-0465, plano no PRD-0466).
 | M0 do ADR-0237 (cache de bindings) | **medido: não há ganho** (69% refazem) | ADR-0237 |
 | B1 — zero alocação por quadro (+ medição do B3) | **mergeado** (`34210c53`, SPEC-0357): na main do jogo, −45 a −65 KB/quadro (−4 a −7%), coleta young −1,6 a −2,6 ms/s, sem regressão; teste impede `new Vector3/Matrix4/Box3` em `System.update`; colunas de GC no kit. O jogo ainda aloca ~0,8–1,1 MB/quadro (critério de pronto do PRD não atingido — o resto está fora do engine) | sessão `b1-zero-alloc` |
 | B2 — desenho nativo no passe da cena (ADR-0330 (b)/(c)) | b.1/b.2 na main; b.3 e SPEC-0362 sem ganho (arquivadas) | sessão `b2-desenho-nativo` |
-| B2 — **RenderingServer** (ADR-0404) | **RS1 construído e medido** (SPEC-0425, 2026-10-23): paridade exata, render **−1,1 ms** no Comercial andando (p95 −2,8, quadros >33 ms 29% → 22%) — abaixo do critério de −4; **ligado por padrão no export por decisão do usuário (2026-10-23)**, `?renderServer=0` desliga. O teto do ADR-0404 (−8 a −11 ms) estava inflado: não descontava o trabalho por estado de shader (~1 ms, luzes/sombra) nem o upload dos que se movem (~0,4 ms). Próximo alvo: o custo por estado de shader | sessão `rendering-server` |
+| B2 — **RenderingServer** (ADR-0404) | **RS1 construído e medido** (SPEC-0425, 2026-10-23): paridade exata, render **−1,1 ms** no Comercial andando (p95 −2,8, quadros >33 ms 29% → 22%) — abaixo do critério de −4; **ligado por padrão no export por decisão do usuário (2026-10-23)**, `?renderServer=0` desliga. O teto do ADR-0404 (−8 a −11 ms) estava inflado: não descontava o trabalho por estado de shader (~1 ms, luzes/sombra) nem o upload dos que se movem (~0,4 ms). **Finalizado em 2026-10-24**: + `DynamicLighting` (−1,4/−1,7 ms), sombra barata (SPEC-0445, −1,6/−1,9 andando, −3,0 dirigindo), Babel com receptor certo (ADR-0485); regravação na b.1 rejeitada e removida; RS2/RS3/escape substituídos pelo renderer nativo (ADR-0465/PRD-0466) | sessão `rendering-server` (encerrada) |
 | B4 — raycast de colisão em C++ (ADR-0346/SPEC-0347) | **mergeado** (`bc5ecf6f`, 2026-10-23): A/B a pé na main do jogo, 16 rodadas válidas, `world` −0,15 a −0,54 ms (Comercial −1,2 ms no par limpo), personagem e câmera mais baratos nos 4 pontos; pendente o A/B dirigindo (lacuna do Rapier em `BreakableProps.activate`) | sessão `b4-raycast-cpp` |
 | Cauda da física (R4-A) + `cullOutlines` pulando nós escondidos | **`cullOutlines`/espelho mergeado** (`6e74af99`, SPEC-0372): `cull` p99 ~3,8 → ~1,0 ms e espelho −0,36 ms/quadro nos 6 pontos, quadro mediano −0,2 a −1,1 ms, p95 até −2,2 ms. **R4-A descartada com número**: o passo extra de física custa 0,2–0,4 ms; a cauda vem do render perdendo o vsync e coincide com o GC jovem | sessão `cauda-cull-outlines` |
 | B3 — skinning em C++ | **dispensado por medição** (SPEC-0357 §5): ~0,1–0,5 ms com 1–4 personagens com mixer; a multidão é o lote instanciado | — |
@@ -205,7 +205,7 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 
 ### Engine / host
 
-- [ ] **Alternar a projeção nativa × `three` a cada quadro trava o host** — causa não isolada.
+- [x] (2026-10-24, SPEC-0362 "Remedido": 0 travamentos em 3 rodadas congeladas no Setor O + 2 em movimento; a causa estava no código arquivado da b.3/SPEC-0362 v1; o caminho de recusa fica) **Alternar a projeção nativa × `three` a cada quadro trava o host** — causa não isolada.
       Origem: frente B2 (SPEC-0362, etapa (a) do ADR-0330). Não afeta o uso normal (a projeção
       não alterna em jogo), mas impede comparar os dois caminhos na mesma execução.
 - [ ] **`getGamepads()` do host monta um snapshot novo a cada chamada** (`native/src/shims/input.cpp`,
@@ -233,11 +233,11 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 - [ ] **Perfil `drive` sem desvio**: no Setor O (`&drive=1`) o carro nasce de frente para a calçada e
       passa boa parte do ciclo encostado numa casa (andou só 15 m em 110 s). Destrava: um ponto de
       spawn de direção com rua livre (no jogo) ou um perfil próprio por ponto. Origem: SPEC-0414.
-- [ ] **b.3 (fila nativa de opacos parados, ADR-0363) sem ganho medido**: paridade 0, mas A/B no ruído
+- [x] (arquivada; o caminho do servidor de receitas foi o RS1 e o destino agora é o renderer próprio — ADR-0465) **b.3 (fila nativa de opacos parados, ADR-0363) sem ganho medido**: paridade 0, mas A/B no ruído
       (setorO −1,24, centro −0,29, comercial +1,01 ms) e uma réplica em Águas Claras regrediu para 33,9 ms
       de render com 2,4 MB/quadro de GC. Código arquivado (retomar a partir de `dbf15071`); registros e
       instrumento na main (`f8ddbf38`). Destrava: entender a regressão de Águas Claras antes de qualquer novo corte.
-- [ ] **~20 objetos por quadro que se movem (NPCs, carros, jogador) ficam fora da fila nativa** —
+- [x] (o RS1 aceita os que se movem — `fbMoved` só no 1º quadro do movimento; SPEC-0425) **~20 objetos por quadro que se movem (NPCs, carros, jogador) ficam fora da fila nativa** —
       maior ganho restante da b.3, se a b.3 for retomada. Origem: contadores de recusa da b.3.
 - [x] **SPEC-0362 rejeitada por medição** (tirar do `three` os objetos com névoa/material com nó):
       refazê-los custa quase o mesmo que o caminho do `three` e sobe o GC ~10 ms/s. Registro para não
@@ -247,18 +247,18 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       na engine: aplicar
       `D:/jogos/detetive-brasilia/.cortex/rs-ceiling/rs-ceiling-arm.patch` numa worktree descartável
       (`?rsCeiling=1|2|3`). Origem: ADR-0404.
-- [ ] **O custo por objeto que escapa do servidor é ~100 µs** (transparentes, skinado, material com
+- [x] (substituído pelo renderer nativo — decisão do usuário em 2026-10-24, ADR-0465/PRD-0466: o servidor de receitas depende do `three` para gravar; quem escapa dele não tem conserto barato aqui) **O custo por objeto que escapa do servidor é ~100 µs** (transparentes, skinado, material com
       nó; ~21/quadro no DDD 61 = ~2–3 ms): é o alvo do RS2/RS3 e o motivo de o escape ser por objeto,
       nunca por quadro. Origem: ADR-0404.
 - [x] (SPEC-0425) **Detecção de mudança de material**: escolhida a conferência por instantâneo da b.1 —
       medida em ~5,5 µs/objeto (~0,4 ms/quadro para ~77 ofertas). Ganchos só se ela virar gargalo.
-- [ ] **Custo por estado de shader: ~77 µs × ~13 estados ≈ 1 ms/quadro** (DDD 61, andando): conferência
+- [x] (atacado: luzes por `DynamicLighting` `04c72500` e sombra por filtro compartilhado `ef530c55`; o resto — ~0,8–1,1 ms de nós de render + ~0,3 ms de grupos por estado — vai para o renderer próprio, formato na SPEC-0475) **Custo por estado de shader: ~77 µs × ~13 estados ≈ 1 ms/quadro** (DDD 61, andando): conferência
       do UBO "render" de cada estado (8 `SpotLight` — 6 postes + 2 faróis, no shader mesmo apagadas de
       dia —, hemisfério, sol com sombra; ~70 uniformes). Nem a b.1 nem o RS1 tiram isso, e a sombra do sol
       (−3 ms com o RS1 ligado) mora aí. Destrava: medir (1) `visible = false` nas `SpotLight` de
       intensidade 0 (jogo), (2) menos estados distintos (material compartilhado), (3) um UBO de luzes
       único para todos os estados (sistema de nós do `three`; o maior). Origem: SPEC-0425 / ADR-0404.
-- [ ] **PRIORIDADE ALTA — O Babel do export quebra getters chamados via `super`** (bug silencioso no export
+- [x] (`4b190149`, ADR-0485: plugin que reescreve leituras de `super.x` para `Reflect.get(..., this)` antes do transform-classes loose; escrita via `super` falha o build; teste com resposta conhecida; contorno do `DynamicLightsNode` removido; paridade 0 no Setor O) **PRIORIDADE ALTA — O Babel do export quebra getters chamados via `super`** (bug silencioso no export
       de QUALQUER jogo) (`super.x` em getter vira
       `Base.prototype.x`, que roda com o protótipo como `this`): derrubou o `DynamicLightsNode` do `three`
       (objetos sumiam, medido como −6 ms falsos). Contornado só nesse caso (SPEC-0435, `76f36c48`).
@@ -272,12 +272,13 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       filtro PCF/PCF soft do `three` cria os uniformes `mapSize`/`radius` dentro do corpo do `Fn`, um por
       material receptor, e cada estado receptor perdia o grupo "render" compartilhado (21 → 5 grupos por
       quadro com o filtro compartilhado). Ganho: −1,6/−1,9 ms andando, −3,0 ms dirigindo. A sombra fica.
-- [ ] **(a) regravar receita no lote da b.1: desligada por padrão até ganho medido; remedir sobre a
+- [x] (2026-10-24, rejeitada e removida — SPEC-0435 "Remedida": Centro −1,70, Comercial +1,01, helio
+      drive +0,74 ms; sinal troca entre pontos) **(a) regravar receita no lote da b.1: desligada por padrão até ganho medido; remedir sobre a
       `DynamicLighting`** (A/B: Comercial −0,74, Centro +0,20 com quadros > 33 ms 8,9% → 13%;
       `?batchRecapture=1` liga). Origem: SPEC-0435.
 - [ ] **(c) menos estados de shader** e **(d) bloco único de luzes**: não iniciadas. Origem: SPEC-0435.
       **2026-10-24: absorvidas pelo PRD-0466** (buffer de luzes por vista no renderer próprio); não
-      iniciar no `three`. O (a) acima fica obsoleto quando o R1 do PRD-0466 assumir.
+      iniciar no `three`. O (a) acima foi rejeitado e removido (2026-10-24).
 - [ ] **O shim WebGPU descarta `constants` vindos do JS** (`native/src/webgpu/pipeline.cpp` não lê
       `constants` dos estágios; só a sonda de override preenche `constantCount`): um pipeline do JS com
       `override` sai com o valor padrão, sem aviso. Não afeta o renderer próprio (pipelines criados em
@@ -285,7 +286,7 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 - [ ] **Mapa do host desatualizado**: `docs/cortex-native/architecture.md` ("Estado e próximos marcos",
       M0) diz que `mapAsync`/`copyTextureToTexture` não existem; os dois estão registrados hoje.
       Origem: PRD-0466 (inventário).
-- [ ] **Só ~26% dos desenhos diretos da b.1 saem pelo lote da b.2 hoje**: o `three` recria o bind group
+- [x] (2026-10-24: medido como a alavanca (a) da SPEC-0435 — rejeitado e removido; o RS1 segue regravando na emissão) **Só ~26% dos desenhos diretos da b.1 saem pelo lote da b.2 hoje**: o `three` recria o bind group
       de um grupo compartilhado (geração de textura/sampler) e a receita fica velha; o `lote.add` recusa e
       cai no `backend.draw` do `three` em silêncio. O RS1 resolveu regravando a receita (`recapture`);
       levar a mesma regravação ao `DrawBatch.add` da b.1 é barato e vale medir sozinho (main, com
@@ -354,12 +355,12 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       segundo o comentário do `sunShadow.ts`) só aparece com o jogador andando. Destrava a opção do RS4.
       Origem: frente B2.
 
-- [ ] **+1,8 ms/quadro no laço por objeto (`rpEach`) com a sombra do sol ligada**, no host: suspeita do
+- [x] (`ef530c55`, SPEC-0445: era o filtro PCF/PCFSoft com uniformes por material, que tirava cada receptor do grupo "render" compartilhado; sombra de ~3,2 → ~0,4 ms) **+1,8 ms/quadro no laço por objeto (`rpEach`) com a sombra do sol ligada**, no host: suspeita do
       `updateBefore` do `ShadowNode` por estado de shader de todo material iluminado e/ou conferência extra
       no caminho direto (b.1/`RenderIdRefresh`). Destrava manter a sombra barata. **Medido com o RS1
       ligado** (SPEC-0425, walk, Comercial): `?sombra=0` ainda tira −2,96 ms — o RS1 absorve pouco; o custo
       está no trabalho por estado de shader (item acima). Origem: B2.
-- [ ] **~1,2 ms do render com sombra fora das fases da sonda** — mesma origem a investigar. Origem: B2.
+- [x] (`ef530c55`, SPEC-0445: mesma origem — o `getBindGroup` por estado receptor; some com o filtro compartilhado) **~1,2 ms do render com sombra fora das fases da sonda** — mesma origem a investigar. Origem: B2.
 - [x] **Decisão de produto (usuário): sombra do sol no export do DDD 61** — **decidido em 2026-10-24: a sombra
       FICA** (no futuro vira opção de qualidade). O usuário: o PC dele roda Call of Duty Warzone no alto, então
       uma sombra direcional simples custar 3,2 ms é defeito da engine, não limite de hardware. Meta: tornar a

@@ -1,12 +1,12 @@
 # ADR-0404 — RenderingServer no export: teto medido e plano de construção
 
 **Data:** 2026-10-23
-**Status:** aceito, **com o teto corrigido em 2026-10-23** (ver "Correção do
-teto"): o RS1 (SPEC-0425) foi construído e medido em −1,1 ms de render no
-Comercial andando, abaixo do critério de −4 ms. **Ligado por padrão no export por
-decisão do usuário em 2026-10-23**, abaixo do critério (medido −1,1 ms de render,
-−7 pp de quadros > 33 ms, paridade exata); a revisar quando o custo por estado de
-shader cair. RS2/RS3 suspensos até esse custo ser atacado.
+**Status:** **concluído em 2026-10-24** (ver "Fechamento"). RS1 feito e ligado
+por padrão no export por decisão do usuário (2026-10-23), abaixo do critério
+(−1,1 ms de render, paridade exata); RS2, RS3 e os objetos que escapam
+**substituídos pelo renderer nativo (decisão do usuário em 2026-10-24,
+ADR-0465/PRD-0466)**; RS4 cancelado por medição. Teto corrigido em 2026-10-23
+(ver "Correção do teto").
 **Destino substituído pelo ADR-0465 (2026-10-24, decisão do usuário):** renderer próprio
 em C++ no export (o `three` sai da compilação e do desenho). O RS1 continua ligado até o
 marco R1 do PRD-0466; RS2/RS3 foram absorvidos por ele (R1.4/R1.5) e o RS4 volta como R1.3.
@@ -245,3 +245,32 @@ o dos portadores de `updateBefore`.
   todos os estados (mexe no sistema de nós do `three` — o maior e o mais caro).
 - RS2/RS3 ficam suspensos: o ganho por objeto que eles miravam é menor do que
   o teto dizia.
+
+## Fechamento (2026-10-24)
+
+| marco / item | estado | registro / commit | efeito medido (autopiloto, kit SPEC-0382) |
+| --- | --- | --- | --- |
+| RS1 — instâncias opacas no servidor | **feito**, ligado por padrão (`?renderServer=0` desliga) | SPEC-0425, `487d4419` | render −1,1 ms (Comercial andando) |
+| custo por estado: luzes | **feito** — `DynamicLighting` do `three` no host | SPEC-0435 (d′), `04c72500` | render −1,4 / −1,7 ms |
+| custo por estado: sombra | **feito** — filtro PCF/PCFSoft compartilhado | SPEC-0445, `ef530c55` | −1,6/−1,9 andando, −3,0 dirigindo; sombra ~3,2 → ~0,4 ms |
+| medir em Full HD | **feito** | SPEC-0455, `e93dd9ae` | GPU ~0,9–1,3 ms em 1920×1080: não é gargalo |
+| Babel do export com `super` | **feito** na raiz | ADR-0485, `4b190149` | correção (o contorno do `DynamicLightsNode` saiu) |
+| regravar receita no lote da b.1 | **rejeitado, código removido** | SPEC-0435 (a), `8dae7b20` | Centro −1,70, Comercial +1,01, helio +0,74: ruído |
+| travamento ao alternar a projeção | **não reproduz** no código atual | SPEC-0362 "Remedido", `b6abdb36` | 0 em 3 rodadas congeladas + 2 em movimento |
+| dado global de luz/cena | **só registro de desenho** | SPEC-0475 | insumo do renderer nativo |
+| RS2, RS3, objetos que escapam (~100 µs cada) | **substituídos pelo renderer nativo** (decisão do usuário em 2026-10-24) | ADR-0465, PRD-0466 | — |
+| RS4 | **cancelado por medição** | PRD-0009 | redesenho do mapa de sombra ~0,3 ms |
+
+**Por que RS2/RS3 e o escape não seguem por aqui:** o servidor de receitas
+depende do `three` para gravar — cada receita nasce de um desenho dele, com os
+bind groups e o pipeline que o sistema de nós montou. Os objetos que escapam
+(transparentes, skinados, material com nó, `InstancedMesh`) são justamente os
+que o `three` monta de forma que a receita não captura com segurança, e o custo
+por estado de shader que sobra (~0,8–1,1 ms de nós de render + ~0,3 ms de grupos)
+é estrutural no sistema de nós. Um renderer que é dono do shader e dos dados
+globais (ADR-0465) não tem nenhum dos dois problemas; as armadilhas e o formato
+de dado medidos aqui foram passados a ele (SPEC-0475).
+
+Soma do que ficou ligado no export, andando: ~−4 a −5 ms de render em relação
+ao início desta frente (não aditivo por construção — cada alavanca foi medida
+sobre a anterior).
