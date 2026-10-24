@@ -1,3 +1,10 @@
+# [0.84.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.83.1...v0.84.0) (2026-10-24)
+
+
+### Features
+
+* **native:** resolução padrão do jogo passa a 1920x1080 e 720p sai das medições (SPEC-0515) ([5c947f4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5c947f4f4b254211263c99cd46fb10bcdf3e69f2))
+
 ## [0.83.1](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.83.0...v0.83.1) (2026-10-24)
 
 
