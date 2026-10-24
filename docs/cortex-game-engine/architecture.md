@@ -1260,7 +1260,9 @@ tem. Desenho nativo intercalado com o `three` tem de seguir a chave do sort dele
 **Armadilha (receita velha):** o `three` recria o bind group de um grupo
 COMPARTILHADO quando muda a geração de uma textura/sampler; a receita gravada fica
 apontando para o grupo velho. Recusar devolve quase tudo ao `three` (hoje só ~26%
-dos diretos da b.1 saem pelo lote por isso); regravar (`DrawBatch.recapture`) resolve.
+dos diretos da b.1 saem pelo lote por isso); o RS1 regrava na emissão
+(`DrawBatch.recapture`). Regravar também no `DrawBatch.add` da b.1 foi medido sem
+ganho e removido (SPEC-0435 (a)).
 
 **Subárvore escondida (SPEC-0372):** a varredura pula o slot com ancestral
 escondido (contador `_ocultoAcima` por slot, mantido pelo gancho de `visible`

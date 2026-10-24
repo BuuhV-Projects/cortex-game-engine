@@ -272,12 +272,13 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       filtro PCF/PCF soft do `three` cria os uniformes `mapSize`/`radius` dentro do corpo do `Fn`, um por
       material receptor, e cada estado receptor perdia o grupo "render" compartilhado (21 → 5 grupos por
       quadro com o filtro compartilhado). Ganho: −1,6/−1,9 ms andando, −3,0 ms dirigindo. A sombra fica.
-- [ ] **(a) regravar receita no lote da b.1: desligada por padrão até ganho medido; remedir sobre a
+- [x] (2026-10-24, rejeitada e removida — SPEC-0435 "Remedida": Centro −1,70, Comercial +1,01, helio
+      drive +0,74 ms; sinal troca entre pontos) **(a) regravar receita no lote da b.1: desligada por padrão até ganho medido; remedir sobre a
       `DynamicLighting`** (A/B: Comercial −0,74, Centro +0,20 com quadros > 33 ms 8,9% → 13%;
       `?batchRecapture=1` liga). Origem: SPEC-0435.
 - [ ] **(c) menos estados de shader** e **(d) bloco único de luzes**: não iniciadas. Origem: SPEC-0435.
       **2026-10-24: absorvidas pelo PRD-0466** (buffer de luzes por vista no renderer próprio); não
-      iniciar no `three`. O (a) acima fica obsoleto quando o R1 do PRD-0466 assumir.
+      iniciar no `three`. O (a) acima foi rejeitado e removido (2026-10-24).
 - [ ] **O shim WebGPU descarta `constants` vindos do JS** (`native/src/webgpu/pipeline.cpp` não lê
       `constants` dos estágios; só a sonda de override preenche `constantCount`): um pipeline do JS com
       `override` sai com o valor padrão, sem aviso. Não afeta o renderer próprio (pipelines criados em
@@ -285,7 +286,7 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 - [ ] **Mapa do host desatualizado**: `docs/cortex-native/architecture.md` ("Estado e próximos marcos",
       M0) diz que `mapAsync`/`copyTextureToTexture` não existem; os dois estão registrados hoje.
       Origem: PRD-0466 (inventário).
-- [ ] **Só ~26% dos desenhos diretos da b.1 saem pelo lote da b.2 hoje**: o `three` recria o bind group
+- [x] (2026-10-24: medido como a alavanca (a) da SPEC-0435 — rejeitado e removido; o RS1 segue regravando na emissão) **Só ~26% dos desenhos diretos da b.1 saem pelo lote da b.2 hoje**: o `three` recria o bind group
       de um grupo compartilhado (geração de textura/sampler) e a receita fica velha; o `lote.add` recusa e
       cai no `backend.draw` do `three` em silêncio. O RS1 resolveu regravando a receita (`recapture`);
       levar a mesma regravação ao `DrawBatch.add` da b.1 é barato e vale medir sozinho (main, com
