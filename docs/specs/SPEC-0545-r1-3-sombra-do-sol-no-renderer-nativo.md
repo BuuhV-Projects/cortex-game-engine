@@ -1,11 +1,76 @@
 # SPEC-0545 — R1.3: sombra do sol no renderer nativo
 
 **Data:** 2026-10-24
-**Status:** em implementação (Frente B do R1, PRD-0466 / ADR-0465), desligado por padrão
-(vive dentro de `?nativeRenderer=1`).
+**Status:** **implementado** (2026-10-24), desligado por padrão (vive dentro de
+`?nativeRenderer=1`). O desenho abaixo foi a proposta. **"Como ficou"**, logo a seguir, registra
+o que mudou e vale sobre o desenho onde os dois divergem.
 
 Etapa R1.3 do PRD-0466. Bloco de quadro e grupo 1: SPEC-0495 ("Como ficou") e SPEC-0475.
 Passe de sombra C++: SPEC-0245. Filtro do DDD 61: SPEC-0445.
+
+## Como ficou (implementação)
+
+- **Núcleo, 2 linhas** (combinado com a Frente C, commit isolado): a `FrameBlockFactory` recebe
+  o host do `three` (`(device, host)`). Sem acesso global ao renderer, era o único jeito de achar
+  o `GPUTexture` do `shadow.map`.
+- **Parte 1** (`frame/shadow.ts`, `ShadowBlock`): como no desenho. A busca da luz é por
+  `traverse` com cache (DDD 61: a `DirectionalLight` do sol). O teste do WGSL confere 16
+  comparações, o mesmo número da referência `wgsl-0019`. `SHADOW_READY = true`.
+- **Parte 2** (`shadow/NativeSunShadowPass.ts`): sem C++ novo. No DDD 61 o passe C++ **assume**
+  o redesenho (`[nativeSunShadow] ASSUMIU` no Setor O e no Comercial), e o gate aceitou os casters
+  do `markShadowCasters`.
+- **Paridade da parte 2: o desenho original não comparava nada.** No braço `three` do
+  `?parityFreeze`, a projeção não entrega servidor, então o `beginFrame` (e o bloco) não rodam e
+  a troca de braço é invisível daqui. Na 1ª rodada os dois braços amostraram o MESMO mapa
+  (desenhado pelo C++ antes de congelar): PASS sem valor, e o plantado não daria FAIL. Correção:
+  no modo de paridade o passe redesenha em todo quadro nativo, e um `scene.onAfterRender`
+  (instalado só nesse modo) religa o `needsUpdate` para o `three` redesenhar no braço dele.
+  Agora cada par compara mapa C++ × mapa `three`.
+- **Armadilha medida:** forçar o redesenho a cada quadro **à noite** derrubou o host (`Texture …
+  has been destroyed` no `wgpuQueueSubmit`, Setor O e Comercial às 21h). Com
+  `?nativeShadowPass=0` a noite passa. O jogo nunca redesenha à noite (o `SunShadow` só pede com o
+  sol aceso), então o modo de paridade passou a seguir a mesma regra (`light.intensity > 0`). A
+  causa exata (qual textura) não foi isolada e ficou como pendência.
+- **Galeria:** a cena não liga o `renderer.shadowMap` (relato `shadowMap-desligado`), então não
+  exercita a sombra. Ela vale aqui só como prova de que o WGSL do bloco compila no naga junto do
+  `unlit`.
+
+### Vereditos (`check-stage.sh`, 1920×1080, flag `&nativeRenderer=1&nativeRendererModels=unlit`)
+
+| rodada | resultado |
+| --- | --- |
+| `r1-3-sombra-c` (completo) | **PASS**: galeria 0%, Setor O dia 0,0001% (1 par alterna), Setor O noite 0%, Comercial dia 0,0042% (4 pares), Comercial noite 0%, fumaça PASS (render 12,71 ms) |
+| `r1-3-sombra-plant2` (`&nativeShadowPassShift=1`, Setor O) | **FAIL** como esperado: Setor O dia 9,12% dos pixels (52 alternados). À noite PASS: com o sol apagado não há sombra a comparar |
+| `r1-3-sombra-nopass` (`&nativeShadowPass=0`, Setor O) | PASS dia e noite (isolou a armadilha da noite) |
+| `cortex_host_tests` | 529 checks, 0 falhas |
+
+### Custo (rodada curta)
+
+`ab.sh`, Setor O, `--autopilot walk`, 1 réplica intercalada, export `r1-3-sombra-c`, ambos
+com `&nativeRenderer=1&nativeRendererModels=unlit`:
+
+| | sombra ligada | `?sombra=0` | diferença |
+| --- | --- | --- | --- |
+| render | 11,16 ms | 10,61 ms | **+0,55 ms** |
+| quadro p95 | 29,1 ms | 26,8 ms | +2,3 |
+| % > 33 ms | 1,65% | 0% | +1,65 |
+| draws | 159 | 155 | +4 |
+
+Fica **acima** do alvo de ≤ 0,3 ms, mas com 1 réplica (a SPEC-0445 mediu 0,37 ms com 2 réplicas
+no Comercial). E não mede ainda o que a R1.3 promete: nesta branch todos os receptores são do
+`three`, então o número é a sombra do `three` mais o redesenho no C++. O custo que conta (receptor
+nativo amostrando 1× por vista) só aparece com o lambert da Frente A. A conferência do alvo fica
+para o aceite final do R1, como manda o PRD.
+
+### O que ficou pendente
+
+- **Paridade da amostragem nativa (parte 1) e o plantado `?nativeShadowShift=1`**: dependem de um
+  receptor nativo (o lambert da Frente A). Nesta branch nenhum modelo nativo recebe sombra (o
+  `three` não sombreia o `MeshBasic`). Rodar no checkpoint pós-merge da A:
+  `check-stage … --flag '&nativeRenderer=1'` PASS e `&nativeShadowShift=1` FAIL.
+- Causa exata do crash ao redesenhar o mapa à noite (só acontece forçando: o jogo não redesenha
+  à noite).
+- Mapa próprio para quando o `three` não criar o dele (R1.6), ver Consequências.
 
 ## Escopo
 
@@ -127,11 +192,10 @@ Chamado pelo bloco no `update`, antes de escrever os parâmetros:
 
 ## Testes
 
-- Vitest (`tests/render/native/shadow*.test.ts`):
-  - porte em TS do PCFSoft (`shadow/pcfSoft.ts`), que é a referência do WGSL, contra casos
-    de resposta conhecida: mapa todo atrás (1), todo à frente (0), meia borda, fora do
-    frustum (1), `intensity`;
-  - o WGSL do bloco contém a mesma sequência de 9 grupos;
+- Vitest (`tests/render/native/shadow.test.ts`):
+  - o WGSL do bloco tem as 16 comparações e a mistura por `intensity` da referência (o porte
+    em TS do PCFSoft previsto no desenho saiu: só provaria a si mesmo, e a prova da fórmula é a
+    paridade no host);
   - bloco: parâmetros escritos da luz, `enabled = 0` em cada condição, `version` sobe quando
     a textura troca, `updateMatrices` chamado só no quadro de redesenho;
   - passe: decisão de redesenho (`needsUpdate`, `autoUpdate`, troca de braço), devolução ao
