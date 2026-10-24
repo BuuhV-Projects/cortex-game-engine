@@ -319,6 +319,7 @@ add_executable(cortex_host_tests
   tests/blit_test.cpp
   tests/raycast_test.cpp
   tests/raycast_parity_test.cpp
+  tests/window_size_test.cpp
   src/physics/raycast/triangle_bvh.cpp
   src/physics/raycast/instance_set.cpp
   src/physics/raycast/raycast_world.cpp

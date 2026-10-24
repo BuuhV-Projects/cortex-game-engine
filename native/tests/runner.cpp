@@ -12,6 +12,7 @@ void testRaycastInstanciasEPodaPorEntrada();
 void testRaycastRecusaIndiceForaDoBuffer();
 void testRaycastBateComOGoldenDoJs();
 void testFormatFromString();
+void testWindowSizeParse();
 void testGcGenerationFromName();
 void testGcTotalsSeparateGenerations();
 void testPassTimingIgnoresSlotsBeyondUsed();
@@ -88,6 +89,7 @@ void testGeometryRegistry();
 
 int main() {
   tests::testFormatFromString();
+  tests::testWindowSizeParse();
   tests::testFormatToStringRoundtrip();
   tests::testBc7Math();
   tests::testAppendPerfLog();
