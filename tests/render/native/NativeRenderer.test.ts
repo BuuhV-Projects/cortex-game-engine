@@ -123,7 +123,7 @@ describe('NativeRenderer (R1.1, SPEC-0495)', () => {
 
   it('refuses what R1.1 does not draw, and the reason is cached until the material changes', () => {
     const t = fakeHost();
-    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const nr = new NativeRenderer(t.host as never, t.bridge, [unlitModel], null);
     const lambert = new Mesh(new BoxGeometry(), new MeshLambertMaterial());
     const transparent = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ transparent: true, premultipliedAlpha: true }));
     frame(nr);
@@ -406,7 +406,7 @@ describe('NativeRenderer core (R1.4, SPEC-0555)', () => {
     const before = t.calls.writes.length;
     frame(nr);
     nr.take(mesh, mesh.material, geo);
-    expect(t.calls.writes.length - before).toBe(1 + 1); // view block + our position buffer
+    expect(t.calls.writes.length - before).toBe(1 + 1 + 1); // view block + lights block (R1.2) + our position buffer
   });
 
   it('unlit: alphaTest discards after opacity, its value is in the params block', () => {
