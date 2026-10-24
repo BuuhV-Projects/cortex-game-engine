@@ -1,7 +1,7 @@
 # SPEC-0505 — R0 do renderer nativo: censo, WGSL de referência, galeria e linha de base
 
 **Data:** 2026-10-24
-**Status:** em implementação
+**Status:** **implementado e medido** (2026-10-24) — critério de aceite atingido; ver "Resultado"
 
 Marco R0 do PRD-0466 (ADR-0465). Só instrumentos: nada muda no render. O R0 diz, para o
 DDD 61, quanto o renderer próprio precisa cobrir, de onde vem a fórmula de cada modelo e
@@ -123,6 +123,50 @@ na linha de base).
 - `tests/render/native/RendererClassifier.test.ts`: cada modelo, cada recusa com motivo,
   features, a exceção da casca de contorno, `colorWrite` falso = `skip`.
 - `tests/native/censusReport.test.ts`: agregação de eventos de um trace sintético.
+
+## Resultado (2026-10-24)
+
+Engine `ea10181e` (+ instrumentos), host compilado na worktree, DDD 61 `e2be01c`, 1920×1080,
+15 rodadas, **todas VÁLIDAS** (`.cortex/renderer-r0/`).
+
+**Achado que invalidou a 1ª tentativa:** o host do checkout principal
+(`native/build`, 2026-10-09) não tem `worldContactPairsWith` (SPEC-0393, 22/10); o export do
+DDD 61 com ele morre no 1º tick (`TypeError` em `hasContact`, 0 amostras). Toda frente que
+exporta precisa do host da própria worktree — é o que o `setup-worktree.sh` (SPEC-0525) garante.
+
+### Censo (walk nos 4 pontos, drive no Helio; média por amostra de 5 s)
+
+| ponto | objetos | cobertos | cobertura | `node:colorNode` | `colorNode+normalNode+positionNode` | skip |
+| --- | --- | --- | --- | --- | --- | --- |
+| Setor O | 136,8 | 121,0 | 89,1% | 13,8 | 1,0 | 1,0 |
+| Centro | 132,1 | 115,1 | 87,8% | 14,0 | 2,0 | 1,0 |
+| Comercial | 127,1 | 110,0 | 87,3% | 13,5 | 2,5 | 1,0 |
+| Águas Claras | 102,1 | 87,1 | 85,3% | 14,0 | 1,0 | 0 |
+| Helio (drive) | 114,4 | 98,2 | 86,6% | 14,2 | 1,0 | 1,0 |
+
+`unclassified` = 0 por construção. Maiores classes cobertas (Setor O): `lambert+emissiveMap+fog+map`
+20,6; `standard+fog+map` 14,0; `standard+doubleSide+fog+map` 13,7; `lambert+fog+vertexColors` 9,9;
+`lambert+fog+instanced+map+receiveShadow` 9,0. As únicas recusas são nós TSL do jogo: as tintas
+(`playerSkin`, `parkedCars`, `shopping-gente`) e o `peopleGpu` — o escopo do R1.5.
+
+### WGSL de referência
+
+64 estados de shader por ponto, com classe no cabeçalho: `unlit` 24, `lambert` 17, `standard` 13
+por ponto, mais `ShadowMaterial` do `three` (4, profundidade do mapa de sombra — vira o passe de
+sombra C++ no R1.3), `outputColorTransform` (1, saída do `three`), tintas TSL (4) e um
+`MeshBasicMaterial` com `CustomBlending` fora da cena do jogo (1, a confirmar: provável UI de
+runtime, R2).
+
+### Galeria (caso de resposta conhecida)
+
+A × A′: `maxChannelDiff` 0 em 1920×1080. Com `?galleryPlant=1` (8/255): o comparador acusa 0,80%
+dos pixels, pior pixel na esfera plantada. Com 2/255 o plantio virava 1 depois do tone mapping e
+sumia abaixo do `--delta 2` — por isso 8/255.
+
+### Linha de base
+
+Tabela no PRD-0466 ("Linha de base — medida no R0"). Ruído do A/A com 1 réplica: render até
+0,87 ms, `% > 33 ms` até 6,5 pp.
 
 ## Riscos
 

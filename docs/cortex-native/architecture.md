@@ -645,6 +645,15 @@ vendorizar por tamanho/licença/integração com o VS):
 
 ## Validar uma mudança no export (rodar, logar, capturar)
 
+**Atalho de frente (SPEC-0525):** `native/scripts/setup-worktree.sh <wt>` prepara a worktree
+(deps, junção só de `third_party`, **host compilado da própria worktree** — o do checkout
+principal pode estar velho: o de 2026-10-09 derruba o DDD 61 no 1º tick, SPEC-0505) e
+`native/scripts/check-stage.sh <wt> <tag> [--flag '&k=v']` faz a checagem inteira de uma
+sub-etapa do renderer nativo (export, paridade na mesma execução na galeria
+`native/fixtures/material-gallery` e no jogo de dia e de noite, fumaça com autopiloto) e devolve
+**uma linha** de veredito. Censo do que o renderer nativo cobriria: `?rendererCensus=1`
+(+ `native/scripts/perf/census-report.mjs`); WGSL de cada estado do `three`: `?wgslDump=1`.
+
 **⚠️ O export NÃO usa o `vendor/` do jogo.** O `bundle.mjs` resolve
 `cortex-game-engine` para o **`src/` do engine do repo de onde o script roda**
 (`resolve('src/index-runtime.ts')`). Consequências:

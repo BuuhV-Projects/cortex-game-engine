@@ -1,7 +1,7 @@
 # PRD 0466 - Renderer nativo próprio no export (o `three` sai do caminho de render)
 
 **Data:** 2026-10-24
-**Status:** **PLANEJADO** — decisão no ADR-0465; nenhum marco iniciado. Frente B2 do PRD-0009.
+**Status:** **EM ANDAMENTO** — decisão no ADR-0465; **R0 concluído** (2026-10-24, SPEC-0505); próximo: R1.1 (SPEC-0495). Frente B2 do PRD-0009.
 
 Decisão do usuário (2026-10-24): cortar o `three` do render do export e ter um renderer
 próprio em C++, "mesmo que seja uma tarefa complexa e demorada". Só no export; o Studio
@@ -27,20 +27,24 @@ kart-racer e crash-racer ficaram fora do escopo por decisão do usuário (2026-1
    no nível do controle;
 4. `?nativeRenderer=0` volta ao `three` (até o R5), e o Studio segue idêntico.
 
-## Linha de base (main `20a5d6b3`, DDD 61 `e2be01c`)
+## Linha de base — medida no R0 (SPEC-0505), controle de todos os marcos
 
-Kit SPEC-0382, export release, RS1 + `DynamicLighting` + filtro de sombra compartilhado
-ligados (SPEC-0445, 2 réplicas):
+Engine `ea10181e` (main + instrumentos do R0, desligados), **host compilado na worktree**, DDD 61
+`e2be01c`, **1920×1080** (SPEC-0515), RS1 + `DynamicLighting` + filtro de sombra compartilhado
+ligados por padrão. A/A (o mesmo export nos dois braços, 1 réplica cada), autopiloto; média dos
+dois braços. GPU = mediana do `gpu-work` por quadro.
 
-| ponto | render | quadro med | p95 | p99 | % > 33 ms |
-| --- | --- | --- | --- | --- | --- |
-| Comercial (walk) | 12,22 | 26,2 | 34,4 | 42,7 | 8,1% |
-| Centro (walk) | 10,97 | 21,7 | 28,8 | 39,7 | 1,5% |
-| Helio (drive) | 10,59 | 21,6 | 29,5 | 36,6 | 2,1% |
+| ponto | render | quadro med | p95 | p99 | % > 33 ms | GPU | draws |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Setor O (walk) | 11,55 | 22,7 | 30,6 | 39,3 | 3,8% | 0,86 | 166 |
+| Centro (walk) | 11,95 | 22,9 | 36,0 | 40,2 | 8,6% | 0,92 | 162 |
+| Comercial (walk) | 12,77 | 26,7 | 37,5 | 43,2 | 12,1% | 1,30 | 162 |
+| Águas Claras (walk) | 14,01 | 28,3 | 42,5 | 55,0 | 23,3% | 1,00 | 166 |
+| Helio (drive) | 9,92 | 20,2 | 28,2 | 42,8 | 1,7% | 0,80 | 171 |
 
-Full HD (SPEC-0455, walk, Comercial): render 12,3 ms (CPU igual ao 1280×720); GPU
-**~0,9–1,3 ms/quadro** com o alvo de 3840×2160. O render é CPU no Hermes. O R0 refaz esta
-tabela nos 4 pontos + drive, nas duas resoluções, como controle de todos os marcos.
+Ruído do A/A (diferença entre braços idênticos): render 0,15–0,87 ms; p99 até 9,4 ms;
+`% > 33 ms` até 6,5 pp (Comercial). Por isso o aceite usa 2 réplicas intercaladas. O render é
+CPU no Hermes: a GPU fica em ~0,8–1,3 ms por quadro com o alvo de 3840×2160.
 
 ## Levantamento: o que cada jogo usa do `three` hoje
 
@@ -159,7 +163,7 @@ defeito do instrumento até prova em contrário (regra da SPEC-0435): conferir l
 N×N+2**, e no máximo 0,01% dos pixels acima do ruído; galeria de materiais com o mesmo
 limiar.
 
-### R0 — Instrumentos, censo e WGSL de referência (sem renderer)
+### R0 — Instrumentos, censo e WGSL de referência (sem renderer) — **CONCLUÍDO** (2026-10-24, SPEC-0505)
 
 - **Censo** `?rendererCensus=1`: por material vivo, o modelo + features que o tradutor daria
   ou a recusa com motivo; por quadro, draws por classe; superfície do renderer chamada (inclui
@@ -173,6 +177,7 @@ limiar.
   numa recusa com motivo) nos 4 pontos; galeria capturada nos dois caminhos com o comparador
   acusando uma diferença plantada (o instrumento é validado num caso de resposta conhecida).
 - Interruptor: o próprio `?rendererCensus` (desligado).
+- **Resultado:** censo 100% classificado; cobertura dos modelos fixos 85–89% nos 5 pontos; as recusas são só nós TSL do jogo (`colorNode` ~14/amostra: tintas do player e dos carros; `colorNode+normalNode+positionNode` 1–2,5: `peopleGpu`) — exatamente o que o R1.5 cobre. Galeria: A×A′ = 0, plantio acusado. Linha de base na tabela acima. Detalhes na SPEC-0505.
 
 ### R1 — O quadro 3D do DDD 61 no renderer próprio (o menor caminho com imagem igual)
 
