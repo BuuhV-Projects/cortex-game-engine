@@ -12,7 +12,8 @@
  * (`light_storage.cpp:1279`). Here: the same filter, with the two references
  * created once per `LightShadow` — the same math, so the same image.
  *
- * Host only, behind `?sharedShadowFilter=0|1` until the A/B (SPEC-0445).
+ * Host only, on by default since the A/B (SPEC-0445: render -1.6/-1.9 ms walking,
+ * -3.0 ms driving); `?sharedShadowFilter=0` turns it off.
  */
 import { PCFShadowMap, PCFSoftShadowMap, type LightShadow, type Texture } from 'three';
 import { ShadowNode } from 'three/webgpu';

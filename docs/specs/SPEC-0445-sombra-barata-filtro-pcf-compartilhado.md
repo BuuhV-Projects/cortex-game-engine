@@ -1,7 +1,7 @@
 # SPEC-0445 — Sombra barata no export: filtro PCF com uniformes compartilhados
 
 **Data:** 2026-10-24
-**Status:** em implementação (atrás de interruptor até o A/B com autopiloto)
+**Status:** **ligado por padrão no host** (A/B abaixo); `?sharedShadowFilter=0` desliga
 
 Decisão do usuário (2026-10-23): a sombra do sol do DDD 61 **fica** (vira opção de
 qualidade no futuro); 3,2 ms de CPU por uma sombra direcional simples é defeito
@@ -89,3 +89,21 @@ A/B com autopiloto (walk no Comercial e no Centro; um par dirigindo), 2
 réplicas: render e % > 33 ms melhores, sem regressão; paridade com a sombra
 visível; e o mesmo par sombra × `?sombra=0` repetido para mostrar quanto do
 custo da sombra sobrou.
+
+## Resultado (2026-10-24)
+
+Verificação do mecanismo (censo temporário, Comercial): grupos compartilhados
+conferidos por quadro **21 → 5** (~1,7 → ~0,32 ms). Paridade por construção: o
+WGSL dos estados receptores é idêntico (Standard byte a byte; Lambert só com dois
+campos do struct do UBO "render" em outra ordem — os nós compartilhados nascem
+antes e o `three` ordena por id; o shader lê por nome).
+
+A/B (kit SPEC-0382, intercalado, 2 réplicas, 12/12 rodadas válidas):
+
+| ponto | render | quadro med | p95 | p99 | % > 33 ms |
+| --- | --- | --- | --- | --- | --- |
+| Comercial (walk) | 14,13 → 12,22 (**−1,91**) | 27,4 → 26,2 | 37,8 → 34,4 | 42,8 → 42,7 | 13,8% → 8,1% |
+| Centro (walk) | 12,61 → 10,97 (**−1,64**) | 23,8 → 21,7 | 31,2 → 28,8 | 33,9 → 39,7 (1 amostra) | 2,0% → 1,5% |
+| Helio (drive) | 13,63 → 10,59 (**−3,04**) | 25,1 → 21,6 | 37,1 → 29,5 | 50,1 → 36,6 | 14,4% → 2,1% |
+
+No drive, a réplica A r1 saiu alta (render 15,5); o par r2 sozinho ainda dá −1,2.

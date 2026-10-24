@@ -164,7 +164,7 @@ export class Renderer {
     // Lights without shadow batched per type, Godot-style (SPEC-0435 (d′)); host only.
     if (isNativeHost() && dynamicLightingRequested(true)) installDynamicLighting(this._renderer as unknown as { lighting: unknown });
     // Receiving the shadow stops splitting the shared "render" group per material (SPEC-0445); host only.
-    if (isNativeHost() && sharedShadowFilterRequested(false)) installSharedShadowFilter();
+    if (isNativeHost() && sharedShadowFilterRequested(true)) installSharedShadowFilter();
     setKtx2Renderer(this._renderer);
     this._renderer.setSize(width, height);
 
