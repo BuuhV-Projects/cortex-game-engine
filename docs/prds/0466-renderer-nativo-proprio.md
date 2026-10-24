@@ -248,6 +248,8 @@ Teto esperado: ~2–4 ms (ADR-0465, Contexto). Abaixo de 5 ms, o critério já p
 - JIT no host (proibido no Xbox).
 - Recursos que nenhum jogo-alvo usa (espelho, CubeCamera, sprites, morph, `BatchedMesh`, decal).
 - Clearcoat, sheen, transmission, iridescence: recusa até um jogo-alvo precisar e o usuário decidir.
+  **Decidido pelo usuário em 2026-10-24: recusar por enquanto** (vale para R3b/R3c: recusa conta como aceita para esses materiais).
+- **Início do R0: decidido pelo usuário em 2026-10-24 — só depois de o RenderingServer (ADR-0404) fechar** os itens restantes, para não disputar a máquina de medição.
 
 ## Pendências levadas ao PRD-0009
 
