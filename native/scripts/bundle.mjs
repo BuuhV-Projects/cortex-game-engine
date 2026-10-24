@@ -4,7 +4,8 @@
 //      `async function` mas não async arrow) — target es2018.
 //   2. babel plugin-transform-classes: remove a sintaxe `class` inteira
 //      (o runtime Hermes da Microsoft não tem classes — mesmo motivo pelo
-//      qual o React Native transpila classes com Babel).
+//      qual o React Native transpila classes com Babel). Opções em
+//      babel-hermes.mjs; leitura `super.x` com receptor certo: ADR-0465.
 // Uso: node native/scripts/bundle.mjs <outfile> [gameMainTs]
 //   sem gameMainTs → bundla o smoke (js/src/main.js)
 //   com gameMainTs → bundla um JOGO REAL (ex.: D:/jogos/teste4/main.ts):
@@ -13,6 +14,7 @@
 //     await do main.ts (iife não aceita TLA).
 import { build } from 'esbuild';
 import { transformAsync } from '@babel/core';
+import { hermesBabelOptions } from './babel-hermes.mjs';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import path, { resolve as resolvePath, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -147,30 +149,6 @@ await build({
 });
 
 const bundled = await readFile(outfile, 'utf8');
-const result = await transformAsync(bundled, {
-  // Classes E arrows no MESMO passe do Babel: se o esbuild rebaixar arrows
-  // antes, ele iça `var _this = this` pro topo de constructors de subclasse
-  // e o transform de classes acusa `this` antes do super(). loose: herança
-  // por protótipo direto, sem Reflect.construct (modo spec quebra no Hermes).
-  // Arrows precisam ser rebaixadas porque o Hermes não tem async arrow.
-  plugins: [
-    ['@babel/plugin-transform-classes', { loose: true }],
-    '@babel/plugin-transform-arrow-functions',
-    // ⚠️ OBRIGATÓRIO: o Hermes NÃO implementa o binding POR ITERAÇÃO do `let` em
-    // loop. Uma closure criada dentro de `for (let i…)` enxerga o valor FINAL de
-    // `i`, não o da sua iteração (provado no host: `for (let k=0;k<3;k++)
-    // probes.push(() => k)` devolve `3,3,3` em vez de `0,1,2`). Isso corrompe
-    // silenciosamente QUALQUER código com closure em loop — nosso, do jogo ou de
-    // dependência. Foi o que apagou a iluminação no export: o CSM do three indexa
-    // `this._shadowNodes[i]` dentro de um callback e recebia `[4]` → `undefined`.
-    // O Babel gera a captura correta, então o transform CONSERTA o Hermes aqui.
-    // Ver ADR-0146.
-    '@babel/plugin-transform-block-scoping',
-  ],
-  cwd: ENGINE_ROOT, // resolução dos plugins independe do cwd do chamador
-  compact: true,
-  babelrc: false,
-  configFile: false,
-});
+const result = await transformAsync(bundled, hermesBabelOptions(ENGINE_ROOT));
 await writeFile(outfile, result.code);
 console.log(`bundle ok (classes transpiladas): ${outfile}`);

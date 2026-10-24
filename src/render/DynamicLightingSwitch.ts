@@ -15,9 +15,7 @@
  * night parity 6 px of 921,600); `?dynamicLighting=0` turns it off. The Studio
  * keeps the default lighting.
  */
-import type { Light } from 'three';
 import { DynamicLighting } from 'three/examples/jsm/lighting/DynamicLighting.js';
-import DynamicLightsNode from 'three/examples/jsm/tsl/lighting/DynamicLightsNode.js';
 import { debug } from '../core/debug.js';
 import { queryFlagRequested } from './TransformOnlyRefresh.js';
 import { mainPassArm } from './MainPassArm.js';
@@ -34,27 +32,6 @@ const MAX_POINT_LIGHTS = 8;
 const MAX_SPOT_LIGHTS = 8;
 const MAX_HEMISPHERE_LIGHTS = 1;
 
-/**
- * `DynamicLightsNode.hasLights` reads `super.hasLights`; the export's Babel
- * compiles that to `LightsNode.prototype.hasLights`, so the getter runs with the
- * prototype as `this` and throws (`_lights` undefined): the light node fails to
- * build, materials do not compile and objects silently stop drawing — measured
- * as a fake -6 ms. Same answer, no `super`.
- */
-class HostDynamicLightsNode extends DynamicLightsNode {
-  override get hasLights(): boolean {
-    const self = this as unknown as { _lights: readonly Light[]; _dataNodes: ReadonlyMap<string, unknown> };
-    return self._lights.length > 0 || self._dataNodes.size > 0;
-  }
-}
-
-/** `DynamicLighting` that builds {@link HostDynamicLightsNode}. */
-class HostDynamicLighting extends DynamicLighting {
-  override createNode(lights: Light[] = []): HostDynamicLightsNode {
-    return new HostDynamicLightsNode(this.options).setLights(lights) as HostDynamicLightsNode;
-  }
-}
-
 /** On? Default of the caller (the host passes `true`); `?dynamicLighting=0` turns it off. */
 export function dynamicLightingRequested(fallback: boolean): boolean {
   return queryFlagRequested(QUERY_KEY, fallback);
@@ -66,7 +43,7 @@ const lightings: { base: unknown; dynamic: unknown } = { base: null, dynamic: nu
 /** Swaps the renderer's lighting for `DynamicLighting`. Call before the first render. */
 export function installDynamicLighting(renderer: { lighting: unknown }): void {
   lightings.base = renderer.lighting;
-  renderer.lighting = lightings.dynamic = new HostDynamicLighting({
+  renderer.lighting = lightings.dynamic = new DynamicLighting({
     maxDirectionalLights: MAX_DIRECTIONAL_LIGHTS,
     maxPointLights: MAX_POINT_LIGHTS,
     maxSpotLights: MAX_SPOT_LIGHTS,
