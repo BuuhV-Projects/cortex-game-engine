@@ -148,6 +148,18 @@ if (plant) {
   const first = scene.getObjectByName(entries[0]![0]) as Mesh;
   (first.material as MeshBasicMaterial).color.r += GALLERY_PLANT_DELTA;
 }
+// `?galleryPlant=flicker` (SPEC-0525): the plant flips on every render, so it alternates like the
+// two arms of ?parityFreeze and the same-run verdict must FAIL. onBeforeRender runs while frozen.
+if (typeof location !== 'undefined' && location.search.includes('galleryPlant=flicker')) {
+  const first = scene.getObjectByName(entries[0]![0]) as Mesh;
+  const color = (first.material as MeshBasicMaterial).color;
+  let on = false;
+  first.castShadow = false; // the shadow pass would call onBeforeRender too and flip it back
+  first.onBeforeRender = () => {
+    on = !on;
+    color.r += on ? GALLERY_PLANT_DELTA : -GALLERY_PLANT_DELTA;
+  };
+}
 
 game.camera.position.set(0, 3.2, 4.5);
 game.camera.lookAt(new Vector3(0, 0, -1.2));
