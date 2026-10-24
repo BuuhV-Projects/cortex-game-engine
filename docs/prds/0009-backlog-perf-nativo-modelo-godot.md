@@ -264,8 +264,10 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       render −1,4 (Comercial) / −1,7 ms (Centro) andando, paridade noturna 6 px de 921.600. Teto de
       tirar as 8 `SpotLight` era −2,7 a −3,2: sobra ~1,5 ms no UBO de render por estado (o Godot usa
       um buffer único; aqui exigiria mexer no sistema de nós do `three`). Origem: SPEC-0435.
-- [ ] **Sombra do sol ainda custa −3,2 ms de render andando com a (d′) ligada** (quadros > 33 ms 22% →
-      5% sem ela). Decisão de produto do usuário. Origem: SPEC-0435.
+- [x] (`ef530c55`, SPEC-0445) **Sombra do sol barata: de ~3,2 para ~0,4 ms de render andando.** Causa: o
+      filtro PCF/PCF soft do `three` cria os uniformes `mapSize`/`radius` dentro do corpo do `Fn`, um por
+      material receptor, e cada estado receptor perdia o grupo "render" compartilhado (21 → 5 grupos por
+      quadro com o filtro compartilhado). Ganho: −1,6/−1,9 ms andando, −3,0 ms dirigindo. A sombra fica.
 - [ ] **(a) regravar receita no lote da b.1: desligada por padrão até ganho medido; remedir sobre a
       `DynamicLighting`** (A/B: Comercial −0,74, Centro +0,20 com quadros > 33 ms 8,9% → 13%;
       `?batchRecapture=1` liga). Origem: SPEC-0435.
@@ -308,12 +310,11 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       Confirmado pelos contadores do braço do ADR-0404: 1 render da cena por quadro + o de sombra
       (~0,01/quadro parado no Setor O); no RenderingServer ele vira o RS4.
 
-- [ ] **(PRIORIDADE subiu em 2026-10-24) Resolução das medições × resolução real.** O usuário joga em Full HD
-      (1920×1080), mas as rodadas usam janela de 1280×720. Com o supersampling 2×, em Full HD o passe principal
-      iria a ~3840 px de largura (quase 4K): o custo de GPU pode estar subestimado. Destrava: medir também em
-      1920×1080 e decidir o fator de supersampling por resolução. Item original: **Passe principal do export desenha em 2560 px de largura (o dobro da janela de 1280)** —
-      supersampling; custo de GPU. Medir antes de mexer: no ciclo anterior a GPU não era o teto
-      (0,3–0,4 ms/quadro), mas o jogo mudou. Origem: frente B2, investigação do render duplo.
+- [x] (`e93dd9ae`, SPEC-0455; prioridade subiu em 2026-10-24) **Resolução das medições × resolução real:
+      medida.** `CORTEX_WINDOW_SIZE` no host e `--window` no kit. Em 1920×1080 o alvo vira 3840×2160 e a GPU
+      sobe de ~0,6–0,8 para ~0,9–1,3 ms/quadro; o render (CPU) não muda (~12,3 ms). **A GPU não é o gargalo em
+      Full HD** nesta máquina, então não há por que reduzir o fator de supersampling por resolução agora.
+      Origem: frente B2.
 
 - [x] (medido com autopiloto: −2,5 a −4,0 ms de render, quadros >33 ms 19,0%→4,8% andando no Setor O;
       sonda: `rpEach` 5,49→3,69 ms, +~1,2 ms fora das fases) **Origem do custo CONTÍNUO da sombra do sol** (−1,6 a −2,4 ms de render com `?sombra=0`, parado):

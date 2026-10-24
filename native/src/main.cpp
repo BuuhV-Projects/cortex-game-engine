@@ -11,6 +11,7 @@
 #include <string>
 
 #include "core/app_window.h"
+#include "core/window_size.h"
 #include "core/crash_handler.h"
 #include "core/frame_timing.h"
 #include "webgpu/pass_timing.h"
@@ -51,6 +52,10 @@
 #include "webgpu/render_parity_capture.h"
 #include "webgpu/bloom.h"
 #include "webgpu/splash.h"
+
+// Janela do modo de desenvolvimento quando CORTEX_WINDOW_SIZE não diz outra coisa.
+constexpr int kDefaultWindowWidth = 1280;
+constexpr int kDefaultWindowHeight = 720;
 
 namespace {
 
@@ -244,8 +249,11 @@ int main(int argc, char** argv) {
 
   HostGpu gpu;
   // Tamanho só do modo janela (CORTEX_WINDOWED); em fullscreen usa a
-  // resolução do display.
-  SDL_Window* window = core::createAppWindow(&gpu, "cortex-native (M0)", 1280, 720);
+  // resolução do display. CORTEX_WINDOW_SIZE=WxH mede em Full HD (SPEC-0455).
+  const core::WindowSize windowSize =
+      core::parseWindowSize(SDL_getenv("CORTEX_WINDOW_SIZE"), {kDefaultWindowWidth, kDefaultWindowHeight});
+  SDL_Window* window =
+      core::createAppWindow(&gpu, "cortex-native (M0)", windowSize.width, windowSize.height);
   if (!window) return 1;
 
   {

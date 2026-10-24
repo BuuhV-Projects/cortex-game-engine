@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # One measurement round of a native export (SPEC-0382), under the shared lock.
 # Usage: round.sh --exp <exportDir> --out <runDir> (--spawn <point> [--extra '&k=v'] | --query '?raw')
-#                 [--secs 135] [--owner <name>] [--autopilot <profile>]
+#                 [--secs 135] [--owner <name>] [--autopilot <profile>] [--window <WxH>]
 # --autopilot: the engine's virtual Xbox controller plays <profile> (SPEC-0414: walk, drive).
+# --window: window size (SPEC-0455, e.g. 1920x1080); default 1280x720. Draw target = window × CORTEX_RENDER_SCALE.
 # Prints the summarize line of the round at the end.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,7 +21,7 @@ readonly PWSH_TIMEOUT_S=30
 # Lock lease = round length + launch/kill/move overhead.
 readonly ROUND_LEASE_MARGIN_S=120
 
-exp=""; out=""; spawn=""; extra=""; query=""; secs=$DEFAULT_SECS; owner="round"; autopilot=""
+exp=""; out=""; spawn=""; extra=""; query=""; secs=$DEFAULT_SECS; owner="round"; autopilot=""; window=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --exp) exp="$2"; shift 2 ;;
@@ -31,11 +32,12 @@ while [ $# -gt 0 ]; do
     --secs) secs="$2"; shift 2 ;;
     --owner) owner="$2"; shift 2 ;;
     --autopilot) autopilot="$2"; shift 2 ;;
+    --window) window="$2"; shift 2 ;;
     *) echo "argumento desconhecido: $1" >&2; exit 2 ;;
   esac
 done
 if [ -z "$exp" ] || [ -z "$out" ] || { [ -z "$spawn" ] && [ -z "$query" ]; }; then
-  echo "uso: round.sh --exp <exportDir> --out <runDir> (--spawn <ponto> [--extra '&k=v'] | --query '?cru') [--secs N] [--owner nome] [--autopilot perfil]" >&2
+  echo "uso: round.sh --exp <exportDir> --out <runDir> (--spawn <ponto> [--extra '&k=v'] | --query '?cru') [--secs N] [--owner nome] [--autopilot perfil] [--window WxH]" >&2
   exit 2
 fi
 # Sections (cpuAvg.world/render) need cortexDebug=perf (engine); DDD 61 since ae5caef only
@@ -73,8 +75,9 @@ rm -f "$exp/perf-log.txt" "$exp/perf-trace.jsonl" "$exp/error_log.txt"
 rm -rf "$(cygpath -u "$APPDATA")/$id/saves"
 
 export CORTEX_WINDOWED=1 CORTEX_WINDOW_OFFSCREEN=1 CORTEX_FRAME_TIMING=1 CORTEX_VRAM_LOG=1
+if [ -n "$window" ]; then export CORTEX_WINDOW_SIZE="$window"; else unset CORTEX_WINDOW_SIZE; fi
 export CORTEX_LAUNCH_QUERY="$query"
-echo "query=$query exp=$exp secs=$secs start=$(date -Iseconds)" > "$out/meta.txt"
+echo "query=$query exp=$exp secs=$secs window=${window:-1280x720} renderScale=${CORTEX_RENDER_SCALE:-2.0} start=$(date -Iseconds)" > "$out/meta.txt"
 # App Control: the launcher only starts through PowerShell (and never from Temp).
 # Start-Process with redirection launches with handle inheritance: a pipe from this call
 # (e.g. $(pwsh ...)) would be held open by the game and block until it exits. So the
