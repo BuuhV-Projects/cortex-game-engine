@@ -126,8 +126,8 @@ host (C++) →  native/src/render/server/: RIDs, cull (espelho + main_pass_culle
 | --- | --- | --- |
 | nó criado/removido, transform, visibilidade | já existem (`appendNodes`/`removeNode`, `update`, gancho de `visible`) | espelho |
 | instância (mesh + material + flags) | malha entra na cena / troca de geometria ou material | comando `instanceSet` |
-| geometria | 1º uso; `attribute.version` mudou (partículas, marcas de pneu, chuva) | upload parcial pelo host a partir do `ArrayBuffer` do atributo |
-| textura | 1º uso; `texture.version` (canvas 2D, `DataTexture`) | upload pelo host (pixels já estão no host: stb, KTX2, canvas) |
+| geometria | 1º uso; `attribute.version` mudou (partículas, marcas de pneu, chuva) | `GPUBuffer` criado/reescrito pela fachada com o shim WebGPU (as mesmas chamadas do `three`) e entregue ao C++ por handle (SPEC-0495) |
+| textura | 1º uso; `texture.version` (canvas 2D, `DataTexture`) | idem: `GPUTexture` pelo shim (reaproveita KTX2, canvas, `ImageBitmap`) e entregue por handle |
 | parâmetro de material | valor mudou | **conferência por material** (não por objeto) contra um instantâneo do bloco de parâmetros do modelo, gerado da mesma tabela que o struct WGSL; ganchos só se a conferência aparecer como gargalo |
 | luzes, névoa, câmera, ambiente | por vista, por quadro | um bloco de cena + um buffer de luzes por vista (o Godot: `render_scene_data_rd.cpp:70-74`) |
 | `InstancedMesh` | `instanceMatrix.version`/`count`, atributos extras por instância | `setInstances` já existe (sombra); estende a atributos extras (`instanceColor`, `instancePaint`, os 7×vec4 das pessoas) |

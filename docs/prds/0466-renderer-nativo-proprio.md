@@ -177,7 +177,7 @@ o próprio interruptor para o A/B dela), com cobertura medida pelo censo:
 
 | etapa | o quê | critério da etapa |
 | --- | --- | --- |
-| R1.1 | servidor + RIDs + fachada `NativeRenderer` + geometria/textura próprias + `pipeline_cache` + modelo **unlit** (céu, sinais, chuva) + emissão no ponto do RS1 | testes verdes; galeria unlit na paridade; A/B walk sem regressão; zero JS por instância limpa (contador) |
+| R1.1 | servidor + RIDs + fachada `NativeRenderer` + geometria/textura próprias (criadas pelo shim WebGPU no JS, entregues por handle) + `pipeline_cache` + modelo **unlit** opaco (céu, sinais) + emissão no ponto do RS1 — desenho na SPEC-0495 | testes verdes; galeria unlit na paridade; A/B walk sem regressão com a cobertura relatada; JS por instância limpa ≤ a oferta do RS1 (zero só na R1.6) |
 | R1.2 | **lambert** e **standard** (com `specular`/`ior`), névoa, emissivo, tone mapping/espaço de cor; bloco de cena + buffer de luzes (dir + hemi + 8 spots) | galeria lambert/standard na paridade, dia e noite; A/B: render cai ≥ draws cobertos × 40 µs (sanidade) |
 | R1.3 | sombra: mapa único com `needsUpdate` no passe C++ + material de sombra compartilhado + amostragem **PCFSoft** (o filtro do DDD 61) no lambert, parâmetros só no bloco de vista (SPEC-0475) | paridade da sombra no chão (Setor O, fim de tarde); `?sombra=0` × ligada custa ≤ 0,3 ms de render |
 | R1.4 | `InstancedMesh` (+ `instanceColor`/`instancePaint`), transparentes/aditivos ordenados pelo sort do `three`, `alphaTest`, `polygonOffset`, `renderOrder`, layers, partículas e marcas de pneu (buffer dinâmico) | paridade nos 4 pontos com coplanares (`interiores-*`) e transparentes; recusas do censo só em skinned/`peopleGpu`/tintas |
