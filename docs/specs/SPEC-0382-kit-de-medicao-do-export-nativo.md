@@ -96,3 +96,9 @@ o profiler do jogo só liga com `perf=1` na query (`main.ts` do jogo); sem ele o
 sem seções `cpuAvg` e o `validate.sh` reprova a rodada. A query padrão do `round.sh` passou
 a ser `?cortexDebug=perf&perf=1&systemProfile=1&spawn=<ponto><extra>` (parâmetro
 desconhecido é ignorado por quem não o usa).
+
+**Quarta correção (2026-10-24, decisão do usuário):** a base de medição é **1920x1080**.
+Os 1280x720 eram herança da janela fixa do host de antes da SPEC-0455. O `round.sh`
+(e, por consequência, o `ab.sh`) agora sempre exporta `CORTEX_WINDOW_SIZE`, com o padrão
+`1920x1080`. Pela SPEC-0515, nada abaixo de 1080p é medido; `--window` fica para
+resoluções maiores no futuro.

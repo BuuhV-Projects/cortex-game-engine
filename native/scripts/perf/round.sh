@@ -3,7 +3,8 @@
 # Usage: round.sh --exp <exportDir> --out <runDir> (--spawn <point> [--extra '&k=v'] | --query '?raw')
 #                 [--secs 135] [--owner <name>] [--autopilot <profile>] [--window <WxH>]
 # --autopilot: the engine's virtual Xbox controller plays <profile> (SPEC-0414: walk, drive).
-# --window: window size (SPEC-0455, e.g. 1920x1080); default 1280x720. Draw target = window × CORTEX_RENDER_SCALE.
+# --window: window size (SPEC-0455); default 1920x1080, the game resolution (SPEC-0515). Only for future
+# larger resolutions; nothing below 1080p is measured. Draw target = window × CORTEX_RENDER_SCALE.
 # Prints the summarize line of the round at the end.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,8 +21,10 @@ readonly CLOSE_WAIT_S=3
 readonly PWSH_TIMEOUT_S=30
 # Lock lease = round length + launch/kill/move overhead.
 readonly ROUND_LEASE_MARGIN_S=120
+# Measurement baseline is Full HD, the game resolution (user decision, SPEC-0515).
+readonly DEFAULT_WINDOW=1920x1080
 
-exp=""; out=""; spawn=""; extra=""; query=""; secs=$DEFAULT_SECS; owner="round"; autopilot=""; window=""
+exp=""; out=""; spawn=""; extra=""; query=""; secs=$DEFAULT_SECS; owner="round"; autopilot=""; window=$DEFAULT_WINDOW
 while [ $# -gt 0 ]; do
   case "$1" in
     --exp) exp="$2"; shift 2 ;;
@@ -75,9 +78,9 @@ rm -f "$exp/perf-log.txt" "$exp/perf-trace.jsonl" "$exp/error_log.txt"
 rm -rf "$(cygpath -u "$APPDATA")/$id/saves"
 
 export CORTEX_WINDOWED=1 CORTEX_WINDOW_OFFSCREEN=1 CORTEX_FRAME_TIMING=1 CORTEX_VRAM_LOG=1
-if [ -n "$window" ]; then export CORTEX_WINDOW_SIZE="$window"; else unset CORTEX_WINDOW_SIZE; fi
+export CORTEX_WINDOW_SIZE="$window"
 export CORTEX_LAUNCH_QUERY="$query"
-echo "query=$query exp=$exp secs=$secs window=${window:-1280x720} renderScale=${CORTEX_RENDER_SCALE:-2.0} start=$(date -Iseconds)" > "$out/meta.txt"
+echo "query=$query exp=$exp secs=$secs window=$window renderScale=${CORTEX_RENDER_SCALE:-2.0} start=$(date -Iseconds)" > "$out/meta.txt"
 # App Control: the launcher only starts through PowerShell (and never from Temp).
 # Start-Process with redirection launches with handle inheritance: a pipe from this call
 # (e.g. $(pwsh ...)) would be held open by the game and block until it exits. So the

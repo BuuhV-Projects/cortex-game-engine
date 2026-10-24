@@ -16,7 +16,7 @@ $K/export.sh <engineDir> <gameDir> D:/jogos/detetive-brasilia/.cortex/minha-fren
 # round: uma rodada (query ?cortexDebug=perf&perf=1&systemProfile=1&spawn=<ponto><extra>; perf=1 liga o profiler do DDD 61 desde o ae5caef), imprime a linha do resumo
 $K/round.sh --exp .../export-a --out .../runs/setorO-1 --spawn setorO [--extra '&k=0'] [--secs 135] [--owner frente]
 $K/round.sh --exp .../export-a --out .../runs/x --query '?cru'      # query inteira à mão
-$K/round.sh ... --window 1920x1080   # Full HD (SPEC-0455); o meta.txt registra janela e renderScale
+$K/round.sh ... --window 2560x1440   # padrão 1920x1080 = resolução do jogo (SPEC-0515); --window só p/ resolução MAIOR; meta.txt registra janela e renderScale
 # jogador em movimento (SPEC-0414): controle virtual do Xbox toca um perfil (walk = a pé; drive = carro, com &drive=1 no DDD 61)
 $K/round.sh --exp .../export-a --out .../runs/setorO-ap --spawn setorO --autopilot walk
 

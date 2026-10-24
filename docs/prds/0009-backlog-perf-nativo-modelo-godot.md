@@ -224,6 +224,11 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 - [ ] **Fila órfã ao parar um comando em segundo plano** (o shell externo morre, o `ab.sh`/fila e o
       `round.sh` seguem vivos). Hoje só documentado no README do kit; destrava: o `ab.sh` e o lock
       desistirem quando o processo raiz morrer. Origem: relato da B2.
+- [ ] **Tela cheia fora de um monitor 1080p não fica em 1920×1080**: a SPEC-0515 fixa 1080p como
+      resolução do jogo, mas a tela cheia usa a resolução do monitor (num 1440p/4K o jogo roda maior,
+      e o supersampling 2× multiplica). Destrava: modo exclusivo 1920×1080 ou alvo fixo com escala,
+      quando o jogo precisar rodar em monitor que não seja 1080p; seletor de resolução é evolução
+      futura (decisão do usuário). Origem: SPEC-0515.
 
 - [ ] **Medir em movimento muda o quadro**: com o autopiloto `walk` (SPEC-0414) o DDD 61 (`e2be01c`)
       piora em relação à rodada parada — Setor O p95 33→55 ms, p99 43→74, quadros >33 ms 5%→34%;
@@ -373,7 +378,7 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 - [x] (2026-10-23) Sessão B2 arquivada; worktree da engine e cópias do jogo `b2-base`/`b2-e2be01c` removidas; branch apagada.
 - [ ] Rodadas e exports da B2 em `D:/jogos/detetive-brasilia/.cortex/b2-desenho` (evidência da b.3/SPEC-0362 e da sombra do sol) — apagar quando o usuário quiser.
 
-- [ ] Artefatos do teto do ADR-0404: os 3 exports em `D:/jogos/detetive-brasilia/.cortex/rs-ceiling`
+- [x] (2026-10-24: 12 GB apagados; os 9 patches e o `parity.sh` salvos em `.cortex/rs-ceiling-patches/`; sessão arquivada, worktree e branch removidas; a cópia do jogo `detetive-brasilia-rs-e2be01c` FICA, passou ao R0 do PRD-0466) Artefatos do teto do ADR-0404: os 3 exports em `D:/jogos/detetive-brasilia/.cortex/rs-ceiling`
       (~1,1 GB; guardar `rs-ceiling-arm.patch` e as pastas `runs-*`/`val`) e a worktree do jogo
       `D:/jogos/detetive-brasilia-rs-e2be01c` — podem servir de base ao A/B do RS1. Na worktree da
       engine (`rendering-server-2b92ff`) há junctions `native/third_party` e
