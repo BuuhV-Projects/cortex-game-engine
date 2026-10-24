@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BoxGeometry, Color, DoubleSide, BackSide, Mesh, MeshLambertMaterial, PerspectiveCamera, PointLight, Scene, Texture } from 'three';
+import { InstancedMesh, BoxGeometry, Color, DoubleSide, BackSide, Mesh, MeshLambertMaterial, PerspectiveCamera, PointLight, Scene, Texture } from 'three';
 import { classifyDrawable, type Classification } from '../../../src/render/native/RendererClassifier.js';
 import { lambertModel } from '../../../src/render/native/models/lambert.js';
 import { LightsBlock } from '../../../src/render/native/frame/lights.js';
@@ -49,6 +49,7 @@ describe('lambert model (R1.2, SPEC-0535)', () => {
     expect(lambertModel.wgsl(variant(shadowed)!)).toContain('nativeShadow(in.positionWorld');
     expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ side: BackSide })))).toBeNull();
     expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ normalMap: new Texture() })))).toBeNull();
+    expect(variant(new InstancedMesh(new BoxGeometry(), new MeshLambertMaterial(), 2) as unknown as Mesh)).toBeNull();
     lights(new Scene().add(new PointLight()) as Scene);
     expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial()))).toBeNull();
     lights(new Scene());

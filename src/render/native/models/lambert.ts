@@ -205,7 +205,10 @@ export const lambertModel: NativeModelDef = {
   name: 'lambert',
   paramFloats: LIT_PARAM_FLOATS,
 
-  variant(c, _object: Object3D, material) {
+  variant(c, object: Object3D, material) {
+    // Instanced lambert stays with the three until the core's instancing path matches the DDD 61's
+    // compacted cables (InstancedMesh.count + addUpdateRange): waits for the R1.4 fix (SPEC-0535).
+    if ((object as Object3D & { isInstancedMesh?: boolean }).isInstancedMesh) return null;
     // Refused while the emissive is not black (stays with the three): with the DDD 61 clock
     // running, the native lambert emissive came out ~22% short of the three's while params,
     // texture, sampler, mip level and lights all matched (SPEC-0535, pending). Constant matches.

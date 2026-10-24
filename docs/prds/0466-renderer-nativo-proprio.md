@@ -320,3 +320,14 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   ordem), evidência em `native/scripts/perf/coverage-diff.mjs`. Hipótese: ordem do domo do céu
   nativo × malha fundida dos fios (matriz identidade, z na origem). `@invariant` na posição não
   muda.
+- **`lambert` instanciado recusado — aguarda correção de instâncias da Frente C** (origem: R1.2,
+  2026-10-24; dono: Frente C). Os "fios distantes" acima são os cabos quebráveis do DDD 61
+  (`breakableProps.ts`, `InstancedMesh` "fios-quebraveis", lambert), cujo `cull()` compacta as
+  instâncias por distância (`setMatrixAt` nas `n` primeiras, `mesh.count = n`,
+  `addUpdateRange(0, n*16)`). Medido: a chave nativa e o `painterSortStable` do `three` r184
+  batem campo a campo (o z do C++ também entra na `RenderList` do `three`, então é o mesmo nos
+  dois braços); com `nativeTint`, quem desenha o fio é o braço nativo e o `three` o esconde; com o
+  lambert instanciado recusado, o "alt 223" some. Suspeitos: culling do `InstancedMesh`
+  (`boundingSphere` em cache no `three` × bounds do espelho C++) ou os `updateRanges`. Resíduo
+  ±2 (0,0565%) quando o instanciado volta ao `three` no braço nativo (cópia de instâncias do
+  `three` desatualizada?). Volta antes do R1.6.
