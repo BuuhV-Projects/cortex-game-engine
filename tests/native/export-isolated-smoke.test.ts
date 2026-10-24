@@ -54,6 +54,10 @@ const GAME_MAIN = [
   '',
 ].join('\n');
 
+// Copying src/ + native/ into tmp can pass vitest's 10 s hook default when the whole suite runs in
+// parallel (disk contention): the describe then fails before any assert. Not a finding.
+const SETUP_TIMEOUT_MS = 120_000;
+
 let iso = '';
 let bundleOut = '';
 
@@ -75,11 +79,11 @@ describe.runIf(hasToolchain)('export isolado (layout do Studio instalado)', () =
   beforeAll(() => {
     iso = buildIsolatedResources();
     bundleOut = path.join(iso, 'boot.bundle.js');
-  });
+  }, SETUP_TIMEOUT_MS);
 
   afterAll(() => {
     if (iso) fs.rmSync(iso, { recursive: true, force: true });
-  });
+  }, SETUP_TIMEOUT_MS);
 
   it('bundle.mjs roda só com o toolchain (esbuild + engine + plugins do Babel)', () => {
     // cwd fora do repo: é o que o Studio faz (cwd = resources). Qualquer dep
