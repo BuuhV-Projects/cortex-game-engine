@@ -32,6 +32,9 @@ const ALPHA_TEST_AT = ROW_FLOATS + 3;
 const MAP_TRANSFORM_AT = 2 * ROW_FLOATS;
 const EMISSIVE_TRANSFORM_AT = 5 * ROW_FLOATS;
 
+/** Lit models draw receiveShadow objects (with `nativeShadow`) only once this is on. */
+const RECEIVE_SHADOW = false;
+
 /** Shading features both lit models take from the classification. */
 const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'fog', 'alphaTest', 'receiveShadow'] as const;
 /** Accepted without a variant of their own (the uv transform is always applied). */
@@ -60,7 +63,10 @@ export function litVariant(c: Classification & { kind: 'covered' }, material: Ma
   for (const f of c.features) {
     if (!accepted.includes(f) && !NEUTRAL_FEATURES.includes(f)) return null;
   }
-  if (c.features.includes('receiveShadow') && !SHADOW_READY) return null;
+  // receiveShadow stays with the three even with SHADOW_READY: on the DDD 61 sidewalk the native
+  // sun shadow of pedestrians differs by up to 6/255 (Comercial, day). Waits for the R1.3 parity
+  // fix (SPEC-0535, pending in PRD-0466); flip RECEIVE_SHADOW when it lands.
+  if (c.features.includes('receiveShadow') && !(SHADOW_READY && RECEIVE_SHADOW)) return null;
   if (m.side === BACK_SIDE || m.alphaToCoverage || lightsRefusal() !== null) return null;
   const variant: string[] = accepted.filter((f) => c.features.includes(f));
   if (m.side === DOUBLE_SIDE) variant.push('doubleSide');
