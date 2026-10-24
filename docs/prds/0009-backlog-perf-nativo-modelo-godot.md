@@ -292,7 +292,10 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       Confirmado pelos contadores do braço do ADR-0404: 1 render da cena por quadro + o de sombra
       (~0,01/quadro parado no Setor O); no RenderingServer ele vira o RS4.
 
-- [ ] **Passe principal do export desenha em 2560 px de largura (o dobro da janela de 1280)** —
+- [ ] **(PRIORIDADE subiu em 2026-10-24) Resolução das medições × resolução real.** O usuário joga em Full HD
+      (1920×1080), mas as rodadas usam janela de 1280×720. Com o supersampling 2×, em Full HD o passe principal
+      iria a ~3840 px de largura (quase 4K): o custo de GPU pode estar subestimado. Destrava: medir também em
+      1920×1080 e decidir o fator de supersampling por resolução. Item original: **Passe principal do export desenha em 2560 px de largura (o dobro da janela de 1280)** —
       supersampling; custo de GPU. Medir antes de mexer: no ciclo anterior a GPU não era o teto
       (0,3–0,4 ms/quadro), mas o jogo mudou. Origem: frente B2, investigação do render duplo.
 
