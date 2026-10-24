@@ -82,6 +82,27 @@ export function installDynamicLighting(renderer: { lighting: unknown }): void {
  */
 export function applyParityLighting(renderer: { lighting: unknown }): void {
   if (lightings.dynamic === null) return;
+  const r = renderer as { lighting: unknown; _renderLists?: { lighting: unknown; constructor: new (lighting: unknown) => unknown } };
+  const lists = r._renderLists;
+  if (!lists) return;
+  // The three captures the lighting at init, in its `RenderLists` (and each list
+  // keeps the `lightsNode` it was built with): swapping `renderer.lighting` alone
+  // changes nothing. One `RenderLists` per lighting, swapped together.
+  if (listsByLighting.size === 0) listsByLighting.set(lists.lighting, lists);
   const want = mainPassArm.lighting ? lightings.base : lightings.dynamic;
-  if (renderer.lighting !== want) renderer.lighting = want;
+  if (lists.lighting === want) return;
+  let next = listsByLighting.get(want);
+  if (next === undefined) {
+    next = new lists.constructor(want) as typeof lists;
+    listsByLighting.set(want, next);
+  }
+  r._renderLists = next;
+  r.lighting = want;
+  if (++parityLightingSwaps % PARITY_REPORT_SWAPS === 0) debug('perf', `[dynamicLighting] parity swaps=${parityLightingSwaps}`);
 }
+
+/** `RenderLists` per lighting for the parity instrument. */
+const listsByLighting = new Map<unknown, { lighting: unknown; constructor: new (lighting: unknown) => unknown }>();
+/** Swaps done by the parity instrument (an instrument has to report how much it switched). */
+let parityLightingSwaps = 0;
+const PARITY_REPORT_SWAPS = 60;
