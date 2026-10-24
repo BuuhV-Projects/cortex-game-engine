@@ -68,11 +68,19 @@ Não exige mexer no sistema de nós do `three` nem no vendor.
 
 ## Desenho
 
-- `src/render/SharedShadowFilter.ts`: `sharedPCFShadowFilter` (cópia literal do
-  `PCFShadowFilter` 0.184 com as duas referências vindas de um `WeakMap` por
-  `LightShadow`) e `installSharedShadowFilter()`, que troca o
-  `ShadowNode.prototype.getShadowFilterFn` para devolver o filtro compartilhado
-  quando o tipo é `PCFShadowMap` (os outros tipos seguem os do `three`).
+- `src/render/SharedShadowFilter.ts`: `sharedPCFShadowFilter` e
+  `sharedPCFSoftShadowFilter` (cópias literais do `PCFShadowFilter` e do
+  `PCFSoftShadowFilter` 0.184 — o PCF soft tem o mesmo defeito, e é o tipo que a
+  engine impõe: `SceneBuilder.ts:624`, `OutdoorLighting.ts:510`) com as referências
+  vindas de um cache por sombra, e `installSharedShadowFilter()`, que troca o
+  `ShadowNode.prototype.getShadowFilterFn` para os dois tipos (Basic e VSM seguem
+  os do `three`).
+- **Armadilha 1 (medida):** o cache não pode ser indexado pelo `shadow` que o corpo
+  do `Fn` recebe — a chamada do TSL converte os argumentos e entrega outro objeto
+  a cada build. Indexado pelo `mapSize` (o mesmo `Vector2` sempre).
+- **Armadilha 2 (medida):** o tipo em uso no DDD 61 é `PCFSoftShadowMap` (2), não o
+  `PCFShadowMap` que o jogo pede — a primeira versão só cobria o PCF e não fazia
+  nada (pego pelo log de `getShadowFilterFn` e pelos ids dos uniformes iguais).
 - Só no host (Studio intocado), interruptor `?sharedShadowFilter=0|1`.
 
 ## Critério

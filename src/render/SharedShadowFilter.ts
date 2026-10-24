@@ -14,11 +14,13 @@
  *
  * Host only, behind `?sharedShadowFilter=0|1` until the A/B (SPEC-0445).
  */
-import { PCFShadowMap, type LightShadow, type Texture } from 'three';
+import { PCFShadowMap, PCFSoftShadowMap, type LightShadow, type Texture } from 'three';
 import { ShadowNode } from 'three/webgpu';
 import {
   Fn,
   add,
+  fract,
+  mix,
   interleavedGradientNoise,
   reference,
   renderGroup,
@@ -43,13 +45,16 @@ interface N {
   compare(...a: unknown[]): N;
   depth(...a: unknown[]): N;
   setGroup(...a: unknown[]): N;
+  subAssign(...a: unknown[]): N;
+  negate(): N;
   readonly xy: N;
   readonly x: N;
+  readonly y: N;
   readonly z: N;
 }
 type TslFn = (...a: unknown[]) => N;
-const t = { reference, texture, vec2, add, interleavedGradientNoise, vogelDiskSample } as unknown as Record<
-  'reference' | 'texture' | 'vec2' | 'add' | 'interleavedGradientNoise' | 'vogelDiskSample',
+const t = { reference, texture, vec2, add, fract, mix, interleavedGradientNoise, vogelDiskSample } as unknown as Record<
+  'reference' | 'texture' | 'vec2' | 'add' | 'fract' | 'mix' | 'interleavedGradientNoise' | 'vogelDiskSample',
   TslFn
 >;
 const screenXY = (screenCoordinate as unknown as N).xy;
@@ -105,6 +110,45 @@ export const sharedPCFShadowFilter = (Fn as unknown as (f: (i: FilterInputs) => 
   },
 );
 
+/** Taps of the three's PCF soft filter (bilinear 3×3); the divisor of the sum. */
+const PCF_SOFT_TAPS = 9;
+const TWO = 2;
+const HALF = 0.5;
+
+/** Literal copy of the three 0.184 `PCFSoftShadowFilter`, with the shared `mapSize` (the engine's default type). */
+export const sharedPCFSoftShadowFilter = (Fn as unknown as (f: (i: FilterInputs) => N) => unknown)(
+  ({ depthTexture, shadowCoord, shadow, depthLayer }) => {
+    const depthCompare = (uv: N, compare: N): N => {
+      let depth = t.texture(depthTexture, uv);
+      if (depthTexture.isArrayTexture) depth = depth.depth(depthLayer);
+      return depth.compare(compare);
+    };
+    const { mapSize } = shadowRefs(shadow);
+    const texelSize = t.vec2(1).div(mapSize);
+    const dx = texelSize.x;
+    const dy = texelSize.y;
+    const uv = shadowCoord.xy;
+    const f = t.fract(uv.mul(mapSize).add(HALF));
+    uv.subAssign(f.mul(texelSize));
+    const z = shadowCoord.z;
+    return t.add(
+      depthCompare(uv, z),
+      depthCompare(uv.add(t.vec2(dx, 0)), z),
+      depthCompare(uv.add(t.vec2(0, dy)), z),
+      depthCompare(uv.add(texelSize), z),
+      t.mix(depthCompare(uv.add(t.vec2(dx.negate(), 0)), z), depthCompare(uv.add(t.vec2(dx.mul(TWO), 0)), z), f.x),
+      t.mix(depthCompare(uv.add(t.vec2(dx.negate(), dy)), z), depthCompare(uv.add(t.vec2(dx.mul(TWO), dy)), z), f.x),
+      t.mix(depthCompare(uv.add(t.vec2(0, dy.negate())), z), depthCompare(uv.add(t.vec2(0, dy.mul(TWO))), z), f.y),
+      t.mix(depthCompare(uv.add(t.vec2(dx, dy.negate())), z), depthCompare(uv.add(t.vec2(dx, dy.mul(TWO))), z), f.y),
+      t.mix(
+        t.mix(depthCompare(uv.add(t.vec2(dx.negate(), dy.negate())), z), depthCompare(uv.add(t.vec2(dx.mul(TWO), dy.negate())), z), f.x),
+        t.mix(depthCompare(uv.add(t.vec2(dx.negate(), dy.mul(TWO))), z), depthCompare(uv.add(t.vec2(dx.mul(TWO), dy.mul(TWO))), z), f.x),
+        f.y,
+      ),
+    ).mul(1 / PCF_SOFT_TAPS);
+  },
+);
+
 /** On? Default of the caller; `?sharedShadowFilter=0|1` overrides. */
 export function sharedShadowFilterRequested(fallback: boolean): boolean {
   return queryFlagRequested(QUERY_KEY, fallback);
@@ -112,14 +156,16 @@ export function sharedShadowFilterRequested(fallback: boolean): boolean {
 
 let installed = false;
 
-/** Makes every `ShadowNode` use {@link sharedPCFShadowFilter} for `PCFShadowMap`. */
+/** Makes every `ShadowNode` use the shared filters for `PCFShadowMap` and `PCFSoftShadowMap`. */
 export function installSharedShadowFilter(): void {
   if (installed) return;
   installed = true;
   const proto = ShadowNode.prototype as unknown as { getShadowFilterFn(type: number): unknown };
   const original = proto.getShadowFilterFn;
   proto.getShadowFilterFn = function getShadowFilterFn(this: unknown, type: number): unknown {
-    return type === PCFShadowMap ? sharedPCFShadowFilter : original.call(this, type);
+    if (type === PCFShadowMap) return sharedPCFShadowFilter;
+    if (type === PCFSoftShadowMap) return sharedPCFSoftShadowFilter;
+    return original.call(this, type);
   };
   debug('perf', '[sharedShadowFilter] installed');
 }
