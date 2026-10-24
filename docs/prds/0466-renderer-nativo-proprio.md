@@ -21,7 +21,7 @@ kart-racer e crash-racer.
 **Pronto** quando, para cada jogo-alvo:
 
 1. o censo do renderer dá **0 recusas** nos pontos medidos;
-2. o A/B com autopiloto (walk e drive) atinge o critério do marco, inclusive em **1920×1080**;
+2. o A/B com autopiloto (walk e drive) atinge o critério do marco **em 1920×1080** (a única resolução de medição, decisão do usuário em 2026-10-24, SPEC-0515);
 3. a paridade (`?parityFreeze` + galeria de materiais + captura por ponto, dia e noite) fica
    no nível do controle;
 4. `?nativeRenderer=0` volta ao `three` (até o R5), e o Studio segue idêntico.
@@ -139,8 +139,8 @@ SOLID no `native/` (ADR-0100); sem números mágicos; `docs/cortex-native/archit
 atualizado na mesma mudança.
 
 **A/B de aceite (todos os marcos):** kit SPEC-0382, intercalado, 2 réplicas × 135 s,
-`--autopilot walk` nos 4 pontos do DDD 61 + `--autopilot drive` (Helio), em 1280×720 **e**
-`--window 1920x1080` (GPU por `CORTEX_FRAME_TIMING`). Métricas: render `cpuAvg`, quadro
+`--autopilot walk` nos 4 pontos do DDD 61 + `--autopilot drive` (Helio), **em 1920×1080** (a única resolução de medição desde 2026-10-24, decisão do usuário, SPEC-0515: o host abre
+a janela em 1080p por padrão e o kit não mede abaixo disso). GPU por `CORTEX_FRAME_TIMING`. Métricas: render `cpuAvg`, quadro
 mediano, **p95, p99, % > 33 ms**, GPU `gpu-work`. Número maior que o teto do marco =
 defeito do instrumento até prova em contrário (regra da SPEC-0435): conferir log
 (`THREE.TSL`, erro do renderer) e imagem.
@@ -159,7 +159,7 @@ limiar.
   do DDD 61 (fonte da fórmula de cada modelo). Agrupar e comparar por **texto normalizado**
   (identificadores renomeados), nunca por hash: o hash do WGSL do `three` não é estável.
 - **Galeria de materiais:** cena fixa com um objeto por (modelo, feature) dos 4 jogos.
-- **Linha de base:** a tabela acima nos 4 pontos + drive, em 1280×720 e 1920×1080.
+- **Linha de base:** a tabela acima nos 4 pontos + drive, em 1920×1080.
 - **Critério:** censo do DDD 61 classifica 100% dos materiais vivos (cada um num modelo ou
   numa recusa com motivo) nos 4 pontos; galeria capturada nos dois caminhos com o comparador
   acusando uma diferença plantada (o instrumento é validado num caso de resposta conhecida).
@@ -188,7 +188,7 @@ o próprio interruptor para o A/B dela), com cobertura medida pelo censo:
 
 - render **≤ 5 ms** (`cpuAvg`) andando nos 4 pontos e dirigindo (hoje 10,6–12,2);
 - p95 do quadro **−5 ms ou mais** no Comercial e no drive; **% > 33 ms ≤ 2%** andando;
-- em 1920×1080, GPU ≤ controle + 0,5 ms;
+- GPU (1920×1080) ≤ controle + 0,5 ms;
 - paridade de aceite (acima) dia e noite; 0 recusas no censo.
 
 Teto esperado: ~2–4 ms (ADR-0465, Contexto). Abaixo de 5 ms, o critério já paga o marco.
