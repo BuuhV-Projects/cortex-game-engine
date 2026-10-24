@@ -198,6 +198,26 @@ os modelos de cada etapa), com cobertura medida pelo censo. Critério de toda et
 | R1.5 | skinning no vertex shader (player e dublês) + **API de WGSL do jogo** (`userData.nativeMaterial`, layout de parâmetros, atributos/`DataTexture` por instância) + porte de `peopleGpu`, tinta por slot e pintura mascarada (no repo do jogo, com spec própria); a API aceita vertex shader animado (o mar do DDD 61) | galeria com os 3 WGSL do jogo; **0 recusas** nos 4 pontos |
 | R1.6 | o renderer próprio vira **dono da pass** (limpa, fundo, cena; o `three` não é chamado para a cena espelhada); pré-compilação no load + ubershader para variante nova | 0 pipelines criados por quadro em regime; nenhum quadro > 50 ms causado por pipeline na 1ª volta |
 
+**R1.6 — item: dados por objeto num buffer único (modelo Godot)** (decisão do usuário, 2026-10-24,
+"Sim"). Processo de sempre: Godot primeiro → aplicabilidade → SPEC → medir antes; **só fica se ganhar**.
+
+- **Hoje (grupo 3):** um slot de 256 B por objeto em chunks `native.objects` e **um bind group por
+  objeto**, trocado a cada draw no replay C++.
+- **Godot (Forward+):** um storage buffer com os dados de todas as instâncias da lista
+  (`SceneState::InstanceData`, `render_forward_clustered.h:334-345`), preenchido de uma vez
+  (`_fill_instance_data`, `render_forward_clustered.cpp:806-911`) e ligado uma vez por passe; o shader lê
+  `instances.data[índice]` com o índice do draw (`scene_forward_clustered.glsl:770-775`). Citações no anexo
+  `godot-renderer-rd.md` §5.
+- **Equivalente em WebGPU:** um `read-only-storage` com todos os objetos, ligado uma vez; o índice vem do
+  `firstInstance` → `@builtin(instance_index)` (somar o offset, sem quebrar o instancing do R1.4); uma
+  gravação por quadro para todos os objetos sujos.
+- **Ganho esperado (não medido):** menos `setBindGroup` por draw no replay, menos `writeBuffer`, caminho
+  para multi-draw.
+- **Validar antes:** o comando do lote C++ (`DrawCommand` de 4 inteiros) não leva `firstInstance` hoje —
+  a SPEC diz como o índice chega ao draw (campo novo no comando ou base por receita).
+- **Critério:** A/B intercalado (2 réplicas, 4 pontos walk + drive, 1080p) mostra ganho de render ou de
+  GPU; sem ganho, não entra.
+
 **Critério de aceite do R1** (liga `?nativeRenderer=1` por padrão no DDD 61):
 
 - render **≤ 5 ms** (`cpuAvg`) andando nos 4 pontos e dirigindo (hoje 10,6–12,2);
