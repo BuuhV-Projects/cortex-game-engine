@@ -1306,6 +1306,16 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
 - **Armadilha (R1.4)**: o núcleo passa a feature `alpha` ao modelo quando o material não é opaco
   (`transparent || blending != Normal`); aditivo sem `transparent` fica na lista OPACA, mas com blend
   (é o que o `three` faz). Material com `visible = false` não é oferecido (a projeção testa antes).
+- **Armadilha (R1.4, SPEC-0555 "Céu de dia")**: o `three` não reenvia a cópia dele de um atributo que
+  parou de desenhar enquanto o renderer próprio era o dono; ao voltar ao `three` (braço de
+  paridade, recusa) desenhava dado velho. O núcleo escreve também na cópia do `three` quando a
+  reescreve (`_syncThreeCopy`).
+- **R1.5 (SPEC-0565, ADR-0566)**: skinning no núcleo (`skinIndex`/`skinWeight` no `VIn`, storage
+  `skin` no grupo 3, `skeleton.update()` 1×/quadro/esqueleto); **WGSL do jogo** por
+  `registerNativeMaterial(nome, NativeModelDef)` + `userData.nativeMaterial` (atributos próprios em
+  `attributeTypes`, `DataTexture` float legível no VS); `view.time` = `shaderTime`
+  (`ShaderClock.ts`, avança no `Game._update`, congela no `?parityFreeze`, *rollover* 3600 s).
+  `?nativeRendererModels=wgsl` libera todos os materiais do jogo.
 
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 

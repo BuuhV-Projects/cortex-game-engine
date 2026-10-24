@@ -22,11 +22,13 @@ import type { DrawBatchBridge } from '../DrawBatch.js';
 import type { NativeDrawer, NativeEntry } from '../RenderServer.js';
 import { queryFlagRequested } from '../TransformOnlyRefresh.js';
 import { classifyDrawable } from './RendererClassifier.js';
+import { GAME_MATERIAL_PREFIX, gameMaterialModel } from './GameMaterials.js';
+import { shaderTime } from './ShaderClock.js';
 import { NATIVE_MODELS } from './models/index.js';
 import { FRAME_BLOCKS } from './frame/index.js';
 import type { FrameBlock, FrameBlockFactory } from './frame/FrameBlock.js';
 import {
-  INSTANCE_MATRIX_COLUMNS, OBJECT_FLOATS, OBJECT_NORMAL_AT, VIEW_FLOATS, coreWgsl, type NativeModelDef, type VertexSemantic,
+  INSTANCE_MATRIX_COLUMNS, OBJECT_FLOATS, OBJECT_NORMAL_AT, VIEW_FLOATS, VIEW_TIME_AT, coreWgsl, type NativeModelDef,
 } from './models/NativeModel.js';
 
 const QUERY_KEY = 'nativeRenderer=';
@@ -68,9 +70,19 @@ const RETRY_REASONS = new Set(['texture']);
  */
 const CORE_FEATURES = new Set(['instanced', 'skinned', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'doubleSide']);
 /** What the core draws today (R1.4, SPEC-0555: instancing, transparency, state). R1.5 adds skinning. */
-const CORE_SUPPORTED = new Set(['doubleSide', 'instanced', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder']);
+const CORE_SUPPORTED = new Set(['doubleSide', 'instanced', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'skinned']);
+/** Vertex semantics every model may read without declaring their type (`attributeTypes` is for the rest). */
+const BUILTIN_SEMANTICS = new Set<string>(['position', 'normal', 'uv', 'color', 'instanceColor']);
+/** Skin attributes the core appends after the model's (`coreWgsl` with `skinned`). */
+const SKIN_SEMANTICS = ['skinIndex', 'skinWeight'];
+/** Skin storage: bindMatrix + bindMatrixInverse, then the bone matrices (SPEC-0565). */
+const SKIN_HEADER_FLOATS = 2 * 16;
+/** three `FloatType`: not filterable (RGBA32F), read with `textureLoad` (a DataTexture of instance data). */
+const FLOAT_TYPE = 1015;
+const UNFILTERABLE = 'u';
+const FILTERABLE = 'f';
 /** Vertex semantics read from the object, not the geometry. */
-const OBJECT_SEMANTICS = new Set<VertexSemantic>(['instanceColor']);
+const OBJECT_SEMANTICS = new Set<string>(['instanceColor']);
 /**
  * Blend states of the three's `_getBlending` (not premultiplied). Normal blending only when the
  * material is transparent (the three draws an opaque normal material without blending).
@@ -93,6 +105,7 @@ const BUFFER_UNIFORM = 0x40;
 const BUFFER_COPY_DST = 0x08;
 const BUFFER_VERTEX = 0x20;
 const BUFFER_INDEX = 0x10;
+const BUFFER_STORAGE = 0x80;
 const STAGE_VERTEX = 0x1;
 const STAGE_FRAGMENT = 0x2;
 
@@ -155,6 +168,9 @@ export function vertexFormat(array: ArrayLike<number>, itemSize: number, normali
   if (array instanceof Uint16Array && normalized && even) return `unorm16x${itemSize}`;
   if (array instanceof Int16Array && normalized && even) return `snorm16x${itemSize}`;
   if (array instanceof Uint8Array && normalized && itemSize === 4) return 'unorm8x4';
+  // skinIndex (glTF JOINTS_0): integer, read as vec4<u32>.
+  if (array instanceof Uint16Array && !normalized && itemSize === 4) return 'uint16x4';
+  if (array instanceof Uint8Array && !normalized && itemSize === 4) return 'uint8x4';
   if (array instanceof Int8Array && normalized && itemSize === 4) return 'snorm8x4';
   return null;
 }
@@ -197,6 +213,8 @@ interface MatState {
   scratch: Float32Array;
   buffer: Gpu;
   textures: unknown[];
+  /** One char per texture: `f` filterable, `u` unfilterable float (the group-2 layout key). */
+  kinds: string;
   gpuTextures: unknown[];
   group: Gpu | null;
   frame: number;
@@ -215,6 +233,8 @@ interface Inst extends NativeEntry {
   geo: GeoState;
   /** Per-object instance buffers (`instanceMatrix`, `instanceColor`), or `null`. */
   extra: VertexSet | null;
+  /** SkinnedMesh: its skin storage (bind, bindInverse, bones) and the CPU copy written per frame. */
+  skin: { buffer: Gpu; data: Float32Array } | null;
   vertexBuffers: Gpu[];
   instanced: boolean;
   state: DrawState;
@@ -269,7 +289,10 @@ export class NativeRenderer implements NativeDrawer {
   /** Bumped when group 1 is rebuilt: recipes recorded with the old group are stale. */
   private _frameGeneration = 0;
   private readonly _normal = new Matrix3();
-  private readonly _layouts: { view: Gpu; frame: Gpu; object: Gpu; material: Map<number, Gpu> };
+  private readonly _layouts: { view: Gpu; frame: Gpu; object: Gpu; objectSkinned: Gpu; material: Map<string, Gpu> };
+  private readonly _allowed: Set<string> | null;
+  /** Frame of the last `skeleton.update()` per skeleton (a skeleton shared by meshes updates once). */
+  private readonly _skeletonFrames = new WeakMap<object, number>();
   private readonly _chunks: Gpu[] = [];
   private readonly _freeSlots: number[] = [];
   private _slotCount = 0;
@@ -287,6 +310,7 @@ export class NativeRenderer implements NativeDrawer {
     allowed: Set<string> | null,
     frameBlocks: readonly FrameBlockFactory[] = FRAME_BLOCKS,
   ) {
+    this._allowed = allowed;
     for (const m of models) if (!allowed || allowed.has(m.name)) this._models.set(m.name, m);
     const d = (this._device = _host.backend.device);
     const uniformEntry = (binding: number) => ({ binding, visibility: STAGE_VERTEX | STAGE_FRAGMENT, buffer: { type: 'uniform' } });
@@ -295,7 +319,11 @@ export class NativeRenderer implements NativeDrawer {
     const view = d.createBindGroupLayout({ label: 'native.view', entries: [uniformEntry(0)] });
     const frame = d.createBindGroupLayout({ label: 'native.frame', entries: this._blocks.flatMap((b) => b.layoutEntries()) });
     const object = d.createBindGroupLayout({ label: 'native.object', entries: [uniformEntry(0)] });
-    this._layouts = { view, frame, object, material: new Map() };
+    const objectSkinned = d.createBindGroupLayout({
+      label: 'native.objectSkinned',
+      entries: [uniformEntry(0), { binding: 1, visibility: STAGE_VERTEX, buffer: { type: 'read-only-storage' } }],
+    });
+    this._layouts = { view, frame, object, objectSkinned, material: new Map() };
     this._viewBuffer = d.createBuffer({ label: 'native.view', size: VIEW_FLOATS * FLOAT_BYTES, usage: BUFFER_UNIFORM | BUFFER_COPY_DST });
     this._viewGroup = d.createBindGroup({ layout: view, entries: [{ binding: 0, resource: { buffer: this._viewBuffer } }] });
     this._refreshFrameGroup();
@@ -333,6 +361,7 @@ export class NativeRenderer implements NativeDrawer {
       v[at + 3] = NO_FOG_NEAR;
       v[at + 4] = NO_FOG_FAR;
     }
+    v[VIEW_TIME_AT] = shaderTime.value;
     this._device.queue.writeBuffer(this._viewBuffer, 0, v);
     for (let i = 0; i < this._blocks.length; i++) this._blocks[i]!.update(scene, camera);
     this._refreshFrameGroup();
@@ -395,7 +424,7 @@ export class NativeRenderer implements NativeDrawer {
   private _build(object: Object3D, material: Material, geometry: GeometryLike): Inst | null {
     const c = classifyDrawable(object, material);
     if (c.kind !== 'covered') return this._refuse(object, material, geometry, c.kind === 'skip' ? 'skip' : c.reason);
-    const model = this._models.get(c.model);
+    const model = this._models.get(c.model) ?? this._gameModel(c.model);
     if (!model) return this._refuse(object, material, geometry, `model:${c.model}`);
     for (const f of c.features) {
       if (CORE_FEATURES.has(f) && !CORE_SUPPORTED.has(f)) return this._refuse(object, material, geometry, `core:${f}`);
@@ -420,7 +449,12 @@ export class NativeRenderer implements NativeDrawer {
     const mat = this._material(material, model, variant);
     if (mat === null) return this._refuse(object, material, geometry, 'texture');
     const semantics = model.attributes(variant);
-    const geo = this._geometry(geometry, semantics);
+    for (const sem of semantics) {
+      if (!BUILTIN_SEMANTICS.has(sem) && !model.attributeTypes?.[sem]) return this._refuse(object, material, geometry, `attribute:${sem}:type`);
+    }
+    const skinned = c.features.includes('skinned');
+    if (skinned && c.features.includes('instanced')) return this._refuse(object, material, geometry, 'core:skinnedInstanced');
+    const geo = this._geometry(geometry, skinned ? [...semantics, ...SKIN_SEMANTICS] : semantics);
     if (typeof geo === 'string') return this._refuse(object, material, geometry, geo);
     const instanced = c.features.includes('instanced');
     const extra = instanced || semantics.some((s) => OBJECT_SEMANTICS.has(s)) ? this._instanceSet(object, semantics, instanced) : null;
@@ -429,12 +463,14 @@ export class NativeRenderer implements NativeDrawer {
     const slot = this._allocSlot();
     const chunk = this._chunks[Math.floor(slot / OBJECT_SLOTS_PER_CHUNK)];
     const offset = (slot % OBJECT_SLOTS_PER_CHUNK) * UNIFORM_ALIGN_BYTES;
-    const group = this._device.createBindGroup({
-      layout: this._layouts.object,
-      entries: [{ binding: 0, resource: { buffer: chunk, offset, size: OBJECT_FLOATS * FLOAT_BYTES } }],
-    });
+    const skin = skinned ? this._skinBuffer(object) : null;
+    if (skinned && skin === null) return this._refuse(object, material, geometry, 'skeleton');
+    const objectEntry = { binding: 0, resource: { buffer: chunk, offset, size: OBJECT_FLOATS * FLOAT_BYTES } };
+    const group = this._device.createBindGroup(skin
+      ? { layout: this._layouts.objectSkinned, entries: [objectEntry, { binding: 1, resource: { buffer: skin.buffer } }] }
+      : { layout: this._layouts.object, entries: [objectEntry] });
     const inst: Inst = {
-      object, material, geometry, mat, geo, extra, instanced, state, slot, chunk, group,
+      object, material, geometry, mat, geo, extra, instanced, skin, state, slot, chunk, group,
       version: material.version,
       instanceColor: (object as { instanceColor?: unknown }).instanceColor ?? null,
       vertexBuffers: extra ? [...geo.buffers, ...extra.buffers] : geo.buffers,
@@ -462,7 +498,7 @@ export class NativeRenderer implements NativeDrawer {
    * Per-object vertex buffers: `instanceColor` at its semantic's location, then the 4 columns of
    * `instanceMatrix` after the model's attributes (`coreWgsl` with `instanced`). A string = refusal.
    */
-  private _instanceSet(object: Object3D, semantics: readonly VertexSemantic[], instanced: boolean): VertexSet | string {
+  private _instanceSet(object: Object3D, semantics: readonly string[], instanced: boolean): VertexSet | string {
     const o = object as Object3D & { instanceMatrix?: AttributeLike; instanceColor?: AttributeLike | null };
     const set: VertexSet = { buffers: [], sources: [], layouts: [], key: '' };
     const add = (attr: AttributeLike, attributes: VertexSet['layouts'][number]['attributes']): void => {
@@ -489,6 +525,41 @@ export class NativeRenderer implements NativeDrawer {
     return set;
   }
 
+  /** A game WGSL material (`wgsl:<name>`, SPEC-0565) allowed by `?nativeRendererModels=`. */
+  private _gameModel(name: string): NativeModelDef | undefined {
+    const a = this._allowed;
+    if (a && !a.has(name) && !(name.startsWith(GAME_MATERIAL_PREFIX) && a.has(GAME_MATERIAL_PREFIX.slice(0, -1)))) return undefined;
+    return gameMaterialModel(name);
+  }
+
+  /** Skin storage of a SkinnedMesh: bindMatrix, bindMatrixInverse, then its skeleton's bones. */
+  private _skinBuffer(object: Object3D): { buffer: Gpu; data: Float32Array } | null {
+    const skeleton = (object as Object3D & { skeleton?: { boneMatrices: Float32Array | null; bones: unknown[] } }).skeleton;
+    if (!skeleton || skeleton.bones.length === 0) return null;
+    const data = new Float32Array(SKIN_HEADER_FLOATS + skeleton.bones.length * MAT4_FLOATS);
+    const buffer = this._device.createBuffer({ label: 'native.skin', size: data.byteLength, usage: BUFFER_STORAGE | BUFFER_COPY_DST });
+    return { buffer, data };
+  }
+
+  /** Per frame: `skeleton.update()` once per skeleton (like the three's SkinningNode), then the storage. */
+  private _writeSkin(object: Object3D, skin: { buffer: Gpu; data: Float32Array }): void {
+    const o = object as Object3D & {
+      bindMatrix: { elements: ArrayLike<number> }; bindMatrixInverse: { elements: ArrayLike<number> };
+      skeleton: { update(): void; boneMatrices: Float32Array };
+    };
+    if (this._skeletonFrames.get(o.skeleton) !== this._frame) {
+      this._skeletonFrames.set(o.skeleton, this._frame);
+      o.skeleton.update();
+    }
+    const d = skin.data;
+    for (let i = 0; i < MAT4_FLOATS; i++) {
+      d[i] = o.bindMatrix.elements[i]!;
+      d[MAT4_FLOATS + i] = o.bindMatrixInverse.elements[i]!;
+    }
+    d.set(o.skeleton.boneMatrices.subarray(0, d.length - SKIN_HEADER_FLOATS), SKIN_HEADER_FLOATS);
+    this._device.queue.writeBuffer(skin.buffer, 0, d);
+  }
+
   private _dropInstance(inst: Inst): void {
     for (const r of inst.recipes.values()) this._bridge.release(r.id);
     inst.recipes.clear();
@@ -507,6 +578,7 @@ export class NativeRenderer implements NativeDrawer {
     }
     if (!this._refreshGeometry(inst.geometry, inst.geo) || (inst.extra !== null && !this._refreshSet(inst.extra))) return false;
     this._drawParameters(inst);
+    if (inst.skin) this._writeSkin(inst.object, inst.skin);
     const e = inst.object.matrixWorld.elements;
     const last = inst.last;
     let moved = false;
@@ -569,6 +641,7 @@ export class NativeRenderer implements NativeDrawer {
       scratch: new Float32Array(model.paramFloats),
       buffer: this._device.createBuffer({ label: `native.${model.name}`, size: model.paramFloats * FLOAT_BYTES, usage: BUFFER_UNIFORM | BUFFER_COPY_DST }),
       textures: [...model.textures(material, variant)],
+      kinds: '',
       gpuTextures: [],
       group: null,
       frame: -1,
@@ -633,23 +706,26 @@ export class NativeRenderer implements NativeDrawer {
       mat.gpuTextures.push(gpu);
       entries.push({ binding: 1 + 2 * i, resource: sampler }, { binding: 2 + 2 * i, resource: gpu.createView() });
     }
-    mat.group = this._device.createBindGroup({ layout: this._materialLayout(mat.textures.length), entries });
+    mat.kinds = mat.textures.map((t) => ((t as { type?: number }).type === FLOAT_TYPE ? UNFILTERABLE : FILTERABLE)).join('');
+    mat.group = this._device.createBindGroup({ layout: this._materialLayout(mat.kinds), entries });
     mat.generation++;
     return true;
   }
 
-  private _materialLayout(textures: number): Gpu {
-    let layout = this._layouts.material.get(textures);
+  /** Group-2 layout for these texture kinds (`f`/`u` per texture), visible in both stages. */
+  private _materialLayout(kinds: string): Gpu {
+    let layout = this._layouts.material.get(kinds);
     if (!layout) {
       const entries: unknown[] = [{ binding: 0, visibility: STAGE_VERTEX | STAGE_FRAGMENT, buffer: { type: 'uniform' } }];
-      for (let i = 0; i < textures; i++) {
+      for (let i = 0; i < kinds.length; i++) {
+        const unfilterable = kinds[i] === UNFILTERABLE;
         entries.push(
-          { binding: 1 + 2 * i, visibility: STAGE_FRAGMENT, sampler: { type: 'filtering' } },
-          { binding: 2 + 2 * i, visibility: STAGE_FRAGMENT, texture: { sampleType: 'float' } },
+          { binding: 1 + 2 * i, visibility: STAGE_VERTEX | STAGE_FRAGMENT, sampler: { type: unfilterable ? 'non-filtering' : 'filtering' } },
+          { binding: 2 + 2 * i, visibility: STAGE_VERTEX | STAGE_FRAGMENT, texture: { sampleType: unfilterable ? 'unfilterable-float' : 'float' } },
         );
       }
-      layout = this._device.createBindGroupLayout({ label: `native.material${textures}`, entries });
-      this._layouts.material.set(textures, layout);
+      layout = this._device.createBindGroupLayout({ label: `native.material.${kinds}`, entries });
+      this._layouts.material.set(kinds, layout);
     }
     return layout;
   }
@@ -657,7 +733,7 @@ export class NativeRenderer implements NativeDrawer {
   // ── Geometry ───────────────────────────────────────────────────────────────────────
 
   /** Own GPU buffers for the attributes the variant reads; a string = refusal reason. */
-  private _geometry(geometry: GeometryLike, semantics: readonly VertexSemantic[]): GeoState | string {
+  private _geometry(geometry: GeometryLike, semantics: readonly string[]): GeoState | string {
     const key = semantics.join();
     const known = this._geos.get(geometry);
     if (known && !known.stale && known.key.startsWith(key + '#')) return known;
@@ -759,18 +835,21 @@ export class NativeRenderer implements NativeDrawer {
   private _pipeline(inst: Inst, color: string, depth: string, samples: number, target: string, cull: string): Gpu | null {
     const mat = inst.mat;
     const extraKey = inst.extra ? inst.extra.key : '';
-    const key = `${mat.model.name}|${mat.variant.join('+')}|${inst.geo.key}|${extraKey}|${inst.state.key}|${cull}|${mat.textures.length}|${target}`;
+    const key = `${mat.model.name}|${mat.variant.join('+')}|${inst.geo.key}|${extraKey}|${inst.state.key}|${cull}|${mat.kinds}|${target}`;
     let pipeline = this._pipelines.get(key);
     if (pipeline) return pipeline;
-    const codeKey = `${mat.model.name}|${mat.variant.join('+')}${inst.instanced ? '|instanced' : ''}`;
+    const codeKey = `${mat.model.name}|${mat.variant.join('+')}${inst.instanced ? '|instanced' : ''}${inst.skin ? '|skinned' : ''}`;
     let module = this._modules.get(codeKey);
     if (!module) {
-      const code = coreWgsl(mat.model.attributes(mat.variant), this._frameWgsl, { instanced: inst.instanced }) + mat.model.wgsl(mat.variant);
+      const core = { instanced: inst.instanced, skinned: inst.skin !== null, attributeTypes: mat.model.attributeTypes };
+      const code = coreWgsl(mat.model.attributes(mat.variant), this._frameWgsl, core) + mat.model.wgsl(mat.variant);
       module = this._device.createShaderModule({ label: `native.${codeKey}`, code });
       this._modules.set(codeKey, module);
     }
     const layout = this._device.createPipelineLayout({
-      bindGroupLayouts: [this._layouts.view, this._layouts.frame, this._materialLayout(mat.textures.length), this._layouts.object],
+      bindGroupLayouts: [
+        this._layouts.view, this._layouts.frame, this._materialLayout(mat.kinds), inst.skin ? this._layouts.objectSkinned : this._layouts.object,
+      ],
     });
     const s = inst.state;
     const depthStencil: Record<string, unknown> = { format: depth, depthWriteEnabled: s.depthWrite, depthCompare: 'less-equal' };

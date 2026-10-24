@@ -335,6 +335,12 @@ export { pass, mrt, output, renderOutput, uniform } from 'three/tsl';
 // engine; o jogo não pode importar `three` (cópia dupla quebra o estado do TSL).
 export * as TSL from 'three/tsl';
 export { MeshLambertNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu';
+// WGSL do jogo no renderer nativo do export (SPEC-0565, ADR-0566): o material TSL marca
+// `userData.nativeMaterial`, o jogo registra o WGSL equivalente; `shaderTime` é o relógio do
+// lado `three` (o mesmo `view.time` do WGSL).
+export { registerNativeMaterial } from './render/native/GameMaterials.js';
+export { shaderTime, SHADER_TIME_ROLLOVER_S } from './render/native/ShaderClock.js';
+export type { NativeModelDef, VertexSemantic } from './render/native/models/NativeModel.js';
 export { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 export { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 

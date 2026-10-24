@@ -20,10 +20,24 @@ import { NativeRenderer, nativeRendererModels, vertexFormat } from '../../../src
 import { NATIVE_MODELS } from '../../../src/render/native/models/index.js';
 import { unlitModel } from '../../../src/render/native/models/unlit.js';
 import type { DrawBatchBridge } from '../../../src/render/DrawBatch.js';
+import {
+  Bone,
+  DataTexture,
+  FloatType,
+  InstancedBufferAttribute,
+  RGBAFormat,
+  Skeleton,
+  SkinnedMesh,
+  Uint16BufferAttribute,
+  Float32BufferAttribute,
+} from 'three';
+import { registerNativeMaterial } from '../../../src/render/native/GameMaterials.js';
+import { SHADER_TIME_ROLLOVER_S, advanceShaderTime, shaderTime } from '../../../src/render/native/ShaderClock.js';
+import { VIEW_TIME_AT, type NativeModelDef } from '../../../src/render/native/models/NativeModel.js';
 
 /** A fake WebGPU device that counts what is created and written. */
 function fakeHost() {
-  const calls = { buffers: 0, writes: [] as Array<{ buffer: unknown; offset: number; length: number }>, pipelines: 0, modules: [] as string[], groups: 0 };
+  const calls = { buffers: 0, writes: [] as Array<{ buffer: unknown; offset: number; length: number; data: ArrayBufferView }>, pipelines: 0, modules: [] as string[], groups: 0 };
   let next = 0;
   const device = {
     createBuffer: (d: { size: number; label?: string }) => ({ kind: 'buffer', id: next++, ...d, buffers: calls.buffers++ }),
@@ -35,7 +49,7 @@ function fakeHost() {
       return { kind: 'module', id: next++ };
     },
     createRenderPipeline: (d: unknown) => ({ kind: 'pipeline', id: next++, d, n: calls.pipelines++ }),
-    queue: { writeBuffer: (buffer: unknown, offset: number, data: ArrayBufferView) => calls.writes.push({ buffer, offset, length: data.byteLength }) },
+    queue: { writeBuffer: (buffer: unknown, offset: number, data: ArrayBufferView) => calls.writes.push({ buffer, offset, length: data.byteLength, data }) },
   };
   const textureData = new WeakMap<object, Record<string, unknown>>();
   const host = {
@@ -405,5 +419,143 @@ describe('NativeRenderer core (R1.4, SPEC-0555)', () => {
     frame(nr);
     const cutout = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ map: new Texture(), alphaTest: 0.5, side: DoubleSide }));
     expect(nr.take(cutout, cutout.material, cutout.geometry)).not.toBeNull();
+  });
+});
+
+describe('NativeRenderer R1.5 (SPEC-0565): game WGSL, shader clock, skinning', () => {
+  type Layout = { d: { entries: Array<{ binding: number; visibility: number; buffer?: { type: string }; sampler?: { type: string }; texture?: { sampleType: string } }> } };
+  const lastPipeline = (t: ReturnType<typeof fakeHost>) =>
+    (t.recorded.at(-1)![0] as { d: { layout: { d: { bindGroupLayouts: Layout[] } }; vertex: { buffers: Array<{ stepMode: string; attributes: Array<{ shaderLocation: number; format: string }> }> } } }).d;
+  const STAGE_BOTH = 3;
+
+  /** A game WGSL with its own per-instance attribute and a float DataTexture read in the VS. */
+  const data = new DataTexture(new Float32Array(4 * 2), 2, 1, RGBAFormat, FloatType);
+  const waveModel: NativeModelDef = {
+    name: 'ignored',
+    paramFloats: 4,
+    attributeTypes: { tint: 'vec3<f32>' },
+    variant: () => [],
+    attributes: () => ['position', 'tint'],
+    wgsl: () => `
+@group(2) @binding(2) var data : texture_2d<f32>;
+@vertex fn vs(vin : VIn) -> @builtin(position) vec4<f32> {
+  let p = nativeLocal(vin) + textureLoad(data, vec2<i32>(i32(vin.instance), 0), 0) * sin(view.time);
+  return view.projection * (view.view * nativeModel(vin)) * p;
+}
+@fragment fn fs() -> @location(0) vec4<f32> { return vec4<f32>(1.0); }`,
+    writeParams: (_m, out) => out.fill(0),
+    textures: () => [data],
+  };
+  registerNativeMaterial('testWave', waveModel);
+
+  const waveMesh = () => {
+    const geo = new BoxGeometry();
+    geo.setAttribute('tint', new InstancedBufferAttribute(new Float32Array(2 * 3), 3));
+    const m = new MeshBasicMaterial();
+    m.userData['nativeMaterial'] = 'testWave';
+    return new InstancedMesh(geo, m, 2);
+  };
+
+  it('draws a registered game material: own instance attribute, float DataTexture visible in the VS', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    frame(nr);
+    const mesh = waveMesh();
+    const entry = nr.take(mesh, mesh.material, mesh.geometry)!;
+    expect(entry).not.toBeNull();
+    nr.recipeFor(entry, {});
+    const p = lastPipeline(t);
+    expect(p.vertex.buffers[1]).toMatchObject({ stepMode: 'instance', attributes: [{ shaderLocation: 1, format: 'float32x3' }] });
+    expect(t.calls.modules.at(-1)).toContain('@location(1) tint : vec3<f32>');
+    const material = p.layout.d.bindGroupLayouts[2]!.d.entries;
+    expect(material[1]).toMatchObject({ visibility: STAGE_BOTH, sampler: { type: 'non-filtering' } });
+    expect(material[2]).toMatchObject({ visibility: STAGE_BOTH, texture: { sampleType: 'unfilterable-float' } });
+  });
+
+  it('refuses an unregistered or filtered-out game material, and an attribute without a type', () => {
+    const t = fakeHost();
+    const unlitOnly = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, new Set(['unlit']));
+    frame(unlitOnly);
+    const mesh = waveMesh();
+    expect(unlitOnly.take(mesh, mesh.material, mesh.geometry)).toBeNull();
+    const games = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, new Set(['unlit', 'wgsl']));
+    frame(games);
+    expect(games.take(mesh, mesh.material, mesh.geometry)).not.toBeNull();
+    const other = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    other.material.userData['nativeMaterial'] = 'notRegistered';
+    expect(games.take(other, other.material, other.geometry)).toBeNull();
+    registerNativeMaterial('untyped', { ...waveModel, attributeTypes: {} });
+    const untyped = waveMesh();
+    untyped.material.userData['nativeMaterial'] = 'untyped';
+    expect(games.take(untyped, untyped.material, untyped.geometry)).toBeNull();
+  });
+
+  it('writes the shader clock into view.time; the clock wraps at the rollover', () => {
+    shaderTime.value = 0;
+    advanceShaderTime(1.5);
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    frame(nr);
+    const view = t.calls.writes.find((w) => w.length === 40 * 4)!.data as Float32Array;
+    expect(view[VIEW_TIME_AT]).toBeCloseTo(1.5);
+    advanceShaderTime(SHADER_TIME_ROLLOVER_S);
+    expect(shaderTime.value).toBeCloseTo(1.5);
+    shaderTime.value = 0;
+  });
+
+  /** Two-bone SkinnedMesh like a glTF rig (uint16 joints, float weights). */
+  const skinned = (skeleton?: Skeleton) => {
+    const geo = new BoxGeometry();
+    const n = geo.getAttribute('position').count;
+    geo.setAttribute('skinIndex', new Uint16BufferAttribute(new Uint16Array(n * 4), 4));
+    geo.setAttribute('skinWeight', new Float32BufferAttribute(new Float32Array(n * 4).fill(0.25), 4));
+    const mesh = new SkinnedMesh(geo, new MeshBasicMaterial());
+    const bones = [new Bone(), new Bone()];
+    bones[0]!.add(bones[1]!);
+    mesh.add(bones[0]!);
+    mesh.bind(skeleton ?? new Skeleton(bones));
+    mesh.updateMatrixWorld(true);
+    return mesh;
+  };
+
+  it('skins in the core: skinIndex/skinWeight in VIn, bones in group 3, skeleton updated once per frame', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const a = skinned();
+    const b = skinned(a.skeleton);
+    let updates = 0;
+    const update = a.skeleton.update.bind(a.skeleton);
+    a.skeleton.update = () => {
+      updates++;
+      update();
+    };
+    frame(nr);
+    const entry = nr.take(a, a.material, a.geometry)!;
+    nr.take(b, b.material, b.geometry);
+    expect(updates).toBe(1);
+    nr.recipeFor(entry, {});
+    const p = lastPipeline(t);
+    expect(p.layout.d.bindGroupLayouts[3]!.d.entries[1]).toMatchObject({ binding: 1, buffer: { type: 'read-only-storage' } });
+    expect(p.vertex.buffers.flatMap((v) => v.attributes.map((x) => x.format))).toContain('uint16x4');
+    const code = t.calls.modules.at(-1)!;
+    expect(code).toContain('skinIndex : vec4<u32>');
+    expect(code).toContain('(skin.bones[i.x] * w.x) * v');
+    const skinBytes = (2 + 2) * 16 * 4;
+    const writes = t.calls.writes.length;
+    frame(nr);
+    nr.take(a, a.material, a.geometry);
+    expect(t.calls.writes.slice(writes).some((w) => w.length === skinBytes)).toBe(true);
+    expect(updates).toBe(2);
+  });
+
+  it('refuses skinned + instanced (the three does not draw both), and reads integer skin formats', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    frame(nr);
+    const both = new InstancedMesh(new BoxGeometry(), new MeshBasicMaterial(), 2);
+    (both as unknown as { isSkinnedMesh: boolean }).isSkinnedMesh = true;
+    expect(nr.take(both, both.material, both.geometry)).toBeNull();
+    expect(vertexFormat(new Uint16Array(4), 4, false)).toBe('uint16x4');
+    expect(vertexFormat(new Uint8Array(4), 4, false)).toBe('uint8x4');
   });
 });
