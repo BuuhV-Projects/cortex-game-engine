@@ -290,3 +290,23 @@ disto muda os marcos; cada item entra com SPEC antes, quando o jogo precisar.
 ## Pendências levadas ao PRD-0009
 
 Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
+
+## Backlog de pendências do R1
+
+- **Vidro emissivo animado no `lambert`** (origem: R1.2, SPEC-0535, 2026-10-24). Estado:
+  `lambert` + `emissiveMap` fica **recusado** (vai para o `three`); o Standard com `emissiveMap`
+  passa. Sintoma: com o relógio do DDD 61 andando (rampa do anoitecer, ~17:37), o vidro das
+  janelas do `plasterMat` (`lambert+emissiveMap+fog+map+vertexColors`) sai no renderer próprio
+  com ~22% a menos do emissivo do `three`, e a diferença é aditiva e constante nos painéis
+  (Setor O 1,48%, Comercial 3,9% dos pixels). Com hora fixa (`?hora=17.6&escala=0`, mesmo `ei`)
+  dá PASS. Descartados, cada um medido no jogo: dados de sol, hemisfério e spots (iguais aos do
+  `three`, lidos lado a lado); bloco de parâmetros (valor atual, escrito todo quadro); textura e
+  sampler do `emissiveMap` (os mesmos objetos que o `three` usa, versão constante); nível de mip
+  (`textureSampleLevel(…, 0)` não muda nada); receita velha (regravar ao mudar parâmetro não
+  muda nada); a cópia de atributo do `three` (correção 04d07194 da Frente C já na branch);
+  `doubleSide`; clima (`setWet` só mexe no asfalto). Hipótese em aberto: algo que acompanha a
+  rampa e que o `three` aplica ao emissivo e o modelo não — por exemplo um estado do
+  `NodeMaterialObserver` / do `renderGroup` que fica entre o degrau do `night` e o
+  congelamento. Próximo passo: reproduzir na galeria com rampa de `emissiveIntensity`
+  **depois** do primeiro quadro (a tentativa feita mudava antes do `precompile`) e capturar o
+  WGSL e os uniformes reais do estado do `three` naquele objeto.

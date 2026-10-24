@@ -206,6 +206,11 @@ export const lambertModel: NativeModelDef = {
   paramFloats: LIT_PARAM_FLOATS,
 
   variant(c, _object: Object3D, material) {
+    // Refused while the emissive is not black (stays with the three): with the DDD 61 clock
+    // running, the native lambert emissive came out ~22% short of the three's while params,
+    // texture, sampler, mip level and lights all matched (SPEC-0535, pending). Constant matches.
+    const e = (material as unknown as LitMaterial).emissive;
+    if (e.r !== 0 || e.g !== 0 || e.b !== 0) return null;
     return litVariant(c, material, ACCEPTED);
   },
 
