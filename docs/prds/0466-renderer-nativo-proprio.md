@@ -309,3 +309,47 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
 - [ ] **No `?parityFreeze`, o braço `three` não chama o `beginFrame`** (servidor nulo): um bloco de quadro
       não vê a troca de braço; a sombra contornou com `scene.onAfterRender` só no modo de paridade.
       Origem: SPEC-0545.
+- **Vidro emissivo animado no `lambert`** (origem: R1.2, SPEC-0535, 2026-10-24). Estado:
+  `lambert` + `emissiveMap` fica **recusado** (vai para o `three`); o Standard com `emissiveMap`
+  passa. Sintoma: com o relógio do DDD 61 andando (rampa do anoitecer, ~17:37), o vidro das
+  janelas do `plasterMat` (`lambert+emissiveMap+fog+map+vertexColors`) sai no renderer próprio
+  com ~22% a menos do emissivo do `three`, e a diferença é aditiva e constante nos painéis
+  (Setor O 1,48%, Comercial 3,9% dos pixels). Com hora fixa (`?hora=17.6&escala=0`, mesmo `ei`)
+  dá PASS. Descartados, cada um medido no jogo: dados de sol, hemisfério e spots (iguais aos do
+  `three`, lidos lado a lado); bloco de parâmetros (valor atual, escrito todo quadro); textura e
+  sampler do `emissiveMap` (os mesmos objetos que o `three` usa, versão constante); nível de mip
+  (`textureSampleLevel(…, 0)` não muda nada); receita velha (regravar ao mudar parâmetro não
+  muda nada); a cópia de atributo do `three` (correção 04d07194 da Frente C já na branch);
+  `doubleSide`; clima (`setWet` só mexe no asfalto). Hipótese em aberto: algo que acompanha a
+  rampa e que o `three` aplica ao emissivo e o modelo não — por exemplo um estado do
+  `NodeMaterialObserver` / do `renderGroup` que fica entre o degrau do `night` e o
+  congelamento. Próximo passo: reproduzir na galeria com rampa de `emissiveIntensity`
+  **depois** do primeiro quadro (a tentativa feita mudava antes do `precompile`) e capturar o
+  WGSL e os uniformes reais do estado do `three` naquele objeto.
+- **`standard` desligado na R1.2** (origem: R1.2, SPEC-0535, 2026-10-24). O modelo existe
+  (`models/standard.ts`, testes), mas saiu de `NATIVE_MODELS`: no Comercial de dia, as fachadas
+  de um prédio dão 1,17% de pixels fora da paridade (Setor O passa). Não foi investigado. **Volta
+  antes do R1.6** (o aceite final exige 0 recusas). Próximo passo: o mesmo método do vidro
+  (isolar o material da fachada, comparar dados e WGSL do estado do `three`).
+- **Fios distantes no Comercial de dia** (origem: R1.2, 2026-10-24): 0,0132% dos pixels, acima
+  do limite de 0,01%. Não é cobertura subpixel: num braço o fio some por inteiro (oclusão ou
+  ordem), evidência em `native/scripts/perf/coverage-diff.mjs`. Hipótese: ordem do domo do céu
+  nativo × malha fundida dos fios (matriz identidade, z na origem). `@invariant` na posição não
+  muda.
+- **`lambert` instanciado recusado — aguarda correção de instâncias da Frente C** (origem: R1.2,
+  2026-10-24; dono: Frente C). Os "fios distantes" acima são os cabos quebráveis do DDD 61
+  (`breakableProps.ts`, `InstancedMesh` "fios-quebraveis", lambert), cujo `cull()` compacta as
+  instâncias por distância (`setMatrixAt` nas `n` primeiras, `mesh.count = n`,
+  `addUpdateRange(0, n*16)`). Medido: a chave nativa e o `painterSortStable` do `three` r184
+  batem campo a campo (o z do C++ também entra na `RenderList` do `three`, então é o mesmo nos
+  dois braços); com `nativeTint`, quem desenha o fio é o braço nativo e o `three` o esconde; com o
+  lambert instanciado recusado, o "alt 223" some. Suspeitos: culling do `InstancedMesh`
+  (`boundingSphere` em cache no `three` × bounds do espelho C++) ou os `updateRanges`. Resíduo
+  ±2 (0,0565%) quando o instanciado volta ao `three` no braço nativo (cópia de instâncias do
+  `three` desatualizada?). Volta antes do R1.6.
+- **`receiveShadow` no `lambert` recusado — aguarda a paridade da sombra (Frente B)** (origem:
+  R1.2 após o merge A+B, 2026-10-24; dono: Frente B). Com `SHADOW_READY`, as sombras dos
+  pedestres na calçada (Comercial, dia) diferem até 6/255 em 0,0821% dos pixels; com
+  `receiveShadow` recusado o Comercial dia dá PASS (0,0030%). O modelo já chama
+  `nativeShadow(posMundo, normalMundo)` na ordem do `wgsl-0019`; religar = `RECEIVE_SHADOW = true`
+  em `models/lambert.ts`.
