@@ -29,6 +29,13 @@ kart-racer e crash-racer ficaram fora do escopo por decisão do usuário (2026-1
 
 ## Linha de base — medida no R0 (SPEC-0505), controle de todos os marcos
 
+> **Jogo-alvo trocado para `e1cede4` (2026-10-24).** O usuário viu o jogador atravessar o ônibus nas
+> rodadas: a correção (SPEC-0193 do jogo) está em `e1cede4`, que só soma isso e a música da carga
+> (SPEC-0192) a `e2be01c`. Cópia de medição: `D:/jogos/detetive-brasilia-rs-e1cede4` (padrão do
+> `check-stage.sh`). **A tabela abaixo (`e2be01c`) não vale mais como número absoluto**: o aceite final
+> mede o braço `three` na cópia nova, no mesmo par intercalado. Um A/B só vale dentro do mesmo commit do
+> jogo — nunca misturar braços de cópias diferentes.
+
 Engine `ea10181e` (main + instrumentos do R0, desligados), **host compilado na worktree**, DDD 61
 `e2be01c`, **1920×1080** (SPEC-0515), RS1 + `DynamicLighting` + filtro de sombra compartilhado
 ligados por padrão. A/A (o mesmo export nos dois braços, 1 réplica cada), autopiloto; média dos
