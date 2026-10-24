@@ -25,7 +25,9 @@ import { classifyDrawable } from './RendererClassifier.js';
 import { NATIVE_MODELS } from './models/index.js';
 import { FRAME_BLOCKS } from './frame/index.js';
 import type { FrameBlock, FrameBlockFactory } from './frame/FrameBlock.js';
-import { OBJECT_FLOATS, OBJECT_NORMAL_AT, VIEW_FLOATS, coreWgsl, type NativeModelDef, type VertexSemantic } from './models/NativeModel.js';
+import {
+  INSTANCE_MATRIX_COLUMNS, OBJECT_FLOATS, OBJECT_NORMAL_AT, VIEW_FLOATS, coreWgsl, type NativeModelDef, type VertexSemantic,
+} from './models/NativeModel.js';
 
 const QUERY_KEY = 'nativeRenderer=';
 const MODELS_QUERY = 'nativeRendererModels=';
@@ -48,8 +50,13 @@ const TINT_DELTA = 8 / 255;
 /** three constants (kept local). */
 const FRONT_SIDE = 0;
 const BACK_SIDE = 1;
+const DOUBLE_SIDE = 2;
+const NORMAL_BLENDING = 1;
+const ADDITIVE_BLENDING = 2;
 const LESS_EQUAL_DEPTH = 3;
 const NO_TONE_MAPPING = 0;
+/** `instanceMatrix`: 16 floats per instance, read as 4 vec4 columns (SPEC-0555). */
+const MAT4_COLUMN_BYTES = 16;
 /** Without `scene.fog`, near/far this large make `smoothstep` return 0: no fog. */
 const NO_FOG_NEAR = 1e37;
 const NO_FOG_FAR = 2e37;
@@ -60,8 +67,25 @@ const RETRY_REASONS = new Set(['texture']);
  * from the classification before the model sees it; refused unless supported below.
  */
 const CORE_FEATURES = new Set(['instanced', 'skinned', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'doubleSide']);
-/** What the core draws today. R1.4 adds instancing/transparency/state, R1.5 skinning. */
-const CORE_SUPPORTED = new Set(['doubleSide']);
+/** What the core draws today (R1.4, SPEC-0555: instancing, transparency, state). R1.5 adds skinning. */
+const CORE_SUPPORTED = new Set(['doubleSide', 'instanced', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder']);
+/** Vertex semantics read from the object, not the geometry. */
+const OBJECT_SEMANTICS = new Set<VertexSemantic>(['instanceColor']);
+/**
+ * Blend states of the three's `_getBlending` (not premultiplied). Normal blending only when the
+ * material is transparent (the three draws an opaque normal material without blending).
+ */
+const BLEND_STATES = {
+  normal: {
+    color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+    alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+  },
+  additive: {
+    color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' },
+    alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+  },
+} as const;
+type Blend = 'none' | keyof typeof BLEND_STATES;
 const MAT3_COLUMNS = 3;
 const ROW_FLOATS = 4;
 
@@ -112,8 +136,9 @@ interface AttributeLike {
   version: number;
   count: number;
   isInterleavedBufferAttribute?: boolean;
+  isInstancedBufferAttribute?: boolean;
   offset?: number;
-  data?: { array: ArrayBufferView & ArrayLike<number>; stride: number; version: number };
+  data?: { array: ArrayBufferView & ArrayLike<number>; stride: number; version: number; isInstancedInterleavedBuffer?: boolean };
 }
 interface GeometryLike {
   attributes: Record<string, AttributeLike | undefined>;
@@ -134,16 +159,33 @@ export function vertexFormat(array: ArrayLike<number>, itemSize: number, normali
   return null;
 }
 
-interface GeoState {
+/** Vertex buffers of a geometry or of an object's instance attributes, kept in sync by version. */
+interface VertexSet {
   /** One GPU buffer per source array (interleaved attributes share one). */
   buffers: Gpu[];
-  sources: Array<{ array: ArrayBufferView; version: () => number; seen: number }>;
-  layouts: Array<{ arrayStride: number; attributes: Array<{ shaderLocation: number; offset: number; format: string }> }>;
+  /** `src` = the attribute (or its interleaved buffer); `array` = what was uploaded. */
+  sources: Array<{ src: { array: ArrayBufferView; version: number }; array: ArrayBufferView; seen: number }>;
+  layouts: Array<{ arrayStride: number; stepMode: 'vertex' | 'instance'; attributes: Array<{ shaderLocation: number; offset: number; format: string }> }>;
+  key: string;
+}
+
+interface GeoState extends VertexSet {
   index: Gpu | null;
   index32: boolean;
   indexSource: AttributeLike | null;
   indexSeen: number;
-  count: number;
+  /** A source array was replaced: the next instance built on this geometry uploads it again. */
+  stale: boolean;
+}
+
+/** Pipeline state of an instance (SPEC-0555): blend, depth write, depth bias, cull per pass. */
+interface DrawState {
+  blend: Blend;
+  depthWrite: boolean;
+  /** `[polygonOffsetUnits, polygonOffsetFactor]`, or `null` without `polygonOffset`. */
+  bias: [number, number] | null;
+  /** Cull mode of each pass, in draw order (transparent DoubleSide: back faces first). */
+  culls: string[];
   key: string;
 }
 
@@ -166,20 +208,36 @@ interface Inst extends NativeEntry {
   object: Object3D;
   material: Material;
   geometry: GeometryLike;
+  /** `material.version` and `instanceColor` at build: a change rebuilds (the classification may change). */
+  version: number;
+  instanceColor: unknown;
   mat: MatState;
   geo: GeoState;
+  /** Per-object instance buffers (`instanceMatrix`, `instanceColor`), or `null`. */
+  extra: VertexSet | null;
+  vertexBuffers: Gpu[];
+  instanced: boolean;
+  state: DrawState;
   slot: number;
   chunk: Gpu;
   group: Gpu;
   last: Float32Array;
   recipes: Map<string, { id: number; generation: number; frame: number }>;
-  cull: string;
+  // Per frame (`getDrawParameters` of the three): drawRange, InstancedMesh.count.
+  count: number;
+  first: number;
+  triangles: number;
+  instances: number;
+  passes: number;
+  transparent: boolean;
 }
 
 /** Refused (object, material, geometry): checked again only when one of them changes. */
 interface Refusal {
   material: unknown;
   geometry: unknown;
+  version: number;
+  instanceColor: unknown;
   reason: string;
 }
 
@@ -283,11 +341,17 @@ export class NativeRenderer implements NativeDrawer {
 
   take(object: Object3D, material: unknown, geometry: unknown): NativeEntry | null {
     const cached = this._byObject.get(object);
-    if (cached !== undefined && cached.material === material && cached.geometry === geometry) {
+    const version = (material as Material).version;
+    const instanceColor = (object as { instanceColor?: unknown }).instanceColor ?? null;
+    if (
+      cached !== undefined && cached.material === material && cached.geometry === geometry &&
+      cached.version === version && cached.instanceColor === instanceColor
+    ) {
       if (!('mat' in cached)) return null;
-      this._refreshInstance(cached);
-      this.stats.taken++;
-      return cached;
+      if (this._refreshInstance(cached)) {
+        this.stats.taken++;
+        return cached;
+      }
     }
     if (cached !== undefined && 'mat' in cached) this._dropInstance(cached);
     const inst = this._build(object, material as Material, geometry as GeometryLike);
@@ -296,19 +360,19 @@ export class NativeRenderer implements NativeDrawer {
     return inst;
   }
 
-  recipeFor(entry: NativeEntry, renderContext: unknown): number {
+  recipeFor(entry: NativeEntry, renderContext: unknown, pass = 0): number {
     const inst = entry as Inst;
     const u = this._host.backend.utils;
     const color = u.getCurrentColorFormat(renderContext);
     const depth = u.getCurrentDepthStencilFormat(renderContext);
     const samples = u.getSampleCountRenderContext(renderContext);
-    const target = `${color}|${depth}|${samples}`;
+    const target = `${color}|${depth}|${samples}|${pass}`;
     const known = inst.recipes.get(target);
     if (known && known.generation === inst.mat.generation && known.frame === this._frameGeneration) return known.id;
     if (known) this._bridge.release(known.id);
-    const pipeline = this._pipeline(inst, color, depth, samples, target);
+    const pipeline = this._pipeline(inst, color, depth, samples, target, inst.state.culls[pass]!);
     if (!pipeline || !inst.mat.group) return NO_RECIPE;
-    const id = this._bridge.record(pipeline, [this._viewGroup, this._frameGroup, inst.mat.group, inst.group], inst.geo.buffers, inst.geo.index, inst.geo.index32);
+    const id = this._bridge.record(pipeline, [this._viewGroup, this._frameGroup, inst.mat.group, inst.group], inst.vertexBuffers, inst.geo.index, inst.geo.index32);
     if (id === NO_RECIPE) return NO_RECIPE;
     inst.recipes.set(target, { id, generation: inst.mat.generation, frame: this._frameGeneration });
     this.stats.recipes++;
@@ -318,7 +382,11 @@ export class NativeRenderer implements NativeDrawer {
   // ── Instances ──────────────────────────────────────────────────────────────────────
 
   private _refuse(object: Object3D, material: unknown, geometry: unknown, reason: string): null {
-    if (!RETRY_REASONS.has(reason)) this._byObject.set(object, { material, geometry, reason });
+    if (!RETRY_REASONS.has(reason)) {
+      const version = (material as Material).version;
+      const instanceColor = (object as { instanceColor?: unknown }).instanceColor ?? null;
+      this._byObject.set(object, { material, geometry, version, instanceColor, reason });
+    }
     this._refusals.set(reason, (this._refusals.get(reason) ?? 0) + 1);
     this.stats.refused++;
     return null;
@@ -332,18 +400,32 @@ export class NativeRenderer implements NativeDrawer {
     for (const f of c.features) {
       if (CORE_FEATURES.has(f) && !CORE_SUPPORTED.has(f)) return this._refuse(object, material, geometry, `core:${f}`);
     }
-    const shading = { ...c, features: c.features.filter((f) => !CORE_FEATURES.has(f)) };
-    const m = material as Material & { depthFunc?: number; depthTest?: boolean; side?: number };
+    const m = material as Material & {
+      depthFunc?: number; depthTest?: boolean; side?: number; premultipliedAlpha?: boolean; alphaToCoverage?: boolean;
+      stencilWrite?: boolean; forceSinglePass?: boolean; polygonOffsetUnits?: number; polygonOffsetFactor?: number;
+    };
     if (m.depthTest === false || (m.depthFunc ?? LESS_EQUAL_DEPTH) !== LESS_EQUAL_DEPTH) return this._refuse(object, material, geometry, 'depth');
+    if (m.premultipliedAlpha) return this._refuse(object, material, geometry, 'core:premultipliedAlpha');
+    if (m.alphaToCoverage) return this._refuse(object, material, geometry, 'core:alphaToCoverage');
+    if (m.stencilWrite) return this._refuse(object, material, geometry, 'core:stencil');
     if ((this._host.toneMapping ?? NO_TONE_MAPPING) !== NO_TONE_MAPPING) return this._refuse(object, material, geometry, 'toneMapping');
     if (this._fog === 'other') return this._refuse(object, material, geometry, 'fog:exp2');
     if (object.matrixWorld.determinant() < 0) return this._refuse(object, material, geometry, 'mirrored');
-    const variant = model.variant(shading, object, material);
+    // The three's NodeBuilder.isOpaque(): otherwise the model outputs its real alpha (`alpha`).
+    const opaque = !m.transparent && m.blending === NORMAL_BLENDING;
+    const features = c.features.filter((f) => !CORE_FEATURES.has(f));
+    if (!opaque) features.push('alpha');
+    const variant = model.variant({ ...c, features: features.sort() }, object, material);
     if (variant === null) return this._refuse(object, material, geometry, `variant:${c.model}`);
     const mat = this._material(material, model, variant);
     if (mat === null) return this._refuse(object, material, geometry, 'texture');
-    const geo = this._geometry(geometry, model.attributes(variant));
+    const semantics = model.attributes(variant);
+    const geo = this._geometry(geometry, semantics);
     if (typeof geo === 'string') return this._refuse(object, material, geometry, geo);
+    const instanced = c.features.includes('instanced');
+    const extra = instanced || semantics.some((s) => OBJECT_SEMANTICS.has(s)) ? this._instanceSet(object, semantics, instanced) : null;
+    if (typeof extra === 'string') return this._refuse(object, material, geometry, extra);
+    const state = drawState(m, opaque);
     const slot = this._allocSlot();
     const chunk = this._chunks[Math.floor(slot / OBJECT_SLOTS_PER_CHUNK)];
     const offset = (slot % OBJECT_SLOTS_PER_CHUNK) * UNIFORM_ALIGN_BYTES;
@@ -352,13 +434,18 @@ export class NativeRenderer implements NativeDrawer {
       entries: [{ binding: 0, resource: { buffer: chunk, offset, size: OBJECT_FLOATS * FLOAT_BYTES } }],
     });
     const inst: Inst = {
-      object, material, geometry, mat, geo, slot, chunk, group,
+      object, material, geometry, mat, geo, extra, instanced, state, slot, chunk, group,
+      version: material.version,
+      instanceColor: (object as { instanceColor?: unknown }).instanceColor ?? null,
+      vertexBuffers: extra ? [...geo.buffers, ...extra.buffers] : geo.buffers,
       last: new Float32Array(MAT4_FLOATS).fill(Number.NaN),
       recipes: new Map(),
-      cull: m.side === FRONT_SIDE ? 'back' : m.side === BACK_SIDE ? 'front' : 'none',
-      count: geo.count,
+      count: 0,
       first: 0,
-      triangles: geo.count / TRIANGLE_VERTICES,
+      triangles: 0,
+      instances: 1,
+      passes: state.culls.length,
+      transparent: m.transparent === true,
     };
     this._byObject.set(object, inst);
     object.addEventListener('removed', () => {
@@ -371,20 +458,55 @@ export class NativeRenderer implements NativeDrawer {
     return inst;
   }
 
+  /**
+   * Per-object vertex buffers: `instanceColor` at its semantic's location, then the 4 columns of
+   * `instanceMatrix` after the model's attributes (`coreWgsl` with `instanced`). A string = refusal.
+   */
+  private _instanceSet(object: Object3D, semantics: readonly VertexSemantic[], instanced: boolean): VertexSet | string {
+    const o = object as Object3D & { instanceMatrix?: AttributeLike; instanceColor?: AttributeLike | null };
+    const set: VertexSet = { buffers: [], sources: [], layouts: [], key: '' };
+    const add = (attr: AttributeLike, attributes: VertexSet['layouts'][number]['attributes']): void => {
+      set.buffers.push(this._uploadBuffer(attr.array, BUFFER_VERTEX));
+      set.sources.push({ src: attr, array: attr.array, seen: attr.version });
+      set.layouts.push({ arrayStride: attr.itemSize * FLOAT_BYTES, stepMode: 'instance', attributes });
+    };
+    const colorAt = semantics.indexOf('instanceColor');
+    if (colorAt >= 0) {
+      const ic = o.instanceColor;
+      if (!ic || vertexFormat(ic.array, ic.itemSize, ic.normalized) !== 'float32x3') return 'attribute:instanceColor';
+      add(ic, [{ shaderLocation: colorAt, offset: 0, format: 'float32x3' }]);
+    }
+    if (instanced) {
+      const im = o.instanceMatrix;
+      if (!im || !(im.array instanceof Float32Array) || im.itemSize !== MAT4_FLOATS) return 'attribute:instanceMatrix';
+      const columns = [];
+      for (let col = 0; col < INSTANCE_MATRIX_COLUMNS; col++) {
+        columns.push({ shaderLocation: semantics.length + col, offset: col * MAT4_COLUMN_BYTES, format: 'float32x4' });
+      }
+      add(im, columns);
+    }
+    set.key = `${colorAt >= 0 ? 'c' : ''}${instanced ? 'm' : ''}`;
+    return set;
+  }
+
   private _dropInstance(inst: Inst): void {
     for (const r of inst.recipes.values()) this._bridge.release(r.id);
     inst.recipes.clear();
     this._freeSlots.push(inst.slot);
   }
 
-  /** Per frame: material snapshot (once per material), geometry versions, matrix. */
-  private _refreshInstance(inst: Inst): void {
+  /**
+   * Per frame: material snapshot (once per material), buffer versions, draw range and instance
+   * count, matrix. `false` = a source array was replaced: the instance has to be rebuilt.
+   */
+  private _refreshInstance(inst: Inst): boolean {
     const mat = inst.mat;
     if (mat.frame !== this._frame) {
       mat.frame = this._frame;
       this._refreshMaterial(inst.material, mat);
     }
-    this._refreshGeometry(inst.geo);
+    if (!this._refreshGeometry(inst.geometry, inst.geo) || (inst.extra !== null && !this._refreshSet(inst.extra))) return false;
+    this._drawParameters(inst);
     const e = inst.object.matrixWorld.elements;
     const last = inst.last;
     let moved = false;
@@ -394,7 +516,7 @@ export class NativeRenderer implements NativeDrawer {
         break;
       }
     }
-    if (!moved) return;
+    if (!moved) return true;
     for (let i = 0; i < MAT4_FLOATS; i++) last[i] = e[i]!;
     const o = this._objectScratch;
     o.set(last);
@@ -409,6 +531,19 @@ export class NativeRenderer implements NativeDrawer {
     }
     this._device.queue.writeBuffer(inst.chunk, (inst.slot % OBJECT_SLOTS_PER_CHUNK) * UNIFORM_ALIGN_BYTES, this._objectScratch);
     this.stats.moved++;
+    return true;
+  }
+
+  /** The three's `RenderObject.getDrawParameters`: drawRange clamped to the items, `count` instances. */
+  private _drawParameters(inst: Inst): void {
+    const g = inst.geometry;
+    const items = inst.geo.indexSource ? inst.geo.indexSource.count : g.attributes['position']!.count;
+    const first = Math.max(g.drawRange.start, 0);
+    const count = Math.max(Math.min(g.drawRange.start + g.drawRange.count, items) - first, 0);
+    inst.first = first;
+    inst.count = count;
+    inst.triangles = count / TRIANGLE_VERTICES;
+    inst.instances = inst.instanced ? Math.max(0, (inst.object as Object3D & { count: number }).count) : 1;
   }
 
   private _allocSlot(): number {
@@ -525,13 +660,15 @@ export class NativeRenderer implements NativeDrawer {
   private _geometry(geometry: GeometryLike, semantics: readonly VertexSemantic[]): GeoState | string {
     const key = semantics.join();
     const known = this._geos.get(geometry);
-    if (known && known.key.startsWith(key + '#')) return known;
-    if (geometry.drawRange.start !== 0 || Number.isFinite(geometry.drawRange.count)) return 'geometry:drawRange';
+    if (known && !known.stale && known.key.startsWith(key + '#')) return known;
     if (Object.values(geometry.morphAttributes).some((l) => l.length > 0)) return 'morph';
-    const geo: GeoState = { buffers: [], sources: [], layouts: [], index: null, index32: false, indexSource: null, indexSeen: -1, count: 0, key: '' };
+    const geo: GeoState = {
+      buffers: [], sources: [], layouts: [], index: null, index32: false, indexSource: null, indexSeen: -1, key: '', stale: false,
+    };
     const bySource = new Map<object, number>();
     const parts: string[] = [];
     for (let loc = 0; loc < semantics.length; loc++) {
+      if (OBJECT_SEMANTICS.has(semantics[loc]!)) continue;
       const attr = geometry.attributes[semantics[loc]!];
       if (!attr) return `attribute:${semantics[loc]}`;
       const array = attr.isInterleavedBufferAttribute ? attr.data!.array : attr.array;
@@ -541,16 +678,18 @@ export class NativeRenderer implements NativeDrawer {
       const stride = attr.isInterleavedBufferAttribute ? attr.data!.stride * bytes : attr.itemSize * bytes;
       const offset = attr.isInterleavedBufferAttribute ? (attr.offset ?? 0) * bytes : 0;
       const source = attr.isInterleavedBufferAttribute ? attr.data! : attr;
+      // InstancedBufferAttribute of the geometry (a game WGSL's per-instance data, SPEC-0565).
+      const stepMode = (attr.isInterleavedBufferAttribute ? attr.data!.isInstancedInterleavedBuffer : attr.isInstancedBufferAttribute) ? 'instance' : 'vertex';
       let slot = bySource.get(source);
       if (slot === undefined) {
         slot = geo.buffers.length;
         bySource.set(source, slot);
         geo.buffers.push(this._uploadBuffer(array, BUFFER_VERTEX));
-        geo.sources.push({ array, version: () => source.version, seen: source.version });
-        geo.layouts.push({ arrayStride: stride, attributes: [] });
+        geo.sources.push({ src: source, array, seen: source.version });
+        geo.layouts.push({ arrayStride: stride, stepMode, attributes: [] });
       }
       geo.layouts[slot]!.attributes.push({ shaderLocation: loc, offset, format });
-      parts.push(`${slot}:${stride}:${offset}:${format}`);
+      parts.push(`${slot}:${stride}:${offset}:${format}:${stepMode}`);
     }
     if (geometry.index) {
       const idx = geometry.index;
@@ -558,29 +697,37 @@ export class NativeRenderer implements NativeDrawer {
       geo.index = this._uploadBuffer(idx.array, BUFFER_INDEX);
       geo.indexSource = idx;
       geo.indexSeen = idx.version;
-      geo.count = idx.count;
-    } else {
-      geo.count = geometry.attributes['position']!.count;
     }
     geo.key = `${key}#${parts.join('|')}`;
     this._geos.set(geometry, geo);
     return geo;
   }
 
-  private _refreshGeometry(geo: GeoState): void {
-    for (let i = 0; i < geo.sources.length; i++) {
-      const s = geo.sources[i]!;
-      const v = s.version();
+  /** Rewrites the buffers whose source version changed; `false` = a source array was replaced. */
+  private _refreshSet(set: VertexSet): boolean {
+    for (let i = 0; i < set.sources.length; i++) {
+      const s = set.sources[i]!;
+      if (s.src.array !== s.array) return false;
+      const v = s.src.version;
       if (v !== s.seen) {
         s.seen = v;
-        this._device.queue.writeBuffer(geo.buffers[i], 0, s.array);
+        this._device.queue.writeBuffer(set.buffers[i], 0, s.array);
       }
     }
+    return true;
+  }
+
+  private _refreshGeometry(geometry: GeometryLike, geo: GeoState): boolean {
     const idx = geo.indexSource;
+    if (!this._refreshSet(geo) || geometry.index !== idx) {
+      geo.stale = true;
+      return false;
+    }
     if (idx && idx.version !== geo.indexSeen) {
       geo.indexSeen = idx.version;
       this._device.queue.writeBuffer(geo.index, 0, idx.array);
     }
+    return true;
   }
 
   private _uploadBuffer(array: ArrayBufferView, usage: number): Gpu {
@@ -598,28 +745,36 @@ export class NativeRenderer implements NativeDrawer {
 
   // ── Pipelines ──────────────────────────────────────────────────────────────────────
 
-  private _pipeline(inst: Inst, color: string, depth: string, samples: number, target: string): Gpu | null {
+  private _pipeline(inst: Inst, color: string, depth: string, samples: number, target: string, cull: string): Gpu | null {
     const mat = inst.mat;
-    const key = `${mat.model.name}|${mat.variant.join('+')}|${inst.geo.key}|${inst.cull}|${mat.textures.length}|${target}`;
+    const extraKey = inst.extra ? inst.extra.key : '';
+    const key = `${mat.model.name}|${mat.variant.join('+')}|${inst.geo.key}|${extraKey}|${inst.state.key}|${cull}|${mat.textures.length}|${target}`;
     let pipeline = this._pipelines.get(key);
     if (pipeline) return pipeline;
-    const codeKey = `${mat.model.name}|${mat.variant.join('+')}`;
+    const codeKey = `${mat.model.name}|${mat.variant.join('+')}${inst.instanced ? '|instanced' : ''}`;
     let module = this._modules.get(codeKey);
     if (!module) {
-      const code = coreWgsl(mat.model.attributes(mat.variant), this._frameWgsl) + mat.model.wgsl(mat.variant);
+      const code = coreWgsl(mat.model.attributes(mat.variant), this._frameWgsl, { instanced: inst.instanced }) + mat.model.wgsl(mat.variant);
       module = this._device.createShaderModule({ label: `native.${codeKey}`, code });
       this._modules.set(codeKey, module);
     }
     const layout = this._device.createPipelineLayout({
       bindGroupLayouts: [this._layouts.view, this._layouts.frame, this._materialLayout(mat.textures.length), this._layouts.object],
     });
+    const s = inst.state;
+    const depthStencil: Record<string, unknown> = { format: depth, depthWriteEnabled: s.depthWrite, depthCompare: 'less-equal' };
+    if (s.bias) {
+      depthStencil['depthBias'] = s.bias[0];
+      depthStencil['depthBiasSlopeScale'] = s.bias[1];
+      depthStencil['depthBiasClamp'] = 0;
+    }
     pipeline = this._device.createRenderPipeline({
       label: `native.${codeKey}`,
       layout,
-      vertex: { module, entryPoint: 'vs', buffers: inst.geo.layouts },
-      fragment: { module, entryPoint: 'fs', targets: [{ format: color }] },
-      primitive: { topology: 'triangle-list', cullMode: inst.cull, frontFace: 'ccw' },
-      depthStencil: { format: depth, depthWriteEnabled: true, depthCompare: 'less-equal' },
+      vertex: { module, entryPoint: 'vs', buffers: inst.extra ? [...inst.geo.layouts, ...inst.extra.layouts] : inst.geo.layouts },
+      fragment: { module, entryPoint: 'fs', targets: [s.blend === 'none' ? { format: color } : { format: color, blend: BLEND_STATES[s.blend] }] },
+      primitive: { topology: 'triangle-list', cullMode: cull, frontFace: 'ccw' },
+      depthStencil,
       multisample: { count: samples },
     });
     this._pipelines.set(key, pipeline);
@@ -632,6 +787,24 @@ export class NativeRenderer implements NativeDrawer {
     const reasons = [...this._refusals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, n]) => `${r}=${n}`).join(' ');
     debug('perf', `[nativeRenderer] taken=${s.taken} refused=${s.refused} moved=${s.moved} params=${s.paramWrites} pipelines=${s.pipelines} recipes=${s.recipes} | ${reasons}`);
   }
+}
+
+const CULL_OF_SIDE: Record<number, string> = { [FRONT_SIDE]: 'back', [BACK_SIDE]: 'front', [DOUBLE_SIDE]: 'none' };
+
+/**
+ * Pipeline state of a material, as the three's `WebGPUPipelineUtils` builds it (SPEC-0555): blend
+ * only when not opaque, `depthWrite`, `polygonOffset` as depth bias; a transparent `DoubleSide`
+ * material (without `forceSinglePass`) is drawn twice like `Renderer._renderObject` does: back
+ * faces (cull `front`), then front faces (cull `back`).
+ */
+export function drawState(
+  m: { blending: number; transparent: boolean; depthWrite: boolean; side: number; forceSinglePass?: boolean; polygonOffset: boolean; polygonOffsetUnits?: number; polygonOffsetFactor?: number },
+  opaque: boolean,
+): DrawState {
+  const blend: Blend = opaque ? 'none' : m.blending === ADDITIVE_BLENDING ? 'additive' : 'normal';
+  const bias: [number, number] | null = m.polygonOffset ? [m.polygonOffsetUnits ?? 0, m.polygonOffsetFactor ?? 0] : null;
+  const culls = m.transparent && m.side === DOUBLE_SIDE && !m.forceSinglePass ? ['front', 'back'] : [CULL_OF_SIDE[m.side] ?? 'back'];
+  return { blend, depthWrite: m.depthWrite, bias, culls, key: `${blend}|${m.depthWrite ? 'w' : '-'}|${bias ? bias.join(',') : ''}` };
 }
 
 /** Builds the native renderer on a three WebGPU renderer, or `null` with the reason logged. */

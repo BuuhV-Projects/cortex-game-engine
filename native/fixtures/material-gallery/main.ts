@@ -28,6 +28,7 @@ import {
   type Material,
 } from 'three';
 import { Game, applyMaterial } from 'cortex-game-engine';
+import { AdditiveBlending, BufferGeometry, InstancedMesh, Matrix4, type Object3D } from 'three';
 
 // 2/255 (linear) came out as 1 after tone mapping + sRGB and hid under the noise floor.
 const GALLERY_PLANT_DELTA = 8 / 255;
@@ -90,6 +91,87 @@ function sphere(withVertexColors = false): SphereGeometry {
 
 const cutout = new MeshBasicMaterial({ map: holes, alphaTest: 0.5, side: DoubleSide });
 
+// ── R1.4 entries (SPEC-0555): instancing, transparency, pipeline state, dynamic buffers ──
+const SMALL_RADIUS = RADIUS / 2;
+const QUAD = RADIUS * 1.5;
+const HALF_OPACITY = 0.5;
+const MARK_OPACITY = 0.55;
+const MARK_OFFSET_FACTOR = -4;
+const DECAL_RENDER_ORDER = 1;
+const PARTICLES = 3;
+const QUADS = 2;
+const QUAD_VERTICES = 4;
+const QUAD_INDICES = 6;
+const XYZ = 3;
+const instanceColors = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44];
+
+/** Hides the entry's sphere (its children still draw) and puts `children` in its cell. */
+function cellWith(...children: Object3D[]): (mesh: Mesh) => void {
+  return (mesh) => {
+    (mesh.material as Material).visible = false;
+    mesh.add(...children);
+  };
+}
+
+/** Four small spheres of an InstancedMesh with instanceColor, on a 2×2 grid. */
+function instancedSpheres(): InstancedMesh {
+  const mesh = new InstancedMesh(new SphereGeometry(SMALL_RADIUS, SEGMENTS_W, SEGMENTS_H), new MeshBasicMaterial(), instanceColors.length);
+  const m = new Matrix4();
+  instanceColors.forEach((c, i) => {
+    mesh.setMatrixAt(i, m.makeTranslation(i % 2 ? SMALL_RADIUS : -SMALL_RADIUS, i < 2 ? SMALL_RADIUS : -SMALL_RADIUS, 0));
+    mesh.setColorAt(i, new Color(c));
+  });
+  return mesh;
+}
+
+/** Additive DoubleSide billboards of an InstancedMesh, like the engine's ParticleEmitter. */
+function particles(): InstancedMesh {
+  const material = new MeshBasicMaterial({
+    map: stripes, transparent: true, blending: AdditiveBlending, depthWrite: false, side: DoubleSide, fog: false, toneMapped: false,
+  });
+  const mesh = new InstancedMesh(new PlaneGeometry(QUAD, QUAD), material, PARTICLES + 1);
+  const m = new Matrix4();
+  for (let i = 0; i < PARTICLES; i++) mesh.setMatrixAt(i, m.makeTranslation((i - 1) * SMALL_RADIUS, (i - 1) * SMALL_RADIUS, i * SMALL_RADIUS));
+  mesh.count = PARTICLES;
+  return mesh;
+}
+
+/** Two opaque coplanar quads (same z: the three's id order decides) under a polygonOffset decal. */
+function coplanar(): Object3D[] {
+  const under = new Mesh(new PlaneGeometry(QUAD, QUAD), new MeshBasicMaterial({ color: 0xcc2222 }));
+  const over = new Mesh(new PlaneGeometry(QUAD, QUAD), new MeshBasicMaterial({ color: 0x22cc22 }));
+  const decal = new Mesh(
+    new PlaneGeometry(QUAD / 2, QUAD / 2),
+    new MeshBasicMaterial({ color: 0x161616, transparent: true, opacity: MARK_OPACITY, depthWrite: false, polygonOffset: true, polygonOffsetFactor: MARK_OFFSET_FACTOR }),
+  );
+  decal.renderOrder = DECAL_RENDER_ORDER;
+  return [under, over, decal];
+}
+
+/** Tire-mark geometry: two quads, drawRange on the first only (SkidMarkSystem). */
+function drawRangeMarks(): Mesh {
+  const geo = new BufferGeometry();
+  const h = QUAD / 2;
+  const corners = [-h, -h, 0, h, -h, 0, -h, h, 0, h, h, 0];
+  const positions: number[] = [];
+  for (let q = 0; q < QUADS; q++) positions.push(...corners.map((v, k) => (k % XYZ === 0 ? v + q * QUAD : v)));
+  geo.setAttribute('position', new Float32BufferAttribute(positions, XYZ));
+  const index: number[] = [];
+  for (let q = 0; q < QUADS; q++) {
+    const v = q * QUAD_VERTICES;
+    index.push(v, v + 1, v + 2, v + 1, v + 3, v + 2);
+  }
+  geo.setIndex(index);
+  geo.setDrawRange(0, QUAD_INDICES);
+  const mesh = new Mesh(geo, new MeshBasicMaterial({
+    color: 0x161616, transparent: true, opacity: MARK_OPACITY, depthWrite: false, side: DoubleSide,
+    polygonOffset: true, polygonOffsetFactor: MARK_OFFSET_FACTOR,
+  }));
+  mesh.renderOrder = DECAL_RENDER_ORDER;
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
 /** [name, material or engine preset, vertexColors] — one sphere each, in gallery order. */
 const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   ['unlit-color', new MeshBasicMaterial({ color: 0xcc3333 }), false],
@@ -109,6 +191,13 @@ const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   ['toon', (mesh) => applyMaterial(mesh, { type: 'toon', color: 0x55aaee, gradientSteps: TOON_STEPS }), false],
   ['toon-outline', (mesh) => applyMaterial(mesh, { type: 'toon', color: 0xee8855, gradientSteps: TOON_STEPS, outline: OUTLINE }), false],
   ['unlit-outline', (mesh) => applyMaterial(mesh, { type: 'unlit', color: 0x88ee55, outline: OUTLINE }), false],
+  ['unlit-transparent', new MeshBasicMaterial({ color: 0x3366ff, transparent: true, opacity: HALF_OPACITY }), false],
+  ['unlit-additive', new MeshBasicMaterial({ color: 0xff6622, transparent: true, blending: AdditiveBlending, depthWrite: false }), false],
+  ['unlit-transparent-double', new MeshBasicMaterial({ map: checker, transparent: true, opacity: HALF_OPACITY, side: DoubleSide }), false],
+  ['unlit-instanced-color', cellWith(instancedSpheres()), false],
+  ['unlit-particles', cellWith(particles()), false],
+  ['unlit-coplanar', cellWith(...coplanar()), false],
+  ['unlit-drawrange', cellWith(drawRangeMarks()), false],
 ];
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;

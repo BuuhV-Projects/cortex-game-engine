@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
+  AdditiveBlending,
   BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  Color,
+  DoubleSide,
+  InstancedMesh,
   Fog,
   FogExp2,
   Mesh,
@@ -103,7 +109,7 @@ describe('NativeRenderer (R1.1, SPEC-0495)', () => {
     const t = fakeHost();
     const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
     const lambert = new Mesh(new BoxGeometry(), new MeshLambertMaterial());
-    const transparent = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ transparent: true }));
+    const transparent = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ transparent: true, premultipliedAlpha: true }));
     frame(nr);
     expect(nr.take(lambert, lambert.material, lambert.geometry)).toBeNull();
     expect(nr.take(transparent, transparent.material, transparent.geometry)).toBeNull();
@@ -207,9 +213,9 @@ describe('NativeRenderer seams for the parallel fronts', () => {
   it('refuses object/pipeline features the core does not draw yet, with a core: reason', () => {
     const t = fakeHost();
     const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
-    const additive = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ blending: 2, depthWrite: false }));
+    const coverage = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ alphaToCoverage: true }));
     frame(nr);
-    expect(nr.take(additive, additive.material, additive.geometry)).toBeNull();
+    expect(nr.take(coverage, coverage.material, coverage.geometry)).toBeNull();
     const double = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ side: 2 }));
     expect(nr.take(double, double.material, double.geometry)).not.toBeNull();
   });
@@ -227,5 +233,153 @@ describe('NativeRenderer seams for the parallel fronts', () => {
     frame(nr);
     expect(nr.recipeFor(entry, {})).toBe(1);
     expect(t.released).toEqual([0]);
+  });
+});
+
+type PipelineDesc = {
+  vertex: { buffers: Array<{ stepMode: string; arrayStride: number; attributes: Array<{ shaderLocation: number; format: string }> }> };
+  fragment: { targets: Array<{ blend?: { color: { dstFactor: string } } }> };
+  primitive: { cullMode: string };
+  depthStencil: { depthWriteEnabled: boolean; depthBias?: number; depthBiasSlopeScale?: number };
+};
+
+describe('NativeRenderer core (R1.4, SPEC-0555)', () => {
+  const lastPipeline = (t: ReturnType<typeof fakeHost>) => (t.recorded.at(-1)![0] as { d: PipelineDesc }).d;
+
+  it('draws an InstancedMesh: per-instance VBs after the geometry, instance applied in nativeLocal, count per frame', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const mesh = new InstancedMesh(new BoxGeometry(), new MeshBasicMaterial(), 4);
+    mesh.setColorAt(0, new Color(1, 0, 0));
+    mesh.count = 3;
+    mesh.updateMatrixWorld();
+    frame(nr);
+    const entry = nr.take(mesh, mesh.material, mesh.geometry)!;
+    expect(entry.instances).toBe(3);
+    nr.recipeFor(entry, {});
+    const p = lastPipeline(t);
+    // position (geometry) + instanceColor (location 1) + instanceMatrix (locations 2..5)
+    expect(p.vertex.buffers.map((b) => b.stepMode)).toEqual(['vertex', 'instance', 'instance']);
+    expect(p.vertex.buffers[1]!.attributes[0]).toMatchObject({ shaderLocation: 1, format: 'float32x3' });
+    expect(p.vertex.buffers[2]!.attributes.map((a) => a.shaderLocation)).toEqual([2, 3, 4, 5]);
+    expect(p.vertex.buffers[2]!.arrayStride).toBe(64);
+    const code = t.calls.modules.at(-1)!;
+    expect(code).toContain('@location(5) instanceMatrix3');
+    expect(code).toContain('nativeInstanceMatrix(vin) * vec4<f32>(vin.position, 1.0)');
+    expect(code).toContain('vec4<f32>(in.instanceColor, 1.0) * diffuse');
+    mesh.count = 0;
+    frame(nr);
+    expect(nr.take(mesh, mesh.material, mesh.geometry)!.instances).toBe(0);
+    // instanceMatrix.needsUpdate: rewritten in place
+    const writes = t.calls.writes.length;
+    mesh.instanceMatrix.needsUpdate = true;
+    frame(nr);
+    nr.take(mesh, mesh.material, mesh.geometry);
+    expect(t.calls.writes.slice(writes).some((w) => w.length === 4 * 16 * 4)).toBe(true);
+  });
+
+  it('rebuilds when instanceColor appears later (setColorAt creates it lazily)', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const mesh = new InstancedMesh(new BoxGeometry(), new MeshBasicMaterial(), 2);
+    frame(nr);
+    const before = nr.take(mesh, mesh.material, mesh.geometry)!;
+    mesh.setColorAt(1, new Color(0, 1, 0));
+    frame(nr);
+    const after = nr.take(mesh, mesh.material, mesh.geometry)!;
+    expect(after).not.toBe(before);
+    nr.recipeFor(after, {});
+    expect(lastPipeline(t).vertex.buffers.length).toBe(3);
+  });
+
+  it('builds the three pipeline state: blend only when not opaque, depthWrite, polygonOffset as depth bias', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    frame(nr);
+    const draw = (m: MeshBasicMaterial) => {
+      const mesh = new Mesh(new BoxGeometry(), m);
+      const entry = nr.take(mesh, m, mesh.geometry)!;
+      nr.recipeFor(entry, {});
+      return { entry, p: lastPipeline(t), code: t.calls.modules.at(-1)! };
+    };
+    const opaque = draw(new MeshBasicMaterial());
+    expect(opaque.p.fragment.targets[0]!.blend).toBeUndefined();
+    expect(opaque.code).toContain('diffuse.w = 1.0');
+    const normal = draw(new MeshBasicMaterial({ transparent: true, opacity: 0.5, depthWrite: false }));
+    expect(normal.entry.transparent).toBe(true);
+    expect(normal.p.fragment.targets[0]!.blend!.color.dstFactor).toBe('one-minus-src-alpha');
+    expect(normal.p.depthStencil.depthWriteEnabled).toBe(false);
+    expect(normal.code).not.toContain('diffuse.w = 1.0');
+    const additive = draw(new MeshBasicMaterial({ blending: AdditiveBlending }));
+    expect(additive.entry.transparent).toBe(false); // opaque list, but blended (like the three)
+    expect(additive.p.fragment.targets[0]!.blend!.color.dstFactor).toBe('one');
+    const offset = draw(new MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -1 }));
+    expect(offset.p.depthStencil).toMatchObject({ depthBias: -1, depthBiasSlopeScale: -4 });
+    expect(opaque.p.depthStencil.depthBias).toBeUndefined();
+  });
+
+  it('draws a transparent DoubleSide material in two passes, back faces first; opaque DoubleSide in one', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    frame(nr);
+    const glass = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ transparent: true, side: DoubleSide }));
+    const entry = nr.take(glass, glass.material, glass.geometry)!;
+    expect(entry.passes).toBe(2);
+    nr.recipeFor(entry, {}, 0);
+    expect(lastPipeline(t).primitive.cullMode).toBe('front');
+    nr.recipeFor(entry, {}, 1);
+    expect(lastPipeline(t).primitive.cullMode).toBe('back');
+    const single = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ transparent: true, side: DoubleSide, forceSinglePass: true }));
+    expect(nr.take(single, single.material, single.geometry)!.passes).toBe(1);
+    const opaque = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ side: DoubleSide }));
+    const e = nr.take(opaque, opaque.material, opaque.geometry)!;
+    expect(e.passes).toBe(1);
+    nr.recipeFor(e, {});
+    expect(lastPipeline(t).primitive.cullMode).toBe('none');
+  });
+
+  it('follows drawRange and attribute versions per frame (tire marks), and rebuilds on material.version', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const geo = new BufferGeometry();
+    const pos = new BufferAttribute(new Float32Array(4 * 3 * 3), 3);
+    geo.setAttribute('position', pos);
+    geo.setIndex([0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6]);
+    geo.setDrawRange(0, 0);
+    const mat = new MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true });
+    const mesh = new Mesh(geo, mat);
+    frame(nr);
+    expect(nr.take(mesh, mat, geo)!.count).toBe(0);
+    geo.setDrawRange(0, 6);
+    pos.needsUpdate = true;
+    const writes = t.calls.writes.length;
+    frame(nr);
+    const entry = nr.take(mesh, mat, geo)!;
+    expect(entry).toMatchObject({ count: 6, first: 0, triangles: 2 });
+    expect(t.calls.writes.slice(writes).some((w) => w.length === pos.array.byteLength)).toBe(true);
+    geo.setDrawRange(3, Infinity);
+    frame(nr);
+    expect(nr.take(mesh, mat, geo)).toMatchObject({ count: 9, first: 3 });
+    mat.depthWrite = true;
+    mat.needsUpdate = true;
+    frame(nr);
+    const rebuilt = nr.take(mesh, mat, geo)!;
+    expect(rebuilt).not.toBe(entry);
+    nr.recipeFor(rebuilt, {});
+    expect(lastPipeline(t).depthStencil.depthWriteEnabled).toBe(true);
+  });
+
+  it('unlit: alphaTest discards after opacity, its value is in the params block', () => {
+    const code = unlitModel.wgsl(['alpha', 'alphaTest', 'map']);
+    expect(code).toContain('diffuse.w = diffuse.w * params.opacity;');
+    expect(code.indexOf('params.opacity')).toBeLessThan(code.indexOf('discard'));
+    const out = new Float32Array(unlitModel.paramFloats);
+    unlitModel.writeParams(new MeshBasicMaterial({ alphaTest: 0.5 }), out);
+    expect(out[16]).toBeCloseTo(0.5);
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    frame(nr);
+    const cutout = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ map: new Texture(), alphaTest: 0.5, side: DoubleSide }));
+    expect(nr.take(cutout, cutout.material, cutout.geometry)).not.toBeNull();
   });
 });

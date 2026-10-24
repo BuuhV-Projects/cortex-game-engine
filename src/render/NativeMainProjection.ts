@@ -135,10 +135,12 @@ export class MainProjector {
         continue;
       }
       let z = this._depths[k]!;
+      // Only what the three would push (`material.visible`) is offered (SPEC-0555).
+      const ofertavel = server !== null && !Array.isArray(objeto.material) && objeto.material.visible;
       // RS1b (SPEC-0425): clean opaque instances go to the server, not to the RenderList.
       if (
-        server !== null && tipo === MainPassKind.NativeCull && !Array.isArray(objeto.material) &&
-        server.offer(objeto, objeto.material, objeto.geometry, clippingContext, this._depths[k]!)
+        ofertavel && tipo === MainPassKind.NativeCull &&
+        server!.offer(objeto, objeto.material as Material, objeto.geometry, clippingContext, this._depths[k]!)
       ) {
         continue;
       }
@@ -147,7 +149,7 @@ export class MainProjector {
         if (objeto.frustumCulled && !this._dentro(objeto)) continue;
         z = this._zDoThree(objeto);
         // The native renderer (ADR-0465) may own instanced/skinned objects the RS1 never takes.
-        if (server !== null && server.offerNative(objeto, objeto.material, objeto.geometry, clippingContext, z)) continue;
+        if (ofertavel && server!.offerNative(objeto, objeto.material, objeto.geometry, clippingContext, z)) continue;
       }
       empurrar(renderList, objeto, z, clippingContext);
     }
