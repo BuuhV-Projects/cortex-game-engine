@@ -318,6 +318,34 @@ disto muda os marcos; cada item entra com SPEC antes, quando o jogo precisar.
 
 Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
 
+## Estado para retomada (pausa de 2026-10-24, limite semanal)
+
+- **Branch integrada:** `claude/renderer-nativo-45b16a` (worktree `renderer-nativo-45b16a`), A + B + C integradas
+  (merges `8c528adc`, `86ccefb4`, `fd65ba1f`), `lambert` instanciado religado; último commit no fim desta pausa
+  (ver `git log`). Sem merge na main (merge é da sessão principal).
+- **Jogo-alvo:** DDD 61 `e1cede4`, cópia `D:/jogos/detetive-brasilia-rs-e1cede4` (padrão do `check-stage.sh`).
+  A antiga `rs-e2be01c` só serve para apagar (backlog do PRD-0009).
+- **1º passo da retomada:** refazer a checagem integrada NA CÓPIA NOVA:
+  `native/scripts/check-stage.sh <wt> r1-int-e1 --flag '&nativeRenderer=1&nativeRendererModels=unlit,lambert,wgsl'`
+  e o mesmo com `&nativeTint=1` (tem de dar FAIL). Na cópia antiga (`r1-int-abc`) deu **FAIL no Setor O de dia,
+  0,0255%** (limite 0,01%); Comercial dia 0,0092%; o resto PASS. Tint de controle (`r1-int-abc-tint`): FAIL em
+  tudo, como deve (pixels do caminho nativo: galeria 4,8%, Setor O dia 44% / noite 29%, Comercial 12% / 18%).
+- **Recusas que bloqueiam o aceite (0 recusas) e dono:**
+  - `standard` fora de `NATIVE_MODELS` (fachada do Comercial de dia, 1,17%) — Frente A (a confirmar pela coordenação);
+  - `lambert` com emissivo não preto (vidros ~22% abaixo com o relógio andando) — sem dono;
+  - `receiveShadow` no `lambert` (`RECEIVE_SHADOW = false`; sombra de pedestre/poça) — Frente B;
+  - tintas TSL do jogo (`node:colorNode`) e `peopleGpu` — Frente D (repo do jogo, `registerNativeMaterial`/`shaderTime`),
+    abre depois do merge na main e do re-vendor do jogo;
+  - skinned + instanced — Frente C (backlog).
+- **Depois:** R1.6 (dono da pass, pré-compilação + ubershader, **dados por objeto num buffer único estilo Godot**,
+  só se o A/B mostrar ganho) e o **aceite final** (A/B completo intercalado, 2 réplicas, 4 pontos walk + drive
+  helio, 1080p, braço `three` na cópia nova: render ≤ 5 ms, % > 33 ms ≤ 2%, GPU ≤ controle + 0,5 ms, paridade
+  dia/noite ≤ 0,01%, 0 recusas).
+- **Ônibus (e1cede4):** fumaça no Comercial VÁLIDA (andou 17 m). Capturas de dia (`&hora=12`, quadros 1200 e
+  2400 da caminhada, `.cortex/renderer-r1/busday-*.png`): a câmera fica fora do ônibus; no 2400 o jogador está
+  ao lado dele, não dentro — duas amostras, não prova exaustiva. A de 18:40 saiu quase preta (inconclusiva).
+  A captura do host em janela sai em 1920×1009 (área útil), não 1080.
+
 ## Backlog de pendências do R1
 
 Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá, com a origem.
