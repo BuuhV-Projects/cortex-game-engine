@@ -3,6 +3,15 @@
 **Data:** 2026-10-24
 **Status:** implementado (2026-10-24), desligado por padrão (`?nativeRenderer=1`).
 
+## Como ficou
+
+- Como no desenho. Diferença achada no export: o `three` **alarga em lugar** o `skinIndex`
+  (`Uint16`/`Uint8` não normalizado → `Uint32Array`) quando sobe o buffer dele
+  (`WebGPUAttributeUtils.createAttribute`); o núcleo aceita `uint32xN` (`cf62a990`).
+- `check-stage r1-5-nucleo` (`unlit,wgsl`, em `fda92deb`): galeria, Setor O e Comercial dia e noite
+  PASS 0/0, fumaça PASS; galeria de novo em `cf62a990` com `wgsl-wave` e `unlit-skinned` desenhados
+  pelo renderer próprio: PASS 0/0; `&nativeTint=1`: FAIL (alt 21), como deve.
+
 Etapa R1.5 do PRD-0466 (ADR-0465), Frente C. Decisões e alternativas: **ADR-0566**. Base: R1.4
 (SPEC-0555).
 
