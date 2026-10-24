@@ -1,3 +1,11 @@
+# [0.85.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.84.0...v0.85.0) (2026-10-24)
+
+
+### Features
+
+* **native:** scripts das frentes paralelas do renderer (setup-worktree, check-stage) (SPEC-0525) ([5b14b20](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5b14b20c245664b4909fa1db60207c4e2e71a992))
+* **render:** R0 do renderer nativo — classificador, censo, dump de WGSL e galeria (SPEC-0505) ([a5f79e8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a5f79e82055d85124390b9173bb986482fa2b414))
+
 # [0.84.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.83.1...v0.84.0) (2026-10-24)
 
 
