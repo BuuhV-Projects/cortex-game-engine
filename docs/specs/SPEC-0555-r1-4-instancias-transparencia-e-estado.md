@@ -238,3 +238,6 @@ a instância, e o modelo só precisa aceitar a variante.
   existiam com o lambert instanciado no `three` (0,004%). O viés de profundidade nativo é o do `three`
   (`depthBias = units`, `slope = factor`, `clamp = 0`), e a ordem é a mesma. Inconclusivo; hipótese:
   sombra de pedestre (Frente B) aparecendo na borda da poça. Reverificar quando a sombra fechar.
+- **Decisão (coordenação, 2026-10-24):** o resíduo do Comercial dia fica com a **Frente B** (amostragem da
+  sombra). Depois da correção dela, reverificar com `RECEIVE_SHADOW` ligado; plantar uma poça fixa só se o
+  resíduo sobreviver.

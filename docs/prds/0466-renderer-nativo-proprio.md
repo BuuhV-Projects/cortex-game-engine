@@ -334,7 +334,10 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
 - **Poça de sangue instanciada ±1–2 no Comercial de dia** (origem: SPEC-0555 "Instâncias compactadas",
   Frente C, 2026-10-24): 0,0273% dos pixels (alt 3), só dentro de `pocas-de-sangue` (lambert
   instanciado, `polygonOffset`); com o lambert instanciado no `three`, PASS. A causa dos fios (cópia de
-  instâncias velha no `three`) foi corrigida no `RenderIdRefresh`.
+  instâncias velha no `three`) foi corrigida no `RenderIdRefresh`. Hipótese: sombra do pedestre ferido no asfalto
+  (Frente B) aparecendo na borda da poça. Também há pontos esparsos de ±2–6 ao longe, que existem sem
+  instância (0,004%). **Fica com a Frente B**; reverificar com `RECEIVE_SHADOW` ligado depois da correção
+  dela; poça fixa (determinística) só se o resíduo sobreviver.
 - **Fios distantes no Comercial de dia** (origem: R1.2, 2026-10-24): 0,0132% dos pixels, acima
   do limite de 0,01%. Não é cobertura subpixel: num braço o fio some por inteiro (oclusão ou
   ordem), evidência em `native/scripts/perf/coverage-diff.mjs`. Hipótese: ordem do domo do céu
