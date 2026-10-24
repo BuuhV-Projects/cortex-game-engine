@@ -1288,6 +1288,15 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   de material são do modelo; de objeto/pipeline são do núcleo (`CORE_FEATURES`). WGSL = `coreWgsl`
   (blocos de vista/objeto, `VIn`, `nativeModel`/`nativeLocal`/`nativeNormalMatrix`) + o do modelo.
 - **Grupo 1 = blocos de quadro** `src/render/native/frame/` (luzes 0–7, sombra 8–15).
+- **Sombra do sol (R1.3, SPEC-0545)** `frame/shadow.ts`: o bloco de sombra liga o mapa do `three`
+  (`light.shadow.map.depthTexture`, pelo `host.backend` que a fábrica do bloco recebe) e o PCFSoft
+  em `nativeShadow(positionWorld, normalWorld)`, com os parâmetros 1× por vista. ⚠️ O `update` dos
+  blocos roda na PROJEÇÃO, antes do `ShadowNode.updateBefore`: no quadro de redesenho o bloco chama
+  `shadow.updateMatrices` para a matriz casar com o mapa. `shadow/NativeSunShadowPass.ts` redesenha
+  o mapa único no passe C++ da SPEC-0245 (`drawShadowPass`, sem C++ novo) no `needsUpdate`; no
+  braço `three` da paridade, ou na recusa do gate, devolve ao `three`. `?nativeShadow=0`,
+  `?nativeShadowPass=0`; plantados `?nativeShadowShift=1` (amostragem) e
+  `?nativeShadowPassShift=1` (mapa).
 - **Armadilha**: a saída é LINEAR (no DDD 61 a passada `outputColorTransform` do `three` aplica o
   sRGB no quadro); a névoa do `three` é `smoothstep(near, far, -z)`, não rampa linear.
 - **Paridade**: `?parityFreeze` alterna renderer próprio × `three` sem código novo (o braço

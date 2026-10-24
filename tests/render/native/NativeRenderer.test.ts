@@ -21,6 +21,8 @@ function fakeHost() {
   let next = 0;
   const device = {
     createBuffer: (d: { size: number; label?: string }) => ({ kind: 'buffer', id: next++, ...d, buffers: calls.buffers++ }),
+    createSampler: (d: unknown) => ({ kind: 'sampler', d }),
+    createTexture: (d: unknown) => ({ kind: 'texture', d, createView: () => ({ kind: 'view' }) }),
     createBindGroupLayout: (d: unknown) => ({ kind: 'bgl', d }),
     createBindGroup: (d: unknown) => ({ kind: 'bg', id: next++, d, n: calls.groups++ }),
     createPipelineLayout: (d: unknown) => ({ kind: 'pl', d }),
