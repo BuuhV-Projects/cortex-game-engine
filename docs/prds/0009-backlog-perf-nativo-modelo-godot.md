@@ -205,7 +205,7 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 
 ### Engine / host
 
-- [ ] **Alternar a projeção nativa × `three` a cada quadro trava o host** — causa não isolada.
+- [x] (2026-10-24, SPEC-0362 "Remedido": 0 travamentos em 3 rodadas congeladas no Setor O + 2 em movimento; a causa estava no código arquivado da b.3/SPEC-0362 v1; o caminho de recusa fica) **Alternar a projeção nativa × `three` a cada quadro trava o host** — causa não isolada.
       Origem: frente B2 (SPEC-0362, etapa (a) do ADR-0330). Não afeta o uso normal (a projeção
       não alterna em jogo), mas impede comparar os dois caminhos na mesma execução.
 - [ ] **`getGamepads()` do host monta um snapshot novo a cada chamada** (`native/src/shims/input.cpp`,

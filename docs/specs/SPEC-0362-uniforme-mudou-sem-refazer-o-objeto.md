@@ -114,6 +114,24 @@ que entre e saia dessa recusa troca de projeção repetidamente. No DDD 61 hoje
 são 0 recusas, então não aparece. Fica como pendência da etapa (a)
 (SPEC-0332).
 
+**Remedido em 2026-10-24 (finalização do RenderingServer, ADR-0404): não trava
+mais.** Interruptor temporário (nunca commitado; patch em
+`D:/jogos/detetive-brasilia/.cortex/rs-ceiling/rs-proj-alternate.patch`) que
+devolve ao `three` a projeção de um render sim, um não, sobre a engine com RS1,
+`DynamicLighting` e filtro de sombra compartilhado ligados:
+
+| condição | rodadas | resultado |
+| --- | --- | --- |
+| Setor O, jogo congelado (`?parityFreeze=20`, alterna também o desenho), 150 s | 3 | 0 travamentos (até 6.600 renders alternados; log até o fim do processo) |
+| Comercial andando (autopiloto `walk`), 135 s | 1 | ok, válido (1.800 renders, metade nativa, 0 recusas) |
+| helio dirigindo (autopiloto `drive`), 135 s | 1 | ok, válido (3.600 renders) |
+
+A configuração que travava em 2 de 3 rodadas não trava em nenhuma. A causa
+estava no código da época que saiu da main (a b.3 do ADR-0363 e a v1 desta spec,
+arquivadas), não na troca de projeção em si. O caminho de recusa (o `three`
+projeta o quadro) fica: é necessário para LOD/`ClippingGroup` e agora está
+exercitado quadro a quadro. Pendência fechada no PRD-0009.
+
 ## A/B v1 — plano completo em todo desenho de material com nó: neutro
 
 Export release do DDD 61 `e2be01c`, engine `7fb9421e` + esta spec, mesma build
