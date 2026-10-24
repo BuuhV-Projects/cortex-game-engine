@@ -179,7 +179,14 @@ Modelos fixos, cada um um template WGSL com feature bits como `override`:
   (a armadilha da SPEC-0150 do jogo deixa de existir).
 - Sombra: o passe depth-only C++ ganha (a) mapa único com `autoUpdate/needsUpdate` (o
   `SunShadow` do DDD 61) além do CSM, e (b) **material de sombra compartilhado** para
-  opacos. A amostragem é do material fixo, com os uniformes da sombra no buffer de luzes.
+  opacos. A amostragem é do material fixo, com a fórmula do filtro que o jogo usa (o DDD 61
+  usa **PCFSoft**, imposto pela engine em `SceneBuilder.ts`/`OutdoorLighting.ts`). Os
+  parâmetros da sombra (matriz, bias, normalBias, intensidade, mapSize, radius) ficam **só no
+  bloco de vista**, nunca por material: uniforme por material foi o que deixava a sombra cara
+  no `three` (SPEC-0445).
+- Formato do bloco de vista, das luzes e das instâncias: SPEC-0475 (registro de desenho da
+  sessão `rendering-server`, branch `claude/rendering-server-2b92ff`), que vira a base da
+  SPEC do R1.2.
 - Pós: fica o que existe no host (bloom, ACES, vinheta, OETF, composição da UI, SSAA). O
   renderer entrega a cena no mesmo formato que o `three` entrega hoje (HDR linear com
   bloom; LDR com tone mapping no shader sem bloom). AgX e o pós do jogo (borrão radial do
@@ -198,7 +205,12 @@ desenha nada do quadro 3D.
 
 - `?parityFreeze=<s>` (`src/render/MainPassArm.ts`) alterna, quadro a quadro e na mesma
   execução, renderer próprio × `three` com o jogo congelado. Pares N×N+1 medem a diferença e
-  N×N+2 o ruído. Novo alvo `?parityTarget=renderer`.
+  N×N+2 o ruído. Novo alvo `?parityTarget=renderer`. O braço troca o caminho **inteiro**
+  e relata quantas trocas fez: na SPEC-0435 trocar só o `renderer.lighting` não trocava nada,
+  porque as `RenderLists` do `three` capturam o `lighting` ao nascer, e o instrumento deu 0 em
+  tudo. Paridade entre execuções não vale no DDD 61 (o jogo não é determinístico).
+- Ganho grande e súbito só vale com paridade por imagem no mesmo par de rodadas: o −6 ms
+  falso da SPEC-0435 eram objetos que deixaram de ser desenhados.
 - Captura por ponto (`CORTEX_RENDER_PARITY_CAPTURE` + `native/scripts/render-parity.mjs`) em
   Setor O, Centro, Comercial e Águas Claras, **dia e noite** (`?hora=21`), andando e dirigindo.
 - **Galeria de materiais:** cena fixa (sem NPC nem trânsito) com um objeto por (modelo,
