@@ -199,19 +199,27 @@ describe('RenderIdRefresh (SPEC-0325)', () => {
     expect(s.log).toEqual([]);
   });
 
-  it('InstancedMesh: refaz na primeira vez e quando a matriz de instância muda; parado, não', () => {
+  it('InstancedMesh: refaz 2 renders depois de cada mudança de instância (o 2º sobe o buffer); parado, não', () => {
     const handle = installRenderIdRefresh(s.renderer)!;
     const instanceMatrix = { version: 1 };
     Object.assign(s.renderObject.object, { isInstancedMesh: true, instanceMatrix, instanceColor: null });
     // Buffer de uniform das matrizes (poucas instâncias) no grupo do objeto.
     s.renderObject.getBindings()[1].bindings.push({ isBuffer: true, groupNode: { shared: false } } as never);
-    expect(s.nodes.needsRefresh(s.renderObject)).toBe(true);
-    s.nextRender();
-    expect(s.nodes.needsRefresh(s.renderObject)).toBe(false);
+    const refreshes = () => {
+      const out: boolean[] = [];
+      for (let i = 0; i < 3; i++) {
+        out.push(s.nodes.needsRefresh(s.renderObject));
+        s.nextRender();
+      }
+      return out;
+    };
+    expect(refreshes()).toEqual([true, true, false]);
     instanceMatrix.version++;
-    s.nextRender();
-    expect(s.nodes.needsRefresh(s.renderObject)).toBe(true);
-    expect(handle.stats).toEqual({ skipped: 1, full: 2 });
+    // Mudou e PAROU (cull dos fios, ?parityFreeze): o 2º refresh ainda acontece, mesmo com o
+    // observador do three sem ver mudança.
+    s.threeNeedsRefresh.mockReturnValue(false);
+    expect(refreshes()).toEqual([true, true, false]);
+    expect(handle.stats).toEqual({ skipped: 2, full: 4 });
   });
 
   it('buffer não-UBO fora de InstancedMesh e updateAfter delegam ao three', () => {

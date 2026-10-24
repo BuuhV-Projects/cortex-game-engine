@@ -331,6 +331,10 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
   de um prédio dão 1,17% de pixels fora da paridade (Setor O passa). Não foi investigado. **Volta
   antes do R1.6** (o aceite final exige 0 recusas). Próximo passo: o mesmo método do vidro
   (isolar o material da fachada, comparar dados e WGSL do estado do `three`).
+- **Poça de sangue instanciada ±1–2 no Comercial de dia** (origem: SPEC-0555 "Instâncias compactadas",
+  Frente C, 2026-10-24): 0,0273% dos pixels (alt 3), só dentro de `pocas-de-sangue` (lambert
+  instanciado, `polygonOffset`); com o lambert instanciado no `three`, PASS. A causa dos fios (cópia de
+  instâncias velha no `three`) foi corrigida no `RenderIdRefresh`.
 - **Fios distantes no Comercial de dia** (origem: R1.2, 2026-10-24): 0,0132% dos pixels, acima
   do limite de 0,01%. Não é cobertura subpixel: num braço o fio some por inteiro (oclusão ou
   ordem), evidência em `native/scripts/perf/coverage-diff.mjs`. Hipótese: ordem do domo do céu

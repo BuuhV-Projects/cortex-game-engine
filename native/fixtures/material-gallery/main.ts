@@ -30,7 +30,7 @@ import {
 import { Game, applyMaterial } from 'cortex-game-engine';
 import { AdditiveBlending, BufferGeometry, InstancedMesh, Matrix4, type Object3D } from 'three';
 import { MeshBasicNodeMaterial, TSL, registerNativeMaterial, shaderTime, type NativeModelDef } from 'cortex-game-engine';
-import { Bone, CylinderGeometry, FloatType, InstancedBufferAttribute, RGBAFormat, Skeleton, SkinnedMesh, Uint16BufferAttribute } from 'three';
+import { Bone, BoxGeometry, CylinderGeometry, FloatType, InstancedBufferAttribute, RGBAFormat, Skeleton, SkinnedMesh, Uint16BufferAttribute } from 'three';
 
 // 2/255 (linear) came out as 1 after tone mapping + sRGB and hid under the noise floor.
 const GALLERY_PLANT_DELTA = 8 / 255;
@@ -285,6 +285,41 @@ function unshadowed(material: Material): (mesh: Mesh) => void {
   };
 }
 
+// ── Compacted instances (SPEC-0555, "Instâncias compactadas"): the DDD 61's breakable wires ──
+// Every game update shows a different subset compacted at the front (setMatrixAt + count +
+// addUpdateRange + needsUpdate); ?parityFreeze stops the game update, so the subset freezes.
+const COMPACT_SIDE = 0.7;
+const COMPACT_DROP = 3;
+const COMPACT_FILL = 0.8;
+const galleryUpdaters: Array<() => void> = [];
+
+function compactedInstances(rows: number, cols: number): InstancedMesh {
+  const total = rows * cols;
+  const cell = COMPACT_SIDE / cols;
+  const mesh = new InstancedMesh(new BoxGeometry(cell * COMPACT_FILL, cell * COMPACT_FILL, cell * COMPACT_FILL), new MeshLambertMaterial({ color: 0x3399dd }), total);
+  const places: Matrix4[] = [];
+  for (let i = 0; i < total; i++) {
+    places.push(new Matrix4().makeTranslation((i % cols) * cell - COMPACT_SIDE / 2, Math.floor(i / cols) * (COMPACT_SIDE / rows) - COMPACT_SIDE / 2, 0));
+  }
+  let frame = 0;
+  galleryUpdaters.push(() => {
+    frame++;
+    let n = 0;
+    for (let i = 0; i < total; i++) if ((i + frame) % COMPACT_DROP !== 0) mesh.setMatrixAt(n++, places[i]!);
+    mesh.count = n;
+    mesh.instanceMatrix.addUpdateRange(0, n * MAT4_ELEMENTS);
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+  mesh.frustumCulled = false;
+  return mesh;
+}
+const MAT4_ELEMENTS = 16;
+// The three's InstanceNode: up to 1024 instances in a uniform buffer, above that an interleaved vertex buffer.
+const UBO_ROWS = 10;
+const UBO_COLS = 30;
+const INTERLEAVED_ROWS = 32;
+const INTERLEAVED_COLS = 40;
+
 /** [name, material or engine preset, vertexColors] — one sphere each, in gallery order. */
 const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   ['unlit-color', new MeshBasicMaterial({ color: 0xcc3333 }), false],
@@ -323,10 +358,13 @@ const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   ['standard-map-lit', unshadowed(new MeshStandardMaterial({ map: checker, roughness: 0.6 })), false],
   ['standard-emissive-lit', unshadowed(new MeshStandardMaterial({ color: 0x111111, emissive: new Color(0.2, 0.6, 1), emissiveMap: stripes })), false],
   ['standard-double-map-lit', unshadowed(new MeshStandardMaterial({ map: checker, side: DoubleSide, roughness: 0.5 })), false],
+  ['lambert-compacted-ubo', cellWith(compactedInstances(UBO_ROWS, UBO_COLS)), false],
+  ['lambert-compacted-interleaved', cellWith(compactedInstances(INTERLEAVED_ROWS, INTERLEAVED_COLS)), false],
 ];
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const game = new Game({ canvas });
+game.onUpdate(() => galleryUpdaters.forEach((update) => update()));
 const scene = game.scene.getThreeScene();
 scene.background = new Color(0x9fb8cc);
 scene.fog = new Fog(0x9fb8cc, FOG_NEAR, FOG_FAR);

@@ -204,3 +204,31 @@ a instância, e o modelo só precisa aceitar a variante.
   cópia do `three`, se ela existir (`backend.get(atributo).buffer`). O custo é uma escrita a mais
   por buffer dinâmico que o `three` já criou, e some quando o `three` sair do caminho (R1.6/R4).
   O índice fica de fora (quase nunca muda, e `uint16` ímpar não é múltiplo de 4 bytes).
+
+## Instâncias compactadas (fios do DDD 61) — diagnóstico e correção
+
+- **Sintoma (Frente A, com lambert instanciado ligado):** no Comercial de dia, o braço nativo desenha um
+  fio que o `three` não mostra (`fios-quebraveis`, `InstancedMesh` lambert; o `cull()` compacta as
+  instâncias por distância: `setMatrixAt` nas n primeiras, `count = n`, `addUpdateRange(0, n·16)`,
+  `needsUpdate`, e só roda quando a vista muda).
+- **Reprodução:** galeria, `lambert-compacted-ubo` (300 instâncias) e `lambert-compacted-interleaved`
+  (1280, o caminho que o DDD 61 sempre usa: `sharedInstancedMesh` alarga para 1025), compactando a cada
+  quadro de jogo → FAIL (alt 35). Com `nativeTint` o braço **nativo** é o certo; o `three` desenha as
+  matrizes do `precompile`. Com `?renderIdRefresh=0` → PASS (0/0).
+- **Causa (no `RenderIdRefresh`, SPEC-0325 — afeta também o caminho só-`three`):** o `three` sobe a
+  geometria (`_geometries.updateForRender`) **antes** de o `InstanceNode.update()` sincronizar a versão
+  do buffer intercalado (`_nodes.updateForRender`). Na mudança, o `RenderIdRefresh` fazia **um**
+  refresh (o upload não vê a mudança; a versão é sincronizada depois) e, nos renders seguintes,
+  pulava o refresh: o upload pendente só saía na **próxima** mudança. Um instanciado que muda e
+  para (fios depois do `cull`, `?parityFreeze`, objeto que volta do renderer próprio) ficava com as
+  matrizes da mudança anterior.
+- **Correção:** cada mudança de `instanceMatrix`/`instanceColor` força **2** refreshes do `three`
+  (`INSTANCE_REFRESHES`), independentemente do observador do `three`.
+- **Verificação:** `check-stage r1-4-compact-fix` (`unlit,lambert`): galeria (com a reprodução) PASS 0/0,
+  Comercial noite PASS, fumaça PASS; **Comercial dia FAIL alt 3 / 0,0273%** (era alt 223 com os fios).
+  O resto está todo **dentro de uma poça** (`pocas-de-sangue`, lambert instanciado opaco com
+  `polygonOffset −2/−2`, `blood.ts`): o nativo sai +1–2 de vermelho na área da poça, e o asfalto em volta
+  é idêntico. Com o lambert instanciado devolvido ao `three` (diagnóstico temporário) → PASS
+  (alt 3 / 0,0040%). Ainda não isolado: fórmula de posição, normal e instância bate com o WGSL de
+  referência (`ac/wgsl-0032.txt`, o mesmo objeto); suspeitas são precisão do sombreamento do `lambert`
+  com instância ou do viés de profundidade contra o asfalto. Pendência no backlog do PRD-0466.
