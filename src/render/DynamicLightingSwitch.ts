@@ -11,7 +11,8 @@
  * changes the count, not the shader variant. Shadow-casting lights stay on the
  * default path.
  *
- * Host only, behind `?dynamicLighting=1` until the A/B (SPEC-0435). The Studio
+ * Host only, on by default since the A/B (SPEC-0435: render -1.4/-1.7 ms walking,
+ * night parity 6 px of 921,600); `?dynamicLighting=0` turns it off. The Studio
  * keeps the default lighting.
  */
 import type { Light } from 'three';
@@ -54,7 +55,7 @@ class HostDynamicLighting extends DynamicLighting {
   }
 }
 
-/** On? Default of the caller (off until the A/B); `?dynamicLighting=1` turns it on. */
+/** On? Default of the caller (the host passes `true`); `?dynamicLighting=0` turns it off. */
 export function dynamicLightingRequested(fallback: boolean): boolean {
   return queryFlagRequested(QUERY_KEY, fallback);
 }

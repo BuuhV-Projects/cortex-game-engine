@@ -161,7 +161,7 @@ export class Renderer {
 
     this._renderer = new WebGPURenderer({ canvas, antialias, forceWebGL });
     // Lights without shadow batched per type, Godot-style (SPEC-0435 (d′)); host only.
-    if (isNativeHost() && dynamicLightingRequested(false)) installDynamicLighting(this._renderer as unknown as { lighting: unknown });
+    if (isNativeHost() && dynamicLightingRequested(true)) installDynamicLighting(this._renderer as unknown as { lighting: unknown });
     setKtx2Renderer(this._renderer);
     this._renderer.setSize(width, height);
 
