@@ -205,6 +205,17 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
 
 ### Engine / host
 
+- [ ] **O host compilado no checkout principal está velho** (`native/build/cortex_host.exe` e
+      `rapier_native.dll` de 2026-10-09, sem `worldContactPairsWith` da SPEC-0393): export do DDD 61
+      `e2be01c` com ele morre no 1º tick (`TypeError` em `hasContact`, rodada INVÁLIDA com 0 amostras).
+      Destrava: `yarn build:host` no checkout principal (máquina do usuário) — as frentes usam o host da
+      própria worktree (`native/scripts/setup-worktree.sh`, SPEC-0525). Origem: SPEC-0505 (R0 do PRD-0466).
+- [ ] **`render-parity.mjs` imprime BGRA como `rgba(...)`**: a captura é a swapchain BGRA; o fundo
+      `0x9fb8cc` aparece como (204,184,159). Só a leitura humana confunde; os números não mudam.
+      Origem: SPEC-0505.
+- [ ] **Um `MeshBasicMaterial` sem nome com `CustomBlending` fora da cena do jogo** (1 estado de shader
+      no WGSL de referência): provável UI de runtime. Identificar antes do R2 do PRD-0466. Origem: SPEC-0505.
+
 - [x] (2026-10-24, SPEC-0362 "Remedido": 0 travamentos em 3 rodadas congeladas no Setor O + 2 em movimento; a causa estava no código arquivado da b.3/SPEC-0362 v1; o caminho de recusa fica) **Alternar a projeção nativa × `three` a cada quadro trava o host** — causa não isolada.
       Origem: frente B2 (SPEC-0362, etapa (a) do ADR-0330). Não afeta o uso normal (a projeção
       não alterna em jogo), mas impede comparar os dois caminhos na mesma execução.
@@ -374,6 +385,13 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       sombras de fim de tarde no chão perto do jogador. Origem: B2.
 
 ### Limpeza
+
+- [ ] `D:/jogos/detetive-brasilia/.cortex/renderer-r0/arquivo-720` (rodadas inválidas do host velho e as de
+      720p, fora de qualquer tabela) e os exports em `.cortex/renderer-r0` e `.cortex/stages/kat-*` —
+      apagar quando o usuário quiser (guardar `runs-*`, `wgsl/` e os scripts). Origem: SPEC-0505/0525.
+- [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-e2be01c` (`e2be01c`): passou para o PRD-0466 (fonte do
+      export do R0/R1 e do `check-stage.sh`). Apagar quando o PRD-0466 trocar de commit-alvo ou fechar o R1.
+      Origem: arquivamento da sessão `rendering-server`.
 
 - [x] (2026-10-23) Sessão B2 arquivada; worktree da engine e cópias do jogo `b2-base`/`b2-e2be01c` removidas; branch apagada.
 - [ ] Rodadas e exports da B2 em `D:/jogos/detetive-brasilia/.cortex/b2-desenho` (evidência da b.3/SPEC-0362 e da sombra do sol) — apagar quando o usuário quiser.

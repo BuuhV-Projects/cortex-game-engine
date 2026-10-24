@@ -74,7 +74,7 @@ function dimsFromFilename(filePath) {
 // Resolve um argumento (arquivo único ou diretório) para uma lista ordenada
 // de arquivos .rgba. Diretório: todos os frame_*.rgba, em ordem de nome (que
 // é ordem de captura, pelo zero-pad de 4 dígitos).
-function listRgbaFiles(p) {
+export function listRgbaFiles(p) {
   const stat = fs.statSync(p);
   if (stat.isFile()) return [p];
   return fs
@@ -84,7 +84,7 @@ function listRgbaFiles(p) {
     .map((f) => path.join(p, f));
 }
 
-function loadFrame(filePath) {
+export function loadFrame(filePath) {
   const { width, height } = dimsFromFilename(filePath);
   const buffer = fs.readFileSync(filePath);
   const expected = width * height * CHANNELS_PER_PIXEL;

@@ -35,6 +35,7 @@ import { installDrawRecipeProbe } from '../render/DrawRecipeProbe.js';
 import { ParityFreeze, parityFreezeSeconds } from '../render/MainPassArm.js';
 import { applyParityLighting } from '../render/DynamicLightingSwitch.js';
 import { PerfTrace } from './PerfTrace.js';
+import { installRendererInstruments, type RendererCensus } from '../render/native/RendererCensus.js';
 import { autopilotFromQuery, type InputAutopilot } from '../input/InputAutopilot.js';
 import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
@@ -255,6 +256,8 @@ export class Game {
   private _nativeProjection: NativeProjection | null = null;
   /** Sonda de elegibilidade da etapa (b) (SPEC-0333), `?drawRecipeProbe=1`. */
   private _drawRecipeProbe: { commitFrame(): void } | null = null;
+  /** Census of the native renderer's R0 (SPEC-0505), `?rendererCensus=1`. */
+  private _rendererCensus: RendererCensus | null = null;
   /** DIAGNOSTICO TEMPORARIO (SPEC-0241). */
   private _ramoRelatado: string | null = null;
   private readonly _matrixFreezeAt = matrixFreezeRequested();
@@ -337,6 +340,13 @@ export class Game {
     this.scene = new Scene();
     this.renderer = new Renderer({ canvas, width, height });
     this._renderPhases.install(this.renderer.threeRenderer);
+    // After init (the three's node manager exists) and before precompile awaits it, so the WGSL
+    // dump sees the load's shader states (SPEC-0505).
+    void this.renderer.init().then(() => {
+      this._rendererCensus = installRendererInstruments(this.renderer.threeRenderer, (name, data) =>
+        this._perfTrace.recordEvent(name, data),
+      );
+    }, () => undefined);
 
     if (projection === 'orthographic') {
       // 2D / pixel art: ortográfica olhando o plano XY de frente. O frustum é
@@ -821,6 +831,7 @@ export class Game {
       this._renderPhases,
       this._systemProfile,
     );
+    this._rendererCensus?.tick(deltaMs, this._activeScene.getThreeScene(), this._activeCamera);
   }
 
   /**

@@ -9,6 +9,12 @@ rejeitada no ADR-0228 e no ADR-0330. Absorve o RS2/RS3 do ADR-0404, as alavancas
 SPEC-0435 e os marcos M5/M7/M8 do ADR-0237. Mantém a premissa de produto do ADR-0237: **o
 Studio continua 100% no `three`**. Frente B2 do PRD-0009.
 
+**Escopo (decisão do usuário, 2026-10-24): o jogo-alvo é só o DDD 61.** teste4, kart-racer e
+crash-racer (o antigo R3 do PRD-0466) ficam fora até o usuário retomá-los, com plano próprio,
+e continuam exportando com o `three` pela recusa por jogo. O que este ADR diz sobre os
+modelos e efeitos desses jogos (toon, outline, água cartoon, pós do kart, AgX) é desenho de
+referência, não compromisso.
+
 Anexos com o material de base (no repo): `docs/prds/0466-anexos/godot-renderer-rd.md`
 (Godot, arquivo:linha), `levantamento-three-jogos.md` (o que cada jogo usa) e
 `inventario-host-render.md` (o que o host já tem).
@@ -197,9 +203,9 @@ Modelos fixos, cada um um template WGSL com feature bits como `override`:
 Durante a migração (até o R4 do PRD-0466), o renderer próprio desenha **dentro da pass da
 cena**, no ponto em que o RS1 já emite hoje (padrão SPEC-0245/SPEC-0425: depois do fundo, na
 ordem do `painterSortStable`, intercalado). O que ele ainda não cobre fica com o `three`,
-por objeto. Cada etapa sobe a cobertura e é mergeável desligada. O estado final de cada jogo
+por objeto. Cada etapa sobe a cobertura e é mergeável desligada. O estado final do DDD 61
 é **0 recusas**: o renderer próprio é dono da pass (limpa, fundo, cena), e o `three` não
-desenha nada do quadro 3D.
+desenha nada do quadro 3D. Jogo com recusa continua inteiro no `three` (recusa por jogo).
 
 ### 7. Igualdade de imagem
 
@@ -257,8 +263,9 @@ desenha nada do quadro 3D.
   (jogo), com a paridade **verificada**, não automática. O ADR-0237 já aceitou isso.
 - Os caminhos de otimização sobre internos do `three` no export (TransformOnlyRefresh,
   RenderIdRefresh, b.1, b.2 com receitas, RS1, DynamicLighting, SharedShadowFilter,
-  projeção que alimenta a RenderList) ficam ligados até o renderer próprio assumir cada jogo,
-  e **saem do export** no R5 (no Studio nunca instalaram). Simplifica o código.
+  projeção que alimenta a RenderList) ficam ligados até o renderer próprio assumir o DDD 61
+  e saem do export **dele** no R4. Continuam na engine e no export dos jogos que ainda usam o
+  `three` (no Studio nunca instalaram).
 - Efeito visual novo em jogo passa a ter custo dobrado (TSL + WGSL), com o censo cobrando.
 - O espelho, o culler, o passe de sombra, o lote, o `pipeline_cache`, o `MaterialDesc`, o
   `PipelineKey`, o bloom, o composite e o SSAA deixam de ser peças soltas e viram o renderer.
