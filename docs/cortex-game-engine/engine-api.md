@@ -1600,6 +1600,39 @@ atributo por instância. No export nativo o WGSL passa pelo naga: valide o PIXEL
 (captura), não só a compilação — há armadilhas conhecidas (vertex color branco no
 `MeshStandardMaterial`). Exemplo real: lote de personagens do DDD 61 (ADR-0131 do jogo).
 
+### WGSL do jogo no renderer nativo do export (`registerNativeMaterial`, `shaderTime`) — SPEC-0565
+
+Com `?nativeRenderer=1` o export desenha os materiais com WGSL próprio do engine; um
+material TSL que os modelos fixos não cobrem é recusado e fica com o `three`. Para levá-lo
+ao renderer nativo, o jogo marca o material e registra o WGSL equivalente (um
+`NativeModelDef`, o mesmo contrato dos modelos fixos):
+
+```ts
+import { MeshBasicNodeMaterial, TSL, registerNativeMaterial, shaderTime, type NativeModelDef } from 'cortex-game-engine'
+const { positionLocal, sin, vec3 } = TSL
+const sea = new MeshBasicNodeMaterial()
+sea.positionNode = positionLocal.add(vec3(0, sin(positionLocal.x.add(shaderTime)), 0)) // lado three
+sea.userData.nativeMaterial = 'sea'
+const seaModel: NativeModelDef = {
+  name: 'sea', paramFloats: 4,
+  attributeTypes: { foam: 'f32' },            // atributos próprios da geometria (instanciados ou não)
+  variant: () => [], attributes: () => ['position', 'foam'],
+  wgsl: () => `/* vs(vin : VIn) -> … com nativeLocal(vin), nativeModel(vin), view.time; fs */`,
+  writeParams: (m, out) => out.fill(0), textures: () => [],
+}
+registerNativeMaterial('sea', seaModel)
+```
+
+- No `vs`, monte a posição como o `three`: `nativeLocal(vin)` já traz instância e skinning;
+  `(view.view * nativeModel(vin)) * local`, depois `view.projection`.
+- **`view.time`** = **`shaderTime`** (relógio do jogo, pausa com ele e congela no
+  `?parityFreeze`). Use `shaderTime` no TSL, **não** o `time` do TSL, senão os dois lados
+  divergem.
+- `DataTexture` float de dados por instância: devolva-a em `textures()` e leia com
+  `textureLoad(tex, vec2<i32>(i32(vin.instance), 0), 0)` (grupo 2, binding `2 + 2·i`).
+- O jogo responde pela paridade TSL × WGSL: valide na galeria/`?parityFreeze`. Exemplo
+  provado: `wgsl-wave` em `native/fixtures/material-gallery/main.ts`.
+
 ## Skybox / HDRI
 
 ```ts
