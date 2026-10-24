@@ -107,3 +107,10 @@ A/B (kit SPEC-0382, intercalado, 2 réplicas, 12/12 rodadas válidas):
 | Helio (drive) | 13,63 → 10,59 (**−3,04**) | 25,1 → 21,6 | 37,1 → 29,5 | 50,1 → 36,6 | 14,4% → 2,1% |
 
 No drive, a réplica A r1 saiu alta (render 15,5); o par r2 sozinho ainda dá −1,2.
+
+### Quanto a sombra custa agora (Full HD, walk, Comercial, 2 réplicas, 4/4 válidas)
+
+Com o filtro compartilhado ligado por padrão: sombra ligada × `?sombra=0` → render
+12,02 × 11,66 ms (**−0,37 ms**), GPU ~1,07 × ~1,06 ms. Antes do filtro, a mesma
+comparação dava **−3,2 ms**: a sombra do sol caiu de ~3,2 para ~0,4 ms de CPU
+(o redesenho do mapa a cada 3 s e o `updateBefore` do `ShadowNode`).
