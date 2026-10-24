@@ -19,7 +19,10 @@ import { queryFlagRequested } from './TransformOnlyRefresh.js';
 
 /** Depuração: relê a receita a cada `add` e relata divergência (caro; desligado). */
 const CHECK_QUERY_KEY = 'drawBatchCheck=';
-/** (a) da SPEC-0435: grupo compartilhado recriado regrava a receita em vez de devolver ao `three`. */
+/**
+ * (a) da SPEC-0435: grupo compartilhado recriado regrava a receita em vez de devolver ao `three`.
+ * Desligada por padrão até ganho medido (A/B sem ganho; Centro com +4 pp de quadros > 33 ms).
+ */
 const RECAPTURE_QUERY_KEY = 'batchRecapture=';
 
 /** Inteiros por comando (ver `kCommandInts` em `draw_batch.h`). */
@@ -124,7 +127,7 @@ export class DrawBatch {
   private _contextData: Record<string, unknown> | null = null;
   private readonly _receitas = new WeakMap<object, Receita>();
   private readonly _conferir = queryFlagRequested(CHECK_QUERY_KEY, false);
-  private readonly _regravar = queryFlagRequested(RECAPTURE_QUERY_KEY, true);
+  private readonly _regravar = queryFlagRequested(RECAPTURE_QUERY_KEY, false);
   private readonly _relatados = new WeakSet<object>();
 
   constructor(

@@ -1,7 +1,7 @@
 # SPEC-0435 — Custo por estado de shader no export (luzes, sombra, grupos compartilhados)
 
 **Data:** 2026-10-23
-**Status:** (d′) `DynamicLighting` **ligada por padrão no host** (`04c72500`); (a) sem ganho demonstrável (ligada, a remedir); (b) teto medido; (c)/(d) não iniciadas.
+**Status:** (d′) `DynamicLighting` **ligada por padrão no host** (`04c72500`); (a) **desligada por padrão até ganho medido; remedir sobre a `DynamicLighting`** (`?batchRecapture=1` liga); (b) teto medido; (c)/(d) não iniciadas.
 
 Frente seguinte ao RS1 (SPEC-0425, ligado por padrão por decisão do usuário).
 Correção do teto no ADR-0404: o que sobra do render não está mais no laço por
