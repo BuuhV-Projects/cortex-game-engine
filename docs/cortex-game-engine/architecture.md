@@ -1297,14 +1297,15 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   braço `three` da paridade, ou na recusa do gate, devolve ao `three`. `?nativeShadow=0`,
   `?nativeShadowPass=0`; plantados `?nativeShadowShift=1` (amostragem) e
   `?nativeShadowPassShift=1` (mapa).
-- **Luz (R1.2, SPEC-0535)**: modelos `lambert` e `standard` (`models/lambert.ts` exporta as partes
-  comuns; o `standard` traz a LUT DFG do `three`, copiada porque é privada do módulo dele). O bloco
+- **Luz (R1.2, SPEC-0535)**: modelo `lambert` (`models/lambert.ts` exporta as partes comuns) e
+  `standard` (com a LUT DFG do `three`, copiada porque é privada do módulo dele), **fora de
+  `NATIVE_MODELS` até a paridade da fachada**. Recusas temporárias do `lambert` (emissivo não
+  preto, instanciado, `receiveShadow`): ver o backlog do PRD-0466. O bloco
   `frame/lights.ts` é um UBO por quadro com sol + hemisfério + até 8 spots (o que a `DynamicLighting`
   do `three` dá aos shaders). **Armadilha**: o `beginFrame` roda antes de o `three` coletar as luzes
   do quadro (`renderList.pushLight` na projeção), então o bloco varre a cena só quando a raiz muda e
   filtra visibilidade/camadas por quadro; luz que os modelos não reproduzem (pontual, ambiente,
   spot com sombra, `scene.environment`) faz os modelos recusarem (`lightsRefusal()`).
-  `receiveShadow` fica recusado até o `SHADOW_READY` da Frente B.
 - **Armadilha**: a saída é LINEAR (no DDD 61 a passada `outputColorTransform` do `three` aplica o
   sRGB no quadro); a névoa do `three` é `smoothstep(near, far, -z)`, não rampa linear.
 - **Paridade**: `?parityFreeze` alterna renderer próprio × `three` sem código novo (o braço

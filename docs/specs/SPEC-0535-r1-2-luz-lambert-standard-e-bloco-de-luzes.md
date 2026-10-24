@@ -1,7 +1,55 @@
 # SPEC-0535 — R1.2: luz no renderer nativo (`lambert`, `standard` e bloco de luzes)
 
 **Data:** 2026-10-24
-**Status:** em implementação (desligado por padrão: `?nativeRenderer=1&nativeRendererModels=…,lambert,standard`)
+**Status:** **implementado** (2026-10-24), desligado por padrão (`?nativeRenderer=1`). O
+desenho abaixo foi a proposta; **"Como ficou"** registra o que mudou e vale sobre ele.
+
+## Como ficou
+
+- **Entregue:** bloco de luzes (`frame/lights.ts`: UBO com sol + hemisfério + 8 spots,
+  conferido valor a valor contra o `SpotLightDataNode`/`HemisphereLightDataNode` e o
+  `lightPosition`/`lightTargetPosition` do `three` no jogo) e o modelo `lambert`. Galeria com 9
+  esferas iluminadas sem `receiveShadow`.
+- **Recusas temporárias** (cada uma com dono e pendência no backlog do PRD-0466; voltam antes do
+  R1.6, porque o aceite final exige 0 recusas):
+  - `standard` **fora de `NATIVE_MODELS`** (o modelo e os testes ficam): fachadas do Comercial de
+    dia com 1,17% fora da paridade. Dono: Frente A, depois do checkpoint;
+  - `lambert` com **emissivo não preto**: com o relógio andando, o vidro das janelas sai ~22%
+    abaixo do emissivo do `three`; com hora fixa bate. Descartados por medição: dados de luz,
+    parâmetros, textura/sampler, mip, receita, cópia de atributo do `three`, `doubleSide`, clima;
+  - `lambert` **instanciado**, aguardando a correção de instâncias da Frente C. Os "fios
+    distantes" eram os cabos quebráveis do DDD 61 (`InstancedMesh` compactado a cada `cull()`:
+    `setMatrixAt` nas `n` primeiras, `count = n`, `addUpdateRange`). A ordem foi descartada: a
+    chave nativa e o `painterSortStable` batem campo a campo, e o z do C++ também vai para a
+    `RenderList` do `three`. Com `nativeTint`, quem desenha o fio é o braço nativo; com o
+    instanciado recusado, o "alt 223" some;
+  - `lambert` com **`receiveShadow`** (`RECEIVE_SHADOW = false`), aguardando a paridade da sombra
+    da Frente B: depois do merge A+B, as sombras dos pedestres na calçada diferem até 6/255
+    (0,0821%); sem `receiveShadow`, o Comercial de dia passa (0,0030%). O modelo já aplica
+    `nativeShadow` só ao sol, na ordem do `wgsl-0019`.
+- **Veredito** (`check-stage r1-2-luz-final`, `unlit,lambert,standard` com as recusas acima):
+  galeria PASS 0/0 · Setor O dia PASS 0,0001% · Setor O noite PASS 0/0 · Comercial dia PASS
+  0,0041% · Comercial noite PASS 0/0 · fumaça 1080p PASS (render 11,61 ms). Prova de resposta
+  conhecida `&nativeTint=1` (`r1-2-luz-tint`): FAIL em todas as rodadas, no jogo também (Setor O
+  dia 44,4%, Comercial dia 11,5%, galeria 4,7%).
+- **`@invariant` na posição do vértice** foi testado e não mudou nada (saiu).
+- **Instrumentos novos:** `native/scripts/perf/coverage-diff.mjs` (separa diferença de
+  cobertura e de cor numa captura de paridade); `.cortex/renderer-r1/checkpoint-r1-2.sh`,
+  `taken-per-frame.sh` e `rs1-per-frame.sh` (resumo de uma linha).
+- **Checkpoint A/B** (código anterior às recusas: B = `unlit,lambert,standard`, com standard e
+  instanciado ligados; intercalado, 2 réplicas, 1080p, 0 inválidas):
+
+  | ponto | render A → B (ms) | B−A | lista do servidor B−A (draws/quadro) | esperado × 40 µs |
+  | --- | --- | --- | --- | --- |
+  | setorO (walk) | 11,22 → 9,08 | −2,14 | +37 | 1,48 |
+  | centro (walk) | 11,18 → 9,53 | −1,66 | +51 | 2,04 |
+  | comercial (walk) | 12,31 → 10,89 | −1,42 | +44 | 1,74 |
+  | ac (walk) | 12,35 → 9,34 | −3,00 | +31 | 1,24 |
+  | helio (drive) | 10,10 → 8,75 | −1,35 | +32 | 1,28 |
+
+  Soma esperada ≈ 7,8 ms contra 9,6 ms medidos: coerente (só o que sai do `three` puro ganha
+  ~40 µs; o que o RS1 já desenhava custa pouco). `frameMs` med −1,35 a −3,40 ms; GC de −71 a
+  −468 KB/quadro. O p99 do centro (+11,85) é ruído de 2 réplicas, a conferir no aceite.
 
 Etapa R1.2 do PRD-0466 (ADR-0465), Frente A do R1. Base: SPEC-0495 (R1.1, contrato de modelo,
 grupos fixos e costuras) e SPEC-0475 (dado global de luz).
