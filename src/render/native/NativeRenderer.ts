@@ -41,6 +41,8 @@ const FLOAT_BYTES = 4;
 const MAT4_FLOATS = 16;
 const TRIANGLE_VERTICES = 3;
 const NO_RECIPE = -1;
+/** `MatState.textureVersions` entry of a texture not bound yet: never equal to a `texture.version`. */
+const NOT_READY = -1;
 /** Projections between reports on `debug('perf')`, plus one early report for short rounds. */
 const REPORT_FRAMES = 600;
 const EARLY_REPORT_FRAME = 120;
@@ -225,6 +227,8 @@ interface MatState {
   /** One char per texture: `f` filterable, `u` unfilterable float (the group-2 layout key). */
   kinds: string;
   gpuTextures: unknown[];
+  /** `texture.version` at the last check (`NOT_READY` = check again next frame). */
+  textureVersions: number[];
   group: Gpu | null;
   frame: number;
   /** Bumped when the group or pipeline changes: recipes recorded before are stale. */
@@ -672,6 +676,7 @@ export class NativeRenderer implements NativeDrawer {
       textures: [...model.textures(material, variant)],
       kinds: '',
       gpuTextures: [],
+      textureVersions: [],
       group: null,
       frame: -1,
       generation: known ? known.generation + 1 : 0,
@@ -691,11 +696,17 @@ export class NativeRenderer implements NativeDrawer {
       mat.textures = [...mat.model.textures(material, mat.variant)];
       this._bindMaterial(mat);
     } else {
+      // Like the three's bindings, only a moved `texture.version` reaches the upload (updateSampler
+      // builds a string key per call). A render target's GPU texture is recreated on resize without a
+      // version bump, so it is checked every frame (SPEC-0585 1a).
       for (let i = 0; i < mat.textures.length; i++) {
-        if (this._gpuTexture(mat.textures[i]) !== mat.gpuTextures[i]) {
+        const tex = mat.textures[i] as { version: number; isRenderTargetTexture?: boolean };
+        if (tex.version === mat.textureVersions[i] && !tex.isRenderTargetTexture) continue;
+        if (this._gpuTexture(tex) !== mat.gpuTextures[i]) {
           this._bindMaterial(mat);
           break;
         }
+        mat.textureVersions[i] = tex.version;
       }
     }
     this._writeParams(material, mat, mat.scratch);
@@ -727,12 +738,14 @@ export class NativeRenderer implements NativeDrawer {
   private _bindMaterial(mat: MatState): boolean {
     const entries: unknown[] = [{ binding: 0, resource: { buffer: mat.buffer } }];
     mat.gpuTextures = [];
+    mat.textureVersions = mat.textures.map(() => NOT_READY);
     for (let i = 0; i < mat.textures.length; i++) {
       const tex = mat.textures[i];
       const gpu = this._gpuTexture(tex) as { createView(): unknown } | null;
       const sampler = this._host.backend.get(tex)['sampler'];
       if (!gpu || !sampler) return false;
       mat.gpuTextures.push(gpu);
+      mat.textureVersions[i] = (tex as { version: number }).version;
       entries.push({ binding: 1 + 2 * i, resource: sampler }, { binding: 2 + 2 * i, resource: gpu.createView() });
     }
     mat.kinds = mat.textures.map((t) => ((t as { type?: number }).type === FLOAT_TYPE ? UNFILTERABLE : FILTERABLE)).join('');

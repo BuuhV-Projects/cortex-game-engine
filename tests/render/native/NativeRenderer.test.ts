@@ -203,6 +203,41 @@ describe('NativeRenderer (R1.1, SPEC-0495)', () => {
     const vbs = t.recorded[0]![2] as unknown[];
     expect(vbs.length).toBe(2); // position + uv, one buffer each
   });
+
+  it('touches a material texture only when its version moves; a render target texture every frame (SPEC-0585 1a)', () => {
+    const t = fakeHost();
+    let updates = 0;
+    const update = t.host._textures.updateTexture;
+    t.host._textures.updateTexture = (tex: object) => {
+      updates++;
+      update(tex);
+    };
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const map = new Texture();
+    const mesh = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ map }));
+    const step = (): void => {
+      frame(nr);
+      nr.take(mesh, mesh.material, mesh.geometry);
+    };
+    step();
+    const groups = t.calls.groups;
+    const afterBuild = updates;
+    step();
+    step();
+    expect(updates).toBe(afterBuild);
+    map.needsUpdate = true;
+    step();
+    expect(updates).toBe(afterBuild + 1);
+    expect(t.calls.groups).toBe(groups);
+    t.host.backend.get(map)['texture'] = { createView: () => ({ kind: 'view2' }) };
+    map.needsUpdate = true;
+    step();
+    expect(t.calls.groups).toBe(groups + 1);
+    (map as Texture & { isRenderTargetTexture?: boolean }).isRenderTargetTexture = true;
+    t.host.backend.get(map)['texture'] = { createView: () => ({ kind: 'view3' }) };
+    step();
+    expect(t.calls.groups).toBe(groups + 2);
+  });
 });
 
 describe('vertexFormat', () => {

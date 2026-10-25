@@ -40,6 +40,7 @@ import { autopilotFromQuery, type InputAutopilot } from '../input/InputAutopilot
 import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
 import { FrameProfiler } from './FrameProfiler.js';
+import { setRenderSections } from '../render/RenderSections.js';
 import {
   RenderPhaseProbe,
   renderPhasesRequested,
@@ -382,6 +383,7 @@ export class Game {
     // Já liga junto se o modo debug foi pedido (export --debug / ?cortexHud=1),
     // pra medir desde o 1º frame; o toggle do Studio liga/desliga em runtime.
     this.profiler = new FrameProfiler({ enabled: debugHudRequested() });
+    setRenderSections(this.profiler); // R1.6 phase 0 sections inside `render` (SPEC-0585)
 
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', () => {

@@ -232,3 +232,134 @@ espera a P2 e só fica se o A/B ganhar.
 - Nenhum quadro > 50 ms com nascimento de pipeline na 1ª volta (mesmo instrumento cruzado com `frameMs`).
 - P2: render nativo cai na proporção medida na fase 0; o render ≤ 5 ms é do aceite do R1, não da etapa.
 - P3: só com ganho no A/B (SPEC-0575).
+
+## Fase 0 da Parte 2 — medida (2026-10-25, Frente A)
+
+Instrumento: seções do `FrameProfiler` aninhadas em `render` (`src/render/RenderSections.ts`):
+`sceneRender` (cada `renderer.render` da cena espelhada), `nativeProject` (projeção inteira) com
+`nativeCull` (a parte C++) dentro, e `nativeEmit` (emissão + replay). O laço JS por instância é
+`nativeProject − nativeCull`; o trabalho do three é `sceneRender − nativeProject − nativeEmit`; pós e
+resto é `render − mirror − sceneRender`. Resumo de uma linha: `native/scripts/perf/render-sections.sh`
+(mesma janela do kit, `t ≥ 30 s`).
+
+**Validação (resposta conhecida):** `?renderSectionSpin=<seção>` espera 2 ms dentro da seção; cada uma
+sobe só no próprio bloco: `sceneRender` → three +2,3; `nativeProject` → laço JS +2,2; `nativeCull` →
+cull +2,0; `nativeEmit` → emissão +6,1 (≈3 chamadas por quadro × 2 ms).
+
+**Divisão** (DDD 61 `f10877e`, Comercial, `walk`, 1080p, `unlit,lambert,standard,wgsl`; render 8,39 ms,
+igual ao `validate.sh`):
+
+| bloco | ms/quadro |
+| --- | --- |
+| espelho (`mirror`) | 1,14 |
+| laço JS por instância (ofertas + `take` + `_refreshInstance`) | **2,38** |
+| cull C++ | ~0,00 |
+| emissão + replay | 0,55 |
+| trabalho do three com a cena espelhada (listas, sombra, fundo, objetos dele) | **3,33** |
+| pós e resto | 0,99 |
+
+Alvos da Parte 2: o laço JS (passo 1, lista persistente) e o trabalho do three com a cena espelhada
+(passo 2), ~5,7 ms no total.
+
+### Passo 1 — onde está o custo do laço JS (rodadas de teto, instrumentação temporária, fora do commit)
+
+Cronômetros temporários em volta de `take` (no `offerNative`), de `server.offer` e do teste de
+frustum/z do JS, e interruptores que desligam um pedaço do `_refreshInstance` (só para medir; a
+imagem fica errada). ~119 `take` por quadro, 123 candidatos.
+
+| rodada | `take` (ms/quadro) | leitura |
+| --- | --- | --- |
+| completo | 1,97 | ≈16 µs por `take` |
+| sem comparar a matriz | 1,97 | a comparação de 16 floats não pesa |
+| sem geometria/`_drawParameters` | 1,61 | geometria ≈0,36 |
+| sem `_refreshMaterial` | 1,20 | **material ≈0,77** |
+
+O resto do laço (≈0,4 ms) é `offer` (classificação, ordem) e o frustum do JS (0,20).
+
+Dentro do material (rodada com seções temporárias; máquina carregada, render 12,5 ms, vale a
+proporção): ~78 materiais e ~125 instâncias por quadro; checagem de textura **0,58** ms, `writeParams`
+0,32 ms.
+
+**1a — textura do material só quando a versão muda.** Hoje `_refreshMaterial` chama, por
+textura e por quadro, `Textures.updateTexture` e `Textures.updateSampler` do three (o segundo monta
+uma string de chave a cada chamada, `WebGPUTextureUtils.updateSampler`, e isso aloca no Hermes) e
+`backend.get`. O three só faz isso quando o binding vê a versão da textura mudar. Passamos a guardar
+`texture.version` por textura no `MatState`; com a versão igual, a textura é pulada sem chamada
+nenhuma. A exceção é a textura de render target, que o three recria no redimensionamento sem mudar
+a versão: ela continua checada a cada quadro. Uma primeira versão, que ainda comparava a
+identidade da textura GPU por quadro (`backend.get`), não teve ganho visível numa rodada solta
+(laço JS 2,42 contra 2,38, com a máquina carregada) e foi trocada por esta. A troca de sampler sem
+`needsUpdate` já não refazia o grupo antes, e isso não muda. `writeParams` continua por quadro: o
+three não avisa quando uma cor muda, então comparar o bloco é o único rastreio de sujos possível.
+
+A/B intercalado (`ab.sh`, Comercial, `walk`, 2 réplicas; A = base da fase 0, B = 1a; máquina com
+outra sessão, absolutos ~20% acima da fase 0, vale a diferença):
+
+| métrica | A | B | Δ |
+| --- | --- | --- | --- |
+| render | 10,35 | 8,96 | **−1,39** |
+| laço JS | 2,87 | 2,25 | −0,62 |
+| three com a cena espelhada | 4,25 | 3,74 | −0,51 (menos GC) |
+| GC (KB/quadro) | 1003 | 849 | −154 (as chaves do `updateSampler`) |
+| frameMs p99 | 73,4 | 54,8 | −18,6 |
+
+### Passo 2 — o que é o "trabalho do three com a cena espelhada" (medido, 2026-10-25)
+
+Instrumentação temporária (fora do commit) dentro do `render` da cena espelhada, DDD 61 `f10877e`,
+Comercial, `walk`, 1080p, já com o 1a (render ~8,2 ms):
+
+| fatia (ms/quadro) | |
+| --- | --- |
+| `sceneRef.onBeforeRender` do **jogo** (`figureBatch`, `peopleBatch`, `playerSkin`: cópia das matrizes dos bonecos para os lotes instanciados), antes da projeção | **~1,7–2,0** |
+| `backend.finishRender` (fim da pass e submit; custo do wgpu) | 0,87–1,17 |
+| `_renderOutput` (quad de Output Color Transform) | 0,42 |
+| draws do three na cena espelhada (**1 objeto**, `static-merged-11`) | 0,35 |
+| `beginProjection` (blocos de luz/sombra do `beginFrame`) | 0,26 |
+| `backend.beginRender` | 0,11 |
+| fundo, listas, ordenação, render target | ~0 |
+
+Como chegamos lá: as chamadas do `_renderScene` antes da projeção (`setRenderTarget`,
+`_renderContexts.get`, `getDrawingBufferSize`, `_getFrameBufferTarget`, `camera.updateMatrixWorld`,
+`inspector`) deram ~0, e o `matrixFreeze` não mudou o intervalo (não é a travessia de matrizes). A
+distribuição do intervalo (mediana ~1 ms por render, GC em ~2,5% dos renders) descartou GC. O que
+restava no trecho era o `onBeforeRender` da cena, onde o jogo pendura os três lotes.
+
+Os outros ~33 `renderObject` por quadro do three são de outras cenas (UI e pós), fora do `sceneRender`.
+O passe de sombra do sol (C++, Frente B) desenha sob demanda, com o gatilho do `SunShadow` do jogo.
+
+**Consequência para a Parte 2:** tirar a cena espelhada do three economiza só o preparo dele
+(~0,5 ms: draw de 1 objeto e `beginRender`). `finishRender` e o pós continuam necessários com
+qualquer dono da pass. O grosso restante é do jogo (lotes de bonecos no `onBeforeRender`, ~1,8 ms) e
+do laço JS por instância (~2,1 ms). A meta de ≤ 5 ms só com o renderer não fecha: precisa de um item
+no jogo (lotes de pessoas) ou de levar a cópia dos lotes ao espelho C++.
+
+**Decisão da coordenação (2026-10-25):** o `finishRender` e o pós (~1,3–1,6 ms) ficam com qualquer dono
+da pass, então a meta de ≤ 5 ms depende do item A (laço JS, esta frente) somado ao C (o
+`onBeforeRender` do jogo, aberto na Frente D). O passo 2 continua no plano por ser pré-requisito do
+dono da pass, do R2 e do R4, mesmo rendendo ~0,5 ms.
+
+### Passo 1b — estado persistente por slot do espelho (item A)
+
+No modelo do Godot, o servidor guarda a instância e o cliente manda só o delta. Aqui o cull C++ já
+devolve o **slot** do nó no espelho. O `take` recebe esse slot (`offer`/`offerNative` repassam) e acha
+a instância num array por slot, conferindo `inst.object === object`. Isso tira a busca no `WeakMap`
+de cada candidato, a cada quadro. Sem slot (fora da projeção nativa), o `WeakMap` continua valendo.
+A checagem de identidade e de versões (material, geometria, `material.version`, `instanceColor`)
+não muda, nem a paridade.
+
+A geometria passa a ser atualizada uma vez por quadro (`GeoState.frame`), como o material já é. Uma
+geometria compartilhada por N instâncias deixa de ter as versões dos atributos comparadas N vezes.
+
+Medição: A/B intercalado contra o 1a (laço JS e render). Sem ganho acima do ruído, o item sai.
+
+**Resultado: saiu.** No A/B (Comercial, `walk`, 2 réplicas), o laço JS ficou em 2,175 ms com o 1a e
+2,165 com o 1b, dentro do ruído. O render caiu 0,25 ms, mas no three e no world, que o 1b não toca.
+Nem a busca no `WeakMap` nem a geometria repetida pesam. O custo é o trabalho por candidato em si:
+classificar, material do quadro, versões, parâmetros de draw, matriz e as 10 listas do `_push`.
+
+**O que sobra para o item A** é passar a lista ao C++. O espelho já sabe quem se moveu e quem está
+visível, então o C++ guarda as instâncias aceitas (receita, slot, chave de ordem) e monta os comandos.
+O JS fica só com o que o three não notifica: os parâmetros de cada material único (~78 por quadro) e
+as versões de cada geometria única, uma vez por quadro, mais as trocas de material/geometria/
+visibilidade como delta. É uma mudança de desenho (lista e ordenação em C++, `draw_batch` alimentado
+pelo cull), não um ajuste do `take`.
