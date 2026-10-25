@@ -191,6 +191,30 @@ O `precompile` cai à metade porque o nativo assume a maior parte da cena e o th
 nascimento imprevisível em jogo, a 1b (`createRenderPipelineAsync` em thread C++) e o ubershader **não
 entram**.
 
+#### P1 — oclusor só de profundidade (`colorWrite=false`)
+
+Depois da P1, o único objeto que o three ainda desenhava na cena era o `skip`: `static-merged-11`, um
+`MeshBasicMaterial` com `colorWrite=false` (oclusor que só escreve profundidade, ~0,35 ms). O classificador
+o marcava como `skip`, e o nativo o recusava.
+
+**Desenho.** O classificador cobre `colorWrite=false` com o modelo do tipo do material e a feature de
+núcleo `noColorWrite` (não chega ao modelo). No `drawState`, ela vira `writeMask: 0` no alvo de cor e entra
+na chave de estado. É o que o `WebGPUPipelineUtils` do three faz (`colorWrite ? All : None`): o fragment
+shader roda, a profundidade é escrita e a cor não. A ordem é a do three: é um opaco, vai para a fase
+opaca com a mesma chave de ordenação do RS1. O `skip` continua no tipo e no censo (os scripts leem o
+campo), mas o classificador não o devolve mais: o censo conta `skip=0`. Interruptor de desligar para A/B:
+`?nativeDepthOnly=0` devolve o oclusor ao three (recusa `skip`, como antes).
+
+**Medido** (`p1-depth`, f10877e, `unlit,lambert,standard,wgsl&nativePrecompile=1`):
+- check-stage PASS 0/0 em todos os pontos (galeria, Setor O e Comercial, dia e noite), fumaça PASS (render
+  9,22); `nativeTint=1` na galeria FAIL (alt 28, 65,8%).
+- Censo (`rendererCensus=1`, Comercial): `objects=125 covered=125 refused=0 skip=0`. O relatório do nativo
+  fica com `refused=0` (antes 25 com a varredura do `precompile`, 20 deles `skip`).
+- A/B intercalado Comercial `walk`, `nativeDepthOnly=0` × padrão, mesmo export. Lote `ab2` (máquina
+  quieta, 3 + 3): render 8,54 → **8,26 ms (−0,28)**, faixas sem sobreposição (A 8,41–8,74 × B 8,18–8,33),
+  draws iguais (146,7). Lote `ab` (ruidoso, 3 + 2): −1,17 ms. O ganho bate com os ~0,35 ms que o three
+  gastava no oclusor e fica acima do ruído: **a mudança fica**.
+
 ### Parte 2 — dono da pass (critério de render)
 
 0. **Fase 0, medir:** dividir o render nativo (8,4 ms) em: JS por instância do nativo, `render()` do

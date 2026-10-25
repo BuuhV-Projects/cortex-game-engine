@@ -57,6 +57,8 @@ const MS_DIGITS = 2;
 const TINT_QUERY = 'nativeTint=';
 /** `?nativePrecompile=1`: warm-up through the native renderer (SPEC-0585), off until accepted. */
 const PRECOMPILE_QUERY = 'nativePrecompile=';
+/** `?nativeDepthOnly=0`: the depth-only occluder (`colorWrite=false`) goes back to the three (A/B, SPEC-0585). */
+const DEPTH_ONLY_QUERY = 'nativeDepthOnly=';
 const TINT_DELTA = 8 / 255;
 /** three constants (kept local). */
 const FRONT_SIDE = 0;
@@ -77,9 +79,11 @@ const RETRY_REASONS = new Set(['texture']);
  * Object/pipeline features: the core's, not the models' (see `models/NativeModel.ts`). Removed
  * from the classification before the model sees it; refused unless supported below.
  */
-export const CORE_FEATURES = new Set(['instanced', 'skinned', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'doubleSide']);
+export const CORE_FEATURES = new Set(['instanced', 'skinned', 'transparent', 'additive', 'noDepthWrite', 'noColorWrite', 'polygonOffset', 'renderOrder', 'doubleSide']);
 /** What the core draws today (R1.4, SPEC-0555: instancing, transparency, state). R1.5 adds skinning. */
-const CORE_SUPPORTED = new Set(['doubleSide', 'instanced', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'skinned']);
+const CORE_SUPPORTED = new Set(['doubleSide', 'instanced', 'transparent', 'additive', 'noDepthWrite', 'noColorWrite', 'polygonOffset', 'renderOrder', 'skinned']);
+/** `GPUColorWrite.NONE`: `colorWrite=false` writes depth only. */
+const COLOR_WRITE_NONE = 0;
 /** Vertex semantics every model may read without declaring their type (`attributeTypes` is for the rest). */
 const BUILTIN_SEMANTICS = new Set<string>(['position', 'normal', 'uv', 'color', 'instanceColor']);
 /** Skin attributes the core appends after the model's (`coreWgsl` with `skinned`). */
@@ -209,6 +213,8 @@ interface GeoState extends VertexSet {
 interface DrawState {
   blend: Blend;
   depthWrite: boolean;
+  /** `material.colorWrite`: `false` = writeMask 0 (depth-only occluder). */
+  colorWrite: boolean;
   /** `[polygonOffsetUnits, polygonOffsetFactor]`, or `null` without `polygonOffset`. */
   bias: [number, number] | null;
   /** Cull mode of each pass, in draw order (transparent DoubleSide: back faces first). */
@@ -319,6 +325,7 @@ export class NativeRenderer implements NativeDrawer {
   /** Refusals of the warm-up while it runs (`null` outside it). */
   private _sweepRefusals: Map<string, number> | null = null;
   private readonly _tint = queryFlagRequested(TINT_QUERY, false);
+  private readonly _depthOnly = queryFlagRequested(DEPTH_ONLY_QUERY, true);
   /** Frames begun so far (the warm-up and `precompile` logs say where they fall). */
   get frame(): number {
     return this._frame;
@@ -453,6 +460,7 @@ export class NativeRenderer implements NativeDrawer {
   private _build(object: Object3D, material: Material, geometry: GeometryLike): Inst | null {
     const c = classifyDrawable(object, material);
     if (c.kind !== 'covered') return this._refuse(object, material, geometry, c.kind === 'skip' ? 'skip' : c.reason);
+    if (!this._depthOnly && c.features.includes('noColorWrite')) return this._refuse(object, material, geometry, 'skip');
     const model = this._models.get(c.model) ?? this._gameModel(c.model);
     if (!model) return this._refuse(object, material, geometry, `model:${c.model}`);
     for (const f of c.features) {
@@ -952,7 +960,7 @@ export class NativeRenderer implements NativeDrawer {
       label: `native.${codeKey}`,
       layout,
       vertex: { module, entryPoint: 'vs', buffers: inst.extra ? [...inst.geo.layouts, ...inst.extra.layouts] : inst.geo.layouts },
-      fragment: { module, entryPoint: 'fs', targets: [s.blend === 'none' ? { format: color } : { format: color, blend: BLEND_STATES[s.blend] }] },
+      fragment: { module, entryPoint: 'fs', targets: [colorTarget(s, color)] },
       primitive: { topology: 'triangle-list', cullMode: cull, frontFace: 'ccw' },
       depthStencil,
       multisample: { count: samples },
@@ -977,18 +985,31 @@ const CULL_OF_SIDE: Record<number, string> = { [FRONT_SIDE]: 'back', [BACK_SIDE]
 
 /**
  * Pipeline state of a material, as the three's `WebGPUPipelineUtils` builds it (SPEC-0555): blend
- * only when not opaque, `depthWrite`, `polygonOffset` as depth bias; a transparent `DoubleSide`
+ * only when not opaque, `depthWrite`, `colorWrite` as writeMask (SPEC-0585), `polygonOffset` as depth
+ * bias; a transparent `DoubleSide`
  * material (without `forceSinglePass`) is drawn twice like `Renderer._renderObject` does: back
  * faces (cull `front`), then front faces (cull `back`).
  */
 export function drawState(
-  m: { blending: number; transparent: boolean; depthWrite: boolean; side: number; forceSinglePass?: boolean; polygonOffset: boolean; polygonOffsetUnits?: number; polygonOffsetFactor?: number },
+  m: { blending: number; transparent: boolean; depthWrite: boolean; colorWrite?: boolean; side: number; forceSinglePass?: boolean; polygonOffset: boolean; polygonOffsetUnits?: number; polygonOffsetFactor?: number },
   opaque: boolean,
 ): DrawState {
   const blend: Blend = opaque ? 'none' : m.blending === ADDITIVE_BLENDING ? 'additive' : 'normal';
   const bias: [number, number] | null = m.polygonOffset ? [m.polygonOffsetUnits ?? 0, m.polygonOffsetFactor ?? 0] : null;
   const culls = m.transparent && m.side === DOUBLE_SIDE && !m.forceSinglePass ? ['front', 'back'] : [CULL_OF_SIDE[m.side] ?? 'back'];
-  return { blend, depthWrite: m.depthWrite, bias, culls, key: `${blend}|${m.depthWrite ? 'w' : '-'}|${bias ? bias.join(',') : ''}` };
+  const colorWrite = m.colorWrite !== false;
+  return {
+    blend, depthWrite: m.depthWrite, colorWrite, bias, culls,
+    key: `${blend}|${m.depthWrite ? 'w' : '-'}|${bias ? bias.join(',') : ''}${colorWrite ? '' : '|c-'}`,
+  };
+}
+
+/** The color target of a pipeline: blend when not opaque, writeMask 0 without `colorWrite`. */
+function colorTarget(s: DrawState, format: string): Record<string, unknown> {
+  const target: Record<string, unknown> = { format };
+  if (s.blend !== 'none') target['blend'] = BLEND_STATES[s.blend];
+  if (!s.colorWrite) target['writeMask'] = COLOR_WRITE_NONE;
+  return target;
 }
 
 /** Builds the native renderer on a three WebGPU renderer, or `null` with the reason logged. */

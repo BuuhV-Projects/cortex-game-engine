@@ -685,3 +685,25 @@ describe('NativeRenderer.precompile (SPEC-0585)', () => {
     expect(nr.stats.refused).toBe(1);
   });
 });
+
+describe('NativeRenderer depth-only occluder (SPEC-0585)', () => {
+  it('draws colorWrite=false with writeMask 0 in its own pipeline, depth written, opaque', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const occluder = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ colorWrite: false }));
+    const visible = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    occluder.updateMatrixWorld();
+    visible.updateMatrixWorld();
+    frame(nr);
+    const entry = nr.take(occluder, occluder.material, occluder.geometry)!;
+    expect(entry).not.toBeNull();
+    expect(entry.transparent).toBe(false);
+    nr.recipeFor(entry, {});
+    nr.recipeFor(nr.take(visible, visible.material, visible.geometry)!, {});
+    expect(t.calls.pipelines).toBe(2);
+    const [occluderPipeline, visiblePipeline] = t.recorded.map((r) => (r[0] as { d: Record<string, any> }).d);
+    expect(occluderPipeline!.fragment.targets[0]).toEqual({ format: 'rgba16float', writeMask: 0 });
+    expect(occluderPipeline!.depthStencil.depthWriteEnabled).toBe(true);
+    expect(visiblePipeline!.fragment.targets[0]).toEqual({ format: 'rgba16float' });
+  });
+});

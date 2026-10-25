@@ -83,8 +83,8 @@ describe('classifyDrawable', () => {
     expect(label(new Mesh(morphed, new MeshBasicMaterial()))).toBe('refused:morph');
   });
 
-  it('marks color-write-off meshes (collision only) as skip, and keeps additive and instancing as features', () => {
-    expect(label(new Mesh(geometry, new MeshBasicMaterial({ colorWrite: false })))).toBe('skip');
+  it('covers color-write-off meshes (depth-only occluder) with noColorWrite, and keeps additive and instancing as features', () => {
+    expect(label(new Mesh(geometry, new MeshBasicMaterial({ colorWrite: false })))).toBe('unlit+fog+noColorWrite');
     expect(label(new Mesh(geometry, new MeshBasicMaterial({ blending: AdditiveBlending, depthWrite: false })))).toBe(
       'unlit+additive+fog+noDepthWrite',
     );
@@ -120,8 +120,8 @@ describe('RendererCensus', () => {
     new RendererCensus((name, data) => events.push([name, data])).sample(scene, camera);
 
     const census = events.find(([name]) => name === 'rendererCensus')![1];
-    expect(census).toMatchObject({ objects: 4, covered: 2, refused: 1, skip: 1 });
-    expect(census.classes).toBe('lambert+fog=2;refused:physical:clearcoat=1;skip=1');
+    expect(census).toMatchObject({ objects: 4, covered: 3, refused: 1, skip: 0 });
+    expect(census.classes).toBe('lambert+fog=2;refused:physical:clearcoat=1;unlit+fog+noColorWrite=1');
     expect(events.filter(([name]) => name === 'rendererCensusMaterial')).toHaveLength(3);
   });
 
