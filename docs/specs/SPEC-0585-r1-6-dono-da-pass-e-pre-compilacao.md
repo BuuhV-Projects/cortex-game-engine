@@ -177,3 +177,45 @@ igual ao `validate.sh`):
 
 Alvos da Parte 2: o laço JS (passo 1, lista persistente) e o trabalho do three com a cena espelhada
 (passo 2), ~5,7 ms no total.
+
+### Passo 1 — onde está o custo do laço JS (rodadas de teto, instrumentação temporária, fora do commit)
+
+Cronômetros temporários em volta de `take` (no `offerNative`), de `server.offer` e do teste de
+frustum/z do JS, e interruptores que desligam um pedaço do `_refreshInstance` (só para medir; a
+imagem fica errada). ~119 `take` por quadro, 123 candidatos.
+
+| rodada | `take` (ms/quadro) | leitura |
+| --- | --- | --- |
+| completo | 1,97 | ≈16 µs por `take` |
+| sem comparar a matriz | 1,97 | a comparação de 16 floats não pesa |
+| sem geometria/`_drawParameters` | 1,61 | geometria ≈0,36 |
+| sem `_refreshMaterial` | 1,20 | **material ≈0,77** |
+
+O resto do laço (≈0,4 ms) é `offer` (classificação, ordem) e o frustum do JS (0,20).
+
+Dentro do material (rodada com seções temporárias; máquina carregada, render 12,5 ms, vale a
+proporção): ~78 materiais e ~125 instâncias por quadro; checagem de textura **0,58** ms, `writeParams`
+0,32 ms.
+
+**1a — textura do material só quando a versão muda.** Hoje `_refreshMaterial` chama, por
+textura e por quadro, `Textures.updateTexture` e `Textures.updateSampler` do three (o segundo monta
+uma string de chave a cada chamada, `WebGPUTextureUtils.updateSampler`, e isso aloca no Hermes) e
+`backend.get`. O three só faz isso quando o binding vê a versão da textura mudar. Passamos a guardar
+`texture.version` por textura no `MatState`; com a versão igual, a textura é pulada sem chamada
+nenhuma. A exceção é a textura de render target, que o three recria no redimensionamento sem mudar
+a versão: ela continua checada a cada quadro. Uma primeira versão, que ainda comparava a
+identidade da textura GPU por quadro (`backend.get`), não teve ganho visível numa rodada solta
+(laço JS 2,42 contra 2,38, com a máquina carregada) e foi trocada por esta. A troca de sampler sem
+`needsUpdate` já não refazia o grupo antes, e isso não muda. `writeParams` continua por quadro: o
+three não avisa quando uma cor muda, então comparar o bloco é o único rastreio de sujos possível.
+
+A/B intercalado (`ab.sh`, Comercial, `walk`, 2 réplicas; A = base da fase 0, B = 1a; máquina com
+outra sessão, absolutos ~20% acima da fase 0, vale a diferença):
+
+| métrica | A | B | Δ |
+| --- | --- | --- | --- |
+| render | 10,35 | 8,96 | **−1,39** |
+| laço JS | 2,87 | 2,25 | −0,62 |
+| three com a cena espelhada | 4,25 | 3,74 | −0,51 (menos GC) |
+| GC (KB/quadro) | 1003 | 849 | −154 (as chaves do `updateSampler`) |
+| frameMs p99 | 73,4 | 54,8 | −18,6 |
