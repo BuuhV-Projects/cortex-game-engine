@@ -207,3 +207,15 @@ emissivo, `alphaTest`, `doubleSide`; Standard metal, mapa, emissivo, `doubleSide
 - Luz nova em runtime fora do padrão do DDD 61 (adicionada a um nó que não é filho direto da raiz,
   depois do 1º quadro) só entra na próxima varredura — limitação registrada até a costura do
   núcleo existir.
+
+## Adendo (2026-10-24): `@invariant` na posição dos modelos iluminados; `standard` religado
+
+Com o emissivo corrigido no núcleo (SPEC-0555, `ecaf612f`), o `standard` ainda dava lascas
+coplanares nas linhas da calçada do Comercial de dia (0,0140%, alt 7). A causa é precisão: o
+`lambert` e o `standard` calculam a mesma posição em módulos diferentes, e o compilador pode
+arredondar diferente; em superfícies coplanares, isso troca qual desenho vence o teste de
+profundidade. A saída `@builtin(position)` do `VOut` compartilhado (`litVertexWgsl`) passou a ser
+`@invariant`, o recurso do WGSL para isso. Resultado (`check-stage std-inv-final`, `e1cede4`,
+`unlit,lambert,standard,wgsl`): tudo PASS com 0,0000% (galeria, Setor O e Comercial, dia e
+noite) e fumaça PASS (render 10,04); `&nativeTint=1` (`std-inv-tint`): FAIL em todas as rodadas.
+O `standard` volta para `NATIVE_MODELS`.

@@ -147,7 +147,7 @@ struct Params {
 ${bindings}
 
 struct VOut {
-  @builtin(position) clip : vec4<f32>,
+  @builtin(position) @invariant clip : vec4<f32>,
   @location(0) positionView : vec3<f32>,
   @location(1) normalView : vec3<f32>,
   ${uv ? '@location(2) uv : vec2<f32>,' : ''}

@@ -336,8 +336,7 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   **Depois, com a Frente C (`5799e3cb` = merge de `ecaf612f` + `7e83a021` sobre a main `eb25eaad`):** `r1-int-c2`
   PASS 0/0 em tudo, fumaça render 10,63 ms; tint `r1-int-c2-tint` FAIL em tudo (52–86% dos pixels).
 - **Recusas que bloqueiam o aceite (0 recusas) e dono** (recontadas no `r1-int-c2`):
-  - `standard` fora de `NATIVE_MODELS` (`model:standard`, 51–195 por amostra; lascas coplanares na calçada, Comercial
-    dia 0,0140%) — Frente A;
+  - ~~`standard` fora de `NATIVE_MODELS`~~ — **resolvido** (Frente A, SPEC-0535 adendo, `dce009ad` + `d7dde846`): emissivo pela Frente C e lascas coplanares por `@invariant` na posição; `std-inv-final` tudo PASS 0,0000%;
   - `variant:lambert` = 4 (eram 9–27 antes do emissivo da C): resíduo NÃO identificado (`BackSide`, alpha to coverage,
     luzes fora do bloco ou feature fora da lista) — falta um dump por objeto para nomear; sem dono;
   - ~~`receiveShadow` no `lambert`~~ — resolvido pela Frente B (SPEC-0545, `30a21e64`);
@@ -389,7 +388,7 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
   congelamento. Próximo passo: reproduzir na galeria com rampa de `emissiveIntensity`
   **depois** do primeiro quadro (a tentativa feita mudava antes do `precompile`) e capturar o
   WGSL e os uniformes reais do estado do `three` naquele objeto.
-- **`standard` desligado na R1.2** — a causa da fachada (emissivo animado, 1,17%) foi **resolvida** (SPEC-0555);
+- ~~**`standard` desligado na R1.2**~~ — **RESOLVIDO** (2026-10-24): as lascas eram precisão da posição entre módulos (`@invariant` no `litVertexWgsl`, `dce009ad`); religado em `d7dde846`, `std-inv-final` PASS 0,0000%. Histórico: a causa da fachada (emissivo animado, 1,17%) foi **resolvida** (SPEC-0555);
   com o `standard` ligado ainda sobram **0,014% (alt 7) em lascas nas linhas da calçada** do Comercial dia (sem ele,
   PASS 0,0059%): outra causa, coplanar. Fica desligado até isolar. Histórico: (origem: R1.2, SPEC-0535, 2026-10-24). O modelo existe
   (`models/standard.ts`, testes), mas saiu de `NATIVE_MODELS`: no Comercial de dia, as fachadas

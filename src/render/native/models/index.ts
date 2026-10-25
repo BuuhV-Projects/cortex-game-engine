@@ -5,7 +5,6 @@
 import type { NativeModelDef } from './NativeModel.js';
 import { unlitModel } from './unlit.js';
 import { lambertModel } from './lambert.js';
+import { standardModel } from './standard.js';
 
-export const NATIVE_MODELS: readonly NativeModelDef[] = [unlitModel, lambertModel];
-// standard (models/standard.ts) stays off: the facade's animated emissive is fixed (SPEC-0555), but the
-// Comercial day still has 0.014% of slivers on the sidewalk lines with it on (coplanar, PRD-0466 backlog).
+export const NATIVE_MODELS: readonly NativeModelDef[] = [unlitModel, lambertModel, standardModel];
