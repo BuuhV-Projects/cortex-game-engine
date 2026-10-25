@@ -337,7 +337,10 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   PASS 0/0 em tudo, fumaça render 10,63 ms; tint `r1-int-c2-tint` FAIL em tudo (52–86% dos pixels).
 - **Recusas que bloqueiam o aceite (0 recusas) e dono** (recontadas no `r1-int-c2`):
   - ~~`standard` fora de `NATIVE_MODELS`~~ — **resolvido** (Frente A, SPEC-0535 adendo, `dce009ad` + `d7dde846`): emissivo pela Frente C e lascas coplanares por `@invariant` na posição; `std-inv-final` tudo PASS 0,0000%;
-  - `variant:lambert` = 4 (eram 9–27 antes do emissivo da C): resíduo NÃO identificado (`BackSide`, alpha to coverage,
+  **Com a Frente A (`57abf1ef`, `unlit,lambert,standard,wgsl`):** `r1-int-a2` PASS em tudo (pior: Setor O dia 0,0002%),
+  fumaça render 10,17 ms; tint FAIL em tudo (52–85%). Recusas da engine que sobram no jogo: `variant:lambert` = 4 e
+  `variant:standard` = 1–4 (mesmo grupo de motivos do `litVariant`); na galeria, `model:toon`/`model:outline` = 2 (fora do DDD 61).
+  - `variant:lambert` = 4 (eram 9–27 antes do emissivo da C) e `variant:standard` = 1–4: resíduo NÃO identificado (`BackSide`, alpha to coverage,
     luzes fora do bloco ou feature fora da lista) — falta um dump por objeto para nomear; sem dono;
   - ~~`receiveShadow` no `lambert`~~ — resolvido pela Frente B (SPEC-0545, `30a21e64`);
   - tintas TSL do jogo (`node:colorNode`) e `peopleGpu` — Frente D (repo do jogo, `registerNativeMaterial`/`shaderTime`),
