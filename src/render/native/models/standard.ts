@@ -20,7 +20,7 @@ const METALNESS_AT = LIT_PARAM_FLOATS;
 const ROUGHNESS_AT = LIT_PARAM_FLOATS + 1;
 
 /** `vertexColors` never shows up on a standard material in the census: refused (YAGNI). */
-export const STANDARD_ACCEPTED: readonly string[] = ['map', 'emissiveMap', 'fog', 'alphaTest', 'receiveShadow'];
+export const STANDARD_ACCEPTED: readonly string[] = ['map', 'emissiveMap', 'fog', 'alpha', 'alphaTest', 'receiveShadow'];
 const ACCEPTED = STANDARD_ACCEPTED;
 
 const DFG_SIZE = 16;

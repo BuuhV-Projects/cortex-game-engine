@@ -378,6 +378,9 @@ const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   ['lambert-compacted-interleaved', cellWith(compactedInstances(INTERLEAVED_ROWS, INTERLEAVED_COLS)), false],
   ['lambert-emissive-ramp', unshadowed(rampingGlass()), true],
   ['standard-emissive-ramp', unshadowed(rampingFacade()), false],
+  // SPEC-0535: lit models with the core's `alpha` (transparent), no receiveShadow.
+  ['lambert-alpha-lit', unshadowed(new MeshLambertMaterial({ map: checker, transparent: true, opacity: 0.5 })), false],
+  ['standard-alpha-lit', unshadowed(new MeshStandardMaterial({ map: checker, transparent: true, opacity: 0.5, roughness: 0.5 })), false],
 ];
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;

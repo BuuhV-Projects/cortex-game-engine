@@ -36,7 +36,7 @@ const EMISSIVE_TRANSFORM_AT = 5 * ROW_FLOATS;
 const RECEIVE_SHADOW = true;
 
 /** Shading features both lit models take from the classification. */
-const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'fog', 'alphaTest', 'receiveShadow'] as const;
+const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'fog', 'alpha', 'alphaTest', 'receiveShadow'] as const;
 /** Accepted without a variant of their own (the uv transform is always applied). */
 const NEUTRAL_FEATURES = ['uvTransform', 'noToneMap'];
 
@@ -206,7 +206,7 @@ export function litSurfaceWgsl(variant: readonly string[]): string {
   ${has('vertexColors') ? 'diffuse = diffuse * in.color;' : ''}
   diffuse.w = diffuse.w * params.opacity;
   ${has('alphaTest') ? 'if (diffuse.w <= params.alphaTest) {\n    discard;\n  }' : ''}
-  diffuse.w = 1.0;
+  ${has('alpha') ? '' : 'diffuse.w = 1.0;'}
   var emissive = params.emissive;
   ${has('emissiveMap') ? 'emissive = (vec4<f32>(params.emissive, 1.0) * textureSample(emissiveTexture, emissiveSampler, (params.emissiveMapTransform * vec3<f32>(in.uv, 1.0)).xy)).xyz;' : ''}
   let normalGeometry = normalize(in.normalView);

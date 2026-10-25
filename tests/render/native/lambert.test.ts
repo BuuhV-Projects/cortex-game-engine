@@ -77,6 +77,9 @@ describe('lambert model (R1.2, SPEC-0535)', () => {
     expect(full).toContain('discard');
     expect(full).toContain('emissiveTexture');
     expect(full).toContain('view.fogColor');
+    // transparent (the core's `alpha`): the real alpha goes out, like the three's wgsl-0050
+    expect(lambertModel.wgsl(['alpha'])).not.toContain('diffuse.w = 1.0;');
+    expect(lambertModel.wgsl([])).toContain('diffuse.w = 1.0;');
     const plain = lambertModel.wgsl([]);
     expect(plain).not.toContain('textureSample');
     expect(plain).not.toContain('discard');
