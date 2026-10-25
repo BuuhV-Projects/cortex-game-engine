@@ -334,7 +334,7 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   (galeria, Setor O e Comercial dia/noite; o FAIL de 0,0255% sumiu com a correção do mapa do sol); fumaça PASS,
   render 10,19 ms, > 33 ms 2%. Controle `r1-int-e1-tint`: FAIL em tudo (caminho nativo cobre 52–81% dos pixels do jogo).
 - **Recusas que bloqueiam o aceite (0 recusas) e dono** (recontadas no `r1-int-e1`):
-  - `standard` fora de `NATIVE_MODELS` (`model:standard`, ~43–63 por amostra) — Frente C fechando;
+  - ~~`standard` fora de `NATIVE_MODELS`~~ — **resolvido** (Frente A, SPEC-0535 adendo, `dce009ad` + `d7dde846`): emissivo pela Frente C e lascas coplanares por `@invariant` na posição; `std-inv-final` tudo PASS 0,0000%;
   - `lambert` com emissivo não preto (`variant:lambert`, 9–21) — Frente C fechando;
   - ~~`receiveShadow` no `lambert`~~ — resolvido pela Frente B (SPEC-0545, `30a21e64`);
   - tintas TSL do jogo (`node:colorNode`) e `peopleGpu` — Frente D (repo do jogo, `registerNativeMaterial`/`shaderTime`),
@@ -385,7 +385,7 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
   congelamento. Próximo passo: reproduzir na galeria com rampa de `emissiveIntensity`
   **depois** do primeiro quadro (a tentativa feita mudava antes do `precompile`) e capturar o
   WGSL e os uniformes reais do estado do `three` naquele objeto.
-- **`standard` desligado na R1.2** — a causa da fachada (emissivo animado, 1,17%) foi **resolvida** (SPEC-0555);
+- ~~**`standard` desligado na R1.2**~~ — **RESOLVIDO** (2026-10-24): as lascas eram precisão da posição entre módulos (`@invariant` no `litVertexWgsl`, `dce009ad`); religado em `d7dde846`, `std-inv-final` PASS 0,0000%. Histórico: a causa da fachada (emissivo animado, 1,17%) foi **resolvida** (SPEC-0555);
   com o `standard` ligado ainda sobram **0,014% (alt 7) em lascas nas linhas da calçada** do Comercial dia (sem ele,
   PASS 0,0059%): outra causa, coplanar. Fica desligado até isolar. Histórico: (origem: R1.2, SPEC-0535, 2026-10-24). O modelo existe
   (`models/standard.ts`, testes), mas saiu de `NATIVE_MODELS`: no Comercial de dia, as fachadas
