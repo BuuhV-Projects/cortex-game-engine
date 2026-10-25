@@ -209,7 +209,7 @@ export function summaryLine(r) {
   );
 }
 
-const AB_NAME_RE = /^(.+)-(A|B)-r\d+$/;
+const AB_NAME_RE = /^(.+)-([A-Z])-r\d+$/;
 const AB_METRICS = [
   ['frameMs med', (r) => r.frameMed],
   ['frameMs p95', (r) => r.frameP95],
@@ -223,26 +223,32 @@ const AB_METRICS = [
   ['gc young ms/s', (r) => r.gc?.youngMsPerS ?? NaN],
 ];
 
-/** Table per point: mean over valid rounds of each arm, and B - A. */
+/** Table per point: mean over valid rounds of each arm, and each arm minus A (`ab.sh`, 2 or 3 arms). */
 export function abTable(runsRoot) {
   const groups = new Map();
+  const letters = new Set();
   const out = [];
   for (const entry of fs.readdirSync(runsRoot).sort()) {
     const m = entry.match(AB_NAME_RE);
     if (!m) continue;
     const r = analyzeRun(path.join(runsRoot, entry));
     if (!r.valid) out.push(verdictLine(r));
-    const point = groups.get(m[1]) ?? { A: [], B: [] };
+    letters.add(m[2]);
+    const point = groups.get(m[1]) ?? {};
+    point[m[2]] ??= [];
     if (r.valid) point[m[2]].push(r);
     groups.set(m[1], point);
   }
-  out.push(`ponto | métrica | A (n) | B (n) | B-A`);
-  for (const [point, arms] of groups) {
+  const arms = [...letters].sort();
+  const others = arms.filter((x) => x !== 'A');
+  out.push(`ponto | métrica | ${arms.map((x) => `${x} (n)`).join(' | ')} | ${others.map((x) => `${x}-A`).join(' | ')}`);
+  for (const [point, byArm] of groups) {
     for (const [label, pick] of AB_METRICS) {
-      const a = mean(arms.A.map(pick));
-      const b = mean(arms.B.map(pick));
-      if (!Number.isFinite(a) && !Number.isFinite(b)) continue; // metric absent in this trace (e.g. gc on an old host)
-      out.push(`${point} | ${label} | ${fmt(a, 2)} (${arms.A.length}) | ${fmt(b, 2)} (${arms.B.length}) | ${fmt(b - a, 2)}`);
+      const values = arms.map((x) => mean((byArm[x] ?? []).map(pick)));
+      if (!values.some(Number.isFinite)) continue; // metric absent in this trace (e.g. gc on an old host)
+      const cells = arms.map((x, i) => `${fmt(values[i], 2)} (${(byArm[x] ?? []).length})`);
+      const deltas = others.map((x) => fmt(values[arms.indexOf(x)] - values[0], 2));
+      out.push(`${point} | ${label} | ${cells.join(' | ')} | ${deltas.join(' | ')}`);
     }
   }
   return out;

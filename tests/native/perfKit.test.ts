@@ -166,4 +166,13 @@ describe('trace-stats ab', () => {
     expect(lines.some((l) => l.startsWith('INVÁLIDO setorO-B-r2'))).toBe(true);
     expect(lines).toContain('setorO | frameMs med | 20.00 (1) | 15.00 (1) | -5.00');
   });
+
+  it('com um braço C, uma coluna e uma diferença contra o A a mais', () => {
+    makeRun('setorO-A-r1', { frameMs: 20 });
+    makeRun('setorO-B-r1', { frameMs: 15 });
+    makeRun('setorO-C-r1', { frameMs: 18 });
+    const lines: string[] = abTable(root);
+    expect(lines).toContain('ponto | métrica | A (n) | B (n) | C (n) | B-A | C-A');
+    expect(lines).toContain('setorO | frameMs med | 20.00 (1) | 15.00 (1) | 18.00 (1) | -5.00 | -2.00');
+  });
 });
