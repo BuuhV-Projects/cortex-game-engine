@@ -266,3 +266,15 @@ a instância, e o modelo só precisa aceitar a variante.
   FAIL alt 7 / 0,014%: lascas nas linhas da calçada **só com o `standard`** (sem ele: PASS 0,0059%) — outra
   causa (coplanar), no backlog do PRD-0466.
 - **Religado:** emissivo do `lambert` (sem a recusa). O `standard` continua fora de `NATIVE_MODELS` pela causa acima.
+
+## Contagem de instâncias de `InstancedBufferGeometry` (multidão do DDD 61, Frente D)
+
+- **Problema:** `_drawParameters` usava `object.count` só para `InstancedMesh` e 1 para o resto. O `PeopleMesh`
+  do DDD 61 é um `Mesh` comum com `InstancedBufferGeometry` (`instanceCount` = pessoas à mostra, atributos
+  `InstancedBufferAttribute` com `stepMode: 'instance'`), e por isso desenhava uma pessoa só.
+- **Correção:** usar o critério do three 0.184 (`RenderObject.getDrawParameters`, l.567–579): se a geometria
+  é `isInstancedBufferGeometry`, vale `geometry.instanceCount`; senão vale `max(0, object.count)` quando o
+  objeto tem `count`; senão 1. Com 0 instâncias, nada é desenhado; o `RenderServer` já pula entradas com
+  `instances <= 0`.
+- **Limite:** um `instanceCount` igual a `Infinity` (o padrão do three) não é finito, e o
+  núcleo o trata como 0 (não desenha). O jogo sempre define a contagem.

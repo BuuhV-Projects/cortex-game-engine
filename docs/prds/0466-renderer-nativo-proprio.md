@@ -333,9 +333,13 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   **FEITO (2026-10-24, `88bf3d45` = integrada + merge de `30a21e64`):** `r1-int-e1` deu PASS 0/0 em tudo
   (galeria, Setor O e Comercial dia/noite; o FAIL de 0,0255% sumiu com a correção do mapa do sol); fumaça PASS,
   render 10,19 ms, > 33 ms 2%. Controle `r1-int-e1-tint`: FAIL em tudo (caminho nativo cobre 52–81% dos pixels do jogo).
-- **Recusas que bloqueiam o aceite (0 recusas) e dono** (recontadas no `r1-int-e1`):
-  - `standard` fora de `NATIVE_MODELS` (`model:standard`, ~43–63 por amostra) — Frente C fechando;
-  - `lambert` com emissivo não preto (`variant:lambert`, 9–21) — Frente C fechando;
+  **Depois, com a Frente C (`5799e3cb` = merge de `ecaf612f` + `7e83a021` sobre a main `eb25eaad`):** `r1-int-c2`
+  PASS 0/0 em tudo, fumaça render 10,63 ms; tint `r1-int-c2-tint` FAIL em tudo (52–86% dos pixels).
+- **Recusas que bloqueiam o aceite (0 recusas) e dono** (recontadas no `r1-int-c2`):
+  - `standard` fora de `NATIVE_MODELS` (`model:standard`, 51–195 por amostra; lascas coplanares na calçada, Comercial
+    dia 0,0140%) — Frente A;
+  - `variant:lambert` = 4 (eram 9–27 antes do emissivo da C): resíduo NÃO identificado (`BackSide`, alpha to coverage,
+    luzes fora do bloco ou feature fora da lista) — falta um dump por objeto para nomear; sem dono;
   - ~~`receiveShadow` no `lambert`~~ — resolvido pela Frente B (SPEC-0545, `30a21e64`);
   - tintas TSL do jogo (`node:colorNode`) e `peopleGpu` — Frente D (repo do jogo, `registerNativeMaterial`/`shaderTime`),
     abre depois do merge na main e do re-vendor do jogo;

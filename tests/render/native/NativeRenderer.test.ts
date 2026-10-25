@@ -6,6 +6,7 @@ import {
   BufferGeometry,
   Color,
   DoubleSide,
+  InstancedBufferGeometry,
   InstancedMesh,
   Fog,
   FogExp2,
@@ -261,6 +262,20 @@ type PipelineDesc = {
 
 describe('NativeRenderer core (R1.4, SPEC-0555)', () => {
   const lastPipeline = (t: ReturnType<typeof fakeHost>) => (t.recorded.at(-1)![0] as { d: PipelineDesc }).d;
+
+  it('takes the instance count of an InstancedBufferGeometry on a plain Mesh, like the three', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const geometry = new InstancedBufferGeometry().copy(new BoxGeometry() as never);
+    geometry.instanceCount = 5;
+    const mesh = new Mesh(geometry, new MeshBasicMaterial());
+    mesh.updateMatrixWorld();
+    frame(nr);
+    expect(nr.take(mesh, mesh.material, mesh.geometry)!.instances).toBe(5);
+    geometry.instanceCount = 0;
+    frame(nr);
+    expect(nr.take(mesh, mesh.material, mesh.geometry)!.instances).toBe(0);
+  });
 
   it('draws an InstancedMesh: per-instance VBs after the geometry, instance applied in nativeLocal, count per frame', () => {
     const t = fakeHost();
