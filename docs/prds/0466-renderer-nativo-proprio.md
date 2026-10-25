@@ -29,6 +29,10 @@ kart-racer e crash-racer ficaram fora do escopo por decisão do usuário (2026-1
 
 ## Linha de base — medida no R0 (SPEC-0505), controle de todos os marcos
 
+> **Jogo-alvo trocado para `290fcb5` (2026-10-25, aceite do R1).** Frente D: lotes de bonecos com uma varredura por
+> quadro (SPEC-0195 do jogo; `onBeforeRender` −0,9 a −1,0 ms nos dois braços). Cópia: `D:/jogos/detetive-brasilia-rs-290fcb5`
+> (padrão do `check-stage.sh`); as anteriores ficam por enquanto.
+>
 > **Jogo-alvo trocado para `f10877e` (2026-10-25).** A Frente D (multidão + tintas no renderer próprio, SPEC-0194
 > do jogo, engine revendorizada de `1b69154e`) entrou na main do jogo. Cópia de medição:
 > `D:/jogos/detetive-brasilia-rs-f10877e` (padrão do `check-stage.sh`). O aceite final do R1 mede na cópia nova; a
@@ -323,12 +327,39 @@ disto muda os marcos; cada item entra com SPEC antes, quando o jogo precisar.
 
 Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
 
+## Aceite final do R1 — medido (2026-10-25)
+
+Engine `2166618b` (main `7c5175c4` + cópia nova), DDD 61 `290fcb5` (`D:/jogos/detetive-brasilia-rs-290fcb5`), mesmo
+export nos dois braços, A/B intercalado, 2 réplicas × 135 s, 1080p, `walk` nos 4 pontos + `drive` no Helio;
+A = `three`, B = `&nativeRenderer=1&nativeRendererModels=unlit,lambert,standard,wgsl&nativePrecompile=1`. 20/20 rodadas
+VÁLIDAS. Rodadas em `D:/jogos/detetive-brasilia/.cortex/stages/r1-accept/`.
+
+| ponto | render A → B (meta ≤ 5) | falta | quadro med A → B | p95 A → B | p99 A → B | > 33 ms A → B (meta ≤ 2%) | GPU A → B (meta ≤ +0,5) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Setor O | 10,55 → **7,91** | 2,91 | 21,85 → 20,25 | 31,40 → 31,65 | 47,55 → 37,35 | 2,95 → **4,23** | 1,01 → 1,04 |
+| Centro | 10,30 → **7,69** | 2,69 | 20,55 → 17,80 | 34,30 → 24,60 | 44,35 → **30,50** | 3,04 → 0,36 | 1,04 → 1,01 |
+| Comercial | 11,66 → **8,01** | 3,01 | 25,75 → 20,90 | 40,05 → 31,30 | 46,35 → 36,65 | 15,18 → **2,51** | 1,30 → 1,19 |
+| AC | 12,69 → **8,38** | 3,38 | 26,55 → 21,25 | 41,60 → 33,55 | 56,40 → 44,75 | 16,89 → **7,69** | 1,22 → 1,13 |
+| Helio (drive) | 9,91 → **7,14** | 2,14 | 20,70 → 17,95 | 30,80 → 29,20 | 35,20 → 38,55 | 3,04 → 1,80 | 0,65 → 0,67 |
+
+- **Render:** cai 2,6–4,3 ms em todos os pontos, mas **não fecha ≤ 5 ms** em nenhum (faltam 2,1–3,4 ms).
+- **> 33 ms:** fecha no Centro e no Helio; Comercial no limite (2,51%); **Setor O piora** (2,95 → 4,23%) e **AC fica em 7,69%**.
+- **GPU:** dentro da meta em todos (de −0,11 a +0,03 ms).
+- **GC jovem:** de 30–40 para 8,5–9,7 ms/s em todos os pontos.
+- **Pipelines nascidos em jogo:** 0 em todas as rodadas B (todos no quadro 1, inclusive o `playerTint` skinned).
+- **Paridade** (`r1-accept-parity`, 4 pontos dia e noite + galeria): PASS 0/0 em tudo; tint FAIL (galeria 65,8%, Setor O dia 89% / noite 54%).
+- **Recusas:** 0 no Setor O, Comercial, AC e Helio; **Centro: 1 (`variant:standard`)**, ainda sem nome.
+- **p99 do Centro** (o +11,85 do checkpoint pós-R1.2, SPEC-0535): agora **cai** 13,85 ms (44,35 → 30,50). Era ruído.
+
+**Veredito:** não aprovado. Faltam o render ≤ 5 ms (todos os pontos), o > 33 ms no Setor O e no AC, e a recusa do
+Centro. O resto fecha.
+
 ## Estado para retomada (pausa de 2026-10-24, limite semanal)
 
 - **Branch integrada:** `claude/renderer-nativo-45b16a` (worktree `renderer-nativo-45b16a`), A + B + C integradas
   (merges `8c528adc`, `86ccefb4`, `fd65ba1f`), `lambert` instanciado religado; último commit no fim desta pausa
   (ver `git log`). Sem merge na main (merge é da sessão principal).
-- **Jogo-alvo:** DDD 61 `f10877e` desde 2026-10-25, cópia `D:/jogos/detetive-brasilia-rs-f10877e` (padrão do `check-stage.sh`); antes `e1cede4`.
+- **Jogo-alvo:** DDD 61 `290fcb5` desde 2026-10-25 (aceite do R1), cópia `D:/jogos/detetive-brasilia-rs-290fcb5` (padrão do `check-stage.sh`); antes `f10877e` e `e1cede4`.
   A antiga `rs-e2be01c` só serve para apagar (backlog do PRD-0009).
 - **1º passo da retomada:** refazer a checagem integrada NA CÓPIA NOVA:
   `native/scripts/check-stage.sh <wt> r1-int-e1 --flag '&nativeRenderer=1&nativeRendererModels=unlit,lambert,wgsl'`
