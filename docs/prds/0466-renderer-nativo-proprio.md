@@ -29,6 +29,11 @@ kart-racer e crash-racer ficaram fora do escopo por decisão do usuário (2026-1
 
 ## Linha de base — medida no R0 (SPEC-0505), controle de todos os marcos
 
+> **Jogo-alvo trocado para `f10877e` (2026-10-25).** A Frente D (multidão + tintas no renderer próprio, SPEC-0194
+> do jogo, engine revendorizada de `1b69154e`) entrou na main do jogo. Cópia de medição:
+> `D:/jogos/detetive-brasilia-rs-f10877e` (padrão do `check-stage.sh`). O aceite final do R1 mede na cópia nova; a
+> `rs-e1cede4` e a `rs-e2be01c` ficam por enquanto (backlog do PRD-0009).
+>
 > **Jogo-alvo trocado para `e1cede4` (2026-10-24).** O usuário viu o jogador atravessar o ônibus nas
 > rodadas: a correção (SPEC-0193 do jogo) está em `e1cede4`, que só soma isso e a música da carga
 > (SPEC-0192) a `e2be01c`. Cópia de medição: `D:/jogos/detetive-brasilia-rs-e1cede4` (padrão do
@@ -203,7 +208,7 @@ os modelos de cada etapa), com cobertura medida pelo censo. Critério de toda et
 | R1.3 | sombra: mapa único com `needsUpdate` no passe C++ + material de sombra compartilhado + amostragem **PCFSoft** (o filtro do DDD 61) no lambert, parâmetros só no bloco de vista (SPEC-0475) | paridade da sombra no chão (Setor O, fim de tarde); custo da sombra conferido no aceite final (alvo ≤ 0,3 ms de render, `?sombra=0` × ligada) |
 | R1.4 | `InstancedMesh` (+ `instanceColor`/`instancePaint`), transparentes/aditivos ordenados pelo sort do `three`, `alphaTest`, `polygonOffset`, `renderOrder`, layers, partículas e marcas de pneu (buffer dinâmico) | paridade nos 4 pontos com coplanares (`interiores-*`) e transparentes; recusas do censo só em skinned/`peopleGpu`/tintas |
 | R1.5 | skinning no vertex shader (player e dublês) + **API de WGSL do jogo** (`userData.nativeMaterial`, layout de parâmetros, atributos/`DataTexture` por instância) + porte de `peopleGpu`, tinta por slot e pintura mascarada (no repo do jogo, com spec própria); a API aceita vertex shader animado (o mar do DDD 61) | galeria com os 3 WGSL do jogo; **0 recusas** nos 4 pontos |
-| R1.6 | o renderer próprio vira **dono da pass** (limpa, fundo, cena; o `three` não é chamado para a cena espelhada); pré-compilação no load + ubershader para variante nova | 0 pipelines criados por quadro em regime; nenhum quadro > 50 ms causado por pipeline na 1ª volta |
+| R1.6 | o renderer próprio vira **dono da pass** (limpa, fundo, cena; o `three` não é chamado para a cena espelhada); pré-compilação no load + ubershader para variante nova | 0 pipelines criados por quadro em regime; nenhum quadro > 50 ms causado por pipeline na 1ª volta — desenho e diagnóstico na **SPEC-0585** (frentes P1 pré-compilação ∥ P2 dono da pass → P3 buffer único) |
 
 **R1.6 — item: dados por objeto num buffer único (modelo Godot)** (decisão do usuário, 2026-10-24,
 "Sim"). Processo de sempre: Godot primeiro → aplicabilidade → SPEC → medir antes; **só fica se ganhar**.
@@ -323,7 +328,7 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
 - **Branch integrada:** `claude/renderer-nativo-45b16a` (worktree `renderer-nativo-45b16a`), A + B + C integradas
   (merges `8c528adc`, `86ccefb4`, `fd65ba1f`), `lambert` instanciado religado; último commit no fim desta pausa
   (ver `git log`). Sem merge na main (merge é da sessão principal).
-- **Jogo-alvo:** DDD 61 `e1cede4`, cópia `D:/jogos/detetive-brasilia-rs-e1cede4` (padrão do `check-stage.sh`).
+- **Jogo-alvo:** DDD 61 `f10877e` desde 2026-10-25, cópia `D:/jogos/detetive-brasilia-rs-f10877e` (padrão do `check-stage.sh`); antes `e1cede4`.
   A antiga `rs-e2be01c` só serve para apagar (backlog do PRD-0009).
 - **1º passo da retomada:** refazer a checagem integrada NA CÓPIA NOVA:
   `native/scripts/check-stage.sh <wt> r1-int-e1 --flag '&nativeRenderer=1&nativeRendererModels=unlit,lambert,wgsl'`
@@ -340,7 +345,11 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   **Com a Frente A (`57abf1ef`, `unlit,lambert,standard,wgsl`):** `r1-int-a2` PASS em tudo (pior: Setor O dia 0,0002%),
   fumaça render 10,17 ms; tint FAIL em tudo (52–85%). Recusas da engine que sobram no jogo: `variant:lambert` = 4 e
   `variant:standard` = 1–4 (mesmo grupo de motivos do `litVariant`); na galeria, `model:toon`/`model:outline` = 2 (fora do DDD 61).
-  - `variant:lambert` = 4 (eram 9–27 antes do emissivo da C) e `variant:standard` = 1–4: resíduo NÃO identificado (`BackSide`, alpha to coverage,
+  **Com o alpha da Frente A (`f0831b6f`):** `r1-int-a3` PASS em tudo (pior: Comercial dia 0,0002%), fumaça render
+  9,69 ms, > 33 ms 3%; tint FAIL em tudo (52–87%); `lit-refusals.sh` na fumaça: 18 amostras, nenhuma recusa na criação.
+  **Recusas da engine no DDD 61: zero.** Sobram só as do jogo (Frente D) e o `skip` da colisão.
+  - ~~`variant:lambert` = 4 e `variant:standard` = 1–4~~ — **resolvido** (Frente A, `0cec302e` + `f0831b6f`): `feature:alpha` na criação
+    (transparente no quadro da tomada, opaco depois, recusa em cache). Antes era resíduo NÃO identificado (`BackSide`, alpha to coverage,
     luzes fora do bloco ou feature fora da lista) — falta um dump por objeto para nomear; sem dono;
   - ~~`receiveShadow` no `lambert`~~ — resolvido pela Frente B (SPEC-0545, `30a21e64`);
   - tintas TSL do jogo (`node:colorNode`) e `peopleGpu` — Frente D (repo do jogo, `registerNativeMaterial`/`shaderTime`),

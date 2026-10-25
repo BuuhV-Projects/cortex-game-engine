@@ -394,7 +394,8 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       Origem: arquivamento da sessão `rendering-server`. **2026-10-24: o PRD-0466 trocou o alvo para `e1cede4`**
       (cópia nova `D:/jogos/detetive-brasilia-rs-e1cede4`): a antiga pode ser apagada quando nenhuma frente
       tiver rodada nela (`git -C D:/jogos/detetive-brasilia worktree remove`).
-- [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-e1cede4` (`e1cede4`): alvo do PRD-0466 desde 2026-10-24.
+- [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-e1cede4` (`e1cede4`): alvo do PRD-0466 de 2026-10-24 a 2026-10-25; pode ser apagada quando nenhuma frente a usar.
+- [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-f10877e` (`f10877e`): alvo do PRD-0466 desde 2026-10-25.
       Apagar quando o PRD-0466 fechar o R1 ou trocar de commit-alvo. Origem: correção do ônibus (SPEC-0193 do jogo).
 
 - [x] (2026-10-23) Sessão B2 arquivada; worktree da engine e cópias do jogo `b2-base`/`b2-e2be01c` removidas; branch apagada.
