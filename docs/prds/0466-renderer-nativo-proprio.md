@@ -298,6 +298,16 @@ disto muda os marcos; cada item entra com SPEC antes, quando o jogo precisar.
 - **Skinning por compute** se o custo de GPU dos passes com skinning aparecer.
 - Resolução interna < alvo + upscale (o modelo do Godot) se a GPU passar a ser o teto.
 
+### R6 — O renderer próprio também no Studio (futuro; **decisão do usuário pendente**)
+
+Pergunta do usuário (2026-10-25): dá para tirar o `three` de vez, até do Studio? Este marco cobre a parte de **renderer**; o `three` como biblioteca (grafo de cena, matemática, loaders, animação) fica fora, ver abaixo. Mudaria a decisão original do ADR-0465 ("só no export; o Studio fica no `three`"), então exige novo ADR e aprovação.
+
+- **Viabilidade:** o `NativeRenderer.ts` e os modelos de material (WGSL) já são TypeScript/WGSL sobre a API WebGPU, e o Studio roda num Chromium com WebGPU. Só o laço de desenho em lote, o cull e a projeção são C++ (host). No Studio, essa parte teria uma versão em JavaScript (com JIT, aguenta).
+- **Custo:** o Studio usa o `three` para o editor: gizmos de mover e rotacionar, contorno de seleção, clique em objetos (raycast), grade e linhas de ajuda, camadas de UI. Cada um precisa de equivalente no renderer próprio. Estimativa: **2 a 4 semanas**, depois do R4, só para o DDD 61.
+- **Ganho:** o que o Studio mostra passa a ser o que o export mostra (hoje são dois caminhos que divergem, e a paridade já custou vários bugs: `RenderIdRefresh`, `_materialCache`, recusas), e o renderer próprio passa a ser testado no dia a dia, sem export.
+- **Fora:** tirar o `three` como biblioteca (`Object3D`, `Matrix4`, `Raycaster`, `GLTFLoader`, `AnimationMixer`, `SkinnedMesh`) por inteiro é reescrever a base da engine e dos jogos: meses, e ganho de fps pequeno (o `three` já não é o gargalo). Só se aparecer outro motivo (por exemplo, tamanho do bundle ou memória no Xbox). Sem data.
+- **Pré-requisitos:** R1 aceito, R2 e R4 concluídos, e um ADR com a decisão.
+
 ## Onde este plano substitui ou absorve o ADR-0404 e a SPEC-0435
 
 | item anterior | destino |
