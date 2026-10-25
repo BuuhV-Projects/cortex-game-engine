@@ -262,7 +262,7 @@ crash-racer. O levantamento desses jogos fica no anexo `levantamento-three-jogos
 referência (toon, outline skinado, IBL/PMREM, skybox, CSM, água cartoon, wireframe, pós
 radial, AgX, point lights, vertex color).
 
-### R4 — Retirar o caminho do `three` do render do export **do DDD 61**
+### R4 — Retirar o caminho do `three` do render do export **do DDD 61** (depois do R6, se o R6 for aprovado)
 
 - No export do DDD 61, o `WebGPURenderer` e o sistema de nós de render do `three` deixam de
   ser usados e de ser carregados; o `three` fica como grafo de cena, matemática e loaders.
@@ -298,7 +298,7 @@ disto muda os marcos; cada item entra com SPEC antes, quando o jogo precisar.
 - **Skinning por compute** se o custo de GPU dos passes com skinning aparecer.
 - Resolução interna < alvo + upscale (o modelo do Godot) se a GPU passar a ser o teto.
 
-### R6 — O renderer próprio também no Studio (futuro; **decisão do usuário pendente**)
+### R6 — O renderer próprio também no Studio (**recomendado antes do R4**; decisão do usuário pendente)
 
 Pergunta do usuário (2026-10-25): dá para tirar o `three` de vez, até do Studio? Este marco cobre a parte de **renderer**; o `three` como biblioteca (grafo de cena, matemática, loaders, animação) fica fora, ver abaixo. Mudaria a decisão original do ADR-0465 ("só no export; o Studio fica no `three`"), então exige novo ADR e aprovação.
 
@@ -306,7 +306,8 @@ Pergunta do usuário (2026-10-25): dá para tirar o `three` de vez, até do Stud
 - **Custo:** o Studio usa o `three` para o editor: gizmos de mover e rotacionar, contorno de seleção, clique em objetos (raycast), grade e linhas de ajuda, camadas de UI. Cada um precisa de equivalente no renderer próprio. Estimativa: **2 a 4 semanas**, depois do R4, só para o DDD 61.
 - **Ganho:** o que o Studio mostra passa a ser o que o export mostra (hoje são dois caminhos que divergem, e a paridade já custou vários bugs: `RenderIdRefresh`, `_materialCache`, recusas), e o renderer próprio passa a ser testado no dia a dia, sem export.
 - **Fora:** tirar o `three` como biblioteca (`Object3D`, `Matrix4`, `Raycaster`, `GLTFLoader`, `AnimationMixer`, `SkinnedMesh`) por inteiro é reescrever a base da engine e dos jogos: meses, e ganho de fps pequeno (o `three` já não é o gargalo). Só se aparecer outro motivo (por exemplo, tamanho do bundle ou memória no Xbox). Sem data.
-- **Pré-requisitos:** R1 aceito, R2 e R4 concluídos, e um ADR com a decisão.
+- **Ordem recomendada (2026-10-25, a pedido do usuário):** R1 fechado e o renderer próprio ligado por padrão no export → R2 → **R6** → R4. Motivo: enquanto o Studio usa o `three`, existem dois caminhos de render e o trabalho de performance no `three` é descartável (ex.: a investigação do travamento com carro só vale corrigir se a causa também afetar o renderer próprio ou o jogo). A partir do R6 há um caminho só. Por isso, trabalho de otimização exclusivo do caminho do `three` fica **fora** do plano; só entra correção de bug que afete o renderer próprio, o jogo ou a correção do `RenderIdRefresh`.
+- **Pré-requisitos:** R1 aceito, R2 concluído, e um ADR com a decisão (muda o combinado "só no export" do ADR-0465).
 
 ## Onde este plano substitui ou absorve o ADR-0404 e a SPEC-0435
 
