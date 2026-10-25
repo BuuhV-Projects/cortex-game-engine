@@ -77,3 +77,27 @@ caminho).
 - Jogo: Vitest do condutor (persegue o coelho, freia em curva, dá ré quando preso).
 - Medição: `validate.sh` com `--autopilot drive` no Hélio e no Comercial passa a regra; o
   `drive-legacy` reprova.
+
+## Resultado (2026-10-25)
+
+Engine nesta branch + DDD 61 na branch `claude/autopilot-drive` do jogo (SPEC-0196 do jogo),
+`--autopilot drive --extra '&drive=1'`, 1080p, `drive-stats.sh`/`validate.sh`:
+
+| rodada | v mediana | > 9 m/s | caminho | veredito |
+| --- | --- | --- | --- | --- |
+| `drive` Hélio | 11,4 m/s | 62% | 534 m | VÁLIDO |
+| `drive` Comercial | 13,3 m/s | 70% | 499 m | VÁLIDO |
+| `drive-legacy` Setor O | 0,2 m/s | 26% | 256 m | INVÁLIDO |
+| `drive-legacy` Comercial | 0,2 m/s | 30% | 283 m | INVÁLIDO |
+| `r1-accept/drive/helio-*` (perfil antigo, 4 rodadas) | 1,5–1,7 m/s | 4–6% | 175–220 m | INVÁLIDO |
+
+Ressalva sobre a resposta conhecida: com o jogo atual, o `drive-legacy` **no Hélio** passa (12,4 m/s,
+62%, 629 m). A avenida é longa e reta, e o roteiro alterna esquerda e direita por igual, então ele
+quase anda reto. O caso conhecido vale no Setor O e no Comercial, e nas rodadas históricas do
+`r1-accept`. A regra mede o regime de velocidade, não se o caminho foi bem escolhido.
+
+Na integração, deu errado e foi corrigido no condutor do jogo: (1) a pose do carro lida logo depois do
+`vehicle.reset` ainda era a antiga (a malha sincroniza no quadro seguinte), então o condutor passou a
+ser semeado com o ponto do spawn; (2) o coelho, nascido em cima do carro, via a caixa do carro do
+jogador no campo do trânsito e não saía, então passou a nascer `LEAD` metros à frente e a ignorar essa
+caixa.
