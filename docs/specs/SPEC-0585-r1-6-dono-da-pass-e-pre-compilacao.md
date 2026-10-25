@@ -280,3 +280,44 @@ O JS fica só com o que o three não notifica: os parâmetros de cada material �
 as versões de cada geometria única, uma vez por quadro, mais as trocas de material/geometria/
 visibilidade como delta. É uma mudança de desenho (lista e ordenação em C++, `draw_batch` alimentado
 pelo cull), não um ajuste do `take`.
+
+### Plano B do item A — lista de instâncias em C++ (só se A + C não fecharem a meta)
+
+Entra só se, depois do passo 2 e da correção da Frente D (lotes de bonecos no `onBeforeRender`), a
+medição mostrar render > 5 ms. Vem com ADR e com a confirmação do usuário (são vários dias).
+
+**Desenho.** O C++ passa a guardar a lista de instâncias aceitas pelo nativo, indexada pelo slot do
+espelho: receita por passe, `count`/`first`/instâncias, slot do bloco do objeto, `renderOrder`,
+material (id) e a flag de transparente. O cull (`project`) já percorre os nós visíveis. Para quem tem
+entrada na lista, ele calcula o `z` e a chave de ordem do three (`groupOrder`, `renderOrder`, `z`, `id`;
+o transparente, por `z` invertido) e monta os comandos do `draw_batch` direto, sem voltar ao JS. A
+matriz do bloco do objeto é escrita no C++ quando o espelho marca o nó como sujo
+(`changedThisFrame`, `scene_mirror.h:433`), e a matriz normal é calculada lá, em double. O JS recebe
+só: (1) os candidatos **sem** entrada (novos, recusados ou do three) para o caminho de hoje; (2) uma
+vez por quadro, os ~78 materiais únicos (`writeParams` e comparação, versões de textura) e as
+geometrias únicas (versões dos atributos, `drawRange`, `instanceCount`); (3) os eventos que invalidam
+uma entrada (troca de material/geometria, `material.version`, `instanceColor`, `removed`, recriação
+de receita por mudança de grupo), que a apagam no C++. Skinned e `InstancedMesh` continuam no
+caminho JS (ossos e `count` por quadro) até medir que pesam.
+
+**Paridade.** A ordem do three é total (a chave acima, `painterSortStable`), então a mesma chave
+calculada no C++ dá a mesma sequência de draws. O ponto de emissão (`emitBefore` intercalado com a
+lista do three) fica igual. Os riscos são o `z` em float (o three usa o `z` do `Vector4` em double e
+compara em double; o C++ também em double) e as entradas transparentes de duas faces (2 passes).
+
+**Estimativa.** Hoje: laço JS ~2,1 ms + emissão 0,56. Fica no JS: materiais (~0,3) e geometrias (~0,2,
+uma vez cada), mais os candidatos fora da lista (~10%). Ganho esperado de ~1,3 a 1,6 ms. Custo: ~3 a 5
+dias, entre C++ (lista, chave, escrita de matriz), ponte, JS e testes (Vitest e `cortex_host_tests`),
+com A/B e check-stage em cada fase.
+
+### Passo 2 — situação (2026-10-25)
+
+A `NativeMainProjection` já tira a cena espelhada do three no sentido do desenho. A travessia, a
+visibilidade e o culling estão em C++; o three não chama `_projectObject` na árvore e não desenha
+nenhum objeto que o nativo cubra. Na cena espelhada, ele desenha só o `skip` (`static-merged-11`,
+`colorWrite=false`, oclusor só de profundidade, 0,35 ms; o desenho acima deixa o `skip` com o three) e
+recebe as luzes pela `pushLight`. O que sobra do "three com a cena espelhada" é o preparo e o
+fechamento da pass (`beginRender` 0,11, `finishRender` ~0,9–1,2, pós 0,42), que ficam com qualquer
+dono da pass enquanto o three for dono do alvo (até o R2). Também há o `onBeforeRender` do jogo,
+item C. Levar o `skip` ao nativo (pipeline com `writeMask: 0`) exigiria mexer na seção de pipelines,
+que é da P1, e renderia ≤ 0,35 ms.
