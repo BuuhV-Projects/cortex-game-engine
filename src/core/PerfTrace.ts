@@ -3,7 +3,7 @@ import type { FrameProfiler } from './FrameProfiler.js';
 import type { RenderPhaseProbe } from './RenderPhaseProbe.js';
 import { describeMaterial, isDescribed, measureCoverage } from '../render/MaterialDesc.js';
 import { countDistinctPipelines } from '../render/PipelineKey.js';
-import { PipelineBirthLog, type PipelineBirth } from './PipelineBirthLog.js';
+import { PipelineBirthLog, drainNativePipelineBirths, type PipelineBirth } from './PipelineBirthLog.js';
 import { activeSceneMirror } from './NativeSceneMirror.js';
 
 /**
@@ -116,6 +116,8 @@ export interface PerfSample {
    * material, passada e custo. Ausente quando nada nasceu.
    */
   pipelinesBorn?: PipelineBirth[];
+  /** Pipelines born in the engine's own renderer since the previous sample (SPEC-0585). */
+  nativePipelinesBorn?: PipelineBirth[];
   /**
    * Consultas ao cache de pipeline desde a instalação — acumulado, ACERTOS
    * incluídos (SPEC-0261). Consulta sem nascimento = pipeline reaproveitado.
@@ -443,6 +445,7 @@ export interface SampleInput {
   cpuP99?: Record<string, number>;
   born?: { pipelines: number; buffers: number; textures: number };
   pipelinesBorn?: PipelineBirth[];
+  nativePipelinesBorn?: PipelineBirth[];
   pipelineLookups?: number;
   gc?: GcTotals;
   draws: number;
@@ -472,6 +475,7 @@ export function buildSample(input: SampleInput): PerfSample {
     cpuP99: arredondarSecoes(input.cpuP99 ?? {}),
     ...(input.born ? { born: input.born } : {}),
     ...(input.pipelinesBorn && input.pipelinesBorn.length > 0 ? { pipelinesBorn: input.pipelinesBorn } : {}),
+    ...(input.nativePipelinesBorn && input.nativePipelinesBorn.length > 0 ? { nativePipelinesBorn: input.nativePipelinesBorn } : {}),
     ...(input.pipelineLookups !== undefined ? { pipelineLookups: input.pipelineLookups } : {}),
     ...(input.gc ? { gc: input.gc } : {}),
     draws: input.draws,
@@ -702,6 +706,7 @@ export class PerfTrace {
       cpuP99,
       born,
       pipelinesBorn: this._pipelineBirths.drain(),
+      nativePipelinesBorn: drainNativePipelineBirths(),
       pipelineLookups: this._watching ? this._pipelineBirths.lookups : undefined,
       gc: (globalThis as { __cortexGcStats?: () => GcTotals }).__cortexGcStats?.(),
       draws: info?.drawCalls ?? 0,

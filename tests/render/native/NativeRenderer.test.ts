@@ -33,6 +33,7 @@ import {
   Float32BufferAttribute,
 } from 'three';
 import { registerNativeMaterial } from '../../../src/render/native/GameMaterials.js';
+import { drainNativePipelineBirths } from '../../../src/core/PipelineBirthLog.js';
 import { SHADER_TIME_ROLLOVER_S, advanceShaderTime, shaderTime } from '../../../src/render/native/ShaderClock.js';
 import { VIEW_TIME_AT, type NativeModelDef } from '../../../src/render/native/models/NativeModel.js';
 
@@ -576,5 +577,53 @@ describe('NativeRenderer R1.5 (SPEC-0565): game WGSL, shader clock, skinning', (
     expect(vertexFormat(new Uint8Array(4), 4, false)).toBe('uint8x4');
     // what the three leaves in skinIndex.array after its own upload
     expect(vertexFormat(new Uint32Array(4), 4, false)).toBe('uint32x4');
+  });
+});
+
+describe('NativeRenderer R1.6 (SPEC-0585): pipeline births', () => {
+  it('records each born pipeline once, with object, material and key, for the trace', () => {
+    drainNativePipelineBirths();
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const mesh = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ name: 'glass' }));
+    mesh.name = 'shop';
+    mesh.updateMatrixWorld();
+    frame(nr);
+    const entry = nr.take(mesh, mesh.material, mesh.geometry)!;
+    nr.recipeFor(entry, {});
+    nr.recipeFor(entry, {});
+    const born = drainNativePipelineBirths();
+    expect(born).toHaveLength(1);
+    expect(born[0]).toMatchObject({ object: 'shop', material: 'glass', transparent: false, camera: 'main' });
+    expect(born[0]!.key.startsWith('unlit|')).toBe(true);
+    expect(nr.stats.pipelineMs).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('NativeRenderer.precompile (SPEC-0585)', () => {
+  it('builds the recipes of meshes never offered: a hidden pool, both passes of a transparent DoubleSide', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const scene = new Scene();
+    const offered = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    const pool = new InstancedMesh(new BoxGeometry(), new MeshBasicMaterial({ color: 0x00ff00, fog: false }), 4);
+    pool.visible = false;
+    const glass = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ transparent: true, side: DoubleSide }));
+    const hiddenMaterial = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ visible: false, transparent: true }));
+    scene.add(offered, pool, glass, hiddenMaterial);
+    scene.updateMatrixWorld();
+    const camera = new PerspectiveCamera();
+    // No main pass yet: nothing to compile against.
+    expect(nr.precompile(scene, camera.layers)).toBe(0);
+    frame(nr, scene);
+    nr.recipeFor(nr.take(offered, offered.material, offered.geometry)!, {});
+    const recipes = nr.stats.recipes;
+    expect(nr.precompile(scene, camera.layers)).toBe(3);
+    expect(nr.stats.recipes - recipes).toBe(3);
+    // Everything is warm: a second warm-up and the real draws create nothing.
+    expect(nr.precompile(scene, camera.layers)).toBe(0);
+    const entry = nr.take(glass, glass.material, glass.geometry)!;
+    nr.recipeFor(entry, {}, 1);
+    expect(t.calls.pipelines).toBe(4);
   });
 });

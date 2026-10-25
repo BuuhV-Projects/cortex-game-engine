@@ -368,6 +368,12 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
 
 Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá, com a origem.
 
+- [ ] **Ligar o `?nativePrecompile=1` por padrão no aceite do R1** (P1 do R1.6, SPEC-0585, Frente C,
+      2026-10-25). Com ele: 0 pipelines nascidos em jogo (2 réplicas × 4 pontos `walk` + `drive`),
+      `precompile` 16,6 → 7,8 s, paridade PASS. Ficam dois pontos: (1) as recusas do relatório sobem de 1
+      para 25 com malhas que o jogo nunca oferece (a varredura passa por elas); (2) o GC jovem caiu de
+      ~40 para ~12 ms/s nas rodadas com o interruptor (5 de 5), sem causa explicada. Ver antes de ligar.
+
 - [ ] **Forçar o redesenho do mapa de sombra à noite derrubou o host** (textura destruída no `submit`). O
       jogo não redesenha à noite; causa não isolada. Origem: SPEC-0545 (Frente B).
 - [ ] **Custo da sombra no renderer próprio: +0,55 ms numa rodada curta** (alvo do R1.3: ≤ 0,3 ms). Medir

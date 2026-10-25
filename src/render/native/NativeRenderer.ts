@@ -16,8 +16,9 @@
  * Host only, off by default: `?nativeRenderer=1` (needs the RS1 on), `?nativeRendererModels=`
  * limits the models. Refusal is per object: the three keeps everything not taken.
  */
-import { Matrix3, type Material, type Object3D } from 'three';
+import { Matrix3, type Layers, type Material, type Object3D } from 'three';
 import { debug } from '../../core/debug.js';
+import { recordNativePipelineBirth } from '../../core/PipelineBirthLog.js';
 import type { DrawBatchBridge } from '../DrawBatch.js';
 import type { NativeDrawer, NativeEntry } from '../RenderServer.js';
 import { queryFlagRequested } from '../TransformOnlyRefresh.js';
@@ -45,11 +46,15 @@ const REPORT_FRAMES = 600;
 const EARLY_REPORT_FRAME = 120;
 /** Refusal reasons listed per report (most frequent first). */
 const REPORT_REASONS = 8;
+/** Decimals of the pipeline creation ms on `debug('perf')`. */
+const MS_DIGITS = 2;
 /**
  * `?nativeTint=1`: adds TINT_DELTA to the red of every material the native renderer draws, and
  * only there — the known-answer case of the same-run parity (SPEC-0495): it must FAIL.
  */
 const TINT_QUERY = 'nativeTint=';
+/** `?nativePrecompile=1`: warm-up through the native renderer (SPEC-0585), off until accepted. */
+const PRECOMPILE_QUERY = 'nativePrecompile=';
 const TINT_DELTA = 8 / 255;
 /** three constants (kept local). */
 const FRONT_SIDE = 0;
@@ -271,11 +276,13 @@ export interface NativeRendererStats {
   moved: number;
   paramWrites: number;
   pipelines: number;
+  /** Creation time of all pipelines (shader module + pipeline), ms (SPEC-0585). */
+  pipelineMs: number;
   recipes: number;
 }
 
 export class NativeRenderer implements NativeDrawer {
-  readonly stats: NativeRendererStats = { taken: 0, refused: 0, moved: 0, paramWrites: 0, pipelines: 0, recipes: 0 };
+  readonly stats: NativeRendererStats = { taken: 0, refused: 0, moved: 0, paramWrites: 0, pipelines: 0, pipelineMs: 0, recipes: 0 };
   private readonly _device: Gpu;
   private readonly _models = new Map<string, NativeModelDef>();
   private readonly _byObject = new WeakMap<Object3D, Inst | Refusal>();
@@ -306,6 +313,12 @@ export class NativeRenderer implements NativeDrawer {
   private _fog: 'linear' | 'none' | 'other' = 'none';
   private readonly _refusals = new Map<string, number>();
   private readonly _tint = queryFlagRequested(TINT_QUERY, false);
+  /** Frames begun so far (the warm-up and `precompile` logs say where they fall). */
+  get frame(): number {
+    return this._frame;
+  }
+  /** Render context of the last main pass: `precompile` runs after the warm-up frame, outside it. */
+  private _context: unknown = null;
 
   constructor(
     private readonly _host: NativeRendererHost,
@@ -395,6 +408,7 @@ export class NativeRenderer implements NativeDrawer {
 
   recipeFor(entry: NativeEntry, renderContext: unknown, pass = 0): number {
     const inst = entry as Inst;
+    this._context = renderContext;
     const u = this._host.backend.utils;
     const color = u.getCurrentColorFormat(renderContext);
     const depth = u.getCurrentDepthStencilFormat(renderContext);
@@ -840,12 +854,37 @@ export class NativeRenderer implements NativeDrawer {
 
   // ── Pipelines ──────────────────────────────────────────────────────────────────────
 
+  /**
+   * Warm-up through the native renderer (SPEC-0585): builds the recipe of every eligible mesh under
+   * `root`, in every pass, visible or not. The warm-up frame only reaches what the C++ projection
+   * offers, which does not see the warm-up reveal (hidden pools, meshes out of view).
+   *
+   * @returns pipelines born; 0 before the first main pass (no render context yet).
+   */
+  precompile(root: Object3D, layers: Layers): number {
+    const context = this._context;
+    if (context === null) {
+      debug('perf', '[nativeRenderer] precompile: no main pass yet');
+      return 0;
+    }
+    const before = this.stats.pipelines;
+    root.traverse((object) => {
+      const mesh = object as Object3D & { isMesh?: boolean; material?: Material | Material[]; geometry?: unknown };
+      if (!mesh.isMesh || !mesh.material || Array.isArray(mesh.material) || !mesh.material.visible || !object.layers.test(layers)) return;
+      const entry = this.take(object, mesh.material, mesh.geometry) as Inst | null;
+      if (entry === null) return;
+      for (let pass = 0; pass < entry.state.culls.length; pass++) this.recipeFor(entry, context, pass);
+    });
+    return this.stats.pipelines - before;
+  }
+
   private _pipeline(inst: Inst, color: string, depth: string, samples: number, target: string, cull: string): Gpu | null {
     const mat = inst.mat;
     const extraKey = inst.extra ? inst.extra.key : '';
     const key = `${mat.model.name}|${mat.variant.join('+')}|${inst.geo.key}|${extraKey}|${inst.state.key}|${cull}|${mat.kinds}|${target}`;
     let pipeline = this._pipelines.get(key);
     if (pipeline) return pipeline;
+    const start = performance.now();
     const codeKey = `${mat.model.name}|${mat.variant.join('+')}${inst.instanced ? '|instanced' : ''}${inst.skin ? '|skinned' : ''}`;
     let module = this._modules.get(codeKey);
     if (!module) {
@@ -876,14 +915,18 @@ export class NativeRenderer implements NativeDrawer {
       multisample: { count: samples },
     });
     this._pipelines.set(key, pipeline);
+    const ms = performance.now() - start;
     this.stats.pipelines++;
+    this.stats.pipelineMs += ms;
+    recordNativePipelineBirth(inst.object, inst.material, ms, key);
+    debug('perf', `[nativeRenderer] pipeline born frame=${this._frame} ${key} ${ms.toFixed(MS_DIGITS)}ms`);
     return pipeline;
   }
 
   private _report(): void {
     const s = this.stats;
     const reasons = [...this._refusals.entries()].sort((a, b) => b[1] - a[1]).slice(0, REPORT_REASONS).map(([r, n]) => `${r}=${n}`).join(' ');
-    debug('perf', `[nativeRenderer] taken=${s.taken} refused=${s.refused} moved=${s.moved} params=${s.paramWrites} pipelines=${s.pipelines} recipes=${s.recipes} | ${reasons}`);
+    debug('perf', `[nativeRenderer] taken=${s.taken} refused=${s.refused} moved=${s.moved} params=${s.paramWrites} pipelines=${s.pipelines} pipelineMs=${s.pipelineMs.toFixed(MS_DIGITS)} recipes=${s.recipes} | ${reasons}`);
   }
 }
 
@@ -913,5 +956,25 @@ export function createNativeRenderer(renderer: unknown, bridge: DrawBatchBridge 
     return null;
   }
   debug('perf', '[nativeRenderer] instalado');
-  return new NativeRenderer(host as NativeRendererHost, bridge, NATIVE_MODELS, nativeRendererModels());
+  return (active = new NativeRenderer(host as NativeRendererHost, bridge, NATIVE_MODELS, nativeRendererModels()));
+}
+
+let active: NativeRenderer | null = null;
+
+/** `?nativePrecompile=1` (SPEC-0585). */
+export function nativePrecompileRequested(): boolean {
+  return queryFlagRequested(PRECOMPILE_QUERY, false);
+}
+
+/**
+ * Called by `Game.precompile` after the warm-up frame: {@link NativeRenderer.precompile} on the
+ * installed native renderer, when `?nativePrecompile=1`.
+ *
+ * @returns pipelines born, or 0 (no native renderer, or switched off).
+ */
+export function precompileNative(root: Object3D, camera: { layers: Layers }): number {
+  if (active === null || !nativePrecompileRequested()) return 0;
+  const born = active.precompile(root, camera.layers);
+  debug('perf', `[nativeRenderer] precompile frame=${active.frame} born=${born}`);
+  return born;
 }

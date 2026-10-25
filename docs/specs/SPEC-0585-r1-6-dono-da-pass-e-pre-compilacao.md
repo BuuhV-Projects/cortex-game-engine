@@ -108,6 +108,80 @@ Rodadas em `D:/jogos/detetive-brasilia/.cortex/stages/r16-diag/` (script de diag
    thread C++, e o draw daquele objeto fica no three, ou fora do quadro, até a pipeline ficar pronta).
    Ubershader só se a 1b não bastar. **Cada passo depende do resultado medido do anterior.**
 
+#### P1 — como ficou (Frente C)
+
+**Instrumento (passo 1).** `_pipeline` cronometra módulo + pipeline: `stats.pipelineMs`, linha
+`[nativeRenderer] pipeline born frame=<n> <chave> <ms>` no `debug('perf')` e fila de módulo
+(`recordNativePipelineBirth`, `PipelineBirthLog.ts`, teto de 256 sem trace) que o `PerfTrace` drena como
+`nativePipelinesBorn` (mesmo formato do `pipelinesBorn` do three: objeto, material, ms, chave).
+
+**Os nascimentos em jogo** (`p1-born`, f10877e, Comercial `walk`, `unlit,lambert,standard,wgsl`, 135 s). O
+aquecimento cria 34 pipelines nos quadros 1–2 (1,23 s). Depois nascem **12** (os "9" do diagnóstico eram
+37→46 entre relatórios; 3 nascem no quadro 75, antes do 1º relatório), ~227 ms no total:
+
+| quadro | objeto | modelo / variante | ms |
+| --- | --- | --- | --- |
+| 75 | `interiores-lanchonete` | standard `map+emissiveMap+fog+doubleSide` | 2,4 |
+| 75 | `steering` (moto) | standard `map+fog` | 69,2 |
+| 75 | `floor_1` (moto) | standard `fog` | 74,4 |
+| 429 | `marcador-trabalho` (2 passes) | unlit `fog+alpha` aditivo duas faces | 9,3 |
+| 469 | `morador-rua-*` | lambert `fog` | 30,4 |
+| 664 | `tiro-capsula`, `tiro-brilho`, `tiro-tracante`, `tiro-marca` | unlit (pools instanciados) | 33,6 |
+| 725 | `farois-lentes` | unlit `instanceColor` | 6,7 |
+| 3052 | `ceu` | unlit `map+alpha` aditivo | 1,4 |
+
+O quadro 75 sozinho gasta 146 ms: o critério "nenhum quadro > 50 ms por pipeline" falha hoje.
+
+**Por que o aquecimento não os viu (medido).** O quadro de aquecimento **não passava pelo nativo**: o
+`[nativeRenderer] precompile` registrou `frame=0`. O espelho de cena e a projeção em C++ só se instalam
+no 1º tick do loop (`Game.ts`, SPEC-0234), e o DDD 61 chama `game.precompile()` **antes** do
+`game.start()`. O quadro saía todo pelo three, e só ele aquecia (77 pipelines). Os 34 pipelines nativos
+dos quadros 1–2 já eram quadros de jogo (escondidos pelo `revealWhenSmooth` do jogo). Os 12 seguintes
+eram o que esses quadros não desenharam: pools escondidos (tiros, marcador), moto, faróis, o sol do céu.
+
+**Aquecimento pelo nativo (passo 2).** Atrás de `?nativePrecompile=1` (desligado até o aceite):
+1. `precompile()` com o loop parado instala o espelho e a projeção (`_installSceneMirror`, o mesmo bloco
+   do tick, extraído) e atualiza o espelho antes do quadro: o aquecimento passa pela projeção em C++,
+   pelo RS1 e pelo nativo.
+2. Depois do `draw()`, `precompileNative(root, camera)` percorre a cena **inteira** (visível ou não) e
+   faz `take` + `recipeFor` de todos os passes de cada malha elegível (material único e visível, na
+   camada da câmera), com o contexto de render do passe principal que acabou de rodar. Cobre o que a
+   projeção não oferece (pool com `visible=false`, fora da vista). O número entra no evento
+   `precompile` como `nativeBorn`.
+
+Efeito colateral: a varredura chama `take` em malhas que o jogo nunca chega a oferecer. As recusas
+delas entram no `refused` do relatório (`p1-warm3`: 25 em vez de 1; `skip=20`, `variant:standard=3`,
+`depth=1`, `variant:lambert=1`). Não muda o que é desenhado, porque a recusa por objeto é a mesma que
+haveria na oferta.
+
+**Medido (passo 3, `p1-warm3`, f10877e, Comercial `walk`, `unlit,lambert,standard,wgsl`, 135 s):**
+
+| | sem (`p1-born`) | com `nativePrecompile=1` (`p1-warm3`) |
+| --- | --- | --- |
+| `precompile` (ms) | 16 634 | **7 801** |
+| pipelines do three no aquecimento | 77 | 14 |
+| pipelines nativos no aquecimento | 0 | **57** (44 pela projeção + 13 pela varredura) |
+| pipelines nativos nascidos em jogo | 46 (34 nos quadros 1–2 + 12) | **0** |
+| `born.pipelines` do host, 1ª → última amostra | 118 → 130 | **78 → 78** |
+
+Nascimentos em regime, mesmo export do check-stage (`p1-precompile/births`), 2 réplicas × Setor O e
+Comercial × dia e noite em `walk`, mais Comercial `drive`: **0 nativos depois do aquecimento nas 10
+rodadas**, e o `born.pipelines` do host não se mexe do início ao fim (78 de dia, 69 à noite). Sem
+nascimento em jogo, nenhum quadro pode passar de 50 ms por pipeline.
+
+Paridade (`check-stage p1-precompile`, `unlit,lambert,standard,wgsl&nativePrecompile=1`): galeria PASS
+0/0, Setor O dia PASS (0,0002%), noite PASS, Comercial dia e noite PASS 0/0, fumaça PASS. `nativeTint=1` na
+galeria: FAIL (alt 28, 65,8%).
+
+A/B intercalado (`ab` + `ab2`, Comercial `walk`, mesmo export; 5 rodadas válidas de cada braço): render
+igual dentro do ruído (lote `ab2`: 10,01 → 10,15 ms; o B-r1 do `ab` saiu lento por inteiro, `world` também,
+carga da máquina). O GC jovem cai de ~40 para ~12 ms/s em todas as rodadas com o interruptor, sem causa
+explicada (backlog do PRD-0466).
+
+O `precompile` cai à metade porque o nativo assume a maior parte da cena e o three compila menos. Sem
+nascimento imprevisível em jogo, a 1b (`createRenderPipelineAsync` em thread C++) e o ubershader **não
+entram**.
+
 ### Parte 2 — dono da pass (critério de render)
 
 0. **Fase 0, medir:** dividir o render nativo (8,4 ms) em: JS por instância do nativo, `render()` do
