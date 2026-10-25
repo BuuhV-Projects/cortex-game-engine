@@ -222,6 +222,26 @@ describe('RenderIdRefresh (SPEC-0325)', () => {
     expect(handle.stats).toEqual({ skipped: 2, full: 4 });
   });
 
+  it('objeto que ficou quadros sem o three (renderer próprio, fora do quadro) volta com refresh completo', () => {
+    const handle = installRenderIdRefresh(s.renderer)!;
+    const frame = s.frame as unknown as { frameId: number };
+    frame.frameId = 1;
+    s.nodes.needsRefresh(s.renderObject); // 1ª vez: o three refaz
+    s.nextRender();
+    frame.frameId = 2;
+    expect(s.nodes.needsRefresh(s.renderObject)).toBe(false); // quadro seguinte, parado: atalho
+    // Três quadros sem o three; o material mudou e o instantâneo compartilhado do observador já
+    // avançou com outro objeto: o equals() não vê mudança, mas o UBO deste objeto é velho.
+    s.threeNeedsRefresh.mockReturnValue(false);
+    s.nextRender();
+    frame.frameId = 5;
+    expect(s.nodes.needsRefresh(s.renderObject)).toBe(true);
+    s.nextRender();
+    frame.frameId = 6;
+    expect(s.nodes.needsRefresh(s.renderObject)).toBe(false);
+    expect(handle.stats.full).toBeGreaterThanOrEqual(1);
+  });
+
   it('buffer não-UBO fora de InstancedMesh e updateAfter delegam ao three', () => {
     installRenderIdRefresh(s.renderer);
     s.renderObject.getBindings()[1].bindings.push({ isBuffer: true, groupNode: { shared: false } } as never);

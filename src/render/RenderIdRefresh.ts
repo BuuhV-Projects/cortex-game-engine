@@ -38,6 +38,14 @@ const VERSION_UNSEEN = -1;
  * keeps drawing the matrices of the change before.
  */
 const INSTANCE_REFRESHES = 2;
+/**
+ * Frames a render object may skip without a full refresh on its return: none. The three's observer
+ * keeps ONE material snapshot per material (shared by every render object of it, created at the first
+ * `equals()`), so an object that was not drawn by the three in the previous frame (drawn by the native
+ * renderer, culled, the other arm of ?parityFreeze) can hold an object UBO older than that snapshot:
+ * `equals()` then sees nothing to do and the UBO stays stale (SPEC-0555, "Emissivo animado").
+ */
+const CONTIGUOUS_FRAMES = 1;
 const QUERY_KEY = 'renderIdRefresh=';
 
 // ── Forma mínima dos internos do three 0.184 usados aqui ────────────────────
@@ -181,14 +189,25 @@ export function installRenderIdRefresh(renderer: RenderIdRendererLike): RenderId
   const previous = nodes['needsRefresh'];
   const inner = nodes.needsRefresh;
   const plans = new WeakMap<object, RenderIdPlan | null>();
+  /** Last frame (`NodeFrame.frameId`) the three asked about each render object. */
+  const lastFrames = new WeakMap<object, number>();
   const stats = { skipped: 0, full: 0 };
 
   nodes.needsRefresh = function needsRefresh(this: RenderIdNodeManagerLike, renderObject: RenderIdRenderObjectLike): boolean {
     const monitor = renderObject.getMonitor();
+    let frame = this.getNodeFrameForRender(renderObject);
+    const frameId = (frame as NodeFrameLike & { frameId: number }).frameId;
+    const last = lastFrames.get(renderObject);
+    lastFrames.set(renderObject, frameId);
     if (renderObject.bundle !== null || monitor.hasNode || monitor.hasAnimation || !monitor.renderObjects.has(renderObject)) {
       return inner.call(this, renderObject);
     }
-    let frame = this.getNodeFrameForRender(renderObject);
+    if (last !== undefined && frameId - last > CONTIGUOUS_FRAMES) {
+      // Back after frames without the three: its UBO may predate the shared material snapshot.
+      stats.full++;
+      inner.call(this, renderObject);
+      return true;
+    }
     const renderId = frame.renderId;
     if (monitor.renderId === renderId || monitor.needsVelocity(frame.renderer)) return inner.call(this, renderObject);
 
