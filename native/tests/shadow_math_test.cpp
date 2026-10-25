@@ -163,4 +163,38 @@ void testShadowDeterminanteIgnoraATranslacao() {
   CHECK(render::shadowCullMode(scene::kShadowSideBack, longe) == render::ShadowCull::kFront);
 }
 
+void testShadowCasterMatricesSplitKeepsTheThreeFactors() {
+  // Sun's single map (SPEC-0545): each factor goes to float on its own (as the three uploads
+  // it); the shader multiplies them in the three's order.
+  double model[16];
+  double view[16];
+  double projection[16];
+  translacao(3.1, -4.2, 5.3, model);
+  translacao(-100.25, 7.5, 0.125, view);
+  translacao(0.5, 0.25, 0.75, projection);
+  render::ShadowCasterMatrices m{};
+  render::shadowCasterMatrices(kIdentidade, projection, view, model, m);
+  for (int i = 0; i < 16; i++) {
+    CHECK(m.model[i] == static_cast<float>(model[i]));
+    CHECK(m.view[i] == static_cast<float>(view[i]));
+    CHECK(m.projection[i] == static_cast<float>(projection[i]));
+  }
+}
+
+void testShadowCasterMatricesLegacyIsTheDoubleMvp() {
+  // CSM (SPEC-0245): no split matrices -> the double viewProj x model in `projection`, identity
+  // elsewhere (exact in float), so one shader serves both.
+  double model[16];
+  translacao(3, -4, 5, model);
+  float mvp[16] = {};
+  render::shadowModelViewProjection(kIdentidade, model, mvp);
+  render::ShadowCasterMatrices m{};
+  render::shadowCasterMatrices(kIdentidade, nullptr, nullptr, model, m);
+  for (int i = 0; i < 16; i++) {
+    CHECK(m.projection[i] == mvp[i]);
+    CHECK(m.model[i] == static_cast<float>(kIdentidade[i]));
+    CHECK(m.view[i] == static_cast<float>(kIdentidade[i]));
+  }
+}
+
 }  // namespace tests

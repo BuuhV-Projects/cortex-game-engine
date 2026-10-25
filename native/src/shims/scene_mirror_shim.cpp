@@ -56,6 +56,8 @@ constexpr int kGateOutFloats = scene::kShadowGateRefusalCount + 3;
 constexpr size_t kArgsDrawShadowPass = 10;
 /** Elementos de uma matriz 4x4. */
 constexpr size_t kMatrixElements = 16;
+/** `drawShadowPass` matrices with projection and view apart: viewProj + projection + view. */
+constexpr size_t kSplitMatrixElements = 3 * kMatrixElements;
 
 /** GPU do host, para o passe de sombra nativo (SPEC-0245, E5). */
 HostGpu* g_gpu = nullptr;
@@ -429,6 +431,11 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
     return njs::undefined(env);
   }
   const auto* viewProjection = static_cast<const double*>(vpData);
+  // Optional extension (SPEC-0545): `[viewProj, projection, view]`, 48 doubles — the sun's
+  // single map is drawn in the three's float order; 16 doubles keeps the CSM path.
+  const bool splitMatrices = vpLength >= kSplitMatrixElements;
+  const double* projection = splitMatrices ? viewProjection + kMatrixElements : nullptr;
+  const double* view = splitMatrices ? viewProjection + 2 * kMatrixElements : nullptr;
 
   napi_valuetype tipoAlvo = napi_undefined;
   napi_typeof(env, args[6], &tipoAlvo);
@@ -501,7 +508,7 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
 
   const uint32_t desenhados = render::drawShadowCasters(
       g_gpu, alvo, viewProjection, s.shadowItems.data(),
-      static_cast<uint32_t>(s.shadowItems.size()));
+      static_cast<uint32_t>(s.shadowItems.size()), projection, view);
   napi_create_double(env, static_cast<double>(desenhados), &saida);
   return saida;
 }

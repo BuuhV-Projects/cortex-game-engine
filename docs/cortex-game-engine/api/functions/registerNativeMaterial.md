@@ -8,7 +8,7 @@
 
 > **registerNativeMaterial**(`name`, `def`): `void`
 
-Defined in: src/render/native/GameMaterials.ts:28
+Defined in: [src/render/native/GameMaterials.ts:28](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/GameMaterials.ts#L28)
 
 Registers the WGSL of a game material. The `def` is a regular native model: its `wgsl()` has a
 `vs(vin : VIn)` that builds the position from `nativeLocal(vin)` (instance and skin applied) and

@@ -8,6 +8,6 @@
 
 > `const` **SHADER\_TIME\_ROLLOVER\_S**: `3600` = `3600`
 
-Defined in: src/render/native/ShaderClock.ts:13
+Defined in: [src/render/native/ShaderClock.ts:13](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/render/native/ShaderClock.ts#L13)
 
 Seconds before the clock wraps to 0 (Godot's default rollover).

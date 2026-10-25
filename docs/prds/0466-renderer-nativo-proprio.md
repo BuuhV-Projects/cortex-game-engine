@@ -29,6 +29,13 @@ kart-racer e crash-racer ficaram fora do escopo por decisão do usuário (2026-1
 
 ## Linha de base — medida no R0 (SPEC-0505), controle de todos os marcos
 
+> **Jogo-alvo trocado para `e1cede4` (2026-10-24).** O usuário viu o jogador atravessar o ônibus nas
+> rodadas: a correção (SPEC-0193 do jogo) está em `e1cede4`, que só soma isso e a música da carga
+> (SPEC-0192) a `e2be01c`. Cópia de medição: `D:/jogos/detetive-brasilia-rs-e1cede4` (padrão do
+> `check-stage.sh`). **A tabela abaixo (`e2be01c`) não vale mais como número absoluto**: o aceite final
+> mede o braço `three` na cópia nova, no mesmo par intercalado. Um A/B só vale dentro do mesmo commit do
+> jogo — nunca misturar braços de cópias diferentes.
+
 Engine `ea10181e` (main + instrumentos do R0, desligados), **host compilado na worktree**, DDD 61
 `e2be01c`, **1920×1080** (SPEC-0515), RS1 + `DynamicLighting` + filtro de sombra compartilhado
 ligados por padrão. A/A (o mesmo export nos dois braços, 1 réplica cada), autopiloto; média dos
@@ -198,6 +205,26 @@ os modelos de cada etapa), com cobertura medida pelo censo. Critério de toda et
 | R1.5 | skinning no vertex shader (player e dublês) + **API de WGSL do jogo** (`userData.nativeMaterial`, layout de parâmetros, atributos/`DataTexture` por instância) + porte de `peopleGpu`, tinta por slot e pintura mascarada (no repo do jogo, com spec própria); a API aceita vertex shader animado (o mar do DDD 61) | galeria com os 3 WGSL do jogo; **0 recusas** nos 4 pontos |
 | R1.6 | o renderer próprio vira **dono da pass** (limpa, fundo, cena; o `three` não é chamado para a cena espelhada); pré-compilação no load + ubershader para variante nova | 0 pipelines criados por quadro em regime; nenhum quadro > 50 ms causado por pipeline na 1ª volta |
 
+**R1.6 — item: dados por objeto num buffer único (modelo Godot)** (decisão do usuário, 2026-10-24,
+"Sim"). Processo de sempre: Godot primeiro → aplicabilidade → SPEC → medir antes; **só fica se ganhar**.
+
+- **Hoje (grupo 3):** um slot de 256 B por objeto em chunks `native.objects` e **um bind group por
+  objeto**, trocado a cada draw no replay C++.
+- **Godot (Forward+):** um storage buffer com os dados de todas as instâncias da lista
+  (`SceneState::InstanceData`, `render_forward_clustered.h:334-345`), preenchido de uma vez
+  (`_fill_instance_data`, `render_forward_clustered.cpp:806-911`) e ligado uma vez por passe; o shader lê
+  `instances.data[índice]` com o índice do draw (`scene_forward_clustered.glsl:770-775`). Citações no anexo
+  `godot-renderer-rd.md` §5.
+- **Equivalente em WebGPU:** um `read-only-storage` com todos os objetos, ligado uma vez; o índice vem do
+  `firstInstance` → `@builtin(instance_index)` (somar o offset, sem quebrar o instancing do R1.4); uma
+  gravação por quadro para todos os objetos sujos.
+- **Ganho esperado (não medido):** menos `setBindGroup` por draw no replay, menos `writeBuffer`, caminho
+  para multi-draw.
+- **Validar antes:** o comando do lote C++ (`DrawCommand` de 4 inteiros) não leva `firstInstance` hoje —
+  a SPEC diz como o índice chega ao draw (campo novo no comando ou base por receita).
+- **Critério:** A/B intercalado (2 réplicas, 4 pontos walk + drive, 1080p) mostra ganho de render ou de
+  GPU; sem ganho, não entra.
+
 **Critério de aceite do R1** (liga `?nativeRenderer=1` por padrão no DDD 61):
 
 - render **≤ 5 ms** (`cpuAvg`) andando nos 4 pontos e dirigindo (hoje 10,6–12,2);
@@ -291,6 +318,37 @@ disto muda os marcos; cada item entra com SPEC antes, quando o jogo precisar.
 
 Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
 
+## Estado para retomada (pausa de 2026-10-24, limite semanal)
+
+- **Branch integrada:** `claude/renderer-nativo-45b16a` (worktree `renderer-nativo-45b16a`), A + B + C integradas
+  (merges `8c528adc`, `86ccefb4`, `fd65ba1f`), `lambert` instanciado religado; último commit no fim desta pausa
+  (ver `git log`). Sem merge na main (merge é da sessão principal).
+- **Jogo-alvo:** DDD 61 `e1cede4`, cópia `D:/jogos/detetive-brasilia-rs-e1cede4` (padrão do `check-stage.sh`).
+  A antiga `rs-e2be01c` só serve para apagar (backlog do PRD-0009).
+- **1º passo da retomada:** refazer a checagem integrada NA CÓPIA NOVA:
+  `native/scripts/check-stage.sh <wt> r1-int-e1 --flag '&nativeRenderer=1&nativeRendererModels=unlit,lambert,wgsl'`
+  e o mesmo com `&nativeTint=1` (tem de dar FAIL). Na cópia antiga (`r1-int-abc`) deu **FAIL no Setor O de dia,
+  0,0255%** (limite 0,01%); Comercial dia 0,0092%; o resto PASS. Tint de controle (`r1-int-abc-tint`): FAIL em
+  tudo, como deve (pixels do caminho nativo: galeria 4,8%, Setor O dia 44% / noite 29%, Comercial 12% / 18%).
+  **FEITO (2026-10-24, `88bf3d45` = integrada + merge de `30a21e64`):** `r1-int-e1` deu PASS 0/0 em tudo
+  (galeria, Setor O e Comercial dia/noite; o FAIL de 0,0255% sumiu com a correção do mapa do sol); fumaça PASS,
+  render 10,19 ms, > 33 ms 2%. Controle `r1-int-e1-tint`: FAIL em tudo (caminho nativo cobre 52–81% dos pixels do jogo).
+- **Recusas que bloqueiam o aceite (0 recusas) e dono** (recontadas no `r1-int-e1`):
+  - `standard` fora de `NATIVE_MODELS` (`model:standard`, ~43–63 por amostra) — Frente C fechando;
+  - `lambert` com emissivo não preto (`variant:lambert`, 9–21) — Frente C fechando;
+  - ~~`receiveShadow` no `lambert`~~ — resolvido pela Frente B (SPEC-0545, `30a21e64`);
+  - tintas TSL do jogo (`node:colorNode`) e `peopleGpu` — Frente D (repo do jogo, `registerNativeMaterial`/`shaderTime`),
+    abre depois do merge na main e do re-vendor do jogo;
+  - skinned + instanced — Frente C (backlog).
+- **Depois:** R1.6 (dono da pass, pré-compilação + ubershader, **dados por objeto num buffer único estilo Godot**,
+  só se o A/B mostrar ganho) e o **aceite final** (A/B completo intercalado, 2 réplicas, 4 pontos walk + drive
+  helio, 1080p, braço `three` na cópia nova: render ≤ 5 ms, % > 33 ms ≤ 2%, GPU ≤ controle + 0,5 ms, paridade
+  dia/noite ≤ 0,01%, 0 recusas).
+- **Ônibus (e1cede4):** fumaça no Comercial VÁLIDA (andou 17 m). Capturas de dia (`&hora=12`, quadros 1200 e
+  2400 da caminhada, `.cortex/renderer-r1/busday-*.png`): a câmera fica fora do ônibus; no 2400 o jogador está
+  ao lado dele, não dentro — duas amostras, não prova exaustiva. A de 18:40 saiu quase preta (inconclusiva).
+  A captura do host em janela sai em 1920×1009 (área útil), não 1080.
+
 ## Backlog de pendências do R1
 
 Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá, com a origem.
@@ -347,7 +405,7 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
       as instâncias): a causa era o `RenderIdRefresh` (1 refresh por mudança deixava as matrizes velhas no
       `three`, também no caminho só-`three`); agora 2 refreshes. Reprodução na galeria (`lambert-compacted-*`):
       FAIL alt 35 → PASS 0/0. Religado no integrado.
-- **`receiveShadow` no `lambert` recusado — aguarda a paridade da sombra (Frente B)** (origem:
+- ~~**`receiveShadow` no `lambert` recusado — aguarda a paridade da sombra (Frente B)**~~ **resolvido (SPEC-0545):** era o mapa do passe C++ (MVP em double × ordem float do `three`); com a ordem do `three`, 0,0000% nos 4 casos e `RECEIVE_SHADOW = true`. (origem:
   R1.2 após o merge A+B, 2026-10-24; dono: Frente B). Com `SHADOW_READY`, as sombras dos
   pedestres na calçada (Comercial, dia) diferem até 6/255 em 0,0821% dos pixels; com
   `receiveShadow` recusado o Comercial dia dá PASS (0,0030%). O modelo já chama

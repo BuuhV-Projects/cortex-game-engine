@@ -45,6 +45,43 @@ inline void shadowModelViewProjection(const double* viewProj, const double* mode
 }
 
 /**
+ * Per-caster matrices of the shadow vertex shader, in float:
+ * `clip = projection * vec4(((view * model) * vec4(p, 1)).xyz, 1)`, the three's own order and
+ * precision (SPEC-0545: the map has to match the one the three draws, edge texel by edge texel).
+ */
+struct ShadowCasterMatrices {
+  float model[kShadowMatrixElements];
+  float view[kShadowMatrixElements];
+  float projection[kShadowMatrixElements];
+};
+
+/**
+ * Fills the shader matrices of one caster.
+ *
+ * - `projection` and `view` given (the sun's single map, SPEC-0545): each factor goes to float as
+ *   the three uploads it, and the GPU multiplies them in the three's order.
+ * - otherwise (the CSM, SPEC-0245): `viewProj x model` composed in double
+ *   ({@link shadowModelViewProjection}) in `projection`, with `view` and `model` the identity — a
+ *   product by the identity is exact in float, so the shader keeps one formula.
+ */
+inline void shadowCasterMatrices(const double* viewProj, const double* projection, const double* view,
+                                 const double* model, ShadowCasterMatrices& out) {
+  if (projection != nullptr && view != nullptr) {
+    for (int i = 0; i < kShadowMatrixElements; i++) {
+      out.model[i] = static_cast<float>(model[i]);
+      out.view[i] = static_cast<float>(view[i]);
+      out.projection[i] = static_cast<float>(projection[i]);
+    }
+    return;
+  }
+  for (int i = 0; i < kShadowMatrixElements; i++) {
+    const bool diagonal = i % (kShadowMatrixSide + 1) == 0;
+    out.model[i] = out.view[i] = diagonal ? 1.0f : 0.0f;
+  }
+  shadowModelViewProjection(viewProj, model, out.projection);
+}
+
+/**
  * Como o passe nativo corta a face de um caster.
  *
  * Os três valores são os do WebGPU (`WGPUCullMode_{Back,Front,None}`), mas o

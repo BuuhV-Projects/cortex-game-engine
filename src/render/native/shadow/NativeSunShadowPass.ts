@@ -30,6 +30,14 @@ import { parityFreezeSeconds } from '../../MainPassArm.js';
 import { queryFlagRequested } from '../../TransformOnlyRefresh.js';
 
 const MAT4_FLOATS = 16;
+/**
+ * `drawShadowPass` matrices: `[viewProj, projection, view]`. The host draws the map with
+ * projection and view apart, in the three's float order (`clip = P * ((V * M) * p)`), so the map
+ * matches the three's texel by texel (SPEC-0545); hosts that read only 16 keep viewProj.
+ */
+const PROJECTION_AT = MAT4_FLOATS;
+const VIEW_AT = 2 * MAT4_FLOATS;
+const PASS_MATRIX_FLOATS = 3 * MAT4_FLOATS;
 const MAT4_ROW = 4;
 const W_ROW = 3;
 /** Known-answer shift (`?nativeShadowPassShift=1`), in shadow-map texels. */
@@ -74,7 +82,7 @@ export class NativeSunShadowPass {
   readonly stats = { drawn: 0, handedBack: 0 };
   private readonly _registry = new CasterGeometryRegistry();
   private readonly _viewProj = new Matrix4();
-  private readonly _viewProj64 = new Float64Array(MAT4_FLOATS);
+  private readonly _matrices = new Float64Array(PASS_MATRIX_FLOATS);
   /** This pass took an `autoUpdate` shadow over: it redraws every frame. */
   private _ownsAuto = false;
   private _hooked: unknown = null;
@@ -123,11 +131,21 @@ export class NativeSunShadowPass {
     shadow.updateMatrices(light);
     const cam = shadow.camera;
     this._viewProj.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-    const vp = this._viewProj64;
-    const e = this._viewProj.elements;
-    for (let i = 0; i < MAT4_FLOATS; i++) vp[i] = e[i]!;
-    if (this._shift) shiftClipX(vp, (NDC_SPAN * PASS_SHIFT_TEXELS) / shadow.mapSize.x);
-    const r = mirror.drawShadowPass(cam, NO_CAMERA, NO_MIN_RATIO, vp, target, NODES_NOT_MEASURED, false);
+    const m = this._matrices;
+    const vp = this._viewProj.elements;
+    const p = cam.projectionMatrix.elements;
+    const v = cam.matrixWorldInverse.elements;
+    for (let i = 0; i < MAT4_FLOATS; i++) {
+      m[i] = vp[i]!;
+      m[PROJECTION_AT + i] = p[i]!;
+      m[VIEW_AT + i] = v[i]!;
+    }
+    if (this._shift) {
+      const dx = (NDC_SPAN * PASS_SHIFT_TEXELS) / shadow.mapSize.x;
+      shiftClipX(m.subarray(0, MAT4_FLOATS), dx);
+      shiftClipX(m.subarray(PROJECTION_AT, VIEW_AT), dx);
+    }
+    const r = mirror.drawShadowPass(cam, NO_CAMERA, NO_MIN_RATIO, m, target, NODES_NOT_MEASURED, false);
     if (!r) return 'sem-ponte';
     if (r.refused || r.drawn === 0) return `${r.reason}${r.counts ? ` [${r.counts}]` : ''}`;
     return null;
