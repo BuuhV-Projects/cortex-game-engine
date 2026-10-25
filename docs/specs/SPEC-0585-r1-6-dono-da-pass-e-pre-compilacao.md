@@ -149,3 +149,31 @@ espera a P2 e só fica se o A/B ganhar.
 - Nenhum quadro > 50 ms com nascimento de pipeline na 1ª volta (mesmo instrumento cruzado com `frameMs`).
 - P2: render nativo cai na proporção medida na fase 0; o render ≤ 5 ms é do aceite do R1, não da etapa.
 - P3: só com ganho no A/B (SPEC-0575).
+
+## Fase 0 da Parte 2 — medida (2026-10-25, Frente A)
+
+Instrumento: seções do `FrameProfiler` aninhadas em `render` (`src/render/RenderSections.ts`):
+`sceneRender` (cada `renderer.render` da cena espelhada), `nativeProject` (projeção inteira) com
+`nativeCull` (a parte C++) dentro, e `nativeEmit` (emissão + replay). O laço JS por instância é
+`nativeProject − nativeCull`; o trabalho do three é `sceneRender − nativeProject − nativeEmit`; pós e
+resto é `render − mirror − sceneRender`. Resumo de uma linha: `native/scripts/perf/render-sections.sh`
+(mesma janela do kit, `t ≥ 30 s`).
+
+**Validação (resposta conhecida):** `?renderSectionSpin=<seção>` espera 2 ms dentro da seção; cada uma
+sobe só no próprio bloco: `sceneRender` → three +2,3; `nativeProject` → laço JS +2,2; `nativeCull` →
+cull +2,0; `nativeEmit` → emissão +6,1 (≈3 chamadas por quadro × 2 ms).
+
+**Divisão** (DDD 61 `f10877e`, Comercial, `walk`, 1080p, `unlit,lambert,standard,wgsl`; render 8,39 ms,
+igual ao `validate.sh`):
+
+| bloco | ms/quadro |
+| --- | --- |
+| espelho (`mirror`) | 1,14 |
+| laço JS por instância (ofertas + `take` + `_refreshInstance`) | **2,38** |
+| cull C++ | ~0,00 |
+| emissão + replay | 0,55 |
+| trabalho do three com a cena espelhada (listas, sombra, fundo, objetos dele) | **3,33** |
+| pós e resto | 0,99 |
+
+Alvos da Parte 2: o laço JS (passo 1, lista persistente) e o trabalho do three com a cena espelhada
+(passo 2), ~5,7 ms no total.

@@ -18,6 +18,7 @@
  * ponte, ou nó alcançável que o C++ não reproduz (`LOD`, `ClippingGroup`,
  * `BundleGroup`, `Group` com `renderOrder`).
  */
+import { beginSection, endSection } from './RenderSections.js';
 import type { Camera, Material, Object3D } from 'three';
 import { Frustum, Matrix4, Vector4 } from 'three';
 import { debug } from '../core/debug.js';
@@ -53,6 +54,7 @@ export interface RenderListLike {
 export interface ProjectingRendererLike {
   _projectObject?: (object: Object3D, camera: Camera, groupOrder: number, renderList: RenderListLike, clippingContext: unknown) => void;
   sortObjects?: boolean;
+  render?: (scene: Object3D, camera: Camera) => unknown;
 }
 
 /** Contadores para o trace e os testes. */
@@ -118,7 +120,9 @@ export class MainProjector {
     escreverPlanos(this._frustum, this._planes);
     this._vp.set(this._viewProjection.elements);
 
+    beginSection('nativeCull');
     const n = this._bridge.project(this._planes, this._vp, this._indices, this._depths);
+    endSection('nativeCull');
     if (n < 0) {
       this._recusar(n === PROJECT_REFUSED ? `no ${this._indices[0]} nao reproduzivel` : `codigo ${n}`, view.nodes, n);
       return false;
@@ -247,12 +251,30 @@ export function installNativeProjection(
       const override = (object as Object3D & { overrideMaterial?: unknown }).overrideMaterial;
       const server = override || mainPassArm.three ? null : activeRenderServer();
       const offering = server !== null && server.beginProjection(this as unknown as ServerRendererLike, renderList, camera, object) ? server : null;
-      if (projector.project(camera, renderList, clippingContext, offering)) return;
+      beginSection('nativeProject');
+      const projected = projector.project(camera, renderList, clippingContext, offering);
+      endSection('nativeProject');
+      if (projected) return;
     } else if (raiz) {
       stats.refused++;
     }
     original.call(this, object, camera, groupOrder, renderList, clippingContext);
   };
+
+  // Phase 0 of the R1.6 (SPEC-0585): each render of the mirrored scene is the `sceneRender` section.
+  const originalRender = renderer.render;
+  const hadOwnRender = Object.prototype.hasOwnProperty.call(renderer, 'render');
+  if (typeof originalRender === 'function') {
+    renderer.render = function render(this: ProjectingRendererLike, scene: Object3D, camera: Camera): unknown {
+      const mirrored = scene === mirror.root;
+      if (mirrored) beginSection('sceneRender');
+      try {
+        return originalRender.call(this, scene, camera);
+      } finally {
+        if (mirrored) endSection('sceneRender');
+      }
+    };
+  }
 
   debug('perf', '[nativeProjection] instalado');
   return {
@@ -260,6 +282,8 @@ export function installNativeProjection(
     uninstall(): void {
       if (hadOwn) renderer._projectObject = original;
       else Reflect.deleteProperty(renderer, '_projectObject');
+      if (hadOwnRender) renderer.render = originalRender;
+      else Reflect.deleteProperty(renderer, 'render');
     },
   };
 }
