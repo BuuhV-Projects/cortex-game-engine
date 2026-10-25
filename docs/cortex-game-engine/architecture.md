@@ -144,6 +144,14 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `createRenderPipelineAsync`, todos no mesmo quadro — e o `precompile()` espera
   as promessas. Antes o Chrome compilava em série DEPOIS do retorno e o 1º quadro
   do jogo congelava atrás (DDD 61: ~6 s). Host nativo: síncrono, como antes.
+  **Armadilha do renderer próprio (SPEC-0585):** o espelho de cena e a projeção
+  em C++ só se instalam no 1º tick do loop. Um `precompile()` chamado antes do
+  `start()` (o DDD 61 faz assim) desenhava o aquecimento todo pelo three, e os
+  pipelines do renderer próprio nasciam nos primeiros quadros do jogo e em
+  pools escondidos ao longo da partida. Com `?nativePrecompile=1` o
+  `precompile()` instala e atualiza o espelho antes do quadro, e depois dele
+  `precompileNative` percorre a cena inteira (visível ou não) e cria a receita
+  de cada malha elegível em todos os passes.
 
 - **Acabamento toon (`Materials.ts`, SPEC-0194):** `shading: 'cel'` usa dois
   patamares e uma transição curta filtrada na rampa de luz. Sem o campo, mantém
