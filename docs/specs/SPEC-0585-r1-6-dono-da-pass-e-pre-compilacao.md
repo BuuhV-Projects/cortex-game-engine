@@ -154,12 +154,14 @@ delas entram no `refused` do relatório (`p1-warm3`: 25 em vez de 1; `skip=20`, 
 `depth=1`, `variant:lambert=1`). Não muda o que é desenhado, porque a recusa por objeto é a mesma que
 haveria na oferta.
 
-**Correção na integração (2026-10-25):** a recusa da varredura ficava em cache em `_byObject`, e o
-`take` com cache devolve a recusa **sem contar**. Uma malha recusada na varredura, escondida no load e
-oferecida depois, sumia do relatório, e o critério de 0 recusas deixava de enxergá-la. Agora a varredura
-conta as recusas à parte (linha `[nativeRenderer] precompile refused=<n> | <motivos>`)
-e **não as guarda em cache**. Quando a malha é oferecida de verdade, ela é classificada de novo e entra
-no `refused` normal. O `refused` do relatório volta a ser só do que é oferecido para desenho.
+**Correção na integração (2026-10-25):** as recusas do aquecimento ficavam em cache em `_byObject`, e o
+`take` com cache devolve a recusa **sem contar**. Uma malha escondida no load, revelada pelo quadro de
+aquecimento e oferecida de verdade depois, sumia do relatório, e o critério de 0 recusas deixava de
+enxergá-la. As 25 vinham do **quadro** de aquecimento (que agora passa pelo nativo com tudo revelado), não
+da varredura (`r16-int-p1b`: varredura com 0 recusas). Agora o aquecimento inteiro (quadro + varredura)
+roda dentro de `NativeRenderer.warmup`: as recusas são contadas à parte (linha `[nativeRenderer] warm-up
+refused=<n> | <motivos>`) e **não ficam em cache**. Quando a malha é oferecida de verdade, ela é
+classificada de novo e entra no `refused` normal, que volta a ser só do que é oferecido para desenho.
 
 **Medido (passo 3, `p1-warm3`, f10877e, Comercial `walk`, `unlit,lambert,standard,wgsl`, 135 s):**
 

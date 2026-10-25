@@ -955,9 +955,8 @@ export class Game {
     try {
       // Host nativo: criação síncrona, como no ADR-0262 (lá o async não ganha nada).
       if (isNativeHost()) {
-        draw();
         // The native renderer only saw what the C++ projection offered (SPEC-0585).
-        this._nativeWarmupBorn += precompileNative(root, this._activeCamera);
+        this._nativeWarmupBorn += precompileNative(root, this._activeCamera, draw);
         return [];
       }
       return drawWithParallelPipelines(this.renderer.threeRenderer, draw);

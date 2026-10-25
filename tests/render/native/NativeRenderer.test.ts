@@ -628,7 +628,7 @@ describe('NativeRenderer.precompile (SPEC-0585)', () => {
     expect(t.calls.pipelines).toBe(4);
   });
 
-  it('keeps the sweep refusals out of the report and the cache: a mesh offered later is counted then', () => {
+  it('keeps the warm-up refusals out of the report and the cache: a mesh offered later is counted then', () => {
     const t = fakeHost();
     const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
     const scene = new Scene();
@@ -640,7 +640,11 @@ describe('NativeRenderer.precompile (SPEC-0585)', () => {
     const camera = new PerspectiveCamera();
     frame(nr, scene);
     nr.recipeFor(nr.take(offered, offered.material, offered.geometry)!, {});
-    nr.precompile(scene, camera.layers);
+    // The warm-up frame offers the revealed mesh, then the sweep reaches it again.
+    nr.warmup(() => {
+      expect(nr.take(toon, toon.material, toon.geometry)).toBeNull();
+      nr.precompile(scene, camera.layers);
+    });
     expect(nr.stats.refused).toBe(0);
     expect(nr.take(toon, toon.material, toon.geometry)).toBeNull();
     expect(nr.stats.refused).toBe(1);

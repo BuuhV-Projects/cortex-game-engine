@@ -312,7 +312,7 @@ export class NativeRenderer implements NativeDrawer {
   /** `scene.fog` of the current frame: linear, none, or another kind (refused). */
   private _fog: 'linear' | 'none' | 'other' = 'none';
   private readonly _refusals = new Map<string, number>();
-  /** Refusals of the `precompile` sweep while it runs (`null` outside it). */
+  /** Refusals of the warm-up while it runs (`null` outside it). */
   private _sweepRefusals: Map<string, number> | null = null;
   private readonly _tint = queryFlagRequested(TINT_QUERY, false);
   /** Frames begun so far (the warm-up and `precompile` logs say where they fall). */
@@ -431,7 +431,7 @@ export class NativeRenderer implements NativeDrawer {
   // ── Instances ──────────────────────────────────────────────────────────────────────
 
   private _refuse(object: Object3D, material: unknown, geometry: unknown, reason: string): null {
-    // Warm-up sweep: counted apart and not cached, so a mesh offered later is classified (and counted) then.
+    // Warm-up: counted apart and not cached, so a mesh offered later is classified (and counted) then.
     if (this._sweepRefusals !== null) {
       this._sweepRefusals.set(reason, (this._sweepRefusals.get(reason) ?? 0) + 1);
       return null;
@@ -875,18 +875,27 @@ export class NativeRenderer implements NativeDrawer {
       return 0;
     }
     const before = this.stats.pipelines;
+    this._sweep(root, layers, context);
+    return this.stats.pipelines - before;
+  }
+
+  /**
+   * Runs the warm-up (frame + sweep) with its refusals counted apart and not cached: the warm-up
+   * reveals hidden meshes, and a cached refusal would hide that mesh from the report when it is
+   * offered for real later (SPEC-0585).
+   */
+  warmup<T>(run: () => T): T {
     const refusals = new Map<string, number>();
     this._sweepRefusals = refusals;
     try {
-      this._sweep(root, layers, context);
+      return run();
     } finally {
       this._sweepRefusals = null;
+      let refused = 0;
+      refusals.forEach((n) => (refused += n));
+      const reasons = [...refusals.entries()].map(([r, n]) => `${r}=${n}`).join(' ');
+      debug('perf', `[nativeRenderer] warm-up refused=${refused} | ${reasons}`);
     }
-    let refused = 0;
-    refusals.forEach((n) => (refused += n));
-    const reasons = [...refusals.entries()].map(([r, n]) => `${r}=${n}`).join(' ');
-    debug('perf', `[nativeRenderer] precompile refused=${refused} | ${reasons}`);
-    return this.stats.pipelines - before;
   }
 
   private _sweep(root: Object3D, layers: Layers, context: unknown): void {
@@ -988,14 +997,22 @@ export function nativePrecompileRequested(): boolean {
 }
 
 /**
- * Called by `Game.precompile` after the warm-up frame: {@link NativeRenderer.precompile} on the
- * installed native renderer, when `?nativePrecompile=1`.
+ * Called by `Game` for the warm-up frame (SPEC-0585): runs `draw` and, with `?nativePrecompile=1`,
+ * {@link NativeRenderer.precompile} on the scene, both inside {@link NativeRenderer.warmup}. Without
+ * the flag (or the native renderer), only `draw`.
  *
- * @returns pipelines born, or 0 (no native renderer, or switched off).
+ * @returns native pipelines born by the sweep.
  */
-export function precompileNative(root: Object3D, camera: { layers: Layers }): number {
-  if (active === null || !nativePrecompileRequested()) return 0;
-  const born = active.precompile(root, camera.layers);
-  debug('perf', `[nativeRenderer] precompile frame=${active.frame} born=${born}`);
-  return born;
+export function precompileNative(root: Object3D, camera: { layers: Layers }, draw: () => void): number {
+  if (active === null || !nativePrecompileRequested()) {
+    draw();
+    return 0;
+  }
+  const renderer = active;
+  return renderer.warmup(() => {
+    draw();
+    const born = renderer.precompile(root, camera.layers);
+    debug('perf', `[nativeRenderer] precompile frame=${renderer.frame} born=${born}`);
+    return born;
+  });
 }
