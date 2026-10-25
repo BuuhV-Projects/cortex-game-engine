@@ -610,7 +610,7 @@ export class NativeRenderer implements NativeDrawer {
     return true;
   }
 
-  /** The three's `RenderObject.getDrawParameters`: drawRange clamped to the items, `count` instances. */
+  /** The three's `RenderObject.getDrawParameters`: drawRange clamped to the items; instances from the geometry's `instanceCount` or the object's `count`. */
   private _drawParameters(inst: Inst): void {
     const g = inst.geometry;
     const items = inst.geo.indexSource ? inst.geo.indexSource.count : g.attributes['position']!.count;
@@ -619,7 +619,11 @@ export class NativeRenderer implements NativeDrawer {
     inst.first = first;
     inst.count = count;
     inst.triangles = count / TRIANGLE_VERTICES;
-    inst.instances = inst.instanced ? Math.max(0, (inst.object as Object3D & { count: number }).count) : 1;
+    const instancedGeometry = g as GeometryLike & { isInstancedBufferGeometry?: boolean; instanceCount?: number };
+    const objectCount = (inst.object as Object3D & { count?: number }).count;
+    // Non-finite instanceCount (the three's Infinity default) draws nothing (SPEC-0555).
+    if (instancedGeometry.isInstancedBufferGeometry) inst.instances = Number.isFinite(instancedGeometry.instanceCount) ? instancedGeometry.instanceCount! : 0;
+    else inst.instances = objectCount !== undefined ? Math.max(0, objectCount) : 1;
   }
 
   private _allocSlot(): number {
