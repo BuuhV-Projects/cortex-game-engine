@@ -340,7 +340,11 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   **Com a Frente A (`57abf1ef`, `unlit,lambert,standard,wgsl`):** `r1-int-a2` PASS em tudo (pior: Setor O dia 0,0002%),
   fumaça render 10,17 ms; tint FAIL em tudo (52–85%). Recusas da engine que sobram no jogo: `variant:lambert` = 4 e
   `variant:standard` = 1–4 (mesmo grupo de motivos do `litVariant`); na galeria, `model:toon`/`model:outline` = 2 (fora do DDD 61).
-  - `variant:lambert` = 4 (eram 9–27 antes do emissivo da C) e `variant:standard` = 1–4: resíduo NÃO identificado (`BackSide`, alpha to coverage,
+  **Com o alpha da Frente A (`f0831b6f`):** `r1-int-a3` PASS em tudo (pior: Comercial dia 0,0002%), fumaça render
+  9,69 ms, > 33 ms 3%; tint FAIL em tudo (52–87%); `lit-refusals.sh` na fumaça: 18 amostras, nenhuma recusa na criação.
+  **Recusas da engine no DDD 61: zero.** Sobram só as do jogo (Frente D) e o `skip` da colisão.
+  - ~~`variant:lambert` = 4 e `variant:standard` = 1–4~~ — **resolvido** (Frente A, `0cec302e` + `f0831b6f`): `feature:alpha` na criação
+    (transparente no quadro da tomada, opaco depois, recusa em cache). Antes era resíduo NÃO identificado (`BackSide`, alpha to coverage,
     luzes fora do bloco ou feature fora da lista) — falta um dump por objeto para nomear; sem dono;
   - ~~`receiveShadow` no `lambert`~~ — resolvido pela Frente B (SPEC-0545, `30a21e64`);
   - tintas TSL do jogo (`node:colorNode`) e `peopleGpu` — Frente D (repo do jogo, `registerNativeMaterial`/`shaderTime`),
