@@ -219,3 +219,33 @@ outra sessão, absolutos ~20% acima da fase 0, vale a diferença):
 | three com a cena espelhada | 4,25 | 3,74 | −0,51 (menos GC) |
 | GC (KB/quadro) | 1003 | 849 | −154 (as chaves do `updateSampler`) |
 | frameMs p99 | 73,4 | 54,8 | −18,6 |
+
+### Passo 2 — o que é o "trabalho do three com a cena espelhada" (medido, 2026-10-25)
+
+Instrumentação temporária (fora do commit) dentro do `render` da cena espelhada, DDD 61 `f10877e`,
+Comercial, `walk`, 1080p, já com o 1a (render ~8,2 ms):
+
+| fatia (ms/quadro) | |
+| --- | --- |
+| `sceneRef.onBeforeRender` do **jogo** (`figureBatch`, `peopleBatch`, `playerSkin`: cópia das matrizes dos bonecos para os lotes instanciados), antes da projeção | **~1,7–2,0** |
+| `backend.finishRender` (fim da pass e submit; custo do wgpu) | 0,87–1,17 |
+| `_renderOutput` (quad de Output Color Transform) | 0,42 |
+| draws do three na cena espelhada (**1 objeto**, `static-merged-11`) | 0,35 |
+| `beginProjection` (blocos de luz/sombra do `beginFrame`) | 0,26 |
+| `backend.beginRender` | 0,11 |
+| fundo, listas, ordenação, render target | ~0 |
+
+Como chegamos lá: as chamadas do `_renderScene` antes da projeção (`setRenderTarget`,
+`_renderContexts.get`, `getDrawingBufferSize`, `_getFrameBufferTarget`, `camera.updateMatrixWorld`,
+`inspector`) deram ~0, e o `matrixFreeze` não mudou o intervalo (não é a travessia de matrizes). A
+distribuição do intervalo (mediana ~1 ms por render, GC em ~2,5% dos renders) descartou GC. O que
+restava no trecho era o `onBeforeRender` da cena, onde o jogo pendura os três lotes.
+
+Os outros ~33 `renderObject` por quadro do three são de outras cenas (UI e pós), fora do `sceneRender`.
+O passe de sombra do sol (C++, Frente B) desenha sob demanda, com o gatilho do `SunShadow` do jogo.
+
+**Consequência para a Parte 2:** tirar a cena espelhada do three economiza só o preparo dele
+(~0,5 ms: draw de 1 objeto e `beginRender`). `finishRender` e o pós continuam necessários com
+qualquer dono da pass. O grosso restante é do jogo (lotes de bonecos no `onBeforeRender`, ~1,8 ms) e
+do laço JS por instância (~2,1 ms). A meta de ≤ 5 ms só com o renderer não fecha: precisa de um item
+no jogo (lotes de pessoas) ou de levar a cópia dos lotes ao espelho C++.
