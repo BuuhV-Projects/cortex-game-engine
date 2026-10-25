@@ -249,3 +249,34 @@ O passe de sombra do sol (C++, Frente B) desenha sob demanda, com o gatilho do `
 qualquer dono da pass. O grosso restante é do jogo (lotes de bonecos no `onBeforeRender`, ~1,8 ms) e
 do laço JS por instância (~2,1 ms). A meta de ≤ 5 ms só com o renderer não fecha: precisa de um item
 no jogo (lotes de pessoas) ou de levar a cópia dos lotes ao espelho C++.
+
+**Decisão da coordenação (2026-10-25):** o `finishRender` e o pós (~1,3–1,6 ms) ficam com qualquer dono
+da pass, então a meta de ≤ 5 ms depende do item A (laço JS, esta frente) somado ao C (o
+`onBeforeRender` do jogo, aberto na Frente D). O passo 2 continua no plano por ser pré-requisito do
+dono da pass, do R2 e do R4, mesmo rendendo ~0,5 ms.
+
+### Passo 1b — estado persistente por slot do espelho (item A)
+
+No modelo do Godot, o servidor guarda a instância e o cliente manda só o delta. Aqui o cull C++ já
+devolve o **slot** do nó no espelho. O `take` recebe esse slot (`offer`/`offerNative` repassam) e acha
+a instância num array por slot, conferindo `inst.object === object`. Isso tira a busca no `WeakMap`
+de cada candidato, a cada quadro. Sem slot (fora da projeção nativa), o `WeakMap` continua valendo.
+A checagem de identidade e de versões (material, geometria, `material.version`, `instanceColor`)
+não muda, nem a paridade.
+
+A geometria passa a ser atualizada uma vez por quadro (`GeoState.frame`), como o material já é. Uma
+geometria compartilhada por N instâncias deixa de ter as versões dos atributos comparadas N vezes.
+
+Medição: A/B intercalado contra o 1a (laço JS e render). Sem ganho acima do ruído, o item sai.
+
+**Resultado: saiu.** No A/B (Comercial, `walk`, 2 réplicas), o laço JS ficou em 2,175 ms com o 1a e
+2,165 com o 1b, dentro do ruído. O render caiu 0,25 ms, mas no three e no world, que o 1b não toca.
+Nem a busca no `WeakMap` nem a geometria repetida pesam. O custo é o trabalho por candidato em si:
+classificar, material do quadro, versões, parâmetros de draw, matriz e as 10 listas do `_push`.
+
+**O que sobra para o item A** é passar a lista ao C++. O espelho já sabe quem se moveu e quem está
+visível, então o C++ guarda as instâncias aceitas (receita, slot, chave de ordem) e monta os comandos.
+O JS fica só com o que o three não notifica: os parâmetros de cada material único (~78 por quadro) e
+as versões de cada geometria única, uma vez por quadro, mais as trocas de material/geometria/
+visibilidade como delta. É uma mudança de desenho (lista e ordenação em C++, `draw_batch` alimentado
+pelo cull), não um ajuste do `take`.
