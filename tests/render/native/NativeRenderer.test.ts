@@ -13,6 +13,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshLambertMaterial,
+  MeshToonMaterial,
   PerspectiveCamera,
   Scene,
   Texture,
@@ -33,6 +34,7 @@ import {
   Float32BufferAttribute,
 } from 'three';
 import { registerNativeMaterial } from '../../../src/render/native/GameMaterials.js';
+import { drainNativePipelineBirths } from '../../../src/core/PipelineBirthLog.js';
 import { SHADER_TIME_ROLLOVER_S, advanceShaderTime, shaderTime } from '../../../src/render/native/ShaderClock.js';
 import { VIEW_TIME_AT, type NativeModelDef } from '../../../src/render/native/models/NativeModel.js';
 
@@ -200,6 +202,41 @@ describe('NativeRenderer (R1.1, SPEC-0495)', () => {
     expect(t.calls.modules.at(-1)).toContain('smoothstep(view.fogNear, view.fogFar');
     const vbs = t.recorded[0]![2] as unknown[];
     expect(vbs.length).toBe(2); // position + uv, one buffer each
+  });
+
+  it('touches a material texture only when its version moves; a render target texture every frame (SPEC-0585 1a)', () => {
+    const t = fakeHost();
+    let updates = 0;
+    const update = t.host._textures.updateTexture;
+    t.host._textures.updateTexture = (tex: object) => {
+      updates++;
+      update(tex);
+    };
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const map = new Texture();
+    const mesh = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ map }));
+    const step = (): void => {
+      frame(nr);
+      nr.take(mesh, mesh.material, mesh.geometry);
+    };
+    step();
+    const groups = t.calls.groups;
+    const afterBuild = updates;
+    step();
+    step();
+    expect(updates).toBe(afterBuild);
+    map.needsUpdate = true;
+    step();
+    expect(updates).toBe(afterBuild + 1);
+    expect(t.calls.groups).toBe(groups);
+    t.host.backend.get(map)['texture'] = { createView: () => ({ kind: 'view2' }) };
+    map.needsUpdate = true;
+    step();
+    expect(t.calls.groups).toBe(groups + 1);
+    (map as Texture & { isRenderTargetTexture?: boolean }).isRenderTargetTexture = true;
+    t.host.backend.get(map)['texture'] = { createView: () => ({ kind: 'view3' }) };
+    step();
+    expect(t.calls.groups).toBe(groups + 2);
   });
 });
 
@@ -576,5 +613,97 @@ describe('NativeRenderer R1.5 (SPEC-0565): game WGSL, shader clock, skinning', (
     expect(vertexFormat(new Uint8Array(4), 4, false)).toBe('uint8x4');
     // what the three leaves in skinIndex.array after its own upload
     expect(vertexFormat(new Uint32Array(4), 4, false)).toBe('uint32x4');
+  });
+});
+
+describe('NativeRenderer R1.6 (SPEC-0585): pipeline births', () => {
+  it('records each born pipeline once, with object, material and key, for the trace', () => {
+    drainNativePipelineBirths();
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const mesh = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ name: 'glass' }));
+    mesh.name = 'shop';
+    mesh.updateMatrixWorld();
+    frame(nr);
+    const entry = nr.take(mesh, mesh.material, mesh.geometry)!;
+    nr.recipeFor(entry, {});
+    nr.recipeFor(entry, {});
+    const born = drainNativePipelineBirths();
+    expect(born).toHaveLength(1);
+    expect(born[0]).toMatchObject({ object: 'shop', material: 'glass', transparent: false, camera: 'main' });
+    expect(born[0]!.key.startsWith('unlit|')).toBe(true);
+    expect(nr.stats.pipelineMs).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('NativeRenderer.precompile (SPEC-0585)', () => {
+  it('builds the recipes of meshes never offered: a hidden pool, both passes of a transparent DoubleSide', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const scene = new Scene();
+    const offered = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    const pool = new InstancedMesh(new BoxGeometry(), new MeshBasicMaterial({ color: 0x00ff00, fog: false }), 4);
+    pool.visible = false;
+    const glass = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ transparent: true, side: DoubleSide }));
+    const hiddenMaterial = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ visible: false, transparent: true }));
+    scene.add(offered, pool, glass, hiddenMaterial);
+    scene.updateMatrixWorld();
+    const camera = new PerspectiveCamera();
+    // No main pass yet: nothing to compile against.
+    expect(nr.precompile(scene, camera.layers)).toBe(0);
+    frame(nr, scene);
+    nr.recipeFor(nr.take(offered, offered.material, offered.geometry)!, {});
+    const recipes = nr.stats.recipes;
+    expect(nr.precompile(scene, camera.layers)).toBe(3);
+    expect(nr.stats.recipes - recipes).toBe(3);
+    // Everything is warm: a second warm-up and the real draws create nothing.
+    expect(nr.precompile(scene, camera.layers)).toBe(0);
+    const entry = nr.take(glass, glass.material, glass.geometry)!;
+    nr.recipeFor(entry, {}, 1);
+    expect(t.calls.pipelines).toBe(4);
+  });
+
+  it('keeps the warm-up refusals out of the report and the cache: a mesh offered later is counted then', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const scene = new Scene();
+    const offered = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    const toon = new Mesh(new BoxGeometry(), new MeshToonMaterial());
+    toon.visible = false;
+    scene.add(offered, toon);
+    scene.updateMatrixWorld();
+    const camera = new PerspectiveCamera();
+    frame(nr, scene);
+    nr.recipeFor(nr.take(offered, offered.material, offered.geometry)!, {});
+    // The warm-up frame offers the revealed mesh, then the sweep reaches it again.
+    nr.warmup(() => {
+      expect(nr.take(toon, toon.material, toon.geometry)).toBeNull();
+      nr.precompile(scene, camera.layers);
+    });
+    expect(nr.stats.refused).toBe(0);
+    expect(nr.take(toon, toon.material, toon.geometry)).toBeNull();
+    expect(nr.stats.refused).toBe(1);
+  });
+});
+
+describe('NativeRenderer depth-only occluder (SPEC-0585)', () => {
+  it('draws colorWrite=false with writeMask 0 in its own pipeline, depth written, opaque', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const occluder = new Mesh(new BoxGeometry(), new MeshBasicMaterial({ colorWrite: false }));
+    const visible = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    occluder.updateMatrixWorld();
+    visible.updateMatrixWorld();
+    frame(nr);
+    const entry = nr.take(occluder, occluder.material, occluder.geometry)!;
+    expect(entry).not.toBeNull();
+    expect(entry.transparent).toBe(false);
+    nr.recipeFor(entry, {});
+    nr.recipeFor(nr.take(visible, visible.material, visible.geometry)!, {});
+    expect(t.calls.pipelines).toBe(2);
+    const [occluderPipeline, visiblePipeline] = t.recorded.map((r) => (r[0] as { d: Record<string, any> }).d);
+    expect(occluderPipeline!.fragment.targets[0]).toEqual({ format: 'rgba16float', writeMask: 0 });
+    expect(occluderPipeline!.depthStencil.depthWriteEnabled).toBe(true);
+    expect(visiblePipeline!.fragment.targets[0]).toEqual({ format: 'rgba16float' });
   });
 });

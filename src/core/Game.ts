@@ -40,6 +40,7 @@ import { autopilotFromQuery, type InputAutopilot } from '../input/InputAutopilot
 import { drawWithParallelPipelines, revealForWarmup } from './WarmupFrame.js';
 import { isNativeHost } from '../scene/StaticMerge.js';
 import { FrameProfiler } from './FrameProfiler.js';
+import { setRenderSections } from '../render/RenderSections.js';
 import {
   RenderPhaseProbe,
   renderPhasesRequested,
@@ -49,6 +50,7 @@ import {
 } from './RenderPhaseProbe.js';
 import { InspectCamera } from './InspectCamera.js';
 import { advanceShaderTime } from '../render/native/ShaderClock.js';
+import { nativePrecompileRequested, precompileNative } from '../render/native/NativeRenderer.js';
 
 /**
  * Uma fase que o Studio pode abrir direto pelo seletor do viewport (ADR-0186).
@@ -324,6 +326,8 @@ export class Game {
   private _sinceOutlineCull = 0;
   private _activeScene: Scene;
   private _activeCamera: PerspectiveCamera | OrthographicCamera;
+  /** Pipelines the native renderer created in the warm-up (SPEC-0585), for the `precompile` event. */
+  private _nativeWarmupBorn = 0;
 
   constructor(options: GameOptions) {
     const {
@@ -379,6 +383,7 @@ export class Game {
     // Já liga junto se o modo debug foi pedido (export --debug / ?cortexHud=1),
     // pra medir desde o 1º frame; o toggle do Studio liga/desliga em runtime.
     this.profiler = new FrameProfiler({ enabled: debugHudRequested() });
+    setRenderSections(this.profiler); // R1.6 phase 0 sections inside `render` (SPEC-0585)
 
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', () => {
@@ -700,26 +705,7 @@ export class Game {
     }
     const inspectCamera = this._inspect?.active ? this._inspect : null;
     const editorCamera = this._editor?.activeCamera() ?? null;
-    // Espelho de cena no host (SPEC-0234): instalado no primeiro frame em que a
-    // cena já existe — instalar antes pegaria a árvore vazia, e ela não cresce
-    // depois do build (o JS passa a segurar ponteiros para a memória do C++).
-    if (
-      !this._sceneMirrorTried &&
-      !this._loading &&
-      !isSceneBuilding(this._activeScene) &&
-      nativeSceneMirrorAvailable()
-    ) {
-      this._sceneMirrorTried = true;
-      this._sceneMirror.install(this._activeScene.getThreeScene());
-      // Etapa (a) do ADR-0330: a projeção da cena espelhada sai do JS.
-      if (this._sceneMirror.installed && nativeProjectionRequested(true)) {
-        this._nativeProjection = installNativeProjection(
-          this.renderer.threeRenderer as unknown as ProjectingRendererLike,
-          this._sceneMirror,
-        );
-      }
-      this._drawRecipeProbe = installDrawRecipeProbe(this.renderer.threeRenderer);
-    }
+    this._installSceneMirror();
     p.begin('render');
     // DIAGNOSTICO TEMPORARIO (SPEC-0241, passo 0) — remover.
     {
@@ -902,6 +888,13 @@ export class Game {
       // e compilava a variante errada dos transparentes de duas faces.
       pending = await new Promise<Promise<unknown>[]>((resolve) => this._warmupRequests.push(resolve));
     } else {
+      // Precompile before `start()`: without the mirror the warm-up frame skips the C++ projection,
+      // and with it the native renderer, whose pipelines were then born in the first game frames
+      // (SPEC-0585). Same order as the tick: install, update, draw.
+      if (nativePrecompileRequested()) {
+        this._installSceneMirror();
+        if (this._sceneMirror.installed) this._sceneMirror.update(this._activeCamera);
+      }
       pending = this._renderWarmupFrame();
     }
     // Pipelines criados em paralelo no quadro (ADR-0310): resolve com eles
@@ -919,8 +912,35 @@ export class Game {
         ms: Math.round(performance.now() - start),
         lookups: after.lookups - before.lookups,
         born: after.born - before.born,
+        nativeBorn: this._nativeWarmupBorn,
       });
     }
+  }
+
+  /**
+   * Espelho de cena no host (SPEC-0234): instalado no primeiro frame em que a
+   * cena já existe — instalar antes pegaria a árvore vazia, e ela não cresce
+   * depois do build (o JS passa a segurar ponteiros para a memória do C++).
+   */
+  private _installSceneMirror(): void {
+    if (
+      this._sceneMirrorTried ||
+      this._loading ||
+      isSceneBuilding(this._activeScene) ||
+      !nativeSceneMirrorAvailable()
+    ) {
+      return;
+    }
+    this._sceneMirrorTried = true;
+    this._sceneMirror.install(this._activeScene.getThreeScene());
+    // Etapa (a) do ADR-0330: a projeção da cena espelhada sai do JS.
+    if (this._sceneMirror.installed && nativeProjectionRequested(true)) {
+      this._nativeProjection = installNativeProjection(
+        this.renderer.threeRenderer as unknown as ProjectingRendererLike,
+        this._sceneMirror,
+      );
+    }
+    this._drawRecipeProbe = installDrawRecipeProbe(this.renderer.threeRenderer);
   }
 
   /**
@@ -937,7 +957,8 @@ export class Game {
     try {
       // Host nativo: criação síncrona, como no ADR-0262 (lá o async não ganha nada).
       if (isNativeHost()) {
-        draw();
+        // The native renderer only saw what the C++ projection offered (SPEC-0585).
+        this._nativeWarmupBorn += precompileNative(root, this._activeCamera, draw);
         return [];
       }
       return drawWithParallelPipelines(this.renderer.threeRenderer, draw);

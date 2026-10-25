@@ -46,7 +46,7 @@ quantos NASCEM — e só isso denuncia compilação dentro do frame.
 
 > **cam**: `object`
 
-Defined in: [src/core/PerfTrace.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L133)
+Defined in: [src/core/PerfTrace.ts:135](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L135)
 
 Posição da câmera (x, y, z) e direção para onde olha.
 
@@ -113,7 +113,7 @@ PIOR CASO por seção (p99 da mesma janela). A distância até [cpuAvg](#cpuavg)
 
 > **draws**: `number`
 
-Defined in: [src/core/PerfTrace.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L130)
+Defined in: [src/core/PerfTrace.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L132)
 
 ***
 
@@ -137,7 +137,7 @@ Defined in: [src/core/PerfTrace.ts:88](https://github.com/BuuhV-Projects/cortex-
 
 > `optional` **gc?**: [`GcTotals`](GcTotals.md)
 
-Defined in: [src/core/PerfTrace.ts:129](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L129)
+Defined in: [src/core/PerfTrace.ts:131](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L131)
 
 Coletor de lixo do Hermes desde o boot (SPEC-0264) — acumulado; compare
 amostras. `oldWallMs` é parede: uma coleta velha concorrente que atravesse
@@ -145,11 +145,21 @@ vários quadros aparece inteira. Ausente fora do host.
 
 ***
 
+### nativePipelinesBorn?
+
+> `optional` **nativePipelinesBorn?**: [`PipelineBirth`](PipelineBirth.md)[]
+
+Defined in: [src/core/PerfTrace.ts:120](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L120)
+
+Pipelines born in the engine's own renderer since the previous sample (SPEC-0585).
+
+***
+
 ### pipelineLookups?
 
 > `optional` **pipelineLookups?**: `number`
 
-Defined in: [src/core/PerfTrace.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L123)
+Defined in: [src/core/PerfTrace.ts:125](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L125)
 
 Consultas ao cache de pipeline desde a instalação — acumulado, ACERTOS
 incluídos (SPEC-0261). Consulta sem nascimento = pipeline reaproveitado.
@@ -181,7 +191,7 @@ ms desde o boot.
 
 > **tris**: `number`
 
-Defined in: [src/core/PerfTrace.ts:131](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L131)
+Defined in: [src/core/PerfTrace.ts:133](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L133)
 
 ***
 
@@ -189,6 +199,6 @@ Defined in: [src/core/PerfTrace.ts:131](https://github.com/BuuhV-Projects/cortex
 
 > **visible**: [`VisibleNode`](VisibleNode.md)[]
 
-Defined in: [src/core/PerfTrace.ts:135](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L135)
+Defined in: [src/core/PerfTrace.ts:137](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L137)
 
 Nós de cena dentro do frustum, do mais caro (em triângulos) pro menos.

@@ -16,8 +16,9 @@
  * Host only, off by default: `?nativeRenderer=1` (needs the RS1 on), `?nativeRendererModels=`
  * limits the models. Refusal is per object: the three keeps everything not taken.
  */
-import { Matrix3, type Material, type Object3D } from 'three';
+import { Matrix3, type Layers, type Material, type Object3D } from 'three';
 import { debug } from '../../core/debug.js';
+import { recordNativePipelineBirth } from '../../core/PipelineBirthLog.js';
 import type { DrawBatchBridge } from '../DrawBatch.js';
 import type { NativeDrawer, NativeEntry } from '../RenderServer.js';
 import { queryFlagRequested } from '../TransformOnlyRefresh.js';
@@ -40,16 +41,24 @@ const FLOAT_BYTES = 4;
 const MAT4_FLOATS = 16;
 const TRIANGLE_VERTICES = 3;
 const NO_RECIPE = -1;
+/** `MatState.textureVersions` entry of a texture not bound yet: never equal to a `texture.version`. */
+const NOT_READY = -1;
 /** Projections between reports on `debug('perf')`, plus one early report for short rounds. */
 const REPORT_FRAMES = 600;
 const EARLY_REPORT_FRAME = 120;
 /** Refusal reasons listed per report (most frequent first). */
 const REPORT_REASONS = 8;
+/** Decimals of the pipeline creation ms on `debug('perf')`. */
+const MS_DIGITS = 2;
 /**
  * `?nativeTint=1`: adds TINT_DELTA to the red of every material the native renderer draws, and
  * only there — the known-answer case of the same-run parity (SPEC-0495): it must FAIL.
  */
 const TINT_QUERY = 'nativeTint=';
+/** `?nativePrecompile=1`: warm-up through the native renderer (SPEC-0585), off until accepted. */
+const PRECOMPILE_QUERY = 'nativePrecompile=';
+/** `?nativeDepthOnly=0`: the depth-only occluder (`colorWrite=false`) goes back to the three (A/B, SPEC-0585). */
+const DEPTH_ONLY_QUERY = 'nativeDepthOnly=';
 const TINT_DELTA = 8 / 255;
 /** three constants (kept local). */
 const FRONT_SIDE = 0;
@@ -70,9 +79,11 @@ const RETRY_REASONS = new Set(['texture']);
  * Object/pipeline features: the core's, not the models' (see `models/NativeModel.ts`). Removed
  * from the classification before the model sees it; refused unless supported below.
  */
-export const CORE_FEATURES = new Set(['instanced', 'skinned', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'doubleSide']);
+export const CORE_FEATURES = new Set(['instanced', 'skinned', 'transparent', 'additive', 'noDepthWrite', 'noColorWrite', 'polygonOffset', 'renderOrder', 'doubleSide']);
 /** What the core draws today (R1.4, SPEC-0555: instancing, transparency, state). R1.5 adds skinning. */
-const CORE_SUPPORTED = new Set(['doubleSide', 'instanced', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'skinned']);
+const CORE_SUPPORTED = new Set(['doubleSide', 'instanced', 'transparent', 'additive', 'noDepthWrite', 'noColorWrite', 'polygonOffset', 'renderOrder', 'skinned']);
+/** `GPUColorWrite.NONE`: `colorWrite=false` writes depth only. */
+const COLOR_WRITE_NONE = 0;
 /** Vertex semantics every model may read without declaring their type (`attributeTypes` is for the rest). */
 const BUILTIN_SEMANTICS = new Set<string>(['position', 'normal', 'uv', 'color', 'instanceColor']);
 /** Skin attributes the core appends after the model's (`coreWgsl` with `skinned`). */
@@ -202,6 +213,8 @@ interface GeoState extends VertexSet {
 interface DrawState {
   blend: Blend;
   depthWrite: boolean;
+  /** `material.colorWrite`: `false` = writeMask 0 (depth-only occluder). */
+  colorWrite: boolean;
   /** `[polygonOffsetUnits, polygonOffsetFactor]`, or `null` without `polygonOffset`. */
   bias: [number, number] | null;
   /** Cull mode of each pass, in draw order (transparent DoubleSide: back faces first). */
@@ -220,6 +233,8 @@ interface MatState {
   /** One char per texture: `f` filterable, `u` unfilterable float (the group-2 layout key). */
   kinds: string;
   gpuTextures: unknown[];
+  /** `texture.version` at the last check (`NOT_READY` = check again next frame). */
+  textureVersions: number[];
   group: Gpu | null;
   frame: number;
   /** Bumped when the group or pipeline changes: recipes recorded before are stale. */
@@ -271,11 +286,13 @@ export interface NativeRendererStats {
   moved: number;
   paramWrites: number;
   pipelines: number;
+  /** Creation time of all pipelines (shader module + pipeline), ms (SPEC-0585). */
+  pipelineMs: number;
   recipes: number;
 }
 
 export class NativeRenderer implements NativeDrawer {
-  readonly stats: NativeRendererStats = { taken: 0, refused: 0, moved: 0, paramWrites: 0, pipelines: 0, recipes: 0 };
+  readonly stats: NativeRendererStats = { taken: 0, refused: 0, moved: 0, paramWrites: 0, pipelines: 0, pipelineMs: 0, recipes: 0 };
   private readonly _device: Gpu;
   private readonly _models = new Map<string, NativeModelDef>();
   private readonly _byObject = new WeakMap<Object3D, Inst | Refusal>();
@@ -305,7 +322,16 @@ export class NativeRenderer implements NativeDrawer {
   /** `scene.fog` of the current frame: linear, none, or another kind (refused). */
   private _fog: 'linear' | 'none' | 'other' = 'none';
   private readonly _refusals = new Map<string, number>();
+  /** Refusals of the warm-up while it runs (`null` outside it). */
+  private _sweepRefusals: Map<string, number> | null = null;
   private readonly _tint = queryFlagRequested(TINT_QUERY, false);
+  private readonly _depthOnly = queryFlagRequested(DEPTH_ONLY_QUERY, true);
+  /** Frames begun so far (the warm-up and `precompile` logs say where they fall). */
+  get frame(): number {
+    return this._frame;
+  }
+  /** Render context of the last main pass: `precompile` runs after the warm-up frame, outside it. */
+  private _context: unknown = null;
 
   constructor(
     private readonly _host: NativeRendererHost,
@@ -395,6 +421,7 @@ export class NativeRenderer implements NativeDrawer {
 
   recipeFor(entry: NativeEntry, renderContext: unknown, pass = 0): number {
     const inst = entry as Inst;
+    this._context = renderContext;
     const u = this._host.backend.utils;
     const color = u.getCurrentColorFormat(renderContext);
     const depth = u.getCurrentDepthStencilFormat(renderContext);
@@ -415,6 +442,11 @@ export class NativeRenderer implements NativeDrawer {
   // ── Instances ──────────────────────────────────────────────────────────────────────
 
   private _refuse(object: Object3D, material: unknown, geometry: unknown, reason: string): null {
+    // Warm-up: counted apart and not cached, so a mesh offered later is classified (and counted) then.
+    if (this._sweepRefusals !== null) {
+      this._sweepRefusals.set(reason, (this._sweepRefusals.get(reason) ?? 0) + 1);
+      return null;
+    }
     if (!RETRY_REASONS.has(reason)) {
       const version = (material as Material).version;
       const instanceColor = (object as { instanceColor?: unknown }).instanceColor ?? null;
@@ -428,6 +460,7 @@ export class NativeRenderer implements NativeDrawer {
   private _build(object: Object3D, material: Material, geometry: GeometryLike): Inst | null {
     const c = classifyDrawable(object, material);
     if (c.kind !== 'covered') return this._refuse(object, material, geometry, c.kind === 'skip' ? 'skip' : c.reason);
+    if (!this._depthOnly && c.features.includes('noColorWrite')) return this._refuse(object, material, geometry, 'skip');
     const model = this._models.get(c.model) ?? this._gameModel(c.model);
     if (!model) return this._refuse(object, material, geometry, `model:${c.model}`);
     for (const f of c.features) {
@@ -651,6 +684,7 @@ export class NativeRenderer implements NativeDrawer {
       textures: [...model.textures(material, variant)],
       kinds: '',
       gpuTextures: [],
+      textureVersions: [],
       group: null,
       frame: -1,
       generation: known ? known.generation + 1 : 0,
@@ -670,11 +704,17 @@ export class NativeRenderer implements NativeDrawer {
       mat.textures = [...mat.model.textures(material, mat.variant)];
       this._bindMaterial(mat);
     } else {
+      // Like the three's bindings, only a moved `texture.version` reaches the upload (updateSampler
+      // builds a string key per call). A render target's GPU texture is recreated on resize without a
+      // version bump, so it is checked every frame (SPEC-0585 1a).
       for (let i = 0; i < mat.textures.length; i++) {
-        if (this._gpuTexture(mat.textures[i]) !== mat.gpuTextures[i]) {
+        const tex = mat.textures[i] as { version: number; isRenderTargetTexture?: boolean };
+        if (tex.version === mat.textureVersions[i] && !tex.isRenderTargetTexture) continue;
+        if (this._gpuTexture(tex) !== mat.gpuTextures[i]) {
           this._bindMaterial(mat);
           break;
         }
+        mat.textureVersions[i] = tex.version;
       }
     }
     this._writeParams(material, mat, mat.scratch);
@@ -706,12 +746,14 @@ export class NativeRenderer implements NativeDrawer {
   private _bindMaterial(mat: MatState): boolean {
     const entries: unknown[] = [{ binding: 0, resource: { buffer: mat.buffer } }];
     mat.gpuTextures = [];
+    mat.textureVersions = mat.textures.map(() => NOT_READY);
     for (let i = 0; i < mat.textures.length; i++) {
       const tex = mat.textures[i];
       const gpu = this._gpuTexture(tex) as { createView(): unknown } | null;
       const sampler = this._host.backend.get(tex)['sampler'];
       if (!gpu || !sampler) return false;
       mat.gpuTextures.push(gpu);
+      mat.textureVersions[i] = (tex as { version: number }).version;
       entries.push({ binding: 1 + 2 * i, resource: sampler }, { binding: 2 + 2 * i, resource: gpu.createView() });
     }
     mat.kinds = mat.textures.map((t) => ((t as { type?: number }).type === FLOAT_TYPE ? UNFILTERABLE : FILTERABLE)).join('');
@@ -840,12 +882,60 @@ export class NativeRenderer implements NativeDrawer {
 
   // ── Pipelines ──────────────────────────────────────────────────────────────────────
 
+  /**
+   * Warm-up through the native renderer (SPEC-0585): builds the recipe of every eligible mesh under
+   * `root`, in every pass, visible or not. The warm-up frame only reaches what the C++ projection
+   * offers, which does not see the warm-up reveal (hidden pools, meshes out of view).
+   *
+   * @returns pipelines born; 0 before the first main pass (no render context yet).
+   */
+  precompile(root: Object3D, layers: Layers): number {
+    const context = this._context;
+    if (context === null) {
+      debug('perf', '[nativeRenderer] precompile: no main pass yet');
+      return 0;
+    }
+    const before = this.stats.pipelines;
+    this._sweep(root, layers, context);
+    return this.stats.pipelines - before;
+  }
+
+  /**
+   * Runs the warm-up (frame + sweep) with its refusals counted apart and not cached: the warm-up
+   * reveals hidden meshes, and a cached refusal would hide that mesh from the report when it is
+   * offered for real later (SPEC-0585).
+   */
+  warmup<T>(run: () => T): T {
+    const refusals = new Map<string, number>();
+    this._sweepRefusals = refusals;
+    try {
+      return run();
+    } finally {
+      this._sweepRefusals = null;
+      let refused = 0;
+      refusals.forEach((n) => (refused += n));
+      const reasons = [...refusals.entries()].map(([r, n]) => `${r}=${n}`).join(' ');
+      debug('perf', `[nativeRenderer] warm-up refused=${refused} | ${reasons}`);
+    }
+  }
+
+  private _sweep(root: Object3D, layers: Layers, context: unknown): void {
+    root.traverse((object) => {
+      const mesh = object as Object3D & { isMesh?: boolean; material?: Material | Material[]; geometry?: unknown };
+      if (!mesh.isMesh || !mesh.material || Array.isArray(mesh.material) || !mesh.material.visible || !object.layers.test(layers)) return;
+      const entry = this.take(object, mesh.material, mesh.geometry) as Inst | null;
+      if (entry === null) return;
+      for (let pass = 0; pass < entry.state.culls.length; pass++) this.recipeFor(entry, context, pass);
+    });
+  }
+
   private _pipeline(inst: Inst, color: string, depth: string, samples: number, target: string, cull: string): Gpu | null {
     const mat = inst.mat;
     const extraKey = inst.extra ? inst.extra.key : '';
     const key = `${mat.model.name}|${mat.variant.join('+')}|${inst.geo.key}|${extraKey}|${inst.state.key}|${cull}|${mat.kinds}|${target}`;
     let pipeline = this._pipelines.get(key);
     if (pipeline) return pipeline;
+    const start = performance.now();
     const codeKey = `${mat.model.name}|${mat.variant.join('+')}${inst.instanced ? '|instanced' : ''}${inst.skin ? '|skinned' : ''}`;
     let module = this._modules.get(codeKey);
     if (!module) {
@@ -870,20 +960,24 @@ export class NativeRenderer implements NativeDrawer {
       label: `native.${codeKey}`,
       layout,
       vertex: { module, entryPoint: 'vs', buffers: inst.extra ? [...inst.geo.layouts, ...inst.extra.layouts] : inst.geo.layouts },
-      fragment: { module, entryPoint: 'fs', targets: [s.blend === 'none' ? { format: color } : { format: color, blend: BLEND_STATES[s.blend] }] },
+      fragment: { module, entryPoint: 'fs', targets: [colorTarget(s, color)] },
       primitive: { topology: 'triangle-list', cullMode: cull, frontFace: 'ccw' },
       depthStencil,
       multisample: { count: samples },
     });
     this._pipelines.set(key, pipeline);
+    const ms = performance.now() - start;
     this.stats.pipelines++;
+    this.stats.pipelineMs += ms;
+    recordNativePipelineBirth(inst.object, inst.material, ms, key);
+    debug('perf', `[nativeRenderer] pipeline born frame=${this._frame} ${key} ${ms.toFixed(MS_DIGITS)}ms`);
     return pipeline;
   }
 
   private _report(): void {
     const s = this.stats;
     const reasons = [...this._refusals.entries()].sort((a, b) => b[1] - a[1]).slice(0, REPORT_REASONS).map(([r, n]) => `${r}=${n}`).join(' ');
-    debug('perf', `[nativeRenderer] taken=${s.taken} refused=${s.refused} moved=${s.moved} params=${s.paramWrites} pipelines=${s.pipelines} recipes=${s.recipes} | ${reasons}`);
+    debug('perf', `[nativeRenderer] taken=${s.taken} refused=${s.refused} moved=${s.moved} params=${s.paramWrites} pipelines=${s.pipelines} pipelineMs=${s.pipelineMs.toFixed(MS_DIGITS)} recipes=${s.recipes} | ${reasons}`);
   }
 }
 
@@ -891,18 +985,31 @@ const CULL_OF_SIDE: Record<number, string> = { [FRONT_SIDE]: 'back', [BACK_SIDE]
 
 /**
  * Pipeline state of a material, as the three's `WebGPUPipelineUtils` builds it (SPEC-0555): blend
- * only when not opaque, `depthWrite`, `polygonOffset` as depth bias; a transparent `DoubleSide`
+ * only when not opaque, `depthWrite`, `colorWrite` as writeMask (SPEC-0585), `polygonOffset` as depth
+ * bias; a transparent `DoubleSide`
  * material (without `forceSinglePass`) is drawn twice like `Renderer._renderObject` does: back
  * faces (cull `front`), then front faces (cull `back`).
  */
 export function drawState(
-  m: { blending: number; transparent: boolean; depthWrite: boolean; side: number; forceSinglePass?: boolean; polygonOffset: boolean; polygonOffsetUnits?: number; polygonOffsetFactor?: number },
+  m: { blending: number; transparent: boolean; depthWrite: boolean; colorWrite?: boolean; side: number; forceSinglePass?: boolean; polygonOffset: boolean; polygonOffsetUnits?: number; polygonOffsetFactor?: number },
   opaque: boolean,
 ): DrawState {
   const blend: Blend = opaque ? 'none' : m.blending === ADDITIVE_BLENDING ? 'additive' : 'normal';
   const bias: [number, number] | null = m.polygonOffset ? [m.polygonOffsetUnits ?? 0, m.polygonOffsetFactor ?? 0] : null;
   const culls = m.transparent && m.side === DOUBLE_SIDE && !m.forceSinglePass ? ['front', 'back'] : [CULL_OF_SIDE[m.side] ?? 'back'];
-  return { blend, depthWrite: m.depthWrite, bias, culls, key: `${blend}|${m.depthWrite ? 'w' : '-'}|${bias ? bias.join(',') : ''}` };
+  const colorWrite = m.colorWrite !== false;
+  return {
+    blend, depthWrite: m.depthWrite, colorWrite, bias, culls,
+    key: `${blend}|${m.depthWrite ? 'w' : '-'}|${bias ? bias.join(',') : ''}${colorWrite ? '' : '|c-'}`,
+  };
+}
+
+/** The color target of a pipeline: blend when not opaque, writeMask 0 without `colorWrite`. */
+function colorTarget(s: DrawState, format: string): Record<string, unknown> {
+  const target: Record<string, unknown> = { format };
+  if (s.blend !== 'none') target['blend'] = BLEND_STATES[s.blend];
+  if (!s.colorWrite) target['writeMask'] = COLOR_WRITE_NONE;
+  return target;
 }
 
 /** Builds the native renderer on a three WebGPU renderer, or `null` with the reason logged. */
@@ -913,5 +1020,33 @@ export function createNativeRenderer(renderer: unknown, bridge: DrawBatchBridge 
     return null;
   }
   debug('perf', '[nativeRenderer] instalado');
-  return new NativeRenderer(host as NativeRendererHost, bridge, NATIVE_MODELS, nativeRendererModels());
+  return (active = new NativeRenderer(host as NativeRendererHost, bridge, NATIVE_MODELS, nativeRendererModels()));
+}
+
+let active: NativeRenderer | null = null;
+
+/** `?nativePrecompile=1` (SPEC-0585). */
+export function nativePrecompileRequested(): boolean {
+  return queryFlagRequested(PRECOMPILE_QUERY, false);
+}
+
+/**
+ * Called by `Game` for the warm-up frame (SPEC-0585): runs `draw` and, with `?nativePrecompile=1`,
+ * {@link NativeRenderer.precompile} on the scene, both inside {@link NativeRenderer.warmup}. Without
+ * the flag (or the native renderer), only `draw`.
+ *
+ * @returns native pipelines born by the sweep.
+ */
+export function precompileNative(root: Object3D, camera: { layers: Layers }, draw: () => void): number {
+  if (active === null || !nativePrecompileRequested()) {
+    draw();
+    return 0;
+  }
+  const renderer = active;
+  return renderer.warmup(() => {
+    draw();
+    const born = renderer.precompile(root, camera.layers);
+    debug('perf', `[nativeRenderer] precompile frame=${renderer.frame} born=${born}`);
+    return born;
+  });
 }

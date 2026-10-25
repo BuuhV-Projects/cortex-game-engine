@@ -19,6 +19,7 @@
  * the background and the `renderOrder` < 0 items, before the first other
  * opaque item of the three. Anything else stays with the three, per object.
  */
+import { beginSection, endSection } from './RenderSections.js';
 import { Object3D } from 'three';
 import { debug } from '../core/debug.js';
 import type { DrawBatch, ServerRecipe } from './DrawBatch.js';
@@ -336,11 +337,13 @@ export class RenderServer {
   ): void {
     if (this._items.length === 0 || this._emitting || r._currentRenderContext !== this._owner) return;
     this._emitting = true;
+    beginSection('nativeEmit');
     try {
       if (!this._prepared) this._prepare(r, scene, camera, lightsNode);
       this._emitUntil(r, next, nextTransparent);
     } finally {
       this._emitting = false;
+      endSection('nativeEmit');
     }
     if (this._cursor >= this._order.length) {
       this.stats.emissions++;

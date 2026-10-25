@@ -94,8 +94,6 @@ export function classifyDrawable(object: Object3D, material: Material | Material
 
   const m = material as unknown as Bag;
   const o = object as unknown as Bag;
-  if (m.colorWrite === false) return { kind: 'skip' };
-
   const outline = typeof material.userData?.[OUTLINE_THICKNESS_KEY] === 'number';
   const wgsl = material.userData?.[NATIVE_MATERIAL_KEY];
   const model: NativeModel | `wgsl:${string}` | undefined =
@@ -144,6 +142,8 @@ export function classifyDrawable(object: Object3D, material: Material | Material
   add(o.receiveShadow, 'receiveShadow');
   add(m.polygonOffset, 'polygonOffset');
   add(m.depthWrite === false, 'noDepthWrite');
+  // Depth-only occluder (collision): drawn with writeMask 0, like the three (SPEC-0585).
+  add(m.colorWrite === false, 'noColorWrite');
   add(o.renderOrder !== NO_RENDER_ORDER, 'renderOrder');
   // Physical with only ior/specular (what the glTF loader creates) is drawn by `standard` with
   // those terms; the feature tells R1.2 which objects need them.

@@ -8,7 +8,7 @@
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STAGES_ROOT=D:/jogos/detetive-brasilia/.cortex/stages
-DEFAULT_GAME=D:/jogos/detetive-brasilia-rs-e1cede4   # DDD 61 at e1cede4 (target since 2026-10-24: bus fix, SPEC-0193 of the game)
+DEFAULT_GAME=D:/jogos/detetive-brasilia-rs-f10877e   # DDD 61 at f10877e (target since 2026-10-25: Frente D, crowd + paints on the native renderer, SPEC-0194 of the game)
 DEFAULT_POINTS="setorO comercial"
 DEFAULT_SMOKE_POINT=comercial
 NIGHT_EXTRA='&hora=21'

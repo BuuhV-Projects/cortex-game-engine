@@ -58,6 +58,33 @@ function objectLabel(object: Object3D | undefined): string {
   return object?.type ?? '?';
 }
 
+/** Cap of the native queue when no trace drains it (Studio, browser): births past it are dropped. */
+const MAX_PENDING_NATIVE = 256;
+const nativePending: PipelineBirth[] = [];
+
+/**
+ * Records a pipeline born in the engine's own renderer (SPEC-0585), which calls the device directly
+ * and so never goes through `backend.createRenderPipeline`. The trace drains it as
+ * `nativePipelinesBorn`.
+ */
+export function recordNativePipelineBirth(object: Object3D, material: Material, ms: number, key: string): void {
+  if (nativePending.length >= MAX_PENDING_NATIVE) return;
+  const factor = DECIMAL_BASE ** MS_DECIMALS;
+  nativePending.push({
+    object: objectLabel(object),
+    material: material.name || material.type,
+    transparent: material.transparent === true,
+    camera: 'main',
+    ms: Math.round(ms * factor) / factor,
+    key,
+  });
+}
+
+/** The native births since the last call. */
+export function drainNativePipelineBirths(): PipelineBirth[] {
+  return nativePending.splice(0, nativePending.length);
+}
+
 /**
  * Registro dos nascimentos, drenado a cada amostra do trace.
  *
