@@ -5,6 +5,7 @@ import {
   RenderServer,
   buildServerInstance,
   renderServerRequested,
+  type NativeEntry,
   type ServerAccess,
   type ServerRecording,
   type ServerRendererLike,
@@ -73,7 +74,11 @@ function setup(check: CheckResult = CheckResult.Clean) {
     _renderObjects(list) {
       for (const item of list) this._currentRenderObjectFunction!(item.object);
     },
-    _renderTransparents: () => void log.push('transparents'),
+    // Like the three: the transparent list goes through _renderObjects.
+    _renderTransparents(...args: unknown[]) {
+      log.push('transparents');
+      this._renderObjects!((args[0] ?? []) as never, args[2], args[3], args[4]);
+    },
   };
   const server = new RenderServer(access);
   server.install(renderer);
@@ -244,5 +249,133 @@ describe('RenderServer — default', () => {
     } finally {
       g.location = before;
     }
+  });
+});
+
+describe('RenderServer — native entries (ADR-0465, R1.1)', () => {
+  it('asks the native renderer first and sorts its entries with the RS1 ones and the three', () => {
+    const { server, renderer, b, add, log } = setup();
+    const taken = new Set<object>();
+    const frames: unknown[] = [];
+    server.attachNative({
+      beginFrame: (camera) => void frames.push(camera),
+      take: (o) => (taken.has(o) ? { count: 6, first: 0, triangles: 2 } : null),
+      recipeFor: (entry) => (entry.count === 6 ? 42 : -1),
+    });
+    const list = { opaque: [] as unknown[] };
+    server.beginProjection(renderer, list, 'cam', 'scene');
+    expect(frames).toEqual(['cam']);
+    const nativeNear = add('nativeNear');
+    taken.add(nativeNear);
+    const rsFar = add('rsFar');
+    expect(server.offer(nativeNear, nativeNear.material, nativeNear.geometry, null, 1)).toBe(true);
+    expect(server.offer(rsFar, rsFar.material, rsFar.geometry, null, 9)).toBe(true);
+    const mid = new Mesh();
+    mid.name = 'mid';
+    new Object3D().add(mid);
+    list.opaque = [item(mid, 5)];
+    renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
+    // native (z 1) → three (z 5) → RS1 (z 9); the native entry did not touch the b.1 state.
+    expect(b.emitted).toEqual([[42, 6, 1, 0], [9, VERTICES, 1, 0]]);
+    expect(log).toEqual(['prepare', 'three:mid']);
+  });
+
+  it('a native entry without a recipe for the target is drawn by the three at its place', () => {
+    const { server, renderer, b, add, log } = setup();
+    server.attachNative({ beginFrame: () => undefined, take: () => ({ count: 3, first: 0, triangles: 1 }), recipeFor: () => -1 });
+    const list = { opaque: [] as unknown[] };
+    server.beginProjection(renderer, list, 'cam', 'scene');
+    const m = add('noRecipe');
+    expect(server.offerNative(m, m.material, m.geometry, null, 2)).toBe(true);
+    renderer._renderTransparents!(null, null, 'cam', 'scene', 'L');
+    expect(b.emitted).toEqual([]);
+    expect(log).toContain('three:noRecipe');
+  });
+});
+
+describe('RenderServer — native transparents, renderOrder, passes (R1.4, SPEC-0555)', () => {
+  /** A scene node of the three with a name (emission is only checked before scene nodes). */
+  const node = (name: string, renderOrder = 0) => {
+    const m = new Mesh();
+    m.name = name;
+    m.renderOrder = renderOrder;
+    new Object3D().add(m);
+    return m;
+  };
+  /** Native entries by object; the recipe id is the entry's `count` + 100 × pass. */
+  const nativeSetup = (entries: Map<object, NativeEntry>) => {
+    const s = setup();
+    s.server.attachNative({
+      beginFrame: () => undefined,
+      take: (o) => entries.get(o) ?? null,
+      recipeFor: (entry, _ctx, pass = 0) => entry.count + 100 * pass,
+    });
+    return s;
+  };
+
+  it('emits transparent entries inside the three transparent list by reversePainterSortStable (ties by id)', () => {
+    const entries = new Map<object, NativeEntry>();
+    const { server, renderer, b, log } = nativeSetup(entries);
+    const opaqueItem = node('mid');
+    const transparentItem = node('glass'); // created before tie: lower id
+    const a = node('a');
+    const near = node('near');
+    const far = node('far');
+    const tie = node('tie');
+    entries.set(a, { count: 1, first: 0, triangles: 0 });
+    entries.set(near, { count: 2, first: 0, triangles: 0, transparent: true });
+    entries.set(far, { count: 3, first: 0, triangles: 0, transparent: true });
+    entries.set(tie, { count: 4, first: 0, triangles: 0, transparent: true });
+    const list = { opaque: [item(opaqueItem, 5)], transparent: [item(transparentItem, 5)] };
+    server.beginProjection(renderer, list, 'cam', 'scene');
+    server.offerNative(a, a.material, a.geometry, null, 3);
+    server.offerNative(near, near.material, near.geometry, null, 2);
+    server.offerNative(far, far.material, far.geometry, null, 8);
+    server.offerNative(tie, tie.material, tie.geometry, null, 5);
+    renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
+    // The opaque list emits only the opaque entry: the transparents wait for the three's.
+    expect(b.emitted).toEqual([[1, 1, 1, 0]]);
+    renderer._renderTransparents!(list.transparent, [], 'cam', 'scene', 'L');
+    // far (z 8) before glass (z 5); tie (z 5, higher id) after glass; near (z 2) last.
+    expect(b.emitted).toEqual([[1, 1, 1, 0], [3, 3, 1, 0], [4, 4, 1, 0, 2, 2, 1, 0]]);
+    expect(log).toEqual(['three:mid', 'transparents', 'three:glass']);
+    expect(server.stats.emissions).toBe(1);
+  });
+
+  it('sorts by renderOrder first, and finishRender emits the transparents when the three has none', () => {
+    const entries = new Map<object, NativeEntry>();
+    const { server, renderer, b, log } = nativeSetup(entries);
+    const three = node('three');
+    const late = node('late', 1);
+    const glass = node('glass');
+    entries.set(late, { count: 5, first: 0, triangles: 0 });
+    entries.set(glass, { count: 6, first: 0, triangles: 0, transparent: true });
+    const list = { opaque: [item(three, 5)], transparent: [] as unknown[] };
+    server.beginProjection(renderer, list, 'cam', 'scene');
+    server.offerNative(late, late.material, late.geometry, null, 1);
+    server.offerNative(glass, glass.material, glass.geometry, null, 1);
+    renderer._renderObjects!(list.opaque as never, 'cam', 'scene', 'L');
+    // renderOrder 1 sorts after the three's renderOrder 0 item despite the lower z.
+    expect(log).toEqual(['three:three']);
+    expect(b.emitted).toEqual([[5, 5, 1, 0]]);
+    renderer.backend!.finishRender!(renderer._currentRenderContext);
+    expect(b.emitted).toEqual([[5, 5, 1, 0], [6, 6, 1, 0]]);
+  });
+
+  it('records one command per pass with the instance count, and skips an empty entry without the three', () => {
+    const entries = new Map<object, NativeEntry>();
+    const { server, renderer, b, log } = nativeSetup(entries);
+    const double = node('double');
+    const empty = node('empty');
+    entries.set(double, { count: 7, first: 2, triangles: 1, instances: 3, passes: 2 });
+    entries.set(empty, { count: 8, first: 0, triangles: 0, instances: 0 });
+    const list = { opaque: [] as unknown[] };
+    server.beginProjection(renderer, list, 'cam', 'scene');
+    server.offerNative(double, double.material, double.geometry, null, 1);
+    server.offerNative(empty, empty.material, empty.geometry, null, 2);
+    renderer._renderTransparents!([], [], 'cam', 'scene', 'L');
+    expect(b.emitted).toEqual([[7, 7, 3, 2, 107, 7, 3, 2]]);
+    expect(log).not.toContain('three:empty');
+    expect(renderer.info!.render).toEqual({ drawCalls: 2, triangles: 6 });
   });
 });

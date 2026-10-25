@@ -135,10 +135,12 @@ export class MainProjector {
         continue;
       }
       let z = this._depths[k]!;
+      // Only what the three would push (`material.visible`) is offered (SPEC-0555).
+      const ofertavel = server !== null && !Array.isArray(objeto.material) && objeto.material.visible;
       // RS1b (SPEC-0425): clean opaque instances go to the server, not to the RenderList.
       if (
-        server !== null && tipo === MainPassKind.NativeCull && !Array.isArray(objeto.material) &&
-        server.offer(objeto, objeto.material, objeto.geometry, clippingContext, this._depths[k]!)
+        ofertavel && tipo === MainPassKind.NativeCull &&
+        server!.offer(objeto, objeto.material as Material, objeto.geometry, clippingContext, this._depths[k]!)
       ) {
         continue;
       }
@@ -146,6 +148,8 @@ export class MainProjector {
         // O teste exato do `three`, com a esfera do OBJETO (instâncias, rig).
         if (objeto.frustumCulled && !this._dentro(objeto)) continue;
         z = this._zDoThree(objeto);
+        // The native renderer (ADR-0465) may own instanced/skinned objects the RS1 never takes.
+        if (ofertavel && server!.offerNative(objeto, objeto.material, objeto.geometry, clippingContext, z)) continue;
       }
       empurrar(renderList, objeto, z, clippingContext);
     }
@@ -242,7 +246,7 @@ export function installNativeProjection(
     if (raiz && this.sortObjects !== false && !(camera as Camera & { isArrayCamera?: boolean }).isArrayCamera) {
       const override = (object as Object3D & { overrideMaterial?: unknown }).overrideMaterial;
       const server = override || mainPassArm.three ? null : activeRenderServer();
-      const offering = server !== null && server.beginProjection(this as unknown as ServerRendererLike, renderList) ? server : null;
+      const offering = server !== null && server.beginProjection(this as unknown as ServerRendererLike, renderList, camera, object) ? server : null;
       if (projector.project(camera, renderList, clippingContext, offering)) return;
     } else if (raiz) {
       stats.refused++;

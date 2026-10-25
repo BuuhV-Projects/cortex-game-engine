@@ -391,7 +391,11 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       apagar quando o usuário quiser (guardar `runs-*`, `wgsl/` e os scripts). Origem: SPEC-0505/0525.
 - [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-e2be01c` (`e2be01c`): passou para o PRD-0466 (fonte do
       export do R0/R1 e do `check-stage.sh`). Apagar quando o PRD-0466 trocar de commit-alvo ou fechar o R1.
-      Origem: arquivamento da sessão `rendering-server`.
+      Origem: arquivamento da sessão `rendering-server`. **2026-10-24: o PRD-0466 trocou o alvo para `e1cede4`**
+      (cópia nova `D:/jogos/detetive-brasilia-rs-e1cede4`): a antiga pode ser apagada quando nenhuma frente
+      tiver rodada nela (`git -C D:/jogos/detetive-brasilia worktree remove`).
+- [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-e1cede4` (`e1cede4`): alvo do PRD-0466 desde 2026-10-24.
+      Apagar quando o PRD-0466 fechar o R1 ou trocar de commit-alvo. Origem: correção do ônibus (SPEC-0193 do jogo).
 
 - [x] (2026-10-23) Sessão B2 arquivada; worktree da engine e cópias do jogo `b2-base`/`b2-e2be01c` removidas; branch apagada.
 - [ ] Rodadas e exports da B2 em `D:/jogos/detetive-brasilia/.cortex/b2-desenho` (evidência da b.3/SPEC-0362 e da sombra do sol) — apagar quando o usuário quiser.

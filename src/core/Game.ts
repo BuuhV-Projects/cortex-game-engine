@@ -48,6 +48,7 @@ import {
   systemProfileRequested,
 } from './RenderPhaseProbe.js';
 import { InspectCamera } from './InspectCamera.js';
+import { advanceShaderTime } from '../render/native/ShaderClock.js';
 
 /**
  * Uma fase que o Studio pode abrir direto pelo seletor do viewport (ADR-0186).
@@ -644,6 +645,7 @@ export class Game {
    */
   private _update(deltaMs: number): void {
     const dt = deltaMs / 1000;
+    advanceShaderTime(dt); // relógio de shader: pausa com o jogo e no ?parityFreeze (SPEC-0565)
     const p = this.profiler; // no-op quando o HUD de debug está desligado
     p.begin('input');
     this._autopilot?.step(dt);

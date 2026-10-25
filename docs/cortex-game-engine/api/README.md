@@ -163,6 +163,7 @@
 - [MouseDelta](interfaces/MouseDelta.md)
 - [MouseMoveEventDetail](interfaces/MouseMoveEventDetail.md)
 - [MousePosition](interfaces/MousePosition.md)
+- [NativeModelDef](interfaces/NativeModelDef.md)
 - [OutdoorLighting](interfaces/OutdoorLighting.md)
 - [OutdoorLightingOptions](interfaces/OutdoorLightingOptions.md)
 - [OutlineCullStats](interfaces/OutlineCullStats.md)
@@ -308,6 +309,7 @@
 - [Vec3](type-aliases/Vec3.md)
 - [VegetationNode](type-aliases/VegetationNode.md)
 - [VehicleAnimState](type-aliases/VehicleAnimState.md)
+- [VertexSemantic](type-aliases/VertexSemantic.md)
 - [WaterNode](type-aliases/WaterNode.md)
 
 ## Variables
@@ -356,6 +358,8 @@
 - [NATIVE\_KTX2\_FLAG](variables/NATIVE_KTX2_FLAG.md)
 - [OUTLINE\_AUTHORED\_KEY](variables/OUTLINE_AUTHORED_KEY.md)
 - [OUTLINE\_THICKNESS\_KEY](variables/OUTLINE_THICKNESS_KEY.md)
+- [SHADER\_TIME\_ROLLOVER\_S](variables/SHADER_TIME_ROLLOVER_S.md)
+- [shaderTime](variables/shaderTime.md)
 - [SHADOW\_AUTHORED\_KEY](variables/SHADOW_AUTHORED_KEY.md)
 - [SHAPES](variables/SHAPES.md)
 - [Steam](variables/Steam.md)
@@ -498,6 +502,7 @@
 - [placeOnGround](functions/placeOnGround.md)
 - [projectOnRoute](functions/projectOnRoute.md)
 - [registerEditorAttacher](functions/registerEditorAttacher.md)
+- [registerNativeMaterial](functions/registerNativeMaterial.md)
 - [registerScript](functions/registerScript.md)
 - [registerScripts](functions/registerScripts.md)
 - [releaseKtx2DataAfterUpload](functions/releaseKtx2DataAfterUpload.md)

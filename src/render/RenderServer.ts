@@ -104,6 +104,31 @@ interface RenderItemLike extends SortKeyLike {
   clippingContext: unknown;
 }
 
+/** A draw owned by the native renderer (ADR-0465): what the list needs to emit it. */
+export interface NativeEntry {
+  readonly count: number;
+  readonly first: number;
+  readonly triangles: number;
+  /** Instances per draw (`InstancedMesh.count`); absent = 1, 0 = nothing to draw (SPEC-0555). */
+  readonly instances?: number;
+  /** Draws per entry: 2 = transparent `DoubleSide` (back faces, then front, like the three). */
+  readonly passes?: number;
+  /** In the three's transparent list (`material.transparent`): `reversePainterSortStable` order. */
+  readonly transparent?: boolean;
+}
+
+/**
+ * The native renderer as the list sees it (`src/render/native/NativeRenderer.ts`). It takes an
+ * object (its own geometry, material, pipeline) or returns `null` and the object goes on as before.
+ */
+export interface NativeDrawer {
+  /** Once per top-level projection of the mirrored scene: view block (camera, fog). */
+  beginFrame(camera: unknown, scene: unknown): void;
+  take(object: Object3D, material: unknown, geometry: unknown): NativeEntry | null;
+  /** Recipe id of one pass for the render context's target formats; -1 = the three draws it at its place. */
+  recipeFor(entry: NativeEntry, renderContext: unknown, pass?: number): number;
+}
+
 /** What is cached per instance: the command and what the emission checks. */
 export interface ServerInstance {
   recipe: ServerRecipe;
@@ -177,9 +202,19 @@ export class RenderServer {
     drawn: 0, moved: 0, refused: 0, fallback: 0, dropped: 0, offered: 0, taken: 0, emissions: 0,
     fbEnv: 0, fbShared: 0, fbMoved: 0, recaptured: 0,
   };
-  private _items: ServerRecording[] = [];
+  /** b.1 recording of an RS1 entry, or `null` for a native entry (`_nat`). */
+  private _items: (ServerRecording | null)[] = [];
+  private _nat: (NativeEntry | null)[] = [];
+  private _ids: number[] = [];
+  private _objs: Object3D[] = [];
+  private _mats: unknown[] = [];
+  private _clips: unknown[] = [];
   private _moved: boolean[] = [];
   private _z: number[] = [];
+  private _ro: number[] = [];
+  /** Phase of the entry: `false` = opaque list, `true` = transparent list (emitted after). */
+  private _tr: boolean[] = [];
+  private _native: NativeDrawer | null = null;
   private _owner: unknown = null;
   private _ownerList: unknown = null;
   /** Inside a nested call made while emitting (shadow updateBefore, fallback draw). */
@@ -197,10 +232,17 @@ export class RenderServer {
   /** Per shader state: last call prepared, and the shared group handles seen then. */
   private readonly _states = new WeakMap<object, { calls: number; shared: unknown[] }>();
   private _projections = 0;
+  /** Opaque entries by `painterSortStable`, then transparent ones by `reversePainterSortStable`. */
   private readonly _byKey = (i: number, j: number): number => {
+    const ti = this._tr[i]!;
+    if (ti !== this._tr[j]!) return ti ? 1 : -1;
+    const ri = this._ro[i]!;
+    const rj = this._ro[j]!;
+    if (ri !== rj) return ri - rj;
     const zi = this._z[i]!;
     const zj = this._z[j]!;
-    return zi !== zj ? zi - zj : this._items[i]!.ro.object.id - this._items[j]!.ro.object.id;
+    if (zi !== zj) return ti ? zj - zi : zi - zj;
+    return this._ids[i]! - this._ids[j]!;
   };
 
   constructor(private readonly _access: ServerAccess) {}
@@ -209,7 +251,7 @@ export class RenderServer {
    * Start of a top-level projection of the mirrored scene (not a shadow pass).
    * A list never emitted (projection without a render) is dropped.
    */
-  beginProjection(r: ServerRendererLike, renderList: unknown): boolean {
+  beginProjection(r: ServerRendererLike, renderList: unknown, camera?: unknown, scene?: unknown): boolean {
     if (this._emitting) return false;
     this._report();
     if (this._items.length > 0) {
@@ -218,7 +260,41 @@ export class RenderServer {
     }
     this._owner = r._currentRenderContext;
     this._ownerList = renderList;
+    if (this._native !== null && camera !== undefined) this._native.beginFrame(camera, scene);
     return true;
+  }
+
+  /** Plugs the native renderer (ADR-0465) in front of the RS1: it is asked first. */
+  attachNative(native: NativeDrawer | null): void {
+    this._native = native;
+  }
+
+  /**
+   * Native renderer only (objects the RS1 never takes: instanced, skinned, transparent); `true` = the
+   * native renderer took it into the list. Same sort key as the three's lists (with `renderOrder`).
+   */
+  offerNative(object: Object3D, material: unknown, geometry: unknown, clipping: unknown, z: number): boolean {
+    if (this._native === null) return false;
+    const entry = this._native.take(object, material, geometry);
+    if (entry === null) return false;
+    this._push(null, entry, object, material, clipping, z, false);
+    return true;
+  }
+
+  private _push(
+    g: ServerRecording | null, nat: NativeEntry | null, object: Object3D, material: unknown, clipping: unknown, z: number, moved: boolean,
+  ): void {
+    this._items.push(g);
+    this._nat.push(nat);
+    this._ids.push(object.id);
+    this._objs.push(object);
+    this._mats.push(material);
+    this._clips.push(clipping);
+    this._moved.push(moved);
+    this._z.push(z);
+    this._ro.push(object.renderOrder);
+    this._tr.push(nat?.transparent === true);
+    this.stats.taken++;
   }
 
   /**
@@ -227,6 +303,7 @@ export class RenderServer {
    */
   offer(object: Object3D, material: unknown, geometry: unknown, clipping: unknown, z: number): boolean {
     this.stats.offered++;
+    if (this.offerNative(object, material, geometry, clipping, z)) return true;
     const g = this._access.recordingOf(object, this._owner);
     if (
       g === undefined || g.material !== material || g.ro.geometry !== geometry || g.clipping !== clipping ||
@@ -242,25 +319,26 @@ export class RenderServer {
       this.stats.refused++;
       return false;
     }
-    this._items.push(g);
-    this._moved.push(r === CheckResult.Moved);
-    this._z.push(z);
-    this.stats.taken++;
+    this._push(g, null, object, material, clipping, z, r === CheckResult.Moved);
     return true;
   }
 
   /**
    * Emits, in the owner's pass, the server entries whose sort key is below
-   * `next` (a render item of the three), or all of them with `next` null.
-   * Identical keys to the three's sort = identical draw order, so coplanar
-   * geometry resolves its depth ties exactly as the three does.
+   * `next` (a render item of the three's opaque list, or of its transparent
+   * list with `nextTransparent`). `next` null: all the opaque entries left
+   * (`nextTransparent`), or everything left. Identical keys to the three's sort
+   * = identical draw order, so coplanar geometry resolves its depth ties
+   * exactly as the three does.
    */
-  emitBefore(r: ServerRendererLike, scene: unknown, camera: unknown, lightsNode: unknown, next: SortKeyLike | null): void {
+  emitBefore(
+    r: ServerRendererLike, scene: unknown, camera: unknown, lightsNode: unknown, next: SortKeyLike | null, nextTransparent = false,
+  ): void {
     if (this._items.length === 0 || this._emitting || r._currentRenderContext !== this._owner) return;
     this._emitting = true;
     try {
       if (!this._prepared) this._prepare(r, scene, camera, lightsNode);
-      this._emitUntil(r, next);
+      this._emitUntil(r, next, nextTransparent);
     } finally {
       this._emitting = false;
     }
@@ -272,8 +350,15 @@ export class RenderServer {
 
   private _clear(): void {
     this._items.length = 0;
+    this._nat.length = 0;
+    this._ids.length = 0;
+    this._objs.length = 0;
+    this._mats.length = 0;
+    this._clips.length = 0;
     this._moved.length = 0;
     this._z.length = 0;
+    this._ro.length = 0;
+    this._tr.length = 0;
     this._order.length = 0;
     this._prepared = false;
     this._cursor = 0;
@@ -295,13 +380,37 @@ export class RenderServer {
     for (let i = 0; i < n; i++) order[i] = i;
     order.sort(this._byKey);
     if (this._slot.length < n) this._slot = new Int32Array(n * 2);
-    if (this._commands.length < n * COMMAND_INTS) this._commands = new Int32Array(n * COMMAND_INTS * 2);
+    // Up to MAX_PASSES commands per entry (transparent DoubleSide).
+    if (this._commands.length < n * MAX_PASSES * COMMAND_INTS) this._commands = new Int32Array(n * MAX_PASSES * COMMAND_INTS * 2);
     const cmds = this._commands;
     let k = 0;
     for (let s = 0; s < n; s++) {
       const i = order[s]!;
-      const g = this._items[i]!;
       this._slot[s] = FALLBACK;
+      const nat = this._nat[i];
+      if (nat) {
+        const instances = nat.instances ?? 1;
+        if (instances <= 0 || nat.count <= 0) {
+          this._slot[s] = EMPTY;
+          continue;
+        }
+        const passes = nat.passes ?? 1;
+        let p = 0;
+        for (; p < passes; p++) {
+          const id = this._native!.recipeFor(nat, this._owner, p);
+          if (id < 0) break;
+          const base = (k + p) * COMMAND_INTS;
+          cmds[base] = id;
+          cmds[base + 1] = nat.count;
+          cmds[base + 2] = instances;
+          cmds[base + 3] = nat.first;
+        }
+        if (p < passes) continue;
+        this._slot[s] = k;
+        k += passes;
+        continue;
+      }
+      const g = this._items[i]!;
       const inst = g.server!;
       if (g.lights !== lightsNode || g.envKey !== env || g.contextNodeVersion !== contextNodeVersion) {
         this.stats.fbEnv++;
@@ -343,7 +452,7 @@ export class RenderServer {
     this._prepared = true;
   }
 
-  private _emitUntil(r: ServerRendererLike, next: SortKeyLike | null): void {
+  private _emitUntil(r: ServerRendererLike, next: SortKeyLike | null, nextTransparent: boolean): void {
     const order = this._order;
     const n = order.length;
     let s = this._cursor;
@@ -352,20 +461,33 @@ export class RenderServer {
     let triangles = 0;
     while (s < n) {
       const i = order[s]!;
-      const g = this._items[i]!;
-      if (next !== null && !keyBelow(this._z[i]!, g.ro.object.id, next)) break;
+      const stop = next === null
+        ? nextTransparent && this._tr[i]!
+        : !keyBelow(this._ro[i]!, this._z[i]!, this._ids[i]!, this._tr[i]!, next, nextTransparent);
+      if (stop) break;
       const k = this._slot[s]!;
+      if (k === EMPTY) {
+        s++;
+        continue;
+      }
       if (k === FALLBACK) {
         triangles = this._flushRun(r, runStart, runCount, triangles);
         runStart = -1;
         runCount = 0;
-        const o = g.ro.object;
-        r._currentRenderObjectFunction?.call(r, o, this._scene, this._camera, o.geometry, g.material, null, this._lights, g.clipping, null);
+        const o = this._objs[i]! as Object3D & { geometry: unknown };
+        r._currentRenderObjectFunction?.call(r, o, this._scene, this._camera, o.geometry, this._mats[i], null, this._lights, this._clips[i], null);
         this.stats.fallback++;
       } else {
         if (runStart < 0) runStart = k;
-        runCount++;
-        triangles += g.server!.triangles;
+        const nat = this._nat[i];
+        if (nat) {
+          const draws = nat.passes ?? 1;
+          runCount += draws;
+          triangles += nat.triangles * draws * (nat.instances ?? 1);
+        } else {
+          runCount++;
+          triangles += this._items[i]!.server!.triangles;
+        }
       }
       s++;
     }
@@ -402,8 +524,11 @@ export class RenderServer {
   /**
    * Installs the emission points on the renderer. Returns the uninstaller.
    * `_renderObjects` of the owner's opaque list: before each item of the three,
-   * the server entries with a lower sort key (the background, not a scene node,
-   * never triggers it); `_renderTransparents` and `finishRender` emit the rest.
+   * the opaque server entries with a lower sort key (the background, not a scene
+   * node, never triggers it), and the opaque ones left at its end;
+   * `_renderTransparents`: the opaque ones left, then, inside the owner's
+   * transparent list, the transparent entries by `reversePainterSortStable`;
+   * `finishRender` emits whatever is left (no transparent item of the three).
    */
   install(r: ServerRendererLike): () => void {
     const renderObjects = r._renderObjects;
@@ -421,7 +546,8 @@ export class RenderServer {
     r._renderObjects = function renderObjectsWithServer(
       this: ServerRendererLike, list: RenderItemLike[], camera: unknown, scene: unknown, lightsNode: unknown, passId?: unknown,
     ): void {
-      if (passId != null || this._currentRenderContext !== server._owner || !server._ownsOpaque(list)) {
+      const transparent = server._ownsList(list, 'transparent');
+      if (passId != null || this._currentRenderContext !== server._owner || !(transparent || server._ownsList(list, 'opaque'))) {
         renderObjects.call(this, list, camera, scene, lightsNode, passId);
         return;
       }
@@ -432,13 +558,19 @@ export class RenderServer {
       // Fixed length at entry, like the three (ADR-0363, trap 5).
       for (let i = 0, il = list.length; i < il; i++) {
         const item = list[i]!;
-        if (server._items.length > 0 && item.object.parent !== null) server.emitBefore(this, scene, camera, lightsNode, item);
+        if (server._items.length > 0 && item.object.parent !== null) server.emitBefore(this, scene, camera, lightsNode, item, transparent);
         draw.call(this, item.object, scene, camera, item.geometry, item.material, item.group, lightsNode, item.clippingContext, passId);
       }
-      server.emitBefore(this, scene, camera, lightsNode, null);
+      // End of the opaque list: only the opaque entries (the three's transparents come later).
+      server.emitBefore(this, scene, camera, lightsNode, null, !transparent);
     };
     r._renderTransparents = function renderTransparentsWithServer(this: ServerRendererLike, ...args: unknown[]): void {
-      if (this._currentRenderContext === server._owner) server.emitBefore(this, args[3], args[2], args[4], null);
+      if (this._currentRenderContext === server._owner) {
+        lastScene = args[3];
+        lastCamera = args[2];
+        lastLights = args[4];
+        server.emitBefore(this, args[3], args[2], args[4], null, true);
+      }
       renderTransparents.apply(this, args);
     };
     backend.finishRender = function finishRenderWithServer(this: unknown, ...args: unknown[]): void {
@@ -456,9 +588,9 @@ export class RenderServer {
     };
   }
 
-  private _ownsOpaque(list: unknown): boolean {
-    const owner = this._ownerList as { opaque?: unknown } | null;
-    return this._items.length > 0 && owner !== null && owner.opaque === list;
+  private _ownsList(list: unknown, which: 'opaque' | 'transparent'): boolean {
+    const owner = this._ownerList as { opaque?: unknown; transparent?: unknown } | null;
+    return this._items.length > 0 && owner !== null && owner[which] === list;
   }
 }
 
@@ -470,16 +602,27 @@ export interface SortKeyLike {
   id: number;
 }
 
-/** A server entry (group order 0, render order 0) sorts before `next`? (`painterSortStable`) */
-export function keyBelow(z: number, id: number, next: SortKeyLike): boolean {
+/**
+ * A server entry (group order 0) sorts before `next`? An opaque entry is below every
+ * transparent item and a transparent one below no opaque item; inside a list, the key of
+ * `painterSortStable` (opaque) or `reversePainterSortStable` (transparent: `z` descending).
+ */
+export function keyBelow(
+  renderOrder: number, z: number, id: number, transparent: boolean, next: SortKeyLike, nextTransparent: boolean,
+): boolean {
+  if (transparent !== nextTransparent) return !transparent;
   if (next.groupOrder !== 0) return next.groupOrder > 0;
-  if (next.renderOrder !== 0) return next.renderOrder > 0;
-  if (z !== next.z) return z < next.z;
+  if (renderOrder !== next.renderOrder) return renderOrder < next.renderOrder;
+  if (z !== next.z) return transparent ? z > next.z : z < next.z;
   return id < next.id;
 }
 
 /** Sorted entry drawn by the three at its place (lights/env changed, stale recipe, moved needs the three). */
 const FALLBACK = -1;
+/** Sorted native entry with nothing to draw this frame (0 instances or 0 vertices): skipped. */
+const EMPTY = -2;
+/** Commands per entry at most (transparent `DoubleSide`: back, then front). */
+const MAX_PASSES = 2;
 
 /** The current handles of the shared groups (camera, lights) of the recipe. */
 function sharedHandles(backend: { get(o: unknown): Record<string, unknown> }, ro: ServerRoLike, recipe: ServerRecipe): unknown[] {

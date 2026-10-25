@@ -1,11 +1,49 @@
 # SPEC-0495 — R1.1: servidor de render, handles, formato de material e modelo `unlit`
 
 **Data:** 2026-10-24
-**Status:** **desenho, sem código.** A implementação espera o R0 (que só começa depois que
-o RenderingServer fechar os itens restantes, decisão do usuário em 2026-10-24). Se o censo
-do R0 mudar algo daqui, este registro é atualizado antes do código.
+**Status:** **implementado** (2026-10-24), desligado por padrão (`?nativeRenderer=1`). O
+desenho abaixo foi a proposta; **"Como ficou"** (logo a seguir) registra o que mudou na
+implementação e vale sobre as seções 1–8 onde divergem.
 
 Etapa R1.1 do PRD-0466 (ADR-0465). Formato do bloco de vista e das luzes: SPEC-0475.
+
+## Como ficou (implementação)
+
+- **Nenhum C++ novo.** Pipelines, shader modules, bind groups, buffers de geometria e de
+  material são criados pela fachada com o shim WebGPU (as mesmas chamadas que o `three` faz)
+  e entram no lote C++ que já existe (`__cortexDrawBatch.record` → `RecipeStore`/`replay`).
+  O **handle C++ é o id da receita**; um alocador de handles em JS seria código sem uso agora
+  (substitui a §1). A §3 (fila própria) não foi necessária: os comandos são os de 4 inteiros
+  do lote.
+- **Variantes por WGSL gerado**, não por `override`: o shim descarta `constants` vindos do JS
+  (pendência do PRD-0009). Cada combinação (modelo, features de material) gera um módulo; no
+  DDD 61 a R1.1 criou **2 pipelines**.
+- **Texturas e samplers do próprio `three`:** `renderer._textures.updateTexture/updateSampler`
+  e `backend.get(textura).texture/.sampler` (KTX2, canvas e mips já funcionam).
+- **Emissão pela lista do RS1:** o `RenderServer` ganhou entradas nativas
+  (`attachNative`/`offerNative`), ordenadas com as do RS1 e com os itens do `three` pela chave
+  do `painterSortStable`. O `NativeRenderer` é perguntado antes do RS1. Com `?parityFreeze`, o
+  braço `three` desliga a oferta, então a paridade na mesma execução já alterna renderer
+  próprio × `three` sem código novo.
+- **Fórmula do `unlit` medida no WGSL de referência (R0):** `(view * model) * posição`; cor ×
+  `textureSample(map, uvTransform · uv)` × cor de vértice; alfa 1; `max(…, 0)`; névoa
+  `smoothstep(near, far, −z)`; saída **linear** (a passada `outputColorTransform` do `three`
+  aplica o sRGB no quadro). Os laços de hemisfério/spots que o `three` emite para material
+  básico são código morto e ficaram de fora.
+- **Costuras para as frentes paralelas** (fecham a interface central):
+  - contrato de modelo `models/NativeModel.ts` + `models/index.ts` (uma linha por modelo);
+  - features de **material** são do modelo; features de **objeto/pipeline** (`instanced`,
+    `skinned`, `transparent`, `additive`, `noDepthWrite`, `polygonOffset`, `renderOrder`,
+    `doubleSide`) são do núcleo (`CORE_FEATURES`/`CORE_SUPPORTED` no `NativeRenderer.ts`);
+  - o núcleo gera a entrada de vértice `VIn` e os helpers `nativeModel`, `nativeLocal`,
+    `nativeLocalNormal`, `nativeNormalMatrix` (`coreWgsl`); o modelo monta
+    `(view.view * nativeModel(vin)) * nativeLocal(vin)` como o `three`;
+  - bloco do objeto com matriz do modelo **e matriz normal** (calculada em double na CPU,
+    como o `modelNormalMatrix` do `three`);
+  - grupo 1 = blocos de quadro (`frame/lights.ts` bindings 0–7, `frame/shadow.ts` 8–15,
+    `SHADOW_READY`), hoje vazios.
+- **Caso de resposta conhecida:** `?nativeTint=1` soma 8/255 ao vermelho só do que o renderer
+  próprio desenha; a paridade tem de dar FAIL.
 
 ## Escopo
 

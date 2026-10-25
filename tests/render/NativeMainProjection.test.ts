@@ -32,6 +32,7 @@ import {
   SYNC_MAIN_UNSUPPORTED,
 } from '../../src/render/MainPassKind.js';
 import {
+  MainProjector,
   installNativeProjection,
   type ProjectingRendererLike,
   type RenderListLike,
@@ -293,5 +294,29 @@ describe('installNativeProjection', () => {
     const renderer: ProjectingRendererLike = { _projectObject: () => undefined };
     const cena = montarCena(new Scene());
     expect(installNativeProjection(renderer, espelhoFalso(cena), undefined)).toBeNull();
+  });
+});
+
+describe('MainProjector — oferta ao servidor (SPEC-0555)', () => {
+  it('só oferece o que o three empurraria: material invisível não vai ao servidor nem à lista', () => {
+    const scene = new Scene();
+    const visivel = malha('visivel', -10);
+    const oculto = malha('oculto', -10, new MeshBasicMaterial({ visible: false }));
+    const instancias = new InstancedMesh(new BoxGeometry(), new MeshBasicMaterial({ visible: false }), 2);
+    instancias.name = 'instancias';
+    instancias.frustumCulled = false;
+    scene.add(visivel, oculto, instancias);
+    const cena = montarCena(scene);
+    const ofertas: string[] = [];
+    const servidor = {
+      offer: (o: Object3D) => (ofertas.push(o.name), true),
+      offerNative: (o: Object3D) => (ofertas.push(o.name), true),
+    };
+    const lista = listaFalsa();
+    const stats = { native: 0, refused: 0, candidates: 0 };
+    const ok = new MainProjector(espelhoFalso(cena), ponteDeReferencia(cena), stats).project(camera(), lista, null, servidor as never);
+    expect(ok).toBe(true);
+    expect(ofertas).toEqual(['visivel']);
+    expect(lista.itens).toEqual([]);
   });
 });

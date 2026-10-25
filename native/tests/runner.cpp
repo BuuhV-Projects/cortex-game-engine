@@ -80,6 +80,8 @@ void testShadowCullSegueATabelaDoThree();
 void testShadowCullNaoAproximaLadoDesconhecido();
 void testShadowCullSegueOEspelhamentoDaMatriz();
 void testShadowDeterminanteIgnoraATranslacao();
+void testShadowCasterMatricesSplitKeepsTheThreeFactors();
+void testShadowCasterMatricesLegacyIsTheDoubleMvp();
 void testPipelineCacheCriaUmaVezPorChave();
 void testPipelineCacheSeparaChavesDiferentes();
 void testPipelineCacheNaoCriaNadaEmRegime();
@@ -153,6 +155,8 @@ int main() {
   tests::testShadowCullNaoAproximaLadoDesconhecido();
   tests::testShadowCullSegueOEspelhamentoDaMatriz();
   tests::testShadowDeterminanteIgnoraATranslacao();
+  tests::testShadowCasterMatricesSplitKeepsTheThreeFactors();
+  tests::testShadowCasterMatricesLegacyIsTheDoubleMvp();
   tests::testPipelineCacheCriaUmaVezPorChave();
   tests::testPipelineCacheSeparaChavesDiferentes();
   tests::testPipelineCacheNaoCriaNadaEmRegime();

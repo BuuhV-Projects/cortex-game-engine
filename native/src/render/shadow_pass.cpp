@@ -30,10 +30,8 @@ constexpr float kDepthClearValue = 1.0f;
 /** Uma amostra: o shadow map do `three` não é multiamostrado. */
 constexpr uint32_t kAmostras = 1;
 
-/** Uniforme por caster: só a matriz. O passe é depth-only — não há cor. */
-struct UniformesDoCaster {
-  float modelViewProjection[kShadowMatrixElements];
-};
+/** Per-caster uniform: the three matrices of {@link ShadowCasterMatrices} (depth-only, no color). */
+using UniformesDoCaster = ShadowCasterMatrices;
 
 /**
  * Vertex shader de posição e nada mais.
@@ -43,13 +41,17 @@ struct UniformesDoCaster {
  */
 const char* kShaderSombra = R"WGSL(
 struct Uniformes {
-  modelViewProjection : mat4x4f,
+  model : mat4x4f,
+  view : mat4x4f,
+  projection : mat4x4f,
 };
 @group(0) @binding(0) var<uniform> u : Uniformes;
 
+// The three's order (SPEC-0545): positionView = (view * model) * p; clip = projection * positionView.
 @vertex
 fn vs(@location(0) position : vec3f) -> @builtin(position) vec4f {
-  return u.modelViewProjection * vec4f(position, 1.0);
+  let positionView = ((u.view * u.model) * vec4f(position, 1.0)).xyz;
+  return u.projection * vec4f(positionView, 1.0);
 }
 )WGSL";
 
@@ -61,7 +63,9 @@ fn vs(@location(0) position : vec3f) -> @builtin(position) vec4f {
  */
 const char* kShaderSombraInstanciada = R"WGSL(
 struct Uniformes {
-  modelViewProjection : mat4x4f,
+  model : mat4x4f,
+  view : mat4x4f,
+  projection : mat4x4f,
 };
 @group(0) @binding(0) var<uniform> u : Uniformes;
 
@@ -69,7 +73,9 @@ struct Uniformes {
 fn vs(@location(0) position : vec3f,
       @location(1) c0 : vec4f, @location(2) c1 : vec4f,
       @location(3) c2 : vec4f, @location(4) c3 : vec4f) -> @builtin(position) vec4f {
-  return u.modelViewProjection * mat4x4f(c0, c1, c2, c3) * vec4f(position, 1.0);
+  let positionLocal = (mat4x4f(c0, c1, c2, c3) * vec4f(position, 1.0)).xyz;
+  let positionView = ((u.view * u.model) * vec4f(positionLocal, 1.0)).xyz;
+  return u.projection * vec4f(positionView, 1.0);
 }
 )WGSL";
 
@@ -298,7 +304,7 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
 
 uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
                            const double viewProjection[16], const ShadowDrawItem* itens,
-                           uint32_t total) {
+                           uint32_t total, const double* projection, const double* view) {
   if (!gpu || !gpu->device || !gpu->queue || !alvoProfundidade || !viewProjection) return 0;
   if (total == 0 || !itens) return 0;
 
@@ -324,7 +330,7 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
     const GeometryEntry* geometria = registro.find(itens[i].geometryId);
     if (!geometria) continue;  // pula: nunca aproxima
     if (itens[i].instanceCount == 0) continue;  // lote vazio: nada a desenhar
-    shadowModelViewProjection(viewProjection, itens[i].model, u.modelViewProjection);
+    shadowCasterMatrices(viewProjection, projection, view, itens[i].model, u);
     const uint32_t slot = static_cast<uint32_t>(prontos.size());
     wgpuQueueWriteBuffer(gpu->queue, r.uniformes, slot * kUniformSlotAlign, &u, sizeof(u));
     prontos.push_back(
