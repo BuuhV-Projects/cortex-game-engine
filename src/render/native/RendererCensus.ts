@@ -13,7 +13,10 @@
 import { Frustum, Matrix4, type Camera, type Material, type Object3D } from 'three';
 import { isNativeHost } from '../../scene/StaticMerge.js';
 import { queryFlagRequested } from '../TransformOnlyRefresh.js';
-import { classifyDrawable, classLabel } from './RendererClassifier.js';
+import { classifyDrawable, classLabel, type Classification } from './RendererClassifier.js';
+import { CORE_FEATURES } from './NativeRenderer.js';
+import { LAMBERT_ACCEPTED, litRefusal, litRefusalCounts } from './models/lambert.js';
+import { STANDARD_ACCEPTED } from './models/standard.js';
 
 /** Census sampling period: often enough for a walking round, cheap enough to ignore. */
 export const CENSUS_PERIOD_MS = 5000;
@@ -30,6 +33,17 @@ export function formatCounts(counts: Map<string, number>): string {
     .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
     .map(([label, n]) => `${label}=${n}`)
     .join(';');
+}
+
+/** Material features each lit model accepts (SPEC-0535): the census names their refusals. */
+const LIT_ACCEPTED: Record<string, readonly string[]> = { lambert: LAMBERT_ACCEPTED, standard: STANDARD_ACCEPTED };
+
+/** Why a lit model refuses a covered drawable (`null` = not a lit model, or it draws it). */
+export function litCensusReason(c: Classification, material: Material): string | null {
+  if (c.kind !== 'covered') return null;
+  const accepted = LIT_ACCEPTED[c.model];
+  if (!accepted) return null;
+  return litRefusal({ ...c, features: c.features.filter((f) => !CORE_FEATURES.has(f)) }, material, accepted);
 }
 
 /** Periodic census of what the native renderer would draw. */
@@ -55,6 +69,7 @@ export class RendererCensus {
     this._viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this._frustum.setFromProjectionMatrix(this._viewProj);
     const counts = new Map<string, number>();
+    const lit = new Map<string, number>();
     let objects = 0;
     let covered = 0;
     let refused = 0;
@@ -71,12 +86,17 @@ export class RendererCensus {
       else if (result.kind === 'skip') skip++;
       else refused++;
       const material = Array.isArray(drawable.material) ? drawable.material[0] : drawable.material;
+      const why = material ? litCensusReason(result, material) : null;
+      if (why !== null && result.kind === 'covered') {
+        const key = `${result.model}:${why}`;
+        lit.set(key, (lit.get(key) ?? 0) + 1);
+      }
       if (material && !this._seenMaterials.has(material.uuid)) {
         this._seenMaterials.add(material.uuid);
-        this._record('rendererCensusMaterial', { label, type: material.type, name: material.name || object.name });
+        this._record('rendererCensusMaterial', { label, type: material.type, name: material.name || object.name, lit: why ?? '' });
       }
     });
-    this._record('rendererCensus', { objects, covered, refused, skip, classes: formatCounts(counts) });
+    this._record('rendererCensus', { objects, covered, refused, skip, classes: formatCounts(counts), lit: formatCounts(lit), litBuilt: formatCounts(litRefusalCounts) });
   }
 }
 

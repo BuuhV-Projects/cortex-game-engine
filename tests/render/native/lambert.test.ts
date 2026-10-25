@@ -84,3 +84,23 @@ describe('lambert model (R1.2, SPEC-0535)', () => {
     expect(plain).not.toContain('nativeShadow');
   });
 });
+
+describe('lit refusal reasons in the census (SPEC-0535)', () => {
+  it('names why a lit model refuses a covered drawable, and is null when it draws it', async () => {
+    const { litCensusReason } = await import('../../../src/render/native/RendererCensus.js');
+    lights(new Scene());
+    const reason = (mesh: Mesh) => litCensusReason(classifyDrawable(mesh, mesh.material as MeshLambertMaterial), mesh.material as MeshLambertMaterial);
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial()))).toBeNull();
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ side: BackSide })))).toBe('backSide');
+    const { litRefusalCounts } = await import('../../../src/render/native/models/lambert.js');
+    const back = new Mesh(new BoxGeometry(), new MeshLambertMaterial({ side: BackSide, name: 'costas' }));
+    variant(back);
+    expect(litRefusalCounts.get('lambert:backSide|costas')).toBe(1);
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ normalMap: new Texture() })))).toBe('feature:normalMap');
+    // core features (doubleSide, instanced…) are the core's, not a lit refusal
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ side: DoubleSide })))).toBeNull();
+    lights(new Scene().add(new PointLight()) as Scene);
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial()))).toBe('lights:PointLight');
+    lights(new Scene());
+  });
+});

@@ -70,7 +70,7 @@ const RETRY_REASONS = new Set(['texture']);
  * Object/pipeline features: the core's, not the models' (see `models/NativeModel.ts`). Removed
  * from the classification before the model sees it; refused unless supported below.
  */
-const CORE_FEATURES = new Set(['instanced', 'skinned', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'doubleSide']);
+export const CORE_FEATURES = new Set(['instanced', 'skinned', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'doubleSide']);
 /** What the core draws today (R1.4, SPEC-0555: instancing, transparency, state). R1.5 adds skinning. */
 const CORE_SUPPORTED = new Set(['doubleSide', 'instanced', 'transparent', 'additive', 'noDepthWrite', 'polygonOffset', 'renderOrder', 'skinned']);
 /** Vertex semantics every model may read without declaring their type (`attributeTypes` is for the rest). */
