@@ -241,3 +241,28 @@ a instância, e o modelo só precisa aceitar a variante.
 - **Decisão (coordenação, 2026-10-24):** o resíduo do Comercial dia fica com a **Frente B** (amostragem da
   sombra). Depois da correção dela, reverificar com `RECEIVE_SHADOW` ligado; plantar uma poça fixa só se o
   resíduo sobreviver.
+
+## Emissivo animado (vidro do lambert, fachada do standard) — diagnóstico e correção
+
+- **Sintoma (Frente A):** `lambert` com emissivo não preto (vidro do `plasterMat`, `emissiveIntensity = night ×
+  máx.` no `setNight`) e a fachada `standard` saíam fora da paridade com o relógio andando; com `?escala=0`, PASS.
+  As duas estavam recusadas.
+- **Reprodução:** galeria `lambert-emissive-ramp` e `standard-emissive-ramp` (rampa de `emissiveIntensity` a cada
+  quadro de jogo) → FAIL alt ~130. Com `nativeTint`, o braço **`three`** é o velho. Com `?renderIdRefresh=0` → PASS.
+- **Causa (no `RenderIdRefresh`, SPEC-0325; também no caminho só-`three`):** o `NodeMaterialObserver` do `three`
+  guarda **um instantâneo por material** (`_materialCache`, de módulo, compartilhado por todo render object do
+  material), criado no 1º `equals()`. O 1º desenho não passa pelo `equals` (`firstInitialization`). O monitor
+  (`renderId`) é do `NodeBuilderState`, também compartilhado. O atalho do `RenderIdRefresh` marca o `renderId` e
+  deixa o `equals()` decidir. Um objeto que passou quadros sem ser desenhado pelo `three` (com o renderer próprio,
+  fora do quadro, o outro braço do `?parityFreeze`) volta com o UBO de antes, e o instantâneo já está
+  em dia: ou criado agora com os valores atuais, ou avançado por outro objeto do mesmo material. O `equals` não
+  vê mudança e o UBO fica velho. (Um `getMaterialData` extra no 1º desenho "consertava" a galeria porque criava o
+  instantâneo cedo; não cobre o material compartilhado.)
+- **Correção:** o `RenderIdRefresh` guarda o último quadro (`NodeFrame.frameId`) em que o `three` perguntou por cada
+  render object; quem volta depois de pular quadros (`CONTIGUOUS_FRAMES`) ganha um refresh completo. Quem é
+  desenhado todo quadro segue no atalho.
+- **Verificação (`check-stage emissivo-fix`, DDD 61 e1cede4, `unlit,lambert,standard,wgsl`):** galeria (com as
+  rampas) PASS 0/0, Setor O dia/noite PASS, Comercial noite PASS, fumaça PASS (render 10,7 ms); Comercial dia
+  FAIL alt 7 / 0,014%: lascas nas linhas da calçada **só com o `standard`** (sem ele: PASS 0,0059%) — outra
+  causa (coplanar), no backlog do PRD-0466.
+- **Religado:** emissivo do `lambert` (sem a recusa). O `standard` continua fora de `NATIVE_MODELS` pela causa acima.

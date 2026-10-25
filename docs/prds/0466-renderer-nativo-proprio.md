@@ -367,7 +367,8 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
 - [ ] **No `?parityFreeze`, o braço `three` não chama o `beginFrame`** (servidor nulo): um bloco de quadro
       não vê a troca de braço; a sombra contornou com `scene.onAfterRender` só no modo de paridade.
       Origem: SPEC-0545.
-- **Vidro emissivo animado no `lambert`** (origem: R1.2, SPEC-0535, 2026-10-24). Estado:
+- ~~**Vidro emissivo animado no `lambert`**~~ **RESOLVIDO** (2026-10-24, SPEC-0555 "Emissivo animado": era o
+  `RenderIdRefresh` deixando o braço `three` velho; emissivo religado). Histórico: (origem: R1.2, SPEC-0535, 2026-10-24). Estado:
   `lambert` + `emissiveMap` fica **recusado** (vai para o `three`); o Standard com `emissiveMap`
   passa. Sintoma: com o relógio do DDD 61 andando (rampa do anoitecer, ~17:37), o vidro das
   janelas do `plasterMat` (`lambert+emissiveMap+fog+map+vertexColors`) sai no renderer próprio
@@ -384,7 +385,9 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
   congelamento. Próximo passo: reproduzir na galeria com rampa de `emissiveIntensity`
   **depois** do primeiro quadro (a tentativa feita mudava antes do `precompile`) e capturar o
   WGSL e os uniformes reais do estado do `three` naquele objeto.
-- **`standard` desligado na R1.2** (origem: R1.2, SPEC-0535, 2026-10-24). O modelo existe
+- **`standard` desligado na R1.2** — a causa da fachada (emissivo animado, 1,17%) foi **resolvida** (SPEC-0555);
+  com o `standard` ligado ainda sobram **0,014% (alt 7) em lascas nas linhas da calçada** do Comercial dia (sem ele,
+  PASS 0,0059%): outra causa, coplanar. Fica desligado até isolar. Histórico: (origem: R1.2, SPEC-0535, 2026-10-24). O modelo existe
   (`models/standard.ts`, testes), mas saiu de `NATIVE_MODELS`: no Comercial de dia, as fachadas
   de um prédio dão 1,17% de pixels fora da paridade (Setor O passa). Não foi investigado. **Volta
   antes do R1.6** (o aceite final exige 0 recusas). Próximo passo: o mesmo método do vidro
