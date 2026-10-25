@@ -33,7 +33,7 @@ const MAP_TRANSFORM_AT = 2 * ROW_FLOATS;
 const EMISSIVE_TRANSFORM_AT = 5 * ROW_FLOATS;
 
 /** Lit models draw receiveShadow objects (with `nativeShadow`) only once this is on. */
-const RECEIVE_SHADOW = false;
+const RECEIVE_SHADOW = true;
 
 /** Shading features both lit models take from the classification. */
 const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'fog', 'alphaTest', 'receiveShadow'] as const;
@@ -63,9 +63,8 @@ export function litVariant(c: Classification & { kind: 'covered' }, material: Ma
   for (const f of c.features) {
     if (!accepted.includes(f) && !NEUTRAL_FEATURES.includes(f)) return null;
   }
-  // receiveShadow stays with the three even with SHADOW_READY: on the DDD 61 sidewalk the native
-  // sun shadow of pedestrians differs by up to 6/255 (Comercial, day). Waits for the R1.3 parity
-  // fix (SPEC-0535, pending in PRD-0466); flip RECEIVE_SHADOW when it lands.
+  // RECEIVE_SHADOW is the switch for native receivers (the 6/255 shadow-edge gap was the C++ map,
+  // fixed by drawing it in the three's float order — SPEC-0545).
   if (c.features.includes('receiveShadow') && !(SHADOW_READY && RECEIVE_SHADOW)) return null;
   if (m.side === BACK_SIDE || m.alphaToCoverage || lightsRefusal() !== null) return null;
   const variant: string[] = accepted.filter((f) => c.features.includes(f));

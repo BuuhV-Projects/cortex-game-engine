@@ -62,12 +62,33 @@ no Comercial). E não mede ainda o que a R1.3 promete: nesta branch todos os rec
 nativo amostrando 1× por vista) só aparece com o lambert da Frente A. A conferência do alvo fica
 para o aceite final do R1, como manda o PRD.
 
+### Receptor nativo (após a integração com a Frente A, 2026-10-24)
+
+Com o lambert nativo recebendo sombra, o Comercial de dia divergia até 6/255 (a Frente A mediu
+0,0821%, e a reprodução aqui deu 0,0097%) em **bordas de sombra finas no asfalto** (postes). Não
+eram pedestres: o `markShadowCasters` do jogo exclui o que é instanciado ou dinâmico.
+
+- **Isolamento:** com `&nativeShadowPass=0` (os dois braços amostram o mesmo mapa do `three`), a
+  divergência some: **0,0000%** no Setor O e no Comercial, dia e noite. A amostragem nativa é bit a
+  bit igual à do `three`; o que diferia era o **conteúdo do mapa** desenhado pelo C++.
+- **Causa:** o passe C++ da SPEC-0245 compõe `viewProj × model` em double e manda um MVP só. O
+  `three` faz `clip = P · vec4(((V · M) · p).xyz, 1)` em float, no shader. Na silhueta de um caster
+  fino, a diferença de arredondamento muda a cobertura de texels da borda, e o PCFSoft espalha
+  isso em 1–6 níveis.
+- **Correção (na raiz):** o passe C++ passou a receber P, V e M em float e a multiplicar na ordem
+  do `three` (`shadowCasterMatrices` em `shadow_math.h`, shaders do `shadow_pass.cpp`, inclusive
+  o instanciado: `(inst · p).xyz` antes). O JS manda `[viewProj, P, V]` (48 doubles); com 16 o
+  caminho antigo (MVP em double, o CSM) continua. **Troca deliberada:** para o mapa do sol vale a
+  paridade com o `three` (mesma precisão dele), não a precisão extra do double.
+- `RECEIVE_SHADOW = true` no lambert. Resultado (`r1-3-sombra-e`, `unlit,lambert`): galeria,
+  Comercial e Setor O, dia e noite, todos **0,0000%**, e fumaça PASS. Plantado
+  `&nativeShadowShift=1` (`r1-3-sombra-e-plant`): Comercial dia **FAIL** (6,98%).
+- `cortex_host_tests`: 625 checks, 0 falhas (+2 testes de `shadowCasterMatrices`).
+
 ### O que ficou pendente
 
-- **Paridade da amostragem nativa (parte 1) e o plantado `?nativeShadowShift=1`**: dependem de um
-  receptor nativo (o lambert da Frente A). Nesta branch nenhum modelo nativo recebe sombra (o
-  `three` não sombreia o `MeshBasic`). Rodar no checkpoint pós-merge da A:
-  `check-stage … --flag '&nativeRenderer=1'` PASS e `&nativeShadowShift=1` FAIL.
+- ~~Paridade da amostragem nativa e plantado `?nativeShadowShift=1`~~: feitos com o lambert da
+  Frente A (seção acima).
 - Causa exata do crash ao redesenhar o mapa à noite (só acontece forçando: o jogo não redesenha
   à noite).
 - Mapa próprio para quando o `three` não criar o dele (R1.6), ver Consequências.

@@ -402,7 +402,7 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
       as instâncias): a causa era o `RenderIdRefresh` (1 refresh por mudança deixava as matrizes velhas no
       `three`, também no caminho só-`three`); agora 2 refreshes. Reprodução na galeria (`lambert-compacted-*`):
       FAIL alt 35 → PASS 0/0. Religado no integrado.
-- **`receiveShadow` no `lambert` recusado — aguarda a paridade da sombra (Frente B)** (origem:
+- ~~**`receiveShadow` no `lambert` recusado — aguarda a paridade da sombra (Frente B)**~~ **resolvido (SPEC-0545):** era o mapa do passe C++ (MVP em double × ordem float do `three`); com a ordem do `three`, 0,0000% nos 4 casos e `RECEIVE_SHADOW = true`. (origem:
   R1.2 após o merge A+B, 2026-10-24; dono: Frente B). Com `SHADOW_READY`, as sombras dos
   pedestres na calçada (Comercial, dia) diferem até 6/255 em 0,0821% dos pixels; com
   `receiveShadow` recusado o Comercial dia dá PASS (0,0030%). O modelo já chama
