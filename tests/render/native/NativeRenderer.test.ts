@@ -13,6 +13,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshLambertMaterial,
+  MeshToonMaterial,
   PerspectiveCamera,
   Scene,
   Texture,
@@ -625,5 +626,23 @@ describe('NativeRenderer.precompile (SPEC-0585)', () => {
     const entry = nr.take(glass, glass.material, glass.geometry)!;
     nr.recipeFor(entry, {}, 1);
     expect(t.calls.pipelines).toBe(4);
+  });
+
+  it('keeps the sweep refusals out of the report and the cache: a mesh offered later is counted then', () => {
+    const t = fakeHost();
+    const nr = new NativeRenderer(t.host as never, t.bridge, NATIVE_MODELS, null);
+    const scene = new Scene();
+    const offered = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    const toon = new Mesh(new BoxGeometry(), new MeshToonMaterial());
+    toon.visible = false;
+    scene.add(offered, toon);
+    scene.updateMatrixWorld();
+    const camera = new PerspectiveCamera();
+    frame(nr, scene);
+    nr.recipeFor(nr.take(offered, offered.material, offered.geometry)!, {});
+    nr.precompile(scene, camera.layers);
+    expect(nr.stats.refused).toBe(0);
+    expect(nr.take(toon, toon.material, toon.geometry)).toBeNull();
+    expect(nr.stats.refused).toBe(1);
   });
 });

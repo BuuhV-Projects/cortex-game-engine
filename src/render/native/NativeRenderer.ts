@@ -312,6 +312,8 @@ export class NativeRenderer implements NativeDrawer {
   /** `scene.fog` of the current frame: linear, none, or another kind (refused). */
   private _fog: 'linear' | 'none' | 'other' = 'none';
   private readonly _refusals = new Map<string, number>();
+  /** Refusals of the `precompile` sweep while it runs (`null` outside it). */
+  private _sweepRefusals: Map<string, number> | null = null;
   private readonly _tint = queryFlagRequested(TINT_QUERY, false);
   /** Frames begun so far (the warm-up and `precompile` logs say where they fall). */
   get frame(): number {
@@ -429,6 +431,11 @@ export class NativeRenderer implements NativeDrawer {
   // ── Instances ──────────────────────────────────────────────────────────────────────
 
   private _refuse(object: Object3D, material: unknown, geometry: unknown, reason: string): null {
+    // Warm-up sweep: counted apart and not cached, so a mesh offered later is classified (and counted) then.
+    if (this._sweepRefusals !== null) {
+      this._sweepRefusals.set(reason, (this._sweepRefusals.get(reason) ?? 0) + 1);
+      return null;
+    }
     if (!RETRY_REASONS.has(reason)) {
       const version = (material as Material).version;
       const instanceColor = (object as { instanceColor?: unknown }).instanceColor ?? null;
@@ -868,6 +875,21 @@ export class NativeRenderer implements NativeDrawer {
       return 0;
     }
     const before = this.stats.pipelines;
+    const refusals = new Map<string, number>();
+    this._sweepRefusals = refusals;
+    try {
+      this._sweep(root, layers, context);
+    } finally {
+      this._sweepRefusals = null;
+    }
+    let refused = 0;
+    refusals.forEach((n) => (refused += n));
+    const reasons = [...refusals.entries()].map(([r, n]) => `${r}=${n}`).join(' ');
+    debug('perf', `[nativeRenderer] precompile refused=${refused} | ${reasons}`);
+    return this.stats.pipelines - before;
+  }
+
+  private _sweep(root: Object3D, layers: Layers, context: unknown): void {
     root.traverse((object) => {
       const mesh = object as Object3D & { isMesh?: boolean; material?: Material | Material[]; geometry?: unknown };
       if (!mesh.isMesh || !mesh.material || Array.isArray(mesh.material) || !mesh.material.visible || !object.layers.test(layers)) return;
@@ -875,7 +897,6 @@ export class NativeRenderer implements NativeDrawer {
       if (entry === null) return;
       for (let pass = 0; pass < entry.state.culls.length; pass++) this.recipeFor(entry, context, pass);
     });
-    return this.stats.pipelines - before;
   }
 
   private _pipeline(inst: Inst, color: string, depth: string, samples: number, target: string, cull: string): Gpu | null {
