@@ -10,11 +10,12 @@ import {
   autopilotFromQuery,
   validateAutopilotProfile,
   MAX_PITCH_STICK_S,
+  setAutopilotDriver,
   type AutopilotProfile,
 } from '../../src/input/InputAutopilot.js';
 import { GamepadManager } from '../../src/core/GamepadManager.js';
 import { InputActions } from '../../src/input/InputActions.js';
-import { GP_A, GP_AXIS_LEFT_Y, GP_RT } from '../../src/input/padLayout.js';
+import { GP_A, GP_AXIS_LEFT_X, GP_AXIS_LEFT_Y, GP_LT, GP_RT } from '../../src/input/padLayout.js';
 import type { InputManager } from '../../src/core/InputManager.js';
 
 const PROFILE: AutopilotProfile = {
@@ -90,6 +91,43 @@ describe('InputAutopilot', () => {
         expect(Math.abs(pitch), `${name}: pitch drift`).toBeLessThanOrEqual(MAX_PITCH_STICK_S);
       }
     }
+  });
+
+  it('driver step: the registered driver sets leftX/RT/LT every frame, clamped (SPEC-0595)', () => {
+    const pilot = new InputAutopilot({ steps: [{ s: 1, driver: true, buttons: ['A'] }] });
+    const pad = pilot.getGamepads()[0]!;
+    let steer = 0.5;
+    setAutopilotDriver(() => ({ steer, throttle: 0.7, brake: 0 }));
+    try {
+      pilot.step(FRAME_S);
+      expect(pad.axes[GP_AXIS_LEFT_X]).toBe(0.5);
+      expect(pad.buttons[GP_RT]).toEqual({ pressed: true, value: 0.7 });
+      expect(pad.buttons[GP_LT]).toEqual({ pressed: false, value: 0 });
+      expect(pad.buttons[GP_A]!.pressed).toBe(true); // the step's own buttons still hold
+      steer = -3;
+      setAutopilotDriver(() => ({ steer, throttle: 2, brake: 0.4 }));
+      pilot.step(FRAME_S);
+      expect(pad.axes[GP_AXIS_LEFT_X]).toBe(-1);
+      expect(pad.buttons[GP_RT]!.value).toBe(1);
+      expect(pad.buttons[GP_LT]).toEqual({ pressed: true, value: 0.4 });
+    } finally {
+      setAutopilotDriver(null);
+    }
+  });
+
+  it('driver step without a registered driver leaves the pad neutral', () => {
+    const pilot = new InputAutopilot(BUILTIN_AUTOPILOT_PROFILES.drive!);
+    const pad = pilot.getGamepads()[0]!;
+    for (let i = 0; i < 10; i++) pilot.step(FRAME_S);
+    expect(pad.axes.every((v) => v === 0)).toBe(true);
+    expect(pad.buttons.every((b) => !b.pressed)).toBe(true);
+  });
+
+  it('drive is the closed-loop driver; drive-legacy keeps the old open-loop script', () => {
+    expect(BUILTIN_AUTOPILOT_PROFILES.drive!.steps.every((step) => step.driver === true)).toBe(true);
+    const legacy = BUILTIN_AUTOPILOT_PROFILES['drive-legacy']!;
+    expect(legacy.steps.some((step) => step.driver)).toBe(false);
+    expect(legacy.steps[0]).toEqual({ s: 3, buttons: ['RT'] });
   });
 
   it('is off without the query', () => {

@@ -3,6 +3,8 @@
  * `walk` keeps every move paired with its opposite so the player loops near the spawn. Camera turns
  * are yaw only (right stick X): pitch stays at the game's default, looking at the street — a camera
  * pointed at the sky renders almost nothing and would hide the drops being measured.
+ * `drive` is closed loop (SPEC-0595): one `driver` step, the game's registered driver steers.
+ * `drive-legacy` is the old open-loop script, kept only as the known answer of the kit's drive rule.
  */
 import type { AutopilotProfile } from './InputAutopilot.js';
 
@@ -36,6 +38,11 @@ export const AUTOPILOT_PROFILES: Record<string, AutopilotProfile> = {
     ]
   },
   "drive": {
+    "steps": [
+      { "s": 60, "driver": true }
+    ]
+  },
+  "drive-legacy": {
     "steps": [
       { "s": 3, "buttons": ["RT"] },
       { "s": 4, "buttons": ["RT"], "axes": { "leftX": -1 } },

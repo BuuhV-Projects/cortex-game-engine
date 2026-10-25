@@ -538,6 +538,7 @@ const VENDOR_TYPE_MODULES = {
     'InputActions',
     'captureBinding',
     'ControlsScreen',
+    'InputAutopilot',
   ],
   ecs: ['Entity', 'Component', 'System', 'World'],
   components: [
