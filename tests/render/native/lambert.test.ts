@@ -33,8 +33,8 @@ describe('lambert model (R1.2, SPEC-0535)', () => {
     expect(variant(mesh)).toEqual(['map', 'vertexColors', 'fog']);
     expect(lambertModel.attributes(variant(mesh)!)).toEqual(['position', 'normal', 'uv', 'color']);
     expect(lambertModel.textures(mesh.material as MeshLambertMaterial, variant(mesh)!)).toEqual([map]);
-    // a non-black emissive stays with the three on lambert (SPEC-0535, pending: animated emissive)
-    expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ map, emissive: new Color(1, 1, 1), emissiveMap: map })))).toBeNull();
+    // animated emissive back on (the stale three arm was the RenderIdRefresh, SPEC-0555)
+    expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ map, emissive: new Color(1, 1, 1), emissiveMap: map })))).toEqual(['map', 'emissiveMap', 'fog']);
     expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ map, emissiveMap: map })))).toEqual(['map', 'emissiveMap', 'fog']);
     const plain = new Mesh(new BoxGeometry(), new MeshLambertMaterial({ fog: false, side: DoubleSide, alphaTest: 0.5 }));
     expect(variant(plain)).toEqual(['alphaTest', 'doubleSide']);
