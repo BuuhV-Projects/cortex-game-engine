@@ -529,6 +529,23 @@ game.actions.define({
   SDL só abre o que está no banco de mapeamentos dele) — remapear não resolve
   esse caso; é trabalho pendente no `native/`.
 
+## Autopiloto de medição (controle Xbox virtual) — SPEC-0414/SPEC-0595
+
+`?autopilot=<perfil>` liga um controle virtual (`InputAutopilot`) que o jogo lê pelo mesmo caminho do
+real. Perfis: `walk` (a pé, roteiro fixo), `drive` (malha fechada: **o jogo dirige**) e `drive-legacy`
+(roteiro antigo, só para resposta conhecida do kit). Para o `drive`, o jogo registra um condutor que
+devolve, a cada quadro, volante/acelerador/freio; sem condutor, o controle fica neutro e a rodada do kit
+reprova.
+
+```ts
+import { setAutopilotDriver } from 'cortex-game-engine';
+
+// só quando a medição pede o drive
+if (new URLSearchParams(location.search).get('autopilot') === 'drive') {
+  setAutopilotDriver((dt) => ({ steer: aim(), throttle: wantFaster ? 1 : 0, brake: wantSlower ? 1 : 0 }));
+}
+```
+
 ## Steam: conquistas, stats, overlay, jogador — ADR-0174/SPEC-0175
 
 Só funciona no export **`--steam`**. Fora dele (Studio, browser, export PC) tudo

@@ -20,6 +20,7 @@ import {
   GP_AXIS_LEFT_X, GP_AXIS_LEFT_Y, GP_AXIS_RIGHT_X, GP_AXIS_RIGHT_Y,
 } from './padLayout.js';
 import { AUTOPILOT_PROFILES } from './autopilotProfiles.js';
+import { debug } from '../core/debug.js';
 
 /** Shortest step: a step shorter than a frame could be skipped and its press never reach the game. */
 export const MIN_STEP_S = 0.1;
@@ -50,6 +51,34 @@ export interface AutopilotStep {
   s: number;
   buttons?: string[];
   axes?: Record<string, number>;
+  /**
+   * Closed loop (SPEC-0595): every frame the registered {@link AutopilotDriver} sets `leftX`
+   * (steer), `RT` (throttle) and `LT` (brake). Without a driver the pad stays neutral.
+   */
+  driver?: true;
+}
+
+/** What a game driver asks of the virtual pad this frame: `steer` in -1..1, `throttle`/`brake` in 0..1. */
+export interface AutopilotDriveInput {
+  steer: number;
+  throttle: number;
+  brake: number;
+}
+
+/** Game-side closed-loop driver for `driver` steps (SPEC-0595): the game knows where the street is. */
+export type AutopilotDriver = (dt: number) => AutopilotDriveInput;
+
+let registeredDriver: AutopilotDriver | null = null;
+
+/**
+ * Registers the driver that `driver` steps (the `drive` profile) read every frame, or clears it
+ * with `null`. The engine knows nothing about streets: the game steers.
+ *
+ * @example
+ * setAutopilotDriver((dt) => ({ steer: aimAt(target), throttle: 1, brake: 0 }));
+ */
+export function setAutopilotDriver(driver: AutopilotDriver | null): void {
+  registeredDriver = driver;
 }
 
 /** A profile: steps played in a loop. */
@@ -67,6 +96,7 @@ export function validateAutopilotProfile(profile: AutopilotProfile): void {
     const where = `autopilot: passo ${i}`;
     if (!(typeof step.s === 'number' && step.s >= MIN_STEP_S)) throw new Error(`${where}: duração ${step.s} (mínimo ${MIN_STEP_S} s)`);
     for (const b of step.buttons ?? []) if (!(b in BUTTONS)) throw new Error(`${where}: botão desconhecido '${b}'`);
+    if (step.driver !== undefined && step.driver !== true) throw new Error(`${where}: driver deve ser true`);
     for (const [axis, v] of Object.entries(step.axes ?? {})) {
       if (!(axis in AXES)) throw new Error(`${where}: eixo desconhecido '${axis}'`);
       if (!(typeof v === 'number' && Math.abs(v) <= 1)) throw new Error(`${where}: eixo ${axis}=${v} fora de -1..1`);
@@ -91,6 +121,7 @@ export class InputAutopilot {
   private readonly _steps: AutopilotStep[];
   private _index = 0;
   private _left: number;
+  private _warnedNoDriver = false;
   private readonly _pad: VirtualPad = {
     id: 'cortex-autopilot (STANDARD GAMEPAD)',
     index: 0,
@@ -124,12 +155,14 @@ export class InputAutopilot {
   step(dt: number): void {
     this._pad.timestamp += dt;
     this._left -= dt;
-    if (this._left > 0) return;
-    while (this._left <= 0) {
-      this._index = (this._index + 1) % this._steps.length;
-      this._left += this._steps[this._index]!.s;
+    if (this._left <= 0) {
+      while (this._left <= 0) {
+        this._index = (this._index + 1) % this._steps.length;
+        this._left += this._steps[this._index]!.s;
+      }
+      this._apply();
     }
-    this._apply();
+    if (this._steps[this._index]!.driver) this._drive(dt);
   }
 
   /**
@@ -142,6 +175,22 @@ export class InputAutopilot {
     return () => {
       nav.getGamepads = original;
     };
+  }
+
+  /** `driver` step: the registered driver's steer/throttle/brake, clamped, on leftX/RT/LT. */
+  private _drive(dt: number): void {
+    const pad = this._pad;
+    if (registeredDriver === null) {
+      if (!this._warnedNoDriver) {
+        this._warnedNoDriver = true;
+        debug('perf', '[autopilot] passo driver sem condutor registrado: controle neutro');
+      }
+      return;
+    }
+    const input = registeredDriver(dt);
+    pad.axes[GP_AXIS_LEFT_X] = clamp(input.steer, -1, 1);
+    setTrigger(pad.buttons[GP_RT]!, clamp(input.throttle, 0, 1));
+    setTrigger(pad.buttons[GP_LT]!, clamp(input.brake, 0, 1));
   }
 
   private _apply(): void {
@@ -158,6 +207,13 @@ export class InputAutopilot {
     }
     for (const [name, v] of Object.entries(step.axes ?? {})) this._pad.axes[AXES[name]!] = v;
   }
+}
+
+const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
+
+function setTrigger(b: { pressed: boolean; value: number }, value: number): void {
+  b.value = value;
+  b.pressed = value > 0;
 }
 
 /**

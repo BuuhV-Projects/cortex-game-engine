@@ -35,6 +35,10 @@ $K/ab.sh --a .../export-a --b .../export-b --out .../runs-ab3 --points "setorO c
 Regras de validade e campos do resumo: `trace-stats.mjs` (constantes no topo) e
 SPEC-0382. Rodada com `--autopilot` é inválida se o engine não ligou o autopiloto, se o jogador não
 andou ou se a câmera passou do horizonte (olhar o céu barateia o quadro); o resumo mostra `>33ms` (fração das amostras acima de 33 ms) e quanto o autopiloto andou.
+Perfil `drive` (SPEC-0595, malha fechada: o jogo registra o condutor): a rodada é inválida com menos de
+40% dos intervalos da câmera acima de 9 m/s ou menos de 400 m de caminho depois do aquecimento.
+`drive-legacy` (o roteiro antigo) é só a resposta conhecida e reprova nessa regra. Resumo de uma linha:
+`$K/drive-stats.sh <rodada...>` (v mediana, % > 9 m/s, caminho, veredito).
 Fora do kit por enquanto: screenshot.
 
 ## Parar uma fila de rodadas (armadilha)
