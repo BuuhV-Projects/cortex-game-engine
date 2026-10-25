@@ -354,6 +354,21 @@ VÁLIDAS. Rodadas em `D:/jogos/detetive-brasilia/.cortex/stages/r1-accept/`.
 **Veredito:** não aprovado. Faltam o render ≤ 5 ms (todos os pontos), o > 33 ms no Setor O e no AC, e a recusa do
 Centro. O resto fecha.
 
+## O que falta para fechar o R1 (registrado em 2026-10-25, a pedido do usuário)
+
+O aceite acima ficou **parcial**, e um teste real do usuário no export (, engine pós-R1.6, renderer próprio **desligado**, ou seja, caminho do ) expôs um ponto cego. Fica registrado aqui, em ordem de execução. O renderer próprio **só liga por padrão no export depois dos itens 1–5**; o Studio continua no .
+
+**Evidência do teste do usuário** (, 115 s, 1080p): a pé (~3 m/s, 5–40 s) 21,8 ms/quadro e **0** picos; com o carro (~15 m/s) 40,7 ms e **20 de 69** amostras com quadros de 100 ms, cada uma com 13–40 mil  de uma vez (normal: ~100;  8789); depois, 44,2 ms e 12/75 picos; lixo de memória por quadro 0,86 → 1,67 → 2,17 MB. Relato: bom no início, travou muito ao pegar o carro da missão de motorista de app e seguiu travando depois de sair dele. Os picos sobem com a velocidade da câmera (0% parado/andando devagar, 21% acima de 9 m/s). Não há evento de entrada/saída do carro no trace, então a fase "depois de sair" não está provada.
+
+1. **Investigar o travamento com direção rápida, no  e no renderer próprio.** Hipóteses (nenhuma provada): (a) objetos entrando na vista em velocidade disparam refresh completo no  (correção , que faz refresh completo de objeto que pulou quadros); (b) algo da missão de motorista de app no jogo; (c) acúmulo (lixo por quadro subindo). Teste de decisão: direção rápida real, com  × padrão, e três braços (, nativo, nativo sem o refresh). Atribuir os  por buffer/rótulo. Corrigir na raiz; se for do , vale também para o Studio.
+2. **Autopiloto  que dirija de verdade** (SPEC-0414). O atual tem velocidade mediana de 1,7 m/s e só 4% das amostras acima de 9 m/s (sessão real: 44%); o aceite não cobriu direção. Critério do instrumento: ≥ 40% das amostras acima de 9 m/s, rota com cruzamentos e curvas, validado num caso de resposta conhecida (a rodada do usuário reproduz o padrão). Liga ao item "perfil  sem desvio" do PRD-0009.
+3. **Repetir o aceite do R1 com direção real** (e mais picos de  e  como métricas de aceite), nos dois braços.
+4. **Travadas :** Setor O piorou (2,95 → 4,23%) e AC fica em 7,69% (meta ≤ 2%).
+5. **Recusa do Centro** (, 1 por amostra, ainda sem nome).
+6. **Render ≤ 5 ms** (faltam 2,1–3,4 ms): **R2** (UI de runtime fora do , ~5,5 ms no painel do usuário, mais o renderer dono da pass, ~1,3–1,6 ms de  e pós) e, só se ainda faltar, o plano B (lista de instâncias em C++, SPEC-0585, 3–5 dias, ADR e decisão do usuário). O  (simulação, até ~9,8 ms no painel) entra no radar depois.
+7. **Ligar o renderer próprio ( + ) por padrão no export do DDD 61**, só depois de 1–5 passarem.
+8. **Teste do usuário com o renderer próprio ligado** no export dele, sem alterar a pasta:  +  (se o launcher de um export fora da pasta de medição aceitar a variável; a confirmar). Resultado esperado: dá o mesmo travamento (problema anterior ao renderer próprio) ou não (o renderer próprio resolve).
+
 ## Estado para retomada (pausa de 2026-10-24, limite semanal)
 
 - **Branch integrada:** `claude/renderer-nativo-45b16a` (worktree `renderer-nativo-45b16a`), A + B + C integradas
