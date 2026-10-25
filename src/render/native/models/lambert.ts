@@ -36,7 +36,7 @@ const EMISSIVE_TRANSFORM_AT = 5 * ROW_FLOATS;
 const RECEIVE_SHADOW = true;
 
 /** Shading features both lit models take from the classification. */
-const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'fog', 'alphaTest', 'receiveShadow'] as const;
+const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'fog', 'alpha', 'alphaTest', 'receiveShadow'] as const;
 /** Accepted without a variant of their own (the uv transform is always applied). */
 const NEUTRAL_FEATURES = ['uvTransform', 'noToneMap'];
 
@@ -58,17 +58,40 @@ export interface LitMaterial {
  * Variant of a lit model, or `null` = refused: unknown feature, `receiveShadow` before the shadow
  * block is ready, `BackSide`, alpha to coverage, or lights the block cannot reproduce.
  */
-export function litVariant(c: Classification & { kind: 'covered' }, material: Material, accepted: readonly string[]): string[] | null {
+/**
+ * Why a lit model refuses a material (`null` = it draws it): a feature outside `accepted`,
+ * `receiveShadow` while the shadow is off, `BackSide`, alpha to coverage, or lights the block
+ * cannot reproduce. The census records it per object (SPEC-0535).
+ */
+export function litRefusal(c: Classification & { kind: 'covered' }, material: Material, accepted: readonly string[]): string | null {
   const m = material as unknown as LitMaterial;
   for (const f of c.features) {
-    if (!accepted.includes(f) && !NEUTRAL_FEATURES.includes(f)) return null;
+    if (!accepted.includes(f) && !NEUTRAL_FEATURES.includes(f)) return `feature:${f}`;
   }
   // RECEIVE_SHADOW is the switch for native receivers (the 6/255 shadow-edge gap was the C++ map,
   // fixed by drawing it in the three's float order — SPEC-0545).
-  if (c.features.includes('receiveShadow') && !(SHADOW_READY && RECEIVE_SHADOW)) return null;
-  if (m.side === BACK_SIDE || m.alphaToCoverage || lightsRefusal() !== null) return null;
+  if (c.features.includes('receiveShadow') && !(SHADOW_READY && RECEIVE_SHADOW)) return 'receiveShadow';
+  if (m.side === BACK_SIDE) return 'backSide';
+  if (m.alphaToCoverage) return 'alphaToCoverage';
+  return lightsRefusal();
+}
+
+/**
+ * Refusals the lit models made, counted when they happen (`model:reason|material` → n): the core
+ * caches a refusal, so a transient reason is only visible here. The census records it.
+ */
+export const litRefusalCounts = new Map<string, number>();
+
+/** Variant of a lit model, or `null` = refused (`litRefusal` says why, counted in `litRefusalCounts`). */
+export function litVariant(c: Classification & { kind: 'covered' }, material: Material, accepted: readonly string[]): string[] | null {
+  const why = litRefusal(c, material, accepted);
+  if (why !== null) {
+    const key = `${c.model}:${why}|${material.name || material.type}`;
+    litRefusalCounts.set(key, (litRefusalCounts.get(key) ?? 0) + 1);
+    return null;
+  }
   const variant: string[] = accepted.filter((f) => c.features.includes(f));
-  if (m.side === DOUBLE_SIDE) variant.push('doubleSide');
+  if ((material as unknown as LitMaterial).side === DOUBLE_SIDE) variant.push('doubleSide');
   return variant;
 }
 
@@ -147,7 +170,7 @@ struct Params {
 ${bindings}
 
 struct VOut {
-  @builtin(position) clip : vec4<f32>,
+  @builtin(position) @invariant clip : vec4<f32>,
   @location(0) positionView : vec3<f32>,
   @location(1) normalView : vec3<f32>,
   ${uv ? '@location(2) uv : vec2<f32>,' : ''}
@@ -183,7 +206,7 @@ export function litSurfaceWgsl(variant: readonly string[]): string {
   ${has('vertexColors') ? 'diffuse = diffuse * in.color;' : ''}
   diffuse.w = diffuse.w * params.opacity;
   ${has('alphaTest') ? 'if (diffuse.w <= params.alphaTest) {\n    discard;\n  }' : ''}
-  diffuse.w = 1.0;
+  ${has('alpha') ? '' : 'diffuse.w = 1.0;'}
   var emissive = params.emissive;
   ${has('emissiveMap') ? 'emissive = (vec4<f32>(params.emissive, 1.0) * textureSample(emissiveTexture, emissiveSampler, (params.emissiveMapTransform * vec3<f32>(in.uv, 1.0)).xy)).xyz;' : ''}
   let normalGeometry = normalize(in.normalView);
@@ -204,18 +227,15 @@ export function litOutputWgsl(variant: readonly string[]): string {
 `;
 }
 
-const ACCEPTED = LIT_FEATURES;
+/** Material features the lambert model draws (the census reads it too). */
+export const LAMBERT_ACCEPTED: readonly string[] = LIT_FEATURES;
+const ACCEPTED = LAMBERT_ACCEPTED;
 
 export const lambertModel: NativeModelDef = {
   name: 'lambert',
   paramFloats: LIT_PARAM_FLOATS,
 
   variant(c, _object: Object3D, material) {
-    // Refused while the emissive is not black (stays with the three): with the DDD 61 clock
-    // running, the native lambert emissive came out ~22% short of the three's while params,
-    // texture, sampler, mip level and lights all matched (SPEC-0535, pending). Constant matches.
-    const e = (material as unknown as LitMaterial).emissive;
-    if (e.r !== 0 || e.g !== 0 || e.b !== 0) return null;
     return litVariant(c, material, ACCEPTED);
   },
 

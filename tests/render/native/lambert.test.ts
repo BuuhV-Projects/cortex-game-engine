@@ -33,8 +33,8 @@ describe('lambert model (R1.2, SPEC-0535)', () => {
     expect(variant(mesh)).toEqual(['map', 'vertexColors', 'fog']);
     expect(lambertModel.attributes(variant(mesh)!)).toEqual(['position', 'normal', 'uv', 'color']);
     expect(lambertModel.textures(mesh.material as MeshLambertMaterial, variant(mesh)!)).toEqual([map]);
-    // a non-black emissive stays with the three on lambert (SPEC-0535, pending: animated emissive)
-    expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ map, emissive: new Color(1, 1, 1), emissiveMap: map })))).toBeNull();
+    // animated emissive back on (the stale three arm was the RenderIdRefresh, SPEC-0555)
+    expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ map, emissive: new Color(1, 1, 1), emissiveMap: map })))).toEqual(['map', 'emissiveMap', 'fog']);
     expect(variant(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ map, emissiveMap: map })))).toEqual(['map', 'emissiveMap', 'fog']);
     const plain = new Mesh(new BoxGeometry(), new MeshLambertMaterial({ fog: false, side: DoubleSide, alphaTest: 0.5 }));
     expect(variant(plain)).toEqual(['alphaTest', 'doubleSide']);
@@ -77,10 +77,33 @@ describe('lambert model (R1.2, SPEC-0535)', () => {
     expect(full).toContain('discard');
     expect(full).toContain('emissiveTexture');
     expect(full).toContain('view.fogColor');
+    // transparent (the core's `alpha`): the real alpha goes out, like the three's wgsl-0050
+    expect(lambertModel.wgsl(['alpha'])).not.toContain('diffuse.w = 1.0;');
+    expect(lambertModel.wgsl([])).toContain('diffuse.w = 1.0;');
     const plain = lambertModel.wgsl([]);
     expect(plain).not.toContain('textureSample');
     expect(plain).not.toContain('discard');
     expect(plain).not.toContain('fogColor');
     expect(plain).not.toContain('nativeShadow');
+  });
+});
+
+describe('lit refusal reasons in the census (SPEC-0535)', () => {
+  it('names why a lit model refuses a covered drawable, and is null when it draws it', async () => {
+    const { litCensusReason } = await import('../../../src/render/native/RendererCensus.js');
+    lights(new Scene());
+    const reason = (mesh: Mesh) => litCensusReason(classifyDrawable(mesh, mesh.material as MeshLambertMaterial), mesh.material as MeshLambertMaterial);
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial()))).toBeNull();
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ side: BackSide })))).toBe('backSide');
+    const { litRefusalCounts } = await import('../../../src/render/native/models/lambert.js');
+    const back = new Mesh(new BoxGeometry(), new MeshLambertMaterial({ side: BackSide, name: 'costas' }));
+    variant(back);
+    expect(litRefusalCounts.get('lambert:backSide|costas')).toBe(1);
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ normalMap: new Texture() })))).toBe('feature:normalMap');
+    // core features (doubleSide, instanced…) are the core's, not a lit refusal
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial({ side: DoubleSide })))).toBeNull();
+    lights(new Scene().add(new PointLight()) as Scene);
+    expect(reason(new Mesh(new BoxGeometry(), new MeshLambertMaterial()))).toBe('lights:PointLight');
+    lights(new Scene());
   });
 });

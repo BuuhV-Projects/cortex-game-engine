@@ -207,3 +207,28 @@ emissivo, `alphaTest`, `doubleSide`; Standard metal, mapa, emissivo, `doubleSide
 - Luz nova em runtime fora do padrão do DDD 61 (adicionada a um nó que não é filho direto da raiz,
   depois do 1º quadro) só entra na próxima varredura — limitação registrada até a costura do
   núcleo existir.
+
+## Adendo (2026-10-24): `@invariant` na posição dos modelos iluminados; `standard` religado
+
+Com o emissivo corrigido no núcleo (SPEC-0555, `ecaf612f`), o `standard` ainda dava lascas
+coplanares nas linhas da calçada do Comercial de dia (0,0140%, alt 7). A causa é precisão: o
+`lambert` e o `standard` calculam a mesma posição em módulos diferentes, e o compilador pode
+arredondar diferente; em superfícies coplanares, isso troca qual desenho vence o teste de
+profundidade. A saída `@builtin(position)` do `VOut` compartilhado (`litVertexWgsl`) passou a ser
+`@invariant`, o recurso do WGSL para isso. Resultado (`check-stage std-inv-final`, `e1cede4`,
+`unlit,lambert,standard,wgsl`): tudo PASS com 0,0000% (galeria, Setor O e Comercial, dia e
+noite) e fumaça PASS (render 10,04); `&nativeTint=1` (`std-inv-tint`): FAIL em todas as rodadas.
+O `standard` volta para `NATIVE_MODELS`.
+
+## Adendo (2026-10-25): resíduo `variant:*` nomeado e coberto (`alpha` nos modelos iluminados)
+
+O resíduo `variant:lambert` (2–4) e `variant:standard` (até 4) do integrado era **`feature:alpha`
+na criação**: objetos que estavam transparentes no quadro em que o núcleo os tomou (Lambert sem
+nome; Standard das lojas grandes `loja_brasileiras`, `loja_luzia`, `loja_paraiba`,
+`restaurante_popular`). Ficam opacos depois, mas a recusa fica em cache, então a amostragem do
+censo não os via. O censo passou a gravar a recusa **no momento** em que ela acontece
+(`litBuilt`; resumo: `native/scripts/perf/lit-refusals.sh`). Cobertura: `lambert` e `standard`
+aceitam a feature `alpha` do núcleo e só forçam `a = 1` no opaco, como o `three` no
+`wgsl-0050`/`wgsl-0060` (o resto da fórmula é igual). Resultado: `check-stage lit-alpha`
+(`e1cede4`, `unlit,lambert,standard,wgsl`) tudo PASS 0,0000%, fumaça PASS (render 9,51);
+`lit-alpha-tint` FAIL em todas; censo do Setor O e do Comercial: nenhuma recusa na criação.

@@ -333,9 +333,19 @@ Registradas no "Backlog de pendências" do PRD-0009, com origem neste PRD.
   **FEITO (2026-10-24, `88bf3d45` = integrada + merge de `30a21e64`):** `r1-int-e1` deu PASS 0/0 em tudo
   (galeria, Setor O e Comercial dia/noite; o FAIL de 0,0255% sumiu com a correção do mapa do sol); fumaça PASS,
   render 10,19 ms, > 33 ms 2%. Controle `r1-int-e1-tint`: FAIL em tudo (caminho nativo cobre 52–81% dos pixels do jogo).
-- **Recusas que bloqueiam o aceite (0 recusas) e dono** (recontadas no `r1-int-e1`):
-  - `standard` fora de `NATIVE_MODELS` (`model:standard`, ~43–63 por amostra) — Frente C fechando;
-  - `lambert` com emissivo não preto (`variant:lambert`, 9–21) — Frente C fechando;
+  **Depois, com a Frente C (`5799e3cb` = merge de `ecaf612f` + `7e83a021` sobre a main `eb25eaad`):** `r1-int-c2`
+  PASS 0/0 em tudo, fumaça render 10,63 ms; tint `r1-int-c2-tint` FAIL em tudo (52–86% dos pixels).
+- **Recusas que bloqueiam o aceite (0 recusas) e dono** (recontadas no `r1-int-c2`):
+  - ~~`standard` fora de `NATIVE_MODELS`~~ — **resolvido** (Frente A, SPEC-0535 adendo, `dce009ad` + `d7dde846`): emissivo pela Frente C e lascas coplanares por `@invariant` na posição; `std-inv-final` tudo PASS 0,0000%;
+  **Com a Frente A (`57abf1ef`, `unlit,lambert,standard,wgsl`):** `r1-int-a2` PASS em tudo (pior: Setor O dia 0,0002%),
+  fumaça render 10,17 ms; tint FAIL em tudo (52–85%). Recusas da engine que sobram no jogo: `variant:lambert` = 4 e
+  `variant:standard` = 1–4 (mesmo grupo de motivos do `litVariant`); na galeria, `model:toon`/`model:outline` = 2 (fora do DDD 61).
+  **Com o alpha da Frente A (`f0831b6f`):** `r1-int-a3` PASS em tudo (pior: Comercial dia 0,0002%), fumaça render
+  9,69 ms, > 33 ms 3%; tint FAIL em tudo (52–87%); `lit-refusals.sh` na fumaça: 18 amostras, nenhuma recusa na criação.
+  **Recusas da engine no DDD 61: zero.** Sobram só as do jogo (Frente D) e o `skip` da colisão.
+  - ~~`variant:lambert` = 4 e `variant:standard` = 1–4~~ — **resolvido** (Frente A, `0cec302e` + `f0831b6f`): `feature:alpha` na criação
+    (transparente no quadro da tomada, opaco depois, recusa em cache). Antes era resíduo NÃO identificado (`BackSide`, alpha to coverage,
+    luzes fora do bloco ou feature fora da lista) — falta um dump por objeto para nomear; sem dono;
   - ~~`receiveShadow` no `lambert`~~ — resolvido pela Frente B (SPEC-0545, `30a21e64`);
   - tintas TSL do jogo (`node:colorNode`) e `peopleGpu` — Frente D (repo do jogo, `registerNativeMaterial`/`shaderTime`),
     abre depois do merge na main e do re-vendor do jogo;
@@ -367,7 +377,8 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
 - [ ] **No `?parityFreeze`, o braço `three` não chama o `beginFrame`** (servidor nulo): um bloco de quadro
       não vê a troca de braço; a sombra contornou com `scene.onAfterRender` só no modo de paridade.
       Origem: SPEC-0545.
-- **Vidro emissivo animado no `lambert`** (origem: R1.2, SPEC-0535, 2026-10-24). Estado:
+- ~~**Vidro emissivo animado no `lambert`**~~ **RESOLVIDO** (2026-10-24, SPEC-0555 "Emissivo animado": era o
+  `RenderIdRefresh` deixando o braço `three` velho; emissivo religado). Histórico: (origem: R1.2, SPEC-0535, 2026-10-24). Estado:
   `lambert` + `emissiveMap` fica **recusado** (vai para o `three`); o Standard com `emissiveMap`
   passa. Sintoma: com o relógio do DDD 61 andando (rampa do anoitecer, ~17:37), o vidro das
   janelas do `plasterMat` (`lambert+emissiveMap+fog+map+vertexColors`) sai no renderer próprio
@@ -384,7 +395,9 @@ Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá
   congelamento. Próximo passo: reproduzir na galeria com rampa de `emissiveIntensity`
   **depois** do primeiro quadro (a tentativa feita mudava antes do `precompile`) e capturar o
   WGSL e os uniformes reais do estado do `three` naquele objeto.
-- **`standard` desligado na R1.2** (origem: R1.2, SPEC-0535, 2026-10-24). O modelo existe
+- ~~**`standard` desligado na R1.2**~~ — **RESOLVIDO** (2026-10-24): as lascas eram precisão da posição entre módulos (`@invariant` no `litVertexWgsl`, `dce009ad`); religado em `d7dde846`, `std-inv-final` PASS 0,0000%. Histórico: a causa da fachada (emissivo animado, 1,17%) foi **resolvida** (SPEC-0555);
+  com o `standard` ligado ainda sobram **0,014% (alt 7) em lascas nas linhas da calçada** do Comercial dia (sem ele,
+  PASS 0,0059%): outra causa, coplanar. Fica desligado até isolar. Histórico: (origem: R1.2, SPEC-0535, 2026-10-24). O modelo existe
   (`models/standard.ts`, testes), mas saiu de `NATIVE_MODELS`: no Comercial de dia, as fachadas
   de um prédio dão 1,17% de pixels fora da paridade (Setor O passa). Não foi investigado. **Volta
   antes do R1.6** (o aceite final exige 0 recusas). Próximo passo: o mesmo método do vidro

@@ -188,3 +188,9 @@ janelas emissivas, HUD, minimapa e prompts.
 Mudança de instância passa a forçar **2** refreshes do `three`: o 1º só sincroniza a versão do buffer
 intercalado (`InstanceNode.update`, que roda depois do upload de geometria), o 2º sobe o buffer. Com
 1 refresh, um `InstancedMesh` que muda e para ficava com as matrizes da mudança anterior.
+
+## Correção (2026-10-24, SPEC-0555 "Emissivo animado")
+
+Render object que volta depois de pular quadros (renderer próprio, fora do quadro, braço de paridade) ganha
+refresh completo: o instantâneo de material do observador é um por material (criado no 1º `equals`) e não
+reflete o UBO de quem ficou fora; o `equals` via "nada mudou" e o UBO ficava velho.

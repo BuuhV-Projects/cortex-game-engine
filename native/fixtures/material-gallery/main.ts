@@ -320,6 +320,22 @@ const UBO_COLS = 30;
 const INTERLEAVED_ROWS = 32;
 const INTERLEAVED_COLS = 40;
 
+// ── Animated emissive (SPEC-0555, "Emissivo animado"): the DDD 61's window glass ──
+// emissiveIntensity ramps every game update (city.ts setNight); ?parityFreeze freezes the ramp.
+const GLOW_RAMP_PER_UPDATE = 0.01;
+const GLOW_MAX = 1.5;
+function ramping<M extends MeshLambertMaterial | MeshStandardMaterial>(glass: M): M {
+  galleryUpdaters.push(() => {
+    glass.emissiveIntensity = Math.min(GLOW_MAX, glass.emissiveIntensity + GLOW_RAMP_PER_UPDATE);
+  });
+  return glass;
+}
+const rampingGlass = (): Material =>
+  ramping(new MeshLambertMaterial({ map: checker, vertexColors: true, emissive: new Color(1, 1, 1), emissiveMap: stripes, emissiveIntensity: 0 }));
+// The DDD 61 Comercial facade (standard with an animated emissive).
+const rampingFacade = (): Material =>
+  ramping(new MeshStandardMaterial({ map: checker, roughness: 0.6, emissive: new Color(1, 0.8, 0.5), emissiveMap: stripes, emissiveIntensity: 0 }));
+
 /** [name, material or engine preset, vertexColors] — one sphere each, in gallery order. */
 const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   ['unlit-color', new MeshBasicMaterial({ color: 0xcc3333 }), false],
@@ -360,6 +376,11 @@ const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   ['standard-double-map-lit', unshadowed(new MeshStandardMaterial({ map: checker, side: DoubleSide, roughness: 0.5 })), false],
   ['lambert-compacted-ubo', cellWith(compactedInstances(UBO_ROWS, UBO_COLS)), false],
   ['lambert-compacted-interleaved', cellWith(compactedInstances(INTERLEAVED_ROWS, INTERLEAVED_COLS)), false],
+  ['lambert-emissive-ramp', unshadowed(rampingGlass()), true],
+  ['standard-emissive-ramp', unshadowed(rampingFacade()), false],
+  // SPEC-0535: lit models with the core's `alpha` (transparent), no receiveShadow.
+  ['lambert-alpha-lit', unshadowed(new MeshLambertMaterial({ map: checker, transparent: true, opacity: 0.5 })), false],
+  ['standard-alpha-lit', unshadowed(new MeshStandardMaterial({ map: checker, transparent: true, opacity: 0.5, roughness: 0.5 })), false],
 ];
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
