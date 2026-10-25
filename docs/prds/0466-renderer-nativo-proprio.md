@@ -298,6 +298,16 @@ disto muda os marcos; cada item entra com SPEC antes, quando o jogo precisar.
 - **Skinning por compute** se o custo de GPU dos passes com skinning aparecer.
 - Resolução interna < alvo + upscale (o modelo do Godot) se a GPU passar a ser o teto.
 
+### R6 — O renderer próprio também no Studio (futuro; **decisão do usuário pendente**)
+
+Pergunta do usuário (2026-10-25): dá para tirar o `three` de vez, até do Studio? Este marco cobre a parte de **renderer**; o `three` como biblioteca (grafo de cena, matemática, loaders, animação) fica fora, ver abaixo. Mudaria a decisão original do ADR-0465 ("só no export; o Studio fica no `three`"), então exige novo ADR e aprovação.
+
+- **Viabilidade:** o `NativeRenderer.ts` e os modelos de material (WGSL) já são TypeScript/WGSL sobre a API WebGPU, e o Studio roda num Chromium com WebGPU. Só o laço de desenho em lote, o cull e a projeção são C++ (host). No Studio, essa parte teria uma versão em JavaScript (com JIT, aguenta).
+- **Custo:** o Studio usa o `three` para o editor: gizmos de mover e rotacionar, contorno de seleção, clique em objetos (raycast), grade e linhas de ajuda, camadas de UI. Cada um precisa de equivalente no renderer próprio. Estimativa: **2 a 4 semanas**, depois do R4, só para o DDD 61.
+- **Ganho:** o que o Studio mostra passa a ser o que o export mostra (hoje são dois caminhos que divergem, e a paridade já custou vários bugs: `RenderIdRefresh`, `_materialCache`, recusas), e o renderer próprio passa a ser testado no dia a dia, sem export.
+- **Fora:** tirar o `three` como biblioteca (`Object3D`, `Matrix4`, `Raycaster`, `GLTFLoader`, `AnimationMixer`, `SkinnedMesh`) por inteiro é reescrever a base da engine e dos jogos: meses, e ganho de fps pequeno (o `three` já não é o gargalo). Só se aparecer outro motivo (por exemplo, tamanho do bundle ou memória no Xbox). Sem data.
+- **Pré-requisitos:** R1 aceito, R2 e R4 concluídos, e um ADR com a decisão.
+
 ## Onde este plano substitui ou absorve o ADR-0404 e a SPEC-0435
 
 | item anterior | destino |
@@ -353,6 +363,21 @@ VÁLIDAS. Rodadas em `D:/jogos/detetive-brasilia/.cortex/stages/r1-accept/`.
 
 **Veredito:** não aprovado. Faltam o render ≤ 5 ms (todos os pontos), o > 33 ms no Setor O e no AC, e a recusa do
 Centro. O resto fecha.
+
+## O que falta para fechar o R1 (registrado em 2026-10-25, a pedido do usuário)
+
+O aceite acima ficou **parcial**, e um teste real do usuário no export (`C:\Users\buuhb\Documents\builded-ddd-61`, engine pós-R1.6, renderer próprio **desligado**, ou seja, caminho do `three`) expôs um ponto cego. Fica registrado aqui, em ordem de execução. O renderer próprio **só liga por padrão no export depois dos itens 1–5**; o Studio continua no `three`.
+
+**Evidência do teste do usuário** (`perf-trace.jsonl`, 115 s, 1080p): a pé (~3 m/s, 5–40 s) 21,8 ms/quadro e **0** picos; com o carro (~15 m/s) 40,7 ms e **20 de 69** amostras com quadros de 100 ms, cada uma com 13–40 mil `writeBuffer` de uma vez (normal: ~100; `nodesTotal` 8789); depois, 44,2 ms e 12/75 picos; lixo de memória por quadro 0,86 → 1,67 → 2,17 MB. Relato: bom no início, travou muito ao pegar o carro da missão de motorista de app e seguiu travando depois de sair dele. Os picos sobem com a velocidade da câmera (0% parado ou andando devagar, 21% acima de 9 m/s). Não há evento de entrada/saída do carro no trace, então a fase "depois de sair" não está provada.
+
+1. **Investigar o travamento com direção rápida, no `three` e no renderer próprio.** **Causa confirmada (SPEC-0597, Frente C, 2026-10-25):** o `cull()` do `breakableProps.ts` do jogo acumula uma faixa de `updateRange` por instância a cada relayout, e o three sobe 1 `writeBuffer` por faixa quando a malha volta à vista (picos de 6–14 mil escritas). Não é o `RenderIdRefresh` (sem ele, 137 picos). No renderer próprio, 0 picos, mas as faixas crescem para sempre (memória). Conserto no jogo pela Frente D. Texto original: Hipóteses (nenhuma provada): (a) objetos entrando na vista em velocidade disparam refresh completo no `RenderIdRefresh` (correção `ecaf612f`, que faz refresh completo de objeto que pulou quadros); (b) algo da missão de motorista de app no jogo; (c) acúmulo (lixo por quadro subindo). Teste de decisão: direção rápida real, com `?renderIdRefresh=0` × padrão, em três braços (`three`, nativo, nativo sem o refresh). Atribuir os `writeBuffer` por buffer/rótulo. Corrigir na raiz; se for do `RenderIdRefresh`, vale também para o Studio.
+2. **Autopiloto `drive` que dirija de verdade** (SPEC-0414). O atual tem velocidade mediana de 1,7 m/s e só 4% das amostras acima de 9 m/s (sessão real: 44%); o aceite não cobriu direção. Critério do instrumento: ≥ 40% das amostras acima de 9 m/s, rota com cruzamentos e curvas, validado num caso de resposta conhecida (a rodada do usuário reproduz o padrão). Liga ao item "perfil `drive` sem desvio" do PRD-0009.
+3. **Repetir o aceite do R1 com direção real**, com picos de `writeBuffer` e `> 33 ms` como métricas de aceite, nos dois braços.
+4. **Travadas `> 33 ms`:** Setor O piorou (2,95 → 4,23%) e AC fica em 7,69% (meta ≤ 2%).
+5. **Recusa do Centro** (`variant:standard`, 1 por amostra, ainda sem nome).
+6. **Render ≤ 5 ms** (faltam 2,1–3,4 ms): **R2** (UI de runtime fora do `three`, ~5,5 ms no painel do usuário, mais o renderer dono da pass, ~1,3–1,6 ms de `finishRender` e pós) e, só se ainda faltar, o plano B (lista de instâncias em C++, SPEC-0585, 3–5 dias, ADR e decisão do usuário). O `world` (simulação, até ~9,8 ms no painel) entra no radar depois.
+7. **Ligar o renderer próprio (`nativeRenderer` + `nativePrecompile`) por padrão no export do DDD 61**, só depois de 1–5 passarem.
+8. **Teste do usuário com o renderer próprio ligado** no export dele, sem alterar a pasta: `CORTEX_LAUNCH_QUERY='?nativeRenderer=1&nativeRendererModels=unlit,lambert,standard,wgsl&nativePrecompile=1'` + `launcher.exe` (se o launcher de um export fora da pasta de medição aceitar a variável; a confirmar). Se travar igual, o problema é anterior ao renderer próprio; se não travar, o renderer próprio resolve.
 
 ## Estado para retomada (pausa de 2026-10-24, limite semanal)
 

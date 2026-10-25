@@ -51,6 +51,7 @@ import {
 import { InspectCamera } from './InspectCamera.js';
 import { advanceShaderTime } from '../render/native/ShaderClock.js';
 import { nativePrecompileRequested, precompileNative } from '../render/native/NativeRenderer.js';
+import { RANGE_CENSUS_FRAMES, pendingInstanceRanges, rangeCensusRequested } from '../render/WriteBufferCensus.js';
 
 /**
  * Uma fase que o Studio pode abrir direto pelo seletor do viewport (ADR-0186).
@@ -328,6 +329,9 @@ export class Game {
   private _activeCamera: PerspectiveCamera | OrthographicCamera;
   /** Pipelines the native renderer created in the warm-up (SPEC-0585), for the `precompile` event. */
   private _nativeWarmupBorn = 0;
+  /** `?rangeCensus=1` (SPEC-0597) and its frame counter. */
+  private readonly _rangeCensus = rangeCensusRequested();
+  private _rangeCensusFrames = 0;
 
   constructor(options: GameOptions) {
     const {
@@ -820,6 +824,13 @@ export class Game {
       this._systemProfile,
     );
     this._rendererCensus?.tick(deltaMs, this._activeScene.getThreeScene(), this._activeCamera);
+    if (this._rangeCensus && ++this._rangeCensusFrames % RANGE_CENSUS_FRAMES === 0) {
+      // SPEC-0597: instanced attributes piling update ranges the three has not uploaded.
+      const top = pendingInstanceRanges(this._activeScene.getThreeScene());
+      const line = top.map((r) => `${r.mesh}.${r.attribute}=${r.ranges}(count=${r.count}${r.visible ? '' : ',hidden'})`).join(' ');
+      debug('perf', `[rangeCensus] frame=${this._rangeCensusFrames} ${line}`);
+      top.forEach((r, i) => this._perfTrace.recordEvent('instanceRanges', { rank: i, frame: this._rangeCensusFrames, ...r, visible: r.visible ? 1 : 0 }));
+    }
   }
 
   /**
