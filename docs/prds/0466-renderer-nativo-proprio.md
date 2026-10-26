@@ -29,6 +29,11 @@ kart-racer e crash-racer ficaram fora do escopo por decisão do usuário (2026-1
 
 ## Linha de base — medida no R0 (SPEC-0505), controle de todos os marcos
 
+> **Jogo-alvo trocado para `5bbf6a3` (2026-10-26, aceite com direção real).** Conserto das faixas do `cull()`
+> (SPEC-0196/0197 do jogo, `?cullRanges=legacy` volta ao antigo), renderer próprio **por padrão** (`nativeRenderer: true`,
+> SPEC-0198 do jogo; `?nativeRenderer=0` volta ao `three`) e piloto que dirige na cidade (SPEC-0199), engine `3b3c51f4`
+> no vendor. Cópia: `D:/jogos/detetive-brasilia-rs-5bbf6a3` (padrão do `check-stage.sh`); as anteriores ficam.
+>
 > **Jogo-alvo trocado para `290fcb5` (2026-10-25, aceite do R1).** Frente D: lotes de bonecos com uma varredura por
 > quadro (SPEC-0195 do jogo; `onBeforeRender` −0,9 a −1,0 ms nos dois braços). Cópia: `D:/jogos/detetive-brasilia-rs-290fcb5`
 > (padrão do `check-stage.sh`); as anteriores ficam por enquanto.
@@ -380,12 +385,65 @@ O aceite acima ficou **parcial**, e um teste real do usuário no export (`C:\Use
 7. **AGORA — ligar o renderer próprio (`nativeRenderer` + `nativePrecompile`) por padrão no export do DDD 61** (ADR-0605, SPEC-0606): opção `nativeRenderer: true` do `Game`, só no host nativo; `?nativeRenderer=0` volta ao `three` até o R4. **Depende** do conserto do `cull()` (item 1) na main do jogo: com o nativo ligado, as faixas dos `quebravel-*` crescem sem limpar.
 8. **Teste do usuário com o renderer próprio ligado** no export dele, sem alterar a pasta: `CORTEX_LAUNCH_QUERY='?nativeRenderer=1&nativeRendererModels=unlit,lambert,standard,wgsl&nativePrecompile=1'` + `launcher.exe` (se o launcher de um export fora da pasta de medição aceitar a variável; a confirmar). Se travar igual, o problema é anterior ao renderer próprio; se não travar, o renderer próprio resolve.
 
+## Aceite com direção real — medido (2026-10-26, item 3 do "O que falta", verificação depois de ligar)
+
+Engine `35cddd8f` (main `3b3c51f4`), DDD 61 `5bbf6a3` (`rs-5bbf6a3`: conserto do `cull()`, nativo por padrão, piloto
+`drive`), **um export**, três braços intercalados (`ab.sh` com braço C): **A** = `three` + `cull()` antigo
+(`&nativeRenderer=0&cullRanges=legacy`), **B** = `three` com o conserto (`&nativeRenderer=0`), **C** = nativo
+(`&nativeRenderer=1…&nativePrecompile=1`). 1080p, 135 s. Rodadas em `.cortex/stages/r1-accept3/`.
+
+**Rodadas repetidas e por quê:** o `perf` do `tools/validate.sh` do jogo rodava com lock próprio, junto das medições
+(janelas informadas: 05:58–08:06). O `walk` inteiro da 1ª passada (05:30–08:40) foi descartado
+(`walk-contaminada/`): havia carga também fora das janelas (`world` de 6–10 ms contra ~3 ms). O `walk` foi refeito
+(10:27–12:00), e 6 rodadas com `world` > 4,0 ms ficaram de fora como suspeitas (`centro-B-r1/r3`, `comercial-A-r3`,
+`comercial-B-r3`, `comercial-C-r2`, `ac-B-r3`). A direção (08:40–10:00) e as réplicas extras r4–r5 ficaram com `world` de 3,0–3,5 ms.
+
+**Dirigindo, Centro** (`&drive=1&hora=18`; válidas: A 3, B 3, C 2 de 5):
+
+| | A | B | C |
+| --- | --- | --- | --- |
+| render | 13,33 | 9,58 | **7,55** |
+| quadro med / p95 / p99 | 23,2 / 98,3 / 100 | 21,0 / 29,2 / 33,4 | **20,2 / 29,7 / 34,3** |
+| > 33 ms | 23,1% | 1,58% | **1,83%** |
+| `writeBuffer`/amostra máx | 18–20 mil | ≤ 173 | ≤ 114 |
+
+**Censo dirigindo no Centro** (rodada à parte): A tem 133 quadros-pico, maior 28 mil escritas, e faixas pendentes até
+3484 (`quebravel-compartilhado-*.instanceMatrix`). B tem 1 pico e ≤ 2 faixas; C tem 1 pico e ≤ 3 faixas.
+**AC e Setor O dirigindo:** reprovados pelas regras do kit (SPEC-0595), sem número.
+- AC, braço A: não chega à velocidade (o próprio travamento segura o carro).
+- AC, braços B e C: densidade < 133 draws em 9 de 10 rodadas; só B-r1 e C-r5 valem.
+- Setor O: trânsito à vista < 50%.
+
+**A pé, 4 pontos, só rodadas limpas** (render; > 33 ms):
+
+| ponto | A | B | C |
+| --- | --- | --- | --- |
+| Setor O (3/3/3) | 10,54; 6,9% | 10,47; 3,4% | **7,78; 1,8%** |
+| Centro (3/1/3) | 10,77; 4,4% | 10,14; 1,5% | **8,11; 0,5%** |
+| Comercial (2/2/1) | 11,73; 14,5% | 10,66; 8,5% | **7,41; 0,7%** |
+| AC (3/2/3) | 12,45; 18,0% | 11,42; 17,4% | **7,77; 2,6%** |
+
+- **Travamento com carro:** some em B e C (Centro: 23% → 1,6–1,8% acima de 33 ms; p95 de 98 para 29–30 ms).
+- **Nativo (C):** render 7,4–8,1 ms a pé e 7,55 dirigindo, 2,7–4,7 ms abaixo do `three` com o conserto;
+  > 33 ms ≤ 2,6% em todos os pontos a pé (meta ≤ 2%: AC 2,6% no limite).
+- **GPU:** 0,9–1,2 ms nos três braços (neutra). Pipelines nascidos em jogo: 0 em todas as rodadas C.
+- **Paridade** dia e noite nos 4 pontos: PASS. Tint: FAIL.
+- **Recusas:** 0, exceto **Centro = 1** (`variant:standard`, a mesma de antes; os commits do `instanceColor` da Frente A,
+  `a3beafdd`/`3bfac7e7`/`29f4397f`, ainda não estão nesta medição).
+- **Backlog do kit:** a regra de densidade do `drive` (≥ 133 draws) reprova o AC nos três braços, e o Setor O
+  quase não tem trânsito à vista. Revisar os limites por ponto (Frente A, SPEC-0595).
+- **Depois, com o `instanceColor` nos iluminados (Frente A, merge `79a3a65c`):** `check-stage ic-int` **sem nenhuma flag
+  de renderer** (o jogo liga por padrão), 4 pontos dia e noite + galeria: PASS 0/0; fumaça PASS (render 6,36 ms, > 33 ms
+  1%). **Recusas: 0 em todos os pontos, inclusive no Centro** (o `variant:standard` sumiu). Censo dirigindo no Centro
+  (`&drive=1&hora=18&rendererCensus=1`, `lit-refusals.sh`): 20 amostras, nenhum material recusado, nenhuma recusa na
+  criação. Tint: Setor O FAIL (89% / 54%).
+
 ## Estado para retomada (pausa de 2026-10-24, limite semanal)
 
 - **Branch integrada:** `claude/renderer-nativo-45b16a` (worktree `renderer-nativo-45b16a`), A + B + C integradas
   (merges `8c528adc`, `86ccefb4`, `fd65ba1f`), `lambert` instanciado religado; último commit no fim desta pausa
   (ver `git log`). Sem merge na main (merge é da sessão principal).
-- **Jogo-alvo:** DDD 61 `290fcb5` desde 2026-10-25 (aceite do R1), cópia `D:/jogos/detetive-brasilia-rs-290fcb5` (padrão do `check-stage.sh`); antes `f10877e` e `e1cede4`.
+- **Jogo-alvo:** DDD 61 `5bbf6a3` desde 2026-10-26 (renderer próprio por padrão), cópia `D:/jogos/detetive-brasilia-rs-5bbf6a3` (padrão do `check-stage.sh`); antes `290fcb5`, `f10877e` e `e1cede4`.
   A antiga `rs-e2be01c` só serve para apagar (backlog do PRD-0009).
 - **1º passo da retomada:** refazer a checagem integrada NA CÓPIA NOVA:
   `native/scripts/check-stage.sh <wt> r1-int-e1 --flag '&nativeRenderer=1&nativeRendererModels=unlit,lambert,wgsl'`
@@ -425,6 +483,12 @@ O aceite acima ficou **parcial**, e um teste real do usuário no export (`C:\Use
 
 Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá, com a origem.
 
+- [ ] **Regras do `drive` apertadas por ponto** (SPEC-0595, dono: Frente A). Em Águas Claras, B e C tiveram menos
+      de 133 draws em 9 de 10 rodadas (regra de densidade (b)). No Setor O, quase todas as rodadas reprovam por
+      trânsito à vista < 50% (regra (c)). Revisar os limites por ponto. (origem: aceite com direção real,
+      `r1-accept3`, 2026-10-26)
+- [ ] **Travadas a pé em Águas Claras no nativo:** 2,6% acima de 33 ms (meta ≤ 2%; o `three` com o conserto
+      fica em 17,4%). (origem: aceite com direção real, `r1-accept3`, 2026-10-26)
 - [ ] **Ligar o `?nativePrecompile=1` por padrão no aceite do R1** (P1 do R1.6, SPEC-0585, Frente C,
       2026-10-25). Com ele: 0 pipelines nascidos em jogo (2 réplicas × 4 pontos `walk` + `drive`),
       `precompile` 16,6 → 7,8 s, paridade PASS. Ponto a ver antes de ligar: o GC jovem caiu de ~40 para

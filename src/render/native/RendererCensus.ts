@@ -82,11 +82,12 @@ export class RendererCensus {
       const label = classLabel(result);
       counts.set(label, (counts.get(label) ?? 0) + 1);
       objects++;
-      if (result.kind === 'covered') covered++;
-      else if (result.kind === 'skip') skip++;
-      else refused++;
       const material = Array.isArray(drawable.material) ? drawable.material[0] : drawable.material;
       const why = material ? litCensusReason(result, material) : null;
+      // a lit model refusing a covered drawable leaves it to the three: refused, not covered (SPEC-0535)
+      if (result.kind === 'covered' && why === null) covered++;
+      else if (result.kind === 'skip') skip++;
+      else refused++;
       if (why !== null && result.kind === 'covered') {
         const key = `${result.model}:${why}`;
         lit.set(key, (lit.get(key) ?? 0) + 1);

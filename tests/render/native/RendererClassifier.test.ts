@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  BackSide,
   AdditiveBlending,
   BoxGeometry,
   DoubleSide,
@@ -123,6 +124,19 @@ describe('RendererCensus', () => {
     expect(census).toMatchObject({ objects: 4, covered: 3, refused: 1, skip: 0 });
     expect(census.classes).toBe('lambert+fog=2;refused:physical:clearcoat=1;unlit+fog+noColorWrite=1');
     expect(events.filter(([name]) => name === 'rendererCensusMaterial')).toHaveLength(3);
+  });
+
+  it('a lit model refusing a covered drawable counts as refused, not covered (SPEC-0535)', () => {
+    const scene = new Scene();
+    const mesh = new Mesh(geometry, new MeshLambertMaterial({ side: BackSide })); // lambert refuses BackSide
+    mesh.position.set(0, 0, -5);
+    scene.add(mesh);
+    scene.updateMatrixWorld();
+    const events: Array<[string, Record<string, number | string>]> = [];
+    new RendererCensus((name, data) => events.push([name, data])).sample(scene, new PerspectiveCamera(60, 1, 0.1, 100));
+    const census = events.find(([name]) => name === 'rendererCensus')![1];
+    expect(census).toMatchObject({ objects: 1, covered: 0, refused: 1 });
+    expect(census.lit).toBe('lambert:backSide=1');
   });
 
   it('formats counts largest first, ties by label', () => {

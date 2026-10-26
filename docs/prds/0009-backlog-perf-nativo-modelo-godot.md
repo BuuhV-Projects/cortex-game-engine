@@ -396,7 +396,10 @@ com a origem e o que destrava. Ao resolver, marque `[x]` com o commit.
       tiver rodada nela (`git -C D:/jogos/detetive-brasilia worktree remove`).
 - [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-e1cede4` (`e1cede4`): alvo do PRD-0466 de 2026-10-24 a 2026-10-25; pode ser apagada quando nenhuma frente a usar.
 - [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-f10877e` (`f10877e`): alvo do PRD-0466 no R1.6; pode ser apagada quando nenhuma frente a usar.
-- [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-290fcb5` (`290fcb5`): alvo do PRD-0466 desde o aceite do R1 (2026-10-25).
+- [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-290fcb5` (`290fcb5`): alvo do aceite do R1 de 2026-10-25; pode ser apagada quando nenhuma frente a usar.
+- [ ] Cópia do jogo `D:/jogos/detetive-brasilia-rs-5bbf6a3` (`5bbf6a3`): alvo do PRD-0466 desde 2026-10-26 (renderer próprio por padrão).
+- [ ] Teste intermitente `tests/render/native/lambert.test.ts` › "names why a lit model refuses…" (SPEC-0535): falhou uma vez no hook com a máquina em uso e passou sozinho e na suíte em seguida (2026-10-26). Suspeita: `await import` dinâmico estourando o tempo do Vitest; trocar por import estático. (origem: integração do renderer-nativo)
+- [ ] Cópia de teste `D:/jogos/detetive-brasilia-test-opt` (`468db13` + `nativeRenderer: true` sem commit, validação da SPEC-0606 da engine): apagar.
       Apagar quando o PRD-0466 fechar o R1 ou trocar de commit-alvo. Origem: correção do ônibus (SPEC-0193 do jogo).
 
 - [x] (2026-10-23) Sessão B2 arquivada; worktree da engine e cópias do jogo `b2-base`/`b2-e2be01c` removidas; branch apagada.

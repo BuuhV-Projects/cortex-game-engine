@@ -107,3 +107,28 @@ describe('lit refusal reasons in the census (SPEC-0535)', () => {
     lights(new Scene());
   });
 });
+
+describe('instanceColor nos modelos iluminados (SPEC-0535, adendo 2026-10-26)', () => {
+  it('lambert e standard instanciados com cor: variante, atributo e a fórmula do three (vInstanceColor * diffuse)', async () => {
+    const { CORE_FEATURES } = await import('../../../src/render/native/NativeRenderer.js');
+    const { standardModel } = await import('../../../src/render/native/models/standard.js');
+    const { MeshStandardMaterial } = await import('three');
+    lights(new Scene());
+    for (const [model, material] of [[lambertModel, new MeshLambertMaterial()], [standardModel, new MeshStandardMaterial()]] as const) {
+      const mesh = new InstancedMesh(new BoxGeometry(), material, 2);
+      mesh.setColorAt(0, new Color(1, 0, 0));
+      const c = classifyDrawable(mesh, material);
+      if (c.kind !== 'covered') throw new Error('not covered');
+      const v = model.variant({ ...c, features: c.features.filter((f) => !CORE_FEATURES.has(f)) }, mesh, material);
+      expect(v, material.type).toContain('instanceColor');
+      expect(model.attributes(v!)).toContain('instanceColor');
+      const wgsl = model.wgsl(v!);
+      expect(wgsl).toContain('@location(5) instanceColor : vec3<f32>');
+      expect(wgsl).toContain('out.instanceColor = vin.instanceColor;');
+      // depois da cor dos vértices e antes da opacidade, como no setupDiffuseColor do three
+      const at = wgsl.indexOf('diffuse = vec4<f32>(in.instanceColor, 1.0) * diffuse;');
+      expect(at).toBeGreaterThan(0);
+      expect(at).toBeLessThan(wgsl.indexOf('diffuse.w = diffuse.w * params.opacity;'));
+    }
+  });
+});

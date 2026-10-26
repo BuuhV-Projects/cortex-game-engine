@@ -232,3 +232,42 @@ aceitam a feature `alpha` do núcleo e só forçam `a = 1` no opaco, como o `thr
 `wgsl-0050`/`wgsl-0060` (o resto da fórmula é igual). Resultado: `check-stage lit-alpha`
 (`e1cede4`, `unlit,lambert,standard,wgsl`) tudo PASS 0,0000%, fumaça PASS (render 9,51);
 `lit-alpha-tint` FAIL em todas; censo do Setor O e do Comercial: nenhuma recusa na criação.
+
+## Adendo (2026-10-26): `instanceColor` nos modelos iluminados; censo não conta recusado como coberto
+
+**Achado (Frente D, dirigindo no Centro):** o `standard` recusa `instanceColor`, e o `lambert` instanciado
+com cor também. Eram malhas instanciadas da Feira (`feira`, 5 recusas na criação), da Feira do Guará
+(`feira_guara`, 2) e um `MeshLambertMaterial` instanciado com cor (2), ~0,3 objetos por amostra caindo no
+three. O censo marcava 100% porque contava como coberto o que o classificador cobre, mesmo quando o
+modelo iluminado recusava (`litCensusReason`).
+
+**Fórmula (three r184, `NodeMaterial.setupDiffuseColor`, `NodeMaterial.js:855-860`):** depois da cor dos
+vértices e antes da opacidade, `colorNode = vInstanceColor.mul(colorNode)`, com o `vInstanceColor`
+(`vec3`) do atributo de instância (`InstanceNode`). É o mesmo nó para todo `NodeMaterial`: o `unlit` já
+o porta (R1.4, SPEC-0555) com o texto WGSL normalizado `diffuse = vec4<f32>(instanceColor, 1.0) * diffuse`,
+e o `lambert`/`standard` passam pelo mesmo `setupDiffuseColor`.
+
+**Decisão:**
+
+- `instanceColor` entra nas features aceitas do `lambert` e do `standard`. O atributo vai para o `VIn`
+  (semântica `instanceColor` do núcleo) e para o `VOut` (`@location(5)`), e o prólogo do fragmento
+  (`litSurfaceWgsl`) aplica a fórmula acima depois do `vertexColors`.
+- **Censo:** `covered` conta só o que o classificador cobre **e** o modelo iluminado desenha
+  (`litCensusReason` nulo). Recusa do modelo conta em `refused` (o motivo continua em `lit`).
+
+**Validação:** galeria com `lambert` e `standard` instanciados com `instanceColor` no fim de `entries`;
+`check-stage` (sem flags de renderer na query) PASS e `nativeTint` FAIL; censo no Centro dirigindo
+(`&drive=1&hora=18&rendererCensus=1`) com 0 recusas.
+
+**Resultado (2026-10-26, engine a3beafdd + 3bfac7e7):**
+
+- `check-stage` com `&nativeRenderer=1` na cópia padrão (`290fcb5`): galeria, Setor O e Comercial
+  (dia e noite) PASS, fumaça PASS; com `&nativeTint=1`, FAIL em todos os pontos (54–88% dos pixels).
+- Sem flags de renderer na query, no DDD 61 da main (`3d798a5`, que liga o renderer por padrão, SPEC-0198
+  do jogo): pontos do jogo PASS; com tint, FAIL (54–89%). A galeria da engine não liga o renderer por
+  padrão, então sem flag ela compara o three com ele mesmo e não serve de prova. A cópia `290fcb5` também
+  não liga, e uma rodada sem flag lá não valida nada.
+- Censo no Centro dirigindo (`&drive=1&hora=18&rendererCensus=1`, perfil `drive-legacy`, porque a cópia
+  não tem o condutor novo): 9 amostras, ~92 objetos por amostra, **100% cobertos, 0 recusas** (nem na
+  criação, `litBuilt` vazio). A classe das bancas (`standard+doubleSide+fog+instanceColor+instanced+map`)
+  aparece coberta.

@@ -36,7 +36,7 @@ const EMISSIVE_TRANSFORM_AT = 5 * ROW_FLOATS;
 const RECEIVE_SHADOW = true;
 
 /** Shading features both lit models take from the classification. */
-const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'fog', 'alpha', 'alphaTest', 'receiveShadow'] as const;
+const LIT_FEATURES = ['map', 'emissiveMap', 'vertexColors', 'instanceColor', 'fog', 'alpha', 'alphaTest', 'receiveShadow'] as const;
 /** Accepted without a variant of their own (the uv transform is always applied). */
 const NEUTRAL_FEATURES = ['uvTransform', 'noToneMap'];
 
@@ -99,6 +99,7 @@ export function litAttributes(variant: readonly string[]): VertexSemantic[] {
   const out: VertexSemantic[] = ['position', 'normal'];
   if (variant.includes('map') || variant.includes('emissiveMap')) out.push('uv');
   if (variant.includes('vertexColors')) out.push('color');
+  if (variant.includes('instanceColor')) out.push('instanceColor');
   return out;
 }
 
@@ -176,6 +177,7 @@ struct VOut {
   ${uv ? '@location(2) uv : vec2<f32>,' : ''}
   ${has('vertexColors') ? '@location(3) color : vec4<f32>,' : ''}
   ${has('receiveShadow') ? '@location(4) positionWorld : vec3<f32>,' : ''}
+  ${has('instanceColor') ? '@location(5) instanceColor : vec3<f32>,' : ''}
 };
 
 @vertex
@@ -188,6 +190,7 @@ fn vs(vin : VIn) -> VOut {
   ${uv ? 'out.uv = vin.uv;' : ''}
   ${has('vertexColors') ? 'out.color = vin.color;' : ''}
   ${has('receiveShadow') ? 'out.positionWorld = (nativeModel(vin) * nativeLocal(vin)).xyz;' : ''}
+  ${has('instanceColor') ? 'out.instanceColor = vin.instanceColor;' : ''}
   return out;
 }
 `;
@@ -204,6 +207,7 @@ export function litSurfaceWgsl(variant: readonly string[]): string {
   var diffuse = vec4<f32>(params.color, 1.0);
   ${has('map') ? 'diffuse = diffuse * textureSample(mapTexture, mapSampler, (params.mapTransform * vec3<f32>(in.uv, 1.0)).xy);' : ''}
   ${has('vertexColors') ? 'diffuse = diffuse * in.color;' : ''}
+  ${has('instanceColor') ? 'diffuse = vec4<f32>(in.instanceColor, 1.0) * diffuse;' : ''}
   diffuse.w = diffuse.w * params.opacity;
   ${has('alphaTest') ? 'if (diffuse.w <= params.alphaTest) {\n    discard;\n  }' : ''}
   ${has('alpha') ? '' : 'diffuse.w = 1.0;'}
