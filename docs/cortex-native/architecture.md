@@ -105,7 +105,7 @@ Ver ADR-0109.
 | `native/rapier-native/` | Crate Rust (cdylib): Rapier de verdade com C ABI mínima espelhando o que o engine usa. Compila contra `patched/rapier3d` (0.22.0 + 2 correções de desempenho, `[patch.crates-io]`, ADR-0336): broad-phase não reordena sub-região sem trabalho e cinemático parado não reposiciona collider — o passo deixou de custar O(corpos parados). Atualizar o Rapier = reaplicar ou confirmar no upstream; instrumento `bench_idle_city`. |
 | `native/src/webgpu/bindings.h` | API pública do módulo: `registerBindings`, `presentIfAcquired`. Fora do módulo, só inclua este. |
 | `native/src/webgpu/internal.h` | Contratos entre os .cpp do módulo (callbacks repartidos). |
-| `native/src/webgpu/navigator.cpp` | `navigator.gpu` (requestAdapter, formato preferido) + dono do `gpuState()`. Registra o binding global `__cortexUiLayer(textureOrNull)` (ADR-0105): o JS entrega a textura da RT da UI pro host compor em gama. |
+| `native/src/webgpu/navigator.cpp` | `navigator.gpu` (requestAdapter, formato preferido) + dono do `gpuState()`. Registra o binding global `__cortexUiLayer(textureOrNull)` (ADR-0105): o JS entrega a textura da RT da UI pro host compor em gama. Com `?nativeUi=1` (R2.1, SPEC-0616) a RT vem do `NativeUiRenderer` (`src/render/native/ui/`), não do `three`: mesma `rgba16float` premultiplicada, sem mudança no host. |
 | `native/src/webgpu/device.cpp` | Aquisição do device, composição do objeto JS `device`, error scopes (push/popErrorScope). |
 | `native/src/webgpu/pipeline.cpp` | Shader modules (WGSL) e render pipelines — sub-parsers por sub-estado (vertex/fragment/primitive/depth/multisample/layout). |
 | `native/src/webgpu/layouts.cpp` | Bind group layouts e pipeline layouts explícitos (o Three não usa 'auto'). |

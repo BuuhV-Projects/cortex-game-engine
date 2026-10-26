@@ -1344,6 +1344,18 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   `attributeTypes`, `DataTexture` float legível no VS); `view.time` = `shaderTime`
   (`ShaderClock.ts`, avança no `Game._update`, congela no `?parityFreeze`, *rollover* 3600 s).
   `?nativeRendererModels=wgsl` libera todos os materiais do jogo.
+- **UI de runtime (R2.1, SPEC-0616, ADR-0615)** `src/render/native/ui/`: com `?nativeUi=1`, o
+  `Renderer.renderUiLayer` entrega a cena de UI do `RendererUiBackend` ao `NativeUiRenderer` em vez do
+  `three`. A cena é lida como DADO (`uiQuads.ts`): o backend marca os materiais em `userData`
+  (`cortexUiBox`/`cortexUiImage`, chaves em `src/ui/runtime/uiNativeData.ts`; texto e `<canvas>` = `map`
+  + `color`); um registro de 160 B por malha (matriz de mundo + forma + cores + UV), ordem dos
+  transparentes do `three` (`renderOrder`, `id`), lotes de mesma textura consecutiva. Desenho
+  (`uiWgsl.ts`, fórmulas do WGSL que o `three` gera para os mesmos materiais): um pass na RT `rgba16float`
+  própria, registros como vertex buffer POR INSTÂNCIA com offset do lote (o canvas do Godot; não depende
+  de `firstInstance`), um `draw(6, n)` por lote, um `submit`. Texturas pelo upload do `three` só quando
+  `texture.version` muda. Paridade `?parityTarget=ui` (alterna só a UI, `mainPassArm.uiThree`);
+  plantado `?nativeUiTint=1`. ⚠️ O backend continua dono do layout: mudar a forma de um widget no
+  `RendererUiBackend` exige o campo equivalente no registro (senão o nativo desenha o valor velho).
 
 ## 8e2. Fusão de malhas dentro de um modelo (`mergeSubtree`) — SPEC-0213
 
