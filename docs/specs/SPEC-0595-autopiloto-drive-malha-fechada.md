@@ -80,7 +80,7 @@ caminho).
 
 ## Resultado (2026-10-25)
 
-Engine nesta branch + DDD 61 na branch `claude/autopilot-drive` do jogo (SPEC-0196 do jogo),
+Engine nesta branch + DDD 61 na branch `claude/autopilot-drive` do jogo (SPEC-0199 do jogo),
 `--autopilot drive --extra '&drive=1'`, 1080p, `drive-stats.sh`/`validate.sh`:
 
 | rodada | v mediana | > 9 m/s | caminho | veredito |
@@ -129,7 +129,7 @@ abaixo de −30° e 4,0 m.
 | (c) trânsito | ≥ 50% das amostras com `game.trafficMoving` ≥ 1 | medidor do jogo (carro do trânsito > 2 m/s, no frustum, a ≤ 100 m) |
 | câmera | inclinação mediana (`asin(cam.dy)`) entre −25° e −10°, e ≤ 10% das amostras abaixo de −30° | trace |
 
-Uma rodada `drive` sem os medidores do jogo reprova (jogo sem a SPEC-0196). A referência de (b) é o
+Uma rodada `drive` sem os medidores do jogo reprova (jogo sem a SPEC-0199 do jogo). A referência de (b) é o
 trace da sessão real do usuário (`builded-ddd-61/perf-trace.jsonl`, janela depois dos 30 s).
 
 Casos de resposta conhecida: as rodadas `wb-ranges/three-drive`, `wb-repro2/native-drive` e

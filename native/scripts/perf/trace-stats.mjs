@@ -220,7 +220,7 @@ export function cityStats(rows) {
 
 /** Why a drive round is not "inside the city", or `null` (SPEC-0595 rules a, b, c). */
 export function cityReason(city, trisMed, drawsMed) {
-  if (!city.gauged) return 'drive sem os medidores do jogo (game.urban/trafficMoving): jogo sem a SPEC-0196';
+  if (!city.gauged) return 'drive sem os medidores do jogo (game.urban/trafficMoving): jogo sem a SPEC-0199 do DDD 61';
   const fails = [];
   if (city.urbanPct < DRIVE_MIN_URBAN_PCT) fails.push(`(a) ${fmt(city.urbanPct, 0)}% na cidade (mínimo ${DRIVE_MIN_URBAN_PCT}%)`);
   if (trisMed < DRIVE_MIN_DENSITY * DRIVE_REF_TRIS || drawsMed < DRIVE_MIN_DENSITY * DRIVE_REF_DRAWS) {
