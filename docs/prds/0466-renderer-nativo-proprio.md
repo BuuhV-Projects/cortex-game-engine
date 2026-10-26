@@ -29,6 +29,11 @@ kart-racer e crash-racer ficaram fora do escopo por decisão do usuário (2026-1
 
 ## Linha de base — medida no R0 (SPEC-0505), controle de todos os marcos
 
+> **Jogo-alvo trocado para `5bbf6a3` (2026-10-26, aceite com direção real).** Conserto das faixas do `cull()`
+> (SPEC-0196/0197 do jogo, `?cullRanges=legacy` volta ao antigo), renderer próprio **por padrão** (`nativeRenderer: true`,
+> SPEC-0198 do jogo; `?nativeRenderer=0` volta ao `three`) e piloto que dirige na cidade (SPEC-0199), engine `3b3c51f4`
+> no vendor. Cópia: `D:/jogos/detetive-brasilia-rs-5bbf6a3` (padrão do `check-stage.sh`); as anteriores ficam.
+>
 > **Jogo-alvo trocado para `290fcb5` (2026-10-25, aceite do R1).** Frente D: lotes de bonecos com uma varredura por
 > quadro (SPEC-0195 do jogo; `onBeforeRender` −0,9 a −1,0 ms nos dois braços). Cópia: `D:/jogos/detetive-brasilia-rs-290fcb5`
 > (padrão do `check-stage.sh`); as anteriores ficam por enquanto.
@@ -385,7 +390,7 @@ O aceite acima ficou **parcial**, e um teste real do usuário no export (`C:\Use
 - **Branch integrada:** `claude/renderer-nativo-45b16a` (worktree `renderer-nativo-45b16a`), A + B + C integradas
   (merges `8c528adc`, `86ccefb4`, `fd65ba1f`), `lambert` instanciado religado; último commit no fim desta pausa
   (ver `git log`). Sem merge na main (merge é da sessão principal).
-- **Jogo-alvo:** DDD 61 `290fcb5` desde 2026-10-25 (aceite do R1), cópia `D:/jogos/detetive-brasilia-rs-290fcb5` (padrão do `check-stage.sh`); antes `f10877e` e `e1cede4`.
+- **Jogo-alvo:** DDD 61 `5bbf6a3` desde 2026-10-26 (renderer próprio por padrão), cópia `D:/jogos/detetive-brasilia-rs-5bbf6a3` (padrão do `check-stage.sh`); antes `290fcb5`, `f10877e` e `e1cede4`.
   A antiga `rs-e2be01c` só serve para apagar (backlog do PRD-0009).
 - **1º passo da retomada:** refazer a checagem integrada NA CÓPIA NOVA:
   `native/scripts/check-stage.sh <wt> r1-int-e1 --flag '&nativeRenderer=1&nativeRendererModels=unlit,lambert,wgsl'`
