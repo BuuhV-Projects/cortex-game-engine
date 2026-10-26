@@ -1,3 +1,12 @@
+# [0.87.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.86.0...v0.87.0) (2026-10-26)
+
+
+### Features
+
+* **input:** passo driver do autopiloto e regra do drive no kit (SPEC-0595) ([3c5c22c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3c5c22c3604fe2e1c654545f345ad1f95437bfbb))
+* **perf:** ab.sh com terceiro braço opcional e tabela de N braços (SPEC-0382, aceite do R1) ([44db029](https://github.com/BuuhV-Projects/cortex-game-engine/commit/44db0295350cba12d0a7970b4ae30de9767a017a))
+* **perf:** censo de writeBuffer por rótulo e de faixas pendentes por malha (SPEC-0597) ([a4935a8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a4935a82d71d18f2875d884ed97994c9c40a5de9))
+
 # [0.86.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.85.0...v0.86.0) (2026-10-25)
 
 
