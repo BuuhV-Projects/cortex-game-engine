@@ -27,6 +27,16 @@ export const MIN_AUTOPILOT_TRAVEL_M = 2;
 // cam.dy above this = camera looking above the horizon: almost nothing on screen, the frame gets
 // artificially cheap (the 3rd-person default in DDD 61 is -0.34).
 export const MAX_AUTOPILOT_CAM_DY = 0;
+// Profile `drive` (SPEC-0595): a round only counts as driving with this share of camera intervals
+// above DRIVE_FAST_M_S and this path after the warm-up (the user's real session: 44% above 9 m/s).
+export const DRIVE_PROFILE = 'drive';
+export const DRIVE_FAST_M_S = 9;
+export const DRIVE_MIN_FAST_PCT = 40;
+export const DRIVE_MIN_PATH_M = 400;
+/** `drive` and its known answer `drive-legacy` (SPEC-0595). */
+export const isDriveProfile = (name) => typeof name === 'string' && name.startsWith(DRIVE_PROFILE);
+// A camera interval faster than this is a teleport (respawn, car reset), not driving: left out.
+export const MAX_CAM_SPEED_M_S = 60;
 const KB_PER_MB = 1024;
 const MS_PER_S = 1000;
 const P50 = 0.5;
@@ -80,6 +90,7 @@ export function analyzeRun(dir) {
   const travel = camRows.length
     ? Math.max(...camRows.map((r) => Math.hypot(r.cam.x - camRows[0].cam.x, r.cam.z - camRows[0].cam.z)))
     : 0;
+  const motion = camMotion(camRows);
   const autopilotWanted = /[?&]autopilot=/.test(meta);
   const maxCamDy = camRows.length ? Math.max(...camRows.map((r) => r.cam.dy)) : NaN;
 
@@ -98,6 +109,10 @@ export function analyzeRun(dir) {
     reason = `autopiloto não andou: a câmera se afastou ${fmt(travel)} m (mínimo ${MIN_AUTOPILOT_TRAVEL_M})`;
   } else if (autopilotWanted && maxCamDy > MAX_AUTOPILOT_CAM_DY) {
     reason = `câmera acima do horizonte (cam.dy até ${fmt(maxCamDy, 2)}): olhando o céu, o quadro fica barato`;
+  } else if (isDriveProfile(autopilot?.profile) && (motion.fastPct < DRIVE_MIN_FAST_PCT || motion.path < DRIVE_MIN_PATH_M)) {
+    reason =
+      `drive não dirigiu: ${fmt(motion.fastPct, 0)}% acima de ${DRIVE_FAST_M_S} m/s (mínimo ${DRIVE_MIN_FAST_PCT}%), ` +
+      `caminho ${fmt(motion.path, 0)} m (mínimo ${DRIVE_MIN_PATH_M})`;
   }
 
   return {
@@ -112,6 +127,7 @@ export function analyzeRun(dir) {
     saturated: frameMs.filter((v) => v >= FRAME_MS_CEILING).length,
     slowPct: frameMs.length ? (PERCENT * frameMs.filter((v) => v > SLOW_FRAME_MS).length) / frameMs.length : NaN,
     travel,
+    ...motion,
     autopilot: autopilot?.profile ?? null,
     jsMed: mean(steady.map((w) => w.jsMed)),
     jsP95: mean(steady.map((w) => w.jsP95)),
@@ -119,6 +135,32 @@ export function analyzeRun(dir) {
     render: section('render'),
     world: section('world'),
     draws: quantile(rows.map((r) => r.draws), P50),
+  };
+}
+
+/**
+ * Camera motion between consecutive steady samples (SPEC-0595): path (sum of the intervals), median
+ * speed and the % of intervals above DRIVE_FAST_M_S. Intervals faster than MAX_CAM_SPEED_M_S are
+ * teleports and are left out.
+ */
+export function camMotion(camRows) {
+  const speeds = [];
+  let pathM = 0;
+  for (let i = 1; i < camRows.length; i++) {
+    const a = camRows[i - 1];
+    const b = camRows[i];
+    const dt = (b.t - a.t) / MS_PER_S;
+    if (!(dt > 0)) continue;
+    const d = Math.hypot(b.cam.x - a.cam.x, b.cam.z - a.cam.z);
+    const v = d / dt;
+    if (v > MAX_CAM_SPEED_M_S) continue;
+    speeds.push(v);
+    pathM += d;
+  }
+  return {
+    path: pathM,
+    speedMed: quantile(speeds, P50),
+    fastPct: speeds.length ? (PERCENT * speeds.filter((v) => v > DRIVE_FAST_M_S).length) / speeds.length : 0,
   };
 }
 
@@ -162,11 +204,12 @@ export function summaryLine(r) {
       ? ` | gc ${fmt(r.gc.kbPerFrame)} KB/q, young ${fmt(r.gc.youngPerS, 2)}/s ${fmt(r.gc.youngMsPerS)} ms/s, old ${r.gc.oldCount}x ${r.gc.oldWallMs} ms`
       : '') +
     (r.autopilot ? ` | autopiloto ${r.autopilot} andou ${fmt(r.travel, 0)} m` : '') +
+    (isDriveProfile(r.autopilot) ? ` (caminho ${fmt(r.path, 0)} m, v med ${fmt(r.speedMed)} m/s, >${DRIVE_FAST_M_S} m/s ${fmt(r.fastPct, 0)}%)` : '') +
     alert
   );
 }
 
-const AB_NAME_RE = /^(.+)-(A|B)-r\d+$/;
+const AB_NAME_RE = /^(.+)-([A-Z])-r\d+$/;
 const AB_METRICS = [
   ['frameMs med', (r) => r.frameMed],
   ['frameMs p95', (r) => r.frameP95],
@@ -180,26 +223,32 @@ const AB_METRICS = [
   ['gc young ms/s', (r) => r.gc?.youngMsPerS ?? NaN],
 ];
 
-/** Table per point: mean over valid rounds of each arm, and B - A. */
+/** Table per point: mean over valid rounds of each arm, and each arm minus A (`ab.sh`, 2 or 3 arms). */
 export function abTable(runsRoot) {
   const groups = new Map();
+  const letters = new Set();
   const out = [];
   for (const entry of fs.readdirSync(runsRoot).sort()) {
     const m = entry.match(AB_NAME_RE);
     if (!m) continue;
     const r = analyzeRun(path.join(runsRoot, entry));
     if (!r.valid) out.push(verdictLine(r));
-    const point = groups.get(m[1]) ?? { A: [], B: [] };
+    letters.add(m[2]);
+    const point = groups.get(m[1]) ?? {};
+    point[m[2]] ??= [];
     if (r.valid) point[m[2]].push(r);
     groups.set(m[1], point);
   }
-  out.push(`ponto | métrica | A (n) | B (n) | B-A`);
-  for (const [point, arms] of groups) {
+  const arms = [...letters].sort();
+  const others = arms.filter((x) => x !== 'A');
+  out.push(`ponto | métrica | ${arms.map((x) => `${x} (n)`).join(' | ')} | ${others.map((x) => `${x}-A`).join(' | ')}`);
+  for (const [point, byArm] of groups) {
     for (const [label, pick] of AB_METRICS) {
-      const a = mean(arms.A.map(pick));
-      const b = mean(arms.B.map(pick));
-      if (!Number.isFinite(a) && !Number.isFinite(b)) continue; // metric absent in this trace (e.g. gc on an old host)
-      out.push(`${point} | ${label} | ${fmt(a, 2)} (${arms.A.length}) | ${fmt(b, 2)} (${arms.B.length}) | ${fmt(b - a, 2)}`);
+      const values = arms.map((x) => mean((byArm[x] ?? []).map(pick)));
+      if (!values.some(Number.isFinite)) continue; // metric absent in this trace (e.g. gc on an old host)
+      const cells = arms.map((x, i) => `${fmt(values[i], 2)} (${(byArm[x] ?? []).length})`);
+      const deltas = others.map((x) => fmt(values[arms.indexOf(x)] - values[0], 2));
+      out.push(`${point} | ${label} | ${cells.join(' | ')} | ${deltas.join(' | ')}`);
     }
   }
   return out;
@@ -213,11 +262,21 @@ function main(argv) {
     for (const r of results) console.log(mode === 'validate' ? verdictLine(r) : summaryLine(r));
     return mode === 'validate' && results.some((r) => !r.valid) ? 1 : 0;
   }
+  if (mode === 'drive') {
+    if (!dirs.length) throw new Error('uso: trace-stats.mjs drive <pastaDaRodada...>');
+    for (const r of dirs.map(analyzeRun)) {
+      console.log(
+        `${r.name} | v med ${fmt(r.speedMed)} m/s | >${DRIVE_FAST_M_S} m/s ${fmt(r.fastPct, 0)}% | caminho ${fmt(r.path, 0)} m` +
+          ` | ${r.valid ? 'VÁLIDO' : `INVÁLIDO: ${r.reason}`}`,
+      );
+    }
+    return 0;
+  }
   if (mode === 'ab' && dirs.length === 1) {
     for (const line of abTable(dirs[0])) console.log(line);
     return 0;
   }
-  throw new Error('uso: trace-stats.mjs validate|summary <pastaDaRodada...> | ab <pastaDasRodadas>');
+  throw new Error('uso: trace-stats.mjs validate|summary|drive <pastaDaRodada...> | ab <pastaDasRodadas>');
 }
 
 if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {

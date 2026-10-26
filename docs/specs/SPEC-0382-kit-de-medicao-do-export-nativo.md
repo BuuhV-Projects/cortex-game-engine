@@ -102,3 +102,11 @@ Os 1280x720 eram herança da janela fixa do host de antes da SPEC-0455. O `round
 (e, por consequência, o `ab.sh`) agora sempre exporta `CORTEX_WINDOW_SIZE`, com o padrão
 `1920x1080`. Pela SPEC-0515, nada abaixo de 1080p é medido; `--window` fica para
 resoluções maiores no futuro.
+
+## Adendo (2026-10-25): terceiro braço no `ab.sh` (aceite do R1, PRD-0466)
+
+O aceite refeito do R1 compara três braços: o `three`, o `three` com o conserto do jogo e o nativo. O `ab.sh`
+ganha `--c <export>` e `--extra-c` (opcionais). Com o braço C, a ordem gira por réplica (r1 A,B,C; r2 B,C,A;
+r3 C,A,B; e assim por diante), para que nenhum braço fique sempre na mesma posição. As rodadas se chamam
+`<ponto>-C-r<n>`. O `abTable` (`trace-stats.mjs ab`) passa a ler qualquer letra de braço: para cada braço
+além do A, imprime uma coluna `(n)` e a diferença contra o A. Com dois braços, a saída não muda.

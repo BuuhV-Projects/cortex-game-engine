@@ -45,6 +45,7 @@ import {
   type RenderIdRefresh,
   type RenderIdRendererLike,
 } from '../render/RenderIdRefresh.js';
+import { installWriteBufferCensus } from '../render/WriteBufferCensus.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -195,6 +196,13 @@ export class Renderer {
         if (renderIdRefreshRequested(isNativeHost())) {
           this._renderIdRefresh = installRenderIdRefresh(this._renderer as unknown as RenderIdRendererLike);
         }
+        // `?wbCensus=1`: writeBuffer per frame and label (SPEC-0597). Before the fast paths create buffers.
+        const three = this._renderer as unknown as { backend?: { device?: unknown }; _nodes?: { nodeFrame?: { frameId: number } } };
+        installWriteBufferCensus(
+          three.backend?.device,
+          () => three._nodes?.nodeFrame?.frameId ?? 0,
+          () => this._renderIdRefresh?.stats.full ?? 0,
+        );
         // Desenho direto dos render objects limpos (SPEC-0333, b.1 do ADR-0330).
         if (cleanDrawRequested(isNativeHost())) {
           installCleanDrawFastPath(this._renderer as unknown as CleanDrawRendererLike);

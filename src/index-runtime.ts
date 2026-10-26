@@ -36,6 +36,7 @@ export * from './input/defaultActions.js';
 export * from './input/InputActions.js';
 export * from './input/captureBinding.js';
 export * from './input/ControlsScreen.js';
+export * from './input/InputAutopilot.js';
 
 // ─── ECS ───────────────────────────────────────────────────────────────────────
 export * from './ecs/Entity.js';

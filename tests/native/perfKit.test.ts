@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS, GC_FROM_MS, MIN_AUTOPILOT_TRAVEL_M, SLOW_FRAME_MS, MAX_AUTOPILOT_CAM_DY } from '../../native/scripts/perf/trace-stats.mjs';
+import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS, GC_FROM_MS, MIN_AUTOPILOT_TRAVEL_M, SLOW_FRAME_MS, MAX_AUTOPILOT_CAM_DY, DRIVE_FAST_M_S, DRIVE_MIN_PATH_M, MAX_CAM_SPEED_M_S } from '../../native/scripts/perf/trace-stats.mjs';
 
 const SAMPLE_MS = 500;
 const FRAME_WINDOWS = 8;
@@ -22,19 +22,26 @@ afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 function makeRun(
   name: string,
   opts: { rows?: number; world?: number; frameMs?: number; presented?: number; sections?: boolean; trace?: string | null; gc?: boolean;
-    meta?: string; autopilot?: boolean; camStep?: number; camDy?: number; frameMsAt?: (i: number) => number } = {},
+    meta?: string; autopilot?: boolean; profile?: string; camStep?: number; camStepAt?: (i: number) => number; camDy?: number; frameMsAt?: (i: number) => number } = {},
 ) {
   const { rows = MIN_ROWS * 2, world = 2, frameMs = 16, presented = 300, sections = true } = opts;
   const dir = path.join(root, name);
   fs.mkdirSync(dir);
+  let x = 0;
+  const xs: number[] = [];
+  for (let i = 0; i < rows; i++) {
+    x += i === 0 ? 0 : (opts.camStepAt?.(i) ?? opts.camStep ?? 0);
+    xs.push(x);
+  }
+  const camX = (i: number): number => xs[i]!;
   let trace = opts.trace;
   if (trace === undefined) {
     const lines = [JSON.stringify({ t: 0, precompile: { ms: 1 } })];
-    if (opts.autopilot) lines.push(JSON.stringify({ t: 0, autopilot: { profile: 'walk', cycleS: 27.8 } }));
+    if (opts.autopilot) lines.push(JSON.stringify({ t: 0, autopilot: { profile: opts.profile ?? 'walk', cycleS: 27.8 } }));
     for (let i = 0; i < rows; i++) {
       const row: Record<string, unknown> = {
         t: WARMUP_MS + i * SAMPLE_MS, frameMs: opts.frameMsAt?.(i) ?? frameMs, cpu: { world: 9, render: 9 }, draws: 150,
-        cam: { x: i * (opts.camStep ?? 0), y: 1, z: 0, dx: 0, dy: opts.camDy ?? -0.34, dz: 0.94 },
+        cam: { x: camX(i), y: 1, z: 0, dx: 0, dy: opts.camDy ?? -0.34, dz: 0.94 },
       };
       if (opts.gc) {
         // known answer: 0.5 MB, 1 young collection of 3 ms per sample; one old collection of 200 ms midway
@@ -94,6 +101,29 @@ describe('trace-stats validate', () => {
     expect(analyzeRun(makeRun('parked', { meta: 'query=?spawn=setorO' })).valid).toBe(true);
   });
 
+  it('drive (SPEC-0595): reprova devagar ou curto, aprova dirigindo; teleporte não conta', () => {
+    const meta = 'query=?autopilot=drive&drive=1';
+    const sampleS = SAMPLE_MS / 1000;
+    const rows = 220; // 110 s of steady samples, like the kit's 135 s round after the warm-up
+    const fast = DRIVE_FAST_M_S + 3;
+    // known answer: the legacy script crawls (the measured 1.7 m/s median)
+    const legacy = analyzeRun(makeRun('legacy', { meta, autopilot: true, profile: 'drive-legacy', rows, camStep: 1.7 * sampleS }));
+    expect(legacy.reason).toMatch(/drive não dirigiu/);
+    const driving = analyzeRun(makeRun('drive', { meta, autopilot: true, profile: 'drive', rows, camStep: fast * sampleS }));
+    expect(driving.valid).toBe(true);
+    expect(driving.fastPct).toBe(100);
+    expect(driving.path).toBeGreaterThan(DRIVE_MIN_PATH_M);
+    expect(driving.speedMed).toBeCloseTo(fast);
+    // fast but short: 30 samples above the speed do not make 400 m
+    expect(analyzeRun(makeRun('short', { meta, autopilot: true, profile: 'drive', rows: 30, camStep: fast * sampleS })).reason).toMatch(/caminho/);
+    // a teleport jump is left out of the path
+    const jump = analyzeRun(makeRun('jump', {
+      meta, autopilot: true, profile: 'drive', rows, camStepAt: (i) => (i === 5 ? MAX_CAM_SPEED_M_S * 10 : 1.7 * sampleS),
+    }));
+    expect(jump.path).toBeLessThan(DRIVE_MIN_PATH_M);
+    expect(jump.valid).toBe(false);
+  });
+
   it('conta a fração de amostras acima de 33 ms', () => {
     const r = analyzeRun(makeRun('slow', { frameMsAt: (i) => (i % 4 === 0 ? SLOW_FRAME_MS + 1 : 16) }));
     expect(r.slowPct).toBe(25);
@@ -135,5 +165,14 @@ describe('trace-stats ab', () => {
     const lines: string[] = abTable(root);
     expect(lines.some((l) => l.startsWith('INVÁLIDO setorO-B-r2'))).toBe(true);
     expect(lines).toContain('setorO | frameMs med | 20.00 (1) | 15.00 (1) | -5.00');
+  });
+
+  it('com um braço C, uma coluna e uma diferença contra o A a mais', () => {
+    makeRun('setorO-A-r1', { frameMs: 20 });
+    makeRun('setorO-B-r1', { frameMs: 15 });
+    makeRun('setorO-C-r1', { frameMs: 18 });
+    const lines: string[] = abTable(root);
+    expect(lines).toContain('ponto | métrica | A (n) | B (n) | C (n) | B-A | C-A');
+    expect(lines).toContain('setorO | frameMs med | 20.00 (1) | 15.00 (1) | 18.00 (1) | -5.00 | -2.00');
   });
 });
