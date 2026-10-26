@@ -135,6 +135,32 @@ export interface PerfSample {
   cam: { x: number; y: number; z: number; dx: number; dy: number; dz: number };
   /** Nós de cena dentro do frustum, do mais caro (em triângulos) pro menos. */
   visible: VisibleNode[];
+  /** Medidores do jogo ({@link setPerfTraceGauge}, SPEC-0595): ausente sem nenhum registrado. */
+  game?: Record<string, number>;
+}
+
+const gauges = new Map<string, () => number>();
+
+/**
+ * Registra um medidor do jogo lido a cada amostra do trace (`game.<name>`), ou o remove com `null`.
+ * Serve para o kit de medição validar o que só o jogo sabe (ex.: câmera dentro da cidade, carros do
+ * trânsito andando à vista).
+ *
+ * @example
+ * setPerfTraceGauge('urban', () => (insideCity(camera.position) ? 1 : 0));
+ */
+export function setPerfTraceGauge(name: string, read: (() => number) | null): void {
+  if (read === null) gauges.delete(name);
+  else gauges.set(name, read);
+}
+
+function readGauges(): Record<string, number> | undefined {
+  if (gauges.size === 0) return undefined;
+  const out: Record<string, number> = {};
+  gauges.forEach((read, name) => {
+    out[name] = read();
+  });
+  return out;
 }
 
 /** A ponte do host: existe só com as métricas ativas. */
@@ -452,6 +478,7 @@ export interface SampleInput {
   tris: number;
   camera: Camera;
   visible: VisibleNode[];
+  game?: Record<string, number>;
 }
 
 /** Monta a amostra (função pura — é o que os testes exercitam). */
@@ -489,6 +516,7 @@ export function buildSample(input: SampleInput): PerfSample {
       dz: round(_direction.z, 2),
     },
     visible: input.visible,
+    ...(input.game ? { game: input.game } : {}),
   };
 }
 
@@ -713,6 +741,7 @@ export class PerfTrace {
       tris: info?.triangles ?? 0,
       camera,
       visible: lap?.visibleNodes ?? [],
+      game: readGauges(),
     });
     this._bridge(JSON.stringify(sample));
     this._lastSampleMs = performance.now() - sampleStart;

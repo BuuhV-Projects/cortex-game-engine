@@ -39,6 +39,11 @@ Perfil `drive` (SPEC-0595, malha fechada: o jogo registra o condutor): a rodada 
 40% dos intervalos da câmera acima de 9 m/s ou menos de 400 m de caminho depois do aquecimento.
 `drive-legacy` (o roteiro antigo) é só a resposta conhecida e reprova nessa regra. Resumo de uma linha:
 `$K/drive-stats.sh <rodada...>` (v mediana, % > 9 m/s, caminho, veredito).
+O `drive` também tem que rodar **dentro da cidade com a câmera livre** (SPEC-0595, revisão 1):
+≥ 80% das amostras com `game.urban`, `tris`/`draws` medianos ≥ 90% da sessão real do usuário, ≥ 50% com
+`game.trafficMoving` ≥ 1, e câmera com inclinação mediana entre −25° e −10°, com ≤ 10% abaixo de −30°.
+Os medidores `game.*` vêm do jogo (`setPerfTraceGauge`). No DDD 61, rode com `--extra '&drive=1&hora=18'`
+(pico do trânsito) e, em Águas Claras, com `--secs 220` (carga longa).
 Fora do kit por enquanto: screenshot.
 
 ## Parar uma fila de rodadas (armadilha)

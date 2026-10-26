@@ -546,6 +546,15 @@ if (new URLSearchParams(location.search).get('autopilot') === 'drive') {
 }
 ```
 
+O kit também valida que o `drive` roda **dentro da cidade** (regras na SPEC-0595). Para isso, o jogo
+publica medidores no trace com `setPerfTraceGauge(nome, ler)`: `urban` (1 com a câmera na área urbana)
+e `trafficMoving` (carros do trânsito andando à vista). Cada amostra grava `game: { nome: valor }`.
+
+```ts
+import { setPerfTraceGauge } from 'cortex-game-engine';
+setPerfTraceGauge('urban', () => (insideCity(camera.position) ? 1 : 0));
+```
+
 ## Steam: conquistas, stats, overlay, jogador — ADR-0174/SPEC-0175
 
 Só funciona no export **`--steam`**. Fora dele (Studio, browser, export PC) tudo

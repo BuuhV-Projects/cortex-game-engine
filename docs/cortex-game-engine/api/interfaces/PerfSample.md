@@ -133,6 +133,16 @@ Defined in: [src/core/PerfTrace.ts:88](https://github.com/BuuhV-Projects/cortex-
 
 ***
 
+### game?
+
+> `optional` **game?**: `Record`\<`string`, `number`\>
+
+Defined in: [src/core/PerfTrace.ts:139](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L139)
+
+Medidores do jogo ([setPerfTraceGauge](../functions/setPerfTraceGauge.md), SPEC-0595): ausente sem nenhum registrado.
+
+***
+
 ### gc?
 
 > `optional` **gc?**: [`GcTotals`](GcTotals.md)
