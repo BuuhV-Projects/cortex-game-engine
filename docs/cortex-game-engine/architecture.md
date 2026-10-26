@@ -1281,7 +1281,9 @@ GRANDE todo quadro passaria a custar a subárvore todo quadro.
 
 ## 8e8. Renderer nativo próprio no export — ADR-0465 / PRD-0466 (R1.1: SPEC-0495, R1.4: SPEC-0555)
 
-Só no host, desligado por padrão (`?nativeRenderer=1`; exige o RS1 e a projeção nativa).
+Só no host, desligado por padrão (`?nativeRenderer=1`; exige o RS1 e a projeção nativa). Um jogo o liga por
+padrão com `GameOptions.nativeRenderer` (ADR-0605: o `Game` chama `setNativeRendererDefault`, padrão das flags
+`nativeRenderer`/`nativePrecompile`; a query vence).
 Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas no DDD 61.
 
 - **Servidor JS** `src/render/native/NativeRenderer.ts`: toma o objeto (geometria, material,

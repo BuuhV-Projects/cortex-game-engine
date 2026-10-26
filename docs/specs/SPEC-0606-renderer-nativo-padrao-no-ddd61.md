@@ -1,7 +1,7 @@
 # SPEC-0606 — Renderer próprio por padrão no export do DDD 61
 
 **Data:** 2026-10-25
-**Status:** proposta. Decisão no ADR-0605; item 7 do "O que falta para fechar o R1" do PRD-0466.
+**Status:** implementado (engine). Decisão no ADR-0605; item 7 do "O que falta para fechar o R1" do PRD-0466.
 **Pré-condição:** o conserto do `cull()` do jogo (SPEC-0197 do jogo, faixas dos `quebravel-*`) na main do DDD 61.
 Com o nativo ligado e sem o conserto, as faixas crescem sem limpar (vazamento lento, SPEC-0597).
 

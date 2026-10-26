@@ -50,7 +50,7 @@ import {
 } from './RenderPhaseProbe.js';
 import { InspectCamera } from './InspectCamera.js';
 import { advanceShaderTime } from '../render/native/ShaderClock.js';
-import { nativePrecompileRequested, precompileNative } from '../render/native/NativeRenderer.js';
+import { nativePrecompileRequested, precompileNative, setNativeRendererDefault } from '../render/native/NativeRenderer.js';
 import { RANGE_CENSUS_FRAMES, pendingInstanceRanges, rangeCensusRequested } from '../render/WriteBufferCensus.js';
 
 /**
@@ -136,6 +136,15 @@ export interface GameOptions {
    * `1 unidade` com nearest filter. Default `100`.
    */
   pixelsPerUnit?: number;
+  /**
+   * Draws the 3D scene with the engine's own renderer in the **native export** (ADR-0605): turns on
+   * `?nativeRenderer` and `?nativePrecompile` by default. The query still wins (`?nativeRenderer=0`
+   * goes back to the three). No effect in the Studio, which always uses the three. Default `false`.
+   *
+   * @example
+   * const game = new Game({ canvas, nativeRenderer: true })
+   */
+  nativeRenderer?: boolean;
 }
 
 /**
@@ -343,7 +352,9 @@ export class Game {
       far = 1000,
       projection = 'perspective',
       pixelsPerUnit = 100,
+      nativeRenderer = false,
     } = options;
+    setNativeRendererDefault(nativeRenderer);
 
     this.canvas = canvas;
     this.scene = new Scene();

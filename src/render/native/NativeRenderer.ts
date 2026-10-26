@@ -122,7 +122,18 @@ const BUFFER_STORAGE = 0x80;
 const STAGE_VERTEX = 0x1;
 const STAGE_FRAGMENT = 0x2;
 
-export function nativeRendererRequested(fallback = false): boolean {
+/** Default of the native-renderer flags when the query does not say: the game's option (ADR-0605). */
+let gameDefault = false;
+
+/**
+ * Sets the default of `?nativeRenderer` and `?nativePrecompile` (ADR-0605, SPEC-0606): `Game` calls it with
+ * `GameOptions.nativeRenderer`. The query still wins (`?nativeRenderer=0` back to the three).
+ */
+export function setNativeRendererDefault(on: boolean): void {
+  gameDefault = on;
+}
+
+export function nativeRendererRequested(fallback = gameDefault): boolean {
   return queryFlagRequested(QUERY_KEY, fallback);
 }
 
@@ -1025,9 +1036,9 @@ export function createNativeRenderer(renderer: unknown, bridge: DrawBatchBridge 
 
 let active: NativeRenderer | null = null;
 
-/** `?nativePrecompile=1` (SPEC-0585). */
+/** `?nativePrecompile=1` (SPEC-0585); without it, the game's option (ADR-0605). */
 export function nativePrecompileRequested(): boolean {
-  return queryFlagRequested(PRECOMPILE_QUERY, false);
+  return queryFlagRequested(PRECOMPILE_QUERY, gameDefault);
 }
 
 /**

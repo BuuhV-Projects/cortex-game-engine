@@ -1617,6 +1617,12 @@ atributo por instância. No export nativo o WGSL passa pelo naga: valide o PIXEL
 (captura), não só a compilação — há armadilhas conhecidas (vertex color branco no
 `MeshStandardMaterial`). Exemplo real: lote de personagens do DDD 61 (ADR-0131 do jogo).
 
+### Ligar o renderer nativo no export do jogo (`GameOptions.nativeRenderer`) — ADR-0605
+
+`new Game({ canvas, nativeRenderer: true })` faz o export desenhar a cena 3D com o renderer próprio do engine
+(liga `?nativeRenderer` e `?nativePrecompile` por padrão). A query ainda manda: `?nativeRenderer=0` volta ao
+`three`. Sem efeito no Studio (sempre `three`). Objeto que o renderer próprio não cobre cai no `three` sozinho.
+
 ### WGSL do jogo no renderer nativo do export (`registerNativeMaterial`, `shaderTime`) — SPEC-0565
 
 Com `?nativeRenderer=1` o export desenha os materiais com WGSL próprio do engine; um
