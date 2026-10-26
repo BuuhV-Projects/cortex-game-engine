@@ -1,3 +1,15 @@
+# [0.89.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.88.0...v0.89.0) (2026-10-26)
+
+
+### Bug Fixes
+
+* **render:** censo do renderer conta recusa do modelo iluminado como recusado, não coberto (SPEC-0535) ([3bfac7e](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3bfac7e77a74d41d5d0adc5e3a7b85677311c874))
+
+
+### Features
+
+* **render:** instanceColor nos modelos lambert e standard (SPEC-0535) ([a3beafd](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a3beafdd855c5da45ad85b196a5a861af4696cd1))
+
 # [0.88.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.87.0...v0.88.0) (2026-10-26)
 
 
