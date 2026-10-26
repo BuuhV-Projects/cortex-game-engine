@@ -43,7 +43,8 @@ O `drive` também tem que rodar **dentro da cidade com a câmera livre** (SPEC-0
 ≥ 80% das amostras com `game.urban`, `tris`/`draws` medianos ≥ 90% da sessão real do usuário, ≥ 50% com
 `game.trafficMoving` ≥ 1, e câmera com inclinação mediana entre −25° e −10°, com ≤ 10% abaixo de −30°.
 Os medidores `game.*` vêm do jogo (`setPerfTraceGauge`). No DDD 61, rode com `--extra '&drive=1&hora=18'`
-(pico do trânsito) e, em Águas Claras, com `--secs 220` (carga longa).
+(pico do trânsito) e, em Águas Claras, com `--secs 220` (carga longa). Essa é a condição padrão do perfil, e o aceite
+usa 3 réplicas por ponto, com o ponto fechando em ≥ 2 de 3 válidas (reposição até 5 rodadas).
 Fora do kit por enquanto: screenshot.
 
 ## Parar uma fila de rodadas (armadilha)

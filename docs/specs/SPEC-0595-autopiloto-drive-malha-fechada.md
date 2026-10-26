@@ -162,3 +162,26 @@ cidade, em 62–82%. Essa régua do `visible` conta carro parado e longe (o lega
 5% no medidor), então a regra usa o medidor. As duas reprovações às 18h ficam perto dos limites e mudam
 de réplica para réplica: no Comercial r2, mais trânsito deixou o carro mais lento; em Águas Claras r2, a
 rota sorteada passou por uma vista com menos draws.
+
+### Condição padrão e aceite do perfil `drive` (decisão da coordenação, 2026-10-25)
+
+- **Condição padrão** de toda rodada `drive` do DDD 61: `--extra '&drive=1&hora=18'` (pico do trânsito)
+  e, em Águas Claras, `--secs 220`. O aceite refeito do R1 usa exatamente isso.
+- **Limites mantidos** (não afrouxar). Três réplicas por ponto (Comercial, Centro, Águas Claras); o ponto
+  fecha com **pelo menos 2 de 3 válidas**. Cada inválida pode ser reposta por mais uma rodada, até 5 no
+  total. Se ainda assim o ponto não fechar, registra-se a regra e quanto falta, e a decisão volta para a
+  coordenação e o usuário.
+
+### Aceite com réplicas (2026-10-25, export da engine 7c76eef3 + jogo 999b756, `&drive=1&hora=18`)
+
+| ponto | rodadas (válida = V) | válidas | fecha? |
+| --- | --- | --- | --- |
+| Centro | V, V, I (14% > 9 m/s, 286 m) | 2 de 3 | sim |
+| Águas Claras (`--secs 220`) | V, I (draws 122, trânsito 47%), I (24% > 9 m/s), I (39% > 9 m/s), V | 2 de 5 | sim |
+| Comercial | V, I (31% > 9 m/s), I (29%, 380 m), I (trânsito 42%), I (trânsito 49%) | 1 de 5 | **não** |
+
+O Comercial falha em duas regras, alternando entre elas. Na **velocidade**, falta ~10 pontos
+percentuais (29–31% contra 40%), em rodadas com o trânsito do pico segurando o carro. No **trânsito à
+vista (c)**, falta 1–8 pontos (42–49% contra 50%), nas rodadas em que ele andou rápido. Cidade (100%),
+densidade (2,6–2,7 M tris, 136–174 draws) e câmera (−20°, 0% abaixo de −30°) passam com folga em todas.
+A decisão volta para a coordenação e o usuário.
