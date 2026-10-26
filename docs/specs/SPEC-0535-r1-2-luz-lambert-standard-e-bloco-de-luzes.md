@@ -258,3 +258,16 @@ e o `lambert`/`standard` passam pelo mesmo `setupDiffuseColor`.
 **Validação:** galeria com `lambert` e `standard` instanciados com `instanceColor` no fim de `entries`;
 `check-stage` (sem flags de renderer na query) PASS e `nativeTint` FAIL; censo no Centro dirigindo
 (`&drive=1&hora=18&rendererCensus=1`) com 0 recusas.
+
+**Resultado (2026-10-26, engine a3beafdd + 3bfac7e7):**
+
+- `check-stage` com `&nativeRenderer=1` na cópia padrão (`290fcb5`): galeria, Setor O e Comercial
+  (dia e noite) PASS, fumaça PASS; com `&nativeTint=1`, FAIL em todos os pontos (54–88% dos pixels).
+- Sem flags de renderer na query, no DDD 61 da main (`3d798a5`, que liga o renderer por padrão, SPEC-0198
+  do jogo): pontos do jogo PASS; com tint, FAIL (54–89%). A galeria da engine não liga o renderer por
+  padrão, então sem flag ela compara o three com ele mesmo e não serve de prova. A cópia `290fcb5` também
+  não liga, e uma rodada sem flag lá não valida nada.
+- Censo no Centro dirigindo (`&drive=1&hora=18&rendererCensus=1`, perfil `drive-legacy`, porque a cópia
+  não tem o condutor novo): 9 amostras, ~92 objetos por amostra, **100% cobertos, 0 recusas** (nem na
+  criação, `litBuilt` vazio). A classe das bancas (`standard+doubleSide+fog+instanceColor+instanced+map`)
+  aparece coberta.
