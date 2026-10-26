@@ -15,6 +15,16 @@ Se um `yarn add` falhar com `EBUSY ... electron\dist\resources\default_app.asar`
 o **Studio aberto** segurando o arquivo: feche o Studio e repita o comando — não
 troque pro npm pra contornar. Versões sempre **pinadas** (`-E`), nunca `latest`.
 
+## REGRA: arquivo de código com no máximo 500 linhas
+
+Nenhum arquivo de código (TS, JS, C++, Python, shell…) passa de **500 linhas**. Passou disso, tem que
+refatorar: dividir por responsabilidade em módulos menores.
+
+Se você mexer num arquivo que **já tem mais de 500 linhas** e a refatoração não couber na tarefa,
+registre-o em `docs/pendencias-refatoracao.md`: só o caminho do arquivo, uma linha por arquivo, sem
+repetir quem já está lá. Quem refatorar tira a linha. Não contam: dados (`.json`), assets, código de
+terceiros (`third_party/`, `vendor/`) e docs gerados (`docs/cortex-game-engine/api/`).
+
 ## REGRA ABSOLUTA: registro ANTES do código (spec/ADR primeiro)
 
 **Nenhuma modificação na engine (ou num jogo que a consome) começa pelo código.**
