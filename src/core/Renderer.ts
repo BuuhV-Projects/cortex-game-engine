@@ -341,7 +341,13 @@ export class Renderer {
   ): unknown {
     if (!this._initialized || width <= 0 || height <= 0) return null;
     if (this._nativeUi === undefined) this._nativeUi = createNativeUiRenderer(this._renderer);
-    if (this._nativeUi && !mainPassArm.uiThree) return this._nativeUi.render(scene, camera, width, height);
+    if (this._nativeUi && !mainPassArm.uiThree) {
+      const texture = this._nativeUi.render(scene, camera, width, height);
+      // The trace `draws` keeps counting the UI draws, as when the three drew them (SPEC-0616).
+      const info = (this._renderer as unknown as { info?: { render?: { drawCalls: number } } }).info?.render;
+      if (info) info.drawCalls += this._nativeUi.stats.draws;
+      return texture;
+    }
     if (!this._uiTarget || this._uiTarget.width !== width || this._uiTarget.height !== height) {
       this._uiTarget?.dispose();
       this._uiTarget = new THREE.RenderTarget(width, height, {
