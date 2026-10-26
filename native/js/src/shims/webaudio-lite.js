@@ -1,6 +1,9 @@
 // WebAudio-lite — a forma da API que o THREE.Audio/AudioLoader usam,
 // sobre o áudio nativo (__cortexAudio). Grafo simplificado: assume
 // source → [gain...] → destination; volume = produto dos gains da cadeia.
+// Each voice keeps its whole chain: a change on any link recomputes the full
+// product (SPEC-0607), never just "that node down" (the master used to erase
+// each sound's own volume).
 // PannerNode (PositionalAudio) toca sem espacialização por enquanto
 // (pendência M1 — volume/pitch funcionam).
 
@@ -19,13 +22,20 @@ GainParam.prototype.setTargetAtTime = function (v) { this.value = v; };
 GainParam.prototype.setValueAtTime = function (v) { this.value = v; };
 GainParam.prototype.linearRampToValueAtTime = function (v) { this.value = v; };
 
-function chainGain(node) {
+/** Max nodes walked down a chain (source → gains → destination). */
+const CHAIN_MAX = 8;
+
+/** The nodes from `node` down to the destination. */
+function chainOf(node) {
+  const chain = [];
+  for (let current = node, i = 0; i < CHAIN_MAX && current; i++, current = current.__next) chain.push(current);
+  return chain;
+}
+
+/** Product of the gains of a chain. */
+function chainGain(chain) {
   let gain = 1;
-  let current = node;
-  for (let i = 0; i < 8 && current; i++) {
-    if (current.gain) gain *= current.gain.value;
-    current = current.__next;
-  }
+  for (let i = 0; i < chain.length; i++) if (chain[i].gain) gain *= chain[i].gain.value;
   return gain;
 }
 
@@ -33,13 +43,18 @@ function GainNode(context) {
   this.context = context;
   this.gain = new GainParam(this);
   this.__next = null;
-  this.__voices = [];
+  /** Sources with a live voice whose chain goes through this node. */
+  this.__sources = new Set();
 }
 GainNode.prototype.connect = function (node) { this.__next = node; return node; };
 GainNode.prototype.disconnect = function () { this.__next = null; };
 GainNode.prototype.__updateVoices = function () {
-  const gain = chainGain(this);
-  for (const voice of this.__voices) __cortexAudio.setGain(voice, gain);
+  const now = this.context.currentTime;
+  for (const source of this.__sources) {
+    // A one-shot voice ends in the host without telling the JS: dropped by its expected end.
+    if (!source.__voice || now >= source.__endsAt) this.__sources.delete(source);
+    else __cortexAudio.setGain(source.__voice, chainGain(source.__chain));
+  }
 };
 
 function PannerNode(context) {
@@ -78,22 +93,24 @@ function BufferSourceNode(context) {
   this.__next = null;
   this.__voice = 0;
   this.__started = false;
+  /** Nodes the voice goes through, from the first after the source to the destination. */
+  this.__chain = null;
+  /** `currentTime` the voice ends at (`Infinity` in loop). */
+  this.__endsAt = Infinity;
 }
 // A voz nativa nasce quando a fonte está iniciada E ligada (SPEC-0341): o
 // THREE.Audio.play() chama start() ANTES de connect(), e fonte sem ligação é
 // muda no WebAudio. Nascer no start() tocava com ganho 1 e fora dos GainNode.
 BufferSourceNode.prototype.__startVoice = function () {
   if (!this.__started || this.__voice || !this.__next) return;
-  const gain = chainGain(this.__next);
+  this.__chain = chainOf(this.__next);
   this.__voice = __cortexAudio.play(
-    this.buffer.__id, this.loop ? 1 : 0, gain, this.playbackRate.value,
+    this.buffer.__id, this.loop ? 1 : 0, chainGain(this.__chain), this.playbackRate.value,
   );
-  // registra a voz nos gains da cadeia (volume ao vivo — ex.: BGM)
-  let current = this.__next;
-  for (let i = 0; i < 8 && current; i++) {
-    if (current.__voices) current.__voices.push(this.__voice);
-    current = current.__next;
-  }
+  const rate = this.playbackRate.value > 0 ? this.playbackRate.value : 1;
+  this.__endsAt = this.loop ? Infinity : this.context.currentTime + this.buffer.duration / rate;
+  // registra a fonte nos gains da cadeia (volume ao vivo — ex.: BGM)
+  for (const node of this.__chain) if (node.__sources) node.__sources.add(this);
 };
 BufferSourceNode.prototype.connect = function (node) {
   this.__next = node;
@@ -108,7 +125,11 @@ BufferSourceNode.prototype.start = function () {
 };
 BufferSourceNode.prototype.stop = function () {
   this.__started = false;
-  if (this.__voice) __cortexAudio.stop(this.__voice);
+  if (this.__voice) {
+    __cortexAudio.stop(this.__voice);
+    for (const node of this.__chain) if (node.__sources) node.__sources.delete(this);
+    this.__voice = 0;
+  }
   if (this.onended) this.onended();
 };
 

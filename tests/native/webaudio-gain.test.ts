@@ -76,3 +76,78 @@ describe('webaudio-lite: ganho da voz (SPEC-0341)', () => {
     expect(cortexAudio.play).not.toHaveBeenCalled();
   });
 });
+
+describe('webaudio-lite: ganho pela cadeia inteira (SPEC-0607)', () => {
+  /** Último ganho que a voz `id` recebeu (no play ou num setGain). */
+  function ganhoDa(id: number): number {
+    const sets = cortexAudio.setGain.mock.calls.filter((c) => c[0] === id);
+    if (sets.length > 0) return sets.at(-1)![1] as number;
+    const index = cortexAudio.play.mock.results.findIndex((r) => r.value === id);
+    return cortexAudio.play.mock.calls[index]![2] as number;
+  }
+
+  async function som(listener: AudioListener, volume: number, loop: boolean): Promise<{ audio: Audio; voz: number }> {
+    const buffer = await listener.context.decodeAudioData(new ArrayBuffer(8));
+    const s = new Audio(listener);
+    s.setBuffer(buffer);
+    s.setLoop(loop);
+    s.setVolume(volume);
+    s.play();
+    return { audio: s, voz: cortexAudio.play.mock.results.at(-1)!.value as number };
+  }
+
+  beforeEach(() => {
+    let next = 100;
+    cortexAudio.play.mockImplementation(() => next++);
+  });
+
+  afterEach(() => {
+    cortexAudio.play.mockImplementation(() => VOICE);
+    vi.restoreAllMocks();
+  });
+
+  it('mutar e desmutar o mestre devolve o volume próprio de cada som (pneu em 0 fica em 0)', async () => {
+    const listener = new AudioListener();
+    const pneu = await som(listener, 0, true);
+    const chuva = await som(listener, 0.5, true);
+    listener.setMasterVolume(0);
+    expect(ganhoDa(pneu.voz)).toBe(0);
+    expect(ganhoDa(chuva.voz)).toBe(0);
+    listener.setMasterVolume(1);
+    expect(ganhoDa(pneu.voz)).toBe(0);
+    expect(ganhoDa(chuva.voz)).toBeCloseTo(0.5);
+    listener.setMasterVolume(0.5);
+    expect(ganhoDa(chuva.voz)).toBeCloseTo(0.25);
+  });
+
+  it('um som que começa com o mestre mudo soa com o próprio volume ao desmutar', async () => {
+    const listener = new AudioListener();
+    listener.setMasterVolume(0);
+    const tiro = await som(listener, 0.8, false);
+    expect(ganhoDa(tiro.voz)).toBe(0);
+    listener.setMasterVolume(1);
+    expect(ganhoDa(tiro.voz)).toBeCloseTo(0.8);
+  });
+
+  it('voz parada sai das listas: mudar o mestre não a toca mais', async () => {
+    const listener = new AudioListener();
+    const s = await som(listener, 0.5, true);
+    s.audio.stop();
+    cortexAudio.setGain.mockClear();
+    listener.setMasterVolume(0.3);
+    expect(cortexAudio.setGain).not.toHaveBeenCalled();
+  });
+
+  it('som curto que já terminou (por tempo) sai das listas', async () => {
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const listener = new AudioListener();
+    const tiro = await som(listener, 0.8, false); // dura 1,5 s
+    const pneu = await som(listener, 0.4, true);
+    now += 2000;
+    cortexAudio.setGain.mockClear();
+    listener.setMasterVolume(0.5);
+    expect(cortexAudio.setGain.mock.calls.map((c) => c[0])).toEqual([pneu.voz]);
+    expect(ganhoDa(tiro.voz)).toBeCloseTo(0.8);
+  });
+});
