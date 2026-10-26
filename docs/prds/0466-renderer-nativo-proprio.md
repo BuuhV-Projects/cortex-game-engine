@@ -432,6 +432,11 @@ Engine `35cddd8f` (main `3b3c51f4`), DDD 61 `5bbf6a3` (`rs-5bbf6a3`: conserto do
   `a3beafdd`/`3bfac7e7`/`29f4397f`, ainda não estão nesta medição).
 - **Backlog do kit:** a regra de densidade do `drive` (≥ 133 draws) reprova o AC nos três braços, e o Setor O
   quase não tem trânsito à vista. Revisar os limites por ponto (Frente A, SPEC-0595).
+- **Depois, com o `instanceColor` nos iluminados (Frente A, merge `79a3a65c`):** `check-stage ic-int` **sem nenhuma flag
+  de renderer** (o jogo liga por padrão), 4 pontos dia e noite + galeria: PASS 0/0; fumaça PASS (render 6,36 ms, > 33 ms
+  1%). **Recusas: 0 em todos os pontos, inclusive no Centro** (o `variant:standard` sumiu). Censo dirigindo no Centro
+  (`&drive=1&hora=18&rendererCensus=1`, `lit-refusals.sh`): 20 amostras, nenhum material recusado, nenhuma recusa na
+  criação. Tint: Setor O FAIL (89% / 54%).
 
 ## Estado para retomada (pausa de 2026-10-24, limite semanal)
 
@@ -478,6 +483,12 @@ Engine `35cddd8f` (main `3b3c51f4`), DDD 61 `5bbf6a3` (`rs-5bbf6a3`: conserto do
 
 Regra do usuário: o que não for resolvido na frente em que surgiu vem para cá, com a origem.
 
+- [ ] **Regras do `drive` apertadas por ponto** (SPEC-0595, dono: Frente A). Em Águas Claras, B e C tiveram menos
+      de 133 draws em 9 de 10 rodadas (regra de densidade (b)). No Setor O, quase todas as rodadas reprovam por
+      trânsito à vista < 50% (regra (c)). Revisar os limites por ponto. (origem: aceite com direção real,
+      `r1-accept3`, 2026-10-26)
+- [ ] **Travadas a pé em Águas Claras no nativo:** 2,6% acima de 33 ms (meta ≤ 2%; o `three` com o conserto
+      fica em 17,4%). (origem: aceite com direção real, `r1-accept3`, 2026-10-26)
 - [ ] **Ligar o `?nativePrecompile=1` por padrão no aceite do R1** (P1 do R1.6, SPEC-0585, Frente C,
       2026-10-25). Com ele: 0 pipelines nascidos em jogo (2 réplicas × 4 pontos `walk` + `drive`),
       `precompile` 16,6 → 7,8 s, paridade PASS. Ponto a ver antes de ligar: o GC jovem caiu de ~40 para
