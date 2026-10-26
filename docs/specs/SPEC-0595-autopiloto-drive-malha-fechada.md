@@ -205,3 +205,16 @@ de 1,44–1,51 M tris e 151–172 draws, e câmera a −20° e 3,8 m. A regra qu
 pontos, porque nas ruas das quadras quase não passa carro do trânsito andando. Ele circula mais pelas
 avenidas. A decisão volta para a coordenação e o usuário. Uma opção é o condutor preferir destinos
 nas avenidas do bairro.
+
+### Aceite de direção final (decisão da coordenação, 2026-10-25)
+
+- **Pontos que bloqueiam o aceite do `drive`:** Centro (2 de 3 válidas) e Águas Claras (2 de 5 válidas),
+  os pontos densos, com trânsito de verdade. Condição: `&drive=1&hora=18`, Águas Claras com `--secs 220`,
+  limites inalterados, ≥ 2 válidas por ponto (reposição até 5).
+- **Setor O é informativo:** as regras são reportadas, mas não bloqueiam. Nas ruas de quadra quase não
+  passa trânsito andando, e a regra (c) não faz sentido ali (1 de 5 válidas; trânsito à vista em 13–34%
+  em 4 rodadas, 64% na válida).
+- **Comercial:** só no aceite a pé (`walk`). No `drive`, deu 1 de 5, alternando entre velocidade (o
+  trânsito do pico segura o carro) e (c).
+- **Melhoria futura (não feita):** no Setor O, o condutor sortearia destinos só nos cruzamentos de avenida
+  do bairro (`isAvenueRow` e Via), onde o trânsito circula. Assim o Setor O poderia voltar a bloquear.
