@@ -21,7 +21,7 @@ describe('DynamicLightingSwitch (SPEC-0435 (d′))', () => {
     const dynamic = renderer.lighting;
     // The three builds its RenderLists at init, with the lighting installed before it.
     renderer._renderLists = new FakeLists(dynamic);
-    const freeze = new ParityFreeze(1, true);
+    const freeze = new ParityFreeze(1, 'lighting');
     mainPassArm.three = false;
     mainPassArm.lighting = false;
     expect(freeze.shouldUpdate(0, true)).toBe(true);

@@ -46,6 +46,8 @@ import {
   type RenderIdRendererLike,
 } from '../render/RenderIdRefresh.js';
 import { installWriteBufferCensus } from '../render/WriteBufferCensus.js';
+import { createNativeUiRenderer, type NativeUiRenderer } from '../render/native/ui/NativeUiRenderer.js';
+import { mainPassArm } from '../render/MainPassArm.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -126,6 +128,9 @@ export class Renderer {
    * (é cena 3D, ao contrário da RT da UI). Criada sob demanda em `renderSceneHDR`.
    */
   private _sceneHdrTarget: THREE.RenderTarget | null = null;
+
+  /** Runtime UI drawn by the native renderer (`?nativeUi=1`, SPEC-0616); `undefined` = not decided yet. */
+  private _nativeUi: NativeUiRenderer | null | undefined;
 
   /** `true` quando o backend (WebGPU ou fallback WebGL2) terminou o init. */
   private _initialized = false;
@@ -335,6 +340,8 @@ export class Renderer {
     height: number,
   ): unknown {
     if (!this._initialized || width <= 0 || height <= 0) return null;
+    if (this._nativeUi === undefined) this._nativeUi = createNativeUiRenderer(this._renderer);
+    if (this._nativeUi && !mainPassArm.uiThree) return this._nativeUi.render(scene, camera, width, height);
     if (!this._uiTarget || this._uiTarget.width !== width || this._uiTarget.height !== height) {
       this._uiTarget?.dispose();
       this._uiTarget = new THREE.RenderTarget(width, height, {
@@ -450,6 +457,7 @@ export class Renderer {
     }
     this._uiTarget?.dispose();
     this._uiTarget = null;
+    this._nativeUi?.dispose();
     this._sceneHdrTarget?.dispose();
     this._sceneHdrTarget = null;
     this._renderer.dispose();

@@ -13,20 +13,28 @@
 import { debug } from '../core/debug.js';
 
 const QUERY_KEY = 'parityFreeze=';
-/** `?parityTarget=lighting`: frozen frames alternate the lighting (SPEC-0435 (d′)) instead of the draw path. */
-const TARGET_QUERY_KEY = 'parityTarget=lighting';
+/**
+ * `?parityTarget=lighting`: frozen frames alternate the lighting (SPEC-0435 (d′)) instead of the draw path;
+ * `?parityTarget=ui`: only the runtime UI (native × three, SPEC-0616).
+ */
+const TARGET_QUERY_KEY = 'parityTarget=';
 const MS_PER_SECOND = 1000;
 
-/** Lido pelos caminhos do passe principal: `three` = devolver tudo ao `three`. */
-export const mainPassArm = { three: false, lighting: false };
+/** What the frozen frames alternate: the main pass draw path (default), the lighting or the UI. */
+export type ParityTarget = 'draw' | 'lighting' | 'ui';
 
-/** Which arm the frozen frames alternate: the draw path (default) or the lighting (SPEC-0435). */
-function lightingTarget(): boolean {
-  try {
-    return typeof location !== 'undefined' && (location.search ?? '').includes(TARGET_QUERY_KEY);
-  } catch {
-    return false;
-  }
+/**
+ * Lido pelos caminhos do passe principal: `three` = devolver tudo ao `three`; `uiThree` = a UI de runtime
+ * pelo `three` (SPEC-0616).
+ */
+export const mainPassArm = { three: false, lighting: false, uiThree: false };
+
+/** The `?parityTarget=` of the page; anything else = the draw path. */
+export function parityTarget(search: string = typeof location !== 'undefined' ? (location.search ?? '') : ''): ParityTarget {
+  const at = search.indexOf(TARGET_QUERY_KEY);
+  if (at < 0) return 'draw';
+  const value = search.slice(at + TARGET_QUERY_KEY.length).split('&')[0];
+  return value === 'lighting' || value === 'ui' ? value : 'draw';
 }
 
 /** Segundos de jogo antes de congelar; 0 = desligado. */
@@ -50,13 +58,14 @@ export class ParityFreeze {
 
   constructor(
     private readonly _seconds: number,
-    private readonly _lighting = lightingTarget(),
+    private readonly _target: ParityTarget = parityTarget(),
   ) {}
 
   /** `false` = congelado (não chamar o `_update`). `gameplay` = cena do jogo no ar. */
   shouldUpdate(nowMs: number, gameplay: boolean): boolean {
     if (this._frozen) {
-      if (this._lighting) mainPassArm.lighting = !mainPassArm.lighting;
+      if (this._target === 'lighting') mainPassArm.lighting = !mainPassArm.lighting;
+      else if (this._target === 'ui') mainPassArm.uiThree = !mainPassArm.uiThree;
       else mainPassArm.three = !mainPassArm.three;
       return false;
     }

@@ -13,6 +13,7 @@ import type { UiViewport } from './layout.js';
 import { resolveRect } from './layout.js';
 import { parseUiBackground, parseUiBoxShadow, parseUiColor } from './uiColor.js';
 import { UiButton, UiCanvas, UiLabel, UiPanel, type UiWidget } from './widgets.js';
+import { UI_BOX_KEY, UI_IMAGE_KEY } from './uiNativeData.js';
 
 /** Assinatura do raster nativo (host). */
 type RasterTextFn = (
@@ -441,6 +442,7 @@ export class RendererUiBackend implements UiBackend {
     // que deixava o menu "frio" no native vs "quente" no Studio/DOM).
     material.toneMapped = false;
     material.colorNode = vec4(color, alpha);
+    material.userData[UI_BOX_KEY] = uniforms; // read as data by the native UI renderer (SPEC-0616)
     if (this._composite) setUiCompositeBlend(material); // alpha correto na RT (ADR-0105)
     return { material, uniforms };
   }
@@ -604,6 +606,7 @@ export class RendererUiBackend implements UiBackend {
     });
     material.toneMapped = false; // cor de UI (sRGB), fora do tone mapping do jogo
     material.colorNode = vec4(sample.r, sample.g, sample.b, sample.a.mul(mask).mul(uniforms.opacity));
+    material.userData[UI_IMAGE_KEY] = { uniforms, texture: tex }; // native UI renderer (SPEC-0616)
     if (this._composite) setUiCompositeBlend(material); // alpha correto na RT (ADR-0105)
     return { material, uniforms };
   }
