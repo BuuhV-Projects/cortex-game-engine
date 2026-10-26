@@ -185,3 +185,23 @@ percentuais (29–31% contra 40%), em rodadas com o trânsito do pico segurando 
 vista (c)**, falta 1–8 pontos (42–49% contra 50%), nas rodadas em que ele andou rápido. Cidade (100%),
 densidade (2,6–2,7 M tris, 136–174 draws) e câmera (−20°, 0% abaixo de −30°) passam com folga em todas.
 A decisão volta para a coordenação e o usuário.
+
+### Setor O no lugar do Comercial (decisão da coordenação, 2026-10-25)
+
+O Comercial fica só no aceite a pé (`walk`). Os pontos de direção do aceite passam a ser Setor O, Centro
+e Águas Claras. Setor O, com o mesmo export e as mesmas condições:
+
+| rodada | > 9 m/s | caminho | trânsito (c) | veredito |
+| --- | --- | --- | --- | --- |
+| r1 | 38% | 428 m | 13% | velocidade, (c) |
+| r2 | 54% | 535 m | 34% | (c) |
+| r3 | 68% | 625 m | 16% | (c) |
+| r4 | 51% | 512 m | 64% | VÁLIDO |
+| r5 | 55% | 557 m | 21% | (c) |
+
+1 válida de 5: não fecha. O percurso está certo: o carro sai alinhado na faixa (o spawn de frente para a
+calçada não se repete) e dá voltas no miolo de Ceilândia (x −65..65, z 34..94), com cidade 100%, densidade
+de 1,44–1,51 M tris e 151–172 draws, e câmera a −20° e 3,8 m. A regra que falha é a (c): faltam 16–37
+pontos, porque nas ruas das quadras quase não passa carro do trânsito andando. Ele circula mais pelas
+avenidas. A decisão volta para a coordenação e o usuário. Uma opção é o condutor preferir destinos
+nas avenidas do bairro.
