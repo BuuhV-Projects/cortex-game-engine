@@ -1,3 +1,16 @@
+# [0.88.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.87.0...v0.88.0) (2026-10-26)
+
+
+### Bug Fixes
+
+* **audio:** ganho de cada voz pela cadeia inteira no host nativo (SPEC-0607) ([80bf5ae](https://github.com/BuuhV-Projects/cortex-game-engine/commit/80bf5ae0c3d3cafa72c219b3da91f11e74ad40ae))
+
+
+### Features
+
+* **perf:** medidores do jogo no trace, câmera do carro ao vivo e regras de cidade/câmera do drive (SPEC-0595) ([7c76eef](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7c76eef375b0e0b5c5cf900b01e64cc47fbd8b72))
+* **render:** GameOptions.nativeRenderer liga o renderer próprio por padrão no export (ADR-0605, SPEC-0606) ([eacaed8](https://github.com/BuuhV-Projects/cortex-game-engine/commit/eacaed8facdec9f0425a9dde7680712a5e07a3c1))
+
 # [0.87.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.86.0...v0.87.0) (2026-10-26)
 
 
