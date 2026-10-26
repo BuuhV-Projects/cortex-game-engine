@@ -1,0 +1,6 @@
+# Pendências de refatoração (arquivos acima de 500 linhas)
+
+Regra no [CLAUDE.md](../CLAUDE.md): arquivo de código tem no máximo 500 linhas. Quem mexer num arquivo
+acima disso e não refatorar na mesma tarefa registra aqui só o caminho, uma linha por arquivo. Quem
+refatorar tira a linha.
+
