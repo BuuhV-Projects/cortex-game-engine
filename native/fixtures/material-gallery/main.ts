@@ -28,7 +28,7 @@ import {
   type Material,
 } from 'three';
 import { Game, applyMaterial } from 'cortex-game-engine';
-import { AdditiveBlending, BufferGeometry, InstancedMesh, Matrix4, type Object3D } from 'three';
+import { AdditiveBlending, BufferGeometry, InstancedMesh, Matrix4, type Material, type Object3D } from 'three';
 import { MeshBasicNodeMaterial, TSL, registerNativeMaterial, shaderTime, type NativeModelDef } from 'cortex-game-engine';
 import { Bone, BoxGeometry, CylinderGeometry, FloatType, InstancedBufferAttribute, RGBAFormat, Skeleton, SkinnedMesh, Uint16BufferAttribute } from 'three';
 
@@ -116,8 +116,8 @@ function cellWith(...children: Object3D[]): (mesh: Mesh) => void {
 }
 
 /** Four small spheres of an InstancedMesh with instanceColor, on a 2×2 grid. */
-function instancedSpheres(): InstancedMesh {
-  const mesh = new InstancedMesh(new SphereGeometry(SMALL_RADIUS, SEGMENTS_W, SEGMENTS_H), new MeshBasicMaterial(), instanceColors.length);
+function instancedSpheres(material: Material = new MeshBasicMaterial()): InstancedMesh {
+  const mesh = new InstancedMesh(new SphereGeometry(SMALL_RADIUS, SEGMENTS_W, SEGMENTS_H), material, instanceColors.length);
   const m = new Matrix4();
   instanceColors.forEach((c, i) => {
     mesh.setMatrixAt(i, m.makeTranslation(i % 2 ? SMALL_RADIUS : -SMALL_RADIUS, i < 2 ? SMALL_RADIUS : -SMALL_RADIUS, 0));
@@ -381,6 +381,9 @@ const entries: Array<[string, Material | ((mesh: Mesh) => void), boolean]> = [
   // SPEC-0535: lit models with the core's `alpha` (transparent), no receiveShadow.
   ['lambert-alpha-lit', unshadowed(new MeshLambertMaterial({ map: checker, transparent: true, opacity: 0.5 })), false],
   ['standard-alpha-lit', unshadowed(new MeshStandardMaterial({ map: checker, transparent: true, opacity: 0.5, roughness: 0.5 })), false],
+  // SPEC-0535 (2026-10-26): lit models instanced with instanceColor (the Feira stalls, DDD 61).
+  ['lambert-instanced-color', cellWith(instancedSpheres(new MeshLambertMaterial({ map: checker }))), false],
+  ['standard-instanced-color', cellWith(instancedSpheres(new MeshStandardMaterial({ roughness: 0.5 }))), false],
 ];
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
