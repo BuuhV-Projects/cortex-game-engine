@@ -1,7 +1,7 @@
 # SPEC-0606 — Renderer próprio por padrão no export do DDD 61
 
 **Data:** 2026-10-25
-**Status:** proposta. Decisão no ADR-0605; item 7 do "O que falta para fechar o R1" do PRD-0466.
+**Status:** implementado (engine). Decisão no ADR-0605; item 7 do "O que falta para fechar o R1" do PRD-0466.
 **Pré-condição:** o conserto do `cull()` do jogo (SPEC-0197 do jogo, faixas dos `quebravel-*`) na main do DDD 61.
 Com o nativo ligado e sem o conserto, as faixas crescem sem limpar (vazamento lento, SPEC-0597).
 
@@ -34,3 +34,11 @@ Com o nativo ligado e sem o conserto, as faixas crescem sem limpar (vazamento le
 
 - Ligar para outros jogos (cada um decide pela opção, depois da própria paridade).
 - Remover o caminho do `three` (R4).
+
+## Validação (2026-10-25, engine `eacaed8f`, cópia de teste do DDD 61 `468db13` com `nativeRenderer: true` no `main.ts`)
+
+- `check-stage s606-on` **sem nenhuma flag na query:** Setor O e Comercial dia/noite PASS 0/0; fumaça PASS (render
+  8,50 ms). O nativo desenha (`taken` 75–81 mil por ponto, `refused=0`) e o aquecimento passa por ele
+  (`precompile frame=1 born=12–13`). A galeria não passa a opção, então fica no `three` (paridade sem conteúdo).
+- `s606-tint` (`&nativeTint=1`): Setor O dia e noite FAIL (89% / 54%), como deve.
+- `s606-off` (`&nativeRenderer=0`): nenhuma linha `[nativeRenderer]` no log (volta ao `three`); render 10,90 ms.
