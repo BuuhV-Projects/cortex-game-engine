@@ -101,3 +101,64 @@ Na integração, deu errado e foi corrigido no condutor do jogo: (1) a pose do c
 ser semeado com o ponto do spawn; (2) o coelho, nascido em cima do carro, via a caixa do carro do
 jogador no campo do trânsito e não saía, então passou a nascer `LEAD` metros à frente e a ignorar essa
 caixa.
+
+## Revisão 1 (2026-10-25) — dirigir dentro da cidade, com a câmera livre
+
+Duas correções do usuário. A primeira: "nos testes você dirige no meio do mato com árvores em vez de
+dirigir dentro da cidade". No Hélio, o piloto rodava na borda (x 430..615, z −690..−1048), com quase só
+prédios estáticos; a sessão real foi no miolo (x −200..80, z −105..99), com trânsito, pessoas e
+interiores na vista. A segunda: "a câmera está apontando pra baixo pegando apenas o carro". O piloto
+tinha −33° de mediana, ~88% das amostras abaixo de −30° e a câmera a 5,9 m; a sessão real tem −21°, 1%
+abaixo de −30° e 4,0 m.
+
+### Engine
+
+- **Medidores do jogo no trace:** `setPerfTraceGauge(nome, ler | null)` (`PerfTrace.ts`, público). Cada
+  amostra grava `game: { nome: valor }`; sem medidor registrado, o campo não aparece.
+- **Câmera ao vivo:** a chase cam (`VehicleControlSystem`) reaplica `options.camPitch` quando o valor
+  muda. Antes, ela lia o valor uma vez, no 1º quadro, e com o autopiloto ligado esse quadro podia vir
+  antes de o jogo escolher o dele (uma das rodadas saiu com a inclinação padrão).
+
+### Kit — regras do perfil `drive` (todas juntas no motivo da reprovação)
+
+| regra | critério | fonte |
+| --- | --- | --- |
+| velocidade | ≥ 40% dos intervalos > 9 m/s e ≥ 400 m de caminho | câmera |
+| (a) cidade | ≥ 80% das amostras com `game.urban` = 1 | medidor do jogo (caixas dos bairros pelo grafo de ruas) |
+| (b) densidade | `tris` e `draws` medianos ≥ 90% dos da sessão real (1 450 290 e 147) | trace |
+| (c) trânsito | ≥ 50% das amostras com `game.trafficMoving` ≥ 1 | medidor do jogo (carro do trânsito > 2 m/s, no frustum, a ≤ 100 m) |
+| câmera | inclinação mediana (`asin(cam.dy)`) entre −25° e −10°, e ≤ 10% das amostras abaixo de −30° | trace |
+
+Uma rodada `drive` sem os medidores do jogo reprova (jogo sem a SPEC-0196). A referência de (b) é o
+trace da sessão real do usuário (`builded-ddd-61/perf-trace.jsonl`, janela depois dos 30 s).
+
+Casos de resposta conhecida: as rodadas `wb-ranges/three-drive`, `wb-repro2/native-drive` e
+`frente-d-faixas/drive-nativo` reprovam na câmera (−33°, 83–86% abaixo de −30°, 5,9 m). O
+`drive-legacy` no Hélio, que passava nas regras de velocidade, reprova em (a) (0% na cidade) e em (c)
+(5% com trânsito à vista).
+
+Em Águas Claras, a carga é longa e o relógio do jogo anda mais devagar que o de parede. Numa rodada de
+135 s, a janela depois do aquecimento ficou com ~24 s, e o caminho, abaixo de 400 m, mesmo a 14 m/s. Lá a
+rodada usa `--secs 220`, sem afrouxar a regra.
+
+### Resultado da revisão 1 (2026-10-25)
+
+Engine nesta branch e jogo na `claude/autopilot-drive`, `--autopilot drive --extra '&drive=1&hora=18'`
+(pico da tarde; a hora padrão é 17,5), 1080p; Águas Claras com `--secs 220`:
+
+| rodada | v med | > 9 m/s | caminho | cidade | trânsito | tris / draws | câmera | veredito |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Comercial r1 | 10,6 | 54% | 596 m | 100% | 69% | 2,60 M / 144 | −20°, 0% < −30°, 3,8 m | VÁLIDO |
+| Comercial r2 | 7,6 | 31% | 428 m | 100% | 60% | 2,70 M / 150 | −20°, 0%, 3,8 m | velocidade |
+| Centro r1 | 9,1 | 52% | 576 m | 100% | 66% | 1,80 M / 147 | −20°, 0%, 3,8 m | VÁLIDO |
+| Centro r2 | 9,1 | 51% | 636 m | 100% | 61% | 1,72 M / 165 | −20°, 0%, 3,8 m | VÁLIDO |
+| Águas Claras r1 | 7,8 | 44% | 736 m | 100% | 83% | 1,63 M / 151 | −20°, 0% | VÁLIDO |
+| Águas Claras r2 | 12,2 | 65% | 696 m | 100% | 47% | 1,61 M / 122 | −20°, 0% | (b) draws, (c) |
+| `drive-legacy` Hélio (caso conhecido) | 12,1 | 60% | 657 m | **0%** | **5%** | 1,33 M / 170 | −20° | (a), (c) |
+
+Na hora padrão (17,5), o trânsito à vista ficou em 34–54% no Comercial e no Centro, abaixo dos 50% em 3 de
+4 rodadas. A sessão real teve carro do trânsito na lista `visible` em 97% das amostras, e as rodadas na
+cidade, em 62–82%. Essa régua do `visible` conta carro parado e longe (o legado no Hélio dá 93% nela e
+5% no medidor), então a regra usa o medidor. As duas reprovações às 18h ficam perto dos limites e mudam
+de réplica para réplica: no Comercial r2, mais trânsito deixou o carro mais lento; em Águas Claras r2, a
+rota sorteada passou por uma vista com menos draws.
