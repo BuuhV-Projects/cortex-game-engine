@@ -1,7 +1,7 @@
 # SPEC-0616 — R2.1: UI de runtime desenhada pelo renderer próprio (WGSL de UI)
 
 **Data:** 2026-10-26
-**Status:** em implementação. Etapa R2.1 do PRD-0466 (R2). Decisão: ADR-0615. Base: ADR-0465, ADR-0102,
+**Status:** implementado, desligado por padrão (`?nativeUi=1`); aceite medido no PRD-0466 (R2.1): paridade PASS 0/0, tint FAIL, `ui` −0,9 a −1,1 ms. Etapa R2.1 do PRD-0466 (R2). Decisão: ADR-0615. Base: ADR-0465, ADR-0102,
 ADR-0105, SPEC-0495 (núcleo do renderer), SPEC-0382 (kit de medição), SPEC-0515 (1080p).
 
 ## Contexto
