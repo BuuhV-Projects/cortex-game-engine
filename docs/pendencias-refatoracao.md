@@ -5,3 +5,4 @@ acima disso e não refatorar na mesma tarefa registra aqui só o caminho, uma li
 refatorar tira a linha.
 
 src/ui/runtime/RendererUiBackend.ts
+src/core/Game.ts

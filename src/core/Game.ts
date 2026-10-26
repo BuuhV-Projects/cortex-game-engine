@@ -336,6 +336,8 @@ export class Game {
   private _sinceOutlineCull = 0;
   private _activeScene: Scene;
   private _activeCamera: PerspectiveCamera | OrthographicCamera;
+  /** The `firstPlayable` trace event was written (SPEC-0616). */
+  private _firstPlayable = false;
   /** Pipelines the native renderer created in the warm-up (SPEC-0585), for the `precompile` event. */
   private _nativeWarmupBorn = 0;
   /** `?rangeCensus=1` (SPEC-0597) and its frame counter. */
@@ -693,6 +695,11 @@ export class Game {
 
   private _tick(deltaMs: number): void {
     const gameplay = !this._loading && !isSplashActive() && !isSceneBuilding(this._activeScene);
+    if (gameplay && !this._firstPlayable) {
+      // Load time up to the first playable frame, from the host start (SPEC-0616, R2 criterion 2).
+      this._firstPlayable = true;
+      this._perfTrace.recordEvent('firstPlayable', { ms: Math.round(performance.now()) });
+    }
     if (this._parityFreeze?.shouldUpdate(performance.now(), gameplay) !== false) this._update(deltaMs);
     if (this._parityFreeze) applyParityLighting(this.renderer.threeRenderer as unknown as { lighting: unknown });
     const p = this.profiler;

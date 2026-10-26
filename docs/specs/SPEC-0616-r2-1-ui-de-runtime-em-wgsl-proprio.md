@@ -108,6 +108,14 @@ Material sem marca e sem `map` é ignorado e contado (`skipped` no relatório).
   da paridade: tem de dar FAIL).
 - Relatório `debug('perf')` a cada 600 quadros: `[nativeUi] quads=<n> draws=<n> skipped=<n>`.
 
+### Instrumentos do R2 (para os critérios 2 e 4)
+
+- Evento `firstPlayable` no perf-trace: `{ ms }` = `performance.now()` do host (origem no início do
+  processo) no 1º quadro com o jogo no ar (sem carga, splash ou cena em montagem). É o "tempo de carga até
+  o 1º quadro jogável" do critério (2).
+- Linha `ui` na tabela do `ab.sh` (`trace-stats.mjs`): média de `cpuAvg.ui` nas amostras estáveis.
+- Heap JS: `heap-js=` das linhas `text-vivo` do `perf-log.txt` (já existe).
+
 ## Testes
 
 - Vitest (`tests/render/native/ui/`): `uiQuads` (ordem, lotes por textura, campos do registro de cada

@@ -167,6 +167,7 @@ export function analyzeRun(dir) {
     presentedPct: framesSum ? (PERCENT * presentedSum) / framesSum : NaN,
     render: section('render'),
     world: section('world'),
+    ui: section('ui'),
     draws: quantile(rows.map((r) => r.draws), P50),
   };
 }
@@ -284,6 +285,7 @@ const AB_METRICS = [
   ['js p95', (r) => r.jsP95],
   ['render', (r) => r.render.avg],
   ['world', (r) => r.world.avg],
+  ['ui', (r) => r.ui.avg],
   ['draws', (r) => r.draws],
   ['gc KB/quadro', (r) => r.gc?.kbPerFrame ?? NaN],
   ['gc young ms/s', (r) => r.gc?.youngMsPerS ?? NaN],
