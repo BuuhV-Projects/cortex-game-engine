@@ -35,6 +35,21 @@ export const DRIVE_MIN_FAST_PCT = 40;
 export const DRIVE_MIN_PATH_M = 400;
 /** `drive` and its known answer `drive-legacy` (SPEC-0595). */
 export const isDriveProfile = (name) => typeof name === 'string' && name.startsWith(DRIVE_PROFILE);
+// Driving inside the city (SPEC-0595, user's request): the game's gauges (`game.urban`,
+// `game.trafficMoving`) and the scene density of the user's real car session
+// (builded-ddd-61/perf-trace.jsonl, 2026-10-25: median tris 1 450 290, draws 147 after the warm-up).
+export const DRIVE_MIN_URBAN_PCT = 80;
+export const DRIVE_MIN_TRAFFIC_PCT = 50;
+export const DRIVE_REF_TRIS = 1450290;
+export const DRIVE_REF_DRAWS = 147;
+export const DRIVE_MIN_DENSITY = 0.9;
+// Free camera while driving (SPEC-0595, user's request): the pitch of the user's real car session
+// (median -21 deg, 1% below -30 deg) and of `walk` (-20 deg); the old chase cam sat at -33 deg.
+export const DRIVE_PITCH_MIN_DEG = -25;
+export const DRIVE_PITCH_MAX_DEG = -10;
+export const DRIVE_STEEP_DEG = -30;
+export const DRIVE_MAX_STEEP_PCT = 10;
+const DEG_PER_RAD = 180 / Math.PI;
 // A camera interval faster than this is a teleport (respawn, car reset), not driving: left out.
 export const MAX_CAM_SPEED_M_S = 60;
 const KB_PER_MB = 1024;
@@ -91,6 +106,8 @@ export function analyzeRun(dir) {
     ? Math.max(...camRows.map((r) => Math.hypot(r.cam.x - camRows[0].cam.x, r.cam.z - camRows[0].cam.z)))
     : 0;
   const motion = camMotion(camRows);
+  const city = cityStats(rows);
+  const pitch = camPitch(camRows);
   const autopilotWanted = /[?&]autopilot=/.test(meta);
   const maxCamDy = camRows.length ? Math.max(...camRows.map((r) => r.cam.dy)) : NaN;
 
@@ -109,10 +126,23 @@ export function analyzeRun(dir) {
     reason = `autopiloto não andou: a câmera se afastou ${fmt(travel)} m (mínimo ${MIN_AUTOPILOT_TRAVEL_M})`;
   } else if (autopilotWanted && maxCamDy > MAX_AUTOPILOT_CAM_DY) {
     reason = `câmera acima do horizonte (cam.dy até ${fmt(maxCamDy, 2)}): olhando o céu, o quadro fica barato`;
-  } else if (isDriveProfile(autopilot?.profile) && (motion.fastPct < DRIVE_MIN_FAST_PCT || motion.path < DRIVE_MIN_PATH_M)) {
-    reason =
-      `drive não dirigiu: ${fmt(motion.fastPct, 0)}% acima de ${DRIVE_FAST_M_S} m/s (mínimo ${DRIVE_MIN_FAST_PCT}%), ` +
-      `caminho ${fmt(motion.path, 0)} m (mínimo ${DRIVE_MIN_PATH_M})`;
+  } else if (isDriveProfile(autopilot?.profile)) {
+    const fails = [];
+    if (motion.fastPct < DRIVE_MIN_FAST_PCT || motion.path < DRIVE_MIN_PATH_M) {
+      fails.push(
+        `drive não dirigiu: ${fmt(motion.fastPct, 0)}% acima de ${DRIVE_FAST_M_S} m/s (mínimo ${DRIVE_MIN_FAST_PCT}%), ` +
+          `caminho ${fmt(motion.path, 0)} m (mínimo ${DRIVE_MIN_PATH_M})`,
+      );
+    }
+    const outside = cityReason(city, quantile(rows.map((r) => r.tris), P50), quantile(rows.map((r) => r.draws), P50));
+    if (outside) fails.push(outside);
+    if (!(pitch.pitchMed >= DRIVE_PITCH_MIN_DEG && pitch.pitchMed <= DRIVE_PITCH_MAX_DEG) || pitch.steepPct > DRIVE_MAX_STEEP_PCT) {
+      fails.push(
+        `câmera presa no carro: inclinação mediana ${fmt(pitch.pitchMed, 0)}° (faixa ${DRIVE_PITCH_MIN_DEG}..${DRIVE_PITCH_MAX_DEG}°), ` +
+          `${fmt(pitch.steepPct, 0)}% abaixo de ${DRIVE_STEEP_DEG}° (máximo ${DRIVE_MAX_STEEP_PCT}%)`,
+      );
+    }
+    reason = fails.length ? fails.join(' | ') : null;
   }
 
   return {
@@ -128,6 +158,9 @@ export function analyzeRun(dir) {
     slowPct: frameMs.length ? (PERCENT * frameMs.filter((v) => v > SLOW_FRAME_MS).length) / frameMs.length : NaN,
     travel,
     ...motion,
+    ...city,
+    ...pitch,
+    tris: quantile(rows.map((r) => r.tris), P50),
     autopilot: autopilot?.profile ?? null,
     jsMed: mean(steady.map((w) => w.jsMed)),
     jsP95: mean(steady.map((w) => w.jsP95)),
@@ -162,6 +195,39 @@ export function camMotion(camRows) {
     speedMed: quantile(speeds, P50),
     fastPct: speeds.length ? (PERCENT * speeds.filter((v) => v > DRIVE_FAST_M_S).length) / speeds.length : 0,
   };
+}
+
+/** Camera pitch in degrees (asin of `cam.dy`): median, % below DRIVE_STEEP_DEG and median height. */
+export function camPitch(camRows) {
+  const deg = camRows.map((r) => Math.asin(Math.max(-1, Math.min(1, r.cam.dy))) * DEG_PER_RAD);
+  return {
+    pitchMed: quantile(deg, P50),
+    steepPct: deg.length ? (PERCENT * deg.filter((d) => d < DRIVE_STEEP_DEG).length) / deg.length : NaN,
+    camYMed: quantile(camRows.map((r) => r.cam.y), P50),
+  };
+}
+
+/** % of samples with the camera in the city and with a moving traffic car in view (game gauges). */
+export function cityStats(rows) {
+  const gauged = rows.filter((r) => r.game && typeof r.game.urban === 'number');
+  const pct = (pred) => (gauged.length ? (PERCENT * gauged.filter(pred).length) / gauged.length : NaN);
+  return {
+    gauged: gauged.length,
+    urbanPct: pct((r) => r.game.urban > 0),
+    trafficPct: pct((r) => (r.game.trafficMoving ?? 0) >= 1),
+  };
+}
+
+/** Why a drive round is not "inside the city", or `null` (SPEC-0595 rules a, b, c). */
+export function cityReason(city, trisMed, drawsMed) {
+  if (!city.gauged) return 'drive sem os medidores do jogo (game.urban/trafficMoving): jogo sem a SPEC-0199 do DDD 61';
+  const fails = [];
+  if (city.urbanPct < DRIVE_MIN_URBAN_PCT) fails.push(`(a) ${fmt(city.urbanPct, 0)}% na cidade (mínimo ${DRIVE_MIN_URBAN_PCT}%)`);
+  if (trisMed < DRIVE_MIN_DENSITY * DRIVE_REF_TRIS || drawsMed < DRIVE_MIN_DENSITY * DRIVE_REF_DRAWS) {
+    fails.push(`(b) tris ${fmt(trisMed / 1e6, 2)} M / draws ${drawsMed} (mínimo ${fmt((DRIVE_MIN_DENSITY * DRIVE_REF_TRIS) / 1e6, 2)} M / ${Math.ceil(DRIVE_MIN_DENSITY * DRIVE_REF_DRAWS)})`);
+  }
+  if (city.trafficPct < DRIVE_MIN_TRAFFIC_PCT) fails.push(`(c) ${fmt(city.trafficPct, 0)}% com carro do trânsito andando à vista (mínimo ${DRIVE_MIN_TRAFFIC_PCT}%)`);
+  return fails.length ? `drive fora da cidade: ${fails.join('; ')}` : null;
 }
 
 /**
@@ -267,6 +333,8 @@ function main(argv) {
     for (const r of dirs.map(analyzeRun)) {
       console.log(
         `${r.name} | v med ${fmt(r.speedMed)} m/s | >${DRIVE_FAST_M_S} m/s ${fmt(r.fastPct, 0)}% | caminho ${fmt(r.path, 0)} m` +
+          ` | cidade ${fmt(r.urbanPct, 0)}% | trânsito ${fmt(r.trafficPct, 0)}% | tris ${fmt(r.tris / 1e6, 2)} M draws ${r.draws}` +
+          ` | câmera ${fmt(r.pitchMed, 0)}° (${fmt(r.steepPct, 0)}% < ${DRIVE_STEEP_DEG}°) a ${fmt(r.camYMed)} m` +
           ` | ${r.valid ? 'VÁLIDO' : `INVÁLIDO: ${r.reason}`}`,
       );
     }

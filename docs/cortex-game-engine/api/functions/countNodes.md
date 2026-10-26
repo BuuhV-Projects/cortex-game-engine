@@ -8,7 +8,7 @@
 
 > **countNodes**(`scene`): `object`
 
-Defined in: [src/core/PerfTrace.ts:190](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L190)
+Defined in: [src/core/PerfTrace.ts:216](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/core/PerfTrace.ts#L216)
 
 Tamanho da árvore de cena (SPEC-0227). Duas contagens porque as duas fases
 mais caras do render percorrem conjuntos diferentes: o `updateMatrixWorld`

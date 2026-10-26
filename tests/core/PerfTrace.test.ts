@@ -12,7 +12,7 @@ import {
   MeshBasicMaterial,
   PerspectiveCamera,
 } from 'three';
-import { PerfTrace, SceneWalk, buildSample, collectVisible, countNodes } from '../../src/core/PerfTrace.js';
+import { PerfTrace, SceneWalk, buildSample, collectVisible, countNodes, setPerfTraceGauge } from '../../src/core/PerfTrace.js';
 import { FrameProfiler } from '../../src/core/FrameProfiler.js';
 
 /** Nó de cena como o `buildScene` monta: nome = id + flag no userData. */
@@ -194,6 +194,25 @@ describe('PerfTrace', () => {
       expect(lines[0]).not.toContain('\n');
       expect(() => JSON.parse(lines[0]!)).not.toThrow();
       expect(JSON.parse(lines[0]!).draws).toBe(5);
+    });
+
+    it('grava os medidores do jogo em game (SPEC-0595) e some sem nenhum registrado', () => {
+      const trace = new PerfTrace();
+      let urban = 1;
+      setPerfTraceGauge('urban', () => urban);
+      setPerfTraceGauge('trafficMoving', () => 3);
+      try {
+        trace.tick(600, new Scene(), camera(), new FrameProfiler(), null);
+        urban = 0;
+        trace.tick(600, new Scene(), camera(), new FrameProfiler(), null);
+      } finally {
+        setPerfTraceGauge('urban', null);
+        setPerfTraceGauge('trafficMoving', null);
+      }
+      expect(JSON.parse(lines[0]!).game).toEqual({ urban: 1, trafficMoving: 3 });
+      expect(JSON.parse(lines[1]!).game).toEqual({ urban: 0, trafficMoving: 3 });
+      trace.tick(600, new Scene(), camera(), new FrameProfiler(), null);
+      expect(JSON.parse(lines[2]!).game).toBeUndefined();
     });
   });
 });

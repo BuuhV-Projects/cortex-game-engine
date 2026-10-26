@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS, GC_FROM_MS, MIN_AUTOPILOT_TRAVEL_M, SLOW_FRAME_MS, MAX_AUTOPILOT_CAM_DY, DRIVE_FAST_M_S, DRIVE_MIN_PATH_M, MAX_CAM_SPEED_M_S } from '../../native/scripts/perf/trace-stats.mjs';
+import { analyzeRun, abTable, summaryLine, WARMUP_MS, MIN_ROWS, GC_FROM_MS, MIN_AUTOPILOT_TRAVEL_M, SLOW_FRAME_MS, MAX_AUTOPILOT_CAM_DY, DRIVE_FAST_M_S, DRIVE_MIN_PATH_M, MAX_CAM_SPEED_M_S, DRIVE_REF_TRIS, DRIVE_REF_DRAWS } from '../../native/scripts/perf/trace-stats.mjs';
 
 const SAMPLE_MS = 500;
 const FRAME_WINDOWS = 8;
@@ -22,7 +22,7 @@ afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 function makeRun(
   name: string,
   opts: { rows?: number; world?: number; frameMs?: number; presented?: number; sections?: boolean; trace?: string | null; gc?: boolean;
-    meta?: string; autopilot?: boolean; profile?: string; camStep?: number; camStepAt?: (i: number) => number; camDy?: number; frameMsAt?: (i: number) => number } = {},
+    meta?: string; autopilot?: boolean; profile?: string; camStep?: number; camStepAt?: (i: number) => number; game?: (i: number) => Record<string, number> | undefined; camDyAt?: (i: number) => number; tris?: number; draws?: number; camDy?: number; frameMsAt?: (i: number) => number } = {},
 ) {
   const { rows = MIN_ROWS * 2, world = 2, frameMs = 16, presented = 300, sections = true } = opts;
   const dir = path.join(root, name);
@@ -40,9 +40,11 @@ function makeRun(
     if (opts.autopilot) lines.push(JSON.stringify({ t: 0, autopilot: { profile: opts.profile ?? 'walk', cycleS: 27.8 } }));
     for (let i = 0; i < rows; i++) {
       const row: Record<string, unknown> = {
-        t: WARMUP_MS + i * SAMPLE_MS, frameMs: opts.frameMsAt?.(i) ?? frameMs, cpu: { world: 9, render: 9 }, draws: 150,
-        cam: { x: camX(i), y: 1, z: 0, dx: 0, dy: opts.camDy ?? -0.34, dz: 0.94 },
+        t: WARMUP_MS + i * SAMPLE_MS, frameMs: opts.frameMsAt?.(i) ?? frameMs, cpu: { world: 9, render: 9 }, draws: opts.draws ?? 150, tris: opts.tris ?? DRIVE_REF_TRIS,
+        cam: { x: camX(i), y: 1, z: 0, dx: 0, dy: opts.camDyAt?.(i) ?? opts.camDy ?? -0.34, dz: 0.94 },
       };
+      const game = opts.game?.(i);
+      if (game) row.game = game;
       if (opts.gc) {
         // known answer: 0.5 MB, 1 young collection of 3 ms per sample; one old collection of 200 ms midway
         const old = i >= rows / 2 ? 1 : 0;
@@ -109,7 +111,8 @@ describe('trace-stats validate', () => {
     // known answer: the legacy script crawls (the measured 1.7 m/s median)
     const legacy = analyzeRun(makeRun('legacy', { meta, autopilot: true, profile: 'drive-legacy', rows, camStep: 1.7 * sampleS }));
     expect(legacy.reason).toMatch(/drive não dirigiu/);
-    const driving = analyzeRun(makeRun('drive', { meta, autopilot: true, profile: 'drive', rows, camStep: fast * sampleS }));
+    const inCity = () => ({ urban: 1, trafficMoving: 2 });
+    const driving = analyzeRun(makeRun('drive', { meta, autopilot: true, profile: 'drive', rows, camStep: fast * sampleS, game: inCity }));
     expect(driving.valid).toBe(true);
     expect(driving.fastPct).toBe(100);
     expect(driving.path).toBeGreaterThan(DRIVE_MIN_PATH_M);
@@ -122,6 +125,35 @@ describe('trace-stats validate', () => {
     }));
     expect(jump.path).toBeLessThan(DRIVE_MIN_PATH_M);
     expect(jump.valid).toBe(false);
+  });
+
+  it('drive na cidade (SPEC-0595): reprova fora da cidade, rala, sem trânsito ou sem medidores', () => {
+    const meta = 'query=?autopilot=drive&drive=1';
+    const rows = 220;
+    const camStep = (DRIVE_FAST_M_S + 3) * (SAMPLE_MS / 1000);
+    const run = (name: string, extra: object) => analyzeRun(makeRun(name, { meta, autopilot: true, profile: 'drive', rows, camStep, ...extra }));
+    expect(run('ok', { game: () => ({ urban: 1, trafficMoving: 1 }) }).valid).toBe(true);
+    // known answer: the Hélio edge — fast, but out of the city and with no traffic in view
+    const edge = run('edge', { game: (i: number) => ({ urban: i % 4 === 0 ? 1 : 0, trafficMoving: i % 5 === 0 ? 1 : 0 }) });
+    expect(edge.reason).toMatch(/\(a\) 25% na cidade/);
+    expect(edge.reason).toMatch(/\(c\) 20% com carro/);
+    expect(run('thin', { game: () => ({ urban: 1, trafficMoving: 1 }), tris: DRIVE_REF_TRIS * 0.5 }).reason).toMatch(/\(b\)/);
+    expect(run('fewdraws', { game: () => ({ urban: 1, trafficMoving: 1 }), draws: Math.floor(DRIVE_REF_DRAWS * 0.5) }).reason).toMatch(/\(b\)/);
+    expect(run('nogauge', {}).reason).toMatch(/sem os medidores/);
+  });
+
+  it('drive com câmera livre (SPEC-0595): reprova a chase cam olhando o carro de cima', () => {
+    const meta = 'query=?autopilot=drive&drive=1';
+    const camStep = (DRIVE_FAST_M_S + 3) * (SAMPLE_MS / 1000);
+    const run = (name: string, camDyAt: (i: number) => number) =>
+      analyzeRun(makeRun(name, { meta, autopilot: true, profile: 'drive', rows: 220, camStep, camDyAt, game: () => ({ urban: 1, trafficMoving: 1 }) }));
+    const sin = (deg: number) => Math.sin((deg * Math.PI) / 180);
+    expect(run('free', () => sin(-20)).valid).toBe(true);
+    // known answer: the old chase cam, -33 deg median and ~88% below -30 deg
+    const chase = run('chase', (i) => sin(i % 8 === 0 ? -28 : -33));
+    expect(chase.reason).toMatch(/câmera presa no carro: inclinação mediana -33°/);
+    // median fine but too many steep samples
+    expect(run('steep', (i) => sin(i % 5 === 0 ? -40 : -20)).reason).toMatch(/20% abaixo de -30°/);
   });
 
   it('conta a fração de amostras acima de 33 ms', () => {

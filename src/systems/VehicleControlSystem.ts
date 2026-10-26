@@ -126,6 +126,8 @@ export class VehicleControlSystem extends System {
   private camPitch = DEFAULT_CAM_PITCH;
   private lookIdle = 999;
   private camInit = false;
+  /** `options.camPitch` applied last: a change re-applies it live (SPEC-0595, the drive autopilot sets it). */
+  private appliedCamPitch: number | undefined = undefined;
 
   constructor(
     private readonly physics: RapierPhysics,
@@ -262,7 +264,11 @@ export class VehicleControlSystem extends System {
     if (!this.camInit) {
       this.camYaw = carYaw;
       this.camPitch = o.camPitch ?? DEFAULT_CAM_PITCH;
+      this.appliedCamPitch = o.camPitch;
       this.camInit = true;
+    } else if (o.camPitch !== this.appliedCamPitch) {
+      this.camPitch = o.camPitch ?? DEFAULT_CAM_PITCH;
+      this.appliedCamPitch = o.camPitch;
     }
 
     // Olhar: mouse (pointer lock) + 2º stick (eixos 2/3).

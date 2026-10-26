@@ -542,6 +542,7 @@
 - [setFog](functions/setFog.md)
 - [setKtx2Renderer](functions/setKtx2Renderer.md)
 - [setMatte](functions/setMatte.md)
+- [setPerfTraceGauge](functions/setPerfTraceGauge.md)
 - [setShadows](functions/setShadows.md)
 - [setupFirstPerson](functions/setupFirstPerson.md)
 - [setupOutdoorLighting](functions/setupOutdoorLighting.md)
