@@ -259,6 +259,45 @@ Teto esperado: ~2–4 ms (ADR-0465, Contexto). Abaixo de 5 ms, o critério já p
   (`?parityTarget=ui`); `ui` do perf-trace não piora.
 - Interruptor: `?nativeUi=0|1`.
 
+#### R2.1 — UI de runtime no renderer próprio (SPEC-0616, ADR-0615) — **feito, desligado por padrão** (2026-10-26)
+
+A cena de UI do `RendererUiBackend` é lida como dado e desenhada por um pipeline WGSL próprio (caixa SDF +
+gradiente + borda, imagem com máscara, textura tingida), um registro por quad como vertex buffer por instância
+e um draw por lote de mesma textura (o canvas do Godot). Medido no DDD 61 `5bbf6a3`, engine `47b335cc`, mesmo
+export, 1080p (`stages/r2-ui-1*`, `stages/r2-ui-ab/`):
+
+- **Paridade** `?parityTarget=ui`: galeria, Setor O e Comercial, dia e noite, **PASS 0/0**; controle
+  `?nativeUiTint=1`: **FAIL** em ~9–10% dos pixels (a área da UI) em todos os pontos; fumaça PASS (render 6,34).
+- **A/B a pé** (`&nativeUi=0` × `&nativeUi=1`, 2 réplicas, 16/16 VÁLIDAS):
+
+  | ponto | `ui` A → B | render A → B | quadro med A → B | > 33 ms A → B |
+  | --- | --- | --- | --- | --- |
+  | Setor O | 2,04 → **1,12** | 6,53 → 6,56 | 17,90 → 16,45 | 0,35 → 0,67% |
+  | Centro | 2,03 → **1,15** | 6,56 → 6,66 | 17,05 → 16,65 | 1,02 → 2,71% |
+  | Comercial | 2,17 → **1,17** | 6,81 → 6,55 | 19,45 → 17,30 | 1,03 → 0,00% |
+  | AC | 2,10 → **1,15** | 6,49 → 6,49 | 19,20 → 17,90 | 1,03 → 1,69% |
+
+  GC jovem −1,7 a −2,2 ms/s. 1º quadro jogável (evento novo `firstPlayable`) 27,5 → 26,5 s; `precompile` 7,27 →
+  6,85 s; heap JS (mediana do `heap-js`) 428 → 426 MB.
+- **Dirigindo** (Centro, `&drive=1&hora=18`, 6 réplicas por braço; válidas A 2, B 3 — as outras reprovam
+  porque o piloto não passa de 9 m/s em 40% do tempo, nos dois braços): `ui` 2,39 → **1,32**, render 6,08 →
+  6,21, quadro med 16,30 → 15,40, p95 22,90 → 25,53, p99 27,25 → 33,07, > 33 ms 0 → 0,94%, draws 154,5 → 154
+  (dentro do ruído do A/A: p99 até 9,4 ms). Rodadas em `stages/r2-ui-ab/drive-all/`.
+- **Instrumento corrigido no caminho:** os draws da UI nativa não entravam no `info.render` do `three` (a
+  coluna `draws` do kit caía ~27 e a regra de densidade do `drive` reprovaria o braço B); agora entram.
+
+#### O que falta para fechar o R2 — **decisão pendente**
+
+Os critérios (2) (carga e heap caem) e (1) (o `WebGPURenderer` não é instanciado) exigem que o renderer
+próprio seja **dono do quadro inteiro**: device e contexto do canvas, pass da cena (limpa, alvo, profundidade),
+lista e ordem fora da `RenderList` do `three` (hoje o RS1 vive dentro dela), passe de saída (ACES + sRGB),
+upload próprio de textura (KTX2 com mips, canvas, `DataTexture`, imagem, geração de mipmap), aquecimento sem
+`compileAsync` e os instrumentos que leem o `three`. No jogo, `SunShadow` e `waitGpuIdle` recebem o
+`threeRenderer` (bastaria um objeto compatível na fachada). Levantamento completo na SPEC-0616 ("O que falta
+para o critério (1)"). É o passo 2 da P2 da SPEC-0585 somado a parte do R4: vários dias, mexe no caminho que o
+R1 provou, paridade a cada passo. **Aguarda decisão do usuário** (fazer agora, depois dos itens do jogo, ou
+junto com o R6/R4).
+
 ### ~~R3 — Cobertura dos outros jogos~~ — fora do escopo
 
 **Removido por decisão do usuário (2026-10-24)**, depois de uma estimativa de 2–4 semanas só

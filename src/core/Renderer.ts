@@ -46,6 +46,8 @@ import {
   type RenderIdRendererLike,
 } from '../render/RenderIdRefresh.js';
 import { installWriteBufferCensus } from '../render/WriteBufferCensus.js';
+import { createNativeUiRenderer, type NativeUiRenderer } from '../render/native/ui/NativeUiRenderer.js';
+import { mainPassArm } from '../render/MainPassArm.js';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────────────
 
@@ -126,6 +128,9 @@ export class Renderer {
    * (é cena 3D, ao contrário da RT da UI). Criada sob demanda em `renderSceneHDR`.
    */
   private _sceneHdrTarget: THREE.RenderTarget | null = null;
+
+  /** Runtime UI drawn by the native renderer (`?nativeUi=1`, SPEC-0616); `undefined` = not decided yet. */
+  private _nativeUi: NativeUiRenderer | null | undefined;
 
   /** `true` quando o backend (WebGPU ou fallback WebGL2) terminou o init. */
   private _initialized = false;
@@ -335,6 +340,14 @@ export class Renderer {
     height: number,
   ): unknown {
     if (!this._initialized || width <= 0 || height <= 0) return null;
+    if (this._nativeUi === undefined) this._nativeUi = createNativeUiRenderer(this._renderer);
+    if (this._nativeUi && !mainPassArm.uiThree) {
+      const texture = this._nativeUi.render(scene, camera, width, height);
+      // The trace `draws` keeps counting the UI draws, as when the three drew them (SPEC-0616).
+      const info = (this._renderer as unknown as { info?: { render?: { drawCalls: number } } }).info?.render;
+      if (info) info.drawCalls += this._nativeUi.stats.draws;
+      return texture;
+    }
     if (!this._uiTarget || this._uiTarget.width !== width || this._uiTarget.height !== height) {
       this._uiTarget?.dispose();
       this._uiTarget = new THREE.RenderTarget(width, height, {
@@ -450,6 +463,7 @@ export class Renderer {
     }
     this._uiTarget?.dispose();
     this._uiTarget = null;
+    this._nativeUi?.dispose();
     this._sceneHdrTarget?.dispose();
     this._sceneHdrTarget = null;
     this._renderer.dispose();
