@@ -1,3 +1,47 @@
+# [0.86.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.85.0...v0.86.0) (2026-10-25)
+
+
+### Bug Fixes
+
+* **native:** setup-worktree cria a junção de third_party sem aspas aninhadas no cmd (SPEC-0525) ([ef1440b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ef1440b1221a2a0d1221fd58390aa18bb9e89589))
+* **render:** aceita skinIndex uint32 (o three alarga o array na hora do upload) e lista 8 motivos de recusa (SPEC-0565) ([cf62a99](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cf62a990218a40f48760595955a28ae9806affa7))
+* **render:** instanciado que muda e para não fica com matrizes velhas no three (SPEC-0555, SPEC-0325) ([9e51d3c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/9e51d3c840b63fb4252f9de86d6cde61198fde13))
+* **render:** lambert com emissivo não preto fica no three (SPEC-0535) ([4bf6409](https://github.com/BuuhV-Projects/cortex-game-engine/commit/4bf640944c55d7d3bd1a1625e093c4b1cb1c71f5))
+* **render:** lambert com receiveShadow fica no three até a paridade da sombra (SPEC-0535) ([f1fb411](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f1fb4111aa340985ce572c4ed6c0b5cde07259fc))
+* **render:** lambert instanciado fica no three até a correção de instâncias (SPEC-0535) ([f2f149b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f2f149b47f8eca92bc4ccf8c348efd0d6635194d))
+* **render:** mantém a cópia do three coerente ao reescrever buffer dinâmico (SPEC-0555) ([04d0719](https://github.com/BuuhV-Projects/cortex-game-engine/commit/04d07194ca75de9e9363960316d16a17b4af331d))
+* **render:** mapa do sol no passe C++ na ordem float do three e receiveShadow religado no lambert (SPEC-0545) ([30a21e6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/30a21e64575f90ed92e68222a524aefaafd3d0f7))
+* **render:** núcleo nativo conta instâncias de InstancedBufferGeometry como o three (SPEC-0555) ([ace2d73](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ace2d73a4a64300d1e58f7c35a60a32a03b1908e))
+* **render:** objeto que volta ao three depois de pular quadros não fica com UBO velho (SPEC-0555, SPEC-0325) ([ecaf612](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ecaf612f54334044d7d318957bc82533782dfc40))
+* **render:** paridade do mapa único compara mapa C++ × three no ?parityFreeze (SPEC-0545) ([0df1805](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0df1805f2ba4a23f6fdd937a4389d9de594d415b))
+* **render:** paridade do mapa único só força redesenho com o sol aceso (SPEC-0545) ([e3f7b72](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e3f7b721e9530fa73f2b1a38965f7013a38c7165))
+* **render:** posição [@invariant](https://github.com/invariant) nos modelos iluminados (SPEC-0535) ([dce009a](https://github.com/BuuhV-Projects/cortex-game-engine/commit/dce009ad6134f9bb9d12df9bea647af480e18f12))
+* **render:** recusas da varredura do precompile contadas à parte e sem cache (SPEC-0585 P1) ([ac2b352](https://github.com/BuuhV-Projects/cortex-game-engine/commit/ac2b352acfdd0cbc0f77558df3bb4838c973ad07))
+* **render:** recusas do quadro de aquecimento também ficam à parte e sem cache (SPEC-0585 P1) ([a563f40](https://github.com/BuuhV-Projects/cortex-game-engine/commit/a563f40d5be9771e13d0a8996defd4cb23c6208d))
+* **render:** standard fora dos modelos nativos até a paridade da fachada (SPEC-0535) ([18b43d7](https://github.com/BuuhV-Projects/cortex-game-engine/commit/18b43d7ae62cf84d1ee9b1cec9355a627cfa60b6))
+
+
+### Features
+
+* **render:** aquecimento passa pelo renderer próprio; 0 pipelines nascidos em jogo (SPEC-0585 P1) ([e3c7c99](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e3c7c99bd23ebb7d926a2d092f3e3b6603c1703c))
+* **render:** censo nomeia as recusas dos modelos iluminados (SPEC-0535) ([0cec302](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0cec302ee22b0654b8d1a10f2dd4202b895d4c67))
+* **render:** fase 0 do dono da pass — seções do render validadas (SPEC-0585) ([e123f26](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e123f26dd64f553938f6ea48f0983384ade1a43d))
+* **render:** lambert e standard aceitam alpha (transparente) (SPEC-0535) ([f0831b6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f0831b6f6821d0c1c8759969b5832cc49df40a3f))
+* **render:** oclusor só de profundidade (colorWrite=false) no renderer próprio (SPEC-0585) ([6596e33](https://github.com/BuuhV-Projects/cortex-game-engine/commit/6596e337cf03664a736111be9f3d0148d417ac19))
+* **render:** R1.1 do renderer nativo — servidor, modelo unlit e costuras das frentes (SPEC-0495) ([f013676](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f0136763ec04ba2937271dc9a12aa691d108488f))
+* **render:** R1.2 do renderer nativo — lambert, standard e bloco de luzes (SPEC-0535) ([1253488](https://github.com/BuuhV-Projects/cortex-game-engine/commit/12534883a64734d5b1e33b18e733d0a7af3fdd4f))
+* **render:** R1.4 do renderer nativo — instâncias, transparência e estado de pipeline (SPEC-0555) ([d91fce5](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d91fce5e68e3d19ad677d9fa6d7abc38be2eb38d))
+* **render:** R1.5 do renderer nativo — skinning no núcleo e API de WGSL do jogo (SPEC-0565, ADR-0566) ([fda92de](https://github.com/BuuhV-Projects/cortex-game-engine/commit/fda92deb091c7d387a5b39d52e53e79b8fea09dd))
+* **render:** religa o emissivo animado no lambert; standard segue fora por outra causa (SPEC-0555) ([7e83a02](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7e83a021832b829c1b3b59ee8bb7bc482975f6c8))
+* **render:** religa o standard no renderer nativo (SPEC-0535) ([d7dde84](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d7dde8460b1a0f99a60c7540f39316249697670c))
+* **render:** sombra do sol no renderer nativo — PCFSoft no grupo 1 e mapa único no passe C++ (SPEC-0545) ([de0d3b3](https://github.com/BuuhV-Projects/cortex-game-engine/commit/de0d3b3ddff075cdcb5d3bfe49c584b9e6b493b7))
+* **render:** stub WGSL nativeShadow no bloco de sombra do renderer nativo (SPEC-0495) ([f693670](https://github.com/BuuhV-Projects/cortex-game-engine/commit/f69367054de957e097ed9a4a484a50d3ba9a2c19))
+
+
+### Performance Improvements
+
+* **render:** textura do material só é atualizada quando a versão muda (SPEC-0585 1a) ([3236aea](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3236aea90c822aefb94f1140368f3f1980774f5d))
+
 # [0.85.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.84.0...v0.85.0) (2026-10-24)
 
 
