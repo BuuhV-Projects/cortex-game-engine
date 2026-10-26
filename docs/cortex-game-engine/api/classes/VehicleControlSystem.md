@@ -26,7 +26,7 @@ sobrescreveria a chase cam ao dirigir). As rodas raycastam no WASM (sem custo de
 
 > **new VehicleControlSystem**(`physics`, `vehicle`, `car`, `camera`, `gamepad`, `input?`, `options?`): `VehicleControlSystem`
 
-Defined in: [src/systems/VehicleControlSystem.ts:130](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L130)
+Defined in: [src/systems/VehicleControlSystem.ts:132](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L132)
 
 #### Parameters
 
@@ -176,7 +176,7 @@ handles nativos que o GC não coleta sozinho (ex.: o mundo do Rapier em
 
 > **update**(`_entities`, `deltaTime`): `void`
 
-Defined in: [src/systems/VehicleControlSystem.ts:146](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L146)
+Defined in: [src/systems/VehicleControlSystem.ts:148](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/systems/VehicleControlSystem.ts#L148)
 
 Executa a lógica do sistema para o frame/passo atual.
 
