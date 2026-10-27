@@ -1,3 +1,16 @@
+# [0.90.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.89.0...v0.90.0) (2026-10-26)
+
+
+### Bug Fixes
+
+* **render:** draws da UI nativa entram no contador do trace (SPEC-0616) ([bcba8fc](https://github.com/BuuhV-Projects/cortex-game-engine/commit/bcba8fc095ab6bf607b1ae4b0b153185ae8ad269))
+
+
+### Features
+
+* **perf:** evento firstPlayable no trace e linha ui no A/B do kit (SPEC-0616) ([47b335c](https://github.com/BuuhV-Projects/cortex-game-engine/commit/47b335ccda4dc26a374c8ee364d7c89c917e2262))
+* **render:** R2.1 — UI de runtime desenhada pelo renderer próprio atrás de ?nativeUi=1 (SPEC-0616) ([d10ee5b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/d10ee5b003881a31ce292368fdd8ae77457fc3a5))
+
 # [0.89.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.88.0...v0.89.0) (2026-10-26)
 
 
