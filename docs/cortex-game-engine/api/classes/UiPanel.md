@@ -33,7 +33,7 @@ Defined in: [src/ui/runtime/widgets.ts:99](https://github.com/BuuhV-Projects/cor
 
 ##### props?
 
-[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiPanel`, `"background"` \| `"backgroundTo"` \| `"cornerRadius"` \| `"borderRadius"` \| `"borderWidth"` \| `"borderColor"` \| `"backgroundImage"` \| `"boxShadow"`\>\> = `{}`
+[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiPanel`, `"borderColor"` \| `"borderWidth"` \| `"background"` \| `"backgroundTo"` \| `"cornerRadius"` \| `"borderRadius"` \| `"backgroundImage"` \| `"boxShadow"`\>\> = `{}`
 
 #### Returns
 

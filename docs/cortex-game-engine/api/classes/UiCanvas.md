@@ -42,7 +42,7 @@ Defined in: [src/ui/runtime/widgets.ts:221](https://github.com/BuuhV-Projects/co
 
 ##### props?
 
-[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiCanvas`, `"background"` \| `"cornerRadius"` \| `"borderWidth"` \| `"borderColor"` \| `"boxShadow"` \| `"pointerEvents"`\>\> & `object` = `{}`
+[`UiWidgetProps`](../interfaces/UiWidgetProps.md) & `Partial`\<`Pick`\<`UiCanvas`, `"borderColor"` \| `"borderWidth"` \| `"background"` \| `"cornerRadius"` \| `"boxShadow"` \| `"pointerEvents"`\>\> & `object` = `{}`
 
 #### Returns
 
