@@ -40,10 +40,15 @@ interface PipelinesLike {
  * SPEC-0309). O descritor sai do render real (mesmas chaves do jogo); só a
  * criação fica assíncrona e o Dawn compila em paralelo.
  *
+ * Com `root`, só os objetos DESSA cena ficam assíncronos: os renders internos do
+ * three (conversão panorama→cubemap do fundo, PMREM, transformação de cor) rodam
+ * em outra cena, uma vez só, e precisam desenhar no mesmo quadro — assíncronos,
+ * eram pulados e o céu ficava preto em cache (SPEC-0617).
+ *
  * @returns as promessas dos pipelines criados — espere todas antes de revelar o
  *   jogo. Vazio (e `draw` roda normal) se o three não tiver o caminho esperado.
  */
-export function drawWithParallelPipelines(threeRenderer: unknown, draw: () => void): Promise<unknown>[] {
+export function drawWithParallelPipelines(threeRenderer: unknown, draw: () => void, root?: object): Promise<unknown>[] {
   const pipelines = (threeRenderer as { _pipelines?: Partial<PipelinesLike> } | null)?._pipelines;
   if (!pipelines || typeof pipelines.getForRender !== 'function' || typeof pipelines.updateForRender !== 'function') {
     draw();
@@ -54,6 +59,10 @@ export function drawWithParallelPipelines(threeRenderer: unknown, draw: () => vo
   const previous = pipelines.updateForRender;
   const getForRender = pipelines.getForRender.bind(pipelines);
   pipelines.updateForRender = (renderObject: unknown) => {
+    if (root !== undefined && (renderObject as { scene?: unknown } | null)?.scene !== root) {
+      previous.call(pipelines, renderObject);
+      return;
+    }
     getForRender(renderObject, promises);
   };
   try {

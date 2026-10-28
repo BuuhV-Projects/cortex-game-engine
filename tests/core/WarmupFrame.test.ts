@@ -80,6 +80,23 @@ describe('drawWithParallelPipelines (ADR-0310)', () => {
     expect(pipelines.sync).toBe(1);
   });
 
+  it('com a cena: renders internos do three (outra cena) ficam síncronos (SPEC-0617)', async () => {
+    const pipelines = new FakePipelines();
+    const root = {};
+    const promises = drawWithParallelPipelines(
+      { _pipelines: pipelines },
+      () => {
+        pipelines.updateForRender({ scene: root });
+        pipelines.updateForRender({ scene: {} }); // ex.: panorama → cubemap do fundo
+        pipelines.updateForRender({ scene: root });
+      },
+      root,
+    );
+    expect(promises).toHaveLength(2);
+    expect(pipelines.sync).toBe(1);
+    await Promise.all(promises);
+  });
+
   it('three sem o caminho esperado: desenha normal e não há o que esperar', () => {
     let drawn = 0;
     expect(drawWithParallelPipelines({}, () => drawn++)).toEqual([]);
