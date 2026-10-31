@@ -20,6 +20,7 @@ import { cullShadowCasters, DEFAULT_SHADOW_CASTER_MIN_RATIO } from './ShadowCast
 import { debug } from '../core/debug.js';
 import { activeSceneMirror } from '../core/NativeSceneMirror.js';
 import { CasterGeometryRegistry } from '../render/CasterGeometryRegistry.js';
+import { ShadowAlphaClipSync } from '../render/ShadowAlphaClipSync.js';
 
 /**
  * CSM que SEGUE a câmera que está renderizando (a do frame), não a cacheada no 1º render.
@@ -129,6 +130,8 @@ class CameraFollowingCSM extends CSMShadowNode {
 
   /** Registro de geometria dos casters (SPEC-0245, E2). Preguiçoso por frame. */
   private readonly _registroDeCasters = new CasterGeometryRegistry();
+  /** Recorte alfa dos casters no host (SPEC-0642). */
+  private readonly _recorteAlfa = new ShadowAlphaClipSync();
 
   /**
    * O passe nativo assumiu o último frame? (SPEC-0245, E7.)
@@ -282,6 +285,8 @@ class CameraFollowingCSM extends CSMShadowNode {
     // As geometrias que o streaming trouxe desde o frame passado entram na
     // fila aqui (SPEC-0289) — antes só a cena do primeiro frame era varrida.
     this._registroDeCasters.atualizar(cena, backend, espelho.drainNewGeometries());
+    // SPEC-0642: textura + UV de quem tem `alphaTest`, antes da 1ª cascata.
+    this._recorteAlfa.sync(espelho, backend);
 
     const cascatas = (this as unknown as { lights?: CascataDoCsm[] }).lights;
     if (!cascatas || cascatas.length === 0) {
