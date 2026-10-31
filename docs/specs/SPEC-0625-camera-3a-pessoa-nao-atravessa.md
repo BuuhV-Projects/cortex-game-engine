@@ -1,7 +1,7 @@
 # SPEC-0625 - Câmera de 3ª pessoa não atravessa objeto (raio da câmera, encolher na hora, desvio)
 
 **Data:** 2026-10-31
-**Status:** aceito (substitui em parte a SPEC-0311: o encolhimento deixa de ser suavizado)
+**Status:** aceito (substitui em parte a SPEC-0311: o encolhimento deixa de ser suavizado); custo otimizado na SPEC-0646
 
 ## Contexto
 
