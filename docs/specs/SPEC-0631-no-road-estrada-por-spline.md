@@ -64,6 +64,12 @@ Depois: média móvel com janela de `smooth` metros (distância real, não índi
 (passadas para frente e para trás, média das duas). O resultado é o **greide**: a pista é plana na largura e segue o
 greide no comprimento.
 
+A janela é **simétrica e encolhe perto das pontas** (meia janela = a menor entre `smooth/2` e a distância até cada
+ponta): a primeira e a última amostra ficam no Y de referência, e uma rampa reta passa sem mudança. Assim dois nós
+encadeados que dividem o ponto da emenda chegam nele no mesmo Y (com a janela cortada só de um lado, a ponta de uma
+rampa de 6% com `smooth` 12 saía 34 cm deslocada). O `maxSlope` ainda pode mexer na ponta quando a referência é mais
+íngreme que ele.
+
 `maxSlope` baixo deixa a pista mais plana e corta mais o morro; alto acompanha mais o relevo. 25% sobe uma serra
 fazendo ladeira e cava só um canal da largura da pista.
 

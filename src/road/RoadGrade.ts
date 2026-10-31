@@ -15,6 +15,8 @@ export const ROAD_DEFAULT_SMOOTH_METERS = 12;
 /** O acostamento mínimo cobre tantas células da grade além da borda da pista. */
 const SHOULDER_CELLS = 1.5;
 const MIN_HALF_WIDTH = 0.05;
+/** Janela menor que isto (m) não tira média: a amostra fica com a própria referência. */
+const WINDOW_EPS = 1e-6;
 
 /** Opções do greide suavizado. */
 export interface GradeOptions {
@@ -54,21 +56,30 @@ export function smoothGrade(samples: readonly RoadSample[], refY: readonly numbe
   for (let i = 1; i < n; i++) seg[i] = horiz(samples[i]!.pos, samples[i - 1]!.pos);
 
   // (1) Média móvel por distância real (a tessellation é adaptativa: índices não são equiespaçados).
+  // Janela simétrica que encolhe nas pontas: a ponta fica no Y de referência (nós encadeados
+  // emendam no mesmo Y) e rampa reta passa intacta (SPEC-0631 §2).
+  const cum = new Array<number>(n).fill(0);
+  for (let i = 1; i < n; i++) cum[i] = cum[i - 1]! + seg[i]!;
+  const total = cum[n - 1]!;
+  // Integral da referência (linear por partes na distância) de 0 até `d`.
+  const prefix = new Array<number>(n).fill(0);
+  for (let i = 1; i < n; i++) prefix[i] = prefix[i - 1]! + ((refY[i]! + refY[i - 1]!) / 2) * seg[i]!;
+  const integralTo = (d: number): number => {
+    let lo = 0;
+    let hi = n - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (cum[mid]! <= d) lo = mid;
+      else hi = mid;
+    }
+    const t = seg[hi]! > 0 ? (d - cum[lo]!) / seg[hi]! : 0;
+    const yd = refY[lo]! + (refY[hi]! - refY[lo]!) * t;
+    return prefix[lo]! + ((refY[lo]! + yd) / 2) * (d - cum[lo]!);
+  };
   const y = new Array<number>(n);
   for (let i = 0; i < n; i++) {
-    let sum = refY[i]!;
-    let w = 1;
-    if (half > 0) {
-      for (let k = i - 1, d = seg[i]!; k >= 0 && d <= half; d += seg[k]!, k--) {
-        sum += refY[k]!;
-        w++;
-      }
-      for (let k = i + 1, d = seg[k] ?? Infinity; k < n && d <= half; k++, d += seg[k] ?? Infinity) {
-        sum += refY[k]!;
-        w++;
-      }
-    }
-    y[i] = sum / w;
+    const h = Math.min(half, cum[i]!, total - cum[i]!);
+    y[i] = h > WINDOW_EPS ? (integralTo(cum[i]! + h) - integralTo(cum[i]! - h)) / (2 * h) : refY[i]!;
   }
 
   // (2) Limite de inclinação nas duas direções; a média das duas passadas fica dentro do limite.
