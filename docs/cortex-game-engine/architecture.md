@@ -609,6 +609,16 @@ proibidos agora vivem no `AGENTS.md` de `templates/new-project/` (com um
 e como o prompt tambem nao tem mais as regras, aquele projeto fica sem contrato
 ate receber o `AGENTS.md`.
 
+**Contrato do export nativo no template** (SPEC-0643): `templates/new-project/.claude/`
+traz um hook `Stop` + `SubagentStop` (`settings.json` → `hooks/native-contract.sh` →
+`native-contract.mjs`, Node sem deps) que ao fim de cada implementacao do agente checa,
+sem rodar o host, o que o nativo exige: ERRO (exit 2) sem `nativeRenderer: true` no
+`new Game` ou com `outdoorLighting` sem `csm: true`; DEBITO novo (material fisico,
+normal map, `MASK`, `AmbientLight`, `environment`, `toneMapping`...) tambem bloqueia, e
+a lista fica em `docs/debito-nativo.md` do jogo. O template ja nasce dentro do contrato.
+O `cp` recursivo do `fs:createProject` leva a pasta oculta. ⚠️ e heuristico (asset em
+disco e texto do codigo): quando a engine ganhar a feature, apague a regra do `.mjs`.
+
 ## 6b. Chat IA: prompt enxuto, skills do plugin e validação geométrica
 
 - **Anatomia do loop** (`electron/agent/`, ADR-0017/ADR-0180): `agentLoop.ts` só

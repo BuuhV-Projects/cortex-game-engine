@@ -24,7 +24,7 @@ import level from './scenes/level.json'
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
 
-const game = new Game({ canvas })
+const game = new Game({ canvas, nativeRenderer: true })
 
 // Scripts anexáveis (ADR-0085): TODO arquivo em `scripts/` é auto-registrado —
 // o nome no Inspector ("Adicionar Componente → Script") é o nome do ARQUIVO
