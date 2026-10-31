@@ -1,7 +1,7 @@
 # SPEC-0646 - Braço da câmera de 3ª pessoa: candidatas preparadas uma vez por quadro
 
 **Data:** 2026-10-31
-**Status:** aceito (otimiza a SPEC-0625 sem mudar o comportamento)
+**Status:** não mergeada — o usuário escolheu manter a câmera revertida (SPEC-0302/0311, merge b92d1dc0 da main), 31/10/2026; fica na branch `claude/camera-0625-perf` como referência caso a SPEC-0625 volte
 
 ## Contexto
 
@@ -67,4 +67,16 @@ para objeto que se move (carro) até o próximo rebuild.
 
 ## Medição
 
-(preenchida após a rodada A/B no export nativo)
+Export nativo do Port Hollow, autopiloto andando, `?systemProfile=1`, rodadas
+intercaladas de 300 s (antes = main 8466bddc com a SPEC-0625; depois = esta branch),
+ms/quadro do `ThirdPersonControlSystem`:
+
+| rodada | quadros | ms/quadro |
+|---|---|---|
+| antes 1 | 1410 | 3,62 |
+| depois 1 | 1818 | 1,28 |
+| antes 2 | 1889 | 3,61 |
+| depois 2 | 1935 | 0,98 |
+
+Sonda por parte (etapa 1 → final): `clearance` 2,0–2,5 → ~1,2; desvio até 1,8 → ~0,5
+quando encosta; `collect` 0,9–1,4 → ~0,05.
