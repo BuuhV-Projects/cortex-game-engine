@@ -40,4 +40,8 @@ Uso manual: `sh .claude/hooks/native-contract.sh .` (relatório; sai 1 com ERRO)
   sem recorte alfa (SPEC-0642). (O `outdoorLighting` se adapta sozinho no host desde a SPEC-0645/ADR-0644: a regra
   "sem adaptação no host" saiu do `.mjs`; ficou só "céu não uniforme" — `hdri`, `skyTop/Middle/Bottom`,
   `skyboxLighting` ou sem `sky` —, que a engine não converte.)
-- Projeto novo nasce com 0 erros e 0 débitos.
+- Projeto novo nasce com 0 erros e 8 débitos de recorte alfa (`alphaMode: MASK` nas 8 espécies de
+  `assets/vegetation/` do template), que somem quando a SPEC-0642 entrar (`SHADOW_ALPHA_CLIP = true` no `.mjs`). A
+  1ª execução do hook grava esses 8 como base, sem bloquear.
+- ⚠️ Teste o validador com os binários reais: numa worktree sem `git lfs pull` os `.glb` são ponteiros de LFS, que o
+  validador ignora em silêncio (foi assim que esses 8 débitos passaram despercebidos).
