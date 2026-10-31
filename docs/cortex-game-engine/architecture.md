@@ -1348,6 +1348,12 @@ Substitui o `three` no desenho do export **por objeto**, a caminho de 0 recusas 
   do quadro (`renderList.pushLight` na projeção), então o bloco varre a cena só quando a raiz muda e
   filtra visibilidade/camadas por quadro; luz que os modelos não reproduzem (pontual, ambiente,
   spot com sombra, `scene.environment`) faz os modelos recusarem (`lightsRefusal()`).
+- **`outdoorLighting` no host (ADR-0644, SPEC-0645)**: com `__cortexBloom` + `nativeRendererRequested()`, o preset
+  não liga ACES no three (vai pro composite do host: `enableNativeToneMapping` em `core/nativePostFX.ts`, e o
+  `Renderer.render` passa a desenhar na RT HDR e entregar ao `__cortexSceneHdr`, como o `PostFX` nativo) e soma
+  ambient + environment uniforme ao hemisfério (`scene/NativeOutdoorLighting.ts`; o environment entra ×π, a
+  convenção do three). Um `PostFX` dono do composite (`configureNativePostFX`) tira o tone mapping do preset; o
+  `reset` também. **Armadilha**: céu não uniforme (HDRI/degradê/panorama com luz) ainda põe `scene.environment`.
 - **Armadilha**: a saída é LINEAR (no DDD 61 a passada `outputColorTransform` do `three` aplica o
   sRGB no quadro); a névoa do `three` é `smoothstep(near, far, -z)`, não rampa linear.
 - **Paridade**: `?parityFreeze` alterna renderer próprio × `three` sem código novo (o braço

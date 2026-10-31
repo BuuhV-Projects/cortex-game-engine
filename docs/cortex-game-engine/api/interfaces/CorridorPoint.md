@@ -6,7 +6,7 @@
 
 # Interface: CorridorPoint
 
-Defined in: src/road/RoadCorridor.ts:8
+Defined in: [src/road/RoadCorridor.ts:8](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadCorridor.ts#L8)
 
 Ponto do eixo no plano (XZ).
 
@@ -16,7 +16,7 @@ Ponto do eixo no plano (XZ).
 
 > **x**: `number`
 
-Defined in: src/road/RoadCorridor.ts:9
+Defined in: [src/road/RoadCorridor.ts:9](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadCorridor.ts#L9)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: src/road/RoadCorridor.ts:9
 
 > **z**: `number`
 
-Defined in: src/road/RoadCorridor.ts:10
+Defined in: [src/road/RoadCorridor.ts:10](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadCorridor.ts#L10)

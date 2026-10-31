@@ -26,7 +26,7 @@ import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 import type { Renderer } from './Renderer.js';
 import type { Scene } from './Scene.js';
-import { nativePostFXHost, nativeSceneHdrSink, type NativePostFXConfig } from './nativePostFX.js';
+import { configureNativePostFX, nativePostFXHost, nativeSceneHdrSink, type NativePostFXConfig } from './nativePostFX.js';
 import { debug } from './debug.js';
 
 /** Ajustes do bloom. Alteráveis em runtime via `postfx.bloom`. */
@@ -131,7 +131,7 @@ export class PostFX {
     if (this._native) {
       const cfg = options.bloom === true ? {} : (options.bloom || {});
       const vig = options.vignette === true ? {} : (options.vignette || null);
-      this._native({
+      configureNativePostFX({
         strength: cfg.strength ?? 0.8,
         threshold: cfg.threshold ?? 0,
         radius: cfg.radius ?? 0,
@@ -249,7 +249,7 @@ export class PostFX {
       // aqui derrubaria o bloom da fase nova (SPEC-0152). O tone mapping não
       // precisa de reset — ele nunca saiu do JS.
       if (_activeNativeOwner === this) {
-        this._native(null);
+        configureNativePostFX(null);
         _activeNativeOwner = null;
       }
       return;

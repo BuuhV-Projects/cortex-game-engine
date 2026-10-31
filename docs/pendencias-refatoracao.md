@@ -13,3 +13,4 @@ src/editor/EditorModel.ts
 src/editor/EditorInspector.ts
 src/editor/ObjectEditSystem.ts
 electron/main.ts
+src/scene/OutdoorLighting.ts
