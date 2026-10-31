@@ -37,7 +37,17 @@ nas **mesmas** candidatas: o trabalho JS se repetia 6 vezes (e 132 vezes no desv
 3. **Desvio** (`CameraArmProbe.swing`): todas as sondas têm comprimento `need + r` e saem
    do alvo ou do peito, então cabem num cilindro em volta do alvo: um `nearXZ(alvo, need
    + 2r)` com faixa de Y preparado uma vez serve os 6 raios de todos os ângulos.
-4. Comportamento, constantes e testes da SPEC-0625 não mudam; o desvio continua só
+4. **Índice compartilhado** (etapa 2, depois da 1ª medição): o `collect` refazia um
+   índice próprio das ~660 malhas visíveis a cada varredura — quase todas já indexadas
+   pelo `groundIndex` do `CharacterPhysicsSystem`. A varredura publicada
+   (`publishScan`) passa a levar também esse índice (`ground`) e o **resto** (`rest`:
+   visível que não é chão — vegetação, água, marcação de rua; `groundMeshes` é
+   subsequência de `visibleMeshes`, então sai num passe O(n)). A câmera consulta o
+   `ground` compartilhado (o próprio jogador sai por `skip`, como no raio de chão da
+   física) e só reconstrói um índice pequeno do `rest`. Mesmo conjunto de alvos de antes
+   (visível − skinada − jogador). Sem varredura publicada (sem `CharacterPhysicsSystem`
+   ou com várias raízes), segue o índice próprio de antes.
+5. Comportamento, constantes e testes da SPEC-0625 não mudam; o desvio continua só
    quando nem `CAM_MIN_DIST` cabe.
 
 Descartado: **spherecast do Rapier** no lugar dos raios. A cidade colide com a câmera
@@ -52,7 +62,7 @@ para objeto que se move (carro) até o próximo rebuild.
 - `prepareCandidates`/`firstHitPrepared` são internos (não exportados no
   `index-runtime`); o `alongRay` ganha o parâmetro opcional `pad` (padrão 0, mesmo
   resultado de antes).
-- O `collect` (rebuild do índice próprio) continua: fica para depois se ainda pesar.
+- `SceneScan` ganha `ground`/`rest` opcionais (interno, não exportado).
 
 ## Medição
 
