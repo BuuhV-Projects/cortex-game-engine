@@ -1,3 +1,34 @@
+# [0.92.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.91.0...v0.92.0) (2026-10-31)
+
+
+### Bug Fixes
+
+* **camera:** câmera de 3ª pessoa não atravessa objeto (raio da câmera, encolher imediato, desvio de yaw) ([7b32f59](https://github.com/BuuhV-Projects/cortex-game-engine/commit/7b32f59aa932e42784aaf03a9ab92c7e67d14e81))
+* **camera:** copa da vegetação não é alvo do braço da 3ª pessoa (SPEC-0647) ([3a2d6f6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/3a2d6f643ec858952dbac5ed7cb5ab67b64f0524))
+* **engine:** aquecimento paralelo não pula os renders internos do three (céu preto) ([2571099](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2571099bdff64ed17acc3ffe1ac4e4d560235659))
+
+
+### Features
+
+* **native:** passe de sombra nativo desenha casters com recorte alfa (SPEC-0642) ([1d067be](https://github.com/BuuhV-Projects/cortex-game-engine/commit/1d067be68a27a24c4279b8ea58806a4159333a0e))
+* **render:** fill do ambiente exposto em userData.cortexAmbientFill do hemisfério (SPEC-0645) ([cafaea2](https://github.com/BuuhV-Projects/cortex-game-engine/commit/cafaea231d1a937043c98192eb9f4d6e053ea2b1))
+* **render:** outdoorLighting no host nativo sem recusa do renderer próprio (SPEC-0645) ([2b806fa](https://github.com/BuuhV-Projects/cortex-game-engine/commit/2b806fa190258a89bcdb4e7f1ff4951e9417a326))
+* **road:** árvore não fica na pista — estrada esconde a vegetação do corredor sem apagar o dado (SPEC-0631 §3b) ([5bcab77](https://github.com/BuuhV-Projects/cortex-game-engine/commit/5bcab77460ad6255bfcbb6ebdfa03c0b1c661298))
+* **road:** estrada por spline enxuta — fita, corte/aterro não destrutivo, chão do carro e edição no F2 (SPEC-0631) ([b633739](https://github.com/BuuhV-Projects/cortex-game-engine/commit/b63373957b44ff03b364409a2bb1d9880ada9afd))
+* **sombra:** sincroniza textura e UV dos casters com alphaTest para o host (SPEC-0642) ([573c586](https://github.com/BuuhV-Projects/cortex-game-engine/commit/573c5866cb8e36c2604b9908ecb4979ed47eed69))
+* **template:** hook do contrato do export nativo e template com nativeRenderer + CSM (SPEC-0643) ([49f6dfe](https://github.com/BuuhV-Projects/cortex-game-engine/commit/49f6dfe633e9d28b21b253648370435f737cd361))
+
+
+### Performance Improvements
+
+* **camera:** braço consulta o índice de chão da física e um feixe só pela linha média (SPEC-0646) ([c5c66e6](https://github.com/BuuhV-Projects/cortex-game-engine/commit/c5c66e67f276019ad47e3fdc1f135b248eaf6e63))
+* **camera:** braço da 3ª pessoa roteia as candidatas uma vez por quadro (SPEC-0646) ([0a80609](https://github.com/BuuhV-Projects/cortex-game-engine/commit/0a806093342b60256ca60b316138f7d12480da9e))
+
+
+### Reverts
+
+* **camera:** braço da 3ª pessoa volta à SPEC-0302/0311 (remove SPEC-0625) ([8b6650b](https://github.com/BuuhV-Projects/cortex-game-engine/commit/8b6650b4f699b176753271e9676f74642d1d7dc5))
+
 # [0.91.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.90.0...v0.91.0) (2026-10-31)
 
 
