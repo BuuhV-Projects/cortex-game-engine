@@ -16,6 +16,22 @@ const MIN_TILE = 0.5;
 /** Cor exibida quando a estrada usa a cor default. */
 const DEFAULT_COLOR_HEX = '#4a4a4a';
 
+/** `[[3, 5], [9, 10]]` → `"3-5, 9-10"`. */
+export function formatBridges(spans: readonly [number, number][]): string {
+  return spans.map(([a, b]) => `${a}-${b}`).join(', ');
+}
+
+/** `"3-5, 9-10"` → `[[3, 5], [9, 10]]`; descarta par fora de `0..last` ou com início ≥ fim. */
+export function parseBridges(text: string, last: number): [number, number][] {
+  const out: [number, number][] = [];
+  for (const m of text.matchAll(/(\d+)\s*-\s*(\d+)/g)) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (a < b && b <= last) out.push([a, b]);
+  }
+  return out;
+}
+
 /**
  * Seção **"Estrada"** do Inspector (SPEC-0631 §6): largura, talude, inclinação máx. (%),
  * greide, textura, repetição, cor, chão do carro e "Editar traçado". `null` se `obj`
@@ -53,7 +69,8 @@ export function describeRoadSection(
     { kind: 'color', id: fid('roadColor'), label: 'Cor', value: r.color === null ? DEFAULT_COLOR_HEX : `#${new Color(r.color).getHexString()}` },
     { kind: 'checkbox', id: fid('roadDrivable'), label: 'Chão do carro', value: r.drivable },
     { kind: 'number', id: fid('roadClear'), label: 'Faixa sem árvores (m)', value: r.clearance, step: TALUDE_STEP },
-    { kind: 'note', id: fid('roadInfo'), text: `${r.points} pontos na curva`, tone: 'muted' },
+    { kind: 'text', id: fid('roadBridge'), label: 'Pontes (pontos)', value: formatBridges(r.bridge), placeholder: 'ex.: 3-5, 9-10' },
+    { kind: 'note', id: fid('roadInfo'), text: `${r.points} pontos na curva (0 a ${r.points - 1})`, tone: 'muted' },
   );
   if (api.editPoints) fields.push({ kind: 'button', id: fid('roadEdit'), label: '✏ Editar traçado', variant: 'primary' });
 
@@ -85,6 +102,10 @@ export function describeRoadSection(
   handlers.set(fid('roadClear'), (v) => {
     const n = num(v);
     if (n !== null) api.set(obj, { clearance: Math.max(0, n) });
+  });
+  handlers.set(fid('roadBridge'), (v) => {
+    api.set(obj, { bridge: parseBridges(String(v), r.points - 1) });
+    return { rebuild: true };
   });
   handlers.set(fid('roadPick'), () => api.pickTexture?.(obj));
   handlers.set(fid('roadNoTex'), () => {

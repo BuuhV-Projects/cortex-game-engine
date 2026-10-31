@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { Scene } from '../../src/core/Scene.js';
 import { buildScene } from '../../src/scene/SceneBuilder.js';
 import { createRoadApi } from '../../src/editor/authoring/RoadAuthoring.js';
-import { describeRoadSection } from '../../src/editor/RoadInspectorSection.js';
+import { describeRoadSection, parseBridges, formatBridges } from '../../src/editor/RoadInspectorSection.js';
 import type { EditorAuthoringContext } from '../../src/editor/authoring/AuthoringContext.js';
 import type { HandlerMap } from '../../src/editor/EditorModel.js';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
@@ -74,5 +74,18 @@ describe('RoadAuthoring', () => {
     expect(slope.value).toBe(0);
     handlers.get('x:roadSlope')!(12);
     expect((overlay.data['road'] as Record<string, { maxSlope?: number }>)['r']!.maxSlope).toBeCloseTo(0.12, 6);
+  });
+
+  it('pontes: texto do Inspector ↔ pares, e remover ponto desloca os índices dos vãos', async () => {
+    expect(parseBridges('0-1, 2-1, 1-9', 2)).toEqual([[0, 1]]);
+    expect(formatBridges([[0, 1], [3, 5]])).toBe('0-1, 3-5');
+    const { ctx, overlay, road } = await setup();
+    const { roadApi, roadEditApi } = createRoadApi(ctx);
+    const handlers: HandlerMap = new Map();
+    describeRoadSection(road, roadApi, (s) => `x:${s}`, handlers);
+    handlers.get('x:roadBridge')!('1-2');
+    expect(roadApi.get(road)!.bridge).toEqual([[1, 2]]);
+    roadEditApi.removePoint(road, 0); // pontos 1,2 viram 0,1
+    expect((overlay.data['road'] as Record<string, { bridge?: unknown }>)['r']!.bridge).toEqual([[0, 1]]);
   });
 });

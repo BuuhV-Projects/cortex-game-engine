@@ -1199,7 +1199,8 @@ pontos, Delete remove). Edições vão para `overlay.data.road[id]` e vencem o n
   "width": 8, "talude": 6, "maxSlope": 0.25,               // m, m por lado, razão (25%)
   "grade": "terrain",                                       // "terrain" (base do terreno) | "points" (Y dos pontos)
   "texture": "assets/textures/asfalto.png", "tile": 8,      // "" = sem textura explícito
-  "drivable": true, "clearance": 2 }                         // m além da borda sem árvores
+  "drivable": true, "clearance": 2,                          // m além da borda sem árvores
+  "bridge": [[1, 2]] }                                       // vãos de ponte por índice de ponto
 ```
 ```ts
 import { sampleSpline, smoothGrade, roadRibbon, moldHeightfield, buildRoads } from 'cortex-game-engine'
@@ -1213,7 +1214,11 @@ Gerador de jogo: um ponto a cada 20–40 m; raio de curva ≥ `width`; com `grad
 o Y dos pontos só vale onde não há terreno. **Não** escave o heightmap no gerador — a
 engine molda. **Árvore não fica na pista:** instâncias de `vegetation` a menos de
 `width/2 + clearance` do eixo somem (`Vegetation.setHidden`, escala 0), sem sair do dado —
-mover/apagar a estrada traz de volta (`clearRoadVegetation`, chamado junto da moldagem). Fora: perfis de via, cruzamentos, marcações, pontes, superelevação.
+mover/apagar a estrada traz de volta (`clearRoadVegetation`, chamado junto da moldagem).
+**Ponte:** `bridge: [[i0, i1]]` (índices de `points`) deixa o vão com greide reto entre as
+cabeceiras e sem corte/aterro embaixo (rio/vale intactos); a fita fica dupla face e segue
+chão do carro. Pilares/guarda-corpo são nós do jogo. Fora: perfis de via, cruzamentos,
+marcações, superelevação.
 
 ## Character controller (player/NPC com cápsula — estilo UPBGE)
 

@@ -14,6 +14,8 @@ export type RoadVec3 = [number, number, number];
 export interface RoadSample {
   pos: RoadVec3;
   tangent: RoadVec3;
+  /** Parâmetro na curva: índice do ponto de controle + fração do segmento (`2.5` = meio de 2→3). */
+  t?: number;
 }
 
 /** Amostras por 90° de curvatura (default de {@link sampleSpline}). */
@@ -87,7 +89,11 @@ export function sampleSpline(points: readonly RoadVec3[], curveDensity = ROAD_DE
     const p3 = points[i + 2] ?? points[i + 1]!;
     const steps = segmentSteps(p0, p1, p2, p3, curveDensity);
     // t=0 só no 1º segmento; os seguintes começam em 1/steps (não duplica o ponto).
-    for (let k = i === 0 ? 0 : 1; k <= steps; k++) out.push(catmullRom(p0, p1, p2, p3, k / steps));
+    for (let k = i === 0 ? 0 : 1; k <= steps; k++) {
+      const sample = catmullRom(p0, p1, p2, p3, k / steps);
+      sample.t = i + k / steps;
+      out.push(sample);
+    }
   }
   return out;
 }

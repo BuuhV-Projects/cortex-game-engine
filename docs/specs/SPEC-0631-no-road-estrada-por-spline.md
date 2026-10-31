@@ -28,6 +28,7 @@ terreno é cortado e aterrado e como a pista vira chão do carro.
   "color": "#4a4a4a",                     // cor da pista sem textura (com textura, o default é branco)
   "drivable": true,                       // chão do carro (userData.cortexRoad). Default true
   "clearance": 2,                         // m além da borda da pista sem vegetação. Default 2
+  "bridge": [[4, 7]],                     // trechos de ponte por índice de ponto — ver §3c. Default nenhum
   "steps": 16                             // amostras por 90° de curva. Default 16
 }
 ```
@@ -96,6 +97,20 @@ grade de hash dos segmentos do eixo: O(instâncias + segmentos) por estrada, nã
 
 O gerador do jogo **não precisa** tirar as árvores do corredor (pode, para economizar instâncias).
 
+### 3c. Ponte (trecho sem corte/aterro)
+
+`bridge` é uma lista de pares `[i0, i1]` de **índices de `points`** (`0 ≤ i0 < i1 ≤ último`): o trecho da curva entre
+o ponto `i0` e o ponto `i1` é ponte. Par inválido (fora do intervalo ou `i0 ≥ i1`) é ignorado.
+
+- **Greide no vão:** reto (por distância) entre a altura de referência das duas cabeceiras (pontos `i0` e `i1`), então
+  o vale ou o rio embaixo não puxa a pista para baixo. Com `grade: "points"` vale o Y da curva, como no resto. A média
+  móvel e o `maxSlope` rodam depois sobre o perfil inteiro, então a entrada e a saída da ponte ficam suaves.
+- **Terreno:** os segmentos do eixo com as duas pontas dentro do vão **não moldam** (delta zero embaixo da ponte). As
+  cabeceiras moldam normalmente, e o talude da estrada encosta nelas.
+- **Malha:** a mesma fita, desenhada dos dois lados (vista de baixo não some), e continua `cortexRoad` (chão do carro).
+  Pilares e guarda-corpo ficam com o jogo (nós comuns); estão fora do escopo da engine por ora.
+- A vegetação sai do corredor também sob a ponte (§3b).
+
 ### 4. Malha e colisão
 
 - A fita é uma grade (colunas na largura a cada ~1,5 m), com Y = greide + **0,05 m** (evita briga de profundidade com
@@ -142,7 +157,7 @@ O gerador do jogo **não precisa** tirar as árvores do corredor (pode, para eco
 ## Consequências
 
 - Fora (ADR-0630): perfis de via, cruzamentos, marcações, `navGraph`, `RegionSpec`, modo "pista acompanha o relevo",
-  superelevação e pontes.
+  superelevação. Ponte é só o trecho sem moldagem (§3c), sem estrutura.
 - Moldar custa O(segmentos × células perto da pista) por ladrilho tocado, uma vez por build e a cada edição no F2;
   não roda por quadro.
 - O renderer nativo recebe a pista como malha comum (`MeshStandardMaterial`), sem caminho especial.

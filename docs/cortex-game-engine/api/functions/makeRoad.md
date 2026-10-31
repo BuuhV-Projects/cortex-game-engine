@@ -8,7 +8,7 @@
 
 > **makeRoad**(`node`): `Mesh`
 
-Defined in: [src/scene/RoadBuild.ts:75](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L75)
+Defined in: [src/scene/RoadBuild.ts:76](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L76)
 
 Cria a malha (ainda vazia) da estrada; a geometria sai no [buildRoads](buildRoads.md).
 
@@ -70,6 +70,12 @@ Socket PRÓPRIO (nome de âncora no `kit.json` deste asset).
 `string` = `...`
 
 Socket do ALVO (nome de âncora no `kit.json` do asset do alvo).
+
+#### bridge?
+
+\[`number`, `number`\][] = `...`
+
+Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c).
 
 #### castShadow?
 

@@ -39,6 +39,8 @@ export const roadFieldsSchema = z.object({
   drivable: z.boolean().optional(),
   /** Faixa (m) além da borda da pista sem vegetação (SPEC-0631 §3b). Default {@link ROAD_DEFAULT_CLEARANCE}. */
   clearance: z.number().nonnegative().optional(),
+  /** Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c). */
+  bridge: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])).optional(),
   /** Amostras por 90° de curva. Default 16. */
   steps: z.number().int().positive().optional(),
 });

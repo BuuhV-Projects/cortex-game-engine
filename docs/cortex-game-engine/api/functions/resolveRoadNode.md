@@ -8,7 +8,7 @@
 
 > **resolveRoadNode**(`node`, `ov?`): `object`
 
-Defined in: [src/scene/RoadBuild.ts:70](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L70)
+Defined in: [src/scene/RoadBuild.ts:71](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L71)
 
 Nó efetivo: `{ ...nó, ...overlay }` — **o overlay vence** (SPEC-0631 §5).
 
@@ -70,6 +70,12 @@ Socket PRÓPRIO (nome de âncora no `kit.json` deste asset).
 `string` = `...`
 
 Socket do ALVO (nome de âncora no `kit.json` do asset do alvo).
+
+#### bridge?
+
+\[`number`, `number`\][] = `...`
+
+Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c).
 
 #### castShadow?
 
@@ -537,6 +543,12 @@ Largura total da pista (m). Default [ROAD\_DEFAULT\_WIDTH](../variables/ROAD_DEF
 
 ### ov?
 
+#### bridge?
+
+\[`number`, `number`\][] = `...`
+
+Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c).
+
 #### clearance?
 
 `number` = `...`
@@ -665,6 +677,12 @@ Socket PRÓPRIO (nome de âncora no `kit.json` deste asset).
 > **toSocket**: `string`
 
 Socket do ALVO (nome de âncora no `kit.json` do asset do alvo).
+
+### bridge?
+
+> `optional` **bridge?**: \[`number`, `number`\][]
+
+Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c).
 
 ### castShadow?
 

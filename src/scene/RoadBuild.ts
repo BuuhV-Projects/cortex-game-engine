@@ -8,6 +8,7 @@
  */
 import {
   Box3,
+  DoubleSide,
   Mesh,
   MeshStandardMaterial,
   RepeatWrapping,
@@ -16,7 +17,7 @@ import {
   type Object3D,
 } from 'three';
 import { debug } from '../core/debug.js';
-import { sampleSpline, ROAD_DEFAULT_CURVE_DENSITY, type RoadVec3 } from '../road/RoadSpline.js';
+import { sampleSpline, ROAD_DEFAULT_CURVE_DENSITY, type RoadSample, type RoadVec3 } from '../road/RoadSpline.js';
 import { roadRibbon, ribbonToGeometry, ROAD_DEFAULT_TILE_METERS } from '../road/RoadMesh.js';
 import {
   smoothGrade,
@@ -122,6 +123,55 @@ function baseHeightAtWorld(terrains: readonly TerrainRef[], x: number, z: number
   return null;
 }
 
+/** Ponto do eixo guardado na estrada: greide + se cai num vão de ponte (§3c). */
+interface CenterPoint extends GradePoint {
+  bridge: boolean;
+}
+
+/** Por amostra: `true` se está num trecho `bridge` válido do nó (SPEC-0631 §3c). */
+function bridgeMask(samples: readonly RoadSample[], node: RoadNode): boolean[] {
+  const last = node.points.length - 1;
+  const spans = (node.bridge ?? []).filter(([i0, i1]) => i0 < i1 && i1 <= last);
+  return samples.map((s) => spans.some(([i0, i1]) => (s.t ?? 0) >= i0 && (s.t ?? 0) <= i1));
+}
+
+/** Greide de referência reto (por distância) entre as cabeceiras de cada vão. */
+function flattenBridges(samples: readonly RoadSample[], refY: number[], onBridge: readonly boolean[]): void {
+  for (let a = 0; a < samples.length; a++) {
+    if (!onBridge[a]) continue;
+    let b = a;
+    while (b + 1 < samples.length && onBridge[b + 1]) b++;
+    const dist = [0];
+    for (let i = a + 1; i <= b; i++) {
+      const p = samples[i]!.pos;
+      const q = samples[i - 1]!.pos;
+      dist.push(dist[dist.length - 1]! + Math.hypot(p[0] - q[0], p[2] - q[2]));
+    }
+    const total = dist[dist.length - 1]! || 1;
+    const ya = refY[a]!;
+    const yb = refY[b]!;
+    for (let i = a; i <= b; i++) refY[i] = ya + (yb - ya) * (dist[i - a]! / total);
+    a = b;
+  }
+}
+
+/** Trechos do eixo que moldam o terreno: corta os segmentos com as duas pontas num vão. */
+function moldRuns(centerline: readonly CenterPoint[]): GradePoint[][] {
+  const runs: GradePoint[][] = [];
+  let run: GradePoint[] = [];
+  for (let i = 0; i < centerline.length; i++) {
+    const p = centerline[i]!;
+    if (i > 0 && p.bridge && centerline[i - 1]!.bridge) {
+      if (run.length >= 2) runs.push(run);
+      run = [p];
+      continue;
+    }
+    run.push(p);
+  }
+  if (run.length >= 2) runs.push(run);
+  return runs;
+}
+
 function applySurface(mesh: Mesh, node: RoadNode): void {
   const textured = !!node.texture;
   const material = new MeshStandardMaterial({
@@ -168,6 +218,8 @@ export function applyRoad(mesh: Mesh, node: RoadNode, three: Object3D, terrains 
   const refY = samples.map((s) =>
     node.grade === 'points' ? s.pos[1] : (baseHeightAtWorld(terrains, s.pos[0], s.pos[2]) ?? s.pos[1]),
   );
+  const onBridge = bridgeMask(samples, node);
+  if (node.grade !== 'points') flattenBridges(samples, refY, onBridge);
   const grade = smoothGrade(samples, refY, {
     maxSlope: node.maxSlope ?? ROAD_DEFAULT_MAX_SLOPE,
     smoothMeters: node.smooth ?? ROAD_DEFAULT_SMOOTH_METERS,
@@ -177,8 +229,9 @@ export function applyRoad(mesh: Mesh, node: RoadNode, three: Object3D, terrains 
   mesh.geometry?.dispose();
   mesh.geometry = ribbonToGeometry(roadRibbon(samples, width, node.tile ?? ROAD_DEFAULT_TILE_METERS, grade, ROAD_LIFT));
   applySurface(mesh, node);
+  if (onBridge.includes(true)) (mesh.material as MeshStandardMaterial).side = DoubleSide; // vista de baixo
 
-  ud[ROAD_CENTERLINE_KEY] = samples.map((s, i) => ({ x: s.pos[0], z: s.pos[2], y: grade[i]! }));
+  ud[ROAD_CENTERLINE_KEY] = samples.map((s, i): CenterPoint => ({ x: s.pos[0], z: s.pos[2], y: grade[i]!, bridge: onBridge[i]! }));
   if (node.drivable === false) delete ud['cortexRoad'];
   else ud['cortexRoad'] = true;
 }
@@ -235,11 +288,11 @@ export function clearRoadVegetation(three: Object3D): void {
  * vegetação do corredor ({@link clearRoadVegetation}).
  */
 export function moldTerrainToRoads(three: Object3D, terrains = collectTerrains(three)): void {
-  const roads: { node: RoadNode; centerline: GradePoint[]; box: Box3; reach: number }[] = [];
+  const roads: { node: RoadNode; centerline: CenterPoint[]; box: Box3; reach: number }[] = [];
   three.traverse((o) => {
     const ud = o.userData as Record<string, unknown>;
     const node = ud[ROAD_NODE_KEY] as RoadNode | undefined;
-    const centerline = ud[ROAD_CENTERLINE_KEY] as GradePoint[] | undefined;
+    const centerline = ud[ROAD_CENTERLINE_KEY] as CenterPoint[] | undefined;
     if (!node || !centerline || centerline.length < 2) return;
     const box = new Box3();
     for (const p of centerline) box.expandByPoint(tmp.set(p.x, 0, p.z));
@@ -256,11 +309,13 @@ export function moldTerrainToRoads(three: Object3D, terrains = collectTerrains(t
       if (r.box.min.x - pad > t.box.max.x || r.box.max.x + pad < t.box.min.x) continue;
       if (r.box.min.z - pad > t.box.max.z || r.box.max.z + pad < t.box.min.z) continue;
       grid ??= { width: t.terrain.width, depth: t.terrain.depth, resolution: t.terrain.resolution, base: t.terrain.getHeights() };
-      const local = r.centerline.map((p) => {
-        t.obj.worldToLocal(v.set(p.x, p.y, p.z));
-        return { x: v.x, z: v.z, y: v.y };
-      });
-      deltas.push(moldHeightfield(grid, local, (r.node.width ?? ROAD_DEFAULT_WIDTH) / 2, r.node.talude ?? ROAD_DEFAULT_TALUDE));
+      for (const run of moldRuns(r.centerline)) {
+        const local = run.map((p) => {
+          t.obj.worldToLocal(v.set(p.x, p.y, p.z));
+          return { x: v.x, z: v.z, y: v.y };
+        });
+        deltas.push(moldHeightfield(grid, local, (r.node.width ?? ROAD_DEFAULT_WIDTH) / 2, r.node.talude ?? ROAD_DEFAULT_TALUDE));
+      }
     }
     t.terrain.setRoadMolding(mergeDeltas(deltas));
   }

@@ -8,7 +8,7 @@
 
 > **clearRoadVegetation**(`three`): `void`
 
-Defined in: [src/scene/RoadBuild.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L191)
+Defined in: [src/scene/RoadBuild.ts:244](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L244)
 
 **Árvore não fica na pista** (SPEC-0631 §3b): esconde (sem apagar) toda instância de
 nó `vegetation` a menos de `width/2 + clearance` do eixo de alguma estrada. Recalcula a

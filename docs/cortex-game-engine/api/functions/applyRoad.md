@@ -8,7 +8,7 @@
 
 > **applyRoad**(`mesh`, `node`, `three`, `terrains?`): `void`
 
-Defined in: [src/scene/RoadBuild.ts:160](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L160)
+Defined in: [src/scene/RoadBuild.ts:210](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L210)
 
 (Re)gera a pista de `mesh` a partir do nó: spline → greide (base do terreno ou Y dos
 pontos, alisado e limitado) → fita + material. Guarda o eixo pro corte e liga/desliga
@@ -79,6 +79,12 @@ Socket PRÓPRIO (nome de âncora no `kit.json` deste asset).
 `string` = `...`
 
 Socket do ALVO (nome de âncora no `kit.json` do asset do alvo).
+
+#### bridge?
+
+\[`number`, `number`\][] = `...`
+
+Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c).
 
 #### castShadow?
 
