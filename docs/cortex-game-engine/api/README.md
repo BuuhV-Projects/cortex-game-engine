@@ -310,6 +310,7 @@
 - [RapierBodyConfig](type-aliases/RapierBodyConfig.md)
 - [RapierBodyShape](type-aliases/RapierBodyShape.md)
 - [RapierBodyType](type-aliases/RapierBodyType.md)
+- [RoadBridgeParts](type-aliases/RoadBridgeParts.md)
 - [RoadFields](type-aliases/RoadFields.md)
 - [RoadNode](type-aliases/RoadNode.md)
 - [RoadOverlay](type-aliases/RoadOverlay.md)

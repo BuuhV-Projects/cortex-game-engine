@@ -29,6 +29,7 @@ import {
 } from '../road/RoadGrade.js';
 import { roadOverlaySchema, ROAD_DEFAULT_CLEARANCE, ROAD_DEFAULT_TALUDE, ROAD_DEFAULT_WIDTH, type RoadOverlay } from '../road/roadFields.js';
 import { RoadCorridor } from '../road/RoadCorridor.js';
+import { buildBridgeParts } from './RoadBridgeParts.js';
 import { FLOATS_PER_INSTANCE, type Vegetation } from './Vegetation.js';
 import { loadTexture } from './SceneAssets.js';
 import type { SceneFileV1 } from './SceneFile.js';
@@ -123,11 +124,6 @@ function baseHeightAtWorld(terrains: readonly TerrainRef[], x: number, z: number
   return null;
 }
 
-/** Ponto do eixo guardado na estrada: greide + se cai num vão de ponte (§3c). */
-interface CenterPoint extends GradePoint {
-  bridge: boolean;
-}
-
 /** Por amostra: `true` se está num trecho `bridge` válido do nó (SPEC-0631 §3c). */
 function bridgeMask(samples: readonly RoadSample[], node: RoadNode): boolean[] {
   const last = node.points.length - 1;
@@ -153,21 +149,6 @@ function flattenBridges(samples: readonly RoadSample[], refY: number[], onBridge
     for (let i = a; i <= b; i++) refY[i] = ya + (yb - ya) * (dist[i - a]! / total);
     a = b;
   }
-}
-
-/**
- * Divide o eixo em trechos contínuos de estrada e de vão (segmento com as duas pontas num
- * vão é de ponte); trechos vizinhos dividem o ponto da cabeceira.
- */
-function moldRuns(centerline: readonly CenterPoint[]): { points: GradePoint[]; bridge: boolean }[] {
-  const runs: { points: GradePoint[]; bridge: boolean }[] = [];
-  for (let i = 1; i < centerline.length; i++) {
-    const bridge = centerline[i]!.bridge && centerline[i - 1]!.bridge;
-    const last = runs[runs.length - 1];
-    if (last && last.bridge === bridge) last.points.push(centerline[i]!);
-    else runs.push({ points: [centerline[i - 1]!, centerline[i]!], bridge });
-  }
-  return runs;
 }
 
 function applySurface(mesh: Mesh, node: RoadNode): void {
@@ -204,8 +185,10 @@ function applySurface(mesh: Mesh, node: RoadNode): void {
  * {@link moldTerrainToRoads} depois (ou {@link buildRoads}).
  *
  * A malha fica em coordenadas de mundo: o transform do objeto é zerado (SPEC-0631 §1).
+ * A promessa resolve quando as peças da ponte (`bridgeParts`, §3d) estão no lugar; a pista
+ * em si já está pronta no retorno.
  */
-export function applyRoad(mesh: Mesh, node: RoadNode, three: Object3D, terrains = collectTerrains(three)): void {
+export function applyRoad(mesh: Mesh, node: RoadNode, three: Object3D, terrains = collectTerrains(three)): Promise<void> {
   const ud = mesh.userData as Record<string, unknown>;
   ud[ROAD_NODE_KEY] = node;
   mesh.position.set(0, 0, 0);
@@ -229,9 +212,11 @@ export function applyRoad(mesh: Mesh, node: RoadNode, three: Object3D, terrains 
   applySurface(mesh, node);
   if (onBridge.includes(true)) (mesh.material as MeshStandardMaterial).side = DoubleSide; // vista de baixo
 
-  ud[ROAD_CENTERLINE_KEY] = samples.map((s, i): CenterPoint => ({ x: s.pos[0], z: s.pos[2], y: grade[i]!, bridge: onBridge[i]! }));
+  const centerline = samples.map((s, i): GradePoint => ({ x: s.pos[0], z: s.pos[2], y: grade[i]!, bridge: onBridge[i]! }));
+  ud[ROAD_CENTERLINE_KEY] = centerline;
   if (node.drivable === false) delete ud['cortexRoad'];
   else ud['cortexRoad'] = true;
+  return buildBridgeParts(mesh, node.bridgeParts, centerline, node.width, (x, z) => baseHeightAtWorld(terrains, x, z));
 }
 
 /**
@@ -286,11 +271,11 @@ export function clearRoadVegetation(three: Object3D): void {
  * vegetação do corredor ({@link clearRoadVegetation}).
  */
 export function moldTerrainToRoads(three: Object3D, terrains = collectTerrains(three)): void {
-  const roads: { node: RoadNode; centerline: CenterPoint[]; box: Box3; reach: number }[] = [];
+  const roads: { node: RoadNode; centerline: GradePoint[]; box: Box3; reach: number }[] = [];
   three.traverse((o) => {
     const ud = o.userData as Record<string, unknown>;
     const node = ud[ROAD_NODE_KEY] as RoadNode | undefined;
-    const centerline = ud[ROAD_CENTERLINE_KEY] as CenterPoint[] | undefined;
+    const centerline = ud[ROAD_CENTERLINE_KEY] as GradePoint[] | undefined;
     if (!node || !centerline || centerline.length < 2) return;
     const box = new Box3();
     for (const p of centerline) box.expandByPoint(tmp.set(p.x, 0, p.z));
@@ -307,15 +292,11 @@ export function moldTerrainToRoads(three: Object3D, terrains = collectTerrains(t
       if (r.box.min.x - pad > t.box.max.x || r.box.max.x + pad < t.box.min.x) continue;
       if (r.box.min.z - pad > t.box.max.z || r.box.max.z + pad < t.box.min.z) continue;
       grid ??= { width: t.terrain.width, depth: t.terrain.depth, resolution: t.terrain.resolution, base: t.terrain.getHeights() };
-      for (const run of moldRuns(r.centerline)) {
-        const local = run.points.map((p) => {
-          t.obj.worldToLocal(v.set(p.x, p.y, p.z));
-          return { x: v.x, z: v.z, y: v.y };
-        });
-        const delta = moldHeightfield(grid, local, (r.node.width ?? ROAD_DEFAULT_WIDTH) / 2, r.node.talude ?? ROAD_DEFAULT_TALUDE);
-        if (run.bridge) for (let i = 0; i < delta.length; i++) delta[i] = Math.min(0, delta[i]!); // vão: só corta (§3c)
-        deltas.push(delta);
-      }
+      const local = r.centerline.map((p): GradePoint => {
+        t.obj.worldToLocal(v.set(p.x, p.y, p.z));
+        return { x: v.x, z: v.z, y: v.y, bridge: p.bridge };
+      });
+      deltas.push(moldHeightfield(grid, local, (r.node.width ?? ROAD_DEFAULT_WIDTH) / 2, r.node.talude ?? ROAD_DEFAULT_TALUDE));
     }
     t.terrain.setRoadMolding(mergeDeltas(deltas));
   }
@@ -323,14 +304,15 @@ export function moldTerrainToRoads(three: Object3D, terrains = collectTerrains(t
   debug('road', `moldagem: ${roads.length} estrada(s), ${terrains.length} terreno(s)`);
 }
 
-/** Gera todas as estradas da cena e molda os terrenos — o pós-passo do `buildScene`. */
-export function buildRoads(three: Object3D): void {
+/** Gera todas as estradas da cena (com as peças das pontes) e molda os terrenos — o pós-passo do `buildScene`. */
+export async function buildRoads(three: Object3D): Promise<void> {
   const terrains = collectTerrains(three);
   const meshes: Mesh[] = [];
   three.traverse((o) => {
     if ((o as Mesh).isMesh && roadNodeOf(o)) meshes.push(o as Mesh);
   });
   if (meshes.length === 0) return;
-  for (const m of meshes) applyRoad(m, roadNodeOf(m)!, three, terrains);
+  const parts = meshes.map((m) => applyRoad(m, roadNodeOf(m)!, three, terrains));
   moldTerrainToRoads(three, terrains);
+  await Promise.all(parts);
 }

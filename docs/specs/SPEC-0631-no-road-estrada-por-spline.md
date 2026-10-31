@@ -110,8 +110,39 @@ o ponto `i0` e o ponto `i1` é ponte. Par inválido (fora do intervalo ou `i0 �
   cortado até o greide, como no resto da estrada, para a ponte nunca ficar enterrada. As cabeceiras moldam
   normalmente, e o talude da estrada encosta nelas.
 - **Malha:** a mesma fita, desenhada dos dois lados (vista de baixo não some), e continua `cortexRoad` (chão do carro).
-  Pilares e guarda-corpo ficam com o jogo (nós comuns); estão fora do escopo da engine por ora.
+  A estrutura (pista, pilares, guarda-corpo) vem de `bridgeParts` (§3d).
 - A vegetação sai do corredor também sob a ponte (§3b).
+
+### 3d. Peças da ponte (`bridgeParts`, ADR-0648)
+
+```jsonc
+"bridgeParts": {
+  "deck": "assets/bridge/road_piece_thick_1.glb",   // pista, repetida ao longo do vão
+  "pillar": "assets/bridge/support_column_2.glb",   // opcional: pilar nas juntas
+  "rail": "assets/bridge/bridge_railing_1.glb",     // opcional: guarda-corpo nas duas bordas
+  "scale": 0.787,                                   // escala de pista e pilar (default 1)
+  "pillarEvery": 2                                  // pilar a cada N peças de pista (default 2)
+}
+```
+
+Sem `bridgeParts`, o vão é só a fita (§3c). Com ele, em cada vão:
+
+- **Pista (`deck`):** `n = round(comprimento do vão / (comprimento da peça × scale))` peças (mínimo 1), esticadas em Z
+  para fechar o vão sem folga. Cada uma fica centrada no seu trecho, no greide, virada pela tangente e inclinada pela
+  rampa do trecho.
+- **Pilar (`pillar`):** nas juntas internas a cada `pillarEvery` peças (as cabeceiras ficam de fora). O topo fica no
+  greide; X e Z na `scale`; Y esticado até a base do terreno embaixo. Junta sem altura (terreno a menos de 0,5 m da
+  pista) não ganha pilar.
+- **Guarda-corpo (`rail`):** repetido pelo próprio comprimento (sem `scale`), nas duas bordas, a `width/2` do eixo.
+
+**Contrato do modelo (origem):** comprimento em Z, Y para cima, X centrado. Pista: topo do piso em y = 0. Pilar: topo
+em y = 0, crescendo para baixo. Guarda-corpo: base em y = 0.
+
+As peças são filhas da malha da estrada, então somem, mudam e voltam com ela (edição no F2, apagar, overlay). Por
+serem filhas, herdam o `cortexRoad` (quando `drivable`): entram no trimesh do carro e no merge estático como a fita. O
+guarda-corpo segura o carro na ponte e o pilar é obstáculo embaixo dela; o carro anda sobre a fita, 5 cm acima do topo
+da pista. Os `.glb` vêm do cache de
+modelos (`loadGLB`); um caminho que falha só registra no `debug('road')`.
 
 ### 4. Malha e colisão
 
@@ -159,7 +190,7 @@ o ponto `i0` e o ponto `i1` é ponte. Par inválido (fora do intervalo ou `i0 �
 ## Consequências
 
 - Fora (ADR-0630): perfis de via, cruzamentos, marcações, `navGraph`, `RegionSpec`, modo "pista acompanha o relevo",
-  superelevação. Ponte é só o trecho sem moldagem (§3c), sem estrutura.
+  superelevação. Ponte = vão sem aterro (§3c) + peças do jogo (§3d).
 - Moldar custa O(segmentos × células perto da pista) por ladrilho tocado, uma vez por build e a cada edição no F2;
   não roda por quadro.
 - O renderer nativo recebe a pista como malha comum (`MeshStandardMaterial`), sem caminho especial.

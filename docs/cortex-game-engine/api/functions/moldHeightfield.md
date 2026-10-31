@@ -8,11 +8,14 @@
 
 > **moldHeightfield**(`grid`, `centerline`, `halfWidth`, `taludeWidth`): `Float32Array`
 
-Defined in: [src/road/RoadGrade.ts:123](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L123)
+Defined in: [src/road/RoadGrade.ts:128](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/road/RoadGrade.ts#L128)
 
 **Molda o terreno à estrada**: para cada vértice perto do eixo, a altura-alvo é o
 greide no **platô** (`halfWidth` + acostamento ≥ 1,5 célula — a borda da pista nunca
 cai no talude), um `smoothstep` do greide até a base no **talude**, e a base fora.
+
+Vértice cujo segmento mais próximo é de **ponte** (as duas pontas com `bridge`) só é
+cortado (delta ≤ 0): o vale embaixo fica, a encosta acima da pista sai (SPEC-0631 §3c).
 
 Custo O(segmentos × células perto de cada segmento) + O(vértices): cada segmento só
 visita a caixa dele ± alcance.

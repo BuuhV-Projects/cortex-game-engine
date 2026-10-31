@@ -93,6 +93,8 @@ export interface GradePoint {
   x: number;
   z: number;
   y: number;
+  /** No vão de uma ponte: o segmento entre dois pontos `bridge` só corta, nunca aterra (SPEC-0631 §3c). */
+  bridge?: boolean;
 }
 
 /** Descritor da grade do terreno (espelha {@link Terrain}: plano XZ centrado na origem local). */
@@ -111,6 +113,9 @@ export interface HeightfieldGrid {
  * **Molda o terreno à estrada**: para cada vértice perto do eixo, a altura-alvo é o
  * greide no **platô** (`halfWidth` + acostamento ≥ 1,5 célula — a borda da pista nunca
  * cai no talude), um `smoothstep` do greide até a base no **talude**, e a base fora.
+ *
+ * Vértice cujo segmento mais próximo é de **ponte** (as duas pontas com `bridge`) só é
+ * cortado (delta ≤ 0): o vale embaixo fica, a encosta acima da pista sai (SPEC-0631 §3c).
  *
  * Custo O(segmentos × células perto de cada segmento) + O(vértices): cada segmento só
  * visita a caixa dele ± alcance.
@@ -139,6 +144,7 @@ export function moldHeightfield(
 
   const bestD2 = new Float64Array(n * n).fill(Infinity);
   const bestY = new Float64Array(n * n);
+  const bestCutOnly = new Uint8Array(n * n);
   const toI = (x: number): number => (x / grid.width + 0.5) * res;
   const toJ = (z: number): number => (z / grid.depth + 0.5) * res;
 
@@ -152,6 +158,7 @@ export function moldHeightfield(
     const abx = b.x - a.x;
     const abz = b.z - a.z;
     const len2 = abx * abx + abz * abz;
+    const cutOnly = a.bridge === true && b.bridge === true ? 1 : 0;
     for (let j = j0; j <= j1; j++) {
       const lz = (j / res - 0.5) * grid.depth;
       for (let i = i0; i <= i1; i++) {
@@ -165,6 +172,7 @@ export function moldHeightfield(
         if (d2 < bestD2[idx]!) {
           bestD2[idx] = d2;
           bestY[idx] = a.y + (b.y - a.y) * t;
+          bestCutOnly[idx] = cutOnly;
         }
       }
     }
@@ -177,7 +185,7 @@ export function moldHeightfield(
     const base = grid.base[idx]!;
     const y = bestY[idx]!;
     const target = d <= flat || talude === 0 ? y : y + (base - y) * smoothstep((d - flat) / talude);
-    delta[idx] = target - base;
+    delta[idx] = bestCutOnly[idx] ? Math.min(0, target - base) : target - base;
   }
   return delta;
 }

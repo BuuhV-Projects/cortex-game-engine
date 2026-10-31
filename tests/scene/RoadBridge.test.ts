@@ -7,6 +7,7 @@ import { DoubleSide, type Mesh, type MeshStandardMaterial } from 'three';
 import { Scene } from '../../src/core/Scene.js';
 import { buildScene } from '../../src/scene/SceneBuilder.js';
 import { ROAD_LIFT } from '../../src/scene/RoadBuild.js';
+import { moldHeightfield } from '../../src/road/RoadGrade.js';
 import type { Terrain } from '../../src/scene/Terrain.js';
 import type { SceneDefinition } from '../../src/scene/SceneDefinition.js';
 
@@ -77,5 +78,16 @@ describe('ponte na estrada', () => {
     expect(t.baseHeightAt(-8, 0)).toBeCloseTo(HUMP, 5);
     expect(t.heightAt(-8, 0)).toBeCloseTo(BANK, 3);
     expect(t.heightAt(0, 0)).toBeCloseTo(0, 5); // o rio continua sem aterro
+  });
+
+  it('logo depois da cabeceira, com a pista descendo, o terreno fica abaixo dela (a ponta do acesso não invade o vão)', () => {
+    const res = 40;
+    const grid = { width: 80, depth: 80, resolution: res, base: new Array<number>((res + 1) ** 2).fill(BANK) };
+    // Acesso plano a 10; vão de x = 0 a 20 descendo para 6.
+    const line = [{ x: -20, z: 0, y: BANK }, { x: 0, z: 0, y: BANK, bridge: true }, { x: 20, z: 0, y: 6, bridge: true }];
+    const delta = moldHeightfield(grid, line, 3, 4);
+    const at = (x: number): number => BANK + delta[(res / 2) * (res + 1) + (x / 80 + 0.5) * res]!;
+    expect(at(4)).toBeCloseTo(BANK - (4 * 4) / 20, 4); // no greide do vão (9,2), não no platô do acesso (10)
+    expect(at(-4)).toBeCloseTo(BANK, 4);
   });
 });

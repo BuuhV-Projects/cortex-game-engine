@@ -8,7 +8,7 @@
 
 > **overlayRoad**(`overlay`): `Record`\<`string`, [`RoadOverlay`](../type-aliases/RoadOverlay.md)\>
 
-Defined in: [src/scene/RoadBuild.ts:58](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L58)
+Defined in: [src/scene/RoadBuild.ts:59](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L59)
 
 Lê `data.road` do overlay: edições da estrada por id (SPEC-0631 §5). Entradas
 inválidas são descartadas.

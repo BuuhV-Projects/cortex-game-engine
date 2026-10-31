@@ -236,7 +236,8 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   então bordas de ladrilho casam. Junto da moldagem, `clearRoadVegetation` esconde (escala 0,
   `Vegetation.setHidden`) as árvores a menos de `width/2 + clearance` do eixo — busca por
   grade de hash (`RoadCorridor`), dado das instâncias intacto. Vãos `bridge` (SPEC-0631 §3c): greide
-  reto entre as cabeceiras; os segmentos do vão só cortam (delta ≤ 0, `moldRuns`), nunca aterram. A fita leva `userData.cortexRoad` (chão do carro:
+  reto entre as cabeceiras; os vértices cujo segmento mais próximo é de vão só cortam (delta ≤ 0, `GradePoint.bridge` no `moldHeightfield`), nunca aterram. `bridgeParts` (ADR-0648): `RoadBridgeParts` clona os modelos do jogo ao
+  longo de cada vão como filhos da malha da estrada (herdam `cortexRoad`); `applyRoad` devolve a promessa delas. A fita leva `userData.cortexRoad` (chão do carro:
   `setupVehicle` faz trimesh; o merge estático preserva). Overlay `data.road[id]` vence
   o nó. ⚠️ O trimesh do carro é montado no `setupVehicle`: editar a estrada no F2 só
   vale pra física do carro depois de recarregar.

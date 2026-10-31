@@ -1224,7 +1224,9 @@ engine molda. **Árvore não fica na pista:** instâncias de `vegetation` a meno
 mover/apagar a estrada traz de volta (`clearRoadVegetation`, chamado junto da moldagem).
 **Ponte:** `bridge: [[i0, i1]]` (índices de `points`) deixa o vão com greide reto entre as
 cabeceiras e sem aterro embaixo (rio/vale intactos; só o terreno acima da pista é cortado); a fita fica dupla face e segue
-chão do carro. Pilares/guarda-corpo são nós do jogo. Fora: perfis de via, cruzamentos,
+chão do carro. `bridgeParts: { deck, pillar, rail, scale, pillarEvery }` monta a ponte com modelos
+do jogo ao longo do vão (pista esticada para fechar o vão, pilar até o chão nas juntas,
+guarda-corpo nas bordas; herdam o `cortexRoad` e seguram o carro) — SPEC-0631 §3d, ADR-0648. Fora: perfis de via, cruzamentos,
 marcações, superelevação.
 
 ## Character controller (player/NPC com cápsula — estilo UPBGE)

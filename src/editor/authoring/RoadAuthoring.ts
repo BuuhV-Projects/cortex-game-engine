@@ -65,7 +65,7 @@ export function createRoadApi(ctx: EditorAuthoringContext): { roadApi: RoadApi; 
     if (!node) return;
     const s = store();
     s[obj.name] = { ...s[obj.name], ...patch };
-    applyRoad(obj as Mesh, { ...node, ...patch }, ctx.three);
+    void applyRoad(obj as Mesh, { ...node, ...patch }, ctx.three);
     if (!mold) return;
     moldTerrainToRoads(ctx.three);
     ctx.persist();

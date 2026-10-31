@@ -13,6 +13,21 @@ export const ROAD_DEFAULT_TALUDE = 6;
 export const ROAD_DEFAULT_CLEARANCE = 2;
 
 const point = z.tuple([z.number(), z.number(), z.number()]);
+
+/** Peças da ponte (SPEC-0631 §3d): modelos do jogo distribuídos ao longo de cada vão. */
+const bridgePartsSchema = z.object({
+  /** Peça de pista (topo em y = 0, comprimento em Z), repetida e esticada para fechar o vão. */
+  deck: z.string().optional(),
+  /** Pilar (topo em y = 0, cresce para baixo), esticado até o chão nas juntas. */
+  pillar: z.string().optional(),
+  /** Guarda-corpo (base em y = 0), repetido nas duas bordas. */
+  rail: z.string().optional(),
+  /** Escala de pista e pilar. Default 1. */
+  scale: z.number().positive().optional(),
+  /** Pilar a cada N peças de pista. Default 2. */
+  pillarEvery: z.number().int().positive().optional(),
+});
+export type RoadBridgeParts = z.infer<typeof bridgePartsSchema>;
 const color = z.union([z.number(), z.string()]);
 
 /** Campos editáveis da estrada (todos opcionais, exceto `points` no nó). */
@@ -41,6 +56,8 @@ export const roadFieldsSchema = z.object({
   clearance: z.number().nonnegative().optional(),
   /** Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c). */
   bridge: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])).optional(),
+  /** Peças da ponte nos vãos `bridge` (SPEC-0631 §3d, ADR-0648). Sem isto, o vão é só a fita. */
+  bridgeParts: bridgePartsSchema.optional(),
   /** Amostras por 90° de curva. Default 16. */
   steps: z.number().int().positive().optional(),
 });

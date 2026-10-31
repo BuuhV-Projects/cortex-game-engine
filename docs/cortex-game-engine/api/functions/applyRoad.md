@@ -6,9 +6,9 @@
 
 # Function: applyRoad()
 
-> **applyRoad**(`mesh`, `node`, `three`, `terrains?`): `void`
+> **applyRoad**(`mesh`, `node`, `three`, `terrains?`): `Promise`\<`void`\>
 
-Defined in: [src/scene/RoadBuild.ts:208](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L208)
+Defined in: [src/scene/RoadBuild.ts:191](https://github.com/BuuhV-Projects/cortex-game-engine/blob/main/src/scene/RoadBuild.ts#L191)
 
 (Re)gera a pista de `mesh` a partir do nó: spline → greide (base do terreno ou Y dos
 pontos, alisado e limitado) → fita + material. Guarda o eixo pro corte e liga/desliga
@@ -16,6 +16,8 @@ pontos, alisado e limitado) → fita + material. Guarda o eixo pro corte e liga/
 [moldTerrainToRoads](moldTerrainToRoads.md) depois (ou [buildRoads](buildRoads.md)).
 
 A malha fica em coordenadas de mundo: o transform do objeto é zerado (SPEC-0631 §1).
+A promessa resolve quando as peças da ponte (`bridgeParts`, §3d) estão no lugar; a pista
+em si já está pronta no retorno.
 
 ## Parameters
 
@@ -85,6 +87,42 @@ Socket do ALVO (nome de âncora no `kit.json` do asset do alvo).
 \[`number`, `number`\][] = `...`
 
 Trechos de ponte `[i0, i1]` por índice de `points`: sem corte/aterro, greide reto (SPEC-0631 §3c).
+
+#### bridgeParts?
+
+\{ `deck?`: `string`; `pillar?`: `string`; `pillarEvery?`: `number`; `rail?`: `string`; `scale?`: `number`; \} = `...`
+
+Peças da ponte nos vãos `bridge` (SPEC-0631 §3d, ADR-0648). Sem isto, o vão é só a fita.
+
+#### bridgeParts.deck?
+
+`string` = `...`
+
+Peça de pista (topo em y = 0, comprimento em Z), repetida e esticada para fechar o vão.
+
+#### bridgeParts.pillar?
+
+`string` = `...`
+
+Pilar (topo em y = 0, cresce para baixo), esticado até o chão nas juntas.
+
+#### bridgeParts.pillarEvery?
+
+`number` = `...`
+
+Pilar a cada N peças de pista. Default 2.
+
+#### bridgeParts.rail?
+
+`string` = `...`
+
+Guarda-corpo (base em y = 0), repetido nas duas bordas.
+
+#### bridgeParts.scale?
+
+`number` = `...`
+
+Escala de pista e pilar. Default 1.
 
 #### castShadow?
 
@@ -560,4 +598,4 @@ Largura total da pista (m). Default [ROAD\_DEFAULT\_WIDTH](../variables/ROAD_DEF
 
 ## Returns
 
-`void`
+`Promise`\<`void`\>
