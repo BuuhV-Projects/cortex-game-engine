@@ -1,3 +1,15 @@
+# [0.91.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.90.0...v0.91.0) (2026-10-31)
+
+
+### Bug Fixes
+
+* **packages:** resolve a pasta de cache dos pacotes só no uso (CI sem LOCALAPPDATA) ([e41f4b0](https://github.com/BuuhV-Projects/cortex-game-engine/commit/e41f4b0886bc9a47abf0be0a4b45c796e6539679))
+
+
+### Features
+
+* pacotes de textura importáveis no Studio (SPEC-0641) ([de78cb4](https://github.com/BuuhV-Projects/cortex-game-engine/commit/de78cb493e3658f92886c748663afb217015398f))
+
 # [0.90.0](https://github.com/BuuhV-Projects/cortex-game-engine/compare/v0.89.0...v0.90.0) (2026-10-26)
 
 
