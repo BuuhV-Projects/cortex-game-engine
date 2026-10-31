@@ -17,6 +17,8 @@ export interface EditorShapePanelOptions {
   onAddShape: (kind: ShapeKind) => void;
   /** Chamado ao clicar em "Desenhar blockout" — arma o desenho de caixa (SPEC-0071). */
   onDrawBox?: () => void;
+  /** Chamado ao clicar em "Estrada" — arma o desenho da spline no terreno (SPEC-0631). */
+  onDrawRoad?: () => void;
   /** Chamado ao clicar em "Vegetação" — cria um nó `vegetation` e liga o pincel (SPEC-0077). */
   onAddVegetation?: () => void;
   /** Abre o picker "Adicionar modelo (.glb)" (modal com busca — SPEC-0093). */
@@ -28,7 +30,7 @@ export interface EditorShapePanelOptions {
 const ORDER: ShapeKind[] = ['cube', 'plane', 'cylinder', 'sphere', 'cone', 'stairs', 'ramp', 'arch', 'wallOpening'];
 
 export function createEditorShapePanel(options: EditorShapePanelOptions): EditorShapePanel {
-  const { onAddShape, onDrawBox, onAddVegetation, onPickModel, parent = document.body } = options;
+  const { onAddShape, onDrawBox, onDrawRoad, onAddVegetation, onPickModel, parent = document.body } = options;
 
   const root = document.createElement('div');
   root.style.cssText = [
@@ -95,6 +97,26 @@ export function createEditorShapePanel(options: EditorShapePanelOptions): Editor
     ].join(';');
     draw.addEventListener('click', onDrawBox);
     root.append(draw);
+  }
+
+  // "Estrada": clique pontos no terreno pra traçar a spline (Enter finaliza).
+  if (onDrawRoad) {
+    const roadBtn = document.createElement('button');
+    roadBtn.textContent = '🛣 Estrada';
+    roadBtn.title = 'Clique pontos no terreno pra traçar uma estrada (Enter finaliza, Esc cancela)';
+    roadBtn.style.cssText = [
+      'margin-top:4px',
+      'width:100%',
+      'padding:7px 4px',
+      'border:1px solid #4a4a4a',
+      'border-radius:4px',
+      'background:#33363f',
+      'color:#fff',
+      'cursor:pointer',
+      'font-size:12px',
+    ].join(';');
+    roadBtn.addEventListener('click', onDrawRoad);
+    root.append(roadBtn);
   }
 
 

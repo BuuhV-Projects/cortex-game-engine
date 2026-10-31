@@ -220,6 +220,21 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   Após editar o terreno, chame `Water.refreshShoreline()` ou reconstrua a cena.
   O detalhe das normais usa ruído suave atenuado pela distância (SPEC-0284):
   senoides curtas e regulares produziam faixas repetidas de brilho no mar aberto.
+- **Estrada por spline (`RoadBuild.ts` + `src/road/`, ADR-0630 / SPEC-0631)** — nó `road`
+  com os pontos da curva (mundo, metros). O `instantiate` só cria a malha vazia; o
+  pós-passo `buildRoads` (depois de todos os nós no lugar e do heightmap do overlay
+  aplicado) gera a fita e molda os terrenos. Greide = **base** do terreno sob o eixo
+  (`Terrain.baseHeightAt`, nunca a malha já cortada — senão o corte realimenta) ou o Y
+  dos pontos (`grade: 'points'`), alisado e limitado a `maxSlope`. Corte/aterro = delta
+  por vértice (`moldHeightfield`, só células perto de cada segmento) somado à base
+  (`Terrain.setRoadMolding`): `getHeights()`/overlay salvam só a base, sem cicatriz.
+  Molda **todo ladrilho** que a estrada cruza; o delta depende só da posição no mundo,
+  então bordas de ladrilho casam. Junto da moldagem, `clearRoadVegetation` esconde (escala 0,
+  `Vegetation.setHidden`) as árvores a menos de `width/2 + clearance` do eixo — busca por
+  grade de hash (`RoadCorridor`), dado das instâncias intacto. A fita leva `userData.cortexRoad` (chão do carro:
+  `setupVehicle` faz trimesh; o merge estático preserva). Overlay `data.road[id]` vence
+  o nó. ⚠️ O trimesh do carro é montado no `setupVehicle`: editar a estrada no F2 só
+  vale pra física do carro depois de recarregar.
 - **Partículas (`Particles.ts`, ADR-0168 / SPEC-0169)** — nó `particles` e a API
   `ParticleEmitter`/`spawnParticles`: fagulha, poeira, fumaça, respingo, clarão.
   Pool de tamanho fixo em arrays planos (nada alocado por partícula) desenhado
@@ -265,7 +280,10 @@ senão o **editor do Studio** não resolve o tipo (runtime funciona, IntelliSens
   `MatteAuthoring`, `MaterialAuthoring`, `PhysicsAuthoring`, `ColliderAuthoring`
   (+ heightfield injetado), `TerrainAuthoring` (pincel com **modo**: esculpir altura
   ou **texturizar/pintar** — escolhe/importa textura, SPEC-0063), `AnimationAuthoring`,
-  `MeshAuthoring` (forma de blockout: params da receita + override de geometria; §11).
+  `MeshAuthoring` (forma de blockout: params da receita + override de geometria; §11),
+  `RoadAuthoring` (estrada: grava `data.road[id]`, refaz a pista, remolda o terreno;
+  `RoadDrawSystem` desenha a spline no terreno, `RoadEditSystem` arrasta os pontos com
+  `editorState.editingRoad` — o `ObjectEditSystem` cede; SPEC-0631).
 - **PostFX com dois backends** (`src/core/PostFX.ts`, ADR-0147) — a API é a MESMA
   nos dois ambientes (`new PostFX(renderer, scene, camera, {bloom, vignette, …})`),
   mas o **contrato é o do host nativo**: se `__cortexBloom` existe (ponte em
@@ -1476,6 +1494,7 @@ no logo da splash enquanto montava os seis carros.
 | Cena data-driven | `src/scene/` (`SceneDefinition`, `SceneBuilder`) |
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (SPEC-0071) |
+| Estrada por spline | `src/road/` (spline, fita, greide/corte puros, `roadFields`) · `src/scene/RoadBuild.ts` (nó → pista + corte) · editor: `RoadAuthoring`, `RoadDrawSystem`, `RoadEditSystem`, `RoadInspectorSection` (ADR-0630/SPEC-0631) |
 | Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) · culling por esfera das instâncias, por nó (SPEC-0299; a sombra nativa não corta instanced) |
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |

@@ -40,6 +40,10 @@ import { createRenameApi, type RenameApi } from './authoring/RenameAuthoring.js'
 import { modelThumb } from './ModelThumbs.js';
 import { createShadowApi } from './authoring/ShadowAuthoring.js';
 import { createEditorShapePanel } from './EditorShapePanel.js';
+import { createRoadApi } from './authoring/RoadAuthoring.js';
+import { moldTerrainToRoads, roadNodeOf } from '../scene/RoadBuild.js';
+import { RoadEditSystem } from './RoadEditSystem.js';
+import { RoadDrawSystem } from './RoadDrawSystem.js';
 import { SHAPES, type ShapeKind } from '../probuilder/shapes.js';
 import { createObjectRegistry } from './EditorModel.js';
 import { createAuthoringContext } from './authoring/AuthoringContext.js';
@@ -924,6 +928,21 @@ export function attachEditor(game: Game): GameEditor {
         refreshUI();
       }),
   };
+  // Estradas (SPEC-0631): autoria no overlay `data.road`, edição do traçado e textura
+  // pelo mesmo modal com preview das texturas do projeto.
+  const road = createRoadApi(authoring);
+  const roadEditSystem = addEditorSystem(
+    new RoadEditSystem(editorState, editorCamera, game.canvas, game.scene, game.input, hud, selection, road.roadEditApi),
+  );
+  const roadApi = {
+    ...road.roadApi,
+    pickTexture: (obj: import('three').Object3D) =>
+      texturePicker.open('Textura da estrada', terrainTextures, (url) => {
+        road.roadApi.set(obj, { texture: url });
+        refreshUI();
+      }),
+    editPoints: (obj: import('three').Object3D) => roadEditSystem.enter(obj),
+  };
   // "Adicionar Componente (Script)" estilo Unity: modal COM BUSCA listando os scripts do
   // projeto (registrados via import.meta.glob no jogo). Ícone genérico (scripts não têm thumb).
   const SCRIPT_ICON =
@@ -1012,6 +1031,7 @@ export function attachEditor(game: Game): GameEditor {
     playerAnimationsApi,
     renameApi,
     shadowApi,
+    roadApi,
     writeBack: writeBackTransform,
   });
 
@@ -1167,7 +1187,7 @@ export function attachEditor(game: Game): GameEditor {
   //    nem undo); nó BASE (level.json) entra em `data.deleted` pro buildScene pular;
   //    3) limpa as entradas de overlay por-objeto (transform + concerns).
   // Chaves de overlay por-objeto (concerns) — limpas no delete, capturadas/restauradas no undo.
-  const CONCERN_KEYS = ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle', 'underlay', 'scripts', 'shadow'] as const;
+  const CONCERN_KEYS = ['physics', 'colliders', 'material', 'matte', 'geometry', 'animation', 'playerAnimations', 'terrain', 'terrainPaint', 'vehicle', 'underlay', 'scripts', 'shadow', 'road'] as const;
   const cloneJson = <T>(v: T): T => (v === undefined ? v : (JSON.parse(JSON.stringify(v)) as T));
 
   /** Snapshot de TUDO de um nó (transform + concerns + def se foi criado no editor) — pro undo. */
@@ -1208,12 +1228,15 @@ export function attachEditor(game: Game): GameEditor {
       const m = (overlay.data as Record<string, unknown>)[key];
       if (m && typeof m === 'object' && !Array.isArray(m)) delete (m as Record<string, unknown>)[name];
     }
+    // Estrada (SPEC-0631): o chamador tira o obj da cena logo depois — remolda em seguida.
+    if (roadNodeOf(obj)) queueMicrotask(() => moldTerrainToRoads(three));
     persist(true);
   };
 
   /** Restaura um nó deletado/adicionado-desfeito: re-anexa o MESMO Object3D + overlay + física viva. */
   const restoreNode = (obj: Object3D, name: string, snap: NodeSnapshot): void => {
     three.add(obj); // o obj fica vivo (só desanexado) — re-anexar traz de volta visual/geometria
+    if (roadNodeOf(obj)) moldTerrainToRoads(three); // a estrada volta a cortar o terreno
     if (snap.transform) overlay.objects[name] = { ...snap.transform };
     if (snap.addedNode) {
       const a = addedList();
@@ -1341,6 +1364,22 @@ export function attachEditor(game: Game): GameEditor {
   );
   addEditorSystem(shapeDrawSystem);
 
+  // "Desenhar estrada" (SPEC-0631 §6): cliques no terreno → nó `road` no overlay
+  // (`data.added`), já com pista + corte (addSceneNode), selecionado e no CTRL+Z.
+  const createRoadNode = (node: SceneNode): void => {
+    void addSceneNode(game.scene, node).then((obj) => {
+      if (!obj) return;
+      addedList().push(node);
+      persist();
+      selection.requestSelect(obj);
+      pushAddCommand(obj, node);
+    });
+  };
+  const roadDrawSystem = addEditorSystem(
+    new RoadDrawSystem(editorState, editorCamera, game.canvas, game.scene, game.input, hud, createRoadNode),
+  );
+  const toggleDrawRoad = (): void => roadDrawSystem.setArmed(!roadDrawSystem.isArmed);
+
 
   // Vegetação (SPEC-0077): cria o nó `vegetation` (placeholder) e JÁ liga o pincel de
   // espalhar — o usuário clica/arrasta no terreno pra povoar.
@@ -1381,6 +1420,7 @@ export function attachEditor(game: Game): GameEditor {
     onPickModel: openModelPicker,
     onAddShape: addShape,
     onDrawBox: openDrawBlockoutPicker,
+    onDrawRoad: toggleDrawRoad,
     onAddVegetation: createVegetationNode,
   });
 
@@ -1455,7 +1495,7 @@ export function attachEditor(game: Game): GameEditor {
     selection,
     registry,
     editorState,
-    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, shadowApi, writeBack: writeBackTransform },
+    ctx: { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, shadowApi, roadApi, writeBack: writeBackTransform },
     focusOn: (obj) => cameraSystem.focusOn(obj),
     viewportInfo,
     // Lido por chamada (não capturado): o jogo costuma declarar as fases DEPOIS
@@ -1466,6 +1506,7 @@ export function attachEditor(game: Game): GameEditor {
     onAddTerrain: addTerrain,
     onAddShape: addShape,
     onDrawShape: openDrawBlockoutPicker,
+    onDrawRoad: toggleDrawRoad,
     onAddVegetation: createVegetationNode,
     onOpenModelPicker: openModelPicker,
     // Drop de asset vindo da IDE (overlay sobre o iframe — o Electron não entrega

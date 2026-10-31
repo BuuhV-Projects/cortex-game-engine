@@ -1,3 +1,5 @@
+import type { RoadApi } from './authoring/RoadAuthoring.js';
+import { describeRoadSection } from './RoadInspectorSection.js';
 import type { Object3D, Mesh } from 'three';
 import { MathUtils, Box3, Vector3 } from 'three';
 import { setShadows, setMatte, clearMatte, isMatte } from '../scene/SceneAssets.js';
@@ -184,6 +186,8 @@ export interface InspectorContext {
   scriptApi?: ScriptApi;
   renameApi?: RenameApi;
   shadowApi?: ShadowApi;
+  /** Estrada por spline (SPEC-0631). */
+  roadApi?: RoadApi;
   /**
    * Propaga uma edição de transform (posição/rotação) pro ECS — pra objetos com
    * entidade sincronizada, escrever só no `Object3D` seria sobrescrito pelo
@@ -930,6 +934,10 @@ export function describeInspector(
     }
     sections.push({ title: 'Vegetação', fields });
   }
+
+  // ── Estrada (SPEC-0631 §6) ─────────────────────────────────────────────────────
+  const roadSection = describeRoadSection(obj, ctx.roadApi, fid, handlers);
+  if (roadSection) sections.push(roadSection);
 
   // ── Animação (modelos .glb com clipes) ────────────────────────────────────────
   const animState = ctx.animationApi?.get(obj) ?? null;

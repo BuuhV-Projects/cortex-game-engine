@@ -57,6 +57,8 @@ export class Vegetation {
 
   private readonly subs: { mesh: InstancedMesh; local: Matrix4 }[] = [];
   private instances: number[] = []; // plano: [x,y,z,rotY,scale] por instância
+  /** Instâncias escondidas pela estrada (SPEC-0631 §3b) — não mexe em `instances`. */
+  private hidden: Uint8Array | null = null;
   private readonly capacity: number;
 
   // Escratch reusado no sync (evita alocar por instância).
@@ -125,6 +127,18 @@ export class Vegetation {
   setInstances(flat: number[]): void {
     const max = this.capacity * FLOATS_PER_INSTANCE;
     this.instances = flat.length > max ? flat.slice(0, max) : flat.slice();
+    this.hidden = null; // índices mudaram: a estrada recalcula a máscara
+    this.sync();
+  }
+
+  /**
+   * **Esconde instâncias** sem apagá-las (SPEC-0631 §3b: árvore no corredor da estrada).
+   * `hidden[i] = 1` desenha a instância `i` com escala 0 (some do desenho, da sombra e do
+   * raycast); {@link getInstances} continua com todas. `null` mostra todas de novo.
+   */
+  setHidden(hidden: Uint8Array | null): void {
+    if (!hidden && !this.hidden) return;
+    this.hidden = hidden;
     this.sync();
   }
 
@@ -160,6 +174,7 @@ export class Vegetation {
     }
     if (removed > 0) {
       this.instances = kept;
+      this.hidden = null; // índices mudaram: a estrada recalcula a máscara
       this.sync();
     }
     return removed;
@@ -183,6 +198,7 @@ export class Vegetation {
     const b = i * FLOATS_PER_INSTANCE;
     if (b < 0 || b >= this.instances.length) return false;
     this.instances.splice(b, FLOATS_PER_INSTANCE);
+    this.hidden = null; // índices mudaram: a estrada recalcula a máscara
     this.sync();
     return true;
   }
@@ -210,7 +226,7 @@ export class Vegetation {
         this._p.set(this.instances[b]!, this.instances[b + 1]!, this.instances[b + 2]!);
         this._e.set(0, this.instances[b + 3]!, 0);
         this._q.setFromEuler(this._e);
-        const sc = this.instances[b + 4]!;
+        const sc = this.hidden?.[i] ? 0 : this.instances[b + 4]!;
         this._s.set(sc, sc, sc);
         this._t.compose(this._p, this._q, this._s); // T·R·S da instância
         this._m.multiplyMatrices(this._t, local); // por cima da transform local da sub-malha

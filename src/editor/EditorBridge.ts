@@ -64,6 +64,8 @@ export interface EditorBridgeOptions {
   onAddShape?: (kind: string) => void;
   /** Arma o "desenhar caixa no chão" (ProBuilder New Shape — SPEC-0071). */
   onDrawShape?: () => void;
+  /** Arma/desarma o "desenhar estrada" (menu do Studio — SPEC-0631 §6). */
+  onDrawRoad?: () => void;
   /** Cria um nó de vegetação e liga o pincel de espalhar (SPEC-0077). */
   onAddVegetation?: () => void;
   /** Abre o picker "Adicionar modelo (.glb)" no frame do jogo (SPEC-0093). */
@@ -81,7 +83,7 @@ export interface EditorBridgeOptions {
 
 /** Cria a ponte. Inerte (no-op) sem IDE do outro lado (iframe ou host). */
 export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
-  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, levels, onTool, onGizmoSpace, onAddTerrain, onAddShape, onDrawShape, onAddVegetation, onOpenModelPicker, onDropAsset, onBridged } = options;
+  const { editRoots, selection, ctx, registry, editorState, focusOn, viewportInfo, levels, onTool, onGizmoSpace, onAddTerrain, onAddShape, onDrawShape, onDrawRoad, onAddVegetation, onOpenModelPicker, onDropAsset, onBridged } = options;
 
   // O TRANSPORTE é escolhido fora daqui (SPEC-0203): iframe (postMessage) ou
   // canal do host nativo. Sem nenhum dos dois, a ponte fica inerte — mesmo
@@ -217,6 +219,9 @@ export function createEditorBridge(options: EditorBridgeOptions): EditorBridge {
         break;
       case 'drawShape':
         onDrawShape?.();
+        break;
+      case 'drawRoad':
+        onDrawRoad?.();
         break;
       case 'addVegetation':
         onAddVegetation?.();

@@ -59,6 +59,7 @@ import { Background } from './Background.js';
 import { toBufferGeometry, type EditableMesh } from '../probuilder/EditableMesh.js';
 import { buildShape } from '../probuilder/shapes.js';
 import { Terrain, type TerrainPaintData } from './Terrain.js';
+import { applyRoad, buildRoads, makeRoad, moldTerrainToRoads, overlayRoad, resolveRoadNode } from './RoadBuild.js';
 import { Vegetation, makePlaceholderVegetation } from './Vegetation.js';
 import { setupOutdoorLighting } from './OutdoorLighting.js';
 import { Skybox } from '../core/Skybox.js';
@@ -604,6 +605,7 @@ async function buildSceneInner(
   const editorPlayerAnim = overlayPlayerAnimations(overlay);
   const editorVehicle = overlayVehicle(overlay);
   const editorUnderlay = overlayUnderlay(overlay);
+  const editorRoad = overlayRoad(overlay);
 
   // ── Config de cena (último arquivo a definir vence) ──────────────────────────
   let background: number | string | undefined;
@@ -693,7 +695,9 @@ async function buildSceneInner(
       byId.set(node.id, bg.mesh);
       continue;
     }
-    const obj = await instantiate(node, scene, three, waters, editorGeometry[node.id], options.camera, emitters);
+    // Estrada (SPEC-0631 §5): o overlay `data.road[id]` vence o nó.
+    const eff = node.type === 'road' ? resolveRoadNode(node, editorRoad[node.id]) : node;
+    const obj = await instantiate(eff, scene, three, waters, editorGeometry[node.id], options.camera, emitters);
     if (!obj) continue;
     // Veículo (ADR-0081): config do nó + overlay → userData.cortexVehicle (o jogo lê pra
     // criar o veículo; o Inspector edita). Marca o nó como veículo pro Inspector mostrar a seção.
@@ -780,6 +784,9 @@ async function buildSceneInner(
   //      dependência ANTES das entidades (que copiam a pose final). Falha alto
   //      em alvo/socket ausente ou ciclo. Override do editor vence o attach.
   resolveAttachments(placed, byId, options.kit, overrides);
+  // Estradas (SPEC-0631): pista + corte/aterro nos terrenos, com todos os nós no lugar
+  // e o heightmap do overlay já aplicado (o greide parte da base final).
+  buildRoads(three);
 
   bootMark('buildScene: nós instanciados');
   await tick('física', 1);
@@ -1001,7 +1008,13 @@ async function buildSceneInner(
  * @returns O `Object3D` criado, ou `null` se o tipo for desconhecido.
  */
 export async function addSceneNode(scene: Scene, node: SceneNode): Promise<Object3D | null> {
-  const obj = await instantiate(node, scene, scene.getThreeScene());
+  const three = scene.getThreeScene();
+  const obj = await instantiate(node, scene, three);
+  // Estrada criada ao vivo (F2): gera a pista e remolda os terrenos (SPEC-0631 §6).
+  if (obj && node.type === 'road') {
+    applyRoad(obj as Mesh, node, three);
+    moldTerrainToRoads(three);
+  }
   // Mesma garantia do buildScene: o objeto pode ser raycastado no mesmo tick em
   // que foi adicionado (antes do próximo render), então o matrixWorld da subtree
   // precisa estar computado já.
@@ -1215,6 +1228,10 @@ async function instantiate(
       applyPlacement(obj, node);
       break;
     }
+    case 'road':
+      obj = makeRoad(node); // geometria no pós-passo buildRoads (precisa dos terrenos)
+      three.add(obj);
+      break;
     case 'background':
       // Backdrop precisa da câmera — é criado no buildScene, não por aqui.
       throw new Error('Nó background não é instanciável isoladamente (use buildScene com options.camera).');

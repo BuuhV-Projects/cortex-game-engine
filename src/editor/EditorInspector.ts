@@ -1,4 +1,5 @@
 import type { Object3D } from 'three';
+import type { RoadApi } from './authoring/RoadAuthoring.js';
 import type { ScriptFieldType } from '../scripts/ScriptBehavior.js';
 import type { ColliderShape2D } from '../components/Collider2DComponent.js';
 import type { MaterialConfig } from '../scene/Materials.js';
@@ -495,6 +496,8 @@ export interface EditorInspectorOptions {
   terrainApi?: TerrainApi;
   /** Opcional: pincel de espalhar vegetação. Ver {@link VegetationApi}. */
   vegetationApi?: VegetationApi;
+  /** Opcional: estrada por spline (SPEC-0631). */
+  roadApi?: RoadApi;
   /** Opcional: controle/persistência de animação (escolher clipe, play/stop). Ver {@link AnimationApi}. */
   animationApi?: AnimationApi;
   /** Opcional: mapa ação→clipe do player (idle/run/jump/…). Ver {@link PlayerAnimationsApi}. */
@@ -539,6 +542,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     meshApi,
     terrainApi,
     vegetationApi,
+    roadApi,
     animationApi,
     playerAnimationsApi,
     renameApi,
@@ -546,7 +550,7 @@ export function createEditorInspector(options: EditorInspectorOptions): EditorIn
     writeBack,
     registry = createObjectRegistry(),
   } = options;
-  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, shadowApi, writeBack };
+  const ctx: InspectorContext = { colliderApi, physicsApi, vehicleApi, underlayApi, scriptApi, matteApi, materialApi, meshApi, terrainApi, vegetationApi, animationApi, playerAnimationsApi, renameApi, shadowApi, roadApi, writeBack };
 
   const root = document.createElement('div');
   root.style.cssText = [

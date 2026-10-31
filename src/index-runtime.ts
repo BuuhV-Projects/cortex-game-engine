@@ -123,6 +123,7 @@ export * from './scene/SceneFile.js';
 export * from './scene/SceneLoader.js';
 export * from './scene/SceneDefinition.js';
 export * from './scene/SceneBuilder.js';
+export * from './scene/RoadBuild.js';
 // Kit de assets (kit.json + sockets/attach — ADR-0053): parseKit + resolver puro.
 export * from './scene/Kit.js';
 // Validação geométrica estática da cena (overlap/floating/tilted/gap) — dados puros.
@@ -168,6 +169,13 @@ export {
   type RenderMesh,
 } from './probuilder/EditableMesh.js';
 export * from './probuilder/shapes.js';
+
+// ─── Estrada por spline (ADR-0630, SPEC-0631) — núcleo puro ──────────────────
+export * from './road/RoadSpline.js';
+export * from './road/RoadMesh.js';
+export * from './road/RoadGrade.js';
+export * from './road/roadFields.js';
+export * from './road/RoadCorridor.js';
 
 export * from './io/SceneFileWriter.js';
 export * from './io/HttpSceneFileWriter.js';

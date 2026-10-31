@@ -85,6 +85,12 @@ export class Terrain {
   readonly depth: number;
 
   private readonly heights: Float32Array;
+  /**
+   * Delta de corte e aterro das estradas (SPEC-0631 §3) — **não destrutivo**: malha,
+   * colisão e {@link Terrain.heightAt} usam `heights + roadDelta`; {@link Terrain.getHeights}
+   * devolve só a base (o corte é recalculado a cada build, nunca salvo).
+   */
+  private roadDelta: Float32Array | null = null;
   private readonly geometry: BufferGeometry;
 
   // ── Pintura de textura (splat) — criada sob demanda no primeiro paint/setPaint ──
@@ -155,9 +161,9 @@ export class Terrain {
     return [(i / this.resolution - 0.5) * this.width, (j / this.resolution - 0.5) * this.depth];
   }
 
-  /** Altura de um vértice (base autorada). */
+  /** Altura **efetiva** de um vértice = base autorada + delta das estradas. */
   private effectiveY(idx: number): number {
-    return this.heights[idx]!;
+    return this.heights[idx]! + (this.roadDelta ? this.roadDelta[idx]! : 0);
   }
 
   /** Reescreve TODO o Y do mesh com a altura efetiva (base+delta) + normais/bounds. */
@@ -170,6 +176,25 @@ export class Terrain {
     this.geometry.computeBoundingSphere();
   }
 
+  /**
+   * **Molda o terreno às estradas** (SPEC-0631 §3): aplica `delta` (mesmo tamanho do
+   * heightmap) por cima da base; `null` remove. A base e a serialização não mudam. O
+   * {@link buildScene} e o editor chamam isto via `moldTerrainToRoads`.
+   */
+  setRoadMolding(delta: Float32Array | null): void {
+    const next = delta && delta.length === this.heights.length ? delta : null;
+    if (!next && !this.roadDelta) return;
+    this.roadDelta = next;
+    this.applyHeights();
+  }
+
+  /**
+   * Altura (Y local) da **base** autorada num ponto, sem o corte das estradas — o greide
+   * das estradas parte daqui (não realimenta o próprio corte). `null` fora da área.
+   */
+  baseHeightAt(localX: number, localZ: number): number | null {
+    return this.sampleHeight(localX, localZ, (idx) => this.heights[idx]!);
+  }
 
   /**
    * **Esculpe** o terreno: soma `delta` à altura num círculo de `radius` (em
@@ -214,6 +239,11 @@ export class Terrain {
    * use `mesh.worldToLocal` antes pra partir de um ponto de mundo.
    */
   heightAt(localX: number, localZ: number): number | null {
+    return this.sampleHeight(localX, localZ, (idx) => this.effectiveY(idx));
+  }
+
+  /** Interpolação bilinear de `y(idx)` na grade; `null` fora da área. */
+  private sampleHeight(localX: number, localZ: number, y: (idx: number) => number): number | null {
     const hw = this.width / 2;
     const hd = this.depth / 2;
     if (localX < -hw || localX > hw || localZ < -hd || localZ > hd) return null;
@@ -224,10 +254,10 @@ export class Terrain {
     const j0 = Math.min(Math.floor(gz), this.resolution - 1);
     const fx = gx - i0;
     const fz = gz - j0;
-    const h00 = this.effectiveY(j0 * n + i0);
-    const h10 = this.effectiveY(j0 * n + i0 + 1);
-    const h01 = this.effectiveY((j0 + 1) * n + i0);
-    const h11 = this.effectiveY((j0 + 1) * n + i0 + 1);
+    const h00 = y(j0 * n + i0);
+    const h10 = y(j0 * n + i0 + 1);
+    const h01 = y((j0 + 1) * n + i0);
+    const h11 = y((j0 + 1) * n + i0 + 1);
     return (h00 * (1 - fx) + h10 * fx) * (1 - fz) + (h01 * (1 - fx) + h11 * fx) * fz;
   }
 

@@ -1,7 +1,7 @@
 # 0089 - Remoção dos subsistemas Road e Kit (enxugar a engine)
 
 **Data:** 2026-06-29
-**Status:** aceito (remove Road — SPEC-0072/0075/0076/0087/0088 — e Kit — ADR-0053)
+**Status:** aceito — substituído em parte por [ADR-0630](ADR-0630-estrada-por-spline-enxuta.md) (a Road volta enxuta; o Kit segue removido). Original: remove Road — SPEC-0072/0075/0076/0087/0088 — e Kit — ADR-0053)
 
 ## Contexto
 
