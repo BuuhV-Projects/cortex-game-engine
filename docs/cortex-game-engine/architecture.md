@@ -1495,7 +1495,7 @@ no logo da splash enquanto montava os seis carros.
 | Narrativa (diálogo/UI/flags) | `src/dialogue/` · `src/narrative/` (ADR-0070) |
 | Blockout / ProBuilder | `src/probuilder/` (formas + `EditableMesh`) · editor: `MeshAuthoring`, `MeshEditSystem`, `EditorShapePanel` (SPEC-0071) |
 | Estrada por spline | `src/road/` (spline, fita, greide/corte puros, `roadFields`) · `src/scene/RoadBuild.ts` (nó → pista + corte) · editor: `RoadAuthoring`, `RoadDrawSystem`, `RoadEditSystem`, `RoadInspectorSection` (ADR-0630/SPEC-0631) |
-| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) · culling por esfera das instâncias, por nó (SPEC-0299; a sombra nativa não corta instanced) |
+| Vegetação (instanciada) | `src/scene/Vegetation.ts` (InstancedMesh + placeholder) · editor: `VegetationAuthoring` (pincel de espalhar) · nó `vegetation` (SPEC-0077) · culling por esfera das instâncias, por nó (SPEC-0299; a sombra nativa não corta instanced; folhagem com `alphaTest` projeta sombra recortada no passe nativo — SPEC-0642, `src/render/ShadowAlphaClipSync.ts`) |
 | Input por ação + remapeamento | `src/input/` (`InputActions`, `bindings`, `ControlsScreen`) · gate: `src/core/gamePlatform.ts` (ADR-0164/SPEC-0165) |
 | Editor (F2) + autorias | `src/editor/` · `src/editor/authoring/` |
 | Física Rapier | `src/physics/` |
