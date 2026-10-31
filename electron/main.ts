@@ -590,6 +590,7 @@ const VENDOR_TYPE_MODULES = {
     'SceneLoader',
     'SceneDefinition',
     'SceneBuilder',
+    'RoadBuild',
     'Background',
     'SceneAnimator',
     'ModularCharacter',
@@ -641,6 +642,7 @@ const VENDOR_TYPE_MODULES = {
   dialogue: ['DialogueGraph', 'DialogueRunner', 'DialogueUI', 'startDialogue'],
   narrative: ['StoryState'],
   probuilder: ['EditableMesh', 'shapes'],
+  road: ['RoadSpline', 'RoadMesh', 'RoadGrade', 'roadFields'],
   // WGSL do jogo no renderer nativo (SPEC-0565): registro, relógio e o contrato do modelo.
   'render/native': ['GameMaterials', 'ShaderClock', 'RendererClassifier'],
   'render/native/models': ['NativeModel'],

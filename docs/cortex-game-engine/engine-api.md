@@ -1184,6 +1184,35 @@ os corpos (`PlatformerBodyComponent`/`KinematicBodyComponent`) EM CIMA da superf
 (smooth/flatten vêm depois); máx. 4 texturas por terreno; trocar o Shader (SPEC-0058)
 do objeto-terreno desfaz o blend de splat.
 
+## Estrada por spline (nó `road`) — ADR-0630 / SPEC-0631
+
+Pista por Catmull-Rom que **corta e aterra o terreno sem destruir o heightmap**: o corte é
+um delta somado à base (`Terrain.setRoadMolding`); `getHeights()` e o overlay guardam só a
+base. A fita é chão do carro (`userData.cortexRoad`). No F2: menu **Desenhar estrada**
+(clique pontos, Enter finaliza), seção **Estrada** do Inspector (largura, talude,
+inclinação máx. %, greide, textura, cor, chão do carro) e **Editar traçado** (arrastar
+pontos, Delete remove). Edições vão para `overlay.data.road[id]` e vencem o nó.
+
+```jsonc
+{ "type": "road", "id": "serra-1",
+  "points": [[120, 0, -40], [180, 0, -10], [260, 0, 30]], // ≥2, mundo, metros (transform ignorado)
+  "width": 8, "talude": 6, "maxSlope": 0.25,               // m, m por lado, razão (25%)
+  "grade": "terrain",                                       // "terrain" (base do terreno) | "points" (Y dos pontos)
+  "texture": "assets/textures/asfalto.png", "tile": 8,      // "" = sem textura explícito
+  "drivable": true }
+```
+```ts
+import { sampleSpline, smoothGrade, roadRibbon, moldHeightfield, buildRoads } from 'cortex-game-engine'
+const samples = sampleSpline([[0, 0, 0], [0, 0, 40], [30, 0, 80]])  // posição + tangente
+const grade = smoothGrade(samples, samples.map((s) => s.pos[1]), { maxSlope: 0.12 })
+const ribbon = roadRibbon(samples, 8, 8, grade)                       // arrays crus da fita
+buildRoads(scene.getThreeScene())  // refaz todas as estradas + corte (o buildScene já chama)
+```
+
+Gerador de jogo: um ponto a cada 20–40 m; raio de curva ≥ `width`; com `grade: "terrain"`
+o Y dos pontos só vale onde não há terreno. **Não** escave o heightmap no gerador — a
+engine molda. Fora: perfis de via, cruzamentos, marcações, pontes, superelevação.
+
 ## Character controller (player/NPC com cápsula — estilo UPBGE)
 
 `CharacterBodyComponent` (cápsula `radius`/`height`) + `CharacterPhysicsSystem` =

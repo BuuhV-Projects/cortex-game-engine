@@ -36,6 +36,11 @@ export interface EditorState {
    * edição de malha) cedem o clique pro {@link ShapeDrawSystem}.
    */
   drawingShape: boolean;
+  /**
+   * **Editando o traçado de uma estrada** (SPEC-0631 §6): arrastando os pontos da spline.
+   * O {@link RoadEditSystem} assume o clique/gizmo e o {@link ObjectEditSystem} cede.
+   */
+  editingRoad: boolean;
 }
 
 export function createEditorState(): EditorState {
@@ -47,5 +52,6 @@ export function createEditorState(): EditorState {
     sculptingTerrain: false,
     meshEditMode: 'object',
     drawingShape: false,
+    editingRoad: false,
   };
 }

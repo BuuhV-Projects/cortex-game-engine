@@ -25,6 +25,8 @@ export * from './editor/ObjectEditSystem.js';
 export * from './editor/MeshEditSystem.js';
 export * from './editor/MeshEditToolbar.js';
 export * from './editor/ShapeDrawSystem.js';
+export * from './editor/RoadDrawSystem.js';
+export * from './editor/RoadEditSystem.js';
 export * from './editor/EditorTexturePicker.js';
 export * from './editor/attachEditor.js';
 

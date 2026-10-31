@@ -1,5 +1,6 @@
 // zod/v3 — compatível com Hermes/CortexNative (ver SceneFile.ts).
 import { z } from 'zod/v3';
+import { roadFieldsSchema } from '../road/roadFields.js';
 
 /**
  * **Definição data-driven de cena** (V1). A cena vira DADO: uma lista de nós que
@@ -529,6 +530,9 @@ const underlayNode = z.object({
   place: placeSchema,
 });
 
+/** **Estrada por spline** (ADR-0630): campos em {@link roadFieldsSchema} (SPEC-0631). */
+const roadNode = z.object({ type: z.literal('road'), ...roadFieldsSchema.shape, ...baseFields });
+
 const sceneNodeSchema = z.discriminatedUnion('type', [
   modelNode,
   primitiveNode,
@@ -541,6 +545,7 @@ const sceneNodeSchema = z.discriminatedUnion('type', [
   terrainNode,
   vegetationNode,
   underlayNode,
+  roadNode,
 ]);
 
 const sceneDefinitionSchema = z.object({
@@ -634,6 +639,8 @@ export type MeshNode = z.infer<typeof meshNode>;
 export type VegetationNode = z.infer<typeof vegetationNode>;
 export type LightNode = z.infer<typeof lightNode>;
 export type WaterNode = z.infer<typeof waterNode>;
+/** Nó de estrada por spline (SPEC-0631). */
+export type RoadNode = z.infer<typeof roadNode>;
 export type ParticlesNode = z.infer<typeof particlesNode>;
 export type BackgroundNode = z.infer<typeof backgroundNode>;
 /** Um nó da cena (união discriminada por `type`). */
