@@ -26,6 +26,7 @@ import { Matrix4, Vector3, type Camera, type Object3D } from 'three';
 import { debug } from '../../../core/debug.js';
 import { activeSceneMirror } from '../../../core/NativeSceneMirror.js';
 import { CasterGeometryRegistry } from '../../CasterGeometryRegistry.js';
+import { ShadowAlphaClipSync } from '../../ShadowAlphaClipSync.js';
 import { parityFreezeSeconds } from '../../MainPassArm.js';
 import { queryFlagRequested } from '../../TransformOnlyRefresh.js';
 
@@ -81,6 +82,8 @@ export class NativeSunShadowPass {
   /** Redraws this pass made (and frames handed to the three), for tests and the report. */
   readonly stats = { drawn: 0, handedBack: 0 };
   private readonly _registry = new CasterGeometryRegistry();
+  /** Alpha-clip casters' texture + UV on the host (SPEC-0642). */
+  private readonly _alphaClip = new ShadowAlphaClipSync();
   private readonly _viewProj = new Matrix4();
   private readonly _matrices = new Float64Array(PASS_MATRIX_FLOATS);
   /** This pass took an `autoUpdate` shadow over: it redraws every frame. */
@@ -128,6 +131,7 @@ export class NativeSunShadowPass {
     // The three creates the GPU texture on its first render into the map.
     if (!target) return 'alvo-sem-gpu';
     this._registry.atualizar(scene, backend, mirror.drainNewGeometries());
+    this._alphaClip.sync(mirror, backend);
     shadow.updateMatrices(light);
     const cam = shadow.camera;
     this._viewProj.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);

@@ -716,6 +716,10 @@ export class NativeSceneMirror {
    * dos dois muda (SPEC-0289); `-1` = nunca mandado.
    */
   private readonly _instanciados = new Map<NoDaCena, { versao: number; quantas: number }>();
+  /** Nós marcados com recorte alfa — quem o `ShadowAlphaClipSync` acompanha (SPEC-0642). */
+  private readonly _recorteAlfa = new Set<Object3D>();
+  /** Sobe a cada {@link install}: o host esquece os recortes quando o espelho renasce. */
+  private _geracao = 0;
   private _loteDescricao = new Float32Array(0);
   private _loteIndices = new Int32Array(0);
   // ── Só o que mudou (SPEC-0322) — tudo dimensionado pela CAPACIDADE ──────
@@ -744,6 +748,21 @@ export class NativeSceneMirror {
 
   get installed(): boolean {
     return this._installed;
+  }
+
+  /** Nós espelhados com recorte alfa (`alphaTest`/`alphaMap`, SPEC-0642). */
+  get alphaClipNodes(): ReadonlySet<Object3D> {
+    return this._recorteAlfa;
+  }
+
+  /** Índice do nó no espelho, ou `undefined` se ele não está espelhado. */
+  nodeIndex(objeto: Object3D): number | undefined {
+    return this._indicePorObjeto.get(objeto);
+  }
+
+  /** Geração do espelho: muda a cada {@link install} (o host limpa o que era por nó). */
+  get generation(): number {
+    return this._geracao;
   }
 
   /**
@@ -864,6 +883,7 @@ export class NativeSceneMirror {
     if (!api || this._installed) return false;
 
     this._nodes = [];
+    this._geracao++;
     const fila: Object3D[] = [scene];
     const indicePorObjeto = this._indicePorObjeto;
     indicePorObjeto.clear();
@@ -1072,6 +1092,7 @@ export class NativeSceneMirror {
       if (slot === undefined) return;
       this._indicePorObjeto.delete(objeto);
       this._instanciados.delete(objeto as NoDaCena);
+      this._recorteAlfa.delete(objeto);
       this._nodes[slot] = undefined;
       this._liveCount--;
       this._pararDeEscutar(objeto);
@@ -1112,6 +1133,7 @@ export class NativeSceneMirror {
     this._nodes = [];
     this._indicePorObjeto.clear();
     this._instanciados.clear();
+    this._recorteAlfa.clear();
     this._liveCount = 0;
     this._qtdSujos = 0;
     this._installed = false;
@@ -1276,6 +1298,8 @@ export class NativeSceneMirror {
     if (no.isInstancedMesh && no.instanceMatrix) {
       this._instanciados.set(no, { versao: -1, quantas: -1 });
     }
+    // Recorte alfa (SPEC-0642): o mesmo critério da flag que o gate lê.
+    if (temRecorteAlfa(no.material)) this._recorteAlfa.add(no);
   }
 
   /**

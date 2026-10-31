@@ -60,6 +60,7 @@ void testShadowGateAceitaCenaLimpa();
 void testShadowGateRecusaSkinnedEInstanced();
 void testShadowGateRecusaMaterialEmArray();
 void testShadowGateRecusaRecorteAlfaEPositionNode();
+void testShadowGateAceitaRecorteAlfaComTexturaNoHost();
 void testShadowGateRecusaGeometriaAusenteDoRegistro();
 void testShadowGateRecusaSemRegistroNenhum();
 void testShadowGateRecusaDivergenciaDeNos();
@@ -143,6 +144,7 @@ int main() {
   tests::testShadowGatePrioridadeEContagemPorMotivo();
   tests::testShadowGateMotivoTemNome();
   tests::testShadowGateAceitaInstancedComMatrizesNoHost();
+  tests::testShadowGateAceitaRecorteAlfaComTexturaNoHost();
   tests::testShadowGateRelataPrimeiroOfensor();
   tests::testShadowGateAceitaOsTresLadosDaTabela();
   tests::testShadowGateRecusaLadoNaoReproduzivel();

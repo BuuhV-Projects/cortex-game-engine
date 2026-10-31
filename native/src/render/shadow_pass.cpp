@@ -6,6 +6,7 @@
 #include "geometry_registry.h"
 #include "instance_buffer_store.h"
 #include "shadow_math.h"
+#include "shadow_pass_shaders.h"
 #include "../webgpu/pass_timing.h"
 
 #include <webgpu/wgpu.h>
@@ -29,55 +30,28 @@ constexpr uint64_t kVertexStridePadrao = 3 * sizeof(float);
 constexpr float kDepthClearValue = 1.0f;
 /** Uma amostra: o shadow map do `three` não é multiamostrado. */
 constexpr uint32_t kAmostras = 1;
-
-/** Per-caster uniform: the three matrices of {@link ShadowCasterMatrices} (depth-only, no color). */
-using UniformesDoCaster = ShadowCasterMatrices;
-
-/**
- * Vertex shader de posição e nada mais.
- *
- * Sem estágio de fragmento: o passe só escreve profundidade, e declarar um
- * fragmento que não escreve nada custaria uma invocação por pixel coberto.
- */
-const char* kShaderSombra = R"WGSL(
-struct Uniformes {
-  model : mat4x4f,
-  view : mat4x4f,
-  projection : mat4x4f,
-};
-@group(0) @binding(0) var<uniform> u : Uniformes;
-
-// The three's order (SPEC-0545): positionView = (view * model) * p; clip = projection * positionView.
-@vertex
-fn vs(@location(0) position : vec3f) -> @builtin(position) vec4f {
-  let positionView = ((u.view * u.model) * vec4f(position, 1.0)).xyz;
-  return u.projection * vec4f(positionView, 1.0);
-}
-)WGSL";
+/** `mat3x3f` no WGSL: 3 colunas de `vec4f` (o 4º float é preenchimento). */
+constexpr uint32_t kUvColumns = 3;
+constexpr uint32_t kUvColumnFloats = 4;
+/** Linhas úteis de cada coluna da `Matrix3` do `three`. */
+constexpr uint32_t kUvRows = 3;
+/** Floats de preenchimento depois de `alphaTest` (o struct fecha em 256 bytes). */
+constexpr uint32_t kUniformPadding = 3;
 
 /**
- * Variante para `InstancedMesh` (SPEC-0289): a matriz da instância chega como
- * atributo POR INSTÂNCIA (4 colunas, coluna-maior como o `instanceMatrix` do
- * `three`) e entra entre a `model` e a posição — a mesma ordem do `three`
- * (`instanceMatrix * positionLocal`, depois `modelWorldMatrix`).
+ * Uniforme por caster: as três matrizes de {@link ShadowCasterMatrices} mais o
+ * recorte alfa (SPEC-0642) — `uvTransform` em 3 colunas `vec4f` (o `mat3x3f` do
+ * WGSL) e `alphaTest`. Ocupa o slot inteiro; as variantes depth-only só leem as
+ * matrizes.
  */
-const char* kShaderSombraInstanciada = R"WGSL(
-struct Uniformes {
-  model : mat4x4f,
-  view : mat4x4f,
-  projection : mat4x4f,
+struct ShadowCasterUniforms {
+  ShadowCasterMatrices matrices;
+  float uvTransform[kUvColumns * kUvColumnFloats];
+  float alphaTest;
+  float padding[kUniformPadding];
 };
-@group(0) @binding(0) var<uniform> u : Uniformes;
-
-@vertex
-fn vs(@location(0) position : vec3f,
-      @location(1) c0 : vec4f, @location(2) c1 : vec4f,
-      @location(3) c2 : vec4f, @location(4) c3 : vec4f) -> @builtin(position) vec4f {
-  let positionLocal = (mat4x4f(c0, c1, c2, c3) * vec4f(position, 1.0)).xyz;
-  let positionView = ((u.view * u.model) * vec4f(positionLocal, 1.0)).xyz;
-  return u.projection * vec4f(positionView, 1.0);
-}
-)WGSL";
+static_assert(sizeof(ShadowCasterUniforms) == kUniformSlotAlign,
+              "o uniforme do caster tem de casar com o struct do WGSL");
 
 /** Colunas da matriz de instância = atributos `vec4f` por instância. */
 constexpr uint32_t kInstanceColumns = 4;
@@ -90,6 +64,13 @@ constexpr uint32_t kVertexBuffersSimples = 1;
 constexpr uint32_t kVertexBuffersInstanciados = 2;
 /** Slot do buffer de matrizes por instância no `setVertexBuffer`. */
 constexpr uint32_t kInstanceBufferSlot = 1;
+/** `@location` do UV no recorte alfa (SPEC-0642), depois das colunas da instância. */
+constexpr uint32_t kUvLocation = 5;
+/** Grupos do pipeline: só o uniforme; uniforme + textura/sampler do recorte. */
+constexpr uint32_t kGruposSimples = 1;
+constexpr uint32_t kGruposComRecorte = 2;
+/** Grupo da textura do recorte no `setBindGroup`. */
+constexpr uint32_t kGrupoRecorte = 1;
 
 /**
  * Um pipeline já compilado, com a chave que o distingue.
@@ -105,6 +86,9 @@ struct PipelineEntry {
   ShadowCull cull = ShadowCull::kFront;
   /** Variante com a matriz por instância (SPEC-0289). */
   bool instanced = false;
+  /** Variante com recorte alfa (SPEC-0642) e o passo do buffer de UV dela. */
+  bool alphaClip = false;
+  uint32_t uvStride = 0;
   WGPURenderPipeline pipeline = nullptr;
 };
 
@@ -159,11 +143,11 @@ bool garantirBindGroupLayout(HostGpu* gpu, Recursos& r) {
 
   WGPUBindGroupLayoutEntry entrada = WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT;
   entrada.binding = 0;
-  // Só o vértice: não há estágio de fragmento neste passe.
-  entrada.visibility = WGPUShaderStage_Vertex;
+  // O fragmento do recorte alfa (SPEC-0642) lê `alphaTest` do mesmo uniforme.
+  entrada.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
   entrada.buffer.type = WGPUBufferBindingType_Uniform;
   entrada.buffer.hasDynamicOffset = true;
-  entrada.buffer.minBindingSize = sizeof(UniformesDoCaster);
+  entrada.buffer.minBindingSize = sizeof(ShadowCasterUniforms);
 
   WGPUBindGroupLayoutDescriptor ld = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
   ld.entryCount = 1;
@@ -187,7 +171,7 @@ bool garantirUniformes(HostGpu* gpu, Recursos& r, uint32_t necessarios) {
   WGPUBindGroupEntry entrada = WGPU_BIND_GROUP_ENTRY_INIT;
   entrada.binding = 0;
   entrada.buffer = r.uniformes;
-  entrada.size = sizeof(UniformesDoCaster);
+  entrada.size = sizeof(ShadowCasterUniforms);
 
   WGPUBindGroupDescriptor gd = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
   gd.layout = r.bindGroupLayout;
@@ -210,7 +194,8 @@ bool garantirUniformes(HostGpu* gpu, Recursos& r, uint32_t necessarios) {
  * validação — que no wgpu aborta o processo, sem exceção (medido no M5).
  */
 WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat profundidade,
-                                    uint32_t stride, ShadowCull cull, bool instanced) {
+                                    uint32_t stride, ShadowCull cull, bool instanced,
+                                    bool alphaClip, uint32_t uvStride) {
   if (r.formatoProfundidade != profundidade) {
     for (PipelineEntry& entrada : r.pipelines) {
       if (entrada.pipeline) wgpuRenderPipelineRelease(entrada.pipeline);
@@ -219,20 +204,27 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
     r.formatoProfundidade = profundidade;
   }
   for (const PipelineEntry& entrada : r.pipelines) {
-    if (entrada.stride == stride && entrada.cull == cull && entrada.instanced == instanced) {
+    if (entrada.stride == stride && entrada.cull == cull && entrada.instanced == instanced &&
+        entrada.alphaClip == alphaClip && entrada.uvStride == uvStride) {
       return entrada.pipeline;
     }
   }
   if (!garantirBindGroupLayout(gpu, r)) return nullptr;
+  WGPUBindGroupLayout grupos[kGruposComRecorte] = {r.bindGroupLayout, nullptr};
+  if (alphaClip) {
+    grupos[kGrupoRecorte] = alphaClipStore().layout(gpu);
+    if (!grupos[kGrupoRecorte]) return nullptr;
+  }
 
   WGPUPipelineLayoutDescriptor pld = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
-  pld.bindGroupLayoutCount = 1;
-  pld.bindGroupLayouts = &r.bindGroupLayout;
+  pld.bindGroupLayoutCount = alphaClip ? kGruposComRecorte : kGruposSimples;
+  pld.bindGroupLayouts = grupos;
   WGPUPipelineLayout layout = wgpuDeviceCreatePipelineLayout(gpu->device, &pld);
   if (!layout) return nullptr;
 
   WGPUShaderSourceWGSL wgsl = WGPU_SHADER_SOURCE_WGSL_INIT;
-  const char* fonte = instanced ? kShaderSombraInstanciada : kShaderSombra;
+  const char* fonte = alphaClip ? (instanced ? kShaderSombraInstanciadaRecorte : kShaderSombraRecorte)
+                                : (instanced ? kShaderSombraInstanciada : kShaderSombra);
   wgsl.code = WGPUStringView{fonte, std::strlen(fonte)};
   WGPUShaderModuleDescriptor sd = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
   sd.nextInChain = &wgsl.chain;
@@ -260,12 +252,25 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
     colunas[c].offset = c * kInstanceColumnBytes;
     colunas[c].shaderLocation = kInstanceFirstLocation + c;
   }
-  WGPUVertexBufferLayout layouts[kVertexBuffersInstanciados] = {vbl,
-                                                                 WGPU_VERTEX_BUFFER_LAYOUT_INIT};
+  WGPUVertexBufferLayout layouts[kVertexBuffersInstanciados + 1] = {
+      vbl, WGPU_VERTEX_BUFFER_LAYOUT_INIT, WGPU_VERTEX_BUFFER_LAYOUT_INIT};
   layouts[kInstanceBufferSlot].arrayStride = kInstanceStrideBytes;
   layouts[kInstanceBufferSlot].stepMode = WGPUVertexStepMode_Instance;
   layouts[kInstanceBufferSlot].attributeCount = kInstanceColumns;
   layouts[kInstanceBufferSlot].attributes = colunas;
+  // UV do recorte (SPEC-0642): buffer próprio, depois da posição e das instâncias.
+  // O deslocamento do UV no bloco vai no `setVertexBuffer`, então o atributo fica em 0.
+  WGPUVertexAttribute atributoUv = WGPU_VERTEX_ATTRIBUTE_INIT;
+  atributoUv.format = WGPUVertexFormat_Float32x2;
+  atributoUv.shaderLocation = kUvLocation;
+  uint32_t buffers = instanced ? kVertexBuffersInstanciados : kVertexBuffersSimples;
+  if (alphaClip) {
+    layouts[buffers].arrayStride = uvStride;
+    layouts[buffers].stepMode = WGPUVertexStepMode_Vertex;
+    layouts[buffers].attributeCount = 1;
+    layouts[buffers].attributes = &atributoUv;
+    ++buffers;
+  }
 
   WGPUDepthStencilState ds = WGPU_DEPTH_STENCIL_STATE_INIT;
   ds.format = profundidade;
@@ -276,7 +281,7 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
   pd.layout = layout;
   pd.vertex.module = modulo;
   pd.vertex.entryPoint = WGPUStringView{"vs", 2};
-  pd.vertex.bufferCount = instanced ? kVertexBuffersInstanciados : kVertexBuffersSimples;
+  pd.vertex.bufferCount = buffers;
   pd.vertex.buffers = layouts;
   pd.primitive.topology = WGPUPrimitiveTopology_TriangleList;
   pd.primitive.frontFace = WGPUFrontFace_CCW;
@@ -286,8 +291,12 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
   // peter-panning), `Back` para `BackSide` e `None` para `DoubleSide`, que o
   // `three` desenha sem culling nenhum.
   pd.primitive.cullMode = paraWgpu(cull);
-  // Sem estágio de fragmento: depth-only.
-  pd.fragment = nullptr;
+  // Depth-only: sem fragmento, salvo o recorte alfa, que só descarta (sem alvo de cor).
+  WGPUFragmentState fragmento = WGPU_FRAGMENT_STATE_INIT;
+  fragmento.module = modulo;
+  fragmento.entryPoint = WGPUStringView{"fs", 2};
+  fragmento.targetCount = 0;
+  pd.fragment = alphaClip ? &fragmento : nullptr;
   pd.depthStencil = &ds;
   pd.multisample.count = kAmostras;
 
@@ -296,7 +305,7 @@ WGPURenderPipeline garantirPipeline(HostGpu* gpu, Recursos& r, WGPUTextureFormat
   wgpuPipelineLayoutRelease(layout);
   if (!pipeline) return nullptr;
 
-  r.pipelines.push_back(PipelineEntry{stride, cull, instanced, pipeline});
+  r.pipelines.push_back(PipelineEntry{stride, cull, instanced, alphaClip, uvStride, pipeline});
   return pipeline;
 }
 
@@ -321,20 +330,29 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
     ShadowCull cull;
     WGPUBuffer instancias;
     uint32_t quantas;
+    const AlphaClipEntry* recorte;
   };
   std::vector<Pronto> prontos;
   prontos.reserve(total);
 
-  UniformesDoCaster u;
+  ShadowCasterUniforms u = {};
   for (uint32_t i = 0; i < total; ++i) {
     const GeometryEntry* geometria = registro.find(itens[i].geometryId);
     if (!geometria) continue;  // pula: nunca aproxima
     if (itens[i].instanceCount == 0) continue;  // lote vazio: nada a desenhar
-    shadowCasterMatrices(viewProjection, projection, view, itens[i].model, u);
+    shadowCasterMatrices(viewProjection, projection, view, itens[i].model, u.matrices);
+    const AlphaClipEntry* recorte = itens[i].alphaClip;
+    u.alphaTest = recorte ? recorte->alphaTest : 0.0f;
+    for (uint32_t c = 0; c < kUvColumns; ++c) {
+      for (uint32_t l = 0; l < kUvRows; ++l) {
+        u.uvTransform[c * kUvColumnFloats + l] =
+            recorte ? recorte->uvTransform[c * kUvRows + l] : 0.0f;
+      }
+    }
     const uint32_t slot = static_cast<uint32_t>(prontos.size());
     wgpuQueueWriteBuffer(gpu->queue, r.uniformes, slot * kUniformSlotAlign, &u, sizeof(u));
-    prontos.push_back(
-        {geometria, slot, itens[i].cullMode, itens[i].instanceBuffer, itens[i].instanceCount});
+    prontos.push_back({geometria, slot, itens[i].cullMode, itens[i].instanceBuffer,
+                       itens[i].instanceCount, recorte});
   }
   if (prontos.empty()) return 0;
 
@@ -349,6 +367,10 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
   std::stable_sort(prontos.begin(), prontos.end(), [](const Pronto& a, const Pronto& b) {
     if (a.cull != b.cull) return a.cull < b.cull;
     if ((a.instancias != nullptr) != (b.instancias != nullptr)) return a.instancias == nullptr;
+    if ((a.recorte != nullptr) != (b.recorte != nullptr)) return a.recorte == nullptr;
+    if (a.recorte && a.recorte->uvStride != b.recorte->uvStride) {
+      return a.recorte->uvStride < b.recorte->uvStride;
+    }
     return a.geometria->vertexStride < b.geometria->vertexStride;
   });
 
@@ -380,6 +402,8 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
   uint32_t strideAtual = 0;
   ShadowCull cullAtual = ShadowCull::kNone;
   bool instanciadoAtual = false;
+  bool recorteAtual = false;
+  uint32_t uvStrideAtual = 0;
   // Flag explícita em vez de confiar num par impossível de (passo, cull): o
   // primeiro item SEMPRE precisa de `setPipeline`, e deduzir isso de valores
   // iniciais é o tipo de armadilha que dá uma pass sem pipeline — e aí o wgpu
@@ -387,14 +411,19 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
   bool primeiro = true;
   for (const Pronto& item : prontos) {
     const bool instanciado = item.instancias != nullptr;
+    const bool comRecorte = item.recorte != nullptr;
+    const uint32_t uvStride = comRecorte ? item.recorte->uvStride : 0;
     if (primeiro || item.geometria->vertexStride != strideAtual || item.cull != cullAtual ||
-        instanciado != instanciadoAtual) {
+        instanciado != instanciadoAtual || comRecorte != recorteAtual ||
+        uvStride != uvStrideAtual) {
       primeiro = false;
       strideAtual = item.geometria->vertexStride;
       cullAtual = item.cull;
       instanciadoAtual = instanciado;
-      WGPURenderPipeline pipeline =
-          garantirPipeline(gpu, r, formatoProf, strideAtual, cullAtual, instanciadoAtual);
+      recorteAtual = comRecorte;
+      uvStrideAtual = uvStride;
+      WGPURenderPipeline pipeline = garantirPipeline(gpu, r, formatoProf, strideAtual, cullAtual,
+                                                     instanciadoAtual, recorteAtual, uvStrideAtual);
       if (!pipeline) break;
       wgpuRenderPassEncoderSetPipeline(pass, pipeline);
     }
@@ -406,6 +435,12 @@ uint32_t drawShadowCasters(HostGpu* gpu, WGPUTexture alvoProfundidade,
       wgpuRenderPassEncoderSetVertexBuffer(pass, kInstanceBufferSlot, item.instancias, 0,
                                            static_cast<uint64_t>(item.quantas) *
                                                kInstanceStrideBytes);
+    }
+    if (comRecorte) {
+      wgpuRenderPassEncoderSetBindGroup(pass, kGrupoRecorte, item.recorte->bindGroup, 0, nullptr);
+      const uint32_t slotUv = instanciado ? kVertexBuffersInstanciados : kVertexBuffersSimples;
+      wgpuRenderPassEncoderSetVertexBuffer(pass, slotUv, item.recorte->uvBuffer,
+                                           item.recorte->uvOffset, WGPU_WHOLE_SIZE);
     }
     if (item.geometria->indexBuffer) {
       const WGPUIndexFormat formatoIndice =

@@ -12,6 +12,7 @@
 #include "../scene/shadow_caster_enumerator.h"
 #include "../scene/shadow_pass_gate.h"
 #include "../render/geometry_registry.h"
+#include "../render/alpha_clip_store.h"
 #include "../render/instance_buffer_store.h"
 #include "geometry_registry_shim.h"
 
@@ -122,6 +123,11 @@ MirrorState& state() {
 /** O host tem as matrizes deste `InstancedMesh`? (a forma que o gate puro aceita) */
 bool instanciasPresentes(int32_t node, void*) { return state().instances.find(node) != nullptr; }
 
+/** O host tem o recorte alfa deste nó (SPEC-0642)? */
+bool recortePresente(int32_t node, void*) {
+  return render::alphaClipStore().find(node) != nullptr;
+}
+
 /**
  * Lê uma linha do layout de construção (20 floats) num {@link scene::NodeDesc}.
  *
@@ -190,6 +196,7 @@ napi_value jsBuild(napi_env env, napi_callback_info info) {
   s.built = s.mirror.build(nodes);
   // Espelho novo = índices novos: instâncias do anterior não descrevem ninguém.
   s.instances.clear();
+  render::alphaClipStore().clear();  // idem para o recorte alfa (SPEC-0642)
   // Espaço para o pior caso: todos os nós mudando num frame — e pela
   // CAPACIDADE, não pelo tamanho de agora, porque este buffer também é externo
   // e o JS o segura desde o `install`. Redimensioná-lo depois realocaria a
@@ -331,10 +338,12 @@ napi_value jsRemoveNode(napi_env env, napi_callback_info info) {
   // O slot vira lápide e pode ser reaproveitado: o próximo dono não herda as
   // matrizes de instância de quem saiu (SPEC-0289).
   if (saiu > 0) {
-    s.instances.eraseIf([&s](int32_t node) {
+    const auto saiuDoEspelho = [&s](int32_t node) {
       return node >= 0 && static_cast<size_t>(node) < s.mirror.size() &&
              s.mirror.removed(static_cast<scene::NodeIndex>(node));
-    });
+    };
+    s.instances.eraseIf(saiuDoEspelho);
+    render::alphaClipStore().eraseIf(saiuDoEspelho);
   }
   napi_create_double(env, static_cast<double>(saiu), &out);
   return out;
@@ -464,7 +473,8 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
   s.shadowCasters.enumerate(s.mirror, params, static_cast<const float*>(planeData));
   const scene::ShadowGateResult veredito =
       scene::evaluateShadowPassGate(s.mirror, s.shadowCasters.casters(), frame,
-                                    geometriaRegistrada, nullptr, instanciasPresentes);
+                                    geometriaRegistrada, nullptr, instanciasPresentes,
+                                    recortePresente);
 
   auto* out = static_cast<double*>(outData);
   for (int i = 0; i < scene::kShadowGateRefusalCount; i++) out[i] = veredito.counts[i];
@@ -502,6 +512,11 @@ napi_value jsDrawShadowPass(napi_env env, napi_callback_info info) {
       if (lote == nullptr || lote->count == 0) continue;
       item.instanceBuffer = lote->buffer;
       item.instanceCount = lote->count;
+    }
+    // O gate já garantiu o recorte de quem tem alphaTest (SPEC-0642).
+    if (s.mirror.hasFlag(index, scene::kNodeAlphaClip)) {
+      item.alphaClip = render::alphaClipStore().find(static_cast<int32_t>(index));
+      if (item.alphaClip == nullptr) continue;
     }
     s.shadowItems.push_back(item);
   }
