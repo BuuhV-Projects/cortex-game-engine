@@ -34,6 +34,7 @@
 #include "shims/main_pass_shim.h"
 #include "shims/draw_batch_shim.h"
 #include "shims/geometry_registry_shim.h"
+#include "shims/shadow_alpha_clip_shim.h"
 #include "shims/perf_stats.h"
 #include "shims/perf_trace.h"
 #include "shims/quit.h"
@@ -289,6 +290,7 @@ int main(int argc, char** argv) {
     shims::registerMainPass(js.env());  // projeção do passe principal (SPEC-0332)
     shims::registerDrawBatch(js.env());  // lote de desenhos diretos (SPEC-0333 b.2)
     shims::registerGeometryRegistry(js.env());  // geometria dos casters (SPEC-0245, E2)
+    shims::registerShadowAlphaClip(js.env(), &gpu);  // recorte alfa da sombra (SPEC-0642)
     shims::registerPerfStats(js.env());
     shims::registerQuit(js.env());
     shims::registerRapier(js.env());

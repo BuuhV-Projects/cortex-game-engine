@@ -120,6 +120,13 @@ using GeometryPresence = bool (*)(int32_t geometryId, void* userData);
  */
 using InstancePresence = bool (*)(int32_t node, void* userData);
 
+/**
+ * O host tem o recorte alfa (textura + UV + `alphaTest`) deste nó (SPEC-0642)?
+ * `nullptr` = não há a quem perguntar, e todo caster com recorte recusa — o
+ * comportamento anterior.
+ */
+using AlphaClipPresence = bool (*)(int32_t node, void* userData);
+
 /** Veredito do gate, com o que basta para explicá-lo no log. */
 struct ShadowGateResult {
   bool accepted = false;
@@ -159,11 +166,13 @@ struct ShadowGateResult {
  * @param presence  consulta ao registro de geometria (ver {@link GeometryPresence})
  * @param userData  repassado a `presence` e `instances` sem ser tocado
  * @param instances consulta às matrizes de instância (ver {@link InstancePresence})
+ * @param alphaClip consulta ao recorte alfa do host (ver {@link AlphaClipPresence})
  */
 ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
                                         const std::vector<NodeIndex>& casters,
                                         const ShadowGateFrame& frame, GeometryPresence presence,
-                                        void* userData, InstancePresence instances = nullptr);
+                                        void* userData, InstancePresence instances = nullptr,
+                                        AlphaClipPresence alphaClip = nullptr);
 
 /** Nome do motivo, para o relato por log sair legível sem depurador. */
 const char* shadowGateRefusalName(ShadowGateRefusal reason);

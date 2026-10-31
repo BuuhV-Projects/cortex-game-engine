@@ -31,14 +31,31 @@ bool instanciasAusentes(const SceneMirror& mirror, NodeIndex index, InstancePres
          (instances == nullptr || !instances(static_cast<int32_t>(index), userData));
 }
 
+/** Recorte alfa que o host não tem (SPEC-0642): com ele, o passe desenha o recorte. */
+bool recorteAusente(const SceneMirror& mirror, NodeIndex index, AlphaClipPresence alphaClip,
+                    void* userData) {
+  return mirror.hasFlag(index, kNodeAlphaClip) &&
+         (alphaClip == nullptr || !alphaClip(static_cast<int32_t>(index), userData));
+}
+
+/** As consultas ao host que o gate recebe, juntas para não crescer cada assinatura. */
+struct Consultas {
+  GeometryPresence presence;
+  InstancePresence instances;
+  AlphaClipPresence alphaClip;
+  void* userData;
+};
+
 bool caiNoMotivo(const SceneMirror& mirror, NodeIndex index, ShadowGateRefusal reason,
-                 GeometryPresence presence, InstancePresence instances, void* userData) {
+                 const Consultas& c) {
+  GeometryPresence presence = c.presence;
+  void* userData = c.userData;
   switch (reason) {
     case ShadowGateRefusal::kSkinnedCaster: return mirror.hasFlag(index, kNodeSkinned);
     case ShadowGateRefusal::kInstancedCaster:
-      return instanciasAusentes(mirror, index, instances, userData);
+      return instanciasAusentes(mirror, index, c.instances, userData);
     case ShadowGateRefusal::kMaterialArray: return mirror.hasFlag(index, kNodeMaterialArray);
-    case ShadowGateRefusal::kAlphaClip: return mirror.hasFlag(index, kNodeAlphaClip);
+    case ShadowGateRefusal::kAlphaClip: return recorteAusente(mirror, index, c.alphaClip, userData);
     case ShadowGateRefusal::kPositionNode: return mirror.hasFlag(index, kNodePositionNode);
     case ShadowGateRefusal::kGeometryMissing: {
       const int32_t geometry = mirror.geometryId(index);
@@ -55,11 +72,10 @@ bool caiNoMotivo(const SceneMirror& mirror, NodeIndex index, ShadowGateRefusal r
  * recusa por motivo de caster, então o caminho aceito não paga nada.
  */
 int32_t primeiroOfensor(const SceneMirror& mirror, const std::vector<NodeIndex>& casters,
-                        ShadowGateRefusal reason, GeometryPresence presence,
-                        InstancePresence instances, void* userData) {
+                        ShadowGateRefusal reason, const Consultas& c) {
   if (reason == ShadowGateRefusal::kNone) return -1;
   for (const NodeIndex index : casters) {
-    if (caiNoMotivo(mirror, index, reason, presence, instances, userData)) {
+    if (caiNoMotivo(mirror, index, reason, c)) {
       return static_cast<int32_t>(index);
     }
   }
@@ -87,7 +103,8 @@ const char* shadowGateRefusalName(ShadowGateRefusal reason) {
 ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
                                         const std::vector<NodeIndex>& casters,
                                         const ShadowGateFrame& frame, GeometryPresence presence,
-                                        void* userData, InstancePresence instances) {
+                                        void* userData, InstancePresence instances,
+                                        AlphaClipPresence alphaClip) {
   ShadowGateResult r;
   r.totalCasters = static_cast<int32_t>(casters.size());
 
@@ -119,7 +136,7 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
     if (mirror.hasFlag(index, kNodeMaterialArray)) {
       refused = marcar(r, ShadowGateRefusal::kMaterialArray);
     }
-    if (mirror.hasFlag(index, kNodeAlphaClip)) {
+    if (recorteAusente(mirror, index, alphaClip, userData)) {
       refused = marcar(r, ShadowGateRefusal::kAlphaClip);
     }
     if (mirror.hasFlag(index, kNodePositionNode)) {
@@ -156,7 +173,8 @@ ShadowGateResult evaluateShadowPassGate(const SceneMirror& mirror,
   }
   r.accepted = r.reason == ShadowGateRefusal::kNone;
   r.offenders = r.counts[static_cast<size_t>(r.reason)];
-  r.firstOffender = primeiroOfensor(mirror, casters, r.reason, presence, instances, userData);
+  r.firstOffender =
+      primeiroOfensor(mirror, casters, r.reason, Consultas{presence, instances, alphaClip, userData});
   return r;
 }
 

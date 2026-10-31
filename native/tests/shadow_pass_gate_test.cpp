@@ -121,9 +121,44 @@ ShadowGateResult avaliarComInstancias(const std::vector<NodeDesc>& nos) {
                                        presencaFalsa, nullptr, instanciasFalsas);
 }
 
+/** Nó com recorte alfa (SPEC-0642): o único de quem o host "tem" textura + UV. */
+constexpr int32_t kNoComRecorte = 1;
+bool recorteFalso(int32_t node, void*) { return node == kNoComRecorte; }
+
+/** Avalia com consulta de recorte alfa, que o `avaliar` padrão não passa. */
+ShadowGateResult avaliarComRecorte(const std::vector<NodeDesc>& nos) {
+  SceneMirror espelho;
+  CHECK(espelho.build(nos));
+  const auto planos = planosAmplos();
+  espelho.updateAndCull(identidade, planos.data());
+  ShadowCasterEnumerator enumerador;
+  enumerador.enumerate(espelho, ShadowCasterParams{}, planos.data());
+  return scene::evaluateShadowPassGate(espelho, enumerador.casters(), frameLimpo(nos.size()),
+                                       presencaFalsa, nullptr, nullptr, recorteFalso);
+}
+
 }  // namespace
 
 namespace tests {
+
+void testShadowGateAceitaRecorteAlfaComTexturaNoHost() {
+  // SPEC-0642: com textura + UV no host, o caster com alphaTest e desenhavel.
+  std::vector<NodeDesc> nos;
+  nos.push_back(casterAceito());
+  NodeDesc folha = casterAceito();
+  folha.parent = 0;
+  folha.flags = static_cast<uint16_t>(folha.flags | scene::kNodeAlphaClip);
+  nos.push_back(folha);  // indice 1 = kNoComRecorte
+  const ShadowGateResult aceito = avaliarComRecorte(nos);
+  CHECK(aceito.accepted);
+  CHECK(aceito.firstOffender == -1);
+
+  // Outra folha SEM recorte no host recusa — e o ofensor e ela (indice 2).
+  nos.push_back(folha);
+  const ShadowGateResult recusado = avaliarComRecorte(nos);
+  esperarRecusa(recusado, ShadowGateRefusal::kAlphaClip, 1);
+  CHECK(recusado.firstOffender == 2);
+}
 
 void testShadowGateAceitaInstancedComMatrizesNoHost() {
   // SPEC-0289: com as matrizes no host, o lote instanciado e desenhavel.
